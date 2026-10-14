@@ -53,6 +53,14 @@ export class World {
   readonly block = new Uint8Array(MAP_W * MAP_H);
   /** Which cell (1–8) each ground tile belongs to, 0 outside cells. */
   readonly cellOf = new Uint8Array(MAP_W * MAP_H);
+  /** On door tiles: the cell the door leads into (0 for other doors). */
+  readonly doorCell = new Uint8Array(MAP_W * MAP_H);
+  /** The tile index of each cell's door, by cell number (index 0 unused). */
+  readonly cellDoor: number[] = [-1];
+  /** Each cell's bed, by cell number (index 0 unused). */
+  readonly cellBed: Array<Prop | undefined> = [undefined];
+  /** Bit c set: cell c's door is locked (derived by the simulation from the routine). */
+  lockedCells = 0;
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
   rev = 0;
 
@@ -75,7 +83,21 @@ export class World {
     });
     this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0 }));
     for (const p of this.props) if (PROPS[p.kind].solid) this.fill(this.propSolid, p.x, p.z, p.x + p.w - 1, p.z + p.d - 1, 1);
-    this.refreshBlock(0);
+    // A cell's door is the door tile next to one of its tiles; its bed the bed inside it.
+    def.cells.forEach((_, k) => {
+      this.cellDoor.push(-1);
+      this.cellBed.push(this.props.find((p) => p.kind === 'bed' && this.cellOf[p.z * MAP_W + p.x] === k + 1));
+    });
+    for (let z = 1; z < MAP_H - 1; z++) {
+      for (let x = 1; x < MAP_W - 1; x++) {
+        const i = z * MAP_W + x;
+        if (g.kind[i] !== TILE.DOOR) continue;
+        const c = Math.max(this.cellOf[i - 1], this.cellOf[i + 1], this.cellOf[i - MAP_W], this.cellOf[i + MAP_W]);
+        this.doorCell[i] = c;
+        if (c) this.cellDoor[c] = i;
+      }
+    }
+    this.refreshBlock();
   }
 
   get ground(): Layer {
@@ -95,12 +117,19 @@ export class World {
     return this.inside(x, z) ? ZONES[this.ground.zone[z * MAP_W + x]] : 'outside';
   }
 
-  /** Recomputes what blocks walking (call when the clock changes door rules, or tiles change). */
-  refreshBlock(minuteOfDay: number) {
+  /** Locks and unlocks cells (bit c = cell c); recomputes what blocks walking when it changes. */
+  setLockedCells(mask: number) {
+    if (mask === this.lockedCells) return;
+    this.lockedCells = mask;
+    this.refreshBlock();
+  }
+
+  /** Recomputes what blocks walking (call when door rules or tiles change). */
+  refreshBlock() {
     const g = this.ground;
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const k = g.kind[i];
-      const solid = k === TILE.DOOR ? !doorOpen(g.key[i], minuteOfDay) : TILE_INFO[k].solid;
+      const solid = k === TILE.DOOR ? !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) : TILE_INFO[k].solid;
       this.block[i] = solid || this.propSolid[i] ? 1 : 0;
     }
     this.rev++;

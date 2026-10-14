@@ -3,6 +3,9 @@ import { dirFromVector } from '../sim/command';
 /** How far the thumb can pull the stick's knob, and the dead zone, in CSS pixels. */
 const STICK_RADIUS = 56;
 const DEAD_ZONE = 10;
+/** A touch or click this short and this still is a tap (walk there), not a drag. */
+const TAP_MS = 280;
+const TAP_SLOP = 12;
 
 const KEYS_X: Record<string, number> = { KeyA: -1, ArrowLeft: -1, KeyD: 1, ArrowRight: 1 };
 const KEYS_Z: Record<string, number> = { KeyW: -1, ArrowUp: -1, KeyS: 1, ArrowDown: 1 };
@@ -11,7 +14,8 @@ const KEYS_Z: Record<string, number> = { KeyW: -1, ArrowUp: -1, KeyS: 1, ArrowDo
  * Keyboard and touch, turned into the one thing the simulation reads: a direction (0–16).
  * Keys are physical (`e.code`), so WASD sits under the same fingers on AZERTY. On touch, a
  * stick appears wherever the thumb lands; two fingers pinch to zoom. The screen's up is
- * north (−z): the camera looks north.
+ * north (−z): the camera looks north. A quick tap or click (no drag) asks to walk to that
+ * spot (`onTap`); any stick or key input takes over from it.
  */
 export class Controls {
   enabled = false;
@@ -23,6 +27,10 @@ export class Controls {
   private vec = { x: 0, y: 0 };
   private readonly pointers = new Map<number, { x: number; y: number }>();
   private pinch = 0;
+  /** The press that may turn out to be a tap. */
+  private press: { id: number; x: number; y: number; t: number; far: boolean } | null = null;
+  /** A quick tap or click at a screen point. */
+  onTap: (x: number, y: number) => void = () => {};
 
   constructor(
     surface: HTMLElement,
@@ -59,7 +67,9 @@ export class Controls {
   }
 
   private down(e: PointerEvent) {
-    if (!this.enabled || e.pointerType === 'mouse') return;
+    if (!this.enabled) return;
+    this.press = this.pointers.size === 0 && e.button === 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), far: false } : null;
+    if (e.pointerType === 'mouse') return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try {
       (e.target as Element).setPointerCapture(e.pointerId);
@@ -67,7 +77,8 @@ export class Controls {
       /* not capturable (synthetic events): moves still arrive while over the canvas */
     }
     if (this.pointers.size === 2) {
-      // A second finger: pinch to zoom, the stick lets go.
+      // A second finger: pinch to zoom, the stick lets go (and it's no tap).
+      this.press = null;
       this.endStick();
       this.pinch = this.spread();
       return;
@@ -84,6 +95,7 @@ export class Controls {
   }
 
   private move(e: PointerEvent) {
+    if (this.press?.id === e.pointerId && Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) > TAP_SLOP) this.press.far = true;
     if (!this.pointers.has(e.pointerId)) return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (this.pointers.size === 2 && this.pinch > 0) {
@@ -111,6 +123,11 @@ export class Controls {
   }
 
   private up(e: PointerEvent) {
+    const p = this.press;
+    if (p?.id === e.pointerId) {
+      this.press = null;
+      if (e.type === 'pointerup' && this.enabled && !p.far && this.pointers.size <= 1 && performance.now() - p.t < TAP_MS) this.onTap(p.x, p.y);
+    }
     this.pointers.delete(e.pointerId);
     if (this.pointers.size < 2) this.pinch = 0;
     if (e.pointerId === this.stickId) this.endStick();
@@ -129,10 +146,16 @@ export class Controls {
 
   /** Lets go of everything (pause, leaving the game, the window losing focus). */
   reset() {
+    this.press = null;
     this.held.clear();
     this.pointers.clear();
     this.pinch = 0;
     this.endStick();
+  }
+
+  /** Whether the player is steering by hand right now (stick pushed or a key held). */
+  get steering(): boolean {
+    return this.dir() !== 0;
   }
 
   /** The direction asked for right now: the stick if a thumb is on it, else the keys. */

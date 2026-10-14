@@ -101,3 +101,362 @@
     background: rgba(242, 107, 29, 0.9);
   }
 }
+
+/* The stick fades in after a moment, so a quick tap (walk there) doesn't flash it. */
+.stick {
+  animation: stick-in 0.12s 0.1s both;
+}
+
+@keyframes stick-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+/* ------------------------------------------------------------ routine and heat */
+.hud-row + .hud-row {
+  margin-top: 6px;
+}
+
+.hud .hud-routine {
+  flex: 0 1 auto;
+  overflow: hidden;
+  padding-right: 6px;
+}
+
+.hud-routine-ic {
+  display: inline-grid;
+  color: var(--gold);
+}
+
+.hud-routine-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.hud-routine-text b {
+  font-size: 15px;
+}
+
+.hud-routine-text span {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  opacity: 0.72;
+}
+
+.hud-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #2a1a05;
+  background: var(--gold);
+}
+
+.hud-badge.done {
+  color: white;
+  background: #2f9e55;
+}
+
+.hud .hud-badge .ic {
+  color: white;
+}
+
+.hud-badge.pop {
+  animation: badge-pop 0.5s var(--spring);
+}
+
+@keyframes badge-pop {
+  40% {
+    transform: scale(1.3);
+  }
+}
+
+.hud-routine.pulse {
+  animation: zone-pulse 0.7s var(--ease);
+}
+
+.hud .hud-routine.alarm {
+  background: rgba(176, 24, 18, 0.9);
+  animation: alarm-pill 1.2s ease-in-out infinite;
+}
+
+.hud .hud-routine.alarm .ic {
+  color: white;
+}
+
+@keyframes alarm-pill {
+  50% {
+    background: rgba(230, 46, 30, 0.95);
+  }
+}
+
+.hud .hud-heat {
+  margin-left: auto;
+  gap: 6px;
+}
+
+.hud .hud-heat .ic {
+  color: #ff8a3d;
+}
+
+.hud-heat-bar {
+  position: relative;
+  width: 54px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.hud-heat-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #ffc23d, #ff8a3d);
+  transition: width 0.6s var(--ease);
+}
+
+.hud-heat b {
+  min-width: 34px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.hud-heat[data-level='none'] b {
+  opacity: 0.6;
+}
+
+.hud-heat[data-level='mid'] .hud-heat-bar i {
+  background: linear-gradient(90deg, #ff9f3d, #ff5a2a);
+}
+
+.hud-heat[data-level='high'] .hud-heat-bar i {
+  background: linear-gradient(90deg, #ff4a2a, #d0121a);
+}
+
+.hud-heat[data-level='high'] b {
+  color: #ff6b5a;
+}
+
+.hud-heat.bump {
+  animation: heat-bump 0.6s var(--spring);
+}
+
+@keyframes heat-bump {
+  30% {
+    transform: scale(1.12);
+    background: rgba(200, 40, 20, 0.92);
+  }
+}
+
+/* ------------------------------------------------------------ banners and toasts */
+.banner {
+  position: fixed;
+  top: calc(max(12px, env(safe-area-inset-top)) + 118px);
+  left: 50%;
+  z-index: 32;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 12px 22px 12px 16px;
+  border-radius: 20px;
+  color: white;
+  background: linear-gradient(180deg, rgba(30, 44, 70, 0.94), rgba(18, 24, 36, 0.94));
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: banner-in 0.55s var(--spring) both;
+}
+
+.banner .ic {
+  flex: none;
+  color: var(--gold);
+}
+
+.banner.routine .ic {
+  animation: bell-ring 0.9s ease-out 0.2s;
+  transform-origin: 50% 10%;
+}
+
+.banner div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.banner b {
+  font: 600 24px/1.1 var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+.banner span {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.banner.alarm {
+  background: linear-gradient(180deg, rgba(200, 30, 22, 0.96), rgba(130, 12, 10, 0.96));
+}
+
+.banner.alarm .ic {
+  color: white;
+}
+
+.banner.alarm b {
+  font-size: 30px;
+  letter-spacing: 0.08em;
+}
+
+.banner.leaving {
+  opacity: 0;
+  transform: translate(-50%, -12px) scale(0.96);
+  transition: opacity 0.35s, transform 0.35s;
+}
+
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.9);
+  }
+}
+
+@keyframes bell-ring {
+  15% {
+    transform: rotate(18deg);
+  }
+  35% {
+    transform: rotate(-14deg);
+  }
+  55% {
+    transform: rotate(9deg);
+  }
+  75% {
+    transform: rotate(-4deg);
+  }
+}
+
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(28px, env(safe-area-inset-bottom)) + 70px);
+  z-index: 33;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: white;
+  background: rgba(18, 24, 36, 0.86);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+  animation: toast-in 0.4s var(--spring) both;
+}
+
+.toast .ic {
+  color: var(--gold);
+}
+
+.toast.bad {
+  background: rgba(170, 30, 20, 0.92);
+}
+
+.toast.bad .ic,
+.toast.good .ic {
+  color: white;
+}
+
+.toast.good {
+  background: rgba(36, 130, 70, 0.92);
+}
+
+.toast.leaving {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+}
+
+/* Lockdown: red light pulsing in from the edges of the screen. */
+.alarm-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(220, 20, 10, 0.5) 100%);
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.alarm-vignette.on {
+  animation: alarm-vignette 1.2s ease-in-out infinite;
+}
+
+@keyframes alarm-vignette {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+body.reduced-motion .alarm-vignette.on {
+  animation: none;
+  opacity: 0.6;
+}
+
+/* Short screens (phones in landscape): the banner would sit on the player; it goes low. */
+@media (max-height: 520px) {
+  .banner {
+    top: auto;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    padding: 8px 18px 8px 12px;
+  }
+
+  .banner b {
+    font-size: 20px;
+  }
+
+  .banner.alarm b {
+    font-size: 24px;
+  }
+
+  .toasts {
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 74px);
+  }
+}

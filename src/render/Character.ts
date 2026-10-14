@@ -1,15 +1,43 @@
 import * as THREE from 'three';
+import { DOING } from '../sim/systems/inmates';
+import { box, kitMaterial, merge, type Part } from './kit';
 
 export interface Look {
   outfit: number;
   skin: number;
   hair: number;
+  /** 0 short, 1 buzz cut, 2 bald, 3 tall top. */
+  hairStyle?: number;
+  /** Overall size (1 = the player). */
+  size?: number;
   /** Shown when the character is hidden behind something (the player only). */
   silhouette?: number;
 }
 
 /** The orange jumpsuit (tech plan §6.2). */
 export const INMATE_LOOK: Look = { outfit: 0xf2701c, skin: 0xe2ad84, hair: 0x3a2a1e, silhouette: 0xffa64d };
+
+const SKINS = [0xf1c6a0, 0xe2ad84, 0xc98d62, 0xa86e48, 0x7d4f33, 0x5b3a26];
+const HAIRS = [0x1d1612, 0x3a2a1e, 0x6b4a2b, 0xb08850, 0x8a8a8a, 0x2a2018];
+
+/** A fellow inmate's look, varied by a number (the same number gives the same look). */
+export function inmateLook(n: number): Look {
+  const r = (k: number) => Math.abs(Math.sin(n * 12.9898 + k * 78.233) * 43758.5453) % 1;
+  return {
+    outfit: 0xf27a26,
+    skin: SKINS[Math.floor(r(1) * SKINS.length)],
+    hair: HAIRS[Math.floor(r(2) * HAIRS.length)],
+    hairStyle: Math.floor(r(3) * 4),
+    size: 0.94 + r(4) * 0.12,
+  };
+}
+
+/** Where a sleeper lies: the middle of the bed and the way its pillow points (radians). */
+export interface BedPose {
+  x: number;
+  z: number;
+  angle: number;
+}
 
 /** The player's pixels mark the stencil, so the silhouette is drawn only where they're hidden. */
 const STENCIL_MARK: Partial<THREE.MeshStandardMaterialParameters> = {
@@ -19,94 +47,117 @@ const STENCIL_MARK: Partial<THREE.MeshStandardMaterialParameters> = {
   stencilZPass: THREE.ReplaceStencilOp,
 };
 
+/** Mattress height and how far the sleeper's feet sit from the bed's middle. */
+const BED_TOP = 0.6;
+const BED_FEET = 0.55;
+
+/** A box w×h×d centered on (x, y, z), painted. */
+const part = (w: number, h: number, d: number, color: number, x: number, y: number, z: number): Part => box(w, h, d, color, x, y - h / 2, z);
+
 /**
  * A blocky character, a 3D take on the Escapists sprites: a big head with blinking eyes,
  * a jumpsuit with a number patch and rolled sleeves, arms and legs on pivots. Faces +z at
- * rotation 0; about 1.25 tiles tall. When given a silhouette color, it shows through walls
- * and furniture as a flat tint wherever something hides it (stencil-masked, so it never
- * tints itself).
+ * rotation 0; about 1.25 tiles tall. Each limb is one merged, vertex-colored mesh (7 draw
+ * calls a character). When given a silhouette color, it shows through walls and furniture
+ * as a flat tint wherever something hides it (stencil-masked, so it never tints itself).
+ * Poses: walking, standing (with glances), and what inmates do at their spots: lining up,
+ * eating, exercising, showering and sleeping in bed.
  */
 export class Character {
   readonly root = new THREE.Group();
   private readonly body = new THREE.Group();
   private readonly head = new THREE.Group();
-  private readonly eyes: THREE.Mesh[] = [];
-  private readonly armL: THREE.Group;
-  private readonly armR: THREE.Group;
-  private readonly legL: THREE.Group;
-  private readonly legR: THREE.Group;
+  private readonly eyes: THREE.Mesh;
+  private readonly armL = new THREE.Group();
+  private readonly armR = new THREE.Group();
+  private readonly legL = new THREE.Group();
+  private readonly legR = new THREE.Group();
+  private readonly material: THREE.Material;
   private phase = 0;
   private swing = 0;
   private blinkAt = 2;
   private idle = 0;
   private glance = 0;
   private glanceGoal = 0;
+  /** 0 standing … 1 lying in bed; and how far into the current activity. */
+  private lie = 0;
+  private act = 0;
+  private actKind: number = DOING.NOTHING;
+  private readonly offset = Math.random() * 10;
+  private readonly at = new THREE.Vector3();
+  private readonly bedAt = new THREE.Vector3();
 
   constructor(look: Look) {
-    const marks = look.silhouette !== undefined ? STENCIL_MARK : {};
-    const mat = (color: number, rough = 0.8) => new THREE.MeshStandardMaterial({ color, roughness: rough, ...marks });
-    const outfit = mat(look.outfit);
-    const outfitDark = mat(new THREE.Color(look.outfit).multiplyScalar(0.78).getHex());
-    const skin = mat(look.skin, 0.75);
-    const hair = mat(look.hair, 0.9);
-    const white = mat(0xf2f2ee);
-    const dark = mat(0x1b1b22, 0.4);
-    const shoe = mat(0x2a2a30);
-
-    const part = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number, parent: THREE.Object3D) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
-      mesh.position.set(x, y, z);
-      mesh.castShadow = true;
-      parent.add(mesh);
-      return mesh;
+    this.material =
+      look.silhouette !== undefined ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, ...STENCIL_MARK }) : kitMaterial;
+    const outfit = look.outfit;
+    const outfitDark = new THREE.Color(outfit).multiplyScalar(0.78).getHex();
+    const { skin, hair } = look;
+    const white = 0xf2f2ee;
+    const dark = 0x1b1b22;
+    const shoe = 0x2a2a30;
+    const mesh = (parts: Part[], parent: THREE.Object3D) => {
+      const m = new THREE.Mesh(merge(parts), this.material);
+      m.castShadow = true;
+      parent.add(m);
+      return m;
     };
 
     // Legs: pivots at the hips.
-    const leg = (x: number) => {
-      const pivot = new THREE.Group();
+    for (const [pivot, x] of [
+      [this.legL, -0.11],
+      [this.legR, 0.11],
+    ] as const) {
       pivot.position.set(x, 0.4, 0);
-      part(0.19, 0.34, 0.2, outfit, 0, -0.17, 0, pivot);
-      part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03, pivot);
-      return pivot;
-    };
-    this.legL = leg(-0.11);
-    this.legR = leg(0.11);
+      mesh([part(0.19, 0.34, 0.2, outfit, 0, -0.17, 0), part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03)], pivot);
+    }
 
     // Torso: the jumpsuit, a white collar, the number patch.
-    part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0, this.body);
-    part(0.53, 0.06, 0.31, outfitDark, 0, 0.42, 0, this.body);
-    part(0.2, 0.06, 0.02, white, 0, 0.79, 0.152, this.body);
-    part(0.13, 0.08, 0.02, white, 0.12, 0.66, 0.152, this.body);
-    part(0.08, 0.015, 0.025, dark, 0.12, 0.665, 0.153, this.body);
+    mesh(
+      [
+        part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0),
+        part(0.53, 0.06, 0.31, outfitDark, 0, 0.42, 0),
+        part(0.2, 0.06, 0.02, white, 0, 0.79, 0.152),
+        part(0.13, 0.08, 0.02, white, 0.12, 0.66, 0.152),
+        part(0.08, 0.015, 0.025, dark, 0.12, 0.665, 0.153),
+      ],
+      this.body,
+    );
 
     // Arms: pivots at the shoulders; sleeves rolled up to the elbow.
-    const arm = (x: number) => {
-      const pivot = new THREE.Group();
+    for (const [pivot, x] of [
+      [this.armL, -0.34],
+      [this.armR, 0.34],
+    ] as const) {
       pivot.position.set(x, 0.78, 0);
-      part(0.15, 0.2, 0.16, outfit, 0, -0.1, 0, pivot);
-      part(0.13, 0.15, 0.14, skin, 0, -0.27, 0, pivot);
-      part(0.14, 0.09, 0.15, skin, 0, -0.38, 0, pivot);
-      return pivot;
-    };
-    this.armL = arm(-0.34);
-    this.armR = arm(0.34);
-
-    // Head: a big block with eyes that blink, brows, a nose, a mouth, short hair.
-    this.head.position.y = 0.8;
-    part(0.46, 0.44, 0.44, skin, 0, 0.22, 0, this.head);
-    for (const s of [-1, 1]) {
-      this.eyes.push(part(0.065, 0.09, 0.02, dark, s * 0.1, 0.24, 0.222, this.head));
-      part(0.11, 0.035, 0.02, hair, s * 0.1, 0.32, 0.222, this.head);
+      mesh([part(0.15, 0.2, 0.16, outfit, 0, -0.1, 0), part(0.13, 0.15, 0.14, skin, 0, -0.27, 0), part(0.14, 0.09, 0.15, skin, 0, -0.38, 0)], pivot);
     }
-    part(0.06, 0.07, 0.04, skin, 0, 0.18, 0.235, this.head);
-    part(0.11, 0.025, 0.02, mat(0x8a4b3a), 0, 0.1, 0.222, this.head);
-    part(0.48, 0.1, 0.46, hair, 0, 0.47, -0.01, this.head);
-    part(0.48, 0.26, 0.08, hair, 0, 0.33, -0.21, this.head);
-    part(0.05, 0.14, 0.4, hair, -0.23, 0.36, -0.02, this.head);
-    part(0.05, 0.14, 0.4, hair, 0.23, 0.36, -0.02, this.head);
+
+    // Head: a big block with brows, a nose, a mouth and a haircut; the eyes blink on their own.
+    this.head.position.y = 0.8;
+    const face: Part[] = [part(0.46, 0.44, 0.44, skin, 0, 0.22, 0), part(0.06, 0.07, 0.04, skin, 0, 0.18, 0.235), part(0.11, 0.025, 0.02, 0x8a4b3a, 0, 0.1, 0.222)];
+    for (const s of [-1, 1]) face.push(part(0.11, 0.035, 0.02, hair, s * 0.1, 0.32, 0.222));
+    const style = look.hairStyle ?? 0;
+    if (style === 0 || style === 3) {
+      const top = style === 3 ? 0.22 : 0.1;
+      face.push(
+        part(0.48, top, 0.46, hair, 0, 0.42 + top / 2, -0.01),
+        part(0.48, 0.26, 0.08, hair, 0, 0.33, -0.21),
+        part(0.05, 0.14, 0.4, hair, -0.23, 0.36, -0.02),
+        part(0.05, 0.14, 0.4, hair, 0.23, 0.36, -0.02),
+      );
+    } else if (style === 1) {
+      face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215));
+    }
+    mesh(face, this.head);
+    const eyes = new THREE.Group();
+    eyes.position.set(0, 0.24, 0.222);
+    this.eyes = mesh([part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], eyes);
+    this.head.add(eyes);
 
     this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
     this.root.add(this.body);
+    this.root.scale.setScalar(look.size ?? 1);
 
     if (look.silhouette !== undefined) this.addSilhouette(look.silhouette);
   }
@@ -137,15 +188,27 @@ export class Character {
 
   /**
    * Places and animates the character. `facing` in radians (0 = +z); `moving` swings the
-   * limbs. Returns true on the frame a foot lands (for footstep sounds and dust).
+   * limbs; `doing` (DOING) poses it at a routine spot, `bed` is where it lies to sleep.
+   * Returns true on the frame a foot lands (for footstep sounds and dust).
    */
-  pose(x: number, z: number, facing: number, moving: boolean, dt: number, time: number, motion = true): boolean {
-    this.root.position.set(x, 0, z);
+  pose(x: number, z: number, facing: number, moving: boolean, dt: number, time: number, motion = true, doing: number = DOING.NOTHING, bed?: BedPose): boolean {
+    const k = (rate: number) => Math.min(1, dt * rate);
+    // Into bed and out of it: a short ease between standing beside it and lying in it.
+    this.lie += ((doing === DOING.SLEEP && bed ? 1 : 0) - this.lie) * k(5);
+    if (this.lie < 0.002) this.lie = 0;
+    this.at.set(x, 0, z);
+    let turn = facing;
+    if (bed && this.lie > 0) {
+      turn = bed.angle;
+      this.bedAt.set(bed.x + Math.sin(bed.angle) * BED_FEET, BED_TOP, bed.z + Math.cos(bed.angle) * BED_FEET);
+      this.at.lerp(this.bedAt, this.lie);
+    }
+    this.root.position.copy(this.at);
     // Turn the short way round, quickly.
-    let d = facing - this.root.rotation.y;
+    let d = turn - this.root.rotation.y;
     d = Math.atan2(Math.sin(d), Math.cos(d));
-    this.root.rotation.y += d * Math.min(1, dt * 14);
-    this.swing += ((moving ? 1 : 0) - this.swing) * Math.min(1, dt * 10);
+    this.root.rotation.y += d * k(14);
+    this.swing += ((moving ? 1 : 0) - this.swing) * k(10);
     let stepped = false;
     if (moving) {
       const before = Math.floor(this.phase / Math.PI);
@@ -153,25 +216,62 @@ export class Character {
       stepped = Math.floor(this.phase / Math.PI) !== before;
     }
     const s = Math.sin(this.phase) * 0.75 * this.swing;
-    this.legL.rotation.x = s;
-    this.legR.rotation.x = -s;
-    this.armL.rotation.x = -s * 0.85;
-    this.armR.rotation.x = s * 0.85;
-    // A bob and a little forward lean while walking, a slow breath while standing.
-    this.body.position.y = Math.abs(Math.cos(this.phase)) * 0.045 * this.swing + (motion ? Math.sin(time * 2.2) * 0.006 * (1 - this.swing) : 0);
-    this.body.rotation.x = 0.08 * this.swing;
+    let legL = s;
+    let legR = -s;
+    let armLx = -s * 0.85;
+    let armRx = s * 0.85;
+    let armLz = 0;
+    let armRz = 0;
+    let legZ = 0;
+    let bob = Math.abs(Math.cos(this.phase)) * 0.045 * this.swing + (motion ? Math.sin(time * 2.2 + this.offset) * 0.006 * (1 - this.swing) : 0);
 
-    // Blink every few seconds.
+    // Activities fade in once the character has stopped at its spot.
+    if (doing !== this.actKind) {
+      this.actKind = doing;
+      this.act = 0;
+    }
+    this.act = moving ? 0 : Math.min(1, this.act + dt * 3);
+    const a = this.act * (motion ? 1 : 0);
+    const t = time + this.offset;
+    if (doing === DOING.EAT) {
+      // Spoon to mouth, now and then.
+      const lift = Math.max(0, Math.sin(t * 2.6)) ** 2;
+      armRx += (-0.6 - lift * 1.3) * a;
+      armLx += -0.5 * a;
+    } else if (doing === DOING.EXERCISE) {
+      // Jumping jacks.
+      const j = (Math.sin(t * 6) + 1) / 2;
+      armLz -= j * 2.5 * a;
+      armRz += j * 2.5 * a;
+      legZ = j * 0.28 * a;
+      bob += Math.abs(Math.sin(t * 6)) * 0.08 * a;
+    } else if (doing === DOING.SHOWER) {
+      // Scrubbing the hair.
+      armLx += (-2.7 + Math.sin(t * 9) * 0.15) * a;
+      armRx += (-2.7 + Math.cos(t * 9) * 0.15) * a;
+      armLz -= 0.35 * a;
+      armRz += 0.35 * a;
+    }
+    this.legL.rotation.set(legL, 0, -legZ);
+    this.legR.rotation.set(legR, 0, legZ);
+    this.armL.rotation.set(armLx, 0, armLz);
+    this.armR.rotation.set(armRx, 0, armRz);
+    // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
+    this.body.position.y = bob * (1 - this.lie);
+    this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie;
+
+    // Blink every few seconds; eyes shut in bed.
     this.blinkAt -= dt;
-    const closed = this.blinkAt < 0.12;
+    const closed = this.blinkAt < 0.12 || this.lie > 0.5;
     if (this.blinkAt < 0) this.blinkAt = 2 + Math.random() * 3.5;
-    for (const e of this.eyes) e.scale.y = closed ? 0.15 : 1;
+    this.eyes.scale.y = closed ? 0.15 : 1;
 
-    // Standing still for a while: glance around now and then.
+    // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
-    if (this.idle > 2.5 && motion && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * 1.1;
-    if (this.idle === 0) this.glanceGoal = 0;
-    this.glance += (this.glanceGoal - this.glance) * Math.min(1, dt * 5);
+    const still = doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE;
+    if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * 1.1;
+    if (this.idle === 0 || still) this.glanceGoal = 0;
+    this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
     return stepped;
   }
@@ -181,7 +281,7 @@ export class Character {
       const m = o as THREE.Mesh;
       m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) mat.dispose();
+      for (const mat of mats) if (mat !== kitMaterial) mat.dispose();
     });
   }
 }

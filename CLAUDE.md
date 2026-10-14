@@ -26,7 +26,7 @@ Rules that matter every time:
   check desktop, phone portrait (412×915) and phone landscape (915×412).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()` and `window.__view`.
-- **Dev server**: `npm run dev` on port 5310.
+- **Dev server**: `npm run dev` on port 5310. In dev builds `]` fast-forwards the clock ×30.
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → poll the live JS bundle
   for the new version.

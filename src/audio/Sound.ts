@@ -18,6 +18,8 @@ export class Sound {
   private volume = 0.8;
   private ambienceOn = false;
   private clankTimer = 0;
+  private sirenOn = false;
+  private sirenNodes: { gain: GainNode; sources: AudioScheduledSourceNode[] } | null = null;
 
   constructor() {
     const start = () => {
@@ -29,6 +31,7 @@ export class Sound {
         this.out.connect(this.ctx.destination);
         this.noise = this.makeNoise();
         if (this.ambienceOn) this.startAmbience();
+        if (this.sirenOn) this.startSiren();
       } catch {
         /* no audio on this device */
       }
@@ -100,7 +103,7 @@ export class Sound {
     }
   }
 
-  /** The prison bell on the hour: two struck notes with a long ring. */
+  /** The prison bell for a new routine block: two struck notes with a long ring. */
   bell() {
     for (const [f, d] of [
       [784, 0],
@@ -109,6 +112,82 @@ export class Sound {
       this.tone(f, f * 0.995, 1.4, 'sine', 0.18, d);
       this.tone(f * 2.76, f * 2.7, 0.5, 'sine', 0.04, d);
     }
+  }
+
+  /** Checked in to a routine block: a bright two-note chime. */
+  chime() {
+    this.tone(880, 880, 0.25, 'triangle', 0.12);
+    this.tone(1320, 1320, 0.45, 'triangle', 0.12, 0.09);
+    this.tone(2640, 2600, 0.3, 'sine', 0.03, 0.09);
+  }
+
+  /** Missed a block: a low falling sting. */
+  sting() {
+    this.tone(330, 220, 0.35, 'sawtooth', 0.07);
+    this.tone(247, 165, 0.5, 'sawtooth', 0.06, 0.12);
+  }
+
+  /** Cell doors slam and lock: a heavy metallic clunk with a short ring. */
+  lockClank() {
+    this.hiss(0.18, 'lowpass', 600, 1, 0.25);
+    this.tone(110, 70, 0.25, 'square', 0.08);
+    this.tone(523, 510, 0.9, 'triangle', 0.04, 0.03);
+    this.tone(1420, 1390, 0.6, 'sine', 0.02, 0.03);
+  }
+
+  /** The lockdown siren: a wailing two-oscillator sweep while on. */
+  siren(on: boolean) {
+    if (on === this.sirenOn) return;
+    this.sirenOn = on;
+    if (on) this.startSiren();
+    else this.stopSiren();
+  }
+
+  private startSiren() {
+    const c = this.ctx;
+    if (!c || !this.out || this.sirenNodes) return;
+    const gain = c.createGain();
+    gain.gain.value = 0;
+    gain.gain.linearRampToValueAtTime(0.045, c.currentTime + 0.4);
+    const band = c.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 900;
+    band.Q.value = 0.8;
+    band.connect(gain).connect(this.out);
+    const lfo = c.createOscillator();
+    lfo.frequency.value = 0.45;
+    const depth = c.createGain();
+    depth.gain.value = 260;
+    lfo.connect(depth);
+    const sources: AudioScheduledSourceNode[] = [lfo];
+    for (const [f, type] of [
+      [720, 'sawtooth'],
+      [724, 'square'],
+    ] as const) {
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.value = f;
+      depth.connect(o.frequency);
+      o.connect(band);
+      o.start();
+      sources.push(o);
+    }
+    lfo.start();
+    this.sirenNodes = { gain, sources };
+  }
+
+  private stopSiren() {
+    const c = this.ctx;
+    const n = this.sirenNodes;
+    if (!c || !n) return;
+    this.sirenNodes = null;
+    n.gain.gain.cancelScheduledValues(c.currentTime);
+    n.gain.gain.setValueAtTime(n.gain.gain.value, c.currentTime);
+    n.gain.gain.linearRampToValueAtTime(0, c.currentTime + 0.8);
+    setTimeout(() => {
+      for (const s of n.sources) s.stop();
+      n.gain.disconnect();
+    }, 1000);
   }
 
   /** The room tone and distant clanks while playing; silence on the title. */

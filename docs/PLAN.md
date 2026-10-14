@@ -44,6 +44,10 @@ Sources:
 | Energy | Not covered | **Below 10% energy, no tools and no training**. Restores: bed +100, meal +35, shower +2/s, chair +1.5/s, chocolate +15 |
 | Solitary | Potato minigame | **2 game hours, or less by peeling potatoes**. Outfit reset, discovered damage repaired |
 | Time units | Mixed real and game time | 1 real s = 1 game min. The KO lasts 30 s and the generator comes back after 45 s. Both are counted **in sim steps** (600 and 900) |
+| Inmate count (L1) | — | GDD says 8 inmates; the map has 8 cells, so **7 AI inmates + the player** |
+| Lockdown without guards | — | Guards arrive in P3. Until then a lockdown lifts after the player spends **60 game minutes in their cell**, leaving **75% heat**. P3 replaces this with capture and solitary |
+| Cell doors at Lights Out | — | They lock once their occupant is inside; a door **waits open for an occupant still out** and never shuts on anyone standing in it. Guards (P3) punish being out |
+| Blocks spent in a lockdown | — | **Excused**: missing them adds no heat |
 
 Any further conflict found during the build is added to this table in the same commit.
 
@@ -160,4 +164,11 @@ real touch feel) and the known limits.
   - a settings screen with quality tiers and auto step-down;
   - a first-play hint and HUD touches;
   - roll-call spots as data.
-- **Next: P1 Routine.**
+- **P1 Routine (v0.2.0)**:
+  - the 24 h schedule as data (`content/routine.ts`), attendance by stepping into the block's zone, +25% heat for a missed meal, exercise or shower, lockdown for a missed roll call;
+  - heat (decays 1% every 4 game minutes), the lockdown state (siren, red light, cells locked), Lights Out locking cells;
+  - A* paths with string pulling (`sim/ai/path.ts`) and an autopilot that steers with ordinary commands (tap-to-walk, bots);
+  - 7 inmates who line up at roll call, eat at the canteen tables, exercise, shower, wander in free time and sleep in their beds;
+  - HUD routine pill with PENDING/ATTENDED, heat meter, banners and toasts, floor arrows to the routine's place, tap/click-to-walk;
+  - `routinetest`: model prisoner 3 days at 0 heat, truant lockdown, night owl doors, inmates make every block. Dev builds: `]` fast-forwards ×30.
+- **Next: P2 Items.**

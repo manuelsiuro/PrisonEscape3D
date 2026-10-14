@@ -4,6 +4,9 @@
  */
 const PATTERNS = {
   bell: [10],
+  attended: [8, 60, 8],
+  missed: [40, 50, 40],
+  lockdown: [120, 80, 120, 80, 200],
 } as const;
 
 export type Haptic = keyof typeof PATTERNS;

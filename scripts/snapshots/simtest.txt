@@ -1,3 +1,3 @@
-after 984 steps: 282579e0, player in inmateCell
+after 984 steps: 81ba49d4, player in inmateCell
 one second east: 3.594 tiles
 3 hours: 3 hour events, clock 11:00

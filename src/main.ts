@@ -2,9 +2,14 @@ import * as THREE from 'three';
 import './styles/index.css';
 import { PRISONS } from './content/prisons';
 import type { PrisonDef } from './content/prisons/types';
+import { ROUTINE } from './content/routine';
+import { ZONES } from './content/zones';
+import { Autopilot } from './sim/ai/autopilot';
+import { findPath, smooth, tileAt } from './sim/ai/path';
+import { isFloor, placesOf } from './sim/ai/places';
 import { command, DIR_X, DIR_Z } from './sim/command';
 import { Recorder } from './sim/Recorder';
-import { Sim } from './sim/Sim';
+import { Sim, type SimEvent } from './sim/Sim';
 import { tileOfBody } from './sim/systems/movement';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from './sim/tuning';
 import { MAP_W } from './sim/world/World';
@@ -14,8 +19,9 @@ import { Sound } from './audio/Sound';
 import { hasSeen, loadSettings, markSeen, saveSettings } from './game/settings';
 import { migrateStorage } from './game/storage';
 import { MOBILE, TOUCH, h } from './ui/dom';
-import { Hud } from './ui/hud';
+import { Hud, routineName, routinePlace } from './ui/hud';
 import { Hint } from './ui/hint';
+import { Banner } from './ui/banner';
 import { showTitle } from './ui/screens/title';
 import { showPause } from './ui/screens/pause';
 import { showSettings } from './ui/screens/settings';
@@ -80,11 +86,20 @@ function governQuality(dt: number) {
 // ------------------------------------------------------------------ the game
 interface Game {
   rec: Recorder;
-  /** The player's position before the last step (interpolation). */
+  /** The player's and inmates' positions before the last step (interpolation). */
   prev: { x: number; z: number };
+  prevInmates: Array<{ x: number; z: number }>;
   paused: boolean;
   /** How far the player has walked (tiles), for the first-play hint. */
   walked: number;
+  /** Tap-to-walk: steers the player with ordinary commands. */
+  pilot: Autopilot;
+  /** The floor arrows: the way to the routine's place, recomputed now and then. */
+  guide: Array<{ x: number; z: number }> | null;
+  guideAge: number;
+  guideFrom: number;
+  /** Dev builds: simulation speed (`]` toggles fast-forward). */
+  speed: number;
 }
 let game: Game | null = null;
 let acc = 0;
@@ -92,7 +107,108 @@ let last = performance.now();
 
 const hud = new Hud(() => pause());
 const hint = new Hint();
+const banner = new Banner();
+const vignette = h('div', 'alarm-vignette');
+document.body.append(vignette);
 view.onStep = (surface) => sound.step(surface);
+
+/** Tap or click a spot: walk there (the nearest free floor if the spot itself is taken). */
+controls.onTap = (cx, cy) => {
+  if (!game || game.paused) return;
+  const p = view.groundAt(cx, cy);
+  const w = game.rec.sim.world;
+  if (!p) return;
+  const tx = Math.floor(p.x);
+  const tz = Math.floor(p.z);
+  let best = -1;
+  let bestD = Infinity;
+  for (let dz = -1; dz <= 1; dz++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const x = tx + dx;
+      const z = tz + dz;
+      if (!w.inside(x, z) || w.blocked(x, z)) continue;
+      const d = (x + 0.5 - p.x) ** 2 + (z + 0.5 - p.z) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = z * MAP_W + x;
+      }
+    }
+  }
+  if (best < 0) return;
+  game.pilot.goTo(best);
+  sound.click();
+  if (hint.visible) {
+    hint.hide();
+    markSeen('walk');
+  }
+};
+
+/** Where the floor arrows lead now: the routine's place while the player hasn't checked in, the cell in a lockdown. */
+function guideTarget(sim: Sim): ((i: number) => boolean) | null {
+  const s = sim.state;
+  const w = sim.world;
+  const places = placesOf(w);
+  const home = places.bedside[1];
+  if (s.lockdown) return sim.playerZone === 'playerCell' ? null : (i) => i === home;
+  const r = ROUTINE[s.routine];
+  if (!r.zones.length || s.attended) return null;
+  if (r.id === 'lightsOut') return (i) => i === home;
+  if (r.id === 'rollCall' || r.id === 'eveningRollCall') {
+    const spot = places.rollCall[0].tile;
+    return (i) => i === spot;
+  }
+  return (i) => r.zones.includes(ZONES[w.ground.zone[i]]) && isFloor(w, i % MAP_W, Math.floor(i / MAP_W));
+}
+
+function updateGuide(g: Game, dt: number) {
+  const sim = g.rec.sim;
+  const p = sim.state.player;
+  const from = tileAt(p.x, p.z);
+  g.guideAge += dt;
+  if (g.guideAge < 0.35 && from === g.guideFrom) return;
+  g.guideAge = 0;
+  g.guideFrom = from;
+  const goal = guideTarget(sim);
+  const path = goal && findPath(sim.world, from, goal, -1, 2600);
+  g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
+}
+
+/** Sound, vibration, banners and toasts for what the simulation reports. */
+function announce(e: SimEvent, sim: Sim) {
+  switch (e.type) {
+    case 'routine': {
+      if (sim.state.lockdown) break;
+      sound.bell();
+      buzz('bell');
+      const r = ROUTINE[e.routine];
+      const sub = r.id === 'lightsOut' ? t('banner.lightsOut') : r.zones.length ? t('banner.goTo', { place: routinePlace(e.routine) }) : t('banner.free');
+      banner.show(routineName(e.routine), sub);
+      break;
+    }
+    case 'attended':
+      if (ROUTINE[e.routine].id === 'lightsOut') break;
+      sound.chime();
+      buzz('attended');
+      break;
+    case 'missed':
+      sound.sting();
+      buzz('missed');
+      if (e.heat < 100) banner.toast(t('toast.missed', { routine: routineName(e.routine), n: e.heat }), 'bad');
+      break;
+    case 'lockdown':
+      // The siren and the red glow follow the state every frame (see frame()).
+      if (e.on) {
+        buzz('lockdown');
+        const missed = sim.events.find((m) => m.type === 'missed' && m.heat >= 100);
+        banner.show(t('banner.lockdown'), missed?.type === 'missed' ? t('banner.lockdownSub', { routine: routineName(missed.routine) }) : t('banner.lockdownHeat'), 'alarm', 5000);
+      } else banner.toast(t('toast.lifted'), 'good');
+      break;
+    case 'cells':
+      if (e.locked) sound.lockClank();
+      if (e.locked && !sim.state.lockdown) banner.toast(t('toast.cellsLocked'), 'info');
+      break;
+  }
+}
 
 /** A short fade from black when a game starts. */
 function fadeIn() {
@@ -108,7 +224,19 @@ function startGame(prison: PrisonDef) {
   // Start a little wide and settle in on the player.
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
   view.zoomBy(1.25);
-  game = { rec: new Recorder(sim), prev: { x: sim.state.player.x, z: sim.state.player.z }, paused: false, walked: 0 };
+  view.setCast(sim.state.inmates.map((m) => m.cell));
+  game = {
+    rec: new Recorder(sim),
+    prev: { x: sim.state.player.x, z: sim.state.player.z },
+    prevInmates: sim.state.inmates.map((m) => ({ x: m.body.x, z: m.body.z })),
+    paused: false,
+    walked: 0,
+    pilot: new Autopilot(sim.world),
+    guide: null,
+    guideAge: 1,
+    guideFrom: -1,
+    speed: 1,
+  };
   acc = 0;
   controls.reset();
   controls.enabled = true;
@@ -116,7 +244,14 @@ function startGame(prison: PrisonDef) {
   sound.ambience(true);
   fadeIn();
   document.body.classList.add('is-playing');
-  if (!hasSeen('walk')) setTimeout(() => game && hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.zoomTouch')] : [t('hint.walkKeys'), t('hint.zoom')]), 900);
+  // Day 1 opens on roll call: the bell and the banner, once the fade is over.
+  setTimeout(() => game && announce({ type: 'routine', routine: sim.state.routine }, sim), 700);
+  if (!hasSeen('walk')) {
+    setTimeout(
+      () => game && hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]),
+      4600,
+    );
+  }
 }
 
 /** Resolves when the player quits to the title. */
@@ -147,12 +282,17 @@ async function pause() {
   controls.enabled = false;
   hud.show(false);
   hint.hide();
+  banner.clear();
+  vignette.classList.remove('on');
+  sound.siren(false);
   sound.ambience(false);
   document.body.classList.remove('is-playing');
   quit?.();
 }
 addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && game && !game.paused) pause();
+  // Dev builds: fast-forward the prison clock (×30) to test the routine.
+  if (import.meta.env.DEV && e.code === 'BracketRight' && game) game.speed = game.speed === 1 ? 30 : 1;
 });
 // A hidden page pauses the game (phones switching apps, a closed laptop).
 document.addEventListener('visibilitychange', () => {
@@ -167,46 +307,70 @@ function frame(now: number) {
     view.drawTitle(dt, now / 1000);
     return;
   }
-  const sim = game.rec.sim;
+  const g = game;
+  const sim = g.rec.sim;
   const p = sim.state.player;
-  if (!game.paused) {
+  if (!g.paused) {
     governQuality(dt);
     // Fixed steps: the simulation never sees the frame time.
-    acc += dt;
-    while (acc >= 1 / STEPS_PER_SECOND) {
+    acc += dt * g.speed;
+    let steps = 0;
+    while (acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * g.speed) {
       acc -= 1 / STEPS_PER_SECOND;
-      game.prev = { x: p.x, z: p.z };
-      game.rec.step(command(controls.dir()));
-      game.walked += Math.hypot(p.x - game.prev.x, p.z - game.prev.z) / UNIT;
-      // Sound and vibration read the events; the simulation never calls them.
-      for (const e of sim.events) {
-        if (e.type === 'hour') {
-          sound.bell();
-          buzz('bell');
-        }
-      }
+      g.prev = { x: p.x, z: p.z };
+      g.prevInmates = sim.state.inmates.map((m) => ({ x: m.body.x, z: m.body.z }));
+      // The stick and keys win over tap-to-walk; both are plain direction commands.
+      if (controls.steering) g.pilot.stop();
+      g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p)));
+      g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
+      // Sound, banners and vibration read the events; the simulation never calls them.
+      for (const e of sim.events) announce(e, sim);
     }
-    if (hint.visible && game.walked > 4) {
+    if (acc > 1) acc = 0;
+    if (hint.visible && g.walked > 4) {
       hint.hide();
       markSeen('walk');
     }
+    updateGuide(g, dt);
   }
-  const a = game.paused ? 1 : acc * STEPS_PER_SECOND;
+  const a = g.paused ? 1 : acc * STEPS_PER_SECOND;
   const clock = sim.clock;
   const tile = tileOfBody(p);
+  const lerp = (from: number, to: number) => (from + (to - from) * a) / UNIT;
+  const target = g.pilot.destination;
   view.draw(
     {
-      x: (game.prev.x + (p.x - game.prev.x) * a) / UNIT,
-      z: (game.prev.z + (p.z - game.prev.z) * a) / UNIT,
+      x: lerp(g.prev.x, p.x),
+      z: lerp(g.prev.z, p.z),
       facing: Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]),
-      moving: p.moving && !game.paused,
+      moving: p.moving && !g.paused,
       minuteOfDay: clock.minuteOfDay + ((sim.state.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE,
       surface: sim.world.ground.kind[tile.z * MAP_W + tile.x],
+      inmates: sim.state.inmates.map((m, k) => ({
+        x: lerp(g.prevInmates[k]?.x ?? m.body.x, m.body.x),
+        z: lerp(g.prevInmates[k]?.z ?? m.body.z, m.body.z),
+        facing: Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]),
+        moving: m.body.moving && !g.paused,
+        doing: m.doing,
+        cell: m.cell,
+      })),
+      guide: g.guide,
+      tap: target >= 0 ? { x: (target % MAP_W) + 0.5, z: Math.floor(target / MAP_W) + 0.5 } : null,
+      alarm: sim.state.lockdown,
     },
     dt,
     now / 1000,
   );
-  hud.update(clock, sim.playerZone);
+  const st = sim.state;
+  vignette.classList.toggle('on', st.lockdown);
+  sound.siren(st.lockdown && !g.paused);
+  hud.update(clock, sim.playerZone, {
+    routine: st.routine,
+    attended: st.attended,
+    heat: st.heat,
+    lockdown: st.lockdown,
+    lockedMinutes: st.lockdown && sim.playerZone === 'playerCell' ? Math.ceil(st.lockdownLeft / STEPS_PER_MINUTE) : null,
+  });
 }
 
 // The title shows the first prison drifting by.
