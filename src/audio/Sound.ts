@@ -1,11 +1,23 @@
+import { TILE } from '../sim/world/tiles';
+
+/** Soft ground: muffled footsteps. */
+const SOFT = new Set<number>([TILE.GRASS, TILE.DIRT]);
+
 /**
- * Synthesized sound effects (Web Audio, no files). The context starts on the first user
- * gesture (browsers block audio before one); a volume of 0 is silence (the mute switch).
+ * Synthesized sound (Web Audio, no files). The context starts on the first user gesture
+ * (browsers block audio before one); a volume of 0 is silence (the mute switch).
+ * Effects go through one output; the ambience (a low room tone and the odd distant clank)
+ * has its own gain under it.
  */
 export class Sound {
   private ctx: AudioContext | null = null;
   private out: GainNode | null = null;
+  private ambienceGain: GainNode | null = null;
+  private ambienceSources: AudioScheduledSourceNode[] = [];
+  private noise: AudioBuffer | null = null;
   private volume = 0.8;
+  private ambienceOn = false;
+  private clankTimer = 0;
 
   constructor() {
     const start = () => {
@@ -15,6 +27,8 @@ export class Sound {
         this.out = this.ctx.createGain();
         this.out.gain.value = this.volume;
         this.out.connect(this.ctx.destination);
+        this.noise = this.makeNoise();
+        if (this.ambienceOn) this.startAmbience();
       } catch {
         /* no audio on this device */
       }
@@ -23,13 +37,21 @@ export class Sound {
     addEventListener('keydown', start, { once: true });
   }
 
+  private makeNoise(): AudioBuffer {
+    const c = this.ctx!;
+    const buf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
   setVolume(v: number) {
     this.volume = v;
     if (this.out) this.out.gain.value = v;
   }
 
   /** A short tone sliding from f0 to f1 Hz, starting `delay` seconds from now. */
-  private tone(f0: number, f1: number, dur: number, type: OscillatorType = 'sine', gain = 0.3, delay = 0) {
+  private tone(f0: number, f1: number, dur: number, type: OscillatorType = 'sine', gain = 0.3, delay = 0, dest?: AudioNode) {
     const c = this.ctx;
     if (!c || !this.out || this.volume === 0) return;
     const t = c.currentTime + delay;
@@ -40,13 +62,42 @@ export class Sound {
     o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    o.connect(g).connect(this.out);
+    o.connect(g).connect(dest ?? this.out);
     o.start(t);
     o.stop(t + dur);
   }
 
+  /** A burst of filtered noise. */
+  private hiss(dur: number, filter: BiquadFilterType, freq: number, q: number, gain: number, dest?: AudioNode) {
+    const c = this.ctx;
+    if (!c || !this.out || !this.noise || this.volume === 0) return;
+    const t = c.currentTime;
+    const src = c.createBufferSource();
+    src.buffer = this.noise;
+    src.playbackRate.value = 0.8 + Math.random() * 0.4;
+    const f = c.createBiquadFilter();
+    f.type = filter;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    const g = c.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(f).connect(g).connect(dest ?? this.out);
+    src.start(t, Math.random() * 1.5);
+    src.stop(t + dur);
+  }
+
   click() {
     this.tone(900, 600, 0.05, 'triangle', 0.15);
+  }
+
+  /** A footstep: a muffled brush on grass and dirt, a crisp tap on hard floors. */
+  step(surface: number) {
+    if (SOFT.has(surface)) this.hiss(0.09, 'lowpass', 700 + Math.random() * 300, 0.7, 0.07);
+    else {
+      this.hiss(0.05, 'bandpass', 1800 + Math.random() * 600, 1.2, 0.05);
+      this.tone(140, 90, 0.05, 'sine', 0.05);
+    }
   }
 
   /** The prison bell on the hour: two struck notes with a long ring. */
@@ -58,5 +109,68 @@ export class Sound {
       this.tone(f, f * 0.995, 1.4, 'sine', 0.18, d);
       this.tone(f * 2.76, f * 2.7, 0.5, 'sine', 0.04, d);
     }
+  }
+
+  /** The room tone and distant clanks while playing; silence on the title. */
+  ambience(on: boolean) {
+    if (on === this.ambienceOn) return;
+    this.ambienceOn = on;
+    if (on) this.startAmbience();
+    else this.stopAmbience();
+  }
+
+  private startAmbience() {
+    const c = this.ctx;
+    if (!c || !this.out || !this.noise || this.ambienceGain) return;
+    const g = c.createGain();
+    g.gain.value = 0;
+    g.gain.linearRampToValueAtTime(1, c.currentTime + 2);
+    g.connect(this.out);
+    this.ambienceGain = g;
+    // Room tone: noise, low-passed hard, very quiet, with a slow swell.
+    const src = c.createBufferSource();
+    src.buffer = this.noise;
+    src.loop = true;
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 220;
+    const tone = c.createGain();
+    tone.gain.value = 0.05;
+    const lfo = c.createOscillator();
+    const depth = c.createGain();
+    lfo.frequency.value = 0.07;
+    depth.gain.value = 0.02;
+    lfo.connect(depth).connect(tone.gain);
+    src.connect(lp).connect(tone).connect(g);
+    src.start();
+    lfo.start();
+    this.ambienceSources = [src, lfo];
+    const clank = () => {
+      if (!this.ambienceGain) return;
+      // A far-off door or gate: two detuned metallic partials through a narrow band.
+      const base = 180 + Math.random() * 160;
+      this.tone(base, base * 0.97, 0.9, 'square', 0.012, 0, this.ambienceGain);
+      this.tone(base * 2.71, base * 2.6, 0.6, 'triangle', 0.008, 0.02, this.ambienceGain);
+      this.hiss(0.25, 'bandpass', 900, 3, 0.02, this.ambienceGain);
+      this.clankTimer = window.setTimeout(clank, 9000 + Math.random() * 16000);
+    };
+    this.clankTimer = window.setTimeout(clank, 5000);
+  }
+
+  private stopAmbience() {
+    clearTimeout(this.clankTimer);
+    const c = this.ctx;
+    const g = this.ambienceGain;
+    if (!c || !g) return;
+    g.gain.cancelScheduledValues(c.currentTime);
+    g.gain.setValueAtTime(g.gain.value, c.currentTime);
+    g.gain.linearRampToValueAtTime(0, c.currentTime + 0.6);
+    this.ambienceGain = null;
+    const sources = this.ambienceSources;
+    this.ambienceSources = [];
+    setTimeout(() => {
+      for (const s of sources) s.stop();
+      g.disconnect();
+    }, 800);
   }
 }

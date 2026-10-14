@@ -16,7 +16,7 @@ let blocked = false;
 };
 
 const { KEYS, SAVE_VERSION, migrateStorage, readJSON } = await import('../src/game/storage');
-const { DEFAULT_SETTINGS, loadSettings, saveSettings } = await import('../src/game/settings');
+const { DEFAULT_SETTINGS, hasSeen, loadSettings, markSeen, saveSettings } = await import('../src/game/settings');
 
 migrateStorage();
 check(mem.get(KEYS.version) === String(SAVE_VERSION), 'version is stamped');
@@ -37,4 +37,13 @@ blocked = false;
 // Garbage in storage falls back to the right shape.
 mem.set(KEYS.settings, '[1,2,3]');
 check(loadSettings().sfxVolume === DEFAULT_SETTINGS.sfxVolume, 'a wrong shape falls back to the defaults');
+// Quality falls back from an unknown value.
+mem.set(KEYS.settings, JSON.stringify({ quality: 'ultra' }));
+check(loadSettings().quality === 'auto', 'an unknown quality falls back to auto');
+
+// One-time hints: remembered once seen.
+check(!hasSeen('walk'), 'a fresh device has seen nothing');
+markSeen('walk');
+markSeen('walk');
+check(hasSeen('walk') && JSON.parse(mem.get(KEYS.seen)!).length === 1, 'seen once, stored once');
 console.log('storage ok, version', SAVE_VERSION);

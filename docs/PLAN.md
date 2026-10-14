@@ -151,4 +151,13 @@ real touch feel) and the known limits.
   - a wall cutaway so walls never hide the player, and day/night lighting from the clock;
   - keyboard, touch stick and pinch/wheel zoom;
   - title, HUD and pause screens in en and fr, the icon, CI.
+- **P0 polish (v0.1.1)**:
+  - walls stay full height, with a shader see-through window and a stencil silhouette;
+  - baked contact shadows, a paint layer and night light pools;
+  - barred cell doors, steel doors, razor wire, lamps, benches and trees;
+  - stable shadows, smooth zoom, look-ahead and an intro zoom;
+  - a blinking character with footsteps (dust and sound) and prison ambience;
+  - a settings screen with quality tiers and auto step-down;
+  - a first-play hint and HUD touches;
+  - roll-call spots as data.
 - **Next: P1 Routine.**

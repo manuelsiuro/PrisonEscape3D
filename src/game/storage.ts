@@ -12,6 +12,8 @@ export const KEYS = {
   version: `${PREFIX}.version`,
   // Preferences (kept on reset).
   settings: `${PREFIX}.settings`,
+  /** Hints and intro cards already shown. */
+  seen: `${PREFIX}.seen`,
 } as const;
 
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS];

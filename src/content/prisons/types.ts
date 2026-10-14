@@ -16,6 +16,8 @@ export interface PrisonDef {
   /** Cells in order: cell 1 is the player's. */
   cells: readonly Rect[];
   props: readonly PropPlacement[];
+  /** Standing spots at roll call, one per inmate (painted on the ground; used by the routine). */
+  rollCall: ReadonlyArray<{ x: number; z: number }>;
   /** Where the player starts, as a tile. */
   spawn: { x: number; z: number };
   /** Zones the player must be able to walk to from the cell with no keys or tools (validated). */

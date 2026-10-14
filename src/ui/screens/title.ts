@@ -2,7 +2,7 @@ import { TOUCH, h } from '../dom';
 import { icon } from '../icons';
 import { t } from '../../i18n';
 
-export type TitleChoice = 'play';
+export type TitleChoice = 'play' | 'settings';
 
 export interface TitleInfo {
   prisonName: string;
@@ -26,6 +26,11 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         <button class="hero-card play-card" data-c="play">
           <span class="hero-ic">${icon('play', 22)}</span>
           <span class="hero-text"><b>${t('title.play')}</b><small>${t('title.prison', { name: info.prisonName })}</small></span>
+        </button>
+        <button class="menu-btn" data-c="settings" style="--tone:#8a94a6;--tone-2:#5d6779">
+          <span class="menu-ic">${icon('gear', 18)}</span>
+          <span class="menu-text"><span class="menu-label">${t('title.settings')}</span></span>
+          ${icon('chevronRight', 16)}
         </button>
       </div>
       <div class="title-foot"><button class="sound-toggle ${info.muted ? 'off' : ''}" data-sound>${sound(info.muted)}</button><span>${t(TOUCH ? 'title.touch' : 'title.keys')}</span></div>

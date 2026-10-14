@@ -73,11 +73,16 @@ for (const def of PRISONS) {
     }
   });
 
+  // Roll call: a free spot in the yard for every inmate.
+  check(def.rollCall.length >= def.cells.length, `${def.id}: a roll call spot per cell`);
+  for (const r of def.rollCall) check(w.zoneAt(r.x, r.z) === 'rollCall' && !w.blocked(r.x, r.z), `${def.id}: roll call spot ${r.x},${r.z} is free yard`);
+
   // Reachability from the spawn, as the rules are at the start of day 1.
   const { x: sx, z: sz } = def.spawn;
   check(w.zoneAt(sx, sz) === 'playerCell', `${def.id}: the player starts in their cell`);
   check(!w.blocked(sx, sz), `${def.id}: the spawn tile is free`);
   const reach = reachableFrom(w, sx, sz);
+  for (const r of def.rollCall) check(reach[r.z * MAP_W + r.x] === 1, `${def.id}: roll call spot ${r.x},${r.z} can be walked to`);
   const reached = new Set<string>();
   for (let i = 0; i < MAP_W * MAP_H; i++) if (reach[i]) reached.add(ZONES[g.zone[i]]);
   for (const z of def.reachable) check(reached.has(z), `${def.id}: ${z} can be walked to from the cell`);

@@ -80,7 +80,33 @@ props.push(
   { kind: 'bed', x: 48, z: 43, d: 2, rot: 2 },
   { kind: 'table', x: 39, z: 40, w: 2 },
   { kind: 'controlDesk', x: 56, z: 40, d: 3, rot: 3 },
+  // Courtyard benches.
+  { kind: 'bench', x: 26, z: 27, w: 2 },
+  { kind: 'bench', x: 34, z: 27, w: 2 },
+  { kind: 'bench', x: 26, z: 32, w: 2, rot: 2 },
+  { kind: 'bench', x: 34, z: 32, w: 2, rot: 2 },
+  // Lamps: the yards' corners, the perimeter ring and the south yard.
+  ...[
+    [27, 7],
+    [38, 7],
+    [24, 25],
+    [37, 25],
+    [24, 34],
+    [37, 34],
+    ...[9, 21, 33, 43].flatMap((z) => [
+      [4, z],
+      [59, z],
+    ]),
+    ...[14, 26, 38, 50].map((x) => [x, 4]),
+    [28, 49],
+    [33, 49],
+    [28, 56],
+    [33, 56],
+  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
 );
+
+/** Two rows of four, facing the guard at the north end. */
+const rollCall = [12, 15].flatMap((z) => [29, 31, 34, 36].map((x) => ({ x, z })));
 
 /** Level 1: minimum security, suburban (GDD §4.1). */
 export const CENTER_PERKS: PrisonDef = {
@@ -115,6 +141,7 @@ export const CENTER_PERKS: PrisonDef = {
   ],
   cells,
   props,
+  rollCall,
   spawn: { x: 9, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation'],
 };

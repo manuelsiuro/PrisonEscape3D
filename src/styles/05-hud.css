@@ -81,3 +81,23 @@
   background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.95), rgba(220, 228, 240, 0.8));
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
+
+.hud-sky {
+  display: inline-grid;
+  color: var(--gold);
+}
+
+.hud-sky.moon {
+  color: #b9c8ff;
+}
+
+.hud-zone.pulse {
+  animation: zone-pulse 0.7s var(--ease);
+}
+
+@keyframes zone-pulse {
+  30% {
+    transform: scale(1.08);
+    background: rgba(242, 107, 29, 0.9);
+  }
+}

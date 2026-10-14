@@ -1,7 +1,10 @@
 import * as THREE from 'three';
+import { TILE } from '../sim/world/tiles';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { Character, INMATE_LOOK } from './Character';
+import { Dust } from './Dust';
+import { updateOcclusion } from './occlusion';
 import { WorldView } from './WorldView';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
@@ -13,6 +16,14 @@ export interface Frame {
   moving: boolean;
   /** Game time of day in minutes, fractional (lighting). */
   minuteOfDay: number;
+  /** The tile kind under the player (footstep dust and sound). */
+  surface: number;
+}
+
+export interface Quality {
+  /** Shadow map size; 0 = no shadows. */
+  shadows: number;
+  pixelRatio: number;
 }
 
 /** From the target, up and to the south: the classic angled top-down view (tech plan §6.1). */
@@ -22,20 +33,31 @@ export const ZOOM_MAX = 1.9;
 
 /** Light by time of day: [minute, sun intensity, sun color, ambient intensity, sky color]. */
 const DAYLIGHT: Array<[number, number, number, number, number]> = [
-  [0, 0.25, 0x8aa2ff, 0.55, 0x0e1626],
-  [300, 0.25, 0x8aa2ff, 0.55, 0x0e1626],
-  [390, 1.4, 0xffc58a, 0.9, 0x6b8fb8],
-  [480, 2.2, 0xfff3e0, 1.1, 0x9cc3e6],
-  [1080, 2.2, 0xfff3e0, 1.1, 0x9cc3e6],
-  [1170, 1.3, 0xff9a5c, 0.85, 0x5f6f9a],
-  [1260, 0.25, 0x8aa2ff, 0.55, 0x0e1626],
-  [1440, 0.25, 0x8aa2ff, 0.55, 0x0e1626],
+  [0, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
+  [300, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
+  [390, 1.4, 0xffc58a, 0.85, 0x6b8fb8],
+  [480, 2.3, 0xfff1dc, 1.05, 0x9cc3e6],
+  [1080, 2.3, 0xfff1dc, 1.05, 0x9cc3e6],
+  [1170, 1.3, 0xff9a5c, 0.8, 0x5f6f9a],
+  [1260, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
+  [1440, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
 ];
+
+/** Dust colors by ground (only soft ground and dirt puffs). */
+const DUST: Record<number, number> = {
+  [TILE.GRASS]: 0x7fa65a,
+  [TILE.DIRT]: 0xa88660,
+  [TILE.ROAD]: 0x8a8d92,
+  [TILE.ASPHALT]: 0x9a9da3,
+};
+
+const ORIGIN = new THREE.Vector3(0, 0, 0);
+const UP = new THREE.Vector3(0, 1, 0);
 
 /**
  * The 3D scene: the prison, the player, an orthographic camera at the classic angle that
- * follows the player, and a sun that moves with the prison clock. Reads state, never
- * changes it.
+ * follows the player with a little look-ahead, and a sun that crosses the sky with the
+ * prison clock. Reads state, never changes it.
  */
 export class View {
   readonly scene = new THREE.Scene();
@@ -44,33 +66,56 @@ export class View {
   private readonly ambient = new THREE.HemisphereLight(0xdfe8ff, 0x4a5a3a, 1);
   private worldView: WorldView | null = null;
   readonly player = new Character(INMATE_LOOK);
+  private readonly dust = new Dust();
   private readonly target = new THREE.Vector3(MAP_W / 2, 0, MAP_H / 2);
+  private readonly ahead = new THREE.Vector3();
+  private readonly feet = new THREE.Vector3();
   private readonly c1 = new THREE.Color();
   private readonly c2 = new THREE.Color();
   private readonly sky = new THREE.Color();
-  private readonly follow = new THREE.Vector3();
-  zoom = 1;
+  private readonly v = new THREE.Vector3();
+  private readonly p = new THREE.Vector3();
+  private readonly lightBasis = new THREE.Matrix4();
+  private readonly lightInverse = new THREE.Matrix4();
+  private zoom = 1;
+  private zoomGoal = 1;
+  private shadowHalf = 20;
+  /** No camera drift, idle glances or dust. */
+  reducedMotion = false;
+  /** Called when a foot lands, with the ground kind. */
+  onStep: (surface: number) => void = () => {};
 
   constructor(
     readonly renderer: THREE.WebGLRenderer,
-    shadowSize: number,
+    quality: Quality,
   ) {
-    renderer.shadowMap.enabled = shadowSize > 0;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.sun.castShadow = shadowSize > 0;
-    this.sun.shadow.mapSize.set(shadowSize, shadowSize);
-    const s = this.sun.shadow.camera;
-    s.left = s.bottom = -22;
-    s.right = s.top = 22;
-    s.near = 1;
-    s.far = 120;
-    this.sun.shadow.bias = -0.0008;
-    this.sun.shadow.normalBias = 0.02;
+    renderer.toneMappingExposure = 1.05;
+    this.sun.shadow.bias = -0.0006;
+    this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root);
-    this.resize();
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh);
+    this.setQuality(quality);
     addEventListener('resize', () => this.resize());
+  }
+
+  setQuality(q: Quality) {
+    this.renderer.setPixelRatio(q.pixelRatio);
+    const on = q.shadows > 0;
+    this.renderer.shadowMap.enabled = on;
+    this.sun.castShadow = on;
+    if (on && this.sun.shadow.mapSize.x !== q.shadows) {
+      this.sun.shadow.mapSize.set(q.shadows, q.shadows);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    }
+    // Materials compiled with or without shadows must recompile.
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material;
+      for (const mat of Array.isArray(m) ? m : m ? [m] : []) mat.needsUpdate = true;
+    });
+    this.resize();
   }
 
   setWorld(world: World) {
@@ -87,10 +132,9 @@ export class View {
     this.applyZoom();
   }
 
-  /** Multiplies the zoom (wheel, pinch), within limits. */
+  /** Multiplies the zoom (wheel, pinch), within limits; the camera eases to it. */
   zoomBy(f: number) {
-    this.zoom = THREE.MathUtils.clamp(this.zoom * f, ZOOM_MIN, ZOOM_MAX);
-    this.applyZoom();
+    this.zoomGoal = THREE.MathUtils.clamp(this.zoomGoal * f, ZOOM_MIN, ZOOM_MAX);
   }
 
   /** About 15 tiles tall, never under 11 wide (phones in portrait see more rows instead). */
@@ -102,9 +146,18 @@ export class View {
     this.camera.top = half;
     this.camera.bottom = -half;
     this.camera.updateProjectionMatrix();
+    // The shadow box covers what the camera sees (the view is stretched along the ground by the tilt).
+    this.shadowHalf = Math.min(34, Math.max(half * aspect, half * 1.25) + 3);
+    const s = this.sun.shadow.camera;
+    s.left = s.bottom = -this.shadowHalf;
+    s.right = s.top = this.shadowHalf;
+    s.near = 1;
+    s.far = 140;
+    s.updateProjectionMatrix();
   }
 
-  private light(minute: number) {
+  /** Sets the lights for a time of day; returns 0 in full daylight, 1 at night. */
+  private light(minute: number): number {
     let k = 1;
     while (k < DAYLIGHT.length - 1 && DAYLIGHT[k][0] < minute) k++;
     const a = DAYLIGHT[k - 1];
@@ -114,38 +167,71 @@ export class View {
     this.sun.color.copy(this.c1.set(a[2]).lerp(this.c2.set(b[2]), f));
     this.ambient.intensity = THREE.MathUtils.lerp(a[3], b[3], f);
     this.sky.copy(this.c1.set(a[4]).lerp(this.c2.set(b[4]), f));
-  }
-
-  /** Draws a frame of play: the camera follows the player. */
-  draw(f: Frame, dt: number, time: number) {
-    this.player.root.visible = true;
-    this.player.pose(f.x, f.z, f.facing, f.moving, dt, time);
-    this.target.lerp(this.follow.set(f.x, 0, f.z), Math.min(1, dt * 8));
-    this.render(f.minuteOfDay, dt, f);
+    return THREE.MathUtils.clamp(1 - (this.sun.intensity - 0.3) / (2.3 - 0.3), 0, 1);
   }
 
   /** Puts the camera on a point at once (a new game starts on the player, not mid-pan). */
-  snapTo(x: number, z: number) {
+  snapTo(x: number, z: number, zoom = this.zoomGoal) {
     this.target.set(x, 0, z);
+    this.ahead.set(0, 0, 0);
+    this.zoom = zoom;
+    this.applyZoom();
+  }
+
+  /** Draws a frame of play: the camera follows the player, looking a little ahead. */
+  draw(f: Frame, dt: number, time: number) {
+    this.player.root.visible = true;
+    if (this.player.pose(f.x, f.z, f.facing, f.moving, dt, time, !this.reducedMotion)) {
+      if (DUST[f.surface] !== undefined && !this.reducedMotion) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
+      this.onStep(f.surface);
+    }
+    // Look-ahead: up to a tile and a half in the walking direction, eased.
+    const lead = f.moving && !this.reducedMotion ? 1.4 : 0;
+    this.ahead.lerp(this.v.set(Math.sin(f.facing) * lead, 0, Math.cos(f.facing) * lead * 0.8), Math.min(1, dt * 2.2));
+    this.target.lerp(this.v.set(f.x, 0, f.z).add(this.ahead), Math.min(1, dt * 7));
+    this.feet.set(f.x, 0, f.z);
+    this.render(f.minuteOfDay, dt, this.feet);
   }
 
   /** Draws the title backdrop: the camera drifts slowly over the prison, nobody in it. */
   drawTitle(dt: number, time: number) {
     this.player.root.visible = false;
-    const a = time * 0.05;
+    const a = this.reducedMotion ? 1.2 : time * 0.05;
     this.target.set(MAP_W / 2 + Math.cos(a) * 14, 0, MAP_H / 2 - 4 + Math.sin(a * 1.3) * 10);
     this.render(600, dt, null);
   }
 
-  private render(minute: number, dt: number, focus: { x: number; z: number } | null) {
-    this.light(minute);
-    this.worldView?.update(dt, focus);
+  private render(minute: number, dt: number, focus: THREE.Vector3 | null) {
+    if (Math.abs(this.zoom - this.zoomGoal) > 1e-4) {
+      this.zoom += (this.zoomGoal - this.zoom) * Math.min(1, dt * 10);
+      this.applyZoom();
+    }
+    const night = this.light(minute);
+    this.worldView?.update(dt, night);
+    this.dust.update(dt);
     this.camera.position.copy(this.target).add(CAMERA_OFFSET);
     this.camera.lookAt(this.target);
-    // The sun's shadow box follows the camera's target; it swings east to west over the day.
-    const sunAngle = ((minute - 720) / 720) * Math.PI * 0.6;
-    this.sun.position.set(this.target.x - Math.sin(sunAngle) * 30, 40, this.target.z + 18);
-    this.sun.target.position.copy(this.target);
+    this.placeSun(minute);
+    updateOcclusion(this.renderer, this.camera, focus, dt);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /**
+   * The sun swings east to west over the day; its shadow box follows the camera, snapped to
+   * whole shadow-map texels so shadow edges don't shimmer as the camera glides.
+   */
+  private placeSun(minute: number) {
+    const angle = ((minute - 720) / 720) * Math.PI * 0.6;
+    // Never straight overhead: a western bias keeps shadows on the floor the camera sees.
+    const offset = this.v.set(-Math.sin(angle) * 26 - 9, 40, 9);
+    this.lightBasis.lookAt(offset, ORIGIN, UP);
+    this.lightInverse.copy(this.lightBasis).invert();
+    const texel = (this.shadowHalf * 2) / Math.max(1, this.sun.shadow.mapSize.x);
+    const p = this.p.copy(this.target).applyMatrix4(this.lightInverse);
+    p.x = Math.round(p.x / texel) * texel;
+    p.y = Math.round(p.y / texel) * texel;
+    p.applyMatrix4(this.lightBasis);
+    this.sun.target.position.copy(p);
+    this.sun.position.copy(p).add(offset);
   }
 }

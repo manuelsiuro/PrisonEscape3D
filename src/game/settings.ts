@@ -12,6 +12,8 @@ export interface Settings {
   haptics: boolean;
   /** Language: auto follows the browser. */
   lang: 'auto' | 'en' | 'fr';
+  /** Graphics: auto starts from the device and steps down if frames run slow. */
+  quality: 'auto' | 'high' | 'low';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -20,6 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reducedMotion: globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
   haptics: true,
   lang: 'auto',
+  quality: 'auto',
 };
 
 /** Stored settings, each field checked against its default's type (a bad value gets the default). */
@@ -29,6 +32,7 @@ export function loadSettings(): Settings {
   for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) if (typeof raw[k] === typeof v) s[k] = raw[k];
   const out = s as unknown as Settings;
   if (!['auto', 'en', 'fr'].includes(out.lang)) out.lang = 'auto';
+  if (!['auto', 'high', 'low'].includes(out.quality)) out.quality = 'auto';
   out.sfxVolume = Math.min(1, Math.max(0, Number.isFinite(out.sfxVolume) ? out.sfxVolume : DEFAULT_SETTINGS.sfxVolume));
   return out;
 }
@@ -40,4 +44,15 @@ export function saveSettings(s: Settings) {
 /** Wipes the game's progress; preferences stay. */
 export function resetProgress() {
   for (const k of PROGRESS_KEYS) removeKey(k);
+}
+
+/** One-time things already shown on this device (hints, intro cards), by name. */
+export function hasSeen(name: string): boolean {
+  return readJSON<string[]>(KEYS.seen, []).includes(name);
+}
+
+export function markSeen(name: string) {
+  const seen = readJSON<string[]>(KEYS.seen, []);
+  if (!Array.isArray(seen) || seen.includes(name)) return;
+  writeJSON(KEYS.seen, [...seen, name]);
 }

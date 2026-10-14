@@ -21,6 +21,9 @@ export const PROPS = {
   generator: { solid: true },
   sortingDesk: { solid: true },
   controlDesk: { solid: true },
+  /** A street lamp: lights a pool of ground at night. */
+  lamp: { solid: true },
+  bench: { solid: true },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

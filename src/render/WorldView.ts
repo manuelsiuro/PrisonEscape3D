@@ -1,20 +1,23 @@
 import * as THREE from 'three';
 import { KEY, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
-import { kitMaterial } from './kit';
+import { buildGround } from './ground';
+import { box, cyl, kitMaterial, merge } from './kit';
+import { Lights } from './lights';
+import { seeThrough } from './occlusion';
 import { propGeometry } from './props';
 import { TEX } from './textures';
 
-/** Wall height in tiles: low enough that the angled camera sees into rooms. */
-export const WALL_H = 1.25;
+/** Wall height in tiles. Walls in front of the player are seen through (occlusion.ts). */
+export const WALL_H = 1.4;
 
-/** Door slab colors by key (GDD §4.0). */
+/** Door colors by key (GDD §4.0). */
 export const KEY_COLORS: Record<number, number> = {
-  [KEY.YELLOW]: 0xf2c230,
-  [KEY.CYAN]: 0x35c7d8,
-  [KEY.PURPLE]: 0x9b59d0,
-  [KEY.RED]: 0xe0483e,
-  [KEY.GREEN]: 0x3fb950,
+  [KEY.YELLOW]: 0xe8b828,
+  [KEY.CYAN]: 0x2fb6c8,
+  [KEY.PURPLE]: 0x8e4fc4,
+  [KEY.RED]: 0xd23f36,
+  [KEY.GREEN]: 0x36a447,
 };
 
 /** Which floor texture each walkable tile shows (doors and detectors stand on concrete). */
@@ -31,50 +34,38 @@ const FLOOR_OF: Record<number, keyof typeof TEX> = {
   [TILE.FENCE]: 'grass',
   [TILE.ELECTRIC]: 'grass',
   [TILE.TOWER]: 'grass',
+  // Under the walls: what a see-through cut reveals.
+  [TILE.BRICK]: 'wallCore',
+  [TILE.REINFORCED]: 'wallCore',
 };
+
+const isWall = (k: number) => k === TILE.BRICK || k === TILE.REINFORCED;
+const isFence = (k: number) => k === TILE.FENCE || k === TILE.ELECTRIC;
 
 interface DoorMesh {
   index: number;
-  x: number;
-  z: number;
-  slab: THREE.Mesh;
-  lintel: THREE.Mesh;
-  /** Slab height when closed. */
-  h: number;
-  /** Cutaway factor, as for walls. */
-  lift: number;
-  /** The slab's closed position and the direction it slides to open. */
+  leaf: THREE.Object3D;
+  /** The leaf's closed position and the direction it slides to open (into the wall). */
   home: THREE.Vector3;
   slide: THREE.Vector3;
   open: number;
 }
 
-/** Is a wall tile (center x, z) between the camera and the player at (px, pz)? */
-function inFront(x: number, z: number, px: number, pz: number): boolean {
-  const dz = z - pz;
-  return dz > -0.2 && dz < 2.6 && Math.abs(x - px) < 2.2 - dz * 0.3;
-}
-
-/** Eases a wall's height factor: quick down to a stub when in front, back up when passed. */
-function towardLift(cur: number, cut: boolean, dt: number): number {
-  const goal = cut ? 0.18 : 1;
-  if (cur === goal) return cur;
-  return goal < cur ? Math.max(goal, cur - dt * 6) : Math.min(goal, cur + dt * 4);
-}
-
 /**
- * Draws a prison's tiles and furniture. Floors, walls and fences are one InstancedMesh per
- * kind (a tile change will update one instance); each furniture model is merged and
- * instanced. Reads the world, never changes it.
+ * Draws a prison: floors, walls and fences as one InstancedMesh per kind, furniture merged
+ * and instanced per model, doors that slide, the baked ground layer (paint and contact
+ * shadows), night lights and the scenery beyond the road. Reads the world, never changes it.
  */
 export class WorldView {
   readonly group = new THREE.Group();
   private doors: DoorMesh[] = [];
+  private readonly lights: Lights;
   private readonly matrix = new THREE.Matrix4();
-  private walls: THREE.InstancedMesh | null = null;
-  private wallCells: number[] = [];
-  /** Each wall's current height factor (1 = full, low when cut away in front of the player). */
-  private wallLift = new Float32Array(0);
+  private readonly q = new THREE.Quaternion();
+  private readonly up = new THREE.Vector3(0, 1, 0);
+  private readonly one = new THREE.Vector3(1, 1, 1);
+  private readonly pos = new THREE.Vector3();
+  private readonly scale = new THREE.Vector3();
 
   constructor(readonly world: World) {
     this.buildFloors();
@@ -84,11 +75,33 @@ export class WorldView {
     this.buildDetectors();
     this.buildTowers();
     this.buildProps();
+    this.group.add(buildGround(world));
+    this.lights = new Lights(world);
+    this.group.add(this.lights.group);
     this.buildSurroundings();
   }
 
   private kindAt(x: number, z: number): number {
     return this.world.inside(x, z) ? this.world.ground.kind[z * MAP_W + x] : TILE.EMPTY;
+  }
+
+  /** Tiles of the kinds asked for, as flat [x, z, x, z…]. */
+  private cells(test: (k: number) => boolean): number[] {
+    const out: number[] = [];
+    for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (test(this.kindAt(x, z))) out.push(x, z);
+    return out;
+  }
+
+  /** Does a line of these tiles run along x here (neighbors east or west), rather than along z? */
+  private alongX(x: number, z: number, like: (k: number) => boolean): boolean {
+    return like(this.kindAt(x - 1, z)) || like(this.kindAt(x + 1, z)) || !(like(this.kindAt(x, z - 1)) || like(this.kindAt(x, z + 1)));
+  }
+
+  /** Sets an instance's transform: position, a turn about y, a scale. */
+  private place(mesh: THREE.InstancedMesh, i: number, x: number, y: number, z: number, angle = 0, sx = 1, sy = 1, sz = 1) {
+    this.q.setFromAxisAngle(this.up, angle);
+    this.matrix.compose(this.pos.set(x, y, z), this.q, this.scale.set(sx, sy, sz));
+    mesh.setMatrixAt(i, this.matrix);
   }
 
   private buildFloors() {
@@ -112,7 +125,7 @@ export class WorldView {
         this.matrix.makeTranslation(x + 0.5, 0, z + 0.5);
         mesh.setMatrixAt(i, this.matrix);
         // A faint per-tile shade so big floors don't look printed.
-        const v = 0.94 + (((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000 / 1000 * 0.08;
+        const v = 0.95 + ((((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000) / 1000 * 0.07;
         mesh.setColorAt(i, color.setScalar(v));
       }
       mesh.receiveShadow = true;
@@ -121,11 +134,14 @@ export class WorldView {
   }
 
   private buildWalls() {
-    const cells: number[] = [];
-    for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (this.kindAt(x, z) === TILE.BRICK || this.kindAt(x, z) === TILE.REINFORCED) cells.push(x, z);
+    const cells = this.cells(isWall);
     const geo = new THREE.BoxGeometry(1, WALL_H, 1);
-    const side = new THREE.MeshStandardMaterial({ map: TEX.brick(), roughness: 0.9 });
-    const top = new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.9 });
+    // The side faces' v runs 0..1 up the wall: repeat the brick so courses keep their size.
+    const brick = TEX.brick().clone();
+    brick.repeat.set(1, WALL_H);
+    brick.needsUpdate = true;
+    const side = seeThrough(new THREE.MeshStandardMaterial({ map: brick, roughness: 0.9 }));
+    const top = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
     // Box faces: +x, -x, +y, -y, +z, -z.
     const mesh = new THREE.InstancedMesh(geo, [side, side, top, top, side, side], cells.length / 2);
     for (let i = 0; i < cells.length / 2; i++) {
@@ -133,121 +149,137 @@ export class WorldView {
       mesh.setMatrixAt(i, this.matrix);
     }
     mesh.castShadow = mesh.receiveShadow = true;
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.walls = mesh;
-    this.wallCells = cells;
-    this.wallLift = new Float32Array(cells.length / 2).fill(1);
     this.group.add(mesh);
   }
 
-  /**
-   * Cutaway: walls just south of the player (between them and the camera) sink to a low
-   * stub, so the player is never hidden behind a wall; they rise again once passed.
-   */
-  private cutWalls(px: number, pz: number, dt: number) {
-    if (!this.walls) return;
-    const cells = this.wallCells;
-    let changed = false;
-    for (let i = 0; i < this.wallLift.length; i++) {
-      const x = cells[i * 2] + 0.5;
-      const z = cells[i * 2 + 1] + 0.5;
-      const cur = this.wallLift[i];
-      const next = towardLift(cur, inFront(x, z, px, pz), dt);
-      if (next === cur) continue;
-      this.wallLift[i] = next;
-      this.matrix.makeScale(1, next, 1).setPosition(x, (WALL_H * next) / 2, z);
-      this.walls.setMatrixAt(i, this.matrix);
-      changed = true;
-    }
-    if (changed) this.walls.instanceMatrix.needsUpdate = true;
-  }
-
-  /** Is the fence line here running along x (neighbors left or right are fence-like)? */
-  private alongX(x: number, z: number, like: (k: number) => boolean): boolean {
-    return like(this.kindAt(x - 1, z)) || like(this.kindAt(x + 1, z)) || !(like(this.kindAt(x, z - 1)) || like(this.kindAt(x, z + 1)));
-  }
-
   private buildFences() {
-    const fenceLike = (k: number) => k === TILE.FENCE || k === TILE.ELECTRIC || k === TILE.DOOR || k === TILE.TOWER;
+    const fenceLike = (k: number) => isFence(k) || k === TILE.DOOR || k === TILE.TOWER;
+    const h = 1.8;
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x7d858f, metalness: 0.6, roughness: 0.45 });
     for (const [kind, tint, emissive] of [
       [TILE.FENCE, 0xffffff, 0x000000],
-      [TILE.ELECTRIC, 0xfff0a0, 0x332a00],
+      [TILE.ELECTRIC, 0xffeb8a, 0x2a2200],
     ] as const) {
-      const cells: number[] = [];
-      for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (this.kindAt(x, z) === kind) cells.push(x, z);
+      const cells = this.cells((k) => k === kind);
       if (!cells.length) continue;
       const tex = TEX.fence().clone();
       tex.needsUpdate = true;
-      const mat = new THREE.MeshStandardMaterial({ map: tex, color: tint, emissive, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.6, metalness: 0.4 });
-      const h = 1.7;
+      const mat = new THREE.MeshStandardMaterial({ map: tex, color: tint, emissive, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.5 });
       const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, h), mat, cells.length / 2);
-      const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, h + 0.1, 0.08), new THREE.MeshStandardMaterial({ color: 0x8d949e, metalness: 0.5, roughness: 0.5 }), cells.length / 2);
-      const q = new THREE.Quaternion();
-      const up = new THREE.Vector3(0, 1, 0);
+      const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.09, h + 0.15, 0.09), postMat, cells.length / 2);
       for (let i = 0; i < cells.length / 2; i++) {
         const x = cells[i * 2];
         const z = cells[i * 2 + 1];
         const ax = this.alongX(x, z, fenceLike);
-        q.setFromAxisAngle(up, ax ? 0 : Math.PI / 2);
-        this.matrix.compose(new THREE.Vector3(x + 0.5, h / 2, z + 0.5), q, new THREE.Vector3(1, 1, 1));
-        mesh.setMatrixAt(i, this.matrix);
-        this.matrix.makeTranslation(ax ? x : x + 0.5, (h + 0.1) / 2, ax ? z + 0.5 : z);
-        posts.setMatrixAt(i, this.matrix);
+        this.place(mesh, i, x + 0.5, h / 2, z + 0.5, ax ? 0 : Math.PI / 2);
+        this.place(posts, i, ax ? x : x + 0.5, (h + 0.15) / 2, ax ? z + 0.5 : z);
       }
-      mesh.castShadow = true;
-      posts.castShadow = true;
+      mesh.castShadow = posts.castShadow = true;
       this.group.add(mesh, posts);
     }
+    // Razor wire coiled along the top of every fence: rings across the line, tilted so they read as a spiral.
+    const fences = this.cells(isFence);
+    const wire = new THREE.InstancedMesh(new THREE.TorusGeometry(0.17, 0.014, 3, 9), new THREE.MeshStandardMaterial({ color: 0xb8c0ca, metalness: 0.8, roughness: 0.3 }), Math.max(1, fences.length));
+    const tilt = new THREE.Euler();
+    let n = 0;
+    for (let i = 0; i < fences.length / 2; i++) {
+      const x = fences[i * 2];
+      const z = fences[i * 2 + 1];
+      const ax = this.alongX(x, z, fenceLike);
+      this.q.setFromEuler(tilt.set(0.35, ax ? Math.PI / 2 : 0, 0, 'YXZ'));
+      for (let k = 0; k < 2; k++) {
+        const t = (k + 0.5) / 2;
+        this.matrix.compose(this.pos.set(ax ? x + t : x + 0.5, h + 0.12, ax ? z + 0.5 : z + t), this.q, this.one);
+        wire.setMatrixAt(n++, this.matrix);
+      }
+    }
+    wire.count = n;
+    this.group.add(wire);
   }
 
   private buildDoors() {
-    const frameMat = new THREE.MeshStandardMaterial({ color: 0x5b6470, roughness: 0.6, metalness: 0.3 });
+    const frameMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x4a515c, roughness: 0.55, metalness: 0.4 }));
+    const steel = seeThrough(new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.5, metalness: 0.45 }));
+    const glassMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6 }));
+    const keyMats = new Map<number, THREE.MeshStandardMaterial>();
+    const keyMat = (key: number, metal: boolean) => {
+      const id = key * 2 + (metal ? 1 : 0);
+      if (!keyMats.has(id)) keyMats.set(id, seeThrough(new THREE.MeshStandardMaterial({ color: KEY_COLORS[key] ?? 0x888888, roughness: metal ? 0.4 : 0.55, metalness: metal ? 0.5 : 0.1 })));
+      return keyMats.get(id)!;
+    };
+    const wallLike = (k: number) => isWall(k) || k === TILE.DOOR || isFence(k);
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (this.kindAt(x, z) !== TILE.DOOR) continue;
         const i = z * MAP_W + x;
         const key = this.world.ground.key[i];
-        const wallLike = (k: number) => k === TILE.BRICK || k === TILE.REINFORCED || k === TILE.DOOR || k === TILE.FENCE || k === TILE.ELECTRIC;
         const ax = this.alongX(x, z, wallLike);
-        const fence = [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some((k) => k === TILE.FENCE || k === TILE.ELECTRIC);
-        const h = fence ? 1.7 : WALL_H;
-        const mat = new THREE.MeshStandardMaterial({ color: KEY_COLORS[key] ?? 0x888888, roughness: 0.5, metalness: 0.2 });
-        const slab = new THREE.Mesh(new THREE.BoxGeometry(ax ? 0.96 : 0.12, h * 0.92, ax ? 0.12 : 0.96), mat);
-        const home = new THREE.Vector3(x + 0.5, (h * 0.92) / 2, z + 0.5);
-        slab.position.copy(home);
-        slab.castShadow = true;
-        // A lintel in the wall color above the gap, and a stripe of the key color on it.
-        const lintel = new THREE.Mesh(new THREE.BoxGeometry(ax ? 1 : 0.3, 0.12, ax ? 0.3 : 1), frameMat);
-        lintel.position.set(x + 0.5, h - 0.06, z + 0.5);
-        this.group.add(slab, lintel);
-        this.doors.push({ index: i, x: x + 0.5, z: z + 0.5, slab, lintel, h: h * 0.92, lift: 1, home, slide: new THREE.Vector3(ax ? 0.9 : 0, 0, ax ? 0 : 0.9), open: this.world.block[i] ? 0 : 1 });
+        const inFence = [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(isFence);
+        const h = inFence ? 1.8 : WALL_H;
+        const leafH = h * 0.86;
+        const leaf = new THREE.Group();
+        if (key === KEY.YELLOW || inFence) {
+          // Cell doors and gates: bars in a frame.
+          const parts = [box(0.96, 0.07, 0.07, 0xffffff, 0, 0, 0), box(0.96, 0.07, 0.07, 0xffffff, 0, leafH - 0.07, 0), box(0.96, 0.05, 0.05, 0xffffff, 0, leafH * 0.45, 0)];
+          for (let b = 0; b < 6; b++) parts.push(cyl(0.025, leafH, 0xffffff, -0.4 + b * 0.16, 0, 0, 6));
+          const bars = new THREE.Mesh(merge(parts), keyMat(key, true));
+          bars.castShadow = true;
+          leaf.add(bars);
+        } else {
+          // Work, utility and security doors: a steel slab, a window, a band of the key color.
+          const slab = new THREE.Mesh(new THREE.BoxGeometry(0.96, leafH, 0.1), steel);
+          slab.position.y = leafH / 2;
+          slab.castShadow = true;
+          const band = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.16, 0.12), keyMat(key, false));
+          band.position.y = leafH * 0.32;
+          const glass = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, 0.12), glassMat);
+          glass.position.y = leafH * 0.72;
+          leaf.add(slab, band, glass);
+        }
+        if (!ax) leaf.rotation.y = Math.PI / 2;
+        const home = new THREE.Vector3(x + 0.5, 0, z + 0.5);
+        leaf.position.copy(home);
+        // A lintel over the gap.
+        const lintel = new THREE.Mesh(new THREE.BoxGeometry(ax ? 1 : 0.34, h - leafH, ax ? 0.34 : 1), frameMat);
+        lintel.position.set(x + 0.5, leafH + (h - leafH) / 2, z + 0.5);
+        lintel.castShadow = true;
+        this.group.add(leaf, lintel);
+        this.doors.push({ index: i, leaf, home, slide: new THREE.Vector3(ax ? 0.92 : 0, 0, ax ? 0 : 0.92), open: this.world.block[i] ? 0 : 1 });
       }
     }
   }
 
   private buildDetectors() {
-    const mat = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.4, metalness: 0.6 });
-    const light = new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a8a3a, emissiveIntensity: 1.2 });
+    const mat = seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 }));
+    const light = new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 });
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (this.kindAt(x, z) !== TILE.DETECTOR) continue;
-        const ax = this.alongX(x, z, (k) => k === TILE.BRICK || k === TILE.DETECTOR);
-        const post = (dx: number, dz: number) => {
-          const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.15, 0.2), mat);
-          m.position.set(x + 0.5 + dx, 0.575, z + 0.5 + dz);
-          m.castShadow = true;
-          return m;
-        };
-        const beam = new THREE.Mesh(new THREE.BoxGeometry(ax ? 1 : 0.22, 0.14, ax ? 0.22 : 1), mat);
-        beam.position.set(x + 0.5, 1.2, z + 0.5);
-        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.1), light);
-        lamp.position.set(x + 0.5, 1.3, z + 0.5);
-        this.group.add(ax ? post(-0.44, 0) : post(0, -0.44), ax ? post(0.44, 0) : post(0, 0.44), beam, lamp);
+        const ax = this.alongX(x, z, (k) => isWall(k) || k === TILE.DETECTOR);
+        const arch = new THREE.Group();
+        for (const s of [-1, 1]) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.25, 0.24), mat);
+          post.position.set(s * 0.44, 0.625, 0);
+          post.castShadow = true;
+          arch.add(post);
+        }
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(1, 0.16, 0.26), mat);
+        beam.position.y = 1.3;
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 0.1), light);
+        lamp.position.y = 1.41;
+        arch.add(beam, lamp);
+        arch.position.set(x + 0.5, 0, z + 0.5);
+        if (!ax) arch.rotation.y = Math.PI / 2;
+        this.group.add(arch);
       }
     }
   }
 
   private buildTowers() {
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7 });
+    const cabinMat = new THREE.MeshStandardMaterial({ color: 0xc9b99a, roughness: 0.8 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x223040, roughness: 0.1, metalness: 0.6 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x6e3328, roughness: 0.8 });
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (this.kindAt(x, z) !== TILE.TOWER || this.kindAt(x - 1, z) === TILE.TOWER || this.kindAt(x, z - 1) === TILE.TOWER) continue;
@@ -256,23 +288,35 @@ export class WorldView {
         let d = 0;
         while (this.kindAt(x, z + d) === TILE.TOWER) d++;
         const tower = new THREE.Group();
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7 });
-        const H = 4;
-        for (const [sx, sz] of [[0.3, 0.3], [w - 0.3, 0.3], [0.3, d - 0.3], [w - 0.3, d - 0.3]]) {
+        const H = 4.2;
+        for (const [sx, sz] of [
+          [0.3, 0.3],
+          [w - 0.3, 0.3],
+          [0.3, d - 0.3],
+          [w - 0.3, d - 0.3],
+        ]) {
           const leg = new THREE.Mesh(new THREE.BoxGeometry(0.25, H, 0.25), legMat);
           leg.position.set(sx, H / 2, sz);
           leg.castShadow = true;
           tower.add(leg);
         }
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(w, 1.3, d), new THREE.MeshStandardMaterial({ color: 0xc9b99a, roughness: 0.8 }));
-        cabin.position.set(w / 2, H + 0.65, d / 2);
-        const glass = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, 0.45, d + 0.02), new THREE.MeshStandardMaterial({ color: 0x2b3a4a, roughness: 0.2, metalness: 0.5 }));
-        glass.position.set(w / 2, H + 0.85, d / 2);
-        const roof = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.8, 0.9, 4), new THREE.MeshStandardMaterial({ color: 0x7a3b2e, roughness: 0.8 }));
+        // Braces make it read as a structure, not a box on stilts.
+        for (const y of [1.3, 2.8]) {
+          const brace = new THREE.Mesh(new THREE.BoxGeometry(w - 0.4, 0.08, 0.08), legMat);
+          brace.position.set(w / 2, y, d - 0.3);
+          tower.add(brace);
+        }
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.15, d + 0.3), legMat);
+        deck.position.set(w / 2, H, d / 2);
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(w - 0.2, 1.3, d - 0.2), cabinMat);
+        cabin.position.set(w / 2, H + 0.72, d / 2);
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(w - 0.18, 0.5, d - 0.18), glassMat);
+        glass.position.set(w / 2, H + 0.95, d / 2);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.82, 0.9, 4), roofMat);
         roof.rotation.y = Math.PI / 4;
-        roof.position.set(w / 2, H + 1.75, d / 2);
-        cabin.castShadow = roof.castShadow = true;
-        tower.add(cabin, glass, roof);
+        roof.position.set(w / 2, H + 1.82, d / 2);
+        for (const m of [deck, cabin, roof]) m.castShadow = true;
+        tower.add(deck, cabin, glass, roof);
         tower.position.set(x, 0, z);
         this.group.add(tower);
       }
@@ -287,52 +331,57 @@ export class WorldView {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(p);
     }
-    const q = new THREE.Quaternion();
-    const up = new THREE.Vector3(0, 1, 0);
-    const one = new THREE.Vector3(1, 1, 1);
+    // Furniture is cut above waist height only: low pieces next to the player stay whole.
+    const material = seeThrough(kitMaterial.clone(), 0.6);
     for (const [key, list] of groups) {
       const [kind, size] = key.split(':');
       const [w, d] = size.split('x').map(Number);
-      const mesh = new THREE.InstancedMesh(propGeometry(kind as never, w, d), kitMaterial, list.length);
-      list.forEach((p, i) => {
-        // rot: 0 front south (+z), 1 east, 2 north, 3 west.
-        q.setFromAxisAngle(up, [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot]);
-        this.matrix.compose(new THREE.Vector3(p.x + p.w / 2, 0, p.z + p.d / 2), q, one);
-        mesh.setMatrixAt(i, this.matrix);
-      });
+      const mesh = new THREE.InstancedMesh(propGeometry(kind as never, w, d), material, list.length);
+      // rot: 0 front south (+z), 1 east, 2 north, 3 west.
+      list.forEach((p, i) => this.place(mesh, i, p.x + p.w / 2, 0, p.z + p.d / 2, [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot]));
       mesh.castShadow = mesh.receiveShadow = true;
       this.group.add(mesh);
     }
   }
 
-  /** Fields beyond the road, so the map's edge never shows the void. */
+  /** Fields and woods beyond the road, so the map's edge never shows the void. */
   private buildSurroundings() {
     const tex = TEX.grass().clone();
     tex.needsUpdate = true;
-    tex.repeat.set(160, 160);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 160).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tex, color: 0xb8c8a8, roughness: 1 }));
+    tex.repeat.set(200, 200);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tex, color: 0xa9bd98, roughness: 1 }));
     ground.position.set(MAP_W / 2, -0.02, MAP_H / 2);
     ground.receiveShadow = true;
     this.group.add(ground);
+
+    // Trees in a ring outside the road: a seeded scatter, one draw call.
+    let s = 12345;
+    const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const tree = merge([cyl(0.12, 0.7, 0x6b4a2f, 0, 0, 0, 6), cyl(0.55, 0.9, 0x3f7a3a, 0, 0.6, 0, 7), cyl(0.4, 0.7, 0x4c8c44, 0, 1.3, 0, 7), cyl(0.22, 0.5, 0x5a9c4f, 0, 1.85, 0, 6)]);
+    const spots: Array<[number, number, number]> = [];
+    for (let k = 0; k < 1500 && spots.length < 280; k++) {
+      const x = -24 + rand() * (MAP_W + 48);
+      const z = -24 + rand() * (MAP_H + 48);
+      if (x > -2 && x < MAP_W + 2 && z > -2 && z < MAP_H + 2) continue;
+      if (spots.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < 2.2)) continue;
+      spots.push([x, z, 0.8 + rand() * 0.9]);
+    }
+    const trees = new THREE.InstancedMesh(tree, kitMaterial, spots.length);
+    spots.forEach(([x, z, sc], i) => this.place(trees, i, x, 0, z, rand() * Math.PI, sc, sc * (0.9 + rand() * 0.3), sc));
+    trees.castShadow = true;
+    this.group.add(trees);
   }
 
-  /** Per frame: doors slide toward their state; walls in front of the focus point (tiles) sink. */
-  update(dt: number, focus: { x: number; z: number } | null) {
-    if (focus) this.cutWalls(focus.x, focus.z, dt);
-    else this.cutWalls(-99, -99, dt);
-    const fx = focus?.x ?? -99;
-    const fz = focus?.z ?? -99;
+  /** Per frame: doors slide toward their state; lights follow the time of day (0 day … 1 night). */
+  update(dt: number, night: number) {
     for (const d of this.doors) {
       const target = this.world.block[d.index] ? 0 : 1;
       if (d.open !== target) d.open = target > d.open ? Math.min(target, d.open + dt * 3) : Math.max(target, d.open - dt * 3);
-      d.lift = towardLift(d.lift, inFront(d.x, d.z, fx, fz), dt);
-      // An open door slides into the wall and shrinks with it, so a cut-away wall never shows it.
-      const scale = Math.max(0.02, d.lift * (1 - 0.9 * d.open));
-      d.slab.scale.y = scale;
-      d.slab.position.copy(d.home).addScaledVector(d.slide, d.open);
-      d.slab.position.y = (d.h * scale) / 2;
-      d.lintel.visible = d.lift > 0.6;
+      // Eased, sliding into the wall.
+      const e = d.open * d.open * (3 - 2 * d.open);
+      d.leaf.position.copy(d.home).addScaledVector(d.slide, e);
     }
+    this.lights.setNight(night);
   }
 
   dispose() {

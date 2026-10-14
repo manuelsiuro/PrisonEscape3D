@@ -13,6 +13,9 @@ const DARK = 0x3b4048;
 const WOOD = 0x9b6a3f;
 const WOOD_DARK = 0x6e4a2b;
 const WHITE = 0xeef1f4;
+/** How far south of its pole a lamp's head hangs, and how high its bulb sits. */
+export const LAMP_ARM = 0.42;
+export const LAMP_BULB_Y = 2.2;
 
 /** Four legs under a top w×d at height h. */
 const legs = (w: number, d: number, h: number, color: number, inset = 0.08): Part[] =>
@@ -110,6 +113,22 @@ const BUILDERS: Record<PropKind, Builder> = {
     for (let k = 0; k < Math.round(w * 3); k++) parts.push(box(0.2, 0.12, 0.02, WHITE, -w / 2 + 0.25 + k * 0.32, 0.72, -d / 2 + 0.31));
     return parts;
   },
+  /** A pole with an arm reaching south; the glowing bulb is drawn by the lights (lights.ts). */
+  lamp: () => [
+    cyl(0.14, 0.12, DARK, 0, 0, 0, 8),
+    cyl(0.05, 2.3, 0x59606b, 0, 0.1, 0, 8),
+    box(0.06, 0.06, 0.5, 0x59606b, 0, 2.3, 0.22),
+    box(0.26, 0.1, 0.3, 0x2b3038, 0, 2.22, LAMP_ARM),
+  ],
+  bench: (w, d) => [
+    ...legs(w - 0.2, d - 0.5, 0.26, DARK, 0.06).map((p) => p.translate(0, 0, 0.05)),
+    box(w - 0.1, 0.05, 0.12, WOOD, 0, 0.26, -0.08),
+    box(w - 0.1, 0.05, 0.12, WOOD, 0, 0.26, 0.08),
+    box(w - 0.1, 0.05, 0.12, WOOD, 0, 0.26, 0.24),
+    box(w - 0.1, 0.22, 0.05, WOOD, 0, 0.36, -0.2),
+    box(0.06, 0.4, 0.06, DARK, -(w - 0.3) / 2, 0.2, -0.2),
+    box(0.06, 0.4, 0.06, DARK, (w - 0.3) / 2, 0.2, -0.2),
+  ],
   controlDesk: (w, d) => {
     const parts = [box(w - 0.06, 0.55, d - 0.3, 0x4a5260, 0, 0, -0.1), box(w - 0.04, 0.05, d - 0.2, 0x2b3038, 0, 0.55)];
     for (let k = 0; k < Math.round(w); k++) parts.push(box(0.7, 0.42, 0.06, 0x1d2026, -w / 2 + 0.5 + k, 0.6, -d / 2 + 0.25), box(0.62, 0.34, 0.01, 0x5fd4ff, -w / 2 + 0.5 + k, 0.64, -d / 2 + 0.285));

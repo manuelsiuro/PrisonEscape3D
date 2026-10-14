@@ -115,7 +115,12 @@ export const TEX = {
     }),
   wallTop: () =>
     texture('wallTop', 16, (c, n, r) => {
-      speckle(c, n, r, '#4b4f57', '#43474e', '#555a62', 0.2);
+      speckle(c, n, r, '#5e646e', '#555b64', '#6a707a', 0.22);
+    }),
+  /** Inside a wall, seen through a cut: dark rubble-grey core. */
+  wallCore: () =>
+    texture('wallCore', 16, (c, n, r) => {
+      speckle(c, n, r, '#2b2e34', '#24272c', '#34383f', 0.3);
     }),
   /** Chain-link: a diamond mesh on transparent, a rail along the top. */
   fence: () =>
