@@ -121,6 +121,33 @@ export class Sound {
     this.tone(2640, 2600, 0.3, 'sine', 0.03, 0.09);
   }
 
+  /** Picked something up: a quick rising pop. */
+  pickup() {
+    this.tone(520, 980, 0.09, 'triangle', 0.14);
+    this.tone(1300, 1500, 0.06, 'sine', 0.05, 0.05);
+  }
+
+  /** Dropped something: a soft thud. */
+  drop() {
+    this.tone(180, 90, 0.12, 'sine', 0.16);
+    this.hiss(0.06, 'lowpass', 900, 0.8, 0.06);
+  }
+
+  /** A drawer slides open: wood friction and a little knock. */
+  drawer() {
+    this.hiss(0.22, 'bandpass', 1400, 2.5, 0.07);
+    this.tone(240, 200, 0.07, 'triangle', 0.08, 0.18);
+  }
+
+  /** Crafted: three quick hammer taps and a bright ding. */
+  craft() {
+    for (const d of [0, 0.11, 0.22]) {
+      this.hiss(0.05, 'bandpass', 2600, 3, 0.09);
+      this.tone(420, 300, 0.06, 'square', 0.03, d);
+    }
+    this.tone(1568, 1568, 0.5, 'triangle', 0.08, 0.34);
+  }
+
   /** Missed a block: a low falling sting. */
   sting() {
     this.tone(330, 220, 0.35, 'sawtooth', 0.07);

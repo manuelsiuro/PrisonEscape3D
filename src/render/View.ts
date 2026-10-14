@@ -3,8 +3,12 @@ import { TILE } from '../sim/world/tiles';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { Character, INMATE_LOOK, inmateLook, type BedPose } from './Character';
+import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
 import { Guide } from './Guide';
+import { itemDef } from '../content/items';
+import { itemGeometry } from './itemModels';
+import { Pickups, type Focus, type GroundItem } from './Pickups';
 import { updateOcclusion } from './occlusion';
 import { WorldView } from './WorldView';
 
@@ -27,6 +31,15 @@ export interface Frame {
   tap: { x: number; z: number } | null;
   /** A lockdown: red lights pulse. */
   alarm: boolean;
+  /** Items on the floor. */
+  ground: readonly GroundItem[];
+  /** What the action button would use, framed on the floor. */
+  focus: Focus | null;
+  /** The item in the player's hand and the outfit they wear (item numbers, 0 for none). */
+  held: number;
+  outfit: number;
+  /** Asleep in bed. */
+  sleeping: boolean;
 }
 
 export interface InmateFrame {
@@ -87,7 +100,9 @@ export class View {
   private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
   private readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, 0x4a5a3a, 1);
   private worldView: WorldView | null = null;
-  readonly player = new Character(INMATE_LOOK);
+  player = new Character(INMATE_LOOK);
+  private outfit = -1;
+  private readonly pickups = new Pickups();
   private cast: Character[] = [];
   /** Each cell's bed, for sleepers (by cell number). */
   private beds: Array<BedPose | undefined> = [];
@@ -128,7 +143,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group);
     this.setQuality(quality);
     addEventListener('resize', () => this.resize());
   }
@@ -234,10 +249,26 @@ export class View {
     this.applyZoom();
   }
 
+  /** Dresses the player: the jumpsuit takes the outfit's color (a white vest with none on). */
+  private dress(outfit: number) {
+    if (outfit === this.outfit) return;
+    this.outfit = outfit;
+    const old = this.player;
+    const color = outfit ? itemDef(outfit).color : 0xe8e8e2;
+    this.player = new Character({ ...INMATE_LOOK, outfit: color });
+    this.player.root.position.copy(old.root.position);
+    this.player.root.rotation.copy(old.root.rotation);
+    this.scene.remove(old.root);
+    old.dispose();
+    this.scene.add(this.player.root);
+  }
+
   /** Draws a frame of play: the camera follows the player, looking a little ahead. */
   draw(f: Frame, dt: number, time: number) {
+    this.dress(f.outfit);
     this.player.root.visible = true;
-    if (this.player.pose(f.x, f.z, f.facing, f.moving, dt, time, !this.reducedMotion)) {
+    this.player.hold(f.sleeping ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
+    if (this.player.pose(f.x, f.z, f.facing, f.moving, dt, time, !this.reducedMotion, f.sleeping ? DOING.SLEEP : DOING.NOTHING, this.beds[1])) {
       if (DUST[f.surface] !== undefined && !this.reducedMotion) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
       this.onStep(f.surface);
     }
@@ -252,6 +283,7 @@ export class View {
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
     });
+    this.pickups.update(f.ground, f.focus, dt, time, !this.reducedMotion);
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);
     this.guide.update(dt, time, f, !this.reducedMotion);
@@ -263,6 +295,7 @@ export class View {
   drawTitle(dt: number, time: number) {
     this.player.root.visible = false;
     this.alarm = 0;
+    this.pickups.update([], null, dt, time, false);
     this.guide.setPath(null);
     this.guide.setTap(null);
     this.guide.update(dt, time, this.target, false);

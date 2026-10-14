@@ -98,7 +98,7 @@ function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim)
     const t0 = performance.now();
     sim.step(play(sim));
     worst = Math.max(worst, performance.now() - t0);
-    for (const e of sim.events) if (e.type !== 'hour') log.push(`${at(sim.state.step)} ${describe(e)}`);
+    for (const e of sim.events) if (describe(e)) log.push(`${at(sim.state.step)} ${describe(e)}`);
     every?.(sim);
   }
   return { sim, log, worst };

@@ -1,0 +1,6 @@
+94 items, 46 recipes
+obtainable in P2 from reachable containers and crafting: 50 items
+containers: bed:bed 8, bin:janitorBin 1, bin:laundryBin 2, bin:woodshopBin 2, counter:canteenCounter 1, desk:inmateDesk 7, desk:playerDesk 1, freezer:kitchenFreezer 1, shelf:libraryShelf 2, shower:shower 6, toilet:toilet 8
+cell 2's desk on day 1: ink, plastic_fork, battery
+replay: 163 steps, 40 commands, state cf112e87
+restock: cell 2's desk 0 → 3 items; woke at day 2 07:55

@@ -7,7 +7,7 @@ import { ZONES } from './content/zones';
 import { Autopilot } from './sim/ai/autopilot';
 import { findPath, smooth, tileAt } from './sim/ai/path';
 import { isFloor, placesOf } from './sim/ai/places';
-import { command, DIR_X, DIR_Z } from './sim/command';
+import { command, DIR_X, DIR_Z, OP, SLOT } from './sim/command';
 import { Recorder } from './sim/Recorder';
 import { Sim, type SimEvent } from './sim/Sim';
 import { tileOfBody } from './sim/systems/movement';
@@ -22,6 +22,11 @@ import { MOBILE, TOUCH, h } from './ui/dom';
 import { Hud, routineName, routinePlace, type HudState } from './ui/hud';
 import { Hint } from './ui/hint';
 import { Banner } from './ui/banner';
+import { ItemsUI, itemName } from './ui/items';
+import { interactTarget, itemOf, type Target } from './sim/systems/items';
+import { containersOf } from './sim/world/containers';
+import { itemIcons } from './render/itemIcons';
+import type { Key } from './i18n';
 import { showTitle } from './ui/screens/title';
 import { showPause } from './ui/screens/pause';
 import { showSettings } from './ui/screens/settings';
@@ -100,6 +105,8 @@ interface Game {
   guideFrom: number;
   /** Dev builds: simulation speed (`]` toggles fast-forward). */
   speed: number;
+  /** One-step operations waiting for the next steps (one per step), from the item UI and keys. */
+  ops: Array<[number, number, number]>;
 }
 let game: Game | null = null;
 let acc = 0;
@@ -174,6 +181,12 @@ function updateGuide(g: Game, dt: number) {
   g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
 }
 
+function seenInteract() {
+  if (hasSeen('interact')) return;
+  markSeen('interact');
+  hint.hide();
+}
+
 /** Sound, vibration, banners and toasts for what the simulation reports. */
 function announce(e: SimEvent, sim: Sim) {
   switch (e.type) {
@@ -203,6 +216,36 @@ function announce(e: SimEvent, sim: Sim) {
         const missed = sim.events.find((m) => m.type === 'missed' && m.heat >= 100);
         banner.show(t('banner.lockdown'), missed?.type === 'missed' ? t('banner.lockdownSub', { routine: routineName(missed.routine) }) : t('banner.lockdownHeat'), 'alarm', 5000);
       } else banner.toast(t('toast.lifted'), 'good');
+      break;
+    case 'pickup':
+      seenInteract();
+      sound.pickup();
+      buzz('bell');
+      break;
+    case 'drop':
+      sound.drop();
+      break;
+    case 'full':
+      sound.sting();
+      itemsUI.toast(t('items.full'));
+      break;
+    case 'open':
+      seenInteract();
+      sound.drawer();
+      if (!hasSeen('items')) {
+        markSeen('items');
+        banner.toast(t('hint.items'), 'info', 5000);
+      }
+      break;
+    case 'crafted':
+      sound.craft();
+      buzz('attended');
+      itemsUI.toast(t('craft.made', { item: itemName(e.item) }));
+      if (e.first) banner.toast(t('craft.newRecipe'), 'good');
+      break;
+    case 'sleep':
+      sound.click();
+      if (e.on) sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
       break;
     case 'cells':
       if (e.locked) sound.lockClank();
@@ -237,7 +280,9 @@ function startGame(prison: PrisonDef) {
     guideAge: 1,
     guideFrom: -1,
     speed: 1,
+    ops: [],
   };
+  itemsUI.show(true);
   acc = 0;
   controls.reset();
   controls.enabled = true;
@@ -287,6 +332,8 @@ async function pause() {
   startTimers = [];
   controls.enabled = false;
   hud.show(false);
+  itemsUI.show(false);
+  sleepVeil.classList.remove('on');
   hint.hide();
   banner.clear();
   vignette.classList.remove('on');
@@ -296,7 +343,22 @@ async function pause() {
   quit?.();
 }
 addEventListener('keydown', (e) => {
-  if (e.code === 'Escape' && game && !game.paused) pause();
+  if (!game || game.paused || e.metaKey || e.ctrlKey || e.repeat) return;
+  // Escape closes a panel first, and pauses only when none is open.
+  if (e.code === 'Escape') {
+    if (itemsUI.panelOpen) itemsUI.closePanels();
+    else pause();
+    return;
+  }
+  const g = game;
+  if (e.code === 'KeyE') {
+    if (g.rec.sim.state.items.open >= 0) sendOp(OP.CLOSE);
+    else act();
+  }
+  if (e.code === 'KeyC') itemsUI.toggleCraft();
+  if (e.code === 'KeyQ' && g.rec.sim.state.items.inv[g.rec.sim.state.items.hand]) sendOp(OP.DROP, g.rec.sim.state.items.hand);
+  const digit = /^Digit([1-6])$/.exec(e.code);
+  if (digit) sendOp(OP.SELECT, Number(digit[1]) - 1);
   // Dev builds: fast-forward the prison clock (×30) to test the routine.
   if (import.meta.env.DEV && e.code === 'BracketRight' && game) game.speed = game.speed === 1 ? 30 : 1;
 });
@@ -305,7 +367,64 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && game && !game.paused) pause();
 });
 
-const frameData: Frame = { x: 0, z: 0, facing: 0, moving: false, minuteOfDay: 0, surface: 0, inmates: [], guide: null, tap: null, alarm: false };
+const NO_OP: [number, number, number] = [0, 0, 0];
+const SLEEP_SPEED = 40;
+
+/** Queues a one-step operation (sent with the next simulation step). */
+function sendOp(op: number, a = 0, b = 0) {
+  game?.ops.push([op, a, b]);
+}
+
+/** The action button / E: use what is in reach (or wake up). */
+function act() {
+  if (!game) return;
+  game.pilot.stop();
+  sendOp(OP.INTERACT);
+}
+
+const itemsUI = new ItemsUI(sendOp, click);
+itemsUI.onAction = act;
+const sleepVeil = h('div', 'sleep-veil', `<span>${''}</span>`);
+document.body.append(sleepVeil);
+
+/** What a container is called ("your desk", "bookshelf"). */
+function thingName(sim: Sim, index: number): string {
+  const c = containersOf(sim.world)[index];
+  if (!c) return '';
+  const k = c.prop.kind;
+  if (c.mine && (k === 'desk' || k === 'bed')) return t(k === 'desk' ? 'thing.myDesk' : 'thing.myBed');
+  return t(`thing.${k}` as Key);
+}
+const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** The action label and the floor frame for what is in reach. */
+function describeTarget(sim: Sim, target: Target): string | null {
+  if (!target) return null;
+  if (target.kind === 'ground') return t('act.pickUp', { item: itemName(target.item) });
+  if (target.kind === 'sleep') return t('act.sleep');
+  return t('act.search', { thing: thingName(sim, target.index) });
+}
+const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
+function focusOf(sim: Sim, target: Target) {
+  if (!target) return null;
+  if (target.kind === 'ground') {
+    const tile = sim.state.items.ground[target.index][0];
+    focusAt.x0 = (tile % MAP_W) + 0.2;
+    focusAt.z0 = Math.floor(tile / MAP_W) + 0.2;
+    focusAt.x1 = focusAt.x0 + 0.6;
+    focusAt.z1 = focusAt.z0 + 0.6;
+    return focusAt;
+  }
+  const p = containersOf(sim.world)[target.index].prop;
+  focusAt.x0 = p.x;
+  focusAt.z0 = p.z;
+  focusAt.x1 = p.x + p.w;
+  focusAt.z1 = p.z + p.d;
+  return focusAt;
+}
+const groundFrame: Array<{ x: number; z: number; item: number }> = [];
+
+const frameData: Frame = { x: 0, z: 0, facing: 0, moving: false, minuteOfDay: 0, surface: 0, inmates: [], guide: null, tap: null, alarm: false, ground: groundFrame, focus: null, held: 0, outfit: 0, sleeping: false };
 const tapAt = { x: 0, z: 0 };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, lockedMinutes: null };
 
@@ -323,9 +442,11 @@ function frame(now: number) {
   if (!g.paused) {
     governQuality(dt);
     // Fixed steps: the simulation never sees the frame time.
-    acc += dt * g.speed;
+    // Asleep, the night runs fast (about 13 s from 23:00 to 07:55).
+    const speed = sim.state.sleeping ? SLEEP_SPEED : g.speed;
+    acc += dt * speed;
     let steps = 0;
-    while (acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * g.speed) {
+    while (acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * speed) {
       acc -= 1 / STEPS_PER_SECOND;
       // Where everyone was before this step (buffers reused: no garbage per step).
       g.prev.x = p.x;
@@ -337,7 +458,8 @@ function frame(now: number) {
       });
       // The stick and keys win over tap-to-walk; both are plain direction commands.
       if (controls.steering) g.pilot.stop();
-      g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p)));
+      const op = g.ops.shift() ?? NO_OP;
+      g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p), op[0], op[1], op[2]));
       g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
       // Sound, banners and vibration read the events; the simulation never calls them.
       for (const e of sim.events) announce(e, sim);
@@ -374,14 +496,39 @@ function frame(now: number) {
     o.cell = m.cell;
   });
   f.guide = g.guide;
-  const target = g.pilot.destination;
-  if (target >= 0) {
-    tapAt.x = (target % MAP_W) + 0.5;
-    tapAt.z = Math.floor(target / MAP_W) + 0.5;
+  const dest = g.pilot.destination;
+  if (dest >= 0) {
+    tapAt.x = (dest % MAP_W) + 0.5;
+    tapAt.z = Math.floor(dest / MAP_W) + 0.5;
   }
-  f.tap = target >= 0 ? tapAt : null;
+  f.tap = dest >= 0 ? tapAt : null;
   f.alarm = st.lockdown;
+  // Items: the floor, the hand, the outfit, and what the action button would use.
+  const it = st.items;
+  groundFrame.length = it.ground.length;
+  it.ground.forEach(([tileIndex, v], k) => {
+    const o = (groundFrame[k] ??= { x: 0, z: 0, item: 0 });
+    o.x = (tileIndex % MAP_W) + 0.5;
+    o.z = Math.floor(tileIndex / MAP_W) + 0.5;
+    o.item = itemOf(v);
+  });
+  const target = st.sleeping || g.paused ? null : interactTarget(sim.world, it, p, ROUTINE[st.routine].id === 'lightsOut');
+  f.focus = it.open >= 0 ? null : focusOf(sim, target);
+  f.held = itemOf(it.inv[it.hand]);
+  f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
+  f.sleeping = st.sleeping;
   view.draw(f, dt, now / 1000);
+  const box = containersOf(sim.world)[it.open];
+  itemsUI.update({
+    items: it,
+    boxTitle: box ? capital(thingName(sim, it.open)) : '',
+    boxHidden: box?.hidden ?? 0,
+    action: it.open >= 0 ? null : describeTarget(sim, target),
+    sleeping: st.sleeping,
+  });
+  sleepVeil.classList.toggle('on', st.sleeping);
+  // First time something is in reach: how to use it.
+  if (target && !hint.visible && !hasSeen('interact') && hasSeen('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   vignette.classList.toggle('on', st.lockdown);
   sound.siren(st.lockdown && !g.paused);
   const zone = sim.playerZone;
@@ -425,6 +572,8 @@ async function titleFlow() {
 }
 
 titleFlow();
+// Item icons are photographed once; do it while the title is up, not at the first slot drawn.
+setTimeout(() => itemIcons(), 1200);
 // The game started: the boot guard in index.html stands down.
 (window as { __pe3dBooted?: boolean }).__pe3dBooted = true;
 registerServiceWorker(() => {});

@@ -30,7 +30,7 @@ Sources:
 | Topic | tech_plan.md | Decision (GDD) |
 |---|---|---|
 | Campaign | One map (Center Perks) | **5 prisons**: Center Perks, Stalag Flucht, Shankton, San Pancho, HMP Irongate |
-| Item count | 76 | **77**: adds `tool_handle`, `grapnel` and `makeshift_raft` as real items |
+| Item count | 76 | GDD's "77" counts keys, molds and plastic keys once each. As data they are one item per door color, so there are **94 item entries** (`tool_handle`, `grapnel` and `raft` included) |
 | Whip reach | 2.5 in the items table, 3.0 in the type comment | **2.5 tiles** |
 | L1 detectors | Cell block, Canteen, Gym, Laundry, Woodshop, Metalshop | **Canteen and Woodshop only** (the L1 cell block is unscanned) |
 | L1 jobs | 6 jobs | **Laundry (default), Janitor, Kitchen, Woodshop, Mailman**. No Metalshop in L1 |
@@ -50,6 +50,10 @@ Sources:
 | Blocks spent in a lockdown | — | **Excused**: missing them adds no heat |
 | When a missed roll call counts | — | GDD §2.2 says "immediate" lockdown but also gives every block a grace window: it fires **when the block ends** (09:00, 23:00) if the player never stepped into the yard |
 | Cells and visitors | — | A cell never locks while anyone but its occupant is inside it |
+| Energy and HP bars | P2 in §5 map | Nothing spends Energy or HP before tools (P4) and combat (P5), so both bars arrive **with what uses them**; meals, showers and chocolate restore Energy from then on |
+| Shivs | "Sharpen on a wall" | Sharpening is a wall action, so comb and toothbrush shivs come with P5 combat |
+| Daily restock | "Restock with randomized items" | At 08:00 containers are **topped up**, never past a cap (desk 6 items), never touching hidden compartments or anything already there; the player's own desk and bed never restock |
+| Sleeping | "Sleep in bed" | Sleeping at Lights Out runs the night ×40 (about 13 s); a move or the action button wakes the player, and 07:55 does in any case |
 | A lockdown while the player stays out | — | Until guards (P3) it simply lasts: heat stays at 100%, inmates stay in their cells, later blocks are excused. Guards make staying out the losing choice |
 
 Any further conflict found during the build is added to this table in the same commit.
@@ -176,4 +180,13 @@ real touch feel) and the known limits.
   - `routinetest`: model prisoner 3 days at 0 heat, truant lockdown, night owl doors, inmates make every block. Dev builds: `]` fast-forwards ×30.
 - **P1 review and polish (v0.2.2)**: a visitor can no longer be locked in someone else's cell (lockdown that never ended); inmates make way for each other and the player (followers keep their distance, head-on meetings by turn, squeeze past after 1.5 s); paths re-checked as doors change; canteen benches with a seated pose and meal trays; shower heads moved to the wall in view, with water; blankets and floating Zs for sleepers; legs paced to each inmate's speed; floor arrows skip spots walls would cut; Lights Out arrows and badge follow whether the player is in the cell; the HUD says when each block ends; start-up timers can't reach a paused or later game; tap vs drag thresholds; siren fade-in; one door per cell validated.
 - **Second review (v0.2.3)**: right of way at head-on meetings (the other steps aside), detours round people standing at their spots, waiting counters reset on arrival; doors settled at the end of each step so a save restored at any step is exact (tested); the lock clank and toast are for the player's own door; no per-frame garbage in the frame loop, guide, view and HUD; fast-forward ends on pause; the HUD follows a language change mid-game.
-- **Next: P2 Items.**
+- **P2 Items (v0.3.0)**:
+  - 94 items (`content/items.ts`), 46 recipes (`recipes.ts`), loot tables and container sizes (`loot.ts`); items stored as numbers in slots, durability in the high bits;
+  - inventory (6 hotbar slots, a weapon slot, an outfit slot), desks with 6 hidden and 10 standard slots, beds, toilets, shelves, counters, bins, showers; a daily restock at 08:00; dropping and picking up;
+  - crafting with INT gates and a handbook of recipes crafted at least once; key molds give the real key back;
+  - one-step ops in the command (interact, close, move, drop, craft, equip, select), so every item action is recorded and replayed;
+  - sleeping in your bed at Lights Out (a fast night);
+  - item models from a shape vocabulary, photographed into inventory icons at load; items on the floor, the item in hand, outfits that change the player's look, a focus frame on what the action button would use;
+  - hotbar with contraband marks and durability bars, action button (touch) or E prompt (keys), the container panel (bottom sheet in portrait, side panel otherwise), the workbench and the handbook; tap an item, tap where it goes;
+  - `itemtest`: ids, the closed recipe graph (every item obtainable), loot and sources agree, a bot that opens, takes, drops, picks up, crafts, wears, stashes and sleeps through ordinary commands, restocks that respect hidden slots and the player's desk, exact replay.
+- **Next: P3 Guards.**

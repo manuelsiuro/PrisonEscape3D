@@ -10,7 +10,7 @@ export type Part = THREE.BufferGeometry;
 
 const tmp = new THREE.Color();
 
-function paint(g: THREE.BufferGeometry, color: number | string): THREE.BufferGeometry {
+export function paint(g: THREE.BufferGeometry, color: number | string): THREE.BufferGeometry {
   tmp.set(color);
   const n = g.attributes.position.count;
   const c = new Float32Array(n * 3);

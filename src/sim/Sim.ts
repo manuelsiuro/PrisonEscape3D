@@ -1,6 +1,8 @@
 import type { PrisonDef } from '../content/prisons/types';
 import { ROUTINE, routineAt } from '../content/routine';
-import { dirOf } from './command';
+import { argA, argB, dirOf, OP, opOf } from './command';
+import { placesOf } from './ai/places';
+import { craft, dropItem, equip, HOTBAR, interactTarget, moveItem, pickUp, restock, startItems, stillInReach, type ItemEvent, type ItemState } from './systems/items';
 import { fnv1a } from './rng';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { LOCKDOWN_PLAN, spawnInmates, stepInmates, type Inmate } from './systems/inmates';
@@ -19,7 +21,9 @@ export type SimEvent =
   | { type: 'missed'; routine: number; heat: number }
   | { type: 'lockdown'; on: boolean }
   /** The player's cell door locked or unlocked (Lights Out, a lockdown, 08:00). */
-  | { type: 'cells'; locked: boolean };
+  | { type: 'cells'; locked: boolean }
+  | { type: 'sleep'; on: boolean }
+  | ItemEvent;
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -42,6 +46,10 @@ export interface SimState {
   inmates: Inmate[];
   /** A lockdown ran during this block: missing it costs nothing. */
   excused: boolean;
+  /** What the player carries, every container's contents, the floor, the handbook. */
+  items: ItemState;
+  /** Asleep in bed (Lights Out): time can run fast, any move wakes the player. */
+  sleeping: boolean;
 }
 
 export interface Snapshot {
@@ -69,6 +77,7 @@ export class Sim {
     this.world = new World(prison);
     const s = { rng: seed | 0 };
     const inmates = spawnInmates(this.world, s);
+    const items = startItems(this.world, s);
     this.state = {
       step: 0,
       rng: s.rng,
@@ -80,6 +89,8 @@ export class Sim {
       lockdownLeft: 0,
       inmates,
       excused: false,
+      items,
+      sleeping: false,
     };
     this.updateDoors(false);
   }
@@ -109,11 +120,24 @@ export class Sim {
       s.attended = false;
       s.excused = s.lockdown;
       this.events.push({ type: 'routine', routine: now });
+      // A new day: desks, shelves and counters are stocked again (GDD §6.2).
+      if (now === 0) {
+        restock(w, s.items, s);
+        this.events.push({ type: 'restock' });
+      }
     }
     // Everyone moves.
     // In a lockdown inmates head for their cells (at night they are going there anyway, to sleep).
     stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, s.player, s.step);
-    walk(w, s.player, dirOf(cmd));
+    // Asleep: a move (or the action button) wakes the player, and so does 07:55 (in time for roll call).
+    const woke = s.sleeping && (dirOf(cmd) !== 0 || opOf(cmd) === OP.INTERACT || clock.minuteOfDay === 7 * 60 + 55 || ROUTINE[s.routine].id !== 'lightsOut');
+    if (woke) {
+      s.sleeping = false;
+      this.events.push({ type: 'sleep', on: false });
+    }
+    walk(w, s.player, s.sleeping ? 0 : dirOf(cmd));
+    // The press that woke the player doesn't also put them back to bed.
+    this.useItems(woke ? dirOf(cmd) : cmd);
     // Attendance, and the lockdown: it lifts once the player has sat out its time in the cell.
     const zone = this.playerZone;
     if (!s.attended && ROUTINE[s.routine].zones.includes(zone)) {
@@ -130,6 +154,67 @@ export class Sim {
     // Doors last: they follow where everyone ended up, so the state at the end of a step
     // (a save, a keyframe) says everything about them.
     this.updateDoors(true);
+  }
+
+  /** The player's one-step operation (OP), and the open container closing out of reach. */
+  private useItems(cmd: number) {
+    const s = this.state;
+    const it = s.items;
+    const ev = this.events as ItemEvent[];
+    const a = argA(cmd);
+    if (opOf(cmd) !== OP.NONE) it.rev++;
+    switch (opOf(cmd)) {
+      case OP.INTERACT: {
+        const target = interactTarget(this.world, it, s.player, ROUTINE[s.routine].id === 'lightsOut');
+        if (!target) break;
+        if (target.kind === 'ground') pickUp(it, target.index, ev);
+        else if (target.kind === 'sleep') this.sleep();
+        else if (it.open !== target.index) {
+          it.open = target.index;
+          ev.push({ type: 'open', container: target.index });
+        }
+        break;
+      }
+      case OP.CLOSE:
+        if (it.open >= 0) {
+          it.open = -1;
+          ev.push({ type: 'close' });
+        }
+        break;
+      case OP.MOVE:
+        moveItem(it, a, argB(cmd));
+        break;
+      case OP.DROP:
+        dropItem(it, a, s.player, ev);
+        break;
+      case OP.CRAFT:
+        craft(it, a, ev);
+        break;
+      case OP.EQUIP:
+        equip(it, a);
+        break;
+      case OP.SELECT:
+        if (a < HOTBAR) it.hand = a;
+        break;
+    }
+    if (it.open >= 0 && !stillInReach(this.world, it, s.player)) {
+      it.open = -1;
+      it.rev++;
+      ev.push({ type: 'close' });
+    }
+  }
+
+  /** Into bed: the player lies down beside it (the view puts them in it). */
+  private sleep() {
+    const s = this.state;
+    const t = placesOf(this.world).bedside[1];
+    if (t < 0) return;
+    s.player.x = (t % MAP_W) * UNIT + UNIT / 2;
+    s.player.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
+    s.player.moving = false;
+    s.sleeping = true;
+    s.items.open = -1;
+    this.events.push({ type: 'sleep', on: true });
   }
 
   private addHeat(n: number) {
@@ -204,6 +289,8 @@ export class Sim {
       lockdownLeft: st.lockdownLeft ?? 0,
       inmates: st.inmates ?? spawnInmates(this.world, { rng: st.rng }),
       excused: st.excused ?? false,
+      items: st.items ?? startItems(this.world, { rng: st.rng }),
+      sleeping: st.sleeping ?? false,
     };
     this.updateDoors(false);
     this.events = [];

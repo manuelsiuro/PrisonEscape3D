@@ -121,6 +121,9 @@ export class Character {
   private readonly zs: THREE.Sprite[] = [];
   /** Standing under a shower head (water falls only there). */
   wet = false;
+  /** The item in the right hand (its model), and which item it is. */
+  private held: THREE.Mesh | null = null;
+  private heldItem = 0;
   private readonly at = new THREE.Vector3();
   private readonly bedAt = new THREE.Vector3();
 
@@ -238,6 +241,26 @@ export class Character {
     this.water.add(spray);
     this.water.visible = false;
     this.root.add(this.water);
+  }
+
+  /**
+   * Puts an item in the right hand (0: empty-handed): the model sticks out of the fist,
+   * pointing forward.
+   */
+  hold(item: number, geometry: THREE.BufferGeometry | null) {
+    if (item === this.heldItem) return;
+    this.heldItem = item;
+    if (this.held) this.armR.remove(this.held);
+    this.held = null;
+    if (!item || !geometry) return;
+    const m = new THREE.Mesh(geometry, kitMaterial);
+    m.castShadow = true;
+    m.scale.setScalar(1.05);
+    // Long axis forward (+z), gripped near its back end.
+    m.rotation.set(0, -Math.PI / 2, 0);
+    m.position.set(0, -0.44, 0.16);
+    this.held = m;
+    this.armR.add(m);
   }
 
   /** A flat copy of every part, drawn only where something stands in front of the character. */
@@ -385,7 +408,7 @@ export class Character {
     this.root.traverse((o) => {
       const m = o as THREE.Mesh;
       // Sprites and drops share their geometry with every other character.
-      if (!(o instanceof THREE.Sprite) && m.geometry !== dropGeometry && m.geometry !== sprayGeometry) m.geometry?.dispose();
+      if (!(o instanceof THREE.Sprite) && o !== this.held && m.geometry !== dropGeometry && m.geometry !== sprayGeometry) m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
       for (const mat of mats) if (mat !== kitMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();
     });
