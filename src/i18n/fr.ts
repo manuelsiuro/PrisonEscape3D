@@ -198,8 +198,6 @@ export const fr: Partial<Strings> = {
   "items.take": "Prendre",
   "items.store": "Ranger",
   "items.empty": "Vide",
-  "act.pickUp": "Ramasser : {item}",
-  "act.search": "Fouiller : {thing}",
   "act.sleep": "Dormir",
   "act.wake": "Se réveiller",
   "thing.desk": "bureau",
@@ -233,4 +231,6 @@ export const fr: Partial<Strings> = {
   "hint.interactKeys": "%KeyE% pour fouiller, ramasser ou dormir · 1–6 pour prendre un objet en main",
   "hint.interactTouch": "Touche le bouton d’action pour fouiller ou ramasser",
   "hint.items": "Les bureaux cachent des choses utiles. La rangée du haut de ton bureau est un compartiment secret.",
+  "act.pickUpVerb": "Ramasser",
+  "act.searchVerb": "Fouiller",
 };

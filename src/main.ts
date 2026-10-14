@@ -22,17 +22,17 @@ import { MOBILE, TOUCH, h } from './ui/dom';
 import { Hud, routineName, routinePlace, type HudState } from './ui/hud';
 import { Hint } from './ui/hint';
 import { Banner } from './ui/banner';
-import { ItemsUI, itemName } from './ui/items';
-import { interactTarget, itemOf, type Target } from './sim/systems/items';
+import { ItemsUI, itemName, type ItemsView } from './ui/items';
+import { interactTarget, itemOf, type ItemState, type Target } from './sim/systems/items';
 import { containersOf } from './sim/world/containers';
-import { itemIcons } from './render/itemIcons';
+import { warmIcons } from './render/itemIcons';
 import type { Key } from './i18n';
 import { showTitle } from './ui/screens/title';
 import { showPause } from './ui/screens/pause';
 import { showSettings } from './ui/screens/settings';
 import { registerServiceWorker } from './app/pwa';
 import { buzz, setHaptics } from './app/haptics';
-import { setLang, t } from './i18n';
+import { currentLang, setLang, t } from './i18n';
 
 /**
  * Wiring: storage first, then the long-lived objects, then the flows between screens.
@@ -231,6 +231,7 @@ function announce(e: SimEvent, sim: Sim) {
       break;
     case 'open':
       seenInteract();
+      itemsUI.closeCraft();
       sound.drawer();
       if (!hasSeen('items')) {
         markSeen('items');
@@ -351,6 +352,8 @@ addEventListener('keydown', (e) => {
     return;
   }
   const g = game;
+  // Asleep: only waking up (E) means anything.
+  if (g.rec.sim.state.sleeping && e.code !== 'KeyE') return;
   if (e.code === 'KeyE') {
     if (g.rec.sim.state.items.open >= 0) sendOp(OP.CLOSE);
     else act();
@@ -379,6 +382,7 @@ function sendOp(op: number, a = 0, b = 0) {
 function act() {
   if (!game) return;
   game.pilot.stop();
+  itemsUI.closeCraft();
   sendOp(OP.INTERACT);
 }
 
@@ -395,14 +399,32 @@ function thingName(sim: Sim, index: number): string {
   if (c.mine && (k === 'desk' || k === 'bed')) return t(k === 'desk' ? 'thing.myDesk' : 'thing.myBed');
   return t(`thing.${k}` as Key);
 }
-const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/** The open container's title, worked out once per container and language. */
+let titleKey = '';
+let titleText = '';
+function boxTitle(sim: Sim, index: number) {
+  const key = `${index}:${currentLang()}`;
+  if (key !== titleKey) {
+    titleKey = key;
+    const name = thingName(sim, index);
+    titleText = name.charAt(0).toUpperCase() + name.slice(1);
+  }
+  return titleText;
+}
 
-/** The action label and the floor frame for what is in reach. */
-function describeTarget(sim: Sim, target: Target): string | null {
+/** The action label for what is in reach, worked out only when the target (or language) changes. */
+const actionLabel = { verb: '', what: '' };
+let actionKey = '';
+function describeTarget(sim: Sim, target: Target): { verb: string; what: string } | null {
   if (!target) return null;
-  if (target.kind === 'ground') return t('act.pickUp', { item: itemName(target.item) });
-  if (target.kind === 'sleep') return t('act.sleep');
-  return t('act.search', { thing: thingName(sim, target.index) });
+  const key = `${target.kind}:${target.index}:${target.kind === 'ground' ? target.item : 0}:${currentLang()}`;
+  if (key !== actionKey) {
+    actionKey = key;
+    if (target.kind === 'ground') Object.assign(actionLabel, { verb: t('act.pickUpVerb'), what: itemName(target.item) });
+    else if (target.kind === 'sleep') Object.assign(actionLabel, { verb: t('act.sleep'), what: '' });
+    else Object.assign(actionLabel, { verb: t('act.searchVerb'), what: thingName(sim, target.index) });
+  }
+  return actionLabel;
 }
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
 function focusOf(sim: Sim, target: Target) {
@@ -423,6 +445,7 @@ function focusOf(sim: Sim, target: Target) {
   return focusAt;
 }
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false };
 
 const frameData: Frame = { x: 0, z: 0, facing: 0, moving: false, minuteOfDay: 0, surface: 0, inmates: [], guide: null, tap: null, alarm: false, ground: groundFrame, focus: null, held: 0, outfit: 0, sleeping: false };
 const tapAt = { x: 0, z: 0 };
@@ -513,19 +536,20 @@ function frame(now: number) {
     o.item = itemOf(v);
   });
   const target = st.sleeping || g.paused ? null : interactTarget(sim.world, it, p, ROUTINE[st.routine].id === 'lightsOut');
-  f.focus = it.open >= 0 ? null : focusOf(sim, target);
+  // The frame stays on an open container (what the panel shows), else on what is in reach.
+  f.focus = focusOf(sim, it.open >= 0 ? { kind: 'container', index: it.open } : target);
   f.held = itemOf(it.inv[it.hand]);
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   f.sleeping = st.sleeping;
   view.draw(f, dt, now / 1000);
   const box = containersOf(sim.world)[it.open];
-  itemsUI.update({
-    items: it,
-    boxTitle: box ? capital(thingName(sim, it.open)) : '',
-    boxHidden: box?.hidden ?? 0,
-    action: it.open >= 0 ? null : describeTarget(sim, target),
-    sleeping: st.sleeping,
-  });
+  const v = itemsView;
+  v.items = it;
+  v.boxTitle = box ? boxTitle(sim, it.open) : '';
+  v.boxHidden = box?.hidden ?? 0;
+  v.action = it.open >= 0 ? null : describeTarget(sim, target);
+  v.sleeping = st.sleeping;
+  itemsUI.update(v);
   sleepVeil.classList.toggle('on', st.sleeping);
   // First time something is in reach: how to use it.
   if (target && !hint.visible && !hasSeen('interact') && hasSeen('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
@@ -573,7 +597,7 @@ async function titleFlow() {
 
 titleFlow();
 // Item icons are photographed once; do it while the title is up, not at the first slot drawn.
-setTimeout(() => itemIcons(), 1200);
+setTimeout(() => warmIcons(), 1200);
 // The game started: the boot guard in index.html stands down.
 (window as { __pe3dBooted?: boolean }).__pe3dBooted = true;
 registerServiceWorker(() => {});

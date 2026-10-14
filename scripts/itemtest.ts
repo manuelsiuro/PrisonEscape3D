@@ -17,7 +17,7 @@ import { command, OP, SLOT } from '../src/sim/command';
 import { Recorder } from '../src/sim/Recorder';
 import { Sim } from '../src/sim/Sim';
 import { clockAt, formatTime } from '../src/sim/systems/clock';
-import { canCraft, HOTBAR, interactTarget, itemOf, slot, usesOf } from '../src/sim/systems/items';
+import { benchCheck, canCraft, craft as craftWith, HOTBAR, ingredientSlots, interactTarget, itemOf, maskOf, slot, usesOf } from '../src/sim/systems/items';
 
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
@@ -197,7 +197,7 @@ op(OP.INTERACT);
 for (let k = 2; k < HOTBAR; k++) if (it().inv[k]) op(OP.DROP, k);
 op(OP.MOVE, SLOT.CONTAINER + 1, 2);
 check(canCraft(it(), sheetRope) === 'ok', 'two sheets make a sheet rope');
-op(OP.CRAFT, sheetRope);
+op(OP.CRAFT, maskOf(ingredientSlots(it(), sheetRope)!));
 check(it().inv.some((v) => itemOf(v) === itemNumber('sheet_rope')) && it().known.includes(sheetRope), 'the sheet rope is crafted and in the handbook');
 check(!it().inv.some((v) => itemOf(v) === itemNumber('bed_sheet')), 'both sheets were used');
 
@@ -207,7 +207,7 @@ it().inv[4] = slot(itemNumber('key_red'));
 const moldRed = RECIPES.findIndex((r) => r.result === 'mold_red');
 check(canCraft(it(), moldRed) === 'int', 'a key mold needs 50 INT');
 it().int = 60;
-op(OP.CRAFT, moldRed);
+op(OP.CRAFT, maskOf(ingredientSlots(it(), moldRed)!));
 check(it().inv.some((v) => itemOf(v) === itemNumber('mold_red')) && it().inv.some((v) => itemOf(v) === itemNumber('key_red')), 'the mold is made and the real key comes back');
 it().int = 40;
 it().inv[5] = slot(itemNumber('nail_file'));
@@ -244,3 +244,46 @@ check(JSON.stringify(it().containers[myDesk]) === before, "the restock leaves th
 const after = it().containers[theirs].filter((v) => v).length;
 check(after > otherBefore && after <= LOOT.inmateDesk.max, `cell 2's desk is restocked (${otherBefore} → ${after} items)`);
 console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at ${woke}`);
+
+// ------------------------------------------------------------------ the workbench crafts exactly what is on it
+{
+  const fresh = () => ({ ...new Sim(CENTER_PERKS, 1).state.items, inv: [0, 0, 0, 0, 0, 0, 0, 0], int: 100 });
+  const n = itemNumber;
+  const events: never[] = [];
+  const craftNow = (st: ReturnType<typeof fresh>, slots: number[]) => craftWith(st, maskOf(slots), events);
+
+  // Every recipe, ingredients in the hotbar: one result, the ingredients gone (bar kept ones).
+  RECIPES.forEach((r) => {
+    const st = fresh();
+    r.ingredients.forEach((ing, k) => (st.inv[k] = slot(n(choices(ing)[0]))));
+    const used = r.ingredients.map((_, k) => k);
+    check(benchCheck(st, maskOf(used)).check === 'ok', `${r.result}: its ingredients make it`);
+    craftNow(st, used);
+    const carried = st.inv.filter((v) => v).map(itemOf);
+    check(carried.filter((i) => i === n(r.result)).length === 1 && carried.length === 1 + (r.keep?.length ?? 0), `${r.result}: crafted into a slot, ingredients used`);
+  });
+
+  // The worn outfit on the bench (a spare in the hotbar): the cushioned one is worn after.
+  {
+    const st = fresh();
+    st.inv = [slot(n('inmate_outfit')), slot(n('pillow')), slot(n('duct_tape')), 0, 0, 0, 0, slot(n('inmate_outfit'))];
+    craftNow(st, [SLOT.OUTFIT, 1, 2]);
+    check(itemOf(st.inv[SLOT.OUTFIT]) === n('cushioned_outfit') && itemOf(st.inv[0]) === n('inmate_outfit'), 'the worn outfit is the one crafted, and it stays worn');
+  }
+  // The wielded bat: the spiked bat is wielded after.
+  {
+    const st = fresh();
+    st.inv = [slot(n('nail_file')), slot(n('duct_tape')), slot(n('wire')), 0, 0, 0, slot(n('bat')), 0];
+    craftNow(st, [SLOT.WEAPON, 2, 1]);
+    check(itemOf(st.inv[SLOT.WEAPON]) === n('spiked_bat'), 'a weapon crafted from the wielded one is wielded');
+    check(itemOf(st.inv[0]) === n('nail_file'), 'the wire on the bench was used, not the nail file');
+  }
+  // Something not on the bench is never touched; a bench that makes nothing does nothing.
+  {
+    const st = fresh();
+    st.inv = [slot(n('sock')), slot(n('soap')), slot(n('sock')), 0, 0, 0, 0, 0];
+    craftNow(st, [0, 1, 2]);
+    check(st.inv.filter((v) => v).length === 3, 'sock + soap + sock makes nothing and keeps everything');
+  }
+  console.log(`workbench: all ${RECIPES.length} recipes craft into a slot; worn and wielded results stay on`);
+}

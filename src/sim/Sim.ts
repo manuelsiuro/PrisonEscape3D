@@ -130,14 +130,14 @@ export class Sim {
     // In a lockdown inmates head for their cells (at night they are going there anyway, to sleep).
     stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, s.player, s.step);
     // Asleep: a move (or the action button) wakes the player, and so does 07:55 (in time for roll call).
-    const woke = s.sleeping && (dirOf(cmd) !== 0 || opOf(cmd) === OP.INTERACT || clock.minuteOfDay === 7 * 60 + 55 || ROUTINE[s.routine].id !== 'lightsOut');
-    if (woke) {
+    const wokenByPlayer = s.sleeping && (dirOf(cmd) !== 0 || opOf(cmd) === OP.INTERACT);
+    if (s.sleeping && (wokenByPlayer || clock.minuteOfDay === 7 * 60 + 55 || ROUTINE[s.routine].id !== 'lightsOut')) {
       s.sleeping = false;
       this.events.push({ type: 'sleep', on: false });
     }
     walk(w, s.player, s.sleeping ? 0 : dirOf(cmd));
-    // The press that woke the player doesn't also put them back to bed.
-    this.useItems(woke ? dirOf(cmd) : cmd);
+    // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
+    this.useItems(s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
     // Attendance, and the lockdown: it lifts once the player has sat out its time in the cell.
     const zone = this.playerZone;
     if (!s.attended && ROUTINE[s.routine].zones.includes(zone)) {
@@ -213,7 +213,10 @@ export class Sim {
     s.player.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
     s.player.moving = false;
     s.sleeping = true;
-    s.items.open = -1;
+    if (s.items.open >= 0) {
+      s.items.open = -1;
+      this.events.push({ type: 'close' });
+    }
     this.events.push({ type: 'sleep', on: true });
   }
 

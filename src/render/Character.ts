@@ -119,6 +119,8 @@ export class Character {
   private readonly tray: THREE.Mesh;
   private readonly water = new THREE.Group();
   private readonly zs: THREE.Sprite[] = [];
+  /** The silhouette material (the player only). */
+  private ghost: THREE.MeshBasicMaterial | null = null;
   /** Standing under a shower head (water falls only there). */
   wet = false;
   /** The item in the right hand (its model), and which item it is. */
@@ -265,7 +267,7 @@ export class Character {
 
   /** A flat copy of every part, drawn only where something stands in front of the character. */
   private addSilhouette(color: number) {
-    const ghost = new THREE.MeshBasicMaterial({
+    const ghost = (this.ghost = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
       opacity: 0.55,
@@ -277,7 +279,7 @@ export class Character {
       stencilFail: THREE.KeepStencilOp,
       stencilZFail: THREE.KeepStencilOp,
       stencilZPass: THREE.KeepStencilOp,
-    });
+    }));
     const meshes: THREE.Mesh[] = [];
     this.root.traverse((o) => o instanceof THREE.Mesh && meshes.push(o));
     for (const m of meshes) {
@@ -366,6 +368,8 @@ export class Character {
     this.body.position.y = bob * (1 - this.lie);
     this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie;
 
+    // In bed the blanket covers the body: no silhouette through it.
+    if (this.ghost) this.ghost.visible = this.lie < 0.3;
     // What goes with the activity: the blanket and Zs, the tray, the water.
     this.blanket.visible = this.lie > 0.6;
     this.blanket.scale.z = THREE.MathUtils.smoothstep(this.lie, 0.6, 1);

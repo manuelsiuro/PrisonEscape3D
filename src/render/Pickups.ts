@@ -3,6 +3,27 @@ import { itemDef } from '../content/items';
 import { itemGeometry } from './itemModels';
 import { kitMaterial } from './kit';
 
+/** A soft warm glow, drawn once and shared, so items on the floor catch the eye. */
+let glowTexture: THREE.CanvasTexture | null = null;
+function glow(): THREE.CanvasTexture {
+  if (glowTexture) return glowTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(32, 32, 2, 32, 32, 31);
+  grad.addColorStop(0, 'rgba(255, 236, 170, 0.95)');
+  grad.addColorStop(0.45, 'rgba(255, 210, 110, 0.45)');
+  grad.addColorStop(1, 'rgba(255, 200, 90, 0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  glowTexture = new THREE.CanvasTexture(c);
+  glowTexture.colorSpace = THREE.SRGBColorSpace;
+  return glowTexture;
+}
+
+/** How much bigger an item lies on the floor than its model (it has to read from the camera). */
+const FLOOR_SCALE = 1.35;
+
 /** An item lying on the floor (tile coordinates of its middle). */
 export interface GroundItem {
   x: number;
@@ -26,6 +47,9 @@ export interface Focus {
 export class Pickups {
   readonly group = new THREE.Group();
   private readonly pool: THREE.Mesh[] = [];
+  private readonly glows: THREE.Mesh[] = [];
+  private readonly glowGeometry = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  private readonly glowMat = new THREE.MeshBasicMaterial({ map: glow(), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 });
   private readonly frame = new THREE.Group();
   private readonly frameMat = new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
   private shown = 0;
@@ -53,19 +77,28 @@ export class Pickups {
     while (this.pool.length < items.length) {
       const m = new THREE.Mesh(undefined, kitMaterial);
       m.castShadow = true;
+      m.scale.setScalar(FLOOR_SCALE);
+      const halo = new THREE.Mesh(this.glowGeometry, this.glowMat);
+      halo.renderOrder = 2;
       this.pool.push(m);
-      this.group.add(m);
+      this.glows.push(halo);
+      this.group.add(m, halo);
     }
     this.pool.forEach((m, k) => {
       const it = items[k];
-      m.visible = !!it;
+      const halo = this.glows[k];
+      m.visible = halo.visible = !!it;
       if (!it) return;
       m.geometry = itemGeometry(itemDef(it.item));
       // Several on one tile fan out; each lies at its own angle.
       const spin = (it.item * 2.4 + k * 1.7) % (Math.PI * 2);
-      const fan = items.slice(0, k).filter((o) => o.x === it.x && o.z === it.z).length;
+      let fan = 0;
+      for (let j = 0; j < k; j++) if (items[j].x === it.x && items[j].z === it.z) fan++;
       m.position.set(it.x + Math.cos(spin) * 0.18 * Math.min(fan, 2), 0.01, it.z + Math.sin(spin) * 0.18 * Math.min(fan, 2));
       m.rotation.y = spin;
+      // The glow breathes, each at its own pace.
+      halo.position.set(m.position.x, 0.02, m.position.z);
+      halo.scale.setScalar(0.95 + (motion ? Math.sin(time * 2.4 + k * 1.3) * 0.12 : 0));
     });
 
     // The focus frame eases in, breathes, and snaps to the new target.
@@ -87,6 +120,8 @@ export class Pickups {
 
   dispose() {
     this.frameMat.dispose();
+    this.glowMat.dispose();
+    this.glowGeometry.dispose();
     (this.frame.children[0].children[0] as THREE.Mesh).geometry.dispose();
   }
 }

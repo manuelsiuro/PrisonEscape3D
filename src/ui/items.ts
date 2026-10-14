@@ -1,7 +1,7 @@
 import { itemDef, ITEMS } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { OP, SLOT } from '../sim/command';
-import { HOTBAR, ingredientSlots, itemOf, recipeFor, usesOf, type ItemState } from '../sim/systems/items';
+import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
 import { itemIcons } from '../render/itemIcons';
 import { t, type Key } from '../i18n';
 import { h, setText, TOUCH } from './dom';
@@ -13,8 +13,8 @@ export interface ItemsView {
   /** The open container's title and its hidden slot count. */
   boxTitle: string;
   boxHidden: number;
-  /** What the action button would do now ("Search desk"), or null. */
-  action: string | null;
+  /** What the action button would do now: a verb ("Search") and what to ("your desk"), or null. */
+  action: { verb: string; what: string } | null;
   sleeping: boolean;
 }
 
@@ -59,7 +59,13 @@ export class ItemsUI {
   private craftOpen = false;
   /** The hand slot whose item menu (drop, wear) is open. */
   private menu: number | null = null;
-  private shownKey = '';
+  /** Bumped by any UI-side change (picked, bench, tab…); with the sim's rev it decides a redraw. */
+  private uiRev = 0;
+  private drawn = '';
+  private simRev = -1;
+  private drawnUi = -1;
+  /** What each carried slot held at the last redraw (an arrival pops the slot). */
+  private lastInv: number[] = [];
   /** Called when the player wants to interact (the action button). */
   onAction: () => void = () => {};
 
@@ -111,6 +117,8 @@ export class ItemsUI {
     this.info.addEventListener('click', (e) => this.infoClick(e));
     this.toastEl = h('div', 'item-toast hidden');
     document.body.append(this.bar, this.act, this.prompt, this.box, this.craft, this.info, this.toastEl);
+    // Clicking a slot must not leave it focused: Space and Enter belong to the game.
+    for (const el of [this.bar, this.act, this.box, this.craft, this.info]) el.addEventListener('mousedown', (e) => e.preventDefault());
   }
 
   show(on: boolean) {
@@ -120,8 +128,10 @@ export class ItemsUI {
       this.craftOpen = false;
       this.picked = this.menu = null;
       this.bench = [];
-      this.shownKey = '';
+      this.tab = 'bench';
+      this.uiRev++;
       this.view = null;
+      this.lastInv = [];
     }
   }
 
@@ -136,13 +146,22 @@ export class ItemsUI {
     this.picked = this.menu = null;
   }
 
+  /** The workbench, if open, closes (a container opening takes the panel's place). */
+  closeCraft() {
+    if (this.craftOpen) this.toggleCraft();
+  }
+
+  get craftIsOpen() {
+    return this.craftOpen;
+  }
+
   toggleCraft() {
     this.click();
     this.craftOpen = !this.craftOpen;
     this.bench = [];
     this.picked = this.menu = null;
     if (this.craftOpen && (this.view?.items.open ?? -1) >= 0) this.send(OP.CLOSE);
-    this.shownKey = '';
+    this.uiRev++;
   }
 
   /** A short note over the hotbar ("Your pockets are full", "Crafted: …"). */
@@ -167,7 +186,7 @@ export class ItemsUI {
       const at = this.bench.indexOf(addr);
       if (at >= 0) this.bench.splice(at, 1);
       else if (this.bench.length < 3) this.bench.push(addr);
-      this.shownKey = '';
+      this.uiRev++;
       return;
     }
     if (it.open >= 0) {
@@ -178,7 +197,7 @@ export class ItemsUI {
         if (addr !== this.picked) this.send(OP.MOVE, this.picked, addr);
         this.picked = null;
       }
-      this.shownKey = '';
+      this.uiRev++;
       return;
     }
     // No panel: hold it in hand; tap the held item again for its menu.
@@ -188,7 +207,7 @@ export class ItemsUI {
         this.menu = null;
       } else this.menu = this.menu === addr || !value ? null : addr;
     } else this.menu = this.menu === addr || !value ? null : addr;
-    this.shownKey = '';
+    this.uiRev++;
   }
 
   private infoClick(e: Event) {
@@ -212,7 +231,7 @@ export class ItemsUI {
       }
     }
     this.menu = this.picked = null;
-    this.shownKey = '';
+    this.uiRev++;
   }
 
   private craftClick(e: Event) {
@@ -223,29 +242,30 @@ export class ItemsUI {
     if (tab === 'bench' || tab === 'book') {
       this.click();
       this.tab = tab;
-      this.shownKey = '';
+      this.uiRev++;
       return;
     }
     if (target.closest('[data-close]')) return this.toggleCraft();
     if (target.closest('[data-clear]')) {
       this.click();
       this.bench = [];
-      this.shownKey = '';
+      this.uiRev++;
       return;
     }
     const bench = target.closest<HTMLElement>('[data-bench]');
     if (bench) {
       this.click();
       this.bench.splice(Number(bench.dataset.bench), 1);
-      this.shownKey = '';
+      this.uiRev++;
       return;
     }
     const make = target.closest<HTMLElement>('[data-make]');
     if (make) {
       this.click();
-      this.send(OP.CRAFT, Number(make.dataset.make));
+      // Exactly the slots on the bench: the sim crafts from those, not from look-alikes.
+      this.send(OP.CRAFT, maskOf(this.bench));
       this.bench = [];
-      this.shownKey = '';
+      this.uiRev++;
       return;
     }
     const recipe = target.closest<HTMLElement>('[data-recipe]');
@@ -257,23 +277,32 @@ export class ItemsUI {
         this.bench = used;
         this.tab = 'bench';
       } else this.toast(t('craft.nothing'));
-      this.shownKey = '';
+      this.uiRev++;
     }
   }
 
   update(v: ItemsView) {
     this.view = v;
     const it = v.items;
-    // Bench entries that emptied (crafted, dropped) fall off.
-    this.bench = this.bench.filter((a) => it.inv[a]);
-    if (this.picked !== null && it.open < 0) this.picked = null;
-    if (this.menu !== null && !it.inv[this.menu]) this.menu = null;
-    const key = `${it.rev}|${this.picked}|${this.bench.join()}|${this.tab}|${this.craftOpen}|${this.menu}|${v.boxTitle}`;
+    // Bench entries that emptied (crafted, dropped) fall off; picks of a closed box go.
+    for (let k = this.bench.length - 1; k >= 0; k--) if (!it.inv[this.bench[k]]) (this.bench.splice(k, 1), this.uiRev++);
+    if (this.picked !== null && it.open < 0) (this.picked = null), this.uiRev++;
+    if (this.menu !== null && !it.inv[this.menu]) (this.menu = null), this.uiRev++;
     this.updateAction(v);
-    if (key === this.shownKey) return;
-    this.shownKey = key;
+    this.bar.classList.toggle('asleep', v.sleeping);
+    // Redraw only on a change: the sim's item revision, the UI's own, or the language.
+    if (it.rev === this.simRev && this.uiRev === this.drawnUi && v.boxTitle === this.drawn) return;
+    this.simRev = it.rev;
+    this.drawnUi = this.uiRev;
+    this.drawn = v.boxTitle;
 
     this.slots.forEach((s, k) => {
+      // Something new landed here: a little pop (not on the first draw).
+      if (this.lastInv.length && it.inv[k] && itemOf(it.inv[k]) !== itemOf(this.lastInv[k] ?? 0)) {
+        s.classList.remove('arrive');
+        void s.offsetWidth;
+        s.classList.add('arrive');
+      }
       s.innerHTML = slotInner(it.inv[k]) || (k === SLOT.WEAPON ? icon('sword', 18) : k === SLOT.OUTFIT ? icon('shirt', 18) : '');
       s.classList.toggle('filled', !!it.inv[k]);
       s.classList.toggle('hand', k === it.hand && !this.craftOpen && it.open < 0);
@@ -282,10 +311,10 @@ export class ItemsUI {
       s.title = it.inv[k] ? itemName(itemOf(it.inv[k])) : k === SLOT.WEAPON ? t('items.weapon') : k === SLOT.OUTFIT ? t('items.outfit') : '';
     });
 
+    this.lastInv = it.inv.slice();
     // The open container.
     const box = it.containers[it.open];
     this.box.classList.toggle('hidden', !box);
-    document.body.classList.toggle('panel-open', !!box || this.craftOpen);
     if (box) {
       setText(this.boxTitle, v.boxTitle);
       const cell = (k: number) => `<button class="slot${box[k] ? ' filled' : ''}${this.picked === SLOT.CONTAINER + k ? ' picked' : ''}" data-addr="${SLOT.CONTAINER + k}" title="${box[k] ? itemName(itemOf(box[k])) : ''}">${slotInner(box[k])}</button>`;
@@ -302,33 +331,36 @@ export class ItemsUI {
 
   /** The action button (touch) or the key prompt (keyboard), following what's in reach. */
   private updateAction(v: ItemsView) {
-    const label = v.sleeping ? t('act.wake') : v.action;
-    const show = !!label && !this.craftOpen;
+    const a = v.sleeping ? { verb: t('act.wake'), what: '' } : v.action;
+    const show = !!a && !this.craftOpen;
     this.act.classList.toggle('hidden', !show || !TOUCH);
     this.prompt.classList.toggle('hidden', !show || TOUCH || v.sleeping);
-    if (!show || !label) return;
+    if (!show || !a) return;
+    const label = `${a.verb}|${a.what}`;
+    // A round button with the verb, and what it applies to on a tag beside it (long names fit).
     if (TOUCH) {
-      const html = `${icon(v.sleeping ? 'sun' : 'hand', 22)}<span>${label}</span>`;
-      if (this.act.dataset.label !== label) {
-        this.act.dataset.label = label;
-        this.act.innerHTML = html;
-        this.act.classList.remove('pop');
-        void this.act.offsetWidth;
-        this.act.classList.add('pop');
-      }
+      if (this.act.dataset.label === label) return;
+      this.act.dataset.label = label;
+      this.act.innerHTML = `<i class="act-round">${icon(v.sleeping ? 'sun' : 'hand', 24)}<span></span></i>${a.what ? '<b class="act-what"></b>' : ''}`;
+      this.act.querySelector('span')!.textContent = a.verb;
+      if (a.what) this.act.querySelector('b')!.textContent = a.what;
+      this.act.classList.remove('pop');
+      void this.act.offsetWidth;
+      this.act.classList.add('pop');
     } else if (this.prompt.dataset.label !== label) {
       this.prompt.dataset.label = label;
-      this.prompt.innerHTML = `<kbd>E</kbd><span>${label}</span>`;
+      this.prompt.innerHTML = `<kbd>E</kbd><span></span><b></b>`;
+      this.prompt.querySelector('span')!.textContent = a.verb;
+      this.prompt.querySelector('b')!.textContent = a.what;
     }
   }
 
   private drawCraft(it: ItemState) {
-    const items = this.bench.map((a) => itemOf(it.inv[a]));
-    const r = items.length ? recipeFor(items) : -1;
+    const { recipe: r, check } = benchCheck(it, maskOf(this.bench));
     const resultN = r >= 0 ? ITEMS.findIndex((d) => d.id === RECIPES[r].result) + 1 : 0;
-    const can = r >= 0 && it.int >= RECIPES[r].int;
+    const can = check === 'ok';
     let msg = TOUCH ? t('craft.pick') : t('craft.pickKeys');
-    if (items.length && r < 0) msg = t('craft.nothing');
+    if (this.bench.length && r < 0) msg = t('craft.nothing');
     if (r >= 0) msg = can ? t('craft.make', { item: itemName(resultN) }) : t('craft.needInt', { n: RECIPES[r].int, have: it.int });
     const bench = [0, 1, 2]
       .map((k) => (this.bench[k] !== undefined ? `<button class="slot filled" data-bench="${k}">${slotInner(it.inv[this.bench[k]])}</button>` : `<i class="slot empty"></i>`))
@@ -349,7 +381,7 @@ export class ItemsUI {
         this.tab === 'bench'
           ? `<div class="bench">${bench}<i class="bench-arrow">${icon('chevronRight', 20)}</i><i class="slot result${resultN ? ' filled' : ''}${r >= 0 && !can ? ' locked' : ''}">${resultN ? slotInner(resultN) : ''}</i></div>
         <p class="bench-msg${r >= 0 && !can ? ' warn' : ''}">${msg}</p>
-        <div class="bench-actions"><button class="big-btn ghost small" data-clear ${this.bench.length ? '' : 'disabled'}>${t('craft.clear')}</button><button class="big-btn primary small" ${can ? `data-make="${r}"` : 'disabled'}>${icon('hammer', 18)}${t('craft.open')}</button></div>
+        <div class="bench-actions"><button class="big-btn ghost small" data-clear ${this.bench.length ? '' : 'disabled'}>${t('craft.clear')}</button><button class="big-btn primary small" ${can ? 'data-make' : 'disabled'}>${icon('hammer', 18)}${t('craft.open')}</button></div>
         <p class="bench-int">${t('craft.int', { n: it.int })}</p>`
           : `<div class="book">${book}</div>`
       }`;

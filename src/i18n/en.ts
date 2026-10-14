@@ -199,8 +199,6 @@ export const en = {
   "items.take": "Take",
   "items.store": "Store",
   "items.empty": "Empty",
-  "act.pickUp": "Pick up {item}",
-  "act.search": "Search {thing}",
   "act.sleep": "Sleep",
   "act.wake": "Wake up",
   "thing.desk": "desk",
@@ -234,6 +232,8 @@ export const en = {
   "hint.interactKeys": "%KeyE% to search, pick up or sleep · 1–6 to hold an item",
   "hint.interactTouch": "Tap the action button to search or pick up",
   "hint.items": "Desks hide useful things. Your desk's top row is a hidden compartment.",
+  "act.pickUpVerb": "Pick up",
+  "act.searchVerb": "Search",
 };
 
 export type Strings = typeof en;

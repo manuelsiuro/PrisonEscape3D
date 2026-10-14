@@ -23,7 +23,7 @@ export const HOTBAR = 6;
 export const START_INT = 40;
 /** How close the player must be to use something (units from the body's middle to its footprint). */
 export const REACH = Math.round(UNIT * 0.85);
-const PICKUP_REACH = Math.round(UNIT * 0.8);
+const PICKUP_REACH = Math.round(UNIT * 0.95);
 
 /** Everything about items in the state. */
 export interface ItemState {
@@ -245,26 +245,40 @@ export function canCraft(s: ItemState, recipe: number): CraftCheck {
   return s.int >= r.int ? 'ok' : 'int';
 }
 
+/** A set of carried slots as a bit mask (bit k = slot k, 0–7), and back. */
+export const maskOf = (slots: readonly number[]) => slots.reduce((m, k) => m | (1 << k), 0);
+export const slotsOf = (mask: number) => [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => (mask >> k) & 1);
+
+/** What the slots on the workbench would make: the recipe (or -1) and whether it can be made now. */
+export function benchCheck(s: ItemState, mask: number): { recipe: number; check: CraftCheck } {
+  const used = slotsOf(mask);
+  if (!used.length || used.some((k) => !s.inv[k])) return { recipe: -1, check: 'missing' };
+  const recipe = recipeFor(used.map((k) => itemOf(s.inv[k])));
+  if (recipe < 0) return { recipe, check: 'missing' };
+  return { recipe, check: s.int >= RECIPES[recipe].int ? 'ok' : 'int' };
+}
+
 /**
- * Crafts a recipe from what the player carries: the ingredients go, the result takes the
- * first freed slot it fits (a crafted outfit stays on), kept items (a guard key) come back.
+ * Crafts from exactly the carried slots the player put on the workbench (a mask): those
+ * ingredients go, kept items (a guard key) come back, and the result takes a freed slot: the
+ * outfit or weapon slot if it came from there and fits, else a freed hotbar slot.
  */
-export function craft(s: ItemState, recipe: number, events: ItemEvent[]) {
-  if (canCraft(s, recipe) !== 'ok') return;
+export function craft(s: ItemState, mask: number, events: ItemEvent[]) {
+  const { recipe, check } = benchCheck(s, mask);
+  if (check !== 'ok') return;
   const r = RECIPES[recipe];
-  const used = ingredientSlots(s, recipe)!;
+  const used = slotsOf(mask);
   const kept = (r.keep ?? []).map(itemNumber);
   for (const k of used) {
-    const item = itemOf(s.inv[k]);
-    const back = kept.indexOf(item);
+    const back = kept.indexOf(itemOf(s.inv[k]));
     if (back >= 0) kept.splice(back, 1);
     else s.inv[k] = 0;
   }
   const result = itemNumber(r.result);
   const made = slot(result);
-  // A crafted outfit stays worn; otherwise the first freed hotbar slot, then any freed slot it fits.
   const freed = used.filter((k) => !s.inv[k]);
-  const target = freed.find((k) => k === SLOT.OUTFIT && fits(k, made)) ?? freed.find((k) => k < HOTBAR) ?? freed.find((k) => fits(k, made)) ?? freeHotbar(s);
+  // Every recipe frees a slot the result fits (itemtest proves it), so this always finds one.
+  const target = freed.find((k) => (k === SLOT.OUTFIT || k === SLOT.WEAPON) && fits(k, made)) ?? freed.find((k) => k < HOTBAR) ?? freed.find((k) => fits(k, made)) ?? freeHotbar(s);
   if (target < 0) return;
   s.inv[target] = made;
   const first = !s.known.includes(recipe);
