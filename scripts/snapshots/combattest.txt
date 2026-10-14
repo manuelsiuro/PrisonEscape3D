@@ -13,3 +13,5 @@ green key: through the yard door, stopped at row 60 by the gate (perimeter)
 shiv: 4 strokes on the wall → comb_shiv
 floored by an inmate: woke in the infirmary (day 1 08:34), health 90, lighter taken
 restored mid-fight at step 17: plays on the same (6 hotbar slots, inmate down), 490 min
+kit farming: 1 baton(s) from two knockouts of one guard
+floored at heat 50: woke in the infirmary, heat 42

@@ -18,7 +18,7 @@ import { lineOfSight } from './sim/ai/sight';
 import type { BedPose } from './render/Character';
 import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
-import { CHOCOLATE_ENERGY, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, THROW_RANGE, UNIT, WALK_SPEED } from './sim/tuning';
+import { CHOCOLATE_ENERGY, KO_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, THROW_RANGE, UNIT, WALK_SPEED } from './sim/tuning';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
 import { TILE } from './sim/world/tiles';
 import { climbTarget, DIRT, facesProp, ladderFootOf, preferClimb, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
@@ -151,10 +151,20 @@ controls.onTap = (cx, cy) => {
   // A tap on someone: lock on to them (GDD §10.1), unless they're already the target (then walk to them).
   const sim = game.rec.sim;
   if (sim.state.layer === LAYER.GROUND) {
-    const near = (b: Body) => (b.x / UNIT - p.x) ** 2 + (b.z / UNIT - 0.25 - p.z) ** 2 < 0.55 ** 2;
+    // On screen, against each one's middle (a tap on the head or the torso counts, not just the feet).
     const list = lockCandidates(w, sim.state, sim.state.player, lockList);
-    const who = list.find((id) => near(personOf(sim.state, id)!.body));
-    if (who !== undefined && who !== sim.state.lock) {
+    let who = -1;
+    let bestPx = TAP_PERSON_PX * TAP_PERSON_PX;
+    for (const id of list) {
+      const at = view.screenOf(id, floatPoint, 0.75);
+      if (!at) continue;
+      const d = (at.x - cx) ** 2 + (at.y - cy) ** 2;
+      if (d < bestPx) {
+        bestPx = d;
+        who = id;
+      }
+    }
+    if (who >= 0 && who !== sim.state.lock) {
       sendOp(OP.LOCK, 2 + who);
       return;
     }
@@ -185,6 +195,8 @@ controls.onTap = (cx, cy) => {
 };
 
 const lockList: number[] = [];
+/** How close (CSS px) a tap must land to someone's middle to lock on to them. */
+const TAP_PERSON_PX = 40;
 
 /** Where the floor arrows lead now: the routine's place while the player hasn't checked in, the cell in a lockdown. */
 function guideTarget(sim: Sim): ((i: number) => boolean) | null {
@@ -476,7 +488,8 @@ function announce(e: SimEvent, sim: Sim) {
       break;
     // ---------------------------------------------------------------- combat
     case 'lock':
-      sound.lockOn(e.who >= 0);
+      // The lock letting go of someone just knocked out: the knockout says it.
+      if (e.who >= 0 || !sim.events.some((x) => x.type === 'koed')) sound.lockOn(e.who >= 0);
       if (e.who >= 0) coachOnce('fight', TOUCH ? 'hint.fightTouch' : 'hint.fightKeys');
       break;
     case 'hit':
@@ -489,6 +502,7 @@ function announce(e: SimEvent, sim: Sim) {
       sound.splash();
       buzz('giveWay');
       view.throwAt(e.who);
+      thrownAt = performance.now();
       break;
     case 'cantHit': {
       const now = performance.now();
@@ -504,14 +518,23 @@ function announce(e: SimEvent, sim: Sim) {
       combatUI.hurt(e.dmg >= 25);
       if (e.by >= 0) view.blow(e.by, -1, false);
       floatAt(-1, `${e.dmg}`, 'taken');
-      // Hit while working or crawling: whatever the hand was doing stops.
-      tools.release();
+      // Hit while working: the tool stops (a fight goes on: a held Hit button keeps swinging).
+      if (!toolNow?.attack) tools.release();
       break;
-    case 'koed':
-      sound.ko();
-      floatAt(e.who, t('combat.ko'), 'ko');
-      coachOnce('loot', 'hint.loot');
+    case 'koed': {
+      // Knocked out by a thrown cup: the stars when it lands, not while it's in the air.
+      const who = e.who;
+      const g0 = game;
+      const land = () => {
+        if (game !== g0) return;
+        sound.ko();
+        floatAt(who, t('combat.ko'), 'ko');
+        coachOnce('loot', 'hint.loot', { s: KO_STEPS / STEPS_PER_SECOND });
+      };
+      if (performance.now() - thrownAt < 100) setTimeout(land, THROW_FLIGHT_MS);
+      else land();
       break;
+    }
     case 'floored':
       sound.thud();
       buzz('lockdown');
@@ -528,6 +551,10 @@ function announce(e: SimEvent, sim: Sim) {
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
 }
 
+/** When a cup was last thrown (real ms), and how long it's in the air (View's flight). */
+let thrownAt = -1e9;
+const THROW_FLIGHT_MS = 320;
+
 /** A number (or word) floating up from someone (Cast id, -1 the player). */
 const floatPoint = { x: 0, y: 0 };
 function floatAt(id: number, text: string, kind: 'dealt' | 'taken' | 'ko') {
@@ -541,10 +568,10 @@ const NEED: Record<string, string> = {
 let lastCant = 0;
 
 /** A tip shown the first time something happens (and never again). */
-function coachOnce(name: string, key: Key) {
+function coachOnce(name: string, key: Key, params?: Record<string, string | number>) {
   if (hasSeen(name)) return;
   markSeen(name);
-  banner.toast(t(key), 'info', 7000);
+  banner.toast(t(key, params), 'info', 7000);
 }
 
 /** A short fade from black when a game starts. */
@@ -785,8 +812,8 @@ function usePress() {
 let pressQueued = false;
 
 /** What the held button is working on: when it changes (the earth gave way, a cave-in), the hold ends. */
-let toolKey = '';
-let heldOn = '';
+let toolKey = 0;
+let heldOn = 0;
 const sleepVeil = h('div', 'sleep-veil', `<span>${''}</span>`);
 document.body.append(sleepVeil);
 
@@ -819,7 +846,7 @@ function boxTitle(sim: Sim, index: number) {
     titleKey = key;
     const name = thingName(sim, index);
     titleText = name.charAt(0).toUpperCase() + name.slice(1);
-    if (who >= 0) titleText = t('box.pockets', { who: titleText, s: Math.ceil(ko / STEPS_PER_SECOND) });
+    if (who >= 0) titleText = t(isGuard(sim.state, who) ? 'box.pocketsGuard' : 'box.pocketsInmate', { s: Math.ceil(ko / STEPS_PER_SECOND) });
   }
   return titleText;
 }
@@ -869,6 +896,8 @@ function bodiesOf(sim: Sim): Body[] {
   return others;
 }
 
+/** Tool actions as numbers (the held button's target key, compared each frame without strings). */
+const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen'];
 const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword' };
 
 /** Everyone who can be looted, by Cast id (inmates, then guards); one array, refilled. */
@@ -914,6 +943,7 @@ function describeAttack(sim: Sim): ToolView | null {
 }
 
 /** The target card's contents, refilled in place. */
+let targetNameKey = -1;
 const targetView: TargetInfo = { name: '', guard: false, health: 1, str: 0, attitude: 'calm', inReach: false };
 function targetInfo(sim: Sim): TargetInfo | null {
   const s = sim.state;
@@ -921,7 +951,11 @@ function targetInfo(sim: Sim): TargetInfo | null {
   if (!f) return null;
   const v = targetView;
   const guard = isGuard(s, s.lock);
-  v.name = personName(sim, s.lock);
+  const nameKey = s.lock * 8 + (currentLang() === 'fr' ? 1 : 0);
+  if (nameKey !== targetNameKey) {
+    targetNameKey = nameKey;
+    v.name = personName(sim, s.lock);
+  }
   v.guard = guard;
   v.health = f.hp / maxHealth(f.str);
   v.str = f.str;
@@ -1043,10 +1077,12 @@ const frameData: Frame = {
   deskAside: false,
   wear: {},
   lock: -1,
+  lockHostile: false,
+  lockFar: false,
 };
 const PEEL_ACTION = { verb: '', what: '' };
 /** What the buttons would do, worked out once per simulation step. */
-const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean } = {
+const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean } = {
   step: -1,
   busy: false,
   panel: false,
@@ -1055,6 +1091,7 @@ const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb
   target: null,
   tool: null,
   canLock: false,
+  fighting: false,
 };
 const tapAt = { x: 0, z: 0 };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null };
@@ -1172,6 +1209,9 @@ function frame(now: number) {
     o.hasKey = !!pocket && (itemOf(pocket[0]) === g.guardKeys[k] || itemOf(pocket[1]) === g.guardKeys[k] || itemOf(pocket[2]) === g.guardKeys[k] || itemOf(pocket[3]) === g.guardKeys[k]);
   });
   f.lock = st.lock;
+  // The ring reads the fight: red while they're after the player, dim out of reach.
+  f.lockHostile = st.lock >= 0 && (st.lock < st.inmates.length ? st.inmates[st.lock].angry > 0 : st.guards[st.lock - st.inmates.length].mode === GUARD.CHASE);
+  f.lockFar = !!toolNow?.attack && !toolNow.fits;
   f.knockedOut = st.ko > 0;
   f.guide = g.guide;
   const dest = g.pilot.destination;
@@ -1212,6 +1252,10 @@ function frame(now: number) {
     memo.target = memo.climb ? null : reach;
     memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim));
     memo.canLock = !busy && st.layer === LAYER.GROUND && lockCandidates(sim.world, st, p, lockList).length > 0;
+    let fighting = false;
+    for (const m of st.inmates) if (m.angry > 0) fighting = true;
+    for (const x of st.guards) if (x.mode === GUARD.CHASE) fighting = true;
+    memo.fighting = fighting;
   }
   const climb = memo.climb;
   const target = memo.target;
@@ -1241,9 +1285,9 @@ function frame(now: number) {
   const fight = busy ? null : describeAttack(sim);
   toolNow = fight ?? describeTool(sim, tt, held);
   // Each new target takes a new press: a held button never digs on into the next thing.
-  toolKey = fight ? `attack:${st.lock}` : tt ? `${tt.action}:${tt.layer}:${tt.tile}` : '';
+  toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && toolKey !== heldOn) tools.release();
-  const fighting = st.lock >= 0 || st.inmates.some((m) => m.angry > 0) || st.guards.some((x) => x.mode === GUARD.CHASE);
+  const fighting = st.lock >= 0 || memo.fighting;
   tools.update(toolNow, st.energy, !!(held && itemDef(held).tool), busy || itemsUI.panelOpen, st.health / maxHealth(st.str), fighting);
   // The target card, and the lock button while anyone is in range (worked out once a step).
   combatUI.update(targetInfo(sim), memo.canLock, busy || itemsUI.panelOpen);

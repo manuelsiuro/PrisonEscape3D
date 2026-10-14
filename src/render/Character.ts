@@ -184,7 +184,7 @@ export class Character {
   /** Prone in a vent (0–1), and a tool strike's swing (1 at the blow, easing to 0). */
   private crawl = 0;
   private hit = 0;
-  /** A punch (1 at the throw, easing to 0) and a flinch from a blow taken (the same). */
+  /** A punch (1 at the blow, easing to 0) and a flinch from a blow taken (the same). */
   private jab = 0;
   private recoil = 0;
   /** The key on a guard's belt (hidden once taken). */
@@ -574,7 +574,9 @@ export class Character {
     // A punch: the right arm drawn back, then thrown straight out; the left guards the face.
     if (this.jab > 0) {
       const j = this.jab;
-      armRx = j > 0.75 ? 0.6 * ((1 - j) / 0.25) : -1.7 * (j / 0.75);
+      // Out at the blow (the event fires as it lands), held a moment, then eased home.
+      const out = Math.min(1, j * 1.6);
+      armRx = -1.7 * out * out * (3 - 2 * out);
       armLx = Math.min(armLx, -1.1 * Math.min(1, j * 2));
       armLz = -0.25 * j;
     }

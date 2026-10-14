@@ -350,7 +350,6 @@ export const en = {
   "act.throw": "Throw",
   "act.sharpen": "Sharpen",
   "thing.pockets": "pockets",
-  "box.pockets": "{who} · wakes in {s} s",
   "combat.lock": "Lock on",
   "combat.inmate": "Inmate · cell {n}",
   "combat.guard": "Guard · {key} key",
@@ -369,12 +368,14 @@ export const en = {
   "spotted.fight": "A guard saw you attack someone!",
   "spotted.keyMissing": "A guard woke up to find their key gone!",
   "toast.tooFar": "Too far: get closer",
-  "toast.sharpened": "Sharpened into a {item}",
+  "toast.sharpened": "Sharpened: {item}",
   "banner.floored": "KNOCKED OUT",
   "banner.flooredSub": "Carried to the infirmary",
   "hint.fightKeys": "Locked on. Space hits (your weapon slot, or a weapon in hand), R picks someone else. A guard who sees a fight sounds the alarm.",
   "hint.fightTouch": "Locked on. The red button hits (your weapon slot, or a weapon in hand); tap someone to pick them. A guard who sees a fight sounds the alarm.",
-  "hint.loot": "Out cold for 30 seconds: search their pockets now. A guard who wakes without their key raises the alarm, so put the key back in time.",
+  "hint.loot": "Out cold for {s} seconds: search their pockets now. A guard who wakes without their key raises the alarm, so put the key back in time.",
+  "box.pocketsGuard": "Guard's pockets · wakes in {s} s",
+  "box.pocketsInmate": "Inmate's pockets · wakes in {s} s",
 };
 
 export type Strings = typeof en;

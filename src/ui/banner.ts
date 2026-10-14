@@ -21,6 +21,8 @@ export class Banner {
     el.querySelector('b')!.textContent = title;
     el.querySelector('span')!.textContent = sub;
     document.body.append(el);
+    // What sits under the HUD (the target card) makes way while it's up.
+    document.body.classList.add('banner-up');
     this.el = el;
     this.timer = window.setTimeout(() => this.hide(), ms);
   }
@@ -30,6 +32,7 @@ export class Banner {
     const el = this.el;
     if (!el) return;
     this.el = null;
+    document.body.classList.remove('banner-up');
     el.classList.add('leaving');
     setTimeout(() => el.remove(), 400);
   }

@@ -18,6 +18,12 @@
   box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8);
   transform: translateX(-50%);
   pointer-events: none;
+  transition: top 0.28s var(--ease);
+}
+
+/* A routine or lockdown banner up under the HUD: the card slides below it. */
+.banner-up .target-card {
+  top: calc(max(12px, env(safe-area-inset-top)) + 214px);
 }
 
 .target-card.pop {
@@ -104,16 +110,51 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
-.target-bar i {
-  display: block;
-  height: 100%;
-  border-radius: 4px;
-  background: var(--health);
-  transition: width 0.25s var(--ease);
+.target-bar {
+  position: relative;
 }
 
-.target-card.low .target-bar i {
+.target-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  border-radius: 4px;
+}
+
+/* The health just lost lingers as a pale trail, then catches up. */
+.target-bar .trail {
+  background: rgba(255, 240, 220, 0.75);
+  transition: width 0.5s var(--ease) 0.35s;
+}
+
+/* The target's bar by how much is left: green, amber, red (never the player's own heart red). */
+.target-bar .fill {
+  background: #6fd45a;
+  transition:
+    width 0.18s var(--ease),
+    background 0.2s;
+}
+
+.target-card[data-health='mid'] .target-bar .fill {
+  background: #ffb02e;
+}
+
+.target-card[data-health='low'] .target-bar .fill {
   background: var(--energy-low);
+}
+
+/* A blow landed: a short jolt. */
+.target-card.hit {
+  animation: target-hit 0.26s ease-out;
+}
+
+@keyframes target-hit {
+  25% {
+    transform: translateX(calc(-50% + 4px));
+  }
+  60% {
+    transform: translateX(calc(-50% - 3px));
+  }
 }
 
 .target-row small {
@@ -188,6 +229,11 @@
   .target-card {
     top: calc(max(12px, env(safe-area-inset-top)) + 100px);
   }
+
+  /* Banners wrap on a phone: more room under them. */
+  .banner-up .target-card {
+    top: calc(max(12px, env(safe-area-inset-top)) + 252px);
+  }
 }
 
 /* Landscape phones: above the tool button. */
@@ -197,7 +243,8 @@
     bottom: calc(max(18px, env(safe-area-inset-bottom)) + 74px);
   }
 
-  .target-card {
+  .target-card,
+  .banner-up .target-card {
     top: calc(max(10px, env(safe-area-inset-top)) + 54px);
   }
 }
@@ -221,10 +268,14 @@
 }
 
 .float-num.ko {
+  /* Above the last blow's number, a beat after it. */
+  margin-top: -30px;
   font-size: 18px;
   color: white;
   letter-spacing: 0.02em;
   animation-duration: 1.3s;
+  animation-delay: 0.12s;
+  animation-fill-mode: both;
 }
 
 @keyframes float-up {
@@ -242,8 +293,15 @@
   }
 }
 
-.reduced-motion .float-num {
-  animation: float-fade 0.9s linear forwards;
+/* Reduced motion: numbers stay put and fade (the global switch would cut them to nothing). */
+body.reduced-motion .float-num {
+  animation: float-fade 0.9s linear forwards !important;
+}
+
+body.reduced-motion .target-card.pop,
+body.reduced-motion .target-card.hit,
+body.reduced-motion .energy .vital .ic {
+  animation: none !important;
 }
 
 @keyframes float-fade {
@@ -280,5 +338,16 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------ toasts clear the vitals pill */
+.has-vitals .toasts {
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 92px), var(--hint-clear, 0px));
+}
+
+@media (max-height: 520px) {
+  .has-vitals .toasts {
+    bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 84px), var(--hint-clear, 0px));
   }
 }

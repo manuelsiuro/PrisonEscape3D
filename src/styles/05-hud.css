@@ -484,3 +484,10 @@ body.reduced-motion .alarm-vignette.on {
     bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 74px), var(--hint-clear, 0px));
   }
 }
+
+/* Narrow phones: once checked in, the deadline gives way so the block keeps its name. */
+@media (max-width: 440px) {
+  .hud-routine:has(.hud-badge.done) .hud-routine-head small {
+    display: none;
+  }
+}

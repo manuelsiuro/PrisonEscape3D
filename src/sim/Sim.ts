@@ -66,7 +66,7 @@ import { containersOf } from './world/containers';
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** Where a knocked-out player wakes up. */
-export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2 } as const;
+export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2, FLOORED: 3 } as const;
 
 /** Something that happened during a step; sound, effects and the HUD read these. */
 export type SimEvent =
@@ -201,8 +201,10 @@ export interface SimState {
   lock: number;
   /** The step of the player's last blow at someone (a guard who sees it sees a fight). */
   swingAt: number;
-  /** The keyed door the player is passing through (a plastic key wears once a door), -1 elsewhere. */
+  /** The keyed door the player is passing through (a plastic key wears once a door, on the way out), -1 elsewhere. */
   doorAt: number;
+  /** A guard came round without their key while the alarm couldn't be raised (a lockdown on, the player out cold): it goes up as soon as it can. */
+  keyAlarm: boolean;
 }
 
 export interface Snapshot {
@@ -275,6 +277,7 @@ export class Sim {
       lock: -1,
       swingAt: -1000,
       doorAt: -1,
+      keyAlarm: false,
     };
     this.ladderFoot = ladderFootOf(this.world);
     // Where nobody may dig, worked out now from the map as built (never from a later state).
@@ -326,6 +329,7 @@ export class Sim {
       // are named for the shakedown during roll call.
       if (now === 0) {
         restock(w, s.items, s);
+        this.reissueKit();
         this.events.push({ type: 'restock' });
         this.shakedown();
       }
@@ -379,8 +383,9 @@ export class Sim {
     if (s.ko === 0 && s.health < maxHealth(s.str) && (s.step % HEALTH_REGEN_STEPS === 0 || (s.sleeping && s.step % (HEALTH_REGEN_STEPS / 2) === 0))) s.health++;
     // Solitary: time served (and potatoes peeled) sets the player free.
     if (s.solitary > 0 && --s.solitary === 0) this.release();
-    // Who sees the player now, and what they make of it.
+    // Who sees the player now, and what they make of it; a key alarm held back goes up now if it can.
     this.watch();
+    this.raiseKeyAlarm();
     // Out of reach through a whole lockdown: the guards call off the hunt, fix what they found,
     // and stay on the lookout (the heat stays: whoever sees the player next gives chase).
     if (s.lockdown && s.layer !== LAYER.GROUND && !this.away) {
@@ -577,6 +582,8 @@ export class Sim {
     const s = this.state;
     const solitary = s.heat >= SOLITARY_HEAT;
     s.lock = -1;
+    // The score is settled: a key alarm still held back is part of it.
+    s.keyAlarm = false;
     for (const m of s.inmates) m.angry = 0;
     s.ko = KO_STEPS;
     s.wake = solitary ? WAKE.SOLITARY : WAKE.INFIRMARY;
@@ -624,7 +631,8 @@ export class Sim {
       it.inv[SLOT.OUTFIT] = slot(INMATE_OUTFIT);
     }
     it.rev++;
-    s.heat = 0;
+    // Caught: the score is settled. Floored by an inmate or a cave-in: the heat stays.
+    if (s.wake !== WAKE.FLOORED) s.heat = 0;
     // Patched up while out cold.
     s.health = maxHealth(s.str);
     s.lock = -1;
@@ -887,27 +895,33 @@ export class Sim {
 
   /**
    * A plastic key wears a little at each door it opens (GDD §7.3: 15 uses); a real key never
-   * does. Counted once a door, as the player steps into it.
+   * does. Counted once a door, as the player steps out of it (the door stays open to them
+   * while they're in it, so the last use still gets them through). A two-wide door is one door.
    */
   private wearKeys() {
     const s = this.state;
     const w = this.world;
     const t = tileOfBody(s.player);
     const i = t.z * MAP_W + t.x;
-    if (s.layer !== LAYER.GROUND || w.ground.kind[i] !== TILE.DOOR || !w.doorShut[i]) {
-      s.doorAt = -1;
+    const inDoor = s.layer === LAYER.GROUND && w.ground.kind[i] === TILE.DOOR && w.doorShut[i] === 1;
+    const was = s.doorAt;
+    if (inDoor) {
+      s.doorAt = i;
       return;
     }
-    if (i === s.doorAt) return;
-    s.doorAt = i;
-    const it = s.items;
-    const color = w.ground.key[i];
+    if (was < 0) return;
+    s.doorAt = -1;
+    this.wearKey(w.ground.key[was]);
+  }
+
+  /** One use off a plastic key of a color (none if the player holds the real one). */
+  private wearKey(color: number) {
+    const it = this.state.items;
     let plastic = -1;
     for (let k = 0; k < HOTBAR; k++) {
       const v = it.inv[k];
       const d = v ? itemDef(itemOf(v)) : null;
       if (d?.cat !== 'key' || d.key !== color) continue;
-      // A real key: nothing wears.
       if (!d.uses) return;
       if (plastic < 0) plastic = k;
     }
@@ -986,6 +1000,7 @@ export class Sim {
       const m = f as Inmate;
       m.angry = ANGRY_STEPS;
       m.doing = DOING.NOTHING;
+      m.wait = 0;
       // Its first punch comes back quickly.
       m.swing = Math.min(m.swing, s.step - INMATE_SWING_STEPS / 2);
     }
@@ -1009,7 +1024,7 @@ export class Sim {
     f.goal = -1;
     f.wait = 0;
     f.doing = DOING.KNOCKED_OUT;
-    if (isGuard(s, who)) backToDuty(f as Guard);
+    if (isGuard(s, who)) this.resumeAfterKo(f as Guard);
     else (f as Inmate).angry = 0;
     f.doing = DOING.KNOCKED_OUT;
     if (s.lock === who) {
@@ -1037,23 +1052,57 @@ export class Sim {
       if (g.ko <= 0 || --g.ko > 0) return;
       g.hp = maxHealth(g.str);
       g.doing = DOING.NOTHING;
-      backToDuty(g);
+      this.resumeAfterKo(g);
       const id = s.inmates.length + k;
       const pockets = s.items.containers[pocketOf(w, id)];
-      const [key, ...kit] = guardKit(w, k);
-      const has = (n: number) => pockets.some((v) => itemOf(v) === n);
-      const missing = !has(key);
-      for (const n of missing ? [key, ...kit] : kit) {
-        if (has(n)) continue;
+      const key = guardKit(w, k)[0];
+      const missing = !pockets.some((v) => itemOf(v) === key);
+      // The key is radioed in (and a spare drawn); a missing baton or uniform waits for 08:00.
+      if (missing) {
+        const free = pockets.indexOf(0);
+        if (free >= 0) pockets[free] = slot(key);
+        s.items.rev++;
+        s.keyAlarm = true;
+      }
+      this.events.push({ type: 'cameTo', who: id, keyMissing: missing });
+    });
+    this.raiseKeyAlarm();
+  }
+
+  /**
+   * A missing key raises the alarm (GDD §10.2) as soon as it can: not during a lockdown
+   * (already on), nor while the player is out cold or in solitary (it waits for them).
+   */
+  private raiseKeyAlarm() {
+    const s = this.state;
+    if (!s.keyAlarm || s.lockdown || this.away) return;
+    s.keyAlarm = false;
+    this.events.push({ type: 'spotted', reason: 'keyMissing' });
+    s.spotted = SPOT.indexOf('keyMissing');
+    this.addHeat(100);
+  }
+
+  /**
+   * A guard back on its feet (or just put down): a chase or a search is over, a round starts
+   * afresh, but a bed check or shakedown under way is taken up again.
+   */
+  private resumeAfterKo(g: Guard) {
+    g.path = [];
+    g.goal = -1;
+    g.wait = 0;
+    if (g.mode !== GUARD.BED_CHECK && g.mode !== GUARD.SHAKEDOWN) backToDuty(g);
+  }
+
+  /** 08:00: guards draw a new baton or uniform from the quarters if theirs were taken (never more than one each). */
+  private reissueKit() {
+    const s = this.state;
+    const w = this.world;
+    s.guards.forEach((_, k) => {
+      const pockets = s.items.containers[pocketOf(w, s.inmates.length + k)];
+      for (const n of guardKit(w, k).slice(1)) {
+        if (pockets.some((v) => itemOf(v) === n)) continue;
         const free = pockets.indexOf(0);
         if (free >= 0) pockets[free] = slot(n);
-      }
-      s.items.rev++;
-      this.events.push({ type: 'cameTo', who: id, keyMissing: missing });
-      if (missing && !s.lockdown) {
-        this.events.push({ type: 'spotted', reason: 'keyMissing' });
-        s.spotted = SPOT.indexOf('keyMissing');
-        this.addHeat(100);
       }
     });
   }
@@ -1090,7 +1139,10 @@ export class Sim {
   private hurt(dmg: number, by: number) {
     const s = this.state;
     s.health = Math.max(0, s.health - dmg);
-    s.sleeping = false;
+    if (s.sleeping) {
+      s.sleeping = false;
+      this.events.push({ type: 'sleep', on: false });
+    }
     this.events.push({ type: 'hurt', by, dmg });
     if (s.health > 0) return;
     // Put down by a guard: caught (solitary or the infirmary). By anyone else: the infirmary.
@@ -1101,9 +1153,15 @@ export class Sim {
   /** Knocked out by an inmate or a cave-in: carried to the infirmary (contraband taken, as after a capture). */
   private floored() {
     const s = this.state;
+    // In a lockdown (or wanted), the guards pick the player up: as good as caught.
+    if (s.lockdown || s.heat >= CHASE_HEAT) {
+      this.caught();
+      return;
+    }
     s.lock = -1;
     s.ko = KO_STEPS;
-    s.wake = WAKE.INFIRMARY;
+    s.excused = true;
+    s.wake = WAKE.FLOORED;
     s.sleeping = false;
     s.player.moving = false;
     for (const m of s.inmates) m.angry = 0;
@@ -1500,6 +1558,7 @@ export class Sim {
       lock: st.lock ?? -1,
       swingAt: st.swingAt ?? -1000,
       doorAt: st.doorAt ?? -1,
+      keyAlarm: st.keyAlarm ?? false,
     };
     // The world as the state has it: the map, then every tile changed since.
     const w = this.world;

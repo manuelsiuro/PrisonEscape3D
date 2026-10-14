@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { currentLang, t } from '../i18n';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -29,13 +29,20 @@ export class CombatUI {
   private readonly card: HTMLElement;
   private readonly cardName: HTMLElement;
   private readonly cardFill: HTMLElement;
+  private readonly cardTrail: HTMLElement;
   private readonly cardStr: HTMLElement;
   private readonly cardMood: HTMLElement;
   private readonly cardIcon: HTMLElement;
   private readonly lockBtn: HTMLButtonElement;
   private readonly flash: HTMLElement;
-  private shown = '';
+  private readonly cardKeys: HTMLElement | null;
+  /** What the card shows now (redrawn only when one of these changes). */
+  private shownName = '';
+  private shownMood = '';
+  private shownStr = -1;
+  private shownReach: boolean | null = null;
   private shownHealth = -1;
+  private lang = currentLang();
   /** Pressed: lock on to the next (R on a keyboard). */
   onLock: () => void = () => {};
 
@@ -43,23 +50,43 @@ export class CombatUI {
     this.card = h(
       'div',
       'target-card hidden',
-      `<i class="target-ic"></i><span class="target-text"><span class="target-head"><b></b><em></em></span><span class="target-row"><i class="target-bar"><i></i></i><small></small></span></span>${TOUCH ? '' : `<span class="target-keys"><kbd>R</kbd><kbd class="wide">${t('key.space')}</kbd></span>`}`,
+      `<i class="target-ic"></i><span class="target-text"><span class="target-head"><b role="status" aria-live="polite"></b><em></em></span><span class="target-row"><i class="target-bar"><i class="trail"></i><i class="fill"></i></i><small></small></span></span>${TOUCH ? '' : `<span class="target-keys"><kbd>R</kbd><kbd class="wide"></kbd></span>`}`,
     );
+    this.cardKeys = this.card.querySelector('.target-keys kbd.wide');
     this.cardName = this.card.querySelector('.target-head b')!;
     this.cardMood = this.card.querySelector('.target-head em')!;
-    this.cardFill = this.card.querySelector('.target-bar i')!;
+    this.cardFill = this.card.querySelector('.target-bar .fill')!;
+    this.cardTrail = this.card.querySelector('.target-bar .trail')!;
     this.cardStr = this.card.querySelector('.target-row small')!;
     this.cardIcon = this.card.querySelector('.target-ic')!;
     this.lockBtn = h('button', 'lock-btn hidden', `<i class="lock-round">${icon('target', 24)}</i>`);
-    this.lockBtn.setAttribute('aria-label', t('combat.lock'));
+    this.lockBtn.setAttribute('aria-pressed', 'false');
+    // Pointer down for touch (no click delay); a click without one (assistive tech, keyboard) too.
+    let pointed = false;
     this.lockBtn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      pointed = true;
       this.onLock();
+    });
+    this.lockBtn.addEventListener('click', () => {
+      if (!pointed) this.onLock();
+      pointed = false;
     });
     this.lockBtn.addEventListener('contextmenu', (e) => e.preventDefault());
     this.flash = h('div', 'hurt-flash');
+    this.flash.setAttribute('aria-hidden', 'true');
+    this.relabel();
     this.flash.addEventListener('animationend', () => this.flash.classList.remove('on'));
     document.body.append(this.card, this.lockBtn, this.flash);
+  }
+
+  /** Text that follows the language: the lock button's label, the Space key. */
+  private relabel() {
+    this.lang = currentLang();
+    this.lockBtn.setAttribute('aria-label', t('combat.lock'));
+    if (this.cardKeys) this.cardKeys.textContent = t('key.space');
+    this.shownName = this.shownMood = '';
+    this.shownStr = -1;
   }
 
   show(on: boolean) {
@@ -67,7 +94,8 @@ export class CombatUI {
     this.card.classList.add('hidden');
     this.lockBtn.classList.add('hidden');
     document.body.classList.remove('has-lock');
-    this.shown = '';
+    this.shownName = '';
+    this.shownHealth = -1;
   }
 
   /**
@@ -75,38 +103,57 @@ export class CombatUI {
    * shows then), and whether controls are busy (asleep, out cold, a panel open).
    */
   update(target: TargetInfo | null, canLock: boolean, busy: boolean) {
+    if (this.lang !== currentLang()) this.relabel();
     const card = !!target && !busy;
     this.card.classList.toggle('hidden', !card);
     const btn = TOUCH && !busy && (canLock || !!target);
     this.lockBtn.classList.toggle('hidden', !btn);
     this.lockBtn.classList.toggle('on', !!target);
+    if ((this.lockBtn.getAttribute('aria-pressed') === 'true') !== !!target) this.lockBtn.setAttribute('aria-pressed', String(!!target));
     document.body.classList.toggle('has-lock', btn);
     if (!target) {
-      this.shown = '';
+      this.shownName = '';
       this.shownHealth = -1;
       return;
     }
-    const key = `${target.name}|${target.attitude}|${target.str}|${target.inReach}`;
-    if (key !== this.shown) {
-      const fresh = !this.shown.startsWith(`${target.name}|`);
-      this.shown = key;
+    // Someone new: everything is written afresh, and the card pops.
+    if (target.name !== this.shownName) {
+      this.shownName = target.name;
+      this.shownMood = '';
+      this.shownStr = -1;
+      this.shownReach = null;
+      this.shownHealth = -1;
       setText(this.cardName, target.name);
-      setText(this.cardMood, t(`attitude.${target.attitude}`));
-      setText(this.cardStr, t('combat.str', { n: target.str }));
       this.cardIcon.innerHTML = icon(target.guard ? 'shield' : 'fist', 18);
+      this.card.classList.remove('pop', 'hit');
+      void this.card.offsetWidth;
+      this.card.classList.add('pop');
+    }
+    if (target.attitude !== this.shownMood) {
+      this.shownMood = target.attitude;
+      setText(this.cardMood, t(`attitude.${target.attitude}`));
       this.card.dataset.mood = target.attitude;
+    }
+    if (target.str !== this.shownStr) {
+      this.shownStr = target.str;
+      setText(this.cardStr, t('combat.str', { n: target.str }));
+    }
+    if (target.inReach !== this.shownReach) {
+      this.shownReach = target.inReach;
       this.card.classList.toggle('far', !target.inReach);
-      if (fresh) {
-        this.card.classList.remove('pop');
-        void this.card.offsetWidth;
-        this.card.classList.add('pop');
-      }
     }
     const hp = Math.round(target.health * 100);
     if (hp !== this.shownHealth) {
+      // A blow landed: the card jolts and the bar leaves a trail (the health just lost) that catches up.
+      if (this.shownHealth >= 0 && hp < this.shownHealth) {
+        this.card.classList.remove('hit');
+        void this.card.offsetWidth;
+        this.card.classList.add('hit');
+      }
       this.shownHealth = hp;
       this.cardFill.style.width = `${hp}%`;
-      this.card.classList.toggle('low', hp <= 30);
+      this.cardTrail.style.width = `${hp}%`;
+      this.card.dataset.health = hp > 60 ? 'high' : hp > 30 ? 'mid' : 'low';
     }
   }
 
@@ -114,6 +161,9 @@ export class CombatUI {
   float(text: string, x: number, y: number, kind: 'dealt' | 'taken' | 'ko') {
     const el = h('div', `float-num ${kind}`);
     el.textContent = text;
+    el.setAttribute('aria-hidden', 'true');
+    // A little sideways scatter, so quick blows don't stack on one spot.
+    if (kind !== 'ko') x += (Math.random() - 0.5) * 24;
     el.style.left = `${Math.round(x)}px`;
     el.style.top = `${Math.round(y)}px`;
     el.addEventListener('animationend', () => el.remove());

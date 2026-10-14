@@ -7,6 +7,7 @@ import { UNIT } from '../tuning';
 import { containersOf, type ContainerInfo } from '../world/containers';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import type { Body } from './movement';
+import { lineOfSight } from '../ai/sight';
 
 /**
  * Items in the simulation (GDD §6, §8). A slot is one number: the item (ITEMS order + 1)
@@ -196,7 +197,8 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
   people.forEach((o, who) => {
     if (o.ko <= 0) return;
     const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));
-    if (d > POCKET_REACH) return;
+    // Within reach, and nothing between (never through a wall's corner).
+    if (d > POCKET_REACH || !lineOfSight(w, b.x, b.z, o.body.x, o.body.z)) return;
     const sc = score(d, o.body.x, o.body.z) - UNIT / 2;
     if (sc < bestScore) {
       bestScore = sc;

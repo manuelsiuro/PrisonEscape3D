@@ -396,5 +396,113 @@ function arena(seed = 3) {
   console.log(`restored mid-fight at step ${snap.state.step}: plays on the same (${HOTBAR} hotbar slots, inmate ${st.inmates[0].ko > 0 ? 'down' : 'up'}), ${clockAt(st.step).minuteOfDay} min`);
 }
 
+// ------------------------------------------------------------------ review fixes
+// No farming a guard's kit: a baton or uniform taken is only replaced at 08:00.
+{
+  const { sim, st, step, op, give } = arena(12);
+  const k = 4;
+  const g = st.guards[k];
+  const id = st.inmates.length + k;
+  const pocket = () => st.items.containers[pocketOf(sim.world, id)];
+  for (const m of st.inmates) freeze(m, 50, 50);
+  let batons = 0;
+  for (let round = 0; round < 2; round++) {
+    put(st.player, 30, 30);
+    plant(g, 31, 30, E);
+    give('molten_chocolate', SLOT.WEAPON);
+    op(OP.LOCK, 2 + id);
+    op(OP.USE, 1);
+    op(OP.INTERACT);
+    const b = pocket().findIndex((v) => itemOf(v) === n('baton'));
+    if (b >= 0) {
+      op(OP.MOVE, SLOT.CONTAINER + b, 5 - round);
+      batons++;
+    }
+    op(OP.CLOSE);
+    while (g.ko > 0) step();
+    step();
+  }
+  check(batons === 1 && !pocket().some((v) => itemOf(v) === n('baton')), 'a guard is not handed a new baton on coming round (no farming)');
+  console.log(`kit farming: ${batons} baton(s) from two knockouts of one guard`);
+}
+
+// A key stolen while a lockdown is on raises its own alarm once the lockdown is over.
+{
+  const { sim, st, step, op, give } = arena(13);
+  const k = 4;
+  const g = st.guards[k];
+  const id = st.inmates.length + k;
+  for (const m of st.inmates) freeze(m, 50, 50);
+  put(st.player, 30, 30);
+  plant(g, 31, 30, E);
+  give('molten_chocolate', SLOT.WEAPON);
+  op(OP.LOCK, 2 + id);
+  op(OP.USE, 1);
+  op(OP.INTERACT);
+  const pocket = st.items.containers[pocketOf(sim.world, id)];
+  op(OP.MOVE, SLOT.CONTAINER + pocket.findIndex((v) => itemOf(v) === n(`key_${sim.world.def.guards[k].key}`)), 0);
+  op(OP.CLOSE);
+  // Hide away in the tunnels (the guards can't reach the player): a lockdown on all the while.
+  st.lockdown = true;
+  st.heat = 100;
+  st.layer = 0;
+  while (g.ko > 0) step();
+  step();
+  check(st.keyAlarm, 'a key missing during a lockdown is held back');
+  st.lockdown = false;
+  st.heat = 0;
+  step();
+  check(st.lockdown && !st.keyAlarm, 'and goes up once the lockdown is over');
+}
+
+// Floored by an inmate with heat on: the heat stays (no free clean slate).
+{
+  const { sim, st, step, op, press } = arena(14);
+  const m = st.inmates[0];
+  m.str = 90;
+  m.hp = maxHealth(90);
+  put(st.player, 28, 30);
+  freeze(m, 29, 30, W);
+  st.heat = 50;
+  op(OP.LOCK);
+  press();
+  op(OP.LOCK, 1);
+  for (let k = 0; k < 600 && st.ko === 0; k++) step();
+  while (st.ko > 0) step();
+  console.log(`floored at heat 50: woke in the ${sim.playerZone}, heat ${st.heat}`);
+  check(sim.playerZone === 'infirmary' && st.heat >= 40, 'knocked out by an inmate: the heat stays (cooling as usual)');
+}
+
+// The night guard knocked out just before the bed check still does it when it comes round.
+{
+  const sim = new Sim(CENTER_PERKS, 15);
+  const st = sim.state;
+  while (clockAt(st.step).minuteOfDay !== 29 || clockAt(st.step).day < 2) {
+    st.attended = true;
+    sim.step(0);
+  }
+  const k = sim.world.def.guards.findIndex((d) => d.duties?.includes('bedCheck'));
+  const g = st.guards[k];
+  g.hp = 0;
+  g.ko = 100;
+  let checks = 0;
+  for (let s2 = 0; s2 < 60 * 20 && !checks; s2++) {
+    sim.step(0);
+    if (sim.events.some((e) => e.type === 'bedCheck' && e.result !== 'start')) checks++;
+  }
+  check(checks > 0, 'a bed check survives the guard being knocked out');
+}
+
+// A plastic key's last use still gets the player through the door.
+{
+  const { sim, st, step } = arena(16);
+  st.items.inv[0] = slot(n('plastic_key_purple'), 1);
+  st.items.rev++;
+  put(st.player, 10, 36);
+  for (let s2 = 0; s2 < 22; s2++) step(command(S));
+  const z = Math.floor(st.player.z / UNIT);
+  check(z >= 39 && !st.items.inv[0] && sim.playerZone === 'generator', 'the last use of a plastic key still opens the door');
+}
+
 // Every recipe is still craftable (weapons made in P2 are now used).
 check(RECIPES.some((r) => r.result === 'molten_chocolate'), 'molten chocolate can be crafted');

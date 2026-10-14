@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { currentLang, t } from '../i18n';
 import { h, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -34,6 +34,7 @@ export class ToolControls {
   private shown = '';
   private shownEnergy = -1;
   private shownHealth = -1;
+  private lang = currentLang();
   private ring: HTMLElement | null = null;
   private bar: HTMLElement | null = null;
   /** Held down (touch or Space). */
@@ -76,7 +77,7 @@ export class ToolControls {
   show(on: boolean) {
     if (!on) {
       for (const el of [this.btn, this.prompt, this.energy]) el.classList.add('hidden');
-      document.body.classList.remove('has-tool', 'tool-up');
+      document.body.classList.remove('has-tool', 'tool-up', 'has-vitals');
       this.shown = '';
       this.shownEnergy = -1;
       this.shownHealth = -1;
@@ -125,7 +126,14 @@ export class ToolControls {
     const hp = Math.round(health * 100);
     const showEnergy = toolInHand || e < 100;
     const showHealth = fighting || hp < 100;
-    this.energy.classList.toggle('hidden', !(showEnergy || showHealth) || blocked);
+    const vitals = (showEnergy || showHealth) && !blocked;
+    this.energy.classList.toggle('hidden', !vitals);
+    document.body.classList.toggle('has-vitals', vitals);
+    // A language change rewrites the bars' titles.
+    if (currentLang() !== this.lang) {
+      this.lang = currentLang();
+      this.shownEnergy = this.shownHealth = -1;
+    }
     this.energyPart.classList.toggle('hidden', !showEnergy);
     this.healthPart.classList.toggle('hidden', !showHealth);
     if (e !== this.shownEnergy) {

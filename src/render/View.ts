@@ -60,6 +60,9 @@ export interface Frame {
   wear: Readonly<Record<number, number>>;
   /** Who the player is locked on to (Cast id: inmates, then guards; -1 none), and whether that's a guard after them. */
   lock: number;
+  /** The target is after the player (the ring turns red), or out of reach (it dims). */
+  lockHostile: boolean;
+  lockFar: boolean;
 }
 
 export interface GuardFrame {
@@ -143,7 +146,8 @@ function lockRing(): THREE.Mesh {
   const merged = new THREE.BufferGeometry();
   merged.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   for (const x of [g, ...ticks, ...all]) x.dispose();
-  const m = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false }));
+  // Depth-tested (walls and the target's own legs stand in front of it), nudged toward the camera over the floor.
+  const m = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
   m.renderOrder = 8;
   m.visible = false;
   return m;
@@ -395,10 +399,10 @@ export class View {
   }
 
   /** Where someone's head is on screen (CSS pixels), for floating numbers; null off screen. */
-  screenOf(id: number, out: { x: number; y: number }): { x: number; y: number } | null {
+  screenOf(id: number, out: { x: number; y: number }, height = 1.7): { x: number; y: number } | null {
     const c = this.who(id);
     if (!c) return null;
-    this.v.copy(c.root.position).setY(c.root.position.y + 1.7).project(this.camera);
+    this.v.copy(c.root.position).setY(c.root.position.y + height).project(this.camera);
     if (this.v.z > 1 || Math.abs(this.v.x) > 1.1 || Math.abs(this.v.y) > 1.1) return null;
     out.x = ((this.v.x + 1) / 2) * innerWidth;
     out.y = ((1 - this.v.y) / 2) * innerHeight;
@@ -564,7 +568,10 @@ export class View {
     this.ring.visible = !!target && f.layer === LAYER.GROUND;
     if (target) {
       const pulse = this.reducedMotion ? 1 : 1 + Math.sin(time * 6) * 0.06;
-      this.ring.position.set(target.x, 0.04, target.z);
+      this.ring.position.set(target.x, 0.03, target.z);
+      const mat = this.ring.material as THREE.MeshBasicMaterial;
+      mat.color.setHex(f.lockHostile ? 0xff4a3a : 0xffb02e);
+      mat.opacity = f.lockFar ? 0.45 : 0.92;
       this.ring.scale.setScalar(pulse);
       this.ring.rotation.y = this.reducedMotion ? 0 : time * 0.8;
     }
