@@ -211,3 +211,24 @@
 .solitary-veil.on {
   opacity: 1;
 }
+
+/* Knocked out: the label in the middle of the screen, clear of the toasts. */
+.sleep-veil.ko {
+  place-items: center;
+  padding-bottom: 0;
+}
+
+/* Narrow phones: the heat meter gives the routine pill room (the eye stays). */
+@media (max-width: 440px) {
+  .hud .hud-heat {
+    gap: 4px;
+  }
+
+  .hud-heat-bar {
+    width: 34px;
+  }
+
+  .hud-heat b {
+    min-width: 30px;
+  }
+}

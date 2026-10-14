@@ -9,7 +9,7 @@ import { canSee } from './ai/sight';
 import { craft, dropItem, equip, HOTBAR, interactTarget, itemOf, moveItem, pickUp, restock, slot, startItems, stillInReach, type ItemEvent, type ItemState } from './systems/items';
 import { fnv1a, randomInt } from './rng';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
-import { assign, awake, backToDuty, CATCH_RANGE, GUARD, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
+import { assign, awake, backToDuty, cancelTasks, CATCH_RANGE, GUARD, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, spawnInmates, stepInmates, type Inmate } from './systems/inmates';
 import { bodyAt, tileOfBody, walk, type Body } from './systems/movement';
 import {
@@ -20,6 +20,7 @@ import {
   KO_STEPS,
   LIGHTS_OUT_GRACE,
   MISSED_ROUTINE_HEAT,
+  PEEL_STEPS,
   POTATO_PRESSES,
   POTATO_STEPS,
   RECOGNIZE_RANGE,
@@ -103,6 +104,8 @@ export interface SimState {
   spotted: number;
   /** Steps a disguised player has spent close to a guard. */
   near: number;
+  /** The step of the last stroke of the peeler (presses come at most every PEEL_STEPS). */
+  peelAt: number;
 }
 
 export interface Snapshot {
@@ -123,6 +126,9 @@ export class Sim {
   state: SimState;
   /** What happened during the last step. */
   events: SimEvent[] = [];
+  private readonly forInmates: Body[] = [];
+  private readonly inmateBodies: Body[] = [];
+  private readonly onReport = (r: GuardReport) => this.report(r);
 
   constructor(
     readonly prison: PrisonDef,
@@ -152,6 +158,7 @@ export class Sim {
       peeled: 0,
       spotted: 0,
       near: 0,
+      peelAt: 0,
     };
     this.updateDoors(false);
   }
@@ -179,6 +186,13 @@ export class Sim {
       }
       s.routine = now;
       s.attended = false;
+      // Night jobs end with the night, the morning's with Lights Out (a long chase may have held them up).
+      const night = ROUTINE[now].id === 'lightsOut';
+      s.guards.forEach((g, i) => {
+        const duties = w.def.guards[i].duties ?? [];
+        if (!night && duties.includes('bedCheck')) cancelTasks(g, GUARD.BED_CHECK);
+        if (night && duties.includes('shakedown')) cancelTasks(g, GUARD.SHAKEDOWN);
+      });
       s.excused = s.lockdown || this.away;
       this.events.push({ type: 'routine', routine: now });
       // A new day: desks, shelves and counters are stocked again (GDD §6.2), and two cells
@@ -193,18 +207,16 @@ export class Sim {
     if (s.step % STEPS_PER_MINUTE === 0 && (clock.minuteOfDay === 30 || clock.minuteOfDay === 240)) this.bedCheck();
     // Everyone moves.
     // In a lockdown inmates head for their cells (at night they are going there anyway, to sleep).
-    const guardBodies = s.guards.map((g) => g.body);
-    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, [s.player, ...guardBodies], s.step);
-    stepGuards(
-      w,
-      s.guards,
-      s.routine,
-      s.lockdown,
-      s.player,
-      s.inmates.map((m) => m.body),
-      s.step,
-      (r) => this.report(r),
-    );
+    // Who each group shares the floor with (arrays reused: asleep, hundreds of steps run a second).
+    const forInmates = this.forInmates;
+    const inmateBodies = this.inmateBodies;
+    forInmates.length = 0;
+    forInmates.push(s.player);
+    for (const g of s.guards) forInmates.push(g.body);
+    inmateBodies.length = 0;
+    for (const m of s.inmates) inmateBodies.push(m.body);
+    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, forInmates, s.step);
+    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport);
     // Knocked out: nothing to do but lie there, then wake up somewhere else.
     if (s.ko > 0) {
       s.player.moving = false;
@@ -235,6 +247,11 @@ export class Sim {
     // Doors last: they follow where everyone ended up, so the state at the end of a step
     // (a save, a keyframe) says everything about them.
     this.updateDoors(true);
+  }
+
+  /** Bed means sleep: Lights Out, and no lockdown (the sirens would wake you at once). */
+  get bedtime(): boolean {
+    return ROUTINE[this.state.routine].id === 'lightsOut' && !this.state.lockdown;
   }
 
   /** Knocked out or in solitary: not about, so the routine excuses the player. */
@@ -384,6 +401,9 @@ export class Sim {
   /** A press on the potato in solitary: every few presses, 10 minutes off. */
   private peel() {
     const s = this.state;
+    // A stroke takes a moment: presses faster than that don't count.
+    if (s.step - s.peelAt < PEEL_STEPS) return;
+    s.peelAt = s.step;
     if (++s.peeled < POTATO_PRESSES) {
       this.events.push({ type: 'peel', done: false });
       return;
@@ -444,7 +464,7 @@ export class Sim {
       this.events.push({ type: 'searched', cell: r.cell, taken });
       return;
     }
-    if (r.cell !== 1) return;
+    if (r.cell !== 1 || ROUTINE[s.routine].id !== 'lightsOut') return;
     // In the cell, asleep, or a bed dummy under the blanket: all present (GDD §5.3).
     const ok = this.playerZone === 'playerCell' || s.sleeping || s.solitary > 0 || s.ko > 0 || this.dummyInBed();
     this.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail' });
@@ -495,7 +515,7 @@ export class Sim {
           this.peel();
           break;
         }
-        const target = interactTarget(this.world, it, s.player, ROUTINE[s.routine].id === 'lightsOut');
+        const target = interactTarget(this.world, it, s.player, this.bedtime);
         if (!target) break;
         if (target.kind === 'ground') pickUp(it, target.index, ev);
         else if (target.kind === 'sleep') this.sleep();
@@ -621,7 +641,7 @@ export class Sim {
       excused: st.excused ?? false,
       items: fitItems(this.world, st.items) ?? startItems(this.world, { rng: st.rng }),
       sleeping: st.sleeping ?? false,
-      guards: st.guards?.length === this.world.def.guards.length ? st.guards : spawnGuards(this.world),
+      guards: st.guards?.length === this.world.def.guards.length ? st.guards.map((g) => ({ ...g, resume: g.resume ?? 0 })) : spawnGuards(this.world),
       seen: st.seen ?? false,
       ko: st.ko ?? 0,
       wake: st.wake ?? WAKE.NONE,
@@ -629,6 +649,7 @@ export class Sim {
       peeled: st.peeled ?? 0,
       spotted: st.spotted ?? 0,
       near: st.near ?? 0,
+      peelAt: st.peelAt ?? 0,
     };
     this.updateDoors(false);
     this.events = [];

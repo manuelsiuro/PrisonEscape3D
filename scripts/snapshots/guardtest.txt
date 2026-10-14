@@ -8,12 +8,12 @@ day 2 00:03 caught → solitary
 day 2 00:03 lockdown over
 day 2 00:30 bed check: start
 day 2 00:33 into solitary (3 taken)
-solitary: 60 presses to get out, back in the cell at day 2 00:36
+solitary: 217 presses to get out, back in the cell at day 2 00:44
 review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard
 == wanted at 85%
 day 1 10:10 spotted: wanted
-day 1 10:11 caught → infirmary
-day 1 10:41 wakes in the infirmary (1 taken)
+day 1 10:12 caught → infirmary
+day 1 10:42 wakes in the infirmary (1 taken)
 == bed dummy: a night in the library
 day 2 00:30 bed check: start
 day 2 01:02 bed check: pass

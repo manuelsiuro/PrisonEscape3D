@@ -162,6 +162,7 @@
 
 .hud-routine-place {
   overflow: hidden;
+  white-space: nowrap;
   font-size: 12px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -375,8 +376,9 @@
 .toasts {
   position: fixed;
   left: 50%;
-  bottom: calc(max(28px, env(safe-area-inset-bottom)) + 70px);
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 70px), var(--hint-clear, 0px));
   z-index: 33;
+  width: min(480px, calc(100vw - 32px));
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
@@ -390,10 +392,12 @@
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 999px;
+  /* A pill on one line, a rounded card when a long tip wraps. */
+  border-radius: 18px;
+  max-width: 100%;
   font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.3;
   color: white;
   background: rgba(18, 24, 36, 0.86);
   box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
@@ -401,6 +405,7 @@
 }
 
 .toast .ic {
+  flex: none;
   color: var(--gold);
 }
 
@@ -476,6 +481,6 @@ body.reduced-motion .alarm-vignette.on {
   }
 
   .toasts {
-    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 74px);
+    bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 74px), var(--hint-clear, 0px));
   }
 }

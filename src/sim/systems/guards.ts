@@ -1,6 +1,7 @@
 import type { GuardDef, Waypoint } from '../../content/prisons/types';
 import { ROUTINE } from '../../content/routine';
 import { centerX, centerZ, clearLine, nearestDir, tileAt } from '../ai/path';
+import { lineOfSight, SIGHT_RANGE } from '../ai/sight';
 import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { DIRS } from '../command';
@@ -58,6 +59,8 @@ export const CHASE_SPEED = 196;
 export const CATCH_RANGE = 700;
 /** How long a guard looks around where it lost the player, looks into a cell, searches a desk. */
 const LOOK_AROUND = 8 * STEPS_PER_SECOND;
+/** A chaser that loses sight keeps going this long before it investigates instead. */
+const CHASE_GRACE = STEPS_PER_SECOND;
 const CHECK_STEPS = 2 * STEPS_PER_SECOND;
 const SEARCH_STEPS = 4 * STEPS_PER_SECOND;
 /** Standing guards glance to one side and the other this often. */
@@ -166,7 +169,10 @@ export function stepGuards(
     if (lockdown && g.mode !== GUARD.CHASE) startChase(g);
     switch (g.mode) {
       case GUARD.CHASE: {
-        if (!lockdown && !g.sees) {
+        // Out of sight a moment (a corner, a glance): it keeps on for a second before giving up.
+        if (g.sees || lockdown) g.timer = CHASE_GRACE;
+        else g.timer--;
+        if (!lockdown && g.timer <= 0) {
           // Lost them: go and look where they were last seen.
           if (g.lastSeen < 0) {
             backToDuty(g);
@@ -202,6 +208,8 @@ export function stepGuards(
         const goal = tileAt(player.x, player.z);
         if (!g.path.length || (goal !== g.goal && (step + k) % 10 === 0)) head(chasers, g, goal);
         walkPath(chasers, g, k, CHASE_SPEED);
+        // Running a path round a corner, it keeps its eyes on the player while it can see them.
+        if (Math.abs(dx) + Math.abs(dz) < SIGHT_RANGE && lineOfSight(w, b.x, b.z, player.x, player.z)) b.facing = nearestDir(dx, dz);
         break;
       }
       case GUARD.INVESTIGATE:
@@ -263,6 +271,7 @@ export function stepGuards(
 export function startChase(g: Guard) {
   if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
   g.mode = GUARD.CHASE;
+  g.timer = CHASE_GRACE;
   g.doing = DOING.NOTHING;
   g.path = [];
   g.goal = -1;
@@ -278,6 +287,18 @@ export function backToDuty(g: Guard) {
   g.path = [];
   g.goal = -1;
   g.doing = DOING.NOTHING;
+}
+
+/**
+ * Calls off a bed check or shakedown (under way or waiting for a chase to end): its time has
+ * passed (bed checks belong to the night, shakedowns to the morning).
+ */
+export function cancelTasks(g: Guard, mode: number) {
+  if (g.resume === mode) {
+    g.resume = 0;
+    g.tasks = [];
+  }
+  if (g.mode === mode) backToDuty(g);
 }
 
 /** Sends a guard on a list of cells: the bed check or the shakedown (after the chase, if it's chasing). */

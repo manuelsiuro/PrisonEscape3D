@@ -527,7 +527,7 @@ kbd {
 
 /* The hotbar moves the toasts up out of its way. */
 .is-playing .toasts {
-  bottom: calc(max(28px, env(safe-area-inset-bottom)) + 120px);
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 120px), var(--hint-clear, 0px));
 }
 
 /* ------------------------------------------------------------ phones */

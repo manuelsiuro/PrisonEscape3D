@@ -708,7 +708,7 @@ function frame(now: number) {
     o.item = itemOf(v);
   });
   f.groundRev = it.rev;
-  const target = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused ? null : interactTarget(sim.world, it, p, ROUTINE[st.routine].id === 'lightsOut');
+  const target = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused ? null : interactTarget(sim.world, it, p, sim.bedtime);
   // The frame stays on an open container (what the panel shows), else on what is in reach.
   f.focus = focusOf(sim, it.open >= 0 ? { kind: 'container', index: it.open } : target);
   f.held = itemOf(it.inv[it.hand]);

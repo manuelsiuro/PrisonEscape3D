@@ -35,6 +35,8 @@ export const KO_STEPS = 30 * STEPS_PER_SECOND;
 /** Solitary lasts 2 game hours; each peeled potato takes 10 minutes off, a potato is 5 presses (GDD §5.6). */
 export const SOLITARY_STEPS = 120 * STEPS_PER_MINUTE;
 export const POTATO_PRESSES = 5;
+/** Strokes of the peeler count at most this often (mashing faster gains nothing): 5 a second. */
+export const PEEL_STEPS = 4;
 export const POTATO_STEPS = 10 * STEPS_PER_MINUTE;
 
 /** Inmates stroll a little slower than the player can walk (units per step). */

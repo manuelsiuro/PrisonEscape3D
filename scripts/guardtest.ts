@@ -199,8 +199,9 @@ function morning(seed: number): Sim {
   // Potato peeling: 5 presses a potato, 10 minutes each.
   const left = sim.state.solitary;
   let presses = 0;
-  run(sim, (s) => (presses++, command(0, OP.INTERACT)), (s) => s.state.solitary === 0, 200);
-  check(sim.state.solitary === 0 && presses <= 61, `peeling 12 potatoes buys release (${presses} presses, ${Math.round(left / STEPS_PER_MINUTE)} minutes were left)`);
+  run(sim, (s) => (presses++, command(0, OP.INTERACT)), (s) => s.state.solitary === 0, 400);
+  check(sim.state.solitary === 0 && presses <= 4 * 60 + 4, `peeling 12 potatoes buys release (${presses} presses, ${Math.round(left / STEPS_PER_MINUTE)} minutes were left)`);
+  check(presses >= 200, `mashing faster than a stroke every 4 steps gains nothing (${presses} presses)`);
   check(sim.playerZone === 'playerCell', 'released at night: back in the cell');
   console.log(`solitary: ${presses} presses to get out, back in the cell at ${at(sim)}`);
 
@@ -252,6 +253,38 @@ function morning(seed: number): Sim {
   const caught = run(c, () => command(1), (s) => s.state.ko > 0, 20 * 20);
   check(c.state.ko > 0, `running east along the corridor, caught (${caught.join('; ')})`);
   console.log('review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard');
+
+  // A bed check held up past the night is called off at 08:00 (never run by day).
+  const e = new Sim(CENTER_PERKS, 4);
+  const ep = modelPrisoner(e);
+  run(e, ep, (s) => minute(s) === 7 * 60 + 59, DAY);
+  const w0 = e.state.guards[0];
+  w0.mode = GUARD.CHASE;
+  w0.resume = GUARD.BED_CHECK;
+  w0.tasks = [1, 2];
+  run(e, ep, (s) => minute(s) === 8 * 60 + 1, 3 * STEPS_PER_MINUTE);
+  check(!w0.resume && !w0.tasks.length && w0.mode !== GUARD.BED_CHECK, 'a bed check still waiting at 08:00 is called off');
+
+  // No sleeping through a lockdown: the bed is offered as a container, not a bed.
+  const l = new Sim(CENTER_PERKS, 4);
+  const lp = modelPrisoner(l);
+  run(l, lp, (s) => minute(s) === 23 * 60 + 30, DAY);
+  l.state.guards.forEach((g, k) => plant(g, 40 + k, 50, 5));
+  l.state.lockdown = true;
+  l.step(command(0, OP.INTERACT));
+  check(!l.state.sleeping && !l.events.some((ev) => ev.type === 'sleep'), 'during a lockdown the bed does not put the player to sleep');
+
+  // Round a corner: a chaser that can still see the player keeps chasing.
+  const k = morning(7);
+  k.state.heat = 85;
+  const kg = k.state.guards[0];
+  plant(kg, 30, 22, 1);
+  kg.wait = 0;
+  put(k.state.player, 33, 22);
+  let lost = false;
+  const turn = (s: Sim) => (s.state.player.x < 33.5 * UNIT ? command(1) : command(13));
+  run(k, (s) => (kg.mode === GUARD.INVESTIGATE && (lost = true), turn(s)), (s) => s.state.ko > 0, 20 * 20);
+  check(k.state.ko > 0 && !lost, 'turning a corner in plain view does not shake a chaser');
 }
 
 // ------------------------------------------------------------------ wanted: chase, lose them, catch
@@ -267,6 +300,8 @@ function morning(seed: number): Sim {
   // Gone: into the library, out of sight.
   put(sim.state.player, 16, 31);
   run(sim, idle, () => false, 2);
+  check(g.mode === GUARD.CHASE, 'out of sight, it keeps on for a moment');
+  run(sim, idle, () => false, 20);
   check(g.mode === GUARD.INVESTIGATE && alertOf(g) === ALERT.SUSPICIOUS, 'lost: it investigates where it last saw them (orange)');
   run(sim, idle, (s) => g.mode === GUARD.DUTY, 60 * 20);
   check(g.mode === GUARD.DUTY, `then goes back to its round (${at(sim)})`);

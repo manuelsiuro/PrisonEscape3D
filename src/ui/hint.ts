@@ -13,6 +13,13 @@ export class Hint {
     const el = h('div', 'hint', `${icon(iconName, 22)}<div>${lines.map((l) => `<span>${l}</span>`).join('')}</div>`);
     document.body.append(el);
     this.el = el;
+    // Toasts rise above the hint while it is up (see .toasts): from its resting place (its
+    // bottom offset and height, not its box mid-slide).
+    requestAnimationFrame(() => {
+      if (this.el !== el) return;
+      const clear = parseFloat(getComputedStyle(el).bottom) + el.offsetHeight + 10;
+      document.body.style.setProperty('--hint-clear', `${Math.round(clear)}px`);
+    });
   }
 
   get visible() {
@@ -23,6 +30,7 @@ export class Hint {
     const el = this.el;
     if (!el) return;
     this.el = null;
+    document.body.style.removeProperty('--hint-clear');
     el.classList.add('leaving');
     setTimeout(() => el.remove(), 350);
   }
