@@ -9,7 +9,7 @@ import { MAP_W, type World } from '../world/World';
 import { bodyAt, type Body } from './movement';
 
 /** What someone is doing where they stand (the view poses it): inmates, guards (searching), the player (knocked out). */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;
@@ -130,7 +130,7 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }) {
  * the same spot.
  */
 export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number) {
-  const c: Crowd = { w, grid: w.block, all, others, step };
+  const c: Crowd = { w, grid: w.npcBlock, all, others, step };
   all.forEach((m, k) => {
     if (m.plan !== plan) {
       m.plan = plan;

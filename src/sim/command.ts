@@ -9,7 +9,7 @@ export const DIRS = 16;
 /** One-step operations (an item moved, a desk opened…). Never renumber: logs store them. */
 export const OP = {
   NONE: 0,
-  /** Use what is in front: pick up, open a container, sleep in your bed. */
+  /** Use what is in front: pick up, open a container, sleep in your bed, climb, cover damage. a = 1: down the tunnel under the open desk. */
   INTERACT: 1,
   /** Close the open container. */
   CLOSE: 2,
@@ -23,6 +23,8 @@ export const OP = {
   EQUIP: 6,
   /** Hold hotbar slot a in hand. */
   SELECT: 7,
+  /** Strike with the tool in hand (chip, cut, unscrew, dig), or eat what is in hand. Sent every step while held; strikes land at their own pace. */
+  USE: 8,
 } as const;
 
 /** Slot addresses for OP.MOVE / DROP / EQUIP: 0–5 the hotbar, then the weapon, the outfit, then the open container's slots. */

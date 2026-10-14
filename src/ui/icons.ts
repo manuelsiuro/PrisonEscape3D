@@ -31,6 +31,14 @@ const P: Record<string, string> = {
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   potato: '<path d="M6 8c2-4 9-5 12-1s2 10-3 12-11 0-11-5c0-2 1-4 2-6Z"/><path d="M10 10h.01M14 14h.01M15 9h.01"/>',
   walk: '<circle cx="13" cy="4" r="2"/><path d="m9 21 2-6 3 3v3M8 11l3-4 3 2 2 3M11 7l-1 6"/>',
+  pick: '<path d="M4 7c4-4 12-4 16 0"/><path d="M12 5 6 21"/>',
+  shovel: '<path d="m14 10 6-6M18 2l4 4"/><path d="M14 10 9 5c-2 2-5 7-5 10l5 5c3 0 8-3 10-5Z"/>',
+  cutters: '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16 16 4M16 16 8 4"/>',
+  screw: '<path d="M12 3v4M8 7h8l-1 4H9Z"/><path d="M12 11v10M10 14h4M10 17h4"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7Z"/>',
+  up: '<path d="M12 20V5M5 12l7-7 7 7"/>',
+  down: '<path d="M12 4v15M5 12l7 7 7-7"/>',
+  cookie: '<path d="M4 8h16v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3Z"/><path d="M4 12h16M10 8v12M14 8v12"/>',
 };
 
 /** An inline SVG icon (`.ic`, display: block; inside text, make it inline-block). */

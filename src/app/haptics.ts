@@ -7,6 +7,9 @@ const PATTERNS = {
   attended: [8, 60, 8],
   missed: [40, 50, 40],
   lockdown: [120, 80, 120, 80, 200],
+  /** A tool strike, and the tile giving way. */
+  strike: [6],
+  giveWay: [25, 40, 25],
 } as const;
 
 export type Haptic = keyof typeof PATTERNS;

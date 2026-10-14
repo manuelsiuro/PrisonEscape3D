@@ -176,6 +176,81 @@ export class Sound {
     if (done) this.tone(300, 520, 0.12, 'triangle', 0.12, 0.08);
   }
 
+  /**
+   * A tool strike: a gritty chip on brick, a crunch of earth, a metal snip on wire, a
+   * squeak of a screw. When the tile gives way: bricks tumble, earth slides, wire twangs.
+   */
+  strike(action: string, broke: boolean) {
+    const r = Math.random() * 0.2;
+    switch (action) {
+      case 'chip':
+        this.hiss(0.08, 'bandpass', 2200 + r * 1000, 2, 0.16);
+        this.tone(260 + r * 80, 140, 0.07, 'square', 0.05);
+        if (broke) {
+          this.hiss(0.6, 'lowpass', 700, 0.7, 0.3);
+          for (const d of [0.05, 0.16, 0.3]) this.tone(180 - d * 100, 70, 0.12, 'triangle', 0.1, d);
+        }
+        break;
+      case 'dig':
+      case 'digUp':
+        this.hiss(0.14, 'lowpass', 900 + r * 400, 0.8, 0.22);
+        this.tone(120, 70, 0.1, 'sine', 0.08);
+        if (broke) this.hiss(0.45, 'lowpass', 500, 0.6, 0.28);
+        break;
+      case 'cut':
+        this.hiss(0.04, 'highpass', 5200, 1, 0.12);
+        this.tone(1900 + r * 400, 1700, 0.05, 'square', 0.04);
+        if (broke) {
+          this.tone(820, 410, 0.4, 'sawtooth', 0.05);
+          this.hiss(0.25, 'bandpass', 3600, 3, 0.08);
+        }
+        break;
+      case 'unscrew':
+        this.tone(1300 + r * 300, 1700, 0.09, 'sawtooth', 0.035);
+        this.hiss(0.06, 'bandpass', 4200, 4, 0.05);
+        if (broke) {
+          this.tone(700, 520, 0.12, 'triangle', 0.1, 0.02);
+          this.tone(520, 380, 0.2, 'triangle', 0.08, 0.16);
+        }
+        break;
+    }
+  }
+
+  /** A live fence: a crackling buzz. */
+  zap() {
+    this.tone(60, 58, 0.7, 'sawtooth', 0.22);
+    this.tone(120, 118, 0.7, 'square', 0.08);
+    this.hiss(0.7, 'highpass', 3000, 1, 0.18);
+  }
+
+  /** A tunnel roof coming down: a rumble and a slide of earth. */
+  caveIn() {
+    this.tone(70, 35, 1.1, 'sawtooth', 0.18);
+    this.hiss(1.1, 'lowpass', 380, 0.6, 0.4);
+  }
+
+  /** A toilet flushing (a gurgle when clogged). */
+  flush(clogged = false) {
+    if (clogged) {
+      for (const d of [0, 0.14, 0.3]) this.tone(180, 120, 0.1, 'sine', 0.12, d);
+      return;
+    }
+    this.hiss(0.9, 'bandpass', 900, 0.7, 0.2);
+    this.tone(400, 160, 0.8, 'sine', 0.05);
+  }
+
+  /** Climbing through a grate, up a ladder, into a hole: a scuffle and a metal knock. */
+  climb() {
+    this.hiss(0.25, 'bandpass', 1200, 1.5, 0.1);
+    this.tone(320, 240, 0.08, 'triangle', 0.08, 0.12);
+  }
+
+  /** A cover put on or taken off: paper and tape, or a block scraping. */
+  cover() {
+    this.hiss(0.18, 'highpass', 2500, 1, 0.08);
+    this.tone(500, 640, 0.06, 'triangle', 0.06, 0.1);
+  }
+
   /** Cell doors slam and lock: a heavy metallic clunk with a short ring. */
   lockClank() {
     this.hiss(0.18, 'lowpass', 600, 1, 0.25);

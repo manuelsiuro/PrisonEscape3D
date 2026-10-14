@@ -26,6 +26,8 @@ export const PROPS = {
   bench: { solid: true },
   /** A low canteen bench: inmates sit on it at meals, anyone can step over it. */
   seat: { solid: false },
+  /** A ladder against a wall up to the roof hatch (and past the vents). */
+  ladder: { solid: true },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

@@ -131,6 +131,13 @@ const BUILDERS: Record<PropKind, Builder> = {
     box(0.06, 0.4, 0.06, DARK, -(w - 0.3) / 2, 0.2, -0.2),
     box(0.06, 0.4, 0.06, DARK, (w - 0.3) / 2, 0.2, -0.2),
   ],
+  /** Steel rails against the wall behind it, up past the wall top to the roof hatch. */
+  ladder: (_w, d) => {
+    const z = -d / 2 + 0.16;
+    const parts = [box(0.06, 1.75, 0.06, 0x6a737e, -0.24, 0, z), box(0.06, 1.75, 0.06, 0x6a737e, 0.24, 0, z)];
+    for (let k = 0; k < 7; k++) parts.push(rod(0.022, 0.48, 0xc0c8d2, 0, 0.18 + k * 0.23, z));
+    return parts;
+  },
   controlDesk: (w, d) => {
     const parts = [box(w - 0.06, 0.55, d - 0.3, 0x4a5260, 0, 0, -0.1), box(w - 0.04, 0.05, d - 0.2, 0x2b3038, 0, 0.55)];
     for (let k = 0; k < Math.round(w); k++) parts.push(box(0.7, 0.42, 0.06, 0x1d2026, -w / 2 + 0.5 + k, 0.6, -d / 2 + 0.25), box(0.62, 0.34, 0.01, 0x5fd4ff, -w / 2 + 0.5 + k, 0.64, -d / 2 + 0.285));

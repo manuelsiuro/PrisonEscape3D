@@ -1,0 +1,20 @@
+vents: grates at 9,9 19,33 13,40; ladder 13,39, foot 13,40
+vents: 48 duct tiles, all joined; roofs: 1782 tiles
+chip: 25 strikes, 2 forks worn out, 2 rests → HOLE, carrying wall_chunk, plastic_fork; energy 92
+through the hole: perimeter at 8,3
+cut: 25 strikes, 2 knives worn out, 2 rests → FENCE_CUT
+escape through the fence: escaped day 1 08:25
+electric fence: shocked, woke up in the infirmary; the plastic knife (legal) kept
+vents: 5 turns of the file; climbed in (climbVent), zone vents
+crawl: cell grate → ladder in 21.3 s
+roof: walked east (roof), climbed down to the generator at 13,40
+toilet 2: flushed, flushed, flushed, clogged, flushed
+tunnel north: 6:TUNNEL 5:TUNNEL 4:CAVE-IN (energy 38)
+tunnel: dug to 10,1 under the road; dirt left in the tunnel: 2 piles; day 1 09:08
+tunnel escape: escaped day 1 09:08
+restore mid-tunnel: same after 200 steps
+discovery: open hole seen → LOCKDOWN (1 found)
+after the capture: repaired, 12,20 is BRICK
+discovery: covered hole → unnoticed; dirt on the floor → LOCKDOWN
+seen at work: heat 100, LOCKDOWN
+roof: a guard indoors → heat 0; a guard in the yard → heat 100

@@ -5,7 +5,7 @@ import { DIR_X, DIR_Z, SLOT } from '../command';
 import { randomInt } from '../rng';
 import { UNIT } from '../tuning';
 import { containersOf, type ContainerInfo } from '../world/containers';
-import { MAP_W, type World } from '../world/World';
+import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import type { Body } from './movement';
 
 /**
@@ -37,7 +37,7 @@ export interface ItemState {
   open: number;
   /** Each container's slots. */
   containers: number[][];
-  /** Items on the floor: [tile index, slot]. */
+  /** Items on the floor: [place (World placeKey: the tile, and its layer off the ground floor), slot]. */
   ground: Array<[number, number]>;
   /** Recipes crafted at least once (the handbook), by RECIPES index. */
   known: number[];
@@ -122,16 +122,19 @@ export type Target = { kind: 'ground'; index: number; item: number } | { kind: '
 
 /**
  * The nearest thing within reach, the one the player faces winning ties: items on the floor
- * first, then furniture. A bed in the player's cell means sleep at Lights Out.
+ * (of the player's layer) first, then furniture (on the ground floor). A bed in the player's
+ * cell means sleep at Lights Out.
  */
-export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean): Target {
+export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND): Target {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   // Facing it is worth a third of a tile.
   const score = (dist: number, tx: number, tz: number) => dist - (fx * (tx - b.x) + fz * (tz - b.z) > 0 ? UNIT / 3 : 0);
   let best: Target = null;
   let bestScore = Infinity;
-  s.ground.forEach(([tile, v], index) => {
+  s.ground.forEach(([key, v], index) => {
+    if (layerOfKey(key) !== layer) return;
+    const tile = tileOfKey(key);
     const tx = (tile % MAP_W) * UNIT + UNIT / 2;
     const tz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
     const d = Math.max(Math.abs(tx - b.x), Math.abs(tz - b.z));
@@ -142,6 +145,7 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
       best = { kind: 'ground', index, item: itemOf(v) };
     }
   });
+  if (layer !== LAYER.GROUND) return best;
   containersOf(w).forEach((c, index) => {
     const d = reachTo(c, b.x, b.z);
     if (d > REACH) return;
@@ -206,19 +210,35 @@ export function moveItem(s: ItemState, from: number, to: number) {
   b.set(va);
 }
 
-/** Drops an item on the floor where the player stands. */
-export function dropItem(s: ItemState, from: number, b: Body, events: ItemEvent[]) {
+/** Drops an item on the floor where the player stands (on their layer). */
+export function dropItem(s: ItemState, from: number, b: Body, events: ItemEvent[], layer: number = LAYER.GROUND) {
   const a = cell(s, from);
   if (!a || !a.get()) return;
-  const tile = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
-  if (s.ground.filter(([t]) => t === tile).length >= PILE) {
+  const key = placeKey(layer, Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT));
+  if (s.ground.filter(([t]) => t === key).length >= PILE) {
     events.push({ type: 'noRoom' });
     return;
   }
   const v = a.get();
   a.set(0);
-  s.ground.push([tile, v]);
+  s.ground.push([key, v]);
   events.push({ type: 'drop', item: itemOf(v) });
+}
+
+/**
+ * Puts an item in the first free hotbar slot, or on the floor at the player's feet when the
+ * hands are full (dirt from a dig, a chunk of wall). Returns false if even the floor is full.
+ */
+export function give(s: ItemState, item: number, b: Body, layer: number): boolean {
+  const k = freeHotbar(s);
+  if (k >= 0) {
+    s.inv[k] = slot(item);
+    return true;
+  }
+  const key = placeKey(layer, Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT));
+  if (s.ground.filter(([t]) => t === key).length >= PILE) return false;
+  s.ground.push([key, slot(item)]);
+  return true;
 }
 
 /** Puts a weapon or outfit from the hotbar on (and what was on into its place). */

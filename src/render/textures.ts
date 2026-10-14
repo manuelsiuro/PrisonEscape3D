@@ -149,4 +149,90 @@ export const TEX = {
       c.fillStyle = 'rgba(0,0,0,0.25)';
       c.fillRect(3, 6, 2, 1);
     }),
+  /** Packed earth around the tunnels (its top is tinted by the map above). */
+  earth: () =>
+    texture('earth', 16, (c, n, r) => {
+      speckle(c, n, r, '#5b4330', '#4c3828', '#6a4f39', 0.4);
+      c.fillStyle = '#7a6a5a';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+    }),
+  /** A tunnel's trodden floor. */
+  tunnel: () =>
+    texture('tunnel', 16, (c, n, r) => {
+      speckle(c, n, r, '#7d5d3f', '#6b4f35', '#8e6c4b', 0.35);
+      c.fillStyle = 'rgba(40,25,15,0.35)';
+      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 3, 1);
+    }),
+  /** Tar and gravel on the flat roofs. */
+  gravel: () =>
+    texture('gravel', 16, (c, n, r) => {
+      speckle(c, n, r, '#7d7a74', '#6c6964', '#8f8b84', 0.45);
+      c.fillStyle = '#a19c93';
+      for (let k = 0; k < 7; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+    }),
+  /** Galvanised duct steel: seams across it. */
+  duct: () =>
+    texture('duct', 16, (c, n, r) => {
+      speckle(c, n, r, '#a9b0b8', '#9ba2aa', '#b7bec6', 0.15);
+      c.fillStyle = '#8a9199';
+      c.fillRect(0, 0, n, 1);
+      c.fillRect(0, n / 2, n, 1);
+    }),
+  /** A vent grille: slats on a frame. */
+  grille: () =>
+    texture('grille', 16, (c, n) => {
+      c.fillStyle = '#2b3038';
+      c.fillRect(0, 0, n, n);
+      c.fillStyle = '#c3c9d0';
+      c.fillRect(0, 0, n, 2);
+      c.fillRect(0, n - 2, n, 2);
+      c.fillRect(0, 0, 2, n);
+      c.fillRect(n - 2, 0, 2, n);
+      for (let y = 4; y < n - 2; y += 3) c.fillRect(2, y, n - 4, 1);
+      c.fillStyle = '#e8b828';
+      c.fillRect(1, 1, 1, 1);
+      c.fillRect(n - 2, 1, 1, 1);
+      c.fillRect(1, n - 2, 1, 1);
+      c.fillRect(n - 2, n - 2, 1, 1);
+    }),
+  /** Cracks spreading in a wall face (transparent around them). */
+  cracks: () =>
+    texture('cracks', 32, (c, n, r) => {
+      c.clearRect(0, 0, n, n);
+      c.fillStyle = 'rgba(30,18,12,0.9)';
+      for (let k = 0; k < 5; k++) {
+        let x = n / 2 + (r() - 0.5) * 6;
+        let y = n / 2 + (r() - 0.5) * 6;
+        const dx = Math.cos(k * 1.3 + r());
+        const dy = Math.sin(k * 1.3 + r());
+        for (let s = 0; s < 14; s++) {
+          c.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+          x += dx + (r() - 0.5);
+          y += dy + (r() - 0.5);
+        }
+      }
+      c.fillStyle = 'rgba(30,18,12,0.6)';
+      c.fillRect(n / 2 - 2, n / 2 - 2, 4, 4);
+    }),
+  /** A pin-up poster: a sunset over palm trees (freedom, in colour). */
+  poster: () =>
+    texture('poster', 16, (c, n) => {
+      c.fillStyle = '#f2d23c';
+      c.fillRect(0, 0, n, n);
+      c.fillStyle = '#e0574a';
+      c.fillRect(1, 1, n - 2, 8);
+      c.fillStyle = '#f29a3c';
+      c.fillRect(1, 6, n - 2, 3);
+      c.fillStyle = '#ffe9a8';
+      c.fillRect(6, 4, 4, 3);
+      c.fillStyle = '#2e86c1';
+      c.fillRect(1, 9, n - 2, 6);
+      c.fillStyle = '#1d2a5a';
+      c.fillRect(3, 5, 1, 6);
+      c.fillRect(2, 4, 3, 1);
+      c.fillRect(12, 6, 1, 5);
+      c.fillRect(11, 5, 3, 1);
+      c.fillStyle = '#ffffff';
+      c.fillRect(2, 13, 5, 1);
+    }),
 };

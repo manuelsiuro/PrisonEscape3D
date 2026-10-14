@@ -1,6 +1,7 @@
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
+import { L1 } from './L1.map';
 
 /** Cells: four on top (doors south), four below (doors north). Cell 1 is the player's. */
 const cells: Rect[] = [];
@@ -69,8 +70,9 @@ props.push(
   { kind: 'sortingDesk', x: 45, z: 31, w: 3 },
   { kind: 'shelf', x: 50, z: 31, w: 2 },
   { kind: 'bin', x: 56, z: 31 },
-  // Generator room.
+  // Generator room, and the ladder up to the roof (and the vents' end) against its north wall.
   { kind: 'generator', x: 7, z: 42, w: 2, d: 2 },
+  { kind: 'ladder', x: 13, z: 39 },
   // Solitary.
   { kind: 'bed', x: 16, z: 43, d: 2, rot: 2 },
   { kind: 'bed', x: 22, z: 43, d: 2, rot: 2 },
@@ -193,6 +195,7 @@ export const CENTER_PERKS: PrisonDef = {
   id: 'center-perks',
   difficulty: 1,
   ground: L0,
+  vents: L1,
   zones: [
     ['cellBlock', 7, 7, 25, 19],
     ['rollCall', 27, 7, 38, 19],

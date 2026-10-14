@@ -15,8 +15,14 @@ import { itemDef, itemNumber } from './content/items';
 import type { BedPose } from './render/Character';
 import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
-import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
-import { MAP_W } from './sim/world/World';
+import { CHOCOLATE_ENERGY, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
+import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
+import { TILE } from './sim/world/tiles';
+import { climbTarget, DIRT, ladderFootOf, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
+import { ToolControls, type ToolView } from './ui/tool';
+import { showEscaped } from './ui/screens/escaped';
+import { formatTime } from './sim/systems/clock';
+import type { Body } from './sim/systems/movement';
 import { View, type Frame, type Quality } from './render/View';
 import { Controls } from './input/Controls';
 import { Sound } from './audio/Sound';
@@ -112,6 +118,10 @@ interface Game {
   speed: number;
   /** One-step operations waiting for the next steps (one per step), from the item UI and keys. */
   ops: Array<[number, number, number]>;
+  /** Where the ladder comes down (for the action button's label), worked out once. */
+  ladderFoot: number;
+  /** The escape screen is up: the game is over. */
+  over: boolean;
 }
 let game: Game | null = null;
 let acc = 0;
@@ -141,7 +151,7 @@ controls.onTap = (cx, cy) => {
     for (let dx = -1; dx <= 1; dx++) {
       const x = tx + dx;
       const z = tz + dz;
-      if (!w.inside(x, z) || w.blocked(x, z)) continue;
+      if (!w.inside(x, z) || w.blocked(x, z, game.rec.sim.state.layer)) continue;
       const d = (x + 0.5 - p.x) ** 2 + (z + 0.5 - p.z) ** 2;
       if (d < bestD) {
         bestD = d;
@@ -164,8 +174,9 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const w = sim.world;
   const places = placesOf(w);
   const home = places.bedside[1];
-  // A lockdown ends when the guards catch you, wherever you are; solitary and a knockout go nowhere.
-  if (s.lockdown || s.solitary > 0 || s.ko > 0) return null;
+  // A lockdown ends when the guards catch you, wherever you are; solitary and a knockout go
+  // nowhere; off the ground floor the player knows their own way.
+  if (s.lockdown || s.solitary > 0 || s.ko > 0 || s.layer !== LAYER.GROUND) return null;
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
@@ -208,6 +219,9 @@ function coachItems(held: number, outfit: number) {
     if (d?.contraband && (d.cat === 'tool' || d.cat === 'weapon') && !hasSeen('contrabandHand')) {
       markSeen('contrabandHand');
       banner.toast(t('hint.contrabandHand'), 'info', 6500);
+    } else if (d?.tool && !hasSeen('tools')) {
+      markSeen('tools');
+      banner.toast(TOUCH ? t('hint.toolsTouch') : t('hint.toolsKeys'), 'info', 7000);
     }
   }
   if (outfit !== coached.outfit) {
@@ -357,7 +371,96 @@ function announce(e: SimEvent, sim: Sim) {
       if (e.locked) sound.lockClank();
       if (e.locked && !sim.state.lockdown) banner.toast(t('toast.cellsLocked'), 'info');
       break;
+    case 'strike':
+      sound.strike(e.action, e.broke);
+      view.impact(e.action, e.tile, e.layer, e.broke);
+      buzz(e.broke ? 'giveWay' : 'strike');
+      if (e.broke) {
+        const done = ({ chip: 'toast.wallGone', cut: 'toast.fenceGone', unscrew: 'toast.grateGone', dig: e.layer === LAYER.GROUND ? 'toast.shaftDone' : '' } as Record<string, string>)[e.action];
+        if (done) itemsUI.toast(t(done as Key));
+        if (e.action === 'chip') coachOnce('damage', 'hint.damage');
+        if (e.action === 'dig' && e.layer === LAYER.GROUND && underMyDesk(sim.world, e.tile)) coachOnce('deskTunnel', 'hint.deskTunnel');
+      }
+      break;
+    case 'cantStrike': {
+      // Holding the button repeats the try: say why once in a while, not every step.
+      const now = performance.now();
+      if (now - lastCant < 1800) break;
+      lastCant = now;
+      sound.sting();
+      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : NEED[e.action];
+      itemsUI.toast(t(why as Key));
+      break;
+    }
+    case 'broke':
+      sound.sting();
+      itemsUI.toast(t('toast.broke', { item: itemName(e.item) }));
+      break;
+    case 'shocked':
+      sound.zap();
+      buzz('lockdown');
+      itemsUI.closePanels();
+      game?.pilot.stop();
+      banner.show(t('banner.shocked'), t('banner.shockedSub'), 'alarm', 3500);
+      break;
+    case 'caveIn':
+      sound.caveIn();
+      buzz('lockdown');
+      view.impact('dig', e.tile, LAYER.UNDER, true);
+      banner.toast(t('toast.caveIn'), 'bad', 5000);
+      break;
+    case 'layer':
+      sound.climb();
+      game?.pilot.stop();
+      itemsUI.closeCraft();
+      // Into or out of the tunnels: a blink of dark while the view changes.
+      if ((e.layer === LAYER.UNDER || e.from === LAYER.UNDER) && !settings.reducedMotion) {
+        const fade = h('div', 'layer-fade');
+        document.body.append(fade);
+        fade.addEventListener('animationend', () => fade.remove());
+      }
+      if (e.layer === LAYER.UNDER) coachOnce('tunnel', 'hint.tunnel');
+      if (e.layer === LAYER.VENTS || e.layer === LAYER.ROOF) coachOnce('restrictedUp', 'hint.restrictedUp');
+      break;
+    case 'covered':
+      sound.cover();
+      if (e.on) itemsUI.toast(t('toast.covered'));
+      break;
+    case 'braced':
+      sound.cover();
+      itemsUI.toast(t('toast.braced'));
+      break;
+    case 'ate':
+      sound.pickup();
+      itemsUI.toast(t('toast.ate', { n: CHOCOLATE_ENERGY }));
+      break;
+    case 'flushed':
+      sound.flush();
+      itemsUI.toast(t('toast.flushed'));
+      break;
+    case 'clogged':
+      sound.flush(true);
+      itemsUI.toast(t('toast.clogged'));
+      break;
+    case 'repaired':
+      banner.toast(t('toast.repaired'), 'info', 4500);
+      break;
+    case 'escaped':
+      escaped();
+      break;
   }
+  if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
+}
+
+/** Why a strike can't land, by what it needs. */
+const NEED: Record<string, string> = { chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
+let lastCant = 0;
+
+/** A tip shown the first time something happens (and never again). */
+function coachOnce(name: string, key: Key) {
+  if (hasSeen(name)) return;
+  markSeen(name);
+  banner.toast(t(key), 'info', 7000);
 }
 
 /** A short fade from black when a game starts. */
@@ -383,14 +486,17 @@ function startGame(prison: PrisonDef) {
     prevGuards: sim.state.guards.map((m) => ({ x: m.body.x, z: m.body.z })),
     paused: false,
     walked: 0,
-    pilot: new Autopilot(sim.world),
+    pilot: new Autopilot(sim.world, () => sim.world.layers[sim.state.layer].block),
     guide: null,
     guideAge: 1,
     guideFrom: -1,
     speed: 1,
     ops: [],
+    ladderFoot: ladderFootOf(sim.world),
+    over: false,
   };
   itemsUI.show(true);
+  tools.show(true);
   acc = 0;
   controls.reset();
   controls.enabled = true;
@@ -446,12 +552,18 @@ async function pause() {
     }
     break;
   }
+  endGame();
+}
+
+/** Back to the title: everything the game put up comes down. */
+function endGame() {
   game = null;
   for (const id of startTimers) clearTimeout(id);
   startTimers = [];
   controls.enabled = false;
   hud.show(false);
   itemsUI.show(false);
+  tools.show(false);
   sleepVeil.classList.remove('on', 'ko');
   solitaryPanel.update(null, 0);
   darkCell.classList.remove('on');
@@ -462,6 +574,28 @@ async function pause() {
   sound.ambience(false);
   document.body.classList.remove('is-playing');
   quit?.();
+}
+
+/** Out on the road: the escape screen, then the title. */
+async function escaped() {
+  const g = game;
+  if (!g || g.over) return;
+  g.over = true;
+  g.paused = true;
+  controls.enabled = false;
+  controls.reset();
+  tools.held = false;
+  itemsUI.closePanels();
+  sound.siren(false);
+  sound.chime();
+  buzz('attended');
+  const sim = g.rec.sim;
+  const clock = sim.clock;
+  // A moment to see the road under their feet before the card.
+  await new Promise((r) => setTimeout(r, 900));
+  if (game !== g) return;
+  await showEscaped({ prison: t(`prison.${sim.prison.id}` as Key), day: clock.day, time: formatTime(clock) }, click);
+  if (game === g) endGame();
 }
 addEventListener('keydown', (e) => {
   if (!game || game.paused || e.metaKey || e.ctrlKey || e.repeat) return;
@@ -480,11 +614,20 @@ addEventListener('keydown', (e) => {
     else act();
   }
   if (e.code === 'KeyC') itemsUI.toggleCraft();
+  // Space: the tool in hand (held, it keeps striking).
+  if (e.code === 'Space') {
+    e.preventDefault();
+    tools.held = true;
+    usePress();
+  }
   if (e.code === 'KeyQ' && g.rec.sim.state.items.inv[g.rec.sim.state.items.hand]) sendOp(OP.DROP, g.rec.sim.state.items.hand);
   const digit = /^Digit([1-6])$/.exec(e.code);
   if (digit) sendOp(OP.SELECT, Number(digit[1]) - 1);
   // Dev builds: fast-forward the prison clock (×30) to test the routine.
   if (import.meta.env.DEV && e.code === 'BracketRight' && game) game.speed = game.speed === 1 ? 30 : 1;
+});
+addEventListener('keyup', (e) => {
+  if (e.code === 'Space') tools.held = false;
 });
 // A hidden page pauses the game (phones switching apps, a closed laptop).
 document.addEventListener('visibilitychange', () => {
@@ -492,6 +635,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 const NO_OP: [number, number, number] = [0, 0, 0];
+const USE_OP: [number, number, number] = [OP.USE, 0, 0];
 const SLEEP_SPEED = 40;
 /** Knocked out, the 30 seconds pass in 3. */
 const KO_SPEED = 10;
@@ -513,6 +657,26 @@ function act() {
 
 const itemsUI = new ItemsUI(sendOp, click);
 itemsUI.onAction = act;
+const tools = new ToolControls();
+tools.onPress = usePress;
+
+/** What the tool button does right now (worked out each frame), and whether holding it repeats. */
+let toolNow: ToolView | null = null;
+const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress: null, repeat: true };
+
+/**
+ * The tool button or Space pressed: strikes repeat while it's held (sent with each step, see
+ * frame()); eating happens once. With no tool target, a plain USE still lets the sim say why
+ * nothing happens (a sock against a wall).
+ */
+function usePress() {
+  if (!game || game.paused) return;
+  game.pilot.stop();
+  if (!toolNow?.repeat) {
+    sendOp(OP.USE);
+    tools.held = false;
+  }
+}
 const sleepVeil = h('div', 'sleep-veil', `<span>${''}</span>`);
 document.body.append(sleepVeil);
 
@@ -540,22 +704,93 @@ function boxTitle(sim: Sim, index: number) {
 /** The action label for what is in reach, worked out only when the target (or language) changes. */
 const actionLabel = { verb: '', what: '' };
 let actionKey = '';
-function describeTarget(sim: Sim, target: Target): { verb: string; what: string } | null {
+function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, held: number): { verb: string; what: string } | null {
+  if (climb) {
+    const key = `climb:${climb.action}:${climb.item ?? 0}:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      const what: Record<string, string> = {
+        climbVent: t('thing.vent'),
+        dropDown: '',
+        climbRoof: t('thing.ladderRoof'),
+        climbDownLadder: '',
+        climbDown: t('thing.tunnel'),
+        climbUp: '',
+        uncover: climb.item ? itemName(climb.item) : '',
+      };
+      Object.assign(actionLabel, { verb: t(`act.${climb.action}` as Key), what: what[climb.action] });
+    }
+    return actionLabel;
+  }
   if (!target) return null;
-  const key = `${target.kind}:${target.index}:${target.kind === 'ground' ? target.item : 0}:${currentLang()}`;
+  // Dirt in hand at a toilet: down it goes.
+  const flush = target.kind === 'container' && (held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet';
+  const key = `${target.kind}:${target.index}:${target.kind === 'ground' ? target.item : 0}:${flush}:${currentLang()}`;
   if (key !== actionKey) {
     actionKey = key;
     if (target.kind === 'ground') Object.assign(actionLabel, { verb: t('act.pickUpVerb'), what: itemName(target.item) });
     else if (target.kind === 'sleep') Object.assign(actionLabel, { verb: t('act.sleep'), what: '' });
+    else if (flush) Object.assign(actionLabel, { verb: t('act.flush'), what: itemName(held) });
     else Object.assign(actionLabel, { verb: t('act.searchVerb'), what: thingName(sim, target.index) });
   }
   return actionLabel;
 }
+
+/** Who stands on the ground floor besides the player (nobody digs under them). */
+const others: Body[] = [];
+function bodiesOf(sim: Sim): Body[] {
+  others.length = 0;
+  for (const m of sim.state.inmates) others.push(m.body);
+  for (const g of sim.state.guards) others.push(g.body);
+  return others;
+}
+
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down' };
+
+/** The tool button's face for a strike target, refilled in place (no garbage per frame). */
+function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView | null {
+  if (!tt) return null;
+  const d = held ? itemDef(held) : null;
+  const strike = STRIKES.has(tt.action);
+  // Only with a tool (or something to put in place) in hand: a sock against a wall offers nothing.
+  if (strike && !d?.tool) return null;
+  const w = sim.world;
+  const v = toolView;
+  v.verb = t(`act.${tt.action}` as Key);
+  v.icon = TOOL_ICON[tt.action];
+  v.fits = tt.fits && (!strike || tt.hp !== 0);
+  v.repeat = strike;
+  if (!strike) {
+    v.what = tt.action === 'eat' ? t('thing.chocolate') : tt.action === 'cover' ? t(tt.layer === LAYER.VENTS ? 'thing.grate' : 'thing.hole') : tt.action === 'brace' ? t('thing.tunnel') : t('thing.rope');
+    v.progress = null;
+    return v;
+  }
+  const k = tt.layer === LAYER.GROUND ? w.ground.kind[tt.tile] : 0;
+  v.what =
+    tt.action === 'chip'
+      ? t(k === TILE.REINFORCED ? 'thing.reinforced' : 'thing.wall')
+      : tt.action === 'cut'
+        ? t(k === TILE.ELECTRIC ? 'thing.electric' : 'thing.fence')
+        : tt.action === 'unscrew'
+          ? t('thing.grate')
+          : tt.action === 'digUp'
+            ? t('thing.surface')
+            : t(tt.layer === LAYER.UNDER ? 'thing.earth' : 'thing.floor');
+  v.progress = tt.hp > 0 ? Math.min(1, (sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0) / tt.hp) : 0;
+  return v;
+}
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
-function focusOf(sim: Sim, target: Target) {
+function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null) {
+  if (climb) {
+    focusAt.x0 = (climb.tile % MAP_W) + 0.08;
+    focusAt.z0 = Math.floor(climb.tile / MAP_W) + 0.08;
+    focusAt.x1 = focusAt.x0 + 0.84;
+    focusAt.z1 = focusAt.z0 + 0.84;
+    return focusAt;
+  }
   if (!target) return null;
   if (target.kind === 'ground') {
-    const tile = sim.state.items.ground[target.index][0];
+    const tile = tileOfKey(sim.state.items.ground[target.index][0]);
     focusAt.x0 = (tile % MAP_W) + 0.2;
     focusAt.z0 = Math.floor(tile / MAP_W) + 0.2;
     focusAt.x1 = focusAt.x0 + 0.6;
@@ -570,7 +805,7 @@ function focusOf(sim: Sim, target: Target) {
   return focusAt;
 }
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false };
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false, deskTunnel: false };
 
 const frameData: Frame = {
   x: 0,
@@ -591,6 +826,9 @@ const frameData: Frame = {
   sleeping: false,
   knockedOut: false,
   guards: [],
+  layer: LAYER.GROUND,
+  tilesRev: -1,
+  wear: {},
 };
 const PEEL_ACTION = { verb: '', what: '' };
 const tapAt = { x: 0, z: 0 };
@@ -631,7 +869,8 @@ function frame(now: number) {
       });
       // The stick and keys win over tap-to-walk; both are plain direction commands.
       if (controls.steering || sim.state.ko > 0) g.pilot.stop();
-      const op = g.ops.shift() ?? NO_OP;
+      // Holding the tool button: a strike is asked for every step (the sim paces them).
+      const op = g.ops.shift() ?? (tools.held && toolNow?.repeat ? USE_OP : NO_OP);
       g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p), op[0], op[1], op[2]));
       g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
       // Sound, banners and vibration read the events; the simulation never calls them.
@@ -663,7 +902,11 @@ function frame(now: number) {
   f.facing = Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]);
   f.moving = p.moving && !g.paused;
   f.minuteOfDay = clock.minuteOfDay + ((st.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE;
-  f.surface = sim.world.ground.kind[tile.z * MAP_W + tile.x];
+  f.layer = st.layer;
+  f.tilesRev = sim.tilesRev;
+  f.wear = st.wear;
+  // Footsteps: earth in the tunnels, steel in the vents, the floor's own sound elsewhere.
+  f.surface = st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
   f.inmates.length = st.inmates.length;
   st.inmates.forEach((m, k) => {
     const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0 });
@@ -698,20 +941,28 @@ function frame(now: number) {
   }
   f.tap = dest >= 0 ? tapAt : null;
   f.alarm = st.lockdown;
-  // Items: the floor, the hand, the outfit, and what the action button would use.
+  // Items: the floor (of the player's layer), the hand, the outfit, and what the action button would use.
   const it = st.items;
-  groundFrame.length = it.ground.length;
-  it.ground.forEach(([tileIndex, v], k) => {
-    const o = (groundFrame[k] ??= { x: 0, z: 0, item: 0 });
+  let n = 0;
+  for (const [key, v] of it.ground) {
+    if (layerOfKey(key) !== st.layer) continue;
+    const tileIndex = tileOfKey(key);
+    const o = (groundFrame[n++] ??= { x: 0, z: 0, item: 0 });
     o.x = (tileIndex % MAP_W) + 0.5;
     o.z = Math.floor(tileIndex / MAP_W) + 0.5;
     o.item = itemOf(v);
-  });
-  f.groundRev = it.rev;
-  const target = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused ? null : interactTarget(sim.world, it, p, sim.bedtime);
+  }
+  groundFrame.length = n;
+  // A layer change redraws the floor items too.
+  f.groundRev = it.rev * 4 + st.layer;
+  const busy = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused || g.over;
+  const held = itemOf(it.inv[it.hand]);
+  // The action button: the structure first (climb, cover, brace), as the sim decides it.
+  const climb = busy ? null : climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim));
+  const target = busy || climb ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer);
   // The frame stays on an open container (what the panel shows), else on what is in reach.
-  f.focus = focusOf(sim, it.open >= 0 ? { kind: 'container', index: it.open } : target);
-  f.held = itemOf(it.inv[it.hand]);
+  f.focus = it.open >= 0 ? focusOf(sim, { kind: 'container', index: it.open }) : focusOf(sim, target, climb);
+  f.held = held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;
@@ -725,9 +976,13 @@ function frame(now: number) {
     PEEL_ACTION.verb = t('act.peel');
     PEEL_ACTION.what = t('act.potato');
   }
-  v.action = st.ko > 0 ? null : st.solitary > 0 ? PEEL_ACTION : it.open >= 0 ? null : describeTarget(sim, target);
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : it.open >= 0 ? null : describeTarget(sim, target, climb, held);
   v.sleeping = st.sleeping;
+  v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   itemsUI.update(v);
+  // The tool button: what a strike would hit.
+  toolNow = busy || itemsUI.panelOpen ? null : describeTool(sim, toolTarget(sim.world, st.layer, p, held, bodiesOf(sim)), held);
+  tools.update(toolNow, st.energy, !!(held && itemDef(held).tool), busy || itemsUI.panelOpen);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');
   sleepVeil.classList.toggle('ko', st.ko > 0);

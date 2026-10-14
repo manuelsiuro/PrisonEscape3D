@@ -21,7 +21,11 @@ export class Autopilot {
   private best = Infinity;
   private stuck = 0;
 
-  constructor(private readonly world: World) {}
+  /** `grid` says what blocks the walker now (the layer it is on; the ground floor by default). */
+  constructor(
+    private readonly world: World,
+    private readonly grid: () => Uint8Array = () => world.block,
+  ) {}
 
   /** Heading somewhere. */
   get active() {
@@ -53,7 +57,8 @@ export class Autopilot {
   }
 
   private plan(b: Body): boolean {
-    const p = findPath(this.world, tileAt(b.x, b.z), this.goal!, this.target);
+    const grid = this.grid();
+    const p = findPath(this.world, tileAt(b.x, b.z), this.goal!, this.target, undefined, undefined, grid);
     this.rev = this.world.rev;
     this.best = Infinity;
     this.stuck = 0;
@@ -61,7 +66,7 @@ export class Autopilot {
       this.stop();
       return false;
     }
-    this.path = smooth(this.world, p, b.x, b.z);
+    this.path = smooth(this.world, p, b.x, b.z, undefined, grid);
     return true;
   }
 

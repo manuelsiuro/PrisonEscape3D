@@ -178,6 +178,11 @@ export class Character {
   private glanceGoal = 0;
   /** 0 standing … 1 lying in bed; and how far into the current activity. */
   private lie = 0;
+  /** Prone in a vent (0–1), and a tool strike's swing (1 at the blow, easing to 0). */
+  private crawl = 0;
+  private hit = 0;
+  /** The floor's height under the character (vents and roofs stand above the ground floor). */
+  baseY = 0;
   private act = 0;
   private actKind: number = DOING.NOTHING;
   private readonly offset = Math.random() * 10;
@@ -421,6 +426,11 @@ export class Character {
     }
   }
 
+  /** A tool strike: one hard swing of the arm (the next frames play it). */
+  strike() {
+    this.hit = 1;
+  }
+
   /**
    * Places and animates the character. `facing` in radians (0 = +z); `moving` swings the
    * limbs; `doing` (DOING) poses it at a routine spot, `bed` is where it lies to sleep.
@@ -433,11 +443,14 @@ export class Character {
     const ko = doing === DOING.KNOCKED_OUT;
     this.lie += (((doing === DOING.SLEEP && bed) || ko ? 1 : 0) - this.lie) * k(ko ? 9 : 5);
     if (this.lie < 0.002) this.lie = 0;
-    this.at.set(x, 0, z);
+    this.crawl += ((doing === DOING.CRAWL ? 1 : 0) - this.crawl) * k(8);
+    if (this.crawl < 0.002) this.crawl = 0;
+    this.hit = Math.max(0, this.hit - dt * 3.2);
+    this.at.set(x, this.baseY, z);
     let turn = facing;
     if (ko) {
       // Lies along its heading, feet where it stood.
-      this.bedAt.set(x - Math.sin(facing) * 0.15, 0.17, z - Math.cos(facing) * 0.15);
+      this.bedAt.set(x - Math.sin(facing) * 0.15, this.baseY + 0.17, z - Math.cos(facing) * 0.15);
       this.at.lerp(this.bedAt, this.lie);
     } else if (bed && this.lie > 0) {
       turn = bed.angle;
@@ -501,6 +514,16 @@ export class Character {
       armLz -= 1.1 * this.lie;
       armRz += 1.1 * this.lie;
       legZ = 0.25 * this.lie;
+    } else if (doing === DOING.CRAWL) {
+      // Elbows forward in turn, knees after them.
+      const c = Math.sin(this.phase * 0.7) * 0.45 * this.swing;
+      armLx = -2.5 + c;
+      armRx = -2.5 - c;
+      armLz = -0.25;
+      armRz = 0.25;
+      legL = 0.15 - c * 0.6;
+      legR = 0.15 + c * 0.6;
+      bob = 0;
     } else if (doing === DOING.SHOWER) {
       // Scrubbing the hair.
       armLx += (-2.7 + Math.sin(t * 9) * 0.15) * a;
@@ -508,13 +531,19 @@ export class Character {
       armLz -= 0.35 * a;
       armRz += 0.35 * a;
     }
+    // A strike: the tool arm up and down hard.
+    if (this.hit > 0) {
+      const h = this.hit;
+      armRx = h > 0.6 ? -2.6 * ((1 - h) / 0.4) : -2.6 * (h / 0.6) - 0.3 * (1 - h / 0.6);
+      armLx = Math.min(armLx, -0.5 * h);
+    }
     this.legL.rotation.set(legL, 0, -legZ);
     this.legR.rotation.set(legR, 0, legZ);
     this.armL.rotation.set(armLx, 0, armLz);
     this.armR.rotation.set(armRx, 0, armRz);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
-    this.body.position.y = bob * (1 - this.lie);
-    this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie + (doing === DOING.SEARCH ? 0.35 * this.act : 0);
+    this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12;
+    this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie + (doing === DOING.SEARCH ? 0.35 * this.act : 0) + (Math.PI / 2) * 0.92 * this.crawl + (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0);
 
     // In bed the blanket covers the body: no silhouette through it.
     if (this.ghost) this.ghost.visible = this.lie < 0.3;
@@ -555,7 +584,7 @@ export class Character {
 
     // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
-    const still = doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || ko;
+    const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || ko;
     if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * 1.1;
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);

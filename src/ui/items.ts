@@ -16,6 +16,8 @@ export interface ItemsView {
   /** What the action button would do now: a verb ("Search") and what to ("your desk"), or null. */
   action: { verb: string; what: string } | null;
   sleeping: boolean;
+  /** The open container is the player's desk with a tunnel dug under it (GDD §9.3): offer the way down. */
+  deskTunnel: boolean;
 }
 
 type Send = (op: number, a?: number, b?: number) => void;
@@ -100,7 +102,8 @@ export class ItemsUI {
       'item-panel box-panel hidden',
       `<div class="panel-head"><b></b><button class="icon-btn small" data-close data-t-label="box.close">${icon('close', 18)}</button></div>
       <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span data-t="box.hidden"></span><em data-t="box.hiddenNote"></em></div><div class="slot-grid box-hidden"></div></div>
-      <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>`,
+      <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>
+      <div class="box-tunnel hidden"><span data-t="box.tunnel"></span><button class="big-btn primary small" data-climb>${icon('down', 18)}<span data-t="box.climbDown"></span></button></div>`,
     );
     this.boxTitle = this.box.querySelector('.panel-head b')!;
     this.boxHidden = this.box.querySelector('.box-hidden')!;
@@ -109,7 +112,14 @@ export class ItemsUI {
       this.click();
       this.send(OP.CLOSE);
     });
-    this.box.addEventListener('click', (e) => this.slotClick(e));
+    this.box.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('[data-climb]')) {
+        this.click();
+        this.send(OP.INTERACT, 1);
+        return;
+      }
+      this.slotClick(e);
+    });
 
     this.craft = h('div', 'item-panel craft-panel hidden');
     this.craft.addEventListener('click', (e) => this.craftClick(e));
@@ -303,10 +313,11 @@ export class ItemsUI {
     this.updateAction(v);
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.
-    if (it.rev === this.simRev && this.uiRev === this.drawnUi && v.boxTitle === this.drawn) return;
+    const drawn = `${v.boxTitle}|${v.deskTunnel}`;
+    if (it.rev === this.simRev && this.uiRev === this.drawnUi && drawn === this.drawn) return;
     this.simRev = it.rev;
     this.drawnUi = this.uiRev;
-    this.drawn = v.boxTitle;
+    this.drawn = drawn;
 
     this.slots.forEach((s, k) => {
       // Something new landed here: a little pop (not on the first draw).
@@ -332,6 +343,7 @@ export class ItemsUI {
       const cell = (k: number) => `<button class="slot${box[k] ? ' filled' : ''}${this.picked === SLOT.CONTAINER + k ? ' picked' : ''}" data-addr="${SLOT.CONTAINER + k}" title="${box[k] ? itemName(itemOf(box[k])) : ''}">${slotInner(box[k])}</button>`;
       this.box.querySelector('.box-hidden-wrap')!.classList.toggle('hidden', v.boxHidden === 0);
       this.box.classList.toggle('plain', v.boxHidden === 0);
+      this.box.querySelector('.box-tunnel')!.classList.toggle('hidden', !v.deskTunnel);
       this.boxHidden.innerHTML = Array.from({ length: v.boxHidden }, (_, k) => cell(k)).join('');
       this.boxDrawers.innerHTML = Array.from({ length: box.length - v.boxHidden }, (_, k) => cell(v.boxHidden + k)).join('');
     }

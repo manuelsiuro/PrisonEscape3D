@@ -159,8 +159,10 @@ export function stepGuards(
   inmates: readonly Body[],
   step: number,
   report: (r: GuardReport) => void,
+  /** The player is on the ground floor (in the tunnels, vents or up on a roof nobody bumps into them). */
+  playerHere = true,
 ) {
-  const crowd: Crowd = { w, grid: w.guardBlock, all: guards, others: [player, ...inmates], step };
+  const crowd: Crowd = { w, grid: w.guardBlock, all: guards, others: playerHere ? [player, ...inmates] : inmates, step };
   const chasers: Crowd = { ...crowd, others: inmates };
   const places = placesOf(w);
   guards.forEach((g, k) => {

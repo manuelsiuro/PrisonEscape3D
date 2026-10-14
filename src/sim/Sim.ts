@@ -6,7 +6,8 @@ import { argA, argB, dirOf, OP, opOf, SLOT } from './command';
 import { findPath, nearestDir } from './ai/path';
 import { placesOf } from './ai/places';
 import { canSee } from './ai/sight';
-import { craft, dropItem, equip, HOTBAR, interactTarget, itemOf, moveItem, pickUp, restock, slot, startItems, stillInReach, type ItemEvent, type ItemState } from './systems/items';
+import { craft, dropItem, equip, give, HOTBAR, interactTarget, itemOf, moveItem, pickUp, restock, slot, startItems, stillInReach, usesOf, type ItemEvent, type ItemState } from './systems/items';
+import { besideOnGround, cavesIn, climbTarget, DIRT, ladderFootOf, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbAction, type ClimbTarget, type ToolAction, type ToolTarget } from './systems/structure';
 import { fnv1a, randomInt } from './rng';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { assign, awake, backToDuty, cancelTasks, CATCH_RANGE, GUARD, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
@@ -14,7 +15,19 @@ import { LOCKDOWN_PLAN, spawnInmates, stepInmates, type Inmate } from './systems
 import { bodyAt, tileOfBody, walk, type Body } from './systems/movement';
 import {
   BODY_HALF,
+  CAVE_IN_ENERGY,
   CHASE_HEAT,
+  CHOCOLATE_ENERGY,
+  CRAWL_SPEED,
+  ENERGY_REGEN_STEPS,
+  MEAL_ENERGY,
+  SHOWER_ENERGY,
+  STRIKE_SEEN_STEPS,
+  STRIKE_STEPS,
+  TOILET_CLOG_STEPS,
+  TOILET_LOADS,
+  TUNNEL_SPEED,
+  WALK_SPEED,
   CONTRABAND_HEAT,
   HEAT_DECAY_STEPS,
   KO_STEPS,
@@ -30,11 +43,12 @@ import {
   STEPS_PER_MINUTE,
   UNIT,
 } from './tuning';
-import { MAP_H, MAP_W, World } from './world/World';
+import { LAYER, layerOfKey, MAP_H, MAP_W, placeKey, tileOfKey, World } from './world/World';
+import { DAMAGE_SHOWS, TILE, TILE_INFO } from './world/tiles';
 import { containersOf } from './world/containers';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** Where a knocked-out player wakes up. */
 export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2 } as const;
@@ -66,6 +80,29 @@ export type SimEvent =
   | { type: 'searched'; cell: number; taken: number }
   /** The night bed check begins, and how it went at the player's cell. */
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
+  /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
+  | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster'; action: ToolAction }
+  /** A tool wore out. */
+  | { type: 'broke'; item: number }
+  /** A live electric fence: knocked out (GDD §9.1). */
+  | { type: 'shocked' }
+  /** A tunnel roof came down on the player (GDD §9.2). */
+  | { type: 'caveIn'; tile: number }
+  /** Onto another layer (through a grate, up the ladder, into a tunnel…). */
+  | { type: 'layer'; layer: number; from: number; how: ClimbAction | 'digUp' | 'rope' }
+  /** A cover put over damage or taken off it; a brace set up; chocolate eaten. */
+  | { type: 'covered'; item: number; on: boolean }
+  | { type: 'braced' }
+  | { type: 'ate'; item: number }
+  /** Dirt down a toilet; a toilet that takes no more for now. */
+  | { type: 'flushed'; item: number }
+  | { type: 'clogged' }
+  /** Guards found damage or evidence (and repaired what they found, after a capture). */
+  | { type: 'found'; kind: number }
+  | { type: 'repaired'; n: number }
+  /** Out on the road: free (GDD §4.0). */
+  | { type: 'escaped' }
   | ItemEvent;
 
 /**
@@ -106,6 +143,22 @@ export interface SimState {
   near: number;
   /** The step of the last stroke of the peeler (presses come at most every PEEL_STEPS). */
   peelAt: number;
+  /** The layer the player is on (World LAYER): tunnels, ground, vents, roof. */
+  layer: number;
+  /** 0–100: tools spend it, sleep, meals, showers and chocolate give it back (GDD §3.1). */
+  energy: number;
+  /** Tiles changed from the map (World placeKey → tile kind): dug, chipped, cut, covered, braced. */
+  tiles: Record<number, number>;
+  /** Hit points struck off tiles that haven't given way yet (placeKey → damage). */
+  wear: Record<number, number>;
+  /** Toilets that took dirt (container index → [loads, the step the count began]). */
+  toilets: Record<number, [number, number]>;
+  /** Damage guards have found (placeKeys): put right when they catch the player. */
+  found: number[];
+  /** The step of the last strike that landed (a guard who sees it sees tampering). */
+  struckAt: number;
+  /** The step the player reached the road (0 while still inside). */
+  escaped: number;
 }
 
 export interface Snapshot {
@@ -159,9 +212,23 @@ export class Sim {
       spotted: 0,
       near: 0,
       peelAt: 0,
+      layer: LAYER.GROUND,
+      energy: 100,
+      tiles: {},
+      wear: {},
+      toilets: {},
+      found: [],
+      struckAt: -STRIKE_STEPS,
+      escaped: 0,
     };
+    this.ladderFoot = ladderFootOf(this.world);
     this.updateDoors(false);
   }
+
+  /** Where the ladder's floor end is (-1 without one). */
+  private ladderFoot = -1;
+  /** Bumps whenever a tile or its wear changes (the view redraws damage then). Not state. */
+  tilesRev = 0;
 
   get clock(): Clock {
     return clockAt(this.state.step);
@@ -171,6 +238,8 @@ export class Sim {
     const s = this.state;
     const w = this.world;
     this.events = [];
+    // Out: the game is won, nothing more happens.
+    if (s.escaped) return;
     s.step++;
     // Clock.
     const clock = this.clock;
@@ -210,13 +279,14 @@ export class Sim {
     // Who each group shares the floor with (arrays reused: asleep, hundreds of steps run a second).
     const forInmates = this.forInmates;
     const inmateBodies = this.inmateBodies;
+    const about = s.layer === LAYER.GROUND;
     forInmates.length = 0;
-    forInmates.push(s.player);
+    if (about) forInmates.push(s.player);
     for (const g of s.guards) forInmates.push(g.body);
     inmateBodies.length = 0;
     for (const m of s.inmates) inmateBodies.push(m.body);
     stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, forInmates, s.step);
-    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport);
+    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about);
     // Knocked out: nothing to do but lie there, then wake up somewhere else.
     if (s.ko > 0) {
       s.player.moving = false;
@@ -228,10 +298,19 @@ export class Sim {
         s.sleeping = false;
         this.events.push({ type: 'sleep', on: false });
       }
-      walk(w, s.player, s.sleeping ? 0 : dirOf(cmd));
+      walk(w, s.player, s.sleeping ? 0 : dirOf(cmd), s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : WALK_SPEED, s.layer);
       // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
       this.useItems(s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
+      // On the road outside: free.
+      if (s.layer === LAYER.GROUND && this.playerZone === 'outside') {
+        s.escaped = s.step;
+        this.closeBox();
+        this.events.push({ type: 'escaped' });
+        return;
+      }
     }
+    // Energy: a point back every couple of minutes, one a minute asleep.
+    if (s.energy < 100 && (s.step % ENERGY_REGEN_STEPS === 0 || (s.sleeping && s.step % STEPS_PER_MINUTE === 0))) s.energy++;
     // Solitary: time served (and potatoes peeled) sets the player free.
     if (s.solitary > 0 && --s.solitary === 0) this.release();
     // Who sees the player now, and what they make of it.
@@ -241,6 +320,10 @@ export class Sim {
     if (!s.attended && ROUTINE[s.routine].zones.includes(zone)) {
       s.attended = true;
       this.events.push({ type: 'attended', routine: s.routine });
+      // A meal or a shower picks the player up.
+      const id = ROUTINE[s.routine].id;
+      const gain = id === 'breakfast' || id === 'dinner' ? MEAL_ENERGY : id === 'showers' ? SHOWER_ENERGY : 0;
+      s.energy = Math.min(100, s.energy + gain);
     }
     // Heat cools while no guard is looking.
     if (!s.seen && !s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
@@ -265,21 +348,23 @@ export class Sim {
    */
   private watch() {
     const s = this.state;
-    const w = this.world;
     const p = s.player;
     const t = tileOfBody(p);
     const here = t.z * MAP_W + t.x;
     s.seen = false;
     for (const g of s.guards) {
-      g.sees = !this.away && awake(g) && canSee(w, g.body, p);
+      g.sees = !this.away && awake(g) && this.inView(g.body);
       if (g.sees) {
         g.lastSeen = here;
         s.seen = true;
       }
     }
+    // Damage and evidence in a guard's cone (GDD §9.3).
+    const found = this.noticeDamage();
     if (this.away) {
       s.spotted = 0;
       s.near = 0;
+      if (found) this.repair();
       return;
     }
     const zone = this.playerZone;
@@ -290,7 +375,10 @@ export class Sim {
     // Out of the cell after Lights Out (past the walk home), or somewhere staff only: 100%.
     const sinceLightsOut = (clockAt(s.step).minuteOfDay - ROUTINE[ROUTINE.length - 1].start + 1440) % 1440;
     const late = ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
-    if (s.seen && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
+    // Seen at work on a wall, a fence, a grate or the floor; damage found: 100% (GDD §5.2, §9.3).
+    if (s.seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS) [reason, heat] = [SPOT.indexOf('tampering'), 100];
+    else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
+    else if (s.seen && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
     else if (s.seen && !disguised && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
     // A contraband tool or weapon in hand, in plain sight: +40% a second.
     const held = itemOf(it.inv[it.hand]);
@@ -312,8 +400,97 @@ export class Sim {
     if (reason && reason !== s.spotted && !s.lockdown) this.events.push({ type: 'spotted', reason: SPOT[reason] });
     s.spotted = reason;
     if (heat) this.addHeat(heat);
-    // Caught: a chaser close enough.
-    if (s.guards.some((g) => g.mode === GUARD.CHASE && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= CATCH_RANGE * CATCH_RANGE)) this.caught();
+    // Caught: a chaser close enough (on the same floor).
+    if (s.layer === LAYER.GROUND && s.guards.some((g) => g.mode === GUARD.CHASE && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= CATCH_RANGE * CATCH_RANGE)) this.caught();
+  }
+
+  /**
+   * Whether a guard sees the player: on the ground floor, its cone and a clear line; up on a
+   * roof, from the open yard (nothing on the ground is in the way); in the vents and the
+   * tunnels, never.
+   */
+  private inView(eye: Body): boolean {
+    const s = this.state;
+    if (s.layer === LAYER.GROUND) return canSee(this.world, eye, s.player);
+    if (s.layer !== LAYER.ROOF) return false;
+    const t = tileOfBody(eye);
+    return TILE_INFO[this.world.ground.kind[t.z * MAP_W + t.x]].outdoor && canSee(this.world, eye, s.player, undefined, false);
+  }
+
+  /**
+   * Guards notice damage in their cones (GDD §9.3): an open hole, a cut fence, a missing
+   * grate overhead, a tunnel entrance (one under the player's desk only while the desk is
+   * pushed aside, with the player below), and dirt or chunks of wall left on the floor
+   * (taken away there and then). Returns whether anything new was found.
+   */
+  private noticeDamage(): boolean {
+    const s = this.state;
+    const w = this.world;
+    const watchers = s.guards.filter(awake);
+    if (!watchers.length) return false;
+    const point = { x: 0, z: 0 };
+    // The middle of the tile, or any of its four faces (a hole in a wall is seen from an angle by its face).
+    const seenAt = (tile: number) => {
+      const cx = (tile % MAP_W) * UNIT + UNIT / 2;
+      const cz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+      for (const [fx, fz] of FACES) {
+        point.x = cx + fx;
+        point.z = cz + fz;
+        if (watchers.some((g) => canSee(w, g.body, point))) return true;
+      }
+      return false;
+    };
+    let any = false;
+    for (const k in s.tiles) {
+      const key = Number(k);
+      const kind = s.tiles[key];
+      const layer = layerOfKey(key);
+      const tile = tileOfKey(key);
+      const shows = layer === LAYER.GROUND ? DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && underMyDesk(w, tile) && s.layer !== LAYER.UNDER) : layer === LAYER.VENTS && kind === TILE.GRATE_OPEN;
+      if (!shows || s.found.includes(key) || !seenAt(tile)) continue;
+      s.found.push(key);
+      this.events.push({ type: 'found', kind });
+      any = true;
+    }
+    const it = s.items;
+    for (let k = it.ground.length - 1; k >= 0; k--) {
+      const [key, v] = it.ground[k];
+      const item = itemOf(v);
+      if ((item !== DIRT && item !== WALL_CHUNK) || layerOfKey(key) !== LAYER.GROUND || !seenAt(key)) continue;
+      it.ground.splice(k, 1);
+      it.rev++;
+      this.events.push({ type: 'found', kind: TILE.DIRT });
+      any = true;
+    }
+    return any;
+  }
+
+  /** Damage the guards found is put right (concreted over, the grate screwed back): after a capture. */
+  private repair() {
+    const s = this.state;
+    if (!s.found.length) return;
+    const n = s.found.length;
+    for (const key of s.found) this.setTile(layerOfKey(key), tileOfKey(key), -1);
+    s.found = [];
+    this.events.push({ type: 'repaired', n });
+  }
+
+  /** Changes a tile and records it in the state (-1 puts the map's own tile back). */
+  private setTile(layer: number, tile: number, kind: number) {
+    const s = this.state;
+    const l = this.world.layers[layer];
+    const key = placeKey(layer, tile);
+    const k = kind < 0 ? l.base[tile] : kind;
+    delete s.wear[key];
+    if (k === l.base[tile]) delete s.tiles[key];
+    else s.tiles[key] = k;
+    this.world.setKind(layer, tile, k);
+    this.tilesRev++;
+  }
+
+  /** The prison's power (the generator arrives in P7: until then it is always on). */
+  get power(): boolean {
+    return true;
   }
 
   /** Knocked down by a guard: the lockdown is over, everyone back to work, the player out cold. */
@@ -367,6 +544,8 @@ export class Sim {
     }
     it.rev++;
     s.heat = 0;
+    // What the guards found is put right while the player is out cold (GDD §5.6).
+    this.repair();
     const lightsOut = ROUTINE[s.routine].id === 'lightsOut';
     if (s.wake === WAKE.SOLITARY && places.solitary >= 0) {
       taken += this.search(1);
@@ -413,8 +592,9 @@ export class Sim {
     this.events.push({ type: 'peel', done: true });
   }
 
-  /** Puts the player on a tile (carried there, facing south). */
+  /** Puts the player on a ground floor tile (carried there, facing south). */
   private place(tile: number) {
+    this.state.layer = LAYER.GROUND;
     const p = this.state.player;
     p.x = (tile % MAP_W) * UNIT + UNIT / 2;
     p.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
@@ -515,10 +695,22 @@ export class Sim {
           this.peel();
           break;
         }
-        const target = interactTarget(this.world, it, s.player, this.bedtime);
+        // From the open desk panel: down the tunnel under the player's desk.
+        if (a === 1) {
+          this.underDesk();
+          break;
+        }
+        const held = itemOf(it.inv[it.hand]);
+        const climb = climbTarget(this.world, s.layer, s.player, this.ladderFoot, this.bodiesAbout());
+        if (climb) {
+          this.climb(climb);
+          break;
+        }
+        const target = interactTarget(this.world, it, s.player, this.bedtime, s.layer);
         if (!target) break;
         if (target.kind === 'ground') pickUp(it, target.index, ev);
         else if (target.kind === 'sleep') this.sleep();
+        else if ((held === DIRT || held === WALL_CHUNK) && containersOf(this.world)[target.index].prop.kind === 'toilet') this.flush(target.index);
         else if (it.open !== target.index) {
           it.open = target.index;
           ev.push({ type: 'open', container: target.index });
@@ -535,7 +727,10 @@ export class Sim {
         moveItem(it, a, argB(cmd));
         break;
       case OP.DROP:
-        dropItem(it, a, s.player, ev);
+        dropItem(it, a, s.player, ev, s.layer);
+        break;
+      case OP.USE:
+        if (s.solitary === 0) this.strike();
         break;
       case OP.CRAFT:
         craft(it, a, ev, argB(cmd) - 1);
@@ -552,6 +747,211 @@ export class Sim {
       it.rev++;
       ev.push({ type: 'close' });
     }
+  }
+
+  /** Everyone about on the ground floor (nobody digs under people). */
+  private bodiesAbout(): Body[] {
+    const s = this.state;
+    const list = this.inmateBodies.slice();
+    for (const g of s.guards) list.push(g.body);
+    return list;
+  }
+
+  /**
+   * A strike with the tool in hand (GDD §9, §7.2): at most every STRIKE_STEPS, it costs the
+   * tool's energy and a use; the tile's hit points go down by the tool's damage, and when
+   * they run out it gives way. Chocolate in hand is eaten instead.
+   */
+  private strike() {
+    const s = this.state;
+    const w = this.world;
+    const it = s.items;
+    const p = s.player;
+    const held = itemOf(it.inv[it.hand]);
+    const target = toolTarget(w, s.layer, p, held, this.bodiesAbout());
+    if (!target) return;
+    // Strikes come at their own pace (holding the button asks every step); the rest at a press.
+    if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
+    if (target.action === 'eat') {
+      it.inv[it.hand] = 0;
+      s.energy = Math.min(100, s.energy + CHOCOLATE_ENERGY);
+      this.events.push({ type: 'ate', item: held });
+      return;
+    }
+    if (!STRIKES.has(target.action)) {
+      this.putInPlace(target, held);
+      return;
+    }
+    const why = target.hp === 0 ? 'reinforced' : !target.fits ? 'tool' : s.energy < itemDef(held).tool!.energy ? 'tired' : null;
+    if (why) {
+      this.events.push({ type: 'cantStrike', why, action: target.action });
+      return;
+    }
+    const tool = itemDef(held).tool!;
+    s.struckAt = s.step;
+    s.energy -= tool.energy;
+    // Face what is struck (the grate overhead keeps the heading).
+    if (target.tile >= 0 && target.action !== 'digUp' && target.action !== 'unscrew') {
+      const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
+      const dz = Math.floor(target.tile / MAP_W) * UNIT + UNIT / 2 - p.z;
+      if (dx || dz) p.facing = nearestDir(dx, dz);
+    }
+    p.moving = false;
+    // The tool wears.
+    const left = usesOf(it.inv[it.hand]) - 1;
+    if (left <= 0) {
+      it.inv[it.hand] = 0;
+      this.events.push({ type: 'broke', item: held });
+    } else it.inv[it.hand] = slot(held, left);
+    // A live fence: knocked flat (GDD §9.1).
+    if (target.action === 'cut' && w.ground.kind[target.tile] === TILE.ELECTRIC && this.power) {
+      s.ko = KO_STEPS;
+      s.wake = WAKE.INFIRMARY;
+      s.sleeping = false;
+      this.closeBox();
+      this.events.push({ type: 'shocked' });
+      return;
+    }
+    const key = placeKey(target.layer, target.tile);
+    const taken = (s.wear[key] ?? 0) + tool.damage;
+    if (taken < target.hp) {
+      s.wear[key] = taken;
+      this.tilesRev++;
+      this.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: target.tile, broke: false });
+      return;
+    }
+    const t = target.tile;
+    switch (target.action) {
+      case 'chip':
+        this.setTile(LAYER.GROUND, t, TILE.HOLE);
+        give(it, WALL_CHUNK, p, s.layer);
+        break;
+      case 'cut':
+        this.setTile(LAYER.GROUND, t, TILE.FENCE_CUT);
+        break;
+      case 'unscrew':
+        this.setTile(LAYER.VENTS, t, TILE.GRATE_OPEN);
+        break;
+      case 'dig':
+        if (target.layer === LAYER.GROUND) {
+          this.setTile(LAYER.GROUND, t, TILE.SHAFT);
+          if (w.layers[LAYER.UNDER].kind[t] === TILE.SOIL) this.setTile(LAYER.UNDER, t, TILE.TUNNEL);
+        } else {
+          this.setTile(LAYER.UNDER, t, TILE.TUNNEL);
+          // Too long a stretch without a brace: the roof comes down (GDD §9.2).
+          if (cavesIn(w, t)) {
+            this.setTile(LAYER.UNDER, t, TILE.SOIL);
+            s.energy = Math.max(0, s.energy - CAVE_IN_ENERGY);
+            this.events.push({ type: 'caveIn', tile: t });
+            return;
+          }
+        }
+        give(it, DIRT, p, s.layer);
+        break;
+      case 'digUp': {
+        this.setTile(LAYER.GROUND, t, TILE.SHAFT);
+        give(it, DIRT, p, s.layer);
+        this.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
+        // Out through the new hole.
+        const out = besideOnGround(w, t, this.bodiesAbout());
+        if (out >= 0) this.moveTo(LAYER.GROUND, out, 'digUp');
+        return;
+      }
+    }
+    this.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
+  }
+
+  /**
+   * The item in hand put to use on the structure (GDD §9.2–9.3): a cover over damage, a
+   * brace in the tunnel, a sheet rope down off a roof. One press each.
+   */
+  private putInPlace(target: ToolTarget, held: number) {
+    const s = this.state;
+    const it = s.items;
+    const t = target.tile;
+    if (!target.fits) {
+      this.events.push({ type: 'cantStrike', why: 'poster', action: target.action });
+      return;
+    }
+    it.inv[it.hand] = 0;
+    switch (target.action) {
+      case 'cover':
+        if (target.layer === LAYER.VENTS) this.setTile(LAYER.VENTS, t, TILE.GRATE_FAKE);
+        else this.setTile(LAYER.GROUND, t, this.world.ground.kind[t] === TILE.FENCE_CUT ? TILE.FENCE_FAKE : held === POSTER_ITEM ? TILE.HOLE_POSTER : TILE.HOLE_FAKE);
+        this.events.push({ type: 'covered', item: held, on: true });
+        break;
+      case 'brace':
+        this.setTile(LAYER.UNDER, t, TILE.BRACED);
+        this.events.push({ type: 'braced' });
+        break;
+      case 'rope':
+        this.moveTo(LAYER.GROUND, t, 'rope');
+        break;
+    }
+  }
+
+  /** Climbing, and covers taken off (the action button on the structure). */
+  private climb(c: ClimbTarget) {
+    const s = this.state;
+    const it = s.items;
+    const p = s.player;
+    switch (c.action) {
+      case 'uncover': {
+        const grate = this.world.layers[LAYER.VENTS].kind[c.tile] === TILE.GRATE_FAKE;
+        if (!give(it, c.item!, p, s.layer)) return;
+        if (grate) this.setTile(LAYER.VENTS, c.tile, TILE.GRATE_OPEN);
+        else this.setTile(LAYER.GROUND, c.tile, this.world.ground.kind[c.tile] === TILE.FENCE_FAKE ? TILE.FENCE_CUT : TILE.HOLE);
+        this.events.push({ type: 'covered', item: c.item!, on: false });
+        return;
+      }
+    }
+    // Climbing out of the tunnel under the desk: beside the desk.
+    const to = c.toTile === -2 ? placesOf(this.world).deskside[1] : c.toTile;
+    if (to < 0) return;
+    this.moveTo(c.toLayer, to, c.action);
+  }
+
+  /** Down the tunnel under the player's desk (from its open panel). */
+  private underDesk() {
+    const it = this.state.items;
+    const box = containersOf(this.world)[it.open];
+    if (!box?.mine || box.prop.kind !== 'desk') return;
+    const tile = box.prop.z * MAP_W + box.prop.x;
+    if (this.world.ground.kind[tile] !== TILE.SHAFT) return;
+    this.moveTo(LAYER.UNDER, tile, 'climbDown');
+  }
+
+  /** Onto a layer, in the middle of a tile. */
+  private moveTo(layer: number, tile: number, how: ClimbAction | 'digUp' | 'rope') {
+    const s = this.state;
+    const from = s.layer;
+    this.closeBox();
+    s.layer = layer;
+    s.player.x = (tile % MAP_W) * UNIT + UNIT / 2;
+    s.player.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+    s.player.moving = false;
+    this.events.push({ type: 'layer', layer, from, how });
+  }
+
+  /** Dirt (or a chunk of wall) down a toilet: three loads an hour, then it's clogged for an hour (GDD §9.2). */
+  private flush(index: number) {
+    const s = this.state;
+    const it = s.items;
+    const t = (s.toilets[index] ??= [0, s.step]);
+    if (s.step - t[1] >= TOILET_CLOG_STEPS) {
+      t[0] = 0;
+      t[1] = s.step;
+    }
+    if (t[0] >= TOILET_LOADS) {
+      this.events.push({ type: 'clogged' });
+      return;
+    }
+    const item = itemOf(it.inv[it.hand]);
+    it.inv[it.hand] = 0;
+    if (t[0] === 0) t[1] = s.step;
+    // The third load clogs it: an hour from now it takes dirt again.
+    if (++t[0] >= TOILET_LOADS) t[1] = s.step;
+    this.events.push({ type: 'flushed', item });
   }
 
   /** Into bed: the player lies down beside it (the view puts them in it). */
@@ -594,7 +994,7 @@ export class Sim {
     const w = this.world;
     let mask = 0;
     if (this.cellsLocked) {
-      const bodies = [s.player, ...s.inmates.map((m) => m.body)];
+      const bodies = s.layer === LAYER.GROUND ? [s.player, ...s.inmates.map((m) => m.body)] : s.inmates.map((m) => m.body);
       const occupant = (c: number) => (c === 1 ? s.player : s.inmates.find((m) => m.cell === c)?.body);
       const cellOfBody = (b: Body) => {
         const t = tileOfBody(b);
@@ -614,8 +1014,12 @@ export class Sim {
     if (announce && ((was ^ mask) & 2) !== 0) this.events.push({ type: 'cells', locked: (mask & 2) !== 0 });
   }
 
-  /** The zone the player stands in. */
+  /** The zone the player stands in (off the ground floor: the tunnels, the vents, the roof). */
   get playerZone() {
+    const l = this.state.layer;
+    if (l === LAYER.UNDER) return 'tunnels';
+    if (l === LAYER.VENTS) return 'vents';
+    if (l === LAYER.ROOF) return 'roof';
     const t = tileOfBody(this.state.player);
     return this.world.zoneAt(t.x, t.z);
   }
@@ -650,21 +1054,44 @@ export class Sim {
       spotted: st.spotted ?? 0,
       near: st.near ?? 0,
       peelAt: st.peelAt ?? 0,
+      layer: st.layer ?? LAYER.GROUND,
+      energy: st.energy ?? 100,
+      tiles: st.tiles ?? {},
+      wear: st.wear ?? {},
+      toilets: st.toilets ?? {},
+      found: st.found ?? [],
+      struckAt: st.struckAt ?? -STRIKE_STEPS,
+      escaped: st.escaped ?? 0,
     };
+    // The world as the state has it: the map, then every tile changed since.
+    const w = this.world;
+    for (const l of w.layers) l.kind.set(l.base);
+    for (const k in this.state.tiles) w.layers[layerOfKey(Number(k))].kind[tileOfKey(Number(k))] = this.state.tiles[k];
+    w.refreshBlock();
+    this.tilesRev++;
     this.updateDoors(false);
     this.events = [];
   }
 
   /** A fingerprint of the whole state (tests compare these). */
   hash(): string {
-    const g = this.world.ground;
-    return fnv1a(JSON.stringify(this.state) + fnv1a(String.fromCharCode(...g.kind)) + fnv1a(String.fromCharCode(...this.world.block)));
+    const w = this.world;
+    return fnv1a(JSON.stringify(this.state) + w.layers.map((l) => fnv1a(String.fromCharCode(...l.kind))).join('') + fnv1a(String.fromCharCode(...w.block)));
   }
 }
 
 const GUARD_OUTFIT = itemNumber('guard_outfit');
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
 const BED_DUMMY = itemNumber('bed_dummy');
+const POSTER_ITEM = itemNumber('poster');
+/** Where a guard looks at a tile from: its middle, then its faces. */
+const FACES = [
+  [0, 0],
+  [0, Math.round(UNIT * 0.45)],
+  [0, -Math.round(UNIT * 0.45)],
+  [Math.round(UNIT * 0.45), 0],
+  [-Math.round(UNIT * 0.45), 0],
+];
 
 /**
  * Items from a snapshot, fitted to this prison's containers (a map edit may add or remove

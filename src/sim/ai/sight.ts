@@ -45,11 +45,11 @@ export function lineOfSight(w: World, ax: number, az: number, bx: number, bz: nu
 }
 
 /**
- * Whether a watcher facing its heading sees a body: inside the 60° cone and the range with
- * a clear line, or touching. Integer math only (the comparisons are squared), so it is the
+ * Whether a watcher facing its heading sees a point (a body, a hole in a wall): inside the
+ * 60° cone and the range with a clear line, or touching. Integer math only (the comparisons are squared), so it is the
  * same on every platform.
  */
-export function canSee(w: World, eye: Body, target: Body, range = SIGHT_RANGE): boolean {
+export function canSee(w: World, eye: Body, target: { x: number; z: number }, range = SIGHT_RANGE, walls = true): boolean {
   const dx = target.x - eye.x;
   const dz = target.z - eye.z;
   const d2 = dx * dx + dz * dz;
@@ -61,7 +61,8 @@ export function canSee(w: World, eye: Body, target: Body, range = SIGHT_RANGE): 
     // cos² 30° = 3/4.
     if (dot <= 0 || 4 * dot * dot < 3 * (fx * fx + fz * fz) * d2) return false;
   }
-  return lineOfSight(w, eye.x, eye.z, target.x, target.z);
+  // Without `walls` (someone up on a roof, seen from the open yard) nothing on the ground is in the way.
+  return !walls || lineOfSight(w, eye.x, eye.z, target.x, target.z);
 }
 
 /**

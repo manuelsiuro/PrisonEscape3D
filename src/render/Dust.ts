@@ -26,13 +26,13 @@ export class Dust {
     }
   }
 
-  /** A few puffs at (x, z), tinted like the ground. */
-  puff(x: number, z: number, color: number, count = 3) {
+  /** A few puffs at (x, z) (y above the floor), tinted like the ground or what was struck. */
+  puff(x: number, z: number, color: number, count = 3, y = 0.04) {
     for (let k = 0; k < count; k++) {
       const i = this.next;
       this.next = (this.next + 1) % POOL;
       this.life[i] = 1;
-      this.pos.set([x + (Math.random() - 0.5) * 0.25, 0.04, z + (Math.random() - 0.5) * 0.25], i * 3);
+      this.pos.set([x + (Math.random() - 0.5) * 0.25, y, z + (Math.random() - 0.5) * 0.25], i * 3);
       this.vel.set([(Math.random() - 0.5) * 0.5, 0.35 + Math.random() * 0.35, (Math.random() - 0.5) * 0.5], i * 3);
       this.size[i] = 0.06 + Math.random() * 0.05;
       this.mesh.setColorAt(i, this.c.set(color));

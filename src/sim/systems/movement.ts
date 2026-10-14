@@ -1,6 +1,6 @@
 import { DIR_X, DIR_Z } from '../command';
 import { BODY_HALF, CORNER_ASSIST, UNIT, WALK_SPEED } from '../tuning';
-import type { World } from '../world/World';
+import { LAYER, type World } from '../world/World';
 
 /** A walker's position (integer units, the middle of its square footprint) and heading. */
 export interface Body {
@@ -18,7 +18,7 @@ const tile = (u: number) => Math.floor(u / UNIT);
  * straight move is blocked on one side only (a door frame), the walker slides toward the
  * opening, so 1-tile doors are easy to hit with a thumb stick.
  */
-function slide(w: World, b: Body, d: number, alongX: boolean, assist: boolean) {
+function slide(w: World, b: Body, d: number, alongX: boolean, assist: boolean, layer: number) {
   if (d === 0) return;
   const pos = alongX ? b.x : b.z;
   const side = alongX ? b.z : b.x;
@@ -26,7 +26,7 @@ function slide(w: World, b: Body, d: number, alongX: boolean, assist: boolean) {
   const a1 = tile(side + BODY_HALF - 1);
   const next = pos + d;
   const edge = d > 0 ? tile(next + BODY_HALF - 1) : tile(next - BODY_HALF);
-  const at = (t: number) => (alongX ? w.blocked(edge, t) : w.blocked(t, edge));
+  const at = (t: number) => (alongX ? w.blocked(edge, t, layer) : w.blocked(t, edge, layer));
   const b0 = at(a0);
   const b1 = a1 === a0 ? b0 : at(a1);
   if (!b0 && !b1) {
@@ -46,15 +46,15 @@ function slide(w: World, b: Body, d: number, alongX: boolean, assist: boolean) {
   else b.x += shift;
 }
 
-/** Walks a body one step in a direction (0 = stand still). */
-export function walk(w: World, b: Body, dir: number, speed = WALK_SPEED) {
+/** Walks a body one step in a direction (0 = stand still), on the ground floor unless a layer is given. */
+export function walk(w: World, b: Body, dir: number, speed = WALK_SPEED, layer: number = LAYER.GROUND) {
   b.moving = dir !== 0;
   if (!dir) return;
   b.facing = dir;
   const dx = Math.trunc((DIR_X[dir] * speed) / 1024);
   const dz = Math.trunc((DIR_Z[dir] * speed) / 1024);
-  slide(w, b, dx, true, dz === 0);
-  slide(w, b, dz, false, dx === 0);
+  slide(w, b, dx, true, dz === 0, layer);
+  slide(w, b, dz, false, dx === 0, layer);
 }
 
 /** The tile a body stands on. */

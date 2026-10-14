@@ -1,0 +1,306 @@
+import { itemDef, itemNumber, type ItemDef } from '../../content/items';
+import { DIR_X, DIR_Z } from '../command';
+import { BODY_HALF, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRATE_HP, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
+import { isGrate, isTunnel, TILE, TILE_INFO } from '../world/tiles';
+import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
+import type { Body } from './movement';
+
+/**
+ * Layers and destruction (GDD §9): what a tool would strike, what the action button would
+ * climb or cover, and the tunnel rules. Pure functions of the world and the player: the
+ * simulation applies them, the UI labels the buttons with the same answers.
+ */
+
+/**
+ * What the use button does with the item in hand: a tool strikes (chip, cut, unscrew, dig,
+ * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
+ * takes the player down off a roof.
+ */
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope';
+
+/** The actions that strike (and wear down a tile); the others happen at one press. */
+export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp']);
+
+export interface ToolTarget {
+  action: ToolAction;
+  layer: number;
+  tile: number;
+  /** The item in hand can do it (else the button says what is needed). */
+  fits: boolean;
+  /** Hit points the tile has in all (0: nothing gets through it; strikes only). */
+  hp: number;
+}
+
+/** What the action button does to the structure around the player. */
+export type ClimbAction =
+  /** Ground → vents through an open grate; vents → ground. */
+  | 'climbVent'
+  | 'dropDown'
+  /** Up the ladder to the roof (from the floor or the vents), and back down to the floor. */
+  | 'climbRoof'
+  | 'climbDownLadder'
+  /** Into a tunnel entrance, and back out. */
+  | 'climbDown'
+  | 'climbUp'
+  /** A cover taken off damage (into the hand). */
+  | 'uncover';
+
+export interface ClimbTarget {
+  action: ClimbAction;
+  /** The tile it acts on (the layer is the player's, or the one below for grates). */
+  tile: number;
+  /** Where the player ends up (cover/uncover/brace: stays). */
+  toLayer: number;
+  toTile: number;
+  /** Covers: the item it takes or gives back. */
+  item?: number;
+}
+
+const ITEM_ID = (id: string) => itemNumber(id);
+export const DIRT = ITEM_ID('dirt');
+export const WALL_CHUNK = ITEM_ID('wall_chunk');
+export const POSTER = ITEM_ID('poster');
+export const FAKE_WALL = ITEM_ID('fake_wall');
+export const FAKE_FENCE = ITEM_ID('fake_fence');
+export const FAKE_VENT = ITEM_ID('fake_vent');
+export const BRACE = ITEM_ID('timber_brace');
+export const SHEET_ROPE = ITEM_ID('sheet_rope');
+export const CHOCOLATE = ITEM_ID('chocolate');
+const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
+
+/** The floors a tunnel can be started through (GDD §9.2: dirt, grass or any non-reinforced floor). */
+const DIGGABLE = new Set<number>([TILE.GRASS, TILE.ROAD, TILE.CONCRETE, TILE.TILED, TILE.WOOD, TILE.ASPHALT, TILE.DIRT]);
+
+const tileX = (i: number) => i % MAP_W;
+const tileZ = (i: number) => Math.floor(i / MAP_W);
+const bodyTile = (b: Body) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
+
+/** The tile straight ahead of a body (its heading snapped to the nearest of the four sides), -1 off the map. */
+export function aheadOf(b: Body): number {
+  const fx = DIR_X[b.facing] ?? 0;
+  const fz = DIR_Z[b.facing] ?? 0;
+  const x = Math.floor(b.x / UNIT) + (Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0);
+  const z = Math.floor(b.z / UNIT) + (Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz));
+  return x < 0 || z < 0 || x >= MAP_W || z >= MAP_H ? -1 : z * MAP_W + x;
+}
+
+/** Whether a tool does a job: picks chip, shovels dig, the multitool does both, cutters cut, files and screwdrivers (and the plastic knife) unscrew. */
+export function toolFits(def: ItemDef | null, action: ToolAction): boolean {
+  const kind = def?.tool?.kind;
+  if (!kind) return false;
+  switch (action) {
+    case 'chip':
+      return kind === 'chip' || kind === 'multi';
+    case 'dig':
+    case 'digUp':
+      return kind === 'dig' || kind === 'multi';
+    case 'cut':
+      return kind === 'cut';
+    case 'unscrew':
+      return kind === 'unscrew' || itemDef(PLASTIC_KNIFE) === def;
+    default:
+      return false;
+  }
+}
+
+/** The player's desk, if the tile is under it (a tunnel can start there, GDD §9.3). */
+export function underMyDesk(w: World, i: number): boolean {
+  return w.cellOf[i] === 1 && w.props.some((p) => p.kind === 'desk' && i >= 0 && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d);
+}
+
+/** Someone's footprint covers the tile (no digging under people). */
+function occupied(i: number, bodies: readonly Body[]): boolean {
+  const x0 = tileX(i) * UNIT;
+  const z0 = tileZ(i) * UNIT;
+  return bodies.some((b) => b.x + BODY_HALF > x0 && b.x - BODY_HALF < x0 + UNIT && b.z + BODY_HALF > z0 && b.z - BODY_HALF < z0 + UNIT);
+}
+
+/** A ground floor tile a tunnel entrance can be dug through (free floor, or under the player's desk). */
+export function canDigFloor(w: World, i: number, bodies: readonly Body[]): boolean {
+  if (i < 0) return false;
+  const k = w.ground.kind[i];
+  if (!DIGGABLE.has(k)) return false;
+  if (w.propSolid[i] && !underMyDesk(w, i)) return false;
+  if (w.props.some((p) => !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
+  return !occupied(i, bodies);
+}
+
+/**
+ * What a strike with the held item would hit (GDD §9): the wall, fence or grate ahead, the
+ * floor ahead (a shovel digs a tunnel entrance), the earth ahead in a tunnel or the ground
+ * above its end. Chocolate in hand is eaten. When something is there but the tool can't do
+ * it, the target comes back with `fits` false (the UI says what is needed); null when there
+ * is nothing to strike.
+ */
+export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[]): ToolTarget | null {
+  const def = held ? itemDef(held) : null;
+  if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  const here = bodyTile(b);
+  const ahead = aheadOf(b);
+  const placed = placeTarget(w, layer, here, ahead, held);
+  if (placed) return placed;
+  const found: ToolTarget[] = [];
+  const add = (action: ToolAction, l: number, tile: number, hp: number) => found.push({ action, layer: l, tile, hp, fits: toolFits(def, action) });
+  if (layer === LAYER.GROUND) {
+    const k = ahead >= 0 ? w.ground.kind[ahead] : TILE.EMPTY;
+    if (k === TILE.BRICK || k === TILE.REINFORCED) add('chip', LAYER.GROUND, ahead, k === TILE.REINFORCED ? 0 : WALL_HP);
+    if (k === TILE.FENCE || k === TILE.ELECTRIC) add('cut', LAYER.GROUND, ahead, k === TILE.ELECTRIC ? ELECTRIC_HP : FENCE_HP);
+    // A ceiling grate overhead or just ahead (from the floor you reach up to it).
+    for (const t of [here, ahead]) if (t >= 0 && w.layers[LAYER.VENTS].kind[t] === TILE.GRATE) add('unscrew', LAYER.VENTS, t, GRATE_HP);
+    // A shovel in hand: the floor ahead.
+    if (toolFits(def, 'dig') && canDigFloor(w, ahead, bodies)) add('dig', LAYER.GROUND, ahead, FLOOR_HP);
+  } else if (layer === LAYER.UNDER) {
+    const k = ahead >= 0 ? w.layers[LAYER.UNDER].kind[ahead] : TILE.EMPTY;
+    if (k === TILE.SOIL && !edge(ahead)) add('dig', LAYER.UNDER, ahead, SOIL_HP);
+    // Facing back along the tunnel: up through the floor above.
+    else if (canDigFloor(w, here, []) && w.ground.kind[here] !== TILE.SHAFT && !underMyDesk(w, here)) add('digUp', LAYER.GROUND, here, FLOOR_HP);
+  } else if (layer === LAYER.VENTS) {
+    for (const t of [here, ahead]) if (t >= 0 && w.layers[LAYER.VENTS].kind[t] === TILE.GRATE) add('unscrew', LAYER.VENTS, t, GRATE_HP);
+  }
+  if (!found.length) return null;
+  return found.find((f) => f.fits && f.hp > 0) ?? found[0];
+}
+
+/**
+ * A cover, a brace or a sheet rope in hand (GDD §9.2–9.3, §12): a fake vent cover over an
+ * open grate (from below or above), a fake wall block into a hole, a poster over a hole in
+ * the player's own cell (elsewhere it wouldn't pass: `fits` false), a fake fence cover over
+ * a cut, a brace in the tunnel where the player stands, a rope down off a roof's edge.
+ */
+function placeTarget(w: World, layer: number, here: number, ahead: number, held: number): ToolTarget | null {
+  const vents = w.layers[LAYER.VENTS].kind;
+  const at = (action: ToolAction, l: number, tile: number, fits = true): ToolTarget => ({ action, layer: l, tile, fits, hp: 0 });
+  const spots = ahead >= 0 && ahead !== here ? [here, ahead] : [here];
+  if (held === FAKE_VENT && (layer === LAYER.GROUND || layer === LAYER.VENTS)) {
+    for (const t of spots) if (vents[t] === TILE.GRATE_OPEN) return at('cover', LAYER.VENTS, t);
+  }
+  if (layer === LAYER.GROUND && ahead >= 0) {
+    const k = w.ground.kind[ahead];
+    if (k === TILE.HOLE && held === FAKE_WALL) return at('cover', LAYER.GROUND, ahead);
+    if (k === TILE.HOLE && held === POSTER) return at('cover', LAYER.GROUND, ahead, touchesMyCell(w, ahead));
+    if (k === TILE.FENCE_CUT && held === FAKE_FENCE) return at('cover', LAYER.GROUND, ahead);
+  }
+  if (layer === LAYER.UNDER && held === BRACE && w.layers[LAYER.UNDER].kind[here] === TILE.TUNNEL) return at('brace', LAYER.UNDER, here);
+  if (layer === LAYER.ROOF && held === SHEET_ROPE && ahead >= 0 && w.layers[LAYER.ROOF].kind[ahead] === TILE.EMPTY && !w.blocked(tileX(ahead), tileZ(ahead)) && TILE_INFO[w.ground.kind[ahead]].outdoor) {
+    return at('rope', LAYER.GROUND, ahead);
+  }
+  return null;
+}
+
+/** The map's outermost ring can't be dug (there is nothing past it). */
+const edge = (i: number) => tileX(i) === 0 || tileZ(i) === 0 || tileX(i) === MAP_W - 1 || tileZ(i) === MAP_H - 1;
+
+/** The free floor tile next to a ground tile where someone climbing out stands (-1 for none). */
+export function besideOnGround(w: World, i: number, bodies: readonly Body[] = []): number {
+  const x = tileX(i);
+  const z = tileZ(i);
+  for (const [dx, dz] of [
+    [0, 1],
+    [0, -1],
+    [1, 0],
+    [-1, 0],
+    [1, 1],
+    [-1, 1],
+    [1, -1],
+    [-1, -1],
+  ]) {
+    const nx = x + dx;
+    const nz = z + dz;
+    if (!w.inside(nx, nz) || w.blocked(nx, nz)) continue;
+    const j = nz * MAP_W + nx;
+    if (!occupied(j, bodies)) return j;
+  }
+  return -1;
+}
+
+/** Whether a hole in a wall touches the player's cell (a poster only passes for decoration there). */
+export const touchesMyCell = (w: World, i: number) => [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => j >= 0 && j < MAP_W * MAP_H && w.cellOf[j] === 1);
+
+/**
+ * What the action button would do to the structure around the player: climb (grates, the
+ * ladder, tunnel entrances) or take a cover off damage. Checked before furniture and items,
+ * so standing on a grate means climbing. (Putting covers on is the use button's: see
+ * placeTarget.) `ladderFoot` is where the ladder's floor end is (-1 if the prison has none).
+ */
+export function climbTarget(w: World, layer: number, b: Body, ladderFoot: number, bodies: readonly Body[]): ClimbTarget | null {
+  const here = bodyTile(b);
+  const ahead = aheadOf(b);
+  const spots = ahead >= 0 && ahead !== here ? [here, ahead] : [here];
+  const vents = w.layers[LAYER.VENTS].kind;
+  const stay = (action: ClimbAction, tile: number, item?: number): ClimbTarget => ({ action, tile, toLayer: layer, toTile: here, item });
+  if (layer === LAYER.GROUND) {
+    for (const t of spots) {
+      if (vents[t] === TILE.GRATE_OPEN) return { action: 'climbVent', tile: t, toLayer: LAYER.VENTS, toTile: t };
+      if (vents[t] === TILE.GRATE_FAKE) return stay('uncover', t, FAKE_VENT);
+    }
+    if (ahead < 0) return null;
+    const k = w.ground.kind[ahead];
+    if (vents[ahead] === TILE.LADDER && w.propSolid[ahead]) return { action: 'climbRoof', tile: ahead, toLayer: LAYER.ROOF, toTile: ahead };
+    if (k === TILE.SHAFT && !underMyDesk(w, ahead)) return { action: 'climbDown', tile: ahead, toLayer: LAYER.UNDER, toTile: ahead };
+    if (k === TILE.HOLE_POSTER) return stay('uncover', ahead, POSTER);
+    if (k === TILE.HOLE_FAKE) return stay('uncover', ahead, FAKE_WALL);
+    if (k === TILE.FENCE_FAKE) return stay('uncover', ahead, FAKE_FENCE);
+    return null;
+  }
+  if (layer === LAYER.UNDER) {
+    if (w.ground.kind[here] === TILE.SHAFT) {
+      const out = underMyDesk(w, here) ? -2 : besideOnGround(w, here, bodies);
+      if (out !== -1) return { action: 'climbUp', tile: here, toLayer: LAYER.GROUND, toTile: out };
+    }
+    return null;
+  }
+  if (layer === LAYER.VENTS) {
+    for (const t of spots) {
+      if (vents[t] === TILE.GRATE_OPEN && !w.blocked(tileX(t), tileZ(t)) && !occupied(t, bodies)) return { action: 'dropDown', tile: t, toLayer: LAYER.GROUND, toTile: t };
+      if (vents[t] === TILE.GRATE_FAKE) return stay('uncover', t, FAKE_VENT);
+      if (vents[t] === TILE.LADDER) return { action: 'climbRoof', tile: t, toLayer: LAYER.ROOF, toTile: t };
+    }
+    return null;
+  }
+  if (layer === LAYER.ROOF) {
+    for (const t of spots) if (w.layers[LAYER.ROOF].kind[t] === TILE.LADDER && ladderFoot >= 0) return { action: 'climbDownLadder', tile: t, toLayer: LAYER.GROUND, toTile: ladderFoot };
+  }
+  return null;
+}
+
+/** The floor tile in front of the ladder (where climbing down puts the player), -1 without a ladder. */
+export function ladderFootOf(w: World): number {
+  const vents = w.layers[LAYER.VENTS].kind;
+  for (let i = 0; i < MAP_W * MAP_H; i++) if (vents[i] === TILE.LADDER) return besideOnGround(w, i);
+  return -1;
+}
+
+/**
+ * Whether a tunnel tile is held up: within a brace's 3×3 (GDD §9.2), or right under a
+ * tunnel entrance (its frame).
+ */
+export function supported(w: World, i: number): boolean {
+  if (w.ground.kind[i] === TILE.SHAFT) return true;
+  const under = w.layers[LAYER.UNDER].kind;
+  const x = tileX(i);
+  const z = tileZ(i);
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (w.inside(x + dx, z + dz) && under[(z + dz) * MAP_W + x + dx] === TILE.BRACED) return true;
+  return false;
+}
+
+/** Whether a newly dug tunnel tile brings down the roof: more than UNBRACED_RUN unsupported tiles joined to it. */
+export function cavesIn(w: World, i: number): boolean {
+  const under = w.layers[LAYER.UNDER].kind;
+  const seen = new Set<number>([i]);
+  const queue = [i];
+  while (queue.length) {
+    const t = queue.pop()!;
+    if (supported(w, t)) continue;
+    if (seen.size > UNBRACED_RUN + 1) break;
+    for (const j of [t - 1, t + 1, t - MAP_W, t + MAP_W]) {
+      if (j < 0 || j >= MAP_W * MAP_H || seen.has(j) || !isTunnel(under[j]) || supported(w, j)) continue;
+      if (Math.abs(tileX(j) - tileX(t)) > 1) continue;
+      seen.add(j);
+      queue.push(j);
+    }
+  }
+  return !supported(w, i) && seen.size > UNBRACED_RUN;
+}
+
+/** Whether a grate tile of the vents is open, closed or covered (for the render and the rules). */
+export const grateAt = (w: World, i: number) => (isGrate(w.layers[LAYER.VENTS].kind[i]) ? w.layers[LAYER.VENTS].kind[i] : 0);

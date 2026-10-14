@@ -1,7 +1,7 @@
 import { PROPS, type PropKind } from '../../content/props';
 import type { PrisonDef } from '../../content/prisons/types';
 import { ZONES, zoneIndex } from '../../content/zones';
-import { KEY, LEGEND, TILE, TILE_INFO } from './tiles';
+import { DAMAGE_SHOWS, KEY, LEGEND, TILE, TILE_INFO, VENT_LEGEND } from './tiles';
 import { doorOpen } from './doors';
 
 export const MAP_W = 64;
@@ -10,9 +10,23 @@ export const MAP_H = 64;
 /** Layers bottom to top (GDD §1.2). Index into World.layers. */
 export const LAYER = { UNDER: 0, GROUND: 1, VENTS: 2, ROOF: 3 } as const;
 
+const TILES = MAP_W * MAP_H;
+
+/**
+ * One number for a tile on a layer (saves, floor items, damage): the ground floor's tiles
+ * keep their plain index (saves from before the layers stay valid), the others follow.
+ */
+export const placeKey = (layer: number, i: number) => (layer === LAYER.GROUND ? i : (layer + 1) * TILES + i);
+export const layerOfKey = (key: number) => (key < TILES ? LAYER.GROUND : Math.floor(key / TILES) - 1);
+export const tileOfKey = (key: number) => key % TILES;
+
 /** One floor of the map: a typed array per field, indexed z * MAP_W + x. */
 export class Layer {
   readonly kind = new Uint8Array(MAP_W * MAP_H);
+  /** The map's own tiles (what a repair puts back). */
+  readonly base = new Uint8Array(MAP_W * MAP_H);
+  /** Derived: 1 where the player can't stand on this layer. */
+  readonly block = new Uint8Array(MAP_W * MAP_H);
   /** Door key color (tiles.ts KEY), 0 elsewhere. */
   readonly key = new Uint8Array(MAP_W * MAP_H);
   /** Zone index (content/zones.ts). */
@@ -29,12 +43,12 @@ export interface Prop {
 }
 
 /** Map pictures are trimmed of their first and last empty lines; every row must be MAP_W wide. */
-export function parseRows(picture: string): string[] {
+export function parseRows(picture: string, legend: Record<string, unknown> = LEGEND): string[] {
   const rows = picture.replace(/^\n+|\n+$/g, '').split('\n');
   if (rows.length !== MAP_H) throw new Error(`map has ${rows.length} rows, expected ${MAP_H}`);
   rows.forEach((r, z) => {
     if (r.length !== MAP_W) throw new Error(`map row ${z} is ${r.length} wide, expected ${MAP_W}`);
-    for (let x = 0; x < MAP_W; x++) if (!LEGEND[r[x]]) throw new Error(`unknown map character '${r[x]}' at ${x},${z}`);
+    for (let x = 0; x < MAP_W; x++) if (legend[r[x]] === undefined) throw new Error(`unknown map character '${r[x]}' at ${x},${z}`);
   });
   return rows;
 }
@@ -49,9 +63,11 @@ export class World {
   readonly props: Prop[];
   /** Tiles covered by solid props on the ground floor. */
   readonly propSolid = new Uint8Array(MAP_W * MAP_H);
-  /** Derived: 1 where the ground floor can't be walked on right now. */
-  readonly block = new Uint8Array(MAP_W * MAP_H);
-  /** Derived: the same for guards, whose keys open every door. */
+  /** Derived: 1 where the player can't walk on the ground floor right now (the ground layer's block). */
+  readonly block: Uint8Array;
+  /** Derived: the same for inmates, who never use the player's holes and cut fences. */
+  readonly npcBlock = new Uint8Array(MAP_W * MAP_H);
+  /** Derived: the same for guards, whose keys open every door (and who keep off damage too). */
   readonly guardBlock = new Uint8Array(MAP_W * MAP_H);
   /** Which cell (1–8) each ground tile belongs to, 0 outside cells. */
   readonly cellOf = new Uint8Array(MAP_W * MAP_H);
@@ -68,6 +84,7 @@ export class World {
 
   constructor(readonly def: PrisonDef) {
     const g = this.ground;
+    this.block = g.block;
     parseRows(def.ground).forEach((row, z) => {
       for (let x = 0; x < MAP_W; x++) {
         const l = LEGEND[row[x]];
@@ -75,6 +92,21 @@ export class World {
         g.key[z * MAP_W + x] = l.key ?? KEY.NONE;
       }
     });
+    // Tunnels: solid earth until dug. Vents: the prison's duct picture. Roofs: over every
+    // building (walls and indoor floors), with the ladder's hatch.
+    this.layers[LAYER.UNDER].kind.fill(TILE.SOIL);
+    const vents = this.layers[LAYER.VENTS];
+    if (def.vents) {
+      parseRows(def.vents, VENT_LEGEND).forEach((row, z) => {
+        for (let x = 0; x < MAP_W; x++) vents.kind[z * MAP_W + x] = VENT_LEGEND[row[x]];
+      });
+    }
+    const roof = this.layers[LAYER.ROOF];
+    for (let i = 0; i < TILES; i++) {
+      const k = g.kind[i];
+      if (k !== TILE.EMPTY && !TILE_INFO[k].outdoor) roof.kind[i] = vents.kind[i] === TILE.LADDER ? TILE.LADDER : TILE.ROOF;
+    }
+    for (const l of this.layers) l.base.set(l.kind);
     // Zones: road is outside, unlisted open ground is the perimeter, unlisted indoor tiles (doors,
     // walls) belong to none; then the rectangles, then the cells.
     for (let i = 0; i < MAP_W * MAP_H; i++) g.zone[i] = zoneIndex(g.kind[i] === TILE.ROAD ? 'outside' : TILE_INFO[g.kind[i]].outdoor ? 'perimeter' : 'none');
@@ -133,13 +165,26 @@ export class World {
       const k = g.kind[i];
       const solid = k === TILE.DOOR ? !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) : TILE_INFO[k].solid;
       this.block[i] = solid || this.propSolid[i] ? 1 : 0;
-      this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] ? 1 : 0;
+      // Damage is the player's way: inmates and guards walk the prison as it was built.
+      const damage = DAMAGE_SHOWS.has(k) ? 1 : 0;
+      this.npcBlock[i] = this.block[i] | damage;
+      this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] || damage ? 1 : 0;
+    }
+    for (const l of [this.layers[LAYER.UNDER], this.layers[LAYER.VENTS], this.layers[LAYER.ROOF]]) {
+      for (let i = 0; i < TILES; i++) l.block[i] = TILE_INFO[l.kind[i]].solid ? 1 : 0;
     }
     this.rev++;
   }
 
-  /** Can't stand on this tile (anything off the map is blocked). */
-  blocked(x: number, z: number): boolean {
-    return !this.inside(x, z) || this.block[z * MAP_W + x] === 1;
+  /** Changes a tile (digging, chipping, covering, repairs); everything derived follows. */
+  setKind(layer: number, i: number, kind: number) {
+    if (this.layers[layer].kind[i] === kind) return;
+    this.layers[layer].kind[i] = kind;
+    this.refreshBlock();
+  }
+
+  /** Can't stand on this tile (anything off the map is blocked); the ground floor unless a layer is given. */
+  blocked(x: number, z: number, layer: number = LAYER.GROUND): boolean {
+    return !this.inside(x, z) || this.layers[layer].block[z * MAP_W + x] === 1;
   }
 }

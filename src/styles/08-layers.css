@@ -1,0 +1,245 @@
+/* P4: tools, energy, layers, the escape. */
+
+/* ------------------------------------------------------------ the tool button (touch) */
+.tool-btn {
+  position: fixed;
+  right: max(23px, calc(env(safe-area-inset-right) + 7px));
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 172px);
+  z-index: 31;
+  padding: 0;
+  color: white;
+  background: none;
+  touch-action: none;
+}
+
+.tool-round {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  font: 800 11px/1.1 var(--font-ui);
+  font-style: normal;
+  background: radial-gradient(circle at 40% 30%, var(--steel), var(--steel-2));
+  box-shadow: 0 10px 22px -8px rgba(20, 40, 70, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.08s;
+}
+
+.tool-round span {
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* How far the tile has given way: a ring filling round the button. */
+.tool-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(var(--gold) var(--p, 0%), rgba(255, 255, 255, 0.14) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+}
+
+.tool-btn.down .tool-round {
+  transform: scale(0.92);
+}
+
+/* The tool in hand can't do it: grey, pressing says what is needed. */
+.tool-btn.no .tool-round {
+  background: radial-gradient(circle at 40% 30%, #8a919b, #565d68);
+}
+
+/* ------------------------------------------------------------ the Space prompt (keyboard) */
+.tool-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 124px);
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  color: white;
+  font: 600 14px var(--font-ui);
+  background: rgba(30, 50, 76, 0.86);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: toast-in 0.25s var(--spring);
+}
+
+.tool-prompt b {
+  font-weight: 800;
+  color: #b8d4f0;
+}
+
+.tool-prompt.no {
+  background: rgba(60, 64, 72, 0.86);
+}
+
+.tool-prompt.no b {
+  color: #c8ccd2;
+}
+
+kbd.wide {
+  padding: 0 8px;
+}
+
+.tool-bar {
+  display: block;
+  width: 56px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tool-bar i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.15s;
+}
+
+/* ------------------------------------------------------------ energy */
+.energy {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 63px);
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 6px;
+  border-radius: 999px;
+  color: var(--energy);
+  background: rgba(18, 24, 36, 0.8);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.energy-bar {
+  display: block;
+  width: 84px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.energy-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--energy);
+  transition: width 0.3s var(--ease);
+}
+
+.energy.low {
+  color: var(--energy-low);
+}
+
+.energy.low .energy-bar i {
+  background: var(--energy-low);
+}
+
+/* The E prompt and the Space prompt sit above the energy pill on desktop. */
+body:not(.touch) .act-prompt {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 88px);
+}
+
+/* ------------------------------------------------------------ the coach hint clears the tool button */
+.touch.is-playing.has-tool .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 248px);
+}
+
+@media (max-width: 520px) {
+  .tool-btn {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 152px);
+    right: max(20px, calc(env(safe-area-inset-right) + 4px));
+  }
+
+  .energy {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 56px);
+  }
+}
+
+/* Landscape phones: the tool button left of the action button, low. */
+@media (max-height: 520px) {
+  .tool-btn {
+    right: calc(max(16px, env(safe-area-inset-right)) + 90px);
+    bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .energy {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 56px);
+  }
+
+  .touch.is-playing.has-tool .hint {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px);
+  }
+}
+
+/* ------------------------------------------------------------ a layer change: a blink of dark */
+.layer-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  background: #07090c;
+  pointer-events: none;
+  animation: layer-fade 0.42s var(--ease) forwards;
+}
+
+@keyframes layer-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------ the desk's tunnel (in its panel) */
+.box-tunnel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 12px;
+  color: #f2dcc0;
+  font: 600 13px var(--font-ui);
+  background: rgba(90, 60, 35, 0.55);
+}
+
+/* ------------------------------------------------------------ escaped */
+.escaped .card {
+  text-align: center;
+}
+
+.escaped h2 {
+  margin: 4px 0 6px;
+  font: 700 clamp(34px, 9vw, 52px) / 1 var(--font-display);
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  animation: badge-pop 0.6s var(--spring);
+}
+
+.escaped .escaped-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 6px;
+  border-radius: 50%;
+  color: white;
+  background: radial-gradient(circle at 40% 30%, #ffd05c, #e08a12);
+  box-shadow: 0 12px 26px -8px rgba(224, 138, 18, 0.8);
+}

@@ -59,6 +59,14 @@ interface DoorMesh {
 export class WorldView {
   readonly group = new THREE.Group();
   private doors: DoorMesh[] = [];
+  /** Per tile, the wall or fence instance standing there (-1 for none): damage hides them (refreshTiles). */
+  private readonly wallAt = new Int32Array(MAP_W * MAP_H).fill(-1);
+  private readonly fenceAt = new Int32Array(MAP_W * MAP_H).fill(-1);
+  private wallMesh: THREE.InstancedMesh | null = null;
+  private readonly fenceMeshes: Array<{ panel: THREE.InstancedMesh; posts: THREE.InstancedMesh; kind: number }> = [];
+  private readonly fenceOf = new Int32Array(MAP_W * MAP_H).fill(-1);
+  private readonly hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+  private readonly kept = new Map<THREE.InstancedMesh, THREE.Matrix4[]>();
   private readonly lights: Lights;
   private readonly matrix = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
@@ -79,10 +87,12 @@ export class WorldView {
     this.lights = new Lights(world);
     this.group.add(this.lights.group);
     this.buildSurroundings();
+    this.refreshTiles();
   }
 
+  /** The map's own tile (what is built); damage is drawn over it (refreshTiles, Structure). */
   private kindAt(x: number, z: number): number {
-    return this.world.inside(x, z) ? this.world.ground.kind[z * MAP_W + x] : TILE.EMPTY;
+    return this.world.inside(x, z) ? this.world.ground.base[z * MAP_W + x] : TILE.EMPTY;
   }
 
   /** Tiles of the kinds asked for, as flat [x, z, x, z…]. */
@@ -147,9 +157,47 @@ export class WorldView {
     for (let i = 0; i < cells.length / 2; i++) {
       this.matrix.makeTranslation(cells[i * 2] + 0.5, WALL_H / 2, cells[i * 2 + 1] + 0.5);
       mesh.setMatrixAt(i, this.matrix);
+      this.wallAt[cells[i * 2 + 1] * MAP_W + cells[i * 2]] = i;
     }
     mesh.castShadow = mesh.receiveShadow = true;
     this.group.add(mesh);
+    this.wallMesh = mesh;
+    this.keep(mesh);
+  }
+
+  /** Remembers an instanced mesh's matrices, so hidden instances can come back. */
+  private keep(mesh: THREE.InstancedMesh) {
+    const list: THREE.Matrix4[] = [];
+    for (let i = 0; i < mesh.count; i++) {
+      const m = new THREE.Matrix4();
+      mesh.getMatrixAt(i, m);
+      list.push(m);
+    }
+    this.kept.set(mesh, list);
+  }
+
+  private show(mesh: THREE.InstancedMesh, i: number, on: boolean) {
+    mesh.setMatrixAt(i, on ? this.kept.get(mesh)![i] : this.hidden);
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /**
+   * After tiles change (a wall chipped through, a fence cut, a cover put on or taken off, a
+   * repair): walls and fences stand where the tile still looks like one.
+   */
+  refreshTiles() {
+    const kind = this.world.ground.kind;
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      if (this.wallAt[i] >= 0 && this.wallMesh) {
+        const k = kind[i];
+        this.show(this.wallMesh, this.wallAt[i], k === TILE.BRICK || k === TILE.REINFORCED || k === TILE.HOLE_POSTER || k === TILE.HOLE_FAKE);
+      }
+      if (this.fenceAt[i] >= 0) {
+        const f = this.fenceMeshes[this.fenceOf[i]];
+        const on = kind[i] !== TILE.FENCE_CUT;
+        this.show(f.panel, this.fenceAt[i], on);
+      }
+    }
   }
 
   private buildFences() {
@@ -173,9 +221,13 @@ export class WorldView {
         const ax = this.alongX(x, z, fenceLike);
         this.place(mesh, i, x + 0.5, h / 2, z + 0.5, ax ? 0 : Math.PI / 2);
         this.place(posts, i, ax ? x : x + 0.5, (h + 0.15) / 2, ax ? z + 0.5 : z);
+        this.fenceAt[z * MAP_W + x] = i;
+        this.fenceOf[z * MAP_W + x] = this.fenceMeshes.length;
       }
       mesh.castShadow = posts.castShadow = true;
       this.group.add(mesh, posts);
+      this.fenceMeshes.push({ panel: mesh, posts, kind });
+      this.keep(mesh);
     }
     // Razor wire coiled along the top of every fence: rings across the line, tilted so they read as a spiral.
     const fences = this.cells(isFence);
@@ -342,6 +394,16 @@ export class WorldView {
       mesh.castShadow = mesh.receiveShadow = true;
       this.group.add(mesh);
     }
+  }
+
+  /** Whether a fence tile runs along x (for the damage drawn on it). */
+  fenceAlongX(x: number, z: number): boolean {
+    return this.alongX(x, z, (k) => isFence(k) || k === TILE.DOOR || k === TILE.TOWER || k === TILE.FENCE_CUT || k === TILE.FENCE_FAKE);
+  }
+
+  /** Whether a wall tile runs along x (its long faces look north and south). */
+  wallAlongX(x: number, z: number): boolean {
+    return this.alongX(x, z, (k) => isWall(k) || k === TILE.DOOR || k === TILE.HOLE || k === TILE.HOLE_FAKE || k === TILE.HOLE_POSTER);
   }
 
   /** Fields and woods beyond the road, so the map's edge never shows the void. */

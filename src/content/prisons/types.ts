@@ -30,8 +30,10 @@ export interface PrisonDef {
   id: string;
   /** 1 (minimum security) to 5 (supermax). */
   difficulty: number;
-  /** The ground floor picture (layer 0). Tunnels, vents and roofs come with their phases. */
+  /** The ground floor picture (layer 0). */
   ground: string;
+  /** The vents picture (layer +1): ducts, ceiling grates, the ladder to the roof. Roofs cover every building; tunnels are dug. */
+  vents?: string;
   /** Zones by rectangle; later rectangles win. Unlisted tiles: road → outside, open ground → perimeter, indoor → none. */
   zones: ReadonlyArray<readonly [ZoneId, ...Rect]>;
   /** Cells in order: cell 1 is the player's. */

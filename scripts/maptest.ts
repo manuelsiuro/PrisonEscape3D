@@ -11,7 +11,8 @@ import { isFloor, placesOf } from '../src/sim/ai/places';
 import { fnv1a } from '../src/sim/rng';
 import { reachableFrom } from '../src/sim/world/reach';
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
-import { MAP_H, MAP_W, World } from '../src/sim/world/World';
+import { LAYER, MAP_H, MAP_W, World } from '../src/sim/world/World';
+import { ladderFootOf } from '../src/sim/systems/structure';
 import { check } from './assert';
 
 const ids = new Set<string>();
@@ -121,4 +122,35 @@ for (const def of PRISONS) {
   check(places.solitary >= 0 && places.infirmary >= 0, `${def.id}: a solitary cell and an infirmary bed`);
   check(places.doorstep.slice(1).every((t) => t >= 0) && places.deskside.slice(1).every((t) => t >= 0), `${def.id}: every cell can be looked into and its desk searched`);
   console.log(`guards: ${def.guards.length}, ${stops.length} stops, ${sleepers} asleep at night`);
+
+  // Vents (layer +1): grates over free floor, one duct network, the ladder against a wall with
+  // a free foot and a roof hatch above it; the player's cell has a way up.
+  const vents = w.layers[LAYER.VENTS];
+  const ducts: number[] = [];
+  let ladders = 0;
+  for (let i = 0; i < MAP_W * MAP_H; i++) {
+    const k = vents.kind[i];
+    if (k === TILE.EMPTY) continue;
+    ducts.push(i);
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    if (k === TILE.GRATE) check(isFloor(w, x, z), `${def.id}: grate ${x},${z} is over free floor`);
+    if (k === TILE.LADDER) {
+      ladders++;
+      check(w.props.some((p) => p.kind === 'ladder' && p.x === x && p.z === z), `${def.id}: the ladder at ${x},${z} stands on the ground floor`);
+      check(w.layers[LAYER.ROOF].kind[i] === TILE.LADDER, `${def.id}: the ladder at ${x},${z} reaches a roof hatch`);
+    }
+  }
+  if (ducts.length) {
+    const seen = new Set([ducts[0]]);
+    const queue = [ducts[0]];
+    while (queue.length) {
+      const i = queue.pop()!;
+      for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !vents.block[j] && !seen.has(j)) (seen.add(j), queue.push(j));
+    }
+    check(seen.size === ducts.length, `${def.id}: the ducts are one network`);
+    check(ladders === 1 && ladderFootOf(w) >= 0, `${def.id}: one ladder, with a free foot`);
+    check(ducts.some((i) => vents.kind[i] === TILE.GRATE && w.cellOf[i] === 1), `${def.id}: a grate in the player's cell`);
+  }
+  console.log(`vents: ${ducts.length} duct tiles, ${ducts.filter((i) => vents.kind[i] === TILE.GRATE).length} grates, ${ladders} ladder; roof tiles ${Array.from(w.layers[LAYER.ROOF].kind).filter((k) => k !== TILE.EMPTY).length}`);
 }

@@ -13,6 +13,9 @@ import { itemGeometry } from './itemModels';
 import { Pickups, type Focus, type GroundItem } from './Pickups';
 import { updateOcclusion } from './occlusion';
 import { WorldView } from './WorldView';
+import { LAYER_Y, Structure } from './Structure';
+import { Underground } from './Underground';
+import { LAYER } from '../sim/world/World';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
 export interface Frame {
@@ -47,6 +50,11 @@ export interface Frame {
   knockedOut: boolean;
   /** The guards, interpolated like everyone else. */
   guards: GuardFrame[];
+  /** The layer the player is on (World LAYER). */
+  layer: number;
+  /** Changes whenever tiles or their wear do (damage is redrawn then), and the wear itself. */
+  tilesRev: number;
+  wear: Readonly<Record<number, number>>;
 }
 
 export interface GuardFrame {
@@ -137,6 +145,13 @@ export class View {
   private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
   private readonly dust = new Dust();
+  private structure: Structure | null = null;
+  private underground: Underground | null = null;
+  /** The layer drawn (the player's), and the tiles revision the damage was drawn for. */
+  private layer = -1;
+  private tilesRev = -1;
+  /** A strike's jolt (0–1), easing away. */
+  private shake = 0;
   private readonly raycaster = new THREE.Raycaster();
   private readonly floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly ndc = new THREE.Vector2();
@@ -200,8 +215,21 @@ export class View {
       this.scene.remove(this.worldView.group);
       this.worldView.dispose();
     }
+    if (this.structure) {
+      this.scene.remove(this.structure.group, this.structure.roofs);
+      this.structure.dispose();
+    }
+    if (this.underground) {
+      this.scene.remove(this.underground.group);
+      this.underground.dispose();
+    }
     this.worldView = new WorldView(world);
-    this.scene.add(this.worldView.group);
+    this.structure = new Structure(world, this.worldView);
+    this.underground = new Underground(world);
+    this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs, this.underground.group);
+    this.layer = -1;
+    this.tilesRev = -1;
+    this.showLayer(LAYER.GROUND);
     this.guide.world = world;
     this.cones.world = world;
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
@@ -233,6 +261,48 @@ export class View {
     }
     this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), gait: c.gait })) : [];
     for (const c of this.cast) this.scene.add(c.root);
+  }
+
+  /**
+   * Which layer is drawn (GDD §1.2 cutaway): the tunnels replace the ground floor; in the
+   * vents the ground floor dims under the open ducts; on the roof the roofs go on.
+   */
+  private showLayer(layer: number) {
+    if (layer === this.layer) return;
+    this.layer = layer;
+    const under = layer === LAYER.UNDER;
+    if (this.worldView) this.worldView.group.visible = !under;
+    if (this.structure) {
+      this.structure.group.visible = !under;
+      this.structure.setMode(layer);
+    }
+    if (this.underground) this.underground.group.visible = under;
+    this.cones.group.visible = !under;
+    this.guide.group.visible = !under;
+    this.floor.constant = -LAYER_Y[layer];
+    this.pickups.group.position.y = LAYER_Y[layer];
+  }
+
+  /**
+   * A tool strike landed at a tile (tiles, the layer struck): the arm swings, the material
+   * flies, the camera jolts a little; harder when the tile gives way.
+   */
+  impact(action: string, tile: number, layer: number, broke: boolean) {
+    this.player.strike();
+    const x = tile >= 0 ? (tile % MAP_W) + 0.5 : this.player.root.position.x;
+    const z = tile >= 0 ? Math.floor(tile / MAP_W) + 0.5 : this.player.root.position.z;
+    // Struck from the near side: the chips fly from the face, not the middle of the tile.
+    const px = this.player.root.position.x;
+    const pz = this.player.root.position.z;
+    const fx = action === 'unscrew' || action === 'digUp' ? px : x + (px - x) * 0.45;
+    const fz = action === 'unscrew' || action === 'digUp' ? pz : z + (pz - z) * 0.45;
+    const y = action === 'unscrew' ? (layer === LAYER.VENTS ? LAYER_Y[LAYER.VENTS] : 1.3) : action === 'chip' ? 0.6 : action === 'cut' ? 0.8 : LAYER_Y[this.layer];
+    const color = action === 'chip' ? 0xa0533e : action === 'cut' || action === 'unscrew' ? 0xffd27a : 0x8a6644;
+    if (!this.reducedMotion) {
+      this.dust.puff(fx, fz, color, broke ? 14 : 4, y);
+      if (broke && action === 'chip') this.dust.puff(fx, fz, 0x8f8a80, 8, y);
+      this.shake = Math.max(this.shake, broke ? 1 : 0.35);
+    }
   }
 
   /** The floor point under a screen point (tiles), for tap-to-walk. */
@@ -311,23 +381,38 @@ export class View {
   /** Draws a frame of play: the camera follows the player, looking a little ahead. */
   draw(f: Frame, dt: number, time: number) {
     this.dress(f.outfit);
+    this.showLayer(f.layer);
+    // Damage, grates and tunnels redrawn when the tiles change.
+    if (f.tilesRev !== this.tilesRev) {
+      this.tilesRev = f.tilesRev;
+      this.structure?.refresh(f.wear, f.layer === LAYER.UNDER);
+      this.underground?.refresh();
+    }
     this.player.root.visible = true;
+    this.player.baseY = LAYER_Y[f.layer];
     this.player.hold(f.sleeping || f.knockedOut ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
-    const doing = f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : DOING.NOTHING;
+    const doing = f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : DOING.NOTHING;
     if (this.player.pose(f.x, f.z, f.facing, f.moving, dt, time, !this.reducedMotion, doing, this.beds[1])) {
-      if (DUST[f.surface] !== undefined && !this.reducedMotion) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
+      if (DUST[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
       this.onStep(f.surface);
     }
     // Look-ahead: up to a tile and a half in the walking direction, eased.
     const lead = f.moving && !this.reducedMotion ? 1.4 : 0;
     this.ahead.lerp(this.v.set(Math.sin(f.facing) * lead, 0, Math.cos(f.facing) * lead * 0.8), Math.min(1, dt * 2.2));
     // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
-    if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10) this.target.set(f.x, 0, f.z);
-    else this.target.lerp(this.v.set(f.x, 0, f.z).add(this.ahead), Math.min(1, dt * 7));
+    // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
+    const y = LAYER_Y[f.layer];
+    if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
+    else this.target.lerp(this.v.set(f.x, y, f.z).add(this.ahead), Math.min(1, dt * 7));
+    this.underground?.follow(f.x, f.z);
     this.feet.set(f.x, 0, f.z);
+    // The see-through cut: on the ground floor and in the tunnels (nothing stands over the vents or the roof).
+    const cut = f.layer === LAYER.GROUND || f.layer === LAYER.UNDER;
     f.inmates.forEach((m, k) => {
       const c = this.cast[k];
       if (!c) return;
+      // In the tunnels the ground floor and everyone on it are out of the picture.
+      c.root.visible = f.layer !== LAYER.UNDER;
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
     });
@@ -335,6 +420,7 @@ export class View {
     f.guards.forEach((g, k) => {
       const c = this.guardCast[k];
       if (!c) return;
+      c.root.visible = f.layer !== LAYER.UNDER;
       c.gait = g.pace;
       c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
       c.pose(g.x, g.z, g.facing, g.moving, dt, time, !this.reducedMotion, g.doing, this.guardBeds[k]);
@@ -351,11 +437,12 @@ export class View {
     this.guide.setTap(f.tap);
     this.guide.update(dt, time, f, !this.reducedMotion);
     this.alarm += ((f.alarm ? 1 : 0) - this.alarm) * Math.min(1, dt * 3);
-    this.render(f.minuteOfDay, dt, this.feet, time);
+    this.render(f.minuteOfDay, dt, cut ? this.feet : null, time);
   }
 
   /** Draws the title backdrop: the camera drifts slowly over the prison, nobody in it. */
   drawTitle(dt: number, time: number) {
+    this.showLayer(LAYER.GROUND);
     this.player.root.visible = false;
     this.doorsOpen.clear();
     this.cones.update([], dt, 0, false);
@@ -383,10 +470,27 @@ export class View {
       this.sky.lerp(this.red, a * 0.35);
       this.sun.intensity *= 1 - 0.35 * this.alarm;
     } else this.ambient.color.set(SKY_LIGHT);
+    // Off the ground floor: the vents dim the rooms below; the tunnels are dark but for the lantern.
+    if (this.layer === LAYER.VENTS) {
+      this.sun.intensity *= 0.4;
+      this.ambient.intensity *= 0.5;
+    } else if (this.layer === LAYER.UNDER) {
+      // Dim, but the map above (tinted on the earth) still reads; the lantern warms the trench.
+      this.sun.intensity = 0.55;
+      this.ambient.intensity = 0.85;
+      this.sky.set(0x120c08);
+    }
     this.worldView?.update(dt, night, this.doorsOpen);
     this.dust.update(dt);
     this.camera.position.copy(this.target).add(CAMERA_OFFSET);
     this.camera.lookAt(this.target);
+    if (this.shake > 0.001) {
+      // A short jolt on a strike (eased away; reduced motion never sets it).
+      const a = this.shake * 0.06;
+      this.camera.position.x += Math.sin(time * 91) * a;
+      this.camera.position.y += Math.cos(time * 77) * a;
+      this.shake = Math.max(0, this.shake - dt * 5);
+    }
     this.placeSun(minute);
     updateOcclusion(this.renderer, this.camera, focus, dt);
     this.renderer.render(this.scene, this.camera);
