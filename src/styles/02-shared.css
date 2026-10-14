@@ -1,0 +1,99 @@
+/* Buttons, pills, cards and modals shared by every screen. */
+.big-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 22px;
+  border-radius: 16px;
+  font: 600 18px var(--font-display);
+  transition: transform 0.18s var(--spring);
+}
+
+.big-btn:active {
+  transform: scale(0.96);
+}
+
+.big-btn.primary {
+  color: white;
+  background: linear-gradient(180deg, var(--orange), var(--orange-2));
+  box-shadow: 0 10px 24px -8px rgba(217, 83, 10, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.big-btn.ghost {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(18, 35, 58, 0.06);
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font: 700 14px var(--font-ui);
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.pill .ic {
+  color: var(--gold);
+  fill: var(--gold);
+}
+
+.pill.big {
+  padding: 6px 12px;
+  font-size: 16px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(18, 35, 58, 0.35);
+  animation: fade 0.25s var(--ease);
+}
+
+.card {
+  width: min(400px, 100%);
+  padding: 24px;
+  border-radius: 24px;
+  text-align: center;
+  background: white;
+  box-shadow: var(--shadow);
+  animation: card-in 0.35s var(--spring);
+}
+
+.card h2 {
+  margin: 0;
+  font: 700 32px var(--font-display);
+}
+
+.card-note {
+  margin: 10px 0 20px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}

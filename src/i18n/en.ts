@@ -1,0 +1,48 @@
+/**
+ * English: the source of every key (other languages may leave keys out). `{n}` holes are
+ * filled by t(); `%KeyW%` prints the label of the key at W's place on this keyboard.
+ */
+export const en = {
+  "title.tagline": "Play the model prisoner. Plan the perfect escape.",
+  "title.play": "Play",
+  "title.prison": "{name} · minimum security",
+  "title.soundOn": "Sound on",
+  "title.soundOff": "Sound off",
+  "title.keys": "%KeyW% %KeyA% %KeyS% %KeyD% or arrows to walk · wheel to zoom",
+  "title.touch": "Drag anywhere to walk · pinch to zoom",
+  "prison.center-perks": "Center Perks",
+  "hud.pause": "Pause",
+  "hud.day": "Day {n}",
+  "pause.title": "Paused",
+  "pause.resume": "Resume",
+  "pause.quit": "Title screen",
+  "pause.note": "Saving comes in a later version: leaving ends this game.",
+  "zone.none": "Prison",
+  "zone.outside": "Outside",
+  "zone.perimeter": "Perimeter",
+  "zone.playerCell": "Your cell",
+  "zone.inmateCell": "Inmate cell",
+  "zone.cellBlock": "Cell block",
+  "zone.rollCall": "Roll call yard",
+  "zone.canteen": "Canteen",
+  "zone.kitchen": "Kitchen",
+  "zone.corridor": "Corridor",
+  "zone.gym": "Gym",
+  "zone.showers": "Showers",
+  "zone.library": "Library",
+  "zone.infirmary": "Infirmary",
+  "zone.yard": "Courtyard",
+  "zone.laundry": "Laundry",
+  "zone.woodshop": "Woodshop",
+  "zone.metalshop": "Metalshop",
+  "zone.mailroom": "Mailroom",
+  "zone.janitor": "Janitor's closet",
+  "zone.generator": "Generator room",
+  "zone.solitary": "Solitary",
+  "zone.visitation": "Visitation",
+  "zone.guardQuarters": "Guard quarters",
+  "zone.controlRoom": "Control room",
+  "common.back": "Back",
+};
+
+export type Strings = typeof en;

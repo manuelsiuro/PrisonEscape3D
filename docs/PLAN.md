@@ -63,7 +63,7 @@ src/
     tuning.ts         every gameplay number
   content/
     items.data.ts  recipes.data.ts  routines.data.ts  jobs.data.ts  loot.data.ts
-    prisons/<id>/L-1.txt L0.txt L1.txt L2.txt  <id>.ts   (legend, zones, props, roster, rules)
+    prisons/<id>/L0.map.ts (L-1, L1, L2 later)  index.ts   (zones, cells, props, spawn, rules)
   render/             instanced tiles, layer cutaway, characters, cones, lights, particles
   input/              keyboard, mouse, touch (stick, context button, tap-to-walk) → Command
   ui/                 HUD, hotbar, sheets/panels (desk, loot, craft, shop, job board), help
@@ -71,6 +71,9 @@ scripts/
   *test*.ts           determinism, map validators, recipe graph, economy, bots
   bots/               action-script autopilot + one script per prison × escape route
 ```
+
+Maps are ASCII pictures in `.map.ts` files (a `String.raw` template) rather than `.txt`, so
+the headless tests import them with no loader. The legend lives in `src/sim/world/tiles.ts`.
 
 The system order for each step is: clock → input → AI → movement → actions → combat →
 security → economy → escape check.
@@ -139,6 +142,13 @@ playbook §4):
 update the project memory and report what changed, what wasn't verified (sound, vibration,
 real touch feel) and the known limits.
 
-## 8. Next step
+## 8. Progress
 
-Start **P0** once this plan is approved.
+- **P0 done (v0.1.0)**:
+  - Center Perks ground floor as an ASCII map, validated by `maptest`;
+  - fixed-step sim with integer movement, a door-frame assist, a recorder and keyframes;
+  - instanced tiles, procedural props and the character rig;
+  - a wall cutaway so walls never hide the player, and day/night lighting from the clock;
+  - keyboard, touch stick and pinch/wheel zoom;
+  - title, HUD and pause screens in en and fr, the icon, CI.
+- **Next: P1 Routine.**

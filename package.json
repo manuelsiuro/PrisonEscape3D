@@ -1,0 +1,23 @@
+{
+  "name": "prison-escape-3d",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 5310 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host --port 5311 --strictPort",
+    "test": "tsx scripts/test.ts",
+    "check": "tsc --noEmit && tsx scripts/test.ts",
+    "icons": "rsvg-convert -w 512 public/icon.svg -o public/icon-512.png && rsvg-convert -w 192 public/icon.svg -o public/icon-192.png && rsvg-convert -w 512 public/icon-maskable.svg -o public/icon-maskable-512.png && rsvg-convert -w 180 public/icon.svg -o public/apple-touch-icon.png"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3"
+  }
+}

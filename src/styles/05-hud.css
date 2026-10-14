@@ -1,0 +1,83 @@
+/* ------------------------------------------------------------ in-game HUD */
+.hud {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 30;
+  pointer-events: none;
+}
+
+.hud-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-row > * {
+  pointer-events: auto;
+}
+
+.hud .pill.big {
+  gap: 6px;
+  min-width: 0;
+  color: white;
+  background: rgba(18, 24, 36, 0.78);
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.hud .pill .ic {
+  color: var(--accent-2);
+  fill: none;
+}
+
+.hud-clock b {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+
+.hud-day {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* The zone name shrinks first on narrow phones. */
+.hud-zone {
+  flex-shrink: 1;
+}
+
+.hud-zone span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-pause {
+  margin-left: auto;
+  color: white;
+  background: rgba(18, 24, 36, 0.78);
+}
+
+/* Touch stick: appears under the thumb; the knob follows it. */
+.stick {
+  position: fixed;
+  z-index: 25;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 55%, rgba(255, 255, 255, 0.22) 56%, rgba(255, 255, 255, 0.12) 70%, transparent 71%);
+  pointer-events: none;
+}
+
+.stick i {
+  position: absolute;
+  left: 34px;
+  top: 34px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.95), rgba(220, 228, 240, 0.8));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
