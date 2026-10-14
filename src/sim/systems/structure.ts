@@ -3,6 +3,7 @@ import { DIR_X, DIR_Z } from '../command';
 import { BODY_HALF, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRATE_HP, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
 import { isGrate, isTunnel, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
+import { placesOf } from '../ai/places';
 import type { Body } from './movement';
 
 /**
@@ -47,6 +48,8 @@ export type ClimbAction =
 
 export interface ClimbTarget {
   action: ClimbAction;
+  /** It's over the player's own tile (a grate overhead), not the one they face: furniture faced wins. */
+  overhead?: boolean;
   /** The tile it acts on (the layer is the player's, or the one below for grates). */
   tile: number;
   /** Where the player ends up (cover/uncover/brace: stays). */
@@ -115,11 +118,26 @@ function occupied(i: number, bodies: readonly Body[]): boolean {
   return bodies.some((b) => b.x + BODY_HALF > x0 && b.x - BODY_HALF < x0 + UNIT && b.z + BODY_HALF > z0 && b.z - BODY_HALF < z0 + UNIT);
 }
 
+/**
+ * Tiles nobody may dig a hole in: where people must be able to stand (beside each bed and
+ * desk, outside each cell door, at the ladder's foot, the roll call spots). A hole there would
+ * strand a guard's bed check or a sleeper, or the player climbing down.
+ */
+const reservedCache = new WeakMap<World, Set<number>>();
+function reserved(w: World): Set<number> {
+  let r = reservedCache.get(w);
+  if (r) return r;
+  const p = placesOf(w);
+  r = new Set<number>([...p.bedside, ...p.deskside, ...p.doorstep, ...p.rollCall.map((s) => s.tile), ladderFootOf(w)].filter((t) => t >= 0));
+  reservedCache.set(w, r);
+  return r;
+}
+
 /** A ground floor tile a tunnel entrance can be dug through (free floor, or under the player's desk). */
 export function canDigFloor(w: World, i: number, bodies: readonly Body[]): boolean {
   if (i < 0) return false;
   const k = w.ground.kind[i];
-  if (!DIGGABLE.has(k)) return false;
+  if (!DIGGABLE.has(k) || reserved(w).has(i)) return false;
   if (w.propSolid[i] && !underMyDesk(w, i)) return false;
   if (w.props.some((p) => !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
   return !occupied(i, bodies);
@@ -153,7 +171,7 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
     const k = ahead >= 0 ? w.layers[LAYER.UNDER].kind[ahead] : TILE.EMPTY;
     if (k === TILE.SOIL && !edge(ahead)) add('dig', LAYER.UNDER, ahead, SOIL_HP);
     // Facing back along the tunnel: up through the floor above.
-    else if (canDigFloor(w, here, []) && w.ground.kind[here] !== TILE.SHAFT && !underMyDesk(w, here)) add('digUp', LAYER.GROUND, here, FLOOR_HP);
+    else if (canDigFloor(w, here, bodies) && !underMyDesk(w, here)) add('digUp', LAYER.GROUND, here, FLOOR_HP);
   } else if (layer === LAYER.VENTS) {
     for (const t of [here, ahead]) if (t >= 0 && w.layers[LAYER.VENTS].kind[t] === TILE.GRATE) add('unscrew', LAYER.VENTS, t, GRATE_HP);
   }
@@ -190,23 +208,33 @@ function placeTarget(w: World, layer: number, here: number, ahead: number, held:
 /** The map's outermost ring can't be dug (there is nothing past it). */
 const edge = (i: number) => tileX(i) === 0 || tileZ(i) === 0 || tileX(i) === MAP_W - 1 || tileZ(i) === MAP_H - 1;
 
-/** The free floor tile next to a ground tile where someone climbing out stands (-1 for none). */
-export function besideOnGround(w: World, i: number, bodies: readonly Body[] = []): number {
+const AROUND = [
+  [0, 0],
+  [0, 1],
+  [0, -1],
+  [1, 0],
+  [-1, 0],
+  [1, 1],
+  [-1, 1],
+  [1, -1],
+  [-1, -1],
+] as const;
+
+/**
+ * The free floor tile next to a ground tile where someone climbing out stands (-1 for none):
+ * the four sides first, then the corners (never through a wall's corner). With `self` the
+ * tile itself comes first.
+ */
+export function besideOnGround(w: World, i: number, bodies: readonly Body[] = [], self = false): number {
   const x = tileX(i);
   const z = tileZ(i);
-  for (const [dx, dz] of [
-    [0, 1],
-    [0, -1],
-    [1, 0],
-    [-1, 0],
-    [1, 1],
-    [-1, 1],
-    [1, -1],
-    [-1, -1],
-  ]) {
+  const free = (nx: number, nz: number) => w.inside(nx, nz) && !w.blocked(nx, nz);
+  for (const [dx, dz] of AROUND) {
+    if (!dx && !dz && !self) continue;
     const nx = x + dx;
     const nz = z + dz;
-    if (!w.inside(nx, nz) || w.blocked(nx, nz)) continue;
+    if (!free(nx, nz)) continue;
+    if (dx && dz && (!free(x + dx, z) || !free(x, z + dz))) continue;
     const j = nz * MAP_W + nx;
     if (!occupied(j, bodies)) return j;
   }
@@ -230,8 +258,9 @@ export function climbTarget(w: World, layer: number, b: Body, ladderFoot: number
   const stay = (action: ClimbAction, tile: number, item?: number): ClimbTarget => ({ action, tile, toLayer: layer, toTile: here, item });
   if (layer === LAYER.GROUND) {
     for (const t of spots) {
-      if (vents[t] === TILE.GRATE_OPEN) return { action: 'climbVent', tile: t, toLayer: LAYER.VENTS, toTile: t };
-      if (vents[t] === TILE.GRATE_FAKE) return stay('uncover', t, FAKE_VENT);
+      const overhead = t === here;
+      if (vents[t] === TILE.GRATE_OPEN) return { action: 'climbVent', tile: t, toLayer: LAYER.VENTS, toTile: t, overhead };
+      if (vents[t] === TILE.GRATE_FAKE) return { ...stay('uncover', t, FAKE_VENT), overhead };
     }
     if (ahead < 0) return null;
     const k = w.ground.kind[ahead];
@@ -304,3 +333,18 @@ export function cavesIn(w: World, i: number): boolean {
 
 /** Whether a grate tile of the vents is open, closed or covered (for the render and the rules). */
 export const grateAt = (w: World, i: number) => (isGrate(w.layers[LAYER.VENTS].kind[i]) ? w.layers[LAYER.VENTS].kind[i] : 0);
+
+/**
+ * The action button's choice between the structure and the furniture in reach: a grate
+ * overhead gives way to a piece of furniture the player faces (the toilet beside it). The
+ * sim and the button's label both decide through this, so they always agree.
+ */
+export function preferClimb(climb: ClimbTarget | null, facesFurniture: boolean): ClimbTarget | null {
+  return climb?.overhead && facesFurniture ? null : climb;
+}
+
+/** Whether the tile ahead of a body is part of a piece of furniture. */
+export function facesProp(b: Body, p: { x: number; z: number; w: number; d: number }): boolean {
+  const t = aheadOf(b);
+  return t >= 0 && tileX(t) >= p.x && tileX(t) < p.x + p.w && tileZ(t) >= p.z && tileZ(t) < p.z + p.d;
+}

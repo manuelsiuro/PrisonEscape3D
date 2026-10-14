@@ -6,6 +6,7 @@ import { box, kitMaterial, merge, rod, type Part } from './kit';
 import { seeThrough } from './occlusion';
 import { TEX } from './textures';
 import { WALL_H, type WorldView } from './WorldView';
+import { FLOOR_HP, WALL_HP } from '../sim/tuning';
 
 /** The vents run on top of the walls; the roofs sit over the vents. */
 export const DUCT_Y = WALL_H;
@@ -44,6 +45,8 @@ export class Structure {
   private floorMesh: THREE.Mesh | null = null;
   private readonly ducts = new THREE.Group();
   private readonly damage = new THREE.Group();
+  /** Cracks and dug-at floors: redrawn on their own (every strike) without the rest. */
+  private readonly worn = new THREE.Group();
   private readonly mats: Record<string, THREE.Material>;
   private mode = -1;
 
@@ -53,9 +56,10 @@ export class Structure {
   ) {
     const ductTex = TEX.duct();
     this.mats = {
-      duct: seeThrough(new THREE.MeshStandardMaterial({ map: ductTex, metalness: 0.45, roughness: 0.5, transparent: true })),
+      duct: seeThrough(new THREE.MeshStandardMaterial({ map: ductTex, metalness: 0.45, roughness: 0.5, transparent: true, emissive: 0x000000 })),
       wallTop: seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 })),
-      ductInside: new THREE.MeshStandardMaterial({ color: 0x6b737c, metalness: 0.3, roughness: 0.7, emissive: 0x1c2026 }),
+      // Lit from within (the rooms below dim while the player crawls): the duct is the brightest thing on screen.
+      ductInside: new THREE.MeshStandardMaterial({ color: 0x8a939c, metalness: 0.3, roughness: 0.7, emissive: 0x4a525c }),
       grille: seeThrough(new THREE.MeshStandardMaterial({ map: TEX.grille(), metalness: 0.4, roughness: 0.5 })),
       dark: seeThrough(new THREE.MeshBasicMaterial({ color: 0x07090c })),
       glow: new THREE.MeshBasicMaterial({ color: 0xffe6a8, transparent: true, opacity: 0.35, depthWrite: false }),
@@ -71,7 +75,7 @@ export class Structure {
     this.ducts.add(body);
     this.lid = lid;
     this.ducts.add(lid);
-    this.group.add(this.ducts, this.damage);
+    this.group.add(this.ducts, this.damage, this.worn);
     this.buildRoofs();
     this.roofs.visible = false;
   }
@@ -206,13 +210,14 @@ export class Structure {
     // From the ground floor the ductwork overhead is a ghost: the rooms under it stay readable.
     const duct = this.mats.duct;
     duct.opacity = layer === LAYER.GROUND ? 0.32 : 1;
+    (duct as THREE.MeshStandardMaterial).emissive.setHex(layer === LAYER.VENTS ? 0x3a424c : 0x000000);
     duct.depthWrite = layer !== LAYER.GROUND;
     if (this.floorMesh) this.floorMesh.visible = layer !== LAYER.GROUND;
     this.roofs.visible = layer === LAYER.ROOF;
   }
 
-  /** Redraws the damage and the grates from the tiles and the wear (call when they change). */
-  refresh(wear: Readonly<Record<number, number>>, playerBelow: boolean) {
+  /** Redraws the damage and the grates from the tiles (call when they change, or the player goes below or comes up). */
+  refresh(playerBelow: boolean) {
     this.view.refreshTiles();
     for (const c of [...this.damage.children]) {
       this.damage.remove(c);
@@ -274,15 +279,32 @@ export class Structure {
         add(merge(rim), this.mats.kit, true);
       }
     }
-    // Wear: cracks spreading in a wall, a patch of floor dug at, a fence half cut (nothing shows).
+    this.buildGrates();
+  }
+
+  /** Redraws the wear: cracks spreading in a wall, a patch of floor dug at (a half-cut fence shows nothing). */
+  refreshWear(wear: Readonly<Record<number, number>>) {
+    for (const c of [...this.worn.children]) {
+      this.worn.remove(c);
+      (c as THREE.Mesh).geometry?.dispose();
+    }
+    const g = this.world.ground.kind;
+    const add = (geo: THREE.BufferGeometry, mat: THREE.Material) => {
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.receiveShadow = true;
+      this.worn.add(mesh);
+      return mesh;
+    };
+    const plane = (wd: number, ht: number) => new THREE.PlaneGeometry(wd, ht);
     for (const key in wear) {
       const n = Number(key);
       const layer = layerOfKey(n);
       const i = tileOfKey(n);
       const x = i % MAP_W;
       const z = Math.floor(i / MAP_W);
-      const f = Math.min(1, wear[n] / 100);
       if (layer !== LAYER.GROUND) continue;
+      // As a share of the tile's hit points (a wall takes 100, a floor 40).
+      const f = Math.min(1, wear[n] / (g[i] === TILE.BRICK ? WALL_HP : FLOOR_HP));
       if (g[i] === TILE.BRICK) {
         const ax = this.view.wallAlongX(x, z);
         const size = 0.45 + 0.55 * f;
@@ -296,7 +318,6 @@ export class Structure {
         d.position.set(x + 0.5, 0.008, z + 0.5);
       }
     }
-    this.buildGrates();
   }
 
   /** Under each grate a vent box with a grille (dark when unscrewed); inside the duct, the same seen from above. */

@@ -495,11 +495,14 @@ kbd {
   left: 50%;
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 130px);
   z-index: 34;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 32px));
   padding: 7px 14px;
-  border-radius: 999px;
-  font: 700 14px var(--font-ui);
+  border-radius: 18px;
+  font: 700 14px/1.3 var(--font-ui);
+  text-align: center;
   color: white;
-  white-space: nowrap;
+  text-wrap: balance;
   background: rgba(18, 24, 36, 0.9);
   transform: translateX(-50%);
   pointer-events: none;
@@ -508,6 +511,10 @@ kbd {
 
 .item-toast.show {
   animation: item-toast 2.2s var(--ease) forwards;
+}
+
+.item-toast.long.show {
+  animation-duration: 3.8s;
 }
 
 @keyframes item-toast {

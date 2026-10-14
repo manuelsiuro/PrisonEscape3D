@@ -77,7 +77,8 @@ function strikeUntil(sim: Sim, tool: string, done: () => boolean, limit = 4000) 
       sim.step(command(0, OP.SELECT, k));
       continue;
     }
-    sim.step(command(0, OP.USE));
+    // Each strike a fresh press (the UI's first press; holding sends 0).
+    sim.step(command(0, OP.USE, 1));
     for (const e of sim.events) {
       events.push(e);
       if (e.type === 'strike') strikes++;
@@ -98,7 +99,7 @@ function interact(sim: Sim, a = 0): SimEvent[] {
 }
 /** One press of the use button (a cover, a brace, a rope); returns its events. */
 function use(sim: Sim): SimEvent[] {
-  sim.step(command(0, OP.USE));
+  sim.step(command(0, OP.USE, 1));
   return sim.events;
 }
 
@@ -198,7 +199,7 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   const live = Array.from(sim.world.ground.kind).indexOf(TILE.ELECTRIC);
   stand(sim, live % MAP_W, Math.floor(live / MAP_W) - 1, SOUTH);
   carry(sim, 'plastic_knife');
-  sim.step(command(0, OP.USE));
+  sim.step(command(0, OP.USE, 1));
   check(sim.events.some((e) => e.type === 'shocked') && sim.state.ko > 0, 'a live fence knocks the player out');
   for (let k = 0; k < 700 && sim.state.ko > 0; k++) sim.step(command(0));
   console.log(`electric fence: shocked, woke up in the ${sim.playerZone}; the plastic knife (legal) ${sim.state.items.inv[0] ? 'kept' : 'confiscated'}`);
@@ -311,9 +312,12 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
     if (z === 3) midTunnel = sim.snapshot();
   }
   console.log(`tunnel: dug to 10,1 under the road; dirt left in the tunnel: ${st.items.ground.length} piles; ${at(sim)}`);
-  // Turn back along the tunnel and dig up: out onto the road.
+  // Turn back along the tunnel and dig up: out onto the road. Holding the button (no fresh
+  // press) never digs up: it would carry a hold on from the last tile straight to the surface.
   goTo(sim, 1 * MAP_W + 10);
   st.player.facing = SOUTH;
+  for (let k = 0; k < 60; k++) sim.step(command(0, OP.USE, 0));
+  check(st.layer === LAYER.UNDER && !st.wear[1 * MAP_W + 10], 'a held button never digs up');
   const up = strikeUntil(sim, 'sturdy_shovel', () => st.escaped > 0 || st.layer === LAYER.GROUND, 200);
   check(up.ok && st.escaped > 0, 'dug up onto the road: escaped');
   console.log(`tunnel escape: ${st.escaped ? `escaped ${at(sim)}` : `stuck in the ${sim.playerZone}`}`);
@@ -433,4 +437,35 @@ function quiet(sim: Sim) {
   sim.step(command(0));
   console.log(`roof: a guard indoors → heat ${inside}; a guard in the yard → heat ${st.heat}`);
   check(inside === 0 && st.heat === 100, 'only a guard in the open sees the roof');
+}
+
+// ------------------------------------------------------------------ pockets, reserved floor, the grate over the toilet
+{
+  const sim = new Sim(NO_GUARDS, 10);
+  const st = sim.state;
+  // The last blow with full pockets would drop the chunk at the player's feet: refused.
+  stand(sim, 8, 7, NORTH);
+  carry(sim, 'sturdy_pickaxe', 'sock', 'sock', 'sock', 'sock', 'sock');
+  st.wear[6 * MAP_W + 8] = 90;
+  const ev = use(sim);
+  check(ev.some((e) => e.type === 'cantStrike' && e.why === 'full') && st.wear[6 * MAP_W + 8] === 90, 'full pockets: the last blow waits for room');
+  // Nobody digs where people must stand: beside beds and desks, at cell doors, at the ladder's foot.
+  const places = placesOf(sim.world);
+  carry(sim, 'sturdy_shovel');
+  const side = places.deskside[1];
+  stand(sim, side % MAP_W, Math.floor(side / MAP_W) - 1, SOUTH);
+  const before = sim.world.ground.kind[side];
+  for (let k = 0; k < 40; k++) use(sim);
+  check(sim.world.ground.kind[side] === before, 'no tunnel entrance beside a desk');
+  // Under the open grate the action button climbs; facing the toilet from beside it, it flushes.
+  stand(sim, 9, 9, NORTH);
+  carry(sim, 'nail_file', 'dirt');
+  strikeUntil(sim, 'nail_file', () => kindAt(sim, LAYER.VENTS, 9, 9) === TILE.GRATE_OPEN);
+  sim.step(command(0, OP.SELECT, 1));
+  stand(sim, 10, 9, SOUTH);
+  const flush = interact(sim);
+  stand(sim, 9, 9, EAST);
+  const climb = interact(sim);
+  console.log(`beside the toilet: ${flush.some((e) => e.type === 'flushed') ? 'flushed' : '-'}; on the grate: ${climb.some((e) => e.type === 'layer') ? 'climbed' : '-'}`);
+  check(flush.some((e) => e.type === 'flushed') && climb.some((e) => e.type === 'layer'), 'the toilet faced flushes, the grate overhead climbs');
 }

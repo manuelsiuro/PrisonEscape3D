@@ -211,7 +211,7 @@ body:not(.touch) .act-prompt {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 10px;
+  margin-bottom: 10px;
   padding: 8px 8px 8px 12px;
   border-radius: 12px;
   color: #f2dcc0;
@@ -242,4 +242,100 @@ body:not(.touch) .act-prompt {
   color: white;
   background: radial-gradient(circle at 40% 30%, #ffd05c, #e08a12);
   box-shadow: 0 12px 26px -8px rgba(224, 138, 18, 0.8);
+}
+
+/* ------------------------------------------------------------ toasts clear the tool controls */
+.is-playing.tool-up .toasts {
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 166px), var(--hint-clear, 0px));
+}
+
+.is-playing.tool-up .item-toast {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 168px);
+}
+
+.touch.is-playing.tool-up .toasts {
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 214px), var(--hint-clear, 0px));
+}
+
+.touch.is-playing.tool-up .item-toast {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 226px);
+}
+
+@media (max-height: 520px) {
+  .is-playing.tool-up .toasts,
+  .touch.is-playing.tool-up .toasts {
+    bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 74px), var(--hint-clear, 0px));
+  }
+
+  .touch.is-playing.tool-up .item-toast {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 130px);
+  }
+}
+
+/* An item's card (drop, wear) over the hotbar: the prompts and energy under it make way. */
+.item-card .act-prompt,
+.item-card .tool-prompt,
+.item-card .energy {
+  visibility: hidden;
+}
+
+/* ------------------------------------------------------------ the layer the player is on, in the zone pill */
+.hud .pill.hud-zone[data-layer='under'] {
+  background: rgba(92, 60, 32, 0.9);
+}
+
+.hud .pill.hud-zone[data-layer='vents'] {
+  background: rgba(61, 95, 132, 0.92);
+}
+
+.hud .pill.hud-zone[data-layer='roof'] {
+  background: rgba(120, 112, 98, 0.92);
+}
+
+/* Desktop: the coach hint sits above the Space prompt. */
+body:not(.touch).is-playing.tool-up .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 170px);
+}
+
+/* Landscape phones: a desk's hidden compartment and drawers side by side, so all 16 slots
+   (and the tunnel row) fit between the HUD and the hotbar without scrolling. */
+@media (max-height: 520px) {
+  .box-panel:not(.plain) {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-content: start;
+    column-gap: 14px;
+    width: auto;
+  }
+
+  .box-panel:not(.plain) .panel-head,
+  .box-panel:not(.plain) .box-tunnel {
+    grid-column: 1 / -1;
+  }
+
+  .box-panel:not(.plain) .box-section + .box-section {
+    margin-top: 0;
+  }
+
+  .box-panel:not(.plain) .box-hidden .slot-grid,
+  .box-panel:not(.plain) .slot-grid.box-hidden {
+    grid-template-columns: repeat(3, 40px);
+  }
+
+  .box-panel:not(.plain) .slot-grid.box-drawers {
+    grid-template-columns: repeat(5, 40px);
+  }
+
+  .box-tunnel {
+    margin-bottom: 6px;
+    padding: 3px 3px 3px 12px;
+  }
+
+  .box-panel:not(.plain) .box-label {
+    margin-bottom: 3px;
+  }
+
+  .box-panel:not(.plain) .box-hidden-wrap .slot-grid {
+    padding: 4px;
+  }
 }

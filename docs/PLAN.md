@@ -232,4 +232,22 @@ real touch feel) and the known limits.
   - guards: damage, evidence and tampering in a cone mean lockdown; repairs after a capture; roofs seen from the open yard; vents and roofs restricted;
   - energy meter, first-time tips, sounds for every strike, the escape card;
   - `layertest`: chipping, covers, cutting and the fence escape, the electric fence, vents to the roof and back, the tunnel bot (cave-in, braces, flushing, dig-up escape), discovery and repair, roof sight, restore mid-tunnel; `maptest` validates the vents.
-- **Next: P5 Combat.**
+- **P4 review and polish (v0.5.1)**:
+  - a held tool button never carries on into the next thing: each new target (the earth giving way, a cave-in) takes a fresh press, and digging up, eating and putting things in place only happen on a press;
+  - the last blow with full pockets waits for room (the chunk or dirt would land at the player's feet in view);
+  - no tunnel entrances where people must stand (beside beds and desks, at cell doors and roll call spots, the ladder's foot); nobody is dug out from under;
+  - every climb lands on free floor (never a hole or a person, never through a wall's corner);
+  - a grate overhead gives way to furniture the player faces;
+  - Space lets go when the window loses focus;
+  - perf: a held button no longer redraws the hotbar every step; a strike redraws only its cracks (tiles and tunnels redraw only when they change); no per-step garbage in damage spotting;
+  - UI:
+    - the zone pill shows the layer (colour and icon);
+    - the tool button greys when too tired;
+    - toasts and hints rise above the tool controls;
+    - item toasts wrap and stay up longer when long;
+    - the item card hides the prompts under it;
+    - the desk's tunnel row sits at the top of its panel, and in landscape the compartment and drawers sit side by side (all 16 slots fit);
+    - the title's sound pill no longer wraps;
+  - look: a warm trodden trench floor and a faint light shaft in the tunnels, the rooms dim more under the vents;
+  - text: clearer wording (FR digging up, cave-in advice every third tile, how to come up).
+- **Next: second P4 review, then P5 Combat.**

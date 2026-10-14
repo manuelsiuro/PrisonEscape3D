@@ -18,7 +18,7 @@ import { tileOfBody } from './sim/systems/movement';
 import { CHOCOLATE_ENERGY, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
 import { TILE } from './sim/world/tiles';
-import { climbTarget, DIRT, ladderFootOf, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
+import { climbTarget, DIRT, facesProp, ladderFootOf, preferClimb, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
 import { ToolControls, type ToolView } from './ui/tool';
 import { showEscaped } from './ui/screens/escaped';
 import { formatTime } from './sim/systems/clock';
@@ -388,7 +388,7 @@ function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : NEED[e.action];
+      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'full' ? 'toast.pocketsFull' : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -404,6 +404,7 @@ function announce(e: SimEvent, sim: Sim) {
       banner.show(t('banner.shocked'), t('banner.shockedSub'), 'alarm', 3500);
       break;
     case 'caveIn':
+      tools.release();
       sound.caveIn();
       buzz('lockdown');
       view.impact('dig', e.tile, LAYER.UNDER, true);
@@ -627,8 +628,10 @@ addEventListener('keydown', (e) => {
   if (import.meta.env.DEV && e.code === 'BracketRight' && game) game.speed = game.speed === 1 ? 30 : 1;
 });
 addEventListener('keyup', (e) => {
-  if (e.code === 'Space') tools.held = false;
+  if (e.code === 'Space') tools.release();
 });
+// Focus gone with Space held: the keyup never comes.
+addEventListener('blur', () => tools.release());
 // A hidden page pauses the game (phones switching apps, a closed laptop).
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && game && !game.paused) pause();
@@ -672,11 +675,15 @@ const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress:
 function usePress() {
   if (!game || game.paused) return;
   game.pilot.stop();
-  if (!toolNow?.repeat) {
-    sendOp(OP.USE);
-    tools.held = false;
-  }
+  // A fresh press (arg 1): only a fresh press digs up, eats or puts things in place.
+  sendOp(OP.USE, 1);
+  heldOn = toolKey;
+  if (!toolNow?.repeat) tools.release();
 }
+
+/** What the held button is working on: when it changes (the earth gave way, a cave-in), the hold ends. */
+let toolKey = '';
+let heldOn = '';
 const sleepVeil = h('div', 'sleep-veil', `<span>${''}</span>`);
 document.body.append(sleepVeil);
 
@@ -758,10 +765,11 @@ function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView |
   const v = toolView;
   v.verb = t(`act.${tt.action}` as Key);
   v.icon = TOOL_ICON[tt.action];
-  v.fits = tt.fits && (!strike || tt.hp !== 0);
+  // Grey when it can't be done: the wrong tool, reinforced concrete, or too tired to swing.
+  v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= (d?.tool?.energy ?? 0)));
   v.repeat = strike;
   if (!strike) {
-    v.what = tt.action === 'eat' ? t('thing.chocolate') : tt.action === 'cover' ? t(tt.layer === LAYER.VENTS ? 'thing.grate' : 'thing.hole') : tt.action === 'brace' ? t('thing.tunnel') : t('thing.rope');
+    v.what = tt.action === 'eat' ? t('thing.chocolate') : tt.action === 'cover' ? t(tt.layer === LAYER.VENTS ? 'thing.grate' : 'thing.hole') : tt.action === 'brace' ? '' : t('thing.rope');
     v.progress = null;
     return v;
   }
@@ -828,6 +836,7 @@ const frameData: Frame = {
   guards: [],
   layer: LAYER.GROUND,
   tilesRev: -1,
+  wearRev: -1,
   wear: {},
 };
 const PEEL_ACTION = { verb: '', what: '' };
@@ -904,6 +913,7 @@ function frame(now: number) {
   f.minuteOfDay = clock.minuteOfDay + ((st.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE;
   f.layer = st.layer;
   f.tilesRev = sim.tilesRev;
+  f.wearRev = sim.wearRev;
   f.wear = st.wear;
   // Footsteps: earth in the tunnels, steel in the vents, the floor's own sound elsewhere.
   f.surface = st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
@@ -958,8 +968,10 @@ function frame(now: number) {
   const busy = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused || g.over;
   const held = itemOf(it.inv[it.hand]);
   // The action button: the structure first (climb, cover, brace), as the sim decides it.
-  const climb = busy ? null : climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim));
-  const target = busy || climb ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer);
+  const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer);
+  const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
+  const climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim)), faced);
+  const target = climb ? null : reach;
   // The frame stays on an open container (what the panel shows), else on what is in reach.
   f.focus = it.open >= 0 ? focusOf(sim, { kind: 'container', index: it.open }) : focusOf(sim, target, climb);
   f.held = held;
@@ -981,7 +993,11 @@ function frame(now: number) {
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   itemsUI.update(v);
   // The tool button: what a strike would hit.
-  toolNow = busy || itemsUI.panelOpen ? null : describeTool(sim, toolTarget(sim.world, st.layer, p, held, bodiesOf(sim)), held);
+  const tt = busy || itemsUI.panelOpen ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim));
+  toolNow = describeTool(sim, tt, held);
+  // Each new target takes a new press: a held button never digs on into the next thing.
+  toolKey = tt ? `${tt.action}:${tt.layer}:${tt.tile}` : '';
+  if (tools.held && toolKey !== heldOn) tools.release();
   tools.update(toolNow, st.energy, !!(held && itemDef(held).tool), busy || itemsUI.panelOpen);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');

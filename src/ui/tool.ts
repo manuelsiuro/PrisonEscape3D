@@ -57,10 +57,16 @@ export class ToolControls {
     document.body.append(this.btn, this.prompt, this.energy);
   }
 
+  /** Lets go of the button (the target changed under the hold, the window lost focus). */
+  release() {
+    this.held = false;
+    this.btn.classList.remove('down');
+  }
+
   show(on: boolean) {
     if (!on) {
       for (const el of [this.btn, this.prompt, this.energy]) el.classList.add('hidden');
-      document.body.classList.remove('has-tool');
+      document.body.classList.remove('has-tool', 'tool-up');
       this.shown = '';
       this.shownEnergy = -1;
       this.held = false;
@@ -73,7 +79,8 @@ export class ToolControls {
     this.btn.classList.toggle('hidden', !on || !TOUCH);
     this.prompt.classList.toggle('hidden', !on || TOUCH);
     document.body.classList.toggle('has-tool', on && TOUCH);
-    if (!on) this.held = false;
+    document.body.classList.toggle('tool-up', on);
+    if (!on) this.release();
     if (on && v) {
       const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}`;
       if (key !== this.shown) {

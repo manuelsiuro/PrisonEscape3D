@@ -232,8 +232,10 @@
 
 .sound-toggle {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
   padding: 4px 10px 4px 8px;
   border-radius: 999px;
   font: 700 12.5px var(--font-ui);

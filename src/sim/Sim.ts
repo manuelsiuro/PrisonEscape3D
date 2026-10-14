@@ -7,7 +7,7 @@ import { findPath, nearestDir } from './ai/path';
 import { placesOf } from './ai/places';
 import { canSee } from './ai/sight';
 import { craft, dropItem, equip, give, HOTBAR, interactTarget, itemOf, moveItem, pickUp, restock, slot, startItems, stillInReach, usesOf, type ItemEvent, type ItemState } from './systems/items';
-import { besideOnGround, cavesIn, climbTarget, DIRT, ladderFootOf, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbAction, type ClimbTarget, type ToolAction, type ToolTarget } from './systems/structure';
+import { besideOnGround, cavesIn, climbTarget, facesProp, preferClimb, DIRT, ladderFootOf, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbAction, type ClimbTarget, type ToolAction, type ToolTarget } from './systems/structure';
 import { fnv1a, randomInt } from './rng';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { assign, awake, backToDuty, cancelTasks, CATCH_RANGE, GUARD, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
@@ -82,7 +82,7 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster'; action: ToolAction }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster' | 'full'; action: ToolAction }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -182,6 +182,9 @@ export class Sim {
   private readonly forInmates: Body[] = [];
   private readonly inmateBodies: Body[] = [];
   private readonly onReport = (r: GuardReport) => this.report(r);
+  /** Reused every step by noticeDamage. */
+  private readonly watchers: Guard[] = [];
+  private readonly point = { x: 0, z: 0 };
 
   constructor(
     readonly prison: PrisonDef,
@@ -218,7 +221,7 @@ export class Sim {
       wear: {},
       toilets: {},
       found: [],
-      struckAt: -STRIKE_STEPS,
+      struckAt: -1000,
       escaped: 0,
     };
     this.ladderFoot = ladderFootOf(this.world);
@@ -227,8 +230,9 @@ export class Sim {
 
   /** Where the ladder's floor end is (-1 without one). */
   private ladderFoot = -1;
-  /** Bumps whenever a tile or its wear changes (the view redraws damage then). Not state. */
+  /** Bump whenever a tile changes, and whenever a tile's wear does (the view redraws them). Not state. */
   tilesRev = 0;
+  wearRev = 0;
 
   get clock(): Clock {
     return clockAt(this.state.step);
@@ -426,9 +430,11 @@ export class Sim {
   private noticeDamage(): boolean {
     const s = this.state;
     const w = this.world;
-    const watchers = s.guards.filter(awake);
+    const watchers = this.watchers;
+    watchers.length = 0;
+    for (const g of s.guards) if (awake(g)) watchers.push(g);
     if (!watchers.length) return false;
-    const point = { x: 0, z: 0 };
+    const point = this.point;
     // The middle of the tile, or any of its four faces (a hole in a wall is seen from an angle by its face).
     const seenAt = (tile: number) => {
       const cx = (tile % MAP_W) * UNIT + UNIT / 2;
@@ -486,6 +492,7 @@ export class Sim {
     else s.tiles[key] = k;
     this.world.setKind(layer, tile, k);
     this.tilesRev++;
+    this.wearRev++;
   }
 
   /** The prison's power (the generator arrives in P7: until then it is always on). */
@@ -688,7 +695,8 @@ export class Sim {
     const it = s.items;
     const ev = this.events as ItemEvent[];
     const a = argA(cmd);
-    if (opOf(cmd) !== OP.NONE) it.rev++;
+    // Every op may change items (the UI redraws on rev); a held use button asks every step, so strikes bump it themselves.
+    if (opOf(cmd) !== OP.NONE && opOf(cmd) !== OP.USE) it.rev++;
     switch (opOf(cmd)) {
       case OP.INTERACT: {
         if (s.solitary > 0) {
@@ -701,12 +709,13 @@ export class Sim {
           break;
         }
         const held = itemOf(it.inv[it.hand]);
-        const climb = climbTarget(this.world, s.layer, s.player, this.ladderFoot, this.bodiesAbout());
+        const target = interactTarget(this.world, it, s.player, this.bedtime, s.layer);
+        const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(this.world)[target.index].prop) : false;
+        const climb = preferClimb(climbTarget(this.world, s.layer, s.player, this.ladderFoot, this.bodiesAbout()), faced);
         if (climb) {
           this.climb(climb);
           break;
         }
-        const target = interactTarget(this.world, it, s.player, this.bedtime, s.layer);
         if (!target) break;
         if (target.kind === 'ground') pickUp(it, target.index, ev);
         else if (target.kind === 'sleep') this.sleep();
@@ -730,7 +739,7 @@ export class Sim {
         dropItem(it, a, s.player, ev, s.layer);
         break;
       case OP.USE:
-        if (s.solitary === 0) this.strike();
+        if (s.solitary === 0) this.strike(a === 1);
         break;
       case OP.CRAFT:
         craft(it, a, ev, argB(cmd) - 1);
@@ -749,20 +758,35 @@ export class Sim {
     }
   }
 
-  /** Everyone about on the ground floor (nobody digs under people). */
+  /** Everyone about on the ground floor (nobody digs under people); one array, refilled. */
+  private readonly about: Body[] = [];
   private bodiesAbout(): Body[] {
-    const s = this.state;
-    const list = this.inmateBodies.slice();
-    for (const g of s.guards) list.push(g.body);
+    const list = this.about;
+    list.length = 0;
+    for (const m of this.state.inmates) list.push(m.body);
+    for (const g of this.state.guards) list.push(g.body);
     return list;
+  }
+
+  /**
+   * Where the player lands climbing onto the ground floor: the tile meant, or (if a hole or
+   * someone is in the way) the nearest free one beside it; -1 if there's none.
+   */
+  private landing(tile: number): number {
+    const w = this.world;
+    const bodies = this.bodiesAbout();
+    if (tile >= 0 && !w.blocked(tile % MAP_W, Math.floor(tile / MAP_W)) && besideOnGround(w, tile, bodies, true) === tile) return tile;
+    return tile >= 0 ? besideOnGround(w, tile, bodies) : -1;
   }
 
   /**
    * A strike with the tool in hand (GDD §9, §7.2): at most every STRIKE_STEPS, it costs the
    * tool's energy and a use; the tile's hit points go down by the tool's damage, and when
-   * they run out it gives way. Chocolate in hand is eaten instead.
+   * they run out it gives way. Chocolate in hand is eaten instead. `fresh`: a new press
+   * (not the button held down): digging up, eating and putting things in place need one, so
+   * a held button never carries on into them.
    */
-  private strike() {
+  private strike(fresh: boolean) {
     const s = this.state;
     const w = this.world;
     const it = s.items;
@@ -772,8 +796,10 @@ export class Sim {
     if (!target) return;
     // Strikes come at their own pace (holding the button asks every step); the rest at a press.
     if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
+    if ((target.action === 'digUp' || !STRIKES.has(target.action)) && !fresh) return;
     if (target.action === 'eat') {
       it.inv[it.hand] = 0;
+      it.rev++;
       s.energy = Math.min(100, s.energy + CHOCOLATE_ENERGY);
       this.events.push({ type: 'ate', item: held });
       return;
@@ -782,14 +808,21 @@ export class Sim {
       this.putInPlace(target, held);
       return;
     }
-    const why = target.hp === 0 ? 'reinforced' : !target.fits ? 'tool' : s.energy < itemDef(held).tool!.energy ? 'tired' : null;
+    const key = placeKey(target.layer, target.tile);
+    const tool0 = itemDef(held).tool;
+    // The last blow on the ground floor with full pockets would leave the chunk or the dirt at
+    // the player's feet, in plain view: not until there's room.
+    const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
+    const full = yields && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + tool0.damage >= target.hp && !it.inv.slice(0, HOTBAR).includes(0);
+    const why = target.hp === 0 ? 'reinforced' : !target.fits ? 'tool' : s.energy < tool0!.energy ? 'tired' : full ? 'full' : null;
     if (why) {
       this.events.push({ type: 'cantStrike', why, action: target.action });
       return;
     }
-    const tool = itemDef(held).tool!;
+    const tool = tool0!;
     s.struckAt = s.step;
     s.energy -= tool.energy;
+    it.rev++;
     // Face what is struck (the grate overhead keeps the heading).
     if (target.tile >= 0 && target.action !== 'digUp' && target.action !== 'unscrew') {
       const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
@@ -812,11 +845,10 @@ export class Sim {
       this.events.push({ type: 'shocked' });
       return;
     }
-    const key = placeKey(target.layer, target.tile);
     const taken = (s.wear[key] ?? 0) + tool.damage;
     if (taken < target.hp) {
       s.wear[key] = taken;
-      this.tilesRev++;
+      this.wearRev++;
       this.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: target.tile, broke: false });
       return;
     }
@@ -853,7 +885,7 @@ export class Sim {
         give(it, DIRT, p, s.layer);
         this.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
         // Out through the new hole.
-        const out = besideOnGround(w, t, this.bodiesAbout());
+        const out = this.landing(besideOnGround(w, t, this.bodiesAbout()));
         if (out >= 0) this.moveTo(LAYER.GROUND, out, 'digUp');
         return;
       }
@@ -874,6 +906,7 @@ export class Sim {
       return;
     }
     it.inv[it.hand] = 0;
+    it.rev++;
     switch (target.action) {
       case 'cover':
         if (target.layer === LAYER.VENTS) this.setTile(LAYER.VENTS, t, TILE.GRATE_FAKE);
@@ -884,9 +917,15 @@ export class Sim {
         this.setTile(LAYER.UNDER, t, TILE.BRACED);
         this.events.push({ type: 'braced' });
         break;
-      case 'rope':
-        this.moveTo(LAYER.GROUND, t, 'rope');
+      case 'rope': {
+        const to = this.landing(t);
+        if (to < 0) {
+          it.inv[it.hand] = slot(held);
+          return;
+        }
+        this.moveTo(LAYER.GROUND, to, 'rope');
         break;
+      }
     }
   }
 
@@ -905,8 +944,10 @@ export class Sim {
         return;
       }
     }
-    // Climbing out of the tunnel under the desk: beside the desk.
-    const to = c.toTile === -2 ? placesOf(this.world).deskside[1] : c.toTile;
+    // Climbing out of the tunnel under the desk: beside the desk. Onto the ground floor, never
+    // onto a hole or into someone.
+    const want = c.toTile === -2 ? placesOf(this.world).deskside[1] : c.toTile;
+    const to = c.toLayer === LAYER.GROUND ? this.landing(want) : want;
     if (to < 0) return;
     this.moveTo(c.toLayer, to, c.action);
   }
@@ -1060,7 +1101,7 @@ export class Sim {
       wear: st.wear ?? {},
       toilets: st.toilets ?? {},
       found: st.found ?? [],
-      struckAt: st.struckAt ?? -STRIKE_STEPS,
+      struckAt: st.struckAt ?? -1000,
       escaped: st.escaped ?? 0,
     };
     // The world as the state has it: the map, then every tile changed since.

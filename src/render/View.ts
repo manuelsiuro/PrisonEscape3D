@@ -54,6 +54,7 @@ export interface Frame {
   layer: number;
   /** Changes whenever tiles or their wear do (damage is redrawn then), and the wear itself. */
   tilesRev: number;
+  wearRev: number;
   wear: Readonly<Record<number, number>>;
 }
 
@@ -150,6 +151,9 @@ export class View {
   /** The layer drawn (the player's), and the tiles revision the damage was drawn for. */
   private layer = -1;
   private tilesRev = -1;
+  private wearRev = -1;
+  /** Whether the damage was last drawn with the player below (the desk over a tunnel is pushed aside then). */
+  private drawnBelow = false;
   /** A strike's jolt (0–1), easing away. */
   private shake = 0;
   private readonly raycaster = new THREE.Raycaster();
@@ -229,6 +233,7 @@ export class View {
     this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs, this.underground.group);
     this.layer = -1;
     this.tilesRev = -1;
+    this.wearRev = -1;
     this.showLayer(LAYER.GROUND);
     this.guide.world = world;
     this.cones.world = world;
@@ -383,10 +388,17 @@ export class View {
     this.dress(f.outfit);
     this.showLayer(f.layer);
     // Damage, grates and tunnels redrawn when the tiles change.
-    if (f.tilesRev !== this.tilesRev) {
+    const below = f.layer === LAYER.UNDER;
+    if (f.tilesRev !== this.tilesRev || below !== this.drawnBelow) {
+      if (f.tilesRev !== this.tilesRev) this.underground?.refresh();
       this.tilesRev = f.tilesRev;
-      this.structure?.refresh(f.wear, f.layer === LAYER.UNDER);
-      this.underground?.refresh();
+      this.drawnBelow = below;
+      this.structure?.refresh(below);
+      this.wearRev = -1;
+    }
+    if (f.wearRev !== this.wearRev) {
+      this.wearRev = f.wearRev;
+      this.structure?.refreshWear(f.wear);
     }
     this.player.root.visible = true;
     this.player.baseY = LAYER_Y[f.layer];
@@ -472,8 +484,8 @@ export class View {
     } else this.ambient.color.set(SKY_LIGHT);
     // Off the ground floor: the vents dim the rooms below; the tunnels are dark but for the lantern.
     if (this.layer === LAYER.VENTS) {
-      this.sun.intensity *= 0.4;
-      this.ambient.intensity *= 0.5;
+      this.sun.intensity *= 0.22;
+      this.ambient.intensity *= 0.32;
     } else if (this.layer === LAYER.UNDER) {
       // Dim, but the map above (tinted on the earth) still reads; the lantern warms the trench.
       this.sun.intensity = 0.55;

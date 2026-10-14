@@ -101,9 +101,9 @@ export class ItemsUI {
       'div',
       'item-panel box-panel hidden',
       `<div class="panel-head"><b></b><button class="icon-btn small" data-close data-t-label="box.close">${icon('close', 18)}</button></div>
+      <div class="box-tunnel hidden"><span data-t="box.tunnel"></span><button class="big-btn primary small" data-climb>${icon('down', 18)}<span data-t="box.climbDown"></span></button></div>
       <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span data-t="box.hidden"></span><em data-t="box.hiddenNote"></em></div><div class="slot-grid box-hidden"></div></div>
-      <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>
-      <div class="box-tunnel hidden"><span data-t="box.tunnel"></span><button class="big-btn primary small" data-climb>${icon('down', 18)}<span data-t="box.climbDown"></span></button></div>`,
+      <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>`,
     );
     this.boxTitle = this.box.querySelector('.panel-head b')!;
     this.boxHidden = this.box.querySelector('.box-hidden')!;
@@ -146,6 +146,7 @@ export class ItemsUI {
     for (const el of [this.bar]) el.classList.toggle('hidden', !on);
     if (!on) {
       for (const el of [this.act, this.prompt, this.box, this.craft, this.info]) el.classList.add('hidden');
+      document.body.classList.remove('item-card');
       this.craftOpen = false;
       this.picked = this.menu = null;
       this.bench = [];
@@ -189,6 +190,8 @@ export class ItemsUI {
   toast(text: string) {
     this.toastEl.textContent = text;
     this.toastEl.classList.remove('hidden', 'show');
+    // Long notes (what a tool needs) stay up long enough to read.
+    this.toastEl.classList.toggle('long', text.length > 34);
     void this.toastEl.offsetWidth;
     this.toastEl.classList.add('show');
   }
@@ -417,6 +420,8 @@ export class ItemsUI {
     const addr = this.menu ?? this.picked;
     const value = addr === null ? 0 : addr < SLOT.CONTAINER ? it.inv[addr] : (it.containers[it.open]?.[addr - SLOT.CONTAINER] ?? 0);
     this.info.classList.toggle('hidden', !value || this.craftOpen);
+    // While an item's card is up, the prompts and the energy pill under it step aside.
+    document.body.classList.toggle('item-card', !!value && !this.craftOpen);
     if (!value || addr === null) return;
     const n = itemOf(value);
     const d = itemDef(n);

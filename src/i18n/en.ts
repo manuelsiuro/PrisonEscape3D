@@ -276,7 +276,7 @@ export const en = {
   "act.dig": "Dig",
   "act.digUp": "Dig up",
   "act.eat": "Eat",
-  "act.climbVent": "Climb in",
+  "act.climbVent": "Climb",
   "act.dropDown": "Drop down",
   "act.climbRoof": "Climb",
   "act.climbDownLadder": "Climb down",
@@ -289,7 +289,7 @@ export const en = {
   "act.flush": "Flush",
   "act.use": "Use",
   "thing.wall": "the wall",
-  "thing.reinforced": "reinforced wall",
+  "thing.reinforced": "the reinforced wall",
   "thing.fence": "the fence",
   "thing.electric": "the electric fence",
   "thing.grate": "the vent grate",
@@ -310,7 +310,7 @@ export const en = {
   "toast.reinforced": "Reinforced concrete: no tool gets through this",
   "toast.tired": "Too tired. Rest, eat or sleep to get your energy back",
   "toast.broke": "Your {item} broke",
-  "toast.caveIn": "Cave-in! Brace tunnels with timber every few tiles",
+  "toast.caveIn": "Cave-in! Brace the tunnel with timber every third tile",
   "toast.clogged": "This toilet is clogged. Try another, or wait an hour",
   "toast.flushed": "Flushed away",
   "toast.braced": "Tunnel braced",
@@ -329,7 +329,7 @@ export const en = {
   "hint.toolsKeys": "Hold Space to use the tool in your hand on the wall, fence, grate or floor in front of you",
   "hint.toolsTouch": "Hold the tool button to use the tool in your hand on the wall, fence, grate or floor in front of you",
   "hint.evidence": "Dirt and wall chunks are evidence: flush them down a toilet, or leave them in a tunnel",
-  "hint.tunnel": "Tunnels cave in after 2 tiles without a timber brace. Face back along the tunnel to dig up.",
+  "hint.tunnel": "Tunnels cave in after 2 tiles without a timber brace. To come up, face back along the tunnel and press the tool button.",
   "hint.restrictedUp": "Vents and roofs are staff only: don't let a guard see you up there",
   "hint.damage": "A guard who sees a hole raises the alarm: cover it with a poster (in your cell) or a fake wall block",
   "hint.deskTunnel": "Your desk hides the tunnel. Open the desk to climb down.",
@@ -339,6 +339,7 @@ export const en = {
   "escaped.back": "Title screen",
   "key.space": "Space",
   "toast.posterCell": "A poster only passes for decoration in your own cell",
+  "toast.pocketsFull": "Make room in your pockets first: it would land at your feet, in plain view",
 };
 
 export type Strings = typeof en;

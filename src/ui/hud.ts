@@ -26,6 +26,10 @@ export function routinePlace(k: number): string {
   return names.reduce((a, b) => t('routine.or', { a, b }));
 }
 
+/** The zones that are layers, and the pill's icon for each. */
+const LAYER_ZONES: Partial<Record<ZoneId, string>> = { tunnels: 'under', vents: 'vents', roof: 'roof' };
+const LAYER_ICONS: Record<string, string> = { under: 'down', vents: 'bars', roof: 'up' };
+
 export const routineName = (k: number) => t(`routine.${ROUTINE[k].id}` as Key);
 
 /**
@@ -115,6 +119,12 @@ export class Hud {
     }
     if (zone !== this.shownZone || !this.zone.textContent) {
       setText(this.zone, t(`zone.${zone}`));
+      // Off the ground floor the pill shows the layer (GDD §13.2): its own color and icon.
+      const layer = LAYER_ZONES[zone] ?? '';
+      if (layer !== this.zonePill.dataset.layer) {
+        this.zonePill.dataset.layer = layer;
+        this.zonePill.querySelector('.ic')!.outerHTML = icon(LAYER_ICONS[layer] ?? 'pin', 16);
+      }
       // A pulse on entering a new zone (not on the first frame).
       if (this.shownZone && zone !== this.shownZone) this.zonePill.classList.add('pulse');
       this.shownZone = zone;

@@ -29,7 +29,8 @@ export class Underground {
     const top = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.earth(), roughness: 1 }));
     const side = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.earth(), roughness: 1, color: 0x8a7a6a }));
     this.earth = new THREE.InstancedMesh(new THREE.BoxGeometry(1, EARTH_H, 1), [side, side, top, top, side, side], MAP_W * MAP_H);
-    this.floor = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: TEX.tunnel(), roughness: 1 }), MAP_W * MAP_H);
+    // The trodden floor, warm and lighter than the earth's top: the trench reads at a glance.
+    this.floor = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: TEX.tunnel(), color: 0xffe0b8, emissive: 0x2a1a0c, roughness: 1 }), MAP_W * MAP_H);
     const c = new THREE.Color();
     const g = world.ground.base;
     for (let i = 0; i < MAP_W * MAP_H; i++) {
@@ -51,7 +52,8 @@ export class Underground {
     }
     this.earth.receiveShadow = true;
     this.floor.receiveShadow = true;
-    this.beam = new THREE.MeshBasicMaterial({ color: 0xfff1c8, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
+    // Additive and faint: a glow down the entrance, never a grey pillar over the player.
+    this.beam = new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
     this.group.add(this.earth, this.floor, this.extras, this.lantern);
     this.group.visible = false;
     this.refresh();
@@ -89,8 +91,8 @@ export class Underground {
       }
       if (this.world.ground.kind[i] === TILE.SHAFT && isTunnel(under[i])) {
         // Daylight (or lamplight) falling down the entrance, and a rope ladder up it.
-        const light = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.3, 3, 10, 1, true), this.beam);
-        light.position.set(x + 0.5, 1.5, z + 0.5);
+        const light = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.34, 1.6, 12, 1, true), this.beam);
+        light.position.set(x + 0.5, 0.8, z + 0.5);
         this.extras.add(light);
         parts.push(box(0.04, 1.6, 0.04, 0xc8a86a, x + 0.36, 0, z + 0.3), box(0.04, 1.6, 0.04, 0xc8a86a, x + 0.64, 0, z + 0.3));
         for (let r = 0; r < 5; r++) parts.push(box(0.3, 0.03, 0.05, 0xa06a3a, x + 0.5, 0.2 + r * 0.3, z + 0.3));
