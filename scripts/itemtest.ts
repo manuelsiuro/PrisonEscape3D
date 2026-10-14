@@ -99,7 +99,9 @@ console.log(`obtainable in P2 from reachable containers and crafting: ${today.si
 
 // ------------------------------------------------------------------ rules in the sim
 const at = (sim: Sim) => `day ${sim.clock.day} ${formatTime(sim.clock)}`;
-const sim = new Sim(CENTER_PERKS, 11);
+// Without guards: the bot spends the day at its desk and the bench, missing the routine, and
+// guards would rightly drag it to solitary (their rules have their own test, guardtest).
+const sim = new Sim({ ...CENTER_PERKS, guards: [] }, 11);
 const rec = new Recorder(sim);
 const w = sim.world;
 const list = containersOf(w);
@@ -226,9 +228,11 @@ op(OP.MOVE, free, SLOT.CONTAINER + 0);
 check(itemOf(it().containers[myDesk][0]) === itemNumber('inmate_outfit'), 'stashed in a hidden slot');
 const before = JSON.stringify(it().containers[myDesk]);
 const otherBefore = it().containers[theirs].filter((v) => v).length;
-// Sleep: wait for Lights Out, go to bed.
+// Sleep: wait for Lights Out, go to bed (the missed roll calls forgiven: a lockdown wakes sleepers).
 op(OP.CLOSE);
 while (clockAt(sim.state.step).minuteOfDay !== 23 * 60 + 30) step(0);
+sim.state.lockdown = false;
+sim.state.heat = 0;
 check(walkTo(myBed), 'back at the bed at night');
 op(OP.INTERACT);
 check(sim.state.sleeping, 'interacting with your bed at Lights Out is sleep');

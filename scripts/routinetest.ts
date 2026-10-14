@@ -1,8 +1,10 @@
 /**
  * The daily routine holds up over days of play, driven by bots through the real simulation:
  * - the model prisoner (goes wherever the routine says) ends 3 days with 0 heat;
- * - the truant (never leaves the cell) misses roll call and starts a lockdown;
- * - the night owl (out at Lights Out) finds its door waiting, and locked once home;
+ * - the truant (never leaves the cell) misses roll call and starts a lockdown: the guards
+ *   come for it, and it serves its time in solitary;
+ * - the night owl (out at Lights Out, home within the grace) finds its door waiting, and
+ *   locked once home;
  * - all seven inmates make every mandatory block, and sleep in their cells at night.
  * Prints the event log of each run; the snapshot pins the timings.
  */
@@ -38,6 +40,12 @@ const describe = (e: SimEvent) => {
       return e.on ? 'LOCKDOWN' : 'lockdown lifted';
     case 'cells':
       return e.locked ? 'cells locked' : 'cells unlocked';
+    case 'caught':
+      return `caught (${e.solitary ? 'solitary' : 'infirmary'})`;
+    case 'solitary':
+      return e.on ? 'into solitary' : 'out of solitary';
+    case 'spotted':
+      return `spotted: ${e.reason}`;
     default:
       return '';
   }
@@ -157,10 +165,12 @@ const truant = run(() => () => 0, DAY);
 console.log('== truant, 1 day');
 for (const l of truant.log) console.log(l);
 check(truant.log.some((l) => l === 'day 1 09:00 LOCKDOWN'), 'missing roll call starts a lockdown at 09:00');
+check(truant.log.some((l) => l.startsWith('day 1 09:') && l.endsWith('caught (solitary)')), 'the guards come into the cell for the truant');
+check(truant.log.some((l) => l.endsWith('out of solitary')), 'the truant serves its time');
 check(truant.log.some((l) => l.endsWith('missed showers +25% heat')), 'missing showers costs heat');
 console.log(`truant heat at the end of day 1: ${truant.sim.state.heat}%`);
 
-// The night owl: a model prisoner until evening roll call, out in the cell block at Lights Out, home at 23:30.
+// The night owl: a model prisoner until evening roll call, out in the cell block at Lights Out, home by 23:10 (within the grace).
 const owl = run(
   (sim) => {
     const pilot = new Autopilot(sim.world);
@@ -174,7 +184,7 @@ const owl = run(
         leg = 1;
         pilot.goTo(13 * MAP_W + 20);
       }
-      if (leg === 1 && m >= 23 * 60 + 30) {
+      if (leg === 1 && m >= 23 * 60 + 5) {
         leg = 2;
         pilot.goTo(places.bedside[1]);
       }
@@ -185,25 +195,24 @@ const owl = run(
   3,
   (sim) => {
     const m = clockAt(sim.state.step).minuteOfDay;
-    if (m === 23 * 60 + 15 && sim.state.step % STEPS_PER_MINUTE === 0) {
-      check(sim.playerZone === 'cellBlock', 'the owl is out at 23:15');
+    if (m === 23 * 60 + 4 && sim.state.step % STEPS_PER_MINUTE === 0) {
+      check(sim.playerZone === 'cellBlock', 'the owl is out at 23:04');
       check(!sim.world.blocked(8, 11), "the owl's cell door waits open");
-      check(sim.world.blocked(13, 11), 'the next cell is locked');
     }
-    if (m === 23 * 60 + 45 && sim.state.step % STEPS_PER_MINUTE === 0) {
-      check(sim.playerZone === 'playerCell', 'the owl is home at 23:45');
+    if (m === 23 * 60 + 20 && sim.state.step % STEPS_PER_MINUTE === 0) {
+      check(sim.playerZone === 'playerCell', 'the owl is home at 23:20');
       check(sim.world.blocked(8, 11), 'the door locked behind the owl');
+      check(sim.world.blocked(13, 11), 'the next cell is locked');
     }
   },
 );
 console.log('== night owl');
 for (const l of owl.log.filter((l) => l.includes('day 1 2') || l.includes('cells'))) console.log(l);
+check(!owl.log.some((l) => l.includes('LOCKDOWN')), 'home within the grace: no trouble');
 
-// The visitor: in someone else's cell when a lockdown starts, never locked in; walks home and sits it out.
+// The visitor: in someone else's cell when a lockdown starts, never locked in; the guards come for it there.
 {
   const sim = new Sim(CENTER_PERKS, 3);
-  const pilot = new Autopilot(sim.world);
-  const places = placesOf(sim.world);
   // Wait for roll call to empty the cells, then step into cell 3.
   for (let i = 0; i < 20 * 20; i++) sim.step(0);
   sim.state.player.x = 17 * 1024 + 512;
@@ -214,11 +223,10 @@ for (const l of owl.log.filter((l) => l.includes('day 1 2') || l.includes('cells
   const t = tileOfBody(sim.state.player);
   check(sim.world.cellOf[t.z * MAP_W + t.x] === 3, 'the visitor is in cell 3');
   check(!sim.world.blocked(18, 11), 'cell 3 stays open while a visitor is inside');
-  pilot.goTo(places.bedside[1]);
   let steps = 0;
-  while (sim.state.lockdown && steps++ < 3 * 60 * 20) sim.step(command(pilot.dir(sim.state.player)));
-  check(!sim.state.lockdown, `the visitor walks home and the lockdown lifts (${at(sim.state.step)})`);
-  console.log(`== visitor: lockdown lifted at ${at(sim.state.step)}, heat ${sim.state.heat}%`);
+  while (sim.state.lockdown && steps++ < 3 * 60 * 20) sim.step(0);
+  check(sim.state.ko > 0, `the guards catch the visitor (${at(sim.state.step)})`);
+  console.log(`== visitor: caught at ${at(sim.state.step)}`);
 }
 
 // Saves can be taken at any step: a snapshot restored into a fresh simulation is the same

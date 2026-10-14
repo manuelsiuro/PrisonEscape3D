@@ -1,5 +1,5 @@
 import type { PropPlacement } from '../../props';
-import type { PrisonDef, Rect } from '../types';
+import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
 
 /** Cells: four on top (doors south), four below (doors north). Cell 1 is the player's. */
@@ -112,6 +112,82 @@ props.push(
 /** Two rows of four, facing the guard at the north end. */
 const rollCall = [12, 15].flatMap((z) => [29, 31, 34, 36].map((x) => ({ x, z })));
 
+/**
+ * Five guards (GDD §4.1). Directions: 1 east, 5 south, 9 west, 13 north.
+ * - The warden walks the cell block and the roll call yard, takes roll call, and at night
+ *   keeps the cell block and does the bed checks.
+ * - The canteen guard watches meals and walks the canteen and kitchen.
+ * - The wing guard walks the north corridor, gym and showers, watches showers, and searches
+ *   cells at the morning shakedown.
+ * - The yard guard walks the courtyard and the south corridor, watches exercise, and at
+ *   night walks the yards.
+ * - The east guard walks the workshops, the mailroom and the staff rooms.
+ * The canteen, wing and east guards sleep in the guard quarters at night.
+ */
+const guards: GuardDef[] = [
+  {
+    beat: [
+      { x: 8, z: 13, wait: 3, face: 1 },
+      { x: 24, z: 13, wait: 2, face: 9 },
+      { x: 33, z: 10, wait: 4, face: 5 },
+      { x: 33, z: 18, wait: 3, face: 13 },
+    ],
+    posts: { rollCall: { x: 32, z: 8, face: 5 }, eveningRollCall: { x: 32, z: 8, face: 5 } },
+    night: [
+      { x: 24, z: 13, wait: 3, face: 9 },
+      { x: 8, z: 13, wait: 4, face: 1 },
+      { x: 30, z: 22, wait: 3, face: 9 },
+      { x: 12, z: 22, wait: 3, face: 1 },
+    ],
+    duties: ['bedCheck'],
+  },
+  {
+    beat: [
+      { x: 44, z: 10, wait: 4, face: 5 },
+      { x: 52, z: 12, wait: 3, face: 9 },
+      { x: 53, z: 17, wait: 3, face: 9 },
+      { x: 44, z: 22, wait: 2, face: 13 },
+    ],
+    posts: { breakfast: { x: 44, z: 16, face: 13 }, dinner: { x: 44, z: 16, face: 13 } },
+  },
+  {
+    beat: [
+      { x: 12, z: 22, wait: 2, face: 1 },
+      { x: 10, z: 27, wait: 3, face: 1 },
+      { x: 19, z: 27, wait: 3, face: 13 },
+      { x: 30, z: 22, wait: 2, face: 9 },
+    ],
+    posts: { showers: { x: 19, z: 28, face: 13 } },
+    duties: ['shakedown'],
+  },
+  {
+    beat: [
+      { x: 30, z: 25, wait: 3, face: 5 },
+      { x: 35, z: 30, wait: 3, face: 9 },
+      { x: 30, z: 34, wait: 3, face: 13 },
+      { x: 19, z: 37, wait: 2, face: 1 },
+      { x: 10, z: 36, wait: 2, face: 1 },
+    ],
+    posts: { exercise: { x: 30, z: 29, face: 1 } },
+    night: [
+      { x: 32, z: 10, wait: 4, face: 5 },
+      { x: 33, z: 18, wait: 3, face: 13 },
+      { x: 31, z: 22, wait: 2, face: 5 },
+      { x: 30, z: 29, wait: 4, face: 1 },
+    ],
+  },
+  {
+    beat: [
+      { x: 50, z: 22, wait: 2, face: 9 },
+      { x: 43, z: 27, wait: 3, face: 5 },
+      { x: 43, z: 33, wait: 3, face: 13 },
+      { x: 50, z: 36, wait: 2, face: 9 },
+      { x: 44, z: 41, wait: 3, face: 1 },
+      { x: 53, z: 41, wait: 3, face: 9 },
+    ],
+  },
+];
+
 /** Level 1: minimum security, suburban (GDD §4.1). */
 export const CENTER_PERKS: PrisonDef = {
   id: 'center-perks',
@@ -148,4 +224,5 @@ export const CENTER_PERKS: PrisonDef = {
   rollCall,
   spawn: { x: 9, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation'],
+  guards,
 };

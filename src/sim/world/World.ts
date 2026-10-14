@@ -51,6 +51,8 @@ export class World {
   readonly propSolid = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 where the ground floor can't be walked on right now. */
   readonly block = new Uint8Array(MAP_W * MAP_H);
+  /** Derived: the same for guards, whose keys open every door. */
+  readonly guardBlock = new Uint8Array(MAP_W * MAP_H);
   /** Which cell (1–8) each ground tile belongs to, 0 outside cells. */
   readonly cellOf = new Uint8Array(MAP_W * MAP_H);
   /** On door tiles: the cell the door leads into (0 for other doors). */
@@ -131,6 +133,7 @@ export class World {
       const k = g.kind[i];
       const solid = k === TILE.DOOR ? !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) : TILE_INFO[k].solid;
       this.block[i] = solid || this.propSolid[i] ? 1 : 0;
+      this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] ? 1 : 0;
     }
     this.rev++;
   }

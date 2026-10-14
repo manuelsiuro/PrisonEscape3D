@@ -1,0 +1,357 @@
+import type { GuardDef, Waypoint } from '../../content/prisons/types';
+import { ROUTINE } from '../../content/routine';
+import { centerX, centerZ, clearLine, nearestDir, tileAt } from '../ai/path';
+import { placesOf } from '../ai/places';
+import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
+import { DIRS } from '../command';
+import { STEPS_PER_SECOND, UNIT } from '../tuning';
+import { MAP_W, type World } from '../world/World';
+import { DOING } from './inmates';
+import { bodyAt, type Body } from './movement';
+
+/** What a guard is up to. Never renumber: saves store them. */
+export const GUARD = {
+  /** Its round, its post, or asleep in the guard quarters (yellow cone, none asleep). */
+  DUTY: 0,
+  /** Going to look where it last saw the player, and looking around (orange). */
+  INVESTIGATE: 1,
+  /** Running after the player (red). */
+  CHASE: 2,
+  /** Night bed check: looking into each cell from its door. */
+  BED_CHECK: 3,
+  /** Morning shakedown: searching cell desks. */
+  SHAKEDOWN: 4,
+} as const;
+
+/** Cone colors (GDD §5.1): none (asleep), yellow, orange, red. */
+export const ALERT = { NONE: 0, CALM: 1, SUSPICIOUS: 2, HOSTILE: 3 } as const;
+
+/** A guard. Plain data, part of the simulation state. */
+export interface Guard extends Walker {
+  mode: number;
+  /** The duty it is set up for (see dutyOf); a change sends it somewhere new. */
+  plan: number;
+  /** Its place in its round. */
+  leg: number;
+  /** Where it looks while standing (1–16); it glances either side of it. */
+  face: number;
+  /** Steps left standing at a stop, looking into a cell, searching a desk, looking around. */
+  timer: number;
+  /** Cells still to look into (bed check) or search (shakedown). */
+  tasks: number[];
+  /** The tile it is investigating. */
+  target: number;
+  /** DOING: asleep, searching (the view poses it). */
+  doing: number;
+  /** It saw the player at the end of the last step, and where. */
+  sees: boolean;
+  lastSeen: number;
+}
+
+/** Guards stroll on their rounds and run when chasing (the player walks at 184). */
+export const GUARD_SPEED = 120;
+export const CHASE_SPEED = 176;
+/** A chasing guard this close (units, centre to centre) has caught the player. */
+export const CATCH_RANGE = 700;
+/** How long a guard looks around where it lost the player, looks into a cell, searches a desk. */
+const LOOK_AROUND = 8 * STEPS_PER_SECOND;
+const CHECK_STEPS = 2 * STEPS_PER_SECOND;
+const SEARCH_STEPS = 4 * STEPS_PER_SECOND;
+/** Standing guards glance to one side and the other this often. */
+const GLANCE = 30;
+
+/** Duty codes besides a routine index (a post during that block). */
+const PLAN_ROUND = -1;
+const PLAN_NIGHT = -2;
+const PLAN_BED = -3;
+const PLAN_NONE = -9;
+
+export function spawnGuards(w: World): Guard[] {
+  return w.def.guards.map((d) => {
+    const at = d.beat[0];
+    return {
+      body: bodyAt(at.x, at.z, at.face ?? 5),
+      goal: -1,
+      path: [],
+      wait: 0,
+      speed: GUARD_SPEED,
+      stall: 0,
+      mode: GUARD.DUTY,
+      plan: PLAN_NONE,
+      leg: 0,
+      face: at.face ?? 5,
+      timer: 0,
+      tasks: [],
+      target: -1,
+      doing: DOING.NOTHING,
+      sees: false,
+      lastSeen: -1,
+    };
+  });
+}
+
+export const alertOf = (g: Guard) =>
+  g.doing === DOING.SLEEP ? ALERT.NONE : g.mode === GUARD.CHASE ? ALERT.HOSTILE : g.mode === GUARD.INVESTIGATE ? ALERT.SUSPICIOUS : ALERT.CALM;
+
+/** Awake (sleeping guards see nothing). */
+export const awake = (g: Guard) => g.doing !== DOING.SLEEP;
+
+/** Which guards sleep at night (those without a night round), and the bed each takes. */
+function bedOf(w: World, k: number): number {
+  let n = 0;
+  for (let j = 0; j < k; j++) if (!w.def.guards[j].night) n++;
+  return placesOf(w).guardBeds[n]?.tile ?? -1;
+}
+
+/** A guard's duty during a routine block: a post, its day round, its night round or bed. */
+function dutyOf(def: GuardDef, routine: number): number {
+  const id = ROUTINE[routine].id;
+  if (def.posts?.[id]) return routine;
+  if (id !== 'lightsOut') return PLAN_ROUND;
+  return def.night ? PLAN_NIGHT : PLAN_BED;
+}
+
+const tileOf = (p: Waypoint) => p.z * MAP_W + p.x;
+
+/** Sets off for a tile (planning the walk now). */
+function head(c: Crowd, g: Guard, tile: number) {
+  g.goal = tile;
+  g.doing = DOING.NOTHING;
+  route(c, g);
+}
+
+/** Turns a direction (1–16) by n sixteenths. */
+const turn = (d: number, n: number) => ((((d - 1 + n) % DIRS) + DIRS) % DIRS) + 1;
+
+/** Standing somewhere: glance left, ahead, right, ahead… */
+function glance(g: Guard, step: number, wide: number) {
+  const k = Math.floor(step / GLANCE) % 4;
+  g.body.facing = k === 1 ? turn(g.face, -wide) : k === 3 ? turn(g.face, wide) : g.face;
+}
+
+/** Whether a guard stands at its goal. */
+const there = (g: Guard) => g.goal >= 0 && !g.path.length && tileAt(g.body.x, g.body.z) === g.goal;
+
+/** What a guard reports from a stop on its bed check or shakedown (Sim applies it). */
+export type GuardReport = { kind: 'bedCheck'; cell: number } | { kind: 'search'; cell: number };
+
+/**
+ * One step of guard life. Each guard follows its duty for the routine block (a round of
+ * waypoints with stops, a post, or bed at night), unless something more pressing is on:
+ * chasing the player (a lockdown sends everyone), investigating where it lost them, the
+ * night bed checks, the morning shakedown. Guards hold keys to every door (they walk the
+ * guard grid). What they see is worked out after the player moves (see Sim); `report` is
+ * called when a guard finishes looking into a cell or searching a desk.
+ */
+export function stepGuards(
+  w: World,
+  guards: Guard[],
+  routine: number,
+  lockdown: boolean,
+  player: Body,
+  inmates: readonly Body[],
+  step: number,
+  report: (r: GuardReport) => void,
+) {
+  const crowd: Crowd = { w, grid: w.guardBlock, all: guards, others: [player, ...inmates], step };
+  const chasers: Crowd = { ...crowd, others: inmates };
+  const places = placesOf(w);
+  guards.forEach((g, k) => {
+    const def = w.def.guards[k];
+    // A lockdown: every guard hunts the player, the sleepers too.
+    if (lockdown && g.mode !== GUARD.CHASE) startChase(g);
+    switch (g.mode) {
+      case GUARD.CHASE: {
+        if (!lockdown && !g.sees) {
+          // Lost them: go and look where they were last seen.
+          if (g.lastSeen < 0) {
+            backToDuty(g);
+            break;
+          }
+          g.mode = GUARD.INVESTIGATE;
+          g.target = g.lastSeen;
+          g.timer = LOOK_AROUND;
+          head(crowd, g, g.target);
+          break;
+        }
+        const b = g.body;
+        const dx = player.x - b.x;
+        const dz = player.z - b.z;
+        // Close and nothing between: straight at them. Further: follow a path, re-planned often.
+        if (Math.abs(dx) + Math.abs(dz) < UNIT * 2 && clearLine(w, b.x, b.z, player.x, player.z, undefined, w.guardBlock)) {
+          const d = Math.sqrt(dx * dx + dz * dz);
+          b.facing = nearestDir(dx, dz);
+          b.moving = d > 0;
+          if (d > CHASE_SPEED) {
+            b.x += Math.trunc((dx * CHASE_SPEED) / d);
+            b.z += Math.trunc((dz * CHASE_SPEED) / d);
+          }
+          g.path = [];
+          break;
+        }
+        const goal = tileAt(player.x, player.z);
+        if (!g.path.length || (goal !== g.goal && (step + k) % 10 === 0)) head(chasers, g, goal);
+        walkPath(chasers, g, k, CHASE_SPEED);
+        break;
+      }
+      case GUARD.INVESTIGATE:
+        if (g.wait > 0) g.wait--;
+        else if (g.path.length) walkPath(crowd, g, k);
+        else {
+          // There (or as close as it got): a good look around, then back to duty.
+          g.body.moving = false;
+          g.body.facing = turn(g.body.facing, step % 12 === 0 ? 2 : 0);
+          if (--g.timer <= 0) backToDuty(g);
+        }
+        break;
+      case GUARD.BED_CHECK:
+      case GUARD.SHAKEDOWN: {
+        const cell = g.tasks[0];
+        if (cell === undefined) {
+          backToDuty(g);
+          break;
+        }
+        const check = g.mode === GUARD.BED_CHECK;
+        const spot = check ? places.doorstep[cell] : places.deskside[cell];
+        if (g.goal !== spot) {
+          head(crowd, g, spot);
+          g.timer = check ? CHECK_STEPS : SEARCH_STEPS;
+        }
+        if (g.wait > 0) g.wait--;
+        else if (g.path.length) walkPath(crowd, g, k);
+        else if (!there(g)) head(crowd, g, spot);
+        else {
+          // At the door (or the desk): face it, look (or rummage), then report.
+          const door = w.cellDoor[cell];
+          const desk = w.props.find((p) => p.kind === 'desk' && w.cellOf[p.z * MAP_W + p.x] === cell);
+          const tx = check ? centerX(door) : desk ? (desk.x + desk.w / 2) * UNIT : g.body.x;
+          const tz = check ? centerZ(door) : desk ? (desk.z + desk.d / 2) * UNIT : g.body.z;
+          g.body.moving = false;
+          if (tx !== g.body.x || tz !== g.body.z) g.body.facing = nearestDir(tx - g.body.x, tz - g.body.z);
+          g.doing = check ? DOING.NOTHING : DOING.SEARCH;
+          if (--g.timer <= 0) {
+            report(check ? { kind: 'bedCheck', cell } : { kind: 'search', cell });
+            g.tasks.shift();
+            g.goal = -1;
+            g.doing = DOING.NOTHING;
+          }
+        }
+        break;
+      }
+      default:
+        duty(crowd, g, k, def, routine, step, w);
+    }
+  });
+}
+
+/** Everyone after the player. */
+export function startChase(g: Guard) {
+  g.mode = GUARD.CHASE;
+  g.doing = DOING.NOTHING;
+  g.path = [];
+  g.goal = -1;
+  g.wait = 0;
+  g.tasks = [];
+}
+
+/** Back to the round or post for the time of day (planned afresh). */
+export function backToDuty(g: Guard) {
+  g.mode = GUARD.DUTY;
+  g.plan = PLAN_NONE;
+  g.path = [];
+  g.goal = -1;
+  g.doing = DOING.NOTHING;
+  g.tasks = [];
+}
+
+/** Sends a guard on a list of cells: the bed check or the shakedown. */
+export function assign(g: Guard, mode: number, cells: number[]) {
+  g.mode = mode;
+  g.tasks = cells;
+  g.path = [];
+  g.goal = -1;
+  g.wait = 0;
+  g.doing = DOING.NOTHING;
+}
+
+/** Rounds, posts and bed. */
+function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World) {
+  const plan = dutyOf(def, routine);
+  if (plan !== g.plan) {
+    g.plan = plan;
+    g.path = [];
+    g.goal = -1;
+    g.timer = 0;
+    g.doing = DOING.NOTHING;
+    // Off to the round: start at its nearest stop.
+    const round = plan === PLAN_NIGHT ? def.night! : def.beat;
+    if (plan === PLAN_ROUND || plan === PLAN_NIGHT) g.leg = nearest(g.body, round);
+  }
+  if (g.wait > 0) {
+    g.wait--;
+    return;
+  }
+  if (plan === PLAN_BED) {
+    const bed = bedOf(w, k);
+    if (g.doing === DOING.SLEEP) return;
+    if (g.goal !== bed) head(c, g, bed);
+    if (g.path.length) walkPath(c, g, k);
+    else if (there(g)) {
+      g.body.moving = false;
+      g.doing = DOING.SLEEP;
+    } else head(c, g, bed);
+    return;
+  }
+  if (plan >= 0) {
+    // A post: walk there, then stand watching, glancing either side.
+    const post = def.posts![ROUTINE[plan].id]!;
+    if (g.goal !== tileOf(post)) {
+      head(c, g, tileOf(post));
+      g.face = post.face ?? 5;
+    }
+    if (g.path.length) walkPath(c, g, k);
+    else if (there(g)) {
+      g.body.moving = false;
+      glance(g, step + k * 7, 2);
+    } else head(c, g, tileOf(post));
+    return;
+  }
+  const round = plan === PLAN_NIGHT ? def.night! : def.beat;
+  const stop = round[g.leg % round.length];
+  if (g.goal !== tileOf(stop)) {
+    head(c, g, tileOf(stop));
+    g.timer = (stop.wait ?? 0) * STEPS_PER_SECOND;
+  }
+  if (g.path.length) {
+    if (walkPath(c, g, k)) g.face = stop.face ?? g.body.facing;
+    return;
+  }
+  if (!there(g)) {
+    head(c, g, tileOf(stop));
+    return;
+  }
+  g.body.moving = false;
+  if (stop.face) g.face = stop.face;
+  glance(g, step + k * 7, 3);
+  if (--g.timer <= 0) {
+    g.leg = (g.leg + 1) % round.length;
+    g.goal = -1;
+  }
+}
+
+/** The stop of a round closest to a body (as the crow flies). */
+function nearest(b: Body, round: readonly Waypoint[]): number {
+  let best = 0;
+  let bestD = Infinity;
+  round.forEach((p, i) => {
+    const d = Math.abs(centerX(tileOf(p)) - b.x) + Math.abs(centerZ(tileOf(p)) - b.z);
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  });
+  return best;
+}
+
+/** Whether any guard is chasing (the view runs, the music would swell). */
+export const chasing = (guards: readonly Guard[]) => guards.some((g) => g.mode === GUARD.CHASE);

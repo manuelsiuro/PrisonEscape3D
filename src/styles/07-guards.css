@@ -1,0 +1,198 @@
+/* ------------------------------------------------------------ guards: seen, solitary, knocked out */
+
+/* The eye in the heat pill: dim while unseen, open and glowing while a guard looks. */
+.hud-eye {
+  display: flex;
+  opacity: 0.25;
+  transition: opacity 0.2s var(--ease);
+}
+
+.hud .hud-heat .hud-eye .ic {
+  color: white;
+}
+
+.hud-heat.seen .hud-eye {
+  opacity: 1;
+}
+
+.hud .hud-heat.seen .hud-eye .ic {
+  color: #ffe066;
+  filter: drop-shadow(0 0 4px rgba(255, 224, 102, 0.8));
+  animation: eye-look 1.1s ease-in-out infinite;
+}
+
+.hud-heat.seen[data-level='high'] .hud-eye .ic {
+  color: #ff6b5a;
+  filter: drop-shadow(0 0 5px rgba(255, 70, 50, 0.9));
+}
+
+@keyframes eye-look {
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+.hud .hud-routine.solitary {
+  background: rgba(58, 48, 96, 0.92);
+}
+
+.hud .hud-routine.solitary .ic {
+  color: #c9b8ff;
+}
+
+/* Knocked out: the screen goes dark red at the edges and the label says so. */
+.sleep-veil.ko {
+  background: radial-gradient(ellipse at center, rgba(40, 6, 6, 0.25), rgba(30, 0, 0, 0.9));
+}
+
+.sleep-veil.ko span {
+  color: #ffd0c8;
+  background: rgba(90, 14, 10, 0.7);
+}
+
+/* Solitary: the potato card above the hotbar. */
+.solitary-panel {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 128px);
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 10px 16px 10px 12px;
+  border-radius: 20px;
+  color: white;
+  background: linear-gradient(180deg, rgba(58, 48, 96, 0.94), rgba(26, 22, 48, 0.94));
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: banner-in 0.5s var(--spring) both;
+}
+
+.solitary-panel.hidden {
+  display: none;
+}
+
+.sol-potato {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: #e8c27a;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sol-potato .ic {
+  fill: rgba(200, 150, 80, 0.45);
+}
+
+.sol-potato.stroke {
+  animation: potato-stroke 0.18s ease-out;
+}
+
+.sol-potato.done {
+  animation: potato-done 0.5s var(--spring);
+}
+
+@keyframes potato-stroke {
+  50% {
+    transform: rotate(-12deg) scale(0.94);
+  }
+}
+
+@keyframes potato-done {
+  40% {
+    transform: scale(1.3);
+    background: rgba(120, 220, 140, 0.45);
+  }
+}
+
+.sol-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sol-text b {
+  font: 800 13px var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.sol-time {
+  font: 800 22px var(--font-display, var(--font-ui));
+  font-variant-numeric: tabular-nums;
+  color: #ffe9a8;
+}
+
+.sol-text small {
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.8;
+}
+
+.sol-strokes {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.sol-strokes i {
+  width: 8px;
+  height: 22px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background 0.15s;
+}
+
+.sol-strokes i.on {
+  background: #e8c27a;
+}
+
+/* Touch: clear of the round action button (where "Peel" is). */
+.touch .solitary-panel {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 166px);
+}
+
+@media (max-height: 520px) {
+  /* Landscape: compact, just above the hotbar, clear of the player in the middle. */
+  .touch .solitary-panel,
+  .solitary-panel {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px);
+    width: min(340px, calc(100vw - 32px));
+    padding: 6px 12px 6px 8px;
+  }
+
+  .sol-text small {
+    display: none;
+  }
+
+  .sol-potato {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sol-time {
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud .hud-heat.seen .hud-eye .ic,
+  .sol-potato.stroke,
+  .sol-potato.done {
+    animation: none;
+  }
+}
+
+.reduced-motion .hud .hud-heat.seen .hud-eye .ic,
+.reduced-motion .sol-potato.stroke,
+.reduced-motion .sol-potato.done {
+  animation: none;
+}

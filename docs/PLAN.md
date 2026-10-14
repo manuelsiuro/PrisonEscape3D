@@ -45,7 +45,7 @@ Sources:
 | Solitary | Potato minigame | **2 game hours, or less by peeling potatoes**. Outfit reset, discovered damage repaired |
 | Time units | Mixed real and game time | 1 real s = 1 game min. The KO lasts 30 s and the generator comes back after 45 s. Both are counted **in sim steps** (600 and 900) |
 | Inmate count (L1) | — | GDD says 8 inmates; the map has 8 cells, so **7 AI inmates + the player** |
-| Lockdown without guards | — | Guards arrive in P3. Until then a lockdown lifts after the player spends **60 game minutes in their cell**, leaving **75% heat**. P3 replaces this with capture and solitary |
+| Lockdown without guards | — | Until P3 a lockdown lifted after **60 game minutes in the cell**. **Since P3 (v0.4.0)** it ends only when a guard catches the player: every guard hunts them, wherever they are |
 | Cell doors at Lights Out | — | They lock once their occupant is inside; a door **waits open for an occupant still out** and never shuts on anyone standing in it. Guards (P3) punish being out |
 | Blocks spent in a lockdown | — | **Excused**: missing them adds no heat |
 | When a missed roll call counts | — | GDD §2.2 says "immediate" lockdown but also gives every block a grace window: it fires **when the block ends** (09:00, 23:00) if the player never stepped into the yard |
@@ -54,7 +54,15 @@ Sources:
 | Shivs | "Sharpen on a wall" | Sharpening is a wall action, so comb and toothbrush shivs come with P5 combat |
 | Daily restock | "Restock with randomized items" | At 08:00 containers are **topped up**, never past a cap (desk 6 items), never touching hidden compartments or anything already there; the player's own desk and bed never restock (their toilet does). A tile holds at most 6 dropped items |
 | Sleeping | "Sleep in bed" | Sleeping at Lights Out runs the night ×40 (about 13 s); a move or the action button wakes the player, and 07:55 does in any case |
-| A lockdown while the player stays out | — | Until guards (P3) it simply lasts: heat stays at 100%, inmates stay in their cells, later blocks are excused. Guards make staying out the losing choice |
+| A lockdown while the player stays out | — | Superseded by P3: the guards come for the player, in or out of the cell |
+| Out of the cell at Lights Out | "Being outside your cell during Lights Out" | **15 game minutes of grace** after 23:00 for the walk home; after that, seen out of the cell in an inmate outfit is 100% heat |
+| The guard-outfit rule | Table: "at night"; §5.3: "keep a respectful distance" | **At any time**: in a guard outfit, a guard within 2.5 tiles for over 2 s recognizes the player (+50% a second). The outfit hides the night and restricted-room rules |
+| Vision | 60° cone, no range given | **7 tiles**, blocked by walls and shut doors (open doors are see-through). A guard also notices someone **touching** it (within 0.9 tile) whichever way it faces |
+| Being caught | §3.1 says KO by guards → solitary; elsewhere solitary from 90%+ | A guard catches only while chasing (80%+ heat or a lockdown). Caught at **90%+ → solitary**, under 90% → **the infirmary**. Either way carried contraband (hotbar, weapon) is taken and the outfit becomes an inmate outfit; solitary also searches the desk. **Heat goes to 0**: the score is settled |
+| Solitary | 2 hours, or less by potato peeling | **5 presses peel a potato, a potato takes 10 minutes off**. Released into the corridor outside solitary (into the cell at night). Blocks missed while knocked out or in solitary are excused |
+| Shakedown | Desk standard drawers | The guard searches the **desk's standard drawers and the bed** (GDD §5.3: the dummy must be gone by roll call). Two cells drawn at 08:00, searched during roll call |
+| Bed check | A guard "walks past the windows" | The night guard stops at each cell door, east to west. The player passes if in their cell (awake or not), asleep, or with a **bed dummy in the bed** (an item placed in the bed's slots) |
+| Restricted zones (L1) | Generator, roof, vents, guard room | **Generator room, guard quarters, control room** (roofs and vents with P4). The kitchen is a job room, not restricted |
 
 Any further conflict found during the build is added to this table in the same commit.
 
@@ -191,4 +199,12 @@ real touch feel) and the known limits.
   - `itemtest`: ids, the closed recipe graph (every item obtainable), loot and sources agree, a bot that opens, takes, drops, picks up, crafts, wears, stashes and sleeps through ordinary commands, restocks that respect hidden slots and the player's desk, exact replay.
 - **P2 review and polish (v0.3.1)**: the workbench crafts from exactly the slots put on it (the craft op carries a slot mask), so a worn outfit or wielded weapon stays on when it is the one upgraded; nothing happens in your sleep and a clock wake-up never drops an action; E closes the workbench before opening a container (never two panels); the action button shows the verb on the round button and the object on a tag beside it (long French names fit); floor items larger with a breathing glow; the focus frame stays on an open container; hotbar slots pop when something arrives; no silhouette through the blanket; icons photographed in idle slices; no per-frame garbage in the item UI; slots never keep focus (Space and Enter are game keys). `itemtest` crafts all 46 recipes and checks worn and wielded results.
 - **Second P2 review (v0.3.2)**: the craft op also carries the recipe the workbench previewed, and crafts nothing if the slots changed meanwhile; at most 6 items a tile; floor items laid out only when they change, at angles set by tile and item (a pile no longer shuffles when one is picked up); the player's toilet restocks; restored item state is fitted to the prison's containers; each new game rebuilds the player (no pose carried over); landscape action label above the button (clear of Craft); touch hints above the action button; the item UI's fixed labels follow a language change.
-- **Next: P3 Guards.**
+- **P3 Guards (v0.4.0)**:
+  - 5 guards as data per prison (`GuardDef`: a day round of stops, posts for some blocks, a night round or a bed in the guard quarters, duties). The warden takes roll call and does the night bed checks, the canteen guard watches meals, the wing guard watches showers and runs the morning shakedown, the yard guard watches exercise and walks the yards at night, the east guard walks the workshops and staff rooms; three sleep at night;
+  - guards hold keys to every door (their own walk grid; doors open for them on screen); inmates and guards share one walker (`sim/ai/walker.ts`) and make way for each other;
+  - sight in the sim (`sim/ai/sight.ts`): a 60° cone, 7 tiles, walls and shut doors block it; the renderer draws the cones with the same ray test, yellow, orange (investigating) and red (chasing), with "!" and "?" over guards;
+  - heat rules (GDD §5.2): out of the cell after Lights Out, restricted rooms, a contraband tool or weapon in hand, recognized in a guard outfit; heat cools only out of sight; the HUD eye shows when a guard is looking;
+  - wanted (80%+): guards who see the player give chase with batons, investigate where they lost them; a lockdown sends every guard; caught → knocked out 30 s (stars, shown fast), then solitary (90%+) or the infirmary, with confiscation;
+  - solitary with potato peeling (a card with the time left and strokes); the morning shakedown (hidden compartment safe); the 00:30 and 04:00 bed checks and the bed dummy; the guard outfit disguise;
+  - `guardtest`: sight, each heat rule, the disguise, chase/investigate/catch, confiscation, peeling, the bed-dummy bot (passes both checks; without it the alarm), the shakedown bot, rounds over 3 days, saves mid-chase. `maptest` validates guard stops, beds and the places guards use.
+- **Next: P3 review and polish, then P4 Layers.**

@@ -154,6 +154,28 @@ export class Sound {
     this.tone(247, 165, 0.5, 'sawtooth', 0.06, 0.12);
   }
 
+  /** A guard spots the player: two sharp blasts on a whistle. */
+  whistle() {
+    for (const d of [0, 0.2]) {
+      this.tone(2900, 3100, 0.14, 'sine', 0.13, d);
+      this.tone(3350, 3500, 0.14, 'sine', 0.05, d);
+      this.hiss(0.14, 'bandpass', 3100, 4, 0.05);
+    }
+  }
+
+  /** Knocked down: a heavy thump and a ringing in the ears. */
+  thud() {
+    this.hiss(0.25, 'lowpass', 400, 0.8, 0.35);
+    this.tone(120, 40, 0.35, 'sine', 0.3);
+    this.tone(2400, 2380, 1.6, 'sine', 0.025, 0.15);
+  }
+
+  /** A stroke of the peeler: a short wet scrape (a done potato plops in the pot). */
+  peel(done: boolean) {
+    this.hiss(0.07, 'highpass', 2600 + Math.random() * 800, 1, 0.07);
+    if (done) this.tone(300, 520, 0.12, 'triangle', 0.12, 0.08);
+  }
+
   /** Cell doors slam and lock: a heavy metallic clunk with a short ring. */
   lockClank() {
     this.hiss(0.18, 'lowpass', 600, 1, 0.25);

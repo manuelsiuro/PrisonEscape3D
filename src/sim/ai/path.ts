@@ -77,8 +77,9 @@ function octile(ax: number, az: number, bx: number, bz: number) {
  * tile index) when there is a single goal: it guides the search. Returns null when no goal
  * can be reached, [] when the start already is one. `limit` caps the tiles explored.
  */
-export function findPath(w: World, start: number, isGoal: (i: number) => boolean, target = -1, limit = N, avoid?: Uint8Array): number[] | null {
+export function findPath(w: World, start: number, isGoal: (i: number) => boolean, target = -1, limit = N, avoid?: Uint8Array, grid: Uint8Array = w.block): number[] | null {
   if (isGoal(start)) return [];
+  const blocked = (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || grid[z * MAP_W + x] === 1;
   search++;
   heapSize = 0;
   pushes = 0;
@@ -107,8 +108,8 @@ export function findPath(w: World, start: number, isGoal: (i: number) => boolean
       const nx = x + dx;
       const nz = z + dz;
       const j = nz * MAP_W + nx;
-      if (w.blocked(nx, nz) || avoid?.[j]) continue;
-      if (dx && dz && (w.blocked(x + dx, z) || w.blocked(x, z + dz))) continue;
+      if (blocked(nx, nz) || avoid?.[j]) continue;
+      if (dx && dz && (blocked(x + dx, z) || blocked(x, z + dz))) continue;
       if (done[j] === search) continue;
       const g = cost[i] + c;
       if (seen[j] === search && cost[j] <= g) continue;
@@ -122,7 +123,7 @@ export function findPath(w: World, start: number, isGoal: (i: number) => boolean
 }
 
 /** The path to one tile (keeping off `avoid` tiles, such as people standing in the way). */
-export const pathTo = (w: World, start: number, goal: number, avoid?: Uint8Array) => findPath(w, start, (i) => i === goal, goal, N, avoid);
+export const pathTo = (w: World, start: number, goal: number, avoid?: Uint8Array, grid: Uint8Array = w.block) => findPath(w, start, (i) => i === goal, goal, N, avoid, grid);
 
 /** Tile index ↔ the middle of the tile, in units. */
 export const tileIndex = (x: number, z: number) => z * MAP_W + x;
@@ -130,8 +131,12 @@ export const centerX = (i: number) => (i % MAP_W) * UNIT + UNIT / 2;
 export const centerZ = (i: number) => Math.floor(i / MAP_W) * UNIT + UNIT / 2;
 export const tileAt = (ux: number, uz: number) => Math.floor(uz / UNIT) * MAP_W + Math.floor(ux / UNIT);
 
-/** Whether a body can walk straight from one point to another (units) without touching anything blocked. */
-export function clearLine(w: World, ax: number, az: number, bx: number, bz: number, avoid?: Uint8Array): boolean {
+/**
+ * Whether a body can walk straight from one point to another (units) without touching
+ * anything blocked. `grid` says what blocks (World.block for inmates, guardBlock for guards).
+ */
+export function clearLine(w: World, ax: number, az: number, bx: number, bz: number, avoid?: Uint8Array, grid: Uint8Array = w.block): boolean {
+  const blocked = (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || grid[z * MAP_W + x] === 1;
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(bz - az)) / (UNIT / 4)));
   const r = BODY_HALF + 40;
   for (let k = 0; k <= n; k++) {
@@ -141,7 +146,7 @@ export function clearLine(w: World, ax: number, az: number, bx: number, bz: numb
     const x1 = Math.floor((x + r) / UNIT);
     const z0 = Math.floor((z - r) / UNIT);
     const z1 = Math.floor((z + r) / UNIT);
-    if (w.blocked(x0, z0) || w.blocked(x1, z0) || w.blocked(x0, z1) || w.blocked(x1, z1)) return false;
+    if (blocked(x0, z0) || blocked(x1, z0) || blocked(x0, z1) || blocked(x1, z1)) return false;
     if (avoid && (avoid[z0 * MAP_W + x0] || avoid[z0 * MAP_W + x1] || avoid[z1 * MAP_W + x0] || avoid[z1 * MAP_W + x1])) return false;
   }
   return true;
@@ -152,7 +157,7 @@ export function clearLine(w: World, ax: number, az: number, bx: number, bz: numb
  * pulling), so walks run in natural diagonals instead of tile zigzags. `x`, `z` is where the
  * walker stands (units).
  */
-export function smooth(w: World, path: number[], x: number, z: number, avoid?: Uint8Array): number[] {
+export function smooth(w: World, path: number[], x: number, z: number, avoid?: Uint8Array, grid: Uint8Array = w.block): number[] {
   const out: number[] = [];
   let ax = x;
   let az = z;
@@ -160,7 +165,7 @@ export function smooth(w: World, path: number[], x: number, z: number, avoid?: U
   while (k < path.length) {
     let far = k;
     for (let j = path.length - 1; j > k; j--) {
-      if (clearLine(w, ax, az, centerX(path[j]), centerZ(path[j]), avoid)) {
+      if (clearLine(w, ax, az, centerX(path[j]), centerZ(path[j]), avoid, grid)) {
         far = j;
         break;
       }

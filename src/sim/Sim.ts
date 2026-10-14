@@ -1,15 +1,42 @@
+import { itemDef, itemNumber } from '../content/items';
 import type { PrisonDef } from '../content/prisons/types';
 import { ROUTINE, routineAt } from '../content/routine';
-import { argA, argB, dirOf, OP, opOf } from './command';
+import { RESTRICTED, zoneIndex } from '../content/zones';
+import { argA, argB, dirOf, OP, opOf, SLOT } from './command';
+import { findPath } from './ai/path';
 import { placesOf } from './ai/places';
-import { craft, dropItem, equip, HOTBAR, interactTarget, moveItem, pickUp, restock, startItems, stillInReach, type ItemEvent, type ItemState } from './systems/items';
-import { fnv1a } from './rng';
+import { canSee } from './ai/sight';
+import { craft, dropItem, equip, HOTBAR, interactTarget, itemOf, moveItem, pickUp, restock, slot, startItems, stillInReach, type ItemEvent, type ItemState } from './systems/items';
+import { fnv1a, randomInt } from './rng';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
+import { assign, awake, backToDuty, CATCH_RANGE, GUARD, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, spawnInmates, stepInmates, type Inmate } from './systems/inmates';
 import { bodyAt, tileOfBody, walk, type Body } from './systems/movement';
-import { BODY_HALF, HEAT_DECAY_STEPS, LOCKDOWN_END_HEAT, LOCKDOWN_STEPS, MISSED_ROUTINE_HEAT, UNIT } from './tuning';
-import { MAP_W, World } from './world/World';
+import {
+  BODY_HALF,
+  CHASE_HEAT,
+  CONTRABAND_HEAT,
+  HEAT_DECAY_STEPS,
+  KO_STEPS,
+  LIGHTS_OUT_GRACE,
+  MISSED_ROUTINE_HEAT,
+  POTATO_PRESSES,
+  POTATO_STEPS,
+  RECOGNIZE_RANGE,
+  RECOGNIZE_STEPS,
+  SOLITARY_HEAT,
+  SOLITARY_STEPS,
+  STEPS_PER_MINUTE,
+  UNIT,
+} from './tuning';
+import { MAP_H, MAP_W, World } from './world/World';
 import { containersOf } from './world/containers';
+
+/** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck'] as const;
+export type SpotReason = (typeof SPOT)[number];
+/** Where a knocked-out player wakes up. */
+export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2 } as const;
 
 /** Something that happened during a step; sound, effects and the HUD read these. */
 export type SimEvent =
@@ -24,6 +51,20 @@ export type SimEvent =
   /** The player's cell door locked or unlocked (Lights Out, a lockdown, 08:00). */
   | { type: 'cells'; locked: boolean }
   | { type: 'sleep'; on: boolean }
+  /** A guard noticed something (the first step of it): a heat jump or a chase. */
+  | { type: 'spotted'; reason: SpotReason }
+  /** A chasing guard caught the player: knocked out, then solitary or the infirmary. */
+  | { type: 'caught'; solitary: boolean }
+  /** Into solitary (with how many contraband items were taken) and out again. */
+  | { type: 'solitary'; on: boolean; taken: number }
+  | { type: 'infirmary'; taken: number }
+  /** A press on the potato; `done` when a whole potato is peeled (10 minutes off). */
+  | { type: 'peel'; done: boolean }
+  /** 08:00: the cells to be searched this morning; a guard has searched one. */
+  | { type: 'shakedown'; cells: number[] }
+  | { type: 'searched'; cell: number; taken: number }
+  /** The night bed check begins, and how it went at the player's cell. */
+  | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
   | ItemEvent;
 
 /**
@@ -42,8 +83,6 @@ export interface SimState {
   /** The player has checked in to the block. */
   attended: boolean;
   lockdown: boolean;
-  /** Steps the player still has to spend in their cell before a lockdown lifts. */
-  lockdownLeft: number;
   inmates: Inmate[];
   /** A lockdown ran during this block: missing it costs nothing. */
   excused: boolean;
@@ -51,6 +90,19 @@ export interface SimState {
   items: ItemState;
   /** Asleep in bed (Lights Out): time can run fast, any move wakes the player. */
   sleeping: boolean;
+  guards: Guard[];
+  /** A guard saw the player at the end of this step. */
+  seen: boolean;
+  /** Steps left knocked out, and where the player wakes (WAKE). */
+  ko: number;
+  wake: number;
+  /** Steps left in solitary (0: not there), and presses on the potato being peeled. */
+  solitary: number;
+  peeled: number;
+  /** What guards are noticing right now (SPOT index): an event fires when it changes. */
+  spotted: number;
+  /** Steps a disguised player has spent close to a guard. */
+  near: number;
 }
 
 export interface Snapshot {
@@ -63,7 +115,8 @@ export interface Snapshot {
  * The game's rules: `step(cmd)` advances one fixed step (1/20 s). The state depends only
  * on the prison, the seed and the commands, never on frame time, the DOM or Three.js, so
  * the tests replay it headless. Systems run in a fixed order (docs/PLAN.md §3):
- * clock → routine → inmates → player → attendance and lockdown → heat → doors.
+ * clock → routine (restock, shakedown, bed checks) → inmates → guards → player →
+ * solitary → what guards see (heat, chases, capture) → attendance → heat decay → doors.
  */
 export class Sim {
   readonly world: World;
@@ -87,11 +140,18 @@ export class Sim {
       routine: routineAt(clockAt(0).minuteOfDay),
       attended: false,
       lockdown: false,
-      lockdownLeft: 0,
       inmates,
       excused: false,
       items,
       sleeping: false,
+      guards: spawnGuards(this.world),
+      seen: false,
+      ko: 0,
+      wake: WAKE.NONE,
+      solitary: 0,
+      peeled: 0,
+      spotted: 0,
+      near: 0,
     };
     this.updateDoors(false);
   }
@@ -119,42 +179,299 @@ export class Sim {
       }
       s.routine = now;
       s.attended = false;
-      s.excused = s.lockdown;
+      s.excused = s.lockdown || this.away;
       this.events.push({ type: 'routine', routine: now });
-      // A new day: desks, shelves and counters are stocked again (GDD §6.2).
+      // A new day: desks, shelves and counters are stocked again (GDD §6.2), and two cells
+      // are named for the shakedown during roll call.
       if (now === 0) {
         restock(w, s.items, s);
         this.events.push({ type: 'restock' });
+        this.shakedown();
       }
     }
+    // 00:30 and 04:00: the night bed check (GDD §5.3).
+    if (s.step % STEPS_PER_MINUTE === 0 && (clock.minuteOfDay === 30 || clock.minuteOfDay === 240)) this.bedCheck();
     // Everyone moves.
     // In a lockdown inmates head for their cells (at night they are going there anyway, to sleep).
-    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, s.player, s.step);
-    // Asleep: a move (or the action button) wakes the player, and so does 07:55 (in time for roll call).
-    const wokenByPlayer = s.sleeping && (dirOf(cmd) !== 0 || opOf(cmd) === OP.INTERACT);
-    if (s.sleeping && (wokenByPlayer || clock.minuteOfDay === 7 * 60 + 55 || ROUTINE[s.routine].id !== 'lightsOut')) {
-      s.sleeping = false;
-      this.events.push({ type: 'sleep', on: false });
+    const guardBodies = s.guards.map((g) => g.body);
+    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, [s.player, ...guardBodies], s.step);
+    stepGuards(
+      w,
+      s.guards,
+      s.routine,
+      s.lockdown,
+      s.player,
+      s.inmates.map((m) => m.body),
+      s.step,
+      (r) => this.report(r),
+    );
+    // Knocked out: nothing to do but lie there, then wake up somewhere else.
+    if (s.ko > 0) {
+      s.player.moving = false;
+      if (--s.ko === 0) this.wakeUp();
+    } else {
+      // Asleep: a move (or the action button) wakes the player, and so does 07:55 (in time for roll call).
+      const wokenByPlayer = s.sleeping && (dirOf(cmd) !== 0 || opOf(cmd) === OP.INTERACT);
+      if (s.sleeping && (wokenByPlayer || clock.minuteOfDay === 7 * 60 + 55 || ROUTINE[s.routine].id !== 'lightsOut' || s.lockdown)) {
+        s.sleeping = false;
+        this.events.push({ type: 'sleep', on: false });
+      }
+      walk(w, s.player, s.sleeping ? 0 : dirOf(cmd));
+      // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
+      this.useItems(s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
     }
-    walk(w, s.player, s.sleeping ? 0 : dirOf(cmd));
-    // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
-    this.useItems(s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
-    // Attendance, and the lockdown: it lifts once the player has sat out its time in the cell.
+    // Solitary: time served (and potatoes peeled) sets the player free.
+    if (s.solitary > 0 && --s.solitary === 0) this.release();
+    // Who sees the player now, and what they make of it.
+    this.watch();
+    // Attendance.
     const zone = this.playerZone;
     if (!s.attended && ROUTINE[s.routine].zones.includes(zone)) {
       s.attended = true;
       this.events.push({ type: 'attended', routine: s.routine });
     }
-    if (s.lockdown && zone === 'playerCell' && --s.lockdownLeft <= 0) {
-      s.lockdown = false;
-      s.heat = Math.min(s.heat, LOCKDOWN_END_HEAT);
-      this.events.push({ type: 'lockdown', on: false });
-    }
-    // Heat cools while nobody is looking (no guards yet: always).
-    if (!s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
+    // Heat cools while no guard is looking.
+    if (!s.seen && !s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
     // Doors last: they follow where everyone ended up, so the state at the end of a step
     // (a save, a keyframe) says everything about them.
     this.updateDoors(true);
+  }
+
+  /** Knocked out or in solitary: not about, so the routine excuses the player. */
+  get away(): boolean {
+    return this.state.ko > 0 || this.state.solitary > 0;
+  }
+
+  /**
+   * Guards look (GDD §5.1–5.3): who sees the player, what that costs in heat, who gives
+   * chase, and whether a chaser has caught them.
+   */
+  private watch() {
+    const s = this.state;
+    const w = this.world;
+    const p = s.player;
+    const t = tileOfBody(p);
+    const here = t.z * MAP_W + t.x;
+    s.seen = false;
+    for (const g of s.guards) {
+      g.sees = !this.away && awake(g) && canSee(w, g.body, p);
+      if (g.sees) {
+        g.lastSeen = here;
+        s.seen = true;
+      }
+    }
+    if (this.away) {
+      s.spotted = 0;
+      s.near = 0;
+      return;
+    }
+    const zone = this.playerZone;
+    const it = s.items;
+    const disguised = itemOf(it.inv[SLOT.OUTFIT]) === GUARD_OUTFIT;
+    let reason = 0;
+    let heat = 0;
+    // Out of the cell after Lights Out (past the walk home), or somewhere staff only: 100%.
+    const sinceLightsOut = (clockAt(s.step).minuteOfDay - ROUTINE[ROUTINE.length - 1].start + 1440) % 1440;
+    const late = ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
+    if (s.seen && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
+    else if (s.seen && !disguised && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
+    // A contraband tool or weapon in hand, in plain sight: +40% a second.
+    const held = itemOf(it.inv[it.hand]);
+    const def = held ? itemDef(held) : null;
+    if (!reason && s.seen && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), CONTRABAND_HEAT];
+    // In a guard's uniform, but too close to a real one for too long: +50% a second.
+    const close = disguised && s.guards.some((g) => awake(g) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
+    s.near = close ? s.near + 1 : 0;
+    if (!reason && s.near > RECOGNIZE_STEPS) [reason, heat] = [SPOT.indexOf('recognized'), s.step % 2 === 0 ? 5 : 0];
+    // Wanted (80%+): any guard who sees the player gives chase.
+    if (!s.lockdown && s.heat >= CHASE_HEAT) {
+      for (const g of s.guards) {
+        if (!g.sees || g.mode === GUARD.CHASE) continue;
+        if (!reason) reason = SPOT.indexOf('wanted');
+        startChase(g);
+      }
+    }
+    // Something new noticed (in a lockdown there is nothing more to notice).
+    if (reason && reason !== s.spotted && !s.lockdown) this.events.push({ type: 'spotted', reason: SPOT[reason] });
+    s.spotted = reason;
+    if (heat) this.addHeat(heat);
+    // Caught: a chaser close enough.
+    if (s.guards.some((g) => g.mode === GUARD.CHASE && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= CATCH_RANGE * CATCH_RANGE)) this.caught();
+  }
+
+  /** Knocked down by a guard: the lockdown is over, everyone back to work, the player out cold. */
+  private caught() {
+    const s = this.state;
+    const solitary = s.heat >= SOLITARY_HEAT;
+    s.ko = KO_STEPS;
+    s.wake = solitary ? WAKE.SOLITARY : WAKE.INFIRMARY;
+    s.excused = true;
+    s.player.moving = false;
+    s.sleeping = false;
+    s.spotted = 0;
+    s.near = 0;
+    this.closeBox();
+    for (const g of s.guards) if (g.mode === GUARD.CHASE || g.mode === GUARD.INVESTIGATE) backToDuty(g);
+    this.events.push({ type: 'caught', solitary });
+    if (s.lockdown) {
+      s.lockdown = false;
+      this.events.push({ type: 'lockdown', on: false });
+    }
+  }
+
+  /**
+   * Waking up after being caught (GDD §5.6): carried contraband is taken and the outfit is
+   * swapped for an inmate's; in solitary the desk's standard drawers are searched too. The
+   * score is settled: heat back to 0.
+   */
+  private wakeUp() {
+    const s = this.state;
+    const places = placesOf(this.world);
+    const it = s.items;
+    let taken = 0;
+    for (let k = 0; k <= SLOT.WEAPON; k++) {
+      if (it.inv[k] && itemDef(itemOf(it.inv[k])).contraband) {
+        it.inv[k] = 0;
+        taken++;
+      }
+    }
+    if (itemOf(it.inv[SLOT.OUTFIT]) !== INMATE_OUTFIT) {
+      if (it.inv[SLOT.OUTFIT] && itemDef(itemOf(it.inv[SLOT.OUTFIT])).contraband) taken++;
+      it.inv[SLOT.OUTFIT] = slot(INMATE_OUTFIT);
+    }
+    it.rev++;
+    s.heat = 0;
+    const lightsOut = ROUTINE[s.routine].id === 'lightsOut';
+    if (s.wake === WAKE.SOLITARY && places.solitary >= 0) {
+      taken += this.search(1);
+      s.solitary = SOLITARY_STEPS;
+      s.peeled = 0;
+      this.place(places.solitary);
+      this.events.push({ type: 'solitary', on: true, taken });
+    } else {
+      // The infirmary (at night, straight back to the cell).
+      this.place(lightsOut || places.infirmary < 0 ? places.bedside[1] : places.infirmary);
+      this.events.push({ type: 'infirmary', taken });
+    }
+    s.wake = WAKE.NONE;
+  }
+
+  /** Out of solitary: into the corridor outside it (at night, back to the cell). */
+  private release() {
+    const s = this.state;
+    const w = this.world;
+    const places = placesOf(w);
+    let to = places.bedside[1];
+    if (ROUTINE[s.routine].id !== 'lightsOut') {
+      const corridor = zoneIndex('corridor');
+      const path = findPath(w, places.solitary, (i) => w.ground.zone[i] === corridor, -1, MAP_W * MAP_H, undefined, w.guardBlock);
+      if (path?.length) to = path[path.length - 1];
+    }
+    s.peeled = 0;
+    this.place(to);
+    this.events.push({ type: 'solitary', on: false, taken: 0 });
+  }
+
+  /** A press on the potato in solitary: every few presses, 10 minutes off. */
+  private peel() {
+    const s = this.state;
+    if (++s.peeled < POTATO_PRESSES) {
+      this.events.push({ type: 'peel', done: false });
+      return;
+    }
+    s.peeled = 0;
+    s.solitary = Math.max(1, s.solitary - POTATO_STEPS);
+    this.events.push({ type: 'peel', done: true });
+  }
+
+  /** Puts the player on a tile (carried there, facing south). */
+  private place(tile: number) {
+    const p = this.state.player;
+    p.x = (tile % MAP_W) * UNIT + UNIT / 2;
+    p.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+    p.moving = false;
+    p.facing = 5;
+  }
+
+  private closeBox() {
+    const it = this.state.items;
+    if (it.open < 0) return;
+    it.open = -1;
+    it.rev++;
+    this.events.push({ type: 'close' });
+  }
+
+  /** 08:00: two cells, drawn at random, for the shakedown guard to search (GDD §2.1). */
+  private shakedown() {
+    const s = this.state;
+    const n = this.world.def.cells.length;
+    const k = s.guards.findIndex((_, i) => this.world.def.guards[i].duties?.includes('shakedown'));
+    if (k < 0 || n < 2) return;
+    const a = 1 + randomInt(s, n);
+    let b = 1 + randomInt(s, n - 1);
+    if (b >= a) b++;
+    const cells = [a, b];
+    if (s.guards[k].mode === GUARD.CHASE) return;
+    assign(s.guards[k], GUARD.SHAKEDOWN, cells);
+    this.events.push({ type: 'shakedown', cells: [...cells] });
+  }
+
+  /** The bed check: the night guard looks into every cell, east to west. */
+  private bedCheck() {
+    const s = this.state;
+    const k = s.guards.findIndex((_, i) => this.world.def.guards[i].duties?.includes('bedCheck'));
+    if (k < 0 || s.guards[k].mode === GUARD.CHASE) return;
+    const steps = placesOf(this.world).doorstep;
+    const cells = steps.map((_, c) => c).filter((c) => c > 0 && steps[c] >= 0);
+    cells.sort((a, b) => (steps[b] % MAP_W) - (steps[a] % MAP_W) || steps[a] - steps[b]);
+    assign(s.guards[k], GUARD.BED_CHECK, cells);
+    this.events.push({ type: 'bedCheck', result: 'start' });
+  }
+
+  /** A guard looked into a cell or searched one. */
+  private report(r: GuardReport) {
+    const s = this.state;
+    if (r.kind === 'search') {
+      const taken = this.search(r.cell);
+      this.events.push({ type: 'searched', cell: r.cell, taken });
+      return;
+    }
+    if (r.cell !== 1) return;
+    // In the cell, asleep, or a bed dummy under the blanket: all present (GDD §5.3).
+    const ok = this.playerZone === 'playerCell' || s.sleeping || s.solitary > 0 || s.ko > 0 || this.dummyInBed();
+    this.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail' });
+    if (!ok && !s.lockdown) {
+      this.events.push({ type: 'spotted', reason: 'bedCheck' });
+      this.addHeat(100);
+    }
+  }
+
+  /** Whether the player's bed holds a bed dummy. */
+  dummyInBed(): boolean {
+    const list = containersOf(this.world);
+    const k = list.findIndex((c) => c.mine && c.prop.kind === 'bed');
+    return k >= 0 && this.state.items.containers[k].some((v) => itemOf(v) === BED_DUMMY);
+  }
+
+  /**
+   * Searches a cell: contraband in the desk's standard drawers and in the bed goes (the
+   * hidden compartment is never found, GDD §6.2). Returns how many items were taken.
+   */
+  private search(cell: number): number {
+    const it = this.state.items;
+    let taken = 0;
+    containersOf(this.world).forEach((c, i) => {
+      if (this.world.cellOf[c.prop.z * MAP_W + c.prop.x] !== cell || (c.prop.kind !== 'desk' && c.prop.kind !== 'bed')) return;
+      const box = it.containers[i];
+      for (let k = c.hidden; k < box.length; k++) {
+        if (box[k] && itemDef(itemOf(box[k])).contraband) {
+          box[k] = 0;
+          taken++;
+        }
+      }
+    });
+    if (taken) it.rev++;
+    return taken;
   }
 
   /** The player's one-step operation (OP), and the open container closing out of reach. */
@@ -166,6 +483,10 @@ export class Sim {
     if (opOf(cmd) !== OP.NONE) it.rev++;
     switch (opOf(cmd)) {
       case OP.INTERACT: {
+        if (s.solitary > 0) {
+          this.peel();
+          break;
+        }
         const target = interactTarget(this.world, it, s.player, ROUTINE[s.routine].id === 'lightsOut');
         if (!target) break;
         if (target.kind === 'ground') pickUp(it, target.index, ev);
@@ -214,19 +535,17 @@ export class Sim {
     s.player.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
     s.player.moving = false;
     s.sleeping = true;
-    if (s.items.open >= 0) {
-      s.items.open = -1;
-      this.events.push({ type: 'close' });
-    }
+    this.closeBox();
     this.events.push({ type: 'sleep', on: true });
   }
 
+  /** Heat; at 100% the sirens go: a lockdown, every guard hunting the player (GDD §3.1). */
   private addHeat(n: number) {
     const s = this.state;
+    if (this.away) return;
     s.heat = Math.min(100, s.heat + n);
     if (s.heat >= 100 && !s.lockdown) {
       s.lockdown = true;
-      s.lockdownLeft = LOCKDOWN_STEPS;
       s.excused = true;
       this.events.push({ type: 'lockdown', on: true });
     }
@@ -290,11 +609,18 @@ export class Sim {
       routine: st.routine ?? routineAt(clockAt(st.step).minuteOfDay),
       attended: st.attended ?? false,
       lockdown: st.lockdown ?? false,
-      lockdownLeft: st.lockdownLeft ?? 0,
       inmates: st.inmates ?? spawnInmates(this.world, { rng: st.rng }),
       excused: st.excused ?? false,
       items: fitItems(this.world, st.items) ?? startItems(this.world, { rng: st.rng }),
       sleeping: st.sleeping ?? false,
+      guards: st.guards?.length === this.world.def.guards.length ? st.guards : spawnGuards(this.world),
+      seen: st.seen ?? false,
+      ko: st.ko ?? 0,
+      wake: st.wake ?? WAKE.NONE,
+      solitary: st.solitary ?? 0,
+      peeled: st.peeled ?? 0,
+      spotted: st.spotted ?? 0,
+      near: st.near ?? 0,
     };
     this.updateDoors(false);
     this.events = [];
@@ -306,6 +632,10 @@ export class Sim {
     return fnv1a(JSON.stringify(this.state) + fnv1a(String.fromCharCode(...g.kind)) + fnv1a(String.fromCharCode(...this.world.block)));
   }
 }
+
+const GUARD_OUTFIT = itemNumber('guard_outfit');
+const INMATE_OUTFIT = itemNumber('inmate_outfit');
+const BED_DUMMY = itemNumber('bed_dummy');
 
 /**
  * Items from a snapshot, fitted to this prison's containers (a map edit may add or remove

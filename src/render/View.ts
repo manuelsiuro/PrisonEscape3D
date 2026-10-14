@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { TILE } from '../sim/world/tiles';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
-import { Character, INMATE_LOOK, inmateLook, type BedPose } from './Character';
+import { Character, guardLook, INMATE_LOOK, inmateLook, type BedPose } from './Character';
+import { Cones } from './Cones';
+import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
 import { Guide } from './Guide';
@@ -41,6 +43,24 @@ export interface Frame {
   outfit: number;
   /** Asleep in bed. */
   sleeping: boolean;
+  /** Knocked out on the floor. */
+  knockedOut: boolean;
+  /** The guards, interpolated like everyone else. */
+  guards: GuardFrame[];
+}
+
+export interface GuardFrame {
+  x: number;
+  z: number;
+  facing: number;
+  moving: boolean;
+  doing: number;
+  /** ALERT: the cone's color, none while asleep. */
+  alert: number;
+  /** Leg pace against the player's walk (they run when chasing). */
+  pace: number;
+  /** What it holds (a baton while chasing), 0 for nothing. */
+  held: number;
 }
 
 export interface InmateFrame {
@@ -105,6 +125,12 @@ export class View {
   private outfit = -1;
   private readonly pickups = new Pickups();
   private cast: Character[] = [];
+  private guardCast: Character[] = [];
+  /** Where each guard sleeps (by guard). */
+  private guardBeds: Array<BedPose | undefined> = [];
+  private readonly cones = new Cones();
+  /** Door tiles a guard is walking through this frame (they open for guards' keys). */
+  private readonly doorsOpen = new Set<number>();
   /** Each cell's bed, for sleepers (by cell number). */
   private beds: Array<BedPose | undefined> = [];
   /** 1 on tiles under a shower head. */
@@ -116,6 +142,8 @@ export class View {
   private readonly ndc = new THREE.Vector2();
   private readonly red = new THREE.Color(0xff2a1a);
   private alarm = 0;
+  /** 0 by day … 1 at night (the last frame's light). */
+  private night = 0;
   private readonly target = new THREE.Vector3(MAP_W / 2, 0, MAP_H / 2);
   private readonly ahead = new THREE.Vector3();
   private readonly feet = new THREE.Vector3();
@@ -144,7 +172,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group, this.cones.group);
     this.setQuality(quality);
     addEventListener('resize', () => this.resize());
   }
@@ -175,12 +203,26 @@ export class View {
     this.worldView = new WorldView(world);
     this.scene.add(this.worldView.group);
     this.guide.world = world;
+    this.cones.world = world;
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
     this.outfit = -1;
     this.showers.fill(0);
     for (const p of world.props) if (p.kind === 'shower') this.showers[p.z * MAP_W + p.x] = 1;
     this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
     this.setCast(0);
+    this.setGuards([]);
+  }
+
+  /** The guards: one character each, and the bed each sleeps in at night (if any). */
+  setGuards(beds: Array<BedPose | undefined>) {
+    for (const c of this.guardCast) {
+      this.scene.remove(c.root);
+      c.dispose();
+    }
+    this.guardCast = beds.map((_, k) => new Character(guardLook(k)));
+    this.guardBeds = beds;
+    for (const c of this.guardCast) this.scene.add(c.root);
+    this.cones.setCount(beds.length);
   }
 
   /** The other inmates: one character each, looks varied by cell, legs paced by walking speed. */
@@ -270,8 +312,9 @@ export class View {
   draw(f: Frame, dt: number, time: number) {
     this.dress(f.outfit);
     this.player.root.visible = true;
-    this.player.hold(f.sleeping ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
-    if (this.player.pose(f.x, f.z, f.facing, f.moving, dt, time, !this.reducedMotion, f.sleeping ? DOING.SLEEP : DOING.NOTHING, this.beds[1])) {
+    this.player.hold(f.sleeping || f.knockedOut ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
+    const doing = f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : DOING.NOTHING;
+    if (this.player.pose(f.x, f.z, f.facing, f.moving, dt, time, !this.reducedMotion, doing, this.beds[1])) {
       if (DUST[f.surface] !== undefined && !this.reducedMotion) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
       this.onStep(f.surface);
     }
@@ -286,6 +329,21 @@ export class View {
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
     });
+    this.doorsOpen.clear();
+    f.guards.forEach((g, k) => {
+      const c = this.guardCast[k];
+      if (!c) return;
+      c.gait = g.pace;
+      c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
+      c.pose(g.x, g.z, g.facing, g.moving, dt, time, !this.reducedMotion, g.doing, this.guardBeds[k]);
+      c.mark(g.alert === ALERT.HOSTILE ? '!' : g.alert === ALERT.SUSPICIOUS ? '?' : '', dt, !this.reducedMotion);
+      // A guard's key opens the door it walks through (and the one just ahead).
+      const tx = Math.floor(g.x + Math.sin(g.facing) * 0.6);
+      const tz = Math.floor(g.z + Math.cos(g.facing) * 0.6);
+      this.doorsOpen.add(Math.floor(g.z) * MAP_W + Math.floor(g.x));
+      if (g.moving) this.doorsOpen.add(tz * MAP_W + tx);
+    });
+    this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion);
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);
@@ -297,6 +355,8 @@ export class View {
   /** Draws the title backdrop: the camera drifts slowly over the prison, nobody in it. */
   drawTitle(dt: number, time: number) {
     this.player.root.visible = false;
+    this.doorsOpen.clear();
+    this.cones.update([], dt, 0, false);
     this.alarm = 0;
     this.pickups.update([], -1, null, dt, time, false);
     this.guide.setPath(null);
@@ -312,7 +372,7 @@ export class View {
       this.zoom += (this.zoomGoal - this.zoom) * Math.min(1, dt * 10);
       this.applyZoom();
     }
-    const night = this.light(minute);
+    const night = (this.night = this.light(minute));
     if (this.alarm > 0.001) {
       // Lockdown: the light swings red in slow pulses, like a rotating beacon.
       const pulse = this.reducedMotion ? 0.5 : (Math.sin(time * 5) + 1) / 2;
@@ -321,7 +381,7 @@ export class View {
       this.sky.lerp(this.red, a * 0.35);
       this.sun.intensity *= 1 - 0.35 * this.alarm;
     } else this.ambient.color.set(SKY_LIGHT);
-    this.worldView?.update(dt, night);
+    this.worldView?.update(dt, night, this.doorsOpen);
     this.dust.update(dt);
     this.camera.position.copy(this.target).add(CAMERA_OFFSET);
     this.camera.lookAt(this.target);

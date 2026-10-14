@@ -372,10 +372,13 @@ export class WorldView {
     this.group.add(trees);
   }
 
-  /** Per frame: doors slide toward their state; lights follow the time of day (0 day … 1 night). */
-  update(dt: number, night: number) {
+  /**
+   * Per frame: doors slide toward their state (open too where a guard walks through, in
+   * `open`); lights follow the time of day (0 day … 1 night).
+   */
+  update(dt: number, night: number, open?: ReadonlySet<number>) {
     for (const d of this.doors) {
-      const target = this.world.block[d.index] ? 0 : 1;
+      const target = this.world.block[d.index] && !open?.has(d.index) ? 0 : 1;
       if (d.open !== target) d.open = target > d.open ? Math.min(target, d.open + dt * 3) : Math.max(target, d.open - dt * 3);
       // Eased, sliding into the wall.
       const e = d.open * d.open * (3 - 2 * d.open);

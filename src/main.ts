@@ -10,6 +10,10 @@ import { isFloor, placesOf } from './sim/ai/places';
 import { command, DIR_X, DIR_Z, OP, SLOT } from './sim/command';
 import { Recorder } from './sim/Recorder';
 import { Sim, type SimEvent } from './sim/Sim';
+import { alertOf, CHASE_SPEED, GUARD } from './sim/systems/guards';
+import { itemNumber } from './content/items';
+import type { BedPose } from './render/Character';
+import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
 import { MAP_W } from './sim/world/World';
@@ -94,6 +98,7 @@ interface Game {
   /** The player's and inmates' positions before the last step (interpolation). */
   prev: { x: number; z: number };
   prevInmates: Array<{ x: number; z: number }>;
+  prevGuards: Array<{ x: number; z: number }>;
   paused: boolean;
   /** How far the player has walked (tiles), for the first-play hint. */
   walked: number;
@@ -115,6 +120,7 @@ let last = performance.now();
 const hud = new Hud(() => pause());
 const hint = new Hint();
 const banner = new Banner();
+const solitaryPanel = new SolitaryPanel();
 const vignette = h('div', 'alarm-vignette');
 document.body.append(vignette);
 view.onStep = (surface) => sound.step(surface);
@@ -156,7 +162,8 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const w = sim.world;
   const places = placesOf(w);
   const home = places.bedside[1];
-  if (s.lockdown) return sim.playerZone === 'playerCell' ? null : (i) => i === home;
+  // A lockdown ends when the guards catch you, wherever you are; solitary and a knockout go nowhere.
+  if (s.lockdown || s.solitary > 0 || s.ko > 0) return null;
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
@@ -214,8 +221,68 @@ function announce(e: SimEvent, sim: Sim) {
       if (e.on) {
         buzz('lockdown');
         const missed = sim.events.find((m) => m.type === 'missed' && m.heat >= 100);
-        banner.show(t('banner.lockdown'), missed?.type === 'missed' ? t('banner.lockdownSub', { routine: routineName(missed.routine) }) : t('banner.lockdownHeat'), 'alarm', 5000);
-      } else banner.toast(t('toast.lifted'), 'good');
+        const seen = sim.events.find((m) => m.type === 'spotted');
+        const why =
+          missed?.type === 'missed'
+            ? t('banner.lockdownSub', { routine: routineName(missed.routine) })
+            : seen?.type === 'spotted'
+              ? t(`spotted.${seen.reason}` as Key)
+              : t('banner.lockdownHeat');
+        banner.show(t('banner.lockdown'), why, 'alarm', 5000);
+      }
+      break;
+    case 'spotted':
+      sound.whistle();
+      buzz('missed');
+      // A lockdown in the same step says it in its banner.
+      if (!sim.events.some((m) => m.type === 'lockdown')) banner.toast(t(`spotted.${e.reason}` as Key), 'bad');
+      break;
+    case 'caught':
+      sound.thud();
+      buzz('lockdown');
+      itemsUI.closePanels();
+      game?.pilot.stop();
+      banner.show(t('banner.caught'), e.solitary ? t('banner.caughtSolitary') : t('banner.caughtInfirmary'), 'alarm', 3000);
+      break;
+    case 'solitary':
+      if (e.on) {
+        sound.lockClank();
+        banner.show(t('banner.solitary'), e.taken ? t('banner.taken', { n: e.taken }) : t('banner.nothingTaken'), 'alarm', 4500);
+      } else {
+        sound.chime();
+        banner.toast(t('toast.released'), 'good');
+      }
+      break;
+    case 'infirmary':
+      sound.chime();
+      banner.show(t('banner.infirmary'), e.taken ? t('banner.taken', { n: e.taken }) : t('banner.nothingTaken'), 'routine', 4500);
+      break;
+    case 'peel':
+      seenInteract();
+      sound.peel(e.done);
+      if (e.done) {
+        buzz('bell');
+        itemsUI.toast(t('toast.peeled'));
+      }
+      break;
+    case 'shakedown':
+      if (e.cells.includes(1)) {
+        sound.sting();
+        banner.toast(t('toast.shakedownYou'), 'bad', 5000);
+      } else banner.toast(t('toast.shakedown', { a: e.cells[0], b: e.cells[1] }), 'info', 4500);
+      break;
+    case 'searched':
+      if (e.cell !== 1) break;
+      if (e.taken) {
+        sound.sting();
+        banner.toast(t('toast.searchedYou', { n: e.taken }), 'bad', 4500);
+      } else banner.toast(t('toast.searchedClean'), 'good');
+      break;
+    case 'bedCheck':
+      // Asleep, the night runs fast: no need to hear about it.
+      if (sim.state.sleeping) break;
+      if (e.result === 'start') banner.toast(t('toast.bedCheck'), 'info');
+      else if (e.result === 'pass' && sim.playerZone !== 'playerCell') banner.toast(t('toast.bedCheckPass'), 'good');
       break;
     case 'pickup':
       seenInteract();
@@ -274,10 +341,12 @@ function startGame(prison: PrisonDef) {
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
   view.zoomBy(1.25);
   view.setCast(sim.state.inmates.map((m) => ({ cell: m.cell, gait: m.speed / WALK_SPEED })));
+  view.setGuards(guardBeds(sim));
   game = {
     rec: new Recorder(sim),
     prev: { x: sim.state.player.x, z: sim.state.player.z },
     prevInmates: sim.state.inmates.map((m) => ({ x: m.body.x, z: m.body.z })),
+    prevGuards: sim.state.guards.map((m) => ({ x: m.body.x, z: m.body.z })),
     paused: false,
     walked: 0,
     pilot: new Autopilot(sim.world),
@@ -302,6 +371,17 @@ function startGame(prison: PrisonDef) {
   if (!hasSeen('walk')) {
     later(4600, () => hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]));
   }
+}
+
+/** Where each guard sleeps at night: the guard-quarters beds, in order, for those without a night round. */
+function guardBeds(sim: Sim): Array<BedPose | undefined> {
+  const beds = placesOf(sim.world).guardBeds;
+  let n = 0;
+  return sim.prison.guards.map((d) => {
+    if (d.night) return undefined;
+    const b = sim.world.props[beds[n++]?.bed ?? -1];
+    return b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 };
+  });
 }
 
 /** Timers set when a game starts (cleared when it ends, so they never reach the next one). */
@@ -338,7 +418,8 @@ async function pause() {
   controls.enabled = false;
   hud.show(false);
   itemsUI.show(false);
-  sleepVeil.classList.remove('on');
+  sleepVeil.classList.remove('on', 'ko');
+  solitaryPanel.update(null, 0);
   hint.hide();
   banner.clear();
   vignette.classList.remove('on');
@@ -356,7 +437,8 @@ addEventListener('keydown', (e) => {
     return;
   }
   const g = game;
-  // Asleep: only waking up (E) means anything.
+  // Asleep: only waking up (E) means anything; knocked out, nothing does.
+  if (g.rec.sim.state.ko > 0) return;
   if (g.rec.sim.state.sleeping && e.code !== 'KeyE') return;
   if (e.code === 'KeyE') {
     if (g.rec.sim.state.items.open >= 0) sendOp(OP.CLOSE);
@@ -376,6 +458,9 @@ document.addEventListener('visibilitychange', () => {
 
 const NO_OP: [number, number, number] = [0, 0, 0];
 const SLEEP_SPEED = 40;
+/** Knocked out, the 30 seconds pass in 3. */
+const KO_SPEED = 10;
+const BATON = itemNumber('baton');
 
 /** Queues a one-step operation (sent with the next simulation step). */
 function sendOp(op: number, a = 0, b = 0) {
@@ -451,9 +536,29 @@ function focusOf(sim: Sim, target: Target) {
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
 const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false };
 
-const frameData: Frame = { x: 0, z: 0, facing: 0, moving: false, minuteOfDay: 0, surface: 0, inmates: [], guide: null, tap: null, alarm: false, ground: groundFrame, groundRev: -1, focus: null, held: 0, outfit: 0, sleeping: false };
+const frameData: Frame = {
+  x: 0,
+  z: 0,
+  facing: 0,
+  moving: false,
+  minuteOfDay: 0,
+  surface: 0,
+  inmates: [],
+  guide: null,
+  tap: null,
+  alarm: false,
+  ground: groundFrame,
+  groundRev: -1,
+  focus: null,
+  held: 0,
+  outfit: 0,
+  sleeping: false,
+  knockedOut: false,
+  guards: [],
+};
+const PEEL_ACTION = { verb: '', what: '' };
 const tapAt = { x: 0, z: 0 };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, lockedMinutes: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null };
 
 function frame(now: number) {
   requestAnimationFrame(frame);
@@ -470,7 +575,7 @@ function frame(now: number) {
     governQuality(dt);
     // Fixed steps: the simulation never sees the frame time.
     // Asleep, the night runs fast (about 13 s from 23:00 to 07:55).
-    const speed = sim.state.sleeping ? SLEEP_SPEED : g.speed;
+    const speed = sim.state.sleeping ? SLEEP_SPEED : sim.state.ko > 0 ? KO_SPEED : g.speed;
     acc += dt * speed;
     let steps = 0;
     while (acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * speed) {
@@ -483,8 +588,13 @@ function frame(now: number) {
         q.x = m.body.x;
         q.z = m.body.z;
       });
+      sim.state.guards.forEach((m, k) => {
+        const q = (g.prevGuards[k] ??= { x: 0, z: 0 });
+        q.x = m.body.x;
+        q.z = m.body.z;
+      });
       // The stick and keys win over tap-to-walk; both are plain direction commands.
-      if (controls.steering) g.pilot.stop();
+      if (controls.steering || sim.state.ko > 0) g.pilot.stop();
       const op = g.ops.shift() ?? NO_OP;
       g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p), op[0], op[1], op[2]));
       g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
@@ -522,6 +632,21 @@ function frame(now: number) {
     o.doing = m.doing;
     o.cell = m.cell;
   });
+  f.guards.length = st.guards.length;
+  st.guards.forEach((m, k) => {
+    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0 });
+    const q = g.prevGuards[k];
+    o.x = lerp(q?.x ?? m.body.x, m.body.x);
+    o.z = lerp(q?.z ?? m.body.z, m.body.z);
+    o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
+    o.moving = m.body.moving && !g.paused;
+    o.doing = m.doing;
+    o.alert = alertOf(m);
+    const chasing = m.mode === GUARD.CHASE;
+    o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
+    o.held = chasing ? BATON : 0;
+  });
+  f.knockedOut = st.ko > 0;
   f.guide = g.guide;
   const dest = g.pilot.destination;
   if (dest >= 0) {
@@ -540,7 +665,7 @@ function frame(now: number) {
     o.item = itemOf(v);
   });
   f.groundRev = it.rev;
-  const target = st.sleeping || g.paused ? null : interactTarget(sim.world, it, p, ROUTINE[st.routine].id === 'lightsOut');
+  const target = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused ? null : interactTarget(sim.world, it, p, ROUTINE[st.routine].id === 'lightsOut');
   // The frame stays on an open container (what the panel shows), else on what is in reach.
   f.focus = focusOf(sim, it.open >= 0 ? { kind: 'container', index: it.open } : target);
   f.held = itemOf(it.inv[it.hand]);
@@ -552,10 +677,20 @@ function frame(now: number) {
   v.items = it;
   v.boxTitle = box ? boxTitle(sim, it.open) : '';
   v.boxHidden = box?.hidden ?? 0;
-  v.action = it.open >= 0 ? null : describeTarget(sim, target);
+  if (st.solitary > 0) {
+    PEEL_ACTION.verb = t('act.peel');
+    PEEL_ACTION.what = t('act.potato');
+  }
+  v.action = st.ko > 0 ? null : st.solitary > 0 ? PEEL_ACTION : it.open >= 0 ? null : describeTarget(sim, target);
   v.sleeping = st.sleeping;
   itemsUI.update(v);
-  sleepVeil.classList.toggle('on', st.sleeping);
+  const veilOn = st.sleeping || st.ko > 0;
+  if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');
+  sleepVeil.classList.toggle('ko', st.ko > 0);
+  sleepVeil.classList.toggle('on', veilOn);
+  solitaryPanel.update(st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null, st.peeled);
+  // The solitary card takes the hint's place.
+  if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it.
   if (target && !hint.visible && !hasSeen('interact') && hasSeen('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   vignette.classList.toggle('on', st.lockdown);
@@ -566,7 +701,8 @@ function frame(now: number) {
   hudState.attended = ROUTINE[st.routine].id === 'lightsOut' ? zone === 'playerCell' : st.attended;
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
-  hudState.lockedMinutes = st.lockdown && zone === 'playerCell' ? Math.ceil(st.lockdownLeft / STEPS_PER_MINUTE) : null;
+  hudState.seen = st.seen;
+  hudState.solitaryMinutes = st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null;
   hud.update(clock, zone, hudState);
 }
 

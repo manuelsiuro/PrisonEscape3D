@@ -1,0 +1,45 @@
+sight: 60° cone, 7 tiles, walls and shut doors block it
+contraband in hand (trowel): lockdown after 50 steps in sight
+restricted rooms: 100% heat when seen, unless disguised
+== out at night, no disguise
+day 2 00:01 spotted: night
+day 2 00:01 LOCKDOWN
+day 2 00:03 caught → solitary
+day 2 00:03 lockdown over
+day 2 00:30 bed check: start
+day 2 00:33 into solitary (3 taken)
+solitary: 60 presses to get out, back in the cell at day 2 00:36
+== wanted at 85%
+day 1 10:10 spotted: wanted
+day 1 10:11 caught → infirmary
+day 1 10:41 wakes in the infirmary (1 taken)
+== bed dummy: a night in the library
+day 2 00:30 bed check: start
+day 2 01:02 bed check: pass
+day 2 04:00 bed check: start
+day 2 04:25 bed check: pass
+day 2 08:00 shakedown: cells 7 and 4
+day 2 08:28 cell 7 searched (0 taken)
+day 2 08:39 cell 4 searched (1 taken)
+== no dummy
+day 2 00:30 bed check: start
+day 2 01:02 bed check: fail
+day 2 01:02 spotted: bedCheck
+day 2 01:02 LOCKDOWN
+day 2 01:09 caught → solitary
+day 2 01:09 lockdown over
+day 2 01:39 into solitary (0 taken)
+day 2 03:39 out of solitary
+day 2 04:00 bed check: start
+day 2 04:33 bed check: pass
+== shakedowns
+day 2 08:00 shakedown: cells 5 and 7
+day 2 08:32 cell 5 searched (0 taken)
+day 2 08:45 cell 7 searched (0 taken)
+day 3 08:00 shakedown: cells 7 and 2
+day 3 08:28 cell 7 searched (0 taken)
+day 3 08:39 cell 2 searched (1 taken)
+day 4 08:00 shakedown: cells 1 and 4
+day 4 08:32 cell 1 searched (1 taken)
+day 4 08:47 cell 4 searched (0 taken)
+rounds over 3 days: 363, 288, 284, 531, 206 stops; 6 bed checks, the longest 32 game minutes

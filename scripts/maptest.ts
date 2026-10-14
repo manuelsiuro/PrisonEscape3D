@@ -6,6 +6,8 @@
 import { PRISONS } from '../src/content/prisons';
 import { PROPS } from '../src/content/props';
 import { ZONES } from '../src/content/zones';
+import { findPath } from '../src/sim/ai/path';
+import { isFloor, placesOf } from '../src/sim/ai/places';
 import { fnv1a } from '../src/sim/rng';
 import { reachableFrom } from '../src/sim/world/reach';
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
@@ -102,4 +104,21 @@ for (const def of PRISONS) {
   for (const z of def.reachable) check(reached.has(z), `${def.id}: ${z} can be walked to from the cell`);
   for (const z of ['outside', 'perimeter'] as const) check(!reached.has(z), `${def.id}: ${z} can't be reached without keys or tools`);
   console.log('walkable from the cell:', [...reached].sort().join(', '));
+
+  // Guards: every stop and post is free floor, all of them reachable from each other with a
+  // guard's keys; beds for the night shift's sleepers; somewhere for solitary and the infirmary.
+  const places = placesOf(w);
+  const stops = def.guards.flatMap((d) => [...d.beat, ...(d.night ?? []), ...Object.values(d.posts ?? {})]);
+  const first = stops[0];
+  for (const p of stops) {
+    check(isFloor(w, p.x, p.z), `${def.id}: guard stop ${p.x},${p.z} is free floor`);
+    check(findPath(w, first.z * MAP_W + first.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !== null, `${def.id}: guard stop ${p.x},${p.z} can be reached`);
+  }
+  const sleepers = def.guards.filter((d) => !d.night).length;
+  check(places.guardBeds.filter((b) => b.tile >= 0).length >= sleepers, `${def.id}: a guard-quarters bed for each guard off at night`);
+  check(def.guards.filter((d) => d.duties?.includes('bedCheck') && d.night).length === 1, `${def.id}: one night guard does the bed checks`);
+  check(def.guards.filter((d) => d.duties?.includes('shakedown')).length === 1, `${def.id}: one guard does the shakedown`);
+  check(places.solitary >= 0 && places.infirmary >= 0, `${def.id}: a solitary cell and an infirmary bed`);
+  check(places.doorstep.slice(1).every((t) => t >= 0) && places.deskside.slice(1).every((t) => t >= 0), `${def.id}: every cell can be looked into and its desk searched`);
+  console.log(`guards: ${def.guards.length}, ${stops.length} stops, ${sleepers} asleep at night`);
 }

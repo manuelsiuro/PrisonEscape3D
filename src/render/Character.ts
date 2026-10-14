@@ -14,6 +14,10 @@ export interface Look {
   gait?: number;
   /** Shown when the character is hidden behind something (the player only). */
   silhouette?: number;
+  /** A guard: a peaked cap of this color, a badge and a belt instead of the number patch. */
+  cap?: number;
+  /** Trouser color (the outfit's otherwise). */
+  trousers?: number;
 }
 
 /** The orange jumpsuit (tech plan §6.2). */
@@ -21,6 +25,20 @@ export const INMATE_LOOK: Look = { outfit: 0xf2701c, skin: 0xe2ad84, hair: 0x3a2
 
 const SKINS = [0xf1c6a0, 0xe2ad84, 0xc98d62, 0xa86e48, 0x7d4f33, 0x5b3a26];
 const HAIRS = [0x1d1612, 0x3a2a1e, 0x6b4a2b, 0xb08850, 0x8a8a8a, 0x2a2018];
+
+/** A guard's look: navy uniform and cap, varied by a number like inmates. */
+export function guardLook(n: number): Look {
+  const r = (k: number) => Math.abs(Math.sin(n * 7.31 + k * 41.7) * 24634.6345) % 1;
+  return {
+    outfit: 0x3a5a8c,
+    trousers: 0x1f2c44,
+    cap: 0x1b2638,
+    skin: SKINS[Math.floor(r(1) * SKINS.length)],
+    hair: HAIRS[Math.floor(r(2) * HAIRS.length)],
+    hairStyle: 1,
+    size: 1.05 + r(4) * 0.06,
+  };
+}
 
 /** A fellow inmate's look, varied by a number (the same number gives the same look). */
 export function inmateLook(n: number): Look {
@@ -73,6 +91,56 @@ function sleepTexture(): THREE.CanvasTexture {
   return zTexture;
 }
 
+/** A little five-pointed star (knocked out: they circle the head). */
+let starTexture: THREE.CanvasTexture | null = null;
+function koTexture(): THREE.CanvasTexture {
+  if (starTexture) return starTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  g.beginPath();
+  for (let k = 0; k < 10; k++) {
+    const r = k % 2 ? 12 : 28;
+    const a = (k * Math.PI) / 5 - Math.PI / 2;
+    g.lineTo(32 + Math.cos(a) * r, 33 + Math.sin(a) * r);
+  }
+  g.closePath();
+  g.lineWidth = 6;
+  g.strokeStyle = 'rgba(60, 40, 0, 0.8)';
+  g.stroke();
+  g.fillStyle = '#ffd84a';
+  g.fill();
+  starTexture = new THREE.CanvasTexture(c);
+  starTexture.colorSpace = THREE.SRGBColorSpace;
+  return starTexture;
+}
+
+/** "!" (red, spotted) and "?" (orange, searching) over a guard's head, drawn once each. */
+const markTextures = new Map<string, THREE.CanvasTexture>();
+function markTexture(ch: string): THREE.CanvasTexture {
+  let t = markTextures.get(ch);
+  if (t) return t;
+  const c = document.createElement('canvas');
+  c.width = c.height = 96;
+  const g = c.getContext('2d')!;
+  g.fillStyle = ch === '!' ? '#ff3b30' : '#ff9f1a';
+  g.strokeStyle = 'rgba(30, 10, 0, 0.85)';
+  g.lineWidth = 6;
+  g.beginPath();
+  g.arc(48, 46, 36, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.font = '900 60px Fredoka, system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#fff';
+  g.fillText(ch, 48, 50);
+  t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  markTextures.set(ch, t);
+  return t;
+}
+
 const dropMaterial = new THREE.MeshBasicMaterial({ color: 0xc8ecff, transparent: true, opacity: 0.8, depthWrite: false });
 const dropGeometry = new THREE.BoxGeometry(0.035, 0.24, 0.035);
 /** The spray under a shower head: a faint cone of water. */
@@ -113,12 +181,18 @@ export class Character {
   private act = 0;
   private actKind: number = DOING.NOTHING;
   private readonly offset = Math.random() * 10;
-  private readonly gait: number;
+  /** Walking pace against the player's: legs swing faster for faster walkers (guards running). */
+  gait: number;
   /** Props that come and go with what the character does. */
   private readonly blanket: THREE.Mesh;
   private readonly tray: THREE.Mesh;
   private readonly water = new THREE.Group();
   private readonly zs: THREE.Sprite[] = [];
+  private readonly stars: THREE.Sprite[] = [];
+  /** The "!" or "?" over the head, its character, and how long it has shown. */
+  private readonly markSprite: THREE.Sprite;
+  private markShown = '';
+  private markAge = 0;
   /** The silhouette material (the player only). */
   private ghost: THREE.MeshBasicMaterial | null = null;
   /** Standing under a shower head (water falls only there). */
@@ -134,6 +208,9 @@ export class Character {
       look.silhouette !== undefined ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, ...STENCIL_MARK }) : kitMaterial;
     const outfit = look.outfit;
     const outfitDark = new THREE.Color(outfit).multiplyScalar(0.78).getHex();
+    const trousers = look.trousers ?? outfit;
+    const guard = look.cap !== undefined;
+    const gold = 0xe8b828;
     const { skin, hair } = look;
     const white = 0xf2f2ee;
     const dark = 0x1b1b22;
@@ -151,18 +228,28 @@ export class Character {
       [this.legR, 0.11],
     ] as const) {
       pivot.position.set(x, 0.4, 0);
-      mesh([part(0.19, 0.34, 0.2, outfit, 0, -0.17, 0), part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03)], pivot);
+      mesh([part(0.19, 0.34, 0.2, trousers, 0, -0.17, 0), part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03)], pivot);
     }
 
-    // Torso: the jumpsuit, a white collar, the number patch.
+    // Torso: the jumpsuit, a white collar, the number patch (a guard: a belt, a tie, a badge).
     mesh(
-      [
-        part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0),
-        part(0.53, 0.06, 0.31, outfitDark, 0, 0.42, 0),
-        part(0.2, 0.06, 0.02, white, 0, 0.79, 0.152),
-        part(0.13, 0.08, 0.02, white, 0.12, 0.66, 0.152),
-        part(0.08, 0.015, 0.025, dark, 0.12, 0.665, 0.153),
-      ],
+      guard
+        ? [
+            part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0),
+            part(0.53, 0.07, 0.31, dark, 0, 0.43, 0),
+            part(0.08, 0.05, 0.02, gold, 0, 0.43, 0.157),
+            part(0.06, 0.2, 0.02, trousers, 0, 0.7, 0.152),
+            part(0.22, 0.05, 0.02, 0xdfe7f2, 0, 0.79, 0.152),
+            part(0.08, 0.09, 0.025, gold, -0.13, 0.67, 0.153),
+            part(0.05, 0.25, 0.05, dark, 0.27, 0.32, 0.06),
+          ]
+        : [
+            part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0),
+            part(0.53, 0.06, 0.31, outfitDark, 0, 0.42, 0),
+            part(0.2, 0.06, 0.02, white, 0, 0.79, 0.152),
+            part(0.13, 0.08, 0.02, white, 0.12, 0.66, 0.152),
+            part(0.08, 0.015, 0.025, dark, 0.12, 0.665, 0.153),
+          ],
       this.body,
     );
 
@@ -190,6 +277,15 @@ export class Character {
       );
     } else if (style === 1) {
       face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215));
+    }
+    if (look.cap !== undefined) {
+      // A peaked cap: the crown, a band, the peak over the eyes, a gold badge.
+      face.push(
+        part(0.5, 0.16, 0.48, look.cap, 0, 0.55, -0.01),
+        part(0.51, 0.05, 0.49, 0x10161f, 0, 0.47, -0.01),
+        part(0.44, 0.03, 0.16, 0x10161f, 0, 0.455, 0.29),
+        part(0.08, 0.07, 0.02, gold, 0, 0.52, 0.235),
+      );
     }
     mesh(face, this.head);
     const eyes = new THREE.Group();
@@ -219,6 +315,20 @@ export class Character {
       this.zs.push(z);
       this.root.add(z);
     }
+    // Knocked out: stars circling the head.
+    for (let k = 0; k < 4; k++) {
+      const st = new THREE.Sprite(new THREE.SpriteMaterial({ map: koTexture(), transparent: true, depthWrite: false }));
+      st.visible = false;
+      st.renderOrder = 5;
+      st.scale.setScalar(0.22);
+      this.stars.push(st);
+      this.root.add(st);
+    }
+    this.markSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false }));
+    this.markSprite.visible = false;
+    this.markSprite.renderOrder = 30;
+    this.markSprite.position.y = 1.85;
+    this.root.add(this.markSprite);
     // At a meal: a tray on the table in front.
     this.tray = new THREE.Mesh(
       merge([
@@ -265,6 +375,28 @@ export class Character {
     this.armR.add(m);
   }
 
+  /**
+   * Shows "!" or "?" over the head ('' hides it): it pops in, bobs, and shrinks away after
+   * a couple of seconds (the alert is in the cone's color from then on).
+   */
+  mark(ch: string, dt: number, motion: boolean) {
+    if (ch !== this.markShown) {
+      this.markShown = ch;
+      this.markAge = 0;
+      if (ch) this.markSprite.material.map = markTexture(ch);
+      this.markSprite.material.needsUpdate = true;
+    }
+    this.markAge += dt;
+    const show = !!ch && this.markAge < 2.2;
+    this.markSprite.visible = show;
+    if (!show) return;
+    const t = this.markAge;
+    const pop = motion ? Math.min(1, t * 7) * (1 + Math.max(0, 0.35 - t) * 1.6) : 1;
+    const out = t > 1.9 ? 1 - (t - 1.9) / 0.3 : 1;
+    this.markSprite.scale.setScalar(0.62 * pop * out);
+    this.markSprite.position.y = 1.85 + (motion ? Math.sin(t * 9) * 0.04 : 0);
+  }
+
   /** A flat copy of every part, drawn only where something stands in front of the character. */
   private addSilhouette(color: number) {
     const ghost = (this.ghost = new THREE.MeshBasicMaterial({
@@ -297,11 +429,17 @@ export class Character {
   pose(x: number, z: number, facing: number, moving: boolean, dt: number, time: number, motion = true, doing: number = DOING.NOTHING, bed?: BedPose): boolean {
     const k = (rate: number) => Math.min(1, dt * rate);
     // Into bed and out of it: a short ease between standing beside it and lying in it.
-    this.lie += ((doing === DOING.SLEEP && bed ? 1 : 0) - this.lie) * k(5);
+    // Knocked out: down on the floor where they stand, quicker.
+    const ko = doing === DOING.KNOCKED_OUT;
+    this.lie += (((doing === DOING.SLEEP && bed) || ko ? 1 : 0) - this.lie) * k(ko ? 9 : 5);
     if (this.lie < 0.002) this.lie = 0;
     this.at.set(x, 0, z);
     let turn = facing;
-    if (bed && this.lie > 0) {
+    if (ko) {
+      // Lies along its heading, feet where it stood.
+      this.bedAt.set(x - Math.sin(facing) * 0.15, 0.17, z - Math.cos(facing) * 0.15);
+      this.at.lerp(this.bedAt, this.lie);
+    } else if (bed && this.lie > 0) {
       turn = bed.angle;
       this.bedAt.set(bed.x + Math.sin(bed.angle) * BED_FEET, BED_TOP, bed.z + Math.cos(bed.angle) * BED_FEET);
       this.at.lerp(this.bedAt, this.lie);
@@ -353,6 +491,16 @@ export class Character {
       armRz += j * 2.5 * a;
       legZ = j * 0.28 * a;
       bob += Math.abs(Math.sin(t * 6)) * 0.08 * a;
+    } else if (doing === DOING.SEARCH) {
+      // Rummaging through a desk: bent over, hands digging in turn.
+      armLx += (-1.3 + Math.sin(t * 7) * 0.35) * a;
+      armRx += (-1.3 + Math.cos(t * 7) * 0.35) * a;
+      bob -= 0.03 * a;
+    } else if (ko) {
+      // Out cold: arms flung out.
+      armLz -= 1.1 * this.lie;
+      armRz += 1.1 * this.lie;
+      legZ = 0.25 * this.lie;
     } else if (doing === DOING.SHOWER) {
       // Scrubbing the hair.
       armLx += (-2.7 + Math.sin(t * 9) * 0.15) * a;
@@ -366,21 +514,28 @@ export class Character {
     this.armR.rotation.set(armRx, 0, armRz);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
     this.body.position.y = bob * (1 - this.lie);
-    this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie;
+    this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie + (doing === DOING.SEARCH ? 0.35 * this.act : 0);
 
     // In bed the blanket covers the body: no silhouette through it.
     if (this.ghost) this.ghost.visible = this.lie < 0.3;
     // What goes with the activity: the blanket and Zs, the tray, the water.
-    this.blanket.visible = this.lie > 0.6;
+    this.blanket.visible = this.lie > 0.6 && !ko;
     this.blanket.scale.z = THREE.MathUtils.smoothstep(this.lie, 0.6, 1);
     this.zs.forEach((z, i) => {
-      z.visible = this.lie > 0.9;
+      z.visible = this.lie > 0.9 && !ko;
       if (!z.visible) return;
       const c = motion ? (time * 0.45 + i / 3 + this.offset) % 1 : i / 3;
       // Up from the face, drifting and growing, fading at the top.
       z.position.set(0.12 + Math.sin(c * 5 + i) * 0.12, 0.45 + c * 0.9, -1.05 - c * 0.15);
       z.scale.setScalar(0.16 + c * 0.2);
       z.material.opacity = Math.sin(c * Math.PI) * 0.95;
+    });
+    this.stars.forEach((st, i) => {
+      st.visible = ko && this.lie > 0.7;
+      if (!st.visible) return;
+      // A ring over the head (the head lies back along the heading).
+      const a2 = (motion ? time * 3.2 : 0) + (i * Math.PI) / 2;
+      st.position.set(Math.cos(a2) * 0.32, 0.55 + Math.sin(a2 * 2) * 0.04, -0.95 + Math.sin(a2) * 0.32);
     });
     this.tray.visible = doing === DOING.EAT && this.act > 0.3;
     this.water.visible = this.wet && doing === DOING.SHOWER && this.act > 0.2;
@@ -394,13 +549,13 @@ export class Character {
 
     // Blink every few seconds; eyes shut in bed.
     this.blinkAt -= dt;
-    const closed = this.blinkAt < 0.12 || this.lie > 0.5;
+    const closed = this.blinkAt < 0.12 || (this.lie > 0.5 && !ko);
     if (this.blinkAt < 0) this.blinkAt = 2 + Math.random() * 3.5;
     this.eyes.scale.y = closed ? 0.15 : 1;
 
     // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
-    const still = doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE;
+    const still = doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || ko;
     if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * 1.1;
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
@@ -412,7 +567,12 @@ export class Character {
     this.root.traverse((o) => {
       const m = o as THREE.Mesh;
       // Sprites and drops share their geometry with every other character.
-      if (!(o instanceof THREE.Sprite) && o !== this.held && m.geometry !== dropGeometry && m.geometry !== sprayGeometry) m.geometry?.dispose();
+      if (o instanceof THREE.Sprite) {
+        // Textures are shared; each sprite has its own material.
+        o.material.dispose();
+        return;
+      }
+      if (o !== this.held && m.geometry !== dropGeometry && m.geometry !== sprayGeometry) m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
       for (const mat of mats) if (mat !== kitMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();
     });

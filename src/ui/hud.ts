@@ -13,8 +13,10 @@ export interface HudState {
   /** Guard heat, 0–100. */
   heat: number;
   lockdown: boolean;
-  /** Minutes the player still has to sit in the cell before a lockdown lifts (when there). */
-  lockedMinutes: number | null;
+  /** A guard sees the player right now. */
+  seen: boolean;
+  /** Game minutes left in solitary, null when not there. */
+  solitaryMinutes: number | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -48,6 +50,7 @@ export class Hud {
   private readonly heatPill: HTMLElement;
   private readonly heatFill: HTMLElement;
   private readonly heatText: HTMLElement;
+  private shownSeen = false;
   private shownZone = '';
   private night: boolean | null = null;
   private shownKey = '';
@@ -66,7 +69,7 @@ export class Hud {
       </div>
       <div class="hud-row">
         <span class="pill big hud-routine"><i class="hud-routine-ic"></i><span class="hud-routine-text"><span class="hud-routine-head"><b></b><small></small></span><span class="hud-routine-place"></span></span><em class="hud-badge"></em></span>
-        <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b></span>
+        <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b><span class="hud-eye" title="${t('hud.seen')}">${icon('eye', 16)}</span></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -125,19 +128,34 @@ export class Hud {
     }
     this.updateRoutine(s);
     this.updateHeat(s.heat);
+    // The eye opens while a guard is looking (so stealth can be read at a glance).
+    if (s.seen !== this.shownSeen) {
+      this.shownSeen = s.seen;
+      this.heatPill.classList.toggle('seen', s.seen);
+    }
   }
 
   private updateRoutine(s: HudState) {
     const mandatory = ROUTINE[s.routine].zones.length > 0;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.lockedMinutes}`;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
     this.routinePill.classList.toggle('alarm', s.lockdown);
+    this.routinePill.classList.toggle('solitary', s.solitaryMinutes !== null);
     if (s.lockdown) {
       this.routineIcon.innerHTML = icon('siren', 16);
       setText(this.routineName, t('routine.lockdown'));
-      setText(this.routinePlace, s.lockedMinutes !== null ? t('routine.lockedIn', { n: s.lockedMinutes }) : t('routine.home'));
+      setText(this.routinePlace, t('routine.hunted'));
+      setText(this.routineUntil, '');
+      this.badge.className = 'hud-badge hidden';
+      return;
+    }
+    if (s.solitaryMinutes !== null) {
+      const m = s.solitaryMinutes;
+      this.routineIcon.innerHTML = icon('lock', 16);
+      setText(this.routineName, t('routine.solitary'));
+      setText(this.routinePlace, t('routine.solitaryLeft', { time: `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}` }));
       setText(this.routineUntil, '');
       this.badge.className = 'hud-badge hidden';
       return;
