@@ -262,4 +262,6 @@ export const fr: Partial<Strings> = {
   "solitary.title": "Isolement",
   "solitary.hintKeys": "%KeyE% pour éplucher des patates : chacune enlève 10 minutes",
   "solitary.hintTouch": "Touche Éplucher pour éplucher des patates : chacune enlève 10 minutes",
+  "hint.contrabandHand": "Contrebande en main : un gardien qui la voit devient vite soupçonneux. Prends un emplacement vide pour la cacher.",
+  "hint.disguise": "En tenue de gardien, les gardiens t’ignorent la nuit et dans les zones du personnel, mais ne reste pas près de l’un d’eux : ils connaissent les visages de leurs collègues.",
 };

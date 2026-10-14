@@ -9,6 +9,7 @@ day 2 00:03 lockdown over
 day 2 00:30 bed check: start
 day 2 00:33 into solitary (3 taken)
 solitary: 60 presses to get out, back in the cell at day 2 00:36
+review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard
 == wanted at 85%
 day 1 10:10 spotted: wanted
 day 1 10:11 caught → infirmary
@@ -26,12 +27,12 @@ day 2 00:30 bed check: start
 day 2 01:02 bed check: fail
 day 2 01:02 spotted: bedCheck
 day 2 01:02 LOCKDOWN
-day 2 01:09 caught → solitary
-day 2 01:09 lockdown over
-day 2 01:39 into solitary (0 taken)
-day 2 03:39 out of solitary
+day 2 01:08 caught → solitary
+day 2 01:08 lockdown over
+day 2 01:38 into solitary (0 taken)
+day 2 03:38 out of solitary
 day 2 04:00 bed check: start
-day 2 04:33 bed check: pass
+day 2 04:26 bed check: pass
 == shakedowns
 day 2 08:00 shakedown: cells 5 and 7
 day 2 08:32 cell 5 searched (0 taken)

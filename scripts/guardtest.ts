@@ -219,6 +219,41 @@ function morning(seed: number): Sim {
   check(l3[0]?.endsWith('spotted: recognized') && d.state.heat >= 40, `up close past 2 seconds: recognized (+50%/s, heat ${d.state.heat}%)`);
 }
 
+// ------------------------------------------------------------------ review fixes (P3 polish)
+{
+  // A disguised player behind a wall is not recognized by a guard who can't see them.
+  const sim = morning(5);
+  sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
+  plant(sim.state.guards[0], 8, 14, 1);
+  put(sim.state.player, 8, 16);
+  run(sim, idle, () => false, 120);
+  check(!sim.state.seen && sim.state.heat === 0, 'disguised behind a wall: never recognized');
+
+  // A chase during the bed check doesn't cancel it: the guard takes it up again afterwards.
+  const b = new Sim(CENTER_PERKS, 4);
+  const play = modelPrisoner(b);
+  run(b, play, (s) => minute(s) === 30 && s.state.step % STEPS_PER_MINUTE === 1, DAY);
+  const warden = b.state.guards[0];
+  check(warden.mode === GUARD.BED_CHECK, 'the bed check is under way at 00:30');
+  warden.lastSeen = -1;
+  warden.mode = GUARD.CHASE;
+  warden.resume = GUARD.BED_CHECK;
+  const log = run(b, play, () => false, 2, []);
+  run(b, play, (s) => s.events.some((e) => e.type === 'bedCheck' && e.result !== 'start'), 90 * STEPS_PER_MINUTE, log);
+  check(log.some((l) => l.endsWith('bed check: pass')), `interrupted, the bed check still reaches the player's cell (${log.join('; ')})`);
+
+  // Running straight away doesn't shake off a chasing guard: guards run faster than the player walks.
+  const c = morning(6);
+  c.state.heat = 85;
+  const g = c.state.guards[0];
+  plant(g, 28, 22, 1);
+  g.wait = 0;
+  put(c.state.player, 31, 22);
+  const caught = run(c, () => command(1), (s) => s.state.ko > 0, 20 * 20);
+  check(c.state.ko > 0, `running east along the corridor, caught (${caught.join('; ')})`);
+  console.log('review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard');
+}
+
 // ------------------------------------------------------------------ wanted: chase, lose them, catch
 {
   const sim = morning(6);

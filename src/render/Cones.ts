@@ -100,7 +100,7 @@ export class Cones {
       if (Number.isNaN(c.angle) || !motion) c.angle = goal;
       else {
         const d = Math.atan2(Math.sin(goal - c.angle), Math.cos(goal - c.angle));
-        c.angle += d * Math.min(1, dt * 9);
+        c.angle += d * Math.min(1, dt * 18);
       }
       const p = c.positions;
       const uv = c.uvs;
@@ -123,7 +123,7 @@ export class Cones {
       c.mesh.geometry.computeBoundingSphere();
       c.color.set(COLORS[g.alert] ?? COLORS[ALERT.CALM]);
       c.material.color.copy(c.color);
-      const strength = g.alert === ALERT.HOSTILE ? 0.42 : g.alert === ALERT.SUSPICIOUS ? 0.36 : 0.26;
+      const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : 0.32;
       c.material.opacity = c.shown * (strength + night * 0.12);
     });
   }

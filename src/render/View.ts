@@ -321,7 +321,9 @@ export class View {
     // Look-ahead: up to a tile and a half in the walking direction, eased.
     const lead = f.moving && !this.reducedMotion ? 1.4 : 0;
     this.ahead.lerp(this.v.set(Math.sin(f.facing) * lead, 0, Math.cos(f.facing) * lead * 0.8), Math.min(1, dt * 2.2));
-    this.target.lerp(this.v.set(f.x, 0, f.z).add(this.ahead), Math.min(1, dt * 7));
+    // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
+    if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10) this.target.set(f.x, 0, f.z);
+    else this.target.lerp(this.v.set(f.x, 0, f.z).add(this.ahead), Math.min(1, dt * 7));
     this.feet.set(f.x, 0, f.z);
     f.inmates.forEach((m, k) => {
       const c = this.cast[k];

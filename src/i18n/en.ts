@@ -263,6 +263,8 @@ export const en = {
   "solitary.title": "Solitary",
   "solitary.hintKeys": "Press %KeyE% to peel potatoes: each one takes 10 minutes off",
   "solitary.hintTouch": "Tap Peel to peel potatoes: each one takes 10 minutes off",
+  "hint.contrabandHand": "Contraband in hand: a guard who sees it gets suspicious fast. Hold an empty slot to hide it.",
+  "hint.disguise": "In a guard outfit, guards ignore you at night and in staff rooms, but don't stand close to one: they know their colleagues' faces.",
 };
 
 export type Strings = typeof en;

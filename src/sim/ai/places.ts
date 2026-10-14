@@ -102,10 +102,39 @@ function build(w: World): Places {
     bedside,
     deskside,
     doorstep,
-    solitary: beside(w, solitaryBed?.p, inZone('solitary')),
-    infirmary: beside(w, infirmaryBed?.p, inZone('infirmary')),
+    solitary: roomy(w, beside(w, solitaryBed?.p, inZone('solitary')), inZone('solitary')),
+    infirmary: roomy(w, beside(w, infirmaryBed?.p, inZone('infirmary')), inZone('infirmary')),
     guardBeds,
   };
+}
+
+/**
+ * Near a tile (within a step), the one with the most free floor around it: somewhere to put
+ * a player down in the open rather than in a corner against two walls.
+ */
+function roomy(w: World, tile: number, ok: (i: number) => boolean): number {
+  if (tile < 0) return tile;
+  const free = (x: number, z: number) => isFloor(w, x, z) && ok(z * MAP_W + x);
+  const room = (x: number, z: number) => {
+    let n = 0;
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if ((dx || dz) && free(x + dx, z + dz)) n++;
+    return n;
+  };
+  const tx = tile % MAP_W;
+  const tz = Math.floor(tile / MAP_W);
+  let best = tile;
+  let bestRoom = room(tx, tz);
+  for (let dz = -1; dz <= 1; dz++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (!free(tx + dx, tz + dz)) continue;
+      const r = room(tx + dx, tz + dz);
+      if (r > bestRoom) {
+        bestRoom = r;
+        best = (tz + dz) * MAP_W + tx + dx;
+      }
+    }
+  }
+  return best;
 }
 
 /** The free tile next to a piece of furniture closest to its middle, among tiles that pass `ok` (-1 if none). */

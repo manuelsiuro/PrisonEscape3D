@@ -3,7 +3,7 @@ import type { PrisonDef } from '../content/prisons/types';
 import { ROUTINE, routineAt } from '../content/routine';
 import { RESTRICTED, zoneIndex } from '../content/zones';
 import { argA, argB, dirOf, OP, opOf, SLOT } from './command';
-import { findPath } from './ai/path';
+import { findPath, nearestDir } from './ai/path';
 import { placesOf } from './ai/places';
 import { canSee } from './ai/sight';
 import { craft, dropItem, equip, HOTBAR, interactTarget, itemOf, moveItem, pickUp, restock, slot, startItems, stillInReach, type ItemEvent, type ItemState } from './systems/items';
@@ -279,8 +279,8 @@ export class Sim {
     const held = itemOf(it.inv[it.hand]);
     const def = held ? itemDef(held) : null;
     if (!reason && s.seen && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), CONTRABAND_HEAT];
-    // In a guard's uniform, but too close to a real one for too long: +50% a second.
-    const close = disguised && s.guards.some((g) => awake(g) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
+    // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
+    const close = disguised && s.guards.some((g) => g.sees && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
     s.near = close ? s.near + 1 : 0;
     if (!reason && s.near > RECOGNIZE_STEPS) [reason, heat] = [SPOT.indexOf('recognized'), s.step % 2 === 0 ? 5 : 0];
     // Wanted (80%+): any guard who sees the player gives chase.
@@ -311,7 +311,16 @@ export class Sim {
     s.spotted = 0;
     s.near = 0;
     this.closeBox();
+    // The guard who made the catch stands over the player until they're carried off.
+    const p = s.player;
+    const d2 = (g: Guard) => (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2;
+    const catcher = s.guards.filter((g) => g.mode === GUARD.CHASE).sort((a, b) => d2(a) - d2(b))[0];
     for (const g of s.guards) if (g.mode === GUARD.CHASE || g.mode === GUARD.INVESTIGATE) backToDuty(g);
+    if (catcher) {
+      catcher.wait = KO_STEPS;
+      catcher.body.moving = false;
+      if (catcher.body.x !== p.x || catcher.body.z !== p.z) catcher.body.facing = nearestDir(p.x - catcher.body.x, p.z - catcher.body.z);
+    }
     this.events.push({ type: 'caught', solitary });
     if (s.lockdown) {
       s.lockdown = false;
@@ -411,7 +420,6 @@ export class Sim {
     let b = 1 + randomInt(s, n - 1);
     if (b >= a) b++;
     const cells = [a, b];
-    if (s.guards[k].mode === GUARD.CHASE) return;
     assign(s.guards[k], GUARD.SHAKEDOWN, cells);
     this.events.push({ type: 'shakedown', cells: [...cells] });
   }
@@ -420,7 +428,7 @@ export class Sim {
   private bedCheck() {
     const s = this.state;
     const k = s.guards.findIndex((_, i) => this.world.def.guards[i].duties?.includes('bedCheck'));
-    if (k < 0 || s.guards[k].mode === GUARD.CHASE) return;
+    if (k < 0) return;
     const steps = placesOf(this.world).doorstep;
     const cells = steps.map((_, c) => c).filter((c) => c > 0 && steps[c] >= 0);
     cells.sort((a, b) => (steps[b] % MAP_W) - (steps[a] % MAP_W) || steps[a] - steps[b]);

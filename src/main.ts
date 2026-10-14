@@ -11,7 +11,7 @@ import { command, DIR_X, DIR_Z, OP, SLOT } from './sim/command';
 import { Recorder } from './sim/Recorder';
 import { Sim, type SimEvent } from './sim/Sim';
 import { alertOf, CHASE_SPEED, GUARD } from './sim/systems/guards';
-import { itemNumber } from './content/items';
+import { itemDef, itemNumber } from './content/items';
 import type { BedPose } from './render/Character';
 import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
@@ -122,7 +122,9 @@ const hint = new Hint();
 const banner = new Banner();
 const solitaryPanel = new SolitaryPanel();
 const vignette = h('div', 'alarm-vignette');
-document.body.append(vignette);
+/** Solitary is a dark cell: the edges of the screen close in. */
+const darkCell = h('div', 'solitary-veil');
+document.body.append(vignette, darkCell);
 view.onStep = (surface) => sound.step(surface);
 
 /** Tap or click a spot: walk there (the nearest free floor if the spot itself is taken). */
@@ -194,6 +196,32 @@ function seenInteract() {
   hint.hide();
 }
 
+/**
+ * First-time tips for guard rules that hinge on items: a contraband tool or weapon in hand
+ * (guards who see it get suspicious fast) and the guard outfit (the disguise and its limit).
+ */
+const coached = { held: 0, outfit: 0 };
+function coachItems(held: number, outfit: number) {
+  if (held !== coached.held) {
+    coached.held = held;
+    const d = held ? itemDef(held) : null;
+    if (d?.contraband && (d.cat === 'tool' || d.cat === 'weapon') && !hasSeen('contrabandHand')) {
+      markSeen('contrabandHand');
+      banner.toast(t('hint.contrabandHand'), 'info', 6500);
+    }
+  }
+  if (outfit !== coached.outfit) {
+    coached.outfit = outfit;
+    if (outfit === GUARD_OUTFIT && !hasSeen('disguise')) {
+      markSeen('disguise');
+      banner.toast(t('hint.disguise'), 'info', 7000);
+    }
+  }
+}
+
+/** The last thing guards noticed, and when (real time): repeats are quiet for a moment. */
+const lastSpotted = { reason: '', at: 0 };
+
 /** Sound, vibration, banners and toasts for what the simulation reports. */
 function announce(e: SimEvent, sim: Sim) {
   switch (e.type) {
@@ -231,12 +259,18 @@ function announce(e: SimEvent, sim: Sim) {
         banner.show(t('banner.lockdown'), why, 'alarm', 5000);
       }
       break;
-    case 'spotted':
+    case 'spotted': {
+      // The same thing noticed again within a few seconds (a guard glancing away and back): say it once.
+      const now = performance.now();
+      if (e.reason === lastSpotted.reason && now - lastSpotted.at < 6000) break;
+      lastSpotted.reason = e.reason;
+      lastSpotted.at = now;
       sound.whistle();
       buzz('missed');
       // A lockdown in the same step says it in its banner.
       if (!sim.events.some((m) => m.type === 'lockdown')) banner.toast(t(`spotted.${e.reason}` as Key), 'bad');
       break;
+    }
     case 'caught':
       sound.thud();
       buzz('lockdown');
@@ -420,6 +454,7 @@ async function pause() {
   itemsUI.show(false);
   sleepVeil.classList.remove('on', 'ko');
   solitaryPanel.update(null, 0);
+  darkCell.classList.remove('on');
   hint.hide();
   banner.clear();
   vignette.classList.remove('on');
@@ -461,6 +496,7 @@ const SLEEP_SPEED = 40;
 /** Knocked out, the 30 seconds pass in 3. */
 const KO_SPEED = 10;
 const BATON = itemNumber('baton');
+const GUARD_OUTFIT = itemNumber('guard_outfit');
 
 /** Queues a one-step operation (sent with the next simulation step). */
 function sendOp(op: number, a = 0, b = 0) {
@@ -599,7 +635,14 @@ function frame(now: number) {
       g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p), op[0], op[1], op[2]));
       g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
       // Sound, banners and vibration read the events; the simulation never calls them.
-      for (const e of sim.events) announce(e, sim);
+      for (const e of sim.events) {
+        announce(e, sim);
+        // Carried somewhere (solitary, the infirmary, into bed): no slide from the old spot.
+        if (e.type === 'solitary' || e.type === 'infirmary' || (e.type === 'sleep' && e.on)) {
+          g.prev.x = p.x;
+          g.prev.z = p.z;
+        }
+      }
     }
     if (acc > 1) acc = 0;
     if (hint.visible && g.walked > 4) {
@@ -670,6 +713,7 @@ function frame(now: number) {
   f.focus = focusOf(sim, it.open >= 0 ? { kind: 'container', index: it.open } : target);
   f.held = itemOf(it.inv[it.hand]);
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
+  coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;
   view.draw(f, dt, now / 1000);
   const box = containersOf(sim.world)[it.open];
@@ -689,6 +733,7 @@ function frame(now: number) {
   sleepVeil.classList.toggle('ko', st.ko > 0);
   sleepVeil.classList.toggle('on', veilOn);
   solitaryPanel.update(st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null, st.peeled);
+  darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it.

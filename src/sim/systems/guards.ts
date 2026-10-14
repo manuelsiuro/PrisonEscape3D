@@ -46,11 +46,14 @@ export interface Guard extends Walker {
   /** It saw the player at the end of the last step, and where. */
   sees: boolean;
   lastSeen: number;
+  /** A bed check or shakedown interrupted by a chase (GUARD mode, 0 for none): taken up again after. */
+  resume?: number;
 }
 
 /** Guards stroll on their rounds and run when chasing (the player walks at 184). */
 export const GUARD_SPEED = 120;
-export const CHASE_SPEED = 176;
+/** A little faster than the player walks: running only buys time, breaking line of sight escapes. */
+export const CHASE_SPEED = 196;
 /** A chasing guard this close (units, centre to centre) has caught the player. */
 export const CATCH_RANGE = 700;
 /** How long a guard looks around where it lost the player, looks into a cell, searches a desk. */
@@ -86,6 +89,7 @@ export function spawnGuards(w: World): Guard[] {
       doing: DOING.NOTHING,
       sees: false,
       lastSeen: -1,
+      resume: 0,
     };
   });
 }
@@ -189,6 +193,12 @@ export function stepGuards(
           g.path = [];
           break;
         }
+        // No way there (a spot guards can't reach): wait before trying again, never A* every step.
+        if (g.wait > 0) {
+          g.wait--;
+          b.moving = false;
+          break;
+        }
         const goal = tileAt(player.x, player.z);
         if (!g.path.length || (goal !== g.goal && (step + k) % 10 === 0)) head(chasers, g, goal);
         walkPath(chasers, g, k, CHASE_SPEED);
@@ -213,6 +223,11 @@ export function stepGuards(
         }
         const check = g.mode === GUARD.BED_CHECK;
         const spot = check ? places.doorstep[cell] : places.deskside[cell];
+        // Nowhere to stand for it (a cell without a door or desk): skip it.
+        if (spot < 0) {
+          g.tasks.shift();
+          break;
+        }
         if (g.goal !== spot) {
           head(crowd, g, spot);
           g.timer = check ? CHECK_STEPS : SEARCH_STEPS;
@@ -244,30 +259,35 @@ export function stepGuards(
   });
 }
 
-/** Everyone after the player. */
+/** After the player. A bed check or shakedown under way is kept, to take up afterwards. */
 export function startChase(g: Guard) {
+  if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
   g.mode = GUARD.CHASE;
   g.doing = DOING.NOTHING;
   g.path = [];
   g.goal = -1;
   g.wait = 0;
-  g.tasks = [];
 }
 
-/** Back to the round or post for the time of day (planned afresh). */
+/** Back to work: an interrupted bed check or shakedown first, else the round or post (planned afresh). */
 export function backToDuty(g: Guard) {
-  g.mode = GUARD.DUTY;
+  g.mode = g.resume && g.tasks.length ? g.resume : GUARD.DUTY;
+  g.resume = 0;
+  if (g.mode === GUARD.DUTY) g.tasks = [];
   g.plan = PLAN_NONE;
   g.path = [];
   g.goal = -1;
   g.doing = DOING.NOTHING;
-  g.tasks = [];
 }
 
-/** Sends a guard on a list of cells: the bed check or the shakedown. */
+/** Sends a guard on a list of cells: the bed check or the shakedown (after the chase, if it's chasing). */
 export function assign(g: Guard, mode: number, cells: number[]) {
-  g.mode = mode;
   g.tasks = cells;
+  if (g.mode === GUARD.CHASE || g.mode === GUARD.INVESTIGATE) {
+    g.resume = mode;
+    return;
+  }
+  g.mode = mode;
   g.path = [];
   g.goal = -1;
   g.wait = 0;

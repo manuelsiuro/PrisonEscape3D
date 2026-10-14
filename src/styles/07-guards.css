@@ -196,3 +196,18 @@
 .reduced-motion .sol-potato.done {
   animation: none;
 }
+
+/* Solitary: a dark cell, the screen's edges closing in. */
+.solitary-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: radial-gradient(ellipse 60% 55% at 50% 48%, transparent 35%, rgba(6, 4, 18, 0.72));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s var(--ease);
+}
+
+.solitary-veil.on {
+  opacity: 1;
+}
