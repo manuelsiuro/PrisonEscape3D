@@ -1,6 +1,6 @@
 import { itemDef, itemNumber, type ItemDef } from '../../content/items';
 import { DIR_X, DIR_Z } from '../command';
-import { BODY_HALF, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRATE_HP, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
+import { BODY_HALF, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRATE_HP, SHARPEN_STROKES, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
 import { isGrate, isTunnel, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { placesOf } from '../ai/places';
@@ -17,10 +17,10 @@ import type { Body } from './movement';
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
  * takes the player down off a roof.
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen';
 
-/** The actions that strike (and wear down a tile); the others happen at one press. */
-export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp']);
+/** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
+export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
 
 export interface ToolTarget {
   action: ToolAction;
@@ -70,6 +70,11 @@ export const BRACE = ITEM_ID('timber_brace');
 export const SHEET_ROPE = ITEM_ID('sheet_rope');
 export const CHOCOLATE = ITEM_ID('chocolate');
 const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
+/** What rubbing on a wall makes of a comb and a toothbrush (GDD §7.3: shivs). */
+export const SHIVS: ReadonlyMap<number, number> = new Map([
+  [ITEM_ID('plastic_comb'), ITEM_ID('comb_shiv')],
+  [ITEM_ID('toothbrush'), ITEM_ID('toothbrush_shiv')],
+]);
 
 /** The floors a tunnel can be started through (GDD §9.2: dirt, grass or any non-reinforced floor). */
 const DIGGABLE = new Set<number>([TILE.GRASS, TILE.ROAD, TILE.CONCRETE, TILE.TILED, TILE.WOOD, TILE.ASPHALT, TILE.DIRT]);
@@ -221,6 +226,11 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   const here = bodyTile(b);
   const ahead = aheadOf(b);
+  // A comb or toothbrush against a wall: rubbed into a shiv (hp: the strokes it takes).
+  if (SHIVS.has(held) && layer === LAYER.GROUND && ahead >= 0) {
+    const k = w.ground.kind[ahead];
+    if (k === TILE.BRICK || k === TILE.REINFORCED) return { action: 'sharpen', layer, tile: ahead, fits: true, hp: SHARPEN_STROKES };
+  }
   const placed = placeTarget(w, layer, here, ahead, held);
   if (placed) return placed;
   const found: ToolTarget[] = [];

@@ -4,43 +4,67 @@ restricted rooms: 100% heat when seen, unless disguised
 == out at night, no disguise
 day 2 00:01 spotted: night
 day 2 00:01 LOCKDOWN
-day 2 00:03 caught → solitary
-day 2 00:03 lockdown over
+day 2 00:05 caught → solitary
+day 2 00:05 lockdown over
 day 2 00:30 bed check: start
-day 2 00:33 into solitary (3 taken)
-solitary: 217 presses to get out, back in the cell at day 2 00:44
+day 2 00:35 into solitary (3 taken)
+solitary: 217 presses to get out, back in the cell at day 2 00:46
 review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard
 == wanted at 85%
 day 1 10:10 spotted: wanted
-day 1 10:12 caught → infirmary
-day 1 10:42 wakes in the infirmary (1 taken)
+day 1 10:13 caught → infirmary
+day 1 10:43 wakes in the infirmary (1 taken)
 == bed dummy: a night in the library
 day 2 00:30 bed check: start
-day 2 01:02 bed check: pass
-day 2 04:00 bed check: start
-day 2 04:25 bed check: pass
-day 2 08:00 shakedown: cells 7 and 4
-day 2 08:28 cell 7 searched (0 taken)
-day 2 08:39 cell 4 searched (1 taken)
-== no dummy
-day 2 00:30 bed check: start
-day 2 01:02 bed check: fail
-day 2 01:02 spotted: bedCheck
-day 2 01:02 LOCKDOWN
-day 2 01:08 caught → solitary
-day 2 01:08 lockdown over
-day 2 01:38 into solitary (0 taken)
-day 2 03:38 out of solitary
+day 2 01:01 bed check: pass
 day 2 04:00 bed check: start
 day 2 04:26 bed check: pass
+day 2 08:00 shakedown: cells 6 and 8
+day 2 08:30 cell 6 searched (1 taken)
+day 2 08:42 cell 8 searched (0 taken)
+== no dummy
+day 2 00:30 bed check: start
+day 2 01:01 bed check: fail
+day 2 01:01 spotted: bedCheck
+day 2 01:01 LOCKDOWN
+day 2 01:10 caught → solitary
+day 2 01:10 lockdown over
+day 2 01:40 into solitary (0 taken)
+day 2 03:40 out of solitary
+day 2 04:00 bed check: start
+day 2 04:25 bed check: pass
 == shakedowns
-day 2 08:00 shakedown: cells 5 and 7
-day 2 08:32 cell 5 searched (0 taken)
-day 2 08:45 cell 7 searched (0 taken)
-day 3 08:00 shakedown: cells 7 and 2
-day 3 08:28 cell 7 searched (0 taken)
-day 3 08:39 cell 2 searched (1 taken)
-day 4 08:00 shakedown: cells 1 and 4
-day 4 08:32 cell 1 searched (1 taken)
-day 4 08:47 cell 4 searched (0 taken)
-rounds over 3 days: 363, 288, 284, 531, 206 stops; 6 bed checks, the longest 32 game minutes
+day 2 08:00 shakedown: cells 4 and 5
+day 2 08:27 cell 4 searched (1 taken)
+day 2 08:42 cell 5 searched (0 taken)
+day 3 08:00 shakedown: cells 4 and 8
+day 3 08:27 cell 4 searched (0 taken)
+day 3 08:36 cell 8 searched (3 taken)
+day 4 08:00 shakedown: cells 5 and 6
+day 4 08:32 cell 5 searched (0 taken)
+day 4 08:42 cell 6 searched (0 taken)
+day 5 08:00 shakedown: cells 6 and 2
+day 5 08:30 cell 6 searched (0 taken)
+day 5 08:39 cell 2 searched (1 taken)
+day 6 08:00 shakedown: cells 6 and 2
+day 6 08:30 cell 6 searched (0 taken)
+day 6 08:39 cell 2 searched (0 taken)
+day 7 08:00 shakedown: cells 5 and 8
+day 7 08:32 cell 5 searched (0 taken)
+day 7 08:47 cell 8 searched (0 taken)
+day 8 08:00 shakedown: cells 4 and 6
+day 8 08:27 cell 4 searched (0 taken)
+day 8 08:39 cell 6 searched (0 taken)
+day 9 08:00 shakedown: cells 5 and 7
+day 9 08:32 cell 5 searched (0 taken)
+day 9 08:45 cell 7 searched (1 taken)
+day 10 08:00 shakedown: cells 3 and 2
+day 10 08:28 cell 3 searched (0 taken)
+day 10 08:39 cell 2 searched (0 taken)
+day 11 08:00 shakedown: cells 6 and 8
+day 11 08:30 cell 6 searched (0 taken)
+day 11 08:42 cell 8 searched (0 taken)
+day 12 08:00 shakedown: cells 6 and 1
+day 12 08:30 cell 6 searched (0 taken)
+day 12 08:41 cell 1 searched (1 taken)
+rounds over 3 days: 360, 288, 281, 531, 207 stops; 6 bed checks, the longest 32 game minutes

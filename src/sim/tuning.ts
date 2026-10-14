@@ -30,7 +30,7 @@ export const CONTRABAND_HEAT = 2;
 /** In a guard outfit, a guard this close (units) for this long recognizes the player: +50% a second after that. */
 export const RECOGNIZE_RANGE = Math.round(2.5 * UNIT);
 export const RECOGNIZE_STEPS = 2 * STEPS_PER_SECOND;
-/** Knocked out for 30 s (docs/PLAN.md §2), then carried off. */
+/** Knocked out for 30 s (docs/PLAN.md §2): the player, then carried off; inmates and guards, then up again (GDD §10.2). */
 export const KO_STEPS = 30 * STEPS_PER_SECOND;
 /** Solitary lasts 2 game hours; each peeled potato takes 10 minutes off, a potato is 5 presses (GDD §5.6). */
 export const SOLITARY_STEPS = 120 * STEPS_PER_MINUTE;
@@ -57,8 +57,6 @@ export const FLOOR_HP = 40;
 export const SOIL_HP = 30;
 /** More than this many tunnel tiles in a row without a brace cave in (GDD §9.2). */
 export const UNBRACED_RUN = 2;
-/** What a cave-in costs until health arrives (P5): energy, knocked out of the player. */
-export const CAVE_IN_ENERGY = 40;
 /** A toilet takes this many loads of dirt an hour, then stays clogged for an hour (GDD §9.2). */
 export const TOILET_LOADS = 3;
 export const TOILET_CLOG_STEPS = 60 * STEPS_PER_MINUTE;
@@ -74,3 +72,30 @@ export const TUNNEL_SPEED = 150;
 export const STRIKE_SEEN_STEPS = 10;
 /** A lockdown with the player off the ground floor this long: the guards call off the hunt (damage found is put right, the heat stays). */
 export const HIDING_STEPS = 60 * STEPS_PER_MINUTE;
+
+// ---------------------------------------------------------------- combat (P5, GDD §3.1, §10)
+/** Attributes run 20–100 and start at 40 (GDD §3.2; training arrives in P6). */
+export const START_STR = 40;
+export const START_SPD = 40;
+/** Guards are tougher than the average inmate; inmates vary (STR 30–60). */
+export const GUARD_STR = 60;
+export const INMATE_STR_MIN = 30;
+export const INMATE_STR_SPAN = 31;
+/** A melee blow reaches this far (units, centre to centre); the razor whip further (its def says). */
+export const MELEE_REACH = Math.round(1.3 * UNIT);
+/** Molten chocolate is thrown this far (GDD §10.1: 3 tiles). */
+export const THROW_RANGE = 3 * UNIT;
+/** Lock-on picks someone this close (and in sight); the lock holds out to the second range. */
+export const LOCK_RANGE = 5 * UNIT;
+export const LOCK_KEEP = 7 * UNIT;
+/** Steps between a guard's baton blows, and between an angry inmate's punches. */
+export const GUARD_SWING_STEPS = 16;
+export const INMATE_SWING_STEPS = 18;
+/** An inmate the player hits fights back this long (steps), unless it loses them first. */
+export const ANGRY_STEPS = 20 * STEPS_PER_SECOND;
+/** Health comes back a point a game minute (two asleep). */
+export const HEALTH_REGEN_STEPS = STEPS_PER_MINUTE;
+/** A tunnel roof coming down on the player (GDD §9.2). */
+export const CAVE_IN_DAMAGE = 40;
+/** Rubbing a comb or toothbrush on a wall this many times sharpens it into a shiv. */
+export const SHARPEN_STROKES = 4;

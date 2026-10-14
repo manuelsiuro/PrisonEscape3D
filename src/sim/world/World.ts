@@ -79,6 +79,12 @@ export class World {
   readonly cellBed: Array<Prop | undefined> = [undefined];
   /** Bit c set: cell c's door is locked (derived by the simulation from the routine). */
   lockedCells = 0;
+  /** Bit k set: the player carries a key for color k (tiles.ts KEY), so those doors open for them (derived by the simulation). */
+  playerKeys = 0;
+  /** 1 on doors in the outer perimeter (beside the road): no key opens them (the takeover does, P7). */
+  readonly gate = new Uint8Array(MAP_W * MAP_H);
+  /** Derived: 1 on doors shut for everyone but guards (the prison as built: inmates walk it, guards' eyes stop at it). */
+  readonly doorShut = new Uint8Array(MAP_W * MAP_H);
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
   rev = 0;
 
@@ -129,6 +135,7 @@ export class World {
         const c = Math.max(this.cellOf[i - 1], this.cellOf[i + 1], this.cellOf[i - MAP_W], this.cellOf[i + MAP_W]);
         this.doorCell[i] = c;
         if (c) this.cellDoor[c] = i;
+        if ([i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => g.kind[j] === TILE.ROAD)) this.gate[i] = 1;
       }
     }
     this.refreshBlock();
@@ -158,16 +165,27 @@ export class World {
     this.refreshBlock();
   }
 
+  /** The keys the player carries (bit k = color k); doors follow when it changes. */
+  setPlayerKeys(mask: number) {
+    if (mask === this.playerKeys) return;
+    this.playerKeys = mask;
+    this.refreshBlock();
+  }
+
   /** Recomputes what blocks walking (call when door rules or tiles change). */
   refreshBlock() {
     const g = this.ground;
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const k = g.kind[i];
-      const solid = k === TILE.DOOR ? !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) : TILE_INFO[k].solid;
+      const shut = k === TILE.DOOR && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells);
+      this.doorShut[i] = shut ? 1 : 0;
+      // A key of the door's color opens it for the player (never a perimeter gate).
+      const keyed = shut && !this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1;
+      const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid;
       this.block[i] = solid || this.propSolid[i] ? 1 : 0;
-      // Damage is the player's way: inmates and guards walk the prison as it was built.
+      // Damage is the player's way: inmates and guards walk the prison as it was built (doors too).
       const damage = DAMAGE_SHOWS.has(k) ? 1 : 0;
-      this.npcBlock[i] = this.block[i] | damage;
+      this.npcBlock[i] = (k === TILE.DOOR ? (shut || this.propSolid[i] ? 1 : 0) : this.block[i]) | damage;
       this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] || damage ? 1 : 0;
     }
     for (const l of [this.layers[LAYER.UNDER], this.layers[LAYER.VENTS], this.layers[LAYER.ROOF]]) {

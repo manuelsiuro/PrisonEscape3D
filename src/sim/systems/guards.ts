@@ -5,9 +5,10 @@ import { lineOfSight, SIGHT_RANGE } from '../ai/sight';
 import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { DIRS } from '../command';
-import { STEPS_PER_SECOND, UNIT } from '../tuning';
+import { GUARD_STR, STEPS_PER_SECOND, UNIT } from '../tuning';
 import { MAP_W, type World } from '../world/World';
-import { DOING } from './inmates';
+import type { Fighter } from './combat';
+import { DOING, fighter, STAND_OFF } from './inmates';
 import { bodyAt, type Body } from './movement';
 
 /** What a guard is up to. Never renumber: saves store them. */
@@ -28,7 +29,7 @@ export const GUARD = {
 export const ALERT = { NONE: 0, CALM: 1, SUSPICIOUS: 2, HOSTILE: 3 } as const;
 
 /** A guard. Plain data, part of the simulation state. */
-export interface Guard extends Walker {
+export interface Guard extends Walker, Fighter {
   mode: number;
   /** The duty it is set up for (see dutyOf); a change sends it somewhere new. */
   plan: number;
@@ -55,8 +56,6 @@ export interface Guard extends Walker {
 export const GUARD_SPEED = 120;
 /** A little faster than the player walks: running only buys time, breaking line of sight escapes. */
 export const CHASE_SPEED = 196;
-/** A chasing guard this close (units, centre to centre) has caught the player. */
-export const CATCH_RANGE = 700;
 /** How long a guard looks around where it lost the player, looks into a cell, searches a desk. */
 const LOOK_AROUND = 8 * STEPS_PER_SECOND;
 /** A chaser that loses sight keeps going this long before it investigates instead. */
@@ -93,15 +92,16 @@ export function spawnGuards(w: World): Guard[] {
       sees: false,
       lastSeen: -1,
       resume: 0,
+      ...fighter(GUARD_STR),
     };
   });
 }
 
 export const alertOf = (g: Guard) =>
-  g.doing === DOING.SLEEP ? ALERT.NONE : g.mode === GUARD.CHASE ? ALERT.HOSTILE : g.mode === GUARD.INVESTIGATE ? ALERT.SUSPICIOUS : ALERT.CALM;
+  !awake(g) ? ALERT.NONE : g.mode === GUARD.CHASE ? ALERT.HOSTILE : g.mode === GUARD.INVESTIGATE ? ALERT.SUSPICIOUS : ALERT.CALM;
 
-/** Awake (sleeping guards see nothing). */
-export const awake = (g: Guard) => g.doing !== DOING.SLEEP;
+/** Awake and on its feet (sleeping or knocked-out guards see nothing). */
+export const awake = (g: Guard) => g.doing !== DOING.SLEEP && g.ko <= 0;
 
 /** Which guards sleep at night (those without a night round), and the bed each takes. */
 function bedOf(w: World, k: number): number {
@@ -167,6 +167,12 @@ export function stepGuards(
   const places = placesOf(w);
   guards.forEach((g, k) => {
     const def = w.def.guards[k];
+    // Out cold (GDD §10.2): lies where it fell; Sim counts the time and wakes it.
+    if (g.ko > 0) {
+      g.body.moving = false;
+      g.doing = DOING.KNOCKED_OUT;
+      return;
+    }
     // A lockdown: every guard hunts the player, the sleepers too.
     if (lockdown && g.mode !== GUARD.CHASE) startChase(g);
     switch (g.mode) {
@@ -189,14 +195,16 @@ export function stepGuards(
         const b = g.body;
         const dx = player.x - b.x;
         const dz = player.z - b.z;
-        // Close and nothing between: straight at them. Further: follow a path, re-planned often.
+        // Close and nothing between: straight at them, to arm's length (the baton does the
+        // rest, see Sim). Further: follow a path, re-planned often.
         if (playerHere && Math.abs(dx) + Math.abs(dz) < UNIT * 2 && clearLine(w, b.x, b.z, player.x, player.z, undefined, w.guardBlock)) {
           const d = Math.sqrt(dx * dx + dz * dz);
-          b.facing = nearestDir(dx, dz);
-          b.moving = d > 0;
-          if (d > CHASE_SPEED) {
-            b.x += Math.trunc((dx * CHASE_SPEED) / d);
-            b.z += Math.trunc((dz * CHASE_SPEED) / d);
+          if (d > 0) b.facing = nearestDir(dx, dz);
+          b.moving = d > STAND_OFF;
+          if (b.moving) {
+            const go = Math.min(CHASE_SPEED, d - STAND_OFF);
+            b.x += Math.trunc((dx * go) / d);
+            b.z += Math.trunc((dz * go) / d);
           }
           g.path = [];
           break;

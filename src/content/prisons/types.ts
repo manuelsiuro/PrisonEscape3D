@@ -23,6 +23,8 @@ export interface GuardDef {
   night?: readonly Waypoint[];
   /** Jobs besides: the night bed checks (00:30, 04:00), the morning shakedown (08:00). */
   duties?: ReadonlyArray<'bedCheck' | 'shakedown'>;
+  /** The door key it carries on its belt (GDD §10.2: one color each). */
+  key: 'yellow' | 'cyan' | 'purple' | 'red' | 'green';
 }
 
 /** Everything that defines one prison. Maps are ASCII pictures, the rest is plain data. */

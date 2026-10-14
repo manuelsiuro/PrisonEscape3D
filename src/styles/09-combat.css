@@ -1,0 +1,284 @@
+/* P5: combat. The target card, the lock button, floating numbers, the hurt flash. */
+
+/* ------------------------------------------------------------ the target card (under the HUD) */
+.target-card {
+  position: fixed;
+  left: 50%;
+  top: calc(max(12px, env(safe-area-inset-top)) + 104px);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: calc(100vw - 32px);
+  padding: 6px 12px 6px 7px;
+  border: 2px solid rgba(255, 176, 46, 0.85);
+  border-radius: 16px;
+  color: white;
+  background: rgba(18, 24, 36, 0.86);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.target-card.pop {
+  animation: target-pop 0.32s var(--spring);
+}
+
+@keyframes target-pop {
+  from {
+    transform: translateX(-50%) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Out of reach: the frame dims (walk in closer). */
+.target-card.far {
+  border-color: rgba(255, 176, 46, 0.35);
+}
+
+.target-ic {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  color: #1b1206;
+  background: var(--gold);
+}
+
+.target-card[data-mood='angry'] .target-ic,
+.target-card[data-mood='chasing'] .target-ic {
+  color: white;
+  background: #e5484d;
+}
+
+.target-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.target-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 800 14px/1.1 var(--font-ui);
+  white-space: nowrap;
+}
+
+.target-head b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.target-head em {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font: 700 11px/1.4 var(--font-ui);
+  font-style: normal;
+  color: #cfe3ff;
+  background: rgba(111, 147, 184, 0.3);
+}
+
+.target-card[data-mood='angry'] .target-head em,
+.target-card[data-mood='chasing'] .target-head em {
+  color: #ffd9d9;
+  background: rgba(229, 72, 77, 0.35);
+}
+
+.target-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.target-bar {
+  display: block;
+  width: 120px;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.target-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--health);
+  transition: width 0.25s var(--ease);
+}
+
+.target-card.low .target-bar i {
+  background: var(--energy-low);
+}
+
+.target-row small {
+  font: 700 11px var(--font-ui);
+  color: #b8c4d4;
+  white-space: nowrap;
+}
+
+.target-keys {
+  display: flex;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+/* ------------------------------------------------------------ the lock button (touch) */
+.lock-btn {
+  position: fixed;
+  right: calc(max(23px, calc(env(safe-area-inset-right) + 7px)) + 76px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 180px);
+  z-index: 31;
+  padding: 0;
+  color: white;
+  background: none;
+  touch-action: none;
+}
+
+.lock-round {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(30, 40, 58, 0.82);
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.9);
+  transition:
+    transform 0.08s,
+    background 0.15s;
+}
+
+.lock-btn:active .lock-round {
+  transform: scale(0.9);
+}
+
+/* Locked on: lit in the ring's amber. */
+.lock-btn.on .lock-round {
+  color: #1b1206;
+  border-color: rgba(255, 255, 255, 0.6);
+  background: radial-gradient(circle at 40% 30%, #ffd27a, #f29a1a);
+}
+
+/* Fighting: the tool button turns red. */
+.tool-btn.attack .tool-round {
+  background: radial-gradient(circle at 40% 30%, #f2676b, #b42a33);
+  box-shadow: 0 10px 22px -8px rgba(90, 10, 20, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+
+.tool-prompt.attack {
+  background: rgba(150, 36, 44, 0.88);
+}
+
+.tool-prompt.attack b {
+  color: #ffd2d2;
+}
+
+@media (max-width: 520px) {
+  .lock-btn {
+    right: calc(max(20px, calc(env(safe-area-inset-right) + 4px)) + 76px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 160px);
+  }
+
+  .target-card {
+    top: calc(max(12px, env(safe-area-inset-top)) + 100px);
+  }
+}
+
+/* Landscape phones: above the tool button. */
+@media (max-height: 520px) {
+  .lock-btn {
+    right: calc(max(16px, env(safe-area-inset-right)) + 97px);
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 74px);
+  }
+
+  .target-card {
+    top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+  }
+}
+
+/* ------------------------------------------------------------ floating numbers */
+.float-num {
+  position: fixed;
+  z-index: 29;
+  font: 900 22px/1 var(--font-ui);
+  color: var(--gold);
+  text-shadow:
+    0 2px 0 rgba(40, 20, 0, 0.9),
+    0 0 10px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: float-up 0.9s var(--ease) forwards;
+}
+
+.float-num.taken {
+  color: #ff6b6b;
+}
+
+.float-num.ko {
+  font-size: 18px;
+  color: white;
+  letter-spacing: 0.02em;
+  animation-duration: 1.3s;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -70%) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -260%) scale(1);
+  }
+}
+
+.reduced-motion .float-num {
+  animation: float-fade 0.9s linear forwards;
+}
+
+@keyframes float-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------ hurt: the edges flash red */
+.hurt-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(220, 20, 30, 0.55));
+  pointer-events: none;
+}
+
+.hurt-flash.on {
+  animation: hurt-flash 0.45s ease-out;
+}
+
+.hurt-flash.heavy {
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(220, 20, 30, 0.75));
+}
+
+@keyframes hurt-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

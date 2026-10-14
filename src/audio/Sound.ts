@@ -170,6 +170,52 @@ export class Sound {
     this.tone(2400, 2380, 1.6, 'sine', 0.025, 0.15);
   }
 
+  /**
+   * A blow landing (GDD §10.1): a body thump with a slap on top, heavier with a weapon; a
+   * knockout adds a deep thud.
+   */
+  punch(ko: boolean, weapon: boolean) {
+    const r = Math.random() * 0.15;
+    this.hiss(0.06, 'bandpass', weapon ? 1400 + r * 600 : 2200 + r * 800, 1.2, weapon ? 0.24 : 0.18);
+    this.tone(weapon ? 140 : 190, 60, 0.12, 'sine', weapon ? 0.34 : 0.26);
+    if (ko) {
+      this.tone(90, 35, 0.4, 'sine', 0.32, 0.06);
+      this.hiss(0.3, 'lowpass', 380, 0.7, 0.22);
+    }
+  }
+
+  /** The player hit: a dull smack and a short grunt-like drop. */
+  hurt() {
+    this.hiss(0.07, 'lowpass', 1400, 0.9, 0.24);
+    this.tone(240, 110, 0.14, 'triangle', 0.16);
+  }
+
+  /** A swing at nothing in reach: a whoosh. */
+  whoosh() {
+    this.hiss(0.16, 'bandpass', 900, 0.8, 0.12);
+  }
+
+  /** A cup of molten chocolate thrown: a swish, then a hot splash. */
+  splash() {
+    this.hiss(0.14, 'bandpass', 1100, 0.8, 0.1);
+    this.hiss(0.35, 'lowpass', 1600, 0.6, 0.26);
+    this.tone(320, 140, 0.25, 'sine', 0.12, 0.3);
+  }
+
+  /** Locking on (a rising blip) and letting go (falling). */
+  lockOn(on: boolean) {
+    this.tone(on ? 620 : 760, on ? 900 : 480, 0.08, 'triangle', 0.1);
+  }
+
+  /** Someone knocked out by the player: little bells for the stars. */
+  ko() {
+    for (const [d, f] of [
+      [0.05, 1760],
+      [0.13, 2093],
+      [0.21, 2637],
+    ]) this.tone(f, f, 0.18, 'sine', 0.05, d);
+  }
+
   /** A stroke of the peeler: a short wet scrape (a done potato plops in the pot). */
   peel(done: boolean) {
     this.hiss(0.07, 'highpass', 2600 + Math.random() * 800, 1, 0.07);
@@ -204,6 +250,11 @@ export class Sound {
           this.tone(820, 410, 0.4, 'sawtooth', 0.05);
           this.hiss(0.25, 'bandpass', 3600, 3, 0.08);
         }
+        break;
+      case 'sharpen':
+        // A rasp of plastic on brick; a last bright scrape when the point is there.
+        this.hiss(0.12, 'bandpass', 3000 + r * 1400, 2.5, 0.12);
+        if (broke) this.tone(2400, 3200, 0.12, 'triangle', 0.05, 0.05);
         break;
       case 'unscrew':
         this.tone(1300 + r * 300, 1700, 0.09, 'sawtooth', 0.035);

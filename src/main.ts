@@ -11,11 +11,14 @@ import { command, DIR_X, DIR_Z, OP, SLOT } from './sim/command';
 import { Recorder } from './sim/Recorder';
 import { Sim, type SimEvent } from './sim/Sim';
 import { alertOf, CHASE_SPEED, GUARD } from './sim/systems/guards';
-import { itemDef, itemNumber } from './content/items';
+import { itemDef, itemNumber, KEY_ITEM_COLORS } from './content/items';
+import { CombatUI, type TargetInfo } from './ui/combat';
+import { isGuard, lockCandidates, maxHealth, personOf, reachOf, swingSteps } from './sim/systems/combat';
+import { lineOfSight } from './sim/ai/sight';
 import type { BedPose } from './render/Character';
 import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
-import { CHOCOLATE_ENERGY, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
+import { CHOCOLATE_ENERGY, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, THROW_RANGE, UNIT, WALK_SPEED } from './sim/tuning';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
 import { TILE } from './sim/world/tiles';
 import { climbTarget, DIRT, facesProp, ladderFootOf, preferClimb, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
@@ -33,7 +36,7 @@ import { Hud, routineName, routinePlace, type HudState } from './ui/hud';
 import { Hint } from './ui/hint';
 import { Banner } from './ui/banner';
 import { ItemsUI, itemName, type ItemsView } from './ui/items';
-import { interactTarget, itemOf, type ItemState, type Target } from './sim/systems/items';
+import { interactTarget, itemOf, ownerOf, usesOf, type ItemState, type Target } from './sim/systems/items';
 import { containersOf } from './sim/world/containers';
 import { warmIcons } from './render/itemIcons';
 import type { Key } from './i18n';
@@ -122,6 +125,8 @@ interface Game {
   ladderFoot: number;
   /** The escape screen is up: the game is over. */
   over: boolean;
+  /** Each guard's own key (item number): the view hangs it on the belt while it's in the guard's pockets. */
+  guardKeys: number[];
 }
 let game: Game | null = null;
 let acc = 0;
@@ -143,6 +148,17 @@ controls.onTap = (cx, cy) => {
   const p = view.groundAt(cx, cy);
   const w = game.rec.sim.world;
   if (!p) return;
+  // A tap on someone: lock on to them (GDD §10.1), unless they're already the target (then walk to them).
+  const sim = game.rec.sim;
+  if (sim.state.layer === LAYER.GROUND) {
+    const near = (b: Body) => (b.x / UNIT - p.x) ** 2 + (b.z / UNIT - 0.25 - p.z) ** 2 < 0.55 ** 2;
+    const list = lockCandidates(w, sim.state, sim.state.player, lockList);
+    const who = list.find((id) => near(personOf(sim.state, id)!.body));
+    if (who !== undefined && who !== sim.state.lock) {
+      sendOp(OP.LOCK, 2 + who);
+      return;
+    }
+  }
   const tx = Math.floor(p.x);
   const tz = Math.floor(p.z);
   let best = -1;
@@ -167,6 +183,8 @@ controls.onTap = (cx, cy) => {
     markSeen('walk');
   }
 };
+
+const lockList: number[] = [];
 
 /** Where the floor arrows lead now: the routine's place while the player hasn't checked in, the cell in a lockdown. */
 function guideTarget(sim: Sim): ((i: number) => boolean) | null {
@@ -354,7 +372,7 @@ function announce(e: SimEvent, sim: Sim) {
       seenInteract();
       itemsUI.closeCraft();
       sound.drawer();
-      if (!hasSeen('items')) {
+      if (ownerOf(sim.world, e.container) < 0 && !hasSeen('items')) {
         markSeen('items');
         banner.toast(t('hint.items'), 'info', 5000);
       }
@@ -456,8 +474,65 @@ function announce(e: SimEvent, sim: Sim) {
     case 'gaveUp':
       banner.show(t('banner.gaveUp'), t('banner.gaveUpSub'), 'routine', 5000);
       break;
+    // ---------------------------------------------------------------- combat
+    case 'lock':
+      sound.lockOn(e.who >= 0);
+      if (e.who >= 0) coachOnce('fight', TOUCH ? 'hint.fightTouch' : 'hint.fightKeys');
+      break;
+    case 'hit':
+      sound.punch(e.ko, !!e.weapon);
+      buzz(e.ko ? 'giveWay' : 'strike');
+      view.blow(-1, e.who, e.ko);
+      floatAt(e.who, `${e.dmg}`, 'dealt');
+      break;
+    case 'thrown':
+      sound.splash();
+      buzz('giveWay');
+      view.throwAt(e.who);
+      break;
+    case 'cantHit': {
+      const now = performance.now();
+      if (now - lastCant < 1200) break;
+      lastCant = now;
+      sound.whoosh();
+      itemsUI.toast(t('toast.tooFar'));
+      break;
+    }
+    case 'hurt':
+      sound.hurt();
+      buzz('strike');
+      combatUI.hurt(e.dmg >= 25);
+      if (e.by >= 0) view.blow(e.by, -1, false);
+      floatAt(-1, `${e.dmg}`, 'taken');
+      // Hit while working or crawling: whatever the hand was doing stops.
+      tools.release();
+      break;
+    case 'koed':
+      sound.ko();
+      floatAt(e.who, t('combat.ko'), 'ko');
+      coachOnce('loot', 'hint.loot');
+      break;
+    case 'floored':
+      sound.thud();
+      buzz('lockdown');
+      itemsUI.closePanels();
+      game?.pilot.stop();
+      banner.show(t('banner.floored'), t('banner.flooredSub'), 'alarm', 3500);
+      break;
+    case 'sharpened':
+      sound.craft();
+      buzz('attended');
+      itemsUI.toast(t('toast.sharpened', { item: itemName(e.item) }));
+      break;
   }
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
+}
+
+/** A number (or word) floating up from someone (Cast id, -1 the player). */
+const floatPoint = { x: 0, y: 0 };
+function floatAt(id: number, text: string, kind: 'dealt' | 'taken' | 'ko') {
+  const at = view.screenOf(id, floatPoint);
+  if (at) combatUI.float(text, at.x, at.y, kind);
 }
 
 /** Why a strike can't land, by what it needs. */
@@ -487,7 +562,10 @@ function startGame(prison: PrisonDef) {
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
   view.zoomBy(1.25);
   view.setCast(sim.state.inmates.map((m) => ({ cell: m.cell, gait: m.speed / WALK_SPEED })));
-  view.setGuards(guardBeds(sim));
+  view.setGuards(
+    guardBeds(sim),
+    sim.prison.guards.map((d) => KEY_ITEM_COLORS.find(([c]) => c === d.key)![2]),
+  );
   game = {
     rec: new Recorder(sim),
     prev: { x: sim.state.player.x, z: sim.state.player.z },
@@ -503,9 +581,11 @@ function startGame(prison: PrisonDef) {
     ops: [],
     ladderFoot: ladderFootOf(sim.world),
     over: false,
+    guardKeys: sim.prison.guards.map((d) => itemNumber(`key_${d.key}`)),
   };
   itemsUI.show(true);
   tools.show(true);
+  combatUI.show(true);
   targets.step = -1;
   pressQueued = false;
   acc = 0;
@@ -575,6 +655,7 @@ function endGame() {
   hud.show(false);
   itemsUI.show(false);
   tools.show(false);
+  combatUI.show(false);
   sleepVeil.classList.remove('on', 'ko');
   solitaryPanel.update(null, 0);
   darkCell.classList.remove('on');
@@ -625,6 +706,8 @@ addEventListener('keydown', (e) => {
     else act();
   }
   if (e.code === 'KeyC') itemsUI.toggleCraft();
+  // R: lock on to the next nearest person (past the last, none).
+  if (e.code === 'KeyR' && !itemsUI.panelOpen) sendOp(OP.LOCK);
   // Space: the tool in hand (held, it keeps striking).
   // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
   if (e.code === 'Space') {
@@ -672,6 +755,11 @@ function act() {
 }
 
 const itemsUI = new ItemsUI(sendOp, click);
+const combatUI = new CombatUI();
+combatUI.onLock = () => {
+  if (!game || game.paused) return;
+  sendOp(OP.LOCK);
+};
 itemsUI.onAction = act;
 const tools = new ToolControls();
 tools.onPress = usePress;
@@ -702,8 +790,17 @@ let heldOn = '';
 const sleepVeil = h('div', 'sleep-veil', `<span>${''}</span>`);
 document.body.append(sleepVeil);
 
-/** What a container is called ("your desk", "bookshelf"). */
+/** Who someone is (Cast id): "Inmate · cell 3", "Guard · purple key". */
+function personName(sim: Sim, id: number): string {
+  const s = sim.state;
+  if (!isGuard(s, id)) return t('combat.inmate', { n: s.inmates[id]?.cell ?? 0 });
+  return t('combat.guard', { key: t(`keyColor.${sim.prison.guards[id - s.inmates.length].key}` as Key) });
+}
+
+/** What a container is called ("your desk", "bookshelf", someone's pockets). */
 function thingName(sim: Sim, index: number): string {
+  const who = ownerOf(sim.world, index);
+  if (who >= 0) return personName(sim, who);
   const c = containersOf(sim.world)[index];
   if (!c) return '';
   const k = c.prop.kind;
@@ -714,11 +811,15 @@ function thingName(sim: Sim, index: number): string {
 let titleKey = '';
 let titleText = '';
 function boxTitle(sim: Sim, index: number) {
-  const key = `${index}:${currentLang()}`;
+  // Someone's pockets: and how long before they come round.
+  const who = ownerOf(sim.world, index);
+  const ko = who >= 0 ? (personOf(sim.state, who)?.ko ?? 0) : 0;
+  const key = `${index}:${currentLang()}:${Math.ceil(ko / STEPS_PER_SECOND)}`;
   if (key !== titleKey) {
     titleKey = key;
     const name = thingName(sim, index);
     titleText = name.charAt(0).toUpperCase() + name.slice(1);
+    if (who >= 0) titleText = t('box.pockets', { who: titleText, s: Math.ceil(ko / STEPS_PER_SECOND) });
   }
   return titleText;
 }
@@ -752,6 +853,7 @@ function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, hel
     actionKey = key;
     if (target.kind === 'ground') Object.assign(actionLabel, { verb: t('act.pickUpVerb'), what: itemName(target.item) });
     else if (target.kind === 'sleep') Object.assign(actionLabel, { verb: t('act.sleep'), what: '' });
+    else if (target.kind === 'pockets') Object.assign(actionLabel, { verb: t('act.searchVerb'), what: t('thing.pockets') });
     else if (flush) Object.assign(actionLabel, { verb: t('act.flush'), what: itemName(held) });
     else Object.assign(actionLabel, { verb: t('act.searchVerb'), what: thingName(sim, target.index) });
   }
@@ -767,7 +869,66 @@ function bodiesOf(sim: Sim): Body[] {
   return others;
 }
 
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down' };
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword' };
+
+/** Everyone who can be looted, by Cast id (inmates, then guards); one array, refilled. */
+const lootable: Array<{ body: Body; ko: number }> = [];
+function peopleOf(sim: Sim) {
+  lootable.length = 0;
+  for (const m of sim.state.inmates) lootable.push(m);
+  for (const g of sim.state.guards) lootable.push(g);
+  return lootable;
+}
+
+/** The weapon the player fights with: one in hand, else the weapon slot (0: fists). */
+function weaponOf(it: ItemState): number {
+  const inHand = itemOf(it.inv[it.hand]);
+  return inHand && itemDef(inHand).cat === 'weapon' ? inHand : itemOf(it.inv[SLOT.WEAPON]);
+}
+
+/** Steps between the player's blows now (the press waits for it, as the sim does). */
+let attackPace = 14;
+
+/** The tool button while locked on (GDD §10.1): a blow (held, it keeps swinging) or a throw. */
+function describeAttack(sim: Sim): ToolView | null {
+  const s = sim.state;
+  if (s.lock < 0 || s.layer !== LAYER.GROUND) return null;
+  const f = personOf(s, s.lock);
+  if (!f) return null;
+  const weapon = weaponOf(s.items);
+  const d = weapon ? itemDef(weapon) : null;
+  const thrown = !!d?.thrown;
+  const reach = thrown ? THROW_RANGE : reachOf(d);
+  const p = s.player;
+  const inReach = (f.body.x - p.x) ** 2 + (f.body.z - p.z) ** 2 <= reach * reach && lineOfSight(sim.world, p.x, p.z, f.body.x, f.body.z);
+  attackPace = swingSteps(s.spd, d);
+  const v = toolView;
+  v.verb = t(thrown ? 'act.throw' : weapon ? 'act.hit' : 'act.punch');
+  v.what = weapon ? itemName(weapon) : '';
+  v.icon = thrown ? 'splash' : 'fist';
+  v.fits = inReach;
+  v.progress = null;
+  v.repeat = !thrown;
+  v.attack = true;
+  return v;
+}
+
+/** The target card's contents, refilled in place. */
+const targetView: TargetInfo = { name: '', guard: false, health: 1, str: 0, attitude: 'calm', inReach: false };
+function targetInfo(sim: Sim): TargetInfo | null {
+  const s = sim.state;
+  const f = s.lock >= 0 ? personOf(s, s.lock) : undefined;
+  if (!f) return null;
+  const v = targetView;
+  const guard = isGuard(s, s.lock);
+  v.name = personName(sim, s.lock);
+  v.guard = guard;
+  v.health = f.hp / maxHealth(f.str);
+  v.str = f.str;
+  v.attitude = guard ? (s.guards[s.lock - s.inmates.length].mode === GUARD.CHASE ? 'chasing' : 'onDuty') : s.inmates[s.lock].angry > 0 ? 'angry' : 'calm';
+  v.inReach = !!toolNow?.attack && toolNow.fits;
+  return v;
+}
 
 /** The tool button's face for a strike target, refilled in place (no garbage per frame). */
 function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView | null {
@@ -775,11 +936,20 @@ function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView |
   const d = held ? itemDef(held) : null;
   const strike = STRIKES.has(tt.action);
   // Only with a tool (or something to put in place) in hand: a sock against a wall offers nothing.
-  if (strike && !d?.tool) return null;
+  if (strike && !d?.tool && tt.action !== 'sharpen') return null;
   const w = sim.world;
   const v = toolView;
+  v.attack = false;
   v.verb = t(`act.${tt.action}` as Key);
   v.icon = TOOL_ICON[tt.action];
+  // A comb or toothbrush on a wall: strokes so far against those it takes.
+  if (tt.action === 'sharpen') {
+    v.what = t('thing.wall');
+    v.fits = true;
+    v.repeat = true;
+    v.progress = Math.min(1, usesOf(sim.state.items.inv[sim.state.items.hand]) / tt.hp);
+    return v;
+  }
   // Grey when it can't be done: the wrong tool, reinforced concrete, or too tired to swing.
   v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= (d?.tool?.energy ?? 0)));
   // Digging up takes a press per strike (a hold never surfaces the player).
@@ -818,6 +988,18 @@ function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null) {
     return focusAt;
   }
   if (!target) return null;
+  if (target.kind === 'pockets') {
+    // Lying where they fell, head back along the way they faced.
+    const b = personOf(sim.state, target.who)!.body;
+    const cx = b.x / UNIT - (DIR_X[b.facing] / 1024) * 0.45;
+    const cz = b.z / UNIT - (DIR_Z[b.facing] / 1024) * 0.45;
+    const along = Math.abs(DIR_X[b.facing]) > Math.abs(DIR_Z[b.facing]);
+    focusAt.x0 = cx - (along ? 0.75 : 0.5);
+    focusAt.x1 = cx + (along ? 0.75 : 0.5);
+    focusAt.z0 = cz - (along ? 0.5 : 0.75);
+    focusAt.z1 = cz + (along ? 0.5 : 0.75);
+    return focusAt;
+  }
   if (target.kind === 'ground') {
     const tile = tileOfKey(sim.state.items.ground[target.index][0]);
     focusAt.x0 = (tile % MAP_W) + 0.2;
@@ -860,10 +1042,11 @@ const frameData: Frame = {
   wearRev: -1,
   deskAside: false,
   wear: {},
+  lock: -1,
 };
 const PEEL_ACTION = { verb: '', what: '' };
 /** What the buttons would do, worked out once per simulation step. */
-const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null } = {
+const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean } = {
   step: -1,
   busy: false,
   panel: false,
@@ -871,6 +1054,7 @@ const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb
   climb: null,
   target: null,
   tool: null,
+  canLock: false,
 };
 const tapAt = { x: 0, z: 0 };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null };
@@ -913,7 +1097,9 @@ function frame(now: number) {
       // Holding the tool button: a strike is asked for every step (the sim paces them).
       let op = g.ops.shift();
       // A press waiting for the last strike's swing to finish (things that aren't strikes go at once).
-      if (!op && pressQueued && (!toolNow?.repeat || sim.state.step + 1 - sim.state.struckAt >= STRIKE_STEPS)) {
+      // (A blow waits for the fighter's own pace, a strike for the tool's.)
+      const ready = toolNow?.attack ? sim.state.step + 1 - sim.state.swingAt >= attackPace : sim.state.step + 1 - sim.state.struckAt >= STRIKE_STEPS;
+      if (!op && pressQueued && (!toolNow?.repeat || ready)) {
         op = PRESS_OP;
         pressQueued = false;
       }
@@ -958,7 +1144,7 @@ function frame(now: number) {
   f.surface = st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
   f.inmates.length = st.inmates.length;
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0 });
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -966,10 +1152,11 @@ function frame(now: number) {
     o.moving = m.body.moving && !g.paused;
     o.doing = m.doing;
     o.cell = m.cell;
+    o.angry = m.angry > 0;
   });
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
-    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0 });
+    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true });
     const q = g.prevGuards[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -980,7 +1167,11 @@ function frame(now: number) {
     const chasing = m.mode === GUARD.CHASE;
     o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
     o.held = chasing ? BATON : 0;
+    // Its key on its belt while it's in its pockets (taken from a guard out cold, it's gone).
+    const pocket = st.items.containers[st.items.containers.length - st.guards.length + k];
+    o.hasKey = !!pocket && (itemOf(pocket[0]) === g.guardKeys[k] || itemOf(pocket[1]) === g.guardKeys[k] || itemOf(pocket[2]) === g.guardKeys[k] || itemOf(pocket[3]) === g.guardKeys[k]);
   });
+  f.lock = st.lock;
   f.knockedOut = st.ko > 0;
   f.guide = g.guide;
   const dest = g.pilot.destination;
@@ -1015,16 +1206,18 @@ function frame(now: number) {
     memo.busy = busy;
     memo.panel = panel;
     memo.rev = it.rev;
-    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer);
+    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim));
     const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim)), faced);
     memo.target = memo.climb ? null : reach;
     memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim));
+    memo.canLock = !busy && st.layer === LAYER.GROUND && lockCandidates(sim.world, st, p, lockList).length > 0;
   }
   const climb = memo.climb;
   const target = memo.target;
   // The frame stays on an open container (what the panel shows), else on what is in reach.
-  f.focus = it.open >= 0 ? focusOf(sim, { kind: 'container', index: it.open }) : focusOf(sim, target, climb);
+  const openWho = ownerOf(sim.world, it.open);
+  f.focus = it.open >= 0 ? focusOf(sim, openWho >= 0 ? { kind: 'pockets', index: it.open, who: openWho } : { kind: 'container', index: it.open }) : focusOf(sim, target, climb);
   f.held = held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
@@ -1033,7 +1226,7 @@ function frame(now: number) {
   const box = containersOf(sim.world)[it.open];
   const v = itemsView;
   v.items = it;
-  v.boxTitle = box ? boxTitle(sim, it.open) : '';
+  v.boxTitle = it.open >= 0 ? boxTitle(sim, it.open) : '';
   v.boxHidden = box?.hidden ?? 0;
   if (st.solitary > 0) {
     PEEL_ACTION.verb = t('act.peel');
@@ -1043,13 +1236,17 @@ function frame(now: number) {
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   itemsUI.update(v);
-  // The tool button: what a strike would hit.
+  // The tool button: a blow at the locked-on target, else what a strike would hit.
   const tt = memo.tool;
-  toolNow = describeTool(sim, tt, held);
+  const fight = busy ? null : describeAttack(sim);
+  toolNow = fight ?? describeTool(sim, tt, held);
   // Each new target takes a new press: a held button never digs on into the next thing.
-  toolKey = tt ? `${tt.action}:${tt.layer}:${tt.tile}` : '';
+  toolKey = fight ? `attack:${st.lock}` : tt ? `${tt.action}:${tt.layer}:${tt.tile}` : '';
   if (tools.held && toolKey !== heldOn) tools.release();
-  tools.update(toolNow, st.energy, !!(held && itemDef(held).tool), busy || itemsUI.panelOpen);
+  const fighting = st.lock >= 0 || st.inmates.some((m) => m.angry > 0) || st.guards.some((x) => x.mode === GUARD.CHASE);
+  tools.update(toolNow, st.energy, !!(held && itemDef(held).tool), busy || itemsUI.panelOpen, st.health / maxHealth(st.str), fighting);
+  // The target card, and the lock button while anyone is in range (worked out once a step).
+  combatUI.update(targetInfo(sim), memo.canLock, busy || itemsUI.panelOpen);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');
   sleepVeil.classList.toggle('ko', st.ko > 0);

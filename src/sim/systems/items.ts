@@ -1,5 +1,5 @@
 import { itemDef, itemNumber, ITEMS } from '../../content/items';
-import { LOOT } from '../../content/loot';
+import { LOOT, POCKET_SLOTS } from '../../content/loot';
 import { choices, RECIPES } from '../../content/recipes';
 import { DIR_X, DIR_Z, SLOT } from '../command';
 import { randomInt } from '../rng';
@@ -24,6 +24,8 @@ export const START_INT = 40;
 /** How close the player must be to use something (units from the body's middle to its footprint). */
 export const REACH = Math.round(UNIT * 0.85);
 const PICKUP_REACH = Math.round(UNIT * 0.95);
+/** How close to someone lying knocked out to go through their pockets (units, either axis). */
+const POCKET_REACH = Math.round(UNIT * 1.2);
 /** At most this many items lie on one tile (a pile); dropping more there is refused. */
 export const PILE = 6;
 
@@ -71,16 +73,48 @@ export function startItems(w: World, rng: { rng: number }): ItemState {
   };
   // Day 1 stock, the player's bed included (nothing restocks it afterwards).
   list.forEach((c, i) => stock(c, s.containers[i], rng, true));
+  // Then everyone's pockets: the inmates' odds and ends, each guard's key, baton and uniform.
+  s.containers.push(...startPockets(w, rng));
   return s;
+}
+
+/** The inmates (one per cell after the player's), then the guards, as Cast ids count them. */
+const inmateCount = (w: World) => w.def.cells.length - 1;
+
+/** The container index of a person's pockets (Cast id: inmates, then guards). */
+export const pocketOf = (w: World, id: number) => containersOf(w).length + id;
+/** Whose pockets a container index is (-1: furniture, not a person). */
+export const ownerOf = (w: World, index: number) => (index >= containersOf(w).length ? index - containersOf(w).length : -1);
+
+/** What a guard always has on it (GDD §10.2): its key, a baton, its uniform. */
+export function guardKit(w: World, k: number): number[] {
+  return [itemNumber(`key_${w.def.guards[k].key}`), itemNumber('baton'), itemNumber('guard_outfit')];
+}
+
+/** Fresh pockets for everyone (a new game, or a save from before pockets). */
+export function startPockets(w: World, rng: { rng: number }): number[][] {
+  const out: number[][] = [];
+  for (let k = 0; k < inmateCount(w); k++) {
+    const p = new Array(POCKET_SLOTS).fill(0);
+    stockSlots('pockets', 0, p, rng);
+    out.push(p);
+  }
+  w.def.guards.forEach((_, k) => out.push([...guardKit(w, k).map((n) => slot(n)), ...new Array(POCKET_SLOTS - 3).fill(0)]));
+  return out;
 }
 
 /** Tops a container up from its table (only the standard slots; hidden ones are the owner's). */
 function stock(c: ContainerInfo, slots: number[], rng: { rng: number }, first = false) {
   // The player's desk and bed are theirs; their toilet gets paper like any other.
   if (c.mine && c.prop.kind !== 'toilet' && !first) return;
-  const t = LOOT[c.table];
+  stockSlots(c.table, c.hidden, slots, rng);
+}
+
+/** Tops slots up from a loot table, from slot `hidden` on. */
+function stockSlots(table: string, hidden: number, slots: number[], rng: { rng: number }) {
+  const t = LOOT[table];
   const free = () => {
-    for (let k = c.hidden; k < slots.length; k++) if (!slots[k]) return k;
+    for (let k = hidden; k < slots.length; k++) if (!slots[k]) return k;
     return -1;
   };
   const count = () => slots.reduce((n, v) => n + (v ? 1 : 0), 0);
@@ -103,9 +137,10 @@ function stock(c: ContainerInfo, slots: number[], rng: { rng: number }, first = 
   }
 }
 
-/** The morning restock (08:00). */
+/** The morning restock (08:00): furniture, and the inmates' pockets. */
 export function restock(w: World, s: ItemState, rng: { rng: number }) {
   containersOf(w).forEach((c, i) => stock(c, s.containers[i], rng));
+  for (let k = 0; k < inmateCount(w); k++) stockSlots('pockets', 0, s.containers[pocketOf(w, k)], rng);
   s.rev++;
 }
 
@@ -117,15 +152,26 @@ function reachTo(c: ContainerInfo, x: number, z: number): number {
   return Math.max(dx, dz);
 }
 
-/** What the player would use by interacting now. */
-export type Target = { kind: 'ground'; index: number; item: number } | { kind: 'container'; index: number } | { kind: 'sleep'; index: number } | null;
+/** What the player would use by interacting now ('pockets': a knocked-out person's, by container index and Cast id). */
+export type Target =
+  | { kind: 'ground'; index: number; item: number }
+  | { kind: 'container'; index: number }
+  | { kind: 'sleep'; index: number }
+  | { kind: 'pockets'; index: number; who: number }
+  | null;
+
+/** Someone whose pockets can be gone through: lying knocked out (GDD §10.2). */
+export interface Lootable {
+  body: Body;
+  ko: number;
+}
 
 /**
  * The nearest thing within reach, the one the player faces winning ties: items on the floor
  * (of the player's layer) first, then furniture (on the ground floor). A bed in the player's
  * cell means sleep at Lights Out.
  */
-export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND): Target {
+export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = []): Target {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   // Facing it is worth a third of a tile.
@@ -146,6 +192,17 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     }
   });
   if (layer !== LAYER.GROUND) return best;
+  // Someone out cold: their pockets (they lie a little ahead of where they stood).
+  people.forEach((o, who) => {
+    if (o.ko <= 0) return;
+    const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));
+    if (d > POCKET_REACH) return;
+    const sc = score(d, o.body.x, o.body.z) - UNIT / 2;
+    if (sc < bestScore) {
+      bestScore = sc;
+      best = { kind: 'pockets', index: pocketOf(w, who), who };
+    }
+  });
   containersOf(w).forEach((c, index) => {
     const d = reachTo(c, b.x, b.z);
     if (d > REACH) return;
@@ -159,8 +216,13 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
   return best;
 }
 
-/** Whether the open container is still within reach. */
-export function stillInReach(w: World, s: ItemState, b: Body): boolean {
+/** Whether the open container is still within reach (pockets: their owner still out cold). */
+export function stillInReach(w: World, s: ItemState, b: Body, people: readonly Lootable[] = []): boolean {
+  const who = ownerOf(w, s.open);
+  if (who >= 0) {
+    const o = people[who];
+    return !!o && o.ko > 0 && Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z)) <= POCKET_REACH + UNIT / 4;
+  }
   const c = containersOf(w)[s.open];
   return !!c && reachTo(c, b.x, b.z) <= REACH + UNIT / 4;
 }

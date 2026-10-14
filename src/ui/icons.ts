@@ -39,6 +39,11 @@ const P: Record<string, string> = {
   up: '<path d="M12 20V5M5 12l7-7 7 7"/>',
   down: '<path d="M12 4v15M5 12l7 7 7-7"/>',
   cookie: '<path d="M4 8h16v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3Z"/><path d="M4 12h16M10 8v12M14 8v12"/>',
+  heart: '<path d="M12 20s-7.5-4.6-9-9.5C1.9 6.8 4.4 4 7.4 4c1.9 0 3.6 1 4.6 2.6C13 5 14.7 4 16.6 4c3 0 5.5 2.8 4.4 6.5-1.5 4.9-9 9.5-9 9.5Z"/>',
+  target: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  fist: '<path d="M7 11V8.5a1.5 1.5 0 0 1 3 0V11M10 8a1.5 1.5 0 0 1 3 0v3M13 8.5a1.5 1.5 0 0 1 3 0V12M16 10a1.5 1.5 0 0 1 3 0v3.5a6.5 6.5 0 0 1-6.5 6.5h-1A6.5 6.5 0 0 1 5 13.5V12a1.5 1.5 0 0 1 2-1.4"/><path d="M7 14h4"/>',
+  splash: '<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11Z"/><path d="M3 9l2 1M21 9l-2 1M5 4l1.5 2M19 4l-1.5 2"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/>',
 };
 
 /** An inline SVG icon (`.ic`, display: block; inside text, make it inline-block). */

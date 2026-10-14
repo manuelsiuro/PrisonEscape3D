@@ -9,7 +9,7 @@ vents: 5 turns of the file; climbed in (climbVent), zone vents
 crawl: cell grate → ladder in 21.3 s
 roof: walked east (roof), climbed down to the generator at 13,40
 toilet 2: flushed, flushed, flushed, clogged, flushed
-tunnel north: 6:TUNNEL 5:TUNNEL 4:CAVE-IN (energy 38)
+tunnel north: 6:TUNNEL 5:TUNNEL 4:CAVE-IN (health 50)
 tunnel: dug to 10,1 under the road; dirt left in the tunnel: 2 piles; day 1 09:08
 tunnel escape: escaped day 1 09:11
 restore mid-tunnel: same after 200 steps

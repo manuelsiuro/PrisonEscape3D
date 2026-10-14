@@ -125,6 +125,9 @@ const rollCall = [12, 15].flatMap((z) => [29, 31, 34, 36].map((x) => ({ x, z }))
  *   night walks the yards.
  * - The east guard walks the workshops, the mailroom and the staff rooms.
  * The canteen, wing and east guards sleep in the guard quarters at night.
+ * Keys (GDD §10.2): the warden red (solitary, staff rooms), the canteen guard cyan (kitchen,
+ * laundry, mailroom, janitor), the wing guard yellow (cell doors after dark), the yard guard
+ * green (the gate to the south yard), the east guard purple (the generator room).
  */
 const guards: GuardDef[] = [
   {
@@ -142,6 +145,7 @@ const guards: GuardDef[] = [
       { x: 12, z: 22, wait: 3, face: 1 },
     ],
     duties: ['bedCheck'],
+    key: 'red',
   },
   {
     beat: [
@@ -151,6 +155,7 @@ const guards: GuardDef[] = [
       { x: 44, z: 22, wait: 2, face: 13 },
     ],
     posts: { breakfast: { x: 44, z: 16, face: 13 }, dinner: { x: 44, z: 16, face: 13 } },
+    key: 'cyan',
   },
   {
     beat: [
@@ -161,6 +166,7 @@ const guards: GuardDef[] = [
     ],
     posts: { showers: { x: 19, z: 28, face: 13 } },
     duties: ['shakedown'],
+    key: 'yellow',
   },
   {
     beat: [
@@ -177,6 +183,7 @@ const guards: GuardDef[] = [
       { x: 31, z: 22, wait: 2, face: 5 },
       { x: 30, z: 29, wait: 4, face: 1 },
     ],
+    key: 'green',
   },
   {
     beat: [
@@ -187,6 +194,7 @@ const guards: GuardDef[] = [
       { x: 44, z: 41, wait: 3, face: 1 },
       { x: 53, z: 41, wait: 3, face: 9 },
     ],
+    key: 'purple',
   },
 ];
 

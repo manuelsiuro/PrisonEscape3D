@@ -23,8 +23,10 @@ export const OP = {
   EQUIP: 6,
   /** Hold hotbar slot a in hand. */
   SELECT: 7,
-  /** Strike with the tool in hand (chip, cut, unscrew, dig), or eat what is in hand. Sent every step while held; strikes land at their own pace. */
+  /** Strike with the tool in hand (chip, cut, unscrew, dig), or eat what is in hand; locked on to someone, a blow at them. Sent every step while held; strikes and blows land at their own pace. a = 1: a fresh press. */
   USE: 8,
+  /** Lock on to the next nearest person in reach (past the last: none). a = 1: let go of the lock; a = 2 + id: that person (Cast id). */
+  LOCK: 9,
 } as const;
 
 /** Slot addresses for OP.MOVE / DROP / EQUIP: 0–5 the hotbar, then the weapon, the outfit, then the open container's slots. */

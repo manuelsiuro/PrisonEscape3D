@@ -68,7 +68,29 @@ export const LOOT: Record<string, LootTable> = {
   laundryBin: { rolls: [1, 2], max: 3, items: [['sock', 4], ['bleach', 2], ['inmate_outfit', 2], ['guard_outfit', 1]] },
   janitorBin: { rolls: [1, 2], max: 3, items: [['broom', 2], ['mop', 2], ['bleach', 2]] },
   kitchenFreezer: { rolls: [1, 2], max: 3, items: [['foil', 2], ['potato', 3]] },
+  /** What an inmate carries (looted when it's knocked out, GDD §10.2); topped up at 08:00. */
+  pockets: {
+    rolls: [1, 2],
+    max: 2,
+    items: [
+      ['plastic_comb', 4],
+      ['toothbrush', 4],
+      ['sock', 4],
+      ['soap', 3],
+      ['chocolate', 5],
+      ['plastic_cup', 3],
+      ['toilet_paper', 3],
+      ['plastic_spoon', 2],
+      ['battery', 2],
+      ['lighter', 1],
+      ['razor_blade', 1],
+      ['duct_tape', 1],
+    ],
+  },
 };
+
+/** Slots in a person's pockets (inmates and guards, GDD §10.2). */
+export const POCKET_SLOTS = 4;
 
 /** How many slots a container prop has, and how many of them are hidden (GDD §6.2: 6 of a desk's 16). */
 export const CONTAINER_SLOTS: Partial<Record<PropKind, { slots: number; hidden: number }>> = {

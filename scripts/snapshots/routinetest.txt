@@ -63,12 +63,12 @@ day 1 09:00 missed rollCall +100% heat
 day 1 09:00 LOCKDOWN
 day 1 09:00 routine breakfast
 day 1 09:00 cells locked
-day 1 09:07 caught (solitary)
-day 1 09:07 lockdown lifted
-day 1 09:07 cells unlocked
-day 1 09:37 into solitary
+day 1 09:09 caught (solitary)
+day 1 09:09 lockdown lifted
+day 1 09:09 cells unlocked
+day 1 09:39 into solitary
 day 1 10:00 routine freeTime
-day 1 11:37 out of solitary
+day 1 11:39 out of solitary
 day 1 12:00 routine work
 day 1 15:00 routine exercise
 day 1 16:00 missed exercise +25% heat

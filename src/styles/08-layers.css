@@ -141,12 +141,63 @@ kbd.wide {
   transition: width 0.3s var(--ease);
 }
 
-.energy.low {
+.energy .vital {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.energy .vital.hidden {
+  display: none;
+}
+
+.energy .vital.en {
+  color: var(--energy);
+}
+
+.energy .vital.hp {
+  color: var(--health);
+}
+
+.energy .vital.hp .energy-bar i {
+  background: var(--health);
+}
+
+.energy .vital.low {
   color: var(--energy-low);
 }
 
-.energy.low .energy-bar i {
+.energy .vital.low .energy-bar i {
   background: var(--energy-low);
+}
+
+.energy .vital.hp.low .ic {
+  animation: heart-beat 0.9s ease-in-out infinite;
+}
+
+.energy .vital.thump .ic {
+  animation: heart-thump 0.35s var(--spring);
+}
+
+@keyframes heart-beat {
+  50% {
+    transform: scale(1.25);
+  }
+}
+
+@keyframes heart-thump {
+  40% {
+    transform: scale(1.45);
+  }
+}
+
+/* Both bars at once: a little shorter, side by side. */
+.energy:has(.vital.hp:not(.hidden)):has(.vital.en:not(.hidden)) .energy-bar {
+  width: 64px;
+}
+
+.energy:has(.vital.hp:not(.hidden)):has(.vital.en:not(.hidden)) {
+  gap: 10px;
 }
 
 /* The E prompt and the Space prompt sit above the energy pill on desktop. */

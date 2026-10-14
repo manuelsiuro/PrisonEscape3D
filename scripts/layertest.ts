@@ -290,7 +290,8 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
     if (!cave) goTo(sim, z * MAP_W + 10);
     st.player.facing = NORTH;
   }
-  console.log(`tunnel north: ${dug.join(' ')} (energy ${st.energy})`);
+  console.log(`tunnel north: ${dug.join(' ')} (health ${st.health})`);
+  check(st.health === 90 - 40 || st.health === 90 - 40 + 1, 'a cave-in costs 40 health');
   check(caveIns === 1 && kindAt(sim, LAYER.UNDER, 10, 4) === TILE.SOIL, 'the third unbraced tile caves in');
   // A brace where the player stands, then on: every third tile braced.
   const braceHere = () => {

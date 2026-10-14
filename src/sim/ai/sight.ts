@@ -11,12 +11,12 @@ export const SIGHT_HALF_ANGLE = Math.PI / 6;
 /** Closer than this (units) a guard notices you whichever way it faces: you're touching it. */
 export const SIGHT_TOUCH = Math.round(UNIT * 0.9);
 
-/** Whether a tile stops sight: walls, and doors while shut (open doors are see-through). */
+/** Whether a tile stops sight: walls, and doors while shut (open doors are see-through; a key in the player's pocket opens nothing to the eye). */
 export function sightBlocked(w: World, x: number, z: number): boolean {
   if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return true;
   const i = z * MAP_W + x;
   const k = w.ground.kind[i];
-  if (k === TILE.DOOR) return w.block[i] === 1;
+  if (k === TILE.DOOR) return w.doorShut[i] === 1;
   return TILE_INFO[k].opaque;
 }
 

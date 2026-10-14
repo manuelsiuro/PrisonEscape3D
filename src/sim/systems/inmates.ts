@@ -1,11 +1,12 @@
 import { ROUTINE } from '../../content/routine';
 import type { ZoneId } from '../../content/zones';
-import { tileAt } from '../ai/path';
+import { clearLine, nearestDir, tileAt } from '../ai/path';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { INMATE_REACTION, INMATE_SPEED, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, STEPS_PER_SECOND, UNIT } from '../tuning';
 import { MAP_W, type World } from '../world/World';
+import { maxHealth, type Fighter } from './combat';
 import { bodyAt, type Body } from './movement';
 
 /** What someone is doing where they stand (the view poses it): inmates, guards (searching), the player (knocked out). */
@@ -15,7 +16,7 @@ export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LIN
 export const LOCKDOWN_PLAN = -2;
 
 /** An AI inmate. Plain data, part of the simulation state. */
-export interface Inmate extends Walker {
+export interface Inmate extends Walker, Fighter {
   /** Its cell number (2–8; cell 1 is the player's). */
   cell: number;
   /** DOING, once it has arrived. */
@@ -26,6 +27,8 @@ export interface Inmate extends Walker {
   face: number;
   /** What to do on arrival. */
   then: number;
+  /** Steps left fighting the player back (hit by them, GDD §10.1); 0 when calm. */
+  angry: number;
 }
 
 /** Where inmates like to spend free time (their own cell is added). */
@@ -49,10 +52,15 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       wait: 0,
       speed: INMATE_SPEED - 12 + randomInt(rng, 25),
       stall: 0,
+      ...fighter(INMATE_STR_MIN + randomInt(rng, INMATE_STR_SPAN)),
+      angry: 0,
     });
   }
   return out;
 }
+
+/** A fighter's starting numbers: full health, up and about. */
+export const fighter = (str: number) => ({ hp: maxHealth(str), ko: 0, str, swing: -1000 });
 
 /** Goals other inmates already hold (so two never pick the same tile). */
 function taken(all: Inmate[], tile: number) {
@@ -129,9 +137,27 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }) {
  * Inmates make way for each other and for `others` (the player, guards); they never pick
  * the same spot.
  */
-export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number) {
+export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number, foe: Body | null = null) {
   const c: Crowd = { w, grid: w.npcBlock, all, others, step };
   all.forEach((m, k) => {
+    // Out cold: lies where it fell (Sim counts the time and wakes it).
+    if (m.ko > 0) {
+      m.body.moving = false;
+      m.doing = DOING.KNOCKED_OUT;
+      return;
+    }
+    // Hit by the player: it goes for them (Sim lands the punches) until it calms down or loses them.
+    if (m.angry > 0) {
+      m.angry--;
+      if (foe && m.angry > 0) {
+        m.doing = DOING.NOTHING;
+        closeIn(c, m, k, foe, m.speed + 24);
+        return;
+      }
+      // Calm again: back to the routine, planned afresh.
+      m.angry = 0;
+      m.plan = -1;
+    }
     if (m.plan !== plan) {
       m.plan = plan;
       m.goal = -1;
@@ -162,6 +188,42 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     // Free time: done lingering, somewhere new next step. Routines keep them where they are.
     if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) m.goal = -1;
   });
+}
+
+/** How close a fighter steps up to the one it is after (units, centre to centre): within arm's reach, not on top of them. */
+export const STAND_OFF = 820;
+
+/**
+ * Goes for someone: straight at them when close with nothing between, else along a path
+ * re-planned now and then. Stops at arm's length, facing them.
+ */
+export function closeIn(c: Crowd, m: Walker, k: number, foe: Body, speed: number) {
+  const b = m.body;
+  const dx = foe.x - b.x;
+  const dz = foe.z - b.z;
+  if (Math.abs(dx) + Math.abs(dz) < UNIT * 2 && clearLine(c.w, b.x, b.z, foe.x, foe.z, undefined, c.grid)) {
+    const d = Math.sqrt(dx * dx + dz * dz);
+    if (d > 0) b.facing = nearestDir(dx, dz);
+    m.path = [];
+    b.moving = d > STAND_OFF;
+    if (b.moving) {
+      const go = Math.min(speed, d - STAND_OFF);
+      b.x += Math.trunc((dx * go) / d);
+      b.z += Math.trunc((dz * go) / d);
+    }
+    return;
+  }
+  if (m.wait > 0) {
+    m.wait--;
+    b.moving = false;
+    return;
+  }
+  const goal = tileAt(foe.x, foe.z);
+  if (!m.path.length || (goal !== m.goal && (c.step + k) % 10 === 0)) {
+    m.goal = goal;
+    route(c, m);
+  }
+  walkPath(c, m, k, speed);
 }
 
 /** At the goal: stop, face the right way, start doing what the spot is for. */

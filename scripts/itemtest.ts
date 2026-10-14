@@ -316,7 +316,7 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
   const mine = containersOf(s2.world).findIndex((c) => c.mine && c.prop.kind === 'toilet');
   s2.state.items.containers[mine][0] = 0;
   let refilled = false;
-  for (let d = 0; d < 6 && !refilled; d++) {
+  for (let d = 0; d < 12 && !refilled; d++) {
     restock(s2.world, s2.state.items, s2.state);
     refilled = s2.state.items.containers[mine][0] !== 0;
   }

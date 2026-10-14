@@ -296,7 +296,7 @@ export class WorldView {
         lintel.position.set(x + 0.5, leafH + (h - leafH) / 2, z + 0.5);
         lintel.castShadow = true;
         this.group.add(leaf, lintel);
-        this.doors.push({ index: i, leaf, home, slide: new THREE.Vector3(ax ? 0.92 : 0, 0, ax ? 0 : 0.92), open: this.world.block[i] ? 0 : 1 });
+        this.doors.push({ index: i, leaf, home, slide: new THREE.Vector3(ax ? 0.92 : 0, 0, ax ? 0 : 0.92), open: this.world.doorShut[i] ? 0 : 1 });
       }
     }
   }
@@ -435,12 +435,12 @@ export class WorldView {
   }
 
   /**
-   * Per frame: doors slide toward their state (open too where a guard walks through, in
-   * `open`); lights follow the time of day (0 day … 1 night).
+   * Per frame: doors slide toward their state (open too where a guard walks through, or the
+   * player with a key, in `open`); lights follow the time of day (0 day … 1 night).
    */
   update(dt: number, night: number, open?: ReadonlySet<number>) {
     for (const d of this.doors) {
-      const target = this.world.block[d.index] && !open?.has(d.index) ? 0 : 1;
+      const target = this.world.doorShut[d.index] && !open?.has(d.index) ? 0 : 1;
       if (d.open !== target) d.open = target > d.open ? Math.min(target, d.open + dt * 3) : Math.max(target, d.open - dt * 3);
       // Eased, sliding into the wall.
       const e = d.open * d.open * (3 - 2 * d.open);

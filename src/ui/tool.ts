@@ -11,8 +11,10 @@ export interface ToolView {
   fits: boolean;
   /** How much of the tile's hit points are gone (0–1), null for nothing to wear down (eating). */
   progress: number | null;
-  /** Holding the button repeats it (strikes); eating is one press. */
+  /** Holding the button repeats it (strikes, blows); eating is one press. */
   repeat: boolean;
+  /** A blow at the locked-on target (the button turns red). */
+  attack?: boolean;
 }
 
 /**
@@ -25,9 +27,13 @@ export class ToolControls {
   private readonly btn: HTMLButtonElement;
   private readonly prompt: HTMLElement;
   private readonly energy: HTMLElement;
+  private readonly energyPart: HTMLElement;
   private readonly energyFill: HTMLElement;
+  private readonly healthPart: HTMLElement;
+  private readonly healthFill: HTMLElement;
   private shown = '';
   private shownEnergy = -1;
+  private shownHealth = -1;
   private ring: HTMLElement | null = null;
   private bar: HTMLElement | null = null;
   /** Held down (touch or Space). */
@@ -38,8 +44,12 @@ export class ToolControls {
   constructor() {
     this.btn = h('button', 'tool-btn hidden');
     this.prompt = h('div', 'tool-prompt hidden');
-    this.energy = h('div', 'energy hidden', `${icon('bolt', 14)}<i class="energy-bar"><i></i></i>`);
-    this.energyFill = this.energy.querySelector('.energy-bar i')!;
+    // The vitals pill (GDD §13.2): health (while it's down or in a fight) and energy.
+    this.energy = h('div', 'energy hidden', `<span class="vital hp">${icon('heart', 14)}<i class="energy-bar"><i></i></i></span><span class="vital en">${icon('bolt', 14)}<i class="energy-bar"><i></i></i></span>`);
+    this.healthPart = this.energy.querySelector('.vital.hp')!;
+    this.energyPart = this.energy.querySelector('.vital.en')!;
+    this.healthFill = this.healthPart.querySelector('.energy-bar i')!;
+    this.energyFill = this.energyPart.querySelector('.energy-bar i')!;
     const down = (e: Event) => {
       e.preventDefault();
       if (this.btn.classList.contains('hidden')) return;
@@ -69,12 +79,17 @@ export class ToolControls {
       document.body.classList.remove('has-tool', 'tool-up');
       this.shown = '';
       this.shownEnergy = -1;
+      this.shownHealth = -1;
       this.held = false;
     }
   }
 
-  /** Each frame: what a strike would do (null: nothing to strike), the energy, whether a tool is in hand. */
-  update(v: ToolView | null, energy: number, toolInHand: boolean, blocked: boolean) {
+  /**
+   * Each frame: what a strike would do (null: nothing to strike), the energy, whether a tool
+   * is in hand, whether the controls are put away; health as a fraction, and whether a fight
+   * is on (health shows then, or while it's down).
+   */
+  update(v: ToolView | null, energy: number, toolInHand: boolean, blocked: boolean, health = 1, fighting = false) {
     const on = !!v && !blocked;
     this.btn.classList.toggle('hidden', !on || !TOUCH);
     this.prompt.classList.toggle('hidden', !on || TOUCH);
@@ -82,7 +97,7 @@ export class ToolControls {
     document.body.classList.toggle('tool-up', on);
     if (!on) this.release();
     if (on && v) {
-      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}`;
+      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}`;
       if (key !== this.shown) {
         this.shown = key;
         if (TOUCH) {
@@ -98,19 +113,38 @@ export class ToolControls {
         }
         this.btn.classList.toggle('no', !v.fits);
         this.prompt.classList.toggle('no', !v.fits);
+        this.btn.classList.toggle('attack', !!v.attack);
+        this.prompt.classList.toggle('attack', !!v.attack);
       }
       const p = Math.round((v.progress ?? 0) * 100);
       if (this.ring) this.ring.style.setProperty('--p', `${p}%`);
       if (this.bar) this.bar.style.width = `${p}%`;
     }
-    // Energy: while a tool is in hand, or while it's down.
+    // Energy: while a tool is in hand, or while it's down. Health: in a fight, or while it's down.
     const e = Math.round(energy);
-    this.energy.classList.toggle('hidden', !(toolInHand || e < 100) || blocked);
+    const hp = Math.round(health * 100);
+    const showEnergy = toolInHand || e < 100;
+    const showHealth = fighting || hp < 100;
+    this.energy.classList.toggle('hidden', !(showEnergy || showHealth) || blocked);
+    this.energyPart.classList.toggle('hidden', !showEnergy);
+    this.healthPart.classList.toggle('hidden', !showHealth);
     if (e !== this.shownEnergy) {
       this.shownEnergy = e;
       this.energyFill.style.width = `${e}%`;
-      this.energy.classList.toggle('low', e < 25);
-      this.energy.title = `${t('hud.energy')} ${e}%`;
+      this.energyPart.classList.toggle('low', e < 25);
+      this.energyPart.title = `${t('hud.energy')} ${e}%`;
+    }
+    if (hp !== this.shownHealth) {
+      // A blow taken: the heart thumps.
+      if (this.shownHealth >= 0 && hp < this.shownHealth) {
+        this.healthPart.classList.remove('thump');
+        void this.healthPart.offsetWidth;
+        this.healthPart.classList.add('thump');
+      }
+      this.shownHealth = hp;
+      this.healthFill.style.width = `${hp}%`;
+      this.healthPart.classList.toggle('low', hp <= 30);
+      this.healthPart.title = `${t('hud.health')} ${hp}%`;
     }
   }
 }

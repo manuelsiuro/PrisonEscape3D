@@ -23,6 +23,10 @@ export interface ItemDef {
   /** Melee attack bonus (weapons) and defense (outfits). */
   attack?: number;
   defense?: number;
+  /** Weapons: swings this much faster (0.15 = 15%), a longer reach (tiles), thrown for an instant knockout. */
+  haste?: number;
+  reach?: number;
+  thrown?: boolean;
   /** Door color for keys, molds and plastic keys (tiles.ts KEY). */
   key?: number;
   shape: string;
@@ -56,7 +60,7 @@ const tool = (id: string, kind: ToolKind, tier: number, uses: number, damage: nu
   from,
 });
 
-const weapon = (id: string, attack: number, shape: string, color: number, accent: number, from: Source[] = []): ItemDef => ({
+const weapon = (id: string, attack: number, shape: string, color: number, accent: number, from: Source[] = [], extra: Partial<ItemDef> = {}): ItemDef => ({
   id,
   cat: 'weapon',
   contraband: true,
@@ -66,6 +70,7 @@ const weapon = (id: string, attack: number, shape: string, color: number, accent
   color,
   accent,
   from,
+  ...extra,
 });
 
 const outfit = (id: string, defense: number, contraband: boolean, color: number, accent: number, from: Source[] = []): ItemDef => ({
@@ -166,9 +171,9 @@ export const ITEMS: readonly ItemDef[] = [
   weapon('bat', 14, 'bat', 0xb07a45, 0x8d949e),
   weapon('spiked_bat', 20, 'bat', 0x8a5a2e, 0xd8dde3),
   weapon('baton', 18, 'baton', 0x1d2026, 0x5a6270, ['guard']),
-  weapon('nunchucks', 22, 'nunchucks', 0xb07a45, 0xc97b3d),
-  weapon('razor_whip', 20, 'whip', 0x8a5a2e, 0xd8dde3),
-  weapon('molten_chocolate', 0, 'cup', 0x6b3d22, 0xf4f4ef),
+  weapon('nunchucks', 22, 'nunchucks', 0xb07a45, 0xc97b3d, [], { haste: 0.15 }),
+  weapon('razor_whip', 20, 'whip', 0x8a5a2e, 0xd8dde3, [], { reach: 2.5 }),
+  weapon('molten_chocolate', 0, 'cup', 0x6b3d22, 0xf4f4ef, [], { thrown: true, value: 30 }),
   // ---------------------------------------------------------------- outfits
   outfit('inmate_outfit', 5, false, 0xf2701c, 0xf2f2ee, ['start', 'laundry']),
   outfit('cushioned_outfit', 15, true, 0xf2701c, 0xf2f2ee),

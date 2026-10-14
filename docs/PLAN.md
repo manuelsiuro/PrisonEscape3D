@@ -70,7 +70,7 @@ Sources:
 | Desk over a tunnel | "Picking up the desk… sliding it back" | A tunnel can be dug **under the player's own desk**; the desk always covers it, except while the player is below (the desk is pushed aside: a guard looking in then sees the hole). The way down is a **Climb down** button in the desk's panel |
 | Tile hit points | Walls 100, fences 100–120, grates 60; tools 4–50 a strike | As the GDD, plus a **tunnel entrance 40** and **earth 30** a tile (a spoon's 10 uses dig one tile). A strike lands at most every 9 steps; holding the button repeats it |
 | Digging up | — | In a tunnel, facing **back along it** (not into earth), the shovel digs up through the floor above (any diggable floor); the player climbs out beside the hole |
-| Cave-in damage | 40 HP | Health arrives with combat (P5): until then a cave-in costs **40 energy** and the tile fills back in. More than 2 unsupported tiles in a row cave in; a brace holds its 3×3, the tile under an entrance holds itself |
+| Cave-in damage | 40 HP | **40 health** (since P5; P4 took 40 energy) and the tile fills back in; at 0 the player is out cold (the infirmary). More than 2 unsupported tiles in a row cave in; a brace holds its 3×3, the tile under an entrance holds itself |
 | Toilets | "More than 3 piles within an hour clogs" | A toilet takes **3 loads, then is clogged for an hour**. Wall chunks flush like dirt |
 | Damage found | Lockdown and solitary; damage repaired | A guard who sees damage or evidence (dirt, chunks on the floor) or the player at work: **100% heat** (lockdown). Evidence on the floor is taken at once; found damage is **repaired when the player is caught** (at once if they're already away) |
 | Inmates and guards vs. holes | — | Holes and cut fences are the player's ways only: inmates and guards keep to the prison as built |
@@ -78,6 +78,15 @@ Sources:
 | Energy | Bar from P4 | **0–100**: tools spend it (GDD per-tool cost); back +1 every 2 game minutes, +1 a minute asleep, +35 at a meal, +20 at the showers, +25 for a bar of chocolate (eaten with the use button) |
 | Hiding through a lockdown | — | A lockdown can only end in a capture on the ground floor; a player who stays in the tunnels, vents or on the roof for **60 game minutes** sees it **called off**: found damage is repaired, the heat stays (the next guard who sees them gives chase) |
 | The escape before P7 | Victory screen in P7 | Reaching the **road** ends the game with a short escape card (prison, day, time); the full victory screen and stats come with P7 |
+
+| Damage and pace | "Scales with Strength plus weapon, minus outfit defense"; "Speed shortens the cooldown" | A blow does **2 + STR/4 + weapon − defense/3** (at least 1). The player swings every **22 − SPD/5 steps** (at least 8; nunchucks 15% faster). Health is **50 + STR**, back 1 a game minute (2 asleep), full on waking from a knockout |
+| Lock-on | "Press R to highlight the nearest" | **R** / the touch lock button / **a tap on someone**: the nearest up and about within 5 tiles in plain view, then the next, then none. The lock lets go past 7 tiles, of someone out cold, or off the ground floor. Space / the tool button then hits the target instead of using the tool |
+| Which weapon | "Equipped weapon" | A weapon **in hand**, else the weapon slot (fists without one). Only one in hand counts as contraband in sight (GDD §5.2) |
+| Being caught (since P5) | "Guards draw batons" | A chaser no longer catches on touch: it stands at arm's length and swings its **baton** (34 a blow on an inmate outfit, every 16 steps). At 0 health the player is caught (solitary or the infirmary, as before). The player can fight back |
+| Being hit | — | An inmate the player hits **fights back for 20 s**. A guard hit turns round (and so sees the attacker: 100% heat). Knocked out by an inmate or a cave-in: **the infirmary**, contraband taken as after a capture |
+| Knocked-out people | Loot, swap uniform, take weapon; 30 s | Inmates and guards lie out cold for 30 s with **pockets** to go through (inmates: odds and ends, topped up at 08:00; guards: key, baton, uniform). A guard who comes round is re-issued a missing baton or uniform; a missing key means a **lockdown** and a spare key. Molten chocolate: thrown within 3 tiles, out cold at once (a guard's back turned: nobody knows) |
+| Keys and doors | "Opens doors of its color"; plastic 15 uses | A key **in the hotbar** opens its color's doors for the player (not inmates; a guard's eye still stops at the shut door). **Perimeter gates** (beside the road) never open by key: the takeover opens them (P7). A plastic key wears **once a door** passed; a real one never does. L1: warden red, canteen cyan, wing yellow, yard green, east purple |
+| Shivs | "Sharpen on a wall" | A comb or toothbrush in hand against a brick wall: **4 strokes** (the use button, held) make the shiv. A guard who sees it sees tampering |
 
 Any further conflict found during the build is added to this table in the same commit.
 
@@ -262,4 +271,11 @@ real touch feel) and the known limits.
   - tips: the tool how-to before the contraband warning; the "evidence" tip on the first chunk or dirt; the tunnel tip in touch and keyboard versions;
   - render: the tap ring on every layer; the tunnel lantern always in the scene (no shader recompile on the first trip down); roof materials disposed; a poster shows on the cell's side only; the ghosted ducts cast no shadow;
   - perf: the buttons' targets worked out once per simulation step; no per-step allocation in damage spotting or strikes.
-- **Next: P5 Combat.**
+- **P5 Combat (v0.6.0)** (GDD §3.1, §10, §8.2):
+  - health, Strength and Speed in the state (training arrives in P6); the damage, pace and health formulas (`sim/systems/combat.ts`); fighters' fields on inmates and guards;
+  - lock-on (R, the lock button, a tap on someone), blows with fists or a weapon (in hand or the weapon slot), the razor whip's reach, nunchucks' pace, molten chocolate thrown for an instant knockout;
+  - inmates fight back; chasing guards beat the player down with batons; seen fighting: lockdown; knocked out by an inmate or a cave-in: the infirmary;
+  - knocked-out people (30 s) and their pockets, looted with the action button (a countdown in the panel); guards re-issued their kit, the missing-key lockdown; key molds and plastic keys (worn a door at a time); keys open doors for the player only, never the perimeter gate; shivs sharpened on walls;
+  - render: the lock ring, punches and flinches, a cup's arc and splash, people falling away from the blow, guards' keys on their belts, "!" over angry inmates; UI: the target card (health, STR, attitude, keys), the red Hit / Throw button, the vitals pill (health beside energy), floating numbers, a red flash when hit, sounds for every blow;
+  - `combattest`: formulas, lock order, an unseen fight and the loot, a seen one, the baton, the key-thief bot (lockdown) and the key-cloner bot (no lockdown, a plastic key that opens the purple door and wears out), the gate, a shiv, floored by an inmate, a save mid-fight.
+- **Next: P6 Economy.**

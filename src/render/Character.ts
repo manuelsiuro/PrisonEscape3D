@@ -18,6 +18,8 @@ export interface Look {
   cap?: number;
   /** Trouser color (the outfit's otherwise). */
   trousers?: number;
+  /** A guard's door key on its belt, in the key's color (GDD §10.2). */
+  key?: number;
 }
 
 /** The orange jumpsuit (tech plan §6.2). */
@@ -26,8 +28,8 @@ export const INMATE_LOOK: Look = { outfit: 0xf2701c, skin: 0xe2ad84, hair: 0x3a2
 const SKINS = [0xf1c6a0, 0xe2ad84, 0xc98d62, 0xa86e48, 0x7d4f33, 0x5b3a26];
 const HAIRS = [0x1d1612, 0x3a2a1e, 0x6b4a2b, 0xb08850, 0x8a8a8a, 0x2a2018];
 
-/** A guard's look: navy uniform and cap, varied by a number like inmates. */
-export function guardLook(n: number): Look {
+/** A guard's look: navy uniform and cap, varied by a number like inmates; its key's color on the belt. */
+export function guardLook(n: number, key?: number): Look {
   const r = (k: number) => Math.abs(Math.sin(n * 7.31 + k * 41.7) * 24634.6345) % 1;
   return {
     outfit: 0x3a5a8c,
@@ -37,6 +39,7 @@ export function guardLook(n: number): Look {
     hair: HAIRS[Math.floor(r(2) * HAIRS.length)],
     hairStyle: 1,
     size: 1.05 + r(4) * 0.06,
+    key,
   };
 }
 
@@ -181,6 +184,11 @@ export class Character {
   /** Prone in a vent (0–1), and a tool strike's swing (1 at the blow, easing to 0). */
   private crawl = 0;
   private hit = 0;
+  /** A punch (1 at the throw, easing to 0) and a flinch from a blow taken (the same). */
+  private jab = 0;
+  private recoil = 0;
+  /** The key on a guard's belt (hidden once taken). */
+  private readonly keyTag: THREE.Mesh | null = null;
   /** The floor's height under the character (vents and roofs stand above the ground floor). */
   baseY = 0;
   private act = 0;
@@ -298,6 +306,15 @@ export class Character {
     this.eyes = mesh([part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], eyes);
     this.head.add(eyes);
 
+    // A guard's key: a ring and a key in its color, hanging from the belt.
+    if (look.key !== undefined) {
+      this.keyTag = new THREE.Mesh(
+        merge([part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0), part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0), part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0)]),
+        kitMaterial,
+      );
+      this.keyTag.position.set(-0.2, 0.02, 0.16);
+      this.body.add(this.keyTag);
+    }
     this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
     this.root.add(this.body);
     this.root.scale.setScalar(look.size ?? 1);
@@ -431,6 +448,21 @@ export class Character {
     this.hit = 1;
   }
 
+  /** A blow at someone: the arm thrown forward (a weapon in hand swings it). */
+  punch() {
+    this.jab = 1;
+  }
+
+  /** Hit: a jolt back. */
+  flinch() {
+    this.recoil = 1;
+  }
+
+  /** Shows or hides the key on a guard's belt. */
+  showKey(on: boolean) {
+    if (this.keyTag) this.keyTag.visible = on;
+  }
+
   /**
    * Places and animates the character. `facing` in radians (0 = +z); `moving` swings the
    * limbs; `doing` (DOING) poses it at a routine spot, `bed` is where it lies to sleep.
@@ -446,6 +478,8 @@ export class Character {
     this.crawl += ((doing === DOING.CRAWL ? 1 : 0) - this.crawl) * k(8);
     if (this.crawl < 0.002) this.crawl = 0;
     this.hit = Math.max(0, this.hit - dt * 3.2);
+    this.jab = Math.max(0, this.jab - dt * 4.5);
+    this.recoil = Math.max(0, this.recoil - dt * 4);
     this.at.set(x, this.baseY, z);
     let turn = facing;
     if (ko) {
@@ -537,13 +571,33 @@ export class Character {
       armRx = h > 0.6 ? -2.6 * ((1 - h) / 0.4) : -2.6 * (h / 0.6) - 0.3 * (1 - h / 0.6);
       armLx = Math.min(armLx, -0.5 * h);
     }
+    // A punch: the right arm drawn back, then thrown straight out; the left guards the face.
+    if (this.jab > 0) {
+      const j = this.jab;
+      armRx = j > 0.75 ? 0.6 * ((1 - j) / 0.25) : -1.7 * (j / 0.75);
+      armLx = Math.min(armLx, -1.1 * Math.min(1, j * 2));
+      armLz = -0.25 * j;
+    }
     this.legL.rotation.set(legL, 0, -legZ);
     this.legR.rotation.set(legR, 0, legZ);
     this.armL.rotation.set(armLx, 0, armLz);
     this.armR.rotation.set(armRx, 0, armRz);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
     this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12;
-    this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie + (doing === DOING.SEARCH ? 0.35 * this.act : 0) + (Math.PI / 2) * 0.92 * this.crawl + (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0);
+    this.body.rotation.x =
+      0.08 * this.swing -
+      (Math.PI / 2) * this.lie +
+      (doing === DOING.SEARCH ? 0.35 * this.act : 0) +
+      (Math.PI / 2) * 0.92 * this.crawl +
+      (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0) +
+      (this.jab > 0 ? 0.14 * Math.sin(this.jab * Math.PI) : 0) -
+      (this.recoil > 0 ? 0.32 * Math.sin(this.recoil * Math.PI) : 0);
+    // A blow taken: knocked back a little along the heading, and the head snaps.
+    if (this.recoil > 0) {
+      const r = Math.sin(this.recoil * Math.PI) * 0.12;
+      this.root.position.x -= Math.sin(this.root.rotation.y) * r;
+      this.root.position.z -= Math.cos(this.root.rotation.y) * r;
+    }
 
     // In bed the blanket covers the body: no silhouette through it.
     if (this.ghost) this.ghost.visible = this.lie < 0.3;
@@ -589,6 +643,7 @@ export class Character {
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
+    this.head.rotation.x = this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : 0;
     return stepped;
   }
 

@@ -58,6 +58,8 @@ export interface Frame {
   /** The desk over the player's tunnel is pushed aside (they went down through it). */
   deskAside: boolean;
   wear: Readonly<Record<number, number>>;
+  /** Who the player is locked on to (Cast id: inmates, then guards; -1 none), and whether that's a guard after them. */
+  lock: number;
 }
 
 export interface GuardFrame {
@@ -72,6 +74,8 @@ export interface GuardFrame {
   pace: number;
   /** What it holds (a baton while chasing), 0 for nothing. */
   held: number;
+  /** Its key still on its belt. */
+  hasKey: boolean;
 }
 
 export interface InmateFrame {
@@ -83,6 +87,8 @@ export interface InmateFrame {
   doing: number;
   /** Their cell number (their bed is in it). */
   cell: number;
+  /** Fighting the player back. */
+  angry: boolean;
 }
 
 export interface Quality {
@@ -123,6 +129,26 @@ const ORIGIN = new THREE.Vector3(0, 0, 0);
 const LANTERN = 2.6;
 const UP = new THREE.Vector3(0, 1, 0);
 
+/** The lock-on ring under the target: a bright band with four ticks, drawn over the floor. */
+function lockRing(): THREE.Mesh {
+  const g = new THREE.RingGeometry(0.46, 0.56, 40).rotateX(-Math.PI / 2);
+  const ticks: THREE.BufferGeometry[] = [];
+  for (let k = 0; k < 4; k++) {
+    const t = new THREE.PlaneGeometry(0.08, 0.2).rotateX(-Math.PI / 2).translate(0, 0, -0.68).rotateY((k * Math.PI) / 2);
+    ticks.push(t);
+  }
+  const all = [g, ...ticks].map((x) => x.toNonIndexed());
+  const pos: number[] = [];
+  for (const x of all) pos.push(...(x.getAttribute('position').array as Float32Array));
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  for (const x of [g, ...ticks, ...all]) x.dispose();
+  const m = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false }));
+  m.renderOrder = 8;
+  m.visible = false;
+  return m;
+}
+
 /**
  * The 3D scene: the prison, the player, an orthographic camera at the classic angle that
  * follows the player with a little look-ahead, and a sun that crosses the sky with the
@@ -134,6 +160,7 @@ export class View {
   private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
   private readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, 0x4a5a3a, 1);
   private worldView: WorldView | null = null;
+  private world: World | null = null;
   player = new Character(INMATE_LOOK);
   private outfit = -1;
   private readonly pickups = new Pickups();
@@ -180,6 +207,13 @@ export class View {
   private zoom = 1;
   private zoomGoal = 1;
   private shadowHalf = 20;
+  /** The lock-on ring, and the cup of molten chocolate in flight (from, to, 0–1 along the way). */
+  private readonly ring = lockRing();
+  private readonly cup = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshStandardMaterial({ color: 0x5a3018, roughness: 0.35, emissive: 0x2a1006 }));
+  private readonly cupFrom = new THREE.Vector3();
+  private readonly cupTo = new THREE.Vector3();
+  private cupT = 1;
+  private cupWho = -1;
   /** No camera drift, idle glances or dust. */
   reducedMotion = false;
   /** Called when a foot lands, with the ground kind. */
@@ -195,7 +229,8 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group, this.cones.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup);
+    this.cup.visible = false;
     this.setQuality(quality);
     addEventListener('resize', () => this.resize());
   }
@@ -231,6 +266,7 @@ export class View {
       this.scene.remove(this.underground.group, this.underground.lantern);
       this.underground.dispose();
     }
+    this.world = world;
     this.worldView = new WorldView(world);
     this.structure = new Structure(world, this.worldView);
     this.underground = new Underground(world);
@@ -250,13 +286,13 @@ export class View {
     this.setGuards([]);
   }
 
-  /** The guards: one character each, and the bed each sleeps in at night (if any). */
-  setGuards(beds: Array<BedPose | undefined>) {
+  /** The guards: one character each (its key's color on the belt), and the bed each sleeps in at night (if any). */
+  setGuards(beds: Array<BedPose | undefined>, keys: number[] = []) {
     for (const c of this.guardCast) {
       this.scene.remove(c.root);
       c.dispose();
     }
-    this.guardCast = beds.map((_, k) => new Character(guardLook(k)));
+    this.guardCast = beds.map((_, k) => new Character(guardLook(k, keys[k])));
     this.guardBeds = beds;
     for (const c of this.guardCast) this.scene.add(c.root);
     this.cones.setCount(beds.length);
@@ -310,13 +346,63 @@ export class View {
     const pz = this.player.root.position.z;
     const fx = action === 'unscrew' || action === 'digUp' ? px : x + (px - x) * 0.45;
     const fz = action === 'unscrew' || action === 'digUp' ? pz : z + (pz - z) * 0.45;
-    const y = action === 'unscrew' ? (layer === LAYER.VENTS ? LAYER_Y[LAYER.VENTS] : 1.3) : action === 'chip' ? 0.6 : action === 'cut' ? 0.8 : LAYER_Y[this.layer];
-    const color = action === 'chip' ? 0xa0533e : action === 'cut' || action === 'unscrew' ? 0xffd27a : 0x8a6644;
+    const y = action === 'unscrew' ? (layer === LAYER.VENTS ? LAYER_Y[LAYER.VENTS] : 1.3) : action === 'chip' ? 0.6 : action === 'cut' || action === 'sharpen' ? 0.8 : LAYER_Y[this.layer];
+    const color = action === 'chip' ? 0xa0533e : action === 'cut' || action === 'unscrew' ? 0xffd27a : action === 'sharpen' ? 0xd8cfc0 : 0x8a6644;
+    // Sharpening is a scrape, not a blow: a little grit, no jolt.
+    if (action === 'sharpen') {
+      if (!this.reducedMotion) this.dust.puff(fx, fz, color, broke ? 6 : 2, y);
+      return;
+    }
     if (!this.reducedMotion) {
       this.dust.puff(fx, fz, color, broke ? 14 : 4, y);
       if (broke && action === 'chip') this.dust.puff(fx, fz, 0x8f8a80, 8, y);
       this.shake = Math.max(this.shake, broke ? 1 : 0.35);
     }
+  }
+
+  /** Someone by Cast id (inmates, then guards; -1 the player). */
+  private who(id: number): Character | undefined {
+    if (id < 0) return this.player;
+    return id < this.cast.length ? this.cast[id] : this.guardCast[id - this.cast.length];
+  }
+
+  /**
+   * A blow lands (`by` hits `on`, Cast ids, -1 the player): the hitter's arm goes, the one hit
+   * flinches, a burst at the point of contact; the player's own blows jolt the camera a touch,
+   * harder for a knockout.
+   */
+  blow(by: number, on: number, ko: boolean) {
+    const a = this.who(by);
+    const b = this.who(on);
+    a?.punch();
+    b?.flinch();
+    if (!a || !b || this.reducedMotion) return;
+    const x = (a.root.position.x + b.root.position.x * 2) / 3;
+    const z = (a.root.position.z + b.root.position.z * 2) / 3;
+    this.dust.puff(x, z, 0xfff2c8, ko ? 12 : 6, 0.9);
+    if (by < 0) this.shake = Math.max(this.shake, ko ? 0.8 : 0.3);
+  }
+
+  /** A cup of molten chocolate thrown at someone (Cast id): it arcs over, then splashes. */
+  throwAt(on: number) {
+    const b = this.who(on);
+    if (!b) return;
+    this.player.punch();
+    this.cupFrom.copy(this.player.root.position).setY(this.player.root.position.y + 1.1);
+    this.cupTo.copy(b.root.position).setY(b.root.position.y + 0.9);
+    this.cupT = 0;
+    this.cupWho = on;
+  }
+
+  /** Where someone's head is on screen (CSS pixels), for floating numbers; null off screen. */
+  screenOf(id: number, out: { x: number; y: number }): { x: number; y: number } | null {
+    const c = this.who(id);
+    if (!c) return null;
+    this.v.copy(c.root.position).setY(c.root.position.y + 1.7).project(this.camera);
+    if (this.v.z > 1 || Math.abs(this.v.x) > 1.1 || Math.abs(this.v.y) > 1.1) return null;
+    out.x = ((this.v.x + 1) / 2) * innerWidth;
+    out.y = ((1 - this.v.y) / 2) * innerHeight;
+    return out;
   }
 
   /** The floor point under a screen point (tiles), for tap-to-walk. */
@@ -436,6 +522,7 @@ export class View {
       c.root.visible = f.layer !== LAYER.UNDER;
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
     });
     this.doorsOpen.clear();
     f.guards.forEach((g, k) => {
@@ -446,12 +533,21 @@ export class View {
       c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
       c.pose(g.x, g.z, g.facing, g.moving, dt, time, !this.reducedMotion, g.doing, this.guardBeds[k]);
       c.mark(g.alert === ALERT.HOSTILE ? '!' : g.alert === ALERT.SUSPICIOUS ? '?' : '', dt, !this.reducedMotion);
+      c.showKey(g.hasKey);
       // A guard's key opens the door it walks through (and the one just ahead).
       const tx = Math.floor(g.x + Math.sin(g.facing) * 0.6);
       const tz = Math.floor(g.z + Math.cos(g.facing) * 0.6);
       this.doorsOpen.add(Math.floor(g.z) * MAP_W + Math.floor(g.x));
       if (g.moving) this.doorsOpen.add(tz * MAP_W + tx);
     });
+    // The player's key opens the door they walk into (on screen as for guards).
+    if (f.layer === LAYER.GROUND && this.world) {
+      const here = Math.floor(f.z) * MAP_W + Math.floor(f.x);
+      const ahead = Math.floor(f.z + Math.cos(f.facing) * 0.7) * MAP_W + Math.floor(f.x + Math.sin(f.facing) * 0.7);
+      if (!this.world.block[here]) this.doorsOpen.add(here);
+      if (f.moving && !this.world.block[ahead]) this.doorsOpen.add(ahead);
+    }
+    this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion);
     this.guide.setPath(f.guide);
@@ -461,10 +557,43 @@ export class View {
     this.render(f.minuteOfDay, dt, cut ? this.feet : null, time);
   }
 
+  /** The ring under the locked-on target (pulsing), and the thrown cup's flight. */
+  private drawLock(f: Frame, dt: number, time: number) {
+    const id = f.lock;
+    const target = id < 0 ? null : id < f.inmates.length ? f.inmates[id] : f.guards[id - f.inmates.length];
+    this.ring.visible = !!target && f.layer === LAYER.GROUND;
+    if (target) {
+      const pulse = this.reducedMotion ? 1 : 1 + Math.sin(time * 6) * 0.06;
+      this.ring.position.set(target.x, 0.04, target.z);
+      this.ring.scale.setScalar(pulse);
+      this.ring.rotation.y = this.reducedMotion ? 0 : time * 0.8;
+    }
+    if (this.cupT < 1) {
+      this.cupT = Math.min(1, this.cupT + dt / 0.32);
+      const t = this.cupT;
+      this.cup.visible = true;
+      this.cup.position.lerpVectors(this.cupFrom, this.cupTo, t);
+      this.cup.position.y += Math.sin(t * Math.PI) * 0.9;
+      if (t >= 1) {
+        this.cup.visible = false;
+        const b = this.who(this.cupWho);
+        b?.flinch();
+        if (!this.reducedMotion) {
+          this.dust.puff(this.cupTo.x, this.cupTo.z, 0x6b3d22, 16, 1);
+          this.dust.puff(this.cupTo.x, this.cupTo.z, 0xd9a066, 8, 1.2);
+          this.shake = Math.max(this.shake, 0.6);
+        }
+      }
+    }
+  }
+
   /** Draws the title backdrop: the camera drifts slowly over the prison, nobody in it. */
   drawTitle(dt: number, time: number) {
     this.showLayer(LAYER.GROUND);
     this.player.root.visible = false;
+    this.ring.visible = false;
+    this.cup.visible = false;
+    this.cupT = 1;
     this.doorsOpen.clear();
     this.cones.update([], dt, 0, false);
     this.alarm = 0;

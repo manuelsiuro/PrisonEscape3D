@@ -1,0 +1,15 @@
+STR 40 damage vs inmate/guard: fists 11/7 (9/16 blows), comb shiv 17/13 (6/9 blows), sock mace 21/17 (5/7 blows), bat 25/21 (4/6 blows), baton 29/25 (4/5 blows), nunchucks 33/29 (3/4 blows)
+a guard's baton on the player: 34 (plated 25) of 90 health
+swing every 14 steps at SPD 40, 8 at 100, 12 with nunchucks
+lock-on: in range 1, 0, 2; R → 1, 0, 2, -1
+fight: the inmate (STR 31, 81 health) down in 4 blows of the sock mace; it landed 5 punches (player 55/90); heat 0
+its pockets: sock, plastic_cup
+seen hitting an inmate: fight, heat 100, lockdown true
+wanted (85%): 3 baton blows, down after 2.6 s → the infirmary (day 1 08:02)
+key thief: guard pockets key_purple, baton, guard_outfit, -; it wakes at day 1 08:30 missing its key: true, lockdown true
+key cloner: key back with 29.5 s to spare: true; guard wakes, key missing false, lockdown false
+plastic key: through the purple door to row 40 (generator); uses 14
+green key: through the yard door, stopped at row 60 by the gate (perimeter)
+shiv: 4 strokes on the wall → comb_shiv
+floored by an inmate: woke in the infirmary (day 1 08:34), health 90, lighter taken
+restored mid-fight at step 17: plays on the same (6 hotbar slots, inmate down), 490 min
