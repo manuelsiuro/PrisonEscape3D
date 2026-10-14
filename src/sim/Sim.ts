@@ -18,7 +18,7 @@ export type SimEvent =
   /** The block ended without the player: what it cost. */
   | { type: 'missed'; routine: number; heat: number }
   | { type: 'lockdown'; on: boolean }
-  /** Cell doors locked or unlocked for the night or a lockdown. */
+  /** The player's cell door locked or unlocked (Lights Out, a lockdown, 08:00). */
   | { type: 'cells'; locked: boolean };
 
 /**
@@ -54,7 +54,7 @@ export interface Snapshot {
  * The game's rules: `step(cmd)` advances one fixed step (1/20 s). The state depends only
  * on the prison, the seed and the commands, never on frame time, the DOM or Three.js, so
  * the tests replay it headless. Systems run in a fixed order (docs/PLAN.md §3):
- * clock → routine → doors → inmates → player → attendance and lockdown → heat.
+ * clock → routine → inmates → player → attendance and lockdown → heat → doors.
  */
 export class Sim {
   readonly world: World;
@@ -110,8 +110,7 @@ export class Sim {
       s.excused = s.lockdown;
       this.events.push({ type: 'routine', routine: now });
     }
-    // Doors, then everyone moves.
-    this.updateDoors(true);
+    // Everyone moves.
     // In a lockdown inmates head for their cells (at night they are going there anyway, to sleep).
     stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, s.player, s.step);
     walk(w, s.player, dirOf(cmd));
@@ -128,6 +127,9 @@ export class Sim {
     }
     // Heat cools while nobody is looking (no guards yet: always).
     if (!s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
+    // Doors last: they follow where everyone ended up, so the state at the end of a step
+    // (a save, a keyframe) says everything about them.
+    this.updateDoors(true);
   }
 
   private addHeat(n: number) {
@@ -172,7 +174,8 @@ export class Sim {
     }
     const was = w.lockedCells;
     w.setLockedCells(mask);
-    if (announce && (was === 0) !== (mask === 0)) this.events.push({ type: 'cells', locked: mask !== 0 });
+    // The player hears their own door lock and unlock.
+    if (announce && ((was ^ mask) & 2) !== 0) this.events.push({ type: 'cells', locked: (mask & 2) !== 0 });
   }
 
   /** The zone the player stands in. */

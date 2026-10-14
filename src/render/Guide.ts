@@ -58,7 +58,9 @@ export class Guide {
   private readonly color = new THREE.Color();
   private readonly dim = new THREE.Color(0xd9530a);
   private readonly bright = new THREE.Color(0xffd36b);
-  private points: THREE.Vector2[] = [];
+  /** The polyline from the player through the waypoints (reused: no garbage per frame). */
+  private points: THREE.Vector2[] = [new THREE.Vector2()];
+  private source: Array<{ x: number; z: number }> | null = null;
   /** The prison, to leave out arrows a wall would cut in half. */
   world: World | null = null;
   private shown = 0;
@@ -83,7 +85,11 @@ export class Guide {
   /** The way to show (tile centers, from the player), or null to fade the arrows out. */
   setPath(points: Array<{ x: number; z: number }> | null) {
     this.want = points !== null && points.length > 0;
-    if (points && points.length) this.points = points.map((p) => new THREE.Vector2(p.x, p.z));
+    // Rebuilt only when the caller hands over a new path.
+    if (!points || !points.length || points === this.source) return;
+    this.source = points;
+    this.points.length = points.length + 1;
+    points.forEach((p, k) => (this.points[k + 1] ??= new THREE.Vector2()).set(p.x, p.z));
   }
 
   /** The tap-to-walk target (tile center), or null once there. */
@@ -113,7 +119,8 @@ export class Guide {
 
   private layArrows(time: number, from: { x: number; z: number }, motion: boolean) {
     // The walk as a polyline from the player through the waypoints.
-    const pts = [new THREE.Vector2(from.x, from.z), ...this.points];
+    const pts = this.points;
+    pts[0].set(from.x, from.z);
     let n = 0;
     let along = 0;
     let next = FIRST;

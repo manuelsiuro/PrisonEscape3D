@@ -220,3 +220,20 @@ for (const l of owl.log.filter((l) => l.includes('day 1 2') || l.includes('cells
   check(!sim.state.lockdown, `the visitor walks home and the lockdown lifts (${at(sim.state.step)})`);
   console.log(`== visitor: lockdown lifted at ${at(sim.state.step)}, heat ${sim.state.heat}%`);
 }
+
+// Saves can be taken at any step: a snapshot restored into a fresh simulation is the same
+// state, and plays on the same (doors included, since they are settled at the end of a step).
+{
+  const a = new Sim(CENTER_PERKS, 5);
+  const play = modelPrisoner(a);
+  let checked = 0;
+  for (let i = 0; i < DAY; i++) {
+    a.step(play(a));
+    if (i % 997 !== 0) continue;
+    const b = new Sim(CENTER_PERKS, 5);
+    b.restore(a.snapshot());
+    if (b.hash() !== a.hash()) check(false, `restore at step ${a.state.step} gives the same state`);
+    checked++;
+  }
+  console.log(`== saves: ${checked} snapshots restored into fresh simulations, all identical`);
+}

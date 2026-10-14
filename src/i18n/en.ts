@@ -87,7 +87,7 @@ export const en = {
   "banner.lockdownHeat": "Too much heat. Return to your cell!",
   "toast.missed": "Missed {routine} · +{n}% heat",
   "toast.lifted": "Lockdown lifted",
-  "toast.cellsLocked": "Cell doors locked",
+  "toast.cellsLocked": "Your cell door is locked",
   "hud.heat": "Heat",
   "hint.tapWalk": "Tap a spot to walk there",
   "hint.clickWalk": "Click a spot to walk there",

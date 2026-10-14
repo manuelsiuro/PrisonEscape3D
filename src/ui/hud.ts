@@ -1,7 +1,7 @@
 import { ROUTINE, routineEnd } from '../content/routine';
 import { formatTime, type Clock } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
-import { t, type Key } from '../i18n';
+import { currentLang, t, type Key } from '../i18n';
 import { h, setText } from './dom';
 import { icon } from './icons';
 
@@ -52,6 +52,8 @@ export class Hud {
   private night: boolean | null = null;
   private shownKey = '';
   private shownHeat = -1;
+  private shownMinute = '';
+  private lang = currentLang();
 
   constructor(onPause: () => void) {
     this.el = h(
@@ -90,17 +92,28 @@ export class Hud {
   show(on: boolean) {
     this.el.classList.toggle('hidden', !on);
     if (!on) return;
-    this.shownZone = this.shownKey = '';
+    this.shownZone = this.shownKey = this.shownMinute = '';
     this.shownHeat = -1;
   }
 
   update(clock: Clock, zone: ZoneId, s: HudState) {
-    setText(this.day, t('hud.day', { n: clock.day }));
-    setText(this.time, formatTime(clock));
-    setText(this.zone, t(`zone.${zone}`));
-    // A pulse on entering a new zone (not on the first frame).
-    if (zone !== this.shownZone) {
-      if (this.shownZone) this.zonePill.classList.add('pulse');
+    // The language changed (settings, from the pause menu): rewrite everything.
+    if (currentLang() !== this.lang) {
+      this.lang = currentLang();
+      this.shownKey = this.shownMinute = '';
+      this.zone.textContent = '';
+    }
+    // Text only when it changes: the clock once a game minute, the zone on entering one.
+    const minute = `${clock.day}:${clock.minuteOfDay}`;
+    if (minute !== this.shownMinute) {
+      this.shownMinute = minute;
+      setText(this.day, t('hud.day', { n: clock.day }));
+      setText(this.time, formatTime(clock));
+    }
+    if (zone !== this.shownZone || !this.zone.textContent) {
+      setText(this.zone, t(`zone.${zone}`));
+      // A pulse on entering a new zone (not on the first frame).
+      if (this.shownZone && zone !== this.shownZone) this.zonePill.classList.add('pulse');
       this.shownZone = zone;
     }
     // Sun by day, moon from 21:00 to 06:00.

@@ -5,7 +5,7 @@ import { centerX, centerZ, clearLine, nearestDir, pathTo, smooth, tileAt } from 
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
 import { INMATE_REACTION, INMATE_SPEED, STEPS_PER_SECOND, UNIT } from '../tuning';
-import { MAP_W, type World } from '../world/World';
+import { MAP_H, MAP_W, type World } from '../world/World';
 import { bodyAt, type Body } from './movement';
 
 /** What an inmate is doing where it stands (the view poses it). */
@@ -149,27 +149,84 @@ function route(w: World, m: Inmate) {
   m.path = smooth(w, path, m.body.x, m.body.z);
 }
 
+/** What is ahead of a walker: nobody, someone to wait for, or someone coming the other way to step aside for. */
+const CLEAR = 0;
+const WAIT = 1;
+const GIVE_WAY = 2;
+
 /**
- * Whether someone stands in the walker's way: the player, or another inmate close ahead
- * (within about 60° of the heading). A follower keeps its distance; when two inmates meet
- * head on, the one earlier in the list goes first.
+ * Who stands in the walker's way: the player, or another inmate close ahead (within about
+ * 60° of the heading). A follower keeps its distance; when two inmates meet head on, the
+ * one earlier in the list goes first and the other steps aside.
  */
-function inTheWay(m: Inmate, k: number, all: Inmate[], player: Body, dx: number, dz: number, dist: number): boolean {
+function inTheWay(m: Inmate, k: number, all: Inmate[], player: Body, dx: number, dz: number, dist: number): number {
   const ahead = (o: Body) => {
     const ox = o.x - m.body.x;
     const oz = o.z - m.body.z;
     const d2 = ox * ox + oz * oz;
     return d2 < PERSONAL_SPACE * PERSONAL_SPACE && (ox * dx + oz * dz) * 2 > Math.sqrt(d2) * dist;
   };
-  if (ahead(player)) return true;
+  const coming = (o: Body) => o.moving && DIR_X[o.facing] * dx + DIR_Z[o.facing] * dz < 0;
+  if (ahead(player)) return coming(player) ? GIVE_WAY : WAIT;
   for (let j = 0; j < all.length; j++) {
     const o = all[j];
     if (j === k || !ahead(o.body)) continue;
-    // Standing there, walking the same way (follow it), or coming the other way with the right of way.
-    const sameWay = DIR_X[o.body.facing] * dx + DIR_Z[o.body.facing] * dz > 0;
-    if (!o.body.moving || sameWay || j < k) return true;
+    // Arrived and standing there (not merely waiting its turn): wait, then squeeze by.
+    if (!o.path.length) return WAIT;
+    if (coming(o.body)) {
+      if (j < k) return GIVE_WAY;
+      continue;
+    }
+    // Walking the same way: follow at a distance.
+    return WAIT;
   }
-  return false;
+  return CLEAR;
+}
+
+/** Steps of waiting before looking for a way round someone who stays put. */
+const DETOUR_STEPS = 8;
+const avoidMask = new Uint8Array(MAP_W * MAP_H);
+
+/** Plans round the tiles of everyone standing still (not the goal); true when a way was found. */
+function detour(w: World, m: Inmate, k: number, all: Inmate[], player: Body): boolean {
+  const marked: number[] = [];
+  const mark = (b: Body) => {
+    const t = tileAt(b.x, b.z);
+    if (t !== m.goal && t !== tileAt(m.body.x, m.body.z) && !avoidMask[t]) {
+      avoidMask[t] = 1;
+      marked.push(t);
+    }
+  };
+  all.forEach((o, j) => j !== k && !o.body.moving && mark(o.body));
+  if (!player.moving) mark(player);
+  const path = pathTo(w, tileAt(m.body.x, m.body.z), m.goal, avoidMask);
+  if (path) {
+    m.path = smooth(w, path, m.body.x, m.body.z, avoidMask);
+    // On the way round: no more stopping for the people it is walking past, for a moment.
+    m.stall = YIELD_STEPS;
+  }
+  for (const t of marked) avoidMask[t] = 0;
+  return path !== null;
+}
+
+/** How far a walker steps aside per step, and for how many steps at most. */
+const SIDESTEP = 70;
+const SIDESTEP_STEPS = 10;
+
+/** Steps to the right of the heading (or the left if the right is a wall) to let someone by. */
+function stepAside(w: World, b: Body, dx: number, dz: number, dist: number) {
+  const sx = Math.trunc((-dz * SIDESTEP) / dist);
+  const sz = Math.trunc((dx * SIDESTEP) / dist);
+  for (const side of [1, -1]) {
+    const nx = b.x + sx * side;
+    const nz = b.z + sz * side;
+    if (clearLine(w, b.x, b.z, nx, nz)) {
+      b.x = nx;
+      b.z = nz;
+      b.moving = true;
+      return;
+    }
+  }
 }
 
 /** Walks toward the next waypoint; returns true once the last one is reached. */
@@ -188,9 +245,13 @@ function walkPath(w: World, m: Inmate, k: number, all: Inmate[], player: Body, s
   const dist = Math.sqrt(dx * dx + dz * dz);
   if (dx || dz) b.facing = nearestDir(dx, dz);
   // Someone in the way: wait a moment, then squeeze by (nobody gets stuck for good).
-  if (m.stall < YIELD_STEPS && (dx || dz) && inTheWay(m, k, all, player, dx, dz, dist)) {
+  const way = m.stall < YIELD_STEPS && (dx || dz) ? inTheWay(m, k, all, player, dx, dz, dist) : CLEAR;
+  if (way !== CLEAR) {
     m.stall++;
+    // Someone stays put in the way (at their spot): after a moment, find a way round them.
+    if (way === WAIT && m.stall === DETOUR_STEPS && detour(w, m, k, all, player)) return false;
     b.moving = false;
+    if (way === GIVE_WAY && m.stall <= SIDESTEP_STEPS) stepAside(w, b, dx, dz, dist);
     return false;
   }
   m.stall = m.stall >= YIELD_STEPS && m.stall < YIELD_STEPS + SQUEEZE_STEPS ? m.stall + 1 : 0;
@@ -220,6 +281,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       m.path = [];
       m.doing = DOING.NOTHING;
       m.body.moving = false;
+      m.stall = 0;
       m.wait = randomInt(rng, INMATE_REACTION);
     }
     if (m.wait > 0) {
@@ -248,6 +310,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
 /** At the goal: stop, face the right way, start doing what the spot is for. */
 function arrive(m: Inmate, plan: number, rng: { rng: number }) {
   m.body.moving = false;
+  m.stall = 0;
   m.body.facing = m.face;
   m.doing = m.then;
   // Free time: linger 15–45 s before moving on.

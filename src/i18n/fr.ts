@@ -86,7 +86,7 @@ export const fr: Partial<Strings> = {
   "banner.lockdownHeat": "Trop de soupçons. Retourne en cellule !",
   "toast.missed": "Manqué : {routine} · +{n} % de soupçons",
   "toast.lifted": "Confinement levé",
-  "toast.cellsLocked": "Portes des cellules verrouillées",
+  "toast.cellsLocked": "Ta porte de cellule est verrouillée",
   "hud.heat": "Soupçons",
   "hint.tapWalk": "Touche un endroit pour y aller",
   "hint.clickWalk": "Clique un endroit pour y aller",

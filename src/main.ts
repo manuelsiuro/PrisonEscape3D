@@ -13,13 +13,13 @@ import { Sim, type SimEvent } from './sim/Sim';
 import { tileOfBody } from './sim/systems/movement';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
 import { MAP_W } from './sim/world/World';
-import { View, type Quality } from './render/View';
+import { View, type Frame, type Quality } from './render/View';
 import { Controls } from './input/Controls';
 import { Sound } from './audio/Sound';
 import { hasSeen, loadSettings, markSeen, saveSettings } from './game/settings';
 import { migrateStorage } from './game/storage';
 import { MOBILE, TOUCH, h } from './ui/dom';
-import { Hud, routineName, routinePlace } from './ui/hud';
+import { Hud, routineName, routinePlace, type HudState } from './ui/hud';
 import { Hint } from './ui/hint';
 import { Banner } from './ui/banner';
 import { showTitle } from './ui/screens/title';
@@ -264,6 +264,7 @@ async function pause() {
   if (!game || game.paused) return;
   click();
   game.paused = true;
+  game.speed = 1;
   controls.enabled = false;
   controls.reset();
   for (;;) {
@@ -304,6 +305,10 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && game && !game.paused) pause();
 });
 
+const frameData: Frame = { x: 0, z: 0, facing: 0, moving: false, minuteOfDay: 0, surface: 0, inmates: [], guide: null, tap: null, alarm: false };
+const tapAt = { x: 0, z: 0 };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, lockedMinutes: null };
+
 function frame(now: number) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000);
@@ -322,8 +327,14 @@ function frame(now: number) {
     let steps = 0;
     while (acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * g.speed) {
       acc -= 1 / STEPS_PER_SECOND;
-      g.prev = { x: p.x, z: p.z };
-      g.prevInmates = sim.state.inmates.map((m) => ({ x: m.body.x, z: m.body.z }));
+      // Where everyone was before this step (buffers reused: no garbage per step).
+      g.prev.x = p.x;
+      g.prev.z = p.z;
+      sim.state.inmates.forEach((m, k) => {
+        const q = (g.prevInmates[k] ??= { x: 0, z: 0 });
+        q.x = m.body.x;
+        q.z = m.body.z;
+      });
       // The stick and keys win over tap-to-walk; both are plain direction commands.
       if (controls.steering) g.pilot.stop();
       g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p)));
@@ -342,41 +353,45 @@ function frame(now: number) {
   const clock = sim.clock;
   const tile = tileOfBody(p);
   const lerp = (from: number, to: number) => (from + (to - from) * a) / UNIT;
-  const target = g.pilot.destination;
-  view.draw(
-    {
-      x: lerp(g.prev.x, p.x),
-      z: lerp(g.prev.z, p.z),
-      facing: Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]),
-      moving: p.moving && !g.paused,
-      minuteOfDay: clock.minuteOfDay + ((sim.state.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE,
-      surface: sim.world.ground.kind[tile.z * MAP_W + tile.x],
-      inmates: sim.state.inmates.map((m, k) => ({
-        x: lerp(g.prevInmates[k]?.x ?? m.body.x, m.body.x),
-        z: lerp(g.prevInmates[k]?.z ?? m.body.z, m.body.z),
-        facing: Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]),
-        moving: m.body.moving && !g.paused,
-        doing: m.doing,
-        cell: m.cell,
-      })),
-      guide: g.guide,
-      tap: target >= 0 ? { x: (target % MAP_W) + 0.5, z: Math.floor(target / MAP_W) + 0.5 } : null,
-      alarm: sim.state.lockdown,
-    },
-    dt,
-    now / 1000,
-  );
   const st = sim.state;
+  // One frame record, refilled every frame (phones notice garbage).
+  const f = frameData;
+  f.x = lerp(g.prev.x, p.x);
+  f.z = lerp(g.prev.z, p.z);
+  f.facing = Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]);
+  f.moving = p.moving && !g.paused;
+  f.minuteOfDay = clock.minuteOfDay + ((st.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE;
+  f.surface = sim.world.ground.kind[tile.z * MAP_W + tile.x];
+  f.inmates.length = st.inmates.length;
+  st.inmates.forEach((m, k) => {
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0 });
+    const q = g.prevInmates[k];
+    o.x = lerp(q?.x ?? m.body.x, m.body.x);
+    o.z = lerp(q?.z ?? m.body.z, m.body.z);
+    o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
+    o.moving = m.body.moving && !g.paused;
+    o.doing = m.doing;
+    o.cell = m.cell;
+  });
+  f.guide = g.guide;
+  const target = g.pilot.destination;
+  if (target >= 0) {
+    tapAt.x = (target % MAP_W) + 0.5;
+    tapAt.z = Math.floor(target / MAP_W) + 0.5;
+  }
+  f.tap = target >= 0 ? tapAt : null;
+  f.alarm = st.lockdown;
+  view.draw(f, dt, now / 1000);
   vignette.classList.toggle('on', st.lockdown);
   sound.siren(st.lockdown && !g.paused);
-  hud.update(clock, sim.playerZone, {
-    routine: st.routine,
-    // At Lights Out the badge says whether the player is in the cell right now.
-    attended: ROUTINE[st.routine].id === 'lightsOut' ? sim.playerZone === 'playerCell' : st.attended,
-    heat: st.heat,
-    lockdown: st.lockdown,
-    lockedMinutes: st.lockdown && sim.playerZone === 'playerCell' ? Math.ceil(st.lockdownLeft / STEPS_PER_MINUTE) : null,
-  });
+  const zone = sim.playerZone;
+  hudState.routine = st.routine;
+  // At Lights Out the badge says whether the player is in the cell right now.
+  hudState.attended = ROUTINE[st.routine].id === 'lightsOut' ? zone === 'playerCell' : st.attended;
+  hudState.heat = st.heat;
+  hudState.lockdown = st.lockdown;
+  hudState.lockedMinutes = st.lockdown && zone === 'playerCell' ? Math.ceil(st.lockdownLeft / STEPS_PER_MINUTE) : null;
+  hud.update(clock, zone, hudState);
 }
 
 // The title shows the first prison drifting by.

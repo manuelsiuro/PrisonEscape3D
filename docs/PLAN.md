@@ -50,6 +50,7 @@ Sources:
 | Blocks spent in a lockdown | — | **Excused**: missing them adds no heat |
 | When a missed roll call counts | — | GDD §2.2 says "immediate" lockdown but also gives every block a grace window: it fires **when the block ends** (09:00, 23:00) if the player never stepped into the yard |
 | Cells and visitors | — | A cell never locks while anyone but its occupant is inside it |
+| A lockdown while the player stays out | — | Until guards (P3) it simply lasts: heat stays at 100%, inmates stay in their cells, later blocks are excused. Guards make staying out the losing choice |
 
 Any further conflict found during the build is added to this table in the same commit.
 
@@ -174,4 +175,5 @@ real touch feel) and the known limits.
   - HUD routine pill with PENDING/ATTENDED, heat meter, banners and toasts, floor arrows to the routine's place, tap/click-to-walk;
   - `routinetest`: model prisoner 3 days at 0 heat, truant lockdown, night owl doors, inmates make every block. Dev builds: `]` fast-forwards ×30.
 - **P1 review and polish (v0.2.2)**: a visitor can no longer be locked in someone else's cell (lockdown that never ended); inmates make way for each other and the player (followers keep their distance, head-on meetings by turn, squeeze past after 1.5 s); paths re-checked as doors change; canteen benches with a seated pose and meal trays; shower heads moved to the wall in view, with water; blankets and floating Zs for sleepers; legs paced to each inmate's speed; floor arrows skip spots walls would cut; Lights Out arrows and badge follow whether the player is in the cell; the HUD says when each block ends; start-up timers can't reach a paused or later game; tap vs drag thresholds; siren fade-in; one door per cell validated.
+- **Second review (v0.2.3)**: right of way at head-on meetings (the other steps aside), detours round people standing at their spots, waiting counters reset on arrival; doors settled at the end of each step so a save restored at any step is exact (tested); the lock clank and toast are for the player's own door; no per-frame garbage in the frame loop, guide, view and HUD; fast-forward ends on pause; the HUD follows a language change mid-game.
 - **Next: P2 Items.**

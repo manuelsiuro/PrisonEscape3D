@@ -91,8 +91,8 @@ export class View {
   private cast: Character[] = [];
   /** Each cell's bed, for sleepers (by cell number). */
   private beds: Array<BedPose | undefined> = [];
-  /** Tiles under a shower head ("x,z"). */
-  private showers = new Set<string>();
+  /** 1 on tiles under a shower head. */
+  private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
   private readonly dust = new Dust();
   private readonly raycaster = new THREE.Raycaster();
@@ -159,7 +159,8 @@ export class View {
     this.worldView = new WorldView(world);
     this.scene.add(this.worldView.group);
     this.guide.world = world;
-    this.showers = new Set(world.props.filter((p) => p.kind === 'shower').map((p) => `${p.x},${p.z}`));
+    this.showers.fill(0);
+    for (const p of world.props) if (p.kind === 'shower') this.showers[p.z * MAP_W + p.x] = 1;
     this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
     this.setCast(0);
   }
@@ -248,7 +249,7 @@ export class View {
     f.inmates.forEach((m, k) => {
       const c = this.cast[k];
       if (!c) return;
-      c.wet = this.showers.has(`${Math.floor(m.x)},${Math.floor(m.z)}`);
+      c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
     });
     this.guide.setPath(f.guide);
