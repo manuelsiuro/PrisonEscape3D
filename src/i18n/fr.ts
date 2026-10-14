@@ -328,7 +328,7 @@ export const fr: Partial<Strings> = {
   "hint.toolsKeys": "Maintiens Espace pour utiliser l’outil en main sur le mur, le grillage, la grille ou le sol devant toi",
   "hint.toolsTouch": "Maintiens le bouton outil pour utiliser l’outil en main sur le mur, le grillage, la grille ou le sol devant toi",
   "hint.evidence": "La terre et les morceaux de mur sont des preuves : jette-les dans des toilettes, ou laisse-les dans un tunnel",
-  "hint.tunnel": "Un tunnel s’effondre après 2 cases sans étai en bois. Pour remonter, tourne-toi vers le tunnel et appuie sur le bouton outil.",
+  "hint.tunnel": "Un tunnel s’effondre après 2 cases sans étai en bois. Pour creuser vers la surface, place-toi au bout du tunnel, tourné vers lui, et appuie sur Espace. Le bouton d’action te fait sortir par une entrée.",
   "hint.restrictedUp": "Conduits et toits sont réservés au personnel : qu’aucun gardien ne t’y voie",
   "hint.damage": "Un gardien qui voit un trou donne l’alerte : cache-le avec un poster (dans ta cellule) ou un faux bloc de mur",
   "hint.deskTunnel": "Ton bureau cache le tunnel. Ouvre le bureau pour descendre.",
@@ -339,4 +339,9 @@ export const fr: Partial<Strings> = {
   "key.space": "Espace",
   "toast.posterCell": "Un poster ne passe pour de la déco que dans ta cellule",
   "toast.pocketsFull": "Libère d’abord une place dans tes poches : ça tomberait à tes pieds, bien en vue",
+  "toast.notHungry": "Tu as toute ton énergie : garde-le pour plus tard",
+  "toast.noLanding": "Nulle part où atterrir en bas",
+  "banner.gaveUp": "Fin du confinement",
+  "banner.gaveUpSub": "Les gardiens ont abandonné la fouille et réparé ce qu’ils ont trouvé. Ils te cherchent toujours.",
+  "hint.tunnelTouch": "Un tunnel s’effondre après 2 cases sans étai en bois. Pour creuser vers la surface, place-toi au bout du tunnel, tourné vers lui, et touche le bouton outil. Le bouton d’action te fait sortir par une entrée.",
 };

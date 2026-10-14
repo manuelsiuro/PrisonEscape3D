@@ -17,7 +17,7 @@ const EARTH_H = 0.8;
  */
 export class Underground {
   readonly group = new THREE.Group();
-  readonly lantern = new THREE.PointLight(0xffc27a, 2.6, 7.5, 1.6);
+  readonly lantern = new THREE.PointLight(0xffc27a, 0, 7.5, 1.6);
   private readonly earth: THREE.InstancedMesh;
   private readonly floor: THREE.InstancedMesh;
   private readonly extras = new THREE.Group();
@@ -54,7 +54,9 @@ export class Underground {
     this.floor.receiveShadow = true;
     // Additive and faint: a glow down the entrance, never a grey pillar over the player.
     this.beam = new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
-    this.group.add(this.earth, this.floor, this.extras, this.lantern);
+    // The lantern is added to the scene by the view (always there, dimmed to 0 above ground).
+    this.group.add(this.earth, this.floor, this.extras);
+    this.lantern.intensity = 0;
     this.group.visible = false;
     this.refresh();
   }

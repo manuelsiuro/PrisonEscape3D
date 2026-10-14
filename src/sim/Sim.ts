@@ -7,7 +7,7 @@ import { findPath, nearestDir } from './ai/path';
 import { placesOf } from './ai/places';
 import { canSee } from './ai/sight';
 import { craft, dropItem, equip, give, HOTBAR, interactTarget, itemOf, moveItem, pickUp, restock, slot, startItems, stillInReach, usesOf, type ItemEvent, type ItemState } from './systems/items';
-import { besideOnGround, cavesIn, climbTarget, facesProp, preferClimb, DIRT, ladderFootOf, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbAction, type ClimbTarget, type ToolAction, type ToolTarget } from './systems/structure';
+import { besideOnGround, cavesIn, climbTarget, facesProp, preferClimb, DIRT, ladderFootOf, reserved, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbAction, type ClimbTarget, type ToolAction, type ToolTarget } from './systems/structure';
 import { fnv1a, randomInt } from './rng';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { assign, awake, backToDuty, cancelTasks, CATCH_RANGE, GUARD, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
@@ -16,6 +16,7 @@ import { bodyAt, tileOfBody, walk, type Body } from './systems/movement';
 import {
   BODY_HALF,
   CAVE_IN_ENERGY,
+  HIDING_STEPS,
   CHASE_HEAT,
   CHOCOLATE_ENERGY,
   CRAWL_SPEED,
@@ -82,7 +83,7 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster' | 'full'; action: ToolAction }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster' | 'full' | 'noLanding'; action: ToolAction }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -103,6 +104,8 @@ export type SimEvent =
   | { type: 'repaired'; n: number }
   /** Out on the road: free (GDD §4.0). */
   | { type: 'escaped' }
+  /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
+  | { type: 'gaveUp' }
   | ItemEvent;
 
 /**
@@ -159,6 +162,10 @@ export interface SimState {
   struckAt: number;
   /** The step the player reached the road (0 while still inside). */
   escaped: number;
+  /** Steps of a lockdown spent off the ground floor (out of the guards' reach). */
+  hiding: number;
+  /** The player went down the tunnel under their desk: it stands pushed aside until they come up. */
+  deskAside: boolean;
 }
 
 export interface Snapshot {
@@ -223,8 +230,12 @@ export class Sim {
       found: [],
       struckAt: -1000,
       escaped: 0,
+      hiding: 0,
+      deskAside: false,
     };
     this.ladderFoot = ladderFootOf(this.world);
+    // Where nobody may dig, worked out now from the map as built (never from a later state).
+    reserved(this.world);
     this.updateDoors(false);
   }
 
@@ -319,6 +330,17 @@ export class Sim {
     if (s.solitary > 0 && --s.solitary === 0) this.release();
     // Who sees the player now, and what they make of it.
     this.watch();
+    // Out of reach through a whole lockdown: the guards call off the hunt, fix what they found,
+    // and stay on the lookout (the heat stays: whoever sees the player next gives chase).
+    if (s.lockdown && s.layer !== LAYER.GROUND && !this.away) {
+      if (++s.hiding >= HIDING_STEPS) {
+        s.lockdown = false;
+        s.hiding = 0;
+        for (const g of s.guards) if (g.mode === GUARD.CHASE || g.mode === GUARD.INVESTIGATE) backToDuty(g);
+        this.repair();
+        this.events.push({ type: 'lockdown', on: false }, { type: 'gaveUp' });
+      }
+    } else s.hiding = 0;
     // Attendance.
     const zone = this.playerZone;
     if (!s.attended && ROUTINE[s.routine].zones.includes(zone)) {
@@ -452,7 +474,7 @@ export class Sim {
       const kind = s.tiles[key];
       const layer = layerOfKey(key);
       const tile = tileOfKey(key);
-      const shows = layer === LAYER.GROUND ? DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && underMyDesk(w, tile) && s.layer !== LAYER.UNDER) : layer === LAYER.VENTS && kind === TILE.GRATE_OPEN;
+      const shows = layer === LAYER.GROUND ? DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && underMyDesk(w, tile) && !s.deskAside) : layer === LAYER.VENTS && kind === TILE.GRATE_OPEN;
       if (!shows || s.found.includes(key) || !seenAt(tile)) continue;
       s.found.push(key);
       this.events.push({ type: 'found', kind });
@@ -602,6 +624,7 @@ export class Sim {
   /** Puts the player on a ground floor tile (carried there, facing south). */
   private place(tile: number) {
     this.state.layer = LAYER.GROUND;
+    this.state.deskAside = false;
     const p = this.state.player;
     p.x = (tile % MAP_W) * UNIT + UNIT / 2;
     p.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
@@ -798,6 +821,11 @@ export class Sim {
     if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
     if ((target.action === 'digUp' || !STRIKES.has(target.action)) && !fresh) return;
     if (target.action === 'eat') {
+      // Full of energy: the bar keeps for later.
+      if (s.energy >= 100) {
+        this.events.push({ type: 'cantStrike', why: 'full', action: 'eat' });
+        return;
+      }
       it.inv[it.hand] = 0;
       it.rev++;
       s.energy = Math.min(100, s.energy + CHOCOLATE_ENERGY);
@@ -813,7 +841,7 @@ export class Sim {
     // The last blow on the ground floor with full pockets would leave the chunk or the dirt at
     // the player's feet, in plain view: not until there's room.
     const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
-    const full = yields && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + tool0.damage >= target.hp && !it.inv.slice(0, HOTBAR).includes(0);
+    const full = yields && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + tool0.damage >= target.hp && !hasRoom(it);
     const why = target.hp === 0 ? 'reinforced' : !target.fits ? 'tool' : s.energy < tool0!.energy ? 'tired' : full ? 'full' : null;
     if (why) {
       this.events.push({ type: 'cantStrike', why, action: target.action });
@@ -921,6 +949,7 @@ export class Sim {
         const to = this.landing(t);
         if (to < 0) {
           it.inv[it.hand] = slot(held);
+          this.events.push({ type: 'cantStrike', why: 'noLanding', action: 'rope' });
           return;
         }
         this.moveTo(LAYER.GROUND, to, 'rope');
@@ -937,7 +966,12 @@ export class Sim {
     switch (c.action) {
       case 'uncover': {
         const grate = this.world.layers[LAYER.VENTS].kind[c.tile] === TILE.GRATE_FAKE;
-        if (!give(it, c.item!, p, s.layer)) return;
+        // The cover comes back into the hand: never dropped at the player's feet.
+        if (!hasRoom(it)) {
+          this.events.push({ type: 'full' });
+          return;
+        }
+        give(it, c.item!, p, s.layer);
         if (grate) this.setTile(LAYER.VENTS, c.tile, TILE.GRATE_OPEN);
         else this.setTile(LAYER.GROUND, c.tile, this.world.ground.kind[c.tile] === TILE.FENCE_FAKE ? TILE.FENCE_CUT : TILE.HOLE);
         this.events.push({ type: 'covered', item: c.item!, on: false });
@@ -960,6 +994,7 @@ export class Sim {
     const tile = box.prop.z * MAP_W + box.prop.x;
     if (this.world.ground.kind[tile] !== TILE.SHAFT) return;
     this.moveTo(LAYER.UNDER, tile, 'climbDown');
+    this.state.deskAside = true;
   }
 
   /** Onto a layer, in the middle of a tile. */
@@ -968,6 +1003,8 @@ export class Sim {
     const from = s.layer;
     this.closeBox();
     s.layer = layer;
+    // Back on the ground floor, the desk is slid back over its hole.
+    if (layer === LAYER.GROUND) s.deskAside = false;
     s.player.x = (tile % MAP_W) * UNIT + UNIT / 2;
     s.player.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
     s.player.moving = false;
@@ -1103,6 +1140,8 @@ export class Sim {
       found: st.found ?? [],
       struckAt: st.struckAt ?? -1000,
       escaped: st.escaped ?? 0,
+      hiding: st.hiding ?? 0,
+      deskAside: st.deskAside ?? false,
     };
     // The world as the state has it: the map, then every tile changed since.
     const w = this.world;
@@ -1125,6 +1164,12 @@ const GUARD_OUTFIT = itemNumber('guard_outfit');
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
 const BED_DUMMY = itemNumber('bed_dummy');
 const POSTER_ITEM = itemNumber('poster');
+
+/** A free hotbar slot. */
+function hasRoom(it: ItemState): boolean {
+  for (let k = 0; k < HOTBAR; k++) if (!it.inv[k]) return true;
+  return false;
+}
 /** Where a guard looks at a tile from: its middle, then its faces. */
 const FACES = [
   [0, 0],

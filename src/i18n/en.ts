@@ -329,7 +329,7 @@ export const en = {
   "hint.toolsKeys": "Hold Space to use the tool in your hand on the wall, fence, grate or floor in front of you",
   "hint.toolsTouch": "Hold the tool button to use the tool in your hand on the wall, fence, grate or floor in front of you",
   "hint.evidence": "Dirt and wall chunks are evidence: flush them down a toilet, or leave them in a tunnel",
-  "hint.tunnel": "Tunnels cave in after 2 tiles without a timber brace. To come up, face back along the tunnel and press the tool button.",
+  "hint.tunnel": "Tunnels cave in after 2 tiles without a timber brace. To dig your way up, stand at the tunnel's end facing back along it and press Space. The action button climbs out at an entrance.",
   "hint.restrictedUp": "Vents and roofs are staff only: don't let a guard see you up there",
   "hint.damage": "A guard who sees a hole raises the alarm: cover it with a poster (in your cell) or a fake wall block",
   "hint.deskTunnel": "Your desk hides the tunnel. Open the desk to climb down.",
@@ -340,6 +340,11 @@ export const en = {
   "key.space": "Space",
   "toast.posterCell": "A poster only passes for decoration in your own cell",
   "toast.pocketsFull": "Make room in your pockets first: it would land at your feet, in plain view",
+  "toast.notHungry": "You're full of energy: keep it for later",
+  "toast.noLanding": "Nowhere to land down there",
+  "banner.gaveUp": "Lockdown lifted",
+  "banner.gaveUpSub": "The guards called off the search and fixed what they found. They're still looking for you.",
+  "hint.tunnelTouch": "Tunnels cave in after 2 tiles without a timber brace. To dig your way up, stand at the tunnel's end facing back along it and tap the tool button. The action button climbs out at an entrance.",
 };
 
 export type Strings = typeof en;

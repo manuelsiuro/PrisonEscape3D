@@ -15,7 +15,7 @@ import { itemDef, itemNumber } from './content/items';
 import type { BedPose } from './render/Character';
 import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
-import { CHOCOLATE_ENERGY, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
+import { CHOCOLATE_ENERGY, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
 import { TILE } from './sim/world/tiles';
 import { climbTarget, DIRT, facesProp, ladderFootOf, preferClimb, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
@@ -197,8 +197,9 @@ function updateGuide(g: Game, dt: number) {
   g.guideAge = 0;
   g.guideFrom = from;
   const goal = guideTarget(sim);
-  const path = goal && findPath(sim.world, from, goal, -1, 2600);
-  g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
+  // On the prison as built: the arrows never lead through the player's own holes.
+  const path = goal && findPath(sim.world, from, goal, -1, 2600, undefined, sim.world.npcBlock);
+  g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z, undefined, sim.world.npcBlock).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
 }
 
 function seenInteract() {
@@ -216,12 +217,13 @@ function coachItems(held: number, outfit: number) {
   if (held !== coached.held) {
     coached.held = held;
     const d = held ? itemDef(held) : null;
-    if (d?.contraband && (d.cat === 'tool' || d.cat === 'weapon') && !hasSeen('contrabandHand')) {
-      markSeen('contrabandHand');
-      banner.toast(t('hint.contrabandHand'), 'info', 6500);
-    } else if (d?.tool && !hasSeen('tools')) {
+    // The first tool: how to use it first; the warning about contraband in hand the next time.
+    if (d?.tool && !hasSeen('tools')) {
       markSeen('tools');
       banner.toast(TOUCH ? t('hint.toolsTouch') : t('hint.toolsKeys'), 'info', 7000);
+    } else if (d?.contraband && (d.cat === 'tool' || d.cat === 'weapon') && !hasSeen('contrabandHand')) {
+      markSeen('contrabandHand');
+      banner.toast(t('hint.contrabandHand'), 'info', 6500);
     }
   }
   if (outfit !== coached.outfit) {
@@ -379,6 +381,8 @@ function announce(e: SimEvent, sim: Sim) {
         const done = ({ chip: 'toast.wallGone', cut: 'toast.fenceGone', unscrew: 'toast.grateGone', dig: e.layer === LAYER.GROUND ? 'toast.shaftDone' : '' } as Record<string, string>)[e.action];
         if (done) itemsUI.toast(t(done as Key));
         if (e.action === 'chip') coachOnce('damage', 'hint.damage');
+        // The first chunk or dirt in hand: it's evidence.
+        if (e.action === 'chip' || e.action === 'dig' || e.action === 'digUp') coachOnce('evidence', 'hint.evidence');
         if (e.action === 'dig' && e.layer === LAYER.GROUND && underMyDesk(sim.world, e.tile)) coachOnce('deskTunnel', 'hint.deskTunnel');
       }
       break;
@@ -388,7 +392,7 @@ function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'full' ? 'toast.pocketsFull' : NEED[e.action];
+      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -420,7 +424,7 @@ function announce(e: SimEvent, sim: Sim) {
         document.body.append(fade);
         fade.addEventListener('animationend', () => fade.remove());
       }
-      if (e.layer === LAYER.UNDER) coachOnce('tunnel', 'hint.tunnel');
+      if (e.layer === LAYER.UNDER) coachOnce('tunnel', TOUCH ? 'hint.tunnelTouch' : 'hint.tunnel');
       if (e.layer === LAYER.VENTS || e.layer === LAYER.ROOF) coachOnce('restrictedUp', 'hint.restrictedUp');
       break;
     case 'covered':
@@ -449,12 +453,16 @@ function announce(e: SimEvent, sim: Sim) {
     case 'escaped':
       escaped();
       break;
+    case 'gaveUp':
+      banner.show(t('banner.gaveUp'), t('banner.gaveUpSub'), 'routine', 5000);
+      break;
   }
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
 }
 
 /** Why a strike can't land, by what it needs. */
-const NEED: Record<string, string> = { chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
+const NEED: Record<string, string> = {
+  rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
 let lastCant = 0;
 
 /** A tip shown the first time something happens (and never again). */
@@ -498,6 +506,8 @@ function startGame(prison: PrisonDef) {
   };
   itemsUI.show(true);
   tools.show(true);
+  targets.step = -1;
+  pressQueued = false;
   acc = 0;
   controls.reset();
   controls.enabled = true;
@@ -616,8 +626,10 @@ addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyC') itemsUI.toggleCraft();
   // Space: the tool in hand (held, it keeps striking).
+  // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
   if (e.code === 'Space') {
     e.preventDefault();
+    if (itemsUI.panelOpen) return;
     tools.held = true;
     usePress();
   }
@@ -639,6 +651,7 @@ document.addEventListener('visibilitychange', () => {
 
 const NO_OP: [number, number, number] = [0, 0, 0];
 const USE_OP: [number, number, number] = [OP.USE, 0, 0];
+const PRESS_OP: [number, number, number] = [OP.USE, 1, 0];
 const SLEEP_SPEED = 40;
 /** Knocked out, the 30 seconds pass in 3. */
 const KO_SPEED = 10;
@@ -675,11 +688,13 @@ const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress:
 function usePress() {
   if (!game || game.paused) return;
   game.pilot.stop();
-  // A fresh press (arg 1): only a fresh press digs up, eats or puts things in place.
-  sendOp(OP.USE, 1);
+  // A fresh press (arg 1): only a fresh press digs up, eats or puts things in place. It waits
+  // for the arm to come back from the last strike (a quick tap is never lost).
+  pressQueued = true;
   heldOn = toolKey;
   if (!toolNow?.repeat) tools.release();
 }
+let pressQueued = false;
 
 /** What the held button is working on: when it changes (the earth gave way, a cave-in), the hold ends. */
 let toolKey = '';
@@ -767,7 +782,9 @@ function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView |
   v.icon = TOOL_ICON[tt.action];
   // Grey when it can't be done: the wrong tool, reinforced concrete, or too tired to swing.
   v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= (d?.tool?.energy ?? 0)));
-  v.repeat = strike;
+  // Digging up takes a press per strike (a hold never surfaces the player).
+  v.repeat = strike && tt.action !== 'digUp';
+  if (tt.action === 'eat') v.fits = sim.state.energy < 100;
   if (!strike) {
     v.what = tt.action === 'eat' ? t('thing.chocolate') : tt.action === 'cover' ? t(tt.layer === LAYER.VENTS ? 'thing.grate' : 'thing.hole') : tt.action === 'brace' ? '' : t('thing.rope');
     v.progress = null;
@@ -784,7 +801,11 @@ function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView |
           : tt.action === 'digUp'
             ? t('thing.surface')
             : t(tt.layer === LAYER.UNDER ? 'thing.earth' : 'thing.floor');
-  v.progress = tt.hp > 0 ? Math.min(1, (sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0) / tt.hp) : 0;
+  const worn = sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0;
+  v.progress = tt.hp > 0 ? Math.min(1, worn / tt.hp) : 0;
+  // The last blow would drop a chunk or dirt at the player's feet with no room in their pockets: grey, as the sim refuses it.
+  const yields = tt.action === 'chip' || (tt.action === 'dig' && tt.layer === LAYER.GROUND);
+  if (yields && sim.state.layer === LAYER.GROUND && d?.tool && worn + d.tool.damage >= tt.hp && !sim.state.items.inv.slice(0, 6).includes(0)) v.fits = false;
   return v;
 }
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
@@ -837,9 +858,20 @@ const frameData: Frame = {
   layer: LAYER.GROUND,
   tilesRev: -1,
   wearRev: -1,
+  deskAside: false,
   wear: {},
 };
 const PEEL_ACTION = { verb: '', what: '' };
+/** What the buttons would do, worked out once per simulation step. */
+const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null } = {
+  step: -1,
+  busy: false,
+  panel: false,
+  rev: -1,
+  climb: null,
+  target: null,
+  tool: null,
+};
 const tapAt = { x: 0, z: 0 };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null };
 
@@ -879,7 +911,13 @@ function frame(now: number) {
       // The stick and keys win over tap-to-walk; both are plain direction commands.
       if (controls.steering || sim.state.ko > 0) g.pilot.stop();
       // Holding the tool button: a strike is asked for every step (the sim paces them).
-      const op = g.ops.shift() ?? (tools.held && toolNow?.repeat ? USE_OP : NO_OP);
+      let op = g.ops.shift();
+      // A press waiting for the last strike's swing to finish (things that aren't strikes go at once).
+      if (!op && pressQueued && (!toolNow?.repeat || sim.state.step + 1 - sim.state.struckAt >= STRIKE_STEPS)) {
+        op = PRESS_OP;
+        pressQueued = false;
+      }
+      op ??= tools.held && toolNow?.repeat ? USE_OP : NO_OP;
       g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p), op[0], op[1], op[2]));
       g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
       // Sound, banners and vibration read the events; the simulation never calls them.
@@ -914,6 +952,7 @@ function frame(now: number) {
   f.layer = st.layer;
   f.tilesRev = sim.tilesRev;
   f.wearRev = sim.wearRev;
+  f.deskAside = st.deskAside;
   f.wear = st.wear;
   // Footsteps: earth in the tunnels, steel in the vents, the floor's own sound elsewhere.
   f.surface = st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
@@ -967,11 +1006,23 @@ function frame(now: number) {
   f.groundRev = it.rev * 4 + st.layer;
   const busy = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused || g.over;
   const held = itemOf(it.inv[it.hand]);
-  // The action button: the structure first (climb, cover, brace), as the sim decides it.
-  const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer);
-  const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
-  const climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim)), faced);
-  const target = climb ? null : reach;
+  // The action button: the structure first (climbing, covers coming off), as the sim decides it.
+  // Worked out once per simulation step (nothing it depends on changes between steps).
+  const memo = targets;
+  const panel = itemsUI.panelOpen;
+  if (memo.step !== st.step || memo.busy !== busy || memo.panel !== panel || memo.rev !== it.rev) {
+    memo.step = st.step;
+    memo.busy = busy;
+    memo.panel = panel;
+    memo.rev = it.rev;
+    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer);
+    const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
+    memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim)), faced);
+    memo.target = memo.climb ? null : reach;
+    memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim));
+  }
+  const climb = memo.climb;
+  const target = memo.target;
   // The frame stays on an open container (what the panel shows), else on what is in reach.
   f.focus = it.open >= 0 ? focusOf(sim, { kind: 'container', index: it.open }) : focusOf(sim, target, climb);
   f.held = held;
@@ -993,7 +1044,7 @@ function frame(now: number) {
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   itemsUI.update(v);
   // The tool button: what a strike would hit.
-  const tt = busy || itemsUI.panelOpen ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim));
+  const tt = memo.tool;
   toolNow = describeTool(sim, tt, held);
   // Each new target takes a new press: a held button never digs on into the next thing.
   toolKey = tt ? `${tt.action}:${tt.layer}:${tt.tile}` : '';

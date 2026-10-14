@@ -149,11 +149,11 @@ export class Structure {
     const isRoof = (x: number, z: number) => this.world.inside(x, z) && roof[z * MAP_W + x] !== TILE.EMPTY;
     const tiles: number[] = [];
     for (let i = 0; i < MAP_W * MAP_H; i++) if (roof[i] !== TILE.EMPTY) tiles.push(i);
-    const gravel = new THREE.MeshStandardMaterial({ map: TEX.gravel(), roughness: 1 });
+    const gravel = (this.mats.gravel = new THREE.MeshStandardMaterial({ map: TEX.gravel(), roughness: 1 }));
     const brickTex = TEX.brick().clone();
     brickTex.repeat.set(1, ROOF_Y - WALL_H);
     brickTex.needsUpdate = true;
-    const side = new THREE.MeshStandardMaterial({ map: brickTex, roughness: 0.9 });
+    const side = (this.mats.roofSide = new THREE.MeshStandardMaterial({ map: brickTex, roughness: 0.9 }));
     const h = ROOF_Y - WALL_H;
     const slabs = new THREE.InstancedMesh(new THREE.BoxGeometry(1, h, 1), [side, side, gravel, gravel, side, side], tiles.length);
     const m = new THREE.Matrix4();
@@ -164,7 +164,7 @@ export class Structure {
       const k = this.world.ground.base[i];
       return k === TILE.BRICK || k === TILE.REINFORCED;
     });
-    const coping = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.07, 1), new THREE.MeshStandardMaterial({ color: 0xa8a39a, roughness: 0.9 }), Math.max(1, walls.length));
+    const coping = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.07, 1), (this.mats.coping = new THREE.MeshStandardMaterial({ color: 0xa8a39a, roughness: 0.9 })), Math.max(1, walls.length));
     walls.forEach((i, k) => coping.setMatrixAt(k, m.makeTranslation((i % MAP_W) + 0.5, ROOF_Y + 0.035, Math.floor(i / MAP_W) + 0.5)));
     coping.count = walls.length;
     coping.receiveShadow = coping.castShadow = true;
@@ -212,6 +212,8 @@ export class Structure {
     duct.opacity = layer === LAYER.GROUND ? 0.32 : 1;
     (duct as THREE.MeshStandardMaterial).emissive.setHex(layer === LAYER.VENTS ? 0x3a424c : 0x000000);
     duct.depthWrite = layer !== LAYER.GROUND;
+    // A ghost casts no shadow.
+    this.ducts.traverse((o) => ((o as THREE.Mesh).castShadow = layer !== LAYER.GROUND && (o as THREE.Mesh).isMesh));
     if (this.floorMesh) this.floorMesh.visible = layer !== LAYER.GROUND;
     this.roofs.visible = layer === LAYER.ROOF;
   }
@@ -252,8 +254,10 @@ export class Structure {
         for (let r = 0; r < 4; r++) rubble.push(box(0.12, 0.1, 0.14, 0x9a4a3a, x + 0.12 + r * 0.25, WALL_H - 0.5 - (r % 2) * 0.06, z + 0.5));
         add(merge(rubble), this.mats.kit, true);
       } else if (k === TILE.HOLE_POSTER) {
+        // On the cell's side of the wall only (the other side shows the wall, patched).
         const ax = this.view.wallAlongX(x, z);
-        for (const s of [-1, 1]) {
+        const cellSide = ax ? (w.cellOf[i + MAP_W] === 1 ? 1 : -1) : w.cellOf[i + 1] === 1 ? 1 : -1;
+        for (const s of [cellSide]) {
           const p = add(plane(0.62, 0.8), this.mats.poster);
           p.position.set(x + 0.5 + (ax ? 0 : s * 0.505), 0.72, z + 0.5 + (ax ? s * 0.505 : 0));
           p.rotation.y = ax ? (s > 0 ? 0 : Math.PI) : s > 0 ? Math.PI / 2 : -Math.PI / 2;
@@ -355,6 +359,9 @@ export class Structure {
         m.geometry?.dispose();
       });
     }
+    // The cloned textures (lintel and roof brick) are this view's own; the shared ones stay cached.
+    (this.mats.brick as THREE.MeshStandardMaterial).map?.dispose();
+    (this.mats.roofSide as THREE.MeshStandardMaterial | undefined)?.map?.dispose();
     for (const m of Object.values(this.mats)) m.dispose();
   }
 }

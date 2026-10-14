@@ -190,7 +190,7 @@ export function stepGuards(
         const dx = player.x - b.x;
         const dz = player.z - b.z;
         // Close and nothing between: straight at them. Further: follow a path, re-planned often.
-        if (Math.abs(dx) + Math.abs(dz) < UNIT * 2 && clearLine(w, b.x, b.z, player.x, player.z, undefined, w.guardBlock)) {
+        if (playerHere && Math.abs(dx) + Math.abs(dz) < UNIT * 2 && clearLine(w, b.x, b.z, player.x, player.z, undefined, w.guardBlock)) {
           const d = Math.sqrt(dx * dx + dz * dz);
           b.facing = nearestDir(dx, dz);
           b.moving = d > 0;
@@ -207,11 +207,17 @@ export function stepGuards(
           b.moving = false;
           break;
         }
-        const goal = tileAt(player.x, player.z);
+        // Gone below or up into the vents: guards can't know where; they make for where the
+        // player was last seen (and wait there), never for the live position.
+        const goal = playerHere ? tileAt(player.x, player.z) : g.lastSeen >= 0 ? g.lastSeen : g.goal;
+        if (goal < 0) {
+          b.moving = false;
+          break;
+        }
         if (!g.path.length || (goal !== g.goal && (step + k) % 10 === 0)) head(chasers, g, goal);
         walkPath(chasers, g, k, CHASE_SPEED);
         // Running a path round a corner, it keeps its eyes on the player while it can see them.
-        if (Math.abs(dx) + Math.abs(dz) < SIGHT_RANGE && lineOfSight(w, b.x, b.z, player.x, player.z)) b.facing = nearestDir(dx, dz);
+        if (playerHere && Math.abs(dx) + Math.abs(dz) < SIGHT_RANGE && lineOfSight(w, b.x, b.z, player.x, player.z)) b.facing = nearestDir(dx, dz);
         break;
       }
       case GUARD.INVESTIGATE:

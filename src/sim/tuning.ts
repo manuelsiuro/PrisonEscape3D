@@ -72,3 +72,5 @@ export const CRAWL_SPEED = 110;
 export const TUNNEL_SPEED = 150;
 /** A guard who saw a strike this recently (steps) saw the player at it. */
 export const STRIKE_SEEN_STEPS = 10;
+/** A lockdown with the player off the ground floor this long: the guards call off the hunt (damage found is put right, the heat stays). */
+export const HIDING_STEPS = 60 * STEPS_PER_MINUTE;

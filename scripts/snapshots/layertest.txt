@@ -19,3 +19,6 @@ discovery: covered hole → unnoticed; dirt on the floor → LOCKDOWN
 seen at work: heat 100, LOCKDOWN
 roof: a guard indoors → heat 0; a guard in the yard → heat 100
 beside the toilet: flushed; on the grate: climbed
+tapping at the face: still below
+hiding out a lockdown: called off after 60 min, heat 99
+chokepoints kept clear: 3/3

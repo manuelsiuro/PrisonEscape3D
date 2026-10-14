@@ -469,3 +469,50 @@ function quiet(sim: Sim) {
   console.log(`beside the toilet: ${flush.some((e) => e.type === 'flushed') ? 'flushed' : '-'}; on the grate: ${climb.some((e) => e.type === 'layer') ? 'climbed' : '-'}`);
   check(flush.some((e) => e.type === 'flushed') && climb.some((e) => e.type === 'layer'), 'the toilet faced flushes, the grate overhead climbs');
 }
+
+// ------------------------------------------------------------------ second review: tapping at the dig face, hiding out a lockdown, chokepoints
+{
+  const sim = new Sim(NO_GUARDS, 11);
+  const st = sim.state;
+  // Down the desk tunnel; tap (fresh presses) on at the face: never up through the floor.
+  stand(sim, 9, 7, EAST);
+  carry(sim, 'sturdy_shovel');
+  strikeUntil(sim, 'sturdy_shovel', () => kindAt(sim, LAYER.GROUND, 10, 7) === TILE.SHAFT);
+  interact(sim);
+  interact(sim, 1);
+  st.player.facing = NORTH;
+  for (let k = 0; k < 80; k++) sim.step(command(0, OP.USE, 1));
+  check(st.layer === LAYER.UNDER && kindAt(sim, LAYER.UNDER, 10, 6) === TILE.TUNNEL && !Object.keys(st.wear).length, 'tapping on after breaking through never digs up');
+  console.log(`tapping at the face: ${st.layer === LAYER.UNDER ? 'still below' : 'SURFACED'}`);
+}
+{
+  // A lockdown while the player stays below: called off after an hour, found damage repaired, heat kept.
+  const sim = new Sim(CENTER_PERKS, 12);
+  const st = sim.state;
+  for (const g of st.guards) g.wait = 100000;
+  stand(sim, 10, 5, NORTH, LAYER.UNDER);
+  st.heat = 100;
+  st.lockdown = true;
+  st.found = [];
+  let gaveUp = -1;
+  for (let k = 0; k < 70 * STEPS_PER_MINUTE && gaveUp < 0; k++) {
+    sim.step(command(0));
+    if (sim.events.some((e) => e.type === 'gaveUp')) gaveUp = k;
+  }
+  console.log(`hiding out a lockdown: called off after ${Math.round(gaveUp / STEPS_PER_MINUTE)} min, heat ${st.heat}`);
+  check(gaveUp > 0 && !st.lockdown && st.heat >= 80, 'a lockdown spent below is called off after an hour; the heat stays');
+}
+{
+  const sim = new Sim(NO_GUARDS, 13);
+  const w = sim.world;
+  // Inside the cell block's only door and in front of the gym door: no holes there.
+  const blockedSpots = [13 * MAP_W + 25, 23 * MAP_W + 10, 23 * MAP_W + 19].filter((i) => {
+    const before = w.ground.kind[i];
+    stand(sim, i % MAP_W, Math.floor(i / MAP_W) - 1, SOUTH);
+    carry(sim, 'sturdy_shovel');
+    for (let k = 0; k < 30; k++) use(sim);
+    return w.ground.kind[i] === before;
+  });
+  check(blockedSpots.length === 3, 'no tunnel entrances on chokepoints or at doors');
+  console.log(`chokepoints kept clear: ${blockedSpots.length}/3`);
+}

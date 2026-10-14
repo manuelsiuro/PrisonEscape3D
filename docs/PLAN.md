@@ -76,6 +76,7 @@ Sources:
 | Inmates and guards vs. holes | — | Holes and cut fences are the player's ways only: inmates and guards keep to the prison as built |
 | Electric fence | Instant knockout while the generator is on | The generator is always on until P7: striking the electric fence knocks the player out (infirmary, contraband taken) |
 | Energy | Bar from P4 | **0–100**: tools spend it (GDD per-tool cost); back +1 every 2 game minutes, +1 a minute asleep, +35 at a meal, +20 at the showers, +25 for a bar of chocolate (eaten with the use button) |
+| Hiding through a lockdown | — | A lockdown can only end in a capture on the ground floor; a player who stays in the tunnels, vents or on the roof for **60 game minutes** sees it **called off**: found damage is repaired, the heat stays (the next guard who sees them gives chase) |
 | The escape before P7 | Victory screen in P7 | Reaching the **road** ends the game with a short escape card (prison, day, time); the full victory screen and stats come with P7 |
 
 Any further conflict found during the build is added to this table in the same commit.
@@ -250,4 +251,15 @@ real touch feel) and the known limits.
     - the title's sound pill no longer wraps;
   - look: a warm trodden trench floor and a faint light shaft in the tunnels, the rooms dim more under the vents;
   - text: clearer wording (FR digging up, cave-in advice every third tile, how to come up).
-- **Next: second P4 review, then P5 Combat.**
+- **Second P4 review (v0.5.2)**:
+  - digging up is offered only at a tunnel's end, facing back along it (the earth behind the player): tapping on at the dig face never surfaces by accident, and digging up takes a press per strike;
+  - a lockdown spent out of reach (tunnels, vents, roof) is called off after an hour: the guards repair what they found and the heat stays (§2);
+  - while the player is below, chasers head for where they last saw them, not the live position;
+  - no tunnel entrances on chokepoints (tiles whose loss would split the prison), either side of any door, guard stops and posts, guard beds, the infirmary and solitary spots;
+  - the desk stays pushed aside only while the player went down through it;
+  - quick taps are kept (a press waits for the last swing); Space does nothing while a panel is open; the tool button greys when the last blow would need room in full pockets; a rope with nowhere to land and a cover coming off into full pockets say why;
+  - chocolate keeps at full energy; the floor arrows never lead through the player's own holes;
+  - tips: the tool how-to before the contraband warning; the "evidence" tip on the first chunk or dirt; the tunnel tip in touch and keyboard versions;
+  - render: the tap ring on every layer; the tunnel lantern always in the scene (no shader recompile on the first trip down); roof materials disposed; a poster shows on the cell's side only; the ghosted ducts cast no shadow;
+  - perf: the buttons' targets worked out once per simulation step; no per-step allocation in damage spotting or strikes.
+- **Next: P5 Combat.**

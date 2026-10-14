@@ -124,13 +124,79 @@ function occupied(i: number, bodies: readonly Body[]): boolean {
  * strand a guard's bed check or a sleeper, or the player climbing down.
  */
 const reservedCache = new WeakMap<World, Set<number>>();
-function reserved(w: World): Set<number> {
+export function reserved(w: World): Set<number> {
   let r = reservedCache.get(w);
   if (r) return r;
   const p = placesOf(w);
-  r = new Set<number>([...p.bedside, ...p.deskside, ...p.doorstep, ...p.rollCall.map((s) => s.tile), ladderFootOf(w)].filter((t) => t >= 0));
+  const guardSpots = w.def.guards.flatMap((d) => [...d.beat, ...(d.night ?? []), ...Object.values(d.posts ?? {})]).map((q) => q!.z * MAP_W + q!.x);
+  r = new Set<number>(
+    [...p.bedside, ...p.deskside, ...p.doorstep, ...p.rollCall.map((q) => q.tile), ...p.guardBeds.map((g) => g.tile), p.infirmary, p.solitary, ladderFootOf(w), ...guardSpots].filter((t) => t >= 0),
+  );
+  // Either side of every door, and every chokepoint: a hole there would cut people off.
+  const base = w.ground.base;
+  for (let i = 0; i < MAP_W * MAP_H; i++) {
+    if (base[i] !== TILE.DOOR && base[i] !== TILE.DETECTOR) continue;
+    for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) r.add(j);
+  }
+  for (const i of chokepoints(w)) r.add(i);
   reservedCache.set(w, r);
   return r;
+}
+
+/**
+ * The tiles whose loss would split the prison's walkable floor in two (articulation points of
+ * the map as built, doors open, furniture in place): found once per map, iteratively (Tarjan).
+ */
+function chokepoints(w: World): number[] {
+  const N = MAP_W * MAP_H;
+  const base = w.ground.base;
+  const open = (i: number) => {
+    const k = base[i];
+    return (k === TILE.DOOR || !TILE_INFO[k].solid) && !w.propSolid[i];
+  };
+  const disc = new Int32Array(N).fill(-1);
+  const low = new Int32Array(N);
+  const parent = new Int32Array(N).fill(-1);
+  const next = new Uint8Array(N);
+  const cut = new Uint8Array(N);
+  let time = 0;
+  const neighbour = (i: number, k: number) => {
+    const x = i % MAP_W;
+    if (k === 0) return x > 0 ? i - 1 : -1;
+    if (k === 1) return x < MAP_W - 1 ? i + 1 : -1;
+    if (k === 2) return i >= MAP_W ? i - MAP_W : -1;
+    return i < N - MAP_W ? i + MAP_W : -1;
+  };
+  for (let root = 0; root < N; root++) {
+    if (!open(root) || disc[root] >= 0) continue;
+    let children = 0;
+    const stack = [root];
+    disc[root] = low[root] = time++;
+    while (stack.length) {
+      const u = stack[stack.length - 1];
+      if (next[u] < 4) {
+        const v = neighbour(u, next[u]++);
+        if (v < 0 || !open(v)) continue;
+        if (disc[v] < 0) {
+          parent[v] = u;
+          if (u === root) children++;
+          disc[v] = low[v] = time++;
+          stack.push(v);
+        } else if (v !== parent[u]) low[u] = Math.min(low[u], disc[v]);
+        continue;
+      }
+      stack.pop();
+      const pu = parent[u];
+      if (pu >= 0) {
+        low[pu] = Math.min(low[pu], low[u]);
+        if (pu !== root && low[u] >= disc[pu]) cut[pu] = 1;
+      }
+    }
+    if (children > 1) cut[root] = 1;
+  }
+  const out: number[] = [];
+  for (let i = 0; i < N; i++) if (cut[i]) out.push(i);
+  return out;
 }
 
 /** A ground floor tile a tunnel entrance can be dug through (free floor, or under the player's desk). */
@@ -170,8 +236,10 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   } else if (layer === LAYER.UNDER) {
     const k = ahead >= 0 ? w.layers[LAYER.UNDER].kind[ahead] : TILE.EMPTY;
     if (k === TILE.SOIL && !edge(ahead)) add('dig', LAYER.UNDER, ahead, SOIL_HP);
-    // Facing back along the tunnel: up through the floor above.
-    else if (canDigFloor(w, here, bodies) && !underMyDesk(w, here)) add('digUp', LAYER.GROUND, here, FLOOR_HP);
+    // At the tunnel's end, facing back along it (the earth behind the player): up through the
+    // floor above. Never just after breaking through ahead (the tunnel is behind them then),
+    // so tapping on at the dig face never surfaces by accident.
+    else if (isTunnel(k) && behindIsEarth(w, b) && canDigFloor(w, here, bodies) && !underMyDesk(w, here)) add('digUp', LAYER.GROUND, here, FLOOR_HP);
   } else if (layer === LAYER.VENTS) {
     for (const t of [here, ahead]) if (t >= 0 && w.layers[LAYER.VENTS].kind[t] === TILE.GRATE) add('unscrew', LAYER.VENTS, t, GRATE_HP);
   }
@@ -203,6 +271,15 @@ function placeTarget(w: World, layer: number, here: number, ahead: number, held:
     return at('rope', LAYER.GROUND, ahead);
   }
   return null;
+}
+
+/** Whether the tile behind a body (opposite its heading, snapped to a side) is undug earth or the map's edge. */
+function behindIsEarth(w: World, b: Body): boolean {
+  const fx = DIR_X[b.facing] ?? 0;
+  const fz = DIR_Z[b.facing] ?? 0;
+  const x = Math.floor(b.x / UNIT) - (Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0);
+  const z = Math.floor(b.z / UNIT) - (Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz));
+  return !w.inside(x, z) || w.layers[LAYER.UNDER].kind[z * MAP_W + x] === TILE.SOIL;
 }
 
 /** The map's outermost ring can't be dug (there is nothing past it). */

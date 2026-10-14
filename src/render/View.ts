@@ -55,6 +55,8 @@ export interface Frame {
   /** Changes whenever tiles or their wear do (damage is redrawn then), and the wear itself. */
   tilesRev: number;
   wearRev: number;
+  /** The desk over the player's tunnel is pushed aside (they went down through it). */
+  deskAside: boolean;
   wear: Readonly<Record<number, number>>;
 }
 
@@ -117,6 +119,8 @@ const DUST: Record<number, number> = {
 /** The ambient light's sky color. */
 const SKY_LIGHT = 0xdfe8ff;
 const ORIGIN = new THREE.Vector3(0, 0, 0);
+/** The tunnel lantern's strength while the player is below. */
+const LANTERN = 2.6;
 const UP = new THREE.Vector3(0, 1, 0);
 
 /**
@@ -224,13 +228,13 @@ export class View {
       this.structure.dispose();
     }
     if (this.underground) {
-      this.scene.remove(this.underground.group);
+      this.scene.remove(this.underground.group, this.underground.lantern);
       this.underground.dispose();
     }
     this.worldView = new WorldView(world);
     this.structure = new Structure(world, this.worldView);
     this.underground = new Underground(world);
-    this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs, this.underground.group);
+    this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs, this.underground.group, this.underground.lantern);
     this.layer = -1;
     this.tilesRev = -1;
     this.wearRev = -1;
@@ -281,9 +285,14 @@ export class View {
       this.structure.group.visible = !under;
       this.structure.setMode(layer);
     }
-    if (this.underground) this.underground.group.visible = under;
+    if (this.underground) {
+      this.underground.group.visible = under;
+      // The lantern never leaves the scene (a light coming and going recompiles every material): it dims instead.
+      this.underground.lantern.intensity = under ? LANTERN : 0;
+    }
     this.cones.group.visible = !under;
-    this.guide.group.visible = !under;
+    // The floor arrows and the tap ring at the player's level (off the ground floor only the ring shows).
+    this.guide.group.position.y = LAYER_Y[layer];
     this.floor.constant = -LAYER_Y[layer];
     this.pickups.group.position.y = LAYER_Y[layer];
   }
@@ -388,7 +397,7 @@ export class View {
     this.dress(f.outfit);
     this.showLayer(f.layer);
     // Damage, grates and tunnels redrawn when the tiles change.
-    const below = f.layer === LAYER.UNDER;
+    const below = f.deskAside;
     if (f.tilesRev !== this.tilesRev || below !== this.drawnBelow) {
       if (f.tilesRev !== this.tilesRev) this.underground?.refresh();
       this.tilesRev = f.tilesRev;
