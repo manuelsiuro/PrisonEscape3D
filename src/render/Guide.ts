@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { TILE, TILE_INFO } from '../sim/world/tiles';
+import { MAP_W, type World } from '../sim/world/World';
 
 const MAX_ARROWS = 28;
 /** Arrows start this far ahead of the player and repeat at this spacing (tiles). */
@@ -57,6 +59,8 @@ export class Guide {
   private readonly dim = new THREE.Color(0xd9530a);
   private readonly bright = new THREE.Color(0xffd36b);
   private points: THREE.Vector2[] = [];
+  /** The prison, to leave out arrows a wall would cut in half. */
+  world: World | null = null;
   private shown = 0;
   private want = false;
   private tapWant = false;
@@ -121,7 +125,11 @@ export class Guide {
         const f = (next - along) / Math.max(1e-6, len);
         // Skip the last stretch: the goal ring marks it.
         if (k === pts.length - 2 && len - (next - along) < 0.6) break;
-        this.dummy.position.set(a.x + (b.x - a.x) * f, 0.03, a.y + (b.y - a.y) * f);
+        const x = a.x + (b.x - a.x) * f;
+        const z = a.y + (b.y - a.y) * f;
+        next += SPACING;
+        if (this.hidden(x, z)) continue;
+        this.dummy.position.set(x, 0.03, z);
         this.dummy.rotation.set(0, Math.atan2(b.x - a.x, b.y - a.y), 0);
         // A pulse of light runs down the line toward the goal.
         const wave = motion ? Math.max(0, Math.sin(n * 0.55 - time * 5)) ** 3 : 0.3;
@@ -130,7 +138,6 @@ export class Guide {
         this.arrows.setMatrixAt(n, this.dummy.matrix);
         this.arrows.setColorAt(n, this.color.copy(this.dim).lerp(this.bright, wave));
         n++;
-        next += SPACING;
       }
       along += len;
     }
@@ -140,6 +147,22 @@ export class Guide {
     const end = pts[pts.length - 1];
     this.goal.position.set(end.x, 0.03, end.y);
     this.goal.scale.setScalar(motion ? 1 + Math.sin(time * 4) * 0.08 : 1);
+  }
+
+  /**
+   * In a doorway, or just north of a wall: the camera looks over the wall from the south, so
+   * the wall would hide half the arrow. The arrows on either side show the way well enough.
+   */
+  private hidden(x: number, z: number): boolean {
+    const w = this.world;
+    if (!w) return false;
+    const blocks = (tx: number, tz: number) => {
+      if (!w.inside(tx, tz)) return false;
+      const k = w.ground.kind[tz * MAP_W + tx];
+      return k === TILE.DOOR || TILE_INFO[k].opaque;
+    };
+    const tx = Math.floor(x);
+    return blocks(tx, Math.floor(z)) || blocks(tx, Math.floor(z + 0.8));
   }
 
   dispose() {

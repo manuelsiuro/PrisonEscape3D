@@ -48,6 +48,8 @@ Sources:
 | Lockdown without guards | — | Guards arrive in P3. Until then a lockdown lifts after the player spends **60 game minutes in their cell**, leaving **75% heat**. P3 replaces this with capture and solitary |
 | Cell doors at Lights Out | — | They lock once their occupant is inside; a door **waits open for an occupant still out** and never shuts on anyone standing in it. Guards (P3) punish being out |
 | Blocks spent in a lockdown | — | **Excused**: missing them adds no heat |
+| When a missed roll call counts | — | GDD §2.2 says "immediate" lockdown but also gives every block a grace window: it fires **when the block ends** (09:00, 23:00) if the player never stepped into the yard |
+| Cells and visitors | — | A cell never locks while anyone but its occupant is inside it |
 
 Any further conflict found during the build is added to this table in the same commit.
 
@@ -171,4 +173,5 @@ real touch feel) and the known limits.
   - 7 inmates who line up at roll call, eat at the canteen tables, exercise, shower, wander in free time and sleep in their beds;
   - HUD routine pill with PENDING/ATTENDED, heat meter, banners and toasts, floor arrows to the routine's place, tap/click-to-walk;
   - `routinetest`: model prisoner 3 days at 0 heat, truant lockdown, night owl doors, inmates make every block. Dev builds: `]` fast-forwards ×30.
+- **P1 review and polish (v0.2.2)**: a visitor can no longer be locked in someone else's cell (lockdown that never ended); inmates make way for each other and the player (followers keep their distance, head-on meetings by turn, squeeze past after 1.5 s); paths re-checked as doors change; canteen benches with a seated pose and meal trays; shower heads moved to the wall in view, with water; blankets and floating Zs for sleepers; legs paced to each inmate's speed; floor arrows skip spots walls would cut; Lights Out arrows and badge follow whether the player is in the cell; the HUD says when each block ends; start-up timers can't reach a paused or later game; tap vs drag thresholds; siren fade-in; one door per cell validated.
 - **Next: P2 Items.**

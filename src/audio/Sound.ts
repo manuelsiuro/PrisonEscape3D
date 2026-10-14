@@ -147,7 +147,7 @@ export class Sound {
     const c = this.ctx;
     if (!c || !this.out || this.sirenNodes) return;
     const gain = c.createGain();
-    gain.gain.value = 0;
+    gain.gain.setValueAtTime(0, c.currentTime);
     gain.gain.linearRampToValueAtTime(0.045, c.currentTime + 0.4);
     const band = c.createBiquadFilter();
     band.type = 'bandpass';

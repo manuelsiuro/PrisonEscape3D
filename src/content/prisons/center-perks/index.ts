@@ -19,11 +19,15 @@ for (const top of [true, false]) {
 }
 
 props.push(
-  // Canteen: rows of tables either side of the entrance, the serving counter at the back.
-  ...[9, 12, 15, 18].flatMap((z) => [
-    { kind: 'table', x: 41, z, w: 3 } as const,
-    { kind: 'table', x: 46, z, w: 3 } as const,
-  ]),
+  // Canteen: rows of tables either side of the entrance, a low bench along each side, the
+  // serving counter at the back.
+  ...[9, 12, 15, 18].flatMap((z) =>
+    [41, 46].flatMap((x) => [
+      { kind: 'table', x, z, w: 3 } as const,
+      { kind: 'seat', x, z: z - 1, w: 3 } as const,
+      { kind: 'seat', x, z: z + 1, w: 3, rot: 2 } as const,
+    ]),
+  ),
   { kind: 'counter', x: 51, z: 9, w: 5 },
   // Kitchen.
   { kind: 'oven', x: 50, z: 19, rot: 2 },
@@ -41,8 +45,8 @@ props.push(
   { kind: 'bed', x: 7, z: 31, d: 2 },
   { kind: 'bed', x: 9, z: 31, d: 2 },
   { kind: 'bed', x: 12, z: 31, d: 2 },
-  // Showers.
-  ...[16, 18, 20, 22].map((x) => ({ kind: 'shower', x, z: 28, rot: 2 }) as const),
+  // Showers: heads along the north wall (in view from the south), either side of the door.
+  ...[16, 17, 18, 20, 21, 22].map((x) => ({ kind: 'shower', x, z: 25 }) as const),
   // Library.
   { kind: 'shelf', x: 16, z: 30, w: 3 },
   { kind: 'shelf', x: 20, z: 30, w: 3 },

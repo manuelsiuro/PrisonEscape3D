@@ -5,7 +5,7 @@ const STICK_RADIUS = 56;
 const DEAD_ZONE = 10;
 /** A touch or click this short and this still is a tap (walk there), not a drag. */
 const TAP_MS = 280;
-const TAP_SLOP = 12;
+const TAP_SLOP = 8;
 
 const KEYS_X: Record<string, number> = { KeyA: -1, ArrowLeft: -1, KeyD: 1, ArrowRight: 1 };
 const KEYS_Z: Record<string, number> = { KeyW: -1, ArrowUp: -1, KeyS: 1, ArrowDown: 1 };
@@ -95,6 +95,7 @@ export class Controls {
   }
 
   private move(e: PointerEvent) {
+    // Past the slop (smaller than the stick's dead zone), the press is a drag, never a tap.
     if (this.press?.id === e.pointerId && Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) > TAP_SLOP) this.press.far = true;
     if (!this.pointers.has(e.pointerId)) return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });

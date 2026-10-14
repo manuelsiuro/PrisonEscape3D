@@ -73,6 +73,20 @@ for (const def of PRISONS) {
     }
   });
 
+  // Each cell has exactly one door (the one that locks at Lights Out), shared with no other cell.
+  def.cells.forEach((_, k) => {
+    let doors = 0;
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      if (g.kind[i] !== TILE.DOOR) continue;
+      const near = [i - 1, i + 1, i - MAP_W, i + MAP_W].map((j) => w.cellOf[j]).filter((c) => c);
+      if (near.includes(k + 1)) {
+        doors++;
+        check(near.every((c) => c === k + 1), `${def.id}: the door of cell ${k + 1} leads into no other cell`);
+      }
+    }
+    check(doors === 1, `${def.id}: cell ${k + 1} has one door (${doors})`);
+  });
+
   // Roll call: a free spot in the yard for every inmate.
   check(def.rollCall.length >= def.cells.length, `${def.id}: a roll call spot per cell`);
   for (const r of def.rollCall) check(w.zoneAt(r.x, r.z) === 'rollCall' && !w.blocked(r.x, r.z), `${def.id}: roll call spot ${r.x},${r.z} is free yard`);

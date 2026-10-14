@@ -73,6 +73,7 @@ export const fr: Partial<Strings> = {
   "routine.lockdown": "Confinement",
   "routine.free": "Où tu veux (zones autorisées)",
   "routine.or": "{a} ou {b}",
+  "routine.until": "jusqu’à {time}",
   "routine.pending": "À faire",
   "routine.attended": "Présent",
   "routine.home": "Retourne en cellule",

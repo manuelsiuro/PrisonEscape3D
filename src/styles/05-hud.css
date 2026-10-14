@@ -141,7 +141,26 @@
   font-size: 15px;
 }
 
-.hud-routine-text span {
+.hud-routine-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hud-routine-head b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-routine-head small {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.6;
+}
+
+.hud-routine-place {
   overflow: hidden;
   font-size: 12px;
   font-weight: 600;

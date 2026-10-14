@@ -91,6 +91,8 @@ export class View {
   private cast: Character[] = [];
   /** Each cell's bed, for sleepers (by cell number). */
   private beds: Array<BedPose | undefined> = [];
+  /** Tiles under a shower head ("x,z"). */
+  private showers = new Set<string>();
   private readonly guide = new Guide();
   private readonly dust = new Dust();
   private readonly raycaster = new THREE.Raycaster();
@@ -156,17 +158,19 @@ export class View {
     }
     this.worldView = new WorldView(world);
     this.scene.add(this.worldView.group);
+    this.guide.world = world;
+    this.showers = new Set(world.props.filter((p) => p.kind === 'shower').map((p) => `${p.x},${p.z}`));
     this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
     this.setCast(0);
   }
 
-  /** The other inmates: one character each, looks varied by cell. */
-  setCast(cells: number[] | 0) {
+  /** The other inmates: one character each, looks varied by cell, legs paced by walking speed. */
+  setCast(cast: Array<{ cell: number; gait: number }> | 0) {
     for (const c of this.cast) {
       this.scene.remove(c.root);
       c.dispose();
     }
-    this.cast = cells ? cells.map((cell) => new Character(inmateLook(cell))) : [];
+    this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), gait: c.gait })) : [];
     for (const c of this.cast) this.scene.add(c.root);
   }
 
@@ -243,7 +247,9 @@ export class View {
     this.feet.set(f.x, 0, f.z);
     f.inmates.forEach((m, k) => {
       const c = this.cast[k];
-      if (c) c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      if (!c) return;
+      c.wet = this.showers.has(`${Math.floor(m.x)},${Math.floor(m.z)}`);
+      c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
     });
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);

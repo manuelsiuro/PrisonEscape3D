@@ -198,3 +198,25 @@ const owl = run(
 );
 console.log('== night owl');
 for (const l of owl.log.filter((l) => l.includes('day 1 2') || l.includes('cells'))) console.log(l);
+
+// The visitor: in someone else's cell when a lockdown starts, never locked in; walks home and sits it out.
+{
+  const sim = new Sim(CENTER_PERKS, 3);
+  const pilot = new Autopilot(sim.world);
+  const places = placesOf(sim.world);
+  // Wait for roll call to empty the cells, then step into cell 3.
+  for (let i = 0; i < 20 * 20; i++) sim.step(0);
+  sim.state.player.x = 17 * 1024 + 512;
+  sim.state.player.z = 9 * 1024 + 512;
+  // Roll call missed at 09:00: lockdown, everyone else goes home.
+  while (!sim.state.lockdown) sim.step(0);
+  for (let i = 0; i < 20 * 20; i++) sim.step(0);
+  const t = tileOfBody(sim.state.player);
+  check(sim.world.cellOf[t.z * MAP_W + t.x] === 3, 'the visitor is in cell 3');
+  check(!sim.world.blocked(18, 11), 'cell 3 stays open while a visitor is inside');
+  pilot.goTo(places.bedside[1]);
+  let steps = 0;
+  while (sim.state.lockdown && steps++ < 3 * 60 * 20) sim.step(command(pilot.dir(sim.state.player)));
+  check(!sim.state.lockdown, `the visitor walks home and the lockdown lifts (${at(sim.state.step)})`);
+  console.log(`== visitor: lockdown lifted at ${at(sim.state.step)}, heat ${sim.state.heat}%`);
+}

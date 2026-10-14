@@ -11,7 +11,7 @@ import { command, DIR_X, DIR_Z } from './sim/command';
 import { Recorder } from './sim/Recorder';
 import { Sim, type SimEvent } from './sim/Sim';
 import { tileOfBody } from './sim/systems/movement';
-import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from './sim/tuning';
+import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT, WALK_SPEED } from './sim/tuning';
 import { MAP_W } from './sim/world/World';
 import { View, type Quality } from './render/View';
 import { Controls } from './input/Controls';
@@ -151,8 +151,9 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const home = places.bedside[1];
   if (s.lockdown) return sim.playerZone === 'playerCell' ? null : (i) => i === home;
   const r = ROUTINE[s.routine];
+  // Lights Out is about being in the cell, not having been there.
+  if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
   if (!r.zones.length || s.attended) return null;
-  if (r.id === 'lightsOut') return (i) => i === home;
   if (r.id === 'rollCall' || r.id === 'eveningRollCall') {
     const spot = places.rollCall[0].tile;
     return (i) => i === spot;
@@ -224,7 +225,7 @@ function startGame(prison: PrisonDef) {
   // Start a little wide and settle in on the player.
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
   view.zoomBy(1.25);
-  view.setCast(sim.state.inmates.map((m) => m.cell));
+  view.setCast(sim.state.inmates.map((m) => ({ cell: m.cell, gait: m.speed / WALK_SPEED })));
   game = {
     rec: new Recorder(sim),
     prev: { x: sim.state.player.x, z: sim.state.player.z },
@@ -245,14 +246,16 @@ function startGame(prison: PrisonDef) {
   fadeIn();
   document.body.classList.add('is-playing');
   // Day 1 opens on roll call: the bell and the banner, once the fade is over.
-  setTimeout(() => game && announce({ type: 'routine', routine: sim.state.routine }, sim), 700);
+  const g = game;
+  const later = (ms: number, f: () => void) => startTimers.push(window.setTimeout(() => game === g && !g.paused && f(), ms));
+  later(700, () => announce({ type: 'routine', routine: sim.state.routine }, sim));
   if (!hasSeen('walk')) {
-    setTimeout(
-      () => game && hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]),
-      4600,
-    );
+    later(4600, () => hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]));
   }
 }
+
+/** Timers set when a game starts (cleared when it ends, so they never reach the next one). */
+let startTimers: number[] = [];
 
 /** Resolves when the player quits to the title. */
 let quit: (() => void) | null = null;
@@ -279,6 +282,8 @@ async function pause() {
     break;
   }
   game = null;
+  for (const id of startTimers) clearTimeout(id);
+  startTimers = [];
   controls.enabled = false;
   hud.show(false);
   hint.hide();
@@ -366,7 +371,8 @@ function frame(now: number) {
   sound.siren(st.lockdown && !g.paused);
   hud.update(clock, sim.playerZone, {
     routine: st.routine,
-    attended: st.attended,
+    // At Lights Out the badge says whether the player is in the cell right now.
+    attended: ROUTINE[st.routine].id === 'lightsOut' ? sim.playerZone === 'playerCell' : st.attended,
     heat: st.heat,
     lockdown: st.lockdown,
     lockedMinutes: st.lockdown && sim.playerZone === 'playerCell' ? Math.ceil(st.lockdownLeft / STEPS_PER_MINUTE) : null,

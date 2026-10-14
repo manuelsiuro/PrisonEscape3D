@@ -74,6 +74,7 @@ export const en = {
   "routine.lockdown": "Lockdown",
   "routine.free": "Anywhere legal",
   "routine.or": "{a} or {b}",
+  "routine.until": "until {time}",
   "routine.pending": "Pending",
   "routine.attended": "Attended",
   "routine.home": "Back to your cell",

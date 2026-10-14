@@ -10,6 +10,8 @@ export interface Look {
   hairStyle?: number;
   /** Overall size (1 = the player). */
   size?: number;
+  /** Walking pace against the player's (legs swing slower for slower walkers). */
+  gait?: number;
   /** Shown when the character is hidden behind something (the player only). */
   silhouette?: number;
 }
@@ -51,6 +53,33 @@ const STENCIL_MARK: Partial<THREE.MeshStandardMaterialParameters> = {
 const BED_TOP = 0.6;
 const BED_FEET = 0.55;
 
+/** "Z" for sleepers, drawn once and shared. */
+let zTexture: THREE.CanvasTexture | null = null;
+function sleepTexture(): THREE.CanvasTexture {
+  if (zTexture) return zTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  g.font = '900 52px Fredoka, system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.lineWidth = 8;
+  g.strokeStyle = 'rgba(20, 30, 60, 0.85)';
+  g.strokeText('Z', 32, 34);
+  g.fillStyle = '#eaf2ff';
+  g.fillText('Z', 32, 34);
+  zTexture = new THREE.CanvasTexture(c);
+  zTexture.colorSpace = THREE.SRGBColorSpace;
+  return zTexture;
+}
+
+const dropMaterial = new THREE.MeshBasicMaterial({ color: 0xc8ecff, transparent: true, opacity: 0.8, depthWrite: false });
+const dropGeometry = new THREE.BoxGeometry(0.035, 0.24, 0.035);
+/** The spray under a shower head: a faint cone of water. */
+const sprayMaterial = new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
+const sprayGeometry = new THREE.CylinderGeometry(0.09, 0.3, 1.55, 14, 1, true).translate(0, 0.8, -0.05);
+const DROPS = 10;
+
 /** A box w×h×d centered on (x, y, z), painted. */
 const part = (w: number, h: number, d: number, color: number, x: number, y: number, z: number): Part => box(w, h, d, color, x, y - h / 2, z);
 
@@ -84,6 +113,14 @@ export class Character {
   private act = 0;
   private actKind: number = DOING.NOTHING;
   private readonly offset = Math.random() * 10;
+  private readonly gait: number;
+  /** Props that come and go with what the character does. */
+  private readonly blanket: THREE.Mesh;
+  private readonly tray: THREE.Mesh;
+  private readonly water = new THREE.Group();
+  private readonly zs: THREE.Sprite[] = [];
+  /** Standing under a shower head (water falls only there). */
+  wet = false;
   private readonly at = new THREE.Vector3();
   private readonly bedAt = new THREE.Vector3();
 
@@ -158,8 +195,49 @@ export class Character {
     this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
     this.root.add(this.body);
     this.root.scale.setScalar(look.size ?? 1);
-
+    this.gait = look.gait ?? 1;
+    // The silhouette covers the body only, not the props below.
     if (look.silhouette !== undefined) this.addSilhouette(look.silhouette);
+
+    // In bed: a blanket pulled up to the chest, and Zs floating up.
+    this.blanket = new THREE.Mesh(
+      merge([part(0.64, 0.08, 0.92, 0x6f8fb5, 0, 0.19, -0.42), part(0.66, 0.09, 0.14, 0xe6ebf2, 0, 0.2, -0.9)]),
+      kitMaterial,
+    );
+    this.blanket.castShadow = true;
+    this.blanket.visible = false;
+    this.root.add(this.blanket);
+    for (let k = 0; k < 3; k++) {
+      const z = new THREE.Sprite(new THREE.SpriteMaterial({ map: sleepTexture(), transparent: true, depthWrite: false, opacity: 0 }));
+      z.visible = false;
+      z.renderOrder = 5;
+      this.zs.push(z);
+      this.root.add(z);
+    }
+    // At a meal: a tray on the table in front.
+    this.tray = new THREE.Mesh(
+      merge([
+        part(0.38, 0.03, 0.28, 0x9aa3ad, 0, 0.545, 0.74),
+        part(0.12, 0.05, 0.1, 0xe8d9a8, -0.08, 0.57, 0.72),
+        part(0.1, 0.04, 0.1, 0x8a5a3a, 0.09, 0.565, 0.76),
+        part(0.1, 0.03, 0.08, 0x6aa84f, 0.05, 0.565, 0.66),
+      ]),
+      kitMaterial,
+    );
+    this.tray.visible = false;
+    this.root.add(this.tray);
+    // Under a shower head: falling water.
+    for (let k = 0; k < DROPS; k++) {
+      const d = new THREE.Mesh(dropGeometry, dropMaterial);
+      d.userData.phase = Math.random();
+      d.position.set((Math.random() - 0.5) * 0.4, 0, -0.05 + (Math.random() - 0.5) * 0.35);
+      this.water.add(d);
+    }
+    const spray = new THREE.Mesh(sprayGeometry, sprayMaterial);
+    spray.userData.spray = true;
+    this.water.add(spray);
+    this.water.visible = false;
+    this.root.add(this.water);
   }
 
   /** A flat copy of every part, drawn only where something stands in front of the character. */
@@ -212,7 +290,7 @@ export class Character {
     let stepped = false;
     if (moving) {
       const before = Math.floor(this.phase / Math.PI);
-      this.phase += dt * 11;
+      this.phase += dt * 11 * this.gait;
       stepped = Math.floor(this.phase / Math.PI) !== before;
     }
     const s = Math.sin(this.phase) * 0.75 * this.swing;
@@ -233,6 +311,11 @@ export class Character {
     this.act = moving ? 0 : Math.min(1, this.act + dt * 3);
     const a = this.act * (motion ? 1 : 0);
     const t = time + this.offset;
+    // Seated on the canteen bench: legs forward under the table, a little lower.
+    const sit = doing === DOING.EAT ? this.act : 0;
+    legL -= sit * 1.45;
+    legR -= sit * 1.45;
+    bob -= sit * 0.06;
     if (doing === DOING.EAT) {
       // Spoon to mouth, now and then.
       const lift = Math.max(0, Math.sin(t * 2.6)) ** 2;
@@ -260,6 +343,28 @@ export class Character {
     this.body.position.y = bob * (1 - this.lie);
     this.body.rotation.x = 0.08 * this.swing - (Math.PI / 2) * this.lie;
 
+    // What goes with the activity: the blanket and Zs, the tray, the water.
+    this.blanket.visible = this.lie > 0.6;
+    this.blanket.scale.z = THREE.MathUtils.smoothstep(this.lie, 0.6, 1);
+    this.zs.forEach((z, i) => {
+      z.visible = this.lie > 0.9;
+      if (!z.visible) return;
+      const c = motion ? (time * 0.45 + i / 3 + this.offset) % 1 : i / 3;
+      // Up from the face, drifting and growing, fading at the top.
+      z.position.set(0.12 + Math.sin(c * 5 + i) * 0.12, 0.45 + c * 0.9, -1.05 - c * 0.15);
+      z.scale.setScalar(0.16 + c * 0.2);
+      z.material.opacity = Math.sin(c * Math.PI) * 0.95;
+    });
+    this.tray.visible = doing === DOING.EAT && this.act > 0.3;
+    this.water.visible = this.wet && doing === DOING.SHOWER && this.act > 0.2;
+    if (this.water.visible) {
+      for (const d of this.water.children) {
+        if (d.userData.spray) continue;
+        const c = motion ? (time * 2.6 + d.userData.phase) % 1 : d.userData.phase;
+        d.position.y = 1.55 - c * 1.35;
+      }
+    }
+
     // Blink every few seconds; eyes shut in bed.
     this.blinkAt -= dt;
     const closed = this.blinkAt < 0.12 || this.lie > 0.5;
@@ -279,9 +384,10 @@ export class Character {
   dispose() {
     this.root.traverse((o) => {
       const m = o as THREE.Mesh;
-      m.geometry?.dispose();
+      // Sprites and drops share their geometry with every other character.
+      if (!(o instanceof THREE.Sprite) && m.geometry !== dropGeometry && m.geometry !== sprayGeometry) m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) if (mat !== kitMaterial) mat.dispose();
+      for (const mat of mats) if (mat !== kitMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();
     });
   }
 }

@@ -113,7 +113,7 @@ export class Sim {
     // Doors, then everyone moves.
     this.updateDoors(true);
     // In a lockdown inmates head for their cells (at night they are going there anyway, to sleep).
-    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s);
+    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, s.player, s.step);
     walk(w, s.player, dirOf(cmd));
     // Attendance, and the lockdown: it lifts once the player has sat out its time in the cell.
     const zone = this.playerZone;
@@ -148,7 +148,8 @@ export class Sim {
 
   /**
    * Cell doors are locked while cells are, except for a cell whose occupant is still out
-   * (the door waits for them) and a door someone stands in (it never shuts on anyone).
+   * (the door waits for them), a cell with a visitor in it (nobody is locked in someone
+   * else's cell) and a door someone stands in (it never shuts on anyone).
    */
   private updateDoors(announce: boolean) {
     const s = this.state;
@@ -157,11 +158,15 @@ export class Sim {
     if (this.cellsLocked) {
       const bodies = [s.player, ...s.inmates.map((m) => m.body)];
       const occupant = (c: number) => (c === 1 ? s.player : s.inmates.find((m) => m.cell === c)?.body);
+      const cellOfBody = (b: Body) => {
+        const t = tileOfBody(b);
+        return w.cellOf[t.z * MAP_W + t.x];
+      };
       for (let c = 1; c < w.cellDoor.length; c++) {
         const b = occupant(c);
-        const home = b && w.cellOf[tileOfBody(b).z * MAP_W + tileOfBody(b).x] === c;
         const door = w.cellDoor[c];
-        if (!home || door < 0 || bodies.some((o) => overlaps(o, door))) continue;
+        if (!b || cellOfBody(b) !== c || door < 0) continue;
+        if (bodies.some((o) => o !== b && cellOfBody(o) === c) || bodies.some((o) => overlaps(o, door))) continue;
         mask |= 1 << c;
       }
     }

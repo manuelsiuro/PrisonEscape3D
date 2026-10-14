@@ -1,6 +1,7 @@
 import { ROUTINE } from '../../content/routine';
 import type { ZoneId } from '../../content/zones';
-import { centerX, centerZ, nearestDir, pathTo, smooth, tileAt } from '../ai/path';
+import { DIR_X, DIR_Z } from '../command';
+import { centerX, centerZ, clearLine, nearestDir, pathTo, smooth, tileAt } from '../ai/path';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
 import { INMATE_REACTION, INMATE_SPEED, STEPS_PER_SECOND, UNIT } from '../tuning';
@@ -34,7 +35,15 @@ export interface Inmate {
   wait: number;
   /** Units per step (each inmate walks at its own pace). */
   speed: number;
+  /** Steps spent waiting for someone in the way (past YIELD_STEPS it squeezes by). */
+  stall: number;
 }
+
+/** Someone this close ahead (units, centre to centre) makes a walker wait. */
+const PERSONAL_SPACE = 760;
+/** How long a walker waits for someone in the way before squeezing past, and for how long it squeezes. */
+const YIELD_STEPS = 30;
+const SQUEEZE_STEPS = 40;
 
 /** Where inmates like to spend free time (their own cell is added). */
 const HANGOUTS: readonly ZoneId[] = ['yard', 'yard', 'library', 'gym', 'cellBlock', 'rollCall', 'corridor', 'canteen'];
@@ -56,6 +65,7 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       path: [],
       wait: 0,
       speed: INMATE_SPEED - 12 + randomInt(rng, 25),
+      stall: 0,
     });
   }
   return out;
@@ -139,21 +149,52 @@ function route(w: World, m: Inmate) {
   m.path = smooth(w, path, m.body.x, m.body.z);
 }
 
+/**
+ * Whether someone stands in the walker's way: the player, or another inmate close ahead
+ * (within about 60° of the heading). A follower keeps its distance; when two inmates meet
+ * head on, the one earlier in the list goes first.
+ */
+function inTheWay(m: Inmate, k: number, all: Inmate[], player: Body, dx: number, dz: number, dist: number): boolean {
+  const ahead = (o: Body) => {
+    const ox = o.x - m.body.x;
+    const oz = o.z - m.body.z;
+    const d2 = ox * ox + oz * oz;
+    return d2 < PERSONAL_SPACE * PERSONAL_SPACE && (ox * dx + oz * dz) * 2 > Math.sqrt(d2) * dist;
+  };
+  if (ahead(player)) return true;
+  for (let j = 0; j < all.length; j++) {
+    const o = all[j];
+    if (j === k || !ahead(o.body)) continue;
+    // Standing there, walking the same way (follow it), or coming the other way with the right of way.
+    const sameWay = DIR_X[o.body.facing] * dx + DIR_Z[o.body.facing] * dz > 0;
+    if (!o.body.moving || sameWay || j < k) return true;
+  }
+  return false;
+}
+
 /** Walks toward the next waypoint; returns true once the last one is reached. */
-function walkPath(w: World, m: Inmate): boolean {
+function walkPath(w: World, m: Inmate, k: number, all: Inmate[], player: Body, step: number): boolean {
   const b = m.body;
   if (!m.path.length) return true;
   const next = m.path[0];
-  // A door shut on the way (Lights Out): plan again.
-  if (w.blocked(next % MAP_W, Math.floor(next / MAP_W))) {
+  // Now and then: is the way to the next waypoint still open (a door may have shut)?
+  const blocked = w.blocked(next % MAP_W, Math.floor(next / MAP_W));
+  if (blocked || ((step + k) % 10 === 0 && !clearLine(w, b.x, b.z, centerX(next), centerZ(next)))) {
     route(w, m);
     return false;
   }
   const dx = centerX(next) - b.x;
   const dz = centerZ(next) - b.z;
   const dist = Math.sqrt(dx * dx + dz * dz);
-  b.moving = true;
   if (dx || dz) b.facing = nearestDir(dx, dz);
+  // Someone in the way: wait a moment, then squeeze by (nobody gets stuck for good).
+  if (m.stall < YIELD_STEPS && (dx || dz) && inTheWay(m, k, all, player, dx, dz, dist)) {
+    m.stall++;
+    b.moving = false;
+    return false;
+  }
+  m.stall = m.stall >= YIELD_STEPS && m.stall < YIELD_STEPS + SQUEEZE_STEPS ? m.stall + 1 : 0;
+  b.moving = true;
   if (dist <= m.speed) {
     b.x += dx;
     b.z += dz;
@@ -169,10 +210,10 @@ function walkPath(w: World, m: Inmate): boolean {
  * One step of inmate life: each follows the routine block (or the lockdown), setting off a
  * moment after the bell, walking an A* path, then lining up, eating, exercising,
  * showering or sleeping where it arrives. Free time is spent wandering between hangouts.
- * Inmates don't collide with anyone (they never pick the same spot).
+ * Walkers make way for each other and for the player (they never pick the same spot).
  */
-export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }) {
-  for (const m of all) {
+export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, player: Body, step: number) {
+  all.forEach((m, k) => {
     if (m.plan !== plan) {
       m.plan = plan;
       m.goal = -1;
@@ -183,25 +224,25 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     }
     if (m.wait > 0) {
       m.wait--;
-      continue;
+      return;
     }
     if (m.goal < 0) {
       choose(w, m, all, rng);
       if (m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) arrive(m, plan, rng);
-      continue;
+      return;
     }
     if (m.path.length) {
-      if (walkPath(w, m)) arrive(m, plan, rng);
-      continue;
+      if (walkPath(w, m, k, all, player, step)) arrive(m, plan, rng);
+      return;
     }
     if (tileAt(m.body.x, m.body.z) !== m.goal) {
       // Not there and no path (none was found earlier): try again.
       route(w, m);
-      continue;
+      return;
     }
     // Free time: done lingering, somewhere new next step. Routines keep them where they are.
     if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) m.goal = -1;
-  }
+  });
 }
 
 /** At the goal: stop, face the right way, start doing what the spot is for. */

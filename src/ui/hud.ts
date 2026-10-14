@@ -1,4 +1,4 @@
-import { ROUTINE } from '../content/routine';
+import { ROUTINE, routineEnd } from '../content/routine';
 import { formatTime, type Clock } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
 import { t, type Key } from '../i18n';
@@ -43,6 +43,7 @@ export class Hud {
   private readonly routineIcon: HTMLElement;
   private readonly routineName: HTMLElement;
   private readonly routinePlace: HTMLElement;
+  private readonly routineUntil: HTMLElement;
   private readonly badge: HTMLElement;
   private readonly heatPill: HTMLElement;
   private readonly heatFill: HTMLElement;
@@ -62,7 +63,7 @@ export class Hud {
         <button class="icon-btn hud-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
       </div>
       <div class="hud-row">
-        <span class="pill big hud-routine"><i class="hud-routine-ic"></i><span class="hud-routine-text"><b></b><span></span></span><em class="hud-badge"></em></span>
+        <span class="pill big hud-routine"><i class="hud-routine-ic"></i><span class="hud-routine-text"><span class="hud-routine-head"><b></b><small></small></span><span class="hud-routine-place"></span></span><em class="hud-badge"></em></span>
         <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b></span>
       </div>`,
     );
@@ -74,8 +75,9 @@ export class Hud {
     this.clockIcon = q('.hud-sky');
     this.routinePill = q('.hud-routine');
     this.routineIcon = q('.hud-routine-ic');
-    this.routineName = q('.hud-routine-text b');
-    this.routinePlace = q('.hud-routine-text span');
+    this.routineName = q('.hud-routine-head b');
+    this.routineUntil = q('.hud-routine-head small');
+    this.routinePlace = q('.hud-routine-place');
     this.badge = q('.hud-badge');
     this.heatPill = q('.hud-heat');
     this.heatFill = q('.hud-heat-bar i');
@@ -123,12 +125,16 @@ export class Hud {
       this.routineIcon.innerHTML = icon('siren', 16);
       setText(this.routineName, t('routine.lockdown'));
       setText(this.routinePlace, s.lockedMinutes !== null ? t('routine.lockedIn', { n: s.lockedMinutes }) : t('routine.home'));
+      setText(this.routineUntil, '');
       this.badge.className = 'hud-badge hidden';
       return;
     }
     this.routineIcon.innerHTML = icon('bell', 16);
     setText(this.routineName, routineName(s.routine));
+    const end = routineEnd(s.routine);
+    const until = t('routine.until', { time: `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}` });
     setText(this.routinePlace, routinePlace(s.routine));
+    setText(this.routineUntil, until);
     this.badge.className = `hud-badge${mandatory ? '' : ' hidden'}${s.attended ? ' done' : ''}`;
     this.badge.innerHTML = s.attended ? `${icon('check', 12)}${t('routine.attended')}` : t('routine.pending');
     // Checked in: the badge pops. A new block: the whole pill does.

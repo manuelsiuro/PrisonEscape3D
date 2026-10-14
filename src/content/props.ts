@@ -24,6 +24,8 @@ export const PROPS = {
   /** A street lamp: lights a pool of ground at night. */
   lamp: { solid: true },
   bench: { solid: true },
+  /** A low canteen bench: inmates sit on it at meals, anyone can step over it. */
+  seat: { solid: false },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

@@ -1,4 +1,4 @@
-places: 48 seats, 4 shower heads, 8 roll call spots
+places: 48 seats, 6 shower heads, 8 roll call spots
 == model prisoner, 3 days
 day 1 08:06 attended rollCall
 day 1 09:00 routine breakfast
@@ -15,8 +15,8 @@ day 1 18:00 routine eveningFreeTime
 day 1 22:00 routine eveningRollCall
 day 1 22:03 attended eveningRollCall
 day 1 23:00 routine lightsOut
-day 1 23:06 attended lightsOut
 day 1 23:06 cells locked
+day 1 23:06 attended lightsOut
 day 2 08:00 routine rollCall
 day 2 08:00 cells unlocked
 day 2 08:06 attended rollCall
@@ -53,8 +53,8 @@ day 3 18:00 routine eveningFreeTime
 day 3 22:00 routine eveningRollCall
 day 3 22:03 attended eveningRollCall
 day 3 23:00 routine lightsOut
-day 3 23:05 cells locked
 day 3 23:06 attended lightsOut
+day 3 23:06 cells locked
 day 4 08:00 routine rollCall
 day 4 08:00 cells unlocked
 inmates: 21 blocks watched, 0 missed, 21 asleep at 03:00 over 3 nights
@@ -88,6 +88,7 @@ truant heat at the end of day 1: 0%
 day 1 22:00 routine eveningRollCall
 day 1 22:03 attended eveningRollCall
 day 1 23:00 routine lightsOut
-day 1 23:09 cells locked
+day 1 23:07 cells locked
 day 1 23:33 attended lightsOut
 day 2 08:00 cells unlocked
+== visitor: lockdown lifted at day 1 10:24, heat 75%
