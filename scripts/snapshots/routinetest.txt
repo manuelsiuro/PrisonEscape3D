@@ -58,7 +58,6 @@ day 3 23:06 attended lightsOut
 day 4 08:00 routine rollCall
 day 4 08:00 cells unlocked
 inmates: 21 blocks watched, 0 missed, 21 asleep at 03:00 over 3 nights
-worst step under 4 ms: yes
 == truant, 1 day
 day 1 09:00 missed rollCall +100% heat
 day 1 09:00 LOCKDOWN

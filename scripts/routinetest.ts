@@ -146,7 +146,8 @@ check(!model.log.some((l) => l.includes('missed') || l.includes('LOCKDOWN')), 't
 check(attended === 3 * MANDATORY.length, `the model prisoner checks in to every block (${attended})`);
 check(inmateMisses.length === 0, `the inmates make every block:\n  ${inmateMisses.join('\n  ')}`);
 console.log(`inmates: ${blocks} blocks watched, ${inmateMisses.length} missed, ${sleepers} asleep at 03:00 over 3 nights`);
-console.log(`worst step under 4 ms: ${model.worst < 4 ? 'yes' : 'no'}`);
+// A loose budget (CI machines are slow and noisy): checked, never printed.
+check(model.worst < 50, `the worst step stays under budget (${model.worst.toFixed(1)} ms)`);
 
 // The same run again: the same state.
 check(run(modelPrisoner, DAY, 3).sim.hash() === run(modelPrisoner, DAY, 3).sim.hash(), 'a day of play is deterministic');
