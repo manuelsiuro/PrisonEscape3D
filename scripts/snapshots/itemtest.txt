@@ -5,3 +5,4 @@ cell 2's desk on day 1: ink, plastic_fork, battery
 replay: 163 steps, 40 commands, state cf112e87
 restock: cell 2's desk 0 → 3 items; woke at day 2 07:55
 workbench: all 46 recipes craft into a slot; worn and wielded results stay on
+piles: 6 items a tile; stale previews refused; the cell toilet restocks

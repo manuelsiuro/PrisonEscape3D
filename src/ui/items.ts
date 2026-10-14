@@ -3,7 +3,7 @@ import { RECIPES } from '../content/recipes';
 import { OP, SLOT } from '../sim/command';
 import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
 import { itemIcons } from '../render/itemIcons';
-import { t, type Key } from '../i18n';
+import { currentLang, t, type Key } from '../i18n';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -62,6 +62,7 @@ export class ItemsUI {
   /** Bumped by any UI-side change (picked, bench, tab…); with the sim's rev it decides a redraw. */
   private uiRev = 0;
   private drawn = '';
+  private lang = '';
   private simRev = -1;
   private drawnUi = -1;
   /** What each carried slot held at the last redraw (an arrival pops the slot). */
@@ -82,7 +83,7 @@ export class ItemsUI {
       this.slots.push(s);
       this.bar.append(s);
     }
-    const craftBtn = h('button', 'slot craft-btn', `${icon('hammer', 22)}<span>${t('craft.open')}</span>`);
+    const craftBtn = h('button', 'slot craft-btn', `${icon('hammer', 22)}<span data-t="craft.open"></span>`);
     craftBtn.addEventListener('click', () => this.toggleCraft());
     this.bar.append(craftBtn);
     this.bar.addEventListener('click', (e) => this.slotClick(e));
@@ -97,9 +98,9 @@ export class ItemsUI {
     this.box = h(
       'div',
       'item-panel box-panel hidden',
-      `<div class="panel-head"><b></b><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
-      <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span>${t('box.hidden')}</span><em>${t('box.hiddenNote')}</em></div><div class="slot-grid box-hidden"></div></div>
-      <div class="box-section"><div class="box-label"><span>${t('box.drawers')}</span></div><div class="slot-grid box-drawers"></div></div>`,
+      `<div class="panel-head"><b></b><button class="icon-btn small" data-close data-t-label="box.close">${icon('close', 18)}</button></div>
+      <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span data-t="box.hidden"></span><em data-t="box.hiddenNote"></em></div><div class="slot-grid box-hidden"></div></div>
+      <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>`,
     );
     this.boxTitle = this.box.querySelector('.panel-head b')!;
     this.boxHidden = this.box.querySelector('.box-hidden')!;
@@ -119,6 +120,16 @@ export class ItemsUI {
     document.body.append(this.bar, this.act, this.prompt, this.box, this.craft, this.info, this.toastEl);
     // Clicking a slot must not leave it focused: Space and Enter belong to the game.
     for (const el of [this.bar, this.act, this.box, this.craft, this.info]) el.addEventListener('mousedown', (e) => e.preventDefault());
+  }
+
+  /** Writes the fixed labels in the current language (at start, and when it changes). */
+  private relabel() {
+    this.lang = currentLang();
+    for (const root of [this.bar, this.box]) {
+      root.querySelectorAll<HTMLElement>('[data-t]').forEach((el) => (el.textContent = t(el.dataset.t as Key)));
+      root.querySelectorAll<HTMLElement>('[data-t-label]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.tLabel as Key)));
+    }
+    this.uiRev++;
   }
 
   show(on: boolean) {
@@ -263,7 +274,7 @@ export class ItemsUI {
     if (make) {
       this.click();
       // Exactly the slots on the bench: the sim crafts from those, not from look-alikes.
-      this.send(OP.CRAFT, maskOf(this.bench));
+      this.send(OP.CRAFT, maskOf(this.bench), benchCheck(this.view!.items, maskOf(this.bench)).recipe + 1);
       this.bench = [];
       this.uiRev++;
       return;
@@ -283,6 +294,7 @@ export class ItemsUI {
 
   update(v: ItemsView) {
     this.view = v;
+    if (this.lang !== currentLang()) this.relabel();
     const it = v.items;
     // Bench entries that emptied (crafted, dropped) fall off; picks of a closed box go.
     for (let k = this.bench.length - 1; k >= 0; k--) if (!it.inv[this.bench[k]]) (this.bench.splice(k, 1), this.uiRev++);

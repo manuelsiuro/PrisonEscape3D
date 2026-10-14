@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { itemDef } from '../content/items';
 import { itemGeometry } from './itemModels';
 import { kitMaterial } from './kit';
+import { MAP_W } from '../sim/world/World';
 
 /** A soft warm glow, drawn once and shared, so items on the floor catch the eye. */
 let glowTexture: THREE.CanvasTexture | null = null;
@@ -53,6 +54,8 @@ export class Pickups {
   private readonly frame = new THREE.Group();
   private readonly frameMat = new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
   private shown = 0;
+  private rev = -1;
+  private count = 0;
   private readonly box = { x0: 0, z0: 0, x1: 1, z1: 1 };
 
   constructor() {
@@ -73,34 +76,14 @@ export class Pickups {
     this.group.add(this.frame);
   }
 
-  update(items: readonly GroundItem[], focus: Focus | null, dt: number, time: number, motion: boolean) {
-    while (this.pool.length < items.length) {
-      const m = new THREE.Mesh(undefined, kitMaterial);
-      m.castShadow = true;
-      m.scale.setScalar(FLOOR_SCALE);
-      const halo = new THREE.Mesh(this.glowGeometry, this.glowMat);
-      halo.renderOrder = 2;
-      this.pool.push(m);
-      this.glows.push(halo);
-      this.group.add(m, halo);
-    }
-    this.pool.forEach((m, k) => {
-      const it = items[k];
-      const halo = this.glows[k];
-      m.visible = halo.visible = !!it;
-      if (!it) return;
-      m.geometry = itemGeometry(itemDef(it.item));
-      // Several on one tile fan out; each lies at its own angle.
-      const spin = (it.item * 2.4 + k * 1.7) % (Math.PI * 2);
-      let fan = 0;
-      for (let j = 0; j < k; j++) if (items[j].x === it.x && items[j].z === it.z) fan++;
-      m.position.set(it.x + Math.cos(spin) * 0.18 * Math.min(fan, 2), 0.01, it.z + Math.sin(spin) * 0.18 * Math.min(fan, 2));
-      m.rotation.y = spin;
-      // The glow breathes, each at its own pace.
-      halo.position.set(m.position.x, 0.02, m.position.z);
-      halo.scale.setScalar(0.95 + (motion ? Math.sin(time * 2.4 + k * 1.3) * 0.12 : 0));
-    });
-
+  /**
+   * Lays out the floor items again when they change (`rev`), and animates every frame.
+   * Each item's angle comes from its tile and kind (not its place in the list), so a pile
+   * doesn't shuffle when one is picked up; items sharing a tile fan out around it.
+   */
+  update(items: readonly GroundItem[], rev: number, focus: Focus | null, dt: number, time: number, motion: boolean) {
+    if (rev !== this.rev || items.length !== this.count) this.layout(items, rev);
+    if (motion) for (let k = 0; k < this.count; k++) this.glows[k].scale.setScalar(0.95 + Math.sin(time * 2.4 + k * 1.3) * 0.12);
     // The focus frame eases in, breathes, and snaps to the new target.
     this.shown += ((focus ? 1 : 0) - this.shown) * Math.min(1, dt * 10);
     this.frame.visible = this.shown > 0.02;
@@ -116,6 +99,40 @@ export class Pickups {
     ];
     this.frame.children.forEach((c, k) => c.position.set(corners[k][0], 0.035, corners[k][1]));
     this.frameMat.opacity = this.shown * 0.95;
+  }
+
+  private layout(items: readonly GroundItem[], rev: number) {
+    this.rev = rev;
+    this.count = items.length;
+    while (this.pool.length < items.length) {
+      const m = new THREE.Mesh(undefined, kitMaterial);
+      m.castShadow = true;
+      m.scale.setScalar(FLOOR_SCALE);
+      const halo = new THREE.Mesh(this.glowGeometry, this.glowMat);
+      halo.renderOrder = 2;
+      this.pool.push(m);
+      this.glows.push(halo);
+      this.group.add(m, halo);
+    }
+    const onTile = new Map<number, number>();
+    this.pool.forEach((m, k) => {
+      const it = items[k];
+      const halo = this.glows[k];
+      m.visible = halo.visible = !!it;
+      if (!it) return;
+      m.geometry = itemGeometry(itemDef(it.item));
+      const tile = Math.floor(it.z) * MAP_W + Math.floor(it.x);
+      const nth = onTile.get(tile) ?? 0;
+      onTile.set(tile, nth + 1);
+      const spin = (tile * 0.61 + it.item * 2.4) % (Math.PI * 2);
+      // The first lies in the middle, the next ones around it.
+      const around = nth === 0 ? 0 : 0.2;
+      const at = nth * 2.1;
+      m.position.set(it.x + Math.cos(at) * around, 0.01, it.z + Math.sin(at) * around);
+      m.rotation.y = spin + nth;
+      halo.position.set(m.position.x, 0.02, m.position.z);
+      halo.scale.setScalar(1);
+    });
   }
 
   dispose() {

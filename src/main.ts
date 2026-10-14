@@ -229,6 +229,10 @@ function announce(e: SimEvent, sim: Sim) {
       sound.sting();
       itemsUI.toast(t('items.full'));
       break;
+    case 'noRoom':
+      sound.sting();
+      itemsUI.toast(t('items.noRoom'));
+      break;
     case 'open':
       seenInteract();
       itemsUI.closeCraft();
@@ -447,7 +451,7 @@ function focusOf(sim: Sim, target: Target) {
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
 const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false };
 
-const frameData: Frame = { x: 0, z: 0, facing: 0, moving: false, minuteOfDay: 0, surface: 0, inmates: [], guide: null, tap: null, alarm: false, ground: groundFrame, focus: null, held: 0, outfit: 0, sleeping: false };
+const frameData: Frame = { x: 0, z: 0, facing: 0, moving: false, minuteOfDay: 0, surface: 0, inmates: [], guide: null, tap: null, alarm: false, ground: groundFrame, groundRev: -1, focus: null, held: 0, outfit: 0, sleeping: false };
 const tapAt = { x: 0, z: 0 };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, lockedMinutes: null };
 
@@ -535,6 +539,7 @@ function frame(now: number) {
     o.z = Math.floor(tileIndex / MAP_W) + 0.5;
     o.item = itemOf(v);
   });
+  f.groundRev = it.rev;
   const target = st.sleeping || g.paused ? null : interactTarget(sim.world, it, p, ROUTINE[st.routine].id === 'lightsOut');
   // The frame stays on an open container (what the panel shows), else on what is in reach.
   f.focus = focusOf(sim, it.open >= 0 ? { kind: 'container', index: it.open } : target);

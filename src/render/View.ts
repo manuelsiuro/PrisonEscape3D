@@ -31,8 +31,9 @@ export interface Frame {
   tap: { x: number; z: number } | null;
   /** A lockdown: red lights pulse. */
   alarm: boolean;
-  /** Items on the floor. */
+  /** Items on the floor, and a number that changes whenever they do. */
   ground: readonly GroundItem[];
+  groundRev: number;
   /** What the action button would use, framed on the floor. */
   focus: Focus | null;
   /** The item in the player's hand and the outfit they wear (item numbers, 0 for none). */
@@ -174,6 +175,8 @@ export class View {
     this.worldView = new WorldView(world);
     this.scene.add(this.worldView.group);
     this.guide.world = world;
+    // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
+    this.outfit = -1;
     this.showers.fill(0);
     for (const p of world.props) if (p.kind === 'shower') this.showers[p.z * MAP_W + p.x] = 1;
     this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
@@ -283,7 +286,7 @@ export class View {
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
     });
-    this.pickups.update(f.ground, f.focus, dt, time, !this.reducedMotion);
+    this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion);
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);
     this.guide.update(dt, time, f, !this.reducedMotion);
@@ -295,7 +298,7 @@ export class View {
   drawTitle(dt: number, time: number) {
     this.player.root.visible = false;
     this.alarm = 0;
-    this.pickups.update([], null, dt, time, false);
+    this.pickups.update([], -1, null, dt, time, false);
     this.guide.setPath(null);
     this.guide.setTap(null);
     this.guide.update(dt, time, this.target, false);

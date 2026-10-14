@@ -24,6 +24,8 @@ export const START_INT = 40;
 /** How close the player must be to use something (units from the body's middle to its footprint). */
 export const REACH = Math.round(UNIT * 0.85);
 const PICKUP_REACH = Math.round(UNIT * 0.95);
+/** At most this many items lie on one tile (a pile); dropping more there is refused. */
+export const PILE = 6;
 
 /** Everything about items in the state. */
 export interface ItemState {
@@ -51,7 +53,9 @@ export type ItemEvent =
   | { type: 'open'; container: number }
   | { type: 'close' }
   | { type: 'restock' }
-  | { type: 'full' };
+  | { type: 'full' }
+  /** The floor here already holds a full pile. */
+  | { type: 'noRoom' };
 
 export function startItems(w: World, rng: { rng: number }): ItemState {
   const list = containersOf(w);
@@ -72,7 +76,8 @@ export function startItems(w: World, rng: { rng: number }): ItemState {
 
 /** Tops a container up from its table (only the standard slots; hidden ones are the owner's). */
 function stock(c: ContainerInfo, slots: number[], rng: { rng: number }, first = false) {
-  if (c.mine && !first) return;
+  // The player's desk and bed are theirs; their toilet gets paper like any other.
+  if (c.mine && c.prop.kind !== 'toilet' && !first) return;
   const t = LOOT[c.table];
   const free = () => {
     for (let k = c.hidden; k < slots.length; k++) if (!slots[k]) return k;
@@ -205,9 +210,14 @@ export function moveItem(s: ItemState, from: number, to: number) {
 export function dropItem(s: ItemState, from: number, b: Body, events: ItemEvent[]) {
   const a = cell(s, from);
   if (!a || !a.get()) return;
+  const tile = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
+  if (s.ground.filter(([t]) => t === tile).length >= PILE) {
+    events.push({ type: 'noRoom' });
+    return;
+  }
   const v = a.get();
   a.set(0);
-  s.ground.push([Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT), v]);
+  s.ground.push([tile, v]);
   events.push({ type: 'drop', item: itemOf(v) });
 }
 
@@ -259,13 +269,15 @@ export function benchCheck(s: ItemState, mask: number): { recipe: number; check:
 }
 
 /**
- * Crafts from exactly the carried slots the player put on the workbench (a mask): those
+ * Crafts from exactly the carried slots the player put on the workbench (a mask) — only if
+ * they still make the `expected` recipe, when given (the preview the player saw): those
  * ingredients go, kept items (a guard key) come back, and the result takes a freed slot: the
  * outfit or weapon slot if it came from there and fits, else a freed hotbar slot.
  */
-export function craft(s: ItemState, mask: number, events: ItemEvent[]) {
+export function craft(s: ItemState, mask: number, events: ItemEvent[], expected = -1) {
   const { recipe, check } = benchCheck(s, mask);
-  if (check !== 'ok') return;
+  // The workbench says what it previewed: if the slots changed meanwhile, nothing happens.
+  if (check !== 'ok' || (expected >= 0 && recipe !== expected)) return;
   const r = RECIPES[recipe];
   const used = slotsOf(mask);
   const kept = (r.keep ?? []).map(itemNumber);

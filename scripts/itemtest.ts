@@ -17,7 +17,7 @@ import { command, OP, SLOT } from '../src/sim/command';
 import { Recorder } from '../src/sim/Recorder';
 import { Sim } from '../src/sim/Sim';
 import { clockAt, formatTime } from '../src/sim/systems/clock';
-import { benchCheck, canCraft, craft as craftWith, HOTBAR, ingredientSlots, interactTarget, itemOf, maskOf, slot, usesOf } from '../src/sim/systems/items';
+import { benchCheck, canCraft, craft as craftWith, dropItem, HOTBAR, ingredientSlots, interactTarget, itemOf, maskOf, PILE, restock, slot, usesOf } from '../src/sim/systems/items';
 
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
@@ -286,4 +286,36 @@ console.log(`restock: cell 2's desk ${otherBefore} → ${after} items; woke at $
     check(st.inv.filter((v) => v).length === 3, 'sock + soap + sock makes nothing and keeps everything');
   }
   console.log(`workbench: all ${RECIPES.length} recipes craft into a slot; worn and wielded results stay on`);
+}
+
+// ------------------------------------------------------------------ second review: piles, stale previews, the cell toilet
+{
+  const st = { ...new Sim(CENTER_PERKS, 1).state.items, inv: [0, 0, 0, 0, 0, 0, 0, 0], int: 100 };
+  const body = new Sim(CENTER_PERKS, 1).state.player;
+  const ev: Array<{ type: string }> = [];
+  for (let k = 0; k < PILE + 1; k++) {
+    st.inv[0] = slot(itemNumber('sock'));
+    dropItem(st, 0, body, ev as never);
+  }
+  check(st.ground.length === PILE && ev.some((e) => e.type === 'noRoom') && itemOf(st.inv[0]) === itemNumber('sock'), `a tile holds at most ${PILE} items; the next stays in hand`);
+
+  // The workbench previewed a sock mace, but the slots changed meanwhile: nothing is crafted.
+  st.inv = [slot(itemNumber('sock')), slot(itemNumber('battery')), 0, 0, 0, 0, 0, 0];
+  const mace = RECIPES.findIndex((r) => r.result === 'sock_mace');
+  craftWith(st, maskOf([0, 1]), ev as never, mace);
+  check(itemOf(st.inv[0]) === itemNumber('sock') && itemOf(st.inv[1]) === itemNumber('battery'), 'a stale preview crafts nothing');
+  craftWith(st, maskOf([0, 1]), ev as never, RECIPES.findIndex((r) => r.result === 'super_sock_mace'));
+  check(st.inv.some((v) => itemOf(v) === itemNumber('super_sock_mace')), 'the previewed recipe is crafted');
+
+  // The player's own toilet is restocked like the others (only the desk and bed are kept).
+  const s2 = new Sim(CENTER_PERKS, 4);
+  const mine = containersOf(s2.world).findIndex((c) => c.mine && c.prop.kind === 'toilet');
+  s2.state.items.containers[mine][0] = 0;
+  let refilled = false;
+  for (let d = 0; d < 6 && !refilled; d++) {
+    restock(s2.world, s2.state.items, s2.state);
+    refilled = s2.state.items.containers[mine][0] !== 0;
+  }
+  check(refilled, "the player's toilet gets paper again");
+  console.log(`piles: ${PILE} items a tile; stale previews refused; the cell toilet restocks`);
 }

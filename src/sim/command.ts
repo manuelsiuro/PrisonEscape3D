@@ -17,7 +17,7 @@ export const OP = {
   MOVE: 3,
   /** Drop the item in slot a on the floor. */
   DROP: 4,
-  /** Craft from the carried slots in mask a (bit k = slot k): the workbench. */
+  /** Craft from the carried slots in mask a (bit k = slot k): the workbench; b = previewed recipe + 1 (0: any). */
   CRAFT: 5,
   /** Wear or wield the item in slot a (outfit or weapon slot). */
   EQUIP: 6,

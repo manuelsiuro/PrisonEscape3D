@@ -9,6 +9,7 @@ import { LOCKDOWN_PLAN, spawnInmates, stepInmates, type Inmate } from './systems
 import { bodyAt, tileOfBody, walk, type Body } from './systems/movement';
 import { BODY_HALF, HEAT_DECAY_STEPS, LOCKDOWN_END_HEAT, LOCKDOWN_STEPS, MISSED_ROUTINE_HEAT, UNIT } from './tuning';
 import { MAP_W, World } from './world/World';
+import { containersOf } from './world/containers';
 
 /** Something that happened during a step; sound, effects and the HUD read these. */
 export type SimEvent =
@@ -188,7 +189,7 @@ export class Sim {
         dropItem(it, a, s.player, ev);
         break;
       case OP.CRAFT:
-        craft(it, a, ev);
+        craft(it, a, ev, argB(cmd) - 1);
         break;
       case OP.EQUIP:
         equip(it, a);
@@ -292,7 +293,7 @@ export class Sim {
       lockdownLeft: st.lockdownLeft ?? 0,
       inmates: st.inmates ?? spawnInmates(this.world, { rng: st.rng }),
       excused: st.excused ?? false,
-      items: st.items ?? startItems(this.world, { rng: st.rng }),
+      items: fitItems(this.world, st.items) ?? startItems(this.world, { rng: st.rng }),
       sleeping: st.sleeping ?? false,
     };
     this.updateDoors(false);
@@ -304,6 +305,21 @@ export class Sim {
     const g = this.world.ground;
     return fnv1a(JSON.stringify(this.state) + fnv1a(String.fromCharCode(...g.kind)) + fnv1a(String.fromCharCode(...this.world.block)));
   }
+}
+
+/**
+ * Items from a snapshot, fitted to this prison's containers (a map edit may add or remove
+ * some): missing ones come in empty, extra ones are dropped, sizes follow the furniture.
+ */
+function fitItems(w: World, items: ItemState | undefined): ItemState | undefined {
+  if (!items) return undefined;
+  const list = containersOf(w);
+  items.containers = list.map((c, i) => {
+    const old = items.containers[i] ?? [];
+    return Array.from({ length: c.slots }, (_, k) => old[k] ?? 0);
+  });
+  items.rev ??= 0;
+  return items;
 }
 
 /** Whether a body's footprint touches a tile. */

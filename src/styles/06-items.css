@@ -727,3 +727,26 @@ body.reduced-motion .slot.arrive {
   opacity: 0.45;
   pointer-events: none;
 }
+
+/* Touch: the coach hint sits above the action button and its label, never on them. */
+.touch.is-playing .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 168px);
+}
+
+@media (max-height: 520px) {
+  /* Landscape: the label goes above the round button, clear of the hotbar's craft button. */
+  .act-btn {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .act-what {
+    max-width: 200px;
+  }
+
+  .touch.is-playing .hint {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px);
+    max-width: calc(100vw - 360px);
+  }
+}

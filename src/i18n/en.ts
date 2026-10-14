@@ -234,6 +234,7 @@ export const en = {
   "hint.items": "Desks hide useful things. Your desk's top row is a hidden compartment.",
   "act.pickUpVerb": "Pick up",
   "act.searchVerb": "Search",
+  "items.noRoom": "No room to drop it here",
 };
 
 export type Strings = typeof en;

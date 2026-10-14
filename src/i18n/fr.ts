@@ -233,4 +233,5 @@ export const fr: Partial<Strings> = {
   "hint.items": "Les bureaux cachent des choses utiles. La rangée du haut de ton bureau est un compartiment secret.",
   "act.pickUpVerb": "Ramasser",
   "act.searchVerb": "Fouiller",
+  "items.noRoom": "Plus de place pour le poser ici",
 };
