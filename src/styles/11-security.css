@@ -203,3 +203,50 @@
   background: rgba(90, 30, 0, 0.28);
   opacity: 1;
 }
+
+/* Confetti behind the victory card. */
+.v-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.v-confetti i {
+  position: absolute;
+  top: -12px;
+  left: var(--x);
+  width: 8px;
+  height: 13px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti var(--t) var(--d) cubic-bezier(0.25, 0.6, 0.45, 1) forwards;
+}
+
+@keyframes confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--s), 105vh) rotate(var(--r));
+  }
+}
+
+.victory .card {
+  position: relative;
+}
+
+body.reduced-motion .v-confetti {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-confetti {
+    display: none;
+  }
+}

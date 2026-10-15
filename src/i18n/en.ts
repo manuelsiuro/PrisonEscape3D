@@ -588,6 +588,9 @@ export const en = {
   "hint.camera": "A camera is watching you: it sounds the alarm at whatever a guard would. Tape or toothpaste over its lens blinds it for a minute",
   "hint.searchlight": "Searchlights sweep the yards at night. Keep out of the light, wear a guard's uniform, or cut the power",
   "victory.bestWas": "Quickest",
+  "hint.detectorAhead": "Detector arch ahead: it will catch the contraband you carry. Stash it, carry a pouch, or cut the power",
+  "thing.electricLive": "the LIVE fence",
+  "thing.electricDead": "the dead electric fence",
 };
 
 export type Strings = typeof en;

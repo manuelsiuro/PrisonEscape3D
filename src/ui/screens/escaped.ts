@@ -61,6 +61,15 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       </div>
     </div>`,
   );
+  // A burst of confetti behind the card (none with reduced motion: the stylesheet hides it).
+  const burst = h('div', 'v-confetti');
+  const colors = ['#ffc23d', '#f26b1d', '#3fb950', '#2fb6c8', '#ffffff', '#8e4fc4'];
+  for (let k = 0; k < 36; k++) {
+    const bit = document.createElement('i');
+    bit.style.cssText = `--x:${(Math.random() * 100).toFixed(1)}vw;--d:${(Math.random() * 0.6).toFixed(2)}s;--t:${(1.8 + Math.random() * 1.4).toFixed(2)}s;--r:${Math.round(Math.random() * 720 - 360)}deg;--s:${(Math.random() * 30 - 15).toFixed(0)}vw;background:${colors[k % colors.length]}`;
+    burst.append(bit);
+  }
+  el.prepend(burst);
   el.querySelector('.v-sub')!.textContent = t('escaped.sub', { prison: v.prison, day: v.day, time: v.time });
   el.querySelector('.v-routes-label')!.textContent = t('victory.routes', { n: v.found.length, of: v.routes.length });
   return new Promise((resolve) => {

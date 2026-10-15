@@ -587,4 +587,7 @@ export const fr: Partial<Strings> = {
   "hint.camera": "Une caméra te surveille : elle donne l’alerte comme un gardien. Du scotch ou du dentifrice sur l’objectif l’aveugle une minute",
   "hint.searchlight": "Les projecteurs balaient les cours la nuit. Reste hors de la lumière, porte un uniforme de gardien ou coupe le courant",
   "victory.bestWas": "Record",
+  "hint.detectorAhead": "Détecteur devant toi : il repérera ta contrebande. Cache-la, prends une pochette ou coupe le courant",
+  "thing.electricLive": "la clôture SOUS TENSION",
+  "thing.electricDead": "la clôture hors tension",
 };

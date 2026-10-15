@@ -255,10 +255,13 @@ function updateGuide(g: Game, dt: number) {
   if (g.guideAge < 0.35 && from === g.guideFrom) return;
   g.guideAge = 0;
   g.guideFrom = from;
-  const goal = guideTarget(sim);
-  // On the prison as built: the arrows never lead through the player's own holes.
-  const path = goal && findPath(sim.world, from, goal, -1, 2600, undefined, sim.world.npcBlock);
-  g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z, undefined, sim.world.npcBlock).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
+  // A takeover (GDD §12): the arrows lead out through the open gates to the road.
+  const riot = sim.state.takeover && sim.state.layer === LAYER.GROUND && sim.state.ko === 0;
+  const goal = riot ? (i: number) => sim.world.ground.kind[i] === TILE.ROAD : guideTarget(sim);
+  // On the prison as built: the arrows never lead through the player's own holes (in a takeover, every door is open to them).
+  const grid = riot ? sim.world.block : sim.world.npcBlock;
+  const path = goal && findPath(sim.world, from, goal, -1, 4000, undefined, grid);
+  g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z, undefined, grid).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
 }
 
 function seenInteract() {
@@ -793,7 +796,11 @@ let lastCant = 0;
 let lastAim = -1e9;
 
 /** A tip shown the first time something happens (and never again). */
+const tipsAsked = new Set<string>();
 function coachOnce(name: string, key: Key, params?: Record<string, string | number>) {
+  // Asked every frame for some tips: storage is read once per tip, not every frame.
+  if (tipsAsked.has(name)) return;
+  tipsAsked.add(name);
   if (hasSeen(name)) return;
   markSeen(name);
   banner.toast(t(key, params), 'info', 7000);
@@ -1346,7 +1353,7 @@ function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView |
     tt.action === 'chip'
       ? t(k === TILE.REINFORCED ? 'thing.reinforced' : 'thing.wall')
       : tt.action === 'cut'
-        ? t(k === TILE.ELECTRIC ? 'thing.electric' : 'thing.fence')
+        ? t(k === TILE.ELECTRIC ? (sim.power ? 'thing.electricLive' : 'thing.electricDead') : 'thing.fence')
         : tt.action === 'unscrew'
           ? t('thing.grate')
           : tt.action === 'digUp'
@@ -1465,6 +1472,18 @@ const frameData: Frame = {
   security: { power: true, cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
   takeover: false,
 };
+const POUCH = itemNumber('pouch');
+/** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
+function carriesUnshielded(it: ItemState): boolean {
+  let found = false;
+  for (let k = 0; k <= SLOT.OUTFIT; k++) {
+    const n = itemOf(it.inv[k]);
+    if (!n) continue;
+    if (n === POUCH && k < 6) return false;
+    if (itemDef(n).contraband) found = true;
+  }
+  return found;
+}
 /** Searchlight pools (tiles), refilled every frame. */
 const beamFrames: Array<{ x: number; z: number }> = [];
 const beamAt0 = { x: 0, z: 0 };
@@ -1774,6 +1793,10 @@ function frame(now: number) {
     // The first time a camera has the player in its eye: what cameras do, and how to blind one.
     if (o.sees && !busy) coachOnce('camera', 'hint.camera');
   });
+  // Walking up to a live detector arch with contraband and no pouch (GDD §5.4): a warning, once.
+  if (memo.step === st.step && sim.power && st.layer === LAYER.GROUND && !busy && !tipsAsked.has('detectorAhead') && carriesUnshielded(it)) {
+    for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (sim.world.ground.kind[(tile.z + dz) * MAP_W + tile.x + dx] === TILE.DETECTOR) coachOnce('detectorAhead', 'hint.detectorAhead');
+  }
   const lights = sim.prison.searchlights;
   if (lights && sim.power && ROUTINE[st.routine].id === 'lightsOut') {
     beamFrames.length = lights.length;
