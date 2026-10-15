@@ -150,6 +150,14 @@ for (const def of [...PRISONS, TRAINING]) {
     check(isFloor(w, p.x, p.z), `${def.id}: guard stop ${p.x},${p.z} is free floor`);
     check(findPath(w, first.z * MAP_W + first.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !== null, `${def.id}: guard stop ${p.x},${p.z} can be reached`);
   }
+  // A post stands where it watches (a shower watch in the showers, a meal watch in the canteen).
+  const WATCHES: Record<string, readonly string[]> = { showers: ['showers'], breakfast: ['canteen'], lunch: ['canteen'], dinner: ['canteen'], exercise: ['yard', 'gym'], rollCall: ['rollCall', 'yard'], eveningRollCall: ['rollCall', 'yard'] };
+  for (const d of def.guards) {
+    for (const [block, p] of Object.entries(d.posts ?? {})) {
+      const want = WATCHES[block];
+      if (want) check(want.includes(w.zoneAt(p.x, p.z)), `${def.id}: the ${block} post ${p.x},${p.z} stands in the ${want.join(' or ')} (${w.zoneAt(p.x, p.z)})`);
+    }
+  }
   const sleepers = def.guards.filter((d) => !d.night).length;
   check(places.guardBeds.filter((b) => b.tile >= 0).length >= sleepers, `${def.id}: a guard-quarters bed for each guard off at night`);
   // A prison proper has its bed checks, its shakedown, solitary and an infirmary; the
@@ -161,6 +169,41 @@ for (const def of [...PRISONS, TRAINING]) {
   }
   check(places.doorstep.slice(1).every((t) => t >= 0) && places.deskside.slice(1).every((t) => t >= 0), `${def.id}: every cell can be looked into and its desk searched`);
   console.log(`guards: ${def.guards.length}, ${stops.length} stops, ${sleepers} asleep at night`);
+
+  // A roof over the perimeter is a grapnel's landing (structure.ts): only a gatehouse
+  // standing on the fence line may have one.
+  {
+    const roofKind = w.layers[LAYER.ROOF].kind;
+    const onWire = new Uint8Array(MAP_W * MAP_H);
+    let perimeterRoofs = 0;
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      if (roofKind[i] === TILE.EMPTY || ZONES[g.zone[i]] !== 'perimeter') continue;
+      perimeterRoofs++;
+      onWire[i] = 1;
+    }
+    // Each building of such roofs touches a fence.
+    const seen = new Uint8Array(MAP_W * MAP_H);
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      if (!onWire[i] || seen[i]) continue;
+      let fence = false;
+      const queue = [i];
+      seen[i] = 1;
+      while (queue.length) {
+        const j = queue.pop()!;
+        for (const n of [j - 1, j + 1, j - MAP_W, j + MAP_W]) {
+          if (n < 0 || n >= MAP_W * MAP_H) continue;
+          const k = g.kind[n];
+          if (k === TILE.FENCE || k === TILE.ELECTRIC) fence = true;
+          if (onWire[n] && !seen[n]) {
+            seen[n] = 1;
+            queue.push(n);
+          }
+        }
+      }
+      check(fence, `${def.id}: the roof over the perimeter at ${i % MAP_W},${Math.floor(i / MAP_W)} stands on the fence line (a grapnel lands there)`);
+    }
+    if (perimeterRoofs) console.log(`perimeter roofs (grapnel landings): ${perimeterRoofs} tiles`);
+  }
 
   // Vents (layer +1): grates over free floor, one duct network, the ladder against a wall with
   // a free foot and a roof hatch above it; the player's cell has a way up.

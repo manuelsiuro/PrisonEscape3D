@@ -178,7 +178,7 @@ const guards: GuardDef[] = [
       { x: 18, z: 31, wait: 3, face: 5 },
       { x: 11, z: 31, wait: 2, face: 1 },
     ],
-    posts: { showers: { x: 14, z: 33, face: 9 } },
+    posts: { showers: { x: 12, z: 32, face: 9 } },
     duties: ['shakedown'],
     key: 'yellow',
   },
@@ -283,7 +283,7 @@ export const SHANKTON: PrisonDef = {
   cells,
   props,
   rollCall,
-  spawn: { x: 11, z: 11 },
+  spawn: { x: 10, z: 10 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary'],
   guards,
   names: ['Rivet', 'Hammer', 'Smokes', 'Knuckles', 'Deacon', 'Flint', 'Sparky', 'Moose', 'Weasel', 'Preacher', 'Lugnut'],
@@ -297,36 +297,39 @@ export const SHANKTON: PrisonDef = {
     { id: 'janitor', cell: 8 },
     { id: 'mailman', cell: 10 },
   ],
-  // Cameras in every corridor (GDD §4.3): both ends and the middle of each; and the generator room and quarters.
+  // Cameras in every corridor (GDD §4.3): both ends and two along each; and the generator room and quarters.
   cameras: [
     { x: 9, z: 24, face: 1 },
     { x: 54, z: 26, face: 9 },
-    { x: 38, z: 24, face: 5 },
+    { x: 38, z: 24, face: 9 },
+    { x: 28, z: 26, face: 1 },
     { x: 9, z: 39, face: 1 },
     { x: 54, z: 37, face: 9 },
-    { x: 38, z: 39, face: 13 },
+    { x: 38, z: 39, face: 1 },
+    { x: 28, z: 37, face: 9 },
     { x: 32, z: 48, face: 3 },
     { x: 54, z: 41, face: 7 },
   ],
-  // Searchlights at night, one per corner tower, each sweeping its side's gravel.
+  // Searchlights at night, one per corner tower (each path starts nearest its own tower),
+  // sweeping its corner's two stretches of gravel.
   searchlights: [
     [
-      { x: 6, z: 32 },
+      { x: 6, z: 30 },
       { x: 6, z: 6 },
-      { x: 32, z: 6 },
+      { x: 30, z: 6 },
     ],
     [
-      { x: 32, z: 4 },
+      { x: 33, z: 6 },
       { x: 57, z: 6 },
-      { x: 57, z: 32 },
+      { x: 57, z: 30 },
     ],
     [
-      { x: 4, z: 32 },
+      { x: 6, z: 33 },
       { x: 6, z: 57 },
       { x: 30, z: 59 },
     ],
     [
-      { x: 59, z: 32 },
+      { x: 57, z: 33 },
       { x: 57, z: 57 },
       { x: 44, z: 57 },
     ],

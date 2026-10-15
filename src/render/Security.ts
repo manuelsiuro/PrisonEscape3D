@@ -22,7 +22,8 @@ export interface SecurityFrame {
   px: number;
   pz: number;
   /** A grapnel ready to throw from a roof's edge: where it would land the player (tiles), else null. */
-  hook: { x: number; z: number } | null;
+  /** The grapnel's landing (y: on a roof, or the ground). */
+  hook: { x: number; y: number; z: number } | null;
 }
 
 /** A soft round pool of light (additive), shared by the searchlights. */
@@ -275,12 +276,12 @@ export class Security {
       const y0 = WALL_H + 0.55 + 0.9;
       for (let i = 0; i <= 24; i++) {
         const u = i / 24;
-        pos.setXYZ(i, f.px + (f.hook.x - f.px) * u, y0 * (1 - u) + 0.05 * u + Math.sin(u * Math.PI) * 1.6, f.pz + (f.hook.z - f.pz) * u);
+        pos.setXYZ(i, f.px + (f.hook.x - f.px) * u, y0 * (1 - u) + (f.hook.y + 0.05) * u + Math.sin(u * Math.PI) * 1.6, f.pz + (f.hook.z - f.pz) * u);
       }
       pos.needsUpdate = true;
       this.arc.computeLineDistances();
       this.arcMat.opacity = 0.9 * this.hookShown;
-      this.ring.position.set(f.hook.x, 0.04, f.hook.z);
+      this.ring.position.set(f.hook.x, f.hook.y + 0.04, f.hook.z);
       (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.85 * this.hookShown;
       this.ring.scale.setScalar(motion ? 1 + Math.sin(time * 5) * 0.08 : 1);
     }

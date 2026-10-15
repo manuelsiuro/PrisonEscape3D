@@ -142,22 +142,23 @@
 
 .pc-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
 
+/* A long name ("Pénitencier de Shankton") wraps rather than pushing the stars off the card. */
 .pc-head b {
-  overflow: hidden;
-  font: 600 18px var(--font-display);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  min-width: 0;
+  font: 600 18px/1.15 var(--font-display);
+  overflow-wrap: anywhere;
 }
 
 .pc-stars {
   display: flex;
   flex: none;
   gap: 1px;
+  margin-top: 3px;
 }
 
 .pc-stars i {
@@ -348,6 +349,11 @@
 }
 .victory .actions [data-c='next'] {
   grid-column: 1 / -1;
+}
+/* The two below share a row: tighter sides, one line each ("Title screen" wrapped at 412 px). */
+.victory .actions:has([data-c='next']) .big-btn:not([data-c='next']) {
+  padding-inline: 12px;
+  white-space: nowrap;
 }
 
 /* The pause card: which prison, which day. */

@@ -12,7 +12,7 @@ import { energyCost } from '../sim/systems/weather';
 import { STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
-import { LAYER, placeKey } from '../sim/world/World';
+import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
 import { inmateName } from '../ui/social';
@@ -231,7 +231,7 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
           : tt.action === 'brace'
             ? ''
             : tt.action === 'grapnel'
-              ? t(!tt.fits ? 'thing.needRope' : tt.layer === LAYER.ROOF ? 'thing.ontoGatehouse' : 'thing.overFence')
+              ? t(!tt.fits ? 'thing.needRope' : tt.layer === LAYER.ROOF ? 'thing.ontoGatehouse' : w.zoneAt(tt.tile % MAP_W, Math.floor(tt.tile / MAP_W)) === 'outside' ? 'thing.overFence' : 'thing.betweenFences')
               : tt.action === 'tape'
                 ? t('thing.camera')
                 : t('thing.rope');

@@ -1,5 +1,5 @@
 shell: 189 reinforced tiles, 3 doors; a pickaxe refused (4 energy kept), brick inside chippable
 detectors: 10 arches; without one, the north wing reaches cellBlock, corridor, gym, inmateCell, playerCell, showers; the south wing cellBlock, corridor, inmateCell
-cameras: 8 in all; north 3 cameras, 39% watched; south 3 cameras, 39% watched
+cameras: 10 in all; north 4 cameras, 47% watched; south 4 cameras, 48% watched
 perimeter: chain-link inside the electric fence, either one alone keeps the road out of reach
 grapnel: onto the gatehouse roof at 53,58; over the chain-link elsewhere (down between the fences)

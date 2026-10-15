@@ -2,6 +2,7 @@ import { itemDef, itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import type { BadgeKind } from '../render/Character';
 import type { Frame } from '../render/View';
+import { ROOF_Y } from '../render/Structure';
 import { DIR_X, DIR_Z, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
@@ -151,7 +152,7 @@ function carriesUnshielded(it: ItemState): boolean {
 /** Searchlight pools (tiles), refilled every frame. */
 const beamFrames: Array<{ x: number; z: number }> = [];
 const beamAt0 = { x: 0, z: 0 };
-const hookAt = { x: 0, z: 0 };
+const hookAt = { x: 0, y: 0, z: 0 };
 /** Where the player stands while training on a treadmill (on its belt), refilled. */
 const trainAt = { x: 0, z: 0, facing: 0, y: 0 };
 /** Where the player sits (refilled when the seat or the body changes), and an infirmary bed's pose. */
@@ -370,6 +371,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   if (hook >= 0) {
     hookAt.x = (hook % MAP_W) + 0.5;
     hookAt.z = Math.floor(hook / MAP_W) + 0.5;
+    // Onto a roof (Shankton's gatehouse), the landing is up there.
+    hookAt.y = memo.tool!.layer === LAYER.ROOF ? ROOF_Y : 0;
   }
   sec.hook = hook >= 0 ? hookAt : null;
   f.takeover = st.takeover;

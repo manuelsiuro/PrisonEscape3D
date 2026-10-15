@@ -18,6 +18,7 @@ zones: canteen 226, cellBlock 120, controlRoom 49, corridor 276, generator 56, g
 decor: 83 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
 guards: 8, 54 stops, 5 asleep at night
+perimeter roofs (grapnel landings): 40 tiles
 vents: 126 duct tiles, 3 grates, 1 ladder; roof tiles 2214
 == training · picture 9be5d540
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144

@@ -121,12 +121,12 @@ const BASE = {
   /** Reinforced concrete (GDD §4.3, `@`): poured panels, their seams and form-tie holes; no tool chips it. */
   reinforced: () =>
     texture('reinforced', 16, (c, n, r) => {
-      speckle(c, n, r, '#8e9296', '#83878b', '#9a9ea2', 0.25);
-      c.fillStyle = '#6f7377';
+      speckle(c, n, r, '#7a8088', '#70767e', '#868c94', 0.25);
+      c.fillStyle = '#5c626a';
       c.fillRect(0, 0, n, 1);
       c.fillRect(0, n / 2, n, 1);
       c.fillRect(0, 0, 1, n);
-      c.fillStyle = '#5c6064';
+      c.fillStyle = '#474c53';
       for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) c.fillRect(x, y, 1, 1);
       c.fillStyle = 'rgba(70,60,50,0.18)';
       for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), 1 + Math.floor(r() * (n - 2)), 1, 3);
@@ -342,16 +342,16 @@ const INDUSTRIAL: Partial<typeof BASE> = {
         if (r() < 0.4) x = (x + (r() < 0.5 ? -1 : 1) + n) % n;
       }
     }),
-  /** Painted cinder block: pale institutional grey, the courses staggered. */
+  /** Painted cinder block: pale institutional cream (warm against the cold concrete shell), the courses staggered. */
   brick: () =>
     texture('cinder', 16, (c, n, r) => {
-      c.fillStyle = '#8b8f8a';
+      c.fillStyle = '#9a9384';
       c.fillRect(0, 0, n, n);
       for (let row = 0; row < 4; row++) {
         const off = row % 2 ? 4 : 0;
         for (let col = -1; col < 2; col++) {
           const shade = 0.95 + r() * 0.07;
-          c.fillStyle = `rgb(${Math.round(184 * shade)},${Math.round(189 * shade)},${Math.round(182 * shade)})`;
+          c.fillStyle = `rgb(${Math.round(204 * shade)},${Math.round(196 * shade)},${Math.round(176 * shade)})`;
           c.fillRect(col * 8 + off + 1, row * 4 + 1, 7, 3);
         }
       }

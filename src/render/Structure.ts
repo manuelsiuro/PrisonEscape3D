@@ -154,11 +154,25 @@ export class Structure {
     brickTex.repeat.set(1, ROOF_Y - WALL_H);
     brickTex.needsUpdate = true;
     const side = (this.mats.roofSide = new THREE.MeshStandardMaterial({ map: brickTex, roughness: 0.9 }));
+    // Over reinforced concrete (Shankton's shell), the slab's edge is concrete too.
+    const concreteTex = TEX.reinforced().clone();
+    concreteTex.repeat.set(1, ROOF_Y - WALL_H);
+    concreteTex.needsUpdate = true;
+    const concrete = (this.mats.roofConcrete = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 0.95 }));
     const h = ROOF_Y - WALL_H;
-    const slabs = new THREE.InstancedMesh(new THREE.BoxGeometry(1, h, 1), [side, side, gravel, gravel, side, side], tiles.length);
     const m = new THREE.Matrix4();
-    tiles.forEach((i, k) => slabs.setMatrixAt(k, m.makeTranslation((i % MAP_W) + 0.5, WALL_H + h / 2, Math.floor(i / MAP_W) + 0.5)));
-    slabs.castShadow = slabs.receiveShadow = true;
+    const slabsOf = (list: number[], sides: THREE.Material) => {
+      const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, h, 1), [sides, sides, gravel, gravel, sides, sides], Math.max(1, list.length));
+      list.forEach((i, k) => mesh.setMatrixAt(k, m.makeTranslation((i % MAP_W) + 0.5, WALL_H + h / 2, Math.floor(i / MAP_W) + 0.5)));
+      mesh.count = list.length;
+      mesh.castShadow = mesh.receiveShadow = true;
+      return mesh;
+    };
+    // (A door through the shell counts: its lintel is the same concrete.)
+    const base = this.world.ground.base;
+    const onConcrete = (i: number) => base[i] === TILE.REINFORCED || (base[i] === TILE.DOOR && [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => base[j] === TILE.REINFORCED));
+    const slabs = slabsOf(tiles.filter((i) => !onConcrete(i)), side);
+    const concreteSlabs = slabsOf(tiles.filter(onConcrete), concrete);
     // Copings along the walls below: the rooms' layout shows on the roof (where am I?).
     const walls = tiles.filter((i) => {
       const k = this.world.ground.base[i];
@@ -195,7 +209,7 @@ export class Structure {
     }
     const extras = new THREE.Mesh(merge(parts), kitMaterial);
     extras.castShadow = extras.receiveShadow = true;
-    this.roofs.add(slabs, extras);
+    this.roofs.add(slabs, concreteSlabs, extras);
   }
 
   /**
@@ -362,6 +376,7 @@ export class Structure {
     // The cloned textures (lintel and roof brick) are this view's own; the shared ones stay cached.
     (this.mats.brick as THREE.MeshStandardMaterial).map?.dispose();
     (this.mats.roofSide as THREE.MeshStandardMaterial | undefined)?.map?.dispose();
+    (this.mats.roofConcrete as THREE.MeshStandardMaterial | undefined)?.map?.dispose();
     for (const m of Object.values(this.mats)) m.dispose();
   }
 }
