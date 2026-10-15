@@ -15,7 +15,7 @@ import { ATTR_START, STEPS_PER_SECOND, UNIT, VACANCY_DAYS } from '../tuning';
 import { containersOf } from '../world/containers';
 import { MAP_W } from '../world/World';
 import { clockAt } from './clock';
-import { HOLDER, jobRooms, nearestProp, type Station, STATION_REACH, stationTarget } from './economy';
+import { HOLDER, jobRooms, nearestProp, qualifies, type Station, STATION_REACH, stationTarget } from './economy';
 import { HOTBAR, itemOf, pocketOf, slot, stockSlots, usesOf } from './items';
 import { tileOfBody } from './movement';
 import { offerFavors, refuse } from './social';
@@ -33,6 +33,8 @@ export function station(sim: SimContext): Station | null {
   ws.inv = s.items.inv;
   ws.hand = s.items.hand;
   ws.mail = s.mail;
+  const def = ws.job >= 0 ? jobRooms(sim.world)[ws.job]?.def : undefined;
+  ws.owed = def ? def.quota - s.quota : 0;
   return stationTarget(sim.world, ws, s.player);
 }
 
@@ -225,7 +227,7 @@ export function jobOp(sim: SimContext, a: number) {
   const room = jobRooms(w)[job];
   if (!room || job === held) return;
   if (s.jobs[job] !== HOLDER.NOBODY) return refuse(sim, 'taken');
-  if (s.items.int < room.def.int) return refuse(sim, 'int');
+  if (!qualifies(w, s.items.int, job)) return refuse(sim, 'int');
   if (held >= 0) vacate(sim, held, HOLDER.PLAYER, 'quit');
   s.jobs[job] = HOLDER.PLAYER;
   // Taken once the Work Period has begun: it counts from tomorrow.

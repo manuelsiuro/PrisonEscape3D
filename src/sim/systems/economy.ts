@@ -131,7 +131,16 @@ export interface WorkState {
   hand: number;
   /** The mail round: inmates still waiting for a letter (Cast ids). */
   mail: readonly number[];
+  /** Pieces still owed today (the quota less those handed in). */
+  owed: number;
 }
+
+/**
+ * Whether the player may take job j: Intellect enough for it, or it's the job the prison gave
+ * them on day 1 (Shankton starts the player in the metalshop at Intellect 40 of 60: fired once,
+ * they may still have it back).
+ */
+export const qualifies = (w: World, int: number, j: number) => int >= jobRooms(w)[j].def.int || w.def.jobs[j]?.cell === 1;
 
 const hotbarHas = (s: WorkState, item: number) => s.inv.slice(0, 6).some((v) => (v & 255) === item);
 
@@ -169,8 +178,13 @@ export function stationTarget(w: World, s: WorkState, b: Body): Station | null {
   const put = room.put >= 0 && room.put !== room.take ? nearestProp(w, b, (_, i) => i === room.put) : -1;
   if (put >= 0 && done && hotbarHas(s, done)) return { prop: put, tile: -1, act: 'put', item: done };
   const take = room.take >= 0 ? nearestProp(w, b, (_, i) => i === room.take) : -1;
-  // A fresh one only with nothing of the kind on the go (in the hands or in a machine).
-  if (take >= 0 && raw && !hotbarHas(s, raw) && !(done && hotbarHas(s, done))) return { prop: take, tile: -1, act: free ? 'take' : 'full', item: raw };
+  // A fresh one only with nothing of the kind on the go (in the hands or in a machine), and
+  // only while the quota still wants one: a piece taken past it (contraband sheet metal, timber)
+  // would be left in the pockets once the job is paid.
+  let going = 0;
+  for (const k in s.machines) if (room.machines.includes(Number(k))) going++;
+  for (let k = 0; k < 6; k++) if ((s.inv[k] & 255) === done) going++;
+  if (take >= 0 && raw && !hotbarHas(s, raw) && !(done && hotbarHas(s, done)) && (def.flow !== 'machine' || s.owed > going)) return { prop: take, tile: -1, act: free ? 'take' : 'full', item: raw };
   return null;
 }
 

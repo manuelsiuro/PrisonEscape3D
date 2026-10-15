@@ -1,8 +1,8 @@
 import { itemDef, itemNumber } from '../content/items';
-import { JOBS } from '../content/jobs';
+import { JOBS, type JobId } from '../content/jobs';
 import { ROUTINE } from '../content/routine';
 import { OP, TALK } from '../sim/command';
-import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_KINDS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, priceOf } from '../sim/systems/economy';
+import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_KINDS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, priceOf, qualifies } from '../sim/systems/economy';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
 import { nextTip } from '../sim/systems/recipes';
@@ -235,7 +235,7 @@ export class BoardPanel {
         const holder = s.jobs[j];
         const you = holder === HOLDER.PLAYER;
         const open = holder === HOLDER.NOBODY;
-        const can = s.items.int >= d.int;
+        const can = qualifies(sim.world, s.items.int, j);
         const who = you ? t('board.you') : open ? t('board.open') : inmateName(sim, holder);
         // Quitting, or applying while holding a job (it's left), asks twice.
         const swap = mine >= 0 ? ` data-confirm="${esc(t('board.confirmSwap'))}" title="${esc(t('board.swapNote', { job: t(`job.${sim.prison.jobs[mine].id}` as Key) }))}"` : '';
@@ -245,7 +245,9 @@ export class BoardPanel {
             ? `<button class="big-btn ${can ? 'primary' : 'ghost'} small" data-job="${j + 1}" ${can ? swap : 'disabled'}>${can ? t('board.apply') : t('board.needInt', { n: d.int })}</button>`
             : `<span class="board-taken">${t('board.taken')}</span>`;
         const later = you && s.jobDay > sim.today ? `<em class="board-later">${t('board.tomorrow')}</em>` : '';
-        return `<div class="board-row${you ? ' mine' : ''}${open ? ' open' : ''}"><span class="board-ic">${icon(JOB_ICONS[d.id], 20)}</span><span class="board-text"><b>${esc(t(`job.${d.id}` as Key))}${later}</b><small>${esc(t(`jobTask.${d.id}` as Key, { n: d.quota }))}</small><span class="board-meta"><i class="${can ? '' : 'short'}">${icon('brain', 12)}${d.int}</i><i class="wage">${icon('coin', 12)}$${d.wage}</i><i class="holder${open ? ' open' : you ? ' you' : ''}">${esc(who)}</i></span></span>${action}</div>`;
+        // The job the prison gave on day 1 (above the player's Intellect): theirs to take back.
+        const first = !you && can && s.items.int < d.int ? `<em class="board-later">${t('board.firstJob')}</em>` : '';
+        return `<div class="board-row${you ? ' mine' : ''}${open ? ' open' : ''}"><span class="board-ic">${icon(JOB_ICONS[d.id], 20)}</span><span class="board-text"><b>${esc(t(`job.${d.id}` as Key))}${later}${first}</b><small>${esc(t(`jobTask.${d.id}` as Key, { n: d.quota }))}</small><span class="board-meta"><i class="${s.items.int >= d.int || you || can ? '' : 'short'}">${icon('brain', 12)}${d.int}</i><i class="wage">${icon('coin', 12)}$${d.wage}</i><i class="holder${open ? ' open' : you ? ' you' : ''}">${esc(who)}</i></span></span>${action}</div>`;
       })
       .join('');
     this.el.innerHTML = `<div class="panel-head"><b>${icon('board', 20)}${t('board.title')}</b><button class="icon-btn small" data-job="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
@@ -254,7 +256,8 @@ export class BoardPanel {
   }
 }
 
-const JOB_ICONS: Record<string, string> = { laundry: 'shirt', janitor: 'drop', kitchen: 'flame', woodshop: 'hammer', mailman: 'letter' };
+/** Every job's icon (typed by JobId: a new job can't be left without one). */
+const JOB_ICONS: Record<JobId, string> = { laundry: 'shirt', janitor: 'drop', kitchen: 'flame', woodshop: 'hammer', mailman: 'letter', metalshop: 'gear' };
 
 /**
  * Training (GDD §3.2): the set's bar, filled by pressing left and right in turn (A and D, or

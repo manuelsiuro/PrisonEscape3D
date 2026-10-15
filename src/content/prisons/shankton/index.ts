@@ -129,8 +129,9 @@ const rollCall = [31, 33].flatMap((z) => [26, 28, 30, 33, 35, 37].map((x) => ({ 
  * - The warden walks the north wing and the courtyard, takes roll call, and at night walks
  *   both wings' halls and does the bed checks.
  * - The canteen guard watches meals and walks the canteen and kitchen.
- * - The wing guard walks the south wing, the gym and showers, watches showers, and searches
- *   cells at the morning shakedown.
+ * - The wing guard walks the north wing's hall, the gym and showers (a dead end off the north
+ *   corridor: its post is a step away), watches showers, and searches cells at the morning
+ *   shakedown.
  * - The yard guard walks the courtyard and both corridors, watches exercise, and at night
  *   walks the corridors.
  * - The workshop guard walks the laundry, the janitor's closet and the shops.
@@ -173,10 +174,10 @@ const guards: GuardDef[] = [
   },
   {
     beat: [
-      { x: 15, z: 44, wait: 3, face: 5 },
-      { x: 16, z: 52, wait: 2, face: 13 },
+      { x: 16, z: 21, wait: 2, face: 13 },
       { x: 18, z: 31, wait: 3, face: 5 },
       { x: 11, z: 31, wait: 2, face: 1 },
+      { x: 20, z: 25, wait: 3, face: 1 },
     ],
     posts: { showers: { x: 12, z: 32, face: 9 } },
     duties: ['shakedown'],

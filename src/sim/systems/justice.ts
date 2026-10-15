@@ -174,14 +174,25 @@ export function shakedown(sim: SimContext) {
   sim.events.push({ type: 'shakedown', cells: [...cells] });
 }
 
-/** The bed check: the night guard looks into every cell, east to west. */
+/**
+ * The bed check: the night guard looks into every cell, from the east-most on, each time the
+ * nearest left (a wing done before the next: Shankton's two wings are a long walk apart).
+ */
 export function bedCheck(sim: SimContext) {
   const s = sim.state;
   const k = s.guards.findIndex((_, i) => sim.world.def.guards[i].duties?.includes('bedCheck'));
   if (k < 0) return;
   const steps = placesOf(sim.world).doorstep;
-  const cells = steps.map((_, c) => c).filter((c) => c > 0 && steps[c] >= 0);
-  cells.sort((a, b) => (steps[b] % MAP_W) - (steps[a] % MAP_W) || steps[a] - steps[b]);
+  const left = steps.map((_, c) => c).filter((c) => c > 0 && steps[c] >= 0);
+  left.sort((a, b) => (steps[b] % MAP_W) - (steps[a] % MAP_W) || steps[a] - steps[b]);
+  const cells: number[] = [];
+  const far = (a: number, b: number) => Math.abs((steps[a] % MAP_W) - (steps[b] % MAP_W)) + Math.abs(Math.floor(steps[a] / MAP_W) - Math.floor(steps[b] / MAP_W));
+  for (let at = left.shift(); at !== undefined; ) {
+    cells.push(at);
+    let best = -1;
+    for (let j = 0; j < left.length; j++) if (best < 0 || far(at, left[j]) < far(at, left[best])) best = j;
+    at = best < 0 ? undefined : left.splice(best, 1)[0];
+  }
   assign(s.guards[k], GUARD.BED_CHECK, cells);
   sim.events.push({ type: 'bedCheck', result: 'start' });
 }

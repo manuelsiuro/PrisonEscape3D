@@ -20,6 +20,7 @@
 import { itemDef, itemNumber, ITEMS } from '../src/content/items';
 import { JOBS } from '../src/content/jobs';
 import { LOOT } from '../src/content/loot';
+import { SHANKTON } from '../src/content/prisons/shankton';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { PRISONS } from '../src/content/prisons';
 import type { PrisonDef } from '../src/content/prisons/types';
@@ -34,7 +35,7 @@ import { TRAINING } from '../src/content/prisons/training';
 import { obtainable } from '../src/sim/systems/recipes';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { clockAt, formatTime } from '../src/sim/systems/clock';
-import { discountOf, FAVOR, FAVOR_STATE, HOLDER, jobRooms, priceOf, stationTarget } from '../src/sim/systems/economy';
+import { discountOf, FAVOR, FAVOR_STATE, HOLDER, jobRooms, priceOf, stationTarget, type WorkState } from '../src/sim/systems/economy';
 import { GUARD, type Guard } from '../src/sim/systems/guards';
 import type { Inmate } from '../src/sim/systems/inmates';
 import { HOTBAR, itemOf, pocketOf, slot, usesOf } from '../src/sim/systems/items';
@@ -659,14 +660,35 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   check(true, 'and plays on');
 }
 
+// Shankton starts the player in the metalshop (Intellect 60) at Intellect 40: fired, they may
+// still have it back from the board; another job above their Intellect stays refused.
+{
+  const sim = new Sim(SHANKTON, 5);
+  const st = sim.state;
+  st.jobs[0] = HOLDER.NOBODY;
+  st.jobs[5] = HOLDER.NOBODY;
+  put(st.player, 21, 29);
+  st.player.facing = 1;
+  sim.step(command(0, OP.JOB, 6));
+  check(st.jobs[5] === HOLDER.NOBODY && sim.events.some((e) => e.type === 'refused' && e.why === 'int'), 'the mailman job at Intellect 40: refused');
+  sim.step(command(0, OP.JOB, 1));
+  check(st.items.int === 40 && st.jobs[0] === HOLDER.PLAYER, 'the metalshop, the player’s first job: theirs again at Intellect 40');
+}
+
 // Every station of every job is something the action button can do (the station logic is total).
 {
   const sim = new Sim(CENTER_PERKS);
-  const ws = { job: 0, onDuty: true, machines: {}, puddles: [], step: 0, inv: [0, 0, 0, 0, 0, 0, 0, 0], hand: 0 };
+  const ws: WorkState = { job: 0, onDuty: true, machines: {}, puddles: [], step: 0, inv: [0, 0, 0, 0, 0, 0, 0, 0], hand: 0, mail: [], owed: 4 };
   const room = jobRooms(sim.world)[0];
   const p = sim.world.props[room.take];
   const b = { x: (p.x + 0.5) * UNIT, z: (p.z - 0.5) * UNIT, facing: 5, moving: false };
   check(stationTarget(sim.world, ws, b)?.act === 'take', 'at the dirty bin with empty hands: take a load');
+  // The last loads already in the machines: nothing more to take (it would be left in the pockets once paid).
+  ws.owed = 2;
+  ws.machines = { [room.machines[0]]: 1e9, [room.machines[1]]: 1e9 };
+  check(stationTarget(sim.world, ws, b) === null, 'the quota covered by the loads in the machines: no more taken');
+  ws.owed = 3;
+  check(stationTarget(sim.world, ws, b)?.act === 'take', 'one more owed: one more taken');
 }
 
 // ------------------------------------------------------------------ review: lockdowns excuse work, scuffles, the mail desk

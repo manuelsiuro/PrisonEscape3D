@@ -188,10 +188,12 @@ export class Structure {
     for (const i of tiles) {
       const x = i % MAP_W;
       const z = Math.floor(i / MAP_W);
-      if (!isRoof(x, z - 1)) parts.push(box(1, 0.16, 0.1, 0x9a948a, x + 0.5, ROOF_Y, z + 0.05));
-      if (!isRoof(x, z + 1)) parts.push(box(1, 0.16, 0.1, 0x9a948a, x + 0.5, ROOF_Y, z + 0.95));
-      if (!isRoof(x - 1, z)) parts.push(box(0.1, 0.16, 1, 0x9a948a, x + 0.05, ROOF_Y, z + 0.5));
-      if (!isRoof(x + 1, z)) parts.push(box(0.1, 0.16, 1, 0x9a948a, x + 0.95, ROOF_Y, z + 0.5));
+      // The parapet; safety yellow on a roof standing on the wire (a gatehouse: where a grapnel lands).
+      const edge = this.world.zoneAt(x, z) === 'perimeter' ? 0xe0b030 : 0x9a948a;
+      if (!isRoof(x, z - 1)) parts.push(box(1, 0.16, 0.1, edge, x + 0.5, ROOF_Y, z + 0.05));
+      if (!isRoof(x, z + 1)) parts.push(box(1, 0.16, 0.1, edge, x + 0.5, ROOF_Y, z + 0.95));
+      if (!isRoof(x - 1, z)) parts.push(box(0.1, 0.16, 1, edge, x + 0.05, ROOF_Y, z + 0.5));
+      if (!isRoof(x + 1, z)) parts.push(box(0.1, 0.16, 1, edge, x + 0.95, ROOF_Y, z + 0.5));
       if (roof[i] === TILE.LADDER) {
         // The hatch: a raised frame, its lid propped open, the ladder's top rungs.
         parts.push(box(0.8, 0.12, 0.8, 0x5e646e, x + 0.5, ROOF_Y, z + 0.5), box(0.62, 0.02, 0.62, 0x0b0d10, x + 0.5, ROOF_Y + 0.12, z + 0.5));

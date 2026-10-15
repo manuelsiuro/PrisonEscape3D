@@ -56,7 +56,7 @@ export function newScratch(): Scratch {
     point: { x: 0, z: 0 },
     about: [],
     cast: [],
-    workState: { job: -1, onDuty: false, machines: {}, puddles: [], step: 0, inv: [], hand: 0, mail: [] },
+    workState: { job: -1, onDuty: false, machines: {}, puddles: [], step: 0, inv: [], hand: 0, mail: [], owed: 0 },
     social: { follow: [], gap: [], talk: -1, work: [], seat: -1 },
     allyFoe: [],
   };

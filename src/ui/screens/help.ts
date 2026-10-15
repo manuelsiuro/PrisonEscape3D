@@ -1,4 +1,5 @@
 import { ROUTINE } from '../../content/routine';
+import { openPrisons } from '../../game/campaign';
 import { t, type Key } from '../../i18n';
 import { withKeys } from '../../i18n/keys';
 import { TOUCH, h } from '../dom';
@@ -12,8 +13,8 @@ import { icon } from '../icons';
 type Tab = 'basics' | 'life' | 'escape' | 'controls';
 const TABS: Tab[] = ['basics', 'life', 'escape', 'controls'];
 
-/** A rule: its icon and color, then help.<id>.t (title) and help.<id> (text). */
-const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string]>> = {
+/** A rule: its icon and color, then help.<id>.t (title) and help.<id> (text); a prison's own rules name it (shown once it's open). */
+const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, string?]>> = {
   basics: [
     ['goal', 'route', '#ff7714'],
     ['routine', 'clock', '#3d7fd0'],
@@ -39,8 +40,8 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string]>> 
     ['cams', 'camera', '#2fb6c8'],
     ['towers', 'target', '#e5484d'],
     ['ways', 'hook', '#ff7714'],
-    ['weather', 'snow', '#2f78be'],
-    ['shell', 'shield', '#5d6b7a'],
+    ['weather', 'snow', '#2f78be', 'stalag-flucht'],
+    ['shell', 'shield', '#5d6b7a', 'shankton'],
   ],
 };
 
@@ -94,8 +95,13 @@ function schedule() {
 }
 
 function body(tab: Tab, touch: boolean) {
-  if (tab === 'basics') return TOPICS.basics.map((r) => row(...r)).join('') + schedule();
-  if (tab !== 'controls') return TOPICS[tab].map((r) => row(...r)).join('');
+  if (tab === 'basics') return TOPICS.basics.map(([id, ic, tone]) => row(id, ic, tone)).join('') + schedule();
+  // A prison's own rules only once it's open (no spoilers of the campaign ahead).
+  if (tab !== 'controls')
+    return TOPICS[tab]
+      .filter(([, , , prison]) => !prison || openPrisons().some((p) => p.id === prison))
+      .map(([id, ic, tone]) => row(id, ic, tone))
+      .join('');
   const which = `<div class="seg help-device" role="radiogroup">${(['keys', 'touch'] as const)
     .map((d) => `<button role="radio" data-device="${d}" class="${(d === 'touch') === touch ? 'on' : ''}" aria-checked="${(d === 'touch') === touch}">${icon(d === 'keys' ? 'keyboard' : 'hand', 15)}${t(`help.device.${d}`)}</button>`)
     .join('')}</div>`;
