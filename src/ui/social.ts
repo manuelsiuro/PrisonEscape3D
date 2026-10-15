@@ -356,7 +356,7 @@ export class WorkChips {
       const job = sim.jobActive();
       const room = job >= 0 ? jobRooms(sim.world)[job] : null;
       const cycle = (room?.def.cycle ?? 3) * 20;
-      for (const k in s.machines) {
+      for (const k in room ? s.machines : {}) {
         const prop = sim.world.props[Number(k)];
         if (!prop) continue;
         const p = project(prop.x + prop.w / 2, 1.35, prop.z + prop.d / 2, this.at);

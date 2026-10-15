@@ -864,6 +864,7 @@ function endGame() {
   sound.siren(false);
   sound.ambience(false);
   talk.hide();
+  view.setShift(0, 0);
   board.close();
   profile.close();
   trainCard.hide();
@@ -899,6 +900,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
     if (itemsUI.panelOpen) itemsUI.closePanels();
     else if (socialOpen()) closeSocial();
+    else if (game.rec.sim.state.train >= 0) sendOp(OP.TRAIN, 3);
     else pause();
     return;
   }
@@ -1405,6 +1407,35 @@ function trainReps(reps: number): number {
 const projectAt = (x: number, y: number, z: number, out: { x: number; y: number }) => view.screenAt(x, y, z, out);
 
 /**
+ * Keeps the player in sight while a panel is open: a side panel reaching past the middle (phone
+ * landscape) slides the picture left, a bottom sheet (phone portrait) slides it up, into the
+ * middle of the space left free. Measured a few times a second, not every frame.
+ */
+let shiftCheck = 0;
+function keepPlayerClear(open: boolean) {
+  if (!open) {
+    view.setShift(0, 0);
+    shiftCheck = 0;
+    return;
+  }
+  if (shiftCheck-- > 0) return;
+  shiftCheck = 8;
+  const el = document.querySelector<HTMLElement>('.item-panel:not(.hidden)');
+  if (!el) return view.setShift(0, 0);
+  const r = el.getBoundingClientRect();
+  const w = innerWidth;
+  const h = innerHeight;
+  const top = 110;
+  if (r.top < h * 0.45 && r.left > w * 0.2) {
+    // To the side: centre the player in what's left of the width.
+    view.setShift(r.left < w / 2 + 60 ? Math.round(r.left / 2 - w / 2) : 0, 0);
+  } else if (r.top >= h * 0.3) {
+    // A sheet from the bottom: between the HUD and its top edge.
+    view.setShift(0, r.top < h / 2 + 60 ? Math.round((top + r.top) / 2 - h / 2) : 0);
+  } else view.setShift(0, 0);
+}
+
+/**
  * The badge over an inmate (GDD §13.2): the letter the player carries for them, a favor done
  * (hand it in) or on offer, a merchant open for business, a follower.
  */
@@ -1582,6 +1613,7 @@ function frame(now: number) {
   const memo = targets;
   const panel = itemsUI.panelOpen || socialOpen();
   document.body.classList.toggle('panel-open', panel);
+  keepPlayerClear(panel && !g.paused);
   if (memo.step !== st.step || memo.busy !== busy || memo.panel !== panel || memo.rev !== it.rev) {
     memo.step = st.step;
     memo.busy = busy;

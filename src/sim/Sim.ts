@@ -1836,6 +1836,12 @@ export class Sim {
     const s = this.state;
     s.jobs[job] = HOLDER.NOBODY;
     s.jobOpen[job] = this.today;
+    // The player's own work on the go goes with the job: loads in the machines, puddles, the mail round.
+    if (who === HOLDER.PLAYER) {
+      s.machines = {};
+      s.puddles = [];
+      s.mail = [];
+    }
     this.events.push({ type: 'job', job, who, change });
   }
 

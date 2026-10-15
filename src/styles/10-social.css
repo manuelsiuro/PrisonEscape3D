@@ -756,7 +756,10 @@
 .train-card {
   position: fixed;
   z-index: 31;
-  left: 50%;
+  /* Centred without a transform, so the pads can be fixed to the screen's edges in landscape. */
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
   width: min(380px, calc(100vw - 32px));
   padding: 12px 14px;
@@ -764,7 +767,6 @@
   color: white;
   background: rgba(22, 30, 46, 0.92);
   box-shadow: 0 20px 50px -14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transform: translateX(-50%);
   animation: sheet-in 0.3s var(--spring);
 }
 
@@ -972,10 +974,11 @@ body.reduced-motion .hud .hud-cash.gain {
   }
 }
 
-/* Landscape phones: a slimmer training card, pads either side of it. */
+/* Landscape phones: a slim card clear of the player, the pads under the thumbs at the screen's edges. */
 @media (max-height: 520px) {
   .train-card {
-    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px);
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 96px);
+    width: min(340px, calc(100vw - 340px));
     padding: 8px 12px;
   }
 
@@ -983,8 +986,22 @@ body.reduced-motion .hud .hud-cash.gain {
     margin: 6px 0 4px;
   }
 
+  .touch .train-pads {
+    position: fixed;
+    left: max(14px, env(safe-area-inset-left));
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    justify-content: space-between;
+    margin: 0;
+    pointer-events: none;
+  }
+
   .train-pad {
-    height: 48px;
+    flex: none;
+    width: 128px;
+    height: 92px;
+    background: rgba(22, 30, 46, 0.85);
+    pointer-events: auto;
   }
 
   .stat-row {
@@ -1061,4 +1078,36 @@ body.reduced-motion .talk-delta {
 
 body.reduced-motion .item-panel .armed::after {
   animation: none;
+}
+
+/* Landscape phones: the talk, the board and the file take the height under the top row (over the
+   heat pill while they're open), and fade at the foot so it's clear there's more to scroll to. */
+@media (max-height: 520px) {
+  .talk-panel,
+  .board-panel,
+  .profile-panel {
+    top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+    padding-bottom: 18px;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent);
+  }
+
+  .talk-panel .panel-head {
+    margin-bottom: 2px;
+  }
+
+  .talk-face {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .talk-quote {
+    margin: 2px 0 6px;
+    font-size: 13px;
+  }
+
+  .item-panel section {
+    margin-top: 8px;
+  }
 }

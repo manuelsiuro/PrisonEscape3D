@@ -724,3 +724,16 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   const us = ((performance.now() - t0) * 1000) / DAY;
   check(us < 400, `a step stays cheap (${us < 400 ? 'under 400' : Math.round(us)} µs)`);
 }
+{
+  // Quitting mid-shift: the loads in the machines and the puddles go with the job.
+  const a = arena(stepAt(1, 11, 59), 29);
+  const { sim, st } = a;
+  [st.jobs[0], st.jobs[1]] = [st.jobs[1], HOLDER.PLAYER];
+  a.steps(MIN + 2);
+  check(st.puddles.length === 6, 'the janitor has six puddles');
+  st.machines[jobRooms(sim.world)[0].machines[0]] = st.step + 100;
+  put(st.player, 27, 22);
+  st.player.facing = 13;
+  a.op(OP.JOB, 0);
+  check(sim.playerJob < 0 && st.puddles.length === 0 && Object.keys(st.machines).length === 0, 'quitting clears the work on the go');
+}

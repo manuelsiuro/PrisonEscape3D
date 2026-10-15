@@ -476,6 +476,36 @@ export class View {
     this.applyZoom();
   }
 
+  /** Where the picture is slid to (CSS px), and where it's going: the player kept clear of an open panel. */
+  private readonly shift = { x: 0, y: 0 };
+  private readonly shiftGoal = { x: 0, y: 0 };
+
+  /**
+   * Slides the picture so the player shows in the part of the screen a panel leaves free (a
+   * side panel in landscape, a bottom sheet in portrait); 0, 0 puts it back. Eased.
+   */
+  setShift(x: number, y: number) {
+    this.shiftGoal.x = x;
+    this.shiftGoal.y = y;
+  }
+
+  private easeShift(dt: number) {
+    const k = this.reducedMotion ? 1 : Math.min(1, dt * 7);
+    const dx = this.shiftGoal.x - this.shift.x;
+    const dy = this.shiftGoal.y - this.shift.y;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+      if (dx || dy) {
+        this.shift.x = this.shiftGoal.x;
+        this.shift.y = this.shiftGoal.y;
+        this.applyZoom();
+      }
+      return;
+    }
+    this.shift.x += dx * k;
+    this.shift.y += dy * k;
+    this.applyZoom();
+  }
+
   /** Multiplies the zoom (wheel, pinch), within limits; the camera eases to it. */
   zoomBy(f: number) {
     this.zoomGoal = THREE.MathUtils.clamp(this.zoomGoal * f, ZOOM_MIN, ZOOM_MAX);
@@ -485,13 +515,16 @@ export class View {
   private applyZoom() {
     const aspect = innerWidth / Math.max(1, innerHeight);
     const half = Math.max(15, 11 / aspect) / 2 / this.zoom;
-    this.camera.left = -half * aspect;
-    this.camera.right = half * aspect;
-    this.camera.top = half;
-    this.camera.bottom = -half;
+    // The picture slides by the shift (CSS px): the frustum moves the other way.
+    const sx = (-this.shift.x / Math.max(1, innerWidth)) * 2 * half * aspect;
+    const sy = (this.shift.y / Math.max(1, innerHeight)) * 2 * half;
+    this.camera.left = -half * aspect + sx;
+    this.camera.right = half * aspect + sx;
+    this.camera.top = half + sy;
+    this.camera.bottom = -half + sy;
     this.camera.updateProjectionMatrix();
     // The shadow box covers what the camera sees (the view is stretched along the ground by the tilt).
-    this.shadowHalf = Math.min(34, Math.max(half * aspect, half * 1.25) + 3);
+    this.shadowHalf = Math.min(34, Math.max(half * aspect, half * 1.25) + 3 + Math.max(Math.abs(sx), Math.abs(sy) * 1.25));
     const s = this.sun.shadow.camera;
     s.left = s.bottom = -this.shadowHalf;
     s.right = s.top = this.shadowHalf;
@@ -680,6 +713,7 @@ export class View {
   }
 
   private render(minute: number, dt: number, focus: THREE.Vector3 | null, time: number) {
+    this.easeShift(dt);
     if (Math.abs(this.zoom - this.zoomGoal) > 1e-4) {
       this.zoom += (this.zoomGoal - this.zoom) * Math.min(1, dt * 10);
       this.applyZoom();

@@ -128,10 +128,12 @@ export class Hud {
       this.cashPill.title = '';
     }
     // Text only when it changes: the clock once a game minute, the zone on entering one.
-    const minute = `${clock.day}:${clock.minuteOfDay}`;
+    const minute = `${clock.day}:${clock.minuteOfDay}:${NARROW.matches}`;
     if (minute !== this.shownMinute) {
       this.shownMinute = minute;
-      setText(this.day, t('hud.day', { n: clock.day }));
+      // Narrow phones: "D1" leaves the zone room for its name beside the cash.
+      setText(this.day, t(NARROW.matches ? 'hud.dayShort' : 'hud.day', { n: clock.day }));
+      this.day.title = t('hud.day', { n: clock.day });
       setText(this.time, formatTime(clock));
     }
     if (zone !== this.shownZone || !this.zone.textContent) {

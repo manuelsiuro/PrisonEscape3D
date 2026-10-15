@@ -540,6 +540,7 @@ export const en = {
   "board.confirmQuit": "Quit?",
   "board.confirmSwap": "Swap jobs?",
   "board.swapNote": "Leaves your {job} job",
+  "hud.dayShort": "D{n}",
 };
 
 export type Strings = typeof en;
