@@ -286,17 +286,17 @@ export class Sim {
     const s = this.state;
     const w = this.world;
     // Job rooms (GDD §11): open for the Work Period, and to let out whoever is still inside.
-    let rooms = 0;
-    if (ROUTINE[s.routine].id === 'work' && !s.lockdown) for (const r of jobRooms(w)) rooms |= 1 << r.zone;
+    let rooms = 0n;
+    if (ROUTINE[s.routine].id === 'work' && !s.lockdown) for (const r of jobRooms(w)) rooms |= 1n << BigInt(r.zone);
     // Someone in a job room, or in its doorway, keeps its door open.
     const zoneBit = (b: Body) => {
       const i = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
-      return 1 << (w.doorRoom[i] || w.ground.zone[i]);
+      return 1n << BigInt(w.doorRoom[i] || w.ground.zone[i]);
     };
     if (s.layer === LAYER.GROUND) rooms |= zoneBit(s.player);
     for (const m of s.inmates) rooms |= zoneBit(m.body);
     w.setOpenRooms(rooms);
-    let mask = 0;
+    let mask = 0n;
     if (this.cellsLocked) {
       const bodies = s.layer === LAYER.GROUND ? [s.player, ...s.inmates.map((m) => m.body)] : s.inmates.map((m) => m.body);
       const occupant = (c: number) => (c === 1 ? s.player : s.inmates.find((m) => m.cell === c)?.body);
@@ -309,13 +309,13 @@ export class Sim {
         const door = w.cellDoor[c];
         if (!b || cellOfBody(b) !== c || door < 0) continue;
         if (bodies.some((o) => o !== b && cellOfBody(o) === c) || bodies.some((o) => overlaps(o, door))) continue;
-        mask |= 1 << c;
+        mask |= 1n << BigInt(c);
       }
     }
     const was = w.lockedCells;
     w.setLockedCells(mask);
     // The player hears their own door lock and unlock.
-    if (announce && ((was ^ mask) & 2) !== 0) this.events.push({ type: 'cells', locked: (mask & 2) !== 0 });
+    if (announce && ((was ^ mask) & 2n) !== 0n) this.events.push({ type: 'cells', locked: (mask & 2n) !== 0n });
   }
 
   /** The zone the player stands in (off the ground floor: the tunnels, the vents, the roof). */

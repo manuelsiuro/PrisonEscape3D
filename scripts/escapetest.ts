@@ -58,7 +58,7 @@ function nightfall(bot: Bot, kitSize: number) {
   check(itemOf(bot.st.items.containers[bot.bed][0]) === n('bed_dummy'), 'the dummy is in bed');
   // Lights Out: the door locks once the player is in.
   check(
-    bot.until(() => bot.sim.cellsLocked && (bot.sim.world.lockedCells & 2) !== 0, 60 * STEPS_PER_MINUTE),
+    bot.until(() => bot.sim.cellsLocked && (bot.sim.world.lockedCells & 2n) !== 0n, 60 * STEPS_PER_MINUTE),
     'Lights Out, locked in',
   );
   bot.until(() => false, 10 * STEPS_PER_MINUTE);

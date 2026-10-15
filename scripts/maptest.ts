@@ -21,6 +21,8 @@ import { ladderFootOf } from '../src/sim/systems/structure';
 import { check } from './assert';
 
 const ids = new Set<string>();
+// Zones and cells are stored per tile in bytes (the job-room and cell masks are bigints, any size).
+check(ZONES.length <= 256, `zones fit in a byte (${ZONES.length})`);
 // Every campaign prison, and the tutorial's Training Block.
 for (const def of [...PRISONS, TRAINING]) {
   const w = new World(def);
@@ -101,6 +103,7 @@ for (const def of [...PRISONS, TRAINING]) {
   }
 
   // Cells: the player's first, then one per named inmate, each with a bed, a desk and a toilet.
+  check(def.cells.length < 256, `${def.id}: cells fit in a byte (${def.cells.length})`);
   check(def.cells.length >= 1 && def.names.length === def.cells.length - 1, `${def.id}: a cell for the player and one per inmate (${def.cells.length})`);
   def.cells.forEach(([x0, z0, x1, z1], k) => {
     for (const kind of ['bed', 'desk', 'toilet'] as const) {

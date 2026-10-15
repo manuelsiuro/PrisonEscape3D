@@ -125,7 +125,7 @@ function morning(seed: number): Sim {
   check(canSee(w, b(28, 13, 1), b(35, 13)) && !canSee(w, b(28, 13, 1), b(36, 13)), 'sight reaches 7 tiles');
   check(!canSee(w, b(14, 13, 13), b(14, 8)), 'walls block sight');
   check(canSee(w, b(13, 13, 13), b(13, 9)), 'an open cell door does not');
-  w.setLockedCells(1 << 2);
+  w.setLockedCells(1n << 2n);
   check(!canSee(w, b(13, 13, 13), b(13, 9)), 'a shut one does');
   console.log('sight: 60° cone, 7 tiles, walls and shut doors block it');
 }

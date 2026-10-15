@@ -7,7 +7,7 @@ import { KEY } from './tiles';
  * `cell` is the cell the door serves (0 for any other door); `lockedCells` has bit c set
  * while cell c is locked.
  */
-export function doorOpen(key: number, cell: number, lockedCells: number): boolean {
+export function doorOpen(key: number, cell: number, lockedCells: bigint): boolean {
   if (key !== KEY.YELLOW) return false;
-  return cell === 0 || ((lockedCells >> cell) & 1) === 0;
+  return cell === 0 || ((lockedCells >> BigInt(cell)) & 1n) === 0n;
 }

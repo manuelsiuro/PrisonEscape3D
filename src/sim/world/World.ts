@@ -81,8 +81,8 @@ export class World {
   readonly cellDoor: number[] = [-1];
   /** Each cell's bed, by cell number (index 0 unused). */
   readonly cellBed: Array<Prop | undefined> = [undefined];
-  /** Bit c set: cell c's door is locked (derived by the simulation from the routine). */
-  lockedCells = 0;
+  /** Bit c set: cell c's door is locked (derived by the simulation from the routine). A bigint: a prison may have any number of cells. */
+  lockedCells = 0n;
   /** Bit k set: the player carries a key for color k (tiles.ts KEY), so those doors open for them (derived by the simulation). */
   playerKeys = 0;
   /** 1 on doors in the outer perimeter (beside the road): no key opens them (the takeover does, P7). */
@@ -91,8 +91,8 @@ export class World {
   riot = false;
   /** On door tiles into a job room (GDD §11): the room's zone index (0 for other doors). */
   readonly doorRoom = new Uint8Array(MAP_W * MAP_H);
-  /** Bit z set: the job room of zone z stands open (the Work Period, or someone still inside; derived by the simulation). */
-  openRooms = 0;
+  /** Bit z set: the job room of zone z stands open (the Work Period, or someone still inside; derived by the simulation). A bigint: zones go past 31. */
+  openRooms = 0n;
   /** Derived: 1 on doors shut for everyone but guards (the prison as built: inmates walk it, guards' eyes stop at it). */
   readonly doorShut = new Uint8Array(MAP_W * MAP_H);
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
@@ -171,7 +171,7 @@ export class World {
   }
 
   /** Locks and unlocks cells (bit c = cell c); recomputes what blocks walking when it changes. */
-  setLockedCells(mask: number) {
+  setLockedCells(mask: bigint) {
     if (mask === this.lockedCells) return;
     this.lockedCells = mask;
     this.refreshBlock();
@@ -192,7 +192,7 @@ export class World {
   }
 
   /** Opens and shuts job rooms (bit z = zone z); recomputes what blocks walking when it changes. */
-  setOpenRooms(mask: number) {
+  setOpenRooms(mask: bigint) {
     if (mask === this.openRooms) return;
     this.openRooms = mask;
     this.refreshBlock();
@@ -204,7 +204,7 @@ export class World {
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const k = g.kind[i];
       const room = this.doorRoom[i];
-      const shut = k === TILE.DOOR && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && (this.openRooms >> room) & 1);
+      const shut = k === TILE.DOOR && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && ((this.openRooms >> BigInt(room)) & 1n) === 1n);
       this.doorShut[i] = shut ? 1 : 0;
       // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
       const keyed = shut && (this.riot || (!this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1));

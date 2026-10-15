@@ -142,7 +142,7 @@ const model = run(modelPrisoner, 3 * DAY, 3, (sim) => {
   if (c.hour === 3 && c.minute === 0 && st.step % STEPS_PER_MINUTE === 0) {
     const asleep = st.inmates.filter((m) => m.doing === DOING.SLEEP).length;
     check(asleep === st.inmates.length, `${at(st.step)}: all inmates asleep (${asleep})`);
-    check(sim.world.lockedCells === 0b111111110, `${at(st.step)}: every cell locked (${sim.world.lockedCells.toString(2)})`);
+    check(sim.world.lockedCells === 0b111111110n, `${at(st.step)}: every cell locked (${sim.world.lockedCells.toString(2)})`);
     sleepers += asleep;
   }
 });
