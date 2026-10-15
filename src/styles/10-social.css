@@ -386,9 +386,9 @@
   cursor: default;
 }
 
+/* Contraband for sale: the slots' red corner, without the border (red here would read as "can't buy"). */
 .shop-item .slot-cb {
-  left: 4px;
-  top: 4px;
+  box-shadow: none;
 }
 
 .gift-grid {
@@ -955,8 +955,7 @@ body.training .tool-prompt {
 }
 
 body.reduced-motion .work-chip.ready,
-body.reduced-motion .hud .hud-cash.gain,
-body.reduced-motion .talk-delta {
+body.reduced-motion .hud .hud-cash.gain {
   animation: none !important;
 }
 
@@ -1022,4 +1021,44 @@ body.training .hint {
   .hud .hud-row {
     gap: 6px;
   }
+
+  /* On the ground floor the zone's pin gives way to its name (the layers keep their icons). */
+  .hud .hud-zone[data-layer=''] .ic,
+  .hud .hud-zone:not([data-layer]) .ic {
+    display: none;
+  }
+}
+
+/* A costly tap asks twice: armed, the button shows its question over itself. */
+.item-panel [data-confirm] {
+  position: relative;
+}
+
+.item-panel .armed::after {
+  content: attr(data-confirm);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: inherit;
+  font: 800 12px/1.1 var(--font-ui);
+  text-align: center;
+  color: white;
+  background: #c8413a;
+  box-shadow: 0 0 0 2px rgba(255, 138, 122, 0.6);
+  animation: badge-pop 0.3s var(--spring);
+}
+
+.item-panel .slot.gift.armed::after {
+  font-size: 10.5px;
+}
+
+/* Reduced motion: the opinion change fades instead of popping (and never stays). */
+body.reduced-motion .talk-delta {
+  animation: float-fade 1.4s linear forwards !important;
+}
+
+body.reduced-motion .item-panel .armed::after {
+  animation: none;
 }

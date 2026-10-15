@@ -84,6 +84,7 @@ import {
   TRAIN_GAIN,
   VACANCY_DAYS,
   walkSpeed,
+  SELF_DEFENSE_HEAT,
 } from './tuning';
 import { LAYER, layerOfKey, MAP_H, MAP_W, placeKey, tileOfKey, World } from './world/World';
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from './world/tiles';
@@ -91,7 +92,7 @@ import { nearestDir as faceTo } from './ai/path';
 import { containersOf } from './world/containers';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** Where a knocked-out player wakes up. */
 export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2, FLOORED: 3 } as const;
@@ -299,6 +300,8 @@ export interface SimState {
   favors: Favor[];
   /** Each merchant's stock (def.merchants order). */
   shops: number[][];
+  /** The player's last blow was at an inmate already after them (seen, it's a scuffle, not an attack). */
+  selfDefense: boolean;
 }
 
 export interface Snapshot {
@@ -390,6 +393,7 @@ export class Sim {
       followers: [],
       favors: [],
       shops: prison.merchants.map(() => new Array(SHOP_SLOTS).fill(0)),
+      selfDefense: false,
     };
     // Day 1: change in desks and pockets, the merchants' stock, the first favors.
     this.spreadCoins();
@@ -430,6 +434,9 @@ export class Sim {
         this.events.push({ type: 'missed', routine: s.routine, heat });
         this.addHeat(heat);
       }
+      // The Work Period settled (GDD §11), while the block's own excuse still stands: wages were paid
+      // as quotas were met; an unmet one costs the job.
+      if (past.id === 'work') this.settleWork();
       s.routine = now;
       s.attended = false;
       // Night jobs end with the night, the morning's with Lights Out (a long chase may have held them up).
@@ -440,8 +447,6 @@ export class Sim {
         if (night && duties.includes('shakedown')) cancelTasks(g, GUARD.SHAKEDOWN);
       });
       s.excused = s.lockdown || this.away;
-      // The Work Period settled (GDD §11): wages were paid as quotas were met; an unmet one costs the job.
-      if (past.id === 'work') this.settleWork();
       this.events.push({ type: 'routine', routine: now });
       // A new day: desks, shelves and counters are stocked again (GDD §6.2), and two cells
       // are named for the shakedown during roll call.
@@ -595,7 +600,8 @@ export class Sim {
     const sinceLightsOut = (clockAt(s.step).minuteOfDay - ROUTINE[ROUTINE.length - 1].start + 1440) % 1440;
     const late = ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
     // Seen attacking someone (GDD §5.2), at work on a wall, a fence, a grate or the floor, damage found: 100% (§9.3).
-    if (s.seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS) [reason, heat] = [SPOT.indexOf('fight'), 100];
+    // Fighting back at an inmate who jumped the player: a scuffle, some heat a blow (not the alarm).
+    if (s.seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
     else if (s.seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS) [reason, heat] = [SPOT.indexOf('tampering'), 100];
     else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
     else if (s.seen && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
@@ -1153,6 +1159,7 @@ export class Sim {
     s.swingAt = s.step;
     const who = s.lock;
     const guard = isGuard(s, who);
+    s.selfDefense = false;
     const dmg = damage(s.str, wdef?.attack ?? 0, guard ? GUARD_DEFENSE : INMATE_DEFENSE);
     f.hp = Math.max(0, f.hp - dmg);
     const ko = f.hp === 0;
@@ -1164,6 +1171,8 @@ export class Sim {
       g.face = g.body.facing;
     } else {
       const m = f as Inmate;
+      // Hitting back at someone already after the player: self-defense (GDD §10.3 ambushes).
+      s.selfDefense = m.angry > 0;
       m.angry = ANGRY_STEPS;
       m.doing = DOING.NOTHING;
       m.wait = 0;
@@ -1690,7 +1699,7 @@ export class Sim {
     return ROUTINE[s.routine].id === 'work' && this.jobActive() >= 0 && !s.paid && !s.lockdown && !this.away;
   }
 
-  private readonly workState: WorkState = { job: -1, onDuty: false, machines: {}, puddles: [], step: 0, inv: [], hand: 0 };
+  private readonly workState: WorkState = { job: -1, onDuty: false, machines: {}, puddles: [], step: 0, inv: [], hand: 0, mail: [] };
   /** What the player's job lets the action button do here (null: the usual). */
   station(): Station | null {
     const s = this.state;
@@ -1702,6 +1711,7 @@ export class Sim {
     ws.step = s.step;
     ws.inv = s.items.inv;
     ws.hand = s.items.hand;
+    ws.mail = s.mail;
     return stationTarget(this.world, ws, s.player);
   }
 
@@ -1738,7 +1748,6 @@ export class Sim {
         s.machines[st.prop] = s.step + (def.cycle ?? 3) * STEPS_PER_SECOND;
         break;
       case 'unload': {
-        delete s.machines[st.prop];
         // A letter is addressed to the next inmate on today's round who has none in the bag yet.
         let v = slot(st.item);
         if (def.flow === 'mail') {
@@ -1747,6 +1756,7 @@ export class Sim {
           if (to === undefined) return;
           v = slot(st.item, to + 1);
         }
+        delete s.machines[st.prop];
         it.inv[free()] = v;
         break;
       }
@@ -1804,15 +1814,20 @@ export class Sim {
     const s = this.state;
     const it = s.items;
     const job = this.jobActive();
-    if (job >= 0 && !s.paid) this.vacate(job, HOLDER.PLAYER, 'fired');
-    for (let k = 0; k < HOTBAR; k++) if (it.inv[k] && WORK_ITEMS.includes(itemDef(itemOf(it.inv[k])).id)) it.inv[k] = 0;
+    // A lockdown (or the player out cold) excuses the block: nobody loses a job over it.
+    if (job >= 0 && !s.paid && !s.excused) this.vacate(job, HOLDER.PLAYER, 'fired');
+    const work = (v: number) => !!v && WORK_ITEMS.includes(itemDef(itemOf(v)).id);
+    for (let k = 0; k < HOTBAR; k++) if (work(it.inv[k])) it.inv[k] = 0;
+    // Dropped ones are picked up too.
+    it.ground = it.ground.filter(([, v]) => !work(v));
     it.rev++;
     s.machines = {};
     s.puddles = [];
     s.mail = [];
     // Inmates who never turned up, or were knocked out on the job, lose theirs (GDD §11: sabotage).
     s.jobs.forEach((who, j) => {
-      if (who >= 0 && s.inmates[who]?.shift !== 1) this.vacate(j, who, 'fired');
+      const shift = s.inmates[who]?.shift;
+      if (who >= 0 && (shift === 2 || (shift === 0 && !s.excused))) this.vacate(j, who, 'fired');
     });
   }
 
@@ -2417,6 +2432,7 @@ export class Sim {
       followers: st.followers ?? [],
       favors: st.favors ?? [],
       shops: st.shops?.length === this.prison.merchants.length ? st.shops : this.prison.merchants.map(() => new Array(SHOP_SLOTS).fill(0)),
+      selfDefense: st.selfDefense ?? false,
     };
     // The world as the state has it: the map, then every tile changed since.
     const w = this.world;

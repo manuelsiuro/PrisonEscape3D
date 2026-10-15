@@ -129,6 +129,8 @@ export interface WorkState {
   /** Carried slots (hotbar) and the hand. */
   inv: number[];
   hand: number;
+  /** The mail round: inmates still waiting for a letter (Cast ids). */
+  mail: readonly number[];
 }
 
 const hotbarHas = (s: WorkState, item: number) => s.inv.slice(0, 6).some((v) => (v & 255) === item);
@@ -155,7 +157,13 @@ export function stationTarget(w: World, s: WorkState, b: Body): Station | null {
       if (s.step < ready) return { prop: machine, tile: -1, act: 'running', item: done };
       return { prop: machine, tile: -1, act: free ? 'unload' : 'full', item: done };
     }
-    if (def.flow === 'mail') return { prop: machine, tile: -1, act: 'sort', item: done };
+    // Sorting only while someone still waits for a letter not already in the bag or on a desk.
+    if (def.flow === 'mail') {
+      let pending = 0;
+      for (const k in s.machines) if (room.machines.includes(Number(k))) pending++;
+      for (let k = 0; k < 6; k++) if ((s.inv[k] & 255) === done) pending++;
+      return s.mail.length > pending ? { prop: machine, tile: -1, act: 'sort', item: done } : null;
+    }
     if (hotbarHas(s, raw)) return { prop: machine, tile: -1, act: 'load', item: raw };
   }
   const put = room.put >= 0 && room.put !== room.take ? nearestProp(w, b, (_, i) => i === room.put) : -1;

@@ -16,6 +16,10 @@ worker bot (laundry, 3 days):
   day 3 12:13 quota 3/4
   day 3 12:16 quota 4/4
   day 3 12:16 +$30 (wage)
+janitor: day 1 12:47 +$35 (wage)
+kitchen: day 1 12:22 +$40 (wage)
+woodshop: day 1 12:13 +$50 (wage)
+mailman: day 1 12:54 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 2 hired: laundry

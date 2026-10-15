@@ -221,7 +221,20 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
-  // The Work Period with a job: to its room until the player is in it (the stations are framed there).
+  // The Work Period with a job: the janitor's next puddle (mop in the hotbar), the addressee of
+  // a letter in the bag, else the job's room until the player is in it (the stations are framed there).
+  if (r.id === 'work' && sim.onDuty) {
+    const flow = jobRooms(w)[sim.jobActive()].def.flow;
+    const inv = s.items.inv;
+    if (flow === 'mop' && s.puddles.length && inv.slice(0, 6).some((v) => itemOf(v) === MOP)) return (i) => s.puddles.includes(i);
+    if (flow === 'mail') {
+      const to = s.mail.filter((id) => inv.slice(0, 6).some((v) => itemOf(v) === LETTER && usesOf(v) - 1 === id) && s.inmates[id].ko === 0);
+      if (to.length) {
+        const tiles = to.map((id) => tileAt(s.inmates[id].body.x, s.inmates[id].body.z));
+        return (i) => tiles.includes(i);
+      }
+    }
+  }
   const zones = sim.dutyZones;
   if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
   if (!zones.length || (s.attended && r.id !== 'work')) return null;
@@ -290,7 +303,16 @@ function announce(e: SimEvent, sim: Sim) {
       sound.bell();
       buzz('bell');
       const r = ROUTINE[e.routine];
-      const sub = r.id === 'lightsOut' ? t('banner.lightsOut') : r.zones.length ? t('banner.goTo', { place: routinePlace(e.routine) }) : t('banner.free');
+      // The Work Period with a job: to its room; without one, more free time.
+      const job = r.id === 'work' ? sim.jobActive() : -1;
+      const sub =
+        r.id === 'lightsOut'
+          ? t('banner.lightsOut')
+          : job >= 0
+            ? t('banner.toWork', { place: t(`zone.${jobRooms(sim.world)[job].def.zone}` as Key), n: jobRooms(sim.world)[job].def.quota })
+            : r.zones.length
+              ? t('banner.goTo', { place: routinePlace(e.routine) })
+              : t('banner.free');
       banner.show(routineName(e.routine), sub);
       break;
     }
@@ -567,6 +589,7 @@ function announce(e: SimEvent, sim: Sim) {
         sound.coin(e.n >= 20);
         floatAt(-1, `+$${e.n}`, 'cash');
         if (e.why === 'loot') itemsUI.toast(t('toast.foundCash', { n: e.n }));
+        coachOnce('file', TOUCH ? 'hint.fileTouch' : 'hint.fileKeys');
         if (e.why === 'wage') {
           buzz('attended');
           banner.show(t('banner.paid', { n: e.n }), t('banner.paidSub', { job: jobName(sim, sim.playerJob) }), 'routine', 3600);
@@ -599,9 +622,10 @@ function announce(e: SimEvent, sim: Sim) {
           const later = sim.state.jobDay > sim.today;
           banner.toast(t(later ? 'toast.hiredTomorrow' : 'toast.hired', { job: jobName(sim, e.job) }), 'good', 5000);
         } else if (e.change === 'fired') {
+          // The bell for the next block rings in the same step: a long toast, not a banner it would replace.
           sound.sting();
           buzz('missed');
-          banner.show(t('banner.fired'), t('banner.firedSub', { job: jobName(sim, e.job) }), 'alarm', 4500);
+          banner.toast(t('toast.fired', { job: jobName(sim, e.job) }), 'bad', 7000);
         } else banner.toast(t('toast.quit', { job: jobName(sim, e.job) }), 'info');
       } else if (e.change === 'fired') banner.toast(t('toast.jobOpen', { name: inmateName(sim, e.who), job: jobName(sim, e.job) }), 'info', 5000);
       break;
@@ -656,7 +680,7 @@ function announce(e: SimEvent, sim: Sim) {
       break;
     case 'gift':
       sound.pickup();
-      itemsUI.toast(e.item ? t('toast.gaveItem', { item: itemName(e.item), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
+      itemsUI.toast(e.item ? t('toast.gaveItem', { item: lower(itemName(e.item)), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
       break;
     case 'favor':
       if (e.state === 'taken') {
@@ -696,6 +720,8 @@ function announce(e: SimEvent, sim: Sim) {
   }
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
 }
+
+const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 /** When a cup was last thrown (real ms), and how long it's in the air (View's flight). */
 let thrownAt = -1e9;
@@ -1345,6 +1371,7 @@ const frameData: Frame = {
   puddlesRev: 0,
 };
 const LETTER = itemNumber('letter');
+const MOP = itemNumber('mop');
 const MAGAZINE = itemNumber('magazine');
 /** Where the player stands while training on a treadmill (on its belt), refilled. */
 const trainAt = { x: 0, z: 0, facing: 0, y: 0 };
@@ -1381,7 +1408,18 @@ const projectAt = (x: number, y: number, z: number, out: { x: number; y: number 
  * The badge over an inmate (GDD §13.2): the letter the player carries for them, a favor done
  * (hand it in) or on offer, a merchant open for business, a follower.
  */
+const badgeMemo = { step: -1, rev: -1, kinds: [] as BadgeKind[] };
 function badgeOf(sim: Sim, who: number): BadgeKind {
+  const s = sim.state;
+  // Worked out once a step (or when the items change), not every frame.
+  if (badgeMemo.step !== s.step || badgeMemo.rev !== s.items.rev) {
+    badgeMemo.step = s.step;
+    badgeMemo.rev = s.items.rev;
+    for (let k = 0; k < s.inmates.length; k++) badgeMemo.kinds[k] = badgeNow(sim, k);
+  }
+  return badgeMemo.kinds[who] ?? '';
+}
+function badgeNow(sim: Sim, who: number): BadgeKind {
   const s = sim.state;
   const m = s.inmates[who];
   if (m.ko > 0 || m.angry > 0) return '';

@@ -139,3 +139,5 @@ export const FAVORS_TAKEN = 3;
 export const VACANCY_DAYS = 2;
 /** Merchants: up to 50% off at full opinion (GDD §10.3); they won't deal with someone they despise. */
 export const MAX_DISCOUNT = 0.5;
+/** Seen hitting back at an inmate who jumped the player: this much heat a blow (attacking first: 100%). */
+export const SELF_DEFENSE_HEAT = 10;

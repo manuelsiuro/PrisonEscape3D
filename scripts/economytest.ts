@@ -33,7 +33,7 @@ import { clockAt, formatTime } from '../src/sim/systems/clock';
 import { discountOf, FAVOR, FAVOR_STATE, HOLDER, jobRooms, priceOf, stationTarget } from '../src/sim/systems/economy';
 import { GUARD, type Guard } from '../src/sim/systems/guards';
 import type { Inmate } from '../src/sim/systems/inmates';
-import { HOTBAR, itemOf, pocketOf, slot } from '../src/sim/systems/items';
+import { HOTBAR, itemOf, pocketOf, slot, usesOf } from '../src/sim/systems/items';
 import { STEPS_PER_MINUTE, UNIT, walkSpeed } from '../src/sim/tuning';
 import { reachableFrom } from '../src/sim/world/reach';
 import { MAP_W } from '../src/sim/world/World';
@@ -139,9 +139,37 @@ function worker(work: boolean): (sim: Sim) => Bot {
         const inv = st.items.inv.slice(0, HOTBAR).map(itemOf);
         const raw = room.def.raw ? n(room.def.raw) : 0;
         const done = room.def.done ? n(room.def.done) : 0;
+        const flow = room.def.flow;
+        // The janitor: mop in hand, to the nearest puddle.
+        if (flow === 'mop' && inv.includes(raw)) {
+          if (inv[st.items.hand] !== raw) return command(0, OP.SELECT, inv.indexOf(raw));
+          if (want !== 'puddle' || !pilot.active) {
+            want = 'puddle';
+            pilot.goToAny((i) => st.puddles.includes(i));
+          }
+          return command(pilot.dir(st.player));
+        }
+        // The mailman: a letter in the bag goes to its addressee (wherever they are now).
+        const letter = flow === 'mail' ? st.items.inv.slice(0, HOTBAR).find((v) => itemOf(v) === done && st.mail.includes(usesOf(v) - 1)) : undefined;
         const ready = room.machines.find((i) => st.machines[i] !== undefined && st.machines[i] <= st.step);
+        if (letter && ready === undefined) {
+          const m = st.inmates[usesOf(letter) - 1];
+          const dx = m.body.x - st.player.x;
+          const dz = m.body.z - st.player.z;
+          if (Math.max(Math.abs(dx), Math.abs(dz)) < UNIT * 1.2 && wait <= 0) {
+            wait = 4;
+            st.player.facing = nearestDir(dx, dz);
+            return command(0, OP.INTERACT);
+          }
+          if (want !== 'mail' || st.step % 40 === 0) {
+            want = 'mail';
+            const t = tileOf(m.body);
+            pilot.goToAny((i) => Math.abs((i % MAP_W) - (t % MAP_W)) + Math.abs(Math.floor(i / MAP_W) - Math.floor(t / MAP_W)) === 1);
+          }
+          return command(pilot.dir(st.player));
+        }
         const free = room.machines.find((i) => st.machines[i] === undefined);
-        const prop = ready ?? (inv.includes(done) ? room.put : inv.includes(raw) ? free : room.take);
+        const prop = flow === 'mail' ? (ready ?? free ?? room.machines[0]) : (ready ?? (done && inv.includes(done) ? room.put : raw && inv.includes(raw) ? free : room.take));
         const key = `prop${prop}`;
         if (prop === undefined || prop < 0) return 0;
         const p = s.world.props[prop];
@@ -191,8 +219,10 @@ function describe(sim: Sim, e: SimEvent): string {
   }
 }
 
-function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim) => void) {
+function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim) => void, job = 0) {
   const sim = new Sim(CENTER_PERKS, seed);
+  // Another job from day 1: the player takes it (its holder moves to the laundry).
+  if (job > 0) [sim.state.jobs[0], sim.state.jobs[job]] = [sim.state.jobs[job], HOLDER.PLAYER];
   const play = bot(sim);
   const log: string[] = [];
   for (let i = 0; i < steps; i++) {
@@ -218,6 +248,16 @@ function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim)
   check(sim.playerJob === 0, 'the worker still has the laundry job');
   check(st.heat === 0 && !log.some((l) => l.includes('LOCKDOWN')), 'the worker ends with no heat, no lockdown');
   check(!st.items.inv.some((v) => ['dirty_laundry', 'clean_laundry'].includes(itemDef(itemOf(v))?.id ?? '')), 'work items are handed back at 15:00');
+}
+
+// ------------------------------------------------------------------ every job can be done in a day
+for (let job = 1; job < CENTER_PERKS.jobs.length; job++) {
+  const id = CENTER_PERKS.jobs[job].id;
+  const { sim, log } = run(worker(true), DAY, 3, undefined, job);
+  const paid = log.find((l) => l.includes('(wage)'));
+  console.log(`${id}: ${paid ?? 'not paid'}`);
+  check(!!paid && sim.playerJob === job && sim.state.cash >= JOBS[id].wage, `the ${id} job can be done and paid in one work period`);
+  check(sim.state.heat < 100, `doing the ${id} job raises no alarm`);
 }
 
 // ------------------------------------------------------------------ the idle worker: fired, the job goes to an inmate
@@ -611,4 +651,76 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   const p = sim.world.props[room.take];
   const b = { x: (p.x + 0.5) * UNIT, z: (p.z - 0.5) * UNIT, facing: 5, moving: false };
   check(stationTarget(sim.world, ws, b)?.act === 'take', 'at the dirty bin with empty hands: take a load');
+}
+
+// ------------------------------------------------------------------ review: lockdowns excuse work, scuffles, the mail desk
+{
+  // A lockdown through the Work Period: inmates were in their cells, the player in the yard: nobody is fired.
+  const a = arena(stepAt(1, 11, 59), 17);
+  const { st } = a;
+  a.steps(MIN + 2);
+  st.heat = 100;
+  st.lockdown = true;
+  st.excused = true;
+  while (ROUTINE[st.routine].id === 'work') a.step();
+  const fired = a.events.filter((e) => e.type === 'job' && e.change === 'fired');
+  check(!fired.length, 'a lockdown during work: nobody loses a job');
+}
+{
+  // An inmate jumps the player; hitting back in a guard's sight is a scuffle (a little heat), not the alarm.
+  const a = arena(stepAt(1, 10, 30), 19);
+  const { sim, st } = a;
+  const m = st.inmates[0];
+  freeze(m, 30, 22);
+  m.angry = 400;
+  put(st.player, 30, 23);
+  const g = st.guards[1];
+  put(g.body, 30, 26);
+  g.body.facing = g.face = 13;
+  a.op(OP.LOCK, 2);
+  a.op(OP.USE, 1);
+  check(st.selfDefense && st.heat > 0 && st.heat <= 10 && !st.lockdown && a.has('spotted', (e) => e.type === 'spotted' && e.reason === 'brawl'), `hitting back, seen: a scuffle (${st.heat}% heat)`);
+  // Hitting someone calm in sight: the alarm, as before.
+  const b = arena(stepAt(1, 10, 30), 19);
+  freeze(b.st.inmates[0], 30, 22);
+  put(b.st.player, 30, 23);
+  const g2 = b.st.guards[1];
+  put(g2.body, 30, 26);
+  g2.body.facing = g2.face = 13;
+  b.op(OP.LOCK, 2);
+  b.op(OP.USE, 1);
+  check(!b.st.selfDefense && b.st.lockdown, 'attacking a calm inmate in sight: lockdown');
+  void sim;
+}
+{
+  // The mail desk sorts only as many letters as there are inmates waiting; dropped work items go back at 15:00.
+  const a = arena(stepAt(1, 11, 59), 23);
+  const { sim, st } = a;
+  [st.jobs[0], st.jobs[4]] = [st.jobs[4], HOLDER.PLAYER];
+  a.steps(MIN + 2);
+  check(st.mail.length === 3, 'three letters to deliver');
+  const desk = jobRooms(sim.world)[4].machines[0];
+  const p = sim.world.props[desk];
+  put(st.player, p.x, p.z + 1);
+  st.player.facing = 13;
+  let sorted = 0;
+  for (let k = 0; k < 12; k++) {
+    a.op(OP.INTERACT);
+    a.steps(4 * 20);
+    sorted = st.items.inv.filter((v) => itemOf(v) === n('letter')).length;
+  }
+  check(sorted === 3 && Object.keys(st.machines).length === 0, `no more letters than addressees (${sorted})`);
+  check(new Set(st.items.inv.filter((v) => itemOf(v) === n('letter')).map(usesOf)).size === 3, 'each letter for a different inmate');
+  a.op(OP.DROP, st.items.inv.findIndex((v) => itemOf(v) === n('letter')));
+  while (ROUTINE[st.routine].id === 'work') a.step();
+  check(!st.items.ground.some(([, v]) => itemOf(v) === n('letter')) && !st.items.inv.some((v) => itemOf(v) === n('letter')), 'letters go back at 15:00, dropped ones too');
+}
+{
+  // How long a step takes with the economy running (the worker bot, a day).
+  const sim = new Sim(CENTER_PERKS, 3);
+  const play = worker(true)(sim);
+  const t0 = performance.now();
+  for (let k = 0; k < DAY; k++) sim.step(play(sim));
+  const us = ((performance.now() - t0) * 1000) / DAY;
+  check(us < 400, `a step stays cheap (${us < 400 ? 'under 400' : Math.round(us)} µs)`);
 }

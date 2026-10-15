@@ -2,7 +2,7 @@ import { ROUTINE, routineEnd } from '../content/routine';
 import { formatTime, type Clock } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
 import { currentLang, t, type Key } from '../i18n';
-import { h, setText } from './dom';
+import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
 /** What the HUD shows besides the clock and the zone. */
@@ -164,7 +164,8 @@ export class Hud {
       }
       this.shownCash = s.cash;
       setText(this.cashText, `$${s.cash}`);
-      this.cashPill.title = t('hud.profile');
+      // The keyboard's shortcut in the tooltip (not on touch).
+      this.cashPill.title = TOUCH ? t('hud.profile') : `${t('hud.profile')} (I)`;
       this.cashPill.setAttribute('aria-label', `${t('hud.cash')} $${s.cash}. ${t('hud.profile')}`);
     }
     // The eye opens while a guard is looking (so stealth can be read at a glance).

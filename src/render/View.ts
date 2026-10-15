@@ -229,8 +229,8 @@ export class View {
   private cupWho = -1;
   /** Puddles for the janitor to mop (GDD §11): flat glossy pools, one instance each. */
   private readonly puddles = new THREE.InstancedMesh(
-    new THREE.CircleGeometry(0.42, 20).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: 0x7fb4d8, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+    new THREE.CircleGeometry(0.46, 20).rotateX(-Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: 0x7cc4f5, emissive: 0x2a6a96, roughness: 0.2, metalness: 0, transparent: true, opacity: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
     16,
   );
   private puddlesRev = -1;
@@ -258,6 +258,8 @@ export class View {
     this.cup.visible = false;
     this.puddles.count = 0;
     this.puddles.renderOrder = 1;
+    // Instances spread over the whole map: the mesh's own bounds (at the origin) would cull them.
+    this.puddles.frustumCulled = false;
     this.setQuality(quality);
     addEventListener('resize', () => this.resize());
   }
@@ -438,7 +440,7 @@ export class View {
       }
       mesh.instanceMatrix.needsUpdate = true;
     }
-    if (mesh.visible) (mesh.material as THREE.MeshStandardMaterial).opacity = 0.55 + (this.reducedMotion ? 0 : Math.sin(time * 2.2) * 0.06);
+    if (mesh.visible) (mesh.material as THREE.MeshStandardMaterial).opacity = 0.74 + (this.reducedMotion ? 0 : Math.sin(time * 2.2) * 0.06);
   }
 
   /** A point of the world (tiles) on screen (CSS pixels); null off screen. */

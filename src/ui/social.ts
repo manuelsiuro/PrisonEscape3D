@@ -32,6 +32,18 @@ export function favorText(sim: Sim, f: { kind: number; item: number; target: num
   return t(`favor.${kind}` as Key, { item: item.charAt(0).toLowerCase() + item.slice(1), name: f.target >= 0 ? inmateName(sim, f.target) : '' });
 }
 
+/**
+ * Costly taps ask twice (a gift, quitting a job, swapping one): the first arms the button
+ * (it shows its question), the second within a few seconds does it. Returns whether to go ahead.
+ */
+function confirmed(b: HTMLElement): boolean {
+  if (!b.dataset.confirm || b.classList.contains('armed')) return true;
+  b.closest('.item-panel')?.querySelectorAll('.armed').forEach((o) => o.classList.remove('armed'));
+  b.classList.add('armed');
+  setTimeout(() => b.classList.remove('armed'), 2800);
+  return false;
+}
+
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /**
@@ -55,6 +67,7 @@ export class TalkPanel {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
       if (!b || (b as HTMLButtonElement).disabled) return;
       this.click();
+      if (!confirmed(b)) return;
       if (b.dataset.act === 'close') this.send(OP.CLOSE);
       else this.send(OP.TALK, Number(b.dataset.act), Number(b.dataset.arg ?? 0));
     });
@@ -140,7 +153,7 @@ export class TalkPanel {
         const n = itemOf(v);
         const value = itemDef(n).value;
         if (value <= 0) return '';
-        return `<button class="slot gift" data-act="${TALK.GIFT}" data-arg="${k}" aria-label="${esc(t('talk.giveItem', { item: itemName(n) }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><i class="gift-gain">+${giftOpinion(value)}</i></button>`;
+        return `<button class="slot gift" data-act="${TALK.GIFT}" data-arg="${k}" data-confirm="${esc(t('talk.confirmGive'))}" aria-label="${esc(t('talk.giveItem', { item: itemName(n) }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><i class="gift-gain">+${giftOpinion(value)}</i></button>`;
       })
       .join('');
     const cashBtns = CASH_GIFTS.map((d) => `<button class="cash-btn" data-act="${TALK.GIFT_CASH}" data-arg="${d}" ${s.cash < d ? 'disabled' : ''}>$${d}<i>+${cashOpinion(d)}</i></button>`).join('');
@@ -182,6 +195,7 @@ export class BoardPanel {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-job]');
       if (!b || (b as HTMLButtonElement).disabled) return;
       this.click();
+      if (!confirmed(b)) return;
       if (b.dataset.job === 'close') this.close();
       else this.send(OP.JOB, Number(b.dataset.job));
     });
@@ -217,10 +231,12 @@ export class BoardPanel {
         const open = holder === HOLDER.NOBODY;
         const can = s.items.int >= d.int;
         const who = you ? t('board.you') : open ? t('board.open') : inmateName(sim, holder);
+        // Quitting, or applying while holding a job (it's left), asks twice.
+        const swap = mine >= 0 ? ` data-confirm="${esc(t('board.confirmSwap'))}" title="${esc(t('board.swapNote', { job: t(`job.${sim.prison.jobs[mine].id}` as Key) }))}"` : '';
         const action = you
-          ? `<button class="big-btn ghost small" data-job="0">${t('board.quit')}</button>`
+          ? `<button class="big-btn ghost small" data-job="0" data-confirm="${esc(t('board.confirmQuit'))}">${t('board.quit')}</button>`
           : open
-            ? `<button class="big-btn ${can ? 'primary' : 'ghost'} small" data-job="${j + 1}" ${can ? '' : 'disabled'}>${can ? t('board.apply') : t('board.needInt', { n: d.int })}</button>`
+            ? `<button class="big-btn ${can ? 'primary' : 'ghost'} small" data-job="${j + 1}" ${can ? swap : 'disabled'}>${can ? t('board.apply') : t('board.needInt', { n: d.int })}</button>`
             : `<span class="board-taken">${t('board.taken')}</span>`;
         const later = you && s.jobDay > sim.today ? `<em class="board-later">${t('board.tomorrow')}</em>` : '';
         return `<div class="board-row${you ? ' mine' : ''}${open ? ' open' : ''}"><span class="board-ic">${icon(JOB_ICONS[d.id], 20)}</span><span class="board-text"><b>${esc(t(`job.${d.id}` as Key))}${later}</b><small>${esc(t(`jobTask.${d.id}` as Key, { n: d.quota }))}</small><span class="board-meta"><i class="${can ? '' : 'short'}">${icon('brain', 12)}${d.int}</i><i class="wage">${icon('coin', 12)}$${d.wage}</i><i class="holder${open ? ' open' : you ? ' you' : ''}">${esc(who)}</i></span></span>${action}</div>`;
