@@ -626,8 +626,8 @@ export class Character {
     this.act = moving ? 0 : Math.min(1, this.act + dt * 3);
     const a = this.act * (motion ? 1 : 0);
     const t = time + this.offset;
-    // Seated on the canteen bench: legs forward under the table, a little lower.
-    const sit = doing === DOING.EAT ? this.act : 0;
+    // Seated (a canteen bench, a chair, a yard bench): legs forward, a little lower.
+    const sit = doing === DOING.EAT || doing === DOING.SIT || doing === DOING.SIT_READ ? this.act : 0;
     legL -= sit * 1.45;
     legR -= sit * 1.45;
     bob -= sit * 0.06;
@@ -684,7 +684,11 @@ export class Character {
       armLx -= r * 0.9;
       armRx += r * 0.9;
       bob += Math.abs(Math.cos(t * (9 + this.pumped * 5))) * 0.05 * a;
-    } else if (doing === DOING.READ) {
+    } else if (doing === DOING.SIT) {
+      // Sitting back: hands on the knees.
+      armLx += -0.75 * a;
+      armRx += -0.75 * a;
+    } else if (doing === DOING.READ || doing === DOING.SIT_READ) {
       // A book held up in both hands; a page turns on each rep.
       armLx += -1.25 * a;
       armRx += (-1.25 - this.pumped * 0.25) * a;

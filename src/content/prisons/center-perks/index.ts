@@ -111,6 +111,17 @@ props.push(
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
 );
 
+// Chairs (P8+), appended so every earlier prop keeps its index (saves, containers and
+// training name props by index): one at each cell's desk, the library's tables, the guard
+// quarters' table, stools either side of the visitation counters, the control room's desk.
+props.push(
+  ...cells.map(([x0, z0], k) => ({ kind: 'chair', x: x0 + 2, z: k < 4 ? z0 : z0 + 3, rot: 1 }) as const),
+  ...[16, 17, 21, 22].map((x) => ({ kind: 'chair', x, z: 33, rot: 2 }) as const),
+  ...[39, 40].map((x) => ({ kind: 'chair', x, z: 41, rot: 2 }) as const),
+  ...[26, 27, 28, 29, 32, 33, 34, 35].flatMap((x) => [{ kind: 'chair', x, z: 40, rot: 0 } as const, { kind: 'chair', x, z: 42, rot: 2 } as const]),
+  { kind: 'chair', x: 55, z: 41, rot: 1 },
+);
+
 /** Two rows of four, facing the guard at the north end. */
 const rollCall = [12, 15].flatMap((z) => [29, 31, 34, 36].map((x) => ({ x, z })));
 

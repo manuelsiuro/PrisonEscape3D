@@ -8,7 +8,7 @@
   day 1 23:12 climbDown → layer 0
   day 1 23:19 digUp → layer 1
   day 1 23:19 ESCAPED (tunnel)
-  saved and loaded at day 1 15:39 (yard) resumes, day 1 21:47 (playerCell) resumes, day 1 23:00 (playerCell) resumes, day 1 23:14 (tunnels) resumes
+  saved and loaded at day 1 15:39 (yard) resumes, day 1 21:47 (playerCell) resumes, day 1 23:01 (playerCell) resumes, day 1 23:14 (tunnels) resumes
   → out day 1 23:19 by tunnel; heat peak 0%; walls 0, tunnel tiles 8, guards out cold 0, cash $0
 == rooftop grapnel
   day 1 23:11 climbVent → layer 2

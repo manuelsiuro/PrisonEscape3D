@@ -288,6 +288,19 @@ export class Sound {
     src.stop(t + dur);
   }
 
+  /** Sitting down: a soft creak of wood and a settle. */
+  sit() {
+    this.tone(180, 120, 0.12, 'triangle', 0.08);
+    this.hiss(0.08, 'lowpass', 900, 0.8, 0.05);
+  }
+
+  /** A meal eaten: two quick spoon clinks and a pleased hum. */
+  eat() {
+    this.tone(2400, 2300, 0.05, 'sine', 0.06);
+    this.tone(2700, 2600, 0.05, 'sine', 0.05, 0.12);
+    this.tone(330, 392, 0.25, 'triangle', 0.08, 0.22);
+  }
+
   click() {
     this.tone(900, 600, 0.05, 'triangle', 0.15);
   }

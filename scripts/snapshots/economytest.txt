@@ -2,27 +2,27 @@ wages $laundry 30, $janitor 35, $kitchen 40, $woodshop 50, $mailman 55; merchant
 worker bot (laundry, 3 days):
   day 1 12:13 quota 1/4
   day 1 12:13 quota 2/4
-  day 1 12:14 quota 3/4
+  day 1 12:13 quota 3/4
   day 1 12:17 quota 4/4
   day 1 12:17 +$30 (wage)
   day 2 12:13 quota 1/4
   day 2 12:13 quota 2/4
   day 2 12:13 quota 3/4
-  day 2 12:17 quota 4/4
-  day 2 12:17 +$30 (wage)
-  day 3 08:00 inmate 0 hired: woodshop
-  day 3 12:13 quota 1/4
+  day 2 12:16 quota 4/4
+  day 2 12:16 +$30 (wage)
+  day 3 08:00 inmate 2 hired: woodshop
+  day 3 12:12 quota 1/4
   day 3 12:13 quota 2/4
   day 3 12:13 quota 3/4
   day 3 12:16 quota 4/4
   day 3 12:16 +$30 (wage)
-janitor: day 1 12:47 +$35 (wage)
+janitor: day 1 12:38 +$35 (wage)
 kitchen: day 1 12:22 +$40 (wage)
 woodshop: day 1 12:13 +$50 (wage)
-mailman: day 1 12:54 +$55 (wage)
+mailman: day 1 13:46 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
-  day 3 08:00 inmate 2 hired: laundry
+  day 3 08:00 inmate 5 hired: laundry
 sabotage: the kitchen hand fired at 15:00, the player hired for day 2
 training: 3 sets of weights → STR 46, energy 100 → 65
 speed: 3.59 tiles a second at SPD 40, 4.30 at 100

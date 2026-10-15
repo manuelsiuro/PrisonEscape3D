@@ -23,11 +23,14 @@ export const PROPS = {
   controlDesk: { solid: true },
   /** A street lamp: lights a pool of ground at night. */
   lamp: { solid: true },
-  bench: { solid: true },
+  /** A yard bench: sat on like a canteen seat (anyone can step over it). */
+  bench: { solid: false },
   /** A low canteen bench: inmates sit on it at meals, anyone can step over it. */
   seat: { solid: false },
   /** A ladder against a wall up to the roof hatch (and past the vents). */
   ladder: { solid: true },
+  /** A chair or stool: sat on (P8+); low, stepped round. */
+  chair: { solid: false },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

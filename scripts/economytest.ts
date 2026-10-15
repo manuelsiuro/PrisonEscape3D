@@ -312,9 +312,11 @@ function arena(step = 0, seed = 5) {
 /** Stand facing an inmate a tile away and talk. */
 function talkTo(a: ReturnType<typeof arena>, who: number) {
   const m = a.st.inmates[who];
-  const tx = Math.floor(m.body.x / UNIT);
-  const tz = Math.floor(m.body.z / UNIT);
-  put(a.st.player, tx, tz + 1);
+  // Wherever it's going (a bench, a hangout): until it stands still there.
+  for (let k = 0; k < 600 && m.body.moving; k++) a.step();
+  // A tile south of where it stands (it may have stopped between tiles, on its way to a seat).
+  a.st.player.x = m.body.x;
+  a.st.player.z = m.body.z + UNIT;
   a.st.player.facing = 13;
   a.op(OP.INTERACT);
   return a.st.talk === who;

@@ -62,8 +62,13 @@ export const TOILET_LOADS = 3;
 export const TOILET_CLOG_STEPS = 60 * STEPS_PER_MINUTE;
 /** Energy (0–100): back to full after a night's sleep, a little back every couple of minutes, more from meals, showers and chocolate. */
 export const ENERGY_REGEN_STEPS = 2 * STEPS_PER_MINUTE;
+/** A meal (GDD §2): seated at a canteen table during breakfast or dinner, the tray takes this long to eat, then +35, once a meal. */
 export const MEAL_ENERGY = 35;
-export const SHOWER_ENERGY = 20;
+export const MEAL_STEPS = 3 * STEPS_PER_SECOND;
+/** Standing under a shower in the showers block (GDD §3.1): a point every 10 steps (2 a second). */
+export const SHOWER_ENERGY_STEPS = 10;
+/** Sitting (a chair, a bench, a canteen seat) or lying on an infirmary bed: a point every 13 steps (about 1.5 a second, GDD §3.1). */
+export const SIT_ENERGY_STEPS = 13;
 export const CHOCOLATE_ENERGY = 25;
 /** Crawling in the vents and stooping in tunnels are slower than walking (units per step). */
 export const CRAWL_SPEED = 110;

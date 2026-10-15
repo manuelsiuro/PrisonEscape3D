@@ -1,6 +1,7 @@
 import { zoneIndex, type ZoneId } from '../../content/zones';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { MAP_H, MAP_W, type Prop, type World } from '../world/World';
+import { facingAt } from '../systems/rest';
 
 /** A tile to stand on and the direction (1–16) to face there. */
 export interface Spot {
@@ -20,6 +21,8 @@ export interface Places {
   seats: Spot[];
   /** Tiles under a shower head, facing the wall. */
   showers: Spot[];
+  /** Somewhere to sit in free time (P8+): every chair and yard bench tile, facing its table or the way it's turned. */
+  rests: Spot[];
   /** Roll call spots in order (spot k for cell k + 1), facing north. */
   rollCall: Spot[];
   /** Per cell number: the free tile beside its bed (index 0 unused). */
@@ -63,7 +66,10 @@ function build(w: World): Places {
   const canteen = zoneIndex('canteen');
   const seats: Spot[] = [];
   const showers: Spot[] = [];
+  const rests: Spot[] = [];
   for (const p of w.props) {
+    if (p.kind === 'chair' || p.kind === 'bench')
+      for (let x = p.x; x < p.x + p.w; x++) for (let z = p.z; z < p.z + p.d; z++) rests.push({ tile: z * MAP_W + x, face: facingAt(w, p, x, z) });
     if (p.kind === 'table' && g.zone[p.z * MAP_W + p.x] === canteen) {
       for (let x = p.x; x < p.x + p.w; x++) {
         if (isFloor(w, x, p.z - 1)) seats.push({ tile: (p.z - 1) * MAP_W + x, face: S });
@@ -98,6 +104,7 @@ function build(w: World): Places {
     floor,
     seats,
     showers,
+    rests,
     rollCall,
     bedside,
     deskside,

@@ -68,6 +68,8 @@ export interface Frame {
   /** Training (GDD §3.2): the player's pose (DOING.LIFT, RUN, READ; NOTHING otherwise), where they stand for it (on the treadmill's belt), and a count of reps so far (each one pumps the arms). */
   doing: number;
   trainAt: { x: number; z: number; facing: number; y: number } | null;
+  /** Resting on an infirmary bed: where it lies (the player lies on it as in their own bed). */
+  restBed: BedPose | null;
   reps: number;
   /** Puddles to mop (tiles), and a number that changes whenever they do. */
   puddles: readonly number[];
@@ -200,6 +202,8 @@ export class View {
   private readonly snores = new Snores();
   /** Sleepers' heads this frame ([x, y, z] each), for the snores. */
   private readonly sleepers: number[] = [];
+  /** Chair tiles (someone sitting there sits a little higher). */
+  private readonly chairs = new Set<number>();
   private structure: Structure | null = null;
   private security: Security | null = null;
   private riot = false;
@@ -314,6 +318,8 @@ export class View {
       this.security.dispose();
     }
     this.world = world;
+    this.chairs.clear();
+    for (const p of world.props) if (p.kind === 'chair') this.chairs.add(p.z * MAP_W + p.x);
     this.security = new Security(world);
     this.scene.add(this.security.group);
     this.worldView = new WorldView(world);
@@ -622,7 +628,9 @@ export class View {
     const px = f.x + (this.trainPos.x - f.x) * tb;
     const pz = f.z + (this.trainPos.z - f.z) * tb;
     this.player.baseY = LAYER_Y[f.layer] + this.trainPos.y * tb;
-    if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, this.beds[1])) {
+    // Under a shower in the showers block: wet like the inmates.
+    this.player.wet = f.doing === DOING.SHOWER;
+    if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.beds[1])) {
       if (DUST[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
       this.onStep(f.surface);
     }
@@ -644,6 +652,8 @@ export class View {
       // In the tunnels the ground floor and everyone on it are out of the picture.
       c.root.visible = f.layer !== LAYER.UNDER;
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
+      // On a chair, a little higher than on a canteen bench.
+      c.baseY = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
       c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);

@@ -165,9 +165,18 @@ export type Target =
   | { kind: 'fixture'; index: number; use: FixtureUse }
   | null;
 
-/** Furniture used by standing at it: the job board, the weights (Strength), the treadmill (Speed), the generator (the power, GDD §5.5). */
-export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator' };
+/**
+ * Furniture used by standing at it: the job board, the weights (Strength), the treadmill
+ * (Speed), the generator (the power, GDD §5.5); seats, benches and chairs to sit on, and the
+ * infirmary's beds to rest on (GDD §3.1).
+ */
+export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest';
+const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit' };
+
+/** What a prop is used for by standing at it (an infirmary bed is for resting; a cell bed is a container). */
+export function fixtureUse(w: World, p: { kind: string; x: number; z: number }): FixtureUse | undefined {
+  return FIXTURES[p.kind] ?? (p.kind === 'bed' && w.zoneAt(p.x, p.z) === 'infirmary' ? 'rest' : undefined);
+}
 
 /** Someone whose pockets can be gone through: lying knocked out (GDD §10.2). */
 export interface Lootable {
@@ -233,13 +242,21 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     }
   }
   w.props.forEach((p, index) => {
-    const use = FIXTURES[p.kind];
+    const use = fixtureUse(w, p);
     if (!use) return;
     const dx = Math.max(p.x * UNIT - b.x, 0, b.x - (p.x + p.w) * UNIT);
     const dz = Math.max(p.z * UNIT - b.z, 0, b.z - (p.z + p.d) * UNIT);
     const d = Math.max(dx, dz);
     if (d > REACH) return;
-    const sc = score(d, (p.x + p.w / 2) * UNIT, (p.z + p.d / 2) * UNIT);
+    // Seats and beds give way to anything else in reach (a chair stands where the desk is
+    // searched from), unless the seat is the tile straight ahead: the player sits by facing it.
+    let sc = score(d, (p.x + p.w / 2) * UNIT, (p.z + p.d / 2) * UNIT);
+    if (use === 'sit' || use === 'rest') {
+      // (Directions are scaled to a tile: three quarters of one ahead.)
+      const ax = Math.floor((b.x + (fx * UNIT * 0.75) / 1024) / UNIT);
+      const az = Math.floor((b.z + (fz * UNIT * 0.75) / 1024) / UNIT);
+      sc += ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d ? -UNIT / 2 : UNIT / 4;
+    }
     if (sc < bestScore) {
       bestScore = sc;
       best = { kind: 'fixture', index, use };

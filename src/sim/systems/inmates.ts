@@ -1,5 +1,5 @@
 import { ROUTINE } from '../../content/routine';
-import type { ZoneId } from '../../content/zones';
+import { zoneIndex, type ZoneId } from '../../content/zones';
 import { clearLine, nearestDir, tileAt } from '../ai/path';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
@@ -10,7 +10,7 @@ import { maxHealth, type Fighter } from './combat';
 import { bodyAt, type Body } from './movement';
 
 /** What someone is doing where they stand (the view poses it): inmates, guards (searching), the player (knocked out). */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;
@@ -129,7 +129,18 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
         then = DOING.WORK;
         break;
       }
-      // Free time: somewhere to hang about for a while, then somewhere else.
+      // Free time: now and then a seat (reading at a library table, a yard bench, the chair in
+      // its own cell), else somewhere to hang about for a while, then somewhere else.
+      if (randomInt(rng, 3) === 0) {
+        const lib = zoneIndex('library');
+        const yard = zoneIndex('yard');
+        const free = places.rests.filter((r) => (w.ground.zone[r.tile] === lib || w.ground.zone[r.tile] === yard || w.cellOf[r.tile] === m.cell) && !taken(all, r.tile));
+        if (free.length) {
+          spot = free[randomInt(rng, free.length)];
+          then = w.ground.zone[spot.tile] === lib ? DOING.SIT_READ : DOING.SIT;
+          break;
+        }
+      }
       const r = randomInt(rng, HANGOUTS.length + 1);
       const list = r === HANGOUTS.length ? own() : floorOf(w, [HANGOUTS[r]]);
       spot = pickSpot(all, tiles(list, 1 + randomInt(rng, 16)), rng);

@@ -715,6 +715,18 @@ export const en = {
   "coach.skip": "Skip the guide",
   "help.mustJob": "With a job: the quota",
   "help.mustCell": "In your cell",
+  "act.sit": "Sit on",
+  "act.rest": "Lie down on",
+  "act.getUp": "Get up",
+  "thing.seat": "bench",
+  "thing.bench": "bench",
+  "thing.chair": "chair",
+  "thing.infirmaryBed": "bed",
+  "hint.meal": "Sit at a table to eat your tray: +{n} energy, once a meal",
+  "hint.shower": "Stand under a shower: energy comes back while it runs",
+  "hint.sit": "Sitting rests you: energy comes back. Move to get up",
+  "hint.rest": "Resting in the infirmary: energy and health come back faster. Move to get up",
+  "float.meal": "+{n} energy",
 };
 
 export type Strings = typeof en;

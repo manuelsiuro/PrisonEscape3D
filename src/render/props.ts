@@ -131,6 +131,14 @@ const BUILDERS: Record<PropKind, Builder> = {
     box(0.06, 0.4, 0.06, DARK, -(w - 0.3) / 2, 0.2, -0.2),
     box(0.06, 0.4, 0.06, DARK, (w - 0.3) / 2, 0.2, -0.2),
   ],
+  /** A plain prison chair: four steel legs, a wooden seat and back (its back to the north, turned by rot). */
+  chair: () => [
+    ...legs(0.36, 0.36, 0.4, DARK, 0.035),
+    box(0.44, 0.05, 0.42, WOOD, 0, 0.4, 0.02),
+    box(0.44, 0.3, 0.05, WOOD, 0, 0.6, -0.19),
+    box(0.04, 0.3, 0.04, DARK, -0.2, 0.45, -0.19),
+    box(0.04, 0.3, 0.04, DARK, 0.2, 0.45, -0.19),
+  ],
   /** Steel rails against the wall behind it, up past the wall top to the roof hatch. */
   ladder: (_w, d) => {
     const z = -d / 2 + 0.16;

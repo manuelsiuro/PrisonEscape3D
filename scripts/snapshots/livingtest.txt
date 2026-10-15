@@ -1,0 +1,3 @@
+meal: +42 at the table, +13 seated for 130 steps
+shower: +13 in 5 s
+free time, day 1: inmate-steps sitting 2958, reading 2337

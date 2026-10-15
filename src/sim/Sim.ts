@@ -6,7 +6,7 @@ import { argA, argB, dirOf, OP, opOf, SLOT, TALK } from './command';
 import { findPath, nearestDir } from './ai/path';
 import { placesOf } from './ai/places';
 import { canSee } from './ai/sight';
-import { craft, dropItem, equip, give, guardKit, HOTBAR, interactTarget, itemOf, moveItem, pickUp, pocketOf, restock, slot, startItems, startPockets, stillInReach, stockSlots, usesOf, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
+import { craft, dropItem, equip, give, guardKit, HOTBAR, interactTarget, REACH, itemOf, moveItem, pickUp, pocketOf, restock, slot, startItems, startPockets, stillInReach, stockSlots, usesOf, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
 import { WORK_ITEMS } from '../content/jobs';
 import { SHOP_SLOTS } from '../content/loot';
 import { CASH_GIFTS, cashOpinion, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, nearestProp, priceOf, stationTarget, STATION_REACH, type Favor, type Station, type StationAct, type WorkState } from './systems/economy';
@@ -39,7 +39,9 @@ import {
   CRAWL_SPEED,
   ENERGY_REGEN_STEPS,
   MEAL_ENERGY,
-  SHOWER_ENERGY,
+  MEAL_STEPS,
+  SHOWER_ENERGY_STEPS,
+  SIT_ENERGY_STEPS,
   STRIKE_SEEN_STEPS,
   STRIKE_STEPS,
   TOILET_CLOG_STEPS,
@@ -99,6 +101,7 @@ import { LAYER, layerOfKey, MAP_H, MAP_W, placeKey, tileOfKey, World } from './w
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from './world/tiles';
 import { nearestDir as faceTo } from './ai/path';
 import { containersOf } from './world/containers';
+import { atProp, seatSpot } from './systems/rest';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper'] as const;
@@ -194,6 +197,10 @@ export type SimEvent =
   | { type: 'board' }
   /** Training (GDD §3.2): on and off equipment; a press that counted; a set done; why not. */
   | { type: 'train'; on: boolean; use: FixtureUse | 'study' }
+  /** Sat down or got up (a seat, bench or chair), lay down on or got off an infirmary bed. */
+  | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
+  /** A meal eaten at the canteen table (GDD §2: +35 energy). */
+  | { type: 'ate' }
   | { type: 'rep' }
   | { type: 'trained'; attr: Attr; value: number }
   | { type: 'cantTrain'; why: 'tired' | 'max' }
@@ -340,6 +347,10 @@ export interface SimState {
   tally: number[];
   /** How the player got out (ESCAPES index, 0 still inside). */
   via: number;
+  /** Sitting on a seat, bench or chair, or resting on an infirmary bed (the prop's index; -1 standing). */
+  seat: number;
+  /** Steps spent eating this meal (GDD §2): MEAL_STEPS is a meal eaten. */
+  eaten: number;
 }
 
 export interface Snapshot {
@@ -372,6 +383,7 @@ export class Sim {
     seed = 1,
   ) {
     this.world = new World(prison);
+    for (const p of this.world.props) if (p.kind === 'shower') this.showerTiles.add(p.z * MAP_W + p.x);
     const s = { rng: seed | 0 };
     const inmates = spawnInmates(this.world, s);
     const items = startItems(this.world, s);
@@ -441,6 +453,8 @@ export class Sim {
       takeover: false,
       tally: [0, 0, 0, 0],
       via: 0,
+      seat: -1,
+      eaten: 0,
     };
     // Day 1: change in desks and pockets, the merchants' stock, the first favors.
     this.spreadCoins();
@@ -456,6 +470,8 @@ export class Sim {
   private ladderFoot = -1;
   /** Bump whenever a tile changes, and whenever a tile's wear does (the view redraws them). Not state. */
   tilesRev = 0;
+  /** The shower heads' tiles (GDD §3.1). */
+  private readonly showerTiles = new Set<number>();
   wearRev = 0;
 
   get clock(): Clock {
@@ -499,6 +515,7 @@ export class Sim {
       if (past.id === 'work') this.settleWork();
       s.routine = now;
       s.attended = false;
+      s.eaten = 0;
       // Night jobs end with the night, the morning's with Lights Out (a long chase may have held them up).
       const night = ROUTINE[now].id === 'lightsOut';
       s.guards.forEach((g, i) => {
@@ -554,6 +571,8 @@ export class Sim {
       w.setPlayerKeys(this.keysCarried());
       // A step off the equipment ends the training.
       if (s.train >= 0 && dirOf(cmd) !== 0) this.stopTraining();
+      // A step gets the player up off a seat or a bed.
+      if (s.seat >= 0 && dirOf(cmd) !== 0) this.standUp();
       walk(w, s.player, s.sleeping ? 0 : dirOf(cmd), s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd), s.layer);
       this.wearKeys();
       // Through a detector arch (GDD §5.4).
@@ -577,9 +596,12 @@ export class Sim {
     this.keepTalk();
     this.grudges();
     this.keepTraining();
-    // Energy: a point back every couple of minutes, one a minute asleep. Health: a point a minute, two asleep.
+    this.keepSeat();
+    // Energy: a point back every couple of minutes, one a minute asleep. Health: a point a minute, two asleep (or resting).
+    const resting = s.sleeping || (s.seat >= 0 && this.world.props[s.seat].kind === 'bed');
     if (s.energy < 100 && (s.step % ENERGY_REGEN_STEPS === 0 || (s.sleeping && s.step % STEPS_PER_MINUTE === 0))) s.energy++;
-    if (s.ko === 0 && s.health < maxHealth(s.str) && (s.step % HEALTH_REGEN_STEPS === 0 || (s.sleeping && s.step % (HEALTH_REGEN_STEPS / 2) === 0))) s.health++;
+    if (s.ko === 0 && s.health < maxHealth(s.str) && (s.step % HEALTH_REGEN_STEPS === 0 || (resting && s.step % (HEALTH_REGEN_STEPS / 2) === 0))) s.health++;
+    this.shower();
     // Solitary: time served (and potatoes peeled) sets the player free.
     if (s.solitary > 0 && --s.solitary === 0) this.release();
     // Who sees the player now, and what they make of it; a key alarm held back goes up now if it can.
@@ -601,10 +623,6 @@ export class Sim {
     if (!s.attended && this.dutyZones.includes(zone)) {
       s.attended = true;
       this.events.push({ type: 'attended', routine: s.routine });
-      // A meal or a shower picks the player up.
-      const id = ROUTINE[s.routine].id;
-      const gain = id === 'breakfast' || id === 'dinner' ? MEAL_ENERGY : id === 'showers' ? SHOWER_ENERGY : 0;
-      s.energy = Math.min(100, s.energy + gain);
     }
     // Heat cools while no guard is looking.
     if (!s.seen && !s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
@@ -1166,6 +1184,11 @@ export class Sim {
           this.underDesk();
           break;
         }
+        // Seated (or resting): the action button gets the player up.
+        if (s.seat >= 0) {
+          this.standUp();
+          break;
+        }
         const held = itemOf(it.inv[it.hand]);
         const target = interactTarget(this.world, it, s.player, this.bedtime, s.layer, this.people(), s.inmates.length);
         const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(this.world)[target.index].prop) : false;
@@ -1187,6 +1210,7 @@ export class Sim {
         else if (target.kind === 'fixture') {
           if (target.use === 'board') this.events.push({ type: 'board' });
           else if (target.use === 'generator') this.switchPower(target.index);
+          else if (target.use === 'sit' || target.use === 'rest') this.sitDown(target.index, target.use);
           else this.startTraining(target.index, target.use);
         } else if (target.kind === 'pockets') {
           // Going through someone's pockets while they're out cold (GDD §10.2).
@@ -1211,6 +1235,7 @@ export class Sim {
         }
         this.endTalk();
         if (s.train >= 0) this.stopTraining();
+        if (s.seat >= 0) this.standUp();
         break;
       case OP.TALK:
         this.talkOp(a, argB(cmd));
@@ -2297,6 +2322,63 @@ export class Sim {
     if (s.reps > 0 && s.step % REP_DRAIN_STEPS === 0) s.reps--;
   }
 
+  // ---------------------------------------------------------------- seats and beds (GDD §2, §3.1)
+
+  /** Sits down on a seat, bench or chair, or lies down on an infirmary bed: facing the table, the body still. */
+  private sitDown(prop: number, use: 'sit' | 'rest') {
+    const s = this.state;
+    this.endTalk();
+    this.closeBox();
+    s.player.moving = false;
+    if (use === 'sit') s.player.facing = seatSpot(this.world, prop, s.player).facing;
+    s.seat = prop;
+    this.events.push({ type: 'sit', on: true, use });
+  }
+
+  private standUp() {
+    const s = this.state;
+    if (s.seat < 0) return;
+    const use = this.world.props[s.seat].kind === 'bed' ? 'rest' : 'sit';
+    s.seat = -1;
+    this.events.push({ type: 'sit', on: false, use });
+  }
+
+  /**
+   * Each step seated: up when carried off, knocked out, asleep or out of reach of the seat;
+   * else energy back a point every SIT_ENERGY_STEPS, and at a canteen table during a meal the
+   * tray is eaten (GDD §2: +35, once a meal).
+   */
+  private keepSeat() {
+    const s = this.state;
+    if (s.seat < 0) return;
+    if (this.away || s.sleeping || s.layer !== LAYER.GROUND || !atProp(this.world, s.seat, s.player, REACH)) {
+      this.standUp();
+      return;
+    }
+    if (s.energy < 100 && s.step % SIT_ENERGY_STEPS === 0) s.energy++;
+    const p = this.world.props[s.seat];
+    const id = ROUTINE[s.routine].id;
+    if (p.kind === 'seat' && (id === 'breakfast' || id === 'dinner') && !s.lockdown && s.eaten < MEAL_STEPS && this.world.zoneAt(p.x, p.z) === 'canteen') {
+      if (++s.eaten === MEAL_STEPS) {
+        s.energy = Math.min(100, s.energy + MEAL_ENERGY);
+        this.events.push({ type: 'ate' });
+      }
+    }
+  }
+
+  /** Under a running shower in the showers block, standing still (GDD §3.1): energy back, 2 a second. */
+  private shower() {
+    const s = this.state;
+    if (s.energy >= 100 || s.player.moving || s.layer !== LAYER.GROUND || ROUTINE[s.routine].id !== 'showers' || s.step % SHOWER_ENERGY_STEPS !== 0) return;
+    if (this.showerTiles.has(Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT))) s.energy++;
+  }
+
+  /** Whether the player stands under a shower now (the view shows them showering). */
+  get showering(): boolean {
+    const s = this.state;
+    return s.layer === LAYER.GROUND && !s.player.moving && ROUTINE[s.routine].id === 'showers' && this.showerTiles.has(Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT));
+  }
+
   private stopTraining() {
     const s = this.state;
     if (s.train < 0) return;
@@ -2720,6 +2802,8 @@ export class Sim {
       takeover: st.takeover ?? false,
       tally: st.tally ?? [0, 0, 0, 0],
       via: st.via ?? 0,
+      seat: st.seat ?? -1,
+      eaten: st.eaten ?? 0,
     };
     // The world as the state has it: the map, then every tile changed since.
     const w = this.world;

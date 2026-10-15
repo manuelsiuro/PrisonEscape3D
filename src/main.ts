@@ -22,11 +22,12 @@ import { lineOfSight } from './sim/ai/sight';
 import type { BedPose } from './render/Character';
 import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
-import { CHOCOLATE_ENERGY, KO_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, THROW_RANGE, UNIT, WALK_SPEED } from './sim/tuning';
+import { CHOCOLATE_ENERGY, KO_STEPS, MEAL_ENERGY, MEAL_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, THROW_RANGE, UNIT, WALK_SPEED } from './sim/tuning';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
 import { TILE, TILE_INFO } from './sim/world/tiles';
 import { climbTarget, DIRT, facesProp, ladderFootOf, preferClimb, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from './sim/systems/security';
+import { seatSpot } from './sim/systems/rest';
 import { ToolControls, type ToolView } from './ui/tool';
 import { showVictory } from './ui/screens/escaped';
 import { recordEscape, recordOf } from './game/records';
@@ -338,11 +339,16 @@ function announce(e: SimEvent, sim: Sim) {
       banner.show(routineName(e.routine), sub);
       break;
     }
-    case 'attended':
-      if (ROUTINE[e.routine].id === 'lightsOut') break;
+    case 'attended': {
+      const id = ROUTINE[e.routine].id;
+      if (id === 'lightsOut') break;
       sound.chime();
       buzz('attended');
+      // The first meal and the first showers: how they pick the player up (GDD §2, §3.1).
+      if (id === 'breakfast' || id === 'dinner') coachOnce('meal', 'hint.meal', { n: MEAL_ENERGY });
+      if (id === 'showers') coachOnce('shower', 'hint.shower');
       break;
+    }
     case 'missed':
       sound.sting();
       buzz('missed');
@@ -716,6 +722,20 @@ function announce(e: SimEvent, sim: Sim) {
         game?.pilot.stop();
         coachOnce('train', TOUCH ? 'hint.trainTouch' : 'hint.trainKeys');
       }
+      break;
+    case 'sit':
+      seenInteract();
+      if (e.on) {
+        sound.sit();
+        game?.pilot.stop();
+        if (e.use === 'rest') coachOnce('rest', 'hint.rest');
+        else coachOnce('sit', 'hint.sit');
+      }
+      break;
+    case 'ate':
+      sound.eat();
+      buzz('attended');
+      floatAt(-1, t('float.meal', { n: MEAL_ENERGY }), 'gain');
       break;
     case 'rep':
       sound.rep();
@@ -1342,11 +1362,14 @@ function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, hel
   if (target.kind === 'fixture') {
     // The generator says which way it would go (GDD §5.5).
     const power = target.use === 'generator' ? sim.power : true;
-    const key = `fixture:${target.use}:${power}:${currentLang()}`;
+    const kind = sim.world.props[target.index].kind;
+    const key = `fixture:${target.use}:${kind}:${power}:${currentLang()}`;
     if (key !== actionKey) {
       actionKey = key;
       const verb = target.use === 'generator' ? (power ? 'act.powerOff' : 'act.powerOn') : `act.${target.use}`;
-      Object.assign(actionLabel, { verb: t(verb as Key), what: t(`thing.${target.use === 'board' ? 'jobBoard' : target.use}` as Key) });
+      // A seat, bench or chair by its own name; an infirmary bed.
+      const thing = target.use === 'board' ? 'jobBoard' : target.use === 'sit' ? kind : target.use === 'rest' ? 'infirmaryBed' : target.use;
+      Object.assign(actionLabel, { verb: t(verb as Key), what: t(`thing.${thing}` as Key) });
     }
     return actionLabel;
   }
@@ -1598,6 +1621,7 @@ const frameData: Frame = {
   lockFar: false,
   doing: 0,
   trainAt: null,
+  restBed: null,
   reps: 0,
   puddles: [],
   puddlesRev: 0,
@@ -1625,6 +1649,11 @@ const MOP = itemNumber('mop');
 const MAGAZINE = itemNumber('magazine');
 /** Where the player stands while training on a treadmill (on its belt), refilled. */
 const trainAt = { x: 0, z: 0, facing: 0, y: 0 };
+/** Where the player sits (refilled when the seat or the body changes), and an infirmary bed's pose. */
+const seatAt = { x: 0, z: 0, facing: 0, y: 0 };
+const seatMemo = { seat: -1, x: 0, z: 0 };
+const restBed = { x: 0, z: 0, angle: 0 };
+const GET_UP = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
 /** What the buttons would do, worked out once per simulation step. */
 const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean; station: Station | null } = {
@@ -1891,20 +1920,43 @@ function frame(now: number) {
       ? focusOf(sim, openWho >= 0 ? { kind: 'pockets', index: it.open, who: openWho } : { kind: 'container', index: it.open })
       : st.talk >= 0
         ? focusOf(sim, { kind: 'person', who: st.talk })
-        : st.train >= 0
+        : st.train >= 0 || st.seat >= 0
           ? null
           : focusOf(sim, target, climb, memo.station);
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
   f.doing = trainKind === 'weights' ? DOING.LIFT : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : DOING.NOTHING;
-  if (trainKind === 'treadmill') {
+  f.restBed = null;
+  // Seated (GDD §3.1): on the seat's tile facing the table, eating while the meal lasts; resting on an infirmary bed: lying on it.
+  const seated = st.seat >= 0 ? sim.world.props[st.seat] : null;
+  if (seated?.kind === 'bed') {
+    restBed.x = seated.x + seated.w / 2;
+    restBed.z = seated.z + seated.d / 2;
+    restBed.angle = (seated.rot * Math.PI) / 2;
+    f.restBed = restBed;
+    f.doing = DOING.SLEEP;
+    f.trainAt = null;
+  } else if (seated) {
+    if (seatMemo.seat !== st.seat || seatMemo.x !== p.x || seatMemo.z !== p.z) {
+      const spot = seatSpot(sim.world, st.seat, p);
+      Object.assign(seatMemo, { seat: st.seat, x: p.x, z: p.z });
+      seatAt.x = spot.x + 0.5;
+      seatAt.z = spot.z + 0.5;
+      seatAt.y = seated.kind === 'chair' ? 0.1 : 0;
+      seatAt.facing = Math.atan2(DIR_X[spot.facing], DIR_Z[spot.facing]);
+    }
+    const meal = ROUTINE[st.routine].id === 'breakfast' || ROUTINE[st.routine].id === 'dinner';
+    f.doing = seated.kind === 'seat' && meal && st.eaten < MEAL_STEPS && sim.playerZone === 'canteen' ? DOING.EAT : DOING.SIT;
+    f.trainAt = seatAt;
+  } else if (sim.showering) f.doing = DOING.SHOWER;
+  if (!seated && trainKind === 'treadmill') {
     const tp = sim.world.props[st.train];
     trainAt.x = tp.x + tp.w / 2;
     trainAt.z = tp.z + tp.d / 2 + 0.1;
     trainAt.y = 0.14;
     trainAt.facing = Math.PI;
     f.trainAt = trainAt;
-  } else f.trainAt = null;
+  } else if (!seated || seated.kind === 'bed') f.trainAt = null;
   f.reps = trainReps(st.reps);
   f.puddles = st.puddles;
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
@@ -1962,7 +2014,8 @@ function frame(now: number) {
     PEEL_ACTION.verb = t('act.peel');
     PEEL_ACTION.what = t('act.potato');
   }
-  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : describeTarget(sim, target, climb, held, memo.station);
+  if (st.seat >= 0) GET_UP.verb = t('act.getUp');
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : describeTarget(sim, target, climb, held, memo.station);
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
