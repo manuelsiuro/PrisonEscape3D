@@ -8,7 +8,7 @@ import { STALAG_FLUCHT_DECOR } from './decor';
 /**
  * Cells: two log cabins of five, three along the north side of each hall (doors south) and
  * two along its south side (doors north). Cell 1, the player's, is cabin A's first; cabin A's
- * last corner is the storeroom with the ladder, cabin B's a common room open to its hall.
+ * last corner is a locked storeroom, cabin B's a common room open to its hall.
  */
 const cells: Rect[] = [];
 const props: PropPlacement[] = [];
@@ -28,8 +28,7 @@ for (const cabin of [5, 24]) {
 }
 
 props.push(
-  // Cabin A's storeroom: the ladder up to the roof (and the vents' end) against its north wall.
-  { kind: 'ladder', x: 17, z: 16 },
+  // Cabin A's storeroom.
   { kind: 'shelf', x: 15, z: 19, w: 2, rot: 2 },
   // Cabin B's common room: a table by the stove.
   { kind: 'table', x: 35, z: 17, w: 2 },
@@ -59,42 +58,42 @@ props.push(
   { kind: 'jobBoard', x: 37, z: 30, rot: 3 },
   // Showers: heads along the south wall, either side.
   ...[25, 26, 27, 33, 34, 35].map((x) => ({ kind: 'shower', x, z: 39, rot: 2 }) as const),
-  // Woodshop.
+  // Woodshop (the west block).
   { kind: 'bin', x: 5, z: 46 },
-  { kind: 'workbench', x: 7, z: 47, w: 2 },
-  { kind: 'workbench', x: 11, z: 47, w: 2 },
-  { kind: 'bin', x: 14, z: 49 },
-  // Laundry.
-  { kind: 'bin', x: 16, z: 46 },
-  { kind: 'washer', x: 18, z: 46 },
-  { kind: 'washer', x: 19, z: 46 },
-  { kind: 'washer', x: 23, z: 46 },
-  { kind: 'bin', x: 25, z: 49 },
-  // Metalshop: the metal bin, two presses, the output bin.
-  { kind: 'bin', x: 27, z: 46 },
-  { kind: 'press', x: 29, z: 47, w: 2 },
-  { kind: 'press', x: 34, z: 47, w: 2 },
-  { kind: 'bin', x: 37, z: 49 },
+  { kind: 'workbench', x: 8, z: 47, w: 2 },
+  { kind: 'workbench', x: 13, z: 47, w: 2 },
+  { kind: 'bin', x: 18, z: 49 },
   // Library.
   { kind: 'shelf', x: 5, z: 54, w: 3 },
-  { kind: 'shelf', x: 12, z: 54, w: 3 },
+  { kind: 'shelf', x: 14, z: 54, w: 3 },
   { kind: 'table', x: 6, z: 56, w: 2 },
-  { kind: 'table', x: 12, z: 56, w: 2 },
+  { kind: 'table', x: 14, z: 56, w: 2 },
+  // Laundry (the east block).
+  { kind: 'bin', x: 24, z: 46 },
+  { kind: 'washer', x: 25, z: 46 },
+  { kind: 'washer', x: 26, z: 46 },
+  { kind: 'bin', x: 29, z: 49 },
+  // Metalshop: the metal bin, two presses, the output bin.
+  { kind: 'bin', x: 31, z: 46 },
+  { kind: 'press', x: 32, z: 47, w: 2 },
+  { kind: 'press', x: 35, z: 47, w: 2 },
+  { kind: 'bin', x: 37, z: 49 },
   // Infirmary.
-  { kind: 'bed', x: 18, z: 56, d: 2, rot: 2 },
-  { kind: 'bed', x: 20, z: 56, d: 2, rot: 2 },
   { kind: 'bed', x: 24, z: 56, d: 2, rot: 2 },
+  { kind: 'bed', x: 26, z: 56, d: 2, rot: 2 },
+  { kind: 'bed', x: 29, z: 56, d: 2, rot: 2 },
   // Janitor's closet.
-  { kind: 'bin', x: 29, z: 54 },
-  { kind: 'shelf', x: 34, z: 54, w: 3 },
+  { kind: 'bin', x: 31, z: 54 },
+  { kind: 'shelf', x: 35, z: 54, w: 2 },
   // The guards' barracks: four bunks for the night's sleepers, a table.
   { kind: 'bed', x: 46, z: 6, d: 2 },
   { kind: 'bed', x: 48, z: 6, d: 2 },
   { kind: 'bed', x: 55, z: 6, d: 2 },
   { kind: 'bed', x: 57, z: 6, d: 2 },
   { kind: 'table', x: 50, z: 10, w: 3 },
-  // The generator hut.
+  // The generator hut, and the ladder up to its roof against the north wall (GDD §4.2: [L]).
   { kind: 'generator', x: 54, z: 24, w: 2, d: 2 },
+  { kind: 'ladder', x: 57, z: 23 },
   { kind: 'controlDesk', x: 49, z: 23, w: 2, rot: 0 },
   // Solitary.
   { kind: 'bed', x: 47, z: 45, d: 2, rot: 2 },
@@ -105,7 +104,7 @@ props.push(
   { kind: 'bench', x: 8, z: 27, w: 2, rot: 2 },
   { kind: 'bench', x: 32, z: 27, w: 2, rot: 2 },
   // Chairs: the library's tables, the barracks' table.
-  ...[6, 7, 12, 13].map((x) => ({ kind: 'chair', x, z: 57, rot: 2 }) as const),
+  ...[6, 7, 14, 15].map((x) => ({ kind: 'chair', x, z: 57, rot: 2 }) as const),
   ...[50, 51, 52].flatMap((x) => [{ kind: 'chair', x, z: 9, rot: 0 } as const, { kind: 'chair', x, z: 11, rot: 2 } as const]),
   // Lamps: the yard, the avenue, the east compound.
   ...[
@@ -137,7 +136,7 @@ const rollCall = [23, 25].flatMap((z) => [14, 17, 20, 23, 26].map((x) => ({ x, z
  *   morning shakedown.
  * - The yard guard walks the yard and the avenue, watches exercise, and walks the yard at night.
  * - The east guard keeps the guards' compound: the inner gate, the barracks, the generator hut, solitary.
- * - The workshop guard walks the service block's corridor and rooms.
+ * - The workshop guard walks the service blocks' corridors and rooms.
  * The canteen, gym, east and workshop guards sleep in the barracks at night.
  * Keys (GDD §10.2): the warden red (the storeroom, the barracks, solitary), the canteen and
  * workshop guards cyan (kitchen, workshops, laundry, janitor), the gym guard yellow (cell
@@ -211,10 +210,10 @@ const guards: GuardDef[] = [
   {
     beat: [
       { x: 8, z: 51, wait: 3, face: 1 },
-      { x: 21, z: 48, wait: 3, face: 5 },
-      { x: 32, z: 51, wait: 2, face: 9 },
-      { x: 31, z: 48, wait: 3, face: 5 },
-      { x: 21, z: 55, wait: 3, face: 13 },
+      { x: 11, z: 48, wait: 3, face: 5 },
+      { x: 30, z: 51, wait: 2, face: 9 },
+      { x: 34, z: 49, wait: 3, face: 13 },
+      { x: 27, z: 55, wait: 3, face: 13 },
     ],
     key: 'cyan',
   },
@@ -241,13 +240,14 @@ export const STALAG_FLUCHT: PrisonDef = {
     ['kitchen', 5, 37, 18, 39],
     ['gym', 24, 30, 37, 34],
     ['showers', 24, 36, 37, 39],
-    ['woodshop', 5, 46, 14, 49],
-    ['laundry', 16, 46, 25, 49],
-    ['metalshop', 27, 46, 37, 49],
-    ['corridor', 5, 51, 37, 52],
-    ['library', 5, 54, 15, 57],
-    ['infirmary', 17, 54, 26, 57],
-    ['janitor', 28, 54, 37, 57],
+    ['woodshop', 5, 46, 18, 49],
+    ['laundry', 24, 46, 29, 49],
+    ['metalshop', 31, 46, 37, 49],
+    ['corridor', 5, 51, 18, 52],
+    ['corridor', 24, 51, 37, 52],
+    ['library', 5, 54, 18, 57],
+    ['infirmary', 24, 54, 29, 57],
+    ['janitor', 31, 54, 37, 57],
     // The guards' compound: its open ground is the perimeter.
     ['guardQuarters', 46, 6, 57, 13],
     ['generator', 49, 23, 57, 28],

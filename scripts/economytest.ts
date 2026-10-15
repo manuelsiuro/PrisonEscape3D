@@ -22,6 +22,7 @@ import { JOBS } from '../src/content/jobs';
 import { LOOT } from '../src/content/loot';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { PRISONS } from '../src/content/prisons';
+import type { PrisonDef } from '../src/content/prisons/types';
 import { ROUTINE } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
 import { Autopilot } from '../src/sim/ai/autopilot';
@@ -222,8 +223,8 @@ function describe(sim: Sim, e: SimEvent): string {
   }
 }
 
-function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim) => void, job = 0) {
-  const sim = new Sim(CENTER_PERKS, seed);
+function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim) => void, job = 0, prison: PrisonDef = CENTER_PERKS) {
+  const sim = new Sim(prison, seed);
   // Another job from day 1: the player takes it (its holder moves to the laundry).
   if (job > 0) [sim.state.jobs[0], sim.state.jobs[job]] = [sim.state.jobs[job], HOLDER.PLAYER];
   const play = bot(sim);
@@ -261,6 +262,16 @@ for (let job = 1; job < CENTER_PERKS.jobs.length; job++) {
   console.log(`${id}: ${paid ?? 'not paid'}`);
   check(!!paid && sim.playerJob === job && sim.state.cash >= JOBS[id].wage, `the ${id} job can be done and paid in one work period`);
   check(sim.state.heat < 100, `doing the ${id} job raises no alarm`);
+}
+// The other prisons: every job on offer, the player's first one included.
+for (const prison of PRISONS.slice(1)) {
+  prison.jobs.forEach(({ id }, job) => {
+    const { sim, log } = run(worker(true), DAY, 3, undefined, job, prison);
+    const paid = log.find((l) => l.includes('(wage)'));
+    console.log(`${prison.id} ${id}: ${paid ?? 'not paid'}`);
+    check(!!paid && sim.playerJob === job && sim.state.cash >= JOBS[id].wage, `${prison.id}: the ${id} job can be done and paid in one work period`);
+    check(sim.state.heat < 100, `${prison.id}: doing the ${id} job raises no alarm`);
+  });
 }
 
 // ------------------------------------------------------------------ the idle worker: fired, the job goes to an inmate

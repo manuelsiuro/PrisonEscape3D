@@ -30,3 +30,38 @@
   day 1 08:54 ESCAPED (takeover)
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:48 (visitation) resumes, day 1 08:53 (perimeter) resumes, day 1 08:53 (perimeter) resumes
   → out day 1 08:54 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 5, cash $0
+== stalag-flucht
+  cutout: the fence cut 5.2 s after the power went off
+== stalag-flucht: perimeter cutout
+  day 1 23:28 power OFF (player)
+  day 1 23:33 ESCAPED (fence)
+  saved and loaded at day 1 15:46 (yard) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (yard) resumes, day 1 23:29 (none) resumes
+  → out day 1 23:33 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+== stalag-flucht: tunnel
+  day 1 23:12 climbDown → layer 0
+  day 1 23:21 digUp → layer 1
+  day 1 23:21 ESCAPED (tunnel)
+  saved and loaded at day 1 15:40 (yard) resumes, day 1 21:49 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
+  → out day 1 23:21 by tunnel; heat peak 0%; walls 0, tunnel tiles 10, guards out cold 0, cash $0
+== stalag-flucht: rooftop grapnel
+  day 1 23:28 power OFF (player)
+  day 1 23:29 climbRoof → layer 3
+  day 1 23:30 grapnel → layer 1
+  day 1 23:30 ESCAPED (roof)
+  saved and loaded at day 1 15:45 (yard) resumes, day 1 21:57 (playerCell) resumes, day 1 23:11 (cellBlock) resumes, day 1 23:25 (perimeter) resumes
+  → out day 1 23:30 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  takeover: health 8/150, guards down 6/6, xxxxxx
+== stalag-flucht: takeover
+  day 1 08:40 spotted: fight
+  day 1 08:40 LOCKDOWN
+  day 1 08:41 knocked out #12
+  day 1 08:43 knocked out #11
+  day 1 08:43 knocked out #9
+  day 1 08:45 knocked out #10
+  day 1 08:47 knocked out #14
+  day 1 08:48 knocked out #13
+  day 1 08:48 TAKEOVER: the gates are open
+  day 1 08:53 sniper warning shot
+  day 1 08:55 ESCAPED (takeover)
+  saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:49 (yard) resumes, day 1 08:54 (yard) resumes, day 1 08:55 (yard) resumes
+  → out day 1 08:55 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 6, cash $0

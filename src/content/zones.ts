@@ -33,7 +33,7 @@ export const ZONES = [
   'tunnels',
   'vents',
   'roof',
-  // P9 (Stalag Flucht): the cabin's locked storeroom, where the ladder goes up to the roof.
+  // P9 (Stalag Flucht): cabin A's locked storeroom.
   'storeroom',
 ] as const;
 

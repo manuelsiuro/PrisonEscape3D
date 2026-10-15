@@ -20,6 +20,11 @@ janitor: day 1 12:38 +$35 (wage)
 kitchen: day 1 12:22 +$40 (wage)
 woodshop: day 1 12:13 +$50 (wage)
 mailman: day 1 12:57 +$55 (wage)
+stalag-flucht kitchen: day 1 12:21 +$40 (wage)
+stalag-flucht laundry: day 1 12:40 +$30 (wage)
+stalag-flucht woodshop: day 1 12:25 +$50 (wage)
+stalag-flucht metalshop: day 1 12:47 +$65 (wage)
+stalag-flucht janitor: day 1 12:22 +$35 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 5 hired: laundry

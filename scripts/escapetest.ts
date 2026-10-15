@@ -14,6 +14,8 @@
  * The snapshot pins each run: when it got out, how, the heat's peak, and the tally.
  */
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import type { PrisonDef } from '../src/content/prisons/types';
 import { placesOf } from '../src/sim/ai/places';
 import { command, dirFromVector, OP, SLOT, TALK } from '../src/sim/command';
 import { ESCAPES } from '../src/sim/Sim';
@@ -64,36 +66,114 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.until(() => false, 10 * STEPS_PER_MINUTE);
 }
 
+/** Where each route goes in a prison: tiles as [x, z], with a facing where it matters. */
+interface Plan {
+  def: PrisonDef;
+  /** The first bot's seed (the others take the next three). */
+  seed: number;
+  name: (route: string) => string;
+  /** Cutout: the keys from the cell to the generator, where to stand at it, the fence tile to cut from and which way. */
+  keys: string[];
+  generator: [number, number];
+  generatorFace: number;
+  fence: [number, number, number];
+  /** Tunnel: the desk, the tile above the toilet, the tunnel's tiles in order with the way each is dug. */
+  desk: [number, number];
+  toilet: [number, number];
+  dig: Array<[number, number, number]>;
+  /** Rooftop: the cell's grate (none: the ladder is reached on foot, the power off first), the ladder, the roof's edge and which way the fence is. */
+  grate?: [number, number];
+  ladder: [number, number];
+  edge: [number, number, number];
+  /** Takeover: where to wait for the first guard (out of the snipers' range), a tile outside the open gates. */
+  rally?: [number, number];
+  gates: [number, number];
+  /** Strength and Speed trained to (default 90, GDD §12: 90+), and whether to recruit the two strongest inmates. */
+  trained?: number;
+  strongest?: boolean;
+}
+
+const PLANS: Plan[] = [
+  {
+    def: CENTER_PERKS,
+    seed: 11,
+    name: (r) => r,
+    keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_green'],
+    generator: [8, 41],
+    generatorFace: DIR.SOUTH,
+    fence: [27, 60, DIR.SOUTH],
+    desk: [10, 7],
+    toilet: [10, 9],
+    dig: [6, 5, 4, 3, 2, 1].map((z) => [10, z, DIR.NORTH]),
+    grate: [9, 9],
+    ladder: [13, 39],
+    edge: [6, 39, DIR.WEST],
+    gates: [30, 62],
+  },
+  // Stalag Flucht (GDD §4.2): the generator is in the guards' compound past the inner gate,
+  // the whole wire is live; the tunnel bends round the boulders north of cabin A; the cabin's
+  // roof is a grapnel's throw from the north wire.
+  {
+    def: STALAG_FLUCHT,
+    seed: 21,
+    name: (r) => `${STALAG_FLUCHT.id}: ${r}`,
+    keys: ['plastic_key_yellow', 'plastic_key_purple'],
+    generator: [54, 26],
+    generatorFace: DIR.NORTH,
+    fence: [60, 30, DIR.EAST],
+    desk: [8, 7],
+    toilet: [8, 9],
+    dig: [
+      [8, 6, DIR.NORTH],
+      [9, 6, DIR.EAST],
+      [10, 6, DIR.EAST],
+      [10, 5, DIR.NORTH],
+      [10, 4, DIR.NORTH],
+      [10, 3, DIR.NORTH],
+      [10, 2, DIR.NORTH],
+      [10, 1, DIR.NORTH],
+    ],
+    ladder: [57, 23],
+    edge: [58, 24, DIR.EAST],
+    rally: [21, 32],
+    trained: 100,
+    strongest: true,
+    gates: [20, 62],
+  },
+];
+
 // ------------------------------------------------------------------ 1. the perimeter cutout
-{
-  const bot = new Bot(CENTER_PERKS, 11);
-  bot.stash('plastic_key_yellow', 'plastic_key_purple', 'plastic_key_green', 'sturdy_cutters', 'bed_dummy', 'guard_outfit');
-  nightfall(bot, 6);
+function cutout(p: Plan) {
+  const bot = new Bot(p.def, p.seed);
+  bot.stash(...p.keys, 'sturdy_cutters', 'bed_dummy', 'guard_outfit');
+  nightfall(bot, p.keys.length + 3);
   // Into the guard's uniform.
   bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
   check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
   // The generator: off.
-  check(bot.walkTo(tileOf(8, 41)), 'at the generator');
-  bot.face(DIR.SOUTH);
+  check(bot.walkTo(tileOf(...p.generator)), 'at the generator');
+  bot.face(p.generatorFace);
   bot.act();
   check(!bot.sim.power, 'the power is off');
   const cutAt = bot.st.step;
-  // South through the yard gate to the electric stretch of the fence, and through it.
-  check(bot.walkTo(tileOf(27, 60)), 'at the electric fence');
-  bot.face(DIR.SOUTH);
-  check(bot.sim.world.ground.kind[tileOf(27, 61)] === TILE.ELECTRIC, 'facing the electric fence');
-  const cut = bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[tileOf(27, 61)] === TILE.FENCE_CUT);
+  // To the electric stretch of the fence, and through it.
+  const [fx, fz, face] = p.fence;
+  check(bot.walkTo(tileOf(fx, fz)), 'at the electric fence');
+  bot.face(face);
+  const wire = tileOf(fx + (face === DIR.EAST ? 1 : 0), fz + (face === DIR.SOUTH ? 1 : 0));
+  check(bot.sim.world.ground.kind[wire] === TILE.ELECTRIC, 'facing the electric fence');
+  const cut = bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT);
   check(cut && !bot.sim.power === true, 'cut through before the power came back');
   console.log(`  cutout: the fence cut ${((bot.st.step - cutAt) / 20).toFixed(1)} s after the power went off`);
-  bot.walkTo(tileOf(27, 62), 200);
-  report('perimeter cutout', bot);
+  bot.walkTo(tileOf(fx + (face === DIR.EAST ? 2 : 0), fz + (face === DIR.SOUTH ? 2 : 0)), 200);
+  report(p.name('perimeter cutout'), bot);
   check(bot.done && ESCAPES[bot.st.via] === 'fence', 'escaped through the fence');
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
 // ------------------------------------------------------------------ 2. the tunnel
-{
-  const bot = new Bot(CENTER_PERKS, 12);
+function tunnel(p: Plan) {
+  const bot = new Bot(p.def, p.seed + 1);
   bot.stash('sturdy_shovel', 'timber_brace', 'timber_brace', 'timber_brace', 'bed_dummy');
   nightfall(bot, 5);
   const places = placesOf(bot.sim.world);
@@ -101,10 +181,10 @@ function nightfall(bot: Bot, kitSize: number) {
   // The entrance under the desk, from beside it.
   bot.walkTo(places.deskside[1]);
   bot.face(DIR.EAST);
-  const desk = tileOf(10, 7);
+  const desk = tileOf(...p.desk);
   check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT), 'the entrance under the desk');
   // Its dirt down the toilet.
-  bot.walkTo(tileOf(10, 9));
+  bot.walkTo(tileOf(...p.toilet));
   bot.face(DIR.SOUTH);
   bot.hold('dirt');
   bot.act();
@@ -115,66 +195,96 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.open(bot.desk);
   bot.act(1);
   check(st.layer === LAYER.UNDER, 'down the tunnel');
-  // North under the wall and the fence: a brace on every third tile.
-  for (const z of [6, 5, 4, 3, 2, 1]) {
-    if (z === 4 || z === 1) {
+  // Under the wall and the fence (round the boulders): a brace on every third tile.
+  p.dig.forEach(([x, z, face], k) => {
+    if (k % 3 === 2) {
       bot.hold('timber_brace');
       bot.use();
     }
-    bot.face(DIR.NORTH);
-    const ok = bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tileOf(10, z)] !== TILE.SOIL || bot.sim.events.some((e) => e.type === 'caveIn'));
-    check(ok && bot.sim.world.layers[LAYER.UNDER].kind[tileOf(10, z)] !== TILE.SOIL, `tile ${z} dug`);
-    check(bot.walkTo(tileOf(10, z), 400), `along to ${z}`);
-  }
+    bot.face(face);
+    const ok = bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL || bot.sim.events.some((e) => e.type === 'caveIn'));
+    check(ok && bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL, `tile ${p.def === CENTER_PERKS ? z : `${x},${z}`} dug`);
+    check(bot.walkTo(tileOf(x, z), 400), `along to ${p.def === CENTER_PERKS ? z : `${x},${z}`}`);
+  });
   // Facing back along it, up through the road.
   bot.face(DIR.SOUTH);
   check(bot.strikeUntil('sturdy_shovel', () => bot.done || st.layer === LAYER.GROUND), 'dug up');
-  report('tunnel', bot);
+  report(p.name('tunnel'), bot);
   check(bot.done && ESCAPES[st.via] === 'tunnel', 'escaped through the tunnel');
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
 // ------------------------------------------------------------------ 3. the rooftop grapnel
-{
-  const bot = new Bot(CENTER_PERKS, 13);
+function rooftop(p: Plan) {
+  const bot = new Bot(p.def, p.seed + 2);
+  if (!p.grate) return generatorRoof(p, bot);
   bot.stash('screwdriver', 'fake_vent', 'grapnel', 'sheet_rope', 'bed_dummy');
   nightfall(bot, 5);
   const st = bot.st;
-  // The cell's grate (9, 9), from the floor under it.
-  check(bot.walkTo(tileOf(9, 9)), 'under the grate');
-  check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[tileOf(9, 9)] === TILE.GRATE_OPEN), 'the grate unscrewed');
+  // The cell's grate, from the floor under it.
+  const grate = tileOf(...p.grate);
+  check(bot.walkTo(grate), 'under the grate');
+  check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN), 'the grate unscrewed');
   bot.act();
   check(st.layer === LAYER.VENTS, 'up into the vents');
   // The fake cover over the hole behind.
   bot.hold('fake_vent');
   bot.use();
-  check(bot.sim.world.layers[LAYER.VENTS].kind[tileOf(9, 9)] === TILE.GRATE_FAKE, 'a fake cover over the grate');
+  check(bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_FAKE, 'a fake cover over the grate');
   // Crawl to the ladder and up.
-  check(bot.walkTo(tileOf(13, 38), 3000), 'along the ducts to the ladder');
-  check(bot.walkTo(tileOf(13, 39), 200), 'at the ladder');
+  const [lx, lz] = p.ladder;
+  check(bot.walkTo(tileOf(lx, lz - 1), 3000), 'along the ducts to the ladder');
+  check(bot.walkTo(tileOf(lx, lz), 200), 'at the ladder');
   bot.act();
   check(st.layer === LAYER.ROOF, 'up on the roof');
-  // To the west edge, the fence 4 tiles beyond.
-  check(bot.walkTo(tileOf(6, 39), 600), 'at the roof’s edge');
-  bot.face(DIR.WEST);
+  overTheWire(p, bot);
+}
+
+/** From the roof: to its edge, the fence a few tiles beyond, and over on the grapnel. */
+function overTheWire(p: Plan, bot: Bot) {
+  check(bot.walkTo(tileOf(p.edge[0], p.edge[1]), 600), 'at the roof’s edge');
+  bot.face(p.edge[2]);
   bot.hold('grapnel');
   bot.use();
-  report('rooftop grapnel', bot);
-  check(bot.done && ESCAPES[st.via] === 'roof', 'escaped over the fence on the grapnel');
+  report(p.name('rooftop grapnel'), bot);
+  check(bot.done && ESCAPES[bot.st.via] === 'roof', 'escaped over the fence on the grapnel');
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
+/**
+ * The roof where the whole wire is live (Stalag Flucht): Lights Out, the dummy in bed, a
+ * guard's uniform and keys to the generator hut; the power off, up its ladder, and over the
+ * dead wire on the grapnel before it comes back.
+ */
+function generatorRoof(p: Plan, bot: Bot) {
+  bot.stash(...p.keys, 'grapnel', 'sheet_rope', 'bed_dummy', 'guard_outfit');
+  nightfall(bot, p.keys.length + 4);
+  bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
+  check(bot.walkTo(tileOf(...p.generator)), 'at the generator');
+  bot.face(p.generatorFace);
+  bot.act();
+  check(!bot.sim.power, 'the power is off');
+  const [lx, lz] = p.ladder;
+  check(bot.walkTo(tileOf(lx, lz + 1), 400), 'at the ladder');
+  bot.face(DIR.NORTH);
+  bot.act();
+  check(bot.st.layer === LAYER.ROOF, 'up on the roof');
+  overTheWire(p, bot);
+  check(!bot.sim.power, 'over before the power came back');
+}
+
 // ------------------------------------------------------------------ 4. the takeover
-{
-  const bot = new Bot(CENTER_PERKS, 14);
+function takeover(p: Plan) {
+  const bot = new Bot(p.def, p.seed + 3);
   const st = bot.st;
   const places = placesOf(bot.sim.world);
   // Trained up (GDD §12: Strength and Speed 90+), armed and armored, two friends at 80+ opinion.
-  st.str = 90;
-  st.spd = 90;
+  st.str = p.trained ?? 90;
+  st.spd = p.trained ?? 90;
   st.health = maxHealth(st.str);
   bot.stash('nunchucks', 'plated_outfit');
-  const friends = [0, 1];
+  // Two friends: the first two inmates, or the two strongest (GDD §12: allies that can fight).
+  const friends = p.strongest ? st.inmates.map((m, i) => ({ i, str: m.str })).sort((a, b) => b.str - a.str || a.i - b.i).slice(0, 2).map((f) => f.i) : [0, 1];
   for (const id of friends) st.inmates[id].opinion = 90;
   // Roll call first (attended on arrival), then the friends, recruited where they stand.
   check(bot.routineUntil(1, 8 * 60 + 20), 'roll call kept');
@@ -200,6 +310,11 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.op(OP.EQUIP, bot.slotOf('nunchucks'));
   bot.op(OP.EQUIP, bot.slotOf('plated_outfit'));
   check(itemOf(st.items.inv[SLOT.WEAPON]) === n('nunchucks') && itemOf(st.items.inv[SLOT.OUTFIT]) === n('plated_outfit'), 'armed and armored');
+  // Somewhere out of the towers' reach, near the gates, for the first guard to come by.
+  if (p.rally) {
+    check(bot.walkTo(tileOf(...p.rally), 2000), 'at the rally point');
+    check(bot.until(() => st.guards.some((g) => awake(g) && Math.max(Math.abs(g.body.x - st.player.x), Math.abs(g.body.z - st.player.z)) < 3 * UNIT), 40 * STEPS_PER_MINUTE), 'a guard comes by');
+  }
   // The fight: the nearest guard standing, each in turn (the first blow is seen: every guard comes).
   const inmates = st.inmates.length;
   const nearestGuard = () => {
@@ -238,9 +353,18 @@ function nightfall(bot: Bot, kitSize: number) {
   check(st.takeover, 'every guard out cold at once: the takeover');
   console.log(`  takeover: health ${st.health}/${maxHealth(st.str)}, guards down ${st.guards.filter((g) => g.ko > 0).length}/${st.guards.length}, ${st.guards.map((g) => g.mode === GUARD.CHASE ? 'C' : g.ko > 0 ? 'x' : '.').join('')}`);
   // Out through the open gates.
-  check(bot.walkTo(tileOf(30, 62), 800), 'out through the gates');
-  report('takeover', bot);
+  check(bot.walkTo(tileOf(...p.gates), 800), 'out through the gates');
+  report(p.name('takeover'), bot);
   check(bot.done && ESCAPES[st.via] === 'takeover', 'escaped in the takeover');
+}
+
+
+for (const p of PLANS) {
+  if (p.def !== CENTER_PERKS) console.log(`== ${p.def.id}`);
+  cutout(p);
+  tunnel(p);
+  rooftop(p);
+  takeover(p);
 }
 
 void DAY;

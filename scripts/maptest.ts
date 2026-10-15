@@ -189,7 +189,8 @@ for (const def of [...PRISONS, TRAINING]) {
     }
     check(seen.size === ducts.length, `${def.id}: the ducts are one network`);
     check(ladders >= 1 && ladderFootOf(w) >= 0, `${def.id}: a ladder, with a free foot`);
-    check(ducts.some((i) => vents.kind[i] === TILE.GRATE && w.cellOf[i] === 1), `${def.id}: a grate in the player's cell`);
+    // Vents with grates are a way out of the cell (Stalag Flucht's log cabins have none: its ladder stands in the generator hut).
+    if (ducts.some((i) => vents.kind[i] === TILE.GRATE)) check(ducts.some((i) => vents.kind[i] === TILE.GRATE && w.cellOf[i] === 1), `${def.id}: a grate in the player's cell`);
   }
   console.log(`vents: ${ducts.length} duct tiles, ${ducts.filter((i) => vents.kind[i] === TILE.GRATE).length} grates, ${ladders} ladder; roof tiles ${Array.from(w.layers[LAYER.ROOF].kind).filter((k) => k !== TILE.EMPTY).length}`);
 }
