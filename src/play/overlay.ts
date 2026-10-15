@@ -169,7 +169,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The cold (P9): shown while it has built up at all, the energy pill frosted once it bites.
   coldHud.built = st.cold / COLD_STEPS;
   coldHud.left = (COLD_STEPS - st.cold) / STEPS_PER_SECOND;
-  coldHud.bit = st.cold >= COLD_STEPS;
+  coldHud.bit = st.frozen;
   coldHud.warming = !exposed(sim);
   hudState.cold = st.cold > 0 ? coldHud : null;
   document.body.classList.toggle('chilled', coldHud.bit);

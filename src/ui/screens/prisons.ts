@@ -27,12 +27,13 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
     const stars = Array.from({ length: 5 }, (_, i) => `<i class="${i < def.difficulty ? 'on' : ''}">${icon('star', 12)}</i>`).join('');
     const pips = routes.map((r) => `<span class="pc-pip${rec.routes.includes(r) ? ' found' : ''}">${icon(rec.routes.includes(r) ? ROUTE_ICON[r] ?? 'star' : 'lock', 13)}</span>`).join('');
     const foot = open
-      ? `<span class="pc-pips" aria-label="${t('title.record', { n: rec.routes.length, of: routes.length })}">${pips}</span><small>${rec.routes.length ? t('prisons.best', { n: rec.bestDay }) : t('prisons.fresh')}</small>`
+      ? `<span class="pc-pips" role="img" aria-label="${t('title.record', { n: rec.routes.length, of: routes.length })}">${pips}</span><small>${rec.routes.length ? t('prisons.best', { n: rec.bestDay }) : t('prisons.fresh')}</small>`
       : `<span class="pc-lock">${icon('lock', 14)}${t('prisons.locked', { name: prisonName(PRISONS[k - 1]) })}</span>`;
-    return `<button class="prison-card theme-${def.theme ?? 'suburban'}${open ? '' : ' locked'}" data-k="${k}" ${open ? '' : 'disabled'} style="--i:${k}">
+    // Locked cards stay focusable (aria-disabled), so a keyboard can reach what opens them.
+    return `<button class="prison-card theme-${def.theme ?? 'suburban'}${open ? '' : ' locked'}" data-k="${k}" ${open ? '' : 'aria-disabled="true"'} style="--i:${k}">
       <span class="pc-scene" aria-hidden="true"><span class="pc-level">${k + 1}</span></span>
       <span class="pc-body">
-        <span class="pc-head"><b>${prisonName(def)}</b><span class="pc-stars" aria-label="${securityOf(def)}">${stars}</span></span>
+        <span class="pc-head"><b>${prisonName(def)}</b><span class="pc-stars" aria-hidden="true">${stars}</span></span>
         <small class="pc-sec">${securityOf(def)}</small>
         <span class="pc-pitch">${t(`prisonInfo.${def.id}` as Key)}</span>
         <span class="pc-foot">${foot}</span>
@@ -44,10 +45,13 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
     <p class="card-note">${t('prisons.note')}</p>
     <div class="prison-list">${cards}</div>
   </div>`;
+  // Focus goes back where it was (the Play button) when the list closes.
+  const opener = document.activeElement as HTMLElement | null;
   return new Promise((resolve) => {
     const done = (def: PrisonDef | null) => {
       removeEventListener('keydown', key, true);
       el.remove();
+      if (!def) opener?.focus?.();
       resolve(def);
     };
     const key = (e: KeyboardEvent) => {
@@ -64,7 +68,7 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
         return done(null);
       }
       const card = target.closest<HTMLButtonElement>('[data-k]');
-      if (!card || card.disabled) return;
+      if (!card || card.getAttribute('aria-disabled') === 'true') return;
       click();
       done(PRISONS[Number(card.dataset.k)]);
     };

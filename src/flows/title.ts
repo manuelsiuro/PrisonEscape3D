@@ -30,6 +30,11 @@ export async function titleFlow() {
     showUpdate();
     const again = takePlayAgain();
     const open = openPrisons();
+    // Progress reset (settings): the prison behind the title may be locked again.
+    if (!open.includes(backdrop)) {
+      backdrop = open.at(-1) ?? PRISONS[0];
+      view.setWorld(new Sim(backdrop).world);
+    }
     // Ways out found across the campaign, of all its prisons have.
     const found = PRISONS.reduce((n, p) => n + recordOf(p.id).routes.length, 0);
     const resume = readSave('auto');

@@ -183,7 +183,7 @@ export async function pause() {
   for (;;) {
     // A lesson isn't saved: the card says which one it is.
     const lesson = play.game.lesson;
-    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? t('lesson.of', { n: lesson.index + 1, of: LESSONS.length }) : note, !!lesson);
+    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? t('lesson.of', { n: lesson.index + 1, of: LESSONS.length }) : note, !!lesson, lesson ? '' : `${prisonName(play.game.rec.sim.prison)} · ${t('hud.day', { n: play.game.rec.sim.clock.day })}`);
     note = '';
     if (!play.game) return;
     if (choice === 'settings') {

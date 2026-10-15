@@ -94,7 +94,7 @@ export class Hud {
       <div class="hud-row hud-alerts">
         <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
-        <span class="pill hud-alert hud-cold hidden" role="status">${icon('snow', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-cold hidden">${icon('snow', 15)}<span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -147,7 +147,7 @@ export class Hud {
     el.classList.toggle('bit', c.bit);
     el.classList.toggle('warming', c.warming);
     setText(el.querySelector('span')!, t(c.bit ? 'hud.frozen' : c.warming ? 'hud.warming' : 'hud.cold'));
-    setText(el.querySelector('b')!, c.bit ? '×2' : c.warming ? '' : `0:${String(Math.max(0, Math.ceil(c.left))).padStart(2, '0')}`);
+    setText(el.querySelector('b')!, c.bit ? '×2' : c.warming ? '' : `0:${String(Math.min(59, Math.max(0, Math.ceil(c.left)))).padStart(2, '0')}`);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, c.built)) * 100}%`;
   }
 

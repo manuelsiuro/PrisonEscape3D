@@ -40,13 +40,15 @@ import { check } from './assert';
   }
   check(bit === COLD_STEPS && chilled(sim), `chilled after a minute outdoors (cold ${bit})`);
   check(energyCost(sim, 10) === 20, 'chilled: energy costs double');
-  // Back indoors: it wears off four times as fast as it came.
+  // Back indoors: still frozen (it costs double indoors too) until it's all gone, four times as fast as it came.
   check(bot.walkTo(tileOf(6, 13)), 'back in the cabin');
+  check(chilled(sim) && energyCost(sim, 10) === 20, 'still frozen just inside');
   const left = st.cold;
   const inAt = st.step;
   check(!exposed(sim) && bot.until(() => st.cold === 0, COLD_STEPS), 'the cold wears off indoors');
   const warmIn = st.step - inAt;
   check(left > 0 && warmIn === Math.ceil(left / WARM_RATE), `four times as fast (${left} → 0 in ${warmIn} steps)`);
+  check(!chilled(sim) && energyCost(sim, 10) === 10, 'warm again: energy costs back to normal');
 
   // A cushioned outfit keeps it out.
   st.items.inv[SLOT.OUTFIT] = slot(n('cushioned_outfit'));

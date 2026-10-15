@@ -15,6 +15,8 @@ export class Snowfall {
   private readonly pos: Float32Array;
   private readonly speed = new Float32Array(FLAKES);
   private readonly phase = new Float32Array(FLAKES);
+  /** Where each flake is drawn (its place, or under the ground over a building). */
+  private readonly drawn = new Float32Array(FLAKES * 3);
 
   constructor() {
     this.pos = new Float32Array(FLAKES * 3);
@@ -29,16 +31,20 @@ export class Snowfall {
       this.phase[i] = rand() * Math.PI * 2;
     }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('position', new THREE.BufferAttribute(this.drawn, 3).setUsage(THREE.DynamicDrawUsage));
     // The camera is orthographic: point sizes are in screen pixels.
-    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 4 * Math.min(2, globalThis.devicePixelRatio || 1), sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false, map: flake(), alphaTest: 0.05 });
+    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 3.2 * Math.min(2, globalThis.devicePixelRatio || 1), sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false, map: flake(), alphaTest: 0.05 });
     this.points = new THREE.Points(geo, mat);
     this.points.frustumCulled = false;
     this.points.visible = false;
   }
 
-  /** A frame: flakes fall and sway; the cloud is kept centered on (cx, cz). */
-  update(dt: number, time: number, cx: number, cz: number, on: boolean) {
+  /**
+   * A frame: flakes fall and sway; the cloud is kept centered on (cx, cz). `open(x, z)` says
+   * whether snow falls on a tile (open sky): over a building it would fall through the cut-away
+   * roof onto the floor, so those flakes are drawn under the ground instead, out of sight.
+   */
+  update(dt: number, time: number, cx: number, cz: number, on: boolean, open: (x: number, z: number) => boolean = () => true) {
     this.points.visible = on;
     if (!on) return;
     const x0 = cx - SPAN / 2;
@@ -53,6 +59,9 @@ export class Snowfall {
       // Wrapped into the box round the player (it moves with them).
       p[k] = x0 + ((((p[k] - x0) % SPAN) + SPAN) % SPAN);
       p[k + 2] = z0 + ((((p[k + 2] - z0) % SPAN) + SPAN) % SPAN);
+      this.drawn[k] = p[k];
+      this.drawn[k + 2] = p[k + 2];
+      this.drawn[k + 1] = open(Math.floor(p[k]), Math.floor(p[k + 2])) ? p[k + 1] : -5;
     }
     (this.points.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
   }

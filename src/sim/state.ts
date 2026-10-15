@@ -278,6 +278,8 @@ export interface SimState {
   studied: number;
   /** The cold (P9, GDD §4.2): steps of it built up out in the snow, up to COLD_STEPS (chilled: energy costs double). */
   cold: number;
+  /** Chilled to the bone (P9): set when the cold reaches COLD_STEPS, cleared only once it's all gone (energy costs double meanwhile, indoors too). */
+  frozen: boolean;
 }
 
 export interface Snapshot {
@@ -371,6 +373,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     tipDay: [],
     studied: Math.floor(START_INT / STUDY_TIP_EVERY),
     cold: 0,
+    frozen: false,
   };
 }
 

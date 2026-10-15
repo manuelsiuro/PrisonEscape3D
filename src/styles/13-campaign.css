@@ -323,3 +323,26 @@
 .victory .actions [data-c='next'] {
   grid-column: 1 / -1;
 }
+
+/* The pause card: which prison, which day. */
+.pause-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: #eef2f7;
+}
+
+/* A banner (a new block, caught…) has the floor for its few seconds: the first-day card steps back under it. */
+.coach {
+  transition: opacity 0.25s;
+}
+.banner-up .coach {
+  opacity: 0;
+  pointer-events: none;
+}

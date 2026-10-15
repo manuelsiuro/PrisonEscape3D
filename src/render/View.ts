@@ -210,6 +210,8 @@ export class View {
   private readonly guide = new Guide();
   private readonly dust = new Dust();
   private readonly snow = new Snowfall();
+  /** Whether a tile has open sky over it (no roof): where snow falls. */
+  private readonly openSky = (x: number, z: number) => !this.world || !this.world.inside(x, z) || this.world.layers[LAYER.ROOF].kind[z * MAP_W + x] === TILE.EMPTY;
   private readonly sparks = new Sparks();
   private readonly snores = new Snores();
   /** Sleepers' heads this frame ([x, y, z] each), for the snores. */
@@ -717,7 +719,7 @@ export class View {
     }
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).
-    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && this.world?.def.theme === 'alpine' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF));
+    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && this.world?.def.theme === 'alpine' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF), f.layer === LAYER.ROOF ? undefined : this.openSky);
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
@@ -816,6 +818,8 @@ export class View {
     this.guide.update(dt, time, this.target, false);
     const a = this.reducedMotion ? 1.2 : time * 0.05;
     this.target.set(MAP_W / 2 + Math.cos(a) * 14, 0, MAP_H / 2 - 4 + Math.sin(a * 1.3) * 10);
+    // Snow falling over an alpine prison behind the title too.
+    this.snow.update(dt, time, this.target.x, this.target.z, !this.reducedMotion && this.world?.def.theme === 'alpine', this.openSky);
     this.render(600, dt, null, time);
   }
 

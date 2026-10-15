@@ -11,11 +11,13 @@ export type PauseChoice = 'resume' | 'quit' | 'settings' | 'save' | 'help' | 're
  * save just made into a slot; a leading "!" marks a failure).
  */
 /** In a lesson (`lesson`): no saving, a restart, and the way out goes back to the lessons. */
-export function showPause(click: () => void, saved: boolean, canSave = true, note = '', lesson = false): Promise<PauseChoice> {
+/** `place`: where the run is ("Stalag Flucht · Day 3"), above the title; none in a lesson. */
+export function showPause(click: () => void, saved: boolean, canSave = true, note = '', lesson = false, place = ''): Promise<PauseChoice> {
   const el = h(
     'div',
     'modal',
     `<div class="card">
+      ${place ? `<p class="pause-place">${icon('pin', 13)}<span></span></p>` : ''}
       <h2>${t('pause.title')}</h2>
       <p class="card-note${note.startsWith('!') || (!note && !saved) ? ' warn' : ''}">${note.startsWith('!') ? note.slice(1) : note ? `${lesson ? '' : icon('check', 14)}${note}` : saved ? `${icon('check', 14)}${t('pause.saved')}` : t('pause.notSaved')}</p>
       <div class="pause-links">
@@ -30,6 +32,7 @@ export function showPause(click: () => void, saved: boolean, canSave = true, not
       </div>
     </div>`,
   );
+  if (place) el.querySelector('.pause-place span')!.textContent = place;
   return new Promise((resolve) => {
     const done = (c: PauseChoice) => {
       click();

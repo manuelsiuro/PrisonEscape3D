@@ -1,7 +1,8 @@
 /**
  * The weather (GDD §4.2): in a freezing prison, more than a minute out in the snow (the
  * ground floor's open air, or a roof) without a cushioned or plated outfit chills the player,
- * and everything that costs energy costs twice as much until they warm up again indoors.
+ * and everything that costs energy costs twice as much until they have warmed up again
+ * indoors (all the way: four times as fast as it came).
  */
 import { itemNumber } from '../../content/items';
 import { SLOT } from '../command';
@@ -25,8 +26,8 @@ export function exposed(sim: SimContext): boolean {
   return TILE_INFO[sim.world.ground.kind[t.z * MAP_W + t.x]].outdoor;
 }
 
-/** Chilled to the bone: energy costs double. */
-export const chilled = (sim: SimContext) => sim.state.cold >= COLD_STEPS;
+/** Chilled to the bone: energy costs double, until the player has warmed up all the way (indoors too). */
+export const chilled = (sim: SimContext) => sim.state.frozen;
 
 /** What spending `n` energy costs the player now. */
 export const energyCost = (sim: SimContext, n: number) => (chilled(sim) ? n * 2 : n);
@@ -34,8 +35,11 @@ export const energyCost = (sim: SimContext, n: number) => (chilled(sim) ? n * 2 
 /** A step of the weather: the cold builds outdoors, eases off indoors (faster), and says when it bites and lets go. */
 export function chill(sim: SimContext) {
   const s = sim.state;
-  const was = chilled(sim);
   s.cold = exposed(sim) ? Math.min(COLD_STEPS, s.cold + 1) : Math.max(0, s.cold - WARM_RATE);
-  const now = chilled(sim);
-  if (now !== was) sim.events.push({ type: 'cold', on: now });
+  // It bites at the full minute and lets go only once the player is warm again.
+  const now = s.cold >= COLD_STEPS || (s.frozen && s.cold > 0);
+  if (now !== s.frozen) {
+    s.frozen = now;
+    sim.events.push({ type: 'cold', on: now });
+  }
 }
