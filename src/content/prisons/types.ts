@@ -29,6 +29,23 @@ export interface GuardDef {
   key: 'yellow' | 'cyan' | 'purple' | 'red' | 'green';
 }
 
+/** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
+export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover';
+
+/**
+ * How a prison bends the common rules (P8+; each default is Center Perks'). New prisons add
+ * what they need here rather than in code: San Pancho's snipers by night too, the tutorial's
+ * forgiving routine.
+ */
+export interface PrisonRules {
+  /** The towers' snipers on duty: by day (default; searchlights at night), or always. */
+  snipers?: 'day' | 'always';
+  /** The tutorial: missed blocks cost nothing; no shakedowns, no bed checks. */
+  relaxed?: boolean;
+  /** Contraband in sight adds its heat one step in this many (default 1: +40% a second). */
+  contrabandEvery?: number;
+}
+
 /** Everything that defines one prison. Maps are ASCII pictures, the rest is plain data. */
 export interface PrisonDef {
   id: string;
@@ -62,4 +79,10 @@ export interface PrisonDef {
   searchlights?: ReadonlyArray<ReadonlyArray<{ x: number; z: number }>>;
   /** Decor (P8+): pieces that dress the rooms and nothing else (the simulation never sees them). */
   decor?: readonly DecorPlacement[];
+  /** Rules that differ from Center Perks' (P8+). */
+  rules?: PrisonRules;
+  /** The perimeter gates (doors no key opens; a takeover does). Default: every door beside the road. */
+  gates?: ReadonlyArray<{ x: number; z: number }>;
+  /** The ways out of this prison (default: fence, tunnel, roof, takeover), for the victory screen and the records. */
+  escapes?: readonly EscapeRoute[];
 }

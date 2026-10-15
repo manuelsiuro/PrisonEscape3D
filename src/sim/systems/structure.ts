@@ -326,7 +326,9 @@ export function grapnelSwing(w: World, b: Body): { fence: number; land: number }
     if (kind === TILE.FENCE || kind === TILE.ELECTRIC || kind === TILE.FENCE_FAKE || kind === TILE.FENCE_CUT) {
       if (k > GRAPNEL_REACH || !w.inside(x + sx, z + sz)) return null;
       const land = (z + sz) * MAP_W + x + sx;
-      return w.ground.kind[land] === TILE.ROAD && !w.blocked(x + sx, z + sz) ? { fence: i, land } : null;
+      // Down onto open ground (the road, or between two fences): whether that's out, the escape check says.
+      const lk = w.ground.kind[land];
+      return TILE_INFO[lk].outdoor && !TILE_INFO[lk].solid && !w.blocked(x + sx, z + sz) ? { fence: i, land } : null;
     }
     // Over open ground only (no roofs, towers or walls in the way).
     if (roof[i] !== TILE.EMPTY || !TILE_INFO[kind].outdoor || TILE_INFO[kind].solid) return null;

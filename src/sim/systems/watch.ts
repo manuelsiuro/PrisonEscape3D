@@ -76,7 +76,7 @@ export function watch(sim: SimContext) {
   // A contraband tool or weapon in hand, in plain sight: +40% a second.
   const held = itemOf(it.inv[it.hand]);
   const def = held ? itemDef(held) : null;
-  if (!reason && s.seen && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), CONTRABAND_HEAT];
+  if (!reason && s.seen && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT : 0];
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
   const close = disguised && s.guards.some((g) => g.sees && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
   s.near = close ? s.near + 1 : 0;

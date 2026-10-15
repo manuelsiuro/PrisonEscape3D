@@ -227,12 +227,13 @@ function strike(sim: SimContext, fresh: boolean) {
     return;
   }
   const key = placeKey(target.layer, target.tile);
-  const tool0 = itemDef(held).tool;
+  // (An empty hand has no tool: nothing to strike with.)
+  const tool0 = held ? itemDef(held).tool : undefined;
   // The last blow on the ground floor with full pockets would leave the chunk or the dirt at
   // the player's feet, in plain view: not until there's room.
   const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
   const full = yields && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + tool0.damage >= target.hp && !hasRoom(it);
-  const why = target.hp === 0 ? 'reinforced' : !target.fits ? 'tool' : s.energy < tool0!.energy ? 'tired' : full ? 'full' : null;
+  const why = target.hp === 0 ? 'reinforced' : !target.fits || !tool0 ? 'tool' : s.energy < tool0!.energy ? 'tired' : full ? 'full' : null;
   if (why) {
     sim.events.push({ type: 'cantStrike', why, action: target.action });
     return;
@@ -544,7 +545,7 @@ export function keepSeat(sim: SimContext) {
   if (p.kind === 'seat' && (id === 'breakfast' || id === 'dinner') && !s.lockdown && s.eaten < MEAL_STEPS && sim.world.zoneAt(p.x, p.z) === 'canteen') {
     if (++s.eaten === MEAL_STEPS) {
       s.energy = Math.min(100, s.energy + MEAL_ENERGY);
-      sim.events.push({ type: 'ate' });
+      sim.events.push({ type: 'meal' });
     }
   }
 }

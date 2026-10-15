@@ -1,5 +1,6 @@
 import { buzz } from '../app/haptics';
 import { itemNumber, KEY_ITEM_COLORS } from '../content/items';
+import { escapesOf } from '../content/prisons';
 import { recordEscape } from '../game/records';
 import { deleteSave, writeSave } from '../game/saves';
 import { t, type Key } from '../i18n';
@@ -282,7 +283,7 @@ export async function escaped() {
       day: clock.day,
       time: formatTime(clock),
       via,
-      routes: ROUTES,
+      routes: escapesOf(sim.prison),
       found: rec.record.routes,
       newRoute: rec.newRoute,
       best: rec.best,
@@ -295,8 +296,6 @@ export async function escaped() {
   playAgain = choice === 'again';
   endGame();
 }
-/** The ways out of a prison, in the order the victory screen shows them (GDD §12, L1). */
-export const ROUTES = ESCAPES.slice(1);
 /** The victory screen's "Play again": straight into a new game, past the title. */
 let playAgain = false;
 /** Whether "Play again" was chosen (asked once: the answer is used up). */

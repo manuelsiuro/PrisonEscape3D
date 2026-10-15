@@ -135,11 +135,12 @@ export function cameraSeesPlayer(sim: SimContext): boolean {
 /**
  * Snipers by day (GDD §5.6): a tower with the player in its sights while they're wanted
  * (90%+) takes aim, fires a warning shot, then shoots to bring them down. Off duty at night
- * (the searchlights take over).
+ * (the searchlights take over), unless the prison keeps them on round the clock.
  */
 export function snipe(sim: SimContext) {
   const s = sim.state;
-  const tower = ROUTINE[s.routine].id === 'lightsOut' || sim.away ? -1 : sniperOn(sim.world, s.player, s.layer);
+  const night = ROUTINE[s.routine].id === 'lightsOut' && sim.world.def.rules?.snipers !== 'always';
+  const tower = night || sim.away ? -1 : sniperOn(sim.world, s.player, s.layer);
   if (tower < 0 || s.heat < SOLITARY_HEAT) {
     s.sniperAt = 0;
     s.shots = 0;

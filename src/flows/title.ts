@@ -1,4 +1,4 @@
-import { PRISONS } from '../content/prisons';
+import { escapesOf, PRISONS } from '../content/prisons';
 import { recordOf } from '../game/records';
 import { ALL_SLOTS, loadSave, readSave, type SlotId } from '../game/saves';
 import { t } from '../i18n';
@@ -12,7 +12,7 @@ import { showSettings } from '../ui/screens/settings';
 import { showTitle } from '../ui/screens/title';
 import { applySettings, banner, click, settings, sound, view } from '../play/context';
 import { play } from '../play/game';
-import { ROUTES, startGame, takePlayAgain, untilQuit } from '../play/session';
+import { startGame, takePlayAgain, untilQuit } from '../play/session';
 import { settingsChanged } from '../play/tips';
 
 // ------------------------------------------------------------------ flows
@@ -29,7 +29,7 @@ export async function titleFlow() {
       : await showTitle(
           {
             prisonName: t(`prison.${PRISONS[0].id}` as 'prison.center-perks'),
-            record: record.routes.length ? t('title.record', { n: record.routes.length, of: ROUTES.length }) : '',
+            record: record.routes.length ? t('title.record', { n: record.routes.length, of: escapesOf(PRISONS[0]).length }) : '',
             resume: resume ? saveWhen(resume) : undefined,
             saves: ALL_SLOTS.some((k) => readSave(k)),
             muted: settings.muted,

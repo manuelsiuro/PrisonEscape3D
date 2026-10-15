@@ -145,7 +145,8 @@ export class World {
         const c = Math.max(this.cellOf[i - 1], this.cellOf[i + 1], this.cellOf[i - MAP_W], this.cellOf[i + MAP_W]);
         this.doorCell[i] = c;
         if (c) this.cellDoor[c] = i;
-        if ([i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => g.kind[j] === TILE.ROAD)) this.gate[i] = 1;
+        // Perimeter gates: as the prison lists them, else every door beside the road.
+        if (def.gates ? def.gates.some((q) => q.z * MAP_W + q.x === i) : [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => g.kind[j] === TILE.ROAD)) this.gate[i] = 1;
         for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (WORK_ZONES.has(ZONES[g.zone[j]])) this.doorRoom[i] = g.zone[j];
       }
     }

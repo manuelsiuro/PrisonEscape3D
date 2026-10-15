@@ -114,7 +114,7 @@ export type SimEvent =
   /** Sat down or got up (a seat, bench or chair), lay down on or got off an infirmary bed. */
   | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
-  | { type: 'ate' }
+  | { type: 'meal' }
   | { type: 'rep' }
   | { type: 'trained'; attr: Attr; value: number }
   | { type: 'cantTrain'; why: 'tired' | 'max' }

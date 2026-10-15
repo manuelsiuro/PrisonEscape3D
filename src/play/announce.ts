@@ -432,7 +432,7 @@ export function announce(e: SimEvent, sim: Sim) {
         else coachOnce('sit', 'hint.sit');
       }
       break;
-    case 'ate':
+    case 'meal':
       sound.eat();
       buzz('attended');
       floatAt(-1, t('float.meal', { n: MEAL_ENERGY }), 'gain');

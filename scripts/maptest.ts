@@ -4,6 +4,7 @@
  * Prints per-prison tile and zone counts and a checksum of the picture.
  */
 import { PRISONS } from '../src/content/prisons';
+import { TRAINING } from '../src/content/prisons/training';
 import { PROPS } from '../src/content/props';
 import { DECOR } from '../src/content/decor';
 
@@ -20,7 +21,8 @@ import { ladderFootOf } from '../src/sim/systems/structure';
 import { check } from './assert';
 
 const ids = new Set<string>();
-for (const def of PRISONS) {
+// Every campaign prison, and the tutorial's Training Block.
+for (const def of [...PRISONS, TRAINING]) {
   const w = new World(def);
   const g = w.ground;
   check(!ids.has(def.id), `prison id ${def.id} is unique`);
@@ -98,8 +100,8 @@ for (const def of PRISONS) {
     check(ZONES[g.zone[i]] !== 'none', `${def.id}: floor at ${i % MAP_W},${Math.floor(i / MAP_W)} has a zone`);
   }
 
-  // Cells: 8, the player's first, each with a bed, a desk and a toilet.
-  check(def.cells.length === 8, `${def.id}: 8 cells`);
+  // Cells: the player's first, then one per named inmate, each with a bed, a desk and a toilet.
+  check(def.cells.length >= 1 && def.names.length === def.cells.length - 1, `${def.id}: a cell for the player and one per inmate (${def.cells.length})`);
   def.cells.forEach(([x0, z0, x1, z1], k) => {
     for (const kind of ['bed', 'desk', 'toilet'] as const) {
       check(w.props.some((p) => p.kind === kind && p.x >= x0 && p.x <= x1 && p.z >= z0 && p.z <= z1), `${def.id}: cell ${k + 1} has a ${kind}`);
@@ -147,9 +149,13 @@ for (const def of PRISONS) {
   }
   const sleepers = def.guards.filter((d) => !d.night).length;
   check(places.guardBeds.filter((b) => b.tile >= 0).length >= sleepers, `${def.id}: a guard-quarters bed for each guard off at night`);
-  check(def.guards.filter((d) => d.duties?.includes('bedCheck') && d.night).length === 1, `${def.id}: one night guard does the bed checks`);
-  check(def.guards.filter((d) => d.duties?.includes('shakedown')).length === 1, `${def.id}: one guard does the shakedown`);
-  check(places.solitary >= 0 && places.infirmary >= 0, `${def.id}: a solitary cell and an infirmary bed`);
+  // A prison proper has its bed checks, its shakedown, solitary and an infirmary; the
+  // tutorial's relaxed rules have none of them.
+  if (!def.rules?.relaxed) {
+    check(def.guards.filter((d) => d.duties?.includes('bedCheck') && d.night).length === 1, `${def.id}: one night guard does the bed checks`);
+    check(def.guards.filter((d) => d.duties?.includes('shakedown')).length === 1, `${def.id}: one guard does the shakedown`);
+    check(places.solitary >= 0 && places.infirmary >= 0, `${def.id}: a solitary cell and an infirmary bed`);
+  }
   check(places.doorstep.slice(1).every((t) => t >= 0) && places.deskside.slice(1).every((t) => t >= 0), `${def.id}: every cell can be looked into and its desk searched`);
   console.log(`guards: ${def.guards.length}, ${stops.length} stops, ${sleepers} asleep at night`);
 
@@ -179,7 +185,7 @@ for (const def of PRISONS) {
       for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !vents.block[j] && !seen.has(j)) (seen.add(j), queue.push(j));
     }
     check(seen.size === ducts.length, `${def.id}: the ducts are one network`);
-    check(ladders === 1 && ladderFootOf(w) >= 0, `${def.id}: one ladder, with a free foot`);
+    check(ladders >= 1 && ladderFootOf(w) >= 0, `${def.id}: a ladder, with a free foot`);
     check(ducts.some((i) => vents.kind[i] === TILE.GRATE && w.cellOf[i] === 1), `${def.id}: a grate in the player's cell`);
   }
   console.log(`vents: ${ducts.length} duct tiles, ${ducts.filter((i) => vents.kind[i] === TILE.GRATE).length} grates, ${ladders} ladder; roof tiles ${Array.from(w.layers[LAYER.ROOF].kind).filter((k) => k !== TILE.EMPTY).length}`);

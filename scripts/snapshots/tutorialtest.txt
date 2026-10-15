@@ -1,0 +1,9 @@
+walk: 2 steps done by day 1 10:35
+search: 3 steps done by day 1 10:30
+craft: 2 steps done by day 1 10:30
+routine: 5 steps done by day 1 23:07
+heat: 2 steps done by day 1 10:32
+stash: 2 steps done by day 1 10:30
+dig: 2 steps done by day 1 10:32
+fight: 2 steps done by day 1 10:31
+escape: 4 steps done by day 1 10:48

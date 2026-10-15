@@ -688,3 +688,172 @@ body.touch .coach-skip {
   width: 40px;
   height: 40px;
 }
+
+/* ------------------------------------------------------------ tutorial (P8+) */
+.lessons-card {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 24px);
+  text-align: left;
+}
+
+.lessons-card .card-note {
+  margin: 0 0 10px;
+}
+
+.lessons-bar {
+  position: relative;
+  flex: none;
+  height: 22px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef1f5;
+}
+
+.lessons-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #43d18e, #1f9d63);
+  transition: width 0.6s var(--ease);
+}
+
+.lessons-bar span {
+  position: relative;
+  display: block;
+  font: 700 12px/22px var(--font-ui);
+  text-align: center;
+  color: var(--ink);
+}
+
+.lessons-list {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  margin: 0 -6px;
+  padding: 2px 6px 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lesson-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 8px 12px 8px 8px;
+  border-radius: 16px;
+  text-align: left;
+  background: #f2f5f9;
+  box-shadow: inset 0 0 0 1px rgba(18, 35, 58, 0.06);
+  animation: card-in 0.35s var(--spring) both;
+  animation-delay: var(--d, 0s);
+  transition: transform 0.18s var(--spring);
+}
+
+.lesson-card:active {
+  transform: scale(0.98);
+}
+
+.lesson-card.next {
+  background: #fff3e8;
+  box-shadow: inset 0 0 0 2px var(--orange);
+}
+
+.lesson-card > .ic {
+  color: var(--ink-soft);
+}
+
+.lesson-card.next > .ic {
+  color: var(--orange);
+}
+
+.lesson-num {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font: 700 13px var(--font-ui);
+  color: var(--ink-soft);
+  background: white;
+}
+
+.lesson-card.done .lesson-num {
+  color: white;
+  background: #1f9d63;
+}
+
+.lesson-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: white;
+  background: linear-gradient(150deg, var(--steel), var(--steel-2));
+}
+
+.lesson-card.next .lesson-ic {
+  background: linear-gradient(150deg, var(--orange), var(--orange-2));
+}
+
+.lesson-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-text b {
+  font: 600 16px var(--font-display);
+}
+
+.lesson-text small {
+  overflow: hidden;
+  font-size: 12.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-soft);
+}
+
+.lesson-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.lesson-dots i {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.lesson-dots i.on {
+  background: #43d18e;
+}
+
+.lesson-dots i.now {
+  background: var(--gold);
+}
+
+.lesson-result .card.won .escaped-icon {
+  color: var(--gold);
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .lessons-card {
+    width: min(720px, 100%);
+    padding: 14px 18px 16px;
+  }
+  .lessons-card .settings-head h2 {
+    font-size: 24px;
+  }
+  .lessons-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}

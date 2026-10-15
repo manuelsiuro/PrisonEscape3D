@@ -18,7 +18,7 @@ export function nextBlock(sim: SimContext, clock: Clock) {
   const now = routineAt(clock.minuteOfDay);
   if (now === s.routine) return;
   const past = ROUTINE[s.routine];
-  if (past.miss && !s.attended && !s.excused) {
+  if (past.miss && !s.attended && !s.excused && !sim.world.def.rules?.relaxed) {
     const heat = past.miss === 'lockdown' ? 100 : MISSED_ROUTINE_HEAT;
     sim.events.push({ type: 'missed', routine: s.routine, heat });
     addHeat(sim, heat);
@@ -44,7 +44,7 @@ export function nextBlock(sim: SimContext, clock: Clock) {
     restock(w, s.items, s);
     reissueKit(sim);
     sim.events.push({ type: 'restock' });
-    shakedown(sim);
+    if (!sim.world.def.rules?.relaxed) shakedown(sim);
     newDay(sim);
   }
   if (ROUTINE[now].id === 'work') startWork(sim);

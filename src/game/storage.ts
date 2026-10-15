@@ -22,12 +22,14 @@ export const KEYS = {
   save1: `${PREFIX}.save.1`,
   save2: `${PREFIX}.save.2`,
   save3: `${PREFIX}.save.3`,
+  /** Tutorial lessons done (their ids). */
+  lessons: `${PREFIX}.lessons`,
 } as const;
 
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS];
 
 /** The keys "Reset progress" wipes. */
-export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3];
+export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3, KEYS.lessons];
 
 export function readText(key: StorageKey): string | null {
   try {
