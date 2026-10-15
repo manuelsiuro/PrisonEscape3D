@@ -17,6 +17,10 @@ export interface HudState {
   seen: boolean;
   /** Game minutes left in solitary, null when not there. */
   solitaryMinutes: number | null;
+  /** Dollars (GDD §13.2: CASH in the top bar). */
+  cash: number;
+  /** During the Work Period with a job (GDD §11): where, and the quota so far (the badge shows it instead of PENDING). */
+  work: { place: string; quota: number; of: number; paid: boolean } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -63,15 +67,19 @@ export class Hud {
   private shownKey = '';
   private shownHeat = -1;
   private shownMinute = '';
+  private shownCash = -1;
+  private readonly cashPill: HTMLElement;
+  private readonly cashText: HTMLElement;
   private lang = currentLang();
 
-  constructor(onPause: () => void) {
+  constructor(onPause: () => void, onProfile: () => void = () => {}) {
     this.el = h(
       'div',
       'hud hidden',
       `<div class="hud-row">
         <span class="pill big hud-clock"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b></span>
         <span class="pill big hud-zone">${icon('pin', 16)}<span></span></span>
+        <button class="pill big hud-cash">${icon('coin', 16)}<b></b></button>
         <button class="icon-btn hud-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
       </div>
       <div class="hud-row">
@@ -96,6 +104,10 @@ export class Hud {
     this.heatText = q('.hud-heat b');
     for (const el of [this.zonePill, this.badge, this.heatPill, this.routinePill]) el.addEventListener('animationend', () => el.classList.remove('pulse', 'pop', 'bump'));
     q('.hud-pause').addEventListener('click', onPause);
+    this.cashPill = q('.hud-cash');
+    this.cashText = q('.hud-cash b');
+    this.cashPill.addEventListener('click', onProfile);
+    this.cashPill.addEventListener('animationend', () => this.cashPill.classList.remove('gain', 'spend'));
     document.body.append(this.el);
   }
 
@@ -104,6 +116,7 @@ export class Hud {
     if (!on) return;
     this.shownZone = this.shownKey = this.shownMinute = '';
     this.shownHeat = -1;
+    this.shownCash = -1;
   }
 
   update(clock: Clock, zone: ZoneId, s: HudState) {
@@ -112,6 +125,7 @@ export class Hud {
       this.lang = currentLang();
       this.shownKey = this.shownMinute = '';
       this.zone.textContent = '';
+      this.cashPill.title = '';
     }
     // Text only when it changes: the clock once a game minute, the zone on entering one.
     const minute = `${clock.day}:${clock.minuteOfDay}`;
@@ -141,6 +155,18 @@ export class Hud {
     }
     this.updateRoutine(s);
     this.updateHeat(s.heat);
+    if (s.cash !== this.shownCash || this.cashPill.title === '') {
+      // Money in: the pill flashes gold; out: it dips.
+      if (this.shownCash >= 0 && s.cash !== this.shownCash) {
+        this.cashPill.classList.remove('gain', 'spend');
+        void this.cashPill.offsetWidth;
+        this.cashPill.classList.add(s.cash > this.shownCash ? 'gain' : 'spend');
+      }
+      this.shownCash = s.cash;
+      setText(this.cashText, `$${s.cash}`);
+      this.cashPill.title = t('hud.profile');
+      this.cashPill.setAttribute('aria-label', `${t('hud.cash')} $${s.cash}. ${t('hud.profile')}`);
+    }
     // The eye opens while a guard is looking (so stealth can be read at a glance).
     if (s.seen !== this.shownSeen) {
       this.shownSeen = s.seen;
@@ -149,8 +175,9 @@ export class Hud {
   }
 
   private updateRoutine(s: HudState) {
-    const mandatory = ROUTINE[s.routine].zones.length > 0;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}`;
+    const w = s.work;
+    const mandatory = ROUTINE[s.routine].zones.length > 0 || !!w;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
@@ -178,13 +205,18 @@ export class Hud {
     const end = routineEnd(s.routine);
     const until = t('routine.until', { time: `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}` });
     // Narrow phones: "Canteen · until 10:00" on the second line (the name keeps the first).
-    setText(this.routinePlace, NARROW.matches && mandatory && !s.attended ? `${routinePlace(s.routine)} · ${until}` : routinePlace(s.routine));
+    const place = w ? w.place : routinePlace(s.routine);
+    const pending = w ? !w.paid : !s.attended;
+    setText(this.routinePlace, NARROW.matches && mandatory && pending ? `${place} · ${until}` : place);
     setText(this.routineUntil, until);
-    this.badge.className = `hud-badge${mandatory ? '' : ' hidden'}${s.attended ? ' done' : ''}`;
-    this.badge.innerHTML = s.attended ? `${icon('check', 12)}${t('routine.attended')}` : t('routine.pending');
-    // Checked in: the badge pops. A new block: the whole pill does.
+    // At work the badge counts the quota (GDD §11), and says PAID once it's done.
+    const done = w ? w.paid : s.attended;
+    this.badge.className = `hud-badge${mandatory ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}`;
+    this.badge.innerHTML = w ? (w.paid ? `${icon('check', 12)}${t('routine.paid')}` : `${w.quota}/${w.of}`) : s.attended ? `${icon('check', 12)}${t('routine.attended')}` : t('routine.pending');
+    // Checked in (or a load done): the badge pops. A new block: the whole pill does.
     const [wasRoutine, wasAttended] = was.split('|');
-    if (was && wasRoutine === String(s.routine) && wasAttended === 'false' && s.attended) this.badge.classList.add('pop');
+    const wasWork = was.split('|')[5] ?? '';
+    if (was && wasRoutine === String(s.routine) && ((wasAttended === 'false' && s.attended && !w) || (w && wasWork && wasWork !== key.split('|')[5]))) this.badge.classList.add('pop');
     else if (was && wasRoutine !== String(s.routine)) this.routinePill.classList.add('pulse');
   }
 

@@ -4,13 +4,13 @@ import { clearLine, nearestDir, tileAt } from '../ai/path';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
 import { MAP_W, type World } from '../world/World';
 import { maxHealth, type Fighter } from './combat';
 import { bodyAt, type Body } from './movement';
 
 /** What someone is doing where they stand (the view poses it): inmates, guards (searching), the player (knocked out). */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;
@@ -29,6 +29,10 @@ export interface Inmate extends Walker, Fighter {
   then: number;
   /** Steps left fighting the player back (hit by them, GDD §10.1); 0 when calm. */
   angry: number;
+  /** What it thinks of the player (GDD §10.3): 0–100, from 50. */
+  opinion: number;
+  /** Today's Work Period (GDD §11): 0 not at work yet, 1 turned up, 2 knocked out on the job (it loses the job at 15:00). */
+  shift: number;
 }
 
 /** Where inmates like to spend free time (their own cell is added). */
@@ -54,6 +58,8 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       stall: 0,
       ...fighter(INMATE_STR_MIN + randomInt(rng, INMATE_STR_SPAN)),
       angry: 0,
+      opinion: OPINION_START,
+      shift: 0,
     });
   }
   return out;
@@ -80,8 +86,8 @@ function pickSpot(all: Inmate[], spots: Spot[], rng: { rng: number }): Spot | nu
 
 const tiles = (list: number[], face: number): Spot[] => list.map((tile) => ({ tile, face }));
 
-/** Chooses where an inmate goes next for its plan, and what it does there. */
-function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }) {
+/** Chooses where an inmate goes next for its plan, and what it does there (`work`: its job's zone index, -1 without one). */
+function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: number) {
   const w = c.w;
   const places = placesOf(w);
   const own = () => floorOf(w, ['inmateCell']).filter((i) => w.cellOf[i] === m.cell);
@@ -117,6 +123,12 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }) {
       spot = pickSpot(all, tiles(own(), 5), rng);
       break;
     default: {
+      // The Work Period: at the job, if it has one (GDD §11); else more free time.
+      if (id === 'work' && work >= 0) {
+        spot = pickSpot(all, tiles(placesOf(w).floor[work] ?? [], 1 + randomInt(rng, 16)), rng);
+        then = DOING.WORK;
+        break;
+      }
       // Free time: somewhere to hang about for a while, then somewhere else.
       const r = randomInt(rng, HANGOUTS.length + 1);
       const list = r === HANGOUTS.length ? own() : floorOf(w, [HANGOUTS[r]]);
@@ -137,13 +149,27 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }) {
  * Inmates make way for each other and for `others` (the player, guards); they never pick
  * the same spot.
  */
-export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number, foe: Body | null = null) {
+export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number, foe: Body | null = null, social: Social = NO_SOCIAL) {
   const c: Crowd = { w, grid: w.npcBlock, all, others, step };
   all.forEach((m, k) => {
     // Out cold: lies where it fell (Sim counts the time and wakes it).
     if (m.ko > 0) {
       m.body.moving = false;
       m.doing = DOING.KNOCKED_OUT;
+      return;
+    }
+    // A follower (GDD §10.3): after whoever comes for the player, else at the player's heels.
+    const lead = social.follow[k];
+    if (lead && m.angry <= 0) {
+      m.doing = DOING.NOTHING;
+      m.plan = -1;
+      closeIn(c, m, k, lead, m.speed + 30, social.gap[k]);
+      return;
+    }
+    // Talking to the player: it stands and listens.
+    if (social.talk === k && m.angry <= 0) {
+      m.body.moving = false;
+      if (foe && (foe.x !== m.body.x || foe.z !== m.body.z)) m.body.facing = nearestDir(foe.x - m.body.x, foe.z - m.body.z);
       return;
     }
     // Hit by the player: it goes for them (Sim lands the punches) until it calms down or loses them.
@@ -172,7 +198,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       return;
     }
     if (m.goal < 0) {
-      choose(c, m, all, rng);
+      choose(c, m, all, rng, social.work[k] ?? -1);
       if (m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) arrive(m, plan, rng);
       return;
     }
@@ -193,11 +219,24 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
 /** How close a fighter steps up to the one it is after (units, centre to centre): within arm's reach, not on top of them. */
 export const STAND_OFF = 820;
 
+/** What the player's social life asks of the inmates this step (by inmate index). */
+export interface Social {
+  /** Whom each follower goes after (a foe, or the player to follow), null for the routine. */
+  follow: ReadonlyArray<Body | null>;
+  /** How close each follower comes (a foe: arm's length; the player: a step behind). */
+  gap: readonly number[];
+  /** The inmate talking to the player (-1 none). */
+  talk: number;
+  /** Each inmate's job zone (-1 none). */
+  work: readonly number[];
+}
+const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [] };
+
 /**
  * Goes for someone: straight at them when close with nothing between, else along a path
  * re-planned now and then. Stops at arm's length, facing them.
  */
-export function closeIn(c: Crowd, m: Walker, k: number, foe: Body, speed: number) {
+export function closeIn(c: Crowd, m: Walker, k: number, foe: Body, speed: number, gap = STAND_OFF) {
   const b = m.body;
   const dx = foe.x - b.x;
   const dz = foe.z - b.z;
@@ -205,9 +244,9 @@ export function closeIn(c: Crowd, m: Walker, k: number, foe: Body, speed: number
     const d = Math.sqrt(dx * dx + dz * dz);
     if (d > 0) b.facing = nearestDir(dx, dz);
     m.path = [];
-    b.moving = d > STAND_OFF;
+    b.moving = d > gap;
     if (b.moving) {
-      const go = Math.min(speed, d - STAND_OFF);
+      const go = Math.min(speed, d - gap);
       b.x += Math.trunc((dx * go) / d);
       b.z += Math.trunc((dz * go) / d);
     }

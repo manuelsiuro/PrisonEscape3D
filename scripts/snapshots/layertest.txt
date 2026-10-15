@@ -6,7 +6,7 @@ cut: 25 strikes, 2 knives worn out, 2 rests → FENCE_CUT
 escape through the fence: escaped day 1 08:25
 electric fence: shocked, woke up in the infirmary; the plastic knife (legal) kept
 vents: 5 turns of the file; climbed in (climbVent), zone vents
-crawl: cell grate → ladder in 21.3 s
+crawl: cell grate → ladder in 21.2 s
 roof: walked east (roof), climbed down to the generator at 13,40
 toilet 2: flushed, flushed, flushed, clogged, flushed
 tunnel north: 6:TUNNEL 5:TUNNEL 4:CAVE-IN (health 50)

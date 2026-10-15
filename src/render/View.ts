@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { TILE } from '../sim/world/tiles';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
-import { Character, guardLook, INMATE_LOOK, inmateLook, type BedPose } from './Character';
+import { Character, guardLook, INMATE_LOOK, inmateLook, type BadgeKind, type BedPose } from './Character';
 import { Cones } from './Cones';
 import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
@@ -63,6 +63,13 @@ export interface Frame {
   /** The target is after the player (the ring turns red), or out of reach (it dims). */
   lockHostile: boolean;
   lockFar: boolean;
+  /** Training (GDD §3.2): the player's pose (DOING.LIFT, RUN, READ; NOTHING otherwise), where they stand for it (on the treadmill's belt), and a count of reps so far (each one pumps the arms). */
+  doing: number;
+  trainAt: { x: number; z: number; facing: number; y: number } | null;
+  reps: number;
+  /** Puddles to mop (tiles), and a number that changes whenever they do. */
+  puddles: readonly number[];
+  puddlesRev: number;
 }
 
 export interface GuardFrame {
@@ -92,6 +99,8 @@ export interface InmateFrame {
   cell: number;
   /** Fighting the player back. */
   angry: boolean;
+  /** The badge over their head: a favor, a shop, the player's letter for them, a follower. */
+  badge: BadgeKind;
 }
 
 export interface Quality {
@@ -218,6 +227,18 @@ export class View {
   private readonly cupTo = new THREE.Vector3();
   private cupT = 1;
   private cupWho = -1;
+  /** Puddles for the janitor to mop (GDD §11): flat glossy pools, one instance each. */
+  private readonly puddles = new THREE.InstancedMesh(
+    new THREE.CircleGeometry(0.42, 20).rotateX(-Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: 0x7fb4d8, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+    16,
+  );
+  private puddlesRev = -1;
+  private readonly m4 = new THREE.Matrix4();
+  /** Easing onto the training equipment (0 standing where the sim has them, 1 on it). */
+  private trainBlend = 0;
+  private readonly trainPos = new THREE.Vector3();
+  private reps = 0;
   /** No camera drift, idle glances or dust. */
   reducedMotion = false;
   /** Called when a foot lands, with the ground kind. */
@@ -233,8 +254,10 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
     this.cup.visible = false;
+    this.puddles.count = 0;
+    this.puddles.renderOrder = 1;
     this.setQuality(quality);
     addEventListener('resize', () => this.resize());
   }
@@ -398,6 +421,35 @@ export class View {
     this.cupWho = on;
   }
 
+  /** The janitor's puddles, placed when they change; a slow shimmer. */
+  private drawPuddles(f: Frame, time: number) {
+    const mesh = this.puddles;
+    mesh.visible = f.layer === LAYER.GROUND && f.puddles.length > 0;
+    if (f.puddlesRev !== this.puddlesRev) {
+      this.puddlesRev = f.puddlesRev;
+      mesh.count = Math.min(f.puddles.length, 16);
+      for (let k = 0; k < mesh.count; k++) {
+        const t = f.puddles[k];
+        // Each its own shape: stretched and turned by where it lies.
+        const sx = 0.85 + ((t * 7) % 5) * 0.08;
+        const sz = 0.7 + ((t * 3) % 4) * 0.08;
+        this.m4.makeRotationY((t % 7) * 0.45).scale(this.v.set(sx, 1, sz)).setPosition((t % MAP_W) + 0.5, 0.02, Math.floor(t / MAP_W) + 0.5);
+        mesh.setMatrixAt(k, this.m4);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+    if (mesh.visible) (mesh.material as THREE.MeshStandardMaterial).opacity = 0.55 + (this.reducedMotion ? 0 : Math.sin(time * 2.2) * 0.06);
+  }
+
+  /** A point of the world (tiles) on screen (CSS pixels); null off screen. */
+  screenAt(x: number, y: number, z: number, out: { x: number; y: number }): { x: number; y: number } | null {
+    this.v.set(x, y, z).project(this.camera);
+    if (this.v.z > 1 || Math.abs(this.v.x) > 1.1 || Math.abs(this.v.y) > 1.1) return null;
+    out.x = ((this.v.x + 1) / 2) * innerWidth;
+    out.y = ((1 - this.v.y) / 2) * innerHeight;
+    return out;
+  }
+
   /** Where someone's head is on screen (CSS pixels), for floating numbers; null off screen. */
   screenOf(id: number, out: { x: number; y: number }, height = 1.7): { x: number; y: number } | null {
     const c = this.who(id);
@@ -500,10 +552,20 @@ export class View {
       this.structure?.refreshWear(f.wear);
     }
     this.player.root.visible = true;
-    this.player.baseY = LAYER_Y[f.layer];
     this.player.hold(f.sleeping || f.knockedOut ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
-    const doing = f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : DOING.NOTHING;
-    if (this.player.pose(f.x, f.z, f.facing, f.moving, dt, time, !this.reducedMotion, doing, this.beds[1])) {
+    const doing = f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : f.doing;
+    // Onto the treadmill's belt and off it again, eased; a rep pumps the arms.
+    this.trainBlend += ((f.trainAt ? 1 : 0) - this.trainBlend) * Math.min(1, dt * 8);
+    if (f.trainAt) this.trainPos.set(f.trainAt.x, f.trainAt.y, f.trainAt.z);
+    const tb = this.trainBlend > 0.001 ? this.trainBlend : 0;
+    if (f.reps !== this.reps) {
+      if (f.reps > this.reps) this.player.pump();
+      this.reps = f.reps;
+    }
+    const px = f.x + (this.trainPos.x - f.x) * tb;
+    const pz = f.z + (this.trainPos.z - f.z) * tb;
+    this.player.baseY = LAYER_Y[f.layer] + this.trainPos.y * tb;
+    if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, this.beds[1])) {
       if (DUST[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
       this.onStep(f.surface);
     }
@@ -527,7 +589,9 @@ export class View {
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
+      c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);
     });
+    this.drawPuddles(f, time);
     this.doorsOpen.clear();
     f.guards.forEach((g, k) => {
       const c = this.guardCast[k];

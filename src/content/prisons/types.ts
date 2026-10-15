@@ -1,3 +1,4 @@
+import type { JobId } from '../jobs';
 import type { PropPlacement } from '../props';
 import type { RoutineId } from '../routine';
 import type { ZoneId } from '../zones';
@@ -48,4 +49,10 @@ export interface PrisonDef {
   /** Zones the player must be able to walk to from the cell with no keys or tools (validated). */
   reachable: readonly ZoneId[];
   guards: readonly GuardDef[];
+  /** The inmates' nicknames, by cell (cell 2 first); the same in every language. */
+  names: readonly string[];
+  /** Cells whose inmates run a contraband shop during free time (GDD §10.3). */
+  merchants: readonly number[];
+  /** The jobs on offer (GDD §11) and who holds each on day 1: a cell number (1: the player), 0 for open. */
+  jobs: ReadonlyArray<{ id: JobId; cell: number }>;
 }

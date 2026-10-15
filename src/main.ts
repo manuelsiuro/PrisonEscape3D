@@ -10,6 +10,11 @@ import { isFloor, placesOf } from './sim/ai/places';
 import { command, DIR_X, DIR_Z, OP, SLOT } from './sim/command';
 import { Recorder } from './sim/Recorder';
 import { Sim, type SimEvent } from './sim/Sim';
+import { FAVOR_STATE, jobRooms, nearestProp, STATION_REACH, type Station } from './sim/systems/economy';
+import { BoardPanel, inmateName, jobName, TalkPanel, TrainCard, WorkChips } from './ui/social';
+import { ProfilePanel } from './ui/profile';
+import type { BadgeKind } from './render/Character';
+import { DOING } from './sim/systems/inmates';
 import { alertOf, CHASE_SPEED, GUARD } from './sim/systems/guards';
 import { itemDef, itemNumber, KEY_ITEM_COLORS } from './content/items';
 import { CombatUI, type TargetInfo } from './ui/combat';
@@ -132,7 +137,13 @@ let game: Game | null = null;
 let acc = 0;
 let last = performance.now();
 
-const hud = new Hud(() => pause());
+const hud = new Hud(
+  () => pause(),
+  () => {
+    click();
+    toggleProfile();
+  },
+);
 const hint = new Hint();
 const banner = new Banner();
 const solitaryPanel = new SolitaryPanel();
@@ -210,12 +221,15 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
-  if (!r.zones.length || s.attended) return null;
+  // The Work Period with a job: to its room until the player is in it (the stations are framed there).
+  const zones = sim.dutyZones;
+  if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
+  if (!zones.length || (s.attended && r.id !== 'work')) return null;
   if (r.id === 'rollCall' || r.id === 'eveningRollCall') {
     const spot = places.rollCall[0].tile;
     return (i) => i === spot;
   }
-  return (i) => r.zones.includes(ZONES[w.ground.zone[i]]) && isFloor(w, i % MAP_W, Math.floor(i / MAP_W));
+  return (i) => zones.includes(ZONES[w.ground.zone[i]]) && isFloor(w, i % MAP_W, Math.floor(i / MAP_W));
 }
 
 function updateGuide(g: Game, dt: number) {
@@ -547,6 +561,138 @@ function announce(e: SimEvent, sim: Sim) {
       buzz('attended');
       itemsUI.toast(t('toast.sharpened', { item: itemName(e.item) }));
       break;
+    // ---------------------------------------------------------------- economy and social life (P6)
+    case 'cash':
+      if (e.n > 0) {
+        sound.coin(e.n >= 20);
+        floatAt(-1, `+$${e.n}`, 'cash');
+        if (e.why === 'loot') itemsUI.toast(t('toast.foundCash', { n: e.n }));
+        if (e.why === 'wage') {
+          buzz('attended');
+          banner.show(t('banner.paid', { n: e.n }), t('banner.paidSub', { job: jobName(sim, sim.playerJob) }), 'routine', 3600);
+        }
+      }
+      break;
+    case 'work':
+      seenInteract();
+      sound.work(e.act);
+      if (e.act === 'running') itemsUI.toast(t('toast.machineBusy'));
+      if (e.act === 'take' || e.act === 'unload') coachOnce('work', 'hint.work');
+      break;
+    case 'quota': {
+      const done = e.n >= e.of;
+      if (!done) {
+        sound.chime();
+        itemsUI.toast(t('toast.quota', { n: e.n, of: e.of }));
+      }
+      break;
+    }
+    case 'delivered':
+      sound.pickup();
+      floatAt(e.who, '✉', 'cash');
+      break;
+    case 'job':
+      if (e.who === -1) {
+        if (e.change === 'hired') {
+          sound.chime();
+          buzz('attended');
+          const later = sim.state.jobDay > sim.today;
+          banner.toast(t(later ? 'toast.hiredTomorrow' : 'toast.hired', { job: jobName(sim, e.job) }), 'good', 5000);
+        } else if (e.change === 'fired') {
+          sound.sting();
+          buzz('missed');
+          banner.show(t('banner.fired'), t('banner.firedSub', { job: jobName(sim, e.job) }), 'alarm', 4500);
+        } else banner.toast(t('toast.quit', { job: jobName(sim, e.job) }), 'info');
+      } else if (e.change === 'fired') banner.toast(t('toast.jobOpen', { name: inmateName(sim, e.who), job: jobName(sim, e.job) }), 'info', 5000);
+      break;
+    case 'board':
+      seenInteract();
+      sound.drawer();
+      itemsUI.closePanels();
+      profile.close();
+      board.show();
+      break;
+    case 'train':
+      if (e.on) {
+        seenInteract();
+        sound.click();
+        game?.pilot.stop();
+        coachOnce('train', TOUCH ? 'hint.trainTouch' : 'hint.trainKeys');
+      }
+      break;
+    case 'rep':
+      sound.rep();
+      buzz('strike');
+      break;
+    case 'trained':
+      sound.levelUp();
+      buzz('attended');
+      floatAt(-1, `+2 ${t(`attr.${e.attr}Short` as Key)}`, 'gain');
+      break;
+    case 'cantTrain':
+      sound.sting();
+      itemsUI.toast(t(e.why === 'tired' ? 'toast.tooTiredTrain' : 'toast.maxed'));
+      break;
+    case 'decay':
+      banner.toast(t('toast.decay', { attrs: e.attrs.map((a) => t(`attr.${a}Short` as Key)).join(', ') }), 'bad', 5000);
+      break;
+    case 'talk':
+      if (e.who >= 0) {
+        seenInteract();
+        sound.drawer();
+        itemsUI.closePanels();
+        board.close();
+        profile.close();
+        coachOnce('talk', 'hint.talk');
+      }
+      break;
+    case 'opinion':
+      if (e.by > 0) sound.opinionUp();
+      break;
+    case 'bought':
+      sound.buy();
+      buzz('bell');
+      itemsUI.toast(t('toast.bought', { item: itemName(e.item), n: e.price }));
+      break;
+    case 'gift':
+      sound.pickup();
+      itemsUI.toast(e.item ? t('toast.gaveItem', { item: itemName(e.item), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
+      break;
+    case 'favor':
+      if (e.state === 'taken') {
+        sound.chime();
+        coachOnce('favor', 'hint.favor');
+      } else if (e.state === 'done') {
+        sound.chime();
+        buzz('attended');
+        banner.toast(t('toast.favorDone', { name: inmateName(sim, e.who) }), 'good', 5000);
+      } else if (e.state === 'paid') buzz('attended');
+      break;
+    case 'recruit':
+      if (e.on) {
+        sound.levelUp();
+        banner.toast(t('toast.recruited', { name: inmateName(sim, e.who) }), 'good', 4500);
+      } else banner.toast(t('toast.leftYou', { name: inmateName(sim, e.who) }), 'info');
+      break;
+    case 'ambush':
+      sound.whistle();
+      buzz('missed');
+      banner.toast(t('toast.ambush', { name: inmateName(sim, e.who) }), 'bad', 4500);
+      break;
+    case 'allyHit':
+      sound.punch(e.ko, false);
+      view.blow(e.by, e.who, e.ko);
+      floatAt(e.who, `${e.dmg}`, 'ally');
+      if (e.ko) floatAt(e.who, t('combat.ko'), 'ko');
+      break;
+    case 'refused': {
+      const now = performance.now();
+      if (now - lastCant < 600) break;
+      lastCant = now;
+      sound.sting();
+      itemsUI.toast(t(`refused.${e.why}` as Key));
+      break;
+    }
   }
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
 }
@@ -557,7 +703,7 @@ const THROW_FLIGHT_MS = 320;
 
 /** A number (or word) floating up from someone (Cast id, -1 the player). */
 const floatPoint = { x: 0, y: 0 };
-function floatAt(id: number, text: string, kind: 'dealt' | 'taken' | 'ko') {
+function floatAt(id: number, text: string, kind: 'dealt' | 'taken' | 'ko' | 'cash' | 'gain' | 'ally') {
   const at = view.screenOf(id, floatPoint);
   if (at) combatUI.float(text, at.x, at.y, kind);
 }
@@ -691,7 +837,12 @@ function endGame() {
   vignette.classList.remove('on');
   sound.siren(false);
   sound.ambience(false);
-  document.body.classList.remove('is-playing');
+  talk.hide();
+  board.close();
+  profile.close();
+  trainCard.hide();
+  workChips.hide();
+  document.body.classList.remove('is-playing', 'panel-open', 'training');
   quit?.();
 }
 
@@ -721,6 +872,7 @@ addEventListener('keydown', (e) => {
   // Escape closes a panel first, and pauses only when none is open.
   if (e.code === 'Escape') {
     if (itemsUI.panelOpen) itemsUI.closePanels();
+    else if (socialOpen()) closeSocial();
     else pause();
     return;
   }
@@ -729,12 +881,27 @@ addEventListener('keydown', (e) => {
   if (g.rec.sim.state.ko > 0) return;
   if (g.rec.sim.state.sleeping && e.code !== 'KeyE') return;
   if (e.code === 'KeyE') {
-    if (g.rec.sim.state.items.open >= 0) sendOp(OP.CLOSE);
+    // E again closes what it opened (a container, a talk, the board) and steps off the equipment.
+    const st = g.rec.sim.state;
+    if (st.items.open >= 0 || st.talk >= 0 || st.train >= 0) sendOp(OP.CLOSE);
+    else if (board.isOpen) board.close();
     else act();
   }
-  if (e.code === 'KeyC') itemsUI.toggleCraft();
+  if (e.code === 'KeyC') {
+    closeSocial();
+    itemsUI.toggleCraft();
+  }
+  if (e.code === 'KeyI') {
+    click();
+    toggleProfile();
+  }
+  // Training (GDD §3.2): left and right in turn fill the bar.
+  if (g.rec.sim.state.train >= 0 && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
+    sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
+    return;
+  }
   // R: lock on to the next nearest person (past the last, none).
-  if (e.code === 'KeyR' && !itemsUI.panelOpen) {
+  if (e.code === 'KeyR' && !itemsUI.panelOpen && !socialOpen()) {
     // Nobody in reach (and nobody locked): say so rather than nothing.
     if (!targets.canLock && g.rec.sim.state.lock < 0) {
       sound.sting();
@@ -745,7 +912,7 @@ addEventListener('keydown', (e) => {
   // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
   if (e.code === 'Space') {
     e.preventDefault();
-    if (itemsUI.panelOpen) return;
+    if (itemsUI.panelOpen || socialOpen()) return;
     tools.held = true;
     usePress();
   }
@@ -784,7 +951,31 @@ function act() {
   if (!game) return;
   game.pilot.stop();
   itemsUI.closeCraft();
+  profile.close();
   sendOp(OP.INTERACT);
+}
+
+// ------------------------------------------------------------------ social life and work (P6)
+const talk = new TalkPanel(sendOp, click);
+const board = new BoardPanel(sendOp, click);
+const profile = new ProfilePanel(click);
+const trainCard = new TrainCard(sendOp);
+const workChips = new WorkChips();
+/** A social panel is up (the talk, the job board, the file): the tool controls step aside. */
+const socialOpen = () => talk.open || board.isOpen || profile.isOpen;
+function closeSocial() {
+  if (game && game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
+  board.close();
+  profile.close();
+}
+function toggleProfile() {
+  if (!game || game.paused) return;
+  if (!profile.isOpen) {
+    itemsUI.closePanels();
+    board.close();
+    if (game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
+  }
+  profile.toggle();
 }
 
 const itemsUI = new ItemsUI(sendOp, click);
@@ -826,7 +1017,7 @@ document.body.append(sleepVeil);
 /** Who someone is (Cast id): "Inmate · cell 3", "Guard · purple key". */
 function personName(sim: Sim, id: number): string {
   const s = sim.state;
-  if (!isGuard(s, id)) return t('combat.inmate', { n: s.inmates[id]?.cell ?? 0 });
+  if (!isGuard(s, id)) return t('combat.inmateNamed', { name: inmateName(sim, id), n: s.inmates[id]?.cell ?? 0 });
   return t('combat.guard', { key: t(`keyColor.${sim.prison.guards[id - s.inmates.length].key}` as Key) });
 }
 
@@ -860,7 +1051,18 @@ function boxTitle(sim: Sim, index: number) {
 /** The action label for what is in reach, worked out only when the target (or language) changes. */
 const actionLabel = { verb: '', what: '' };
 let actionKey = '';
-function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, held: number): { verb: string; what: string } | null {
+function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, held: number, station: Station | null = null): { verb: string; what: string } | null {
+  if (station && !climb) {
+    // On the job: the station's step ("Load the washer", "Take out: clean laundry").
+    const key = `station:${station.act}:${station.prop}:${station.item}:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      const prop = sim.world.props[station.prop];
+      const what = station.act === 'take' || station.act === 'unload' || station.act === 'put' || station.act === 'load' ? itemName(station.item) : prop ? t(`thing.${prop.kind}` as Key) : t('thing.puddle');
+      Object.assign(actionLabel, { verb: t(`work.${station.act}` as Key), what: station.act === 'mop' ? t('thing.puddle') : station.act === 'running' || station.act === 'full' ? (prop ? t(`thing.${prop.kind}` as Key) : '') : what });
+    }
+    return actionLabel;
+  }
   if (climb) {
     const key = `climb:${climb.action}:${climb.item ?? 0}:${currentLang()}`;
     if (key !== actionKey) {
@@ -881,6 +1083,26 @@ function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, hel
   if (!target) return null;
   // Dirt in hand at a toilet: down it goes.
   const flush = target.kind === 'container' && (held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet';
+  if (target.kind === 'person') {
+    // The player's letter for them (the mail round), else a talk.
+    const letter = LETTER;
+    const it = sim.state.items;
+    const mail = sim.onDuty && sim.state.mail.includes(target.who) && it.inv.slice(0, 6).some((v) => itemOf(v) === letter && usesOf(v) - 1 === target.who);
+    const key = `person:${target.who}:${mail}:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : 'act.talk'), what: inmateName(sim, target.who) });
+    }
+    return actionLabel;
+  }
+  if (target.kind === 'fixture') {
+    const key = `fixture:${target.use}:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t(`act.${target.use}` as Key), what: t(`thing.${target.use === 'board' ? 'jobBoard' : target.use}` as Key) });
+    }
+    return actionLabel;
+  }
   const key = `${target.kind}:${target.index}:${target.kind === 'ground' ? target.item : 0}:${flush}:${currentLang()}`;
   if (key !== actionKey) {
     actionKey = key;
@@ -907,7 +1129,7 @@ const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'b
 const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword' };
 
 /** Everyone who can be looted, by Cast id (inmates, then guards); one array, refilled. */
-const lootable: Array<{ body: Body; ko: number }> = [];
+const lootable: Array<{ body: Body; ko: number; angry?: number }> = [];
 function peopleOf(sim: Sim) {
   lootable.length = 0;
   for (const m of sim.state.inmates) lootable.push(m);
@@ -1019,7 +1241,22 @@ function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView |
   return v;
 }
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
-function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null) {
+function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, station: Station | null = null) {
+  if (station && !climb) {
+    if (station.prop < 0) {
+      focusAt.x0 = (station.tile % MAP_W) + 0.06;
+      focusAt.z0 = Math.floor(station.tile / MAP_W) + 0.06;
+      focusAt.x1 = focusAt.x0 + 0.88;
+      focusAt.z1 = focusAt.z0 + 0.88;
+      return focusAt;
+    }
+    const p = sim.world.props[station.prop];
+    focusAt.x0 = p.x;
+    focusAt.z0 = p.z;
+    focusAt.x1 = p.x + p.w;
+    focusAt.z1 = p.z + p.d;
+    return focusAt;
+  }
   if (climb) {
     focusAt.x0 = (climb.tile % MAP_W) + 0.08;
     focusAt.z0 = Math.floor(climb.tile / MAP_W) + 0.08;
@@ -1040,6 +1277,22 @@ function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null) {
     focusAt.z1 = cz + (along ? 0.5 : 0.82);
     return focusAt;
   }
+  if (target.kind === 'person') {
+    const b = sim.state.inmates[target.who].body;
+    focusAt.x0 = b.x / UNIT - 0.45;
+    focusAt.z0 = b.z / UNIT - 0.45;
+    focusAt.x1 = focusAt.x0 + 0.9;
+    focusAt.z1 = focusAt.z0 + 0.9;
+    return focusAt;
+  }
+  if (target.kind === 'fixture') {
+    const p = sim.world.props[target.index];
+    focusAt.x0 = p.x;
+    focusAt.z0 = p.z;
+    focusAt.x1 = p.x + p.w;
+    focusAt.z1 = p.z + p.d;
+    return focusAt;
+  }
   if (target.kind === 'ground') {
     const tile = tileOfKey(sim.state.items.ground[target.index][0]);
     focusAt.x0 = (tile % MAP_W) + 0.2;
@@ -1056,7 +1309,7 @@ function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null) {
   return focusAt;
 }
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false, deskTunnel: false };
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false, deskTunnel: false, study: false };
 
 const frameData: Frame = {
   x: 0,
@@ -1085,10 +1338,20 @@ const frameData: Frame = {
   lock: -1,
   lockHostile: false,
   lockFar: false,
+  doing: 0,
+  trainAt: null,
+  reps: 0,
+  puddles: [],
+  puddlesRev: 0,
 };
+const LETTER = itemNumber('letter');
+const MAGAZINE = itemNumber('magazine');
+/** Where the player stands while training on a treadmill (on its belt), refilled. */
+const trainAt = { x: 0, z: 0, facing: 0, y: 0 };
 const PEEL_ACTION = { verb: '', what: '' };
 /** What the buttons would do, worked out once per simulation step. */
-const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean } = {
+const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean; station: Station | null } = {
+  station: null,
   step: -1,
   busy: false,
   panel: false,
@@ -1100,7 +1363,36 @@ const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb
   fighting: false,
 };
 const tapAt = { x: 0, z: 0 };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null };
+const workHud = { place: '', quota: 0, of: 0, paid: false };
+
+/** Reps so far, counted across sets (the view pumps the arms on each). */
+let repCount = 0;
+let repLast = 0;
+function trainReps(reps: number): number {
+  if (reps > repLast) repCount++;
+  repLast = reps;
+  return repCount;
+}
+
+const projectAt = (x: number, y: number, z: number, out: { x: number; y: number }) => view.screenAt(x, y, z, out);
+
+/**
+ * The badge over an inmate (GDD §13.2): the letter the player carries for them, a favor done
+ * (hand it in) or on offer, a merchant open for business, a follower.
+ */
+function badgeOf(sim: Sim, who: number): BadgeKind {
+  const s = sim.state;
+  const m = s.inmates[who];
+  if (m.ko > 0 || m.angry > 0) return '';
+  if (sim.onDuty && s.mail.includes(who) && s.items.inv.slice(0, 6).some((v) => itemOf(v) === LETTER && usesOf(v) - 1 === who)) return 'mail';
+  const f = s.favors.find((x) => x.by === who);
+  if (f && (f.state === FAVOR_STATE.DONE || ((f.kind === 0 || f.kind === 1) && f.state === FAVOR_STATE.TAKEN && s.items.inv.slice(0, 6).some((v) => itemOf(v) === f.item)))) return 'done';
+  if (f?.state === FAVOR_STATE.OFFERED) return 'favor';
+  if (sim.shopsOpen && sim.merchantOf(who) >= 0 && s.shops[sim.merchantOf(who)].some((v) => v)) return 'shop';
+  if (s.followers.includes(who)) return 'ally';
+  return '';
+}
 
 function frame(now: number) {
   requestAnimationFrame(frame);
@@ -1147,7 +1439,10 @@ function frame(now: number) {
         pressQueued = false;
       }
       op ??= tools.held && toolNow?.repeat ? USE_OP : NO_OP;
-      g.rec.step(command(controls.steering ? controls.dir() : g.pilot.dir(p), op[0], op[1], op[2]));
+      let dir = controls.steering ? controls.dir() : g.pilot.dir(p);
+      // On the equipment, left and right are reps (sent as ops): only up or down steps off.
+      if (sim.state.train >= 0 && (dir === 1 || dir === 9)) dir = 0;
+      g.rec.step(command(dir, op[0], op[1], op[2]));
       g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
       // Sound, banners and vibration read the events; the simulation never calls them.
       for (const e of sim.events) {
@@ -1187,7 +1482,7 @@ function frame(now: number) {
   f.surface = st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
   f.inmates.length = st.inmates.length;
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false });
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '' });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -1196,6 +1491,7 @@ function frame(now: number) {
     o.doing = m.doing;
     o.cell = m.cell;
     o.angry = m.angry > 0;
+    o.badge = badgeOf(sim, k);
   });
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
@@ -1246,13 +1542,15 @@ function frame(now: number) {
   // The action button: the structure first (climbing, covers coming off), as the sim decides it.
   // Worked out once per simulation step (nothing it depends on changes between steps).
   const memo = targets;
-  const panel = itemsUI.panelOpen;
+  const panel = itemsUI.panelOpen || socialOpen();
+  document.body.classList.toggle('panel-open', panel);
   if (memo.step !== st.step || memo.busy !== busy || memo.panel !== panel || memo.rev !== it.rev) {
     memo.step = st.step;
     memo.busy = busy;
     memo.panel = panel;
     memo.rev = it.rev;
-    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim));
+    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length);
+    memo.station = busy || st.layer !== LAYER.GROUND ? null : sim.station();
     const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim)), faced);
     memo.target = memo.climb ? null : reach;
@@ -1267,8 +1565,29 @@ function frame(now: number) {
   const target = memo.target;
   // The frame stays on an open container (what the panel shows), else on what is in reach.
   const openWho = ownerOf(sim.world, it.open);
-  f.focus = it.open >= 0 ? focusOf(sim, openWho >= 0 ? { kind: 'pockets', index: it.open, who: openWho } : { kind: 'container', index: it.open }) : focusOf(sim, target, climb);
-  f.held = held;
+  f.focus =
+    it.open >= 0
+      ? focusOf(sim, openWho >= 0 ? { kind: 'pockets', index: it.open, who: openWho } : { kind: 'container', index: it.open })
+      : st.talk >= 0
+        ? focusOf(sim, { kind: 'person', who: st.talk })
+        : st.train >= 0
+          ? null
+          : focusOf(sim, target, climb, memo.station);
+  // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
+  const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
+  f.doing = trainKind === 'weights' ? DOING.LIFT : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : DOING.NOTHING;
+  if (trainKind === 'treadmill') {
+    const tp = sim.world.props[st.train];
+    trainAt.x = tp.x + tp.w / 2;
+    trainAt.z = tp.z + tp.d / 2 + 0.1;
+    trainAt.y = 0.14;
+    trainAt.facing = Math.PI;
+    f.trainAt = trainAt;
+  } else f.trainAt = null;
+  f.reps = trainReps(st.reps);
+  f.puddles = st.puddles;
+  f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
+  f.held = trainKind === 'shelf' ? MAGAZINE : held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;
@@ -1282,9 +1601,10 @@ function frame(now: number) {
     PEEL_ACTION.verb = t('act.peel');
     PEEL_ACTION.what = t('act.potato');
   }
-  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : it.open >= 0 ? null : describeTarget(sim, target, climb, held);
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : describeTarget(sim, target, climb, held, memo.station);
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
+  v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
   itemsUI.update(v);
   // The tool button: a blow at the locked-on target, else what a strike would hit.
   const tt = memo.tool;
@@ -1294,9 +1614,17 @@ function frame(now: number) {
   toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && toolKey !== heldOn) tools.release();
   const fighting = st.lock >= 0 || memo.fighting;
-  tools.update(toolNow, st.energy, !!(held && itemDef(held).tool), busy || itemsUI.panelOpen, st.health / maxHealth(st.str), fighting);
+  const training = st.train >= 0;
+  tools.update(training ? null : toolNow, st.energy, !!(held && itemDef(held).tool) || training, busy || panel, st.health / maxHealth(st.str), fighting);
   // The target card, and the lock button while anyone is in range (worked out once a step).
-  combatUI.update(targetInfo(sim), memo.canLock, busy || itemsUI.panelOpen);
+  combatUI.update(targetInfo(sim), memo.canLock && !training, busy || panel || training);
+  // Social life and work (P6): the talk, the job board (closed out of its reach), the file, the training card, machines at work.
+  if (board.isOpen && nearestProp(sim.world, p, (q) => q.kind === 'jobBoard', STATION_REACH + UNIT / 2) < 0) board.close();
+  talk.update(sim, busy);
+  board.update(sim, busy);
+  profile.update(sim, busy && !st.sleeping);
+  trainCard.update(sim, busy);
+  workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');
   sleepVeil.classList.toggle('ko', st.ko > 0);
@@ -1317,6 +1645,17 @@ function frame(now: number) {
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;
   hudState.solitaryMinutes = st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null;
+  hudState.cash = st.cash;
+  // During the Work Period with a job that counts today: the quota on the badge (GDD §11).
+  const job = sim.jobActive();
+  if (ROUTINE[st.routine].id === 'work' && job >= 0) {
+    const d = jobRooms(sim.world)[job].def;
+    workHud.place = t(`zone.${d.zone}` as Key);
+    workHud.quota = st.quota;
+    workHud.of = d.quota;
+    workHud.paid = st.paid;
+    hudState.work = workHud;
+  } else hudState.work = null;
   hud.update(clock, zone, hudState);
 }
 

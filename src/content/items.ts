@@ -9,7 +9,7 @@ export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | '
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
 /** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start';
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job';
 
 export interface ItemDef {
   id: string;
@@ -96,6 +96,8 @@ const gear = (id: string, value: number, shape: string, color: number, accent?: 
   accent,
   from: [],
 });
+
+const work = (id: string, shape: string, color: number, accent: number): ItemDef => ({ id, cat: 'material', contraband: false, value: 0, shape, color, accent, from: ['job'] });
 
 /** Key colors in KEY order (1–5), with the color each is painted. */
 export const KEY_ITEM_COLORS: ReadonlyArray<[string, number, number]> = [
@@ -195,6 +197,13 @@ export const ITEMS: readonly ItemDef[] = [
   gear('grappling_hook', 40, 'hook', 0x8d949e, 0xc0392b),
   gear('grapnel', 60, 'grapnel', 0x8d949e, 0xc8a86a),
   gear('raft', 60, 'raft', 0xe8d2a0, 0x9fb7d0),
+  // ---------------------------------------------------------------- the day's work (P6, GDD §11): worth nothing outside the job
+  work('dirty_laundry', 'cloth', 0x9a8f78, 0x6f6656),
+  work('clean_laundry', 'cloth', 0xf2701c, 0xf2f2ee),
+  work('raw_food', 'pack', 0xd86a6a, 0xf4f4ef),
+  work('meal_tray', 'tray', 0x9aa2ad, 0xe8b828),
+  work('furniture', 'stool', 0xb07a45, 0x8a5a2e),
+  work('letter', 'letter', 0xf4efe0, 0xd23f36),
 ];
 
 /** An item's number in saves and slots (1 + its place in ITEMS). */

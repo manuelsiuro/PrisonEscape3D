@@ -87,7 +87,31 @@ export const LOOT: Record<string, LootTable> = {
       ['duct_tape', 1],
     ],
   },
+  /** What the inmate merchants sell (GDD §10.3): rare materials, tools and crowbars; topped up at 08:00. */
+  merchant: {
+    rolls: [2, 3],
+    max: 4,
+    items: [
+      ['lighter', 4],
+      ['glue', 4],
+      ['duct_tape', 6],
+      ['metal_file', 4],
+      ['timber', 3],
+      ['sheet_metal', 3],
+      ['crowbar', 2],
+      ['wire', 4],
+      ['razor_blade', 3],
+      ['foil', 3],
+      ['rope', 2],
+      ['trowel', 2],
+      ['nail_file', 3],
+      ['screwdriver', 2],
+    ],
+  },
 };
+
+/** Slots in a merchant's stock. */
+export const SHOP_SLOTS = 4;
 
 /** Slots in a person's pockets (inmates and guards, GDD §10.2). */
 export const POCKET_SLOTS = 4;

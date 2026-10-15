@@ -27,7 +27,16 @@ export const OP = {
   USE: 8,
   /** Lock on to the next nearest person in reach (past the last: none). a = 1: let go of the lock; a = 2 + id: that person (Cast id). */
   LOCK: 9,
+  /** To the inmate the player is talking to (GDD §10.3–10.4): a = TALK action, b its argument. */
+  TALK: 10,
+  /** At the job board (GDD §11): a = job + 1 to apply for it, 0 to quit the job held. */
+  JOB: 11,
+  /** Training (GDD §3.2): a = 0 study at the open library shelf, 1 or 2 a press (left, right: they must alternate), 3 stop. */
+  TRAIN: 12,
 } as const;
+
+/** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given). Never renumber. */
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7 } as const;
 
 /** Slot addresses for OP.MOVE / DROP / EQUIP: 0–5 the hotbar, then the weapon, the outfit, then the open container's slots. */
 export const SLOT = { HOTBAR: 0, WEAPON: 6, OUTFIT: 7, CONTAINER: 8 } as const;

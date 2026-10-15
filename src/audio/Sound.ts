@@ -148,6 +148,62 @@ export class Sound {
     this.tone(1568, 1568, 0.5, 'triangle', 0.08, 0.34);
   }
 
+  /** Cash in (GDD §11): a coin's bright clink, a little run of them for a wage. */
+  coin(big = false) {
+    const n = big ? 3 : 1;
+    for (let k = 0; k < n; k++) {
+      const d = k * 0.07;
+      this.tone(1975, 1960, 0.18, 'triangle', 0.1, d);
+      this.tone(2637, 2620, 0.28, 'sine', 0.05, d + 0.03);
+    }
+  }
+
+  /** Bought something: the coins go, the goods come (a soft two-note close). */
+  buy() {
+    this.coin();
+    this.tone(660, 990, 0.12, 'triangle', 0.1, 0.12);
+  }
+
+  /** At a job station: a machine starting, a load taken out, a mop's swish, a tray set down. */
+  work(act: string) {
+    switch (act) {
+      case 'load':
+      case 'sort':
+        // A machine starting: a hum that rises.
+        this.tone(110, 180, 0.45, 'sawtooth', 0.04);
+        this.hiss(0.4, 'bandpass', 600, 1.5, 0.05);
+        break;
+      case 'unload':
+      case 'take':
+        this.pickup();
+        break;
+      case 'put':
+        this.tone(330, 260, 0.1, 'triangle', 0.12);
+        this.hiss(0.08, 'bandpass', 1500, 1.4, 0.06);
+        break;
+      case 'mop':
+        this.hiss(0.35, 'bandpass', 1100, 0.9, 0.12);
+        break;
+      default:
+        this.tone(300, 250, 0.08, 'triangle', 0.06);
+    }
+  }
+
+  /** A training rep that counted: a short tick, higher as the set goes on. */
+  rep() {
+    this.tone(520 + Math.random() * 40, 480, 0.05, 'triangle', 0.07);
+  }
+
+  /** A set done (+2), or someone joins the player: a rising arpeggio. */
+  levelUp() {
+    [523, 659, 784, 1047].forEach((f, k) => this.tone(f, f, 0.22, 'triangle', 0.1, k * 0.07));
+  }
+
+  /** An inmate likes the player a little more: a soft upward blip. */
+  opinionUp() {
+    this.tone(700, 1050, 0.12, 'sine', 0.06, 0.05);
+  }
+
   /** Missed a block: a low falling sting. */
   sting() {
     this.tone(330, 220, 0.35, 'sawtooth', 0.07);

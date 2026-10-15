@@ -18,6 +18,8 @@ export interface ItemsView {
   sleeping: boolean;
   /** The open container is the player's desk with a tunnel dug under it (GDD §9.3): offer the way down. */
   deskTunnel: boolean;
+  /** The open container is a library shelf (GDD §3.2): offer a book to study. */
+  study: boolean;
 }
 
 type Send = (op: number, a?: number, b?: number) => void;
@@ -102,6 +104,7 @@ export class ItemsUI {
       'item-panel box-panel hidden',
       `<div class="panel-head"><b></b><button class="icon-btn small" data-close data-t-label="box.close">${icon('close', 18)}</button></div>
       <div class="box-tunnel hidden"><span data-t="box.tunnel"></span><button class="big-btn primary small" data-climb>${icon('down', 18)}<span data-t="box.climbDown"></span></button></div>
+      <div class="box-tunnel box-study hidden"><span><b data-t="box.study"></b><small data-t="box.studyNote"></small></span><button class="big-btn primary small" data-study>${icon('book', 18)}<span data-t="train.study"></span></button></div>
       <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span data-t="box.hidden"></span><em data-t="box.hiddenNote"></em></div><div class="slot-grid box-hidden"></div></div>
       <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>`,
     );
@@ -116,6 +119,11 @@ export class ItemsUI {
       if ((e.target as HTMLElement).closest('[data-climb]')) {
         this.click();
         this.send(OP.INTERACT, 1);
+        return;
+      }
+      if ((e.target as HTMLElement).closest('[data-study]')) {
+        this.click();
+        this.send(OP.TRAIN, 0);
         return;
       }
       this.slotClick(e);
@@ -316,7 +324,7 @@ export class ItemsUI {
     this.updateAction(v);
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.
-    const drawn = `${v.boxTitle}|${v.deskTunnel}`;
+    const drawn = `${v.boxTitle}|${v.deskTunnel}|${v.study}`;
     if (it.rev === this.simRev && this.uiRev === this.drawnUi && drawn === this.drawn) return;
     this.simRev = it.rev;
     this.drawnUi = this.uiRev;
@@ -346,7 +354,8 @@ export class ItemsUI {
       const cell = (k: number) => `<button class="slot${box[k] ? ' filled' : ''}${this.picked === SLOT.CONTAINER + k ? ' picked' : ''}" data-addr="${SLOT.CONTAINER + k}" title="${box[k] ? itemName(itemOf(box[k])) : ''}">${slotInner(box[k])}</button>`;
       this.box.querySelector('.box-hidden-wrap')!.classList.toggle('hidden', v.boxHidden === 0);
       this.box.classList.toggle('plain', v.boxHidden === 0);
-      this.box.querySelector('.box-tunnel')!.classList.toggle('hidden', !v.deskTunnel);
+      this.box.querySelector('.box-tunnel:not(.box-study)')!.classList.toggle('hidden', !v.deskTunnel);
+      this.box.querySelector('.box-study')!.classList.toggle('hidden', !v.study);
       this.boxHidden.innerHTML = Array.from({ length: v.boxHidden }, (_, k) => cell(k)).join('');
       this.boxDrawers.innerHTML = Array.from({ length: box.length - v.boxHidden }, (_, k) => cell(v.boxHidden + k)).join('');
     }

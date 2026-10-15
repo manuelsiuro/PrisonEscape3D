@@ -236,4 +236,14 @@ export const CENTER_PERKS: PrisonDef = {
   spawn: { x: 9, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation'],
   guards,
+  names: ['Rusty', 'Tank', 'Mouse', 'Doc', 'Lefty', 'Bones', 'Slim'],
+  merchants: [2, 6, 7],
+  // The player starts in the laundry; the woodshop is open (Intellect 40, as the player starts).
+  jobs: [
+    { id: 'laundry', cell: 1 },
+    { id: 'janitor', cell: 3 },
+    { id: 'kitchen', cell: 5 },
+    { id: 'woodshop', cell: 0 },
+    { id: 'mailman', cell: 8 },
+  ],
 };

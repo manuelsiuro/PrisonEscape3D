@@ -158,12 +158,12 @@ export class CombatUI {
   }
 
   /** A number floating up from a point on screen: damage dealt (gold), taken (red), or a word ("Out cold!"). */
-  float(text: string, x: number, y: number, kind: 'dealt' | 'taken' | 'ko') {
+  float(text: string, x: number, y: number, kind: 'dealt' | 'taken' | 'ko' | 'cash' | 'gain' | 'ally') {
     const el = h('div', `float-num ${kind}`);
     el.textContent = text;
     el.setAttribute('aria-hidden', 'true');
     // A little sideways scatter, so quick blows don't stack on one spot.
-    if (kind !== 'ko') x += (Math.random() - 0.5) * 24;
+    if (kind === 'dealt' || kind === 'taken' || kind === 'ally') x += (Math.random() - 0.5) * 24;
     el.style.left = `${Math.round(x)}px`;
     el.style.top = `${Math.round(y)}px`;
     el.addEventListener('animationend', () => el.remove());

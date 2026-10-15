@@ -3,6 +3,10 @@ import type { PrisonDef } from '../../content/prisons/types';
 import { ZONES, zoneIndex } from '../../content/zones';
 import { DAMAGE_SHOWS, KEY, LEGEND, TILE, TILE_INFO, VENT_LEGEND } from './tiles';
 import { doorOpen } from './doors';
+import { JOBS } from '../../content/jobs';
+
+/** Zones where jobs are done: their doors open for the Work Period. */
+const WORK_ZONES = new Set<string>(Object.values(JOBS).map((j) => j.zone));
 
 export const MAP_W = 64;
 export const MAP_H = 64;
@@ -83,6 +87,10 @@ export class World {
   playerKeys = 0;
   /** 1 on doors in the outer perimeter (beside the road): no key opens them (the takeover does, P7). */
   readonly gate = new Uint8Array(MAP_W * MAP_H);
+  /** On door tiles into a job room (GDD §11): the room's zone index (0 for other doors). */
+  readonly doorRoom = new Uint8Array(MAP_W * MAP_H);
+  /** Bit z set: the job room of zone z stands open (the Work Period, or someone still inside; derived by the simulation). */
+  openRooms = 0;
   /** Derived: 1 on doors shut for everyone but guards (the prison as built: inmates walk it, guards' eyes stop at it). */
   readonly doorShut = new Uint8Array(MAP_W * MAP_H);
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
@@ -136,6 +144,7 @@ export class World {
         this.doorCell[i] = c;
         if (c) this.cellDoor[c] = i;
         if ([i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => g.kind[j] === TILE.ROAD)) this.gate[i] = 1;
+        for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (WORK_ZONES.has(ZONES[g.zone[j]])) this.doorRoom[i] = g.zone[j];
       }
     }
     this.refreshBlock();
@@ -172,12 +181,20 @@ export class World {
     this.refreshBlock();
   }
 
+  /** Opens and shuts job rooms (bit z = zone z); recomputes what blocks walking when it changes. */
+  setOpenRooms(mask: number) {
+    if (mask === this.openRooms) return;
+    this.openRooms = mask;
+    this.refreshBlock();
+  }
+
   /** Recomputes what blocks walking (call when door rules or tiles change). */
   refreshBlock() {
     const g = this.ground;
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const k = g.kind[i];
-      const shut = k === TILE.DOOR && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells);
+      const room = this.doorRoom[i];
+      const shut = k === TILE.DOOR && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && (this.openRooms >> room) & 1);
       this.doorShut[i] = shut ? 1 : 0;
       // A key of the door's color opens it for the player (never a perimeter gate).
       const keyed = shut && !this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1;

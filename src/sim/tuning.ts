@@ -99,3 +99,43 @@ export const HEALTH_REGEN_STEPS = STEPS_PER_MINUTE;
 export const CAVE_IN_DAMAGE = 40;
 /** Rubbing a comb or toothbrush on a wall this many times sharpens it into a shiv. */
 export const SHARPEN_STROKES = 4;
+
+// ---------------------------------------------------------------- economy, training, social (P6, GDD §3.2, §10.3–10.4, §11)
+/** Walking speed grows with Speed (GDD §3.2): 184 at the starting 40, 220 at 100 (a chasing guard runs 196). */
+export const walkSpeed = (spd: number) => 160 + Math.floor((spd * 3) / 5);
+/** Attributes run 20–100; training adds 2 a set (GDD §3.2). Decay takes a point a day off an untrained one, never below the start. */
+export const ATTR_MIN = 20;
+export const ATTR_MAX = 100;
+export const ATTR_START = 40;
+export const TRAIN_GAIN = 2;
+/** A set: the bar fills by alternate presses, drains while idle; full, it costs this much energy (GDD: 12% gym, 10% library). */
+export const REP_GAIN = 6;
+export const REP_DRAIN_STEPS = 2;
+export const GYM_ENERGY = 12;
+export const STUDY_ENERGY = 10;
+/** Below this much energy: no tools, no training (GDD §3.1). */
+export const TIRED = 10;
+/** Talking to an inmate: within this reach (units, either axis), nothing between. */
+export const TALK_REACH = Math.round(1.4 * UNIT);
+/** Opinion (GDD §10.3): 0–100 from 50; at or under LOW an inmate may jump the player at meals and showers; from HIGH it joins them. */
+export const OPINION_START = 50;
+export const OPINION_LOW = 25;
+export const OPINION_HIGH = 80;
+export const FAVOR_OPINION = 15;
+export const HIT_OPINION = 8;
+export const KO_OPINION = 15;
+export const BUY_OPINION = 2;
+/** A grudge: each step in the same canteen or shower block, nearby, 1 chance in this many of an ambush. */
+export const AMBUSH_ODDS = 400;
+export const AMBUSH_RANGE = 4 * UNIT;
+/** At most 2 followers (GDD §10.3); they keep this far behind, and go for whoever comes for the player within this range. */
+export const MAX_FOLLOWERS = 2;
+export const FOLLOW_GAP = Math.round(1.6 * UNIT);
+export const GUARD_RANGE = 6 * UNIT;
+/** Favors pay $20–50 (GDD §10.4); at most this many on offer at once, and under way. */
+export const FAVOR_OFFERS = 3;
+export const FAVORS_TAKEN = 3;
+/** A job left open is filled by an inmate this many mornings after it opened (the player has until then to apply). */
+export const VACANCY_DAYS = 2;
+/** Merchants: up to 50% off at full opinion (GDD §10.3); they won't deal with someone they despise. */
+export const MAX_DISCOUNT = 0.5;

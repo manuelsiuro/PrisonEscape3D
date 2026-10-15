@@ -1,0 +1,1025 @@
+/* ------------------------------------------------------------ P6: cash, jobs, training, talking, the file */
+
+/* The cash pill in the HUD's top row (GDD §13.2: CASH): a tap opens the file. */
+.hud .hud-cash {
+  flex: none;
+  gap: 5px;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.15s var(--spring);
+}
+
+.hud .hud-cash:active {
+  transform: scale(0.94);
+}
+
+.hud .hud-cash .ic {
+  color: var(--gold);
+  fill: none;
+}
+
+.hud .hud-cash b {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+
+.hud .hud-cash.gain {
+  animation: cash-gain 0.7s var(--spring);
+}
+
+.hud .hud-cash.spend {
+  animation: cash-spend 0.4s var(--ease);
+}
+
+@keyframes cash-gain {
+  30% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 3px rgba(255, 194, 61, 0.55), 0 6px 18px -6px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@keyframes cash-spend {
+  40% {
+    transform: translateY(2px) scale(0.95);
+  }
+}
+
+/* The quota on the routine badge during work: steel blue until it's paid. */
+.hud-badge.quota {
+  color: white;
+  background: var(--steel-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Floating numbers: cash in (gold, bigger), +2 STR (green), a follower's blow (teal). */
+.float-num.cash {
+  font-size: 20px;
+  color: var(--gold);
+  margin-top: -14px;
+}
+
+.float-num.gain {
+  font-size: 19px;
+  color: var(--energy);
+  margin-top: -20px;
+  animation-duration: 1.4s;
+}
+
+.float-num.ally {
+  color: #6fe3f0;
+}
+
+/* ------------------------------------------------------------ shared bits of the social panels */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font: 700 12px var(--font-ui);
+  color: #dfe8f5;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chip .ic {
+  color: var(--accent-2);
+}
+
+.chip.shop .ic {
+  color: #5fd38c;
+}
+
+.chip.ally {
+  color: #bff3fa;
+  background: rgba(41, 182, 200, 0.22);
+}
+
+.chip.ally .ic {
+  color: #6fe3f0;
+  fill: #6fe3f0;
+}
+
+.talk-note {
+  margin: 4px 0 0;
+  font: 500 12.5px/1.35 var(--font-ui);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.item-panel section {
+  margin-top: 12px;
+}
+
+.item-panel .box-label .ic {
+  margin-right: 2px;
+}
+
+/* ------------------------------------------------------------ talking to an inmate */
+.talk-panel .panel-head {
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.talk-panel .panel-head .icon-btn {
+  margin-left: auto;
+}
+
+.talk-face {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font: 700 19px var(--font-display);
+  color: white;
+  background: linear-gradient(160deg, var(--orange), var(--orange-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.talk-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.talk-who b {
+  overflow: hidden;
+  font: 700 19px/1.1 var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.talk-who small {
+  font: 600 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.talk-opinion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 8px;
+  font: 700 13px var(--font-ui);
+}
+
+.talk-mood {
+  flex: none;
+  min-width: 92px;
+}
+
+.talk-opinion[data-mood='low'] .talk-mood {
+  color: #ff8a7a;
+}
+
+.talk-opinion[data-mood='high'] .talk-mood {
+  color: #6fe3a0;
+}
+
+.talk-meter {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.talk-meter .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #e2a03c, var(--gold));
+  transition: width 0.5s var(--ease);
+}
+
+.talk-opinion[data-mood='low'] .talk-meter .fill {
+  background: linear-gradient(90deg, #c8413a, #ff6b5a);
+}
+
+.talk-opinion[data-mood='high'] .talk-meter .fill {
+  background: linear-gradient(90deg, #2f9e55, #6fe3a0);
+}
+
+/* The bands' edges (25 and 80): where grudges start and where recruiting does. */
+.talk-meter .tick {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.talk-meter .tick.low {
+  left: 25%;
+}
+
+.talk-meter .tick.high {
+  left: 80%;
+}
+
+.talk-opinion > b {
+  min-width: 24px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.talk-delta {
+  font-style: normal;
+  font-weight: 800;
+  animation: delta-pop 1.4s var(--ease) forwards;
+}
+
+.talk-delta.up {
+  color: #6fe3a0;
+}
+
+.talk-delta.down {
+  color: #ff8a7a;
+}
+
+@keyframes delta-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: none;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.talk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.talk-favor {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 194, 61, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.28);
+}
+
+.talk-favor[data-state='2'] {
+  background: rgba(66, 201, 122, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(66, 201, 122, 0.35);
+}
+
+.talk-quote {
+  margin: 4px 0 8px;
+  font: italic 500 14px/1.4 var(--font-ui);
+  color: #f4ead2;
+}
+
+.talk-row,
+.talk-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.talk-foot {
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+.talk-foot .talk-note {
+  margin: 0;
+}
+
+.talk-reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 800 15px var(--font-ui);
+  color: var(--gold);
+}
+
+.talk-reward em {
+  margin-left: 6px;
+  font: 600 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.talk-status {
+  font: 700 12.5px var(--font-ui);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.box-label em.discount {
+  color: #6fe3a0;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.shop-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.shop-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: transform 0.15s var(--spring), background 0.15s;
+}
+
+.shop-item:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.shop-item:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.shop-item img {
+  grid-row: span 2;
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+
+.shop-item span {
+  overflow: hidden;
+  font: 600 12.5px/1.2 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-item b {
+  font: 800 14px var(--font-ui);
+  color: var(--gold);
+}
+
+.shop-item s {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  font: 600 11px var(--font-ui);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.shop-item.poor b {
+  color: #ff8a7a;
+}
+
+.shop-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.shop-item .slot-cb {
+  left: 4px;
+  top: 4px;
+}
+
+.gift-grid {
+  margin-top: 6px;
+}
+
+.slot.gift {
+  cursor: pointer;
+}
+
+.gift-gain {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  padding: 1px 5px;
+  border-radius: 99px;
+  font: 800 10px var(--font-ui);
+  font-style: normal;
+  color: white;
+  background: #2f9e55;
+}
+
+.cash-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cash-btn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  font: 800 14px var(--font-ui);
+  color: var(--gold);
+  background: rgba(255, 194, 61, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.3);
+  transition: transform 0.15s var(--spring);
+}
+
+.cash-btn i {
+  font: 700 11px var(--font-ui);
+  font-style: normal;
+  color: #6fe3a0;
+}
+
+.cash-btn:active {
+  transform: scale(0.94);
+}
+
+.cash-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------ the job board */
+.board-panel .panel-head b,
+.profile-panel .panel-head b {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.board-note {
+  margin: 0 0 10px;
+  font: 500 12.5px/1.35 var(--font-ui);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.board-row,
+.profile-job {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.board-row.mine {
+  background: rgba(242, 107, 29, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 162, 92, 0.45);
+}
+
+.board-row.open {
+  background: rgba(66, 201, 122, 0.1);
+}
+
+.board-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  color: var(--accent-2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.board-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.board-text b {
+  font: 700 15px var(--font-display);
+}
+
+.board-text small {
+  font: 500 11.5px/1.3 var(--font-ui);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.board-later {
+  margin-left: 6px;
+  font: 700 11px var(--font-ui);
+  font-style: normal;
+  color: var(--accent-2);
+}
+
+.board-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 2px;
+}
+
+.board-meta i {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font: 700 11.5px var(--font-ui);
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.board-meta i .ic {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.board-meta i.short {
+  color: #ff8a7a;
+}
+
+.board-meta i.wage {
+  color: var(--gold);
+}
+
+.board-meta i.holder.open {
+  color: #6fe3a0;
+}
+
+.board-meta i.holder.you {
+  color: var(--accent-2);
+}
+
+.board-taken {
+  flex: none;
+  font: 700 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.board-row .big-btn.small {
+  flex: none;
+}
+
+/* ------------------------------------------------------------ the file */
+.profile-cash {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 10px;
+  font: 800 16px var(--font-ui);
+  color: var(--gold);
+}
+
+.profile-panel .panel-head {
+  justify-content: flex-start;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 70px 28px;
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 0;
+}
+
+.stat-row > em {
+  grid-column: 2 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: -2px;
+  font: 700 11px var(--font-ui);
+  font-style: normal;
+}
+
+.stat-row > em.ok {
+  color: #6fe3a0;
+}
+
+.stat-row > em.slip {
+  color: #ffb36b;
+}
+
+.stat-ic {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.stat-row[data-attr='str'] .stat-ic {
+  background: #c8413a;
+}
+
+.stat-row[data-attr='spd'] .stat-ic {
+  background: #2f8fd1;
+}
+
+.stat-row[data-attr='int'] .stat-ic {
+  background: #8a55c9;
+}
+
+.stat-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stat-text b {
+  font: 700 14px var(--font-display);
+}
+
+.stat-text small {
+  overflow: hidden;
+  font: 500 11px/1.25 var(--font-ui);
+  color: rgba(255, 255, 255, 0.55);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-bar {
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.stat-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--gold);
+}
+
+.stat-row[data-attr='str'] .stat-bar i {
+  background: #ff6b5a;
+}
+
+.stat-row[data-attr='spd'] .stat-bar i {
+  background: #5cb6ff;
+}
+
+.stat-row[data-attr='int'] .stat-bar i {
+  background: #b98cff;
+}
+
+.stat-v {
+  font: 800 15px var(--font-ui);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-quota {
+  flex: none;
+  padding: 4px 9px;
+  border-radius: 99px;
+  font: 800 12px var(--font-ui);
+  color: white;
+  background: var(--steel-2);
+}
+
+.profile-quota.done {
+  background: #2f9e55;
+}
+
+.profile-favor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.profile-favor + .profile-favor {
+  margin-top: 6px;
+}
+
+.profile-favor b {
+  display: flex;
+  justify-content: space-between;
+  font: 700 14px var(--font-display);
+}
+
+.profile-favor b em {
+  font: 800 13px var(--font-ui);
+  font-style: normal;
+  color: var(--gold);
+}
+
+.profile-favor small {
+  font: italic 500 12px/1.35 var(--font-ui);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.profile-favor span {
+  font: 700 11.5px var(--font-ui);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.profile-favor.ready {
+  box-shadow: inset 0 0 0 1px rgba(66, 201, 122, 0.45);
+}
+
+.profile-favor.ready span {
+  color: #6fe3a0;
+}
+
+/* The library shelf's "Study" row (in its panel). */
+.box-study {
+  color: #e6dcff;
+  background: rgba(110, 70, 170, 0.45);
+}
+
+.box-study > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.box-study small {
+  font: 500 11.5px var(--font-ui);
+  opacity: 0.8;
+}
+
+/* ------------------------------------------------------------ training (GDD §3.2) */
+.train-card {
+  position: fixed;
+  z-index: 31;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+  width: min(380px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border-radius: 20px;
+  color: white;
+  background: rgba(22, 30, 46, 0.92);
+  box-shadow: 0 20px 50px -14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateX(-50%);
+  animation: sheet-in 0.3s var(--spring);
+}
+
+.train-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.train-ic {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #c8413a;
+}
+
+.train-card[data-attr='spd'] .train-ic {
+  background: #2f8fd1;
+}
+
+.train-card[data-attr='int'] .train-ic {
+  background: #8a55c9;
+}
+
+.train-head b {
+  font: 700 17px var(--font-display);
+}
+
+.train-value {
+  margin-left: auto;
+  font: 800 14px var(--font-ui);
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.train-value.pop {
+  animation: badge-pop 0.6s var(--spring);
+}
+
+.train-head .icon-btn {
+  width: 34px;
+  height: 34px;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.train-bar {
+  display: block;
+  height: 14px;
+  margin: 10px 0 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.train-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #ff6b5a, var(--gold));
+  transition: width 0.08s linear;
+}
+
+.train-card[data-attr='spd'] .train-bar i {
+  background: linear-gradient(90deg, #2f8fd1, #7fd6ff);
+}
+
+.train-card[data-attr='int'] .train-bar i {
+  background: linear-gradient(90deg, #8a55c9, #d4b2ff);
+}
+
+.train-note {
+  margin: 0;
+  font: 600 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.train-pads {
+  display: none;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.touch .train-pads {
+  display: flex;
+}
+
+.train-pad {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  height: 64px;
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  touch-action: none;
+  transition: transform 0.08s, background 0.15s;
+}
+
+.train-pad.next {
+  color: white;
+  background: rgba(242, 107, 29, 0.55);
+  box-shadow: inset 0 0 0 2px rgba(255, 162, 92, 0.8);
+}
+
+.train-pad:active {
+  transform: scale(0.94);
+}
+
+/* While training, the hotbar's action and tool buttons step aside. */
+body.training .act-btn,
+body.training .act-prompt,
+body.training .tool-btn,
+body.training .tool-prompt {
+  display: none;
+}
+
+/* ------------------------------------------------------------ machines at work */
+.work-chip {
+  position: fixed;
+  z-index: 18;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: rgba(18, 24, 36, 0.82);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.work-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--steel) var(--p, 0%), rgba(255, 255, 255, 0.1) 0);
+  -webkit-mask: radial-gradient(circle, transparent 15px, #000 16px);
+  mask: radial-gradient(circle, transparent 15px, #000 16px);
+}
+
+.work-chip img {
+  width: 26px;
+  height: 26px;
+  opacity: 0.55;
+}
+
+.work-tick {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: white;
+  background: #2f9e55;
+}
+
+.work-chip.ready {
+  animation: chip-bob 1s var(--ease) infinite;
+}
+
+.work-chip.ready .work-ring {
+  background: #42c97a;
+}
+
+.work-chip.ready img {
+  opacity: 1;
+}
+
+.work-chip.ready .work-tick {
+  display: grid;
+}
+
+@keyframes chip-bob {
+  50% {
+    translate: 0 -4px;
+  }
+}
+
+body.reduced-motion .work-chip.ready,
+body.reduced-motion .hud .hud-cash.gain,
+body.reduced-motion .talk-delta {
+  animation: none !important;
+}
+
+/* Portrait phones: the training card sits above the hotbar; the shop is one column. */
+@media (max-width: 600px) and (min-height: 521px) {
+  .train-card {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px);
+  }
+}
+
+@media (max-width: 380px) {
+  .shop-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Landscape phones: a slimmer training card, pads either side of it. */
+@media (max-height: 520px) {
+  .train-card {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px);
+    padding: 8px 12px;
+  }
+
+  .train-bar {
+    margin: 6px 0 4px;
+  }
+
+  .train-pad {
+    height: 48px;
+  }
+
+  .stat-row {
+    padding: 3px 0;
+  }
+
+  .board-note {
+    display: none;
+  }
+
+  .board-row {
+    padding: 6px 8px;
+  }
+}
+
+/* A panel open (a container, the workbench, a talk, the board, the file): a coach hint waits under it. */
+body.panel-open .hint,
+body.training .hint {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Narrow phones: the cash pill is just the amount, so the zone keeps its name. */
+@media (max-width: 440px) {
+  .hud .hud-cash {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .hud .hud-cash .ic {
+    display: none;
+  }
+
+  .hud .hud-row {
+    gap: 6px;
+  }
+}

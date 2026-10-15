@@ -81,12 +81,12 @@ day 1 22:00 routine eveningRollCall
 day 1 23:00 missed eveningRollCall +100% heat
 day 1 23:00 LOCKDOWN
 day 1 23:00 routine lightsOut
-day 1 23:05 caught (solitary)
-day 1 23:05 lockdown lifted
-day 1 23:35 into solitary
-day 2 01:35 out of solitary
-day 2 01:35 attended lightsOut
-day 2 01:35 cells locked
+day 1 23:04 caught (solitary)
+day 1 23:04 lockdown lifted
+day 1 23:34 into solitary
+day 2 01:34 out of solitary
+day 2 01:34 attended lightsOut
+day 2 01:34 cells locked
 day 2 08:00 routine rollCall
 day 2 08:00 cells unlocked
 truant heat at the end of day 1: 0%

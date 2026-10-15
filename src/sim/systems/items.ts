@@ -3,7 +3,7 @@ import { LOOT, POCKET_SLOTS } from '../../content/loot';
 import { choices, RECIPES } from '../../content/recipes';
 import { DIR_X, DIR_Z, SLOT } from '../command';
 import { randomInt } from '../rng';
-import { UNIT } from '../tuning';
+import { TALK_REACH, UNIT } from '../tuning';
 import { containersOf, type ContainerInfo } from '../world/containers';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import type { Body } from './movement';
@@ -20,7 +20,7 @@ export const itemOf = (v: number) => v & 255;
 export const usesOf = (v: number) => v >>> 8;
 
 export const HOTBAR = 6;
-/** Starting Intellect (GDD §3.2; training arrives in P6). */
+/** Starting Intellect (GDD §3.2; trained in the library). */
 export const START_INT = 40;
 /** How close the player must be to use something (units from the body's middle to its footprint). */
 export const REACH = Math.round(UNIT * 0.85);
@@ -112,7 +112,7 @@ function stock(c: ContainerInfo, slots: number[], rng: { rng: number }, first = 
 }
 
 /** Tops slots up from a loot table, from slot `hidden` on. */
-function stockSlots(table: string, hidden: number, slots: number[], rng: { rng: number }) {
+export function stockSlots(table: string, hidden: number, slots: number[], rng: { rng: number }) {
   const t = LOOT[table];
   const free = () => {
     for (let k = hidden; k < slots.length; k++) if (!slots[k]) return k;
@@ -159,12 +159,22 @@ export type Target =
   | { kind: 'container'; index: number }
   | { kind: 'sleep'; index: number }
   | { kind: 'pockets'; index: number; who: number }
+  /** An inmate up and about: talk (trade, gifts, favors, recruiting), or hand over their letter. */
+  | { kind: 'person'; who: number }
+  /** The job board, gym equipment (prop index). */
+  | { kind: 'fixture'; index: number; use: FixtureUse }
   | null;
+
+/** Furniture used by standing at it: the job board, the weights (Strength), the treadmill (Speed). */
+export type FixtureUse = 'board' | 'weights' | 'treadmill';
+const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill' };
 
 /** Someone whose pockets can be gone through: lying knocked out (GDD §10.2). */
 export interface Lootable {
   body: Body;
   ko: number;
+  /** Fighting the player (inmates): no talking now. */
+  angry?: number;
 }
 
 /**
@@ -172,7 +182,7 @@ export interface Lootable {
  * (of the player's layer) first, then furniture (on the ground floor). A bed in the player's
  * cell means sleep at Lights Out.
  */
-export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = []): Target {
+export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0): Target {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   // Facing it is worth a third of a tile.
@@ -203,6 +213,36 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     if (sc < bestScore) {
       bestScore = sc;
       best = { kind: 'pockets', index: pocketOf(w, who), who };
+    }
+  });
+  // Someone to talk to (inmates up and about, not fighting), a little behind furniture in reach.
+  for (let who = 0; who < talkers && who < people.length; who++) {
+    const o = people[who];
+    if (o.ko > 0 || (o.angry ?? 0) > 0) continue;
+    const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));
+    if (d > TALK_REACH || !lineOfSight(w, b.x, b.z, o.body.x, o.body.z)) continue;
+    // Someone the player looks straight at wins over furniture at their elbow.
+    const dx = o.body.x - b.x;
+    const dz = o.body.z - b.z;
+    const ahead = fx * dx + fz * dz;
+    const straight = ahead > 0 && ahead * ahead * 2 >= (dx * dx + dz * dz) * 1024 * 1024;
+    const sc = score(d, o.body.x, o.body.z) + UNIT / 4 - (straight ? UNIT : 0);
+    if (sc < bestScore) {
+      bestScore = sc;
+      best = { kind: 'person', who };
+    }
+  }
+  w.props.forEach((p, index) => {
+    const use = FIXTURES[p.kind];
+    if (!use) return;
+    const dx = Math.max(p.x * UNIT - b.x, 0, b.x - (p.x + p.w) * UNIT);
+    const dz = Math.max(p.z * UNIT - b.z, 0, b.z - (p.z + p.d) * UNIT);
+    const d = Math.max(dx, dz);
+    if (d > REACH) return;
+    const sc = score(d, (p.x + p.w / 2) * UNIT, (p.z + p.d / 2) * UNIT);
+    if (sc < bestScore) {
+      bestScore = sc;
+      best = { kind: 'fixture', index, use };
     }
   });
   containersOf(w).forEach((c, index) => {

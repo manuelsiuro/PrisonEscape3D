@@ -144,6 +144,74 @@ function markTexture(ch: string): THREE.CanvasTexture {
   return t;
 }
 
+/**
+ * Badges over inmates' heads (GDD §13.2: "!" and "$" over inmates): a favor on offer, one
+ * done (hand it in), a merchant open for business, the letter the player carries for them,
+ * a follower. Drawn shapes, not font glyphs, so they look the same everywhere.
+ */
+export type BadgeKind = '' | 'favor' | 'done' | 'shop' | 'mail' | 'ally';
+const BADGE_COLORS: Record<Exclude<BadgeKind, ''>, string> = { favor: '#ffc23d', done: '#42c97a', shop: '#3fbf6f', mail: '#4aa3ff', ally: '#29b6c8' };
+const badgeTextures = new Map<string, THREE.CanvasTexture>();
+function badgeTexture(kind: Exclude<BadgeKind, ''>): THREE.CanvasTexture {
+  let t = badgeTextures.get(kind);
+  if (t) return t;
+  const c = document.createElement('canvas');
+  c.width = c.height = 96;
+  const g = c.getContext('2d')!;
+  // A rounded tag with a little point under it, like a speech bubble.
+  g.fillStyle = BADGE_COLORS[kind];
+  g.strokeStyle = 'rgba(10, 20, 30, 0.85)';
+  g.lineWidth = 6;
+  g.beginPath();
+  g.roundRect(14, 8, 68, 64, 18);
+  g.moveTo(40, 72);
+  g.lineTo(48, 86);
+  g.lineTo(56, 72);
+  g.fill();
+  g.stroke();
+  g.fillStyle = BADGE_COLORS[kind];
+  g.fillRect(38, 62, 20, 10);
+  g.fillStyle = '#fff';
+  g.strokeStyle = '#fff';
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  if (kind === 'favor' || kind === 'shop') {
+    g.font = '900 52px Fredoka, system-ui, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(kind === 'favor' ? '!' : '$', 48, 42);
+  } else if (kind === 'done') {
+    g.lineWidth = 9;
+    g.beginPath();
+    g.moveTo(31, 41);
+    g.lineTo(43, 53);
+    g.lineTo(65, 29);
+    g.stroke();
+  } else if (kind === 'mail') {
+    g.fillRect(26, 25, 44, 32);
+    g.strokeStyle = BADGE_COLORS.mail;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(28, 27);
+    g.lineTo(48, 43);
+    g.lineTo(68, 27);
+    g.stroke();
+  } else {
+    g.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const r = k % 2 ? 11 : 24;
+      const a = -Math.PI / 2 + (k * Math.PI) / 5;
+      g.lineTo(48 + Math.cos(a) * r, 42 + Math.sin(a) * r);
+    }
+    g.closePath();
+    g.fill();
+  }
+  t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  badgeTextures.set(kind, t);
+  return t;
+}
+
 const dropMaterial = new THREE.MeshBasicMaterial({ color: 0xc8ecff, transparent: true, opacity: 0.8, depthWrite: false });
 const dropGeometry = new THREE.BoxGeometry(0.035, 0.24, 0.035);
 /** The spray under a shower head: a faint cone of water. */
@@ -206,6 +274,12 @@ export class Character {
   private readonly markSprite: THREE.Sprite;
   private markShown = '';
   private markAge = 0;
+  /** The badge over the head (favor, shop, mail, follower), and how long it has shown. */
+  private readonly badgeSprite: THREE.Sprite;
+  private badgeShown: BadgeKind = '';
+  private badgeAge = 0;
+  /** A training rep: the arms pump (1, easing to 0). */
+  private pumped = 0;
   /** The silhouette material (the player only). */
   private ghost: THREE.MeshBasicMaterial | null = null;
   /** Standing under a shower head (water falls only there). */
@@ -351,6 +425,10 @@ export class Character {
     this.markSprite.renderOrder = 30;
     this.markSprite.position.y = 1.85;
     this.root.add(this.markSprite);
+    this.badgeSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false }));
+    this.badgeSprite.visible = false;
+    this.badgeSprite.renderOrder = 29;
+    this.root.add(this.badgeSprite);
     // At a meal: a tray on the table in front.
     this.tray = new THREE.Mesh(
       merge([
@@ -419,6 +497,32 @@ export class Character {
     this.markSprite.position.y = 1.85 + (motion ? Math.sin(t * 9) * 0.04 : 0);
   }
 
+  /**
+   * The badge over the head ('' hides it): it pops in and bobs gently; a "!" mark (alert)
+   * takes its place while one shows.
+   */
+  badge(kind: BadgeKind, dt: number, motion: boolean) {
+    if (kind !== this.badgeShown) {
+      this.badgeShown = kind;
+      this.badgeAge = 0;
+      if (kind) this.badgeSprite.material.map = badgeTexture(kind);
+      this.badgeSprite.material.needsUpdate = true;
+    }
+    this.badgeAge += dt;
+    const show = !!kind && !this.markSprite.visible && this.lie < 0.5;
+    this.badgeSprite.visible = show;
+    if (!show) return;
+    const t = this.badgeAge;
+    const pop = motion ? Math.min(1, t * 6) * (1 + Math.max(0, 0.3 - t) * 1.4) : 1;
+    this.badgeSprite.scale.setScalar(0.5 * pop);
+    this.badgeSprite.position.y = 1.9 + (motion ? Math.sin(t * 3 + this.offset) * 0.05 : 0);
+  }
+
+  /** A training rep: the arms pump once. */
+  pump() {
+    this.pumped = 1;
+  }
+
   /** A flat copy of every part, drawn only where something stands in front of the character. */
   private addSilhouette(color: number) {
     const ghost = (this.ghost = new THREE.MeshBasicMaterial({
@@ -480,6 +584,7 @@ export class Character {
     this.hit = Math.max(0, this.hit - dt * 3.2);
     this.jab = Math.max(0, this.jab - dt * 4.5);
     this.recoil = Math.max(0, this.recoil - dt * 4);
+    this.pumped = Math.max(0, this.pumped - dt * 3);
     this.at.set(x, this.baseY, z);
     let turn = facing;
     if (ko) {
@@ -558,6 +663,33 @@ export class Character {
       legL = 0.15 - c * 0.6;
       legR = 0.15 + c * 0.6;
       bob = 0;
+    } else if (doing === DOING.WORK) {
+      // At work: hands busy at waist height, a little bent.
+      armLx += (-0.9 + Math.sin(t * 5) * 0.3) * a;
+      armRx += (-0.9 + Math.cos(t * 5) * 0.3) * a;
+      bob -= 0.015 * a;
+    } else if (doing === DOING.LIFT) {
+      // Pressing a weight overhead: up on each rep, slowly down between.
+      const up = this.pumped;
+      armLx += (-2.2 - up * 0.7) * a;
+      armRx += (-2.2 - up * 0.7) * a;
+      armLz -= (0.5 - up * 0.3) * a;
+      armRz += (0.5 - up * 0.3) * a;
+      bob -= (1 - up) * 0.03 * a;
+    } else if (doing === DOING.RUN) {
+      // Running in place on the belt: quicker with each rep.
+      const r = Math.sin(t * (9 + this.pumped * 5)) * 0.8 * a;
+      legL += r;
+      legR -= r;
+      armLx -= r * 0.9;
+      armRx += r * 0.9;
+      bob += Math.abs(Math.cos(t * (9 + this.pumped * 5))) * 0.05 * a;
+    } else if (doing === DOING.READ) {
+      // A book held up in both hands; a page turns on each rep.
+      armLx += -1.25 * a;
+      armRx += (-1.25 - this.pumped * 0.25) * a;
+      armLz -= 0.25 * a;
+      armRz += 0.25 * a;
     } else if (doing === DOING.SHOWER) {
       // Scrubbing the hair.
       armLx += (-2.7 + Math.sin(t * 9) * 0.15) * a;
@@ -590,6 +722,7 @@ export class Character {
       0.08 * this.swing -
       (Math.PI / 2) * this.lie +
       (doing === DOING.SEARCH ? 0.35 * this.act : 0) +
+      (doing === DOING.READ ? 0.12 * this.act : 0) +
       (Math.PI / 2) * 0.92 * this.crawl +
       (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0) +
       (this.jab > 0 ? 0.14 * Math.sin(this.jab * Math.PI) : 0) -
@@ -640,12 +773,12 @@ export class Character {
 
     // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
-    const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || ko;
+    const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || doing >= DOING.WORK || ko;
     if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * 1.1;
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
-    this.head.rotation.x = this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : 0;
+    this.head.rotation.x = this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : 0;
     return stepped;
   }
 
