@@ -6,8 +6,14 @@ export interface Settings {
   sfxVolume: number;
   /** All sound off (the title's switch); the volume is kept for when it comes back. */
   muted: boolean;
-  /** No screen shake or flashes. */
+  /** 0..1: the music, under the effects. */
+  musicVolume: number;
+  /** No camera drift, flashes or animated extras. */
   reducedMotion: boolean;
+  /** The camera jolts on blows, breaks and shots. */
+  shake: boolean;
+  /** First-time tips and the first day's guide. */
+  tips: boolean;
   /** Vibrate on the big moments (phones). */
   haptics: boolean;
   /** Language: auto follows the browser. */
@@ -19,7 +25,10 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   sfxVolume: 0.8,
   muted: false,
+  musicVolume: 0.5,
   reducedMotion: globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+  shake: true,
+  tips: true,
   haptics: true,
   lang: 'auto',
   quality: 'auto',
@@ -34,6 +43,7 @@ export function loadSettings(): Settings {
   if (!['auto', 'en', 'fr'].includes(out.lang)) out.lang = 'auto';
   if (!['auto', 'high', 'low'].includes(out.quality)) out.quality = 'auto';
   out.sfxVolume = Math.min(1, Math.max(0, Number.isFinite(out.sfxVolume) ? out.sfxVolume : DEFAULT_SETTINGS.sfxVolume));
+  out.musicVolume = Math.min(1, Math.max(0, Number.isFinite(out.musicVolume) ? out.musicVolume : DEFAULT_SETTINGS.musicVolume));
   return out;
 }
 
@@ -44,6 +54,11 @@ export function saveSettings(s: Settings) {
 /** Wipes the game's progress; preferences stay. */
 export function resetProgress() {
   for (const k of PROGRESS_KEYS) removeKey(k);
+}
+
+/** Forgets the tips already shown (they show again from the next game). */
+export function resetTips() {
+  removeKey(KEYS.seen);
 }
 
 /** One-time things already shown on this device (hints, intro cards), by name. */

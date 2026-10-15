@@ -17,12 +17,17 @@ export const KEYS = {
   // Progress.
   /** Escapes per prison (records.ts): the routes found and the quickest. */
   escapes: `${PREFIX}.escapes`,
+  /** Saved games (saves.ts): the run in progress (Continue) and three slots. */
+  saveAuto: `${PREFIX}.save.auto`,
+  save1: `${PREFIX}.save.1`,
+  save2: `${PREFIX}.save.2`,
+  save3: `${PREFIX}.save.3`,
 } as const;
 
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS];
 
 /** The keys "Reset progress" wipes. */
-export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes];
+export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3];
 
 export function readText(key: StorageKey): string | null {
   try {

@@ -23,7 +23,7 @@ import { maxHealth } from '../src/sim/systems/combat';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_W } from '../src/sim/world/World';
-import { Bot, DIR, n, tileOf } from './bots';
+import { Bot, DIR, n, resumes, tileOf } from './bots';
 import { check } from './assert';
 
 const DAY = 1440 * STEPS_PER_MINUTE;
@@ -33,6 +33,10 @@ function report(name: string, bot: Bot) {
   console.log(`== ${name}`);
   for (const l of bot.log) console.log(`  ${l}`);
   const [walls, dug, guards, cash] = st.tally;
+  // Saved and loaded at four points of the run (the last two in the escape itself), the game ends the same.
+  const at = resumes(bot, [0.5, 0.9, 0.98, 0.995]);
+  console.log(`  saved and loaded at ${at.join(', ')}`);
+  check(at.every((a) => a.endsWith('resumes')), `${name}: a game saved and loaded plays on exactly as before`);
   console.log(`  → ${st.escaped ? `out ${bot.time} by ${ESCAPES[st.via]}` : `still inside, ${bot.time}, in the ${bot.sim.playerZone}`}; heat peak ${bot.heatPeak}%; walls ${walls}, tunnel tiles ${dug}, guards out cold ${guards}, cash $${cash}`);
 }
 

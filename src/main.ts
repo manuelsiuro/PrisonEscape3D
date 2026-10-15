@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import './styles/index.css';
 import { PRISONS } from './content/prisons';
-import type { PrisonDef } from './content/prisons/types';
 import { ROUTINE } from './content/routine';
 import { ZONES } from './content/zones';
 import { Autopilot } from './sim/ai/autopilot';
@@ -25,7 +24,7 @@ import { SolitaryPanel } from './ui/solitary';
 import { tileOfBody } from './sim/systems/movement';
 import { CHOCOLATE_ENERGY, KO_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_SECOND, THROW_RANGE, UNIT, WALK_SPEED } from './sim/tuning';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
-import { TILE } from './sim/world/tiles';
+import { TILE, TILE_INFO } from './sim/world/tiles';
 import { climbTarget, DIRT, facesProp, ladderFootOf, preferClimb, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from './sim/systems/security';
 import { ToolControls, type ToolView } from './ui/tool';
@@ -39,6 +38,7 @@ import { Sound } from './audio/Sound';
 import { hasSeen, loadSettings, markSeen, saveSettings } from './game/settings';
 import { migrateStorage } from './game/storage';
 import { MOBILE, TOUCH, h } from './ui/dom';
+import { icon } from './ui/icons';
 import { Hud, routineName, routinePlace, type HudState } from './ui/hud';
 import { Hint } from './ui/hint';
 import { Banner } from './ui/banner';
@@ -50,6 +50,11 @@ import type { Key } from './i18n';
 import { showTitle } from './ui/screens/title';
 import { showPause } from './ui/screens/pause';
 import { showSettings } from './ui/screens/settings';
+import { showHelp } from './ui/screens/help';
+import { saveWhen, showSaves } from './ui/screens/saves';
+import { ask } from './ui/screens/ask';
+import { FirstDay } from './ui/coach';
+import { ALL_SLOTS, deleteSave, loadSave, readSave, writeSave, type SlotId } from './game/saves';
 import { registerServiceWorker } from './app/pwa';
 import { buzz, setHaptics } from './app/haptics';
 import { currentLang, setLang, t } from './i18n';
@@ -86,7 +91,9 @@ function applySettings() {
   setLang(settings.lang);
   setHaptics(settings.haptics);
   sound.setVolume(settings.muted ? 0 : settings.sfxVolume);
+  sound.setMusicVolume(settings.muted ? 0 : settings.musicVolume);
   view.reducedMotion = settings.reducedMotion;
+  view.shakeOn = settings.shake;
   document.body.classList.toggle('reduced-motion', settings.reducedMotion);
   view.setQuality(TIERS[tierFor()]);
   saveSettings(settings);
@@ -134,6 +141,8 @@ interface Game {
   over: boolean;
   /** Each guard's own key (item number): the view hangs it on the belt while it's in the guard's pockets. */
   guardKeys: number[];
+  /** The game in progress was last written to storage successfully. */
+  saved: boolean;
 }
 let game: Game | null = null;
 let acc = 0;
@@ -474,6 +483,7 @@ function announce(e: SimEvent, sim: Sim) {
       break;
     case 'shocked':
       sound.zap();
+      view.shock();
       buzz('lockdown');
       itemsUI.closePanels();
       game?.pilot.stop();
@@ -801,7 +811,7 @@ function coachOnce(name: string, key: Key, params?: Record<string, string | numb
   // Asked every frame for some tips: storage is read once per tip, not every frame.
   if (tipsAsked.has(name)) return;
   tipsAsked.add(name);
-  if (hasSeen(name)) return;
+  if (!settings.tips || hasSeen(name)) return;
   markSeen(name);
   banner.toast(t(key, params), 'info', 7000);
 }
@@ -814,8 +824,40 @@ function fadeIn() {
   veil.addEventListener('animationend', () => veil.remove());
 }
 
-function startGame(prison: PrisonDef) {
-  const sim = new Sim(prison, Date.now() & 0x7fffffff);
+// ------------------------------------------------------------------ saves
+const savedMark = h('div', 'saved-mark', `${icon('save', 14)}<span></span>`);
+document.body.append(savedMark);
+let savedMarkTimer = 0;
+/** "Game saved" for a moment in the corner (the autosaves at 08:00 and on falling asleep). */
+function flashSaved() {
+  savedMark.querySelector('span')!.textContent = t('toast.autosaved');
+  savedMark.classList.add('on');
+  clearTimeout(savedMarkTimer);
+  savedMarkTimer = window.setTimeout(() => savedMark.classList.remove('on'), 1800);
+}
+
+/** Writes the game in progress (never once it's over: an escape ends the run). */
+function autosave(g: Game, show = false) {
+  if (g.over) return;
+  g.saved = writeSave('auto', g.rec.sim);
+  if (g.saved && show) flashSaved();
+}
+
+/** The first day's guide; done or skipped, it's seen, and the help tip follows. */
+const firstDay = new FirstDay(
+  hud.el,
+  () => {
+    markSeen('guide');
+    coachOnce('help', TOUCH ? 'hint.help' : 'hint.helpKeys');
+  },
+  click,
+);
+
+/**
+ * Into a game: a new one, or one loaded from a save (`resumed`: no day-one welcome, the guide
+ * stays away, a "welcome back" instead).
+ */
+function startGame(sim: Sim, resumed = false) {
   view.setWorld(sim.world);
   // Start a little wide and settle in on the player.
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
@@ -841,7 +883,9 @@ function startGame(prison: PrisonDef) {
     ladderFoot: ladderFootOf(sim.world),
     over: false,
     guardKeys: sim.prison.guards.map((d) => itemNumber(`key_${d.key}`)),
+    saved: false,
   };
+  tipsAsked.clear();
   itemsUI.show(true);
   tools.show(true);
   combatUI.show(true);
@@ -854,11 +898,22 @@ function startGame(prison: PrisonDef) {
   sound.ambience(true);
   fadeIn();
   document.body.classList.add('is-playing');
-  // Day 1 opens on roll call: the bell and the banner, once the fade is over.
   const g = game;
   const later = (ms: number, f: () => void) => startTimers.push(window.setTimeout(() => game === g && !g.paused && f(), ms));
+  if (resumed) {
+    // Back where they left: the block they're in, and when.
+    later(500, () => banner.show(routineName(sim.state.routine), t('toast.loaded', { when: `${t('hud.day', { n: sim.clock.day })} · ${formatTime(sim.clock)}` })));
+    // A loaded game is the game in progress from now on.
+    autosave(g);
+    // Left on the first day before the guide was through: it picks up where the day is.
+    if (settings.tips && !hasSeen('guide') && sim.clock.day === 1) later(3000, () => firstDay.start());
+    return;
+  }
+  // Day 1 opens on roll call: the bell and the banner, once the fade is over.
   later(700, () => announce({ type: 'routine', routine: sim.state.routine }, sim));
-  if (!hasSeen('walk')) {
+  // The first game: the guide through the first day (once; again when the tips are reset).
+  if (settings.tips && !hasSeen('guide')) later(5200, () => firstDay.start());
+  if (settings.tips && !hasSeen('walk')) {
     later(4600, () => hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]));
   }
 }
@@ -887,11 +942,30 @@ async function pause() {
   game.speed = 1;
   controls.enabled = false;
   controls.reset();
+  // Paused is saved: a phone may close the tab from here.
+  autosave(game);
+  let note = '';
   for (;;) {
-    const choice = await showPause(click);
+    const choice = await showPause(click, game.saved, !game.over, note);
+    note = '';
     if (!game) return;
     if (choice === 'settings') {
       await showSettings(settings, applySettings, click);
+      continue;
+    }
+    if (choice === 'help') {
+      await showHelp(click);
+      continue;
+    }
+    if (choice === 'save') {
+      const slot = await showSaves('save', click);
+      if (slot !== null && game) {
+        const ok = writeSave(slot, game.rec.sim);
+        if (ok) {
+          note = t('toast.saved', { n: slot });
+          sound.chime();
+        } else banner.toast(t('toast.saveFailed'), 'bad');
+      }
       continue;
     }
     if (choice === 'resume') {
@@ -905,8 +979,26 @@ async function pause() {
   endGame();
 }
 
+/** How to play over the game (H): the game waits while it's open. */
+async function openHelp() {
+  const g = game;
+  if (!g || g.paused) return;
+  click();
+  g.paused = true;
+  controls.enabled = false;
+  controls.reset();
+  tools.release();
+  await showHelp(click);
+  if (game !== g) return;
+  g.paused = false;
+  controls.enabled = true;
+  last = performance.now();
+}
+
 /** Back to the title: everything the game put up comes down. */
 function endGame() {
+  if (game) autosave(game);
+  firstDay.stop();
   game = null;
   for (const id of startTimers) clearTimeout(id);
   startTimers = [];
@@ -952,6 +1044,10 @@ async function escaped() {
   // Kept on this device: the way out joins the prison's list, the quickest is remembered.
   const via = ESCAPES[st.via];
   const rec = recordEscape(sim.prison.id, via, clock.day, Math.floor(st.step / STEPS_PER_MINUTE));
+  // The run is over: nothing left to continue (games kept in slots stay).
+  deleteSave('auto');
+  firstDay.stop();
+  sound.music('title');
   // A moment to see the road under their feet before the card.
   await new Promise((r) => setTimeout(r, 900));
   if (game !== g) return;
@@ -1007,6 +1103,7 @@ addEventListener('keydown', (e) => {
     click();
     toggleProfile();
   }
+  if (e.code === 'KeyH') openHelp();
   // Training (GDD §3.2): left and right in turn fill the bar.
   if (g.rec.sim.state.train >= 0 && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
@@ -1043,6 +1140,8 @@ addEventListener('blur', () => tools.release());
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && game && !game.paused) pause();
 });
+// The tab closing: one last save.
+addEventListener('pagehide', () => game && autosave(game));
 
 const NO_OP: [number, number, number] = [0, 0, 0];
 const USE_OP: [number, number, number] = [OP.USE, 0, 0];
@@ -1637,6 +1736,9 @@ function frame(now: number) {
           g.prev.x = p.x;
           g.prev.z = p.z;
         }
+        // Saved (GDD §2) on falling asleep in bed, and every morning at 08:00.
+        if ((e.type === 'sleep' && e.on) || (e.type === 'routine' && ROUTINE[e.routine].id === 'rollCall')) autosave(g, true);
+        if (e.type === 'pickup') pickedUp = true;
       }
     }
     if (acc > 1) acc = 0;
@@ -1887,7 +1989,29 @@ function frame(now: number) {
   for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
   hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
   hud.update(clock, zone, hudState);
+  // The music follows the danger and the hour; the ambience, where the player is.
+  const chased = st.lockdown || st.heat >= 80 || st.guards.some((x) => x.mode === GUARD.CHASE);
+  const night = ROUTINE[st.routine].id === 'lightsOut' || st.sleeping;
+  sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
+  const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
+  sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
+  // The first day's guide: what the player has done, read from the game.
+  if (firstDay.active) {
+    const open = st.items.open >= 0 ? containersOf(sim.world)[st.items.open] : undefined;
+    coachState.routine = ROUTINE[st.routine].id;
+    coachState.attended = st.attended;
+    coachState.openMine = !!open?.mine && open.prop.kind === 'desk';
+    coachState.openOther = !!open && !open.mine;
+    coachState.pickedUp = pickedUp;
+    coachState.craftOpen = itemsUI.craftIsOpen;
+    coachState.boardOpen = board.isOpen;
+    firstDay.update(coachState, dt, g.paused || st.sleeping || st.ko > 0 || st.solitary > 0 || itemsUI.panelOpen || socialOpen());
+  }
+  pickedUp = false;
 }
+/** Picked something up since the last frame (for the guide). */
+let pickedUp = false;
+const coachState = { routine: '', attended: false, openMine: false, openOther: false, pickedUp: false, craftOpen: false, boardOpen: false };
 
 // The title shows the first prison drifting by.
 view.setWorld(new Sim(PRISONS[0]).world);
@@ -1896,33 +2020,78 @@ requestAnimationFrame(frame);
 // ------------------------------------------------------------------ flows
 async function titleFlow() {
   for (;;) {
+    sound.music('title');
+    showUpdate();
     const again = playAgain;
     playAgain = false;
     const record = recordOf(PRISONS[0].id);
+    const resume = readSave('auto');
     const choice = again
       ? 'play'
       : await showTitle(
-      {
-        prisonName: t(`prison.${PRISONS[0].id}` as 'prison.center-perks'),
-        record: record.routes.length ? t('title.record', { n: record.routes.length, of: ROUTES.length }) : '',
-        muted: settings.muted,
-        toggleSound: () => {
-          settings.muted = !settings.muted;
-          if (!settings.muted && settings.sfxVolume === 0) settings.sfxVolume = 0.8;
-          applySettings();
-          return settings.muted;
-        },
-      },
-      click,
-    );
+          {
+            prisonName: t(`prison.${PRISONS[0].id}` as 'prison.center-perks'),
+            record: record.routes.length ? t('title.record', { n: record.routes.length, of: ROUTES.length }) : '',
+            resume: resume ? saveWhen(resume) : undefined,
+            saves: ALL_SLOTS.some((k) => readSave(k)),
+            muted: settings.muted,
+            toggleSound: () => {
+              settings.muted = !settings.muted;
+              if (!settings.muted && settings.sfxVolume === 0) settings.sfxVolume = 0.8;
+              applySettings();
+              return settings.muted;
+            },
+          },
+          click,
+        );
+    updateCard?.remove();
     if (choice === 'settings') {
-      await showSettings(settings, applySettings, click);
+      await showSettings(settings, applySettings, click, true);
       continue;
     }
-    startGame(PRISONS[0]);
+    if (choice === 'help') {
+      await showHelp(click);
+      continue;
+    }
+    let sim: Sim | null = null;
+    if (choice === 'play') {
+      // A new game replaces the one in progress: asked first (games in slots stay).
+      if (!again && resume && !(await ask(t('title.newSure', { when: saveWhen(resume) }), t('title.newYes'), click))) continue;
+      sim = new Sim(PRISONS[0], Date.now() & 0x7fffffff);
+    } else {
+      const slot: SlotId | null = choice === 'continue' ? 'auto' : await showSaves('load', click);
+      if (slot === null) continue;
+      const f = readSave(slot);
+      sim = f && loadSave(f);
+      if (!sim) {
+        banner.toast(t('toast.loadFailed'), 'bad');
+        continue;
+      }
+    }
+    startGame(sim, choice !== 'play');
     await new Promise<void>((resolve) => (quit = resolve));
     view.setWorld(new Sim(PRISONS[0]).world);
   }
+}
+
+/** A new version waiting (the installed app): offered on the title, never mid-game. */
+let update: { version: string | null; restart: () => void } | null = null;
+let updateCard: HTMLElement | null = null;
+function showUpdate() {
+  if (!update || game) return;
+  updateCard?.remove();
+  const u = update;
+  updateCard = h(
+    'div',
+    'update-card',
+    `${icon('star', 18)}<span></span><button class="big-btn primary">${icon('replay', 16)}${t('update.restart')}</button>`,
+  );
+  updateCard.querySelector('span')!.textContent = u.version ? t('update.ready', { v: u.version }) : t('update.readyNoVersion');
+  updateCard.querySelector('button')!.onclick = () => {
+    click();
+    u.restart();
+  };
+  document.body.append(updateCard);
 }
 
 titleFlow();
@@ -1930,6 +2099,9 @@ titleFlow();
 setTimeout(() => warmIcons(), 1200);
 // The game started: the boot guard in index.html stands down.
 (window as { __pe3dBooted?: boolean }).__pe3dBooted = true;
-registerServiceWorker(() => {});
+registerServiceWorker((version, restart) => {
+  update = { version, restart };
+  showUpdate();
+});
 // Dev only: the running game, for probing from the browser console.
-if (import.meta.env.DEV) Object.assign(window, { __game: () => game, __view: view, __renderer: renderer });
+if (import.meta.env.DEV) Object.assign(window, { __game: () => game, __view: view, __renderer: renderer, __sound: sound });

@@ -1,0 +1,637 @@
+/* ------------------------------------------------------------ saved games (P8) */
+.saves-card {
+  width: min(420px, 100%);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  text-align: left;
+}
+
+.saves-card .card-note {
+  margin: 0 0 12px;
+}
+
+.save-list {
+  display: grid;
+  gap: 8px;
+}
+
+.save-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  animation: card-in 0.35s var(--spring) both;
+}
+
+.save-row:nth-child(2) { animation-delay: 0.04s; }
+.save-row:nth-child(3) { animation-delay: 0.08s; }
+.save-row:nth-child(4) { animation-delay: 0.12s; }
+
+.save-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 62px;
+  padding: 8px 12px 8px 8px;
+  border-radius: 16px;
+  text-align: left;
+  background: #f2f5f9;
+  box-shadow: inset 0 0 0 1px rgba(18, 35, 58, 0.06);
+  transition: transform 0.18s var(--spring), background 0.2s;
+}
+
+.save-main:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.save-main:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.save-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: white;
+  background: linear-gradient(150deg, var(--steel), var(--steel-2));
+}
+
+.save-row.empty .save-ic {
+  color: var(--ink-soft);
+  background: #e2e7ee;
+}
+
+.save-row:first-child .save-ic {
+  background: linear-gradient(150deg, var(--orange), var(--orange-2));
+}
+
+.save-row.empty:first-child .save-ic {
+  background: #e2e7ee;
+}
+
+.save-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.save-text b {
+  font: 600 16px var(--font-display);
+}
+
+.save-text small {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-soft);
+}
+
+.save-text .save-ago {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.save-row.armed .save-main {
+  background: #fff1e6;
+  box-shadow: inset 0 0 0 2px var(--orange);
+}
+
+.save-row.armed .save-ago {
+  font-weight: 700;
+  color: var(--orange-2);
+  opacity: 1;
+}
+
+.save-del {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 48px;
+  padding: 0 12px;
+  border-radius: 16px;
+  color: var(--ink-soft);
+  background: #f2f5f9;
+  transition: background 0.2s, color 0.2s;
+}
+
+.save-del.armed {
+  color: white;
+  background: #e5484d;
+  font: 700 13px var(--font-ui);
+}
+
+/* ------------------------------------------------------------ title (P8): help and settings side by side */
+.title-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.title-row .menu-btn {
+  min-width: 0;
+}
+
+.title-row .menu-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------ pause (P8) */
+.pause-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: -6px 0 16px;
+}
+
+.pause-links .link-btn {
+  margin: 0;
+}
+
+.card-note .ic {
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: -2px;
+  color: #1f9d63;
+}
+
+/* ------------------------------------------------------------ how to play (P8) */
+.help-card {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: min(760px, calc(100dvh - 24px));
+  padding: 20px 20px 12px;
+  text-align: left;
+}
+
+.help-tabs {
+  flex: none;
+  margin: 4px 0 8px;
+}
+
+.help-tabs button {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.help-body {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -8px;
+  padding: 2px 8px 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+.help-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #edf0f4;
+  animation: card-in 0.3s var(--spring) both;
+}
+
+.help-row:last-of-type {
+  border-bottom: 0;
+}
+
+.help-row h3 {
+  margin: 1px 0 3px;
+  font: 600 16px var(--font-display);
+}
+
+.help-row p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.help-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  color: white;
+  background: linear-gradient(150deg, var(--tone), color-mix(in srgb, var(--tone) 70%, black));
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--tone) 80%, transparent);
+}
+
+.help-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 6px;
+  font: 600 16px var(--font-display);
+}
+
+.help-day {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help-day li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.help-day li:nth-child(odd) {
+  background: #f4f6f9;
+}
+
+.help-day time {
+  flex: none;
+  width: 44px;
+  font: 700 13px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.help-day span {
+  flex: 1;
+  min-width: 0;
+}
+
+.help-day .must {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: 700 11px var(--font-ui);
+  font-style: normal;
+  color: #8a5a00;
+  background: #ffefc6;
+}
+
+.help-day .must.lock {
+  color: white;
+  background: #e5484d;
+}
+
+.help-device {
+  margin: 4px 0 10px;
+}
+
+.help-device button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.help-keys {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help-keys li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.help-keys kbd {
+  flex: none;
+  min-width: 92px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font: 700 12.5px var(--font-ui);
+  text-align: center;
+  color: var(--ink);
+  background: #eef1f5;
+  box-shadow: inset 0 -2px 0 #d3dae3;
+}
+
+.help-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: white;
+  background: rgba(18, 24, 36, 0.82);
+}
+
+.help-foot {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------ settings (P8) */
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 100%);
+  max-height: calc(100dvh - 24px);
+}
+
+.settings-scroll {
+  min-height: 0;
+  margin: 0 -24px -24px;
+  padding: 0 24px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.set-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.set-name .ic {
+  color: var(--ink-soft);
+}
+
+.set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #edf0f4;
+}
+
+.set-actions .link-btn {
+  margin: 0;
+}
+
+.link-btn.danger.armed {
+  color: white;
+  background: #e5484d;
+}
+
+.link-btn.done {
+  color: #1f7a4f;
+  background: #dcf5e8;
+}
+
+/* Landscape phones: the rows tighten so more fit. */
+@media (max-height: 500px) {
+  .settings-card {
+    padding: 16px 20px;
+  }
+  .settings-scroll {
+    margin: 0 -20px -16px;
+    padding: 0 20px 14px;
+  }
+  .set-row {
+    min-height: 44px;
+  }
+}
+
+/* ------------------------------------------------------------ the first day's guide (P8) */
+.coach {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: min(420px, 100%);
+  margin: 8px auto 0;
+  padding: 7px 8px 7px 7px;
+  border-radius: 16px;
+  color: white;
+  background: rgba(18, 24, 36, 0.82);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 194, 61, 0.35);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+  animation: card-in 0.4s var(--spring) both;
+}
+
+.coach-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: var(--ink);
+  background: linear-gradient(150deg, #ffd66b, var(--gold));
+  transition: background 0.25s, transform 0.3s var(--spring);
+}
+
+.coach.done .coach-ic {
+  color: white;
+  background: linear-gradient(150deg, #43d18e, #1f9d63);
+  transform: scale(1.12);
+}
+
+.coach.done .coach-text b {
+  opacity: 0.6;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.coach.finish .coach-ic {
+  background: linear-gradient(150deg, var(--orange), var(--orange-2));
+  color: white;
+}
+
+.coach-text {
+  display: grid;
+  min-width: 0;
+}
+
+.coach-text small {
+  font: 700 10.5px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.coach-text b {
+  font: 600 14px/1.3 var(--font-ui);
+  transition: opacity 0.3s;
+}
+
+.coach-skip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 2px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ------------------------------------------------------------ "Game saved" (P8) */
+.saved-mark {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 34;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 7px;
+  border-radius: 999px;
+  font: 700 12px var(--font-ui);
+  color: white;
+  background: rgba(18, 24, 36, 0.72);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+  pointer-events: none;
+}
+
+.saved-mark .ic {
+  color: #5fe0a0;
+}
+
+.saved-mark.on {
+  opacity: 1;
+  transform: none;
+}
+
+/* Touch: bottom left is the stick's; the mark sits higher. */
+body.touch .saved-mark {
+  bottom: auto;
+  top: 50%;
+}
+
+/* ------------------------------------------------------------ a question (P8) */
+.ask-card p {
+  margin: 8px 0 20px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------ update ready (P8) */
+.update-card {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 8px 8px 8px 14px;
+  border-radius: 18px;
+  font-weight: 600;
+  background: white;
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+  animation: hint-in 0.45s var(--spring) both;
+}
+
+.update-card .ic {
+  color: var(--orange);
+}
+
+.update-card .big-btn {
+  height: 40px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+.help-day .must.job {
+  color: #6b4a00;
+  background: #ffe2a3;
+}
+
+/* Landscape phones: the logo on the left, the menu beside it (everything above the fold). */
+@media (max-height: 520px) and (orientation: landscape) {
+  .title-screen {
+    padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+  }
+  .title-inner {
+    display: grid;
+    grid-template-columns: 1fr minmax(300px, 380px);
+    grid-template-areas: 'logo actions' 'foot actions';
+    align-items: center;
+    column-gap: 28px;
+    row-gap: 12px;
+    width: min(860px, 100%);
+  }
+  .title-inner .logo {
+    grid-area: logo;
+    align-self: end;
+  }
+  .title-inner .title-actions {
+    grid-area: actions;
+    gap: 8px;
+  }
+  .title-inner .title-foot {
+    grid-area: foot;
+    align-self: start;
+    justify-self: center;
+  }
+  .logo-mark {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 8px;
+    border-radius: 18px;
+  }
+  .logo-mark .ic {
+    width: 30px;
+    height: 30px;
+  }
+  .logo h1 {
+    font-size: clamp(36px, 7.5vw, 58px);
+  }
+  .tagline {
+    margin-top: 8px;
+    font-size: 16px;
+  }
+  .title-actions .hero-card {
+    min-height: 58px;
+  }
+  .title-actions .menu-btn {
+    height: 48px;
+  }
+}
+
+@media (max-height: 520px) {
+  .help-card {
+    padding: 12px 16px 8px;
+  }
+  .help-card .settings-head h2 {
+    font-size: 22px;
+  }
+  .help-card .settings-head .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .help-tabs {
+    margin: 2px 0 4px;
+  }
+}

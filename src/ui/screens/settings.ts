@@ -1,4 +1,4 @@
-import type { Settings } from '../../game/settings';
+import { resetProgress, resetTips, type Settings } from '../../game/settings';
 import { t, type Key } from '../../i18n';
 import { h } from '../dom';
 import { icon } from '../icons';
@@ -16,35 +16,52 @@ const LANGS: Choice<'lang'> = [
   ['fr', 'settings.french'],
 ];
 
+type Toggle = 'haptics' | 'reducedMotion' | 'shake' | 'tips';
+
 /**
  * Settings, as a card over the game; every change applies at once through `apply` (sound,
- * motion, graphics, language). Resolves when closed. Vibration only shows where the device
- * can vibrate.
+ * music, motion, graphics, language). Resolves when closed. Vibration only shows where the
+ * device can vibrate. From the title (`fromTitle`), the progress can be wiped (asked twice);
+ * the tips can be shown again from anywhere.
  */
-export function showSettings(settings: Settings, apply: () => void, click: () => void): Promise<void> {
+export function showSettings(settings: Settings, apply: () => void, click: () => void, fromTitle = false): Promise<void> {
   const el = h('div', 'modal');
   const canVibrate = typeof navigator.vibrate === 'function';
-  const toggle = (k: 'haptics' | 'reducedMotion', label: Key) =>
-    `<div class="set-row"><span>${t(label)}</span><button class="switch ${settings[k] ? 'on' : ''}" role="switch" aria-checked="${settings[k]}" data-toggle="${k}" aria-label="${t(label)}"><i></i></button></div>`;
-  const choice = <K extends 'quality' | 'lang'>(k: K, label: Key, options: Choice<K>) =>
-    `<div class="set-row"><span>${t(label)}</span><div class="seg" role="radiogroup" aria-label="${t(label)}">${options
+  /** A button waiting for its second press, and what was just done. */
+  let armed = '';
+  let done = '';
+  const toggle = (k: Toggle, label: Key, ic: string) =>
+    `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><button class="switch ${settings[k] ? 'on' : ''}" role="switch" aria-checked="${settings[k]}" data-toggle="${k}" aria-label="${t(label)}"><i></i></button></div>`;
+  const choice = <K extends 'quality' | 'lang'>(k: K, label: Key, ic: string, options: Choice<K>) =>
+    `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><div class="seg" role="radiogroup" aria-label="${t(label)}">${options
       .map(([v, l]) => `<button role="radio" aria-checked="${settings[k] === v}" class="${settings[k] === v ? 'on' : ''}" data-choice="${k}" data-value="${v}">${t(l)}</button>`)
       .join('')}</div></div>`;
+  const slider = (k: 'sfx' | 'music', label: Key, value: number, ic: string) =>
+    `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><div class="volume"><input type="range" min="0" max="100" step="5" value="${Math.round(value * 100)}" data-volume="${k}" aria-label="${t(label)}"></div></div>`;
   const render = () => {
     el.innerHTML = `<div class="card settings-card">
       <div class="settings-head"><h2>${t('settings.title')}</h2><button class="icon-btn" data-close aria-label="${t('common.close')}">${icon('close')}</button></div>
-      <div class="set-row"><span>${t('settings.sound')}</span><div class="volume">${icon(settings.muted ? 'mute' : 'sound', 18)}<input type="range" min="0" max="100" step="5" value="${settings.muted ? 0 : Math.round(settings.sfxVolume * 100)}" aria-label="${t('settings.sound')}"></div></div>
-      ${canVibrate ? toggle('haptics', 'settings.haptics') : ''}
-      ${toggle('reducedMotion', 'settings.motion')}
-      ${choice('quality', 'settings.quality', QUALITY)}
-      ${choice('lang', 'settings.language', LANGS)}
+      <div class="settings-scroll">
+        ${slider('sfx', 'settings.sound', settings.muted ? 0 : settings.sfxVolume, settings.muted ? 'mute' : 'sound')}
+        ${slider('music', 'settings.music', settings.musicVolume, 'music')}
+        ${canVibrate ? toggle('haptics', 'settings.haptics', 'vibrate') : ''}
+        ${toggle('shake', 'settings.shake', 'bolt')}
+        ${toggle('reducedMotion', 'settings.motion', 'eye')}
+        ${toggle('tips', 'settings.tips', 'bulb')}
+        ${choice('quality', 'settings.quality', 'sun', QUALITY)}
+        ${choice('lang', 'settings.language', 'chat', LANGS)}
+        <div class="set-actions">
+          <button class="link-btn${done === 'tips' ? ' done' : ''}" data-act="tips">${icon(done === 'tips' ? 'check' : 'bulb', 15)}${t(done === 'tips' ? 'settings.tipsReset' : 'settings.resetTips')}</button>
+          ${fromTitle ? `<button class="link-btn danger${armed === 'progress' ? ' armed' : ''}${done === 'progress' ? ' done' : ''}" data-act="progress">${icon(done === 'progress' ? 'check' : 'trash', 15)}${t(done === 'progress' ? 'settings.progressReset' : armed === 'progress' ? 'settings.resetSure' : 'settings.resetProgress')}</button>` : ''}
+        </div>
+      </div>
     </div>`;
   };
   render();
   return new Promise((resolve) => {
     const close = () => {
       click();
-      removeEventListener('keydown', key);
+      removeEventListener('keydown', key, true);
       el.remove();
       resolve();
     };
@@ -58,27 +75,44 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
     el.addEventListener('input', (e) => {
       const range = e.target as HTMLInputElement;
       if (range.type !== 'range') return;
-      settings.sfxVolume = Number(range.value) / 100;
-      settings.muted = settings.sfxVolume === 0;
+      const v = Number(range.value) / 100;
+      if (range.dataset.volume === 'music') settings.musicVolume = v;
+      else {
+        settings.sfxVolume = v;
+        settings.muted = v === 0;
+        el.querySelector('[data-volume="sfx"]')!.closest('.set-row')!.querySelector('.set-name .ic')!.outerHTML = icon(settings.muted ? 'mute' : 'sound', 17);
+      }
       apply();
-      el.querySelector('.volume .ic')!.outerHTML = icon(settings.muted ? 'mute' : 'sound', 18);
     });
     el.addEventListener('change', () => click());
     el.onclick = (e) => {
       const target = e.target as HTMLElement;
       if (target === el || target.closest('[data-close]')) return close();
+      const act = target.closest<HTMLElement>('[data-act]')?.dataset.act;
+      if (act === 'tips') {
+        resetTips();
+        done = 'tips';
+      } else if (act === 'progress') {
+        if (armed === 'progress') {
+          resetProgress();
+          armed = '';
+          done = 'progress';
+        } else armed = 'progress';
+      }
       const tg = target.closest<HTMLElement>('[data-toggle]');
       if (tg) {
-        const k = tg.dataset.toggle as 'haptics' | 'reducedMotion';
+        const k = tg.dataset.toggle as Toggle;
         settings[k] = !settings[k];
       }
       const ch = target.closest<HTMLElement>('[data-choice]');
       if (ch) (settings as unknown as Record<string, string>)[ch.dataset.choice!] = ch.dataset.value!;
-      if (!tg && !ch) return;
+      if (!tg && !ch && !act) return;
       click();
       apply();
-      // Re-render (the language may have changed every label).
+      // Re-render (the language may have changed every label), keeping the scroll.
+      const top = el.querySelector('.settings-scroll')?.scrollTop ?? 0;
       render();
+      el.querySelector('.settings-scroll')!.scrollTop = top;
     };
     document.body.append(el);
   });

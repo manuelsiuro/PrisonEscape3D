@@ -11,7 +11,7 @@ import { ZONES } from '../src/content/zones';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
 import { command, OP, SLOT } from '../src/sim/command';
-import { Sim, type SimEvent } from '../src/sim/Sim';
+import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { itemOf, slot } from '../src/sim/systems/items';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
@@ -29,6 +29,9 @@ export class Bot {
   heatPeak = 0;
   readonly log: string[] = [];
   private readonly events: SimEvent[] = [];
+  /** The state before the first step (after any setup) and every command since: the run, replayable. */
+  start: Snapshot | null = null;
+  readonly cmds: number[] = [];
 
   constructor(prison: PrisonDef, seed: number) {
     this.sim = new Sim(prison, seed);
@@ -50,6 +53,8 @@ export class Bot {
 
   /** One step; notable events go in the log. */
   step(cmd = 0) {
+    this.start ??= this.sim.snapshot();
+    this.cmds.push(cmd);
     this.sim.step(cmd);
     this.heatPeak = Math.max(this.heatPeak, this.st.heat);
     for (const e of this.sim.events) {
@@ -171,6 +176,29 @@ export class Bot {
     const target = ((day - 1) * 1440 + minute - 8 * 60) * STEPS_PER_MINUTE;
     return this.keepRoutine(() => this.st.step >= target, Math.max(0, target - this.st.step) + 1);
   }
+}
+
+/**
+ * Saved and loaded mid-run (GDD §2): the run replayed from its start, saved at each cut (a
+ * fraction of the way), the save written out as JSON and loaded into a fresh game, which plays
+ * the rest of the commands and must end exactly as the run did. Returns where each cut fell.
+ */
+export function resumes(bot: Bot, cuts: readonly number[]): string[] {
+  const end = bot.sim.hash();
+  const replay = new Sim(bot.sim.prison, 1);
+  replay.restore(bot.start!);
+  const at: string[] = [];
+  let k = 0;
+  for (const cut of cuts) {
+    const stop = Math.floor(bot.cmds.length * cut);
+    for (; k < stop; k++) replay.step(bot.cmds[k]);
+    const saved = JSON.parse(JSON.stringify(replay.snapshot())) as Snapshot;
+    const loaded = new Sim(bot.sim.prison, 99);
+    loaded.restore(saved);
+    for (let j = stop; j < bot.cmds.length; j++) loaded.step(bot.cmds[j]);
+    at.push(`day ${replay.clock.day} ${formatTime(replay.clock)} (${replay.playerZone}) ${loaded.hash() === end ? 'resumes' : 'DIVERGES'}`);
+  }
+  return at;
 }
 
 export function describe(e: SimEvent): string {

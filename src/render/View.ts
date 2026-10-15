@@ -8,6 +8,7 @@ import { Security, type SecurityFrame } from './Security';
 import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
+import { Snores, Sparks } from './Particles';
 import { Guide } from './Guide';
 import { itemDef } from '../content/items';
 import { itemGeometry } from './itemModels';
@@ -195,6 +196,10 @@ export class View {
   private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
   private readonly dust = new Dust();
+  private readonly sparks = new Sparks();
+  private readonly snores = new Snores();
+  /** Sleepers' heads this frame ([x, y, z] each), for the snores. */
+  private readonly sleepers: number[] = [];
   private structure: Structure | null = null;
   private security: Security | null = null;
   private riot = false;
@@ -248,6 +253,8 @@ export class View {
   private reps = 0;
   /** No camera drift, idle glances or dust. */
   reducedMotion = false;
+  /** The camera jolts on blows, breaks and shots (a setting; never with reduced motion). */
+  shakeOn = true;
   /** Called when a foot lands, with the ground kind. */
   onStep: (surface: number) => void = () => {};
 
@@ -261,7 +268,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
     this.cup.visible = false;
     this.puddles.count = 0;
     this.puddles.renderOrder = 1;
@@ -397,6 +404,8 @@ export class View {
     }
     if (!this.reducedMotion) {
       this.dust.puff(fx, fz, color, broke ? 14 : 4, y);
+      // Steel on steel: sparks off the fence or the grate.
+      if (action === 'cut' || action === 'unscrew') this.sparks.burst(fx, y, fz, broke ? 16 : 6, 0xffc45a, broke ? 3.4 : 2.4);
       if (broke && action === 'chip') this.dust.puff(fx, fz, 0x8f8a80, 8, y);
       this.shake = Math.max(this.shake, broke ? 1 : 0.35);
     }
@@ -663,6 +672,16 @@ export class View {
       if (!this.world.block[here]) this.doorsOpen.add(here);
       if (f.moving && !this.world.block[ahead]) this.doorsOpen.add(ahead);
     }
+    // Z's over everyone asleep on the ground floor (the player too).
+    this.sleepers.length = 0;
+    if (f.layer === LAYER.GROUND) {
+      const head = (c: Character) => this.sleepers.push(c.root.position.x, c.root.position.y + 0.85, c.root.position.z);
+      if (f.sleeping) head(this.player);
+      f.inmates.forEach((m, k) => m.doing === DOING.SLEEP && this.cast[k] && head(this.cast[k]));
+      f.guards.forEach((g, k) => g.doing === DOING.SLEEP && this.guardCast[k] && head(this.guardCast[k]));
+    }
+    this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
+    this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
     // Cameras, searchlights and snipers belong to the ground floor (from below or in the ducts, out of the picture).
@@ -684,7 +703,19 @@ export class View {
     this.security?.shot(tower, x, z, hit);
     if (this.reducedMotion) return;
     if (hit) this.shake = Math.max(this.shake, 0.8);
-    else this.dust.puff(x + 0.9, z + 0.6, 0x9a8a6a, 10, 0.8);
+    else {
+      this.dust.puff(x + 0.9, z + 0.6, 0x9a8a6a, 10, 0.8);
+      this.sparks.burst(x + 0.9, 0.05, z + 0.6, 7, 0xffe2a0, 2.6);
+    }
+  }
+
+  /** The electric fence bites (GDD §5.5): a shower of blue-white sparks off the player and a hard jolt. */
+  shock() {
+    const p = this.player.root.position;
+    this.shake = Math.max(this.shake, 1);
+    if (this.reducedMotion) return;
+    this.sparks.burst(p.x, 0.9, p.z, 22, 0x9fd8ff, 4);
+    this.sparks.burst(p.x, 1.2, p.z, 10, 0xffffff, 3);
   }
 
   /** A detector arch tripped: its lamps flash. */
@@ -776,8 +807,8 @@ export class View {
     this.camera.position.copy(this.target).add(CAMERA_OFFSET);
     this.camera.lookAt(this.target);
     if (this.shake > 0.001) {
-      // A short jolt on a strike (eased away; reduced motion never sets it).
-      const a = this.shake * 0.06;
+      // A short jolt on a strike, eased away (none with the setting off or reduced motion).
+      const a = this.shakeOn && !this.reducedMotion ? this.shake * 0.06 : 0;
       this.camera.position.x += Math.sin(time * 91) * a;
       this.camera.position.y += Math.cos(time * 77) * a;
       this.shake = Math.max(0, this.shake - dt * 5);

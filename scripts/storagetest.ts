@@ -62,3 +62,39 @@ console.log('storage ok, version', SAVE_VERSION);
   check(recordOf('center-perks').routes.length === 0 && recordOf('center-perks').bestDay === 0, 'a bad record falls back');
   console.log('escape records ok');
 }
+
+// Saved games: written, listed, loaded into a game that plays on; garbage, other prisons and
+// blocked storage read as empty; Reset progress wipes them.
+{
+  const { deleteSave, loadSave, readSave, writeSave } = await import('../src/game/saves');
+  const { resetProgress } = await import('../src/game/settings');
+  const { Sim } = await import('../src/sim/Sim');
+  const { PRISONS } = await import('../src/content/prisons');
+  const sim = new Sim(PRISONS[0], 42);
+  for (let k = 0; k < 20 * 3; k++) sim.step(0);
+  check(readSave('auto') === null, 'no save yet');
+  check(writeSave('auto', sim, 'test') && writeSave(2, sim, 'test'), 'saved');
+  const f = readSave(2)!;
+  check(f.day === 1 && f.minute === 8 * 60 + 3 && f.prison === 'center-perks' && f.game === 'test', 'the save says when and where');
+  const back = loadSave(f)!;
+  check(back.hash() === sim.hash(), 'loaded, the same game');
+  for (let k = 0; k < 400; k++) {
+    sim.step(0);
+    back.step(0);
+  }
+  check(back.hash() === sim.hash(), 'and it plays on the same');
+  mem.set(KEYS.save1, JSON.stringify({ v: 1, day: 'x' }));
+  check(readSave(1) === null, 'a broken save reads as empty');
+  mem.set(KEYS.save1, JSON.stringify({ ...f, prison: 'alcatraz' }));
+  check(readSave(1) === null, 'a save of an unknown prison reads as empty');
+  mem.set(KEYS.save1, JSON.stringify({ ...f, snap: { ...f.snap, prison: 'alcatraz' } }));
+  check(readSave(1) !== null && loadSave(readSave(1)!) === null, 'a save that fails to load gives no game');
+  deleteSave(2);
+  check(readSave(2) === null && readSave('auto') !== null, 'one slot deleted');
+  blocked = true;
+  check(!writeSave(3, sim, 'test') && readSave('auto') === null, 'blocked storage: not saved, nothing read');
+  blocked = false;
+  resetProgress();
+  check(readSave('auto') === null && readSave(1) === null, 'reset progress wipes the saves');
+  console.log('saves ok,', JSON.stringify(f).length < 12000 ? 'under 12 KB' : 'OVER 12 KB');
+}

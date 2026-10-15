@@ -1,5 +1,20 @@
 import { TILE } from '../sim/world/tiles';
 
+export type Mood = 'off' | 'title' | 'day' | 'night' | 'tension';
+export type Scene = 'indoor' | 'outdoorDay' | 'outdoorNight' | 'under';
+
+/** Eighth notes a beat's half: beats a minute for each mood. */
+const TEMPO: Record<Mood, number> = { off: 60, title: 70, day: 88, night: 60, tension: 126 };
+/** The music's loudest, under the effects at full volume. */
+const MUSIC_LEVEL = 0.55;
+/** Chords in semitones above D3 (root first): Dm, Bb, Gm, A. */
+const CHORDS: ReadonlyArray<readonly number[]> = [
+  [0, 0, 3, 7, 10],
+  [-4, -4, 0, 3, 7],
+  [-7, 5, 8, 12, 15],
+  [-5, 7, 11, 14, 17],
+];
+
 /** Soft ground: muffled footsteps. */
 const SOFT = new Set<number>([TILE.GRASS, TILE.DIRT]);
 
@@ -20,6 +35,15 @@ export class Sound {
   private clankTimer = 0;
   private sirenOn = false;
   private sirenNodes: { gain: GainNode; sources: AudioScheduledSourceNode[] } | null = null;
+  /** The music (its own output and volume, under the effects): a mood and a step scheduler. */
+  private musicOut: GainNode | null = null;
+  private musicVolume = 0.5;
+  private mood: Mood = 'off';
+  private musicTimer = 0;
+  private musicNext = 0;
+  private musicStep = 0;
+  /** Where the player is, for the ambience's sounds (birds, crickets, drips, far-off clanks). */
+  private scene: Scene = 'indoor';
 
   constructor() {
     const start = () => {
@@ -30,6 +54,10 @@ export class Sound {
         this.out.gain.value = this.volume;
         this.out.connect(this.ctx.destination);
         this.noise = this.makeNoise();
+        this.musicOut = this.ctx.createGain();
+        this.musicOut.gain.value = this.musicVolume * MUSIC_LEVEL;
+        this.musicOut.connect(this.ctx.destination);
+        if (this.mood !== 'off') this.startMusic();
         if (this.ambienceOn) this.startAmbience();
         if (this.sirenOn) this.startSiren();
       } catch {
@@ -51,6 +79,157 @@ export class Sound {
   setVolume(v: number) {
     this.volume = v;
     if (this.out) this.out.gain.value = v;
+  }
+
+  setMusicVolume(v: number) {
+    this.musicVolume = v;
+    const c = this.ctx;
+    if (c && this.musicOut) this.musicOut.gain.setTargetAtTime(v * MUSIC_LEVEL, c.currentTime, 0.1);
+  }
+
+  // ---------------------------------------------------------------- music
+  /**
+   * The score: one progression in D minor (i–VI–iv–v), played in the mood of the moment.
+   * The title is a slow, warm theme; the day walks (bass, a soft pad, a sparse pluck); Lights
+   * Out is slow pads and a far bell; tension (wanted, a chase, a lockdown) drives a low
+   * ostinato over a ticking hat and a heartbeat. A mood change takes effect on the next
+   * step, so the music never stops to switch.
+   */
+  music(mood: Mood) {
+    if (mood === this.mood) return;
+    const was = this.mood;
+    this.mood = mood;
+    if (mood === 'off') this.stopMusic();
+    else if (was === 'off') this.startMusic();
+  }
+
+  private startMusic() {
+    const c = this.ctx;
+    if (!c || !this.musicOut || this.musicTimer) return;
+    this.musicNext = c.currentTime + 0.1;
+    this.musicStep = 0;
+    this.musicOut.gain.cancelScheduledValues(c.currentTime);
+    this.musicOut.gain.setValueAtTime(0, c.currentTime);
+    this.musicOut.gain.linearRampToValueAtTime(this.musicVolume * MUSIC_LEVEL, c.currentTime + 2);
+    // Schedules a little ahead of the clock (timers in a background tab run late).
+    this.musicTimer = window.setInterval(() => {
+      const ctx = this.ctx!;
+      while (this.musicNext < ctx.currentTime + 0.25) {
+        this.musicBeat(this.musicNext, this.musicStep++);
+        this.musicNext += 60 / TEMPO[this.mood] / 2;
+      }
+    }, 60);
+  }
+
+  private stopMusic() {
+    clearInterval(this.musicTimer);
+    this.musicTimer = 0;
+  }
+
+  /** A note of the score: one oscillator through an envelope (attack, hold, release) into the music. */
+  private note(f: number, at: number, dur: number, type: OscillatorType, gain: number, attack = 0.01, cutoff = 0) {
+    const c = this.ctx;
+    if (!c || !this.musicOut || this.musicVolume === 0 || this.volume === 0) return;
+    const o = c.createOscillator();
+    o.type = type;
+    o.frequency.value = f;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    let node: AudioNode = o;
+    if (cutoff) {
+      const f2 = c.createBiquadFilter();
+      f2.type = 'lowpass';
+      f2.frequency.value = cutoff;
+      node = o.connect(f2);
+    }
+    node.connect(g).connect(this.musicOut);
+    o.start(at);
+    o.stop(at + dur + 0.05);
+  }
+
+  /** Eighth note `k` of the score at time `at`. */
+  private musicBeat(at: number, k: number) {
+    const mood = this.mood;
+    if (mood === 'off') return;
+    const eighth = 60 / TEMPO[mood] / 2;
+    const bar = Math.floor(k / 8);
+    const inBar = k % 8;
+    const chord = CHORDS[Math.floor(bar / 2) % CHORDS.length];
+    const hz = (semi: number) => 146.83 * 2 ** (semi / 12);
+    const r = Math.random();
+    if (mood === 'tension') {
+      // Driving eighths on the root, a fifth on the off-beats of the second bar.
+      this.note(hz(chord[0] - 12), at, eighth * 0.9, 'sawtooth', 0.09, 0.005, 420);
+      if (bar % 2 === 1 && inBar % 2 === 1) this.note(hz(chord[0] - 5), at, eighth * 0.8, 'sawtooth', 0.05, 0.005, 600);
+      // A ticking hat on every eighth, a heartbeat on beats 1 and 2.
+      this.tick(at, inBar % 2 === 0 ? 0.035 : 0.02);
+      if (inBar === 0 || inBar === 1) this.thump(at, inBar === 0 ? 0.3 : 0.18);
+      if (inBar === 0 && bar % 2 === 0) this.pad(chord, at, eighth * 16, 0.025, 500);
+      return;
+    }
+    if (mood === 'day') {
+      // A walking bass (root, fifth, octave), a pad every two bars, a sparse pluck.
+      const walk = [0, -1, 7, -1, 12, -1, 7, 5];
+      if (walk[inBar] >= 0) this.note(hz(chord[0] - 24 + walk[inBar]), at, eighth * 1.6, 'triangle', 0.12, 0.01, 900);
+      if (k % 16 === 0) this.pad(chord, at, eighth * 16, 0.03, 1100);
+      if (inBar % 2 === 0 ? r < 0.3 : r < 0.12) this.note(hz(chord[1 + Math.floor(Math.random() * 3)] + 12), at, eighth * 3, 'triangle', 0.045, 0.004, 2600);
+      return;
+    }
+    // Night and title: long roots and pads, a far bell now and then (the title: a motif).
+    if (inBar === 0 && bar % 2 === 0) {
+      this.note(hz(chord[0] - 24), at, eighth * 16, 'sine', 0.13, 0.4);
+      this.pad(chord, at, eighth * 16, mood === 'title' ? 0.04 : 0.032, mood === 'title' ? 1300 : 800);
+    }
+    if (mood === 'title' && bar % 2 === 0) {
+      // An arpeggio up the chord and back (chord tones only: never a clash).
+      const motif = [2, -1, 3, -1, 4, -1, 3, 2];
+      if (motif[inBar] >= 0) this.note(hz(chord[motif[inBar]] + 12), at, eighth * 3.5, 'triangle', 0.05, 0.01, 3000);
+    } else if (r < (mood === 'title' ? 0.1 : 0.06)) {
+      const f = hz(chord[1 + Math.floor(Math.random() * 3)] + 24);
+      this.note(f, at, eighth * 8, 'sine', 0.03, 0.005);
+      this.note(f * 2.76, at, eighth * 3, 'sine', 0.008, 0.005);
+    }
+  }
+
+  /** A chord held under the rest: two detuned saws a voice, low-passed. */
+  private pad(chord: readonly number[], at: number, dur: number, gain: number, cutoff: number) {
+    for (const semi of chord.slice(1)) {
+      const f = 146.83 * 2 ** (semi / 12);
+      this.note(f, at, dur, 'sawtooth', gain, dur * 0.3, cutoff);
+      this.note(f * 1.006, at, dur, 'sawtooth', gain * 0.7, dur * 0.35, cutoff);
+    }
+  }
+
+  private tick(at: number, gain: number) {
+    const c = this.ctx;
+    if (!c || !this.musicOut || !this.noise) return;
+    const src = c.createBufferSource();
+    src.buffer = this.noise;
+    const f = c.createBiquadFilter();
+    f.type = 'highpass';
+    f.frequency.value = 7000;
+    const g = c.createGain();
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.04);
+    src.connect(f).connect(g).connect(this.musicOut);
+    src.start(at, Math.random());
+    src.stop(at + 0.05);
+  }
+
+  private thump(at: number, gain: number) {
+    const c = this.ctx;
+    if (!c || !this.musicOut) return;
+    const o = c.createOscillator();
+    o.frequency.setValueAtTime(70, at);
+    o.frequency.exponentialRampToValueAtTime(38, at + 0.18);
+    const g = c.createGain();
+    g.gain.setValueAtTime(gain, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+    o.connect(g).connect(this.musicOut);
+    o.start(at);
+    o.stop(at + 0.25);
   }
 
   /** A short tone sliding from f0 to f1 Hz, starting `delay` seconds from now. */
@@ -479,6 +658,11 @@ export class Sound {
     }, 1000);
   }
 
+  /** Where the player is: the ambience's sounds follow from the next one. */
+  setScene(scene: Scene) {
+    this.scene = scene;
+  }
+
   /** The room tone and distant clanks while playing; silence on the title. */
   ambience(on: boolean) {
     if (on === this.ambienceOn) return;
@@ -514,15 +698,35 @@ export class Sound {
     lfo.start();
     this.ambienceSources = [src, lfo];
     const clank = () => {
-      if (!this.ambienceGain) return;
-      // A far-off door or gate: two detuned metallic partials through a narrow band.
-      const base = 180 + Math.random() * 160;
-      this.tone(base, base * 0.97, 0.9, 'square', 0.012, 0, this.ambienceGain);
-      this.tone(base * 2.71, base * 2.6, 0.6, 'triangle', 0.008, 0.02, this.ambienceGain);
-      this.hiss(0.25, 'bandpass', 900, 3, 0.02, this.ambienceGain);
-      this.clankTimer = window.setTimeout(clank, 9000 + Math.random() * 16000);
+      const g = this.ambienceGain;
+      if (!g) return;
+      let wait = 9000 + Math.random() * 16000;
+      if (this.scene === 'outdoorDay') {
+        // Birds: a pair of quick rising chirps.
+        const f = 2400 + Math.random() * 1400;
+        for (let k = 0; k < 2 + Math.floor(Math.random() * 3); k++) this.tone(f, f * 1.35, 0.07, 'sine', 0.018, k * 0.11, g);
+        wait = 2500 + Math.random() * 5000;
+      } else if (this.scene === 'outdoorNight') {
+        // Crickets: a trill of short high pulses.
+        const f = 4300 + Math.random() * 400;
+        for (let k = 0; k < 6; k++) this.tone(f, f, 0.025, 'sine', 0.012, k * 0.045, g);
+        wait = 900 + Math.random() * 2200;
+      } else if (this.scene === 'under') {
+        // A drip in the tunnel, and its echo.
+        const f = 900 + Math.random() * 700;
+        this.tone(f, f * 0.4, 0.09, 'sine', 0.05, 0, g);
+        this.tone(f, f * 0.4, 0.09, 'sine', 0.012, 0.28, g);
+        wait = 1800 + Math.random() * 4000;
+      } else {
+        // A far-off door or gate: two detuned metallic partials through a narrow band.
+        const base = 180 + Math.random() * 160;
+        this.tone(base, base * 0.97, 0.9, 'square', 0.012, 0, g);
+        this.tone(base * 2.71, base * 2.6, 0.6, 'triangle', 0.008, 0.02, g);
+        this.hiss(0.25, 'bandpass', 900, 3, 0.02, g);
+      }
+      this.clankTimer = window.setTimeout(clank, wait);
     };
-    this.clankTimer = window.setTimeout(clank, 5000);
+    this.clankTimer = window.setTimeout(clank, 3000);
   }
 
   private stopAmbience() {
