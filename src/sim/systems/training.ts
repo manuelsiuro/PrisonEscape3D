@@ -73,13 +73,16 @@ export function rep(sim: SimContext, side: number) {
   if (s.reps < 100) return;
   const a = trainsOn(sim, s.train)!;
   s.reps = 0;
-  const was = attr(sim, a);
-  setAttr(sim, a, Math.min(ATTR_MAX, was + TRAIN_GAIN));
+  setAttr(sim, a, Math.min(ATTR_MAX, attr(sim, a) + TRAIN_GAIN));
   s.trained |= 1 << ATTRS.indexOf(a);
   s.energy = Math.max(0, s.energy - (a === 'int' ? STUDY_ENERGY : GYM_ENERGY));
   sim.events.push({ type: 'trained', attr: a, value: attr(sim, a) });
-  // Studying past a multiple of STUDY_TIP_EVERY: a recipe in the books (P8+).
-  if (a === 'int' && Math.floor(attr(sim, a) / STUDY_TIP_EVERY) > Math.floor(was / STUDY_TIP_EVERY)) revealTip(sim);
+  // Studying to a new mark (every STUDY_TIP_EVERY points, never the same one twice): a recipe in the books (P8+).
+  const mark = Math.floor(attr(sim, a) / STUDY_TIP_EVERY);
+  if (a === 'int' && mark > s.studied) {
+    s.studied = mark;
+    revealTip(sim);
+  }
   // Spent, or as good as it gets: off the equipment.
   if (s.energy < TIRED || attr(sim, a) >= ATTR_MAX) {
     sim.events.push({ type: 'cantTrain', why: s.energy < TIRED ? 'tired' : 'max' });

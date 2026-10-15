@@ -29,6 +29,8 @@ import { nearestDir } from '../src/sim/ai/path';
 import { placesOf } from '../src/sim/ai/places';
 import { command, OP, TALK } from '../src/sim/command';
 import { RECIPES } from '../src/content/recipes';
+import { TRAINING } from '../src/content/prisons/training';
+import { obtainable } from '../src/sim/systems/recipes';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { clockAt, formatTime } from '../src/sim/systems/clock';
 import { discountOf, FAVOR, FAVOR_STATE, HOLDER, jobRooms, priceOf, stationTarget } from '../src/sim/systems/economy';
@@ -784,4 +786,35 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   back.restore(old);
   check(back.state.tips.length === 0 && back.state.carried.length === 0, 'an older save loads with nothing told');
   console.log(`recipes: studying told ${RECIPES[first].result}, an inmate told ${RECIPES[st.tips[1]].result}`);
+}
+{
+  // A mark lost overnight and studied back pays nothing again; marks never reached before do.
+  const a = arena(stepAt(1, 10, 30), 32);
+  const { st } = a;
+  put(st.player, 17, 31);
+  st.player.facing = 13;
+  st.items.int = 44;
+  st.energy = 100;
+  a.op(OP.INTERACT);
+  a.op(OP.TRAIN, 0);
+  const set = () => {
+    const was = st.items.int;
+    for (let k = 0; k < 60 && st.items.int === was; k++) a.op(OP.TRAIN, 1 + (k % 2));
+  };
+  set();
+  check(st.tips.length === 1, 'studying to 46: a tip');
+  st.items.int = 44;
+  st.energy = 100;
+  set();
+  check(st.tips.length === 1, 'back to 44 overnight, studied to 46 again: no second tip for the same mark');
+  st.energy = 100;
+  set();
+  set();
+  check(st.items.int === 50 && st.tips.length === 2, `on to 50: the next tip (INT ${st.items.int}, ${st.tips.length} tips)`);
+  // Copying keys is never told; what a prison can't make is never told nor shown.
+  check(st.tips.every((k) => !RECIPES[k].keep && !RECIPES[k].ingredients.some((i) => i.startsWith('mold_'))), 'no key mold is ever told');
+  const training = new Sim(TRAINING, 3);
+  const here = obtainable(training.world);
+  check(here.has(n('key_red')) && !here.has(n('key_yellow')) && here.has(n('mold_red')) && !here.has(n('mold_yellow')), 'the Training Block: only its guard\'s key and mold can be had');
+  check(['key_yellow', 'key_cyan', 'key_purple', 'key_green', 'key_red'].every((id) => obtainable(new Sim(CENTER_PERKS, 1).world).has(n(id))), 'Center Perks: every guard key can be had');
 }

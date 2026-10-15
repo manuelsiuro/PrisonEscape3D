@@ -191,6 +191,13 @@ export interface Lootable {
  * (of the player's layer) first, then furniture (on the ground floor). A bed in the player's
  * cell means sleep at Lights Out.
  */
+/** Someone the player can talk to from here: up, not fighting, within reach and in sight. */
+function canTalkTo(w: World, b: Body, o: Lootable): boolean {
+  if (o.ko > 0 || (o.angry ?? 0) > 0) return false;
+  const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));
+  return d <= TALK_REACH && lineOfSight(w, b.x, b.z, o.body.x, o.body.z);
+}
+
 export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0): Target {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
@@ -227,9 +234,8 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
   // Someone to talk to (inmates up and about, not fighting), a little behind furniture in reach.
   for (let who = 0; who < talkers && who < people.length; who++) {
     const o = people[who];
-    if (o.ko > 0 || (o.angry ?? 0) > 0) continue;
+    if (!canTalkTo(w, b, o)) continue;
     const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));
-    if (d > TALK_REACH || !lineOfSight(w, b.x, b.z, o.body.x, o.body.z)) continue;
     // Someone the player looks straight at wins over furniture at their elbow.
     const dx = o.body.x - b.x;
     const dz = o.body.z - b.z;
@@ -256,8 +262,8 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
       const ax = Math.floor((b.x + (fx * UNIT * 0.75) / 1024) / UNIT);
       const az = Math.floor((b.z + (fz * UNIT * 0.75) / 1024) / UNIT);
       const ahead = ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d;
-      // Someone sitting on the tile ahead: they're who the player faces (a talk), not the seat.
-      if (ahead && people.some((o, who) => who < talkers && o.ko <= 0 && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
+      // Someone on the tile ahead the player could talk to: they're who the player faces, not the seat.
+      if (ahead && people.some((o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
       sc += ahead ? -UNIT / 2 : UNIT / 4;
     }
     if (sc < bestScore) {

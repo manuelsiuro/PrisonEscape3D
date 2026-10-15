@@ -116,6 +116,43 @@
   color: white;
 }
 
+/* A recipe told and not yet looked at: a dot on the Craft button and the handbook's tab. */
+.craft-btn.has-new::after,
+.tabs .has-new::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px rgba(18, 24, 36, 0.9);
+  animation: new-dot 1.6s var(--ease) infinite;
+}
+
+.tabs .has-new {
+  position: relative;
+}
+
+@keyframes new-dot {
+  50% {
+    transform: scale(1.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .craft-btn.has-new::after,
+  .tabs .has-new::after {
+    animation: none;
+  }
+}
+
+body.reduced-motion .craft-btn.has-new::after,
+body.reduced-motion .tabs .has-new::after {
+  animation: none;
+}
+
 /* ------------------------------------------------------------ action button and prompt */
 .act-btn {
   position: fixed;
@@ -452,8 +489,9 @@ kbd {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-.book-row.mystery:disabled {
-  cursor: default;
+/* Still unseen ingredients: a tap says how to see them. */
+.book-row.mystery[data-mystery] {
+  cursor: help;
 }
 
 .book-unknown,

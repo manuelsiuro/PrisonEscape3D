@@ -169,6 +169,7 @@ export function announce(e: SimEvent, sim: Sim) {
       const item = itemName(itemNumber(RECIPES[e.recipe].result));
       sound.chime();
       buzz('attended');
+      itemsUI.markNewRecipe();
       banner.toast(e.who >= 0 ? t('toast.tipTalk', { who: inmateName(sim, e.who), item }) : t('toast.tipStudy', { item }), 'good', 5000);
       break;
     }

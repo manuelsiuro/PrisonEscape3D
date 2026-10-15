@@ -5,6 +5,7 @@ import { OP, TALK } from '../sim/command';
 import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_KINDS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, priceOf } from '../sim/systems/economy';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
+import { nextTip } from '../sim/systems/recipes';
 import { MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TIP_OPINION } from '../sim/tuning';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, t, type Key } from '../i18n';
@@ -96,7 +97,7 @@ export class TalkPanel {
     const shop = merchant >= 0 ? s.shops[merchant] : null;
     const favor = s.favors.find((f) => f.by === who);
     const inv = s.items.inv.slice(0, HOTBAR);
-    const key = [who, m.opinion, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, sim.clock.day, currentLang()].join('|');
+    const key = [who, m.opinion, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang()].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -161,8 +162,9 @@ export class TalkPanel {
       ${gifts ? `<div class="slot-grid gift-grid">${gifts}</div>` : ''}<div class="cash-row">${cashBtns}</div></section>`;
     // A recipe tip (P8+): from those who like the player enough, once a day each.
     const tipped = (s.tipDay[who] ?? 0) === sim.clock.day;
-    const tipOk = m.opinion >= TIP_OPINION && !tipped;
-    const tipHtml = `<div class="talk-foot talk-tip"><button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span></div>`;
+    const none = nextTip(sim) < 0;
+    const tipOk = m.opinion >= TIP_OPINION && !tipped && !none;
+    const tipHtml = `<div class="talk-foot talk-tip"><button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${none ? t('talk.tipNone') : tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span></div>`;
     // Recruiting (GDD §10.3): from 80 opinion, two at most.
     let foot: string;
     if (following) foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t('talk.followingNote')}</span>`;

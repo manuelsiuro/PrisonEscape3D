@@ -104,6 +104,8 @@ export function toggleProfile() {
 }
 
 export const itemsUI = new ItemsUI(sendOp, click);
+// One panel at a time: the workbench opening puts the social panels away.
+itemsUI.onCraftOpen = closeSocial;
 export const combatUI = new CombatUI();
 export const tools = new ToolControls();
 export const sleepVeil = h('div', 'sleep-veil', `<span>${''}</span>`);

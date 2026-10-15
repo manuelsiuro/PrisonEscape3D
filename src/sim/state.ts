@@ -10,10 +10,10 @@ import { maxHealth } from './systems/combat';
 import { clockAt } from './systems/clock';
 import { spawnGuards, type Guard } from './systems/guards';
 import { fighter, spawnInmates, type Inmate } from './systems/inmates';
-import { fixtureUse, startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
+import { fixtureUse, START_INT, startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
 import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
-import { GUARD_STR, OPINION_START, START_SPD, START_STR } from './tuning';
+import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
 
@@ -273,6 +273,8 @@ export interface SimState {
   tips: number[];
   /** The day each inmate last told the player a recipe (by inmate index; 0 never). */
   tipDay: number[];
+  /** The highest Intellect mark (in STUDY_TIP_EVERY points) studying has paid a tip for: a mark lost overnight and won back again pays nothing. */
+  studied: number;
 }
 
 export interface Snapshot {
@@ -364,6 +366,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     carried: [],
     tips: [],
     tipDay: [],
+    studied: Math.floor(START_INT / STUDY_TIP_EVERY),
   };
 }
 

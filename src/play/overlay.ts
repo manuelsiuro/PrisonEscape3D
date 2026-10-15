@@ -8,6 +8,7 @@ import type { ItemState } from '../sim/systems/items';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
+import { usableHere } from '../sim/systems/recipes';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { TOUCH } from '../ui/dom';
 import type { HudState } from '../ui/hud';
@@ -32,7 +33,7 @@ import {
   view,
   workChips,
 } from './context';
-import type { Game } from './game';
+import { play, type Game } from './game';
 import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, targetInfo } from './labels';
 import { seenTip } from './tips';
 
@@ -42,7 +43,7 @@ import { seenTip } from './tips';
  * music and ambience that follow the game.
  */
 
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], action: null, sleeping: false, deskTunnel: false, study: false };
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false };
 const GET_UP = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, takeoverLeft: null };

@@ -947,3 +947,10 @@ body.touch .coach-skip {
     top: calc(max(12px, env(safe-area-inset-top)) + 200px);
   }
 }
+
+/* A container or the workbench open: the item toast shows light, so it reads over the dark panel. */
+.items-open .item-toast {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.6);
+}
