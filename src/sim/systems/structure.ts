@@ -1,6 +1,6 @@
 import { itemDef, itemNumber, type ItemDef } from '../../content/items';
 import { DIR_X, DIR_Z } from '../command';
-import { BODY_HALF, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRATE_HP, SHARPEN_STROKES, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
+import { BODY_HALF, CAMERA_REACH, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRAPNEL_REACH, GRATE_HP, SHARPEN_STROKES, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
 import { isGrate, isTunnel, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { placesOf } from '../ai/places';
@@ -17,7 +17,7 @@ import type { Body } from './movement';
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
  * takes the player down off a roof.
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -30,6 +30,8 @@ export interface ToolTarget {
   fits: boolean;
   /** Hit points the tile has in all (0: nothing gets through it; strikes only). */
   hp: number;
+  /** A grapnel's swing: the fence tile it hooks over (the landing is `tile`). */
+  over?: number;
 }
 
 /** What the action button does to the structure around the player. */
@@ -69,6 +71,9 @@ export const FAKE_VENT = ITEM_ID('fake_vent');
 export const BRACE = ITEM_ID('timber_brace');
 export const SHEET_ROPE = ITEM_ID('sheet_rope');
 export const CHOCOLATE = ITEM_ID('chocolate');
+export const GRAPNEL = ITEM_ID('grapnel');
+/** What blinds a camera (GDD §5.6). */
+export const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
 const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
 /** What rubbing on a wall makes of a comb and a toothbrush (GDD §7.3: shivs). */
 export const SHIVS: ReadonlyMap<number, number> = new Map([
@@ -221,7 +226,7 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[]): boole
  * it, the target comes back with `fits` false (the UI says what is needed); null when there
  * is nothing to strike.
  */
-export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[]): ToolTarget | null {
+export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = []): ToolTarget | null {
   const def = held ? itemDef(held) : null;
   if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   const here = bodyTile(b);
@@ -233,6 +238,19 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   }
   const placed = placeTarget(w, layer, here, ahead, held);
   if (placed) return placed;
+  // A grapnel at a roof's edge, the perimeter fence in reach beyond (GDD §12): a sheet rope in the pockets gets the player down outside.
+  if (held === GRAPNEL && layer === LAYER.ROOF) {
+    const swing = grapnelSwing(w, b);
+    if (swing) return { action: 'grapnel', layer: LAYER.GROUND, tile: swing.land, over: swing.fence, hp: 0, fits: pockets.some((v) => (v & 255) === SHEET_ROPE) };
+  }
+  // Tape or toothpaste under a camera: over its lens.
+  if (LENS_COVERS.has(held) && layer === LAYER.GROUND) {
+    const cam = cameraInReach(w, b);
+    if (cam >= 0) {
+      const c = w.def.cameras![cam];
+      return { action: 'tape', layer: LAYER.GROUND, tile: c.z * MAP_W + c.x, hp: 0, fits: true };
+    }
+  }
   const found: ToolTarget[] = [];
   const add = (action: ToolAction, l: number, tile: number, hp: number) => found.push({ action, layer: l, tile, hp, fits: toolFits(def, action) });
   if (layer === LAYER.GROUND) {
@@ -281,6 +299,49 @@ function placeTarget(w: World, layer: number, here: number, ahead: number, held:
     return at('rope', LAYER.GROUND, ahead);
   }
   return null;
+}
+
+/**
+ * A grapnel thrown from a roof's edge (GDD §12): straight ahead over the open ground below,
+ * the perimeter fence within reach, and free road just past it to come down on. Returns the
+ * fence tile and the landing, or null.
+ */
+export function grapnelSwing(w: World, b: Body): { fence: number; land: number } | null {
+  const fx = DIR_X[b.facing] ?? 0;
+  const fz = DIR_Z[b.facing] ?? 0;
+  const sx = Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;
+  const sz = Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz);
+  let x = Math.floor(b.x / UNIT);
+  let z = Math.floor(b.z / UNIT);
+  const roof = w.layers[LAYER.ROOF].kind;
+  // Only from the edge: the tile ahead has no roof.
+  if (!w.inside(x + sx, z + sz) || roof[(z + sz) * MAP_W + x + sx] !== TILE.EMPTY) return null;
+  for (let k = 1; k <= GRAPNEL_REACH + 1; k++) {
+    x += sx;
+    z += sz;
+    if (!w.inside(x, z)) return null;
+    const i = z * MAP_W + x;
+    const kind = w.ground.kind[i];
+    if (kind === TILE.FENCE || kind === TILE.ELECTRIC || kind === TILE.FENCE_FAKE || kind === TILE.FENCE_CUT) {
+      if (k > GRAPNEL_REACH || !w.inside(x + sx, z + sz)) return null;
+      const land = (z + sz) * MAP_W + x + sx;
+      return w.ground.kind[land] === TILE.ROAD && !w.blocked(x + sx, z + sz) ? { fence: i, land } : null;
+    }
+    // Over open ground only (no roofs, towers or walls in the way).
+    if (roof[i] !== TILE.EMPTY || !TILE_INFO[kind].outdoor || TILE_INFO[kind].solid) return null;
+  }
+  return null;
+}
+
+/** The camera the player stands under or beside (-1: none). */
+export function cameraInReach(w: World, b: Body): number {
+  const cams = w.def.cameras ?? [];
+  for (let k = 0; k < cams.length; k++) {
+    const dx = Math.abs(cams[k].x * UNIT + UNIT / 2 - b.x);
+    const dz = Math.abs(cams[k].z * UNIT + UNIT / 2 - b.z);
+    if (Math.max(dx, dz) <= CAMERA_REACH) return k;
+  }
+  return -1;
 }
 
 /** Whether the tile behind a body (opposite its heading, snapped to a side) is undug earth or the map's edge. */

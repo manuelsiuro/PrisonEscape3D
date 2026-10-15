@@ -165,9 +165,9 @@ export type Target =
   | { kind: 'fixture'; index: number; use: FixtureUse }
   | null;
 
-/** Furniture used by standing at it: the job board, the weights (Strength), the treadmill (Speed). */
-export type FixtureUse = 'board' | 'weights' | 'treadmill';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill' };
+/** Furniture used by standing at it: the job board, the weights (Strength), the treadmill (Speed), the generator (the power, GDD §5.5). */
+export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator';
+const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator' };
 
 /** Someone whose pockets can be gone through: lying knocked out (GDD §10.2). */
 export interface Lootable {

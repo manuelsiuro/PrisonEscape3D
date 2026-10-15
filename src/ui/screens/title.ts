@@ -6,6 +6,8 @@ export type TitleChoice = 'play' | 'settings';
 
 export interface TitleInfo {
   prisonName: string;
+  /** The ways out found so far ("2 of 4 ways out"), empty before the first escape. */
+  record?: string;
   muted: boolean;
   /** Flips sound on or off; returns whether it's now muted. */
   toggleSound: () => boolean;
@@ -25,7 +27,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
       <div class="title-actions">
         <button class="hero-card play-card" data-c="play">
           <span class="hero-ic">${icon('play', 22)}</span>
-          <span class="hero-text"><b>${t('title.play')}</b><small>${t('title.prison', { name: info.prisonName })}</small></span>
+          <span class="hero-text"><b>${t('title.play')}</b><small>${t('title.prison', { name: info.prisonName })}</small>${info.record ? `<small class="t-record">${icon('trophy', 13)}${info.record}</small>` : ''}</span>
         </button>
         <button class="menu-btn" data-c="settings" style="--tone:#8a94a6;--tone-2:#5d6779">
           <span class="menu-ic">${icon('gear', 18)}</span>

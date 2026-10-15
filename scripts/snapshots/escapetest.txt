@@ -1,0 +1,28 @@
+  cutout: the fence cut 15.4 s after the power went off
+== perimeter cutout
+  day 1 23:30 power OFF (player)
+  day 1 23:46 ESCAPED (fence)
+  → out day 1 23:46 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+== tunnel
+  day 1 23:12 climbDown → layer 0
+  day 1 23:19 digUp → layer 1
+  day 1 23:19 ESCAPED (tunnel)
+  → out day 1 23:19 by tunnel; heat peak 0%; walls 0, tunnel tiles 8, guards out cold 0, cash $0
+== rooftop grapnel
+  day 1 23:11 climbVent → layer 2
+  day 1 23:33 climbRoof → layer 3
+  day 1 23:35 grapnel → layer 1
+  day 1 23:35 ESCAPED (roof)
+  → out day 1 23:35 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  takeover: health 24/140, guards down 5/5, xxxxx
+== takeover
+  day 1 08:36 spotted: fight
+  day 1 08:36 LOCKDOWN
+  day 1 08:37 knocked out #7
+  day 1 08:41 knocked out #10
+  day 1 08:42 knocked out #9
+  day 1 08:43 knocked out #8
+  day 1 08:45 knocked out #11
+  day 1 08:45 TAKEOVER: the gates are open
+  day 1 08:54 ESCAPED (takeover)
+  → out day 1 08:54 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 5, cash $0

@@ -21,6 +21,9 @@ export interface HudState {
   cash: number;
   /** During the Work Period with a job (GDD §11): where, and the quota so far (the badge shows it instead of PENDING). */
   work: { place: string; quota: number; of: number; paid: boolean } | null;
+  /** Security (GDD §5.5, §12): seconds until the power comes back (null: on), and until the first guard comes round in a takeover (null: none). */
+  powerLeft: number | null;
+  takeoverLeft: number | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -85,6 +88,10 @@ export class Hud {
       <div class="hud-row">
         <span class="pill big hud-routine"><i class="hud-routine-ic"></i><span class="hud-routine-text"><span class="hud-routine-head"><b></b><small></small></span><span class="hud-routine-place"></span></span><em class="hud-badge"></em></span>
         <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b><span class="hud-eye" title="${t('hud.seen')}">${icon('eye', 16)}</span></span>
+      </div>
+      <div class="hud-row hud-alerts">
+        <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -108,7 +115,23 @@ export class Hud {
     this.cashText = q('.hud-cash b');
     this.cashPill.addEventListener('click', onProfile);
     this.cashPill.addEventListener('animationend', () => this.cashPill.classList.remove('gain', 'spend'));
+    this.power = q('.hud-power');
+    this.riot = q('.hud-riot');
     document.body.append(this.el);
+  }
+
+  private readonly power: HTMLElement;
+  private readonly riot: HTMLElement;
+  private shownAlerts = '';
+
+  /** A chip under the rows while something runs out: its label, the seconds left and a bar draining from full. */
+  private alert(el: HTMLElement, label: Key, left: number | null, total: number) {
+    el.classList.toggle('hidden', left === null);
+    if (left === null) return;
+    setText(el.querySelector('span')!, t(label));
+    setText(el.querySelector('b')!, `0:${String(Math.max(0, Math.ceil(left))).padStart(2, '0')}`);
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, left / total)) * 100}%`;
+    el.classList.toggle('low', left <= 10);
   }
 
   show(on: boolean) {
@@ -117,6 +140,7 @@ export class Hud {
     this.shownZone = this.shownKey = this.shownMinute = '';
     this.shownHeat = -1;
     this.shownCash = -1;
+    this.shownAlerts = '';
   }
 
   update(clock: Clock, zone: ZoneId, s: HudState) {
@@ -157,6 +181,12 @@ export class Hud {
     }
     this.updateRoutine(s);
     this.updateHeat(s.heat);
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${this.lang}`;
+    if (alerts !== this.shownAlerts) {
+      this.shownAlerts = alerts;
+      this.alert(this.power, 'hud.powerOut', s.powerLeft, 45);
+      this.alert(this.riot, 'hud.gatesOpen', s.takeoverLeft, 30);
+    }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.
       if (this.shownCash >= 0 && s.cash !== this.shownCash) {

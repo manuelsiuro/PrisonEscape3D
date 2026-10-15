@@ -55,4 +55,8 @@ export interface PrisonDef {
   merchants: readonly number[];
   /** The jobs on offer (GDD §11) and who holds each on day 1: a cell number (1: the player), 0 for open. */
   jobs: ReadonlyArray<{ id: JobId; cell: number }>;
+  /** Security cameras (GDD §5.6): the floor tile each hangs over (against a wall) and the way it looks (1–16), sweeping ±45°. */
+  cameras?: ReadonlyArray<{ x: number; z: number; face: number }>;
+  /** Searchlights at night (GDD §5.2), one per tower: the tiles the beam sweeps along, back and forth. */
+  searchlights?: ReadonlyArray<ReadonlyArray<{ x: number; z: number }>>;
 }

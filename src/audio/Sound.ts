@@ -330,6 +330,64 @@ export class Sound {
     this.hiss(0.7, 'highpass', 3000, 1, 0.18);
   }
 
+  /** The generator switched off (GDD §5.5): a dying hum, the lights clunking out. */
+  powerDown() {
+    this.tone(120, 30, 1.4, 'sawtooth', 0.16);
+    this.tone(240, 60, 1.2, 'square', 0.05);
+    this.hiss(0.18, 'lowpass', 500, 0.8, 0.25);
+  }
+
+  /** The power back on: a rising hum and a click. */
+  powerUp() {
+    this.tone(40, 120, 0.9, 'sawtooth', 0.12);
+    this.tone(80, 240, 0.9, 'square', 0.03);
+    this.tone(1800, 1600, 0.04, 'square', 0.06, 0.85);
+  }
+
+  /** A detector arch tripped (GDD §5.4): a harsh buzzer, three times. */
+  buzzer() {
+    for (const d of [0, 0.28, 0.56]) {
+      this.tone(330, 320, 0.22, 'square', 0.13, d);
+      this.tone(415, 405, 0.22, 'sawtooth', 0.07, d);
+    }
+  }
+
+  /** A pass through a detector shielded by the pouch: a soft, satisfied blip. */
+  blip() {
+    this.tone(1250, 1300, 0.07, 'sine', 0.08);
+  }
+
+  /** A sniper takes aim: two thin high beeps. */
+  aim() {
+    this.tone(2400, 2400, 0.06, 'sine', 0.09);
+    this.tone(2400, 2400, 0.06, 'sine', 0.09, 0.16);
+  }
+
+  /** A rifle shot from the tower: a crack, and a thud when it hits (a whine when it misses). */
+  gunshot(hit: boolean) {
+    this.hiss(0.08, 'highpass', 1800, 0.7, 0.5);
+    this.tone(160, 40, 0.35, 'sawtooth', 0.22);
+    this.hiss(0.6, 'lowpass', 900, 0.5, 0.12);
+    if (hit) this.tone(90, 50, 0.18, 'sine', 0.3, 0.05);
+    else this.tone(2600, 900, 0.3, 'sine', 0.05, 0.05);
+  }
+
+  /** Tape torn off the roll and pressed over a lens. */
+  tape() {
+    this.hiss(0.22, 'bandpass', 2600, 1.4, 0.16);
+  }
+
+  /** The takeover (GDD §12): the gates grind open, a roar. */
+  takeover() {
+    this.tone(55, 70, 1.6, 'sawtooth', 0.14);
+    this.hiss(1.6, 'bandpass', 600, 0.4, 0.22);
+    for (const [f, d] of [
+      [523, 0.2],
+      [659, 0.45],
+      [784, 0.7],
+    ]) this.tone(f, f, 0.5, 'triangle', 0.1, d);
+  }
+
   /** A tunnel roof coming down: a rumble and a slide of earth. */
   caveIn() {
     this.tone(70, 35, 1.1, 'sawtooth', 0.18);

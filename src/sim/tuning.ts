@@ -141,3 +141,29 @@ export const VACANCY_DAYS = 2;
 export const MAX_DISCOUNT = 0.5;
 /** Seen hitting back at an inmate who jumped the player: this much heat a blow (attacking first: 100%). */
 export const SELF_DEFENSE_HEAT = 10;
+
+// Security and escapes (GDD §5.4–5.6, §12).
+/** The generator switched off (GDD §5.5): 45 s until the maintenance guard has it back on. */
+export const POWER_OFF_STEPS = 45 * STEPS_PER_SECOND;
+/** Walking through a live detector arch with unshielded contraband (GDD §5.4). */
+export const DETECTOR_HEAT = 50;
+/** Tape or toothpaste over a camera's lens blinds it this long (GDD §5.6). */
+export const CAMERA_BLIND_STEPS = 60 * STEPS_PER_SECOND;
+/** How far a camera sees (units), and how often it turns a sixteenth of a turn on its ±45° sweep. */
+export const CAMERA_RANGE = 6 * UNIT;
+export const CAMERA_TURN_STEPS = 40;
+/** Reach to tape a camera: standing under it or beside it (units). */
+export const CAMERA_REACH = Math.round(1.5 * UNIT);
+/** Searchlights at night (GDD §5.2): +35% heat a second in the beam (this much every 4 steps), its radius and speed. */
+export const SEARCHLIGHT_HEAT = 7;
+export const BEAM_RADIUS = 2 * UNIT;
+export const BEAM_SPEED = 90;
+/** Snipers by day (GDD §5.6): their reach from the towers, the aim before the warning shot, the pace and the damage of the rest. */
+export const SNIPER_RANGE = 26 * UNIT;
+export const SNIPER_AIM = 2 * STEPS_PER_SECOND;
+export const SNIPER_PACE = 3 * STEPS_PER_SECOND;
+export const SNIPER_DAMAGE = 30;
+/** The takeover (GDD §12): this share of the guards out cold at once opens the gates (L1: all 5). */
+export const TAKEOVER_SHARE = 0.85;
+/** How far beyond a roof's edge a grapnel can hook the perimeter fence (tiles). */
+export const GRAPNEL_REACH = 6;

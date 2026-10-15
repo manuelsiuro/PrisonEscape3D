@@ -87,6 +87,8 @@ export class World {
   playerKeys = 0;
   /** 1 on doors in the outer perimeter (beside the road): no key opens them (the takeover does, P7). */
   readonly gate = new Uint8Array(MAP_W * MAP_H);
+  /** A takeover (GDD §12): the guards are down, every door and gate opens for the player (derived by the simulation). */
+  riot = false;
   /** On door tiles into a job room (GDD §11): the room's zone index (0 for other doors). */
   readonly doorRoom = new Uint8Array(MAP_W * MAP_H);
   /** Bit z set: the job room of zone z stands open (the Work Period, or someone still inside; derived by the simulation). */
@@ -181,6 +183,13 @@ export class World {
     this.refreshBlock();
   }
 
+  /** The takeover on or over; doors follow. */
+  setRiot(on: boolean) {
+    if (on === this.riot) return;
+    this.riot = on;
+    this.refreshBlock();
+  }
+
   /** Opens and shuts job rooms (bit z = zone z); recomputes what blocks walking when it changes. */
   setOpenRooms(mask: number) {
     if (mask === this.openRooms) return;
@@ -196,8 +205,8 @@ export class World {
       const room = this.doorRoom[i];
       const shut = k === TILE.DOOR && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && (this.openRooms >> room) & 1);
       this.doorShut[i] = shut ? 1 : 0;
-      // A key of the door's color opens it for the player (never a perimeter gate).
-      const keyed = shut && !this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1;
+      // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
+      const keyed = shut && (this.riot || (!this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1));
       const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid;
       this.block[i] = solid || this.propSolid[i] ? 1 : 0;
       // Damage is the player's way: inmates and guards walk the prison as it was built (doors too).

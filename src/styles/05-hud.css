@@ -496,3 +496,67 @@ body.reduced-motion .alarm-vignette.on {
     display: none;
   }
 }
+
+/* Security (P7): chips while something runs out (the power, a takeover's open gates). */
+.hud-alerts {
+  margin-top: 8px;
+  justify-content: center;
+}
+.hud-alerts:not(:has(.hud-alert:not(.hidden))) {
+  display: none;
+}
+.hud-alert {
+  position: relative;
+  gap: 6px;
+  padding: 6px 12px 9px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: #fff;
+  background: rgba(18, 35, 58, 0.86);
+  overflow: hidden;
+  animation: alert-in 0.35s var(--spring);
+}
+.hud-alert b {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+.hud-alert.hud-riot {
+  background: rgba(150, 30, 24, 0.9);
+}
+.hud-alert.low b {
+  color: #ff8a7a;
+  animation: alert-tick 1s steps(2) infinite;
+}
+.hud-alert-bar {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.hud-alert-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--gold);
+  transition: width 0.4s linear;
+}
+@keyframes alert-in {
+  from {
+    transform: translateY(-6px) scale(0.92);
+    opacity: 0;
+  }
+}
+@keyframes alert-tick {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-alert,
+  .hud-alert.low b {
+    animation: none;
+  }
+}

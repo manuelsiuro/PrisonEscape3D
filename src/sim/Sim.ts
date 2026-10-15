@@ -10,12 +10,13 @@ import { craft, dropItem, equip, give, guardKit, HOTBAR, interactTarget, itemOf,
 import { WORK_ITEMS } from '../content/jobs';
 import { SHOP_SLOTS } from '../content/loot';
 import { CASH_GIFTS, cashOpinion, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, nearestProp, priceOf, stationTarget, STATION_REACH, type Favor, type Station, type StationAct, type WorkState } from './systems/economy';
-import { besideOnGround, cavesIn, climbTarget, facesProp, preferClimb, DIRT, ladderFootOf, reserved, SHIVS, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbAction, type ClimbTarget, type ToolAction, type ToolTarget } from './systems/structure';
+import { besideOnGround, cavesIn, climbTarget, facesProp, preferClimb, DIRT, ladderFootOf, reserved, SHEET_ROPE, SHIVS, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbAction, type ClimbTarget, type ToolAction, type ToolTarget } from './systems/structure';
+import { cameraSees, inBeam, sniperOn } from './systems/security';
 import { BATON_ATTACK, damage, dist2, GUARD_DEFENSE, INMATE_DEFENSE, isGuard, lockCandidates, maxHealth, nextLock, personOf, reachOf, swingSteps, type Fighter } from './systems/combat';
 import { lineOfSight } from './ai/sight';
 import { fnv1a, randomInt } from './rng';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
-import { assign, awake, backToDuty, cancelTasks, GUARD, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
+import { assign, awake, backToDuty, cancelTasks, GUARD, sendToLook, spawnGuards, startChase, stepGuards, type Guard, type GuardReport } from './systems/guards';
 import { DOING, fighter, inmateZone, LOCKDOWN_PLAN, spawnInmates, STAND_OFF, stepInmates, type Inmate, type Social } from './systems/inmates';
 import { bodyAt, tileOfBody, walk, type Body } from './systems/movement';
 import {
@@ -85,6 +86,14 @@ import {
   VACANCY_DAYS,
   walkSpeed,
   SELF_DEFENSE_HEAT,
+  CAMERA_BLIND_STEPS,
+  DETECTOR_HEAT,
+  POWER_OFF_STEPS,
+  SEARCHLIGHT_HEAT,
+  SNIPER_AIM,
+  SNIPER_DAMAGE,
+  SNIPER_PACE,
+  TAKEOVER_SHARE,
 } from './tuning';
 import { LAYER, layerOfKey, MAP_H, MAP_W, placeKey, tileOfKey, World } from './world/World';
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from './world/tiles';
@@ -92,8 +101,13 @@ import { nearestDir as faceTo } from './ai/path';
 import { containersOf } from './world/containers';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper'] as const;
 export type SpotReason = (typeof SPOT)[number];
+/** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover'] as const;
+export type EscapeRoute = (typeof ESCAPES)[number];
+/** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper. */
+export const HURT_BY = { CAVE_IN: -1, SNIPER: -2 } as const;
 /** Where a knocked-out player wakes up. */
 export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2, FLOORED: 3 } as const;
 
@@ -126,7 +140,7 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster' | 'full' | 'noLanding'; action: ToolAction }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope'; action: ToolAction }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -134,7 +148,7 @@ export type SimEvent =
   /** A tunnel roof came down on the player (GDD §9.2). */
   | { type: 'caveIn'; tile: number }
   /** Onto another layer (through a grate, up the ladder, into a tunnel…). */
-  | { type: 'layer'; layer: number; from: number; how: ClimbAction | 'digUp' | 'rope' }
+  | { type: 'layer'; layer: number; from: number; how: ClimbAction | 'digUp' | 'rope' | 'grapnel' }
   /** A cover put over damage or taken off it; a brace set up; chocolate eaten. */
   | { type: 'covered'; item: number; on: boolean }
   | { type: 'braced' }
@@ -145,8 +159,15 @@ export type SimEvent =
   /** Guards found damage or evidence (and repaired what they found, after a capture). */
   | { type: 'found'; kind: number }
   | { type: 'repaired'; n: number }
-  /** Out on the road: free (GDD §4.0). */
-  | { type: 'escaped' }
+  /** Out on the road: free (GDD §4.0), and how. */
+  | { type: 'escaped'; via: EscapeRoute }
+  /** Security (GDD §5.4–5.6): the power off and back on; a pass through a detector arch (tripped, or shielded by the pouch: its passes left); a camera blinded or seeing again; a sniper taking aim and shooting; the takeover. */
+  | { type: 'power'; on: boolean; by: 'player' | 'guard' }
+  | { type: 'scanned'; tripped: boolean; pouch: number; tile: number }
+  | { type: 'camera'; index: number; blind: boolean }
+  | { type: 'aim'; tower: number }
+  | { type: 'shot'; tower: number; hit: boolean; dmg: number }
+  | { type: 'takeover'; on: boolean }
   /** Combat (GDD §10): the lock moved (-1: none); a blow landed on someone (Cast id) or the player; a cup of molten chocolate thrown. */
   | { type: 'lock'; who: number }
   | { type: 'hit'; who: number; dmg: number; ko: boolean; weapon: number }
@@ -302,6 +323,23 @@ export interface SimState {
   shops: number[][];
   /** The player's last blow was at an inmate already after them (seen, it's a scuffle, not an attack). */
   selfDefense: boolean;
+  /** The generator (GDD §5.5): steps until the power comes back on (0: on). */
+  powerOff: number;
+  /** Standing in a detector arch already scanned (a pass counts once). */
+  scanned: boolean;
+  /** Each camera's tape (GDD §5.6): the step it comes off (0: watching). */
+  cams: number[];
+  /** A sniper's aim (GDD §5.6): the step of its next shot (0: nobody in its sights), and the shots fired so far. */
+  sniperAt: number;
+  shots: number;
+  /** In a searchlight's beam last step (its alarm goes once a pass). */
+  lit: boolean;
+  /** The takeover (GDD §12): enough guards out cold at once, every door and gate open. */
+  takeover: boolean;
+  /** For the victory screen (GDD §13.2): walls chipped, tunnel tiles dug, guards knocked out, cash earned. */
+  tally: number[];
+  /** How the player got out (ESCAPES index, 0 still inside). */
+  via: number;
 }
 
 export interface Snapshot {
@@ -394,6 +432,15 @@ export class Sim {
       favors: [],
       shops: prison.merchants.map(() => new Array(SHOP_SLOTS).fill(0)),
       selfDefense: false,
+      powerOff: 0,
+      scanned: false,
+      cams: (prison.cameras ?? []).map(() => 0),
+      sniperAt: 0,
+      shots: 0,
+      lit: false,
+      takeover: false,
+      tally: [0, 0, 0, 0],
+      via: 0,
     };
     // Day 1: change in desks and pockets, the merchants' stock, the first favors.
     this.spreadCoins();
@@ -422,8 +469,18 @@ export class Sim {
     // Out: the game is won, nothing more happens.
     if (s.escaped) return;
     s.step++;
+    this.movedBy = null;
     // Clock.
     const clock = this.clock;
+    // The power comes back: the maintenance guard has the generator running again (GDD §5.5).
+    if (s.powerOff > 0 && --s.powerOff === 0) this.events.push({ type: 'power', on: true, by: 'guard' });
+    // A camera's tape comes off.
+    s.cams.forEach((until, k) => {
+      if (until && s.step >= until) {
+        s.cams[k] = 0;
+        this.events.push({ type: 'camera', index: k, blind: false });
+      }
+    });
     if (hourStarts(s.step)) this.events.push({ type: 'hour', hour: clock.hour });
     // Routine: a new block settles the last one.
     const now = routineAt(clock.minuteOfDay);
@@ -496,18 +553,23 @@ export class Sim {
       if (s.train >= 0 && dirOf(cmd) !== 0) this.stopTraining();
       walk(w, s.player, s.sleeping ? 0 : dirOf(cmd), s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd), s.layer);
       this.wearKeys();
+      // Through a detector arch (GDD §5.4).
+      this.scan();
       // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
       this.useItems(s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
-      // On the road outside: free.
+      // On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel, out of the gates in a takeover, or through the fence.
       if (s.layer === LAYER.GROUND && this.playerZone === 'outside') {
         s.escaped = s.step;
+        s.via = ESCAPES.indexOf(this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' ? 'roof' : s.takeover ? 'takeover' : 'fence');
         this.closeBox();
-        this.events.push({ type: 'escaped' });
+        this.events.push({ type: 'escaped', via: ESCAPES[s.via] });
         return;
       }
     }
     // Combat: inmates and guards land their blows on the player (GDD §10.1); the lock follows its target.
     this.fight();
+    // Enough guards out cold at once: the prison is the inmates' (GDD §12).
+    this.takeoverCheck();
     // Social life and training: the talk holds while the inmate is in reach, grudges flare up, a set's bar drains.
     this.keepTalk();
     this.grudges();
@@ -606,6 +668,18 @@ export class Sim {
     else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
     else if (s.seen && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
     else if (s.seen && !disguised && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
+    // A camera sees what a guard would sound the alarm for (GDD §5.6).
+    const filmed = this.cameraSeesPlayer();
+    if (!reason && filmed) {
+      const fighting = s.step - s.swingAt <= STRIKE_SEEN_STEPS && !s.selfDefense;
+      const working = s.step - s.struckAt <= STRIKE_SEEN_STEPS;
+      if (fighting || working || (!disguised && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone)))) [reason, heat] = [SPOT.indexOf('camera'), 100];
+    }
+    // A searchlight's beam at night (GDD §5.2): +35% a second in it, the alarm (guards sent) as it finds the player.
+    const lit = !disguised && this.power && ROUTINE[s.routine].id === 'lightsOut' && s.layer === LAYER.GROUND && inBeam(this.world, p, s.step) >= 0;
+    if (lit && !s.lit) this.summon(here, 2);
+    s.lit = lit;
+    if (!reason && lit) [reason, heat] = [SPOT.indexOf('searchlight'), s.step % 4 === 0 ? SEARCHLIGHT_HEAT : 0];
     // A contraband tool or weapon in hand, in plain sight: +40% a second.
     const held = itemOf(it.inv[it.hand]);
     const def = held ? itemDef(held) : null;
@@ -626,6 +700,10 @@ export class Sim {
     if (reason && reason !== s.spotted && !s.lockdown) this.events.push({ type: 'spotted', reason: SPOT[reason] });
     s.spotted = reason;
     if (heat) this.addHeat(heat);
+    // Under a camera's eye, heat doesn't cool either.
+    if (filmed) s.seen = true;
+    // Snipers by day.
+    this.snipe();
   }
 
   /**
@@ -715,9 +793,139 @@ export class Sim {
     this.wearRev++;
   }
 
-  /** The prison's power (the generator arrives in P7: until then it is always on). */
+  /** The prison's power (GDD §5.5): on unless the generator was switched off less than 45 s ago. */
   get power(): boolean {
-    return true;
+    return this.state.powerOff === 0;
+  }
+
+  /** How the player moved onto another layer this step (the escape check reads it); not state. */
+  private movedBy: ClimbAction | 'digUp' | 'rope' | 'grapnel' | null = null;
+
+  /**
+   * The generator (GDD §5.5): switched off, the electric fence, the detectors, the cameras and
+   * the searchlights go dead for 45 s, and a guard is sent to put it right; switched back on by
+   * the player, sooner.
+   */
+  private switchPower(prop: number) {
+    const s = this.state;
+    if (s.powerOff > 0) {
+      s.powerOff = 0;
+      this.events.push({ type: 'power', on: true, by: 'player' });
+      return;
+    }
+    s.powerOff = POWER_OFF_STEPS;
+    this.events.push({ type: 'power', on: false, by: 'player' });
+    const p = this.world.props[prop];
+    const at = besideOnGround(this.world, p.z * MAP_W + p.x + p.w);
+    this.summon(at >= 0 ? at : p.z * MAP_W + p.x, 1);
+  }
+
+  /** The nearest guards up and about (and not chasing) go and look at a tile. */
+  private summon(tile: number, n: number) {
+    const s = this.state;
+    const tx = (tile % MAP_W) * UNIT + UNIT / 2;
+    const tz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+    const free = s.guards.filter((g) => awake(g) && g.mode !== GUARD.CHASE);
+    free.sort((a, b) => (a.body.x - tx) ** 2 + (a.body.z - tz) ** 2 - ((b.body.x - tx) ** 2 + (b.body.z - tz) ** 2));
+    for (const g of free.slice(0, n)) sendToLook(g, tile);
+  }
+
+  /**
+   * A detector arch (GDD §5.4): stepping into one with the power on scans what the player
+   * carries. Contraband trips it (+50% heat, the buzzer, the nearest guards sent to look),
+   * unless a contraband pouch in the pockets shields it (a pass worn off the pouch).
+   */
+  private scan() {
+    const s = this.state;
+    const w = this.world;
+    const t = tileOfBody(s.player);
+    const tile = t.z * MAP_W + t.x;
+    if (s.layer !== LAYER.GROUND || w.ground.kind[tile] !== TILE.DETECTOR) {
+      s.scanned = false;
+      return;
+    }
+    if (s.scanned) return;
+    s.scanned = true;
+    if (!this.power) return;
+    const it = s.items;
+    let carried = false;
+    let pouch = -1;
+    for (let k = 0; k <= SLOT.OUTFIT; k++) {
+      const n = itemOf(it.inv[k]);
+      if (!n) continue;
+      if (n === POUCH && k < HOTBAR) pouch = pouch < 0 ? k : pouch;
+      else if (itemDef(n).contraband) carried = true;
+    }
+    if (!carried) return;
+    if (pouch >= 0) {
+      const left = usesOf(it.inv[pouch]) - 1;
+      it.inv[pouch] = left > 0 ? slot(POUCH, left) : 0;
+      it.rev++;
+      this.events.push({ type: 'scanned', tripped: false, pouch: left, tile });
+      if (left <= 0) this.events.push({ type: 'broke', item: POUCH });
+      return;
+    }
+    this.events.push({ type: 'scanned', tripped: true, pouch: -1, tile });
+    if (!s.lockdown) this.events.push({ type: 'spotted', reason: 'detector' });
+    this.addHeat(DETECTOR_HEAT);
+    this.summon(tile, 2);
+  }
+
+  /**
+   * Cameras (GDD §5.6): whether one that is working (power on, no tape) sees the player on
+   * the ground floor now. They catch what sets off the alarm: work on the structure, a fight,
+   * a restricted room or the night out of the cell (a guard's uniform passes).
+   */
+  private cameraSeesPlayer(): boolean {
+    const s = this.state;
+    const cams = this.world.def.cameras;
+    if (!cams || !this.power || s.layer !== LAYER.GROUND) return false;
+    for (let k = 0; k < cams.length; k++) if (!s.cams[k] && cameraSees(this.world, cams[k], k, s.step, s.player)) return true;
+    return false;
+  }
+
+  /**
+   * Snipers by day (GDD §5.6): a tower with the player in its sights while they're wanted
+   * (90%+) takes aim, fires a warning shot, then shoots to bring them down. Off duty at night
+   * (the searchlights take over).
+   */
+  private snipe() {
+    const s = this.state;
+    const tower = ROUTINE[s.routine].id === 'lightsOut' || this.away ? -1 : sniperOn(this.world, s.player, s.layer);
+    if (tower < 0 || s.heat < SOLITARY_HEAT) {
+      s.sniperAt = 0;
+      s.shots = 0;
+      return;
+    }
+    if (!s.sniperAt) {
+      s.sniperAt = s.step + SNIPER_AIM;
+      this.events.push({ type: 'aim', tower });
+      return;
+    }
+    if (s.step < s.sniperAt) return;
+    s.sniperAt = s.step + SNIPER_PACE;
+    const hit = s.shots++ > 0;
+    const defense = itemDef(itemOf(s.items.inv[SLOT.OUTFIT]))?.defense ?? 0;
+    const dmg = hit ? Math.max(10, SNIPER_DAMAGE - Math.floor(defense / 3)) : 0;
+    this.events.push({ type: 'shot', tower, hit, dmg });
+    if (hit) this.hurt(dmg, HURT_BY.SNIPER);
+  }
+
+  /** Enough guards out cold at once (GDD §12: 85%): every door and gate opens; it holds while they're down. */
+  private takeoverCheck() {
+    const s = this.state;
+    const n = s.guards.length;
+    let down = 0;
+    for (const g of s.guards) if (g.ko > 0) down++;
+    const on = n > 0 && down >= Math.ceil(n * TAKEOVER_SHARE);
+    // Doors close again only once the player is clear of them.
+    const t = tileOfBody(s.player);
+    const inDoor = s.layer === LAYER.GROUND && this.world.ground.kind[t.z * MAP_W + t.x] === TILE.DOOR;
+    if (on !== s.takeover && (on || !inDoor)) {
+      s.takeover = on;
+      this.events.push({ type: 'takeover', on });
+    }
+    this.world.setRiot(s.takeover);
   }
 
   /** Knocked down by a guard: the lockdown is over, everyone back to work, the player out cold. */
@@ -960,6 +1168,7 @@ export class Sim {
         else if (target.kind === 'person') this.approach(target.who);
         else if (target.kind === 'fixture') {
           if (target.use === 'board') this.events.push({ type: 'board' });
+          else if (target.use === 'generator') this.switchPower(target.index);
           else this.startTraining(target.index, target.use);
         } else if (target.kind === 'pockets') {
           // Going through someone's pockets while they're out cold (GDD §10.2).
@@ -1214,8 +1423,10 @@ export class Sim {
     f.goal = -1;
     f.wait = 0;
     f.doing = DOING.KNOCKED_OUT;
-    if (isGuard(s, who)) this.resumeAfterKo(f as Guard);
-    else (f as Inmate).angry = 0;
+    if (isGuard(s, who)) {
+      this.resumeAfterKo(f as Guard);
+      s.tally[2]++;
+    } else (f as Inmate).angry = 0;
     f.doing = DOING.KNOCKED_OUT;
     if (s.lock === who) {
       s.lock = -1;
@@ -1409,7 +1620,7 @@ export class Sim {
     const it = s.items;
     const p = s.player;
     const held = itemOf(it.inv[it.hand]);
-    const target = toolTarget(w, s.layer, p, held, this.bodiesAbout());
+    const target = toolTarget(w, s.layer, p, held, this.bodiesAbout(), it.inv);
     if (!target) return;
     // Strikes come at their own pace (holding the button asks every step); the rest at a press.
     if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
@@ -1464,15 +1675,14 @@ export class Sim {
     } else it.inv[it.hand] = slot(held, left);
     // A live fence: knocked flat (GDD §9.1).
     if (target.action === 'cut' && w.ground.kind[target.tile] === TILE.ELECTRIC && this.power) {
-      s.lock = -1;
-      this.dismissAll();
-      this.endTalk();
-      s.ko = KO_STEPS;
-      s.wake = WAKE.INFIRMARY;
-      s.sleeping = false;
-      this.closeBox();
-      this.events.push({ type: 'shocked' });
+      this.shock();
       return;
+    }
+    // Cutting the perimeter fence by day within a tower's reach: the sniper sees it (GDD §5.6).
+    if (target.action === 'cut' && ROUTINE[s.routine].id !== 'lightsOut' && sniperOn(w, p, s.layer) >= 0 && !s.lockdown) {
+      this.events.push({ type: 'spotted', reason: 'sniper' });
+      s.spotted = SPOT.indexOf('sniper');
+      this.addHeat(100);
     }
     const taken = (s.wear[key] ?? 0) + tool.damage;
     if (taken < target.hp) {
@@ -1486,6 +1696,7 @@ export class Sim {
       case 'chip':
         this.setTile(LAYER.GROUND, t, TILE.HOLE);
         give(it, WALL_CHUNK, p, s.layer);
+        s.tally[0]++;
         break;
       case 'cut':
         this.setTile(LAYER.GROUND, t, TILE.FENCE_CUT);
@@ -1508,10 +1719,12 @@ export class Sim {
           }
         }
         give(it, DIRT, p, s.layer);
+        s.tally[1]++;
         break;
       case 'digUp': {
         this.setTile(LAYER.GROUND, t, TILE.SHAFT);
         give(it, DIRT, p, s.layer);
+        s.tally[1]++;
         this.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
         // Out through the new hole.
         const out = this.landing(besideOnGround(w, t, this.bodiesAbout()));
@@ -1520,6 +1733,19 @@ export class Sim {
       }
     }
     this.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
+  }
+
+  /** A live electric fence (cut or hooked with the power on): knocked out, then the infirmary (GDD §9.1). */
+  private shock() {
+    const s = this.state;
+    s.lock = -1;
+    this.dismissAll();
+    this.endTalk();
+    s.ko = KO_STEPS;
+    s.wake = WAKE.INFIRMARY;
+    s.sleeping = false;
+    this.closeBox();
+    this.events.push({ type: 'shocked' });
   }
 
   /**
@@ -1558,12 +1784,36 @@ export class Sim {
     const it = s.items;
     const t = target.tile;
     if (!target.fits) {
-      this.events.push({ type: 'cantStrike', why: 'poster', action: target.action });
+      this.events.push({ type: 'cantStrike', why: target.action === 'grapnel' ? 'noRope' : 'poster', action: target.action });
+      return;
+    }
+    // A hook over a live fence: the shock comes down the rope.
+    if (target.action === 'grapnel' && this.world.ground.kind[target.over!] === TILE.ELECTRIC && this.power) {
+      it.inv[it.hand] = 0;
+      it.rev++;
+      this.shock();
       return;
     }
     it.inv[it.hand] = 0;
     it.rev++;
     switch (target.action) {
+      case 'grapnel': {
+        // Hooked over the fence, the sheet rope takes the player down the far side (both stay there).
+        const rope = it.inv.findIndex((v, k) => k < HOTBAR && itemOf(v) === SHEET_ROPE);
+        if (rope >= 0) it.inv[rope] = 0;
+        this.moveTo(LAYER.GROUND, t, 'grapnel');
+        break;
+      }
+      case 'tape': {
+        // Over the lens: blind for a minute (touching a camera is tampering, if a guard sees it).
+        const k = (this.world.def.cameras ?? []).findIndex((c) => c.z * MAP_W + c.x === t);
+        if (k >= 0) {
+          s.cams[k] = s.step + CAMERA_BLIND_STEPS;
+          s.struckAt = s.step;
+          this.events.push({ type: 'camera', index: k, blind: true });
+        }
+        break;
+      }
       case 'cover':
         if (target.layer === LAYER.VENTS) this.setTile(LAYER.VENTS, t, TILE.GRATE_FAKE);
         else this.setTile(LAYER.GROUND, t, this.world.ground.kind[t] === TILE.FENCE_CUT ? TILE.FENCE_FAKE : held === POSTER_ITEM ? TILE.HOLE_POSTER : TILE.HOLE_FAKE);
@@ -1626,9 +1876,10 @@ export class Sim {
   }
 
   /** Onto a layer, in the middle of a tile. */
-  private moveTo(layer: number, tile: number, how: ClimbAction | 'digUp' | 'rope') {
+  private moveTo(layer: number, tile: number, how: ClimbAction | 'digUp' | 'rope' | 'grapnel') {
     const s = this.state;
     const from = s.layer;
+    this.movedBy = how;
     this.closeBox();
     s.layer = layer;
     // Back on the ground floor, the desk is slid back over its hole.
@@ -1783,6 +2034,7 @@ export class Sim {
     s.paid = true;
     s.cash += def.wage;
     this.events.push({ type: 'cash', n: def.wage, why: 'wage' });
+    s.tally[3] += def.wage;
   }
 
   /** 12:00: the janitor's puddles appear in the corridors, the mailman's round is drawn; inmates head to work. */
@@ -1937,6 +2189,7 @@ export class Sim {
     delete s.coins[index];
     s.cash += n;
     this.events.push({ type: 'cash', n, why: 'loot' });
+    s.tally[3] += n;
   }
 
   // ---------------------------------------------------------------- training (GDD §3.2)
@@ -2170,6 +2423,7 @@ export class Sim {
         s.favors.splice(s.favors.indexOf(f), 1);
         s.cash += f.reward;
         this.events.push({ type: 'favor', who, kind: f.kind, state: 'paid' }, { type: 'cash', n: f.reward, why: 'favor' });
+        s.tally[3] += f.reward;
         this.changeOpinion(who, FAVOR_OPINION);
         return;
       }
@@ -2439,12 +2693,22 @@ export class Sim {
       favors: st.favors ?? [],
       shops: st.shops?.length === this.prison.merchants.length ? st.shops : this.prison.merchants.map(() => new Array(SHOP_SLOTS).fill(0)),
       selfDefense: st.selfDefense ?? false,
+      powerOff: st.powerOff ?? 0,
+      scanned: st.scanned ?? false,
+      cams: st.cams?.length === (this.prison.cameras ?? []).length ? st.cams : (this.prison.cameras ?? []).map(() => 0),
+      sniperAt: st.sniperAt ?? 0,
+      shots: st.shots ?? 0,
+      lit: st.lit ?? false,
+      takeover: st.takeover ?? false,
+      tally: st.tally ?? [0, 0, 0, 0],
+      via: st.via ?? 0,
     };
     // The world as the state has it: the map, then every tile changed since.
     const w = this.world;
     for (const l of w.layers) l.kind.set(l.base);
     for (const k in this.state.tiles) w.layers[layerOfKey(Number(k))].kind[tileOfKey(Number(k))] = this.state.tiles[k];
     w.playerKeys = this.keysCarried();
+    w.riot = this.state.takeover;
     w.refreshBlock();
     this.tilesRev++;
     this.updateDoors(false);
@@ -2462,6 +2726,7 @@ const GUARD_OUTFIT = itemNumber('guard_outfit');
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
 const BED_DUMMY = itemNumber('bed_dummy');
 const POSTER_ITEM = itemNumber('poster');
+const POUCH = itemNumber('pouch');
 
 /** A free hotbar slot. */
 function hasRoom(it: ItemState): boolean {

@@ -301,9 +301,12 @@ export class WorldView {
     }
   }
 
+  private readonly archLight = new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 });
+  private archFlash = 0;
+
   private buildDetectors() {
     const mat = seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 }));
-    const light = new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 });
+    const light = this.archLight;
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (this.kindAt(x, z) !== TILE.DETECTOR) continue;
@@ -438,15 +441,26 @@ export class WorldView {
    * Per frame: doors slide toward their state (open too where a guard walks through, or the
    * player with a key, in `open`); lights follow the time of day (0 day … 1 night).
    */
-  update(dt: number, night: number, open?: ReadonlySet<number>) {
+  update(dt: number, night: number, open?: ReadonlySet<number>, power = 1, riot = false) {
     for (const d of this.doors) {
-      const target = this.world.doorShut[d.index] && !open?.has(d.index) ? 0 : 1;
+      // A takeover (GDD §12): every door stands open.
+      const target = this.world.doorShut[d.index] && !open?.has(d.index) && !riot ? 0 : 1;
       if (d.open !== target) d.open = target > d.open ? Math.min(target, d.open + dt * 3) : Math.max(target, d.open - dt * 3);
       // Eased, sliding into the wall.
       const e = d.open * d.open * (3 - 2 * d.open);
       d.leaf.position.copy(d.home).addScaledVector(d.slide, e);
     }
-    this.lights.setNight(night);
+    this.lights.setNight(night, power);
+    // Detector arches: green while powered, a red flash when one trips, dark with the power out.
+    if (this.archFlash > 0) this.archFlash = Math.max(0, this.archFlash - dt);
+    const flash = this.archFlash > 0 && Math.floor(this.archFlash * 8) % 2 === 0;
+    this.archLight.color.setHex(flash ? 0xff2a1a : power > 0.5 ? 0x3fb950 : 0x1d2229);
+    this.archLight.emissive.setHex(flash ? 0xff2a1a : power > 0.5 ? 0x2a9a3a : 0x000000);
+  }
+
+  /** A detector arch tripped (GDD §5.4): its lamps flash red a moment. */
+  tripArch() {
+    this.archFlash = 1.6;
   }
 
   dispose() {

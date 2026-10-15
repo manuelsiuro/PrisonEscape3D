@@ -81,9 +81,11 @@ export class Lights {
     return mat;
   }
 
-  /** 0 in daylight, 1 at night. */
-  setNight(night: number) {
-    this.bulbs.color.setRGB(0.33 + night * 0.67, 0.33 + night * 0.55, 0.33 + night * 0.2);
+  /** 0 in daylight, 1 at night; `power` 0–1 (the generator off: every lamp and room light goes dark, GDD §5.5). */
+  setNight(night: number, power = 1) {
+    const lit = night * power;
+    this.bulbs.color.setRGB(0.33 + lit * 0.67, 0.33 + lit * 0.55, 0.33 + lit * 0.2);
+    night = lit;
     for (const [mat, peak] of [
       [this.warm, 0.42],
       [this.cool, 0.3],

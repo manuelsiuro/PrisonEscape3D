@@ -229,6 +229,8 @@ export function stepGuards(
         break;
       }
       case GUARD.INVESTIGATE:
+        // Sent to look somewhere (a detector, a camera, the generator): plan the walk there once.
+        if (g.target >= 0 && g.goal !== g.target) head(crowd, g, g.target);
         if (g.wait > 0) g.wait--;
         else if (g.path.length) walkPath(crowd, g, k);
         else {
@@ -292,6 +294,23 @@ export function startChase(g: Guard) {
   g.path = [];
   g.goal = -1;
   g.wait = 0;
+}
+
+/**
+ * Sent to look at a place (GDD §5.4–5.6: a tripped detector, a camera's alarm, the generator
+ * switched off): it goes there and looks around, then back to duty. A chase comes first; a bed
+ * check or shakedown under way is taken up again after.
+ */
+export function sendToLook(g: Guard, tile: number) {
+  if (g.mode === GUARD.CHASE) return;
+  if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
+  g.mode = GUARD.INVESTIGATE;
+  g.target = tile;
+  g.timer = LOOK_AROUND;
+  g.path = [];
+  g.goal = -1;
+  g.wait = 0;
+  g.doing = DOING.NOTHING;
 }
 
 /** Back to work: an interrupted bed check or shakedown first, else the round or post (planned afresh). */

@@ -55,6 +55,11 @@ const P: Record<string, string> = {
   brain: '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1ZM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/>',
   letter: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
   drop: '<path d="M12 3c3 4.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-6.5 6-11Z"/>',
+  hook: '<path d="M12 3v11a4 4 0 0 1-8 0"/><path d="M12 14a4 4 0 0 0 8 0M12 3l-3 3M12 3l3 3"/>',
+  camera: '<path d="M3 8h12l4-3v10l-4-3H3Z"/><path d="M7 12v5M4 17h6"/>',
+  eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.6 6.6A16.7 16.7 0 0 0 2.5 12s3.5 6 9.5 6a9.5 9.5 0 0 0 4.4-1.1"/>',
+  plug: '<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0Z"/><path d="M12 17v5"/>',
+  route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/>',
   board: '<rect x="4" y="3" width="16" height="13" rx="1.5"/><path d="M8 21l2-5M16 21l-2-5M8 7h5M8 10h8"/>',
 };
 

@@ -246,4 +246,26 @@ export const CENTER_PERKS: PrisonDef = {
     { id: 'woodshop', cell: 0 },
     { id: 'mailman', cell: 8 },
   ],
+  // Cameras (GDD §5.6): the staff corridor (its west end, looking down it past the generator and
+  // solitary doors), the woodshop's corner, the control room.
+  cameras: [
+    { x: 7, z: 36, face: 1 },
+    { x: 39, z: 25, face: 3 },
+    { x: 50, z: 39, face: 3 },
+  ],
+  // The two south towers' searchlights (GDD §4.1): each sweeps its side's strip and half the south yard.
+  searchlights: [
+    [
+      { x: 4, z: 18 },
+      { x: 4, z: 47 },
+      { x: 14, z: 53 },
+      { x: 27, z: 57 },
+    ],
+    [
+      { x: 59, z: 18 },
+      { x: 59, z: 47 },
+      { x: 49, z: 53 },
+      { x: 34, z: 57 },
+    ],
+  ],
 };

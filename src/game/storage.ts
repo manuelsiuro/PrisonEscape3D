@@ -14,12 +14,15 @@ export const KEYS = {
   settings: `${PREFIX}.settings`,
   /** Hints and intro cards already shown. */
   seen: `${PREFIX}.seen`,
+  // Progress.
+  /** Escapes per prison (records.ts): the routes found and the quickest. */
+  escapes: `${PREFIX}.escapes`,
 } as const;
 
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS];
 
 /** The keys "Reset progress" wipes. */
-export const PROGRESS_KEYS: StorageKey[] = [];
+export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes];
 
 export function readText(key: StorageKey): string | null {
   try {

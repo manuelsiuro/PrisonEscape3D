@@ -5,7 +5,7 @@
  *   the chunk lands in hand, the player walks through and inmates never path through holes;
  * - covers: a poster only in the player's cell, a fake wall block anywhere, both taken off again;
  * - cutting: plastic knives through the north fence, then out on the road: escaped;
- * - the electric fence knocks the player out (the generator is always on before P7);
+ * - the electric fence knocks the player out while the generator runs (securitytest cuts the power);
  * - vents: a nail file unscrews the cell grate, the player climbs in, crawls to the ladder,
  *   climbs to the roof and back down; a fake vent cover goes on from above;
  * - tunnels: a shovel digs under the desk, the desk panel leads down, the third unbraced

@@ -4,6 +4,7 @@ import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { Character, guardLook, INMATE_LOOK, inmateLook, type BadgeKind, type BedPose } from './Character';
 import { Cones } from './Cones';
+import { Security, type SecurityFrame } from './Security';
 import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
@@ -70,6 +71,10 @@ export interface Frame {
   /** Puddles to mop (tiles), and a number that changes whenever they do. */
   puddles: readonly number[];
   puddlesRev: number;
+  /** Security (GDD §5.4–5.6): the power, cameras, searchlights, a sniper's aim. */
+  security: SecurityFrame;
+  /** A takeover (GDD §12): every door stands open. */
+  takeover: boolean;
 }
 
 export interface GuardFrame {
@@ -191,6 +196,8 @@ export class View {
   private readonly guide = new Guide();
   private readonly dust = new Dust();
   private structure: Structure | null = null;
+  private security: Security | null = null;
+  private riot = false;
   private underground: Underground | null = null;
   /** The layer drawn (the player's), and the tiles revision the damage was drawn for. */
   private layer = -1;
@@ -295,7 +302,13 @@ export class View {
       this.scene.remove(this.underground.group, this.underground.lantern);
       this.underground.dispose();
     }
+    if (this.security) {
+      this.scene.remove(this.security.group);
+      this.security.dispose();
+    }
     this.world = world;
+    this.security = new Security(world);
+    this.scene.add(this.security.group);
     this.worldView = new WorldView(world);
     this.structure = new Structure(world, this.worldView);
     this.underground = new Underground(world);
@@ -652,12 +665,31 @@ export class View {
     }
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
+    // Cameras, searchlights and snipers belong to the ground floor (from below or in the ducts, out of the picture).
+    if (this.security) {
+      this.security.group.visible = f.layer !== LAYER.UNDER;
+      this.security.update(f.security, dt, time, this.night, !this.reducedMotion);
+    }
+    this.riot = f.takeover;
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion);
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);
     this.guide.update(dt, time, f, !this.reducedMotion);
     this.alarm += ((f.alarm ? 1 : 0) - this.alarm) * Math.min(1, dt * 3);
     this.render(f.minuteOfDay, dt, cut ? this.feet : null, time);
+  }
+
+  /** A sniper's shot (GDD §5.6): the tracer and flash, dust where a warning shot lands, a jolt when it hits. */
+  shot(tower: number, x: number, z: number, hit: boolean) {
+    this.security?.shot(tower, x, z, hit);
+    if (this.reducedMotion) return;
+    if (hit) this.shake = Math.max(this.shake, 0.8);
+    else this.dust.puff(x + 0.9, z + 0.6, 0x9a8a6a, 10, 0.8);
+  }
+
+  /** A detector arch tripped: its lamps flash. */
+  tripArch() {
+    this.worldView?.tripArch();
   }
 
   /** The ring under the locked-on target (pulsing), and the thrown cup's flight. */
@@ -703,6 +735,8 @@ export class View {
     this.doorsOpen.clear();
     this.cones.update([], dt, 0, false);
     this.alarm = 0;
+    this.riot = false;
+    if (this.security) this.security.group.visible = false;
     this.pickups.update([], -1, null, dt, time, false);
     this.guide.setPath(null);
     this.guide.setTap(null);
@@ -737,7 +771,7 @@ export class View {
       this.ambient.intensity = 0.85;
       this.sky.set(0x120c08);
     }
-    this.worldView?.update(dt, night, this.doorsOpen);
+    this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot);
     this.dust.update(dt);
     this.camera.position.copy(this.target).add(CAMERA_OFFSET);
     this.camera.lookAt(this.target);

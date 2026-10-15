@@ -59,6 +59,14 @@ export class Cones {
   readonly group = new THREE.Group();
   private cones: Cone[] = [];
   world: World | null = null;
+  private readonly range: number;
+  private readonly colors: Record<number, number>;
+
+  /** Guards' cones by default; cameras see less far and in their own colors. */
+  constructor(opts: { range?: number; colors?: Record<number, number> } = {}) {
+    this.range = opts.range ?? RANGE;
+    this.colors = { ...COLORS, ...opts.colors };
+  }
 
   /** One cone per guard. */
   setCount(n: number) {
@@ -111,17 +119,17 @@ export class Cones {
       uv[1] = 1;
       for (let r = 0; r <= RAYS; r++) {
         const a = c.angle - SIGHT_HALF_ANGLE + (2 * SIGHT_HALF_ANGLE * r) / RAYS;
-        const reach = sightReach(w, g.x, g.z, a);
+        const reach = sightReach(w, g.x, g.z, a, this.range);
         p[(r + 1) * 3] = g.x + Math.cos(a) * reach;
         p[(r + 1) * 3 + 1] = 0.05;
         p[(r + 1) * 3 + 2] = g.z + Math.sin(a) * reach;
         uv[(r + 1) * 2] = 0.5;
-        uv[(r + 1) * 2 + 1] = 1 - reach / RANGE;
+        uv[(r + 1) * 2 + 1] = 1 - reach / this.range;
       }
       c.mesh.geometry.attributes.position.needsUpdate = true;
       c.mesh.geometry.attributes.uv.needsUpdate = true;
       c.mesh.geometry.computeBoundingSphere();
-      c.color.set(COLORS[g.alert] ?? COLORS[ALERT.CALM]);
+      c.color.set(this.colors[g.alert] ?? this.colors[ALERT.CALM]);
       c.material.color.copy(c.color);
       const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : 0.32;
       c.material.opacity = c.shown * (strength + night * 0.12);

@@ -47,3 +47,18 @@ markSeen('walk');
 markSeen('walk');
 check(hasSeen('walk') && JSON.parse(mem.get(KEYS.seen)!).length === 1, 'seen once, stored once');
 console.log('storage ok, version', SAVE_VERSION);
+
+// Escape records: routes collected once each, the quickest kept; garbage falls back.
+{
+  const { recordEscape, recordOf } = await import('../src/game/records');
+  check(recordOf('center-perks').routes.length === 0, 'no escapes yet');
+  const a = recordEscape('center-perks', 'tunnel', 2, 2000);
+  const b = recordEscape('center-perks', 'tunnel', 1, 900);
+  const c = recordEscape('center-perks', 'roof', 3, 4000);
+  check(a.newRoute && a.best && !b.newRoute && b.best && c.newRoute && !c.best, 'new routes and the quickest');
+  const r = recordOf('center-perks');
+  check(r.routes.join() === 'tunnel,roof' && r.bestDay === 1 && r.bestMinute === 900, 'stored');
+  mem.set(KEYS.escapes, JSON.stringify({ 'center-perks': { routes: 'x', bestDay: 'y' } }));
+  check(recordOf('center-perks').routes.length === 0 && recordOf('center-perks').bestDay === 0, 'a bad record falls back');
+  console.log('escape records ok');
+}

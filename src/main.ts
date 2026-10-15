@@ -9,7 +9,7 @@ import { findPath, smooth, tileAt } from './sim/ai/path';
 import { isFloor, placesOf } from './sim/ai/places';
 import { command, DIR_X, DIR_Z, OP, SLOT } from './sim/command';
 import { Recorder } from './sim/Recorder';
-import { Sim, type SimEvent } from './sim/Sim';
+import { ESCAPES, Sim, type SimEvent } from './sim/Sim';
 import { FAVOR_STATE, jobRooms, nearestProp, STATION_REACH, type Station } from './sim/systems/economy';
 import { BoardPanel, inmateName, jobName, TalkPanel, TrainCard, WorkChips } from './ui/social';
 import { ProfilePanel } from './ui/profile';
@@ -27,8 +27,10 @@ import { CHOCOLATE_ENERGY, KO_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, STEPS_PER_S
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from './sim/world/World';
 import { TILE } from './sim/world/tiles';
 import { climbTarget, DIRT, facesProp, ladderFootOf, preferClimb, STRIKES, toolTarget, underMyDesk, WALL_CHUNK, type ClimbTarget, type ToolTarget } from './sim/systems/structure';
+import { beamAt, cameraSees, cameraSweep, sniperOn } from './sim/systems/security';
 import { ToolControls, type ToolView } from './ui/tool';
-import { showEscaped } from './ui/screens/escaped';
+import { showVictory } from './ui/screens/escaped';
+import { recordEscape, recordOf } from './game/records';
 import { formatTime } from './sim/systems/clock';
 import type { Body } from './sim/systems/movement';
 import { View, type Frame, type Quality } from './render/View';
@@ -458,7 +460,7 @@ function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
+      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -518,6 +520,51 @@ function announce(e: SimEvent, sim: Sim) {
       break;
     case 'escaped':
       escaped();
+      break;
+    // ---------------------------------------------------------------- security (GDD §5.4–5.6, §12)
+    case 'power':
+      if (!e.on) {
+        sound.powerDown();
+        buzz('giveWay');
+        banner.show(t('banner.powerOff'), t('banner.powerOffSub'), 'routine', 3500);
+        coachOnce('power', 'hint.power');
+      } else {
+        sound.powerUp();
+        banner.toast(t(e.by === 'guard' ? 'toast.powerBack' : 'toast.powerOn'), e.by === 'guard' ? 'bad' : 'info');
+      }
+      break;
+    case 'scanned':
+      if (e.tripped) {
+        sound.buzzer();
+        view.tripArch();
+        coachOnce('pouch', 'hint.pouch');
+      } else {
+        sound.blip();
+        itemsUI.toast(t('toast.pouch', { n: Math.max(0, e.pouch) }));
+      }
+      break;
+    case 'camera':
+      if (e.blind) {
+        sound.tape();
+        itemsUI.toast(t('toast.taped'));
+      } else banner.toast(t("toast.cameraBack"), "info");
+      break;
+    case 'aim':
+      sound.aim();
+      buzz('missed');
+      banner.toast(t('toast.sniperAim'), 'bad', 4000);
+      break;
+    case 'shot':
+      sound.gunshot(e.hit);
+      if (game) view.shot(e.tower, game.rec.sim.state.player.x / UNIT, game.rec.sim.state.player.z / UNIT, e.hit);
+      buzz(e.hit ? 'lockdown' : 'strike');
+      break;
+    case 'takeover':
+      if (e.on) {
+        sound.takeover();
+        buzz('lockdown');
+        banner.show(t('banner.takeover'), t('banner.takeoverSub'), 'routine', 5000);
+      } else banner.toast(t('toast.takeoverOver'), 'bad', 4500);
       break;
     case 'gaveUp':
       banner.show(t('banner.gaveUp'), t('banner.gaveUpSub'), 'routine', 5000);
@@ -887,13 +934,36 @@ async function escaped() {
   sound.chime();
   buzz('attended');
   const sim = g.rec.sim;
+  const st = sim.state;
   const clock = sim.clock;
+  // Kept on this device: the way out joins the prison's list, the quickest is remembered.
+  const via = ESCAPES[st.via];
+  const rec = recordEscape(sim.prison.id, via, clock.day, Math.floor(st.step / STEPS_PER_MINUTE));
   // A moment to see the road under their feet before the card.
   await new Promise((r) => setTimeout(r, 900));
   if (game !== g) return;
-  await showEscaped({ prison: t(`prison.${sim.prison.id}` as Key), day: clock.day, time: formatTime(clock) }, click);
-  if (game === g) endGame();
+  const choice = await showVictory(
+    {
+      prison: t(`prison.${sim.prison.id}` as Key),
+      day: clock.day,
+      time: formatTime(clock),
+      via,
+      routes: ROUTES,
+      found: rec.record.routes,
+      newRoute: rec.newRoute,
+      best: rec.best,
+      tally: st.tally,
+    },
+    click,
+  );
+  if (game !== g) return;
+  playAgain = choice === 'again';
+  endGame();
 }
+/** The ways out of a prison, in the order the victory screen shows them (GDD §12, L1). */
+const ROUTES = ESCAPES.slice(1);
+/** The victory screen's "Play again": straight into a new game, past the title. */
+let playAgain = false;
 addEventListener('keydown', (e) => {
   if (!game || game.paused || e.metaKey || e.ctrlKey || e.repeat) return;
   // Escape closes a panel first, and pauses only when none is open.
@@ -1124,10 +1194,13 @@ function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, hel
     return actionLabel;
   }
   if (target.kind === 'fixture') {
-    const key = `fixture:${target.use}:${currentLang()}`;
+    // The generator says which way it would go (GDD §5.5).
+    const power = target.use === 'generator' ? sim.power : true;
+    const key = `fixture:${target.use}:${power}:${currentLang()}`;
     if (key !== actionKey) {
       actionKey = key;
-      Object.assign(actionLabel, { verb: t(`act.${target.use}` as Key), what: t(`thing.${target.use === 'board' ? 'jobBoard' : target.use}` as Key) });
+      const verb = target.use === 'generator' ? (power ? 'act.powerOff' : 'act.powerOn') : `act.${target.use}`;
+      Object.assign(actionLabel, { verb: t(verb as Key), what: t(`thing.${target.use === 'board' ? 'jobBoard' : target.use}` as Key) });
     }
     return actionLabel;
   }
@@ -1153,8 +1226,8 @@ function bodiesOf(sim: Sim): Body[] {
 }
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword' };
+const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff' };
 
 /** Everyone who can be looted, by Cast id (inmates, then guards); one array, refilled. */
 const lootable: Array<{ body: Body; ko: number; angry?: number }> = [];
@@ -1246,7 +1319,18 @@ function describeTool(sim: Sim, tt: ToolTarget | null, held: number): ToolView |
   v.repeat = strike && tt.action !== 'digUp';
   if (tt.action === 'eat') v.fits = sim.state.energy < 100;
   if (!strike) {
-    v.what = tt.action === 'eat' ? t('thing.chocolate') : tt.action === 'cover' ? t(tt.layer === LAYER.VENTS ? 'thing.grate' : 'thing.hole') : tt.action === 'brace' ? '' : t('thing.rope');
+    v.what =
+      tt.action === 'eat'
+        ? t('thing.chocolate')
+        : tt.action === 'cover'
+          ? t(tt.layer === LAYER.VENTS ? 'thing.grate' : 'thing.hole')
+          : tt.action === 'brace'
+            ? ''
+            : tt.action === 'grapnel'
+              ? t(tt.fits ? 'thing.overFence' : 'thing.needRope')
+              : tt.action === 'tape'
+                ? t('thing.camera')
+                : t('thing.rope');
     v.progress = null;
     return v;
   }
@@ -1371,7 +1455,12 @@ const frameData: Frame = {
   reps: 0,
   puddles: [],
   puddlesRev: 0,
+  security: { power: true, cams: [], beams: null, aim: -1, px: 0, pz: 0 },
+  takeover: false,
 };
+/** Searchlight pools (tiles), refilled every frame. */
+const beamFrames: Array<{ x: number; z: number }> = [];
+const beamAt0 = { x: 0, z: 0 };
 const LETTER = itemNumber('letter');
 const MOP = itemNumber('mop');
 const MAGAZINE = itemNumber('magazine');
@@ -1392,7 +1481,7 @@ const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb
   fighting: false,
 };
 const tapAt = { x: 0, z: 0 };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, takeoverLeft: null };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
 
 /** Reps so far, counted across sets (the view pumps the arms on each). */
@@ -1624,7 +1713,7 @@ function frame(now: number) {
     const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, g.ladderFoot, bodiesOf(sim)), faced);
     memo.target = memo.climb ? null : reach;
-    memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim));
+    memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv);
     memo.canLock = !busy && st.layer === LAYER.GROUND && lockCandidates(sim.world, st, p, lockList).length > 0;
     let fighting = false;
     for (const m of st.inmates) if (m.angry > 0) fighting = true;
@@ -1661,6 +1750,32 @@ function frame(now: number) {
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;
+  // Security (GDD §5.4–5.6) as the sim has it: cameras on their sweep, the searchlights at night, a sniper's aim.
+  const sec = f.security;
+  sec.power = sim.power;
+  sec.px = f.x;
+  sec.pz = f.z;
+  const cams = sim.prison.cameras ?? [];
+  sec.cams.length = cams.length;
+  cams.forEach((c, k) => {
+    const o = (sec.cams[k] ??= { facing: 0, on: false, sees: false });
+    o.facing = Math.PI / 2 - ((c.face - 1 + cameraSweep(k, st.step + a)) * Math.PI * 2) / 16;
+    o.on = sim.power && !st.cams[k];
+    o.sees = o.on && st.layer === LAYER.GROUND && !g.over && cameraSees(sim.world, c, k, st.step, p);
+  });
+  const lights = sim.prison.searchlights;
+  if (lights && sim.power && ROUTINE[st.routine].id === 'lightsOut') {
+    beamFrames.length = lights.length;
+    lights.forEach((path, k) => {
+      beamAt(path, st.step + a, beamAt0);
+      const o = (beamFrames[k] ??= { x: 0, z: 0 });
+      o.x = beamAt0.x / UNIT;
+      o.z = beamAt0.z / UNIT;
+    });
+    sec.beams = beamFrames;
+  } else sec.beams = null;
+  sec.aim = st.sniperAt > 0 && !busy ? sniperOn(sim.world, p, st.layer) : -1;
+  f.takeover = st.takeover;
   view.draw(f, dt, now / 1000);
   const box = containersOf(sim.world)[it.open];
   const v = itemsView;
@@ -1726,6 +1841,10 @@ function frame(now: number) {
     workHud.paid = st.paid;
     hudState.work = workHud;
   } else hudState.work = null;
+  hudState.powerLeft = st.powerOff > 0 ? (st.powerOff - a) / STEPS_PER_SECOND : null;
+  let wakes = Infinity;
+  for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
+  hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
   hud.update(clock, zone, hudState);
 }
 
@@ -1736,9 +1855,15 @@ requestAnimationFrame(frame);
 // ------------------------------------------------------------------ flows
 async function titleFlow() {
   for (;;) {
-    const choice = await showTitle(
+    const again = playAgain;
+    playAgain = false;
+    const record = recordOf(PRISONS[0].id);
+    const choice = again
+      ? 'play'
+      : await showTitle(
       {
         prisonName: t(`prison.${PRISONS[0].id}` as 'prison.center-perks'),
+        record: record.routes.length ? t('title.record', { n: record.routes.length, of: ROUTES.length }) : '',
         muted: settings.muted,
         toggleSound: () => {
           settings.muted = !settings.muted;
