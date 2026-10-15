@@ -353,6 +353,7 @@ function announce(e: SimEvent, sim: Sim) {
       buzz('missed');
       // A lockdown in the same step says it in its banner.
       if (!sim.events.some((m) => m.type === 'lockdown')) banner.toast(t(`spotted.${e.reason}` as Key), 'bad');
+      if (e.reason === 'searchlight') coachOnce('searchlight', 'hint.searchlight');
       break;
     }
     case 'caught':
@@ -549,11 +550,15 @@ function announce(e: SimEvent, sim: Sim) {
         itemsUI.toast(t('toast.taped'));
       } else banner.toast(t("toast.cameraBack"), "info");
       break;
-    case 'aim':
+    case 'aim': {
       sound.aim();
       buzz('missed');
-      banner.toast(t('toast.sniperAim'), 'bad', 4000);
+      // In and out of a tower's reach: say it once in a while, not at every step back into it.
+      const now = performance.now();
+      if (now - lastAim > 8000) banner.toast(t('toast.sniperAim'), 'bad', 4000);
+      lastAim = now;
       break;
+    }
     case 'shot':
       sound.gunshot(e.hit);
       if (game) view.shot(e.tower, game.rec.sim.state.player.x / UNIT, game.rec.sim.state.player.z / UNIT, e.hit);
@@ -785,6 +790,7 @@ function floatAt(id: number, text: string, kind: 'dealt' | 'taken' | 'ko' | 'cas
 const NEED: Record<string, string> = {
   rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
 let lastCant = 0;
+let lastAim = -1e9;
 
 /** A tip shown the first time something happens (and never again). */
 function coachOnce(name: string, key: Key, params?: Record<string, string | number>) {
@@ -953,6 +959,7 @@ async function escaped() {
       newRoute: rec.newRoute,
       best: rec.best,
       tally: st.tally,
+      bestDay: rec.record.bestDay,
     },
     click,
   );
@@ -1455,12 +1462,13 @@ const frameData: Frame = {
   reps: 0,
   puddles: [],
   puddlesRev: 0,
-  security: { power: true, cams: [], beams: null, aim: -1, px: 0, pz: 0 },
+  security: { power: true, cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
   takeover: false,
 };
 /** Searchlight pools (tiles), refilled every frame. */
 const beamFrames: Array<{ x: number; z: number }> = [];
 const beamAt0 = { x: 0, z: 0 };
+const hookAt = { x: 0, z: 0 };
 const LETTER = itemNumber('letter');
 const MOP = itemNumber('mop');
 const MAGAZINE = itemNumber('magazine');
@@ -1758,10 +1766,13 @@ function frame(now: number) {
   const cams = sim.prison.cameras ?? [];
   sec.cams.length = cams.length;
   cams.forEach((c, k) => {
-    const o = (sec.cams[k] ??= { facing: 0, on: false, sees: false });
+    const o = (sec.cams[k] ??= { facing: 0, on: false, sees: false, taped: false });
+    o.taped = st.cams[k] > 0;
     o.facing = Math.PI / 2 - ((c.face - 1 + cameraSweep(k, st.step + a)) * Math.PI * 2) / 16;
     o.on = sim.power && !st.cams[k];
     o.sees = o.on && st.layer === LAYER.GROUND && !g.over && cameraSees(sim.world, c, k, st.step, p);
+    // The first time a camera has the player in its eye: what cameras do, and how to blind one.
+    if (o.sees && !busy) coachOnce('camera', 'hint.camera');
   });
   const lights = sim.prison.searchlights;
   if (lights && sim.power && ROUTINE[st.routine].id === 'lightsOut') {
@@ -1775,6 +1786,13 @@ function frame(now: number) {
     sec.beams = beamFrames;
   } else sec.beams = null;
   sec.aim = st.sniperAt > 0 && !busy ? sniperOn(sim.world, p, st.layer) : -1;
+  // A grapnel ready at a roof's edge: where it would land.
+  const hook = memo.tool?.action === 'grapnel' ? memo.tool.tile : -1;
+  if (hook >= 0) {
+    hookAt.x = (hook % MAP_W) + 0.5;
+    hookAt.z = Math.floor(hook / MAP_W) + 0.5;
+  }
+  sec.hook = hook >= 0 ? hookAt : null;
   f.takeover = st.takeover;
   view.draw(f, dt, now / 1000);
   const box = containersOf(sim.world)[it.open];

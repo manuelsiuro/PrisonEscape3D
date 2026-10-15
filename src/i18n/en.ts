@@ -585,6 +585,9 @@ export const en = {
   "route.tunnel": "Down a tunnel",
   "route.roof": "Over the roof",
   "route.takeover": "Prison takeover",
+  "hint.camera": "A camera is watching you: it sounds the alarm at whatever a guard would. Tape or toothpaste over its lens blinds it for a minute",
+  "hint.searchlight": "Searchlights sweep the yards at night. Keep out of the light, wear a guard's uniform, or cut the power",
+  "victory.bestWas": "Quickest",
 };
 
 export type Strings = typeof en;

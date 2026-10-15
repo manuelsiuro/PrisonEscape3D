@@ -98,7 +98,10 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   carry(sim, 'sturdy_cutters');
   const ev = run(sim, 60, command(0, OP.USE, 1));
   check(!ev.some((e) => e.type === 'shocked') && kind(sim, 27, 61) === TILE.FENCE_CUT, 'the dead electric fence cuts like any other');
-  const back = run(sim, POWER_OFF_STEPS);
+  const back = run(sim, POWER_OFF_STEPS - 200);
+  check(g.mode === GUARD.INVESTIGATE && Math.floor(g.body.x / UNIT) + Math.floor(g.body.z / UNIT) * MAP_W === target, 'the maintenance guard waits at the generator while the power is out');
+  back.push(...run(sim, 200));
+  check(g.mode !== GUARD.INVESTIGATE, 'and goes back to duty when it’s back on');
   const on = back.find((e) => e.type === 'power');
   check(sim.power && on?.type === 'power' && on.by === 'guard', 'back on 45 s later (the maintenance guard)');
   console.log(`generator: off for ${POWER_OFF_STEPS / 20} s; the east guard sent to ${target % MAP_W},${Math.floor(target / MAP_W)}, there at ${Math.floor(g.body.x / UNIT)},${Math.floor(g.body.z / UNIT)}; the fence ${TILE.FENCE_CUT === kind(sim, 27, 61) ? 'cut' : 'whole'}`);

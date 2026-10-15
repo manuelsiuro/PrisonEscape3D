@@ -4,6 +4,7 @@ import { BODY_HALF, CAMERA_REACH, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRAPNEL_REACH
 import { isGrate, isTunnel, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { placesOf } from '../ai/places';
+import { lineOfSight } from '../ai/sight';
 import type { Body } from './movement';
 
 /**
@@ -339,7 +340,8 @@ export function cameraInReach(w: World, b: Body): number {
   for (let k = 0; k < cams.length; k++) {
     const dx = Math.abs(cams[k].x * UNIT + UNIT / 2 - b.x);
     const dz = Math.abs(cams[k].z * UNIT + UNIT / 2 - b.z);
-    if (Math.max(dx, dz) <= CAMERA_REACH) return k;
+    // Within reach, and not through a wall.
+    if (Math.max(dx, dz) <= CAMERA_REACH && lineOfSight(w, b.x, b.z, cams[k].x * UNIT + UNIT / 2, cams[k].z * UNIT + UNIT / 2)) return k;
   }
   return -1;
 }

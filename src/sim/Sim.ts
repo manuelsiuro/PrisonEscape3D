@@ -473,7 +473,10 @@ export class Sim {
     // Clock.
     const clock = this.clock;
     // The power comes back: the maintenance guard has the generator running again (GDD §5.5).
-    if (s.powerOff > 0 && --s.powerOff === 0) this.events.push({ type: 'power', on: true, by: 'guard' });
+    if (s.powerOff > 0 && --s.powerOff === 0) {
+      this.maintenanceDone();
+      this.events.push({ type: 'power', on: true, by: 'guard' });
+    }
     // A camera's tape comes off.
     s.cams.forEach((until, k) => {
       if (until && s.step >= until) {
@@ -810,24 +813,39 @@ export class Sim {
     const s = this.state;
     if (s.powerOff > 0) {
       s.powerOff = 0;
+      this.maintenanceDone();
       this.events.push({ type: 'power', on: true, by: 'player' });
       return;
     }
     s.powerOff = POWER_OFF_STEPS;
     this.events.push({ type: 'power', on: false, by: 'player' });
+    // It stays at the generator until the power is back (on its way there it is a guard like any other).
+    this.summon(this.generatorSpot(prop), 1, POWER_OFF_STEPS);
+  }
+
+  /** Where the maintenance guard stands at the generator. */
+  private generatorSpot(prop: number): number {
     const p = this.world.props[prop];
     const at = besideOnGround(this.world, p.z * MAP_W + p.x + p.w);
-    this.summon(at >= 0 ? at : p.z * MAP_W + p.x, 1);
+    return at >= 0 ? at : p.z * MAP_W + p.x;
+  }
+
+  /** The power is back: whoever was sent to the generator goes back to duty. */
+  private maintenanceDone() {
+    const gen = this.world.props.findIndex((q) => q.kind === 'generator');
+    if (gen < 0) return;
+    const spot = this.generatorSpot(gen);
+    for (const g of this.state.guards) if (g.mode === GUARD.INVESTIGATE && g.target === spot) backToDuty(g);
   }
 
   /** The nearest guards up and about (and not chasing) go and look at a tile. */
-  private summon(tile: number, n: number) {
+  private summon(tile: number, n: number, look?: number) {
     const s = this.state;
     const tx = (tile % MAP_W) * UNIT + UNIT / 2;
     const tz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
     const free = s.guards.filter((g) => awake(g) && g.mode !== GUARD.CHASE);
     free.sort((a, b) => (a.body.x - tx) ** 2 + (a.body.z - tz) ** 2 - ((b.body.x - tx) ** 2 + (b.body.z - tz) ** 2));
-    for (const g of free.slice(0, n)) sendToLook(g, tile);
+    for (const g of free.slice(0, n)) sendToLook(g, tile, look);
   }
 
   /**

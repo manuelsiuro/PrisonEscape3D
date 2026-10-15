@@ -499,6 +499,7 @@ body.reduced-motion .alarm-vignette.on {
 
 /* Security (P7): chips while something runs out (the power, a takeover's open gates). */
 .hud-alerts {
+  flex-wrap: wrap;
   margin-top: 8px;
   justify-content: center;
 }

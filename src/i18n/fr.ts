@@ -584,4 +584,7 @@ export const fr: Partial<Strings> = {
   "route.tunnel": "Par un tunnel",
   "route.roof": "Par les toits",
   "route.takeover": "Mutinerie",
+  "hint.camera": "Une caméra te surveille : elle donne l’alerte comme un gardien. Du scotch ou du dentifrice sur l’objectif l’aveugle une minute",
+  "hint.searchlight": "Les projecteurs balaient les cours la nuit. Reste hors de la lumière, porte un uniforme de gardien ou coupe le courant",
+  "victory.bestWas": "Record",
 };

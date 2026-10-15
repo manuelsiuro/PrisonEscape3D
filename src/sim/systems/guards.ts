@@ -301,12 +301,12 @@ export function startChase(g: Guard) {
  * switched off): it goes there and looks around, then back to duty. A chase comes first; a bed
  * check or shakedown under way is taken up again after.
  */
-export function sendToLook(g: Guard, tile: number) {
+export function sendToLook(g: Guard, tile: number, look = LOOK_AROUND) {
   if (g.mode === GUARD.CHASE) return;
   if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
   g.mode = GUARD.INVESTIGATE;
   g.target = tile;
-  g.timer = LOOK_AROUND;
+  g.timer = look;
   g.path = [];
   g.goal = -1;
   g.wait = 0;

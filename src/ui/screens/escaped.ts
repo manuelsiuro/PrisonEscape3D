@@ -15,6 +15,8 @@ export interface Victory {
   best: boolean;
   /** Walls chipped, tunnel tiles dug, guards knocked out, cash earned. */
   tally: readonly number[];
+  /** The quickest escape's day (this one's, when it's the quickest). */
+  bestDay: number;
 }
 
 export type VictoryChoice = 'again' | 'title';
@@ -50,7 +52,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
         ${stat('shovel', dug, 'victory.dug')}
         ${stat('fist', guards, 'victory.guards')}
         ${stat('coin', `$${cash}`, 'victory.cash')}
-        ${stat('star', v.best ? t('victory.bestYes') : '—', 'victory.best')}
+        ${v.best ? stat('star', t('victory.bestYes'), 'victory.best') : stat('star', t('hud.day', { n: v.bestDay }), 'victory.bestWas')}
       </div>
       <div class="v-routes"><span class="v-routes-label"></span><span class="v-pips">${pips}</span></div>
       <div class="actions">

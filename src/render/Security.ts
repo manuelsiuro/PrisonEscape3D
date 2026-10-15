@@ -13,7 +13,7 @@ export interface SecurityFrame {
   /** The generator running. */
   power: boolean;
   /** Each camera: its heading (radians, the view's convention: 0 = +z) and whether it watches (power, no tape); whether it sees the player. */
-  cams: Array<{ facing: number; on: boolean; sees: boolean }>;
+  cams: Array<{ facing: number; on: boolean; sees: boolean; taped: boolean }>;
   /** Each searchlight's pool (tiles), or null while off (by day, or the power out). */
   beams: Array<{ x: number; z: number }> | null;
   /** The tower whose sniper has the player in its sights (-1: none). */
@@ -21,6 +21,8 @@ export interface SecurityFrame {
   /** The player's position (tiles), where the laser and shots go. */
   px: number;
   pz: number;
+  /** A grapnel ready to throw from a roof's edge: where it would land the player (tiles), else null. */
+  hook: { x: number; z: number } | null;
 }
 
 /** A soft round pool of light (additive), shared by the searchlights. */
@@ -89,6 +91,11 @@ export class Security {
   private readonly fence: Array<[number, number]> = [];
   private readonly genLamp: THREE.MeshBasicMaterial | null = null;
   private readonly coneFrames: ConeFrame[] = [];
+  /** The grapnel's throw: an arc from the roof's edge over the fence, a ring where it lands. */
+  private readonly arc: THREE.Line;
+  private readonly arcMat: THREE.LineDashedMaterial;
+  private readonly ring: THREE.Mesh;
+  private hookShown = 0;
   private power = 1;
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
@@ -132,6 +139,7 @@ export class Security {
       // Pans (y) and looks down a little (x, in its own frame).
       head.rotation.order = 'YXZ';
       head.rotation.x = 0.35;
+      head.scale.setScalar(1.45);
       head.position.set(x, y, z);
       this.group.add(bracket, head);
       this.cams.push({ head, led, tape, x: c.x + 0.5, z: c.z + 0.5 });
@@ -169,6 +177,14 @@ export class Security {
     this.dot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, depthTest: false, toneMapped: false }));
     this.dot.renderOrder = 9;
     this.group.add(this.dot);
+    // The grapnel's arc and landing ring.
+    this.arcMat = new THREE.LineDashedMaterial({ color: 0xffd27a, dashSize: 0.22, gapSize: 0.14, transparent: true, opacity: 0, depthTest: false });
+    this.arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 25 }, () => new THREE.Vector3())), this.arcMat);
+    this.arc.frustumCulled = false;
+    this.arc.renderOrder = 9;
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.4, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0, depthWrite: false }));
+    this.ring.renderOrder = 9;
+    this.group.add(this.arc, this.ring);
     // Sparks on the live fence: a few small flashes at a time.
     const k = world.ground.kind;
     for (let i = 0; i < k.length; i++) if (k[i] === TILE.ELECTRIC) this.fence.push([i % MAP_W, Math.floor(i / MAP_W)]);
@@ -209,7 +225,7 @@ export class Security {
       const cone = this.coneFrames[k];
       if (!cf) return;
       c.head.rotation.y = cf.facing;
-      c.tape.visible = !cf.on && f.power;
+      c.tape.visible = cf.taped;
       c.led.color.setHex(cf.on ? (cf.sees || Math.sin(time * 4 + k) > 0.2 ? 0xff2a1a : 0x5a0a06) : 0x1a1a1a);
       cone.x = c.x;
       cone.z = c.z;
@@ -251,6 +267,23 @@ export class Security {
       this.dot.scale.setScalar(motion ? 1 + Math.sin(time * 14) * 0.25 : 1);
     }
     this.dot.visible = this.laser.visible;
+    // The grapnel's throw, previewed while it's ready.
+    this.hookShown += ((f.hook ? 1 : 0) - this.hookShown) * Math.min(1, dt * 8);
+    this.arc.visible = this.ring.visible = this.hookShown > 0.02 && !!f.hook;
+    if (f.hook && this.arc.visible) {
+      const pos = this.arc.geometry.attributes.position as THREE.BufferAttribute;
+      const y0 = WALL_H + 0.55 + 0.9;
+      for (let i = 0; i <= 24; i++) {
+        const u = i / 24;
+        pos.setXYZ(i, f.px + (f.hook.x - f.px) * u, y0 * (1 - u) + 0.05 * u + Math.sin(u * Math.PI) * 1.6, f.pz + (f.hook.z - f.pz) * u);
+      }
+      pos.needsUpdate = true;
+      this.arc.computeLineDistances();
+      this.arcMat.opacity = 0.9 * this.hookShown;
+      this.ring.position.set(f.hook.x, 0.04, f.hook.z);
+      (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.85 * this.hookShown;
+      this.ring.scale.setScalar(motion ? 1 + Math.sin(time * 5) * 0.08 : 1);
+    }
     // Shots fade out.
     for (let k = this.shots.length - 1; k >= 0; k--) {
       const s = this.shots[k];

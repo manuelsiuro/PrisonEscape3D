@@ -1,4 +1,4 @@
-generator: off for 45 s; the east guard sent to 9,43, there at 40,37; the fence cut
+generator: off for 45 s; the east guard sent to 9,43, there at 11,37; the fence cut
 detectors: a nail file → +90% and guards sent; with a pouch → shielded (19 left); clean or no power → nothing
 camera: chipping in the woodshop → LOCKDOWN (facing 5)
 camera taped: unseen for 60 s, then watching again
