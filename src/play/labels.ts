@@ -8,6 +8,7 @@ import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/systems/items';
 import { DIRT, STRIKES, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import { energyCost } from '../sim/systems/weather';
 import { STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
@@ -217,7 +218,7 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     return v;
   }
   // Grey when it can't be done: the wrong tool, reinforced concrete, or too tired to swing.
-  v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= (d?.tool?.energy ?? 0)));
+  v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= energyCost(sim, d?.tool?.energy ?? 0)));
   // Digging up takes a press per strike (a hold never surfaces the player).
   v.repeat = strike && tt.action !== 'digUp';
   if (tt.action === 'eat') v.fits = sim.state.energy < 100;
@@ -247,7 +248,9 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
           ? t('thing.grate')
           : tt.action === 'digUp'
             ? t('thing.surface')
-            : t(tt.layer === LAYER.UNDER ? 'thing.earth' : 'thing.floor');
+            : tt.layer === LAYER.UNDER
+              ? t(w.layers[LAYER.UNDER].kind[tt.tile] === TILE.BOULDER ? 'thing.boulder' : 'thing.earth')
+              : t('thing.floor');
   const worn = sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0;
   v.progress = tt.hp > 0 ? Math.min(1, worn / tt.hp) : 0;
   // The last blow would drop a chunk or dirt at the player's feet with no room in their pockets: grey, as the sim refuses it.

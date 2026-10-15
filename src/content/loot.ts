@@ -68,6 +68,7 @@ export const LOOT: Record<string, LootTable> = {
   laundryBin: { rolls: [1, 2], max: 3, items: [['sock', 4], ['bleach', 2], ['inmate_outfit', 2], ['guard_outfit', 1]] },
   janitorBin: { rolls: [1, 2], max: 3, items: [['broom', 2], ['mop', 2], ['bleach', 2]] },
   kitchenFreezer: { rolls: [1, 2], max: 3, items: [['foil', 2], ['potato', 3]] },
+  metalshopBin: { rolls: [1, 2], max: 3, items: [['sheet_metal', 3], ['wire', 2], ['metal_file', 1]] },
   /** What an inmate carries (looted when it's knocked out, GDD §10.2); topped up at 08:00. */
   pockets: {
     rolls: [1, 2],
@@ -148,7 +149,7 @@ export function lootTableFor(kind: PropKind, zone: ZoneId, playerCell: boolean):
     case 'shower':
       return 'shower';
     case 'bin':
-      return zone === 'woodshop' ? 'woodshopBin' : zone === 'laundry' ? 'laundryBin' : zone === 'janitor' ? 'janitorBin' : null;
+      return zone === 'woodshop' ? 'woodshopBin' : zone === 'laundry' ? 'laundryBin' : zone === 'janitor' ? 'janitorBin' : zone === 'metalshop' ? 'metalshopBin' : null;
     case 'freezer':
       return zone === 'kitchen' ? 'kitchenFreezer' : null;
     default:

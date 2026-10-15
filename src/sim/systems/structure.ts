@@ -214,7 +214,8 @@ function chokepoints(w: World): number[] {
 export function canDigFloor(w: World, i: number, bodies: readonly Body[]): boolean {
   if (i < 0) return false;
   const k = w.ground.kind[i];
-  if (!DIGGABLE.has(k) || reserved(w).has(i)) return false;
+  // Nor over a boulder: there'd be nowhere to go.
+  if (!DIGGABLE.has(k) || reserved(w).has(i) || w.layers[LAYER.UNDER].kind[i] === TILE.BOULDER) return false;
   if (w.propSolid[i] && !underMyDesk(w, i)) return false;
   if (w.props.some((p) => !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
   return !occupied(i, bodies);
@@ -265,6 +266,8 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   } else if (layer === LAYER.UNDER) {
     const k = ahead >= 0 ? w.layers[LAYER.UNDER].kind[ahead] : TILE.EMPTY;
     if (k === TILE.SOIL && !edge(ahead)) add('dig', LAYER.UNDER, ahead, SOIL_HP);
+    // Granite: there, but no tool gets through (hp 0, as reinforced concrete).
+    else if (k === TILE.BOULDER) add('dig', LAYER.UNDER, ahead, 0);
     // At the tunnel's end, facing back along it (the earth behind the player): up through the
     // floor above. Never just after breaking through ahead (the tunnel is behind them then),
     // so tapping on at the dig face never surfaces by accident.
@@ -354,7 +357,8 @@ function behindIsEarth(w: World, b: Body): boolean {
   const fz = DIR_Z[b.facing] ?? 0;
   const x = Math.floor(b.x / UNIT) - (Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0);
   const z = Math.floor(b.z / UNIT) - (Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz));
-  return !w.inside(x, z) || w.layers[LAYER.UNDER].kind[z * MAP_W + x] === TILE.SOIL;
+  const k = w.inside(x, z) ? w.layers[LAYER.UNDER].kind[z * MAP_W + x] : TILE.SOIL;
+  return k === TILE.SOIL || k === TILE.BOULDER;
 }
 
 /** The map's outermost ring can't be dug (there is nothing past it). */

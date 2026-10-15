@@ -31,6 +31,8 @@ export const PROPS = {
   ladder: { solid: true },
   /** A chair or stool: sat on (P8+); low, stepped round. */
   chair: { solid: false },
+  /** The metalshop's hydraulic press (P9): sheet metal in, a license plate out. */
+  press: { solid: true },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

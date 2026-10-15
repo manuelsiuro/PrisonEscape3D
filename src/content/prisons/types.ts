@@ -44,6 +44,8 @@ export interface PrisonRules {
   relaxed?: boolean;
   /** Contraband in sight adds its heat one step in this many (default 1: +40% a second). */
   contrabandEvery?: number;
+  /** Freezing weather (Stalag Flucht, GDD §4.2): a minute outdoors without a warm outfit doubles what energy costs. */
+  cold?: boolean;
 }
 
 /** Everything that defines one prison. Maps are ASCII pictures, the rest is plain data. */
@@ -51,10 +53,14 @@ export interface PrisonDef {
   id: string;
   /** 1 (minimum security) to 5 (supermax). */
   difficulty: number;
+  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow. */
+  theme?: 'suburban' | 'alpine';
   /** The ground floor picture (layer 0). */
   ground: string;
   /** The vents picture (layer +1): ducts, ceiling grates, the ladder to the roof. Roofs cover every building; tunnels are dug. */
   vents?: string;
+  /** The underground picture (layer -1): `O` boulders in the earth (UNDER_LEGEND). Without one, earth all through. */
+  under?: string;
   /** Zones by rectangle; later rectangles win. Unlisted tiles: road → outside, open ground → perimeter, indoor → none. */
   zones: ReadonlyArray<readonly [ZoneId, ...Rect]>;
   /** Cells in order: cell 1 is the player's. */

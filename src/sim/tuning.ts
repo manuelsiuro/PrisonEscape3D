@@ -176,3 +176,7 @@ export const SNIPER_DAMAGE = 30;
 export const TAKEOVER_SHARE = 0.85;
 /** How far beyond a roof's edge a grapnel can hook the perimeter fence (tiles). */
 export const GRAPNEL_REACH = 6;
+
+/** The cold (GDD §4.2): a minute out in the snow without a warm outfit chills; indoors it wears off four times as fast. */
+export const COLD_STEPS = 60 * STEPS_PER_SECOND;
+export const WARM_RATE = 4;

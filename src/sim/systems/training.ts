@@ -9,6 +9,7 @@ import { closeBox } from './actions';
 import type { FixtureUse } from './items';
 import { revealTip } from './recipes';
 import { endTalk } from './social';
+import { energyCost } from './weather';
 
 export function attr(sim: SimContext, a: Attr): number {
   const s = sim.state;
@@ -75,7 +76,7 @@ export function rep(sim: SimContext, side: number) {
   s.reps = 0;
   setAttr(sim, a, Math.min(ATTR_MAX, attr(sim, a) + TRAIN_GAIN));
   s.trained |= 1 << ATTRS.indexOf(a);
-  s.energy = Math.max(0, s.energy - (a === 'int' ? STUDY_ENERGY : GYM_ENERGY));
+  s.energy = Math.max(0, s.energy - energyCost(sim, a === 'int' ? STUDY_ENERGY : GYM_ENERGY));
   sim.events.push({ type: 'trained', attr: a, value: attr(sim, a) });
   // Studying to a new mark (every STUDY_TIP_EVERY points, never the same one twice): a recipe in the books (P8+).
   const mark = Math.floor(attr(sim, a) / STUDY_TIP_EVERY);

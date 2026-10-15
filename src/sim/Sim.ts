@@ -5,6 +5,7 @@ import { newScratch } from './context';
 import { fnv1a } from './rng';
 import { ESCAPES, freshState, loadState, type Attr, type LayerMove, type SimEvent, type SimState, type Snapshot } from './state';
 import { closeBox, keepSeat, regenerate, shower, standUp, underShower, useItems } from './systems/actions';
+import { chill } from './systems/weather';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
@@ -110,6 +111,7 @@ export class Sim {
     keepSeat(this);
     noteCarried(this);
     regenerate(this);
+    chill(this);
     shower(this);
     // Solitary: time served (and potatoes peeled) sets the player free.
     if (s.solitary > 0 && --s.solitary === 0) release(this);

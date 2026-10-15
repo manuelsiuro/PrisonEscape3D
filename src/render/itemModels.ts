@@ -30,6 +30,12 @@ const SHAPES: Record<string, Shape> = {
   file: (c, a) => [box(0.3, 0.025, 0.06, c, 0.05), box(0.14, 0.05, 0.06, a, -0.17)],
   plank: (c) => [box(0.5, 0.06, 0.16, c), box(0.5, 0.005, 0.01, 0x8a5a2e, 0, 0.06, 0.03)],
   sheet: (c) => [box(0.42, 0.025, 0.32, c), box(0.4, 0.005, 0.3, 0xd8dde3, 0, 0.025)],
+  /** A license plate: a rimmed rectangle, a row of stamped characters. */
+  plate: (c, a) => [
+    box(0.44, 0.02, 0.22, a),
+    box(0.4, 0.024, 0.18, c),
+    ...Array.from({ length: 6 }, (_, k) => box(0.035, 0.03, 0.09, a, -0.14 + k * 0.056, 0, 0)),
+  ],
   crowbar: (c) => [stick(0.46, 0.025, c, 0.02), box(0.06, 0.05, 0.1, c, -0.22, 0, 0.04)],
   pillow: (c) => [box(0.4, 0.1, 0.26, c), box(0.36, 0.04, 0.22, 0xffffff, 0, 0.08)],
   cloth: (c) => [box(0.38, 0.06, 0.3, c), box(0.38, 0.03, 0.08, 0xe6ebf2, 0, 0.06, -0.11)],

@@ -1,7 +1,7 @@
 import { PROPS, type PropKind } from '../../content/props';
 import type { PrisonDef } from '../../content/prisons/types';
 import { ZONES, zoneIndex } from '../../content/zones';
-import { DAMAGE_SHOWS, KEY, LEGEND, TILE, TILE_INFO, VENT_LEGEND } from './tiles';
+import { DAMAGE_SHOWS, KEY, LEGEND, TILE, TILE_INFO, UNDER_LEGEND, VENT_LEGEND } from './tiles';
 import { doorOpen } from './doors';
 import { JOBS } from '../../content/jobs';
 
@@ -108,9 +108,15 @@ export class World {
         g.key[z * MAP_W + x] = l.key ?? KEY.NONE;
       }
     });
-    // Tunnels: solid earth until dug. Vents: the prison's duct picture. Roofs: over every
-    // building (walls and indoor floors), with the ladder's hatch.
-    this.layers[LAYER.UNDER].kind.fill(TILE.SOIL);
+    // Tunnels: solid earth until dug (and the prison's boulders, never). Vents: the prison's
+    // duct picture. Roofs: over every building (walls and indoor floors), with the ladder's hatch.
+    const under = this.layers[LAYER.UNDER];
+    under.kind.fill(TILE.SOIL);
+    if (def.under) {
+      parseRows(def.under, UNDER_LEGEND).forEach((row, z) => {
+        for (let x = 0; x < MAP_W; x++) under.kind[z * MAP_W + x] = UNDER_LEGEND[row[x]];
+      });
+    }
     const vents = this.layers[LAYER.VENTS];
     if (def.vents) {
       parseRows(def.vents, VENT_LEGEND).forEach((row, z) => {

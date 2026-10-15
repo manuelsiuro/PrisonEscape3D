@@ -56,6 +56,7 @@ const TABLE_SOURCE: Record<string, Source> = {
   laundryBin: 'laundry',
   janitorBin: 'janitor',
   kitchenFreezer: 'kitchen',
+  metalshopBin: 'metalshop',
 };
 const inTable = new Map<Source, Set<string>>();
 for (const [name, t] of Object.entries(LOOT)) {

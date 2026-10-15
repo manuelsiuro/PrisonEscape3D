@@ -45,6 +45,8 @@ export const TILE = {
   /** A duct (or roof) tile with the ladder that links the ground floor and the vents to the roof. */
   LADDER: 31,
   ROOF: 32,
+  /** Granite under the ground (layer -1, GDD §4.2): no tool digs it; tunnels go round. */
+  BOULDER: 33,
 } as const;
 
 export type TileKind = (typeof TILE)[keyof typeof TILE];
@@ -93,6 +95,7 @@ export const TILE_INFO: Record<number, TileInfo> = {
   [TILE.GRATE_FAKE]: info('grateFake', false, false, false),
   [TILE.LADDER]: info('ladder', false, false, false),
   [TILE.ROOF]: info('roof', false, false, true),
+  [TILE.BOULDER]: info('boulder', true, true, false),
 };
 
 /** Damage a guard would notice (GDD §9.3): an open hole, a cut fence, a missing grate, a tunnel entrance. */
@@ -128,6 +131,12 @@ export const LEGEND: Record<string, { kind: TileKind; key?: KeyColor }> = {
   p: { kind: TILE.DOOR, key: KEY.PURPLE },
   r: { kind: TILE.DOOR, key: KEY.RED },
   g: { kind: TILE.DOOR, key: KEY.GREEN },
+};
+
+/** The underground picture (layer -1): packed earth, and the boulders a tunnel must go round. */
+export const UNDER_LEGEND: Record<string, number> = {
+  '.': TILE.SOIL,
+  O: TILE.BOULDER,
 };
 
 /** The vents picture (layer +1): ducts over the rooms, grates down into them, the ladder to the roof. */

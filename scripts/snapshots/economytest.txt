@@ -1,4 +1,4 @@
-wages $laundry 30, $janitor 35, $kitchen 40, $woodshop 50, $mailman 55; merchant prices $12–40 (at 100 opinion $20)
+wages $laundry 30, $janitor 35, $kitchen 40, $woodshop 50, $mailman 55, $metalshop 65; merchant prices $12–40 (at 100 opinion $20)
 worker bot (laundry, 3 days):
   day 1 12:13 quota 1/4
   day 1 12:13 quota 2/4

@@ -57,7 +57,7 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope'; action: ToolAction }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope'; action: ToolAction }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -117,6 +117,7 @@ export type SimEvent =
   | { type: 'meal' }
   /** A recipe told to the player: by studying (who -1) or by an inmate. */
   | { type: 'tip'; recipe: number; who: number }
+  | { type: 'cold'; on: boolean }
   | { type: 'rep' }
   | { type: 'trained'; attr: Attr; value: number }
   | { type: 'cantTrain'; why: 'tired' | 'max' }
@@ -275,6 +276,8 @@ export interface SimState {
   tipDay: number[];
   /** The highest Intellect mark (in STUDY_TIP_EVERY points) studying has paid a tip for: a mark lost overnight and won back again pays nothing. */
   studied: number;
+  /** The cold (P9, GDD §4.2): steps of it built up out in the snow, up to COLD_STEPS (chilled: energy costs double). */
+  cold: number;
 }
 
 export interface Snapshot {
@@ -367,6 +370,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     tips: [],
     tipDay: [],
     studied: Math.floor(START_INT / STUDY_TIP_EVERY),
+    cold: 0,
   };
 }
 

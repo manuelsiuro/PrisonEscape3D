@@ -139,6 +139,17 @@ const BUILDERS: Record<PropKind, Builder> = {
     box(0.04, 0.3, 0.04, DARK, -0.2, 0.45, -0.19),
     box(0.04, 0.3, 0.04, DARK, 0.2, 0.45, -0.19),
   ],
+  /** A hydraulic press: a bed on a base, two columns, the crown and the ram between them, a red guard rail. */
+  press: (w, d) => [
+    box(w - 0.1, 0.35, d - 0.15, 0x3d4652),
+    box(w - 0.3, 0.08, d - 0.35, METAL, 0, 0.35),
+    box(0.12, 1.2, 0.12, 0x56606c, -(w - 0.36) / 2, 0.35, 0),
+    box(0.12, 1.2, 0.12, 0x56606c, (w - 0.36) / 2, 0.35, 0),
+    box(w - 0.14, 0.24, d - 0.4, 0x3d4652, 0, 1.5),
+    cyl(0.08, 0.4, METAL, 0, 1.1, 0, 10),
+    box(w - 0.5, 0.08, d - 0.5, 0x2b3038, 0, 1.0),
+    box(w - 0.2, 0.05, 0.05, 0xd23f36, 0, 0.75, d / 2 - 0.12),
+  ],
   /** Steel rails against the wall behind it, up past the wall top to the roof hatch. */
   ladder: (_w, d) => {
     const z = -d / 2 + 0.16;

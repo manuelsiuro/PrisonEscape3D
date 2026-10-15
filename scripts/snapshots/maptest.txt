@@ -5,6 +5,13 @@ decor: 132 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, visitation, woodshop, yard
 guards: 5, 37 stops, 3 asleep at night
 vents: 48 duct tiles, 3 grates, 1 ladder; roof tiles 1782
+== stalag-flucht · picture 4170e946
+tiles: brick 598, concrete 234, detector 4, dirt 439, door 32, electric 281, grass 1127, road 496, tiled 178, tower 27, wood 680
+zones: canteen 84, cellBlock 104, corridor 66, generator 54, guardQuarters 96, gym 70, infirmary 40, inmateCell 144, janitor 40, kitchen 42, laundry 40, library 44, metalshop 44, none 126, outside 496, perimeter 966, playerCell 16, rollCall 90, showers 56, solitary 96, storeroom 16, woodshop 40, yard 1326
+decor: 0 pieces
+walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, playerCell, rollCall, showers, yard
+guards: 6, 40 stops, 4 asleep at night
+vents: 19 duct tiles, 2 grates, 1 ladder; roof tiles 1726
 == training · picture 9be5d540
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144
 zones: canteen 110, corridor 78, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, woodshop 50, yard 823

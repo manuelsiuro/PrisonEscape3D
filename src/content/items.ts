@@ -116,7 +116,7 @@ export const ITEMS: readonly ItemDef[] = [
   m('toilet_paper', false, 3, 'roll', 0xf4f4ef, ['toilet', 'desk']),
   m('glue', true, 12, 'tube', 0xf2d23c, ['desk', 'merchant'], 0xffffff),
   m('duct_tape', true, 20, 'tape', 0x9aa2ad, ['desk', 'merchant']),
-  m('metal_file', true, 20, 'file', 0x8d949e, ['desk', 'merchant'], 0x2b3038),
+  m('metal_file', true, 20, 'file', 0x8d949e, ['desk', 'merchant', 'metalshop'], 0x2b3038),
   m('timber', true, 15, 'plank', 0xb07a45, ['woodshop', 'merchant']),
   m('sheet_metal', true, 20, 'sheet', 0xa8b0ba, ['metalshop', 'merchant']),
   m('crowbar', true, 35, 'crowbar', 0xc0392b, ['merchant']),
@@ -125,7 +125,7 @@ export const ITEMS: readonly ItemDef[] = [
   m('sock', false, 3, 'sock', 0xe8e8e2, ['desk', 'laundry']),
   m('soap', false, 5, 'bar', 0xf6c6d8, ['shower', 'desk']),
   m('battery', false, 10, 'battery', 0x2b3038, ['desk'], 0xe8b828),
-  m('wire', true, 12, 'coil', 0xc97b3d, ['desk', 'merchant']),
+  m('wire', true, 12, 'coil', 0xc97b3d, ['desk', 'merchant', 'metalshop']),
   m('razor_blade', true, 12, 'blade', 0xd8dde3, ['desk', 'merchant']),
   m('ink', false, 8, 'jar', 0x1d2a5a, ['shelf', 'desk'], 0x2b3038),
   m('magazine', false, 8, 'book', 0xe0574a, ['shelf', 'desk'], 0xf2d23c),
@@ -204,6 +204,8 @@ export const ITEMS: readonly ItemDef[] = [
   work('meal_tray', 'tray', 0x9aa2ad, 0xe8b828),
   work('furniture', 'stool', 0xb07a45, 0x8a5a2e),
   work('letter', 'letter', 0xf4efe0, 0xd23f36),
+  // P9 (Stalag Flucht's metalshop): appended, so every earlier item keeps its number in saves.
+  work('license_plate', 'plate', 0xf2d23c, 0x1d2a5a),
 ];
 
 /** An item's number in saves and slots (1 + its place in ITEMS). */

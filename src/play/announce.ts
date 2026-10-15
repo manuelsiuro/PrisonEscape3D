@@ -164,6 +164,11 @@ export function announce(e: SimEvent, sim: Sim) {
       itemsUI.toast(t('craft.made', { item: itemName(e.item) }));
       if (e.first) banner.toast(t('craft.newRecipe'), 'good');
       break;
+    case 'cold':
+      // The cold bites (P9, GDD §4.2), and lets go.
+      if (e.on) banner.toast(t('toast.coldOn'), 'bad', 5000);
+      else banner.toast(t('toast.coldOff'), 'good');
+      break;
     case 'tip': {
       // A recipe told (P8+): what it makes, from whom; the handbook has it now.
       const item = itemName(itemNumber(RECIPES[e.recipe].result));
@@ -200,7 +205,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
+      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }

@@ -33,6 +33,8 @@ export const ZONES = [
   'tunnels',
   'vents',
   'roof',
+  // P9 (Stalag Flucht): the cabin's locked storeroom, where the ladder goes up to the roof.
+  'storeroom',
 ] as const;
 
 export type ZoneId = (typeof ZONES)[number];

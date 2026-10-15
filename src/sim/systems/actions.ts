@@ -29,6 +29,7 @@ import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, WALL_CHUNK } from './structure';
 import { rep, startTraining, stopTraining, study } from './training';
 import { addHeat, setTile } from './watch';
+import { energyCost } from './weather';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
 export function closeBox(sim: SimContext) {
@@ -235,14 +236,15 @@ function strike(sim: SimContext, fresh: boolean) {
   // the player's feet, in plain view: not until there's room.
   const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
   const full = yields && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + tool0.damage >= target.hp && !hasRoom(it);
-  const why = target.hp === 0 ? 'reinforced' : !target.fits || !tool0 ? 'tool' : s.energy < tool0!.energy ? 'tired' : full ? 'full' : null;
+  const cost = tool0 ? energyCost(sim, tool0.energy) : 0;
+  const why = target.hp === 0 ? (target.layer === LAYER.UNDER ? 'boulder' : 'reinforced') : !target.fits || !tool0 ? 'tool' : s.energy < cost ? 'tired' : full ? 'full' : null;
   if (why) {
     sim.events.push({ type: 'cantStrike', why, action: target.action });
     return;
   }
   const tool = tool0!;
   s.struckAt = s.step;
-  s.energy -= tool.energy;
+  s.energy -= cost;
   it.rev++;
   // Face what is struck (the grate overhead keeps the heading).
   if (target.tile >= 0 && target.action !== 'digUp' && target.action !== 'unscrew') {
