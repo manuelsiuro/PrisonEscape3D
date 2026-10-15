@@ -8,7 +8,7 @@ export type PauseChoice = 'resume' | 'quit' | 'settings' | 'save' | 'help';
  * The pause card; resolves with Resume, Save, How to play, Settings or Title screen (Escape
  * resumes too). `saved` says the game in progress was just saved; `canSave` is false while a
  * slot can't be written (the game is over); `note` replaces the line under the title (a
- * save just made into a slot).
+ * save just made into a slot; a leading "!" marks a failure).
  */
 export function showPause(click: () => void, saved: boolean, canSave = true, note = ''): Promise<PauseChoice> {
   const el = h(
@@ -16,7 +16,7 @@ export function showPause(click: () => void, saved: boolean, canSave = true, not
     'modal',
     `<div class="card">
       <h2>${t('pause.title')}</h2>
-      <p class="card-note">${note ? `${icon('check', 14)}${note}` : saved ? `${icon('check', 14)}${t('pause.saved')}` : t('pause.notSaved')}</p>
+      <p class="card-note${note.startsWith('!') || (!note && !saved) ? ' warn' : ''}">${note.startsWith('!') ? note.slice(1) : note ? `${icon('check', 14)}${note}` : saved ? `${icon('check', 14)}${t('pause.saved')}` : t('pause.notSaved')}</p>
       <div class="pause-links">
         ${canSave ? `<button class="link-btn" data-c="save">${icon('save', 16)}${t('pause.save')}</button>` : ''}
         <button class="link-btn" data-c="help">${icon('help', 16)}${t('pause.help')}</button>

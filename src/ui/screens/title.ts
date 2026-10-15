@@ -1,6 +1,7 @@
 import { TOUCH, h } from '../dom';
 import { icon } from '../icons';
 import { t } from '../../i18n';
+import { keysReady } from '../../i18n/keys';
 
 export type TitleChoice = 'continue' | 'play' | 'load' | 'help' | 'settings';
 
@@ -67,7 +68,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
           </button>
         </div>
       </div>
-      <div class="title-foot"><button class="sound-toggle ${info.muted ? 'off' : ''}" data-sound>${sound(info.muted)}</button><span>${t(TOUCH ? 'title.touch' : 'title.keys')}</span></div>
+      <div class="title-foot"><button class="sound-toggle ${info.muted ? 'off' : ''}" data-sound>${sound(info.muted)}</button><span class="title-keys">${t(TOUCH ? 'title.touch' : 'title.keys')}</span></div>
     </div>
     <span class="title-version">v${__APP_VERSION__}</span>`,
   );
@@ -89,5 +90,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
       resolve(c);
     };
     document.body.append(el);
+    // The keys' labels follow the keyboard once the browser says which it is (Z Q S D on AZERTY).
+    if (!TOUCH) keysReady.then(() => (el.querySelector('.title-keys')!.textContent = t('title.keys')));
   });
 }

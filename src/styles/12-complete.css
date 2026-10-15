@@ -520,10 +520,9 @@
   transform: none;
 }
 
-/* Touch: bottom left is the stick's; the mark sits higher. */
+/* Touch: above the hotbar, clear of the thumbs. */
 body.touch .saved-mark {
-  bottom: auto;
-  top: 50%;
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 84px);
 }
 
 /* ------------------------------------------------------------ a question (P8) */
@@ -633,5 +632,53 @@ body.touch .saved-mark {
   }
   .help-tabs {
     margin: 2px 0 4px;
+  }
+}
+
+.card-note.warn {
+  color: #b4232a;
+}
+
+/* Landscape phones: the saves two by two, a slimmer header, everything in sight. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .saves-card {
+    width: min(680px, 100%);
+    padding: 14px 18px 18px;
+  }
+  .saves-card .settings-head h2 {
+    font-size: 24px;
+  }
+  .saves-card .settings-head .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .saves-card .card-note {
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .save-list {
+    grid-template-columns: 1fr 1fr;
+  }
+  .save-main {
+    min-height: 56px;
+  }
+}
+
+/* Landscape phones: the guide takes the top row's free middle, beside the pause button, clear of the play. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .coach {
+    position: absolute;
+    top: 0;
+    right: 58px;
+    max-width: min(400px, calc(100vw - 480px));
+    margin: 0;
+    padding-block: 5px;
+  }
+  .coach-ic {
+    width: 30px;
+    height: 30px;
+  }
+  .coach-text b {
+    font-size: 13px;
   }
 }

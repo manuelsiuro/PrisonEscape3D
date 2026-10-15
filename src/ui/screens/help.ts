@@ -59,11 +59,11 @@ const keys = (): Array<[string, Key]> => [
 
 const TOUCHES: Array<[string, Key]> = [
   ['walk', 'help.t.stick'],
-  ['hand', 'help.t.tap'],
-  ['bolt', 'help.t.act'],
+  ['pin', 'help.t.tap'],
+  ['hand', 'help.t.act'],
   ['pick', 'help.t.use'],
   ['target', 'help.t.lock'],
-  ['briefcase', 'help.t.slots'],
+  ['hammer', 'help.t.slots'],
   ['coin', 'help.t.file'],
   ['pause', 'help.t.pause'],
 ];

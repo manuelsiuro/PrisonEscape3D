@@ -76,8 +76,16 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
       const range = e.target as HTMLInputElement;
       if (range.type !== 'range') return;
       const v = Number(range.value) / 100;
-      if (range.dataset.volume === 'music') settings.musicVolume = v;
-      else {
+      // Turning the music up turns the sound back on (the title's switch mutes both).
+      if (range.dataset.volume === 'music') {
+        settings.musicVolume = v;
+        if (v > 0 && settings.muted && settings.sfxVolume > 0) {
+          settings.muted = false;
+          const sfx = el.querySelector<HTMLInputElement>('[data-volume="sfx"]')!;
+          sfx.value = String(Math.round(settings.sfxVolume * 100));
+          sfx.closest('.set-row')!.querySelector('.set-name .ic')!.outerHTML = icon('sound', 17);
+        }
+      } else {
         settings.sfxVolume = v;
         settings.muted = v === 0;
         el.querySelector('[data-volume="sfx"]')!.closest('.set-row')!.querySelector('.set-name .ic')!.outerHTML = icon(settings.muted ? 'mute' : 'sound', 17);

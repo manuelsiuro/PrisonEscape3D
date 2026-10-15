@@ -212,7 +212,7 @@ controls.onTap = (cx, cy) => {
   sound.click();
   if (hint.visible) {
     hint.hide();
-    markSeen('walk');
+    markTip('walk');
   }
 };
 
@@ -274,8 +274,8 @@ function updateGuide(g: Game, dt: number) {
 }
 
 function seenInteract() {
-  if (hasSeen('interact')) return;
-  markSeen('interact');
+  if (seenTip('interact')) return;
+  markTip('interact');
   hint.hide();
 }
 
@@ -289,18 +289,18 @@ function coachItems(held: number, outfit: number) {
     coached.held = held;
     const d = held ? itemDef(held) : null;
     // The first tool: how to use it first; the warning about contraband in hand the next time.
-    if (d?.tool && !hasSeen('tools')) {
-      markSeen('tools');
+    if (d?.tool && !seenTip('tools')) {
+      markTip('tools');
       banner.toast(TOUCH ? t('hint.toolsTouch') : t('hint.toolsKeys'), 'info', 7000);
-    } else if (d?.contraband && (d.cat === 'tool' || d.cat === 'weapon') && !hasSeen('contrabandHand')) {
-      markSeen('contrabandHand');
+    } else if (d?.contraband && (d.cat === 'tool' || d.cat === 'weapon') && !seenTip('contrabandHand')) {
+      markTip('contrabandHand');
       banner.toast(t('hint.contrabandHand'), 'info', 6500);
     }
   }
   if (outfit !== coached.outfit) {
     coached.outfit = outfit;
-    if (outfit === GUARD_OUTFIT && !hasSeen('disguise')) {
-      markSeen('disguise');
+    if (outfit === GUARD_OUTFIT && !seenTip('disguise')) {
+      markTip('disguise');
       banner.toast(t('hint.disguise'), 'info', 7000);
     }
   }
@@ -435,8 +435,8 @@ function announce(e: SimEvent, sim: Sim) {
       seenInteract();
       itemsUI.closeCraft();
       sound.drawer();
-      if (ownerOf(sim.world, e.container) < 0 && !hasSeen('items')) {
-        markSeen('items');
+      if (ownerOf(sim.world, e.container) < 0 && !seenTip('items')) {
+        markTip('items');
         banner.toast(t('hint.items'), 'info', 5000);
       }
       break;
@@ -806,14 +806,26 @@ let lastCant = 0;
 let lastAim = -1e9;
 
 /** A tip shown the first time something happens (and never again). */
-const tipsAsked = new Set<string>();
 function coachOnce(name: string, key: Key, params?: Record<string, string | number>) {
-  // Asked every frame for some tips: storage is read once per tip, not every frame.
-  if (tipsAsked.has(name)) return;
-  tipsAsked.add(name);
-  if (!settings.tips || hasSeen(name)) return;
-  markSeen(name);
+  if (seenTip(name)) return;
+  markTip(name);
   banner.toast(t(key, params), 'info', 7000);
+}
+
+/**
+ * Whether a one-time tip was shown on this device (or tips are off: then every tip counts as
+ * shown). Some are asked every frame, so storage is read once per tip and game, not every frame.
+ */
+const tipsSeen = new Map<string, boolean>();
+function seenTip(name: string): boolean {
+  if (!settings.tips) return true;
+  let v = tipsSeen.get(name);
+  if (v === undefined) tipsSeen.set(name, (v = hasSeen(name)));
+  return v;
+}
+function markTip(name: string) {
+  tipsSeen.set(name, true);
+  markSeen(name);
 }
 
 /** A short fade from black when a game starts. */
@@ -847,7 +859,7 @@ function autosave(g: Game, show = false) {
 const firstDay = new FirstDay(
   hud.el,
   () => {
-    markSeen('guide');
+    markTip('guide');
     coachOnce('help', TOUCH ? 'hint.help' : 'hint.helpKeys');
   },
   click,
@@ -885,7 +897,9 @@ function startGame(sim: Sim, resumed = false) {
     guardKeys: sim.prison.guards.map((d) => itemNumber(`key_${d.key}`)),
     saved: false,
   };
-  tipsAsked.clear();
+  tipsSeen.clear();
+  // Loaded asleep or out cold: the veil says which.
+  sleepVeil.querySelector('span')!.textContent = t(sim.state.ko > 0 ? 'sleep.knockedOut' : 'sleep.asleep');
   itemsUI.show(true);
   tools.show(true);
   combatUI.show(true);
@@ -906,14 +920,14 @@ function startGame(sim: Sim, resumed = false) {
     // A loaded game is the game in progress from now on.
     autosave(g);
     // Left on the first day before the guide was through: it picks up where the day is.
-    if (settings.tips && !hasSeen('guide') && sim.clock.day === 1) later(3000, () => firstDay.start());
+    if (!seenTip('guide') && sim.clock.day === 1) later(3000, () => firstDay.start());
     return;
   }
   // Day 1 opens on roll call: the bell and the banner, once the fade is over.
   later(700, () => announce({ type: 'routine', routine: sim.state.routine }, sim));
   // The first game: the guide through the first day (once; again when the tips are reset).
-  if (settings.tips && !hasSeen('guide')) later(5200, () => firstDay.start());
-  if (settings.tips && !hasSeen('walk')) {
+  if (!seenTip('guide')) later(5200, () => firstDay.start());
+  if (!seenTip('walk')) {
     later(4600, () => hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]));
   }
 }
@@ -961,10 +975,9 @@ async function pause() {
       const slot = await showSaves('save', click);
       if (slot !== null && game) {
         const ok = writeSave(slot, game.rec.sim);
-        if (ok) {
-          note = t('toast.saved', { n: slot });
-          sound.chime();
-        } else banner.toast(t('toast.saveFailed'), 'bad');
+        if (ok) sound.chime();
+        else sound.sting();
+        note = ok ? t('toast.saved', { n: slot }) : `!${t('toast.saveFailed')}`;
       }
       continue;
     }
@@ -1744,7 +1757,7 @@ function frame(now: number) {
     if (acc > 1) acc = 0;
     if (hint.visible && g.walked > 4) {
       hint.hide();
-      markSeen('walk');
+      markTip('walk');
     }
     updateGuide(g, dt);
   }
@@ -1896,7 +1909,7 @@ function frame(now: number) {
     if (o.sees && !busy) coachOnce('camera', 'hint.camera');
   });
   // Walking up to a live detector arch with contraband and no pouch (GDD §5.4): a warning, once.
-  if (memo.step === st.step && sim.power && st.layer === LAYER.GROUND && !busy && !tipsAsked.has('detectorAhead') && carriesUnshielded(it)) {
+  if (memo.step === st.step && sim.power && st.layer === LAYER.GROUND && !busy && !seenTip('detectorAhead') && carriesUnshielded(it)) {
     for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (sim.world.ground.kind[(tile.z + dz) * MAP_W + tile.x + dx] === TILE.DETECTOR) coachOnce('detectorAhead', 'hint.detectorAhead');
   }
   const lights = sim.prison.searchlights;
@@ -1962,7 +1975,7 @@ function frame(now: number) {
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it.
-  if (target && !hint.visible && !hasSeen('interact') && hasSeen('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
+  if (target && !hint.visible && !seenTip('interact') && seenTip('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   vignette.classList.toggle('on', st.lockdown);
   sound.siren(st.lockdown && !g.paused);
   const zone = sim.playerZone;
@@ -1990,9 +2003,13 @@ function frame(now: number) {
   hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
   hud.update(clock, zone, hudState);
   // The music follows the danger and the hour; the ambience, where the player is.
-  const chased = st.lockdown || st.heat >= 80 || st.guards.some((x) => x.mode === GUARD.CHASE);
+  // Tense from 80% heat (or a chase, a lockdown) until it's back under 70%: no flapping at the line.
+  const hunted = st.lockdown || st.guards.some((x) => x.mode === GUARD.CHASE);
+  tense = hunted || st.heat >= 80 || (tense && st.heat >= 70);
+  const chased = tense;
   const night = ROUTINE[st.routine].id === 'lightsOut' || st.sleeping;
-  sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
+  // Out on the road: the title theme plays over the victory screen.
+  if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
   const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
   sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
   // The first day's guide: what the player has done, read from the game.
@@ -2001,7 +2018,7 @@ function frame(now: number) {
     coachState.routine = ROUTINE[st.routine].id;
     coachState.attended = st.attended;
     coachState.openMine = !!open?.mine && open.prop.kind === 'desk';
-    coachState.openOther = !!open && !open.mine;
+    coachState.openOther = !!open && !open.mine && open.prop.kind === 'desk';
     coachState.pickedUp = pickedUp;
     coachState.craftOpen = itemsUI.craftIsOpen;
     coachState.boardOpen = board.isOpen;
@@ -2009,6 +2026,8 @@ function frame(now: number) {
   }
   pickedUp = false;
 }
+/** The music's tension cue is on (see the frame). */
+let tense = false;
 /** Picked something up since the last frame (for the guide). */
 let pickedUp = false;
 const coachState = { routine: '', attended: false, openMine: false, openOther: false, pickedUp: false, craftOpen: false, boardOpen: false };
@@ -2104,4 +2123,15 @@ registerServiceWorker((version, restart) => {
   showUpdate();
 });
 // Dev only: the running game, for probing from the browser console.
-if (import.meta.env.DEV) Object.assign(window, { __game: () => game, __view: view, __renderer: renderer, __sound: sound });
+if (import.meta.env.DEV)
+  Object.assign(window, {
+    __game: () => game,
+    __view: view,
+    __renderer: renderer,
+    __sound: sound,
+    // The update offer, as a new version would show it.
+    __offerUpdate: () => {
+      update = { version: '9.9.9', restart: () => location.reload() };
+      showUpdate();
+    },
+  });

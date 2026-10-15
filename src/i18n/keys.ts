@@ -13,16 +13,19 @@ if (/^fr(-(fr|be|lu|mc))?$/i.test(globalThis.navigator?.language ?? '')) for (co
 
 type LayoutMap = { get(code: string): string | undefined };
 const keyboard = (globalThis.navigator as unknown as { keyboard?: { getLayoutMap?: () => Promise<LayoutMap> } } | undefined)?.keyboard;
-keyboard
+/** Settles once the keyboard's labels are known (at once where the browser can't tell). */
+export const keysReady: Promise<void> = (
+  keyboard
   ?.getLayoutMap?.()
   .then((m) => {
     labels.clear();
-    for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyQ', 'KeyE', 'KeyR']) {
+    for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyQ', 'KeyE', 'KeyR', 'KeyC', 'KeyH', 'KeyI']) {
       const k = m.get(code);
       if (k) labels.set(code, k.toUpperCase());
     }
   })
-  .catch(() => {});
+  .catch(() => {}) ?? Promise.resolve()
+);
 
 /** The label on the key with this code ('KeyW' → 'W', or 'Z' on AZERTY). */
 export const keyLabel = (code: string) => labels.get(code) ?? (code.startsWith('Key') ? code.slice(3) : code);

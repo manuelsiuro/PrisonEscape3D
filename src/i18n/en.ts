@@ -696,7 +696,7 @@ export const en = {
   "help.t.act": "The action button: search, pick up, open, talk, sleep",
   "help.t.use": "The tool button: hold to use the tool in hand",
   "help.t.lock": "The lock button: the next nearest person; the red button hits",
-  "help.t.slots": "Tap a pocket to hold it; the bag opens crafting",
+  "help.t.slots": "Tap a pocket to hold what's in it. After the six pockets: your weapon, your outfit, then the hammer for crafting",
   "help.t.file": "The cash pill opens your file",
   "help.t.pause": "Pause, save, settings",
   "help.t.zoom": "Pinch to zoom.",

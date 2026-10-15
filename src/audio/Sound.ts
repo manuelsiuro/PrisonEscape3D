@@ -66,6 +66,13 @@ export class Sound {
     };
     addEventListener('pointerdown', start, { once: true });
     addEventListener('keydown', start, { once: true });
+    // Hidden (another app, a locked phone): silence, not a score playing in the pocket. The
+    // context's clock stops with it, so the music picks up where it was without a burst.
+    document.addEventListener('visibilitychange', () => {
+      if (!this.ctx) return;
+      if (document.hidden) this.ctx.suspend().catch(() => {});
+      else this.ctx.resume().catch(() => {});
+    });
   }
 
   private makeNoise(): AudioBuffer {
