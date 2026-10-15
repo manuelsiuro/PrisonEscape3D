@@ -5,7 +5,8 @@ import { maxHealth } from '../sim/systems/combat';
 import { jobRooms, nearestProp, STATION_REACH } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import type { ItemState } from '../sim/systems/items';
-import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { COLD_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { exposed } from '../sim/systems/weather';
 import { containersOf } from '../sim/world/containers';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
@@ -46,7 +47,8 @@ import { seenTip } from './tips';
 const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false };
 const GET_UP = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, takeoverLeft: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, takeoverLeft: null, cold: null };
+const coldHud = { built: 0, left: 0, bit: false, warming: false };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
 /** The music's tension cue is on (see updateOverlay). */
 let tense = false;
@@ -164,6 +166,13 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   let wakes = Infinity;
   for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
   hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
+  // The cold (P9): shown while it has built up at all, the energy pill frosted once it bites.
+  coldHud.built = st.cold / COLD_STEPS;
+  coldHud.left = (COLD_STEPS - st.cold) / STEPS_PER_SECOND;
+  coldHud.bit = st.cold >= COLD_STEPS;
+  coldHud.warming = !exposed(sim);
+  hudState.cold = st.cold > 0 ? coldHud : null;
+  document.body.classList.toggle('chilled', coldHud.bit);
   hud.update(clock, zone, hudState);
   // The music follows the danger and the hour; the ambience, where the player is.
   // Tense from 80% heat (or a chase, a lockdown) until it's back under 70%: no flapping at the line.

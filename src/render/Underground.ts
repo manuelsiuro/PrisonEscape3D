@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { isTunnel, TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
-import { box, kitMaterial, merge, type Part } from './kit';
+import { box, kitMaterial, merge, paint, type Part } from './kit';
 import { seeThrough } from './occlusion';
 import { TEX } from './textures';
 
@@ -12,6 +12,7 @@ const EARTH_H = 0.8;
  * The tunnels (layer −1, GDD §9.2), drawn in place of the ground floor while the player is
  * down there: packed earth everywhere, its top faintly tinted by what stands above (walls
  * darker, fences rust, roads grey) so the player knows where they are under the prison;
+ * granite boulders hump up out of it where no tunnel can go;
  * dug tiles open into trenches with a trodden floor, timber braces, and a shaft of daylight
  * under each entrance. A lantern goes with the player.
  */
@@ -49,6 +50,26 @@ export class Underground {
                   ? 0xa89c88
                   : 0xc8b8a0;
       this.earth.setColorAt(i, c.set(tint));
+    }
+    // Granite (GDD §4.2): grey rock in the earth, humped up out of it so a digger sees where
+    // the tunnel must go round. Boulders never move: drawn once.
+    const under = world.layers[LAYER.UNDER].kind;
+    const rocks: Part[] = [];
+    for (let i = 0; i < MAP_W * MAP_H; i++) {
+      if (under[i] !== TILE.BOULDER) continue;
+      const x = i % MAP_W;
+      const z = Math.floor(i / MAP_W);
+      this.earth.setColorAt(i, c.set(0x7d848d));
+      const h = (((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000 / 1000;
+      rocks.push(
+        paint(new THREE.DodecahedronGeometry(0.5, 0).scale(1, 0.55, 0.95).rotateY(h * 6).translate(x + 0.5, EARTH_H + 0.05, z + 0.5), 0x8e959e),
+        paint(new THREE.DodecahedronGeometry(0.24, 0).scale(1, 0.7, 1).rotateY(h * 9).translate(x + 0.25 + h * 0.4, EARTH_H + 0.18, z + 0.3 + h * 0.3), 0xa3aab3),
+      );
+    }
+    if (rocks.length) {
+      const mesh = new THREE.Mesh(merge(rocks), kitMaterial);
+      mesh.castShadow = mesh.receiveShadow = true;
+      this.group.add(mesh);
     }
     this.earth.receiveShadow = true;
     this.floor.receiveShadow = true;

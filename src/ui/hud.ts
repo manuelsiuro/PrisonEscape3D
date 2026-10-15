@@ -24,6 +24,8 @@ export interface HudState {
   /** Security (GDD §5.5, §12): seconds until the power comes back (null: on), and until the first guard comes round in a takeover (null: none). */
   powerLeft: number | null;
   takeoverLeft: number | null;
+  /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double). */
+  cold: { built: number; left: number; bit: boolean; warming: boolean } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -92,6 +94,7 @@ export class Hud {
       <div class="hud-row hud-alerts">
         <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-cold hidden" role="status">${icon('snow', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -117,11 +120,13 @@ export class Hud {
     this.cashPill.addEventListener('animationend', () => this.cashPill.classList.remove('gain', 'spend'));
     this.power = q('.hud-power');
     this.riot = q('.hud-riot');
+    this.cold = q('.hud-cold');
     document.body.append(this.el);
   }
 
   private readonly power: HTMLElement;
   private readonly riot: HTMLElement;
+  private readonly cold: HTMLElement;
   private shownAlerts = '';
 
   /** A chip under the rows while something runs out: its label, the seconds left and a bar draining from full. */
@@ -132,6 +137,18 @@ export class Hud {
     setText(el.querySelector('b')!, `0:${String(Math.max(0, Math.ceil(left))).padStart(2, '0')}`);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, left / total)) * 100}%`;
     el.classList.toggle('low', left <= 10);
+  }
+
+  /** The cold's chip: the bar fills as it builds, the seconds until it bites; then "Frozen" until warm again. */
+  private chill(c: HudState['cold']) {
+    const el = this.cold;
+    el.classList.toggle('hidden', !c);
+    if (!c) return;
+    el.classList.toggle('bit', c.bit);
+    el.classList.toggle('warming', c.warming);
+    setText(el.querySelector('span')!, t(c.bit ? 'hud.frozen' : c.warming ? 'hud.warming' : 'hud.cold'));
+    setText(el.querySelector('b')!, c.bit ? '×2' : c.warming ? '' : `0:${String(Math.max(0, Math.ceil(c.left))).padStart(2, '0')}`);
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, c.built)) * 100}%`;
   }
 
   show(on: boolean) {
@@ -181,11 +198,13 @@ export class Hud {
     }
     this.updateRoutine(s);
     this.updateHeat(s.heat);
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${this.lang}`;
+    const c = s.cold;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, 'hud.powerOut', s.powerLeft, 45);
       this.alert(this.riot, 'hud.gatesOpen', s.takeoverLeft, 30);
+      this.chill(c);
     }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.

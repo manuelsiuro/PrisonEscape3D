@@ -1,7 +1,10 @@
 import { buzz } from '../app/haptics';
 import { itemNumber, KEY_ITEM_COLORS } from '../content/items';
-import { escapesOf } from '../content/prisons';
+import { escapesOf, PRISONS } from '../content/prisons';
 import { recordEscape } from '../game/records';
+import { isOpen, nextPrison } from '../game/campaign';
+import { prisonName, securityOf } from '../ui/screens/prisons';
+import type { PrisonDef } from '../content/prisons/types';
 import { deleteSave, writeSave } from '../game/saves';
 import { t, type Key } from '../i18n';
 import type { BedPose } from '../render/Character';
@@ -286,6 +289,9 @@ export async function escaped() {
   const clock = sim.clock;
   // Kept on this device: the way out joins the prison's list, the quickest is remembered.
   const via = ESCAPES[st.via];
+  // The first way out of a prison opens the next one (GDD §4).
+  const next = nextPrison(sim.prison);
+  const wasOpen = !!next && isOpen(PRISONS.indexOf(next));
   const rec = recordEscape(sim.prison.id, via, clock.day, Math.floor(st.step / STEPS_PER_MINUTE));
   // The run is over: nothing left to continue (games kept in slots stay).
   deleteSave('auto');
@@ -306,18 +312,19 @@ export async function escaped() {
       best: rec.best,
       tally: st.tally,
       bestDay: rec.record.bestDay,
+      unlocked: next && !wasOpen ? { name: prisonName(next), security: securityOf(next) } : undefined,
     },
     click,
   );
   if (play.game !== g) return;
-  playAgain = choice === 'again';
+  playAgain = choice === 'again' ? sim.prison : choice === 'next' ? (next ?? null) : null;
   endGame();
 }
-/** The victory screen's "Play again": straight into a new game, past the title. */
-let playAgain = false;
-/** Whether "Play again" was chosen (asked once: the answer is used up). */
-export function takePlayAgain() {
+/** The victory screen's "Play again" (this prison) or "On to" (the next): straight into a new game there, past the title. */
+let playAgain: PrisonDef | null = null;
+/** The prison chosen to play straight away, if any (asked once: the answer is used up). */
+export function takePlayAgain(): PrisonDef | null {
   const again = playAgain;
-  playAgain = false;
+  playAgain = null;
   return again;
 }

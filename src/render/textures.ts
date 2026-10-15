@@ -49,7 +49,7 @@ function speckle(c: CanvasRenderingContext2D, n: number, rand: () => number, bas
   }
 }
 
-export const TEX = {
+const BASE = {
   grass: () =>
     texture('grass', 16, (c, n, r) => {
       speckle(c, n, r, '#5f9e43', '#4d8a36', '#74b553', 0.35);
@@ -65,6 +65,11 @@ export const TEX = {
       speckle(c, n, r, '#6d7178', '#62666c', '#7b7f86', 0.3);
     }),
   dirt: () =>
+    texture('dirt', 16, (c, n, r) => {
+      speckle(c, n, r, '#9a7650', '#866443', '#ad8a62', 0.35);
+    }),
+  /** A trodden path (the map's `d`): bare dirt here, packed snow in the Alps. */
+  trail: () =>
     texture('dirt', 16, (c, n, r) => {
       speckle(c, n, r, '#9a7650', '#866443', '#ad8a62', 0.35);
     }),
@@ -236,3 +241,74 @@ export const TEX = {
       c.fillRect(2, 13, 5, 1);
     }),
 };
+
+/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow. */
+export type Theme = 'suburban' | 'alpine';
+let theme: Theme = 'suburban';
+
+/** The look the next textures are drawn in (set as a world is shown; textures already made keep theirs). */
+export function setTheme(t: Theme) {
+  theme = t;
+}
+export const currentTheme = () => theme;
+
+/** Snow: blue-white with a cold sparkle; the trodden paths, the road, log walls, snowy tops. */
+const ALPINE: Partial<typeof BASE> = {
+  grass: () =>
+    texture('snow', 16, (c, n, r) => {
+      speckle(c, n, r, '#eef3f9', '#dbe4ef', '#fbfdff', 0.3);
+      c.fillStyle = '#c9d6e6';
+      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+      c.fillStyle = '#ffffff';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+    }),
+  trail: () =>
+    texture('trail-snow', 16, (c, n, r) => {
+      speckle(c, n, r, '#c9ced4', '#b3b8bf', '#dde2e8', 0.4);
+      c.fillStyle = 'rgba(120,100,80,0.35)';
+      for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+      c.fillStyle = '#eef3f9';
+      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+    }),
+  road: () =>
+    texture('road-snow', 16, (c, n, r) => {
+      speckle(c, n, r, '#dfe5ec', '#c7cfd9', '#f4f7fb', 0.3);
+      // Two wheel ruts, grey slush.
+      c.fillStyle = '#9aa3ad';
+      c.fillRect(0, 4, n, 2);
+      c.fillRect(0, 11, n, 2);
+      c.fillStyle = '#b8c0c9';
+      for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), 3 + Math.floor(r() * 10), 2, 1);
+    }),
+  /** Round logs laid flat, their ends notched at the corners: a cabin wall. */
+  brick: () =>
+    texture('logs', 16, (c, n, r) => {
+      for (let row = 0; row < 4; row++) {
+        const shade = 0.88 + r() * 0.18;
+        c.fillStyle = `rgb(${Math.round(126 * shade)},${Math.round(86 * shade)},${Math.round(52 * shade)})`;
+        c.fillRect(0, row * 4, n, 4);
+        c.fillStyle = `rgba(255,220,170,0.18)`;
+        c.fillRect(0, row * 4 + 1, n, 1);
+        c.fillStyle = '#4a2f1a';
+        c.fillRect(0, row * 4 + 3, n, 1);
+        c.fillStyle = 'rgba(60,35,18,0.35)';
+        for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), row * 4 + 1 + Math.floor(r() * 2), 3, 1);
+      }
+    }),
+  wallTop: () =>
+    texture('snowTop', 16, (c, n, r) => {
+      speckle(c, n, r, '#f1f5fa', '#dce5f0', '#ffffff', 0.25);
+    }),
+  /** Snow lying on the flat roofs. */
+  gravel: () =>
+    texture('snowRoof', 16, (c, n, r) => {
+      speckle(c, n, r, '#e9eff6', '#d3dde9', '#fafcff', 0.35);
+      c.fillStyle = '#c3cfdd';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 3, 1);
+    }),
+};
+
+/** The textures, in the current theme's look. */
+export const TEX = Object.fromEntries(
+  (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => ((theme === 'alpine' && ALPINE[k]) || BASE[k])(...(a as [string]))]),
+) as unknown as typeof BASE;

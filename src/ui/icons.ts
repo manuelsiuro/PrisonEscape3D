@@ -36,6 +36,7 @@ const P: Record<string, string> = {
   cutters: '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16 16 4M16 16 8 4"/>',
   screw: '<path d="M12 3v4M8 7h8l-1 4H9Z"/><path d="M12 11v10M10 14h4M10 17h4"/>',
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7Z"/>',
+  snow: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7"/><path d="m9 3.5 3 2 3-2M9 20.5l3-2 3 2M3.6 10.6l3.1-1.7-.2-3.6M20.4 13.4l-3.1 1.7.2 3.6M3.6 13.4l3.1 1.7-.2 3.6M20.4 10.6l-3.1-1.7.2-3.6"/>',
   up: '<path d="M12 20V5M5 12l7-7 7 7"/>',
   down: '<path d="M12 4v15M5 12l7 7 7-7"/>',
   cookie: '<path d="M4 8h16v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3Z"/><path d="M4 12h16M10 8v12M14 8v12"/>',

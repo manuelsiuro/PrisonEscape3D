@@ -8,7 +8,7 @@ vents: 48 duct tiles, 3 grates, 1 ladder; roof tiles 1782
 == stalag-flucht · picture 1002a882
 tiles: brick 596, concrete 206, detector 4, dirt 512, door 34, electric 281, grass 1096, road 496, tiled 146, tower 27, wood 698
 zones: canteen 84, cellBlock 104, corridor 56, generator 54, guardQuarters 96, gym 70, infirmary 24, inmateCell 144, janitor 28, kitchen 42, laundry 24, library 56, metalshop 28, none 126, outside 496, perimeter 966, playerCell 16, rollCall 90, showers 56, solitary 96, storeroom 16, woodshop 56, yard 1368
-decor: 0 pieces
+decor: 65 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, playerCell, rollCall, showers, yard
 guards: 6, 40 stops, 4 asleep at night
 vents: 1 duct tiles, 0 grates, 1 ladder; roof tiles 1684

@@ -19,6 +19,9 @@ import { play } from './game';
 import { NEED } from './labels';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
 
+/** Games whose player has been told about the cold already. */
+const coldTold = new WeakSet<object>();
+
 /** The last thing guards noticed, and when (real time): repeats are quiet for a moment. */
 const lastSpotted = { reason: '', at: 0 };
 
@@ -165,9 +168,12 @@ export function announce(e: SimEvent, sim: Sim) {
       if (e.first) banner.toast(t('craft.newRecipe'), 'good');
       break;
     case 'cold':
-      // The cold bites (P9, GDD §4.2), and lets go.
-      if (e.on) banner.toast(t('toast.coldOn'), 'bad', 5000);
-      else banner.toast(t('toast.coldOff'), 'good');
+      // The cold bites (P9, GDD §4.2): explained the first time in a game; after that the HUD's chip says it.
+      if (e.on && !coldTold.has(sim)) {
+        coldTold.add(sim);
+        banner.toast(t('toast.coldOn'), 'bad', 6000);
+      }
+      if (e.on) buzz('missed');
       break;
     case 'tip': {
       // A recipe told (P8+): what it makes, from whom; the handbook has it now.

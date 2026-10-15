@@ -6,7 +6,8 @@ import { keysReady } from '../../i18n/keys';
 export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'help' | 'settings';
 
 export interface TitleInfo {
-  prisonName: string;
+  /** Where Play goes: the prison and its security level, or how many prisons are open to choose from. */
+  prisonLine: string;
   /** The ways out found so far ("2 of 4 ways out"), empty before the first escape. */
   record?: string;
   /** The game in progress ("Day 3 · 14:20 · Laundry"), when there is one to continue. */
@@ -43,12 +44,12 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         </button>
         <button class="menu-btn" data-c="play" style="--tone:#ff7714;--tone-2:#d9530a">
           <span class="menu-ic">${icon('replay', 18)}</span>
-          <span class="menu-text"><span class="menu-label">${t('title.newGame')}</span><small>${info.record ? `${icon('trophy', 12)}${info.record}` : t('title.prison', { name: info.prisonName })}</small></span>
+          <span class="menu-text"><span class="menu-label">${t('title.newGame')}</span><small>${info.record ? `${icon('trophy', 12)}${info.record}` : info.prisonLine}</small></span>
           ${icon('chevronRight', 16)}
         </button>`
             : `<button class="hero-card play-card" data-c="play">
           <span class="hero-ic">${icon('play', 22)}</span>
-          <span class="hero-text"><b>${t('title.play')}</b><small>${t('title.prison', { name: info.prisonName })}</small>${info.record ? `<small class="t-record">${icon('trophy', 13)}${info.record}</small>` : ''}</span>
+          <span class="hero-text"><b>${t('title.play')}</b><small>${info.prisonLine}</small>${info.record ? `<small class="t-record">${icon('trophy', 13)}${info.record}</small>` : ''}</span>
         </button>`
         }
         ${

@@ -1,6 +1,7 @@
 import './styles/index.css';
 import { registerServiceWorker } from './app/pwa';
 import { PRISONS } from './content/prisons';
+import { openPrisons } from './game/campaign';
 import { offerUpdate, titleFlow } from './flows/title';
 import { warmIcons } from './render/itemIcons';
 import { OP } from './sim/command';
@@ -33,7 +34,8 @@ tools.onPress = usePress;
 listenKeys();
 
 // The title shows the first prison drifting by.
-view.setWorld(new Sim(PRISONS[0]).world);
+// Behind the title: the newest prison open.
+view.setWorld(new Sim(openPrisons().at(-1) ?? PRISONS[0]).world);
 requestAnimationFrame(frame);
 
 titleFlow();

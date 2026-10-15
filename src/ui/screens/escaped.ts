@@ -17,9 +17,11 @@ export interface Victory {
   tally: readonly number[];
   /** The quickest escape's day (this one's, when it's the quickest). */
   bestDay: number;
+  /** The next prison in the campaign, opened by this escape (its name and security level), offered to go on to. */
+  unlocked?: { name: string; security: string };
 }
 
-export type VictoryChoice = 'again' | 'title';
+export type VictoryChoice = 'again' | 'next' | 'title';
 
 /** Each way out's icon. */
 const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users' };
@@ -55,8 +57,10 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
         ${v.best ? stat('star', t('victory.bestYes'), 'victory.best') : stat('star', t('hud.day', { n: v.bestDay }), 'victory.bestWas')}
       </div>
       <div class="v-routes"><span class="v-routes-label"></span><span class="v-pips">${pips}</span></div>
+      ${v.unlocked ? `<div class="v-unlock" role="status">${icon('map', 22)}<span><b></b><small></small></span></div>` : ''}
       <div class="actions">
-        <button class="big-btn primary" data-c="again">${icon('replay', 18)}${t('victory.again')}</button>
+        ${v.unlocked ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}<span class="v-next"></span></button>` : ''}
+        <button class="big-btn ${v.unlocked ? 'ghost' : 'primary'}" data-c="again">${icon('replay', 18)}${t('victory.again')}</button>
         <button class="big-btn ghost" data-c="title">${icon('home', 18)}${t('escaped.back')}</button>
       </div>
     </div>`,
@@ -72,6 +76,11 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
   el.prepend(burst);
   el.querySelector('.v-sub')!.textContent = t('escaped.sub', { prison: v.prison, day: v.day, time: v.time });
   el.querySelector('.v-routes-label')!.textContent = t('victory.routes', { n: v.found.length, of: v.routes.length });
+  if (v.unlocked) {
+    el.querySelector('.v-unlock b')!.textContent = t('victory.unlocked', { name: v.unlocked.name });
+    el.querySelector('.v-unlock small')!.textContent = v.unlocked.security;
+    el.querySelector('.v-next')!.textContent = t('victory.next', { name: v.unlocked.name });
+  }
   return new Promise((resolve) => {
     el.onclick = (e) => {
       const c = (e.target as HTMLElement).closest<HTMLElement>('[data-c]')?.dataset.c as VictoryChoice | undefined;
@@ -81,6 +90,6 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       resolve(c);
     };
     document.body.append(el);
-    el.querySelector<HTMLElement>('[data-c="again"]')?.focus();
+    el.querySelector<HTMLElement>(v.unlocked ? '[data-c="next"]' : '[data-c="again"]')?.focus();
   });
 }

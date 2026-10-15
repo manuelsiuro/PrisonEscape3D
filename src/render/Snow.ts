@@ -1,0 +1,82 @@
+import * as THREE from 'three';
+
+const FLAKES = 700;
+/** The box of air around the player that the flakes fill (tiles), and how high they start. */
+const SPAN = 28;
+const HIGH = 9;
+
+/**
+ * Falling snow (Stalag Flucht, P9): a fixed cloud of soft points around the player, drifting
+ * down and sideways and wrapping round, so the weather follows wherever they go. Hidden
+ * indoors-below (tunnels, vents) and with reduced motion. No allocation per frame.
+ */
+export class Snowfall {
+  readonly points: THREE.Points;
+  private readonly pos: Float32Array;
+  private readonly speed = new Float32Array(FLAKES);
+  private readonly phase = new Float32Array(FLAKES);
+
+  constructor() {
+    this.pos = new Float32Array(FLAKES * 3);
+    // A fixed seed: the same snow every time.
+    let s = 4242;
+    const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    for (let i = 0; i < FLAKES; i++) {
+      this.pos[i * 3] = rand() * SPAN;
+      this.pos[i * 3 + 1] = rand() * HIGH;
+      this.pos[i * 3 + 2] = rand() * SPAN;
+      this.speed[i] = 0.7 + rand() * 0.9;
+      this.phase[i] = rand() * Math.PI * 2;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    // The camera is orthographic: point sizes are in screen pixels.
+    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 4 * Math.min(2, globalThis.devicePixelRatio || 1), sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false, map: flake(), alphaTest: 0.05 });
+    this.points = new THREE.Points(geo, mat);
+    this.points.frustumCulled = false;
+    this.points.visible = false;
+  }
+
+  /** A frame: flakes fall and sway; the cloud is kept centered on (cx, cz). */
+  update(dt: number, time: number, cx: number, cz: number, on: boolean) {
+    this.points.visible = on;
+    if (!on) return;
+    const x0 = cx - SPAN / 2;
+    const z0 = cz - SPAN / 2;
+    const p = this.pos;
+    for (let i = 0; i < FLAKES; i++) {
+      const k = i * 3;
+      p[k + 1] -= this.speed[i] * dt;
+      p[k] += (0.25 + Math.sin(time * 0.8 + this.phase[i]) * 0.3) * dt;
+      p[k + 2] += Math.cos(time * 0.6 + this.phase[i]) * 0.15 * dt;
+      if (p[k + 1] < 0) p[k + 1] += HIGH;
+      // Wrapped into the box round the player (it moves with them).
+      p[k] = x0 + ((((p[k] - x0) % SPAN) + SPAN) % SPAN);
+      p[k + 2] = z0 + ((((p[k + 2] - z0) % SPAN) + SPAN) % SPAN);
+    }
+    (this.points.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+  }
+
+  dispose() {
+    this.points.geometry.dispose();
+    const m = this.points.material as THREE.PointsMaterial;
+    m.map?.dispose();
+    m.dispose();
+  }
+}
+
+/** A soft round flake (a radial gradient on a small canvas). */
+function flake(): THREE.Texture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 16;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(8, 8, 0, 8, 8, 8);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 16, 16);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}

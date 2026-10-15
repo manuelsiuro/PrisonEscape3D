@@ -18,6 +18,8 @@ import { updateOcclusion } from './occlusion';
 import { WorldView } from './WorldView';
 import { LAYER_Y, Structure } from './Structure';
 import { Underground } from './Underground';
+import { setTheme } from './textures';
+import { Snowfall } from './Snow';
 import { LAYER } from '../sim/world/World';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
@@ -135,11 +137,17 @@ const DAYLIGHT: Array<[number, number, number, number, number]> = [
   [1440, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
 ];
 
-/** Dust colors by ground (only soft ground and dirt puffs). */
+/** Dust colors by ground (only soft ground and dirt puffs); in the snow, powder. */
 const DUST: Record<number, number> = {
   [TILE.GRASS]: 0x7fa65a,
   [TILE.DIRT]: 0xa88660,
   [TILE.ROAD]: 0x8a8d92,
+  [TILE.ASPHALT]: 0x9a9da3,
+};
+const SNOW_DUST: Record<number, number> = {
+  [TILE.GRASS]: 0xf4f8fc,
+  [TILE.DIRT]: 0xd6dbe1,
+  [TILE.ROAD]: 0xe6ebf1,
   [TILE.ASPHALT]: 0x9a9da3,
 };
 
@@ -201,6 +209,7 @@ export class View {
   private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
   private readonly dust = new Dust();
+  private readonly snow = new Snowfall();
   private readonly sparks = new Sparks();
   private readonly snores = new Snores();
   /** Sleepers' heads this frame ([x, y, z] each), for the snores. */
@@ -276,7 +285,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
     this.cup.visible = false;
     this.puddles.count = 0;
     this.puddles.renderOrder = 1;
@@ -325,6 +334,8 @@ export class View {
       this.scene.remove(this.decor.group);
       this.decor.dispose();
     }
+    // The prison's look (snow at Stalag Flucht): the textures drawn from here on follow it.
+    setTheme(world.def.theme ?? 'suburban');
     this.world = world;
     this.chairs.clear();
     for (const p of world.props) if (p.kind === 'chair') this.chairs.add(p.z * MAP_W + p.x);
@@ -644,7 +655,8 @@ export class View {
     if (f.restBed) this.lastRest = f.restBed;
     else if (this.player.lying === 0) this.lastRest = null;
     if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
-      if (DUST[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
+      const dust = this.world?.def.theme === 'alpine' && f.layer === LAYER.GROUND ? SNOW_DUST : DUST;
+      if (dust[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, dust[f.surface], 2);
       this.onStep(f.surface);
     }
     // Look-ahead: up to a tile and a half in the walking direction, eased.
@@ -704,6 +716,8 @@ export class View {
       for (let k = 0; k < f.guards.length; k++) if (f.guards[k].doing === DOING.SLEEP && this.guardCast[k]) this.head(this.guardCast[k]);
     }
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
+    // Snow over an alpine prison, out in the open (ground floor and roofs).
+    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && this.world?.def.theme === 'alpine' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF));
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);

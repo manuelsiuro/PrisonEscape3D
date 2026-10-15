@@ -5,9 +5,9 @@ import { icon } from '../icons';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** "Day 3 · 14:20 · Laundry": when and where a save was made. */
+/** "Stalag Flucht · Day 3 · 14:20 · Laundry": which prison, when and where a save was made. */
 export function saveWhen(f: SaveFile): string {
-  return `${t('hud.day', { n: f.day })} · ${pad(Math.floor(f.minute / 60))}:${pad(f.minute % 60)} · ${t(`zone.${f.zone}` as Key)}`;
+  return `${t(`prison.${f.prison}` as Key)} · ${t('hud.day', { n: f.day })} · ${pad(Math.floor(f.minute / 60))}:${pad(f.minute % 60)} · ${t(`zone.${f.zone}` as Key)}`;
 }
 
 /** "5 minutes ago", in the game's language. */
