@@ -359,4 +359,31 @@ real touch feel) and the known limits.
   - **Living**: a seat an inmate holds is refused ("Someone is sitting there") and inmates no longer pick the player's seat; a lockdown or the tool button gets the player up; no shower while out cold, carried off or in a lockdown; a save whose seat no longer exists loads standing; the fence-cut sniper honours `rules.snipers`.
   - **First day**: the breakfast step asks to sit at a table and ticks when the tray is eaten.
   - **Render**: getting off an infirmary bed no longer flashes to the cell bed; seated inmates ease up and down; glowing decor dims from the vents and holds still with reduced motion; decor's instanced buffers are freed when the map changes.
+- **Polish pass, second review (v1.1.5)**:
+  - **Lessons:** Tools and Fighting played by hand on touch.
+    - Sparky now waits where he stands instead of wandering off.
+    - Fighting says to close in before hitting.
+    - Tools names the Chip and Cover buttons.
+    - On portrait phones, the lock-on target card drops under a guide or lesson card instead of covering it.
+    - Hiding things has its own touch prompt.
+  - **Seats:**
+    - An inmate following the player, or one that is angry, no longer holds a seat against them.
+    - Inmates avoid the seat's own tile when the player sat down from the next tile.
+    - Sitting down is refused during a lockdown.
+  - **Tap-twice moves:**
+    - Into someone else's desk, items go to the drawers first.
+    - With nowhere to go, the player is told so.
+  - **Wide-screen layout:**
+    - Toasts move aside only for container and workbench panels.
+    - Minimum widths for the lesson card and toasts between 521 and 650 px.
+  - **Help screen:** sitting, meals, showers, the infirmary bed, tap-twice and the Tutorial.
+  - **Texts:**
+    - Tiredness messages say "sit down", since "rest" now means the infirmary bed.
+    - Showers say to stand still.
+  - **French:**
+    - narrow no-break spaces before ! ? : ; % throughout;
+    - curly apostrophes throughout;
+    - "Suspicion" used everywhere for heat;
+    - the tu voice kept;
+    - shorter meal texts.
 - **Next: P9 Stalag Flucht (v1.2).**

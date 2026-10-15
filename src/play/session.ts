@@ -263,7 +263,7 @@ export function endGame() {
   profile.close();
   trainCard.hide();
   workChips.hide();
-  document.body.classList.remove('is-playing', 'panel-open', 'training');
+  document.body.classList.remove('is-playing', 'panel-open', 'items-open', 'training');
   quit?.();
 }
 

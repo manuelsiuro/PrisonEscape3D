@@ -513,10 +513,12 @@ function sleep(sim: SimContext) {
 /** Sits down on a seat, bench or chair, or lies down on an infirmary bed: facing the table, the body still. */
 function sitDown(sim: SimContext, prop: number, use: 'sit' | 'rest') {
   const s = sim.state;
-  // Someone sitting there already, or on the way to: the player stays up.
+  // No sitting down in a lockdown (it would only get up again).
+  if (s.lockdown || sim.away) return;
+  // Someone sitting there already, or on the way to (on their routine, not following or fighting): the player stays up.
   const spot = seatSpot(sim.world, prop, s.player);
   const at = spot.z * MAP_W + spot.x;
-  if (s.inmates.some((m) => m.ko === 0 && (m.goal === at || tileAt(m.body.x, m.body.z) === at))) {
+  if (s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === at || tileAt(m.body.x, m.body.z) === at))) {
     sim.events.push({ type: 'refused', why: 'seatTaken' });
     return;
   }

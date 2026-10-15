@@ -18,6 +18,7 @@ import { awake, GUARD } from './guards';
 import { DOING, type Inmate, inmateZone, type Social, STAND_OFF } from './inmates';
 import { HOTBAR, itemOf, pocketOf, slot, usesOf } from './items';
 import { quotaUp } from './jobs';
+import { seatSpot } from './rest';
 import { stopTraining } from './training';
 
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
@@ -237,7 +238,9 @@ export function socialNow(sim: SimContext): Social {
   so.work.fill(-1);
   sim.scratch.allyFoe.fill(-1);
   so.talk = s.talk;
-  so.seat = s.seat >= 0 ? Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT) : -1;
+  // The seat's own tile (the player may have sat down from the next one): what sitDown and the view use.
+  const sp = s.seat >= 0 ? seatSpot(sim.world, s.seat, s.player) : null;
+  so.seat = sp ? sp.z * MAP_W + sp.x : -1;
   const rooms = jobRooms(sim.world);
   s.jobs.forEach((who, j) => {
     if (who >= 0 && who < n) so.work[who] = rooms[j].zone;

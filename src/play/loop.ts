@@ -117,6 +117,7 @@ export function frame(now: number) {
   const held = itemOf(it.inv[it.hand]);
   const panel = itemsUI.panelOpen || socialOpen();
   document.body.classList.toggle('panel-open', panel);
+  document.body.classList.toggle('items-open', itemsUI.panelOpen);
   keepPlayerClear(panel && !g.paused);
   updateTargets(sim, g.ladderFoot, busy, panel, held);
   view.draw(buildFrame(g, a, tile, busy, held), dt, now / 1000);

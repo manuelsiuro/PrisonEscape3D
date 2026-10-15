@@ -159,6 +159,11 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   at(bot, spot.tile, spot.face);
   bot.act();
   check(bot.st.seat === -1 && bot.sim.events.some((e) => e.type === 'refused' && e.why === 'seatTaken'), 'a seat someone holds is refused');
+  // A follower's old goal doesn't hold the seat (they're off after the player, not sitting).
+  m.plan = -1;
+  bot.act();
+  check(bot.st.seat >= 0, 'a follower heading nowhere near does not hold the seat');
+  bot.act();
   m.goal = -1;
   m.wait = 0;
   // Free again: sit; a lockdown gets the player up.

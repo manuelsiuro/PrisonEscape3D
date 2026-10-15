@@ -13,6 +13,8 @@ export interface ItemsView {
   /** The open container's title and its hidden slot count. */
   boxTitle: string;
   boxHidden: number;
+  /** The open container is the player's own (their desk: the hidden compartment comes first). */
+  boxMine: boolean;
   /** What the action button would do now: a verb ("Search") and what to ("your desk"), or null. */
   action: { verb: string; what: string } | null;
   sleeping: boolean;
@@ -230,8 +232,12 @@ export class ItemsUI {
         let to = addr;
         if (addr === this.picked) {
           const box = it.containers[it.open] ?? [];
-          const free = addr >= SLOT.CONTAINER ? it.inv.slice(0, HOTBAR).findIndex((x) => !x) : box.findIndex((x) => !x);
+          // Someone else's desk: its drawers first (their hidden compartment is no place for the player's things).
+          const from = v.boxMine ? 0 : v.boxHidden;
+          const inBox = box.findIndex((x, k) => k >= from && !x);
+          const free = addr >= SLOT.CONTAINER ? it.inv.slice(0, HOTBAR).findIndex((x) => !x) : inBox >= 0 ? inBox : box.findIndex((x) => !x);
           to = free < 0 ? addr : addr >= SLOT.CONTAINER ? free : SLOT.CONTAINER + free;
+          if (free < 0) this.toast(t(addr >= SLOT.CONTAINER ? 'items.full' : 'items.boxFull'));
         }
         if (to !== this.picked) this.send(OP.MOVE, this.picked, to);
         this.picked = null;

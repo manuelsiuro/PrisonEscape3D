@@ -172,7 +172,7 @@ export const LESSONS: readonly Lesson[] = [
       fill(sim, myDesk(sim));
     },
     steps: [
-      { text: 'lesson.stash.desk', touch: 'lesson.search.deskTouch', done: (c) => c.sim.state.items.open === myDesk(c.sim) },
+      { text: 'lesson.stash.desk', touch: 'lesson.stash.deskTouch', done: (c) => c.sim.state.items.open === myDesk(c.sim) },
       {
         text: 'lesson.stash.hide',
         touch: 'lesson.stash.hideTouch',
@@ -211,6 +211,10 @@ export const LESSONS: readonly Lesson[] = [
       m.body.x = 26 * UNIT + UNIT / 2;
       m.body.z = 31 * UNIT + UNIT / 2;
       m.goal = -1;
+      // He waits for the player where he stands (his block already planned, no wandering off).
+      m.plan = sim.state.routine;
+      m.wait = 5 * 60 * STEPS_PER_MINUTE;
+      m.body.facing = 9;
     },
     steps: [
       { text: 'lesson.fight.lock', touch: 'lesson.fight.lockTouch', done: (c) => c.sim.state.lock === 0 || c.sim.state.inmates[0].ko > 0 },

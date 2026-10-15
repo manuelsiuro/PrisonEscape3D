@@ -905,9 +905,9 @@ body.touch .coach-skip {
 }
 
 @media (min-width: 521px) {
-  .is-playing.panel-open .toasts {
+  .is-playing.items-open .toasts {
     left: calc((100vw - 392px) / 2);
-    width: min(480px, calc(100vw - 424px));
+    width: min(480px, max(240px, calc(100vw - 424px)));
   }
 }
 
@@ -917,7 +917,7 @@ body.touch .coach-skip {
 @media (min-width: 521px) and (min-height: 521px) {
   .coach.lesson-coach {
     margin-left: 0;
-    max-width: min(400px, calc(100vw - 424px));
+    max-width: min(400px, max(260px, calc(100vw - 424px)));
   }
 }
 
@@ -938,4 +938,12 @@ body.touch .coach-skip {
 
 .tagline {
   text-wrap: balance;
+}
+
+/* Portrait phones: the target card (lock-on) drops under the guide's or a lesson's card while
+   one is up, instead of covering it (they share the top middle there). */
+@media (max-width: 520px) {
+  body:has(.hud .coach:not(.hidden)) .target-card {
+    top: calc(max(12px, env(safe-area-inset-top)) + 200px);
+  }
 }
