@@ -1,0 +1,176 @@
+import { itemDef } from '../content/items';
+import { ROUTINE } from '../content/routine';
+import { t, type Key } from '../i18n';
+import { maxHealth } from '../sim/systems/combat';
+import { jobRooms, nearestProp, STATION_REACH } from '../sim/systems/economy';
+import { GUARD } from '../sim/systems/guards';
+import type { ItemState } from '../sim/systems/items';
+import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { containersOf } from '../sim/world/containers';
+import { TILE, TILE_INFO } from '../sim/world/tiles';
+import { LAYER, MAP_W } from '../sim/world/World';
+import { TOUCH } from '../ui/dom';
+import type { HudState } from '../ui/hud';
+import type { ItemsView } from '../ui/items';
+import { press, targets } from './buttons';
+import {
+  board,
+  combatUI,
+  darkCell,
+  hint,
+  hud,
+  itemsUI,
+  profile,
+  sleepVeil,
+  socialOpen,
+  solitaryPanel,
+  sound,
+  talk,
+  tools,
+  trainCard,
+  vignette,
+  view,
+  workChips,
+} from './context';
+import type { Game } from './game';
+import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, targetInfo } from './labels';
+import { seenTip } from './tips';
+
+/**
+ * Everything over the picture, brought up to date after each draw: the item bar and action
+ * button, the tool button, the target card, the social panels, the veils, the HUD, and the
+ * music and ambience that follow the game.
+ */
+
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, action: null, sleeping: false, deskTunnel: false, study: false };
+const GET_UP = { verb: '', what: '' };
+const PEEL_ACTION = { verb: '', what: '' };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, takeoverLeft: null };
+const workHud = { place: '', quota: 0, of: 0, paid: false };
+/** The music's tension cue is on (see updateOverlay). */
+let tense = false;
+
+const projectAt = (x: number, y: number, z: number, out: { x: number; y: number }) => view.screenAt(x, y, z, out);
+
+/**
+ * Keeps the player in sight while a panel is open: a side panel reaching past the middle (phone
+ * landscape) slides the picture left, a bottom sheet (phone portrait) slides it up, into the
+ * middle of the space left free. Measured a few times a second, not every frame.
+ */
+let shiftCheck = 0;
+export function keepPlayerClear(open: boolean) {
+  if (!open) {
+    view.setShift(0, 0);
+    shiftCheck = 0;
+    return;
+  }
+  if (shiftCheck-- > 0) return;
+  shiftCheck = 8;
+  const el = document.querySelector<HTMLElement>('.item-panel:not(.hidden)');
+  if (!el) return view.setShift(0, 0);
+  const r = el.getBoundingClientRect();
+  const w = innerWidth;
+  const h = innerHeight;
+  const top = 110;
+  if (r.top < h * 0.45 && r.left > w * 0.2) {
+    // To the side: centre the player in what's left of the width.
+    view.setShift(r.left < w / 2 + 60 ? Math.round(r.left / 2 - w / 2) : 0, 0);
+  } else if (r.top >= h * 0.3) {
+    // A sheet from the bottom: between the HUD and its top edge.
+    view.setShift(0, r.top < h / 2 + 60 ? Math.round((top + r.top) / 2 - h / 2) : 0);
+  } else view.setShift(0, 0);
+}
+
+/** The UI after the draw (same arguments as buildFrame, and whether a panel is open). */
+export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }, busy: boolean, held: number, panel: boolean) {
+  const sim = g.rec.sim;
+  const p = sim.state.player;
+  const clock = sim.clock;
+  const st = sim.state;
+  const it = st.items;
+  const memo = targets;
+  const climb = memo.climb;
+  const target = memo.target;
+  const box = containersOf(sim.world)[it.open];
+  const v = itemsView;
+  v.items = it;
+  v.boxTitle = it.open >= 0 ? boxTitle(sim, it.open) : '';
+  v.boxHidden = box?.hidden ?? 0;
+  if (st.solitary > 0) {
+    PEEL_ACTION.verb = t('act.peel');
+    PEEL_ACTION.what = t('act.potato');
+  }
+  if (st.seat >= 0) GET_UP.verb = t('act.getUp');
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : describeTarget(sim, target, climb, held, memo.station);
+  v.sleeping = st.sleeping;
+  v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
+  v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
+  itemsUI.update(v);
+  // The tool button: a blow at the locked-on target, else what a strike would hit.
+  const tt = memo.tool;
+  const fight = busy ? null : describeAttack(sim);
+  press.toolNow = fight ?? describeTool(sim, tt, held);
+  // Each new target takes a new press: a held button never digs on into the next thing.
+  press.toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
+  if (tools.held && press.toolKey !== press.heldOn) tools.release();
+  const fighting = st.lock >= 0 || memo.fighting;
+  const training = st.train >= 0;
+  tools.update(training ? null : press.toolNow, st.energy, !!(held && itemDef(held).tool) || training, busy || panel, st.health / maxHealth(st.str), fighting);
+  // The target card, and the lock button while anyone is in range (worked out once a step).
+  combatUI.update(targetInfo(sim), memo.canLock && !training, busy || panel || training);
+  // Social life and work (P6): the talk, the job board (closed out of its reach), the file, the training card, machines at work.
+  if (board.isOpen && nearestProp(sim.world, p, (q) => q.kind === 'jobBoard', STATION_REACH + UNIT / 2) < 0) board.close();
+  talk.update(sim, busy);
+  board.update(sim, busy);
+  profile.update(sim, busy && !st.sleeping);
+  trainCard.update(sim, busy);
+  workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);
+  const veilOn = st.sleeping || st.ko > 0;
+  if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');
+  sleepVeil.classList.toggle('ko', st.ko > 0);
+  sleepVeil.classList.toggle('on', veilOn);
+  solitaryPanel.update(st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null, st.peeled);
+  darkCell.classList.toggle('on', st.solitary > 0);
+  // The solitary card takes the hint's place.
+  if (st.solitary > 0 && hint.visible) hint.hide();
+  // First time something is in reach: how to use it.
+  if (target && !hint.visible && !seenTip('interact') && seenTip('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
+  vignette.classList.toggle('on', st.lockdown);
+  sound.siren(st.lockdown && !g.paused);
+  const zone = sim.playerZone;
+  hudState.routine = st.routine;
+  // At Lights Out the badge says whether the player is in the cell right now.
+  hudState.attended = ROUTINE[st.routine].id === 'lightsOut' ? zone === 'playerCell' : st.attended;
+  hudState.heat = st.heat;
+  hudState.lockdown = st.lockdown;
+  hudState.seen = st.seen;
+  hudState.solitaryMinutes = st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null;
+  hudState.cash = st.cash;
+  // During the Work Period with a job that counts today: the quota on the badge (GDD §11).
+  const job = sim.jobActive();
+  if (ROUTINE[st.routine].id === 'work' && job >= 0) {
+    const d = jobRooms(sim.world)[job].def;
+    workHud.place = t(`zone.${d.zone}` as Key);
+    workHud.quota = st.quota;
+    workHud.of = d.quota;
+    workHud.paid = st.paid;
+    hudState.work = workHud;
+  } else hudState.work = null;
+  hudState.powerLeft = st.powerOff > 0 ? (st.powerOff - a) / STEPS_PER_SECOND : null;
+  let wakes = Infinity;
+  for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
+  hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
+  hud.update(clock, zone, hudState);
+  // The music follows the danger and the hour; the ambience, where the player is.
+  // Tense from 80% heat (or a chase, a lockdown) until it's back under 70%: no flapping at the line.
+  const hunted = st.lockdown || st.guards.some((x) => x.mode === GUARD.CHASE);
+  tense = hunted || st.heat >= 80 || (tense && st.heat >= 70);
+  const chased = tense;
+  const night = ROUTINE[st.routine].id === 'lightsOut' || st.sleeping;
+  // Paused or reading a card, the music steps back.
+  sound.duck(g.paused && !g.over);
+  // Out on the road: the title theme plays over the victory screen.
+  if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
+  const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
+  sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
+}

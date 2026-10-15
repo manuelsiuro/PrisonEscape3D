@@ -1,0 +1,573 @@
+/**
+ * What the player does (GDD §2, §3.1, §7, §9): the one-step operation of each command, tools
+ * on the structure, covers, braces and ropes, climbing between layers, toilets, bed, seats,
+ * showers, and energy and health coming back.
+ */
+import { itemDef, itemNumber } from '../../content/items';
+import { ROUTINE } from '../../content/routine';
+import { nearestDir, nearestDir as faceTo } from '../ai/path';
+import { placesOf } from '../ai/places';
+import { argA, argB, OP, opOf } from '../command';
+import type { SimContext } from '../context';
+import { SPOT, WAKE } from '../state';
+import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, ENERGY_REGEN_STEPS, HEALTH_REGEN_STEPS, KO_STEPS, MEAL_ENERGY, MEAL_STEPS, SHARPEN_STROKES, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS, UNIT } from '../tuning';
+import { containersOf } from '../world/containers';
+import { TILE } from '../world/tiles';
+import { LAYER, MAP_W, placeKey } from '../world/World';
+import { lockCandidates, maxHealth, nextLock } from './combat';
+import { attack, hurt } from './fights';
+import type { Guard } from './guards';
+import type { Inmate } from './inmates';
+import { craft, dropItem, equip, give, HOTBAR, interactTarget, type ItemEvent, itemOf, type ItemState, moveItem, pickUp, REACH, slot, stillInReach, usesOf } from './items';
+import { jobOp, station, takeCoins, work } from './jobs';
+import { peel } from './justice';
+import type { Body } from './movement';
+import { switchPower } from './power';
+import { atProp, seatSpot } from './rest';
+import { sniperOn } from './security';
+import { approach, dismissAll, endTalk, talkOp } from './social';
+import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, WALL_CHUNK } from './structure';
+import { rep, startTraining, stopTraining, study } from './training';
+import { addHeat, setTile } from './watch';
+
+/** The open container's panel closes (caught, knocked out, climbing, asleep…). */
+export function closeBox(sim: SimContext) {
+  const it = sim.state.items;
+  if (it.open < 0) return;
+  it.open = -1;
+  it.rev++;
+  sim.events.push({ type: 'close' });
+}
+
+/** The player's one-step operation (OP), and the open container closing out of reach. */
+export function useItems(sim: SimContext, cmd: number) {
+  const s = sim.state;
+  const it = s.items;
+  const ev = sim.events as ItemEvent[];
+  const a = argA(cmd);
+  // Every op may change items (the UI redraws on rev); a held use button asks every step, so strikes bump it themselves.
+  if (opOf(cmd) !== OP.NONE && opOf(cmd) !== OP.USE) it.rev++;
+  switch (opOf(cmd)) {
+    case OP.INTERACT: {
+      if (s.solitary > 0) {
+        peel(sim);
+        break;
+      }
+      // From the open desk panel: down the tunnel under the player's desk.
+      if (a === 1) {
+        underDesk(sim);
+        break;
+      }
+      // Seated (or resting): the action button gets the player up.
+      if (s.seat >= 0) {
+        standUp(sim);
+        break;
+      }
+      const held = itemOf(it.inv[it.hand]);
+      const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length);
+      const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
+      const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
+      if (up) {
+        climb(sim, up);
+        break;
+      }
+      // On the job (GDD §11): the station's step comes first.
+      const job = s.layer === LAYER.GROUND ? station(sim) : null;
+      if (job) {
+        work(sim, job);
+        break;
+      }
+      if (!target) break;
+      if (target.kind === 'ground') pickUp(it, target.index, ev);
+      else if (target.kind === 'sleep') sleep(sim);
+      else if (target.kind === 'person') approach(sim, target.who);
+      else if (target.kind === 'fixture') {
+        if (target.use === 'board') sim.events.push({ type: 'board' });
+        else if (target.use === 'generator') switchPower(sim, target.index);
+        else if (target.use === 'sit' || target.use === 'rest') sitDown(sim, target.index, target.use);
+        else startTraining(sim, target.index, target.use);
+      } else if (target.kind === 'pockets') {
+        // Going through someone's pockets while they're out cold (GDD §10.2).
+        if (it.open !== target.index) {
+          it.open = target.index;
+          ev.push({ type: 'open', container: target.index });
+          takeCoins(sim, target.index);
+        }
+      }
+      else if ((held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet') flush(sim, target.index);
+      else if (it.open !== target.index) {
+        it.open = target.index;
+        ev.push({ type: 'open', container: target.index });
+        takeCoins(sim, target.index);
+      }
+      break;
+    }
+    case OP.CLOSE:
+      if (it.open >= 0) {
+        it.open = -1;
+        ev.push({ type: 'close' });
+      }
+      endTalk(sim);
+      if (s.train >= 0) stopTraining(sim);
+      if (s.seat >= 0) standUp(sim);
+      break;
+    case OP.TALK:
+      talkOp(sim, a, argB(cmd));
+      break;
+    case OP.JOB:
+      jobOp(sim, a);
+      break;
+    case OP.TRAIN:
+      if (a === 0) study(sim);
+      else if (a === 3) {
+        if (s.train >= 0) stopTraining(sim);
+      } else rep(sim, a);
+      break;
+    case OP.MOVE:
+      moveItem(it, a, argB(cmd));
+      break;
+    case OP.DROP:
+      dropItem(it, a, s.player, ev, s.layer);
+      break;
+    case OP.USE:
+      // Locked on to someone: a blow (or a throw) at them; else the tool in hand.
+      if (s.solitary === 0 && !attack(sim, a === 1)) strike(sim, a === 1);
+      break;
+    case OP.LOCK: {
+      if (s.solitary > 0) break;
+      const was = s.lock;
+      // a = 2 + id: that person (a tap on them), if they can be locked on to.
+      const pick = a >= 2 ? a - 2 : -1;
+      s.lock = a === 1 || s.layer !== LAYER.GROUND ? -1 : pick >= 0 ? (lockCandidates(sim.world, s, s.player).includes(pick) ? pick : s.lock) : nextLock(sim.world, s, s.player, s.lock);
+      if (s.lock !== was) sim.events.push({ type: 'lock', who: s.lock });
+      break;
+    }
+    case OP.CRAFT:
+      craft(it, a, ev, argB(cmd) - 1);
+      break;
+    case OP.EQUIP:
+      equip(it, a);
+      break;
+    case OP.SELECT:
+      if (a < HOTBAR) it.hand = a;
+      break;
+  }
+  if (it.open >= 0 && !stillInReach(sim.world, it, s.player, people(sim))) {
+    it.open = -1;
+    it.rev++;
+    ev.push({ type: 'close' });
+  }
+}
+
+/** Everyone about on the ground floor (nobody digs under people); one array, refilled. */
+function bodiesAbout(sim: SimContext): Body[] {
+  const list = sim.scratch.about;
+  list.length = 0;
+  for (const m of sim.state.inmates) list.push(m.body);
+  for (const g of sim.state.guards) list.push(g.body);
+  return list;
+}
+
+/** Everyone who can be fought or looted, by Cast id (inmates, then guards); one array, refilled. */
+function people(sim: SimContext): ReadonlyArray<Inmate | Guard> {
+  const list = sim.scratch.cast;
+  list.length = 0;
+  for (const m of sim.state.inmates) list.push(m);
+  for (const g of sim.state.guards) list.push(g);
+  return list;
+}
+
+/**
+ * Where the player lands climbing onto the ground floor: the tile meant, or (if a hole or
+ * someone is in the way) the nearest free one beside it; -1 if there's none.
+ */
+function landing(sim: SimContext, tile: number): number {
+  const w = sim.world;
+  const bodies = bodiesAbout(sim);
+  if (tile >= 0 && !w.blocked(tile % MAP_W, Math.floor(tile / MAP_W)) && besideOnGround(w, tile, bodies, true) === tile) return tile;
+  return tile >= 0 ? besideOnGround(w, tile, bodies) : -1;
+}
+
+/**
+ * A strike with the tool in hand (GDD §9, §7.2): at most every STRIKE_STEPS, it costs the
+ * tool's energy and a use; the tile's hit points go down by the tool's damage, and when
+ * they run out it gives way. Chocolate in hand is eaten instead. `fresh`: a new press
+ * (not the button held down): digging up, eating and putting things in place need one, so
+ * a held button never carries on into them.
+ */
+function strike(sim: SimContext, fresh: boolean) {
+  const s = sim.state;
+  const w = sim.world;
+  const it = s.items;
+  const p = s.player;
+  const held = itemOf(it.inv[it.hand]);
+  const target = toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv);
+  if (!target) return;
+  // Strikes come at their own pace (holding the button asks every step); the rest at a press.
+  if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
+  if ((target.action === 'digUp' || !STRIKES.has(target.action)) && !fresh) return;
+  if (target.action === 'eat') {
+    // Full of energy: the bar keeps for later.
+    if (s.energy >= 100) {
+      sim.events.push({ type: 'cantStrike', why: 'full', action: 'eat' });
+      return;
+    }
+    it.inv[it.hand] = 0;
+    it.rev++;
+    s.energy = Math.min(100, s.energy + CHOCOLATE_ENERGY);
+    sim.events.push({ type: 'ate', item: held });
+    return;
+  }
+  if (!STRIKES.has(target.action)) {
+    putInPlace(sim, target, held);
+    return;
+  }
+  if (target.action === 'sharpen') {
+    sharpen(sim, target);
+    return;
+  }
+  const key = placeKey(target.layer, target.tile);
+  const tool0 = itemDef(held).tool;
+  // The last blow on the ground floor with full pockets would leave the chunk or the dirt at
+  // the player's feet, in plain view: not until there's room.
+  const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
+  const full = yields && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + tool0.damage >= target.hp && !hasRoom(it);
+  const why = target.hp === 0 ? 'reinforced' : !target.fits ? 'tool' : s.energy < tool0!.energy ? 'tired' : full ? 'full' : null;
+  if (why) {
+    sim.events.push({ type: 'cantStrike', why, action: target.action });
+    return;
+  }
+  const tool = tool0!;
+  s.struckAt = s.step;
+  s.energy -= tool.energy;
+  it.rev++;
+  // Face what is struck (the grate overhead keeps the heading).
+  if (target.tile >= 0 && target.action !== 'digUp' && target.action !== 'unscrew') {
+    const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
+    const dz = Math.floor(target.tile / MAP_W) * UNIT + UNIT / 2 - p.z;
+    if (dx || dz) p.facing = nearestDir(dx, dz);
+  }
+  p.moving = false;
+  // The tool wears.
+  const left = usesOf(it.inv[it.hand]) - 1;
+  if (left <= 0) {
+    it.inv[it.hand] = 0;
+    sim.events.push({ type: 'broke', item: held });
+  } else it.inv[it.hand] = slot(held, left);
+  // A live fence: knocked flat (GDD §9.1).
+  if (target.action === 'cut' && w.ground.kind[target.tile] === TILE.ELECTRIC && sim.power) {
+    shock(sim);
+    return;
+  }
+  // Cutting the perimeter fence by day within a tower's reach: the sniper sees it (GDD §5.6).
+  if (target.action === 'cut' && ROUTINE[s.routine].id !== 'lightsOut' && sniperOn(w, p, s.layer) >= 0 && !s.lockdown) {
+    sim.events.push({ type: 'spotted', reason: 'sniper' });
+    s.spotted = SPOT.indexOf('sniper');
+    addHeat(sim, 100);
+  }
+  const taken = (s.wear[key] ?? 0) + tool.damage;
+  if (taken < target.hp) {
+    s.wear[key] = taken;
+    sim.wearRev++;
+    sim.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: target.tile, broke: false });
+    return;
+  }
+  const t = target.tile;
+  switch (target.action) {
+    case 'chip':
+      setTile(sim, LAYER.GROUND, t, TILE.HOLE);
+      give(it, WALL_CHUNK, p, s.layer);
+      s.tally[0]++;
+      break;
+    case 'cut':
+      setTile(sim, LAYER.GROUND, t, TILE.FENCE_CUT);
+      break;
+    case 'unscrew':
+      setTile(sim, LAYER.VENTS, t, TILE.GRATE_OPEN);
+      break;
+    case 'dig':
+      if (target.layer === LAYER.GROUND) {
+        setTile(sim, LAYER.GROUND, t, TILE.SHAFT);
+        if (w.layers[LAYER.UNDER].kind[t] === TILE.SOIL) setTile(sim, LAYER.UNDER, t, TILE.TUNNEL);
+      } else {
+        setTile(sim, LAYER.UNDER, t, TILE.TUNNEL);
+        // Too long a stretch without a brace: the roof comes down (GDD §9.2).
+        if (cavesIn(w, t)) {
+          setTile(sim, LAYER.UNDER, t, TILE.SOIL);
+          sim.events.push({ type: 'caveIn', tile: t });
+          hurt(sim, CAVE_IN_DAMAGE, -1);
+          return;
+        }
+      }
+      give(it, DIRT, p, s.layer);
+      s.tally[1]++;
+      break;
+    case 'digUp': {
+      setTile(sim, LAYER.GROUND, t, TILE.SHAFT);
+      give(it, DIRT, p, s.layer);
+      s.tally[1]++;
+      sim.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
+      // Out through the new hole.
+      const out = landing(sim, besideOnGround(w, t, bodiesAbout(sim)));
+      if (out >= 0) moveTo(sim, LAYER.GROUND, out, 'digUp');
+      return;
+    }
+  }
+  sim.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
+}
+
+/** A live electric fence (cut or hooked with the power on): knocked out, then the infirmary (GDD §9.1). */
+function shock(sim: SimContext) {
+  const s = sim.state;
+  s.lock = -1;
+  dismissAll(sim);
+  endTalk(sim);
+  s.ko = KO_STEPS;
+  s.wake = WAKE.INFIRMARY;
+  s.sleeping = false;
+  closeBox(sim);
+  sim.events.push({ type: 'shocked' });
+}
+
+/**
+ * A comb or toothbrush rubbed on a wall (GDD §7.3 shivs): a stroke at a strike's pace, and
+ * after a few the shiv. The strokes so far ride in the item's slot (as uses do).
+ */
+function sharpen(sim: SimContext, target: ToolTarget) {
+  const s = sim.state;
+  const it = s.items;
+  const p = s.player;
+  const v = it.inv[it.hand];
+  const item = itemOf(v);
+  s.struckAt = s.step;
+  p.moving = false;
+  const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
+  const dz = Math.floor(target.tile / MAP_W) * UNIT + UNIT / 2 - p.z;
+  if (dx || dz) p.facing = faceTo(dx, dz);
+  const strokes = usesOf(v) + 1;
+  it.rev++;
+  if (strokes < SHARPEN_STROKES) {
+    it.inv[it.hand] = slot(item, strokes);
+    sim.events.push({ type: 'strike', action: 'sharpen', layer: LAYER.GROUND, tile: target.tile, broke: false });
+    return;
+  }
+  const shiv = SHIVS.get(item)!;
+  it.inv[it.hand] = slot(shiv);
+  sim.events.push({ type: 'strike', action: 'sharpen', layer: LAYER.GROUND, tile: target.tile, broke: true }, { type: 'sharpened', item: shiv });
+}
+
+/**
+ * The item in hand put to use on the structure (GDD §9.2–9.3): a cover over damage, a
+ * brace in the tunnel, a sheet rope down off a roof. One press each.
+ */
+function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
+  const s = sim.state;
+  const it = s.items;
+  const t = target.tile;
+  if (!target.fits) {
+    sim.events.push({ type: 'cantStrike', why: target.action === 'grapnel' ? 'noRope' : 'poster', action: target.action });
+    return;
+  }
+  // A hook over a live fence: the shock comes down the rope.
+  if (target.action === 'grapnel' && sim.world.ground.kind[target.over!] === TILE.ELECTRIC && sim.power) {
+    it.inv[it.hand] = 0;
+    it.rev++;
+    shock(sim);
+    return;
+  }
+  it.inv[it.hand] = 0;
+  it.rev++;
+  switch (target.action) {
+    case 'grapnel': {
+      // Hooked over the fence, the sheet rope takes the player down the far side (both stay there).
+      const rope = it.inv.findIndex((v, k) => k < HOTBAR && itemOf(v) === SHEET_ROPE);
+      if (rope >= 0) it.inv[rope] = 0;
+      moveTo(sim, LAYER.GROUND, t, 'grapnel');
+      break;
+    }
+    case 'tape': {
+      // Over the lens: blind for a minute (touching a camera is tampering, if a guard sees it).
+      const k = (sim.world.def.cameras ?? []).findIndex((c) => c.z * MAP_W + c.x === t);
+      if (k >= 0) {
+        s.cams[k] = s.step + CAMERA_BLIND_STEPS;
+        s.struckAt = s.step;
+        sim.events.push({ type: 'camera', index: k, blind: true });
+      }
+      break;
+    }
+    case 'cover':
+      if (target.layer === LAYER.VENTS) setTile(sim, LAYER.VENTS, t, TILE.GRATE_FAKE);
+      else setTile(sim, LAYER.GROUND, t, sim.world.ground.kind[t] === TILE.FENCE_CUT ? TILE.FENCE_FAKE : held === POSTER_ITEM ? TILE.HOLE_POSTER : TILE.HOLE_FAKE);
+      sim.events.push({ type: 'covered', item: held, on: true });
+      break;
+    case 'brace':
+      setTile(sim, LAYER.UNDER, t, TILE.BRACED);
+      sim.events.push({ type: 'braced' });
+      break;
+    case 'rope': {
+      const to = landing(sim, t);
+      if (to < 0) {
+        it.inv[it.hand] = slot(held);
+        sim.events.push({ type: 'cantStrike', why: 'noLanding', action: 'rope' });
+        return;
+      }
+      moveTo(sim, LAYER.GROUND, to, 'rope');
+      break;
+    }
+  }
+}
+
+/** Climbing, and covers taken off (the action button on the structure). */
+function climb(sim: SimContext, c: ClimbTarget) {
+  const s = sim.state;
+  const it = s.items;
+  const p = s.player;
+  switch (c.action) {
+    case 'uncover': {
+      const grate = sim.world.layers[LAYER.VENTS].kind[c.tile] === TILE.GRATE_FAKE;
+      // The cover comes back into the hand: never dropped at the player's feet.
+      if (!hasRoom(it)) {
+        sim.events.push({ type: 'full' });
+        return;
+      }
+      give(it, c.item!, p, s.layer);
+      if (grate) setTile(sim, LAYER.VENTS, c.tile, TILE.GRATE_OPEN);
+      else setTile(sim, LAYER.GROUND, c.tile, sim.world.ground.kind[c.tile] === TILE.FENCE_FAKE ? TILE.FENCE_CUT : TILE.HOLE);
+      sim.events.push({ type: 'covered', item: c.item!, on: false });
+      return;
+    }
+  }
+  // Climbing out of the tunnel under the desk: beside the desk. Onto the ground floor, never
+  // onto a hole or into someone.
+  const want = c.toTile === -2 ? placesOf(sim.world).deskside[1] : c.toTile;
+  const to = c.toLayer === LAYER.GROUND ? landing(sim, want) : want;
+  if (to < 0) return;
+  moveTo(sim, c.toLayer, to, c.action);
+}
+
+/** Down the tunnel under the player's desk (from its open panel). */
+function underDesk(sim: SimContext) {
+  const it = sim.state.items;
+  const box = containersOf(sim.world)[it.open];
+  if (!box?.mine || box.prop.kind !== 'desk') return;
+  const tile = box.prop.z * MAP_W + box.prop.x;
+  if (sim.world.ground.kind[tile] !== TILE.SHAFT) return;
+  moveTo(sim, LAYER.UNDER, tile, 'climbDown');
+  sim.state.deskAside = true;
+}
+
+/** Onto a layer, in the middle of a tile. */
+function moveTo(sim: SimContext, layer: number, tile: number, how: ClimbAction | 'digUp' | 'rope' | 'grapnel') {
+  const s = sim.state;
+  const from = s.layer;
+  sim.movedBy = how;
+  closeBox(sim);
+  s.layer = layer;
+  // Back on the ground floor, the desk is slid back over its hole.
+  if (layer === LAYER.GROUND) s.deskAside = false;
+  s.player.x = (tile % MAP_W) * UNIT + UNIT / 2;
+  s.player.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  s.player.moving = false;
+  sim.events.push({ type: 'layer', layer, from, how });
+}
+
+/** Dirt (or a chunk of wall) down a toilet: three loads an hour, then it's clogged for an hour (GDD §9.2). */
+function flush(sim: SimContext, index: number) {
+  const s = sim.state;
+  const it = s.items;
+  const t = (s.toilets[index] ??= [0, s.step]);
+  if (s.step - t[1] >= TOILET_CLOG_STEPS) {
+    t[0] = 0;
+    t[1] = s.step;
+  }
+  if (t[0] >= TOILET_LOADS) {
+    sim.events.push({ type: 'clogged' });
+    return;
+  }
+  const item = itemOf(it.inv[it.hand]);
+  it.inv[it.hand] = 0;
+  if (t[0] === 0) t[1] = s.step;
+  // The third load clogs it: an hour from now it takes dirt again.
+  if (++t[0] >= TOILET_LOADS) t[1] = s.step;
+  sim.events.push({ type: 'flushed', item });
+}
+
+/** Into bed: the player lies down beside it (the view puts them in it). */
+function sleep(sim: SimContext) {
+  const s = sim.state;
+  const t = placesOf(sim.world).bedside[1];
+  if (t < 0) return;
+  s.player.x = (t % MAP_W) * UNIT + UNIT / 2;
+  s.player.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
+  s.player.moving = false;
+  s.sleeping = true;
+  closeBox(sim);
+  endTalk(sim);
+  stopTraining(sim);
+  sim.events.push({ type: 'sleep', on: true });
+}
+
+/** Sits down on a seat, bench or chair, or lies down on an infirmary bed: facing the table, the body still. */
+function sitDown(sim: SimContext, prop: number, use: 'sit' | 'rest') {
+  const s = sim.state;
+  endTalk(sim);
+  closeBox(sim);
+  s.player.moving = false;
+  if (use === 'sit') s.player.facing = seatSpot(sim.world, prop, s.player).facing;
+  s.seat = prop;
+  sim.events.push({ type: 'sit', on: true, use });
+}
+
+export function standUp(sim: SimContext) {
+  const s = sim.state;
+  if (s.seat < 0) return;
+  const use = sim.world.props[s.seat].kind === 'bed' ? 'rest' : 'sit';
+  s.seat = -1;
+  sim.events.push({ type: 'sit', on: false, use });
+}
+
+/**
+ * Each step seated: up when carried off, knocked out, asleep or out of reach of the seat;
+ * else energy back a point every SIT_ENERGY_STEPS, and at a canteen table during a meal the
+ * tray is eaten (GDD §2: +35, once a meal).
+ */
+export function keepSeat(sim: SimContext) {
+  const s = sim.state;
+  if (s.seat < 0) return;
+  if (sim.away || s.sleeping || s.layer !== LAYER.GROUND || !atProp(sim.world, s.seat, s.player, REACH)) {
+    standUp(sim);
+    return;
+  }
+  if (s.energy < 100 && s.step % SIT_ENERGY_STEPS === 0) s.energy++;
+  const p = sim.world.props[s.seat];
+  const id = ROUTINE[s.routine].id;
+  if (p.kind === 'seat' && (id === 'breakfast' || id === 'dinner') && !s.lockdown && s.eaten < MEAL_STEPS && sim.world.zoneAt(p.x, p.z) === 'canteen') {
+    if (++s.eaten === MEAL_STEPS) {
+      s.energy = Math.min(100, s.energy + MEAL_ENERGY);
+      sim.events.push({ type: 'ate' });
+    }
+  }
+}
+
+/** Energy: a point back every couple of minutes, one a minute asleep. Health: a point a minute, two asleep (or resting). */
+export function regenerate(sim: SimContext) {
+  const s = sim.state;
+  const resting = s.sleeping || (s.seat >= 0 && sim.world.props[s.seat].kind === 'bed');
+  if (s.energy < 100 && (s.step % ENERGY_REGEN_STEPS === 0 || (s.sleeping && s.step % STEPS_PER_MINUTE === 0))) s.energy++;
+  if (s.ko === 0 && s.health < maxHealth(s.str) && (s.step % HEALTH_REGEN_STEPS === 0 || (resting && s.step % (HEALTH_REGEN_STEPS / 2) === 0))) s.health++;
+}
+
+/** Under a running shower in the showers block, standing still (GDD §3.1): energy back, 2 a second. */
+export function shower(sim: SimContext) {
+  const s = sim.state;
+  if (s.energy >= 100 || s.player.moving || s.layer !== LAYER.GROUND || ROUTINE[s.routine].id !== 'showers' || s.step % SHOWER_ENERGY_STEPS !== 0) return;
+  if (sim.showerTiles.has(Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT))) s.energy++;
+}
+
+const POSTER_ITEM = itemNumber('poster');
+
+/** A free hotbar slot. */
+function hasRoom(it: ItemState): boolean {
+  for (let k = 0; k < HOTBAR; k++) if (!it.inv[k]) return true;
+  return false;
+}

@@ -1,0 +1,110 @@
+import * as THREE from 'three';
+import { setHaptics } from '../app/haptics';
+import { TIERS, tierFor } from '../app/quality';
+import { Sound } from '../audio/Sound';
+import { loadSettings, saveSettings } from '../game/settings';
+import { migrateStorage } from '../game/storage';
+import { setLang } from '../i18n';
+import { Controls } from '../input/Controls';
+import { View } from '../render/View';
+import { OP } from '../sim/command';
+import { Banner } from '../ui/banner';
+import { CombatUI } from '../ui/combat';
+import { h } from '../ui/dom';
+import { Hint } from '../ui/hint';
+import { Hud } from '../ui/hud';
+import { icon } from '../ui/icons';
+import { ItemsUI } from '../ui/items';
+import { ProfilePanel } from '../ui/profile';
+import { SolitaryPanel } from '../ui/solitary';
+import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
+import { ToolControls } from '../ui/tool';
+import { play, sendOp } from './game';
+
+/**
+ * The long-lived objects every play module shares: storage first, then settings, sound, the
+ * view and the controls, then the HUD and panels. Made here once, in this order, and nowhere
+ * else: each appends itself to the page, and the order they're appended is the order they stack.
+ * This module imports no other play module, so anything can import it without a cycle.
+ */
+migrateStorage();
+export const settings = loadSettings();
+export const sound = new Sound();
+export const click = () => sound.click();
+
+// The stencil buffer lets the player's silhouette show through walls (Character.ts).
+export const renderer = new THREE.WebGLRenderer({ antialias: true, stencil: true, powerPreference: 'high-performance' });
+document.body.append(renderer.domElement);
+export const view = new View(renderer, TIERS[tierFor(settings.quality)]);
+export const controls = new Controls(renderer.domElement, (f) => view.zoomBy(f));
+
+/** Applies every setting (on start and on each change in the settings screen). */
+export function applySettings() {
+  setLang(settings.lang);
+  setHaptics(settings.haptics);
+  sound.setVolume(settings.muted ? 0 : settings.sfxVolume);
+  sound.setMusicVolume(settings.muted ? 0 : settings.musicVolume);
+  view.reducedMotion = settings.reducedMotion;
+  view.shakeOn = settings.shake;
+  document.body.classList.toggle('reduced-motion', settings.reducedMotion);
+  view.setQuality(TIERS[tierFor(settings.quality)]);
+  saveSettings(settings);
+}
+// Before anything below is built: they read the language as they make their text.
+applySettings();
+
+/**
+ * What the HUD's pause button calls, set by main.ts: pausing belongs to the session, which
+ * imports this module (a late binding instead of an import cycle).
+ */
+export const hooks: { pause: () => void } = { pause: () => {} };
+
+export const hud = new Hud(
+  () => hooks.pause(),
+  () => {
+    click();
+    toggleProfile();
+  },
+);
+export const hint = new Hint();
+export const banner = new Banner();
+export const solitaryPanel = new SolitaryPanel();
+export const vignette = h('div', 'alarm-vignette');
+/** Solitary is a dark cell: the edges of the screen close in. */
+export const darkCell = h('div', 'solitary-veil');
+document.body.append(vignette, darkCell);
+
+/** "Game saved" for a moment in the corner (see autosave). */
+export const savedMark = h('div', 'saved-mark', `${icon('save', 14)}<span></span>`);
+savedMark.setAttribute('role', 'status');
+document.body.append(savedMark);
+
+// ------------------------------------------------------------------ social life and work (P6)
+export const talk = new TalkPanel(sendOp, click);
+export const board = new BoardPanel(sendOp, click);
+export const profile = new ProfilePanel(click);
+export const trainCard = new TrainCard(sendOp);
+export const workChips = new WorkChips();
+/** A social panel is up (the talk, the job board, the file): the tool controls step aside. */
+export const socialOpen = () => talk.open || board.isOpen || profile.isOpen;
+export function closeSocial() {
+  if (play.game && play.game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
+  board.close();
+  profile.close();
+}
+export function toggleProfile() {
+  const game = play.game;
+  if (!game || game.paused) return;
+  if (!profile.isOpen) {
+    itemsUI.closePanels();
+    board.close();
+    if (game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
+  }
+  profile.toggle();
+}
+
+export const itemsUI = new ItemsUI(sendOp, click);
+export const combatUI = new CombatUI();
+export const tools = new ToolControls();
+export const sleepVeil = h('div', 'sleep-veil', `<span>${''}</span>`);
+document.body.append(sleepVeil);

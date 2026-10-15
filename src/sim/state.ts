@@ -1,0 +1,406 @@
+/**
+ * The simulation's state as plain data (what a save, a keyframe or a hash holds), the events
+ * a step reports, and where a state comes from: a new game, or a snapshot loaded.
+ */
+import type { PrisonDef } from '../content/prisons/types';
+import { SHOP_SLOTS } from '../content/loot';
+import { routineAt } from '../content/routine';
+import { HOLDER, type Favor, type StationAct } from './systems/economy';
+import { maxHealth } from './systems/combat';
+import { clockAt } from './systems/clock';
+import { spawnGuards, type Guard } from './systems/guards';
+import { fighter, spawnInmates, type Inmate } from './systems/inmates';
+import { startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
+import { bodyAt, type Body } from './systems/movement';
+import type { ClimbAction, ToolAction } from './systems/structure';
+import { GUARD_STR, OPINION_START, START_SPD, START_STR } from './tuning';
+import { containersOf } from './world/containers';
+import { LAYER, type World } from './world/World';
+
+/** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper'] as const;
+export type SpotReason = (typeof SPOT)[number];
+/** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover'] as const;
+export type EscapeRoute = (typeof ESCAPES)[number];
+/** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper. */
+export const HURT_BY = { CAVE_IN: -1, SNIPER: -2 } as const;
+/** Where a knocked-out player wakes up. */
+export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2, FLOORED: 3 } as const;
+
+/** Something that happened during a step; sound, effects and the HUD read these. */
+export type SimEvent =
+  | { type: 'hour'; hour: number }
+  /** A new routine block began (index into ROUTINE). */
+  | { type: 'routine'; routine: number }
+  /** The player checked in to the block. */
+  | { type: 'attended'; routine: number }
+  /** The block ended without the player: what it cost. */
+  | { type: 'missed'; routine: number; heat: number }
+  | { type: 'lockdown'; on: boolean }
+  /** The player's cell door locked or unlocked (Lights Out, a lockdown, 08:00). */
+  | { type: 'cells'; locked: boolean }
+  | { type: 'sleep'; on: boolean }
+  /** A guard noticed something (the first step of it): a heat jump or a chase. */
+  | { type: 'spotted'; reason: SpotReason }
+  /** A chasing guard caught the player: knocked out, then solitary or the infirmary. */
+  | { type: 'caught'; solitary: boolean }
+  /** Into solitary (with how many contraband items were taken) and out again. */
+  | { type: 'solitary'; on: boolean; taken: number }
+  | { type: 'infirmary'; taken: number }
+  /** A press on the potato; `done` when a whole potato is peeled (10 minutes off). */
+  | { type: 'peel'; done: boolean }
+  /** 08:00: the cells to be searched this morning; a guard has searched one. */
+  | { type: 'shakedown'; cells: number[] }
+  | { type: 'searched'; cell: number; taken: number }
+  /** The night bed check begins, and how it went at the player's cell. */
+  | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
+  /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
+  | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope'; action: ToolAction }
+  /** A tool wore out. */
+  | { type: 'broke'; item: number }
+  /** A live electric fence: knocked out (GDD §9.1). */
+  | { type: 'shocked' }
+  /** A tunnel roof came down on the player (GDD §9.2). */
+  | { type: 'caveIn'; tile: number }
+  /** Onto another layer (through a grate, up the ladder, into a tunnel…). */
+  | { type: 'layer'; layer: number; from: number; how: ClimbAction | 'digUp' | 'rope' | 'grapnel' }
+  /** A cover put over damage or taken off it; a brace set up; chocolate eaten. */
+  | { type: 'covered'; item: number; on: boolean }
+  | { type: 'braced' }
+  | { type: 'ate'; item: number }
+  /** Dirt down a toilet; a toilet that takes no more for now. */
+  | { type: 'flushed'; item: number }
+  | { type: 'clogged' }
+  /** Guards found damage or evidence (and repaired what they found, after a capture). */
+  | { type: 'found'; kind: number }
+  | { type: 'repaired'; n: number }
+  /** Out on the road: free (GDD §4.0), and how. */
+  | { type: 'escaped'; via: EscapeRoute }
+  /** Security (GDD §5.4–5.6): the power off and back on; a pass through a detector arch (tripped, or shielded by the pouch: its passes left); a camera blinded or seeing again; a sniper taking aim and shooting; the takeover. */
+  | { type: 'power'; on: boolean; by: 'player' | 'guard' }
+  | { type: 'scanned'; tripped: boolean; pouch: number; tile: number }
+  | { type: 'camera'; index: number; blind: boolean }
+  | { type: 'aim'; tower: number }
+  | { type: 'shot'; tower: number; hit: boolean; dmg: number }
+  | { type: 'takeover'; on: boolean }
+  /** Combat (GDD §10): the lock moved (-1: none); a blow landed on someone (Cast id) or the player; a cup of molten chocolate thrown. */
+  | { type: 'lock'; who: number }
+  | { type: 'hit'; who: number; dmg: number; ko: boolean; weapon: number }
+  | { type: 'thrown'; who: number }
+  | { type: 'cantHit'; why: 'far' }
+  | { type: 'hurt'; by: number; dmg: number }
+  /** Someone the player knocked out, and someone coming round (a guard missing its key raises the alarm). */
+  | { type: 'koed'; who: number }
+  | { type: 'cameTo'; who: number; keyMissing: boolean }
+  /** The player knocked out by an inmate or a cave-in: the infirmary. */
+  | { type: 'floored' }
+  /** A comb or toothbrush rubbed into a shiv on a wall. */
+  | { type: 'sharpened'; item: number }
+  /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
+  | { type: 'gaveUp' }
+  /** Economy (GDD §11): cash in or out (signed), and why. */
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' }
+  /** Something done at a job station; the quota moved on; the day's wage. */
+  | { type: 'work'; act: StationAct; item: number; prop: number }
+  | { type: 'quota'; n: number; of: number }
+  /** A job changed hands (who: -1 the player, else an inmate's Cast id). */
+  | { type: 'job'; job: number; who: number; change: 'hired' | 'fired' | 'quit' }
+  /** The job board was looked at (the panel opens). */
+  | { type: 'board' }
+  /** Training (GDD §3.2): on and off equipment; a press that counted; a set done; why not. */
+  | { type: 'train'; on: boolean; use: FixtureUse | 'study' }
+  /** Sat down or got up (a seat, bench or chair), lay down on or got off an infirmary bed. */
+  | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
+  /** A meal eaten at the canteen table (GDD §2: +35 energy). */
+  | { type: 'ate' }
+  | { type: 'rep' }
+  | { type: 'trained'; attr: Attr; value: number }
+  | { type: 'cantTrain'; why: 'tired' | 'max' }
+  /** 08:00: attributes left untrained yesterday slipped a point. */
+  | { type: 'decay'; attrs: Attr[] }
+  /** Talking to an inmate (-1: the talk is over). */
+  | { type: 'talk'; who: number }
+  | { type: 'opinion'; who: number; by: number }
+  | { type: 'bought'; who: number; item: number; price: number }
+  | { type: 'gift'; who: number; item: number; cash: number }
+  | { type: 'favor'; who: number; kind: number; state: 'offered' | 'taken' | 'done' | 'paid' }
+  | { type: 'recruit'; who: number; on: boolean }
+  | { type: 'delivered'; who: number }
+  /** An inmate with a grudge jumps the player (GDD §10.3); a follower lands a blow on someone. */
+  | { type: 'ambush'; who: number }
+  | { type: 'allyHit'; by: number; who: number; dmg: number; ko: boolean }
+  /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
+  | { type: 'refused'; why: Refusal }
+  | ItemEvent;
+
+/** The three attributes (GDD §3.2). */
+export type Attr = 'str' | 'spd' | 'int';
+export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
+/** Why something social or economic didn't happen (i18n `refused.<why>`). */
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone';
+
+/**
+ * Everything that changes, as plain data (the world's tiles are kept in World and saved
+ * with it). New fields go at the end and must be optional when loading old snapshots.
+ */
+export interface SimState {
+  step: number;
+  /** mulberry32 state (rng.ts). */
+  rng: number;
+  player: Body;
+  /** Guard heat, 0–100 (GDD §3.1). */
+  heat: number;
+  /** The routine block running (index into ROUTINE). */
+  routine: number;
+  /** The player has checked in to the block. */
+  attended: boolean;
+  lockdown: boolean;
+  inmates: Inmate[];
+  /** A lockdown ran during this block: missing it costs nothing. */
+  excused: boolean;
+  /** What the player carries, every container's contents, the floor, the handbook. */
+  items: ItemState;
+  /** Asleep in bed (Lights Out): time can run fast, any move wakes the player. */
+  sleeping: boolean;
+  guards: Guard[];
+  /** A guard saw the player at the end of this step. */
+  seen: boolean;
+  /** Steps left knocked out, and where the player wakes (WAKE). */
+  ko: number;
+  wake: number;
+  /** Steps left in solitary (0: not there), and presses on the potato being peeled. */
+  solitary: number;
+  peeled: number;
+  /** What guards are noticing right now (SPOT index): an event fires when it changes. */
+  spotted: number;
+  /** Steps a disguised player has spent close to a guard. */
+  near: number;
+  /** The step of the last stroke of the peeler (presses come at most every PEEL_STEPS). */
+  peelAt: number;
+  /** The layer the player is on (World LAYER): tunnels, ground, vents, roof. */
+  layer: number;
+  /** 0–100: tools spend it, sleep, meals, showers and chocolate give it back (GDD §3.1). */
+  energy: number;
+  /** Tiles changed from the map (World placeKey → tile kind): dug, chipped, cut, covered, braced. */
+  tiles: Record<number, number>;
+  /** Hit points struck off tiles that haven't given way yet (placeKey → damage). */
+  wear: Record<number, number>;
+  /** Toilets that took dirt (container index → [loads, the step the count began]). */
+  toilets: Record<number, [number, number]>;
+  /** Damage guards have found (placeKeys): put right when they catch the player. */
+  found: number[];
+  /** The step of the last strike that landed (a guard who sees it sees tampering). */
+  struckAt: number;
+  /** The step the player reached the road (0 while still inside). */
+  escaped: number;
+  /** Steps of a lockdown spent off the ground floor (out of the guards' reach). */
+  hiding: number;
+  /** The player went down the tunnel under their desk: it stands pushed aside until they come up. */
+  deskAside: boolean;
+  /** Health (0 → knocked out), Strength and Speed (GDD §3.1–3.2; Intellect lives with the items). */
+  health: number;
+  str: number;
+  spd: number;
+  /** Who the player is locked on to (Cast id: inmates, then guards; -1 none). */
+  lock: number;
+  /** The step of the player's last blow at someone (a guard who sees it sees a fight). */
+  swingAt: number;
+  /** The keyed door the player is passing through (a plastic key wears once a door, on the way out), -1 elsewhere. */
+  doorAt: number;
+  /** A guard came round without their key while the alarm couldn't be raised (a lockdown on, the player out cold): it goes up as soon as it can. */
+  keyAlarm: boolean;
+  /** Dollars (GDD §3.1): wages, favors, change found; spent at the merchants. */
+  cash: number;
+  /** Change lying in desks and pockets (container index → dollars): taken on opening them. */
+  coins: Record<number, number>;
+  /** Who holds each of the prison's jobs (def.jobs order): HOLDER.PLAYER, HOLDER.NOBODY, or an inmate's Cast id. */
+  jobs: number[];
+  /** The day each open job opened (an inmate takes it VACANCY_DAYS mornings later). */
+  jobOpen: number[];
+  /** The first day the player's job counts (taken after the Work Period began: the next day). */
+  jobDay: number;
+  /** Today's quota so far, and whether today's wage is paid. */
+  quota: number;
+  paid: boolean;
+  /** Machines with a load in (prop index → the step it's done). */
+  machines: Record<number, number>;
+  /** Puddles left to mop (tiles), and who today's letters are for (Cast ids). */
+  puddles: number[];
+  mail: number[];
+  /** Training (GDD §3.2): the prop trained on (-1 none), the set's bar (0–100), the side last pressed, attributes trained today (bit per ATTRS). */
+  train: number;
+  reps: number;
+  repSide: number;
+  trained: number;
+  /** The inmate the player is talking to (Cast id, -1 none). */
+  talk: number;
+  /** Inmates following the player (GDD §10.3), at most MAX_FOLLOWERS. */
+  followers: number[];
+  /** Favors on offer and under way (GDD §10.4). */
+  favors: Favor[];
+  /** Each merchant's stock (def.merchants order). */
+  shops: number[][];
+  /** The player's last blow was at an inmate already after them (seen, it's a scuffle, not an attack). */
+  selfDefense: boolean;
+  /** The generator (GDD §5.5): steps until the power comes back on (0: on). */
+  powerOff: number;
+  /** Standing in a detector arch already scanned (a pass counts once). */
+  scanned: boolean;
+  /** Each camera's tape (GDD §5.6): the step it comes off (0: watching). */
+  cams: number[];
+  /** A sniper's aim (GDD §5.6): the step of its next shot (0: nobody in its sights), and the shots fired so far. */
+  sniperAt: number;
+  shots: number;
+  /** In a searchlight's beam last step (its alarm goes once a pass). */
+  lit: boolean;
+  /** The takeover (GDD §12): enough guards out cold at once, every door and gate open. */
+  takeover: boolean;
+  /** For the victory screen (GDD §13.2): walls chipped, tunnel tiles dug, guards knocked out, cash earned. */
+  tally: number[];
+  /** How the player got out (ESCAPES index, 0 still inside). */
+  via: number;
+  /** Sitting on a seat, bench or chair, or resting on an infirmary bed (the prop's index; -1 standing). */
+  seat: number;
+  /** Steps spent eating this meal (GDD §2): MEAL_STEPS is a meal eaten. */
+  eaten: number;
+}
+
+export interface Snapshot {
+  v: 1;
+  prison: string;
+  state: SimState;
+}
+
+/** How the player moved onto another layer (the 'layer' event, the escape check). */
+export type LayerMove = ClimbAction | 'digUp' | 'rope' | 'grapnel';
+
+/**
+ * A new game's state: every field with its starting value, in field order (the hash
+ * stringifies the state, so the order is part of it). Day 1's coins, stock and favors are
+ * the Sim's to add (they draw on the RNG after this).
+ */
+export function freshState(world: World, prison: PrisonDef, seed: number): SimState {
+  const s = { rng: seed | 0 };
+  const inmates = spawnInmates(world, s);
+  const items = startItems(world, s);
+  return {
+    step: 0,
+    rng: s.rng,
+    player: bodyAt(prison.spawn.x, prison.spawn.z),
+    heat: 0,
+    routine: routineAt(clockAt(0).minuteOfDay),
+    attended: false,
+    lockdown: false,
+    inmates,
+    excused: false,
+    items,
+    sleeping: false,
+    guards: spawnGuards(world),
+    seen: false,
+    ko: 0,
+    wake: WAKE.NONE,
+    solitary: 0,
+    peeled: 0,
+    spotted: 0,
+    near: 0,
+    peelAt: 0,
+    layer: LAYER.GROUND,
+    energy: 100,
+    tiles: {},
+    wear: {},
+    toilets: {},
+    found: [],
+    struckAt: -1000,
+    escaped: 0,
+    hiding: 0,
+    deskAside: false,
+    health: maxHealth(START_STR),
+    str: START_STR,
+    spd: START_SPD,
+    lock: -1,
+    swingAt: -1000,
+    doorAt: -1,
+    keyAlarm: false,
+    cash: 0,
+    coins: {},
+    jobs: prison.jobs.map((j) => (j.cell === 1 ? HOLDER.PLAYER : j.cell === 0 ? HOLDER.NOBODY : j.cell - 2)),
+    jobOpen: prison.jobs.map((j) => (j.cell === 0 ? 1 : 0)),
+    jobDay: 1,
+    quota: 0,
+    paid: false,
+    machines: {},
+    puddles: [],
+    mail: [],
+    train: -1,
+    reps: 0,
+    repSide: 0,
+    trained: 0,
+    talk: -1,
+    followers: [],
+    favors: [],
+    shops: prison.merchants.map(() => new Array(SHOP_SLOTS).fill(0)),
+    selfDefense: false,
+    powerOff: 0,
+    scanned: false,
+    cams: (prison.cameras ?? []).map(() => 0),
+    sniperAt: 0,
+    shots: 0,
+    lit: false,
+    takeover: false,
+    tally: [0, 0, 0, 0],
+    via: 0,
+    seat: -1,
+    eaten: 0,
+  };
+}
+
+/**
+ * A state loaded from a snapshot (a copy the caller owns). Fields added after the snapshot
+ * was taken load with their starting values, in field order, so the state hashes the same
+ * however it was made.
+ */
+export function loadState(world: World, prison: PrisonDef, st: Partial<SimState> & Pick<SimState, 'step' | 'rng' | 'player'>): SimState {
+  const fresh = freshState(world, prison, st.rng);
+  const out = {} as Record<keyof SimState, unknown>;
+  for (const k of Object.keys(fresh) as Array<keyof SimState>) out[k] = st[k] ?? fresh[k];
+  const s = out as SimState;
+  // Starting values that depend on the loaded state (its time, its Strength, its RNG), and
+  // lists fitted to this prison (a map edit may change how many guards, jobs, merchants or
+  // cameras it has).
+  s.routine = st.routine ?? routineAt(clockAt(st.step).minuteOfDay);
+  s.inmates =
+    st.inmates?.map((m0) => {
+      const m = m0.hp === undefined ? { ...m0, ...fighter(45), angry: 0 } : m0;
+      return m.opinion === undefined ? { ...m, opinion: OPINION_START, shift: 0 } : m;
+    }) ?? spawnInmates(world, { rng: st.rng });
+  s.items = fitItems(world, st.items, st.rng) ?? startItems(world, { rng: st.rng });
+  s.guards = st.guards?.length === world.def.guards.length ? st.guards.map((g) => ({ ...g, resume: g.resume ?? 0, ...(g.hp === undefined ? fighter(GUARD_STR) : {}) })) : fresh.guards;
+  s.health = st.health ?? maxHealth(st.str ?? START_STR);
+  s.jobs = st.jobs?.length === prison.jobs.length ? st.jobs : fresh.jobs;
+  s.jobOpen = st.jobOpen?.length === prison.jobs.length ? st.jobOpen : prison.jobs.map((j) => (j.cell === 0 ? clockAt(st.step).day : 0));
+  s.jobDay = st.jobDay ?? clockAt(st.step).day + 1;
+  s.shops = st.shops?.length === prison.merchants.length ? st.shops : fresh.shops;
+  s.cams = st.cams?.length === (prison.cameras ?? []).length ? st.cams : fresh.cams;
+  return s;
+}
+
+/**
+ * Items from a snapshot, fitted to this prison's containers (a map edit may add or remove
+ * some): missing ones come in empty, extra ones are dropped, sizes follow the furniture.
+ */
+function fitItems(w: World, items: ItemState | undefined, rng: number): ItemState | undefined {
+  if (!items) return undefined;
+  const list = containersOf(w);
+  const old = items.containers;
+  items.containers = list.map((c, i) => {
+    const was = old[i] ?? [];
+    return Array.from({ length: c.slots }, (_, k) => was[k] ?? 0);
+  });
+  // Everyone's pockets after the furniture (a save from before pockets gets fresh ones).
+  const fresh = startPockets(w, { rng });
+  items.containers.push(...fresh.map((p, k) => (old.length === list.length + fresh.length ? old[list.length + k] : p)));
+  items.rev ??= 0;
+  return items;
+}

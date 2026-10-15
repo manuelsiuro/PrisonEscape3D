@@ -1,0 +1,236 @@
+/**
+ * Caught and punished (GDD §5.3, §5.6): the capture, waking up in solitary or the infirmary,
+ * peeling potatoes, the morning shakedown, the night bed check and cell searches.
+ */
+import { itemDef, itemNumber } from '../../content/items';
+import { ROUTINE } from '../../content/routine';
+import { zoneIndex } from '../../content/zones';
+import { findPath, nearestDir } from '../ai/path';
+import { placesOf } from '../ai/places';
+import { SLOT } from '../command';
+import type { SimContext } from '../context';
+import { randomInt } from '../rng';
+import { WAKE } from '../state';
+import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SOLITARY_HEAT, SOLITARY_STEPS, UNIT } from '../tuning';
+import { containersOf } from '../world/containers';
+import { LAYER, MAP_H, MAP_W } from '../world/World';
+import { closeBox } from './actions';
+import { maxHealth } from './combat';
+import { assign, backToDuty, type Guard, GUARD, type GuardReport } from './guards';
+import { itemOf, slot } from './items';
+import { dismissAll, endTalk } from './social';
+import { stopTraining } from './training';
+import { addHeat, repair } from './watch';
+
+/** Knocked down by a guard: the lockdown is over, everyone back to work, the player out cold. */
+export function caught(sim: SimContext) {
+  const s = sim.state;
+  const solitary = s.heat >= SOLITARY_HEAT;
+  s.lock = -1;
+  dismissAll(sim);
+  endTalk(sim);
+  stopTraining(sim);
+  // The score is settled: a key alarm still held back is part of it.
+  s.keyAlarm = false;
+  for (const m of s.inmates) m.angry = 0;
+  s.ko = KO_STEPS;
+  s.wake = solitary ? WAKE.SOLITARY : WAKE.INFIRMARY;
+  s.excused = true;
+  s.player.moving = false;
+  s.sleeping = false;
+  s.spotted = 0;
+  s.near = 0;
+  closeBox(sim);
+  // The guard who made the catch stands over the player until they're carried off.
+  const p = s.player;
+  const d2 = (g: Guard) => (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2;
+  const catcher = s.guards.filter((g) => g.mode === GUARD.CHASE).sort((a, b) => d2(a) - d2(b))[0];
+  for (const g of s.guards) if (g.mode === GUARD.CHASE || g.mode === GUARD.INVESTIGATE) backToDuty(g);
+  if (catcher) {
+    catcher.wait = KO_STEPS;
+    catcher.body.moving = false;
+    if (catcher.body.x !== p.x || catcher.body.z !== p.z) catcher.body.facing = nearestDir(p.x - catcher.body.x, p.z - catcher.body.z);
+  }
+  sim.events.push({ type: 'caught', solitary });
+  if (s.lockdown) {
+    s.lockdown = false;
+    sim.events.push({ type: 'lockdown', on: false });
+  }
+}
+
+/**
+ * Waking up after being caught (GDD §5.6): carried contraband is taken and the outfit is
+ * swapped for an inmate's; in solitary the desk's standard drawers are searched too. The
+ * score is settled: heat back to 0.
+ */
+export function wakeUp(sim: SimContext) {
+  const s = sim.state;
+  const places = placesOf(sim.world);
+  const it = s.items;
+  let taken = 0;
+  for (let k = 0; k <= SLOT.WEAPON; k++) {
+    if (it.inv[k] && itemDef(itemOf(it.inv[k])).contraband) {
+      it.inv[k] = 0;
+      taken++;
+    }
+  }
+  if (itemOf(it.inv[SLOT.OUTFIT]) !== INMATE_OUTFIT) {
+    if (it.inv[SLOT.OUTFIT] && itemDef(itemOf(it.inv[SLOT.OUTFIT])).contraband) taken++;
+    it.inv[SLOT.OUTFIT] = slot(INMATE_OUTFIT);
+  }
+  it.rev++;
+  // Caught: the score is settled. Floored by an inmate or a cave-in: the heat stays.
+  if (s.wake !== WAKE.FLOORED) s.heat = 0;
+  // Patched up while out cold.
+  s.health = maxHealth(s.str);
+  s.lock = -1;
+  // What the guards found is put right while the player is out cold (GDD §5.6).
+  repair(sim);
+  const lightsOut = ROUTINE[s.routine].id === 'lightsOut';
+  if (s.wake === WAKE.SOLITARY && places.solitary >= 0) {
+    taken += search(sim, 1);
+    s.solitary = SOLITARY_STEPS;
+    s.peeled = 0;
+    place(sim, places.solitary);
+    sim.events.push({ type: 'solitary', on: true, taken });
+  } else {
+    // The infirmary (at night, straight back to the cell).
+    place(sim, lightsOut || places.infirmary < 0 ? places.bedside[1] : places.infirmary);
+    sim.events.push({ type: 'infirmary', taken });
+  }
+  s.wake = WAKE.NONE;
+}
+
+/** Out of solitary: into the corridor outside it (at night, back to the cell). */
+export function release(sim: SimContext) {
+  const s = sim.state;
+  const w = sim.world;
+  const places = placesOf(w);
+  let to = places.bedside[1];
+  if (ROUTINE[s.routine].id !== 'lightsOut') {
+    const corridor = zoneIndex('corridor');
+    const path = findPath(w, places.solitary, (i) => w.ground.zone[i] === corridor, -1, MAP_W * MAP_H, undefined, w.guardBlock);
+    if (path?.length) to = path[path.length - 1];
+  }
+  s.peeled = 0;
+  place(sim, to);
+  sim.events.push({ type: 'solitary', on: false, taken: 0 });
+}
+
+/** A press on the potato in solitary: every few presses, 10 minutes off. */
+export function peel(sim: SimContext) {
+  const s = sim.state;
+  // A stroke takes a moment: presses faster than that don't count.
+  if (s.step - s.peelAt < PEEL_STEPS) return;
+  s.peelAt = s.step;
+  if (++s.peeled < POTATO_PRESSES) {
+    sim.events.push({ type: 'peel', done: false });
+    return;
+  }
+  s.peeled = 0;
+  s.solitary = Math.max(1, s.solitary - POTATO_STEPS);
+  sim.events.push({ type: 'peel', done: true });
+}
+
+/**
+ * Out of reach through a whole lockdown: the guards call off the hunt, fix what they found,
+ * and stay on the lookout (the heat stays: whoever sees the player next gives chase).
+ */
+export function outOfReach(sim: SimContext) {
+  const s = sim.state;
+  if (s.lockdown && s.layer !== LAYER.GROUND && !sim.away) {
+    if (++s.hiding >= HIDING_STEPS) {
+      s.lockdown = false;
+      s.hiding = 0;
+      for (const g of s.guards) if (g.mode === GUARD.CHASE || g.mode === GUARD.INVESTIGATE) backToDuty(g);
+      repair(sim);
+      sim.events.push({ type: 'lockdown', on: false }, { type: 'gaveUp' });
+    }
+  } else s.hiding = 0;
+}
+
+/** Puts the player on a ground floor tile (carried there, facing south). */
+function place(sim: SimContext, tile: number) {
+  sim.state.layer = LAYER.GROUND;
+  sim.state.deskAside = false;
+  const p = sim.state.player;
+  p.x = (tile % MAP_W) * UNIT + UNIT / 2;
+  p.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  p.moving = false;
+  p.facing = 5;
+}
+
+/** 08:00: two cells, drawn at random, for the shakedown guard to search (GDD §2.1). */
+export function shakedown(sim: SimContext) {
+  const s = sim.state;
+  const n = sim.world.def.cells.length;
+  const k = s.guards.findIndex((_, i) => sim.world.def.guards[i].duties?.includes('shakedown'));
+  if (k < 0 || n < 2) return;
+  const a = 1 + randomInt(s, n);
+  let b = 1 + randomInt(s, n - 1);
+  if (b >= a) b++;
+  const cells = [a, b];
+  assign(s.guards[k], GUARD.SHAKEDOWN, cells);
+  sim.events.push({ type: 'shakedown', cells: [...cells] });
+}
+
+/** The bed check: the night guard looks into every cell, east to west. */
+export function bedCheck(sim: SimContext) {
+  const s = sim.state;
+  const k = s.guards.findIndex((_, i) => sim.world.def.guards[i].duties?.includes('bedCheck'));
+  if (k < 0) return;
+  const steps = placesOf(sim.world).doorstep;
+  const cells = steps.map((_, c) => c).filter((c) => c > 0 && steps[c] >= 0);
+  cells.sort((a, b) => (steps[b] % MAP_W) - (steps[a] % MAP_W) || steps[a] - steps[b]);
+  assign(s.guards[k], GUARD.BED_CHECK, cells);
+  sim.events.push({ type: 'bedCheck', result: 'start' });
+}
+
+/** A guard looked into a cell or searched one. */
+export function report(sim: SimContext, r: GuardReport) {
+  const s = sim.state;
+  if (r.kind === 'search') {
+    const taken = search(sim, r.cell);
+    sim.events.push({ type: 'searched', cell: r.cell, taken });
+    return;
+  }
+  if (r.cell !== 1 || ROUTINE[s.routine].id !== 'lightsOut') return;
+  // In the cell, asleep, or a bed dummy under the blanket: all present (GDD §5.3).
+  const ok = sim.playerZone === 'playerCell' || s.sleeping || s.solitary > 0 || s.ko > 0 || dummyInBed(sim);
+  sim.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail' });
+  if (!ok && !s.lockdown) {
+    sim.events.push({ type: 'spotted', reason: 'bedCheck' });
+    addHeat(sim, 100);
+  }
+}
+
+/** Whether the player's bed holds a bed dummy. */
+export function dummyInBed(sim: SimContext): boolean {
+  const list = containersOf(sim.world);
+  const k = list.findIndex((c) => c.mine && c.prop.kind === 'bed');
+  return k >= 0 && sim.state.items.containers[k].some((v) => itemOf(v) === BED_DUMMY);
+}
+
+/**
+ * Searches a cell: contraband in the desk's standard drawers and in the bed goes (the
+ * hidden compartment is never found, GDD §6.2). Returns how many items were taken.
+ */
+function search(sim: SimContext, cell: number): number {
+  const it = sim.state.items;
+  let taken = 0;
+  containersOf(sim.world).forEach((c, i) => {
+    if (sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] !== cell || (c.prop.kind !== 'desk' && c.prop.kind !== 'bed')) return;
+    const box = it.containers[i];
+    for (let k = c.hidden; k < box.length; k++) {
+      if (box[k] && itemDef(itemOf(box[k])).contraband) {
+        box[k] = 0;
+        taken++;
+      }
+    }
+  });
+  if (taken) it.rev++;
+  return taken;
+}
+
+const INMATE_OUTFIT = itemNumber('inmate_outfit');
+const BED_DUMMY = itemNumber('bed_dummy');
