@@ -30,6 +30,9 @@ export function routinePlace(k: number): string {
 const LAYER_ZONES: Partial<Record<ZoneId, string>> = { tunnels: 'under', vents: 'vents', roof: 'roof' };
 const LAYER_ICONS: Record<string, string> = { under: 'down', vents: 'bars', roof: 'up' };
 
+/** Phones narrower than this move the block's deadline under its name. */
+const NARROW = matchMedia('(max-width: 440px)');
+
 export const routineName = (k: number) => t(`routine.${ROUTINE[k].id}` as Key);
 
 /**
@@ -147,7 +150,7 @@ export class Hud {
 
   private updateRoutine(s: HudState) {
     const mandatory = ROUTINE[s.routine].zones.length > 0;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}`;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
@@ -174,7 +177,8 @@ export class Hud {
     setText(this.routineName, routineName(s.routine));
     const end = routineEnd(s.routine);
     const until = t('routine.until', { time: `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}` });
-    setText(this.routinePlace, routinePlace(s.routine));
+    // Narrow phones: "Canteen · until 10:00" on the second line (the name keeps the first).
+    setText(this.routinePlace, NARROW.matches && mandatory && !s.attended ? `${routinePlace(s.routine)} · ${until}` : routinePlace(s.routine));
     setText(this.routineUntil, until);
     this.badge.className = `hud-badge${mandatory ? '' : ' hidden'}${s.attended ? ' done' : ''}`;
     this.badge.innerHTML = s.attended ? `${icon('check', 12)}${t('routine.attended')}` : t('routine.pending');

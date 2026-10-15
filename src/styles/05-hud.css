@@ -485,9 +485,14 @@ body.reduced-motion .alarm-vignette.on {
   }
 }
 
-/* Narrow phones: once checked in, the deadline gives way so the block keeps its name. */
+/* Narrow phones: the deadline joins the place line (hud.ts), so the block keeps its name. */
 @media (max-width: 440px) {
-  .hud-routine:has(.hud-badge.done) .hud-routine-head small {
+  .hud-routine-head small {
+    display: none;
+  }
+
+  /* No heat at all: the empty bar gives way (the flame and 0% say it), the routine pill takes the room. */
+  .hud-heat[data-level='none'] .hud-heat-bar {
     display: none;
   }
 }

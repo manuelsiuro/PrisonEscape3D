@@ -1124,15 +1124,22 @@ export class Sim {
     }
     if (this.away || s.layer !== LAYER.GROUND) return;
     const defense = itemDef(itemOf(s.items.inv[SLOT.OUTFIT]))?.defense ?? 0;
-    const blow = (f: Fighter, id: number, pace: number, attack: number) => {
-      if (f.ko > 0 || s.step - f.swing < pace || dist2(f.body, p) > MELEE_REACH * MELEE_REACH) return;
-      if (!lineOfSight(this.world, f.body.x, f.body.z, p.x, p.z)) return;
-      f.swing = s.step;
-      if (f.body.x !== p.x || f.body.z !== p.z) f.body.facing = faceTo(p.x - f.body.x, p.z - f.body.z);
-      this.hurt(damage(f.str, attack, defense), id);
-    };
-    s.inmates.forEach((m, id) => m.angry > 0 && !this.away && blow(m, id, INMATE_SWING_STEPS, 0));
-    s.guards.forEach((g, k) => g.mode === GUARD.CHASE && awake(g) && !this.away && blow(g, s.inmates.length + k, GUARD_SWING_STEPS, BATON_ATTACK));
+    for (let id = 0; id < s.inmates.length && !this.away; id++) if (s.inmates[id].angry > 0) this.blow(s.inmates[id], id, INMATE_SWING_STEPS, 0, defense);
+    for (let k = 0; k < s.guards.length && !this.away; k++) {
+      const g = s.guards[k];
+      if (g.mode === GUARD.CHASE && awake(g)) this.blow(g, s.inmates.length + k, GUARD_SWING_STEPS, BATON_ATTACK, defense);
+    }
+  }
+
+  /** Someone's blow at the player, if it's their moment and the player is at arm's length with nothing between. */
+  private blow(f: Fighter, id: number, pace: number, attack: number, defense: number) {
+    const s = this.state;
+    const p = s.player;
+    if (f.ko > 0 || s.step - f.swing < pace || dist2(f.body, p) > MELEE_REACH * MELEE_REACH) return;
+    if (!lineOfSight(this.world, f.body.x, f.body.z, p.x, p.z)) return;
+    f.swing = s.step;
+    if (f.body.x !== p.x || f.body.z !== p.z) f.body.facing = faceTo(p.x - f.body.x, p.z - f.body.z);
+    this.hurt(damage(f.str, attack, defense), id);
   }
 
   /** The player takes a blow (by Cast id, -1 for the tunnel roof): at 0 health, out cold. */

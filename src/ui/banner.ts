@@ -23,6 +23,7 @@ export class Banner {
     document.body.append(el);
     // What sits under the HUD (the target card) makes way while it's up.
     document.body.classList.add('banner-up');
+    document.body.style.setProperty('--banner-h', `${el.offsetHeight}px`);
     this.el = el;
     this.timer = window.setTimeout(() => this.hide(), ms);
   }

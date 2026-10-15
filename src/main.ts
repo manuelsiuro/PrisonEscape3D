@@ -734,7 +734,13 @@ addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyC') itemsUI.toggleCraft();
   // R: lock on to the next nearest person (past the last, none).
-  if (e.code === 'KeyR' && !itemsUI.panelOpen) sendOp(OP.LOCK);
+  if (e.code === 'KeyR' && !itemsUI.panelOpen) {
+    // Nobody in reach (and nobody locked): say so rather than nothing.
+    if (!targets.canLock && g.rec.sim.state.lock < 0) {
+      sound.sting();
+      itemsUI.toast(t('toast.nobodyToLock'));
+    } else sendOp(OP.LOCK);
+  }
   // Space: the tool in hand (held, it keeps striking).
   // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
   if (e.code === 'Space') {
@@ -1025,13 +1031,13 @@ function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null) {
   if (target.kind === 'pockets') {
     // Lying where they fell, head back along the way they faced.
     const b = personOf(sim.state, target.who)!.body;
-    const cx = b.x / UNIT - (DIR_X[b.facing] / 1024) * 0.45;
-    const cz = b.z / UNIT - (DIR_Z[b.facing] / 1024) * 0.45;
+    const cx = b.x / UNIT - (DIR_X[b.facing] / 1024) * 0.62;
+    const cz = b.z / UNIT - (DIR_Z[b.facing] / 1024) * 0.62;
     const along = Math.abs(DIR_X[b.facing]) > Math.abs(DIR_Z[b.facing]);
-    focusAt.x0 = cx - (along ? 0.75 : 0.5);
-    focusAt.x1 = cx + (along ? 0.75 : 0.5);
-    focusAt.z0 = cz - (along ? 0.5 : 0.75);
-    focusAt.z1 = cz + (along ? 0.5 : 0.75);
+    focusAt.x0 = cx - (along ? 0.82 : 0.5);
+    focusAt.x1 = cx + (along ? 0.82 : 0.5);
+    focusAt.z0 = cz - (along ? 0.5 : 0.82);
+    focusAt.z1 = cz + (along ? 0.5 : 0.82);
     return focusAt;
   }
   if (target.kind === 'ground') {

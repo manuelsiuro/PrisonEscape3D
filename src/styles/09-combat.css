@@ -21,9 +21,9 @@
   transition: top 0.28s var(--ease);
 }
 
-/* A routine or lockdown banner up under the HUD: the card slides below it. */
+/* A routine or lockdown banner up under the HUD (top + 118px): the card slides below it. */
 .banner-up .target-card {
-  top: calc(max(12px, env(safe-area-inset-top)) + 214px);
+  top: calc(max(12px, env(safe-area-inset-top)) + 128px + var(--banner-h, 86px));
 }
 
 .target-card.pop {
@@ -230,10 +230,6 @@
     top: calc(max(12px, env(safe-area-inset-top)) + 100px);
   }
 
-  /* Banners wrap on a phone: more room under them. */
-  .banner-up .target-card {
-    top: calc(max(12px, env(safe-area-inset-top)) + 252px);
-  }
 }
 
 /* Landscape phones: above the tool button. */

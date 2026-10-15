@@ -376,6 +376,7 @@ export const en = {
   "hint.loot": "Out cold for {s} seconds: search their pockets now. A guard who wakes without their key raises the alarm, so put the key back in time.",
   "box.pocketsGuard": "Guard's pockets · wakes in {s} s",
   "box.pocketsInmate": "Inmate's pockets · wakes in {s} s",
+  "toast.nobodyToLock": "Nobody close enough to lock on to",
 };
 
 export type Strings = typeof en;

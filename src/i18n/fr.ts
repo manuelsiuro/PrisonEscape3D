@@ -375,4 +375,5 @@ export const fr: Partial<Strings> = {
   "hint.loot": "K.-O. pour {s} secondes : fouille ses poches maintenant. Un gardien qui se réveille sans sa clé donne l’alerte, alors remets-la à temps.",
   "box.pocketsGuard": "Poches du gardien · réveil dans {s} s",
   "box.pocketsInmate": "Poches du détenu · réveil dans {s} s",
+  "toast.nobodyToLock": "Personne d’assez proche à cibler",
 };
