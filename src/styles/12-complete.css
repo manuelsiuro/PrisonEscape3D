@@ -163,7 +163,7 @@
   display: inline-block;
   margin-right: 4px;
   vertical-align: -2px;
-  color: #1f9d63;
+  color: var(--ok-2);
 }
 
 /* ------------------------------------------------------------ how to play (P8) */
@@ -447,7 +447,7 @@
 
 .coach.done .coach-ic {
   color: white;
-  background: linear-gradient(150deg, #43d18e, #1f9d63);
+  background: linear-gradient(150deg, var(--ok), var(--ok-2));
   transform: scale(1.12);
 }
 
@@ -716,7 +716,7 @@ body.touch .coach-skip {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 999px;
-  background: linear-gradient(90deg, #43d18e, #1f9d63);
+  background: linear-gradient(90deg, var(--ok), var(--ok-2));
   transition: width 0.6s var(--ease);
 }
 
@@ -733,7 +733,7 @@ body.touch .coach-skip {
   gap: 8px;
   min-height: 0;
   margin: 0 -6px;
-  padding: 2px 6px 6px;
+  padding: 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -784,7 +784,7 @@ body.touch .coach-skip {
 
 .lesson-card.done .lesson-num {
   color: white;
-  background: #1f9d63;
+  background: var(--ok-2);
 }
 
 .lesson-ic {
@@ -813,11 +813,12 @@ body.touch .coach-skip {
 }
 
 .lesson-text small {
+  display: -webkit-box;
   overflow: hidden;
   font-size: 12.5px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   color: var(--ink-soft);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .lesson-dots {
@@ -834,7 +835,7 @@ body.touch .coach-skip {
 }
 
 .lesson-dots i.on {
-  background: #43d18e;
+  background: var(--ok);
 }
 
 .lesson-dots i.now {
@@ -881,14 +882,6 @@ body.touch .coach-skip {
   }
 }
 
-/* A lesson's line wraps (two lines at most) rather than cutting short on narrow phones. */
-.lesson-text small {
-  display: -webkit-box;
-  white-space: normal;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
 /* Landscape phones: a lesson's card (two lines, often) sits under the routine pill on the
    left, clear of the heat and the play in the middle. */
 @media (max-height: 520px) and (orientation: landscape) {
@@ -898,4 +891,51 @@ body.touch .coach-skip {
     left: 0;
     max-width: min(330px, 36vw);
   }
+}
+
+/* A container or the workbench open: the toasts keep clear of it. Phones in portrait (the
+   sheet fills the bottom): they come down under the HUD instead. Wider screens (the panel on
+   the right): they centre on what's left of the screen. */
+@media (max-width: 520px) {
+  .is-playing.panel-open .toasts {
+    top: calc(max(12px, env(safe-area-inset-top)) + 200px) !important;
+    bottom: auto !important;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 521px) {
+  .is-playing.panel-open .toasts {
+    left: calc((100vw - 392px) / 2);
+    width: min(480px, calc(100vw - 424px));
+  }
+}
+
+/* Wider screens: a lesson's card sits on the left under the routine pill, so the middle (the
+   player, and the room a step points to just ahead) stays in view, and clear of the panels on
+   the right. */
+@media (min-width: 521px) and (min-height: 521px) {
+  .coach.lesson-coach {
+    margin-left: 0;
+    max-width: min(400px, calc(100vw - 424px));
+  }
+}
+
+/* The lesson's card says what to do; it never takes a touch meant for the stick. */
+.coach.lesson-coach {
+  pointer-events: none;
+}
+
+/* Read aloud, not shown (a lesson done, beside its tick). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tagline {
+  text-wrap: balance;
 }

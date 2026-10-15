@@ -344,4 +344,19 @@ real touch feel) and the known limits.
   - the **Training Block** (the tutorial's small prison) and its nine lessons as data (`src/tutorial/lessons.ts`), each played to the end by a bot in `tutorialtest`;
   - left for the phases that need them (recorded so they're not forgotten): several generators each powering a region (P12), a tunnel-layer picture with boulders and flooding (P9, P12), mines and drawn water (P11, P12), a campaign menu over `PRISONS` (P9), themes (P9+), guard kinds such as riot guards (P12), `World.openRooms` as a bitmask over zones (switch before zones pass 31).
 - **P8+ step 4, the tutorial (v1.1.3)**: a **Tutorial** on the title (suggested with a soft pulse to a newcomer, "3 of 9 lessons" after), its list of **nine lessons** (walking, searching, crafting, the routine, heat and guards, hiding things, tools, fighting, getting out) with a progress bar and the next one marked; each lesson a fresh game on the **Training Block** (relaxed rules: missed blocks cost nothing, no searches, contraband heat at a quarter of the pace), its steps on the guide's card ("Lesson 5 of 9 · Heat and guards", step dots, a tick and a chime as each is done), the floor arrows to each step's goal, the clock hurried while a step only waits for time; caught or knocked out: "Caught! Try the lesson again"; done: "Lesson complete" (next, or all lessons), remembered on the device (`pe3d.lessons`, wiped by Reset progress); no saves, records or victory screen in a lesson; pausing out goes back to the list; landscape phones keep the lesson card under the routine pill.
+- **Polish pass review (v1.1.4)**: the tutorial played by hand at every size. **Lessons**:
+  - the step card stays up while the desk or the workbench is open (the steps that happen there were hidden), and on wider screens it sits on the left under the routine pill (it covered the room the step pointed at);
+  - steps that ticked themselves fixed (Searching's last step, Heat's first): each now waits for the player's own move;
+  - the arrows to the generator room led nowhere (the goal was inside the generator), and lesson arrows now follow the player's own way (doors their keys open, the fence they cut);
+  - no one-time tips in a lesson (they covered the card and were used up before the real game);
+  - a lesson never ends under the pause card, a finished lesson can't be failed in its last second, "Knocked out!" when floored;
+  - the pause card in a lesson offers Restart lesson and All lessons;
+  - after the last lesson, Play goes straight to Center Perks;
+  - the result card is a proper dialog (focus, Escape);
+  - French prompts shortened;
+  - the Training Block is relaxed about the generator too (nobody is sent to fix it), its one guard down is no takeover (only the routes it lists), and it is dressed with 37 decor pieces.
+  - **Containers**: tap an item twice to send it across (the first free pocket, or the desk's hidden compartment first); the hidden compartment's six slots fit on one row; toasts keep clear of an open panel (under the HUD in portrait, beside the panel in landscape).
+  - **Living**: a seat an inmate holds is refused ("Someone is sitting there") and inmates no longer pick the player's seat; a lockdown or the tool button gets the player up; no shower while out cold, carried off or in a lockdown; a save whose seat no longer exists loads standing; the fence-cut sniper honours `rules.snipers`.
+  - **First day**: the breakfast step asks to sit at a table and ticks when the tray is eaten.
+  - **Render**: getting off an infirmary bed no longer flashes to the cell bed; seated inmates ease up and down; glowing decor dims from the vents and holds still with reduced motion; decor's instanced buffers are freed when the map changes.
 - **Next: P9 Stalag Flucht (v1.2).**

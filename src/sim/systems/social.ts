@@ -10,7 +10,7 @@ import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import type { Refusal } from '../state';
 import { AMBUSH_ODDS, AMBUSH_RANGE, ANGRY_STEPS, BUY_OPINION, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, UNIT } from '../tuning';
-import { LAYER } from '../world/World';
+import { LAYER, MAP_W } from '../world/World';
 import { closeBox } from './actions';
 import { dist2, type Fighter, personOf } from './combat';
 import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, jobRooms, priceOf } from './economy';
@@ -237,6 +237,7 @@ export function socialNow(sim: SimContext): Social {
   so.work.fill(-1);
   sim.scratch.allyFoe.fill(-1);
   so.talk = s.talk;
+  so.seat = s.seat >= 0 ? Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT) : -1;
   const rooms = jobRooms(sim.world);
   s.jobs.forEach((who, j) => {
     if (who >= 0 && who < n) so.work[who] = rooms[j].zone;

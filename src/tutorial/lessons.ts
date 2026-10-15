@@ -105,12 +105,14 @@ export const LESSONS: readonly Lesson[] = [
       clockTo(sim, MORNING);
       place(sim, 21, 18, 1);
       pockets(sim);
+      // The hand on the last pocket: the magazine lands in the first, to be picked up in hand.
+      sim.state.items.hand = 5;
       fill(sim, myDesk(sim), '', '', '', '', '', '', 'magazine');
     },
     steps: [
       { text: 'lesson.search.desk', touch: 'lesson.search.deskTouch', done: (c) => c.sim.state.items.open === myDesk(c.sim) },
       { text: 'lesson.search.take', touch: 'lesson.search.takeTouch', done: (c) => carries(c.sim, 'magazine') },
-      { text: 'lesson.search.hold', touch: 'lesson.search.holdTouch', done: (c) => holds(c.sim, 'magazine') },
+      { text: 'lesson.search.hold', touch: 'lesson.search.holdTouch', done: (c) => c.sim.state.items.open < 0 && holds(c.sim, 'magazine') },
     ],
   },
   {
@@ -151,6 +153,8 @@ export const LESSONS: readonly Lesson[] = [
       clockTo(sim, MORNING);
       place(sim, 37, 26);
       pockets(sim, 'light_cutters');
+      // Empty-handed to start: holding the cutters is the player's own move.
+      sim.state.items.hand = 1;
     },
     steps: [
       { text: 'lesson.heat.show', touch: 'lesson.heat.showTouch', done: (c) => c.sim.state.heat >= 20 },
@@ -224,7 +228,7 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.energy = 100;
     },
     steps: [
-      { text: 'lesson.escape.room', done: zone('generator'), goal: () => tile(42, 19) },
+      { text: 'lesson.escape.room', done: zone('generator'), goal: () => tile(43, 19) },
       { text: 'lesson.escape.power', touch: 'lesson.escape.powerTouch', done: (c) => !c.sim.power },
       { text: 'lesson.escape.fence', touch: 'lesson.escape.fenceTouch', done: (c) => c.sim.world.ground.kind.some((k) => k === TILE.FENCE_CUT), goal: () => tile(29, 51) },
       { text: 'lesson.escape.out', done: (c) => c.sim.state.escaped > 0, goal: () => tile(29, 54) },

@@ -1,5 +1,6 @@
 import type { PropPlacement } from '../../props';
 import type { PrisonDef } from '../types';
+import { TRAINING_DECOR } from './decor';
 import { L0 } from './L0.map';
 
 const props: PropPlacement[] = [
@@ -57,6 +58,7 @@ export const TRAINING: PrisonDef = {
     [24, 17, 27, 20],
   ],
   props,
+  decor: TRAINING_DECOR,
   rollCall: [
     { x: 22, z: 40 },
     { x: 27, z: 40 },

@@ -145,3 +145,44 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   check(sitting > 0 && reading > 0, 'inmates sit and read in free time');
   console.log(`free time, day 1: inmate-steps sitting ${sitting}, reading ${reading}`);
 }
+
+// ------------------------------------------------------------------ a taken seat, a lockdown, a tool, a knockout
+{
+  const bot = new Bot(CENTER_PERKS, 7);
+  check(bot.routineUntil(1, 10 * 60 + 30), 'free time for the edge cases');
+  const spot = placesOf(bot.sim.world).seats[0];
+  // Someone on the way to sit there: the player stays up, and is told so.
+  const m = bot.st.inmates[0];
+  m.goal = spot.tile;
+  m.path = [];
+  m.wait = 1000;
+  at(bot, spot.tile, spot.face);
+  bot.act();
+  check(bot.st.seat === -1 && bot.sim.events.some((e) => e.type === 'refused' && e.why === 'seatTaken'), 'a seat someone holds is refused');
+  m.goal = -1;
+  m.wait = 0;
+  // Free again: sit; a lockdown gets the player up.
+  at(bot, spot.tile, spot.face);
+  bot.act();
+  check(bot.st.seat >= 0, 'sat down once the seat is free');
+  bot.st.lockdown = true;
+  bot.step();
+  check(bot.st.seat === -1, 'a lockdown gets the player up');
+  bot.st.lockdown = false;
+  // The tool button gets the player up too (no strikes from a seat).
+  at(bot, spot.tile, spot.face);
+  bot.act();
+  bot.use();
+  check(bot.st.seat === -1, 'the tool button gets the player up');
+}
+{
+  const bot = new Bot(CENTER_PERKS, 8);
+  check(bot.routineUntil(1, 16 * 60 + 5), 'the showers block again');
+  const head = placesOf(bot.sim.world).showers[0];
+  at(bot, head.tile, head.face);
+  bot.st.energy = 30;
+  bot.st.ko = 400;
+  bot.until(() => false, 100);
+  // (A shower gives 10 more in that time.)
+  check(bot.st.energy - 30 <= 4 && !bot.sim.showering, `out cold under a shower: no shower (+${bot.st.energy - 30})`);
+}

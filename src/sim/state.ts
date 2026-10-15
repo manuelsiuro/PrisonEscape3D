@@ -10,7 +10,7 @@ import { maxHealth } from './systems/combat';
 import { clockAt } from './systems/clock';
 import { spawnGuards, type Guard } from './systems/guards';
 import { fighter, spawnInmates, type Inmate } from './systems/inmates';
-import { startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
+import { fixtureUse, startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
 import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR } from './tuning';
@@ -139,7 +139,7 @@ export type SimEvent =
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -383,6 +383,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.jobDay = st.jobDay ?? clockAt(st.step).day + 1;
   s.shops = st.shops?.length === prison.merchants.length ? st.shops : fresh.shops;
   s.cams = st.cams?.length === (prison.cameras ?? []).length ? st.cams : fresh.cams;
+  // A seat that isn't one any more (the props changed): standing.
+  const seat = world.props[s.seat];
+  if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
   return s;
 }
 

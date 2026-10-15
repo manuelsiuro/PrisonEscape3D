@@ -1,4 +1,5 @@
 import { itemDef, itemNumber } from '../content/items';
+import { MEAL_STEPS } from '../sim/tuning';
 import { ROUTINE } from '../content/routine';
 import { hasSeen, markSeen } from '../game/settings';
 import { t, type Key } from '../i18n';
@@ -6,17 +7,18 @@ import { containersOf } from '../sim/world/containers';
 import { FirstDay } from '../ui/coach';
 import { TOUCH } from '../ui/dom';
 import { applySettings, banner, board, click, hint, hud, itemsUI, settings, socialOpen } from './context';
-import type { Game } from './game';
+import { play, type Game } from './game';
 
 const GUARD_OUTFIT = itemNumber('guard_outfit');
 
 /**
  * Whether a one-time tip was shown on this device (or tips are off: then every tip counts as
  * shown). Some are asked every frame, so storage is read once per tip and game, not every frame.
+ * In a lesson every tip counts as shown (the lesson's card does the teaching) and none is spent.
  */
 export const tipsSeen = new Map<string, boolean>();
 export function seenTip(name: string): boolean {
-  if (!settings.tips) return true;
+  if (!settings.tips || play.game?.lesson) return true;
   let v = tipsSeen.get(name);
   if (v === undefined) tipsSeen.set(name, (v = hasSeen(name)));
   return v;
@@ -84,7 +86,7 @@ export function settingsChanged() {
   tipsSeen.clear();
 }
 
-const coachState = { routine: '', attended: false, openMine: false, openOther: false, pickedUp: false, craftOpen: false, boardOpen: false };
+const coachState = { routine: '', attended: false, openMine: false, openOther: false, pickedUp: false, craftOpen: false, boardOpen: false, ate: false };
 
 /** The first day's guide: what the player has done, read from the game (every frame). */
 export function updateFirstDay(g: Game, pickedUp: boolean, dt: number) {
@@ -99,5 +101,6 @@ export function updateFirstDay(g: Game, pickedUp: boolean, dt: number) {
   coachState.pickedUp = pickedUp;
   coachState.craftOpen = itemsUI.craftIsOpen;
   coachState.boardOpen = board.isOpen;
+  coachState.ate = st.eaten >= MEAL_STEPS;
   firstDay.update(coachState, dt, g.paused || st.sleeping || st.ko > 0 || st.solitary > 0 || itemsUI.panelOpen || socialOpen());
 }

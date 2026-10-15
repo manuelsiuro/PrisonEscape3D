@@ -287,17 +287,24 @@ export class DecorView {
     }
   }
 
-  /** Glow follows the power (0 out … 1 on); screens flicker a touch. */
-  update(power: number, time: number) {
-    const flicker = 0.94 + Math.sin(time * 23) * 0.03 + (Math.sin(time * 3.1) > 0.995 ? -0.25 : 0);
-    const lit = 0.12 + 0.88 * power * flicker;
+  /**
+   * Glow follows the power (0 out … 1 on) and the light (`dim`: seen from the vents, the rooms
+   * below are dark); screens hum a touch, with a rare irregular dip (none with reduced motion).
+   */
+  update(power: number, time: number, dim = 1, still = false) {
+    const flicker = still ? 0.95 : 0.94 + Math.sin(time * 23) * 0.03 + (Math.sin(time * 0.71) * Math.sin(time * 1.37) > 0.985 ? -0.2 : 0);
+    const lit = (0.12 + 0.88 * power * flicker) * dim;
     if (Math.abs(lit - this.lit) < 0.005) return;
     this.lit = lit;
     this.glowMat.color.setScalar(lit);
   }
 
   dispose() {
-    for (const c of this.group.children) (c as THREE.InstancedMesh).geometry.dispose();
+    // The instanced meshes' own buffers go with them (InstancedMesh.dispose), then the shared parts.
+    for (const c of this.group.children) {
+      (c as THREE.InstancedMesh).geometry.dispose();
+      (c as THREE.InstancedMesh).dispose();
+    }
     this.base.dispose();
     this.glowMat.dispose();
   }

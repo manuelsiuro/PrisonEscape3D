@@ -249,6 +249,10 @@ export class Character {
   private glanceGoal = 0;
   /** 0 standing … 1 lying in bed; and how far into the current activity. */
   private lie = 0;
+  /** Lying down, or still getting up (0 standing … 1 flat). */
+  get lying(): number {
+    return this.lie;
+  }
   /** Prone in a vent (0–1), and a tool strike's swing (1 at the blow, easing to 0). */
   private crawl = 0;
   private hit = 0;

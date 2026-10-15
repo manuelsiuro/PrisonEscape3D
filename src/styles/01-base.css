@@ -11,6 +11,9 @@
   --orange-2: #d9530a;
   --navy: #1e3a5f;
   --gold: #ffc23d;
+  /* Done, ticked, won: the success greens. */
+  --ok: #43d18e;
+  --ok-2: #1f9d63;
   /* Tools (steel blue) and energy (green, red when low). */
   --steel: #6f93b8;
   --steel-2: #3d5f84;

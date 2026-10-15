@@ -195,6 +195,8 @@ export class View {
   private readonly doorsOpen = new Set<number>();
   /** Each cell's bed, for sleepers (by cell number). */
   private beds: Array<BedPose | undefined> = [];
+  /** The infirmary bed the player rested on, while they get up from it. */
+  private lastRest: BedPose | null = null;
   /** 1 on tiles under a shower head. */
   private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
@@ -638,7 +640,10 @@ export class View {
     this.player.baseY = LAYER_Y[f.layer] + this.trainPos.y * tb;
     // Under a shower in the showers block: wet like the inmates.
     this.player.wet = f.doing === DOING.SHOWER;
-    if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.beds[1])) {
+    // Off an infirmary bed: the body eases up from that bed (not the cell's) until it stands.
+    if (f.restBed) this.lastRest = f.restBed;
+    else if (this.player.lying === 0) this.lastRest = null;
+    if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
       if (DUST[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, DUST[f.surface], 2);
       this.onStep(f.surface);
     }
@@ -661,7 +666,8 @@ export class View {
       c.root.visible = f.layer !== LAYER.UNDER;
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
       // On a chair, a little higher than on a canteen bench.
-      c.baseY = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;
+      const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;
+      c.baseY += (lift - c.baseY) * Math.min(1, dt * 8);
       c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
       c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);
@@ -824,7 +830,7 @@ export class View {
       this.ambient.intensity = 0.85;
       this.sky.set(0x120c08);
     }
-    this.decor?.update(this.security?.group.visible ? this.security.powerLevel : 1, time);
+    this.decor?.update(this.security?.group.visible ? this.security.powerLevel : 1, time, this.layer === LAYER.VENTS ? 0.3 : 1, this.reducedMotion);
     // Decor belongs to the ground floor (out of the picture from the tunnels).
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
     this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot);

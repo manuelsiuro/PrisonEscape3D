@@ -11,17 +11,18 @@ import { newLessonRun } from '../play/lesson';
 /**
  * The tutorial from the title (P8+): the list of lessons, then a lesson on the Training Block,
  * and after it the next one, the same again, or the list; closing the list goes back to the
- * title.
+ * title. Resolves true when the player, done with the last lesson, chose to play for real.
  */
-export async function tutorialFlow() {
+export async function tutorialFlow(): Promise<boolean> {
   let k: number | null = null;
   for (;;) {
     if (k === null) {
       view.setWorld(new Sim(TRAINING).world);
       k = await showLessons(LESSONS, lessonsDone(), click);
-      if (k === null) return;
+      if (k === null) return false;
     }
     const result = await runLesson(k);
+    if (result === 'play') return true;
     if (result === 'next') k = k + 1 < LESSONS.length ? k + 1 : null;
     else if (result !== 'again') k = null;
   }

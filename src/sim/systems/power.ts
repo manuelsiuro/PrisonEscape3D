@@ -50,7 +50,8 @@ export function switchPower(sim: SimContext, prop: number) {
   s.powerOff = POWER_OFF_STEPS;
   sim.events.push({ type: 'power', on: false, by: 'player' });
   // It stays at the generator until the power is back (on its way there it is a guard like any other).
-  summon(sim, generatorSpot(sim, prop), 1, POWER_OFF_STEPS);
+  // The tutorial's relaxed rules send nobody: the lesson is about the fence, not the chase.
+  if (!sim.world.def.rules?.relaxed) summon(sim, generatorSpot(sim, prop), 1, POWER_OFF_STEPS);
 }
 
 /** Where the maintenance guard stands at the generator. */
@@ -132,6 +133,11 @@ export function cameraSeesPlayer(sim: SimContext): boolean {
   return false;
 }
 
+/** The towers' snipers are on duty: by day, or round the clock where the prison says so. */
+export function snipersOnDuty(sim: SimContext): boolean {
+  return ROUTINE[sim.state.routine].id !== 'lightsOut' || sim.world.def.rules?.snipers === 'always';
+}
+
 /**
  * Snipers by day (GDD §5.6): a tower with the player in its sights while they're wanted
  * (90%+) takes aim, fires a warning shot, then shoots to bring them down. Off duty at night
@@ -139,8 +145,7 @@ export function cameraSeesPlayer(sim: SimContext): boolean {
  */
 export function snipe(sim: SimContext) {
   const s = sim.state;
-  const night = ROUTINE[s.routine].id === 'lightsOut' && sim.world.def.rules?.snipers !== 'always';
-  const tower = night || sim.away ? -1 : sniperOn(sim.world, s.player, s.layer);
+  const tower = !snipersOnDuty(sim) || sim.away ? -1 : sniperOn(sim.world, s.player, s.layer);
   if (tower < 0 || s.heat < SOLITARY_HEAT) {
     s.sniperAt = 0;
     s.shots = 0;
@@ -163,6 +168,9 @@ export function snipe(sim: SimContext) {
 /** Enough guards out cold at once (GDD §12: 85%): every door and gate opens; it holds while they're down. */
 export function takeoverCheck(sim: SimContext) {
   const s = sim.state;
+  // A prison whose ways out leave the takeover off the list (the Training Block) never falls.
+  const routes = sim.world.def.escapes;
+  if (routes && !routes.includes('takeover')) return;
   const n = s.guards.length;
   let down = 0;
   for (const g of s.guards) if (g.ko > 0) down++;

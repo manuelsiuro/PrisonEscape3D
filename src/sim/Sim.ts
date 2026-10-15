@@ -4,7 +4,7 @@ import { dirOf, OP, opOf } from './command';
 import { newScratch } from './context';
 import { fnv1a } from './rng';
 import { ESCAPES, freshState, loadState, type Attr, type LayerMove, type SimEvent, type SimState, type Snapshot } from './state';
-import { closeBox, keepSeat, regenerate, shower, standUp, useItems } from './systems/actions';
+import { closeBox, keepSeat, regenerate, shower, standUp, underShower, useItems } from './systems/actions';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
@@ -253,8 +253,7 @@ export class Sim {
 
   /** Whether the player stands under a shower now (the view shows them showering). */
   get showering(): boolean {
-    const s = this.state;
-    return s.layer === LAYER.GROUND && !s.player.moving && ROUTINE[s.routine].id === 'showers' && this.showerTiles.has(Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT));
+    return underShower(this);
   }
 
   // ---------------------------------------------------------------- inmates (GDD §10.3–10.4)

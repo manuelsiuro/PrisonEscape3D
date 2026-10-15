@@ -287,6 +287,8 @@ kbd {
 }
 
 .box-hidden-wrap .slot-grid {
+  /* Out into the panel's padding, so its six slots line up with the drawers' rows. */
+  margin: 0 -7px;
   padding: 6px;
   border-radius: 14px;
   background: repeating-linear-gradient(135deg, rgba(255, 194, 61, 0.08) 0 6px, transparent 6px 12px);

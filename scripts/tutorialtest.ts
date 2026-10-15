@@ -10,7 +10,7 @@ import { ROUTINE } from '../src/content/routine';
 import { placesOf } from '../src/sim/ai/places';
 import { UNIT } from '../src/sim/tuning';
 
-import { TILE } from '../src/sim/world/tiles';
+import { TILE, TILE_INFO } from '../src/sim/world/tiles';
 import { MAP_W } from '../src/sim/world/World';
 import { LESSONS, myDesk, type LessonCtx } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
@@ -108,3 +108,25 @@ play('escape', (bot) => {
   bot.walkTo(tile(29, 54));
 });
 
+
+// The Training Block's only way out is the fence: its one guard down doesn't open the gates.
+{
+  const bot = new Bot(TRAINING, 12);
+  for (const g of bot.sim.state.guards) g.ko = 400;
+  bot.until(() => false, 5);
+  check(!bot.sim.state.takeover, 'training: no takeover');
+  console.log('training: its guard out cold, no takeover');
+}
+
+// Every step's floor arrows lead somewhere the player can stand (a goal inside furniture or a wall shows no arrows).
+for (const lesson of LESSONS) {
+  const bot = new Bot(TRAINING, 13);
+  lesson.setup(bot.sim);
+  bot.step();
+  for (const s of lesson.steps) {
+    const goal = s.goal?.(bot.sim);
+    if (goal === undefined || goal === null) continue;
+    check(!bot.sim.world.propSolid[goal] && !TILE_INFO[bot.sim.world.ground.kind[goal]].solid, `${lesson.id}: the goal ${goal % MAP_W},${Math.floor(goal / MAP_W)} is open floor`);
+  }
+}
+console.log('every lesson goal is open floor');

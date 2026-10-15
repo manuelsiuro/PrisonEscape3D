@@ -7,3 +7,5 @@ stash: 2 steps done by day 1 10:30
 dig: 2 steps done by day 1 10:32
 fight: 2 steps done by day 1 10:31
 escape: 4 steps done by day 1 10:48
+training: its guard out cold, no takeover
+every lesson goal is open floor

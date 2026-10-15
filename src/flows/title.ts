@@ -21,13 +21,15 @@ import { tutorialFlow } from './tutorial';
 // ------------------------------------------------------------------ flows
 /** The title, and from it into a game (new, continued or loaded) and back, for good. */
 export async function titleFlow() {
+  /** A choice made elsewhere (the tutorial's last lesson: play), taken instead of the title's. */
+  let next: 'play' | null = null;
   for (;;) {
     sound.music('title');
     showUpdate();
     const again = takePlayAgain();
     const record = recordOf(PRISONS[0].id);
     const resume = readSave('auto');
-    const choice = again
+    const choice = again || next
       ? 'play'
       : await showTitle(
           {
@@ -47,6 +49,7 @@ export async function titleFlow() {
           },
           click,
         );
+    next = null;
     updateCard?.remove();
     if (choice === 'settings') {
       await showSettings(settings, settingsChanged, click, true);
@@ -57,7 +60,7 @@ export async function titleFlow() {
       continue;
     }
     if (choice === 'tutorial') {
-      await tutorialFlow();
+      if (await tutorialFlow()) next = 'play';
       view.setWorld(new Sim(PRISONS[0]).world);
       continue;
     }

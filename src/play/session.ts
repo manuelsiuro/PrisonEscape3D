@@ -180,7 +180,7 @@ export async function pause() {
   for (;;) {
     // A lesson isn't saved: the card says which one it is.
     const lesson = play.game.lesson;
-    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? t('lesson.of', { n: lesson.index + 1, of: LESSONS.length }) : note);
+    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? t('lesson.of', { n: lesson.index + 1, of: LESSONS.length }) : note, !!lesson);
     note = '';
     if (!play.game) return;
     if (choice === 'settings') {
@@ -201,7 +201,13 @@ export async function pause() {
       }
       continue;
     }
+    if (choice === 'restart' && play.game.lesson) {
+      // The same lesson from its start (the tutorial flow sets it up again).
+      play.game.lesson.finish('again');
+      return;
+    }
     if (choice === 'resume') {
+      if (play.game.over) return;
       play.game.paused = false;
       controls.enabled = true;
       play.last = performance.now();
@@ -224,7 +230,7 @@ export async function openHelp() {
   controls.reset();
   tools.release();
   await showHelp(click);
-  if (play.game !== g) return;
+  if (play.game !== g || g.over) return;
   g.paused = false;
   controls.enabled = true;
   play.last = performance.now();

@@ -14,6 +14,8 @@ export interface CoachState {
   pickedUp: boolean;
   craftOpen: boolean;
   boardOpen: boolean;
+  /** This meal's tray eaten (sat at a canteen table long enough). */
+  ate: boolean;
 }
 
 interface Step {
@@ -32,7 +34,7 @@ const STEPS: Step[] = [
     id: 'meal',
     ic: 'cookie',
     text: () => t('coach.meal'),
-    done: (s) => s.routine === 'breakfast' && s.attended,
+    done: (s) => s.routine === 'breakfast' && s.ate,
     gone: (s) => s.routine !== 'breakfast' && s.routine !== 'rollCall',
   },
   { id: 'loot', ic: 'hand', text: () => t('coach.loot'), done: (s) => s.openOther || s.pickedUp },

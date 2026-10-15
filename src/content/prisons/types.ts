@@ -40,7 +40,7 @@ export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover';
 export interface PrisonRules {
   /** The towers' snipers on duty: by day (default; searchlights at night), or always. */
   snipers?: 'day' | 'always';
-  /** The tutorial: missed blocks cost nothing; no shakedowns, no bed checks. */
+  /** The tutorial: missed blocks cost nothing; no shakedowns, no bed checks, nobody sent to the generator. */
   relaxed?: boolean;
   /** Contraband in sight adds its heat one step in this many (default 1: +40% a second). */
   contrabandEvery?: number;

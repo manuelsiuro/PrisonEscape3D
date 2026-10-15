@@ -68,9 +68,12 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
 /** A fighter's starting numbers: full health, up and about. */
 export const fighter = (str: number) => ({ hp: maxHealth(str), ko: 0, str, swing: -1000 });
 
-/** Goals other inmates already hold (so two never pick the same tile). */
+/** The player's seat (its tile, -1 standing): nobody picks it while they sit there. */
+let playerSeat = -1;
+
+/** Goals other inmates already hold, or the player's seat (so two never pick the same tile). */
 function taken(all: Inmate[], tile: number) {
-  return all.some((m) => m.goal === tile);
+  return tile === playerSeat || all.some((m) => m.goal === tile);
 }
 
 /** A random spot from a list that nobody else is heading for (or any, if all are taken). */
@@ -162,6 +165,7 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
  */
 export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number, foe: Body | null = null, social: Social = NO_SOCIAL) {
   const c: Crowd = { w, grid: w.npcBlock, all, others, step };
+  playerSeat = social.seat;
   all.forEach((m, k) => {
     // Out cold: lies where it fell (Sim counts the time and wakes it).
     if (m.ko > 0) {
@@ -240,8 +244,10 @@ export interface Social {
   talk: number;
   /** Each inmate's job zone (-1 none). */
   work: readonly number[];
+  /** The tile the player sits on (-1 standing). */
+  seat: number;
 }
-const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [] };
+const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [], seat: -1 };
 
 /**
  * Goes for someone: straight at them when close with nothing between, else along a path

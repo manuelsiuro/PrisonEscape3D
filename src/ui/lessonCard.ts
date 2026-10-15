@@ -33,33 +33,47 @@ export class LessonCard {
   }
 }
 
-export type LessonResult = 'next' | 'list' | 'again';
+export type LessonResult = 'next' | 'list' | 'again' | 'play';
 
-/** The end of a lesson: done (the next one, or all lessons), or failed (again, or all lessons). */
-export function showLessonResult(won: boolean, hasNext: boolean, title: string, click: () => void): Promise<LessonResult> {
+/** The end of a lesson: done (the next one, or all lessons; after the last, the real game), or failed (again, or all lessons). */
+export function showLessonResult(head: Key, hasNext: boolean, title: string, click: () => void): Promise<LessonResult> {
+  const won = head === 'lesson.done';
   const el = h(
     'div',
     'modal lesson-result',
     `<div class="card${won ? ' won' : ''}">
       <div class="escaped-icon">${icon(won ? 'star' : 'siren', 32)}</div>
-      <h2>${t(won ? 'lesson.done' : 'lesson.failed')}</h2>
+      <h2 id="lesson-result-h">${t(head)}</h2>
       <p class="card-note"></p>
       <div class="actions">
         <button class="big-btn ghost" data-c="list">${icon('book', 18)}${t('lesson.list')}</button>
-        ${won ? (hasNext ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}${t('lesson.next')}</button>` : '') : `<button class="big-btn primary" data-c="again">${icon('replay', 18)}${t('lesson.again')}</button>`}
+        ${won ? (hasNext ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}${t('lesson.next')}</button>` : `<button class="big-btn primary" data-c="play">${icon('play', 18)}${t('title.play')}</button>`) : `<button class="big-btn primary" data-c="again">${icon('replay', 18)}${t('lesson.again')}</button>`}
       </div>
     </div>`,
   );
   el.querySelector('.card-note')!.textContent = title;
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.setAttribute('aria-labelledby', 'lesson-result-h');
   return new Promise((resolve) => {
-    el.onclick = (e) => {
-      const c = (e.target as HTMLElement).closest<HTMLElement>('[data-c]')?.dataset.c as LessonResult | undefined;
-      if (!c) return;
+    const done = (c: LessonResult) => {
       click();
+      removeEventListener('keydown', key, true);
       el.remove();
       resolve(c);
     };
+    // Escape: back to the list (the pause key must not reach the game behind).
+    const key = (e: KeyboardEvent) => {
+      if (e.code !== 'Escape') return;
+      e.stopImmediatePropagation();
+      done('list');
+    };
+    addEventListener('keydown', key, true);
+    el.onclick = (e) => {
+      const c = (e.target as HTMLElement).closest<HTMLElement>('[data-c]')?.dataset.c as LessonResult | undefined;
+      if (c) done(c);
+    };
     document.body.append(el);
-    el.querySelector<HTMLElement>('.big-btn.primary')?.focus();
+    (el.querySelector<HTMLElement>('.big-btn.primary') ?? el.querySelector<HTMLElement>('[data-c="list"]'))?.focus();
   });
 }

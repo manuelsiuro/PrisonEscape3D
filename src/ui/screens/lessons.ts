@@ -17,7 +17,7 @@ export function showLessons(lessons: readonly Lesson[], done: readonly string[],
       return `<button class="lesson-card${ok ? ' done' : ''}${k === next ? ' next' : ''}" data-k="${k}" style="--d:${k * 0.035}s">
         <span class="lesson-num">${ok ? icon('check', 16) : k + 1}</span>
         <span class="lesson-ic">${icon(l.icon, 22)}</span>
-        <span class="lesson-text"><b>${t(`lesson.${l.id}.t` as Key)}</b><small>${t(`lesson.${l.id}.d` as Key)}</small></span>
+        <span class="lesson-text"><b>${t(`lesson.${l.id}.t` as Key)}${ok ? `<span class="sr-only"> · ${t('lessons.doneOne')}</span>` : ''}</b><small>${t(`lesson.${l.id}.d` as Key)}</small></span>
         ${icon(k === next ? 'play' : 'chevronRight', 16)}
       </button>`;
     })

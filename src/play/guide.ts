@@ -135,8 +135,9 @@ export function updateGuide(g: Game, dt: number) {
   // A takeover (GDD §12): the arrows lead out through the open gates to the road.
   const riot = sim.state.takeover && sim.state.layer === LAYER.GROUND && sim.state.ko === 0;
   const goal = riot ? (i: number) => sim.world.ground.kind[i] === TILE.ROAD : guideTarget(sim);
-  // On the prison as built: the arrows never lead through the player's own holes (in a takeover, every door is open to them).
-  const grid = riot ? sim.world.block : sim.world.npcBlock;
+  // On the prison as built: the arrows never lead through the player's own holes (in a takeover,
+  // every door is open to them; in a lesson, the doors their keys open and the holes it had them make).
+  const grid = riot || lessonGoal(g) !== null ? sim.world.block : sim.world.npcBlock;
   const path = goal && findPath(sim.world, from, goal, -1, 4000, undefined, grid);
   g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z, undefined, grid).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
 }

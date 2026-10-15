@@ -5,7 +5,7 @@
  */
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
-import { nearestDir, nearestDir as faceTo } from '../ai/path';
+import { nearestDir, nearestDir as faceTo, tileAt } from '../ai/path';
 import { placesOf } from '../ai/places';
 import { argA, argB, OP, opOf } from '../command';
 import type { SimContext } from '../context';
@@ -22,7 +22,7 @@ import { craft, dropItem, equip, give, HOTBAR, interactTarget, type ItemEvent, i
 import { jobOp, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
-import { switchPower } from './power';
+import { snipersOnDuty, switchPower } from './power';
 import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
 import { approach, dismissAll, endTalk, talkOp } from './social';
@@ -130,8 +130,10 @@ export function useItems(sim: SimContext, cmd: number) {
       dropItem(it, a, s.player, ev, s.layer);
       break;
     case OP.USE:
-      // Locked on to someone: a blow (or a throw) at them; else the tool in hand.
-      if (s.solitary === 0 && !attack(sim, a === 1)) strike(sim, a === 1);
+      // Locked on to someone: a blow (or a throw) at them; else the tool in hand (up off a seat first).
+      if (s.solitary > 0) break;
+      standUp(sim);
+      if (!attack(sim, a === 1)) strike(sim, a === 1);
       break;
     case OP.LOCK: {
       if (s.solitary > 0) break;
@@ -261,7 +263,7 @@ function strike(sim: SimContext, fresh: boolean) {
     return;
   }
   // Cutting the perimeter fence by day within a tower's reach: the sniper sees it (GDD §5.6).
-  if (target.action === 'cut' && ROUTINE[s.routine].id !== 'lightsOut' && sniperOn(w, p, s.layer) >= 0 && !s.lockdown) {
+  if (target.action === 'cut' && snipersOnDuty(sim) && sniperOn(w, p, s.layer) >= 0 && !s.lockdown) {
     sim.events.push({ type: 'spotted', reason: 'sniper' });
     s.spotted = SPOT.indexOf('sniper');
     addHeat(sim, 100);
@@ -511,10 +513,17 @@ function sleep(sim: SimContext) {
 /** Sits down on a seat, bench or chair, or lies down on an infirmary bed: facing the table, the body still. */
 function sitDown(sim: SimContext, prop: number, use: 'sit' | 'rest') {
   const s = sim.state;
+  // Someone sitting there already, or on the way to: the player stays up.
+  const spot = seatSpot(sim.world, prop, s.player);
+  const at = spot.z * MAP_W + spot.x;
+  if (s.inmates.some((m) => m.ko === 0 && (m.goal === at || tileAt(m.body.x, m.body.z) === at))) {
+    sim.events.push({ type: 'refused', why: 'seatTaken' });
+    return;
+  }
   endTalk(sim);
   closeBox(sim);
   s.player.moving = false;
-  if (use === 'sit') s.player.facing = seatSpot(sim.world, prop, s.player).facing;
+  if (use === 'sit') s.player.facing = spot.facing;
   s.seat = prop;
   sim.events.push({ type: 'sit', on: true, use });
 }
@@ -535,7 +544,7 @@ export function standUp(sim: SimContext) {
 export function keepSeat(sim: SimContext) {
   const s = sim.state;
   if (s.seat < 0) return;
-  if (sim.away || s.sleeping || s.layer !== LAYER.GROUND || !atProp(sim.world, s.seat, s.player, REACH)) {
+  if (sim.away || s.sleeping || s.lockdown || s.layer !== LAYER.GROUND || !atProp(sim.world, s.seat, s.player, REACH)) {
     standUp(sim);
     return;
   }
@@ -561,8 +570,14 @@ export function regenerate(sim: SimContext) {
 /** Under a running shower in the showers block, standing still (GDD §3.1): energy back, 2 a second. */
 export function shower(sim: SimContext) {
   const s = sim.state;
-  if (s.energy >= 100 || s.player.moving || s.layer !== LAYER.GROUND || ROUTINE[s.routine].id !== 'showers' || s.step % SHOWER_ENERGY_STEPS !== 0) return;
-  if (sim.showerTiles.has(Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT))) s.energy++;
+  if (s.energy < 100 && s.step % SHOWER_ENERGY_STEPS === 0 && underShower(sim)) s.energy++;
+}
+
+/** Standing still under a running shower in the showers block (not out cold, carried off or in a lockdown). */
+export function underShower(sim: SimContext): boolean {
+  const s = sim.state;
+  if (s.player.moving || sim.away || s.lockdown || s.layer !== LAYER.GROUND || ROUTINE[s.routine].id !== 'showers') return false;
+  return sim.showerTiles.has(Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT));
 }
 
 const POSTER_ITEM = itemNumber('poster');

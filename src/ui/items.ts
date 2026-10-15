@@ -222,11 +222,18 @@ export class ItemsUI {
       return;
     }
     if (it.open >= 0) {
-      // Tap an item, then where it goes.
+      // Tap an item, then where it goes; the same item twice sends it across (the first free
+      // pocket, or the container's first free slot: the hidden compartment first in a desk).
       if (this.picked === null) {
         if (value) this.picked = addr;
       } else {
-        if (addr !== this.picked) this.send(OP.MOVE, this.picked, addr);
+        let to = addr;
+        if (addr === this.picked) {
+          const box = it.containers[it.open] ?? [];
+          const free = addr >= SLOT.CONTAINER ? it.inv.slice(0, HOTBAR).findIndex((x) => !x) : box.findIndex((x) => !x);
+          to = free < 0 ? addr : addr >= SLOT.CONTAINER ? free : SLOT.CONTAINER + free;
+        }
+        if (to !== this.picked) this.send(OP.MOVE, this.picked, to);
         this.picked = null;
       }
       this.uiRev++;

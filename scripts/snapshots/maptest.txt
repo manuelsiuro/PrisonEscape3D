@@ -8,7 +8,7 @@ vents: 48 duct tiles, 3 grates, 1 ladder; roof tiles 1782
 == training · picture 9be5d540
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144
 zones: canteen 110, corridor 78, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, woodshop 50, yard 823
-decor: 0 pieces
+decor: 37 pieces
 walkable from the cell: canteen, corridor, gym, inmateCell, playerCell, rollCall, woodshop, yard
 guards: 1, 6 stops, 0 asleep at night
 vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 534
