@@ -675,10 +675,9 @@ export class View {
     // Z's over everyone asleep on the ground floor (the player too).
     this.sleepers.length = 0;
     if (f.layer === LAYER.GROUND) {
-      const head = (c: Character) => this.sleepers.push(c.root.position.x, c.root.position.y + 0.85, c.root.position.z);
-      if (f.sleeping) head(this.player);
-      f.inmates.forEach((m, k) => m.doing === DOING.SLEEP && this.cast[k] && head(this.cast[k]));
-      f.guards.forEach((g, k) => g.doing === DOING.SLEEP && this.guardCast[k] && head(this.guardCast[k]));
+      if (f.sleeping) this.head(this.player);
+      for (let k = 0; k < f.inmates.length; k++) if (f.inmates[k].doing === DOING.SLEEP && this.cast[k]) this.head(this.cast[k]);
+      for (let k = 0; k < f.guards.length; k++) if (f.guards[k].doing === DOING.SLEEP && this.guardCast[k]) this.head(this.guardCast[k]);
     }
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     this.sparks.update(dt);
@@ -696,6 +695,11 @@ export class View {
     this.guide.update(dt, time, f, !this.reducedMotion);
     this.alarm += ((f.alarm ? 1 : 0) - this.alarm) * Math.min(1, dt * 3);
     this.render(f.minuteOfDay, dt, cut ? this.feet : null, time);
+  }
+
+  /** A sleeper's head, for the snores. */
+  private head(c: Character) {
+    this.sleepers.push(c.root.position.x, c.root.position.y + 0.85, c.root.position.z);
   }
 
   /** A sniper's shot (GDD §5.6): the tracer and flash, dust where a warning shot lands, a jolt when it hits. */

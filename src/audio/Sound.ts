@@ -38,6 +38,7 @@ export class Sound {
   /** The music (its own output and volume, under the effects): a mood and a step scheduler. */
   private musicOut: GainNode | null = null;
   private musicVolume = 0.5;
+  private ducked = false;
   private mood: Mood = 'off';
   private musicTimer = 0;
   private musicNext = 0;
@@ -90,8 +91,19 @@ export class Sound {
 
   setMusicVolume(v: number) {
     this.musicVolume = v;
+    this.musicLevel();
+  }
+
+  /** The music steps back (to 40%) while the game is paused or a card is read. */
+  duck(on: boolean) {
+    if (on === this.ducked) return;
+    this.ducked = on;
+    this.musicLevel();
+  }
+
+  private musicLevel() {
     const c = this.ctx;
-    if (c && this.musicOut) this.musicOut.gain.setTargetAtTime(v * MUSIC_LEVEL, c.currentTime, 0.1);
+    if (c && this.musicOut) this.musicOut.gain.setTargetAtTime(this.musicVolume * MUSIC_LEVEL * (this.ducked ? 0.4 : 1), c.currentTime, 0.15);
   }
 
   // ---------------------------------------------------------------- music

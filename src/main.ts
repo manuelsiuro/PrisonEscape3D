@@ -248,6 +248,14 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   }
   const zones = sim.dutyZones;
   if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
+  // Nowhere the routine wants the player: the first day's guide may point to the job board.
+  if ((!zones.length || s.attended) && firstDay.step === 'board') {
+    const b = w.props.find((q) => q.kind === 'jobBoard');
+    if (b) {
+      const at = b.z * MAP_W + b.x;
+      return (i) => !w.block[i] && (i === at - 1 || i === at + 1 || i === at - MAP_W || i === at + MAP_W);
+    }
+  }
   if (!zones.length || (s.attended && r.id !== 'work')) return null;
   if (r.id === 'rollCall' || r.id === 'eveningRollCall') {
     const spot = places.rollCall[0].tile;
@@ -838,6 +846,7 @@ function fadeIn() {
 
 // ------------------------------------------------------------------ saves
 const savedMark = h('div', 'saved-mark', `${icon('save', 14)}<span></span>`);
+savedMark.setAttribute('role', 'status');
 document.body.append(savedMark);
 let savedMarkTimer = 0;
 /** "Game saved" for a moment in the corner (the autosaves at 08:00 and on falling asleep). */
@@ -853,6 +862,14 @@ function autosave(g: Game, show = false) {
   if (g.over) return;
   g.saved = writeSave('auto', g.rec.sim);
   if (g.saved && show) flashSaved();
+}
+
+/** A change made in the settings screen: applied, and the tips follow at once. */
+function settingsChanged() {
+  applySettings();
+  // Tips switched off: the guide goes now (not marked done: it comes back with the tips).
+  if (!settings.tips) firstDay.stop();
+  tipsSeen.clear();
 }
 
 /** The first day's guide; done or skipped, it's seen, and the help tip follows. */
@@ -964,7 +981,7 @@ async function pause() {
     note = '';
     if (!game) return;
     if (choice === 'settings') {
-      await showSettings(settings, applySettings, click);
+      await showSettings(settings, settingsChanged, click);
       continue;
     }
     if (choice === 'help') {
@@ -1151,7 +1168,10 @@ addEventListener('keyup', (e) => {
 addEventListener('blur', () => tools.release());
 // A hidden page pauses the game (phones switching apps, a closed laptop).
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && game && !game.paused) pause();
+  if (!document.hidden || !game) return;
+  // Saved whatever is open (a help page, the pause card, a panel); paused if it wasn't.
+  autosave(game);
+  if (!game.paused) pause();
 });
 // The tab closing: one last save.
 addEventListener('pagehide', () => game && autosave(game));
@@ -2008,6 +2028,8 @@ function frame(now: number) {
   tense = hunted || st.heat >= 80 || (tense && st.heat >= 70);
   const chased = tense;
   const night = ROUTINE[st.routine].id === 'lightsOut' || st.sleeping;
+  // Paused or reading a card, the music steps back.
+  sound.duck(g.paused && !g.over);
   // Out on the road: the title theme plays over the victory screen.
   if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
   const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
@@ -2065,7 +2087,7 @@ async function titleFlow() {
         );
     updateCard?.remove();
     if (choice === 'settings') {
-      await showSettings(settings, applySettings, click, true);
+      await showSettings(settings, settingsChanged, click, true);
       continue;
     }
     if (choice === 'help') {
@@ -2105,6 +2127,7 @@ function showUpdate() {
     'update-card',
     `${icon('star', 18)}<span></span><button class="big-btn primary">${icon('replay', 16)}${t('update.restart')}</button>`,
   );
+  updateCard.setAttribute('role', 'status');
   updateCard.querySelector('span')!.textContent = u.version ? t('update.ready', { v: u.version }) : t('update.readyNoVersion');
   updateCard.querySelector('button')!.onclick = () => {
     click();
@@ -2129,6 +2152,7 @@ if (import.meta.env.DEV)
     __view: view,
     __renderer: renderer,
     __sound: sound,
+    __firstDay: firstDay,
     // The update offer, as a new version would show it.
     __offerUpdate: () => {
       update = { version: '9.9.9', restart: () => location.reload() };

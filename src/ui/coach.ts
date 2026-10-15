@@ -73,6 +73,11 @@ export class FirstDay {
     return this.k >= 0;
   }
 
+  /** The step showing now (its id), '' when none. */
+  get step(): string {
+    return this.k >= 0 && !this.finishing ? (STEPS[this.k]?.id ?? '') : '';
+  }
+
   start() {
     this.k = 0;
     this.hold = 0;
@@ -94,7 +99,8 @@ export class FirstDay {
   /** Every frame: ticks steps off, moves on, shows the card (not while `hidden`). */
   update(s: CoachState, dt: number, hidden: boolean) {
     if (this.k < 0) return;
-    if (this.hold > 0) {
+    // The tick and the closing line wait while the card is hidden (a panel open): never missed.
+    if (this.hold > 0 && !hidden) {
       this.hold -= dt;
       if (this.hold <= 0) {
         if (this.finishing) return this.end(false);

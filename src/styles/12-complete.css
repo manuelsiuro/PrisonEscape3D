@@ -682,3 +682,9 @@ body.touch .saved-mark {
     font-size: 13px;
   }
 }
+
+/* Touch: the guide's cross is a finger's size. */
+body.touch .coach-skip {
+  width: 40px;
+  height: 40px;
+}
