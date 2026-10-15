@@ -456,4 +456,8 @@ real touch feel) and the known limits.
   - reinforced walls have concrete tops (they read as concrete from above on sand), the mine mounds smaller and quieter, the skull signs face the camera, the minefield shows red in the tunnel view (where not to come up);
   - a tap in the minefield picks the nearest tile that isn't mined, and says why nothing happens out in the middle of it;
   - measured fine: no inmate misses a block (San Pancho's arrivals the quickest of the three prisons), the warden's posts within 10 minutes, bed checks about an hour, the idle player locked down and caught, a step about 41 µs; `sanpanchotest` adds the settled grudges and the walkway's camera cover (25%, the four guards walk the rest).
+- **P11 second review (v1.4.2)**: the rendering measured (60 fps on desktop, still 60 with the CPU slowed 4×; 192 draw calls with the minefield's mounds and lids instanced), the compound at night, a second runtime pass (no misses, guard posts, the idle player caught):
+  - San Pancho's canteen: two-seat tables with aisles between them and along the plaza side (the whole compound filed in through one tile);
+  - "seen somewhere staff only" (the walkway and the minefield are not rooms);
+  - the title's keys line breaks into two even lines in a rounded card, not a pill with a word left over.
 - **Next: P12 HMP Irongate (v1.5).**

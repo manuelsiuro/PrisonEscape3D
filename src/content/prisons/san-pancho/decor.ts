@@ -53,7 +53,7 @@ export const SAN_PANCHO_DECOR: readonly DecorPlacement[] = [
   { kind: 'waterCooler', x: 18, z: 32 },
   { kind: 'vending', x: 25, z: 40, rot: 3 },
   { kind: 'trays', x: 20, z: 34, y: TABLE },
-  { kind: 'trays', x: 24, z: 38, y: TABLE },
+  { kind: 'trays', x: 23, z: 38, y: TABLE },
   // Kitchen: pans on the wall, the sink, a sack of potatoes.
   { kind: 'panRack', x: 14, z: 32, w: 2 },
   { kind: 'sink', x: 12, z: 36, rot: 1 },

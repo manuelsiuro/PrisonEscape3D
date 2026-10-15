@@ -269,7 +269,7 @@ export const en = {
   "routine.solitaryLeft": "{time} left · peel potatoes",
   "hud.seen": "A guard sees you",
   "spotted.night": "A guard saw you out of your cell!",
-  "spotted.restricted": "A guard saw you in a staff-only room!",
+  "spotted.restricted": "A guard saw you somewhere staff only!",
   "spotted.contraband": "A guard sees what's in your hand!",
   "spotted.recognized": "A guard recognized your face!",
   "spotted.wanted": "A guard is coming for you!",

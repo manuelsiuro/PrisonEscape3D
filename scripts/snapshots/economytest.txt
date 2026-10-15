@@ -31,12 +31,12 @@ shankton laundry: day 1 12:36 +$30 (wage)
 shankton woodshop: day 1 12:16 +$50 (wage)
 shankton janitor: day 1 12:39 +$35 (wage)
 shankton mailman: day 1 12:52 +$55 (wage)
-san-pancho janitor: day 1 12:30 +$35 (wage)
+san-pancho janitor: day 1 12:28 +$35 (wage)
 san-pancho kitchen: day 1 12:29 +$40 (wage)
 san-pancho laundry: day 1 12:36 +$30 (wage)
-san-pancho woodshop: day 1 12:17 +$50 (wage)
-san-pancho metalshop: day 1 12:22 +$65 (wage)
-san-pancho mailman: day 1 12:46 +$55 (wage)
+san-pancho woodshop: day 1 12:16 +$50 (wage)
+san-pancho metalshop: day 1 12:21 +$65 (wage)
+san-pancho mailman: day 1 12:34 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 5 hired: laundry

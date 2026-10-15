@@ -136,5 +136,5 @@
   day 1 09:27 TAKEOVER: the gates are open
   day 1 09:28 knocked out #15
   day 1 09:32 ESCAPED (takeover)
-  saved and loaded at day 1 08:46 (yard) resumes, day 1 09:23 (yard) resumes, day 1 09:31 (walkway) resumes, day 1 09:32 (walkway) resumes
+  saved and loaded at day 1 08:46 (yard) resumes, day 1 09:23 (yard) resumes, day 1 09:30 (walkway) resumes, day 1 09:32 (walkway) resumes
   → out day 1 09:32 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0

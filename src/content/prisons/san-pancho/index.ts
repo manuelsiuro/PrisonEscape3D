@@ -40,12 +40,13 @@ props.push(
   { kind: 'oven', x: 12, z: 40, rot: 2 },
   { kind: 'oven', x: 13, z: 40, rot: 2 },
   { kind: 'counter', x: 15, z: 38, d: 3, rot: 3 },
-  // Canteen: four long tables, benches either side, the serving counter by the kitchen.
+  // Canteen: four tables, benches either side, the serving counter by the kitchen; aisles
+  // between and along the plaza side, so the whole compound files in through the wide door.
   ...[34, 38].flatMap((z) =>
-    [19, 23].flatMap((x) => [
-      { kind: 'table', x, z, w: 3 } as const,
-      { kind: 'seat', x, z: z - 1, w: 3 } as const,
-      { kind: 'seat', x, z: z + 1, w: 3, rot: 2 } as const,
+    [19, 22].flatMap((x) => [
+      { kind: 'table', x, z, w: 2 } as const,
+      { kind: 'seat', x, z: z - 1, w: 2 } as const,
+      { kind: 'seat', x, z: z + 1, w: 2, rot: 2 } as const,
     ]),
   ),
   { kind: 'counter', x: 17, z: 36, d: 3, rot: 1 },
