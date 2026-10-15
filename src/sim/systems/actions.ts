@@ -384,6 +384,11 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
   it.rev++;
   switch (target.action) {
     case 'grapnel': {
+      // Hooked over the fence onto a roof beyond: across on the line, the sheet rope kept for the way down.
+      if (target.layer === LAYER.ROOF) {
+        moveTo(sim, LAYER.ROOF, t, 'grapnel');
+        break;
+      }
       // Hooked over the fence, the sheet rope takes the player down the far side (both stay there).
       const rope = it.inv.findIndex((v, k) => k < HOTBAR && itemOf(v) === SHEET_ROPE);
       if (rope >= 0) it.inv[rope] = 0;

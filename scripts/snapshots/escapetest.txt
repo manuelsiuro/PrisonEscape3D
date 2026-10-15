@@ -65,3 +65,46 @@
   day 1 08:55 ESCAPED (takeover)
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:49 (yard) resumes, day 1 08:54 (yard) resumes, day 1 08:55 (yard) resumes
   → out day 1 08:55 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 6, cash $0
+== shankton
+  cutout: the fence cut 6.9 s after the power went off
+== shankton: perimeter cutout
+  day 1 23:17 detector: shielded (19 passes left)
+  day 1 23:19 detector: shielded (18 passes left)
+  day 1 23:26 power OFF (player)
+  day 1 23:33 ESCAPED (fence)
+  saved and loaded at day 1 15:46 (yard) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (corridor) resumes, day 1 23:29 (perimeter) resumes
+  → out day 1 23:33 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+== shankton: tunnel
+  day 1 23:12 climbDown → layer 0
+  day 1 23:21 digUp → layer 1
+  day 1 23:21 ESCAPED (tunnel)
+  saved and loaded at day 1 15:40 (yard) resumes, day 1 21:49 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
+  → out day 1 23:21 by tunnel; heat peak 0%; walls 0, tunnel tiles 10, guards out cold 0, cash $0
+== shankton: rooftop grapnel
+  day 1 23:11 climbVent → layer 2
+  day 1 23:42 climbRoof → layer 3
+  day 1 23:47 grapnel → layer 3
+  day 1 23:48 rope → layer 1
+  day 1 23:48 ESCAPED (roof)
+  saved and loaded at day 1 15:54 (yard) resumes, day 1 22:13 (rollCall) resumes, day 1 23:29 (vents) resumes, day 1 23:43 (roof) resumes
+  → out day 1 23:48 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  takeover: health 47/140, guards down 8/8, xxxxxxxx
+== shankton: takeover
+  day 1 08:45 knocked out #13
+  day 1 08:47 detector TRIPPED
+  day 1 08:47 spotted: detector
+  day 1 08:49 knocked out #11
+  day 1 08:49 spotted: fight
+  day 1 08:49 LOCKDOWN
+  day 1 08:49 knocked out #14
+  day 1 08:50 knocked out #18
+  day 1 08:52 knocked out #15
+  day 1 08:54 knocked out #12
+  day 1 08:55 detector TRIPPED
+  day 1 08:57 knocked out #16
+  day 1 08:57 TAKEOVER: the gates are open
+  day 1 08:58 knocked out #17
+  day 1 09:06 sniper warning shot
+  day 1 09:09 ESCAPED (takeover)
+  saved and loaded at day 1 08:34 (cellBlock) resumes, day 1 09:02 (generator) resumes, day 1 09:08 (perimeter) resumes, day 1 09:09 (perimeter) resumes
+  → out day 1 09:09 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0

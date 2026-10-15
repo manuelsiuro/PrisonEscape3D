@@ -146,26 +146,35 @@ export class WorldView {
     }
   }
 
+  /** Brick walls (chipped through, they hide: `wallAt`), and reinforced concrete in its own panels, which nothing breaks. */
   private buildWalls() {
-    const cells = this.cells(isWall);
     const geo = new THREE.BoxGeometry(1, WALL_H, 1);
-    // The side faces' v runs 0..1 up the wall: repeat the brick so courses keep their size.
-    const brick = TEX.brick().clone();
-    brick.repeat.set(1, WALL_H);
-    brick.needsUpdate = true;
-    const side = seeThrough(new THREE.MeshStandardMaterial({ map: brick, roughness: 0.9 }));
     const top = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
-    // Box faces: +x, -x, +y, -y, +z, -z.
-    const mesh = new THREE.InstancedMesh(geo, [side, side, top, top, side, side], cells.length / 2);
-    for (let i = 0; i < cells.length / 2; i++) {
-      this.matrix.makeTranslation(cells[i * 2] + 0.5, WALL_H / 2, cells[i * 2 + 1] + 0.5);
-      mesh.setMatrixAt(i, this.matrix);
-      this.wallAt[cells[i * 2 + 1] * MAP_W + cells[i * 2]] = i;
+    for (const [kind, tex, roughness] of [
+      [TILE.BRICK, TEX.brick(), 0.9],
+      [TILE.REINFORCED, TEX.reinforced(), 0.95],
+    ] as const) {
+      const cells = this.cells((k) => k === kind);
+      if (!cells.length) continue;
+      // The side faces' v runs 0..1 up the wall: repeat the texture so courses keep their size.
+      const map = tex.clone();
+      map.repeat.set(1, WALL_H);
+      map.needsUpdate = true;
+      const side = seeThrough(new THREE.MeshStandardMaterial({ map, roughness }));
+      // Box faces: +x, -x, +y, -y, +z, -z.
+      const mesh = new THREE.InstancedMesh(geo, [side, side, top, top, side, side], cells.length / 2);
+      for (let i = 0; i < cells.length / 2; i++) {
+        this.matrix.makeTranslation(cells[i * 2] + 0.5, WALL_H / 2, cells[i * 2 + 1] + 0.5);
+        mesh.setMatrixAt(i, this.matrix);
+        if (kind === TILE.BRICK) this.wallAt[cells[i * 2 + 1] * MAP_W + cells[i * 2]] = i;
+      }
+      mesh.castShadow = mesh.receiveShadow = true;
+      this.group.add(mesh);
+      if (kind === TILE.BRICK) {
+        this.wallMesh = mesh;
+        this.keep(mesh);
+      }
     }
-    mesh.castShadow = mesh.receiveShadow = true;
-    this.group.add(mesh);
-    this.wallMesh = mesh;
-    this.keep(mesh);
   }
 
   /** Remembers an instanced mesh's matrices, so hidden instances can come back. */
@@ -193,7 +202,7 @@ export class WorldView {
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       if (this.wallAt[i] >= 0 && this.wallMesh) {
         const k = kind[i];
-        this.show(this.wallMesh, this.wallAt[i], k === TILE.BRICK || k === TILE.REINFORCED || k === TILE.HOLE_POSTER || k === TILE.HOLE_FAKE);
+        this.show(this.wallMesh, this.wallAt[i], k === TILE.BRICK || k === TILE.HOLE_POSTER || k === TILE.HOLE_FAKE);
       }
       if (this.fenceAt[i] >= 0) {
         const f = this.fenceMeshes[this.fenceOf[i]];
@@ -417,8 +426,12 @@ export class WorldView {
     const tex = TEX.grass().clone();
     tex.needsUpdate = true;
     tex.repeat.set(200, 200);
-    const alpine = this.world.def.theme === 'alpine';
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tex, color: alpine ? 0xe6edf5 : 0xa9bd98, roughness: 1 }));
+    const theme = this.world.def.theme ?? 'suburban';
+    const alpine = theme === 'alpine';
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2),
+      new THREE.MeshStandardMaterial({ map: tex, color: alpine ? 0xe6edf5 : theme === 'industrial' ? 0xa7a298 : 0xa9bd98, roughness: 1 }),
+    );
     ground.position.set(MAP_W / 2, -0.02, MAP_H / 2);
     ground.receiveShadow = true;
     this.group.add(ground);
@@ -426,8 +439,11 @@ export class WorldView {
     // Trees in a ring outside the road: a seeded scatter, one draw call.
     let s = 12345;
     const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
-    // Leafy trees in the suburbs; in the Alps, tall dark pines with snow on their tiers.
-    const tree = alpine
+    // Leafy trees in the suburbs; in the Alps, tall dark pines with snow on their tiers; by
+    // the state highway, scrub: dusty olive bushes on thin stems.
+    const tree = theme === 'industrial'
+      ? merge([cyl(0.07, 0.35, 0x5e5243, 0, 0, 0, 5), cyl(0.42, 0.45, 0x6b6e4c, 0, 0.3, 0, 6), cyl(0.3, 0.35, 0x7a7d58, 0.12, 0.62, 0.05, 6)])
+      : alpine
       ? merge([
           cyl(0.1, 0.5, 0x5a3c24, 0, 0, 0, 6),
           cone(0.62, 0.9, 0x24503a, 0, 0.4),

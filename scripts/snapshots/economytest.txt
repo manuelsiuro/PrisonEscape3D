@@ -25,6 +25,12 @@ stalag-flucht laundry: day 1 12:40 +$30 (wage)
 stalag-flucht woodshop: day 1 12:25 +$50 (wage)
 stalag-flucht metalshop: day 1 12:47 +$65 (wage)
 stalag-flucht janitor: day 1 12:22 +$35 (wage)
+shankton metalshop: day 1 12:23 +$65 (wage)
+shankton kitchen: day 1 12:30 +$40 (wage)
+shankton laundry: day 1 12:36 +$30 (wage)
+shankton woodshop: day 1 12:16 +$50 (wage)
+shankton janitor: day 1 12:32 +$35 (wage)
+shankton mailman: day 1 12:59 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 5 hired: laundry

@@ -11,9 +11,11 @@
  *   the vents to the ladder, the roof's edge, a grapnel over the fence and a sheet rope down;
  * - takeover: Strength and Speed trained to 90, plated armor and nunchucks, two followers;
  *   one blow at a guard and every guard comes; all five out cold opens the gates.
+ * Stalag Flucht and Shankton follow the same four routes on their own maps (`PLANS`).
  * The snapshot pins each run: when it got out, how, the heat's peak, and the tally.
  */
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { SHANKTON } from '../src/content/prisons/shankton';
 import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { placesOf } from '../src/sim/ai/places';
@@ -77,6 +79,10 @@ interface Plan {
   generator: [number, number];
   generatorFace: number;
   fence: [number, number, number];
+  /** A chain-link fence inside the electric one (Shankton's double perimeter), cut first: where to stand and which way. */
+  inner?: [number, number, number];
+  /** Detector arches on the way (Shankton): a contraband pouch in the kit. */
+  pouch?: boolean;
   /** Tunnel: the desk, the tile above the toilet, the tunnel's tiles in order with the way each is dug. */
   desk: [number, number];
   toilet: [number, number];
@@ -85,12 +91,16 @@ interface Plan {
   grate?: [number, number];
   ladder: [number, number];
   edge: [number, number, number];
+  /** Where the grapnel lands on a roof beyond the fence (Shankton's gatehouse): its far edge, and the way down the sheet rope. */
+  rope?: [number, number, number];
   /** Takeover: where to wait for the first guard (out of the snipers' range), a tile outside the open gates. */
   rally?: [number, number];
   gates: [number, number];
   /** Strength and Speed trained to (default 90, GDD §12: 90+), and whether to recruit the two strongest inmates. */
   trained?: number;
   strongest?: boolean;
+  /** Molten chocolate in the pockets (GDD §10.1: thrown, out cold at once), for a guard force too big to beat by hand. */
+  chocolate?: number;
 }
 
 const PLANS: Plan[] = [
@@ -140,13 +150,41 @@ const PLANS: Plan[] = [
     strongest: true,
     gates: [20, 62],
   },
+  // Shankton (GDD §4.3): no wall of the shell can be chipped. The generator room's own door
+  // leads out to the gravel, a chain-link fence and the live one beyond (the pouch gets the
+  // kit through the corridors' detectors); the tunnel runs under the shell and both fences;
+  // the vent maze reaches the generator room's ladder, the grapnel swings across onto the
+  // gatehouse roof astride both fences, a sheet rope down from there. Eight guards are too
+  // many to beat by hand: four cups of molten chocolate thrown, the rest with nunchucks.
+  {
+    def: SHANKTON,
+    seed: 31,
+    name: (r) => `${SHANKTON.id}: ${r}`,
+    keys: ['plastic_key_yellow', 'plastic_key_purple'],
+    pouch: true,
+    generator: [34, 49],
+    generatorFace: DIR.SOUTH,
+    inner: [36, 57, DIR.SOUTH],
+    fence: [36, 60, DIR.SOUTH],
+    desk: [12, 9],
+    toilet: [12, 11],
+    dig: [8, 7, 6, 5, 4, 3, 2, 1].map((z) => [12, z, DIR.NORTH]),
+    grate: [10, 11],
+    ladder: [38, 49],
+    edge: [53, 55, DIR.SOUTH],
+    rope: [53, 62, DIR.SOUTH],
+    rally: [16, 25],
+    chocolate: 4,
+    gates: [51, 63],
+  },
 ];
 
 // ------------------------------------------------------------------ 1. the perimeter cutout
 function cutout(p: Plan) {
   const bot = new Bot(p.def, p.seed);
-  bot.stash(...p.keys, 'sturdy_cutters', 'bed_dummy', 'guard_outfit');
-  nightfall(bot, p.keys.length + 3);
+  const pouch = p.pouch ? ['pouch'] : [];
+  bot.stash(...p.keys, ...pouch, 'sturdy_cutters', 'bed_dummy', 'guard_outfit');
+  nightfall(bot, p.keys.length + pouch.length + 3);
   // Into the guard's uniform.
   bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
   check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
@@ -156,6 +194,15 @@ function cutout(p: Plan) {
   bot.act();
   check(!bot.sim.power, 'the power is off');
   const cutAt = bot.st.step;
+  // Through the chain-link first, where there is one inside the wire.
+  if (p.inner) {
+    const [ix, iz, iface] = p.inner;
+    check(bot.walkTo(tileOf(ix, iz)), 'at the inner fence');
+    bot.face(iface);
+    const mesh = tileOf(ix + (iface === DIR.EAST ? 1 : 0), iz + (iface === DIR.SOUTH ? 1 : 0));
+    check(bot.sim.world.ground.kind[mesh] === TILE.FENCE, 'facing the chain-link');
+    check(bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[mesh] === TILE.FENCE_CUT), 'the chain-link cut');
+  }
   // To the electric stretch of the fence, and through it.
   const [fx, fz, face] = p.fence;
   check(bot.walkTo(tileOf(fx, fz)), 'at the electric fence');
@@ -246,6 +293,14 @@ function overTheWire(p: Plan, bot: Bot) {
   bot.face(p.edge[2]);
   bot.hold('grapnel');
   bot.use();
+  // Swung across onto a roof beyond the fence: to its far edge, and down the sheet rope.
+  if (p.rope) {
+    check(bot.st.layer === LAYER.ROOF, 'across onto the gatehouse roof');
+    check(bot.walkTo(tileOf(p.rope[0], p.rope[1]), 400), 'at the gatehouse roof’s far edge');
+    bot.face(p.rope[2]);
+    bot.hold('sheet_rope');
+    bot.use();
+  }
   report(p.name('rooftop grapnel'), bot);
   check(bot.done && ESCAPES[bot.st.via] === 'roof', 'escaped over the fence on the grapnel');
   check(bot.heatPeak < 80, 'never wanted on the way');
@@ -282,7 +337,8 @@ function takeover(p: Plan) {
   st.str = p.trained ?? 90;
   st.spd = p.trained ?? 90;
   st.health = maxHealth(st.str);
-  bot.stash('nunchucks', 'plated_outfit');
+  const cups = Array<string>(p.chocolate ?? 0).fill('molten_chocolate');
+  bot.stash('nunchucks', 'plated_outfit', ...cups);
   // Two friends: the first two inmates, or the two strongest (GDD §12: allies that can fight).
   const friends = p.strongest ? st.inmates.map((m, i) => ({ i, str: m.str })).sort((a, b) => b.str - a.str || a.i - b.i).slice(0, 2).map((f) => f.i) : [0, 1];
   for (const id of friends) st.inmates[id].opinion = 90;
@@ -305,7 +361,7 @@ function takeover(p: Plan) {
   bot.walkTo(places.deskside[1]);
   bot.face(DIR.EAST);
   bot.open(bot.desk);
-  bot.takeAll(2);
+  bot.takeAll(2 + cups.length);
   bot.close();
   bot.op(OP.EQUIP, bot.slotOf('nunchucks'));
   bot.op(OP.EQUIP, bot.slotOf('plated_outfit'));
@@ -331,7 +387,8 @@ function takeover(p: Plan) {
     return { k: best, d: bestD };
   };
   let fights = 0;
-  for (let k = 0; k < 8000 && !st.takeover && st.ko === 0; k++) {
+  // On until the gates open with no guard still on its feet close by (one at the player's heels would catch them on the way out).
+  for (let k = 0; k < 8000 && !(st.takeover && nearestGuard().d > 6 * UNIT) && st.ko === 0; k++) {
     const { k: g, d } = nearestGuard();
     if (g < 0) {
       bot.step(0);
@@ -346,6 +403,12 @@ function takeover(p: Plan) {
     }
     bot.pilot.stop();
     if (st.lock !== inmates + g) bot.op(OP.LOCK, 2 + inmates + g);
+    // A cup of molten chocolate left: thrown from where the player stands.
+    if (cups.length && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
+      bot.hold('molten_chocolate');
+      bot.op(OP.USE, 1);
+      continue;
+    }
     // In reach: swing; else close in.
     if (d < 1.2 * UNIT) bot.op(OP.USE, fights++ === 0 ? 1 : 0);
     else bot.step(command(dirFromVector(gb.x - st.player.x, gb.z - st.player.z)));

@@ -176,10 +176,10 @@ export class Sim {
     scan(this);
     // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
     useItems(this, s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
-    // On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel, out of the gates in a takeover, or through the fence.
+    // On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), out of the gates in a takeover, or through the fence.
     if (s.layer === LAYER.GROUND && this.playerZone === 'outside') {
       s.escaped = s.step;
-      s.via = ESCAPES.indexOf(this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' ? 'roof' : s.takeover ? 'takeover' : 'fence');
+      s.via = ESCAPES.indexOf(this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : 'fence');
       closeBox(this);
       this.events.push({ type: 'escaped', via: ESCAPES[s.via] });
       return true;

@@ -53,8 +53,8 @@ export interface PrisonDef {
   id: string;
   /** 1 (minimum security) to 5 (supermax). */
   difficulty: number;
-  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow. */
-  theme?: 'suburban' | 'alpine';
+  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey. */
+  theme?: 'suburban' | 'alpine' | 'industrial';
   /** The ground floor picture (layer 0). */
   ground: string;
   /** The vents picture (layer +1): ducts, ceiling grates, the ladder to the roof. Roofs cover every building; tunnels are dug. */

@@ -31,7 +31,7 @@ export interface ToolTarget {
   fits: boolean;
   /** Hit points the tile has in all (0: nothing gets through it; strikes only). */
   hp: number;
-  /** A grapnel's swing: the fence tile it hooks over (the landing is `tile`). */
+  /** A grapnel's swing: the fence (or gatehouse roof) tile it hooks (the landing is `tile`). */
   over?: number;
 }
 
@@ -243,7 +243,7 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   // A grapnel at a roof's edge, the perimeter fence in reach beyond (GDD §12): a sheet rope in the pockets gets the player down outside.
   if (held === GRAPNEL && layer === LAYER.ROOF) {
     const swing = grapnelSwing(w, b);
-    if (swing) return { action: 'grapnel', layer: LAYER.GROUND, tile: swing.land, over: swing.fence, hp: 0, fits: pockets.some((v) => (v & 255) === SHEET_ROPE) };
+    if (swing) return { action: 'grapnel', layer: swing.roof ? LAYER.ROOF : LAYER.GROUND, tile: swing.land, over: swing.fence, hp: 0, fits: pockets.some((v) => (v & 255) === SHEET_ROPE) };
   }
   // Tape or toothpaste under a camera: over its lens.
   if (LENS_COVERS.has(held) && layer === LAYER.GROUND) {
@@ -307,10 +307,11 @@ function placeTarget(w: World, layer: number, here: number, ahead: number, held:
 
 /**
  * A grapnel thrown from a roof's edge (GDD §12): straight ahead over the open ground below,
- * the perimeter fence within reach, and free road just past it to come down on. Returns the
- * fence tile and the landing, or null.
+ * the perimeter fence within reach, and free road just past it to come down on; or a roof
+ * standing on the wire to swing across onto (Shankton's gatehouse, GDD §4.3: the sheet
+ * rope then gets the player down its far side). Returns the tile hooked and the landing, or null.
  */
-export function grapnelSwing(w: World, b: Body): { fence: number; land: number } | null {
+export function grapnelSwing(w: World, b: Body): { fence: number; land: number; roof: boolean } | null {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   const sx = Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;
@@ -331,8 +332,10 @@ export function grapnelSwing(w: World, b: Body): { fence: number; land: number }
       const land = (z + sz) * MAP_W + x + sx;
       // Down onto open ground (the road, or between two fences): whether that's out, the escape check says.
       const lk = w.ground.kind[land];
-      return TILE_INFO[lk].outdoor && !TILE_INFO[lk].solid && !w.blocked(x + sx, z + sz) ? { fence: i, land } : null;
+      return TILE_INFO[lk].outdoor && !TILE_INFO[lk].solid && !w.blocked(x + sx, z + sz) ? { fence: i, land, roof: false } : null;
     }
+    // A roof standing on the wire (a gatehouse astride the fences): hooked, and swung across onto it.
+    if (roof[i] === TILE.ROOF && k <= GRAPNEL_REACH && w.zoneAt(x, z) === 'perimeter') return { fence: i, land: i, roof: true };
     // Over open ground only (no roofs, towers or walls in the way).
     if (roof[i] !== TILE.EMPTY || !TILE_INFO[kind].outdoor || TILE_INFO[kind].solid) return null;
   }

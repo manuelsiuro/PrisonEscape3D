@@ -118,6 +118,19 @@ const BASE = {
         }
       }
     }),
+  /** Reinforced concrete (GDD §4.3, `@`): poured panels, their seams and form-tie holes; no tool chips it. */
+  reinforced: () =>
+    texture('reinforced', 16, (c, n, r) => {
+      speckle(c, n, r, '#8e9296', '#83878b', '#9a9ea2', 0.25);
+      c.fillStyle = '#6f7377';
+      c.fillRect(0, 0, n, 1);
+      c.fillRect(0, n / 2, n, 1);
+      c.fillRect(0, 0, 1, n);
+      c.fillStyle = '#5c6064';
+      for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) c.fillRect(x, y, 1, 1);
+      c.fillStyle = 'rgba(70,60,50,0.18)';
+      for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), 1 + Math.floor(r() * (n - 2)), 1, 3);
+    }),
   wallTop: () =>
     texture('wallTop', 16, (c, n, r) => {
       speckle(c, n, r, '#5e646e', '#555b64', '#6a707a', 0.22);
@@ -242,8 +255,8 @@ const BASE = {
     }),
 };
 
-/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow. */
-export type Theme = 'suburban' | 'alpine';
+/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey. */
+export type Theme = 'suburban' | 'alpine' | 'industrial';
 let theme: Theme = 'suburban';
 
 /** The look the next textures are drawn in (set as a world is shown; textures already made keep theirs). */
@@ -308,7 +321,45 @@ const ALPINE: Partial<typeof BASE> = {
     }),
 };
 
+/** Crushed stone round the shell, the state highway's tar, painted cinder block inside. */
+const INDUSTRIAL: Partial<typeof BASE> = {
+  grass: () =>
+    texture('crushedStone', 16, (c, n, r) => {
+      speckle(c, n, r, '#8d8a83', '#77746e', '#a29f98', 0.5);
+      c.fillStyle = '#6a6761';
+      for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+      c.fillStyle = '#b8b4ab';
+      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+    }),
+  road: () =>
+    texture('highway', 16, (c, n, r) => {
+      speckle(c, n, r, '#43464b', '#3a3d41', '#4f5257', 0.35);
+      // Tar-sealed cracks.
+      c.fillStyle = '#2c2e31';
+      let x = Math.floor(r() * n);
+      for (let y = 0; y < n; y++) {
+        c.fillRect(x, y, 1, 1);
+        if (r() < 0.4) x = (x + (r() < 0.5 ? -1 : 1) + n) % n;
+      }
+    }),
+  /** Painted cinder block: pale institutional grey, the courses staggered. */
+  brick: () =>
+    texture('cinder', 16, (c, n, r) => {
+      c.fillStyle = '#8b8f8a';
+      c.fillRect(0, 0, n, n);
+      for (let row = 0; row < 4; row++) {
+        const off = row % 2 ? 4 : 0;
+        for (let col = -1; col < 2; col++) {
+          const shade = 0.95 + r() * 0.07;
+          c.fillStyle = `rgb(${Math.round(184 * shade)},${Math.round(189 * shade)},${Math.round(182 * shade)})`;
+          c.fillRect(col * 8 + off + 1, row * 4 + 1, 7, 3);
+        }
+      }
+    }),
+};
+
 /** The textures, in the current theme's look. */
+const THEMES: Record<Theme, Partial<typeof BASE>> = { suburban: {}, alpine: ALPINE, industrial: INDUSTRIAL };
 export const TEX = Object.fromEntries(
-  (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => ((theme === 'alpine' && ALPINE[k]) || BASE[k])(...(a as [string]))]),
+  (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => (THEMES[theme][k] || BASE[k])(...(a as [string]))]),
 ) as unknown as typeof BASE;
