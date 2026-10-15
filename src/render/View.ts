@@ -9,6 +9,7 @@ import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
 import { Snores, Sparks } from './Particles';
+import { DecorView } from './decor';
 import { Guide } from './Guide';
 import { itemDef } from '../content/items';
 import { itemGeometry } from './itemModels';
@@ -204,6 +205,7 @@ export class View {
   private readonly sleepers: number[] = [];
   /** Chair tiles (someone sitting there sits a little higher). */
   private readonly chairs = new Set<number>();
+  private decor: DecorView | null = null;
   private structure: Structure | null = null;
   private security: Security | null = null;
   private riot = false;
@@ -317,10 +319,16 @@ export class View {
       this.scene.remove(this.security.group);
       this.security.dispose();
     }
+    if (this.decor) {
+      this.scene.remove(this.decor.group);
+      this.decor.dispose();
+    }
     this.world = world;
     this.chairs.clear();
     for (const p of world.props) if (p.kind === 'chair') this.chairs.add(p.z * MAP_W + p.x);
     this.security = new Security(world);
+    this.decor = new DecorView(world.def.decor ?? []);
+    this.scene.add(this.decor.group);
     this.scene.add(this.security.group);
     this.worldView = new WorldView(world);
     this.structure = new Structure(world, this.worldView);
@@ -816,6 +824,9 @@ export class View {
       this.ambient.intensity = 0.85;
       this.sky.set(0x120c08);
     }
+    this.decor?.update(this.security?.group.visible ? this.security.powerLevel : 1, time);
+    // Decor belongs to the ground floor (out of the picture from the tunnels).
+    if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
     this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot);
     this.dust.update(dt);
     this.camera.position.copy(this.target).add(CAMERA_OFFSET);

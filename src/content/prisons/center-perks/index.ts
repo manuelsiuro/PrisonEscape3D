@@ -2,6 +2,7 @@ import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
 import { L1 } from './L1.map';
+import { CENTER_PERKS_DECOR } from './decor';
 
 /** Cells: four on top (doors south), four below (doors north). Cell 1 is the player's. */
 const cells: Rect[] = [];
@@ -213,6 +214,7 @@ const guards: GuardDef[] = [
 export const CENTER_PERKS: PrisonDef = {
   id: 'center-perks',
   difficulty: 1,
+  decor: CENTER_PERKS_DECOR,
   ground: L0,
   vents: L1,
   zones: [

@@ -5,6 +5,10 @@
  */
 import { PRISONS } from '../src/content/prisons';
 import { PROPS } from '../src/content/props';
+import { DECOR } from '../src/content/decor';
+
+/** A wall a decor piece can hang on (brick or concrete; holes and covers count, they look like wall). */
+const isWallTile = (k: number) => k === TILE.BRICK || k === TILE.REINFORCED;
 import { ZONES } from '../src/content/zones';
 import { findPath } from '../src/sim/ai/path';
 import { isFloor, placesOf } from '../src/sim/ai/places';
@@ -50,6 +54,32 @@ for (const def of PRISONS) {
     }
   }
   check(Object.keys(PROPS).length > 0, 'prop kinds exist');
+
+  // Decor (render only): floor pieces on free floor (on furniture when lifted), wall pieces on
+  // floor in front of a wall along their whole width, nothing on a door or a detector.
+  let decorCount = 0;
+  for (const p of def.decor ?? []) {
+    decorCount++;
+    const w0 = p.w ?? 1;
+    const d0 = p.d ?? 1;
+    for (let z = p.z; z < p.z + d0; z++) {
+      for (let x = p.x; x < p.x + w0; x++) {
+        const i = z * MAP_W + x;
+        const k = w.inside(x, z) ? g.kind[i] : TILE.EMPTY;
+        const where = `${def.id}: decor ${p.kind} at ${x},${z}`;
+        check(!TILE_INFO[k].solid && k !== TILE.DOOR && k !== TILE.DETECTOR, `${where} stands on ${TILE_INFO[k].name}`);
+        if (p.y) check(w.propSolid[i] === 1, `${where} is lifted onto furniture that isn't there`);
+        else if (!DECOR[p.kind].wall) check(!w.propSolid[i], `${where} stands inside furniture`);
+        if (DECOR[p.kind].wall) {
+          const r = p.rot ?? 0;
+          const [bx, bz] = r === 0 ? [x, p.z - 1] : r === 1 ? [p.x - 1, z] : r === 2 ? [x, p.z + d0] : [p.x + w0, z];
+          check(isWallTile(g.kind[bz * MAP_W + bx]), `${where} hangs on ${TILE_INFO[g.kind[bz * MAP_W + bx]].name}, not a wall`);
+        }
+      }
+    }
+  }
+
+  console.log(`decor: ${decorCount} pieces`);
 
   // Doors and detectors sit in a wall line, with floor on both sides free of solid props.
   for (let z = 1; z < MAP_H - 1; z++) {

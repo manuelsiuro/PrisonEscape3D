@@ -1,3 +1,4 @@
+import type { DecorPlacement } from '../decor';
 import type { JobId } from '../jobs';
 import type { PropPlacement } from '../props';
 import type { RoutineId } from '../routine';
@@ -59,4 +60,6 @@ export interface PrisonDef {
   cameras?: ReadonlyArray<{ x: number; z: number; face: number }>;
   /** Searchlights at night (GDD §5.2), one per tower: the tiles the beam sweeps along, back and forth. */
   searchlights?: ReadonlyArray<ReadonlyArray<{ x: number; z: number }>>;
+  /** Decor (P8+): pieces that dress the rooms and nothing else (the simulation never sees them). */
+  decor?: readonly DecorPlacement[];
 }
