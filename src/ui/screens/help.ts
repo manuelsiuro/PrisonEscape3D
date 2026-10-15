@@ -40,6 +40,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string]>> 
     ['towers', 'target', '#e5484d'],
     ['ways', 'hook', '#ff7714'],
     ['weather', 'snow', '#2f78be'],
+    ['shell', 'shield', '#5d6b7a'],
   ],
 };
 

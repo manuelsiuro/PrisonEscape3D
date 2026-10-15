@@ -72,6 +72,9 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
     document.body.append(el);
     // The furthest prison open is where the player is headed: focused (and in view).
     const open = el.querySelectorAll<HTMLButtonElement>('.prison-card:not(.locked)');
-    open[open.length - 1]?.focus();
+    const last = open[open.length - 1];
+    last?.focus();
+    // Scrolled to again once it has slid in (its entrance moves it while focus scrolls).
+    last?.addEventListener('animationend', () => last.scrollIntoView({ block: 'nearest' }), { once: true });
   });
 }

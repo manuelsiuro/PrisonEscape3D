@@ -15,7 +15,7 @@ vents: 1 duct tiles, 0 grates, 1 ladder; roof tiles 1684
 == shankton · picture 1b118955
 tiles: asphalt 130, brick 394, concrete 872, detector 10, door 37, electric 208, fence 204, grass 816, reinforced 203, road 488, tiled 444, tower 36, wood 254
 zones: canteen 226, cellBlock 120, controlRoom 49, corridor 276, generator 56, guardQuarters 84, gym 72, infirmary 48, inmateCell 176, janitor 36, kitchen 98, laundry 42, library 42, mailroom 49, metalshop 48, none 576, outside 488, perimeter 1304, playerCell 16, rollCall 70, showers 32, solitary 42, woodshop 56, yard 90
-decor: 0 pieces
+decor: 83 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
 guards: 8, 54 stops, 5 asleep at night
 vents: 126 duct tiles, 3 grates, 1 ladder; roof tiles 2214

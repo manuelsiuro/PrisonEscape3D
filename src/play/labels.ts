@@ -231,7 +231,7 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
           : tt.action === 'brace'
             ? ''
             : tt.action === 'grapnel'
-              ? t(tt.fits ? 'thing.overFence' : 'thing.needRope')
+              ? t(!tt.fits ? 'thing.needRope' : tt.layer === LAYER.ROOF ? 'thing.ontoGatehouse' : 'thing.overFence')
               : tt.action === 'tape'
                 ? t('thing.camera')
                 : t('thing.rope');
