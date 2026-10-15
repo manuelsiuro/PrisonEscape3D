@@ -30,7 +30,7 @@ export interface GuardDef {
 }
 
 /** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
-export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover';
+export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate';
 
 /**
  * How a prison bends the common rules (P8+; each default is Center Perks'). New prisons add
@@ -46,6 +46,8 @@ export interface PrisonRules {
   contrabandEvery?: number;
   /** Freezing weather (Stalag Flucht, GDD §4.2): a minute outdoors without a warm outfit doubles what energy costs. */
   cold?: boolean;
+  /** A lawless interior (San Pancho, GDD §4.4): a few inmates bear the new arrival a grudge from day 1, and grudges are settled in free time and the yard too, not just at meals and in the showers. */
+  hostile?: boolean;
 }
 
 /** Everything that defines one prison. Maps are ASCII pictures, the rest is plain data. */
@@ -53,8 +55,8 @@ export interface PrisonDef {
   id: string;
   /** 1 (minimum security) to 5 (supermax). */
   difficulty: number;
-  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey. */
-  theme?: 'suburban' | 'alpine' | 'industrial';
+  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert. */
+  theme?: 'suburban' | 'alpine' | 'industrial' | 'desert';
   /** The ground floor picture (layer 0). */
   ground: string;
   /** The vents picture (layer +1): ducts, ceiling grates, the ladder to the roof. Roofs cover every building; tunnels are dug. */

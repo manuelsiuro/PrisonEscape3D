@@ -73,6 +73,8 @@ export class World {
   readonly npcBlock = new Uint8Array(MAP_W * MAP_H);
   /** Derived: the same for guards, whose keys open every door (and who keep off damage too). */
   readonly guardBlock = new Uint8Array(MAP_W * MAP_H);
+  /** Derived: where the player's own feet are walked by a route (tap to walk): the ground's block, and the minefield (P11) too. */
+  readonly routeBlock = new Uint8Array(MAP_W * MAP_H);
   /** Which cell (1–8) each ground tile belongs to, 0 outside cells. */
   readonly cellOf = new Uint8Array(MAP_W * MAP_H);
   /** On door tiles: the cell the door leads into (0 for other doors). */
@@ -163,6 +165,11 @@ export class World {
     return this.layers[LAYER.GROUND];
   }
 
+  /** What blocks a route the player is walked along on a layer (tap to walk, the bots): on the ground floor, mines too. */
+  routeGrid(layer: number): Uint8Array {
+    return layer === LAYER.GROUND ? this.routeBlock : this.layers[layer].block;
+  }
+
   private fill(a: Uint8Array, x0: number, z0: number, x1: number, z1: number, v: number) {
     for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) a[z * MAP_W + x] = v;
   }
@@ -218,8 +225,11 @@ export class World {
       this.block[i] = solid || this.propSolid[i] ? 1 : 0;
       // Damage is the player's way: inmates and guards walk the prison as it was built (doors too).
       const damage = DAMAGE_SHOWS.has(k) ? 1 : 0;
-      this.npcBlock[i] = (k === TILE.DOOR ? (shut || this.propSolid[i] ? 1 : 0) : this.block[i]) | damage;
-      this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] || damage ? 1 : 0;
+      // Nobody walks into a minefield on purpose: inmates, guards, and the player's routes keep out (P11).
+      const mine = k === TILE.MINE ? 1 : 0;
+      this.npcBlock[i] = (k === TILE.DOOR ? (shut || this.propSolid[i] ? 1 : 0) : this.block[i]) | damage | mine;
+      this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] || damage || mine ? 1 : 0;
+      this.routeBlock[i] = this.block[i] | mine;
     }
     for (const l of [this.layers[LAYER.UNDER], this.layers[LAYER.VENTS], this.layers[LAYER.ROOF]]) {
       for (let i = 0; i < TILES; i++) l.block[i] = TILE_INFO[l.kind[i]].solid ? 1 : 0;

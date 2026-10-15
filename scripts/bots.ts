@@ -35,7 +35,7 @@ export class Bot {
 
   constructor(prison: PrisonDef, seed: number) {
     this.sim = new Sim(prison, seed);
-    this.pilot = new Autopilot(this.sim.world, () => this.sim.world.layers[this.sim.state.layer].block);
+    this.pilot = new Autopilot(this.sim.world, () => this.sim.world.routeGrid(this.sim.state.layer));
   }
 
   get st() {

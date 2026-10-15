@@ -4,7 +4,7 @@ import { clearLine, nearestDir, tileAt } from '../ai/path';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
 import { MAP_W, type World } from '../world/World';
 import { maxHealth, type Fighter } from './combat';
 import { bodyAt, type Body } from './movement';
@@ -38,7 +38,7 @@ export interface Inmate extends Walker, Fighter {
 /** Where inmates like to spend free time (their own cell is added). */
 const HANGOUTS: readonly ZoneId[] = ['yard', 'yard', 'library', 'gym', 'cellBlock', 'rollCall', 'corridor', 'canteen'];
 
-/** One inmate per cell after the player's, starting in bed-side position. */
+/** One inmate per cell after the player's, starting in bed-side position (in a hostile prison, cooler towards the player). */
 export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
   const out: Inmate[] = [];
   const places = placesOf(w);
@@ -58,7 +58,7 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       stall: 0,
       ...fighter(INMATE_STR_MIN + randomInt(rng, INMATE_STR_SPAN)),
       angry: 0,
-      opinion: OPINION_START,
+      opinion: !w.def.rules?.hostile ? OPINION_START : cell % 4 === 0 ? HOSTILE_GRUDGE : HOSTILE_OPINION,
       shift: 0,
     });
   }

@@ -247,7 +247,7 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
         : tt.action === 'unscrew'
           ? t('thing.grate')
           : tt.action === 'digUp'
-            ? t('thing.surface')
+            ? t(k === TILE.MINE && !sim.state.craters.includes(tt.tile) ? 'thing.intoMines' : 'thing.surface')
             : tt.layer === LAYER.UNDER
               ? t(w.layers[LAYER.UNDER].kind[tt.tile] === TILE.BOULDER ? 'thing.boulder' : 'thing.earth')
               : t('thing.floor');

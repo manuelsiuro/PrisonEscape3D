@@ -44,7 +44,7 @@ export class Underground {
             ? 0xa0684a
             : k === TILE.ROAD
               ? 0x8c8a86
-              : k === TILE.GRASS || k === TILE.DIRT
+              : k === TILE.GRASS || k === TILE.DIRT || k === TILE.MINE
                 ? 0xb4a888
                 : TILE_INFO[k].outdoor
                   ? 0xa89c88

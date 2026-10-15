@@ -7,7 +7,7 @@ import { h } from '../dom';
 import { icon } from '../icons';
 
 /** Each way out's icon (as on the victory screen). */
-const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users' };
+const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key' };
 
 /** The prison's name, and its security level in words ("Medium security"). */
 export const prisonName = (def: PrisonDef) => t(`prison.${def.id}` as Key);

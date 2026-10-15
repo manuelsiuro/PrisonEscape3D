@@ -103,7 +103,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
     prevGuards: sim.state.guards.map((m) => ({ x: m.body.x, z: m.body.z })),
     paused: false,
     walked: 0,
-    pilot: new Autopilot(sim.world, () => sim.world.layers[sim.state.layer].block),
+    pilot: new Autopilot(sim.world, () => sim.world.routeGrid(sim.state.layer)),
     guide: null,
     guideAge: 1,
     guideFrom: -1,

@@ -11,10 +11,12 @@
  *   the vents to the ladder, the roof's edge, a grapnel over the fence and a sheet rope down;
  * - takeover: Strength and Speed trained to 90, plated armor and nunchucks, two followers;
  *   one blow at a guard and every guard comes; all five out cold opens the gates.
- * Stalag Flucht and Shankton follow the same four routes on their own maps (`PLANS`).
+ * Stalag Flucht and Shankton follow the same four routes on their own maps (`PLANS`); San
+ * Pancho has its own three: the deep tunnel, the supply road's gate on cloned keys, the takeover.
  * The snapshot pins each run: when it got out, how, the heat's peak, and the tally.
  */
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { SHANKTON } from '../src/content/prisons/shankton';
 import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
 import type { PrisonDef } from '../src/content/prisons/types';
@@ -68,17 +70,21 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.until(() => false, 10 * STEPS_PER_MINUTE);
 }
 
+type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate';
+
 /** Where each route goes in a prison: tiles as [x, z], with a facing where it matters. */
 interface Plan {
   def: PrisonDef;
-  /** The first bot's seed (the others take the next three). */
+  /** The first bot's seed (the others take the next ones). */
   seed: number;
   name: (route: string) => string;
-  /** Cutout: the keys from the cell to the generator, where to stand at it, the fence tile to cut from and which way. */
+  /** The routes this prison has (default: cutout, tunnel, rooftop, takeover). */
+  routes?: Route[];
+  /** Cutout: the keys from the cell to the generator, where to stand at it, the fence tile to cut from and which way. Gate: the keys out by the gates. */
   keys: string[];
-  generator: [number, number];
-  generatorFace: number;
-  fence: [number, number, number];
+  generator?: [number, number];
+  generatorFace?: number;
+  fence?: [number, number, number];
   /** A chain-link fence inside the electric one (Shankton's double perimeter), cut first: where to stand and which way. */
   inner?: [number, number, number];
   /** Detector arches on the way (Shankton): a contraband pouch in the kit. */
@@ -89,12 +95,15 @@ interface Plan {
   dig: Array<[number, number, number]>;
   /** Rooftop: the cell's grate (none: the ladder is reached on foot, the power off first), the ladder, the roof's edge and which way the fence is. */
   grate?: [number, number];
-  ladder: [number, number];
-  edge: [number, number, number];
+  ladder?: [number, number];
+  edge?: [number, number, number];
   /** Where the grapnel lands on a roof beyond the fence (Shankton's gatehouse): its far edge, and the way down the sheet rope. */
   rope?: [number, number, number];
   /** Takeover: where to wait for the first guard (out of the snipers' range), a tile outside the open gates. */
   rally?: [number, number];
+  /** Takeover: the first blow by hand, the chocolate only once it has raised the alarm (a guard knocked out unseen calls nobody in: San Pancho's lawless interior). */
+  alarmFirst?: boolean;
+  /** Takeover and gate: a tile outside the open gates (on the road). */
   gates: [number, number];
   /** Strength and Speed trained to (default 90, GDD §12: 90+), and whether to recruit the two strongest inmates. */
   trained?: number;
@@ -177,6 +186,29 @@ const PLANS: Plan[] = [
     chocolate: 4,
     gates: [51, 63],
   },
+  // San Pancho (GDD §4.4): no fence to cut, no roof to swing from. The deep tunnel runs north
+  // from the desk under the compound wall, the walkway, the inner wall, the minefield and the
+  // outer wall, to come up on the road; the supply road is walked at night in a guard's
+  // uniform on cloned keys (yellow out of the cell and the wing, red through the control room
+  // and the inner wall, green through the outer gate); the takeover is fought in the plaza,
+  // out of the towers' reach, the first blow by hand where the guard sees it (a guard
+  // knocked out unseen in the lawless compound calls nobody in).
+  {
+    def: SAN_PANCHO,
+    seed: 41,
+    name: (r) => `${SAN_PANCHO.id}: ${r}`,
+    routes: ['tunnel', 'gate', 'takeover'],
+    keys: ['plastic_key_yellow', 'plastic_key_red', 'plastic_key_green'],
+    desk: [15, 12],
+    toilet: [15, 14],
+    dig: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((z) => [15, z, DIR.NORTH]),
+    rally: [31, 40],
+    alarmFirst: true,
+    trained: 100,
+    strongest: true,
+    chocolate: 4,
+    gates: [31, 62],
+  },
 ];
 
 // ------------------------------------------------------------------ 1. the perimeter cutout
@@ -189,8 +221,8 @@ function cutout(p: Plan) {
   bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
   check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
   // The generator: off.
-  check(bot.walkTo(tileOf(...p.generator)), 'at the generator');
-  bot.face(p.generatorFace);
+  check(bot.walkTo(tileOf(...p.generator!)), 'at the generator');
+  bot.face(p.generatorFace!);
   bot.act();
   check(!bot.sim.power, 'the power is off');
   const cutAt = bot.st.step;
@@ -204,7 +236,7 @@ function cutout(p: Plan) {
     check(bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[mesh] === TILE.FENCE_CUT), 'the chain-link cut');
   }
   // To the electric stretch of the fence, and through it.
-  const [fx, fz, face] = p.fence;
+  const [fx, fz, face] = p.fence!;
   check(bot.walkTo(tileOf(fx, fz)), 'at the electric fence');
   bot.face(face);
   const wire = tileOf(fx + (face === DIR.EAST ? 1 : 0), fz + (face === DIR.SOUTH ? 1 : 0));
@@ -279,7 +311,7 @@ function rooftop(p: Plan) {
   bot.use();
   check(bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_FAKE, 'a fake cover over the grate');
   // Crawl to the ladder and up.
-  const [lx, lz] = p.ladder;
+  const [lx, lz] = p.ladder!;
   check(bot.walkTo(tileOf(lx, lz - 1), 3000), 'along the ducts to the ladder');
   check(bot.walkTo(tileOf(lx, lz), 200), 'at the ladder');
   bot.act();
@@ -289,8 +321,9 @@ function rooftop(p: Plan) {
 
 /** From the roof: to its edge, the fence a few tiles beyond, and over on the grapnel. */
 function overTheWire(p: Plan, bot: Bot) {
-  check(bot.walkTo(tileOf(p.edge[0], p.edge[1]), 600), 'at the roof’s edge');
-  bot.face(p.edge[2]);
+  const edge = p.edge!;
+  check(bot.walkTo(tileOf(edge[0], edge[1]), 600), 'at the roof’s edge');
+  bot.face(edge[2]);
   bot.hold('grapnel');
   bot.use();
   // Swung across onto a roof beyond the fence: to its far edge, and down the sheet rope.
@@ -315,11 +348,11 @@ function generatorRoof(p: Plan, bot: Bot) {
   bot.stash(...p.keys, 'grapnel', 'sheet_rope', 'bed_dummy', 'guard_outfit');
   nightfall(bot, p.keys.length + 4);
   bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
-  check(bot.walkTo(tileOf(...p.generator)), 'at the generator');
-  bot.face(p.generatorFace);
+  check(bot.walkTo(tileOf(...p.generator!)), 'at the generator');
+  bot.face(p.generatorFace!);
   bot.act();
   check(!bot.sim.power, 'the power is off');
-  const [lx, lz] = p.ladder;
+  const [lx, lz] = p.ladder!;
   check(bot.walkTo(tileOf(lx, lz + 1), 400), 'at the ladder');
   bot.face(DIR.NORTH);
   bot.act();
@@ -366,6 +399,8 @@ function takeover(p: Plan) {
   bot.op(OP.EQUIP, bot.slotOf('nunchucks'));
   bot.op(OP.EQUIP, bot.slotOf('plated_outfit'));
   check(itemOf(st.items.inv[SLOT.WEAPON]) === n('nunchucks') && itemOf(st.items.inv[SLOT.OUTFIT]) === n('plated_outfit'), 'armed and armored');
+  // Nothing in hand on the way (a cup of molten chocolate is contraband in plain sight).
+  if (cups.length) bot.op(OP.SELECT, st.items.inv.slice(0, 6).indexOf(0));
   // Somewhere out of the towers' reach, near the gates, for the first guard to come by.
   if (p.rally) {
     check(bot.walkTo(tileOf(...p.rally), 2000), 'at the rally point');
@@ -403,8 +438,8 @@ function takeover(p: Plan) {
     }
     bot.pilot.stop();
     if (st.lock !== inmates + g) bot.op(OP.LOCK, 2 + inmates + g);
-    // A cup of molten chocolate left: thrown from where the player stands.
-    if (cups.length && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
+    // A cup of molten chocolate left (once the alarm is up, where it has to be raised first): thrown from where the player stands.
+    if (cups.length && (!p.alarmFirst || st.lockdown) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
       bot.hold('molten_chocolate');
       bot.op(OP.USE, 1);
       continue;
@@ -421,13 +456,33 @@ function takeover(p: Plan) {
   check(bot.done && ESCAPES[st.via] === 'takeover', 'escaped in the takeover');
 }
 
+// ------------------------------------------------------------------ 5. the gate (San Pancho's supply road)
+/**
+ * Lights Out, the dummy in bed, a guard's uniform; the cloned keys open every door from the
+ * cell to the road: out of the wing, across the plaza, through the control room, over the
+ * walkway, down the paved corridor between the mines and out of the outer gate.
+ */
+function gate(p: Plan, seed: number) {
+  const bot = new Bot(p.def, seed);
+  bot.stash(...p.keys, 'bed_dummy', 'guard_outfit');
+  nightfall(bot, p.keys.length + 2);
+  bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
+  check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
+  check(bot.walkTo(tileOf(...p.gates), 6000), 'down the supply road and out of the gate');
+  report(p.name('supply road gate'), bot);
+  check(bot.done && ESCAPES[bot.st.via] === 'gate', 'escaped through the gate');
+  check(!bot.st.craters.length, 'never set foot on a mine');
+  check(bot.heatPeak < 80, 'never wanted on the way');
+}
 
 for (const p of PLANS) {
   if (p.def !== CENTER_PERKS) console.log(`== ${p.def.id}`);
-  cutout(p);
-  tunnel(p);
-  rooftop(p);
-  takeover(p);
+  const routes = p.routes ?? ['cutout', 'tunnel', 'rooftop', 'takeover'];
+  if (routes.includes('cutout')) cutout(p);
+  if (routes.includes('tunnel')) tunnel(p);
+  if (routes.includes('rooftop')) rooftop(p);
+  if (routes.includes('gate')) gate(p, p.seed + 4);
+  if (routes.includes('takeover')) takeover(p);
 }
 
 void DAY;

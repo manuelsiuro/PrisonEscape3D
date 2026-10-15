@@ -10,6 +10,7 @@ import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
 import { Snores, Sparks } from './Particles';
 import { DecorView } from './decor';
+import { Minefield } from './Minefield';
 import { Guide } from './Guide';
 import { itemDef } from '../content/items';
 import { itemGeometry } from './itemModels';
@@ -77,6 +78,8 @@ export interface Frame {
   /** Puddles to mop (tiles), and a number that changes whenever they do. */
   puddles: readonly number[];
   puddlesRev: number;
+  /** Mines set off today (P11): their ground tiles. */
+  craters: readonly number[];
   /** Security (GDD §5.4–5.6): the power, cameras, searchlights, a sniper's aim. */
   security: SecurityFrame;
   /** A takeover (GDD §12): every door stands open. */
@@ -143,6 +146,14 @@ const DUST: Record<number, number> = {
   [TILE.DIRT]: 0xa88660,
   [TILE.ROAD]: 0x8a8d92,
   [TILE.ASPHALT]: 0x9a9da3,
+};
+/** In the desert: pale sand everywhere, red earth in the plaza. */
+const SAND_DUST: Record<number, number> = {
+  [TILE.GRASS]: 0xdcbb84,
+  [TILE.MINE]: 0xcba86f,
+  [TILE.DIRT]: 0xb98257,
+  [TILE.ROAD]: 0xb7a07a,
+  [TILE.ASPHALT]: 0xb7a07a,
 };
 const SNOW_DUST: Record<number, number> = {
   [TILE.GRASS]: 0xf4f8fc,
@@ -221,6 +232,7 @@ export class View {
   private decor: DecorView | null = null;
   private structure: Structure | null = null;
   private security: Security | null = null;
+  private minefield: Minefield | null = null;
   private riot = false;
   private underground: Underground | null = null;
   /** The layer drawn (the player's), and the tiles revision the damage was drawn for. */
@@ -336,6 +348,10 @@ export class View {
       this.scene.remove(this.decor.group);
       this.decor.dispose();
     }
+    if (this.minefield) {
+      this.scene.remove(this.minefield.group);
+      this.minefield.dispose();
+    }
     // The prison's look (snow at Stalag Flucht): the textures drawn from here on follow it.
     setTheme(world.def.theme ?? 'suburban');
     this.world = world;
@@ -344,6 +360,8 @@ export class View {
     this.security = new Security(world);
     this.decor = new DecorView(world.def.decor ?? []);
     this.scene.add(this.decor.group);
+    this.minefield = new Minefield(world);
+    this.scene.add(this.minefield.group);
     this.scene.add(this.security.group);
     this.worldView = new WorldView(world);
     this.structure = new Structure(world, this.worldView);
@@ -657,7 +675,8 @@ export class View {
     if (f.restBed) this.lastRest = f.restBed;
     else if (this.player.lying === 0) this.lastRest = null;
     if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
-      const dust = this.world?.def.theme === 'alpine' && f.layer === LAYER.GROUND ? SNOW_DUST : DUST;
+      const theme = f.layer === LAYER.GROUND ? this.world?.def.theme : undefined;
+      const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : DUST;
       if (dust[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, dust[f.surface], 2);
       this.onStep(f.surface);
     }
@@ -687,6 +706,10 @@ export class View {
       c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);
     });
     this.drawPuddles(f, time);
+    if (this.minefield) {
+      this.minefield.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
+      this.minefield.update(f.craters);
+    }
     this.doorsOpen.clear();
     f.guards.forEach((g, k) => {
       const c = this.guardCast[k];
@@ -751,6 +774,18 @@ export class View {
       this.dust.puff(x + 0.9, z + 0.6, 0x9a8a6a, 10, 0.8);
       this.sparks.burst(x + 0.9, 0.05, z + 0.6, 7, 0xffe2a0, 2.6);
     }
+  }
+
+  /** A landmine goes off (P11): a fireball of sparks, a column of sand and smoke, the hardest jolt. */
+  blast(tile: number) {
+    const x = (tile % MAP_W) + 0.5;
+    const z = Math.floor(tile / MAP_W) + 0.5;
+    this.shake = Math.max(this.shake, 1.8);
+    if (this.reducedMotion) return;
+    this.sparks.burst(x, 0.3, z, 40, 0xffa53a, 6.5);
+    this.sparks.burst(x, 0.5, z, 18, 0xfff0c0, 4.5);
+    this.dust.puff(x, z, 0xc8a36a, 34, 0.3);
+    this.dust.puff(x, z, 0x5b4a3a, 18, 1.1);
   }
 
   /** The electric fence bites (GDD §5.5): a shower of blue-white sparks off the player and a hard jolt. */

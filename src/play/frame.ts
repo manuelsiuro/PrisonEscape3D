@@ -135,6 +135,7 @@ const frameData: Frame = {
   reps: 0,
   puddles: [],
   puddlesRev: 0,
+  craters: [],
   security: { power: true, cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
   takeover: false,
 };
@@ -329,6 +330,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   } else if (!seated || seated.kind === 'bed') f.trainAt = null;
   f.reps = trainReps(st.reps);
   f.puddles = st.puddles;
+  f.craters = st.craters;
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
   f.held = trainKind === 'shelf' ? MAGAZINE : held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);

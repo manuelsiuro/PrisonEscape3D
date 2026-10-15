@@ -115,6 +115,31 @@
     linear-gradient(#e4e8ee, #e4e8ee) top / 100% 2px no-repeat;
 }
 
+/* San Pancho: a white-hot sky, sand, an adobe block, a band of mines under the wall. */
+.theme-desert .pc-scene {
+  background:
+    radial-gradient(circle at 78% 18%, #fff4c9 0 7%, transparent 8%),
+    linear-gradient(180deg, #f3c27a 0 46%, #dcb57e 46% 100%);
+}
+
+.theme-desert .pc-scene::before {
+  bottom: 34%;
+  height: 24%;
+  border-radius: 4px 4px 0 0;
+  background:
+    linear-gradient(90deg, transparent 0 38%, #6b4428 38% 50%, transparent 50%) bottom / 100% 55% no-repeat,
+    linear-gradient(180deg, #a87e56 0 16%, #d2ab7c 16% 100%);
+}
+
+.theme-desert .pc-scene::after {
+  bottom: 10%;
+  height: 16%;
+  background:
+    radial-gradient(circle, #4d5330 0 1.6px, transparent 2.2px) 0 0 / 9px 7px,
+    linear-gradient(#a99f8f, #a99f8f) top / 100% 3px no-repeat;
+  opacity: 1;
+}
+
 .pc-level {
   position: absolute;
   z-index: 1;

@@ -22,6 +22,7 @@ import { craft, dropItem, equip, give, HOTBAR, interactTarget, type ItemEvent, i
 import { jobOp, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
+import { blast, liveMine } from './mines';
 import { snipersOnDuty, switchPower } from './power';
 import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
@@ -308,6 +309,11 @@ function strike(sim: SimContext, fresh: boolean) {
       s.tally[1]++;
       break;
     case 'digUp': {
+      // Up into the minefield: the mine above goes off (P11).
+      if (liveMine(sim, t)) {
+        blast(sim, t);
+        return;
+      }
       setTile(sim, LAYER.GROUND, t, TILE.SHAFT);
       give(it, DIRT, p, s.layer);
       s.tally[1]++;

@@ -215,17 +215,24 @@ export function favorDone(sim: SimContext, f: Favor) {
   sim.events.push({ type: 'favor', who: f.by, kind: f.kind, state: 'done' });
 }
 
+/** Where grudges are settled: at meals and in the showers; in a hostile prison, free time and the yard too. */
+const GRUDGE_BLOCKS: readonly string[] = ['breakfast', 'dinner', 'showers'];
+const HOSTILE_BLOCKS: readonly string[] = [...GRUDGE_BLOCKS, 'freeTime', 'exercise', 'eveningFreeTime'];
+
 /**
  * An inmate with a grudge (opinion 25 or less) may jump the player at a meal or in the
- * showers (GDD §10.3): close by, in the same room, now and then.
+ * showers (GDD §10.3): close by, in the same room, now and then. In a lawless prison (San
+ * Pancho, GDD §4.4) anywhere they meet in free time or the yard.
  */
 export function grudges(sim: SimContext) {
   const s = sim.state;
   const id = ROUTINE[s.routine].id;
-  if ((id !== 'breakfast' && id !== 'dinner' && id !== 'showers') || sim.away || s.layer !== LAYER.GROUND || s.lockdown) return;
+  if (!(sim.world.def.rules?.hostile ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown) return;
   const p = s.player;
   const zone = sim.playerZone;
-  if (!ROUTINE[s.routine].zones.includes(zone)) return;
+  // At a block with its own rooms, in them; in free time, wherever the two meet.
+  const zones = ROUTINE[s.routine].zones;
+  if (zones.length ? !zones.includes(zone) : zone === 'playerCell') return;
   s.inmates.forEach((m, who) => {
     if (m.opinion > OPINION_LOW || m.angry > 0 || m.ko > 0 || s.followers.includes(who)) return;
     if (dist2(m.body, p) > AMBUSH_RANGE * AMBUSH_RANGE || inmateZone(sim.world, m) !== zone) return;

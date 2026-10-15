@@ -102,6 +102,8 @@ export const ANGRY_STEPS = 20 * STEPS_PER_SECOND;
 export const HEALTH_REGEN_STEPS = STEPS_PER_MINUTE;
 /** A tunnel roof coming down on the player (GDD §9.2). */
 export const CAVE_IN_DAMAGE = 40;
+/** A landmine underfoot (GDD §4.4): 100 HP, out cold unless Strength has raised the most health past it. */
+export const MINE_DAMAGE = 100;
 /** Rubbing a comb or toothbrush on a wall this many times sharpens it into a shiv. */
 export const SHARPEN_STROKES = 4;
 
@@ -125,6 +127,9 @@ export const TALK_REACH = Math.round(1.4 * UNIT);
 /** Opinion (GDD §10.3): 0–100 from 50; at or under LOW an inmate may jump the player at meals and showers; from HIGH it joins them. */
 export const OPINION_START = 50;
 export const OPINION_LOW = 25;
+/** A hostile prison (San Pancho, P11): what inmates think of the new arrival on day 1; every fourth cell's starts with a grudge. */
+export const HOSTILE_OPINION = 40;
+export const HOSTILE_GRUDGE = 20;
 export const OPINION_HIGH = 80;
 /** An inmate tells the player a recipe (once a day) from this opinion up (P8+, PLAN §2). */
 export const TIP_OPINION = 60;

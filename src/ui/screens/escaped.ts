@@ -24,7 +24,7 @@ export interface Victory {
 export type VictoryChoice = 'again' | 'next' | 'title';
 
 /** Each way out's icon. */
-const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users' };
+const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key' };
 
 /**
  * The victory screen (GDD §13.2): how the player got out, the days it took and the tally

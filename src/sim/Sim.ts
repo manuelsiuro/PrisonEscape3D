@@ -11,6 +11,7 @@ import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
 import { stepGuards, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
+import { mines } from './systems/mines';
 import { noteCarried } from './systems/recipes';
 import { stockSlots } from './systems/items';
 import { clockIn, spreadCoins, station } from './systems/jobs';
@@ -23,6 +24,7 @@ import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
 import { watch } from './systems/watch';
 import { BODY_HALF, CRAWL_SPEED, HEAT_DECAY_STEPS, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
+import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 
 // The state, its events and snapshots live in state.ts; importers have always found them here.
@@ -170,16 +172,20 @@ export class Sim {
     if (s.train >= 0 && dirOf(cmd) !== 0) stopTraining(this);
     // A step gets the player up off a seat or a bed.
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
+    const from = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
     walk(w, s.player, s.sleeping ? 0 : dirOf(cmd), s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd), s.layer);
+    // Onto a buried mine (P11).
+    mines(this);
     wearKeys(this);
     // Through a detector arch (GDD §5.4).
     scan(this);
     // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
     useItems(this, s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
-    // On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), out of the gates in a takeover, or through the fence.
+    // On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), out of the gates in a takeover, through a gate with its keys (San Pancho's supply road), or through the fence.
     if (s.layer === LAYER.GROUND && this.playerZone === 'outside') {
       s.escaped = s.step;
-      s.via = ESCAPES.indexOf(this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : 'fence');
+      const gate = w.ground.kind[from] === TILE.DOOR;
+      s.via = ESCAPES.indexOf(this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : gate ? 'gate' : 'fence');
       closeBox(this);
       this.events.push({ type: 'escaped', via: ESCAPES[s.via] });
       return true;
@@ -290,10 +296,16 @@ export class Sim {
     // Job rooms (GDD §11): open for the Work Period, and to let out whoever is still inside.
     let rooms = 0n;
     if (ROUTINE[s.routine].id === 'work' && !s.lockdown) for (const r of jobRooms(w)) rooms |= 1n << BigInt(r.zone);
-    // Someone in a job room, or in its doorway, keeps its door open.
+    // Someone in a job room, or anywhere in its doorway (a foot still in it is enough: a door never shuts on anyone), keeps its door open.
     const zoneBit = (b: Body) => {
       const i = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
-      return 1n << BigInt(w.doorRoom[i] || w.ground.zone[i]);
+      let bits = 1n << BigInt(w.doorRoom[i] || w.ground.zone[i]);
+      for (const x of [b.x - BODY_HALF, b.x + BODY_HALF - 1])
+        for (const z of [b.z - BODY_HALF, b.z + BODY_HALF - 1]) {
+          const j = Math.floor(z / UNIT) * MAP_W + Math.floor(x / UNIT);
+          if (w.doorRoom[j]) bits |= 1n << BigInt(w.doorRoom[j]);
+        }
+      return bits;
     };
     if (s.layer === LAYER.GROUND) rooms |= zoneBit(s.player);
     for (const m of s.inmates) rooms |= zoneBit(m.body);

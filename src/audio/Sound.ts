@@ -16,7 +16,7 @@ const CHORDS: ReadonlyArray<readonly number[]> = [
 ];
 
 /** Soft ground: muffled footsteps. */
-const SOFT = new Set<number>([TILE.GRASS, TILE.DIRT]);
+const SOFT = new Set<number>([TILE.GRASS, TILE.DIRT, TILE.MINE]);
 
 /**
  * Synthesized sound (Web Audio, no files). The context starts on the first user gesture
@@ -603,6 +603,15 @@ export class Sound {
   caveIn() {
     this.tone(70, 35, 1.1, 'sawtooth', 0.18);
     this.hiss(1.1, 'lowpass', 380, 0.6, 0.4);
+  }
+
+  /** A landmine going off (P11): a sharp crack, a deep boom, sand raining down. */
+  blast() {
+    this.hiss(0.12, 'highpass', 1400, 0.6, 0.6);
+    this.tone(110, 28, 1.4, 'sawtooth', 0.32);
+    this.tone(60, 24, 1.2, 'sine', 0.4, 0.02);
+    this.hiss(1.8, 'lowpass', 520, 0.5, 0.5);
+    this.hiss(1.4, 'bandpass', 2600, 0.8, 0.06);
   }
 
   /** A toilet flushing (a gurgle when clogged). */

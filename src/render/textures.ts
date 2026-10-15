@@ -68,6 +68,13 @@ const BASE = {
     texture('dirt', 16, (c, n, r) => {
       speckle(c, n, r, '#9a7650', '#866443', '#ad8a62', 0.35);
     }),
+  /** Ground sown with mines (P11): the open ground's own look elsewhere (only San Pancho has any). */
+  minefield: () =>
+    texture('grass', 16, (c, n, r) => {
+      speckle(c, n, r, '#5f9e43', '#4d8a36', '#74b553', 0.35);
+      c.fillStyle = '#86c463';
+      for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * (n - 1)), 1, 2);
+    }),
   /** A trodden path (the map's `d`): bare dirt here, packed snow in the Alps. */
   trail: () =>
     texture('dirt', 16, (c, n, r) => {
@@ -255,8 +262,8 @@ const BASE = {
     }),
 };
 
-/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey. */
-export type Theme = 'suburban' | 'alpine' | 'industrial';
+/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert. */
+export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert';
 let theme: Theme = 'suburban';
 
 /** The look the next textures are drawn in (set as a world is shown; textures already made keep theirs). */
@@ -358,8 +365,86 @@ const INDUSTRIAL: Partial<typeof BASE> = {
     }),
 };
 
+/**
+ * The desert (San Pancho): pale sand, the minefield's raked and darker, a sun-bleached border
+ * road, the plaza's packed red earth, adobe walls of plastered mud brick, sandy concrete, clay roofs.
+ */
+const DESERT: Partial<typeof BASE> = {
+  grass: () =>
+    texture('sand', 16, (c, n, r) => {
+      speckle(c, n, r, '#dcbb84', '#cba86f', '#e8cb98', 0.35);
+      c.fillStyle = '#b8945e';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+      c.fillStyle = '#f0d8aa';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+    }),
+  /** Raked sand over the mines: ridged, a shade darker, so the field reads at a glance. */
+  minefield: () =>
+    texture('sandRaked', 16, (c, n, r) => {
+      speckle(c, n, r, '#c9a46c', '#b8925c', '#d6b47e', 0.3);
+      c.fillStyle = 'rgba(120,88,48,0.35)';
+      for (let y = 1; y < n; y += 4) c.fillRect(0, y, n, 1);
+      c.fillStyle = 'rgba(240,214,166,0.4)';
+      for (let y = 2; y < n; y += 4) c.fillRect(0, y, n, 1);
+    }),
+  road: () =>
+    texture('borderRoad', 16, (c, n, r) => {
+      speckle(c, n, r, '#8c8172', '#7f7466', '#9a8f80', 0.35);
+      // Sand blown across it.
+      c.fillStyle = 'rgba(220,187,132,0.55)';
+      for (let k = 0; k < 7; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 3, 1);
+    }),
+  asphalt: () =>
+    texture('asphaltSun', 16, (c, n, r) => {
+      speckle(c, n, r, '#8f877b', '#83796d', '#9c9488', 0.3);
+      c.fillStyle = 'rgba(220,187,132,0.45)';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+    }),
+  trail: () =>
+    texture('redEarth', 16, (c, n, r) => {
+      speckle(c, n, r, '#b98257', '#a8744b', '#c79265', 0.38);
+      c.fillStyle = 'rgba(90,52,28,0.3)';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 3, 1);
+    }),
+  /** Adobe: mud bricks under a lime-washed plaster, worn through in patches. */
+  brick: () =>
+    texture('adobe', 16, (c, n, r) => {
+      speckle(c, n, r, '#d2ab7c', '#c49c6c', '#dcb88a', 0.3);
+      for (let k = 0; k < 2; k++) {
+        const x0 = Math.floor(r() * (n - 6));
+        const y0 = Math.floor(r() * (n - 4));
+        c.fillStyle = '#a8683f';
+        c.fillRect(x0, y0, 6, 4);
+        c.fillStyle = '#8a5333';
+        c.fillRect(x0, y0 + 2, 6, 1);
+        c.fillRect(x0 + 3, y0, 1, 2);
+      }
+    }),
+  reinforced: () =>
+    texture('sandConcrete', 16, (c, n, r) => {
+      speckle(c, n, r, '#a99f8f', '#9e9484', '#b4aa9a', 0.25);
+      c.fillStyle = '#8a8070';
+      c.fillRect(0, 0, n, 1);
+      c.fillRect(0, n / 2, n, 1);
+      c.fillRect(0, 0, 1, n);
+      c.fillStyle = '#6f675a';
+      for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) c.fillRect(x, y, 1, 1);
+    }),
+  wallTop: () =>
+    texture('adobeTop', 16, (c, n, r) => {
+      speckle(c, n, r, '#a87e56', '#9a714b', '#b58b62', 0.25);
+    }),
+  /** Flat clay roofs. */
+  gravel: () =>
+    texture('clayRoof', 16, (c, n, r) => {
+      speckle(c, n, r, '#b98a5c', '#a87b50', '#c69a6c', 0.4);
+      c.fillStyle = '#d8b07c';
+      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+    }),
+};
+
 /** The textures, in the current theme's look. */
-const THEMES: Record<Theme, Partial<typeof BASE>> = { suburban: {}, alpine: ALPINE, industrial: INDUSTRIAL };
+const THEMES: Record<Theme, Partial<typeof BASE>> = { suburban: {}, alpine: ALPINE, industrial: INDUSTRIAL, desert: DESERT };
 export const TEX = Object.fromEntries(
   (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => (THEMES[theme][k] || BASE[k])(...(a as [string]))]),
 ) as unknown as typeof BASE;

@@ -1,0 +1,8 @@
+walls: outer and inner reinforced, gates green (outer) and red (inner); 1024 mines between them, a corridor of 20 paved tiles
+mines kept off: 13 inmates and 8 guards over a day, lockdown off
+a mine underfoot: 100 health, out cold, solitary; the crater safe till 08:00
+a mine at Strength 70: 20 health left, a sniper taking aim
+digging up under the minefield sets the mine off
+supply road: red through the control room and the inner wall, green through the gate; 21 tiles to the road, none of them mined
+snipers: on duty day and night
+lawless: three grudges from day 1; a free-time ambush after 42 s (never at Center Perks)

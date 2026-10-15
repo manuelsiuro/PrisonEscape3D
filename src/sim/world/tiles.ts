@@ -47,6 +47,8 @@ export const TILE = {
   ROOF: 32,
   /** Granite under the ground (layer -1, GDD §4.2): no tool digs it; tunnels go round. */
   BOULDER: 33,
+  /** A landmine buried in the sand (GDD §4.4): walkable, and it goes off underfoot. */
+  MINE: 34,
 } as const;
 
 export type TileKind = (typeof TILE)[keyof typeof TILE];
@@ -96,6 +98,7 @@ export const TILE_INFO: Record<number, TileInfo> = {
   [TILE.LADDER]: info('ladder', false, false, false),
   [TILE.ROOF]: info('roof', false, false, true),
   [TILE.BOULDER]: info('boulder', true, true, false),
+  [TILE.MINE]: info('mine', false, false, true),
 };
 
 /** Damage a guard would notice (GDD §9.3): an open hole, a cut fence, a missing grate, a tunnel entrance. */
@@ -126,6 +129,7 @@ export const LEGEND: Record<string, { kind: TileKind; key?: KeyColor }> = {
   D: { kind: TILE.DETECTOR },
   T: { kind: TILE.TOWER },
   '~': { kind: TILE.WATER },
+  '*': { kind: TILE.MINE },
   y: { kind: TILE.DOOR, key: KEY.YELLOW },
   c: { kind: TILE.DOOR, key: KEY.CYAN },
   p: { kind: TILE.DOOR, key: KEY.PURPLE },

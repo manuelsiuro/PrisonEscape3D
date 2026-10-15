@@ -184,8 +184,8 @@ export function clockIn(sim: SimContext) {
 
 /**
  * 08:00, a new day: the quota starts again; attributes left untrained yesterday slip a point
- * (GDD §3.2); change turns up in desks and pockets; merchants restock; new favors; jobs left
- * open long enough are taken by inmates.
+ * (GDD §3.2); mines are laid again; change turns up in desks and pockets; merchants restock;
+ * new favors; jobs left open long enough are taken by inmates.
  */
 export function newDay(sim: SimContext) {
   const s = sim.state;
@@ -199,6 +199,8 @@ export function newDay(sim: SimContext) {
   });
   s.trained = 0;
   if (slipped.length) sim.events.push({ type: 'decay', attrs: slipped });
+  // Yesterday's craters have new mines in them (P11).
+  s.craters = [];
   spreadCoins(sim);
   for (const shop of s.shops) stockSlots('merchant', 0, shop, s);
   offerFavors(sim);

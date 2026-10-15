@@ -52,6 +52,9 @@ export const DECOR = {
   flagpole: { wall: false },
   tree: { wall: false },
   bush: { wall: false },
+  // P11 (San Pancho): a saguaro in the plaza, a skull-and-crossbones sign on a post at the minefield's edge.
+  cactus: { wall: false },
+  mineSign: { wall: false },
   hoop: { wall: false },
   filing: { wall: false },
   ivStand: { wall: false },

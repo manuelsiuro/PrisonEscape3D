@@ -21,10 +21,10 @@ import { LAYER, type World } from './world/World';
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
-export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover'] as const;
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate'] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
 /** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper. */
-export const HURT_BY = { CAVE_IN: -1, SNIPER: -2 } as const;
+export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3 } as const;
 /** Where a knocked-out player wakes up. */
 export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2, FLOORED: 3 } as const;
 
@@ -64,6 +64,8 @@ export type SimEvent =
   | { type: 'shocked' }
   /** A tunnel roof came down on the player (GDD §9.2). */
   | { type: 'caveIn'; tile: number }
+  /** A landmine went off under the player (P11): its ground tile. */
+  | { type: 'blast'; tile: number }
   /** Onto another layer (through a grate, up the ladder, into a tunnel…). */
   | { type: 'layer'; layer: number; from: number; how: ClimbAction | 'digUp' | 'rope' | 'grapnel' }
   /** A cover put over damage or taken off it; a brace set up; chocolate eaten. */
@@ -280,6 +282,8 @@ export interface SimState {
   cold: number;
   /** Chilled to the bone (P9): set when the cold reaches COLD_STEPS, cleared only once it's all gone (energy costs double meanwhile, indoors too). */
   frozen: boolean;
+  /** Mines set off today (P11, GDD §4.4): their ground tiles, craters until the guards lay new ones at 08:00. */
+  craters: number[];
 }
 
 export interface Snapshot {
@@ -374,6 +378,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     studied: Math.floor(START_INT / STUDY_TIP_EVERY),
     cold: 0,
     frozen: false,
+    craters: [],
   };
 }
 

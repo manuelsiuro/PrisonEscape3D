@@ -37,6 +37,7 @@ const FLOOR_OF: Record<number, keyof typeof TEX> = {
   [TILE.FENCE]: 'grass',
   [TILE.ELECTRIC]: 'grass',
   [TILE.TOWER]: 'grass',
+  [TILE.MINE]: 'minefield',
   // Under the walls: what a see-through cut reveals.
   [TILE.BRICK]: 'wallCore',
   [TILE.REINFORCED]: 'wallCore',
@@ -430,7 +431,7 @@ export class WorldView {
     const alpine = theme === 'alpine';
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2),
-      new THREE.MeshStandardMaterial({ map: tex, color: alpine ? 0xe6edf5 : theme === 'industrial' ? 0xa7a298 : 0xa9bd98, roughness: 1 }),
+      new THREE.MeshStandardMaterial({ map: tex, color: alpine ? 0xe6edf5 : theme === 'industrial' ? 0xa7a298 : theme === 'desert' ? 0xe8d2ae : 0xa9bd98, roughness: 1 }),
     );
     ground.position.set(MAP_W / 2, -0.02, MAP_H / 2);
     ground.receiveShadow = true;
@@ -440,8 +441,17 @@ export class WorldView {
     let s = 12345;
     const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
     // Leafy trees in the suburbs; in the Alps, tall dark pines with snow on their tiers; by
-    // the state highway, scrub: dusty olive bushes on thin stems.
-    const tree = theme === 'industrial'
+    // the state highway, scrub: dusty olive bushes on thin stems; in the desert, saguaros.
+    const tree = theme === 'desert'
+      ? merge([
+          cyl(0.15, 1.5, 0x5f7f3d, 0, 0, 0, 8),
+          cyl(0.15, 0.08, 0x6d8d48, 0, 1.5, 0, 8),
+          cyl(0.09, 0.14, 0x5f7f3d, 0.18, 0.62, 0, 7),
+          cyl(0.1, 0.55, 0x5f7f3d, 0.3, 0.66, 0, 7),
+          cyl(0.09, 0.12, 0x5f7f3d, -0.17, 0.86, 0, 7),
+          cyl(0.09, 0.42, 0x5f7f3d, -0.28, 0.9, 0, 7),
+        ])
+      : theme === 'industrial'
       ? merge([cyl(0.07, 0.35, 0x5e5243, 0, 0, 0, 5), cyl(0.42, 0.45, 0x6b6e4c, 0, 0.3, 0, 6), cyl(0.3, 0.35, 0x7a7d58, 0.12, 0.62, 0.05, 6)])
       : alpine
       ? merge([

@@ -227,6 +227,15 @@ export function announce(e: SimEvent, sim: Sim) {
       play.game?.pilot.stop();
       banner.show(t('banner.shocked'), t('banner.shockedSub'), 'alarm', 3500);
       break;
+    case 'blast':
+      tools.release();
+      sound.blast();
+      buzz('lockdown');
+      view.blast(e.tile);
+      itemsUI.closePanels();
+      play.game?.pilot.stop();
+      banner.toast(t('toast.blast'), 'bad', 6000);
+      break;
     case 'caveIn':
       tools.release();
       sound.caveIn();

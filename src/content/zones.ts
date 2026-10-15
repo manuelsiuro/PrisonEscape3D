@@ -35,6 +35,9 @@ export const ZONES = [
   'roof',
   // P9 (Stalag Flucht): cabin A's locked storeroom.
   'storeroom',
+  // P11 (San Pancho): the guards' walkway inside the inner wall, the minefield beyond it.
+  'walkway',
+  'minefield',
 ] as const;
 
 export type ZoneId = (typeof ZONES)[number];
@@ -42,4 +45,4 @@ export type ZoneId = (typeof ZONES)[number];
 export const zoneIndex = (id: ZoneId): number => ZONES.indexOf(id);
 
 /** Staff only: seen in one without a guard outfit means instant 100% heat (GDD §5.2). */
-export const RESTRICTED: readonly ZoneId[] = ['generator', 'guardQuarters', 'controlRoom', 'vents', 'roof'];
+export const RESTRICTED: readonly ZoneId[] = ['generator', 'guardQuarters', 'controlRoom', 'vents', 'roof', 'walkway', 'minefield'];

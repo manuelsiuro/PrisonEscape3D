@@ -210,12 +210,12 @@ function chokepoints(w: World): number[] {
   return out;
 }
 
-/** A ground floor tile a tunnel entrance can be dug through (free floor, or under the player's desk). */
-export function canDigFloor(w: World, i: number, bodies: readonly Body[]): boolean {
+/** A ground floor tile a tunnel entrance can be dug through (free floor, or under the player's desk); from below (`up`), the minefield's sand too, mine and all (P11). */
+export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = false): boolean {
   if (i < 0) return false;
   const k = w.ground.kind[i];
   // Nor over a boulder: there'd be nowhere to go.
-  if (!DIGGABLE.has(k) || reserved(w).has(i) || w.layers[LAYER.UNDER].kind[i] === TILE.BOULDER) return false;
+  if (!(DIGGABLE.has(k) || (up && k === TILE.MINE)) || reserved(w).has(i) || w.layers[LAYER.UNDER].kind[i] === TILE.BOULDER) return false;
   if (w.propSolid[i] && !underMyDesk(w, i)) return false;
   if (w.props.some((p) => !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
   return !occupied(i, bodies);
@@ -271,7 +271,7 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
     // At the tunnel's end, facing back along it (the earth behind the player): up through the
     // floor above. Never just after breaking through ahead (the tunnel is behind them then),
     // so tapping on at the dig face never surfaces by accident.
-    else if (isTunnel(k) && behindIsEarth(w, b) && canDigFloor(w, here, bodies) && !underMyDesk(w, here)) add('digUp', LAYER.GROUND, here, FLOOR_HP);
+    else if (isTunnel(k) && behindIsEarth(w, b) && canDigFloor(w, here, bodies, true) && !underMyDesk(w, here)) add('digUp', LAYER.GROUND, here, FLOOR_HP);
   } else if (layer === LAYER.VENTS) {
     for (const t of [here, ahead]) if (t >= 0 && w.layers[LAYER.VENTS].kind[t] === TILE.GRATE) add('unscrew', LAYER.VENTS, t, GRATE_HP);
   }

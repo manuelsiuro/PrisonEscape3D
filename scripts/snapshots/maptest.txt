@@ -20,6 +20,13 @@ walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell
 guards: 8, 54 stops, 5 asleep at night
 perimeter roofs (grapnel landings): 40 tiles
 vents: 126 duct tiles, 3 grates, 1 ladder; roof tiles 2214
+== san-pancho · picture 1323cfe8
+tiles: asphalt 20, brick 484, concrete 571, detector 2, dirt 220, door 35, grass 352, mine 1024, reinforced 400, road 496, tiled 226, tower 36, wood 230
+zones: canteen 90, cellBlock 40, controlRoom 42, corridor 152, generator 24, guardQuarters 28, gym 81, infirmary 35, inmateCell 208, janitor 18, kitchen 36, laundry 27, library 42, mailroom 27, metalshop 60, minefield 1040, none 877, outside 496, perimeter 20, playerCell 16, rollCall 70, showers 54, solitary 21, walkway 372, woodshop 70, yard 150
+decor: 94 pieces
+walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
+guards: 8, 45 stops, 2 asleep at night
+vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 1948
 == training · picture 9be5d540
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144
 zones: canteen 110, corridor 78, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, woodshop 50, yard 823
