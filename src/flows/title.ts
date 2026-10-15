@@ -9,7 +9,7 @@ import { ask } from '../ui/screens/ask';
 import { showHelp } from '../ui/screens/help';
 import { saveWhen, showSaves } from '../ui/screens/saves';
 import { showSettings } from '../ui/screens/settings';
-import { showTitle } from '../ui/screens/title';
+import { showTitle, type TitleChoice } from '../ui/screens/title';
 import { prisonName, securityOf, showPrisons } from '../ui/screens/prisons';
 import { openPrisons } from '../game/campaign';
 import { applySettings, banner, click, settings, sound, view } from '../play/context';
@@ -24,6 +24,8 @@ import { tutorialFlow } from './tutorial';
 /** The title, and from it into a game (new, continued or loaded) and back, for good. */
 export async function titleFlow() {
   /** A choice made elsewhere (the tutorial's last lesson: play), taken instead of the title's. */
+  /** The title button whose screen was last opened (focused when the title comes back). */
+  let back: TitleChoice | null = null;
   let next: 'play' | null = null;
   for (;;) {
     sound.music('title');
@@ -38,7 +40,7 @@ export async function titleFlow() {
     // Ways out found across the campaign, of all its prisons have.
     const found = PRISONS.reduce((n, p) => n + recordOf(p.id).routes.length, 0);
     const resume = readSave('auto');
-    const choice = again || next
+    const choice: TitleChoice = again || next
       ? 'play'
       : await showTitle(
           {
@@ -48,6 +50,7 @@ export async function titleFlow() {
             saves: ALL_SLOTS.some((k) => readSave(k)),
             tutorial: t('title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
             newcomer: !resume && lessonsDone().length === 0 && !found,
+            focus: back,
             muted: settings.muted,
             toggleSound: () => {
               settings.muted = !settings.muted;
@@ -59,6 +62,8 @@ export async function titleFlow() {
           click,
         );
     next = null;
+    // Back on the title after this choice's screen (closed, or a game over): its button gets the focus.
+    back = choice;
     updateCard?.remove();
     if (choice === 'settings') {
       await showSettings(settings, settingsChanged, click, true);

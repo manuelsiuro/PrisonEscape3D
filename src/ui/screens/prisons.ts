@@ -45,13 +45,10 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
     <p class="card-note">${t('prisons.note')}</p>
     <div class="prison-list">${cards}</div>
   </div>`;
-  // Focus goes back where it was (the Play button) when the list closes.
-  const opener = document.activeElement as HTMLElement | null;
   return new Promise((resolve) => {
     const done = (def: PrisonDef | null) => {
       removeEventListener('keydown', key, true);
       el.remove();
-      if (!def) opener?.focus?.();
       resolve(def);
     };
     const key = (e: KeyboardEvent) => {

@@ -18,6 +18,8 @@ export interface TitleInfo {
   tutorial: string;
   newcomer: boolean;
   muted: boolean;
+  /** The button to focus (the one that opened the screen just closed: Play, Settings…), so a keyboard picks up where it was. */
+  focus?: TitleChoice | null;
   /** Flips sound on or off; returns whether it's now muted. */
   toggleSound: () => boolean;
 }
@@ -99,6 +101,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
       resolve(c);
     };
     document.body.append(el);
+    if (info.focus) el.querySelector<HTMLElement>(`[data-c="${info.focus}"]`)?.focus({ preventScroll: true });
     // The keys' labels follow the keyboard once the browser says which it is (Z Q S D on AZERTY).
     if (!TOUCH) keysReady.then(() => (el.querySelector('.title-keys')!.textContent = t('title.keys')));
   });
