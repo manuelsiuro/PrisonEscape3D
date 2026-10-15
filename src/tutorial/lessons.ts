@@ -229,6 +229,9 @@ export const LESSONS: readonly Lesson[] = [
       clockTo(sim, MORNING);
       place(sim, 42, 22, 13);
       pockets(sim, 'plastic_key_purple', 'light_cutters');
+      // The cutters in hand from the start (the key opens its door from the pockets): at the
+      // fence, the Cut button is there as soon as the player faces it.
+      sim.state.items.hand = 1;
       sim.state.energy = 100;
     },
     steps: [

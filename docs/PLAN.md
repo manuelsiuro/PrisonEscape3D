@@ -386,4 +386,5 @@ real touch feel) and the known limits.
     - "Suspicion" used everywhere for heat;
     - the tu voice kept;
     - shorter meal texts.
+- **Getting out lesson (v1.1.6)**: the lesson starts with the cutters in hand (the key opens its door from the pockets), so the Cut button is there as soon as the player faces the fence; the fence step says to follow the arrows, face the fence and keep Cut (Space) held. A player reported reaching the gate with the key in hand and no way to cut.
 - **Next: P9 Stalag Flucht (v1.2).**
