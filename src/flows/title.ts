@@ -14,6 +14,9 @@ import { applySettings, banner, click, settings, sound, view } from '../play/con
 import { play } from '../play/game';
 import { startGame, takePlayAgain, untilQuit } from '../play/session';
 import { settingsChanged } from '../play/tips';
+import { lessonsDone } from '../game/lessons';
+import { LESSONS } from '../tutorial/lessons';
+import { tutorialFlow } from './tutorial';
 
 // ------------------------------------------------------------------ flows
 /** The title, and from it into a game (new, continued or loaded) and back, for good. */
@@ -32,6 +35,8 @@ export async function titleFlow() {
             record: record.routes.length ? t('title.record', { n: record.routes.length, of: escapesOf(PRISONS[0]).length }) : '',
             resume: resume ? saveWhen(resume) : undefined,
             saves: ALL_SLOTS.some((k) => readSave(k)),
+            tutorial: t('title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
+            newcomer: !resume && lessonsDone().length === 0 && !record.routes.length,
             muted: settings.muted,
             toggleSound: () => {
               settings.muted = !settings.muted;
@@ -49,6 +54,11 @@ export async function titleFlow() {
     }
     if (choice === 'help') {
       await showHelp(click);
+      continue;
+    }
+    if (choice === 'tutorial') {
+      await tutorialFlow();
+      view.setWorld(new Sim(PRISONS[0]).world);
       continue;
     }
     let sim: Sim | null = null;

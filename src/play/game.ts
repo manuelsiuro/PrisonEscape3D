@@ -1,5 +1,6 @@
 import type { Autopilot } from '../sim/ai/autopilot';
 import type { Recorder } from '../sim/Recorder';
+import type { LessonRun } from './lesson';
 
 // ------------------------------------------------------------------ the game
 export interface Game {
@@ -29,6 +30,8 @@ export interface Game {
   guardKeys: number[];
   /** The game in progress was last written to storage successfully. */
   saved: boolean;
+  /** A tutorial lesson (P8+): no saves, no records, its own end. */
+  lesson: LessonRun | null;
 }
 
 /**

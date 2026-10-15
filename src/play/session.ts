@@ -46,6 +46,8 @@ import {
 } from './context';
 import { play, type Game } from './game';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
+import { hideLesson, type LessonRun } from './lesson';
+import { LESSONS } from '../tutorial/lessons';
 
 /**
  * A game from start to end: into it (new or loaded), the saves along the way, pausing, and
@@ -72,7 +74,7 @@ function flashSaved() {
 
 /** Writes the game in progress (never once it's over: an escape ends the run). */
 export function autosave(g: Game, show = false) {
-  if (g.over) return;
+  if (g.over || g.lesson) return;
   g.saved = writeSave('auto', g.rec.sim);
   if (g.saved && show) flashSaved();
 }
@@ -81,7 +83,7 @@ export function autosave(g: Game, show = false) {
  * Into a game: a new one, or one loaded from a save (`resumed`: no day-one welcome, the guide
  * stays away, a "welcome back" instead).
  */
-export function startGame(sim: Sim, resumed = false) {
+export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null) {
   view.setWorld(sim.world);
   // Start a little wide and settle in on the player.
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
@@ -108,6 +110,7 @@ export function startGame(sim: Sim, resumed = false) {
     over: false,
     guardKeys: sim.prison.guards.map((d) => itemNumber(`key_${d.key}`)),
     saved: false,
+    lesson,
   };
   tipsSeen.clear();
   // Loaded asleep or out cold: the veil says which.
@@ -125,6 +128,8 @@ export function startGame(sim: Sim, resumed = false) {
   document.body.classList.add('is-playing');
   const g = play.game;
   const later = (ms: number, f: () => void) => startTimers.push(window.setTimeout(() => play.game === g && !g.paused && f(), ms));
+  // A lesson: its card says what to do; no day one, no guide, no saves.
+  if (lesson) return;
   if (resumed) {
     // Back where they left: the block they're in, and when.
     later(500, () => banner.show(routineName(sim.state.routine), t('toast.loaded', { when: `${t('hud.day', { n: sim.clock.day })} · ${formatTime(sim.clock)}` })));
@@ -173,7 +178,9 @@ export async function pause() {
   autosave(play.game);
   let note = '';
   for (;;) {
-    const choice = await showPause(click, play.game.saved, !play.game.over, note);
+    // A lesson isn't saved: the card says which one it is.
+    const lesson = play.game.lesson;
+    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? t('lesson.of', { n: lesson.index + 1, of: LESSONS.length }) : note);
     note = '';
     if (!play.game) return;
     if (choice === 'settings') {
@@ -202,6 +209,8 @@ export async function pause() {
     }
     break;
   }
+  // Out of a lesson: back to the list of lessons.
+  play.game?.lesson?.finish('quit');
   endGame();
 }
 
@@ -225,6 +234,7 @@ export async function openHelp() {
 export function endGame() {
   if (play.game) autosave(play.game);
   firstDay.stop();
+  hideLesson();
   play.game = null;
   for (const id of startTimers) clearTimeout(id);
   startTimers = [];
@@ -254,7 +264,8 @@ export function endGame() {
 /** Out on the road: the escape screen, then the title. */
 export async function escaped() {
   const g = play.game;
-  if (!g || g.over) return;
+  // A lesson's escape is its last step: the lesson ends it.
+  if (!g || g.over || g.lesson) return;
   g.over = true;
   g.paused = true;
   controls.enabled = false;

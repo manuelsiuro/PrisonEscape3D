@@ -13,6 +13,7 @@ import { updateGuide } from './guide';
 import { keepPlayerClear, updateOverlay } from './overlay';
 import { autosave, escaped } from './session';
 import { markTip, updateFirstDay } from './tips';
+import { lessonEvent, lessonHidden, updateLesson } from './lesson';
 
 const NO_OP: [number, number, number] = [0, 0, 0];
 const USE_OP: [number, number, number] = [OP.USE, 0, 0];
@@ -68,6 +69,7 @@ function stepSim(g: Game, dt: number) {
     // Sound, banners and vibration read the events; the simulation never calls them.
     for (const e of sim.events) {
       announce(e, sim);
+      lessonEvent(g, e);
       // Out on the road: the escape screen.
       if (e.type === 'escaped') escaped();
       // Carried somewhere (solitary, the infirmary, into bed): no slide from the old spot.
@@ -121,5 +123,6 @@ export function frame(now: number) {
   updateOverlay(g, a, tile, busy, held, panel);
   // The first day's guide: what the player has done, read from the game.
   updateFirstDay(g, pickedUp, dt);
+  updateLesson(g, dt, lessonHidden() || st.sleeping || st.ko > 0);
   pickedUp = false;
 }

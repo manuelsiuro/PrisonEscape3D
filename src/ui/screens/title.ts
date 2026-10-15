@@ -3,7 +3,7 @@ import { icon } from '../icons';
 import { t } from '../../i18n';
 import { keysReady } from '../../i18n/keys';
 
-export type TitleChoice = 'continue' | 'play' | 'load' | 'help' | 'settings';
+export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'help' | 'settings';
 
 export interface TitleInfo {
   prisonName: string;
@@ -13,6 +13,9 @@ export interface TitleInfo {
   resume?: string;
   /** Any saved game to load (the game in progress or a slot). */
   saves: boolean;
+  /** The tutorial's progress ("3 of 9 lessons"), and whether it's where a newcomer should start. */
+  tutorial: string;
+  newcomer: boolean;
   muted: boolean;
   /** Flips sound on or off; returns whether it's now muted. */
   toggleSound: () => boolean;
@@ -57,6 +60,11 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         </button>`
             : ''
         }
+        <button class="menu-btn${info.newcomer ? ' suggest' : ''}" data-c="tutorial" style="--tone:#8e4fc4;--tone-2:#6a35a0">
+          <span class="menu-ic">${icon('book', 18)}</span>
+          <span class="menu-text"><span class="menu-label">${t('title.tutorial')}</span><small>${info.tutorial}</small></span>
+          ${icon('chevronRight', 16)}
+        </button>
         <div class="title-row">
           <button class="menu-btn" data-c="help" style="--tone:#3fb07a;--tone-2:#1f8a5a">
             <span class="menu-ic">${icon('help', 18)}</span>

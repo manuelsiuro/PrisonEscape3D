@@ -1,5 +1,6 @@
 import { itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
+import { lessonGoal } from './lesson';
 import { ZONES } from '../content/zones';
 import { findPath, smooth, tileAt } from '../sim/ai/path';
 import { isFloor, placesOf } from '../sim/ai/places';
@@ -85,6 +86,9 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   // A lockdown ends when the guards catch you, wherever you are; solitary and a knockout go
   // nowhere; off the ground floor the player knows their own way.
   if (s.lockdown || s.solitary > 0 || s.ko > 0 || s.layer !== LAYER.GROUND) return null;
+  // A lesson's step that leads somewhere: there.
+  const goal = play.game ? lessonGoal(play.game) : null;
+  if (goal !== null) return (i) => i === goal;
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;

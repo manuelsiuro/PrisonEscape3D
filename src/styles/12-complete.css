@@ -857,3 +857,45 @@ body.touch .coach-skip {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* The tutorial suggested to a newcomer: a soft pulse round its button. */
+.menu-btn.suggest {
+  box-shadow: var(--shadow), inset 0 0 0 2px color-mix(in srgb, var(--tone) 70%, transparent);
+  animation: suggest 2.4s var(--ease) 1.2s infinite;
+}
+
+@keyframes suggest {
+  0%,
+  70%,
+  100% {
+    transform: none;
+  }
+  80% {
+    transform: scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-btn.suggest {
+    animation: none;
+  }
+}
+
+/* A lesson's line wraps (two lines at most) rather than cutting short on narrow phones. */
+.lesson-text small {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Landscape phones: a lesson's card (two lines, often) sits under the routine pill on the
+   left, clear of the heat and the play in the middle. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .coach.lesson-coach {
+    top: 108px;
+    right: auto;
+    left: 0;
+    max-width: min(330px, 36vw);
+  }
+}
