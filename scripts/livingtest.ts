@@ -191,3 +191,18 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   // (A shower gives 10 more in that time.)
   check(bot.st.energy - 30 <= 4 && !bot.sim.showering, `out cold under a shower: no shower (+${bot.st.energy - 30})`);
 }
+{
+  // Someone sitting on a yard bench: facing them is a talk, not a seat.
+  const bot = new Bot(CENTER_PERKS, 10);
+  check(bot.routineUntil(1, 10 * 60 + 30), 'free time for a talk');
+  const bench = bot.sim.world.props[propAt(bot.sim, 'bench')];
+  const m = bot.st.inmates[0];
+  m.body.x = bench.x * UNIT + UNIT / 2;
+  m.body.z = bench.z * UNIT + UNIT / 2;
+  m.goal = bench.z * MAP_W + bench.x;
+  m.path = [];
+  m.wait = 1000;
+  at(bot, (bench.z + 1) * MAP_W + bench.x, DIR.NORTH);
+  bot.act();
+  check(bot.st.talk === 0 && bot.st.seat === -1, 'facing someone on a bench: a talk');
+}

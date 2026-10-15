@@ -28,7 +28,8 @@ import { Autopilot } from '../src/sim/ai/autopilot';
 import { nearestDir } from '../src/sim/ai/path';
 import { placesOf } from '../src/sim/ai/places';
 import { command, OP, TALK } from '../src/sim/command';
-import { Sim, type SimEvent } from '../src/sim/Sim';
+import { RECIPES } from '../src/content/recipes';
+import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { clockAt, formatTime } from '../src/sim/systems/clock';
 import { discountOf, FAVOR, FAVOR_STATE, HOLDER, jobRooms, priceOf, stationTarget } from '../src/sim/systems/economy';
 import { GUARD, type Guard } from '../src/sim/systems/guards';
@@ -738,4 +739,49 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   st.player.facing = 13;
   a.op(OP.JOB, 0);
   check(sim.playerJob < 0 && st.puddles.length === 0 && Object.keys(st.machines).length === 0, 'quitting clears the work on the go');
+}
+
+// ------------------------------------------------------------------ learning recipes (P8+)
+{
+  const a = arena(stepAt(1, 10, 30), 31);
+  const { sim, st } = a;
+  // Whatever passes through the pockets is something carried (the handbook's mysteries show it).
+  st.items.inv[0] = slot(n('magazine'));
+  a.step();
+  check(st.carried.includes(n('magazine')), 'an item in the pockets is remembered as carried');
+  // Studying past a multiple of five: the simplest recipe within reach, told.
+  put(st.player, 17, 31);
+  st.player.facing = 13;
+  st.items.int = 44;
+  st.energy = 100;
+  a.op(OP.INTERACT);
+  a.op(OP.TRAIN, 0);
+  for (let k = 0; k < 60 && st.items.int === 44; k++) a.op(OP.TRAIN, 1 + (k % 2));
+  const first = st.tips[0];
+  check(st.items.int === 46 && st.tips.length === 1 && RECIPES[first].int <= 46 && a.has('tip', (e) => e.type === 'tip' && e.who === -1), `studying past 45 tells a recipe (${RECIPES[first]?.result})`);
+  check(!RECIPES.some((r, k) => r.int < RECIPES[first].int && !st.items.known.includes(k)), 'the simplest one first');
+  a.op(OP.TRAIN, 3);
+  // An inmate who likes the player: a recipe once a day.
+  const who = 0;
+  st.inmates[who].opinion = 50;
+  check(talkTo(a, who), 'talking for a tip');
+  a.op(OP.TALK, TALK.TIP);
+  check(st.tips.length === 1 && a.has('refused', (e) => e.type === 'refused' && e.why === 'tipOpinion'), 'under 60 opinion: no tip');
+  st.inmates[who].opinion = 70;
+  a.op(OP.TALK, TALK.TIP);
+  check(st.tips.length === 2 && a.has('tip', (e) => e.type === 'tip' && e.who === who), 'at 70: a recipe tip');
+  a.op(OP.TALK, TALK.TIP);
+  check(st.tips.length === 2 && a.has('refused', (e) => e.type === 'refused' && e.why === 'tipToday'), 'once a day');
+  // Saved and loaded: what was carried and told stays.
+  const back = new Sim(CENTER_PERKS, 9);
+  back.restore(JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot);
+  check(back.state.tips.join() === st.tips.join() && back.state.carried.join() === st.carried.join() && back.state.tipDay[who] === 1, 'tips survive a save');
+  // A save from before (no such fields): empty lists.
+  const old = JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot;
+  delete (old.state as Partial<typeof old.state>).carried;
+  delete (old.state as Partial<typeof old.state>).tips;
+  delete (old.state as Partial<typeof old.state>).tipDay;
+  back.restore(old);
+  check(back.state.tips.length === 0 && back.state.carried.length === 0, 'an older save loads with nothing told');
+  console.log(`recipes: studying told ${RECIPES[first].result}, an inmate told ${RECIPES[st.tips[1]].result}`);
 }

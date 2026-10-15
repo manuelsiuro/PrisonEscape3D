@@ -106,6 +106,7 @@ Sources:
 | Fighting back (since v0.7.1) | "Guards punish fights" | Seen hitting an inmate **who is already after the player** (an ambush, a fight it started): a **scuffle, +10% heat a blow**. Seen hitting someone calm: 100%, as since P5 |
 | Meals (P8+, v1.1.0) | §2: "grab a food tray (+35%)"; until v1.1 +35 on stepping into the canteen | Attendance still counts on arrival; the **+35 comes from eating**: seated at a canteen table during breakfast or dinner, the tray takes **3 s** (the view shows it), once a meal |
 | Showers and sitting (P8+, v1.1.0) | §3.1: "+2%/s standing under a running shower", "chair +1.5/s"; until v1.1 +20 on arrival | Standing still under a shower in the showers block: **+1 energy every 10 steps**. **Sitting** on a canteen seat, yard bench or chair (the action button, facing it; a move or the button gets up): **+1 every 13 steps**; an **infirmary bed** to lie on: the same, and health at the sleeping pace. Seats give way to anything else in reach unless straight ahead (a chair stands where its desk is searched from). Yard benches are stepped over like canteen seats |
+| Learning recipes (P8+, v1.1.7) | §8: a recipe is recorded in the handbook once crafted; nothing says how a player finds one | Crafting by trial still records recipes. The **handbook also lists every recipe within the player's Intellect as a mystery**: result hidden, each ingredient shown once the player has carried it (pockets, weapon, outfit), the nearest to known first, and how many more need more Intellect. **Tips** tell a recipe outright (the simplest unknown within Intellect): **studying** each time Intellect passes a multiple of 5, and **an inmate at opinion 60+**, once a day each ("Any tips?" in the talk). Someone sitting on the seat ahead is a talk, not the seat |
 | Saving (P8) | §2: "sleep in bed to save progress"; tech_plan: autosave at 08:00 plus manual Save/Load | **Both**: the game in progress is saved on falling asleep in bed, at 08:00, and whenever the game is paused, hidden or left (a phone may close a background tab at any time); **Continue** on the title resumes it. Three **slots** take a save by hand from the pause card; the title loads any of them. A new game asks before replacing the one in progress; an escape ends the run (its save is deleted, slots stay) |
 | Followers | Recruit up to 2 at 80+ | Recruited at **opinion 80+**, at most 2; they keep a step and a half behind, and go for a **chasing guard or an angry inmate** within 6 tiles, landing their own blows (they can knock guards out; guards don't target them). Hitting one, Lights Out, or the player being caught or knocked out ends it. Inmates have **nicknames** (the same in every language) |
 
@@ -387,4 +388,9 @@ real touch feel) and the known limits.
     - the tu voice kept;
     - shorter meal texts.
 - **Getting out lesson (v1.1.6)**: the lesson starts with the cutters in hand (the key opens its door from the pockets), so the Cut button is there as soon as the player faces the fence; the fence step says to follow the arrows, face the fence and keep Cut (Space) held. A player reported reaching the gate with the key in hand and no way to cut.
+- **Learning recipes (v1.1.7)**, see §2:
+  - the handbook's "Still to discover" mysteries;
+  - recipe tips from studying and from inmates who like the player;
+  - state `carried`, `tips` and `tipDay` added at the end;
+  - a player facing someone seated on a bench talks to them instead of sitting (the mailman now delivers to seated inmates).
 - **Next: P9 Stalag Flucht (v1.2).**

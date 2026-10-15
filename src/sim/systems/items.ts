@@ -255,7 +255,10 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
       // (Directions are scaled to a tile: three quarters of one ahead.)
       const ax = Math.floor((b.x + (fx * UNIT * 0.75) / 1024) / UNIT);
       const az = Math.floor((b.z + (fz * UNIT * 0.75) / 1024) / UNIT);
-      sc += ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d ? -UNIT / 2 : UNIT / 4;
+      const ahead = ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d;
+      // Someone sitting on the tile ahead: they're who the player faces (a talk), not the seat.
+      if (ahead && people.some((o, who) => who < talkers && o.ko <= 0 && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
+      sc += ahead ? -UNIT / 2 : UNIT / 4;
     }
     if (sc < bestScore) {
       bestScore = sc;

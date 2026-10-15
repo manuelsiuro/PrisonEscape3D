@@ -115,6 +115,8 @@ export type SimEvent =
   | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
   | { type: 'meal' }
+  /** A recipe told to the player: by studying (who -1) or by an inmate. */
+  | { type: 'tip'; recipe: number; who: number }
   | { type: 'rep' }
   | { type: 'trained'; attr: Attr; value: number }
   | { type: 'cantTrain'; why: 'tired' | 'max' }
@@ -139,7 +141,7 @@ export type SimEvent =
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -265,6 +267,12 @@ export interface SimState {
   seat: number;
   /** Steps spent eating this meal (GDD §2): MEAL_STEPS is a meal eaten. */
   eaten: number;
+  /** Items the player has carried (item numbers): the handbook shows them in recipes not yet known. */
+  carried: number[];
+  /** Recipes the player was told (RECIPES indexes), by studying or by an inmate. */
+  tips: number[];
+  /** The day each inmate last told the player a recipe (by inmate index; 0 never). */
+  tipDay: number[];
 }
 
 export interface Snapshot {
@@ -353,6 +361,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     via: 0,
     seat: -1,
     eaten: 0,
+    carried: [],
+    tips: [],
+    tipDay: [],
   };
 }
 

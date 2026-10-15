@@ -1,6 +1,7 @@
 import { itemDef, ITEMS } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { OP, SLOT } from '../sim/command';
+import { ingredientOptions } from '../sim/systems/recipes';
 import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, t, type Key } from '../i18n';
@@ -15,6 +16,9 @@ export interface ItemsView {
   boxHidden: number;
   /** The open container is the player's own (their desk: the hidden compartment comes first). */
   boxMine: boolean;
+  /** Items the player has carried, and recipes they were told (the handbook's mysteries and tips). */
+  carried: readonly number[];
+  tips: readonly number[];
   /** What the action button would do now: a verb ("Search") and what to ("your desk"), or null. */
   action: { verb: string; what: string } | null;
   sleeping: boolean;
@@ -414,17 +418,7 @@ export class ItemsUI {
     const bench = [0, 1, 2]
       .map((k) => (this.bench[k] !== undefined ? `<button class="slot filled" data-bench="${k}">${slotInner(it.inv[this.bench[k]])}</button>` : `<i class="slot empty"></i>`))
       .join(`<i class="bench-plus">+</i>`);
-    const book = it.known.length
-      ? it.known
-          .map((k) => {
-            const rec = RECIPES[k];
-            const res = ITEMS.findIndex((d) => d.id === rec.result) + 1;
-            const have = !!ingredientSlots(it, k);
-            const ings = rec.ingredients.map((ing) => `<img src="${itemIcons()[ITEMS.findIndex((d) => d.id === ing.split('|')[0]) + 1]}" alt="">`).join('');
-            return `<button class="book-row${have ? '' : ' missing'}" data-recipe="${k}"><img src="${itemIcons()[res]}" alt=""><span><b>${itemName(res)}</b><em>${ings}</em></span><small>${t('craft.int', { n: rec.int })}</small></button>`;
-          })
-          .join('')
-      : `<p class="book-empty">${t('craft.handbookEmpty')}</p>`;
+    const book = this.drawBook(it);
     this.craft.innerHTML = `<div class="panel-head"><div class="tabs"><button data-tab="bench" class="${this.tab === 'bench' ? 'on' : ''}">${icon('hammer', 16)}${t('craft.title')}</button><button data-tab="book" class="${this.tab === 'book' ? 'on' : ''}">${icon('book', 16)}${t('craft.handbook')}</button></div><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${
         this.tab === 'bench'
@@ -434,6 +428,42 @@ export class ItemsUI {
         <p class="bench-int">${t('craft.int', { n: it.int })}</p>`
           : `<div class="book">${book}</div>`
       }`;
+  }
+
+  /**
+   * The handbook: recipes crafted, then recipes the player was told (a tip), then the mysteries
+   * (P8+): every other recipe within their Intellect, its result hidden, each ingredient shown
+   * once they've carried it (the most nearly known first), and how many more need more Intellect.
+   */
+  private drawBook(it: ItemState): string {
+    const v = this.view!;
+    const icons = itemIcons();
+    const row = (k: number, tip: boolean) => {
+      const rec = RECIPES[k];
+      const res = ITEMS.findIndex((d) => d.id === rec.result) + 1;
+      const have = !!ingredientSlots(it, k);
+      const ings = rec.ingredients.map((_, j) => `<img src="${icons[ingredientOptions(k, j)[0]]}" alt="">`).join('');
+      return `<button class="book-row${have ? '' : ' missing'}" data-recipe="${k}"><img src="${icons[res]}" alt=""><span><b>${itemName(res)}${tip ? `<i class="book-tag">${t('craft.tip')}</i>` : ''}</b><em>${ings}</em></span><small>${t('craft.int', { n: rec.int })}</small></button>`;
+    };
+    const tips = v.tips.filter((k) => !it.known.includes(k));
+    const seen = (k: number, j: number) => ingredientOptions(k, j).find((n) => v.carried.includes(n)) ?? 0;
+    const mysteries = RECIPES.map((rec, k) => ({ rec, k, n: rec.ingredients.filter((_, j) => seen(k, j)).length }))
+      .filter(({ rec, k }) => rec.int <= it.int && !it.known.includes(k) && !tips.includes(k))
+      .sort((a, b) => b.n / b.rec.ingredients.length - a.n / a.rec.ingredients.length || a.k - b.k)
+      .map(({ rec, k, n }) => {
+        const all = n === rec.ingredients.length;
+        const have = all && !!ingredientSlots(it, k);
+        const ings = rec.ingredients.map((_, j) => (seen(k, j) ? `<img src="${icons[seen(k, j)]}" alt="">` : `<i class="book-q">?</i>`)).join('');
+        return `<button class="book-row mystery${all && !have ? ' missing' : ''}" ${all ? `data-recipe="${k}"` : 'disabled'} aria-label="${t('craft.unknown')}"><i class="book-unknown">?</i><span><b>${t('craft.unknown')}</b><em>${ings}</em></span><small>${t('craft.int', { n: rec.int })}</small></button>`;
+      });
+    const locked = RECIPES.filter((rec, k) => rec.int > it.int && !it.known.includes(k) && !tips.includes(k)).length;
+    return [
+      ...it.known.map((k) => row(k, false)),
+      ...tips.map((k) => row(k, true)),
+      mysteries.length ? `<div class="box-label book-head">${icon('help', 14)}<span>${t('craft.mysteries')}</span><em>${t('craft.mysteriesNote')}</em></div>` : '',
+      ...mysteries,
+      locked ? `<p class="book-more">${icon('lock', 14)}${t('craft.moreInt', { n: locked })}</p>` : '',
+    ].join('');
   }
 
   /** The item strip: what's picked or menu'd, with what can be done with it. */

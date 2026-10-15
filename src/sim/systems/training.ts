@@ -2,11 +2,12 @@
 import { nearestDir as faceTo } from '../ai/path';
 import type { SimContext } from '../context';
 import { type Attr, ATTRS } from '../state';
-import { ATTR_MAX, GYM_ENERGY, REP_DRAIN_STEPS, REP_GAIN, STUDY_ENERGY, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
+import { ATTR_MAX, GYM_ENERGY, REP_DRAIN_STEPS, REP_GAIN, STUDY_ENERGY, STUDY_TIP_EVERY, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
 import { LAYER } from '../world/World';
 import { closeBox } from './actions';
 import type { FixtureUse } from './items';
+import { revealTip } from './recipes';
 import { endTalk } from './social';
 
 export function attr(sim: SimContext, a: Attr): number {
@@ -72,10 +73,13 @@ export function rep(sim: SimContext, side: number) {
   if (s.reps < 100) return;
   const a = trainsOn(sim, s.train)!;
   s.reps = 0;
-  setAttr(sim, a, Math.min(ATTR_MAX, attr(sim, a) + TRAIN_GAIN));
+  const was = attr(sim, a);
+  setAttr(sim, a, Math.min(ATTR_MAX, was + TRAIN_GAIN));
   s.trained |= 1 << ATTRS.indexOf(a);
   s.energy = Math.max(0, s.energy - (a === 'int' ? STUDY_ENERGY : GYM_ENERGY));
   sim.events.push({ type: 'trained', attr: a, value: attr(sim, a) });
+  // Studying past a multiple of STUDY_TIP_EVERY: a recipe in the books (P8+).
+  if (a === 'int' && Math.floor(attr(sim, a) / STUDY_TIP_EVERY) > Math.floor(was / STUDY_TIP_EVERY)) revealTip(sim);
   // Spent, or as good as it gets: off the equipment.
   if (s.energy < TIRED || attr(sim, a) >= ATTR_MAX) {
     sim.events.push({ type: 'cantTrain', why: s.energy < TIRED ? 'tired' : 'max' });

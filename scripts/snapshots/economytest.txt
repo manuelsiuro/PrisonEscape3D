@@ -19,7 +19,7 @@ worker bot (laundry, 3 days):
 janitor: day 1 12:38 +$35 (wage)
 kitchen: day 1 12:22 +$40 (wage)
 woodshop: day 1 12:13 +$50 (wage)
-mailman: day 1 13:46 +$55 (wage)
+mailman: day 1 12:57 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 5 hired: laundry
@@ -28,3 +28,4 @@ training: 3 sets of weights → STR 46, energy 100 → 65
 speed: 3.59 tiles a second at SPD 40, 4.30 at 100
 merchant: sold foil at $15, $8 to a friend
 follower: at most 1.8 tiles behind on a walk down the corridor
+recipes: studying told sheet_rope, an inmate told poster

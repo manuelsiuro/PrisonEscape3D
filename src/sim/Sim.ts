@@ -10,6 +10,7 @@ import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
 import { stepGuards, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
+import { noteCarried } from './systems/recipes';
 import { stockSlots } from './systems/items';
 import { clockIn, spreadCoins, station } from './systems/jobs';
 import { bedCheck, dummyInBed, outOfReach, release, report, wakeUp } from './systems/justice';
@@ -107,6 +108,7 @@ export class Sim {
     grudges(this);
     keepTraining(this);
     keepSeat(this);
+    noteCarried(this);
     regenerate(this);
     shower(this);
     // Solitary: time served (and potatoes peeled) sets the player free.

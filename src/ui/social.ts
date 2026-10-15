@@ -5,7 +5,7 @@ import { OP, TALK } from '../sim/command';
 import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_KINDS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, priceOf } from '../sim/systems/economy';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
-import { MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW } from '../sim/tuning';
+import { MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TIP_OPINION } from '../sim/tuning';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, t, type Key } from '../i18n';
 import { h, setText, TOUCH } from './dom';
@@ -96,7 +96,7 @@ export class TalkPanel {
     const shop = merchant >= 0 ? s.shops[merchant] : null;
     const favor = s.favors.find((f) => f.by === who);
     const inv = s.items.inv.slice(0, HOTBAR);
-    const key = [who, m.opinion, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), currentLang()].join('|');
+    const key = [who, m.opinion, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, sim.clock.day, currentLang()].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -159,6 +159,10 @@ export class TalkPanel {
     const cashBtns = CASH_GIFTS.map((d) => `<button class="cash-btn" data-act="${TALK.GIFT_CASH}" data-arg="${d}" ${s.cash < d ? 'disabled' : ''}>$${d}<i>+${cashOpinion(d)}</i></button>`).join('');
     const giftHtml = `<section class="talk-gift"><div class="box-label">${icon('gift', 14)}<span>${t('talk.gifts')}</span><em>${t('talk.giftsNote')}</em></div>
       ${gifts ? `<div class="slot-grid gift-grid">${gifts}</div>` : ''}<div class="cash-row">${cashBtns}</div></section>`;
+    // A recipe tip (P8+): from those who like the player enough, once a day each.
+    const tipped = (s.tipDay[who] ?? 0) === sim.clock.day;
+    const tipOk = m.opinion >= TIP_OPINION && !tipped;
+    const tipHtml = `<div class="talk-foot talk-tip"><button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span></div>`;
     // Recruiting (GDD §10.3): from 80 opinion, two at most.
     let foot: string;
     if (following) foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t('talk.followingNote')}</span>`;
@@ -169,7 +173,7 @@ export class TalkPanel {
     }
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       <div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${shopHtml}${giftHtml}<div class="talk-foot">${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${shopHtml}${giftHtml}${tipHtml}<div class="talk-foot">${foot}</div>`;
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));

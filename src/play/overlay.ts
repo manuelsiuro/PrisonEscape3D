@@ -42,7 +42,7 @@ import { seenTip } from './tips';
  * music and ambience that follow the game.
  */
 
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, action: null, sleeping: false, deskTunnel: false, study: false };
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], action: null, sleeping: false, deskTunnel: false, study: false };
 const GET_UP = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, takeoverLeft: null };
@@ -97,6 +97,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   v.boxTitle = it.open >= 0 ? boxTitle(sim, it.open) : '';
   v.boxHidden = box?.hidden ?? 0;
   v.boxMine = !!box?.mine;
+  v.carried = st.carried;
+  v.tips = st.tips;
   if (st.solitary > 0) {
     PEEL_ACTION.verb = t('act.peel');
     PEEL_ACTION.what = t('act.potato');

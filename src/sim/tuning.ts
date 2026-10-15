@@ -126,6 +126,10 @@ export const TALK_REACH = Math.round(1.4 * UNIT);
 export const OPINION_START = 50;
 export const OPINION_LOW = 25;
 export const OPINION_HIGH = 80;
+/** An inmate tells the player a recipe (once a day) from this opinion up (P8+, PLAN §2). */
+export const TIP_OPINION = 60;
+/** Studying tells the player a recipe each time Intellect passes a multiple of this. */
+export const STUDY_TIP_EVERY = 5;
 export const FAVOR_OPINION = 15;
 export const HIT_OPINION = 8;
 export const KO_OPINION = 15;

@@ -9,7 +9,7 @@ import { TALK } from '../command';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import type { Refusal } from '../state';
-import { AMBUSH_ODDS, AMBUSH_RANGE, ANGRY_STEPS, BUY_OPINION, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, UNIT } from '../tuning';
+import { AMBUSH_ODDS, AMBUSH_RANGE, ANGRY_STEPS, BUY_OPINION, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { closeBox } from './actions';
 import { dist2, type Fighter, personOf } from './combat';
@@ -19,6 +19,8 @@ import { DOING, type Inmate, inmateZone, type Social, STAND_OFF } from './inmate
 import { HOTBAR, itemOf, pocketOf, slot, usesOf } from './items';
 import { quotaUp } from './jobs';
 import { seatSpot } from './rest';
+import { clockAt } from './clock';
+import { revealTip, tippedToday } from './recipes';
 import { stopTraining } from './training';
 
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
@@ -159,6 +161,14 @@ export function talkOp(sim: SimContext, a: number, b: number) {
       return;
     case TALK.DISMISS:
       dismiss(sim, who);
+      return;
+    case TALK.TIP:
+      // A recipe they know (P8+): from those who like the player, once a day each.
+      if (m.opinion < TIP_OPINION) return refuse(sim, 'tipOpinion');
+      if (tippedToday(sim, who)) return refuse(sim, 'tipToday');
+      if (!revealTip(sim, who)) return refuse(sim, 'noTips');
+      while (s.tipDay.length <= who) s.tipDay.push(0);
+      s.tipDay[who] = clockAt(s.step).day;
       return;
   }
 }

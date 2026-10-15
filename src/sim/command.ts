@@ -36,7 +36,7 @@ export const OP = {
 } as const;
 
 /** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given). Never renumber. */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7 } as const;
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8 } as const;
 
 /** Slot addresses for OP.MOVE / DROP / EQUIP: 0–5 the hotbar, then the weapon, the outfit, then the open container's slots. */
 export const SLOT = { HOTBAR: 0, WEAPON: 6, OUTFIT: 7, CONTAINER: 8 } as const;

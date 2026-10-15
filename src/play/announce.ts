@@ -1,4 +1,6 @@
 import { buzz } from '../app/haptics';
+import { itemNumber } from '../content/items';
+import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -162,6 +164,14 @@ export function announce(e: SimEvent, sim: Sim) {
       itemsUI.toast(t('craft.made', { item: itemName(e.item) }));
       if (e.first) banner.toast(t('craft.newRecipe'), 'good');
       break;
+    case 'tip': {
+      // A recipe told (P8+): what it makes, from whom; the handbook has it now.
+      const item = itemName(itemNumber(RECIPES[e.recipe].result));
+      sound.chime();
+      buzz('attended');
+      banner.toast(e.who >= 0 ? t('toast.tipTalk', { who: inmateName(sim, e.who), item }) : t('toast.tipStudy', { item }), 'good', 5000);
+      break;
+    }
     case 'sleep':
       sound.click();
       if (e.on) sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
