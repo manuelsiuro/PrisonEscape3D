@@ -120,7 +120,7 @@
   → out day 1 23:24 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
 == san-pancho: supply road gate
   day 1 23:26 ESCAPED (gate)
-  saved and loaded at day 1 15:43 (yard) resumes, day 1 21:53 (playerCell) resumes, day 1 23:08 (playerCell) resumes, day 1 23:22 (controlRoom) resumes
+  saved and loaded at day 1 15:43 (yard) resumes, day 1 21:54 (playerCell) resumes, day 1 23:08 (playerCell) resumes, day 1 23:22 (controlRoom) resumes
   → out day 1 23:26 by gate; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 46/150, guards down 8/8, xxxxxxxx
 == san-pancho: takeover

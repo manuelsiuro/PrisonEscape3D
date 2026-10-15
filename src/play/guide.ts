@@ -1,5 +1,6 @@
 import { itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
+import { t } from '../i18n';
 import { lessonGoal } from './lesson';
 import { ZONES } from '../content/zones';
 import { findPath, smooth, tileAt } from '../sim/ai/path';
@@ -12,7 +13,7 @@ import { itemOf, usesOf } from '../sim/systems/items';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { lockList } from './buttons';
-import { hint, sound, view } from './context';
+import { banner, hint, sound, view } from './context';
 import { play, sendOp, type Game } from './game';
 import { firstDay, markTip } from './tips';
 
@@ -60,7 +61,8 @@ export function onTap(cx: number, cy: number) {
     for (let dx = -1; dx <= 1; dx++) {
       const x = tx + dx;
       const z = tz + dz;
-      if (!w.inside(x, z) || w.blocked(x, z, game.rec.sim.state.layer)) continue;
+      // Never onto a mine (P11): the route would refuse it anyway.
+      if (!w.inside(x, z) || w.routeGrid(game.rec.sim.state.layer)[z * MAP_W + x]) continue;
       const d = (x + 0.5 - p.x) ** 2 + (z + 0.5 - p.z) ** 2;
       if (d < bestD) {
         bestD = d;
@@ -68,7 +70,11 @@ export function onTap(cx: number, cy: number) {
       }
     }
   }
-  if (best < 0) return;
+  if (best < 0) {
+    // A tap out in the minefield: say why nothing happens.
+    if (sim.state.layer === LAYER.GROUND && w.inside(tx, tz) && w.ground.kind[tz * MAP_W + tx] === TILE.MINE) banner.toast(t('toast.minefield'), 'bad', 3500);
+    return;
+  }
   game.pilot.goTo(best);
   sound.click();
   if (hint.visible) {

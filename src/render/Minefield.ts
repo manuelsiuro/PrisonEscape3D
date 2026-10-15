@@ -63,8 +63,8 @@ export class Minefield {
     const lidTiles = tiles.filter((i) => hash(i, 1) < 0.42);
     if (tiles.length) {
       this.mounds = new THREE.InstancedMesh(
-        new THREE.SphereGeometry(0.2, 9, 4, 0, Math.PI * 2, 0, Math.PI / 2),
-        new THREE.MeshStandardMaterial({ color: 0xa47e50, roughness: 1 }),
+        new THREE.SphereGeometry(0.15, 9, 4, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: 0xb8915e, roughness: 1 }),
         tiles.length,
       );
       tiles.forEach((i, k) => {
@@ -72,7 +72,7 @@ export class Minefield {
         const s = 0.85 + hash(i, 2) * 0.35;
         this.m4
           .makeRotationY(hash(i, 3) * Math.PI)
-          .scale(new THREE.Vector3(s * 1.2, 0.28, s))
+          .scale(new THREE.Vector3(s * 1.1, 0.3, s))
           .setPosition((i % MAP_W) + 0.3 + hash(i, 4) * 0.4, 0, Math.floor(i / MAP_W) + 0.3 + hash(i, 5) * 0.4);
         this.mounds!.setMatrixAt(k, this.m4);
       });

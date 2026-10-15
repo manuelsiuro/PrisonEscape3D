@@ -6,3 +6,5 @@ digging up under the minefield sets the mine off
 supply road: red through the control room and the inner wall, green through the gate; 21 tiles to the road, none of them mined
 snipers: on duty day and night
 lawless: three grudges from day 1; a free-time ambush after 42 s (never at Center Perks)
+grudges settled: 2 ambushes, 2 knockouts in three days, each by a different inmate, never twice
+walkway cameras: 25% of the walkway watched over a sweep

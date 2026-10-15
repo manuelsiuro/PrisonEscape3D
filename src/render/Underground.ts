@@ -37,14 +37,17 @@ export class Underground {
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       // The map above, faintly: buildings' footprints and walls, fences, roads, grass.
       const k = g[i];
+      // The minefield above (P11) in a warning red: come up there and a mine goes off.
       const tint =
-        k === TILE.BRICK || k === TILE.REINFORCED
+        k === TILE.MINE
+          ? 0xc8735a
+          : k === TILE.BRICK || k === TILE.REINFORCED
           ? 0x6f6258
           : k === TILE.FENCE || k === TILE.ELECTRIC
             ? 0xa0684a
             : k === TILE.ROAD
               ? 0x8c8a86
-              : k === TILE.GRASS || k === TILE.DIRT || k === TILE.MINE
+              : k === TILE.GRASS || k === TILE.DIRT
                 ? 0xb4a888
                 : TILE_INFO[k].outdoor
                   ? 0xa89c88

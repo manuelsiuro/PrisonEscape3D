@@ -10,7 +10,7 @@ import { lineOfSight } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import { SPOT, WAKE } from '../state';
-import { ANGRY_STEPS, CHASE_HEAT, GUARD_SWING_STEPS, HIT_OPINION, INMATE_SWING_STEPS, KO_OPINION, KO_STEPS, LOCK_KEEP, MELEE_REACH, THROW_RANGE } from '../tuning';
+import { ANGRY_STEPS, CHASE_HEAT, GRUDGE_SETTLED, GUARD_SWING_STEPS, HIT_OPINION, INMATE_SWING_STEPS, KO_OPINION, KO_STEPS, LOCK_KEEP, MELEE_REACH, THROW_RANGE } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';
 import { closeBox } from './actions';
@@ -334,7 +334,12 @@ export function hurt(sim: SimContext, dmg: number, by: number) {
   if (s.health > 0) return;
   // Put down by a guard: caught (solitary or the infirmary). By anyone else: the infirmary.
   if (by >= 0 && isGuard(s, by)) caught(sim);
-  else floored(sim);
+  else {
+    // An inmate who put the player down has settled its score: the grudge is spent (beaten, it would hate them all the more).
+    const m = by >= 0 ? s.inmates[by] : undefined;
+    if (m && m.opinion < GRUDGE_SETTLED) changeOpinion(sim, by, GRUDGE_SETTLED - m.opinion);
+    floored(sim);
+  }
 }
 
 /** Knocked out by an inmate or a cave-in: carried to the infirmary (contraband taken, as after a capture). */

@@ -17,14 +17,16 @@
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { ROUTINE } from '../src/content/routine';
+import { ZONES } from '../src/content/zones';
 import { findPath } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
 import { WAKE } from '../src/sim/state';
 import { maxHealth } from '../src/sim/systems/combat';
 import { snipersOnDuty } from '../src/sim/systems/power';
+import { cameraSees } from '../src/sim/systems/security';
 import { toolTarget } from '../src/sim/systems/structure';
 import { slot } from '../src/sim/systems/items';
-import { KO_STEPS, MINE_DAMAGE, STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
+import { CAMERA_TURN_STEPS, KO_STEPS, MINE_DAMAGE, STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { KEY, TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { Bot, DIR, n, tileOf } from './bots';
@@ -208,5 +210,43 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   const there = ambush(cpBot);
   check(there < 0, 'at Center Perks, never in free time');
   console.log(`lawless: three grudges from day 1; a free-time ambush after ${(here / 20).toFixed(0)} s (never at Center Perks)`);
+}
+
+// ------------------------------------------------------------------ a score settled
+{
+  // A player who never hits back, three days of the routine: a grudge-bearer that jumps them and puts them down is over it.
+  const bot = new Bot(SAN_PANCHO, 9);
+  const st = bot.st;
+  const by = new Set<number>();
+  const hurt = bot.sim.step.bind(bot.sim);
+  bot.sim.step = (cmd: number) => {
+    hurt(cmd);
+    for (const e of bot.sim.events) if (e.type === 'hurt' && e.by >= 0 && e.by < st.inmates.length && st.health === 0) by.add(e.by);
+  };
+  bot.routineUntil(4, 8 * 60);
+  const floored = bot.events.filter((e) => e.type === 'floored').length;
+  const ambushes = bot.events.filter((e) => e.type === 'ambush').length;
+  check(floored >= 1 && floored <= 3 && by.size === floored && [...by].every((k) => st.inmates[k].opinion >= 35), `whoever put the player down has spent its grudge (${floored} times floored by ${[...by].map((k) => `#${k} now ${st.inmates[k].opinion}`).join(', ')})`);
+  console.log(`grudges settled: ${ambushes} ambushes, ${floored} knockouts in three days, each by a different inmate, never twice`);
+}
+
+// ------------------------------------------------------------------ the cameras on the walkway
+{
+  const bot = new Bot(SAN_PANCHO, 10);
+  const w = bot.sim.world;
+  const cams = SAN_PANCHO.cameras!;
+  let seen = 0;
+  let all = 0;
+  for (let i = 0; i < MAP_W * MAP_H; i++) {
+    if (w.ground.zone[i] !== ZONES.indexOf('walkway') || w.ground.kind[i] !== TILE.GRASS) continue;
+    all++;
+    const at = { x: (i % MAP_W) * UNIT + UNIT / 2, z: Math.floor(i / MAP_W) * UNIT + UNIT / 2 };
+    let hit = false;
+    for (let step = 0; step < 8 * CAMERA_TURN_STEPS && !hit; step += CAMERA_TURN_STEPS / 4) hit = cams.some((c, k) => cameraSees(w, c, k, step, at));
+    if (hit) seen++;
+  }
+  const pct = Math.round((seen / all) * 100);
+  check(pct >= 20, `the walkway's corner cameras watch its corners and a stretch of each side (${pct}%; the four guards walk the rest)`);
+  console.log(`walkway cameras: ${pct}% of the walkway watched over a sweep`);
 }
 

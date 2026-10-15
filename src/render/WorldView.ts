@@ -150,7 +150,9 @@ export class WorldView {
   /** Brick walls (chipped through, they hide: `wallAt`), and reinforced concrete in its own panels, which nothing breaks. */
   private buildWalls() {
     const geo = new THREE.BoxGeometry(1, WALL_H, 1);
-    const top = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
+    const brickTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
+    // Reinforced concrete is concrete on top too: from above, the walls no tool chips read as such (San Pancho's sand all round them).
+    const concreteTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.reinforced(), color: 0xc4c4c4, roughness: 0.95 }));
     for (const [kind, tex, roughness] of [
       [TILE.BRICK, TEX.brick(), 0.9],
       [TILE.REINFORCED, TEX.reinforced(), 0.95],
@@ -163,6 +165,7 @@ export class WorldView {
       map.needsUpdate = true;
       const side = seeThrough(new THREE.MeshStandardMaterial({ map, roughness }));
       // Box faces: +x, -x, +y, -y, +z, -z.
+      const top = kind === TILE.REINFORCED ? concreteTop : brickTop;
       const mesh = new THREE.InstancedMesh(geo, [side, side, top, top, side, side], cells.length / 2);
       for (let i = 0; i < cells.length / 2; i++) {
         this.matrix.makeTranslation(cells[i * 2] + 0.5, WALL_H / 2, cells[i * 2 + 1] + 0.5);

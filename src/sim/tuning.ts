@@ -130,6 +130,8 @@ export const OPINION_LOW = 25;
 /** A hostile prison (San Pancho, P11): what inmates think of the new arrival on day 1; every fourth cell's starts with a grudge. */
 export const HOSTILE_OPINION = 40;
 export const HOSTILE_GRUDGE = 20;
+/** A score settled: an inmate who put the player down gets over its grudge (its opinion back up to this). */
+export const GRUDGE_SETTLED = 35;
 export const OPINION_HIGH = 80;
 /** An inmate tells the player a recipe (once a day) from this opinion up (P8+, PLAN §2). */
 export const TIP_OPINION = 60;
