@@ -117,10 +117,10 @@ function showUpdate() {
   updateCard = h(
     'div',
     'update-card',
-    `${icon('star', 18)}<span></span><button class="big-btn primary">${icon('replay', 16)}${t('update.restart')}</button>`,
+    `<span class="uc-ic">${icon('star', 18)}</span><span class="uc-text"><b>${t('update.title')}</b><small></small></span><button class="uc-btn">${icon('replay', 15)}<span>${t('update.restart')}</span></button>`,
   );
   updateCard.setAttribute('role', 'status');
-  updateCard.querySelector('span')!.textContent = u.version ? t('update.ready', { v: u.version }) : t('update.readyNoVersion');
+  updateCard.querySelector('small')!.textContent = u.version ? t('update.version', { v: u.version }) : t('update.note');
   updateCard.querySelector('button')!.onclick = () => {
     click();
     u.restart();

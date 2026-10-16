@@ -562,16 +562,6 @@ body.touch .saved-mark {
   animation: hint-in 0.45s var(--spring) both;
 }
 
-.update-card .ic {
-  color: var(--orange);
-}
-
-.update-card .big-btn {
-  height: 40px;
-  padding: 0 14px;
-  font-size: 15px;
-}
-
 .help-day .must.job {
   color: #6b4a00;
   background: #ffe2a3;
