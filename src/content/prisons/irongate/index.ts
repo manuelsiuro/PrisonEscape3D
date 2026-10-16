@@ -120,8 +120,8 @@ props.push(
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
 );
 
-/** Two rows of seven across the yard, facing the warden at its north side. */
-const rollCall = [24, 26].flatMap((z) => [20, 22, 24, 26, 28, 30, 32].map((x) => ({ x, z })));
+/** One row of fourteen through the middle of the yard (it is only five tiles deep), facing the warden at its north side: the painted box clear of the walls and doorways on every side. */
+const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 19 + k, z: 24 }));
 
 /**
  * Ten guards (GDD §4.5), four of them armored riot guards. Directions: 1 east, 5 south,
@@ -299,7 +299,7 @@ export const IRONGATE: PrisonDef = {
     ['generator', 43, 17, 51, 20],
     // The yard.
     ['yard', 8, 22, 51, 26],
-    ['rollCall', 19, 23, 33, 26],
+    ['rollCall', 18, 23, 33, 25],
     // The middle block.
     ['kitchen', 8, 28, 12, 37],
     ['canteen', 14, 27, 24, 38],

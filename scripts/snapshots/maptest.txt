@@ -29,7 +29,7 @@ guards: 8, 45 stops, 2 asleep at night
 vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 1948
 == irongate · picture 04a9596b
 tiles: asphalt 325, brick 404, concrete 673, detector 6, door 36, electric 19, fence 10, grass 847, pier 6, reinforced 348, road 18, tiled 259, tower 36, water 925, wood 184
-zones: canteen 132, cellBlock 108, controlRoom 63, corridor 88, dock 39, generator 81, guardQuarters 36, gym 48, helipad 72, infirmary 42, inmateCell 208, janitor 20, kitchen 50, laundry 36, library 42, mailroom 20, metalshop 54, none 738, outside 18, perimeter 1261, playerCell 16, rollCall 60, showers 40, solitary 16, walkway 594, woodshop 54, yard 160
+zones: canteen 132, cellBlock 108, controlRoom 63, corridor 88, dock 39, generator 81, guardQuarters 36, gym 48, helipad 72, infirmary 42, inmateCell 208, janitor 20, kitchen 50, laundry 36, library 42, mailroom 20, metalshop 54, none 738, outside 18, perimeter 1261, playerCell 16, rollCall 48, showers 40, solitary 16, walkway 594, woodshop 54, yard 172
 decor: 85 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
 guards: 10, 58 stops, 4 asleep at night
