@@ -122,6 +122,8 @@ export interface InmateFrame {
 export interface Quality {
   /** Shadow map size; 0 = no shadows. */
   shadows: number;
+  /** Shadow edge softness in shadow-map texels (PCF filter radius). */
+  softness: number;
   pixelRatio: number;
 }
 
@@ -321,6 +323,7 @@ export class View {
     const on = q.shadows > 0;
     this.renderer.shadowMap.enabled = on;
     this.sun.castShadow = on;
+    this.sun.shadow.radius = q.softness;
     if (on && this.sun.shadow.mapSize.x !== q.shadows) {
       this.sun.shadow.mapSize.set(q.shadows, q.shadows);
       this.sun.shadow.map?.dispose();
