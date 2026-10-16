@@ -29,6 +29,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['searches', 'bell', '#d9930a'],
     ['work', 'coin', '#c99a12'],
     ['inmates', 'chat', '#3fb07a'],
+    ['chatter', 'ear', '#d9a21b'],
     ['train', 'dumbbell', '#8e4fc4'],
     ['fight', 'fist', '#c0392b'],
   ],

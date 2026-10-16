@@ -75,6 +75,7 @@ const P: Record<string, string> = {
   bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z"/>',
   keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
   map: '<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15M15 6v15"/>',
+  ear: '<path d="M7 9.5a5.5 5.5 0 0 1 11 0c0 3.2-3.5 4.3-3.5 7.5a3 3 0 0 1-5.6 1.5"/><path d="M10.5 10a2 2 0 0 1 4 0c0 1.6-2 2-2 3.6"/>',
 };
 
 /** An inline SVG icon (`.ic`, display: block; inside text, make it inline-block). */

@@ -37,6 +37,7 @@ import {
 import { play, type Game } from './game';
 import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, targetInfo } from './labels';
 import { seenTip } from './tips';
+import { chatterFrame } from './chatter';
 
 /**
  * Everything over the picture, brought up to date after each draw: the item bar and action
@@ -189,4 +190,6 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
   const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
   sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
+  // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
+  chatterFrame(g, busy || panel || !!g.lesson);
 }

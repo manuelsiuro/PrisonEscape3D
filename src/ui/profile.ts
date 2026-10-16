@@ -19,6 +19,8 @@ export class ProfilePanel {
   readonly el: HTMLElement;
   private drawn = '';
   isOpen = false;
+  /** The rumors heard (P13), newest first: the speech bubbles' director fills this in. */
+  notebook: () => ReadonlyArray<{ text: string; old: boolean; day: number }> = () => [];
 
   constructor(private readonly click: () => void) {
     this.el = h('div', 'item-panel profile-panel hidden');
@@ -52,7 +54,8 @@ export class ProfilePanel {
     this.el.classList.remove('hidden');
     const s = sim.state;
     const favors = s.favors.filter((f) => f.state !== FAVOR_STATE.OFFERED);
-    const key = [s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang()].join('|');
+    const rumors = this.notebook();
+    const key = [rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang()].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const attrs = ATTRS.map((a, k) => {
@@ -81,12 +84,16 @@ export class ProfilePanel {
           })
           .join('')
       : `<p class="talk-note">${t('profile.noFavors')}</p>`;
+    const rumorList = rumors.length
+      ? rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}">${icon('ear', 14)}<span>${esc(r.text)}</span><small>${t('profile.rumorDay', { n: r.day })}</small></div>`).join('')
+      : `<p class="talk-note">${t('profile.noRumors')}</p>`;
     const working = ROUTINE[s.routine].id === 'work';
     this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${t('profile.title')}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       <div class="box-section"><div class="box-label"><span>${t('profile.stats')}</span><em>${t('profile.statsNote')}</em></div>${attrs}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.job')}</span>${working && job >= 0 ? `<em>${t('profile.workNow')}</em>` : ''}</div>${jobHtml}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.favors')}</span></div>${favorList}</div>
-      <div class="box-section"><div class="box-label"><span>${t('profile.followers')}</span></div>${allies}</div>`;
+      <div class="box-section"><div class="box-label"><span>${t('profile.followers')}</span></div>${allies}</div>
+      <div class="box-section"><div class="box-label"><span>${t('profile.rumors')}</span><em>${t('profile.rumorsNote')}</em></div>${rumorList}</div>`;
     this.el.setAttribute('aria-label', t('profile.title'));
   }
 }

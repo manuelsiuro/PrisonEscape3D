@@ -67,6 +67,7 @@ export const TRAINING: PrisonDef = {
   reachable: ['corridor', 'woodshop', 'canteen', 'gym', 'rollCall', 'yard'],
   guards: [
     {
+      name: 'Bell',
       beat: [
         { x: 33, z: 27, wait: 2, face: 1 },
         { x: 43, z: 27, wait: 2, face: 5 },

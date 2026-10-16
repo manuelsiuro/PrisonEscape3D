@@ -20,6 +20,10 @@ export interface Settings {
   lang: 'auto' | 'en' | 'fr';
   /** Graphics: auto starts from the device and steps down if frames run slow. */
   quality: 'auto' | 'high' | 'low';
+  /** Speech bubbles (P13): lots, some (fewer, further apart) or none. */
+  chatter: 'lots' | 'some' | 'off';
+  /** The murmur of voices under the bubbles. */
+  voices: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -32,6 +36,8 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   lang: 'auto',
   quality: 'auto',
+  chatter: 'lots',
+  voices: true,
 };
 
 /** Stored settings, each field checked against its default's type (a bad value gets the default). */
@@ -42,6 +48,7 @@ export function loadSettings(): Settings {
   const out = s as unknown as Settings;
   if (!['auto', 'en', 'fr'].includes(out.lang)) out.lang = 'auto';
   if (!['auto', 'high', 'low'].includes(out.quality)) out.quality = 'auto';
+  if (!['lots', 'some', 'off'].includes(out.chatter)) out.chatter = 'lots';
   out.sfxVolume = Math.min(1, Math.max(0, Number.isFinite(out.sfxVolume) ? out.sfxVolume : DEFAULT_SETTINGS.sfxVolume));
   out.musicVolume = Math.min(1, Math.max(0, Number.isFinite(out.musicVolume) ? out.musicVolume : DEFAULT_SETTINGS.musicVolume));
   return out;

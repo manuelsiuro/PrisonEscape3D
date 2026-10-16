@@ -40,11 +40,13 @@ const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 
 /** The tool button's face, refilled in place. */
 const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress: null, repeat: true };
 
-/** Who someone is (Cast id): "Inmate · cell 3", "Guard · purple key". */
+/** Who someone is (Cast id): "Rusty · cell 3", "Officer Keller · purple key". */
 export function personName(sim: Sim, id: number): string {
   const s = sim.state;
   if (!isGuard(s, id)) return t('combat.inmateNamed', { name: inmateName(sim, id), n: s.inmates[id]?.cell ?? 0 });
-  return t('combat.guard', { key: t(`keyColor.${sim.prison.guards[id - s.inmates.length].key}` as Key) });
+  const d = sim.prison.guards[id - s.inmates.length];
+  const key = t(`keyColor.${d.key}` as Key);
+  return d.name ? t('combat.guardNamed', { name: d.name, key }) : t('combat.guard', { key });
 }
 
 /** What a container is called ("your desk", "bookshelf", someone's pockets). */

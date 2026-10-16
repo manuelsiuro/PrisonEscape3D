@@ -59,6 +59,8 @@ export class TalkPanel {
   private drawn = '';
   private who = -1;
   private opinion = -1;
+  /** What the inmate says on seeing the player (P13: chosen once a talk, by the speech bubbles' director). */
+  greeting = '';
 
   constructor(private readonly send: Send, private readonly click: () => void) {
     this.el = h('div', 'item-panel talk-panel hidden');
@@ -97,7 +99,7 @@ export class TalkPanel {
     const shop = merchant >= 0 ? s.shops[merchant] : null;
     const favor = s.favors.find((f) => f.by === who);
     const inv = s.items.inv.slice(0, HOTBAR);
-    const key = [who, m.opinion, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang()].join('|');
+    const key = [who, m.opinion, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -174,7 +176,7 @@ export class TalkPanel {
       foot = `<button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-act="${TALK.RECRUIT}" ${ok ? '' : 'disabled'}>${icon('users', 16)}<span>${t('talk.recruit')}</span></button><span class="talk-note">${ok ? t('talk.recruitNote') : full ? t('talk.recruitFull', { n: MAX_FOLLOWERS }) : t('talk.recruitNeed', { n: OPINION_HIGH })}</span>`;
     }
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
-      <div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
+      ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
       ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${shopHtml}${giftHtml}${tipHtml}<div class="talk-foot">${foot}</div>`;
     if (first) {
       this.el.classList.remove('hidden');

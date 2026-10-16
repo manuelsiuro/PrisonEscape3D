@@ -10,13 +10,18 @@ const QUALITY: Choice<'quality'> = [
   ['high', 'settings.high'],
   ['low', 'settings.low'],
 ];
+const CHATTER: Choice<'chatter'> = [
+  ['lots', 'settings.chatterLots'],
+  ['some', 'settings.chatterSome'],
+  ['off', 'settings.chatterOff'],
+];
 const LANGS: Choice<'lang'> = [
   ['auto', 'settings.auto'],
   ['en', 'settings.english'],
   ['fr', 'settings.french'],
 ];
 
-type Toggle = 'haptics' | 'reducedMotion' | 'shake' | 'tips';
+type Toggle = 'haptics' | 'reducedMotion' | 'shake' | 'tips' | 'voices';
 
 /**
  * Settings, as a card over the game; every change applies at once through `apply` (sound,
@@ -32,7 +37,7 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
   let done = '';
   const toggle = (k: Toggle, label: Key, ic: string) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><button class="switch ${settings[k] ? 'on' : ''}" role="switch" aria-checked="${settings[k]}" data-toggle="${k}" aria-label="${t(label)}"><i></i></button></div>`;
-  const choice = <K extends 'quality' | 'lang'>(k: K, label: Key, ic: string, options: Choice<K>) =>
+  const choice = <K extends 'quality' | 'lang' | 'chatter'>(k: K, label: Key, ic: string, options: Choice<K>) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><div class="seg" role="radiogroup" aria-label="${t(label)}">${options
       .map(([v, l]) => `<button role="radio" aria-checked="${settings[k] === v}" class="${settings[k] === v ? 'on' : ''}" data-choice="${k}" data-value="${v}">${t(l)}</button>`)
       .join('')}</div></div>`;
@@ -48,6 +53,8 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
         ${toggle('shake', 'settings.shake', 'bolt')}
         ${toggle('reducedMotion', 'settings.motion', 'eye')}
         ${toggle('tips', 'settings.tips', 'bulb')}
+        ${choice('chatter', 'settings.chatter', 'users', CHATTER)}
+        ${toggle('voices', 'settings.voices', 'ear')}
         ${choice('quality', 'settings.quality', 'sun', QUALITY)}
         ${choice('lang', 'settings.language', 'chat', LANGS)}
         <div class="set-actions">

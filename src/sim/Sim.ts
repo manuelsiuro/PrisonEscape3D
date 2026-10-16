@@ -23,7 +23,7 @@ import { grudges, keepTalk, offerFavors, socialNow } from './systems/social';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
 import { watch } from './systems/watch';
-import { BODY_HALF, CRAWL_SPEED, HEAT_DECAY_STEPS, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
+import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, HEAT_DECAY_STEPS, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 
@@ -100,7 +100,7 @@ export class Sim {
     // Routine: a new block settles the last one.
     nextBlock(this, clock);
     // 00:30 and 04:00: the night bed check (GDD §5.3).
-    if (s.step % STEPS_PER_MINUTE === 0 && (clock.minuteOfDay === 30 || clock.minuteOfDay === 240) && !this.world.def.rules?.relaxed) bedCheck(this);
+    if (s.step % STEPS_PER_MINUTE === 0 && BED_CHECK_MINUTES.includes(clock.minuteOfDay) && !this.world.def.rules?.relaxed) bedCheck(this);
     // The knocked out come round (GDD §10.2): a guard missing its key raises the alarm.
     recover(this);
     this.everyoneMoves();

@@ -23,6 +23,8 @@ import { showPause } from '../ui/screens/pause';
 import { showSaves } from '../ui/screens/saves';
 import { showSettings } from '../ui/screens/settings';
 import { announce } from './announce';
+import { chatterStart, chatterStop, director } from './chatter';
+import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
 import {
   banner,
@@ -78,7 +80,7 @@ function flashSaved() {
 /** Writes the game in progress (never once it's over: an escape ends the run). */
 export function autosave(g: Game, show = false) {
   if (g.over || g.lesson) return;
-  g.saved = writeSave('auto', g.rec.sim);
+  g.saved = writeSave('auto', g.rec.sim, undefined, director.rumors);
   if (g.saved && show) flashSaved();
 }
 
@@ -86,8 +88,10 @@ export function autosave(g: Game, show = false) {
  * Into a game: a new one, or one loaded from a save (`resumed`: no day-one welcome, the guide
  * stays away, a "welcome back" instead).
  */
-export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null) {
+export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null, rumors: readonly Rumor[] = []) {
   view.setWorld(sim.world);
+  // The speech bubbles (P13): this prison's voices, and the rumors the save kept.
+  chatterStart(sim, rumors);
   // Start a little wide and settle in on the player.
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
   view.zoomBy(1.25);
@@ -199,7 +203,7 @@ export async function pause() {
     if (choice === 'save') {
       const slot = await showSaves('save', click);
       if (slot !== null && play.game) {
-        const ok = writeSave(slot, play.game.rec.sim);
+        const ok = writeSave(slot, play.game.rec.sim, undefined, director.rumors);
         if (ok) sound.chime();
         else sound.sting();
         note = ok ? t('toast.saved', { n: slot }) : `!${t('toast.saveFailed')}`;
@@ -263,6 +267,7 @@ export function endGame() {
   sound.siren(false);
   sound.ambience(false);
   talk.hide();
+  chatterStop();
   view.setShift(0, 0);
   board.close();
   profile.close();

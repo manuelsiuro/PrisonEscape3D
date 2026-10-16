@@ -1,6 +1,7 @@
 import { PRISONS } from '../content/prisons';
 import type { PrisonDef } from '../content/prisons/types';
 import { Sim, type Snapshot } from '../sim/Sim';
+import type { Rumor } from '../talk/director';
 import { KEYS, readJSON, removeKey, writeJSON, type StorageKey } from './storage';
 
 /**
@@ -25,12 +26,14 @@ export interface SaveFile {
   at: number;
   game: string;
   snap: Snapshot;
+  /** Rumors heard (P13, the prisoner's file): kept with the game, optional. */
+  rumors?: Rumor[];
 }
 
 const KEY_OF: Record<SlotId, StorageKey> = { auto: KEYS.saveAuto, 1: KEYS.save1, 2: KEYS.save2, 3: KEYS.save3 };
 
 /** The save file for a game as it stands now. */
-export function saveFileOf(sim: Sim, at: number, game: string): SaveFile {
+export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly Rumor[] = []): SaveFile {
   const clock = sim.clock;
   return {
     v: 1,
@@ -41,12 +44,13 @@ export function saveFileOf(sim: Sim, at: number, game: string): SaveFile {
     at,
     game,
     snap: sim.snapshot(),
+    ...(rumors.length ? { rumors: rumors.map((r) => ({ fact: { ...r.fact }, step: r.step })) } : {}),
   };
 }
 
 /** Writes a game to a slot; false when storage is full or blocked. */
-export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__): boolean {
-  return writeJSON(KEY_OF[slot], saveFileOf(sim, Date.now(), game));
+export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__, rumors: readonly Rumor[] = []): boolean {
+  return writeJSON(KEY_OF[slot], saveFileOf(sim, Date.now(), game, rumors));
 }
 
 /** A slot's save, or null when it's empty, unreadable or not a save of a known prison. */
@@ -64,7 +68,10 @@ export function readSave(slot: SlotId): SaveFile | null {
     snap.state !== null &&
     typeof snap.state.step === 'number' &&
     !!prisonOf(f.prison);
-  return ok ? (f as SaveFile) : null;
+  if (!ok) return null;
+  // Rumors from an older or damaged save: dropped, not trusted.
+  if (f.rumors !== undefined && !(Array.isArray(f.rumors) && f.rumors.every((r) => r && typeof r.step === 'number' && typeof r.fact?.kind === 'string' && typeof r.fact.key === 'string'))) delete f.rumors;
+  return f as SaveFile;
 }
 
 export function deleteSave(slot: SlotId) {

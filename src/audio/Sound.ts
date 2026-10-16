@@ -336,6 +336,18 @@ export class Sound {
     this.tone(2640, 2600, 0.3, 'sine', 0.03, 0.09);
   }
 
+  /**
+   * A voice under a speech bubble (P13): a few soft syllables at the speaker's pitch, rising
+   * and falling like talk, quieter the further away (`gain` 0–1).
+   */
+  murmur(pitch: number, syllables: number, gain: number) {
+    if (gain <= 0.02) return;
+    for (let k = 0; k < syllables; k++) {
+      const f = pitch * (0.88 + Math.random() * 0.36);
+      this.tone(f, f * (0.82 + Math.random() * 0.3), 0.075, 'triangle', 0.045 * gain, k * 0.09 + Math.random() * 0.02);
+    }
+  }
+
   /** Picked something up: a quick rising pop. */
   pickup() {
     this.tone(520, 980, 0.09, 'triangle', 0.14);

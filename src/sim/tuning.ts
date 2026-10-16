@@ -23,6 +23,8 @@ export const MISSED_ROUTINE_HEAT = 25;
 /** From this much heat a guard who sees the player gives chase; caught from this much, it's solitary (GDD §3.1). */
 export const CHASE_HEAT = 80;
 export const SOLITARY_HEAT = 90;
+/** The night bed checks (GDD §5.3), as minutes of the day: 00:30 and 04:00. */
+export const BED_CHECK_MINUTES: readonly number[] = [30, 240];
 /** Out of the cell this long after Lights Out begins before it counts (the walk home). */
 export const LIGHTS_OUT_GRACE = 15 * STEPS_PER_MINUTE;
 /** A contraband tool or weapon in hand in sight: +40% a second (GDD §5.2), so +2 a step. */

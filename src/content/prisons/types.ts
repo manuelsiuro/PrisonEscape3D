@@ -17,6 +17,8 @@ export interface Waypoint {
 
 /** A guard's duties (GDD §5): the rounds it walks, where it stands during some blocks. */
 export interface GuardDef {
+  /** Its surname (P13: speech bubbles, the target card), the same in every language; unique in the prison. */
+  name?: string;
   /** Its round by day, walked in a loop. */
   beat: readonly Waypoint[];
   /** Where it stands instead during some blocks (roll call, meals…). */

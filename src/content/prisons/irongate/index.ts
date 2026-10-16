@@ -147,6 +147,7 @@ const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 19 + k, z: 24 }));
  */
 const guards: GuardDef[] = [
   {
+    name: 'Blackwood',
     beat: [
       { x: 26, z: 46, wait: 25, face: 1 },
       { x: 25, z: 40, wait: 3, face: 13 },
@@ -164,6 +165,7 @@ const guards: GuardDef[] = [
     key: 'red',
   },
   {
+    name: 'Finch',
     beat: [
       { x: 15, z: 28, wait: 3, face: 5 },
       { x: 24, z: 32, wait: 3, face: 9 },
@@ -174,6 +176,7 @@ const guards: GuardDef[] = [
     key: 'cyan',
   },
   {
+    name: 'Pike',
     beat: [
       { x: 12, z: 15, wait: 3, face: 1 },
       { x: 29, z: 18, wait: 3, face: 13 },
@@ -186,6 +189,7 @@ const guards: GuardDef[] = [
     key: 'yellow',
   },
   {
+    name: 'Penrose',
     beat: [
       { x: 9, z: 24, wait: 3, face: 1 },
       { x: 50, z: 24, wait: 3, face: 9 },
@@ -200,6 +204,7 @@ const guards: GuardDef[] = [
     key: 'green',
   },
   {
+    name: 'Quill',
     beat: [
       { x: 45, z: 29, wait: 3, face: 5 },
       { x: 45, z: 35, wait: 3, face: 1 },
@@ -210,6 +215,7 @@ const guards: GuardDef[] = [
     key: 'cyan',
   },
   {
+    name: 'Mercer',
     beat: [
       { x: 47, z: 18, wait: 4, face: 9 },
       { x: 49, z: 12, wait: 3, face: 13 },
@@ -219,6 +225,7 @@ const guards: GuardDef[] = [
     key: 'purple',
   },
   {
+    name: 'Thorne',
     beat: [
       { x: 5, z: 50, wait: 4, face: 13 },
       { x: 5, z: 7, wait: 3, face: 1 },
@@ -233,6 +240,7 @@ const guards: GuardDef[] = [
     riot: true,
   },
   {
+    name: 'Hask',
     beat: [
       { x: 31, z: 53, wait: 4, face: 1 },
       { x: 54, z: 52, wait: 3, face: 13 },
@@ -247,6 +255,7 @@ const guards: GuardDef[] = [
     riot: true,
   },
   {
+    name: 'Doyle',
     beat: [
       { x: 33, z: 43, wait: 8, face: 3 },
       { x: 33, z: 49, wait: 6, face: 15 },
@@ -260,6 +269,7 @@ const guards: GuardDef[] = [
     helipad: true,
   },
   {
+    name: 'Vance',
     beat: [
       { x: 40, z: 49, wait: 7, face: 11 },
       { x: 40, z: 43, wait: 9, face: 7 },

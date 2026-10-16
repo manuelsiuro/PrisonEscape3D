@@ -174,6 +174,10 @@ for (const def of [...PRISONS, TRAINING]) {
     check(places.solitary >= 0 && places.infirmary >= 0, `${def.id}: a solitary cell and an infirmary bed`);
   }
   check(places.doorstep.slice(1).every((t) => t >= 0) && places.deskside.slice(1).every((t) => t >= 0), `${def.id}: every cell can be looked into and its desk searched`);
+  // Names (P13: the speech bubbles call people by them): every guard has one, nobody shares one.
+  check(def.guards.every((d) => !!d.name), `${def.id}: every guard has a name`);
+  const people = [...def.names, ...def.guards.map((d) => d.name ?? '')];
+  check(new Set(people).size === people.length, `${def.id}: names are unique (${people.join(', ')})`);
   console.log(`guards: ${def.guards.length}, ${stops.length} stops, ${sleepers} asleep at night`);
 
   // A roof over the perimeter is a grapnel's landing (structure.ts): only a gatehouse

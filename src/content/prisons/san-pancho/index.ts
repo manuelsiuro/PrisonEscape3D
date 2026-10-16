@@ -138,6 +138,7 @@ const rollCall = [27, 29].flatMap((z) => [28, 29, 30, 31, 32, 33, 34].map((x) =>
  */
 const guards: GuardDef[] = [
   {
+    name: 'Varga',
     beat: [
       { x: 34, z: 48, wait: 20, face: 9 },
       { x: 31, z: 41, wait: 4, face: 13 },
@@ -153,6 +154,7 @@ const guards: GuardDef[] = [
     key: 'red',
   },
   {
+    name: 'Ríos',
     beat: [
       { x: 18, z: 14, wait: 3, face: 5 },
       { x: 23, z: 29, wait: 2, face: 1 },
@@ -168,6 +170,7 @@ const guards: GuardDef[] = [
     key: 'green',
   },
   {
+    name: 'Molina',
     beat: [
       { x: 10, z: 10, wait: 4, face: 1 },
       { x: 53, z: 9, wait: 4, face: 9 },
@@ -179,6 +182,7 @@ const guards: GuardDef[] = [
     key: 'yellow',
   },
   {
+    name: 'Cruz',
     beat: [
       { x: 53, z: 10, wait: 4, face: 5 },
       { x: 54, z: 53, wait: 4, face: 13 },
@@ -190,6 +194,7 @@ const guards: GuardDef[] = [
     key: 'cyan',
   },
   {
+    name: 'Ortiz',
     beat: [
       { x: 53, z: 53, wait: 4, face: 9 },
       { x: 10, z: 54, wait: 4, face: 1 },
@@ -201,6 +206,7 @@ const guards: GuardDef[] = [
     key: 'purple',
   },
   {
+    name: 'Peña',
     beat: [
       { x: 10, z: 53, wait: 4, face: 13 },
       { x: 9, z: 10, wait: 4, face: 5 },
@@ -212,6 +218,7 @@ const guards: GuardDef[] = [
     key: 'cyan',
   },
   {
+    name: 'Ochoa',
     beat: [
       { x: 32, z: 50, wait: 8, face: 13 },
       { x: 33, z: 53, wait: 3, face: 1 },
@@ -227,6 +234,7 @@ const guards: GuardDef[] = [
     key: 'red',
   },
   {
+    name: 'Paz',
     beat: [
       { x: 42, z: 49, wait: 4, face: 9 },
       { x: 48, z: 50, wait: 4, face: 13 },

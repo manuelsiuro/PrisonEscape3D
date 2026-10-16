@@ -1,6 +1,6 @@
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordOf } from '../game/records';
-import { ALL_SLOTS, loadSave, readSave, type SlotId } from '../game/saves';
+import { ALL_SLOTS, loadSave, readSave, type SaveFile, type SlotId } from '../game/saves';
 import { t } from '../i18n';
 import { Sim } from '../sim/Sim';
 import { h } from '../ui/dom';
@@ -79,6 +79,7 @@ export async function titleFlow() {
       continue;
     }
     let sim: Sim | null = null;
+    let rumors: SaveFile['rumors'];
     if (choice === 'play') {
       // Which prison (GDD §13.1): the one chosen on the victory screen, else picked from those
       // open (straight into the first while it's the only one).
@@ -92,12 +93,13 @@ export async function titleFlow() {
       if (slot === null) continue;
       const f = readSave(slot);
       sim = f && loadSave(f);
+      rumors = f?.rumors;
       if (!sim) {
         banner.toast(t('toast.loadFailed'), 'bad');
         continue;
       }
     }
-    startGame(sim, choice !== 'play');
+    startGame(sim, choice !== 'play', null, rumors);
     backdrop = sim.prison;
     await untilQuit();
     view.setWorld(new Sim(backdrop).world);

@@ -13,6 +13,7 @@ import { onTap } from './play/guide';
 import { act, listenKeys } from './play/keys';
 import { frame } from './play/loop';
 import { pause } from './play/session';
+import { chatterStats, director } from './play/chatter';
 import { firstDay } from './play/tips';
 
 /**
@@ -52,6 +53,9 @@ if (import.meta.env.DEV)
     __renderer: renderer,
     __sound: sound,
     __firstDay: firstDay,
+    // The speech bubbles: what has been said (lines, distinct, repeats), and the director itself.
+    __chatter: () => chatterStats(),
+    __director: director,
     // The update offer, as a new version would show it.
     __offerUpdate: () => offerUpdate('9.9.9', () => location.reload()),
   });

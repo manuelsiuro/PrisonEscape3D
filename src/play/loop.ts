@@ -5,6 +5,7 @@ import { itemOf } from '../sim/systems/items';
 import { tileOfBody } from '../sim/systems/movement';
 import { STEPS_PER_SECOND, STRIKE_STEPS, UNIT } from '../sim/tuning';
 import { announce } from './announce';
+import { chatterEvent } from './chatter';
 import { press, updateTargets } from './buttons';
 import { controls, hint, itemsUI, settings, socialOpen, tools, view } from './context';
 import { buildFrame } from './frame';
@@ -69,6 +70,7 @@ function stepSim(g: Game, dt: number) {
     // Sound, banners and vibration read the events; the simulation never calls them.
     for (const e of sim.events) {
       announce(e, sim);
+      if (!g.lesson) chatterEvent(e, sim);
       lessonEvent(g, e);
       // Out on the road: the escape screen.
       if (e.type === 'escaped') escaped();
