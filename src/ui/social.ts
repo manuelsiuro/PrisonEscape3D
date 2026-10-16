@@ -166,7 +166,7 @@ export class TalkPanel {
     const tipped = (s.tipDay[who] ?? 0) === sim.clock.day;
     const none = nextTip(sim) < 0;
     const tipOk = m.opinion >= TIP_OPINION && !tipped && !none;
-    const tipHtml = `<div class="talk-foot talk-tip"><button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${none ? t('talk.tipNone') : tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span></div>`;
+    const tipHtml = `<button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${none ? t('talk.tipNone') : tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span>`;
     // Recruiting (GDD §10.3): from 80 opinion, two at most.
     let foot: string;
     if (following) foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t('talk.followingNote')}</span>`;
@@ -177,7 +177,7 @@ export class TalkPanel {
     }
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${shopHtml}${giftHtml}${tipHtml}<div class="talk-foot">${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${shopHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));

@@ -278,21 +278,36 @@
   color: #f4ead2;
 }
 
-.talk-row,
-.talk-foot {
+.talk-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.talk-foot {
-  justify-content: flex-start;
+/* The tip and recruiting: one column of buttons as wide as the widest, the notes lined up
+ * beside them. A button's label stays on one line ("Une astuce ?" squeezed by its note
+ * wrapped in two); the note wraps instead. */
+.talk-acts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
   margin-top: 14px;
 }
 
-.talk-foot .talk-note {
+.talk-acts .big-btn {
+  justify-self: stretch;
+}
+
+.talk-acts .talk-note {
   margin: 0;
+}
+
+.talk-row .big-btn,
+.talk-acts .big-btn {
+  flex: none;
+  white-space: nowrap;
 }
 
 .talk-reward {
