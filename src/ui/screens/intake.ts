@@ -8,8 +8,11 @@ import { icon } from '../icons';
  * The Intake (P16): make your prisoner. A panel beside the 3D preview (your prisoner standing
  * in their cell behind it, turned by dragging): a name, then a part at a time (skin, hair,
  * style, beard, build, hat, glasses, tattoo, trim) as swatches; those still locked say which
- * achievement opens them. Resolves with the prisoner made, or null when cancelled.
+ * achievement opens them. Resolves with the prisoner made, null when cancelled (or skipped,
+ * the first time), 'back' when Escape leaves a first Intake (no game: back to the title).
  * `onChange` follows every change (the preview), `onTurn` a drag across the picture.
+ * Keyboard: the parts are tabs (arrows switch part), the choices a radio group (arrows choose;
+ * a locked one says what opens it), one Tab stop each.
  */
 const PART_ICON: Record<LookPart, string> = { skin: 'hand', hair: 'drop', style: 'star', beard: 'chat', build: 'dumbbell', hat: 'home', glasses: 'eye', tattoo: 'heart', trim: 'shirt' };
 
@@ -28,7 +31,7 @@ export interface IntakeOptions {
   onTurn: (radians: number) => void;
 }
 
-export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => void): Promise<Prisoner | null> {
+export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => void): Promise<Prisoner | null | 'back'> {
   const p: Prisoner = { name: start.name, look: { ...start.look } };
   let part: LookPart = 'skin';
   const el = h(
@@ -38,8 +41,8 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
     <div class="intake-card" role="dialog" aria-modal="true" aria-labelledby="intake-title">
       <div class="intake-head"><span class="intake-tag">${icon('shirt', 14)}${t('intake.tag')}</span><h2 id="intake-title">${t('intake.title')}</h2></div>
       <label class="intake-name"><span>${t('intake.name')}</span><input type="text" maxlength="${NAME_MAX * 2}" autocomplete="off" spellcheck="false" placeholder="${t('intake.namePh')}"></label>
-      <div class="intake-parts" role="tablist">${LOOK_PARTS.map((k) => `<button role="tab" data-part="${k}" aria-label="${t(`part.${k}` as Key)}">${icon(PART_ICON[k], 18)}<span>${t(`part.${k}` as Key)}</span></button>`).join('')}</div>
-      <div class="intake-opts" role="radiogroup"></div>
+      <div class="intake-parts" role="tablist" aria-label="${t('intake.parts')}">${LOOK_PARTS.map((k) => `<button role="tab" id="intake-tab-${k}" aria-controls="intake-pane" data-part="${k}">${icon(PART_ICON[k], 18)}<span>${t(`part.${k}` as Key)}</span></button>`).join('')}</div>
+      <div id="intake-pane" role="tabpanel"><div class="intake-opts" role="radiogroup"></div></div>
       <p class="intake-lock" aria-live="polite"></p>
       <div class="intake-actions">
         <button class="big-btn ghost small" data-c="random">${icon('replay', 16)}${t('intake.random')}</button>
@@ -54,9 +57,12 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
   const lockNote = el.querySelector<HTMLElement>('.intake-lock')!;
   const showOpts = () => {
     for (const b of el.querySelectorAll<HTMLElement>('[data-part]')) {
-      b.classList.toggle('on', b.dataset.part === part);
-      b.setAttribute('aria-selected', String(b.dataset.part === part));
+      const on = b.dataset.part === part;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
     }
+    el.querySelector('#intake-pane')!.setAttribute('aria-labelledby', `intake-tab-${part}`);
     const colour = part === 'skin' || part === 'hair' || part === 'trim';
     opts$.innerHTML = cosmeticsOf(part)
       .map((c) => {
@@ -64,17 +70,36 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
         const on = p.look[part] === c.id;
         const name = t(`look.${c.id}` as Key);
         const swatch = colour ? (c.color ? `<i class="sw" style="--c:${css(c.color)}"></i>` : '<i class="sw none"></i>') : c.color ? `<i class="sw dot" style="--c:${css(c.color)}"></i>` : '';
-        return `<button role="radio" class="opt${on ? ' on' : ''}${open ? '' : ' locked'}${colour ? ' colour' : ''}" data-id="${c.id}" aria-checked="${on}" aria-label="${name}${open ? '' : ` (${t('intake.locked')})`}" title="${name}">${swatch}${colour ? '' : `<span>${name}</span>`}${open ? '' : `<em>${icon('lock', 11)}</em>`}</button>`;
+        return `<button role="radio" tabindex="${on ? 0 : -1}" class="opt${on ? ' on' : ''}${open ? '' : ' locked'}${colour ? ' colour' : ''}" data-id="${c.id}" aria-checked="${on}" aria-label="${name}${open ? '' : ` (${t('intake.locked')})`}" title="${name}">${swatch}${colour ? '' : `<span>${name}</span>`}${open ? '' : `<em>${icon('lock', 11)}</em>`}</button>`;
       })
       .join('');
     lockNote.textContent = '';
     opts$.setAttribute('aria-label', t(`part.${part}` as Key));
   };
   const changed = () => opts.onChange({ name: cleanName(input.value), look: { ...p.look } });
+  const choosePart = (k: LookPart) => {
+    part = k;
+    showOpts();
+    // The part chosen in full view (the row scrolls on a phone).
+    el.querySelector<HTMLElement>(`[data-part="${k}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: document.body.classList.contains('reduced-motion') ? 'auto' : 'smooth' });
+  };
+  /** A choice: worn (and the preview follows), or, still locked, what opens it. */
+  const pick = (id: string) => {
+    if (!opts.unlocked.has(id)) {
+      const a = giverOf(id);
+      for (const b of opts$.querySelectorAll<HTMLElement>('.opt')) b.tabIndex = b.dataset.id === id ? 0 : -1;
+      lockNote.textContent = a ? t('intake.lockedBy', { what: t(`look.${id}` as Key), name: t(`ach.${a.id}` as Key) }) : t('intake.locked');
+      return;
+    }
+    click();
+    p.look[part] = id;
+    showOpts();
+    changed();
+  };
   showOpts();
   changed();
   return new Promise((resolve) => {
-    const done = (v: Prisoner | null) => {
+    const done = (v: Prisoner | null | 'back') => {
       removeEventListener('keydown', key, true);
       el.remove();
       resolve(v);
@@ -82,8 +107,10 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
     const key = (e: KeyboardEvent) => {
       if (e.code === 'Escape') {
         e.stopImmediatePropagation();
+        // In the name: out of it only (nothing typed is lost).
+        if (e.target === input) return input.blur();
         click();
-        done(null);
+        done(opts.first ? 'back' : null);
       }
       if (e.code === 'Enter' && e.target === input) {
         e.preventDefault();
@@ -95,41 +122,42 @@ export function showIntake(start: Prisoner, opts: IntakeOptions, click: () => vo
     input.addEventListener('input', () => {
       if ([...input.value].length > NAME_MAX) input.value = cleanName(input.value);
     });
-    // Arrow keys move along the choices of a part.
-    opts$.addEventListener('keydown', (e) => {
-      const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
-      if (!step) return;
-      const list = [...opts$.querySelectorAll<HTMLElement>('.opt')];
-      const k = list.indexOf(document.activeElement as HTMLElement);
-      if (k < 0) return;
+    const stepOf = (e: KeyboardEvent, n: number, k: number) =>
+      e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : e.key === 'ArrowRight' || e.key === 'ArrowDown' ? (k + 1) % n : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? (k + n - 1) % n : -1;
+    // The parts: arrows switch part (the choices follow).
+    el.querySelector<HTMLElement>('.intake-parts')!.addEventListener('keydown', (e) => {
+      const k = LOOK_PARTS.indexOf(part);
+      const j = stepOf(e, LOOK_PARTS.length, k);
+      if (j < 0) return;
       e.preventDefault();
       e.stopPropagation();
-      list[(k + step + list.length) % list.length].focus();
+      click();
+      choosePart(LOOK_PARTS[j]);
+      el.querySelector<HTMLElement>(`[data-part="${part}"]`)?.focus();
+    });
+    // The choices: arrows choose (a locked one is only pointed at: it says what opens it).
+    opts$.addEventListener('keydown', (e) => {
+      const list = [...opts$.querySelectorAll<HTMLElement>('.opt')];
+      const k = list.indexOf(document.activeElement as HTMLElement);
+      const j = k < 0 ? -1 : stepOf(e, list.length, k);
+      if (j < 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pick(list[j].dataset.id!);
+      opts$.querySelector<HTMLElement>(`[data-id="${list[j].dataset.id}"]`)?.focus();
     });
     el.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const k = target.closest<HTMLElement>('[data-part]')?.dataset.part as LookPart | undefined;
       if (k) {
         click();
-        part = k;
-        showOpts();
-        // The part chosen in full view (the row scrolls on a phone).
-        el.querySelector<HTMLElement>(`[data-part="${k}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
-        return;
+        return choosePart(k);
       }
       const o = target.closest<HTMLElement>('[data-id]');
       if (o) {
-        const id = o.dataset.id!;
-        if (!opts.unlocked.has(id)) {
-          const a = giverOf(id);
-          lockNote.textContent = a ? t('intake.lockedBy', { what: t(`look.${id}` as Key), name: t(`ach.${a.id}` as Key) }) : t('intake.locked');
-          return;
-        }
-        click();
-        p.look[part] = id;
-        showOpts();
-        opts$.querySelector<HTMLElement>(`[data-id="${id}"]`)?.focus();
-        return changed();
+        pick(o.dataset.id!);
+        opts$.querySelector<HTMLElement>(`[data-id="${o.dataset.id}"]`)?.focus();
+        return;
       }
       const c = target.closest<HTMLElement>('[data-c]')?.dataset.c;
       if (c === 'random') {

@@ -58,7 +58,7 @@ for (const p of PRISONS) {
   for (const r of routes) {
     const [g, s, b] = MEDAL_DAYS[p.id][r];
     check(g >= 1 && g < s && s < b, `${p.id} ${r}: gold before silver before bronze`);
-    check(medalFor(p.id, r, g) === 'gold' && medalFor(p.id, r, g + 1) === (s === g + 1 ? 'silver' : 'silver') && medalFor(p.id, r, b) === 'bronze' && medalFor(p.id, r, b + 1) === null, `${p.id} ${r}: the medal by day`);
+    check(medalFor(p.id, r, g) === 'gold' && medalFor(p.id, r, g + 1) === 'silver' && medalFor(p.id, r, s) === 'silver' && medalFor(p.id, r, s + 1) === 'bronze' && medalFor(p.id, r, b) === 'bronze' && medalFor(p.id, r, b + 1) === null, `${p.id} ${r}: the medal by day`);
     rows++;
   }
 }
@@ -106,6 +106,8 @@ check(runOf('shocking')(view({ shocked: 1 })), 'Shocking');
 const esc = (id: string) => ACHIEVEMENTS.find((a) => a.id === id)!.escape!;
 const out = (over: Partial<Record<string, number>>, via = 'tunnel', day = 4, medal: 'gold' | null = null) => ({ ...view(over), via, day, medal });
 check(esc('pacifist')(out({})) && !esc('pacifist')(out({ blows: 1 })) && !esc('pacifist')(out({ partial: 1 })), 'Pacifist: no blows, and the whole run');
+check(!esc('pacifist')(out({ flung: 1 })) && !esc('pacifist')(out({ koGuards: 2 })) && !esc('pacifist')(out({ koInmates: 1 })), 'Pacifist: nothing thrown at anyone, nobody knocked out (followers included)');
+check(!runOf('popular')(view({ recruits: 5, crew: 1 })) && runOf('popular')(view({ crew: 2 })), 'Popular: two followers at once (not one recruited twice)');
 check(esc('ghost')(out({})) && !esc('ghost')(out({ spotted: 2 })) && !esc('ghost')(out({ partial: 1 })), 'Ghost: never spotted, the whole run');
 check(esc('cleanRecord')(out({ spotted: 3 })) && !esc('cleanRecord')(out({ solitary: 1 })) && !esc('cleanRecord')(out({ caught: 1 })), 'Clean Record');
 check(esc('dayOne')(out({}, 'fence', 1)) && !esc('dayOne')(out({}, 'fence', 2)), 'Day One');

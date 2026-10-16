@@ -114,7 +114,8 @@ export async function titleFlow() {
       // The first game: the Intake first (once; skipped, it isn't asked again).
       if (!readPrisoner()) {
         view.setWorld(new Sim(prison).world);
-        await intakeFlow(true);
+        // Escape: not now (back to the title).
+        if (!(await intakeFlow(true))) continue;
       }
       seed = Date.now() & 0x7fffffff;
       sim = new Sim(prison, seed);

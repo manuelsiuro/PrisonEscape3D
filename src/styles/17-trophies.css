@@ -101,11 +101,16 @@
 .trophy-toast {
   position: fixed;
   top: calc(max(12px, env(safe-area-inset-top)) + 64px);
-  left: 50%;
-  z-index: 60;
+  /* Centred by both edges at its own width (left: 50% alone would cap it at half the screen). */
+  left: 0;
+  right: 0;
+  /* Under dialogs (50): it waits for them anyway. */
+  z-index: 49;
   display: flex;
   align-items: center;
   gap: 12px;
+  width: max-content;
+  margin-inline: auto;
   max-width: min(380px, calc(100vw - 32px));
   padding: 10px 18px 10px 10px;
   border-radius: 18px;
@@ -117,21 +122,20 @@
     inset 0 0 0 1.5px rgba(255, 200, 80, 0.75),
     0 0 30px -6px rgba(255, 194, 61, 0.55),
     0 18px 40px -16px rgba(0, 0, 0, 0.8);
-  transform: translateX(-50%);
   pointer-events: none;
   animation: tt-in 0.55s var(--spring) both;
 }
 
 .trophy-toast.leaving {
   opacity: 0;
-  transform: translate(-50%, -14px) scale(0.96);
+  transform: translateY(-14px) scale(0.96);
   transition: opacity 0.35s, transform 0.35s;
 }
 
 @keyframes tt-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -24px) scale(0.9);
+    transform: translateY(-24px) scale(0.9);
   }
 }
 
@@ -819,6 +823,8 @@
   background: var(--dlg-surface);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
   transition: background 0.2s, color 0.2s;
+  /* Scrolled into view with room for its ring. */
+  scroll-margin-inline: 16px;
 }
 
 .intake-parts button.on {
@@ -830,8 +836,10 @@
 .intake-opts {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  align-content: start;
   gap: 6px;
-  min-height: 52px;
+  /* Four rows whatever the part: the panel doesn't jump from one part to the next. */
+  min-height: 194px;
 }
 
 .intake-opts:has(.colour) {
@@ -995,7 +1003,11 @@ body.intake-on .update-card {
 
   .intake-name input {
     flex: 1;
-    height: 38px;
+    height: 44px;
+  }
+
+  .intake-opts {
+    min-height: 0;
   }
 
   .intake-parts button {
@@ -1045,6 +1057,8 @@ body.intake-on .update-card {
 }
 
 .cine-stamp {
+  /* Above the prisoner (the picture's middle), not over them. */
+  margin-bottom: 34vh;
   padding: 6px 26px 2px;
   border: 5px solid #ff5a3c;
   border-radius: 12px;
@@ -1068,9 +1082,12 @@ body.intake-on .update-card {
 .cine-skip {
   position: absolute;
   bottom: calc(11vh + 12px);
-  font-size: 12.5px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(5, 7, 11, 0.6);
   animation: fade 0.4s var(--ease) 1.4s both;
 }
 
@@ -1111,7 +1128,7 @@ body.cinema-on > :not(canvas, .cinema, .trophy-toast, .v-confetti) {
 }
 
 .reduced-motion .trophy-toast.leaving {
-  transform: translateX(-50%);
+  transform: none;
 }
 
 /* Phones on their side: the medal and the achievements on tight lines, the buttons in view. */
@@ -1119,6 +1136,23 @@ body.cinema-on > :not(canvas, .cinema, .trophy-toast, .v-confetti) {
   .v-medal {
     margin-top: 6px;
     padding: 4px 12px;
+  }
+
+  .v-medal small {
+    display: none;
+  }
+
+  .v-earned > div {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* More to the right: the row fades out there. */
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+
+  .v-ach {
+    flex: none;
   }
 
   .v-medal .medal {
@@ -1131,5 +1165,65 @@ body.cinema-on > :not(canvas, .cinema, .trophy-toast, .v-confetti) {
 
   .v-earned > small {
     display: none;
+  }
+}
+
+/* Phones: the shelf's tabs and close button big enough for a thumb. */
+@media (max-width: 700px), (max-height: 520px) {
+  .shelf-card .help-tabs button {
+    min-height: 40px;
+  }
+
+  .shelf-card .settings-head .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/*
+ * The victory card's halves (v1.10.1): one column as ever; on a phone on its side with a
+ * medal, achievements and a prison opened, two side by side (how it went | what it earned
+ * and where next), so the buttons stay in view.
+ */
+.v-left,
+.v-right {
+  display: contents;
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .victory .card:has(.v-earned, .v-unlock) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    width: min(880px, 100%);
+  }
+
+  .victory .card:has(.v-earned, .v-unlock) > h2,
+  .victory .card:has(.v-earned, .v-unlock) > .v-sub {
+    grid-column: 1 / -1;
+  }
+
+  .victory .card:has(.v-earned, .v-unlock) .v-left,
+  .victory .card:has(.v-earned, .v-unlock) .v-right {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .victory .card:has(.v-earned, .v-unlock) .v-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .victory .card:has(.v-earned, .v-unlock) .v-medal {
+    margin-top: 0;
+  }
+
+  .victory .card:has(.v-earned, .v-unlock) .v-routes {
+    margin: 8px 0 0;
+  }
+
+  .victory .card:has(.v-earned, .v-unlock) .actions {
+    margin-top: auto;
+    padding-top: 8px;
   }
 }

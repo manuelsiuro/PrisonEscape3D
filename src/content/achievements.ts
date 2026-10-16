@@ -76,7 +76,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'quickStep', group: 'speed', icon: 'walk', gives: 'tangerine', escape: (e) => e.day <= 3 },
   { id: 'goldStandard', group: 'speed', icon: 'trophy', gives: 'gold', escape: (e) => e.medal === 'gold' },
   // Conduct: the whole run.
-  { id: 'pacifist', group: 'conduct', icon: 'heart', gives: 'heart', escape: (e) => whole(e) && f(e, 'blows') === 0 },
+  // No blow, nothing thrown at anyone, and nobody knocked out on your account (your followers' fists count too).
+  { id: 'pacifist', group: 'conduct', icon: 'heart', gives: 'heart', escape: (e) => whole(e) && f(e, 'blows') + f(e, 'flung') + f(e, 'koGuards') + f(e, 'koInmates') === 0 },
   { id: 'ghost', group: 'conduct', icon: 'eyeOff', gives: 'platinum', escape: (e) => whole(e) && f(e, 'spotted') === 0 },
   { id: 'cleanRecord', group: 'conduct', icon: 'shield', gives: 'cream', escape: (e) => whole(e) && f(e, 'caught') === 0 && f(e, 'solitary') === 0 },
   { id: 'modelPrisoner', group: 'conduct', icon: 'bell', gives: 'ponytail', escape: (e) => whole(e) && f(e, 'missed') === 0 },
@@ -97,7 +98,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'partyPopper', group: 'life', icon: 'flame', gives: 'party', run: (r) => f(r, 'bangs') >= 1 },
   { id: 'greasedPalm', group: 'life', icon: 'hand', gives: 'monocle', run: (r) => f(r, 'bribes') >= 1 },
   { id: 'paperTrail', group: 'life', icon: 'letter', gives: 'starShades', run: (r) => f(r, 'paperwork') >= 1 },
-  { id: 'popular', group: 'life', icon: 'chat', gives: 'mohawk', run: (r) => f(r, 'recruits') >= 2 },
+  { id: 'popular', group: 'life', icon: 'chat', gives: 'mohawk', run: (r) => f(r, 'crew') >= 2 },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },

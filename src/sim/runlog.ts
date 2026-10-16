@@ -189,7 +189,11 @@ export class RunRecorder {
     const bytes = new Uint8Array(this.len + tail.length);
     bytes.set(this.buf.subarray(0, this.len));
     bytes.set(tail, this.len);
-    return { ...this.head, steps: this.steps, data: toBase64(bytes), sums: this.sums.map((s) => [s[0], s[1]]) };
+    // The state where the log ends (an escape's last step, a save's) checked too, not just the hours.
+    const sums = this.sums.map((x): [number, string] => [x[0], x[1]]);
+    const end = this.sim.state.step;
+    if (sums.at(-1)?.[0] !== end) sums.push([end, sumOf(this.sim)]);
+    return { ...this.head, steps: this.steps, data: toBase64(bytes), sums };
   }
 
   /** The bytes the commands take so far (tests: how small a day is). */
@@ -217,6 +221,7 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (sim.state.step !== log.from) return null;
   const sums = new Map(log.sums);
   let verified = log.from;
+  let checked = 0;
   for (const [cmd, n] of runs)
     for (let k = 0; k < n; k++) {
       sim.step(cmd);
@@ -224,6 +229,9 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
       if (want === undefined) continue;
       if (want !== sumOf(sim)) return { sim, ok: false, verified };
       verified = sim.state.step;
+      checked++;
     }
-  return { sim, ok: true, verified };
+  // Whole only if it got to where the log ends and every checksum on the way was met (none skipped).
+  const end = log.from + log.steps;
+  return { sim, ok: sim.state.step === end && checked === log.sums.filter(([k]) => k > log.from && k <= end).length && sums.has(end), verified };
 }

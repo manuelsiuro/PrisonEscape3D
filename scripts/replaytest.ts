@@ -115,6 +115,19 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   console.log(`a run of commands changed from step ${from} (hour ${Math.floor(from / SUM_STEPS)}): verified to hour ${r.verified / SUM_STEPS}`);
 }
 
+// The end of a run checked too (the escape is there, after the last hour): a change in the last minutes is caught.
+{
+  const tail = JSON.parse(JSON.stringify(log)) as typeof log;
+  const raw = decodeRuns(fromBase64(tail.data)!)!;
+  const last = raw.length - 1;
+  raw[last] = [raw[last][0] === 0 ? 5 : 0, raw[last][1]];
+  tail.data = toBase64(encodeRuns(raw));
+  check(log.sums.at(-1)![0] === log.from + log.steps, 'the log ends on a checksum of its last step');
+  check(!replayLog(tail, CENTER_PERKS)!.ok, 'a change after the last hour is caught at the end');
+  const short = { ...log, steps: log.steps + 10 };
+  check(!replayLog(short, CENTER_PERKS)!.ok, 'a log that says it is longer than its commands is not whole');
+}
+
 // A save without a log (made before logs): a new log from the loaded state.
 {
   const sim = new Sim(CENTER_PERKS, 1);
@@ -144,6 +157,24 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   check(readReplay()?.steps === log.steps && readReplay('center-perks')?.steps === log.steps, 'an escape\'s log: the last, and the prison\'s quickest');
   keepReplay({ ...log, steps: 5 }, false);
   check(readReplay()?.steps === 5 && readReplay('center-perks')?.steps === log.steps, 'a slower escape keeps the quickest');
+  // Storage full: every log and replay gives way to a save.
+  const { replayBestKey } = await import('../src/game/storage');
+  writeSave(1, sim, 'test', [], saved);
+  // As full as it gets: the save fits only once the logs are gone.
+  const logsSize = [...mem.entries()].filter(([k]) => k.startsWith('pe3d.log.') || k.startsWith('pe3d.replay.')).reduce((n, [, v]) => n + v.length, 0);
+  const cap = [...mem.values()].reduce((n, v) => n + v.length, 0);
+  const setItem = (globalThis as unknown as { localStorage: { setItem: (k: string, v: string) => void } }).localStorage.setItem;
+  (globalThis as unknown as { localStorage: { setItem: (k: string, v: string) => void } }).localStorage.setItem = (k, v) => {
+    const used = [...mem.entries()].reduce((n, [kk, vv]) => n + (kk === k ? 0 : vv.length), 0);
+    if (used + v.length > cap) throw new Error('QuotaExceededError');
+    mem.set(k, v);
+  };
+  mem.set('pe3d.other.game', 'x'.repeat(Math.max(0, logsSize - 6500)));
+  check(logsSize > 7000, `logs to make room with (${logsSize})`);
+  check(writeSave('auto', sim, 'test', [], saved), 'storage full: the save is written');
+  check(!mem.has(KEYS.log1) && !mem.has(replayBestKey('center-perks')), 'every log and replay made room for it');
+  mem.delete('pe3d.other.game');
+  (globalThis as unknown as { localStorage: { setItem: (k: string, v: string) => void } }).localStorage.setItem = setItem;
   mem.set(KEYS.replayLast, '{"v":1}');
   check(readReplay() === null, 'a damaged log reads as none');
   const save = mem.get(KEYS.save2)!;

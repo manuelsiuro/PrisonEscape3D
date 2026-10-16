@@ -111,11 +111,20 @@ export function syncRun(): Stats {
   return addStats(delta);
 }
 
-/** The run's own achievements reached by now (and the career ones its counts complete). */
+/** Checks since the stats last caught up (they do every CAREER_EVERY checks, about half a minute). */
+let sinceSync = 0;
+const CAREER_EVERY = 30;
+
+/** The run's own achievements reached by now; now and then the stats catch up, and the career ones they complete. */
 export function checkRun(): Achievement[] {
   if (!run) return [];
   const r = viewOf(run.sim);
   const got = award(ACHIEVEMENTS.filter((a) => a.run?.(r)));
+  if (++sinceSync >= CAREER_EVERY) {
+    sinceSync = 0;
+    syncRun();
+    got.push(...syncCareer(false));
+  }
   if (got.length) trophyHooks.onEarned(got);
   return got;
 }

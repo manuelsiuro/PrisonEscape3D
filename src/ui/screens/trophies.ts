@@ -50,7 +50,7 @@ const STATS: Array<[string, string, ((n: number) => string)?]> = [
 
 /** A medal as a little disc (none: an empty ring). */
 export const medalDisc = (m: Medal | null | undefined, size = 26) =>
-  `<span class="medal ${m ?? 'none'}" style="--s:${size}px" ${m ? `title="${t(`medal.${m}` as Key)}"` : ''}>${m ? icon('star', Math.round(size * 0.5)) : ''}</span>`;
+  `<span class="medal ${m ?? 'none'}" style="--s:${size}px" role="img" aria-label="${t(m ? (`medal.${m}` as Key) : 'trophy.noMedal')}" ${m ? `title="${t(`medal.${m}` as Key)}"` : ''}>${m ? icon('star', Math.round(size * 0.5)) : ''}</span>`;
 
 const fmt = (n: number) => new Intl.NumberFormat(currentLang()).format(n);
 
@@ -70,10 +70,10 @@ function achievementRow(a: Achievement, s: Shelf): string {
   const prog = !got && a.progress ? a.progress(s.career) : null;
   const when = got ? new Intl.DateTimeFormat(currentLang(), { day: 'numeric', month: 'short', year: 'numeric' }).format(at) : '';
   return `<li class="ach${got ? ' got' : ''}${mystery ? ' mystery' : ''}">
-    <span class="ach-medal">${icon(mystery ? 'help' : a.icon, 22)}${got ? '' : `<i>${icon('lock', 11)}</i>`}</span>
-    <span class="ach-text"><b>${name}${s.unseen.includes(a.id) ? `<em class="ach-new">${t('trophy.new')}</em>` : ''}</b><small>${desc}</small>
-      ${prog ? `<span class="ach-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${prog[1]}" aria-valuenow="${prog[0]}"><i style="width:${(100 * prog[0]) / prog[1]}%"></i></span><small class="ach-count">${fmt(prog[0])} / ${fmt(prog[1])}</small>` : ''}
-      ${a.gives && !mystery ? `<small class="ach-gift">${icon('shirt', 12)}${t(got ? 'trophy.gave' : 'trophy.gives', { what: t(`look.${a.gives}` as Key) })}</small>` : ''}
+    <span class="ach-medal" aria-hidden="true">${icon(mystery ? 'help' : a.icon, 22)}${got ? '' : `<i>${icon('lock', 11)}</i>`}</span>
+    <span class="ach-text"><b>${mystery ? `<span aria-hidden="true">${name}</span><span class="sr-only">${t('trophy.mysterySr')}</span>` : name}${s.unseen.includes(a.id) ? `<em class="ach-new">${t('trophy.new')}</em>` : ''}<span class="sr-only">, ${t(got ? 'trophy.earnedSr' : 'trophy.lockedSr')}</span></b><small>${desc}</small>
+      ${prog ? `<span class="ach-bar" role="progressbar" aria-label="${t(`ach.${a.id}` as Key)}" aria-valuemin="0" aria-valuemax="${prog[1]}" aria-valuenow="${prog[0]}"><i style="width:${(100 * prog[0]) / prog[1]}%"></i></span><small class="ach-count">${fmt(prog[0])} / ${fmt(prog[1])}</small>` : ''}
+      ${a.gives && !mystery ? `<small class="ach-gift">${icon('shirt', 12)}${t(got ? 'trophy.gave' : 'trophy.unlocks', { what: t(`look.${a.gives}` as Key) })}</small>` : ''}
     </span>
     ${got ? `<small class="ach-when">${when}</small>` : ''}
   </li>`;
@@ -99,9 +99,10 @@ function medalsTab(): string {
         const found = r.routes.includes(route);
         const b = r.byRoute[route];
         const days = MEDAL_DAYS[p.id]?.[route];
-        const goal = days ? MEDALS.map((m, j) => `<span class="mg ${m}">${t('trophy.byDay', { n: days[j] })}</span>`).join('') : '';
+        // Each medal named (not by its colour alone): "Gold by day 3".
+        const goal = days ? MEDALS.map((m, j) => `<span class="mg ${m}">${t(`trophy.${m}By` as Key, { n: days[j] })}</span>`).join('') : '';
         return `<li class="medal-row${found ? '' : ' unfound'}">
-          <span class="mr-ic">${icon(found ? (ROUTE_ICON[route] ?? 'route') : 'lock', 18)}</span>
+          <span class="mr-ic" aria-hidden="true">${icon(found ? (ROUTE_ICON[route] ?? 'route') : 'lock', 18)}</span>
           <span class="mr-text"><b>${found ? t(`route.${route}` as Key) : t('victory.unknownRoute')}</b><small>${goal}</small></span>
           <span class="mr-best">${b ? t('hud.day', { n: b.day }) : found ? t('trophy.dayUnknown') : '—'}</span>
           ${medalDisc(b?.medal)}
@@ -145,7 +146,9 @@ export function showTrophies(shelf: Shelf, click: () => void, start: Tab = 'trop
       <div class="help-body shelf-body" id="shelf-pane" role="tabpanel" tabindex="-1"></div>
     </div>`,
   );
-  el.querySelector('.sy-text b')!.textContent = name || t('trophy.noName');
+  el.querySelector('.sy-text b')!.textContent = name || t(shelf.prisoner ? 'trophy.noName' : 'trophy.makeYou');
+  // No prisoner yet: the one line says it all.
+  if (!shelf.prisoner) el.querySelector('.sy-text small')!.remove();
   const pane = el.querySelector<HTMLElement>('.shelf-body')!;
   const show = () => {
     for (const b of el.querySelectorAll<HTMLElement>('[data-tab]')) {

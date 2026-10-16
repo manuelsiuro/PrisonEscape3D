@@ -1,3 +1,4 @@
+import { PRISONS } from '../content/prisons';
 import { fitLog, type RunLog } from '../sim/runlog';
 import type { SlotId } from './saves';
 import { KEYS, readJSON, removeKey, replayBestKey, writeJSON, type StorageKey } from './storage';
@@ -18,12 +19,18 @@ export const deleteLog = (slot: SlotId) => removeKey(LOG_OF[slot]);
 
 /** An escape's log: the last one's, and the prison's quickest (`best`); none past LOG_MAX. */
 export function keepReplay(log: RunLog, best: boolean) {
-  if (log.data.length > LOG_MAX) return;
-  writeJSON(KEYS.replayLast, log);
-  if (best) writeJSON(replayBestKey(log.prison), log);
+  // A quickest escape replaces the old quickest's log even when its own can't be kept (it would no longer match the record).
+  if (best) removeKey(replayBestKey(log.prison));
+  if (log.data.length > LOG_MAX) return removeKey(KEYS.replayLast);
+  if (!writeJSON(KEYS.replayLast, log)) removeKey(KEYS.replayLast);
+  if (best && !writeJSON(replayBestKey(log.prison), log)) removeKey(replayBestKey(log.prison));
 }
 
-/** The last escape's log let go (storage full: a save comes first). */
-export const dropLastReplay = () => removeKey(KEYS.replayLast);
+/** Every log and replay let go (storage full: a save comes first). */
+export function dropAllLogs() {
+  for (const k of Object.values(LOG_OF)) removeKey(k);
+  removeKey(KEYS.replayLast);
+  for (const p of PRISONS) removeKey(replayBestKey(p.id));
+}
 
 export const readReplay = (prison?: string): RunLog | null => fitLog(readJSON<unknown>(prison ? replayBestKey(prison) : KEYS.replayLast, null));

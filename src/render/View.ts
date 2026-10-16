@@ -236,6 +236,10 @@ export class View {
   private model: Character | null = null;
   previewTurn = 0;
   private titleZoom = 1;
+  /** 0 the title's angle … 1 the Intake's (eased between them). */
+  private previewBlend = 0;
+  /** The raft or the helicopter carries the player off (the camera follows it). */
+  private carrying = false;
   /** The escape camera (P16): time in, length, turn (signed), the zoom it starts from; resolved once played (or skipped). */
   private cine: { t: number; dur: number; turn: number; zoom0: number; still: boolean; done: (() => void) | null; held: boolean } | null = null;
   private readonly cineOffset = new THREE.Vector3();
@@ -375,6 +379,7 @@ export class View {
     this.snores.clear();
     // The escape camera ends with the game (the title's picture is the classic angle again).
     this.endCinema();
+    this.carrying = false;
     if (this.worldView) {
       this.scene.remove(this.worldView.group);
       this.worldView.dispose();
@@ -680,7 +685,9 @@ export class View {
     this.camera.bottom = -half + sy;
     this.camera.updateProjectionMatrix();
     // The shadow box covers what the camera sees (the view is stretched along the ground by the tilt).
-    this.shadowHalf = Math.min(34, Math.max(half * aspect, half * 1.25) + 3 + Math.max(Math.abs(sx), Math.abs(sy) * 1.25));
+    // (Turned by the escape camera, the view's corners swing out: the box covers its diagonal.)
+    const reach = this.cine ? Math.hypot(half * aspect, half * 1.25) : Math.max(half * aspect, half * 1.25);
+    this.shadowHalf = Math.min(34, reach + 3 + Math.max(Math.abs(sx), Math.abs(sy) * 1.25));
     const s = this.sun.shadow.camera;
     s.left = s.bottom = -this.shadowHalf;
     s.right = s.top = this.shadowHalf;
@@ -833,7 +840,10 @@ export class View {
     // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
     // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
     const y = LAYER_Y[f.layer];
-    if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
+    // (Aboard the raft or the helicopter, the camera follows them instead: below.)
+    if (this.carrying) {
+      /* followed below */
+    } else if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
     else this.target.lerp(this.v.set(f.x, y, f.z).add(this.ahead), Math.min(1, dt * 7));
     this.underground?.follow(f.x, f.z);
     this.feet.set(f.x, 0, f.z);
@@ -908,7 +918,12 @@ export class View {
       this.island.update(dt, time, f.minuteOfDay, f.takeover, !this.reducedMotion);
       // Leaving: on the raft as it drifts out, or aboard the helicopter (out of sight).
       const on = this.island.carry(this.carried);
-      if (on) this.player.root.position.copy(on);
+      this.carrying = !!on;
+      if (on) {
+        this.player.root.position.copy(on);
+        // The camera goes with them (the helicopter climbs out of a fixed shot).
+        this.target.lerp(this.v.set(on.x, on.y * 0.6, on.z), Math.min(1, dt * 3));
+      }
       this.player.root.visible = !this.island.aboard && this.player.root.visible;
     }
     this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
@@ -1020,16 +1035,21 @@ export class View {
     this.guide.setTap(null);
     this.guide.update(dt, time, this.target, false);
     // The Intake (P16): your prisoner in their cell, the camera close (the walls in front cut away).
+    // In and out of it eased (the angle, the target), at once with reduced motion.
     const model = this.model;
+    const k = this.reducedMotion ? 1 : Math.min(1, dt * 4);
+    this.previewBlend += ((model ? 1 : 0) - this.previewBlend) * k;
     if (model && this.world) {
       const sp = this.world.def.spawn;
       const sway = this.reducedMotion ? 0 : Math.sin(time * 0.6) * 0.35;
       model.pose(sp.x + 0.5, sp.z + 0.5, this.previewTurn + sway, false, dt, time, !this.reducedMotion, DOING.NOTHING);
-      this.target.lerp(this.v.set(sp.x + 0.5, 0.75, sp.z + 0.5), Math.min(1, dt * 6));
+      this.target.lerp(this.v.set(sp.x + 0.5, 0.75, sp.z + 0.5), this.reducedMotion ? 1 : Math.min(1, dt * 6));
       this.feet.set(sp.x + 0.5, 0, sp.z + 0.5);
     } else {
       const a = this.reducedMotion ? 1.2 : time * 0.05;
-      this.target.set(MAP_W / 2 + Math.cos(a) * 14, 0, MAP_H / 2 - 4 + Math.sin(a * 1.3) * 10);
+      this.v.set(MAP_W / 2 + Math.cos(a) * 14, 0, MAP_H / 2 - 4 + Math.sin(a * 1.3) * 10);
+      if (this.previewBlend > 0.002) this.target.lerp(this.v, k);
+      else this.target.copy(this.v);
     }
     // Snow falling over an alpine prison behind the title too.
     this.snow.update(dt, time, this.target.x, this.target.z, !this.reducedMotion && this.world?.def.theme === 'alpine', this.openSky);
@@ -1067,14 +1087,15 @@ export class View {
     this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot, this.security?.group.visible ? this.security.arches : 1);
     this.dust.update(dt);
     const c = this.cine;
-    this.cineOffset.copy(this.model ? PREVIEW_OFFSET : CAMERA_OFFSET);
+    this.cineOffset.copy(CAMERA_OFFSET);
+    if (this.previewBlend > 0.002) this.cineOffset.lerp(PREVIEW_OFFSET, this.previewBlend).setLength(60);
     if (c) {
       // Skipped: it holds where it got to.
       if (!c.held) c.t = Math.min(c.dur, c.t + dt);
       const e = c.still ? 0 : THREE.MathUtils.smootherstep(c.t / c.dur, 0, 1);
       this.cineOffset.applyAxisAngle(UP, c.turn * e);
       if (!c.still) {
-        this.zoom = this.zoomGoal = c.zoom0 * (1 - CINEMA_PULL * e);
+        this.zoom = this.zoomGoal = Math.max(ZOOM_MIN, c.zoom0 * (1 - CINEMA_PULL * e));
         this.applyZoom();
       }
       if (c.t >= c.dur && c.done) {
@@ -1095,6 +1116,7 @@ export class View {
     const stage = this.onStage;
     stage.length = 0;
     stage.push(this.player, ...this.cast, ...this.guardCast);
+    if (this.model) stage.push(this.model);
     this.blobs.update(stage);
     updateOcclusion(this.renderer, this.camera, focus, dt);
     this.renderer.render(this.scene, this.camera);

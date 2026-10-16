@@ -3,7 +3,7 @@ import type { PrisonDef } from '../content/prisons/types';
 import { Sim, type Snapshot } from '../sim/Sim';
 import type { Rumor } from '../talk/director';
 import type { RunLog } from '../sim/runlog';
-import { deleteLog, dropLastReplay, LOG_MAX, writeLog } from './logs';
+import { deleteLog, dropAllLogs, LOG_MAX, writeLog } from './logs';
 import { KEYS, readJSON, removeKey, writeJSON, type StorageKey } from './storage';
 
 /**
@@ -57,10 +57,13 @@ export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly 
 export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__, rumors: readonly Rumor[] = [], log: RunLog | null = null): boolean {
   const file = saveFileOf(sim, Date.now(), game, rumors);
   let ok = writeJSON(KEY_OF[slot], file);
-  // Storage full: the logs make room for the save (this slot's, then the last escape's).
+  // Storage full: the logs make room for the save (this slot's first, then every log and replay).
   if (!ok) {
     deleteLog(slot);
-    dropLastReplay();
+    ok = writeJSON(KEY_OF[slot], file);
+  }
+  if (!ok) {
+    dropAllLogs();
     ok = writeJSON(KEY_OF[slot], file);
   }
   if (ok && log && log.data.length <= LOG_MAX) {

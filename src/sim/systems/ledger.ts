@@ -46,6 +46,9 @@ export const FEATS = [
   'recruits',
   'tips',
   'trained',
+  // v1.10.1: molten chocolate thrown at someone (a blow all the same), and the most followers at once.
+  'flung',
+  'crew',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -87,6 +90,7 @@ export function ledger(sim: Sim, x: number, z: number) {
   const moved = Math.abs(s.player.x - x) + Math.abs(s.player.z - z);
   if (moved > 0 && moved < UNIT) f[FEAT.walked] += moved;
   if (s.heat > f[FEAT.maxHeat]) f[FEAT.maxHeat] = s.heat;
+  if (s.followers.length > f[FEAT.crew]) f[FEAT.crew] = s.followers.length;
   for (const e of sim.events) {
     switch (e.type) {
       case 'hit':
@@ -97,8 +101,13 @@ export function ledger(sim: Sim, x: number, z: number) {
         if (e.who >= s.inmates.length) f[FEAT.koGuards]++;
         else f[FEAT.koInmates]++;
         break;
+      // (Things tossed for noise, P14; not at anyone.)
       case 'tossed':
         f[FEAT.thrown]++;
+        break;
+      case 'thrown':
+        f[FEAT.flung]++;
+        bits |= DAY.FIGHT;
         break;
       case 'noise':
         if (e.kind !== 'strike' && e.sent.length > 0) f[FEAT.decoys]++;

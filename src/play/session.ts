@@ -326,9 +326,10 @@ export async function escaped() {
   const earned = escapeRun(rec);
   // Toasts still queued give way to the victory card (the shelf marks them new).
   trophyToast.clear();
-  keepReplay(g.rec.toLog(), rec.best);
-  // The run is over: nothing left to continue (games kept in slots stay).
+  // The run is over: nothing left to continue (games kept in slots stay); its log (room freed first) kept to watch again.
+  const log = g.rec.toLog();
   deleteSave('auto');
+  keepReplay(log, rec.best);
   firstDay.stop();
   sound.music('title');
   // Away over the sea (P12): the raft pushes off, the helicopter lifts away; a longer moment to watch it.

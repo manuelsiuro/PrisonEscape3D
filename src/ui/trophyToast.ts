@@ -28,8 +28,14 @@ export class TrophyToast {
   }
 
   private next() {
-    const a = this.queue.shift();
-    if (!a) return;
+    if (!this.queue.length) return;
+    // Not over a dialog (the pause card, the escape, a screen): it waits for the game.
+    if (document.querySelector('.modal, .intake')) {
+      window.clearTimeout(this.timer);
+      this.timer = window.setTimeout(() => this.next(), 600);
+      return;
+    }
+    const a = this.queue.shift()!;
     const el = h(
       'div',
       'trophy-toast',
@@ -38,7 +44,7 @@ export class TrophyToast {
     el.setAttribute('aria-hidden', 'true');
     el.querySelector('b')!.textContent = t(`ach.${a.id}` as Key);
     if (a.gives) el.querySelector('em span')!.textContent = t('trophy.gives', { what: t(`look.${a.gives}` as Key) });
-    this.live.textContent = `${t('trophy.unlocked')}: ${el.querySelector('b')!.textContent}${a.gives ? `. ${el.querySelector('em span')!.textContent}` : ''}`;
+    this.live.textContent = t('trophy.unlockedSr', { name: el.querySelector('b')!.textContent!, gift: a.gives ? ` ${el.querySelector('em span')!.textContent}` : '' });
     document.body.append(el);
     this.el = el;
     this.onShow();

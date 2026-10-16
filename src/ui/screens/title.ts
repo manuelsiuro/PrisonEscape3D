@@ -73,7 +73,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         </button>
         <div class="title-row three">
           <button class="menu-btn" data-c="trophies" style="--tone:#e2a21b;--tone-2:#b87a0c">
-            <span class="menu-ic">${icon('trophy', 18)}${info.trophiesNew ? '<i class="menu-dot"></i>' : ''}</span>
+            <span class="menu-ic">${icon('trophy', 18)}${info.trophiesNew ? `<i class="menu-dot"></i><span class="sr-only">${t('trophy.newSr')}</span>` : ''}</span>
             <span class="menu-text"><span class="menu-label">${t('title.trophies')}</span><small>${info.trophies}</small></span>
           </button>
           <button class="menu-btn" data-c="help" style="--tone:#3fb07a;--tone-2:#1f8a5a">

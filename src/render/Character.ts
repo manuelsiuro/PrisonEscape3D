@@ -289,7 +289,7 @@ function glassesParts(kind: number, color: number): Part[] {
     case 4:
       return [...rim(0.1, 0.12, 0.12), part(0.01, 0.2, 0.01, color, 0.16, 0.1, z)];
     case 5:
-      return [part(0.48, 0.04, 0.46, 0x5a3d22, 0, 0.3, 0), ...rim(-0.1, 0.15, 0.13), ...rim(0.1, 0.15, 0.13), bridge];
+      return [part(0.53, 0.04, 0.53, 0x5a3d22, 0, 0.3, -0.01), ...rim(-0.1, 0.15, 0.13), ...rim(0.1, 0.15, 0.13), bridge];
     case 6:
       return [...rim(-0.1, 0.15, 0.12), ...rim(0.1, 0.15, 0.12), part(0.04, 0.04, 0.015, color, -0.19, 0.31, z), part(0.04, 0.04, 0.015, color, 0.19, 0.31, z), bridge, ...arms];
     default:
@@ -304,11 +304,13 @@ function hatParts(kind: number, color: number): Part[] {
     case 1:
       return [part(0.5, 0.16, 0.48, color, 0, 0.55, -0.01), part(0.52, 0.06, 0.5, dark, 0, 0.46, -0.01), part(0.1, 0.08, 0.1, mix(color, 0xffffff, 0.35), 0, 0.66, -0.01)];
     case 2:
-      return [part(0.5, 0.08, 0.48, color, 0, 0.44, -0.01), part(0.49, 0.08, 0.47, color, 0, 0.52, -0.02), part(0.07, 0.13, 0.04, color, 0.07, 0.36, -0.26), part(0.07, 0.11, 0.04, dark, -0.03, 0.37, -0.26), part(0.04, 0.02, 0.02, 0xffffff, 0.1, 0.5, 0.24)];
+      // (Its front ahead of the hair and the face, its back behind the back hair; the knot's tails behind it.)
+      return [part(0.5, 0.08, 0.52, color, 0, 0.44, -0.01), part(0.49, 0.08, 0.48, color, 0, 0.52, -0.01), part(0.07, 0.13, 0.04, color, 0.07, 0.36, -0.29), part(0.07, 0.11, 0.04, dark, -0.03, 0.37, -0.29), part(0.04, 0.02, 0.02, 0xffffff, 0.1, 0.5, 0.245)];
     case 3:
-      return [part(0.49, 0.06, 0.47, color, 0, 0.41, 0), part(0.495, 0.02, 0.475, 0xd63c2e, 0, 0.41, 0)];
+      // (Round the hair, not in it: wider than the side hair, deeper than the back hair.)
+      return [part(0.53, 0.06, 0.53, color, 0, 0.41, -0.01), part(0.535, 0.02, 0.535, 0xd63c2e, 0, 0.41, -0.01)];
     case 4:
-      return [part(0.5, 0.08, 0.48, color, 0, 0.48, -0.01), part(0.58, 0.24, 0.54, color, 0, 0.64, -0.01), part(0.3, 0.06, 0.3, mix(color, 0xc8c8c8, 0.3), 0, 0.77, -0.01)];
+      return [part(0.52, 0.08, 0.5, color, 0, 0.48, -0.01), part(0.58, 0.24, 0.54, color, 0, 0.64, -0.01), part(0.3, 0.06, 0.3, mix(color, 0xc8c8c8, 0.3), 0, 0.77, -0.01)];
     case 5:
       return [part(0.24, 0.08, 0.24, color, 0.04, 0.55, 0), part(0.18, 0.08, 0.18, 0xffd23f, 0.04, 0.63, 0), part(0.12, 0.08, 0.12, color, 0.04, 0.71, 0), part(0.06, 0.08, 0.06, 0xffd23f, 0.04, 0.79, 0), part(0.09, 0.07, 0.09, 0xf2f2ee, 0.04, 0.86, 0)];
     case 6: {
@@ -318,11 +320,12 @@ function hatParts(kind: number, color: number): Part[] {
       return pts;
     }
     case 7:
-      return [part(0.82, 0.03, 0.78, color, 0, 0.5, 0), part(0.44, 0.14, 0.42, color, 0, 0.58, 0), part(0.45, 0.04, 0.43, 0x8a4b2a, 0, 0.54, 0)];
+      // (The crown's foot covers the hair under the brim.)
+      return [part(0.82, 0.03, 0.78, color, 0, 0.5, 0), part(0.5, 0.04, 0.49, color, 0, 0.53, -0.01), part(0.44, 0.14, 0.42, color, 0, 0.6, 0), part(0.45, 0.04, 0.43, 0x8a4b2a, 0, 0.56, 0)];
     case 8:
-      return [part(0.62, 0.04, 0.6, dark, 0, 0.47, 0), part(0.5, 0.16, 0.48, color, 0, 0.56, 0)];
+      return [part(0.62, 0.04, 0.6, dark, 0, 0.47, 0), part(0.5, 0.16, 0.5, color, 0, 0.56, -0.01)];
     case 9:
-      return [part(0.66, 0.03, 0.62, color, 0, 0.5, 0), part(0.42, 0.36, 0.4, color, 0, 0.69, 0), part(0.43, 0.05, 0.41, 0xa3262a, 0, 0.55, 0)];
+      return [part(0.66, 0.03, 0.62, color, 0, 0.5, 0), part(0.5, 0.04, 0.49, color, 0, 0.53, -0.01), part(0.42, 0.36, 0.4, color, 0, 0.71, 0), part(0.43, 0.05, 0.41, 0xa3262a, 0, 0.57, 0)];
     default:
       return [
         part(0.25, 0.12, 0.24, color, -0.125, 0.53, 0.115),
@@ -509,7 +512,7 @@ export class Character {
           part(0.15, 0.2, 0.16, outfit, 0, -0.1, 0),
           part(0.13, 0.15, 0.14, skin, 0, -0.27, 0),
           part(0.14, 0.09, 0.15, skin, 0, -0.38, 0),
-          ...(trim !== undefined ? [part(0.156, 0.03, 0.166, trim, 0, -0.185, 0)] : []),
+          ...(trim !== undefined ? [part(0.156, 0.034, 0.166, trim, 0, -0.187, 0)] : []),
           ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f) : []),
         ],
         pivot,
@@ -525,11 +528,12 @@ export class Character {
     const style0 = look.hairStyle ?? 0;
     // (Under a guard's cap too: a disguise's crown stays a cap.)
     const covered = hatted || look.cap !== undefined || !!look.riot;
-    const style = covered && (style0 === 3 || style0 === 4 || style0 === 5) ? 0 : style0;
+    // Under a hat (or the cap): a tall top lies flat, a mohawk is shaved down to a buzz cut, curls keep their sides and back.
+    const style = covered && style0 === 3 ? 0 : covered && style0 === 4 ? 1 : style0;
     if (style === 0 || style === 3 || style === 6) {
       const top = style === 3 ? 0.22 : 0.1;
       face.push(
-        part(0.48, top, 0.46, hair, 0, 0.42 + top / 2, -0.01),
+        part(0.48, top, 0.47, hair, 0, 0.42 + top / 2, -0.005),
         part(0.48, 0.26, 0.08, hair, 0, 0.33, -0.21),
         part(0.05, 0.14, 0.4, hair, -0.23, 0.36, -0.02),
         part(0.05, 0.14, 0.4, hair, 0.23, 0.36, -0.02),
@@ -542,13 +546,17 @@ export class Character {
       // A mohawk: shaved sides, a crest front to back.
       face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215), part(0.1, 0.2, 0.46, hair, 0, 0.55, -0.01));
     } else if (style === 5) {
-      // Curls: a round mop over the top, down the sides and the back.
-      face.push(part(0.56, 0.2, 0.54, hair, 0, 0.5, -0.02), part(0.08, 0.2, 0.42, hair, -0.27, 0.36, -0.04), part(0.08, 0.2, 0.42, hair, 0.27, 0.36, -0.04), part(0.54, 0.3, 0.1, hair, 0, 0.32, -0.25));
+      // Curls: a round mop over the top (a short top under a hat), down the sides and the back.
+      face.push(covered ? part(0.48, 0.1, 0.47, hair, 0, 0.47, -0.005) : part(0.56, 0.2, 0.54, hair, 0, 0.5, -0.02), part(0.08, 0.2, 0.42, hair, -0.27, 0.36, -0.04), part(0.08, 0.2, 0.42, hair, 0.27, 0.36, -0.04), part(0.54, 0.3, 0.1, hair, 0, 0.32, -0.25));
     }
     if (look.beard) face.push(...beardParts(look.beard, hair, skin));
     if (look.glasses) face.push(...glassesParts(look.glasses, look.glassesColor ?? 0x2a2a30));
-    // A hat sits on what's under it: the short cut's top (0.52), a buzz cut's (0.465), a bald head's (0.44).
-    if (hatted) face.push(...hatParts(look.hat!, look.hatColor ?? 0x8c3b2a).map((g) => g.translate(0, (style === 2 ? 0.44 : style === 1 || style === 4 ? 0.465 : 0.52) - 0.52, 0)));
+    // A hat sits on what's under it: the short cut's top (0.52), a buzz cut's (0.465), a bald head's (0.44),
+    // a hair's breadth above (no shared faces); a headband stays round the brow whatever the hair.
+    if (hatted) {
+      const dy = look.hat === 3 ? 0 : (style === 2 ? 0.45 : style === 1 ? 0.475 : 0.52) - 0.52;
+      face.push(...hatParts(look.hat!, look.hatColor ?? 0x8c3b2a).map((g) => g.translate(0, dy, 0)));
+    }
     if (look.riot) {
       // A riot helmet: the shell over the head, its visor down over the eyes, a chin guard.
       face.push(

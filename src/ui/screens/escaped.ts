@@ -47,7 +47,7 @@ function earnedRow(list: readonly Achievement[]): string {
   if (!list.length) return '';
   const shown = list.slice(0, 5);
   const more = list.length - shown.length;
-  return `<div class="v-earned"><small>${t('victory.earned')}</small><div>${shown.map((a) => `<span class="v-ach">${icon(a.icon, 14)}${t(`ach.${a.id}` as Key)}</span>`).join('')}${more > 0 ? `<span class="v-ach more">+${more}</span>` : ''}</div></div>`;
+  return `<div class="v-earned"><small>${t('victory.earned')}</small><div>${shown.map((a) => `<span class="v-ach">${icon(a.icon, 14)}${t(`ach.${a.id}` as Key)}</span>`).join('')}${more > 0 ? `<span class="v-ach more" aria-label="${t('victory.earnedMore', { n: more })}">+${more}</span>` : ''}</div></div>`;
 }
 
 /** Each way out's icon. */
@@ -74,6 +74,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       <div class="escaped-icon">${icon('trophy', 34)}</div>
       <h2>${t('escaped.title')}</h2>
       <p class="v-sub"></p>
+      <div class="v-left">
       <div class="v-method">${icon(ROUTE_ICON[v.via] ?? 'route', 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}</div>
       <div class="v-stats">
         ${stat('clock', v.day, 'victory.days')}
@@ -83,6 +84,8 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
         ${stat('coin', `$${cash}`, 'victory.cash')}
         ${v.best ? stat('star', t('victory.bestYes'), 'victory.best') : stat('star', t('hud.day', { n: v.bestDay }), 'victory.bestWas')}
       </div>
+      </div>
+      <div class="v-right">
       ${medalRow(v)}
       <div class="v-routes"><span class="v-routes-label"></span><span class="v-pips">${pips}</span></div>
       ${earnedRow(v.earned ?? [])}
@@ -92,6 +95,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
         ${v.unlocked ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}<span class="v-next"></span></button>` : ''}
         <button class="big-btn ${v.unlocked ? 'ghost' : 'primary'}" data-c="again">${icon('replay', 18)}${t('victory.again')}</button>
         <button class="big-btn ghost" data-c="title">${icon('home', 18)}${t('escaped.back')}</button>
+      </div>
       </div>
     </div>`,
   );
