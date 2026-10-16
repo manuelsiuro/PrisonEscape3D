@@ -19,7 +19,8 @@ import { enBarks, type BankId } from '../src/i18n/barks/en';
 import { frBarks } from '../src/i18n/barks/fr';
 import { CHAT_ITEMS, itemPhrase, placePhrase, PUBLIC_PLACES } from '../src/i18n/barks/grammar';
 import { Director, GLOBAL_MEMORY, SPEAKER_MEMORY, type Bubble, type Stage } from '../src/talk/director';
-import { SLOTS, slotsOf, typo } from '../src/talk/fill';
+import { fill, SLOTS, slotsOf, typo } from '../src/talk/fill';
+import { generatorsOf, switchPower } from '../src/sim/systems/power';
 import { GOSSIP } from '../src/talk/gossip';
 import { GUARD_VOICES, INMATE_VOICES, type Line, type LineDef } from '../src/talk/types';
 import { UNIT } from '../src/sim/tuning';
@@ -131,6 +132,9 @@ function run(prison = PRISONS[0], days = 2) {
     stage.now = s.step / 20;
     for (const e of sim.events) d.react(e, sim, stage.now);
     if (!s.sleeping && s.ko <= 0 && s.solitary <= 0) d.tick(sim, stage);
+    else d.quiet();
+    // The screen's part: every bubble up is seen (gossip reaches the notebook then).
+    for (const b of d.active) if (!b.shown) d.seen(b, sim);
     peak = Math.max(peak, d.active.length);
     return s.step >= end;
   }, end + 10);
@@ -199,9 +203,45 @@ console.log(`styles: ${[...styles].sort().map(([k, n]) => `${k} ${n}`).join(', '
     st.now = bot.sim.state.step / 20;
     for (const e of bot.sim.events) dd.react(e, bot.sim, st.now);
     if (!bot.sim.state.sleeping) dd.tick(bot.sim, st);
+    for (const b of dd.active) if (!b.shown) dd.seen(b, bot.sim);
     return bot.sim.state.step >= end;
   }, end + 10);
   const bad = out.filter((s) => /\{|\}| [!?;:»]/.test(s));
   check(bad.length === 0, `French lines come out filled and typeset (${bad.slice(0, 2).join(' / ')})`);
   console.log(`a day in French: ${out.length} lines`);
+}
+
+// An exchange's reply names the same guard, meal or event as the line it answers.
+{
+  const bot = new Bot(PRISONS[0], 2);
+  const ctx = { lang: 'en' as const, sim: bot.sim, speaker: 0, random: () => 0.99, recent: new Map<string, string[]>(), dayEvent: null };
+  const slots = new Map<string, string>();
+  const a = fill('I think {guard} likes me.', ctx, slots);
+  const b = fill('{guard} likes nobody.', { ...ctx, speaker: 1 }, slots);
+  check(!!a && !!b && a.split(' ')[2] === b.split(' ')[0], `a reply names the same guard (${a} / ${b})`);
+}
+// A merchant holding a grudge greets coldly, shop or not.
+{
+  const bot = new Bot(PRISONS[0], 2);
+  const sim = bot.sim;
+  const who = sim.state.inmates.findIndex((m) => sim.prison.merchants.includes(m.cell));
+  sim.state.inmates[who].opinion = 10;
+  const dd = new Director();
+  dd.reset(sim, 2);
+  const low = new Set(enBarks['gr.in.low'].map((l) => (typeof l === 'string' ? l : l.t)));
+  const said = dd.greeting(sim, who);
+  check(low.has(said), `a merchant with a grudge greets coldly ("${said}")`);
+}
+// Irongate: the first generator runs the detectors and cameras only: no blackout talk.
+{
+  const prison = PRISONS.find((p) => p.id === 'irongate')!;
+  const bot = new Bot(prison, 2);
+  const sim = bot.sim;
+  const dd = new Director();
+  dd.reset(sim, 2);
+  switchPower(sim, generatorsOf(sim.world)[0]);
+  for (const e of sim.events) dd.react(e, sim, 0);
+  const waiting = (dd as unknown as { queue: Array<{ bank: string }> }).queue.map((p) => p.bank);
+  check(!waiting.some((b) => b.startsWith('re.power')), `GEN-1 off at Irongate: nobody talks of a blackout (${waiting.join(', ') || 'quiet'})`);
+  console.log('greetings, replies and Irongate\'s generators checked');
 }

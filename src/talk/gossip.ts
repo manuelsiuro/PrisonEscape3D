@@ -8,7 +8,7 @@ import { generatorsOf } from '../sim/systems/power';
 import { grateAt, underSea } from '../sim/systems/structure';
 import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN } from '../sim/tuning';
 import { TILE } from '../sim/world/tiles';
-import { LAYER, MAP_H, MAP_W } from '../sim/world/World';
+import { MAP_H, MAP_W } from '../sim/world/World';
 import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
 
 /**
@@ -19,11 +19,11 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime']);
+export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime']);
 
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
@@ -67,7 +67,11 @@ function lastingFacts(sim: Sim): Fact[] {
   if (!def.grid && generatorsOf(sim.world).length === 1 && hasTile(sim, TILE.ELECTRIC)) add({ kind: 'fenceOff', n: POWER_OFF_STEPS / STEPS_PER_SECOND });
   add({ kind: 'brace', n: UNBRACED_RUN });
   const routes = def.escapes ?? ['fence', 'tunnel', 'roof', 'takeover'];
-  if (routes.includes('takeover') && def.guards.length > 1) add({ kind: 'takeover', n: Math.ceil(def.guards.length * TAKEOVER_SHARE), m: def.guards.length });
+  if (routes.includes('takeover') && def.guards.length > 1) {
+    // "5 of the 5" reads oddly: when it takes every guard, it's said so.
+    const n = Math.ceil(def.guards.length * TAKEOVER_SHARE);
+    add(n === def.guards.length ? { kind: 'takeoverAll', n } : { kind: 'takeover', n, m: def.guards.length });
+  }
   def.guards.forEach((g, k) => g.name && add({ kind: 'keyColor', key: `keyColor:${k}`, guard: k, color: g.key }));
   // Rooms with a ceiling grate into the vents.
   const w = sim.world;
@@ -93,10 +97,10 @@ function lastingFacts(sim: Sim): Fact[] {
 export function facts(sim: Sim, speaker = -1): Fact[] {
   const s = sim.state;
   const out = lastingFacts(sim).slice();
-  // A merchant's stock (items people know how to say).
+  // A merchant's stock (items people know how to say), if the merchant would sell to the player.
   sim.prison.merchants.forEach((cell, k) => {
     const who = s.inmates.findIndex((m) => m.cell === cell);
-    if (who < 0 || who === speaker) return;
+    if (who < 0 || who === speaker || s.inmates[who].opinion <= OPINION_LOW) return;
     for (const v of s.shops[k] ?? []) {
       const id = v ? itemDef(itemOf(v)).id : '';
       if (id && (CHAT_ITEMS.includes(id) || STOCK_WORDS.has(id))) out.push({ kind: 'stock', key: `stock:${who}:${id}`, inmate: who, item: id });
@@ -110,9 +114,46 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   s.inmates.forEach((m, k) => {
     if (k !== speaker && m.opinion <= OPINION_LOW) out.push({ kind: 'grudge', key: `grudge:${k}`, inmate: k });
   });
-  if (s.heat >= 50 && s.layer === LAYER.GROUND) out.push({ kind: 'heat', key: 'heat' });
+  if (s.heat >= 50) out.push({ kind: 'heat', key: 'heat' });
   return out;
 }
 
 /** The merchants' wares the banks can name (grammar.ts has their words). */
 const STOCK_WORDS: ReadonlySet<string> = new Set(['lighter', 'glue', 'duct_tape', 'metal_file', 'timber', 'sheet_metal', 'crowbar', 'wire', 'razor_blade', 'foil', 'rope', 'trowel', 'nail_file', 'screwdriver']);
+
+/** The fields each kind of fact needs (numbers, a guard, an inmate, an item, a place). */
+const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
+  bedChecks: ['t1', 't2'],
+  dummy: [],
+  fenceOff: ['n'],
+  brace: ['n'],
+  takeover: ['n', 'm'],
+  takeoverAll: ['n'],
+  keyColor: ['guard', 'color'],
+  grate: ['place'],
+  toilets: ['n'],
+  camera: ['n'],
+  pouch: [],
+  shell: [],
+  craters: ['t1'],
+  flood: [],
+  heli: ['t1', 't2'],
+  solitary: ['n', 'm'],
+  koTime: ['n'],
+  stock: ['inmate', 'item'],
+  job: ['place'],
+  favor: ['inmate'],
+  grudge: ['inmate'],
+  heat: [],
+};
+
+/** Whether a fact (from a save) is whole and about people of this prison: a kind this version knows, every field it needs. */
+export function factOk(f: Partial<Fact> | undefined, sim: Sim): f is Fact {
+  if (!f || typeof f.key !== 'string' || !(GOSSIP as readonly string[]).includes(f.kind as string)) return false;
+  const kind = f.kind as GossipKind;
+  if (!NEEDS[kind].every((k) => f[k] !== undefined && f[k] !== null)) return false;
+  const s = sim.state;
+  if (f.inmate !== undefined && !(Number.isInteger(f.inmate) && f.inmate >= 0 && f.inmate < s.inmates.length)) return false;
+  if (f.guard !== undefined && !(Number.isInteger(f.guard) && f.guard >= 0 && f.guard < s.guards.length)) return false;
+  return true;
+}

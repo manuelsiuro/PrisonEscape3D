@@ -1,14 +1,16 @@
+import { itemDef } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import { t, type Key, type Lang } from '../i18n';
 import { enBarks, type BankId, type Barks } from '../i18n/barks/en';
 import { frBarks } from '../i18n/barks/fr';
-import type { DayEvent } from '../i18n/barks/grammar';
+import { itemPhrase, type DayEvent } from '../i18n/barks/grammar';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt } from '../sim/systems/clock';
 import { DOING } from '../sim/systems/inmates';
+import { itemOf } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
 import { DIR_X, DIR_Z } from '../sim/command';
-import { OPINION_LOW, UNIT } from '../sim/tuning';
+import { OPINION_HIGH, OPINION_LOW, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { fill, nameOf, type FillContext } from './fill';
 import { facts, LASTING, type Fact } from './gossip';
@@ -51,6 +53,14 @@ export interface Bubble {
   pitch: number;
   line: number;
   bank: BankId;
+  /** Who it is (shown on gossip: the friend worth thanking). */
+  name?: string;
+  /** What happened made them say it (a reaction outranks an idle line for the room on screen). */
+  reaction?: boolean;
+  /** The gossip told (the notebook keeps it once the bubble has been seen). */
+  fact?: Fact;
+  /** On screen at least once (set by the bubbles' layer): a line never seen is let go. */
+  shown?: boolean;
 }
 
 /** What the screen tells the director each tick. */
@@ -73,6 +83,8 @@ export interface Stage {
 export interface Rumor {
   fact: Fact;
   step: number;
+  /** Who told it (Cast id; older saves have none). */
+  by?: number;
 }
 
 interface Pending {
@@ -89,6 +101,7 @@ interface Pending {
 }
 
 const lineDef = (l: Line): LineDef => (typeof l === 'string' ? { t: l } : l);
+const NO_TAGS: ReadonlySet<Tag> = new Set();
 
 function mulberry(seed: number) {
   let a = seed | 0;
@@ -101,6 +114,13 @@ function mulberry(seed: number) {
 }
 
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
+
+/** The banks of a language with lines tied to moments (`when`). */
+function whenBanks(lang: Lang): ReadonlySet<BankId> {
+  return new Set(BANK_IDS.filter((b) => BANKS[lang][b].some((l) => typeof l !== 'string' && !!l.when)));
+}
+/** How many reactions may wait at once (the rest are dropped, the least pressing first). */
+const QUEUE_MAX = 24;
 
 export class Director {
   readonly active: Bubble[] = [];
@@ -137,6 +157,10 @@ export class Director {
   private dayEvent: DayEvent | null = null;
   private voices: Voice[] = [];
   private prisonId = '';
+  /** Each inmate's last greetings (the talk panel's lines, apart from the bubbles' memory). */
+  private greeted = new Map<number, number[]>();
+  /** Banks with lines tied to moments (only those need the moment worked out). */
+  private timed = whenBanks('en');
 
   /** A new game (or a game loaded): everything forgotten, the voices of this prison. */
   reset(sim: Sim, seed = 0) {
@@ -153,6 +177,7 @@ export class Director {
     this.grumble.clear();
     this.cameTo.clear();
     this.bumped.clear();
+    this.greeted.clear();
     this.caughtAt = this.powerOutAt = -1e9;
     this.nextAmbient = this.nextTick = this.gossipNext = 0;
     this.day = sim.clock.day;
@@ -167,7 +192,15 @@ export class Director {
   setLang(lang: Lang) {
     if (lang === this.lang) return;
     this.lang = lang;
+    this.timed = whenBanks(lang);
     this.forget();
+    this.active.length = 0;
+    this.queue = [];
+    this.greeted.clear();
+  }
+
+  /** The game went quiet (paused, asleep, out cold, in solitary): what was up or waiting goes. */
+  quiet() {
     this.active.length = 0;
     this.queue = [];
   }
@@ -210,7 +243,9 @@ export class Director {
     if (c.minuteOfDay >= 8 * 60 && c.minuteOfDay < 12 * 60) out.add('morning');
     if (c.minuteOfDay >= 18 * 60 && c.minuteOfDay < 23 * 60) out.add('evening');
     if (c.day === 1) out.add('day1');
+    if (c.day <= 2) out.add('newbie');
     if (c.day >= 5) out.add('veteran');
+    if (block === 'freeTime' || block === 'eveningFreeTime') out.add('freeTime');
     out.add(sim.prison.theme ?? 'suburban');
     if (s.cash >= 100) out.add('rich');
     if (s.cash < 5) out.add('broke');
@@ -221,19 +256,26 @@ export class Director {
     return out;
   }
 
-  private context(sim: Sim, speaker: number, fact?: Fact): FillContext {
-    return { lang: this.lang, sim, speaker, random: this.random, recent: this.recentSlots, fact, dayEvent: this.dayEvent };
+  private context(sim: Sim, speaker: number, fact?: Fact, items?: readonly string[]): FillContext {
+    return { lang: this.lang, sim, speaker, random: this.random, recent: this.recentSlots, fact, dayEvent: this.dayEvent, items };
+  }
+
+  /** What a merchant has on sale (the items the banks can name): what its dealing lines may mention. */
+  private stockOf(sim: Sim, speaker: number): string[] {
+    const k = sim.merchantOf(speaker);
+    const shop = k >= 0 ? sim.state.shops[k] : [];
+    return shop.filter((v) => v > 0).map((v) => itemDef(itemOf(v)).id).filter((id) => itemPhrase(this.lang, id, 'a') !== null);
   }
 
   /**
    * A line from a bank for a speaker: fitting its voice and the moment, fresh (not among its
    * last lines nor the last heard), weighted to the rarely said. Null when none is left.
    */
-  private pickLine(sim: Sim, bank: BankId, speaker: number, fact?: Fact, relax = true): { line: number; text: string; def: LineDef } | null {
+  private pickLine(sim: Sim, bank: BankId, speaker: number, fact?: Fact, relax = true, avoid?: readonly number[]): { line: number; text: string; def: LineDef; slots: Map<string, string> } | null {
     const lines = BANKS[this.lang][bank];
     if (!lines?.length) return null;
     const voice = this.voiceOf(speaker);
-    const tags = this.tags(sim, speaker);
+    const tags = this.timed.has(bank) ? this.tags(sim, speaker) : NO_TAGS;
     const base = BANK_INDEX.get(bank)! * BANK_SPAN;
     const mine = this.bySpeaker.get(speaker) ?? [];
     for (const relaxed of relax ? [false, true] : [false]) {
@@ -244,12 +286,13 @@ export class Director {
         if (def.v && !def.v.includes(voice)) return;
         if (def.when && !def.when.every((tg) => tags.has(tg))) return;
         if (def.once && this.once.has(id)) return;
-        if (mine.includes(id)) return;
-        if (!relaxed && this.ring.includes(id)) return;
+        if ((avoid ?? mine).includes(id)) return;
+        if (!relaxed && !avoid && this.ring.includes(id)) return;
         const w = (def.w ?? 1) * (def.v ? 3 : 1) * (def.when ? 2 : 1) / (1 + (this.counts.get(id) ?? 0));
         pool.push({ id, def, w });
       });
-      const ctx = this.context(sim, speaker, fact);
+      // A merchant's dealing lines name what's actually on sale.
+      const ctx = this.context(sim, speaker, fact, bank === 'in.dealing' ? this.stockOf(sim, speaker) : undefined);
       while (pool.length) {
         let total = 0;
         for (const c of pool) total += c.w;
@@ -257,10 +300,12 @@ export class Director {
         let k = 0;
         while (k < pool.length - 1 && (r -= pool[k].w) > 0) k++;
         const c = pool[k];
-        const text = fill(c.def.t, ctx);
+        const slots = new Map<string, string>();
+        const text = fill(c.def.t, ctx, slots);
         if (text !== null) {
           if (relaxed) this.stats.relaxed++;
-          return { line: c.id, text, def: c.def };
+          if (c.def.once) this.once.add(c.id);
+          return { line: c.id, text, def: c.def, slots };
         }
         pool.splice(k, 1);
       }
@@ -283,11 +328,13 @@ export class Director {
   }
 
   /** A bubble up over a speaker. */
-  private show(sim: Sim, stage: Stage, speaker: number, bank: BankId, line: number, text: string, style: Style) {
+  private show(sim: Sim, stage: Stage, speaker: number, bank: BankId, line: number, text: string, style: Style, reaction = false) {
     const guard = speaker >= sim.state.inmates.length;
     const chars = text.length;
     const read = Math.max(2.4, 1.2 + chars / 14) * (style === 'gossip' ? 1.5 : 1) * (stage.phone ? 1.2 : 1);
-    const b: Bubble = { speaker, guard, text, style, start: stage.now, until: stage.now + read, pitch: PITCH[this.voiceOf(speaker)], line, bank };
+    // Gossip says who tells it: the friend worth thanking.
+    const name = style === 'gossip' ? (nameOf(sim, speaker) ?? undefined) : undefined;
+    const b: Bubble = { speaker, guard, text, style, start: stage.now, until: stage.now + read, pitch: PITCH[this.voiceOf(speaker)], line, bank, name, reaction };
     this.active.push(b);
     this.remember(speaker, line);
     const pause = PAUSE[this.voiceOf(speaker)];
@@ -297,13 +344,13 @@ export class Director {
   }
 
   /** Says a line from a bank, if one is left: the bubble, or null (silence). */
-  private say(sim: Sim, stage: Stage, speaker: number, bank: BankId, style: Style, fact?: Fact, relax = true): Bubble | null {
+  private say(sim: Sim, stage: Stage, speaker: number, bank: BankId, style: Style, fact?: Fact, relax = true, reaction = false): Bubble | null {
     const got = this.pickLine(sim, bank, speaker, fact, relax);
     if (!got) {
       this.stats.silent++;
       return null;
     }
-    return this.show(sim, stage, speaker, bank, got.line, got.text, style);
+    return this.show(sim, stage, speaker, bank, got.line, got.text, style, reaction);
   }
 
   // ---------------------------------------------------------------- what happened
@@ -331,7 +378,12 @@ export class Director {
 
   private queueUp(now: number, bank: BankId, speakers: number[], prio: number, trigger: string, style?: Style, delay = 0, life = 2.5) {
     if (!speakers.length) return;
-    this.queue.push({ bank, speakers, prio, at: now + delay, expires: now + delay + life, trigger, style });
+    // What matters most waits a little longer for its turn on screen.
+    this.queue.push({ bank, speakers, prio, at: now + delay, expires: now + delay + life + (prio >= 4 ? 1.5 : 0), trigger, style });
+    if (this.queue.length > QUEUE_MAX) {
+      this.queue.sort((a, b) => b.prio - a.prio || b.at - a.at);
+      this.queue.length = QUEUE_MAX;
+    }
   }
 
   private incident(kind: Incident['kind'], x: number, z: number, now: number) {
@@ -370,7 +422,7 @@ export class Director {
       case 'bedCheck':
         if (e.result === 'start') {
           const k = s.guards.findIndex((_, i) => sim.prison.guards[i].duties?.includes('bedCheck'));
-          if (k >= 0) this.queueUp(now, 'gu.bedCheck', [n + k], 2, 'bedCheck', undefined, 0, 30);
+          if (k >= 0) this.queueUp(now, 'gu.bedCheck', [n + k], 2, 'bedCheck', undefined, 0, 12);
         } else if (e.result === 'fail') this.queueUp(now, 're.bedFail.gu', this.guardsNear(sim, px, pz, 30), 5, 'bedFail', 'shout');
         break;
       case 'scanned':
@@ -398,6 +450,8 @@ export class Director {
         const p = at(e.who);
         this.incident(e.ko ? 'ko' : 'fight', p.x, p.z, now);
         this.queueUp(now, 're.fight.in', this.inmatesNear(sim, p.x, p.z, 7, e.who), 3, 'fight', 'shout', 0.3);
+        // A follower's brawl: the guards nearby want it over.
+        this.queueUp(now, 're.fight.gu', this.guardsNear(sim, p.x, p.z, 8, e.who), 2, 'fightGu', 'shout', 0.8);
         break;
       }
       case 'hurt':
@@ -431,7 +485,8 @@ export class Director {
         break;
       }
       case 'power':
-        if (!e.on) {
+        // Irongate's GEN-1 runs only the detectors and cameras: nobody notices a blackout that isn't one.
+        if (!e.on && !sim.powered('lights')) {
           this.powerOutAt = now;
           this.noteDay('power');
           this.queueUp(now, 're.power.in', this.inmatesNear(sim, px, pz, 30), 3, 'power', undefined, 0.5);
@@ -461,21 +516,16 @@ export class Director {
           this.queueUp(now, 're.takeover.gu', this.guardsNear(sim, px, pz, 40), 4, 'takeoverGu', 'shout', 1.4);
         }
         break;
+      // Said to the player across the talk panel: the panel shows it (see answer()); a bubble otherwise.
       case 'gift':
-        this.queueUp(now, 're.gift.in', [e.who], 3, 'gift');
-        break;
       case 'opinion':
-        if (e.by < 0 && (s.inmates[e.who]?.angry ?? 0) <= 0) this.queueUp(now, 're.opinionDown.in', [e.who], 3, 'opinionDown');
-        break;
       case 'favor':
-        if (e.state === 'paid') this.queueUp(now, 're.favorDone.in', [e.who], 3, 'favorDone');
-        break;
       case 'recruit':
-        this.queueUp(now, e.on ? 're.recruit.in' : 're.dismiss.in', [e.who], 3, 'recruit');
+      case 'tip': {
+        const bank = this.answerBank(e, sim);
+        if (bank && e.who !== s.talk) this.queueUp(now, bank, [e.who], 3, bank);
         break;
-      case 'tip':
-        if (e.who >= 0) this.queueUp(now, 're.tip.in', [e.who], 3, 'tip');
-        break;
+      }
       case 'routine':
         if (this.random() < 0.5) this.queueUp(now, 're.bell.in', this.inmatesNear(sim, px, pz, 14), 2, 'bell', undefined, 1);
         break;
@@ -487,10 +537,16 @@ export class Director {
   /** Bubbles that have had their time go; every quarter second, someone may speak. */
   tick(sim: Sim, stage: Stage) {
     const now = stage.now;
-    for (let i = this.active.length - 1; i >= 0; i--) if (now >= this.active[i].until || !stage.sees(this.active[i].speaker)) this.active.splice(i, 1);
+    const s = sim.state;
+    // A bubble goes when its time is up, when its speaker leaves the screen or is knocked out,
+    // and when it never found room on screen (it isn't kept waiting: it's let go).
+    for (let i = this.active.length - 1; i >= 0; i--) {
+      const b = this.active[i];
+      const out = b.guard ? s.guards[b.speaker - s.inmates.length]?.ko : s.inmates[b.speaker]?.ko;
+      if (now >= b.until || !stage.sees(b.speaker) || (out ?? 0) > 0 || (!b.shown && now - b.start > 0.8)) this.active.splice(i, 1);
+    }
     if (now < this.nextTick) return;
     this.nextTick = now + 0.25;
-    const s = sim.state;
     if (sim.clock.day !== this.day) {
       this.day = sim.clock.day;
       this.searched.clear();
@@ -500,7 +556,7 @@ export class Director {
     this.incidents = this.incidents.filter((i) => now - i.at < 10);
     // Only on the ground floor (from the vents and tunnels nobody is seen talking).
     if (s.layer !== LAYER.GROUND) {
-      this.queue = [];
+      this.quiet();
       return;
     }
     this.bumps(sim, now);
@@ -527,28 +583,44 @@ export class Director {
     const now = stage.now;
     this.queue = this.queue.filter((p) => now <= p.expires);
     this.queue.sort((a, b) => b.prio - a.prio || a.at - b.at);
-    for (let q = 0; q < this.queue.length && this.active.length < stage.max; q++) {
+    for (let q = 0; q < this.queue.length; q++) {
       const p = this.queue[q];
       if (now < p.at) continue;
+      // An exchange's reply isn't held back by cooldowns (it's half of a line already said).
       if (now < (this.triggerNext.get(p.trigger) ?? 0) && !p.text) {
         this.queue.splice(q--, 1);
         continue;
       }
-      const who = p.speakers.find((id) => stage.sees(id) && !this.speaking(id) && now >= (this.triggerNext.get(`${p.trigger}:${id}`) ?? 0));
+      // What matters (a guard saying why it noticed the player, a reply) may take the place of an
+      // idle line: its speaker's own, or the oldest one on screen when the screen is full.
+      const urgent = p.prio >= 4;
+      const idle = (id: number) => this.active.find((b) => b.speaker === id && !b.reaction);
+      const who = p.speakers.find((id) => stage.sees(id) && (!this.speaking(id) || (urgent && !!idle(id))) && (!!p.text || now >= (this.triggerNext.get(`${p.trigger}:${id}`) ?? 0)) && this.canSpeak(sim, id, now));
       if (who === undefined) continue;
-      let said: Bubble | null;
-      if (p.text) said = this.show(sim, stage, who, p.bank, p.line ?? 0, p.text, p.style ?? 'say');
-      else {
-        const mood = who < sim.state.inmates.length ? inmateMood(sim, who, this.recent(now)) : guardMood(sim, who, this.recent(now));
-        // Someone out cold says nothing; a shout stays a shout.
-        said = mood === null ? null : this.say(sim, stage, who, p.bank, p.style ?? 'say');
+      const own = idle(who);
+      if (own) this.drop(own);
+      else if (this.active.length >= stage.max) {
+        const oldest = urgent ? this.active.find((b) => !b.reaction) : undefined;
+        if (!oldest) continue;
+        this.drop(oldest);
       }
+      const said = p.text ? this.show(sim, stage, who, p.bank, p.line ?? 0, p.text, p.style ?? 'say', true) : this.say(sim, stage, who, p.bank, p.style ?? 'say', undefined, true, true);
       this.queue.splice(q--, 1);
-      if (said) {
+      if (said && !p.text) {
         this.triggerNext.set(p.trigger, now + 6);
         this.triggerNext.set(`${p.trigger}:${who}`, now + 20);
       }
     }
+  }
+
+  /** Whether someone can speak now (awake or sleep-talking, not out cold). */
+  private canSpeak(sim: Sim, id: number, now: number): boolean {
+    return (id < sim.state.inmates.length ? inmateMood(sim, id, this.recent(now)) : guardMood(sim, id, this.recent(now))) !== null;
+  }
+
+  private drop(b: Bubble) {
+    const i = this.active.indexOf(b);
+    if (i >= 0) this.active.splice(i, 1);
   }
 
   /** Someone on screen says something, if anyone is in the mood. */
@@ -567,7 +639,8 @@ export class Director {
       const b = this.bodyOf(sim, id)!;
       const d = dist(b, s.player);
       // Sleep-talk only close by (a whisper).
-      if (mood.style === 'whisper' && d > 5) continue;
+      // Sleep-talk only close by (a whisper through the bars), and now and then.
+      if (mood.style === 'whisper' && (d > 7 || this.random() > 0.4)) continue;
       const prox = d <= 4 ? 1 : Math.max(0.3, 1 - ((d - 4) / 8) * 0.7);
       const fx = DIR_X[b.facing] ?? 0;
       const fz = DIR_Z[b.facing] ?? 0;
@@ -601,7 +674,7 @@ export class Director {
     // Its own catchphrase, once a day.
     const name = nameOf(sim, id);
     const catchBank = `catch.${name}` as BankId;
-    if (calm && name && BANK_INDEX.has(catchBank) && this.catchDay.get(id) !== sim.clock.day && this.random() < 0.1 && this.say(sim, stage, id, catchBank, 'say')) {
+    if (calm && name && BANK_INDEX.has(catchBank) && this.catchDay.get(id) !== sim.clock.day && this.random() < 0.07 && this.say(sim, stage, id, catchBank, 'say')) {
       this.catchDay.set(id, sim.clock.day);
       return;
     }
@@ -630,10 +703,20 @@ export class Director {
     const fact = from[Math.floor(this.random() * from.length)];
     const b = this.say(sim, stage, id, `go.${fact.kind}` as BankId, 'gossip', fact);
     if (!b) return false;
+    b.fact = fact;
     this.told.add(`${day}|${id}|${fact.key}`);
     this.gossipNext = stage.now + 45;
-    this.rumors = [{ fact, step: sim.state.step }, ...this.rumors.filter((r) => r.fact.key !== fact.key)].slice(0, 12);
     return true;
+  }
+
+  /**
+   * A bubble reached the screen (the bubbles' layer says so, once): gossip goes in the
+   * notebook only now, so nothing the player never saw is "heard".
+   */
+  seen(b: Bubble, sim: Sim) {
+    b.shown = true;
+    const fact = b.fact;
+    if (fact) this.rumors = [{ fact, step: sim.state.step, by: b.speaker }, ...this.rumors.filter((r) => r.fact.key !== fact.key)].slice(0, 12);
   }
 
   /** Two idle inmates side by side: a line, and the other's reply a moment later. */
@@ -644,7 +727,8 @@ export class Director {
       const o = s.inmates[k];
       return !!o && o.ko <= 0 && o.angry <= 0 && (o.doing === DOING.NOTHING || o.doing === DOING.SIT || o.doing === DOING.EAT || o.doing === DOING.LINE_UP);
     };
-    if (!idle(id)) return false;
+    // Room for both lines on screen (a phone held upright has room for two at most).
+    if (!idle(id) || stage.max - this.active.length < 2) return false;
     const other = s.inmates.findIndex((o, k) => k !== id && idle(k) && k !== stage.partner && dist(o.body, m.body) <= 1.5 && stage.sees(k) && !this.speaking(k) && stage.now >= (this.speakerNext.get(k) ?? 0) && !s.followers.includes(k));
     if (other < 0) return false;
     const meal = m.doing === DOING.EAT || ROUTINE[s.routine].id === 'breakfast' || ROUTINE[s.routine].id === 'dinner';
@@ -652,11 +736,41 @@ export class Director {
     const bank = topics[Math.floor(this.random() * topics.length)];
     const got = this.pickLine(sim, bank, id);
     if (!got?.def.r) return false;
-    const reply = fill(got.def.r, this.context(sim, other));
+    // The reply talks about the same guard, meal or event (its own speaker and place aside).
+    for (const k of [...got.slots.keys()]) if (k === 'me' || k.startsWith('here')) got.slots.delete(k);
+    const reply = fill(got.def.r, this.context(sim, other), got.slots);
     if (reply === null) return false;
     this.show(sim, stage, id, bank, got.line, got.text, 'say');
     this.queue.push({ bank, speakers: [other], prio: 6, at: stage.now + 1.2, expires: stage.now + 3, trigger: `reply:${other}`, text: reply, line: got.line + BANK_SPAN / 2 });
     return true;
+  }
+
+  /** How an inmate answers something the player did with it (a gift, a favor paid, joining up…), if at all. */
+  private answerBank(e: SimEvent, sim: Sim): BankId | null {
+    switch (e.type) {
+      case 'gift':
+        return 're.gift.in';
+      case 'opinion':
+        return e.by < 0 && (sim.state.inmates[e.who]?.angry ?? 0) <= 0 ? 're.opinionDown.in' : null;
+      case 'favor':
+        return e.state === 'paid' ? 're.favorDone.in' : null;
+      case 'recruit':
+        return e.on ? 're.recruit.in' : 're.dismiss.in';
+      case 'tip':
+        return e.who >= 0 ? 're.tip.in' : null;
+      default:
+        return null;
+    }
+  }
+
+  /** The talk partner's answer to what the player just did (shown in the talk panel), or null. */
+  answer(e: SimEvent, sim: Sim): string | null {
+    if (!('who' in e) || e.who !== sim.state.talk || e.who < 0) return null;
+    const bank = this.answerBank(e, sim);
+    const got = bank && this.pickLine(sim, bank, e.who);
+    if (!got) return null;
+    this.remember(e.who, got.line);
+    return got.text;
   }
 
   /** What an inmate says on opening the talk panel (by how it feels about the player). */
@@ -664,20 +778,23 @@ export class Director {
     const s = sim.state;
     const m = s.inmates[who];
     if (!m) return '';
-    const bank: BankId = s.followers.includes(who) ? 'gr.in.follower' : sim.merchantOf(who) >= 0 && sim.shopsOpen ? 'gr.in.merchant' : m.opinion <= OPINION_LOW ? 'gr.in.low' : m.opinion >= 60 ? 'gr.in.high' : 'gr.in.neutral';
-    const got = this.pickLine(sim, bank, who);
+    // A grudge shows first (a merchant who won't sell doesn't welcome anyone to the shop).
+    const bank: BankId = m.opinion <= OPINION_LOW ? 'gr.in.low' : s.followers.includes(who) ? 'gr.in.follower' : sim.merchantOf(who) >= 0 && sim.shopsOpen ? 'gr.in.merchant' : m.opinion >= OPINION_HIGH ? 'gr.in.high' : 'gr.in.neutral';
+    // Greetings keep their own memory: the last three aren't said again (the bubbles' memory untouched).
+    const last = this.greeted.get(who) ?? [];
+    const got = this.pickLine(sim, bank, who, undefined, true, last) ?? this.pickLine(sim, bank, who, undefined, true, []);
     if (!got) return '';
-    this.remember(who, got.line);
+    this.greeted.set(who, [...last, got.line].slice(-3));
     return got.text;
   }
 
   /** The rumors heard, newest first, as the prisoner's file lists them (stale news marked). */
-  notebook(sim: Sim): Array<{ text: string; old: boolean; day: number }> {
+  notebook(sim: Sim): Array<{ text: string; old: boolean; day: number; by: string | null }> {
     if (!this.rumors.length) return [];
     const now = new Set(facts(sim).map((f) => f.key));
     return this.rumors.map((r) => {
       const text = fill(t(`rumor.${r.fact.kind}` as Key), this.context(sim, -1, r.fact)) ?? '';
-      return { text, old: !LASTING.has(r.fact.kind) && !now.has(r.fact.key), day: clockAt(r.step).day };
+      return { text, old: !LASTING.has(r.fact.kind) && !now.has(r.fact.key), day: clockAt(r.step).day, by: r.by !== undefined ? nameOf(sim, r.by) : null };
     });
   }
 

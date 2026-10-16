@@ -597,6 +597,7 @@ export const en = {
   "rumor.fenceOff": "Generator off: the electric fence is dead for {n} s.",
   "rumor.brace": "More than {n} tiles past a brace and a tunnel caves in.",
   "rumor.takeover": "Takeover: {n} of the {m} guards out cold at once.",
+  "rumor.takeoverAll": "Takeover: all {n} guards out cold at once.",
   "rumor.keyColor": "{Guard.full} carries the {key} key.",
   "rumor.grate": "A vent grate {place.at}.",
   "rumor.toilets": "A toilet takes {n} loads of dirt an hour.",

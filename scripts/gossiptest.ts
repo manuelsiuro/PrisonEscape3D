@@ -118,9 +118,10 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
       out.push(`tunnel holds ${brace.n} tiles`);
     }
   }
-  // The takeover: guards knocked out one by one until the prison is the inmates'.
-  const take = find('takeover');
+  // The takeover: guards knocked out one by one until the prison is the inmates' (every guard: "all of them").
+  const take = find('takeover') ?? find('takeoverAll');
   if (take) {
+    const all = take.kind === 'takeoverAll' ? take.n : take.m;
     const bot = new Bot(prison, 1);
     const s = bot.sim.state;
     let down = 0;
@@ -128,7 +129,7 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
       s.guards[down++].ko = 99999;
       takeoverCheck(bot.sim);
     }
-    check(s.takeover && down === take.n && take.m === s.guards.length, `${prison.id}: the takeover comes with ${take.n} of ${take.m} guards out (${down})`);
+    check(s.takeover && down === take.n && all === s.guards.length, `${prison.id}: the takeover comes with ${take.n} of ${all} guards out (${down})`);
     out.push(`takeover at ${down}/${s.guards.length}`);
   }
   // The bed check of an empty cell: passed with a dummy in the bed, failed without one.

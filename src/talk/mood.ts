@@ -93,7 +93,7 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (m.opinion <= OPINION_LOW && d <= 3) return mood('in.hostile', 0.8);
   if (m.hp < maxHealth(m.str) / 2 || r.now - (r.cameTo.get(id) ?? -1e9) < 20) return mood('in.hurt', 0.7);
   if (r.now - (r.bumped.get(id) ?? -1e9) < 30) return mood('in.grumpy', 0.7);
-  if (s.followers.includes(id)) return mood('in.loyal', 0.6);
+  if (s.followers.includes(id)) return mood('in.loyal', 0.6, 'say', ['in.idle', 'in.friendly']);
   const block = ROUTINE[s.routine].id;
   const minute = sim.clock.minuteOfDay;
   const weather = weatherBank(sim, b, false);
@@ -148,7 +148,8 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (r.now - r.caughtAt < 120 && d <= 6) return mood('gu.smug', 0.7);
   if (s.heat >= 50 && d <= 5) return mood('gu.wary', 0.6);
   const block = ROUTINE[s.routine].id;
-  if (block === 'lightsOut') return mood('gu.drowsy', 0.5, 'say', ['gu.bored']);
+  // Night duty: its own lines only (the day's grumbles don't fit after Lights Out).
+  if (block === 'lightsOut') return mood('gu.drowsy', 0.5);
   const weather = weatherBank(sim, g.body, true);
   const usual: BankId = g.body.moving ? 'gu.idle' : 'gu.bored';
   const other: BankId = usual === 'gu.idle' ? 'gu.bored' : 'gu.idle';

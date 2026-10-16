@@ -23,7 +23,8 @@
   color: #f2f5f9;
   font: 600 14px/1.28 var(--font-ui);
   letter-spacing: 0.005em;
-  box-shadow: inset 3px 0 0 var(--edge), 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+  /* The speaker's colour down the left edge, a faint rim (dark floors at night), a soft drop. */
+  box-shadow: inset 3px 0 0 var(--edge), 0 0 0 1px rgba(255, 255, 255, 0.07), 0 8px 20px -8px rgba(0, 0, 0, 0.6);
   opacity: 0;
   transition: opacity 0.18s var(--ease);
   white-space: normal;
@@ -51,8 +52,13 @@
   display: block;
 }
 
-.bubble.on .bubble-in {
+.bubble.pop .bubble-in {
   animation: bubble-pop 0.26s var(--spring);
+}
+
+/* Pushed up over another bubble: no tail (it would point into the one below). */
+.bubble.stacked::after {
+  display: none;
 }
 
 @keyframes bubble-pop {
@@ -72,6 +78,17 @@
   color: #fff4d2;
 }
 
+/* Who tells it (gossip): a small name over the line, in the bubble's gold. */
+.bubble-name {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--gold);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .bubble.gossip .ic {
   display: inline-block;
   vertical-align: -2px;
@@ -85,7 +102,7 @@
   font-weight: 800;
 }
 
-.bubble.shout.on .bubble-in {
+.bubble.shout.pop .bubble-in {
   animation: bubble-pop 0.22s var(--spring), bubble-shake 0.32s 0.1s linear;
 }
 
@@ -106,7 +123,7 @@
 }
 
 body.reduced-motion .bubble .bubble-in,
-body.reduced-motion .bubble.on .bubble-in {
+body.reduced-motion .bubble.pop .bubble-in {
   animation: none;
 }
 
@@ -149,7 +166,7 @@ body.reduced-motion .bubble.on .bubble-in {
   line-height: 1.3;
 }
 
-.rumor:first-of-type {
+.box-label + .rumor {
   border-top: 0;
 }
 

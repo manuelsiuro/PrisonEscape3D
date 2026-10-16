@@ -1,6 +1,7 @@
-174 banks: 1000 lines in English, 1000 in French; longest 67 / 83 characters
-28 places and 31 items with words; 21 kinds of gossip
-two days: 294 lines (201 distinct), worst 100 91% distinct, 0 heard again, at most 3 at once
-styles: gossip 8, say 286; kinds: catch, ex, go, gu, in, re; rumors 8
+175 banks: 1003 lines in English, 1003 in French; longest 67 / 83 characters
+28 places and 31 items with words; 22 kinds of gossip
+two days: 307 lines (203 distinct), worst 100 88% distinct, 0 heard again, at most 3 at once
+styles: gossip 6, say 283, whisper 18; kinds: catch, ex, go, gu, in, re, sl; rumors 6
 a spent bank: 6 lines said, then silence
-a day in French: 414 lines
+a day in French: 384 lines
+greetings, replies and Irongate's generators checked

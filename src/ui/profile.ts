@@ -20,7 +20,7 @@ export class ProfilePanel {
   private drawn = '';
   isOpen = false;
   /** The rumors heard (P13), newest first: the speech bubbles' director fills this in. */
-  notebook: () => ReadonlyArray<{ text: string; old: boolean; day: number }> = () => [];
+  notebook: () => ReadonlyArray<{ text: string; old: boolean; day: number; by: string | null }> = () => [];
 
   constructor(private readonly click: () => void) {
     this.el = h('div', 'item-panel profile-panel hidden');
@@ -85,7 +85,7 @@ export class ProfilePanel {
           .join('')
       : `<p class="talk-note">${t('profile.noFavors')}</p>`;
     const rumorList = rumors.length
-      ? rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}">${icon('ear', 14)}<span>${esc(r.text)}</span><small>${t('profile.rumorDay', { n: r.day })}</small></div>`).join('')
+      ? rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}">${icon('ear', 14)}<span>${esc(r.text)}</span><small>${r.by ? `${esc(r.by)} · ` : ''}${t('profile.rumorDay', { n: r.day })}</small></div>`).join('')
       : `<p class="talk-note">${t('profile.noRumors')}</p>`;
     const working = ROUTINE[s.routine].id === 'work';
     this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${t('profile.title')}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>

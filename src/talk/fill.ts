@@ -19,8 +19,8 @@ import { hashStr } from './voice';
  * Slots: {you} what the prison calls the player · {me} the speaker · {inmate} another inmate
  * · {guard} {guard.full} a guard · {here.at} {here.the} where the speaker stands ·
  * {place.at} {place.the} a room · {item} {item.a} {item.the} {item.my} · {time} {block}
- * {next} {day} {weekday} · {meal} today's dish · {event} what happened today · and gossip's
- * own: {n} {m} {t1} {t2} {key}.
+ * {next} {day} {weekday} · {meal} today's dish (the meal at hand), {dinner} tonight's · {event}
+ * what happened today · and gossip's own: {n} {m} {t1} {t2} {key}.
  */
 export interface FillContext {
   lang: Lang;
@@ -34,6 +34,8 @@ export interface FillContext {
   fact?: Fact;
   /** Today's talking point, if anything happened. */
   dayEvent: DayEvent | null;
+  /** The things {item} may name (a merchant names what's on sale), instead of everyday things. */
+  items?: readonly string[];
 }
 
 const SLOT = /\{([A-Za-z][A-Za-z0-9]*)(?:\.([a-z]+))?\}/g;
@@ -50,7 +52,7 @@ export function slotsOf(text: string): string[] {
 }
 
 /** The slots the director can fill (chattertest checks every line's against it). */
-export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'event', 'n', 'm', 't1', 't2', 'key']);
+export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'dinner', 'event', 'n', 'm', 't1', 't2', 'key']);
 
 const hhmm = (minute: number) => `${String(Math.floor(minute / 60) % 24).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -76,14 +78,15 @@ export function nickOf(sim: Sim): Nick {
 /** An inmate's nickname (Cast id), a guard's name: who people are in the bubbles. */
 export function nameOf(sim: Sim, id: number): string | null {
   const s = sim.state;
+  if (id < 0) return null;
   if (id < s.inmates.length) return sim.prison.names[s.inmates[id].cell - 2] ?? null;
   return sim.prison.guards[id - s.inmates.length]?.name ?? null;
 }
 
-/** Today's dish for the meal at hand (breakfast until free time, then the evening meal). */
-export function mealOf(lang: Lang, sim: Sim): string {
+/** Today's dish for the meal at hand (breakfast until free time, then the evening meal), or tonight's. */
+export function mealOf(lang: Lang, sim: Sim, tonight = false): string {
   const c = sim.clock;
-  const kind = c.minuteOfDay < 10 * 60 ? 'breakfast' : 'dinner';
+  const kind = !tonight && c.minuteOfDay < 10 * 60 ? 'breakfast' : 'dinner';
   const list = MEALS[lang][kind];
   return list[hashStr(`${sim.prison.id}:${c.day}:${kind}`) % list.length];
 }
@@ -169,7 +172,7 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
       break;
     }
     case 'item': {
-      const id = fact?.item ?? pick(ctx, 'item', CHAT_ITEMS);
+      const id = fact?.item ?? pick(ctx, 'item', ctx.items ?? CHAT_ITEMS);
       v = id ? itemPhrase(lang, id, form as 'a' | 'the' | 'my' | '') : null;
       break;
     }
@@ -191,6 +194,9 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
     case 'meal':
       v = mealOf(lang, sim);
       break;
+    case 'dinner':
+      v = mealOf(lang, sim, true);
+      break;
     case 'event':
       v = ctx.dayEvent ? EVENTS[lang][ctx.dayEvent] : null;
       break;
@@ -210,9 +216,11 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
   return v;
 }
 
-/** The line with its slots filled (French typography applied), or null if one can't be. */
-export function fill(text: string, ctx: FillContext): string | null {
-  const line = new Map<string, string>();
+/**
+ * The line with its slots filled (French typography applied), or null if one can't be.
+ * `line` holds what each slot said: pass the same map to a reply so it names the same guard.
+ */
+export function fill(text: string, ctx: FillContext, line = new Map<string, string>()): string | null {
   let ok = true;
   const out = text.replace(SLOT, (_, a: string, b?: string) => {
     const slot = (b ? `${a}.${b}` : a).replace(/^./, (c) => c.toLowerCase());

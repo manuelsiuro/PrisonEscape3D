@@ -596,6 +596,7 @@ export const fr: Partial<Strings> = {
   "rumor.fenceOff": "Générateur coupé : le grillage électrique est mort {n} s.",
   "rumor.brace": "Plus de {n} cases après un étai et le tunnel s’effondre.",
   "rumor.takeover": "Prise de contrôle : {n} gardiens sur {m} K.-O. en même temps.",
+  "rumor.takeoverAll": "Prise de contrôle : les {n} gardiens K.-O. en même temps.",
   "rumor.keyColor": "{Guard.full} a la clé {key}.",
   "rumor.grate": "Une grille d’aération {place.at}.",
   "rumor.toilets": "Un WC avale {n} chargements de terre par heure.",

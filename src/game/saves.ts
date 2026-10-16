@@ -44,7 +44,7 @@ export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly 
     at,
     game,
     snap: sim.snapshot(),
-    ...(rumors.length ? { rumors: rumors.map((r) => ({ fact: { ...r.fact }, step: r.step })) } : {}),
+    ...(rumors.length ? { rumors: rumors.map((r) => ({ fact: { ...r.fact }, step: r.step, ...(r.by !== undefined ? { by: r.by } : {}) })) } : {}),
   };
 }
 
