@@ -52,17 +52,17 @@ function speckle(c: CanvasRenderingContext2D, n: number, rand: () => number, bas
 const BASE = {
   grass: () =>
     texture('grass', 16, (c, n, r) => {
-      speckle(c, n, r, '#5f9e43', '#4d8a36', '#74b553', 0.35);
+      speckle(c, n, r, '#5f9e43', '#54913b', '#6aa94b', 0.3);
       c.fillStyle = '#86c463';
       for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * (n - 1)), 1, 2);
     }),
   road: () =>
     texture('road', 16, (c, n, r) => {
-      speckle(c, n, r, '#55585e', '#4a4d52', '#63676d', 0.3);
+      speckle(c, n, r, '#55585e', '#4e5157', '#5c5f65', 0.3);
     }),
   asphalt: () =>
     texture('asphalt', 16, (c, n, r) => {
-      speckle(c, n, r, '#6d7178', '#62666c', '#7b7f86', 0.3);
+      speckle(c, n, r, '#6d7178', '#666a70', '#74787f', 0.3);
     }),
   dirt: () =>
     texture('dirt', 16, (c, n, r) => {
@@ -71,7 +71,7 @@ const BASE = {
   /** Ground sown with mines (P11): the open ground's own look elsewhere (only San Pancho has any). */
   minefield: () =>
     texture('grass', 16, (c, n, r) => {
-      speckle(c, n, r, '#5f9e43', '#4d8a36', '#74b553', 0.35);
+      speckle(c, n, r, '#5f9e43', '#54913b', '#6aa94b', 0.3);
       c.fillStyle = '#86c463';
       for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * (n - 1)), 1, 2);
     }),
@@ -157,7 +157,7 @@ const BASE = {
     }),
   wallTop: () =>
     texture('wallTop', 16, (c, n, r) => {
-      speckle(c, n, r, '#5e646e', '#555b64', '#6a707a', 0.22);
+      speckle(c, n, r, '#5e646e', '#585e67', '#656b75', 0.22);
     }),
   /** Inside a wall, seen through a cut: dark rubble-grey core. */
   wallCore: () =>
@@ -208,7 +208,7 @@ const BASE = {
   /** Tar and gravel on the flat roofs. */
   gravel: () =>
     texture('gravel', 16, (c, n, r) => {
-      speckle(c, n, r, '#7d7a74', '#6c6964', '#8f8b84', 0.45);
+      speckle(c, n, r, '#7d7a74', '#73706a', '#88847d', 0.35);
       c.fillStyle = '#a19c93';
       for (let k = 0; k < 7; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
     }),

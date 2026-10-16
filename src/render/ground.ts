@@ -137,6 +137,20 @@ function contactShadows(world: World): THREE.Mesh {
     fill(p.x + 0.08, p.z + 0.08, p.x + p.w - 0.08, p.z + p.d - 0.08, strength);
   }
   blur(cover, W, H, 4, 3);
+  // Broad, soft patches over the open ground (lusher and drier grass, worn sand, patched
+  // asphalt), so the one-tile texture never reads as a grid. A fixed seed: the same every load.
+  const tone = new Float32Array(W * H);
+  let seed = 0x9e3779b9;
+  const rand = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+  for (let i = 0; i < W * H; i++) tone[i] = rand();
+  blur(tone, W, H, 10, 3);
+  let mean = 0;
+  for (const t of tone) mean += t;
+  mean /= tone.length;
+  let sd = 0;
+  for (const t of tone) sd += (t - mean) ** 2;
+  sd = Math.sqrt(sd / tone.length) || 1;
+  const OPEN = new Set<number>([TILE.GRASS, TILE.DIRT, TILE.ROAD, TILE.ASPHALT, TILE.MINE]);
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -145,7 +159,11 @@ function contactShadows(world: World): THREE.Mesh {
   const img = c.createImageData(W, H);
   for (let i = 0; i < W * H; i++) {
     // White = untouched; darker toward walls and under furniture.
-    const v = Math.round(255 * (1 - 0.72 * Math.min(1, cover[i] * 1.3)));
+    const tile = Math.floor(i / W / AO_RES) * MAP_W + Math.floor((i % W) / AO_RES);
+    // (Blurred noise has a narrow spread: two deviations either side stretched to 0..1.)
+    const t = Math.min(1, Math.max(0, 0.5 + (tone[i] - mean) / (4 * sd)));
+    const patch = OPEN.has(world.ground.kind[tile]) ? 1 - 0.2 * t : 1;
+    const v = Math.round(255 * (1 - 0.72 * Math.min(1, cover[i] * 1.3)) * patch);
     img.data[i * 4] = v;
     img.data[i * 4 + 1] = v;
     img.data[i * 4 + 2] = Math.min(255, v + 6);

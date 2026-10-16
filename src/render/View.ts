@@ -21,6 +21,7 @@ import { WorldView } from './WorldView';
 import { LAYER_Y, Structure } from './Structure';
 import { Underground } from './Underground';
 import { setTheme } from './textures';
+import { Blobs } from './Blobs';
 import { Snowfall } from './Snow';
 import { LAYER } from '../sim/world/World';
 
@@ -221,6 +222,9 @@ export class View {
   private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
   private readonly dust = new Dust();
+  private readonly blobs = new Blobs();
+  /** Everyone on stage, for the contact shadows (refilled per frame). */
+  private readonly onStage: Character[] = [];
   private readonly snow = new Snowfall();
   /** Whether a tile has open sky over it (no roof): where snow falls. */
   private readonly openSky = (x: number, z: number) => !this.world || !this.world.inside(x, z) || this.world.layers[LAYER.ROOF].kind[z * MAP_W + x] === TILE.EMPTY;
@@ -302,7 +306,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
     this.cup.visible = false;
     this.puddles.count = 0;
     this.puddles.renderOrder = 1;
@@ -925,6 +929,10 @@ export class View {
       this.shake = Math.max(0, this.shake - dt * 5);
     }
     this.placeSun(minute);
+    const stage = this.onStage;
+    stage.length = 0;
+    stage.push(this.player, ...this.cast, ...this.guardCast);
+    this.blobs.update(stage);
     updateOcclusion(this.renderer, this.camera, focus, dt);
     this.renderer.render(this.scene, this.camera);
   }

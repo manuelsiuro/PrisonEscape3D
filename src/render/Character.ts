@@ -310,7 +310,7 @@ export class Character {
     const dark = 0x1b1b22;
     const shoe = 0x2a2a30;
     const mesh = (parts: Part[], parent: THREE.Object3D) => {
-      const m = new THREE.Mesh(merge(parts), this.material);
+      const m = new THREE.Mesh(merge(parts, false), this.material);
       m.castShadow = true;
       parent.add(m);
       return m;
@@ -413,7 +413,7 @@ export class Character {
     // A guard's key: a ring and a key in its color, hanging from the belt.
     if (look.key !== undefined) {
       this.keyTag = new THREE.Mesh(
-        merge([part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0), part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0), part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0)]),
+        merge([part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0), part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0), part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0)], false),
         kitMaterial,
       );
       this.keyTag.position.set(-0.2, 0.02, 0.16);
@@ -428,7 +428,7 @@ export class Character {
 
     // In bed: a blanket pulled up to the chest, and Zs floating up.
     this.blanket = new THREE.Mesh(
-      merge([part(0.64, 0.08, 0.92, 0x6f8fb5, 0, 0.19, -0.42), part(0.66, 0.09, 0.14, 0xe6ebf2, 0, 0.2, -0.9)]),
+      merge([part(0.64, 0.08, 0.92, 0x6f8fb5, 0, 0.19, -0.42), part(0.66, 0.09, 0.14, 0xe6ebf2, 0, 0.2, -0.9)], false),
       kitMaterial,
     );
     this.blanket.castShadow = true;
@@ -466,7 +466,7 @@ export class Character {
         part(0.12, 0.05, 0.1, 0xe8d9a8, -0.08, 0.57, 0.72),
         part(0.1, 0.04, 0.1, 0x8a5a3a, 0.09, 0.565, 0.76),
         part(0.1, 0.03, 0.08, 0x6aa84f, 0.05, 0.565, 0.66),
-      ]),
+      ], false),
       kitMaterial,
     );
     this.tray.visible = false;

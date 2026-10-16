@@ -599,3 +599,65 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+/* ------------------------------------------------------------ the last light surfaces, in the family (v1.6) */
+/* "An update is ready": a steel card with the orange edge, not a white box over the game. */
+.update-card {
+  color: var(--dlg-text);
+  background:
+    linear-gradient(90deg, transparent 10%, rgba(255, 150, 60, 0.85) 50%, transparent 90%) top / 100% 2px no-repeat,
+    linear-gradient(180deg, rgba(34, 48, 71, 0.97), rgba(19, 28, 42, 0.97));
+  box-shadow:
+    0 18px 40px -14px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* An item toast over an open panel: a lighter steel than the panel, edged in orange. */
+.items-open .item-toast {
+  color: var(--dlg-text);
+  background: linear-gradient(180deg, #34445e, #26344a);
+  box-shadow:
+    0 12px 26px -10px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(255, 170, 90, 0.35);
+}
+
+/* Carousel arrows (the tutorial, how to play): dark glass discs. */
+.carousel-arrow {
+  color: var(--dlg-text);
+  background: rgba(22, 32, 48, 0.88);
+  box-shadow:
+    0 10px 22px -8px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.carousel-arrow:hover:not([disabled]) {
+  background: rgba(34, 48, 71, 0.95);
+}
+
+/* The round action button's verb: two short lines rather than cut off ("Fouiller les…"). */
+.act-round span {
+  display: -webkit-box;
+  max-width: 70px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Keyboard focus on what isn't a button (slots, tabs, rows): the orange ring, clear on dark. */
+.item-panel [tabindex]:focus-visible,
+.hotbar [tabindex]:focus-visible,
+.item-panel .slot:focus-visible,
+.hotbar .slot:focus-visible,
+.help-tabs button:focus-visible {
+  outline: 2px solid #ffb05c;
+  outline-offset: 2px;
+}
+
+/* On the title, the menu's foot is at the bottom: the card waits at the top instead. */
+body:has(.title-screen:not(.hidden)) .update-card {
+  top: max(16px, env(safe-area-inset-top));
+  bottom: auto;
+}

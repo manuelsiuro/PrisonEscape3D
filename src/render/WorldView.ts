@@ -68,6 +68,8 @@ export class WorldView {
   private readonly wallAt = new Int32Array(MAP_W * MAP_H).fill(-1);
   private readonly fenceAt = new Int32Array(MAP_W * MAP_H).fill(-1);
   private wallMesh: THREE.InstancedMesh | null = null;
+  /** Window glass, lit at night. */
+  private readonly windows: THREE.MeshStandardMaterial[] = [];
   private readonly fenceMeshes: Array<{ panel: THREE.InstancedMesh; posts: THREE.InstancedMesh; kind: number }> = [];
   private readonly fenceOf = new Int32Array(MAP_W * MAP_H).fill(-1);
   private readonly hidden = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -269,7 +271,8 @@ export class WorldView {
   private buildDoors() {
     const frameMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x4a515c, roughness: 0.55, metalness: 0.4 }));
     const steel = seeThrough(new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.5, metalness: 0.45 }));
-    const glassMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6 }));
+    const glassMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 }));
+    this.windows.push(glassMat);
     const keyMats = new Map<number, THREE.MeshStandardMaterial>();
     const keyMat = (key: number, metal: boolean) => {
       const id = key * 2 + (metal ? 1 : 0);
@@ -350,7 +353,8 @@ export class WorldView {
   private buildTowers() {
     const legMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7 });
     const cabinMat = new THREE.MeshStandardMaterial({ color: 0xc9b99a, roughness: 0.8 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x223040, roughness: 0.1, metalness: 0.6 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x223040, roughness: 0.1, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 });
+    this.windows.push(glassMat);
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x6e3328, roughness: 0.8 });
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
@@ -497,6 +501,8 @@ export class WorldView {
       d.leaf.position.copy(d.home).addScaledVector(d.slide, e);
     }
     this.lights.setNight(night, power);
+    // Lit from inside after dark (the tower cabins, the doors' windows); dark with the power out.
+    for (const m of this.windows) m.emissiveIntensity = night * power * 0.85;
     // Detector arches: green while powered, a red flash when one trips, dark with the power out.
     if (this.archFlash > 0) this.archFlash = Math.max(0, this.archFlash - dt);
     const flash = this.archFlash > 0 && Math.floor(this.archFlash * 8) % 2 === 0;

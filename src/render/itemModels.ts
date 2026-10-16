@@ -96,7 +96,7 @@ export function itemGeometry(d: ItemDef): THREE.BufferGeometry {
   let g = cache.get(d.id);
   if (!g) {
     const shape = SHAPES[d.shape] ?? SHAPES.blob;
-    g = merge(shape(d.color, d.accent ?? d.color));
+    g = merge(shape(d.color, d.accent ?? d.color), false);
     g.computeBoundingBox();
     cache.set(d.id, g);
   }
