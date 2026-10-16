@@ -8,6 +8,7 @@ export function ask(text: string, yes: string, click: () => void): Promise<boole
     'div',
     'modal',
     `<div class="card ask-card" role="alertdialog" aria-modal="true">
+      <span class="ask-ic" aria-hidden="true">${icon('replay', 26)}</span>
       <p></p>
       <div class="actions">
         <button class="big-btn ghost" data-c="no">${t('common.back')}</button>

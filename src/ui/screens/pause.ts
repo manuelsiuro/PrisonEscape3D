@@ -16,7 +16,7 @@ export function showPause(click: () => void, saved: boolean, canSave = true, not
   const el = h(
     'div',
     'modal',
-    `<div class="card">
+    `<div class="card pause-card">
       ${place ? `<p class="pause-place">${icon('pin', 13)}<span></span></p>` : ''}
       <h2>${t('pause.title')}</h2>
       <p class="card-note${note.startsWith('!') || (!note && !saved) ? ' warn' : ''}">${note.startsWith('!') ? note.slice(1) : note ? `${lesson ? '' : icon('check', 14)}${note}` : saved ? `${icon('check', 14)}${t('pause.saved')}` : t('pause.notSaved')}</p>

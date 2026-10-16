@@ -1,0 +1,571 @@
+/*
+ * Dialogs, dressed as the game's own (after P12): every modal card (settings, how to play,
+ * saves, the tutorial, the prison select, pause, a question, the escape and the victory) is a
+ * dark steel panel over a dimmed, blurred prison, the HUD's family: light type, glassy rows, a
+ * warm orange edge of light along the top, orange for what's chosen. Loaded last; the rules
+ * before it lay things out, this one gives them their colors.
+ */
+:root {
+  --dlg-top: #223047;
+  --dlg-bottom: #131c2a;
+  --dlg-text: #eef3fa;
+  --dlg-soft: #9db0c8;
+  --dlg-faint: #6c7f98;
+  --dlg-line: rgba(255, 255, 255, 0.08);
+  --dlg-surface: rgba(255, 255, 255, 0.055);
+  --dlg-surface-hi: rgba(255, 255, 255, 0.1);
+  --dlg-well: rgba(4, 10, 20, 0.35);
+}
+
+/* ------------------------------------------------------------ the backdrop: the prison, dimmed and soft */
+.modal {
+  background:
+    radial-gradient(120% 90% at 50% 40%, rgba(12, 20, 34, 0.45), rgba(5, 9, 16, 0.82));
+  -webkit-backdrop-filter: blur(7px) saturate(0.85);
+  backdrop-filter: blur(7px) saturate(0.85);
+}
+
+/* ------------------------------------------------------------ the panel */
+.modal .card {
+  --ink: var(--dlg-text);
+  --ink-soft: var(--dlg-soft);
+  position: relative;
+  color: var(--dlg-text);
+  background:
+    /* A warm edge of light along the top. */
+    linear-gradient(90deg, transparent 8%, rgba(255, 150, 60, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    /* Brushed steel: the faintest diagonal grain. */
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
+    radial-gradient(120% 60% at 50% 0%, rgba(255, 140, 50, 0.1), transparent 60%),
+    linear-gradient(180deg, var(--dlg-top), var(--dlg-bottom));
+  box-shadow:
+    0 40px 90px -30px rgba(0, 0, 0, 0.85),
+    0 12px 30px -12px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-width: thin;
+}
+
+.modal .card ::-webkit-scrollbar,
+.modal .card::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal .card ::-webkit-scrollbar-thumb,
+.modal .card::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.modal .card h2 {
+  color: #fff;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 0 24px rgba(255, 140, 50, 0.18);
+}
+
+.modal .card-note {
+  color: var(--dlg-soft);
+}
+
+/* The header: the title, its close button; a hairline under it. */
+.modal .settings-head {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dlg-line);
+}
+
+.modal .settings-head .icon-btn,
+.modal .card .icon-btn {
+  color: #dbe5f2;
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  transition: background 0.2s, color 0.2s, transform 0.18s var(--spring);
+}
+
+.modal .card .icon-btn:hover {
+  color: #fff;
+  background: var(--dlg-surface-hi);
+}
+
+.modal .card .icon-btn:active {
+  transform: scale(0.94);
+}
+
+/* ------------------------------------------------------------ buttons inside a panel */
+.modal .big-btn.ghost {
+  color: var(--dlg-text);
+  background: var(--dlg-surface-hi);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 20px -12px rgba(0, 0, 0, 0.8);
+}
+
+.modal .big-btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.modal .big-btn.primary:hover {
+  filter: brightness(1.06);
+}
+
+.modal .link-btn {
+  color: var(--dlg-soft);
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  transition: background 0.2s, color 0.2s;
+}
+
+.modal .link-btn:hover {
+  color: var(--dlg-text);
+  background: var(--dlg-surface-hi);
+}
+
+.modal .link-btn.danger.armed {
+  color: #fff;
+  background: #d9363e;
+  box-shadow: none;
+}
+
+.modal .link-btn.done {
+  color: #7ff0b7;
+  background: rgba(67, 209, 142, 0.14);
+}
+
+.modal button:focus-visible {
+  outline-color: var(--gold);
+}
+
+/* ------------------------------------------------------------ settings */
+.modal .set-row {
+  border-top-color: var(--dlg-line);
+}
+
+.modal .set-row:first-child {
+  border-top: 0;
+}
+
+.modal .set-name .ic,
+.modal .volume {
+  color: var(--dlg-soft);
+}
+
+.modal .set-actions {
+  border-top-color: var(--dlg-line);
+}
+
+.modal .switch {
+  background: #34425a;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.modal .switch.on {
+  background: linear-gradient(180deg, var(--orange), var(--orange-2));
+  box-shadow: 0 0 14px -2px rgba(255, 119, 20, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.modal .switch i {
+  background: linear-gradient(180deg, #ffffff, #dfe6ef);
+}
+
+.modal .seg {
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.modal .seg button {
+  color: var(--dlg-soft);
+  transition: color 0.2s, background 0.2s;
+}
+
+.modal .seg button:hover:not(.on) {
+  color: var(--dlg-text);
+}
+
+.modal .seg button.on {
+  color: #fff;
+  background: linear-gradient(180deg, var(--orange), var(--orange-2));
+  box-shadow: 0 4px 12px -4px rgba(217, 83, 10, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Range sliders: an orange fill on a dark track. */
+.modal input[type='range'] {
+  accent-color: var(--orange);
+}
+
+/* ------------------------------------------------------------ how to play */
+.modal .help-row {
+  border-bottom-color: var(--dlg-line);
+}
+
+.modal .help-row p,
+.modal .help-foot {
+  color: var(--dlg-soft);
+}
+
+.modal .help-row h3,
+.modal .help-sub {
+  color: #fff;
+}
+
+.modal .help-day li:nth-child(odd) {
+  background: var(--dlg-surface);
+}
+
+.modal .help-day .must {
+  color: #2a1d00;
+  background: var(--gold);
+}
+
+.modal .help-keys kbd {
+  color: #fff;
+  background: linear-gradient(180deg, #33435c, #243248);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* ------------------------------------------------------------ saved games */
+.modal .save-main,
+.modal .save-del {
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  transition: transform 0.18s var(--spring), background 0.2s, box-shadow 0.2s;
+}
+
+.modal .save-main:not(:disabled):hover,
+.modal .save-del:hover {
+  background: var(--dlg-surface-hi);
+}
+
+.modal .save-row.empty .save-ic,
+.modal .save-row.empty:first-child .save-ic {
+  color: var(--dlg-faint);
+  background: var(--dlg-surface);
+}
+
+.modal .save-row.armed .save-main {
+  background: rgba(255, 119, 20, 0.14);
+  box-shadow: inset 0 0 0 2px var(--orange);
+}
+
+.modal .save-row.armed .save-ago {
+  color: var(--accent-2);
+}
+
+.modal .save-del {
+  color: var(--dlg-soft);
+}
+
+.modal .save-del.armed {
+  color: #fff;
+  background: #d9363e;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------ the tutorial */
+.modal .lessons-bar {
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.modal .lessons-bar span {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.modal .lesson-card {
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  transition: transform 0.18s var(--spring), background 0.2s;
+}
+
+.modal .lesson-card:hover {
+  background: var(--dlg-surface-hi);
+}
+
+.modal .lesson-card.next {
+  background: linear-gradient(90deg, rgba(255, 119, 20, 0.2), rgba(255, 119, 20, 0.06));
+  box-shadow: inset 0 0 0 2px var(--orange), 0 8px 22px -12px rgba(255, 119, 20, 0.7);
+}
+
+.modal .lesson-num {
+  color: var(--dlg-soft);
+  background: var(--dlg-well);
+}
+
+.modal .lesson-card > .ic {
+  color: var(--dlg-faint);
+}
+
+/* ------------------------------------------------------------ the prison select */
+.modal .prison-card {
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 10px 24px -16px rgba(0, 0, 0, 0.8);
+}
+
+.modal .prison-card:not(.locked):hover,
+.modal .prison-card:focus-visible {
+  background: var(--dlg-surface-hi);
+  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 18px 36px -16px rgba(0, 0, 0, 0.9), 0 0 28px -10px rgba(255, 119, 20, 0.45);
+}
+
+.modal .prison-list:hover .prison-card:focus-visible:not(:hover) {
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 10px 24px -16px rgba(0, 0, 0, 0.8);
+}
+
+.modal .prison-card.locked:hover {
+  box-shadow: inset 0 0 0 1px var(--dlg-line), 0 10px 24px -16px rgba(0, 0, 0, 0.8);
+}
+
+/* The scene meets the card with a soft shadow, not a seam. */
+.modal .pc-scene {
+  box-shadow: inset 0 -20px 30px -24px rgba(0, 0, 0, 0.55);
+}
+
+.modal .pc-head b {
+  color: #fff;
+}
+
+.modal .pc-sec {
+  color: var(--accent-2);
+  opacity: 0.9;
+}
+
+.modal .pc-pitch {
+  color: #c9d6e6;
+}
+
+.modal .pc-stars i {
+  color: rgba(255, 255, 255, 0.16);
+}
+
+.modal .pc-stars i.on {
+  color: var(--gold);
+  filter: drop-shadow(0 0 4px rgba(255, 194, 61, 0.45));
+}
+
+.modal .pc-pip {
+  color: var(--dlg-faint);
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.modal .pc-pip.found {
+  color: #fff;
+  box-shadow: 0 0 10px -2px rgba(63, 185, 80, 0.6);
+}
+
+.modal .pc-foot small {
+  color: var(--dlg-soft);
+}
+
+.modal .pc-lock {
+  color: var(--dlg-soft);
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.modal .prison-card.locked .pc-scene,
+.modal .prison-card.locked .pc-body > :not(.pc-foot) {
+  opacity: 0.45;
+}
+
+/* ------------------------------------------------------------ pause, a question */
+.modal .pause-place {
+  color: var(--dlg-soft);
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.modal .ask-card p {
+  color: #c9d6e6;
+}
+
+/* ------------------------------------------------------------ the escape and the victory */
+.modal .v-sub {
+  color: #c9d6e6;
+}
+
+.modal .v-method {
+  background: linear-gradient(135deg, #2b4a73, #1d3352);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 12px 26px -12px rgba(0, 0, 0, 0.8);
+}
+
+.modal .v-stat {
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.modal .v-stat .ic {
+  color: #8fb6e0;
+}
+
+.modal .v-stat b {
+  color: #fff;
+}
+
+.modal .v-route {
+  color: var(--dlg-faint);
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1.5px var(--dlg-line);
+}
+
+.modal .v-route.found {
+  color: #fff;
+  box-shadow: 0 0 14px -2px rgba(255, 140, 50, 0.6);
+}
+
+.modal .v-unlock {
+  color: #d3e8ff;
+  background: linear-gradient(120deg, rgba(47, 120, 190, 0.28), rgba(47, 120, 190, 0.1));
+  box-shadow: inset 0 0 0 1px rgba(111, 170, 230, 0.35);
+}
+
+.modal .v-unlock .ic {
+  color: #7fbaf2;
+}
+
+.modal .v-unlock.campaign {
+  color: #ffe3a3;
+  background: linear-gradient(120deg, rgba(255, 194, 61, 0.24), rgba(255, 194, 61, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.45), 0 0 24px -10px rgba(255, 194, 61, 0.6);
+}
+
+.modal .v-unlock.campaign .ic {
+  color: var(--gold);
+}
+
+/* Long lists fade out at their bottom edge rather than being cut off. */
+.modal .help-body,
+.modal .lessons-list {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent);
+  padding-bottom: 20px;
+}
+
+/* An empty save slot: a dashed outline, waiting to be filled. */
+.modal .save-row.empty .save-main {
+  background: transparent;
+  box-shadow: none;
+  outline: 1.5px dashed rgba(255, 255, 255, 0.14);
+  outline-offset: -1.5px;
+}
+
+/* Rows that are buttons (a lesson, a save): focus is one ring with a soft halo, never a ring round a ring. */
+.modal .lesson-card:focus-visible,
+.modal .save-main:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 4px rgba(255, 194, 61, 0.16);
+}
+
+.modal .lesson-card.next:focus-visible,
+.modal .save-row:first-child .save-main:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--orange), 0 0 0 4px rgba(255, 119, 20, 0.22), 0 8px 22px -12px rgba(255, 119, 20, 0.7);
+}
+
+/* Ways out found keep their colors (the dark wells above are for the ones still to find). */
+.modal .pc-pip.found {
+  background: linear-gradient(150deg, #3fb950, #1f8a3a);
+}
+
+.modal .v-route.found {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+}
+
+/* A question: its badge on top, the words, the two answers. */
+.modal .ask-card {
+  width: min(420px, 100%);
+  padding-top: 26px;
+}
+
+.ask-ic {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 4px;
+  border-radius: 18px;
+  color: #fff;
+  background: linear-gradient(150deg, var(--orange), var(--orange-2));
+  box-shadow: 0 12px 26px -10px rgba(217, 83, 10, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.modal .ask-card p {
+  margin: 12px 0 22px;
+  font-size: 15.5px;
+}
+
+/* ------------------------------------------------------------ the title menu, in the same family */
+.title-screen .menu-btn {
+  color: var(--dlg-text);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--tone) 26%, transparent), transparent 60%),
+    linear-gradient(180deg, rgba(34, 48, 71, 0.88), rgba(19, 28, 42, 0.9));
+  box-shadow:
+    0 14px 30px -14px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform 0.18s var(--spring), box-shadow 0.2s, filter 0.2s;
+}
+
+.title-screen .menu-btn:hover {
+  box-shadow:
+    0 18px 34px -14px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  filter: brightness(1.08);
+}
+
+.title-screen .menu-btn:active {
+  transform: scale(0.98);
+}
+
+.title-screen .menu-text small {
+  color: var(--dlg-soft);
+}
+
+.title-screen .menu-btn > .ic {
+  color: var(--dlg-soft);
+  opacity: 0.8;
+}
+
+.title-screen .menu-ic {
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--tone) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.title-screen .title-foot {
+  color: var(--dlg-soft);
+  background: rgba(19, 28, 42, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.title-screen .title-version,
+.title-version {
+  color: var(--dlg-soft);
+  background: rgba(19, 28, 42, 0.7);
+}
+
+/* Pause: its three links on one row where there's room. */
+.modal .pause-links {
+  gap: 6px;
+}
+
+.modal .pause-links .link-btn {
+  padding: 6px 11px;
+  font-size: 13.5px;
+}
+
+.modal .pause-card {
+  width: min(440px, 100%);
+}
+
+/* Out: the word in gold, glowing. */
+.modal.escaped h2 {
+  color: var(--gold);
+  text-shadow: 0 3px 0 rgba(120, 70, 0, 0.55), 0 0 30px rgba(255, 194, 61, 0.45);
+}
+
+.modal.escaped .escaped-icon {
+  box-shadow: 0 0 0 6px rgba(255, 194, 61, 0.12), 0 12px 30px -6px rgba(224, 138, 18, 0.9);
+}
