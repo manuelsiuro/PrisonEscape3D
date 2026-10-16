@@ -569,3 +569,33 @@
 .modal.escaped .escaped-icon {
   box-shadow: 0 0 0 6px rgba(255, 194, 61, 0.12), 0 12px 30px -6px rgba(224, 138, 18, 0.9);
 }
+
+/* ------------------------------------------------------------ in-game panels (desk, workbench, talk, job board, file): the dialogs' finish */
+.item-panel {
+  background:
+    linear-gradient(90deg, transparent 8%, rgba(255, 150, 60, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
+    radial-gradient(120% 50% at 50% 0%, rgba(255, 140, 50, 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(34, 48, 71, 0.96), rgba(19, 28, 42, 0.97));
+  box-shadow:
+    0 24px 56px -16px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-width: thin;
+}
+
+.item-panel .panel-head {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dlg-line);
+}
+
+/* The file's attributes: where each is trained, on two lines rather than cut off. */
+.stat-text small {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

@@ -99,7 +99,7 @@ interface Plan {
   dock?: [number, number, number];
   pier?: [number, number, number];
   walkwayGuard?: number;
-  /** Helicopter (Irongate): the north roof's edge over the yard and the way across, the edge over the helipad court and the way down, the pad. */
+  /** Helicopter (Irongate): the north roof's edge over the yard and the way across, the edge over the helipad court and the way down, the tile beside the pad (west of it). */
   chasm?: [number, number, number];
   court?: [number, number, number];
   pad?: [number, number];
@@ -246,7 +246,7 @@ const PLANS: Plan[] = [
     ladder: [51, 17],
     chasm: [36, 21, DIR.SOUTH],
     court: [32, 44, DIR.EAST],
-    pad: [36, 45],
+    pad: [34, 45],
     rally: [30, 18],
     trained: 100,
     strongest: true,
@@ -664,7 +664,8 @@ function helicopter(p: Plan, seed: number) {
     check(g.ko > 0, `helipad guard ${k} out cold`);
   }
   const [ax, az] = p.pad!;
-  check(bot.walkTo(tileOf(ax, az), 400), 'on the pad');
+  check(bot.walkTo(tileOf(ax, az), 400), 'beside the pad');
+  bot.face(DIR.EAST);
   bot.act();
   report(p.name('helicopter'), bot);
   check(bot.done && ESCAPES[st.via] === 'helicopter', 'away in the helicopter');

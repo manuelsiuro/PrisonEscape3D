@@ -251,15 +251,17 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   const bot = new Bot(IRONGATE, 7);
   const st = bot.st;
   const refusal = () => bot.sim.events.find((e) => e.type === 'refused')?.why;
+  // Beside the pad (it's kept clear), facing it.
   const onPad = () => {
-    place(bot, 36, 45);
+    place(bot, 34, 45);
+    bot.face(DIR.EAST);
     bot.act();
   };
   onPad();
   check(!helicopterIn(bot.sim) && refusal() === 'noHelicopter', `by day the pad is empty (${refusal()})`);
   // Lights Out: the helicopter is in.
   runTo(bot, 23 * 60 + 1);
-  place(bot, 36, 45);
+  place(bot, 34, 45);
   bot.step(0);
   onPad();
   check(helicopterIn(bot.sim) && refusal() === 'helipadGuards', `at night, the helipad guards up: refused (${refusal()})`);
