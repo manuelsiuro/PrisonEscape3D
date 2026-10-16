@@ -140,7 +140,25 @@ export type SimEvent =
   | { type: 'allyHit'; by: number; who: number; dmg: number; ko: boolean }
   /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
   | { type: 'refused'; why: Refusal }
+  /**
+   * Noise (P14): made somewhere (its layer and tile; the ground tiles it reached), the guards
+   * awake who heard it and those sent to look (guard indexes). A thrown item landing (from the
+   * player's tile to where it lies; an inmate it hit, Cast id, or -1), an alarm clock wound
+   * (seconds to go; 0: stopped), a firecracker going off, an alarm clock ringing (seconds of it
+   * left); why a throw didn't go.
+   */
+  | { type: 'noise'; kind: NoiseKind; layer: number; tile: number; reach: number; tiles: number[]; heard: number[]; sent: number[] }
+  | { type: 'tossed'; item: number; from: number; to: number; hit: number }
+  | { type: 'wound'; secs: number }
+  | { type: 'bang'; tile: number }
+  | { type: 'ringing'; layer: number; tile: number; left: number }
+  | { type: 'cantThrow'; why: TossRefusal }
   | ItemEvent;
+
+/** What made a noise (P14). */
+export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring';
+/** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
+export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 
 /** The three attributes (GDD §3.2). */
 export type Attr = 'str' | 'spd' | 'int';
@@ -288,6 +306,8 @@ export interface SimState {
   craters: number[];
   /** The second generator (P12, HMP Irongate's GEN-2): steps until its power comes back on (0: on). */
   powerOff2: number;
+  /** Firecrackers burning (P14): [where (World placeKey), the step it goes off]. */
+  fuses: Array<[number, number]>;
 }
 
 export interface Snapshot {
@@ -384,6 +404,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     frozen: false,
     craters: [],
     powerOff2: 0,
+    fuses: [],
   };
 }
 

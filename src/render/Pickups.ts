@@ -56,6 +56,9 @@ export class Pickups {
   private shown = 0;
   private rev = -1;
   private count = 0;
+  /** Each item's tile, and the tile whose items wait for something thrown there to land (-1 none). */
+  private readonly tiles: number[] = [];
+  private hidden = -1;
   private readonly box = { x0: 0, z0: 0, x1: 1, z1: 1 };
 
   constructor() {
@@ -81,8 +84,12 @@ export class Pickups {
    * Each item's angle comes from its tile and kind (not its place in the list), so a pile
    * doesn't shuffle when one is picked up; items sharing a tile fan out around it.
    */
-  update(items: readonly GroundItem[], rev: number, focus: Focus | null, dt: number, time: number, motion: boolean) {
+  update(items: readonly GroundItem[], rev: number, focus: Focus | null, dt: number, time: number, motion: boolean, hidden = -1) {
     if (rev !== this.rev || items.length !== this.count) this.layout(items, rev);
+    if (hidden !== this.hidden) {
+      this.hidden = hidden;
+      for (let k = 0; k < this.count; k++) this.pool[k].visible = this.glows[k].visible = this.tiles[k] !== hidden;
+    }
     if (motion) for (let k = 0; k < this.count; k++) this.glows[k].scale.setScalar(0.95 + Math.sin(time * 2.4 + k * 1.3) * 0.12);
     // The focus frame eases in, breathes, and snaps to the new target.
     this.shown += ((focus ? 1 : 0) - this.shown) * Math.min(1, dt * 10);
@@ -122,6 +129,8 @@ export class Pickups {
       if (!it) return;
       m.geometry = itemGeometry(itemDef(it.item));
       const tile = Math.floor(it.z) * MAP_W + Math.floor(it.x);
+      this.tiles[k] = tile;
+      if (tile === this.hidden) m.visible = halo.visible = false;
       const nth = onTile.get(tile) ?? 0;
       onTile.set(tile, nth + 1);
       const spin = (tile * 0.61 + it.item * 2.4) % (Math.PI * 2);

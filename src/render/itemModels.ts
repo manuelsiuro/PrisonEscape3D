@@ -87,6 +87,18 @@ const SHAPES: Record<string, Shape> = {
   stool: (c, a) => [box(0.3, 0.05, 0.3, c, 0, 0.22), ...[-1, 1].flatMap((x) => [-1, 1].map((z) => box(0.04, 0.22, 0.04, a, x * 0.11, 0, z * 0.11)))],
   letter: (c, a) => [box(0.3, 0.02, 0.2, c), turn(box(0.19, 0.022, 0.012, 0xc8bfa8), 0.6, -0.05, 0.02), turn(box(0.19, 0.022, 0.012, 0xc8bfa8), -0.6, 0.05, 0.02), box(0.05, 0.024, 0.05, a, 0, 0, 0.04)],
   raft: (c, a) => [...[-0.12, 0, 0.12].map((z) => box(0.46, 0.05, 0.1, c, 0, 0, z)), box(0.06, 0.06, 0.36, a, -0.15, 0.05), box(0.06, 0.06, 0.36, a, 0.15, 0.05)],
+  /** A firecracker (P14): a red tube with gold bands and its fuse. */
+  firecracker: (c, a) => [rod(0.05, 0.26, c, 0, 0.05, 0, 12), box(0.03, 0.105, 0.105, a, -0.07, -0.002), box(0.03, 0.105, 0.105, a, 0.07, -0.002), stick(0.09, 0.009, DARK, 0.17, 0.05)],
+  /** An alarm clock (P14) on its back: the case, the white face with its hands, two bells on top. */
+  clock: (c, a) => [
+    cyl(0.12, 0.08, c, 0, 0, 0, 18),
+    cyl(0.1, 0.085, a, 0, 0, 0, 18),
+    box(0.075, 0.006, 0.014, DARK, 0.035, 0.085, 0),
+    box(0.014, 0.006, 0.055, DARK, 0, 0.085, -0.025),
+    cyl(0.045, 0.05, c, -0.08, 0.02, -0.1, 10),
+    cyl(0.045, 0.05, c, 0.08, 0.02, -0.1, 10),
+    box(0.04, 0.03, 0.03, METAL, 0, 0.03, -0.13),
+  ],
 };
 
 const cache = new Map<string, THREE.BufferGeometry>();

@@ -31,6 +31,13 @@ export class Controls {
   private press: { id: number; x: number; y: number; t: number; far: boolean } | null = null;
   /** A quick tap or click at a screen point. */
   onTap: (x: number, y: number) => void = () => {};
+  /**
+   * Throwing (P14): the right mouse button held aims instead of anything else; so does any
+   * press while the aim is armed (from a menu), and a mouse moving over the picture then.
+   */
+  onAim: ((phase: 'down' | 'move' | 'up' | 'cancel', x: number, y: number) => void) | null = null;
+  aimArmed = false;
+  private aimId: number | null = null;
 
   constructor(
     surface: HTMLElement,
@@ -54,6 +61,8 @@ export class Controls {
 
     surface.addEventListener('pointerdown', (e) => this.down(e));
     surface.addEventListener('pointermove', (e) => this.move(e));
+    // The right button aims a throw: no browser menu over the picture.
+    surface.addEventListener('contextmenu', (e) => e.preventDefault());
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) surface.addEventListener(ev, (e) => this.up(e));
     surface.addEventListener(
       'wheel',
@@ -68,6 +77,20 @@ export class Controls {
 
   private down(e: PointerEvent) {
     if (!this.enabled) return;
+    // Aiming a throw (P14): this press is the aim's, not the stick's or a tap.
+    if (this.onAim && this.aimId === null && (e.button === 2 || (this.aimArmed && e.button === 0))) {
+      this.aimId = e.pointerId;
+      this.press = null;
+      this.endStick();
+      try {
+        (e.target as Element).setPointerCapture(e.pointerId);
+      } catch {
+        /* not capturable (synthetic events) */
+      }
+      this.onAim('down', e.clientX, e.clientY);
+      return;
+    }
+    if (this.aimId !== null) return;
     this.press = this.pointers.size === 0 && e.button === 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), far: false } : null;
     if (e.pointerType === 'mouse') return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -95,6 +118,10 @@ export class Controls {
   }
 
   private move(e: PointerEvent) {
+    if (e.pointerId === this.aimId || (this.aimArmed && this.aimId === null && e.pointerType === 'mouse')) {
+      this.onAim?.('move', e.clientX, e.clientY);
+      return;
+    }
     // Past the slop (smaller than the stick's dead zone), the press is a drag, never a tap.
     if (this.press?.id === e.pointerId && Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) > TAP_SLOP) this.press.far = true;
     if (!this.pointers.has(e.pointerId)) return;
@@ -124,6 +151,13 @@ export class Controls {
   }
 
   private up(e: PointerEvent) {
+    if (e.pointerId === this.aimId) {
+      // Let go: thrown (a cancel, or the pointer lost, throws nothing).
+      if (e.type === 'pointerleave') return;
+      this.aimId = null;
+      this.onAim?.(e.type === 'pointerup' ? 'up' : 'cancel', e.clientX, e.clientY);
+      return;
+    }
     const p = this.press;
     if (p?.id === e.pointerId) {
       this.press = null;
@@ -147,6 +181,10 @@ export class Controls {
 
   /** Lets go of everything (pause, leaving the game, the window losing focus). */
   reset() {
+    if (this.aimId !== null) {
+      this.aimId = null;
+      this.onAim?.('cancel', 0, 0);
+    }
     this.press = null;
     this.held.clear();
     this.pointers.clear();

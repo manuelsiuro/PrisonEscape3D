@@ -206,10 +206,10 @@ export const MEALS: Record<Lang, { breakfast: readonly string[]; dinner: readonl
 
 /** Today's talking point ({event}), by what happened. */
 export const EVENTS: Record<Lang, Record<DayEvent, string>> = {
-  en: { lockdown: 'the lockdown', power: 'the blackout', fight: 'that punch-up', shakedown: 'the shakedown', blast: 'that big bang', takeover: 'the riot', detector: 'the detector going off', shot: 'the sniper shooting' },
-  fr: { lockdown: 'le confinement', power: 'la panne de courant', fight: 'la bagarre', shakedown: 'la fouille', blast: 'la grosse explosion', takeover: 'l’émeute', detector: 'le détecteur qui a sonné', shot: 'le tir du sniper' },
+  en: { lockdown: 'the lockdown', power: 'the blackout', fight: 'that punch-up', shakedown: 'the shakedown', blast: 'that big bang', takeover: 'the riot', detector: 'the detector going off', shot: 'the sniper shooting', firecracker: 'that firecracker', alarmClock: 'that alarm clock' },
+  fr: { lockdown: 'le confinement', power: 'la panne de courant', fight: 'la bagarre', shakedown: 'la fouille', blast: 'la grosse explosion', takeover: 'l’émeute', detector: 'le détecteur qui a sonné', shot: 'le tir du sniper', firecracker: 'ce pétard', alarmClock: 'ce réveil' },
 };
-export type DayEvent = 'lockdown' | 'power' | 'fight' | 'shakedown' | 'blast' | 'takeover' | 'detector' | 'shot';
+export type DayEvent = 'lockdown' | 'power' | 'fight' | 'shakedown' | 'blast' | 'takeover' | 'detector' | 'shot' | 'firecracker' | 'alarmClock';
 
 /** What the prison calls the player ({you}): the new fish for two days, then a name earned. */
 export const NICKS: Record<Lang, Record<Nick, string>> = {

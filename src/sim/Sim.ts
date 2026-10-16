@@ -12,6 +12,7 @@ import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/
 import { stepGuards, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
 import { mines } from './systems/mines';
+import { noisemakers } from './systems/noise';
 import { noteCarried } from './systems/recipes';
 import { stockSlots } from './systems/items';
 import { clockIn, spreadCoins, station } from './systems/jobs';
@@ -34,7 +35,7 @@ export * from './state';
  * The game's rules: `step(cmd)` advances one fixed step (1/20 s). The state depends only
  * on the prison, the seed and the commands, never on frame time, the DOM or Three.js, so
  * the tests replay it headless. Systems (src/sim/systems/) run in a fixed order:
- * clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
+ * noise (fuses, alarm clocks) → clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
  * day, the Work Period) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, seats → energy and health → showers → solitary →
@@ -93,6 +94,8 @@ export class Sim {
     s.step++;
     this.movedBy = null;
     this.boarded = null;
+    // Noise first (P14): a firecracker going off, alarm clocks ticking and ringing; guards sent to look move this step.
+    noisemakers(this);
     // Clock.
     const clock = this.clock;
     devices(this);

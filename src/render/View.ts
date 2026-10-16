@@ -19,6 +19,8 @@ import { Pickups, type Focus, type GroundItem } from './Pickups';
 import { updateOcclusion } from './occlusion';
 import { WorldView } from './WorldView';
 import { LAYER_Y, Structure } from './Structure';
+import { NoiseFx, type AimView } from './Noise';
+import { FIRECRACKER } from '../sim/systems/structure';
 import { Underground } from './Underground';
 import { setTheme } from './textures';
 import { Blobs } from './Blobs';
@@ -86,7 +88,11 @@ export interface Frame {
   security: SecurityFrame;
   /** A takeover (GDD §12): every door stands open. */
   takeover: boolean;
+  /** Firecrackers burning on the floor (P14): their ground tiles. */
+  fuses: readonly number[];
 }
+
+const NO_FUSES: readonly number[] = [];
 
 export interface GuardFrame {
   x: number;
@@ -231,6 +237,9 @@ export class View {
   /** Whether a tile has open sky over it (no roof): where snow falls. */
   private readonly openSky = (x: number, z: number) => !this.world || !this.world.inside(x, z) || this.world.layers[LAYER.ROOF].kind[z * MAP_W + x] === TILE.EMPTY;
   private readonly sparks = new Sparks();
+  /** Noise and throwing (P14): the aim, waves, things in flight, lit fuses. */
+  private readonly noiseFx = new NoiseFx();
+  private readonly fuseSpark = (x: number, y: number, z: number) => this.sparks.burst(x, y, z, 1, 0xffd27a, 1.1);
   private readonly snores = new Snores();
   /** Sleepers' heads this frame ([x, y, z] each), for the snores. */
   private readonly sleepers: number[] = [];
@@ -308,7 +317,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.cones.group, this.ring, this.cup, this.puddles);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles);
     this.cup.visible = false;
     this.puddles.count = 0;
     this.puddles.renderOrder = 1;
@@ -447,6 +456,7 @@ export class View {
     this.guide.group.position.y = LAYER_Y[layer];
     this.floor.constant = -LAYER_Y[layer];
     this.pickups.group.position.y = LAYER_Y[layer];
+    this.noiseFx.group.position.y = LAYER_Y[layer];
   }
 
   /**
@@ -499,6 +509,35 @@ export class View {
     const z = (a.root.position.z + b.root.position.z * 2) / 3;
     this.dust.puff(x, z, 0xfff2c8, ko ? 12 : 6, 0.9);
     if (by < 0) this.shake = Math.max(this.shake, ko ? 0.8 : 0.3);
+  }
+
+  /** The throw being aimed (P14), or null: the reach, the arc, the landing ring, where its thud would carry. */
+  setAim(a: AimView | null) {
+    this.noiseFx.setAim(a);
+  }
+
+  /** A noise made (P14): a wave out from its tile as far as it carries, the tiles it reached lit (after `delay` s: a thrown thing lands first). */
+  noise(kind: 'strike' | 'thud' | 'bang' | 'ring', tile: number, reach: number, tiles: readonly number[], heard: boolean, delay = 0) {
+    this.noiseFx.noise(kind, tile, reach, tiles, heard, delay, !this.reducedMotion);
+  }
+
+  /** Something thrown by the player (P14): out of the hand, over to its tile (without motion it's simply there). */
+  toss(item: number, to: number) {
+    this.player.punch();
+    if (this.reducedMotion) return;
+    const p = this.player.root.position;
+    this.noiseFx.toss(item, p.x, p.y + 1.1, p.z, to);
+  }
+
+  /** A firecracker going off (P14): a flash of sparks and smoke, the camera jolted. */
+  bang(tile: number) {
+    if (this.reducedMotion) return;
+    const x = (tile % MAP_W) + 0.5;
+    const z = Math.floor(tile / MAP_W) + 0.5;
+    this.sparks.burst(x, 0.3, z, 22, 0xffd27a, 4);
+    this.sparks.burst(x, 0.4, z, 10, 0xff5a3a, 3);
+    this.dust.puff(x, z, 0xd8d2c8, 14, 0.5);
+    this.shake = Math.max(this.shake, 0.9);
   }
 
   /** A cup of molten chocolate thrown at someone (Cast id): it arcs over, then splashes. */
@@ -660,6 +699,7 @@ export class View {
 
   /** Draws a frame of play: the camera follows the player, looking a little ahead. */
   draw(f: Frame, dt: number, time: number) {
+    this.noiseFx.group.visible = true;
     this.dress(f.outfit);
     this.showLayer(f.layer);
     // Damage, grates and tunnels redrawn when the tiles change.
@@ -780,7 +820,8 @@ export class View {
       if (on) this.player.root.position.copy(on);
       this.player.root.visible = !this.island.aboard && this.player.root.visible;
     }
-    this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion);
+    this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
+    this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion, this.noiseFx.landing);
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);
     this.guide.update(dt, time, f, !this.reducedMotion);
@@ -872,6 +913,8 @@ export class View {
   /** Draws the title backdrop: the camera drifts slowly over the prison, nobody in it. */
   drawTitle(dt: number, time: number) {
     this.showLayer(LAYER.GROUND);
+    // Nothing of a game's noise behind the title (a lit firecracker, an aim, a wave).
+    this.noiseFx.group.visible = false;
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;

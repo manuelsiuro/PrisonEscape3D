@@ -1,0 +1,235 @@
+/* ------------------------------------------------------------ noise and throwing (P14)
+ * Dark like every surface in the game. While aiming: the hint (and Cancel) above the item bar,
+ * a label at the landing spot (amber: who would hear it; red: why it can't go), an ear over
+ * each guard who would hear it. After a noise, a "?" over each guard on the way to look. An
+ * ear on the tool when a guard would hear the work; a wound alarm clock's countdown on its slot. */
+.aim-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.aim-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 124px);
+  z-index: 34;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Its own width (a box from the middle would get only half the screen to wrap in). */
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 6px 6px 6px 12px;
+  border-radius: 999px;
+  color: white;
+  font: 600 14px/1.25 var(--font-ui);
+  background: rgba(22, 30, 46, 0.94);
+  box-shadow: 0 12px 26px -12px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: translateX(-50%);
+  /* Its own entrance (on `translate`): the toasts' would drop the centring while it plays. */
+  animation: aim-in 0.25s var(--spring);
+}
+
+@keyframes aim-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+.aim-hint > .ic {
+  flex: none;
+  color: #ffb347;
+}
+
+.aim-hint span {
+  white-space: nowrap;
+}
+
+/* Held with the mouse: no button to make room for. */
+.aim-hint:has(.aim-cancel.hidden) {
+  padding-right: 14px;
+}
+
+.aim-cancel {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: white;
+  font: 700 13px var(--font-ui);
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.aim-cancel:active {
+  transform: scale(0.95);
+}
+
+.aim-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 7px;
+  border-radius: 999px;
+  color: #ffe4b8;
+  font: 700 12px var(--font-ui);
+  white-space: nowrap;
+  background: rgba(22, 30, 46, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(255, 179, 71, 0.5), 0 8px 18px -10px rgba(0, 0, 0, 0.7);
+}
+
+.aim-label .ic {
+  color: #ffb347;
+}
+
+.aim-label.bad {
+  padding-left: 10px;
+  color: #ffd2ca;
+  box-shadow: inset 0 0 0 1px rgba(255, 74, 58, 0.65), 0 8px 18px -10px rgba(0, 0, 0, 0.7);
+}
+
+.aim-label.bad .ic {
+  display: none;
+}
+
+/* An ear over a guard who would hear the throw. */
+.ear-pin,
+.heard-pop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #24180a;
+  background: #ffb347;
+  box-shadow: 0 0 0 2px rgba(22, 30, 46, 0.88), 0 6px 12px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* On the way to look at a noise: a "?" that pops in. */
+.heard-pop {
+  width: 26px;
+  height: 26px;
+  font: 700 17px/1 var(--font-display);
+  background: #ff8a3d;
+}
+
+.heard-pop.on {
+  animation: heard-pop 0.42s var(--spring);
+}
+
+@keyframes heard-pop {
+  from {
+    scale: 0.3;
+  }
+}
+
+/* The tool button and the Space prompt: a guard would hear the work. */
+.tool-btn .tool-ear {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #24180a;
+  background: #ffb347;
+  box-shadow: 0 0 0 2px rgba(22, 30, 46, 0.9);
+  animation: heard-pop 0.32s var(--spring);
+}
+
+.tool-prompt .tool-ear {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: -2px;
+  border-radius: 50%;
+  color: #24180a;
+  background: #ffb347;
+}
+
+/* While aiming, the prompts and the coach's hint under the aim's hint step aside. */
+body.aiming .tool-prompt,
+body.aiming .act-prompt,
+body.aiming .hint {
+  display: none;
+}
+
+/* A wound alarm clock: its seconds to go on the slot; a bell, shaking, once it rings. */
+.slot-clock {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  color: #24180a;
+  font: 800 10px/1 var(--font-ui);
+  background: var(--gold);
+  pointer-events: none;
+}
+
+.slot-clock.ringing {
+  color: white;
+  background: #ff5a3a;
+  animation: clock-shake 0.24s linear infinite;
+}
+
+@keyframes clock-shake {
+  25% {
+    rotate: -10deg;
+  }
+  75% {
+    rotate: 10deg;
+  }
+}
+
+.item-info em.clock {
+  color: var(--gold);
+  opacity: 1;
+}
+
+.item-info button .ic {
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: -2px;
+}
+
+body.reduced-motion .heard-pop.on,
+body.reduced-motion .tool-btn .tool-ear,
+body.reduced-motion .slot-clock.ringing,
+body.reduced-motion .aim-hint {
+  animation: none;
+}
+
+/* Phones held upright: the hint to the left, clear of the round buttons down the right; two lines if it must. */
+@media (max-width: 600px) and (min-height: 521px) {
+  .aim-hint {
+    left: 12px;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 98px);
+    max-width: calc(100vw - 108px);
+    font-size: 13px;
+    transform: none;
+  }
+
+  .aim-hint span {
+    white-space: normal;
+  }
+}

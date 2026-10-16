@@ -7,7 +7,8 @@ import { warmIcons } from './render/itemIcons';
 import { OP } from './sim/command';
 import { Sim } from './sim/Sim';
 import { usePress } from './play/buttons';
-import { combatUI, controls, hooks, itemsUI, renderer, sound, tools, view } from './play/context';
+import { aimUI, combatUI, controls, hooks, itemsUI, renderer, sound, tools, view } from './play/context';
+import { armThrow, cancelThrow, onAim } from './play/aim';
 import { play, sendOp } from './play/game';
 import { onTap } from './play/guide';
 import { act, listenKeys } from './play/keys';
@@ -32,6 +33,10 @@ combatUI.onLock = () => {
 };
 itemsUI.onAction = act;
 tools.onPress = usePress;
+// Throwing (P14): the right button or a press while armed aims; Throw in the item's menu arms it.
+controls.onAim = onAim;
+itemsUI.onThrow = armThrow;
+aimUI.onCancel = cancelThrow;
 listenKeys();
 
 // The title shows the first prison drifting by.
@@ -56,6 +61,8 @@ if (import.meta.env.DEV)
     // The speech bubbles: what has been said (lines, distinct, repeats), and the director itself.
     __chatter: () => chatterStats(),
     __director: director,
+    // Throwing and noise over the picture (P14).
+    __aimUI: aimUI,
     // The update offer, as a new version would show it.
     __offerUpdate: () => offerUpdate('9.9.9', () => location.reload()),
   });

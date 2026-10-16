@@ -630,6 +630,69 @@ export class Sound {
     this.hiss(1.4, 'bandpass', 2600, 0.8, 0.06);
   }
 
+  // ---------------------------------------------------------------- noise and distractions (P14)
+
+  /** Something thrown landing (`gain` falls off with distance): a soft flump, a hard knock, a metal clang. */
+  clatter(thud: number, gain = 1) {
+    if (gain <= 0.02) return;
+    if (thud >= 2) {
+      // Metal: an inharmonic ring over a click, bouncing once.
+      for (const [f, g] of [[860, 0.07], [1370, 0.05], [2210, 0.035], [3120, 0.02]] as const) this.tone(f, f * 0.995, 0.55, 'sine', g * gain);
+      this.hiss(0.05, 'highpass', 3000, 0.7, 0.12 * gain);
+      for (const [f, g] of [[860, 0.03], [1370, 0.02]] as const) this.tone(f, f * 0.995, 0.3, 'sine', g * gain, 0.16);
+    } else if (thud === 1) {
+      // Hard: a knock and a little rattle.
+      this.tone(320, 170, 0.09, 'triangle', 0.18 * gain);
+      this.hiss(0.06, 'bandpass', 1400, 1.2, 0.12 * gain);
+      this.tone(260, 150, 0.06, 'triangle', 0.08 * gain, 0.11);
+    } else {
+      // Soft: a muffled flump.
+      this.hiss(0.12, 'lowpass', 700, 0.7, 0.16 * gain);
+      this.tone(150, 80, 0.12, 'sine', 0.12 * gain);
+    }
+  }
+
+  /** A firecracker's fuse catching: a crackling fizz while it burns (1.5 s). */
+  fuse(gain = 1) {
+    if (gain <= 0.02) return;
+    this.hiss(1.4, 'highpass', 4200, 0.8, 0.06 * gain, undefined, 0, 0.05);
+    for (let k = 0; k < 9; k++) this.hiss(0.025, 'bandpass', 2600 + k * 230, 2, 0.08 * gain, undefined, 0.08 + k * 0.15);
+  }
+
+  /** A firecracker going off: a sharp crack, a pop of a boom, crackles after. */
+  bang(gain = 1) {
+    if (gain <= 0.02) return;
+    this.hiss(0.08, 'highpass', 1800, 0.6, 0.55 * gain);
+    this.tone(180, 40, 0.45, 'sawtooth', 0.22 * gain);
+    this.tone(90, 30, 0.6, 'sine', 0.35 * gain, 0.01);
+    this.hiss(0.6, 'lowpass', 900, 0.6, 0.25 * gain);
+    for (let k = 0; k < 6; k++) this.hiss(0.03, 'bandpass', 3000 + k * 400, 2, 0.1 * gain, undefined, 0.25 + k * 0.09 + Math.random() * 0.05);
+  }
+
+  /** An alarm clock ringing (a second of it): the hammer between two bells. */
+  ring(gain = 1) {
+    if (gain <= 0.02) return;
+    for (let k = 0; k < 14; k++) {
+      const f = k % 2 ? 2350 : 2100;
+      this.tone(f, f * 0.99, 0.09, 'square', 0.035 * gain, k * 0.065);
+      this.tone(f * 1.51, f * 1.5, 0.07, 'sine', 0.02 * gain, k * 0.065);
+    }
+  }
+
+  /** A wound alarm clock in the pockets: tick. */
+  clockTick() {
+    this.tone(3200, 3000, 0.018, 'square', 0.018);
+    this.hiss(0.015, 'highpass', 5000, 0.8, 0.02);
+  }
+
+  /** Winding an alarm clock: a ratchet. */
+  wind() {
+    for (let k = 0; k < 5; k++) {
+      this.tone(2400, 2100, 0.025, 'square', 0.03, k * 0.06);
+      this.hiss(0.02, 'highpass', 4000, 0.8, 0.04, undefined, k * 0.06);
+    }
+  }
+
   /** A toilet flushing (a gurgle when clogged). */
   flush(clogged = false) {
     if (clogged) {

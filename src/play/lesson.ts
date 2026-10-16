@@ -52,6 +52,12 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
       run.tick = TICK;
       sound.chime();
     }
+    // A step that can't be done any more (the firecrackers gone off out of earshot): try again.
+    const why = run.progress.step?.fail?.(ctx);
+    if (why) {
+      end(g, false, why);
+      return;
+    }
   }
   // The tick on the step just done, then on to the next (one at a time); it waits while the
   // game is paused, so a lesson never ends under the pause card or the help.

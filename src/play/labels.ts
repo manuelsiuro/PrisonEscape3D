@@ -9,6 +9,7 @@ import { GUARD } from '../sim/systems/guards';
 import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/systems/items';
 import { genOf, offFor } from '../sim/systems/power';
 import { helicopterIn } from '../sim/systems/sea';
+import { clockRinging } from '../sim/systems/noise';
 import { DIRT, STRIKES, underSea, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { energyCost } from '../sim/systems/weather';
 import { STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
@@ -34,8 +35,16 @@ export const NEED: Record<string, string> = {
   rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock' };
+
+/** A firecracker in hand (P14): the tool button throws it. */
+const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
+export function describeToss(): ToolView {
+  tossView.verb = t('act.throw');
+  tossView.what = t('thing.firecracker');
+  return tossView;
+}
 
 /** The tool button's face, refilled in place. */
 const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress: null, repeat: true };
@@ -225,6 +234,15 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   v.attack = false;
   v.verb = t(`act.${tt.action}` as Key);
   v.icon = TOOL_ICON[tt.action];
+  // An alarm clock (P14): wound, or stopped while it rings.
+  if (tt.action === 'wind') {
+    if (clockRinging(sim.state.items.inv[sim.state.items.hand])) v.verb = t('act.stop');
+    v.what = t('thing.clock');
+    v.fits = true;
+    v.repeat = false;
+    v.progress = null;
+    return v;
+  }
   // A comb or toothbrush on a wall: strokes so far against those it takes.
   if (tt.action === 'sharpen') {
     v.what = t('thing.wall');

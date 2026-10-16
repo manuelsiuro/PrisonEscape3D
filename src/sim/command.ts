@@ -1,8 +1,9 @@
 /**
  * What the player asks for during one step, packed in one integer so command logs stay
  * small: bits 0–4 the direction (0 = stand still, 1–16 = a compass point), bits 5–8 a
- * one-step operation (OP), bits 9–16 and 17–24 its two arguments. Keyboard, touch and
- * bots all produce the same commands; an operation is sent for exactly one step.
+ * one-step operation (OP), bits 9–16 and 17–24 its two arguments, bits 25–30 a third (OP.EXT).
+ * Keyboard, touch and bots all produce the same commands; an operation is sent for exactly
+ * one step.
  */
 export const DIRS = 16;
 
@@ -33,6 +34,14 @@ export const OP = {
   JOB: 11,
   /** Training (GDD §3.2): a = 0 study at the open library shelf, 1 or 2 a press (left, right: they must alternate), 3 stop. */
   TRAIN: 12,
+  /** The operations added from P14 on: a = EXT action, b and c its arguments. (14 and 15 stay free.) */
+  EXT: 13,
+} as const;
+
+/** What OP.EXT asks for. Never renumber: logs store them. */
+export const EXT = {
+  /** Throw the item in hand (P14): b and c = the ground tile aimed at (see tossArgs), wherever the player is by then. */
+  THROW: 1,
 } as const;
 
 /** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given). Never renumber. */
@@ -41,11 +50,20 @@ export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECR
 /** Slot addresses for OP.MOVE / DROP / EQUIP: 0–5 the hotbar, then the weapon, the outfit, then the open container's slots. */
 export const SLOT = { HOTBAR: 0, WEAPON: 6, OUTFIT: 7, CONTAINER: 8 } as const;
 
-export const command = (dir: number, op = 0, a = 0, b = 0) => (dir & 31) | ((op & 15) << 5) | ((a & 255) << 9) | ((b & 255) << 17);
+export const command = (dir: number, op = 0, a = 0, b = 0, c = 0) => (dir & 31) | ((op & 15) << 5) | ((a & 255) << 9) | ((b & 255) << 17) | ((c & 63) << 25);
 export const dirOf = (cmd: number) => cmd & 31;
 export const opOf = (cmd: number) => (cmd >>> 5) & 15;
 export const argA = (cmd: number) => (cmd >>> 9) & 255;
 export const argB = (cmd: number) => (cmd >>> 17) & 255;
+export const argC = (cmd: number) => (cmd >>> 25) & 63;
+
+/**
+ * A throw's target, the ground tile aimed at, in the two arguments: its low 8 bits in b, the
+ * rest in c. A tile, not an offset: a throw sent while walking still lands where it was aimed
+ * (the player's step comes before the throw).
+ */
+export const tossArgs = (tile: number): [number, number] => [tile & 255, tile >>> 8];
+export const tossTile = (b: number, c: number) => b | (c << 8);
 
 /**
  * Unit vectors for the 16 directions, scaled to 1024 and rounded, so every platform gets

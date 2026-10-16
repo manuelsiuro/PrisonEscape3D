@@ -63,8 +63,8 @@ export class Bot {
       if (line) this.log.push(`${this.time} ${line}`);
     }
   }
-  op(op: number, a = 0, b = 0) {
-    this.step(command(0, op, a, b));
+  op(op: number, a = 0, b = 0, c = 0) {
+    this.step(command(0, op, a, b, c));
   }
   /** Steps until a test passes (or a limit); whether it did. */
   until(test: () => boolean, limit: number, cmd: () => number = () => 0): boolean {

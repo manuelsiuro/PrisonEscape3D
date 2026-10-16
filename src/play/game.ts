@@ -20,8 +20,8 @@ export interface Game {
   guideFrom: number;
   /** Dev builds: simulation speed (`]` toggles fast-forward). */
   speed: number;
-  /** One-step operations waiting for the next steps (one per step), from the item UI and keys. */
-  ops: Array<[number, number, number]>;
+  /** One-step operations waiting for the next steps (one per step), from the item UI and keys: [op, a, b, c]. */
+  ops: Array<[number, number, number, number]>;
   /** Where the ladder comes down (for the action button's label), worked out once. */
   ladderFoot: number;
   /** The escape screen is up: the game is over. */
@@ -42,6 +42,6 @@ export interface Game {
 export const play: { game: Game | null; acc: number; last: number } = { game: null, acc: 0, last: performance.now() };
 
 /** Queues a one-step operation (sent with the next simulation step). */
-export function sendOp(op: number, a = 0, b = 0) {
-  play.game?.ops.push([op, a, b]);
+export function sendOp(op: number, a = 0, b = 0, c = 0) {
+  play.game?.ops.push([op, a, b, c]);
 }

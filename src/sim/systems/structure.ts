@@ -16,9 +16,9 @@ import type { Body } from './movement';
 /**
  * What the use button does with the item in hand: a tool strikes (chip, cut, unscrew, dig,
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
- * takes the player down off a roof.
+ * takes the player down off a roof, an alarm clock is wound (P14).
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -74,6 +74,9 @@ export const SHEET_ROPE = ITEM_ID('sheet_rope');
 export const CHOCOLATE = ITEM_ID('chocolate');
 export const GRAPNEL = ITEM_ID('grapnel');
 export const RAFT = ITEM_ID('raft');
+/** P14: the alarm clock (wound with the use button) and the firecracker (thrown). */
+export const ALARM_CLOCK = ITEM_ID('alarm_clock');
+export const FIRECRACKER = ITEM_ID('firecracker');
 /** What blinds a camera (GDD §5.6). */
 export const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
 const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
@@ -232,6 +235,7 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = f
 export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = []): ToolTarget | null {
   const def = held ? itemDef(held) : null;
   if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
   const here = bodyTile(b);
   const ahead = aheadOf(b);
   // A comb or toothbrush against a wall: rubbed into a shiv (hp: the strokes it takes).

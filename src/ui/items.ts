@@ -3,6 +3,8 @@ import { RECIPES } from '../content/recipes';
 import { OP, SLOT } from '../sim/command';
 import { ingredientOptions } from '../sim/systems/recipes';
 import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
+import { clockRinging, clockSecs } from '../sim/systems/noise';
+import { ALARM_CLOCK } from '../sim/systems/structure';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, t, type Key } from '../i18n';
 import { h, setText, TOUCH } from './dom';
@@ -43,6 +45,11 @@ function slotInner(v: number): string {
   return `<img src="${itemIcons()[n]}" alt="" draggable="false">${d.contraband ? '<i class="slot-cb"></i>' : ''}${d.uses ? `<i class="slot-dur"><i style="width:${Math.round(uses * 100)}%"></i></i>` : ''}`;
 }
 
+/** What a wound alarm clock shows (P14): its seconds to go, 'ring' while it rings, '' stopped or not a clock. */
+const clockFace = (v: number) => (itemOf(v) === ALARM_CLOCK && usesOf(v) > 0 ? (clockRinging(v) ? 'ring' : String(clockSecs(v))) : '');
+/** What the item card says of an alarm clock. */
+const clockText = (v: number) => (clockRinging(v) ? t('items.ringing') : clockSecs(v) ? t('items.clockIn', { n: clockSecs(v) }) : t('items.clockOff'));
+
 /**
  * The item UI (GDD §6, §8, §13): the hotbar of 6 slots plus weapon and outfit, the action
  * button (touch) or prompt (keys), the open container as a panel (hidden compartment and
@@ -79,8 +86,18 @@ export class ItemsUI {
   private drawnUi = -1;
   /** What each carried slot held at the last redraw (an arrival pops the slot). */
   private lastInv: number[] = [];
+  /**
+   * Alarm clocks (P14) count down once a second: their faces are kept up to date in place, not
+   * by a redraw (a button replaced under a click loses it). What each pocket's face shows, and
+   * the item card's line about a clock.
+   */
+  private clocks: string[] = [];
+  private cardClock: HTMLElement | null = null;
+  private cardAddr = -1;
   /** Called when the player wants to interact (the action button). */
   onAction: () => void = () => {};
+  /** Called when the player picks Throw for the item in hand (P14): the aim takes over. */
+  onThrow: () => void = () => {};
 
   constructor(
     private readonly send: Send,
@@ -291,6 +308,9 @@ export class ItemsUI {
       case 'drop':
         this.send(OP.DROP, addr);
         break;
+      case 'throw':
+        this.onThrow();
+        break;
       case 'equip':
         this.send(OP.EQUIP, addr);
         break;
@@ -370,7 +390,10 @@ export class ItemsUI {
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.
     const drawn = `${v.boxTitle}|${v.deskTunnel}|${v.study}`;
-    if (it.rev === this.simRev && this.uiRev === this.drawnUi && drawn === this.drawn) return;
+    if (it.rev === this.simRev && this.uiRev === this.drawnUi && drawn === this.drawn) {
+      this.tickClocks(it);
+      return;
+    }
     this.simRev = it.rev;
     this.drawnUi = this.uiRev;
     this.drawn = drawn;
@@ -391,6 +414,9 @@ export class ItemsUI {
     });
 
     this.lastInv = it.inv.slice();
+    // The redraw wiped the clocks' faces: put them back.
+    this.clocks.length = 0;
+    this.tickClocks(it);
     // The open container.
     const box = it.containers[it.open];
     this.box.classList.toggle('hidden', !box);
@@ -500,6 +526,31 @@ export class ItemsUI {
     ].join('');
   }
 
+  /** Between redraws: each alarm clock's face in the pockets, and the card's line about one, where they changed. */
+  private tickClocks(it: ItemState) {
+    for (let k = 0; k < HOTBAR; k++) {
+      const face = clockFace(it.inv[k]);
+      if (face === (this.clocks[k] ?? '')) continue;
+      this.clocks[k] = face;
+      const slotEl = this.slots[k];
+      let badge = slotEl.querySelector<HTMLElement>('.slot-clock');
+      if (!face) {
+        badge?.remove();
+        continue;
+      }
+      if (!badge) {
+        badge = h('i', 'slot-clock');
+        slotEl.append(badge);
+      }
+      badge.classList.toggle('ringing', face === 'ring');
+      badge.innerHTML = face === 'ring' ? icon('bell', 11) : face;
+    }
+    if (this.cardClock?.isConnected) {
+      const v = this.cardAddr < SLOT.CONTAINER ? it.inv[this.cardAddr] : (it.containers[it.open]?.[this.cardAddr - SLOT.CONTAINER] ?? 0);
+      if (itemOf(v) === ALARM_CLOCK) setText(this.cardClock, clockText(v));
+    }
+  }
+
   /** The item strip: what's picked or menu'd, with what can be done with it. */
   private drawInfo(v: ItemsView) {
     const it = v.items;
@@ -511,13 +562,20 @@ export class ItemsUI {
     if (!value || addr === null) return;
     const n = itemOf(value);
     const d = itemDef(n);
-    const tags = [d.contraband ? `<em class="cb">${t('items.contraband')}</em>` : '', d.uses ? `<em>${t('items.uses', { n: usesOf(value) })}</em>` : ''].join('');
+    // An alarm clock says when it rings (P14), not how it wears.
+    const clock = n === ALARM_CLOCK ? `<em class="clock">${clockText(value)}</em>` : '';
+    const tags = [d.contraband ? `<em class="cb">${t('items.contraband')}</em>` : '', d.uses ? `<em>${t('items.uses', { n: usesOf(value) })}</em>` : '', clock].join('');
     const buttons: string[] = [];
     if (this.menu !== null) {
       if (addr < HOTBAR && (d.cat === 'weapon' || d.cat === 'outfit')) buttons.push(`<button data-do="equip" data-addr="${addr}">${d.cat === 'weapon' ? t('items.wield') : t('items.equip')}</button>`);
       if (addr === SLOT.WEAPON || addr === SLOT.OUTFIT) buttons.push(`<button data-do="unequip" data-addr="${addr}">${t('items.take')}</button>`);
+      // The item in hand can be thrown (P14), on the ground floor only (the sim says why not elsewhere).
+      if (addr === it.hand) buttons.push(`<button data-do="throw" data-addr="${addr}">${icon('toss', 14)}${t('items.throw')}</button>`);
       buttons.push(`<button data-do="drop" data-addr="${addr}">${t('items.drop')}</button>`);
     }
     this.info.innerHTML = `<img src="${itemIcons()[n]}" alt=""><div><b>${itemName(n)}</b><span>${tags}</span></div>${buttons.join('')}`;
+    // A clock's line counts down in place (see tickClocks).
+    this.cardClock = this.info.querySelector('em.clock');
+    this.cardAddr = addr;
   }
 }

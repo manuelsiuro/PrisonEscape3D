@@ -16,6 +16,7 @@ import type { HudState } from '../ui/hud';
 import type { ItemsView } from '../ui/items';
 import { press, targets } from './buttons';
 import {
+  aimUI,
   board,
   combatUI,
   darkCell,
@@ -35,8 +36,10 @@ import {
   workChips,
 } from './context';
 import { play, type Game } from './game';
-import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, targetInfo } from './labels';
-import { seenTip } from './tips';
+import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, targetInfo } from './labels';
+import { updateAim } from './aim';
+import { coachOnce, seenTip } from './tips';
+import { FIRECRACKER } from '../sim/systems/structure';
 import { chatterFrame } from './chatter';
 
 /**
@@ -117,6 +120,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const tt = memo.tool;
   const fight = busy ? null : describeAttack(sim);
   press.toolNow = fight ?? describeTool(sim, tt, held);
+  // A firecracker in hand (P14): nothing to strike, but its own button throws it.
+  if (!press.toolNow && held === FIRECRACKER && !busy && st.layer === LAYER.GROUND) press.toolNow = describeToss();
+  // Within a guard's earshot: the ear on the button (worked out once a step), told about the first time.
+  if (press.toolNow) press.toolNow.heard = !fight && memo.heard;
+  if (press.toolNow?.heard && !busy && !panel) coachOnce('earshot', 'hint.earshot');
+  if (held === FIRECRACKER && !busy) coachOnce('firecracker', 'hint.firecracker');
   // Each new target takes a new press: a held button never digs on into the next thing.
   press.toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && press.toolKey !== press.heldOn) tools.release();
@@ -192,4 +201,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
   chatterFrame(g, busy || panel || !!g.lesson);
+  // Throwing (P14): the aim follows the pointer; a "?" over the guards on their way to look.
+  updateAim(busy || panel);
+  aimUI.frame(headAt, busy || st.layer !== LAYER.GROUND);
 }
+
+const headAt = (id: number, out: { x: number; y: number }) => view.screenOf(id, out, 1.95);

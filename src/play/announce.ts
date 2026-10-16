@@ -1,12 +1,15 @@
 import { buzz } from '../app/haptics';
-import { itemNumber } from '../content/items';
+import { itemDef, itemNumber } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
 import { ownerOf } from '../sim/systems/items';
-import { DIRT, underMyDesk, WALL_CHUNK } from '../sim/systems/structure';
+import { ALARM_CLOCK, DIRT, FIRECRACKER, underMyDesk, WALL_CHUNK } from '../sim/systems/structure';
+import { clockSecs } from '../sim/systems/noise';
+import { itemOf } from '../sim/systems/items';
+import { tossFlight } from '../render/Noise';
 import { CHOCOLATE_ENERGY, KO_STEPS, MEAL_ENERGY, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { TOUCH, h } from '../ui/dom';
@@ -14,7 +17,7 @@ import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
 import { inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
-import { banner, board, combatUI, itemsUI, profile, settings, sleepVeil, sound, tools, view } from './context';
+import { aimUI, banner, board, combatUI, itemsUI, profile, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
 import { NEED } from './labels';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
@@ -556,11 +559,71 @@ export function announce(e: SimEvent, sim: Sim) {
       itemsUI.toast(t(`refused.${e.why}` as Key));
       break;
     }
+    // Noise and distractions (P14): a throw flies, lands with its clatter; a noise sends out its
+    // wave and the guards sent to look get a "?"; a firecracker fizzes, then bangs; a clock rings.
+    case 'tossed': {
+      const flight = view.reducedMotion ? 0 : tossFlight(tilesTo(sim, e.to));
+      lastFlight = flight;
+      sound.whoosh();
+      view.toss(e.item, e.to);
+      const gain = gainAt(sim, e.to);
+      setTimeout(() => sound.clatter(itemDef(e.item).thud ?? 0, gain), flight * 1000);
+      if (e.item === FIRECRACKER) setTimeout(() => sound.fuse(gain), flight * 1000);
+      if (e.hit >= 0) itemsUI.toast(t('toast.hitInmate', { name: inmateName(sim, e.hit) }));
+      break;
+    }
+    case 'noise': {
+      view.noise(e.kind, e.tile, e.reach, e.tiles, e.sent.length > 0, e.kind === 'thud' ? lastFlight : 0);
+      if (e.sent.length) {
+        aimUI.heard(e.sent.map((k) => sim.state.inmates.length + k));
+        coachOnce('heard', 'hint.heard');
+      }
+      break;
+    }
+    case 'wound':
+      sound.wind();
+      itemsUI.toast(e.secs ? t('toast.wound', { n: e.secs }) : t('toast.clockStopped'));
+      break;
+    case 'bang': {
+      const gain = gainAt(sim, e.tile);
+      sound.bang(gain);
+      view.bang(e.tile);
+      if (gain > 0.5) buzz('giveWay');
+      break;
+    }
+    case 'ringing':
+      sound.ring(gainAt(sim, e.tile));
+      break;
+    case 'cantThrow': {
+      const now = performance.now();
+      if (now - lastCant < 600) break;
+      lastCant = now;
+      sound.sting();
+      itemsUI.toast(t(`toss.${e.why}` as Key));
+      break;
+    }
   }
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
 }
 
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
+/** How long the last thing thrown is in the air (s): its thud's wave waits for it to land. */
+let lastFlight = 0;
+/** How far a tile is from the player (tiles). */
+function tilesTo(sim: Sim, tile: number): number {
+  const p = sim.state.player;
+  return Math.hypot((tile % 64) + 0.5 - p.x / UNIT, Math.floor(tile / 64) + 0.5 - p.z / UNIT);
+}
+/** How loud something at a tile sounds to the player: full close by, a whisper across the prison. */
+const gainAt = (sim: Sim, tile: number) => Math.max(0.12, Math.min(1, 1.15 - tilesTo(sim, tile) / 16));
+
+/** Once a second while it counts down: a wound alarm clock in the pockets ticks (never while time runs fast: asleep, out cold, fast-forward). */
+export function tickTock(sim: Sim, speed: number) {
+  const s = sim.state;
+  if (speed !== 1 || s.step % STEPS_PER_SECOND !== 0) return;
+  if (s.items.inv.some((v) => itemOf(v) === ALARM_CLOCK && clockSecs(v) > 0)) sound.clockTick();
+}
 
 /** When a cup was last thrown (real ms), and how long it's in the air (View's flight). */
 let thrownAt = -1e9;

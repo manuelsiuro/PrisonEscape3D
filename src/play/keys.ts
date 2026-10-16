@@ -4,6 +4,7 @@ import { targets, usePress } from './buttons';
 import { board, click, closeSocial, itemsUI, profile, socialOpen, sound, tools, toggleProfile } from './context';
 import { play, sendOp } from './game';
 import { autosave, openHelp, pause } from './session';
+import { aiming, cancelThrow, throwAhead } from './aim';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -17,9 +18,10 @@ export function act() {
 function onKeyDown(e: KeyboardEvent) {
   const game = play.game;
   if (!game || game.paused || e.metaKey || e.ctrlKey || e.repeat) return;
-  // Escape closes a panel first, and pauses only when none is open.
+  // Escape closes a panel first (or lets go of an aim), and pauses only when none is open.
   if (e.code === 'Escape') {
-    if (itemsUI.panelOpen) itemsUI.closePanels();
+    if (aiming()) cancelThrow();
+    else if (itemsUI.panelOpen) itemsUI.closePanels();
     else if (socialOpen()) closeSocial();
     else if (game.rec.sim.state.train >= 0) sendOp(OP.TRAIN, 3);
     else pause();
@@ -67,6 +69,8 @@ function onKeyDown(e: KeyboardEvent) {
     usePress();
   }
   if (e.code === 'KeyQ' && g.rec.sim.state.items.inv[g.rec.sim.state.items.hand]) sendOp(OP.DROP, g.rec.sim.state.items.hand);
+  // F: the item in hand thrown straight ahead (P14).
+  if (e.code === 'KeyF' && !itemsUI.panelOpen && !socialOpen()) throwAhead();
   const digit = /^Digit([1-6])$/.exec(e.code);
   if (digit) sendOp(OP.SELECT, Number(digit[1]) - 1);
   // Dev builds: fast-forward the prison clock (×30) to test the routine.

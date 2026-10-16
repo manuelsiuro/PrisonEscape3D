@@ -15,6 +15,10 @@ export interface ToolView {
   repeat: boolean;
   /** A blow at the locked-on target (the button turns red). */
   attack?: boolean;
+  /** A guard awake would hear it (P14): an ear on the button. */
+  heard?: boolean;
+  /** A firecracker in hand (P14): the button throws it instead of striking. */
+  toss?: boolean;
 }
 
 /**
@@ -98,16 +102,18 @@ export class ToolControls {
     document.body.classList.toggle('tool-up', on);
     if (!on) this.release();
     if (on && v) {
-      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}`;
+      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}`;
       if (key !== this.shown) {
         this.shown = key;
+        // Within a guard's earshot (P14): an ear says so, on the button or the prompt.
+        const ear = v.heard ? `<i class="tool-ear" title="${t('tool.heard')}">${icon('ear', TOUCH ? 13 : 14)}</i>` : '';
         if (TOUCH) {
-          this.btn.innerHTML = `<i class="tool-round"><i class="tool-ring"></i>${icon(v.icon, 24)}<span></span></i>`;
+          this.btn.innerHTML = `<i class="tool-round"><i class="tool-ring"></i>${icon(v.icon, 24)}<span></span></i>${ear}`;
           this.btn.querySelector('span')!.textContent = v.verb;
           this.ring = this.btn.querySelector('.tool-ring');
-          this.btn.setAttribute('aria-label', `${v.verb} ${v.what}`);
+          this.btn.setAttribute('aria-label', `${v.verb} ${v.what}${v.heard ? `. ${t('tool.heard')}` : ''}`);
         } else {
-          this.prompt.innerHTML = `<kbd class="wide">${t('key.space')}</kbd><span></span><b></b>${v.progress === null ? '' : '<i class="tool-bar"><i></i></i>'}`;
+          this.prompt.innerHTML = `<kbd class="wide">${t('key.space')}</kbd><span></span><b></b>${ear}${v.progress === null ? '' : '<i class="tool-bar"><i></i></i>'}`;
           this.prompt.querySelector('span')!.textContent = v.verb;
           this.prompt.querySelector('b')!.textContent = v.what;
           this.bar = this.prompt.querySelector('.tool-bar i');

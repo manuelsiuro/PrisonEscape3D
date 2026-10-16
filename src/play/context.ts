@@ -19,6 +19,7 @@ import { ProfilePanel } from '../ui/profile';
 import { SolitaryPanel } from '../ui/solitary';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
+import { AimUI } from '../ui/aim';
 import { play, sendOp } from './game';
 
 /**
@@ -85,6 +86,8 @@ export const board = new BoardPanel(sendOp, click);
 export const profile = new ProfilePanel(click);
 export const trainCard = new TrainCard(sendOp);
 export const workChips = new WorkChips();
+/** Throwing and noise over the picture (P14): the aim's hint and labels, guards who heard. */
+export const aimUI = new AimUI();
 /** A social panel is up (the talk, the job board, the file): the tool controls step aside. */
 export const socialOpen = () => talk.open || board.isOpen || profile.isOpen;
 export function closeSocial() {

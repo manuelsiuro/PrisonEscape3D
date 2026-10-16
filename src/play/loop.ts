@@ -4,7 +4,7 @@ import { command, OP } from '../sim/command';
 import { itemOf } from '../sim/systems/items';
 import { tileOfBody } from '../sim/systems/movement';
 import { STEPS_PER_SECOND, STRIKE_STEPS, UNIT } from '../sim/tuning';
-import { announce } from './announce';
+import { announce, tickTock } from './announce';
 import { chatterEvent } from './chatter';
 import { press, updateTargets } from './buttons';
 import { controls, hint, itemsUI, settings, socialOpen, tools, view } from './context';
@@ -16,9 +16,9 @@ import { autosave, escaped } from './session';
 import { markTip, updateFirstDay } from './tips';
 import { lessonEvent, lessonHidden, updateLesson } from './lesson';
 
-const NO_OP: [number, number, number] = [0, 0, 0];
-const USE_OP: [number, number, number] = [OP.USE, 0, 0];
-const PRESS_OP: [number, number, number] = [OP.USE, 1, 0];
+const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
+const USE_OP: [number, number, number, number] = [OP.USE, 0, 0, 0];
+const PRESS_OP: [number, number, number, number] = [OP.USE, 1, 0, 0];
 const SLEEP_SPEED = 40;
 /** Knocked out, the 30 seconds pass in 3. */
 const KO_SPEED = 10;
@@ -65,7 +65,7 @@ function stepSim(g: Game, dt: number) {
     let dir = controls.steering ? controls.dir() : g.pilot.dir(p);
     // On the equipment, left and right are reps (sent as ops): only up or down steps off.
     if (sim.state.train >= 0 && (dir === 1 || dir === 9)) dir = 0;
-    g.rec.step(command(dir, op[0], op[1], op[2]));
+    g.rec.step(command(dir, op[0], op[1], op[2], op[3]));
     g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
     // Sound, banners and vibration read the events; the simulation never calls them.
     for (const e of sim.events) {
@@ -83,6 +83,7 @@ function stepSim(g: Game, dt: number) {
       if ((e.type === 'sleep' && e.on) || (e.type === 'routine' && ROUTINE[e.routine].id === 'rollCall')) autosave(g, true);
       if (e.type === 'pickup') pickedUp = true;
     }
+    tickTock(sim, speed);
   }
   if (play.acc > 1) play.acc = 0;
 }

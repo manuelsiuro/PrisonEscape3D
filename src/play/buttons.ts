@@ -6,14 +6,18 @@ import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import { interactTarget, type Target } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
-import { climbTarget, facesProp, preferClimb, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import { climbTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import { strikeNoise, wouldHear } from '../sim/systems/noise';
+import { TOUCH } from '../ui/dom';
+import { armThrow, throwAhead } from './aim';
 import type { ToolView } from '../ui/tool';
 import { tools } from './context';
 import { play } from './game';
 
 /** What the buttons would do, worked out once per simulation step. */
-export const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean; station: Station | null } = {
+export const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean; station: Station | null; heard: boolean } = {
   station: null,
+  heard: false,
   step: -1,
   busy: false,
   panel: false,
@@ -57,6 +61,13 @@ export function usePress() {
   const game = play.game;
   if (!game || game.paused) return;
   game.pilot.stop();
+  // A firecracker's button throws it (P14): aimed on touch, straight ahead on a keyboard.
+  if (press.toolNow?.toss) {
+    tools.release();
+    if (TOUCH) armThrow();
+    else throwAhead();
+    return;
+  }
   // A fresh press (arg 1): only a fresh press digs up, eats or puts things in place. It waits
   // for the arm to come back from the last strike (a quick tap is never lost).
   press.pressQueued = true;
@@ -102,6 +113,9 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, ladderFoot, bodiesOf(sim)), faced);
     memo.target = memo.climb ? null : reach;
     memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv);
+    // The ear on the tool button (P14): a guard awake would hear this strike (the sim's own rule).
+    const tool = memo.tool;
+    memo.heard = !!tool && STRIKES.has(tool.action) && tool.fits && tool.hp > 0 && wouldHear(sim, strikeNoise(st.layer, tool, held));
     memo.canLock = !busy && st.layer === LAYER.GROUND && lockCandidates(sim.world, st, p, lockList).length > 0;
     let fighting = false;
     for (const m of st.inmates) if (m.angry > 0) fighting = true;

@@ -529,6 +529,32 @@ export class Director {
       case 'routine':
         if (this.random() < 0.5) this.queueUp(now, 're.bell.in', this.inmatesNear(sim, px, pz, 14), 2, 'bell', undefined, 1);
         break;
+      // Noise (P14): the guards sent to look say so, those close by wonder; a bang wakes the
+      // sleepers within earshot; an inmate hit by something thrown complains.
+      case 'noise': {
+        const x = e.tile % 64;
+        const z = Math.floor(e.tile / 64);
+        const sent = e.sent.map((k) => n + k);
+        if (e.kind === 'bang') {
+          this.incident('blast', x, z, now);
+          this.noteDay('firecracker');
+          this.queueUp(now, 're.bang.gu', sent, 4, 'bangGu', 'shout', 0.3);
+          this.queueUp(now, 're.bang.in', this.inmatesNear(sim, x, z, 10), 3, 'bang', 'shout', 0.6);
+          const woken = s.inmates.map((m, k) => (m.doing === DOING.SLEEP && m.ko <= 0 && e.tiles.includes(Math.floor(m.body.z / UNIT) * 64 + Math.floor(m.body.x / UNIT)) ? k : -1)).filter((k) => k >= 0);
+          this.queueUp(now, 're.woken.in', woken, 3, 'woken', undefined, 1.2);
+        } else if (e.kind === 'ring') {
+          this.noteDay('alarmClock');
+          this.queueUp(now, 're.ring.gu', sent, 3, 'ringGu', 'shout', 0.3);
+          this.queueUp(now, 're.ring.in', this.inmatesNear(sim, x, z, 7), 2, 'ring', undefined, 0.8);
+        } else {
+          this.queueUp(now, 're.noise.gu', sent, 3, 'noiseGu', undefined, 0.3);
+          if (e.kind === 'thud' || sent.length) this.queueUp(now, 're.noise.in', this.inmatesNear(sim, x, z, 5), 1, 'noiseIn', undefined, 0.8);
+        }
+        break;
+      }
+      case 'tossed':
+        if (e.hit >= 0) this.queueUp(now, 're.tossHit.in', [e.hit], 4, 'tossHit', 'shout', 0.2);
+        break;
     }
   }
 

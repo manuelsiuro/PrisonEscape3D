@@ -4,8 +4,9 @@ import type { Key } from '../i18n';
 import { SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { clockAt } from '../sim/systems/clock';
+import { GUARD } from '../sim/systems/guards';
 import { itemOf, slot } from '../sim/systems/items';
-import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
+import { NOISE_LOOK, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { MAP_W } from '../sim/world/World';
@@ -32,6 +33,8 @@ export interface LessonStep {
   goal?: (sim: Sim) => number | null;
   /** The game runs faster while this step waits (time to pass, nothing to do). */
   speed?: number;
+  /** Why the lesson can't go on now (it ends, to be tried again), if it can't; null while it can. */
+  fail?: (c: LessonCtx) => Key | null;
 }
 
 export interface Lesson {
@@ -78,6 +81,7 @@ function fill(sim: Sim, box: number, ...ids: string[]) {
 }
 const holds = (sim: Sim, id: string) => itemOf(sim.state.items.inv[sim.state.items.hand]) === n(id);
 const carries = (sim: Sim, id: string) => sim.state.items.inv.slice(0, 6).some((v) => itemOf(v) === n(id));
+const count = (sim: Sim, id: string) => sim.state.items.inv.slice(0, 6).filter((v) => itemOf(v) === n(id)).length;
 const zone = (z: string) => (c: LessonCtx) => c.sim.playerZone === z;
 
 /** A quiet morning of free time: no block to keep, nothing due. */
@@ -222,7 +226,30 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
-    // 9. Getting out: the power off, the electric fence cut, out onto the road.
+    // 9. Noise (P14): a potato thrown, too quiet to carry to the gym; a firecracker that does,
+    // and the guard going to look where it went off.
+    id: 'noise',
+    icon: 'ear',
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      place(sim, 37, 23, 5);
+      pockets(sim, 'potato', 'firecracker', 'firecracker');
+    },
+    steps: [
+      { text: 'lesson.noise.throw', touch: 'lesson.noise.throwTouch', done: (c) => !carries(c.sim, 'potato') },
+      {
+        text: 'lesson.noise.bang',
+        touch: 'lesson.noise.bangTouch',
+        // Bell sent by a bang (a bang keeps him looking longer than a potato would).
+        done: (c) => c.sim.state.guards[0].mode === GUARD.INVESTIGATE && c.sim.state.guards[0].timer > NOISE_LOOK,
+        // Both gone off out of his earshot: nothing left to try with.
+        fail: (c) => (count(c.sim, 'firecracker') === 0 && !c.sim.state.fuses.length ? 'lesson.noise.missed' : null),
+      },
+      { text: 'lesson.noise.look', done: (c) => c.sim.state.guards[0].mode !== GUARD.INVESTIGATE, speed: 2 },
+    ],
+  },
+  {
+    // 10. Getting out: the power off, the electric fence cut, out onto the road.
     id: 'escape',
     icon: 'route',
     setup: (sim) => {

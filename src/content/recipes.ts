@@ -55,6 +55,9 @@ export const RECIPES: readonly RecipeDef[] = [
   r('grappling_hook', 60, 'crowbar', 'crowbar', 'duct_tape'),
   r('grapnel', 60, 'grappling_hook', 'rope|sheet_rope'),
   r('raft', 70, 'balsa', 'bed_sheet', 'rope'),
+  // P14: noise to order.
+  r('firecracker', 40, 'foil', 'toilet_paper', 'lighter'),
+  r('alarm_clock', 30, 'battery', 'wire', 'plastic_cup'),
 ];
 
 /** The item ids an ingredient accepts. */

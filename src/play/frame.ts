@@ -101,6 +101,8 @@ function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, sta
   return focusAt;
 }
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
+/** Firecrackers burning (P14): their tiles. */
+const fuseFrame: number[] = [];
 
 const frameData: Frame = {
   x: 0,
@@ -138,6 +140,7 @@ const frameData: Frame = {
   craters: [],
   security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
   takeover: false,
+  fuses: fuseFrame,
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -281,6 +284,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   groundFrame.length = n;
   // A layer change redraws the floor items too.
   f.groundRev = it.rev * 4 + st.layer;
+  fuseFrame.length = 0;
+  for (const [key] of st.fuses) fuseFrame.push(tileOfKey(key));
   const memo = targets;
   const climb = memo.climb;
   const target = memo.target;

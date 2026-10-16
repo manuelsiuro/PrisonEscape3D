@@ -32,7 +32,7 @@ const EDGE = 12;
 /** How high over the feet a bubble's tail points: above the head and the "!" and "$" badges. */
 export const BUBBLE_HEIGHT = 2.35;
 /** What a bubble never covers: the HUD, the item bar, the buttons and prompts, the target card. */
-const KEEP_CLEAR = ['.hud', '.hotbar', '.act-btn', '.tool-btn', '.lock-btn', '.act-prompt', '.tool-prompt', '.energy', '.target-card', '.train-card', '.lesson-card'];
+const KEEP_CLEAR = ['.hud', '.hotbar', '.act-btn', '.tool-btn', '.lock-btn', '.act-prompt', '.tool-prompt', '.energy', '.target-card', '.train-card', '.lesson-card', '.aim-hint', '.aim-label'];
 /** A typical bubble (two lines), to tell whether a head on screen has room for one at all. */
 const TYPICAL = { w: 150, h: 42 };
 /** Screen-reader lines: one every few seconds, the rest waiting (at most a few). */

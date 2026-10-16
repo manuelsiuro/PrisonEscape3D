@@ -24,6 +24,7 @@ import { showSaves } from '../ui/screens/saves';
 import { showSettings } from '../ui/screens/settings';
 import { announce } from './announce';
 import { chatterStart, chatterStop, director } from './chatter';
+import { cancelThrow } from './aim';
 import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
 import {
@@ -126,6 +127,8 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   tools.show(true);
   combatUI.show(true);
   resetButtons();
+  // No aim carried over from another game (P14).
+  cancelThrow();
   play.acc = 0;
   controls.reset();
   controls.enabled = true;
@@ -268,6 +271,7 @@ export function endGame() {
   sound.ambience(false);
   talk.hide();
   chatterStop();
+  cancelThrow();
   view.setShift(0, 0);
   board.close();
   profile.close();

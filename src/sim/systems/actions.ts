@@ -7,7 +7,7 @@ import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { nearestDir, nearestDir as faceTo, tileAt } from '../ai/path';
 import { placesOf } from '../ai/places';
-import { argA, argB, OP, opOf } from '../command';
+import { argA, argB, argC, EXT, OP, opOf, tossTile } from '../command';
 import type { SimContext } from '../context';
 import { SPOT, WAKE } from '../state';
 import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, ENERGY_REGEN_STEPS, HEALTH_REGEN_STEPS, KO_STEPS, MEAL_ENERGY, MEAL_STEPS, SHARPEN_STROKES, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS, UNIT } from '../tuning';
@@ -23,6 +23,7 @@ import { jobOp, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
 import { blast, liveMine } from './mines';
+import { makeNoise, strikeNoise, throwItem, wind } from './noise';
 import { board, flood, launch } from './sea';
 import { powered, snipersOnDuty, switchPower } from './power';
 import { atProp, seatSpot } from './rest';
@@ -157,6 +158,9 @@ export function useItems(sim: SimContext, cmd: number) {
     case OP.SELECT:
       if (a < HOTBAR) it.hand = a;
       break;
+    case OP.EXT:
+      if (a === EXT.THROW) throwItem(sim, tossTile(argB(cmd), argC(cmd)));
+      break;
   }
   if (it.open >= 0 && !stillInReach(sim.world, it, s.player, people(sim))) {
     it.open = -1;
@@ -224,12 +228,16 @@ function strike(sim: SimContext, fresh: boolean) {
     sim.events.push({ type: 'ate', item: held });
     return;
   }
+  if (target.action === 'wind') {
+    wind(sim);
+    return;
+  }
   if (!STRIKES.has(target.action)) {
     putInPlace(sim, target, held);
     return;
   }
   if (target.action === 'sharpen') {
-    sharpen(sim, target);
+    sharpen(sim, target, held);
     return;
   }
   const key = placeKey(target.layer, target.tile);
@@ -273,6 +281,9 @@ function strike(sim: SimContext, fresh: boolean) {
     s.spotted = SPOT.indexOf('sniper');
     addHeat(sim, 100);
   }
+  // The work is heard (P14): guards within earshot come and look.
+  const noise = strikeNoise(s.layer, target, held);
+  if (noise) makeNoise(sim, 'strike', noise.layer, noise.tile, noise.reach);
   const taken = (s.wear[key] ?? 0) + tool.damage;
   if (taken < target.hp) {
     s.wear[key] = taken;
@@ -351,13 +362,15 @@ function shock(sim: SimContext) {
  * A comb or toothbrush rubbed on a wall (GDD §7.3 shivs): a stroke at a strike's pace, and
  * after a few the shiv. The strokes so far ride in the item's slot (as uses do).
  */
-function sharpen(sim: SimContext, target: ToolTarget) {
+function sharpen(sim: SimContext, target: ToolTarget, held: number) {
   const s = sim.state;
   const it = s.items;
   const p = s.player;
   const v = it.inv[it.hand];
   const item = itemOf(v);
   s.struckAt = s.step;
+  const noise = strikeNoise(s.layer, target, held);
+  if (noise) makeNoise(sim, 'strike', noise.layer, noise.tile, noise.reach);
   p.moving = false;
   const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
   const dz = Math.floor(target.tile / MAP_W) * UNIT + UNIT / 2 - p.z;

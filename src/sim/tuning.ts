@@ -192,3 +192,31 @@ export const GRAPNEL_REACH = 6;
 /** The cold (GDD §4.2): a minute out in the snow without a warm outfit chills; indoors it wears off four times as fast. */
 export const COLD_STEPS = 60 * STEPS_PER_SECOND;
 export const WARM_RATE = 4;
+
+// Noise and distractions (P14).
+/** How many walking tiles a noise carries (a shut door counts DOOR_NOISE): a tool at work, by what it does. */
+export const STRIKE_NOISE = { chip: 6, cut: 5, dig: 3, digUp: 3, unscrew: 2, sharpen: 2 } as const;
+/** A thrown item landing: soft, hard, metal (ItemDef.thud). */
+export const THUD_NOISE: readonly number[] = [2, 4, 6];
+/** A firecracker going off; an alarm clock ringing (once a second while it rings). */
+export const BANG_NOISE = 10;
+export const RING_NOISE = 7;
+export const DOOR_NOISE = 4;
+/** Guards sent to look at a noise: this many at most (a bang: more), looking around this long; none if one is already looking this close (tiles). */
+export const NOISE_GUARDS = 2;
+export const BANG_GUARDS = 3;
+export const NOISE_LOOK = 8 * STEPS_PER_SECOND;
+export const BANG_LOOK = 12 * STEPS_PER_SECOND;
+export const LOOK_NEAR = 2;
+/** Throwing (tiles): this far, farther from this much Strength. */
+export const TOSS_RANGE = 6;
+export const TOSS_RANGE_STRONG = 7;
+export const TOSS_STRONG = 70;
+/** An inmate hit by something thrown thinks less of the player. */
+export const TOSS_OPINION = 2;
+/** A firecracker's fuse. */
+export const FUSE_STEPS = Math.round(1.5 * STEPS_PER_SECOND);
+/** The alarm clock (seconds): wound this much a press, up to the most; then it rings this long. */
+export const WIND_SECONDS = 20;
+export const WIND_MAX = 60;
+export const RING_SECONDS = 8;

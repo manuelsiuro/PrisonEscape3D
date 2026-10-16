@@ -34,6 +34,8 @@ export interface ItemDef {
   /** A second color for the model (handles, labels, trims). */
   accent?: number;
   from: readonly Source[];
+  /** How it lands when thrown (P14): 0 soft (unset), 1 hard, 2 metal; the noise carries THUD_NOISE[thud] tiles. */
+  thud?: number;
 }
 
 const m = (id: string, contraband: boolean, value: number, shape: string, color: number, from: Source[], accent?: number): ItemDef => ({
@@ -206,7 +208,15 @@ export const ITEMS: readonly ItemDef[] = [
   work('letter', 'letter', 0xf4efe0, 0xd23f36),
   // P9 (Stalag Flucht's metalshop): appended, so every earlier item keeps its number in saves.
   work('license_plate', 'plate', 0xf2d23c, 0x1d2a5a),
+  // P14 (noise and distractions): thrown, a firecracker goes off after its fuse; wound, an alarm clock rings wherever it is.
+  m('firecracker', true, 15, 'firecracker', 0xd23f36, [], 0xf2d23c),
+  m('alarm_clock', false, 12, 'clock', 0xc0392b, [], 0xf4f4ef),
 ];
+
+/** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
+const HARD = ['timber', 'balsa', 'wall_chunk', 'potato', 'plastic_cup', 'lighter', 'battery', 'duct_tape', 'bleach', 'broom', 'mop', 'tool_handle', 'timber_brace', 'fake_wall', 'raft', 'bat', 'spiked_bat', 'baton', 'nunchucks', 'furniture', ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`)];
+const METAL = ['crowbar', 'sheet_metal', 'metal_file', 'trowel', 'flimsy_shovel', 'light_shovel', 'sturdy_shovel', 'flimsy_pickaxe', 'light_pickaxe', 'sturdy_pickaxe', 'flimsy_cutters', 'light_cutters', 'sturdy_cutters', 'screwdriver', 'powered_screwdriver', 'multitool', 'grappling_hook', 'grapnel', 'plated_outfit', 'meal_tray', 'license_plate', 'alarm_clock'];
+for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud = METAL.includes(d.id) ? 2 : 1;
 
 /** An item's number in saves and slots (1 + its place in ITEMS). */
 export const ITEM: Record<string, number> = Object.fromEntries(ITEMS.map((d, i) => [d.id, i + 1]));
