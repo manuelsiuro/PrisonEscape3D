@@ -2,6 +2,8 @@ import { PRISONS } from '../content/prisons';
 import type { PrisonDef } from '../content/prisons/types';
 import { Sim, type Snapshot } from '../sim/Sim';
 import type { Rumor } from '../talk/director';
+import type { RunLog } from '../sim/runlog';
+import { deleteLog, dropLastReplay, LOG_MAX, writeLog } from './logs';
 import { KEYS, readJSON, removeKey, writeJSON, type StorageKey } from './storage';
 
 /**
@@ -48,9 +50,23 @@ export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly 
   };
 }
 
-/** Writes a game to a slot; false when storage is full or blocked. */
-export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__, rumors: readonly Rumor[] = []): boolean {
-  return writeJSON(KEY_OF[slot], saveFileOf(sim, Date.now(), game, rumors));
+/**
+ * Writes a game to a slot, and its run log next to it (P16; a log that doesn't fit in storage
+ * is dropped, the save comes first); false when storage is full or blocked.
+ */
+export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__, rumors: readonly Rumor[] = [], log: RunLog | null = null): boolean {
+  const file = saveFileOf(sim, Date.now(), game, rumors);
+  let ok = writeJSON(KEY_OF[slot], file);
+  // Storage full: the logs make room for the save (this slot's, then the last escape's).
+  if (!ok) {
+    deleteLog(slot);
+    dropLastReplay();
+    ok = writeJSON(KEY_OF[slot], file);
+  }
+  if (ok && log && log.data.length <= LOG_MAX) {
+    if (!writeLog(slot, log)) deleteLog(slot);
+  } else if (ok) deleteLog(slot);
+  return ok;
 }
 
 /** A slot's save, or null when it's empty, unreadable or not a save of a known prison. */
@@ -76,6 +92,7 @@ export function readSave(slot: SlotId): SaveFile | null {
 
 export function deleteSave(slot: SlotId) {
   removeKey(KEY_OF[slot]);
+  deleteLog(slot);
 }
 
 export function prisonOf(id: unknown): PrisonDef | undefined {

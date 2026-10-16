@@ -336,6 +336,18 @@ export class Sound {
     this.tone(2640, 2600, 0.3, 'sine', 0.03, 0.09);
   }
 
+  /** An achievement earned (P16): a short brassy fanfare, up a major arpeggio to a held top note with a sparkle. */
+  fanfare() {
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((f, k) => {
+      this.tone(f, f, 0.14, 'square', 0.045, k * 0.09);
+      this.tone(f, f, 0.16, 'triangle', 0.1, k * 0.09);
+    });
+    this.tone(1046.5, 1046.5, 0.6, 'square', 0.04, 0.3);
+    this.tone(1046.5, 1046.5, 0.7, 'triangle', 0.12, 0.3);
+    this.tone(2093, 2080, 0.4, 'sine', 0.035, 0.36);
+  }
+
   /**
    * A voice under a speech bubble (P13): a few soft syllables at the speaker's pitch, rising
    * and falling like talk, quieter the further away (`gain` 0–1).

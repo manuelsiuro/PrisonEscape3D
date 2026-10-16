@@ -1,0 +1,1135 @@
+/*
+ * Achievements & you (P16): the title's third button, the unlock toast, the trophy shelf
+ * (achievements, medals, stats), medals as discs, the victory card's medal and achievements,
+ * the Intake editor beside its 3D preview, and the escape camera's letterbox.
+ */
+:root {
+  --gold-1: #ffe08a;
+  --gold-2: #f2b01e;
+  --gold-3: #a8700a;
+  --silver-1: #f4f7fb;
+  --silver-2: #b9c4d2;
+  --silver-3: #6d7a8c;
+  --bronze-1: #ffcf9e;
+  --bronze-2: #d0803e;
+  --bronze-3: #81461a;
+}
+
+/* ------------------------------------------------------------ the title row: three across */
+.title-row.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.title-row.three .menu-btn {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 74px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.title-row.three .menu-ic {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+.title-row.three .menu-text {
+  flex: none;
+  align-items: center;
+  width: 100%;
+}
+
+.title-row.three .menu-label {
+  max-width: 100%;
+  font-size: 14.5px;
+}
+
+.title-row.three .menu-text small {
+  max-width: 100%;
+  font-size: 11px;
+}
+
+/* Something new on the shelf: a dot on the trophy. */
+.menu-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ff4d3d;
+  box-shadow: 0 0 0 2px #1b2638;
+}
+
+/* ------------------------------------------------------------ medals */
+.medal {
+  --s: 26px;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  color: rgba(0, 0, 0, 0.35);
+  fill: rgba(255, 255, 255, 0.55);
+}
+
+.medal.gold {
+  background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold-2) 55%, var(--gold-3));
+  box-shadow: inset 0 0 0 2px rgba(255, 240, 190, 0.6), 0 2px 8px -2px rgba(242, 176, 30, 0.7);
+}
+
+.medal.silver {
+  background: radial-gradient(circle at 35% 30%, var(--silver-1), var(--silver-2) 55%, var(--silver-3));
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6), 0 2px 8px -2px rgba(185, 196, 210, 0.6);
+}
+
+.medal.bronze {
+  background: radial-gradient(circle at 35% 30%, var(--bronze-1), var(--bronze-2) 55%, var(--bronze-3));
+  box-shadow: inset 0 0 0 2px rgba(255, 220, 180, 0.5), 0 2px 8px -2px rgba(208, 128, 62, 0.6);
+}
+
+.medal.none {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14);
+}
+
+/* ------------------------------------------------------------ the unlock toast */
+.trophy-toast {
+  position: fixed;
+  top: calc(max(12px, env(safe-area-inset-top)) + 64px);
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(380px, calc(100vw - 32px));
+  padding: 10px 18px 10px 10px;
+  border-radius: 18px;
+  color: #fff6dc;
+  background:
+    linear-gradient(90deg, transparent 10%, rgba(255, 220, 130, 0.9) 50%, transparent 90%) top / 100% 2px no-repeat,
+    linear-gradient(180deg, rgba(58, 44, 16, 0.96), rgba(28, 22, 10, 0.96));
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 200, 80, 0.75),
+    0 0 30px -6px rgba(255, 194, 61, 0.55),
+    0 18px 40px -16px rgba(0, 0, 0, 0.8);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: tt-in 0.55s var(--spring) both;
+}
+
+.trophy-toast.leaving {
+  opacity: 0;
+  transform: translate(-50%, -14px) scale(0.96);
+  transition: opacity 0.35s, transform 0.35s;
+}
+
+@keyframes tt-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.9);
+  }
+}
+
+.tt-medal {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  color: #5a3a00;
+  background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold-2) 60%, var(--gold-3));
+  box-shadow: inset 0 0 0 2px rgba(255, 245, 200, 0.7), 0 0 18px -2px rgba(255, 194, 61, 0.8);
+}
+
+.tt-medal .ic {
+  animation: tt-spin 0.9s var(--ease) 0.2s;
+}
+
+@keyframes tt-spin {
+  from {
+    transform: rotateY(-360deg) scale(0.6);
+  }
+}
+
+.tt-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tt-text small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.tt-text b {
+  font: 600 19px/1.15 var(--font-display);
+  color: #fff;
+}
+
+.tt-text em {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 600;
+  color: #ffd98a;
+}
+
+/* ------------------------------------------------------------ the shelf */
+.shelf-card {
+  display: flex;
+  flex-direction: column;
+  width: min(600px, 100%);
+  /* The same height whichever tab is open. */
+  height: min(800px, calc(100dvh - 24px));
+  padding: 20px 20px 12px;
+  text-align: left;
+}
+
+.shelf-you {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-align: left;
+  color: var(--dlg-text);
+  background: linear-gradient(90deg, rgba(255, 119, 20, 0.22), rgba(255, 255, 255, 0.04) 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 150, 60, 0.35);
+  transition: filter 0.2s;
+}
+
+.shelf-you:hover {
+  filter: brightness(1.1);
+}
+
+.sy-ic {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(150deg, var(--orange), var(--orange-2));
+}
+
+.sy-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sy-text b {
+  overflow: hidden;
+  font: 600 17px var(--font-display);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sy-text small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dlg-soft);
+}
+
+.shelf-sum {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 2px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dlg-soft);
+}
+
+.shelf-sum b {
+  margin: 0 1px 0 5px;
+  font: 600 17px var(--font-display);
+  color: #fff;
+}
+
+.ss-count {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+
+.ss-count .ic {
+  color: var(--gold);
+}
+
+.ss-medal {
+  display: flex;
+  align-items: center;
+}
+
+.shelf-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 6px;
+  font: 600 13px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dlg-soft);
+}
+
+.shelf-sub:first-child {
+  margin-top: 4px;
+}
+
+.shelf-sub span {
+  margin-left: auto;
+  letter-spacing: 0;
+  color: var(--dlg-faint);
+}
+
+.ach-list,
+.medal-list,
+.stat-grid {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ach {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.ach.got {
+  background: linear-gradient(100deg, rgba(255, 194, 61, 0.14), rgba(255, 255, 255, 0.04) 60%);
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.3);
+}
+
+.ach-medal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #7d8ea6;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.ach.got .ach-medal {
+  color: #5a3a00;
+  background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold-2) 60%, var(--gold-3));
+  box-shadow: inset 0 0 0 2px rgba(255, 245, 200, 0.6), 0 2px 10px -3px rgba(242, 176, 30, 0.8);
+}
+
+.ach-medal i {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #c9d4e3;
+  background: #2a3a52;
+  box-shadow: 0 0 0 2px #1a2536;
+}
+
+.ach.mystery .ach-medal {
+  color: #56667c;
+}
+
+.ach-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ach-text b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 16px/1.2 var(--font-display);
+  color: #fff;
+}
+
+.ach:not(.got) .ach-text b {
+  color: #c9d4e3;
+}
+
+.ach-text small {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--dlg-soft);
+}
+
+.ach-new {
+  padding: 1px 7px;
+  border-radius: 8px;
+  font: 700 10px var(--font-ui);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2a1a00;
+  background: var(--gold);
+}
+
+.ach-bar {
+  display: block;
+  height: 6px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ach-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold-2), var(--gold-1));
+}
+
+.ach-text .ach-count {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--dlg-faint);
+}
+
+.ach-text .ach-gift {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-weight: 600;
+  color: #ffb877;
+}
+
+.ach.got .ach-gift {
+  color: #ffd98a;
+}
+
+.ach-when {
+  flex: none;
+  padding-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dlg-faint);
+}
+
+/* Medals by way out. */
+.medal-prison.locked .shelf-sub {
+  color: var(--dlg-faint);
+}
+
+.medal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.mr-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #ffd0a8;
+  background: rgba(255, 119, 20, 0.16);
+}
+
+.medal-row.unfound .mr-ic {
+  color: var(--dlg-faint);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mr-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mr-text b {
+  font: 600 15px var(--font-display);
+  color: #fff;
+}
+
+.medal-row.unfound .mr-text b {
+  color: var(--dlg-soft);
+}
+
+.mr-text small {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.mg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--dlg-faint);
+}
+
+.mg::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.mg.gold::before {
+  background: var(--gold-2);
+}
+
+.mg.silver::before {
+  background: var(--silver-2);
+}
+
+.mg.bronze::before {
+  background: var(--bronze-2);
+}
+
+.mr-best {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--dlg-soft);
+}
+
+/* Lifetime stats: a grid of small cards. */
+.stat-grid {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.stat .stat-ic {
+  color: #8fb6e0;
+}
+
+.stat b {
+  font: 600 22px/1.1 var(--font-display);
+  color: #fff;
+}
+
+.stat small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dlg-soft);
+}
+
+/* ------------------------------------------------------------ the victory card's medal and achievements */
+.v-medal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  text-align: left;
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  animation: card-in 0.45s var(--spring) 0.35s both;
+}
+
+.v-medal.gold {
+  background: linear-gradient(110deg, rgba(255, 194, 61, 0.24), rgba(255, 194, 61, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.45), 0 0 24px -10px rgba(255, 194, 61, 0.6);
+}
+
+.v-medal.silver {
+  background: linear-gradient(110deg, rgba(200, 212, 228, 0.2), rgba(200, 212, 228, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(200, 212, 228, 0.4);
+}
+
+.v-medal.bronze {
+  background: linear-gradient(110deg, rgba(208, 128, 62, 0.24), rgba(208, 128, 62, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(208, 128, 62, 0.45);
+}
+
+.v-medal span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.v-medal b {
+  font: 600 17px var(--font-display);
+  color: #fff;
+}
+
+.v-medal small {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dlg-soft);
+}
+
+.v-medal .medal {
+  animation: medal-pop 0.7s var(--spring) 0.6s both;
+}
+
+@keyframes medal-pop {
+  from {
+    transform: scale(0.2) rotate(-40deg);
+    opacity: 0;
+  }
+}
+
+.v-earned {
+  margin: 10px 0 0;
+  text-align: left;
+}
+
+.v-earned > small {
+  display: block;
+  margin: 0 2px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.v-earned > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.v-ach {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ffe6a8;
+  background: rgba(255, 194, 61, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.35);
+  animation: card-in 0.4s var(--spring) 0.8s both;
+}
+
+.v-ach .ic {
+  color: var(--gold);
+}
+
+.v-ach.more {
+  padding-left: 10px;
+}
+
+/* ------------------------------------------------------------ the Intake */
+.intake {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  pointer-events: none;
+  animation: fade 0.3s var(--ease);
+}
+
+/* The picture: dragged to turn your prisoner. */
+.intake-stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  background: radial-gradient(60% 60% at 30% 50%, transparent 40%, rgba(5, 9, 16, 0.45));
+}
+
+.intake-stage:active {
+  cursor: grabbing;
+}
+
+.intake-turn {
+  position: absolute;
+  left: calc((100% - min(420px, 46vw)) / 2);
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #dbe5f2;
+  background: rgba(10, 16, 28, 0.6);
+  transform: translateX(-50%);
+}
+
+.intake-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 46vw);
+  max-height: 100%;
+  padding: 18px 18px 14px;
+  overflow-y: auto;
+  border-radius: 24px;
+  color: var(--dlg-text);
+  pointer-events: auto;
+  background:
+    linear-gradient(90deg, transparent 8%, rgba(255, 150, 60, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    radial-gradient(120% 60% at 50% 0%, rgba(255, 140, 50, 0.1), transparent 60%),
+    linear-gradient(180deg, rgba(34, 48, 71, 0.97), rgba(19, 28, 42, 0.97));
+  box-shadow:
+    0 40px 90px -30px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  animation: card-in 0.4s var(--spring);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.intake-head h2 {
+  margin: 2px 0 10px;
+  font: 700 28px var(--font-display);
+  color: #fff;
+}
+
+.intake-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd0a8;
+  background: rgba(255, 119, 20, 0.18);
+}
+
+.intake-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dlg-soft);
+}
+
+.intake-name input {
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  font: 600 17px var(--font-display);
+  color: #fff;
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.intake-name input:focus {
+  box-shadow: inset 0 0 0 2px var(--accent-2);
+}
+
+.intake-name input::placeholder {
+  color: var(--dlg-faint);
+}
+
+/* The parts: a row that scrolls sideways on narrow screens. */
+.intake-parts {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  margin: 0 -18px 10px;
+  padding: 2px 18px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* Room enough (a desktop): the parts wrap onto a second row instead. */
+@media (min-width: 701px) and (min-height: 521px) {
+  .intake-parts {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
+
+.intake-parts::-webkit-scrollbar {
+  display: none;
+}
+
+.intake-parts button {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 62px;
+  padding: 7px 6px 6px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--dlg-soft);
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  transition: background 0.2s, color 0.2s;
+}
+
+.intake-parts button.on {
+  color: #fff;
+  background: linear-gradient(150deg, var(--orange), var(--orange-2));
+  box-shadow: none;
+}
+
+.intake-opts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+  min-height: 52px;
+}
+
+.intake-opts:has(.colour) {
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+}
+
+.opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--dlg-text);
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.opt:hover {
+  background: var(--dlg-surface-hi);
+}
+
+.opt.on {
+  background: rgba(255, 119, 20, 0.2);
+  box-shadow: inset 0 0 0 2px var(--orange);
+}
+
+.opt.locked {
+  color: var(--dlg-faint);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: help;
+}
+
+.opt .sw {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25), 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.opt .sw.none {
+  background: linear-gradient(135deg, transparent 45%, rgba(255, 255, 255, 0.45) 45% 55%, transparent 55%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.opt .sw.dot {
+  width: 12px;
+  height: 12px;
+}
+
+.opt.locked .sw {
+  opacity: 0.35;
+}
+
+.opt em {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  color: var(--dlg-faint);
+}
+
+.intake-lock {
+  min-height: 18px;
+  margin: 8px 2px 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffd98a;
+}
+
+.intake-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.intake-actions .big-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.intake-actions .big-btn.ghost {
+  color: var(--dlg-text);
+  background: var(--dlg-surface-hi);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+/* While the Intake is up, the title's version and update card make way. */
+body.intake-on .title-version,
+body.intake-on .update-card {
+  display: none;
+}
+
+/* Phones upright: the card is a sheet along the bottom, the prisoner above it. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .intake {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0;
+  }
+
+  .intake-card {
+    width: 100%;
+    max-height: 60dvh;
+    padding: 14px 16px max(12px, env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+  }
+
+  .intake-head h2 {
+    margin-bottom: 6px;
+    font-size: 24px;
+  }
+
+  .intake-parts {
+    margin: 0 -16px 8px;
+    padding: 2px 16px 4px;
+  }
+
+  .intake-turn {
+    left: 50%;
+    top: max(14px, env(safe-area-inset-top));
+    bottom: auto;
+  }
+}
+
+/* Phones on their side: the card on the right, slim. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .intake {
+    padding: 8px max(8px, env(safe-area-inset-right)) 8px 8px;
+  }
+
+  .intake-card {
+    width: min(400px, 50vw);
+    padding: 10px 14px 10px;
+  }
+
+  .intake-head h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+  }
+
+  .intake-tag {
+    display: none;
+  }
+
+  .intake-name {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .intake-name input {
+    flex: 1;
+    height: 38px;
+  }
+
+  .intake-parts button {
+    min-width: 54px;
+    padding: 5px 4px;
+  }
+
+  .intake-turn {
+    left: calc((100% - min(400px, 50vw)) / 2);
+    bottom: 12px;
+  }
+}
+
+/* ------------------------------------------------------------ the escape camera */
+.cinema {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.cine-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 11vh;
+  background: #05070b;
+  animation: bar-in 0.6s var(--ease) both;
+}
+
+.cine-bar.top {
+  top: 0;
+  transform-origin: top;
+}
+
+.cine-bar.bottom {
+  bottom: 0;
+  transform-origin: bottom;
+}
+
+@keyframes bar-in {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.cine-stamp {
+  padding: 6px 26px 2px;
+  border: 5px solid #ff5a3c;
+  border-radius: 12px;
+  font: 700 clamp(44px, 11vw, 96px) / 1 var(--font-display);
+  letter-spacing: 0.12em;
+  color: #ff5a3c;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 0 3px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 245, 235, 0.08);
+  transform: rotate(-8deg);
+  animation: stamp-in 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) 0.9s both;
+}
+
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(2.4);
+  }
+}
+
+.cine-skip {
+  position: absolute;
+  bottom: calc(11vh + 12px);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  animation: fade 0.4s var(--ease) 1.4s both;
+}
+
+body.cinema-on > :not(canvas, .cinema, .trophy-toast, .v-confetti) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+
+.cinema.leaving {
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+/* Reduced motion: everything simply there. */
+.cinema.still .cine-bar,
+.cinema.still .cine-stamp,
+.cinema.still .cine-skip,
+.reduced-motion .trophy-toast,
+.reduced-motion .tt-medal .ic,
+.reduced-motion .v-medal,
+.reduced-motion .v-medal .medal,
+.reduced-motion .v-ach {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cine-bar,
+  .cine-stamp,
+  .cine-skip,
+  .trophy-toast,
+  .tt-medal .ic,
+  .v-medal,
+  .v-medal .medal,
+  .v-ach {
+    animation: none;
+  }
+}
+
+.reduced-motion .trophy-toast.leaving {
+  transform: translateX(-50%);
+}
+
+/* Phones on their side: the medal and the achievements on tight lines, the buttons in view. */
+@media (max-height: 500px) {
+  .v-medal {
+    margin-top: 6px;
+    padding: 4px 12px;
+  }
+
+  .v-medal .medal {
+    --s: 26px !important;
+  }
+
+  .v-earned {
+    margin-top: 6px;
+  }
+
+  .v-earned > small {
+    display: none;
+  }
+}

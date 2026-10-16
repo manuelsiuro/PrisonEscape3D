@@ -1,4 +1,5 @@
-import { KEYS, PROGRESS_KEYS, readJSON, removeKey, writeJSON } from './storage';
+import { PRISONS } from '../content/prisons';
+import { KEYS, PROGRESS_KEYS, readJSON, removeKey, replayBestKey, writeJSON } from './storage';
 
 /** Player preferences, saved on this device. New fields get their default automatically. */
 export interface Settings {
@@ -61,6 +62,7 @@ export function saveSettings(s: Settings) {
 /** Wipes the game's progress; preferences stay. */
 export function resetProgress() {
   for (const k of PROGRESS_KEYS) removeKey(k);
+  for (const p of PRISONS) removeKey(replayBestKey(p.id));
 }
 
 /** Forgets the tips already shown (they show again from the next game). */

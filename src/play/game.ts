@@ -1,10 +1,11 @@
 import type { Autopilot } from '../sim/ai/autopilot';
-import type { Recorder } from '../sim/Recorder';
+import type { RunRecorder } from '../sim/runlog';
 import type { LessonRun } from './lesson';
 
 // ------------------------------------------------------------------ the game
 export interface Game {
-  rec: Recorder;
+  /** The simulation and its run log (P16). */
+  rec: RunRecorder;
   /** The player's and inmates' positions before the last step (interpolation). */
   prev: { x: number; z: number };
   prevInmates: Array<{ x: number; z: number }>;

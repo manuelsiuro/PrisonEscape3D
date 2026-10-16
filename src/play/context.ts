@@ -20,6 +20,8 @@ import { SolitaryPanel } from '../ui/solitary';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
+import { TrophyToast } from '../ui/trophyToast';
+import { trophyHooks } from '../game/trophies';
 import { play, sendOp } from './game';
 
 /**
@@ -77,6 +79,10 @@ document.body.append(vignette, darkCell);
 
 /** "Game saved" for a moment in the corner (see autosave). */
 export const savedMark = h('div', 'saved-mark', `${icon('save', 14)}<span></span>`);
+/** Achievements earned (P16): a gold card and a fanfare each. */
+export const trophyToast = new TrophyToast();
+trophyToast.onShow = () => sound.fanfare();
+trophyHooks.onEarned = (list) => trophyToast.show(list);
 savedMark.setAttribute('role', 'status');
 document.body.append(savedMark);
 

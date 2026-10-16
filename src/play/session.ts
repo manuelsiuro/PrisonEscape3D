@@ -2,6 +2,7 @@ import { buzz } from '../app/haptics';
 import { itemNumber, KEY_ITEM_COLORS } from '../content/items';
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordEscape } from '../game/records';
+import { MEDAL_DAYS } from '../content/medals';
 import { isOpen, nextPrison } from '../game/campaign';
 import { prisonName, securityOf } from '../ui/screens/prisons';
 import type { PrisonDef } from '../content/prisons/types';
@@ -10,7 +11,12 @@ import { t, type Key } from '../i18n';
 import type { BedPose } from '../render/Character';
 import { Autopilot } from '../sim/ai/autopilot';
 import { placesOf } from '../sim/ai/places';
-import { Recorder } from '../sim/Recorder';
+import { RunRecorder, type RunLog } from '../sim/runlog';
+import { keepReplay } from '../game/logs';
+import { readPrisoner } from '../game/prisoner';
+import { escapeRun, startRun, stopRun, syncRun } from '../game/trophies';
+import { PLAYER } from '../talk/fill';
+import { showCinema } from '../ui/cinema';
 import { ESCAPES, type Sim } from '../sim/Sim';
 import { formatTime } from '../sim/systems/clock';
 import { ladderFootOf } from '../sim/systems/structure';
@@ -45,6 +51,7 @@ import {
   sound,
   talk,
   tools,
+  trophyToast,
   trainCard,
   view,
   vignette,
@@ -81,28 +88,36 @@ function flashSaved() {
 /** Writes the game in progress (never once it's over: an escape ends the run). */
 export function autosave(g: Game, show = false) {
   if (g.over || g.lesson) return;
-  g.saved = writeSave('auto', g.rec.sim, undefined, director.rumors);
+  // The lifetime stats catch up with the run as it's saved (P16).
+  syncRun();
+  g.saved = writeSave('auto', g.rec.sim, undefined, director.rumors, g.rec.toLog());
   if (g.saved && show) flashSaved();
 }
 
 /**
  * Into a game: a new one, or one loaded from a save (`resumed`: no day-one welcome, the guide
- * stays away, a "welcome back" instead).
+ * stays away, a "welcome back" instead). `origin`: where its run log starts (P16): a new
+ * game's seed, or the log saved with the game loaded.
  */
-export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null, rumors: readonly Rumor[] = []) {
+export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null, rumors: readonly Rumor[] = [], origin: { seed: number } | { log: RunLog | null } = { seed: 0 }) {
   view.setWorld(sim.world);
+  // Your prisoner (P16): how the player looks, and the name friends call them.
+  const prisoner = readPrisoner();
+  view.setPrisoner(prisoner);
+  PLAYER.name = prisoner?.name ?? '';
   // The speech bubbles (P13): this prison's voices, and the rumors the save kept.
   chatterStart(sim, rumors);
   // Start a little wide and settle in on the player.
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
-  view.zoomBy(1.25);
+  // (Set, not multiplied: one game's zoom never compounds into the next's.)
+  view.zoomTo(1.25);
   view.setCast(sim.state.inmates.map((m) => ({ cell: m.cell, gait: m.speed / WALK_SPEED })));
   view.setGuards(
     guardBeds(sim),
     sim.prison.guards.map((d) => KEY_ITEM_COLORS.find(([c]) => c === d.key)![2]),
   );
   play.game = {
-    rec: new Recorder(sim),
+    rec: new RunRecorder(sim, { ...origin, game: __APP_VERSION__ }),
     prev: { x: sim.state.player.x, z: sim.state.player.z },
     prevInmates: sim.state.inmates.map((m) => ({ x: m.body.x, z: m.body.z })),
     prevGuards: sim.state.guards.map((m) => ({ x: m.body.x, z: m.body.z })),
@@ -121,6 +136,8 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
     lesson,
   };
   tipsSeen.clear();
+  // Achievements and stats follow the run (not a lesson's).
+  if (!lesson) startRun(sim, !resumed);
   // Loaded asleep or out cold: the veil says which.
   sleepVeil.querySelector('span')!.textContent = t(sim.state.ko > 0 ? 'sleep.knockedOut' : 'sleep.asleep');
   itemsUI.show(true);
@@ -206,7 +223,7 @@ export async function pause() {
     if (choice === 'save') {
       const slot = await showSaves('save', click);
       if (slot !== null && play.game) {
-        const ok = writeSave(slot, play.game.rec.sim, undefined, director.rumors);
+        const ok = writeSave(slot, play.game.rec.sim, undefined, director.rumors, play.game.rec.toLog());
         if (ok) sound.chime();
         else sound.sting();
         note = ok ? t('toast.saved', { n: slot }) : `!${t('toast.saveFailed')}`;
@@ -251,6 +268,7 @@ export async function openHelp() {
 /** Back to the title: everything the game put up comes down. */
 export function endGame() {
   if (play.game) autosave(play.game);
+  if (play.game && !play.game.lesson) stopRun();
   firstDay.stop();
   hideLesson();
   play.game = null;
@@ -304,6 +322,11 @@ export async function escaped() {
   const next = nextPrison(sim.prison);
   const wasOpen = !!next && isOpen(PRISONS.indexOf(next));
   const rec = recordEscape(sim.prison.id, via, clock.day, Math.floor(st.step / STEPS_PER_MINUTE));
+  // What the escape earned (P16), and its run log kept to watch again (the prison's quickest too).
+  const earned = escapeRun(rec);
+  // Toasts still queued give way to the victory card (the shelf marks them new).
+  trophyToast.clear();
+  keepReplay(g.rec.toLog(), rec.best);
   // The run is over: nothing left to continue (games kept in slots stay).
   deleteSave('auto');
   firstDay.stop();
@@ -315,8 +338,8 @@ export async function escaped() {
     if (via === 'raft') sound.launch();
     else sound.rotor();
   }
-  // A moment to see the road under their feet (or the sea) before the card.
-  await new Promise((r) => setTimeout(r, away ? 2600 : 900));
+  // The escape camera (P16): a slow turn and pull-back, letterboxed, ESCAPED stamped; a tap skips it.
+  await showCinema(view.cinema(away), () => view.skipCinema(), settings.reducedMotion);
   if (play.game !== g) return;
   const choice = await showVictory(
     {
@@ -331,6 +354,11 @@ export async function escaped() {
       tally: st.tally,
       bestDay: rec.record.bestDay,
       unlocked: next && !wasOpen ? { name: prisonName(next), security: securityOf(next) } : undefined,
+      medal: rec.medal,
+      newMedal: rec.newMedal,
+      routeBest: rec.routeBest,
+      bronzeBy: MEDAL_DAYS[sim.prison.id]?.[via]?.[2],
+      earned,
       campaign: !next && rec.record.routes.length === 1 && rec.newRoute,
     },
     click,

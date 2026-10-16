@@ -6,6 +6,7 @@ import { currentLang, t, type Key } from '../i18n';
 import { h } from './dom';
 import { icon } from './icons';
 import { favorText, inmateName } from './social';
+import { PLAYER } from '../talk/fill';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const ATTR_ICONS = { str: 'dumbbell', spd: 'run', int: 'brain' } as const;
@@ -55,7 +56,7 @@ export class ProfilePanel {
     const s = sim.state;
     const favors = s.favors.filter((f) => f.state !== FAVOR_STATE.OFFERED);
     const rumors = this.notebook();
-    const key = [rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang()].join('|');
+    const key = [rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const attrs = ATTRS.map((a, k) => {
@@ -88,12 +89,14 @@ export class ProfilePanel {
       ? rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}">${icon(r.self ? 'eye' : 'ear', 14)}<span>${esc(r.text)}</span><small>${r.self ? `${t('profile.rumorSelf')} · ` : r.by ? `${esc(r.by)} · ` : ''}${t('profile.rumorDay', { n: r.day })}</small></div>`).join('')
       : `<p class="talk-note">${t('profile.noRumors')}</p>`;
     const working = ROUTINE[s.routine].id === 'work';
-    this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${t('profile.title')}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
+    // Your prisoner's name on the file (P16), when they have one.
+    const title = PLAYER.name ? t('profile.titleOf', { name: esc(PLAYER.name) }) : t('profile.title');
+    this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${title}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       <div class="box-section"><div class="box-label"><span>${t('profile.stats')}</span><em>${t('profile.statsNote')}</em></div>${attrs}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.job')}</span>${working && job >= 0 ? `<em>${t('profile.workNow')}</em>` : ''}</div>${jobHtml}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.favors')}</span></div>${favorList}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.followers')}</span></div>${allies}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.rumors')}</span><em>${t('profile.rumorsNote')}</em></div>${rumorList}</div>`;
-    this.el.setAttribute('aria-label', t('profile.title'));
+    this.el.setAttribute('aria-label', PLAYER.name ? t('profile.titleOf', { name: PLAYER.name }) : t('profile.title'));
   }
 }

@@ -32,6 +32,14 @@ import { TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_W } from '../src/sim/world/World';
 import { Bot, DIR, n, resumes, tileOf } from './bots';
 import { check } from './assert';
+import { DAY as DAY_BITS, FEATS } from '../src/sim/systems/ledger';
+
+/** The run's ledger in a line (P16): counters that moved, and each day's bits. */
+export function ledgerLine(feats: readonly number[], days: readonly number[]): string {
+  const moved = FEATS.map((f, k) => (feats[k] && f !== 'walked' ? `${f} ${feats[k]}` : '')).filter(Boolean);
+  const bits = days.map((b) => Object.entries(DAY_BITS).filter(([, v]) => b & v).map(([k]) => k.toLowerCase()).join('+') || 'quiet');
+  return `${moved.join(', ') || 'nothing'}; walked ${Math.round(feats[FEATS.indexOf('walked')] / 1024)} tiles; days ${bits.join(' / ')}`;
+}
 
 const DAY = 1440 * STEPS_PER_MINUTE;
 
@@ -44,6 +52,7 @@ function report(name: string, bot: Bot) {
   const at = resumes(bot, [0.5, 0.9, 0.98, 0.995]);
   console.log(`  saved and loaded at ${at.join(', ')}`);
   check(at.every((a) => a.endsWith('resumes')), `${name}: a game saved and loaded plays on exactly as before`);
+  console.log(`  ledger: ${ledgerLine(st.feats, st.days)}`);
   console.log(`  → ${st.escaped ? `out ${bot.time} by ${ESCAPES[st.via]}` : `still inside, ${bot.time}, in the ${bot.sim.playerZone}`}; heat peak ${bot.heatPeak}%; walls ${walls}, tunnel tiles ${dug}, guards out cold ${guards}, cash $${cash}`);
 }
 

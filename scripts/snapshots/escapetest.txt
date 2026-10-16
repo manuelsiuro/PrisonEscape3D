@@ -3,12 +3,14 @@
   day 1 23:30 power OFF (player)
   day 1 23:46 ESCAPED (fence)
   saved and loaded at day 1 15:53 (yard) resumes, day 1 22:11 (rollCall) resumes, day 1 23:27 (corridor) resumes, day 1 23:41 (perimeter) resumes
+  ledger: powerCuts 1; walked 475 tiles; days escaped
   → out day 1 23:46 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:19 digUp → layer 1
   day 1 23:19 ESCAPED (tunnel)
   saved and loaded at day 1 15:39 (yard) resumes, day 1 21:47 (playerCell) resumes, day 1 23:00 (playerCell) resumes, day 1 23:14 (tunnels) resumes
+  ledger: nothing; walked 355 tiles; days escaped
   → out day 1 23:19 by tunnel; heat peak 0%; walls 0, tunnel tiles 8, guards out cold 0, cash $0
 == rooftop grapnel
   day 1 23:11 climbVent → layer 2
@@ -16,6 +18,7 @@
   day 1 23:35 grapnel → layer 1
   day 1 23:35 ESCAPED (roof)
   saved and loaded at day 1 15:47 (yard) resumes, day 1 22:01 (cellBlock) resumes, day 1 23:16 (vents) resumes, day 1 23:30 (vents) resumes
+  ledger: nothing; walked 397 tiles; days escaped
   → out day 1 23:35 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 24/140, guards down 5/5, xxxxx
 == takeover
@@ -29,6 +32,7 @@
   day 1 08:45 TAKEOVER: the gates are open
   day 1 08:54 ESCAPED (takeover)
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:48 (visitation) resumes, day 1 08:53 (perimeter) resumes, day 1 08:53 (perimeter) resumes
+  ledger: blows 15, koGuards 5, lockdowns 1, spotted 1, maxHeat 100, recruits 2; walked 159 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 08:54 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 5, cash $0
 == stalag-flucht
   cutout: the fence cut 5.2 s after the power went off
@@ -36,12 +40,14 @@
   day 1 23:28 power OFF (player)
   day 1 23:33 ESCAPED (fence)
   saved and loaded at day 1 15:46 (yard) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (yard) resumes, day 1 23:29 (none) resumes
+  ledger: powerCuts 1; walked 360 tiles; days escaped
   → out day 1 23:33 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == stalag-flucht: tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:21 digUp → layer 1
   day 1 23:21 ESCAPED (tunnel)
   saved and loaded at day 1 15:40 (yard) resumes, day 1 21:49 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
+  ledger: nothing; walked 287 tiles; days escaped
   → out day 1 23:21 by tunnel; heat peak 0%; walls 0, tunnel tiles 10, guards out cold 0, cash $0
 == stalag-flucht: rooftop grapnel
   day 1 23:28 power OFF (player)
@@ -49,6 +55,7 @@
   day 1 23:30 grapnel → layer 1
   day 1 23:30 ESCAPED (roof)
   saved and loaded at day 1 15:45 (yard) resumes, day 1 21:57 (playerCell) resumes, day 1 23:11 (cellBlock) resumes, day 1 23:25 (perimeter) resumes
+  ledger: powerCuts 1; walked 355 tiles; days escaped
   → out day 1 23:30 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 8/150, guards down 6/6, xxxxxx
 == stalag-flucht: takeover
@@ -64,6 +71,7 @@
   day 1 08:53 sniper warning shot
   day 1 08:55 ESCAPED (takeover)
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:49 (yard) resumes, day 1 08:54 (yard) resumes, day 1 08:55 (yard) resumes
+  ledger: blows 13, koGuards 6, lockdowns 1, spotted 1, maxHeat 100, recruits 2; walked 166 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 08:55 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 6, cash $0
 == shankton
   cutout: the fence cut 6.9 s after the power went off
@@ -73,12 +81,14 @@
   day 1 23:26 power OFF (player)
   day 1 23:33 ESCAPED (fence)
   saved and loaded at day 1 15:46 (yard) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (corridor) resumes, day 1 23:29 (perimeter) resumes
+  ledger: powerCuts 1; walked 442 tiles; days escaped
   → out day 1 23:33 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == shankton: tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:21 digUp → layer 1
   day 1 23:21 ESCAPED (tunnel)
   saved and loaded at day 1 15:40 (yard) resumes, day 1 21:48 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
+  ledger: nothing; walked 377 tiles; days escaped
   → out day 1 23:21 by tunnel; heat peak 0%; walls 0, tunnel tiles 10, guards out cold 0, cash $0
 == shankton: rooftop grapnel
   day 1 23:11 climbVent → layer 2
@@ -87,6 +97,7 @@
   day 1 23:48 rope → layer 1
   day 1 23:48 ESCAPED (roof)
   saved and loaded at day 1 15:54 (yard) resumes, day 1 22:13 (rollCall) resumes, day 1 23:29 (vents) resumes, day 1 23:43 (roof) resumes
+  ledger: nothing; walked 455 tiles; days escaped
   → out day 1 23:48 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 46/140, guards down 8/8, xxxxxxxx
 == shankton: takeover
@@ -110,6 +121,7 @@
   day 1 09:08 sniper warning shot
   day 1 09:11 ESCAPED (takeover)
   saved and loaded at day 1 08:35 (corridor) resumes, day 1 09:04 (none) resumes, day 1 09:09 (perimeter) resumes, day 1 09:10 (perimeter) resumes
+  ledger: blows 11, koGuards 8, lockdowns 1, spotted 3, maxHeat 100, recruits 2; walked 201 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:11 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0
 == san-pancho
 == san-pancho: tunnel
@@ -117,10 +129,12 @@
   day 1 23:24 digUp → layer 1
   day 1 23:24 ESCAPED (tunnel)
   saved and loaded at day 1 15:42 (yard) resumes, day 1 21:51 (playerCell) resumes, day 1 23:05 (playerCell) resumes, day 1 23:19 (tunnels) resumes
+  ledger: nothing; walked 316 tiles; days escaped
   → out day 1 23:24 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
 == san-pancho: supply road gate
   day 1 23:26 ESCAPED (gate)
   saved and loaded at day 1 15:43 (yard) resumes, day 1 21:54 (playerCell) resumes, day 1 23:08 (playerCell) resumes, day 1 23:22 (controlRoom) resumes
+  ledger: nothing; walked 365 tiles; days escaped
   → out day 1 23:26 by gate; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 46/150, guards down 8/8, xxxxxxxx
 == san-pancho: takeover
@@ -137,6 +151,7 @@
   day 1 09:28 knocked out #15
   day 1 09:32 ESCAPED (takeover)
   saved and loaded at day 1 08:46 (yard) resumes, day 1 09:23 (yard) resumes, day 1 09:30 (walkway) resumes, day 1 09:32 (walkway) resumes
+  ledger: blows 9, koGuards 8, lockdowns 1, spotted 1, maxHeat 100, recruits 2; walked 154 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:32 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0
 == irongate
   raft: the dock fence cut 25.7 s after GEN-2 went off
@@ -145,6 +160,7 @@
   day 1 23:44 power OFF (player)
   day 2 00:11 ESCAPED (raft)
   saved and loaded at day 1 16:05 (showers) resumes, day 1 22:34 (playerCell) resumes, day 1 23:51 (walkway) resumes, day 2 00:06 (walkway) resumes
+  ledger: powerCuts 1; walked 531 tiles; days quiet / escaped
   → out day 2 00:11 by raft; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == irongate: helicopter
   day 1 23:16 climbVent → layer 2
@@ -157,6 +173,7 @@
   day 1 23:50 knocked out #22
   day 1 23:51 ESCAPED (helicopter)
   saved and loaded at day 1 15:55 (yard) resumes, day 1 22:16 (rollCall) resumes, day 1 23:32 (vents) resumes, day 1 23:46 (roof) resumes
+  ledger: koGuards 2, lockdowns 1, spotted 1, maxHeat 100; walked 467 tiles; days spotted+wanted+lockdown+escaped
   → out day 1 23:51 by helicopter; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 2, cash $0
   takeover: health 21/150, guards down 10/10, xxxxxxxxxx
 == irongate: takeover
@@ -181,4 +198,5 @@
   day 1 09:29 knocked out #19
   day 1 09:33 ESCAPED (takeover)
   saved and loaded at day 1 08:46 (rollCall) resumes, day 1 09:23 (yard) resumes, day 1 09:31 (none) resumes, day 1 09:32 (perimeter) resumes
+  ledger: blows 14, koGuards 10, lockdowns 1, spotted 1, maxHeat 100, recruits 2; walked 224 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:33 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 10, cash $0

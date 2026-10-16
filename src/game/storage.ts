@@ -24,12 +24,26 @@ export const KEYS = {
   save3: `${PREFIX}.save.3`,
   /** Tutorial lessons done (their ids). */
   lessons: `${PREFIX}.lessons`,
+  /** P16: lifetime stats (stats.ts), achievements earned (trophies.ts). */
+  stats: `${PREFIX}.stats`,
+  trophies: `${PREFIX}.trophies`,
+  /** P16: your prisoner (prisoner.ts): kept on reset, like the settings. */
+  prisoner: `${PREFIX}.prisoner`,
+  /** P16: each save's run log (runlog.ts), kept next to it; the last escape's. */
+  logAuto: `${PREFIX}.log.auto`,
+  log1: `${PREFIX}.log.1`,
+  log2: `${PREFIX}.log.2`,
+  log3: `${PREFIX}.log.3`,
+  replayLast: `${PREFIX}.replay.last`,
 } as const;
 
-export type StorageKey = (typeof KEYS)[keyof typeof KEYS];
+/** The quickest escape's run log for a prison (P16). */
+export const replayBestKey = (prison: string) => `${PREFIX}.replay.best.${prison}` as const;
 
-/** The keys "Reset progress" wipes. */
-export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3, KEYS.lessons];
+export type StorageKey = (typeof KEYS)[keyof typeof KEYS] | ReturnType<typeof replayBestKey>;
+
+/** The keys "Reset progress" wipes (and every prison's best replay: resetProgress). */
+export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3, KEYS.lessons, KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log1, KEYS.log2, KEYS.log3, KEYS.replayLast];
 
 export function readText(key: StorageKey): string | null {
   try {
@@ -78,12 +92,23 @@ export function writeJSON(key: StorageKey, value: unknown): boolean {
 
 // ------------------------------------------------------------------ versions
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** MIGRATIONS[n] upgrades saves from version n to n + 1; false means "try again next start". */
 const MIGRATIONS: Array<() => boolean> = [
   // 0 → 1: the first stored version; nothing to convert.
   () => true,
+  // 1 → 2 (P16): escape records keep each way out's quickest (and its medal). A prison escaped
+  // one way only: that way's quickest is the prison's. Several ways: which was quickest isn't known.
+  () => {
+    const all = readJSON<Record<string, { routes?: unknown; bestDay?: unknown; bestMinute?: unknown; byRoute?: unknown }>>(KEYS.escapes, {});
+    for (const r of Object.values(all)) {
+      if (!r || typeof r !== 'object' || r.byRoute) continue;
+      const routes = Array.isArray(r.routes) ? r.routes.filter((x): x is string => typeof x === 'string') : [];
+      r.byRoute = routes.length === 1 && typeof r.bestDay === 'number' && r.bestDay > 0 ? { [routes[0]]: { day: r.bestDay, minute: r.bestMinute } } : {};
+    }
+    return writeJSON(KEYS.escapes, all);
+  },
 ];
 
 /** Brings stored data up to SAVE_VERSION; call once at startup. Newer saves are left alone. */

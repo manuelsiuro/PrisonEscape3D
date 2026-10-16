@@ -22,6 +22,7 @@ import { devices, powered, scan, takeoverCheck } from './systems/power';
 import { attendance, nextBlock } from './systems/routine';
 import { endTalk, grudges, guardTalking, keepTalk, offerFavors, socialNow } from './systems/social';
 import { bribesWearOff } from './systems/ways';
+import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
 import { watch } from './systems/watch';
@@ -87,11 +88,20 @@ export class Sim {
     return clockAt(this.state.step);
   }
 
+  /** One step: the rules (`advance`), then the ledger counts what happened (it never changes what does). */
   step(cmd: number) {
+    const p = this.state.player;
+    const x = p.x;
+    const z = p.z;
+    if (this.advance(cmd)) ledger(this, x, z);
+  }
+
+  /** The rules for one step; false once the game is over (nothing happened). */
+  private advance(cmd: number): boolean {
     const s = this.state;
     this.events = [];
     // Out: the game is won, nothing more happens.
-    if (s.escaped) return;
+    if (s.escaped) return false;
     s.step++;
     // Who dozes as the step starts (P15): each nap ended in it is told once, whatever ended it.
     let dozing = 0;
@@ -111,7 +121,7 @@ export class Sim {
     // The knocked out come round (GDD §10.2): a guard missing its key raises the alarm.
     recover(this);
     this.everyoneMoves();
-    if (this.playerMoves(cmd, clock)) return;
+    if (this.playerMoves(cmd, clock)) return true;
     // Combat: inmates and guards land their blows on the player (GDD §10.1); the lock follows its target.
     fight(this);
     // Enough guards out cold at once: the prison is the inmates' (GDD §12).
@@ -139,6 +149,7 @@ export class Sim {
     // (a save, a keyframe) says everything about them.
     this.updateDoors(true);
     if (dozing) this.napsOver(dozing);
+    return true;
   }
 
   /**

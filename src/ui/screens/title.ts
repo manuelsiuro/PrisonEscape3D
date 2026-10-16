@@ -3,7 +3,7 @@ import { icon } from '../icons';
 import { t } from '../../i18n';
 import { keysReady } from '../../i18n/keys';
 
-export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'help' | 'settings';
+export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'trophies' | 'help' | 'settings';
 
 export interface TitleInfo {
   /** Where Play goes: the prison and its security level, or how many prisons are open to choose from. */
@@ -17,6 +17,9 @@ export interface TitleInfo {
   /** The tutorial's progress ("3 of 9 lessons"), and whether it's where a newcomer should start. */
   tutorial: string;
   newcomer: boolean;
+  /** Achievements earned ("12/42"), and whether some are new since the shelf was last opened (P16). */
+  trophies: string;
+  trophiesNew: boolean;
   muted: boolean;
   /** The button to focus (the one that opened the screen just closed: Play, Settings…), so a keyboard picks up where it was. */
   focus?: TitleChoice | null;
@@ -26,8 +29,8 @@ export interface TitleInfo {
 
 /**
  * Title screen over the drifting prison; resolves with the player's choice. A hero card for
- * the main action (Continue the game in progress, else Play), New game and Load under it, How
- * to play and Settings side by side, a sound switch and the controls in the footer, the
+ * the main action (Continue the game in progress, else Play), New game and Load under it,
+ * Trophies (P16), How to play and Settings side by side, a sound switch and the controls in the footer, the
  * version in the corner.
  */
 export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoice> {
@@ -68,7 +71,11 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
           <span class="menu-text"><span class="menu-label">${t('title.tutorial')}</span><small>${info.tutorial}</small></span>
           ${icon('chevronRight', 16)}
         </button>
-        <div class="title-row">
+        <div class="title-row three">
+          <button class="menu-btn" data-c="trophies" style="--tone:#e2a21b;--tone-2:#b87a0c">
+            <span class="menu-ic">${icon('trophy', 18)}${info.trophiesNew ? '<i class="menu-dot"></i>' : ''}</span>
+            <span class="menu-text"><span class="menu-label">${t('title.trophies')}</span><small>${info.trophies}</small></span>
+          </button>
           <button class="menu-btn" data-c="help" style="--tone:#3fb07a;--tone-2:#1f8a5a">
             <span class="menu-ic">${icon('help', 18)}</span>
             <span class="menu-text"><span class="menu-label">${t('title.help')}</span></span>

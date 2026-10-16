@@ -63,6 +63,9 @@ export function typo(lang: Lang, s: string): string {
   return s.replace(/ ([!?:;»])/g, ' $1').replace(/« /g, '« ');
 }
 
+/** Your prisoner's name (P16; empty: none given). Friends use it, now and then, instead of the nickname. */
+export const PLAYER = { name: '' };
+
 /** What the prison calls the player: the fish for two days, then a name earned (or "kid"). */
 export function nickOf(sim: Sim): Nick {
   const s = sim.state;
@@ -137,9 +140,11 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
   const [name, form = ''] = slot.split('.');
   let v: string | null = null;
   switch (name) {
-    case 'you':
-      v = NICKS[lang][nickOf(sim)];
+    case 'you': {
+      const friend = ctx.speaker >= 0 && ctx.speaker < s.inmates.length && s.inmates[ctx.speaker].opinion >= 60;
+      v = PLAYER.name && friend && ctx.random() < 0.5 ? PLAYER.name : NICKS[lang][nickOf(sim)];
       break;
+    }
     case 'me':
       v = nameOf(sim, ctx.speaker);
       break;

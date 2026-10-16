@@ -1,0 +1,30 @@
+/**
+ * Medals (P16): for each prison's ways out, the day by which an escape earns gold, silver or
+ * bronze (an escape on that day or before). A medal once earned is kept, whatever comes after.
+ * Every way out of every prison has a row (achievementtest checks).
+ */
+export type Medal = 'gold' | 'silver' | 'bronze';
+export const MEDALS: readonly Medal[] = ['gold', 'silver', 'bronze'];
+
+/** prison → route → [gold, silver, bronze] days. */
+export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number, number]>> = {
+  'center-perks': { fence: [3, 5, 8], tunnel: [2, 4, 7], roof: [3, 5, 8], takeover: [4, 7, 10] },
+  'stalag-flucht': { fence: [3, 6, 9], tunnel: [3, 5, 8], roof: [4, 6, 9], takeover: [5, 8, 12] },
+  shankton: { fence: [4, 7, 10], tunnel: [4, 6, 10], roof: [4, 7, 10], takeover: [6, 9, 13] },
+  'san-pancho': { tunnel: [5, 8, 12], gate: [5, 8, 12], takeover: [7, 10, 14] },
+  irongate: { raft: [6, 9, 13], helicopter: [7, 10, 14], takeover: [8, 12, 16] },
+};
+
+/** The medal an escape on `day` earns (null: too slow for bronze, or no medals there). */
+export function medalFor(prison: string, route: string, day: number): Medal | null {
+  const row = MEDAL_DAYS[prison]?.[route];
+  if (!row) return null;
+  const k = row.findIndex((d) => day <= d);
+  return k < 0 ? null : MEDALS[k];
+}
+
+/** The better of two medals (null below bronze). */
+export function betterMedal(a: Medal | null | undefined, b: Medal | null | undefined): Medal | null {
+  const rank = (m: Medal | null | undefined) => (m ? MEDALS.indexOf(m) : 3);
+  return rank(a) <= rank(b) ? (a ?? null) : (b ?? null);
+}

@@ -22,6 +22,19 @@ export interface Look {
   key?: number;
   /** An armored riot guard (P12): a helmet and visor instead of the cap, plates over the uniform. */
   riot?: boolean;
+  /**
+   * Your prisoner (P16, content/prisoner.ts): facial hair (0 none, 1 stubble, 2 moustache,
+   * 3 full beard, 4 goatee, 5 sideburns), a hat (shape 1–10) and glasses (1–6) in a colour, a
+   * tattoo on the right forearm (1–5), the jumpsuit's trim colour (cuffs, waistband, side stripes).
+   */
+  beard?: number;
+  hat?: number;
+  hatColor?: number;
+  glasses?: number;
+  glassesColor?: number;
+  tattoo?: number;
+  tattooColor?: number;
+  trim?: number;
 }
 
 /** The orange jumpsuit (tech plan §6.2). */
@@ -235,6 +248,111 @@ const DROPS = 10;
 /** A box w×h×d centered on (x, y, z), painted. */
 const part = (w: number, h: number, d: number, color: number, x: number, y: number, z: number): Part => box(w, h, d, color, x, y - h / 2, z);
 
+/** A colour a share of the way to another (stubble: skin toward the hair). */
+const mix = (a: number, b: number, k: number) => new THREE.Color(a).lerp(new THREE.Color(b), k).getHex();
+
+/** Facial hair (P16), in the head's frame: the face's front at z 0.22, the mouth at y 0.1. */
+function beardParts(kind: number, hair: number, skin: number): Part[] {
+  const moustache = part(0.16, 0.035, 0.03, hair, 0, 0.13, 0.235);
+  switch (kind) {
+    case 1: {
+      const stub = mix(skin, hair, 0.4);
+      return [part(0.08, 0.12, 0.02, stub, -0.15, 0.1, 0.222), part(0.08, 0.12, 0.02, stub, 0.15, 0.1, 0.222), part(0.24, 0.05, 0.02, stub, 0, 0.04, 0.222)];
+    }
+    case 2:
+      return [moustache];
+    case 3:
+      return [moustache, part(0.47, 0.1, 0.08, hair, 0, 0.02, 0.2), part(0.05, 0.22, 0.3, hair, -0.235, 0.12, 0.06), part(0.05, 0.22, 0.3, hair, 0.235, 0.12, 0.06)];
+    case 4:
+      return [part(0.12, 0.03, 0.03, hair, 0, 0.135, 0.235), part(0.12, 0.08, 0.04, hair, 0, 0.04, 0.235)];
+    default:
+      return [part(0.04, 0.18, 0.1, hair, -0.235, 0.25, 0.12), part(0.04, 0.18, 0.1, hair, 0.235, 0.25, 0.12)];
+  }
+}
+
+/** Glasses (P16) over the eyes (y 0.24, the face at z 0.22): frames leave the eyes showing; shades don't. */
+function glassesParts(kind: number, color: number): Part[] {
+  const z = 0.238;
+  const t = kind === 2 || kind === 6 ? 0.03 : 0.02;
+  const rim = (x: number, w = 0.13, h = 0.12): Part[] => [
+    part(w, t, 0.015, color, x, 0.24 + h / 2, z),
+    part(w, t, 0.015, color, x, 0.24 - h / 2, z),
+    part(t, h, 0.015, color, x - w / 2, 0.24, z),
+    part(t, h, 0.015, color, x + w / 2, 0.24, z),
+  ];
+  // The arms back over the ears, and the temples that join them to the frames.
+  const arms = [part(0.015, 0.02, 0.22, color, -0.235, 0.27, 0.12), part(0.015, 0.02, 0.22, color, 0.235, 0.27, 0.12), part(0.07, 0.02, 0.015, color, -0.205, 0.27, z), part(0.07, 0.02, 0.015, color, 0.205, 0.27, z)];
+  const bridge = part(0.07, 0.02, 0.015, color, 0, 0.27, z);
+  switch (kind) {
+    case 3:
+      return [part(0.15, 0.1, 0.015, color, -0.1, 0.24, z), part(0.15, 0.1, 0.015, color, 0.1, 0.24, z), bridge, ...arms];
+    case 4:
+      return [...rim(0.1, 0.12, 0.12), part(0.01, 0.2, 0.01, color, 0.16, 0.1, z)];
+    case 5:
+      return [part(0.48, 0.04, 0.46, 0x5a3d22, 0, 0.3, 0), ...rim(-0.1, 0.15, 0.13), ...rim(0.1, 0.15, 0.13), bridge];
+    case 6:
+      return [...rim(-0.1, 0.15, 0.12), ...rim(0.1, 0.15, 0.12), part(0.04, 0.04, 0.015, color, -0.19, 0.31, z), part(0.04, 0.04, 0.015, color, 0.19, 0.31, z), bridge, ...arms];
+    default:
+      return [...rim(-0.1), ...rim(0.1), bridge, ...arms];
+  }
+}
+
+/** Hats (P16) on top of the hair (its top at y 0.52): never a peaked cap, so a guard's look stays theirs. */
+function hatParts(kind: number, color: number): Part[] {
+  const dark = mix(color, 0x000000, 0.25);
+  switch (kind) {
+    case 1:
+      return [part(0.5, 0.16, 0.48, color, 0, 0.55, -0.01), part(0.52, 0.06, 0.5, dark, 0, 0.46, -0.01), part(0.1, 0.08, 0.1, mix(color, 0xffffff, 0.35), 0, 0.66, -0.01)];
+    case 2:
+      return [part(0.5, 0.08, 0.48, color, 0, 0.44, -0.01), part(0.49, 0.08, 0.47, color, 0, 0.52, -0.02), part(0.07, 0.13, 0.04, color, 0.07, 0.36, -0.26), part(0.07, 0.11, 0.04, dark, -0.03, 0.37, -0.26), part(0.04, 0.02, 0.02, 0xffffff, 0.1, 0.5, 0.24)];
+    case 3:
+      return [part(0.49, 0.06, 0.47, color, 0, 0.41, 0), part(0.495, 0.02, 0.475, 0xd63c2e, 0, 0.41, 0)];
+    case 4:
+      return [part(0.5, 0.08, 0.48, color, 0, 0.48, -0.01), part(0.58, 0.24, 0.54, color, 0, 0.64, -0.01), part(0.3, 0.06, 0.3, mix(color, 0xc8c8c8, 0.3), 0, 0.77, -0.01)];
+    case 5:
+      return [part(0.24, 0.08, 0.24, color, 0.04, 0.55, 0), part(0.18, 0.08, 0.18, 0xffd23f, 0.04, 0.63, 0), part(0.12, 0.08, 0.12, color, 0.04, 0.71, 0), part(0.06, 0.08, 0.06, 0xffd23f, 0.04, 0.79, 0), part(0.09, 0.07, 0.09, 0xf2f2ee, 0.04, 0.86, 0)];
+    case 6: {
+      const pts: Part[] = [part(0.5, 0.1, 0.48, color, 0, 0.54, -0.01), part(0.06, 0.05, 0.02, 0xd63c2e, 0, 0.54, 0.236)];
+      for (const x of [-0.19, 0, 0.19]) pts.push(part(0.07, 0.09, 0.03, color, x, 0.63, 0.22), part(0.07, 0.09, 0.03, color, x, 0.63, -0.24));
+      for (const zz of [-0.12, 0.08]) pts.push(part(0.03, 0.09, 0.07, color, -0.24, 0.63, zz), part(0.03, 0.09, 0.07, color, 0.24, 0.63, zz));
+      return pts;
+    }
+    case 7:
+      return [part(0.82, 0.03, 0.78, color, 0, 0.5, 0), part(0.44, 0.14, 0.42, color, 0, 0.58, 0), part(0.45, 0.04, 0.43, 0x8a4b2a, 0, 0.54, 0)];
+    case 8:
+      return [part(0.62, 0.04, 0.6, dark, 0, 0.47, 0), part(0.5, 0.16, 0.48, color, 0, 0.56, 0)];
+    case 9:
+      return [part(0.66, 0.03, 0.62, color, 0, 0.5, 0), part(0.42, 0.36, 0.4, color, 0, 0.69, 0), part(0.43, 0.05, 0.41, 0xa3262a, 0, 0.55, 0)];
+    default:
+      return [
+        part(0.25, 0.12, 0.24, color, -0.125, 0.53, 0.115),
+        part(0.25, 0.12, 0.24, 0xffd23f, 0.125, 0.53, 0.115),
+        part(0.25, 0.12, 0.24, 0x2f9be0, -0.125, 0.53, -0.125),
+        part(0.25, 0.12, 0.24, 0x3fb950, 0.125, 0.53, -0.125),
+        part(0.03, 0.08, 0.03, 0x333338, 0, 0.62, 0),
+        part(0.5, 0.02, 0.06, 0xffd23f, 0, 0.66, 0),
+      ];
+  }
+}
+
+/** A tattoo (P16) on the front of the right forearm (the forearm spans y −0.345…−0.195, its front at z 0.07). */
+function tattooParts(kind: number, color: number): Part[] {
+  const z = 0.072;
+  const d = 0.006;
+  switch (kind) {
+    case 1:
+      return [part(0.016, 0.08, d, color, 0, -0.27, z), part(0.05, 0.012, d, color, 0, -0.245, z), part(0.06, 0.016, d, color, 0, -0.305, z)];
+    case 2:
+      return [part(0.064, 0.026, d, color, 0, -0.258, z), part(0.042, 0.02, d, color, 0, -0.279, z), part(0.018, 0.016, d, color, 0, -0.295, z)];
+    case 3:
+      return [part(0.066, 0.016, d, color, 0, -0.27, z), part(0.016, 0.066, d, color, 0, -0.27, z)];
+    case 4:
+      return [part(0.03, 0.014, d, color, -0.02, -0.262, z), part(0.03, 0.014, d, color, 0.02, -0.262, z), part(0.016, 0.04, d, color, 0, -0.285, z)];
+    default:
+      return [part(0.042, 0.05, d, 0xe2601c, 0, -0.29, z), part(0.026, 0.03, d, 0xf2a03c, 0, -0.255, z), part(0.012, 0.02, d, 0xffd23f, 0, -0.232, z)];
+  }
+}
+
 /**
  * A blocky character, a 3D take on the Escapists sprites: a big head with blinking eyes,
  * a jumpsuit with a number patch and rolled sleeves, arms and legs on pivots. Faces +z at
@@ -319,6 +437,7 @@ export class Character {
     const outfitDark = new THREE.Color(outfit).multiplyScalar(0.78).getHex();
     const trousers = look.trousers ?? outfit;
     const guard = look.cap !== undefined;
+    const trim = guard ? undefined : look.trim;
     const gold = 0xe8b828;
     const { skin, hair } = look;
     const white = 0xf2f2ee;
@@ -337,7 +456,7 @@ export class Character {
       [this.legR, 0.11],
     ] as const) {
       pivot.position.set(x, 0.4, 0);
-      mesh([part(0.19, 0.34, 0.2, trousers, 0, -0.17, 0), part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03)], pivot);
+      mesh([part(0.19, 0.34, 0.2, trousers, 0, -0.17, 0), part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03), ...(trim !== undefined ? [part(0.196, 0.035, 0.206, trim, 0, -0.29, 0)] : [])], pivot);
     }
 
     // Torso: the jumpsuit, a white collar, the number patch (a guard: a belt, a tie, a badge).
@@ -354,10 +473,12 @@ export class Character {
           ]
         : [
             part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0),
-            part(0.53, 0.06, 0.31, outfitDark, 0, 0.42, 0),
+            part(0.53, 0.06, 0.31, trim ?? outfitDark, 0, 0.42, 0),
             part(0.2, 0.06, 0.02, white, 0, 0.79, 0.152),
             part(0.13, 0.08, 0.02, white, 0.12, 0.66, 0.152),
             part(0.08, 0.015, 0.025, dark, 0.12, 0.665, 0.153),
+            // A trim (P16): a stripe down each side.
+            ...(trim !== undefined ? [part(0.012, 0.34, 0.2, trim, -0.262, 0.62, 0), part(0.012, 0.34, 0.2, trim, 0.262, 0.62, 0)] : []),
           ],
       this.body,
     );
@@ -383,15 +504,29 @@ export class Character {
       [this.armR, 0.34],
     ] as const) {
       pivot.position.set(x, 0.78, 0);
-      mesh([part(0.15, 0.2, 0.16, outfit, 0, -0.1, 0), part(0.13, 0.15, 0.14, skin, 0, -0.27, 0), part(0.14, 0.09, 0.15, skin, 0, -0.38, 0)], pivot);
+      mesh(
+        [
+          part(0.15, 0.2, 0.16, outfit, 0, -0.1, 0),
+          part(0.13, 0.15, 0.14, skin, 0, -0.27, 0),
+          part(0.14, 0.09, 0.15, skin, 0, -0.38, 0),
+          ...(trim !== undefined ? [part(0.156, 0.03, 0.166, trim, 0, -0.185, 0)] : []),
+          ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f) : []),
+        ],
+        pivot,
+      );
     }
 
     // Head: a big block with brows, a nose, a mouth and a haircut; the eyes blink on their own.
     this.head.position.y = 0.8;
     const face: Part[] = [part(0.46, 0.44, 0.44, skin, 0, 0.22, 0), part(0.06, 0.07, 0.04, skin, 0, 0.18, 0.235), part(0.11, 0.025, 0.02, 0x8a4b3a, 0, 0.1, 0.222)];
     for (const s of [-1, 1]) face.push(part(0.11, 0.035, 0.02, hair, s * 0.1, 0.32, 0.222));
-    const style = look.hairStyle ?? 0;
-    if (style === 0 || style === 3) {
+    // Under a hat, hair that would stand up through it lies flat (P16).
+    const hatted = !!look.hat && look.cap === undefined && !look.riot;
+    const style0 = look.hairStyle ?? 0;
+    // (Under a guard's cap too: a disguise's crown stays a cap.)
+    const covered = hatted || look.cap !== undefined || !!look.riot;
+    const style = covered && (style0 === 3 || style0 === 4 || style0 === 5) ? 0 : style0;
+    if (style === 0 || style === 3 || style === 6) {
       const top = style === 3 ? 0.22 : 0.1;
       face.push(
         part(0.48, top, 0.46, hair, 0, 0.42 + top / 2, -0.01),
@@ -399,9 +534,21 @@ export class Character {
         part(0.05, 0.14, 0.4, hair, -0.23, 0.36, -0.02),
         part(0.05, 0.14, 0.4, hair, 0.23, 0.36, -0.02),
       );
+      // A ponytail with a band (P16).
+      if (style === 6) face.push(part(0.1, 0.24, 0.1, hair, 0, 0.3, -0.29), part(0.11, 0.04, 0.11, 0xff9a3c, 0, 0.42, -0.29));
     } else if (style === 1) {
       face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215));
+    } else if (style === 4) {
+      // A mohawk: shaved sides, a crest front to back.
+      face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215), part(0.1, 0.2, 0.46, hair, 0, 0.55, -0.01));
+    } else if (style === 5) {
+      // Curls: a round mop over the top, down the sides and the back.
+      face.push(part(0.56, 0.2, 0.54, hair, 0, 0.5, -0.02), part(0.08, 0.2, 0.42, hair, -0.27, 0.36, -0.04), part(0.08, 0.2, 0.42, hair, 0.27, 0.36, -0.04), part(0.54, 0.3, 0.1, hair, 0, 0.32, -0.25));
     }
+    if (look.beard) face.push(...beardParts(look.beard, hair, skin));
+    if (look.glasses) face.push(...glassesParts(look.glasses, look.glassesColor ?? 0x2a2a30));
+    // A hat sits on what's under it: the short cut's top (0.52), a buzz cut's (0.465), a bald head's (0.44).
+    if (hatted) face.push(...hatParts(look.hat!, look.hatColor ?? 0x8c3b2a).map((g) => g.translate(0, (style === 2 ? 0.44 : style === 1 || style === 4 ? 0.465 : 0.52) - 0.52, 0)));
     if (look.riot) {
       // A riot helmet: the shell over the head, its visor down over the eyes, a chin guard.
       face.push(

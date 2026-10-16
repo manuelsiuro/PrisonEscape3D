@@ -13,6 +13,7 @@ import { play, type Game } from './game';
 import { updateGuide } from './guide';
 import { keepPlayerClear, updateOverlay } from './overlay';
 import { autosave, escaped } from './session';
+import { checkRun } from '../game/trophies';
 import { markTip, updateFirstDay } from './tips';
 import { lessonEvent, lessonHidden, updateLesson } from './lesson';
 
@@ -25,6 +26,8 @@ const KO_SPEED = 10;
 
 /** Picked something up since the last frame (for the guide). */
 let pickedUp = false;
+/** Real seconds to the next look at the run's achievements (P16). */
+let trophyCheck = 1;
 
 /** Runs the simulation's fixed steps for the time that passed (the simulation never sees the frame time). */
 function stepSim(g: Game, dt: number) {
@@ -111,6 +114,11 @@ export function frame(now: number) {
       markTip('walk');
     }
     updateGuide(g, dt);
+    // The run's achievements, about once a second (not a lesson's, not once it's over).
+    if ((trophyCheck -= dt) <= 0) {
+      trophyCheck = 1;
+      if (!g.lesson && !g.over) checkRun();
+    }
   }
   const a = g.paused ? 1 : play.acc * STEPS_PER_SECOND;
   const tile = tileOfBody(p);

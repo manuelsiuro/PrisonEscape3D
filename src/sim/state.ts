@@ -14,6 +14,7 @@ import { fixtureUse, START_INT, startItems, startPockets, type FixtureUse, type 
 import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
 import { mix32 } from './rng';
+import { FEATS, freshFeats, partialLedger } from './systems/ledger';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
@@ -55,7 +56,7 @@ export type SimEvent =
   | { type: 'shakedown'; cells: number[] }
   | { type: 'searched'; cell: number; taken: number }
   /** The night bed check begins, and how it went at the player's cell. */
-  | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail' }
+  | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
   | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope'; action: ToolAction }
@@ -320,6 +321,11 @@ export interface SimState {
   fuses: Array<[number, number]>;
   /** The seed mixed (P15, rng.ts roll()): the newer rules' randomness, never drawn from `rng`. Old saves mix their loaded rng. */
   salt: number;
+  /** The run's ledger (P16, ledger.ts): counters (FEATS order), and DAY bits per prison day (index day − 1). */
+  feats: number[];
+  days: number[];
+  /** The Daily's twists (P26; none in the campaign). */
+  mods: string[];
 }
 
 export interface Snapshot {
@@ -418,6 +424,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     powerOff2: 0,
     fuses: [],
     salt: mix32(seed),
+    feats: freshFeats(),
+    days: [],
+    mods: [],
   };
 }
 
@@ -452,6 +461,12 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.jobDay = st.jobDay ?? clockAt(st.step).day + 1;
   s.shops = st.shops?.length === prison.merchants.length ? st.shops : fresh.shops;
   s.cams = st.cams?.length === (prison.cameras ?? []).length ? st.cams : fresh.cams;
+  // A save from before the ledger (P16): partial, its days so far unknown. Counters added since load at 0.
+  // (A damaged one too: a ledger that isn't lists of numbers starts again, partial.)
+  const list = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'number');
+  if (!list(st.feats) || !list(st.days)) Object.assign(s, partialLedger(st.step));
+  else if (st.feats!.length < FEATS.length) s.feats = [...st.feats!, ...freshFeats().slice(st.feats!.length)];
+  if (!Array.isArray(s.mods) || !s.mods.every((m) => typeof m === 'string')) s.mods = [];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

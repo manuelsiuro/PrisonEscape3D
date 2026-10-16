@@ -1,4 +1,5 @@
 import { currentLang } from '../i18n';
+import { rumorHeard } from '../game/trophies';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { UNIT } from '../sim/tuning';
 import { Director, keepRumors, type Rumor, type Stage } from '../talk/director';
@@ -35,7 +36,10 @@ bubbles.onShow = (b) => {
   if (!g) return;
   const sim = g.rec.sim;
   const s = sim.state;
+  // A rumor never heard before (P16: counted for the stats and All Ears).
+  const fresh = !!b.fact && !g.lesson && !director.rumors.some((r) => r.fact.key === b.fact!.key);
   director.seen(b, sim);
+  if (fresh) rumorHeard();
   // The murmur: closer is louder, never more than one every 0.4 s.
   const now = performance.now() / 1000;
   if (settings.voices && now - murmurAt >= 0.4) {

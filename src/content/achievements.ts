@@ -1,0 +1,115 @@
+/**
+ * Achievements (P16), as data: each is earned during a run (`run`, checked as it goes), by an
+ * escape (`escape`), or over a career (`career`: lifetime stats and records). Conduct needs the
+ * whole run in the ledger (not one loaded from a save made before it). Some give a cosmetic
+ * for your prisoner (prisoner.ts). Mishaps stay hidden until earned.
+ * Names and descriptions: i18n `ach.<id>` and `ach.<id>.d`.
+ */
+import { FEAT, type Feat } from '../sim/systems/ledger';
+import { ATTR_MAX } from '../sim/tuning';
+import type { Medal } from './medals';
+
+export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'mishaps' | 'career';
+export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'mishaps', 'career'];
+
+/** A run as the checks see it: the ledger and a few of the player's numbers. */
+export interface RunView {
+  prison: string;
+  feats: readonly number[];
+  days: readonly number[];
+  str: number;
+  spd: number;
+  int: number;
+}
+
+/** An escape: the run, how and on which day, and the medal it earned. */
+export interface EscapeView extends RunView {
+  via: string;
+  day: number;
+  medal: Medal | null;
+}
+
+/** A career: lifetime stats (stats.ts keys), and each prison's ways out found and medals won. */
+export interface Career {
+  stats: Readonly<Record<string, number>>;
+  prisons: ReadonlyArray<{ id: string; routes: readonly string[]; of: number; medals: readonly Medal[] }>;
+  /** Tutorial lessons done, of how many. */
+  lessons: number;
+  lessonsOf: number;
+}
+
+export interface Achievement {
+  id: string;
+  group: AchievementGroup;
+  icon: string;
+  /** Hidden on the shelf until earned (mishaps). */
+  hidden?: boolean;
+  /** The cosmetic it gives (prisoner.ts id). */
+  gives?: string;
+  run?: (r: RunView) => boolean;
+  escape?: (e: EscapeView) => boolean;
+  career?: (c: Career) => boolean;
+  /** How far along a counted one is, [now, goal]: the shelf's progress bar. */
+  progress?: (c: Career) => readonly [number, number];
+}
+
+const f = (r: RunView, k: Feat) => r.feats[FEAT[k]] ?? 0;
+/** The whole run is in the ledger (not a game loaded from before it). */
+const whole = (r: RunView) => f(r, 'partial') === 0;
+const stat = (c: Career, k: string) => c.stats[k] ?? 0;
+/** A career count reaching a goal, with its progress. */
+const counted = (k: string, goal: number) => ({ career: (c: Career) => stat(c, k) >= goal, progress: (c: Career) => [Math.min(goal, stat(c, k)), goal] as const });
+
+export const ACHIEVEMENTS: readonly Achievement[] = [
+  // Ways out.
+  { id: 'freshAir', group: 'out', icon: 'run', gives: 'amber', escape: () => true },
+  { id: 'mole', group: 'out', icon: 'shovel', gives: 'goggles', escape: (e) => e.via === 'tunnel' },
+  { id: 'overTheTop', group: 'out', icon: 'hook', gives: 'propeller', escape: (e) => e.via === 'roof' },
+  { id: 'snip', group: 'out', icon: 'cutters', gives: 'rust', escape: (e) => e.via === 'fence' },
+  { id: 'riotAct', group: 'out', icon: 'users', gives: 'bandana', escape: (e) => e.via === 'takeover' },
+  { id: 'keyMaster', group: 'out', icon: 'key', gives: 'star', escape: (e) => e.via === 'gate' },
+  { id: 'castaway', group: 'out', icon: 'boat', gives: 'straw', escape: (e) => e.via === 'raft' || e.via === 'helicopter' },
+  { id: 'houdini', group: 'out', icon: 'star', gives: 'topHat', career: (c) => c.prisons.some((p) => p.routes.length >= p.of) },
+  { id: 'grandTour', group: 'out', icon: 'map', gives: 'crown', career: (c) => c.prisons.every((p) => p.routes.length > 0), progress: (c) => [c.prisons.filter((p) => p.routes.length > 0).length, c.prisons.length] },
+  // Speed.
+  { id: 'dayOne', group: 'speed', icon: 'clock', gives: 'shades', escape: (e) => e.day === 1 },
+  { id: 'quickStep', group: 'speed', icon: 'walk', gives: 'tangerine', escape: (e) => e.day <= 3 },
+  { id: 'goldStandard', group: 'speed', icon: 'trophy', gives: 'gold', escape: (e) => e.medal === 'gold' },
+  // Conduct: the whole run.
+  { id: 'pacifist', group: 'conduct', icon: 'heart', gives: 'heart', escape: (e) => whole(e) && f(e, 'blows') === 0 },
+  { id: 'ghost', group: 'conduct', icon: 'eyeOff', gives: 'platinum', escape: (e) => whole(e) && f(e, 'spotted') === 0 },
+  { id: 'cleanRecord', group: 'conduct', icon: 'shield', gives: 'cream', escape: (e) => whole(e) && f(e, 'caught') === 0 && f(e, 'solitary') === 0 },
+  { id: 'modelPrisoner', group: 'conduct', icon: 'bell', gives: 'ponytail', escape: (e) => whole(e) && f(e, 'missed') === 0 },
+  { id: 'calm', group: 'conduct', icon: 'sun', gives: 'swallow', escape: (e) => whole(e) && f(e, 'lockdowns') === 0 },
+  // Skills.
+  { id: 'sweetTooth', group: 'skills', icon: 'cookie', gives: 'curls', run: (r) => f(r, 'chocolate') >= 5 },
+  { id: 'bookworm', group: 'skills', icon: 'book', gives: 'square', run: (r) => r.int >= ATTR_MAX },
+  { id: 'strongman', group: 'skills', icon: 'dumbbell', gives: 'fullBeard', run: (r) => r.str >= ATTR_MAX },
+  { id: 'sprinter', group: 'skills', icon: 'run', gives: 'headband', run: (r) => r.spd >= ATTR_MAX },
+  { id: 'sleepwalker', group: 'skills', icon: 'moon', gives: 'goatee', run: (r) => f(r, 'dummy') >= 1 },
+  { id: 'blackout', group: 'skills', icon: 'plug', gives: 'teal', run: (r) => f(r, 'powerCuts') >= 1 },
+  { id: 'candid', group: 'skills', icon: 'camera', gives: 'flame', run: (r) => f(r, 'taped') >= 1 },
+  { id: 'handyman', group: 'skills', icon: 'hammer', gives: 'bucket', run: (r) => f(r, 'crafted') >= 10 },
+  { id: 'employee', group: 'skills', icon: 'briefcase', gives: 'chef', run: (r) => f(r, 'wages') >= 5 },
+  // Prison life: talk, noise, guards' ways.
+  { id: 'allEars', group: 'life', icon: 'ear', gives: 'sideburns', ...counted('rumors', 10) },
+  { id: 'decoy', group: 'life', icon: 'toss', gives: 'anchor', run: (r) => f(r, 'decoys') >= 1 },
+  { id: 'partyPopper', group: 'life', icon: 'flame', gives: 'party', run: (r) => f(r, 'bangs') >= 1 },
+  { id: 'greasedPalm', group: 'life', icon: 'hand', gives: 'monocle', run: (r) => f(r, 'bribes') >= 1 },
+  { id: 'paperTrail', group: 'life', icon: 'letter', gives: 'starShades', run: (r) => f(r, 'paperwork') >= 1 },
+  { id: 'popular', group: 'life', icon: 'chat', gives: 'mohawk', run: (r) => f(r, 'recruits') >= 2 },
+  // Mishaps (hidden).
+  { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
+  { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
+  { id: 'washedOut', group: 'mishaps', icon: 'splash', hidden: true, run: (r) => f(r, 'floods') >= 1 },
+  { id: 'watchStep', group: 'mishaps', icon: 'mine', hidden: true, run: (r) => f(r, 'blasts') >= 1 },
+  { id: 'spudPeeler', group: 'mishaps', icon: 'potato', hidden: true, run: (r) => f(r, 'potatoes') >= 1 },
+  // Career.
+  { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
+  { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },
+  { id: 'seasoned', group: 'career', icon: 'route', ...counted('escapes', 10) },
+  { id: 'marathon', group: 'career', icon: 'walk', ...counted('walked', 10000) },
+  { id: 'graduate', group: 'career', icon: 'bulb', career: (c) => c.lessons >= c.lessonsOf, progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf] },
+];
+
+export const achievement = (id: string) => ACHIEVEMENTS.find((a) => a.id === id);

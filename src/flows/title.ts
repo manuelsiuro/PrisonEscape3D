@@ -1,6 +1,7 @@
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordOf } from '../game/records';
 import { ALL_SLOTS, loadSave, readSave, type SaveFile, type SlotId } from '../game/saves';
+import { readLog } from '../game/logs';
 import { t } from '../i18n';
 import { Sim } from '../sim/Sim';
 import { h } from '../ui/dom';
@@ -19,6 +20,11 @@ import { settingsChanged } from '../play/tips';
 import { lessonsDone } from '../game/lessons';
 import { LESSONS } from '../tutorial/lessons';
 import { tutorialFlow } from './tutorial';
+import { intakeFlow } from './intake';
+import { ACHIEVEMENTS } from '../content/achievements';
+import { readPrisoner } from '../game/prisoner';
+import { careerOf, earnedTrophies, markTrophiesSeen, syncCareer, unseenTrophies } from '../game/trophies';
+import { showTrophies } from '../ui/screens/trophies';
 
 // ------------------------------------------------------------------ flows
 /** The title, and from it into a game (new, continued or loaded) and back, for good. */
@@ -39,6 +45,9 @@ export async function titleFlow() {
     }
     // Ways out found across the campaign, of all its prisons have.
     const found = PRISONS.reduce((n, p) => n + recordOf(p.id).routes.length, 0);
+    // What the records and the stats have earned so far (older escapes included).
+    syncCareer();
+    const earned = Object.keys(earnedTrophies()).length;
     const resume = readSave('auto');
     const choice: TitleChoice = again || next
       ? 'play'
@@ -50,6 +59,8 @@ export async function titleFlow() {
             saves: ALL_SLOTS.some((k) => readSave(k)),
             tutorial: t('title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
             newcomer: !resume && lessonsDone().length === 0 && !found,
+            trophies: `${earned}/${ACHIEVEMENTS.length}`,
+            trophiesNew: unseenTrophies().length > 0,
             focus: back,
             muted: settings.muted,
             toggleSound: () => {
@@ -73,6 +84,16 @@ export async function titleFlow() {
       await showHelp(click);
       continue;
     }
+    if (choice === 'trophies') {
+      // The shelf, and from it the Intake (back to the shelf after).
+      let back: Awaited<ReturnType<typeof showTrophies>> = null;
+      while ((back = await showTrophies({ earned: earnedTrophies(), unseen: unseenTrophies(), career: careerOf(), prisoner: readPrisoner() }, click, back?.tab, !!back))) {
+        markTrophiesSeen();
+        await intakeFlow();
+      }
+      markTrophiesSeen();
+      continue;
+    }
     if (choice === 'tutorial') {
       if (await tutorialFlow()) next = 'play';
       view.setWorld(new Sim(backdrop).world);
@@ -80,6 +101,9 @@ export async function titleFlow() {
     }
     let sim: Sim | null = null;
     let rumors: SaveFile['rumors'];
+    /** A new game's seed (its run log starts from it); a loaded game carries on its slot's log. */
+    let seed = -1;
+    let slot: SlotId | null = null;
     if (choice === 'play') {
       // Which prison (GDD §13.1): the one chosen on the victory screen, else picked from those
       // open (straight into the first while it's the only one).
@@ -87,9 +111,15 @@ export async function titleFlow() {
       if (!prison) continue;
       // A new game replaces the one in progress: asked first (games in slots stay).
       if (!again && resume && !(await ask(t('title.newSure', { when: saveWhen(resume) }), t('title.newYes'), click))) continue;
-      sim = new Sim(prison, Date.now() & 0x7fffffff);
+      // The first game: the Intake first (once; skipped, it isn't asked again).
+      if (!readPrisoner()) {
+        view.setWorld(new Sim(prison).world);
+        await intakeFlow(true);
+      }
+      seed = Date.now() & 0x7fffffff;
+      sim = new Sim(prison, seed);
     } else {
-      const slot: SlotId | null = choice === 'continue' ? 'auto' : await showSaves('load', click);
+      slot = choice === 'continue' ? 'auto' : await showSaves('load', click);
       if (slot === null) continue;
       const f = readSave(slot);
       sim = f && loadSave(f);
@@ -99,7 +129,7 @@ export async function titleFlow() {
         continue;
       }
     }
-    startGame(sim, choice !== 'play', null, rumors);
+    startGame(sim, choice !== 'play', null, rumors, seed >= 0 ? { seed } : { log: slot === null ? null : readLog(slot) });
     backdrop = sim.prison;
     await untilQuit();
     view.setWorld(new Sim(backdrop).world);

@@ -98,3 +98,15 @@ console.log('storage ok, version', SAVE_VERSION);
   check(readSave('auto') === null && readSave(1) === null, 'reset progress wipes the saves');
   console.log('saves ok,', JSON.stringify(f).length < 12000 ? 'under 12 KB' : 'OVER 12 KB');
 }
+
+// P16: Reset progress wipes the achievements, the stats, the run logs and every replay; your prisoner stays.
+{
+  const { resetProgress } = await import('../src/game/settings');
+  const { replayBestKey, PROGRESS_KEYS } = await import('../src/game/storage');
+  for (const k of [KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log2, KEYS.replayLast, replayBestKey('irongate'), KEYS.prisoner]) mem.set(k, '{}');
+  resetProgress();
+  check([KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log2, KEYS.replayLast, replayBestKey('irongate')].every((k) => !mem.has(k)), 'reset progress wipes achievements, stats, logs and replays');
+  check(mem.has(KEYS.prisoner) && !PROGRESS_KEYS.includes(KEYS.prisoner), 'your prisoner stays');
+  check(replayBestKey('shankton').startsWith('pe3d.'), 'replay keys have the game prefix');
+  console.log('progress keys ok');
+}

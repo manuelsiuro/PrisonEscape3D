@@ -1,6 +1,9 @@
 import { h } from '../dom';
 import { icon } from '../icons';
 import { t, type Key } from '../../i18n';
+import type { Achievement } from '../../content/achievements';
+import type { Medal } from '../../content/medals';
+import { medalDisc } from './trophies';
 
 /** What the victory screen shows (GDD §13.2). */
 export interface Victory {
@@ -21,9 +24,31 @@ export interface Victory {
   unlocked?: { name: string; security: string };
   /** The last prison broken out of for the first time (P12): every prison of the campaign beaten. */
   campaign?: boolean;
+  /** P16: the medal this escape earned (null: too slow), whether it's the route's best yet, and the day bronze needed. */
+  medal?: Medal | null;
+  newMedal?: boolean;
+  routeBest?: boolean;
+  bronzeBy?: number;
+  /** Achievements this escape earned. */
+  earned?: readonly Achievement[];
 }
 
 export type VictoryChoice = 'again' | 'next' | 'title';
+
+/** The medal won (P16), or how quick bronze needed to be. */
+function medalRow(v: Victory): string {
+  if (v.medal === undefined) return '';
+  if (!v.medal) return v.bronzeBy ? `<div class="v-medal none">${medalDisc(null, 30)}<span><b>${t('victory.noMedal')}</b><small>${t('victory.bronzeBy', { n: v.bronzeBy })}</small></span></div>` : '';
+  return `<div class="v-medal ${v.medal}">${medalDisc(v.medal, 34)}<span><b>${t(`medal.${v.medal}` as Key)}</b><small>${t(v.newMedal ? 'victory.medalNew' : 'victory.medalKept')}</small></span></div>`;
+}
+
+/** Achievements the escape earned (P16): a chip each, the first few. */
+function earnedRow(list: readonly Achievement[]): string {
+  if (!list.length) return '';
+  const shown = list.slice(0, 5);
+  const more = list.length - shown.length;
+  return `<div class="v-earned"><small>${t('victory.earned')}</small><div>${shown.map((a) => `<span class="v-ach">${icon(a.icon, 14)}${t(`ach.${a.id}` as Key)}</span>`).join('')}${more > 0 ? `<span class="v-ach more">+${more}</span>` : ''}</div></div>`;
+}
 
 /** Each way out's icon. */
 const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli' };
@@ -58,7 +83,9 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
         ${stat('coin', `$${cash}`, 'victory.cash')}
         ${v.best ? stat('star', t('victory.bestYes'), 'victory.best') : stat('star', t('hud.day', { n: v.bestDay }), 'victory.bestWas')}
       </div>
+      ${medalRow(v)}
       <div class="v-routes"><span class="v-routes-label"></span><span class="v-pips">${pips}</span></div>
+      ${earnedRow(v.earned ?? [])}
       ${v.unlocked ? `<div class="v-unlock" role="status">${icon('map', 22)}<span><b></b><small></small></span></div>` : ''}
       ${v.campaign ? `<div class="v-unlock campaign" role="status">${icon('star', 22)}<span><b>${t('victory.campaign')}</b><small>${t('victory.campaignSub')}</small></span></div>` : ''}
       <div class="actions">

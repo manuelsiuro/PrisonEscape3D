@@ -80,6 +80,9 @@ const P: Record<string, string> = {
   toss: '<path d="M4 19c1.5-7 7-11.5 14-11"/><path d="m14.5 5 3.7 3-3.2 3.6"/><circle cx="4" cy="19.5" r="1.4"/>',
 };
 
+/** Whether an icon exists (tests check every icon content names). */
+export const hasIcon = (name: string) => name in P;
+
 /** An inline SVG icon (`.ic`, display: block; inside text, make it inline-block). */
 export function icon(name: keyof typeof P | string, size = 22): string {
   return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] ?? ''}</svg>`;

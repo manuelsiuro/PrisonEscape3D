@@ -1,0 +1,229 @@
+/**
+ * The silent run recorder (P16): a game as the commands that made it, stored small, so an
+ * escape can be watched again (P25). Nothing but commands goes in: the sim is deterministic,
+ * so the prison, the seed and the commands are the whole run. Commands are kept as runs
+ * (the command, then how many steps it held) in varints; an hourly checksum of the state lets
+ * a replay tell where it drifted (a rules change since). No keyframes are kept in memory.
+ * A save carries its log next to it (copied on save, so a game loaded and played two ways
+ * makes two logs, each whole).
+ */
+import { fnv1a } from './rng';
+import { Sim, type Snapshot } from './Sim';
+import { STEPS_PER_MINUTE } from './tuning';
+import type { PrisonDef } from '../content/prisons/types';
+
+/** A checksum every game hour. */
+export const SUM_STEPS = STEPS_PER_MINUTE * 60;
+
+export interface RunLog {
+  v: 1;
+  prison: string;
+  /** The new game's seed; -1 when it starts from `start` (a game loaded from a save made before logs). */
+  seed: number;
+  start?: Snapshot;
+  /** The game's version when the run began. */
+  game: string;
+  /** The step it starts at, and how many it holds. */
+  from: number;
+  steps: number;
+  /** Runs of commands, base64: varint command, varint how many steps. */
+  data: string;
+  /** [step, fingerprint of the state after it] every game hour. */
+  sums: Array<[number, string]>;
+}
+
+/**
+ * The state's fingerprint for the checksums (short: the log stays small). Only what has always
+ * been in the state and says where the run is (the clock, the RNG, the player, everyone's place,
+ * the tiles changed): a field added in a later version (or the ledger counting a little
+ * differently) leaves an old log verifiable; a rule that plays out differently doesn't.
+ */
+export function sumOf(sim: Sim): string {
+  const s = sim.state;
+  return fnv1a(
+    JSON.stringify([s.step, s.rng, s.player.x, s.player.z, s.layer, s.heat, s.health, s.cash, s.escaped, s.items.inv, s.inmates.map((m) => [m.body.x, m.body.z]), s.guards.map((g) => [g.body.x, g.body.z]), s.tiles]),
+  );
+}
+
+function putVarint(out: number[], v: number) {
+  while (v >= 0x80) {
+    out.push((v & 0x7f) | 0x80);
+    v = Math.floor(v / 128);
+  }
+  out.push(v);
+}
+
+/** Runs of commands as bytes. */
+export function encodeRuns(runs: ReadonlyArray<readonly [number, number]>): Uint8Array {
+  const out: number[] = [];
+  for (const [cmd, n] of runs) {
+    putVarint(out, cmd >>> 0);
+    putVarint(out, n);
+  }
+  return Uint8Array.from(out);
+}
+
+/** Bytes back to runs of commands (null if they're cut short). */
+export function decodeRuns(bytes: Uint8Array): Array<[number, number]> | null {
+  const runs: Array<[number, number]> = [];
+  let k = 0;
+  const read = (): number | null => {
+    let v = 0;
+    let mul = 1;
+    for (;;) {
+      if (k >= bytes.length) return null;
+      const b = bytes[k++];
+      v += (b & 0x7f) * mul;
+      if (b < 0x80) return v;
+      mul *= 128;
+      if (mul > 2 ** 35) return null;
+    }
+  };
+  while (k < bytes.length) {
+    const cmd = read();
+    const n = read();
+    if (cmd === null || n === null) return null;
+    runs.push([cmd, n]);
+  }
+  return runs;
+}
+
+export function toBase64(bytes: Uint8Array): string {
+  let s = '';
+  for (let k = 0; k < bytes.length; k += 0x8000) s += String.fromCharCode(...bytes.subarray(k, k + 0x8000));
+  return btoa(s);
+}
+
+export function fromBase64(text: string): Uint8Array | null {
+  try {
+    const s = atob(text);
+    const out = new Uint8Array(s.length);
+    for (let k = 0; k < s.length; k++) out[k] = s.charCodeAt(k);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/** A stored log checked for shape (null when it isn't one). */
+export function fitLog(v: unknown): RunLog | null {
+  const l = v as Partial<RunLog> | null;
+  if (!l || typeof l !== 'object' || l.v !== 1) return null;
+  if (typeof l.prison !== 'string' || typeof l.seed !== 'number' || typeof l.from !== 'number' || typeof l.steps !== 'number' || typeof l.data !== 'string' || typeof l.game !== 'string') return null;
+  if (!Array.isArray(l.sums) || !l.sums.every((s) => Array.isArray(s) && typeof s[0] === 'number' && typeof s[1] === 'string')) return null;
+  if (l.seed < 0 && !(l.start && typeof l.start === 'object' && l.start.prison === l.prison)) return null;
+  return l as RunLog;
+}
+
+/**
+ * Steps a game and records its commands (Game.rec): a new game from its seed, or a game
+ * loaded from a save, carrying on that save's log (or a new one from the loaded state when it
+ * has none that fits).
+ */
+export class RunRecorder {
+  /** The runs so far as bytes (grown by doubling), and how many are used. */
+  private buf = new Uint8Array(1024);
+  private len = 0;
+  private readonly tmp: number[] = [];
+  /** The run being held: its command and how many steps so far (0: none yet). */
+  private cmd = 0;
+  private held = 0;
+  private readonly head: Omit<RunLog, 'data' | 'steps' | 'sums'>;
+  private steps = 0;
+  private readonly sums: Array<[number, string]> = [];
+
+  constructor(
+    readonly sim: Sim,
+    origin: { seed: number; game: string } | { log: RunLog | null; game: string },
+  ) {
+    const from = sim.state.step;
+    if ('seed' in origin) this.head = { v: 1, prison: sim.prison.id, seed: origin.seed, game: origin.game, from };
+    else {
+      const log = origin.log;
+      const runs = log && log.prison === sim.prison.id && log.from + log.steps === from ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
+      if (log && runs) {
+        this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
+        this.put(encodeRuns(runs));
+        this.steps = log.steps;
+        this.sums.push(...log.sums);
+      } else this.head = { v: 1, prison: sim.prison.id, seed: -1, start: sim.snapshot(), game: origin.game, from };
+    }
+  }
+
+  /** Steps the simulation with a command and records it (nothing once the game is over). */
+  step(cmd: number) {
+    const was = this.sim.state.step;
+    this.sim.step(cmd);
+    if (this.sim.state.step === was) return;
+    if (this.held > 0 && cmd !== this.cmd) this.flush();
+    this.cmd = cmd;
+    this.held++;
+    this.steps++;
+    if (this.sim.state.step % SUM_STEPS === 0) this.sums.push([this.sim.state.step, sumOf(this.sim)]);
+  }
+
+  private put(bytes: ArrayLike<number>) {
+    if (this.len + bytes.length > this.buf.length) {
+      const grown = new Uint8Array(Math.max(this.buf.length * 2, this.len + bytes.length));
+      grown.set(this.buf.subarray(0, this.len));
+      this.buf = grown;
+    }
+    for (let k = 0; k < bytes.length; k++) this.buf[this.len++] = bytes[k];
+  }
+
+  private flush() {
+    this.tmp.length = 0;
+    putVarint(this.tmp, this.cmd >>> 0);
+    putVarint(this.tmp, this.held);
+    this.put(this.tmp);
+    this.held = 0;
+  }
+
+  /** The log so far (the run being held included), ready to store. */
+  toLog(): RunLog {
+    const tail: number[] = [];
+    if (this.held > 0) {
+      putVarint(tail, this.cmd >>> 0);
+      putVarint(tail, this.held);
+    }
+    const bytes = new Uint8Array(this.len + tail.length);
+    bytes.set(this.buf.subarray(0, this.len));
+    bytes.set(tail, this.len);
+    return { ...this.head, steps: this.steps, data: toBase64(bytes), sums: this.sums.map((s) => [s[0], s[1]]) };
+  }
+
+  /** The bytes the commands take so far (tests: how small a day is). */
+  get size(): number {
+    return this.len;
+  }
+}
+
+/** Where a replay got to: the sim at the end (or where it stopped), and the last step whose checksum matched. */
+export interface Replayed {
+  sim: Sim;
+  /** Every checksum matched to the end. */
+  ok: boolean;
+  /** The last checked step that matched (the log's start if none). */
+  verified: number;
+}
+
+/** Plays a log back from its start, checking the hourly sums (stops at the first that doesn't match). */
+export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
+  if (prison.id !== log.prison) return null;
+  const runs = decodeRuns(fromBase64(log.data) ?? new Uint8Array());
+  if (!runs) return null;
+  const sim = new Sim(prison, log.seed < 0 ? 1 : log.seed);
+  if (log.seed < 0) sim.restore(log.start!);
+  if (sim.state.step !== log.from) return null;
+  const sums = new Map(log.sums);
+  let verified = log.from;
+  for (const [cmd, n] of runs)
+    for (let k = 0; k < n; k++) {
+      sim.step(cmd);
+      const want = sums.get(sim.state.step);
+      if (want === undefined) continue;
+      if (want !== sumOf(sim)) return { sim, ok: false, verified };
+      verified = sim.state.step;
+    }
+  return { sim, ok: true, verified };
+}

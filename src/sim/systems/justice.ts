@@ -232,8 +232,10 @@ export function report(sim: SimContext, r: GuardReport) {
   }
   if (r.cell !== 1 || ROUTINE[s.routine].id !== 'lightsOut') return;
   // In the cell, asleep, or a bed dummy under the blanket: all present (GDD §5.3).
-  const ok = sim.playerZone === 'playerCell' || s.sleeping || s.solitary > 0 || s.ko > 0 || dummyInBed(sim);
-  sim.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail' });
+  const there = sim.playerZone === 'playerCell' || s.sleeping || s.solitary > 0 || s.ko > 0;
+  const ok = there || dummyInBed(sim);
+  // (The dummy did it: P16's ledger counts that.)
+  sim.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail', ...(ok && !there ? { dummy: true } : {}) });
   if (!ok && !s.lockdown) {
     sim.events.push({ type: 'spotted', reason: 'bedCheck' });
     addHeat(sim, 100);

@@ -13,7 +13,9 @@ import { Snores, Sparks } from './Particles';
 import { DecorView } from './decor';
 import { Minefield } from './Minefield';
 import { Guide } from './Guide';
-import { itemDef } from '../content/items';
+import { itemDef, itemNumber } from '../content/items';
+import type { Prisoner } from '../content/prisoner';
+import { lookFor } from './prisonerLook';
 import { itemGeometry } from './itemModels';
 import { Pickups, type Focus, type GroundItem } from './Pickups';
 import { updateOcclusion } from './occlusion';
@@ -140,6 +142,15 @@ export interface Quality {
 
 /** From the target, up and to the south: the classic angled top-down view (tech plan §6.1). */
 const CAMERA_OFFSET = new THREE.Vector3(0, 38, 24).normalize().multiplyScalar(60);
+const GUARD_OUTFIT = itemNumber('guard_outfit');
+const INMATE_OUTFIT = itemNumber('inmate_outfit');
+/** The escape camera (P16): how far it turns round the player (radians) and pulls back (a share of the zoom). */
+const CINEMA_TURN = (25 * Math.PI) / 180;
+const CINEMA_PULL = 0.3;
+/** The Intake preview's zoom (P16): close on your prisoner in their cell. */
+const PREVIEW_ZOOM = 4.2;
+/** The Intake's camera: lower than play's, nearly face on (a mugshot, not a map). */
+const PREVIEW_OFFSET = new THREE.Vector3(0, 16, 24).normalize().multiplyScalar(60);
 export const ZOOM_MIN = 0.6;
 export const ZOOM_MAX = 1.9;
 
@@ -219,6 +230,15 @@ export class View {
   private world: World | null = null;
   player = new Character(INMATE_LOOK);
   private outfit = -1;
+  /** Your prisoner (P16): how the player looks (null: the plain jumpsuit). */
+  private prisoner: Prisoner | null = null;
+  /** The Intake's preview (P16): your prisoner standing in their cell behind the title, turned by `previewTurn`. */
+  private model: Character | null = null;
+  previewTurn = 0;
+  private titleZoom = 1;
+  /** The escape camera (P16): time in, length, turn (signed), the zoom it starts from; resolved once played (or skipped). */
+  private cine: { t: number; dur: number; turn: number; zoom0: number; still: boolean; done: (() => void) | null; held: boolean } | null = null;
+  private readonly cineOffset = new THREE.Vector3();
   private readonly pickups = new Pickups();
   private cast: Character[] = [];
   private guardCast: Character[] = [];
@@ -353,6 +373,8 @@ export class View {
 
   setWorld(world: World) {
     this.snores.clear();
+    // The escape camera ends with the game (the title's picture is the classic angle again).
+    this.endCinema();
     if (this.worldView) {
       this.scene.remove(this.worldView.group);
       this.worldView.dispose();
@@ -683,19 +705,78 @@ export class View {
 
   /** Puts the camera on a point at once (a new game starts on the player, not mid-pan). */
   snapTo(x: number, z: number, zoom = this.zoomGoal) {
+    this.endCinema();
     this.target.set(x, 0, z);
     this.ahead.set(0, 0, 0);
     this.zoom = zoom;
     this.applyZoom();
   }
 
-  /** Dresses the player: the jumpsuit takes the outfit's color (a white vest with none on). */
+  /** Your prisoner (P16): the player is dressed again as them at the next frame. */
+  setPrisoner(p: Prisoner | null) {
+    this.prisoner = p;
+    this.outfit = -1;
+  }
+
+  /**
+   * The Intake's preview (P16): your prisoner (null: none) standing in the cell behind the
+   * title, the camera close on them; the zoom the title had comes back after.
+   */
+  setPreview(p: Prisoner | null) {
+    if (this.model) {
+      this.scene.remove(this.model.root);
+      this.model.dispose();
+      this.model = null;
+    } else if (p) this.titleZoom = this.zoomGoal;
+    if (!p) {
+      this.zoomGoal = this.titleZoom;
+      return;
+    }
+    this.model = new Character(lookFor(p, INMATE_LOOK.outfit, false));
+    this.scene.add(this.model.root);
+    this.zoomGoal = PREVIEW_ZOOM;
+  }
+
+  /**
+   * The escape camera (P16): a slow turn of up to 25° round the player and a pull-back, then
+   * a hold; resolves when it's played (or skipped). With reduced motion: a still hold, 0.9 s.
+   */
+  cinema(long: boolean, still = this.reducedMotion): Promise<void> {
+    this.cine?.done?.();
+    return new Promise((resolve) => {
+      this.cine = { t: 0, dur: still ? 0.9 : long ? 3.4 : 2.6, turn: (Math.random() < 0.5 ? -1 : 1) * CINEMA_TURN, zoom0: this.zoom, still, done: resolve, held: false };
+    });
+  }
+
+  /** Cuts the escape camera short (a tap): it resolves now and holds where it got to. */
+  skipCinema() {
+    const c = this.cine;
+    if (!c?.done) return;
+    c.held = true;
+    c.done();
+    c.done = null;
+  }
+
+  /** The escape camera over (a new game, the title): the classic angle, and the zoom it started from. */
+  private endCinema() {
+    const c = this.cine;
+    if (!c) return;
+    c.done?.();
+    this.cine = null;
+    this.zoomGoal = c.zoom0;
+  }
+
+  /** Sets the zoom to ease to (a new game's), within limits. */
+  zoomTo(z: number) {
+    this.zoomGoal = THREE.MathUtils.clamp(z, ZOOM_MIN, ZOOM_MAX);
+  }
+
+  /** Dresses the player: your prisoner in the outfit (a white vest with none on; the guard cap with the guard's uniform). */
   private dress(outfit: number) {
     if (outfit === this.outfit) return;
     this.outfit = outfit;
     const old = this.player;
-    const color = outfit ? itemDef(outfit).color : 0xe8e8e2;
-    this.player = new Character({ ...INMATE_LOOK, outfit: color });
+    this.player = new Character(lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT));
     this.player.root.position.copy(old.root.position);
     this.player.root.rotation.copy(old.root.rotation);
     this.scene.remove(old.root);
@@ -938,11 +1019,21 @@ export class View {
     this.guide.setPath(null);
     this.guide.setTap(null);
     this.guide.update(dt, time, this.target, false);
-    const a = this.reducedMotion ? 1.2 : time * 0.05;
-    this.target.set(MAP_W / 2 + Math.cos(a) * 14, 0, MAP_H / 2 - 4 + Math.sin(a * 1.3) * 10);
+    // The Intake (P16): your prisoner in their cell, the camera close (the walls in front cut away).
+    const model = this.model;
+    if (model && this.world) {
+      const sp = this.world.def.spawn;
+      const sway = this.reducedMotion ? 0 : Math.sin(time * 0.6) * 0.35;
+      model.pose(sp.x + 0.5, sp.z + 0.5, this.previewTurn + sway, false, dt, time, !this.reducedMotion, DOING.NOTHING);
+      this.target.lerp(this.v.set(sp.x + 0.5, 0.75, sp.z + 0.5), Math.min(1, dt * 6));
+      this.feet.set(sp.x + 0.5, 0, sp.z + 0.5);
+    } else {
+      const a = this.reducedMotion ? 1.2 : time * 0.05;
+      this.target.set(MAP_W / 2 + Math.cos(a) * 14, 0, MAP_H / 2 - 4 + Math.sin(a * 1.3) * 10);
+    }
     // Snow falling over an alpine prison behind the title too.
     this.snow.update(dt, time, this.target.x, this.target.z, !this.reducedMotion && this.world?.def.theme === 'alpine', this.openSky);
-    this.render(600, dt, null, time);
+    this.render(600, dt, model ? this.feet : null, time);
   }
 
   private render(minute: number, dt: number, focus: THREE.Vector3 | null, time: number) {
@@ -975,7 +1066,23 @@ export class View {
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
     this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot, this.security?.group.visible ? this.security.arches : 1);
     this.dust.update(dt);
-    this.camera.position.copy(this.target).add(CAMERA_OFFSET);
+    const c = this.cine;
+    this.cineOffset.copy(this.model ? PREVIEW_OFFSET : CAMERA_OFFSET);
+    if (c) {
+      // Skipped: it holds where it got to.
+      if (!c.held) c.t = Math.min(c.dur, c.t + dt);
+      const e = c.still ? 0 : THREE.MathUtils.smootherstep(c.t / c.dur, 0, 1);
+      this.cineOffset.applyAxisAngle(UP, c.turn * e);
+      if (!c.still) {
+        this.zoom = this.zoomGoal = c.zoom0 * (1 - CINEMA_PULL * e);
+        this.applyZoom();
+      }
+      if (c.t >= c.dur && c.done) {
+        c.done();
+        c.done = null;
+      }
+    }
+    this.camera.position.copy(this.target).add(this.cineOffset);
     this.camera.lookAt(this.target);
     if (this.shake > 0.001) {
       // A short jolt on a strike, eased away (none with the setting off or reduced motion).
