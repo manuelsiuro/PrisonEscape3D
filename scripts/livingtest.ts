@@ -206,3 +206,30 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   bot.act();
   check(bot.st.talk === 0 && bot.st.seat === -1, 'facing someone on a bench: a talk');
 }
+{
+  // Someone eating at the canteen, the player behind the free seat beside them: facing them
+  // (at 45°) is a talk; facing the free seat is still a seat.
+  const bot = new Bot(CENTER_PERKS, 3);
+  check(bot.routineUntil(1, 9 * 60 + 25), 'breakfast for a talk at the table');
+  const w = bot.sim.world;
+  const seats = placesOf(w).seats;
+  // A seat facing south (the table below it), its east neighbour a seat too, the tile behind that free floor.
+  const s = seats.find((q) => q.face === DIR.SOUTH && seats.some((r) => r.tile === q.tile + 1) && !w.blocked((q.tile + 1) % MAP_W, Math.floor(q.tile / MAP_W) - 1))!;
+  const m = bot.st.inmates[0];
+  m.body.x = (s.tile % MAP_W) * UNIT + UNIT / 2;
+  m.body.z = Math.floor(s.tile / MAP_W) * UNIT + UNIT / 2;
+  m.goal = s.tile;
+  m.path = [];
+  m.wait = 1000;
+  const behind = s.tile + 1 - MAP_W;
+  // South-west (between south, 5, and west, 9), standing off the tile's middle to the east as
+  // a stick leaves the player: the tile three quarters ahead is the free seat, not theirs.
+  at(bot, behind, 7);
+  bot.st.player.x += Math.round(UNIT * 0.3);
+  bot.act();
+  check(bot.st.talk === 0 && bot.st.seat === -1, 'facing someone seated at 45°: a talk, not the free seat beside them');
+  bot.close();
+  at(bot, behind, DIR.SOUTH);
+  bot.act();
+  check(bot.st.seat >= 0 && bot.st.talk === -1, 'facing the free seat beside them: a seat');
+}

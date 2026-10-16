@@ -7,6 +7,7 @@ import { TALK_REACH, UNIT } from '../tuning';
 import { containersOf, type ContainerInfo } from '../world/containers';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import type { Body } from './movement';
+import { seatSpot } from './rest';
 import { lineOfSight } from '../ai/sight';
 
 /**
@@ -198,6 +199,35 @@ function canTalkTo(w: World, b: Body, o: Lootable): boolean {
   return d <= TALK_REACH && lineOfSight(w, b.x, b.z, o.body.x, o.body.z);
 }
 
+/** Whether a tile is on a seat, bench, chair or infirmary bed (someone there is sitting or lying on it). */
+function onSeat(w: World, x: number, z: number): boolean {
+  return w.props.some((p) => x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d && (fixtureUse(w, p) === 'sit' || fixtureUse(w, p) === 'rest'));
+}
+
+/**
+ * A seat (or bed) gives way to someone sitting the player could talk to: on the spot the player
+ * would take (sitting there is refused anyway), or in front of the player (within 45°) more
+ * squarely than that spot.
+ */
+function seatGivesWay(w: World, index: number, b: Body, fx: number, fz: number, people: readonly Lootable[], talkers: number, faced: Faced | null): boolean {
+  const spot = seatSpot(w, index, b);
+  for (let who = 0; who < talkers && who < people.length; who++) {
+    const o = people[who];
+    if (Math.floor(o.body.x / UNIT) === spot.x && Math.floor(o.body.z / UNIT) === spot.z && canTalkTo(w, b, o)) return true;
+  }
+  if (!faced) return false;
+  const sx = spot.x * UNIT + UNIT / 2 - b.x;
+  const sz = spot.z * UNIT + UNIT / 2 - b.z;
+  const toSpot = fx * sx + fz * sz;
+  return toSpot <= 0 || faced.ahead * faced.ahead * (sx * sx + sz * sz) >= toSpot * toSpot * faced.d2;
+}
+
+/** The seated person the player looks at most squarely (how far ahead, and their distance squared). */
+interface Faced {
+  ahead: number;
+  d2: number;
+}
+
 export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0): Target {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
@@ -232,6 +262,7 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     }
   });
   // Someone to talk to (inmates up and about, not fighting), a little behind furniture in reach.
+  let faced: Faced | null = null;
   for (let who = 0; who < talkers && who < people.length; who++) {
     const o = people[who];
     if (!canTalkTo(w, b, o)) continue;
@@ -242,6 +273,9 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     const ahead = fx * dx + fz * dz;
     const straight = ahead > 0 && ahead * ahead * 2 >= (dx * dx + dz * dz) * 1024 * 1024;
     const sc = score(d, o.body.x, o.body.z) + UNIT / 4 - (straight ? UNIT : 0);
+    const d2 = dx * dx + dz * dz;
+    // Sitting, and looked at most squarely so far: seats give way to them (below).
+    if (straight && (!faced || ahead * ahead * faced.d2 > faced.ahead * faced.ahead * d2) && onSeat(w, Math.floor(o.body.x / UNIT), Math.floor(o.body.z / UNIT))) faced = { ahead, d2 };
     if (sc < bestScore) {
       bestScore = sc;
       best = { kind: 'person', who };
@@ -264,6 +298,7 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
       const ahead = ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d;
       // Someone on the tile ahead the player could talk to: they're who the player faces, not the seat.
       if (ahead && people.some((o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
+      if (seatGivesWay(w, index, b, fx, fz, people, talkers, faced)) return;
       sc += ahead ? -UNIT / 2 : UNIT / 4;
     }
     if (sc < bestScore) {
