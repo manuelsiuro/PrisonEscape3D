@@ -60,7 +60,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       </div>
       <div class="v-routes"><span class="v-routes-label"></span><span class="v-pips">${pips}</span></div>
       ${v.unlocked ? `<div class="v-unlock" role="status">${icon('map', 22)}<span><b></b><small></small></span></div>` : ''}
-      ${v.campaign ? `<div class="v-unlock" role="status">${icon('star', 22)}<span><b>${t('victory.campaign')}</b><small>${t('victory.campaignSub')}</small></span></div>` : ''}
+      ${v.campaign ? `<div class="v-unlock campaign" role="status">${icon('star', 22)}<span><b>${t('victory.campaign')}</b><small>${t('victory.campaignSub')}</small></span></div>` : ''}
       <div class="actions">
         ${v.unlocked ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}<span class="v-next"></span></button>` : ''}
         <button class="big-btn ${v.unlocked ? 'ghost' : 'primary'}" data-c="again">${icon('replay', 18)}${t('victory.again')}</button>

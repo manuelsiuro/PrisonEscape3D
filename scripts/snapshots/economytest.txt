@@ -37,12 +37,12 @@ san-pancho laundry: day 1 12:36 +$30 (wage)
 san-pancho woodshop: day 1 12:16 +$50 (wage)
 san-pancho metalshop: day 1 12:21 +$65 (wage)
 san-pancho mailman: day 1 12:34 +$55 (wage)
-irongate woodshop: day 1 12:18 +$50 (wage)
-irongate kitchen: day 1 12:27 +$40 (wage)
+irongate woodshop: day 1 12:19 +$50 (wage)
+irongate kitchen: day 1 12:30 +$40 (wage)
 irongate laundry: day 1 12:30 +$30 (wage)
 irongate metalshop: day 1 12:22 +$65 (wage)
-irongate janitor: day 1 12:22 +$35 (wage)
-irongate mailman: day 1 13:07 +$55 (wage)
+irongate janitor: day 1 12:26 +$35 (wage)
+irongate mailman: day 1 13:05 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 5 hired: laundry

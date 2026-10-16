@@ -118,8 +118,8 @@ export class Island {
         if (!land && world.bridge[i] === 0) {
           if (near) foam.push(x, z);
           let d = 99;
-          for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dz)));
-          if (d <= 2) shallow.push(x, z);
+          for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dz)));
+          if (d <= 3) shallow.push(x, z);
         }
       }
     }
@@ -171,13 +171,34 @@ export class Island {
     const rock = new THREE.Mesh(merge(skirt), kitMaterial);
     rock.castShadow = rock.receiveShadow = true;
     this.group.add(rock);
-    // Shallows over the rock shelf (a lighter, greener sea), and the surf.
-    const shallowMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x5fb3b8, transparent: true, opacity: 0.32, depthWrite: false }), Math.max(1, shallow.length / 2));
-    const m = new THREE.Matrix4();
-    for (let k = 0; k < shallow.length / 2; k++) shallowMesh.setMatrixAt(k, m.makeTranslation(shallow[k * 2] + 0.5, SEA_Y + 0.02, shallow[k * 2 + 1] + 0.5));
-    shallowMesh.count = shallow.length / 2;
+    // Shallows over the rock shelf: a lighter, greener sea fading out from the shore (one soft texture, no tile steps).
+    const R = 4;
+    const sc = document.createElement('canvas');
+    sc.width = MAP_W * R;
+    sc.height = MAP_H * R;
+    const sx = sc.getContext('2d')!;
+    for (let k = 0; k < shallow.length / 2; k++) {
+      const x = shallow[k * 2];
+      const z = shallow[k * 2 + 1];
+      let d = 9;
+      for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.hypot(dx, dz));
+      sx.fillStyle = `rgba(95,179,184,${Math.max(0, 0.55 - d * 0.17).toFixed(3)})`;
+      sx.fillRect(x * R, z * R, R, R);
+    }
+    // Blur it into a gradient.
+    const soft = document.createElement('canvas');
+    soft.width = sc.width;
+    soft.height = sc.height;
+    const sf = soft.getContext('2d')!;
+    sf.filter = 'blur(3px)';
+    sf.drawImage(sc, 0, 0);
+    const shallowTex = new THREE.CanvasTexture(soft);
+    shallowTex.colorSpace = THREE.SRGBColorSpace;
+    const shallowMesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W, MAP_H).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shallowTex, transparent: true, depthWrite: false }));
+    shallowMesh.position.set(MAP_W / 2, SEA_Y + 0.02, MAP_H / 2);
     shallowMesh.renderOrder = 1;
     this.group.add(shallowMesh);
+    const m = new THREE.Matrix4();
     this.foamMat = new THREE.MeshBasicMaterial({ map: foamTexture(), transparent: true, opacity: 0.8, depthWrite: false });
     const foamMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.15, 1.15).rotateX(-Math.PI / 2), this.foamMat, Math.max(1, foam.length / 2));
     for (let k = 0; k < foam.length / 2; k++) foamMesh.setMatrixAt(k, m.makeRotationY(hash(k, 4) * 6).setPosition(foam[k * 2] + 0.5, SEA_Y + 0.04, foam[k * 2 + 1] + 0.5));

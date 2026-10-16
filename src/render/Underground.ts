@@ -76,6 +76,19 @@ export class Underground {
       mesh.castShadow = mesh.receiveShadow = true;
       this.group.add(mesh);
     }
+    // The sea overhead (P12): unlit blue over the earth, so a digger sees it coming in the dark, past the lantern's reach.
+    const sea: number[] = [];
+    for (let i = 0; i < MAP_W * MAP_H; i++) if (isSea(g[i])) sea.push(i);
+    if (sea.length) {
+      const water = new THREE.InstancedMesh(
+        new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0x2f7fb0, transparent: true, opacity: 0.55, depthWrite: false }),
+        sea.length,
+      );
+      sea.forEach((i, k) => water.setMatrixAt(k, this.m.makeTranslation((i % MAP_W) + 0.5, EARTH_H + 0.01, Math.floor(i / MAP_W) + 0.5)));
+      water.renderOrder = 1;
+      this.group.add(water);
+    }
     this.earth.receiveShadow = true;
     this.floor.receiveShadow = true;
     // Additive and faint: a glow down the entrance, never a grey pillar over the player.

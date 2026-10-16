@@ -142,7 +142,6 @@
   raft: the dock fence cut 25.7 s after GEN-2 went off
 == irongate: raft
   day 1 23:23 detector: shielded (19 passes left)
-  day 1 23:26 detector: shielded (18 passes left)
   day 1 23:44 power OFF (player)
   day 2 00:11 ESCAPED (raft)
   saved and loaded at day 1 16:05 (showers) resumes, day 1 22:34 (playerCell) resumes, day 1 23:51 (walkway) resumes, day 2 00:06 (walkway) resumes
@@ -157,25 +156,25 @@
   day 1 23:51 ESCAPED (helicopter)
   saved and loaded at day 1 15:55 (yard) resumes, day 1 22:16 (rollCall) resumes, day 1 23:32 (vents) resumes, day 1 23:46 (roof) resumes
   → out day 1 23:51 by helicopter; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 2, cash $0
-  takeover: health 16/150, guards down 10/10, xxxxxxxxxx
+  takeover: health 21/150, guards down 10/10, xxxxxxxxxx
 == irongate: takeover
-  day 1 08:41 detector: shielded (19 passes left)
-  day 1 09:35 spotted: fight
-  day 1 09:35 LOCKDOWN
-  day 1 09:36 knocked out #17
-  day 1 09:37 knocked out #15
-  day 1 09:38 detector: shielded (18 passes left)
-  day 1 09:40 knocked out #18
-  day 1 09:41 knocked out #14
-  day 1 09:41 detector: shielded (17 passes left)
-  day 1 09:42 knocked out #16
-  day 1 09:44 knocked out #13
-  day 1 09:45 knocked out #21
-  day 1 09:46 knocked out #22
-  day 1 09:48 detector: shielded (16 passes left)
-  day 1 09:50 knocked out #20
-  day 1 09:50 TAKEOVER: the gates are open
-  day 1 09:51 knocked out #19
-  day 1 09:59 ESCAPED (takeover)
-  saved and loaded at day 1 08:59 (yard) resumes, day 1 09:47 (rollCall) resumes, day 1 09:56 (walkway) resumes, day 1 09:58 (perimeter) resumes
-  → out day 1 09:59 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 10, cash $0
+  day 1 09:08 spotted: fight
+  day 1 09:08 LOCKDOWN
+  day 1 09:08 knocked out #18
+  day 1 09:08 detector: shielded (19 passes left)
+  day 1 09:10 knocked out #13
+  day 1 09:11 detector: shielded (18 passes left)
+  day 1 09:11 knocked out #15
+  day 1 09:12 detector: shielded (17 passes left)
+  day 1 09:14 knocked out #14
+  day 1 09:15 knocked out #17
+  day 1 09:16 knocked out #16
+  day 1 09:18 knocked out #21
+  day 1 09:19 knocked out #22
+  day 1 09:21 knocked out #20
+  day 1 09:21 TAKEOVER: the gates are open
+  day 1 09:23 detector: shielded (16 passes left)
+  day 1 09:29 knocked out #19
+  day 1 09:33 ESCAPED (takeover)
+  saved and loaded at day 1 08:46 (cellBlock) resumes, day 1 09:23 (canteen) resumes, day 1 09:31 (none) resumes, day 1 09:32 (perimeter) resumes
+  → out day 1 09:33 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 10, cash $0

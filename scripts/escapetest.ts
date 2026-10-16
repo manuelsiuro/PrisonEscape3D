@@ -227,7 +227,8 @@ const PLANS: Plan[] = [
   // dead fence cut, the raft launched off the pier's end. The helicopter: the vents to GEN-1's
   // ladder, a grapnel across the yard onto the south roofs, a sheet rope down into the court,
   // the two riot guards put down with molten chocolate, aboard in uniform. The takeover in the
-  // yard (ten guards, four in riot gear), out by the sally port, the ferry gate and the
+  // cell block's vestibule, a chokepoint (ten guards, four in riot gear: chocolate for the
+  // riot guards, every one put down), out by the sally port, the ferry gate and the
   // lowered drawbridge.
   {
     def: IRONGATE,
@@ -244,7 +245,7 @@ const PLANS: Plan[] = [
     chasm: [36, 21, DIR.SOUTH],
     court: [32, 44, DIR.EAST],
     pad: [36, 45],
-    rally: [34, 24],
+    rally: [30, 18],
     trained: 100,
     strongest: true,
     chocolate: 5,
@@ -478,7 +479,7 @@ function takeover(p: Plan) {
   };
   let fights = 0;
   // On until the gates open with no guard still on its feet close by (one at the player's heels would catch them on the way out); with riot guards about, none still chasing at all.
-  const clear = () => st.takeover && (p.riotCups ? st.guards.every((g) => !awake(g) || g.mode !== GUARD.CHASE) : nearestGuard().d > 6 * UNIT);
+  const clear = () => st.takeover && (p.riotCups ? st.guards.every((g) => !awake(g)) : nearestGuard().d > 6 * UNIT);
   for (let k = 0; k < 8000 && !clear() && st.ko === 0; k++) {
     const { k: g, d } = nearestGuard();
     if (g < 0) {

@@ -225,6 +225,8 @@
 }
 
 .help-row p {
+  /* A topic may set its parts on lines of their own (Irongate's three ways off). */
+  white-space: pre-line;
   margin: 0;
   font-size: 13.5px;
   line-height: 1.45;

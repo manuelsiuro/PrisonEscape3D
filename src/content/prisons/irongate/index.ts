@@ -306,7 +306,7 @@ export const IRONGATE: PrisonDef = {
     ['gym', 26, 27, 33, 32],
     ['showers', 26, 33, 33, 37],
     ['library', 35, 27, 41, 32],
-    ['infirmary', 35, 34, 41, 38],
+    ['infirmary', 35, 33, 41, 38],
     ['laundry', 43, 28, 51, 31],
     ['janitor', 43, 33, 46, 37],
     ['mailroom', 48, 33, 51, 37],
