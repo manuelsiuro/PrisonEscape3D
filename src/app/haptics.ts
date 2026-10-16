@@ -3,13 +3,14 @@
  * iPhones). Patterns are milliseconds: buzz, pause, buzz… Name them after the game's events.
  */
 const PATTERNS = {
-  bell: [10],
-  attended: [8, 60, 8],
-  missed: [40, 50, 40],
-  lockdown: [120, 80, 120, 80, 200],
+  // Pulses under ~25 ms don't spin up many Android motors: nothing is felt. Keep every buzz ≥ 30.
+  bell: [30],
+  attended: [30, 70, 30],
+  missed: [60, 60, 60],
+  lockdown: [180, 90, 180, 90, 300],
   /** A tool strike, and the tile giving way. */
-  strike: [6],
-  giveWay: [25, 40, 25],
+  strike: [30],
+  giveWay: [50, 50, 50],
 } as const;
 
 export type Haptic = keyof typeof PATTERNS;
