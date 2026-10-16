@@ -25,6 +25,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
   ],
   life: [
     ['guards', 'eye', '#1e3a5f'],
+    ['guardWays', 'shield', '#5b6fa8'],
     ['caught', 'siren', '#e5484d'],
     ['searches', 'bell', '#d9930a'],
     ['work', 'coin', '#c99a12'],

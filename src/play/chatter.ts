@@ -1,7 +1,7 @@
 import { currentLang } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { UNIT } from '../sim/tuning';
-import { Director, type Rumor, type Stage } from '../talk/director';
+import { Director, keepRumors, type Rumor, type Stage } from '../talk/director';
 import { factOk } from '../talk/gossip';
 import { BUBBLE_HEIGHT, Bubbles } from '../ui/bubbles';
 import { TOUCH } from '../ui/dom';
@@ -49,6 +49,9 @@ bubbles.onShow = (b) => {
   if (b.style === 'gossip' || (b.guard && b.style === 'shout')) bubbles.announce(b.name ? `${b.name}: ${b.text}` : b.text);
 };
 
+/** A guard's ways show in the talk panel once a rumor told them (P15). */
+talk.knows = (key) => director.rumors.some((r) => r.fact.key === key);
+
 /** The prisoner's file lists the rumors: worked out again only when something may have changed. */
 let notes: ReturnType<Director['notebook']> = [];
 let notesKey = '';
@@ -68,7 +71,7 @@ profile.notebook = () => {
 export function chatterStart(sim: Sim, rumors: readonly Rumor[] = []) {
   director.reset(sim, sim.state.rng >>> 0);
   // Only rumors this version can tell again truly (a save from a newer one, or a damaged one, may hold others).
-  director.rumors = rumors.filter((r) => factOk(r.fact, sim)).slice(0, 12);
+  director.rumors = keepRumors(rumors.filter((r) => factOk(r.fact, sim)));
   talk.greeting = '';
 }
 

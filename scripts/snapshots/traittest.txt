@@ -1,0 +1,13 @@
+center-perks: strict Dunn; lazy Moss; corrupt Pratt; 2 steady
+stalag-flucht: strict Weber; lazy Huber; corrupt Lang; 3 steady
+shankton: strict Ortega; lazy Briggs; corrupt Gibbs; 5 steady
+san-pancho: strict Ríos; lazy Cruz; corrupt Molina, Paz; 4 steady
+irongate: strict Pike; lazy Penrose; corrupt Quill; 7 steady
+training: strict none; lazy none; corrupt none; 1 steady
+roll: 94863da4 5ba3c64d; salt of seed 1 514e28b7
+shakedowns, days 2–7: 3+4+5, 3+5+8, 1+2+5, 6+2+5, 8+3+4, 3+7+1
+first desk searched day 2 08:28, 120 steps
+Moss dozes off at 01:00 in the yard, for 1.59 game hours
+Moss up again at 02:36
+looking around 160 steps: steady 160, lazy 120, strict 239
+Pratt looks away for $50 (2 game hours), loses the paperwork for $40

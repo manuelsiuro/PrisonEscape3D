@@ -48,7 +48,7 @@ for (const b of banks) {
   const min = b.startsWith('catch.') ? 2 : b.startsWith('go.') ? 3 : 6;
   check(e.length >= min, `${b}: at least ${min} lines in English (${e.length})`);
   check(f.length >= Math.max(min, Math.ceil(e.length * 0.6)), `${b}: French has at least 60% of English's lines (${f.length} of ${e.length})`);
-  const guardBank = b.startsWith('gu.') || b.endsWith('.gu') || b === 'sl.gu';
+  const guardBank = b.startsWith('gu.') || b.endsWith('.gu') || b === 'sl.gu' || b === 'sl.doze';
   for (const [lang, lines] of [['en', e], ['fr', f]] as const) {
     for (const l of lines) {
       const d = def(l);

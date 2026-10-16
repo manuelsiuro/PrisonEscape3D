@@ -13,6 +13,7 @@ import { fighter, spawnInmates, type Inmate } from './systems/inmates';
 import { fixtureUse, START_INT, startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
 import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
+import { mix32 } from './rng';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
@@ -105,7 +106,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -153,7 +154,16 @@ export type SimEvent =
   | { type: 'bang'; tile: number }
   | { type: 'ringing'; layer: number; tile: number; left: number }
   | { type: 'cantThrow'; why: TossRefusal }
+  /**
+   * Guard ways (P15): a lazy guard dozing off at its nap stop or waking (guard index); a bribe
+   * taken (look the other way, lose the paperwork: its price) and a look the other way over.
+   */
+  | { type: 'nap'; guard: number; on: boolean }
+  | { type: 'bribe'; guard: number; kind: BribeKind; price: number }
   | ItemEvent;
+
+/** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
+export type BribeKind = 'look' | 'paper' | 'over';
 
 /** What made a noise (P14). */
 export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring';
@@ -164,7 +174,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -190,7 +200,7 @@ export interface SimState {
   /** Asleep in bed (Lights Out): time can run fast, any move wakes the player. */
   sleeping: boolean;
   guards: Guard[];
-  /** A guard saw the player at the end of this step. */
+  /** A guard saw the player at the end of this step (P15: not one bribed to look the other way). */
   seen: boolean;
   /** Steps left knocked out, and where the player wakes (WAKE). */
   ko: number;
@@ -308,6 +318,8 @@ export interface SimState {
   powerOff2: number;
   /** Firecrackers burning (P14): [where (World placeKey), the step it goes off]. */
   fuses: Array<[number, number]>;
+  /** The seed mixed (P15, rng.ts roll()): the newer rules' randomness, never drawn from `rng`. Old saves mix their loaded rng. */
+  salt: number;
 }
 
 export interface Snapshot {
@@ -405,6 +417,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     craters: [],
     powerOff2: 0,
     fuses: [],
+    salt: mix32(seed),
   };
 }
 
@@ -428,7 +441,11 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
       return m.opinion === undefined ? { ...m, opinion: OPINION_START, shift: 0 } : m;
     }) ?? spawnInmates(world, { rng: st.rng });
   s.items = fitItems(world, st.items, st.rng) ?? startItems(world, { rng: st.rng });
-  s.guards = st.guards?.length === world.def.guards.length ? st.guards.map((g) => ({ ...g, resume: g.resume ?? 0, ...(g.hp === undefined ? fighter(GUARD_STR) : {}) })) : fresh.guards;
+  // Guard fields added later (P15's ways) load at the end, in field order.
+  s.guards =
+    st.guards?.length === world.def.guards.length
+      ? st.guards.map((g) => ({ ...g, resume: g.resume ?? 0, ...(g.hp === undefined ? fighter(GUARD_STR) : {}), doze: g.doze ?? 0, napDay: g.napDay ?? 0, stir: g.stir ?? 0, bribed: g.bribed ?? 0, paperDay: g.paperDay ?? 0 }))
+      : fresh.guards;
   s.health = st.health ?? maxHealth(st.str ?? START_STR);
   s.jobs = st.jobs?.length === prison.jobs.length ? st.jobs : fresh.jobs;
   s.jobOpen = st.jobOpen?.length === prison.jobs.length ? st.jobOpen : prison.jobs.map((j) => (j.cell === 0 ? clockAt(st.step).day : 0));

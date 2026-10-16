@@ -1,11 +1,13 @@
-import type { GuardDef, Waypoint } from '../../content/prisons/types';
+import type { GuardDef, GuardTrait, Waypoint } from '../../content/prisons/types';
 import { ROUTINE } from '../../content/routine';
 import { centerX, centerZ, clearLine, nearestDir, tileAt } from '../ai/path';
 import { lineOfSight, SIGHT_RANGE } from '../ai/sight';
 import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { DIRS } from '../command';
-import { GUARD_STR, RIOT_STR, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { rollInt, SALT } from '../rng';
+import { GUARD_STR, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, RIOT_STR, STEPS_PER_SECOND, STIR_RANGE, STIR_STEPS, UNIT } from '../tuning';
+import { clockAt } from './clock';
 import { MAP_W, type World } from '../world/World';
 import type { Fighter } from './combat';
 import { DOING, fighter, STAND_OFF } from './inmates';
@@ -50,6 +52,16 @@ export interface Guard extends Walker, Fighter {
   lastSeen: number;
   /** A bed check or shakedown interrupted by a chase (GUARD mode, 0 for none): taken up again after. */
   resume?: number;
+  /** P15. Steps left dozing at its nap stop (a lazy guard on its night round; blind meanwhile), 0 awake. */
+  doze: number;
+  /** The day it last dozed off (once a night). */
+  napDay: number;
+  /** Steps the player has stood right beside it while it dozes (STIR_STEPS wakes it). */
+  stir: number;
+  /** Bribed to look the other way (a corrupt guard): the step it looks again, 0 none. */
+  bribed: number;
+  /** The day it last lost the player's paperwork (once a day). */
+  paperDay: number;
 }
 
 /** Guards stroll on their rounds and run when chasing (the player walks at 184). */
@@ -93,6 +105,11 @@ export function spawnGuards(w: World): Guard[] {
       lastSeen: -1,
       resume: 0,
       ...fighter(d.riot ? RIOT_STR : GUARD_STR),
+      doze: 0,
+      napDay: 0,
+      stir: 0,
+      bribed: 0,
+      paperDay: 0,
     };
   });
 }
@@ -100,8 +117,27 @@ export function spawnGuards(w: World): Guard[] {
 export const alertOf = (g: Guard) =>
   !awake(g) ? ALERT.NONE : g.mode === GUARD.CHASE ? ALERT.HOSTILE : g.mode === GUARD.INVESTIGATE ? ALERT.SUSPICIOUS : ALERT.CALM;
 
-/** Awake and on its feet (sleeping or knocked-out guards see nothing). */
-export const awake = (g: Guard) => g.doing !== DOING.SLEEP && g.ko <= 0;
+/** Awake and on its feet (sleeping, dozing or knocked-out guards see nothing). */
+export const awake = (g: Guard) => g.doing !== DOING.SLEEP && g.doing !== DOING.DOZE && g.ko <= 0;
+
+/** A guard's ways (P15): its trait, steady unless the prison says otherwise. */
+export const traitOf = (def: GuardDef): GuardTrait => def.trait ?? 'steady';
+
+/** Woken from a doze (by a noise, the player at its elbow, a job to do). Returns whether it was dozing. */
+export function rouse(g: Guard): boolean {
+  const was = g.doze > 0;
+  g.doze = 0;
+  g.stir = 0;
+  if (g.doing === DOING.DOZE) g.doing = DOING.NOTHING;
+  return was;
+}
+
+/**
+ * How fast a guard's look around runs down (P15): a lazy one gives up a quarter sooner
+ * (2 steps' worth one step in three), a strict one keeps at it half as long again (nothing
+ * one step in three). Worked out from the step, so nothing more is stored.
+ */
+const lookDrain = (trait: GuardTrait, step: number) => (trait === 'lazy' ? (step % 3 === 0 ? 2 : 1) : trait === 'strict' ? (step % 3 === 0 ? 0 : 1) : 1);
 
 /** Which guards sleep at night (those without a night round), and the bed each takes. */
 function bedOf(w: World, k: number): number {
@@ -139,8 +175,8 @@ function glance(g: Guard, step: number, wide: number) {
 /** Whether a guard stands at its goal. */
 const there = (g: Guard) => g.goal >= 0 && !g.path.length && tileAt(g.body.x, g.body.z) === g.goal;
 
-/** What a guard reports from a stop on its bed check or shakedown (Sim applies it). */
-export type GuardReport = { kind: 'bedCheck'; cell: number } | { kind: 'search'; cell: number };
+/** What a guard reports from a stop on its bed check or shakedown, and dozing off or waking up (Sim applies it). */
+export type GuardReport = { kind: 'bedCheck'; cell: number } | { kind: 'search'; cell: number } | { kind: 'nap'; guard: number; on: boolean };
 
 /**
  * One step of guard life. Each guard follows its duty for the routine block (a round of
@@ -161,6 +197,10 @@ export function stepGuards(
   report: (r: GuardReport) => void,
   /** The player is on the ground floor (in the tunnels, vents or up on a roof nobody bumps into them). */
   playerHere = true,
+  /** The guard the player is talking to (P15; -1 none): it stands still, facing them. */
+  talkTo = -1,
+  /** state.salt (P15): how long a nap lasts. */
+  salt = 0,
 ) {
   const crowd: Crowd = { w, grid: w.guardBlock, all: guards, others: playerHere ? [player, ...inmates] : inmates, step };
   const chasers: Crowd = { ...crowd, others: inmates };
@@ -175,6 +215,13 @@ export function stepGuards(
     }
     // A lockdown: every guard hunts the player, the sleepers too.
     if (lockdown && g.mode !== GUARD.CHASE) startChase(g);
+    // Talking with the player (P15): it stands still and faces them, its duty on hold.
+    if (k === talkTo && g.mode === GUARD.DUTY && playerHere) {
+      const b = g.body;
+      b.moving = false;
+      if (player.x !== b.x || player.z !== b.z) b.facing = nearestDir(player.x - b.x, player.z - b.z);
+      return;
+    }
     switch (g.mode) {
       case GUARD.CHASE: {
         // Out of sight a moment (a corner, a glance): it keeps on for a second before giving up.
@@ -237,7 +284,8 @@ export function stepGuards(
           // There (or as close as it got): a good look around, then back to duty.
           g.body.moving = false;
           g.body.facing = turn(g.body.facing, step % 12 === 0 ? 2 : 0);
-          if (--g.timer <= 0) backToDuty(g);
+          g.timer -= lookDrain(traitOf(def), step);
+          if (g.timer <= 0) backToDuty(g);
         }
         break;
       case GUARD.BED_CHECK:
@@ -256,7 +304,8 @@ export function stepGuards(
         }
         if (g.goal !== spot) {
           head(crowd, g, spot);
-          g.timer = check ? CHECK_STEPS : SEARCH_STEPS;
+          // A strict guard searches a desk half as long again (P15).
+          g.timer = check ? CHECK_STEPS : traitOf(def) === 'strict' ? (SEARCH_STEPS * 3) / 2 : SEARCH_STEPS;
         }
         if (g.wait > 0) g.wait--;
         else if (g.path.length) walkPath(crowd, g, k);
@@ -280,13 +329,14 @@ export function stepGuards(
         break;
       }
       default:
-        duty(crowd, g, k, def, routine, step, w);
+        duty(crowd, g, k, def, routine, step, w, player, playerHere, report, salt);
     }
   });
 }
 
 /** After the player. A bed check or shakedown under way is kept, to take up afterwards. */
 export function startChase(g: Guard) {
+  rouse(g);
   if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
   g.mode = GUARD.CHASE;
   g.timer = CHASE_GRACE;
@@ -303,6 +353,7 @@ export function startChase(g: Guard) {
  */
 export function sendToLook(g: Guard, tile: number, look = LOOK_AROUND) {
   if (g.mode === GUARD.CHASE) return;
+  rouse(g);
   if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
   g.mode = GUARD.INVESTIGATE;
   g.target = tile;
@@ -338,6 +389,7 @@ export function cancelTasks(g: Guard, mode: number) {
 
 /** Sends a guard on a list of cells: the bed check or the shakedown (after the chase, if it's chasing). */
 export function assign(g: Guard, mode: number, cells: number[]) {
+  rouse(g);
   g.tasks = cells;
   if (g.mode === GUARD.CHASE || g.mode === GUARD.INVESTIGATE) {
     g.resume = mode;
@@ -350,10 +402,18 @@ export function assign(g: Guard, mode: number, cells: number[]) {
   g.doing = DOING.NOTHING;
 }
 
-/** Rounds, posts and bed. */
-function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World) {
+/** Whether a guard's duty changes with this block (a new round, a post, bed): a talk with it ends (P15). */
+export const dutyDue = (def: GuardDef, g: Guard, routine: number) => g.plan !== PLAN_NONE && dutyOf(def, routine) !== g.plan;
+
+/**
+ * Rounds, posts and bed. A lazy guard on its night round dozes off at its nap stop between
+ * 01:00 and 05:00, once a night (P15): blind until the nap is over (05:00 at the latest), a
+ * noise wakes it (noise.ts), or the player stands at its elbow a moment.
+ */
+function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World, player: Body, playerHere: boolean, report: (r: GuardReport) => void, salt: number) {
   const plan = dutyOf(def, routine);
   if (plan !== g.plan) {
+    if (rouse(g)) report({ kind: 'nap', guard: k, on: false });
     g.plan = plan;
     g.path = [];
     g.goal = -1;
@@ -408,6 +468,30 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
   }
   g.body.moving = false;
   if (stop.face) g.face = stop.face;
+  if (g.doze > 0) {
+    const near = playerHere && Math.max(Math.abs(player.x - g.body.x), Math.abs(player.z - g.body.z)) <= STIR_RANGE;
+    g.stir = near ? g.stir + 1 : 0;
+    const late = clockAt(step).minuteOfDay >= NAP_TO;
+    if (--g.doze <= 0 || late || g.stir >= STIR_STEPS) {
+      // Someone right there: it comes to with a start, facing them.
+      if (g.stir >= STIR_STEPS && (player.x !== g.body.x || player.z !== g.body.z)) g.body.facing = nearestDir(player.x - g.body.x, player.z - g.body.z);
+      rouse(g);
+      report({ kind: 'nap', guard: k, on: false });
+    }
+    return;
+  }
+  if (stop.nap && plan === PLAN_NIGHT && traitOf(def) === 'lazy') {
+    const clock = clockAt(step);
+    if (clock.minuteOfDay >= NAP_FROM && clock.minuteOfDay < NAP_TO && g.napDay !== clock.day) {
+      g.napDay = clock.day;
+      g.doze = NAP_MIN + rollInt(salt, SALT.NAP, k, clock.day, NAP_MAX - NAP_MIN + 1);
+      g.stir = 0;
+      g.doing = DOING.DOZE;
+      g.body.facing = g.face;
+      report({ kind: 'nap', guard: k, on: true });
+      return;
+    }
+  }
   glance(g, step + k * 7, 3);
   if (--g.timer <= 0) {
     g.leg = (g.leg + 1) % round.length;

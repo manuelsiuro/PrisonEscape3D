@@ -724,6 +724,13 @@ export class Character {
       armRx += (-1.25 - this.pumped * 0.25) * a;
       armLz -= 0.25 * a;
       armRz += 0.25 * a;
+    } else if (doing === DOING.DOZE) {
+      // Dozing on its feet (P15): arms folded, a slow sway (the chin drops, below).
+      armLx += -0.95 * a;
+      armRx += -0.95 * a;
+      armLz += 0.55 * a;
+      armRz -= 0.55 * a;
+      bob += Math.sin(t * 0.9) * 0.012 * a;
     } else if (doing === DOING.SHOWER) {
       // Scrubbing the hair.
       armLx += (-2.7 + Math.sin(t * 9) * 0.15) * a;
@@ -812,7 +819,7 @@ export class Character {
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
-    this.head.rotation.x = this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : 0;
+    this.head.rotation.x = this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : doing === DOING.DOZE ? 0.55 * this.act : 0;
     return stepped;
   }
 

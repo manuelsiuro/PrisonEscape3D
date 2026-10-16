@@ -8,6 +8,8 @@
  * - the rules' numbers by running the rules: the generator switched off until the power comes
  *   back, a tunnel dug past the bracing limit, guards knocked out until the takeover, a bed
  *   check of an empty cell with and without a bed dummy;
+ * - each guard's ways (P15) by offering it a bribe; a lazy guard's naps against the naps
+ *   that happened (where, from when); the next shakedown's cells against the shakedown;
  * and every phrasing of every fact, in English and French, says the fact's own numbers.
  * Zero false facts; the snapshot holds how many of each kind were checked.
  */
@@ -24,11 +26,14 @@ import { itemOf, slot } from '../src/sim/systems/items';
 import { report } from '../src/sim/systems/justice';
 import { generatorsOf, switchPower, takeoverCheck } from '../src/sim/systems/power';
 import { cavesIn } from '../src/sim/systems/structure';
-import { CAMERA_BLIND_STEPS, KO_STEPS, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TOILET_LOADS, UNIT } from '../src/sim/tuning';
+import { traitOf } from '../src/sim/systems/guards';
+import { bribe, lookAwayPrice } from '../src/sim/systems/ways';
+import { BRIBE } from '../src/sim/command';
+import { BRIBE_REPORT_HEAT, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, NAP_TO, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TOILET_LOADS, UNIT } from '../src/sim/tuning';
 import { isGrate, isSea, TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { fill, type FillContext } from '../src/talk/fill';
-import { facts, GOSSIP, type Fact } from '../src/talk/gossip';
+import { facts, GOSSIP, napStop, type Fact } from '../src/talk/gossip';
 import { Bot, n } from './bots';
 import { check } from './assert';
 
@@ -54,6 +59,15 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       return s.heat >= 50;
     case 'keyColor':
       return sim.prison.guards[f.guard!].key === f.color && !!sim.prison.guards[f.guard!].name;
+    case 'steady':
+    case 'strict':
+    case 'corrupt':
+      return traitOf(sim.prison.guards[f.guard!]) === f.kind;
+    case 'lazy': {
+      const g = sim.prison.guards[f.guard!];
+      const at = napStop(g);
+      return traitOf(g) === 'lazy' && !!at && sim.world.zoneAt(at.x, at.z) === f.place && f.t1 === NAP_FROM;
+    }
     default:
       return true;
   }
@@ -152,6 +166,25 @@ function rules(prison: typeof TRAINING, list: Fact[]): string[] {
     check(results[0] === 'pass' && results[1] === 'fail', `${prison.id}: away from the cell, a dummy passes the bed check (${results.join(', ')})`);
     out.push(`dummy ${results.join('/')}`);
   }
+  // A guard's ways (P15): a bribe offered to each, as the fact says it goes.
+  let bribes = 0;
+  for (const f of list) {
+    if (f.kind !== 'steady' && f.kind !== 'strict' && f.kind !== 'corrupt' && f.kind !== 'lazy') continue;
+    const bot = new Bot(prison, 1);
+    const s = bot.sim.state;
+    s.cash = 500;
+    bribe(bot.sim, f.guard!, BRIBE.LOOK);
+    const g = s.guards[f.guard!];
+    const ok =
+      f.kind === 'corrupt'
+        ? g.bribed > s.step && s.cash === 500 - lookAwayPrice(prison.difficulty)
+        : f.kind === 'strict'
+          ? s.heat === BRIBE_REPORT_HEAT && s.cash === 500 && !g.bribed
+          : s.heat === 0 && s.cash === 500 && !g.bribed;
+    check(ok, `${prison.id}: ${prison.guards[f.guard!].name} takes a bribe as told (${f.kind})`);
+    bribes++;
+  }
+  if (bribes) out.push(`${bribes} bribe${bribes > 1 ? "s" : ""} as told`);
   // The rest: the numbers are the rules' own constants, the places and things are there.
   const bot = new Bot(prison, 1);
   const w = bot.sim.world;
@@ -201,17 +234,49 @@ for (const prison of [...PRISONS, TRAINING]) {
   let wrong = 0;
   let badWords = 0;
   const lasting = facts(new Bot(prison, 1).sim);
+  let naps = 0;
+  let shakedowns = 0;
   for (const seed of [1, 2, 3, 4]) {
     const bot = new Bot(prison, seed);
     const sim = bot.sim;
     const checks: number[] = [];
     const end = 3 * DAY;
     const worded = new Set<string>();
+    /** The cells the next shakedown was said to name, by its day. */
+    const promised = new Map<number, Set<number>>();
     bot.keepRoutine(() => {
-      for (const e of sim.events) if (e.type === 'bedCheck' && e.result === 'start') checks.push(sim.clock.minuteOfDay);
+      for (const e of sim.events) {
+        if (e.type === 'bedCheck' && e.result === 'start') checks.push(sim.clock.minuteOfDay);
+        // A nap (P15): only a lazy guard, at its nap stop as told, between the hours told.
+        if (e.type === 'nap' && e.on) {
+          const g = sim.state.guards[e.guard];
+          const fact = lasting.find((f) => f.kind === 'lazy' && f.guard === e.guard);
+          const zone = sim.world.zoneAt(Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT));
+          const m = sim.clock.minuteOfDay;
+          if (!fact || zone !== fact.place || m < NAP_FROM || m >= NAP_TO) {
+            wrong++;
+            console.error(`FALSE NAP: ${prison.id} seed ${seed} guard ${e.guard} at ${hhmm(m)} in ${zone}`);
+          }
+          naps++;
+        }
+        // The shakedown names exactly the cells gossip said it would.
+        if (e.type === 'shakedown') {
+          const said = promised.get(sim.clock.day);
+          if (said && [...said].sort().join() !== [...e.cells].sort().join()) {
+            wrong++;
+            console.error(`FALSE SHAKEDOWN: ${prison.id} seed ${seed} day ${sim.clock.day}: said ${[...said]}, searched ${e.cells}`);
+          }
+          if (said) shakedowns++;
+        }
+      }
       if (sim.state.step % 300 === 0) {
         for (const f of facts(sim)) {
           counted.set(f.kind, (counted.get(f.kind) ?? 0) + 1);
+          if (f.kind === 'shakedown' || f.kind === 'shakedownYou') {
+            const set = promised.get(f.n!) ?? new Set<number>();
+            set.add(f.kind === 'shakedownYou' ? 1 : sim.state.inmates[f.inmate!].cell);
+            promised.set(f.n!, set);
+          }
           if (!holdsNow(sim, f)) {
             wrong++;
             if (wrong < 4) console.error(`FALSE: ${prison.id} seed ${seed} day ${sim.clock.day} ${hhmm(sim.clock.minuteOfDay)} ${JSON.stringify(f)}`);
@@ -237,5 +302,7 @@ for (const prison of [...PRISONS, TRAINING]) {
   for (const [k, v] of counted) kinds.set(k, (kinds.get(k) ?? 0) + v);
   console.log(`${prison.id}: ${lasting.length} lasting facts (${[...new Set(lasting.map((f) => f.kind))].join(', ')}); ${ran.join('; ') || 'no rules to run'}`);
   console.log(`  checked: ${[...counted].sort().map(([k, v]) => `${k} ${v}`).join(', ')}`);
+  console.log(`  naps as told: ${naps}; shakedowns as told: ${shakedowns}`);
+  if (lasting.some((f) => f.kind === 'lazy')) check(naps > 0, `${prison.id}: the lazy guard naps as told`);
 }
 check(GOSSIP.every((k) => kinds.has(k) || ['heat'].includes(k)), `every kind of gossip came up somewhere (${GOSSIP.filter((k) => !kinds.has(k)).join(', ') || 'all'})`);

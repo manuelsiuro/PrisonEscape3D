@@ -1,12 +1,14 @@
 import { itemDef, itemNumber } from '../content/items';
 import { JOBS, type JobId } from '../content/jobs';
 import { ROUTINE } from '../content/routine';
-import { OP, TALK } from '../sim/command';
+import { BRIBE, OP, TALK } from '../sim/command';
+import { traitOf } from '../sim/systems/guards';
+import { lookAwayPrice, lookingAway, paperPrice } from '../sim/systems/ways';
 import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_KINDS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, priceOf, qualifies } from '../sim/systems/economy';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
 import { nextTip } from '../sim/systems/recipes';
-import { MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TIP_OPINION } from '../sim/tuning';
+import { LOOK_AWAY_STEPS, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, PAPER_HEAT, STEPS_PER_MINUTE, TIP_OPINION } from '../sim/tuning';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, t, type Key } from '../i18n';
 import { h, setText, TOUCH } from './dom';
@@ -61,6 +63,8 @@ export class TalkPanel {
   private opinion = -1;
   /** What the inmate says on seeing the player (P13: chosen once a talk, by the speech bubbles' director). */
   greeting = '';
+  /** Whether the player has heard a rumor (its fact key): a guard's ways show once gossip told them (P15). */
+  knows: (key: string) => boolean = () => false;
 
   constructor(private readonly send: Send, private readonly click: () => void) {
     this.el = h('div', 'item-panel talk-panel hidden');
@@ -92,6 +96,10 @@ export class TalkPanel {
     const who = s.talk;
     if (who < 0 || busy) {
       if (this.open) this.hide();
+      return;
+    }
+    if (who >= s.inmates.length) {
+      this.updateGuard(sim, who);
       return;
     }
     const m = s.inmates[who];
@@ -183,6 +191,61 @@ export class TalkPanel {
       this.el.setAttribute('aria-label', inmateName(sim, who));
     }
   }
+
+  /**
+   * Talking to a guard (P15): who it is, its key, its ways once a rumor told them, what it says,
+   * and the two bribes. Any guard can be offered one (only a corrupt one takes it, a strict one
+   * reports it: that's the gamble), each asking twice before the money changes hands.
+   */
+  private updateGuard(sim: Sim, who: number) {
+    const s = sim.state;
+    const k = who - s.inmates.length;
+    const g = s.guards[k];
+    const def = sim.prison.guards[k];
+    const trait = this.knows(`trait:${k}`) ? traitOf(def) : null;
+    const look = lookAwayPrice(sim.prison.difficulty);
+    const paper = paperPrice(sim.prison.difficulty);
+    const left = lookingAway(g, s.step) ? Math.ceil((g.bribed - s.step) / STEPS_PER_MINUTE) : 0;
+    const paperDone = g.paperDay === sim.today;
+    // The look away's countdown is written in place (a redraw every game minute would disarm a button asking twice).
+    const clock = left ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '';
+    const key = ['g', who, s.cash, s.heat > 0, left > 0, paperDone, trait, currentLang(), this.greeting].join('|');
+    if (key === this.drawn) {
+      const time = this.el.querySelector('.bribe-left');
+      if (time) setText(time as HTMLElement, t('bribe.lookingAway', { time: clock }));
+      return;
+    }
+    this.drawn = key;
+    const first = this.who !== who;
+    this.who = who;
+    const name = guardTitle(sim, k);
+    const keyName = t(`keyColor.${def.key}` as Key);
+    const chip = trait ? `<span class="chip trait" data-trait="${trait}">${icon(TRAIT_ICON[trait], 13)}${t(`trait.${trait}` as Key)}</span>` : `<span class="chip trait unknown">${icon('ear', 13)}${t('trait.unknown')}</span>`;
+    const pay = (kind: number, price: number) =>
+      `<button class="big-btn primary small" data-act="${TALK.BRIBE}" data-arg="${kind}" data-confirm="${esc(t('bribe.confirm', { n: price }))}" ${s.cash < price ? 'disabled' : ''}>${icon('coin', 16)}<span>$${price}</span></button>`;
+    const hours = LOOK_AWAY_STEPS / STEPS_PER_MINUTE / 60;
+    const lookEnd = left ? `<span class="talk-status bribe-on">${icon('eyeOff', 14)}<span class="bribe-left">${t('bribe.lookingAway', { time: clock })}</span></span>` : pay(BRIBE.LOOK, look);
+    const paperEnd = paperDone ? `<span class="talk-status">${t('bribe.paperDone')}</span>` : s.heat > 0 ? pay(BRIBE.PAPER, paper) : `<span class="talk-status">${t('bribe.noHeat')}</span>`;
+    this.el.innerHTML = `<div class="panel-head"><span class="talk-face guard" data-key="${def.key}">${icon('shield', 20)}</span><span class="talk-who"><b>${esc(name)}</b><small>${esc(t('talk.guardKey', { key: keyName }))}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
+      ${this.greeting ? `<p class="talk-greet guard">${esc(this.greeting)}</p>` : ''}<div class="talk-chips">${chip}</div>
+      <section class="talk-bribe"><div class="box-label">${icon('coin', 14)}<span>${t('bribe.title')}</span><em>${t('bribe.note')}</em></div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('bribe.look')}</b><small>${t('bribe.lookNote', { n: hours })}</small></span>${lookEnd}</div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('bribe.paper')}</b><small>${t('bribe.paperNote', { n: PAPER_HEAT })}</small></span>${paperEnd}</div>
+        <p class="talk-note bribe-risk">${icon('eye', 13)}<span>${t('bribe.risk')}</span></p></section>`;
+    if (first) {
+      this.el.classList.remove('hidden');
+      this.el.setAttribute('aria-label', name);
+    }
+  }
+}
+
+/** The icon of each of a guard's ways. */
+const TRAIT_ICON: Record<string, string> = { steady: 'check', lazy: 'moon', strict: 'shield', corrupt: 'coin' };
+
+/** A guard as the player addresses it: "Officer Pratt" (or "a guard" for one without a name). */
+export function guardTitle(sim: Sim, k: number): string {
+  const d = sim.prison.guards[k];
+  return d?.name ? t('guard.title', { name: d.name }) : t('guard.nameless');
 }
 
 /**

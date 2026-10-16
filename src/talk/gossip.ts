@@ -5,8 +5,11 @@ import type { Sim } from '../sim/Sim';
 import { FAVOR_STATE, HOLDER, jobRooms } from '../sim/systems/economy';
 import { itemOf } from '../sim/systems/items';
 import { generatorsOf } from '../sim/systems/power';
+import { traitOf } from '../sim/systems/guards';
+import { shakedownCells } from '../sim/systems/justice';
+import type { GuardDef } from '../content/prisons/types';
 import { grateAt, underSea } from '../sim/systems/structure';
-import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN } from '../sim/tuning';
+import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN } from '../sim/tuning';
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
@@ -19,11 +22,11 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime']);
+export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt']);
 
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
@@ -73,6 +76,15 @@ function lastingFacts(sim: Sim): Fact[] {
     add(n === def.guards.length ? { kind: 'takeoverAll', n } : { kind: 'takeover', n, m: def.guards.length });
   }
   def.guards.forEach((g, k) => g.name && add({ kind: 'keyColor', key: `keyColor:${k}`, guard: k, color: g.key }));
+  // Each guard's ways (P15); a lazy one's, with where and from when it naps.
+  def.guards.forEach((g, k) => {
+    if (!g.name) return;
+    const trait = traitOf(g);
+    if (trait !== 'lazy') return add({ kind: trait, key: `trait:${k}`, guard: k });
+    const at = napStop(g);
+    const place = at && sim.world.zoneAt(at.x, at.z);
+    if (place && place !== 'none') add({ kind: 'lazy', key: `trait:${k}`, guard: k, place, t1: NAP_FROM });
+  });
   // Rooms with a ceiling grate into the vents.
   const w = sim.world;
   const grated = new Set<ZoneId>();
@@ -115,6 +127,16 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
     if (k !== speaker && m.opinion <= OPINION_LOW) out.push({ kind: 'grudge', key: `grudge:${k}`, inmate: k });
   });
   if (s.heat >= 50) out.push({ kind: 'heat', key: 'heat' });
+  // The next 08:00 shakedown's cells (P15: drawn ahead with roll(), so known): whose, and the player's.
+  const clock = sim.clock;
+  const day = clock.minuteOfDay >= ROUTINE[0].start ? clock.day + 1 : clock.day;
+  for (const cell of shakedownCells(sim.world, s.salt, day)) {
+    if (cell === 1) out.push({ kind: 'shakedownYou', key: `shakedown:${day}:1`, n: day });
+    else {
+      const who = s.inmates.findIndex((m) => m.cell === cell);
+      if (who >= 0 && who !== speaker) out.push({ kind: 'shakedown', key: `shakedown:${day}:${cell}`, inmate: who, n: day });
+    }
+  }
   return out;
 }
 
@@ -145,7 +167,16 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   favor: ['inmate'],
   grudge: ['inmate'],
   heat: [],
+  steady: ['guard'],
+  lazy: ['guard', 'place', 't1'],
+  strict: ['guard'],
+  corrupt: ['guard'],
+  shakedown: ['inmate', 'n'],
+  shakedownYou: ['n'],
 };
+
+/** Where a lazy guard naps (its night round's nap stop), if it has one. */
+export const napStop = (g: GuardDef) => g.night?.find((p) => p.nap) ?? null;
 
 /** Whether a fact (from a save) is whole and about people of this prison: a kind this version knows, every field it needs. */
 export function factOk(f: Partial<Fact> | undefined, sim: Sim): f is Fact {

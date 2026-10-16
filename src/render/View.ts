@@ -108,6 +108,8 @@ export interface GuardFrame {
   held: number;
   /** Its key still on its belt. */
   hasKey: boolean;
+  /** Bribed to look the other way (P15): its cone in the looking-away tint. */
+  away?: boolean;
 }
 
 export interface InmateFrame {
@@ -798,7 +800,7 @@ export class View {
     if (f.layer === LAYER.GROUND) {
       if (f.sleeping) this.head(this.player);
       for (let k = 0; k < f.inmates.length; k++) if (f.inmates[k].doing === DOING.SLEEP && this.cast[k]) this.head(this.cast[k]);
-      for (let k = 0; k < f.guards.length; k++) if (f.guards[k].doing === DOING.SLEEP && this.guardCast[k]) this.head(this.guardCast[k]);
+      for (let k = 0; k < f.guards.length; k++) if ((f.guards[k].doing === DOING.SLEEP || f.guards[k].doing === DOING.DOZE) && this.guardCast[k]) this.head(this.guardCast[k]);
     }
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).

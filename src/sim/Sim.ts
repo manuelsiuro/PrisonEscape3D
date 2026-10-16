@@ -9,7 +9,7 @@ import { chill } from './systems/weather';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
-import { stepGuards, type GuardReport } from './systems/guards';
+import { dutyDue, stepGuards, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
 import { mines } from './systems/mines';
 import { noisemakers } from './systems/noise';
@@ -20,7 +20,8 @@ import { bedCheck, dummyInBed, outOfReach, release, report, wakeUp } from './sys
 import { tileOfBody, walk, type Body } from './systems/movement';
 import { devices, powered, scan, takeoverCheck } from './systems/power';
 import { attendance, nextBlock } from './systems/routine';
-import { grudges, keepTalk, offerFavors, socialNow } from './systems/social';
+import { endTalk, grudges, guardTalking, keepTalk, offerFavors, socialNow } from './systems/social';
+import { bribesWearOff } from './systems/ways';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
 import { watch } from './systems/watch';
@@ -39,7 +40,7 @@ export * from './state';
  * day, the Work Period) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, seats → energy and health → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the key alarm →
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → bribes wearing off → the key alarm →
  * a lockdown called off → attendance → heat decay → doors.
  */
 export class Sim {
@@ -125,6 +126,7 @@ export class Sim {
     if (s.solitary > 0 && --s.solitary === 0) release(this);
     // Who sees the player now, and what they make of it; a key alarm held back goes up now if it can.
     watch(this);
+    bribesWearOff(this);
     raiseKeyAlarm(this);
     outOfReach(this);
     attendance(this);
@@ -153,7 +155,10 @@ export class Sim {
     for (const m of s.inmates) inmateBodies.push(m.body);
     stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, forInmates, s.step, about && !this.away ? s.player : null, socialNow(this));
     clockIn(this);
-    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about);
+    // A guard talking with the player has somewhere else to be at a new block (P15): the talk ends.
+    const k = guardTalking(s);
+    if (k >= 0 && dutyDue(w.def.guards[k], s.guards[k], s.routine)) endTalk(this);
+    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about, guardTalking(s), s.salt);
   }
 
   /** The player's turn: out cold, or awake to walk and act. Returns true once they're out on the road (the step ends there). */

@@ -44,8 +44,11 @@ export const EXT = {
   THROW: 1,
 } as const;
 
-/** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given). Never renumber. */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8 } as const;
+/** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a bribe: BRIBE). Never renumber. */
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9 } as const;
+
+/** What a bribe to a guard buys (P15, TALK.BRIBE's b): looking the other way, the paperwork lost. Never renumber. */
+export const BRIBE = { LOOK: 1, PAPER: 2 } as const;
 
 /** Slot addresses for OP.MOVE / DROP / EQUIP: 0–5 the hotbar, then the weapon, the outfit, then the open container's slots. */
 export const SLOT = { HOTBAR: 0, WEAPON: 6, OUTFIT: 7, CONTAINER: 8 } as const;

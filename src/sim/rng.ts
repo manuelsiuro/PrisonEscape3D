@@ -22,3 +22,26 @@ export function fnv1a(text: string): string {
   }
   return (h >>> 0).toString(16).padStart(8, '0');
 }
+
+/**
+ * A 32-bit mix (murmur3's fmix32): the same bits on every device. `state.salt` is the seed
+ * mixed once; roll() hashes it with what a draw is for, so new rules get their randomness
+ * without drawing from `state.rng` (the old draws, and the escape bots' runs, stay as they were).
+ */
+export function mix32(h: number): number {
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+/** What a roll() is for (its own stream). Never renumber: saves replay them. */
+export const SALT = { SHAKEDOWN: 1, NAP: 2 } as const;
+
+/** A number in [0, 2³²) for a draw of a kind (SALT) and its arguments: pure, never the same stream as another kind. */
+export const roll = (salt: number, kind: number, a: number, b = 0) => mix32(mix32(mix32(salt ^ Math.imul(kind, 0x9e3779b9)) ^ a) ^ Math.imul(b + 1, 0x27d4eb2f));
+
+/** An integer in [0, n) from roll(). */
+export const rollInt = (salt: number, kind: number, a: number, b: number, n: number) => Math.floor((roll(salt, kind, a, b) / 4294967296) * n);

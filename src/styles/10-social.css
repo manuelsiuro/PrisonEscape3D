@@ -136,6 +136,120 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
+.talk-face.guard {
+  color: #dfe8f5;
+  background: linear-gradient(160deg, #3a5578, #1d2f49);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 2px var(--key, #6f93b8);
+}
+
+/* The guard's key color, as its belt tag shows it. */
+.talk-face.guard[data-key='yellow'] {
+  --key: #f2c94c;
+}
+.talk-face.guard[data-key='cyan'] {
+  --key: #39c6d6;
+}
+.talk-face.guard[data-key='purple'] {
+  --key: #a274e0;
+}
+.talk-face.guard[data-key='red'] {
+  --key: #e5484d;
+}
+.talk-face.guard[data-key='green'] {
+  --key: #4cc27a;
+}
+
+/* A guard's ways (P15): known from gossip, or not yet. */
+.chip.trait[data-trait='steady'] .ic {
+  color: #9fc4e8;
+}
+.chip.trait[data-trait='lazy'] .ic {
+  color: #b9a6ff;
+}
+.chip.trait[data-trait='strict'] .ic {
+  color: #ff8a7a;
+}
+.chip.trait[data-trait='corrupt'] .ic {
+  color: var(--gold);
+}
+.chip.trait.unknown {
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.chip.trait.unknown .ic {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Bribes: what each buys, its price, and the gamble. */
+.talk-bribe {
+  padding: 10px 12px 8px;
+  border-radius: 14px;
+  background: rgba(255, 194, 61, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 61, 0.2);
+}
+
+.bribe-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.bribe-row + .bribe-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bribe-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bribe-text b {
+  font: 700 14.5px/1.25 var(--font-ui);
+  color: #f4ead2;
+}
+
+.bribe-text small {
+  font: 500 12px/1.35 var(--font-ui);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.bribe-row .big-btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+.bribe-row .talk-status {
+  flex: none;
+  white-space: nowrap;
+}
+
+.talk-status.bribe-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #8fe0b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.talk-note.bribe-risk {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.talk-note.bribe-risk .ic {
+  flex: none;
+  margin-top: 2px;
+  color: #ff8a7a;
+}
+
 .talk-who {
   display: flex;
   flex-direction: column;

@@ -45,7 +45,7 @@ irongate janitor: day 1 12:23 +$35 (wage)
 irongate mailman: day 1 12:50 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
-  day 3 08:00 inmate 5 hired: laundry
+  day 3 08:00 inmate 2 hired: laundry
 sabotage: the kitchen hand fired at 15:00, the player hired for day 2
 training: 3 sets of weights → STR 46, energy 100 → 65
 speed: 3.59 tiles a second at SPD 40, 4.30 at 100

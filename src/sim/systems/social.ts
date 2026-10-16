@@ -22,6 +22,7 @@ import { seatSpot } from './rest';
 import { clockAt } from './clock';
 import { revealTip, tippedToday } from './recipes';
 import { stopTraining } from './training';
+import { bribe, canChat } from './ways';
 
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
 export function refuse(sim: SimContext, why: Refusal) {
@@ -50,13 +51,16 @@ export function approach(sim: SimContext, who: number) {
   }
 }
 
-/** Whether the player can go on talking to an inmate: up, calm, close, nothing between. */
+/** Whether the player can go on talking to someone (Cast id): an inmate up and calm, a guard who'd talk (P15); close, nothing between. */
 function talkable(sim: SimContext, who: number): boolean {
   const s = sim.state;
-  const m = s.inmates[who];
-  if (!m || m.ko > 0 || m.angry > 0 || sim.away || s.layer !== LAYER.GROUND) return false;
+  const n = s.inmates.length;
+  const m = who < n ? s.inmates[who] : null;
+  if (who >= n ? !canChat(sim, who - n) : !m || m.ko > 0 || m.angry > 0) return false;
+  if (sim.away || s.layer !== LAYER.GROUND) return false;
   const p = s.player;
-  return Math.max(Math.abs(m.body.x - p.x), Math.abs(m.body.z - p.z)) <= TALK_REACH + UNIT / 4 && lineOfSight(sim.world, p.x, p.z, m.body.x, m.body.z);
+  const b = m ? m.body : s.guards[who - n].body;
+  return Math.max(Math.abs(b.x - p.x), Math.abs(b.z - p.z)) <= TALK_REACH + UNIT / 4 && lineOfSight(sim.world, p.x, p.z, b.x, b.z);
 }
 
 export function keepTalk(sim: SimContext) {
@@ -69,6 +73,9 @@ export function endTalk(sim: SimContext) {
   s.talk = -1;
   sim.events.push({ type: 'talk', who: -1 });
 }
+
+/** Talking to a guard (P15): the guard's index, -1 when it's an inmate or nobody. */
+export const guardTalking = (s: { talk: number; inmates: readonly unknown[] }) => (s.talk >= s.inmates.length ? s.talk - s.inmates.length : -1);
 
 /** Opinion of the player goes up or down (0–100). */
 export function changeOpinion(sim: SimContext, who: number, by: number) {
@@ -85,6 +92,11 @@ export function talkOp(sim: SimContext, a: number, b: number) {
   const it = s.items;
   const who = s.talk;
   if (who < 0 || !talkable(sim, who)) return;
+  // A guard (P15): a bribe is all there is to ask.
+  if (who >= s.inmates.length) {
+    if (a === TALK.BRIBE) bribe(sim, who - s.inmates.length, b);
+    return;
+  }
   const m = s.inmates[who];
   const free = it.inv.slice(0, HOTBAR).indexOf(0);
   it.rev++;

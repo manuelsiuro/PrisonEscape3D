@@ -9,11 +9,12 @@ import { findPath, nearestDir } from '../ai/path';
 import { placesOf } from '../ai/places';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
-import { randomInt } from '../rng';
+import { randomInt, rollInt, SALT } from '../rng';
 import { WAKE } from '../state';
-import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SOLITARY_HEAT, SOLITARY_STEPS, UNIT } from '../tuning';
+import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SHAKEDOWN_CELLS, SOLITARY_HEAT, SOLITARY_STEPS, STRICT_CELLS, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
-import { LAYER, MAP_H, MAP_W } from '../world/World';
+import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
+import { clockAt } from './clock';
 import { closeBox } from './actions';
 import { maxHealth } from './combat';
 import { assign, backToDuty, type Guard, GUARD, type GuardReport } from './guards';
@@ -160,16 +161,36 @@ function place(sim: SimContext, tile: number) {
   p.facing = 5;
 }
 
-/** 08:00: two cells, drawn at random, for the shakedown guard to search (GDD §2.1). */
+/** The guard who does the morning shakedown (-1: none). */
+const shakedownGuard = (w: World) => w.def.guards.findIndex((g) => g.duties?.includes('shakedown'));
+
+/**
+ * The cells a day's 08:00 shakedown names (GDD §2.1): two (a strict guard's, three), drawn
+ * with roll() (P15), so they are known ahead: what inmates whisper about the next one is true.
+ */
+export function shakedownCells(w: World, salt: number, day: number): number[] {
+  const n = w.def.cells.length;
+  const k = shakedownGuard(w);
+  if (k < 0 || n < 2 || w.def.rules?.relaxed) return [];
+  const count = Math.min(n, w.def.guards[k].trait === 'strict' ? STRICT_CELLS : SHAKEDOWN_CELLS);
+  const cells: number[] = [];
+  for (let j = 0; cells.length < count; j++) {
+    const c = 1 + rollInt(salt, SALT.SHAKEDOWN, day, j, n);
+    if (!cells.includes(c)) cells.push(c);
+  }
+  return cells;
+}
+
+/** 08:00: the cells named for the shakedown guard to search (GDD §2.1). */
 export function shakedown(sim: SimContext) {
   const s = sim.state;
   const n = sim.world.def.cells.length;
-  const k = s.guards.findIndex((_, i) => sim.world.def.guards[i].duties?.includes('shakedown'));
+  const k = shakedownGuard(sim.world);
   if (k < 0 || n < 2) return;
-  const a = 1 + randomInt(s, n);
-  let b = 1 + randomInt(s, n - 1);
-  if (b >= a) b++;
-  const cells = [a, b];
+  // The draws the cells once came from, still made (P15): every later draw stays as it was.
+  randomInt(s, n);
+  randomInt(s, n - 1);
+  const cells = shakedownCells(sim.world, s.salt, clockAt(s.step).day);
   assign(s.guards[k], GUARD.SHAKEDOWN, cells);
   sim.events.push({ type: 'shakedown', cells: [...cells] });
 }
@@ -200,6 +221,10 @@ export function bedCheck(sim: SimContext) {
 /** A guard looked into a cell or searched one. */
 export function report(sim: SimContext, r: GuardReport) {
   const s = sim.state;
+  if (r.kind === 'nap') {
+    sim.events.push({ type: 'nap', guard: r.guard, on: r.on });
+    return;
+  }
   if (r.kind === 'search') {
     const taken = search(sim, r.cell);
     sim.events.push({ type: 'searched', cell: r.cell, taken });

@@ -381,7 +381,8 @@ function morning(seed: number): Sim {
   check(itemOf(box()[1]) === n('metal_file'), 'the hidden file is never found');
   check(itemOf(box()[8]) === 0, 'the screwdriver in a standard drawer is taken');
   check(itemOf(box()[9]) === n('bed_sheet'), 'a legal bed sheet stays');
-  check(times.every((l) => / 08:/.test(l)), 'every search is done during roll call');
+  // (A strict guard's third cell may take it into breakfast, P15.)
+  check(times.every((l) => / 0[89]:/.test(l)), 'every search is done in the morning');
   check(sim.state.heat === 0, 'the model prisoner keeps 0 heat through it all');
 }
 

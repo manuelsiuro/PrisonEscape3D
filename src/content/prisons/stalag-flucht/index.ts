@@ -174,6 +174,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Weber',
+    trait: 'strict',
     beat: [
       { x: 31, z: 31, wait: 3, face: 5 },
       { x: 35, z: 34, wait: 2, face: 9 },
@@ -186,6 +187,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Huber',
+    trait: 'lazy',
     beat: [
       { x: 10, z: 42, wait: 3, face: 1 },
       { x: 30, z: 42, wait: 3, face: 9 },
@@ -196,13 +198,14 @@ const guards: GuardDef[] = [
     night: [
       { x: 21, z: 22, wait: 3, face: 5 },
       { x: 10, z: 42, wait: 3, face: 1 },
-      { x: 40, z: 42, wait: 3, face: 9 },
+      { x: 40, z: 42, wait: 3, face: 9, nap: true },
       { x: 40, z: 10, wait: 3, face: 5 },
     ],
     key: 'green',
   },
   {
     name: 'Lang',
+    trait: 'corrupt',
     beat: [
       { x: 43, z: 31, wait: 3, face: 9 },
       { x: 51, z: 16, wait: 3, face: 5 },

@@ -228,7 +228,7 @@ interface Faced {
   d2: number;
 }
 
-export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0): Target {
+export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0, chat?: (guard: number) => boolean): Target {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   // Facing it is worth a third of a tile.
@@ -261,9 +261,10 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
       best = { kind: 'pockets', index: pocketOf(w, who), who };
     }
   });
-  // Someone to talk to (inmates up and about, not fighting), a little behind furniture in reach.
+  // Someone to talk to (inmates up and about, not fighting; guards who'd talk, P15: `chat`, by guard index), a little behind furniture in reach.
   let faced: Faced | null = null;
-  for (let who = 0; who < talkers && who < people.length; who++) {
+  for (let who = 0; who < people.length; who++) {
+    if (who >= talkers && !chat?.(who - talkers)) continue;
     const o = people[who];
     if (!canTalkTo(w, b, o)) continue;
     const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));

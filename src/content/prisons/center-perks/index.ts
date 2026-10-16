@@ -137,6 +137,8 @@ const rollCall = [12, 15].flatMap((z) => [29, 31, 34, 36].map((x) => ({ x, z }))
  *   night walks the yards.
  * - The east guard walks the workshops, the mailroom and the staff rooms.
  * The canteen, wing and east guards sleep in the guard quarters at night.
+ * Their ways (P15): the canteen guard takes bribes, the wing guard goes by the book to the
+ * letter (the shakedown is thorough), the yard guard dozes off in the yard on the night round.
  * Keys (GDD §10.2): the warden red (solitary, staff rooms), the canteen guard cyan (kitchen,
  * laundry, mailroom, janitor), the wing guard yellow (cell doors after dark), the yard guard
  * green (the gate to the south yard), the east guard purple (the generator room).
@@ -162,6 +164,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Pratt',
+    trait: 'corrupt',
     beat: [
       { x: 44, z: 10, wait: 4, face: 5 },
       { x: 52, z: 12, wait: 3, face: 9 },
@@ -173,6 +176,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Dunn',
+    trait: 'strict',
     beat: [
       { x: 12, z: 22, wait: 2, face: 1 },
       { x: 10, z: 27, wait: 3, face: 1 },
@@ -185,6 +189,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Moss',
+    trait: 'lazy',
     beat: [
       { x: 30, z: 25, wait: 3, face: 5 },
       { x: 35, z: 30, wait: 3, face: 9 },
@@ -197,7 +202,7 @@ const guards: GuardDef[] = [
       { x: 32, z: 10, wait: 4, face: 5 },
       { x: 33, z: 18, wait: 3, face: 13 },
       { x: 31, z: 22, wait: 2, face: 5 },
-      { x: 30, z: 29, wait: 4, face: 1 },
+      { x: 30, z: 29, wait: 4, face: 1, nap: true },
     ],
     key: 'green',
   },

@@ -177,6 +177,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Pike',
+    trait: 'strict',
     beat: [
       { x: 12, z: 15, wait: 3, face: 1 },
       { x: 29, z: 18, wait: 3, face: 13 },
@@ -190,6 +191,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Penrose',
+    trait: 'lazy',
     beat: [
       { x: 9, z: 24, wait: 3, face: 1 },
       { x: 50, z: 24, wait: 3, face: 9 },
@@ -199,12 +201,13 @@ const guards: GuardDef[] = [
     posts: { exercise: { x: 37, z: 23, face: 7 } },
     night: [
       { x: 9, z: 23, wait: 4, face: 1 },
-      { x: 50, z: 25, wait: 4, face: 9 },
+      { x: 50, z: 25, wait: 4, face: 9, nap: true },
     ],
     key: 'green',
   },
   {
     name: 'Quill',
+    trait: 'corrupt',
     beat: [
       { x: 45, z: 29, wait: 3, face: 5 },
       { x: 45, z: 35, wait: 3, face: 1 },

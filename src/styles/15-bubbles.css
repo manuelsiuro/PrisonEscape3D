@@ -155,6 +155,11 @@ body.reduced-motion .bubble.pop .bubble-in {
   font-style: italic;
 }
 
+/* A guard's words (P15): the steel edge of its bubbles. */
+.talk-greet.guard {
+  box-shadow: inset 3px 0 0 var(--steel);
+}
+
 /* The prisoner's file: rumors heard (old news faded). */
 .rumor {
   display: flex;

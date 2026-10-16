@@ -6,8 +6,8 @@
 
 /** How an inmate talks: weights its own lines, how chatty it is, its murmur's pitch. */
 export const INMATE_VOICES = ['jokester', 'grump', 'philosopher', 'tough', 'worrier', 'oldTimer', 'hustler', 'sweetheart', 'conspiracist', 'poet'] as const;
-/** How a guard talks (P15 adds the traits' voices). */
-export const GUARD_VOICES = ['rookie', 'veteran'] as const;
+/** How a guard talks: a steady one as a rookie or a veteran, the others by their ways (P15: lazy, strict, corrupt). */
+export const GUARD_VOICES = ['rookie', 'veteran', 'slacker', 'stickler', 'crook'] as const;
 export type InmateVoice = (typeof INMATE_VOICES)[number];
 export type GuardVoice = (typeof GUARD_VOICES)[number];
 export type Voice = InmateVoice | GuardVoice;

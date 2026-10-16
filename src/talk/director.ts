@@ -7,6 +7,8 @@ import { itemPhrase, type DayEvent } from '../i18n/barks/grammar';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt } from '../sim/systems/clock';
 import { DOING } from '../sim/systems/inmates';
+import { lookingAway } from '../sim/systems/ways';
+import { awake } from '../sim/systems/guards';
 import { itemOf } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
 import { DIR_X, DIR_Z } from '../sim/command';
@@ -371,7 +373,7 @@ export class Director {
     const n = s.inmates.length;
     return s.guards
       .map((g, k) => ({ id: n + k, d: Math.hypot(g.body.x / UNIT - x, g.body.z / UNIT - z), g }))
-      .filter((o) => o.id !== but && o.g.ko <= 0 && o.g.doing !== DOING.SLEEP && o.d <= range)
+      .filter((o) => o.id !== but && awake(o.g) && o.d <= range)
       .sort((a, b) => a.d - b.d)
       .map((o) => o.id);
   }
@@ -431,6 +433,10 @@ export class Director {
           this.noteDay('detector');
           this.queueUp(now, 're.detector.in', this.inmatesNear(sim, px, pz, 7), 3, 'detector');
         }
+        break;
+      // A lazy guard woken from its doze (P15): it insists it never slept.
+      case 'nap':
+        if (!e.on) this.queueUp(now, 're.napWoke.gu', [n + e.guard], 4, 'napWoke', undefined, 0.3);
         break;
       case 'cameTo':
         this.cameTo.set(e.who, now);
@@ -742,7 +748,7 @@ export class Director {
   seen(b: Bubble, sim: Sim) {
     b.shown = true;
     const fact = b.fact;
-    if (fact) this.rumors = [{ fact, step: sim.state.step, by: b.speaker }, ...this.rumors.filter((r) => r.fact.key !== fact.key)].slice(0, 12);
+    if (fact) this.rumors = keepRumors([{ fact, step: sim.state.step, by: b.speaker }, ...this.rumors.filter((r) => r.fact.key !== fact.key)]);
   }
 
   /** Two idle inmates side by side: a line, and the other's reply a moment later. */
@@ -789,8 +795,24 @@ export class Director {
     }
   }
 
+  /** How a guard the player talks to answers a bribe (P15): taken, turned down, reported, too poor. */
+  private guardAnswerBank(e: SimEvent, sim: Sim): BankId | null {
+    const s = sim.state;
+    if (s.talk < s.inmates.length) return null;
+    if (e.type === 'bribe') return s.talk !== s.inmates.length + e.guard ? null : e.kind === 'look' ? 're.bribe.gu' : e.kind === 'paper' ? 're.paper.gu' : null;
+    if (e.type !== 'refused') return null;
+    return e.why === 'honest' || e.why === 'tooHot' ? 're.honest.gu' : e.why === 'reported' ? 're.reported.gu' : e.why === 'cash' ? 're.broke.gu' : null;
+  }
+
   /** The talk partner's answer to what the player just did (shown in the talk panel), or null. */
   answer(e: SimEvent, sim: Sim): string | null {
+    const guard = this.guardAnswerBank(e, sim);
+    if (guard) {
+      const got = this.pickLine(sim, guard, sim.state.talk);
+      if (!got) return null;
+      this.remember(sim.state.talk, got.line);
+      return got.text;
+    }
     if (!('who' in e) || e.who !== sim.state.talk || e.who < 0) return null;
     const bank = this.answerBank(e, sim);
     const got = bank && this.pickLine(sim, bank, e.who);
@@ -803,9 +825,11 @@ export class Director {
   greeting(sim: Sim, who: number): string {
     const s = sim.state;
     const m = s.inmates[who];
-    if (!m) return '';
+    const g = s.guards[who - s.inmates.length];
+    if (!m && !g) return '';
+    // A guard (P15): in its own voice; one already bribed winks.
     // A grudge shows first (a merchant who won't sell doesn't welcome anyone to the shop).
-    const bank: BankId = m.opinion <= OPINION_LOW ? 'gr.in.low' : s.followers.includes(who) ? 'gr.in.follower' : sim.merchantOf(who) >= 0 && sim.shopsOpen ? 'gr.in.merchant' : m.opinion >= OPINION_HIGH ? 'gr.in.high' : 'gr.in.neutral';
+    const bank: BankId = !m ? (lookingAway(g, s.step) ? 'gu.bribed' : 'gr.gu') : m.opinion <= OPINION_LOW ? 'gr.in.low' : s.followers.includes(who) ? 'gr.in.follower' : sim.merchantOf(who) >= 0 && sim.shopsOpen ? 'gr.in.merchant' : m.opinion >= OPINION_HIGH ? 'gr.in.high' : 'gr.in.neutral';
     // Greetings keep their own memory: the last three aren't said again (the bubbles' memory untouched).
     const last = this.greeted.get(who) ?? [];
     const got = this.pickLine(sim, bank, who, undefined, true, last) ?? this.pickLine(sim, bank, who, undefined, true, []);
@@ -828,4 +852,13 @@ export class Director {
   get prison() {
     return this.prisonId;
   }
+}
+
+/**
+ * The rumors kept, newest first: every lasting one (a rule, a guard's ways: the talk panel
+ * relies on them, P15), and the 12 newest about the moment (a shakedown, a stock, a grudge).
+ */
+export function keepRumors(list: readonly Rumor[]): Rumor[] {
+  let news = 0;
+  return list.filter((r) => LASTING.has(r.fact.kind) || ++news <= 12);
 }

@@ -8,6 +8,7 @@ import { interactTarget, type Target } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
 import { climbTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { strikeNoise, wouldHear } from '../sim/systems/noise';
+import { canChat } from '../sim/systems/ways';
 import { TOUCH } from '../ui/dom';
 import { armThrow, throwAhead } from './aim';
 import type { ToolView } from '../ui/tool';
@@ -75,6 +76,14 @@ export function usePress() {
   if (!press.toolNow?.repeat) tools.release();
 }
 
+/** Which guards would talk now (P15), for the action button: the sim's own rule. */
+let chatSim: Sim | null = null;
+const chatFn = (k: number) => !!chatSim && canChat(chatSim, k);
+function chatty(sim: Sim) {
+  chatSim = sim;
+  return chatFn;
+}
+
 /** Who stands on the ground floor besides the player (nobody digs under them). */
 const others: Body[] = [];
 function bodiesOf(sim: Sim): Body[] {
@@ -107,7 +116,7 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     memo.busy = busy;
     memo.panel = panel;
     memo.rev = it.rev;
-    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length);
+    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim));
     memo.station = busy || st.layer !== LAYER.GROUND ? null : sim.station();
     const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, ladderFoot, bodiesOf(sim)), faced);

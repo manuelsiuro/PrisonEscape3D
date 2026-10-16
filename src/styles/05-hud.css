@@ -567,3 +567,17 @@ body.reduced-motion .alarm-vignette.on {
     animation: none;
   }
 }
+
+/* A guard bribed to look the other way (P15): a pale-green chip, the time left of it. */
+.hud-alert.hud-bribe {
+  background: rgba(22, 84, 66, 0.9);
+}
+.hud-alert.hud-bribe .ic {
+  color: #8fe0b8;
+}
+.hud-alert.hud-bribe b {
+  color: #c4f5dd;
+}
+.hud-alert.hud-bribe .hud-alert-bar i {
+  background: #8fe0b8;
+}

@@ -36,7 +36,12 @@ export interface ConeFrame {
   facing: number;
   /** ALERT (sim/systems/guards.ts): NONE hides the cone. */
   alert: number;
+  /** Bribed to look the other way (P15): a calm cone in a pale green, fainter. */
+  away?: boolean;
 }
+
+/** A bribed guard's calm cone (P15). */
+const AWAY = 0x8fe0b8;
 
 interface Cone {
   mesh: THREE.Mesh;
@@ -129,9 +134,10 @@ export class Cones {
       c.mesh.geometry.attributes.position.needsUpdate = true;
       c.mesh.geometry.attributes.uv.needsUpdate = true;
       c.mesh.geometry.computeBoundingSphere();
-      c.color.set(this.colors[g.alert] ?? this.colors[ALERT.CALM]);
+      const away = !!g.away && g.alert === ALERT.CALM;
+      c.color.set(away ? AWAY : (this.colors[g.alert] ?? this.colors[ALERT.CALM]));
       c.material.color.copy(c.color);
-      const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : 0.32;
+      const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : away ? 0.2 : 0.32;
       c.material.opacity = c.shown * (strength + night * 0.12);
     });
   }

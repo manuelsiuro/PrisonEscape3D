@@ -20,6 +20,7 @@ import { type Body, tileOfBody } from './movement';
 import { cameraSeesPlayer, snipe, summon, powered } from './power';
 import { inBeam } from './security';
 import { DIRT, underMyDesk, WALL_CHUNK } from './structure';
+import { lookingAway } from './ways';
 
 /**
  * Guards look (GDD §5.1–5.3): who sees the player, what that costs in heat, who gives
@@ -30,14 +31,20 @@ export function watch(sim: SimContext) {
   const p = s.player;
   const t = tileOfBody(p);
   const here = t.z * MAP_W + t.x;
-  s.seen = false;
+  // Seen by any guard (a fight, tools at work: none overlooks those), and by one who isn't
+  // looking the other way (P15: one bribed lets the player be out late, somewhere staff only,
+  // with contraband, in a uniform it should see through; under its eyes alone heat still cools).
+  let seen = false;
+  let eyes = false;
   for (const g of s.guards) {
     g.sees = !sim.away && awake(g) && inView(sim, g.body);
     if (g.sees) {
       g.lastSeen = here;
-      s.seen = true;
+      seen = true;
+      if (!lookingAway(g, s.step)) eyes = true;
     }
   }
+  s.seen = eyes;
   // Damage and evidence in a guard's cone (GDD §9.3).
   const found = noticeDamage(sim);
   if (sim.away) {
@@ -56,11 +63,11 @@ export function watch(sim: SimContext) {
   const late = ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
   // Seen attacking someone (GDD §5.2), at work on a wall, a fence, a grate or the floor, damage found: 100% (§9.3).
   // Fighting back at an inmate who jumped the player: a scuffle, some heat a blow (not the alarm).
-  if (s.seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
-  else if (s.seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS) [reason, heat] = [SPOT.indexOf('tampering'), 100];
+  if (seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
+  else if (seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS) [reason, heat] = [SPOT.indexOf('tampering'), 100];
   else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
-  else if (s.seen && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
-  else if (s.seen && !disguised && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
+  else if (eyes && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
+  else if (eyes && !disguised && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
   // A camera sees what a guard would sound the alarm for (GDD §5.6).
   const filmed = cameraSeesPlayer(sim);
   if (!reason && filmed) {
@@ -76,9 +83,9 @@ export function watch(sim: SimContext) {
   // A contraband tool or weapon in hand, in plain sight: +40% a second.
   const held = itemOf(it.inv[it.hand]);
   const def = held ? itemDef(held) : null;
-  if (!reason && s.seen && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT : 0];
+  if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT : 0];
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
-  const close = disguised && s.guards.some((g) => g.sees && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
+  const close = disguised && s.guards.some((g) => g.sees && !lookingAway(g, s.step) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
   s.near = close ? s.near + 1 : 0;
   if (!reason && s.near > RECOGNIZE_STEPS) [reason, heat] = [SPOT.indexOf('recognized'), s.step % 2 === 0 ? 5 : 0];
   // Wanted (80%+): any guard who sees the player gives chase.

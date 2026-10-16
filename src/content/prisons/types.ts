@@ -13,7 +13,16 @@ export interface Waypoint {
   z: number;
   wait?: number;
   face?: number;
+  /** A lazy guard's nap stop (P15): on its night round, between 01:00 and 05:00, it dozes off here. */
+  nap?: boolean;
 }
+
+/**
+ * How a guard goes about the job (P15): steady by the book; lazy (naps on its night round,
+ * looks around less); strict (looks around longer, a shakedown of three cells searched
+ * slowly, reports a bribe); corrupt (takes bribes).
+ */
+export type GuardTrait = 'steady' | 'lazy' | 'strict' | 'corrupt';
 
 /** A guard's duties (GDD §5): the rounds it walks, where it stands during some blocks. */
 export interface GuardDef {
@@ -33,6 +42,8 @@ export interface GuardDef {
   riot?: boolean;
   /** One of the helipad's guards (GDD §4.5): the helicopter takes nobody while one is up and about. */
   helipad?: boolean;
+  /** Its ways (P15; default steady). A lazy guard has a nap stop on its night round. */
+  trait?: GuardTrait;
 }
 
 /** What a generator powers (GDD §5.5; HMP Irongate splits them between two, §4.5). */

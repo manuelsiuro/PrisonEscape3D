@@ -220,3 +220,26 @@ export const FUSE_STEPS = Math.round(1.5 * STEPS_PER_SECOND);
 export const WIND_SECONDS = 20;
 export const WIND_MAX = 60;
 export const RING_SECONDS = 8;
+
+// Guard ways (P15).
+/** A lazy guard naps at a nap stop of its night round between these minutes of the day (01:00–05:00), once a night, this long (wakes at 05:00 at the latest). */
+export const NAP_FROM = 60;
+export const NAP_TO = 300;
+export const NAP_MIN = 60 * STEPS_PER_MINUTE;
+export const NAP_MAX = 150 * STEPS_PER_MINUTE;
+/** A dozing guard wakes to a noise whose reach at his tile is this much shorter than the noise's own (a bang wakes him anywhere in earshot). */
+export const NAP_WAKE = 2;
+/** ...and to the player standing this close (units) for this long. */
+export const STIR_RANGE = Math.round(0.9 * UNIT);
+export const STIR_STEPS = STEPS_PER_SECOND;
+/** Bribes (a corrupt guard only): "look the other way" for 2 game hours, "lose the paperwork" (heat off, once a day each); prices base + per prison difficulty. */
+export const LOOK_AWAY_STEPS = 120 * STEPS_PER_MINUTE;
+export const LOOK_AWAY_PRICE = 40;
+export const PAPER_PRICE = 30;
+export const BRIBE_PER_LEVEL = 10;
+export const PAPER_HEAT = 25;
+/** A strict guard offered a bribe reports it. */
+export const BRIBE_REPORT_HEAT = 20;
+/** The shakedown names this many cells (a strict guard's: more), and a strict guard searches this much longer (×3/2). */
+export const SHAKEDOWN_CELLS = 2;
+export const STRICT_CELLS = 3;

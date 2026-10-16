@@ -15,11 +15,11 @@ import { centerX, centerZ, nearestDir, tileAt } from '../ai/path';
 import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
 import type { NoiseKind, TossRefusal } from '../state';
-import { BANG_GUARDS, BANG_LOOK, BANG_NOISE, DOOR_NOISE, FUSE_STEPS, LOOK_NEAR, NOISE_GUARDS, NOISE_LOOK, RING_NOISE, RING_SECONDS, STEPS_PER_SECOND, STRIKE_NOISE, THUD_NOISE, TOSS_OPINION, TOSS_RANGE, TOSS_RANGE_STRONG, TOSS_STRONG, WIND_MAX, WIND_SECONDS } from '../tuning';
+import { BANG_GUARDS, BANG_LOOK, BANG_NOISE, DOOR_NOISE, FUSE_STEPS, LOOK_NEAR, NAP_WAKE, NOISE_GUARDS, NOISE_LOOK, RING_NOISE, RING_SECONDS, STEPS_PER_SECOND, STRIKE_NOISE, THUD_NOISE, TOSS_OPINION, TOSS_RANGE, TOSS_RANGE_STRONG, TOSS_STRONG, WIND_MAX, WIND_SECONDS } from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
-import { awake, GUARD, sendToLook, type Guard } from './guards';
+import { awake, GUARD, rouse, sendToLook, type Guard } from './guards';
 import { DOING } from './inmates';
 import { itemOf, ownerOf, PILE, slot, usesOf } from './items';
 import { tileOfBody } from './movement';
@@ -109,11 +109,21 @@ function spread(w: World, n: NoiseAt) {
 /** The ground tile a guard stands on. */
 const tileOfGuard = (g: Guard) => tileAt(g.body.x, g.body.z);
 
-/** The guards awake within earshot of the last noise worked out (guard indexes), nearest first (ties: the lower index); with `wake`, those asleep too (a bang wakes them). */
-function listeners(guards: readonly Guard[], out: number[], wake = false): number[] {
+/**
+ * Whether a guard dozing at its nap stop (P15) wakes to the last noise worked out: a bang
+ * anywhere in earshot, anything else NAP_WAKE tiles short of its reach.
+ */
+const stirs = (g: Guard, n: number, bang: boolean) => g.doze > 0 && g.ko <= 0 && cost[tileOfGuard(g)] >= 0 && (bang || cost[tileOfGuard(g)] <= n - NAP_WAKE);
+
+/**
+ * The guards awake within earshot of the last noise worked out (guard indexes), nearest first
+ * (ties: the lower index), with those a noise this loud would wake from a doze; with `wake`,
+ * those asleep too (a bang wakes them).
+ */
+function listeners(guards: readonly Guard[], out: number[], n: number, wake = false): number[] {
   out.length = 0;
   guards.forEach((g, k) => {
-    if ((awake(g) || (wake && g.ko <= 0)) && cost[tileOfGuard(g)] >= 0) out.push(k);
+    if ((awake(g) || (wake && g.ko <= 0) || stirs(g, n, wake)) && cost[tileOfGuard(g)] >= 0) out.push(k);
   });
   out.sort((a, b) => cost[tileOfGuard(guards[a])] - cost[tileOfGuard(guards[b])] || a - b);
   return out;
@@ -149,7 +159,7 @@ export function hearers(sim: SimContext, n: NoiseAt | null, out: number[] = [], 
   out.length = 0;
   if (!n) return out;
   spread(sim.world, n);
-  return listeners(sim.state.guards, out, wake);
+  return listeners(sim.state.guards, out, n.reach, wake);
 }
 
 /** Whether a guard awake would hear a noise made now (the ear on the tool button). */
@@ -177,7 +187,11 @@ export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile:
   spread(w, { layer, tile, reach: n });
   const bang = kind === 'bang';
   if (bang) for (const g of guards) if (g.doing === DOING.SLEEP && g.ko <= 0 && cost[tileOfGuard(g)] >= 0) g.doing = DOING.NOTHING;
-  const heard = listeners(guards, []);
+  // Dozing at a nap stop (P15): loud enough and close enough, it wakes.
+  guards.forEach((g, k) => {
+    if (stirs(g, n, bang) && rouse(g)) sim.events.push({ type: 'nap', guard: k, on: false });
+  });
+  const heard = listeners(guards, [], n);
   const sent: number[] = [];
   const x0 = tile % MAP_W;
   const z0 = Math.floor(tile / MAP_W);

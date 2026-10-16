@@ -1,3 +1,4 @@
+import { lookingAway } from '../sim/systems/ways';
 import { itemDef, itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import type { BadgeKind } from '../render/Character';
@@ -70,7 +71,7 @@ function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, sta
     return focusAt;
   }
   if (target.kind === 'person') {
-    const b = sim.state.inmates[target.who].body;
+    const b = personOf(sim.state, target.who)!.body;
     focusAt.x0 = b.x / UNIT - 0.45;
     focusAt.z0 = b.z / UNIT - 0.45;
     focusAt.x1 = focusAt.x0 + 0.9;
@@ -249,6 +250,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.moving = m.body.moving && !g.paused;
     o.doing = m.doing;
     o.alert = alertOf(m);
+    o.away = lookingAway(m, st.step);
     const chasing = m.mode === GUARD.CHASE;
     o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
     o.held = chasing ? BATON : 0;

@@ -28,6 +28,7 @@ import { board, flood, launch } from './sea';
 import { powered, snipersOnDuty, switchPower } from './power';
 import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
+import { canChat } from './ways';
 import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
 import { rep, startTraining, stopTraining, study } from './training';
@@ -68,7 +69,7 @@ export function useItems(sim: SimContext, cmd: number) {
         break;
       }
       const held = itemOf(it.inv[it.hand]);
-      const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length);
+      const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k));
       const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
       const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
       if (up) {

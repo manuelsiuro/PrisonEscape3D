@@ -5,12 +5,15 @@ import { maxHealth } from '../sim/systems/combat';
 import { jobRooms, nearestProp, STATION_REACH } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import type { ItemState } from '../sim/systems/items';
-import { COLD_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { COLD_STEPS, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { lookingAway } from '../sim/systems/ways';
+import { guardTitle } from '../ui/social';
 import { exposed } from '../sim/systems/weather';
 import { containersOf } from '../sim/world/containers';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
 import { LAYER, MAP_W } from '../sim/world/World';
+import { DOING } from '../sim/systems/inmates';
 import { TOUCH } from '../ui/dom';
 import type { HudState } from '../ui/hud';
 import type { ItemsView } from '../ui/items';
@@ -51,8 +54,9 @@ import { chatterFrame } from './chatter';
 const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false };
 const GET_UP = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false };
+const bribeHud = { name: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
 /** The music's tension cue is on (see updateOverlay). */
 let tense = false;
@@ -126,6 +130,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (press.toolNow) press.toolNow.heard = !fight && memo.heard;
   if (press.toolNow?.heard && !busy && !panel) coachOnce('earshot', 'hint.earshot');
   if (held === FIRECRACKER && !busy) coachOnce('firecracker', 'hint.firecracker');
+  // A guard dozing close by (P15): what it means, the first time one is seen.
+  if (!busy && st.layer === LAYER.GROUND && !seenTip('nap') && st.guards.some((x) => x.doing === DOING.DOZE && Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT)) coachOnce('nap', 'hint.nap');
   // Each new target takes a new press: a held button never digs on into the next thing.
   press.toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && press.toolKey !== press.heldOn) tools.release();
@@ -185,6 +191,16 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   coldHud.bit = st.frozen;
   coldHud.warming = !exposed(sim);
   hudState.cold = st.cold > 0 ? coldHud : null;
+  // A guard looking the other way (P15): the one whose look away ends first.
+  let away = -1;
+  st.guards.forEach((x, k) => {
+    if (lookingAway(x, st.step) && (away < 0 || x.bribed < st.guards[away].bribed)) away = k;
+  });
+  if (away >= 0) {
+    bribeHud.name = guardTitle(sim, away);
+    bribeHud.left = Math.ceil((st.guards[away].bribed - st.step) / STEPS_PER_MINUTE);
+  }
+  hudState.bribe = away >= 0 ? bribeHud : null;
   document.body.classList.toggle('chilled', coldHud.bit);
   hud.update(clock, zone, hudState);
   // The music follows the danger and the hour; the ambience, where the player is.

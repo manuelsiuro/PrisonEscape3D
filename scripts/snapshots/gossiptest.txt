@@ -1,12 +1,18 @@
-center-perks: 29 lasting facts (bedChecks, dummy, fenceOff, brace, takeoverAll, keyColor, grate, toilets, camera, pouch, solitary, koTime, stock, job, favor); fence dead 45 s; tunnel holds 2 tiles; takeover at 5/5; dummy pass/fail
-  checked: bedChecks 1160, brace 1160, camera 1160, dummy 1160, favor 3480, fenceOff 1160, grate 3480, job 1424, keyColor 5800, koTime 1160, pouch 1160, solitary 1160, stock 11904, takeoverAll 1160, toilets 1160
-stalag-flucht: 29 lasting facts (bedChecks, dummy, fenceOff, brace, takeoverAll, keyColor, toilets, camera, pouch, solitary, koTime, stock, job, favor); fence dead 45 s; tunnel holds 2 tiles; takeover at 6/6; dummy pass/fail
-  checked: bedChecks 1160, brace 1160, camera 1160, dummy 1160, favor 3480, fenceOff 1160, heat 20, job 1424, keyColor 6960, koTime 1160, pouch 1160, solitary 1160, stock 12384, takeoverAll 1160, toilets 1160
-shankton: 36 lasting facts (bedChecks, dummy, fenceOff, brace, takeover, keyColor, grate, toilets, camera, pouch, shell, solitary, koTime, stock, job, favor); fence dead 45 s; tunnel holds 2 tiles; takeover at 7/8; dummy pass/fail
-  checked: bedChecks 1160, brace 1160, camera 1160, dummy 1160, favor 3480, fenceOff 1160, grate 3480, job 1424, keyColor 9280, koTime 1160, pouch 1160, shell 1160, solitary 1160, stock 16736, takeover 1160, toilets 1160
-san-pancho: 34 lasting facts (bedChecks, dummy, brace, takeover, keyColor, toilets, camera, pouch, shell, craters, solitary, koTime, stock, job, favor, grudge); tunnel holds 2 tiles; takeover at 7/8; dummy pass/fail
-  checked: bedChecks 1160, brace 1160, camera 1160, craters 1160, dummy 1160, favor 3480, grudge 2065, job 768, keyColor 9280, koTime 1160, pouch 1160, shell 1160, solitary 1160, stock 13916, takeover 1160, toilets 1160
-irongate: 38 lasting facts (bedChecks, dummy, brace, takeover, keyColor, grate, toilets, camera, pouch, shell, flood, heli, solitary, koTime, stock, job, favor); tunnel holds 2 tiles; takeover at 9/10; dummy pass/fail
-  checked: bedChecks 1160, brace 1160, camera 1160, dummy 1160, favor 3480, flood 1160, grate 2320, heli 1160, job 1424, keyColor 11600, koTime 1160, pouch 1160, shell 1160, solitary 1160, stock 16352, takeover 1160, toilets 1160
-training: 6 lasting facts (fenceOff, brace, keyColor, toilets, koTime, favor); fence dead 45 s; tunnel holds 2 tiles
-  checked: brace 1160, favor 1160, fenceOff 1160, keyColor 1160, koTime 1160, toilets 1160
+center-perks: 37 lasting facts (bedChecks, dummy, fenceOff, brace, takeoverAll, keyColor, steady, corrupt, strict, lazy, grate, toilets, camera, pouch, solitary, koTime, stock, job, favor, shakedown); fence dead 45 s; tunnel holds 2 tiles; takeover at 5/5; dummy pass/fail; 5 bribes as told
+  checked: bedChecks 1160, brace 1160, camera 1160, corrupt 1160, dummy 1160, favor 3480, fenceOff 1160, grate 3480, job 1424, keyColor 5800, koTime 1160, lazy 1160, pouch 1160, shakedown 2994, shakedownYou 486, solitary 1160, steady 2320, stock 11904, strict 1160, takeoverAll 1160, toilets 1160
+  naps as told: 12; shakedowns as told: 16
+stalag-flucht: 38 lasting facts (bedChecks, dummy, fenceOff, brace, takeoverAll, keyColor, steady, strict, lazy, corrupt, toilets, camera, pouch, solitary, koTime, stock, job, favor, shakedown); fence dead 45 s; tunnel holds 2 tiles; takeover at 6/6; dummy pass/fail; 6 bribes as told
+  checked: bedChecks 1160, brace 1160, camera 1160, corrupt 1160, dummy 1160, favor 3480, fenceOff 1160, heat 20, job 1424, keyColor 6960, koTime 1160, lazy 1160, pouch 1160, shakedown 3090, shakedownYou 390, solitary 1160, steady 3480, stock 12384, strict 1160, takeoverAll 1160, toilets 1160
+  naps as told: 12; shakedowns as told: 16
+shankton: 47 lasting facts (bedChecks, dummy, fenceOff, brace, takeover, keyColor, steady, strict, lazy, corrupt, grate, toilets, camera, pouch, shell, solitary, koTime, stock, job, favor, shakedown); fence dead 45 s; tunnel holds 2 tiles; takeover at 7/8; dummy pass/fail; 8 bribes as told
+  checked: bedChecks 1160, brace 1160, camera 1160, corrupt 1160, dummy 1160, favor 3480, fenceOff 1160, grate 3480, job 1424, keyColor 9280, koTime 1160, lazy 1160, pouch 1160, shakedown 3092, shakedownYou 388, shell 1160, solitary 1160, steady 5800, stock 16736, strict 1160, takeover 1160, toilets 1160
+  naps as told: 12; shakedowns as told: 16
+san-pancho: 45 lasting facts (bedChecks, dummy, brace, takeover, keyColor, steady, strict, corrupt, lazy, toilets, camera, pouch, shell, craters, solitary, koTime, stock, job, favor, grudge, shakedown); tunnel holds 2 tiles; takeover at 7/8; dummy pass/fail; 8 bribes as told
+  checked: bedChecks 1160, brace 1160, camera 1160, corrupt 2320, craters 1160, dummy 1160, favor 3480, grudge 1842, job 768, keyColor 9280, koTime 1160, lazy 1160, pouch 1160, shakedown 3092, shakedownYou 388, shell 1160, solitary 1160, steady 4640, stock 13896, strict 1160, takeover 1160, toilets 1160
+  naps as told: 12; shakedowns as told: 16
+irongate: 51 lasting facts (bedChecks, dummy, brace, takeover, keyColor, steady, strict, lazy, corrupt, grate, toilets, camera, pouch, shell, flood, heli, solitary, koTime, stock, job, favor, shakedown); tunnel holds 2 tiles; takeover at 9/10; dummy pass/fail; 10 bribes as told
+  checked: bedChecks 1160, brace 1160, camera 1160, corrupt 1160, dummy 1160, favor 3480, flood 1160, grate 2320, heli 1160, job 1424, keyColor 11600, koTime 1160, lazy 1160, pouch 1160, shakedown 3092, shakedownYou 388, shell 1160, solitary 1160, steady 8120, stock 16352, strict 1160, takeover 1160, toilets 1160
+  naps as told: 12; shakedowns as told: 16
+training: 7 lasting facts (fenceOff, brace, keyColor, steady, toilets, koTime, favor); fence dead 45 s; tunnel holds 2 tiles; 1 bribe as told
+  checked: brace 1160, favor 1160, fenceOff 1160, keyColor 1160, koTime 1160, steady 1160, toilets 1160
+  naps as told: 0; shakedowns as told: 0

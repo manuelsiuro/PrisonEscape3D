@@ -18,7 +18,7 @@ import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
-import { inmateName } from '../ui/social';
+import { guardTitle, inmateName } from '../ui/social';
 import type { ToolView } from '../ui/tool';
 import { press } from './buttons';
 
@@ -128,7 +128,8 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     const key = `person:${target.who}:${mail}:${currentLang()}`;
     if (key !== actionKey) {
       actionKey = key;
-      Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : 'act.talk'), what: inmateName(sim, target.who) });
+      const n = sim.state.inmates.length;
+      Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : 'act.talk'), what: target.who >= n ? guardTitle(sim, target.who - n) : inmateName(sim, target.who) });
     }
     return actionLabel;
   }

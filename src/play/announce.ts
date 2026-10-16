@@ -10,12 +10,12 @@ import { ALARM_CLOCK, DIRT, FIRECRACKER, underMyDesk, WALL_CHUNK } from '../sim/
 import { clockSecs } from '../sim/systems/noise';
 import { itemOf } from '../sim/systems/items';
 import { tossFlight } from '../render/Noise';
-import { CHOCOLATE_ENERGY, KO_STEPS, MEAL_ENERGY, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { CHOCOLATE_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
-import { inmateName, jobName } from '../ui/social';
+import { guardTitle, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
@@ -507,7 +507,8 @@ export function announce(e: SimEvent, sim: Sim) {
         itemsUI.closePanels();
         board.close();
         profile.close();
-        coachOnce('talk', 'hint.talk');
+        // A guard (P15): what talking to one is for.
+        coachOnce(e.who >= sim.state.inmates.length ? 'guardTalk' : 'talk', e.who >= sim.state.inmates.length ? 'hint.guardTalk' : 'hint.talk');
       }
       break;
     case 'opinion':
@@ -551,6 +552,20 @@ export function announce(e: SimEvent, sim: Sim) {
       floatAt(e.who, `${e.dmg}`, 'ally');
       if (e.ko) floatAt(e.who, t('combat.ko'), 'ko');
       break;
+    // Guard ways (P15): a bribe paid, a look away over (a guard dozing: the coach, see overlay).
+    case 'bribe': {
+      const name = guardTitle(sim, e.guard);
+      if (e.kind === 'over') {
+        sound.sting();
+        banner.toast(t('toast.bribeOver', { name }), 'bad', 3500);
+        break;
+      }
+      sound.buy();
+      buzz('bell');
+      floatAt(-1, `−$${e.price}`, 'cash');
+      itemsUI.toast(e.kind === 'look' ? t('toast.bribeLook', { name, n: LOOK_AWAY_STEPS / STEPS_PER_MINUTE / 60 }) : t('toast.bribePaper', { n: PAPER_HEAT }));
+      break;
+    }
     case 'refused': {
       const now = performance.now();
       if (now - lastCant < 600) break;

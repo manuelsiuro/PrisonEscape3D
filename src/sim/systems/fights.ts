@@ -16,7 +16,7 @@ import { LAYER, MAP_W } from '../world/World';
 import { closeBox } from './actions';
 import { BATON_ATTACK, damage, dist2, type Fighter, guardDefense, INMATE_DEFENSE, isGuard, maxHealth, personOf, reachOf, swingSteps } from './combat';
 import { FAVOR, FAVOR_STATE } from './economy';
-import { awake, backToDuty, type Guard, GUARD } from './guards';
+import { awake, backToDuty, type Guard, GUARD, rouse } from './guards';
 import { DOING, type Inmate } from './inmates';
 import { guardKit, HOTBAR, itemOf, pocketOf, slot, usesOf } from './items';
 import { caught } from './justice';
@@ -140,6 +140,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
   if (guard) {
     const g = f as Guard;
     if (g.doing === DOING.SLEEP) g.doing = DOING.NOTHING;
+    // Dozing on its round (P15): a blow wakes it as surely as it would in bed.
+    else if (rouse(g)) sim.events.push({ type: 'nap', guard: who - s.inmates.length, on: false });
     g.face = g.body.facing;
   } else {
     const m = f as Inmate;
@@ -171,6 +173,8 @@ function knockOut(sim: SimContext, who: number, by: Body = sim.state.player) {
   f.hp = 0;
   f.ko = KO_STEPS;
   f.body.moving = false;
+  // Out cold, a nap is over (it doesn't come round claiming it never slept).
+  if (isGuard(s, who)) rouse(f as Guard);
   if (!isGuard(s, who)) {
     const m = f as Inmate;
     // Knocked out on the job: it misses work (GDD §11: sabotage).
@@ -306,6 +310,7 @@ export function fight(sim: SimContext) {
     const dmg = damage(m.str, 0, guard ? guardDefense(sim.world, foe - s.inmates.length) : INMATE_DEFENSE);
     f.hp = Math.max(0, f.hp - dmg);
     if (guard && (f as Guard).doing === DOING.SLEEP) (f as Guard).doing = DOING.NOTHING;
+    else if (guard && rouse(f as Guard)) sim.events.push({ type: 'nap', guard: foe - s.inmates.length, on: false });
     sim.events.push({ type: 'allyHit', by: id, who: foe, dmg, ko: f.hp === 0 });
     if (f.hp === 0) knockOut(sim, foe, m.body);
   }

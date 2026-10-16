@@ -3,6 +3,7 @@ import type { BankId } from '../i18n/barks/en';
 import type { Sim } from '../sim/Sim';
 import { maxHealth } from '../sim/systems/combat';
 import { GUARD, awake } from '../sim/systems/guards';
+import { lookingAway } from '../sim/systems/ways';
 import { DOING } from '../sim/systems/inmates';
 import { tileOfBody, type Body } from '../sim/systems/movement';
 import { OPINION_LOW, UNIT } from '../sim/tuning';
@@ -136,6 +137,8 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   const s = sim.state;
   const g = s.guards[id - s.inmates.length];
   if (!g || g.ko > 0) return null;
+  // Dozing on the night round (P15): its own mumbles, a little louder than a guard asleep in bed.
+  if (g.doing === DOING.DOZE) return mood('sl.doze', 0.35, 'whisper');
   if (!awake(g)) return mood('sl.gu', 0.25, 'whisper');
   if (s.takeover) return mood('gu.scared', 1, 'shout');
   if (g.mode === GUARD.CHASE) return mood('gu.hostile', 1, 'shout');
@@ -146,6 +149,8 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (r.now - (r.cameTo.get(id) ?? -1e9) < 20) return mood('gu.groggy', 0.8);
   const d = tiles(g.body, s.player);
   if (r.now - r.caughtAt < 120 && d <= 6) return mood('gu.smug', 0.7);
+  // Bribed to look the other way (P15), with the player close by: it makes a show of seeing nothing.
+  if (lookingAway(g, s.step) && d <= 6) return mood('gu.bribed', 0.7);
   if (s.heat >= 50 && d <= 5) return mood('gu.wary', 0.6);
   const block = ROUTINE[s.routine].id;
   // Night duty: its own lines only (the day's grumbles don't fit after Lights Out).
