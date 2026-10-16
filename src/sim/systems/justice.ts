@@ -11,6 +11,8 @@ import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import { randomInt, rollInt, SALT } from '../rng';
 import { WAKE } from '../state';
+import { today } from './calendar';
+import { INSPECTION_CELLS } from '../../content/days';
 import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SHAKEDOWN_CELLS, SOLITARY_HEAT, SOLITARY_STEPS, STRICT_CELLS, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
@@ -168,11 +170,12 @@ const shakedownGuard = (w: World) => w.def.guards.findIndex((g) => g.duties?.inc
  * The cells a day's 08:00 shakedown names (GDD §2.1): two (a strict guard's, three), drawn
  * with roll() (P15), so they are known ahead: what inmates whisper about the next one is true.
  */
-export function shakedownCells(w: World, salt: number, day: number): number[] {
+export function shakedownCells(w: World, salt: number, day: number, inspection = false): number[] {
   const n = w.def.cells.length;
   const k = shakedownGuard(w);
   if (k < 0 || n < 2 || w.def.rules?.relaxed) return [];
-  const count = Math.min(n, w.def.guards[k].trait === 'strict' ? STRICT_CELLS : SHAKEDOWN_CELLS);
+  // An inspection morning (P17): more cells (the first ones the same as any other morning's).
+  const count = Math.min(n, inspection ? INSPECTION_CELLS : w.def.guards[k].trait === 'strict' ? STRICT_CELLS : SHAKEDOWN_CELLS);
   const cells: number[] = [];
   for (let j = 0; cells.length < count; j++) {
     const c = 1 + rollInt(salt, SALT.SHAKEDOWN, day, j, n);
@@ -190,7 +193,7 @@ export function shakedown(sim: SimContext) {
   // The draws the cells once came from, still made (P15): every later draw stays as it was.
   randomInt(s, n);
   randomInt(s, n - 1);
-  const cells = shakedownCells(sim.world, s.salt, clockAt(s.step).day);
+  const cells = shakedownCells(sim.world, s.salt, clockAt(s.step).day, today(sim).event === 'inspection');
   assign(s.guards[k], GUARD.SHAKEDOWN, cells);
   sim.events.push({ type: 'shakedown', cells: [...cells] });
 }

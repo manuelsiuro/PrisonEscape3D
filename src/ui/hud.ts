@@ -26,10 +26,15 @@ export interface HudState {
   /** What the power pill says (Irongate's generators each kill their half, P12). */
   powerKey: 'hud.powerOut' | 'hud.powerOutCams' | 'hud.powerOutFence';
   takeoverLeft: number | null;
-  /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double). */
-  cold: { built: number; left: number; bit: boolean; warming: boolean } | null;
+  /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double); `hot`: a heatwave's sun instead (P17). */
+  cold: { built: number; left: number; bit: boolean; warming: boolean; hot: boolean } | null;
   /** A guard bribed to look the other way (P15): who, until when, game minutes left of it, out of how many (null: none). */
   bribe: { name: string; until: string; left: number; of: number } | null;
+  /** The day (P17): the weather's icon by the clock (its name for the tooltip), and the day's event chip (null: nothing to show). */
+  weather: { icon: string; name: string; color: string };
+  today: { icon: string; color: string; text: string; time: string; soon: boolean; left: number | null; of: number } | null;
+  /** The fire drill (P17): the routine pill says so until it's over; whether the player has mustered. */
+  drill: { mustered: boolean; missed: boolean } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -86,7 +91,7 @@ export class Hud {
       'div',
       'hud hidden',
       `<div class="hud-row">
-        <span class="pill big hud-clock"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b></span>
+        <span class="pill big hud-clock"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b><i class="hud-wx" role="img"></i></span>
         <span class="pill big hud-zone">${icon('pin', 16)}<span></span></span>
         <button class="pill big hud-cash">${icon('coin', 16)}<b></b></button>
         <button class="icon-btn hud-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
@@ -99,7 +104,8 @@ export class Hud {
         <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
-        <span class="pill hud-alert hud-cold hidden">${icon('snow', 15)}<span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -127,6 +133,8 @@ export class Hud {
     this.riot = q('.hud-riot');
     this.cold = q('.hud-cold');
     this.bribe = q('.hud-bribe');
+    this.today = q('.hud-today');
+    this.wx = q('.hud-wx');
     document.body.append(this.el);
   }
 
@@ -134,7 +142,12 @@ export class Hud {
   private readonly power: HTMLElement;
   private readonly riot: HTMLElement;
   private readonly cold: HTMLElement;
+  private readonly today: HTMLElement;
+  private readonly wx: HTMLElement;
   private shownAlerts = '';
+  private shownWx = '';
+  private coldIcon = 'snow';
+  private todayIcon = '';
 
   /** A chip under the rows while something runs out: its label, the seconds left and a bar draining from full. */
   private alert(el: HTMLElement, label: Key, left: number | null, total: number) {
@@ -157,21 +170,47 @@ export class Hud {
     el.classList.toggle('low', b.left <= 15);
   }
 
-  /** The cold's chip: the bar fills as it builds, the seconds until it bites; then "Frozen" until warm again. */
+  /** The cold's chip: the bar fills as it builds, the seconds until it bites; then "Frozen" until warm again. A heatwave's (P17): "Hot", "Baked", "Cooling down". */
   private chill(c: HudState['cold']) {
     const el = this.cold;
     el.classList.toggle('hidden', !c);
     if (!c) return;
     el.classList.toggle('bit', c.bit);
     el.classList.toggle('warming', c.warming);
-    setText(el.querySelector('span')!, t(c.bit ? 'hud.frozen' : c.warming ? 'hud.warming' : 'hud.cold'));
+    el.classList.toggle('hot', c.hot);
+    const ic = c.hot ? 'heat' : 'snow';
+    if (ic !== this.coldIcon) {
+      this.coldIcon = ic;
+      el.querySelector('.hud-cold-ic')!.innerHTML = icon(ic, 15);
+    }
+    setText(el.querySelector('span')!, t(c.hot ? (c.bit ? 'hud.baked' : c.warming ? 'hud.cooling' : 'hud.hot') : c.bit ? 'hud.frozen' : c.warming ? 'hud.warming' : 'hud.cold'));
     setText(el.querySelector('b')!, c.bit ? '×2' : c.warming ? '' : `0:${String(Math.min(59, Math.max(0, Math.ceil(c.left)))).padStart(2, '0')}`);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, c.built)) * 100}%`;
+  }
+
+  /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
+  private dayChip(d: HudState['today']) {
+    const el = this.today;
+    el.classList.toggle('hidden', !d);
+    if (!d) return;
+    el.classList.toggle('soon', d.soon);
+    el.style.setProperty('--c', d.color);
+    if (d.icon !== this.todayIcon) {
+      this.todayIcon = d.icon;
+      el.querySelector('.hud-today-ic')!.innerHTML = icon(d.icon, 15);
+    }
+    setText(el.querySelector('span')!, d.text);
+    setText(el.querySelector('b')!, d.left === null ? d.time : `${Math.floor(d.left / 60)}:${String(Math.max(0, Math.ceil(d.left % 60))).padStart(2, '0')}`);
+    const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
+    bar.style.display = d.left === null ? 'none' : '';
+    if (d.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, d.left / d.of)) * 100}%`;
+    el.classList.toggle('low', d.left !== null && d.left <= 5);
   }
 
   show(on: boolean) {
     this.el.classList.toggle('hidden', !on);
     if (!on) return;
+    this.shownWx = '';
     this.shownZone = this.shownKey = this.shownMinute = '';
     this.shownHeat = -1;
     this.shownCash = -1;
@@ -214,16 +253,27 @@ export class Hud {
       this.clockIcon.innerHTML = icon(night ? 'moon' : 'sun', 16);
       this.clockIcon.classList.toggle('moon', night);
     }
+    // The weather by the clock (P17).
+    const wx = `${s.weather.icon}|${s.weather.name}`;
+    if (wx !== this.shownWx) {
+      this.shownWx = wx;
+      this.wx.innerHTML = s.weather.icon ? icon(s.weather.icon, 15) : '';
+      this.wx.style.setProperty('--wx', s.weather.color);
+      this.wx.setAttribute('aria-label', t('hud.weather', { weather: s.weather.name }));
+      this.wx.title = t('hud.weather', { weather: s.weather.name });
+    }
     this.updateRoutine(s);
     this.updateHeat(s.heat);
     const c = s.cold;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${this.lang}`;
+    const d = s.today;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
       this.alert(this.riot, 'hud.gatesOpen', s.takeoverLeft, 30);
       this.chill(c);
       this.lookAway(s.bribe);
+      this.dayChip(d);
     }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.
@@ -248,12 +298,13 @@ export class Hud {
   private updateRoutine(s: HudState) {
     const w = s.work;
     const mandatory = ROUTINE[s.routine].zones.length > 0 || !!w;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}`;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
     this.routinePill.classList.toggle('alarm', s.lockdown);
     this.routinePill.classList.toggle('solitary', s.solitaryMinutes !== null);
+    this.routinePill.classList.toggle('drill', !!s.drill && !s.lockdown && s.solitaryMinutes === null);
     if (s.lockdown) {
       this.routineIcon.innerHTML = icon('siren', 16);
       setText(this.routineName, t('routine.lockdown'));
@@ -269,6 +320,19 @@ export class Hud {
       setText(this.routinePlace, t('routine.solitaryLeft', { time: `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}` }));
       setText(this.routineUntil, '');
       this.badge.className = 'hud-badge hidden';
+      return;
+    }
+    // The fire drill (P17): out to roll call, the badge says whether the player has mustered.
+    if (s.drill) {
+      this.routineIcon.innerHTML = icon('siren', 16);
+      setText(this.routineName, t('routine.drill'));
+      setText(this.routinePlace, t('zone.rollCall'));
+      setText(this.routineUntil, '');
+      this.badge.className = `hud-badge${s.drill.mustered ? ' done' : s.drill.missed ? ' missed' : ''}`;
+      this.badge.innerHTML = s.drill.mustered ? `${icon('check', 12)}${t('routine.mustered')}` : s.drill.missed ? t('routine.drillMissed') : t('routine.pending');
+      const wasDrill = was.split('|')[6] ?? '';
+      if (was && wasDrill === '') this.routinePill.classList.add('pulse');
+      else if (wasDrill === 'false' && s.drill.mustered) this.badge.classList.add('pop');
       return;
     }
     this.routineIcon.innerHTML = icon('bell', 16);

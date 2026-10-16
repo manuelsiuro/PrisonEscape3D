@@ -26,6 +26,8 @@ import { blast, liveMine } from './mines';
 import { makeNoise, strikeNoise, throwItem, wind } from './noise';
 import { board, flood, launch } from './sea';
 import { powered, snipersOnDuty, switchPower } from './power';
+import { feastNow, TODAY } from './calendar';
+import { FEAST_ENERGY } from '../../content/days';
 import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
 import { canChat } from './ways';
@@ -592,8 +594,14 @@ export function keepSeat(sim: SimContext) {
   const id = ROUTINE[s.routine].id;
   if (p.kind === 'seat' && (id === 'breakfast' || id === 'dinner') && !s.lockdown && s.eaten < MEAL_STEPS && sim.world.zoneAt(p.x, p.z) === 'canteen') {
     if (++s.eaten === MEAL_STEPS) {
-      s.energy = Math.min(100, s.energy + MEAL_ENERGY);
-      sim.events.push({ type: 'meal' });
+      // A feast (P17): a tray piled high, and health back to full.
+      const feast = feastNow(sim);
+      s.energy = Math.min(100, s.energy + (feast ? FEAST_ENERGY : MEAL_ENERGY));
+      if (feast) {
+        s.health = Math.max(s.health, maxHealth(s.str));
+        s.eventFlags |= TODAY.FEASTED;
+      }
+      sim.events.push(feast ? { type: 'meal', feast } : { type: 'meal' });
     }
   }
 }

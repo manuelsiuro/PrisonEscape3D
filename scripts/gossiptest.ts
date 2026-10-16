@@ -34,6 +34,7 @@ import { isGrate, isSea, TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { fill, type FillContext } from '../src/talk/fill';
 import { facts, GOSSIP, napStop, type Fact } from '../src/talk/gossip';
+import { dayMinute, planOf, today } from '../src/sim/systems/calendar';
 import { Bot, n } from './bots';
 import { check } from './assert';
 
@@ -67,6 +68,16 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       const g = sim.prison.guards[f.guard!];
       const at = napStop(g);
       return traitOf(g) === 'lazy' && !!at && sim.world.zoneAt(at.x, at.z) === f.place && f.t1 === NAP_FROM;
+    }
+    // The day (P17): what the plan says of tomorrow, and of tonight's storm.
+    case 'nextInspection':
+    case 'nextDrill':
+    case 'nextFoodFight':
+      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight' } as const)[f.kind];
+    case 'stormCut': {
+      const p = today(sim);
+      const m = (f.t1! - ROUTINE[0].start + 1440) % 1440;
+      return p.weather === 'storm' && p.outages.includes(m) && m > dayMinute(s.step);
     }
     default:
       return true;

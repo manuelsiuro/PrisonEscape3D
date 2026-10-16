@@ -1,0 +1,400 @@
+/* ------------------------------------------------------------ the day (P17) */
+
+/* The warden's morning card: a dark board under the HUD, an amber rule across its top. */
+.pa-card {
+  position: fixed;
+  top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--hud-alerts, 0px) + 10px));
+  left: 0;
+  right: 0;
+  z-index: 33;
+  width: min(440px, calc(100vw - 32px));
+  margin-inline: auto;
+  padding: 14px 16px 10px;
+  border-radius: 20px;
+  color: #fff;
+  background:
+    linear-gradient(90deg, transparent 6%, rgba(255, 194, 61, 0.95) 50%, transparent 94%) top / 100% 2px no-repeat,
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 1.5px) 0 0 / 7px 7px,
+    linear-gradient(180deg, rgba(30, 40, 60, 0.97), rgba(16, 21, 32, 0.97));
+  box-shadow: 0 22px 46px -14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  animation: pa-in 0.5s var(--spring) both;
+}
+
+.pa-card.leaving,
+.pa-strip.leaving {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.97);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+@keyframes pa-in {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.94);
+  }
+}
+
+.pa-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 36px;
+}
+
+.pa-mic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #2a1a00;
+  background: radial-gradient(circle at 35% 30%, #ffe08a, var(--gold) 60%, #d99a12);
+  box-shadow: 0 0 0 3px rgba(255, 194, 61, 0.18);
+}
+
+.pa-from {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffd98a;
+}
+
+.pa-card .pa-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.pa-line {
+  margin: 10px 2px 12px;
+  font: 500 17px/1.35 var(--font-display);
+  letter-spacing: 0.005em;
+}
+
+/* The words still to come hold their place (the card never grows as it types). */
+.pa-rest {
+  color: transparent;
+}
+
+.pa-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.pa-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pa-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: #fff;
+  background: color-mix(in srgb, var(--c) 78%, #000);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.pa-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.pa-text small {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.pa-text b {
+  font: 600 16px/1.2 var(--font-display);
+}
+
+.pa-text b em {
+  margin-left: 8px;
+  font: 700 13px var(--font-ui);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+
+.pa-text span {
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.78;
+}
+
+.pa-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  color: #9fc4e8;
+}
+
+.pa-hint {
+  display: block;
+  margin-top: 8px;
+  text-align: right;
+  font-size: 11px;
+  opacity: 0.45;
+}
+
+/* Announcements through the day: a strip under the HUD, the warden's name over the line. */
+.pa-strip {
+  position: fixed;
+  top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--hud-alerts, 0px) + 10px));
+  left: 0;
+  right: 0;
+  z-index: 32;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: min(500px, calc(100vw - 32px));
+  margin-inline: auto;
+  padding: 9px 18px 9px 10px;
+  border-radius: 18px;
+  color: #fff;
+  background:
+    linear-gradient(90deg, rgba(255, 194, 61, 0.9), rgba(255, 194, 61, 0)) left / 3px 100% no-repeat,
+    linear-gradient(180deg, rgba(30, 40, 60, 0.95), rgba(16, 21, 32, 0.95));
+  box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  animation: pa-in 0.45s var(--spring) both;
+}
+
+.pa-strip .pa-mic {
+  width: 28px;
+  height: 28px;
+}
+
+.pa-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pa-strip .pa-from {
+  font-size: 10.5px;
+}
+
+.pa-strip .pa-line {
+  margin: 1px 0 0;
+  font: 500 15px/1.3 var(--font-display);
+}
+
+/* Short screens (phones in landscape): low, like the banners, and compact. */
+@media (max-height: 520px) {
+  .pa-card {
+    top: auto;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px);
+    width: min(560px, calc(100vw - 32px));
+    padding: 10px 14px 8px;
+  }
+
+  .pa-line {
+    margin: 6px 2px 8px;
+    font-size: 15px;
+  }
+
+  .pa-rows {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pa-card .pa-text span {
+    font-size: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .pa-hint {
+    display: none;
+  }
+
+  .pa-strip {
+    top: auto;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px);
+  }
+
+  /* The toasts rise above the warden's board while it's up. */
+  body.pa-up .toasts {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 78px + var(--pa-h, 0px));
+  }
+}
+
+/* A drill missed: the badge says so (red). */
+.hud-routine.drill .hud-badge.missed {
+  color: #fff;
+  background: #c8372d;
+}
+
+body.reduced-motion .pa-card,
+body.reduced-motion .pa-strip {
+  animation: none;
+}
+
+body.reduced-motion .pa-card.leaving,
+body.reduced-motion .pa-strip.leaving {
+  transform: none;
+}
+
+/* The day's chip under the HUD: what's on (or coming), its time, and a bar for the drill's muster. */
+.hud-alert.hud-today {
+  background: rgba(30, 40, 60, 0.9);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--gold)) 70%, transparent);
+}
+
+.hud-alert.hud-today .ic {
+  color: var(--c, var(--gold));
+}
+
+.hud-alert.hud-today.soon {
+  background: rgba(30, 40, 60, 0.82);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.18);
+}
+
+.hud-alert.hud-today.soon .ic {
+  animation: today-soon 1.6s ease-in-out infinite;
+}
+
+.hud-alert.hud-today .hud-alert-bar i {
+  background: var(--c, var(--gold));
+}
+
+@keyframes today-soon {
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+body.reduced-motion .hud-alert.hud-today.soon .ic {
+  animation: none;
+}
+
+/* The weather beside the clock (the clock pill's own icon is the sun or moon). */
+.hud-wx {
+  display: inline-grid;
+  place-items: center;
+  margin-left: 2px;
+  color: var(--wx, #cfe2ff);
+}
+
+.hud-wx:empty {
+  display: none;
+}
+
+/* The fire drill holds the routine pill: an amber alert, roll call the place. */
+.hud-routine.drill {
+  background: linear-gradient(180deg, rgba(196, 110, 12, 0.92), rgba(140, 70, 6, 0.92)) !important;
+}
+
+.hud-routine.drill .hud-routine-ic .ic {
+  color: #fff;
+}
+
+/* Baked by a heatwave (P17): the cold's chip in the sun's colours. */
+.hud-alert.hud-cold.hot {
+  background: rgba(150, 70, 14, 0.9);
+}
+
+.hud-alert.hud-cold.hot .hud-alert-bar i {
+  background: #ffd27a;
+}
+
+.hud-alert.hud-cold.hot b {
+  color: #ffe9c2;
+}
+
+.hud-alert.hud-cold.hot.bit {
+  background: rgba(170, 52, 10, 0.95);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 210, 122, 0.7);
+}
+
+.hud-alert.hud-cold.hot.warming {
+  background: rgba(120, 88, 50, 0.85);
+}
+
+.hud-alert.hud-cold.hot.warming .hud-alert-bar i {
+  background: #9fd8ff;
+}
+
+.baked .vital.en {
+  color: #ffb36a;
+}
+
+.baked .vital.en .energy-bar i {
+  background: linear-gradient(90deg, #ff9a4a, #ffd27a);
+}
+
+/* Lightning: the whole screen flashes white for an instant (never with reduced motion: the view doesn't either). */
+.lightning {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 30%, rgba(235, 242, 255, 0.75), rgba(200, 215, 255, 0.35));
+  opacity: 0;
+}
+
+.lightning.on {
+  animation: lightning 0.45s ease-out;
+}
+
+@keyframes lightning {
+  0% {
+    opacity: 0.9;
+  }
+  18% {
+    opacity: 0.15;
+  }
+  30% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The file's Today: the event and the weather, with what they change. */
+.file-day {
+  display: grid;
+  gap: 8px;
+}
+
+.file-day .pa-row {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.file-day .pa-text span {
+  opacity: 0.85;
+}
+
+.file-day .pa-text small {
+  opacity: 0.6;
+}

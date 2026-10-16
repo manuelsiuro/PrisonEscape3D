@@ -496,9 +496,16 @@ export class Director {
         if (!e.on && !sim.powered('lights')) {
           this.powerOutAt = now;
           this.noteDay('power');
-          this.queueUp(now, 're.power.in', this.inmatesNear(sim, px, pz, 30), 3, 'power', undefined, 0.5);
-          this.queueUp(now, 're.power.gu', this.guardsNear(sim, px, pz, 30), 3, 'powerGu', 'shout', 1.4);
+          // P17: lightning has its own cries; the generator's service was announced (inmates still notice the dark).
+          const storm = e.by === 'storm' && sim.prison.theme !== 'alpine';
+          this.queueUp(now, storm ? 're.storm.in' : 're.power.in', this.inmatesNear(sim, px, pz, 30), 3, 'power', undefined, 0.5);
+          if (e.by !== 'maintenance') this.queueUp(now, storm ? 're.storm.gu' : 're.power.gu', this.guardsNear(sim, px, pz, 30), 3, 'powerGu', 'shout', 1.4);
         }
+        break;
+      // The day (P17): the drill's bell, a food fight breaking out.
+      case 'today':
+        if (e.phase === 'start' && e.event === 'drill') this.queueUp(now, 're.drill.in', this.inmatesNear(sim, px, pz, 30), 3, 'drill', undefined, 0.6);
+        if (e.phase === 'start' && e.event === 'foodFight') this.queueUp(now, 're.foodFight.in', this.inmatesNear(sim, px, pz, 20), 3, 'foodFight', 'shout', 0.2);
         break;
       case 'shot':
         this.incident('shot', px, pz, now);

@@ -7,7 +7,7 @@ import { SHOP_SLOTS } from '../content/loot';
 import { routineAt } from '../content/routine';
 import { HOLDER, type Favor, type StationAct } from './systems/economy';
 import { maxHealth } from './systems/combat';
-import { clockAt } from './systems/clock';
+import { clockAt, prisonDay } from './systems/clock';
 import { spawnGuards, type Guard } from './systems/guards';
 import { fighter, spawnInmates, type Inmate } from './systems/inmates';
 import { fixtureUse, START_INT, startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
@@ -15,6 +15,8 @@ import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
 import { mix32 } from './rng';
 import { FEATS, freshFeats, partialLedger } from './systems/ledger';
+import type { ForcedDay } from './systems/calendar';
+import type { DayEvent } from '../content/days';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
@@ -85,7 +87,7 @@ export type SimEvent =
   /** Out on the road: free (GDD §4.0), and how. */
   | { type: 'escaped'; via: EscapeRoute }
   /** Security (GDD §5.4–5.6): the power off and back on; a pass through a detector arch (tripped, or shielded by the pouch: its passes left); a camera blinded or seeing again; a sniper taking aim and shooting; the takeover. */
-  | { type: 'power'; on: boolean; by: 'player' | 'guard'; gen?: number }
+  | { type: 'power'; on: boolean; by: 'player' | 'guard' | 'storm' | 'maintenance'; gen?: number }
   | { type: 'scanned'; tripped: boolean; pouch: number; tile: number }
   | { type: 'camera'; index: number; blind: boolean }
   | { type: 'aim'; tower: number }
@@ -107,7 +109,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -120,10 +122,11 @@ export type SimEvent =
   /** Sat down or got up (a seat, bench or chair), lay down on or got off an infirmary bed. */
   | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
-  | { type: 'meal' }
+  | { type: 'meal'; feast?: boolean }
   /** A recipe told to the player: by studying (who -1) or by an inmate. */
   | { type: 'tip'; recipe: number; who: number }
-  | { type: 'cold'; on: boolean }
+  /** Chilled to the bone in the snow, or (`hot`, P17) baked by a heatwave's sun: energy costs double while it lasts. */
+  | { type: 'cold'; on: boolean; hot?: boolean }
   | { type: 'rep' }
   | { type: 'trained'; attr: Attr; value: number }
   | { type: 'cantTrain'; why: 'tired' | 'max' }
@@ -161,6 +164,12 @@ export type SimEvent =
    */
   | { type: 'nap'; guard: number; on: boolean }
   | { type: 'bribe'; guard: number; kind: BribeKind; price: number }
+  /**
+   * The day (P17): 08:00, a new prison day; the day's event starting and ending, the drill's
+   * muster taken or missed, the inspection's commendation.
+   */
+  | { type: 'day'; day: number }
+  | { type: 'today'; event: DayEvent; phase: 'start' | 'end' | 'muster' | 'missed' | 'commend' }
   | ItemEvent;
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
@@ -326,6 +335,10 @@ export interface SimState {
   days: number[];
   /** The Daily's twists (P26; none in the campaign). */
   mods: string[];
+  /** Days forced (P17, calendar.ts ForcedDay: bots, tests, the Daily): [day (0 every day), event, weather], -1 as drawn. */
+  calendar: ForcedDay[];
+  /** What happened today (P17, calendar.ts TODAY bits): the drill's muster, the inspection's blots, the feast. Cleared at 08:00. */
+  eventFlags: number;
 }
 
 export interface Snapshot {
@@ -427,6 +440,8 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     feats: freshFeats(),
     days: [],
     mods: [],
+    calendar: [],
+    eventFlags: 0,
   };
 }
 
@@ -467,6 +482,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!list(st.feats) || !list(st.days)) Object.assign(s, partialLedger(st.step));
   else if (st.feats!.length < FEATS.length) s.feats = [...st.feats!, ...freshFeats().slice(st.feats!.length)];
   if (!Array.isArray(s.mods) || !s.mods.every((m) => typeof m === 'string')) s.mods = [];
+  // A save from before the day (P17): the day it was made on stays quiet (nothing starts half way through).
+  const days = (v: unknown) => Array.isArray(v) && v.every((d) => Array.isArray(d) && d.length === 3 && d.every((x) => Number.isInteger(x)));
+  if (!days(st.calendar)) s.calendar = [[prisonDay(st.step), 0, 0]];
+  if (!Number.isInteger(s.eventFlags)) s.eventFlags = 0;
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

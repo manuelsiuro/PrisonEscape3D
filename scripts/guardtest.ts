@@ -20,6 +20,7 @@ import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
 import { canSee } from '../src/sim/ai/sight';
 import { command, OP, SLOT } from '../src/sim/command';
+import { quietCalendar } from '../src/sim/systems/calendar';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { clockAt, formatTime } from '../src/sim/systems/clock';
 import { alertOf, ALERT, GUARD, type Guard } from '../src/sim/systems/guards';
@@ -389,6 +390,8 @@ function morning(seed: number): Sim {
 // ------------------------------------------------------------------ rounds, and saves mid-chase
 {
   const sim = new Sim(CENTER_PERKS, 3);
+  // Ordinary days (P17): the rounds counted aren't about the day's events.
+  sim.state.calendar = quietCalendar();
   const play = modelPrisoner(sim);
   const legs = sim.state.guards.map(() => 0);
   const last = sim.state.guards.map((g) => g.leg);

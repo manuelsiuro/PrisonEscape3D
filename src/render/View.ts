@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TILE } from '../sim/world/tiles';
+import { TILE, TILE_INFO } from '../sim/world/tiles';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { Character, guardLook, INMATE_LOOK, inmateLook, type BadgeKind, type BedPose } from './Character';
@@ -27,6 +27,10 @@ import { Underground } from './Underground';
 import { setTheme } from './textures';
 import { Blobs } from './Blobs';
 import { Snowfall } from './Snow';
+import { Weather, type WeatherFrame } from './Weather';
+import { DayEvents, type EventsFrame } from './DayEvents';
+import { ROOF_Y as ROOF_HEIGHT } from './Structure';
+import { WALL_H } from './WorldView';
 import { LAYER } from '../sim/world/World';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
@@ -92,9 +96,14 @@ export interface Frame {
   takeover: boolean;
   /** Firecrackers burning on the floor (P14): their ground tiles. */
   fuses: readonly number[];
+  /** The day (P17): the weather over the prison, and the event on (the movie, the food fight, the inspectors). */
+  weather: WeatherFrame;
+  events: EventsFrame;
 }
 
 const NO_FUSES: readonly number[] = [];
+const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 };
+const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
 
 export interface GuardFrame {
   x: number;
@@ -115,6 +124,8 @@ export interface GuardFrame {
   awayLeft: number;
   /** Dozing and stirring (0–1): the player at its elbow is about to wake it. */
   stir: number;
+  /** How far it sees now (tiles; P17: the weather, the inspectors): its cone is drawn that long. */
+  range: number;
 }
 
 export interface InmateFrame {
@@ -263,8 +274,27 @@ export class View {
   /** Everyone on stage, for the contact shadows (refilled per frame). */
   private readonly onStage: Character[] = [];
   private readonly snow = new Snowfall();
+  /** The day (P17): rain, ripples and fog; the movie screen, the food fight, the inspectors. */
+  private readonly weather = new Weather();
+  private readonly events = new DayEvents();
+  /** The weather's light this frame (the title has none), and a lightning flash easing away. */
+  private wxLight: WeatherFrame | null = null;
+  private flash = 0;
+  private readonly guardSpots: Array<{ x: number; z: number; awake: boolean }> = [];
   /** Whether a tile has open sky over it (no roof): where snow falls. */
   private readonly openSky = (x: number, z: number) => !this.world || !this.world.inside(x, z) || this.world.layers[LAYER.ROOF].kind[z * MAP_W + x] === TILE.EMPTY;
+  /** Where rain lands on a tile (P17): seen from the ground floor or below a roof, the open ground; from the roofs, the roof or the ground. -1: none. */
+  private readonly rainBelow = (x: number, z: number) => (this.openSky(x, z) ? 0 : -1);
+  private readonly rainOnRoofs = (x: number, z: number) => (this.openSky(x, z) ? 0 : ROOF_HEIGHT);
+  /** On the roofs: puddles on the roofs and on hard open ground. */
+  private readonly wetRoofs = (x: number, z: number) => !this.openSky(x, z) || this.puddly(x, z);
+  private readonly wxSnow: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 };
+  /** Open sky over hard ground (paths, roads, concrete): where rain ripples (P17). */
+  private readonly puddly = (x: number, z: number) => {
+    if (!this.openSky(x, z) || !this.world?.inside(x, z)) return false;
+    const k = this.world.ground.kind[z * MAP_W + x];
+    return k !== TILE.GRASS && k !== TILE.DIRT && k !== TILE.MINE && !TILE_INFO[k].solid;
+  };
   private readonly sparks = new Sparks();
   /** Noise and throwing (P14): the aim, waves, things in flight, lit fuses. */
   private readonly noiseFx = new NoiseFx();
@@ -335,6 +365,8 @@ export class View {
   shakeOn = true;
   /** Called when a foot lands, with the ground kind. */
   onStep: (surface: number) => void = () => {};
+  /** Called when food lands in a food fight (P17). */
+  onSplat: (x: number, z: number) => void = () => {};
 
   constructor(
     readonly renderer: THREE.WebGLRenderer,
@@ -346,7 +378,12 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group);
+    // Food landing in a food fight: a splat of it.
+    this.events.onSplat = (x, z, color) => {
+      this.dust.puff(x, z, color, 5, 0.1);
+      this.onSplat(x, z);
+    };
     this.cup.visible = false;
     this.puddles.count = 0;
     this.puddles.renderOrder = 1;
@@ -435,6 +472,9 @@ export class View {
     this.showLayer(LAYER.GROUND);
     this.guide.world = world;
     this.cones.world = world;
+    this.events.setWorld(world);
+    this.weather.reset();
+    this.flash = 0;
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
     this.outfit = -1;
     this.showers.fill(0);
@@ -903,7 +943,29 @@ export class View {
     }
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).
-    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && this.world?.def.theme === 'alpine' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF), f.layer === LAYER.ROOF ? undefined : this.openSky);
+    const wx = f.weather;
+    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && this.world?.def.theme === 'alpine' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF), f.layer === LAYER.ROOF ? undefined : this.openSky, wx.rain >= 2 ? 3 : wx.windForce, wx.windAngle);
+    // The weather (P17): no rain in the snow (a storm there is a blizzard of it, above).
+    const alpine = this.world?.def.theme === 'alpine';
+    this.wxLight = wx;
+    let wxNow = wx;
+    if (alpine && wx.rain) {
+      Object.assign(this.wxSnow, wx);
+      this.wxSnow.rain = 0;
+      wxNow = this.wxSnow;
+    }
+    this.weather.update(wxNow, dt, time, f.x, f.z, LAYER_Y[f.layer], f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45, this.night, !this.reducedMotion, f.layer === LAYER.UNDER, f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow, f.layer === LAYER.ROOF ? this.wetRoofs : this.puddly);
+    // The day's events: the film, the food, the inspectors trailing a guard.
+    const spots = this.guardSpots;
+    spots.length = f.guards.length;
+    for (let k = 0; k < f.guards.length; k++) {
+      const g = f.guards[k];
+      const o = (spots[k] ??= { x: 0, z: 0, awake: false });
+      o.x = g.x;
+      o.z = g.z;
+      o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
+    }
+    this.inspecting = this.events.update(f.events, dt, time, spots, f.inmates, f.layer === LAYER.GROUND, !this.reducedMotion, !this.reducedMotion, f.x, f.z);
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
@@ -1051,8 +1113,11 @@ export class View {
       if (this.previewBlend > 0.002) this.target.lerp(this.v, k);
       else this.target.copy(this.v);
     }
-    // Snow falling over an alpine prison behind the title too.
+    // Snow falling over an alpine prison behind the title too (no day's weather there).
     this.snow.update(dt, time, this.target.x, this.target.z, !this.reducedMotion && this.world?.def.theme === 'alpine', this.openSky);
+    this.wxLight = null;
+    this.weather.update(NO_WEATHER, dt, time, this.target.x, this.target.z, 0, WALL_H + 0.45, 0, !this.reducedMotion, false, this.rainBelow, this.puddly);
+    this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false, false);
     this.render(600, dt, model ? this.feet : null, time);
   }
 
@@ -1071,6 +1136,7 @@ export class View {
       this.sky.lerp(this.red, a * 0.35);
       this.sun.intensity *= 1 - 0.35 * this.alarm;
     } else this.ambient.color.set(SKY_LIGHT);
+    this.weatherLight(dt);
     // Off the ground floor: the vents dim the rooms below; the tunnels are dark but for the lantern.
     if (this.layer === LAYER.VENTS) {
       this.sun.intensity *= 0.22;
@@ -1115,11 +1181,50 @@ export class View {
     this.placeSun(minute);
     const stage = this.onStage;
     stage.length = 0;
-    stage.push(this.player, ...this.cast, ...this.guardCast);
+    stage.push(this.player, ...this.cast, ...this.guardCast, ...this.inspecting);
     if (this.model) stage.push(this.model);
     this.blobs.update(stage);
     updateOcclusion(this.renderer, this.camera, focus, dt);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Who the day's events put on stage this frame (the inspectors), for the contact shadows. */
+  private inspecting: Character[] = [];
+
+  /**
+   * The weather's light (P17): rain and storms dim and grey the day, fog softens it, a
+   * heatwave warms it to a haze; lightning flashes it white for an instant.
+   */
+  private weatherLight(dt: number) {
+    const w = this.wxLight;
+    if (w) {
+      const grey = w.rain >= 2 ? 0.65 : w.rain ? 0.45 : 0;
+      if (grey) {
+        this.sun.intensity *= w.rain >= 2 ? 0.38 : 0.6;
+        this.ambient.intensity *= w.rain >= 2 ? 0.72 : 0.86;
+        this.sky.lerp(this.c1.set(0x4a5462), grey);
+        this.sun.color.lerp(this.c1.set(0xc6d2e2), grey * 0.6);
+      }
+      if (w.fog > 0) {
+        this.sun.intensity *= 1 - 0.25 * w.fog;
+        this.sky.lerp(this.c1.set(0x9aa6b2), 0.6 * w.fog * (1 - this.night));
+      }
+      if (w.heat) {
+        this.sun.intensity *= 1.08;
+        this.sun.color.lerp(this.c1.set(0xffc27a), 0.4);
+        this.sky.lerp(this.c1.set(0xe8c79a), 0.35);
+      }
+    }
+    if (this.flash > 0.001) {
+      this.ambient.intensity += this.flash * 2.6;
+      this.sky.lerp(this.c1.set(0xe8f0ff), this.flash * 0.7);
+      this.flash = Math.max(0, this.flash - dt * 5);
+    }
+  }
+
+  /** A bolt of lightning (P17): the scene flashes white (not with reduced motion). */
+  lightning() {
+    if (!this.reducedMotion) this.flash = 1;
   }
 
   /**

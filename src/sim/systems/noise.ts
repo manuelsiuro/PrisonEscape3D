@@ -24,6 +24,7 @@ import { DOING } from './inmates';
 import { itemOf, ownerOf, PILE, slot, usesOf } from './items';
 import { tileOfBody } from './movement';
 import { changeOpinion } from './social';
+import { muffled } from './calendar';
 import { ALARM_CLOCK, FIRECRACKER, type ToolTarget } from './structure';
 
 /** A noise: where it's made and how many tiles it carries. */
@@ -158,8 +159,9 @@ const heardScratch: number[] = [];
 export function hearers(sim: SimContext, n: NoiseAt | null, out: number[] = [], wake = false): number[] {
   out.length = 0;
   if (!n) return out;
-  spread(sim.world, n);
-  return listeners(sim.state.guards, out, n.reach, wake);
+  const reach = muffled(sim, n.layer, n.tile, n.reach);
+  spread(sim.world, { layer: n.layer, tile: n.tile, reach });
+  return listeners(sim.state.guards, out, reach, wake);
 }
 
 /** Whether a guard awake would hear a noise made now (the ear on the tool button). */
@@ -169,7 +171,7 @@ export const wouldHear = (sim: SimContext, n: NoiseAt | null) => hearers(sim, n,
 export function earshot(sim: SimContext, n: NoiseAt | null, out: number[] = []): number[] {
   out.length = 0;
   if (!n) return out;
-  spread(sim.world, n);
+  spread(sim.world, { layer: n.layer, tile: n.tile, reach: muffled(sim, n.layer, n.tile, n.reach) });
   for (const t of reached) out.push(t);
   return out;
 }
@@ -180,8 +182,10 @@ export function earshot(sim: SimContext, n: NoiseAt | null, out: number[] = []):
  * guards asleep within earshot, sends more of them, whoever is looking already, and keeps them
  * looking longer.
  */
-export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile: number, n: number) {
-  if (tile < 0 || n <= 0) return;
+export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile: number, loud: number) {
+  if (tile < 0 || loud <= 0) return;
+  // (P17: the rain, a storm, the film's soundtrack drown it.)
+  const n = muffled(sim, layer, tile, loud);
   const w = sim.world;
   const guards = sim.state.guards;
   spread(w, { layer, tile, reach: n });

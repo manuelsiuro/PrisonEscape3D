@@ -10,6 +10,8 @@ import { OPINION_LOW, UNIT } from '../sim/tuning';
 import { MAP_W } from '../sim/world/World';
 import { TILE_INFO } from '../sim/world/tiles';
 import type { Style } from './types';
+import { dayMinute, drillOn, eventOn, feastNow, sunBites, today, weatherNow } from '../sim/systems/calendar';
+import type { ZoneId } from '../content/zones';
 
 /**
  * Moods (P13): what someone feels right now, read from the game (never stored): the bank a
@@ -52,6 +54,18 @@ export interface Recent {
 
 const tiles = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
+/** Whether someone stands in a zone (ground floor). */
+function inZone(sim: Sim, b: Body, zone: ZoneId): boolean {
+  const t = tileOfBody(b);
+  return sim.world.zoneAt(t.x, t.z) === zone;
+}
+
+/** The generator's service is today, and hasn't been yet (or is on). */
+function maintenanceDay(sim: Sim): boolean {
+  const p = today(sim);
+  return p.event === 'maintenance' && dayMinute(sim.state.step) < p.until;
+}
+
 function near(r: Recent, b: Body, kinds: ReadonlyArray<Incident['kind']>, range: number, within: number): boolean {
   const x = b.x / UNIT;
   const z = b.z / UNIT;
@@ -66,9 +80,13 @@ export function outdoors(sim: Sim, b: Body): boolean {
 
 const mood = (bank: BankId, intensity: number, style: Style = 'say', alt?: readonly BankId[]): Mood => ({ bank, intensity, style, alt });
 
-/** The weather's bank for someone outdoors (the snow, the sun, the sea), if any. */
+/** The weather's bank for someone outdoors (the day's fog, rain, storm or heatwave, P17; else the snow, the sun, the sea), if any. A storm is heard indoors too. */
 function weatherBank(sim: Sim, b: Body, guard: boolean): BankId | null {
-  if (!outdoors(sim, b)) return null;
+  const wx = weatherNow(sim);
+  const out = outdoors(sim, b);
+  if (wx === 'storm' && sim.prison.theme !== 'alpine') return guard ? 'gu.wx.storm' : 'in.wx.storm';
+  if (!out) return null;
+  if (wx === 'fog' || wx === 'rain' || (wx === 'heatwave' && sunBites(sim))) return (guard ? `gu.wx.${wx}` : `in.wx.${wx}`) as BankId;
   const theme = sim.prison.theme;
   if (theme === 'alpine') return guard ? 'gu.cold' : 'in.cold';
   if (theme === 'desert') return guard ? 'gu.hot' : 'in.hot';
@@ -94,6 +112,9 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (m.opinion <= OPINION_LOW && d <= 3) return mood('in.hostile', 0.8);
   if (m.hp < maxHealth(m.str) / 2 || r.now - (r.cameTo.get(id) ?? -1e9) < 20) return mood('in.hurt', 0.7);
   if (r.now - (r.bumped.get(id) ?? -1e9) < 30) return mood('in.grumpy', 0.7);
+  // The day's event (P17): a food fight in the canteen, the drill out at roll call.
+  if (eventOn(sim, 'foodFight') && inZone(sim, b, 'canteen')) return mood('in.day.foodFight', 0.95, 'shout');
+  if (drillOn(sim)) return mood('in.day.drill', 0.65, 'say', ['in.lineup']);
   if (s.followers.includes(id)) return mood('in.loyal', 0.6, 'say', ['in.idle', 'in.friendly']);
   const block = ROUTINE[s.routine].id;
   const minute = sim.clock.minuteOfDay;
@@ -102,6 +123,9 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   const evening = block === 'eveningFreeTime' || block === 'dinner';
   switch (m.doing) {
     case DOING.EAT:
+      // Movie night in the canteen's seats, or a feast's tray (P17).
+      if (eventOn(sim, 'movie')) return mood('in.day.movie', 0.5, 'say', some('in.idle', friend));
+      if (feastNow(sim)) return mood('in.day.feast', 0.65, 'say', some('in.eating', friend));
       return mood('in.eating', 0.6, 'say', some('in.idle', friend, evening && 'in.homesick'));
     case DOING.EXERCISE:
     case DOING.LIFT:
@@ -123,7 +147,10 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (sim.merchantOf(id) >= 0 && sim.shopsOpen && d <= 5) return mood('in.dealing', 0.6, 'say', ['in.idle']);
   if (r.searched.has(m.cell) || (s.heat >= 50 && d <= 3)) return mood('in.nervous', 0.5);
   if (m.opinion <= 40 && d <= 3) return mood('in.grumpy', 0.5);
-  if (friend) return mood('in.friendly', 0.6, 'say', some('in.idle', weather));
+  // What the day holds, talked over (P17): the inspectors, the generator's service.
+  const today = eventOn(sim, 'inspection') ? 'in.day.inspection' : maintenanceDay(sim) ? 'in.day.maintenance' : null;
+  if (today && (id + sim.clock.hour) % 2 === 0) return mood(today, 0.45, 'say', some('in.idle', weather, friend));
+  if (friend) return mood('in.friendly', 0.6, 'say', some('in.idle', weather, today));
   if (block === 'lightsOut' || block === 'eveningRollCall') return mood('in.sleepy', 0.5, 'say', ['in.idle']);
   if (block === 'rollCall' || (minute >= 16 * 60 + 30 && minute < 17 * 60) || (minute >= 8 * 60 + 30 && minute < 9 * 60)) return mood('in.hungry', 0.5, 'say', some('in.idle', weather));
   if (weather) return mood(weather, weather === 'in.sea' ? 0.35 : 0.5, 'say', ['in.idle', 'in.bored']);
@@ -142,6 +169,8 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (!awake(g)) return mood('sl.gu', 0.25, 'whisper');
   if (s.takeover) return mood('gu.scared', 1, 'shout');
   if (g.mode === GUARD.CHASE) return mood('gu.hostile', 1, 'shout');
+  // Drawn into a food fight (P17): not a mystery to look into, a mess to stop.
+  if (eventOn(sim, 'foodFight') && inZone(sim, g.body, 'canteen')) return mood('gu.day.foodFight', 0.9, 'shout');
   if (g.mode === GUARD.INVESTIGATE) return mood('gu.suspicious', 0.8);
   if (g.mode === GUARD.BED_CHECK) return mood('gu.bedCheck', 0.7);
   if (g.mode === GUARD.SHAKEDOWN) return mood('gu.stern', 0.7);
@@ -153,9 +182,13 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (lookingAway(g, s.step) && d <= 6) return mood('gu.bribed', 0.7);
   if (s.heat >= 50 && d <= 5) return mood('gu.wary', 0.6);
   const block = ROUTINE[s.routine].id;
-  // Night duty: its own lines only (the day's grumbles don't fit after Lights Out).
-  if (block === 'lightsOut') return mood('gu.drowsy', 0.5);
+  // Night duty: its own lines only (the day's grumbles don't fit after Lights Out; a storm's do).
+  if (block === 'lightsOut') return mood('gu.drowsy', 0.5, 'say', some(weatherNow(sim) === 'storm' && sim.prison.theme !== 'alpine' && 'gu.wx.storm'));
   const weather = weatherBank(sim, g.body, true);
+  // The day's event (P17): the drill, the inspectors, the film.
+  if (drillOn(sim)) return mood('gu.day.drill', 0.7, 'shout');
+  if (eventOn(sim, 'inspection')) return mood('gu.day.inspection', 0.45, 'say', some(g.body.moving ? 'gu.idle' : 'gu.bored', weather));
+  if (eventOn(sim, 'movie') && inZone(sim, g.body, 'canteen')) return mood('gu.day.movie', 0.45, 'say', ['gu.bored']);
   const usual: BankId = g.body.moving ? 'gu.idle' : 'gu.bored';
   const other: BankId = usual === 'gu.idle' ? 'gu.bored' : 'gu.idle';
   // The moment's own lines first: the morning count, the canteen, the yard.

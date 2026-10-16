@@ -3,6 +3,7 @@
  * throws, knockouts and coming round (a guard's missing key raises the alarm), blows on the
  * player and what happens at 0 health. The numbers (damage, reach, pace) are in combat.ts.
  */
+import { inFoodFight } from './calendar';
 import { itemDef } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { nearestDir as faceTo } from '../ai/path';
@@ -117,6 +118,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     it.rev++;
     s.swingAt = s.step;
     const who = s.lock;
+    // (A throw is a blow: at a guard never a scuffle; at an inmate, as for a punch.)
+    s.selfDefense = !isGuard(s, who) && freeBlow(sim, f as Inmate);
     sim.events.push({ type: 'thrown', who });
     knockOut(sim, who);
     return true;
@@ -145,8 +148,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     g.face = g.body.facing;
   } else {
     const m = f as Inmate;
-    // Hitting back at someone already after the player: self-defense (GDD §10.3 ambushes).
-    s.selfDefense = m.angry > 0;
+    // Hitting back at someone already after the player: self-defense (GDD §10.3 ambushes). In a food fight (P17) everyone's at it.
+    s.selfDefense = freeBlow(sim, m);
     m.angry = ANGRY_STEPS;
     m.doing = DOING.NOTHING;
     m.wait = 0;
@@ -367,4 +370,12 @@ function floored(sim: SimContext) {
   for (const m of s.inmates) m.angry = 0;
   closeBox(sim);
   sim.events.push({ type: 'floored' });
+}
+
+/** A blow at an inmate that's a scuffle, not an attack: it was already after the player, or (P17) it's in the thick of a food fight with them. */
+function freeBlow(sim: SimContext, m: Inmate): boolean {
+  if (m.angry > 0) return true;
+  if (!inFoodFight(sim)) return false;
+  const t = tileOfBody(m.body);
+  return sim.world.zoneAt(t.x, t.z) === 'canteen';
 }

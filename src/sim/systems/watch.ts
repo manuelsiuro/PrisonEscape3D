@@ -14,9 +14,11 @@ import { CHASE_HEAT, CONTRABAND_HEAT, LIGHTS_OUT_GRACE, RECOGNIZE_RANGE, RECOGNI
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from '../world/World';
 import { clockAt } from './clock';
-import { awake, GUARD, startChase } from './guards';
+import { awake, GUARD, startChase, type Guard } from './guards';
+import { eventOn, inFoodFight, sightOf } from './calendar';
+import { INSPECTION_CONTRABAND } from '../../content/days';
 import { itemOf } from './items';
-import { type Body, tileOfBody } from './movement';
+import { tileOfBody } from './movement';
 import { cameraSeesPlayer, snipe, summon, powered } from './power';
 import { inBeam } from './security';
 import { DIRT, underMyDesk, WALL_CHUNK } from './structure';
@@ -37,7 +39,7 @@ export function watch(sim: SimContext) {
   let seen = false;
   let eyes = false;
   for (const g of s.guards) {
-    g.sees = !sim.away && awake(g) && inView(sim, g.body);
+    g.sees = !sim.away && awake(g) && inView(sim, g);
     if (g.sees) {
       g.lastSeen = here;
       seen = true;
@@ -63,7 +65,9 @@ export function watch(sim: SimContext) {
   const late = ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
   // Seen attacking someone (GDD §5.2), at work on a wall, a fence, a grate or the floor, damage found: 100% (§9.3).
   // Fighting back at an inmate who jumped the player: a scuffle, some heat a blow (not the alarm).
-  if (seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
+  // A food fight (P17): blows at inmates in the canteen are part of the fun, no heat at all.
+  if (seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS && s.selfDefense && inFoodFight(sim)) [reason, heat] = [SPOT.indexOf('brawl'), 0];
+  else if (seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
   else if (seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS) [reason, heat] = [SPOT.indexOf('tampering'), 100];
   else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
   else if (eyes && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
@@ -83,7 +87,8 @@ export function watch(sim: SimContext) {
   // A contraband tool or weapon in hand, in plain sight: +40% a second.
   const held = itemOf(it.inv[it.hand]);
   const def = held ? itemDef(held) : null;
-  if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT : 0];
+  // (P17: the inspectors in, twice that.)
+  if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT * (eventOn(sim, 'inspection') ? INSPECTION_CONTRABAND : 1) : 0];
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
   const close = disguised && s.guards.some((g) => g.sees && !lookingAway(g, s.step) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
   s.near = close ? s.near + 1 : 0;
@@ -109,14 +114,15 @@ export function watch(sim: SimContext) {
 /**
  * Whether a guard sees the player: on the ground floor, its cone and a clear line; up on a
  * roof, from the open yard (nothing on the ground is in the way); in the vents and the
- * tunnels, never.
+ * tunnels, never. As far as it sees today (P17: the weather, the inspectors).
  */
-function inView(sim: SimContext, eye: Body): boolean {
+function inView(sim: SimContext, g: Guard): boolean {
   const s = sim.state;
-  if (s.layer === LAYER.GROUND) return canSee(sim.world, eye, s.player);
+  const eye = g.body;
+  if (s.layer === LAYER.GROUND) return canSee(sim.world, eye, s.player, sightOf(sim, g));
   if (s.layer !== LAYER.ROOF) return false;
   const t = tileOfBody(eye);
-  return TILE_INFO[sim.world.ground.kind[t.z * MAP_W + t.x]].outdoor && canSee(sim.world, eye, s.player, undefined, false);
+  return TILE_INFO[sim.world.ground.kind[t.z * MAP_W + t.x]].outdoor && canSee(sim.world, eye, s.player, sightOf(sim, g), false);
 }
 
 /**
@@ -140,7 +146,7 @@ function noticeDamage(sim: SimContext): boolean {
     for (const [fx, fz] of FACES) {
       point.x = cx + fx;
       point.z = cz + fz;
-      if (watchers.some((g) => canSee(w, g.body, point))) return true;
+      if (watchers.some((g) => canSee(w, g.body, point, sightOf(sim, g)))) return true;
     }
     return false;
   };

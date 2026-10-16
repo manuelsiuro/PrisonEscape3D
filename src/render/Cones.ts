@@ -40,6 +40,8 @@ export interface ConeFrame {
   away?: boolean;
   /** Steps of looking away left: over the last ENDING the cone pulses back toward yellow. */
   awayLeft?: number;
+  /** How far it sees now (tiles; P17: the weather, the inspectors). The cone's own range by default. */
+  range?: number;
 }
 
 /** A bribed guard's calm cone (P15): emerald, apart from the cameras' cyan and the calm yellow. */
@@ -59,6 +61,8 @@ interface Cone {
   strength: number;
   flash: number;
   shown: number;
+  /** The range drawn (tiles), eased toward the guard's. */
+  range: number;
 }
 
 /**
@@ -105,7 +109,7 @@ export class Cones {
       mesh.renderOrder = 1;
       mesh.frustumCulled = false;
       this.group.add(mesh);
-      this.cones.push({ mesh, material, positions, uvs, angle: NaN, color: new THREE.Color(), strength: 0.32, flash: 0, shown: 0 });
+      this.cones.push({ mesh, material, positions, uvs, angle: NaN, color: new THREE.Color(), strength: 0.32, flash: 0, shown: 0, range: NaN });
     }
   }
 
@@ -137,14 +141,20 @@ export class Cones {
       p[2] = g.z;
       uv[0] = 0.5;
       uv[1] = 1;
+      // As far as it sees now: the cone drawn is the rule (sight.ts sightReach, calendar.ts sightOf),
+      // eased when it changes (a guard stepping out into the fog), at once with reduced motion.
+      const want = g.range ?? this.range;
+      if (Number.isNaN(c.range) || !motion || was < 0.05) c.range = want;
+      else c.range += (want - c.range) * Math.min(1, dt * 5);
+      const range = c.range;
       for (let r = 0; r <= RAYS; r++) {
         const a = c.angle - SIGHT_HALF_ANGLE + (2 * SIGHT_HALF_ANGLE * r) / RAYS;
-        const reach = sightReach(w, g.x, g.z, a, this.range);
+        const reach = sightReach(w, g.x, g.z, a, range);
         p[(r + 1) * 3] = g.x + Math.cos(a) * reach;
         p[(r + 1) * 3 + 1] = 0.05;
         p[(r + 1) * 3 + 2] = g.z + Math.sin(a) * reach;
         uv[(r + 1) * 2] = 0.5;
-        uv[(r + 1) * 2 + 1] = 1 - reach / this.range;
+        uv[(r + 1) * 2 + 1] = 1 - reach / range;
       }
       c.mesh.geometry.attributes.position.needsUpdate = true;
       c.mesh.geometry.attributes.uv.needsUpdate = true;

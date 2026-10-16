@@ -9,8 +9,8 @@ import { FEAT, type Feat } from '../sim/systems/ledger';
 import { ATTR_MAX } from '../sim/tuning';
 import type { Medal } from './medals';
 
-export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'mishaps' | 'career';
-export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'mishaps', 'career'];
+export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'days' | 'mishaps' | 'career';
+export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'days', 'mishaps', 'career'];
 
 /** A run as the checks see it: the ledger and a few of the player's numbers. */
 export interface RunView {
@@ -22,11 +22,12 @@ export interface RunView {
   int: number;
 }
 
-/** An escape: the run, how and on which day, and the medal it earned. */
+/** An escape: the run, how and on which day, and the medal it earned; the weather out there as it went (P17; unknown for escapes from the records). */
 export interface EscapeView extends RunView {
   via: string;
   day: number;
   medal: Medal | null;
+  weather?: string;
 }
 
 /** A career: lifetime stats (stats.ts keys), and each prison's ways out found and medals won. */
@@ -99,12 +100,21 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'greasedPalm', group: 'life', icon: 'hand', gives: 'monocle', run: (r) => f(r, 'bribes') >= 1 },
   { id: 'paperTrail', group: 'life', icon: 'letter', gives: 'starShades', run: (r) => f(r, 'paperwork') >= 1 },
   { id: 'popular', group: 'life', icon: 'chat', gives: 'mohawk', run: (r) => f(r, 'crew') >= 2 },
+  // The day (P17): events and weather.
+  { id: 'teachersPet', group: 'days', icon: 'clipboard', run: (r) => f(r, 'commended') >= 1 },
+  { id: 'present', group: 'days', icon: 'bell', run: (r) => f(r, 'mustered') >= 1 },
+  { id: 'seconds', group: 'days', icon: 'utensils', run: (r) => f(r, 'feasts') >= 1 },
+  { id: 'foodFighter', group: 'days', icon: 'fist', run: (r) => f(r, 'foodBlows') >= 3 },
+  { id: 'stormRunner', group: 'days', icon: 'storm', escape: (e) => e.weather === 'storm' },
+  { id: 'peaSouper', group: 'days', icon: 'fog', escape: (e) => e.weather === 'fog' },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
   { id: 'washedOut', group: 'mishaps', icon: 'splash', hidden: true, run: (r) => f(r, 'floods') >= 1 },
   { id: 'watchStep', group: 'mishaps', icon: 'mine', hidden: true, run: (r) => f(r, 'blasts') >= 1 },
   { id: 'spudPeeler', group: 'mishaps', icon: 'potato', hidden: true, run: (r) => f(r, 'potatoes') >= 1 },
+  { id: 'sunstroke', group: 'mishaps', icon: 'heat', hidden: true, run: (r) => f(r, 'baked') >= 1 },
+  { id: 'drillDodger', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'drillsMissed') >= 1 },
   // Career.
   { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },

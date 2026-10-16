@@ -21,9 +21,13 @@ import { aimUI, banner, board, combatUI, itemsUI, profile, settings, sleepVeil, 
 import { play } from './game';
 import { NEED } from './labels';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
+import { dayTime } from './day';
+import { today } from '../sim/systems/calendar';
+import { FEAST_ENERGY } from '../content/days';
 
-/** Games whose player has been told about the cold already. */
+/** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
+const hotTold = new WeakSet<object>();
 
 /** The last thing guards noticed, and when (real time): repeats are quiet for a moment. */
 const lastSpotted = { reason: '', at: 0 };
@@ -172,9 +176,10 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'cold':
       // The cold bites (P9, GDD §4.2): explained the first time in a game; after that the HUD's chip says it.
-      if (e.on && !coldTold.has(sim)) {
-        coldTold.add(sim);
-        banner.toast(t('toast.coldOn'), 'bad', 6000);
+      // (A heatwave's sun, P17: its own toast, once a game too.)
+      if (e.on && !(e.hot ? hotTold : coldTold).has(sim)) {
+        (e.hot ? hotTold : coldTold).add(sim);
+        banner.toast(t(e.hot ? 'toast.hotOn' : 'toast.coldOn'), 'bad', 6000);
       }
       if (e.on) buzz('missed');
       break;
@@ -300,7 +305,13 @@ export function announce(e: SimEvent, sim: Sim) {
         buzz('giveWay');
         // Irongate's two generators (P12): the banner says which half went dead.
         const split = !!sim.world.def.grid;
-        banner.show(t(split ? (e.gen === 1 ? 'banner.gen2Off' : 'banner.gen1Off') : 'banner.powerOff'), t(split ? (e.gen === 1 ? 'banner.gen2OffSub' : 'banner.gen1OffSub') : 'banner.powerOffSub'), 'routine', 3500);
+        // P17: lightning (both halves at once: one banner) or the generator's service.
+        if (e.by === 'storm') {
+          // (In the snow a blizzard takes the power: no lightning.)
+          if (e.gen !== 1) banner.show(t(sim.world.def.rules?.cold ? 'banner.blizzard' : 'banner.storm'), t('banner.stormSub'), 'alarm', 3800);
+        } else if (e.by === 'maintenance') {
+          if (e.gen !== 1) banner.show(t('banner.service'), t('banner.serviceSub', { time: dayTime(today(sim).until) }), 'routine', 3800);
+        } else banner.show(t(split ? (e.gen === 1 ? 'banner.gen2Off' : 'banner.gen1Off') : 'banner.powerOff'), t(split ? (e.gen === 1 ? 'banner.gen2OffSub' : 'banner.gen1OffSub') : 'banner.powerOffSub'), 'routine', 3500);
         coachOnce('power', 'hint.power');
       } else {
         sound.powerUp();
@@ -482,7 +493,9 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'meal':
       sound.eat();
       buzz('attended');
-      floatAt(-1, t('float.meal', { n: MEAL_ENERGY }), 'gain');
+      floatAt(-1, t('float.meal', { n: e.feast ? FEAST_ENERGY : MEAL_ENERGY }), 'gain');
+      // A feast (P17): and health back to full.
+      if (e.feast) banner.toast(t('toast.feast', { n: FEAST_ENERGY }), 'good', 4500);
       break;
     case 'rep':
       sound.rep();

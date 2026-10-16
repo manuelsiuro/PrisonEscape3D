@@ -6,6 +6,7 @@ import { fnv1a } from './rng';
 import { ESCAPES, freshState, loadState, type Attr, type LayerMove, type SimEvent, type SimState, type Snapshot } from './state';
 import { closeBox, keepSeat, regenerate, shower, standUp, underShower, useItems } from './systems/actions';
 import { chill } from './systems/weather';
+import { crowdPlan, dayWatch, drillOn, theDay } from './systems/calendar';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
@@ -38,11 +39,11 @@ export * from './state';
  * on the prison, the seed and the commands, never on frame time, the DOM or Three.js, so
  * the tests replay it headless. Systems (src/sim/systems/) run in a fixed order:
  * noise (fuses, alarm clocks) → clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
- * day, the Work Period) → bed checks → the knocked out come round → inmates → job clock-in →
+ * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, seats → energy and health → showers → solitary →
  * what guards see (heat, chases, damage, cameras, searchlights, snipers) → bribes wearing off → the key alarm →
- * a lockdown called off → attendance → heat decay → doors.
+ * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay → doors.
  */
 export class Sim {
   readonly world: World;
@@ -116,6 +117,8 @@ export class Sim {
     if (hourStarts(s.step)) this.events.push({ type: 'hour', hour: clock.hour });
     // Routine: a new block settles the last one.
     nextBlock(this, clock);
+    // The day (P17): its event starts and ends, the drill's muster is called, a storm cuts the power.
+    theDay(this);
     // 00:30 and 04:00: the night bed check (GDD §5.3).
     if (s.step % STEPS_PER_MINUTE === 0 && BED_CHECK_MINUTES.includes(clock.minuteOfDay) && !this.world.def.rules?.relaxed) bedCheck(this);
     // The knocked out come round (GDD §10.2): a guard missing its key raises the alarm.
@@ -143,6 +146,7 @@ export class Sim {
     raiseKeyAlarm(this);
     outOfReach(this);
     attendance(this);
+    dayWatch(this);
     // Heat cools while no guard is looking.
     if (!s.seen && !s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
     // Doors last: they follow where everyone ended up, so the state at the end of a step
@@ -180,7 +184,7 @@ export class Sim {
     for (const g of s.guards) forInmates.push(g.body);
     inmateBodies.length = 0;
     for (const m of s.inmates) inmateBodies.push(m.body);
-    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : s.routine, s, forInmates, s.step, about && !this.away ? s.player : null, socialNow(this));
+    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : crowdPlan(this, s.routine), s, forInmates, s.step, about && !this.away ? s.player : null, socialNow(this));
     clockIn(this);
     // A guard talking with the player has somewhere else to be at a new block (P15): the talk ends.
     const k = guardTalking(s);
@@ -234,6 +238,8 @@ export class Sim {
 
   /** Where the block wants the player: the routine's zones, or during the Work Period, the job's room (GDD §2.1: mandatory if employed). */
   get dutyZones(): readonly string[] {
+    // The fire drill (P17): everyone out to roll call until it's over.
+    if (drillOn(this) && !this.state.lockdown) return MUSTER;
     const r = ROUTINE[this.state.routine];
     if (r.id !== 'work') return r.zones;
     const job = this.jobActive();
@@ -411,6 +417,9 @@ export class Sim {
     return fnv1a(JSON.stringify(this.state) + w.layers.map((l) => fnv1a(String.fromCharCode(...l.kind))).join('') + fnv1a(String.fromCharCode(...w.block)));
   }
 }
+
+/** Where the fire drill musters. */
+const MUSTER: readonly string[] = ['rollCall'];
 
 /** Whether a body's footprint touches a tile. */
 function overlaps(b: Body, tile: number): boolean {

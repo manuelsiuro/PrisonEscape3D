@@ -9,6 +9,7 @@ import { itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
 import { CHASE_HEAT, UNIT } from '../tuning';
+import { inFoodFight } from './calendar';
 
 /** The ledger's counters, in `feats` order. Stored as numbers: append only, never renumber. */
 export const FEATS = [
@@ -49,6 +50,13 @@ export const FEATS = [
   // v1.10.1: molten chocolate thrown at someone (a blow all the same), and the most followers at once.
   'flung',
   'crew',
+  // v1.11 (P17, the day): an inspection's commendation, the drill's muster made and missed, a feast eaten, blows landed in a food fight, baked by a heatwave.
+  'commended',
+  'mustered',
+  'drillsMissed',
+  'feasts',
+  'foodBlows',
+  'baked',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -95,6 +103,7 @@ export function ledger(sim: Sim, x: number, z: number) {
     switch (e.type) {
       case 'hit':
         f[FEAT.blows]++;
+        if (inFoodFight(sim) && e.who < s.inmates.length) f[FEAT.foodBlows]++;
         bits |= DAY.FIGHT;
         break;
       case 'koed':
@@ -156,6 +165,15 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'meal':
         f[FEAT.meals]++;
+        if (e.feast) f[FEAT.feasts]++;
+        break;
+      case 'today':
+        if (e.phase === 'commend') f[FEAT.commended]++;
+        else if (e.phase === 'muster') f[FEAT.mustered]++;
+        else if (e.phase === 'missed') f[FEAT.drillsMissed]++;
+        break;
+      case 'cold':
+        if (e.on && e.hot) f[FEAT.baked]++;
         break;
       case 'bedCheck':
         // Passed with nobody in the cell: the dummy under the blanket did it.

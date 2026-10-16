@@ -68,6 +68,8 @@ export interface PrisonRules {
   cold?: boolean;
   /** A lawless interior (San Pancho, GDD §4.4): a few inmates bear the new arrival a grudge from day 1, and grudges are settled in free time and the yard too, not just at meals and in the showers. */
   hostile?: boolean;
+  /** How far guards see (tiles; default 7): the Daily's twists (P26) may change it, the weather and the inspectors bend it (P17). */
+  sightRange?: number;
 }
 
 /** Everything that defines one prison. Maps are ASCII pictures, the rest is plain data. */

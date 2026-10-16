@@ -4,6 +4,7 @@ import { COSMETICS } from '../content/prisoner';
 import { escapesOf, PRISONS } from '../content/prisons';
 import { ESCAPES, type Sim } from '../sim/Sim';
 import { FEAT, FEATS } from '../sim/systems/ledger';
+import { weatherNow } from '../sim/systems/calendar';
 import { UNIT } from '../sim/tuning';
 import { LESSONS } from '../tutorial/lessons';
 import { lessonsDone } from './lessons';
@@ -140,7 +141,7 @@ export function escapeRun(rec: EscapeRecord): Achievement[] {
     addStats({ escapes: 1 });
   }
   syncRun();
-  const e: EscapeView = { ...viewOf(sim), via: ESCAPES[sim.state.via], day: sim.clock.day, medal: rec.medal };
+  const e: EscapeView = { ...viewOf(sim), via: ESCAPES[sim.state.via], day: sim.clock.day, medal: rec.medal, weather: weatherNow(sim) };
   const got = award(ACHIEVEMENTS.filter((a) => a.escape?.(e) || a.run?.(e)));
   return [...got, ...syncCareer(false)];
 }

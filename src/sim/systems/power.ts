@@ -19,6 +19,7 @@ import { tileOfBody } from './movement';
 import { cameraSees, sniperOn } from './security';
 import { besideOnGround } from './structure';
 import { addHeat } from './watch';
+import { snipersBlind } from './calendar';
 
 /** Time passing on the devices: the power comes back on (the maintenance guard has the generator running again, GDD §5.5), a camera's tape comes off. */
 export function devices(sim: SimContext) {
@@ -79,12 +80,38 @@ export function switchPower(sim: SimContext, prop: number) {
     sim.events.push({ type: 'power', on: true, by: 'player', gen });
     return;
   }
-  if (gen === 1) s.powerOff2 = POWER_OFF_STEPS;
-  else s.powerOff = POWER_OFF_STEPS;
-  sim.events.push({ type: 'power', on: false, by: 'player', gen });
-  // It stays at the generator until the power is back (on its way there it is a guard like any other).
-  // The tutorial's relaxed rules send nobody: the lesson is about the fence, not the chase.
-  if (!sim.world.def.rules?.relaxed) summon(sim, generatorSpot(sim, prop), 1, POWER_OFF_STEPS);
+  cutPower(sim, gen, 'player');
+}
+
+/**
+ * A generator's power cut (by the player, a storm's lightning, P17's service): what it powers
+ * goes dead for 45 s (a cut already under way lasts at least that), and a guard is sent to put
+ * it right. It stays at the generator until the power is back (on its way there it is a guard
+ * like any other). The tutorial's relaxed rules send nobody: the lesson is about the fence, not the chase.
+ */
+export function cutPower(sim: SimContext, gen: number, by: 'player' | 'storm' | 'maintenance', steps = POWER_OFF_STEPS) {
+  const s = sim.state;
+  const prop = generatorsOf(sim.world)[gen];
+  if (prop === undefined) return;
+  const was = offFor(s, gen);
+  if (gen === 1) s.powerOff2 = Math.max(was, steps);
+  else s.powerOff = Math.max(was, steps);
+  if (sim.world.def.rules?.relaxed) {
+    if (!was) sim.events.push({ type: 'power', on: false, by, gen });
+    return;
+  }
+  const spot = generatorSpot(sim, prop);
+  if (was > 0) {
+    // A cut made longer (the service on top of the player's): whoever is there waits it out.
+    if (steps > was) {
+      const there = s.guards.filter((g) => g.mode === GUARD.INVESTIGATE && g.target === spot);
+      for (const g of there) g.timer = Math.max(g.timer, steps);
+      if (!there.length) summon(sim, spot, 1, steps);
+    }
+    return;
+  }
+  sim.events.push({ type: 'power', on: false, by, gen });
+  summon(sim, spot, 1, offFor(s, gen));
 }
 
 /** Where the maintenance guard stands at the generator. */
@@ -168,6 +195,8 @@ export function cameraSeesPlayer(sim: SimContext): boolean {
 
 /** The towers' snipers are on duty: by day, or round the clock where the prison says so. */
 export function snipersOnDuty(sim: SimContext): boolean {
+  // P17: nobody shoots what the fog or a storm hides.
+  if (snipersBlind(sim)) return false;
   return ROUTINE[sim.state.routine].id !== 'lightsOut' || sim.world.def.rules?.snipers === 'always';
 }
 

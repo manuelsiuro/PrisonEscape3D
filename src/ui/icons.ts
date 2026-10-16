@@ -78,6 +78,19 @@ const P: Record<string, string> = {
   ear: '<path d="M7 9.5a5.5 5.5 0 0 1 11 0c0 3.2-3.5 4.3-3.5 7.5a3 3 0 0 1-5.6 1.5"/><path d="M10.5 10a2 2 0 0 1 4 0c0 1.6-2 2-2 3.6"/>',
   /** A throw (P14): an arc up and over, its arrowhead. */
   toss: '<path d="M4 19c1.5-7 7-11.5 14-11"/><path d="m14.5 5 3.7 3-3.2 3.6"/><circle cx="4" cy="19.5" r="1.4"/>',
+  /** The day (P17): weather, the warden's speakers, the events. */
+  cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.8 3.8 0 0 1 17.5 18Z"/>',
+  rain: '<path d="M7 14a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.8 3.8 0 0 1 17.5 14Z"/><path d="m8 17-1 3M12 17l-1 3M16 17l-1 3"/>',
+  storm: '<path d="M7 14a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.8 3.8 0 0 1 17.5 14H16"/><path d="m12.5 11-3 5h4l-3 5"/>',
+  fog: '<path d="M7 11a4.5 4.5 0 0 1 .4-6 6 6 0 0 1 10 2.4A3.6 3.6 0 0 1 18.5 11"/><path d="M3 14h18M5 17.5h14M8 21h8"/>',
+  heat: '<circle cx="9" cy="9" r="3.5"/><path d="M9 2v1.5M3.5 9H2M4.8 4.8l1 1M13.2 4.8l-1 1M4.8 13.2l1-1"/><path d="M15 12c1.5 1.5-1.5 3 0 4.5s-1.5 3 0 4.5M19 12c1.5 1.5-1.5 3 0 4.5s-1.5 3 0 4.5"/>',
+  wind: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h8"/>',
+  megaphone: '<path d="M3 10v4a1 1 0 0 0 1 1h3l9 5V4L7 9H4a1 1 0 0 0-1 1Z"/><path d="M7 15l1.5 5h3L10 16M19.5 9.5a3.5 3.5 0 0 1 0 5"/>',
+  film: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 8h4M3 12h4M3 16h4M17 8h4M17 12h4M17 16h4"/>',
+  clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 2.5h6v3H9ZM8.5 11l2 2 4-4M8.5 17h7"/>',
+  utensils: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 0-3 2.5-3 6s1.5 4 3 4v8"/>',
+  wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9Z"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

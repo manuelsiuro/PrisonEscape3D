@@ -21,6 +21,7 @@ import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
 import { TrophyToast } from '../ui/trophyToast';
+import { PaBoard } from '../ui/pa';
 import { trophyHooks } from '../game/trophies';
 import { play, sendOp } from './game';
 
@@ -76,6 +77,15 @@ export const vignette = h('div', 'alarm-vignette');
 /** Solitary is a dark cell: the edges of the screen close in. */
 export const darkCell = h('div', 'solitary-veil');
 document.body.append(vignette, darkCell);
+
+/** The warden's speakers (P17): the morning card and the day's announcements; the storm's flash over the screen. */
+export const paBoard = new PaBoard();
+paBoard.onSpeak = (chars, chime) => {
+  if (chime) sound.paChime();
+  window.setTimeout(() => sound.paVoice(Math.min(9, 3 + Math.round(chars / 16))), chime ? 950 : 0);
+};
+export const lightningVeil = h('div', 'lightning');
+document.body.append(lightningVeil);
 
 /** "Game saved" for a moment in the corner (see autosave). */
 export const savedMark = h('div', 'saved-mark', `${icon('save', 14)}<span></span>`);

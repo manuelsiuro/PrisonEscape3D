@@ -21,6 +21,7 @@ import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
 import { press, targets } from './buttons';
 import type { Game } from './game';
 import { coachItems, coachOnce, seenTip } from './tips';
+import { dayMinute, eventOn, fogNow, sightOf, today, weatherNow } from '../sim/systems/calendar';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -142,6 +143,8 @@ const frameData: Frame = {
   security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
   takeover: false,
   fuses: fuseFrame,
+  weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 },
+  events: { movie: false, foodFight: false, inspection: false },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -242,7 +245,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   });
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
-    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0, stir: 0 });
+    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0, stir: 0, range: 7 });
     const q = g.prevGuards[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -253,6 +256,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.away = lookingAway(m, st.step);
     o.awayLeft = o.away ? m.bribed - st.step : 0;
     o.stir = m.doze > 0 ? Math.min(1, m.stir / STIR_STEPS) : 0;
+    // How far it sees now (P17): the cone is drawn exactly that long.
+    o.range = sightOf(sim, m) / UNIT;
     const chasing = m.mode === GUARD.CHASE;
     o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
     o.held = chasing ? BATON : 0;
@@ -392,5 +397,29 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   }
   sec.hook = hook >= 0 ? hookAt : null;
   f.takeover = st.takeover;
+  dayFrame(sim, f);
   return f;
+}
+
+/**
+ * The day in the picture (P17): rain (1) or a storm (2), fog while it lies thick, a
+ * heatwave's haze by day, the wind (a heading in the view: where it blows to), and the
+ * event on (the screen, the food, the inspectors).
+ */
+function dayFrame(sim: Sim, f: Frame) {
+  const plan = today(sim);
+  const w = f.weather;
+  const now = weatherNow(sim);
+  w.rain = now === 'storm' ? 2 : now === 'rain' ? 1 : 0;
+  w.fog = fogNow(sim) ? 1 : 0;
+  const m = dayMinute(sim.state.step);
+  w.heat = plan.weather === 'heatwave' && m >= 60 && m < 690;
+  // From a bearing (0 north, clockwise in eighths) it blows the other way: east +x, south +z.
+  const b = (plan.wind * Math.PI) / 4;
+  w.windAngle = Math.atan2(Math.cos(b), -Math.sin(b));
+  w.windForce = plan.windForce;
+  const e = f.events;
+  e.movie = eventOn(sim, 'movie');
+  e.foodFight = eventOn(sim, 'foodFight');
+  e.inspection = eventOn(sim, 'inspection');
 }

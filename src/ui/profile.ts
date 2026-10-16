@@ -7,6 +7,7 @@ import { h } from './dom';
 import { icon } from './icons';
 import { favorText, inmateName } from './social';
 import { PLAYER } from '../talk/fill';
+import type { PaRow } from './pa';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const ATTR_ICONS = { str: 'dumbbell', spd: 'run', int: 'brain' } as const;
@@ -20,6 +21,8 @@ export class ProfilePanel {
   readonly el: HTMLElement;
   private drawn = '';
   isOpen = false;
+  /** The day (P17): today's event and weather rows, tomorrow's once forecast, what the player did of it; the play layer fills this in. */
+  day: () => { day: number; today: readonly PaRow[]; tomorrow: readonly PaRow[] | null; notes: readonly string[]; key: string } | null = () => null;
   /** The rumors heard (P13), newest first: the speech bubbles' director fills this in. */
   notebook: () => ReadonlyArray<{ text: string; old: boolean; day: number; by: string | null; self?: boolean }> = () => [];
 
@@ -56,7 +59,8 @@ export class ProfilePanel {
     const s = sim.state;
     const favors = s.favors.filter((f) => f.state !== FAVOR_STATE.OFFERED);
     const rumors = this.notebook();
-    const key = [rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
+    const day = this.day();
+    const key = [day?.key ?? '', rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const attrs = ATTRS.map((a, k) => {
@@ -91,7 +95,14 @@ export class ProfilePanel {
     const working = ROUTINE[s.routine].id === 'work';
     // Your prisoner's name on the file (P16), when they have one.
     const title = PLAYER.name ? t('profile.titleOf', { name: esc(PLAYER.name) }) : t('profile.title');
+    const row = (r: PaRow) => `<div class="pa-row"><span class="pa-ic" style="--c:${r.color}">${icon(r.icon, 18)}</span><span class="pa-text"><small>${esc(r.label)}</small><b>${esc(r.title)}${r.when ? `<em>${esc(r.when)}</em>` : ''}</b><span>${esc(r.sub)}</span>${r.note ? `<i class="pa-note">${icon('wind', 13)}${esc(r.note)}</i>` : ''}</span></div>`;
+    const dayHtml = day
+      ? `<div class="box-section"><div class="box-label"><span>${t('profile.today')}</span><em>${t('hud.day', { n: day.day })}${day.notes.length ? ` · ${day.notes.map(esc).join(' · ')}` : ''}</em></div><div class="file-day">${day.today.map(row).join('')}</div></div>${
+          day.tomorrow ? `<div class="box-section"><div class="box-label"><span>${t('profile.tomorrow')}</span><em>${t('profile.tomorrowNote')}</em></div><div class="file-day">${day.tomorrow.map(row).join('')}</div></div>` : ''
+        }`
+      : '';
     this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${title}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
+      ${dayHtml}
       <div class="box-section"><div class="box-label"><span>${t('profile.stats')}</span><em>${t('profile.statsNote')}</em></div>${attrs}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.job')}</span>${working && job >= 0 ? `<em>${t('profile.workNow')}</em>` : ''}</div>${jobHtml}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.favors')}</span></div>${favorList}</div>

@@ -360,6 +360,114 @@ export class Sound {
     }
   }
 
+  // ---------------------------------------------------------------- the day (P17)
+  /** The warden's speakers clicking on: a three-note airport chime, high to low. */
+  paChime() {
+    [784, 659.25, 523.25].forEach((f, k) => {
+      this.tone(f, f, 0.9, 'triangle', 0.11, k * 0.32);
+      this.tone(f * 2, f * 2, 0.4, 'sine', 0.025, k * 0.32);
+    });
+    this.hiss(0.12, 'bandpass', 2400, 1.5, 0.02);
+  }
+
+  /** The warden talking over the speakers: low syllables through a tinny radio band. */
+  paVoice(syllables: number) {
+    const c = this.ctx;
+    if (!c || !this.out || this.volume === 0) return;
+    const band = c.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 1300;
+    band.Q.value = 1.1;
+    const g = c.createGain();
+    g.gain.value = 1;
+    band.connect(g).connect(this.out);
+    for (let k = 0; k < syllables; k++) {
+      const f = 150 * (0.85 + Math.random() * 0.4);
+      this.tone(f, f * (0.85 + Math.random() * 0.3), 0.1, 'sawtooth', 0.05, k * 0.12 + Math.random() * 0.03, band);
+    }
+    setTimeout(() => g.disconnect(), (syllables * 0.12 + 0.4) * 1000);
+  }
+
+  /** The fire drill's bell: a striker hammering a gong for a few seconds. */
+  drillBell() {
+    for (let k = 0; k < 26; k++) {
+      this.tone(2250, 2200, 0.09, 'square', 0.035, k * 0.075);
+      this.tone(3420, 3380, 0.07, 'sine', 0.025, k * 0.075);
+    }
+  }
+
+  /** Thunder: a crack when it's close, then a long low rumble (`near` 0–1). */
+  thunder(near: number) {
+    if (near > 0.5) this.hiss(0.25, 'highpass', 1800, 0.7, 0.18 * near);
+    this.hiss(2.6, 'lowpass', 160 + 120 * near, 0.6, 0.45 * (0.5 + near / 2), undefined, near > 0.5 ? 0.05 : 0.4, 0.3);
+    this.hiss(1.4, 'lowpass', 420, 0.7, 0.12, undefined, 0.6 + Math.random() * 0.5);
+  }
+
+  /** A canteen erupting (the food fight): a roar of voices and a few whoops. */
+  crowd() {
+    this.hiss(2.4, 'bandpass', 700, 0.8, 0.16, undefined, 0, 0.4);
+    this.hiss(1.8, 'bandpass', 1500, 1.4, 0.05, undefined, 0.3, 0.3);
+    for (let k = 0; k < 4; k++) {
+      const f = 380 + Math.random() * 260;
+      this.tone(f, f * 1.6, 0.22, 'triangle', 0.035, 0.2 + k * 0.4 + Math.random() * 0.2);
+    }
+  }
+
+  /** Something soft flying and landing (a food fight's splat). */
+  splat(gain = 1) {
+    this.hiss(0.12, 'lowpass', 900, 1, 0.08 * gain);
+    this.tone(260, 120, 0.1, 'sine', 0.06 * gain);
+  }
+
+  /** The weather's sound (P17): rain (0–1) and wind (0–1), looping, muffled indoors and below. */
+  private wx: { rain: GainNode; rainF: BiquadFilterNode; wind: GainNode; windF: BiquadFilterNode; sources: AudioScheduledSourceNode[] } | null = null;
+  private wxWant = { rain: 0, wind: 0 };
+  setWeather(rain: number, wind: number) {
+    if (rain === this.wxWant.rain && wind === this.wxWant.wind) return;
+    this.wxWant = { rain, wind };
+    this.applyWeather();
+  }
+
+  private applyWeather() {
+    const c = this.ctx;
+    if (!c || !this.out || !this.noise || !this.ambienceGain) return;
+    const { rain, wind } = this.wxWant;
+    if (!this.wx) {
+      if (rain <= 0 && wind <= 0) return;
+      const make = (type: BiquadFilterType, freq: number, q: number) => {
+        const src = c.createBufferSource();
+        src.buffer = this.noise;
+        src.loop = true;
+        src.playbackRate.value = 0.9 + Math.random() * 0.2;
+        const f = c.createBiquadFilter();
+        f.type = type;
+        f.frequency.value = freq;
+        f.Q.value = q;
+        const g = c.createGain();
+        g.gain.value = 0;
+        src.connect(f).connect(g).connect(this.ambienceGain!);
+        src.start();
+        return { src, f, g };
+      };
+      const r = make('lowpass', 3200, 0.4);
+      const w = make('bandpass', 380, 1.8);
+      // The wind gusts: its band wanders.
+      const lfo = c.createOscillator();
+      lfo.frequency.value = 0.13;
+      const depth = c.createGain();
+      depth.gain.value = 160;
+      lfo.connect(depth).connect(w.f.frequency);
+      lfo.start();
+      this.wx = { rain: r.g, rainF: r.f, wind: w.g, windF: w.f, sources: [r.src, w.src, lfo] };
+    }
+    const inside = this.scene === 'indoor' || this.scene === 'under';
+    const muffle = this.scene === 'under' ? 0.15 : inside ? 0.4 : 1;
+    const now = c.currentTime;
+    this.wx.rain.gain.setTargetAtTime(0.09 * rain * muffle, now, 0.6);
+    this.wx.rainF.frequency.setTargetAtTime(inside ? 800 : 3200, now, 0.3);
+    this.wx.wind.gain.setTargetAtTime(0.07 * wind * (inside ? 0.3 : 1), now, 0.8);
+  }
+
   /** Picked something up: a quick rising pop. */
   pickup() {
     this.tone(520, 980, 0.09, 'triangle', 0.14);
@@ -792,7 +900,9 @@ export class Sound {
 
   /** Where the player is: the ambience's sounds follow from the next one. */
   setScene(scene: Scene) {
+    if (scene === this.scene) return;
     this.scene = scene;
+    this.applyWeather();
   }
 
   /** On the coast (HMP Irongate, P12): outdoors, the surf and gulls instead of songbirds and crickets. */
@@ -903,6 +1013,7 @@ export class Sound {
       this.clankTimer = window.setTimeout(clank, wait);
     };
     this.clankTimer = window.setTimeout(clank, 3000);
+    this.applyWeather();
   }
 
   private stopAmbience() {
@@ -914,6 +1025,10 @@ export class Sound {
     g.gain.setValueAtTime(g.gain.value, c.currentTime);
     g.gain.linearRampToValueAtTime(0, c.currentTime + 0.6);
     this.ambienceGain = null;
+    // The weather goes with it (it plays through the ambience's gain, fading out with it).
+    const wx = this.wx;
+    this.wx = null;
+    if (wx) setTimeout(() => wx.sources.forEach((x) => x.stop()), 800);
     const sources = this.ambienceSources;
     this.ambienceSources = [];
     setTimeout(() => {

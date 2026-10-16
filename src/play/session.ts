@@ -30,6 +30,7 @@ import { showSaves } from '../ui/screens/saves';
 import { showSettings } from '../ui/screens/settings';
 import { announce } from './announce';
 import { chatterStart, chatterStop, director } from './chatter';
+import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
 import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
@@ -138,6 +139,8 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   tipsSeen.clear();
   // Achievements and stats follow the run (not a lesson's).
   if (!lesson) startRun(sim, !resumed);
+  // The day (P17): the warden's first morning for a new game (after the bell).
+  dayStart(sim, !resumed);
   // Loaded asleep or out cold: the veil says which.
   sleepVeil.querySelector('span')!.textContent = t(sim.state.ko > 0 ? 'sleep.knockedOut' : 'sleep.asleep');
   itemsUI.show(true);
@@ -289,6 +292,7 @@ export function endGame() {
   sound.ambience(false);
   talk.hide();
   chatterStop();
+  dayStop();
   cancelThrow();
   view.setShift(0, 0);
   board.close();

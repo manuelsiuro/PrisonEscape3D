@@ -29,6 +29,7 @@ import { slot } from '../src/sim/systems/items';
 import { CAMERA_TURN_STEPS, KO_STEPS, MINE_DAMAGE, STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { KEY, TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
+import { quietCalendar } from '../src/sim/systems/calendar';
 import { Bot, DIR, n, tileOf } from './bots';
 import { check } from './assert';
 
@@ -216,6 +217,8 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
 {
   // A player who never hits back, three days of the routine: a grudge-bearer that jumps them and puts them down is over it.
   const bot = new Bot(SAN_PANCHO, 9);
+  // Ordinary days (P17): a food fight would settle scores of its own.
+  bot.st.calendar = quietCalendar();
   const st = bot.st;
   const by = new Set<number>();
   const hurt = bot.sim.step.bind(bot.sim);

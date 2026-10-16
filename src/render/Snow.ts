@@ -44,17 +44,21 @@ export class Snowfall {
    * whether snow falls on a tile (open sky): over a building it would fall through the cut-away
    * roof onto the floor, so those flakes are drawn under the ground instead, out of sight.
    */
-  update(dt: number, time: number, cx: number, cz: number, on: boolean, open: (x: number, z: number) => boolean = () => true) {
+  update(dt: number, time: number, cx: number, cz: number, on: boolean, open: (x: number, z: number) => boolean = () => true, wind = 0, windAngle = 0) {
     this.points.visible = on;
     if (!on) return;
     const x0 = cx - SPAN / 2;
     const z0 = cz - SPAN / 2;
     const p = this.pos;
+    // The wind (P17): flakes driven sideways, faster in a blizzard.
+    const fall = 1 + wind * 0.3;
+    const gx = Math.cos(windAngle) * wind * 0.9;
+    const gz = Math.sin(windAngle) * wind * 0.9;
     for (let i = 0; i < FLAKES; i++) {
       const k = i * 3;
-      p[k + 1] -= this.speed[i] * dt;
-      p[k] += (0.25 + Math.sin(time * 0.8 + this.phase[i]) * 0.3) * dt;
-      p[k + 2] += Math.cos(time * 0.6 + this.phase[i]) * 0.15 * dt;
+      p[k + 1] -= this.speed[i] * fall * dt;
+      p[k] += (0.25 + gx + Math.sin(time * 0.8 + this.phase[i]) * 0.3) * dt;
+      p[k + 2] += (gz + Math.cos(time * 0.6 + this.phase[i]) * 0.15) * dt;
       if (p[k + 1] < 0) p[k + 1] += HIGH;
       // Wrapped into the box round the player (it moves with them).
       p[k] = x0 + ((((p[k] - x0) % SPAN) + SPAN) % SPAN);

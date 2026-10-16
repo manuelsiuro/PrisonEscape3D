@@ -13,6 +13,7 @@ import { play, type Game } from './game';
 import { updateGuide } from './guide';
 import { keepPlayerClear, updateOverlay } from './overlay';
 import { autosave, escaped } from './session';
+import { dayEvent, dayFrame, dayStep } from './day';
 import { checkRun } from '../game/trophies';
 import { markTip, updateFirstDay } from './tips';
 import { lessonEvent, lessonHidden, updateLesson } from './lesson';
@@ -73,6 +74,7 @@ function stepSim(g: Game, dt: number) {
     // Sound, banners and vibration read the events; the simulation never calls them.
     for (const e of sim.events) {
       announce(e, sim);
+      dayEvent(e, sim);
       if (!g.lesson) chatterEvent(e, sim);
       lessonEvent(g, e);
       // Out on the road: the escape screen.
@@ -87,6 +89,8 @@ function stepSim(g: Game, dt: number) {
       if (e.type === 'pickup') pickedUp = true;
     }
     tickTock(sim, speed);
+    // The warden's clock (P17): warnings, the forecast, a quip, on the minute.
+    dayStep(sim);
   }
   if (play.acc > 1) play.acc = 0;
 }
@@ -132,6 +136,7 @@ export function frame(now: number) {
   keepPlayerClear(panel && !g.paused);
   updateTargets(sim, g.ladderFoot, busy, panel, held);
   view.draw(buildFrame(g, a, tile, busy, held), dt, now / 1000);
+  dayFrame(g, dt, g.over || st.ko > 0 || st.solitary > 0);
   updateOverlay(g, a, tile, busy, held, panel);
   // The first day's guide: what the player has done, read from the game.
   updateFirstDay(g, pickedUp, dt);

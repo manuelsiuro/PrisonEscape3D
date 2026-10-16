@@ -21,3 +21,11 @@ export const formatTime = (c: Clock) => `${String(c.hour).padStart(2, '0')}:${St
 
 /** True on the first step of each game hour (not at the very start). */
 export const hourStarts = (step: number) => step > 0 && step % (STEPS_PER_MINUTE * 60) === 0;
+
+/** Steps in a prison day (P17): a prison day runs from 08:00 to 08:00. */
+export const DAY_STEPS = 1440 * STEPS_PER_MINUTE;
+
+/** The prison day a step falls in (1 on the first). */
+export const prisonDay = (step: number) => Math.floor(step / DAY_STEPS) + 1;
+/** Minutes into the prison day (0 is 08:00, 1439 is 07:59). */
+export const dayMinute = (step: number) => Math.floor((step % DAY_STEPS) / STEPS_PER_MINUTE);
