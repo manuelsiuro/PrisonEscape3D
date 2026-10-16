@@ -5,7 +5,7 @@ import { lineOfSight, SIGHT_RANGE } from '../ai/sight';
 import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { DIRS } from '../command';
-import { GUARD_STR, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { GUARD_STR, RIOT_STR, STEPS_PER_SECOND, UNIT } from '../tuning';
 import { MAP_W, type World } from '../world/World';
 import type { Fighter } from './combat';
 import { DOING, fighter, STAND_OFF } from './inmates';
@@ -92,7 +92,7 @@ export function spawnGuards(w: World): Guard[] {
       sees: false,
       lastSeen: -1,
       resume: 0,
-      ...fighter(GUARD_STR),
+      ...fighter(d.riot ? RIOT_STR : GUARD_STR),
     };
   });
 }

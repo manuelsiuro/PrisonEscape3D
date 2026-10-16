@@ -269,10 +269,10 @@ export class Sound {
   }
 
   /** A burst of filtered noise. */
-  private hiss(dur: number, filter: BiquadFilterType, freq: number, q: number, gain: number, dest?: AudioNode) {
+  private hiss(dur: number, filter: BiquadFilterType, freq: number, q: number, gain: number, dest?: AudioNode, delay = 0, swell = 0) {
     const c = this.ctx;
     if (!c || !this.out || !this.noise || this.volume === 0) return;
-    const t = c.currentTime;
+    const t = c.currentTime + delay;
     const src = c.createBufferSource();
     src.buffer = this.noise;
     src.playbackRate.value = 0.8 + Math.random() * 0.4;
@@ -281,11 +281,15 @@ export class Sound {
     f.frequency.value = freq;
     f.Q.value = q;
     const g = c.createGain();
-    g.gain.setValueAtTime(gain, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    // A swell (the surf): rising before it dies away, rather than struck.
+    if (swell > 0) {
+      g.gain.setValueAtTime(0.001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + swell);
+    } else g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + swell + dur);
     src.connect(f).connect(g).connect(dest ?? this.out);
     src.start(t, Math.random() * 1.5);
-    src.stop(t + dur);
+    src.stop(t + swell + dur);
   }
 
   /** Sitting down: a soft creak of wood and a settle. */
@@ -704,6 +708,42 @@ export class Sound {
     this.scene = scene;
   }
 
+  /** On the coast (HMP Irongate, P12): outdoors, the surf and gulls instead of songbirds and crickets. */
+  private coast = false;
+  setCoast(on: boolean) {
+    this.coast = on;
+  }
+
+  /** The surf: a long wash of low noise breaking on the rocks. */
+  private surf(g: GainNode) {
+    this.hiss(1.8, 'lowpass', 520, 0.6, 0.05, g, 0, 0.9);
+    this.hiss(1.0, 'bandpass', 1400, 0.8, 0.014, g, 0.7, 0.3);
+  }
+
+  /** The sea pouring into a tunnel (P12): a roar of water, a deep rumble, bubbles. */
+  flood() {
+    this.hiss(2.2, 'lowpass', 600, 0.5, 0.55);
+    this.hiss(1.6, 'bandpass', 1800, 1.2, 0.12);
+    this.tone(80, 40, 1.6, 'sine', 0.3);
+    for (let k = 0; k < 6; k++) this.tone(300 + k * 70, 700 + k * 90, 0.06, 'sine', 0.05, 0.3 + k * 0.17);
+  }
+
+  /** Off the pier on the raft: a splash, then the slap of water under it. */
+  launch() {
+    this.hiss(0.5, 'highpass', 900, 0.7, 0.25);
+    this.hiss(1.2, 'lowpass', 700, 0.6, 0.15, undefined, 0.2);
+    for (let k = 0; k < 3; k++) this.hiss(0.18, 'bandpass', 600, 1.5, 0.08, undefined, 0.7 + k * 0.45);
+  }
+
+  /** The helicopter lifting off (P12): the rotor's beat quickening, the turbine's whine. */
+  rotor() {
+    for (let k = 0; k < 18; k++) {
+      const at = 0.42 * k * (1 - k / 40);
+      this.hiss(0.08, 'lowpass', 300, 0.8, 0.18, undefined, at);
+    }
+    this.tone(400, 1100, 2.6, 'sawtooth', 0.03);
+  }
+
   /** The room tone and distant clanks while playing; silence on the title. */
   ambience(on: boolean) {
     if (on === this.ambienceOn) return;
@@ -742,7 +782,15 @@ export class Sound {
       const g = this.ambienceGain;
       if (!g) return;
       let wait = 9000 + Math.random() * 16000;
-      if (this.scene === 'outdoorDay') {
+      if (this.coast && (this.scene === 'outdoorDay' || this.scene === 'outdoorNight')) {
+        // The surf on the rocks; by day a gull's falling cry now and then.
+        this.surf(g);
+        if (this.scene === 'outdoorDay' && Math.random() < 0.45) {
+          const f = 1500 + Math.random() * 500;
+          for (let k = 0; k < 2 + Math.floor(Math.random() * 2); k++) this.tone(f, f * 0.62, 0.22, 'triangle', 0.014, 0.6 + k * 0.3, g);
+        }
+        wait = 2600 + Math.random() * 3200;
+      } else if (this.scene === 'outdoorDay') {
         // Birds: a pair of quick rising chirps.
         const f = 2400 + Math.random() * 1400;
         for (let k = 0; k < 2 + Math.floor(Math.random() * 3); k++) this.tone(f, f * 1.35, 0.07, 'sine', 0.018, k * 0.11, g);

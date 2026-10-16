@@ -84,6 +84,9 @@ export const START_STR = 40;
 export const START_SPD = 40;
 /** Guards are tougher than the average inmate; inmates vary (STR 30–60). */
 export const GUARD_STR = 60;
+/** Armored riot guards (P12, HMP Irongate): stronger (more health, harder blows), and their plates take a blow's edge off (defense, as an outfit's). */
+export const RIOT_STR = 80;
+export const RIOT_DEFENSE = 45;
 export const INMATE_STR_MIN = 30;
 export const INMATE_STR_SPAN = 31;
 /** A melee blow reaches this far (units, centre to centre); the razor whip further (its def says). */

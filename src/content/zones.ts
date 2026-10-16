@@ -38,6 +38,9 @@ export const ZONES = [
   // P11 (San Pancho): the guards' walkway inside the inner wall, the minefield beyond it.
   'walkway',
   'minefield',
+  // P12 (HMP Irongate): the helipad's walled court, the dock behind its electric fence.
+  'helipad',
+  'dock',
 ] as const;
 
 export type ZoneId = (typeof ZONES)[number];
@@ -45,4 +48,4 @@ export type ZoneId = (typeof ZONES)[number];
 export const zoneIndex = (id: ZoneId): number => ZONES.indexOf(id);
 
 /** Staff only: seen in one without a guard outfit means instant 100% heat (GDD §5.2). */
-export const RESTRICTED: readonly ZoneId[] = ['generator', 'guardQuarters', 'controlRoom', 'vents', 'roof', 'walkway', 'minefield'];
+export const RESTRICTED: readonly ZoneId[] = ['generator', 'guardQuarters', 'controlRoom', 'vents', 'roof', 'walkway', 'minefield', 'helipad', 'dock'];

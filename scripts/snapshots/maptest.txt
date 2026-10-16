@@ -27,6 +27,13 @@ decor: 94 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
 guards: 8, 45 stops, 2 asleep at night
 vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 1948
+== irongate · picture 5cbfd2d6
+tiles: asphalt 325, brick 405, concrete 673, detector 6, door 36, electric 19, fence 10, grass 847, pier 6, reinforced 348, road 18, tiled 258, tower 36, water 925, wood 184
+zones: canteen 132, cellBlock 108, controlRoom 63, corridor 88, dock 39, generator 81, guardQuarters 36, gym 48, helipad 72, infirmary 35, inmateCell 208, janitor 20, kitchen 50, laundry 36, library 42, mailroom 20, metalshop 54, none 745, outside 18, perimeter 1261, playerCell 16, rollCall 60, showers 40, solitary 16, walkway 594, woodshop 54, yard 160
+decor: 85 pieces
+walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
+guards: 10, 58 stops, 4 asleep at night
+vents: 59 duct tiles, 2 grates, 1 ladder; roof tiles 1910
 == training · picture 9be5d540
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144
 zones: canteen 110, corridor 78, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, woodshop 50, yard 823

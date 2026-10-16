@@ -43,6 +43,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['weather', 'snow', '#2f78be', 'stalag-flucht'],
     ['shell', 'shield', '#5d6b7a', 'shankton'],
     ['mines', 'mine', '#c8372d', 'san-pancho'],
+    ['island', 'boat', '#2b6f9a', 'irongate'],
   ],
 };
 

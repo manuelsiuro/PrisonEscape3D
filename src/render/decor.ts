@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { DecorKind, DecorPlacement } from '../content/decor';
-import { box, cyl, disc, kitMaterial, merge, rod, type Part } from './kit';
+import { box, cyl, disc, kitMaterial, merge, paint, rod, type Part } from './kit';
 import { seeThrough } from './occlusion';
 
 /**
@@ -230,6 +230,30 @@ const BUILDERS: Record<DecorKind, Builder> = {
       box(0.03, 0.12, 0.01, 0x1d1d1d, 0.09, 0.77, 0.07),
     ],
   }),
+  /** A mooring bollard on the quay (P12): a squat iron post, its cap, a turn of rope. */
+  bollard: () => ({ parts: [cyl(0.16, 0.12, 0x3b4048, 0, 0, 0, 10), cyl(0.12, 0.34, 0x2b3038, 0, 0.1, 0, 10), cyl(0.17, 0.07, 0x3b4048, 0, 0.42, 0, 10), cyl(0.135, 0.05, 0xc8a86a, 0, 0.24, 0, 10)] }),
+  /** Shipping crates, one on another, stencilled. */
+  crates: () => ({
+    parts: [
+      box(0.7, 0.5, 0.6, 0x8a6a42, -0.05, 0, 0),
+      box(0.72, 0.06, 0.62, 0x6e4a2b, -0.05, 0.22, 0),
+      box(0.5, 0.4, 0.45, 0xa07a4a, 0.08, 0.5, -0.02),
+      box(0.3, 0.12, 0.01, 0x2b3038, -0.05, 0.25, 0.305),
+    ],
+  }),
+  /** A coil of mooring rope on the quay. */
+  ropeCoil: () => ({ parts: [cyl(0.3, 0.06, 0xc8a86a, 0, 0, 0, 14), cyl(0.26, 0.06, 0xb8985a, 0, 0.06, 0, 14), cyl(0.22, 0.06, 0xc8a86a, 0, 0.12, 0, 14), cyl(0.12, 0.2, 0x3b4048, 0, 0, 0, 10)] }),
+  /** The helipad's windsock: a pole and an orange-and-white sock. */
+  windsock: () => {
+    const sock = new THREE.CylinderGeometry(0.12, 0.06, 0.7, 8, 1, true).rotateZ(Math.PI / 2).translate(0.42, 2.3, 0);
+    return { parts: [cyl(0.04, 2.4, STEEL, 0, 0, 0, 8), cyl(0.13, 0.05, STEEL, 0.05, 2.28, 0, 8).rotateZ(Math.PI / 2), paint(sock, 0xf2701c), box(0.12, 0.2, 0.2, WHITE, 0.45, 2.2, 0)] };
+  },
+  /** A life ring on the wall: red and white quarters, its rope. */
+  lifebuoy: (_w, d) => {
+    const z = ON_WALL(d) + 0.06;
+    const ring = (from: number, color: number) => paint(new THREE.TorusGeometry(0.2, 0.06, 6, 6, Math.PI / 2).rotateZ(from).translate(0, 0.9, z), color);
+    return { parts: [ring(0, RED), ring(Math.PI / 2, WHITE), ring(Math.PI, RED), ring((3 * Math.PI) / 2, WHITE), box(0.04, 0.12, 0.02, 0xc8a86a, 0, 1.12, z - 0.03)] };
+  },
   hoop: () => ({ parts: [cyl(0.05, 2.4, DARK, 0, 0, -0.3, 8), box(0.9, 0.6, 0.04, WHITE, 0, 2.2, -0.24), box(0.3, 0.22, 0.01, RED, 0, 2.25, -0.215), cyl(0.2, 0.03, 0xe8642c, 0, 2.15, -0.02, 14)] }),
   filing: () => ({ parts: [box(0.5, 1.1, 0.5, 0x8a96a3, 0, 0, 0), ...[0.22, 0.48, 0.74].map((y) => box(0.42, 0.2, 0.01, 0x9fabb7, 0, y, 0.255)), ...[0.3, 0.56, 0.82].map((y) => box(0.12, 0.03, 0.02, DARK, 0, y, 0.265))] }),
   ivStand: () => ({ parts: [cyl(0.2, 0.04, DARK, 0, 0, 0, 8), cyl(0.02, 1.5, STEEL, 0, 0.04, 0, 6), box(0.3, 0.02, 0.02, STEEL, 0, 1.52, 0), box(0.12, 0.2, 0.06, 0xd9eef7, 0.1, 1.3, 0)] }),

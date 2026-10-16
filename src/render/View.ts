@@ -8,6 +8,7 @@ import { Security, type SecurityFrame } from './Security';
 import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
+import { Island } from './Island';
 import { Snores, Sparks } from './Particles';
 import { DecorView } from './decor';
 import { Minefield } from './Minefield';
@@ -233,6 +234,7 @@ export class View {
   private structure: Structure | null = null;
   private security: Security | null = null;
   private minefield: Minefield | null = null;
+  private island: Island | null = null;
   private riot = false;
   private underground: Underground | null = null;
   /** The layer drawn (the player's), and the tiles revision the damage was drawn for. */
@@ -257,6 +259,7 @@ export class View {
   private readonly c2 = new THREE.Color();
   private readonly sky = new THREE.Color();
   private readonly v = new THREE.Vector3();
+  private readonly carried = new THREE.Vector3();
   private readonly p = new THREE.Vector3();
   private readonly lightBasis = new THREE.Matrix4();
   private readonly lightInverse = new THREE.Matrix4();
@@ -352,6 +355,11 @@ export class View {
       this.scene.remove(this.minefield.group);
       this.minefield.dispose();
     }
+    if (this.island) {
+      this.scene.remove(this.island.group);
+      this.island.dispose();
+      this.island = null;
+    }
     // The prison's look (snow at Stalag Flucht): the textures drawn from here on follow it.
     setTheme(world.def.theme ?? 'suburban');
     this.world = world;
@@ -362,6 +370,11 @@ export class View {
     this.scene.add(this.decor.group);
     this.minefield = new Minefield(world);
     this.scene.add(this.minefield.group);
+    // An island's sea and shore, the drawbridge, the helicopter (P12).
+    if (world.def.theme === 'island') {
+      this.island = new Island(world);
+      this.scene.add(this.island.group);
+    }
     this.scene.add(this.security.group);
     this.worldView = new WorldView(world);
     this.structure = new Structure(world, this.worldView);
@@ -388,7 +401,7 @@ export class View {
       this.scene.remove(c.root);
       c.dispose();
     }
-    this.guardCast = beds.map((_, k) => new Character(guardLook(k, keys[k])));
+    this.guardCast = beds.map((_, k) => new Character(guardLook(k, keys[k], !!this.world?.def.guards[k]?.riot)));
     this.guardBeds = beds;
     for (const c of this.guardCast) this.scene.add(c.root);
     this.cones.setCount(beds.length);
@@ -752,6 +765,14 @@ export class View {
       this.security.update(f.security, dt, time, this.night, !this.reducedMotion);
     }
     this.riot = f.takeover;
+    if (this.island) {
+      this.island.group.visible = f.layer !== LAYER.UNDER;
+      this.island.update(dt, time, f.minuteOfDay, f.takeover, !this.reducedMotion);
+      // Leaving: on the raft as it drifts out, or aboard the helicopter (out of sight).
+      const on = this.island.carry(this.carried);
+      if (on) this.player.root.position.copy(on);
+      this.player.root.visible = !this.island.aboard && this.player.root.visible;
+    }
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion);
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);
@@ -774,6 +795,12 @@ export class View {
       this.dust.puff(x + 0.9, z + 0.6, 0x9a8a6a, 10, 0.8);
       this.sparks.burst(x + 0.9, 0.05, z + 0.6, 7, 0xffe2a0, 2.6);
     }
+  }
+
+  /** Away over the sea (P12): the raft pushes off the pier, or the helicopter lifts off with the player aboard. */
+  depart(kind: 'raft' | 'helicopter') {
+    const p = this.player.root.position;
+    this.island?.depart(kind, p.x, p.z);
   }
 
   /** A landmine goes off (P11): a fireball of sparks, a column of sand and smoke, the hardest jolt. */
@@ -886,7 +913,7 @@ export class View {
     this.decor?.update(this.security?.group.visible ? this.security.powerLevel : 1, time, this.layer === LAYER.VENTS ? 0.3 : 1, this.reducedMotion);
     // Decor belongs to the ground floor (out of the picture from the tunnels).
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
-    this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot);
+    this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot, this.security?.group.visible ? this.security.arches : 1);
     this.dust.update(dt);
     this.camera.position.copy(this.target).add(CAMERA_OFFSET);
     this.camera.lookAt(this.target);

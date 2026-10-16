@@ -14,7 +14,7 @@ import { ANGRY_STEPS, CHASE_HEAT, GRUDGE_SETTLED, GUARD_SWING_STEPS, HIT_OPINION
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';
 import { closeBox } from './actions';
-import { BATON_ATTACK, damage, dist2, type Fighter, GUARD_DEFENSE, INMATE_DEFENSE, isGuard, maxHealth, personOf, reachOf, swingSteps } from './combat';
+import { BATON_ATTACK, damage, dist2, type Fighter, guardDefense, INMATE_DEFENSE, isGuard, maxHealth, personOf, reachOf, swingSteps } from './combat';
 import { FAVOR, FAVOR_STATE } from './economy';
 import { awake, backToDuty, type Guard, GUARD } from './guards';
 import { DOING, type Inmate } from './inmates';
@@ -132,7 +132,7 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
   const who = s.lock;
   const guard = isGuard(s, who);
   s.selfDefense = false;
-  const dmg = damage(s.str, wdef?.attack ?? 0, guard ? GUARD_DEFENSE : INMATE_DEFENSE);
+  const dmg = damage(s.str, wdef?.attack ?? 0, guard ? guardDefense(sim.world, who - s.inmates.length) : INMATE_DEFENSE);
   f.hp = Math.max(0, f.hp - dmg);
   const ko = f.hp === 0;
   // They know who hit them.
@@ -303,7 +303,7 @@ export function fight(sim: SimContext) {
     m.swing = s.step;
     if (m.body.x !== f.body.x || m.body.z !== f.body.z) m.body.facing = faceTo(f.body.x - m.body.x, f.body.z - m.body.z);
     const guard = isGuard(s, foe);
-    const dmg = damage(m.str, 0, guard ? GUARD_DEFENSE : INMATE_DEFENSE);
+    const dmg = damage(m.str, 0, guard ? guardDefense(sim.world, foe - s.inmates.length) : INMATE_DEFENSE);
     f.hp = Math.max(0, f.hp - dmg);
     if (guard && (f as Guard).doing === DOING.SLEEP) (f as Guard).doing = DOING.NOTHING;
     sim.events.push({ type: 'allyHit', by: id, who: foe, dmg, ko: f.hp === 0 });

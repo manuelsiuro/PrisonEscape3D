@@ -1,6 +1,6 @@
 import { itemDef, itemNumber, type ItemDef } from '../../content/items';
 import { lineOfSight } from '../ai/sight';
-import { GUARD_SWING_STEPS, INMATE_SWING_STEPS, LOCK_RANGE, MELEE_REACH, UNIT } from '../tuning';
+import { GUARD_SWING_STEPS, INMATE_SWING_STEPS, LOCK_RANGE, MELEE_REACH, RIOT_DEFENSE, UNIT } from '../tuning';
 import type { World } from '../world/World';
 import type { Body } from './movement';
 
@@ -51,6 +51,8 @@ export const BATON = itemNumber('baton');
 export const INMATE_DEFENSE = itemDef(INMATE_OUTFIT).defense ?? 0;
 export const GUARD_DEFENSE = itemDef(GUARD_OUTFIT).defense ?? 0;
 export const BATON_ATTACK = itemDef(BATON).attack ?? 0;
+/** A guard's defense: its uniform's, or a riot guard's plates (P12). */
+export const guardDefense = (w: World, k: number) => (w.def.guards[k]?.riot ? RIOT_DEFENSE : GUARD_DEFENSE);
 export { GUARD_SWING_STEPS, INMATE_SWING_STEPS };
 
 /**

@@ -1,7 +1,7 @@
 import { itemDef, itemNumber, type ItemDef } from '../../content/items';
 import { DIR_X, DIR_Z } from '../command';
 import { BODY_HALF, CAMERA_REACH, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRAPNEL_REACH, GRATE_HP, SHARPEN_STROKES, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
-import { isGrate, isTunnel, TILE, TILE_INFO } from '../world/tiles';
+import { isGrate, isSea, isTunnel, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { placesOf } from '../ai/places';
 import { lineOfSight } from '../ai/sight';
@@ -18,7 +18,7 @@ import type { Body } from './movement';
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
  * takes the player down off a roof.
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -73,6 +73,7 @@ export const BRACE = ITEM_ID('timber_brace');
 export const SHEET_ROPE = ITEM_ID('sheet_rope');
 export const CHOCOLATE = ITEM_ID('chocolate');
 export const GRAPNEL = ITEM_ID('grapnel');
+export const RAFT = ITEM_ID('raft');
 /** What blinds a camera (GDD §5.6). */
 export const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
 const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
@@ -240,6 +241,10 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   }
   const placed = placeTarget(w, layer, here, ahead, held);
   if (placed) return placed;
+  // A raft in hand at the end of a pier, the open sea ahead (P12, GDD §4.5): launched, and away.
+  if (held === RAFT && layer === LAYER.GROUND && ahead >= 0 && w.ground.kind[here] === TILE.PIER && w.ground.kind[ahead] === TILE.WATER && !w.bridge[ahead]) {
+    return { action: 'launch', layer, tile: ahead, fits: true, hp: 0 };
+  }
   // A grapnel at a roof's edge, the perimeter fence in reach beyond (GDD §12): a sheet rope in the pockets gets the player down outside.
   if (held === GRAPNEL && layer === LAYER.ROOF) {
     const swing = grapnelSwing(w, b);
@@ -334,13 +339,20 @@ export function grapnelSwing(w: World, b: Body): { fence: number; land: number; 
       const lk = w.ground.kind[land];
       return TILE_INFO[lk].outdoor && !TILE_INFO[lk].solid && !w.blocked(x + sx, z + sz) ? { fence: i, land, roof: false } : null;
     }
-    // A roof standing on the wire (a gatehouse astride the fences): hooked, and swung across onto it.
-    if (roof[i] === TILE.ROOF && k <= GRAPNEL_REACH && w.zoneAt(x, z) === 'perimeter') return { fence: i, land: i, roof: true };
+    // A roof standing on the wire (a gatehouse astride the fences), or a landing across a chasm
+    // between roofs (Irongate's yard): hooked, and swung across onto it.
+    if (roof[i] === TILE.ROOF && k <= GRAPNEL_REACH && (w.zoneAt(x, z) === 'perimeter' || onLanding(w, x, z))) return { fence: i, land: i, roof: true };
     // Over open ground only (no roofs, towers or walls in the way).
     if (roof[i] !== TILE.EMPTY || !TILE_INFO[kind].outdoor || TILE_INFO[kind].solid) return null;
   }
   return null;
 }
+
+/** A roof the prison names as a grapnel's landing across a chasm (PrisonDef.landings). */
+export const onLanding = (w: World, x: number, z: number) => !!w.def.landings?.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
+
+/** A tunnel tile under the sea (P12): digging it floods the tunnel (GDD §4.5). */
+export const underSea = (w: World, i: number) => i >= 0 && isSea(w.ground.base[i]);
 
 /** The camera the player stands under or beside (-1: none). */
 export function cameraInReach(w: World, b: Body): number {

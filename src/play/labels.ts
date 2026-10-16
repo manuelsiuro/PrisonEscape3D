@@ -7,7 +7,9 @@ import { isGuard, maxHealth, personOf, reachOf, swingSteps } from '../sim/system
 import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/systems/items';
-import { DIRT, STRIKES, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import { genOf, offFor } from '../sim/systems/power';
+import { helicopterIn } from '../sim/systems/sea';
+import { DIRT, STRIKES, underSea, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { energyCost } from '../sim/systems/weather';
 import { STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
@@ -32,8 +34,8 @@ export const NEED: Record<string, string> = {
   rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat' };
 
 /** The tool button's face, refilled in place. */
 const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress: null, repeat: true };
@@ -120,15 +122,27 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     return actionLabel;
   }
   if (target.kind === 'fixture') {
-    // The generator says which way it would go (GDD §5.5).
-    const power = target.use === 'generator' ? sim.power : true;
+    // The generator says which way it would go (GDD §5.5), and at Irongate which one it is (P12); the helipad, whether the helicopter is in.
+    const gen = target.use === 'generator' ? genOf(sim.world, target.index) : 0;
+    const power = target.use === 'generator' ? offFor(sim.state, gen) === 0 : target.use === 'helicopter' ? helicopterIn(sim) : true;
     const kind = sim.world.props[target.index].kind;
-    const key = `fixture:${target.use}:${kind}:${power}:${currentLang()}`;
+    const key = `fixture:${target.use}:${kind}:${power}:${gen}:${currentLang()}`;
     if (key !== actionKey) {
       actionKey = key;
-      const verb = target.use === 'generator' ? (power ? 'act.powerOff' : 'act.powerOn') : `act.${target.use}`;
-      // A seat, bench or chair by its own name; an infirmary bed.
-      const thing = target.use === 'board' ? 'jobBoard' : target.use === 'sit' ? kind : target.use === 'rest' ? 'infirmaryBed' : target.use;
+      const verb = target.use === 'generator' ? (power ? 'act.powerOff' : 'act.powerOn') : target.use === 'helicopter' && !power ? 'act.helipad' : `act.${target.use}`;
+      // A seat, bench or chair by its own name; an infirmary bed; GEN-1 and GEN-2 by what they run.
+      const thing =
+        target.use === 'board'
+          ? 'jobBoard'
+          : target.use === 'sit'
+            ? kind
+            : target.use === 'rest'
+              ? 'infirmaryBed'
+              : target.use === 'generator' && sim.world.def.grid
+                ? `gen${gen + 1}`
+                : target.use === 'helicopter' && !power
+                  ? 'helipad'
+                  : target.use;
       Object.assign(actionLabel, { verb: t(verb as Key), what: t(`thing.${thing}` as Key) });
     }
     return actionLabel;
@@ -231,10 +245,22 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
           : tt.action === 'brace'
             ? ''
             : tt.action === 'grapnel'
-              ? t(!tt.fits ? 'thing.needRope' : tt.layer === LAYER.ROOF ? 'thing.ontoGatehouse' : w.zoneAt(tt.tile % MAP_W, Math.floor(tt.tile / MAP_W)) === 'outside' ? 'thing.overFence' : 'thing.betweenFences')
+              ? t(
+                  !tt.fits
+                    ? 'thing.needRope'
+                    : tt.layer === LAYER.ROOF
+                      ? w.zoneAt(tt.tile % MAP_W, Math.floor(tt.tile / MAP_W)) === 'perimeter'
+                        ? 'thing.ontoGatehouse'
+                        : 'thing.acrossChasm'
+                      : w.zoneAt(tt.tile % MAP_W, Math.floor(tt.tile / MAP_W)) === 'outside'
+                        ? 'thing.overFence'
+                        : 'thing.betweenFences',
+                )
               : tt.action === 'tape'
                 ? t('thing.camera')
-                : t('thing.rope');
+                : tt.action === 'launch'
+                  ? t('thing.toSea')
+                  : t('thing.rope');
     v.progress = null;
     return v;
   }
@@ -243,13 +269,13 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     tt.action === 'chip'
       ? t(k === TILE.REINFORCED ? 'thing.reinforced' : 'thing.wall')
       : tt.action === 'cut'
-        ? t(k === TILE.ELECTRIC ? (sim.power ? 'thing.electricLive' : 'thing.electricDead') : 'thing.fence')
+        ? t(k === TILE.ELECTRIC ? (sim.powered('fence') ? 'thing.electricLive' : 'thing.electricDead') : 'thing.fence')
         : tt.action === 'unscrew'
           ? t('thing.grate')
           : tt.action === 'digUp'
             ? t(k === TILE.MINE && !sim.state.craters.includes(tt.tile) ? 'thing.intoMines' : 'thing.surface')
             : tt.layer === LAYER.UNDER
-              ? t(w.layers[LAYER.UNDER].kind[tt.tile] === TILE.BOULDER ? 'thing.boulder' : 'thing.earth')
+              ? t(w.layers[LAYER.UNDER].kind[tt.tile] === TILE.BOULDER ? 'thing.boulder' : underSea(w, tt.tile) ? 'thing.underSea' : 'thing.earth')
               : t('thing.floor');
   const worn = sim.state.wear[placeKey(tt.layer, tt.tile)] ?? 0;
   v.progress = tt.hp > 0 ? Math.min(1, worn / tt.hp) : 0;

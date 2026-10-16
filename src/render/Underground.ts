@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { isTunnel, TILE, TILE_INFO } from '../sim/world/tiles';
+import { isSea, isTunnel, TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
 import { box, kitMaterial, merge, paint, type Part } from './kit';
 import { seeThrough } from './occlusion';
@@ -38,8 +38,10 @@ export class Underground {
       // The map above, faintly: buildings' footprints and walls, fences, roads, grass.
       const k = g[i];
       // The minefield above (P11) in a warning red: come up there and a mine goes off.
-      const tint =
-        k === TILE.MINE
+      // The sea above (P12) in deep blue: dig under it and the tunnel floods.
+      const tint = isSea(k)
+        ? 0x3d6f8f
+        : k === TILE.MINE
           ? 0xc8735a
           : k === TILE.BRICK || k === TILE.REINFORCED
           ? 0x6f6258

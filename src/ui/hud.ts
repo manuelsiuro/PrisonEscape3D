@@ -23,6 +23,8 @@ export interface HudState {
   work: { place: string; quota: number; of: number; paid: boolean } | null;
   /** Security (GDD §5.5, §12): seconds until the power comes back (null: on), and until the first guard comes round in a takeover (null: none). */
   powerLeft: number | null;
+  /** What the power pill says (Irongate's generators each kill their half, P12). */
+  powerKey: 'hud.powerOut' | 'hud.powerOutCams' | 'hud.powerOutFence';
   takeoverLeft: number | null;
   /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double). */
   cold: { built: number; left: number; bit: boolean; warming: boolean } | null;
@@ -199,10 +201,10 @@ export class Hud {
     this.updateRoutine(s);
     this.updateHeat(s.heat);
     const c = s.cold;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
-      this.alert(this.power, 'hud.powerOut', s.powerLeft, 45);
+      this.alert(this.power, s.powerKey, s.powerLeft, 45);
       this.alert(this.riot, 'hud.gatesOpen', s.takeoverLeft, 30);
       this.chill(c);
     }

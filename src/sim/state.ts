@@ -21,10 +21,10 @@ import { LAYER, type World } from './world/World';
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
-export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate'] as const;
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter'] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
-/** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper. */
-export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3 } as const;
+/** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper, a mine, the sea flooding a tunnel. */
+export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3, FLOOD: -4 } as const;
 /** Where a knocked-out player wakes up. */
 export const WAKE = { NONE: 0, SOLITARY: 1, INFIRMARY: 2, FLOORED: 3 } as const;
 
@@ -66,6 +66,8 @@ export type SimEvent =
   | { type: 'caveIn'; tile: number }
   /** A landmine went off under the player (P11): its ground tile. */
   | { type: 'blast'; tile: number }
+  /** A tunnel dug under the sea (P12, GDD §4.5): it floods, the player is washed out; the tile dug into, the tunnel tiles lost. */
+  | { type: 'flood'; tile: number; lost: number }
   /** Onto another layer (through a grate, up the ladder, into a tunnel…). */
   | { type: 'layer'; layer: number; from: number; how: ClimbAction | 'digUp' | 'rope' | 'grapnel' }
   /** A cover put over damage or taken off it; a brace set up; chocolate eaten. */
@@ -81,7 +83,7 @@ export type SimEvent =
   /** Out on the road: free (GDD §4.0), and how. */
   | { type: 'escaped'; via: EscapeRoute }
   /** Security (GDD §5.4–5.6): the power off and back on; a pass through a detector arch (tripped, or shielded by the pouch: its passes left); a camera blinded or seeing again; a sniper taking aim and shooting; the takeover. */
-  | { type: 'power'; on: boolean; by: 'player' | 'guard' }
+  | { type: 'power'; on: boolean; by: 'player' | 'guard'; gen?: number }
   | { type: 'scanned'; tripped: boolean; pouch: number; tile: number }
   | { type: 'camera'; index: number; blind: boolean }
   | { type: 'aim'; tower: number }
@@ -144,7 +146,7 @@ export type SimEvent =
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -284,6 +286,8 @@ export interface SimState {
   frozen: boolean;
   /** Mines set off today (P11, GDD §4.4): their ground tiles, craters until the guards lay new ones at 08:00. */
   craters: number[];
+  /** The second generator (P12, HMP Irongate's GEN-2): steps until its power comes back on (0: on). */
+  powerOff2: number;
 }
 
 export interface Snapshot {
@@ -379,6 +383,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     cold: 0,
     frozen: false,
     craters: [],
+    powerOff2: 0,
   };
 }
 

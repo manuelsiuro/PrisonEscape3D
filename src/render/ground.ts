@@ -39,9 +39,9 @@ function paintLayer(world: World): THREE.Mesh {
   const R = PAINT_RES;
   const kind = (x: number, z: number) => (world.inside(x, z) ? world.ground.kind[z * MAP_W + x] : TILE.EMPTY);
 
-  // Road: a dashed yellow center line along the ring.
+  // Road: a dashed yellow center line along the ring (an island has no road round it).
   c.fillStyle = 'rgba(242, 194, 48, 0.85)';
-  for (let i = 2; i < MAP_W - 2; i += 2) {
+  for (let i = 2; i < MAP_W - 2 && world.def.theme !== 'island'; i += 2) {
     c.fillRect(i * R + 2, 1 * R - 1, R - 4, 2);
     c.fillRect(i * R + 2, (MAP_H - 1) * R - 1, R - 4, 2);
     c.fillRect(1 * R - 1, i * R + 2, 2, R - 4);

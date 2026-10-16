@@ -49,6 +49,8 @@ export const TILE = {
   BOULDER: 33,
   /** A landmine buried in the sand (GDD §4.4): walkable, and it goes off underfoot. */
   MINE: 34,
+  /** A wooden pier over the sea (HMP Irongate, GDD §4.5): walkable, and the sea under it floods a tunnel. */
+  PIER: 35,
 } as const;
 
 export type TileKind = (typeof TILE)[keyof typeof TILE];
@@ -99,11 +101,14 @@ export const TILE_INFO: Record<number, TileInfo> = {
   [TILE.ROOF]: info('roof', false, false, true),
   [TILE.BOULDER]: info('boulder', true, true, false),
   [TILE.MINE]: info('mine', false, false, true),
+  [TILE.PIER]: info('pier', false, false, true),
 };
 
 /** Damage a guard would notice (GDD §9.3): an open hole, a cut fence, a missing grate, a tunnel entrance. */
 export const DAMAGE_SHOWS: ReadonlySet<number> = new Set([TILE.HOLE, TILE.FENCE_CUT, TILE.GRATE_OPEN, TILE.SHAFT]);
 
+/** The sea is under it (HMP Irongate, GDD §4.5): a tunnel dug beneath floods at once. */
+export const isSea = (k: number) => k === TILE.WATER || k === TILE.PIER;
 /** Tunnel floor (walkable, layer -1). */
 export const isTunnel = (k: number) => k === TILE.TUNNEL || k === TILE.BRACED;
 /** Grate tiles of any state. */
@@ -130,6 +135,7 @@ export const LEGEND: Record<string, { kind: TileKind; key?: KeyColor }> = {
   T: { kind: TILE.TOWER },
   '~': { kind: TILE.WATER },
   '*': { kind: TILE.MINE },
+  P: { kind: TILE.PIER },
   y: { kind: TILE.DOOR, key: KEY.YELLOW },
   c: { kind: TILE.DOOR, key: KEY.CYAN },
   p: { kind: TILE.DOOR, key: KEY.PURPLE },

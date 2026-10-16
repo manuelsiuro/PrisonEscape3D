@@ -1,6 +1,7 @@
 import type * as THREE from 'three';
+import { CylinderGeometry } from 'three';
 import type { PropKind } from '../content/props';
-import { box, cyl, disc, merge, rod, type Part } from './kit';
+import { box, cyl, disc, merge, paint as paintPart, rod, type Part } from './kit';
 
 /**
  * Furniture models, built facing +z (south, toward the camera) and centered on the origin,
@@ -160,6 +161,17 @@ const BUILDERS: Record<PropKind, Builder> = {
   controlDesk: (w, d) => {
     const parts = [box(w - 0.06, 0.55, d - 0.3, 0x4a5260, 0, 0, -0.1), box(w - 0.04, 0.05, d - 0.2, 0x2b3038, 0, 0.55)];
     for (let k = 0; k < Math.round(w); k++) parts.push(box(0.7, 0.42, 0.06, 0x1d2026, -w / 2 + 0.5 + k, 0.6, -d / 2 + 0.25), box(0.62, 0.34, 0.01, 0x5fd4ff, -w / 2 + 0.5 + k, 0.64, -d / 2 + 0.285));
+    return parts;
+  },
+  /** Irongate's helipad (P12): a painted pad, its yellow ring, the white H, a lamp at each corner. */
+  helipad: (w, d) => {
+    const r = Math.min(w, d) / 2 - 0.15;
+    const ring = new CylinderGeometry(r, r, 0.02, 32).translate(0, 0.01, 0);
+    const inner = new CylinderGeometry(r - 0.16, r - 0.16, 0.022, 32).translate(0, 0.011, 0);
+    const parts: Part[] = [box(w - 0.1, 0.008, d - 0.1, 0x3b4048), paintPart(ring, 0xe8b828), paintPart(inner, 0x4a5058)];
+    // The H.
+    parts.push(box(0.22, 0.03, 1.5, WHITE, -0.5, 0.015), box(0.22, 0.03, 1.5, WHITE, 0.5, 0.015), box(0.8, 0.03, 0.22, WHITE, 0, 0.015));
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) parts.push(cyl(0.06, 0.08, 0x2b3038, sx * (w / 2 - 0.18), 0, sz * (d / 2 - 0.18), 8), cyl(0.045, 0.04, 0x8fe08a, sx * (w / 2 - 0.18), 0.08, sz * (d / 2 - 0.18), 8));
     return parts;
   },
 };

@@ -19,12 +19,14 @@ export interface Victory {
   bestDay: number;
   /** The next prison in the campaign, opened by this escape (its name and security level), offered to go on to. */
   unlocked?: { name: string; security: string };
+  /** The last prison broken out of for the first time (P12): every prison of the campaign beaten. */
+  campaign?: boolean;
 }
 
 export type VictoryChoice = 'again' | 'next' | 'title';
 
 /** Each way out's icon. */
-const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key' };
+const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli' };
 
 /**
  * The victory screen (GDD §13.2): how the player got out, the days it took and the tally
@@ -58,6 +60,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       </div>
       <div class="v-routes"><span class="v-routes-label"></span><span class="v-pips">${pips}</span></div>
       ${v.unlocked ? `<div class="v-unlock" role="status">${icon('map', 22)}<span><b></b><small></small></span></div>` : ''}
+      ${v.campaign ? `<div class="v-unlock" role="status">${icon('star', 22)}<span><b>${t('victory.campaign')}</b><small>${t('victory.campaignSub')}</small></span></div>` : ''}
       <div class="actions">
         ${v.unlocked ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}<span class="v-next"></span></button>` : ''}
         <button class="big-btn ${v.unlocked ? 'ghost' : 'primary'}" data-c="again">${icon('replay', 18)}${t('victory.again')}</button>

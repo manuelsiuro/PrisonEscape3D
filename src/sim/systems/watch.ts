@@ -17,7 +17,7 @@ import { clockAt } from './clock';
 import { awake, GUARD, startChase } from './guards';
 import { itemOf } from './items';
 import { type Body, tileOfBody } from './movement';
-import { cameraSeesPlayer, snipe, summon } from './power';
+import { cameraSeesPlayer, snipe, summon, powered } from './power';
 import { inBeam } from './security';
 import { DIRT, underMyDesk, WALL_CHUNK } from './structure';
 
@@ -69,7 +69,7 @@ export function watch(sim: SimContext) {
     if (fighting || working || (!disguised && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone)))) [reason, heat] = [SPOT.indexOf('camera'), 100];
   }
   // A searchlight's beam at night (GDD §5.2): +35% a second in it, the alarm (guards sent) as it finds the player.
-  const lit = !disguised && sim.power && ROUTINE[s.routine].id === 'lightsOut' && s.layer === LAYER.GROUND && inBeam(sim.world, p, s.step) >= 0;
+  const lit = !disguised && powered(sim.world, s, 'searchlights') && ROUTINE[s.routine].id === 'lightsOut' && s.layer === LAYER.GROUND && inBeam(sim.world, p, s.step) >= 0;
   if (lit && !s.lit) summon(sim, here, 2);
   s.lit = lit;
   if (!reason && lit) [reason, heat] = [SPOT.indexOf('searchlight'), s.step % 4 === 0 ? SEARCHLIGHT_HEAT : 0];

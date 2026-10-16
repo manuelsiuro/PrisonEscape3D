@@ -43,9 +43,12 @@ for (const def of [...PRISONS, TRAINING]) {
   console.log('tiles:', [...kinds].sort().map(([k, n]) => `${k} ${n}`).join(', '));
   console.log('zones:', [...zones].sort().map(([k, n]) => `${k} ${n}`).join(', '));
 
-  // The edge of the map is road: escapes end there.
+  // The edge of the map is road (escapes end there), or the sea round an island (Irongate's ways out cross it).
   for (let i = 0; i < MAP_W; i++) {
-    for (const [x, z] of [[i, 0], [i, MAP_H - 1], [0, i], [MAP_W - 1, i]]) check(g.kind[z * MAP_W + x] === TILE.ROAD, `${def.id}: edge tile ${x},${z} is road`);
+    for (const [x, z] of [[i, 0], [i, MAP_H - 1], [0, i], [MAP_W - 1, i]]) {
+      const k = g.kind[z * MAP_W + x];
+      check(k === TILE.ROAD || (def.theme === 'island' && k === TILE.WATER), `${def.id}: edge tile ${x},${z} is road${def.theme === 'island' ? ' or sea' : ''}`);
+    }
   }
 
   // Props stand on walkable floor, inside the map, never on a door.
@@ -85,12 +88,15 @@ for (const def of [...PRISONS, TRAINING]) {
 
   console.log(`decor: ${decorCount} pieces`);
 
-  // Doors and detectors sit in a wall line, with floor on both sides free of solid props.
+  // Doors and detectors sit in a wall line, with floor on both sides free of solid props (a drawbridge counts: it comes down onto it).
   for (let z = 1; z < MAP_H - 1; z++) {
     for (let x = 1; x < MAP_W - 1; x++) {
       const k = g.kind[z * MAP_W + x];
       if (k !== TILE.DOOR && k !== TILE.DETECTOR) continue;
-      const free = (dx: number, dz: number) => !TILE_INFO[g.kind[(z + dz) * MAP_W + x + dx]].solid && !w.propSolid[(z + dz) * MAP_W + x + dx];
+      const free = (dx: number, dz: number) => {
+        const j = (z + dz) * MAP_W + x + dx;
+        return (!TILE_INFO[g.kind[j]].solid || w.bridge[j] === 1) && !w.propSolid[j];
+      };
       check((free(1, 0) && free(-1, 0)) || (free(0, 1) && free(0, -1)), `${def.id}: door at ${x},${z} opens onto floor on two opposite sides`);
     }
   }

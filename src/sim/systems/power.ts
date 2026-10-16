@@ -7,10 +7,11 @@ import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
-import { HURT_BY } from '../state';
+import type { PowerUse } from '../../content/prisons/types';
+import { HURT_BY, type SimState } from '../state';
 import { DETECTOR_HEAT, POWER_OFF_STEPS, SNIPER_AIM, SNIPER_DAMAGE, SNIPER_PACE, SOLITARY_HEAT, TAKEOVER_SHARE, UNIT } from '../tuning';
 import { TILE } from '../world/tiles';
-import { LAYER, MAP_W } from '../world/World';
+import { LAYER, MAP_W, type World } from '../world/World';
 import { hurt } from './fights';
 import { awake, backToDuty, GUARD, sendToLook } from './guards';
 import { HOTBAR, itemOf, slot, usesOf } from './items';
@@ -23,8 +24,12 @@ import { addHeat } from './watch';
 export function devices(sim: SimContext) {
   const s = sim.state;
   if (s.powerOff > 0 && --s.powerOff === 0) {
-    maintenanceDone(sim);
-    sim.events.push({ type: 'power', on: true, by: 'guard' });
+    maintenanceDone(sim, 0);
+    sim.events.push({ type: 'power', on: true, by: 'guard', gen: 0 });
+  }
+  if (s.powerOff2 > 0 && --s.powerOff2 === 0) {
+    maintenanceDone(sim, 1);
+    sim.events.push({ type: 'power', on: true, by: 'guard', gen: 1 });
   }
   s.cams.forEach((until, k) => {
     if (until && s.step >= until) {
@@ -34,21 +39,49 @@ export function devices(sim: SimContext) {
   });
 }
 
+/** The prison's generators (prop indexes, in map order): one, or HMP Irongate's two (P12). */
+export function generatorsOf(w: World): number[] {
+  const out: number[] = [];
+  w.props.forEach((p, k) => p.kind === 'generator' && out.push(k));
+  return out;
+}
+
+/** Which generator (0, 1) a generator prop is. */
+export const genOf = (w: World, prop: number) => Math.max(0, generatorsOf(w).indexOf(prop));
+
+/** Steps until a generator's power is back (0: running). */
+export const offFor = (s: SimState, gen: number) => (gen === 1 ? s.powerOff2 : s.powerOff);
+
+/** The generator that powers something (GDD §5.5; Irongate's split, §4.5): the prison's one, else the one the grid names. */
+export function genFor(w: World, use: PowerUse): number {
+  const grid = w.def.grid;
+  if (!grid) return 0;
+  const k = grid.findIndex((uses) => uses.includes(use));
+  return k < 0 ? 0 : k;
+}
+
+/** Whether something has power now. */
+export const powered = (w: World, s: SimState, use: PowerUse) => offFor(s, genFor(w, use)) === 0;
+
 /**
- * The generator (GDD §5.5): switched off, the electric fence, the detectors, the cameras and
- * the searchlights go dead for 45 s, and a guard is sent to put it right; switched back on by
- * the player, sooner.
+ * The generator (GDD §5.5): switched off, what it powers (the electric fence, the
+ * detectors, the cameras, the searchlights, the lights: all of them, or Irongate's half)
+ * goes dead for 45 s, and a guard is sent to put it right; switched back on by the player,
+ * sooner.
  */
 export function switchPower(sim: SimContext, prop: number) {
   const s = sim.state;
-  if (s.powerOff > 0) {
-    s.powerOff = 0;
-    maintenanceDone(sim);
-    sim.events.push({ type: 'power', on: true, by: 'player' });
+  const gen = genOf(sim.world, prop);
+  if (offFor(s, gen) > 0) {
+    if (gen === 1) s.powerOff2 = 0;
+    else s.powerOff = 0;
+    maintenanceDone(sim, gen);
+    sim.events.push({ type: 'power', on: true, by: 'player', gen });
     return;
   }
-  s.powerOff = POWER_OFF_STEPS;
-  sim.events.push({ type: 'power', on: false, by: 'player' });
+  if (gen === 1) s.powerOff2 = POWER_OFF_STEPS;
+  else s.powerOff = POWER_OFF_STEPS;
+  sim.events.push({ type: 'power', on: false, by: 'player', gen });
   // It stays at the generator until the power is back (on its way there it is a guard like any other).
   // The tutorial's relaxed rules send nobody: the lesson is about the fence, not the chase.
   if (!sim.world.def.rules?.relaxed) summon(sim, generatorSpot(sim, prop), 1, POWER_OFF_STEPS);
@@ -61,11 +94,11 @@ function generatorSpot(sim: SimContext, prop: number): number {
   return at >= 0 ? at : p.z * MAP_W + p.x;
 }
 
-/** The power is back: whoever was sent to the generator goes back to duty. */
-function maintenanceDone(sim: SimContext) {
-  const gen = sim.world.props.findIndex((q) => q.kind === 'generator');
-  if (gen < 0) return;
-  const spot = generatorSpot(sim, gen);
+/** A generator's power is back: whoever was sent to it goes back to duty. */
+function maintenanceDone(sim: SimContext, gen: number) {
+  const prop = generatorsOf(sim.world)[gen];
+  if (prop === undefined) return;
+  const spot = generatorSpot(sim, prop);
   for (const g of sim.state.guards) if (g.mode === GUARD.INVESTIGATE && g.target === spot) backToDuty(g);
 }
 
@@ -95,7 +128,7 @@ export function scan(sim: SimContext) {
   }
   if (s.scanned) return;
   s.scanned = true;
-  if (!sim.power) return;
+  if (!powered(w, s, 'detectors')) return;
   const it = s.items;
   let carried = false;
   let pouch = -1;
@@ -128,7 +161,7 @@ export function scan(sim: SimContext) {
 export function cameraSeesPlayer(sim: SimContext): boolean {
   const s = sim.state;
   const cams = sim.world.def.cameras;
-  if (!cams || !sim.power || s.layer !== LAYER.GROUND) return false;
+  if (!cams || !powered(sim.world, s, 'cameras') || s.layer !== LAYER.GROUND) return false;
   for (let k = 0; k < cams.length; k++) if (!s.cams[k] && cameraSees(sim.world, cams[k], k, s.step, s.player)) return true;
   return false;
 }

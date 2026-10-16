@@ -33,6 +33,8 @@ export const PROPS = {
   chair: { solid: false },
   /** The metalshop's hydraulic press (P9): sheet metal in, a license plate out. */
   press: { solid: true },
+  /** HMP Irongate's helipad (P12): the pad's marking, flat underfoot; the supply helicopter sets down on it at night. */
+  helipad: { solid: false },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

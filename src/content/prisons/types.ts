@@ -27,10 +27,17 @@ export interface GuardDef {
   duties?: ReadonlyArray<'bedCheck' | 'shakedown'>;
   /** The door key it carries on its belt (GDD §10.2: one color each). */
   key: 'yellow' | 'cyan' | 'purple' | 'red' | 'green';
+  /** An armored riot guard (HMP Irongate, GDD §4.5): helmet and plates, stronger, blows glance off. */
+  riot?: boolean;
+  /** One of the helipad's guards (GDD §4.5): the helicopter takes nobody while one is up and about. */
+  helipad?: boolean;
 }
 
+/** What a generator powers (GDD §5.5; HMP Irongate splits them between two, §4.5). */
+export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';
+
 /** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
-export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate';
+export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter';
 
 /**
  * How a prison bends the common rules (P8+; each default is Center Perks'). New prisons add
@@ -55,8 +62,8 @@ export interface PrisonDef {
   id: string;
   /** 1 (minimum security) to 5 (supermax). */
   difficulty: number;
-  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert. */
-  theme?: 'suburban' | 'alpine' | 'industrial' | 'desert';
+  /** How it looks (render only): Center Perks' suburban green (default), Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island in the sea. */
+  theme?: 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island';
   /** The ground floor picture (layer 0). */
   ground: string;
   /** The vents picture (layer +1): ducts, ceiling grates, the ladder to the roof. Roofs cover every building; tunnels are dug. */
@@ -93,4 +100,13 @@ export interface PrisonDef {
   gates?: ReadonlyArray<{ x: number; z: number }>;
   /** The ways out of this prison (default: fence, tunnel, roof, takeover), for the victory screen and the records. */
   escapes?: readonly EscapeRoute[];
+  /**
+   * Several generators (HMP Irongate, GDD §4.5): what each powers, in the order the props
+   * list them. Without it the prison's one generator powers everything.
+   */
+  grid?: ReadonlyArray<readonly PowerUse[]>;
+  /** Roofs a grapnel swings across onto from another roof, over open ground (Irongate's chasm): their rectangles. */
+  landings?: readonly Rect[];
+  /** Water a takeover bridges (Irongate's ferry drawbridge, GDD §4.5): walkable while the prison is the inmates'. */
+  drawbridge?: Rect;
 }

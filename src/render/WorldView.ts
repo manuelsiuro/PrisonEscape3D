@@ -38,6 +38,7 @@ const FLOOR_OF: Record<number, keyof typeof TEX> = {
   [TILE.ELECTRIC]: 'grass',
   [TILE.TOWER]: 'grass',
   [TILE.MINE]: 'minefield',
+  [TILE.PIER]: 'pier',
   // Under the walls: what a see-through cut reveals.
   [TILE.BRICK]: 'wallCore',
   [TILE.REINFORCED]: 'wallCore',
@@ -425,8 +426,9 @@ export class WorldView {
     return this.alongX(x, z, (k) => isWall(k) || k === TILE.DOOR || k === TILE.HOLE || k === TILE.HOLE_FAKE || k === TILE.HOLE_POSTER);
   }
 
-  /** Fields and woods beyond the road, so the map's edge never shows the void. */
+  /** Fields and woods beyond the road, so the map's edge never shows the void (an island's sea is the Island view's). */
   private buildSurroundings() {
+    if (this.world.def.theme === 'island') return;
     const tex = TEX.grass().clone();
     tex.needsUpdate = true;
     tex.repeat.set(200, 200);
@@ -485,7 +487,7 @@ export class WorldView {
    * Per frame: doors slide toward their state (open too where a guard walks through, or the
    * player with a key, in `open`); lights follow the time of day (0 day … 1 night).
    */
-  update(dt: number, night: number, open?: ReadonlySet<number>, power = 1, riot = false) {
+  update(dt: number, night: number, open?: ReadonlySet<number>, power = 1, riot = false, arches = power) {
     for (const d of this.doors) {
       // A takeover (GDD §12): every door stands open.
       const target = this.world.doorShut[d.index] && !open?.has(d.index) && !riot ? 0 : 1;
@@ -498,8 +500,8 @@ export class WorldView {
     // Detector arches: green while powered, a red flash when one trips, dark with the power out.
     if (this.archFlash > 0) this.archFlash = Math.max(0, this.archFlash - dt);
     const flash = this.archFlash > 0 && Math.floor(this.archFlash * 8) % 2 === 0;
-    this.archLight.color.setHex(flash ? 0xff2a1a : power > 0.5 ? 0x3fb950 : 0x1d2229);
-    this.archLight.emissive.setHex(flash ? 0xff2a1a : power > 0.5 ? 0x2a9a3a : 0x000000);
+    this.archLight.color.setHex(flash ? 0xff2a1a : arches > 0.5 ? 0x3fb950 : 0x1d2229);
+    this.archLight.emissive.setHex(flash ? 0xff2a1a : arches > 0.5 ? 0x2a9a3a : 0x000000);
   }
 
   /** A detector arch tripped (GDD §5.4): its lamps flash red a moment. */

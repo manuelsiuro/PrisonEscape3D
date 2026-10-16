@@ -16,6 +16,7 @@
  * The snapshot pins each run: when it got out, how, the heat's peak, and the tally.
  */
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { IRONGATE } from '../src/content/prisons/irongate';
 import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { SHANKTON } from '../src/content/prisons/shankton';
 import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
@@ -70,7 +71,7 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.until(() => false, 10 * STEPS_PER_MINUTE);
 }
 
-type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate';
+type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter';
 
 /** Where each route goes in a prison: tiles as [x, z], with a facing where it matters. */
 interface Plan {
@@ -90,9 +91,18 @@ interface Plan {
   /** Detector arches on the way (Shankton): a contraband pouch in the kit. */
   pouch?: boolean;
   /** Tunnel: the desk, the tile above the toilet, the tunnel's tiles in order with the way each is dug. */
-  desk: [number, number];
-  toilet: [number, number];
-  dig: Array<[number, number, number]>;
+  desk?: [number, number];
+  toilet?: [number, number];
+  dig?: Array<[number, number, number]>;
+  /** Raft (Irongate): where to stand at GEN-2 and which way, the dock fence to cut from and which way, the pier's end and the sea's way; the walkway guard to let go by first (its night round's west end). */
+  power2?: [number, number, number];
+  dock?: [number, number, number];
+  pier?: [number, number, number];
+  walkwayGuard?: number;
+  /** Helicopter (Irongate): the north roof's edge over the yard and the way across, the edge over the helipad court and the way down, the pad. */
+  chasm?: [number, number, number];
+  court?: [number, number, number];
+  pad?: [number, number];
   /** Rooftop: the cell's grate (none: the ladder is reached on foot, the power off first), the ladder, the roof's edge and which way the fence is. */
   grate?: [number, number];
   ladder?: [number, number];
@@ -110,6 +120,8 @@ interface Plan {
   strongest?: boolean;
   /** Molten chocolate in the pockets (GDD §10.1: thrown, out cold at once), for a guard force too big to beat by hand. */
   chocolate?: number;
+  /** Takeover: the chocolate kept for the riot guards (Irongate's armored four), the rest beaten by hand; and every chaser beaten before walking out (a riot guard catches a player who runs). */
+  riotCups?: boolean;
 }
 
 const PLANS: Plan[] = [
@@ -209,6 +221,37 @@ const PLANS: Plan[] = [
     chocolate: 4,
     gates: [31, 62],
   },
+  // HMP Irongate (GDD §4.5): no tunnel (the sea floods it), no fence onto a road. The raft: a
+  // guard's uniform and cloned keys (yellow out of the cell, purple into GEN-2, red through
+  // the sally port and the dock's door), a pouch through the arches; GEN-2 off, the dock's
+  // dead fence cut, the raft launched off the pier's end. The helicopter: the vents to GEN-1's
+  // ladder, a grapnel across the yard onto the south roofs, a sheet rope down into the court,
+  // the two riot guards put down with molten chocolate, aboard in uniform. The takeover in the
+  // yard (ten guards, four in riot gear), out by the sally port, the ferry gate and the
+  // lowered drawbridge.
+  {
+    def: IRONGATE,
+    seed: 51,
+    name: (r) => `${IRONGATE.id}: ${r}`,
+    routes: ['raft', 'helicopter', 'takeover'],
+    keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_red'],
+    power2: [43, 45, DIR.SOUTH],
+    dock: [59, 28, DIR.EAST],
+    pier: [62, 28, DIR.EAST],
+    walkwayGuard: 7,
+    grate: [9, 11],
+    ladder: [51, 17],
+    chasm: [36, 21, DIR.SOUTH],
+    court: [32, 44, DIR.EAST],
+    pad: [36, 45],
+    rally: [34, 24],
+    trained: 100,
+    strongest: true,
+    chocolate: 5,
+    riotCups: true,
+    pouch: true,
+    gates: [30, 59],
+  },
 ];
 
 // ------------------------------------------------------------------ 1. the perimeter cutout
@@ -260,10 +303,10 @@ function tunnel(p: Plan) {
   // The entrance under the desk, from beside it.
   bot.walkTo(places.deskside[1]);
   bot.face(DIR.EAST);
-  const desk = tileOf(...p.desk);
+  const desk = tileOf(...p.desk!);
   check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT), 'the entrance under the desk');
   // Its dirt down the toilet.
-  bot.walkTo(tileOf(...p.toilet));
+  bot.walkTo(tileOf(...p.toilet!));
   bot.face(DIR.SOUTH);
   bot.hold('dirt');
   bot.act();
@@ -275,7 +318,7 @@ function tunnel(p: Plan) {
   bot.act(1);
   check(st.layer === LAYER.UNDER, 'down the tunnel');
   // Under the wall and the fence (round the boulders): a brace on every third tile.
-  p.dig.forEach(([x, z, face], k) => {
+  p.dig!.forEach(([x, z, face], k) => {
     if (k % 3 === 2) {
       bot.hold('timber_brace');
       bot.use();
@@ -371,7 +414,9 @@ function takeover(p: Plan) {
   st.spd = p.trained ?? 90;
   st.health = maxHealth(st.str);
   const cups = Array<string>(p.chocolate ?? 0).fill('molten_chocolate');
-  bot.stash('nunchucks', 'plated_outfit', ...cups);
+  // Irongate's takeover also carries a pouch through the arches (and takes its kit in two goes: too much for the pockets at once).
+  const pouch = p.riotCups && p.pouch ? ['pouch'] : [];
+  bot.stash('nunchucks', 'plated_outfit', ...cups, ...pouch);
   // Two friends: the first two inmates, or the two strongest (GDD §12: allies that can fight).
   const friends = p.strongest ? st.inmates.map((m, i) => ({ i, str: m.str })).sort((a, b) => b.str - a.str || a.i - b.i).slice(0, 2).map((f) => f.i) : [0, 1];
   for (const id of friends) st.inmates[id].opinion = 90;
@@ -394,17 +439,27 @@ function takeover(p: Plan) {
   bot.walkTo(places.deskside[1]);
   bot.face(DIR.EAST);
   bot.open(bot.desk);
-  bot.takeAll(2 + cups.length);
-  bot.close();
-  bot.op(OP.EQUIP, bot.slotOf('nunchucks'));
-  bot.op(OP.EQUIP, bot.slotOf('plated_outfit'));
+  if (p.riotCups) {
+    bot.takeAll(2);
+    bot.op(OP.EQUIP, bot.slotOf('nunchucks'));
+    bot.op(OP.EQUIP, bot.slotOf('plated_outfit'));
+    // The orange outfit back in the drawer, the rest of the kit out.
+    bot.putIn('inmate_outfit', 12);
+    bot.takeAll(2 + cups.length + pouch.length);
+    bot.close();
+  } else {
+    bot.takeAll(2 + cups.length);
+    bot.close();
+    bot.op(OP.EQUIP, bot.slotOf('nunchucks'));
+    bot.op(OP.EQUIP, bot.slotOf('plated_outfit'));
+  }
   check(itemOf(st.items.inv[SLOT.WEAPON]) === n('nunchucks') && itemOf(st.items.inv[SLOT.OUTFIT]) === n('plated_outfit'), 'armed and armored');
-  // Nothing in hand on the way (a cup of molten chocolate is contraband in plain sight).
-  if (cups.length) bot.op(OP.SELECT, st.items.inv.slice(0, 6).indexOf(0));
+  // Nothing in hand on the way (a cup of molten chocolate is contraband in plain sight): an empty slot, or the pouch.
+  if (cups.length) bot.op(OP.SELECT, pouch.length ? bot.slotOf('pouch') : st.items.inv.slice(0, 6).indexOf(0));
   // Somewhere out of the towers' reach, near the gates, for the first guard to come by.
   if (p.rally) {
     check(bot.walkTo(tileOf(...p.rally), 2000), 'at the rally point');
-    check(bot.until(() => st.guards.some((g) => awake(g) && Math.max(Math.abs(g.body.x - st.player.x), Math.abs(g.body.z - st.player.z)) < 3 * UNIT), 40 * STEPS_PER_MINUTE), 'a guard comes by');
+    check(bot.until(() => st.guards.some((g) => awake(g) && Math.max(Math.abs(g.body.x - st.player.x), Math.abs(g.body.z - st.player.z)) < 3 * UNIT), 60 * STEPS_PER_MINUTE), 'a guard comes by');
   }
   // The fight: the nearest guard standing, each in turn (the first blow is seen: every guard comes).
   const inmates = st.inmates.length;
@@ -422,8 +477,9 @@ function takeover(p: Plan) {
     return { k: best, d: bestD };
   };
   let fights = 0;
-  // On until the gates open with no guard still on its feet close by (one at the player's heels would catch them on the way out).
-  for (let k = 0; k < 8000 && !(st.takeover && nearestGuard().d > 6 * UNIT) && st.ko === 0; k++) {
+  // On until the gates open with no guard still on its feet close by (one at the player's heels would catch them on the way out); with riot guards about, none still chasing at all.
+  const clear = () => st.takeover && (p.riotCups ? st.guards.every((g) => !awake(g) || g.mode !== GUARD.CHASE) : nearestGuard().d > 6 * UNIT);
+  for (let k = 0; k < 8000 && !clear() && st.ko === 0; k++) {
     const { k: g, d } = nearestGuard();
     if (g < 0) {
       bot.step(0);
@@ -439,7 +495,7 @@ function takeover(p: Plan) {
     bot.pilot.stop();
     if (st.lock !== inmates + g) bot.op(OP.LOCK, 2 + inmates + g);
     // A cup of molten chocolate left (once the alarm is up, where it has to be raised first): thrown from where the player stands.
-    if (cups.length && (!p.alarmFirst || st.lockdown) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
+    if (cups.length && (!p.alarmFirst || st.lockdown) && (!p.riotCups || p.def.guards[g].riot) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
       bot.hold('molten_chocolate');
       bot.op(OP.USE, 1);
       continue;
@@ -475,13 +531,150 @@ function gate(p: Plan, seed: number) {
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
+// ------------------------------------------------------------------ 6. the raft (Irongate)
+/**
+ * An escape kit too big for the pockets in one go: the uniform and the dummy first (worn and
+ * put to bed), then the rest. The evening roll call kept, Lights Out, locked in.
+ */
+function nightfallBig(bot: Bot, kit: string[]) {
+  const places = placesOf(bot.sim.world);
+  bot.stash('guard_outfit', 'bed_dummy', ...kit);
+  check(bot.routineUntil(1, 22 * 60 + 15), 'the day kept');
+  check(bot.walkTo(places.deskside[1]), 'beside the desk');
+  bot.face(DIR.EAST);
+  check(bot.open(bot.desk), 'the desk opens');
+  bot.takeAll(2);
+  bot.close();
+  check(bot.walkTo(places.bedside[1]), 'beside the bed');
+  bot.face(DIR.WEST);
+  check(bot.open(bot.bed), 'the bed opens');
+  bot.putIn('bed_dummy', 0);
+  bot.close();
+  // Into the uniform at the desk, the orange outfit left in the compartment, the rest of the kit out.
+  check(bot.walkTo(places.deskside[1]), 'back at the desk');
+  bot.face(DIR.EAST);
+  bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
+  check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
+  bot.open(bot.desk);
+  // Whatever the day left in the pockets (the woodshop's timber, the orange outfit) goes in the drawers.
+  for (let k = 0, at = 10; k < 6; k++) if (bot.st.items.inv[k]) bot.op(OP.MOVE, k, SLOT.CONTAINER + at++);
+  bot.takeAll(2 + kit.length);
+  bot.close();
+  check(kit.every((id) => bot.slotOf(id) >= 0), `the kit in the pockets (${kit.filter((id) => bot.slotOf(id) < 0).join(', ') || 'all'})`);
+  check(
+    bot.until(() => bot.sim.cellsLocked && (bot.sim.world.lockedCells & 2n) !== 0n, 60 * STEPS_PER_MINUTE),
+    'Lights Out, locked in',
+  );
+  bot.until(() => false, 15 * STEPS_PER_MINUTE);
+}
+
+/**
+ * Lights Out, the dummy in bed, a guard's uniform, cloned keys and a pouch: GEN-2 off (once
+ * the south walkway's guard has gone by), out by the sally port, round the walkway to the
+ * dock's door, the dead fence cut, the raft launched off the pier's end.
+ */
+function raft(p: Plan, seed: number) {
+  const bot = new Bot(p.def, seed);
+  nightfallBig(bot, [...p.keys, 'pouch', 'sturdy_cutters', 'raft']);
+  bot.hold(p.keys[0]);
+  const [gx, gz, gface] = p.power2!;
+  check(bot.walkTo(tileOf(gx, gz), 3000), 'at GEN-2');
+  bot.face(gface);
+  // The south walkway's guard at the far end of its round, walking away from the way out.
+  const g = bot.st.guards[p.walkwayGuard!];
+  check(bot.until(() => g.body.x < 24 * UNIT, 20 * STEPS_PER_MINUTE), 'the walkway guard at its west end');
+  bot.act();
+  check(bot.st.powerOff2 > 0 && bot.st.powerOff === 0, 'GEN-2 off (GEN-1 still running)');
+  const offAt = bot.st.step;
+  const [fx, fz, face] = p.dock!;
+  check(bot.walkTo(tileOf(fx, fz), 3000), 'at the dock fence');
+  bot.face(face);
+  const wire = tileOf(fx + 1, fz);
+  check(bot.sim.world.ground.kind[wire] === TILE.ELECTRIC, 'facing the electric fence');
+  check(bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT) && bot.st.powerOff2 > 0, 'cut through before GEN-2 came back');
+  console.log(`  raft: the dock fence cut ${((bot.st.step - offAt) / 20).toFixed(1)} s after GEN-2 went off`);
+  const [px, pz, pface] = p.pier!;
+  check(bot.walkTo(tileOf(px, pz), 200), 'at the pier’s end');
+  bot.face(pface);
+  bot.hold('raft');
+  bot.use();
+  report(p.name('raft'), bot);
+  check(bot.done && ESCAPES[bot.st.via] === 'raft', 'away on the raft');
+  check(bot.heatPeak < 80, 'never wanted on the way');
+}
+
+// ------------------------------------------------------------------ 7. the helicopter (Irongate)
+/**
+ * Lights Out, the dummy in bed, a guard's uniform: the cell's grate, the vents to GEN-1's
+ * ladder, the north roof; a grapnel across the yard onto the south roofs, a sheet rope down
+ * into the helipad court; both riot guards put down (molten chocolate), aboard.
+ */
+function helicopter(p: Plan, seed: number) {
+  const bot = new Bot(p.def, seed);
+  nightfallBig(bot, ['screwdriver', 'fake_vent', 'grapnel', 'sheet_rope', 'molten_chocolate', 'molten_chocolate']);
+  const st = bot.st;
+  const grate = tileOf(...p.grate!);
+  check(bot.walkTo(grate), 'under the grate');
+  check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN), 'the grate unscrewed');
+  bot.act();
+  check(st.layer === LAYER.VENTS, 'up into the vents');
+  bot.hold('fake_vent');
+  bot.use();
+  check(bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_FAKE, 'a fake cover over the grate');
+  const [lx, lz] = p.ladder!;
+  check(bot.walkTo(tileOf(lx, lz - 1), 3000), 'along the ducts to the ladder');
+  check(bot.walkTo(tileOf(lx, lz), 200), 'at the ladder');
+  bot.act();
+  check(st.layer === LAYER.ROOF, 'up on the north roof');
+  const [cx, cz, cface] = p.chasm!;
+  check(bot.walkTo(tileOf(cx, cz), 800), 'at the roof’s edge over the yard');
+  bot.face(cface);
+  bot.hold('grapnel');
+  bot.use();
+  check(st.layer === LAYER.ROOF && bot.slotOf('sheet_rope') >= 0, 'across the yard onto the south roofs, the rope kept');
+  const [kx, kz, kface] = p.court!;
+  check(bot.walkTo(tileOf(kx, kz), 800), 'at the edge over the helipad court');
+  bot.face(kface);
+  bot.hold('sheet_rope');
+  bot.use();
+  check(st.layer === LAYER.GROUND && bot.sim.playerZone === 'helipad', 'down the rope into the court');
+  // The two riot guards: a cup of molten chocolate each, thrown from where the player stands.
+  const inmates = st.inmates.length;
+  const helipad = p.def.guards.map((d, k) => (d.helipad ? k : -1)).filter((k) => k >= 0);
+  for (const k of helipad) {
+    const g = st.guards[k];
+    for (let t = 0; t < 600 && g.ko === 0; t++) {
+      const d = Math.max(Math.abs(g.body.x - st.player.x), Math.abs(g.body.z - st.player.z));
+      if (d > 2.5 * UNIT) {
+        if (t % 10 === 0) bot.pilot.goTo(Math.floor(g.body.z / UNIT) * MAP_W + Math.floor(g.body.x / UNIT));
+        bot.step(command(bot.pilot.dir(st.player)));
+        continue;
+      }
+      bot.pilot.stop();
+      if (st.lock !== inmates + k) bot.op(OP.LOCK, 2 + inmates + k);
+      bot.hold('molten_chocolate');
+      bot.op(OP.USE, 1);
+    }
+    check(g.ko > 0, `helipad guard ${k} out cold`);
+  }
+  const [ax, az] = p.pad!;
+  check(bot.walkTo(tileOf(ax, az), 400), 'on the pad');
+  bot.act();
+  report(p.name('helicopter'), bot);
+  check(bot.done && ESCAPES[st.via] === 'helicopter', 'away in the helicopter');
+}
+
+// ONLY=<prison id> runs one prison's routes (while working on them).
 for (const p of PLANS) {
+  if (process.env.ONLY && p.def.id !== process.env.ONLY) continue;
   if (p.def !== CENTER_PERKS) console.log(`== ${p.def.id}`);
   const routes = p.routes ?? ['cutout', 'tunnel', 'rooftop', 'takeover'];
   if (routes.includes('cutout')) cutout(p);
   if (routes.includes('tunnel')) tunnel(p);
   if (routes.includes('rooftop')) rooftop(p);
   if (routes.includes('gate')) gate(p, p.seed + 4);
+  if (routes.includes('raft')) raft(p, p.seed + 5);
+  if (routes.includes('helicopter')) helicopter(p, p.seed + 6);
   if (routes.includes('takeover')) takeover(p);
 }
 

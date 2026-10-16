@@ -30,6 +30,8 @@ export const DECOR = {
   medCabinet: { wall: true },
   sink: { wall: true },
   keyCabinet: { wall: true },
+  // P12 (HMP Irongate): a life ring on the wall.
+  lifebuoy: { wall: true },
   // On the floor.
   plant: { wall: false },
   smallBin: { wall: false },
@@ -56,6 +58,11 @@ export const DECOR = {
   cactus: { wall: false },
   mineSign: { wall: false },
   hoop: { wall: false },
+  // P12 (HMP Irongate): the dock's mooring bollards, crates and coils of rope; the helipad's windsock.
+  bollard: { wall: false },
+  crates: { wall: false },
+  ropeCoil: { wall: false },
+  windsock: { wall: false },
   filing: { wall: false },
   ivStand: { wall: false },
   rug: { wall: false },

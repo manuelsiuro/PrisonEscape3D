@@ -75,6 +75,23 @@ const BASE = {
       c.fillStyle = '#86c463';
       for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * (n - 1)), 1, 2);
     }),
+  /** A wooden pier over the sea (P12): weathered planks across it, dark water in the gaps. */
+  pier: () =>
+    texture('pier', 16, (c, n, r) => {
+      c.fillStyle = '#1f3442';
+      c.fillRect(0, 0, n, n);
+      for (let x = 0; x < n; x += 4) {
+        const shade = 0.85 + r() * 0.2;
+        c.fillStyle = `rgb(${Math.round(150 * shade)},${Math.round(128 * shade)},${Math.round(100 * shade)})`;
+        c.fillRect(x, 0, 3, n);
+        c.fillStyle = 'rgba(60,45,30,0.35)';
+        for (let k = 0; k < 3; k++) c.fillRect(x + Math.floor(r() * 3), Math.floor(r() * n), 1, 3);
+        c.fillStyle = 'rgba(230,236,240,0.35)';
+        c.fillRect(x + 1, Math.floor(r() * n), 1, 1);
+      }
+      c.fillStyle = '#5b4b3a';
+      c.fillRect(0, 7, n, 1);
+    }),
   /** A trodden path (the map's `d`): bare dirt here, packed snow in the Alps. */
   trail: () =>
     texture('dirt', 16, (c, n, r) => {
@@ -262,8 +279,8 @@ const BASE = {
     }),
 };
 
-/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert. */
-export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert';
+/** How a prison looks (PrisonDef.theme): Center Perks' suburban green, Stalag Flucht's alpine snow, Shankton's industrial grey, San Pancho's desert, HMP Irongate's island. */
+export type Theme = 'suburban' | 'alpine' | 'industrial' | 'desert' | 'island';
 let theme: Theme = 'suburban';
 
 /** The look the next textures are drawn in (set as a world is shown; textures already made keep theirs). */
@@ -443,8 +460,92 @@ const DESERT: Partial<typeof BASE> = {
     }),
 };
 
+/**
+ * The island (HMP Irongate): wind-bitten turf over grey rock, the ferry landing's wet cobbles,
+ * salt-stained tarmac, granite ashlar walls under granite caps, slate roofs, concrete streaked
+ * with rust and salt.
+ */
+const ISLAND: Partial<typeof BASE> = {
+  grass: () =>
+    texture('rockTurf', 16, (c, n, r) => {
+      speckle(c, n, r, '#6f7f5a', '#5e6d4c', '#7f8f68', 0.35);
+      c.fillStyle = '#8b8f8c';
+      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 2);
+      c.fillStyle = '#a3a7a3';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+    }),
+  road: () =>
+    texture('cobbles', 16, (c, n, r) => {
+      c.fillStyle = '#4c5156';
+      c.fillRect(0, 0, n, n);
+      for (let y = 0; y < n; y += 4) {
+        const off = (y / 4) % 2 ? 2 : 0;
+        for (let x = -off; x < n; x += 4) {
+          const shade = 0.85 + r() * 0.25;
+          c.fillStyle = `rgb(${Math.round(112 * shade)},${Math.round(118 * shade)},${Math.round(122 * shade)})`;
+          c.fillRect(x + 1, y + 1, 3, 3);
+        }
+      }
+    }),
+  asphalt: () =>
+    texture('wetTarmac', 16, (c, n, r) => {
+      speckle(c, n, r, '#555b61', '#4b5056', '#626970', 0.3);
+      c.fillStyle = 'rgba(220,228,232,0.25)';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+    }),
+  /** Granite ashlar: big grey blocks, bluish, in courses. */
+  brick: () =>
+    texture('granite', 16, (c, n, r) => {
+      c.fillStyle = '#5d636b';
+      c.fillRect(0, 0, n, n);
+      for (let row = 0; row < 2; row++) {
+        const off = row % 2 ? 4 : 0;
+        for (let col = -1; col < 2; col++) {
+          const shade = 0.88 + r() * 0.2;
+          c.fillStyle = `rgb(${Math.round(132 * shade)},${Math.round(138 * shade)},${Math.round(146 * shade)})`;
+          c.fillRect(col * 8 + off + 1, row * 8 + 1, 7, 7);
+        }
+      }
+      c.fillStyle = 'rgba(40,44,50,0.35)';
+      for (let k = 0; k < 8; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+    }),
+  reinforced: () =>
+    texture('seaConcrete', 16, (c, n, r) => {
+      speckle(c, n, r, '#727a82', '#68707a', '#7e868e', 0.25);
+      c.fillStyle = '#565d65';
+      c.fillRect(0, 0, n, 1);
+      c.fillRect(0, n / 2, n, 1);
+      c.fillRect(0, 0, 1, n);
+      c.fillStyle = '#434951';
+      for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) c.fillRect(x, y, 1, 1);
+      // Rust weeping from the tie holes, salt bloom.
+      c.fillStyle = 'rgba(150,80,40,0.35)';
+      for (const [x, y] of [[4, 5], [12, 13]]) c.fillRect(x, y, 1, 3);
+      c.fillStyle = 'rgba(230,236,240,0.25)';
+      for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+    }),
+  wallTop: () =>
+    texture('graniteCap', 16, (c, n, r) => {
+      speckle(c, n, r, '#6b727b', '#5f666e', '#7a818a', 0.3);
+    }),
+  /** Slate roofs: dark blue-grey tiles in overlapping rows. */
+  gravel: () =>
+    texture('slate', 16, (c, n, r) => {
+      c.fillStyle = '#3a414b';
+      c.fillRect(0, 0, n, n);
+      for (let y = 0; y < n; y += 4) {
+        const off = (y / 4) % 2 ? 2 : 0;
+        for (let x = -off; x < n; x += 4) {
+          const shade = 0.85 + r() * 0.25;
+          c.fillStyle = `rgb(${Math.round(78 * shade)},${Math.round(88 * shade)},${Math.round(100 * shade)})`;
+          c.fillRect(x, y, 3, 3);
+        }
+      }
+    }),
+};
+
 /** The textures, in the current theme's look. */
-const THEMES: Record<Theme, Partial<typeof BASE>> = { suburban: {}, alpine: ALPINE, industrial: INDUSTRIAL, desert: DESERT };
+const THEMES: Record<Theme, Partial<typeof BASE>> = { suburban: {}, alpine: ALPINE, industrial: INDUSTRIAL, desert: DESERT, island: ISLAND };
 export const TEX = Object.fromEntries(
   (Object.keys(BASE) as Array<keyof typeof BASE>).map((k) => [k, (...a: unknown[]) => (THEMES[theme][k] || BASE[k])(...(a as [string]))]),
 ) as unknown as typeof BASE;

@@ -127,6 +127,8 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   controls.enabled = true;
   hud.show(true);
   sound.ambience(true);
+  // Irongate's surf and gulls (P12).
+  sound.setCoast(sim.world.def.theme === 'island');
   fadeIn();
   document.body.classList.add('is-playing');
   const g = play.game;
@@ -297,8 +299,15 @@ export async function escaped() {
   deleteSave('auto');
   firstDay.stop();
   sound.music('title');
-  // A moment to see the road under their feet before the card.
-  await new Promise((r) => setTimeout(r, 900));
+  // Away over the sea (P12): the raft pushes off, the helicopter lifts away; a longer moment to watch it.
+  const away = via === 'raft' || via === 'helicopter';
+  if (away) {
+    view.depart(via);
+    if (via === 'raft') sound.launch();
+    else sound.rotor();
+  }
+  // A moment to see the road under their feet (or the sea) before the card.
+  await new Promise((r) => setTimeout(r, away ? 2600 : 900));
   if (play.game !== g) return;
   const choice = await showVictory(
     {
@@ -313,6 +322,7 @@ export async function escaped() {
       tally: st.tally,
       bestDay: rec.record.bestDay,
       unlocked: next && !wasOpen ? { name: prisonName(next), security: securityOf(next) } : undefined,
+      campaign: !next && rec.record.routes.length === 1 && rec.newRoute,
     },
     click,
   );

@@ -46,6 +46,8 @@ const P: Record<string, string> = {
   splash: '<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11Z"/><path d="M3 9l2 1M21 9l-2 1M5 4l1.5 2M19 4l-1.5 2"/>',
   shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/>',
   key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2.5 2.5"/>',
+  boat: '<path d="M3 15h18l-2.5 4.5h-13Z"/><path d="M12 15V3l6 9h-6"/><path d="M2 21.5c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"/>',
+  heli: '<path d="M3 5h18M12 5v3"/><path d="M5 12a3 3 0 0 1 3-3h7a4 4 0 0 1 4 4v1a2 2 0 0 1-2 2H8a3 3 0 0 1-3-3Z"/><path d="M19 12h3M8 16v3M15 16v3M5 19h13"/>',
   mine: '<path d="M3 19h18"/><path d="M6 19a6 6 0 0 1 12 0"/><path d="M12 13v-3M9.5 10h5M12 7l1.2-2.2M10.8 4.8 12 7"/>',
   coin: '<circle cx="12" cy="12" r="9"/><path d="M14.8 9a3 3 0 0 0-2.8-1.5c-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2a3.2 3.2 0 0 1-3-1.6M12 6v1.5M12 16.5V18"/>',
   briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',

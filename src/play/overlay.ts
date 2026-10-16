@@ -47,7 +47,7 @@ import { seenTip } from './tips';
 const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false };
 const GET_UP = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, takeoverLeft: null, cold: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
 /** The music's tension cue is on (see updateOverlay). */
@@ -162,7 +162,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     workHud.paid = st.paid;
     hudState.work = workHud;
   } else hudState.work = null;
-  hudState.powerLeft = st.powerOff > 0 ? (st.powerOff - a) / STEPS_PER_SECOND : null;
+  // Irongate's two generators (P12): the pill says which half is dead (both: the power).
+  const off = Math.max(st.powerOff, st.powerOff2);
+  hudState.powerLeft = off > 0 ? (off - a) / STEPS_PER_SECOND : null;
+  hudState.powerKey = !sim.world.def.grid || (st.powerOff > 0 && st.powerOff2 > 0) ? 'hud.powerOut' : st.powerOff > 0 ? 'hud.powerOutCams' : 'hud.powerOutFence';
   let wakes = Infinity;
   for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
   hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;

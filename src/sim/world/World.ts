@@ -95,6 +95,8 @@ export class World {
   readonly doorRoom = new Uint8Array(MAP_W * MAP_H);
   /** Bit z set: the job room of zone z stands open (the Work Period, or someone still inside; derived by the simulation). A bigint: zones go past 31. */
   openRooms = 0n;
+  /** 1 on water a takeover bridges (Irongate's drawbridge, P12): walkable while `riot`. */
+  readonly bridge = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 on doors shut for everyone but guards (the prison as built: inmates walk it, guards' eyes stop at it). */
   readonly doorShut = new Uint8Array(MAP_W * MAP_H);
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
@@ -139,6 +141,7 @@ export class World {
       this.fill(g.zone, x0, z0, x1, z1, zoneIndex(k === 0 ? 'playerCell' : 'inmateCell'));
       this.fill(this.cellOf, x0, z0, x1, z1, k + 1);
     });
+    if (def.drawbridge) this.fill(this.bridge, ...def.drawbridge, 1);
     this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0 }));
     for (const p of this.props) if (PROPS[p.kind].solid) this.fill(this.propSolid, p.x, p.z, p.x + p.w - 1, p.z + p.d - 1, 1);
     // A cell's door is the door tile next to one of its tiles; its bed the bed inside it.
@@ -221,7 +224,8 @@ export class World {
       this.doorShut[i] = shut ? 1 : 0;
       // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
       const keyed = shut && (this.riot || (!this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1));
-      const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid;
+      // The drawbridge (P12) is down while the prison is the inmates'.
+      const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid && !(this.riot && this.bridge[i]);
       this.block[i] = solid || this.propSolid[i] ? 1 : 0;
       // Damage is the player's way: inmates and guards walk the prison as it was built (doors too).
       const damage = DAMAGE_SHOWS.has(k) ? 1 : 0;

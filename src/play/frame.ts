@@ -136,7 +136,7 @@ const frameData: Frame = {
   puddles: [],
   puddlesRev: 0,
   craters: [],
-  security: { power: true, cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
+  security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
   takeover: false,
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
@@ -338,7 +338,12 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.sleeping = st.sleeping;
   // Security (GDD §5.4–5.6) as the sim has it: cameras on their sweep, the searchlights at night, a sniper's aim.
   const sec = f.security;
-  sec.power = sim.power;
+  // What has power (Irongate's two generators each run their half, P12).
+  sec.power = sim.powered('lights');
+  sec.fence = sim.powered('fence');
+  sec.arches = sim.powered('detectors');
+  sec.gens[0] = st.powerOff === 0;
+  sec.gens[1] = st.powerOff2 === 0;
   sec.px = f.x;
   sec.pz = f.z;
   const cams = sim.prison.cameras ?? [];
@@ -347,17 +352,17 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const o = (sec.cams[k] ??= { facing: 0, on: false, sees: false, taped: false });
     o.taped = st.cams[k] > 0;
     o.facing = Math.PI / 2 - ((c.face - 1 + cameraSweep(k, st.step + a)) * Math.PI * 2) / 16;
-    o.on = sim.power && !st.cams[k];
+    o.on = sim.powered('cameras') && !st.cams[k];
     o.sees = o.on && st.layer === LAYER.GROUND && !g.over && cameraSees(sim.world, c, k, st.step, p);
     // The first time a camera has the player in its eye: what cameras do, and how to blind one.
     if (o.sees && !busy) coachOnce('camera', 'hint.camera');
   });
   // Walking up to a live detector arch with contraband and no pouch (GDD §5.4): a warning, once.
-  if (memo.step === st.step && sim.power && st.layer === LAYER.GROUND && !busy && !seenTip('detectorAhead') && carriesUnshielded(it)) {
+  if (memo.step === st.step && sim.powered('detectors') && st.layer === LAYER.GROUND && !busy && !seenTip('detectorAhead') && carriesUnshielded(it)) {
     for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (sim.world.ground.kind[(tile.z + dz) * MAP_W + tile.x + dx] === TILE.DETECTOR) coachOnce('detectorAhead', 'hint.detectorAhead');
   }
   const lights = sim.prison.searchlights;
-  if (lights && sim.power && ROUTINE[st.routine].id === 'lightsOut') {
+  if (lights && sim.powered('searchlights') && ROUTINE[st.routine].id === 'lightsOut') {
     beamFrames.length = lights.length;
     lights.forEach((path, k) => {
       beamAt(path, st.step + a, beamAt0);

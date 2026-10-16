@@ -20,6 +20,8 @@ export interface Look {
   trousers?: number;
   /** A guard's door key on its belt, in the key's color (GDD §10.2). */
   key?: number;
+  /** An armored riot guard (P12): a helmet and visor instead of the cap, plates over the uniform. */
+  riot?: boolean;
 }
 
 /** The orange jumpsuit (tech plan §6.2). */
@@ -28,13 +30,14 @@ export const INMATE_LOOK: Look = { outfit: 0xf2701c, skin: 0xe2ad84, hair: 0x3a2
 const SKINS = [0xf1c6a0, 0xe2ad84, 0xc98d62, 0xa86e48, 0x7d4f33, 0x5b3a26];
 const HAIRS = [0x1d1612, 0x3a2a1e, 0x6b4a2b, 0xb08850, 0x8a8a8a, 0x2a2018];
 
-/** A guard's look: navy uniform and cap, varied by a number like inmates; its key's color on the belt. */
-export function guardLook(n: number, key?: number): Look {
+/** A guard's look: navy uniform and cap, varied by a number like inmates; its key's color on the belt. A riot guard (P12) in black, armored. */
+export function guardLook(n: number, key?: number, riot = false): Look {
   const r = (k: number) => Math.abs(Math.sin(n * 7.31 + k * 41.7) * 24634.6345) % 1;
   return {
-    outfit: 0x3a5a8c,
-    trousers: 0x1f2c44,
+    outfit: riot ? 0x2a2f38 : 0x3a5a8c,
+    trousers: riot ? 0x1a1d23 : 0x1f2c44,
     cap: 0x1b2638,
+    riot,
     skin: SKINS[Math.floor(r(1) * SKINS.length)],
     hair: HAIRS[Math.floor(r(2) * HAIRS.length)],
     hairStyle: 1,
@@ -344,6 +347,21 @@ export class Character {
       this.body,
     );
 
+    // A riot guard's plates: a chest plate, a back plate, shoulder guards.
+    if (look.riot) {
+      const plate = 0x3b4250;
+      mesh(
+        [
+          part(0.56, 0.32, 0.06, plate, 0, 0.62, 0.16),
+          part(0.56, 0.32, 0.06, plate, 0, 0.62, -0.16),
+          part(0.18, 0.08, 0.34, plate, -0.3, 0.8, 0),
+          part(0.18, 0.08, 0.34, plate, 0.3, 0.8, 0),
+          part(0.3, 0.05, 0.02, 0xe8b828, 0, 0.7, 0.195),
+        ],
+        this.body,
+      );
+    }
+
     // Arms: pivots at the shoulders; sleeves rolled up to the elbow.
     for (const [pivot, x] of [
       [this.armL, -0.34],
@@ -369,7 +387,15 @@ export class Character {
     } else if (style === 1) {
       face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215));
     }
-    if (look.cap !== undefined) {
+    if (look.riot) {
+      // A riot helmet: the shell over the head, its visor down over the eyes, a chin guard.
+      face.push(
+        part(0.54, 0.24, 0.52, 0x1d2129, 0, 0.5, -0.01),
+        part(0.5, 0.2, 0.03, 0x6f8aa0, 0, 0.28, 0.25),
+        part(0.4, 0.06, 0.08, 0x1d2129, 0, 0.06, 0.2),
+        part(0.08, 0.05, 0.02, 0xe8b828, 0, 0.56, 0.26),
+      );
+    } else if (look.cap !== undefined) {
       // A peaked cap: the crown, a band, the peak over the eyes, a gold badge.
       face.push(
         part(0.5, 0.16, 0.48, look.cap, 0, 0.55, -0.01),

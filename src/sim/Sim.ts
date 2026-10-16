@@ -1,4 +1,4 @@
-import type { PrisonDef } from '../content/prisons/types';
+import type { PowerUse, PrisonDef } from '../content/prisons/types';
 import { ROUTINE } from '../content/routine';
 import { dirOf, OP, opOf } from './command';
 import { newScratch } from './context';
@@ -17,7 +17,7 @@ import { stockSlots } from './systems/items';
 import { clockIn, spreadCoins, station } from './systems/jobs';
 import { bedCheck, dummyInBed, outOfReach, release, report, wakeUp } from './systems/justice';
 import { tileOfBody, walk, type Body } from './systems/movement';
-import { devices, scan, takeoverCheck } from './systems/power';
+import { devices, powered, scan, takeoverCheck } from './systems/power';
 import { attendance, nextBlock } from './systems/routine';
 import { grudges, keepTalk, offerFavors, socialNow } from './systems/social';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -78,6 +78,8 @@ export class Sim {
   wearRev = 0;
   /** How the player moved onto another layer this step (the escape check reads it); not state. */
   movedBy: LayerMove | null = null;
+  /** Away on a raft from the pier, or the helicopter off the pad, this step (P12: the escape check reads it); not state. */
+  boarded: 'raft' | 'helicopter' | null = null;
 
   get clock(): Clock {
     return clockAt(this.state.step);
@@ -90,6 +92,7 @@ export class Sim {
     if (s.escaped) return;
     s.step++;
     this.movedBy = null;
+    this.boarded = null;
     // Clock.
     const clock = this.clock;
     devices(this);
@@ -182,10 +185,11 @@ export class Sim {
     // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
     useItems(this, s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
     // On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), out of the gates in a takeover, through a gate with its keys (San Pancho's supply road), or through the fence.
-    if (s.layer === LAYER.GROUND && this.playerZone === 'outside') {
+    // Or away over the sea (Irongate): on a raft off the pier, in the helicopter off its pad.
+    if (s.layer === LAYER.GROUND && (this.boarded || this.playerZone === 'outside')) {
       s.escaped = s.step;
       const gate = w.ground.kind[from] === TILE.DOOR;
-      s.via = ESCAPES.indexOf(this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : gate ? 'gate' : 'fence');
+      s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : gate ? 'gate' : 'fence'));
       closeBox(this);
       this.events.push({ type: 'escaped', via: ESCAPES[s.via] });
       return true;
@@ -211,9 +215,14 @@ export class Sim {
     return this.state.ko > 0 || this.state.solitary > 0;
   }
 
-  /** The prison's power (GDD §5.5): on unless the generator was switched off less than 45 s ago. */
+  /** The prison's power (GDD §5.5): on unless the generator was switched off less than 45 s ago (Irongate: GEN-1's; see powered()). */
   get power(): boolean {
     return this.state.powerOff === 0;
+  }
+
+  /** Whether something has power now (Irongate's two generators each power their half, GDD §4.5). */
+  powered(use: PowerUse): boolean {
+    return powered(this.world, this.state, use);
   }
 
   /** Whether the player's bed holds a bed dummy. */

@@ -140,6 +140,30 @@
   opacity: 1;
 }
 
+.theme-island .pc-scene {
+  background:
+    radial-gradient(circle at 24% 20%, #fdfdf6 0 6%, transparent 7%),
+    linear-gradient(180deg, #a9c6db 0 40%, #2f6d8f 40% 100%);
+}
+
+/* A granite fortress standing straight out of the sea, a slate roof line. */
+.theme-island .pc-scene::before {
+  bottom: 28%;
+  height: 32%;
+  border-radius: 2px 2px 0 0;
+  background:
+    linear-gradient(90deg, transparent 0 44%, #23282f 44% 56%, transparent 56%) bottom / 100% 40% no-repeat,
+    linear-gradient(180deg, #3a414b 0 14%, #7f868f 14% 100%);
+}
+
+/* The swell along the bottom: lines of white on the water. */
+.theme-island .pc-scene::after {
+  bottom: 8%;
+  height: 18%;
+  background: repeating-linear-gradient(180deg, rgba(235, 245, 250, 0.55) 0 1.5px, transparent 1.5px 6px);
+  opacity: 1;
+}
+
 .pc-level {
   position: absolute;
   z-index: 1;

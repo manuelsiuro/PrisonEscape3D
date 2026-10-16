@@ -23,11 +23,12 @@ import { jobOp, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
 import { blast, liveMine } from './mines';
-import { snipersOnDuty, switchPower } from './power';
+import { board, flood, launch } from './sea';
+import { powered, snipersOnDuty, switchPower } from './power';
 import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
 import { approach, dismissAll, endTalk, talkOp } from './social';
-import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, WALL_CHUNK } from './structure';
+import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
 import { rep, startTraining, stopTraining, study } from './training';
 import { addHeat, setTile } from './watch';
 import { energyCost } from './weather';
@@ -86,6 +87,7 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (target.kind === 'fixture') {
         if (target.use === 'board') sim.events.push({ type: 'board' });
         else if (target.use === 'generator') switchPower(sim, target.index);
+        else if (target.use === 'helicopter') board(sim);
         else if (target.use === 'sit' || target.use === 'rest') sitDown(sim, target.index, target.use);
         else startTraining(sim, target.index, target.use);
       } else if (target.kind === 'pockets') {
@@ -261,7 +263,7 @@ function strike(sim: SimContext, fresh: boolean) {
     sim.events.push({ type: 'broke', item: held });
   } else it.inv[it.hand] = slot(held, left);
   // A live fence: knocked flat (GDD §9.1).
-  if (target.action === 'cut' && w.ground.kind[target.tile] === TILE.ELECTRIC && sim.power) {
+  if (target.action === 'cut' && w.ground.kind[target.tile] === TILE.ELECTRIC && powered(w, s, 'fence')) {
     shock(sim);
     return;
   }
@@ -297,6 +299,11 @@ function strike(sim: SimContext, fresh: boolean) {
         if (w.layers[LAYER.UNDER].kind[t] === TILE.SOIL) setTile(sim, LAYER.UNDER, t, TILE.TUNNEL);
       } else {
         setTile(sim, LAYER.UNDER, t, TILE.TUNNEL);
+        // Under the sea (P12, GDD §4.5): the water pours in.
+        if (underSea(w, t)) {
+          flood(sim, t);
+          return;
+        }
         // Too long a stretch without a brace: the roof comes down (GDD §9.2).
         if (cavesIn(w, t)) {
           setTile(sim, LAYER.UNDER, t, TILE.SOIL);
@@ -380,7 +387,7 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
     return;
   }
   // A hook over a live fence: the shock comes down the rope.
-  if (target.action === 'grapnel' && sim.world.ground.kind[target.over!] === TILE.ELECTRIC && sim.power) {
+  if (target.action === 'grapnel' && sim.world.ground.kind[target.over!] === TILE.ELECTRIC && powered(sim.world, s, 'fence')) {
     it.inv[it.hand] = 0;
     it.rev++;
     shock(sim);
@@ -389,6 +396,9 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
   it.inv[it.hand] = 0;
   it.rev++;
   switch (target.action) {
+    case 'launch':
+      launch(sim);
+      break;
     case 'grapnel': {
       // Hooked over the fence onto a roof beyond: across on the line, the sheet rope kept for the way down.
       if (target.layer === LAYER.ROOF) {

@@ -10,8 +10,13 @@ import { WALL_H } from './WorldView';
 
 /** What the view needs of security each frame (filled by the game, reused). */
 export interface SecurityFrame {
-  /** The generator running. */
+  /** The lights' generator running (the only one, or Irongate's GEN-2): lamps and room lights. */
   power: boolean;
+  /** The electric fence live, the detector arches on (Irongate: each on its own generator). */
+  fence: boolean;
+  arches: boolean;
+  /** Each generator running (its lamp: green, or red and blinking). */
+  gens: boolean[];
   /** Each camera: its heading (radians, the view's convention: 0 = +z) and whether it watches (power, no tape); whether it sees the player. */
   cams: Array<{ facing: number; on: boolean; sees: boolean; taped: boolean }>;
   /** Each searchlight's pool (tiles), or null while off (by day, or the power out). */
@@ -90,7 +95,7 @@ export class Security {
   private readonly sparks: THREE.InstancedMesh;
   private readonly sparkMat: THREE.MeshBasicMaterial;
   private readonly fence: Array<[number, number]> = [];
-  private readonly genLamp: THREE.MeshBasicMaterial | null = null;
+  private readonly genLamps: THREE.MeshBasicMaterial[] = [];
   private readonly coneFrames: ConeFrame[] = [];
   /** The grapnel's throw: an arc from the roof's edge over the fence, a ring where it lands. */
   private readonly arc: THREE.Line;
@@ -194,13 +199,13 @@ export class Security {
     this.sparks.frustumCulled = false;
     this.sparks.count = 0;
     this.group.add(this.sparks);
-    // The generator's lamp: green while it runs, red when it's off.
-    const gen = world.props.find((p) => p.kind === 'generator');
-    if (gen) {
-      this.genLamp = new THREE.MeshBasicMaterial({ color: 0x3fdc5a, toneMapped: false });
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), this.genLamp);
+    // Each generator's lamp: green while it runs, red when it's off.
+    for (const gen of world.props.filter((p) => p.kind === 'generator')) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0x3fdc5a, toneMapped: false });
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), mat);
       lamp.position.set(gen.x + gen.w - 0.25, 1.05, gen.z + 0.25);
       this.group.add(lamp);
+      this.genLamps.push(mat);
     }
   }
 
@@ -303,7 +308,7 @@ export class Security {
     }
     // Sparks crackle along the live fence (none with the power out, none with reduced motion).
     let n = 0;
-    if (f.power && motion && this.fence.length) {
+    if (f.fence && motion && this.fence.length) {
       const slot = Math.floor(time * 14);
       for (let k = 0; k < 10; k++) {
         // A few random fence tiles each moment (a cheap hash of the moment and the slot).
@@ -317,8 +322,12 @@ export class Security {
     }
     this.sparks.count = n;
     if (n) this.sparks.instanceMatrix.needsUpdate = true;
-    this.genLamp?.color.setHex(f.power ? 0x3fdc5a : Math.sin(time * 6) > 0 ? 0xff2a1a : 0x4a0a06);
+    this.genLamps.forEach((m, k) => m.color.setHex(f.gens[k] ?? f.power ? 0x3fdc5a : Math.sin(time * 6) > 0 ? 0xff2a1a : 0x4a0a06));
+    this.arches += ((f.arches ? 1 : 0) - this.arches) * Math.min(1, dt * 4);
   }
+
+  /** How far the detector arches' power is on (eased 0–1). */
+  arches = 1;
 
   /** How far the power is on (eased 0–1): lamps and room lights follow it. */
   get powerLevel() {

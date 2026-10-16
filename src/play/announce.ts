@@ -236,6 +236,16 @@ export function announce(e: SimEvent, sim: Sim) {
       play.game?.pilot.stop();
       banner.toast(t('toast.blast'), 'bad', 6000);
       break;
+    case 'flood':
+      // The sea pours into the tunnel (P12): the whole of it is lost.
+      tools.release();
+      sound.flood();
+      buzz('lockdown');
+      view.impact('dig', e.tile, LAYER.UNDER, true);
+      itemsUI.closePanels();
+      play.game?.pilot.stop();
+      banner.toast(t('toast.flood'), 'bad', 6000);
+      break;
     case 'caveIn':
       tools.release();
       sound.caveIn();
@@ -285,11 +295,14 @@ export function announce(e: SimEvent, sim: Sim) {
       if (!e.on) {
         sound.powerDown();
         buzz('giveWay');
-        banner.show(t('banner.powerOff'), t('banner.powerOffSub'), 'routine', 3500);
+        // Irongate's two generators (P12): the banner says which half went dead.
+        const split = !!sim.world.def.grid;
+        banner.show(t(split ? (e.gen === 1 ? 'banner.gen2Off' : 'banner.gen1Off') : 'banner.powerOff'), t(split ? (e.gen === 1 ? 'banner.gen2OffSub' : 'banner.gen1OffSub') : 'banner.powerOffSub'), 'routine', 3500);
         coachOnce('power', 'hint.power');
       } else {
         sound.powerUp();
-        banner.toast(t(e.by === 'guard' ? 'toast.powerBack' : 'toast.powerOn'), e.by === 'guard' ? 'bad' : 'info');
+        const split = !!sim.world.def.grid;
+        banner.toast(t(e.by === 'guard' ? (split ? (e.gen === 1 ? 'toast.gen2Back' : 'toast.gen1Back') : 'toast.powerBack') : 'toast.powerOn'), e.by === 'guard' ? 'bad' : 'info');
       }
       break;
     case 'scanned':
