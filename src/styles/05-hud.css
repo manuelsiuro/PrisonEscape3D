@@ -568,16 +568,19 @@ body.reduced-motion .alarm-vignette.on {
   }
 }
 
-/* A guard bribed to look the other way (P15): a pale-green chip, the time left of it. */
+/* A guard bribed to look the other way (P15): an emerald chip (the cone's green), until when. */
 .hud-alert.hud-bribe {
-  background: rgba(22, 84, 66, 0.9);
+  background: rgba(16, 78, 58, 0.92);
 }
 .hud-alert.hud-bribe .ic {
-  color: #8fe0b8;
+  color: #34d399;
 }
 .hud-alert.hud-bribe b {
   color: #c4f5dd;
 }
+.hud-alert.hud-bribe.low b {
+  color: #ff8a7a;
+}
 .hud-alert.hud-bribe .hud-alert-bar i {
-  background: #8fe0b8;
+  background: #34d399;
 }

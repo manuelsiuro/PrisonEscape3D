@@ -28,8 +28,8 @@ export interface HudState {
   takeoverLeft: number | null;
   /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double). */
   cold: { built: number; left: number; bit: boolean; warming: boolean } | null;
-  /** A guard bribed to look the other way (P15): who, game minutes left of it, out of how many (null: none). */
-  bribe: { name: string; left: number; of: number } | null;
+  /** A guard bribed to look the other way (P15): who, until when, game minutes left of it, out of how many (null: none). */
+  bribe: { name: string; until: string; left: number; of: number } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -98,7 +98,7 @@ export class Hud {
       <div class="hud-row hud-alerts">
         <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
-        <span class="pill hud-alert hud-bribe hidden" role="status">${icon('eyeOff', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-cold hidden">${icon('snow', 15)}<span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
       </div>`,
     );
@@ -146,13 +146,13 @@ export class Hud {
     el.classList.toggle('low', left <= 10);
   }
 
-  /** A guard looking the other way (P15): who, and for how long yet (game time, h:mm). */
+  /** A guard looking the other way (P15): who, until when (the clock's time), the bar for what's left. */
   private lookAway(b: HudState['bribe']) {
     const el = this.bribe;
     el.classList.toggle('hidden', !b);
     if (!b) return;
     setText(el.querySelector('span')!, t('hud.bribe', { name: b.name }));
-    setText(el.querySelector('b')!, `${Math.floor(b.left / 60)}:${String(b.left % 60).padStart(2, '0')}`);
+    setText(el.querySelector('b')!, t('hud.bribeUntil', { time: b.until }));
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, b.left / b.of)) * 100}%`;
     el.classList.toggle('low', b.left <= 15);
   }

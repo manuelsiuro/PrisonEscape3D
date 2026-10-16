@@ -108,8 +108,9 @@ export interface GuardFrame {
   held: number;
   /** Its key still on its belt. */
   hasKey: boolean;
-  /** Bribed to look the other way (P15): its cone in the looking-away tint. */
-  away?: boolean;
+  /** Bribed to look the other way (P15): its cone in the looking-away tint, and steps left. */
+  away: boolean;
+  awayLeft: number;
 }
 
 export interface InmateFrame {
@@ -349,6 +350,7 @@ export class View {
   }
 
   setWorld(world: World) {
+    this.snores.clear();
     if (this.worldView) {
       this.scene.remove(this.worldView.group);
       this.worldView.dispose();
@@ -780,7 +782,8 @@ export class View {
       c.gait = g.pace;
       c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
       c.pose(g.x, g.z, g.facing, g.moving, dt, time, !this.reducedMotion, g.doing, this.guardBeds[k]);
-      c.mark(g.alert === ALERT.HOSTILE ? '!' : g.alert === ALERT.SUSPICIOUS ? '?' : '', dt, !this.reducedMotion);
+      // "$" pops over a guard as it takes the money (and again once it's calm, still paid).
+      c.mark(g.alert === ALERT.HOSTILE ? '!' : g.alert === ALERT.SUSPICIOUS ? '?' : g.away ? '$' : '', dt, !this.reducedMotion);
       c.showKey(g.hasKey);
       // A guard's key opens the door it walks through (and the one just ahead).
       const tx = Math.floor(g.x + Math.sin(g.facing) * 0.6);
@@ -800,7 +803,8 @@ export class View {
     if (f.layer === LAYER.GROUND) {
       if (f.sleeping) this.head(this.player);
       for (let k = 0; k < f.inmates.length; k++) if (f.inmates[k].doing === DOING.SLEEP && this.cast[k]) this.head(this.cast[k]);
-      for (let k = 0; k < f.guards.length; k++) if ((f.guards[k].doing === DOING.SLEEP || f.guards[k].doing === DOING.DOZE) && this.guardCast[k]) this.head(this.guardCast[k]);
+      // (A guard dozing on its feet has its own Z's, over its cap: Character.)
+      for (let k = 0; k < f.guards.length; k++) if (f.guards[k].doing === DOING.SLEEP && this.guardCast[k]) this.head(this.guardCast[k]);
     }
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).

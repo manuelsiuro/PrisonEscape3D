@@ -121,7 +121,7 @@ function koTexture(): THREE.CanvasTexture {
   return starTexture;
 }
 
-/** "!" (red, spotted) and "?" (orange, searching) over a guard's head, drawn once each. */
+/** "!" (red, spotted), "?" (orange, searching) and "$" (green, bribed: P15) over a guard's head, drawn once each. */
 const markTextures = new Map<string, THREE.CanvasTexture>();
 function markTexture(ch: string): THREE.CanvasTexture {
   let t = markTextures.get(ch);
@@ -129,7 +129,7 @@ function markTexture(ch: string): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 96;
   const g = c.getContext('2d')!;
-  g.fillStyle = ch === '!' ? '#ff3b30' : '#ff9f1a';
+  g.fillStyle = ch === '!' ? '#ff3b30' : ch === '$' ? '#22b07d' : '#ff9f1a';
   g.strokeStyle = 'rgba(30, 10, 0, 0.85)';
   g.lineWidth = 6;
   g.beginPath();
@@ -258,6 +258,9 @@ export class Character {
   }
   /** Prone in a vent (0–1), and a tool strike's swing (1 at the blow, easing to 0). */
   private crawl = 0;
+  /** Dozing on its feet (P15), eased in slowly and out with a start; `startle` is the jolt on waking. */
+  private doze = 0;
+  private startle = 0;
   private hit = 0;
   /** A punch (1 at the blow, easing to 0) and a flinch from a blow taken (the same). */
   private jab = 0;
@@ -611,6 +614,13 @@ export class Character {
     if (this.lie < 0.002) this.lie = 0;
     this.crawl += ((doing === DOING.CRAWL ? 1 : 0) - this.crawl) * k(8);
     if (this.crawl < 0.002) this.crawl = 0;
+    const dozing = doing === DOING.DOZE && !moving;
+    const wasDozing = this.doze;
+    this.doze += ((dozing ? 1 : 0) - this.doze) * k(dozing ? 1.6 : 12);
+    if (this.doze < 0.002) this.doze = 0;
+    // Woken: a little hop, the head jerking up (felt once, as the doze falls through half).
+    if (!dozing && wasDozing >= 0.5 && this.doze < 0.5 && motion && !ko) this.startle = 1;
+    this.startle = Math.max(0, this.startle - dt * 4);
     this.hit = Math.max(0, this.hit - dt * 3.2);
     this.jab = Math.max(0, this.jab - dt * 4.5);
     this.recoil = Math.max(0, this.recoil - dt * 4);
@@ -724,19 +734,22 @@ export class Character {
       armRx += (-1.25 - this.pumped * 0.25) * a;
       armLz -= 0.25 * a;
       armRz += 0.25 * a;
-    } else if (doing === DOING.DOZE) {
-      // Dozing on its feet (P15): arms folded, a slow sway (the chin drops, below).
-      armLx += -0.95 * a;
-      armRx += -0.95 * a;
-      armLz += 0.55 * a;
-      armRz -= 0.55 * a;
-      bob += Math.sin(t * 0.9) * 0.012 * a;
     } else if (doing === DOING.SHOWER) {
       // Scrubbing the hair.
       armLx += (-2.7 + Math.sin(t * 9) * 0.15) * a;
       armRx += (-2.7 + Math.cos(t * 9) * 0.15) * a;
       armLz -= 0.35 * a;
       armRz += 0.35 * a;
+    }
+    // Dozing on its feet (P15): arms folded across the chest, a slouch and a sway (the chin
+    // sinks and jerks back up, below). Eased by its own weight so waking unfolds them.
+    const dz = this.doze * this.doze * (3 - 2 * this.doze);
+    if (dz > 0) {
+      armLx += -0.95 * dz;
+      armRx += -0.95 * dz;
+      armLz += 0.55 * dz;
+      armRz -= 0.55 * dz;
+      bob -= 0.025 * dz;
     }
     // A strike: the tool arm up and down hard.
     if (this.hit > 0) {
@@ -758,13 +771,15 @@ export class Character {
     this.armL.rotation.set(armLx, 0, armLz);
     this.armR.rotation.set(armRx, 0, armRz);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
-    this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12;
+    this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI);
+    this.body.rotation.z = motion ? Math.sin(t * 0.7) * 0.035 * dz : 0;
     this.body.rotation.x =
       0.08 * this.swing -
       (Math.PI / 2) * this.lie +
       (doing === DOING.SEARCH ? 0.35 * this.act : 0) +
       (doing === DOING.READ ? 0.12 * this.act : 0) +
       (Math.PI / 2) * 0.92 * this.crawl +
+      0.06 * dz +
       (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0) +
       (this.jab > 0 ? 0.14 * Math.sin(this.jab * Math.PI) : 0) -
       (this.recoil > 0 ? 0.32 * Math.sin(this.recoil * Math.PI) : 0);
@@ -780,10 +795,18 @@ export class Character {
     // What goes with the activity: the blanket and Zs, the tray, the water.
     this.blanket.visible = this.lie > 0.6 && !ko;
     this.blanket.scale.z = THREE.MathUtils.smoothstep(this.lie, 0.6, 1);
+    const nap = !ko && this.lie < 0.1 && this.doze > 0.3;
     this.zs.forEach((z, i) => {
-      z.visible = this.lie > 0.9 && !ko;
+      z.visible = (this.lie > 0.9 && !ko) || nap;
       if (!z.visible) return;
       const c = motion ? (time * 0.45 + i / 3 + this.offset) % 1 : i / 3;
+      if (nap) {
+        // Standing: up from over the cap, "z Z Z" growing, fading in with the doze.
+        z.position.set(0.1 + Math.sin(c * 5 + i) * 0.1 + c * 0.18, 1.5 + c * 0.8, 0.08);
+        z.scale.setScalar(0.2 + c * 0.24);
+        z.material.opacity = Math.sin(c * Math.PI) * 0.95 * Math.min(1, (this.doze - 0.3) / 0.4);
+        return;
+      }
       // Up from the face, drifting and growing, fading at the top.
       z.position.set(0.12 + Math.sin(c * 5 + i) * 0.12, 0.45 + c * 0.9, -1.05 - c * 0.15);
       z.scale.setScalar(0.16 + c * 0.2);
@@ -808,7 +831,7 @@ export class Character {
 
     // Blink every few seconds; eyes shut in bed.
     this.blinkAt -= dt;
-    const closed = this.blinkAt < 0.12 || (this.lie > 0.5 && !ko);
+    const closed = this.blinkAt < 0.12 || (this.lie > 0.5 && !ko) || this.doze > 0.6;
     if (this.blinkAt < 0) this.blinkAt = 2 + Math.random() * 3.5;
     this.eyes.scale.y = closed ? 0.15 : 1;
 
@@ -819,7 +842,12 @@ export class Character {
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
-    this.head.rotation.x = this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : doing === DOING.DOZE ? 0.55 * this.act : 0;
+    // Nodding off: the chin sinks for 4 s and jerks back up (still, it just hangs).
+    const n = (t * 0.2) % 1;
+    const sink = n < 0.85 ? n / 0.85 : 1 - (n - 0.85) / 0.15;
+    const nod = motion ? 0.3 + 0.35 * sink * sink * (3 - 2 * sink) : 0.55;
+    this.head.rotation.x =
+      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : nod * dz - 0.25 * this.startle;
     return stepped;
   }
 

@@ -129,7 +129,10 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     if (key !== actionKey) {
       actionKey = key;
       const n = sim.state.inmates.length;
-      Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : 'act.talk'), what: target.who >= n ? guardTitle(sim, target.who - n) : inmateName(sim, target.who) });
+      // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
+      const guard = target.who >= n ? sim.prison.guards[target.who - n] : undefined;
+      const what = !guard ? inmateName(sim, target.who) : guard.name ? t('guard.addressed', { name: guard.name }) : guardTitle(sim, target.who - n);
+      Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : guard ? 'act.talkGuard' : 'act.talk'), what });
     }
     return actionLabel;
   }

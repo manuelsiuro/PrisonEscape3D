@@ -1312,7 +1312,7 @@ export const frBarks: Barks = {
   ],
   'gu.bribed': [
     'J’ai rien vu. Toi non plus, d’ailleurs.',
-    '*sifflote* Belle soirée pour ne rien remarquer.',
+    '*sifflote* Belle journée pour ne rien remarquer.',
     'Qui va là ? Personne. C’est bien ce que je pensais.',
     'J’ai les yeux fermés. Professionnellement fermés.',
     'C’était pas moi. Pas toi. Personne.',
@@ -1361,7 +1361,7 @@ export const frBarks: Barks = {
     'C’est fou comme les formulaires… s’envolent.',
   ],
   're.honest.gu': [
-    'Range ça avant que je fasse semblant de rien voir.',
+    'Range ça, et je ferai comme si j’avais rien vu.',
     'Bien essayé. Je suis pas à vendre.',
     'De l’argent ? Garde-le. Achète-toi des manières.',
     'J’oublie que tu as proposé. Une fois.',
@@ -1385,24 +1385,24 @@ export const frBarks: Barks = {
     'Pas d’argent, pas d’affaire. C’est l’économie.',
   ],
   'go.steady': [
-    '{guard.full} est réglo. Les pots-de-vin, oublie.',
-    '{guard.full} ? Juste, ennuyeux et honnête. Propose pas d’argent.',
+    '{Guard.full} est réglo. Les pots-de-vin, oublie.',
+    '{Guard.full} ? Juste, ennuyeux et honnête. Propose pas d’argent.',
     'Inutile de soudoyer {guard.full}. Droit comme un I.',
   ],
   'go.lazy': [
-    '{guard.full} fait la sieste pendant sa ronde, {place.at}, après {t1}.',
+    '{Guard.full} fait la sieste pendant sa ronde, {place.at}, après {t1}.',
     'Psst. Après {t1}, {guard.full} roupille {place.at}.',
-    '{guard.full} pique du nez {place.at} après {t1}. Marche sur la pointe des pieds.',
+    '{Guard.full} pique du nez {place.at} après {t1}. Marche sur la pointe des pieds.',
   ],
   'go.strict': [
-    '{guard.full} est à cheval sur le règlement. Propose de l’argent et tu es signalé.',
+    '{Guard.full} est à cheval sur le règlement. Propose de l’argent et tu es signalé.',
     'Ne soudoie jamais {guard.full}. Tout est signalé.',
-    '{guard.full} fouille lentement et à fond. Cache bien tes affaires.',
+    '{Guard.full} fouille lentement et à fond. Cache bien tes affaires.',
   ],
   'go.corrupt': [
-    '{guard.full} peut se laisser convaincre. Apporte de l’argent.',
+    '{Guard.full} peut se laisser convaincre. Apporte de l’argent.',
     'Va voir {guard.full} avec de l’argent. Les yeux se ferment vite.',
-    '{guard.full} égare les dossiers, contre un petit quelque chose.',
+    '{Guard.full} égare les dossiers, contre un petit quelque chose.',
   ],
   'go.shakedown': [
     'Il paraît que la prochaine fouille vise la cellule de {inmate}.',

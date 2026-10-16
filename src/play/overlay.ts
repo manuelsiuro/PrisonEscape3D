@@ -7,6 +7,8 @@ import { GUARD } from '../sim/systems/guards';
 import type { ItemState } from '../sim/systems/items';
 import { COLD_STEPS, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { lookingAway } from '../sim/systems/ways';
+import { lineOfSight } from '../sim/ai/sight';
+import { clockAt, formatTime } from '../sim/systems/clock';
 import { guardTitle } from '../ui/social';
 import { exposed } from '../sim/systems/weather';
 import { containersOf } from '../sim/world/containers';
@@ -56,7 +58,7 @@ const GET_UP = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false };
-const bribeHud = { name: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
+const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
 /** The music's tension cue is on (see updateOverlay). */
 let tense = false;
@@ -130,8 +132,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (press.toolNow) press.toolNow.heard = !fight && memo.heard;
   if (press.toolNow?.heard && !busy && !panel) coachOnce('earshot', 'hint.earshot');
   if (held === FIRECRACKER && !busy) coachOnce('firecracker', 'hint.firecracker');
-  // A guard dozing close by (P15): what it means, the first time one is seen.
-  if (!busy && st.layer === LAYER.GROUND && !seenTip('nap') && st.guards.some((x) => x.doing === DOING.DOZE && Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT)) coachOnce('nap', 'hint.nap');
+  // A guard dozing close by, in plain sight (P15): what it means, the first time one is seen.
+  if (!busy && st.layer === LAYER.GROUND && !seenTip('nap') && st.guards.some((x) => x.doing === DOING.DOZE && Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT && lineOfSight(sim.world, st.player.x, st.player.z, x.body.x, x.body.z))) coachOnce('nap', 'hint.nap');
   // Each new target takes a new press: a held button never digs on into the next thing.
   press.toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && press.toolKey !== press.heldOn) tools.release();
@@ -199,6 +201,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (away >= 0) {
     bribeHud.name = guardTitle(sim, away);
     bribeHud.left = Math.ceil((st.guards[away].bribed - st.step) / STEPS_PER_MINUTE);
+    bribeHud.until = formatTime(clockAt(st.guards[away].bribed));
   }
   hudState.bribe = away >= 0 ? bribeHud : null;
   document.body.classList.toggle('chilled', coldHud.bit);

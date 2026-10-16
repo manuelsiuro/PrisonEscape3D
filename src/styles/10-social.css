@@ -146,19 +146,19 @@
 
 /* The guard's key color, as its belt tag shows it. */
 .talk-face.guard[data-key='yellow'] {
-  --key: #f2c94c;
+  --key: #e8b828;
 }
 .talk-face.guard[data-key='cyan'] {
-  --key: #39c6d6;
+  --key: #2fb6c8;
 }
 .talk-face.guard[data-key='purple'] {
-  --key: #a274e0;
+  --key: #8e4fc4;
 }
 .talk-face.guard[data-key='red'] {
-  --key: #e5484d;
+  --key: #d23f36;
 }
 .talk-face.guard[data-key='green'] {
-  --key: #4cc27a;
+  --key: #36a447;
 }
 
 /* A guard's ways (P15): known from gossip, or not yet. */
@@ -205,6 +205,7 @@
 
 .bribe-text {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
 }
@@ -225,16 +226,23 @@
 }
 
 .bribe-row .talk-status {
-  flex: none;
-  white-space: nowrap;
+  flex: 0 1 auto;
+  max-width: 45%;
+  text-align: right;
 }
 
+/* Looking away until when: the cone's emerald, the icon kept by the first line. */
 .talk-status.bribe-on {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #8fe0b8;
+  white-space: nowrap;
+  color: #6ee7b7;
   font-variant-numeric: tabular-nums;
+}
+
+.talk-status.bribe-on .ic {
+  flex: none;
 }
 
 .talk-note.bribe-risk {

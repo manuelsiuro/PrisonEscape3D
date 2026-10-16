@@ -93,6 +93,9 @@ export class Sim {
     // Out: the game is won, nothing more happens.
     if (s.escaped) return;
     s.step++;
+    // Who dozes as the step starts (P15): each nap ended in it is told once, whatever ended it.
+    let dozing = 0;
+    for (let k = 0; k < s.guards.length; k++) if (s.guards[k].doze > 0) dozing |= 1 << k;
     this.movedBy = null;
     this.boarded = null;
     // Noise first (P14): a firecracker going off, alarm clocks ticking and ringing; guards sent to look move this step.
@@ -135,6 +138,19 @@ export class Sim {
     // Doors last: they follow where everyone ended up, so the state at the end of a step
     // (a save, a keyframe) says everything about them.
     this.updateDoors(true);
+    if (dozing) this.napsOver(dozing);
+  }
+
+  /**
+   * A nap ended this step without a word (a chase, a lockdown, a job, a look, a knockout): the
+   * 'nap' event the noise, a blow or the round would have given.
+   */
+  private napsOver(dozing: number) {
+    const s = this.state;
+    for (let k = 0; k < s.guards.length; k++) {
+      if (!(dozing & (1 << k)) || s.guards[k].doze > 0) continue;
+      if (!this.events.some((e) => e.type === 'nap' && e.guard === k && !e.on)) this.events.push({ type: 'nap', guard: k, on: false });
+    }
   }
 
   /**

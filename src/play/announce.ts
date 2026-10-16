@@ -10,7 +10,7 @@ import { ALARM_CLOCK, DIRT, FIRECRACKER, underMyDesk, WALL_CHUNK } from '../sim/
 import { clockSecs } from '../sim/systems/noise';
 import { itemOf } from '../sim/systems/items';
 import { tossFlight } from '../render/Noise';
-import { CHOCOLATE_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { BRIBE_REPORT_HEAT, CHOCOLATE_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
@@ -571,7 +571,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 600) break;
       lastCant = now;
       sound.sting();
-      itemsUI.toast(t(`refused.${e.why}` as Key));
+      itemsUI.toast(t(`refused.${e.why}` as Key, { n: BRIBE_REPORT_HEAT }));
       break;
     }
     // Noise and distractions (P14): a throw flies, lands with its clatter; a noise sends out its

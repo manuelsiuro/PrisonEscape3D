@@ -115,6 +115,12 @@ export class Snores {
     }
   }
 
+  /** Hides every Z (a new prison, a load). */
+  clear() {
+    this.age.fill(-1);
+    for (const s of this.sprites) s.visible = false;
+  }
+
   /** Every frame: `sleepers` are [x, y, z] of each sleeper's head (flat list); none hides them. */
   update(dt: number, sleepers: readonly number[], count: number, motion: boolean) {
     this.clock += dt;
@@ -124,7 +130,9 @@ export class Snores {
         const i = this.next;
         this.next = (this.next + 1) % ZS;
         this.age[i] = 0;
-        this.base.set([sleepers[k * 3], sleepers[k * 3 + 1], sleepers[k * 3 + 2]], i * 3);
+        this.base[i * 3] = sleepers[k * 3];
+        this.base[i * 3 + 1] = sleepers[k * 3 + 1];
+        this.base[i * 3 + 2] = sleepers[k * 3 + 2];
       }
     }
     for (let i = 0; i < ZS; i++) {

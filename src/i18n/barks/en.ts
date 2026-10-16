@@ -1134,7 +1134,7 @@ export const enBarks = {
     'If all {n} guards napped at the same time… just saying.',
   ],
   'go.keyColor': [
-    '{guard.full} carries the {key} key.',
+    '{Guard.full} carries the {key} key.',
     'Want the {key} doors? {guard.full} has the key.',
     'See {guard.full}? That’s the {key} key on the belt.',
   ],
@@ -1314,7 +1314,7 @@ export const enBarks = {
   ],
   'gu.bribed': [
     "I didn't see a thing. Didn't see you either.",
-    '*whistles* Lovely evening for not noticing things.',
+    '*whistles* Lovely day for not noticing things.',
     "Who's there? Nobody. Thought so.",
     'My eyes are closed. Professionally closed.',
     "Wasn't me. Wasn't you. Wasn't anyone.",
@@ -1363,7 +1363,7 @@ export const enBarks = {
     'Funny how forms just… vanish.',
   ],
   're.honest.gu': [
-    "Put that away before I pretend I didn't see it.",
+    "Put that away and I'll pretend I didn't see it.",
     "Nice try. I'm not for sale.",
     'Money? Keep it. Buy yourself some manners.',
     "I'll forget you offered. Once.",
@@ -1376,7 +1376,7 @@ export const enBarks = {
     "Right. Your name's on my list now. In capitals.",
     "That's an offence, {you}! The warden will hear of it!",
     'How dare you! Rule 9: no bribes. Rule 10: I report them.',
-    'Cash for favours? Not on my shift!',
+    'Cash for favors? Not on my shift!',
   ],
   're.broke.gu': [
     'Come back when you can afford me.',
@@ -1387,24 +1387,24 @@ export const enBarks = {
     'No cash, no deal. Simple economics.',
   ],
   'go.steady': [
-    "{guard.full} goes by the book. Bribes won't work there.",
-    "{guard.full}? Fair, dull and honest. Don't offer cash.",
+    "{Guard.full} goes by the book. Bribes won't work there.",
+    "{Guard.full}? Fair, dull and honest. Don't offer cash.",
     "Don't bother bribing {guard.full}. Straight as a ruler.",
   ],
   'go.lazy': [
-    '{guard.full} naps on the night round, {place.at}, after {t1}.',
+    '{Guard.full} naps on the night round, {place.at}, after {t1}.',
     'Psst. After {t1}, {guard.full} snoozes {place.at}.',
-    '{guard.full} dozes off {place.at} after {t1}. Tiptoe.',
+    '{Guard.full} dozes off {place.at} after {t1}. Tiptoe.',
   ],
   'go.strict': [
-    "{guard.full} is a stickler. Offer cash and you're reported.",
+    "{Guard.full} is a stickler. Offer cash and you're reported.",
     'Never bribe {guard.full}. Reports everything.',
-    '{guard.full} searches slow and thorough. Hide stuff well.',
+    '{Guard.full} searches slow and thorough. Hide stuff well.',
   ],
   'go.corrupt': [
-    '{guard.full} can be persuaded. Bring cash.',
+    '{Guard.full} can be persuaded. Bring cash.',
     'Talk to {guard.full} with money in hand. Eyes close fast.',
-    '{guard.full} loses paperwork, for a price.',
+    '{Guard.full} loses paperwork, for a price.',
   ],
   'go.shakedown': [
     "Word is the next shakedown hits {inmate}'s cell.",

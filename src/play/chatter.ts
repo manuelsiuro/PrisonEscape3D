@@ -1,5 +1,6 @@
 import { currentLang } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
+import { guardTalking } from '../sim/systems/social';
 import { UNIT } from '../sim/tuning';
 import { Director, keepRumors, type Rumor, type Stage } from '../talk/director';
 import { factOk } from '../talk/gossip';
@@ -49,8 +50,20 @@ bubbles.onShow = (b) => {
   if (b.style === 'gossip' || (b.guard && b.style === 'shout')) bubbles.announce(b.name ? `${b.name}: ${b.text}` : b.text);
 };
 
-/** A guard's ways show in the talk panel once a rumor told them (P15). */
-talk.knows = (key) => director.rumors.some((r) => r.fact.key === key);
+/**
+ * A guard's ways show in the talk panel once a rumor told them, or the player found out
+ * first-hand (P15). With the chatter off nobody gossips: the panel just shows them.
+ */
+talk.knows = (key) => settings.chatter === 'off' || director.rumors.some((r) => r.fact.key === key);
+
+/** A guard's ways found out first-hand (P15): one that took the money is corrupt, one that reported the offer strict. */
+function learn(e: SimEvent, sim: Sim) {
+  const k = e.type === 'bribe' && e.kind !== 'over' ? e.guard : e.type === 'refused' && e.why === 'reported' ? guardTalking(sim.state) : -1;
+  if (k < 0) return;
+  const key = `trait:${k}`;
+  if (director.rumors.some((r) => r.fact.key === key)) return;
+  director.rumors = keepRumors([{ fact: { kind: e.type === 'bribe' ? 'corrupt' : 'strict', key, guard: k }, step: sim.state.step }, ...director.rumors]);
+}
 
 /** The prisoner's file lists the rumors: worked out again only when something may have changed. */
 let notes: ReturnType<Director['notebook']> = [];
@@ -83,6 +96,7 @@ export function chatterStop() {
 
 /** Each event of a step, as it happens. */
 export function chatterEvent(e: SimEvent, sim: Sim) {
+  learn(e, sim);
   if (settings.chatter === 'off') {
     if (e.type === 'talk') talk.greeting = '';
     return;

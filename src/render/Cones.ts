@@ -36,12 +36,16 @@ export interface ConeFrame {
   facing: number;
   /** ALERT (sim/systems/guards.ts): NONE hides the cone. */
   alert: number;
-  /** Bribed to look the other way (P15): a calm cone in a pale green, fainter. */
+  /** Bribed to look the other way (P15): a calm cone in green, fainter, breathing. */
   away?: boolean;
+  /** Steps of looking away left: over the last ENDING the cone pulses back toward yellow. */
+  awayLeft?: number;
 }
 
-/** A bribed guard's calm cone (P15). */
-const AWAY = 0x8fe0b8;
+/** A bribed guard's calm cone (P15): emerald, apart from the cameras' cyan and the calm yellow. */
+const AWAY = 0x34d399;
+/** The last 10 game minutes of a bribe (steps). */
+const ENDING = 200;
 
 interface Cone {
   mesh: THREE.Mesh;
@@ -66,6 +70,9 @@ export class Cones {
   world: World | null = null;
   private readonly range: number;
   private readonly colors: Record<number, number>;
+  private readonly goal = new THREE.Color();
+  private readonly calm = new THREE.Color();
+  private clock = 0;
 
   /** Guards' cones by default; cameras see less far and in their own colors. */
   constructor(opts: { range?: number; colors?: Record<number, number> } = {}) {
@@ -102,6 +109,7 @@ export class Cones {
   /** Redraws every cone; `night` (0–1) makes them a little stronger in the dark. */
   update(guards: readonly ConeFrame[], dt: number, night: number, motion: boolean) {
     const w = this.world;
+    this.clock += dt;
     this.cones.forEach((c, k) => {
       const g = guards[k];
       const on = !!g && !!w && g.alert !== ALERT.NONE;
@@ -134,10 +142,19 @@ export class Cones {
       c.mesh.geometry.attributes.position.needsUpdate = true;
       c.mesh.geometry.attributes.uv.needsUpdate = true;
       c.mesh.geometry.computeBoundingSphere();
+      // Eased toward its color; a bribed cone breathes (a cue beyond color), and over its last
+      // minutes pulses back toward the calm yellow (still: turns yellow then).
       const away = !!g.away && g.alert === ALERT.CALM;
-      c.color.set(away ? AWAY : (this.colors[g.alert] ?? this.colors[ALERT.CALM]));
+      this.goal.setHex(away ? AWAY : (this.colors[g.alert] ?? this.colors[ALERT.CALM]));
+      if (away && (g.awayLeft ?? ENDING) < ENDING) {
+        const mix = motion ? 0.5 + 0.5 * Math.sin(this.clock * Math.PI * 2.4) : 1;
+        this.goal.lerp(this.calm.setHex(this.colors[ALERT.CALM]), mix);
+      }
+      if (c.shown < 0.05 || !motion) c.color.copy(this.goal);
+      else c.color.lerp(this.goal, Math.min(1, dt * 6));
       c.material.color.copy(c.color);
-      const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : away ? 0.2 : 0.32;
+      const breath = away && motion ? 0.85 + 0.15 * Math.sin(this.clock * 2.2 + k) : 1;
+      const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : away ? 0.26 * breath : 0.32;
       c.material.opacity = c.shown * (strength + night * 0.12);
     });
   }

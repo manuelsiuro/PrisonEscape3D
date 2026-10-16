@@ -9,7 +9,7 @@ import { TALK } from '../command';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import type { Refusal } from '../state';
-import { AMBUSH_ODDS, AMBUSH_RANGE, ANGRY_STEPS, BUY_OPINION, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
+import { AMBUSH_ODDS, AMBUSH_RANGE, ANGRY_STEPS, BUY_OPINION, CHASE_HEAT, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { closeBox } from './actions';
 import { dist2, type Fighter, personOf } from './combat';
@@ -91,8 +91,10 @@ export function talkOp(sim: SimContext, a: number, b: number) {
   const s = sim.state;
   const it = s.items;
   const who = s.talk;
-  if (who < 0 || !talkable(sim, who)) return;
-  // A guard (P15): a bribe is all there is to ask.
+  if (who < 0) return;
+  // A guard (P15): a bribe is all there is to ask; offered the very step the player is wanted, it's refused.
+  if (who >= s.inmates.length && a === TALK.BRIBE && (s.heat >= CHASE_HEAT || s.lockdown)) return refuse(sim, 'tooHot');
+  if (!talkable(sim, who)) return;
   if (who >= s.inmates.length) {
     if (a === TALK.BRIBE) bribe(sim, who - s.inmates.length, b);
     return;

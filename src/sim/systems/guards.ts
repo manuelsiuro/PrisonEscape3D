@@ -215,8 +215,10 @@ export function stepGuards(
     }
     // A lockdown: every guard hunts the player, the sleepers too.
     if (lockdown && g.mode !== GUARD.CHASE) startChase(g);
-    // Talking with the player (P15): it stands still and faces them, its duty on hold.
-    if (k === talkTo && g.mode === GUARD.DUTY && playerHere) {
+    // Talking with the player (P15): it stands still and faces them, its duty on hold (once
+    // its duty is planned: back from a look this very step, it plans first, or Sim's
+    // dutyDue could never see the talk out).
+    if (k === talkTo && g.mode === GUARD.DUTY && g.plan !== PLAN_NONE && playerHere) {
       const b = g.body;
       b.moving = false;
       if (player.x !== b.x || player.z !== b.z) b.facing = nearestDir(player.x - b.x, player.z - b.z);

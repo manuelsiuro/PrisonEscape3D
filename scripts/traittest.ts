@@ -221,7 +221,7 @@ const MOSS = 3;
   reload(bot.sim, nap);
   s().lockdown = true;
   bot.sim.step(0);
-  check(moss().doze === 0 && moss().mode === GUARD.CHASE, 'a lockdown wakes it');
+  check(moss().doze === 0 && moss().mode === GUARD.CHASE && bot.sim.events.some((e) => e.type === 'nap' && e.guard === MOSS && !e.on), 'a lockdown wakes it (and says so)');
 
   // Left alone: it naps until the nap is over (05:00 at the latest), once a night; saved and
   // loaded mid-nap, the same.
@@ -396,6 +396,25 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
   const ended = late.until(() => late.st.talk === -1, 60 * STEPS_PER_MINUTE);
   check(late.st.talk === -1 || !ended, 'talk started');
   check(ended && late.sim.clock.minuteOfDay >= 17 * 60, `a talk doesn't hold a guard past its block (ended ${hhmm(late.st.step)})`);
+  // Nor one met the very step it's back from looking around (its duty not planned yet).
+  const back = beside(PRATT, 1, 16 * 60 + 50);
+  const bg = back.st.guards[PRATT];
+  bg.mode = GUARD.INVESTIGATE;
+  bg.target = bg.goal = 28 * MAP_W + 33;
+  bg.path = [];
+  bg.timer = 1;
+  bg.wait = 0;
+  check(talkTo(back, PRATT), 'a talk the step it is back from a look');
+  const over = back.until(() => back.st.talk === -1, 60 * STEPS_PER_MINUTE);
+  check(over, `that talk ends with its block too (ended ${hhmm(back.st.step)})`);
+  // Wanted the very step a bribe is offered: refused, nothing paid, nothing reported.
+  for (const k of [PRATT, DUNN]) {
+    const bot = beside(k);
+    talkTo(bot, k);
+    bot.st.heat = 85;
+    bot.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
+    check(events(bot, 'refused').some((e) => e.type === 'refused' && e.why === 'tooHot') && bot.st.cash === 500 && bot.st.heat === 85 && bot.st.guards[k].bribed === 0, `too hot to deal with ${CENTER_PERKS.guards[k].name}`);
+  }
   const night = beside(KELLER);
   night.st.guards[KELLER].doing = DOING.SLEEP;
   check(!canChat(night.sim, KELLER), 'nor to a guard asleep');
