@@ -120,6 +120,8 @@ interface Plan {
   strongest?: boolean;
   /** Molten chocolate in the pockets (GDD §10.1: thrown, out cold at once), for a guard force too big to beat by hand. */
   chocolate?: number;
+  /** Takeover: the hour (game minutes) to go to the rally point at, the routine kept till then (Irongate: after roll call, not in the middle of every guard). */
+  startAt?: number;
   /** Takeover: the chocolate kept for the riot guards (Irongate's armored four), the rest beaten by hand; and every chaser beaten before walking out (a riot guard catches a player who runs). */
   riotCups?: boolean;
 }
@@ -227,8 +229,8 @@ const PLANS: Plan[] = [
   // dead fence cut, the raft launched off the pier's end. The helicopter: the vents to GEN-1's
   // ladder, a grapnel across the yard onto the south roofs, a sheet rope down into the court,
   // the two riot guards put down with molten chocolate, aboard in uniform. The takeover in the
-  // cell block's vestibule, a chokepoint (ten guards, four in riot gear: chocolate for the
-  // riot guards, every one put down), out by the sally port, the ferry gate and the
+  // cell block's vestibule, a chokepoint, once roll call is over (ten guards, four in riot
+  // gear: chocolate for the riot guards, every one put down), out by the sally port, the ferry gate and the
   // lowered drawbridge.
   {
     def: IRONGATE,
@@ -249,6 +251,7 @@ const PLANS: Plan[] = [
     trained: 100,
     strongest: true,
     chocolate: 5,
+    startAt: 9 * 60 + 5,
     riotCups: true,
     pouch: true,
     gates: [30, 59],
@@ -457,6 +460,8 @@ function takeover(p: Plan) {
   check(itemOf(st.items.inv[SLOT.WEAPON]) === n('nunchucks') && itemOf(st.items.inv[SLOT.OUTFIT]) === n('plated_outfit'), 'armed and armored');
   // Nothing in hand on the way (a cup of molten chocolate is contraband in plain sight): an empty slot, or the pouch.
   if (cups.length) bot.op(OP.SELECT, pouch.length ? bot.slotOf('pouch') : st.items.inv.slice(0, 6).indexOf(0));
+  // The routine kept until the fight's hour, where the plan says.
+  if (p.startAt) check(bot.routineUntil(1, p.startAt), 'the routine kept till the fight');
   // Somewhere out of the towers' reach, near the gates, for the first guard to come by.
   if (p.rally) {
     check(bot.walkTo(tileOf(...p.rally), 2000), 'at the rally point');
