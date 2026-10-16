@@ -12,28 +12,50 @@ const hash = (i: number, k: number) => {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
 
-/** The sea's surface: deep water with lighter swells and flecks of white. */
+/**
+ * The sea's surface: deep water rolling into lighter swells at three scales, smooth (no hard
+ * blobs), with a few white flecks on the crests. Every wave has whole cycles across the
+ * canvas, so the tiles meet without a seam; big enough that the repeat doesn't read as a grid.
+ */
 function waveTexture(): THREE.CanvasTexture {
-  const n = 64;
+  const n = 256;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = n;
   const c = canvas.getContext('2d')!;
-  c.fillStyle = '#2a5a78';
-  c.fillRect(0, 0, n, n);
+  const img = c.createImageData(n, n);
+  const deep = [36, 84, 114];
+  const swell = [72, 132, 162];
+  const T = Math.PI * 2;
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const v = Math.sin((x / n) * Math.PI * 4 + Math.sin((y / n) * Math.PI * 2) * 1.6) + Math.sin((y / n) * Math.PI * 6 + (x / n) * 2);
-      if (v > 1.3) c.fillStyle = 'rgba(120,176,204,0.55)';
-      else if (v < -1.2) c.fillStyle = 'rgba(18,52,74,0.5)';
-      else continue;
-      c.fillRect(x, y, 1, 1);
+      const u = x / n;
+      const w = y / n;
+      const v =
+        Math.sin(T * (2 * u + w) + 1.4 * Math.sin(T * w)) * 0.5 +
+        Math.sin(T * (3 * w - u) + 0.9 * Math.sin(T * 2 * u)) * 0.3 +
+        Math.sin(T * (7 * u + 5 * w)) * 0.12 +
+        Math.sin(T * (4 * u - 9 * w)) * 0.08;
+      // -1..1 to 0..1, eased so the swells are narrower than the troughs.
+      const t = Math.pow(Math.min(1, Math.max(0, (v + 1) / 2)), 1.6);
+      const k = (y * n + x) * 4;
+      for (let j = 0; j < 3; j++) img.data[k + j] = Math.round(deep[j] + (swell[j] - deep[j]) * t + (t > 0.82 ? (t - 0.82) * 120 : 0));
+      img.data[k + 3] = 255;
     }
   }
-  c.fillStyle = 'rgba(235,245,250,0.7)';
-  for (let k = 0; k < 18; k++) c.fillRect(Math.floor(hash(k, 3) * n), Math.floor(hash(k, 5) * n), 2, 1);
+  c.putImageData(img, 0, 0);
+  // White flecks, only on the crests.
+  for (let k = 0; k < 90; k++) {
+    const x = Math.floor(hash(k, 3) * n);
+    const y = Math.floor(hash(k, 5) * n);
+    const u = x / n;
+    const w = y / n;
+    if (Math.sin(T * (2 * u + w) + 1.4 * Math.sin(T * w)) < 0.55) continue;
+    c.fillStyle = `rgba(232,244,250,${0.35 + hash(k, 7) * 0.35})`;
+    c.fillRect(x, y, 2 + Math.floor(hash(k, 9) * 3), 1);
+  }
   const t = new THREE.CanvasTexture(canvas);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.magFilter = THREE.NearestFilter;
+  t.anisotropy = 4;
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
@@ -45,14 +67,24 @@ function foamTexture(): THREE.CanvasTexture {
   canvas.width = canvas.height = n;
   const c = canvas.getContext('2d')!;
   c.clearRect(0, 0, n, n);
-  for (let k = 0; k < 140; k++) {
-    const a = hash(k, 11);
-    c.fillStyle = `rgba(240,248,252,${0.35 + a * 0.5})`;
-    c.fillRect(Math.floor(hash(k, 7) * n), Math.floor(hash(k, 9) * n), 1 + Math.floor(a * 3), 1);
+  // Soft clumps of froth, then a few bright streaks: surf, not static.
+  for (let k = 0; k < 16; k++) {
+    const x = hash(k, 7) * n;
+    const y = hash(k, 9) * n;
+    const r = 2 + hash(k, 13) * 4;
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(240,248,252,${0.35 + hash(k, 11) * 0.3})`);
+    g.addColorStop(1, 'rgba(240,248,252,0)');
+    c.fillStyle = g;
+    c.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  for (let k = 0; k < 8; k++) {
+    c.fillStyle = `rgba(245,250,253,${0.25 + hash(k, 17) * 0.3})`;
+    c.fillRect(Math.floor(hash(k, 19) * n), Math.floor(hash(k, 23) * n), 2 + Math.floor(hash(k, 29) * 3), 1);
   }
   const t = new THREE.CanvasTexture(canvas);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.magFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -88,7 +120,7 @@ export class Island {
     const sea = (x: number, z: number) => !world.inside(x, z) || isSea(g[z * MAP_W + x]);
     // The ocean, far past the map's edges.
     this.waves = waveTexture();
-    this.waves.repeat.set(70, 70);
+    this.waves.repeat.set(16, 16);
     const ocean = new THREE.Mesh(new THREE.PlaneGeometry(320, 320).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: this.waves, color: 0x9fc4d8, roughness: 0.32, metalness: 0.12 }));
     ocean.position.set(MAP_W / 2, SEA_Y, MAP_H / 2);
     ocean.receiveShadow = true;
@@ -276,8 +308,8 @@ export class Island {
    */
   update(dt: number, time: number, minuteOfDay: number, takeover: boolean, motion: boolean) {
     if (motion) {
-      this.waves.offset.set((time * 0.006) % 1, (time * 0.011) % 1);
-      this.foamMat.opacity = 0.55 + Math.sin(time * 1.3) * 0.25;
+      this.waves.offset.set((time * 0.0015) % 1, (time * 0.0028) % 1);
+      this.foamMat.opacity = 0.6 + Math.sin(time * 1.3) * 0.18;
     }
     if (this.bridge) {
       const want = takeover ? 0 : 1;

@@ -311,7 +311,7 @@ const ALPINE: Partial<typeof BASE> = {
     texture('road-snow', 16, (c, n, r) => {
       speckle(c, n, r, '#dfe5ec', '#c7cfd9', '#f4f7fb', 0.3);
       // Two wheel ruts, grey slush.
-      c.fillStyle = '#9aa3ad';
+      c.fillStyle = '#b9c1ca';
       c.fillRect(0, 4, n, 2);
       c.fillRect(0, 11, n, 2);
       c.fillStyle = '#b8c0c9';
@@ -334,7 +334,7 @@ const ALPINE: Partial<typeof BASE> = {
     }),
   wallTop: () =>
     texture('snowTop', 16, (c, n, r) => {
-      speckle(c, n, r, '#f1f5fa', '#dce5f0', '#ffffff', 0.25);
+      speckle(c, n, r, '#ccd6e2', '#c3cedb', '#d5dee9', 0.25);
     }),
   /** Snow lying on the flat roofs. */
   gravel: () =>
@@ -349,11 +349,11 @@ const ALPINE: Partial<typeof BASE> = {
 const INDUSTRIAL: Partial<typeof BASE> = {
   grass: () =>
     texture('crushedStone', 16, (c, n, r) => {
-      speckle(c, n, r, '#8d8a83', '#77746e', '#a29f98', 0.5);
-      c.fillStyle = '#6a6761';
-      for (let k = 0; k < 6; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
-      c.fillStyle = '#b8b4ab';
-      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
+      speckle(c, n, r, '#8d8a83', '#837f78', '#98948d', 0.32);
+      c.fillStyle = '#76736c';
+      for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 1);
+      c.fillStyle = '#a7a39a';
+      for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
     }),
   road: () =>
     texture('highway', 16, (c, n, r) => {
@@ -399,9 +399,9 @@ const DESERT: Partial<typeof BASE> = {
   minefield: () =>
     texture('sandRaked', 16, (c, n, r) => {
       speckle(c, n, r, '#c9a46c', '#b8925c', '#d6b47e', 0.3);
-      c.fillStyle = 'rgba(120,88,48,0.35)';
+      c.fillStyle = 'rgba(120,88,48,0.2)';
       for (let y = 1; y < n; y += 4) c.fillRect(0, y, n, 1);
-      c.fillStyle = 'rgba(240,214,166,0.4)';
+      c.fillStyle = 'rgba(240,214,166,0.25)';
       for (let y = 2; y < n; y += 4) c.fillRect(0, y, n, 1);
     }),
   road: () =>
@@ -468,9 +468,9 @@ const DESERT: Partial<typeof BASE> = {
 const ISLAND: Partial<typeof BASE> = {
   grass: () =>
     texture('rockTurf', 16, (c, n, r) => {
-      speckle(c, n, r, '#6f7f5a', '#5e6d4c', '#7f8f68', 0.35);
-      c.fillStyle = '#8b8f8c';
-      for (let k = 0; k < 5; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 2);
+      speckle(c, n, r, '#6f7f5a', '#66764f', '#788862', 0.3);
+      c.fillStyle = '#858a84';
+      for (let k = 0; k < 3; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 2, 2);
       c.fillStyle = '#a3a7a3';
       for (let k = 0; k < 4; k++) c.fillRect(Math.floor(r() * n), Math.floor(r() * n), 1, 1);
     }),
@@ -526,7 +526,7 @@ const ISLAND: Partial<typeof BASE> = {
     }),
   wallTop: () =>
     texture('graniteCap', 16, (c, n, r) => {
-      speckle(c, n, r, '#6b727b', '#5f666e', '#7a818a', 0.3);
+      speckle(c, n, r, '#6b727b', '#656c75', '#737a83', 0.25);
     }),
   /** Slate roofs: dark blue-grey tiles in overlapping rows. */
   gravel: () =>
