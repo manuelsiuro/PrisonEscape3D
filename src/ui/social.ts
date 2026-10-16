@@ -221,9 +221,12 @@ export class TalkPanel {
     const name = guardTitle(sim, k);
     const keyName = t(`keyColor.${def.key}` as Key);
     const chip = trait ? `<span class="chip trait" data-trait="${trait}">${icon(TRAIT_ICON[trait], 13)}${t(`trait.${trait}` as Key)}</span>` : `<span class="chip trait unknown">${icon('ear', 13)}${t('trait.unknown')}</span>`;
-    // Known not to take money: the offer stays possible (a gamble), drawn as a long shot.
+    // Known not to take money, or short of it: the offer stays possible (a gamble; the guard
+    // answers, a strict one reports it), drawn as a long shot.
     const pay = (kind: number, price: number) =>
-      `<button class="big-btn ${trait && trait !== 'corrupt' ? 'ghost' : 'primary'} small" data-act="${TALK.BRIBE}" data-arg="${kind}" data-confirm="${esc(t('bribe.confirm', { n: price }))}" aria-label="${esc(t('bribe.payFor', { what: t(kind === BRIBE.LOOK ? 'bribe.look' : 'bribe.paper'), n: price }))}" ${s.cash < price ? 'disabled' : ''}>${icon('coin', 16)}<span>$${price}</span></button>`;
+      `<button class="big-btn ${(trait && trait !== 'corrupt') || s.cash < price ? 'ghost' : 'primary'} small" data-act="${TALK.BRIBE}" data-arg="${kind}" data-confirm="${esc(t('bribe.confirm', { n: price }))}" aria-label="${esc(t('bribe.payFor', { what: t(kind === BRIBE.LOOK ? 'bribe.look' : 'bribe.paper'), n: price }))}">${icon('coin', 16)}<span>$${price}</span></button>`;
+    // Under the offers: the risk while its ways are unknown, else what to expect of this one.
+    const note = !trait ? t('bribe.risk', { n: BRIBE_REPORT_HEAT }) : trait === 'strict' ? t('bribe.strictNote', { n: BRIBE_REPORT_HEAT }) : trait !== 'corrupt' ? t('bribe.honestNote') : '';
     const hours = LOOK_AWAY_STEPS / STEPS_PER_MINUTE / 60;
     const lookEnd = until ? `<span class="talk-status bribe-on">${icon('eyeOff', 14)}<span>${t('bribe.lookingAway', { time: until })}</span></span>` : pay(BRIBE.LOOK, look);
     const paperEnd = paperDone ? `<span class="talk-status">${t('bribe.paperDone')}</span>` : s.heat > 0 ? pay(BRIBE.PAPER, paper) : `<span class="talk-status">${t('bribe.noHeat')}</span>`;
@@ -232,7 +235,7 @@ export class TalkPanel {
       <section class="talk-bribe"><div class="box-label">${icon('coin', 14)}<span>${t('bribe.title')}</span><em>${t('bribe.note')}</em></div>
         <div class="bribe-row"><span class="bribe-text"><b>${t('bribe.look')}</b><small>${t('bribe.lookNote', { n: hours })}</small></span>${lookEnd}</div>
         <div class="bribe-row"><span class="bribe-text"><b>${t('bribe.paper')}</b><small>${t('bribe.paperNote', { n: PAPER_HEAT })}</small></span>${paperEnd}</div>
-        ${trait ? '' : `<p class="talk-note bribe-risk">${icon('eye', 13)}<span>${t('bribe.risk', { n: BRIBE_REPORT_HEAT })}</span></p>`}</section>`;
+        ${note ? `<p class="talk-note bribe-risk">${icon(trait === 'strict' ? 'siren' : 'eye', 13)}<span>${note}</span></p>` : ''}</section>`;
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', name);
@@ -247,6 +250,12 @@ const TRAIT_ICON: Record<string, string> = { steady: 'check', lazy: 'moon', stri
 export function guardTitle(sim: Sim, k: number): string {
   const d = sim.prison.guards[k];
   return d?.name ? t('guard.title', { name: d.name }) : t('guard.nameless');
+}
+
+/** A guard opening a sentence: "Officer Pratt looks away", "Le gardien Pratt ferme les yeux". */
+export function guardSubject(sim: Sim, k: number): string {
+  const d = sim.prison.guards[k];
+  return d?.name ? t('guard.subject', { name: d.name }) : t('guard.nameless');
 }
 
 /**

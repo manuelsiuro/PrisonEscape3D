@@ -9,7 +9,7 @@ import { COLD_STEPS, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT }
 import { lookingAway } from '../sim/systems/ways';
 import { lineOfSight } from '../sim/ai/sight';
 import { clockAt, formatTime } from '../sim/systems/clock';
-import { guardTitle } from '../ui/social';
+import { guardSubject } from '../ui/social';
 import { exposed } from '../sim/systems/weather';
 import { containersOf } from '../sim/world/containers';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
@@ -199,7 +199,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     if (lookingAway(x, st.step) && (away < 0 || x.bribed < st.guards[away].bribed)) away = k;
   });
   if (away >= 0) {
-    bribeHud.name = guardTitle(sim, away);
+    bribeHud.name = guardSubject(sim, away);
     bribeHud.left = Math.ceil((st.guards[away].bribed - st.step) / STEPS_PER_MINUTE);
     bribeHud.until = formatTime(clockAt(st.guards[away].bribed));
   }

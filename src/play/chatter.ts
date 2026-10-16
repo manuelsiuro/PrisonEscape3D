@@ -1,6 +1,5 @@
 import { currentLang } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { guardTalking } from '../sim/systems/social';
 import { UNIT } from '../sim/tuning';
 import { Director, keepRumors, type Rumor, type Stage } from '../talk/director';
 import { factOk } from '../talk/gossip';
@@ -56,13 +55,21 @@ bubbles.onShow = (b) => {
  */
 talk.knows = (key) => settings.chatter === 'off' || director.rumors.some((r) => r.fact.key === key);
 
-/** A guard's ways found out first-hand (P15): one that took the money is corrupt, one that reported the offer strict. */
+/**
+ * Who the player talks to, as the events tell it: a report that makes the player wanted ends
+ * the talk in the same step, so the state has already let go of the guard by then.
+ */
+let partner = -1;
+
+/** A guard's ways found out first-hand (P15): one that took the money is corrupt, one that reported the offer strict (`by` -1: the player). */
 function learn(e: SimEvent, sim: Sim) {
-  const k = e.type === 'bribe' && e.kind !== 'over' ? e.guard : e.type === 'refused' && e.why === 'reported' ? guardTalking(sim.state) : -1;
+  const n = sim.state.inmates.length;
+  const k = e.type === 'bribe' && e.kind !== 'over' ? e.guard : e.type === 'refused' && e.why === 'reported' && partner >= n ? partner - n : -1;
+  if (e.type === 'talk') partner = e.who;
   if (k < 0) return;
   const key = `trait:${k}`;
   if (director.rumors.some((r) => r.fact.key === key)) return;
-  director.rumors = keepRumors([{ fact: { kind: e.type === 'bribe' ? 'corrupt' : 'strict', key, guard: k }, step: sim.state.step }, ...director.rumors]);
+  director.rumors = keepRumors([{ fact: { kind: e.type === 'bribe' ? 'corrupt' : 'strict', key, guard: k }, step: sim.state.step, by: -1 }, ...director.rumors]);
 }
 
 /** The prisoner's file lists the rumors: worked out again only when something may have changed. */
@@ -83,6 +90,7 @@ profile.notebook = () => {
 /** A game starts (new or loaded): a fresh director for this prison, the rumors the save kept. */
 export function chatterStart(sim: Sim, rumors: readonly Rumor[] = []) {
   director.reset(sim, sim.state.rng >>> 0);
+  partner = sim.state.talk;
   // Only rumors this version can tell again truly (a save from a newer one, or a damaged one, may hold others).
   director.rumors = keepRumors(rumors.filter((r) => factOk(r.fact, sim)));
   talk.greeting = '';

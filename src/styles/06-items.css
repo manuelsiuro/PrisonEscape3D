@@ -204,6 +204,11 @@ body.reduced-motion .tabs .has-new::after {
   box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
 }
 
+/* Alone on its tag, the phrase opens with a capital ("gardien Pratt" beside "Parler au"). */
+.act-what::first-letter {
+  text-transform: uppercase;
+}
+
 .act-btn:active .act-round {
   transform: scale(0.94);
 }

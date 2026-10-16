@@ -55,7 +55,7 @@ export function watch(sim: SimContext) {
   }
   const zone = sim.playerZone;
   const it = s.items;
-  const disguised = itemOf(it.inv[SLOT.OUTFIT]) === GUARD_OUTFIT;
+  const disguised = inDisguise(sim);
   let reason = 0;
   let heat = 0;
   // Out of the cell after Lights Out (past the walk home), or somewhere staff only: 100%.
@@ -206,6 +206,8 @@ export function addHeat(sim: SimContext, n: number) {
 }
 
 const GUARD_OUTFIT = itemNumber('guard_outfit');
+/** The player in a guard's uniform. */
+export const inDisguise = (sim: SimContext) => itemOf(sim.state.items.inv[SLOT.OUTFIT]) === GUARD_OUTFIT;
 /** Where a guard looks at a tile from: its middle, then its faces. */
 const FACES = [
   [0, 0],

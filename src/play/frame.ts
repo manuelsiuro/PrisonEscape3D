@@ -14,7 +14,7 @@ import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/sys
 import { seatSpot } from '../sim/systems/rest';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from '../sim/systems/security';
 import type { ClimbTarget } from '../sim/systems/structure';
-import { MEAL_STEPS, STEPS_PER_MINUTE, UNIT, WALK_SPEED } from '../sim/tuning';
+import { MEAL_STEPS, STEPS_PER_MINUTE, STIR_STEPS, UNIT, WALK_SPEED } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
@@ -242,7 +242,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   });
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
-    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0 });
+    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0, stir: 0 });
     const q = g.prevGuards[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -252,6 +252,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.alert = alertOf(m);
     o.away = lookingAway(m, st.step);
     o.awayLeft = o.away ? m.bribed - st.step : 0;
+    o.stir = m.doze > 0 ? Math.min(1, m.stir / STIR_STEPS) : 0;
     const chasing = m.mode === GUARD.CHASE;
     o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
     o.held = chasing ? BATON : 0;

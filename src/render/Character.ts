@@ -84,17 +84,27 @@ function sleepTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
   const g = c.getContext('2d')!;
-  g.font = '900 52px Fredoka, system-ui, sans-serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.lineWidth = 8;
-  g.strokeStyle = 'rgba(20, 30, 60, 0.85)';
-  g.strokeText('Z', 32, 34);
-  g.fillStyle = '#eaf2ff';
-  g.fillText('Z', 32, 34);
-  zTexture = new THREE.CanvasTexture(c);
-  zTexture.colorSpace = THREE.SRGBColorSpace;
-  return zTexture;
+  const draw = () => {
+    g.clearRect(0, 0, 64, 64);
+    g.font = '900 52px Fredoka, system-ui, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineWidth = 8;
+    g.strokeStyle = 'rgba(20, 30, 60, 0.85)';
+    g.strokeText('Z', 32, 34);
+    g.fillStyle = '#eaf2ff';
+    g.fillText('Z', 32, 34);
+  };
+  draw();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  zTexture = tex;
+  // Made before the web font arrives (the player is built at startup): drawn again once it has.
+  document.fonts?.load('900 52px Fredoka').then(() => {
+    draw();
+    tex.needsUpdate = true;
+  }, () => {});
+  return tex;
 }
 
 /** A little five-pointed star (knocked out: they circle the head). */
@@ -129,7 +139,7 @@ function markTexture(ch: string): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 96;
   const g = c.getContext('2d')!;
-  g.fillStyle = ch === '!' ? '#ff3b30' : ch === '$' ? '#22b07d' : '#ff9f1a';
+  g.fillStyle = ch === '!' ? '#ff3b30' : ch === '$' ? '#0a845a' : '#ff9f1a';
   g.strokeStyle = 'rgba(30, 10, 0, 0.85)';
   g.lineWidth = 6;
   g.beginPath();
@@ -261,6 +271,8 @@ export class Character {
   /** Dozing on its feet (P15), eased in slowly and out with a start; `startle` is the jolt on waking. */
   private doze = 0;
   private startle = 0;
+  /** A dozing guard stirring (0–1: the player at its elbow, about to wake it), from the frame. */
+  stir = 0;
   private hit = 0;
   /** A punch (1 at the blow, easing to 0) and a flinch from a blow taken (the same). */
   private jab = 0;
@@ -510,7 +522,8 @@ export class Character {
 
   /**
    * Shows "!" or "?" over the head ('' hides it): it pops in, bobs, and shrinks away after
-   * a couple of seconds (the alert is in the cone's color from then on).
+   * a couple of seconds (the alert is in the cone's color from then on). A "$" (bribed, P15)
+   * settles small and stays, out of the way of a doze's Z's.
    */
   mark(ch: string, dt: number, motion: boolean) {
     if (ch !== this.markShown) {
@@ -520,14 +533,29 @@ export class Character {
       this.markSprite.material.needsUpdate = true;
     }
     this.markAge += dt;
-    const show = !!ch && this.markAge < 2.2;
+    const keep = ch === '$';
+    const show = !!ch && (this.markAge < 2.2 || keep) && !(keep && this.doze > 0.3);
     this.markSprite.visible = show;
     if (!show) return;
     const t = this.markAge;
+    if (keep && t > 1.9) {
+      const e = Math.min(1, (t - 1.9) / 0.4);
+      const s = e * e * (3 - 2 * e);
+      this.markSprite.scale.setScalar(0.62 - 0.32 * s);
+      this.markSprite.material.opacity = 1 - 0.15 * s;
+      this.markSprite.position.y = 1.85 - 0.1 * s;
+      return;
+    }
     const pop = motion ? Math.min(1, t * 7) * (1 + Math.max(0, 0.35 - t) * 1.6) : 1;
     const out = t > 1.9 ? 1 - (t - 1.9) / 0.3 : 1;
     this.markSprite.scale.setScalar(0.62 * pop * out);
+    this.markSprite.material.opacity = 1;
     this.markSprite.position.y = 1.85 + (motion ? Math.sin(t * 9) * 0.04 : 0);
+  }
+
+  /** The mark showing now ('' none). */
+  get markChar(): string {
+    return this.markShown;
   }
 
   /**
@@ -772,7 +800,7 @@ export class Character {
     this.armR.rotation.set(armRx, 0, armRz);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
     this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI);
-    this.body.rotation.z = motion ? Math.sin(t * 0.7) * 0.035 * dz : 0;
+    this.body.rotation.z = motion ? Math.sin(t * 0.7) * 0.06 * dz : 0;
     this.body.rotation.x =
       0.08 * this.swing -
       (Math.PI / 2) * this.lie +
@@ -801,10 +829,17 @@ export class Character {
       if (!z.visible) return;
       const c = motion ? (time * 0.45 + i / 3 + this.offset) % 1 : i / 3;
       if (nap) {
-        // Standing: up from over the cap, "z Z Z" growing, fading in with the doze.
-        z.position.set(0.1 + Math.sin(c * 5 + i) * 0.1 + c * 0.18, 1.5 + c * 0.8, 0.08);
-        z.scale.setScalar(0.2 + c * 0.24);
-        z.material.opacity = Math.sin(c * Math.PI) * 0.95 * Math.min(1, (this.doze - 0.3) / 0.4);
+        // Standing: up from over the cap, "z Z Z" growing, drifting up and right on screen
+        // (the steep camera sees little of a rise: world +x and -z, turned into the root's
+        // frame), fading in with the doze and out as it stirs.
+        const wx = Math.sin(c * 5 + i) * 0.1 + c * 0.2;
+        const wz = -c * 0.45;
+        const ry = this.root.rotation.y;
+        const cy = Math.cos(ry);
+        const sy = Math.sin(ry);
+        z.position.set(wx * cy - wz * sy, 1.5 + c * 0.7, wx * sy + wz * cy + 0.08);
+        z.scale.setScalar(0.24 + c * 0.28);
+        z.material.opacity = Math.sin(c * Math.PI) * 0.95 * Math.min(1, (this.doze - 0.3) / 0.4) * (1 - this.stir);
         return;
       }
       // Up from the face, drifting and growing, fading at the top.
@@ -831,9 +866,11 @@ export class Character {
 
     // Blink every few seconds; eyes shut in bed.
     this.blinkAt -= dt;
-    const closed = this.blinkAt < 0.12 || (this.lie > 0.5 && !ko) || this.doze > 0.6;
+    // Dozing: shut, fluttering as it stirs; wide for a moment on waking with a start.
+    const flutter = this.stir > 0.4 && (t * 12) % 1 < 0.3;
+    const closed = this.blinkAt < 0.12 || (this.lie > 0.5 && !ko) || (this.doze > 0.6 && !flutter);
     if (this.blinkAt < 0) this.blinkAt = 2 + Math.random() * 3.5;
-    this.eyes.scale.y = closed ? 0.15 : 1;
+    this.eyes.scale.y = closed ? 0.15 : 1 + 0.5 * this.startle;
 
     // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
@@ -847,7 +884,7 @@ export class Character {
     const sink = n < 0.85 ? n / 0.85 : 1 - (n - 0.85) / 0.15;
     const nod = motion ? 0.3 + 0.35 * sink * sink * (3 - 2 * sink) : 0.55;
     this.head.rotation.x =
-      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : nod * dz - 0.25 * this.startle;
+      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;
     return stepped;
   }
 

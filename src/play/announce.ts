@@ -2,7 +2,7 @@ import { buzz } from '../app/haptics';
 import { itemDef, itemNumber } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
-import { t, type Key } from '../i18n';
+import { listOf, t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
 import { ownerOf } from '../sim/systems/items';
@@ -15,7 +15,7 @@ import { LAYER } from '../sim/world/World';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
-import { guardTitle, inmateName, jobName } from '../ui/social';
+import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
@@ -124,7 +124,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (e.cells.includes(1)) {
         sound.sting();
         banner.toast(t('toast.shakedownYou'), 'bad', 5000);
-      } else banner.toast(t('toast.shakedown', { a: e.cells[0], b: e.cells[1] }), 'info', 4500);
+      } else banner.toast(t('toast.shakedown', { cells: listOf(e.cells.map(String)) }), 'info', 4500);
       break;
     case 'searched':
       if (e.cell !== 1) break;
@@ -554,7 +554,7 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     // Guard ways (P15): a bribe paid, a look away over (a guard dozing: the coach, see overlay).
     case 'bribe': {
-      const name = guardTitle(sim, e.guard);
+      const name = guardSubject(sim, e.guard);
       if (e.kind === 'over') {
         sound.sting();
         banner.toast(t('toast.bribeOver', { name }), 'bad', 3500);

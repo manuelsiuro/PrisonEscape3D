@@ -23,16 +23,17 @@
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { PRISONS } from '../src/content/prisons';
 import { TRAINING } from '../src/content/prisons/training';
-import { BRIBE, command, OP, TALK } from '../src/sim/command';
+import { BRIBE, command, OP, SLOT, TALK } from '../src/sim/command';
 import { mix32, randomInt, roll, rollInt, SALT } from '../src/sim/rng';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { ALERT, alertOf, awake, GUARD, sendToLook, traitOf, type Guard } from '../src/sim/systems/guards';
 import { DOING } from '../src/sim/systems/inmates';
 import { slot } from '../src/sim/systems/items';
+import { itemNumber } from '../src/content/items';
 import { shakedown, shakedownCells } from '../src/sim/systems/justice';
 import { hearers, makeNoise } from '../src/sim/systems/noise';
 import { canChat, lookAwayPrice, paperPrice } from '../src/sim/systems/ways';
-import { BANG_NOISE, BRIBE_REPORT_HEAT, CONTRABAND_HEAT, LOOK_AWAY_STEPS, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, NOISE_LOOK, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, STIR_STEPS, UNIT } from '../src/sim/tuning';
+import { BANG_NOISE, BRIBE_REPORT_HEAT, CHASE_HEAT, CONTRABAND_HEAT, LOOK_AWAY_STEPS, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, NOISE_LOOK, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, STIR_STEPS, UNIT } from '../src/sim/tuning';
 import { LAYER, MAP_W } from '../src/sim/world/World';
 import { keepRumors } from '../src/talk/director';
 import { check } from './assert';
@@ -418,6 +419,16 @@ const events = (bot: Bot, type: SimEvent['type']) => bot.sim.events.filter((e) =
   const night = beside(KELLER);
   night.st.guards[KELLER].doing = DOING.SLEEP;
   check(!canChat(night.sim, KELLER), 'nor to a guard asleep');
+  // Nor in a guard's uniform: face to face it would only end in a lockdown.
+  const dressed = beside(KELLER);
+  dressed.st.items.inv[SLOT.OUTFIT] = slot(itemNumber('guard_outfit'));
+  check(!canChat(dressed.sim, KELLER) && !talkTo(dressed, KELLER), 'not in a guard uniform');
+  // A report that makes the player wanted ends the talk, the refusal told all the same.
+  const hot2 = beside(DUNN);
+  talkTo(hot2, DUNN);
+  hot2.st.heat = 65;
+  hot2.op(OP.TALK, TALK.BRIBE, BRIBE.LOOK);
+  check(events(hot2, 'refused').some((e) => e.type === 'refused' && e.why === 'reported') && hot2.st.heat >= CHASE_HEAT && hot2.st.talk === -1, 'reported into a chase: the talk ends, the report told');
 }
 
 // ------------------------------------------------------------------ an old save

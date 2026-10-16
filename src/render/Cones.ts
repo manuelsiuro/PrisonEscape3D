@@ -55,6 +55,9 @@ interface Cone {
   /** The angle drawn (eased toward the guard's heading) and the color. */
   angle: number;
   color: THREE.Color;
+  /** Its opacity before night and fading (eased with the color), and a brief flare as it comes on. */
+  strength: number;
+  flash: number;
   shown: number;
 }
 
@@ -102,7 +105,7 @@ export class Cones {
       mesh.renderOrder = 1;
       mesh.frustumCulled = false;
       this.group.add(mesh);
-      this.cones.push({ mesh, material, positions, uvs, angle: NaN, color: new THREE.Color(), shown: 0 });
+      this.cones.push({ mesh, material, positions, uvs, angle: NaN, color: new THREE.Color(), strength: 0.32, flash: 0, shown: 0 });
     }
   }
 
@@ -113,7 +116,11 @@ export class Cones {
     this.cones.forEach((c, k) => {
       const g = guards[k];
       const on = !!g && !!w && g.alert !== ALERT.NONE;
-      c.shown += ((on ? 1 : 0) - c.shown) * Math.min(1, dt * 6);
+      const was = c.shown;
+      // Back on (woken, come round): a brief flare, quicker in (not as a game starts).
+      if (on && was < 0.05 && motion && this.clock > 1) c.flash = 1;
+      c.flash = Math.max(0, c.flash - dt * 3);
+      c.shown += ((on ? 1 : 0) - c.shown) * Math.min(1, dt * (c.flash > 0 ? 10 : 6));
       c.mesh.visible = c.shown > 0.02;
       if (!c.mesh.visible || !g || !w) return;
       // Ease toward the heading the short way round (in the sim's angle: 0 = +x).
@@ -142,20 +149,28 @@ export class Cones {
       c.mesh.geometry.attributes.position.needsUpdate = true;
       c.mesh.geometry.attributes.uv.needsUpdate = true;
       c.mesh.geometry.computeBoundingSphere();
-      // Eased toward its color; a bribed cone breathes (a cue beyond color), and over its last
-      // minutes pulses back toward the calm yellow (still: turns yellow then).
-      const away = !!g.away && g.alert === ALERT.CALM;
-      this.goal.setHex(away ? AWAY : (this.colors[g.alert] ?? this.colors[ALERT.CALM]));
-      if (away && (g.awayLeft ?? ENDING) < ENDING) {
-        const mix = motion ? 0.5 + 0.5 * Math.sin(this.clock * Math.PI * 2.4) : 1;
-        this.goal.lerp(this.calm.setHex(this.colors[ALERT.CALM]), mix);
+      // An alarm snaps on (easing yellow to red would pass through orange: "suspicious"); calm
+      // and looking away ease into each other. A bribed cone breathes (a cue beyond color) and
+      // over its last minutes pulses back toward the calm yellow (still: half way). Fading out
+      // (asleep, out cold) it keeps its last color and strength.
+      if (on) {
+        const away = !!g.away && g.alert === ALERT.CALM;
+        const ending = away && (g.awayLeft ?? ENDING) < ENDING;
+        this.goal.setHex(away ? AWAY : (this.colors[g.alert] ?? this.colors[ALERT.CALM]));
+        if (ending) this.goal.lerp(this.calm.setHex(this.colors[ALERT.CALM]), motion ? 0.5 + 0.5 * Math.sin(this.clock * Math.PI * 2.4) : 0.5);
+        const breath = away && motion ? 0.7 + 0.3 * Math.sin(this.clock * 2 + k) : 1;
+        const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : away ? 0.26 * breath : 0.32;
+        if (was < 0.05 || !motion || g.alert === ALERT.HOSTILE || g.alert === ALERT.SUSPICIOUS) {
+          c.color.copy(this.goal);
+          c.strength = strength;
+        } else {
+          const e = Math.min(1, dt * (ending ? 14 : 6));
+          c.color.lerp(this.goal, e);
+          c.strength += (strength - c.strength) * e;
+        }
       }
-      if (c.shown < 0.05 || !motion) c.color.copy(this.goal);
-      else c.color.lerp(this.goal, Math.min(1, dt * 6));
       c.material.color.copy(c.color);
-      const breath = away && motion ? 0.85 + 0.15 * Math.sin(this.clock * 2.2 + k) : 1;
-      const strength = g.alert === ALERT.HOSTILE ? 0.44 : g.alert === ALERT.SUSPICIOUS ? 0.38 : away ? 0.26 * breath : 0.32;
-      c.material.opacity = c.shown * (strength + night * 0.12);
+      c.material.opacity = c.shown * (c.strength + night * 0.12) * (1 + 0.8 * c.flash);
     });
   }
 

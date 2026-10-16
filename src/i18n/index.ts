@@ -31,3 +31,9 @@ export function t(key: Key, vars: Record<string, string | number> = {}): string 
   const s = TABLES[lang]?.[key] ?? en[key];
   return withKeys(s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`)));
 }
+
+/** A list in a sentence: "6, 8 and 4" ("6, 8 et 4"). */
+export function listOf(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return t('list.and', { a: items.slice(0, -1).join(', '), b: items[items.length - 1] });
+}

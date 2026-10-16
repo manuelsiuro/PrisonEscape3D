@@ -111,6 +111,8 @@ export interface GuardFrame {
   /** Bribed to look the other way (P15): its cone in the looking-away tint, and steps left. */
   away: boolean;
   awayLeft: number;
+  /** Dozing and stirring (0–1): the player at its elbow is about to wake it. */
+  stir: number;
 }
 
 export interface InmateFrame {
@@ -783,7 +785,9 @@ export class View {
       c.hold(g.held, g.held ? itemGeometry(itemDef(g.held)) : null);
       c.pose(g.x, g.z, g.facing, g.moving, dt, time, !this.reducedMotion, g.doing, this.guardBeds[k]);
       // "$" pops over a guard as it takes the money (and again once it's calm, still paid).
-      c.mark(g.alert === ALERT.HOSTILE ? '!' : g.alert === ALERT.SUSPICIOUS ? '?' : g.away ? '$' : '', dt, !this.reducedMotion);
+      // (Not over one floored while looking into something: a "$" already up stays, small.)
+      c.mark(g.alert === ALERT.HOSTILE ? '!' : g.alert === ALERT.SUSPICIOUS ? '?' : g.away && (g.alert === ALERT.CALM || c.markChar === '$') ? '$' : '', dt, !this.reducedMotion);
+      c.stir = g.stir;
       c.showKey(g.hasKey);
       // A guard's key opens the door it walks through (and the one just ahead).
       const tx = Math.floor(g.x + Math.sin(g.facing) * 0.6);

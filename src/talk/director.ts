@@ -8,7 +8,7 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt } from '../sim/systems/clock';
 import { DOING } from '../sim/systems/inmates';
 import { lookingAway } from '../sim/systems/ways';
-import { awake } from '../sim/systems/guards';
+import { awake, GUARD } from '../sim/systems/guards';
 import { itemOf } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
 import { DIR_X, DIR_Z } from '../sim/command';
@@ -436,7 +436,8 @@ export class Director {
         break;
       // A lazy guard woken from its doze (P15): it insists it never slept.
       case 'nap':
-        if (!e.on) this.queueUp(now, 're.napWoke.gu', [n + e.guard], 4, 'napWoke', undefined, 0.3);
+        // (Not under the sirens or in a chase: "Night shift, right" would ring false.)
+        if (!e.on && !sim.state.lockdown && sim.state.guards[e.guard]?.mode !== GUARD.CHASE) this.queueUp(now, 're.napWoke.gu', [n + e.guard], 4, 'napWoke', undefined, 0.3);
         break;
       case 'cameTo':
         this.cameTo.set(e.who, now);
@@ -801,7 +802,7 @@ export class Director {
     if (s.talk < s.inmates.length) return null;
     if (e.type === 'bribe') return s.talk !== s.inmates.length + e.guard ? null : e.kind === 'look' ? 're.bribe.gu' : e.kind === 'paper' ? 're.paper.gu' : null;
     if (e.type !== 'refused') return null;
-    return e.why === 'honest' || e.why === 'tooHot' ? 're.honest.gu' : e.why === 'reported' ? 're.reported.gu' : e.why === 'cash' ? 're.broke.gu' : null;
+    return e.why === 'honest' ? 're.honest.gu' : e.why === 'reported' ? 're.reported.gu' : e.why === 'cash' ? 're.broke.gu' : null;
   }
 
   /** The talk partner's answer to what the player just did (shown in the talk panel), or null. */
@@ -839,12 +840,14 @@ export class Director {
   }
 
   /** The rumors heard, newest first, as the prisoner's file lists them (stale news marked). */
-  notebook(sim: Sim): Array<{ text: string; old: boolean; day: number; by: string | null }> {
+  notebook(sim: Sim): Array<{ text: string; old: boolean; day: number; by: string | null; self: boolean }> {
     if (!this.rumors.length) return [];
     const now = new Set(facts(sim).map((f) => f.key));
     return this.rumors.map((r) => {
       const text = fill(t(`rumor.${r.fact.kind}` as Key), this.context(sim, -1, r.fact)) ?? '';
-      return { text, old: !LASTING.has(r.fact.kind) && !now.has(r.fact.key), day: clockAt(r.step).day, by: r.by !== undefined ? nameOf(sim, r.by) : null };
+      // Found out first-hand (P15: a bribe taken or reported) rather than told.
+      const self = r.by === -1;
+      return { text, old: !LASTING.has(r.fact.kind) && !now.has(r.fact.key), day: clockAt(r.step).day, by: r.by !== undefined && !self ? nameOf(sim, r.by) : null, self };
     });
   }
 

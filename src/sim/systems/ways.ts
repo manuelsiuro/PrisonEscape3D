@@ -10,7 +10,7 @@ import { BRIBE_PER_LEVEL, BRIBE_REPORT_HEAT, CHASE_HEAT, LOOK_AWAY_PRICE, LOOK_A
 import { clockAt } from './clock';
 import { awake, GUARD, traitOf, type Guard } from './guards';
 import { refuse } from './social';
-import { addHeat } from './watch';
+import { addHeat, inDisguise } from './watch';
 
 /** What a bribe costs in this prison: dearer the harder the prison. */
 export const lookAwayPrice = (difficulty: number) => LOOK_AWAY_PRICE + BRIBE_PER_LEVEL * difficulty;
@@ -22,12 +22,13 @@ export const lookingAway = (g: Guard, step: number) => g.bribed > step;
 /**
  * Whether the player can talk to a guard (guard index): awake and about its ordinary duty
  * (not chasing, looking into something, checking beds or searching), no lockdown or takeover,
- * and the player not wanted.
+ * the player not wanted, and not in a guard's uniform (face to face, a guard would know a
+ * colleague it never met: the talk would only end in a lockdown).
  */
 export function canChat(sim: SimContext, k: number): boolean {
   const s = sim.state;
   const g = s.guards[k];
-  return !!g && awake(g) && g.mode === GUARD.DUTY && !s.lockdown && !s.takeover && s.heat < CHASE_HEAT && !sim.away;
+  return !!g && awake(g) && g.mode === GUARD.DUTY && !s.lockdown && !s.takeover && s.heat < CHASE_HEAT && !sim.away && !inDisguise(sim);
 }
 
 /**

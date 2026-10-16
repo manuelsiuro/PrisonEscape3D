@@ -18,7 +18,7 @@ import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
-import { guardTitle, inmateName } from '../ui/social';
+import { inmateName } from '../ui/social';
 import type { ToolView } from '../ui/tool';
 import { press } from './buttons';
 
@@ -131,7 +131,7 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
       const n = sim.state.inmates.length;
       // A guard by its title, as the sentence needs it ("Parler au gardien Pratt").
       const guard = target.who >= n ? sim.prison.guards[target.who - n] : undefined;
-      const what = !guard ? inmateName(sim, target.who) : guard.name ? t('guard.addressed', { name: guard.name }) : guardTitle(sim, target.who - n);
+      const what = !guard ? inmateName(sim, target.who) : guard.name ? t('guard.addressed', { name: guard.name }) : t('guard.addressedNameless');
       Object.assign(actionLabel, { verb: t(mail ? 'act.deliver' : guard ? 'act.talkGuard' : 'act.talk'), what });
     }
     return actionLabel;
