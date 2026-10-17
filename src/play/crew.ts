@@ -100,7 +100,7 @@ function orderNote(sim: Sim, who: number, order: number): string {
     case ORDER.FETCH:
       return t('crew.fetchNote');
     case ORDER.NIGHT:
-      return nightOf(sim.state, who) ? t('crew.nightOn') : t('crew.nightNote');
+      return nightOf(sim.state, who) ? t('crew.nightOnNote') : t('crew.nightNote');
   }
   return t('crew.followNote');
 }
@@ -124,7 +124,7 @@ export function crewTalk(sim: Sim, who: number): CrewTalkView | null {
     confirm: o === ORDER.BRAWL ? t('crew.brawlConfirm') : undefined,
   }));
   const night = nightOf(s, who);
-  orders.push({ order: ORDER.NIGHT, icon: 'moon', label: t(night ? 'crew.nightOff' : 'crew.night'), note: orderNote(sim, who, ORDER.NIGHT), ok: !cantOrder(sim, who, ORDER.NIGHT), on: false });
+  orders.push({ order: ORDER.NIGHT, icon: 'moon', label: t('crew.night'), note: orderNote(sim, who, ORDER.NIGHT), ok: !cantOrder(sim, who, ORDER.NIGHT), on: night });
   return { spec, status: crewStatus(sim, who), orders };
 }
 

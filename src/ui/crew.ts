@@ -1,6 +1,6 @@
 import type { Speciality } from '../content/crew';
 import { currentLang, t } from '../i18n';
-import { TALK } from '../sim/command';
+import { ORDER, TALK } from '../sim/command';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -29,13 +29,19 @@ export interface CrewTalkView {
   orders: CrewOrderView[];
 }
 
-/** A follower's crew section: his line of work, what he's at, his orders (each with what it does or why not), tonight's the night. */
+/**
+ * A follower's crew section: his line of work, what he's at, then his orders as a list of
+ * full-width actions on two lines each (its name, then what it does or why not now), the one in
+ * force lit (tonight's the night stays pressable to call it off).
+ */
 export function crewSection(v: CrewTalkView): string {
   const rows = v.orders
     .map((o) => {
-      const cls = o.on ? 'primary on' : o.ok ? 'primary' : 'ghost';
-      const confirm = o.confirm && o.ok && !o.on ? ` data-confirm="${esc(o.confirm)}"` : '';
-      return `<div class="crew-order"><button class="big-btn ${cls} small" data-act="${TALK.CREW}" data-arg="${o.order}" ${o.ok && !o.on ? '' : 'disabled'}${o.on ? ' aria-pressed="true"' : ''}${confirm} aria-describedby="crew-note-${o.order}">${icon(o.icon, 16)}<span>${esc(o.label)}</span></button><small id="crew-note-${o.order}">${esc(o.note)}</small></div>`;
+      const toggle = o.order === ORDER.NIGHT;
+      const live = o.ok && (!o.on || toggle);
+      const confirm = o.confirm && live ? ` data-confirm="${esc(o.confirm)}"` : '';
+      const tag = o.on ? `<em class="crew-act-tag">${t('crew.tagOn')}</em>` : '';
+      return `<button class="crew-act${o.on ? ' on' : ''}" data-act="${TALK.CREW}" data-arg="${o.order}" ${live ? '' : 'disabled'}${o.on ? ' aria-pressed="true"' : ''}${confirm}><span class="crew-act-ic">${icon(o.icon, 18)}</span><span class="crew-act-text"><b>${esc(o.label)}</b>${o.note ? `<small>${esc(o.note)}</small>` : ''}</span>${tag}</button>`;
     })
     .join('');
   return `<section class="talk-crew"><div class="box-label">${icon(SPEC_ICON[v.spec], 14)}<span>${t('crew.title', { spec: t(`spec.${v.spec}`) })}</span></div>

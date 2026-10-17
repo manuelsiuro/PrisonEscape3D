@@ -32,38 +32,112 @@
 }
 .crew-orders {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+}
+/* One order: a full-width action on two lines (its name, what it does or why not now). */
+.crew-act {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 6px 10px;
-}
-/* (Buttons in one column as wide as the widest, the notes lined up beside them.) */
-.crew-order {
-  display: contents;
-}
-.crew-order .big-btn.small {
-  justify-content: flex-start;
+  gap: 12px;
   width: 100%;
-  gap: 5px;
+  min-height: 52px;
+  padding: 8px 12px 8px 8px;
+  border: 0;
+  border-radius: 14px;
+  text-align: left;
+  color: #fff3e6;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 169, 77, 0.28);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+.crew-act:hover:not(:disabled) {
+  background: rgba(255, 169, 77, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 169, 77, 0.55);
+}
+.crew-act:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.crew-act:focus-visible {
+  outline: 2px solid var(--crew);
+  outline-offset: 2px;
+}
+.crew-act-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
   height: 36px;
-  padding: 0 12px;
-  font-size: 13.5px;
-}
-.crew-order .big-btn.on {
+  border-radius: 11px;
   color: #2a1a08;
-  background: linear-gradient(180deg, #ffd8a8, var(--crew));
-  box-shadow:
-    0 3px 0 #b8722a,
-    0 0 0 2px rgba(255, 169, 77, 0.35);
-  opacity: 1;
+  background: linear-gradient(180deg, #ffc98a, var(--crew));
+  box-shadow: 0 2px 0 #b8722a;
 }
-.crew-order .big-btn:disabled:not(.on) {
-  opacity: 0.45;
-}
-.crew-order small {
+.crew-act-text {
+  display: grid;
   flex: 1;
+  gap: 2px;
   min-width: 0;
-  font: 500 11.5px/1.3 var(--font-ui);
+}
+.crew-act-text b {
+  font: 800 14.5px/1.2 var(--font-ui);
+  color: white;
+}
+.crew-act-text small {
+  font: 500 12px/1.3 var(--font-ui);
   color: rgba(255, 255, 255, 0.66);
+}
+/* The order in force: lit, with its tag. */
+.crew-act.on {
+  background: linear-gradient(135deg, rgba(255, 169, 77, 0.26), rgba(255, 169, 77, 0.1));
+  box-shadow: inset 0 0 0 2px var(--crew);
+}
+.crew-act.on:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.crew-act-tag {
+  flex: none;
+  align-self: flex-start;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #2a1a08;
+  font: 800 10.5px/1.2 var(--font-ui);
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--crew);
+}
+/* Not now: dimmed, the reason on its second line. */
+.crew-act:disabled:not(.on) {
+  cursor: default;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.crew-act:disabled:not(.on) .crew-act-ic {
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+.crew-act:disabled:not(.on) .crew-act-text b {
+  color: rgba(255, 255, 255, 0.5);
+}
+.crew-act.armed::after {
+  font-size: 14px;
+}
+@media (max-height: 520px) {
+  .crew-act {
+    min-height: 46px;
+    padding: 6px 10px 6px 6px;
+  }
+  .crew-act-ic {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 /* The crew's pill under the HUD rows: orange, a button to their panel; ringing as a lookout whistles. */

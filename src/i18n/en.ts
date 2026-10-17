@@ -1898,7 +1898,6 @@ export const en = {
   "crew.brawl": "Start a brawl",
   "crew.fetch": "Fetch the drop",
   "crew.night": "Tonight's the night",
-  "crew.nightOff": "Not tonight after all",
   "crew.followNote": "Back at your heels, order over",
   "crew.watchNote": "Stays right here, wherever you go, and whistles when a guard comes within {n} tiles of him",
   "crew.digNote": "At your side, walls and floors give way half as fast again and he gets rid of the rubble. Down a tunnel he waits up top: a quarter faster, the dirt handed up",
@@ -1986,6 +1985,8 @@ export const en = {
   "crew.say": "{name}: {status}",
   "refused.badPost": "Not here: a doorway or a work room would stay open",
   "crew.badPost": "Not here: someone standing in a doorway or a work room holds its door open",
+  "crew.tagOn": "On",
+  "crew.nightOnNote": "Up with you tonight, until 06:00. Choose it again to call it off",
 };
 
 export type Strings = typeof en;

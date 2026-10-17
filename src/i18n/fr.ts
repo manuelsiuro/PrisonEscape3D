@@ -1897,7 +1897,6 @@ export const fr: Partial<Strings> = {
   "crew.brawl": "Déclenche une bagarre",
   "crew.fetch": "Va chercher le colis",
   "crew.night": "C’est pour ce soir",
-  "crew.nightOff": "Finalement, pas ce soir",
   "crew.followNote": "De nouveau sur tes talons, ordre terminé",
   "crew.watchNote": "Reste ici, où que tu ailles, et siffle quand un gardien arrive à {n} cases de lui",
   "crew.digNote": "À tes côtés, murs et sols cèdent moitié plus vite et il se débarrasse des gravats. Dans un tunnel, il attend en haut : un quart plus vite, la terre remontée",
@@ -1985,4 +1984,6 @@ export const fr: Partial<Strings> = {
   "crew.say": "{name} : {status}",
   "refused.badPost": "Pas ici : une porte ou un atelier resterait ouvert",
   "crew.badPost": "Pas ici : quelqu’un qui se tient dans une porte ou un atelier la garde ouverte",
+  "crew.tagOn": "En cours",
+  "crew.nightOnNote": "Debout avec toi cette nuit, jusqu’à 6 h. Choisis-le encore pour annuler",
 };
