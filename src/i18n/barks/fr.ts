@@ -1422,7 +1422,7 @@ export const frBarks: Barks = {
     'Aie l’air occupé. Et innocent. Les deux à la fois.',
     'Je parie qu’ils mangent pas ce qu’on mange.',
     'Sage jusqu’à seize heures. Ensuite, comme d’hab.',
-    'Les gardiens ont l’œil deux fois plus vif. Prudence.',
+    'Les gardiens voient plus loin aujourd’hui. Prudence.',
   ],
   'in.day.drill': [
     'Au feu ! Ah. C’est un exercice. Ouf.',
@@ -1616,8 +1616,8 @@ export const frBarks: Barks = {
     'Jour {n} : prends un plateau comme bouclier.',
   ],
   'go.stormCut': [
-    'L’orage coupe le courant vers {t1} cette nuit.',
-    'Retiens bien : plus de courant vers {t1}. L’orage s’en charge.',
-    'Vers {t1} cette nuit, la clôture s’éteint. L’orage.',
+    'Le mauvais temps coupe le courant vers {t1} cette nuit.',
+    'Retiens bien : plus de courant vers {t1} cette nuit.',
+    'Vers {t1} cette nuit, la clôture s’éteint. Le mauvais temps.',
   ],
 };

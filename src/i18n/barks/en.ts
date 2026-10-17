@@ -1424,7 +1424,7 @@ export const enBarks = {
     'Look busy. Look innocent. Look busy and innocent.',
     'Bet they don\'t eat what we eat.',
     'Best behaviour till four. Then back to normal.',
-    'Guards are twice as sharp today. Careful.',
+    'Guards see further today. Careful.',
   ],
   'in.day.drill': [
     'Fire! Oh. It\'s a drill. Phew.',
@@ -1618,9 +1618,9 @@ export const enBarks = {
     'Day {n}: bring a tray for a shield.',
   ],
   'go.stormCut': [
-    'The storm cuts the power around {t1} tonight.',
-    'Mark my words: lights out around {t1}, storm or no storm.',
-    'Around {t1} tonight, the fence goes dead. The storm.',
+    'The weather cuts the power around {t1} tonight.',
+    'Mark my words: lights out around {t1} tonight.',
+    'Around {t1} tonight, the fence goes dead. Bad weather.',
   ],
 } satisfies Record<string, readonly Line[]>;
 

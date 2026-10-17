@@ -215,7 +215,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   dayHud(sim, hudState, a);
   hud.update(clock, zone, hudState);
   paBoard.reducedMotion = settings.reducedMotion;
-  paBoard.frame();
+  // (The warden's clock is play time: paused or over, nothing runs out and nothing new is said.)
+  paBoard.frame(g.paused || g.over);
   // The music follows the danger and the hour; the ambience, where the player is.
   // Tense from 80% heat (or a chase, a lockdown) until it's back under 70%: no flapping at the line.
   const hunted = st.lockdown || st.guards.some((x) => x.mode === GUARD.CHASE);

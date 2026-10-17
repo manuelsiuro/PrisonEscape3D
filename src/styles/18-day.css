@@ -217,20 +217,43 @@
   }
 
   .pa-line {
-    margin: 6px 2px 8px;
-    font-size: 15px;
+    margin: 4px 2px 6px;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .pa-head .pa-mic {
+    width: 26px;
+    height: 26px;
+  }
+
+  .pa-row {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .pa-ic {
+    width: 28px;
+    height: 28px;
+  }
+
+  .pa-text b {
+    font-size: 14px;
+  }
+
+  .pa-note {
+    margin-top: 1px;
+    font-size: 11.5px;
   }
 
   .pa-rows {
     grid-template-columns: 1fr 1fr;
   }
 
+  /* (Every rule said in full: the two rows side by side keep the card short.) */
   .pa-card .pa-text span {
-    font-size: 12px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.3;
   }
 
   .pa-hint {
@@ -397,4 +420,16 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
 
 .file-day .pa-text small {
   opacity: 0.6;
+}
+
+/* The file's notes on the day (mustered, commended; where tomorrow's plan comes from). */
+.file-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9fc4e8;
 }

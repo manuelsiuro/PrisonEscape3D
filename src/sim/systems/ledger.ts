@@ -9,7 +9,6 @@ import { itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
 import { CHASE_HEAT, UNIT } from '../tuning';
-import { inFoodFight } from './calendar';
 
 /** The ledger's counters, in `feats` order. Stored as numbers: append only, never renumber. */
 export const FEATS = [
@@ -103,7 +102,7 @@ export function ledger(sim: Sim, x: number, z: number) {
     switch (e.type) {
       case 'hit':
         f[FEAT.blows]++;
-        if (inFoodFight(sim) && e.who < s.inmates.length) f[FEAT.foodBlows]++;
+        if (e.free) f[FEAT.foodBlows]++;
         bits |= DAY.FIGHT;
         break;
       case 'koed':
@@ -116,6 +115,7 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'thrown':
         f[FEAT.flung]++;
+        if (e.free) f[FEAT.foodBlows]++;
         bits |= DAY.FIGHT;
         break;
       case 'noise':

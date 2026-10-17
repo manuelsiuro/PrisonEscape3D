@@ -54,6 +54,7 @@ export class DayEvents {
   private trailLen = 0;
   private trailGuard = -1;
   private readonly spot = [{ x: 0, z: 0, set: false }, { x: 0, z: 0, set: false }];
+  private world: World | null = null;
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
   private readonly s = new THREE.Vector3();
@@ -76,6 +77,9 @@ export class DayEvents {
   /** A prison: where its canteen is (the screen goes up over its north wall). */
   setWorld(world: World) {
     this.clear();
+    this.world = world;
+    // The inspectors made now, hidden (not in the middle of a day the first time they're needed).
+    this.inspectorCast();
     let x0 = MAP_W;
     let z0 = MAP_H;
     let x1 = -1;
@@ -108,10 +112,15 @@ export class DayEvents {
     canvas.height = 108;
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
+    // Redrawn 12 times a second: no mipmaps to rebuild each time.
+    tex.generateMipmaps = false;
+    tex.minFilter = THREE.LinearFilter;
     this.film = { canvas, tex, t: 0, frame: -1 };
     const frame = new THREE.Mesh(new THREE.PlaneGeometry(width + 0.16, height + 0.16), new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.8 }));
     frame.position.z = -0.01;
-    this.screen = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+    // (Transparent so it draws after the fog veil, over it: no seam where the veil cuts across the film.)
+    this.screen = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, transparent: true }));
+    this.screen.renderOrder = 0.6;
     this.screen.add(frame);
     this.screen.position.set(cx, WALL_H + 0.08 + height / 2, top - 0.45);
     this.screen.visible = false;
@@ -120,7 +129,7 @@ export class DayEvents {
     const g = new THREE.BufferGeometry();
     const sx = this.screen.position;
     g.setAttribute('position', new THREE.Float32BufferAttribute([back.x, back.y, back.z, sx.x - width / 2, sx.y - height / 2, sx.z + 0.02, sx.x + width / 2, sx.y - height / 2, sx.z + 0.02, back.x, back.y, back.z, sx.x + width / 2, sx.y - height / 2, sx.z + 0.02, sx.x + width / 2, sx.y + height / 2, sx.z + 0.02, back.x, back.y, back.z, sx.x + width / 2, sx.y + height / 2, sx.z + 0.02, sx.x - width / 2, sx.y + height / 2, sx.z + 0.02, back.x, back.y, back.z, sx.x - width / 2, sx.y + height / 2, sx.z + 0.02, sx.x - width / 2, sx.y - height / 2, sx.z + 0.02], 3));
-    this.beam = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xfff1c8, transparent: true, opacity: 0.03, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    this.beam = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xfff1c8, transparent: true, opacity: 0.03, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, forceSinglePass: true }));
     this.beam.visible = false;
     this.beam.renderOrder = 7;
     this.group.add(this.screen, this.beam);
@@ -144,17 +153,22 @@ export class DayEvents {
   /**
    * A frame. `guards`: where each guard is (and whether it's up and about: the inspectors
    * trail the first one that is); `inmates`: where everyone is (the food flies between them);
-   * `ground`: the player is on the ground floor (at px, pz).
+   * `ground`: the player is on the ground floor (at px, pz); `about`: anywhere above the tunnels
+   * (the ground floor's people are drawn from the vents and the roofs too); `power`: the lights' level (a cut dims the film).
    */
-  update(f: EventsFrame, dt: number, time: number, guards: ReadonlyArray<{ x: number; z: number; awake: boolean }>, inmates: ReadonlyArray<{ x: number; z: number }>, ground: boolean, motion: boolean, splat: boolean, px = 0, pz = 0): Character[] {
+  update(f: EventsFrame, dt: number, time: number, guards: ReadonlyArray<{ x: number; z: number; awake: boolean }>, inmates: ReadonlyArray<{ x: number; z: number }>, ground: boolean, motion: boolean, splat: boolean, px = 0, pz = 0, about = ground, power = 1): Character[] {
     // Movie night: the screen stands over the wall only while the player is in or by the canteen (elsewhere it would hide the rooms north of it).
     const box = this.canteen;
     const near = !!box && px >= box.x0 - 3 && px <= box.x1 + 4 && pz >= box.z0 - 2 && pz <= box.z1 + 4;
     const movie = f.movie && ground && near && !!this.screen;
-    if (this.screen) this.screen.visible = movie;
+    if (this.screen) {
+      this.screen.visible = movie;
+      // The projector runs on the mains: a power cut dims the film to a ghost.
+      if (movie) (this.screen.material as THREE.MeshBasicMaterial).color.setScalar(0.15 + 0.85 * power);
+    }
     if (this.beam) {
-      this.beam.visible = movie;
-      if (movie) (this.beam.material as THREE.MeshBasicMaterial).opacity = motion ? 0.03 + 0.012 * Math.sin(time * 23) * Math.sin(time * 7.3) : 0.03;
+      this.beam.visible = movie && power > 0.2;
+      if (movie) (this.beam.material as THREE.MeshBasicMaterial).opacity = (motion ? 0.03 + 0.012 * Math.sin(time * 23) * Math.sin(time * 7.3) : 0.03) * power;
     }
     if (movie) this.roll(dt, motion);
     // The food fight.
@@ -162,7 +176,7 @@ export class DayEvents {
     // The inspectors, a few steps behind a guard on its round.
     const shown = this.shown;
     shown.length = 0;
-    if (f.inspection && ground) {
+    if (f.inspection && about) {
       let k = -1;
       for (let i = 0; i < guards.length && k < 0; i++) if (guards[i].awake) k = i;
       if (k >= 0) {
@@ -195,14 +209,27 @@ export class DayEvents {
           const side = j === 0 ? 0.42 : -0.42;
           let tx = x + Math.cos(facing) * side;
           let tz = z - Math.sin(facing) * side;
+          // Side by side only where there's room (a corridor, a doorway: single file).
+          if (!this.walkable(tx, tz)) {
+            tx = x;
+            tz = z;
+          }
           // Never on its heels: where it stops, they wait a pace or so back (taking notes).
           const was = this.spot[j];
           if (Math.hypot(tx - g.x, tz - g.z) < 1.4) {
-            // (Arriving on a guard standing still: a pace behind it, to the camera's side.)
-            tx = was.set ? was.x : g.x + side * 1.6;
-            tz = was.set ? was.z : g.z + 1.4;
+            // (Arriving on a guard standing still: a pace behind it if there's floor there, else where the trail is.)
+            const bx = g.x + side * 1.6;
+            const bz = g.z + 1.4;
+            tx = was.set ? was.x : this.walkable(bx, bz) ? bx : tx;
+            tz = was.set ? was.z : this.walkable(bx, bz) ? bz : tz;
             moving = false;
             facing = Math.atan2(g.x - tx, g.z - tz);
+          }
+          // Eased onto the spot (no jumps when the trail starts again or the guard moves off).
+          if (was.set && motion) {
+            const e = Math.min(1, dt * 6);
+            tx = was.x + (tx - was.x) * e;
+            tz = was.z + (tz - was.z) * e;
           }
           was.x = tx;
           was.z = tz;
@@ -217,6 +244,23 @@ export class DayEvents {
     for (const c of this.inspectors) c.root.visible = false;
     this.trailGuard = -1;
     return shown;
+  }
+
+  /** Shown for a moment while the renderer compiles their shaders (a new game), then hidden again. */
+  warm(on: boolean) {
+    for (const m of [this.blobs, this.screen, this.beam]) if (m) m.visible = on;
+    this.blobs.count = on ? 1 : 0;
+  }
+
+  /** Whether someone can stand at a point (not in a wall, not in furniture). */
+  private walkable(x: number, z: number): boolean {
+    const w = this.world;
+    if (!w) return true;
+    const tx = Math.floor(x);
+    const tz = Math.floor(z);
+    if (!w.inside(tx, tz)) return false;
+    const i = tz * MAP_W + tx;
+    return !TILE_INFO[w.ground.kind[i]].solid && !w.propSolid[i];
   }
 
   /** A point of the guard's trail. */
@@ -269,21 +313,9 @@ export class DayEvents {
     // The chase: round and round (the guard always a step behind), a hop now and then.
     const lap = (t * 0.22) % 1;
     const hop = Math.abs(Math.sin(t * 6)) * 6;
-    const runner = (x: number, color: string, hat: boolean, y: number) => {
-      c.fillStyle = color;
-      c.fillRect(x - 5, h * 0.78 - 26 - y, 10, 16);
-      c.beginPath();
-      c.arc(x, h * 0.78 - 32 - y, 6, 0, Math.PI * 2);
-      c.fill();
-      // Legs scissoring.
-      const s = Math.sin(t * 18) * 4;
-      c.fillRect(x - 4 + s, h * 0.78 - 10 - y, 3, 10);
-      c.fillRect(x + 1 - s, h * 0.78 - 10 - y, 3, 10);
-      if (hat) c.fillRect(x - 7, h * 0.78 - 40 - y, 14, 4);
-    };
     const xr = -20 + lap * (w + 60);
-    runner(xr, 'rgba(40,30,20,0.92)', false, hop);
-    runner(xr - 34 - Math.sin(t * 3) * 6, 'rgba(25,20,15,0.95)', true, 0);
+    runner(c, h, t, xr, 'rgba(40,30,20,0.92)', false, hop);
+    runner(c, h, t, xr - 34 - Math.sin(t * 3) * 6, 'rgba(25,20,15,0.95)', true, 0);
     // Scratches and dust.
     if (motion) {
       c.strokeStyle = 'rgba(40,30,20,0.35)';
@@ -403,4 +435,17 @@ export class DayEvents {
     this.blobs.geometry.dispose();
     (this.blobs.material as THREE.Material).dispose();
   }
+}
+
+/** A runner in the film (its body, head, scissoring legs, a guard's cap) on a canvas `h` high at film time `t`. */
+function runner(c: CanvasRenderingContext2D, h: number, t: number, x: number, color: string, hat: boolean, y: number) {
+  c.fillStyle = color;
+  c.fillRect(x - 5, h * 0.78 - 26 - y, 10, 16);
+  c.beginPath();
+  c.arc(x, h * 0.78 - 32 - y, 6, 0, Math.PI * 2);
+  c.fill();
+  const s = Math.sin(t * 18) * 4;
+  c.fillRect(x - 4 + s, h * 0.78 - 10 - y, 3, 10);
+  c.fillRect(x + 1 - s, h * 0.78 - 10 - y, 3, 10);
+  if (hat) c.fillRect(x - 7, h * 0.78 - 40 - y, 14, 4);
 }

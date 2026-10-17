@@ -17,6 +17,7 @@ export function buildGround(world: World): THREE.Group {
   return group;
 }
 
+/** (Floor decals draw under P17's fog veil, at renderOrder 0.5: orders below it, their own order kept.) */
 function overlay(canvas: HTMLCanvasElement, material: THREE.MeshBasicMaterial, y: number, order: number): THREE.Mesh {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -87,7 +88,7 @@ function paintLayer(world: World): THREE.Mesh {
       c.restore();
     }
   }
-  return overlay(canvas, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), 0.002, 1);
+  return overlay(canvas, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), 0.002, 0.1);
 }
 
 // ------------------------------------------------------------------ contact shadows
@@ -171,5 +172,5 @@ function contactShadows(world: World): THREE.Mesh {
   }
   c.putImageData(img, 0, 0);
   const material = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.MultiplyBlending, premultipliedAlpha: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  return overlay(canvas, material, 0.004, 2);
+  return overlay(canvas, material, 0.004, 0.2);
 }

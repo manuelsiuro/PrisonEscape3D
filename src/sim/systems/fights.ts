@@ -120,7 +120,7 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     const who = s.lock;
     // (A throw is a blow: at a guard never a scuffle; at an inmate, as for a punch.)
     s.selfDefense = !isGuard(s, who) && freeBlow(sim, f as Inmate);
-    sim.events.push({ type: 'thrown', who });
+    sim.events.push(s.selfDefense && inFoodFight(sim) ? { type: 'thrown', who, free: true } : { type: 'thrown', who });
     knockOut(sim, who);
     return true;
   }
@@ -160,7 +160,7 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     dismiss(sim, who);
     if (s.talk === who) endTalk(sim);
   }
-  sim.events.push({ type: 'hit', who, dmg, ko, weapon: item });
+  sim.events.push(!guard && s.selfDefense && inFoodFight(sim) ? { type: 'hit', who, dmg, ko, weapon: item, free: true } : { type: 'hit', who, dmg, ko, weapon: item });
   // A scene at roll call (GDD §10.4: the distraction favor).
   const block = ROUTINE[s.routine].id;
   if (block === 'rollCall' || block === 'eveningRollCall') for (const fv of s.favors) if (fv.kind === FAVOR.DISTRACTION && fv.state === FAVOR_STATE.TAKEN) favorDone(sim, fv);

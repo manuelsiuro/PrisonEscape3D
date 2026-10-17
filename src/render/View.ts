@@ -279,6 +279,8 @@ export class View {
   private readonly events = new DayEvents();
   /** The weather's light this frame (the title has none), and a lightning flash easing away. */
   private wxLight: WeatherFrame | null = null;
+  /** The weather's light as drawn: eased toward the frame's (P17). */
+  private readonly wxEased = { grey: 0, storm: 0, fog: 0, heat: 0 };
   private flash = 0;
   private readonly guardSpots: Array<{ x: number; z: number; awake: boolean }> = [];
   /** Whether a tile has open sky over it (no roof): where snow falls. */
@@ -386,7 +388,7 @@ export class View {
     };
     this.cup.visible = false;
     this.puddles.count = 0;
-    this.puddles.renderOrder = 1;
+    this.puddles.renderOrder = 0.15;
     // Instances spread over the whole map: the mesh's own bounds (at the origin) would cull them.
     this.puddles.frustumCulled = false;
     this.setQuality(quality);
@@ -473,8 +475,15 @@ export class View {
     this.guide.world = world;
     this.cones.world = world;
     this.events.setWorld(world);
-    this.weather.reset();
+    this.weather.setWorld(world);
+    // The day's effects compiled now (P17), not on a phone in the middle of a food fight.
+    this.weather.warm(true);
+    this.events.warm(true);
+    this.renderer.compile(this.scene, this.camera);
+    this.weather.warm(false);
+    this.events.warm(false);
     this.flash = 0;
+    Object.assign(this.wxEased, { grey: 0, storm: 0, fog: 0, heat: 0 });
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
     this.outfit = -1;
     this.showers.fill(0);
@@ -954,7 +963,7 @@ export class View {
       this.wxSnow.rain = 0;
       wxNow = this.wxSnow;
     }
-    this.weather.update(wxNow, dt, time, f.x, f.z, LAYER_Y[f.layer], f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45, this.night, !this.reducedMotion, f.layer === LAYER.UNDER, f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow, f.layer === LAYER.ROOF ? this.wetRoofs : this.puddly);
+    this.weather.update(wxNow, dt, time, f.x, f.z, LAYER_Y[f.layer], f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45, this.night, !this.reducedMotion, f.layer === LAYER.UNDER, f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow, f.layer === LAYER.ROOF ? this.wetRoofs : this.puddly, Math.max(this.camera.right - this.camera.left, (this.camera.top - this.camera.bottom) * 1.6) + 6, this.alarm, f.layer === LAYER.VENTS);
     // The day's events: the film, the food, the inspectors trailing a guard.
     const spots = this.guardSpots;
     spots.length = f.guards.length;
@@ -965,7 +974,7 @@ export class View {
       o.z = g.z;
       o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
     }
-    this.inspecting = this.events.update(f.events, dt, time, spots, f.inmates, f.layer === LAYER.GROUND, !this.reducedMotion, !this.reducedMotion, f.x, f.z);
+    this.inspecting = this.events.update(f.events, dt, time, spots, f.inmates, f.layer === LAYER.GROUND, !this.reducedMotion, !this.reducedMotion, f.x, f.z, f.layer !== LAYER.UNDER, this.security?.powerLevel ?? 1);
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
@@ -1128,6 +1137,8 @@ export class View {
       this.applyZoom();
     }
     const night = (this.night = this.light(minute));
+    // The weather first: a lockdown's red pulses through a storm's grey (not washed out by it).
+    this.weatherLight(dt);
     if (this.alarm > 0.001) {
       // Lockdown: the light swings red in slow pulses, like a rotating beacon.
       const pulse = this.reducedMotion ? 0.5 : (Math.sin(time * 5) + 1) / 2;
@@ -1136,7 +1147,6 @@ export class View {
       this.sky.lerp(this.red, a * 0.35);
       this.sun.intensity *= 1 - 0.35 * this.alarm;
     } else this.ambient.color.set(SKY_LIGHT);
-    this.weatherLight(dt);
     // Off the ground floor: the vents dim the rooms below; the tunnels are dark but for the lantern.
     if (this.layer === LAYER.VENTS) {
       this.sun.intensity *= 0.22;
@@ -1197,23 +1207,30 @@ export class View {
    */
   private weatherLight(dt: number) {
     const w = this.wxLight;
-    if (w) {
-      const grey = w.rain >= 2 ? 0.65 : w.rain ? 0.45 : 0;
-      if (grey) {
-        this.sun.intensity *= w.rain >= 2 ? 0.38 : 0.6;
-        this.ambient.intensity *= w.rain >= 2 ? 0.72 : 0.86;
-        this.sky.lerp(this.c1.set(0x4a5462), grey);
-        this.sun.color.lerp(this.c1.set(0xc6d2e2), grey * 0.6);
-      }
-      if (w.fog > 0) {
-        this.sun.intensity *= 1 - 0.25 * w.fog;
-        this.sky.lerp(this.c1.set(0x9aa6b2), 0.6 * w.fog * (1 - this.night));
-      }
-      if (w.heat) {
-        this.sun.intensity *= 1.08;
-        this.sun.color.lerp(this.c1.set(0xffc27a), 0.4);
-        this.sky.lerp(this.c1.set(0xe8c79a), 0.35);
-      }
+    // Each part eases in and out (the fog lifting, a storm rolling in at 08:00), at once with reduced motion.
+    const k = this.reducedMotion ? 1 : Math.min(1, dt * 0.8);
+    const g = this.wxEased;
+    g.grey += ((w ? (w.rain >= 2 ? 0.65 : w.rain ? 0.45 : 0) : 0) - g.grey) * k;
+    g.storm += ((w && w.rain >= 2 ? 1 : 0) - g.storm) * k;
+    g.fog += ((w ? w.fog : 0) - g.fog) * k;
+    // (The heat's haze goes with the daylight.)
+    g.heat += ((w?.heat ? 1 - this.night : 0) - g.heat) * k;
+    if (g.grey > 0.002) {
+      const rain = g.grey / 0.45;
+      const sun = 1 - Math.min(1, rain) * 0.4 - g.storm * 0.22;
+      this.sun.intensity *= sun;
+      this.ambient.intensity *= 1 - Math.min(1, rain) * 0.14 - g.storm * 0.14;
+      this.sky.lerp(this.c1.set(0x4a5462), g.grey);
+      this.sun.color.lerp(this.c1.set(0xc6d2e2), g.grey * 0.6);
+    }
+    if (g.fog > 0.002) {
+      this.sun.intensity *= 1 - 0.25 * g.fog;
+      this.sky.lerp(this.c1.set(0x9aa6b2), 0.6 * g.fog * (1 - this.night));
+    }
+    if (g.heat > 0.002) {
+      this.sun.intensity *= 1 + 0.08 * g.heat;
+      this.sun.color.lerp(this.c1.set(0xffc27a), 0.4 * g.heat);
+      this.sky.lerp(this.c1.set(0xe8c79a), 0.35 * g.heat);
     }
     if (this.flash > 0.001) {
       this.ambient.intensity += this.flash * 2.6;

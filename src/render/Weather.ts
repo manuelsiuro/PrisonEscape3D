@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { TILE, TILE_INFO } from '../sim/world/tiles';
+import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
 
 /** Rain drops in the box of air round the player (a storm uses them all). */
 const DROPS = 900;
@@ -39,6 +41,8 @@ export class Weather {
   private readonly rippleAge = new Float32Array(RIPPLES);
   private readonly rippleAt = new Float32Array(RIPPLES * 2);
   private readonly rippleY = new Float32Array(RIPPLES);
+  /** The rain's box (tiles across): as wide as the view. */
+  private span = SPAN;
   private rippleNext = 0;
   private rippleClock = 0;
   readonly fog: THREE.Mesh;
@@ -101,6 +105,10 @@ export class Weather {
         clear: { value: new THREE.Vector2(3.2, 9) },
         drift: { value: new THREE.Vector2() },
         cloud: { value: cloudTexture() },
+        // Where the ground is out in the open (1) or under a roof (0): the fog lies outdoors, a thin haze indoors.
+        outdoor: { value: null as THREE.Texture | null },
+        lift: { value: 0 },
+        indoor: { value: 0.18 },
       },
       vertexShader: `varying vec2 vXZ;
         void main() {
@@ -108,13 +116,16 @@ export class Weather {
           vXZ = w.xz;
           gl_Position = projectionMatrix * viewMatrix * w;
         }`,
-      fragmentShader: `uniform vec3 color; uniform float density; uniform vec2 center; uniform vec2 clear; uniform vec2 drift; uniform sampler2D cloud;
+      fragmentShader: `uniform vec3 color; uniform float density; uniform vec2 center; uniform vec2 clear; uniform vec2 drift; uniform sampler2D cloud; uniform sampler2D outdoor; uniform float lift; uniform float indoor;
         varying vec2 vXZ;
         void main() {
           float d = distance(vXZ, center);
           float a = smoothstep(clear.x, clear.y, d);
           float n = texture2D(cloud, vXZ / 22.0 + drift).r * 0.6 + texture2D(cloud, vXZ / 9.0 - drift * 1.7).r * 0.4;
-          a *= density * (0.62 + 0.5 * n);
+          // The ground seen through this point of the veil (the camera looks down from the south).
+          vec2 g = (vXZ - vec2(0.0, lift)) / vec2(${MAP_W}.0, ${MAP_H}.0);
+          float open = texture2D(outdoor, g).r;
+          a *= density * (0.62 + 0.5 * n) * mix(indoor, 1.0, open);
           gl_FragColor = vec4(color, clamp(a, 0.0, 0.9));
           #include <colorspace_fragment>
         }`,
@@ -133,25 +144,45 @@ export class Weather {
    * roof seen from below), `wet` whether rain ripples on it (hard ground: grass soaks it up); `y` is the floor the player is on,
    * `fogY` the height the veil hangs at; `night` (0–1) darkens the fog; `under`: in the tunnels, none of it.
    */
-  update(f: WeatherFrame, dt: number, time: number, cx: number, cz: number, y: number, fogY: number, night: number, motion: boolean, under: boolean, ground: (x: number, z: number) => number, wet: (x: number, z: number) => boolean) {
+  update(f: WeatherFrame, dt: number, time: number, cx: number, cz: number, y: number, fogY: number, night: number, motion: boolean, under: boolean, ground: (x: number, z: number) => number, wet: (x: number, z: number) => boolean, span = SPAN, alarm = 0, vents = false) {
     const raining = f.rain > 0 && !under;
     this.streaks.visible = raining && motion;
+    this.span = Math.max(SPAN, Math.min(80, span));
     if (this.streaks.visible) this.fall(f, dt, cx, cz, ground);
     this.ripple(raining && motion ? f.rain : 0, dt, cx, cz, ground, wet);
-    // The fog eases in and out (the morning's burns off; the evening's rolls in).
-    const want = under ? 0 : f.fog;
-    this.fogShown += (want - this.fogShown) * Math.min(1, dt * (motion ? 0.8 : 10));
-    this.fog.visible = this.fogShown > 0.01;
+    // The fog eases in and out (the morning's burns off; the evening's rolls in); below ground it isn't there at all.
+    this.fogShown += (f.fog - this.fogShown) * Math.min(1, dt * (motion ? 0.8 : 10));
+    this.fog.visible = !under && this.fogShown > 0.01;
     if (this.fog.visible) {
       const u = this.fogMat.uniforms;
-      u.density.value = this.fogShown;
+      // (Up in the vents, the rooms below show through a thinner veil.)
+      u.density.value = this.fogShown * (vents ? 0.45 : 1);
       this.fog.position.set(cx, fogY, cz);
-      // The clear patch where the player's feet are, seen through the veil from the camera's angle.
-      (u.center.value as THREE.Vector2).set(cx, cz + (fogY - y) * (24 / 38));
+      // The clear patch where the player's feet are, seen through the veil from the camera's angle; the ground under each point of the veil likewise.
+      (u.center.value as THREE.Vector2).set(cx, cz + (fogY - y) * LIFT);
+      u.lift.value = fogY * LIFT;
       const wind = 0.004 + 0.006 * f.windForce;
       if (motion) (u.drift.value as THREE.Vector2).set(Math.cos(f.windAngle) * time * wind, Math.sin(f.windAngle) * time * wind);
-      (u.color.value as THREE.Color).set(0xc9d2db).lerp(this.c.set(0x2a3340), night * 0.85);
+      // Darker at night, and red in a lockdown's pulse like everything else.
+      (u.color.value as THREE.Color).set(0xc9d2db).lerp(this.c.set(0x2a3340), night * 0.85).lerp(this.c.set(0xd23a2a), Math.min(0.6, alarm));
     }
+  }
+
+  /** A prison: where its ground is out in the open (the fog's mask). */
+  setWorld(world: World) {
+    const data = new Uint8Array(MAP_W * MAP_H);
+    for (let i = 0; i < data.length; i++) {
+      const roofed = world.layers[LAYER.ROOF].kind[i] !== TILE.EMPTY;
+      data[i] = TILE_INFO[world.ground.kind[i]].outdoor && !roofed ? 255 : 0;
+    }
+    const old = this.fogMat.uniforms.outdoor.value as THREE.Texture | null;
+    old?.dispose();
+    const tex = new THREE.DataTexture(data, MAP_W, MAP_H, THREE.RedFormat);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    this.fogMat.uniforms.outdoor.value = tex;
+    this.reset();
   }
 
   private fall(f: WeatherFrame, dt: number, cx: number, cz: number, ground: (x: number, z: number) => number) {
@@ -166,8 +197,9 @@ export class Weather {
     const speed = storm ? 22 : 17;
     const len = storm ? 0.75 : 0.55;
     // The box sits a little south of the player: drops high up show further north on screen.
-    const x0 = cx - SPAN / 2;
-    const z0 = cz - SPAN / 2 + (HIGH / 2) * LIFT;
+    const span = this.span;
+    const x0 = cx - span / 2;
+    const z0 = cz - span / 2 + (HIGH / 2) * LIFT;
     const p = this.pos;
     const d = this.drawn;
     for (let i = 0; i < n; i++) {
@@ -177,10 +209,12 @@ export class Weather {
       p[k] += wx * v;
       p[k + 2] += wz * v;
       if (p[k + 1] < 0) p[k + 1] += HIGH;
-      p[k] = x0 + ((((p[k] - x0) % SPAN) + SPAN) % SPAN);
-      p[k + 2] = z0 + ((((p[k + 2] - z0) % SPAN) + SPAN) % SPAN);
+      p[k] = x0 + ((((p[k] - x0) % span) + span) % span);
+      p[k + 2] = z0 + ((((p[k + 2] - z0) % span) + span) % span);
       const at = ground(Math.floor(p[k]), Math.floor(p[k + 2]));
-      const top = at >= 0 ? at + p[k + 1] : -50;
+      let top = at >= 0 ? at + p[k + 1] : -50;
+      // Seen from the camera a drop high up stands over the ground further north: over a cut-away room there, it isn't drawn.
+      if (top > 0 && ground(Math.floor(p[k]), Math.floor(p[k + 2] - (top + len) * LIFT)) < 0) top = -50;
       const j = i * 6;
       d[j] = p[k];
       d[j + 1] = top;
@@ -228,6 +262,13 @@ export class Weather {
     }
   }
 
+  /** Shown for a moment while the renderer compiles their shaders (a new game), then hidden again. */
+  warm(on: boolean) {
+    for (const m of [this.streaks, this.ripples, this.fog]) m.visible = on;
+    if (on) this.ripples.count = 1;
+    else this.reset();
+  }
+
   /** A new game (or the title): no fog left over, no ripples, nothing mid-flash. */
   reset() {
     this.fogShown = 0;
@@ -243,6 +284,7 @@ export class Weather {
     (this.ripples.material as THREE.Material).dispose();
     this.fog.geometry.dispose();
     (this.fogMat.uniforms.cloud.value as THREE.Texture).dispose();
+    (this.fogMat.uniforms.outdoor.value as THREE.Texture | null)?.dispose();
     this.fogMat.dispose();
   }
 }

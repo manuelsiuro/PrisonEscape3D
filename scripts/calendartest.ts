@@ -485,3 +485,39 @@ function resumesSame(bot: Bot, steps: number): boolean {
   idle(ko, MUSTER_MINUTES);
   check(!ko.seen.some((e) => e.type === 'today' && e.phase === 'missed') && ko.bot.st.heat <= h0, 'out cold during the muster: no heat for missing the drill');
 }
+
+// ------------------------------------------------------------------ the second review's edge cases
+{
+  // Out cold over 16:00 after a clean day: commended all the same.
+  const b = botFor('inspection');
+  b.until(2, 15 * 60 + 50);
+  b.bot.st.ko = 20 * STEPS_PER_MINUTE;
+  for (let k = 0; k < 15 * STEPS_PER_MINUTE; k++) {
+    b.bot.step(0);
+    b.seen.push(...b.bot.sim.events);
+  }
+  check(b.seen.some((e) => e.type === 'today' && e.phase === 'commend'), 'out cold at 16:00 after a clean inspection: still commended');
+  // Out cold at roll call as the bell rings: not mustered (and excused).
+  const d = botFor('drill', 'clear', 6);
+  const at = d.plan().at;
+  d.until(2, (at + 8 * 60 - 1) % 1440);
+  put(d.bot.sim, placesOf(d.bot.sim.world).rollCall[0].tile);
+  d.bot.st.ko = 30 * STEPS_PER_MINUTE;
+  for (let k = 0; k < (MUSTER_MINUTES + 2) * STEPS_PER_MINUTE; k++) {
+    d.bot.step(0);
+    d.seen.push(...d.bot.sim.events);
+  }
+  check(!d.seen.some((e) => e.type === 'today' && (e.phase === 'muster' || e.phase === 'missed')) && (d.bot.st.eventFlags & TODAY.EXCUSED) !== 0, 'out cold at roll call when the bell rings: excused, not mustered');
+  // Tools at work in the canteen between food-fight blows: still tampering.
+  const f = botFor('foodFight', 'clear', 7);
+  f.until(2, (f.plan().at + 8 * 60 + 2) % 1440);
+  const st = f.bot.st;
+  st.swingAt = st.step + 1;
+  st.struckAt = st.step + 1;
+  st.selfDefense = true;
+  const g = st.guards.find((x) => x.ko <= 0)!;
+  put(f.bot.sim, Math.floor(g.body.z / UNIT) * MAP_W + Math.floor(g.body.x / UNIT));
+  const h0 = st.heat;
+  f.bot.step(0);
+  check(g.sees && (st.heat - h0 >= 100 || st.lockdown), `a scuffle never hides tools at work from a guard who sees them (+${st.heat - h0})`);
+}

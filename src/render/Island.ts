@@ -228,14 +228,14 @@ export class Island {
     shallowTex.colorSpace = THREE.SRGBColorSpace;
     const shallowMesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W, MAP_H).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shallowTex, transparent: true, depthWrite: false }));
     shallowMesh.position.set(MAP_W / 2, SEA_Y + 0.02, MAP_H / 2);
-    shallowMesh.renderOrder = 1;
+    shallowMesh.renderOrder = 0.12;
     this.group.add(shallowMesh);
     const m = new THREE.Matrix4();
     this.foamMat = new THREE.MeshBasicMaterial({ map: foamTexture(), transparent: true, opacity: 0.8, depthWrite: false });
     const foamMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.15, 1.15).rotateX(-Math.PI / 2), this.foamMat, Math.max(1, foam.length / 2));
     for (let k = 0; k < foam.length / 2; k++) foamMesh.setMatrixAt(k, m.makeRotationY(hash(k, 4) * 6).setPosition(foam[k * 2] + 0.5, SEA_Y + 0.04, foam[k * 2 + 1] + 0.5));
     foamMesh.count = foam.length / 2;
-    foamMesh.renderOrder = 2;
+    foamMesh.renderOrder = 0.22;
     this.group.add(foamMesh);
 
     // The drawbridge: a timber deck hinged at the gate, chained up until a takeover lowers it.

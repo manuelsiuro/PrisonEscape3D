@@ -19,39 +19,57 @@ export interface PaRow {
 /** Characters typed a second (the warden's voice keeps pace). */
 const TYPE_RATE = 42;
 
+/** A line waiting to be said: who says it, what, how long it has waited (ms of play), and whether it was heard already (cut short by a banner). */
+interface Line {
+  from: string;
+  text: string;
+  waited: number;
+  heard: boolean;
+}
+
+/** A banner holds the next line back this long at most; a line cut short comes back only this fresh (ms of play). */
+const BANNER_WAIT = 6000;
+const STALE = 10000;
+/** Something waiting for a clear stage gives up after this long. */
+const CLEAR_WAIT = 8000;
+
 /**
  * The warden's speakers (P17). The morning card at 08:00: who's speaking and the day, a line in
  * their voice typed out, then the day's event and weather with what they change; closed with
- * a tap (or on its own). Announcements through the day: a strip under the HUD, the line typed
- * out, one at a time (they wait while a banner is up, and give way when one comes). The screen
- * reader hears each line once, whole. With reduced motion the text is there at once.
+ * a tap, Esc (while it's on top) or on its own. Announcements through the day: a strip under the
+ * HUD, the line typed out, one at a time (they wait while a banner is up, and give way when one
+ * comes, back after it if still fresh, never heard twice). Its clock is play time: paused,
+ * nothing runs out and nothing new starts. The screen reader hears each line once, whole. With
+ * reduced motion the text is there at once.
  */
 export class PaBoard {
-  private card: HTMLElement | null = null;
-  private strip: HTMLElement | null = null;
-  /** The line the strip says (put back in the queue if a banner cuts it short). */
-  private stripLine: { from: string; text: string } | null = null;
-  private readonly queue: Array<{ from: string; text: string }> = [];
-  private readonly timers = new Set<number>();
+  private card: { el: HTMLElement; left: number } | null = null;
+  private strip: { el: HTMLElement; left: number; line: Line } | null = null;
+  private readonly queue: Line[] = [];
+  /** Things to do once the stage is clear (the morning card after the bell's banner). */
+  private readonly pending: Array<{ f: () => void; waited: number }> = [];
   private typing = 0;
-  private waited = 0;
   private measure = 0;
   private alertsBottom = -1;
+  private last = performance.now();
+  private paused = false;
   /** No typing, no slide (the setting). */
   reducedMotion = false;
   /** Called as a line starts (the chime and the voice): how long it is. */
   onSpeak: (chars: number, chime: boolean) => void = () => {};
+  /** Whether the card is what the keyboard is talking to (no pause card, no panel over it). */
+  onTop: () => boolean = () => true;
   /** One live region, always in the page. */
   private readonly live = h('div', 'sr-only');
 
   constructor() {
     this.live.setAttribute('role', 'status');
     document.body.append(this.live);
-    // Esc closes the morning card (before anything else hears it: the pause waits for the next press).
+    // Esc closes the morning card while it's on top (the pause waits for the next press).
     addEventListener(
       'keydown',
       (e) => {
-        if (e.code !== 'Escape' || !this.card) return;
+        if (e.code !== 'Escape' || !this.card || this.paused || !this.onTop() || document.querySelector('.modal')) return;
         e.stopImmediatePropagation();
         e.preventDefault();
         this.closeCard();
@@ -60,29 +78,23 @@ export class PaBoard {
     );
   }
 
-  /** A timer that forgets itself when it fires (clear() cancels those still waiting). */
-  private later(f: () => void, ms: number) {
-    const id = window.setTimeout(() => {
-      this.timers.delete(id);
-      f();
-    }, ms);
-    this.timers.add(id);
-  }
-
-  /** Where the HUD's alert chips end (the card and strip go below them), and how tall the warden's board is (toasts make room in landscape). */
+  /** Where the HUD's alert chips (and the first day's guide card) end: the card and strip go below them. How tall the board is (toasts make room in landscape). */
   private place() {
-    const alerts = document.querySelector<HTMLElement>('.hud-alerts');
-    const bottom = alerts && alerts.offsetParent ? alerts.getBoundingClientRect().bottom : 0;
+    let bottom = 0;
+    for (const sel of ['.hud-alerts', '.coach:not(.hidden)']) {
+      const el = document.querySelector<HTMLElement>(sel);
+      if (el && el.offsetParent) bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+    }
     if (bottom !== this.alertsBottom) {
       this.alertsBottom = bottom;
       document.body.style.setProperty('--hud-alerts', `${Math.round(bottom)}px`);
     }
-    const up = this.card ?? this.strip;
+    const up = this.card?.el ?? this.strip?.el;
     document.body.classList.toggle('pa-up', !!up);
     if (up) document.body.style.setProperty('--pa-h', `${Math.round(up.offsetHeight)}px`);
   }
 
-  /** The morning card; `ms` until it closes on its own. */
+  /** The morning card; `ms` of play until it closes on its own. */
   morning(from: string, text: string, rows: readonly PaRow[], ms = 11000) {
     this.closeCard();
     const el = h(
@@ -93,8 +105,8 @@ export class PaBoard {
       <p class="pa-line" aria-hidden="true"><span class="pa-typed"></span><span class="pa-rest"></span></p>
       <div class="pa-rows">${rows
         .map(
-          (r) =>
-            `<div class="pa-row"><span class="pa-ic" style="--c:${r.color}">${icon(r.icon, 18)}</span><span class="pa-text"><small>${esc(r.label)}</small><b>${esc(r.title)}${r.when ? `<em>${esc(r.when)}</em>` : ''}</b><span>${esc(r.sub)}</span>${r.note ? `<i class="pa-note">${icon('wind', 13)}${esc(r.note)}</i>` : ''}</span></div>`,
+          (r, k) =>
+            `<div class="pa-row${k === rows.length - 1 ? ' last' : ''}"><span class="pa-ic" style="--c:${r.color}">${icon(r.icon, 18)}</span><span class="pa-text"><small>${esc(r.label)}</small><b>${esc(r.title)}${r.when ? `<em>${esc(r.when)}</em>` : ''}</b><span>${esc(r.sub)}</span>${r.note ? `<i class="pa-note">${icon('wind', 13)}${esc(r.note)}</i>` : ''}</span></div>`,
         )
         .join('')}</div>
       <small class="pa-hint" aria-hidden="true">${t(TOUCH ? 'pa.dismiss' : 'pa.dismissKeys')}</small>`,
@@ -106,76 +118,87 @@ export class PaBoard {
     });
     el.querySelector('.pa-close')!.addEventListener('click', () => this.closeCard());
     document.body.append(el);
-    this.card = el;
+    this.card = { el, left: ms };
     document.body.classList.add('pa-card-up');
     this.live.textContent = `${from}. ${text} ${rows.map((r) => `${r.label}: ${r.title}${r.when ? ` (${r.when})` : ''}. ${r.sub}${r.note ? ` ${r.note}.` : ''}`).join(' ')}`;
     this.onSpeak(text.length, true);
     this.type(el, text);
     this.place();
-    this.later(() => this.closeCard(), ms);
   }
 
-  /** Runs `f` once nothing is up where the warden speaks (a banner, a card, a strip): a few seconds at most. */
-  whenClear(f: () => void, tries = 0) {
-    const busy = document.body.classList.contains('banner-up') || !!this.card || !!this.strip;
-    if (busy && tries < 32) {
-      this.later(() => this.whenClear(f, tries + 1), 250);
-      return;
-    }
-    f();
+  /** Runs `f` once nothing is up where the warden speaks (a banner, a card, a strip) and the game isn't paused: a few seconds at most. */
+  whenClear(f: () => void) {
+    this.pending.push({ f, waited: 0 });
   }
 
   /** An announcement: queued behind any other (and any banner). */
   say(from: string, text: string) {
-    this.queue.push({ from, text });
-    if (!this.strip) this.next();
+    this.queue.push({ from, text, waited: 0, heard: false });
   }
 
-  /** Each frame: a banner arriving puts the strip away (it says something more pressing). */
-  frame() {
-    // Below the HUD's alert chips when there are any (the power out, the day's chip...).
-    if ((this.card || this.strip) && ++this.measure % 10 === 0) this.place();
-    // A banner arriving puts the strip away; its line comes back after the banner.
-    const banner = document.body.classList.contains('banner-up');
-    if (banner && this.strip && !this.strip.classList.contains('leaving')) {
-      if (this.stripLine) this.queue.unshift(this.stripLine);
-      this.stripLine = null;
-      this.leave(this.strip);
+  /** Each frame (`paused`: the game is): the clocks run in play time, lines start when the stage is clear, a banner cuts a strip short. */
+  frame(paused: boolean) {
+    const now = performance.now();
+    const dt = Math.min(250, now - this.last);
+    this.last = now;
+    this.paused = paused;
+    if (this.card || this.strip) {
+      if (++this.measure % 10 === 0) this.place();
     }
+    if (paused) return;
+    const banner = document.body.classList.contains('banner-up');
+    // The card and the strip run out.
+    if (this.card && (this.card.left -= dt) <= 0) this.closeCard();
+    if (this.strip) {
+      // A banner arriving puts the strip away; its line comes back after the banner (heard already: no chime, no second reading).
+      if (banner) {
+        const line = this.strip.line;
+        line.heard = true;
+        line.waited = 0;
+        this.queue.unshift(line);
+        this.leave();
+      } else if ((this.strip.left -= dt) <= 0) this.leave();
+    }
+    // Waiting lines grow stale (one cut short comes back only while fresh).
+    for (let k = this.queue.length - 1; k >= 0; k--) {
+      const l = this.queue[k];
+      l.waited += dt;
+      if (l.heard && l.waited > STALE) this.queue.splice(k, 1);
+    }
+    const busy = banner || !!this.card || !!this.strip;
+    // Things waiting for a clear stage (or giving up the wait).
+    for (let k = 0; k < this.pending.length; k++) {
+      const p = this.pending[k];
+      p.waited += dt;
+      if (busy && p.waited < CLEAR_WAIT) continue;
+      this.pending.splice(k--, 1);
+      p.f();
+    }
+    // The next line: not over the card; behind a banner a few seconds at most.
+    if (!this.strip && !this.card && this.queue.length && (!banner || this.queue[0].waited > BANNER_WAIT)) this.next();
   }
 
   private next() {
-    if (this.strip || !this.queue.length) return;
-    // The morning card up: wait for it. A banner: a few seconds at most.
-    if (this.card || (document.body.classList.contains('banner-up') && this.waited < 24)) {
-      this.waited++;
-      this.later(() => this.next(), 250);
-      return;
-    }
-    this.waited = 0;
     const line = this.queue.shift()!;
     const { from, text } = line;
-    this.stripLine = line;
     const el = h('div', 'pa-strip', `<span class="pa-mic">${icon('megaphone', 16)}</span><span class="pa-body"><small class="pa-from"></small><span class="pa-line" aria-hidden="true"><span class="pa-typed"></span><span class="pa-rest"></span></span></span>`);
     el.querySelector('.pa-from')!.textContent = from;
     document.body.append(el);
-    this.strip = el;
-    this.live.textContent = `${from}: ${text}`;
-    this.onSpeak(text.length, true);
-    this.type(el, text);
-    this.place();
     const read = Math.max(3800, 1400 + (text.length / TYPE_RATE) * 1000 + text.length * 45);
-    this.later(() => {
-      if (this.strip === el) this.stripLine = null;
-      this.leave(el);
-    }, read);
+    this.strip = { el, left: read, line };
+    if (!line.heard) {
+      this.live.textContent = `${from}: ${text}`;
+      this.onSpeak(text.length, true);
+      this.type(el, text);
+    } else this.type(el, text, true);
+    this.place();
   }
 
-  /** Types a line out (all at once with reduced motion); the untyped rest holds its place, invisible. */
-  private type(el: HTMLElement, text: string) {
+  /** Types a line out (all at once with reduced motion, or a line heard already); the untyped rest holds its place, invisible. */
+  private type(el: HTMLElement, text: string, whole = false) {
     const typed = el.querySelector<HTMLElement>('.pa-typed')!;
     const rest = el.querySelector<HTMLElement>('.pa-rest')!;
-    if (this.reducedMotion) {
+    if (this.reducedMotion || whole) {
       typed.textContent = text;
       rest.textContent = '';
       return;
@@ -197,46 +220,39 @@ export class PaBoard {
     tick();
   }
 
-  private leave(el: HTMLElement) {
-    el.classList.add('leaving');
-    this.later(() => {
-      el.remove();
-      if (this.strip === el) {
-        this.strip = null;
-        this.place();
-        this.next();
-      }
-    }, 320);
+  private leave() {
+    const s = this.strip;
+    if (!s) return;
+    this.strip = null;
+    s.el.classList.add('leaving');
+    window.setTimeout(() => s.el.remove(), 320);
+    this.place();
   }
 
   closeCard() {
-    const el = this.card;
-    if (!el) return;
+    const c = this.card;
+    if (!c) return;
     this.card = null;
     document.body.classList.remove('pa-card-up');
     this.place();
-    el.classList.add('leaving');
-    window.setTimeout(() => el.remove(), 320);
+    c.el.classList.add('leaving');
+    window.setTimeout(() => c.el.remove(), 320);
   }
 
   /** Everything down (leaving the game, the announcements switched off). */
   clear() {
-    for (const id of this.timers) clearTimeout(id);
-    this.timers.clear();
     cancelAnimationFrame(this.typing);
     this.queue.length = 0;
+    this.pending.length = 0;
     this.closeCard();
-    this.strip?.remove();
+    this.strip?.el.remove();
     this.strip = null;
-    this.stripLine = null;
-    this.waited = 0;
     document.body.classList.remove('pa-up');
   }
 
   get up() {
     return !!this.card || !!this.strip;
   }
-
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);

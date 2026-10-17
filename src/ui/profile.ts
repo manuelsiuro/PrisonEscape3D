@@ -22,7 +22,7 @@ export class ProfilePanel {
   private drawn = '';
   isOpen = false;
   /** The day (P17): today's event and weather rows, tomorrow's once forecast, what the player did of it; the play layer fills this in. */
-  day: () => { day: number; today: readonly PaRow[]; tomorrow: readonly PaRow[] | null; notes: readonly string[]; key: string } | null = () => null;
+  day: () => { day: number; today: readonly PaRow[]; tomorrow: readonly PaRow[] | null; notes: readonly string[]; night: boolean; key: string } | null = () => null;
   /** The rumors heard (P13), newest first: the speech bubbles' director fills this in. */
   notebook: () => ReadonlyArray<{ text: string; old: boolean; day: number; by: string | null; self?: boolean }> = () => [];
 
@@ -96,9 +96,11 @@ export class ProfilePanel {
     // Your prisoner's name on the file (P16), when they have one.
     const title = PLAYER.name ? t('profile.titleOf', { name: esc(PLAYER.name) }) : t('profile.title');
     const row = (r: PaRow) => `<div class="pa-row"><span class="pa-ic" style="--c:${r.color}">${icon(r.icon, 18)}</span><span class="pa-text"><small>${esc(r.label)}</small><b>${esc(r.title)}${r.when ? `<em>${esc(r.when)}</em>` : ''}</b><span>${esc(r.sub)}</span>${r.note ? `<i class="pa-note">${icon('wind', 13)}${esc(r.note)}</i>` : ''}</span></div>`;
+    // (Notes on their own line: short screens hide the label's aside.)
+    const dayNote = day && day.notes.length ? `<p class="file-note">${icon('check', 13)}${day.notes.map(esc).join(' · ')}</p>` : '';
     const dayHtml = day
-      ? `<div class="box-section"><div class="box-label"><span>${t('profile.today')}</span><em>${t('hud.day', { n: day.day })}${day.notes.length ? ` · ${day.notes.map(esc).join(' · ')}` : ''}</em></div><div class="file-day">${day.today.map(row).join('')}</div></div>${
-          day.tomorrow ? `<div class="box-section"><div class="box-label"><span>${t('profile.tomorrow')}</span><em>${t('profile.tomorrowNote')}</em></div><div class="file-day">${day.tomorrow.map(row).join('')}</div></div>` : ''
+      ? `<div class="box-section"><div class="box-label"><span>${t(day.night ? 'profile.tonight' : 'profile.today')}</span></div><div class="file-day">${day.today.map(row).join('')}${dayNote}</div></div>${
+          day.tomorrow ? `<div class="box-section"><div class="box-label"><span>${t(day.night ? 'profile.fromMorning' : 'profile.tomorrow')}</span></div><div class="file-day">${day.tomorrow.map(row).join('')}<p class="file-note">${icon('megaphone', 13)}${t('profile.tomorrowNote')}</p></div></div>` : ''
         }`
       : '';
     this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${title}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>

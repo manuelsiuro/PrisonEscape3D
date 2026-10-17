@@ -95,8 +95,9 @@ export type SimEvent =
   | { type: 'takeover'; on: boolean }
   /** Combat (GDD §10): the lock moved (-1: none); a blow landed on someone (Cast id) or the player; a cup of molten chocolate thrown. */
   | { type: 'lock'; who: number }
-  | { type: 'hit'; who: number; dmg: number; ko: boolean; weapon: number }
-  | { type: 'thrown'; who: number }
+  /** (`free`, P17: a food fight's blow at an inmate in the canteen: no heat, counted for Food Fighter.) */
+  | { type: 'hit'; who: number; dmg: number; ko: boolean; weapon: number; free?: boolean }
+  | { type: 'thrown'; who: number; free?: boolean }
   | { type: 'cantHit'; why: 'far' }
   | { type: 'hurt'; by: number; dmg: number }
   /** Someone the player knocked out, and someone coming round (a guard missing its key raises the alarm). */

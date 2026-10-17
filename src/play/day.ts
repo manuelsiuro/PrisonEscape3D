@@ -8,7 +8,7 @@ import { LAYER } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
 import type { PaRow } from '../ui/pa';
 import { PLAYER } from '../talk/fill';
-import { banner, lightningVeil, paBoard, profile, settings, sound, view } from './context';
+import { banner, itemsUI, lightningVeil, paBoard, profile, settings, socialOpen, sound, view } from './context';
 import { play, type Game } from './game';
 import { seenTip } from './tips';
 
@@ -64,11 +64,16 @@ function whenOf(p: DayPlan): string {
 /** The day's two rows (its event, its weather), as the morning card and the file show them. */
 export function dayRows(sim: Sim, p: DayPlan, forecast = false, inFile = false): PaRow[] {
   // Over for today (the file, after it): said so. A food fight isn't announced (a rowdy canteen) until it happens.
-  const past = !forecast && p.event !== 'none' && today(sim).day === p.day && dayMinute(sim.state.step) >= p.until;
-  const ev = p.event === 'foodFight' && !past ? 'rowdy' : p.event;
+  const m = dayMinute(sim.state.step);
+  const isToday = !forecast && today(sim).day === p.day;
+  const past = isToday && p.event !== 'none' && m >= p.until;
+  // Under way: a food fight is one now, the drill's bell has rung.
+  const begun = isToday && p.event !== 'none' && m >= p.at;
+  const ev = p.event === 'foodFight' && !begun ? 'rowdy' : p.event;
   const sub = (() => {
     if (past) return t('day.eventD.over');
     if (p.event === 'drill' && forecast) return t('day.eventD.drillAhead', { n: MUSTER_MINUTES, heat: DRILL_HEAT });
+    if (p.event === 'drill' && begun) return t('day.eventD.drillRang', { time: dayTime(p.at), n: MUSTER_MINUTES, heat: DRILL_HEAT });
     switch (p.event) {
       case 'inspection':
         return t('day.eventD.inspection', { n: COMMENDATION });
@@ -84,7 +89,7 @@ export function dayRows(sim: Sim, p: DayPlan, forecast = false, inFile = false):
   })();
   const w = weatherName(sim, p.weather);
   return [
-    { icon: EVENT_ICON[p.event], color: EVENT_COLOR[p.event], label: t(inFile ? 'pa.event' : forecast ? 'profile.tomorrow' : 'pa.today'), title: t(`day.event.${ev}` as Key), when: ev === 'rowdy' ? '' : whenOf(p), sub },
+    { icon: EVENT_ICON[p.event], color: EVENT_COLOR[p.event], label: t(inFile ? 'pa.event' : forecast ? 'profile.tomorrow' : 'pa.today'), title: t(`day.event.${ev}` as Key), when: ev === 'rowdy' ? '' : p.event === 'drill' && begun ? t('day.rang', { time: dayTime(p.at) }) : p.event === 'foodFight' && begun ? t('day.when', { from: dayTime(p.at), to: dayTime(p.until) }) : whenOf(p), sub },
     { icon: WX_ICON[w], color: WX_COLOR[w], label: t('pa.weather'), title: t(`weather.${w}` as Key), when: '', note: t(`windForce.${p.windForce}` as Key, { dir: t(`wind.${p.wind}` as Key) }), sub: t(`weatherD.${w}` as Key, { n: WEATHER_SIGHT[p.weather] ?? 7 }) },
   ];
 }
@@ -115,7 +120,6 @@ function morning(sim: Sim, first: boolean) {
 /** A game begins: a new one's first morning (after the bell, once the first day's guide has been seen; the guide has the stage before). */
 export function dayStart(sim: Sim, fresh: boolean) {
   paBoard.clear();
-  forecastDay = 0;
   bolt = 6 + Math.random() * 8;
   const g = play.game;
   if (!hasDays(g) || !fresh || !seenTip('guide')) return;
@@ -139,13 +143,10 @@ export function dayStep(sim: Sim) {
     const next = planOf(sim, p.day + 1);
     const sky = t(`weather.${weatherName(sim, next.weather)}` as Key).toLocaleLowerCase();
     say(sim, t('pa.forecast', { weather: sky, event: next.event === 'none' ? t('pa.forecastNone') : t(`pa.forecastEvent.${next.event}` as Key) }));
-    forecastDay = next.day;
   }
   if (m === QUIP_AT && p.day > 1 && (p.event === 'none' || p.event === 'feast')) say(sim, t(`pa.quip.${sim.prison.id}.${Math.floor(dayRoll(st.salt, p.day, 7) * QUIPS)}` as Key));
 }
 
-/** The day the warden last forecast (the file shows it as "tomorrow" from then on). */
-let forecastDay = 0;
 
 /** What the simulation reports, the day's side of it: the morning, the events, the storm's power cuts. */
 export function dayEvent(e: SimEvent, sim: Sim) {
@@ -195,6 +196,9 @@ export function dayEvent(e: SimEvent, sim: Sim) {
       break;
   }
 }
+
+/** The morning card hears Esc only while nothing is open over the game (a panel, the file, a talk). */
+paBoard.onTop = () => !itemsUI.panelOpen && !socialOpen();
 
 // ------------------------------------------------------------------ lightning, rain and wind
 
@@ -332,7 +336,11 @@ profile.day = () => {
   const notes: string[] = [];
   if (st.eventFlags & TODAY.MUSTERED) notes.push(t('profile.mustered'));
   if (st.eventFlags & TODAY.COMMENDED) notes.push(t('profile.commended'));
-  const tomorrow = forecastDay === p.day + 1 ? dayRows(sim, planOf(sim, p.day + 1), true, true) : null;
-  return { day: p.day, today: dayRows(sim, p, false, true), tomorrow, notes, key: `${p.day}|${tomorrow ? 1 : 0}|${st.eventFlags}|${dayMinute(st.step) >= p.at}` };
+  // Tomorrow, once the warden has forecast it (22:00, whether heard or not: it's in the file from then on).
+  const m = dayMinute(st.step);
+  const tomorrow = m >= FORECAST_AT ? dayRows(sim, planOf(sim, p.day + 1), true, true) : null;
+  // After midnight the clock's day has turned but the prison day runs to 08:00: tonight, and from 08:00.
+  const night = sim.clock.day !== p.day;
+  return { day: p.day, today: dayRows(sim, p, false, true), tomorrow, notes, night, key: `${p.day}|${tomorrow ? 1 : 0}|${st.eventFlags}|${m >= p.at}|${m >= p.until}|${night}` };
 };
 

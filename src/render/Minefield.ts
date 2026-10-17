@@ -103,7 +103,7 @@ export class Minefield {
       MAX_CRATERS,
     );
     this.craters.count = 0;
-    this.craters.renderOrder = 1;
+    this.craters.renderOrder = 0.14;
     this.craters.frustumCulled = false;
     this.group.add(this.craters);
   }

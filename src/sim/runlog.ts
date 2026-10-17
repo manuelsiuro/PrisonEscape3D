@@ -7,6 +7,7 @@
  * A save carries its log next to it (copied on save, so a game loaded and played two ways
  * makes two logs, each whole).
  */
+import { quietCalendar } from './systems/calendar';
 import { fnv1a } from './rng';
 import { Sim, type Snapshot } from './Sim';
 import { STEPS_PER_MINUTE } from './tuning';
@@ -140,7 +141,8 @@ export class RunRecorder {
     if ('seed' in origin) this.head = { v: 1, prison: sim.prison.id, seed: origin.seed, game: origin.game, from };
     else {
       const log = origin.log;
-      const runs = log && log.prison === sim.prison.id && log.from + log.steps === from ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
+      // (A log from before the day's events (P17) can't be carried on under them: the game starts a log of its own from here.)
+      const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !beforeDays(log.game) ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
         this.put(encodeRuns(runs));
@@ -211,6 +213,14 @@ export interface Replayed {
   verified: number;
 }
 
+/** Whether a game version came before the day's events (1.11.0): its days were all quiet. */
+export function beforeDays(game: string): boolean {
+  const m = /^(\d+)\.(\d+)\./.exec(game);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a < 1 || (a === 1 && b < 11);
+}
+
 /** Plays a log back from its start, checking the hourly sums (stops at the first that doesn't match). */
 export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (prison.id !== log.prison) return null;
@@ -218,6 +228,8 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (!runs) return null;
   const sim = new Sim(prison, log.seed < 0 ? 1 : log.seed);
   if (log.seed < 0) sim.restore(log.start!);
+  // Played before the day's events (P17): every day was quiet then.
+  if (beforeDays(log.game)) sim.state.calendar = quietCalendar();
   if (sim.state.step !== log.from) return null;
   const sums = new Map(log.sums);
   let verified = log.from;

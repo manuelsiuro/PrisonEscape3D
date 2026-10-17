@@ -65,11 +65,13 @@ export function watch(sim: SimContext) {
   const late = ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
   // Seen attacking someone (GDD §5.2), at work on a wall, a fence, a grate or the floor, damage found: 100% (§9.3).
   // Fighting back at an inmate who jumped the player: a scuffle, some heat a blow (not the alarm).
-  // A food fight (P17): blows at inmates in the canteen are part of the fun, no heat at all.
-  if (seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS && s.selfDefense && inFoodFight(sim)) [reason, heat] = [SPOT.indexOf('brawl'), 0];
-  else if (seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
-  else if (seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS) [reason, heat] = [SPOT.indexOf('tampering'), 100];
+  // A scuffle (hitting back, or P17's food fight) never hides tools at work or damage found; a food fight's blows at inmates in the canteen are noticed not at all.
+  const swung = seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS;
+  const tampered = seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS;
+  if (swung && !s.selfDefense) [reason, heat] = [SPOT.indexOf('fight'), 100];
+  else if (tampered) [reason, heat] = [SPOT.indexOf('tampering'), 100];
   else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
+  else if (swung && !inFoodFight(sim)) [reason, heat] = [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0];
   else if (eyes && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
   else if (eyes && !disguised && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
   // A camera sees what a guard would sound the alarm for (GDD §5.6).

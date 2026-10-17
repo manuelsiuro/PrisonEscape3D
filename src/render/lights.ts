@@ -75,7 +75,7 @@ export class Lights {
     const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, spots.length);
     const m = new THREE.Matrix4();
     spots.forEach(([x, z, size], i) => mesh.setMatrixAt(i, m.makeScale(size, 1, size).setPosition(x, 0.008, z)));
-    mesh.renderOrder = 3;
+    mesh.renderOrder = 0.32;
     mesh.frustumCulled = false;
     this.group.add(mesh);
     return mat;

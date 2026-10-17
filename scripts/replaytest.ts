@@ -6,6 +6,7 @@
  * the next checksum; a game loaded from a save without a log starts one from its state;
  * logs live next to their saves and go with them.
  */
+import { quietCalendar } from '../src/sim/systems/calendar';
 import { check } from './assert';
 
 const mem = new Map<string, string>();
@@ -182,3 +183,20 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   check(save.length < 12 * 1024, 'a save stays under 12 KB');
 }
 console.log('replay ok');
+
+// ------------------------------------------------------------------ logs from before the day (P17)
+{
+  // A run recorded by 1.10 (no events then): it replays whole, every day quiet as it was.
+  const seed = 7;
+  const old = new Sim(CENTER_PERKS, seed);
+  old.state.calendar = quietCalendar();
+  const r = new RunRecorder(old, { seed, game: '1.10.1' });
+  for (let k = 0; k < 2 * 1440 * STEPS_PER_MINUTE + 600; k++) r.step(0);
+  const log = r.toLog();
+  const back = replayLog(log, CENTER_PERKS);
+  check(!!back?.ok, 'a log from before the day replays whole (its days quiet)');
+  // Carried on in 1.11: a log of its own from the game loaded (the two rules never mix in one log).
+  const carried = new RunRecorder(old, { log, game: '1.11.0' });
+  check(carried.toLog().seed === -1 && carried.toLog().game === '1.11.0', 'a game from before the day starts a log of its own');
+  console.log('a 1.10 log: replays whole; carried on in 1.11 as a new log');
+}

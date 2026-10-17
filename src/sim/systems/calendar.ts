@@ -22,7 +22,6 @@ import { TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';
 import type { Guard } from './guards';
 import { dayMinute, DAY_STEPS, prisonDay } from './clock';
-import { tileOfBody } from './movement';
 import { cutPower, generatorsOf, offFor, summon } from './power';
 import { addHeat } from './watch';
 
@@ -108,7 +107,8 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
       if (e >= 0 && e < DAY_EVENTS.length) event = e;
       if (wx >= 0 && wx < WEATHERS.length) weather = wx;
     }
-  for (const m of mods) if (MOD_WEATHER[m]) weather = WEATHERS.indexOf(MOD_WEATHER[m]);
+  // (Not on day 1: it stays clear whatever the twist.)
+  if (day > 1) for (const m of mods) if (MOD_WEATHER[m]) weather = WEATHERS.indexOf(MOD_WEATHER[m]);
   const book = DAY_BOOKS[prison];
   const id = DAY_EVENTS[event];
   const w = WEATHERS[weather];
@@ -207,10 +207,7 @@ export function sightOf(sim: SimContext, g: Guard): number {
   let r = sim.world.def.rules?.sightRange ?? 7;
   if (eventOn(sim, 'inspection')) r += INSPECTION_SIGHT;
   const cap = WEATHER_SIGHT[weatherNow(sim)];
-  if (cap !== undefined && r > cap) {
-    const t = tileOfBody(g.body);
-    if (outdoors(sim, t.x, t.z)) r = cap;
-  }
+  if (cap !== undefined && r > cap && outdoors(sim, Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT))) r = cap;
   return r * UNIT;
 }
 
@@ -306,7 +303,10 @@ function startEvent(sim: SimContext, p: DayPlan) {
     const mid = canteenMiddle(sim);
     if (mid >= 0) summon(sim, mid, FIGHT_GUARDS, (p.until - p.at) * STEPS_PER_MINUTE);
   }
-  if (p.event === 'drill' && musterHere(sim)) muster(sim);
+  if (p.event === 'drill') {
+    if (sim.away || sim.state.lockdown) sim.state.eventFlags |= TODAY.EXCUSED;
+    else if (musterHere(sim)) muster(sim);
+  }
 }
 
 function endEvent(sim: SimContext, p: DayPlan) {
@@ -316,7 +316,8 @@ function endEvent(sim: SimContext, p: DayPlan) {
 /** A clean inspection: a commendation (and the cash it brings), once the last step's blots are counted. */
 function commend(sim: SimContext) {
   const s = sim.state;
-  if (s.eventFlags & (TODAY.BLOT | TODAY.COMMENDED) || s.escaped || sim.away) return;
+  // (Out cold at 16:00 after a clean day: still commended. Solitary means caught: a blot already.)
+  if (s.eventFlags & (TODAY.BLOT | TODAY.COMMENDED) || s.escaped) return;
   s.eventFlags |= TODAY.COMMENDED;
   s.cash += COMMENDATION;
   s.tally[3] += COMMENDATION;

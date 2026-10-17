@@ -37,6 +37,8 @@ export class Snowfall {
     this.points = new THREE.Points(geo, mat);
     this.points.frustumCulled = false;
     this.points.visible = false;
+    // Over the fog veil (P17), like the rain: flakes fall in front of it.
+    this.points.renderOrder = 6;
   }
 
   /**
