@@ -123,6 +123,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
     prev: { x: sim.state.player.x, z: sim.state.player.z },
     prevInmates: sim.state.inmates.map((m) => ({ x: m.body.x, z: m.body.z })),
     prevGuards: sim.state.guards.map((m) => ({ x: m.body.x, z: m.body.z })),
+    prevDogs: sim.state.dogs.map((d) => ({ x: d.body.x, z: d.body.z })),
     paused: false,
     walked: 0,
     pilot: new Autopilot(sim.world, () => sim.world.routeGrid(sim.state.layer)),

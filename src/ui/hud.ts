@@ -35,6 +35,8 @@ export interface HudState {
   today: { icon: string; color: string; text: string; time: string; soon: boolean; left: number | null; of: number; sr: string } | null;
   /** The fire drill (P17): the routine pill says so until it's over; whether the player has mustered. */
   drill: { mustered: boolean; missed: boolean } | null;
+  /** Guard dogs (P19): one close by would smell the contraband in the hotbar ('nose'), one is on the player's trail ('track'); null neither. */
+  dog: 'nose' | 'track' | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -76,6 +78,9 @@ export class Hud {
   private readonly heatFill: HTMLElement;
   private readonly heatText: HTMLElement;
   private shownSeen = false;
+  private shownDog: HudState['dog'] = null;
+  private readonly paw: HTMLElement;
+  private readonly pawSr: HTMLElement;
   private shownZone = '';
   private night: boolean | null = null;
   private shownKey = '';
@@ -98,7 +103,7 @@ export class Hud {
       </div>
       <div class="hud-row">
         <span class="pill big hud-routine"><i class="hud-routine-ic"></i><span class="hud-routine-text"><span class="hud-routine-head"><b></b><small></small></span><span class="hud-routine-place"></span></span><em class="hud-badge"></em></span>
-        <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b><span class="hud-eye" title="${t('hud.seen')}">${icon('eye', 16)}</span></span>
+        <span class="pill big hud-heat" aria-label="${t('hud.heat')}">${icon('flame', 16)}<i class="hud-heat-bar"><i></i></i><b></b><span class="hud-eye" title="${t('hud.seen')}">${icon('eye', 16)}</span><span class="hud-paw" role="img">${icon('paw', 16)}</span><span class="sr-only hud-paw-sr" role="status"></span></span>
       </div>
       <div class="hud-row hud-alerts">
         <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
@@ -123,6 +128,8 @@ export class Hud {
     this.heatPill = q('.hud-heat');
     this.heatFill = q('.hud-heat-bar i');
     this.heatText = q('.hud-heat b');
+    this.paw = q('.hud-paw');
+    this.pawSr = q('.hud-paw-sr');
     for (const el of [this.zonePill, this.badge, this.heatPill, this.routinePill]) el.addEventListener('animationend', () => el.classList.remove('pulse', 'pop', 'bump'));
     q('.hud-pause').addEventListener('click', onPause);
     this.cashPill = q('.hud-cash');
@@ -294,6 +301,17 @@ export class Hud {
     if (s.seen !== this.shownSeen) {
       this.shownSeen = s.seen;
       this.heatPill.classList.toggle('seen', s.seen);
+    }
+    // The paw (P19): a dog close by would smell the contraband on you; a dog on your trail.
+    if (s.dog !== this.shownDog) {
+      this.shownDog = s.dog;
+      this.paw.dataset.dog = s.dog ?? '';
+      const say = s.dog ? t(s.dog === 'nose' ? 'hud.dogNose' : 'hud.dogTrack') : '';
+      this.paw.title = say;
+      this.paw.setAttribute('aria-label', say);
+      // (Said to a screen reader as it comes on.)
+      this.pawSr.textContent = say;
+      if (s.dog) this.heatPill.classList.add('bump');
     }
   }
 

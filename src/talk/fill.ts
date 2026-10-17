@@ -6,6 +6,7 @@ import type { Sim } from '../sim/Sim';
 import { formatTime } from '../sim/systems/clock';
 import { tileOfBody } from '../sim/systems/movement';
 import { MAP_W } from '../sim/world/World';
+import { handlersOf } from '../sim/systems/k9';
 import type { Fact } from './gossip';
 import { hashStr } from './voice';
 
@@ -36,6 +37,8 @@ export interface FillContext {
   dayEvent: DayEvent | null;
   /** The things {item} may name (a merchant names what's on sale), instead of everyday things. */
   items?: readonly string[];
+  /** The dog a reaction is about (P19, {dog}). */
+  dog?: number;
 }
 
 const SLOT = /\{([A-Za-z][A-Za-z0-9]*)(?:\.([a-z]+))?\}/g;
@@ -52,7 +55,7 @@ export function slotsOf(text: string): string[] {
 }
 
 /** The slots the director can fill (chattertest checks every line's against it). */
-export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'dinner', 'event', 'n', 'm', 't1', 't2', 'key']);
+export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'dinner', 'event', 'n', 'm', 't1', 't2', 'key', 'dog']);
 
 const hhmm = (minute: number) => `${String(Math.floor(minute / 60) % 24).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -216,6 +219,14 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
     case 'key':
       v = fact?.color ? t(`keyColor.${fact.color}` as Key) : null;
       break;
+    // A guard dog (P19): the fact's, the dog of the guard speaking, else one of the prison's.
+    case 'dog': {
+      const dogs = handlersOf(sim.world);
+      const own = dogs.indexOf(ctx.speaker - s.inmates.length);
+      const k = fact?.dog ?? ctx.dog ?? (own >= 0 ? own : Number(pick(ctx, 'dog', dogs.map((_, i) => String(i))) ?? -1));
+      v = k >= 0 && k < dogs.length ? sim.prison.guards[dogs[k]].dog!.name : null;
+      break;
+    }
   }
   if (v !== null) line.set(slot, v);
   return v;

@@ -1,4 +1,4 @@
-import { itemDef } from '../content/items';
+import { itemDef, itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import { t, type Key } from '../i18n';
 import { maxHealth } from '../sim/systems/combat';
@@ -8,7 +8,7 @@ import type { ItemState } from '../sim/systems/items';
 import { COLD_STEPS, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { lookingAway } from '../sim/systems/ways';
 import { lineOfSight } from '../sim/ai/sight';
-import { clockAt, formatTime } from '../sim/systems/clock';
+import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
 import { guardSubject } from '../ui/social';
 import { baking, exposed } from '../sim/systems/weather';
 import { dayHud, stowCard, vehicleThe } from './day';
@@ -47,10 +47,13 @@ import {
   workChips,
 } from './context';
 import { play, type Game } from './game';
-import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, targetInfo } from './labels';
+import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, describeTreat, dogName, targetInfo } from './labels';
+import { DOG, dogWarning, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
 import { coachOnce, seenTip } from './tips';
 import { FIRECRACKER } from '../sim/systems/structure';
+const PEPPER = itemNumber('pepper');
+const JERKY = itemNumber('jerky');
 import { chatterFrame } from './chatter';
 
 /**
@@ -65,7 +68,7 @@ const GET_UP = { verb: '', what: '' };
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
@@ -144,6 +147,14 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   press.toolNow = fight ?? describeTool(sim, tt, held);
   // A firecracker in hand (P14): nothing to strike, but its own button throws it.
   if (!press.toolNow && held === FIRECRACKER && !busy && st.layer === LAYER.GROUND) press.toolNow = describeToss();
+  // Jerky, pepper or sleepy jerky in hand with a dog within a throw (P19): its button throws it to the dog.
+  if (!press.toolNow && FOR_DOGS.has(held) && !busy && st.layer === LAYER.GROUND) {
+    const to = treatTarget(sim);
+    if (to) press.toolNow = describeTreat(dogName(sim, to.dog), to.tile, held === PEPPER, held === JERKY && st.dogs[to.dog].fed === prisonDay(st.step));
+  }
+  // The dogs (P19): told about a dog's nose the first time one could smell the contraband, and about the trail the first time one is laid with a dog at work.
+  if (!busy && hudState.dog === 'nose') coachOnce('sniffed', 'hint.sniffed');
+  if (!busy && st.scent.length && st.dogs.some((d) => d.mode !== DOG.KENNEL)) coachOnce('scent', 'hint.scent');
   // Within a guard's earshot: the ear on the button (worked out once a step), told about the first time.
   if (press.toolNow) press.toolNow.heard = !fight && memo.heard;
   if (press.toolNow?.heard && !busy && !panel) coachOnce('earshot', 'hint.earshot');
@@ -185,6 +196,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;
+  hudState.dog = dogWarning(sim);
   hudState.solitaryMinutes = st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null;
   hudState.cash = st.cash;
   // During the Work Period with a job that counts today: the quota on the badge (GDD §11).

@@ -99,6 +99,12 @@ const SHAPES: Record<string, Shape> = {
     cyl(0.045, 0.05, c, 0.08, 0.02, -0.1, 10),
     box(0.04, 0.03, 0.03, METAL, 0, 0.03, -0.13),
   ],
+  /** Jerky (P19): two twisted strips of dried meat. */
+  jerky: (c, a) => [turn(box(0.36, 0.035, 0.07, c, 0, 0, 0), 0.18, 0, -0.035), turn(box(0.3, 0.035, 0.065, a, 0, 0.02, 0), -0.22, 0.02, 0.04)],
+  /** A pepper pot (P19): a white body, a dark cap with holes. */
+  shaker: (c, a) => [cyl(0.06, 0.16, c, 0, 0, 0, 14), cyl(0.065, 0.05, a, 0, 0.16, 0, 14), cyl(0.04, 0.02, a, 0, 0.21, 0, 10)],
+  /** A pill bottle (P19) on its side, with its cap and label. */
+  pills: (c, a) => [rod(0.07, 0.2, c, 0, 0.07, 0, 14), rod(0.075, 0.06, a, 0.12, 0.07, 0, 14), rod(0.072, 0.09, 0xf4f4ef, -0.02, 0.07, 0, 14)],
 };
 
 const cache = new Map<string, THREE.BufferGeometry>();

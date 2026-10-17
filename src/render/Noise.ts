@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { NoiseKind } from '../sim/state';
 import { itemDef } from '../content/items';
 import { MAP_W } from '../sim/world/World';
 import { itemGeometry } from './itemModels';
@@ -26,8 +27,8 @@ export interface AimView {
   tiles: readonly number[];
 }
 
-type Kind = 'strike' | 'thud' | 'bang' | 'ring';
-const WAVE_COLOR: Record<Kind, number> = { strike: 0xffd27a, thud: 0xffb347, bang: 0xff7a2e, ring: 0xffe08a };
+type Kind = NoiseKind;
+const WAVE_COLOR: Record<Kind, number> = { strike: 0xffd27a, thud: 0xffb347, bang: 0xff7a2e, ring: 0xffe08a, bark: 0xffc04a };
 const AMBER = 0xffb347;
 const RED = 0xff4a3a;
 

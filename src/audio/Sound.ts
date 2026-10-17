@@ -960,6 +960,40 @@ export class Sound {
     this.hiss(0.08, 'lowpass', 500, 0.8, 0.14 * gain, undefined, 0.3);
   }
 
+  /** A guard dog's bark (P19): two gruff woofs, a growl's grain under them (`pitch`: a big dog lower). */
+  bark(gain = 1, pitch = 1) {
+    for (const at of [0, 0.22]) {
+      this.tone(330 * pitch, 180 * pitch, 0.13, 'sawtooth', 0.09 * gain, at);
+      this.tone(660 * pitch, 380 * pitch, 0.1, 'square', 0.025 * gain, at);
+      this.hiss(0.12, 'bandpass', 900 * pitch, 2.2, 0.1 * gain, undefined, at);
+    }
+  }
+
+  /** A dog sneezing at pepper: a sharp "ptchoo", a snort after. */
+  sneeze(gain = 1) {
+    this.hiss(0.14, 'highpass', 3200, 0.9, 0.16 * gain);
+    this.tone(520, 240, 0.12, 'triangle', 0.05 * gain, 0.02);
+    this.hiss(0.18, 'lowpass', 700, 0.7, 0.1 * gain, undefined, 0.35);
+  }
+
+  /** Jerky wolfed down: quick chomps, a happy yip. */
+  munch(happy = false) {
+    for (let k = 0; k < 4; k++) this.hiss(0.05, 'bandpass', 1400 + k * 120, 2.5, 0.12, undefined, k * 0.09);
+    if (happy) this.tone(880, 1320, 0.12, 'triangle', 0.06, 0.42);
+  }
+
+  /** A dog nodding off: a long yawn, sliding down. */
+  yawn(gain = 1) {
+    this.tone(620, 260, 0.7, 'triangle', 0.05 * gain);
+    this.hiss(0.5, 'lowpass', 600, 0.6, 0.04 * gain, undefined, 0.1);
+  }
+
+  /** Soap and water (P19): a lather's squelch and a rinse. */
+  scrub() {
+    for (let k = 0; k < 3; k++) this.hiss(0.09, 'bandpass', 2200 - k * 300, 3, 0.08, undefined, k * 0.12);
+    this.hiss(0.4, 'highpass', 1800, 0.7, 0.05, undefined, 0.38);
+  }
+
   /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);

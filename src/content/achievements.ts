@@ -112,6 +112,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   // Delivery day (P18).
   { id: 'offTheBooks', group: 'days', icon: 'clipboard', run: (r) => f(r, 'slipped') >= 1 },
   { id: 'airMail', group: 'days', icon: 'heli', escape: (e) => e.via === 'stowaway' && e.prison === 'irongate' },
+  // Guard dogs (P19).
+  { id: 'goodBoy', group: 'life', icon: 'paw', run: (r) => f(r, 'dogFriends') >= 1 },
+  { id: 'blessYou', group: 'life', icon: 'wind', run: (r) => f(r, 'dogsPeppered') >= 1 },
+  { id: 'sweetDreams', group: 'life', icon: 'moon', run: (r) => f(r, 'dogsAsleep') >= 1 },
+  { id: 'squeakyClean', group: 'life', icon: 'drop', run: (r) => f(r, 'washed') >= 1 },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
@@ -121,6 +126,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'sunstroke', group: 'mishaps', icon: 'heat', hidden: true, run: (r) => f(r, 'baked') >= 1 },
   { id: 'drillDodger', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'drillsMissed') >= 1 },
   { id: 'returnToSender', group: 'mishaps', icon: 'box', hidden: true, run: (r) => f(r, 'stowFound') >= 1 },
+  { id: 'nosyParker', group: 'mishaps', icon: 'paw', hidden: true, run: (r) => f(r, 'dogDug') >= 1 },
   // Career.
   { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },

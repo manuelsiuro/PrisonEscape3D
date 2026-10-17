@@ -14,7 +14,7 @@ import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/sys
 import { seatSpot } from '../sim/systems/rest';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from '../sim/systems/security';
 import type { ClimbTarget } from '../sim/systems/structure';
-import { MEAL_STEPS, STEPS_PER_MINUTE, STIR_STEPS, UNIT, WALK_SPEED } from '../sim/tuning';
+import { MEAL_STEPS, SCENT_STEPS, STEPS_PER_MINUTE, STIR_STEPS, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
@@ -23,6 +23,8 @@ import type { Game } from './game';
 import { coachItems, coachOnce, seenTip } from './tips';
 import { dayMinute, eventOn, fogNow, sightOf, today, weatherNow } from '../sim/systems/calendar';
 import { searchMinute } from '../sim/systems/delivery';
+import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
+import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -106,6 +108,8 @@ function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, sta
 const groundFrame: Array<{ x: number; z: number; item: number }> = [];
 /** Firecrackers burning (P14): their tiles. */
 const fuseFrame: number[] = [];
+/** The player's trail (P19): [tile, freshness], refilled. */
+const scentFrame: Array<[number, number]> = [];
 
 const frameData: Frame = {
   x: 0,
@@ -147,6 +151,8 @@ const frameData: Frame = {
   weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 },
   events: { movie: false, foodFight: false, inspection: false },
   delivery: { t: -1, at: 0, search: 0, until: 0, stowed: false },
+  dogs: [],
+  scent: scentFrame,
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -267,6 +273,25 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const pocket = st.items.containers[st.items.containers.length - st.guards.length + k];
     o.hasKey = !!pocket && (itemOf(pocket[0]) === g.guardKeys[k] || itemOf(pocket[1]) === g.guardKeys[k] || itemOf(pocket[2]) === g.guardKeys[k] || itemOf(pocket[3]) === g.guardKeys[k]);
   });
+  // The dogs (P19): where they are, what they're up to; the player's trail, fresher the brighter.
+  f.dogs.length = st.dogs.length;
+  st.dogs.forEach((d, k) => {
+    const o = (f.dogs[k] ??= { x: 0, z: 0, facing: 0, moving: false, pace: 1, pose: 'kennel', friend: false });
+    const q = g.prevDogs[k];
+    o.x = lerp(q?.x ?? d.body.x, d.body.x);
+    o.z = lerp(q?.z ?? d.body.z, d.body.z);
+    o.facing = Math.atan2(DIR_X[d.body.facing], DIR_Z[d.body.facing]);
+    o.moving = d.body.moving && !g.paused;
+    o.pose = dogAsleep(d, st.step) ? 'asleep' : dogDazed(d, st.step) ? 'dazed' : d.mode === DOG.POINT ? 'point' : d.mode === DOG.TRACK ? 'track' : d.mode === DOG.KENNEL ? 'kennel' : 'heel';
+    o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / WALK_SPEED_GUARD : 1;
+    o.friend = d.trust >= TRUST_IGNORE;
+  });
+  scentFrame.length = st.scent.length;
+  for (let k = 0; k < st.scent.length; k++) {
+    const e = (scentFrame[k] ??= [0, 0]);
+    e[0] = st.scent[k][0];
+    e[1] = Math.max(0, 1 - (st.step - st.scent[k][1]) / SCENT_STEPS);
+  }
   f.lock = st.lock;
   // The ring reads the fight: red while they're after the player, dim out of reach.
   f.lockHostile = st.lock >= 0 && (st.lock < st.inmates.length ? st.inmates[st.lock].angry > 0 : st.guards[st.lock - st.inmates.length].mode === GUARD.CHASE);

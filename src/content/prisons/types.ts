@@ -44,7 +44,29 @@ export interface GuardDef {
   helipad?: boolean;
   /** Its ways (P15; default steady). A lazy guard has a nap stop on its night round. */
   trait?: GuardTrait;
+  /** Its dog (P19): at its side on shift, in the kennel otherwise. */
+  dog?: DogDef;
 }
+
+/**
+ * A guard dog (P19), bound to its handler: no Cast id, never bites, nobody's to fight. On
+ * shift (from prison day 2) 10:00–22:00, 01:00–05:00 too if it works nights, and in every
+ * lockdown; at its kennel otherwise. It smells contraband in the hotbar and tracks the
+ * player's trail.
+ */
+export interface DogDef {
+  /** Its name, the same in every language; unique in the prison. */
+  name: string;
+  /** Its kennel: a floor tile, and the way the kennel's door faces (1–16). */
+  kennel: Waypoint;
+  /** It works the night shift too (its handler walks a night round). */
+  night?: boolean;
+  /** Its coat (how it's drawn). */
+  coat: DogCoat;
+}
+
+/** How a dog looks: a black-and-tan shepherd, a brindle mastiff, a cinnamon retriever, a black-and-white collie. */
+export type DogCoat = 'shepherd' | 'mastiff' | 'retriever' | 'collie';
 
 /** What a generator powers (GDD §5.5; HMP Irongate splits them between two, §4.5). */
 export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';

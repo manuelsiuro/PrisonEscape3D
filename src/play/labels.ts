@@ -12,6 +12,7 @@ import { helicopterIn } from '../sim/systems/sea';
 import { clockRinging } from '../sim/systems/noise';
 import { DIRT, STRIKES, underSea, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { energyCost } from '../sim/systems/weather';
+import { dogDef } from '../sim/systems/k9';
 import { STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
@@ -35,16 +36,33 @@ export const NEED: Record<string, string> = {
   rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop' };
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
 export function describeToss(): ToolView {
   tossView.verb = t('act.throw');
   tossView.what = t('thing.firecracker');
+  tossView.icon = 'toss';
+  tossView.tossTo = -1;
+  tossView.fits = true;
   return tossView;
 }
+
+/** A treat or pepper in hand, a dog within a throw (P19): the button throws it to the dog. */
+export function describeTreat(dog: string, tile: number, pepper: boolean, fed: boolean): ToolView {
+  tossView.verb = t(pepper ? 'act.throwAt' : 'act.throwTo');
+  tossView.what = dog;
+  tossView.icon = pepper ? 'wind' : 'bone';
+  tossView.tossTo = tile;
+  // (Jerky for a dog that's had today's: it would only land on the floor.)
+  tossView.fits = !fed;
+  return tossView;
+}
+
+/** A dog's name (P19), by its place in the state's dogs. */
+export const dogName = (sim: Sim, k: number) => dogDef(sim.world, k).name;
 
 /** The tool button's face, refilled in place. */
 const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress: null, repeat: true };
@@ -243,6 +261,14 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     if (clockRinging(sim.state.items.inv[sim.state.items.hand])) v.verb = t('act.stop');
     v.what = t('thing.clock');
     v.fits = true;
+    v.repeat = false;
+    v.progress = null;
+    return v;
+  }
+  // A bar of soap (P19): the scent washed off (grey with none to wash).
+  if (tt.action === 'wash') {
+    v.what = t('thing.scent');
+    v.fits = sim.state.scent.length > 0;
     v.repeat = false;
     v.progress = null;
     return v;

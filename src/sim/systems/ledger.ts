@@ -60,6 +60,14 @@ export const FEATS = [
   'stowed',
   'slipped',
   'stowFound',
+  // v1.13 (P19, guard dogs): smelled out by a dog, a dog's trail that found the way the player went, dogs given jerky, peppered, put to sleep, won over (trust at its most), the scent washed off.
+  'sniffed',
+  'dogDug',
+  'dogsFed',
+  'dogsPeppered',
+  'dogsAsleep',
+  'dogFriends',
+  'washed',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -183,6 +191,17 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'cold':
         if (e.on && e.hot) f[FEAT.baked]++;
+        break;
+      case 'dog':
+        if (e.what === 'sniff') f[FEAT.sniffed]++;
+        else if (e.what === 'dug') f[FEAT.dogDug]++;
+        else if (e.what === 'fed') f[FEAT.dogsFed]++;
+        else if (e.what === 'friend') f[FEAT.dogFriends]++;
+        else if (e.what === 'dazed') f[FEAT.dogsPeppered]++;
+        else if (e.what === 'asleep') f[FEAT.dogsAsleep]++;
+        break;
+      case 'washed':
+        f[FEAT.washed]++;
         break;
       case 'bedCheck':
         // Passed with nobody in the cell: the dummy under the blanket did it.

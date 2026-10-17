@@ -232,3 +232,41 @@
     min-width: 30px;
   }
 }
+
+/* The paw in the heat pill (P19): hidden; amber while a dog close by would smell contraband on you, red while one is on your trail. */
+.hud-paw {
+  display: none;
+}
+
+.hud-paw[data-dog='nose'],
+.hud-paw[data-dog='track'] {
+  display: flex;
+}
+
+.hud .hud-heat .hud-paw[data-dog='nose'] .ic {
+  color: #ffc04a;
+  filter: drop-shadow(0 0 4px rgba(255, 192, 74, 0.85));
+  animation: paw-sniff 0.9s ease-in-out infinite;
+}
+
+.hud .hud-heat .hud-paw[data-dog='track'] .ic {
+  color: #ff6b5a;
+  filter: drop-shadow(0 0 5px rgba(255, 70, 50, 0.9));
+  animation: paw-sniff 0.6s ease-in-out infinite;
+}
+
+@keyframes paw-sniff {
+  50% {
+    transform: translateY(-1.5px) scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud .hud-heat .hud-paw .ic {
+    animation: none;
+  }
+}
+
+.reduced-motion .hud .hud-heat .hud-paw .ic {
+  animation: none;
+}

@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats';
 
 export interface ItemDef {
   id: string;
@@ -211,6 +211,11 @@ export const ITEMS: readonly ItemDef[] = [
   // P14 (noise and distractions): thrown, a firecracker goes off after its fuse; wound, an alarm clock rings wherever it is.
   m('firecracker', true, 15, 'firecracker', 0xd23f36, [], 0xf2d23c),
   m('alarm_clock', false, 12, 'clock', 0xc0392b, [], 0xf4f4ef),
+  // P19 (guard dogs): thrown to a dog, jerky wins it over (once a day), pepper sets it sneezing, sleepy jerky puts it to sleep.
+  m('jerky', false, 6, 'jerky', 0x8a3f22, ['treats'], 0xb5653a),
+  m('pepper', false, 6, 'shaker', 0xf4f4ef, ['treats'], 0x2b3038),
+  m('sleeping_pills', true, 15, 'pills', 0xe8eef6, ['treats'], 0x6a8fd8),
+  m('sleepy_jerky', true, 20, 'jerky', 0x6a3f5a, [], 0x9a7ad0),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */

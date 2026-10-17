@@ -10,6 +10,7 @@ import { newDay, settleWork, startWork } from './jobs';
 import { shakedown } from './justice';
 import { dismissAll } from './social';
 import { addHeat } from './watch';
+import { treats } from './k9';
 
 /** A new block settles the last one: a missed block costs heat, the Work Period pays or fires, 08:00 starts a new day. */
 export function nextBlock(sim: SimContext, clock: Clock) {
@@ -42,6 +43,8 @@ export function nextBlock(sim: SimContext, clock: Clock) {
   // are named for the shakedown during roll call.
   if (now === 0) {
     restock(w, s.items, s);
+    // (P19: the dogs' treats, and the pills, where there are dogs.)
+    treats(sim);
     reissueKit(sim);
     sim.events.push({ type: 'restock' });
     if (!sim.world.def.rules?.relaxed) shakedown(sim);

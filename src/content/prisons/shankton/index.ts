@@ -255,6 +255,7 @@ const guards: GuardDef[] = [
       { x: 20, z: 39, wait: 4, face: 1 },
     ],
     key: 'yellow',
+    dog: { name: 'Brutus', kennel: { x: 54, z: 45, face: 9 }, night: true, coat: 'mastiff' },
   },
 ];
 

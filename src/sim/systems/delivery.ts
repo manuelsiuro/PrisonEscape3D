@@ -178,7 +178,8 @@ export function clearBay(sim: SimContext) {
       m.path = [];
     }
   }
-  for (const g of s.guards) {
+  // (Guards, and their dogs, P19.)
+  for (const g of [...s.guards, ...s.dogs]) {
     move(g.body, w.guardBlock);
     if (g.path.some((t) => w.parked[t])) {
       g.path = [];

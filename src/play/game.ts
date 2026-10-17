@@ -10,6 +10,8 @@ export interface Game {
   prev: { x: number; z: number };
   prevInmates: Array<{ x: number; z: number }>;
   prevGuards: Array<{ x: number; z: number }>;
+  /** The dogs' (P19). */
+  prevDogs: Array<{ x: number; z: number }>;
   paused: boolean;
   /** How far the player has walked (tiles), for the first-play hint. */
   walked: number;

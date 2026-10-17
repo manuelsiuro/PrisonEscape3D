@@ -243,3 +243,37 @@ export const BRIBE_REPORT_HEAT = 20;
 /** The shakedown names this many cells (a strict guard's: more), and a strict guard searches this much longer (×3/2). */
 export const SHAKEDOWN_CELLS = 2;
 export const STRICT_CELLS = 3;
+
+// Guard dogs (P19).
+/** Dogs start work on this prison day (day 1 is quiet), and their shifts (minutes of the day): 10:00–22:00, and 01:00–05:00 for those on nights. */
+export const DOG_FIRST_DAY = 2;
+export const DOG_DAY_FROM = 600;
+export const DOG_DAY_TO = 1320;
+export const DOG_NIGHT_FROM = 60;
+export const DOG_NIGHT_TO = 300;
+/** A dog trots at its handler's heel, runs to catch up from this far (units), tracks a trail at its own pace (units a step). */
+export const DOG_HEEL_SPEED = 130;
+export const DOG_RUN_SPEED = 200;
+export const DOG_TRACK_SPEED = 160;
+export const DOG_CATCH_UP = 3 * UNIT;
+/** It stops this close to its handler. */
+export const DOG_HEEL = UNIT;
+/** It smells contraband in the hotbar this close (units, a clear line), points and barks this long, and not again so soon. */
+export const SNIFF_RANGE = Math.round(1.5 * UNIT);
+export const POINT_STEPS = 3 * STEPS_PER_SECOND;
+export const SNIFF_AGAIN = 30 * STEPS_PER_SECOND;
+/** What its bark costs and how far it carries; a sneeze's. */
+export const SNIFF_HEAT = 25;
+export const BARK_NOISE = 6;
+export const SNEEZE_NOISE = 3;
+/** The player's trail out of bounds: this many tiles at most, each fresh this long. */
+export const SCENT_TILES = 32;
+export const SCENT_STEPS = 90 * STEPS_PER_SECOND;
+/** Something thrown to a dog lands this close to it (units): jerky (trust, once a day), pepper (dazed), sleepy jerky (asleep). */
+export const TREAT_RANGE = Math.round(1.5 * UNIT);
+export const TREAT_TRUST = 20;
+/** Trust: from this much a dog lets contraband go by; at the most, it's a friend and never tracks the player. */
+export const TRUST_IGNORE = 60;
+export const TRUST_FRIEND = 100;
+export const DAZE_STEPS = 10 * STEPS_PER_SECOND;
+export const DOG_SLEEP_STEPS = 120 * STEPS_PER_MINUTE;

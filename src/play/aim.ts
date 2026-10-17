@@ -126,6 +126,19 @@ export function throwAhead() {
   refuse(first ?? 'there');
 }
 
+/** Thrown straight to a tile (P19: a treat to a dog, from the tool button). */
+export function throwAt(tile: number) {
+  const g = play.game;
+  if (!g || g.paused) return;
+  const sim = g.rec.sim;
+  const p = sim.state.player;
+  const dx = (tile % MAP_W) - Math.floor(p.x / UNIT);
+  const dz = Math.floor(tile / MAP_W) - Math.floor(p.z / UNIT);
+  aimToss(sim, dx, dz, result);
+  if (!result.why) send(dx, dz);
+  else refuse(result.why);
+}
+
 /** The tile aimed at: the pointer's, kept within reach (as far as the throw goes towards it); with no pointer yet, 3 tiles ahead. */
 function target() {
   const sim = play.game!.rec.sim;

@@ -169,6 +169,7 @@ const guards: GuardDef[] = [
     ],
     duties: ['shakedown'],
     key: 'green',
+    dog: { name: 'Canela', kennel: { x: 45, z: 50, face: 1 }, coat: 'retriever' },
   },
   {
     name: 'Molina',
@@ -235,6 +236,7 @@ const guards: GuardDef[] = [
       { x: 30, z: 54, wait: 3, face: 9 },
     ],
     key: 'red',
+    dog: { name: 'Bandido', kennel: { x: 51, z: 50, face: 9 }, night: true, coat: 'collie' },
   },
   {
     name: 'Paz',

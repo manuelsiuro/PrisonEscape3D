@@ -19,7 +19,8 @@ import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
-import { NEED } from './labels';
+import { dogName, NEED } from './labels';
+import { dogDef } from '../sim/systems/k9';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
 import { dayTime, vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
@@ -221,7 +222,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
+      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -624,6 +625,73 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'ringing':
       sound.ring(gainAt(sim, e.tile));
       break;
+    case 'dog': {
+      // Guard dogs (P19): heard as loud as they are close; told by name.
+      const d = sim.state.dogs[e.dog];
+      const gain = d ? gainAt(sim, Math.floor(d.body.z / UNIT) * 64 + Math.floor(d.body.x / UNIT)) : 0.5;
+      const dog = dogName(sim, e.dog);
+      const pitch = dogDef(sim.world, e.dog).coat === 'mastiff' ? 0.75 : dogDef(sim.world, e.dog).coat === 'collie' ? 1.15 : 1;
+      switch (e.what) {
+        case 'sniff':
+          sound.bark(gain, pitch);
+          buzz('missed');
+          coachOnce('sniffed', 'hint.sniffed');
+          break;
+        case 'track': {
+          sound.bark(gain * 0.8, pitch);
+          // (Once in a while per dog: in a lockdown a dog may lose the trail and pick up fresher scent again and again.)
+          const now = performance.now();
+          if (now - (trackSaid[e.dog] ?? -1e9) < 10000) break;
+          trackSaid[e.dog] = now;
+          trackShown[e.dog] = true;
+          banner.toast(t('toast.dogTrack', { dog }), 'bad');
+          coachOnce('scent', 'hint.scent');
+          break;
+        }
+        case 'point':
+          sound.bark(gain, pitch);
+          banner.toast(t('toast.dogPoint', { dog }), 'bad');
+          break;
+        case 'dug':
+          sound.bark(gain, pitch);
+          buzz('missed');
+          break;
+        case 'lost':
+          // (Said only of a trail the player was told about.)
+          if (trackShown[e.dog]) itemsUI.toast(t('toast.dogLost', { dog }));
+          trackShown[e.dog] = false;
+          break;
+        case 'dazed':
+          sound.sneeze(gain);
+          itemsUI.toast(t(e.trail ? 'toast.dogDazed' : 'toast.dogSneeze', { dog }));
+          trackShown[e.dog] = false;
+          break;
+        case 'fed':
+          sound.munch(false);
+          if (!sim.events.some((m) => m.type === 'dog' && m.what === 'friend')) itemsUI.toast(t('toast.dogFed', { dog, n: e.trust ?? 0 }));
+          coachOnce('treat', 'hint.treat');
+          break;
+        case 'friend':
+          sound.munch(true);
+          banner.toast(t('toast.dogFriend', { dog }), 'good');
+          break;
+        case 'full':
+          itemsUI.toast(t('toast.dogFull', { dog }));
+          break;
+        case 'asleep':
+          sound.yawn(gain);
+          itemsUI.toast(t('toast.dogAsleep', { dog }));
+          break;
+        case 'woke':
+          if (gain > 0.4) itemsUI.toast(t('toast.dogWoke', { dog }));
+          break;
+      }
+      break;
+    }
+    case 'washed':
+      sound.scrub();
+      itemsUI.toast(t('toast.washed'));
+      break;
     case 'cantThrow': {
       const now = performance.now();
       if (now - lastCant < 600) break;
@@ -665,6 +733,10 @@ function floatAt(id: number, text: string, kind: 'dealt' | 'taken' | 'ko' | 'cas
   const at = view.screenOf(id, floatPoint);
   if (at) combatUI.float(text, at.x, at.y, kind);
 }
+
+/** When each dog's "on your trail" was last said (real ms), and whether it was (its "lost" follows only then). */
+const trackSaid: number[] = [];
+const trackShown: boolean[] = [];
 
 /** When a refusal was last said, and the sniper's aim (real ms): repeats keep quiet for a while. */
 let lastCant = 0;

@@ -2,11 +2,13 @@ import { buzz } from '../app/haptics';
 import { COMMENDATION, DAY_BOOKS, DRILL_HEAT, FEAST_ENERGY, MUSTER_MINUTES, SIGN_OFF_MINUTES, WEATHER_SIGHT, type DayEvent, type Weather } from '../content/days';
 import type { StowView } from '../ui/stow';
 import { guardSubject } from '../ui/social';
-import { t, type Key } from '../i18n';
+import { listOf, t, type Key } from '../i18n';
+import { ROUTINE } from '../content/routine';
+import { handlersOf } from '../sim/systems/k9';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, dayRoll, eventOn, planOf, TODAY, today, weatherNow, type DayPlan } from '../sim/systems/calendar';
 import { searchMinute } from '../sim/systems/delivery';
-import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
+import { DOG_DAY_FROM, DOG_FIRST_DAY, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
 import type { PaRow } from '../ui/pa';
@@ -156,6 +158,11 @@ export function dayStep(sim: Sim) {
   const m = dayMinute(st.step);
   const p = today(sim);
   if (WARNED.has(p.event) && m === p.at - WARN_AHEAD) say(sim, t(`pa.warn.${p.event}` as Key, { vehicle: vehicleThe(sim) }));
+  // The dogs' first shift (P19): the warden introduces them.
+  if (p.day === DOG_FIRST_DAY && m === DOG_DAY_FROM - ROUTINE[0].start && st.dogs.length) {
+    const names = handlersOf(sim.world).map((h) => sim.prison.guards[h].dog!.name);
+    say(sim, t(names.length === 1 ? 'pa.dog1' : 'pa.dogs', { names: listOf(names) }));
+  }
   if (m === FORECAST_AT) {
     const next = planOf(sim, p.day + 1);
     const sky = t(`weather.${weatherName(sim, next.weather)}` as Key).toLocaleLowerCase();

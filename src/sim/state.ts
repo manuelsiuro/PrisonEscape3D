@@ -15,6 +15,7 @@ import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
 import { mix32 } from './rng';
 import { FEATS, freshFeats, partialLedger } from './systems/ledger';
+import { spawnDogs, type Dog } from './systems/k9';
 import { dayPlan, type ForcedDay } from './systems/calendar';
 import { DAY_BOOKS, DAY_EVENTS, type DayEvent } from '../content/days';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
@@ -22,7 +23,7 @@ import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
 export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway'] as const;
@@ -61,7 +62,7 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope'; action: ToolAction }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent'; action: ToolAction }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -177,13 +178,24 @@ export type SimEvent =
    * 14:30, thorough or not, or waved through with nobody there to search.)
    */
   | { type: 'stow'; on: boolean; found?: boolean }
+  /**
+   * Guard dogs (P19): what a dog (its index in `dogs`) did: smelled contraband on the player and
+   * pointed, picked up the trail, lost it, ran the player down at its end, dug up where it led
+   * (a way down or up: found), sneezing at pepper, a treat eaten (its trust now), one refused
+   * (it's had today's), won over for good (trust at its most), asleep after sleepy jerky, awake again. The player's scent washed off.
+   */
+  | { type: 'dog'; dog: number; what: DogNews; trust?: number; trail?: boolean }
+  | { type: 'washed' }
   | ItemEvent;
+
+/** What a dog did (P19, the 'dog' event). */
+export type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke';
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
 export type BribeKind = 'look' | 'paper' | 'over';
 
 /** What made a noise (P14). */
-export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring';
+export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark';
 /** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
 export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 
@@ -350,6 +362,10 @@ export interface SimState {
   stowed: boolean;
   /** The prison day a stowaway was last pulled out of a vehicle (0 never): every search thorough for WARY_DAYS. */
   stowCaught: number;
+  /** The guard dogs (P19, k9.ts), in the order of their handlers. */
+  dogs: Dog[];
+  /** The player's trail out of bounds (P19): [ground tile, the step it was laid, 1 where they left the floor from it], oldest first, at most SCENT_TILES. */
+  scent: Array<[number, number, number?]>;
 }
 
 export interface Snapshot {
@@ -455,6 +471,8 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     eventFlags: 0,
     stowed: false,
     stowCaught: 0,
+    dogs: spawnDogs(world),
+    scent: [],
   };
 }
 
@@ -506,6 +524,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   }
   if (typeof s.stowed !== 'boolean') s.stowed = false;
   if (!Number.isInteger(s.stowCaught)) s.stowCaught = 0;
+  // The dogs (P19): a save from before them (or for a prison whose dogs changed) has them in their kennels; a trail that isn't one is gone.
+  s.dogs = Array.isArray(st.dogs) && st.dogs.length === fresh.dogs.length ? st.dogs.map((d, k) => ({ ...fresh.dogs[k], ...d })) : fresh.dogs;
+  if (!Array.isArray(s.scent) || !s.scent.every((e) => Array.isArray(e) && (e.length === 2 || e.length === 3) && e.every((x) => Number.isInteger(x)))) s.scent = [];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

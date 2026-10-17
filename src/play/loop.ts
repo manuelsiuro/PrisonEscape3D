@@ -56,6 +56,11 @@ function stepSim(g: Game, dt: number) {
       q.x = m.body.x;
       q.z = m.body.z;
     });
+    sim.state.dogs.forEach((d, k) => {
+      const q = (g.prevDogs[k] ??= { x: 0, z: 0 });
+      q.x = d.body.x;
+      q.z = d.body.z;
+    });
     // The stick and keys win over tap-to-walk; both are plain direction commands.
     if (controls.steering || sim.state.ko > 0) g.pilot.stop();
     // Holding the tool button: a strike is asked for every step (the sim paces them).

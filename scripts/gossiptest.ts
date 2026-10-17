@@ -36,6 +36,8 @@ import { fill, type FillContext } from '../src/talk/fill';
 import { facts, GOSSIP, napStop, type Fact } from '../src/talk/gossip';
 import { dayMinute, planOf, today } from '../src/sim/systems/calendar';
 import { searchMinute, thorough } from '../src/sim/systems/delivery';
+import { dogDef, FOR_DOGS, handlersOf, onShift, pillsDesk } from '../src/sim/systems/k9';
+import { containersOf } from '../src/sim/world/containers';
 import { Bot, n } from './bots';
 import { check } from './assert';
 
@@ -87,6 +89,35 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       const m = (f.t1! - ROUTINE[0].start + 1440) % 1440;
       return p.weather === 'storm' && p.outages.includes(m) && m > dayMinute(s.step);
     }
+    // Guard dogs (P19): today's sleeping pills, still in that inmate's desk.
+    case 'pills': {
+      const desk = pillsDesk(sim);
+      const prop = desk >= 0 ? containersOf(sim.world)[desk].prop : null;
+      return !!prop && sim.world.cellOf[prop.z * MAP_W + prop.x] === s.inmates[f.inmate!].cell && s.items.containers[desk].some((v) => itemOf(v) === n('sleeping_pills'));
+    }
+    // A dog's hours, by asking the rule itself at the minute either side of each end (on day 2, no lockdown).
+    case 'dogShift':
+    case 'dogNight': {
+      const def = dogDef(sim.world, f.dog!);
+      if (f.kind === 'dogShift' && handlersOf(sim.world)[f.dog!] !== f.guard) return false;
+      if (f.kind === 'dogNight' && !def.night) return false;
+      const was = { step: s.step, lockdown: s.lockdown };
+      s.lockdown = false;
+      const at = (m: number) => {
+        s.step = DAY + ((m - ROUTINE[0].start + 1440) % 1440) * STEPS_PER_MINUTE;
+        return onShift(sim, def);
+      };
+      const ok = !at(f.t1! - 1) && at(f.t1!) && at(f.t2! - 1) && !at(f.t2!);
+      Object.assign(s, was);
+      return ok;
+    }
+    // What works on a dog: there's a dog, and the item it takes (the rules themselves: k9test).
+    case 'dogTreat':
+      return s.dogs.length > 0 && FOR_DOGS.has(n('jerky'));
+    case 'dogPepper':
+      return s.dogs.length > 0 && FOR_DOGS.has(n('pepper'));
+    case 'dogWash':
+      return s.dogs.length > 0;
     default:
       return true;
   }

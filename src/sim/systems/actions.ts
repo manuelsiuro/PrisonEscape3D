@@ -36,6 +36,7 @@ import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
 import { rep, startTraining, stopTraining, study } from './training';
 import { addHeat, setTile } from './watch';
+import { washScent } from './k9';
 import { energyCost } from './weather';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
@@ -243,6 +244,16 @@ function strike(sim: SimContext, fresh: boolean) {
   }
   if (target.action === 'wind') {
     wind(sim);
+    return;
+  }
+  // A bar of soap (P19): the scent rubbed off, the soap used up (with no trail to wash off, it keeps).
+  if (target.action === 'wash') {
+    if (!washScent(sim)) {
+      sim.events.push({ type: 'cantStrike', why: 'noScent', action: 'wash' });
+      return;
+    }
+    it.inv[it.hand] = 0;
+    it.rev++;
     return;
   }
   if (!STRIKES.has(target.action)) {
@@ -628,6 +639,8 @@ export function regenerate(sim: SimContext) {
 export function shower(sim: SimContext) {
   const s = sim.state;
   if (s.energy < 100 && s.step % SHOWER_ENERGY_STEPS === 0 && underShower(sim)) s.energy++;
+  // (P19: and the scent washes off.)
+  if (s.scent.length && underShower(sim)) washScent(sim);
 }
 
 /** Standing still under a running shower in the showers block (not out cold, carried off or in a lockdown). */

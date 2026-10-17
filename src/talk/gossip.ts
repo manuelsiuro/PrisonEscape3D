@@ -1,4 +1,6 @@
-import { itemDef } from '../content/items';
+import { itemDef, itemNumber } from '../content/items';
+import { handlersOf, pillsDesk } from '../sim/systems/k9';
+import { containersOf } from '../sim/world/containers';
 import { ROUTINE } from '../content/routine';
 import type { ZoneId } from '../content/zones';
 import type { Sim } from '../sim/Sim';
@@ -8,10 +10,14 @@ import { generatorsOf } from '../sim/systems/power';
 import { traitOf } from '../sim/systems/guards';
 import { shakedownCells } from '../sim/systems/justice';
 import { dayMinute, planOf, today } from '../sim/systems/calendar';
+import { prisonDay } from '../sim/systems/clock';
 import { searchMinute, thorough } from '../sim/systems/delivery';
 import type { GuardDef } from '../content/prisons/types';
 import { grateAt, underSea } from '../sim/systems/structure';
-import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN } from '../sim/tuning';
+import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN, DOG_DAY_FROM, DOG_DAY_TO, DOG_NIGHT_FROM, DOG_NIGHT_TO, DOG_FIRST_DAY } from '../sim/tuning';
+
+const PILLS = itemNumber('sleeping_pills');
+const DOG_FACTS: ReadonlySet<string> = new Set(['dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper']);
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
@@ -24,11 +30,11 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt']);
+export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper']);
 
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
@@ -37,6 +43,8 @@ export interface Fact {
   key: string;
   inmate?: number;
   guard?: number;
+  /** A guard dog (P19: its place in the state's dogs). */
+  dog?: number;
   item?: string;
   place?: ZoneId;
   color?: string;
@@ -103,6 +111,18 @@ function lastingFacts(sim: Sim): Fact[] {
   if (routes.includes('helicopter')) add({ kind: 'heli', t1: ROUTINE.find((r) => r.id === 'lightsOut')!.start, t2: ROUTINE[0].start });
   if (!relaxed) add({ kind: 'solitary', n: SOLITARY_STEPS / STEPS_PER_MINUTE / 60, m: POTATO_STEPS / STEPS_PER_MINUTE });
   add({ kind: 'koTime', n: KO_STEPS / STEPS_PER_SECOND });
+  // The guard dogs (P19): whose each is and its hours, and what works on them.
+  const handlers = handlersOf(w);
+  handlers.forEach((h, k) => {
+    const dog = def.guards[h].dog!;
+    add({ kind: 'dogShift', key: `dogShift:${k}`, guard: h, dog: k, t1: DOG_DAY_FROM, t2: DOG_DAY_TO });
+    if (dog.night) add({ kind: 'dogNight', key: `dogNight:${k}`, dog: k, t1: DOG_NIGHT_FROM, t2: DOG_NIGHT_TO });
+  });
+  if (handlers.length) {
+    add({ kind: 'dogTreat' });
+    add({ kind: 'dogWash' });
+    add({ kind: 'dogPepper' });
+  }
   lasting.set(def.id, out);
   return out;
 }
@@ -110,7 +130,9 @@ function lastingFacts(sim: Sim): Fact[] {
 /** Everything true worth telling right now (the speaker's own business left out). */
 export function facts(sim: Sim, speaker = -1): Fact[] {
   const s = sim.state;
-  const out = lastingFacts(sim).slice();
+  // (The dogs' facts once they've started work, P19: on day 1 they're still in their kennels.)
+  const dogsOut = prisonDay(s.step) >= DOG_FIRST_DAY;
+  const out = lastingFacts(sim).filter((f) => dogsOut || !DOG_FACTS.has(f.kind));
   // A merchant's stock (items people know how to say), if the merchant would sell to the player.
   sim.prison.merchants.forEach((cell, k) => {
     const who = s.inmates.findIndex((m) => m.cell === cell);
@@ -147,6 +169,13 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   const m = dayMinute(s.step);
   const cut = plan.outages.find((o) => o > m);
   if (cut !== undefined && !sim.prison.rules?.relaxed) out.push({ kind: 'stormCut', key: `stormCut:${plan.day}:${cut}`, t1: (cut + ROUTINE[0].start) % 1440 });
+  // The dogs (P19): whose desk the day's sleeping pills are in, while they're still there.
+  const desk = pillsDesk(sim);
+  if (desk >= 0 && s.items.containers[desk].some((v) => itemOf(v) === PILLS)) {
+    const prop = containersOf(sim.world)[desk].prop;
+    const who = s.inmates.findIndex((m) => m.cell === sim.world.cellOf[prop.z * MAP_W + prop.x]);
+    if (who >= 0 && who !== speaker) out.push({ kind: 'pills', key: `pills:${plan.day}:${who}`, inmate: who });
+  }
   // Delivery day (P18): before the search, how thorough today's will be (drawn for the day: true; a catch changes only the days after).
   const dv = sim.prison.delivery;
   if (dv && plan.event === 'delivery' && m < searchMinute(plan) && !sim.prison.rules?.relaxed) {
@@ -196,6 +225,12 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   nextDelivery: ['n'],
   searchClose: ['guard'],
   searchQuick: ['guard'],
+  dogShift: ['guard', 'dog', 't1', 't2'],
+  dogNight: ['dog', 't1', 't2'],
+  dogTreat: [],
+  dogWash: [],
+  dogPepper: [],
+  pills: ['inmate'],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */
@@ -209,5 +244,6 @@ export function factOk(f: Partial<Fact> | undefined, sim: Sim): f is Fact {
   const s = sim.state;
   if (f.inmate !== undefined && !(Number.isInteger(f.inmate) && f.inmate >= 0 && f.inmate < s.inmates.length)) return false;
   if (f.guard !== undefined && !(Number.isInteger(f.guard) && f.guard >= 0 && f.guard < s.guards.length)) return false;
+  if (f.dog !== undefined && !(Number.isInteger(f.dog) && f.dog >= 0 && f.dog < s.dogs.length)) return false;
   return true;
 }

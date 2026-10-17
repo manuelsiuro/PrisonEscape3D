@@ -19,6 +19,8 @@ export interface ToolView {
   heard?: boolean;
   /** A firecracker in hand (P14): the button throws it instead of striking. */
   toss?: boolean;
+  /** A treat or pepper in hand by a dog (P19): the tile it's thrown to (-1: ahead, or aimed). */
+  tossTo?: number;
 }
 
 /**
@@ -109,7 +111,8 @@ export class ToolControls {
         const ear = v.heard ? `<i class="tool-ear" title="${t('tool.heard')}">${icon('ear', TOUCH ? 13 : 14)}</i>` : '';
         if (TOUCH) {
           this.btn.innerHTML = `<i class="tool-round"><i class="tool-ring"></i>${icon(v.icon, 24)}<span></span></i>${ear}`;
-          this.btn.querySelector('span')!.textContent = v.verb;
+          // (A treat for a dog, P19: the dog's name says it all on the round button.)
+          this.btn.querySelector('span')!.textContent = (v.tossTo ?? -1) >= 0 ? v.what : v.verb;
           this.ring = this.btn.querySelector('.tool-ring');
           this.btn.setAttribute('aria-label', `${v.verb} ${v.what}${v.heard ? `. ${t('tool.heard')}` : ''}`);
         } else {

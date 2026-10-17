@@ -93,6 +93,10 @@ const P: Record<string, string> = {
   utensils: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 0-3 2.5-3 6s1.5 4 3 4v8"/>',
   wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9Z"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/>',
+  /** A paw print (P19: the dogs). */
+  paw: '<ellipse cx="12" cy="16" rx="4.5" ry="3.6"/><circle cx="5.5" cy="10.5" r="1.8"/><circle cx="9.5" cy="6.5" r="1.8"/><circle cx="14.5" cy="6.5" r="1.8"/><circle cx="18.5" cy="10.5" r="1.8"/>',
+  /** A bone (P19: treats). */
+  bone: '<path d="M8.5 15.5 15.5 8.5"/><path d="M7.4 13.4a2.5 2.5 0 1 0-1.8 4.2 2.5 2.5 0 1 0 4.2-1.8"/><path d="M16.6 10.6a2.5 2.5 0 1 0 1.8-4.2 2.5 2.5 0 1 0-4.2 1.8"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

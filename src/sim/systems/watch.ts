@@ -9,7 +9,7 @@ import { RESTRICTED } from '../../content/zones';
 import { canSee } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
-import { SPOT } from '../state';
+import { SPOT, type SimState } from '../state';
 import { CHASE_HEAT, CONTRABAND_HEAT, LIGHTS_OUT_GRACE, RECOGNIZE_RANGE, RECOGNIZE_STEPS, SEARCHLIGHT_HEAT, SELF_DEFENSE_HEAT, STEPS_PER_MINUTE, STRIKE_SEEN_STEPS, UNIT } from '../tuning';
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from '../world/World';
@@ -69,8 +69,7 @@ export function watch(sim: SimContext) {
   let reason = 0;
   let heat = 0;
   // Out of the cell after Lights Out (past the walk home), or somewhere staff only: 100%.
-  const sinceLightsOut = (clockAt(s.step).minuteOfDay - ROUTINE[ROUTINE.length - 1].start + 1440) % 1440;
-  const late = ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
+  const late = afterHours(s);
   // Seen attacking someone (GDD §5.2), at work on a wall, a fence, a grate or the floor, damage found: 100% (§9.3).
   // Fighting back at an inmate who jumped the player: a scuffle, some heat a blow (not the alarm).
   // A scuffle (hitting back, or P17's food fight) never hides tools at work or damage found; a food fight's blows at inmates in the canteen are noticed not at all.
@@ -121,6 +120,12 @@ export function watch(sim: SimContext) {
   if (filmed) s.seen = true;
   // Snipers by day.
   snipe(sim);
+}
+
+/** Lights Out, past the walk home: out of the cell now is out late. */
+export function afterHours(s: SimState): boolean {
+  const sinceLightsOut = (clockAt(s.step).minuteOfDay - ROUTINE[ROUTINE.length - 1].start + 1440) % 1440;
+  return ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
 }
 
 /**

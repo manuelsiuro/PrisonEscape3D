@@ -33,6 +33,9 @@ import { DayEvents, type EventsFrame } from './DayEvents';
 import { ROOF_Y as ROOF_HEIGHT } from './Structure';
 import { WALL_H } from './WorldView';
 import { LAYER } from '../sim/world/World';
+import type { NoiseKind } from '../sim/state';
+import { Dogs, type DogFrame } from './Dog';
+import { handlersOf } from '../sim/systems/k9';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
 export interface Frame {
@@ -102,6 +105,9 @@ export interface Frame {
   events: EventsFrame;
   /** Delivery day (P18): where its vehicle is in its day, and the player hidden in it. */
   delivery: DeliveryFrame;
+  /** Guard dogs (P19), interpolated; the player's trail ([ground tile, freshness 1 → 0], oldest first). */
+  dogs: DogFrame[];
+  scent: ReadonlyArray<readonly [number, number]>;
 }
 
 const NO_FUSES: readonly number[] = [];
@@ -282,6 +288,9 @@ export class View {
   private readonly events = new DayEvents();
   /** Delivery day's vehicle (P18; Irongate's helicopter is the island's). */
   private readonly delivery = new Delivery();
+  /** The guard dogs, their kennels, the trail (P19). */
+  private readonly dogs = new Dogs();
+  private readonly noSleepers: number[] = [];
   /** The weather's light this frame (the title has none), and a lightning flash easing away. */
   private wxLight: WeatherFrame | null = null;
   /** The weather's light as drawn: eased toward the frame's (P17). */
@@ -386,7 +395,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -485,6 +494,12 @@ export class View {
     this.cones.world = world;
     this.events.setWorld(world);
     this.delivery.setWorld(world);
+    this.dogs.setDogs(
+      handlersOf(world).map((h) => {
+        const d = world.def.guards[h].dog!;
+        return { x: d.kennel.x, z: d.kennel.z, face: d.kennel.face ?? 5, coat: d.coat };
+      }),
+    );
     this.weather.setWorld(world);
     this.warmDay();
     this.flash = 0;
@@ -605,7 +620,7 @@ export class View {
   }
 
   /** A noise made (P14): a wave out from its tile as far as it carries, the tiles it reached lit (after `delay` s: a thrown thing lands first). */
-  noise(kind: 'strike' | 'thud' | 'bang' | 'ring', tile: number, reach: number, tiles: readonly number[], heard: boolean, delay = 0) {
+  noise(kind: NoiseKind, tile: number, reach: number, tiles: readonly number[], heard: boolean, delay = 0) {
     this.noiseFx.noise(kind, tile, reach, tiles, heard, delay, !this.reducedMotion);
   }
 
@@ -963,6 +978,10 @@ export class View {
       // (A guard dozing on its feet has its own Z's, over its cap: Character.)
       for (let k = 0; k < f.guards.length; k++) if (f.guards[k].doing === DOING.SLEEP && this.guardCast[k]) this.head(this.guardCast[k]);
     }
+    // The dogs (P19): out of the picture below ground; asleep, Z's over them too.
+    this.dogs.group.visible = f.layer !== LAYER.UNDER;
+    this.dogs.update(f.dogs, f.scent, f.x, f.z, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers);
+    this.noSleepers.length = 0;
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).
     const wx = f.weather;

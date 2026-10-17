@@ -23,6 +23,7 @@ import { devices, powered, scan, takeoverCheck } from './systems/power';
 import { attendance, nextBlock } from './systems/routine';
 import { endTalk, grudges, guardTalking, keepTalk, offerFavors, socialNow } from './systems/social';
 import { bribesWearOff } from './systems/ways';
+import { dogs } from './systems/k9';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -43,7 +44,7 @@ export * from './state';
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, seats → energy and health → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → bribes wearing off → the key alarm →
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → bribes wearing off → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay → doors.
  */
 export class Sim {
@@ -85,6 +86,8 @@ export class Sim {
   movedBy: LayerMove | null = null;
   /** Replaying a run logged before 1.11 (runlog.ts): the few rules fixed since (a scuffle's verdict) as they were then. Not state. */
   legacy = false;
+  /** Replaying a run logged before the dogs came (1.13, runlog.ts): they stay in their kennels. Not state. */
+  noDogs = false;
   /** Away on a raft from the pier, or the helicopter off the pad, this step (P12: the escape check reads it), or off with the delivery's vehicle (P18); not state. */
   boarded: 'raft' | 'helicopter' | 'stowaway' | null = null;
 
@@ -145,6 +148,8 @@ export class Sim {
     if (s.solitary > 0 && --s.solitary === 0) release(this);
     // Who sees the player now, and what they make of it; a key alarm held back goes up now if it can.
     watch(this);
+    // The dogs (P19): the player's trail, noses, the trail followed.
+    dogs(this);
     bribesWearOff(this);
     raiseKeyAlarm(this);
     outOfReach(this);

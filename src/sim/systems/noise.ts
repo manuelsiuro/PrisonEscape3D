@@ -26,6 +26,7 @@ import { tileOfBody } from './movement';
 import { changeOpinion } from './social';
 import { muffled } from './calendar';
 import { ALARM_CLOCK, FIRECRACKER, type ToolTarget } from './structure';
+import { catchTreat } from './k9';
 
 /** A noise: where it's made and how many tiles it carries. */
 export interface NoiseAt {
@@ -341,7 +342,8 @@ export function throwItem(sim: SimContext, tile: number) {
   const dz = centerZ(to) - p.z;
   if (dx || dz) p.facing = nearestDir(dx, dz);
   if (item === FIRECRACKER) s.fuses.push([placeKey(LAYER.GROUND, to), s.step + FUSE_STEPS]);
-  else it.ground.push([placeKey(LAYER.GROUND, to), v]);
+  // (P19: a treat or pepper landing by a dog is the dog's.)
+  else if (!catchTreat(sim, item, to)) it.ground.push([placeKey(LAYER.GROUND, to), v]);
   const hit = s.inmates.findIndex((m) => tileAt(m.body.x, m.body.z) === to);
   sim.events.push({ type: 'tossed', item, from: here.z * MAP_W + here.x, to, hit });
   if (hit >= 0) changeOpinion(sim, hit, -TOSS_OPINION);

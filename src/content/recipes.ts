@@ -58,6 +58,8 @@ export const RECIPES: readonly RecipeDef[] = [
   // P14: noise to order.
   r('firecracker', 40, 'foil', 'toilet_paper', 'lighter'),
   r('alarm_clock', 30, 'battery', 'wire', 'plastic_cup'),
+  // P19: a treat for a dog that should sleep.
+  r('sleepy_jerky', 30, 'jerky', 'sleeping_pills'),
 ];
 
 /** The item ids an ingredient accepts. */

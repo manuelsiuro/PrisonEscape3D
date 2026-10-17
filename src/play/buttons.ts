@@ -10,7 +10,7 @@ import { climbTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTar
 import { strikeNoise, wouldHear } from '../sim/systems/noise';
 import { canChat } from '../sim/systems/ways';
 import { TOUCH } from '../ui/dom';
-import { armThrow, throwAhead } from './aim';
+import { armThrow, throwAhead, throwAt } from './aim';
 import type { ToolView } from '../ui/tool';
 import { tools } from './context';
 import { play } from './game';
@@ -65,7 +65,9 @@ export function usePress() {
   // A firecracker's button throws it (P14): aimed on touch, straight ahead on a keyboard.
   if (press.toolNow?.toss) {
     tools.release();
-    if (TOUCH) armThrow();
+    // (P19: to a dog, straight there.)
+    if ((press.toolNow.tossTo ?? -1) >= 0) throwAt(press.toolNow.tossTo!);
+    else if (TOUCH) armThrow();
     else throwAhead();
     return;
   }

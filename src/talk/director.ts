@@ -10,6 +10,7 @@ import { clockAt } from '../sim/systems/clock';
 import { DOING } from '../sim/systems/inmates';
 import { lookingAway } from '../sim/systems/ways';
 import { awake, GUARD } from '../sim/systems/guards';
+import { handlersOf } from '../sim/systems/k9';
 import { itemOf } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
 import { DIR_X, DIR_Z } from '../sim/command';
@@ -158,6 +159,8 @@ export class Director {
   private cameTo = new Map<number, number>();
   private bumped = new Map<number, number>();
   private dayEvent: DayEvent | null = null;
+  /** The dog the last dog event was about (P19: its handler's lines and the inmates' name it), -1 none. */
+  private dogAbout = -1;
   private voices: Voice[] = [];
   private prisonId = '';
   /** Each inmate's last greetings (the talk panel's lines, apart from the bubbles' memory). */
@@ -185,6 +188,7 @@ export class Director {
     this.nextAmbient = this.nextTick = this.gossipNext = 0;
     this.day = sim.clock.day;
     this.dayEvent = null;
+    this.dogAbout = -1;
     this.prisonId = sim.prison.id;
     this.random = mulberry(hashStr(sim.prison.id) ^ (seed + sim.clock.day * 7919));
     const s = sim.state;
@@ -260,7 +264,7 @@ export class Director {
   }
 
   private context(sim: Sim, speaker: number, fact?: Fact, items?: readonly string[]): FillContext {
-    return { lang: this.lang, sim, speaker, random: this.random, recent: this.recentSlots, fact, dayEvent: this.dayEvent, items };
+    return { lang: this.lang, sim, speaker, random: this.random, recent: this.recentSlots, fact, dayEvent: this.dayEvent, items, dog: this.dogAbout >= 0 ? this.dogAbout : undefined };
   }
 
   /** What a merchant has on sale (the items the banks can name): what its dealing lines may mention. */
@@ -518,6 +522,18 @@ export class Director {
       case 'stow':
         if (e.found) this.queueUp(now, 're.stowFound.in', this.inmatesNear(sim, px, pz, 12), 3, 'stowFound', undefined, 1.6);
         break;
+      // Guard dogs (P19): its handler has something to say about what it did; inmates about a dog fed.
+      case 'dog': {
+        const d = s.dogs[e.dog];
+        const h = handlersOf(sim.world)[e.dog];
+        if (!d || h === undefined) break;
+        this.dogAbout = e.dog;
+        const handler = s.guards[h] && awake(s.guards[h]) ? [n + h] : [];
+        const bank = ({ sniff: 're.dogSniff.gu', track: 're.dogTrack.gu', lost: 're.dogLost.gu', dug: 're.dogDug.gu', dazed: 're.dogDazed.gu', asleep: 're.dogAsleep.gu' } as Partial<Record<string, BankId>>)[e.what];
+        if (bank) this.queueUp(now, bank, handler, e.what === 'dug' || e.what === 'sniff' ? 5 : 4, `dog:${e.what}`, e.what === 'sniff' || e.what === 'dug' ? 'shout' : undefined, 0.3);
+        if (e.what === 'fed' || e.what === 'friend') this.queueUp(now, 're.dogFed.in', this.inmatesNear(sim, d.body.x / UNIT, d.body.z / UNIT, 8), 2, 'dogFed', undefined, 0.8);
+        break;
+      }
       case 'shot':
         this.incident('shot', px, pz, now);
         this.noteDay('shot');

@@ -235,6 +235,8 @@ export function describe(e: SimEvent): string {
       return `ESCAPED (${e.via})`;
     case 'stow':
       return e.on ? 'into the vehicle' : e.found ? 'FOUND in the vehicle' : 'out of the vehicle';
+    case 'dog':
+      return e.what === 'sniff' || e.what === 'dug' || e.what === 'track' || e.what === 'point' ? `dog #${e.dog} ${e.what}` : '';
     case 'today':
       if (e.event !== 'delivery') return '';
       return e.phase === 'start' ? 'the delivery is in' : e.phase === 'search' ? `the vehicle searched (${e.thorough ? 'thoroughly' : 'a quick look'})` : e.phase === 'waved' ? 'the vehicle waved through' : e.phase === 'end' ? 'the delivery leaves' : '';
