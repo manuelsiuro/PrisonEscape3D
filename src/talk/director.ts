@@ -512,6 +512,11 @@ export class Director {
       case 'today':
         if (e.phase === 'start' && e.event === 'drill') this.queueUp(now, 're.drill.in', this.inmatesNear(sim, px, pz, 30), 3, 'drill', undefined, 0.6);
         if (e.phase === 'start' && e.event === 'foodFight') this.queueUp(now, 're.foodFight.in', this.inmatesNear(sim, px, pz, 20), 3, 'foodFight', 'shout', 0.2);
+        // Visiting day (P21): the inmates about the visiting room, looking forward to it.
+        if (e.event === 'visiting' && e.phase === 'start' && sim.prison.smuggling?.visits) {
+          const r = sim.prison.smuggling.visits;
+          this.queueUp(now, 're.visiting.in', this.inmatesNear(sim, (r[0] + r[2]) / 2, (r[1] + r[3]) / 2, 24), 3, 'visiting', undefined, 1);
+        }
         // Delivery day (P18): the inmates by its bay see it come in; its supervisor at the tail, searching.
         if (e.event === 'delivery' && sim.prison.delivery) {
           const tx = sim.prison.delivery.tail.x + 0.5;
@@ -548,6 +553,18 @@ export class Director {
       case 'keyless':
         if (s.guards[e.guard]) this.queueUp(now, 're.keyless.gu', [n + e.guard], 5, 'keyless', 'shout', 0.2);
         break;
+      // Smuggling (P21): the drone overhead (guards and inmates near where it drops), a guard taking what it dropped, the player's visitor.
+      case 'smuggle': {
+        if (e.what === 'dropped' && e.tile !== undefined) {
+          const x = (e.tile % 64) + 0.5;
+          const z = Math.floor(e.tile / 64) + 0.5;
+          this.queueUp(now, 're.drone.gu', this.guardsNear(sim, x, z, 12), 2, 'drone', 'shout', 0.4);
+          this.queueUp(now, 're.drone.in', this.inmatesNear(sim, x, z, 10), 2, 'droneIn', undefined, 0.9);
+        }
+        if (e.what === 'seized' && e.guard !== undefined && s.guards[e.guard]) this.queueUp(now, 're.seized.gu', [n + e.guard], 5, 'seized', undefined, 0.3);
+        if (e.what === 'visit') this.queueUp(now, 're.visit.in', this.inmatesNear(sim, px, pz, 6), 2, 'visit', undefined, 1.4);
+        break;
+      }
       case 'shot':
         this.incident('shot', px, pz, now);
         this.noteDay('shot');

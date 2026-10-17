@@ -236,12 +236,12 @@ export function strikeNoise(layer: number, target: ToolTarget | null, held: numb
 // ------------------------------------------------------------------ throwing
 
 /** Whether something thrown can land on a ground tile: open floor (not a doorway, a hole or the water). */
-function landable(w: World, t: number): boolean {
+export function landable(w: World, t: number): boolean {
   const k = w.ground.kind[t];
   return !w.blocked(t % MAP_W, Math.floor(t / MAP_W)) && k !== TILE.DOOR && k !== TILE.SHAFT && k !== TILE.HOLE && k !== TILE.WATER;
 }
 
-function pileRoom(sim: SimContext, t: number): boolean {
+export function pileRoom(sim: SimContext, t: number): boolean {
   const key = placeKey(LAYER.GROUND, t);
   let n = 0;
   for (const [k] of sim.state.items.ground) if (k === key) n++;

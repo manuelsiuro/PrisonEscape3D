@@ -1,0 +1,228 @@
+/* ------------------------------------------------------------ smuggling (P21) */
+
+/* The fixer's chip and the phone on offer: a mint rim, the phone's screen colour. */
+.chip.fixer {
+  color: #d6fbe8;
+  background: rgba(95, 211, 160, 0.18);
+}
+.chip.fixer .ic {
+  color: #5fd3a0;
+}
+.talk-phone {
+  padding: 8px 12px 4px;
+  border-radius: 14px;
+  background: rgba(95, 211, 160, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(95, 211, 160, 0.22);
+}
+.talk-phone .box-label .ic {
+  color: #5fd3a0;
+}
+.talk-phone .big-btn .btn-item {
+  width: 22px;
+  height: 22px;
+  margin: -2px 2px -2px -4px;
+  object-fit: contain;
+}
+
+/* The order's pill under the HUD rows: mint, a button to the phone; pulsing while a drop lies on the ground. */
+.hud-alert.hud-order {
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  font-family: inherit;
+  background: rgba(30, 40, 60, 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(95, 211, 160, 0.6);
+}
+.hud-alert.hud-order .hud-order-ic {
+  display: inline-grid;
+  color: #5fd3a0;
+}
+.hud-alert.hud-order b {
+  color: #c9f7e0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.hud-alert.hud-order .hud-alert-bar i {
+  background: #5fd3a0;
+}
+.hud-alert.hud-order.urgent {
+  box-shadow: inset 0 0 0 2px #5fd3a0;
+  animation: order-pulse 1.1s ease-in-out infinite;
+}
+.hud-alert.hud-order:active {
+  transform: scale(0.95);
+}
+@keyframes order-pulse {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px #5fd3a0,
+      0 0 14px rgba(95, 211, 160, 0.55);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-alert.hud-order.urgent {
+    animation: none;
+  }
+}
+.reduced-motion .hud-alert.hud-order.urgent {
+  animation: none;
+}
+@media (pointer: coarse) {
+  .hud-alert.hud-order {
+    min-height: 40px;
+  }
+}
+
+/* The phone's panel: the order on its way, the ways it can come, the catalogue. */
+.phone-panel .panel-head .ic {
+  color: #5fd3a0;
+}
+.phone-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font: 600 13px/1.4 var(--font-ui);
+  color: #e6fff2;
+  background: rgba(95, 211, 160, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(95, 211, 160, 0.3);
+}
+.phone-status i {
+  display: inline-grid;
+  flex: none;
+  margin-top: 1px;
+  color: #5fd3a0;
+}
+.phone-status.none {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+.phone-status.none i {
+  color: rgba(255, 255, 255, 0.45);
+}
+.phone-ways {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.phone-way {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 14px;
+  text-align: left;
+  font-family: inherit;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+.phone-way > i {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+}
+.phone-way > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.phone-way b {
+  font: 700 14px var(--font-display);
+}
+.phone-way b em {
+  font: 700 12px var(--font-ui);
+  font-style: normal;
+  color: var(--gold);
+}
+.phone-way small {
+  font: 500 11.5px/1.3 var(--font-ui);
+  color: rgba(255, 255, 255, 0.62);
+}
+.phone-way.on {
+  background: rgba(95, 211, 160, 0.16);
+  box-shadow: inset 0 0 0 2px #5fd3a0;
+}
+.phone-way.on > i {
+  color: #0f2a1d;
+  background: #5fd3a0;
+}
+.phone-way:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 2px;
+}
+.phone-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font: 600 12.5px/1.35 var(--font-ui);
+  color: rgba(255, 255, 255, 0.7);
+}
+.phone-note .ic {
+  flex: none;
+  color: var(--gold);
+}
+.phone-img {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.phone-img img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.phone-row .big-btn.small {
+  flex: none;
+  gap: 5px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.phone-row .big-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.phone-panel .board-list {
+  margin-bottom: 18px;
+}
+
+/* Narrow phones: the two ways stack. */
+@media (max-width: 380px) {
+  .phone-ways {
+    grid-template-columns: 1fr;
+  }
+}
+/* Phones on their side: tighter. */
+@media (max-height: 520px) {
+  .phone-status {
+    margin-bottom: 6px;
+    padding: 6px 8px;
+  }
+  .phone-ways {
+    margin-bottom: 6px;
+  }
+  .phone-way {
+    padding: 6px 8px;
+  }
+}

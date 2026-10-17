@@ -24,6 +24,8 @@ import { clockAt } from './clock';
 import { revealTip, tippedToday } from './recipes';
 import { stopTraining } from './training';
 import { bribe, canChat } from './ways';
+import { fixerOf, PHONE } from './smuggling';
+import { PHONE_OPINION, PHONE_PRICE } from '../../content/smuggling';
 
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
 export function refuse(sim: SimContext, why: Refusal) {
@@ -177,6 +179,20 @@ export function talkOp(sim: SimContext, a: number, b: number) {
     case TALK.DISMISS:
       dismiss(sim, who);
       return;
+    case TALK.PHONE: {
+      // A burner phone (P21), from the fixer only, in the merchants' hours, to a friend; one at a time.
+      if (who !== fixerOf(sim)) return;
+      if (!sim.shopsOpen) return refuse(sim, 'closed');
+      if (m.opinion < PHONE_OPINION) return refuse(sim, 'opinion');
+      if (it.inv.slice(0, HOTBAR).some((v) => itemOf(v) === PHONE)) return refuse(sim, 'havePhone');
+      if (s.cash < PHONE_PRICE) return refuse(sim, 'cash');
+      if (free < 0) return refuse(sim, 'room');
+      it.inv[free] = slot(PHONE);
+      s.cash -= PHONE_PRICE;
+      sim.events.push({ type: 'bought', who, item: PHONE, price: PHONE_PRICE }, { type: 'cash', n: -PHONE_PRICE, why: 'buy' });
+      changeOpinion(sim, who, BUY_OPINION);
+      return;
+    }
     case TALK.TIP:
       // A recipe they know (P8+): from those who like the player, once a day each.
       if (m.opinion < TIP_OPINION) return refuse(sim, 'tipOpinion');

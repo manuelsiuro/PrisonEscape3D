@@ -34,6 +34,7 @@ import {
   paBoard,
   profile,
   ratPanel,
+  phonePanel,
   settings,
   sleepVeil,
   socialOpen,
@@ -48,7 +49,7 @@ import {
   workChips,
 } from './context';
 import { play, type Game } from './game';
-import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, describeTreat, dogName, targetInfo } from './labels';
+import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, describeTreat, describeCall, dogName, targetInfo } from './labels';
 import { DOG, dogWarning, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
 import { coachOnce, seenTip } from './tips';
@@ -61,6 +62,8 @@ const PAW_HOLD_MS = 1500;
 const PILLS = itemNumber('sleeping_pills');
 import { chatterFrame } from './chatter';
 import { ratHud, ratView } from './rat';
+import { orderHud, phoneView, smuggleHints } from './smuggle';
+import { PHONE, smugglingOf } from '../sim/systems/smuggling';
 import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
 
 /**
@@ -75,7 +78,7 @@ const GET_UP = { verb: '', what: '' };
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
@@ -154,6 +157,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   press.toolNow = fight ?? describeTool(sim, tt, held);
   // A firecracker in hand (P14): nothing to strike, but its own button throws it.
   if (!press.toolNow && held === FIRECRACKER && !busy && st.layer === LAYER.GROUND) press.toolNow = describeToss();
+  // The burner phone in hand (P21): its button opens its panel.
+  if (!press.toolNow && held === PHONE && !busy && smugglingOf(sim)) press.toolNow = describeCall();
   // Jerky, pepper or sleepy jerky in hand with a dog within a throw (P19): its button throws it to the dog.
   if (!press.toolNow && FOR_DOGS.has(held) && !busy && st.layer === LAYER.GROUND) {
     const to = treatTarget(sim);
@@ -198,6 +203,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The pet rat (P20): its panel and its pill.
   ratPanel.update(ratView(sim), busy);
   hudState.rat = ratHud(sim);
+  // Smuggling (P21): the phone's panel, the order's pill, the visitor's wait.
+  phonePanel.update(phoneView(sim), busy);
+  hudState.order = orderHud(sim);
+  smuggleHints(sim, busy || panel);
   darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();

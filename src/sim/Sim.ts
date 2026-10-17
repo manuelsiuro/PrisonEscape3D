@@ -25,6 +25,7 @@ import { endTalk, grudges, guardTalking, keepTalk, offerFavors, socialNow } from
 import { bribesWearOff } from './systems/ways';
 import { dogs } from './systems/k9';
 import { rats } from './systems/rats';
+import { smuggle } from './systems/smuggling';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -45,7 +46,7 @@ export * from './state';
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, seats → energy and health → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → bribes wearing off → the key alarm →
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → bribes wearing off → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
  */
@@ -164,6 +165,8 @@ export class Sim {
     dogs(this);
     // The rats (P20): the traps at 04:00, errands, panics.
     rats(this);
+    // Smuggling (P21): the drone's drop and what guards see of it, the visitor, the Red Cross parcel.
+    smuggle(this);
     bribesWearOff(this);
     raiseKeyAlarm(this);
     outOfReach(this);

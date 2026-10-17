@@ -325,4 +325,7 @@ export const STALAG_FLUCHT: PrisonDef = {
       { x: 21, z: 56.5 },
     ],
   },
+  // Smuggling (P21): Scraps sells burner phones; the drone drops on the open ground east of roll
+  // call; nobody visits up here: a Red Cross parcel comes with the truck instead.
+  smuggling: { fixer: 9, drop: [30, 22, 38, 28], parcel: true },
 };

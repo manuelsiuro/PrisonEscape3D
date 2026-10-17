@@ -15,6 +15,7 @@ import type { ToolView } from '../ui/tool';
 import { itemsUI, tools } from './context';
 import { t } from '../i18n';
 import { play } from './game';
+import { togglePhone } from './smuggle';
 
 /** What the buttons would do, worked out once per simulation step. */
 export const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean; station: Station | null; heard: boolean } = {
@@ -63,6 +64,12 @@ export function usePress() {
   const game = play.game;
   if (!game || game.paused) return;
   game.pilot.stop();
+  // The burner phone's button opens its panel (P21).
+  if (press.toolNow?.call) {
+    tools.release();
+    togglePhone(!TOUCH);
+    return;
+  }
   // A firecracker's button throws it (P14): aimed on touch, straight ahead on a keyboard.
   if (press.toolNow?.toss) {
     tools.release();

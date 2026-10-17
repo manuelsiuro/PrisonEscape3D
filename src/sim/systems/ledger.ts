@@ -77,6 +77,14 @@ export const FEATS = [
   'ratPanics',
   'keyHeists',
   'keyless',
+  // v1.15 (P21, smuggling): burner phones bought, orders placed, drone drops picked up and seized, visits, orders a visitor or a parcel brought in, parcels seized.
+  'phones',
+  'orders',
+  'drops',
+  'dropsSeized',
+  'visits',
+  'smuggled',
+  'parcelsSeized',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -106,6 +114,7 @@ export function partialLedger(step: number): { feats: number[]; days: number[] }
 }
 
 const CHOCOLATE = itemNumber('chocolate');
+const PHONE = itemNumber('burner_phone');
 
 /** Counts the step just run (`x`, `z`: where the player stood before it). */
 export function ledger(sim: Sim, x: number, z: number) {
@@ -171,6 +180,17 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'bought':
         f[FEAT.bought]++;
+        if (e.item === PHONE) f[FEAT.phones]++;
+        break;
+      case 'smuggle':
+        if (e.what === 'ordered') f[FEAT.orders]++;
+        else if (e.what === 'collected') f[FEAT.drops]++;
+        else if (e.what === 'seized') f[FEAT.dropsSeized]++;
+        else if (e.what === 'visit') {
+          f[FEAT.visits]++;
+          if (e.item) f[FEAT.smuggled]++;
+        } else if (e.what === 'parcel') f[FEAT.smuggled]++;
+        else if (e.what === 'parcelSeized') f[FEAT.parcelsSeized]++;
         break;
       case 'crafted':
         f[FEAT.crafted]++;

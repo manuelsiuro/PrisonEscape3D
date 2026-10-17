@@ -98,6 +98,10 @@ const P: Record<string, string> = {
   rat: '<path d="M5 16c0-4 4-7 9-7 3 0 5 2 7 4-2 2-4 3-7 3Z"/><circle cx="14.5" cy="9.2" r="1.8"/><circle cx="17.6" cy="12.2" r=".8" fill="currentColor" stroke="none"/><path d="M5 16c-2.5 0-3.5 1.5-2.5 3s4 1 5.5-.5M10 16v2M14 16v2"/>',
   /** A bone (P19: treats). */
   bone: '<path d="M8.5 15.5 15.5 8.5"/><path d="M7.4 13.4a2.5 2.5 0 1 0-1.8 4.2 2.5 2.5 0 1 0 4.2-1.8"/><path d="M16.6 10.6a2.5 2.5 0 1 0 1.8-4.2 2.5 2.5 0 1 0-4.2 1.8"/>',
+  /** A burner phone (P21: smuggling). */
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 5.5h4M11 18.5h2"/>',
+  /** A drone with a parcel slung under it (P21). */
+  drone: '<path d="M2.5 6h5M16.5 6h5M5 6v2.5l4 2h6l4-2V6"/><rect x="9" y="9" width="6" height="3.5" rx="1"/><path d="M12 12.5v3"/><rect x="9.5" y="15.5" width="5" height="5" rx=".5"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

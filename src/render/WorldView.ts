@@ -321,7 +321,8 @@ export class WorldView {
     }
   }
 
-  private readonly archLight = new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 });
+  /** The arches' lamps (P21: the visiting room's portable arches share it). */
+  readonly archLight = new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 });
   private archFlash = 0;
 
   private buildDetectors() {

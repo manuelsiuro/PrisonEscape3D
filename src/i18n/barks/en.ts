@@ -1839,6 +1839,66 @@ export const enBarks = {
     "Rats and dogs. Never a quiet moment.",
     "The dogs here hate rats. Hate them.",
   ],
+  "go.fixer": [
+    "{inmate} can get you a phone. If they trust you.",
+    "Want to call outside? Get on {inmate}'s good side.",
+    "{inmate} sells phones. Not to just anyone, mind.",
+  ],
+  "go.droneDrop": [
+    "Drones drop stuff {place.at}. At night, mostly.",
+    "Hear a buzz at night? Something's landing {place.at}.",
+    "Things fall from the sky {place.at}. Ask me how.",
+  ],
+  "go.visitArches": [
+    "Visiting day, they put arches on the doors of {place.the}.",
+    "Get something from a visitor? The arches at {place.the} will know.",
+    "Leaving {place.the} on visiting day, you get scanned.",
+  ],
+  "go.nextVisiting": [
+    "Visiting day on day {n}. Wash behind your ears.",
+    "Day {n}, the families come. Some bring more than cake.",
+    "Psst: visiting day is day {n}. Order something.",
+  ],
+  "re.drone.gu": [
+    "Is that a drone? At this hour?",
+    "What's that buzzing? Over there!",
+    "A drone! Somebody's ordering takeaway.",
+    "I heard that. Don't think I didn't.",
+    "Since when do pizzas fly?",
+    "That buzz again. Let's have a look.",
+  ],
+  "re.drone.in": [
+    "Pizza delivery!",
+    "Look up! Something's coming down!",
+    "Somebody's got friends outside.",
+    "Was that a drone? Lucky so-and-so.",
+    "Bzzz. Christmas came early.",
+    "Did that thing just drop something?",
+  ],
+  "re.seized.gu": [
+    "Well, well. What fell from the sky?",
+    "Confiscated. Nice try, whoever you are.",
+    "Lost something? Too bad.",
+    "Air mail goes in the evidence locker.",
+    "Someone's going to miss this.",
+    "Special delivery. For me, apparently.",
+  ],
+  "re.visiting.in": [
+    "Visiting day! My mum's coming.",
+    "Do I look all right? Be honest.",
+    "My aunt bakes the best cake. Shame they search it.",
+    "Visiting day. Best day of the week.",
+    "I hope they bring socks. Clean ones.",
+    "My gran's coming. Everybody behave.",
+  ],
+  "re.visit.in": [
+    "Who's that, {you}? Your nan?",
+    "Nice of them to come.",
+    "Aw. Someone loves you.",
+    "Did they bring snacks? Share.",
+    "Family. Can't live with them, can't escape them.",
+    "Wave at my mum while you're there.",
+  ],
 } satisfies Record<string, readonly Line[]>;
 
 export type BankId = keyof typeof enBarks;

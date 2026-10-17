@@ -1006,6 +1006,27 @@ export class Sound {
     for (let k = 0; k < 4; k++) this.hiss(0.03, 'bandpass', 4200 - k * 200, 4, 0.04 * gain, undefined, k * 0.05);
   }
 
+  /** The burner phone (P21): two quick keypad beeps and the double trill of a call going through. */
+  phone() {
+    this.tone(1336, 1336, 0.07, 'sine', 0.05);
+    this.tone(1477, 1477, 0.07, 'sine', 0.05, 0.1);
+    for (const at of [0.28, 0.4]) this.tone(440, 480, 0.08, 'triangle', 0.05, at);
+  }
+
+  /** A drone overhead (P21): the whine of four little rotors, beating against each other, swelling and fading (`gain`: how near). */
+  droneBuzz(gain = 1) {
+    if (gain <= 0.02) return;
+    this.tone(210, 228, 1.6, 'sawtooth', 0.022 * gain);
+    this.tone(232, 214, 1.6, 'sawtooth', 0.02 * gain, 0.04);
+    this.hiss(1.4, 'bandpass', 1800, 3, 0.03 * gain, undefined, 0.1);
+  }
+
+  /** Something dropped by the drone landing (a soft thump on the ground). */
+  parcelThump(gain = 1) {
+    this.tone(120, 60, 0.12, 'triangle', 0.09 * gain);
+    this.hiss(0.08, 'lowpass', 600, 0.7, 0.08 * gain);
+  }
+
   /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);

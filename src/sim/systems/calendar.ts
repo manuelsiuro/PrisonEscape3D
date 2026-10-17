@@ -7,7 +7,8 @@
  *
  * Each step (`theDay`) starts and ends the day's event on the minute: the inspection, the fire
  * drill and its muster, the feast, the generator's service, movie night, the food fight, the
- * delivery (P18, delivery.ts: its search and departure); and a storm's power cuts in the night. What they change is asked of this module by the systems:
+ * delivery (P18, delivery.ts: its search and departure), visiting day (P21, smuggling.ts: the visitors and the
+ * arches at the visiting room's doors); and a storm's power cuts in the night. What they change is asked of this module by the systems:
  * how far a guard sees (`sightOf`), how far a noise carries (`muffled`), the inmates' plan
  * (`crowdPlan`), the snipers in the weather, the heat of the sun.
  */
@@ -90,6 +91,9 @@ function drawnEvent(prison: string, salt: number, day: number): number {
   return DAY_EVENTS.indexOf(book.deck[order[(day - 2) % book.deck.length]]);
 }
 
+/** Cards a day is forced to only where the prison's deck has them (a vehicle to come, a room to visit in). */
+const DECK_ONLY: ReadonlySet<DayEvent> = new Set(['delivery', 'visiting']);
+
 /** The Daily's twists that set every day's weather (P26; dormant in the campaign). */
 const MOD_WEATHER: Record<string, Weather> = { fogDays: 'fog', storm: 'storm' };
 
@@ -101,12 +105,12 @@ const MOD_WEATHER: Record<string, Weather> = { fogDays: 'fog', storm: 'storm' };
 export function dayPlan(prison: string, salt: number, day: number, calendar: readonly ForcedDay[] = [], mods: readonly string[] = []): DayPlan {
   let event = drawnEvent(prison, salt, day);
   let weather = drawnWeather(prison, salt, day);
-  // Forced days: an exact day wins over every day (0). (Never a delivery where no vehicle comes: a deck without the card.)
+  // Forced days: an exact day wins over every day (0). (Never a delivery where no vehicle comes, nor visiting day where nobody visits: a deck without the card.)
   const book = DAY_BOOKS[prison];
   for (const pass of [0, 1])
     for (const [d, e, wx] of calendar) {
       if (pass === 0 ? d !== 0 : d !== day) continue;
-      if (e >= 0 && e < DAY_EVENTS.length && (DAY_EVENTS[e] !== 'delivery' || book?.deck.includes('delivery'))) event = e;
+      if (e >= 0 && e < DAY_EVENTS.length && (!DECK_ONLY.has(DAY_EVENTS[e]) || book?.deck.includes(DAY_EVENTS[e]))) event = e;
       if (wx >= 0 && wx < WEATHERS.length) weather = wx;
     }
   // (Not on day 1: it stays clear whatever the twist.)
@@ -263,6 +267,8 @@ export const TODAY = {
   SEARCHED: 64,
   SEARCHED_CLOSE: 128,
   WAVED: 256,
+  /** Visiting day (P21): the player's visitor came today. */
+  VISITED: 512,
 } as const;
 
 /** A food fight's guards: this many drawn into the canteen for as long as it lasts. */

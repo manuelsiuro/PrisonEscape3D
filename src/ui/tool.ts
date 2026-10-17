@@ -21,6 +21,8 @@ export interface ToolView {
   toss?: boolean;
   /** A treat or pepper in hand by a dog (P19): the tile it's thrown to (-1: ahead, or aimed). */
   tossTo?: number;
+  /** The burner phone in hand (P21): the button opens its panel. */
+  call?: boolean;
 }
 
 /**

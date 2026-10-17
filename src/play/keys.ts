@@ -1,8 +1,9 @@
 import { t } from '../i18n';
 import { OP } from '../sim/command';
 import { targets, usePress } from './buttons';
-import { board, click, closeSocial, itemsUI, profile, ratPanel, socialOpen, sound, tools, toggleProfile } from './context';
+import { board, click, closeSocial, itemsUI, profile, ratPanel, phonePanel, socialOpen, sound, tools, toggleProfile } from './context';
 import { toggleRat } from './rat';
+import { togglePhone } from './smuggle';
 import { play, sendOp } from './game';
 import { autosave, openHelp, pause } from './session';
 import { aiming, cancelThrow, throwAhead } from './aim';
@@ -15,6 +16,7 @@ export function act() {
   itemsUI.closeCraft();
   profile.close();
   ratPanel.close();
+  phonePanel.close();
   sendOp(OP.INTERACT);
 }
 
@@ -68,6 +70,8 @@ function onKeyDown(e: KeyboardEvent) {
     if (!ratPanel.isOpen) closeSocial();
     toggleRat(true);
   }
+  // P: the burner phone's panel (P21).
+  if (e.code === 'KeyP' && !itemsUI.panelOpen) togglePhone(true);
   // Training (GDD §3.2): left and right in turn fill the bar.
   if (g.rec.sim.state.train >= 0 && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
@@ -85,6 +89,7 @@ function onKeyDown(e: KeyboardEvent) {
   if (e.code === 'Space') {
     // (A button in the rat's panel with the focus: Space presses it.)
     if (ratPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.rat-panel')) return;
+    if (phonePanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.phone-panel')) return;
     e.preventDefault();
     if (itemsUI.panelOpen || socialOpen()) return;
     tools.held = true;

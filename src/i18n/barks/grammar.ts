@@ -33,7 +33,7 @@ const EN_PLACES: Partial<Record<ZoneId, PlaceWords>> = {
   janitor: { at: "in the janitor's closet", the: "the janitor's closet" },
   generator: { at: 'in the generator room', the: 'the generator room' },
   solitary: { at: 'in solitary', the: 'solitary' },
-  visitation: { at: 'in visitation', the: 'visitation' },
+  visitation: { at: 'in the visiting room', the: 'the visiting room' },
   guardQuarters: { at: 'in the guard quarters', the: 'the guard quarters' },
   controlRoom: { at: 'in the control room', the: 'the control room' },
   storeroom: { at: 'in the storeroom', the: 'the storeroom' },

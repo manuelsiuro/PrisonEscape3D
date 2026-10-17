@@ -122,6 +122,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'ratMail', group: 'life', icon: 'gift', run: (r) => f(r, 'ratLeft') >= 1 },
   { id: 'ratRace', group: 'life', icon: 'siren', run: (r) => f(r, 'ratPanics') >= 1 },
   { id: 'insideJob', group: 'skills', icon: 'key', run: (r) => f(r, 'keyHeists') >= 1 },
+  // Smuggling (P21).
+  { id: 'onTheLine', group: 'life', icon: 'phone', run: (r) => f(r, 'phones') >= 1 },
+  { id: 'dropZone', group: 'skills', icon: 'drone', run: (r) => f(r, 'drops') >= 1 },
+  { id: 'visitingHours', group: 'days', icon: 'users', run: (r) => f(r, 'smuggled') >= 1 },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
@@ -133,6 +137,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'returnToSender', group: 'mishaps', icon: 'box', hidden: true, run: (r) => f(r, 'stowFound') >= 1 },
   { id: 'nosyParker', group: 'mishaps', icon: 'paw', hidden: true, run: (r) => f(r, 'dogDug') >= 1 },
   { id: 'rudeAwakening', group: 'mishaps', icon: 'key', hidden: true, run: (r) => f(r, 'keyless') >= 1 },
+  { id: 'findersKeepers', group: 'mishaps', icon: 'drone', hidden: true, run: (r) => f(r, 'dropsSeized') + f(r, 'parcelsSeized') >= 1 },
   // Career.
   { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },

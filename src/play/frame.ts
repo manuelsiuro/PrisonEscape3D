@@ -25,6 +25,7 @@ import { dayMinute, eventOn, fogNow, sightOf, today, weatherNow } from '../sim/s
 import { searchMinute } from '../sim/systems/delivery';
 import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
+import { smuggleFrame } from './smuggle';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
@@ -155,6 +156,7 @@ const frameData: Frame = {
   dogs: [],
   scent: scentFrame,
   rats: [],
+  smuggle: null,
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -442,6 +444,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.takeover = st.takeover;
   frameA = a;
   dayFrame(sim, f);
+  // Smuggling (P21): the drone, the drops, visiting day.
+  f.smuggle = smuggleFrame(sim, a);
   return f;
 }
 

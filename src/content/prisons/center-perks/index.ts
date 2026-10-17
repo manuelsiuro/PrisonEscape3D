@@ -317,4 +317,8 @@ export const CENTER_PERKS: PrisonDef = {
       { x: 31, z: 49.5 },
     ],
   },
+  // Smuggling (P21): Lefty sells burner phones; the drone comes over the courtyard in the evening
+  // (21:00–22:00, free time: the yard is open to everyone then); visitors sit across the
+  // visitation room's counters.
+  smuggling: { fixer: 6, drop: [25, 25, 36, 34], droneHours: [780, 840], visits: [24, 38, 37, 44] },
 };

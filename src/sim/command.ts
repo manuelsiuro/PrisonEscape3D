@@ -50,10 +50,12 @@ export const EXT = {
   RAT_FETCH: 2,
   RAT_LEAVE: 3,
   RAT_LOOSE: 4,
+  /** Smuggling (P21): an order on the burner phone in hand (b = its place in the catalogue, c = the way it comes: WAY). */
+  ORDER: 5,
 } as const;
 
-/** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a bribe: BRIBE). Never renumber. */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9 } as const;
+/** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a bribe: BRIBE; P21's PHONE: a burner phone from the fixer). Never renumber. */
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10 } as const;
 
 /** What a bribe to a guard buys (P15, TALK.BRIBE's b): looking the other way, the paperwork lost. Never renumber. */
 export const BRIBE = { LOOK: 1, PAPER: 2 } as const;

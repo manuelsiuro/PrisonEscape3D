@@ -16,6 +16,7 @@ import { PLAYER } from '../talk/fill';
 import { banner, itemsUI, lightningVeil, paBoard, profile, settings, socialOpen, sound, stowPanel, view } from './context';
 import { play, type Game } from './game';
 import { seenTip } from './tips';
+import { visitPlaceAt } from './smuggle';
 
 /**
  * The day in play (P17): the warden's speakers (the morning card at 08:00, warnings fifteen
@@ -26,8 +27,8 @@ import { seenTip } from './tips';
  * warden says is what happens.
  */
 
-export const EVENT_ICON: Record<DayEvent, string> = { none: 'calendar', inspection: 'clipboard', drill: 'siren', feast: 'utensils', maintenance: 'wrench', movie: 'film', foodFight: 'splash', delivery: 'truck' };
-export const EVENT_COLOR: Record<DayEvent, string> = { none: '#8aa0b8', inspection: '#5fa8e8', drill: '#ff7a1a', feast: '#e2a21b', maintenance: '#f0b429', movie: '#a77bff', foodFight: '#ff5f6d', delivery: '#3fc79a' };
+export const EVENT_ICON: Record<DayEvent, string> = { none: 'calendar', inspection: 'clipboard', drill: 'siren', feast: 'utensils', maintenance: 'wrench', movie: 'film', foodFight: 'splash', delivery: 'truck', visiting: 'users' };
+export const EVENT_COLOR: Record<DayEvent, string> = { none: '#8aa0b8', inspection: '#5fa8e8', drill: '#ff7a1a', feast: '#e2a21b', maintenance: '#f0b429', movie: '#a77bff', foodFight: '#ff5f6d', delivery: '#3fc79a', visiting: '#ff9ec7' };
 /** An event's icon here (P18: Irongate's delivery comes by helicopter). */
 export const eventIcon = (sim: Sim, e: DayEvent) => (e === 'delivery' && sim.prison.delivery?.vehicle === 'helicopter' ? 'heli' : EVENT_ICON[e]);
 
@@ -44,7 +45,7 @@ type WeatherName = Weather | 'snow' | 'blizzard';
 const WX_ICON: Record<WeatherName, string> = { clear: 'sun', snow: 'snow', fog: 'fog', rain: 'rain', storm: 'storm', blizzard: 'storm', heatwave: 'heat' };
 const WX_COLOR: Record<WeatherName, string> = { clear: '#ffd76a', snow: '#e6f3ff', fog: '#cfd8e2', rain: '#8cc8ff', storm: '#b8a8ff', blizzard: '#cfe6ff', heatwave: '#ffb35a' };
 /** Events the warden warns of fifteen minutes ahead (the drill is a surprise; a food fight just happens). */
-const WARNED: ReadonlySet<DayEvent> = new Set(['inspection', 'feast', 'maintenance', 'movie', 'delivery']);
+const WARNED: ReadonlySet<DayEvent> = new Set(['inspection', 'feast', 'maintenance', 'movie', 'delivery', 'visiting']);
 const WARN_AHEAD = 15;
 /** 22:00: tomorrow's forecast; 14:30: a quip on a quiet afternoon (minutes into the prison day). */
 const FORECAST_AT = 14 * 60;
@@ -99,6 +100,8 @@ export function dayRows(sim: Sim, p: DayPlan, forecast = false, inFile = false):
         return t('day.eventD.feast', { n: FEAST_ENERGY });
       case 'maintenance':
         return t('day.eventD.maintenance', { from: dayTime(p.at), to: dayTime(p.until) });
+      case 'visiting':
+        return t('day.eventD.visiting', { place: visitPlaceAt(sim) });
       case 'delivery':
         return t('day.eventD.delivery', { guard: supervisorOf(sim), search: dayTime(searchMinute(p)), leave: dayTime(p.until) });
       default:
@@ -338,6 +341,16 @@ view.onDelivery = (kind, x, z) => {
   if (kind === 'beep') sound.reverseBeep(k);
   else if (kind === 'engine') sound.engine(k);
   else sound.tailgate(k);
+};
+
+/** The drone overhead (P21): its buzz, quieter the further off. */
+view.onDrone = (x, z) => {
+  const g = play.game;
+  if (!g) return;
+  const p = g.rec.sim.state.player;
+  const d = Math.hypot(x - p.x / UNIT, z - p.z / UNIT);
+  const k = Math.max(0, 1 - d / 26);
+  if (k > 0) sound.droneBuzz(k);
 };
 
 /** Food landing in a food fight: a splat, quieter the further from the player (a few a second at most). */

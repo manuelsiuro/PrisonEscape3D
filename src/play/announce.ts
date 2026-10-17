@@ -1,5 +1,6 @@
 import { buzz } from '../app/haptics';
 import { announceRat } from './rat';
+import { announceSmuggle } from './smuggle';
 import { itemDef, itemNumber } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
@@ -18,7 +19,7 @@ import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
 import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
-import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, settings, sleepVeil, sound, tools, view } from './context';
+import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
 import { dogName, NEED } from './labels';
 import { dogDef, outOfBounds } from '../sim/systems/k9';
@@ -167,6 +168,7 @@ export function announce(e: SimEvent, sim: Sim) {
       seenInteract();
       itemsUI.closeCraft();
       ratPanel.close();
+      phonePanel.close();
       sound.drawer();
       if (ownerOf(sim.world, e.container) < 0 && !seenTip('items')) {
         markTip('items');
@@ -477,6 +479,7 @@ export function announce(e: SimEvent, sim: Sim) {
       itemsUI.closePanels();
       profile.close();
       ratPanel.close();
+      phonePanel.close();
       board.show();
       break;
     case 'train':
@@ -527,6 +530,7 @@ export function announce(e: SimEvent, sim: Sim) {
         board.close();
         profile.close();
         ratPanel.close();
+        phonePanel.close();
         // A guard (P15): what talking to one is for.
         coachOnce(e.who >= sim.state.inmates.length ? 'guardTalk' : 'talk', e.who >= sim.state.inmates.length ? 'hint.guardTalk' : 'hint.talk');
       }
@@ -700,6 +704,9 @@ export function announce(e: SimEvent, sim: Sim) {
     }
     case 'rat':
       announceRat(sim, e);
+      break;
+    case 'smuggle':
+      announceSmuggle(sim, e);
       break;
     case 'washed':
       sound.scrub();

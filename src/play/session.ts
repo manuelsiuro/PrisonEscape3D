@@ -1,5 +1,6 @@
 import { buzz } from '../app/haptics';
 import { resetRat } from './rat';
+import { resetSmuggle } from './smuggle';
 import { itemNumber, KEY_ITEM_COLORS } from '../content/items';
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordEscape } from '../game/records';
@@ -35,7 +36,7 @@ import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
 import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
-import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
+import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
 import { play, type Game } from './game';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
 import { hideLesson, type LessonRun } from './lesson';
@@ -129,6 +130,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   combatUI.show(true);
   resetButtons();
   resetRat();
+  resetSmuggle();
   // No aim carried over from another game (P14).
   cancelThrow();
   play.acc = 0;
@@ -281,6 +283,7 @@ export function endGame() {
   board.close();
   profile.close();
   ratPanel.close();
+  phonePanel.close();
   trainCard.hide();
   workChips.hide();
   document.body.classList.remove('is-playing', 'panel-open', 'items-open', 'training');

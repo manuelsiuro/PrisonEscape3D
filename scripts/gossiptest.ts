@@ -41,6 +41,7 @@ import { RAT_ROOMS, trapChance } from '../src/sim/systems/rats';
 import { floorOf } from '../src/sim/ai/places';
 import { TRAP_KITCHEN, TRAP_MINUTE, TRAP_TUNNEL } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
+import { fixerOf, visitExits } from '../src/sim/systems/smuggling';
 import { Bot, n } from './bots';
 import { check } from './assert';
 
@@ -80,7 +81,19 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'nextDrill':
     case 'nextFoodFight':
     case 'nextDelivery':
-      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery' } as const)[f.kind];
+    case 'nextVisiting':
+      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery', nextVisiting: 'visiting' } as const)[f.kind];
+    // Smuggling (P21): the fixer is the one the rules sell phones from; the drone drops and the arches stand where it's said (smuggletest proves the rules).
+    case 'fixer':
+      return f.inmate === fixerOf(sim) && sim.prison.merchants.includes(s.inmates[f.inmate!].cell);
+    case 'droneDrop': {
+      const r = sim.prison.smuggling?.drop;
+      return !!r && sim.world.zoneAt((r[0] + r[2]) >> 1, (r[1] + r[3]) >> 1) === f.place;
+    }
+    case 'visitArches': {
+      const r = sim.prison.smuggling?.visits;
+      return !!r && visitExits(sim.world).size > 0 && sim.world.zoneAt((r[0] + r[2]) >> 1, (r[1] + r[3]) >> 1) === f.place;
+    }
     // Delivery day (P18): the search still to come, as thorough as said, by its supervisor.
     case 'searchClose':
     case 'searchQuick': {

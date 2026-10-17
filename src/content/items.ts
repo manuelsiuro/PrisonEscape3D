@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer';
 
 export interface ItemDef {
   id: string;
@@ -38,6 +38,8 @@ export interface ItemDef {
   thud?: number;
   /** Small enough for a rat to carry (P20). */
   small?: boolean;
+  /** Plain to see in hand (P21, the burner phone): a guard who sees it there reacts as to a contraband tool or weapon. */
+  obvious?: boolean;
 }
 
 const m = (id: string, contraband: boolean, value: number, shape: string, color: number, from: Source[], accent?: number): ItemDef => ({
@@ -221,6 +223,8 @@ export const ITEMS: readonly ItemDef[] = [
   // P20 (the pet rat): a trap left on the floor overnight, and a rat caught in it (fed twice, it's yours).
   m('rat_trap', false, 6, 'trap', 0xf4f4ef, [], 0xb8925a),
   m('caught_rat', true, 10, 'caughtRat', 0xf4f4ef, ['trap'], 0x8a7f78),
+  // P21 (smuggling): the fixer's burner phone, for ordering from outside (plain to see in hand).
+  { ...m('burner_phone', true, 60, 'phone', 0x2b3038, ['fixer'], 0x5fd3a0), obvious: true },
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
@@ -231,7 +235,7 @@ for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud =
 /** What a rat can carry in its teeth (P20): keys, molds and odds and ends; nothing long, heavy or bulky. */
 const SMALL = [
   'plastic_comb', 'toothbrush', 'lighter', 'toilet_paper', 'glue', 'duct_tape', 'metal_file', 'sock', 'soap', 'battery', 'wire', 'razor_blade', 'ink', 'foil', 'talcum', 'toothpaste', 'putty', 'molten_plastic',
-  'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky',
+  'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky', 'burner_phone',
   ...KEY_ITEM_COLORS.flatMap(([c]) => [`key_${c}`, `mold_${c}`, `plastic_key_${c}`]),
 ];
 for (const d of ITEMS) if (SMALL.includes(d.id)) d.small = true;

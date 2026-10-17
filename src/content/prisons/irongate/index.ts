@@ -423,4 +423,7 @@ export const IRONGATE: PrisonDef = {
   // The roofs south of the yard: a grapnel swings across the chasm onto them from the north block's.
   landings: [[7, 27, 52, 51]],
   drawbridge: [30, 56, 31, 58],
+  // Smuggling (P21): Rook sells burner phones; the drone drops at the yard's east end; visitors
+  // (off the ferry) sit in the canteen.
+  smuggling: { fixer: 13, drop: [36, 22, 50, 26], visits: [14, 27, 24, 38] },
 };

@@ -19,6 +19,8 @@ import { spawnDogs, type Dog } from './systems/k9';
 import type { Rat, RatRefusal } from './systems/rats';
 import { dayPlan, type ForcedDay } from './systems/calendar';
 import { DAY_BOOKS, DAY_EVENTS, type DayEvent } from '../content/days';
+import { CATALOGUE } from '../content/smuggling';
+import { ITEMS } from '../content/items';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
@@ -112,7 +114,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -198,7 +200,19 @@ export type SimEvent =
    */
   | { type: 'rat'; what: RatNews; item?: number; cash?: number; who?: number; container?: number; n?: number; at?: number; why?: RatRefusal; wild?: boolean; heist?: boolean; floor?: boolean }
   | { type: 'keyless'; guard: number }
+  /**
+   * Smuggling (P21, smuggling.ts): an order placed on the phone (`item`, `way`); the drone turned
+   * back by the sirens (it comes the next night); dropped on a ground `tile`, seized there by a
+   * guard (`guard`), picked up by the player; a visit (`cash` the visitor's gift, `item` slipped
+   * across, 0 none), a visitor who couldn't hand it over (no room: `item` kept for next time); a
+   * Red Cross parcel put in the player's desk, or seized in the vehicle's search, or waiting for
+   * room in the desk.
+   */
+  | { type: 'smuggle'; what: SmuggleNews; item?: number; way?: number; tile?: number; guard?: number; cash?: number }
   | ItemEvent;
+
+/** What smuggling did (P21, the 'smuggle' event). */
+export type SmuggleNews = 'ordered' | 'turnedBack' | 'dropped' | 'seized' | 'collected' | 'visit' | 'noRoom' | 'parcel' | 'parcelSeized' | 'deskFull';
 
 /** What a rat did (P20, the 'rat' event). */
 export type RatNews = 'caught' | 'fed' | 'tamed' | 'hungry' | 'haveOne' | 'sent' | 'took' | 'left' | 'empty' | 'full' | 'woke' | 'home' | 'chased' | 'loose' | 'calm' | 'gone' | 'refused';
@@ -210,7 +224,7 @@ export type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | '
 export type BribeKind = 'look' | 'paper' | 'over';
 
 /** What made a noise (P14). */
-export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark' | 'squeak';
+export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark' | 'squeak' | 'buzz';
 /** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
 export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 
@@ -218,7 +232,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -383,6 +397,12 @@ export interface SimState {
   scent: Array<[number, number, number?]>;
   /** The rats (P20, rats.ts): the player's pet once tamed, and any caught one thrown loose. */
   rats: Rat[];
+  /** An order on its way (P21, smuggling.ts): [its place in the CATALOGUE, the WAY it comes, the first prison day it may come]; [] none. */
+  order: number[];
+  /** What the drone dropped that still lies where it fell (P21): [its ground tile's placeKey, the item, the step it fell]. */
+  drops: Array<[number, number, number]>;
+  /** Steps seated at a visiting seat in visiting hours (P21): the visitor comes at VISIT_STEPS. */
+  visit: number;
 }
 
 export interface Snapshot {
@@ -491,6 +511,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     dogs: spawnDogs(world),
     scent: [],
     rats: [],
+    order: [],
+    drops: [],
+    visit: 0,
   };
 }
 
@@ -550,6 +573,16 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (An errand to a container this prison no longer has, after a map edit: it gives it up and comes back.)
   // (RAT.OUT is 1, RAT.WAIT 4: an errand to nowhere waits instead.)
   for (const r of s.rats) if (r.target >= s.items.containers.length || (r.mode === 1 && r.target < 0)) Object.assign(r, { target: -1, mode: 4, path: [], at: 0 });
+  // Smuggling (P21): a save from before it keeps the card visiting day took the place of, on the day it's loaded and the next (as delivery day did, P18).
+  if (st.order === undefined) {
+    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeVisits ?? 'none');
+    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) if (dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
+  }
+  const ints = (v: unknown, n: number) => Array.isArray(v) && v.length === n && v.every((x) => Number.isInteger(x));
+  // (A damaged one: an order for nothing in the catalogue, a way that doesn't exist, a drop of no item.)
+  if (!(Array.isArray(s.order) && (s.order.length === 0 || (ints(s.order, 3) && s.order[0] >= 0 && s.order[0] < CATALOGUE.length && (s.order[1] === 0 || s.order[1] === 1))))) s.order = [];
+  if (!Array.isArray(s.drops) || !s.drops.every((d) => ints(d, 3) && d[1] >= 1 && d[1] <= ITEMS.length)) s.drops = [];
+  if (!Number.isInteger(s.visit)) s.visit = 0;
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

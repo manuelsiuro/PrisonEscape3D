@@ -7,7 +7,8 @@
  * A save carries its log next to it (copied on save, so a game loaded and played two ways
  * makes two logs, each whole).
  */
-import { quietCalendar } from './systems/calendar';
+import { planOf, prisonDay, quietCalendar } from './systems/calendar';
+import { DAY_BOOKS, DAY_EVENTS } from '../content/days';
 import { fnv1a } from './rng';
 import { Sim, type Snapshot } from './Sim';
 import { STEPS_PER_MINUTE } from './tuning';
@@ -142,8 +143,8 @@ export class RunRecorder {
     else {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
-      // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm.)
-      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '');
+      // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm; nor one from before visiting day, P21: the week's cards changed.)
+      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -239,6 +240,14 @@ export function beforeRats(game: string): boolean {
   return a < 1 || (a === 1 && b < 14);
 }
 
+/** Whether a game version came before visiting day (1.15.0): the card it took the place of was dealt then. */
+export function beforeVisits(game: string): boolean {
+  const m = /^(\d+)\.(\d+)\./.exec(game);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a < 1 || (a === 1 && b < 15);
+}
+
 /** Plays a log back from its start, checking the hourly sums (stops at the first that doesn't match). */
 export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (prison.id !== log.prison) return null;
@@ -255,6 +264,12 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (beforeDogs(log.game)) sim.noDogs = true;
   // Played before the rats (P20): a guard waking without his key went unnoticed.
   if (beforeRats(log.game)) sim.noRats = true;
+  // Played before visiting day (P21): every day it would deal now dealt the card it took the place of.
+  if (beforeVisits(log.game) && !beforeDays(log.game)) {
+    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeVisits ?? 'none');
+    const s = sim.state;
+    for (let day = prisonDay(log.from); day <= prisonDay(log.from + log.steps); day++) if (planOf(sim, day).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
+  }
   if (sim.state.step !== log.from) return null;
   const sums = new Map(log.sums);
   let verified = log.from;

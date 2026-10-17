@@ -38,6 +38,7 @@ import { rep, startTraining, stopTraining, study } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
+import { placeOrder } from './smuggling';
 import { energyCost } from './weather';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
@@ -178,6 +179,8 @@ export function useItems(sim: SimContext, cmd: number) {
       // The pet rat (P20): sent on an errand (the container in b and c), let loose.
       else if (a === EXT.RAT_FETCH || a === EXT.RAT_LEAVE) sendRat(sim, tossTile(argB(cmd), argC(cmd)), a === EXT.RAT_LEAVE);
       else if (a === EXT.RAT_LOOSE) looseRat(sim);
+      // Smuggling (P21): an order on the burner phone in hand.
+      else if (a === EXT.ORDER) placeOrder(sim, argB(cmd), argC(cmd));
       break;
   }
   if (it.open >= 0 && !stillInReach(sim.world, it, s.player, people(sim))) {

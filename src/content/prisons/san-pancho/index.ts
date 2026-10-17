@@ -369,4 +369,7 @@ export const SAN_PANCHO: PrisonDef = {
       { x: 32, z: 58.5 },
     ],
   },
+  // Smuggling (P21): Primo sells burner phones; the drone drops on the plaza's south end;
+  // visitors sit in the canteen.
+  smuggling: { fixer: 9, drop: [28, 32, 35, 42], visits: [17, 32, 26, 40] },
 };

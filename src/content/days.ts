@@ -6,8 +6,8 @@
  * src/sim/systems/calendar.ts; a prison without a row (the Training Block) is always quiet.
  */
 
-/** The day's event. Stored as numbers: append only, never renumber (P21's visiting day and P22's sports day come next). */
-export const DAY_EVENTS = ['none', 'inspection', 'drill', 'feast', 'maintenance', 'movie', 'foodFight', 'delivery'] as const;
+/** The day's event. Stored as numbers: append only, never renumber (P22's sports day comes next). */
+export const DAY_EVENTS = ['none', 'inspection', 'drill', 'feast', 'maintenance', 'movie', 'foodFight', 'delivery', 'visiting'] as const;
 export type DayEvent = (typeof DAY_EVENTS)[number];
 
 /** The weather. Stored as numbers: append only. In the snow (Stalag Flucht) the storm is a blizzard. */
@@ -33,15 +33,18 @@ export interface DayBook {
    * it's loaded.
    */
   before?: DayEvent;
+  /** The card visiting day (P21) took the place of, likewise (a game saved before P21 keeps it on the day it's loaded, and the next). */
+  beforeVisits?: DayEvent;
 }
 
 /** prison → its days. */
 export const DAY_BOOKS: Record<string, DayBook> = {
-  // Suburban and mild: a bit of everything, rarely too hot.
+  // Suburban and mild: a bit of everything, rarely too hot; families visit once a week.
   'center-perks': {
-    deck: ['none', 'delivery', 'inspection', 'feast', 'movie', 'drill', 'maintenance'],
+    deck: ['none', 'delivery', 'inspection', 'visiting', 'movie', 'drill', 'maintenance'],
     climate: { weights: [45, 15, 25, 10, 5], keep: 35, wind: 6 },
     before: 'none',
+    beforeVisits: 'feast',
   },
   // The Alps: clear (snowing), fog in the valleys, blizzards; never rain, never a heatwave.
   // (The Red Cross truck comes once a week.)
@@ -50,23 +53,26 @@ export const DAY_BOOKS: Record<string, DayBook> = {
     climate: { weights: [50, 30, 0, 20, 0], keep: 40, wind: 0 },
     before: 'drill',
   },
-  // Industrial and grey: rain and smog, scuffles at meals.
+  // Industrial and grey: rain and smog, scuffles at meals; visiting day once a week, in the canteen.
   shankton: {
-    deck: ['none', 'inspection', 'foodFight', 'drill', 'maintenance', 'movie', 'none'],
+    deck: ['none', 'inspection', 'foodFight', 'drill', 'maintenance', 'movie', 'visiting'],
     climate: { weights: [35, 20, 30, 15, 0], keep: 35, wind: 5 },
+    beforeVisits: 'none',
   },
   // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about; the produce truck once a week.
   'san-pancho': {
-    deck: ['none', 'foodFight', 'delivery', 'feast', 'movie', 'inspection', 'drill'],
+    deck: ['none', 'foodFight', 'delivery', 'feast', 'visiting', 'inspection', 'drill'],
     climate: { weights: [45, 5, 0, 15, 35], keep: 40, wind: 2 },
     before: 'foodFight',
+    beforeVisits: 'movie',
   },
   // The island: sea fog and squalls, and inspectors on the ferry.
-  // (The supply helicopter by day once a week.)
+  // (The supply helicopter by day once a week; families come over on the ferry once a week.)
   irongate: {
-    deck: ['none', 'inspection', 'delivery', 'drill', 'maintenance', 'movie', 'foodFight'],
+    deck: ['none', 'inspection', 'delivery', 'drill', 'maintenance', 'visiting', 'foodFight'],
     climate: { weights: [35, 30, 20, 15, 0], keep: 35, wind: 7 },
     before: 'inspection',
+    beforeVisits: 'movie',
   },
 };
 
@@ -90,6 +96,8 @@ export const EVENT_TIMES: Record<Exclude<DayEvent, 'none'>, { at: number | Reado
   foodFight: { at: [[65, 100], [545, 580]], length: 15 },
   // 12:30–14:31: the vehicle in (its search at 14:30, away at 14:31).
   delivery: { at: 270, length: 121 },
+  // 10:00–12:00: visiting hours (P21).
+  visiting: { at: 120, length: 120 },
 };
 
 /** The fire drill: minutes after the bell by which the player must be at roll call, and what missing it costs. */

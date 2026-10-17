@@ -4,7 +4,7 @@ import type { SimEvent } from '../sim/Sim';
 import { LESSONS, type LessonCtx } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
 import { LessonCard, showLessonResult, type LessonResult } from '../ui/lessonCard';
-import { board, click, controls, hud, itemsUI, profile, ratPanel, socialOpen, sound, talk, tools } from './context';
+import { board, click, controls, hud, itemsUI, profile, ratPanel, phonePanel, socialOpen, sound, talk, tools } from './context';
 import { play, type Game } from './game';
 
 /**
@@ -100,6 +100,7 @@ async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
   board.close();
   profile.close();
   ratPanel.close();
+  phonePanel.close();
   card.hide();
   if (won) markLessonDone(LESSONS[run.index].id);
   sound.music('title');

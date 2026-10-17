@@ -101,6 +101,24 @@ export interface DeliveryDef {
 }
 
 /**
+ * Smuggling (P21): who sells burner phones, where the fixer's drone drops what's ordered (and
+ * when), and where visitors sit on visiting day. All of it data: the drone, the visitors and
+ * the arches at the visiting room's doors are drawn.
+ */
+export interface SmugglingDef {
+  /** The fixer: the inmate (by cell) who sells burner phones, during the merchants' hours. */
+  fixer: number;
+  /** Where the drone drops an order: open ground (it drifts downwind of the middle, and lands inside). */
+  drop: Rect;
+  /** When it comes (minutes into the prison day, from 08:00): DRONE_HOURS unless set. */
+  droneHours?: readonly [number, number];
+  /** The room where visitors sit, across a counter or a table, on visiting day; its ways out are scanned as detector arches while visiting hours last. */
+  visits?: Rect;
+  /** No visits (Stalag Flucht): what a visitor would bring comes in a Red Cross parcel on delivery day. */
+  parcel?: boolean;
+}
+
+/**
  * How a prison bends the common rules (P8+; each default is Center Perks'). New prisons add
  * what they need here rather than in code: San Pancho's snipers by night too, the tutorial's
  * forgiving routine.
@@ -174,4 +192,6 @@ export interface PrisonDef {
   drawbridge?: Rect;
   /** Its delivery day's vehicle (P18); without one, no delivery (the deck has no such card). */
   delivery?: DeliveryDef;
+  /** Smuggling (P21): the fixer, the drone's drop, the visiting room; without it, none. */
+  smuggling?: SmugglingDef;
 }

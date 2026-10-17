@@ -105,6 +105,13 @@ const SHAPES: Record<string, Shape> = {
   shaker: (c, a) => [cyl(0.06, 0.16, c, 0, 0, 0, 14), cyl(0.065, 0.05, a, 0, 0.16, 0, 14), cyl(0.04, 0.02, a, 0, 0.21, 0, 10)],
   /** A pill bottle (P19) on its side, with its cap and label. */
   pills: (c, a) => [rod(0.07, 0.2, c, 0, 0.07, 0, 14), rod(0.075, 0.06, a, 0.12, 0.07, 0, 14), rod(0.072, 0.09, 0xf4f4ef, -0.02, 0.07, 0, 14)],
+  /** A burner phone (P21): a chunky handset lying face up, its screen lit (the accent), a keypad below, a stub of aerial. */
+  phone: (c, a) => [
+    box(0.13, 0.04, 0.26, c, 0, 0, 0),
+    box(0.1, 0.006, 0.09, a, 0, 0.04, -0.055),
+    ...[-1, 0, 1].flatMap((x) => [0.04, 0.075].map((z) => box(0.025, 0.006, 0.02, 0x8a929e, x * 0.035, 0.04, z))),
+    box(0.03, 0.03, 0.05, 0x1b1e24, 0.045, 0.01, -0.15),
+  ],
   /** A rat trap (P20): a cup tipped mouth down over the bait, its raised rim propped on a matchstick, on a scrap of board. */
   trap: (c, a) => {
     const r = 0.085;

@@ -15,6 +15,8 @@ import { currentLang, t, type Key } from '../i18n';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { itemName } from './items';
+import { fixerOf, PHONE } from '../sim/systems/smuggling';
+import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
 
 type Send = (op: number, a?: number, b?: number) => void;
 
@@ -40,7 +42,7 @@ export function favorText(sim: Sim, f: { kind: number; item: number; target: num
  * Costly taps ask twice (a gift, quitting a job, swapping one): the first arms the button
  * (it shows its question), the second within a few seconds does it. Returns whether to go ahead.
  */
-function confirmed(b: HTMLElement): boolean {
+export function confirmed(b: HTMLElement): boolean {
   if (!b.dataset.confirm || b.classList.contains('armed')) return true;
   b.closest('.item-panel')?.querySelectorAll('.armed').forEach((o) => o.classList.remove('armed'));
   b.classList.add('armed');
@@ -108,7 +110,10 @@ export class TalkPanel {
     const shop = merchant >= 0 ? s.shops[merchant] : null;
     const favor = s.favors.find((f) => f.by === who);
     const inv = s.items.inv.slice(0, HOTBAR);
-    const key = [who, m.opinion, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    // The fixer (P21): a burner phone, to a friend.
+    const fixer = fixerOf(sim) === who;
+    const hasPhone = inv.some((v) => itemOf(v) === PHONE);
+    const key = [who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -120,6 +125,7 @@ export class TalkPanel {
     const job = s.jobs.indexOf(who);
     const chips = [
       merchant >= 0 ? `<span class="chip shop">${icon('cart', 13)}${t('role.merchant')}</span>` : '',
+      fixer ? `<span class="chip fixer">${icon('phone', 13)}${t('role.fixer')}</span>` : '',
       job >= 0 ? `<span class="chip">${icon('briefcase', 13)}${esc(t(`job.${sim.prison.jobs[job].id}` as Key))}</span>` : '',
       following ? `<span class="chip ally">${icon('star', 13)}${t('role.follower')}</span>` : '',
     ].join('');
@@ -158,6 +164,16 @@ export class TalkPanel {
       shopHtml = `<section class="talk-shop"><div class="box-label">${icon('cart', 14)}<span>${t('talk.shop')}</span>${off > 0 && !grudge ? `<em class="discount">${t('talk.discount', { n: off })}</em>` : ''}</div>
         ${items ? `<div class="shop-list">${items}</div>` : ''}${note ? `<p class="talk-note">${note}</p>` : ''}</section>`;
     }
+    // The fixer's burner phone (P21): in the merchants' hours, to a friend, one at a time.
+    let phoneHtml = '';
+    if (fixer) {
+      const closed = !sim.shopsOpen;
+      const friend = m.opinion >= PHONE_OPINION;
+      const ok = !closed && friend && !hasPhone;
+      const note = hasPhone ? t('phone.haveOne') : closed ? t('phone.closed') : !friend ? t('phone.needOpinion', { n: PHONE_OPINION }) : s.cash < PHONE_PRICE ? t('phone.needCash', { n: PHONE_PRICE }) : t('phone.offer');
+      phoneHtml = `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.fixerTitle')}</span></div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('item.burner_phone')}</b><small>${esc(note)}</small></span><button class="big-btn ${ok && s.cash >= PHONE_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.PHONE}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirmBuy', { n: PHONE_PRICE }))}" aria-label="${esc(t('talk.buy', { item: t('item.burner_phone'), price: PHONE_PRICE }))}"><img class="btn-item" src="${itemIcons()[PHONE]}" alt="" draggable="false"><span>$${PHONE_PRICE}</span></button></div></section>`;
+    }
     // Gifts: anything worth something from the hotbar, or a little cash.
     const gifts = inv
       .map((v, k) => {
@@ -186,7 +202,7 @@ export class TalkPanel {
     }
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${shopHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${phoneHtml}${shopHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));

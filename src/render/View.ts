@@ -36,6 +36,7 @@ import { LAYER } from '../sim/world/World';
 import type { NoiseKind } from '../sim/state';
 import { Dogs, type DogFrame } from './Dog';
 import { Rats, type RatFrame } from './Rat';
+import { SmuggleView, type SmuggleFrame } from './Smuggling';
 import { handlersOf } from '../sim/systems/k9';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
@@ -111,6 +112,8 @@ export interface Frame {
   scent: ReadonlyArray<readonly [number, number]>;
   /** The rats (P20): the pet and any thrown loose, interpolated. */
   rats: RatFrame[];
+  /** Smuggling (P21): the drone, what it dropped, visiting day's arches and visitors (null where there's none). */
+  smuggle: SmuggleFrame | null;
 }
 
 const NO_FUSES: readonly number[] = [];
@@ -295,6 +298,11 @@ export class View {
   private readonly dogs = new Dogs();
   /** The rats (P20), and where the player's shoulder is this frame. */
   private readonly rats = new Rats();
+  /** Smuggling (P21): the drone, the drops' beacons, visiting day. */
+  private readonly smuggling = new SmuggleView();
+  private buzzClock = 0;
+  /** The drone overhead (P21): its buzz, every so often while it's about (the play layer plays it, louder the nearer). */
+  onDrone: (x: number, z: number) => void = () => {};
   private readonly shoulderAt = new THREE.Vector3();
   private readonly noSleepers: number[] = [];
   /** The weather's light this frame (the title has none), and a lightning flash easing away. */
@@ -401,7 +409,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -489,6 +497,7 @@ export class View {
     }
     this.scene.add(this.security.group);
     this.worldView = new WorldView(world);
+    this.smuggling.setLampMaterial(this.worldView.archLight);
     this.structure = new Structure(world, this.worldView);
     this.underground = new Underground(world);
     this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs, this.underground.group, this.underground.lantern);
@@ -1053,6 +1062,15 @@ export class View {
     // (Hands busy, it ducks into a pocket a moment: never an arm through it.)
     const perch = this.player.perched && this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.player.armsBusy ? this.player.shoulder(this.shoulderAt) : null;
     this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    // Smuggling (P21): the drone is in the sky (seen from the ground floor and the roofs), the rest on the ground floor.
+    this.smuggling.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
+    this.smuggling.update(f.smuggle, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND);
+    // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
+    const drone = this.smuggling.group.visible ? this.smuggling.droneAt : null;
+    if (drone && (this.buzzClock -= dt) <= 0) {
+      this.buzzClock = 1.3;
+      this.onDrone(drone.x, drone.z);
+    } else if (!drone) this.buzzClock = 0;
     this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion, this.noiseFx.landing);
     this.guide.setPath(f.guide);
@@ -1157,6 +1175,7 @@ export class View {
     // Nothing of a game's noise behind the title (a lit firecracker, an aim, a wave).
     this.noiseFx.group.visible = false;
     this.rats.group.visible = false;
+    this.smuggling.clear();
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;

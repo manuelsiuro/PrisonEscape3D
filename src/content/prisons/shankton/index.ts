@@ -349,4 +349,7 @@ export const SHANKTON: PrisonDef = {
   ],
   // The gates no key opens (a takeover does): the shell's, and the gatehouse's either side.
   gates: [51, 52].flatMap((x) => [55, 58, 62].map((z) => ({ x, z }))),
+  // Smuggling (P21): Deacon sells burner phones; the drone drops on the roll call square in the
+  // yard inside the shell; visitors sit in the canteen.
+  smuggling: { fixer: 6, drop: [25, 30, 38, 34], visits: [24, 9, 39, 22] },
 };

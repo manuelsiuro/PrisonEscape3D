@@ -39,6 +39,8 @@ export interface HudState {
   dog: 'nose' | 'track' | null;
   /** The pet rat (P20): its name, what it's doing ('' on the shoulder), out on an errand or loose, and the seconds left of a panic (null none) out of how many. */
   rat: { name: string; status: string; busy: boolean; left: number | null; of: number; usable: boolean } | null;
+  /** Smuggling (P21): an order on its way (its way's icon and when: a time today, else the day), a drop lying where it fell (`urgent`), the visitor coming (`done`: how far, 0–1); null none. */
+  order: { icon: string; text: string; sr: string; urgent: boolean; done: number | null } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -114,6 +116,7 @@ export class Hud {
         <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <button class="pill hud-alert hud-rat hidden" aria-keyshortcuts="T">${icon('rat', 15)}<span></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
+        <button class="pill hud-alert hud-order hidden" aria-keyshortcuts="P"><i class="hud-order-ic"></i><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -146,6 +149,8 @@ export class Hud {
     this.today = q('.hud-today');
     this.rat = q('.hud-rat');
     this.rat.addEventListener('click', () => this.onRat());
+    this.order = q('.hud-order');
+    this.order.addEventListener('click', () => this.onOrder());
     this.wx = q('.hud-wx');
     document.body.append(this.el);
   }
@@ -158,6 +163,10 @@ export class Hud {
   private readonly rat: HTMLElement;
   /** The rat pill tapped (P20): its panel. */
   onRat: () => void = () => {};
+  private readonly order: HTMLElement;
+  private orderIcon = '';
+  /** The order pill tapped (P21): the phone's panel. */
+  onOrder: () => void = () => {};
   private readonly wx: HTMLElement;
   private shownAlerts = '';
   private shownWx = '';
@@ -217,6 +226,24 @@ export class Hud {
     if (r.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, r.left / r.of)) * 100}%`;
     el.title = TOUCH ? t('hud.rat') : `${t('hud.rat')} (T)`;
     el.setAttribute('aria-label', `${r.name}${r.status ? `, ${r.status}` : ''}. ${t('hud.rat')}`);
+  }
+
+  /** Smuggling's pill (P21): the order's way and when, a drop lying (pulsing), the visitor's wait (a bar filling). Tapped, the phone's panel. */
+  private orderChip(o: HudState['order']) {
+    const el = this.order;
+    el.classList.toggle('hidden', !o);
+    if (!o) return;
+    el.classList.toggle('urgent', o.urgent);
+    if (o.icon !== this.orderIcon) {
+      this.orderIcon = o.icon;
+      el.querySelector('.hud-order-ic')!.innerHTML = icon(o.icon, 15);
+    }
+    setText(el.querySelector('b')!, o.text);
+    const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
+    bar.style.display = o.done === null ? 'none' : '';
+    if (o.done !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, o.done)) * 100}%`;
+    el.title = TOUCH ? t('hud.order') : `${t('hud.order')} (P)`;
+    el.setAttribute('aria-label', `${o.sr.replace(/\.\s*$/, '')}. ${t('hud.order')}`);
   }
 
   /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
@@ -299,7 +326,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
@@ -308,6 +335,7 @@ export class Hud {
       this.lookAway(s.bribe);
       this.dayChip(d);
       this.ratChip(s.rat);
+      this.orderChip(s.order);
     }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.

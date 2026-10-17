@@ -20,6 +20,7 @@ import { cameraSees, sniperOn } from './security';
 import { besideOnGround } from './structure';
 import { addHeat } from './watch';
 import { snipersBlind } from './calendar';
+import { visitArch } from './smuggling';
 
 /** Time passing on the devices: the power comes back on (the maintenance guard has the generator running again, GDD §5.5), a camera's tape comes off. */
 export function devices(sim: SimContext) {
@@ -149,12 +150,24 @@ export function scan(sim: SimContext) {
   const w = sim.world;
   const t = tileOfBody(s.player);
   const tile = t.z * MAP_W + t.x;
-  if (s.layer !== LAYER.GROUND || w.ground.kind[tile] !== TILE.DETECTOR) {
+  // (P21: on visiting day, the visiting room's ways out are arches too while visiting hours last.)
+  if (s.layer !== LAYER.GROUND || (w.ground.kind[tile] !== TILE.DETECTOR && !visitArch(sim, tile))) {
     s.scanned = false;
     return;
   }
   if (s.scanned) return;
   s.scanned = true;
+  frisk(sim, tile);
+}
+
+/**
+ * A pass through an arch (or P21's frisk on the way out of the visiting room at the end of
+ * visiting hours), the power on: contraband carried trips it, unless a pouch hides it (a use
+ * of the pouch spent).
+ */
+export function frisk(sim: SimContext, tile: number) {
+  const s = sim.state;
+  const w = sim.world;
   if (!powered(w, s, 'detectors')) return;
   const it = s.items;
   let carried = false;

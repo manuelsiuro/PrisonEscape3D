@@ -62,6 +62,14 @@ export function describeTreat(dog: string, tile: number, pepper: boolean, fed: b
   return tossView;
 }
 
+/** The burner phone in hand (P21): the button opens its panel ("Call · the fixer's people"). */
+const callView: ToolView = { verb: '', what: '', icon: 'phone', fits: true, progress: null, repeat: false, call: true };
+export function describeCall(): ToolView {
+  callView.verb = t('act.call');
+  callView.what = t('thing.outside');
+  return callView;
+}
+
 /** A dog's name (P19), by its place in the state's dogs. */
 export const dogName = (sim: Sim, k: number) => dogDef(sim.world, k).name;
 

@@ -95,11 +95,11 @@ export function watch(sim: SimContext) {
   if (lit && !s.lit) summon(sim, here, 2);
   s.lit = lit;
   if (!reason && lit) [reason, heat] = [SPOT.indexOf('searchlight'), s.step % 4 === 0 ? SEARCHLIGHT_HEAT : 0];
-  // A contraband tool or weapon in hand, in plain sight: +40% a second.
+  // A contraband tool or weapon in hand, in plain sight: +40% a second (P21: and a burner phone, as plain to see).
   const held = itemOf(it.inv[it.hand]);
   const def = held ? itemDef(held) : null;
   // (P17: the inspectors in, twice that.)
-  if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon')) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT * (eventOn(sim, 'inspection') ? INSPECTION_CONTRABAND : 1) : 0];
+  if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon' || def.obvious)) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT * (eventOn(sim, 'inspection') ? INSPECTION_CONTRABAND : 1) : 0];
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
   const close = disguised && s.guards.some((g) => g.sees && !lookingAway(g, s.step) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
   s.near = close ? s.near + 1 : 0;
