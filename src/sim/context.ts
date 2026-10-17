@@ -21,6 +21,8 @@ export type SimContext = Pick<
   | 'boarded'
   | 'legacy'
   | 'noDogs'
+  | 'aboutBefore'
+  | 'groundFrom'
   | 'ladderFoot'
   | 'showerTiles'
   | 'scratch'

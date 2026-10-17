@@ -980,7 +980,7 @@ export class View {
     }
     // The dogs (P19): out of the picture below ground; asleep, Z's over them too.
     this.dogs.group.visible = f.layer !== LAYER.UNDER;
-    this.dogs.update(f.dogs, f.scent, f.x, f.z, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers);
+    this.dogs.update(f.dogs, f.scent, f.x, f.z, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers, f.layer === LAYER.GROUND);
     this.noSleepers.length = 0;
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).

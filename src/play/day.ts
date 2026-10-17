@@ -159,7 +159,7 @@ export function dayStep(sim: Sim) {
   const p = today(sim);
   if (WARNED.has(p.event) && m === p.at - WARN_AHEAD) say(sim, t(`pa.warn.${p.event}` as Key, { vehicle: vehicleThe(sim) }));
   // The dogs' first shift (P19): the warden introduces them.
-  if (p.day === DOG_FIRST_DAY && m === DOG_DAY_FROM - ROUTINE[0].start && st.dogs.length) {
+  if (p.day === DOG_FIRST_DAY && m === DOG_DAY_FROM - ROUTINE[0].start && st.dogs.length && !sim.noDogs) {
     const names = handlersOf(sim.world).map((h) => sim.prison.guards[h].dog!.name);
     say(sim, t(names.length === 1 ? 'pa.dog1' : 'pa.dogs', { names: listOf(names) }));
   }

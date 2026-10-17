@@ -131,7 +131,7 @@ function lastingFacts(sim: Sim): Fact[] {
 export function facts(sim: Sim, speaker = -1): Fact[] {
   const s = sim.state;
   // (The dogs' facts once they've started work, P19: on day 1 they're still in their kennels.)
-  const dogsOut = prisonDay(s.step) >= DOG_FIRST_DAY;
+  const dogsOut = prisonDay(s.step) >= DOG_FIRST_DAY && !sim.noDogs;
   const out = lastingFacts(sim).filter((f) => dogsOut || !DOG_FACTS.has(f.kind));
   // A merchant's stock (items people know how to say), if the merchant would sell to the player.
   sim.prison.merchants.forEach((cell, k) => {

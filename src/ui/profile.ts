@@ -1,4 +1,7 @@
 import { ROUTINE } from '../content/routine';
+import { dogDef } from '../sim/systems/k9';
+import { prisonDay } from '../sim/systems/clock';
+import { DOG_FIRST_DAY, TRUST_FRIEND } from '../sim/tuning';
 import { FAVOR, FAVOR_STATE, jobRooms } from '../sim/systems/economy';
 import { ATTRS, type Sim } from '../sim/Sim';
 import { ATTR_MAX, ATTR_MIN, ATTR_START } from '../sim/tuning';
@@ -79,6 +82,17 @@ export class ProfilePanel {
       const today = later ? t('board.tomorrow') : s.paid ? t('profile.paid', { n: d.wage }) : t('profile.quota', { n: s.quota, of: d.quota });
       jobHtml = `<div class="profile-job"><span class="board-ic">${icon('briefcase', 18)}</span><span class="board-text"><b>${esc(t(`job.${d.id}` as Key))}</b><small>${esc(t(`jobTask.${d.id}` as Key, { n: d.quota }))}</small></span><span class="profile-quota${s.paid ? ' done' : ''}">${esc(today)}</span></div>`;
     }
+    // The guard dogs (P19), once they're at work: how far each trusts the player, and whether it's had today's jerky.
+    const dogs =
+      s.dogs.length && prisonDay(s.step) >= DOG_FIRST_DAY
+        ? `<div class="box-section"><div class="box-label"><span>${t('profile.dogs')}</span></div><div class="talk-chips">${s.dogs
+            .map((d, k) => {
+              const name = esc(dogDef(sim.world, k).name);
+              const fed = d.fed === prisonDay(s.step);
+              return `<span class="chip dog" title="${esc(t(fed ? 'profile.dogFed' : 'profile.dogHungry'))}">${icon(d.trust >= TRUST_FRIEND ? 'heart' : 'paw', 13)}${name}<em>${t('profile.trust', { n: d.trust })}</em>${fed ? icon('check', 12) : ''}</span>`;
+            })
+            .join('')}</div></div>`
+        : '';
     const allies = s.followers.length ? `<div class="talk-chips">${s.followers.map((id) => `<span class="chip ally">${icon('star', 13)}${esc(inmateName(sim, id))}</span>`).join('')}</div>` : `<p class="talk-note">${t('profile.noFollowers')}</p>`;
     const favorList = favors.length
       ? favors
@@ -109,6 +123,7 @@ export class ProfilePanel {
       <div class="box-section"><div class="box-label"><span>${t('profile.job')}</span>${working && job >= 0 ? `<em>${t('profile.workNow')}</em>` : ''}</div>${jobHtml}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.favors')}</span></div>${favorList}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.followers')}</span></div>${allies}</div>
+      ${dogs}
       <div class="box-section"><div class="box-label"><span>${t('profile.rumors')}</span><em>${t('profile.rumorsNote')}</em></div>${rumorList}</div>`;
     this.el.setAttribute('aria-label', PLAYER.name ? t('profile.titleOf', { name: PLAYER.name }) : t('profile.title'));
   }

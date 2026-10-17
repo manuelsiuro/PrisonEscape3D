@@ -2,6 +2,7 @@
  * Caught and punished (GDD §5.3, §5.6): the capture, waking up in solitary or the infirmary,
  * peeling potatoes, the morning shakedown, the night bed check and cell searches.
  */
+import { washScent } from './k9';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { zoneIndex } from '../../content/zones';
@@ -33,8 +34,9 @@ export function caught(sim: SimContext) {
   dismissAll(sim);
   endTalk(sim);
   stopTraining(sim);
-  // The score is settled: a key alarm still held back is part of it.
+  // The score is settled: a key alarm still held back is part of it, and the trail the chase left (P19).
   s.keyAlarm = false;
+  washScent(sim, true);
   for (const m of s.inmates) m.angry = 0;
   s.ko = KO_STEPS;
   s.wake = solitary ? WAKE.SOLITARY : WAKE.INFIRMARY;

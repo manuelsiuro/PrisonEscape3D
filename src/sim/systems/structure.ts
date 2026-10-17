@@ -1,4 +1,5 @@
 import { itemDef, itemNumber, type ItemDef } from '../../content/items';
+import { handlersOf } from './k9';
 import { DIR_X, DIR_Z } from '../command';
 import { BODY_HALF, CAMERA_REACH, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRAPNEL_REACH, GRATE_HP, SHARPEN_STROKES, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
 import { isGrate, isSea, isTunnel, TILE, TILE_INFO } from '../world/tiles';
@@ -238,7 +239,7 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
   // A bar of soap (P19): the player's scent rubbed off.
-  if (held === SOAP) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
+  if (held === SOAP && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
   const here = bodyTile(b);
   const ahead = aheadOf(b);
   // A comb or toothbrush against a wall: rubbed into a shiv (hp: the strokes it takes).

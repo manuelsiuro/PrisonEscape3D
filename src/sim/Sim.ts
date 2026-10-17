@@ -88,6 +88,9 @@ export class Sim {
   legacy = false;
   /** Replaying a run logged before the dogs came (1.13, runlog.ts): they stay in their kennels. Not state. */
   noDogs = false;
+  /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
+  aboutBefore = false;
+  groundFrom = -1;
   /** Away on a raft from the pier, or the helicopter off the pad, this step (P12: the escape check reads it), or off with the delivery's vehicle (P18); not state. */
   boarded: 'raft' | 'helicopter' | 'stowaway' | null = null;
 
@@ -114,6 +117,9 @@ export class Sim {
     let dozing = 0;
     for (let k = 0; k < s.guards.length; k++) if (s.guards[k].doze > 0) dozing |= 1 << k;
     this.movedBy = null;
+    // Where the player is as the step starts (P19: a dog's nose works on a player already about; a trail marks where they left the floor).
+    this.aboutBefore = s.layer === LAYER.GROUND && !s.stowed && !this.away;
+    this.groundFrom = this.aboutBefore ? Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT) : -1;
     this.boarded = null;
     // Noise first (P14): a firecracker going off, alarm clocks ticking and ringing; guards sent to look move this step.
     noisemakers(this);

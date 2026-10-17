@@ -48,7 +48,9 @@ export function obtainable(w: World): ReadonlySet<number> {
   const tables = new Set(['pockets', ...containersOf(w).map((c) => c.table), ...(w.def.merchants.length ? ['merchant'] : [])]);
   for (const name of tables) for (const id of [...(LOOT[name]?.items.map(([i]) => i) ?? []), ...(LOOT[name]?.fixed ?? [])]) have.add(id);
   w.def.guards.forEach((_, k) => guardKit(w, k).forEach((n) => have.add(ITEMS[n - 1].id)));
-  for (const d of ITEMS) if (d.from.some((f) => ANYWHERE.includes(f) || (f === 'job' && w.def.jobs.length > 0))) have.add(d.id);
+  // (P19: a prison with dogs stocks their treats, and the pills.)
+  const dogs = w.def.guards.some((g) => g.dog);
+  for (const d of ITEMS) if (d.from.some((f) => ANYWHERE.includes(f) || (f === 'job' && w.def.jobs.length > 0) || (f === 'treats' && dogs))) have.add(d.id);
   for (let changed = true; changed; ) {
     changed = false;
     for (const r of RECIPES) {

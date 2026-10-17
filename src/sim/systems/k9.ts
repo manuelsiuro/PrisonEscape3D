@@ -211,8 +211,9 @@ function layScent(sim: SimContext) {
   const s = sim.state;
   while (s.scent.length && s.step - s.scent[0][1] > SCENT_STEPS) s.scent.shift();
   // Off the floor this step (down a shaft, up into the vents or onto a roof): the trail's last tile is where they left it.
+  // (Only the tile they stood on as the step began, laid while they were out of bounds: never an older one.)
   const last0 = s.scent[s.scent.length - 1];
-  if (sim.movedBy && s.layer !== LAYER.GROUND && last0) last0[2] = 1;
+  if (sim.movedBy && s.layer !== LAYER.GROUND && last0 && last0[0] === sim.groundFrom) last0[2] = 1;
   // (Under a running shower nothing is laid: it washes off as it would be.)
   if (!playerAbout(sim) || !outOfBounds(sim) || underShower(sim)) return;
   const here = tileAt(s.player.x, s.player.z);
@@ -307,7 +308,8 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
     }
     return;
   }
-  const near = playerAbout(sim) && dist(b, p.x, p.z) <= SNIFF_RANGE && lineOfSight(w, b.x, b.z, p.x, p.z);
+  // (A player only just back on the ground floor this step, out of the vents, a vehicle, solitary or a faint, is noticed from the next: the HUD's paw a step ahead.)
+  const near = sim.aboutBefore && playerAbout(sim) && dist(b, p.x, p.z) <= SNIFF_RANGE && lineOfSight(w, b.x, b.z, p.x, p.z);
   if (d.mode === DOG.TRACK) {
     // Caught up with the player: there they are.
     if (near) {
@@ -362,6 +364,7 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
   d.trail = s.scent[pick][1];
   d.goal = -1;
   d.path = [];
+  d.wait = 0;
   sim.events.push({ type: 'dog', dog: k, what: 'track' });
 }
 
@@ -419,7 +422,8 @@ function wayOff(w: World, at: number, off: boolean): number {
 function trailEnd(sim: SimContext, k: number, g: Guard, end: number, from: number, off: boolean) {
   const s = sim.state;
   const key = wayOff(sim.world, end, off);
-  if (key < 0 || s.found.includes(key)) return lose(sim, k);
+  // (With the player out cold or in solitary there's nobody to hunt: as the guards do then, it's left be.)
+  if (key < 0 || s.found.includes(key) || sim.away) return lose(sim, k);
   s.found.push(key);
   sim.events.push({ type: 'found', kind: sim.world.layers[layerOfKey(key)].kind[tileOfKey(key)] });
   for (const o of s.guards) o.lastSeen = from;
@@ -477,10 +481,14 @@ export function catchTreat(sim: SimContext, item: number, tile: number): boolean
   const z = centerZ(tile);
   let k = -1;
   let best = Infinity;
+  const day = prisonDay(s.step);
+  const reach = (d: Dog) => !dogAsleep(d, s.step) && dist(d.body, x, z) <= TREAT_RANGE && lineOfSight(sim.world, x, z, d.body.x, d.body.z);
+  // (Jerky goes to the nearest dog that hasn't had its share today, if one is in reach.)
+  const hungry = item === JERKY && s.dogs.some((d) => reach(d) && d.fed !== day);
   s.dogs.forEach((d, j) => {
     const dd = dist(d.body, x, z);
     // (Within reach of where it lands, nothing between: never round a corner.)
-    if (!dogAsleep(d, s.step) && dd <= TREAT_RANGE && dd < best && lineOfSight(sim.world, x, z, d.body.x, d.body.z)) {
+    if (reach(d) && dd < best && (!hungry || d.fed !== day)) {
       k = j;
       best = dd;
     }
@@ -488,7 +496,6 @@ export function catchTreat(sim: SimContext, item: number, tile: number): boolean
   if (k < 0) return false;
   const d = s.dogs[k];
   if (item === JERKY) {
-    const day = prisonDay(s.step);
     if (d.fed === day) {
       sim.events.push({ type: 'dog', dog: k, what: 'full', trust: d.trust });
       return false;

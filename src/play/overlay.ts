@@ -54,6 +54,10 @@ import { coachOnce, seenTip } from './tips';
 import { FIRECRACKER } from '../sim/systems/structure';
 const PEPPER = itemNumber('pepper');
 const JERKY = itemNumber('jerky');
+/** When the paw last lit for a dog's nose (real ms), and how long it stays lit after. */
+let pawAt = -1e9;
+const PAW_HOLD_MS = 1500;
+const PILLS = itemNumber('sleeping_pills');
 import { chatterFrame } from './chatter';
 
 /**
@@ -159,6 +163,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (press.toolNow) press.toolNow.heard = !fight && memo.heard;
   if (press.toolNow?.heard && !busy && !panel) coachOnce('earshot', 'hint.earshot');
   if (held === FIRECRACKER && !busy) coachOnce('firecracker', 'hint.firecracker');
+  // (P19: what jerky, pepper and the pills are for, the first time one is in hand.)
+  if (!busy && FOR_DOGS.has(held)) coachOnce('treatHeld', 'hint.treatHeld');
+  if (!busy && held === PILLS) coachOnce('pills', 'hint.pills');
   // A guard dozing close by, in plain sight (P15): what it means, the first time one is seen.
   if (!busy && st.layer === LAYER.GROUND && !seenTip('nap') && st.guards.some((x) => x.doing === DOING.DOZE && Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT && lineOfSight(sim.world, st.player.x, st.player.z, x.body.x, x.body.z))) coachOnce('nap', 'hint.nap');
   // Each new target takes a new press: a held button never digs on into the next thing.
@@ -196,7 +203,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;
-  hudState.dog = dogWarning(sim);
+  // (The paw held a moment: a dog pacing at the edge of its reach doesn't make it flicker.)
+  const dog = dogWarning(sim);
+  if (dog === 'nose') pawAt = performance.now();
+  hudState.dog = dog ?? (hudState.dog === 'nose' && performance.now() - pawAt < PAW_HOLD_MS && !busy ? 'nose' : null);
   hudState.solitaryMinutes = st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null;
   hudState.cash = st.cash;
   // During the Work Period with a job that counts today: the quota on the badge (GDD §11).

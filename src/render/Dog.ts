@@ -53,7 +53,9 @@ const PAW_LIFE = 6;
 /** Prints lie just over the floor's decals (rugs reach 0.016). */
 const PRINT_Y = 0.021;
 /** How far in front of its kennel's door a dog lies, and the most dogs a prison has pieces for. */
-const LIE_OUT = 0.42;
+const LIE_OUT = 0.5;
+/** A paw's front and back edges (along the leg's z): the lowest of them stays on the floor. */
+const PAW_EDGES = [-0.03, 0.05] as const;
 const MAX_DOGS = 4;
 const SCENT_AMBER = new THREE.Color(0xf0a030);
 const PAW_ORANGE = new THREE.Color(0xff7a3a);
@@ -77,6 +79,9 @@ interface Rig {
   bark: number;
   wag: number;
   sneeze: number;
+  /** The head's pitch and the tail's lift, eased (a pose change never snaps). */
+  hx: number;
+  lift: number;
   /** Where its last paw print went down. */
   px: number;
   pz: number;
@@ -114,6 +119,8 @@ export class Dogs {
   private readonly pieces: THREE.InstancedMesh[];
   private readonly lying = { x: 0, z: 0 };
   private dt = 0;
+  /** The player on the ground floor (the bark rings, drawn over everything, belong to it). */
+  private ground = true;
 
   constructor() {
     const inst = (g: THREE.BufferGeometry, n: number, mat: THREE.Material = kitMaterial) => {
@@ -166,9 +173,9 @@ export class Dogs {
     gable.scale(1, rise / (0.25 / Math.sin((2 * Math.PI) / 3) * 1.5), 1);
     gable.computeBoundingBox();
     gable.translate(0, 0.4 - gable.boundingBox!.min.y, 0);
-    const slab = (side: number) => box(0.34, 0.035, 0.62, roof, 0, 0, 0).rotateZ(-side * pitch).translate(side * 0.125, 0.4 + rise / 2, 0);
+    const slab = (side: number) => box(0.42, 0.035, 0.62, roof, 0, 0, 0).rotateZ(-side * pitch).translate(side * 0.125, 0.4 + rise / 2, 0);
     this.kennels = inst(
-      merge([box(0.5, 0.4, 0.56, wood, 0, 0, 0), gable, slab(-1), slab(1), box(0.05, 0.035, 0.63, 0x6e2a1f, 0, 0.4 + rise - 0.005, 0), box(0.22, 0.28, 0.02, 0x1a1410, 0, 0.02, 0.281), box(0.14, 0.05, 0.015, 0xe8b828, 0, 0.34, 0.285), cyl(0.07, 0.04, 0x9aa2ad, 0.33, 0, 0.18, 12), cyl(0.055, 0.042, 0x5aa8d8, 0.33, 0.002, 0.18, 12)]),
+      merge([box(0.5, 0.4, 0.56, wood, 0, 0, 0), gable, slab(-1), slab(1), box(0.06, 0.05, 0.64, 0x6e2a1f, 0, 0.4 + rise + 0.015, 0), box(0.22, 0.28, 0.02, 0x1a1410, 0, 0.02, 0.281), box(0.14, 0.05, 0.015, 0xe8b828, 0, 0.34, 0.285), cyl(0.07, 0.04, 0x9aa2ad, 0.33, 0, 0.18, 12), cyl(0.055, 0.042, 0x5aa8d8, 0.33, 0.002, 0.18, 12)]),
       4,
     );
     this.kennels.castShadow = true;
@@ -242,7 +249,7 @@ export class Dogs {
       });
       const at = kennelSpot(s, LIE_OUT);
       root.position.set(at.x, 0, at.z);
-      this.rigs.push({ root, body, head, tail, legs, bodyShape, headShape, tailShape, yaw: faceAngle(s.face), gait: 0, sit: 0, lie: 1, still: 0, bark: 0, wag: this.rigs.length * 2.3, sneeze: 0, px: at.x, pz: at.z });
+      this.rigs.push({ root, body, head, tail, legs, bodyShape, headShape, tailShape, yaw: faceAngle(s.face), gait: 0, sit: 0, lie: 1, still: 0, bark: 0, wag: this.rigs.length * 2.3, sneeze: 0, hx: 0, lift: 0.55, px: at.x, pz: at.z });
     }
     // A ring left up by the last prison's dogs goes.
     for (const ring of this.rings) ring.visible = false;
@@ -282,9 +289,10 @@ export class Dogs {
    * trail's prints (scent tiles with their freshness 0–1, oldest first), the paw prints fading.
    * Asleep dogs' heads go into `sleepers` (the view's Z's).
    */
-  update(dogs: readonly DogFrame[], scent: ReadonlyArray<readonly [number, number]>, px: number, pz: number, dt: number, time: number, motion: boolean, sleepers: number[]) {
+  update(dogs: readonly DogFrame[], scent: ReadonlyArray<readonly [number, number]>, px: number, pz: number, dt: number, time: number, motion: boolean, sleepers: number[], ground = true) {
     const n = Math.min(dogs.length, this.rigs.length);
     this.dt = dt;
+    this.ground = ground;
     for (let k = 0; k < n; k++) this.pose(k, dogs[k], px, pz, dt, time, motion, sleepers);
     for (let k = n; k < this.rings.length; k++) this.rings[k].visible = false;
     this.drawPrints(scent);
@@ -300,31 +308,52 @@ export class Dogs {
   private pose(k: number, d: DogFrame, px: number, pz: number, dt: number, time: number, motion: boolean, sleepers: number[]) {
     const r = this.rigs[k];
     const coat = COATS[this.coats[k]];
-    // Lying by the kennel: on the floor in front of its door (clear of the kennel), not on the tile's middle.
-    const atKennel = d.pose === 'kennel' && !d.moving;
-    const spot = atKennel ? kennelSpot(this.spots[k], LIE_OUT, this.lying) : null;
-    const tx = spot ? spot.x : d.x;
-    const tz = spot ? spot.z : d.z;
-    const far = Math.hypot(r.root.position.x - tx, r.root.position.z - tz);
-    if (far > 1.5 || !motion) r.root.position.set(tx, 0, tz);
-    else r.root.position.set(this.ease(r.root.position.x, tx, 10), 0, this.ease(r.root.position.z, tz, 10));
-    // Turning: the short way round, smoothly.
-    const want = atKennel ? faceAngle(this.spots[k].face) : d.facing;
-    let turn = want - r.yaw;
-    turn = Math.atan2(Math.sin(turn), Math.cos(turn));
-    r.yaw += motion ? turn * Math.min(1, dt * 9) : turn;
-    r.root.rotation.set(0, r.yaw, 0);
     // How it holds itself.
+    const atKennel = d.pose === 'kennel' && !d.moving;
     r.still = d.moving ? 0 : r.still + dt;
     const lie = d.pose === 'asleep' || atKennel;
     const sit = !lie && d.pose === 'heel' && r.still > 1.2;
     r.lie = motion ? this.ease(r.lie, lie ? 1 : 0, 5) : lie ? 1 : 0;
     r.sit = motion ? this.ease(r.sit, sit ? 1 : 0, 5) : sit ? 1 : 0;
+    // Where the sim has it (as characters are: never trailing behind), eased out in front of its
+    // kennel's door as it lies down there, and never inside the kennel.
+    const kennel = this.spots[k];
+    let tx = d.x;
+    let tz = d.z;
+    if (d.pose === 'kennel' && r.lie > 0) {
+      const spot = kennelSpot(kennel, LIE_OUT, this.lying);
+      tx += (spot.x - tx) * r.lie;
+      tz += (spot.z - tz) * r.lie;
+    }
+    {
+      const a = faceAngle(kennel.face);
+      const sa = Math.sin(a);
+      const ca = Math.cos(a);
+      const dx = tx - kennel.x - 0.5;
+      const dz = tz - kennel.z - 0.5;
+      const along = dx * sa + dz * ca;
+      const lat = dx * ca - dz * sa;
+      // (Facing the kennel, its nose needs room too.)
+      const toward = Math.max(0, -(Math.sin(r.yaw) * sa + Math.cos(r.yaw) * ca));
+      const clear = LIE_OUT + 0.25 * toward;
+      if (Math.abs(lat) < 0.5 && along > -0.7 && along < clear) {
+        tx = kennel.x + 0.5 + sa * clear + ca * lat;
+        tz = kennel.z + 0.5 + ca * clear - sa * lat;
+      }
+    }
+    r.root.position.set(tx, 0, tz);
+    // Turning: the short way round, smoothly.
+    const want = atKennel ? faceAngle(kennel.face) : d.facing;
+    let turn = want - r.yaw;
+    turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+    r.yaw += motion ? turn * Math.min(1, dt * 9) : turn;
+    r.root.rotation.set(0, r.yaw, 0);
     const run = d.pose === 'track' || d.pace > 1.3;
     if (d.moving && motion) r.gait += dt * (run ? 15 : 10) * Math.max(0.8, d.pace);
-    const swing = d.moving && motion ? Math.sin(r.gait) * (run ? 0.75 : 0.5) : 0;
-    // (A swung leg reaches less far down: the body dips with it, paws on the floor.)
-    const bob = -LEG_H * (1 - Math.cos(swing));
+    // (No trot while still folded up, getting up or sitting down.)
+    const swing = d.moving && motion ? Math.sin(r.gait) * (run ? 0.75 : 0.5) * (1 - Math.max(r.lie, r.sit)) : 0;
+    // (A swung leg reaches less far down: the body dips with it, paws on the floor, toes clear of it.)
+    const bob = -LEG_H * (1 - Math.cos(swing)) + 0.05 * Math.abs(Math.sin(swing));
     // The body: down on the floor lying, sat back on its haunches, level otherwise.
     r.body.position.set(0, bob - r.lie * (HIP_Y - 0.09) - r.sit * 0.058, -r.sit * 0.05);
     r.body.rotation.set(-r.sit * 0.5, 0, 0);
@@ -340,25 +369,25 @@ export class Dogs {
     }
     // The head: up and alert; nose to the ground on the trail; pointing forward low and barking;
     // shaking off pepper with a sneeze now and then; down on its paws asleep.
+    // (The pose eased; a bark's jerk and a sneeze on top.)
     let hx = 0;
     let hy = 0;
     const barking = d.pose === 'point';
+    const aim = d.pose === 'track' ? 0.8 : barking ? 0.12 : d.pose === 'dazed' ? -0.15 : 0;
+    r.hx = motion ? this.ease(r.hx, aim, 10) : aim;
+    hx = r.hx * (1 - r.lie) + r.lie * 0.35 - 0.15 * r.sit;
     if (barking && motion) {
       r.bark += dt;
       // A bark every half second: the head jerks up.
       const b = (r.bark % 0.5) / 0.5;
-      hx = -0.35 * Math.max(0, 1 - b * 4);
+      hx -= 0.35 * Math.max(0, 1 - b * 4);
     } else r.bark = 0;
-    if (d.pose === 'track') hx = 0.55;
-    else if (barking) hx += 0.12;
     if (d.pose === 'dazed' && motion) {
       r.sneeze += dt;
       hy = Math.sin(time * 22) * 0.35;
       const s = (r.sneeze % 1.3) / 1.3;
-      hx = s > 0.8 ? 0.9 * Math.sin(((s - 0.8) / 0.2) * Math.PI) : -0.15;
+      if (s > 0.8) hx += 1.05 * Math.sin(((s - 0.8) / 0.2) * Math.PI);
     }
-    if (lie) hx = r.lie * 0.35;
-    if (sit) hx -= 0.15 * r.sit;
     // Idle: a look about now and then.
     if (!d.moving && !lie && !barking && d.pose !== 'dazed' && motion) hy += Math.sin(time * 0.7 + k * 2) * 0.35 * Math.max(0, Math.sin(time * 0.31 + k));
     r.head.rotation.set(hx + r.sit * 0.5, hy, 0);
@@ -369,10 +398,22 @@ export class Dogs {
     if (motion) r.wag += dt * wagRate;
     const wag = d.pose === 'asleep' ? 0 : Math.sin(r.wag) * (d.friend && close ? 0.7 : 0.22);
     const lift = barking ? 1.1 : d.pose === 'track' ? 0.15 : d.pose === 'dazed' ? -0.3 : 0.55;
+    r.lift = motion ? this.ease(r.lift, lift, 10) : lift;
     // (Lying, curled round to one side, clear of the kennel.)
-    r.tail.rotation.set(lift - r.lie * 0.5 + r.sit * 0.4, wag + r.lie * 1.2, 0);
-    // Matrices to the pieces.
+    r.tail.rotation.set(r.lift - r.lie * 0.5 + r.sit * 0.4, wag + r.lie * 1.5, 0);
+    // Feet on the floor whatever the blend (getting up, sitting down): the body lifts by however far the lowest paw sinks.
     r.root.updateMatrixWorld(true);
+    let low = 0;
+    for (const l of r.legs)
+      for (const toe of PAW_EDGES) {
+        this.v.set(0, -LEG_H, toe).applyMatrix4(l.matrixWorld);
+        low = Math.min(low, this.v.y);
+      }
+    if (low < 0) {
+      r.root.position.y = -low;
+      r.root.updateMatrixWorld(true);
+    }
+    // Matrices to the pieces.
     this.body.setMatrixAt(k, r.bodyShape.matrixWorld);
     this.saddle.setMatrixAt(k, coat.saddle === null ? this.zero : r.bodyShape.matrixWorld);
     this.head.setMatrixAt(k, r.headShape.matrixWorld);
@@ -382,7 +423,7 @@ export class Dogs {
     const ring = this.rings[k];
     if (ring) {
       // (Reduced motion: one still ring, the bark said all the same.)
-      ring.visible = barking;
+      ring.visible = barking && this.ground;
       if (ring.visible) {
         const b = motion ? (r.bark % 0.5) / 0.5 : 0.3;
         r.head.getWorldPosition(this.v);
@@ -430,10 +471,11 @@ export class Dogs {
       const dx = (a % MAP_W) - (b % MAP_W);
       const dz = Math.floor(a / MAP_W) - Math.floor(b / MAP_W);
       const yaw = dx || dz ? Math.atan2(dx, dz) : 0;
-      // (Left or right by the tile, so a print keeps its side as the trail moves on.)
-      const side = (((t % MAP_W) + Math.floor(t / MAP_W)) & 1 ? 1 : -1) * 0.11;
+      // (Left or right by the tile, so a print keeps its side as the trail moves on; by x alone after a diagonal step, where x + z keeps its parity.)
+      const diag = prev >= 0 && prev % MAP_W !== t % MAP_W && Math.floor(prev / MAP_W) !== Math.floor(t / MAP_W);
+      const side = ((diag ? t % MAP_W : (t % MAP_W) + Math.floor(t / MAP_W)) & 1 ? 1 : -1) * 0.11;
       this.q.setFromAxisAngle(UP, yaw);
-      this.m.compose(this.v.set(x + Math.cos(yaw) * side, PRINT_Y, z - Math.sin(yaw) * side), this.q, this.s.setScalar(0.45 + 0.55 * fresh));
+      this.m.compose(this.v.set(x + Math.cos(yaw) * side, PRINT_Y, z - Math.sin(yaw) * side), this.q, this.s.setScalar(0.1 + 0.9 * fresh));
       this.prints.setMatrixAt(k, this.m);
       this.prints.setColorAt(k, this.c.copy(SCENT_AMBER).multiplyScalar(0.75 + 0.25 * fresh));
     }
@@ -449,7 +491,7 @@ export class Dogs {
       if (life < 0) continue;
       this.pawAt[k * 4 + 3] = life - dt;
       this.q.setFromAxisAngle(UP, this.pawAt[k * 4 + 2]);
-      this.m.compose(this.v.set(this.pawAt[k * 4], PRINT_Y, this.pawAt[k * 4 + 1]), this.q, this.s.setScalar(0.4 + 0.6 * Math.max(0, life / PAW_LIFE)));
+      this.m.compose(this.v.set(this.pawAt[k * 4], PRINT_Y, this.pawAt[k * 4 + 1]), this.q, this.s.setScalar(0.1 + 0.9 * Math.max(0, life / PAW_LIFE)));
       this.paws.setMatrixAt(n, this.m);
       this.paws.setColorAt(n, PAW_ORANGE);
       n++;

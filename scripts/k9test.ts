@@ -33,7 +33,7 @@ import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { pathTo } from '../src/sim/ai/path';
 import { lineOfSight } from '../src/sim/ai/sight';
-import { command, EXT, OP, SLOT } from '../src/sim/command';
+import { command, DIR_X, DIR_Z, EXT, OP, SLOT } from '../src/sim/command';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { clockAt } from '../src/sim/systems/clock';
 import { GUARD } from '../src/sim/systems/guards';
@@ -102,6 +102,10 @@ for (const p of [...PRISONS, TRAINING]) {
     const kennel = def.kennel.z * MAP_W + def.kennel.x;
     check(!w.guardBlock[kennel] && w.ground.kind[kennel] !== TILE.DOOR, `${p.id}: ${def.name}'s kennel on open floor`);
     check(!w.props.some((q) => def.kennel.x >= q.x && def.kennel.x < q.x + q.w && def.kennel.z >= q.z && def.kennel.z < q.z + q.d), `${p.id}: nothing stands on ${def.name}'s kennel`);
+    check(!(p.decor ?? []).some((q) => !q.y && def.kennel.x >= Math.floor(q.x) && def.kennel.x < Math.floor(q.x) + (q.w ?? 1) && def.kennel.z >= Math.floor(q.z) && def.kennel.z < Math.floor(q.z) + (q.d ?? 1)), `${p.id}: no decor on ${def.name}'s kennel either`);
+    // In front of its door: open floor, where it lies.
+    const front = (def.kennel.z + DIR_Z[def.kennel.face ?? 5] / 1024) * MAP_W + def.kennel.x + DIR_X[def.kennel.face ?? 5] / 1024;
+    check(DIR_X[def.kennel.face ?? 5] % 1024 === 0 && DIR_Z[def.kennel.face ?? 5] % 1024 === 0 && !w.block[front], `${p.id}: open floor in front of ${def.name}'s kennel`);
     const beat = p.guards[h].beat[0];
     check(pathTo(w, beat.z * MAP_W + beat.x, kennel, undefined, w.guardBlock) !== null, `${p.id}: ${def.name}'s kennel is a walk from its handler's round`);
     if (def.night) check(!!p.guards[h].night, `${p.id}: ${def.name} works nights, so its handler does`);
@@ -432,6 +436,14 @@ function tracking(tiles: number[], seed = 5) {
     sim.state.tiles[placeKey(LAYER.VENTS, end + 1 + MAP_W)] = TILE.GRATE_FAKE;
     for (let k = 0; k < 2000 && !dogEvents(seen, 'lost'); k++) step();
     check(sim.state.found.length === 0 && dogEvents(seen, 'lost') === 1, 'a grate by a trail that just ends: not the dog\'s business');
+  }
+  // The player out of it (solitary): a dog's find is left be, as the guards leave damage then.
+  {
+    const { sim, seen, step } = tracking([...row, 33 + 24 * MAP_W, hole, 33 + 22 * MAP_W]);
+    setTile(sim, LAYER.GROUND, hole, TILE.HOLE_POSTER);
+    sim.state.solitary = 100000;
+    for (let k = 0; k < 2000; k++) step(0, false);
+    check(dogEvents(seen, 'dug') === 0 && !sim.state.found.includes(placeKey(LAYER.GROUND, hole)) && !seen.some((e) => e.type === 'spotted'), 'the player in solitary: no find, no alarm');
   }
   // The handler knocked out while his dog is on the trail: it gives up and stays by him.
   {

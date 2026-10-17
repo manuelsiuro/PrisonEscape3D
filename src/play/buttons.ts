@@ -12,7 +12,8 @@ import { canChat } from '../sim/systems/ways';
 import { TOUCH } from '../ui/dom';
 import { armThrow, throwAhead, throwAt } from './aim';
 import type { ToolView } from '../ui/tool';
-import { tools } from './context';
+import { itemsUI, tools } from './context';
+import { t } from '../i18n';
 import { play } from './game';
 
 /** What the buttons would do, worked out once per simulation step. */
@@ -66,7 +67,9 @@ export function usePress() {
   if (press.toolNow?.toss) {
     tools.release();
     // (P19: to a dog, straight there.)
-    if ((press.toolNow.tossTo ?? -1) >= 0) throwAt(press.toolNow.tossTo!);
+    // (Greyed: the dog has had its jerky today; said, not thrown.)
+    if ((press.toolNow.tossTo ?? -1) >= 0 && !press.toolNow.fits) itemsUI.toast(t('toast.dogFull', { dog: press.toolNow.what }));
+    else if ((press.toolNow.tossTo ?? -1) >= 0) throwAt(press.toolNow.tossTo!);
     else if (TOUCH) armThrow();
     else throwAhead();
     return;

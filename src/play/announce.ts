@@ -20,7 +20,7 @@ import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
 import { dogName, NEED } from './labels';
-import { dogDef } from '../sim/systems/k9';
+import { dogDef, outOfBounds } from '../sim/systems/k9';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
 import { dayTime, vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
@@ -650,11 +650,17 @@ export function announce(e: SimEvent, sim: Sim) {
         }
         case 'point':
           sound.bark(gain, pitch);
-          banner.toast(t('toast.dogPoint', { dog }), 'bad');
+          trackShown[e.dog] = false;
+          // (Found somewhere the player may be, it's only a dog's hello.)
+          if (outOfBounds(sim)) banner.toast(t('toast.dogPoint', { dog }), 'bad');
+          else itemsUI.toast(t('toast.dogHello', { dog }));
           break;
         case 'dug':
           sound.bark(gain, pitch);
           buzz('missed');
+          trackShown[e.dog] = false;
+          // (Out of a lockdown the alarm's banner says it; in one, this does.)
+          if (sim.state.lockdown && !sim.events.some((m) => m.type === 'lockdown')) banner.toast(t('toast.dogDug', { dog }), 'bad');
           break;
         case 'lost':
           // (Said only of a trail the player was told about.)
@@ -690,7 +696,7 @@ export function announce(e: SimEvent, sim: Sim) {
     }
     case 'washed':
       sound.scrub();
-      itemsUI.toast(t('toast.washed'));
+      itemsUI.toast(t(outOfBounds(sim) ? 'toast.washedStill' : 'toast.washed'));
       break;
     case 'cantThrow': {
       const now = performance.now();

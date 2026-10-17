@@ -1675,7 +1675,7 @@ export const enBarks = {
     "{dog} doesn't bark for nothing. Hands up!",
     "Easy, {dog}. Let's see what you've got there.",
     "Sit, {dog}. Now then, what's in the pockets?",
-    "That's my girl. Or boy. Anyway: pockets!",
+    "Good dog. Now then: pockets!",
   ],
   're.dogTrack.gu': [
     "{dog}'s got a scent! Lead on!",

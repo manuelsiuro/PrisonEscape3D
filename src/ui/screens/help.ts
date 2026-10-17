@@ -46,7 +46,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['towers', 'target', '#e5484d'],
     ['ways', 'hook', '#ff7714'],
     ['delivery', 'truck', '#3fc79a'],
-    ['dogs', 'paw', '#e0a050'],
+    ['dogs', 'paw', '#e0a050', 'shankton'],
     ['weather', 'snow', '#2f78be', 'stalag-flucht'],
     ['shell', 'shield', '#5d6b7a', 'shankton'],
     ['mines', 'mine', '#c8372d', 'san-pancho'],

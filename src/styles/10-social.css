@@ -99,6 +99,23 @@
   fill: #6fe3f0;
 }
 
+/* A guard dog in the prisoner's file (P19): its trust, a tick once it's had today's jerky. */
+.chip.dog {
+  color: #ffe2b8;
+  background: rgba(224, 160, 80, 0.2);
+}
+
+.chip.dog .ic {
+  color: #f0b060;
+}
+
+.chip.dog em {
+  font-style: normal;
+  font-weight: 800;
+  margin-left: 2px;
+  color: #ffc77a;
+}
+
 .talk-note {
   margin: 4px 0 0;
   font: 500 12.5px/1.35 var(--font-ui);
