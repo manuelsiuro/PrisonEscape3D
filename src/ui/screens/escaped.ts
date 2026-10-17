@@ -1,4 +1,5 @@
 import { h } from '../dom';
+import { routeIcon } from './trophies';
 import { icon } from '../icons';
 import { t, type Key } from '../../i18n';
 import type { Achievement } from '../../content/achievements';
@@ -8,6 +9,8 @@ import { medalDisc } from './trophies';
 /** What the victory screen shows (GDD §13.2). */
 export interface Victory {
   prison: string;
+  /** Its id (the icons). */
+  prisonId: string;
   day: number;
   time: string;
   /** The way out (ESCAPES name) and every way this prison has, with those found so far. */
@@ -50,9 +53,6 @@ function earnedRow(list: readonly Achievement[]): string {
   return `<div class="v-earned"><small>${t('victory.earned')}</small><div>${shown.map((a) => `<span class="v-ach">${icon(a.icon, 14)}${t(`ach.${a.id}` as Key)}</span>`).join('')}${more > 0 ? `<span class="v-ach more" aria-label="${t('victory.earnedMore', { n: more })}">+${more}</span>` : ''}</div></div>`;
 }
 
-/** Each way out's icon. */
-const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli' };
-
 /**
  * The victory screen (GDD §13.2): how the player got out, the days it took and the tally
  * (walls chipped, tunnel dug, guards knocked out, cash earned), the ways out of this prison
@@ -64,7 +64,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
   const pips = v.routes
     .map((r) => {
       const found = v.found.includes(r);
-      return `<span class="v-route${found ? ' found' : ''}${r === v.via ? ' now' : ''}" title="${found ? t(`route.${r}` as Key) : t('victory.unknownRoute')}">${icon(found ? ROUTE_ICON[r] ?? 'star' : 'lock', 16)}</span>`;
+      return `<span class="v-route${found ? ' found' : ''}${r === v.via ? ' now' : ''}" title="${found ? t(`route.${r}` as Key) : t('victory.unknownRoute')}">${icon(found ? routeIcon(r, v.prisonId) : 'lock', 16)}</span>`;
     })
     .join('');
   const el = h(
@@ -75,7 +75,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       <h2>${t('escaped.title')}</h2>
       <p class="v-sub"></p>
       <div class="v-left">
-      <div class="v-method">${icon(ROUTE_ICON[v.via] ?? 'route', 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}</div>
+      <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}</div>
       <div class="v-stats">
         ${stat('clock', v.day, 'victory.days')}
         ${stat('pick', walls, 'victory.walls')}

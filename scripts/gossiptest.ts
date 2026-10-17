@@ -35,6 +35,7 @@ import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { fill, type FillContext } from '../src/talk/fill';
 import { facts, GOSSIP, napStop, type Fact } from '../src/talk/gossip';
 import { dayMinute, planOf, today } from '../src/sim/systems/calendar';
+import { searchMinute, thorough } from '../src/sim/systems/delivery';
 import { Bot, n } from './bots';
 import { check } from './assert';
 
@@ -73,7 +74,14 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'nextInspection':
     case 'nextDrill':
     case 'nextFoodFight':
-      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight' } as const)[f.kind];
+    case 'nextDelivery':
+      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery' } as const)[f.kind];
+    // Delivery day (P18): the search still to come, as thorough as said, by its supervisor.
+    case 'searchClose':
+    case 'searchQuick': {
+      const p = today(sim);
+      return p.event === 'delivery' && dayMinute(s.step) < searchMinute(p) && f.guard === sim.prison.delivery?.supervisor && thorough(sim, p.day) === (f.kind === 'searchClose');
+    }
     case 'stormCut': {
       const p = today(sim);
       const m = (f.t1! - ROUTINE[0].start + 1440) % 1440;

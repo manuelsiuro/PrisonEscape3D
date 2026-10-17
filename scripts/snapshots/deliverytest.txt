@@ -1,0 +1,11 @@
+plans: a delivery once a week where a vehicle comes (Center Perks, Stalag Flucht, San Pancho, Irongate); none at Shankton or in training
+center-perks: the truck in 12:30–14:31, solid and opaque, Moss round its 5 stops and at the tail by 14:29
+stalag-flucht: the redCross in 12:30–14:31, solid and opaque, Fink round its 5 stops and at the tail by 14:29
+san-pancho: the produce in 12:30–14:31, solid and opaque, Ochoa round its 4 stops and at the tail by 14:29
+irongate: the helicopter in 12:30–14:31, solid and opaque, Doyle round its 4 stops and at the tail by 14:29
+climbing in: at the tail, unseen, not wanted, before 14:30; hidden, nowhere on foot and seen by nobody; Interact climbs out
+the search: a quick look lets the stowaway away at 14:31, a thorough one finds them; nobody there to search (out cold, drawn off, bribed, too far): waved through; strict always thorough; a lockdown searches
+thorough searches: center-perks 22%, stalag-flucht 39%, san-pancho 56%, irongate 80%
+saves: loaded hidden plays on the same; a save from before delivery day keeps that day’s card
+achievements: Special Delivery, Air Mail, Off the Books, Return to Sender
+review: damage found while hidden raises the alarm; out of the truck, its gate waits for the player; climbing out at 14:31 stays behind; the search kept in the state; an old save keeps tomorrow

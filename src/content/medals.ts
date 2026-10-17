@@ -8,11 +8,12 @@ export const MEDALS: readonly Medal[] = ['gold', 'silver', 'bronze'];
 
 /** prison → route → [gold, silver, bronze] days. */
 export const MEDAL_DAYS: Record<string, Record<string, readonly [number, number, number]>> = {
-  'center-perks': { fence: [3, 5, 8], tunnel: [2, 4, 7], roof: [3, 5, 8], takeover: [4, 7, 10] },
-  'stalag-flucht': { fence: [3, 6, 9], tunnel: [3, 5, 8], roof: [4, 6, 9], takeover: [5, 8, 12] },
+  // (The stowaway's days follow the calendar, P18: a delivery comes once a week, by day 8 at the latest; gold is away with the first, silver the second, bronze the third.)
+  'center-perks': { fence: [3, 5, 8], tunnel: [2, 4, 7], roof: [3, 5, 8], takeover: [4, 7, 10], stowaway: [8, 15, 22] },
+  'stalag-flucht': { fence: [3, 6, 9], tunnel: [3, 5, 8], roof: [4, 6, 9], takeover: [5, 8, 12], stowaway: [8, 15, 22] },
   shankton: { fence: [4, 7, 10], tunnel: [4, 6, 10], roof: [4, 7, 10], takeover: [6, 9, 13] },
-  'san-pancho': { tunnel: [5, 8, 12], gate: [5, 8, 12], takeover: [7, 10, 14] },
-  irongate: { raft: [6, 9, 13], helicopter: [7, 10, 14], takeover: [8, 12, 16] },
+  'san-pancho': { tunnel: [5, 8, 12], gate: [5, 8, 12], takeover: [7, 10, 14], stowaway: [8, 15, 22] },
+  irongate: { raft: [6, 9, 13], helicopter: [7, 10, 14], takeover: [8, 12, 16], stowaway: [8, 15, 22] },
 };
 
 /** The medal an escape on `day` earns (null: too slow for bronze, or no medals there). */

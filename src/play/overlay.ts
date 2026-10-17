@@ -11,7 +11,9 @@ import { lineOfSight } from '../sim/ai/sight';
 import { clockAt, formatTime } from '../sim/systems/clock';
 import { guardSubject } from '../ui/social';
 import { baking, exposed } from '../sim/systems/weather';
-import { dayHud } from './day';
+import { dayHud, stowCard, vehicleThe } from './day';
+import { atTail, searchMinute } from '../sim/systems/delivery';
+import { dayMinute, today } from '../sim/systems/calendar';
 import { containersOf } from '../sim/world/containers';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
@@ -36,6 +38,7 @@ import {
   socialOpen,
   solitaryPanel,
   sound,
+  stowPanel,
   talk,
   tools,
   trainCard,
@@ -58,6 +61,9 @@ import { chatterFrame } from './chatter';
 
 const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false };
 const GET_UP = { verb: '', what: '' };
+/** Delivery day (P18): into the vehicle at its tail, out of it while hidden. */
+const STOW = { verb: '', what: '' };
+const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
 const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
@@ -120,7 +126,14 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     PEEL_ACTION.what = t('act.potato');
   }
   if (st.seat >= 0) GET_UP.verb = t('act.getUp');
-  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : describeTarget(sim, target, climb, held, memo.station);
+  // (At the vehicle's tail, the tailgate open: climbing in comes before anything else there.)
+  const tail = !st.stowed && atTail(sim) && dayMinute(st.step) < searchMinute(today(sim));
+  if (st.stowed) CLIMB_OUT.verb = t('act.climbOut');
+  if (tail) {
+    STOW.verb = t('act.stow');
+    STOW.what = vehicleThe(sim);
+  }
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : tail ? STOW : describeTarget(sim, target, climb, held, memo.station);
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
@@ -157,6 +170,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   sleepVeil.classList.toggle('ko', st.ko > 0);
   sleepVeil.classList.toggle('on', veilOn);
   solitaryPanel.update(st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null, st.peeled);
+  stowPanel.update(stowCard(g));
   darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();
@@ -230,7 +244,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
   sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
-  chatterFrame(g, busy || panel || !!g.lesson);
+  // (Hidden in the delivery's vehicle the talk goes on: the search's words are for the player in there.)
+  chatterFrame(g, (busy && !(st.stowed && !g.paused && !g.over)) || panel || !!g.lesson);
   // Throwing (P14): the aim follows the pointer; a "?" over the guards on their way to look.
   updateAim(busy || panel);
   aimUI.frame(headAt, busy || st.layer !== LAYER.GROUND);

@@ -233,6 +233,13 @@ export function describe(e: SimEvent): string {
       return `${e.how} → layer ${e.layer}`;
     case 'escaped':
       return `ESCAPED (${e.via})`;
+    case 'stow':
+      return e.on ? 'into the vehicle' : e.found ? 'FOUND in the vehicle' : 'out of the vehicle';
+    case 'today':
+      if (e.event !== 'delivery') return '';
+      return e.phase === 'start' ? 'the delivery is in' : e.phase === 'search' ? `the vehicle searched (${e.thorough ? 'thoroughly' : 'a quick look'})` : e.phase === 'waved' ? 'the vehicle waved through' : e.phase === 'end' ? 'the delivery leaves' : '';
+    case 'refused':
+      return e.why === 'watched' || e.why === 'tailgate' ? `refused: ${e.why}` : '';
     default:
       return '';
   }

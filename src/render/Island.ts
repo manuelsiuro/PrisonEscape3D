@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { DeliveryFrame } from './Delivery';
 import { isSea, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
@@ -111,6 +112,9 @@ export class Island {
   private readonly beacon: THREE.MeshBasicMaterial;
   private readonly pad = new THREE.Vector3();
   private rotorTurn = 0;
+  /** Its cargo ramp (P18: down while the day's delivery is unloaded), 0 shut – 1 down. */
+  private readonly ramp = new THREE.Group();
+  private rampOpen = 0;
   /** A departure under way: what, since when (seconds), from where. */
   private leaving: { kind: 'raft' | 'helicopter'; t: number; x: number; z: number } | null = null;
   private raft: THREE.Mesh | null = null;
@@ -293,8 +297,12 @@ export class Island {
       this.tailRotor.position.set(0.1, 1.0, -2.95);
       const light = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), this.beacon);
       light.position.set(0, 1.26, -0.6);
-      heli.add(body, this.rotor, this.tailRotor, light);
-      heli.rotation.y = Math.PI / 5;
+      // The cargo ramp under the tail boom (P18), hinged at the cabin's floor.
+      this.ramp.add(new THREE.Mesh(merge([box(0.9, 0.05, 0.8, 0x26392d, 0, -0.025, -0.4), box(0.84, 0.02, 0.06, 0xe0c23a, 0, 0.005, -0.76)], false), kitMaterial));
+      this.ramp.position.set(0, 0.4, -1.0);
+      heli.add(body, this.rotor, this.tailRotor, light, this.ramp);
+      // Nose north, its tail (and ramp) over the court's south side.
+      heli.rotation.y = Math.PI;
       heli.position.copy(this.pad);
       heli.visible = false;
       this.heli = heli;
@@ -306,7 +314,7 @@ export class Island {
    * Per frame: the swell drifting, the surf breathing, the drawbridge easing up or down, the
    * helicopter in at night (setting down at 23:00, lifting off at 08:00), a departure playing out.
    */
-  update(dt: number, time: number, minuteOfDay: number, takeover: boolean, motion: boolean) {
+  update(dt: number, time: number, minuteOfDay: number, takeover: boolean, motion: boolean, delivery?: DeliveryFrame) {
     if (motion) {
       this.waves.offset.set((time * 0.0015) % 1, (time * 0.0028) % 1);
       this.foamMat.opacity = 0.6 + Math.sin(time * 1.3) * 0.18;
@@ -332,6 +340,28 @@ export class Island {
         y = (m - 480) * 3.5;
         spin = 1;
       }
+      // Delivery day (P18): in by day too, setting down in the five minutes before 12:30, its ramp down while it's unloaded, away at 14:31.
+      let ramp = 0;
+      const d = delivery;
+      if (d && d.t >= 0 && d.t >= d.at - 5 && d.t < d.until + 4) {
+        const t = d.t;
+        shown = true;
+        if (t < d.at) {
+          y = (d.at - t) * 3.5;
+          spin = 1;
+        } else if (t < d.at + 3) spin = (d.at + 3 - t) / 3;
+        else if (t >= d.until - 4 && t < d.until) spin = (t - (d.until - 4)) / 4;
+        else if (t >= d.until) {
+          y = (t - d.until) * 3.5;
+          spin = 1;
+        }
+        ramp = t >= d.at + 1 && t < d.search ? 1 : 0;
+      }
+      this.rampOpen += Math.sign(ramp - this.rampOpen) * Math.min(Math.abs(ramp - this.rampOpen), dt * (motion ? 1.5 : 99));
+      // (Shut it's stowed under the cabin, out of sight; it slides out and slopes down to the ground, under the tail boom.)
+      this.ramp.visible = this.rampOpen > 0.01;
+      this.ramp.scale.z = 0.15 + this.rampOpen * 0.85;
+      this.ramp.rotation.x = -this.rampOpen * 0.45;
       // Leaving with the player aboard.
       if (this.leaving?.kind === 'helicopter') {
         const t = this.leaving.t;

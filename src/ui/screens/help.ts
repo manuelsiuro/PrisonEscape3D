@@ -45,6 +45,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['cams', 'camera', '#2fb6c8'],
     ['towers', 'target', '#e5484d'],
     ['ways', 'hook', '#ff7714'],
+    ['delivery', 'truck', '#3fc79a'],
     ['weather', 'snow', '#2f78be', 'stalag-flucht'],
     ['shell', 'shield', '#5d6b7a', 'shankton'],
     ['mines', 'mine', '#c8372d', 'san-pancho'],

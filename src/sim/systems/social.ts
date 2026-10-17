@@ -241,7 +241,7 @@ const HOSTILE_BLOCKS: readonly string[] = [...GRUDGE_BLOCKS, 'freeTime', 'exerci
 export function grudges(sim: SimContext) {
   const s = sim.state;
   const id = ROUTINE[s.routine].id;
-  if (!(sim.world.def.rules?.hostile ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown) return;
+  if (!(sim.world.def.rules?.hostile ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown || s.stowed) return;
   const p = s.player;
   const zone = sim.playerZone;
   // At a block with its own rooms, in them; in free time, wherever the two meet.

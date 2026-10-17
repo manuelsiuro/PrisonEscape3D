@@ -290,5 +290,31 @@ export const CENTER_PERKS: PrisonDef = {
       { x: 49, z: 53 },
       { x: 34, z: 57 },
     ],
-  ],
+  ],  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway'],
+  // Delivery day (P18): the supply truck backs up the south drive to the visitation room's gate
+  // (propped open while it's unloaded); the yard guard walks round it, and searches it one day
+  // in four.
+  delivery: {
+    vehicle: 'truck',
+    bay: [30, 47, 31, 51],
+    tail: { x: 30, z: 46 },
+    face: 5,
+    open: [
+      { x: 30, z: 45 },
+      { x: 31, z: 45 },
+    ],
+    supervisor: 3,
+    round: [
+      { x: 32, z: 46, wait: 5, face: 13 },
+      { x: 33, z: 50, wait: 4, face: 9 },
+      { x: 31, z: 53, wait: 5, face: 13 },
+      { x: 28, z: 50, wait: 4, face: 1 },
+      { x: 29, z: 46, wait: 5, face: 13 },
+    ],
+    thorough: 25,
+    road: [
+      { x: 31, z: 68 },
+      { x: 31, z: 49.5 },
+    ],
+  },
 };

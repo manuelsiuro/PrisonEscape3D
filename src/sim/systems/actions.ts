@@ -31,6 +31,7 @@ import { FEAST_ENERGY } from '../../content/days';
 import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
 import { canChat } from './ways';
+import { atTail, climbOut, stow } from './delivery';
 import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
 import { rep, startTraining, stopTraining, study } from './training';
@@ -68,6 +69,15 @@ export function useItems(sim: SimContext, cmd: number) {
       // Seated (or resting): the action button gets the player up.
       if (s.seat >= 0) {
         standUp(sim);
+        break;
+      }
+      // Delivery day (P18): out of the vehicle again; into it at its tail.
+      if (s.stowed) {
+        climbOut(sim);
+        break;
+      }
+      if (atTail(sim)) {
+        stow(sim);
         break;
       }
       const held = itemOf(it.inv[it.hand]);

@@ -6,7 +6,7 @@ import { fnv1a } from './rng';
 import { ESCAPES, freshState, loadState, type Attr, type LayerMove, type SimEvent, type SimState, type Snapshot } from './state';
 import { closeBox, keepSeat, regenerate, shower, standUp, underShower, useItems } from './systems/actions';
 import { chill } from './systems/weather';
-import { crowdPlan, dayWatch, drillOn, theDay } from './systems/calendar';
+import { crowdPlan, dayMinute, dayWatch, drillOn, theDay, today } from './systems/calendar';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
@@ -23,6 +23,7 @@ import { devices, powered, scan, takeoverCheck } from './systems/power';
 import { attendance, nextBlock } from './systems/routine';
 import { endTalk, grudges, guardTalking, keepTalk, offerFavors, socialNow } from './systems/social';
 import { bribesWearOff } from './systems/ways';
+import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
@@ -84,8 +85,8 @@ export class Sim {
   movedBy: LayerMove | null = null;
   /** Replaying a run logged before 1.11 (runlog.ts): the few rules fixed since (a scuffle's verdict) as they were then. Not state. */
   legacy = false;
-  /** Away on a raft from the pier, or the helicopter off the pad, this step (P12: the escape check reads it); not state. */
-  boarded: 'raft' | 'helicopter' | null = null;
+  /** Away on a raft from the pier, or the helicopter off the pad, this step (P12: the escape check reads it), or off with the delivery's vehicle (P18); not state. */
+  boarded: 'raft' | 'helicopter' | 'stowaway' | null = null;
 
   get clock(): Clock {
     return clockAt(this.state.step);
@@ -180,7 +181,9 @@ export class Sim {
     // Who each group shares the floor with (arrays reused: asleep, hundreds of steps run a second).
     const forInmates = this.forInmates;
     const inmateBodies = this.inmateBodies;
-    const about = s.layer === LAYER.GROUND;
+    // (Hidden in the delivery's vehicle, P18: nobody bumps into the player, nobody can come for them.)
+    const about = s.layer === LAYER.GROUND && !s.stowed;
+    const delivery = deliveryDuty(this);
     forInmates.length = 0;
     if (about) forInmates.push(s.player);
     for (const g of s.guards) forInmates.push(g.body);
@@ -190,8 +193,8 @@ export class Sim {
     clockIn(this);
     // A guard talking with the player has somewhere else to be at a new block (P15): the talk ends.
     const k = guardTalking(s);
-    if (k >= 0 && dutyDue(w.def.guards[k], s.guards[k], s.routine)) endTalk(this);
-    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about, guardTalking(s), s.salt);
+    if (k >= 0 && dutyDue(w.def.guards[k], s.guards[k], s.routine, k, delivery)) endTalk(this);
+    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about, guardTalking(s), s.salt, delivery);
   }
 
   /** The player's turn: out cold, or awake to walk and act. Returns true once they're out on the road (the step ends there). */
@@ -210,6 +213,12 @@ export class Sim {
       s.sleeping = false;
       this.events.push({ type: 'sleep', on: false });
     }
+    // Hidden in the delivery's vehicle (P18): going nowhere, and Interact climbs back out; the vehicle leaving takes the player with it.
+    if (s.stowed) {
+      s.player.moving = false;
+      useItems(this, STOWED_OPS.includes(opOf(cmd)) ? cmd : 0);
+      return this.out(-1);
+    }
     // Keys in the pockets open their doors for the player (GDD §7.3).
     w.setPlayerKeys(keysCarried(this));
     // A step off the equipment ends the training.
@@ -225,17 +234,25 @@ export class Sim {
     scan(this);
     // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
     useItems(this, s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
-    // On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), out of the gates in a takeover, through a gate with its keys (San Pancho's supply road), or through the fence.
-    // Or away over the sea (Irongate): on a raft off the pier, in the helicopter off its pad.
-    if (s.layer === LAYER.GROUND && (this.boarded || this.playerZone === 'outside')) {
-      s.escaped = s.step;
-      const gate = w.ground.kind[from] === TILE.DOOR;
-      s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : gate ? 'gate' : 'fence'));
-      closeBox(this);
-      this.events.push({ type: 'escaped', via: ESCAPES[s.via] });
-      return true;
-    }
-    return false;
+    return this.out(from);
+  }
+
+  /**
+   * On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), out of the gates in a takeover, through a gate with its keys (San Pancho's supply road), or through the fence.
+   * Or away over the sea (Irongate): on a raft off the pier, in the helicopter off its pad; or away in the delivery's vehicle (P18).
+   * (`from`: the tile the player stood on before walking this step; -1 not walking.)
+   */
+  private out(from: number): boolean {
+    const s = this.state;
+    // (Climbed out as it pulls away: left behind.)
+    if (this.boarded === 'stowaway' && !s.stowed) this.boarded = null;
+    if (s.layer !== LAYER.GROUND || !(this.boarded || (!s.stowed && this.playerZone === 'outside'))) return false;
+    s.escaped = s.step;
+    const gate = from >= 0 && this.world.ground.kind[from] === TILE.DOOR;
+    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : gate ? 'gate' : 'fence'));
+    closeBox(this);
+    this.events.push({ type: 'escaped', via: ESCAPES[s.via] });
+    return true;
   }
 
   /** Where the block wants the player: the routine's zones, or during the Work Period, the job's room (GDD §2.1: mandatory if employed). */
@@ -380,8 +397,23 @@ export class Sim {
     }
     const was = w.lockedCells;
     w.setLockedCells(mask);
+    // Delivery day (P18): the vehicle's bay solid and its doors propped open while it's in; anyone where it parks steps aside.
+    const arriving = !w.delivering;
+    // (Its doors stay open behind it, that day, while the player is still out there: never shut out.)
+    w.setDelivery(vehicleIn(this), this.outBeyond());
+    if (announce && arriving && w.delivering) clearBay(this);
     // The player hears their own door lock and unlock.
     if (announce && ((was ^ mask) & 2n) !== 0n) this.events.push({ type: 'cells', locked: (mask & 2n) !== 0n });
+  }
+
+  /** The player is out past the delivery's propped doors after it left today (P18): they stay open until they're back. */
+  private outBeyond(): boolean {
+    const s = this.state;
+    if (s.layer !== LAYER.GROUND || !this.world.def.delivery?.open) return false;
+    const p = today(this);
+    if (p.event !== 'delivery' || dayMinute(s.step) < p.at) return false;
+    const t = tileOfBody(s.player);
+    return this.world.beyond(t.z * MAP_W + t.x);
   }
 
   /** The zone the player stands in (off the ground floor: the tunnels, the vents, the roof). */
@@ -422,6 +454,8 @@ export class Sim {
 
 /** Where the fire drill musters. */
 const MUSTER: readonly string[] = ['rollCall'];
+/** What a player hidden in the delivery's vehicle can do (P18): climb out, and sort the pockets. */
+const STOWED_OPS: readonly number[] = [OP.INTERACT, OP.CLOSE, OP.MOVE, OP.EQUIP, OP.SELECT];
 
 /** Whether a body's footprint touches a tile. */
 function overlaps(b: Body, tile: number): boolean {

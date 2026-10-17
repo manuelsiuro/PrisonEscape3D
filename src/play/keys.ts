@@ -5,6 +5,7 @@ import { board, click, closeSocial, itemsUI, profile, socialOpen, sound, tools, 
 import { play, sendOp } from './game';
 import { autosave, openHelp, pause } from './session';
 import { aiming, cancelThrow, throwAhead } from './aim';
+import { toggleWait } from './day';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -38,6 +39,19 @@ function onKeyDown(e: KeyboardEvent) {
     else if (board.isOpen) board.close();
     else act();
   }
+  // Hidden in the delivery's vehicle (P18): E climbs out (above), Space waits (the clock fast until the search), I and H still open the file and the help; nothing else.
+  if (g.rec.sim.state.stowed) {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      toggleWait();
+    }
+    if (e.code === 'KeyI') {
+      click();
+      toggleProfile();
+    }
+    if (e.code === 'KeyH') openHelp();
+    return;
+  }
   if (e.code === 'KeyC') {
     closeSocial();
     itemsUI.toggleCraft();
@@ -60,7 +74,6 @@ function onKeyDown(e: KeyboardEvent) {
       itemsUI.toast(t('toast.nobodyToLock'));
     } else sendOp(OP.LOCK);
   }
-  // Space: the tool in hand (held, it keeps striking).
   // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
   if (e.code === 'Space') {
     e.preventDefault();

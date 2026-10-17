@@ -15,8 +15,8 @@ import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
 import { mix32 } from './rng';
 import { FEATS, freshFeats, partialLedger } from './systems/ledger';
-import type { ForcedDay } from './systems/calendar';
-import type { DayEvent } from '../content/days';
+import { dayPlan, type ForcedDay } from './systems/calendar';
+import { DAY_BOOKS, DAY_EVENTS, type DayEvent } from '../content/days';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
@@ -25,7 +25,7 @@ import { LAYER, type World } from './world/World';
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
-export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter'] as const;
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway'] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
 /** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper, a mine, the sea flooding a tunnel. */
 export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3, FLOOD: -4 } as const;
@@ -170,7 +170,13 @@ export type SimEvent =
    * muster taken or missed, the inspection's commendation.
    */
   | { type: 'day'; day: number }
-  | { type: 'today'; event: DayEvent; phase: 'start' | 'end' | 'muster' | 'missed' | 'commend' }
+  | { type: 'today'; event: DayEvent; phase: 'start' | 'end' | 'muster' | 'missed' | 'commend' | 'signOff' | 'search' | 'waved'; thorough?: boolean }
+  /**
+   * Delivery day (P18): into the vehicle and out of it (`found`: pulled out by a thorough
+   * search). (The day's delivery itself: 'today' events, its sign-off at 14:29, the search at
+   * 14:30, thorough or not, or waved through with nobody there to search.)
+   */
+  | { type: 'stow'; on: boolean; found?: boolean }
   | ItemEvent;
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
@@ -185,7 +191,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -340,6 +346,10 @@ export interface SimState {
   calendar: ForcedDay[];
   /** What happened today (P17, calendar.ts TODAY bits): the drill's muster, the inspection's blots, the feast. Cleared at 08:00. */
   eventFlags: number;
+  /** Hidden in the delivery's vehicle (P18): out of sight, going nowhere on foot, away with it at 14:31. */
+  stowed: boolean;
+  /** The prison day a stowaway was last pulled out of a vehicle (0 never): every search thorough for WARY_DAYS. */
+  stowCaught: number;
 }
 
 export interface Snapshot {
@@ -443,6 +453,8 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     mods: [],
     calendar: [],
     eventFlags: 0,
+    stowed: false,
+    stowCaught: 0,
   };
 }
 
@@ -487,6 +499,13 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   const days = (v: unknown) => Array.isArray(v) && v.every((d) => Array.isArray(d) && d.length === 3 && d.every((x) => Number.isInteger(x)));
   if (!days(st.calendar)) s.calendar = [[prisonDay(st.step), 0, 0]];
   if (!Number.isInteger(s.eventFlags)) s.eventFlags = 0;
+  // A save from before delivery day (P18): the day it was made on, and tomorrow (the forecast, the gossip may have named it), keep the card the delivery took the place of.
+  if (st.stowed === undefined) {
+    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.before ?? 'none');
+    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) if (dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event === 'delivery') s.calendar = [...s.calendar, [day, before, -1]];
+  }
+  if (typeof s.stowed !== 'boolean') s.stowed = false;
+  if (!Number.isInteger(s.stowCaught)) s.stowCaught = 0;
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

@@ -18,7 +18,9 @@ type Tab = 'trophies' | 'medals' | 'stats';
 const TABS: Tab[] = ['trophies', 'medals', 'stats'];
 
 /** Each way out's icon (as on the victory card). */
-export const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli' };
+export const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli', stowaway: 'truck' };
+/** A way out's icon in a prison (P18: Irongate's stowaway rides the helicopter). */
+export const routeIcon = (route: string, prison: string) => (route === 'stowaway' && PRISONS.find((p) => p.id === prison)?.delivery?.vehicle === 'helicopter' ? 'heli' : (ROUTE_ICON[route] ?? 'route'));
 
 /** The stats shown, in order: the stat, its icon, and how it's written. */
 const STATS: Array<[string, string, ((n: number) => string)?]> = [
@@ -102,7 +104,7 @@ function medalsTab(): string {
         // Each medal named (not by its colour alone): "Gold by day 3".
         const goal = days ? MEDALS.map((m, j) => `<span class="mg ${m}">${t(`trophy.${m}By` as Key, { n: days[j] })}</span>`).join('') : '';
         return `<li class="medal-row${found ? '' : ' unfound'}">
-          <span class="mr-ic" aria-hidden="true">${icon(found ? (ROUTE_ICON[route] ?? 'route') : 'lock', 18)}</span>
+          <span class="mr-ic" aria-hidden="true">${icon(found ? routeIcon(route, p.id) : 'lock', 18)}</span>
           <span class="mr-text"><b>${found ? t(`route.${route}` as Key) : t('victory.unknownRoute')}</b><small>${goal}</small></span>
           <span class="mr-best">${b ? t('hud.day', { n: b.day }) : found ? t('trophy.dayUnknown') : '—'}</span>
           ${medalDisc(b?.medal)}

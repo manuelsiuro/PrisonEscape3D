@@ -56,7 +56,8 @@ export function nextBlock(sim: SimContext, clock: Clock) {
 export function attendance(sim: SimContext) {
   const s = sim.state;
   const zone = sim.playerZone;
-  if (!s.attended && sim.dutyZones.includes(zone)) {
+  // (Hidden in the delivery's vehicle, P18, the player is nowhere a block wants them.)
+  if (!s.attended && !s.stowed && sim.dutyZones.includes(zone)) {
     s.attended = true;
     sim.events.push({ type: 'attended', routine: s.routine });
   }

@@ -1,4 +1,5 @@
 import { PRISONS, escapesOf } from '../../content/prisons';
+import { routeIcon } from './trophies';
 import type { PrisonDef } from '../../content/prisons/types';
 import { isOpen } from '../../game/campaign';
 import { recordOf } from '../../game/records';
@@ -7,7 +8,6 @@ import { h } from '../dom';
 import { icon } from '../icons';
 
 /** Each way out's icon (as on the victory screen). */
-const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli' };
 
 /** The prison's name, and its security level in words ("Medium security"). */
 export const prisonName = (def: PrisonDef) => t(`prison.${def.id}` as Key);
@@ -25,7 +25,7 @@ export function showPrisons(click: () => void): Promise<PrisonDef | null> {
     const rec = recordOf(def.id);
     const routes = escapesOf(def);
     const stars = Array.from({ length: 5 }, (_, i) => `<i class="${i < def.difficulty ? 'on' : ''}">${icon('star', 12)}</i>`).join('');
-    const pips = routes.map((r) => `<span class="pc-pip${rec.routes.includes(r) ? ' found' : ''}">${icon(rec.routes.includes(r) ? ROUTE_ICON[r] ?? 'star' : 'lock', 13)}</span>`).join('');
+    const pips = routes.map((r) => `<span class="pc-pip${rec.routes.includes(r) ? ' found' : ''}">${icon(rec.routes.includes(r) ? routeIcon(r, def.id) : 'lock', 13)}</span>`).join('');
     const foot = open
       ? `<span class="pc-pips" role="img" aria-label="${t('title.record', { n: rec.routes.length, of: routes.length })}">${pips}</span><small>${rec.routes.length ? t('prisons.best', { n: rec.bestDay }) : t('prisons.fresh')}</small>`
       : `<span class="pc-lock">${icon('lock', 14)}${t('prisons.locked', { name: prisonName(PRISONS[k - 1]) })}</span>`;

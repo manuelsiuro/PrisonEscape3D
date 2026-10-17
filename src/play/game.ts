@@ -21,6 +21,8 @@ export interface Game {
   guideFrom: number;
   /** Dev builds: simulation speed (`]` toggles fast-forward). */
   speed: number;
+  /** Hidden in the delivery's vehicle (P18): the Wait button runs the clock fast until the sign-off. */
+  waiting: boolean;
   /** One-step operations waiting for the next steps (one per step), from the item UI and keys: [op, a, b, c]. */
   ops: Array<[number, number, number, number]>;
   /** Where the ladder comes down (for the action button's label), worked out once. */

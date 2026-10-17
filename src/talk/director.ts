@@ -1,5 +1,6 @@
 import { itemDef } from '../content/items';
 import { ROUTINE } from '../content/routine';
+import { SEARCH_REACH } from '../content/days';
 import { t, type Key, type Lang } from '../i18n';
 import { enBarks, type BankId, type Barks } from '../i18n/barks/en';
 import { frBarks } from '../i18n/barks/fr';
@@ -506,6 +507,16 @@ export class Director {
       case 'today':
         if (e.phase === 'start' && e.event === 'drill') this.queueUp(now, 're.drill.in', this.inmatesNear(sim, px, pz, 30), 3, 'drill', undefined, 0.6);
         if (e.phase === 'start' && e.event === 'foodFight') this.queueUp(now, 're.foodFight.in', this.inmatesNear(sim, px, pz, 20), 3, 'foodFight', 'shout', 0.2);
+        // Delivery day (P18): the inmates by its bay see it come in; its supervisor at the tail, searching.
+        if (e.event === 'delivery' && sim.prison.delivery) {
+          const tx = sim.prison.delivery.tail.x + 0.5;
+          const tz = sim.prison.delivery.tail.z + 0.5;
+          if (e.phase === 'start') this.queueUp(now, 're.delivery.in', this.inmatesNear(sim, tx, tz, 18), 2, 'delivery', undefined, 1.2);
+          if (e.phase === 'search') this.queueUp(now, e.thorough ? 're.searchClose.gu' : 're.searchQuick.gu', this.guardsNear(sim, tx, tz, SEARCH_REACH + 1), 4, 'search', undefined, 0.2);
+        }
+        break;
+      case 'stow':
+        if (e.found) this.queueUp(now, 're.stowFound.in', this.inmatesNear(sim, px, pz, 12), 3, 'stowFound', undefined, 1.6);
         break;
       case 'shot':
         this.incident('shot', px, pz, now);

@@ -70,6 +70,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'riotAct', group: 'out', icon: 'users', gives: 'bandana', escape: (e) => e.via === 'takeover' },
   { id: 'keyMaster', group: 'out', icon: 'key', gives: 'star', escape: (e) => e.via === 'gate' },
   { id: 'castaway', group: 'out', icon: 'boat', gives: 'straw', escape: (e) => e.via === 'raft' || e.via === 'helicopter' },
+  // (P18.)
+  { id: 'specialDelivery', group: 'out', icon: 'truck', escape: (e) => e.via === 'stowaway' },
   { id: 'houdini', group: 'out', icon: 'star', gives: 'topHat', career: (c) => c.prisons.some((p) => p.routes.length >= p.of) },
   { id: 'grandTour', group: 'out', icon: 'map', gives: 'crown', career: (c) => c.prisons.every((p) => p.routes.length > 0), progress: (c) => [c.prisons.filter((p) => p.routes.length > 0).length, c.prisons.length] },
   // Speed.
@@ -107,6 +109,9 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'foodFighter', group: 'days', icon: 'fist', run: (r) => f(r, 'foodBlows') >= 3 },
   { id: 'stormRunner', group: 'days', icon: 'storm', escape: (e) => e.weather === 'storm' },
   { id: 'peaSouper', group: 'days', icon: 'fog', escape: (e) => e.weather === 'fog' },
+  // Delivery day (P18).
+  { id: 'offTheBooks', group: 'days', icon: 'clipboard', run: (r) => f(r, 'slipped') >= 1 },
+  { id: 'airMail', group: 'days', icon: 'heli', escape: (e) => e.via === 'stowaway' && e.prison === 'irongate' },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
@@ -115,6 +120,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'spudPeeler', group: 'mishaps', icon: 'potato', hidden: true, run: (r) => f(r, 'potatoes') >= 1 },
   { id: 'sunstroke', group: 'mishaps', icon: 'heat', hidden: true, run: (r) => f(r, 'baked') >= 1 },
   { id: 'drillDodger', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'drillsMissed') >= 1 },
+  { id: 'returnToSender', group: 'mishaps', icon: 'box', hidden: true, run: (r) => f(r, 'stowFound') >= 1 },
   // Career.
   { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },

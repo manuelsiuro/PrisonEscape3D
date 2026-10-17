@@ -21,7 +21,7 @@ import { aimUI, banner, board, combatUI, itemsUI, profile, settings, sleepVeil, 
 import { play } from './game';
 import { NEED } from './labels';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
-import { dayTime } from './day';
+import { dayTime, vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
 import { FEAST_ENERGY } from '../content/days';
 
@@ -101,7 +101,9 @@ export function announce(e: SimEvent, sim: Sim) {
       buzz('lockdown');
       itemsUI.closePanels();
       play.game?.pilot.stop();
-      banner.show(t('banner.caught'), e.solitary ? t('banner.caughtSolitary') : t('banner.caughtInfirmary'), 'alarm', 3000);
+      // (Pulled out of the delivery's vehicle, P18: the banner says where they were found.)
+      if (sim.events.some((x) => x.type === 'stow' && x.found)) banner.show(t('banner.found'), t('banner.foundSub', { vehicle: vehicleThe(sim) }), 'alarm', 3600);
+      else banner.show(t('banner.caught'), e.solitary ? t('banner.caughtSolitary') : t('banner.caughtInfirmary'), 'alarm', 3000);
       break;
     case 'solitary':
       if (e.on) {

@@ -99,6 +99,15 @@ export class World {
   readonly bridge = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 on doors shut for everyone but guards (the prison as built: inmates walk it, guards' eyes stop at it). */
   readonly doorShut = new Uint8Array(MAP_W * MAP_H);
+  /** Delivery day (P18): 1 under the vehicle while it's in (solid for everyone, and it stops sight); derived by the simulation. */
+  readonly parked = new Uint8Array(MAP_W * MAP_H);
+  /** 1 on doors standing open for the delivery while it's in (for everyone); derived by the simulation. */
+  readonly propped = new Uint8Array(MAP_W * MAP_H);
+  /** Whether the delivery's vehicle is in (what `parked` shows), and whether its doors stand open (while it's in, and after it while the player is still on its side of them). */
+  delivering = false;
+  private proppedOn = false;
+  /** 1 on the ground the delivery's propped doors lead to (from its tail, with them shut): worked out once. */
+  private beyondTiles: Uint8Array | null = null;
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
   rev = 0;
 
@@ -214,25 +223,76 @@ export class World {
     this.refreshBlock();
   }
 
+  /**
+   * The delivery's vehicle in or gone (P18): its bay solid while it's in; its doors propped open
+   * while it's in, and after it (that day) for as long as the player is still on its side of
+   * them (`keep`: worked out from the state, so a game loaded there is the same; nobody is shut
+   * out).
+   */
+  setDelivery(on: boolean, keep = false) {
+    const open = on || keep;
+    if (on === this.delivering && open === this.proppedOn) return;
+    this.delivering = on;
+    this.proppedOn = open;
+    this.parked.fill(0);
+    this.propped.fill(0);
+    const d = this.def.delivery;
+    if (on && d) this.fill(this.parked, ...d.bay, 1);
+    if (open && d) for (const q of d.open ?? []) this.propped[q.z * MAP_W + q.x] = 1;
+    this.refreshBlock();
+  }
+
+  /** Whether a ground tile lies beyond the delivery's propped doors (where only they let the player out). */
+  beyond(tile: number): boolean {
+    const d = this.def.delivery;
+    if (!d?.open?.length) return false;
+    if (!this.beyondTiles) {
+      // From the tail, over ground that's open with every door shut (the map as built).
+      const g = this.ground;
+      const seen = new Uint8Array(MAP_W * MAP_H);
+      const start = d.tail.z * MAP_W + d.tail.x;
+      const queue = [start];
+      seen[start] = 1;
+      for (let k = 0; k < queue.length; k++) {
+        const t = queue[k];
+        const x = t % MAP_W;
+        for (const [j, ok] of [
+          [t - 1, x > 0],
+          [t + 1, x < MAP_W - 1],
+          [t - MAP_W, t >= MAP_W],
+          [t + MAP_W, t < MAP_W * (MAP_H - 1)],
+        ] as const) {
+          if (!ok || seen[j]) continue;
+          const kind = g.kind[j];
+          if (kind === TILE.DOOR || TILE_INFO[kind].solid || this.propSolid[j]) continue;
+          seen[j] = 1;
+          queue.push(j);
+        }
+      }
+      this.beyondTiles = seen;
+    }
+    return this.beyondTiles[tile] === 1;
+  }
+
   /** Recomputes what blocks walking (call when door rules or tiles change). */
   refreshBlock() {
     const g = this.ground;
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const k = g.kind[i];
       const room = this.doorRoom[i];
-      const shut = k === TILE.DOOR && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && ((this.openRooms >> BigInt(room)) & 1n) === 1n);
+      const shut = k === TILE.DOOR && !this.propped[i] && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && ((this.openRooms >> BigInt(room)) & 1n) === 1n);
       this.doorShut[i] = shut ? 1 : 0;
       // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
       const keyed = shut && (this.riot || (!this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1));
       // The drawbridge (P12) is down while the prison is the inmates'.
       const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid && !(this.riot && this.bridge[i]);
-      this.block[i] = solid || this.propSolid[i] ? 1 : 0;
+      this.block[i] = solid || this.propSolid[i] || this.parked[i] ? 1 : 0;
       // Damage is the player's way: inmates and guards walk the prison as it was built (doors too).
       const damage = DAMAGE_SHOWS.has(k) ? 1 : 0;
       // Nobody walks into a minefield on purpose: inmates, guards, and the player's routes keep out (P11).
       const mine = k === TILE.MINE ? 1 : 0;
       this.npcBlock[i] = (k === TILE.DOOR ? (shut || this.propSolid[i] ? 1 : 0) : this.block[i]) | damage | mine;
-      this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] || damage || mine ? 1 : 0;
+      this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] || this.parked[i] || damage || mine ? 1 : 0;
       this.routeBlock[i] = this.block[i] | mine;
     }
     for (const l of [this.layers[LAYER.UNDER], this.layers[LAYER.VENTS], this.layers[LAYER.ROOF]]) {

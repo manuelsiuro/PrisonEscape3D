@@ -50,7 +50,33 @@ export interface GuardDef {
 export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';
 
 /** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
-export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter';
+export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway';
+
+/**
+ * Delivery day (P18): the vehicle that comes once a week, 12:30–14:31, and the guard who
+ * supervises it. All of it data: nothing on the map changes (the vehicle is drawn). While it's
+ * in, its bay is solid and stops sight; the doors listed stand open; the supervisor walks its
+ * round instead of his own, signs the vehicle off at its tail from 14:25 and searches it at 14:30.
+ */
+export interface DeliveryDef {
+  /** What comes (how it's drawn and named): the supply truck, the Red Cross truck, the produce truck, the supply helicopter. */
+  vehicle: 'truck' | 'redCross' | 'produce' | 'helicopter';
+  /** Where it stands: its footprint, solid and opaque while it's in. */
+  bay: Rect;
+  /** The tile at its tail (beside the bay) where a stowaway climbs in, and where the supervisor signs it off. */
+  tail: { x: number; z: number };
+  /** Which way its nose points (1–16; 5 south). */
+  face: number;
+  /** Doors that stand open while it's in (the porters carry the load through). */
+  open?: ReadonlyArray<{ x: number; z: number }>;
+  /** The guard who supervises it (index into guards), and the round he walks meanwhile. */
+  supervisor: number;
+  round: readonly Waypoint[];
+  /** Out of 100: the chance a day's search is thorough (a strict supervisor's always is). */
+  thorough: number;
+  /** The way it drives in and out (tiles, from off the map to the bay's middle; drawn only). */
+  road: ReadonlyArray<{ x: number; z: number }>;
+}
 
 /**
  * How a prison bends the common rules (P8+; each default is Center Perks'). New prisons add
@@ -124,4 +150,6 @@ export interface PrisonDef {
   landings?: readonly Rect[];
   /** Water a takeover bridges (Irongate's ferry drawbridge, GDD §4.5): walkable while the prison is the inmates'. */
   drawbridge?: Rect;
+  /** Its delivery day's vehicle (P18); without one, no delivery (the deck has no such card). */
+  delivery?: DeliveryDef;
 }

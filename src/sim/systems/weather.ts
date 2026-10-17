@@ -22,7 +22,8 @@ const WARM = new Set([itemNumber('cushioned_outfit'), itemNumber('plated_outfit'
 /** Whether the player is out in the cold now (in a freezing prison, without a warm outfit), or (P17) out in a heatwave's sun. */
 export function exposed(sim: SimContext): boolean {
   const s = sim.state;
-  if (sim.away) return false;
+  // (Hidden in the delivery's vehicle, P18: out of the wind and the sun.)
+  if (sim.away || s.stowed) return false;
   // A heatwave's day (P17): only its sun counts (whatever the prison's usual cold); else the cold, without a warm outfit.
   const exposure = baking(sim) ? sunBites(sim) : sim.world.def.rules?.cold && !WARM.has(itemOf(s.items.inv[SLOT.OUTFIT]));
   if (!exposure) return false;

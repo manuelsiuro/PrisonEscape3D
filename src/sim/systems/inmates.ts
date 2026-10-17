@@ -71,9 +71,12 @@ export const fighter = (str: number) => ({ hp: maxHealth(str), ko: 0, str, swing
 /** The player's seat (its tile, -1 standing): nobody picks it while they sit there. */
 let playerSeat = -1;
 
-/** Goals other inmates already hold, or the player's seat (so two never pick the same tile). */
+/** The delivery's bay while its vehicle is in (P18): nobody picks a spot under it. */
+let bay: Uint8Array | null = null;
+
+/** Goals other inmates already hold, or the player's seat (so two never pick the same tile); under the delivery's vehicle. */
 function taken(all: Inmate[], tile: number) {
-  return tile === playerSeat || all.some((m) => m.goal === tile);
+  return tile === playerSeat || (bay !== null && bay[tile] === 1) || all.some((m) => m.goal === tile);
 }
 
 /** A random spot from a list that nobody else is heading for (or any, if all are taken). */
@@ -166,6 +169,7 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
 export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number, foe: Body | null = null, social: Social = NO_SOCIAL) {
   const c: Crowd = { w, grid: w.npcBlock, all, others, step };
   playerSeat = social.seat;
+  bay = w.delivering ? w.parked : null;
   all.forEach((m, k) => {
     // Out cold: lies where it fell (Sim counts the time and wakes it).
     if (m.ko > 0) {

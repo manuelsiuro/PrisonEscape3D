@@ -302,4 +302,27 @@ export const STALAG_FLUCHT: PrisonDef = {
     ],
   ],
   rules: { cold: true },
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway'],
+  // Delivery day (P18): the Red Cross truck backs in through the south gate and up the camp's
+  // middle path (a lane left beside it); the south guard walks round it, and searches it two
+  // days in five.
+  delivery: {
+    vehicle: 'redCross',
+    bay: [20, 54, 21, 58],
+    tail: { x: 20, z: 53 },
+    face: 5,
+    supervisor: 5,
+    round: [
+      { x: 22, z: 53, wait: 5, face: 13 },
+      { x: 22, z: 57, wait: 3, face: 5 },
+      { x: 20, z: 60, wait: 5, face: 13 },
+      { x: 25, z: 59, wait: 3, face: 9 },
+      { x: 22, z: 57, wait: 3, face: 13 },
+    ],
+    thorough: 40,
+    road: [
+      { x: 21, z: 68 },
+      { x: 21, z: 56.5 },
+    ],
+  },
 };

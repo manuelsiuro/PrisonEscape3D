@@ -6,8 +6,8 @@
  * src/sim/systems/calendar.ts; a prison without a row (the Training Block) is always quiet.
  */
 
-/** The day's event. Stored as numbers: append only, never renumber (P18's delivery, P21's visiting day and P22's sports day come next). */
-export const DAY_EVENTS = ['none', 'inspection', 'drill', 'feast', 'maintenance', 'movie', 'foodFight'] as const;
+/** The day's event. Stored as numbers: append only, never renumber (P21's visiting day and P22's sports day come next). */
+export const DAY_EVENTS = ['none', 'inspection', 'drill', 'feast', 'maintenance', 'movie', 'foodFight', 'delivery'] as const;
 export type DayEvent = (typeof DAY_EVENTS)[number];
 
 /** The weather. Stored as numbers: append only. In the snow (Stalag Flucht) the storm is a blizzard. */
@@ -27,34 +27,46 @@ export interface DayBook {
   /** A week of event cards, every one dealt once a week in a shuffled order. */
   deck: readonly DayEvent[];
   climate: Climate;
+  /**
+   * The card the delivery (P18) took the place of in the week's deck (the deck keeps its
+   * length, so every other day deals as it did): a game saved before P18 keeps it on the day
+   * it's loaded.
+   */
+  before?: DayEvent;
 }
 
 /** prison → its days. */
 export const DAY_BOOKS: Record<string, DayBook> = {
   // Suburban and mild: a bit of everything, rarely too hot.
   'center-perks': {
-    deck: ['none', 'none', 'inspection', 'feast', 'movie', 'drill', 'maintenance'],
+    deck: ['none', 'delivery', 'inspection', 'feast', 'movie', 'drill', 'maintenance'],
     climate: { weights: [45, 15, 25, 10, 5], keep: 35, wind: 6 },
+    before: 'none',
   },
   // The Alps: clear (snowing), fog in the valleys, blizzards; never rain, never a heatwave.
+  // (The Red Cross truck comes once a week.)
   'stalag-flucht': {
-    deck: ['none', 'inspection', 'drill', 'drill', 'feast', 'maintenance', 'movie'],
+    deck: ['none', 'inspection', 'drill', 'delivery', 'feast', 'maintenance', 'movie'],
     climate: { weights: [50, 30, 0, 20, 0], keep: 40, wind: 0 },
+    before: 'drill',
   },
   // Industrial and grey: rain and smog, scuffles at meals.
   shankton: {
     deck: ['none', 'inspection', 'foodFight', 'drill', 'maintenance', 'movie', 'none'],
     climate: { weights: [35, 20, 30, 15, 0], keep: 35, wind: 5 },
   },
-  // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about.
+  // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about; the produce truck once a week.
   'san-pancho': {
-    deck: ['none', 'foodFight', 'foodFight', 'feast', 'movie', 'inspection', 'drill'],
+    deck: ['none', 'foodFight', 'delivery', 'feast', 'movie', 'inspection', 'drill'],
     climate: { weights: [45, 5, 0, 15, 35], keep: 40, wind: 2 },
+    before: 'foodFight',
   },
   // The island: sea fog and squalls, and inspectors on the ferry.
+  // (The supply helicopter by day once a week.)
   irongate: {
-    deck: ['none', 'inspection', 'inspection', 'drill', 'maintenance', 'movie', 'foodFight'],
+    deck: ['none', 'inspection', 'delivery', 'drill', 'maintenance', 'movie', 'foodFight'],
     climate: { weights: [35, 30, 20, 15, 0], keep: 35, wind: 7 },
+    before: 'inspection',
   },
 };
 
@@ -76,6 +88,8 @@ export const EVENT_TIMES: Record<Exclude<DayEvent, 'none'>, { at: number | Reado
   movie: { at: 660, length: 150 },
   // 15 minutes of a meal: breakfast (09:05–09:40) or dinner (17:05–17:40).
   foodFight: { at: [[65, 100], [545, 580]], length: 15 },
+  // 12:30–14:31: the vehicle in (its search at 14:30, away at 14:31).
+  delivery: { at: 270, length: 121 },
 };
 
 /** The fire drill: minutes after the bell by which the player must be at roll call, and what missing it costs. */
@@ -107,3 +121,9 @@ export const INSPECTION_CONTRABAND = 2;
 export const INSPECTION_CELLS = 4;
 /** The film's soundtrack: a noise made in the canteen during movie night carries this share (tenths). */
 export const MOVIE_NOISE = 4;
+
+/** The delivery (P18): the supervisor goes to the tail to sign it off this many minutes before the search (14:25: time to walk there from anywhere on its round), and searches from up to this far (tiles). */
+export const SIGN_OFF_MINUTES = 5;
+export const SEARCH_REACH = 3;
+/** After a stowaway is caught, every search is thorough for this many days after (two weeks: the next two deliveries). */
+export const WARY_DAYS = 14;

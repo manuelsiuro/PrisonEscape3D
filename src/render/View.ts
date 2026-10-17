@@ -28,6 +28,7 @@ import { setTheme } from './textures';
 import { Blobs } from './Blobs';
 import { Snowfall } from './Snow';
 import { Weather, type WeatherFrame, type WeatherView } from './Weather';
+import { Delivery, type DeliveryFrame } from './Delivery';
 import { DayEvents, type EventsFrame } from './DayEvents';
 import { ROOF_Y as ROOF_HEIGHT } from './Structure';
 import { WALL_H } from './WorldView';
@@ -99,6 +100,8 @@ export interface Frame {
   /** The day (P17): the weather over the prison, and the event on (the movie, the food fight, the inspectors). */
   weather: WeatherFrame;
   events: EventsFrame;
+  /** Delivery day (P18): where its vehicle is in its day, and the player hidden in it. */
+  delivery: DeliveryFrame;
 }
 
 const NO_FUSES: readonly number[] = [];
@@ -277,6 +280,8 @@ export class View {
   /** The day (P17): rain, ripples and fog; the movie screen, the food fight, the inspectors. */
   private readonly weather = new Weather();
   private readonly events = new DayEvents();
+  /** Delivery day's vehicle (P18; Irongate's helicopter is the island's). */
+  private readonly delivery = new Delivery();
   /** The weather's light this frame (the title has none), and a lightning flash easing away. */
   private wxLight: WeatherFrame | null = null;
   /** The weather's light as drawn: eased toward the frame's (P17). */
@@ -381,7 +386,8 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group);
+    this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
       this.dust.puff(x, z, color, 5, 0.1);
@@ -478,6 +484,7 @@ export class View {
     this.guide.world = world;
     this.cones.world = world;
     this.events.setWorld(world);
+    this.delivery.setWorld(world);
     this.weather.setWorld(world);
     this.warmDay();
     this.flash = 0;
@@ -941,6 +948,13 @@ export class View {
       if (!this.world.block[here]) this.doorsOpen.add(here);
       if (f.moving && !this.world.block[ahead]) this.doorsOpen.add(ahead);
     }
+    // Delivery day (P18): the vehicle in or on its road (the gates it passes open for it); the player hidden in it out of sight.
+    const dv = f.delivery;
+    this.delivery.group.visible = f.layer !== LAYER.UNDER;
+    const near = !!this.world?.def.delivery && Math.hypot(f.x - this.world.def.delivery.tail.x - 0.5, f.z - this.world.def.delivery.tail.z - 0.5) < 4;
+    this.delivery.update(dv, dt, time, !this.reducedMotion, near, f.layer === LAYER.GROUND);
+    for (const t of this.delivery.opening) this.doorsOpen.add(t);
+    if (dv.stowed) this.player.root.visible = false;
     // Z's over everyone asleep on the ground floor (the player too).
     this.sleepers.length = 0;
     if (f.layer === LAYER.GROUND) {
@@ -983,9 +997,10 @@ export class View {
       this.security.update(f.security, dt, time, this.night, !this.reducedMotion);
     }
     this.riot = f.takeover;
+    this.carrying = false;
     if (this.island) {
       this.island.group.visible = f.layer !== LAYER.UNDER;
-      this.island.update(dt, time, f.minuteOfDay, f.takeover, !this.reducedMotion);
+      this.island.update(dt, time, f.minuteOfDay, f.takeover, !this.reducedMotion, f.delivery);
       // Leaving: on the raft as it drifts out, or aboard the helicopter (out of sight).
       const on = this.island.carry(this.carried);
       this.carrying = !!on;
@@ -995,6 +1010,13 @@ export class View {
         this.target.lerp(this.v.set(on.x, on.y * 0.6, on.z), Math.min(1, dt * 3));
       }
       this.player.root.visible = !this.island.aboard && this.player.root.visible;
+    }
+    // Away in the delivery's truck (P18): the camera follows it out.
+    const ride = this.delivery.carry(this.carried);
+    if (ride) {
+      this.carrying = true;
+      this.player.root.visible = false;
+      this.target.lerp(this.v.set(ride.x, 0, ride.z), Math.min(1, dt * 3));
     }
     this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion, this.noiseFx.landing);
@@ -1021,11 +1043,19 @@ export class View {
     }
   }
 
-  /** Away over the sea (P12): the raft pushes off the pier, or the helicopter lifts off with the player aboard. */
-  depart(kind: 'raft' | 'helicopter') {
+  /** Away over the sea (P12): the raft pushes off the pier, or the helicopter lifts off with the player aboard; or (P18) the delivery's vehicle leaves with them hidden in it. */
+  depart(kind: 'raft' | 'helicopter' | 'stowaway') {
     const p = this.player.root.position;
+    if (kind === 'stowaway') {
+      if (this.world?.def.delivery?.vehicle === 'helicopter') this.island?.depart('helicopter', p.x, p.z);
+      else this.delivery.depart();
+      return;
+    }
     this.island?.depart(kind, p.x, p.z);
   }
+
+  /** Delivery day's sounds (the play layer plays them): reversing beeps, the tailgate, the engine. */
+  onDelivery: (kind: 'beep' | 'gate' | 'engine', x: number, z: number) => void = () => {};
 
   /** A landmine goes off (P11): a fireball of sparks, a column of sand and smoke, the hardest jolt. */
   blast(tile: number) {
@@ -1126,6 +1156,7 @@ export class View {
     this.wxLight = null;
     this.weather.update(NO_WEATHER, dt, time, this.target.x, this.target.z, 0, WALL_H + 0.45, 0, !this.reducedMotion, false, this.rainBelow, this.puddly);
     this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false, false);
+    this.delivery.update(null, dt, time, false, false);
     this.render(600, dt, model ? this.feet : null, time);
   }
 
@@ -1218,9 +1249,11 @@ export class View {
   private warmDay() {
     this.weather.warm(true);
     this.events.warm(true);
+    this.delivery.warm(true);
     this.renderer.compile(this.scene, this.camera);
     this.weather.warm(false);
     this.events.warm(false);
+    this.delivery.warm(false);
   }
 
   /** Who the day's events put on stage this frame (the inspectors), for the contact shadows. */

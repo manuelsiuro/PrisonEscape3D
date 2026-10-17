@@ -11,6 +11,7 @@ import { DECOR } from '../src/content/decor';
 /** A wall a decor piece can hang on (brick or concrete; holes and covers count, they look like wall). */
 const isWallTile = (k: number) => k === TILE.BRICK || k === TILE.REINFORCED;
 import { ZONES } from '../src/content/zones';
+import { DAY_BOOKS } from '../src/content/days';
 import { findPath } from '../src/sim/ai/path';
 import { isFloor, placesOf } from '../src/sim/ai/places';
 import { fnv1a } from '../src/sim/rng';
@@ -179,6 +180,35 @@ for (const def of [...PRISONS, TRAINING]) {
   const people = [...def.names, ...def.guards.map((d) => d.name ?? '')];
   check(new Set(people).size === people.length, `${def.id}: names are unique (${people.join(', ')})`);
   console.log(`guards: ${def.guards.length}, ${stops.length} stops, ${sleepers} asleep at night`);
+  // Delivery day (P18): the bay is open floor with nothing on it, the tail beside it, the doors
+  // propped are doors, and with the vehicle in, the supervisor's round and the tail can be
+  // walked (from where its own round goes); a delivery card in the deck only where a vehicle comes.
+  const dv = def.delivery;
+  check(!!dv === !!DAY_BOOKS[def.id]?.deck.includes('delivery'), `${def.id}: a delivery card in the deck only with a vehicle`);
+  if (dv) {
+    const [bx0, bz0, bx1, bz1] = dv.bay;
+    let bay = 0;
+    for (let z = bz0; z <= bz1; z++)
+      for (let x = bx0; x <= bx1; x++) {
+        // (Irongate's helicopter sets down on its pad.)
+        const pad = w.props.some((q) => q.kind === 'helipad' && x >= q.x && x < q.x + q.w && z >= q.z && z < q.z + q.d);
+        check(isFloor(w, x, z) || pad, `${def.id}: the delivery's bay ${x},${z} is open floor (or the helipad)`);
+        bay++;
+      }
+    const { x: tx, z: tz } = dv.tail;
+    const beside = (tx >= bx0 && tx <= bx1 && (tz === bz0 - 1 || tz === bz1 + 1)) || (tz >= bz0 && tz <= bz1 && (tx === bx0 - 1 || tx === bx1 + 1));
+    check(isFloor(w, tx, tz) && beside, `${def.id}: the delivery's tail ${tx},${tz} is floor beside the bay`);
+    for (const q of dv.open ?? []) check(w.ground.kind[q.z * MAP_W + q.x] === TILE.DOOR, `${def.id}: the delivery props open a door at ${q.x},${q.z}`);
+    check(!!def.guards[dv.supervisor], `${def.id}: the delivery's supervisor is a guard`);
+    w.setDelivery(true);
+    const from = def.guards[dv.supervisor].beat[0];
+    for (const p of [...dv.round, dv.tail]) {
+      check(isFloor(w, p.x, p.z) && !w.parked[p.z * MAP_W + p.x], `${def.id}: the delivery round's stop ${p.x},${p.z} is free floor beside the vehicle`);
+      check(findPath(w, from.z * MAP_W + from.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !== null, `${def.id}: the supervisor reaches ${p.x},${p.z} with the vehicle in`);
+    }
+    w.setDelivery(false);
+    console.log(`delivery: ${dv.vehicle}, ${bay} tiles, tail ${tx},${tz}, supervised by ${def.guards[dv.supervisor].name} (${dv.round.length} stops), thorough ${dv.thorough}%`);
+  }
 
   // A roof over the perimeter is a grapnel's landing (structure.ts): only a gatehouse
   // standing on the fence line may have one.

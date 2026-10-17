@@ -941,6 +941,32 @@ export class Sound {
     this.tone(400, 1100, 2.6, 'sawtooth', 0.03);
   }
 
+  /** Delivery day (P18): a vehicle backing up, its beep (quieter further off). */
+  reverseBeep(gain = 1) {
+    this.tone(1180, 1180, 0.16, 'square', 0.035 * gain);
+  }
+
+  /** A truck pulling away: the diesel's low rumble rising, a hiss of air brakes let off. */
+  engine(gain = 1) {
+    this.hiss(0.35, 'highpass', 2400, 0.8, 0.06 * gain);
+    this.tone(48, 92, 2.4, 'sawtooth', 0.07 * gain, 0.1);
+    this.tone(96, 150, 2.2, 'square', 0.025 * gain, 0.15);
+  }
+
+  /** A tailgate or roller door: a rattle and a clank (the search: shut tight). */
+  tailgate(gain = 1) {
+    this.hiss(0.32, 'bandpass', 900, 1.4, 0.12 * gain);
+    this.tone(140, 70, 0.18, 'square', 0.08 * gain, 0.28);
+    this.hiss(0.08, 'lowpass', 500, 0.8, 0.14 * gain, undefined, 0.3);
+  }
+
+  /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
+  stow(on: boolean) {
+    this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);
+    this.tone(on ? 330 : 260, on ? 240 : 360, 0.16, 'triangle', 0.05, 0.08);
+    this.hiss(0.1, 'bandpass', 1500, 1.5, 0.05, undefined, 0.22);
+  }
+
   /** The room tone and distant clanks while playing; silence on the title. */
   ambience(on: boolean) {
     if (on === this.ambienceOn) return;

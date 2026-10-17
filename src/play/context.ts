@@ -17,6 +17,7 @@ import { icon } from '../ui/icons';
 import { ItemsUI } from '../ui/items';
 import { ProfilePanel } from '../ui/profile';
 import { SolitaryPanel } from '../ui/solitary';
+import { StowPanel } from '../ui/stow';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
@@ -73,6 +74,8 @@ export const hud = new Hud(
 export const hint = new Hint();
 export const banner = new Banner();
 export const solitaryPanel = new SolitaryPanel();
+/** Hidden in the delivery's vehicle (P18). */
+export const stowPanel = new StowPanel();
 export const vignette = h('div', 'alarm-vignette');
 /** Solitary is a dark cell: the edges of the screen close in. */
 export const darkCell = h('div', 'solitary-veil');

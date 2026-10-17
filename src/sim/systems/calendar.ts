@@ -6,8 +6,8 @@
  * and weather (bots, tests, the Daily), and `state.mods` the Daily's twists.
  *
  * Each step (`theDay`) starts and ends the day's event on the minute: the inspection, the fire
- * drill and its muster, the feast, the generator's service, movie night, the food fight; and a
- * storm's power cuts in the night. What they change is asked of this module by the systems:
+ * drill and its muster, the feast, the generator's service, movie night, the food fight, the
+ * delivery (P18, delivery.ts: its search and departure); and a storm's power cuts in the night. What they change is asked of this module by the systems:
  * how far a guard sees (`sightOf`), how far a noise carries (`muffled`), the inmates' plan
  * (`crowdPlan`), the snipers in the weather, the heat of the sun.
  */
@@ -24,6 +24,7 @@ import type { Guard } from './guards';
 import { dayMinute, DAY_STEPS, prisonDay } from './clock';
 import { cutPower, generatorsOf, offFor, summon } from './power';
 import { addHeat } from './watch';
+import { deliveryMinute } from './delivery';
 
 export { DAY_STEPS, dayMinute, prisonDay };
 
@@ -100,16 +101,16 @@ const MOD_WEATHER: Record<string, Weather> = { fogDays: 'fog', storm: 'storm' };
 export function dayPlan(prison: string, salt: number, day: number, calendar: readonly ForcedDay[] = [], mods: readonly string[] = []): DayPlan {
   let event = drawnEvent(prison, salt, day);
   let weather = drawnWeather(prison, salt, day);
-  // Forced days: an exact day wins over every day (0).
+  // Forced days: an exact day wins over every day (0). (Never a delivery where no vehicle comes: a deck without the card.)
+  const book = DAY_BOOKS[prison];
   for (const pass of [0, 1])
     for (const [d, e, wx] of calendar) {
       if (pass === 0 ? d !== 0 : d !== day) continue;
-      if (e >= 0 && e < DAY_EVENTS.length) event = e;
+      if (e >= 0 && e < DAY_EVENTS.length && (DAY_EVENTS[e] !== 'delivery' || book?.deck.includes('delivery'))) event = e;
       if (wx >= 0 && wx < WEATHERS.length) weather = wx;
     }
   // (Not on day 1: it stays clear whatever the twist.)
   if (day > 1) for (const m of mods) if (MOD_WEATHER[m]) weather = WEATHERS.indexOf(MOD_WEATHER[m]);
-  const book = DAY_BOOKS[prison];
   const id = DAY_EVENTS[event];
   const w = WEATHERS[weather];
   // The wind: the prevailing one most days, else from anywhere; calm in fog, strong in a storm.
@@ -258,6 +259,10 @@ export const TODAY = {
   FEASTED: 16,
   /** Out cold, in solitary or in a lockdown during the drill's muster: no heat for missing it. */
   EXCUSED: 32,
+  /** Delivery day (P18): the vehicle searched (a quick look; thoroughly), or waved through with nobody there to search. */
+  SEARCHED: 64,
+  SEARCHED_CLOSE: 128,
+  WAVED: 256,
 } as const;
 
 /** A food fight's guards: this many drawn into the canteen for as long as it lasts. */
@@ -294,6 +299,7 @@ export function theDay(sim: SimContext) {
         addHeat(sim, DRILL_HEAT);
       }
     }
+    deliveryMinute(sim, p, m);
     if (m === p.until) endEvent(sim, p);
   }
   // A storm's power cuts, each generator still running (one already off: the lightning finds nothing to cut there).

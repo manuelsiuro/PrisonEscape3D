@@ -8,6 +8,7 @@ import { generatorsOf } from '../sim/systems/power';
 import { traitOf } from '../sim/systems/guards';
 import { shakedownCells } from '../sim/systems/justice';
 import { dayMinute, planOf, today } from '../sim/systems/calendar';
+import { searchMinute, thorough } from '../sim/systems/delivery';
 import type { GuardDef } from '../content/prisons/types';
 import { grateAt, underSea } from '../sim/systems/structure';
 import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN } from '../sim/tuning';
@@ -23,7 +24,7 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
@@ -141,11 +142,17 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // The day (P17): tomorrow's inspection, drill or food fight (the plan is drawn ahead: true), and tonight's storm's first power cut still to come.
   const plan = today(sim);
   const next = planOf(sim, plan.day + 1);
-  const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : null;
+  const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : next.event === 'delivery' ? 'nextDelivery' : null;
   if (ahead && !sim.prison.rules?.relaxed) out.push({ kind: ahead, key: `${ahead}:${next.day}`, n: next.day });
   const m = dayMinute(s.step);
   const cut = plan.outages.find((o) => o > m);
   if (cut !== undefined && !sim.prison.rules?.relaxed) out.push({ kind: 'stormCut', key: `stormCut:${plan.day}:${cut}`, t1: (cut + ROUTINE[0].start) % 1440 });
+  // Delivery day (P18): before the search, how thorough today's will be (drawn for the day: true; a catch changes only the days after).
+  const dv = sim.prison.delivery;
+  if (dv && plan.event === 'delivery' && m < searchMinute(plan) && !sim.prison.rules?.relaxed) {
+    const kind = thorough(sim, plan.day) ? 'searchClose' : 'searchQuick';
+    out.push({ kind, key: `search:${plan.day}`, guard: dv.supervisor });
+  }
   return out;
 }
 
@@ -186,6 +193,9 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   nextDrill: ['n'],
   nextFoodFight: ['n'],
   stormCut: ['t1'],
+  nextDelivery: ['n'],
+  searchClose: ['guard'],
+  searchQuick: ['guard'],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */

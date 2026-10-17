@@ -34,6 +34,16 @@
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:48 (visitation) resumes, day 1 08:53 (perimeter) resumes, day 1 08:53 (perimeter) resumes
   ledger: blows 15, koGuards 5, lockdowns 1, spotted 1, maxHeat 100, recruits 2, crew 2; walked 159 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 08:54 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 5, cash $0
+== stowaway
+  day 1 12:30 the delivery is in
+  day 1 12:47 into the vehicle
+  day 1 14:30 the vehicle searched (a quick look)
+  day 1 14:31 the delivery leaves
+  day 1 14:31 ESCAPED (stowaway)
+  saved and loaded at day 1 11:15 (playerCell) resumes, day 1 13:51 (perimeter) resumes, day 1 14:23 (perimeter) resumes, day 1 14:29 (perimeter) resumes
+  ledger: stowed 1; walked 212 tiles; days escaped
+  → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  seed 18: the search a quick look
 == stalag-flucht
   cutout: the fence cut 5.2 s after the power went off
 == stalag-flucht: perimeter cutout
@@ -73,6 +83,16 @@
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:49 (yard) resumes, day 1 08:54 (yard) resumes, day 1 08:55 (yard) resumes
   ledger: blows 13, koGuards 6, lockdowns 1, spotted 1, maxHeat 100, recruits 2, crew 2; walked 166 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 08:55 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 6, cash $0
+== stalag-flucht: stowaway
+  day 1 12:30 the delivery is in
+  day 1 12:46 into the vehicle
+  day 1 14:30 the vehicle searched (a quick look)
+  day 1 14:31 the delivery leaves
+  day 1 14:31 ESCAPED (stowaway)
+  saved and loaded at day 1 11:15 (playerCell) resumes, day 1 13:51 (yard) resumes, day 1 14:23 (yard) resumes, day 1 14:29 (yard) resumes
+  ledger: stowed 1; walked 154 tiles; days escaped
+  → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  seed 29: the search a quick look
 == shankton
   cutout: the fence cut 6.9 s after the power went off
 == shankton: perimeter cutout
@@ -153,6 +173,16 @@
   saved and loaded at day 1 08:46 (yard) resumes, day 1 09:23 (yard) resumes, day 1 09:30 (walkway) resumes, day 1 09:32 (walkway) resumes
   ledger: blows 9, koGuards 8, lockdowns 1, spotted 1, maxHeat 100, recruits 2, flung 4, crew 2; walked 154 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:32 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0
+== san-pancho: stowaway
+  day 1 12:30 the delivery is in
+  day 1 13:00 into the vehicle
+  day 1 14:30 the vehicle searched (a quick look)
+  day 1 14:31 the delivery leaves
+  day 1 14:31 ESCAPED (stowaway)
+  saved and loaded at day 1 11:15 (playerCell) resumes, day 1 13:51 (walkway) resumes, day 1 14:23 (walkway) resumes, day 1 14:29 (walkway) resumes
+  ledger: stowed 1; walked 219 tiles; days escaped
+  → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  seed 49: the search a quick look
 == irongate
   raft: the dock fence cut 25.7 s after GEN-2 went off
 == irongate: raft
@@ -200,3 +230,16 @@
   saved and loaded at day 1 08:46 (rollCall) resumes, day 1 09:23 (yard) resumes, day 1 09:31 (none) resumes, day 1 09:32 (perimeter) resumes
   ledger: blows 14, koGuards 10, lockdowns 1, spotted 1, maxHeat 100, recruits 2, flung 4, crew 2; walked 224 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:33 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 10, cash $0
+== irongate: stowaway
+  day 1 12:30 the delivery is in
+  day 1 13:02 detector: shielded (19 passes left)
+  day 1 13:14 into the vehicle
+  day 1 14:21 out of the vehicle
+  day 1 14:21 into the vehicle
+  day 1 14:30 the vehicle waved through
+  day 1 14:31 the delivery leaves
+  day 1 14:31 ESCAPED (stowaway)
+  saved and loaded at day 1 11:15 (playerCell) resumes, day 1 13:51 (helipad) resumes, day 1 14:23 (helipad) resumes, day 1 14:29 (helipad) resumes
+  ledger: thrown 1, decoys 1, bangs 1, stowed 2, slipped 1; walked 320 tiles; days escaped
+  → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  seed 59: the search thorough, the supervisor drawn off (1 slipped through)

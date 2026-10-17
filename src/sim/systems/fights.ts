@@ -294,7 +294,8 @@ export function fight(sim: SimContext) {
       sim.events.push({ type: 'lock', who: -1 });
     }
   }
-  if (sim.away || s.layer !== LAYER.GROUND) return;
+  // (Nobody lands a blow on a player hidden in the delivery's vehicle, P18.)
+  if (sim.away || s.layer !== LAYER.GROUND || s.stowed) return;
   const defense = itemDef(itemOf(s.items.inv[SLOT.OUTFIT]))?.defense ?? 0;
   for (let id = 0; id < s.inmates.length && !sim.away; id++) if (s.inmates[id].angry > 0) blow(sim, s.inmates[id], id, INMATE_SWING_STEPS, 0, defense);
   for (let k = 0; k < s.guards.length && !sim.away; k++) {

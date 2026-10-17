@@ -49,6 +49,7 @@ import {
   settings,
   sleepVeil,
   solitaryPanel,
+  stowPanel,
   sound,
   talk,
   tools,
@@ -129,6 +130,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
     guideAge: 1,
     guideFrom: -1,
     speed: 1,
+    waiting: false,
     ops: [],
     ladderFoot: ladderFootOf(sim.world),
     over: false,
@@ -284,6 +286,7 @@ export function endGame() {
   combatUI.show(false);
   sleepVeil.classList.remove('on', 'ko');
   solitaryPanel.update(null, 0);
+  stowPanel.update(null);
   darkCell.classList.remove('on');
   hint.hide();
   banner.clear();
@@ -336,12 +339,13 @@ export async function escaped() {
   keepReplay(log, rec.best);
   firstDay.stop();
   sound.music('title');
-  // Away over the sea (P12): the raft pushes off, the helicopter lifts away; a longer moment to watch it.
-  const away = via === 'raft' || via === 'helicopter';
+  // Away over the sea (P12): the raft pushes off, the helicopter lifts away; (P18) the delivery drives (or flies) off with the player hidden in it. A longer moment to watch it.
+  const away = via === 'raft' || via === 'helicopter' || via === 'stowaway';
   if (away) {
     view.depart(via);
     if (via === 'raft') sound.launch();
-    else sound.rotor();
+    else if (via === 'helicopter' || sim.prison.delivery?.vehicle === 'helicopter') sound.rotor();
+    else sound.engine();
   }
   // The escape camera (P16): a slow turn and pull-back, letterboxed, ESCAPED stamped; a tap skips it.
   await showCinema(view.cinema(away), () => view.skipCinema(), settings.reducedMotion);
@@ -349,6 +353,7 @@ export async function escaped() {
   const choice = await showVictory(
     {
       prison: t(`prison.${sim.prison.id}` as Key),
+      prisonId: sim.prison.id,
       day: clock.day,
       time: formatTime(clock),
       via,

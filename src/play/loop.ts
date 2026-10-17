@@ -22,6 +22,8 @@ const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
 const USE_OP: [number, number, number, number] = [OP.USE, 0, 0, 0];
 const PRESS_OP: [number, number, number, number] = [OP.USE, 1, 0, 0];
 const SLEEP_SPEED = 40;
+/** Hidden in the delivery's vehicle with Wait pressed (P18): the afternoon passes eight times as fast. */
+const WAIT_SPEED = 8;
 /** Knocked out, the 30 seconds pass in 3. */
 const KO_SPEED = 10;
 
@@ -35,7 +37,8 @@ function stepSim(g: Game, dt: number) {
   const sim = g.rec.sim;
   const p = sim.state.player;
   // Asleep, the night runs fast (about 13 s from 23:00 to 07:55).
-  const speed = sim.state.sleeping ? SLEEP_SPEED : sim.state.ko > 0 ? KO_SPEED : g.speed;
+  if (g.waiting && !sim.state.stowed) g.waiting = false;
+  const speed = sim.state.sleeping ? SLEEP_SPEED : sim.state.ko > 0 ? KO_SPEED : g.waiting ? Math.max(WAIT_SPEED, g.speed) : g.speed;
   play.acc += dt * speed;
   let steps = 0;
   while (play.acc >= 1 / STEPS_PER_SECOND && steps++ < 40 * speed) {
@@ -128,7 +131,7 @@ export function frame(now: number) {
   const tile = tileOfBody(p);
   const st = sim.state;
   const it = st.items;
-  const busy = st.sleeping || st.ko > 0 || st.solitary > 0 || g.paused || g.over;
+  const busy = st.sleeping || st.ko > 0 || st.solitary > 0 || st.stowed || g.paused || g.over;
   const held = itemOf(it.inv[it.hand]);
   const panel = itemsUI.panelOpen || socialOpen();
   document.body.classList.toggle('panel-open', panel);

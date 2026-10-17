@@ -4,6 +4,7 @@ zones: canteen 175, cellBlock 119, controlRoom 42, corridor 250, generator 48, g
 decor: 132 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, visitation, woodshop, yard
 guards: 5, 37 stops, 3 asleep at night
+delivery: truck, 10 tiles, tail 30,46, supervised by Moss (5 stops), thorough 25%
 vents: 48 duct tiles, 3 grates, 1 ladder; roof tiles 1782
 == stalag-flucht · picture 1002a882
 tiles: brick 596, concrete 206, detector 4, dirt 512, door 34, electric 281, grass 1096, road 496, tiled 146, tower 27, wood 698
@@ -11,6 +12,7 @@ zones: canteen 84, cellBlock 104, corridor 56, generator 54, guardQuarters 96, g
 decor: 65 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, playerCell, rollCall, showers, yard
 guards: 6, 40 stops, 4 asleep at night
+delivery: redCross, 10 tiles, tail 20,53, supervised by Fink (5 stops), thorough 40%
 vents: 1 duct tiles, 0 grates, 1 ladder; roof tiles 1684
 == shankton · picture 1b118955
 tiles: asphalt 130, brick 394, concrete 872, detector 10, door 37, electric 208, fence 204, grass 816, reinforced 203, road 488, tiled 444, tower 36, wood 254
@@ -26,6 +28,7 @@ zones: canteen 90, cellBlock 40, controlRoom 42, corridor 152, generator 24, gua
 decor: 94 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
 guards: 8, 45 stops, 2 asleep at night
+delivery: produce, 6 tiles, tail 31,56, supervised by Ochoa (4 stops), thorough 60%
 vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 1948
 == irongate · picture 04a9596b
 tiles: asphalt 325, brick 404, concrete 673, detector 6, door 36, electric 19, fence 10, grass 847, pier 6, reinforced 348, road 18, tiled 259, tower 36, water 925, wood 184
@@ -33,6 +36,7 @@ zones: canteen 132, cellBlock 108, controlRoom 63, corridor 88, dock 39, generat
 decor: 85 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
 guards: 10, 58 stops, 4 asleep at night
+delivery: helicopter, 16 tiles, tail 36,48, supervised by Doyle (4 stops), thorough 80%
 vents: 59 duct tiles, 2 grates, 1 ladder; roof tiles 1910
 == training · picture 9be5d540
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144

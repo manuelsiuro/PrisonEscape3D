@@ -10,7 +10,7 @@ worker bot (laundry, 3 days):
   day 2 12:14 quota 3/4
   day 2 12:18 quota 4/4
   day 2 12:18 +$30 (wage)
-  day 3 08:00 inmate 2 hired: woodshop
+  day 3 08:00 inmate 4 hired: woodshop
   day 3 12:13 quota 1/4
   day 3 12:13 quota 2/4
   day 3 12:13 quota 3/4
@@ -45,7 +45,7 @@ irongate janitor: day 1 12:23 +$35 (wage)
 irongate mailman: day 1 12:50 +$55 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
-  day 3 08:00 inmate 2 hired: laundry
+  day 3 08:00 inmate 5 hired: laundry
 sabotage: the kitchen hand fired at 15:00, the player hired for day 2
 training: 3 sets of weights → STR 46, energy 100 → 65
 speed: 3.59 tiles a second at SPD 40, 4.30 at 100

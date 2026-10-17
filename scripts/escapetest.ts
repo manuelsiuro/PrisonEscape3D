@@ -22,7 +22,7 @@ import { SHANKTON } from '../src/content/prisons/shankton';
 import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { placesOf } from '../src/sim/ai/places';
-import { command, dirFromVector, OP, SLOT, TALK } from '../src/sim/command';
+import { command, dirFromVector, EXT, OP, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { ESCAPES } from '../src/sim/Sim';
 import { awake, GUARD } from '../src/sim/systems/guards';
 import { itemOf, slot } from '../src/sim/systems/items';
@@ -33,6 +33,9 @@ import { LAYER, MAP_W } from '../src/sim/world/World';
 import { Bot, DIR, n, resumes, tileOf } from './bots';
 import { check } from './assert';
 import { DAY as DAY_BITS, FEATS } from '../src/sim/systems/ledger';
+import { DAY_EVENTS, WEATHERS } from '../src/content/days';
+import { thorough } from '../src/sim/systems/delivery';
+import { Sim } from '../src/sim/Sim';
 
 /** The run's ledger in a line (P16): counters that moved, and each day's bits. */
 export function ledgerLine(feats: readonly number[], days: readonly number[]): string {
@@ -80,7 +83,7 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.until(() => false, 10 * STEPS_PER_MINUTE);
 }
 
-type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter';
+type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway';
 
 /** Where each route goes in a prison: tiles as [x, z], with a facing where it matters. */
 interface Plan {
@@ -133,6 +136,10 @@ interface Plan {
   startAt?: number;
   /** Takeover: the chocolate kept for the riot guards (Irongate's armored four), the rest beaten by hand; and every chaser beaten before walking out (a riot guard catches a player who runs). */
   riotCups?: boolean;
+  /** Stowaway (P18): what the delivery's vehicle takes (keys and a uniform from the desk), the tile to wait at before slipping to the tail. */
+  stowKit?: string[];
+  /** Stowaway on a day its search would be thorough: a firecracker thrown here (from the tail) at 14:21 draws the supervisor off before the search. */
+  stowLure?: [number, number];
 }
 
 const PLANS: Plan[] = [
@@ -140,6 +147,7 @@ const PLANS: Plan[] = [
     def: CENTER_PERKS,
     seed: 11,
     name: (r) => r,
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway'],
     keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_green'],
     generator: [8, 41],
     generatorFace: DIR.SOUTH,
@@ -159,6 +167,7 @@ const PLANS: Plan[] = [
     def: STALAG_FLUCHT,
     seed: 21,
     name: (r) => `${STALAG_FLUCHT.id}: ${r}`,
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway'],
     keys: ['plastic_key_yellow', 'plastic_key_purple'],
     generator: [54, 26],
     generatorFace: DIR.NORTH,
@@ -220,7 +229,8 @@ const PLANS: Plan[] = [
     def: SAN_PANCHO,
     seed: 41,
     name: (r) => `${SAN_PANCHO.id}: ${r}`,
-    routes: ['tunnel', 'gate', 'takeover'],
+    routes: ['tunnel', 'gate', 'takeover', 'stowaway'],
+    stowKit: ['plastic_key_red', 'guard_outfit'],
     keys: ['plastic_key_yellow', 'plastic_key_red', 'plastic_key_green'],
     desk: [15, 12],
     toilet: [15, 14],
@@ -245,7 +255,9 @@ const PLANS: Plan[] = [
     def: IRONGATE,
     seed: 51,
     name: (r) => `${IRONGATE.id}: ${r}`,
-    routes: ['raft', 'helicopter', 'takeover'],
+    routes: ['raft', 'helicopter', 'takeover', 'stowaway'],
+    stowKit: ['plastic_key_red', 'guard_outfit', 'pouch', 'firecracker'],
+    stowLure: [33, 50],
     keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_red'],
     power2: [43, 45, DIR.SOUTH],
     dock: [59, 28, DIR.EAST],
@@ -680,6 +692,60 @@ function helicopter(p: Plan, seed: number) {
   check(bot.done && ESCAPES[st.via] === 'helicopter', 'away in the helicopter');
 }
 
+// ------------------------------------------------------------------ 8. the stowaway (P18)
+/**
+ * Delivery day forced on day 1: the morning kept, then (with the kit from the desk: keys and a
+ * uniform where the vehicle stands behind staff doors, a pouch through the arches) to the
+ * vehicle's tail; in as soon as no guard is looking, and away with it at 14:31 on a day its
+ * search is a quick look. Irongate's helicopter, on a day its search is thorough: out again at
+ * 14:21, a firecracker thrown across the court, back in; the supervisor still looking where it
+ * went off at 14:30, nobody searches.
+ */
+function stowaway(p: Plan, from: number) {
+  const d = p.def.delivery!;
+  const lure = p.stowLure;
+  // The first seed from `from` whose day-1 search is a quick look (thorough, with a lure).
+  let seed = from;
+  while (thorough(new Sim(p.def, seed), 1) !== !!lure) seed++;
+  const bot = new Bot(p.def, seed);
+  bot.st.calendar = [[1, DAY_EVENTS.indexOf('delivery'), WEATHERS.indexOf('clear')]];
+  const kit = p.stowKit ?? [];
+  if (kit.length) bot.stash(...kit);
+  check(bot.routineUntil(1, 12 * 60 + 35), 'the morning kept, the vehicle in');
+  if (kit.length) {
+    const places = placesOf(bot.sim.world);
+    check(bot.walkTo(places.deskside[1]), 'beside the desk');
+    bot.face(DIR.EAST);
+    check(bot.open(bot.desk), 'the desk opens');
+    bot.takeAll(kit.length);
+    bot.close();
+    if (kit.includes('guard_outfit')) {
+      bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
+      check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
+    }
+  }
+  check(bot.walkTo(tileOf(d.tail.x, d.tail.z), 4000), `at the ${d.vehicle}'s tail`);
+  check(bot.until(() => !bot.st.seen && !bot.st.guards.some((g) => g.mode === GUARD.CHASE), 60 * STEPS_PER_MINUTE), 'nobody looking');
+  bot.act();
+  check(bot.st.stowed, `hidden in the ${d.vehicle}`);
+  if (lure) {
+    check(bot.routineUntil(1, 14 * 60 + 21) || bot.st.stowed, '14:21');
+    bot.act();
+    check(!bot.st.stowed && bot.hold('firecracker'), 'out again, the firecracker in hand');
+    const [tb, tc] = tossArgs(tileOf(...lure));
+    bot.step(command(0, OP.EXT, EXT.THROW, tb, tc));
+    check(bot.st.fuses.length === 1, 'thrown across the court, lit');
+    check(bot.until(() => !bot.st.seen, 60 * STEPS_PER_MINUTE), 'nobody looking');
+    bot.act();
+    check(bot.st.stowed, 'back in');
+  }
+  check(bot.until(() => bot.done, 3 * 60 * STEPS_PER_MINUTE), 'away with it');
+  report(p.name('stowaway'), bot);
+  console.log(`  seed ${seed}: the search ${lure ? `thorough, the supervisor drawn off (${bot.st.feats[FEATS.indexOf('slipped')]} slipped through)` : 'a quick look'}`);
+  check(bot.done && ESCAPES[bot.st.via] === 'stowaway', 'away as a stowaway');
+  check(bot.heatPeak < 80, 'never wanted on the way');
+}
+
 // ONLY=<prison id> runs one prison's routes (while working on them).
 for (const p of PLANS) {
   if (process.env.ONLY && p.def.id !== process.env.ONLY) continue;
@@ -692,6 +758,7 @@ for (const p of PLANS) {
   if (routes.includes('raft')) raft(p, p.seed + 5);
   if (routes.includes('helicopter')) helicopter(p, p.seed + 6);
   if (routes.includes('takeover')) takeover(p);
+  if (routes.includes('stowaway')) stowaway(p, p.seed + 7);
 }
 
 void DAY;

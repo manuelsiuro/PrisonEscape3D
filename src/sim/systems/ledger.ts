@@ -56,6 +56,10 @@ export const FEATS = [
   'feasts',
   'foodBlows',
   'baked',
+  // v1.12 (P18, delivery day): times hidden in the delivery's vehicle, waved through on a day its search would have been thorough, found in it.
+  'stowed',
+  'slipped',
+  'stowFound',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -171,6 +175,11 @@ export function ledger(sim: Sim, x: number, z: number) {
         if (e.phase === 'commend') f[FEAT.commended]++;
         else if (e.phase === 'muster') f[FEAT.mustered]++;
         else if (e.phase === 'missed') f[FEAT.drillsMissed]++;
+        else if (e.phase === 'waved' && e.thorough && s.stowed) f[FEAT.slipped]++;
+        break;
+      case 'stow':
+        if (e.on) f[FEAT.stowed]++;
+        else if (e.found) f[FEAT.stowFound]++;
         break;
       case 'cold':
         if (e.on && e.hot) f[FEAT.baked]++;

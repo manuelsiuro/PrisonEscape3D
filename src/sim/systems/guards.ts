@@ -12,6 +12,7 @@ import { MAP_W, type World } from '../world/World';
 import type { Fighter } from './combat';
 import { DOING, fighter, STAND_OFF } from './inmates';
 import { bodyAt, type Body } from './movement';
+import type { DeliveryDuty } from './delivery';
 
 /** What a guard is up to. Never renumber: saves store them. */
 export const GUARD = {
@@ -81,6 +82,9 @@ const GLANCE = 30;
 const PLAN_ROUND = -1;
 const PLAN_NIGHT = -2;
 const PLAN_BED = -3;
+/** The delivery's supervisor (P18): its round of the vehicle, then the sign-off at its tail. */
+const PLAN_DELIVERY = -4;
+const PLAN_SIGN = -5;
 const PLAN_NONE = -9;
 
 export function spawnGuards(w: World): Guard[] {
@@ -146,8 +150,9 @@ function bedOf(w: World, k: number): number {
   return placesOf(w).guardBeds[n]?.tile ?? -1;
 }
 
-/** A guard's duty during a routine block: a post, its day round, its night round or bed. */
-function dutyOf(def: GuardDef, routine: number): number {
+/** A guard's duty during a routine block: a post, its day round, its night round or bed; the delivery's supervisor (P18) the vehicle's round or its sign-off. */
+function dutyOf(def: GuardDef, routine: number, k: number, delivery: DeliveryDuty | null): number {
+  if (delivery?.guard === k) return delivery.signOff ? PLAN_SIGN : PLAN_DELIVERY;
   const id = ROUTINE[routine].id;
   if (def.posts?.[id]) return routine;
   if (id !== 'lightsOut') return PLAN_ROUND;
@@ -201,6 +206,8 @@ export function stepGuards(
   talkTo = -1,
   /** state.salt (P15): how long a nap lasts. */
   salt = 0,
+  /** The delivery's supervisor and what it's to do (P18; null while no vehicle is in). */
+  delivery: DeliveryDuty | null = null,
 ) {
   const crowd: Crowd = { w, grid: w.guardBlock, all: guards, others: playerHere ? [player, ...inmates] : inmates, step };
   const chasers: Crowd = { ...crowd, others: inmates };
@@ -331,7 +338,7 @@ export function stepGuards(
         break;
       }
       default:
-        duty(crowd, g, k, def, routine, step, w, player, playerHere, report, salt);
+        duty(crowd, g, k, def, routine, step, w, player, playerHere, report, salt, delivery);
     }
   });
 }
@@ -405,15 +412,15 @@ export function assign(g: Guard, mode: number, cells: number[]) {
 }
 
 /** Whether a guard's duty changes with this block (a new round, a post, bed): a talk with it ends (P15). */
-export const dutyDue = (def: GuardDef, g: Guard, routine: number) => g.plan !== PLAN_NONE && dutyOf(def, routine) !== g.plan;
+export const dutyDue = (def: GuardDef, g: Guard, routine: number, k: number, delivery: DeliveryDuty | null) => g.plan !== PLAN_NONE && dutyOf(def, routine, k, delivery) !== g.plan;
 
 /**
  * Rounds, posts and bed. A lazy guard on its night round dozes off at its nap stop between
  * 01:00 and 05:00, once a night (P15): blind until the nap is over (05:00 at the latest), a
  * noise wakes it (noise.ts), or the player stands at its elbow a moment.
  */
-function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World, player: Body, playerHere: boolean, report: (r: GuardReport) => void, salt: number) {
-  const plan = dutyOf(def, routine);
+function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World, player: Body, playerHere: boolean, report: (r: GuardReport) => void, salt: number, delivery: DeliveryDuty | null) {
+  const plan = dutyOf(def, routine, k, delivery);
   if (plan !== g.plan) {
     if (rouse(g)) report({ kind: 'nap', guard: k, on: false });
     g.plan = plan;
@@ -422,8 +429,8 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
     g.timer = 0;
     g.doing = DOING.NOTHING;
     // Off to the round: start at its nearest stop.
-    const round = plan === PLAN_NIGHT ? def.night! : def.beat;
-    if (plan === PLAN_ROUND || plan === PLAN_NIGHT) g.leg = nearest(g.body, round);
+    const round = plan === PLAN_NIGHT ? def.night! : plan === PLAN_DELIVERY ? delivery!.round : def.beat;
+    if (plan === PLAN_ROUND || plan === PLAN_NIGHT || plan === PLAN_DELIVERY) g.leg = nearest(g.body, round);
   }
   if (g.wait > 0) {
     g.wait--;
@@ -440,9 +447,9 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
     } else head(c, g, bed);
     return;
   }
-  if (plan >= 0) {
-    // A post: walk there, then stand watching, glancing either side.
-    const post = def.posts![ROUTINE[plan].id]!;
+  if (plan >= 0 || plan === PLAN_SIGN) {
+    // A post: walk there, then stand watching, glancing either side. (The delivery's sign-off: at the vehicle's tail, facing it.)
+    const post = plan === PLAN_SIGN ? delivery!.signOff! : def.posts![ROUTINE[plan].id]!;
     if (g.goal !== tileOf(post)) {
       head(c, g, tileOf(post));
       g.face = post.face ?? 5;
@@ -454,7 +461,7 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
     } else head(c, g, tileOf(post));
     return;
   }
-  const round = plan === PLAN_NIGHT ? def.night! : def.beat;
+  const round = plan === PLAN_NIGHT ? def.night! : plan === PLAN_DELIVERY ? delivery!.round : def.beat;
   const stop = round[g.leg % round.length];
   if (g.goal !== tileOf(stop)) {
     head(c, g, tileOf(stop));

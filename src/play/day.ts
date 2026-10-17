@@ -1,14 +1,17 @@
 import { buzz } from '../app/haptics';
-import { COMMENDATION, DAY_BOOKS, DRILL_HEAT, FEAST_ENERGY, MUSTER_MINUTES, WEATHER_SIGHT, type DayEvent, type Weather } from '../content/days';
+import { COMMENDATION, DAY_BOOKS, DRILL_HEAT, FEAST_ENERGY, MUSTER_MINUTES, SIGN_OFF_MINUTES, WEATHER_SIGHT, type DayEvent, type Weather } from '../content/days';
+import type { StowView } from '../ui/stow';
+import { guardSubject } from '../ui/social';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, dayRoll, eventOn, planOf, TODAY, today, weatherNow, type DayPlan } from '../sim/systems/calendar';
+import { searchMinute } from '../sim/systems/delivery';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
 import type { PaRow } from '../ui/pa';
 import { PLAYER } from '../talk/fill';
-import { banner, itemsUI, lightningVeil, paBoard, profile, settings, socialOpen, sound, view } from './context';
+import { banner, itemsUI, lightningVeil, paBoard, profile, settings, socialOpen, sound, stowPanel, view } from './context';
 import { play, type Game } from './game';
 import { seenTip } from './tips';
 
@@ -21,14 +24,25 @@ import { seenTip } from './tips';
  * warden says is what happens.
  */
 
-export const EVENT_ICON: Record<DayEvent, string> = { none: 'calendar', inspection: 'clipboard', drill: 'siren', feast: 'utensils', maintenance: 'wrench', movie: 'film', foodFight: 'splash' };
-export const EVENT_COLOR: Record<DayEvent, string> = { none: '#8aa0b8', inspection: '#5fa8e8', drill: '#ff7a1a', feast: '#e2a21b', maintenance: '#f0b429', movie: '#a77bff', foodFight: '#ff5f6d' };
+export const EVENT_ICON: Record<DayEvent, string> = { none: 'calendar', inspection: 'clipboard', drill: 'siren', feast: 'utensils', maintenance: 'wrench', movie: 'film', foodFight: 'splash', delivery: 'truck' };
+export const EVENT_COLOR: Record<DayEvent, string> = { none: '#8aa0b8', inspection: '#5fa8e8', drill: '#ff7a1a', feast: '#e2a21b', maintenance: '#f0b429', movie: '#a77bff', foodFight: '#ff5f6d', delivery: '#3fc79a' };
+/** An event's icon here (P18: Irongate's delivery comes by helicopter). */
+export const eventIcon = (sim: Sim, e: DayEvent) => (e === 'delivery' && sim.prison.delivery?.vehicle === 'helicopter' ? 'heli' : EVENT_ICON[e]);
+
+/** Delivery day (P18): the vehicle that comes ("Supply truck"), as said in a sentence ("the supply truck"), and who supervises it. */
+const vehicleOf = (sim: Sim) => sim.prison.delivery?.vehicle ?? 'truck';
+export const vehicleName = (sim: Sim) => t(`vehicle.${vehicleOf(sim)}` as Key);
+export const vehicleThe = (sim: Sim) => t(`vehicle.the.${vehicleOf(sim)}` as Key);
+const supervisorOf = (sim: Sim) => {
+  const name = sim.prison.guards[sim.prison.delivery?.supervisor ?? -1]?.name;
+  return name ? t('guard.the', { name }) : t('guard.nameless');
+};
 /** The weather as it's named and drawn: in the snow (Stalag Flucht) a clear day snows, a storm is a blizzard. */
 type WeatherName = Weather | 'snow' | 'blizzard';
 const WX_ICON: Record<WeatherName, string> = { clear: 'sun', snow: 'snow', fog: 'fog', rain: 'rain', storm: 'storm', blizzard: 'storm', heatwave: 'heat' };
 const WX_COLOR: Record<WeatherName, string> = { clear: '#ffd76a', snow: '#e6f3ff', fog: '#cfd8e2', rain: '#8cc8ff', storm: '#b8a8ff', blizzard: '#cfe6ff', heatwave: '#ffb35a' };
 /** Events the warden warns of fifteen minutes ahead (the drill is a surprise; a food fight just happens). */
-const WARNED: ReadonlySet<DayEvent> = new Set(['inspection', 'feast', 'maintenance', 'movie']);
+const WARNED: ReadonlySet<DayEvent> = new Set(['inspection', 'feast', 'maintenance', 'movie', 'delivery']);
 const WARN_AHEAD = 15;
 /** 22:00: tomorrow's forecast; 14:30: a quip on a quiet afternoon (minutes into the prison day). */
 const FORECAST_AT = 14 * 60;
@@ -83,13 +97,15 @@ export function dayRows(sim: Sim, p: DayPlan, forecast = false, inFile = false):
         return t('day.eventD.feast', { n: FEAST_ENERGY });
       case 'maintenance':
         return t('day.eventD.maintenance', { from: dayTime(p.at), to: dayTime(p.until) });
+      case 'delivery':
+        return t('day.eventD.delivery', { guard: supervisorOf(sim), search: dayTime(searchMinute(p)), leave: dayTime(p.until) });
       default:
         return t(`day.eventD.${ev}` as Key);
     }
   })();
   const w = weatherName(sim, p.weather);
   return [
-    { icon: EVENT_ICON[p.event], color: EVENT_COLOR[p.event], label: t(inFile ? 'pa.event' : forecast ? 'profile.tomorrow' : 'pa.today'), title: t(`day.event.${ev}` as Key), when: ev === 'rowdy' ? '' : p.event === 'drill' && begun ? t('day.rang', { time: dayTime(p.at) }) : p.event === 'foodFight' && begun ? t('day.when', { from: dayTime(p.at), to: dayTime(p.until) }) : whenOf(p), sub },
+    { icon: eventIcon(sim, p.event), color: EVENT_COLOR[p.event], label: t(inFile ? 'pa.event' : forecast ? 'profile.tomorrow' : 'pa.today'), title: p.event === 'delivery' ? vehicleName(sim) : t(`day.event.${ev}` as Key), when: ev === 'rowdy' ? '' : p.event === 'drill' && begun ? t('day.rang', { time: dayTime(p.at) }) : p.event === 'foodFight' && begun ? t('day.when', { from: dayTime(p.at), to: dayTime(p.until) }) : whenOf(p), sub },
     { icon: WX_ICON[w], color: WX_COLOR[w], label: t('pa.weather'), title: t(`weather.${w}` as Key), when: '', note: t(`windForce.${p.windForce}` as Key, { dir: t(`wind.${p.wind}` as Key) }), sub: t(`weatherD.${w}` as Key, { n: WEATHER_SIGHT[p.weather] ?? 7 }) },
   ];
 }
@@ -107,7 +123,7 @@ function morning(sim: Sim, first: boolean) {
   if (settings.pa === 'off' || sim.state.sleeping) return;
   const p = today(sim);
   const id = sim.prison.id;
-  const what = t(`pa.morning.${p.event}` as Key, { time: dayTime(p.at), from: dayTime(p.at), to: dayTime(p.until) });
+  const what = t(`pa.morning.${p.event}` as Key, { time: dayTime(p.at), from: dayTime(p.at), to: dayTime(p.until), vehicle: vehicleThe(sim) });
   const sky = t(`pa.weatherSay.${weatherName(sim, p.weather)}` as Key);
   if (settings.pa === 'short') {
     paBoard.say(wardenOf(sim), `${what} ${sky}`);
@@ -139,7 +155,7 @@ export function dayStep(sim: Sim) {
   if (!hasDays(g) || st.step % STEPS_PER_MINUTE !== 0 || st.sleeping || g.over) return;
   const m = dayMinute(st.step);
   const p = today(sim);
-  if (WARNED.has(p.event) && m === p.at - WARN_AHEAD) say(sim, t(`pa.warn.${p.event}` as Key));
+  if (WARNED.has(p.event) && m === p.at - WARN_AHEAD) say(sim, t(`pa.warn.${p.event}` as Key, { vehicle: vehicleThe(sim) }));
   if (m === FORECAST_AT) {
     const next = planOf(sim, p.day + 1);
     const sky = t(`weather.${weatherName(sim, next.weather)}` as Key).toLocaleLowerCase();
@@ -169,9 +185,21 @@ export function dayEvent(e: SimEvent, sim: Sim) {
           buzz('giveWay');
           banner.show(t('banner.foodFight'), t('banner.foodFightSub'), 'routine', 3800);
           say(sim, t('pa.start.foodFight'));
-        } else say(sim, t(`pa.start.${e.event}` as Key, { time: dayTime(p.until) }));
+        } else say(sim, t(`pa.start.${e.event}` as Key, { time: dayTime(p.until), vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'end') {
-        if (e.event !== 'feast') say(sim, t(`pa.end.${e.event}` as Key));
+        if (e.event !== 'feast' && !sim.state.escaped) say(sim, t(`pa.end.${e.event}` as Key, { vehicle: vehicleThe(sim) }));
+      } else if (e.phase === 'signOff') {
+        say(sim, t('pa.signOff', { vehicle: vehicleThe(sim), search: dayTime(searchMinute(p)), time: dayTime(p.until) }));
+        // Waiting in the dark: the last minutes play out at their own pace.
+        if (sim.state.stowed && g.waiting) g.waiting = false;
+      } else if (e.phase === 'search') {
+        // Hidden in it, a quick look is the sweetest sound: the tailgate slamming shut.
+        if (sim.state.stowed && !e.thorough) banner.toast(t('toast.quickLook', { guard: supervisorOf(sim) }), 'good', 4200);
+        // (A stowaway found has the warden's own line.)
+        if (!sim.events.some((x) => x.type === 'stow' && x.found)) say(sim, t(e.thorough ? 'pa.searchClose' : 'pa.searchQuick', { vehicle: vehicleThe(sim) }));
+      } else if (e.phase === 'waved') {
+        if (sim.state.stowed) banner.toast(t('toast.waved'), 'good', 4200);
+        say(sim, t('pa.waved', { vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'muster') {
         sound.chime();
         buzz('attended');
@@ -188,6 +216,21 @@ export function dayEvent(e: SimEvent, sim: Sim) {
       }
       break;
     }
+    // Delivery day (P18): into the vehicle and out (pulled out by the search: caught).
+    case 'stow':
+      if (e.on) {
+        sound.stow(true);
+        buzz('attended');
+        banner.toast(t('toast.stowed', { vehicle: vehicleThe(sim), time: dayTime(today(sim).until) }), 'good', 4200);
+      } else if (e.found) {
+        // (The capture's banner says it: announce.ts.)
+        say(sim, t('pa.found', { vehicle: vehicleThe(sim) }));
+      } else {
+        sound.stow(false);
+        banner.toast(t('toast.unstowed', { vehicle: vehicleThe(sim) }));
+      }
+      if (!sim.state.stowed) g.waiting = false;
+      break;
     case 'power':
       if (!e.on && e.by === 'storm' && e.gen !== 1) {
         // Lightning (a blizzard just takes the power: no bolt in the snow); none seen asleep or underground.
@@ -197,6 +240,42 @@ export function dayEvent(e: SimEvent, sim: Sim) {
       break;
   }
 }
+
+const stowView: StowView = { icon: 'truck', vehicle: '', leaves: '', search: '', guard: '', done: 0, searched: 'ahead', waiting: false, canWait: true };
+
+/** The hidden player's card (P18), null when not hidden. */
+export function stowCard(g: Game): StowView | null {
+  const sim = g.rec.sim;
+  const st = sim.state;
+  if (!st.stowed || g.over) return null;
+  const p = today(sim);
+  const v = stowView;
+  const m = (st.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE;
+  v.icon = eventIcon(sim, 'delivery');
+  v.vehicle = vehicleThe(sim);
+  v.leaves = dayTime(p.until);
+  v.search = dayTime(searchMinute(p));
+  const k = sim.prison.delivery?.supervisor ?? -1;
+  v.guard = k >= 0 ? guardSubject(sim, k) : t('guard.nameless');
+  v.done = (m - p.at) / Math.max(1, p.until - p.at);
+  // (From the state: a game loaded after the search says how it went.)
+  v.searched = st.eventFlags & TODAY.WAVED ? 'waved' : st.eventFlags & TODAY.SEARCHED ? 'quick' : 'ahead';
+  v.canWait = m < searchMinute(p) - SIGN_OFF_MINUTES;
+  v.waiting = g.waiting;
+  return v;
+}
+
+/** The Wait button (or Space) while hidden: the clock runs fast until the sign-off, or back to normal. */
+export function toggleWait() {
+  const g = play.game;
+  if (!g || !g.rec.sim.state.stowed) return;
+  const p = today(g.rec.sim);
+  if (dayMinute(g.rec.sim.state.step) >= searchMinute(p) - SIGN_OFF_MINUTES) return;
+  g.waiting = !g.waiting;
+  sound.click();
+}
+
+stowPanel.onWait = toggleWait;
 
 /** The morning card hears Esc only while nothing is open over the game (a panel, the file, a talk). */
 paBoard.onTop = () => !itemsUI.panelOpen && !socialOpen();
@@ -241,6 +320,19 @@ export function dayFrame(g: Game, dt: number, quiet: boolean) {
   sound.setWeather(live ? rain : 0, live ? wind : 0);
 }
 
+/** Delivery day's vehicle (P18): its beeps backing in, its tailgate, its engine pulling away, quieter the further off. */
+view.onDelivery = (kind, x, z) => {
+  const g = play.game;
+  if (!g) return;
+  const p = g.rec.sim.state.player;
+  const d = Math.hypot(x - p.x / UNIT, z - p.z / UNIT);
+  const k = Math.max(0, 1 - d / 24);
+  if (k <= 0) return;
+  if (kind === 'beep') sound.reverseBeep(k);
+  else if (kind === 'engine') sound.engine(k);
+  else sound.tailgate(k);
+};
+
 /** Food landing in a food fight: a splat, quieter the further from the player (a few a second at most). */
 let splatAt = 0;
 view.onSplat = (x, z) => {
@@ -282,8 +374,8 @@ export function dayHud(sim: Sim, hud: HudState, a: number) {
   hud.drill = null;
   hud.today = null;
   if (p.event === 'none') return;
-  const name = t(`day.event.${p.event}` as Key);
-  todayHud.icon = EVENT_ICON[p.event];
+  const name = p.event === 'delivery' ? vehicleName(sim) : t(`day.event.${p.event}` as Key);
+  todayHud.icon = eventIcon(sim, p.event);
   todayHud.color = EVENT_COLOR[p.event];
   todayHud.left = null;
   if (p.event === 'drill' && eventOn(sim, 'drill')) {

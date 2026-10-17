@@ -391,7 +391,29 @@ export const IRONGATE: PrisonDef = {
     { x: 31, z: 55 },
     { x: 32, z: 46 },
   ],
-  escapes: ['raft', 'helicopter', 'takeover'],
+  escapes: ['raft', 'helicopter', 'takeover', 'stowaway'],
+  // Delivery day (P18): the supply helicopter sets down on its pad by day too, the court's gate
+  // propped open for the porters from the sally port; the west helipad guard walks round it,
+  // and searches it four days in five.
+  delivery: {
+    vehicle: 'helicopter',
+    bay: [35, 44, 38, 47],
+    tail: { x: 36, z: 48 },
+    face: 13,
+    open: [{ x: 32, z: 46 }],
+    supervisor: 8,
+    round: [
+      { x: 34, z: 49, wait: 5, face: 1 },
+      { x: 33, z: 45, wait: 4, face: 1 },
+      { x: 36, z: 42, wait: 4, face: 5 },
+      { x: 33, z: 45, wait: 3, face: 5 },
+    ],
+    thorough: 80,
+    road: [
+      { x: 37, z: 30 },
+      { x: 37, z: 46 },
+    ],
+  },
   // GEN-1 (north block) runs the detectors and cameras; GEN-2 (south block) the dock's fence, the searchlights and the lamps.
   grid: [
     ['detectors', 'cameras'],

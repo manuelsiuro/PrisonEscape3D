@@ -22,6 +22,7 @@ import { press, targets } from './buttons';
 import type { Game } from './game';
 import { coachItems, coachOnce, seenTip } from './tips';
 import { dayMinute, eventOn, fogNow, sightOf, today, weatherNow } from '../sim/systems/calendar';
+import { searchMinute } from '../sim/systems/delivery';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -145,6 +146,7 @@ const frameData: Frame = {
   fuses: fuseFrame,
   weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 },
   events: { movie: false, foodFight: false, inspection: false },
+  delivery: { t: -1, at: 0, search: 0, until: 0, stowed: false },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -271,7 +273,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // (The tool button as the last frame left it: it's worked out after the draw.)
   f.lockFar = !!press.toolNow?.attack && !press.toolNow.fits;
   f.knockedOut = st.ko > 0;
-  f.guide = g.guide;
+  // (Hidden in the delivery's vehicle, P18: nowhere to be led.)
+  f.guide = st.stowed ? null : g.guide;
   const dest = g.pilot.destination;
   if (dest >= 0) {
     tapAt.x = (dest % MAP_W) + 0.5;
@@ -397,6 +400,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   }
   sec.hook = hook >= 0 ? hookAt : null;
   f.takeover = st.takeover;
+  frameA = a;
   dayFrame(sim, f);
   return f;
 }
@@ -406,6 +410,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
  * heatwave's haze by day, the wind (a heading in the view: where it blows to), and the
  * event on (the screen, the food, the inspectors).
  */
+/** The step's fraction (the frame's interpolation) for the day's clocks. */
+let frameA = 0;
 function dayFrame(sim: Sim, f: Frame) {
   const plan = today(sim);
   const w = f.weather;
@@ -422,4 +428,12 @@ function dayFrame(sim: Sim, f: Frame) {
   e.movie = eventOn(sim, 'movie');
   e.foodFight = eventOn(sim, 'foodFight');
   e.inspection = eventOn(sim, 'inspection');
+  // Delivery day (P18): the vehicle's day, in fractional minutes (it drives in before 12:30 and out after 14:31).
+  const d = f.delivery;
+  const st = sim.state;
+  d.t = plan.event === 'delivery' && sim.prison.delivery && !sim.prison.rules?.relaxed ? (st.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE + frameA / STEPS_PER_MINUTE : -1;
+  d.at = plan.at;
+  d.until = plan.until;
+  d.search = searchMinute(plan);
+  d.stowed = st.stowed;
 }

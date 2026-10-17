@@ -38,8 +38,10 @@ export function watch(sim: SimContext) {
   // with contraband, in a uniform it should see through; under its eyes alone heat still cools).
   let seen = false;
   let eyes = false;
+  // (Hidden in the delivery's vehicle, P18: nobody sees the player at all.)
+  const hidden = sim.away || s.stowed;
   for (const g of s.guards) {
-    g.sees = !sim.away && awake(g) && inView(sim, g);
+    g.sees = !hidden && awake(g) && inView(sim, g);
     if (g.sees) {
       g.lastSeen = here;
       seen = true;
@@ -49,10 +51,16 @@ export function watch(sim: SimContext) {
   s.seen = eyes;
   // Damage and evidence in a guard's cone (GDD §9.3).
   const found = noticeDamage(sim);
-  if (sim.away) {
+  if (hidden) {
     s.spotted = 0;
     s.near = 0;
-    if (found) repair(sim);
+    if (found && sim.away) repair(sim);
+    // Hidden in the delivery's vehicle (P18), the player is still the one the damage points to: the alarm goes up all the same.
+    if (found && s.stowed && !sim.away) {
+      s.spotted = SPOT.indexOf('damage');
+      if (!s.lockdown) sim.events.push({ type: 'spotted', reason: 'damage' });
+      addHeat(sim, 100);
+    }
     return;
   }
   const zone = sim.playerZone;
