@@ -625,6 +625,66 @@ function chipSpot(sim: Sim): number {
   check(carryingOf(f.sim.state, CP.smuggler) === n('rope') && cantOrder(f.sim, CP.smuggler, ORDER.FOLLOW) === 'crewBusy', 'bringing the drop: no other order till it\'s handed over');
 }
 
+// ------------------------------------------------------------------ the second review's holes
+{
+  // Tonight's the night called off after Lights Out: off to bed at once (never left in the player's cell).
+  const g = game(61);
+  g.to(1, 22, 30);
+  g.recruit(CP.lookout, 95);
+  g.talk(TALK.CREW, ORDER.NIGHT);
+  g.step(command(0, OP.CLOSE));
+  // (In the cell for Lights Out, he beside the player.)
+  const bed = placesOf(g.sim.world).bedside[1];
+  put(g.sim.state.player, bed);
+  g.to(1, 23, 5);
+  g.talkTo(CP.lookout, bed);
+  g.talk(TALK.CREW, ORDER.NIGHT);
+  check(!g.sim.state.followers.includes(CP.lookout) && crewNews(g.seen, 'nightOff').length === 1, 'the night called off after Lights Out: to bed at once');
+  // Other orders at night need tonight's the night first; "Follow me" to a plain follower changes nothing.
+  const h = game(67);
+  h.to(1, 23, 30);
+  h.recruit(CP.muscle, 85);
+  check(cantOrder(h.sim, CP.muscle, ORDER.BACK) === 'crewNight', 'orders at night: tonight\'s the night first');
+  h.talk(TALK.CREW, ORDER.FOLLOW);
+  h.steps(5);
+  check(h.sim.state.followers.includes(CP.muscle) && !crewEntry(h.sim.state, CP.muscle), '"Follow me" to a plain follower: nothing changes');
+  // Staying the night with the player up in the vents: he holds where he is, not back to bed.
+  const v = game(71);
+  v.to(1, 22, 30);
+  v.recruit(CP.lookout, 95, yardSpot(v.sim));
+  v.talk(TALK.CREW, ORDER.NIGHT);
+  v.step(command(0, OP.CLOSE));
+  put(v.sim.state.player, placesOf(v.sim.world).bedside[1]);
+  v.to(1, 23, 5);
+  const at = tileOf(v.sim.state.inmates[CP.lookout].body);
+  v.sim.state.layer = LAYER.VENTS;
+  v.steps(600);
+  check(v.sim.state.followers.includes(CP.lookout) && v.sim.state.inmates[CP.lookout].doing !== DOING.SLEEP && cheb(v.sim.state.inmates[CP.lookout].body, { x: (at % MAP_W) * UNIT + UNIT / 2, z: Math.floor(at / MAP_W) * UNIT + UNIT / 2 }) <= UNIT, 'the player in the vents: the night\'s company waits where he was');
+  // A fresh post: the guards already in sight are no news (whistles can't be farmed by posting again).
+  const f = game(73);
+  f.to(1, 9, 5);
+  f.recruit(CP.lookout, 85);
+  const lk = f.sim.state.inmates[CP.lookout];
+  const gd = f.sim.state.guards[0];
+  put(gd.body, tileOf(lk.body) + 2);
+  gd.path = [];
+  gd.wait = 400;
+  for (let k = 0; k < 5; k++) {
+    f.talk(TALK.CREW, ORDER.WATCH);
+    f.step();
+    f.step(command(0, OP.EXT, EXT.RECALL, CP.lookout));
+    put(lk.body, tileOf(f.sim.state.player) - 1);
+    put(gd.body, tileOf(lk.body) + 2);
+  }
+  check(crewNews(f.seen, 'whistle').length === 0, 'posted again and again beside a guard: no whistle for one already there');
+  // A post blocked since (dug into, walled up): back to the player.
+  f.talk(TALK.CREW, ORDER.WATCH);
+  const post = postOf(f.sim.state, CP.lookout);
+  f.sim.world.npcBlock[post] = 1;
+  f.step();
+  check(postOf(f.sim.state, CP.lookout) === -1 && crewNews(f.seen, 'recalled').length >= 6, 'his post blocked: he comes back');
+}
+
 // ------------------------------------------------------------------ saves
 {
   const g = game(37);

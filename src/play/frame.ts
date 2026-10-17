@@ -251,7 +251,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
     o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
-    o.moving = m.body.moving && !g.paused;
+    // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
+    o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
     o.doing = m.doing;
     o.cell = m.cell;
     o.angry = m.angry > 0;
@@ -267,7 +268,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
     o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
-    o.moving = m.body.moving && !g.paused;
+    // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
+    o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
     o.doing = m.doing;
     o.alert = alertOf(m);
     o.away = lookingAway(m, st.step);

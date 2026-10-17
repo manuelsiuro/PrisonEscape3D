@@ -444,8 +444,11 @@ export class Character {
   private act = 0;
   private actKind: number = DOING.NOTHING;
   /** On a change of activity (P23 review): the limbs as they were (legs, left arm x/z, right arm x/z), blended away over a fifth of a second. */
-  private readonly from = [0, 0, 0, 0, 0, 0];
+  private readonly from = [0, 0, 0, 0, 0, 0, 0, 0];
   private blend = 1;
+  /** Last frame's height and lean from the activity (the blend's starting point for them). */
+  private lastBob = 0;
+  private lastLean = 0;
   private readonly offset = Math.random() * 10;
   /** Walking pace against the player's: legs swing faster for faster walkers (guards running). */
   gait: number;
@@ -852,6 +855,8 @@ export class Character {
     this.pumped = Math.max(0, this.pumped - dt * 3);
     this.at.set(x, this.baseY, z);
     let turn = facing;
+    // A lookout on watch (P23): his whole body sweeps slowly from side to side (the head held still: a raised arm beside it).
+    if (doing === DOING.LOOKOUT && !moving && !ko) turn += (motion ? Math.sin((time + this.offset) * 0.8) * 0.5 : 0) * this.act;
     if (ko) {
       // Lies along its heading, feet where it stood.
       this.bedAt.set(x - Math.sin(facing) * 0.15, this.baseY + 0.17, z - Math.cos(facing) * 0.15);
@@ -896,6 +901,8 @@ export class Character {
       f[3] = this.armL.rotation.z;
       f[4] = this.armR.rotation.x;
       f[5] = this.armR.rotation.z;
+      f[6] = this.lastBob;
+      f[7] = this.lastLean;
       this.blend = motion ? 0 : 1;
     }
     this.act = moving ? 0 : Math.min(1, this.act + dt * 3);
@@ -1011,11 +1018,11 @@ export class Character {
       bob -= 0.1 * ga;
     } else if (doing === DOING.LOOKOUT) {
       // On watch (P23): a hand at the brow, clear of the head (a salute's reach: a rigid arm can't
-      // get in front of the face), the other arm a little out, the head sweeping slowly from side
-      // to side (below). Held still with reduced motion: it still says "on watch".
+      // get in front of the face), the other arm a little out; the whole body sweeps from side to
+      // side (above), the head held still. Held still with reduced motion: it still says "on watch".
       const ga = this.act;
       armRx += -2.57 * ga;
-      armRz += -0.05 * ga;
+      armRz += 0.15 * ga;
       armLx += -0.3 * ga;
       armLz += -0.15 * ga;
     } else if (doing === DOING.BRAWL) {
@@ -1042,6 +1049,30 @@ export class Character {
       armRz -= 0.55 * dz;
       bob -= 0.025 * dz;
     }
+    // The activity's own lean (bent to a desk, a lock, the dice, a scrap).
+    let lean =
+      (doing === DOING.SEARCH ? 0.35 * this.act : 0) +
+      (doing === DOING.READ ? 0.12 * this.act : 0) +
+      (doing === DOING.WRESTLE ? (0.12 + this.strainNow * 0.1) * this.act : 0) +
+      (doing === DOING.PICK ? 0.32 * this.act : 0) +
+      (doing === DOING.DICE ? 0.12 * this.act : 0) +
+      (doing === DOING.BRAWL ? 0.08 * this.act : 0);
+    // From one activity to another: limbs, height and lean ease from where they were (before a blow, which never waits).
+    if (this.blend < 1) {
+      this.blend = Math.min(1, this.blend + dt * 5);
+      const b = this.blend * this.blend * (3 - 2 * this.blend);
+      const f = this.from;
+      legL = f[0] + (legL - f[0]) * b;
+      legR = f[1] + (legR - f[1]) * b;
+      armLx = f[2] + (armLx - f[2]) * b;
+      armLz = f[3] + (armLz - f[3]) * b;
+      armRx = f[4] + (armRx - f[4]) * b;
+      armRz = f[5] + (armRz - f[5]) * b;
+      bob = f[6] + (bob - f[6]) * b;
+      lean = f[7] + (lean - f[7]) * b;
+    }
+    this.lastBob = bob;
+    this.lastLean = lean;
     // A strike: the tool arm up and down hard.
     if (this.hit > 0) {
       const h = this.hit;
@@ -1057,17 +1088,6 @@ export class Character {
       armLx = Math.min(armLx, -1.1 * Math.min(1, j * 2));
       armLz = -0.25 * j;
     }
-    if (this.blend < 1) {
-      this.blend = Math.min(1, this.blend + dt * 5);
-      const b = this.blend * this.blend * (3 - 2 * this.blend);
-      const f = this.from;
-      legL = f[0] + (legL - f[0]) * b;
-      legR = f[1] + (legR - f[1]) * b;
-      armLx = f[2] + (armLx - f[2]) * b;
-      armLz = f[3] + (armLz - f[3]) * b;
-      armRx = f[4] + (armRx - f[4]) * b;
-      armRz = f[5] + (armRz - f[5]) * b;
-    }
     this.legL.rotation.set(legL, 0, -legZ);
     this.legR.rotation.set(legR, 0, legZ);
     this.armL.rotation.set(armLx, 0, armLz);
@@ -1078,12 +1098,7 @@ export class Character {
     this.body.rotation.x =
       0.08 * this.swing -
       (Math.PI / 2) * this.lie +
-      (doing === DOING.SEARCH ? 0.35 * this.act : 0) +
-      (doing === DOING.READ ? 0.12 * this.act : 0) +
-      (doing === DOING.WRESTLE ? (0.12 + this.strainNow * 0.1) * this.act : 0) +
-      (doing === DOING.PICK ? 0.32 * this.act : 0) +
-      (doing === DOING.DICE ? 0.12 * this.act : 0) +
-      (doing === DOING.BRAWL ? 0.08 * this.act : 0) +
+      lean +
       (Math.PI / 2) * 0.92 * this.crawl +
       0.06 * dz +
       (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0) +
@@ -1155,9 +1170,7 @@ export class Character {
     const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || doing >= DOING.WORK || ko;
     if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * (this.perched ? PERCHED_GLANCE * 2 : 1.1);
     if (this.idle === 0 || still) this.glanceGoal = 0;
-    // (A lookout on watch, P23: scanning slowly from side to side; off watch, eased back.)
-    if (doing === DOING.LOOKOUT) this.glance = (motion ? Math.sin(t * 0.8) * 0.6 : 0.3) * this.act;
-    else this.glance += (this.glanceGoal - this.glance) * k(5);
+    this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
     // Nodding off: the chin sinks for 4 s and jerks back up (still, it just hangs).
     const n = (t * 0.2) % 1;

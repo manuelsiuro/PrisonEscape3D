@@ -68,7 +68,12 @@ export class ProfilePanel {
     const rumors = this.notebook();
     const day = this.day();
     const crewLines = s.followers.map((id) => this.crewLine(sim, id));
-    const key = [crewLines.join('/'), s.crew.map((e) => e[4]).join(','), s.dogs.map((d) => `${d.trust}:${d.fed}`).join(','), day?.key ?? '', rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
+    // (A brawl's countdown is written in place: the file isn't rebuilt every second for it.)
+    s.followers.forEach((id, k) => {
+      const line = this.el.querySelector(`.file-row[data-who="${id}"] small`);
+      if (line && line.textContent !== crewLines[k]) line.textContent = crewLines[k];
+    });
+    const key = [crewLines.join('/').replace(/\d+:\d\d/g, ''), s.crew.map((e) => e[4]).join(','), s.dogs.map((d) => `${d.trust}:${d.fed}`).join(','), day?.key ?? '', rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const attrs = ATTRS.map((a, k) => {
@@ -79,8 +84,8 @@ export class ProfilePanel {
       return `<div class="stat-row" data-attr="${a}"><span class="stat-ic">${icon(ATTR_ICONS[a], 18)}</span><span class="stat-text"><b>${t(`attr.${a}` as Key)}</b><small>${t(`attrWhere.${a}` as Key)}</small></span><i class="stat-bar"><i style="width:${pct}%"></i></i><b class="stat-v">${v}</b>${state}</div>`;
     }).join('');
     // The file's rows: a tile, a title, a line under it (and a tag at the end); a muted one says what would go there.
-    const fileRow = (ic: string, color: string, title: string, sub: string, opts: { tag?: string; tagCls?: string; cls?: string; quote?: boolean; state?: string; stateCls?: string; aside?: string } = {}) =>
-      `<div class="file-row${opts.cls ? ` ${opts.cls}` : ''}" style="--c:${color}"><span class="file-ic">${icon(ic, 18)}</span><span class="file-text"><b>${title}${opts.aside ? `<em>${opts.aside}</em>` : ''}</b>${sub ? `<small${opts.quote ? ' class="quote"' : ''}>${sub}</small>` : ''}${opts.state ? `<span class="file-state${opts.stateCls ? ` ${opts.stateCls}` : ''}">${opts.state}</span>` : ''}</span>${opts.tag ? `<span class="file-tag${opts.tagCls ? ` ${opts.tagCls}` : ''}">${opts.tag}</span>` : ''}</div>`;
+    const fileRow = (ic: string, color: string, title: string, sub: string, opts: { tag?: string; tagCls?: string; cls?: string; quote?: boolean; state?: string; stateCls?: string; aside?: string; who?: number } = {}) =>
+      `<div class="file-row${opts.cls ? ` ${opts.cls}` : ''}" style="--c:${color}"${opts.who !== undefined ? ` data-who="${opts.who}"` : ''}><span class="file-ic">${icon(ic, 18)}</span><span class="file-text"><b>${title}${opts.aside ? `<em>${opts.aside}</em>` : ''}</b>${sub ? `<small${opts.quote ? ' class="quote"' : ''}>${sub}</small>` : ''}${opts.state ? `<span class="file-state${opts.stateCls ? ` ${opts.stateCls}` : ''}">${opts.state}</span>` : ''}</span>${opts.tag ? `<span class="file-tag${opts.tagCls ? ` ${opts.tagCls}` : ''}">${opts.tag}</span>` : ''}</div>`;
     const empty = (ic: string, title: Key, sub: Key) => fileRow(ic, '', t(title), t(sub), { cls: 'empty' });
     const job = sim.playerJob;
     let jobHtml: string;
@@ -107,7 +112,7 @@ export class ProfilePanel {
           .map((id, k) => {
             const spec = specialityOf(sim.world, id, s.inmates[id].cell);
             const night = s.crew.some((e) => e[0] === id && e[4] === 1);
-            return fileRow(SPEC_ICON[spec], '#ffa94d', esc(inmateName(sim, id)), esc(crewLines[k]), { aside: esc(t(`spec.${spec}`)), tag: night ? `${icon('moon', 12)}${esc(t('profile.tonight'))}` : '', tagCls: 'night' });
+            return fileRow(SPEC_ICON[spec], '#ffa94d', esc(inmateName(sim, id)), esc(crewLines[k]), { who: id, aside: esc(t(`spec.${spec}`)), tag: night ? `${icon('moon', 12)}${esc(t('profile.tonight'))}` : '', tagCls: 'night' });
           })
           .join('')}</div>`
       : empty('users', 'profile.noFollowersT', 'profile.noFollowersS');
@@ -121,7 +126,7 @@ export class ProfilePanel {
           .join('')}</div>`
       : empty('chat', 'profile.noFavorsT', 'profile.noFavorsS');
     const rumorList = rumors.length
-      ? `<div class="file-list rumors">${rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}"><span class="rumor-ic">${icon(r.self ? 'eye' : 'ear', 14)}</span><span class="rumor-text"><span>${esc(r.text)}</span><small>${r.self ? `${t('profile.rumorSelf')} · ` : r.by ? `${esc(r.by)} · ` : ''}${t('profile.rumorDay', { n: r.day })}</small></span></div>`).join('')}</div>`
+      ? `<div class="file-list rumors">${rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}"><span class="rumor-ic">${icon(r.self ? 'eye' : 'ear', 14)}</span><span class="rumor-text"><span>${esc(r.text)}${r.old ? `<i class="sr-only"> (${esc(t('profile.rumorOld'))})</i>` : ''}</span><small>${r.self ? `${t('profile.rumorSelf')} · ` : r.by ? `${esc(r.by)} · ` : ''}${t('profile.rumorDay', { n: r.day })}</small></span></div>`).join('')}</div>`
       : empty('ear', 'profile.noRumorsT', 'profile.noRumorsS');
     const working = ROUTINE[s.routine].id === 'work';
     // Your prisoner's name on the file (P16), when they have one.
@@ -134,6 +139,8 @@ export class ProfilePanel {
           day.tomorrow ? `<div class="box-section"><div class="box-label"><span>${t(day.night ? 'profile.fromMorning' : 'profile.tomorrow')}</span></div><div class="file-day">${day.tomorrow.map(row).join('')}<p class="file-note">${icon('megaphone', 13)}${t('profile.tomorrowNote')}</p></div></div>` : ''
         }`
       : '';
+    // (A rebuild keeps the keyboard's place on the close button.)
+    const hadClose = this.el.contains(document.activeElement) && !!(document.activeElement as HTMLElement).closest('[data-close]');
     this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${title}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${dayHtml}
       <div class="box-section"><div class="box-label"><span>${t('profile.stats')}</span><em>${t('profile.statsNote')}</em></div><div class="file-list">${attrs}</div></div>
@@ -143,5 +150,6 @@ export class ProfilePanel {
       ${dogs}
       <div class="box-section"><div class="box-label"><span>${t('profile.rumors')}</span><em>${t('profile.rumorsNote')}</em></div>${rumorList}</div>`;
     this.el.setAttribute('aria-label', PLAYER.name ? t('profile.titleOf', { name: PLAYER.name }) : t('profile.title'));
+    if (hadClose) this.el.querySelector<HTMLElement>('[data-close]')?.focus();
   }
 }

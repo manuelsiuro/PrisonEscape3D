@@ -1,4 +1,5 @@
 import { buzz } from '../app/haptics';
+import { ROUTINE } from '../content/routine';
 import { BACK_REACH, BRAWL_GUARDS, BRAWL_RANGE, NIGHT_OPINION, WATCH_RANGE } from '../content/crew';
 import { currentLang, t, type Key } from '../i18n';
 import { EXT, OP, ORDER } from '../sim/command';
@@ -72,6 +73,7 @@ export function crewStatus(sim: Sim, who: number): string {
     case ORDER.BACK:
       return about ? t('crew.s.back') : t('crew.s.waiting');
   }
+  if (nightOf(s, who)) return t('crew.s.night');
   return about ? t('crew.s.follow') : t('crew.s.waiting');
 }
 
@@ -84,6 +86,7 @@ function orderNote(sim: Sim, who: number, order: number): string {
   if (why === 'noDrop') return t('crew.fetchNone');
   if (why === 'crewLockdown') return t('refused.crewLockdown');
   if (why === 'nightOpinion') return t('crew.nightNeed', { n: NIGHT_OPINION });
+  if (why === 'crewNight') return t('refused.crewNight');
   // (Mid-brawl, or bringing the drop: the status line says what he's at; the orders wait, quietly.)
   if (why === 'crewBusy') return '';
   switch (order) {
@@ -105,8 +108,14 @@ function orderNote(sim: Sim, who: number, order: number): string {
   return t('crew.followNote');
 }
 
-/** The talk panel's crew section for a follower (null: not one of the crew). */
+/** The talk panel's crew section for a follower (null: not one of the crew), worked out once a step (the panel asks every frame). */
+let talkMemo: { step: number; who: number; lang: string; v: CrewTalkView | null } = { step: -1, who: -1, lang: '', v: null };
 export function crewTalk(sim: Sim, who: number): CrewTalkView | null {
+  if (talkMemo.step === sim.state.step && talkMemo.who === who && talkMemo.lang === currentLang()) return talkMemo.v;
+  talkMemo = { step: sim.state.step, who, lang: currentLang(), v: crewTalkNow(sim, who) };
+  return talkMemo.v;
+}
+function crewTalkNow(sim: Sim, who: number): CrewTalkView | null {
   const s = sim.state;
   const m = s.inmates[who];
   if (!m || !s.followers.includes(who)) return null;
@@ -121,7 +130,7 @@ export function crewTalk(sim: Sim, who: number): CrewTalkView | null {
     note: orderNote(sim, who, o),
     ok: !cantOrder(sim, who, o),
     on: o === now && o !== ORDER.FOLLOW,
-    confirm: o === ORDER.BRAWL ? t('crew.brawlConfirm') : undefined,
+    confirm: o === ORDER.BRAWL ? t('crew.brawlConfirm', { name: brawlWith(sim, who) >= 0 ? inmateName(sim, brawlWith(sim, who)) : '' }) : undefined,
   }));
   const night = nightOf(s, who);
   orders.push({ order: ORDER.NIGHT, icon: 'moon', label: t('crew.night'), note: orderNote(sim, who, ORDER.NIGHT), ok: !cantOrder(sim, who, ORDER.NIGHT), on: night });
@@ -134,8 +143,14 @@ const recallable = (sim: Sim, who: number) => {
   return o === ORDER.WATCH || o === ORDER.DIG || o === ORDER.BACK || (o === ORDER.FETCH && !carryingOf(sim.state, who));
 };
 
-/** The crew's panel rows. */
+/** The crew's panel rows (worked out once a step: the panel asks every frame). */
+let rowsMemo: { step: number; lang: string; rows: CrewRow[] } = { step: -1, lang: '', rows: [] };
 export function crewRows(sim: Sim): CrewRow[] {
+  if (rowsMemo.step === sim.state.step && rowsMemo.lang === currentLang()) return rowsMemo.rows;
+  rowsMemo = { step: sim.state.step, lang: currentLang(), rows: crewRowsNow(sim) };
+  return rowsMemo.rows;
+}
+function crewRowsNow(sim: Sim): CrewRow[] {
   const s = sim.state;
   return s.followers.map((who) => ({ who, name: inmateName(sim, who), spec: specialityOf(sim.world, who, s.inmates[who].cell), status: crewStatus(sim, who), recall: recallable(sim, who), night: nightOf(s, who) }));
 }
@@ -224,7 +239,8 @@ export function announceCrew(sim: Sim, e: Extract<SimEvent, { type: 'crew' }>) {
       break;
     case 'nightOff':
       sound.click();
-      banner.toast(t('toast.crew.nightOff', { name }), 'info', 3600);
+      // (Called off once Lights Out has begun, he's gone to bed already.)
+      banner.toast(t(ROUTINE[sim.state.routine].id === 'lightsOut' ? 'toast.crew.nightOffNow' : 'toast.crew.nightOff', { name }), 'info', 3600);
       break;
     case 'recalled':
       sound.lookout();

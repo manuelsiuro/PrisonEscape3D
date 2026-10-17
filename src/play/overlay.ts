@@ -95,6 +95,14 @@ const projectAt = (x: number, y: number, z: number, out: { x: number; y: number 
 /** Over someone's head (P23: the crew's chips). */
 const chipAt = (id: number, out: { x: number; y: number }, height: number) => view.screenOf(id, out, height);
 const NO_CREW: never[] = [];
+/** CSS pixels per world unit at head height (the camera is orthographic: the same all over the screen). */
+const unitA = { x: 0, y: 0 };
+const unitB = { x: 0, y: 0 };
+function unitPx(x: number, z: number): number {
+  const a = view.screenAt(x, 1.9, z, unitA);
+  const b = view.screenAt(x + 1, 1.9, z, unitB);
+  return a && b ? Math.hypot(b.x - a.x, b.y - a.y) : 57;
+}
 
 /**
  * Keeps the player in sight while a panel is open: a side panel reaching past the middle (phone
@@ -227,7 +235,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   crewPanel.update(crewPanel.isOpen ? crewRows(sim) : null, busy);
   hudState.crew = crewPill(sim);
   const chipsOff = busy || panel || st.layer !== LAYER.GROUND || !st.followers.length;
-  crewChips.update(chipsOff ? NO_CREW : crewChipList(sim), chipAt, chipsOff);
+  crewChips.update(chipsOff ? NO_CREW : crewChipList(sim), chipAt, chipsOff, chipsOff ? 57 : unitPx(st.player.x / UNIT, st.player.z / UNIT));
   smuggleHints(sim, busy || panel);
   darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.

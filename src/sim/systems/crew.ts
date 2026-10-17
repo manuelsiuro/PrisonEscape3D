@@ -106,6 +106,8 @@ export function cantOrder(sim: SimContext, who: number, order: number): Refusal 
   // Mid-brawl, or bringing the player the drop: that comes first.
   if (e?.[ORD] === ORDER.BRAWL || (order !== ORDER.NIGHT && e?.[ORD] === ORDER.FETCH && e[ARG] < 0)) return 'crewBusy';
   if (order === ORDER.NIGHT) return e?.[NIGHT] || m.opinion >= NIGHT_OPINION ? null : 'nightOpinion';
+  // (Lights Out: anyone not staying the night is off to bed; tonight's the night first.)
+  if (ROUTINE[s.routine].id === 'lightsOut' && !e?.[NIGHT]) return 'crewNight';
   if (order === ORDER.FOLLOW) return null;
   const line = LINE_OF[order];
   if (!line) return 'notHisLine';
@@ -131,6 +133,8 @@ export function crewOrder(sim: SimContext, who: number, order: number) {
   const why = cantOrder(sim, who, order);
   if (why) return refuse(sim, why);
   let e = crewEntry(s, who);
+  // ("Follow me" to someone just following: nothing to it.)
+  if (!e && order === ORDER.FOLLOW) return;
   if (!e) {
     e = [who, ORDER.FOLLOW, -1, -1, 0];
     s.crew.push(e);
@@ -138,6 +142,8 @@ export function crewOrder(sim: SimContext, who: number, order: number) {
   if (order === ORDER.NIGHT) {
     e[NIGHT] = e[NIGHT] ? 0 : 1;
     sim.events.push(e[NIGHT] ? { type: 'crew', what: 'order', who, order: ORDER.NIGHT } : { type: 'crew', what: 'nightOff', who });
+    // (Called off once Lights Out has begun: off to bed now.)
+    if (!e[NIGHT] && ROUTINE[s.routine].id === 'lightsOut') dismiss(sim, who);
     tidy(s);
     return;
   }
@@ -153,9 +159,9 @@ export function crewOrder(sim: SimContext, who: number, order: number) {
   e[AUX] = -1;
   switch (order) {
     case ORDER.WATCH:
-      // Where he stands now; he whistles at once for a guard already in sight there.
+      // Where he stands now; the guards in sight there already he's seen (he whistles for the next to come).
       e[ARG] = tileAt(m.body.x, m.body.z);
-      e[AUX] = seen;
+      e[AUX] = seen | inSight(sim, m);
       break;
     case ORDER.BACK:
       // (The ambushes called off this block, by inmate bit, and the block: each told once.)
@@ -316,6 +322,8 @@ export function crewTargets(sim: SimContext, so: { follow: Array<Body | null>; g
         break;
       }
     }
+    // Staying the night with the player off the ground floor (the vents, a tunnel): he holds where he is, never back to bed.
+    if (!to && e[NIGHT] && ROUTINE[s.routine].id === 'lightsOut' && (s.layer !== LAYER.GROUND || sim.away)) to = mark(k, tileAt(m.body.x, m.body.z));
     // (Only the crew with orders: a plain follower does as followers always did, old run logs and all.)
     if (e && locked && doorstep >= 0 && (to ? w.cellOf[tileAt(to.x, to.z)] === 1 || tileAt(to.x, to.z) === w.cellDoor[1] : inMine)) {
       to = mark(k, doorstep);
@@ -355,7 +363,12 @@ export function crew(sim: SimContext) {
     if (!m || !s.crew.includes(e)) continue;
     switch (e[ORD]) {
       case ORDER.WATCH:
-        whistles(sim, e);
+        // (His post walled up, dug through or blocked since: he comes back to the player.)
+        if (w.npcBlock[e[ARG]]) {
+          e[ORD] = ORDER.FOLLOW;
+          e[ARG] = e[AUX] = -1;
+          sim.events.push({ type: 'crew', what: 'recalled', who: e[WHO] });
+        } else whistles(sim, e);
         break;
       case ORDER.BRAWL:
         if (s.step >= e[ARG] || m.ko > 0 || (s.inmates[e[AUX]]?.ko ?? 1) > 0 || s.lockdown) {
@@ -384,19 +397,24 @@ export function crew(sim: SimContext) {
   tidy(s);
 }
 
-/** A lookout on watch: a whistle for each awake guard newly within WATCH_RANGE of him, in his sight. */
-function whistles(sim: SimContext, e: CrewEntry) {
-  const s = sim.state;
-  const m = s.inmates[e[WHO]];
+/** The awake guards within WATCH_RANGE of someone, in his sight (bit k = guard k). */
+function inSight(sim: SimContext, m: { body: Body; ko: number }): number {
   let now = 0;
   if (m.ko <= 0)
-    s.guards.forEach((g, k) => {
+    sim.state.guards.forEach((g, k) => {
       if (!awake(g)) return;
       const dx = g.body.x - m.body.x;
       const dz = g.body.z - m.body.z;
       if (dx * dx + dz * dz > (WATCH_RANGE * UNIT) ** 2 || !lineOfSight(sim.world, m.body.x, m.body.z, g.body.x, g.body.z)) return;
       now |= 1 << k;
     });
+  return now;
+}
+
+/** A lookout on watch: a whistle for each awake guard newly within WATCH_RANGE of him, in his sight. */
+function whistles(sim: SimContext, e: CrewEntry) {
+  const s = sim.state;
+  const now = inSight(sim, s.inmates[e[WHO]]);
   const fresh = now & ~e[AUX];
   e[AUX] = now;
   for (let k = 0; k < s.guards.length; k++) if (fresh & (1 << k)) sim.events.push({ type: 'crew', what: 'whistle', who: e[WHO], guard: k });
@@ -518,6 +536,6 @@ export function crewEscape(sim: SimContext, via: EscapeRoute): number[] {
   if (!CREW_ROUTES.has(via)) return [];
   return s.followers.filter((who) => {
     const m = s.inmates[who];
-    return !!m && m.ko <= 0 && cheb(m.body, s.player) <= CREW_ESCAPE_REACH * UNIT;
+    return !!m && m.ko <= 0 && cheb(m.body, s.player) <= CREW_ESCAPE_REACH * UNIT && lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z);
   });
 }

@@ -40,8 +40,10 @@ export function crewSection(v: CrewTalkView): string {
       const toggle = o.order === ORDER.NIGHT;
       const live = o.ok && (!o.on || toggle);
       const confirm = o.confirm && live ? ` data-confirm="${esc(o.confirm)}"` : '';
-      const tag = o.on ? `<em class="crew-act-tag">${t('crew.tagOn')}</em>` : '';
-      return `<button class="crew-act${o.on ? ' on' : ''}" data-act="${TALK.CREW}" data-arg="${o.order}" ${live ? '' : 'disabled'}${o.on ? ' aria-pressed="true"' : ''}${confirm}><span class="crew-act-ic">${icon(o.icon, 18)}</span><span class="crew-act-text"><b>${esc(o.label)}</b>${o.note ? `<small>${esc(o.note)}</small>` : ''}</span>${tag}</button>`;
+      const tag = o.on ? `<em class="crew-act-tag" aria-hidden="true">${t('crew.tagOn')}</em>` : '';
+      // (A toggle says so either way; an order says it's in force.)
+      const pressed = toggle ? ` aria-pressed="${o.on}"` : o.on ? ' aria-pressed="true"' : '';
+      return `<button class="crew-act${o.on ? ' on' : ''}" data-act="${TALK.CREW}" data-arg="${o.order}" ${live ? '' : 'disabled'}${pressed}${confirm}><span class="crew-act-ic">${icon(o.icon, 18)}</span><span class="crew-act-text"><b>${esc(o.label)}</b>${o.note ? `<small>${esc(o.note)}</small>` : ''}</span>${tag}</button>`;
     })
     .join('');
   return `<section class="talk-crew"><div class="box-label">${icon(SPEC_ICON[v.spec], 14)}<span>${t('crew.title', { spec: t(`spec.${v.spec}`) })}</span></div>
@@ -155,7 +157,7 @@ export class CrewPanel {
     this.body.innerHTML = `<div class="board-list">${rows
       .map(
         (r) =>
-          `<div class="board-row crew-row"><span class="board-ic">${icon(SPEC_ICON[r.spec], 20)}</span><span class="board-text"><b>${esc(r.name)}<em>${t(`spec.${r.spec}`)}</em>${r.night ? `<i class="crew-moon" title="${esc(t('crew.nightOn'))}">${icon('moon', 12)}</i><span class="sr-only">${esc(t('crew.nightOn'))}</span>` : ''}</b><small>${esc(r.status)}</small></span>${r.recall ? `<button class="big-btn primary small" data-crew="recall" data-who="${r.who}" aria-label="${esc(t('crew.recallAria', { name: r.name }))}">${icon('bell', 16)}<span>${t('crew.recall')}</span></button>` : ''}</div>`,
+          `<div class="board-row crew-row"><span class="board-ic crew-act-ic">${icon(SPEC_ICON[r.spec], 20)}</span><span class="board-text"><b>${esc(r.name)}<em>${t(`spec.${r.spec}`)}</em>${r.night ? `<i class="crew-moon" title="${esc(t('crew.nightOn'))}">${icon('moon', 12)}</i><span class="sr-only">${esc(t('crew.nightOn'))}</span>` : ''}</b><small>${esc(r.status)}</small></span>${r.recall ? `<button class="big-btn primary small" data-crew="recall" data-who="${r.who}" aria-label="${esc(t('crew.recallAria', { name: r.name }))}">${icon('bell', 16)}<span>${t('crew.recall')}</span></button>` : ''}</div>`,
       )
       .join('')}</div><p class="board-note">${t('crew.panelNote')}</p>${TOUCH ? '' : `<p class="rat-keys">${t('crew.keys')}</p>`}`;
     if (had !== undefined) (this.body.querySelector<HTMLElement>(`[data-who="${had}"]`) ?? this.el.querySelector<HTMLElement>('[data-crew="close"]'))?.focus();
@@ -171,8 +173,13 @@ export class CrewChips {
   private readonly pool: HTMLElement[] = [];
   private readonly at = { x: 0, y: 0 };
 
-  update(list: readonly CrewChip[], project: (id: number, out: { x: number; y: number }, height: number) => { x: number; y: number } | null, hidden: boolean) {
+  /** `unit`: CSS pixels per world unit at the chips' height (the zoom): the chips grow and shrink with the world's badges. */
+  update(list: readonly CrewChip[], project: (id: number, out: { x: number; y: number }, height: number) => { x: number; y: number } | null, hidden: boolean, unit = 57) {
     let n = 0;
+    // A badge is half a unit across: the chip a little smaller, beside it just clear of its edge when there's one.
+    const badge = unit * 0.5;
+    const size = Math.max(16, Math.min(30, badge * 0.84));
+    const aside = badge * 0.385 + size / 2 + 2;
     if (!hidden)
       for (const c of list) {
         // (Where a follower's badge used to be; beside another badge when he has one.)
@@ -180,7 +187,7 @@ export class CrewChips {
         if (!p) continue;
         const el = (this.pool[n] ??= this.make());
         n++;
-        el.style.transform = `translate(${Math.round(p.x + (c.badge ? 22 : 0))}px, ${Math.round(p.y)}px)`;
+        el.style.transform = `translate(${Math.round(p.x + (c.badge ? aside : 0))}px, ${Math.round(p.y)}px) scale(${(size / 24).toFixed(2)})`;
         if (el.dataset.spec !== c.spec) {
           el.dataset.spec = c.spec;
           el.innerHTML = icon(SPEC_ICON[c.spec], 13);

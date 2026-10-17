@@ -1901,7 +1901,7 @@ export const en = {
   "crew.brawlNote": "Once a day: a minute's scrap with {name}, and the {n} nearest guards come running to look",
   "crew.brawlNobody": "Nobody within {n} tiles of him to scrap with",
   "crew.brawlToday": "One brawl a day: tomorrow",
-  "crew.brawlConfirm": "Start it?",
+  "crew.brawlConfirm": "Brawl with {name}?",
   "crew.fetchNote": "Goes for what the drone dropped and brings it to your pockets (before a guard sees it)",
   "crew.fetchNone": "Nothing dropped to fetch",
   "crew.nightNote": "Stays up with you through Lights Out until 06:00, waiting outside your cell while you're in it",
@@ -1961,7 +1961,7 @@ export const en = {
   "help.crew.t": "Crew",
   "help.crew": "Everyone in here has a line of work: a lookout, a digger, muscle or a smuggler (talk to them to see). Recruit someone who thinks the world of you (opinion 80, two at most) and talk to them again to give orders in their line. A lookout keeps watch where he stands, wherever you go, and whistles when an awake guard comes within 6 tiles of him in sight. A digger at your side makes walls and floors give way half as fast again and takes the rubble and dirt; down a tunnel he waits at the top: a quarter faster, the dirt handed up to him. Muscle watches your back (his punches land half as hard again, and nobody jumps you while he's within 4 tiles) or, once a day, starts a brawl with someone close by: the 2 nearest guards come to look for up to a minute. A smuggler fetches what the drone dropped (before a guard sees it) and brings it to your pockets. Anyone at opinion 90 can stay up with you through Lights Out until 06:00 (\"Tonight's the night\"); everyone else goes to bed. Whistle anyone with an order back from the crew's pill (%KeyG%), unless they're mid-brawl or already bringing you the drop. A lookout can't be posted in a doorway or a work room. Get out over the fence, through a gate, in a takeover, on a raft or in the helicopter with your crew within 4 tiles, and they're free too. Nobody follows you down a hole, a rope or into a vehicle.",
   "help.k.crew": "The crew's panel",
-  "help.t.crew": "The crew's pill (while someone has an order): their panel",
+  "help.t.crew": "The crew's pill (while someone has an order or stays the night): their panel",
   "ach.inGoodCompany": "In Good Company",
   "ach.inGoodCompany.d": "Get out with someone from your crew.",
   "ach.wholeGang": "The Whole Gang",
@@ -1991,6 +1991,10 @@ export const en = {
   "profile.noFollowersS": "Inmates who like you (80+) can be recruited.",
   "profile.noRumorsT": "No rumors yet",
   "profile.noRumorsS": "Friends close by share what they know.",
+  "toast.crew.nightOffNow": "{name} turns in now",
+  "crew.s.night": "Up with you tonight",
+  "refused.crewNight": "Lights Out: tonight's the night first, or he's off to bed",
+  "profile.rumorOld": "no longer true",
 };
 
 export type Strings = typeof en;

@@ -248,6 +248,10 @@
     0 4px 10px -4px rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
+/* (Under the speech bubbles, which say more.) */
+.crew-chip {
+  z-index: 16;
+}
 .crew-chip.busy {
   color: #2a1a08;
   background: var(--crew);
@@ -421,26 +425,11 @@
   color: rgba(255, 255, 255, 0.78);
   font-size: 13.5px;
 }
-/* Rumors: a small gold tile, the line, who told it and when under it (old news faded). */
-.file-list.rumors {
-  gap: 0;
-}
-.file-list.rumors .rumor {
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-.file-list.rumors .rumor:first-child {
-  border-top: 0;
-}
+/* Rumors: a gold tile, the line, who told it and when under it (old news faded, only its line struck). */
 .rumor-ic {
   display: grid;
   flex: none;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
   color: #2a2008;
   background: var(--gold);
 }
@@ -453,15 +442,18 @@
   gap: 2px;
   min-width: 0;
 }
-.rumor-text > span {
-  font: 500 13px/1.35 var(--font-ui);
-  color: white;
-}
 .file-list.rumors .rumor small {
   margin: 0;
   opacity: 1;
   font: 600 11px/1.2 var(--font-ui);
   color: rgba(255, 255, 255, 0.5);
+}
+.file-list.rumors .rumor.old span {
+  text-decoration: none;
+}
+.file-list.rumors .rumor.old .rumor-text > span {
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
 }
 .file-list.rumors .rumor.old .rumor-ic {
   color: rgba(255, 255, 255, 0.6);
@@ -513,4 +505,40 @@
   .profile-panel .stat-row {
     padding: 6px 8px 6px 6px;
   }
+}
+
+/* Every card's text starts at the same place: the Today rows and the attributes take the cards' tile and gap. */
+.profile-panel .stat-row {
+  column-gap: 10px;
+}
+.file-day .pa-row {
+  padding: 8px 10px 8px 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.file-day .pa-ic {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+/* The crew's panel: their tiles in the crew's orange, as in the talk panel and the file. */
+.crew-row .board-ic.crew-act-ic {
+  width: 36px;
+  height: 36px;
+}
+
+/* Reduced motion: the orders don't scale or fade. */
+@media (prefers-reduced-motion: reduce) {
+  .crew-act {
+    transition: none;
+  }
+  .crew-act:active:not(:disabled) {
+    transform: none;
+  }
+}
+.reduced-motion .crew-act {
+  transition: none;
+}
+.reduced-motion .crew-act:active:not(:disabled) {
+  transform: none;
 }

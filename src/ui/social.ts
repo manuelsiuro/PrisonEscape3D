@@ -269,7 +269,7 @@ export class TalkPanel {
     }
     // (The button gone, the games' first live control takes the focus: a die, a stake, else the panel's close.)
     // (P23: an order given greys its own button: the focus goes on to the crew's next live one.)
-    if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])') ?? (had?.closest('.talk-crew') ? this.el.querySelector<HTMLElement>('.talk-crew button:not([disabled])') : null) ?? this.el.querySelector<HTMLElement>('[data-act="close"]'))?.focus();
+    if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? (had?.closest('.talk-crew') ? this.el.querySelector<HTMLElement>('.talk-crew button:not([disabled])') : null) ?? (had?.closest('.talk-games') ? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])') : null) ?? this.el.querySelector<HTMLElement>('[data-act="close"]'))?.focus();
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));
