@@ -123,7 +123,8 @@ export function dayStart(sim: Sim, fresh: boolean) {
   bolt = 6 + Math.random() * 8;
   const g = play.game;
   if (!hasDays(g) || !fresh || !seenTip('guide')) return;
-  paBoard.whenClear(() => play.game === g && morning(sim, true));
+  // (After the roll call's bell and banner, which come a moment after the fade.)
+  paBoard.whenClear(() => play.game === g && morning(sim, true), 1500);
 }
 
 export function dayStop() {
@@ -220,7 +221,7 @@ function strike(near: number) {
 export function dayFrame(g: Game, dt: number, quiet: boolean) {
   const sim = g.rec.sim;
   // Announcements switched off: whatever the warden was saying stops.
-  if (settings.pa === 'off' && paBoard.up) paBoard.clear();
+  if (settings.pa === 'off' && paBoard.busy) paBoard.clear();
   if (!hasDays(g)) {
     sound.setWeather(0, 0);
     return;
@@ -255,7 +256,7 @@ view.onSplat = (x, z) => {
 // ------------------------------------------------------------------ the HUD
 
 const weatherHud = { icon: '', name: '', color: '' };
-const todayHud = { icon: '', color: '', text: '', time: '', soon: false, left: null as number | null, of: MUSTER_MINUTES };
+const todayHud = { icon: '', color: '', text: '', time: '', soon: false, left: null as number | null, of: MUSTER_MINUTES, sr: '' };
 const drillHud = { mustered: false, missed: false };
 
 /** The day's part of the HUD: the weather by the clock, the event's chip, the drill. */
@@ -306,6 +307,7 @@ export function dayHud(sim: Sim, hud: HudState, a: number) {
       todayHud.time = t('today.until', { time: dayTime(p.until) });
       todayHud.soon = false;
     }
+    todayHud.sr = todayHud.left !== null ? t('today.srMuster', { n: MUSTER_MINUTES }) : `${todayHud.text} ${todayHud.time}`;
     hud.today = todayHud;
     return;
   }
@@ -313,6 +315,7 @@ export function dayHud(sim: Sim, hud: HudState, a: number) {
     todayHud.text = name;
     todayHud.time = t('today.at', { time: dayTime(p.at) });
     todayHud.soon = true;
+    todayHud.sr = `${todayHud.text} ${todayHud.time}`;
     hud.today = todayHud;
     return;
   }
@@ -320,6 +323,7 @@ export function dayHud(sim: Sim, hud: HudState, a: number) {
     todayHud.text = name;
     todayHud.time = t('today.until', { time: dayTime(p.until) });
     todayHud.soon = false;
+    todayHud.sr = `${todayHud.text} ${todayHud.time}`;
     hud.today = todayHud;
   }
 }

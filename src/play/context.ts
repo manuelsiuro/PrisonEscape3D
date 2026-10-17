@@ -82,7 +82,11 @@ document.body.append(vignette, darkCell);
 export const paBoard = new PaBoard();
 paBoard.onSpeak = (chars, chime) => {
   if (chime) sound.paChime();
-  window.setTimeout(() => sound.paVoice(Math.min(9, 3 + Math.round(chars / 16))), chime ? 950 : 0);
+  // The voice after the chime (with the Voices setting; not if the game was paused or left meanwhile).
+  const g = play.game;
+  window.setTimeout(() => {
+    if (settings.voices && play.game === g && !g?.paused) sound.paVoice(Math.min(9, 3 + Math.round(chars / 16)));
+  }, chime ? 950 : 0);
 };
 export const lightningVeil = h('div', 'lightning');
 document.body.append(lightningVeil);

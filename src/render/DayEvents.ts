@@ -116,8 +116,10 @@ export class DayEvents {
     tex.generateMipmaps = false;
     tex.minFilter = THREE.LinearFilter;
     this.film = { canvas, tex, t: 0, frame: -1 };
-    const frame = new THREE.Mesh(new THREE.PlaneGeometry(width + 0.16, height + 0.16), new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.8 }));
+    // (Drawn after the fog too, like the film: the veil never cuts across the frame.)
+    const frame = new THREE.Mesh(new THREE.PlaneGeometry(width + 0.16, height + 0.16), new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.8, transparent: true }));
     frame.position.z = -0.01;
+    frame.renderOrder = 0.59;
     // (Transparent so it draws after the fog veil, over it: no seam where the veil cuts across the film.)
     this.screen = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, transparent: true }));
     this.screen.renderOrder = 0.6;
@@ -135,7 +137,7 @@ export class DayEvents {
     this.group.add(this.screen, this.beam);
   }
 
-  /** The inspectors are made the first time they're needed (most days have none). */
+  /** The inspectors, made with the prison (hidden until an inspection: no draw call). */
   private inspectorCast(): Character[] {
     if (!this.inspectors.length) {
       const clipboard = itemNumber('magazine');
@@ -177,7 +179,8 @@ export class DayEvents {
     const shown = this.shown;
     shown.length = 0;
     if (f.inspection && about) {
-      let k = -1;
+      // The guard they follow, as long as it's there (knocked out, they wait by it); else the first one up and about.
+      let k = this.trailGuard >= 0 && this.trailGuard < guards.length ? this.trailGuard : -1;
       for (let i = 0; i < guards.length && k < 0; i++) if (guards[i].awake) k = i;
       if (k >= 0) {
         const cast = this.inspectorCast();

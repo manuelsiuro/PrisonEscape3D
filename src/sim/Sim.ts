@@ -82,6 +82,8 @@ export class Sim {
   wearRev = 0;
   /** How the player moved onto another layer this step (the escape check reads it); not state. */
   movedBy: LayerMove | null = null;
+  /** Replaying a run logged before 1.11 (runlog.ts): the few rules fixed since (a scuffle's verdict) as they were then. Not state. */
+  legacy = false;
   /** Away on a raft from the pier, or the helicopter off the pad, this step (P12: the escape check reads it); not state. */
   boarded: 'raft' | 'helicopter' | null = null;
 

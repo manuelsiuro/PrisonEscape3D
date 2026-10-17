@@ -1380,7 +1380,6 @@ export const en = {
   "pa.warn.maintenance": "Generator service in fifteen minutes. Don't touch anything that hums.",
   "pa.warn.movie": "Movie night in fifteen minutes. Popcorn is not provided.",
   "pa.start.inspection": "The inspectors are here. Best behaviour, everyone.",
-  "pa.start.drill": "This is a drill. Everyone to the yard, now.",
   "pa.start.feast": "Dinner is served. It's a feast. Enjoy it, you've earned it. Probably.",
   "pa.start.maintenance": "Generator going down for service. Back at {time}.",
   "pa.start.movie": "Lights down in the canteen. The film is starting.",
@@ -1461,6 +1460,9 @@ export const en = {
   "day.eventD.drillRang": "The bell rang at {time}: roll call within {n} minutes of it, or +{heat}% heat.",
   "profile.tonight": "Tonight",
   "profile.fromMorning": "From 08:00",
+  "pa.srRow": "{label}: {title}",
+  "pa.srLine": "{from}: {text}",
+  "today.srMuster": "Fire drill: to roll call within {n} minutes",
 };
 
 export type Strings = typeof en;

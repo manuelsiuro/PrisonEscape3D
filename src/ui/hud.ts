@@ -32,7 +32,7 @@ export interface HudState {
   bribe: { name: string; until: string; left: number; of: number } | null;
   /** The day (P17): the weather's icon by the clock (its name for the tooltip), and the day's event chip (null: nothing to show). */
   weather: { icon: string; name: string; color: string };
-  today: { icon: string; color: string; text: string; time: string; soon: boolean; left: number | null; of: number } | null;
+  today: { icon: string; color: string; text: string; time: string; soon: boolean; left: number | null; of: number; sr: string } | null;
   /** The fire drill (P17): the routine pill says so until it's over; whether the player has mustered. */
   drill: { mustered: boolean; missed: boolean } | null;
 }
@@ -105,7 +105,7 @@ export class Hud {
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
-        <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -200,6 +200,8 @@ export class Hud {
       el.querySelector('.hud-today-ic')!.innerHTML = icon(d.icon, 15);
     }
     setText(el.querySelector('span')!, d.text);
+    // The screen reader hears the whole phrase, once (never the countdown's seconds).
+    setText(el.querySelector('.sr-only')!, d.sr);
     setText(el.querySelector('b')!, d.left === null ? d.time : `${Math.floor(d.left / 60)}:${String(Math.max(0, Math.ceil(d.left % 60))).padStart(2, '0')}`);
     const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
     bar.style.display = d.left === null ? 'none' : '';

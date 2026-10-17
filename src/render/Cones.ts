@@ -144,7 +144,8 @@ export class Cones {
       // As far as it sees now: the cone drawn is the rule (sight.ts sightReach, calendar.ts sightOf),
       // eased when it changes (a guard stepping out into the fog), at once with reduced motion.
       const want = g.range ?? this.range;
-      if (Number.isNaN(c.range) || !motion || was < 0.05) c.range = want;
+      // (Growing, at once: a cone never shows less than the guard sees. Shrinking, eased.)
+      if (Number.isNaN(c.range) || !motion || was < 0.05 || want > c.range) c.range = want;
       else c.range += (want - c.range) * Math.min(1, dt * 5);
       const range = c.range;
       for (let r = 0; r <= RAYS; r++) {

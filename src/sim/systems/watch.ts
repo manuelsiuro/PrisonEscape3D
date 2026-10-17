@@ -68,7 +68,9 @@ export function watch(sim: SimContext) {
   // A scuffle (hitting back, or P17's food fight) never hides tools at work or damage found; a food fight's blows at inmates in the canteen are noticed not at all.
   const swung = seen && s.step - s.swingAt <= STRIKE_SEEN_STEPS;
   const tampered = seen && s.step - s.struckAt <= STRIKE_SEEN_STEPS;
-  if (swung && !s.selfDefense) [reason, heat] = [SPOT.indexOf('fight'), 100];
+  // (A run logged before 1.11 replays as it was played: a scuffle came first then.)
+  if (sim.legacy && swung) [reason, heat] = s.selfDefense ? [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0] : [SPOT.indexOf('fight'), 100];
+  else if (swung && !s.selfDefense) [reason, heat] = [SPOT.indexOf('fight'), 100];
   else if (tampered) [reason, heat] = [SPOT.indexOf('tampering'), 100];
   else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
   else if (swung && !inFoodFight(sim)) [reason, heat] = [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0];

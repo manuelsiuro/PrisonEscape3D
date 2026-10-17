@@ -19,7 +19,7 @@ import { canSee } from '../src/sim/ai/sight';
 import { floorOf, placesOf } from '../src/sim/ai/places';
 import { command, OP, SLOT } from '../src/sim/command';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
-import { dayMinute, dayPlan, eventOn, muffled, planOf, prisonDay, quietCalendar, sightOf, TODAY, today, weatherNow } from '../src/sim/systems/calendar';
+import { byCanteen, dayMinute, dayPlan, eventOn, inFoodFight, muffled, planOf, prisonDay, quietCalendar, sightOf, TODAY, today, weatherNow } from '../src/sim/systems/calendar';
 import { maxHealth } from '../src/sim/systems/combat';
 import { GUARD } from '../src/sim/systems/guards';
 import { slot } from '../src/sim/systems/items';
@@ -520,4 +520,38 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const h0 = st.heat;
   f.bot.step(0);
   check(g.sees && (st.heat - h0 >= 100 || st.lockdown), `a scuffle never hides tools at work from a guard who sees them (+${st.heat - h0})`);
+}
+
+// ------------------------------------------------------------------ the third review's edge cases
+{
+  // A wall chipped from the yard in the rain: muffled like the yard (a wall indoors isn't).
+  const r = botFor('none', 'rain');
+  r.until(2, 12 * 60);
+  const sim = r.bot.sim;
+  const w = sim.world;
+  let yardWall = -1;
+  let innerWall = -1;
+  for (let i = 0; i < w.ground.kind.length && (yardWall < 0 || innerWall < 0); i++) {
+    if (!TILE_INFO[w.ground.kind[i]].solid) continue;
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    const near = [i + 1, i - 1, i + MAP_W, i - MAP_W].filter((t) => t >= 0 && t < w.ground.kind.length);
+    const outside = near.some((t) => TILE_INFO[w.ground.kind[t]].outdoor && !TILE_INFO[w.ground.kind[t]].solid);
+    const inside = near.every((t) => !TILE_INFO[w.ground.kind[t]].outdoor);
+    if (outside && yardWall < 0 && x > 2 && z > 2) yardWall = i;
+    if (inside && innerWall < 0) innerWall = i;
+  }
+  check(muffled(sim, LAYER.GROUND, yardWall, 6) === 3 && muffled(sim, LAYER.GROUND, innerWall, 6) === 6, `rain: a wall chipped from the yard carries 3 tiles, one indoors 6 (${muffled(sim, LAYER.GROUND, yardWall, 6)}, ${muffled(sim, LAYER.GROUND, innerWall, 6)})`);
+  // The canteen's edge (its doorways, the corridor tile it opens onto) is part of a food fight.
+  const f = botFor('foodFight', 'clear', 7);
+  const fw = f.bot.sim.world;
+  let edge = -1;
+  for (let i = 0; i < fw.ground.kind.length && edge < 0; i++) {
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    if (fw.zoneAt(x, z) !== 'canteen' && !TILE_INFO[fw.ground.kind[i]].solid && byCanteen(f.bot.sim, x, z)) edge = i;
+  }
+  f.until(2, (f.plan().at + 8 * 60 + 2) % 1440);
+  put(f.bot.sim, edge);
+  check(edge >= 0 && f.bot.sim.world.zoneAt(edge % MAP_W, Math.floor(edge / MAP_W)) !== 'canteen' && inFoodFight(f.bot.sim), 'standing at the canteen\'s edge, the player is in the food fight');
 }

@@ -194,7 +194,7 @@ console.log('replay ok');
   for (let k = 0; k < 2 * 1440 * STEPS_PER_MINUTE + 600; k++) r.step(0);
   const log = r.toLog();
   const back = replayLog(log, CENTER_PERKS);
-  check(!!back?.ok, 'a log from before the day replays whole (its days quiet)');
+  check(!!back?.ok && !!back?.sim.legacy, 'a log from before the day replays whole (its days quiet, its scuffles judged as they were)');
   // Carried on in 1.11: a log of its own from the game loaded (the two rules never mix in one log).
   const carried = new RunRecorder(old, { log, game: '1.11.0' });
   check(carried.toLog().seed === -1 && carried.toLog().game === '1.11.0', 'a game from before the day starts a log of its own');

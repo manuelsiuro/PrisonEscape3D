@@ -229,7 +229,10 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   const sim = new Sim(prison, log.seed < 0 ? 1 : log.seed);
   if (log.seed < 0) sim.restore(log.start!);
   // Played before the day's events (P17): every day was quiet then.
-  if (beforeDays(log.game)) sim.state.calendar = quietCalendar();
+  if (beforeDays(log.game)) {
+    sim.state.calendar = quietCalendar();
+    sim.legacy = true;
+  }
   if (sim.state.step !== log.from) return null;
   const sums = new Map(log.sums);
   let verified = log.from;

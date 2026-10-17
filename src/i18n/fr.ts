@@ -1379,7 +1379,6 @@ export const fr: Partial<Strings> = {
   "pa.warn.maintenance": "Entretien du générateur dans quinze minutes. Ne touchez à rien qui bourdonne.",
   "pa.warn.movie": "Soirée cinéma dans quinze minutes. Le pop-corn n’est pas fourni.",
   "pa.start.inspection": "Les inspecteurs sont là. Tenue exemplaire, tout le monde.",
-  "pa.start.drill": "Ceci est un exercice. Tout le monde dans la cour, maintenant.",
   "pa.start.feast": "Le dîner est servi. C’est un festin. Régalez-vous, vous l’avez mérité. Sans doute.",
   "pa.start.maintenance": "Le générateur est coupé pour entretien. Retour à {time}.",
   "pa.start.movie": "On éteint à la cantine. Le film commence.",
@@ -1460,4 +1459,7 @@ export const fr: Partial<Strings> = {
   "day.eventD.drillRang": "La sonnerie a retenti à {time} : à l’appel dans les {n} minutes, ou +{heat} % de suspicion.",
   "profile.tonight": "Cette nuit",
   "profile.fromMorning": "Dès 08:00",
+  "pa.srRow": "{label} : {title}",
+  "pa.srLine": "{from} : {text}",
+  "today.srMuster": "Exercice incendie : à l’appel en moins de {n} minutes",
 };

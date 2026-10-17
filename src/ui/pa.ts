@@ -48,7 +48,8 @@ export class PaBoard {
   private readonly queue: Line[] = [];
   /** Things to do once the stage is clear (the morning card after the bell's banner). */
   private readonly pending: Array<{ f: () => void; waited: number }> = [];
-  private typing = 0;
+  /** The line being typed out (on play time, like everything here). */
+  private typer: { typed: HTMLElement; rest: HTMLElement; chars: string[]; shown: number; ms: number } | null = null;
   private measure = 0;
   private alertsBottom = -1;
   private last = performance.now();
@@ -95,7 +96,10 @@ export class PaBoard {
   }
 
   /** The morning card; `ms` of play until it closes on its own. */
-  morning(from: string, text: string, rows: readonly PaRow[], ms = 11000) {
+  morning(from: string, text: string, rows: readonly PaRow[], least = 11000) {
+    // Long enough to read it all: the line typed out, then the rows.
+    const rowChars = rows.reduce((n, r) => n + r.title.length + r.sub.length + (r.note?.length ?? 0), 0);
+    const ms = Math.max(least, (text.length / TYPE_RATE) * 1000 + rowChars * 32 + 2500);
     this.closeCard();
     const el = h(
       'div',
@@ -120,15 +124,16 @@ export class PaBoard {
     document.body.append(el);
     this.card = { el, left: ms };
     document.body.classList.add('pa-card-up');
-    this.live.textContent = `${from}. ${text} ${rows.map((r) => `${r.label}: ${r.title}${r.when ? ` (${r.when})` : ''}. ${r.sub}${r.note ? ` ${r.note}.` : ''}`).join(' ')}`;
+    this.live.textContent = `${from}. ${text} ${rows.map((r) => `${t('pa.srRow', { label: r.label, title: r.title })}${r.when ? ` (${r.when})` : ''}. ${r.sub}${r.note ? ` ${r.note}.` : ''}`).join(' ')}`;
     this.onSpeak(text.length, true);
     this.type(el, text);
     this.place();
   }
 
   /** Runs `f` once nothing is up where the warden speaks (a banner, a card, a strip) and the game isn't paused: a few seconds at most. */
-  whenClear(f: () => void) {
-    this.pending.push({ f, waited: 0 });
+  whenClear(f: () => void, least = 0) {
+    // (`least`: not before this long, e.g. the bell's banner still to come.)
+    this.pending.push({ f, waited: -least });
   }
 
   /** An announcement: queued behind any other (and any banner). */
@@ -148,7 +153,23 @@ export class PaBoard {
     if (paused) return;
     const banner = document.body.classList.contains('banner-up');
     // The card and the strip run out.
-    if (this.card && (this.card.left -= dt) <= 0) this.closeCard();
+    // The card steps out of the way of a banner (and its clock waits for it).
+    if (this.card) {
+      this.card.el.classList.toggle('behind', banner);
+      if (!banner && (this.card.left -= dt) <= 0) this.closeCard();
+    }
+    // Typing on play time.
+    const ty = this.typer;
+    if (ty) {
+      ty.ms += dt;
+      const n = Math.min(ty.chars.length, Math.floor((ty.ms / 1000) * TYPE_RATE));
+      if (n !== ty.shown) {
+        ty.shown = n;
+        ty.typed.textContent = ty.chars.slice(0, n).join('');
+        ty.rest.textContent = ty.chars.slice(n).join('');
+      }
+      if (n >= ty.chars.length || !ty.typed.isConnected) this.typer = null;
+    }
     if (this.strip) {
       // A banner arriving puts the strip away; its line comes back after the banner (heard already: no chime, no second reading).
       if (banner) {
@@ -187,7 +208,7 @@ export class PaBoard {
     const read = Math.max(3800, 1400 + (text.length / TYPE_RATE) * 1000 + text.length * 45);
     this.strip = { el, left: read, line };
     if (!line.heard) {
-      this.live.textContent = `${from}: ${text}`;
+      this.live.textContent = t('pa.srLine', { from, text });
       this.onSpeak(text.length, true);
       this.type(el, text);
     } else this.type(el, text, true);
@@ -203,21 +224,9 @@ export class PaBoard {
       rest.textContent = '';
       return;
     }
-    const chars = [...text];
-    let n = 0;
-    const start = performance.now();
-    const tick = () => {
-      if (!el.isConnected) return;
-      const k = Math.min(chars.length, Math.floor(((performance.now() - start) / 1000) * TYPE_RATE));
-      if (k !== n) {
-        n = k;
-        typed.textContent = chars.slice(0, n).join('');
-        rest.textContent = chars.slice(n).join('');
-      }
-      if (n < chars.length) this.typing = requestAnimationFrame(tick);
-    };
+    typed.textContent = '';
     rest.textContent = text;
-    tick();
+    this.typer = { typed, rest, chars: [...text], shown: 0, ms: 0 };
   }
 
   private leave() {
@@ -241,7 +250,7 @@ export class PaBoard {
 
   /** Everything down (leaving the game, the announcements switched off). */
   clear() {
-    cancelAnimationFrame(this.typing);
+    this.typer = null;
     this.queue.length = 0;
     this.pending.length = 0;
     this.closeCard();
@@ -252,6 +261,11 @@ export class PaBoard {
 
   get up() {
     return !!this.card || !!this.strip;
+  }
+
+  /** Anything up, queued or waiting to be said. */
+  get busy() {
+    return this.up || this.queue.length > 0 || this.pending.length > 0;
   }
 }
 

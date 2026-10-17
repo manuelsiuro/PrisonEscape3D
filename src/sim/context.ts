@@ -19,6 +19,7 @@ export type SimContext = Pick<
   | 'wearRev'
   | 'movedBy'
   | 'boarded'
+  | 'legacy'
   | 'ladderFoot'
   | 'showerTiles'
   | 'scratch'

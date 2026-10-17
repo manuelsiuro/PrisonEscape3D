@@ -3,7 +3,7 @@
  * throws, knockouts and coming round (a guard's missing key raises the alarm), blows on the
  * player and what happens at 0 health. The numbers (damage, reach, pace) are in combat.ts.
  */
-import { inFoodFight } from './calendar';
+import { byCanteen, inFoodFight } from './calendar';
 import { itemDef } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { nearestDir as faceTo } from '../ai/path';
@@ -119,7 +119,8 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     s.swingAt = s.step;
     const who = s.lock;
     // (A throw is a blow: at a guard never a scuffle; at an inmate, as for a punch.)
-    s.selfDefense = !isGuard(s, who) && freeBlow(sim, f as Inmate);
+    // (A run logged before 1.11 replays as it was played: a throw left the last punch's verdict.)
+    if (!sim.legacy) s.selfDefense = !isGuard(s, who) && freeBlow(sim, f as Inmate);
     sim.events.push(s.selfDefense && inFoodFight(sim) ? { type: 'thrown', who, free: true } : { type: 'thrown', who });
     knockOut(sim, who);
     return true;
@@ -377,5 +378,5 @@ function freeBlow(sim: SimContext, m: Inmate): boolean {
   if (m.angry > 0) return true;
   if (!inFoodFight(sim)) return false;
   const t = tileOfBody(m.body);
-  return sim.world.zoneAt(t.x, t.z) === 'canteen';
+  return byCanteen(sim, t.x, t.z);
 }

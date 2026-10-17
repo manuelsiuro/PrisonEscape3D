@@ -433,3 +433,22 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
   font-weight: 600;
   color: #9fc4e8;
 }
+
+/* A banner over the warden's card: the card steps aside until it's gone (its clock waits too). */
+.pa-card.behind {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+/* The combat target card goes below the warden's board (as it does below a banner). */
+@media (min-height: 521px) {
+  body.pa-up .target-card {
+    top: calc(max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--hud-alerts, 0px) + 10px)) + var(--pa-h, 0px) + 8px);
+  }
+}
+
+/* Reduced motion (the setting): the drill's last seconds don't blink. */
+body.reduced-motion .hud-alert.low b {
+  animation: none;
+}

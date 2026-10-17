@@ -221,10 +221,19 @@ export function muffled(sim: SimContext, layer: number, tile: number, reach: num
   const x = tile % MAP_W;
   const z = Math.floor(tile / MAP_W);
   let share = 10;
-  const open = layer === LAYER.ROOF || (layer === LAYER.GROUND && outdoors(sim, x, z));
+  // (A wall being chipped from the yard is out in the open too: its noise is the yard's.)
+  const open = layer === LAYER.ROOF || (layer === LAYER.GROUND && (outdoors(sim, x, z) || (TILE_INFO[sim.world.ground.kind[tile]].solid && openBeside(sim, x, z))));
   if (open) share = WEATHER_NOISE[weatherNow(sim)] ?? 10;
   if (layer === LAYER.GROUND && eventOn(sim, 'movie') && sim.world.zoneAt(x, z) === 'canteen') share = Math.min(share, MOVIE_NOISE);
   return share === 10 ? reach : Math.max(1, Math.floor((reach * share) / 10));
+}
+
+/** A tile beside open ground (a wall facing the yard). */
+const openBeside = (sim: SimContext, x: number, z: number) => outdoorFloor(sim, x + 1, z) || outdoorFloor(sim, x - 1, z) || outdoorFloor(sim, x, z + 1) || outdoorFloor(sim, x, z - 1);
+function outdoorFloor(sim: SimContext, x: number, z: number): boolean {
+  if (!sim.world.inside(x, z)) return false;
+  const info = TILE_INFO[sim.world.ground.kind[z * MAP_W + x]];
+  return info.outdoor && !info.solid;
 }
 
 /** The inmates' plan now (a ROUTINE index): the drill sends everyone to roll call, movie night to the canteen's seats. */
@@ -351,7 +360,7 @@ export function dayWatch(sim: SimContext) {
     const into = s.step % DAY_STEPS;
     if (into > p.at * STEPS_PER_MINUTE && into <= p.until * STEPS_PER_MINUTE && !(s.eventFlags & TODAY.BLOT)) {
       // Seen at anything (whatever began before 10:00 and still goes on), in a lockdown, caught, a block missed.
-      if (s.spotted !== 0 || s.lockdown || sim.events.some((e) => e.type === 'spotted' || e.type === 'caught' || e.type === 'missed' || e.type === 'lockdown')) s.eventFlags |= TODAY.BLOT;
+      if (s.spotted !== 0 || s.lockdown || s.solitary > 0 || sim.events.some((e) => e.type === 'spotted' || e.type === 'caught' || e.type === 'missed' || e.type === 'lockdown')) s.eventFlags |= TODAY.BLOT;
     }
     if (into === p.until * STEPS_PER_MINUTE) commend(sim);
   }
@@ -359,7 +368,15 @@ export function dayWatch(sim: SimContext) {
 
 /** The food fight is on, and the player in the thick of it (blows at inmates in the canteen cost no heat). */
 export function inFoodFight(sim: SimContext): boolean {
-  return sim.state.layer === LAYER.GROUND && eventOn(sim, 'foodFight') && sim.playerZone === 'canteen';
+  if (sim.state.layer !== LAYER.GROUND || !eventOn(sim, 'foodFight')) return false;
+  const p = sim.state.player;
+  return byCanteen(sim, Math.floor(p.x / UNIT), Math.floor(p.z / UNIT));
+}
+
+/** In the canteen or at its edge (a doorway, the corridor tile it opens onto): where a food fight is fought. */
+export function byCanteen(sim: SimContext, x: number, z: number): boolean {
+  const w = sim.world;
+  return w.zoneAt(x, z) === 'canteen' || w.zoneAt(x + 1, z) === 'canteen' || w.zoneAt(x - 1, z) === 'canteen' || w.zoneAt(x, z + 1) === 'canteen' || w.zoneAt(x, z - 1) === 'canteen';
 }
 
 /** A feast's tray (dinner on a feast day). */

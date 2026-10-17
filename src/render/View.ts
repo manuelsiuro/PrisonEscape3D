@@ -27,7 +27,7 @@ import { Underground } from './Underground';
 import { setTheme } from './textures';
 import { Blobs } from './Blobs';
 import { Snowfall } from './Snow';
-import { Weather, type WeatherFrame } from './Weather';
+import { Weather, type WeatherFrame, type WeatherView } from './Weather';
 import { DayEvents, type EventsFrame } from './DayEvents';
 import { ROOF_Y as ROOF_HEIGHT } from './Structure';
 import { WALL_H } from './WorldView';
@@ -281,6 +281,7 @@ export class View {
   private wxLight: WeatherFrame | null = null;
   /** The weather's light as drawn: eased toward the frame's (P17). */
   private readonly wxEased = { grey: 0, storm: 0, fog: 0, heat: 0 };
+  private wxFresh = true;
   private flash = 0;
   private readonly guardSpots: Array<{ x: number; z: number; awake: boolean }> = [];
   /** Whether a tile has open sky over it (no roof): where snow falls. */
@@ -412,6 +413,8 @@ export class View {
       for (const mat of Array.isArray(m) ? m : m ? [m] : []) mat.needsUpdate = true;
     });
     this.resize();
+    // (Recompiled for the new settings now, the day's effects with them: auto quality steps down on phones mid-game.)
+    if (this.world) this.warmDay();
   }
 
   setWorld(world: World) {
@@ -476,14 +479,10 @@ export class View {
     this.cones.world = world;
     this.events.setWorld(world);
     this.weather.setWorld(world);
-    // The day's effects compiled now (P17), not on a phone in the middle of a food fight.
-    this.weather.warm(true);
-    this.events.warm(true);
-    this.renderer.compile(this.scene, this.camera);
-    this.weather.warm(false);
-    this.events.warm(false);
+    this.warmDay();
     this.flash = 0;
-    Object.assign(this.wxEased, { grey: 0, storm: 0, fog: 0, heat: 0 });
+    // (The first frame takes the weather as it is: a save loaded in fog isn't clear for its first seconds.)
+    this.wxFresh = true;
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
     this.outfit = -1;
     this.showers.fill(0);
@@ -963,7 +962,7 @@ export class View {
       this.wxSnow.rain = 0;
       wxNow = this.wxSnow;
     }
-    this.weather.update(wxNow, dt, time, f.x, f.z, LAYER_Y[f.layer], f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45, this.night, !this.reducedMotion, f.layer === LAYER.UNDER, f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow, f.layer === LAYER.ROOF ? this.wetRoofs : this.puddly, Math.max(this.camera.right - this.camera.left, (this.camera.top - this.camera.bottom) * 1.6) + 6, this.alarm, f.layer === LAYER.VENTS);
+    this.weather.update(wxNow, dt, time, f.x, f.z, LAYER_Y[f.layer], f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45, this.night, !this.reducedMotion, f.layer === LAYER.UNDER, f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow, f.layer === LAYER.ROOF ? this.wetRoofs : this.puddly, this.weatherView(f.layer, time));
     // The day's events: the film, the food, the inspectors trailing a guard.
     const spots = this.guardSpots;
     spots.length = f.guards.length;
@@ -1198,6 +1197,32 @@ export class View {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /** How the view sees the weather (P17): the rain's box as wide as the view, the lockdown's red as it pulses, the layer, where a point higher up lands on the ground (the camera's angle, turned by the escape camera). */
+  private readonly wxView: WeatherView = { span: 40, alarm: 0, vents: false, roof: false, lx: 0, lz: 24 / 38 };
+  private weatherView(layer: number, time: number): WeatherView {
+    const v = this.wxView;
+    v.span = Math.max(this.camera.right - this.camera.left, (this.camera.top - this.camera.bottom) * 1.6) + 6;
+    const pulse = this.reducedMotion ? 0.5 : (Math.sin(time * 5) + 1) / 2;
+    v.alarm = this.alarm * (0.25 + pulse * 0.45);
+    v.vents = layer === LAYER.VENTS;
+    v.roof = layer === LAYER.ROOF;
+    const o = this.cineOffset;
+    if (o.y > 1) {
+      v.lx = o.x / o.y;
+      v.lz = o.z / o.y;
+    }
+    return v;
+  }
+
+  /** The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the middle of a food fight. */
+  private warmDay() {
+    this.weather.warm(true);
+    this.events.warm(true);
+    this.renderer.compile(this.scene, this.camera);
+    this.weather.warm(false);
+    this.events.warm(false);
+  }
+
   /** Who the day's events put on stage this frame (the inspectors), for the contact shadows. */
   private inspecting: Character[] = [];
 
@@ -1208,7 +1233,8 @@ export class View {
   private weatherLight(dt: number) {
     const w = this.wxLight;
     // Each part eases in and out (the fog lifting, a storm rolling in at 08:00), at once with reduced motion.
-    const k = this.reducedMotion ? 1 : Math.min(1, dt * 0.8);
+    const k = this.reducedMotion || (this.wxFresh && w) ? 1 : Math.min(1, dt * 0.8);
+    if (w) this.wxFresh = false;
     const g = this.wxEased;
     g.grey += ((w ? (w.rain >= 2 ? 0.65 : w.rain ? 0.45 : 0) : 0) - g.grey) * k;
     g.storm += ((w && w.rain >= 2 ? 1 : 0) - g.storm) * k;
