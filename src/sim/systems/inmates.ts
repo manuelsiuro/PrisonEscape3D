@@ -11,8 +11,12 @@ import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
 import { bodyAt, type Body } from './movement';
 
-/** What someone is doing where they stand (the view poses it): inmates, guards (searching), the player (knocked out). */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15 } as const;
+/**
+ * What someone is doing where they stand (the view poses it): inmates, guards (searching), the
+ * player (knocked out). Append only. (P22's WRESTLE, PICK and DICE are the view's alone: an
+ * arm-wrestle, a lock being picked, dice thrown; the sim never sets them.)
+ */
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;

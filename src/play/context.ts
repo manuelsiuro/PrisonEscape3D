@@ -20,6 +20,7 @@ import { SolitaryPanel } from '../ui/solitary';
 import { StowPanel } from '../ui/stow';
 import { RatPanel } from '../ui/rat';
 import { PhonePanel } from '../ui/phone';
+import { PickCard, WrestleCard } from '../ui/games';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
@@ -117,6 +118,9 @@ export const aimUI = new AimUI();
 export const ratPanel = new RatPanel(click);
 /** The burner phone's panel (P21). */
 export const phonePanel = new PhonePanel(click);
+/** The side games (P22): the arm-wrestle's card and the lockpick's. */
+export const wrestleCard = new WrestleCard(sendOp);
+export const pickCard = new PickCard();
 /** A social panel is up (the talk, the job board, the file, the rat's, the phone's): the tool controls step aside. */
 export const socialOpen = () => talk.open || board.isOpen || profile.isOpen || ratPanel.isOpen || phonePanel.isOpen;
 export function closeSocial() {

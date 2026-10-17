@@ -128,6 +128,14 @@ const SHAPES: Record<string, Shape> = {
     const mouthX = (h / 2) * sin + dx;
     return [box(0.4, 0.02, 0.28, 0xb07a45), cup, box(0.07, 0.025, 0.06, a, mouthX, 0.02, 0), box(0.022, rimY - 0.02, 0.022, 0xe8c45a, rimX - 0.014, 0.02, 0)];
   },
+  /** A lockpick (P22): a pink nail-file grip with a bent wire pick out of it, and its little L-shaped tension wrench beside. */
+  lockpick: (c, a) => [
+    box(0.12, 0.03, 0.05, a, -0.14, 0, 0.0),
+    stick(0.26, 0.007, c, 0.05, 0.015, 0),
+    box(0.012, 0.012, 0.035, c, 0.18, 0.009, 0.012),
+    box(0.2, 0.012, 0.016, c, 0.0, 0.0, 0.07),
+    box(0.016, 0.012, 0.06, c, -0.1, 0.0, 0.048),
+  ],
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [
     box(0.4, 0.02, 0.28, 0xb07a45),

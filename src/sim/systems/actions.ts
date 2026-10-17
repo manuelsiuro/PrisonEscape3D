@@ -39,6 +39,7 @@ import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
 import { placeOrder } from './smuggling';
+import { endBout, pickLock, push, stopPick } from './games';
 import { energyCost } from './weather';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
@@ -128,6 +129,9 @@ export function useItems(sim: SimContext, cmd: number) {
         it.open = -1;
         ev.push({ type: 'close' });
       }
+      // (P22: in a bout, Close gives up; at a lock, steps back from it.)
+      if (s.bout.length) endBout(sim, 'gaveUp');
+      stopPick(sim);
       endTalk(sim);
       if (s.train >= 0) stopTraining(sim);
       if (s.seat >= 0) standUp(sim);
@@ -139,7 +143,11 @@ export function useItems(sim: SimContext, cmd: number) {
       jobOp(sim, a);
       break;
     case OP.TRAIN:
-      if (a === 0) study(sim);
+      // An arm-wrestle (P22): the presses push, 3 gives up.
+      if (s.bout.length) {
+        if (a === 3) endBout(sim, 'gaveUp');
+        else if (a === 1 || a === 2) push(sim, a);
+      } else if (a === 0) study(sim);
       else if (a === 3) {
         if (s.train >= 0) stopTraining(sim);
       } else rep(sim, a);
@@ -152,7 +160,8 @@ export function useItems(sim: SimContext, cmd: number) {
       break;
     case OP.USE:
       // Locked on to someone: a blow (or a throw) at them; else the tool in hand (up off a seat first).
-      if (s.solitary > 0) break;
+      // (P22: not mid arm-wrestle: both hands are busy.)
+      if (s.solitary > 0 || s.bout.length) break;
       standUp(sim);
       if (!attack(sim, a === 1)) strike(sim, a === 1);
       break;
@@ -270,6 +279,12 @@ function strike(sim: SimContext, fresh: boolean) {
   }
   if (target.action === 'setTrap') {
     dropItem(it, it.hand, p, sim.events as ItemEvent[], s.layer);
+    return;
+  }
+  // The lockpick on a keyed door (P22): picking starts, then a pin at each press (never a perimeter gate).
+  if (target.action === 'pick') {
+    if (!target.fits) sim.events.push({ type: 'cantStrike', why: 'gate', action: 'pick' });
+    else pickLock(sim, target.tile);
     return;
   }
   if (!STRIKES.has(target.action)) {

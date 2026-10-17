@@ -26,6 +26,7 @@ import { stopTraining } from './training';
 import { bribe, canChat } from './ways';
 import { fixerOf, PHONE } from './smuggling';
 import { PHONE_OPINION, PHONE_PRICE } from '../../content/smuggling';
+import { endBout, reroll, settleDice, startBout, startDice, stopPick } from './games';
 
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
 export function refuse(sim: SimContext, why: Refusal) {
@@ -47,7 +48,10 @@ export function approach(sim: SimContext, who: number) {
     return;
   }
   stopTraining(sim);
+  stopPick(sim);
   closeBox(sim);
+  // (P22: from one talk to another, the last one ends first: dice on the table stand, a bout is broken off.)
+  if (s.talk >= 0 && s.talk !== who) endTalk(sim);
   if (s.talk !== who) {
     s.talk = who;
     sim.events.push({ type: 'talk', who });
@@ -73,6 +77,9 @@ export function keepTalk(sim: SimContext) {
 export function endTalk(sim: SimContext) {
   const s = sim.state;
   if (s.talk < 0) return;
+  // (P22: the dice still on the table, the player stands on them; a bout is broken off.)
+  settleDice(sim);
+  endBout(sim, 'off');
   s.talk = -1;
   sim.events.push({ type: 'talk', who: -1 });
 }
@@ -193,6 +200,16 @@ export function talkOp(sim: SimContext, a: number, b: number) {
       changeOpinion(sim, who, BUY_OPINION);
       return;
     }
+    // Side games (P22): dice for a stake, a second throw (or standing), an arm-wrestle.
+    case TALK.DICE:
+      startDice(sim, who, b);
+      return;
+    case TALK.REROLL:
+      if (s.dice[0] === who) reroll(sim, b & 3);
+      return;
+    case TALK.WRESTLE:
+      startBout(sim, who);
+      return;
     case TALK.TIP:
       // A recipe they know (P8+): from those who like the player, once a day each.
       if (m.opinion < TIP_OPINION) return refuse(sim, 'tipOpinion');

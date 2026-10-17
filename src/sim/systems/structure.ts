@@ -7,6 +7,8 @@ import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { placesOf } from '../ai/places';
 import { lineOfSight } from '../ai/sight';
 import type { Body } from './movement';
+import { lockAt } from './games';
+import { PINS } from '../../content/games';
 
 /**
  * Layers and destruction (GDD §9): what a tool would strike, what the action button would
@@ -18,9 +20,9 @@ import type { Body } from './movement';
  * What the use button does with the item in hand: a tool strikes (chip, cut, unscrew, dig,
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
  * takes the player down off a roof, an alarm clock is wound (P14), soap washes the scent off
- * (P19), a caught rat is fed and a rat trap set down (P20).
+ * (P19), a caught rat is fed and a rat trap set down (P20), a lockpick works a keyed door's pins (P22).
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -83,6 +85,8 @@ export const SOAP = ITEM_ID('soap');
 /** P20: a rat trap (set down), a caught rat (fed: potato, chocolate or jerky). */
 const RAT_TRAP = ITEM_ID('rat_trap');
 const CAUGHT_RAT = ITEM_ID('caught_rat');
+/** P22: the lockpick (a keyed door ahead). */
+const LOCKPICK = ITEM_ID('lockpick');
 const BAIT = ['potato', 'chocolate', 'jerky'].map(ITEM_ID);
 /** What blinds a camera (GDD §5.6). */
 export const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
@@ -257,6 +261,11 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   }
   const placed = placeTarget(w, layer, here, ahead, held);
   if (placed) return placed;
+  // A lockpick at a keyed door shut for the player (P22): its pins (hp); a perimeter gate has none to pick (`fits` false).
+  if (held === LOCKPICK && layer === LAYER.GROUND && ahead >= 0) {
+    const lock = lockAt(w, ahead);
+    if (lock) return { action: 'pick', layer, tile: ahead, fits: lock === 'lock', hp: PINS[w.ground.key[ahead]] ?? 0 };
+  }
   // A raft in hand at the end of a pier, the open sea ahead (P12, GDD §4.5): launched, and away.
   if (held === RAFT && layer === LAYER.GROUND && ahead >= 0 && w.ground.kind[here] === TILE.PIER && w.ground.kind[ahead] === TILE.WATER && !w.bridge[ahead]) {
     return { action: 'launch', layer, tile: ahead, fits: true, hp: 0 };

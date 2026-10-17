@@ -85,6 +85,16 @@ export const FEATS = [
   'visits',
   'smuggled',
   'parcelsSeized',
+  // v1.16 (P22, side games): dice games played and won, a $20 pot won, snake eyes thrown (a pair of ones, at the last), arm-wrestles and wins, sports day's prize, locks picked open, slips of the pick.
+  'dice',
+  'diceWon',
+  'bigPots',
+  'snakeEyes',
+  'bouts',
+  'boutsWon',
+  'champion',
+  'locksPicked',
+  'slips',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -193,6 +203,22 @@ export function ledger(sim: Sim, x: number, z: number) {
         } else if (e.what === 'parcel') f[FEAT.smuggled]++;
         else if (e.what === 'parcelSeized') f[FEAT.parcelsSeized]++;
         break;
+      case 'dice':
+        if (e.what === 'rolled') f[FEAT.dice]++;
+        else if (e.what === 'won') {
+          f[FEAT.diceWon]++;
+          if (e.stake >= 20) f[FEAT.bigPots]++;
+        }
+        if (e.theirs && e.mine[0] === 1 && e.mine[1] === 1) f[FEAT.snakeEyes]++;
+        break;
+      case 'bout':
+        if (e.what === 'start') f[FEAT.bouts]++;
+        else if (e.what === 'won') f[FEAT.boutsWon]++;
+        break;
+      case 'pick':
+        if (e.what === 'open') f[FEAT.locksPicked]++;
+        else if (e.what === 'slip') f[FEAT.slips]++;
+        break;
       case 'crafted':
         f[FEAT.crafted]++;
         break;
@@ -214,6 +240,7 @@ export function ledger(sim: Sim, x: number, z: number) {
         else if (e.phase === 'muster') f[FEAT.mustered]++;
         else if (e.phase === 'missed') f[FEAT.drillsMissed]++;
         else if (e.phase === 'waved' && e.thorough && s.stowed) f[FEAT.slipped]++;
+        else if (e.phase === 'prize') f[FEAT.champion]++;
         break;
       case 'stow':
         if (e.on) f[FEAT.stowed]++;

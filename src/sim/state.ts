@@ -20,13 +20,15 @@ import type { Rat, RatRefusal } from './systems/rats';
 import { dayPlan, type ForcedDay } from './systems/calendar';
 import { DAY_BOOKS, DAY_EVENTS, type DayEvent } from '../content/days';
 import { CATALOGUE } from '../content/smuggling';
+import { BAR, STAKES } from '../content/games';
+import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
 export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway'] as const;
@@ -65,7 +67,7 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent'; action: ToolAction }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent' | 'gate'; action: ToolAction }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -114,7 +116,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -174,7 +176,7 @@ export type SimEvent =
    * muster taken or missed, the inspection's commendation.
    */
   | { type: 'day'; day: number }
-  | { type: 'today'; event: DayEvent; phase: 'start' | 'end' | 'muster' | 'missed' | 'commend' | 'signOff' | 'search' | 'waved'; thorough?: boolean }
+  | { type: 'today'; event: DayEvent; phase: 'start' | 'end' | 'muster' | 'missed' | 'commend' | 'signOff' | 'search' | 'waved' | 'prize'; thorough?: boolean }
   /**
    * Delivery day (P18): into the vehicle and out of it (`found`: pulled out by a thorough
    * search). (The day's delivery itself: 'today' events, its sign-off at 14:29, the search at
@@ -209,7 +211,24 @@ export type SimEvent =
    * room in the desk.
    */
   | { type: 'smuggle'; what: SmuggleNews; item?: number; way?: number; tile?: number; guard?: number; cash?: number }
+  /**
+   * Side games (P22, games.ts): the dice thrown (the player's, `mine`), thrown again (`mask`: which), and how the
+   * game went (`theirs`, the inmate's throw; the stake changes hands as a 'cash' event); an
+   * arm-wrestle begun and how it ended (`crowd`: inmates watching a win, `wins`: bouts won on
+   * sports day so far); a lock being picked: begun, a pin set, the pick slipping, the door open,
+   * given up (`pin` pins set, `of` in all).
+   */
+  | { type: 'dice'; what: DiceNews; who: number; stake: number; mine: number[]; theirs?: number[]; mask?: number }
+  | { type: 'bout'; what: BoutNews; who: number; crowd?: number; wins?: number }
+  | { type: 'pick'; what: PickNews; tile: number; pin?: number; of?: number }
   | ItemEvent;
+
+/** A dice game (P22, the 'dice' event). */
+export type DiceNews = 'rolled' | 'rerolled' | 'won' | 'lost' | 'push';
+/** An arm-wrestle (P22, the 'bout' event). */
+export type BoutNews = 'start' | 'won' | 'lost' | 'draw' | 'gaveUp' | 'off';
+/** The lockpick at work (P22, the 'pick' event). */
+export type PickNews = 'start' | 'set' | 'slip' | 'open' | 'stop';
 
 /** What smuggling did (P21, the 'smuggle' event). */
 export type SmuggleNews = 'ordered' | 'turnedBack' | 'dropped' | 'seized' | 'collected' | 'visit' | 'noRoom' | 'parcel' | 'parcelSeized' | 'deskFull';
@@ -232,7 +251,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -403,6 +422,16 @@ export interface SimState {
   drops: Array<[number, number, number]>;
   /** Steps seated at a visiting seat in visiting hours (P21): the visitor comes at VISIT_STEPS. */
   visit: number;
+  /** Side games (P22, games.ts): the games played with each inmate today (by inmate index: prison day × 4 + games). */
+  played: number[];
+  /** Dice on the table: [the inmate (index), the stake's place in STAKES, the player's two dice]; [] none. */
+  dice: number[];
+  /** An arm-wrestle: [the inmate, the bar (0 their win – BAR the player's), the side last pressed, the step it began]; [] none. */
+  bout: number[];
+  /** Picking a lock: [the door's ground tile, pins set, the step the marker set off]; [] none. */
+  pick: number[];
+  /** A door picked open, for the player alone: [its tile, the step it locks again, 1 once they've stood in it]; [] none. */
+  picked: number[];
 }
 
 export interface Snapshot {
@@ -514,6 +543,11 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     order: [],
     drops: [],
     visit: 0,
+    played: [],
+    dice: [],
+    bout: [],
+    pick: [],
+    picked: [],
   };
 }
 
@@ -585,6 +619,19 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (A drop with nothing lying where it says: forgotten, never counted as picked up.)
   s.drops = s.drops.filter(([key, item]) => s.items.ground.some(([k, v]) => k === key && (v & 255) === item));
   if (!Number.isInteger(s.visit)) s.visit = 0;
+  // Side games (P22): a save from before them keeps the card sports day took the place of, on the day it's loaded and the next.
+  if (st.played === undefined) {
+    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeSports ?? 'none');
+    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) if (dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event === 'sports') s.calendar = [...s.calendar, [day, before, -1]];
+  }
+  // (A damaged one: games with nobody, dice that aren't dice, a lock where there's no door.)
+  const n = s.inmates.length;
+  if (!Array.isArray(s.played) || !s.played.every((x) => Number.isInteger(x) && x >= 0)) s.played = [];
+  if (!(Array.isArray(s.dice) && (s.dice.length === 0 || (ints(s.dice, 4) && s.dice[0] >= 0 && s.dice[0] < n && s.dice[1] >= 0 && s.dice[1] < STAKES.length && [s.dice[2], s.dice[3]].every((d) => d >= 1 && d <= 6))))) s.dice = [];
+  if (!(Array.isArray(s.bout) && (s.bout.length === 0 || (ints(s.bout, 4) && s.bout[0] >= 0 && s.bout[0] < n && s.bout[1] > 0 && s.bout[1] < BAR)))) s.bout = [];
+  const door = (t: number) => t >= 0 && t < world.ground.kind.length && world.ground.base[t] === TILE.DOOR;
+  if (!(Array.isArray(s.pick) && (s.pick.length === 0 || (ints(s.pick, 3) && door(s.pick[0]) && s.pick[1] >= 0)))) s.pick = [];
+  if (!(Array.isArray(s.picked) && (s.picked.length === 0 || (ints(s.picked, 3) && door(s.picked[0]))))) s.picked = [];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

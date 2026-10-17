@@ -102,6 +102,12 @@ const P: Record<string, string> = {
   phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 5.5h4M11 18.5h2"/>',
   /** A drone with a parcel slung under it (P21). */
   drone: '<path d="M2.5 6h5M16.5 6h5M5 6v2.5l4 2h6l4-2V6"/><rect x="9" y="9" width="6" height="3.5" rx="1"/><path d="M12 12.5v3"/><rect x="9.5" y="15.5" width="5" height="5" rx=".5"/>',
+  /** Two dice (P22: side games). */
+  dice: '<rect x="2.5" y="9.5" width="10" height="10" rx="2"/><rect x="11.5" y="3.5" width="10" height="10" rx="2" transform="rotate(12 16.5 8.5)"/><circle cx="5.5" cy="12.5" r=".9" fill="currentColor"/><circle cx="9.5" cy="16.5" r=".9" fill="currentColor"/><circle cx="16.5" cy="8.5" r=".9" fill="currentColor"/>',
+  /** A flexed arm (P22: arm-wrestling). */
+  arm: '<path d="M4 20c-.8-3.6.2-7.6 3.2-10.6L10 6.5 9 4h4.5l1.5 2.5-3 2.5.8 2.8c2.6-1.4 6.2-.6 7.2 2.4s-1.2 5.8-4.5 5.8Z"/>',
+  /** A lockpick and its tension wrench (P22). */
+  lockpick: '<path d="M3.5 20.5 14 10l2.2 1.2L18.5 9"/><path d="M8 3.5v6.5h4"/><circle cx="18.8" cy="8.6" r=".4"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

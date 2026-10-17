@@ -17,6 +17,7 @@ import { icon } from './icons';
 import { itemName } from './items';
 import { fixerOf, PHONE } from '../sim/systems/smuggling';
 import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
+import { gamesSection, type GamesView } from './games';
 
 type Send = (op: number, a?: number, b?: number) => void;
 
@@ -81,12 +82,25 @@ export class TalkPanel {
   greeting = '';
   /** Whether the player has heard a rumor (its fact key): a guard's ways show once gossip told them (P15). */
   knows: (key: string) => boolean = () => false;
+  /** The games on offer with this inmate (P22), from the play layer. */
+  games: (sim: Sim) => GamesView | null = () => null;
+  /** The dice chosen to throw again (bit per die), and the dice game they were chosen in. */
+  private diceMask = 0;
+  private diceGame = -1;
 
   constructor(private readonly send: Send, private readonly click: () => void) {
     this.el = h('div', 'item-panel talk-panel hidden');
     this.el.setAttribute('role', 'dialog');
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.addEventListener('click', (e) => {
+      // A die tapped (P22): chosen to throw again, or not.
+      const die = (e.target as HTMLElement).closest<HTMLElement>('[data-die]');
+      if (die) {
+        this.click();
+        this.diceMask ^= 1 << Number(die.dataset.die);
+        this.drawn = '';
+        return;
+      }
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
       if (!b || (b as HTMLButtonElement).disabled) return;
       this.click();
@@ -110,7 +124,8 @@ export class TalkPanel {
   update(sim: Sim, busy: boolean) {
     const s = sim.state;
     const who = s.talk;
-    if (who < 0 || busy) {
+    // (P22: an arm-wrestle has its own card meanwhile.)
+    if (who < 0 || busy || s.bout.length) {
       if (this.open) this.hide();
       return;
     }
@@ -126,7 +141,17 @@ export class TalkPanel {
     // The fixer (P21): a burner phone, to a friend.
     const fixer = fixerOf(sim) === who;
     const hasPhone = inv.some((v) => itemOf(v) === PHONE);
-    const key = [who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    // The games (P22): the dice tapped belong to one game on the table.
+    const gv = this.games(sim);
+    const game = gv?.dice ? gv.id : -1;
+    if (game !== this.diceGame) {
+      this.diceGame = game;
+      this.diceMask = 0;
+    }
+    const now = performance.now();
+    const shown = gv?.show;
+    const gamesKey = gv ? [gv.id, gv.open, gv.why, gv.left, gv.seen, gv.dice?.mine.join(',') ?? '', shown ? (now < shown.shownAt ? 1 : 2) : 0, shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '', gv.arm, gv.tired, gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '', this.diceMask, gv.stakes.map((x) => x.ok).join(',')].join(':') : '';
+    const key = [gamesKey, who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -187,6 +212,8 @@ export class TalkPanel {
       phoneHtml = `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.fixerTitle')}</span></div>
         <div class="bribe-row"><span class="bribe-text"><b>${t('item.burner_phone')}</b><small>${esc(note)}</small></span><button class="big-btn ${ok && s.cash >= PHONE_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.PHONE}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirmBuy', { n: PHONE_PRICE }))}" aria-label="${esc(t('talk.buy', { item: t('item.burner_phone'), price: PHONE_PRICE }))}"><img class="btn-item" src="${itemIcons()[PHONE]}" alt="" draggable="false"><span>$${PHONE_PRICE}</span></button></div></section>`;
     }
+    // The games (P22): dice and an arm-wrestle.
+    const gamesHtml = gv ? gamesSection(gv, this.diceMask, now) : '';
     // Gifts: anything worth something from the hotbar, or a little cash.
     const gifts = inv
       .map((v, k) => {
@@ -213,9 +240,13 @@ export class TalkPanel {
       const ok = m.opinion >= OPINION_HIGH && !full;
       foot = `<button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-act="${TALK.RECRUIT}" ${ok ? '' : 'disabled'}>${icon('users', 16)}<span>${t('talk.recruit')}</span></button><span class="talk-note">${ok ? t('talk.recruitNote') : full ? t('talk.recruitFull', { n: MAX_FOLLOWERS }) : t('talk.recruitNeed', { n: OPINION_HIGH })}</span>`;
     }
+    // (A redraw keeps the keyboard's place: the die or button that had the focus has it again.)
+    const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
+    const again = had?.dataset.die !== undefined ? `[data-die="${had.dataset.die}"]` : had?.dataset.act ? `[data-act="${had.dataset.act}"]${had.dataset.arg !== undefined ? `[data-arg="${had.dataset.arg}"]` : ''}` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${phoneHtml}${shopHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+    if (again) this.el.querySelector<HTMLElement>(again)?.focus();
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));

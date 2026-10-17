@@ -144,7 +144,8 @@ export class RunRecorder {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
       // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm; nor one from before visiting day, P21: the week's cards changed.)
-      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '');
+      // (Nor one from before sports day, P22: the week's cards changed again.)
+      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -248,6 +249,14 @@ export function beforeVisits(game: string): boolean {
   return a < 1 || (a === 1 && b < 15);
 }
 
+/** Whether a game version came before sports day (1.16.0): the card it took the place of was dealt then. */
+export function beforeSports(game: string): boolean {
+  const m = /^(\d+)\.(\d+)\./.exec(game);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a < 1 || (a === 1 && b < 16);
+}
+
 /** Plays a log back from its start, checking the hourly sums (stops at the first that doesn't match). */
 export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (prison.id !== log.prison) return null;
@@ -269,6 +278,12 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
     const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeVisits ?? 'none');
     const s = sim.state;
     for (let day = prisonDay(log.from); day <= prisonDay(log.from + log.steps); day++) if (planOf(sim, day).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
+  }
+  // Played before sports day (P22): likewise.
+  if (beforeSports(log.game) && !beforeDays(log.game)) {
+    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeSports ?? 'none');
+    const s = sim.state;
+    for (let day = prisonDay(log.from); day <= prisonDay(log.from + log.steps); day++) if (planOf(sim, day).event === 'sports') s.calendar = [...s.calendar, [day, before, -1]];
   }
   if (sim.state.step !== log.from) return null;
   const sums = new Map(log.sums);

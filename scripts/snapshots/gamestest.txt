@@ -1,0 +1,11 @@
+data: the lockpick (wire + nail file, Int 40, $35 on the phone, 12 uses); sports day in place of center-perks movie, stalag-flucht feast, shankton drill, san-pancho drill, irongate foodFight
+who plays: opinion 40+, freeTime on, work off, exercise on, showers off, eveningFreeTime on; 3 games a day each
+dice: 6 games as roll() throws them; dice left on the table stand; the warning agrees 34/34; rethrowing 1–3: won 48%, lost 43%, tied 9%
+arm-wrestling: the bar as the rule says; a win +6 / +2 x 4 watching / +1 Strength; lost, drawn +2; given up, broken off
+  Strength 40 vs 30 · 45 · 60: 5/s won 11.0s · won 24.8s · lost; 8/s won 5.4s · won 7.0s · won 17.9s; 12/s won 2.6s · won 3.0s · won 4.0s
+  Strength 70 vs 30 · 45 · 60: 5/s won 6.2s · won 8.6s · draw; 8/s won 3.5s · won 4.3s · won 6.8s; 12/s won 1.8s · won 2.0s · won 2.6s
+sports day: 3 wins earn $30 and +3 from everyone, once, only on the day
+lockpick doors: center-perks cyan 4, purple 1, red 5, green 2; 2 gates | stalag-flucht red 3, purple 3, cyan 5; 2 gates | shankton cyan 6, red 3, purple 2; 6 gates | san-pancho cyan 6, red 8, purple 1, green 2 | irongate red 8, purple 2, cyan 6, green 1; 3 gates | training purple 1; 2 gates
+lockpick: start, a slip (6, worn), pins set (2), open for the player alone until through or 15 s, a step stops it, it breaks, never a gate, the cell door at night
+saves: dice and a bout carry on; damaged games dropped; an old save on sports day 3 keeps its movie
+saves: a lock half picked and a door picked open carry on

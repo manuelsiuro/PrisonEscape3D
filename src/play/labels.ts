@@ -1,4 +1,4 @@
-import { itemDef, itemNumber } from '../content/items';
+import { itemDef, itemNumber, KEY_ITEM_COLORS } from '../content/items';
 import { currentLang, t, type Key } from '../i18n';
 import { lineOfSight } from '../sim/ai/sight';
 import { SLOT } from '../sim/command';
@@ -34,11 +34,11 @@ const LETTER = itemNumber('letter');
 
 /** Why a strike can't land, by what it needs. */
 export const NEED: Record<string, string> = {
-  rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
+  rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig', pick: 'toast.pickGate' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick' };
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
@@ -298,6 +298,17 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     v.fits = true;
     v.repeat = false;
     v.progress = null;
+    return v;
+  }
+  // The lockpick (P22): a keyed door's pins (set so far, once at it); a perimeter gate has none to pick.
+  if (tt.action === 'pick') {
+    const s = sim.state;
+    const at = s.pick.length > 0 && s.pick[0] === tt.tile;
+    v.verb = t(at ? 'act.setPin' : 'act.pick');
+    v.what = tt.fits ? t('thing.lock', { key: t(`keyColor.${KEY_ITEM_COLORS[w.ground.key[tt.tile] - 1]?.[0] ?? 'yellow'}` as Key) }) : t('thing.gate');
+    v.fits = tt.fits;
+    v.repeat = false;
+    v.progress = at ? s.pick[1] / Math.max(1, tt.hp) : null;
     return v;
   }
   // A comb or toothbrush on a wall: strokes so far against those it takes.

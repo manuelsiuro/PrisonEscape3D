@@ -34,10 +34,12 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['chatter', 'ear', '#d9a21b'],
     ['day', 'calendar', '#d9930a'],
     ['train', 'dumbbell', '#8e4fc4'],
+    ['games', 'dice', '#7ed957'],
     ['fight', 'fist', '#c0392b'],
   ],
   escape: [
     ['tools', 'pick', '#6f93b8'],
+    ['lockpick', 'lockpick', '#8d949e'],
     ['noise', 'ear', '#e8963a'],
     ['layers', 'down', '#8e5a2b'],
     ['cover', 'lock', '#5d6779'],

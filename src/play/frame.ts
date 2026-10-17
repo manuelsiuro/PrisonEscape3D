@@ -26,6 +26,7 @@ import { searchMinute } from '../sim/systems/delivery';
 import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
 import { smuggleFrame } from './smuggle';
+import { diceRival, gamesDoing, gamesFrameOf } from './games';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
@@ -157,6 +158,7 @@ const frameData: Frame = {
   scent: scentFrame,
   rats: [],
   smuggle: null,
+  games: { bout: null, dice: null, taps: 0, sports: false },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -255,6 +257,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.angry = m.angry > 0;
     o.badge = badgeOf(sim, k);
   });
+  // The side games (P22): the dice partner crouches over the dice with the player (the arm-wrestle's pose is the view's, from the bout).
+  const rival = diceRival(sim);
+  if (rival >= 0 && f.inmates[rival] && st.talk === rival) f.inmates[rival].doing = DOING.DICE;
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
     const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0, stir: 0, range: 7 });
@@ -379,6 +384,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     f.doing = seated.kind === 'seat' && meal && st.eaten < MEAL_STEPS && sim.playerZone === 'canteen' ? DOING.EAT : DOING.SIT;
     f.trainAt = seatAt;
   } else if (sim.showering) f.doing = DOING.SHOWER;
+  // The side games (P22): at a lock, in an arm-wrestle, over the dice.
+  const game = gamesDoing(sim);
+  if (game >= 0 && !seated) f.doing = game;
   if (!seated && trainKind === 'treadmill') {
     const tp = sim.world.props[st.train];
     trainAt.x = tp.x + tp.w / 2;
@@ -446,6 +454,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   dayFrame(sim, f);
   // Smuggling (P21): the drone, the drops, visiting day.
   f.smuggle = smuggleFrame(sim, a);
+  // The side games (P22): the bout, the dice between the two, the pick's taps, sports day.
+  f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? f.inmates[rival] ?? null : null);
   return f;
 }
 

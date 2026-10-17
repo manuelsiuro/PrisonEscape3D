@@ -18,6 +18,7 @@ import { chatterStats, director } from './play/chatter';
 import { firstDay } from './play/tips';
 import { wireRatPanel } from './play/rat';
 import { wirePhone } from './play/smuggle';
+import { wireGames } from './play/games';
 
 /**
  * Wiring: storage first, then the long-lived objects (play/context.ts, made as it's imported),
@@ -42,6 +43,7 @@ aimUI.onCancel = cancelThrow;
 // The pet rat (P20): its panel's buttons, and the HUD's pill opening it.
 wireRatPanel();
 wirePhone();
+wireGames();
 listenKeys();
 
 // The title shows the first prison drifting by.

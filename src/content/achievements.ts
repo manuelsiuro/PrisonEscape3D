@@ -126,6 +126,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'onTheLine', group: 'life', icon: 'phone', run: (r) => f(r, 'phones') >= 1 },
   { id: 'dropZone', group: 'skills', icon: 'drone', run: (r) => f(r, 'drops') >= 1 },
   { id: 'visitingHours', group: 'days', icon: 'users', run: (r) => f(r, 'smuggled') >= 1 },
+  // Side games (P22).
+  { id: 'highRoller', group: 'life', icon: 'dice', run: (r) => f(r, 'bigPots') >= 1 },
+  { id: 'ironArm', group: 'skills', icon: 'arm', run: (r) => f(r, 'boutsWon') >= 5 },
+  { id: 'openSesame', group: 'skills', icon: 'lockpick', run: (r) => f(r, 'locksPicked') >= 1 },
+  { id: 'champion', group: 'days', icon: 'trophy', run: (r) => f(r, 'champion') >= 1 },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
@@ -138,6 +143,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'nosyParker', group: 'mishaps', icon: 'paw', hidden: true, run: (r) => f(r, 'dogDug') >= 1 },
   { id: 'rudeAwakening', group: 'mishaps', icon: 'key', hidden: true, run: (r) => f(r, 'keyless') >= 1 },
   { id: 'findersKeepers', group: 'mishaps', icon: 'drone', hidden: true, run: (r) => f(r, 'dropsSeized') + f(r, 'parcelsSeized') >= 1 },
+  { id: 'snakeEyes', group: 'mishaps', icon: 'dice', hidden: true, run: (r) => f(r, 'snakeEyes') >= 1 },
   // Career.
   { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },

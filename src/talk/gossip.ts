@@ -15,6 +15,7 @@ import { dayMinute, planOf, today } from '../sim/systems/calendar';
 import { prisonDay } from '../sim/systems/clock';
 import { searchMinute, thorough } from '../sim/systems/delivery';
 import { fixerOf } from '../sim/systems/smuggling';
+import { DICE_HEAT } from '../content/games';
 import type { GuardDef } from '../content/prisons/types';
 import { grateAt, underSea } from '../sim/systems/structure';
 import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN, DOG_DAY_FROM, DOG_DAY_TO, DOG_NIGHT_FROM, DOG_NIGHT_TO, DOG_FIRST_DAY } from '../sim/tuning';
@@ -33,11 +34,11 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches']);
+export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches', 'gambling', 'lockpick']);
 
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
@@ -137,6 +138,9 @@ function lastingFacts(sim: Sim): Fact[] {
     add({ kind: 'droneDrop', place: w.zoneAt((sm.drop[0] + sm.drop[2]) >> 1, (sm.drop[1] + sm.drop[3]) >> 1) });
     if (sm.visits) add({ kind: 'visitArches', place: w.zoneAt((sm.visits[0] + sm.visits[2]) >> 1, (sm.visits[1] + sm.visits[3]) >> 1) });
   }
+  // Side games (P22): what a game of dice under a guard's nose costs, and what a lockpick won't open.
+  if (!relaxed) add({ kind: 'gambling', n: DICE_HEAT });
+  add({ kind: 'lockpick' });
   lasting.set(def.id, out);
   return out;
 }
@@ -168,6 +172,12 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // Smuggling (P21): who sells burner phones (not the fixer about himself).
   const fixer = fixerOf(sim);
   if (fixer >= 0 && fixer !== speaker) out.push({ kind: 'fixer', key: 'fixer', inmate: fixer });
+  // Side games (P22): the strongest arm in the prison (not the speaker bragging).
+  let champ = -1;
+  s.inmates.forEach((m, k) => {
+    if (champ < 0 || m.str > s.inmates[champ].str) champ = k;
+  });
+  if (champ >= 0 && champ !== speaker && !sim.prison.rules?.relaxed) out.push({ kind: 'champ', key: `champ:${champ}`, inmate: champ });
   // The next 08:00 shakedown's cells (P15: drawn ahead with roll(), so known): whose, and the player's.
   const clock = sim.clock;
   const day = clock.minuteOfDay >= ROUTINE[0].start ? clock.day + 1 : clock.day;
@@ -181,7 +191,7 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // The day (P17): tomorrow's inspection, drill or food fight (the plan is drawn ahead: true), and tonight's storm's first power cut still to come.
   const plan = today(sim);
   const next = planOf(sim, plan.day + 1);
-  const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : next.event === 'delivery' ? 'nextDelivery' : next.event === 'visiting' ? 'nextVisiting' : null;
+  const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : next.event === 'delivery' ? 'nextDelivery' : next.event === 'visiting' ? 'nextVisiting' : next.event === 'sports' ? 'nextSports' : null;
   if (ahead && !sim.prison.rules?.relaxed) out.push({ kind: ahead, key: `${ahead}:${next.day}`, n: next.day });
   const m = dayMinute(s.step);
   const cut = plan.outages.find((o) => o > m);
@@ -256,6 +266,10 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   droneDrop: ['place'],
   visitArches: ['place'],
   nextVisiting: ['n'],
+  champ: ['inmate'],
+  gambling: ['n'],
+  lockpick: [],
+  nextSports: ['n'],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */

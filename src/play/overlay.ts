@@ -44,6 +44,8 @@ import {
   talk,
   tools,
   trainCard,
+  pickCard,
+  wrestleCard,
   vignette,
   view,
   workChips,
@@ -65,6 +67,7 @@ import { ratHud, ratView } from './rat';
 import { orderHud, phoneView, smuggleHints } from './smuggle';
 import { PHONE, smugglingOf } from '../sim/systems/smuggling';
 import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
+import { cashShown, pickNow, wrestleNow } from './games';
 
 /**
  * Everything over the picture, brought up to date after each draw: the item bar and action
@@ -183,7 +186,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   press.toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && press.toolKey !== press.heldOn) tools.release();
   const fighting = st.lock >= 0 || memo.fighting;
-  const training = st.train >= 0;
+  // (P22: an arm-wrestle and a lock being picked have their own cards, as training has.)
+  const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0;
   tools.update(training ? null : press.toolNow, st.energy, !!(held && itemDef(held).tool) || training, busy || panel, st.health / maxHealth(st.str), fighting);
   // The target card, and the lock button while anyone is in range (worked out once a step).
   combatUI.update(targetInfo(sim), memo.canLock && !training, busy || panel || training);
@@ -193,6 +197,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   board.update(sim, busy);
   profile.update(sim, busy && !st.sleeping);
   trainCard.update(sim, busy);
+  // The side games (P22): the arm-wrestle's card, the lockpick's (the tool controls step aside for them).
+  const bout = busy ? null : wrestleNow(sim, frameDt(g));
+  const pick = busy ? null : pickNow(sim, a);
+  wrestleCard.update(bout);
+  pickCard.update(pick, !settings.reducedMotion);
+  document.body.classList.toggle('gaming', !!bout || !!pick);
   workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');
@@ -227,7 +237,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (dog === 'nose') pawAt = performance.now();
   hudState.dog = dog ?? (hudState.dog === 'nose' && performance.now() - pawAt < PAW_HOLD_MS && !busy ? 'nose' : null);
   hudState.solitaryMinutes = st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null;
-  hudState.cash = st.cash;
+  // (P22: the dice's winnings show as the dice come down.)
+  hudState.cash = cashShown(st);
   // During the Work Period with a job that counts today: the quota on the badge (GDD §11).
   const job = sim.jobActive();
   if (ROUTINE[st.routine].id === 'work' && job >= 0) {
@@ -293,3 +304,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
 }
 
 const headAt = (id: number, out: { x: number; y: number }) => view.screenOf(id, out, 1.95);
+
+/** Real seconds since the last overlay (the arm-wrestle's bar eases with it). */
+let lastOverlay = performance.now();
+function frameDt(g: Game): number {
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - lastOverlay) / 1000);
+  lastOverlay = now;
+  return g.paused ? 0 : dt;
+}

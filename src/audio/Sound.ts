@@ -1027,6 +1027,63 @@ export class Sound {
     this.hiss(0.08, 'lowpass', 600, 0.7, 0.08 * gain);
   }
 
+  /** Dice shaken in a cupped hand (P22): a dry rattle of quick clicks. */
+  diceRattle() {
+    for (let k = 0; k < 7; k++) {
+      const d = k * 0.045 + Math.random() * 0.02;
+      this.tone(1900 + Math.random() * 900, 1500, 0.025, 'square', 0.025, d);
+    }
+    this.hiss(0.32, 'bandpass', 2600, 2.2, 0.035);
+  }
+
+  /** Dice landing (P22): a clack each, then a little skitter as they settle (`gain`: how near). */
+  diceLand(gain = 1) {
+    if (gain <= 0.02) return;
+    for (const [d, g] of [
+      [0, 1],
+      [0.05, 0.8],
+      [0.13, 0.45],
+      [0.2, 0.3],
+      [0.26, 0.18],
+    ]) this.tone(1450 + Math.random() * 500, 1100, 0.03, 'square', 0.05 * g * gain, d);
+  }
+
+  /** Straining at an arm-wrestle (P22): a short throaty grunt. */
+  grunt() {
+    const f = 130 + Math.random() * 40;
+    this.tone(f, f * 0.8, 0.2, 'sawtooth', 0.045);
+    this.hiss(0.16, 'lowpass', 500, 0.8, 0.04);
+  }
+
+  /** A bout won in front of people (P22): a short cheer and some clapping. */
+  cheer() {
+    this.hiss(1.2, 'bandpass', 900, 0.9, 0.12, undefined, 0, 0.15);
+    for (let k = 0; k < 8; k++) this.hiss(0.04, 'bandpass', 2200, 2, 0.05, undefined, 0.15 + k * 0.11 + Math.random() * 0.04);
+    for (let k = 0; k < 3; k++) {
+      const f = 420 + Math.random() * 200;
+      this.tone(f, f * 1.5, 0.2, 'triangle', 0.03, 0.05 + k * 0.18);
+    }
+  }
+
+  /** A lockpick's pin set (P22): a tiny bright click. */
+  pickClick() {
+    this.tone(3400, 2900, 0.025, 'square', 0.04);
+    this.tone(1900, 1700, 0.04, 'triangle', 0.05, 0.01);
+  }
+
+  /** The pick slipping (P22): a metal scrape and a jolt. */
+  pickSlip() {
+    this.hiss(0.2, 'bandpass', 2800, 3, 0.09);
+    this.tone(900, 420, 0.16, 'sawtooth', 0.04);
+  }
+
+  /** The last pin, and the bolt slides back (P22): a click and a heavy clunk. */
+  unlock() {
+    this.pickClick();
+    this.tone(240, 150, 0.16, 'triangle', 0.14, 0.08);
+    this.hiss(0.1, 'lowpass', 900, 0.9, 0.08, undefined, 0.08);
+  }
+
   /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);

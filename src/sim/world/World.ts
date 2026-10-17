@@ -108,6 +108,8 @@ export class World {
   private proppedOn = false;
   /** 1 on the ground the delivery's propped doors lead to (from its tail, with them shut): worked out once. */
   private beyondTiles: Uint8Array | null = null;
+  /** A door the player picked open (P22): it opens for them as their own key would (-1 none); derived by the simulation. */
+  pickedDoor = -1;
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
   rev = 0;
 
@@ -209,6 +211,13 @@ export class World {
     this.refreshBlock();
   }
 
+  /** A door picked open for the player (P22), or none (-1); doors follow. */
+  setPicked(tile: number) {
+    if (tile === this.pickedDoor) return;
+    this.pickedDoor = tile;
+    this.refreshBlock();
+  }
+
   /** The takeover on or over; doors follow. */
   setRiot(on: boolean) {
     if (on === this.riot) return;
@@ -283,7 +292,8 @@ export class World {
       const shut = k === TILE.DOOR && !this.propped[i] && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && ((this.openRooms >> BigInt(room)) & 1n) === 1n);
       this.doorShut[i] = shut ? 1 : 0;
       // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
-      const keyed = shut && (this.riot || (!this.gate[i] && ((this.playerKeys >> g.key[i]) & 1) === 1));
+      // (P22: and the door the player picked, as their own key would.)
+      const keyed = shut && (this.riot || (!this.gate[i] && (((this.playerKeys >> g.key[i]) & 1) === 1 || i === this.pickedDoor)));
       // The drawbridge (P12) is down while the prison is the inmates'.
       const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid && !(this.riot && this.bridge[i]);
       this.block[i] = solid || this.propSolid[i] || this.parked[i] ? 1 : 0;

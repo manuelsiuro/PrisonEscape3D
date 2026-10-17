@@ -37,6 +37,7 @@ import type { NoiseKind } from '../sim/state';
 import { Dogs, type DogFrame } from './Dog';
 import { Rats, type RatFrame } from './Rat';
 import { SmuggleView, type SmuggleFrame } from './Smuggling';
+import { GamesView, type GamesFrame } from './Games';
 import { handlersOf } from '../sim/systems/k9';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
@@ -114,9 +115,19 @@ export interface Frame {
   rats: RatFrame[];
   /** Smuggling (P21): the drone, what it dropped, visiting day's arches and visitors (null where there's none). */
   smuggle: SmuggleFrame | null;
+  /** Side games (P22): an arm-wrestle, dice on the ground, the lockpick's taps, sports day's bunting. */
+  games: GamesFrame;
 }
 
 const NO_FUSES: readonly number[] = [];
+/** How far apart two arm-wrestlers stand, centre to centre (tiles): their right hands, each reaching about half of it, meet between them. */
+const BOUT_GAP = 1.0;
+/** How far each steps to its own left (tiles), so the right hands (a shoulder's width off the middle) meet on the line between them. */
+const BOUT_SIDE = 0.21;
+/** How far the one winning leans in, and the other gives way, at the most (tiles). */
+const BOUT_LEAN = 0.06;
+/** How far in to a lock the player leans (tiles from the tile's middle: the hands at the door's face). */
+const PICK_LEAN = 0.38;
 const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 };
 const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
 
@@ -300,6 +311,9 @@ export class View {
   private readonly rats = new Rats();
   /** Smuggling (P21): the drone, the drops' beacons, visiting day. */
   private readonly smuggling = new SmuggleView();
+  private readonly gamesView = new GamesView();
+  /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
+  private taps = 0;
   private buzzClock = 0;
   /** The drone overhead (P21): its buzz, every so often while it's about (the play layer plays it, louder the nearer). */
   onDrone: (x: number, z: number) => void = () => {};
@@ -388,6 +402,10 @@ export class View {
   private readonly m4 = new THREE.Matrix4();
   /** Easing onto the training equipment (0 standing where the sim has them, 1 on it). */
   private trainBlend = 0;
+  /** Where the side games (P22) draw the player off their spot (an arm-wrestle's stance, leaning in to a lock), and the one wrestling them (and who), eased in and out. */
+  private readonly gameOff = { x: 0, z: 0 };
+  private readonly rivalOff = { x: 0, z: 0 };
+  private rivalWho = -1;
   private readonly trainPos = new THREE.Vector3();
   private reps = 0;
   /** No camera drift, idle glances or dust. */
@@ -409,7 +427,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -509,6 +527,7 @@ export class View {
     this.cones.world = world;
     this.events.setWorld(world);
     this.delivery.setWorld(world);
+    this.gamesView.setWorld(world);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {
         const d = world.def.guards[h].dog!;
@@ -905,8 +924,51 @@ export class View {
       if (f.reps > this.reps) this.player.pump();
       this.reps = f.reps;
     }
-    const px = f.x + (this.trainPos.x - f.x) * tb;
-    const pz = f.z + (this.trainPos.z - f.z) * tb;
+    let px = f.x + (this.trainPos.x - f.x) * tb;
+    let pz = f.z + (this.trainPos.z - f.z) * tb;
+    let facing = f.trainAt ? f.trainAt.facing : f.facing;
+    // An arm-wrestle (P22): the two square on at arm's length, each a step to its own left so the
+    // right hands meet on the line between them; the one winning leans in, the other gives way.
+    // At a lock: leaning in to the door. Eased in and out (never a jump).
+    const bout = f.games.bout;
+    const rival = bout ? f.inmates[bout.who] : null;
+    let gx = 0;
+    let gz = 0;
+    let rx = 0;
+    let rz = 0;
+    if (bout && rival) {
+      const dx = rival.x - f.x;
+      const dz = rival.z - f.z;
+      const d = Math.hypot(dx, dz) || 1;
+      const fx = dx / d;
+      const fz = dz / d;
+      const along = Math.max(-0.25, Math.min(0.35, (d - BOUT_GAP) / 2));
+      const lean = BOUT_LEAN * bout.strain;
+      // (A body's own left, the side away from the arm that grips: the player's (−fz, fx), the rival's the opposite.)
+      gx = fx * (along + lean) - fz * BOUT_SIDE;
+      gz = fz * (along + lean) + fx * BOUT_SIDE;
+      rx = -fx * (along - lean) + fz * BOUT_SIDE;
+      rz = -fz * (along - lean) - fx * BOUT_SIDE;
+      facing = Math.atan2(dx, dz);
+      this.rivalWho = bout.who;
+      this.player.strain = bout.strain;
+      this.player.shudder = bout.surge;
+    } else if (f.doing === DOING.PICK) {
+      gx = Math.sin(f.facing) * PICK_LEAN;
+      gz = Math.cos(f.facing) * PICK_LEAN;
+    }
+    const ge = Math.min(1, dt * 8);
+    this.gameOff.x += (gx - this.gameOff.x) * ge;
+    this.gameOff.z += (gz - this.gameOff.z) * ge;
+    this.rivalOff.x += (rx - this.rivalOff.x) * ge;
+    this.rivalOff.z += (rz - this.rivalOff.z) * ge;
+    if (!bout && Math.abs(this.rivalOff.x) + Math.abs(this.rivalOff.z) < 0.002) this.rivalWho = -1;
+    px += this.gameOff.x;
+    pz += this.gameOff.z;
+    if (f.games.taps !== this.taps) {
+      if (f.games.taps > this.taps) this.player.pump();
+      this.taps = f.games.taps;
+    }
     this.player.baseY = LAYER_Y[f.layer] + this.trainPos.y * tb;
     // Under a shower in the showers block: wet like the inmates.
     this.player.wet = f.doing === DOING.SHOWER;
@@ -917,7 +979,7 @@ export class View {
     let perchedRat = false;
     for (const r of f.rats) if (r.mode === 'shoulder') perchedRat = true;
     this.player.perched = perchedRat;
-    if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
+    if (this.player.pose(px, pz, facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
       const theme = f.layer === LAYER.GROUND ? this.world?.def.theme : undefined;
       const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : DUST;
       if (dust[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, dust[f.surface], 2);
@@ -947,7 +1009,13 @@ export class View {
       // On a chair, a little higher than on a canteen bench.
       const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;
       c.baseY += (lift - c.baseY) * Math.min(1, dt * 8);
-      c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      // The one arm-wrestling the player (P22): square on to them in its stance, straining the other way (eased back to its spot after).
+      if (bout && bout.who === k) {
+        c.strain = -bout.strain;
+        c.shudder = bout.surge;
+        c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, Math.atan2(f.x - m.x, f.z - m.z), false, dt, time, !this.reducedMotion, DOING.WRESTLE, this.beds[m.cell]);
+      } else if (this.rivalWho === k) c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      else c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
       c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);
     });
@@ -1066,6 +1134,9 @@ export class View {
     // (From the vents and the roof the ground floor shows too, its visitors and arches with it.)
     this.smuggling.group.visible = f.layer !== LAYER.UNDER;
     this.smuggling.update(f.smuggle, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    // The side games (P22): dice on the ground floor, sports day's bunting (seen from the roofs too).
+    this.gamesView.group.visible = f.layer !== LAYER.UNDER;
+    this.gamesView.update(f.games, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
     const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.smuggling.droneAt : null;
     if (drone && (this.buzzClock -= dt) <= 0) {
@@ -1177,6 +1248,7 @@ export class View {
     this.noiseFx.group.visible = false;
     this.rats.group.visible = false;
     this.smuggling.clear();
+    this.gamesView.update(null, 0, false, false);
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;
@@ -1306,10 +1378,12 @@ export class View {
     this.weather.warm(true);
     this.events.warm(true);
     this.delivery.warm(true);
+    this.gamesView.warm(true);
     this.renderer.compile(this.scene, this.camera);
     this.weather.warm(false);
     this.events.warm(false);
     this.delivery.warm(false);
+    this.gamesView.warm(false);
   }
 
   /** Who the day's events put on stage this frame (the inspectors), for the contact shadows. */

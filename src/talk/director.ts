@@ -417,7 +417,7 @@ export class Director {
       case 'spotted': {
         if (e.reason === 'none') break;
         const seeing = s.guards.map((g, k) => ({ id: n + k, g })).filter((o) => o.g.sees && o.g.ko <= 0).sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player)).map((o) => o.id);
-        const own = ['night', 'restricted', 'contraband', 'recognized', 'wanted', 'damage', 'tampering', 'fight'] as const;
+        const own = ['night', 'restricted', 'contraband', 'recognized', 'wanted', 'damage', 'tampering', 'fight', 'gambling'] as const;
         const bank = ((own as readonly string[]).includes(e.reason) ? `re.spotted.${e.reason}` : 're.spotted.other') as BankId;
         this.queueUp(now, bank, seeing, 5, `spotted:${e.reason}`, 'shout');
         break;
@@ -512,6 +512,9 @@ export class Director {
       case 'today':
         if (e.phase === 'start' && e.event === 'drill') this.queueUp(now, 're.drill.in', this.inmatesNear(sim, px, pz, 30), 3, 'drill', undefined, 0.6);
         if (e.phase === 'start' && e.event === 'foodFight') this.queueUp(now, 're.foodFight.in', this.inmatesNear(sim, px, pz, 20), 3, 'foodFight', 'shout', 0.2);
+        // Sports day (P22): everyone limbering up; the champion cheered.
+        if (e.phase === 'start' && e.event === 'sports') this.queueUp(now, 're.sports.in', this.inmatesNear(sim, px, pz, 24), 3, 'sports', undefined, 1.2);
+        if (e.phase === 'prize' && e.event === 'sports') this.queueUp(now, 're.champion.in', this.inmatesNear(sim, px, pz, 16), 3, 'champion', 'shout', 1.6);
         // Visiting day (P21): the inmates about the visiting room, looking forward to it.
         if (e.event === 'visiting' && e.phase === 'start' && sim.prison.smuggling?.visits) {
           const r = sim.prison.smuggling.visits;
@@ -565,6 +568,18 @@ export class Director {
         if (e.what === 'visit') this.queueUp(now, 're.visit.in', this.inmatesNear(sim, px, pz, 6), 2, 'visit', undefined, 1.4);
         break;
       }
+      // Side games (P22): the dice partner when the dice are down (a sore loser, a gloating winner), the crowd at a bout, sports day.
+      case 'dice':
+        if (e.what === 'won' || e.what === 'lost') this.queueUp(now, e.what === 'won' ? 're.diceWon.in' : 're.diceLost.in', [e.who], 4, `dice:${e.what}`, undefined, e.theirs && sim.events.some((x) => x.type === 'dice' && x.what === 'rerolled') ? 2.1 : 1.5);
+        break;
+      case 'bout':
+        if (e.what === 'start') this.queueUp(now, 're.bout.in', this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who), 2, 'bout', 'shout', 0.6);
+        if (e.what === 'won') {
+          this.queueUp(now, 're.boutWon.in', this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who), 3, 'boutWon', 'shout', 0.3);
+          this.queueUp(now, 're.boutLoser.in', [e.who], 3, 'boutLoser', undefined, 1.4);
+        }
+        if (e.what === 'lost') this.queueUp(now, 're.boutWinner.in', [e.who], 3, 'boutWinner', undefined, 0.5);
+        break;
       case 'shot':
         this.incident('shot', px, pz, now);
         this.noteDay('shot');

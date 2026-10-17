@@ -32,7 +32,7 @@ export const OP = {
   TALK: 10,
   /** At the job board (GDD §11): a = job + 1 to apply for it, 0 to quit the job held. */
   JOB: 11,
-  /** Training (GDD §3.2): a = 0 study at the open library shelf, 1 or 2 a press (left, right: they must alternate), 3 stop. */
+  /** Training (GDD §3.2): a = 0 study at the open library shelf, 1 or 2 a press (left, right: they must alternate), 3 stop. (P22: in an arm-wrestle, the presses push and 3 gives up.) */
   TRAIN: 12,
   /** The operations added from P14 on: a = EXT action, b and c its arguments. (14 and 15 stay free.) */
   EXT: 13,
@@ -54,8 +54,13 @@ export const EXT = {
   ORDER: 5,
 } as const;
 
-/** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a bribe: BRIBE; P21's PHONE: a burner phone from the fixer). Never renumber. */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10 } as const;
+/**
+ * What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a
+ * bribe: BRIBE; P21's PHONE: a burner phone from the fixer; P22's games: DICE, b = the stake's
+ * place in STAKES; REROLL, b = the dice thrown again (bit 0 the first, bit 1 the second; 0
+ * stands); WRESTLE, a bout). Never renumber.
+ */
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13 } as const;
 
 /** What a bribe to a guard buys (P15, TALK.BRIBE's b): looking the other way, the paperwork lost. Never renumber. */
 export const BRIBE = { LOOK: 1, PAPER: 2 } as const;

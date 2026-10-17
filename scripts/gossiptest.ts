@@ -42,6 +42,8 @@ import { floorOf } from '../src/sim/ai/places';
 import { TRAP_KITCHEN, TRAP_MINUTE, TRAP_TUNNEL } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { fixerOf, visitExits } from '../src/sim/systems/smuggling';
+import { lockAt } from '../src/sim/systems/games';
+import { DICE_HEAT } from '../src/content/games';
 import { Bot, n } from './bots';
 import { check } from './assert';
 
@@ -82,7 +84,17 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'nextFoodFight':
     case 'nextDelivery':
     case 'nextVisiting':
-      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery', nextVisiting: 'visiting' } as const)[f.kind];
+    case 'nextSports':
+      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery', nextVisiting: 'visiting', nextSports: 'sports' } as const)[f.kind];
+    // Side games (P22): nobody's arm is stronger; the dice's heat is the rule's (gamestest proves it); the lockpick never opens a gate.
+    case 'champ':
+      return s.inmates.every((m) => m.str <= s.inmates[f.inmate!].str);
+    case 'gambling':
+      return f.n === DICE_HEAT && !sim.prison.rules?.relaxed;
+    case 'lockpick': {
+      for (let i = 0; i < MAP_W * MAP_H; i++) if (sim.world.gate[i] && lockAt(sim.world, i) === 'lock') return false;
+      return true;
+    }
     // Smuggling (P21): the fixer is the one the rules sell phones from; the drone drops and the arches stand where it's said (smuggletest proves the rules).
     case 'fixer':
       return f.inmate === fixerOf(sim) && sim.prison.merchants.includes(s.inmates[f.inmate!].cell);

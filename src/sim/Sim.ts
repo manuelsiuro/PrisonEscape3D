@@ -30,6 +30,7 @@ import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
+import { endBout, games, stopPick } from './systems/games';
 import { watch } from './systems/watch';
 import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, HEAT_DECAY_STEPS, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
@@ -45,7 +46,7 @@ export * from './state';
  * noise (fuses, alarm clocks) → clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
- * the takeover → talk, grudges, training, seats → energy and health → showers → solitary →
+ * the takeover → talk, grudges, training, the side games (P22), seats → energy and health → showers → solitary →
  * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → bribes wearing off → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
@@ -152,6 +153,8 @@ export class Sim {
     keepTalk(this);
     grudges(this);
     keepTraining(this);
+    // Side games (P22): a bout's push and shove, a lock being picked, a door picked open.
+    games(this);
     keepSeat(this);
     noteCarried(this);
     regenerate(this);
@@ -247,6 +250,9 @@ export class Sim {
     w.setPlayerKeys(keysCarried(this));
     // A step off the equipment ends the training.
     if (s.train >= 0 && dirOf(cmd) !== 0) stopTraining(this);
+    // (P22: a step out of a bout gives it up; a step away from a lock stops the picking.)
+    if (s.bout.length && dirOf(cmd) !== 0) endBout(this, 'gaveUp');
+    if (s.pick.length && dirOf(cmd) !== 0) stopPick(this);
     // A step gets the player up off a seat or a bed.
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
     const from = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
@@ -421,6 +427,8 @@ export class Sim {
     }
     const was = w.lockedCells;
     w.setLockedCells(mask);
+    // A door picked open (P22): for the player, until they're through it.
+    w.setPicked(s.picked.length ? s.picked[0] : -1);
     // Delivery day (P18): the vehicle's bay solid and its doors propped open while it's in; anyone where it parks steps aside.
     const arriving = !w.delivering;
     // (Its doors stay open behind it, that day, while the player is still out there: never shut out.)

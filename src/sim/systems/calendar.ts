@@ -8,7 +8,7 @@
  * Each step (`theDay`) starts and ends the day's event on the minute: the inspection, the fire
  * drill and its muster, the feast, the generator's service, movie night, the food fight, the
  * delivery (P18, delivery.ts: its search and departure), visiting day (P21, smuggling.ts: the visitors and the
- * arches at the visiting room's doors); and a storm's power cuts in the night. What they change is asked of this module by the systems:
+ * arches at the visiting room's doors), sports day (P22, games.ts: the prize for three bouts won); and a storm's power cuts in the night. What they change is asked of this module by the systems:
  * how far a guard sees (`sightOf`), how far a noise carries (`muffled`), the inmates' plan
  * (`crowdPlan`), the snipers in the weather, the heat of the sun.
  */
@@ -269,6 +269,10 @@ export const TODAY = {
   WAVED: 256,
   /** Visiting day (P21): the player's visitor came today. */
   VISITED: 512,
+  /** Sports day (P22): bouts won today (a count in these two bits: SPORTS_WIN each), and the prize handed out. */
+  SPORTS_WIN: 1024,
+  SPORTS_WINS: 3072,
+  SPORTS_PRIZE: 4096,
 } as const;
 
 /** A food fight's guards: this many drawn into the canteen for as long as it lasts. */

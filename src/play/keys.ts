@@ -29,6 +29,9 @@ function onKeyDown(e: KeyboardEvent) {
     else if (itemsUI.panelOpen) itemsUI.closePanels();
     else if (socialOpen()) closeSocial();
     else if (game.rec.sim.state.train >= 0) sendOp(OP.TRAIN, 3);
+    // (P22: out of an arm-wrestle, away from a lock.)
+    else if (game.rec.sim.state.bout.length) sendOp(OP.TRAIN, 3);
+    else if (game.rec.sim.state.pick.length) sendOp(OP.CLOSE);
     else pause();
     return;
   }
@@ -39,7 +42,7 @@ function onKeyDown(e: KeyboardEvent) {
   if (e.code === 'KeyE') {
     // E again closes what it opened (a container, a talk, the board) and steps off the equipment.
     const st = g.rec.sim.state;
-    if (st.items.open >= 0 || st.talk >= 0 || st.train >= 0) sendOp(OP.CLOSE);
+    if (st.items.open >= 0 || st.talk >= 0 || st.train >= 0 || st.pick.length) sendOp(OP.CLOSE);
     else if (board.isOpen) board.close();
     else act();
   }
@@ -72,8 +75,8 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // P: the burner phone's panel (P21).
   if (e.code === 'KeyP' && !itemsUI.panelOpen) togglePhone(true);
-  // Training (GDD §3.2): left and right in turn fill the bar.
-  if (g.rec.sim.state.train >= 0 && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
+  // Training (GDD §3.2): left and right in turn fill the bar (P22: and push in an arm-wrestle).
+  if ((g.rec.sim.state.train >= 0 || g.rec.sim.state.bout.length) && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
     return;
   }

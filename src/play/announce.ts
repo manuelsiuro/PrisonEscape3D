@@ -1,6 +1,7 @@
 import { buzz } from '../app/haptics';
 import { announceRat } from './rat';
 import { announceSmuggle } from './smuggle';
+import { announceGames } from './games';
 import { itemDef, itemNumber } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
@@ -27,6 +28,7 @@ import { coachOnce, markTip, seenInteract, seenTip } from './tips';
 import { dayTime, vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
 import { FEAST_ENERGY } from '../content/days';
+import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
 
 /** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
@@ -429,6 +431,8 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     // ---------------------------------------------------------------- economy and social life (P6)
     case 'cash':
+      // (The dice's winnings and sports day's prize: said by the games, when the dice are down.)
+      if (e.why === 'dice' || e.why === 'prize') break;
       if (e.n > 0) {
         sound.coin(e.n >= 20);
         floatAt(-1, `+$${e.n}`, 'cash');
@@ -595,7 +599,8 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 600) break;
       lastCant = now;
       sound.sting();
-      itemsUI.toast(t(`refused.${e.why}` as Key, { n: BRIBE_REPORT_HEAT }));
+      // (P22's games say their own numbers: the opinion they need, the games a day.)
+      itemsUI.toast(t(`refused.${e.why}` as Key, { n: e.why === 'gameOpinion' ? GAME_OPINION : e.why === 'played' ? GAMES_A_DAY : BRIBE_REPORT_HEAT }));
       break;
     }
     // Noise and distractions (P14): a throw flies, lands with its clatter; a noise sends out its
@@ -708,6 +713,15 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'smuggle':
       announceSmuggle(sim, e);
+      break;
+    // Side games (P22), and sports day's prize.
+    case 'dice':
+    case 'bout':
+    case 'pick':
+      announceGames(sim, e);
+      break;
+    case 'today':
+      if (e.event === 'sports' && e.phase === 'prize') announceGames(sim, e);
       break;
     case 'washed':
       sound.scrub();
