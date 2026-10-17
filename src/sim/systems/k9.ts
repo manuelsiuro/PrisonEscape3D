@@ -309,7 +309,8 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
     const r = ratSeen(sim, b, Infinity);
     // (Its handler out cold: back by him.)
     if (--d.timer <= 0 || !r || g.ko > 0) {
-      d.rest = s.step + DOG_RAT_STEPS * 2;
+      // (Back at the heel a while before the next rat, its timer counting up from below 0; the trail it may pick up at once.)
+      d.timer = -DOG_RAT_STEPS * 2;
       d.mode = DOG.HEEL;
       d.goal = -1;
       d.path = [];
@@ -370,8 +371,9 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
   // (Its handler out cold: it stays by him, and minds nothing else.)
   if (g.ko > 0) return;
   // A rat running in sight (P20): it's off after it, barking (the rat bolts home).
-  // (A while after the last chase, it minds its handler again: not a bark every few seconds.)
-  const rat = s.step >= d.rest ? ratSeen(sim, b, DOG_RAT_RANGE) : null;
+  // (A while after the last chase it minds its handler: not a bark every few seconds.)
+  if (d.timer < 0) d.timer++;
+  const rat = d.timer >= 0 ? ratSeen(sim, b, DOG_RAT_RANGE) : null;
   if (rat) {
     d.mode = DOG.RAT;
     d.timer = DOG_RAT_STEPS;

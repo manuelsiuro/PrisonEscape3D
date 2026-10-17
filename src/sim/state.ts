@@ -196,7 +196,7 @@ export type SimEvent =
    * people scared; `wild` a caught one thrown), its panic over, a thrown one gone. A guard who
    * woke without his key (`keyless`).
    */
-  | { type: 'rat'; what: RatNews; item?: number; cash?: number; who?: number; container?: number; n?: number; at?: number; why?: RatRefusal; wild?: boolean; heist?: boolean }
+  | { type: 'rat'; what: RatNews; item?: number; cash?: number; who?: number; container?: number; n?: number; at?: number; why?: RatRefusal; wild?: boolean; heist?: boolean; floor?: boolean }
   | { type: 'keyless'; guard: number }
   | ItemEvent;
 

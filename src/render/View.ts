@@ -904,6 +904,10 @@ export class View {
     // Off an infirmary bed: the body eases up from that bed (not the cell's) until it stands.
     if (f.restBed) this.lastRest = f.restBed;
     else if (this.player.lying === 0) this.lastRest = null;
+    // (A pet rat on the shoulder, P20: the arm under it holds still, glances stay small.)
+    let perchedRat = false;
+    for (const r of f.rats) if (r.mode === 'shoulder') perchedRat = true;
+    this.player.perched = perchedRat;
     if (this.player.pose(px, pz, f.trainAt ? f.trainAt.facing : f.facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
       const theme = f.layer === LAYER.GROUND ? this.world?.def.theme : undefined;
       const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : DUST;
@@ -1046,9 +1050,8 @@ export class View {
     // The rats (P20), after the player has gone wherever they go (a raft, the helicopter, a truck): on the floor seen from anywhere but a tunnel;
     // on the shoulder of a player up and about (not lying, not crawling, not in a tunnel), turning with them.
     this.rats.group.visible = true;
-    let perched = false;
-    for (const r of f.rats) if (r.mode === 'shoulder') perched = true;
-    const perch = perched && this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 && this.player.crawling < 0.1 ? this.player.shoulder(this.shoulderAt) : null;
+    // (Hands busy, it ducks into a pocket a moment: never an arm through it.)
+    const perch = this.player.perched && this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.player.armsBusy ? this.player.shoulder(this.shoulderAt) : null;
     this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion, this.noiseFx.landing);

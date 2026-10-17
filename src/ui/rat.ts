@@ -49,6 +49,7 @@ export class RatPanel {
   private readonly body: HTMLElement;
   private readonly title: HTMLElement;
   private drawn = '';
+  private shape = '';
   private focusNext = false;
   isOpen = false;
   /** Fetch from a container (`leave`: take the item in hand there), let loose. */
@@ -95,6 +96,22 @@ export class RatPanel {
     this.el.classList.add('hidden');
   }
 
+  /** The rows' distances and the crowd's line, rewritten where they stand (false: the panel isn't as drawn). */
+  private patch(v: RatView): boolean {
+    const rows = this.body.querySelectorAll<HTMLElement>('.rat-row');
+    if (rows.length !== v.rows.length) return false;
+    v.rows.forEach((r, k) => {
+      const row = rows[k];
+      setText(row.querySelector('small')!, r.meta);
+      const where = [r.name, r.meta, r.key ? t('rat.hasKeySay') : ''].filter(Boolean).join(', ');
+      row.querySelector('[data-rat="fetch"]')?.setAttribute('aria-label', t('rat.fetchFrom', { where }));
+      row.querySelector('[data-rat="leave"]')?.setAttribute('aria-label', t('rat.leaveAt', { item: v.leave, where }));
+    });
+    const note = this.body.querySelector('#rat-loose-why');
+    if (note) setText(note, v.looseNote);
+    return true;
+  }
+
   update(v: RatView | null, busy: boolean) {
     // (Nothing to show, or the game can't take it now: shut, never waiting to pop open later.)
     if (!v || busy) this.close();
@@ -110,12 +127,16 @@ export class RatPanel {
     const key = JSON.stringify([v.ready, v.rows, v.more, v.leave, v.leaveNo, v.loose, v.looseNote]) + currentLang();
     if (key === this.drawn) return;
     this.drawn = key;
+    // (Only distances or the crowd's count changed, walking along: written in place, the focus and the screen reader left be.)
+    const shape = JSON.stringify([v.ready, v.rows.map((r) => [r.container, r.name, r.key, r.icon]), v.more, v.leave, v.leaveNo, v.loose]) + currentLang();
+    if (shape === this.shape && this.patch(v)) return;
+    this.shape = shape;
     this.el.querySelector('[data-rat="close"]')!.setAttribute('aria-label', t('box.close'));
     const rows = v.rows
       .map((r) => {
         const chip = r.key ? `<i class="rat-key" style="--key:${r.key}" aria-hidden="true" title="${esc(t('rat.hasKey'))}">${icon('key', 12)}</i>` : '';
         // (What a screen reader says of the place: its name, where it is, and a guard's key on him.)
-        const where = [r.name, r.meta, r.key ? t('rat.hasKey') : ''].filter(Boolean).join(', ');
+        const where = [r.name, r.meta, r.key ? t('rat.hasKeySay') : ''].filter(Boolean).join(', ');
         const leave = v.leave ? `<button class="big-btn ghost small" data-rat="leave" data-box="${r.container}" aria-label="${esc(t('rat.leaveAt', { item: v.leave, where }))}">${icon('down', 16)}<span>${t('rat.leave')}</span></button>` : '';
         return `<div class="board-row rat-row"><span class="board-ic">${icon(r.icon, 20)}</span><span class="board-text"><b>${esc(r.name)}${chip}</b><small>${esc(r.meta)}</small></span><span class="rat-acts"><button class="big-btn primary small" data-rat="fetch" data-box="${r.container}" aria-label="${esc(t('rat.fetchFrom', { where }))}">${icon('up', 16)}<span>${t('rat.fetch')}</span></button>${leave}</span></div>`;
       })
@@ -137,7 +158,8 @@ export class RatPanel {
     }
     if (this.focusNext) {
       this.focusNext = false;
-      (this.body.querySelector<HTMLButtonElement>('button:not([disabled])') ?? this.el.querySelector<HTMLButtonElement>('[data-rat="close"]'))?.focus();
+      // (The first Fetch: never Let it loose, a once-a-day panic one stray Space away.)
+      (this.body.querySelector<HTMLButtonElement>('button[data-rat="fetch"]') ?? this.el.querySelector<HTMLButtonElement>('[data-rat="close"]'))?.focus();
     }
   }
 }

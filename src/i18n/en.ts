@@ -1628,7 +1628,7 @@ export const en = {
   "toast.ratHungry": "It needs a potato, chocolate or jerky in your hotbar",
   "toast.ratHaveOne": "You have {name} already. One rat is plenty",
   "toast.ratLeft": "{name} left it there: {item}",
-  "toast.ratEmpty": "{name} found nothing small enough to carry",
+  "toast.ratEmpty": "{name} came back with nothing it could carry",
   "toast.ratFull": "No room there. {name} brings back: {item}",
   "toast.ratWoke": "They're up! {name} comes back empty-pawed",
   "toast.ratChased": "A dog is after {name}! It's bolting back to you",
@@ -1683,6 +1683,8 @@ export const en = {
   "rat.dir.ne": "north-east",
   "rat.moreOne": "1 more place in its reach, further off",
   "rat.statusLooseSay": "Running loose: it comes back to you once the panic is over",
+  "rat.hasKeySay": "has his key on him",
+  "toast.ratBroughtFloor": "{name} brought it back, but your hands are full: at your feet, {item}",
 };
 
 export type Strings = typeof en;

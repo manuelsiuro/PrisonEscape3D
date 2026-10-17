@@ -109,8 +109,8 @@ const dist = new Int16Array(MAP_W * MAP_H).fill(-1);
 const prev = new Int32Array(MAP_W * MAP_H);
 const queue: number[] = [];
 
-/** A breadth-first search along a rat's way from a tile, `limit` tiles at most (stopping early at `goal`, if given). Fills `dist`. */
-function search(w: World, from: number, limit: number, goal = -1) {
+/** A breadth-first search along a rat's way from a tile, `limit` tiles at most (stopping early at `goal`, if given; `floor`: never into a duct over a wall). Fills `dist`. */
+function search(w: World, from: number, limit: number, goal = -1, floor = false) {
   for (const t of queue) dist[t] = -1;
   queue.length = 0;
   if (from < 0) return;
@@ -127,7 +127,7 @@ function search(w: World, from: number, limit: number, goal = -1) {
       const nz = z + (d === 2 ? 1 : d === 0 ? -1 : 0);
       if (nx < 0 || nz < 0 || nx >= MAP_W || nz >= MAP_H) continue;
       const n = nz * MAP_W + nx;
-      if (dist[n] >= 0 || !ratWay(w, n)) continue;
+      if (dist[n] >= 0 || !ratWay(w, n) || (floor && inDuct(w, n))) continue;
       dist[n] = dist[t] + 1;
       prev[n] = t;
       queue.push(n);
@@ -136,8 +136,8 @@ function search(w: World, from: number, limit: number, goal = -1) {
 }
 
 /** A rat's way from one tile to another (both included), `limit` tiles at most; null without one. */
-export function ratPath(w: World, from: number, to: number, limit: number): number[] | null {
-  search(w, from, limit, to);
+export function ratPath(w: World, from: number, to: number, limit: number, floor = false): number[] | null {
+  search(w, from, limit, to, floor);
   if (to < 0 || dist[to] < 0) return null;
   const out: number[] = [];
   for (let t = to; t !== from; t = prev[t]) out.push(t);
@@ -526,8 +526,10 @@ function headHome(sim: SimContext, r: Rat) {
 function home(sim: SimContext, r: Rat) {
   const s = sim.state;
   const item = itemOf(r.carry);
+  // (A full hotbar: at their feet, and the toast says so.)
+  const floor = !!r.carry && s.items.inv.slice(0, HOTBAR).indexOf(0) < 0;
   if (r.carry) {
-    // (A full hotbar and a full pile at their feet: it drops it there all the same.)
+    // (A full pile at their feet too: it drops it there all the same.)
     if (!giveSlot(s.items, r.carry, s.player, s.layer)) s.items.ground.push([tileAt(s.player.x, s.player.z), r.carry]);
     s.items.rev++;
   }
@@ -542,7 +544,7 @@ function home(sim: SimContext, r: Rat) {
   r.mode = RAT.SHOULDER;
   r.path = [];
   r.at = 0;
-  sim.events.push({ type: 'rat', what: 'home', item, cash });
+  sim.events.push({ type: 'rat', what: 'home', item, cash, floor });
 }
 
 /** Loose: darting from one spot to another on the floor within 2 tiles of its way from where it was let go (never through a wall). */
@@ -559,7 +561,7 @@ function scurry(sim: SimContext, r: Rat) {
       for (const n of [t - MAP_W, t + 1, t + MAP_W, t - 1]) if (n >= 0 && n < MAP_W * MAP_H && Math.abs((n % MAP_W) - (t % MAP_W)) <= 1 && !spots.includes(n) && ratWay(w, n) && !inDuct(w, n)) spots.push(n);
     }
     const to = spots.length ? spots[rollInt(s.salt, SALT.SCURRY, s.step, r.tile, spots.length)] : r.tile;
-    r.path = ratPath(w, tileAt(r.x, r.z), to, 8) ?? [tileAt(r.x, r.z)];
+    r.path = ratPath(w, tileAt(r.x, r.z), to, 8, true) ?? [tileAt(r.x, r.z)];
     r.at = r.path.length > 1 ? 1 : 0;
   }
   run(r, (RAT_SPEED * 3) >> 2);

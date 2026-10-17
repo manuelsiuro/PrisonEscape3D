@@ -48,9 +48,31 @@ function furnitureName(sim: Sim, container: number): string {
   const c = containersOf(sim.world)[container];
   const cell = sim.world.cellOf[c.prop.z * MAP_W + c.prop.x];
   const owner = cell > 1 ? sim.state.inmates.findIndex((m) => m.cell === cell) : -1;
-  if (owner >= 0) return t('rat.whose', { thing: cap, name: inmateName(sim, owner) });
-  // (Elsewhere, the room it's in: two bookshelves in the library tell apart by their distance.)
-  return t('rat.where', { thing: cap, place: t(`zone.${sim.world.zoneAt(c.prop.x, c.prop.z)}` as Key) });
+  const base = owner >= 0 ? t('rat.whose', { thing: cap, name: inmateName(sim, owner) }) : t('rat.where', { thing: cap, place: t(`zone.${sim.world.zoneAt(c.prop.x, c.prop.z)}` as Key) });
+  // (Several of a kind in one room, a row of showers: numbered once and for all, by their order in the prison.)
+  const twins = twinsOf(sim, container);
+  return twins.length > 1 ? `${base} ${twins.indexOf(container) + 1}` : base;
+}
+
+/** The containers of the same kind in the same room or cell as one (itself included, in prison order); cached per prison. */
+const twinCache = new WeakMap<object, Map<number, number[]>>();
+function twinsOf(sim: Sim, container: number): number[] {
+  let map = twinCache.get(sim.world);
+  if (!map) {
+    map = new Map();
+    const groups = new Map<string, number[]>();
+    const w = sim.world;
+    containersOf(w).forEach((c, i) => {
+      const t0 = c.prop.z * MAP_W + c.prop.x;
+      const key = `${c.prop.kind}|${w.cellOf[t0] > 1 ? `c${w.cellOf[t0]}` : w.ground.zone[t0]}`;
+      const list = groups.get(key) ?? [];
+      list.push(i);
+      groups.set(key, list);
+    });
+    for (const list of groups.values()) for (const i of list) map.set(i, list);
+    twinCache.set(sim.world, map);
+  }
+  return map.get(container) ?? [container];
 }
 
 const targets: RatTarget[] = [];
@@ -101,12 +123,6 @@ export function ratView(sim: Sim): RatView | null {
         key: guard && s.items.containers[x.container]?.some((v) => itemOf(v) === itemNumber(`key_${guard.key}`)) ? (KEY_CSS[guard.key] ?? '') : '',
       };
       view.rows.push(row);
-    }
-    // (Two places that read the same, a pair of showers side by side: numbered, so neither eye nor screen reader mixes them up.)
-    for (let i = 0; i < view.rows.length; i++) {
-      const r = view.rows[i];
-      const twins = view.rows.filter((o) => o.name === r.name && o.meta === r.meta);
-      if (twins.length > 1 && twins[0] === r) twins.forEach((o, k) => (o.name = `${o.name} (${k + 1})`));
     }
   }
   const small = held && s.items.hand < HOTBAR && itemDef(held).small;
@@ -265,7 +281,7 @@ export function announceRat(sim: Sim, e: Extract<SimEvent, { type: 'rat' }>) {
       }
       told = 0;
       if (e.item) {
-        itemsUI.toast(t('toast.ratBrought', { name, item }) + cash);
+        itemsUI.toast(t(e.floor ? 'toast.ratBroughtFloor' : 'toast.ratBrought', { name, item }) + cash);
         if (fromGuard) coachOnce('ratKey', 'hint.ratKey');
       } else if (e.cash) itemsUI.toast(t('toast.ratOnlyCash', { name, n: e.cash }));
       fromGuard = false;

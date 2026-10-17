@@ -18,6 +18,7 @@ const FUR = 0x6e5d52;
 const PINK = 0xe2a0ae;
 const TAIL = 0xd89aa0;
 const EYE = 0x141414;
+const RIM = 0xd9cabd;
 /** The most rats on screen at once: the pet and a few thrown loose. */
 const MAX_RATS = 4;
 /** Its size on the floor, and on a shoulder (a little smaller: it curls up). */
@@ -47,8 +48,8 @@ function bodyGeometry(): THREE.BufferGeometry {
       blob(0.028, 0.01, 0.024, PINK, 0.035, 0.112, 0.105, 8),
       blob(0.011, 0.011, 0.011, EYE, -0.022, 0.09, 0.155, 6),
       blob(0.011, 0.011, 0.011, EYE, 0.022, 0.09, 0.155, 6),
-      // Four little feet.
-      ...[-1, 1].flatMap((sx) => [-1, 1].map((sz) => box(0.022, 0.012, 0.03, PINK, sx * 0.045, 0, sz * 0.07))),
+      // Four little feet, tucked under the body.
+      ...[-1, 1].flatMap((sx) => [-1, 1].map((sz) => box(0.022, 0.02, 0.03, PINK, sx * 0.04, 0, sz * 0.055))),
     ],
     false,
   );
@@ -76,8 +77,8 @@ interface Rig {
 
 /**
  * The rats (P20): the player's pet on their shoulder or out on its errands, and caught ones
- * thrown loose. Each a body (it casts a shadow), a tail that wags and whatever it carries in its
- * teeth; two or three draw calls a rat on screen, none for one out of sight. Its material marks
+ * thrown loose. Each a body (it casts a shadow) with a pale rim, a tail that wags and whatever it
+ * carries in its teeth; three or four draw calls a rat on screen, none for one out of sight. Its material marks
  * the stencil as the player's does: perched, the player's see-through silhouette never paints it.
  */
 export class Rats {
@@ -88,6 +89,11 @@ export class Rats {
     const body = bodyGeometry();
     const tail = tailGeometry();
     const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
+    // A pale rim round the body (its back faces, a little larger): the dark rat reads on light floors, the rim on dark ones (grass, carpet).
+    const rim = new THREE.SphereGeometry(1, 10, 8);
+    rim.scale(0.082, 0.07, 0.142);
+    rim.translate(0, 0.068, -0.005);
+    const rimMat = new THREE.MeshBasicMaterial({ color: RIM, side: THREE.BackSide, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
     const carry = new THREE.BoxGeometry(0.07, 0.04, 0.07);
     for (let k = 0; k < MAX_RATS; k++) {
       const root = new THREE.Group();
@@ -98,7 +104,7 @@ export class Rats {
       const c = new THREE.Mesh(carry, new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0.1 }));
       c.position.set(0, 0.055, 0.24);
       c.visible = false;
-      root.add(b, t, c);
+      root.add(b, new THREE.Mesh(rim, rimMat), t, c);
       root.visible = false;
       this.group.add(root);
       this.rigs.push({ root, tail: t, carry: c, carried: 0, gait: 0, run: 0, yaw: 0 });

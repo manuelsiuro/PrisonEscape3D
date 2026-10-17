@@ -86,6 +86,9 @@ const STENCIL_MARK: Partial<THREE.MeshStandardMaterialParameters> = {
   stencilZPass: THREE.ReplaceStencilOp,
 };
 
+/** How far a head turns either way glancing about with a rat on the shoulder (P20; ±0.55 otherwise): its side stays clear of the rat. */
+const PERCHED_GLANCE = 0.2;
+
 /** Mattress height and how far the sleeper's feet sit from the bed's middle. */
 const BED_TOP = 0.6;
 const BED_FEET = 0.55;
@@ -389,13 +392,24 @@ export class Character {
   }
 
   /**
-   * On top of a shoulder, in the world (P20: where the pet rat perches): on the body, so a swinging
-   * arm never moves it; the side away from the arm that strikes, eats and punches (armR), and out
-   * past the head's corner as it glances about.
+   * A pet rat on the left shoulder (P20), set by the view before the pose: that arm holds still
+   * under it while walking, and glances stay small, so neither arm nor head goes through it.
+   */
+  perched = false;
+
+  /**
+   * On top of the left shoulder, in the world (P20: where the pet rat perches): on the body, so
+   * nothing but the body moves it; the side away from the arm that strikes (armR), out past the
+   * head's side at its widest perched glance and a full beard, just over the still arm.
    */
   shoulder(out: THREE.Vector3): THREE.Vector3 {
     this.root.updateMatrixWorld();
-    return this.body.localToWorld(out.set(-0.33, 0.8, 0));
+    return this.body.localToWorld(out.set(-0.36, 0.785, 0));
+  }
+
+  /** Hands busy (an activity, a strike, a punch, arms folded dozing): a perched rat ducks out of sight meanwhile (P20). */
+  get armsBusy(): boolean {
+    return (this.actKind !== DOING.NOTHING && this.act > 0.02) || this.hit > 0 || this.jab > 0 || this.doze > 0.02;
   }
 
   /** Prone in a vent (0 standing … 1 flat): a rat on the shoulder waits until they're up. */
@@ -849,7 +863,8 @@ export class Character {
     const s = Math.sin(this.phase) * 0.75 * this.swing;
     let legL = s;
     let legR = -s;
-    let armLx = -s * 0.85;
+    // (A rat perched on the left shoulder, P20: that arm holds still while walking.)
+    let armLx = this.perched ? 0 : -s * 0.85;
     let armRx = s * 0.85;
     let armLz = 0;
     let armRz = 0;
@@ -1045,7 +1060,7 @@ export class Character {
     // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
     const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || doing >= DOING.WORK || ko;
-    if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * 1.1;
+    if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * (this.perched ? PERCHED_GLANCE * 2 : 1.1);
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
