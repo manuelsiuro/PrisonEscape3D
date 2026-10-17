@@ -10,7 +10,7 @@ import { LAYER, MAP_W } from '../sim/world/World';
 import { type CrewChip, type CrewHud, type CrewOrderView, type CrewRow, type CrewTalkView } from '../ui/crew';
 import { itemName } from '../ui/items';
 import { guardTitle, inmateName } from '../ui/social';
-import { banner, closeSocial, crewPanel, hud, itemsUI, sound } from './context';
+import { banner, closeSocial, crewPanel, hud, itemsUI, profile, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { badgeOf } from './frame';
@@ -196,6 +196,7 @@ export function wireCrewPanel() {
     toggleCrew();
   };
   crewPanel.onRecall = (who) => sendOp(OP.EXT, EXT.RECALL, who);
+  profile.crewLine = crewStatus;
 }
 
 /** G (`focus`: into the panel), or the crew's pill: the panel open or shut (only with a crew). */

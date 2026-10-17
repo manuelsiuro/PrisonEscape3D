@@ -30,6 +30,8 @@ export class ProfilePanel {
   day: () => { day: number; today: readonly PaRow[]; tomorrow: readonly PaRow[] | null; notes: readonly string[]; night: boolean; key: string } | null = () => null;
   /** The rumors heard (P13), newest first: the speech bubbles' director fills this in. */
   notebook: () => ReadonlyArray<{ text: string; old: boolean; day: number; by: string | null; self?: boolean }> = () => [];
+  /** What one of the crew is at (P23, play/crew.ts). */
+  crewLine: (sim: Sim, who: number) => string = () => '';
 
   constructor(private readonly click: () => void) {
     this.el = h('div', 'item-panel profile-panel hidden');
@@ -65,7 +67,8 @@ export class ProfilePanel {
     const favors = s.favors.filter((f) => f.state !== FAVOR_STATE.OFFERED);
     const rumors = this.notebook();
     const day = this.day();
-    const key = [day?.key ?? '', rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
+    const crewLines = s.followers.map((id) => this.crewLine(sim, id));
+    const key = [crewLines.join('/'), s.crew.map((e) => e[4]).join(','), s.dogs.map((d) => `${d.trust}:${d.fed}`).join(','), day?.key ?? '', rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const attrs = ATTRS.map((a, k) => {
@@ -75,43 +78,51 @@ export class ProfilePanel {
       const state = trained ? `<em class="ok">${icon('check', 12)}${t('profile.trained')}</em>` : v > ATTR_START ? `<em class="slip">${t('profile.slips')}</em>` : '';
       return `<div class="stat-row" data-attr="${a}"><span class="stat-ic">${icon(ATTR_ICONS[a], 18)}</span><span class="stat-text"><b>${t(`attr.${a}` as Key)}</b><small>${t(`attrWhere.${a}` as Key)}</small></span><i class="stat-bar"><i style="width:${pct}%"></i></i><b class="stat-v">${v}</b>${state}</div>`;
     }).join('');
+    // The file's rows: a tile, a title, a line under it (and a tag at the end); a muted one says what would go there.
+    const fileRow = (ic: string, color: string, title: string, sub: string, opts: { tag?: string; tagCls?: string; cls?: string; quote?: boolean; state?: string; stateCls?: string; aside?: string } = {}) =>
+      `<div class="file-row${opts.cls ? ` ${opts.cls}` : ''}" style="--c:${color}"><span class="file-ic">${icon(ic, 18)}</span><span class="file-text"><b>${title}${opts.aside ? `<em>${opts.aside}</em>` : ''}</b>${sub ? `<small${opts.quote ? ' class="quote"' : ''}>${sub}</small>` : ''}${opts.state ? `<span class="file-state${opts.stateCls ? ` ${opts.stateCls}` : ''}">${opts.state}</span>` : ''}</span>${opts.tag ? `<span class="file-tag${opts.tagCls ? ` ${opts.tagCls}` : ''}">${opts.tag}</span>` : ''}</div>`;
+    const empty = (ic: string, title: Key, sub: Key) => fileRow(ic, '', t(title), t(sub), { cls: 'empty' });
     const job = sim.playerJob;
     let jobHtml: string;
-    if (job < 0) jobHtml = `<p class="talk-note">${t('profile.noJob')}</p>`;
+    if (job < 0) jobHtml = empty('briefcase', 'profile.noJobT', 'profile.noJobS');
     else {
       const d = jobRooms(sim.world)[job].def;
       const later = s.jobDay > sim.today;
       const today = later ? t('board.tomorrow') : s.paid ? t('profile.paid', { n: d.wage }) : t('profile.quota', { n: s.quota, of: d.quota });
-      jobHtml = `<div class="profile-job"><span class="board-ic">${icon('briefcase', 18)}</span><span class="board-text"><b>${esc(t(`job.${d.id}` as Key))}</b><small>${esc(t(`jobTask.${d.id}` as Key, { n: d.quota }))}</small></span><span class="profile-quota${s.paid ? ' done' : ''}">${esc(today)}</span></div>`;
+      jobHtml = fileRow('briefcase', '#c99a12', esc(t(`job.${d.id}` as Key)), esc(t(`jobTask.${d.id}` as Key, { n: d.quota })), { tag: esc(today), tagCls: s.paid ? 'done' : '' });
     }
     // The guard dogs (P19), once they're at work: how far each trusts the player, and whether it's had today's jerky.
     const dogs =
       s.dogs.length && prisonDay(s.step) >= DOG_FIRST_DAY
-        ? `<div class="box-section"><div class="box-label"><span>${t('profile.dogs')}</span></div><div class="talk-chips">${s.dogs
+        ? `<div class="box-section"><div class="box-label"><span>${t('profile.dogs')}</span></div><div class="file-list">${s.dogs
             .map((d, k) => {
-              const name = esc(dogDef(sim.world, k).name);
               const fed = d.fed === prisonDay(s.step);
-              return `<span class="chip dog" title="${esc(t(fed ? 'profile.dogFed' : 'profile.dogHungry'))}">${icon(d.trust >= TRUST_FRIEND ? 'heart' : 'paw', 13)}${name}<em>${t('profile.trust', { n: d.trust })}</em>${fed ? icon('check', 12) : ''}</span>`;
+              return fileRow(d.trust >= TRUST_FRIEND ? 'heart' : 'paw', '#b07a3c', esc(dogDef(sim.world, k).name), esc(t(fed ? 'profile.dogFed' : 'profile.dogHungry')), { tag: t('profile.trust', { n: d.trust }), tagCls: d.trust >= TRUST_FRIEND ? 'done' : '' });
             })
             .join('')}</div></div>`
         : '';
-    const allies = s.followers.length ? `<div class="talk-chips">${s.followers.map((id) => {
-          // (P23: each one's line of work.)
-          const spec = specialityOf(sim.world, id, s.inmates[id].cell);
-          return `<span class="chip ally">${icon(SPEC_ICON[spec], 13)}${esc(inmateName(sim, id))} · ${t(`spec.${spec}`)}</span>`;
-        }).join('')}</div>` : `<p class="talk-note">${t('profile.noFollowers')}</p>`;
+    // The crew (P23): each one's line of work and what he's at.
+    const allies = s.followers.length
+      ? `<div class="file-list">${s.followers
+          .map((id, k) => {
+            const spec = specialityOf(sim.world, id, s.inmates[id].cell);
+            const night = s.crew.some((e) => e[0] === id && e[4] === 1);
+            return fileRow(SPEC_ICON[spec], '#ffa94d', esc(inmateName(sim, id)), esc(crewLines[k]), { aside: esc(t(`spec.${spec}`)), tag: night ? `${icon('moon', 12)}${esc(t('profile.tonight'))}` : '', tagCls: 'night' });
+          })
+          .join('')}</div>`
+      : empty('users', 'profile.noFollowersT', 'profile.noFollowersS');
     const favorList = favors.length
-      ? favors
+      ? `<div class="file-list">${favors
           .map((f) => {
             const ready = f.state === FAVOR_STATE.DONE;
             const bring = f.kind === FAVOR.SCAVENGE || f.kind === FAVOR.RETRIEVE;
-            return `<div class="profile-favor${ready ? ' ready' : ''}"><b>${esc(inmateName(sim, f.by))}<em>$${f.reward}</em></b><small>${esc(favorText(sim, f))}</small><span>${ready ? t('profile.favorReady') : bring ? t('talk.bringIt') : t('talk.underWay')}</span></div>`;
+            return fileRow('chat', '#3fb07a', esc(inmateName(sim, f.by)), esc(favorText(sim, f)), { quote: true, tag: `$${f.reward}`, tagCls: 'cash', state: ready ? t('profile.favorReady') : bring ? t('talk.bringIt') : t('talk.underWay'), stateCls: ready ? 'ok' : '', cls: ready ? 'ready' : '' });
           })
-          .join('')
-      : `<p class="talk-note">${t('profile.noFavors')}</p>`;
+          .join('')}</div>`
+      : empty('chat', 'profile.noFavorsT', 'profile.noFavorsS');
     const rumorList = rumors.length
-      ? rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}">${icon(r.self ? 'eye' : 'ear', 14)}<span>${esc(r.text)}</span><small>${r.self ? `${t('profile.rumorSelf')} · ` : r.by ? `${esc(r.by)} · ` : ''}${t('profile.rumorDay', { n: r.day })}</small></div>`).join('')
-      : `<p class="talk-note">${t('profile.noRumors')}</p>`;
+      ? `<div class="file-list rumors">${rumors.map((r) => `<div class="rumor${r.old ? ' old' : ''}"><span class="rumor-ic">${icon(r.self ? 'eye' : 'ear', 14)}</span><span class="rumor-text"><span>${esc(r.text)}</span><small>${r.self ? `${t('profile.rumorSelf')} · ` : r.by ? `${esc(r.by)} · ` : ''}${t('profile.rumorDay', { n: r.day })}</small></span></div>`).join('')}</div>`
+      : empty('ear', 'profile.noRumorsT', 'profile.noRumorsS');
     const working = ROUTINE[s.routine].id === 'work';
     // Your prisoner's name on the file (P16), when they have one.
     const title = PLAYER.name ? t('profile.titleOf', { name: esc(PLAYER.name) }) : t('profile.title');
