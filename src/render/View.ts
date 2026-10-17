@@ -988,9 +988,6 @@ export class View {
     this.dogs.group.visible = f.layer !== LAYER.UNDER;
     this.dogs.update(f.dogs, f.scent, f.x, f.z, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers, f.layer === LAYER.GROUND);
     this.noSleepers.length = 0;
-    // The rats (P20): on the floor seen from the ground floor or a roof; on the shoulder of a player up and about (not in the vents or a tunnel), turning with them.
-    const perch = this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 ? this.player.shoulder(this.shoulderAt) : null;
-    this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).
     const wx = f.weather;
@@ -1046,6 +1043,13 @@ export class View {
       this.player.root.visible = false;
       this.target.lerp(this.v.set(ride.x, 0, ride.z), Math.min(1, dt * 3));
     }
+    // The rats (P20), after the player has gone wherever they go (a raft, the helicopter, a truck): on the floor seen from anywhere but a tunnel;
+    // on the shoulder of a player up and about (not lying, not crawling, not in a tunnel), turning with them.
+    this.rats.group.visible = true;
+    let perched = false;
+    for (const r of f.rats) if (r.mode === 'shoulder') perched = true;
+    const perch = perched && this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 && this.player.crawling < 0.1 ? this.player.shoulder(this.shoulderAt) : null;
+    this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     this.noiseFx.update(dt, time, f.layer === LAYER.GROUND ? f.fuses : NO_FUSES, FIRECRACKER, !this.reducedMotion, this.fuseSpark);
     this.pickups.update(f.ground, f.groundRev, f.focus, dt, time, !this.reducedMotion, this.noiseFx.landing);
     this.guide.setPath(f.guide);
@@ -1149,6 +1153,7 @@ export class View {
     this.showLayer(LAYER.GROUND);
     // Nothing of a game's noise behind the title (a lit firecracker, an aim, a wave).
     this.noiseFx.group.visible = false;
+    this.rats.group.visible = false;
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;

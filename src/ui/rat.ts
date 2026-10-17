@@ -17,12 +17,13 @@ export interface RatRow {
 /** What the rat panel shows (P20). */
 export interface RatView {
   name: string;
-  /** Where it is and what it's doing (a sentence). */
+  /** Where it is and what it's doing (a sentence), and the same for a screen reader (no countdown: said once, not every second). */
   status: string;
+  say: string;
   /** On the player's shoulder: it can be sent now. */
   ready: boolean;
   rows: RatRow[];
-  /** Places in its reach past those listed. */
+  /** Places in its reach past those listed (said "1 more place" or "n more places"). */
   more: number;
   /** The small item in hand it could take along (its name), '' none; why not, when there's something in hand too big. */
   leave: string;
@@ -44,6 +45,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 export class RatPanel {
   readonly el: HTMLElement;
   private readonly status: HTMLElement;
+  private readonly say: HTMLElement;
   private readonly body: HTMLElement;
   private readonly title: HTMLElement;
   private drawn = '';
@@ -57,11 +59,12 @@ export class RatPanel {
     this.el = h(
       'div',
       'item-panel board-panel rat-panel hidden',
-      `<div class="panel-head"><b>${icon('rat', 20)}<span></span></b><button class="icon-btn small" data-rat="close">${icon('close', 18)}</button></div><p class="rat-status" role="status"></p><div class="rat-body"></div>`,
+      `<div class="panel-head"><b>${icon('rat', 20)}<span></span></b><button class="icon-btn small" data-rat="close">${icon('close', 18)}</button></div><p class="rat-status" aria-hidden="true"></p><span class="sr-only rat-say" role="status"></span><div class="rat-body"></div>`,
     );
     this.el.setAttribute('role', 'dialog');
     this.title = this.el.querySelector('.panel-head span')!;
     this.status = this.el.querySelector('.rat-status')!;
+    this.say = this.el.querySelector('.rat-say')!;
     this.body = this.el.querySelector('.rat-body')!;
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.addEventListener('click', (e) => {
@@ -102,6 +105,7 @@ export class RatPanel {
     this.el.classList.remove('hidden');
     setText(this.title, v.name);
     setText(this.status, v.status);
+    setText(this.say, v.say);
     this.el.setAttribute('aria-label', v.name);
     const key = JSON.stringify([v.ready, v.rows, v.more, v.leave, v.leaveNo, v.loose, v.looseNote]) + currentLang();
     if (key === this.drawn) return;
@@ -109,21 +113,31 @@ export class RatPanel {
     this.el.querySelector('[data-rat="close"]')!.setAttribute('aria-label', t('box.close'));
     const rows = v.rows
       .map((r) => {
-        const chip = r.key ? `<i class="rat-key" style="--key:${r.key}" role="img" aria-label="${esc(t('rat.hasKey'))}" title="${esc(t('rat.hasKey'))}">${icon('key', 12)}</i>` : '';
-        const leave = v.leave ? `<button class="big-btn ghost small" data-rat="leave" data-box="${r.container}" aria-label="${esc(t('rat.leaveAt', { item: v.leave, where: `${r.name}, ${r.meta}` }))}">${icon('down', 16)}<span>${t('rat.leave')}</span></button>` : '';
-        return `<div class="board-row rat-row"><span class="board-ic">${icon(r.icon, 20)}</span><span class="board-text"><b>${esc(r.name)}${chip}</b><small>${esc(r.meta)}</small></span><span class="rat-acts"><button class="big-btn primary small" data-rat="fetch" data-box="${r.container}" aria-label="${esc(t('rat.fetchFrom', { where: `${r.name}, ${r.meta}` }))}">${icon('up', 16)}<span>${t('rat.fetch')}</span></button>${leave}</span></div>`;
+        const chip = r.key ? `<i class="rat-key" style="--key:${r.key}" aria-hidden="true" title="${esc(t('rat.hasKey'))}">${icon('key', 12)}</i>` : '';
+        // (What a screen reader says of the place: its name, where it is, and a guard's key on him.)
+        const where = [r.name, r.meta, r.key ? t('rat.hasKey') : ''].filter(Boolean).join(', ');
+        const leave = v.leave ? `<button class="big-btn ghost small" data-rat="leave" data-box="${r.container}" aria-label="${esc(t('rat.leaveAt', { item: v.leave, where }))}">${icon('down', 16)}<span>${t('rat.leave')}</span></button>` : '';
+        return `<div class="board-row rat-row"><span class="board-ic">${icon(r.icon, 20)}</span><span class="board-text"><b>${esc(r.name)}${chip}</b><small>${esc(r.meta)}</small></span><span class="rat-acts"><button class="big-btn primary small" data-rat="fetch" data-box="${r.container}" aria-label="${esc(t('rat.fetchFrom', { where }))}">${icon('up', 16)}<span>${t('rat.fetch')}</span></button>${leave}</span></div>`;
       })
       .join('');
-    const more = v.more ? `<p class="rat-empty">${esc(t('rat.more', { n: v.more }))}</p>` : '';
+    const more = v.more ? `<p class="rat-empty rat-more">${esc(t(v.more === 1 ? 'rat.moreOne' : 'rat.more', { n: v.more }))}</p>` : '';
     const list = !v.ready ? '' : v.rows.length ? `<div class="board-list">${rows}</div>${more}` : `<p class="rat-empty">${t('rat.nothing')}</p>`;
     const carry = v.ready && v.rows.length ? `<p class="board-note">${esc(v.leave ? t('rat.carry', { item: v.leave }) : v.leaveNo || t('rat.carryNone'))}</p>` : '';
     const loose = v.ready
       ? `<div class="rat-loose"><button class="big-btn ${v.loose ? 'danger' : 'ghost'} small" data-rat="loose" aria-describedby="rat-loose-why" ${v.loose ? '' : 'disabled'}>${icon('siren', 16)}<span>${t('rat.loose')}</span></button><small id="rat-loose-why">${esc(v.looseNote)}</small></div>`
       : '';
+    // (A rebuild keeps the focus on the same button, walking or not: keyboard and screen reader never lose their place.)
+    const had = this.body.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
+    const was = had ? `${had.dataset.rat}|${had.dataset.box ?? ''}` : '';
     this.body.innerHTML = `${loose}${carry}${list}${TOUCH ? '' : `<p class="rat-keys">${t('rat.keys')}</p>`}`;
+    if (was) {
+      const [what, box] = was.split('|');
+      const again = this.body.querySelector<HTMLButtonElement>(`button[data-rat="${what}"]${box ? `[data-box="${box}"]` : ''}:not([disabled])`) ?? this.body.querySelector<HTMLButtonElement>('button:not([disabled])');
+      (again ?? this.el.querySelector<HTMLButtonElement>('[data-rat="close"]'))?.focus();
+    }
     if (this.focusNext) {
       this.focusNext = false;
-      this.el.querySelector<HTMLButtonElement>('.rat-body button:not([disabled]), [data-rat="close"]')?.focus();
+      (this.body.querySelector<HTMLButtonElement>('button:not([disabled])') ?? this.el.querySelector<HTMLButtonElement>('[data-rat="close"]'))?.focus();
     }
   }
 }

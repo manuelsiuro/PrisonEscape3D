@@ -119,13 +119,13 @@ const SHAPES: Record<string, Shape> = {
     const rimX = r * cos + (h / 2) * sin + dx;
     const rimY = r * sin - (h / 2) * cos + dy;
     const mouthX = (h / 2) * sin + dx;
-    return [box(0.4, 0.02, 0.28, 0xb07a45), cup, box(0.07, 0.025, 0.06, a, mouthX, 0.02, 0), box(0.014, rimY - 0.02, 0.014, 0xe8c45a, rimX - 0.012, 0.02, 0)];
+    return [box(0.4, 0.02, 0.28, 0xb07a45), cup, box(0.07, 0.025, 0.06, a, mouthX, 0.02, 0), box(0.022, rimY - 0.02, 0.022, 0xe8c45a, rimX - 0.014, 0.02, 0)];
   },
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [
     box(0.4, 0.02, 0.28, 0xb07a45),
     cyl(0.1, 0.16, c, 0, 0.02, 0, 16),
-    cyl(0.104, 0.012, 0xd8dde3, 0, 0.165, 0, 16),
+    cyl(0.104, 0.012, 0xd8dde3, 0, 0.02, 0, 16),
     box(0.09, 0.012, 0.016, 0xd89aa0, 0.14, 0.02, 0.03),
     box(0.016, 0.012, 0.045, 0xd89aa0, 0.18, 0.02, 0.05),
     box(0.04, 0.035, 0.05, a, -0.11, 0.02, -0.02),

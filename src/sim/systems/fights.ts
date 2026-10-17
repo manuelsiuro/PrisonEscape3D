@@ -231,7 +231,8 @@ export function recover(sim: SimContext) {
     const missing = !pockets.some((v) => itemOf(v) === key);
     // The key is radioed in (and a spare drawn); a missing baton or uniform waits for 08:00.
     if (missing) {
-      const free = pockets.indexOf(0);
+      // (P20: pockets stuffed full, an odd item goes on the floor for the spare: missed once, never again in bed.)
+      const free = sim.noRats ? pockets.indexOf(0) : roomFor(sim, k, pockets, g.body);
       if (free >= 0) pockets[free] = slot(key);
       s.items.rev++;
       s.keyAlarm = true;
@@ -264,18 +265,27 @@ export function wokeKeyless(sim: SimContext, was: number) {
     const key = guardKit(w, k)[0];
     if (pockets.some((v) => itemOf(v) === key)) return;
     // (Pockets stuffed full: the last thing that isn't his kit goes on the floor for the spare, so he misses his key once, not every morning.)
-    let free = pockets.indexOf(0);
-    if (free < 0) {
-      const kit = guardKit(w, k);
-      for (let j = pockets.length - 1; j >= 0 && free < 0; j--) if (!kit.includes(itemOf(pockets[j]))) free = j;
-      if (free >= 0) s.items.ground.push([tileAt(g.body.x, g.body.z), pockets[free]]);
-    }
+    const free = roomFor(sim, k, pockets, g.body);
     if (free >= 0) pockets[free] = slot(key);
     s.items.rev++;
     s.keyAlarm = true;
     sim.events.push({ type: 'keyless', guard: k });
   });
   raiseKeyAlarm(sim);
+}
+
+/** A free slot in a guard's pockets for a spare key: an empty one, else the last that isn't his kit, its item dropped at his feet (-1: all kit). */
+function roomFor(sim: SimContext, k: number, pockets: number[], b: Body): number {
+  const free = pockets.indexOf(0);
+  if (free >= 0) return free;
+  const kit = guardKit(sim.world, k);
+  for (let j = pockets.length - 1; j >= 0; j--)
+    if (!kit.includes(itemOf(pockets[j]))) {
+      sim.state.items.ground.push([tileAt(b.x, b.z), pockets[j]]);
+      pockets[j] = 0;
+      return j;
+    }
+  return -1;
 }
 
 /**

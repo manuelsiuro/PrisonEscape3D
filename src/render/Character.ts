@@ -388,10 +388,19 @@ export class Character {
     return this.lie;
   }
 
-  /** On top of a shoulder, in the world (P20: where the pet rat perches): on the body, so a swinging arm never moves it. */
+  /**
+   * On top of a shoulder, in the world (P20: where the pet rat perches): on the body, so a swinging
+   * arm never moves it; the side away from the arm that strikes, eats and punches (armR), and out
+   * past the head's corner as it glances about.
+   */
   shoulder(out: THREE.Vector3): THREE.Vector3 {
     this.root.updateMatrixWorld();
-    return this.body.localToWorld(out.set(0.27, 0.8, 0));
+    return this.body.localToWorld(out.set(-0.33, 0.8, 0));
+  }
+
+  /** Prone in a vent (0 standing … 1 flat): a rat on the shoulder waits until they're up. */
+  get crawling(): number {
+    return this.crawl;
   }
   /** Prone in a vent (0–1), and a tool strike's swing (1 at the blow, easing to 0). */
   private crawl = 0;

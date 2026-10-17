@@ -550,9 +550,14 @@ function scurry(sim: SimContext, r: Rat) {
   const s = sim.state;
   const w = sim.world;
   if (r.at >= r.path.length) {
-    search(w, r.tile, 2);
-    const spots: number[] = [];
-    for (const t of queue) if (dist[t] >= 0 && !inDuct(w, t)) spots.push(t);
+    // (Spots on the floor within 2 steps of it, by floor alone: never through a wall's duct into the next room.)
+    const spots: number[] = [r.tile];
+    for (let k = 0; k < spots.length; k++) {
+      const t = spots[k];
+      const d = Math.abs((t % MAP_W) - (r.tile % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(r.tile / MAP_W));
+      if (d >= 2) continue;
+      for (const n of [t - MAP_W, t + 1, t + MAP_W, t - 1]) if (n >= 0 && n < MAP_W * MAP_H && Math.abs((n % MAP_W) - (t % MAP_W)) <= 1 && !spots.includes(n) && ratWay(w, n) && !inDuct(w, n)) spots.push(n);
+    }
     const to = spots.length ? spots[rollInt(s.salt, SALT.SCURRY, s.step, r.tile, spots.length)] : r.tile;
     r.path = ratPath(w, tileAt(r.x, r.z), to, 8) ?? [tileAt(r.x, r.z)];
     r.at = r.path.length > 1 ? 1 : 0;

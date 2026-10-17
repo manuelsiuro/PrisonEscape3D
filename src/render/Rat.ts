@@ -21,7 +21,7 @@ const EYE = 0x141414;
 /** The most rats on screen at once: the pet and a few thrown loose. */
 const MAX_RATS = 4;
 /** Its size on the floor, and on a shoulder (a little smaller: it curls up). */
-const SIZE = 1.35;
+const SIZE = 1.5;
 const PERCHED = 1.1;
 
 /** A ball scaled into an ellipsoid (rx, ry, rz) with its middle at (x, y, z). */

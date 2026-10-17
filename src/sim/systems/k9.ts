@@ -304,11 +304,12 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
   const p = s.player;
   const w = sim.world;
   const here = tileAt(b.x, b.z);
-  // After a rat (P20): the nearest one still running, until it's out of sight a while or back on a shoulder.
+  // After a rat (P20): the nearest one still in sight and running, for DOG_RAT_STEPS at most; then a rest before the next.
   if (d.mode === DOG.RAT) {
     const r = ratSeen(sim, b, Infinity);
     // (Its handler out cold: back by him.)
     if (--d.timer <= 0 || !r || g.ko > 0) {
+      d.rest = s.step + DOG_RAT_STEPS * 2;
       d.mode = DOG.HEEL;
       d.goal = -1;
       d.path = [];
@@ -369,7 +370,8 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
   // (Its handler out cold: it stays by him, and minds nothing else.)
   if (g.ko > 0) return;
   // A rat running in sight (P20): it's off after it, barking (the rat bolts home).
-  const rat = ratSeen(sim, b, DOG_RAT_RANGE);
+  // (A while after the last chase, it minds its handler again: not a bark every few seconds.)
+  const rat = s.step >= d.rest ? ratSeen(sim, b, DOG_RAT_RANGE) : null;
   if (rat) {
     d.mode = DOG.RAT;
     d.timer = DOG_RAT_STEPS;

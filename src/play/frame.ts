@@ -284,7 +284,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.z = lerp(q?.z ?? d.body.z, d.body.z);
     o.facing = Math.atan2(DIR_X[d.body.facing], DIR_Z[d.body.facing]);
     o.moving = d.body.moving && !g.paused;
-    o.pose = dogAsleep(d, st.step) ? 'asleep' : dogDazed(d, st.step) ? 'dazed' : d.mode === DOG.POINT ? 'point' : d.mode === DOG.TRACK ? 'track' : d.mode === DOG.KENNEL ? 'kennel' : 'heel';
+    o.pose = dogAsleep(d, st.step) ? 'asleep' : dogDazed(d, st.step) ? 'dazed' : d.mode === DOG.POINT ? 'point' : d.mode === DOG.TRACK || d.mode === DOG.RAT ? 'track' : d.mode === DOG.KENNEL ? 'kennel' : 'heel';
     o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / WALK_SPEED_GUARD : 1;
     o.friend = d.trust >= TRUST_IGNORE;
   });

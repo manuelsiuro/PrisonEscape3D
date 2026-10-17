@@ -137,3 +137,13 @@
     min-height: 40px;
   }
 }
+
+/* Nothing to open now (asleep, out cold, solitary, a vehicle): the pill dims. */
+.hud-alert.hud-rat:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* The last line clear of the panel's fade at the bottom. */
+.rat-panel .rat-more {
+  margin-bottom: 18px;
+}

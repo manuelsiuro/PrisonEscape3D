@@ -548,7 +548,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // The rats (P20): a save from before them has none (nor one that isn't a list of them).
   if (!Array.isArray(s.rats) || !s.rats.every((r) => !!r && typeof r === 'object' && Number.isInteger(r.mode) && Array.isArray(r.path))) s.rats = [];
   // (An errand to a container this prison no longer has, after a map edit: it gives it up and comes back.)
-  for (const r of s.rats) if (r.target >= s.items.containers.length) Object.assign(r, { target: -1, mode: 4, path: [], at: 0 }) // RAT.WAIT;
+  // (RAT.OUT is 1, RAT.WAIT 4: an errand to nowhere waits instead.)
+  for (const r of s.rats) if (r.target >= s.items.containers.length || (r.mode === 1 && r.target < 0)) Object.assign(r, { target: -1, mode: 4, path: [], at: 0 });
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

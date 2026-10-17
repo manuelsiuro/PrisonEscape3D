@@ -38,7 +38,7 @@ export interface HudState {
   /** Guard dogs (P19): one close by would smell the contraband in the hotbar ('nose'), one is on the player's trail ('track'); null neither. */
   dog: 'nose' | 'track' | null;
   /** The pet rat (P20): its name, what it's doing ('' on the shoulder), out on an errand or loose, and the seconds left of a panic (null none) out of how many. */
-  rat: { name: string; status: string; busy: boolean; left: number | null; of: number } | null;
+  rat: { name: string; status: string; busy: boolean; left: number | null; of: number; usable: boolean } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -209,6 +209,7 @@ export class Hud {
     el.classList.toggle('hidden', !r);
     if (!r) return;
     el.classList.toggle('busy', r.busy);
+    (el as HTMLButtonElement).disabled = !r.usable;
     setText(el.querySelector('span')!, r.name);
     setText(el.querySelector('b')!, r.left === null ? r.status : `${r.status} 0:${String(Math.ceil(r.left)).padStart(2, '0')}`);
     const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
@@ -298,7 +299,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);

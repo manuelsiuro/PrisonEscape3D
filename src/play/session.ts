@@ -1,4 +1,5 @@
 import { buzz } from '../app/haptics';
+import { resetRat } from './rat';
 import { itemNumber, KEY_ITEM_COLORS } from '../content/items';
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordEscape } from '../game/records';
@@ -127,6 +128,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   tools.show(true);
   combatUI.show(true);
   resetButtons();
+  resetRat();
   // No aim carried over from another game (P14).
   cancelThrow();
   play.acc = 0;

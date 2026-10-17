@@ -30,7 +30,7 @@ export function ratName(sim: Sim): string {
   return names[(sim.state.salt >>> 0) % names.length];
 }
 
-const ICONS: Record<string, string> = { desk: 'box', bed: 'moon', toilet: 'drop', shelf: 'book', counter: 'utensils', bin: 'trash', freezer: 'snow', shower: 'drop' };
+const ICONS: Record<string, string> = { desk: 'box', bed: 'home', toilet: 'drop', shelf: 'book', counter: 'utensils', bin: 'trash', freezer: 'snow', shower: 'drop' };
 const KEY_CSS: Record<string, string> = Object.fromEntries(KEY_ITEM_COLORS.map(([c, , color]) => [c, `#${color.toString(16).padStart(6, '0')}`]));
 
 /** A place's name for the panel, capitalised: a guard by his title, an inmate by name, furniture by what it is and whose cell. */
@@ -54,7 +54,7 @@ function furnitureName(sim: Sim, container: number): string {
 }
 
 const targets: RatTarget[] = [];
-const view: RatView = { name: '', status: '', ready: false, rows: [], more: 0, leave: '', leaveNo: '', loose: false, looseNote: '' };
+const view: RatView = { name: '', status: '', say: '', ready: false, rows: [], more: 0, leave: '', leaveNo: '', loose: false, looseNote: '' };
 /** The most places the panel lists (the sleepers first: a heist's guard never falls off the end). */
 const ROWS = 12;
 /** Compass points from the player, by eighths of a turn from east (z grows south). */
@@ -78,6 +78,7 @@ export function ratView(sim: Sim): RatView | null {
   memo = key;
   view.name = ratName(sim);
   view.status = ratStatus(sim);
+  view.say = pet.mode === RAT.LOOSE ? t('rat.statusLooseSay') : view.status;
   view.ready = pet.mode === RAT.SHOULDER && !s.sleeping && s.layer === LAYER.GROUND && !s.stowed && !sim.away;
   view.rows = [];
   view.more = 0;
@@ -100,6 +101,12 @@ export function ratView(sim: Sim): RatView | null {
         key: guard && s.items.containers[x.container]?.some((v) => itemOf(v) === itemNumber(`key_${guard.key}`)) ? (KEY_CSS[guard.key] ?? '') : '',
       };
       view.rows.push(row);
+    }
+    // (Two places that read the same, a pair of showers side by side: numbered, so neither eye nor screen reader mixes them up.)
+    for (let i = 0; i < view.rows.length; i++) {
+      const r = view.rows[i];
+      const twins = view.rows.filter((o) => o.name === r.name && o.meta === r.meta);
+      if (twins.length > 1 && twins[0] === r) twins.forEach((o, k) => (o.name = `${o.name} (${k + 1})`));
     }
   }
   const small = held && s.items.hand < HOTBAR && itemDef(held).small;
@@ -139,7 +146,7 @@ function targetName(sim: Sim, container: number): string {
 }
 
 /** The HUD's rat pill (null: no rat): its name and what it's doing; a bar while it runs loose. */
-const hudRat: NonNullable<HudState['rat']> = { name: '', status: '', busy: false, left: null, of: PANIC_STEPS / STEPS_PER_SECOND };
+const hudRat: NonNullable<HudState['rat']> = { name: '', status: '', busy: false, left: null, of: PANIC_STEPS / STEPS_PER_SECOND, usable: true };
 export function ratHud(sim: Sim): HudState['rat'] {
   const s = sim.state;
   const pet = petOf(s);
@@ -148,6 +155,8 @@ export function ratHud(sim: Sim): HudState['rat'] {
   hudRat.busy = pet.mode !== RAT.SHOULDER;
   hudRat.status = pet.mode === RAT.OUT ? t('rat.pillOut') : pet.mode === RAT.BACK ? t('rat.pillBack') : pet.mode === RAT.LOOSE ? t('rat.pillLoose') : pet.mode === RAT.WAIT ? t('rat.pillWait') : '';
   hudRat.left = pet.mode === RAT.LOOSE ? Math.max(0, (pet.until - s.step) / STEPS_PER_SECOND) : null;
+  // (Its panel can't open asleep, out cold, in solitary or a vehicle: the pill says so by going quiet.)
+  hudRat.usable = !s.sleeping && !s.stowed && !sim.away;
   return hudRat;
 }
 
@@ -243,7 +252,8 @@ export function announceRat(sim: Sim, e: Extract<SimEvent, { type: 'rat' }>) {
       break;
     case 'chased':
       banner.toast(t(waits ? 'toast.ratChasedWait' : e.item ? 'toast.ratChasedWith' : 'toast.ratChased', { name, item }), 'bad');
-      told = e.item ?? 0;
+      // (Only what the toast named: waiting, it says nothing of what it carries, so its return will.)
+      told = waits ? 0 : (e.item ?? 0);
       break;
     case 'home': {
       sound.squeak(0.7);
@@ -282,3 +292,9 @@ export function announceRat(sim: Sim, e: Extract<SimEvent, { type: 'rat' }>) {
 /** What a toast already said the rat carries back (its 'home' then keeps quiet), and whether what it took came from a guard's pockets. */
 let told = 0;
 let fromGuard = false;
+
+/** A game starts or loads: nothing said about a rat yet. */
+export function resetRat() {
+  told = 0;
+  fromGuard = false;
+}

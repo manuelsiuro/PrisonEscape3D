@@ -215,16 +215,13 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       m.wait = randomInt(rng, INMATE_REACTION);
     }
     // A rat running loose close by, in sight (P20): away from it as fast as legs go, then watching it
-    // from a safe distance; once it's over, back to what it was going to (its goal kept, as −2 − goal,
-    // while it flees): walked to afresh, or taken up again on the spot.
+    // from a safe distance (its goal kept: its spot stays its own); once it's over, back to it.
     if (social.scare.length && m.doing !== DOING.SLEEP && flee(c, m, social.scare)) return;
-    if (m.goal <= -2) {
-      m.goal = -2 - m.goal;
-      m.path = [];
-      if (tileAt(m.body.x, m.body.z) === m.goal) {
-        arrive(m, plan, rng);
-        return;
-      }
+    // Back on its spot after fleeing (P20): what it was doing there, taken up again as it was (nothing drawn).
+    if (m.doing === DOING.NOTHING && m.then !== DOING.NOTHING && m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) {
+      m.doing = m.then;
+      m.body.facing = m.face;
+      m.body.moving = false;
     }
     if (m.wait > 0) {
       m.wait--;
@@ -286,7 +283,6 @@ function flee(c: Crowd, m: Inmate, rats: ReadonlyArray<{ x: number; z: number }>
     }
   }
   if (!near) return false;
-  if (m.goal >= 0) m.goal = -2 - m.goal;
   m.path = [];
   m.doing = DOING.NOTHING;
   m.stall = 0;
