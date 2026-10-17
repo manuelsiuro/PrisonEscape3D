@@ -136,7 +136,7 @@ export class ProfilePanel {
       : '';
     this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${title}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${dayHtml}
-      <div class="box-section"><div class="box-label"><span>${t('profile.stats')}</span><em>${t('profile.statsNote')}</em></div>${attrs}</div>
+      <div class="box-section"><div class="box-label"><span>${t('profile.stats')}</span><em>${t('profile.statsNote')}</em></div><div class="file-list">${attrs}</div></div>
       <div class="box-section"><div class="box-label"><span>${t('profile.job')}</span>${working && job >= 0 ? `<em>${t('profile.workNow')}</em>` : ''}</div>${jobHtml}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.favors')}</span></div>${favorList}</div>
       <div class="box-section"><div class="box-label"><span>${t('profile.followers')}</span></div>${allies}</div>
