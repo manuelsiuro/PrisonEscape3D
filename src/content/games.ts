@@ -21,14 +21,14 @@ export const BAR = 1000;
 /** A press (left and right in turn) pushes the bar this much plus the player's Strength / 4. */
 export const PUSH_BASE = 20;
 /** The inmate pushes back every step: (its Strength + this) / 10, half as much again in a surge. */
-export const DRAIN_BASE = 20;
+export const DRAIN_BASE = 30;
 /** A bout lasts at most this long (steps: 30 s), then it's a draw. */
 export const BOUT_STEPS = 600;
 /** Each second, the odds (out of 100) the inmate surges for its first half. */
 export const SURGE_ODDS = 30;
 /** A bout costs this much energy (too tired, no bout). */
 export const BOUT_ENERGY = 6;
-/** A win: the loser thinks this much more of the player (a good loser), everyone watching this much, and a point of Strength. */
+/** A win: the loser thinks this much more of the player (a good loser), everyone watching this much (each once a day), and a point of Strength. */
 export const WIN_OPINION = 6;
 export const CROWD_OPINION = 2;
 /** Who watches a bout: inmates this close (tiles) who can see it. */

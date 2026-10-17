@@ -93,6 +93,8 @@ function onKeyDown(e: KeyboardEvent) {
     // (A button in the rat's panel with the focus: Space presses it.)
     if (ratPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.rat-panel')) return;
     if (phonePanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.phone-panel')) return;
+    // (P22: a die, a bet or a game's button in the talk panel with the focus: Space presses it.)
+    if ((document.activeElement as HTMLElement | null)?.closest('.talk-panel, .train-card')) return;
     e.preventDefault();
     if (itemsUI.panelOpen || socialOpen()) return;
     tools.held = true;

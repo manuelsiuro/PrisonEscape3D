@@ -429,6 +429,8 @@ export class Character {
    */
   strain = 0;
   shudder = false;
+  /** Dice in a cupped hand, not thrown yet (P22): it shakes them. */
+  diceShake = false;
   /** The strain as drawn (eased: the arms never jump). */
   private strainNow = 0;
   private hit = 0;
@@ -970,10 +972,11 @@ export class Character {
       this.strainNow += (this.strain - this.strainNow) * k(6);
       const g = this.strainNow;
       const shake = motion ? Math.sin(t * (this.shudder ? 47 : 31)) * (this.shudder ? 0.07 : 0.035) : 0;
-      armRx += (-1.42 - g * 0.3 + shake) * ga;
+      // (The strain is carried by the lean and the stance, View: the grip stays at one height for both.)
+      armRx += (-1.42 - g * 0.08 + shake) * ga;
       armRz += (-0.32 + shake * 0.5) * ga;
       armLx += -0.35 * ga;
-      armLz += -0.55 * ga;
+      armLz += 0.45 * ga;
       bob -= 0.03 * ga;
     } else if (doing === DOING.PICK) {
       // At a lock (P22): bent to it, both hands at the keyhole, the right one working the pick
@@ -987,7 +990,7 @@ export class Character {
     } else if (doing === DOING.DICE) {
       // Dice (P22): crouched over them, the right hand cupped and shaking, flung out at a throw (`pumped`).
       const ga = this.act;
-      const shake = motion && this.pumped < 0.05 ? Math.sin(t * 24) * 0.12 : 0;
+      const shake = motion && this.diceShake && this.pumped < 0.05 ? Math.sin(t * 24) * 0.12 : 0;
       armRx += (-0.85 - this.pumped * 0.7 + shake) * ga;
       armRz += -0.12 * ga;
       armLx += -0.55 * ga;
@@ -1034,7 +1037,7 @@ export class Character {
       (doing === DOING.READ ? 0.12 * this.act : 0) +
       (doing === DOING.WRESTLE ? (0.12 + this.strainNow * 0.1) * this.act : 0) +
       (doing === DOING.PICK ? 0.32 * this.act : 0) +
-      (doing === DOING.DICE ? 0.18 * this.act : 0) +
+      (doing === DOING.DICE ? 0.12 * this.act : 0) +
       (Math.PI / 2) * 0.92 * this.crawl +
       0.06 * dz +
       (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0) +

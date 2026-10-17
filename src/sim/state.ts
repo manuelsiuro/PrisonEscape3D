@@ -214,12 +214,12 @@ export type SimEvent =
   /**
    * Side games (P22, games.ts): the dice thrown (the player's, `mine`), thrown again (`mask`: which), and how the
    * game went (`theirs`, the inmate's throw; the stake changes hands as a 'cash' event); an
-   * arm-wrestle begun and how it ended (`crowd`: inmates watching a win, `wins`: bouts won on
-   * sports day so far); a lock being picked: begun, a pin set, the pick slipping, the door open,
+   * arm-wrestle begun and how it ended (`crowd`: inmates watching a win who cheered (once a day each),
+   * `wins`: bouts won on sports day so far, `str`: Strength gained (0 at the top), `gain`: the loser's opinion as it moved); a lock being picked: begun, a pin set, the pick slipping, the door open,
    * given up (`pin` pins set, `of` in all).
    */
   | { type: 'dice'; what: DiceNews; who: number; stake: number; mine: number[]; theirs?: number[]; mask?: number }
-  | { type: 'bout'; what: BoutNews; who: number; crowd?: number; wins?: number }
+  | { type: 'bout'; what: BoutNews; who: number; crowd?: number; wins?: number; str?: number; gain?: number }
   | { type: 'pick'; what: PickNews; tile: number; pin?: number; of?: number }
   | ItemEvent;
 
@@ -251,7 +251,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -432,6 +432,8 @@ export interface SimState {
   pick: number[];
   /** A door picked open, for the player alone: [its tile, the step it locks again, 1 once they've stood in it]; [] none. */
   picked: number[];
+  /** The prison day each inmate last cheered the player's win at arm-wrestling (by inmate index; 0 never): once a day each. */
+  cheered: number[];
 }
 
 export interface Snapshot {
@@ -548,6 +550,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     bout: [],
     pick: [],
     picked: [],
+    cheered: [],
   };
 }
 
@@ -631,6 +634,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!(Array.isArray(s.bout) && (s.bout.length === 0 || (ints(s.bout, 4) && s.bout[0] >= 0 && s.bout[0] < n && s.bout[1] > 0 && s.bout[1] < BAR)))) s.bout = [];
   const door = (t: number) => t >= 0 && t < world.ground.kind.length && world.ground.base[t] === TILE.DOOR;
   if (!(Array.isArray(s.pick) && (s.pick.length === 0 || (ints(s.pick, 3) && door(s.pick[0]) && s.pick[1] >= 0)))) s.pick = [];
+  if (!Array.isArray(s.cheered) || !s.cheered.every((x) => Number.isInteger(x) && x >= 0)) s.cheered = [];
   if (!(Array.isArray(s.picked) && (s.picked.length === 0 || (ints(s.picked, 3) && door(s.picked[0]))))) s.picked = [];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];

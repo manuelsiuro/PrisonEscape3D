@@ -158,7 +158,7 @@ const frameData: Frame = {
   scent: scentFrame,
   rats: [],
   smuggle: null,
-  games: { bout: null, dice: null, taps: 0, sports: false },
+  games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {

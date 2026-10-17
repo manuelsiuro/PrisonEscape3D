@@ -125,9 +125,9 @@ const BOUT_GAP = 1.0;
 /** How far each steps to its own left (tiles), so the right hands (a shoulder's width off the middle) meet on the line between them. */
 const BOUT_SIDE = 0.21;
 /** How far the one winning leans in, and the other gives way, at the most (tiles). */
-const BOUT_LEAN = 0.06;
-/** How far in to a lock the player leans (tiles from the tile's middle: the hands at the door's face). */
-const PICK_LEAN = 0.38;
+const BOUT_LEAN = 0.09;
+/** Where the player stands to pick a lock: this far from the door tile's middle (the hands at its face, the pick in the keyhole). */
+const PICK_STAND = 0.7;
 const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 };
 const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
 
@@ -406,6 +406,8 @@ export class View {
   private readonly gameOff = { x: 0, z: 0 };
   private readonly rivalOff = { x: 0, z: 0 };
   private rivalWho = -1;
+  /** The dice partner's throw seen (its fling plays once). */
+  private rivalThrew = false;
   private readonly trainPos = new THREE.Vector3();
   private reps = 0;
   /** No camera drift, idle glances or dust. */
@@ -930,6 +932,7 @@ export class View {
     // An arm-wrestle (P22): the two square on at arm's length, each a step to its own left so the
     // right hands meet on the line between them; the one winning leans in, the other gives way.
     // At a lock: leaning in to the door. Eased in and out (never a jump).
+    if (!f.games.dice || f.games.dice.t[2] < 0) this.rivalThrew = false;
     const bout = f.games.bout;
     const rival = bout ? f.inmates[bout.who] : null;
     let gx = 0;
@@ -942,7 +945,7 @@ export class View {
       const d = Math.hypot(dx, dz) || 1;
       const fx = dx / d;
       const fz = dz / d;
-      const along = Math.max(-0.25, Math.min(0.35, (d - BOUT_GAP) / 2));
+      const along = Math.max(-0.45, Math.min(0.7, (d - BOUT_GAP) / 2));
       const lean = BOUT_LEAN * bout.strain;
       // (A body's own left, the side away from the arm that grips: the player's (−fz, fx), the rival's the opposite.)
       gx = fx * (along + lean) - fz * BOUT_SIDE;
@@ -953,16 +956,24 @@ export class View {
       this.rivalWho = bout.who;
       this.player.strain = bout.strain;
       this.player.shudder = bout.surge;
-    } else if (f.doing === DOING.PICK) {
-      gx = Math.sin(f.facing) * PICK_LEAN;
-      gz = Math.cos(f.facing) * PICK_LEAN;
+    } else if (f.doing === DOING.PICK && f.games.lock) {
+      // (Up to the door, from wherever the player stopped: never through it.)
+      const fx = Math.sin(f.facing);
+      const fz = Math.cos(f.facing);
+      const lean = Math.max(0, (f.games.lock.x - fx * PICK_STAND - f.x) * fx + (f.games.lock.z - fz * PICK_STAND - f.z) * fz);
+      gx = fx * lean;
+      gz = fz * lean;
     }
     const ge = Math.min(1, dt * 8);
     this.gameOff.x += (gx - this.gameOff.x) * ge;
     this.gameOff.z += (gz - this.gameOff.z) * ge;
     this.rivalOff.x += (rx - this.rivalOff.x) * ge;
     this.rivalOff.z += (rz - this.rivalOff.z) * ge;
-    if (!bout && Math.abs(this.rivalOff.x) + Math.abs(this.rivalOff.z) < 0.002) this.rivalWho = -1;
+    if (Math.abs(this.gameOff.x) + Math.abs(this.gameOff.z) < 1e-4) this.gameOff.x = this.gameOff.z = 0;
+    if (!bout && Math.abs(this.rivalOff.x) + Math.abs(this.rivalOff.z) < 0.002) {
+      this.rivalWho = -1;
+      this.rivalOff.x = this.rivalOff.z = 0;
+    }
     px += this.gameOff.x;
     pz += this.gameOff.z;
     if (f.games.taps !== this.taps) {
@@ -1014,6 +1025,13 @@ export class View {
         c.strain = -bout.strain;
         c.shudder = bout.surge;
         c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, Math.atan2(f.x - m.x, f.z - m.z), false, dt, time, !this.reducedMotion, DOING.WRESTLE, this.beds[m.cell]);
+      } else if (f.games.dice && f.games.dice.who === k) {
+        // The dice partner (P22): shaking its dice until it throws, a fling as it does.
+        const threw = f.games.dice.t[2] >= 0;
+        if (threw && !this.rivalThrew) c.pump();
+        this.rivalThrew = threw;
+        c.diceShake = !threw;
+        c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       } else if (this.rivalWho === k) c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       else c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);

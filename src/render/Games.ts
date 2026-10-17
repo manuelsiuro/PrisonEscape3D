@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { World } from '../sim/world/World';
+import { DECOR } from '../content/decor';
 import { LAYER, MAP_H, MAP_W } from '../sim/world/World';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 
@@ -13,24 +14,28 @@ export interface GamesFrame {
    * not thrown yet), seconds since each die left the hand (the player's two, then the inmate's;
    * negative: not yet).
    */
-  dice: { x: number; z: number; fromX: number; fromZ: number; oppX: number; oppZ: number; mine: [number, number]; theirs: [number, number]; t: [number, number, number, number]; seed: number } | null;
+  dice: { who: number; x: number; z: number; fromX: number; fromZ: number; oppX: number; oppZ: number; mine: [number, number]; theirs: [number, number]; t: [number, number, number, number]; seed: number } | null;
   /** Taps at a lock and throws of the dice so far (the arm twitches at each new one). */
   taps: number;
   /** Sports day: bunting strung over the yard. */
   sports: boolean;
+  /** The lock being picked: its door tile's middle (the player leans in to it), null none. */
+  lock: { x: number; z: number } | null;
 }
 
 /** How long a die takes from the hand to rest. */
 const FLIGHT = 0.55;
 /** Where a die leaves the hand: ahead of the thrower, to its right, this high (tiles). */
-const HAND_AHEAD = 0.35;
-const HAND_SIDE = 0.18;
+const HAND_AHEAD = 0.5;
+const HAND_SIDE = 0.29;
 const HAND_Y = 0.6;
 /** A die's size (a tile is 1). */
 const DIE = 0.17;
 /** Pennants on the bunting at most, and its poles. */
-const MAX_FLAGS = 260;
-const MAX_POLES = 16;
+const MAX_FLAGS = 320;
+const MAX_POLES = 40;
+/** The longest a stretch of bunting hangs between two poles (tiles): longer runs get poles along them. */
+const SPAN = 14;
 /** How high a pole stands (tiles), and the shortest stretch of open yard worth a line. */
 const POLE_H = 2.6;
 const STRETCH = 5;
@@ -150,9 +155,9 @@ export class GamesView {
   }
 
   /**
-   * A prison: bunting strung across its yard, along its longer side, under open sky only (never
-   * through a roof, a tree or a flagpole): each stretch of open yard tiles at least STRETCH long
-   * gets a line from a pole to a pole, sagging between them, its pennants a palm apart.
+   * A prison: bunting strung over its yard under open sky only (never through a roof, a tree, a
+   * flagpole or a bush): the longest stretches of open yard (at least STRETCH), a line from a pole
+   * to a pole each, sagging between them, its pennants a palm apart.
    */
   setWorld(world: World) {
     if (this.strings) {
@@ -163,50 +168,70 @@ export class GamesView {
     }
     this.flagCount = 0;
     this.poles.count = 0;
-    let x0 = MAP_W;
-    let z0 = MAP_H;
-    let x1 = -1;
-    let z1 = -1;
     const roof = world.layers[LAYER.ROOF].kind;
-    // Open yard: the yard's floor with nothing overhead, a tile and a bit from any tree or flagpole.
-    const tall = (world.def.decor ?? []).filter((d) => d.kind === 'tree' || d.kind === 'flagpole');
+    // Open yard: the yard's floor with nothing overhead, a tile and a bit from any tree or
+    // flagpole, a step from anything else standing there (a bush, a hoop: no pole in it).
+    const decor = (world.def.decor ?? []).filter((d) => !DECOR[d.kind].wall);
     const open = (x: number, z: number) => {
       if (!world.inside(x, z) || world.zoneAt(x, z) !== 'yard') return false;
       const i = z * MAP_W + x;
-      if (TILE_INFO[world.ground.kind[i]].solid || roof[i] !== TILE.EMPTY) return false;
-      return !tall.some((d) => Math.abs(d.x + 0.5 - (x + 0.5)) < 1.4 && Math.abs(d.z + 0.5 - (z + 0.5)) < 1.4);
+      if (TILE_INFO[world.ground.kind[i]].solid || world.propSolid[i] || roof[i] !== TILE.EMPTY) return false;
+      return !decor.some((d) => {
+        const r = d.kind === 'tree' || d.kind === 'flagpole' ? 1.4 : 1;
+        return x + 0.5 > d.x - r + 0.5 && x + 0.5 < d.x + (d.w ?? 1) + r - 0.5 && z + 0.5 > d.z - r + 0.5 && z + 0.5 < d.z + (d.d ?? 1) + r - 0.5;
+      });
     };
-    for (let z = 0; z < MAP_H; z++)
-      for (let x = 0; x < MAP_W; x++) {
-        if (!open(x, z)) continue;
-        x0 = Math.min(x0, x);
-        z0 = Math.min(z0, z);
-        x1 = Math.max(x1, x);
-        z1 = Math.max(z1, z);
+    // Every row and column's stretches of open yard; the best strung (long, near the middle), then
+    // the next best running the same way at least 3 tiles off it (two lines at most: more would hide the yard's
+    // people from the steep camera).
+    const runs: Array<{ along: boolean; c: number; a0: number; a1: number }> = [];
+    for (const along of [true, false])
+      for (let c = 0; c < (along ? MAP_H : MAP_W); c++) {
+        let run = -1;
+        for (let a = 0; a <= (along ? MAP_W : MAP_H); a++) {
+          const ok = a < (along ? MAP_W : MAP_H) && open(along ? a : c, along ? c : a);
+          if (ok && run < 0) run = a;
+          if (ok || run < 0) continue;
+          if (a - run >= STRETCH) runs.push({ along, c, a0: run, a1: a });
+          run = -1;
+        }
       }
-    if (x1 < 0) return;
-    const along = x1 - x0 >= z1 - z0;
-    const across = (along ? z1 - z0 : x1 - x0) + 1;
-    // Two lines at most (more would hide the yard's people from the steep camera).
-    const lines = Math.max(1, Math.min(2, Math.floor(across / 5)));
+    // (Long enough is long enough: then the nearer the middle of the open yard, where the games are, the better.)
+    let sx = 0;
+    let sz = 0;
+    let n = 0;
+    for (let z = 0; z < MAP_H; z++)
+      for (let x = 0; x < MAP_W; x++)
+        if (open(x, z)) {
+          sx += x;
+          sz += z;
+          n++;
+        }
+    const cx = sx / Math.max(1, n);
+    const cz = sz / Math.max(1, n);
+    const score = (r: (typeof runs)[number]) => {
+      const mid = (r.a0 + r.a1) / 2;
+      return Math.min(r.a1 - r.a0, 20) - 0.6 * (r.along ? Math.hypot(mid - cx, r.c - cz) : Math.hypot(r.c - cx, mid - cz));
+    };
+    runs.sort((p, q) => score(q) - score(p) || p.c - q.c);
+    const chosen: typeof runs = [];
+    for (const r of runs) {
+      if (chosen.length >= 2) break;
+      const first = chosen[0];
+      if (first && (first.along !== r.along || Math.abs(first.c - r.c) < 3)) continue;
+      chosen.push(r);
+    }
     const at: number[] = [];
     const seg: number[] = [];
     const poles: number[] = [];
     const color = new THREE.Color();
-    for (let l = 0; l < lines; l++) {
-      const c = Math.floor((along ? z0 : x0) + ((l + 1) * across) / (lines + 1));
-      // The stretches of open tiles along this line.
-      const from = along ? x0 : z0;
-      const to = along ? x1 : z1;
-      let run = -1;
-      for (let a = from; a <= to + 1; a++) {
-        const ok = a <= to && open(along ? a : c, along ? c : a);
-        if (ok && run < 0) run = a;
-        if (ok || run < 0) continue;
-        if (a - run >= STRETCH) this.string(along, c + 0.5, run + 0.3, a - 0.3, l, at, seg, poles, color);
-        run = -1;
-      }
-    }
+    chosen.forEach((r, l) => {
+      // (A long run: a pole every SPAN tiles or so, each span sagging on its own.)
+      const a0 = r.a0 + 0.3;
+      const a1 = r.a1 - 0.3;
+      const spans = Math.ceil((a1 - a0) / SPAN);
+      for (let k = 0; k < spans; k++) this.string(r.along, r.c + 0.5, a0 + ((a1 - a0) * k) / spans, a0 + ((a1 - a0) * (k + 1)) / spans, l * 5 + k, at, seg, poles, color);
+    });
     this.flagAt = new Float32Array(at);
     this.flagCount = Math.min(MAX_FLAGS, at.length / 5);
     this.flags.instanceColor!.needsUpdate = true;
@@ -215,13 +240,19 @@ export class GamesView {
     this.strings = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x2b3038 }));
     this.strings.visible = false;
     this.group.add(this.strings);
-    // The poles at each end.
-    for (let k = 0; k < poles.length / 2 && k < MAX_POLES; k++) {
-      this.p.set(poles[k * 2], POLE_H / 2, poles[k * 2 + 1]);
+    // The poles at each end (one where two spans meet).
+    let count = 0;
+    for (let k = 0; k < poles.length / 2 && count < MAX_POLES; k++) {
+      const x = poles[k * 2];
+      const z = poles[k * 2 + 1];
+      let twin = false;
+      for (let j = 0; j < k && !twin; j++) twin = Math.abs(poles[j * 2] - x) < 0.01 && Math.abs(poles[j * 2 + 1] - z) < 0.01;
+      if (twin) continue;
+      this.p.set(x, POLE_H / 2, z);
       this.m.compose(this.p, this.q.identity(), this.s.set(1, 1, 1));
-      this.poles.setMatrixAt(k, this.m);
+      this.poles.setMatrixAt(count++, this.m);
     }
-    this.poles.count = Math.min(MAX_POLES, poles.length / 2);
+    this.poles.count = count;
     this.poles.instanceMatrix.needsUpdate = true;
     this.placeFlags(0, false);
   }
@@ -291,7 +322,9 @@ export class GamesView {
         const fz = (d.oppZ - d.fromZ) / len;
         const off = (k % 2 === 0 ? -1 : 1) * (0.13 + jit(d.seed, k) * 0.05);
         const toward = (mine ? -0.13 : 0.13) + (jit(d.seed, k + 4) - 0.5) * 0.05;
-        const rx = d.x + fz * off + fx * toward;
+        // (Along the camera's depth the throwers' backs would hide them: a little to the side.)
+        const cx = d.x + (Math.abs(fz) > Math.abs(fx) ? 0.3 : 0);
+        const rx = cx + fz * off + fx * toward;
         const rz = d.z - fx * off + fz * toward;
         // (A body's right, the throwing hand's side: the player's (fz, −fx), the inmate's the opposite.)
         const sgn = mine ? 1 : -1;

@@ -51,11 +51,18 @@ export function gameRefusal(sim: SimContext, who: number): Refusal | null {
   const s = sim.state;
   const m = s.inmates[who];
   if (!m) return 'gamesClosed';
+  // (In a lockdown the sirens are the reason, said so.)
+  if (s.lockdown) return 'gamesLockdown';
   if (!gamesOpen(sim)) return 'gamesClosed';
+  // Sat down (on a bench, at a table): not getting up for a game.
+  if (SEATED.has(m.doing)) return 'seated';
   if (m.opinion < GAME_OPINION) return 'gameOpinion';
   if (playedToday(s, who) >= GAMES_A_DAY) return 'played';
   return null;
 }
+
+/** What an inmate does sat down. */
+const SEATED: ReadonlySet<number> = new Set([DOING.SIT, DOING.SIT_READ, DOING.EAT]);
 
 function countGame(sim: SimContext, who: number) {
   const s = sim.state;
@@ -111,6 +118,8 @@ export function startDice(sim: SimContext, who: number, b: number) {
 export function reroll(sim: SimContext, mask: number) {
   const s = sim.state;
   if (!s.dice.length) return;
+  // (One die thrown again at most: both is no choice.)
+  if ((mask & 3) === 3) return;
   if (mask & 1) s.dice[2] = die(s.salt, s.step, 2);
   if (mask & 2) s.dice[3] = die(s.salt, s.step, 3);
   if (mask & 3) sim.events.push({ type: 'dice', what: 'rerolled', who: s.dice[0], stake: STAKES[s.dice[1]], mine: [s.dice[2], s.dice[3]], mask: mask & 3 });
@@ -138,7 +147,6 @@ export function settleDice(sim: SimContext) {
   const n = what === 'won' ? stake * 2 : what === 'push' ? stake : 0;
   if (n) {
     s.cash += n;
-    if (what === 'won') s.tally[3] += stake;
     sim.events.push({ type: 'cash', n, why: 'dice' });
   }
   sim.events.push({ type: 'dice', what, who, stake, mine: [a1, a2], theirs: [t1, t2] });
@@ -195,19 +203,28 @@ export function endBout(sim: SimContext, how: BoutEnd) {
   const who = s.bout[0];
   s.bout = [];
   if (how === 'won') {
+    const m = s.inmates[who];
+    const was = m.opinion;
     changeOpinion(sim, who, WIN_OPINION);
-    // Those watching think more of the player too.
-    const crowd = watchers(sim, who);
-    for (const k of crowd) changeOpinion(sim, k, CROWD_OPINION);
-    s.str = Math.min(ATTR_MAX, s.str + 1);
+    // Those watching think more of the player too (each once a day: no cheering the same faces up all afternoon).
+    const day = prisonDay(s.step);
+    const crowd = watchers(sim, who).filter((k) => (s.cheered[k] ?? 0) !== day);
+    for (const k of crowd) {
+      while (s.cheered.length <= k) s.cheered.push(0);
+      s.cheered[k] = day;
+      changeOpinion(sim, k, CROWD_OPINION);
+    }
+    const str = s.str < ATTR_MAX ? 1 : 0;
+    s.str += str;
     s.trained |= 1 << ATTRS.indexOf('str');
     const wins = sportsWin(sim);
-    sim.events.push({ type: 'bout', what: 'won', who, crowd: crowd.length, wins });
+    sim.events.push({ type: 'bout', what: 'won', who, crowd: crowd.length, wins, str, gain: m.opinion - was });
     if (wins >= SPORTS_WINS && !(s.eventFlags & TODAY.SPORTS_PRIZE)) sportsPrize(sim);
     return;
   }
+  const was = s.inmates[who]?.opinion ?? 0;
   if (how === 'lost' || how === 'draw') changeOpinion(sim, who, PLAY_OPINION);
-  sim.events.push({ type: 'bout', what: how, who });
+  sim.events.push({ type: 'bout', what: how, who, gain: (s.inmates[who]?.opinion ?? 0) - was });
 }
 
 /** Inmates who see a bout (up and calm, close enough, a clear line), but the one wrestling. */
@@ -363,7 +380,7 @@ function keepPick(sim: SimContext) {
   const s = sim.state;
   if (!s.pick.length) return;
   const it = s.items;
-  if (sim.away || s.sleeping || s.stowed || s.train >= 0 || s.layer !== LAYER.GROUND || itemOf(it.inv[it.hand]) !== LOCKPICK || lockAt(sim.world, s.pick[0]) !== 'lock') stopPick(sim);
+  if (sim.away || s.sleeping || s.stowed || s.train >= 0 || s.seat >= 0 || s.layer !== LAYER.GROUND || itemOf(it.inv[it.hand]) !== LOCKPICK || lockAt(sim.world, s.pick[0]) !== 'lock') stopPick(sim);
 }
 
 /**

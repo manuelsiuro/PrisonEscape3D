@@ -253,9 +253,6 @@
 .wrestle-card.surge .tug-them {
   animation: surge-flash 0.25s ease-in-out infinite alternate;
 }
-.wrestle-card.surge .train-note {
-  color: #ffb4a8;
-}
 .wrestle-card.surge .tug-knot {
   animation: knot-shake 0.08s linear infinite alternate;
 }
@@ -412,12 +409,20 @@
       inset 0 0 0 2px #3fc79a;
   }
 }
+/* (A slip shakes the sweep, never the card: in landscape the Set pad is fixed inside it, and a transform on the card would move it under the thumb.) */
 @keyframes pick-slip {
   20% {
-    transform: translateX(-6px);
     box-shadow:
       0 20px 50px -14px rgba(0, 0, 0, 0.7),
       inset 0 0 0 2px #ff5f6d;
+  }
+}
+.pick-card.slip .sweep {
+  animation: sweep-shake 0.35s ease-out;
+}
+@keyframes sweep-shake {
+  20% {
+    transform: translateX(-6px);
   }
   50% {
     transform: translateX(5px);
@@ -439,6 +444,8 @@ body.gaming .tool-prompt {
 @media (max-height: 520px) {
   .wrestle-card,
   .pick-card {
+    /* (Faded in, not slid: the pads fixed inside must stay under the thumbs.) */
+    animation: card-fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;
@@ -461,6 +468,8 @@ body.gaming .tool-prompt {
   }
 }
 
+body.reduced-motion .wrestle-card,
+body.reduced-motion .pick-card .sweep,
 body.reduced-motion .die.fresh .die-face,
 body.reduced-motion .dice-wait .die-face,
 body.reduced-motion .wrestle-card .tug-them,
@@ -526,4 +535,23 @@ body.reduced-motion .wrestle-card.surge .wrestle-surge {
   .wrestle-card .train-pad.next {
     background: rgb(150, 72, 26);
   }
+}
+
+@keyframes card-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The stake on the table, under the dice. */
+.dice-stake {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  font: 700 12.5px var(--font-ui);
+  color: var(--gold);
+}
+.dice-stake .ic {
+  flex: none;
 }

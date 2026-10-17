@@ -81,11 +81,13 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
   if (v.dice) {
     const [a, b] = v.dice.mine;
     const die = (k: number, n: number) => `<button class="die${(mask >> k) & 1 ? ' on' : ''}${fresh(v.show, k, now) ? ' fresh' : ''}" data-die="${k}" aria-pressed="${(mask >> k) & 1 ? 'true' : 'false'}" aria-label="${esc(t('games.dieAria', { n }))}">${dieFace(n)}</button>`;
-    const again = mask & 3;
+    // (One die at most: choosing one lets go of the other.)
+    const again = mask & 1 ? 1 : mask & 2 ? 2 : 0;
     return `<section class="talk-games playing">${label}<div class="dice-play">
-      <div class="dice-row"><span class="dice-who">${t('games.you')}</span>${die(0, a)}${die(1, b)}<b class="dice-sum">= ${a + b}</b></div>
+      <div class="dice-row" role="radiogroup" aria-label="${esc(t('games.rerollNote', { name: v.name }))}"><span class="dice-who">${t('games.you')}</span>${die(0, a)}${die(1, b)}<b class="dice-sum">= ${a + b}</b></div>
+      <p class="dice-stake">${icon('coin', 13)}<span>${t('games.onTable', { n: v.dice.stake })}</span></p>
       <p class="talk-note">${t('games.rerollNote', { name: esc(v.name) })}</p>
-      <div class="dice-acts"><button class="big-btn ${again ? 'primary' : 'ghost'} small" data-act="${TALK.REROLL}" data-arg="${again}" ${again ? '' : 'disabled'}>${icon('dice', 16)}<span>${t(again === 3 ? 'games.rerollBoth' : 'games.reroll')}</span></button><button class="big-btn ${again ? 'ghost' : 'primary'} small" data-act="${TALK.REROLL}" data-arg="0">${icon('check', 16)}<span>${t('games.stand', { n: a + b })}</span></button></div>
+      <div class="dice-acts"><button class="big-btn ${again ? 'primary' : 'ghost'} small" data-act="${TALK.REROLL}" data-arg="${again}" ${again ? '' : 'disabled'}>${icon('dice', 16)}<span>${t('games.reroll')}</span></button><button class="big-btn ${again ? 'ghost' : 'primary'} small" data-act="${TALK.REROLL}" data-arg="0" data-stand="1">${icon('check', 16)}<span>${t('games.stand', { n: a + b })}</span></button></div>
     </div></section>`;
   }
   // The last game: both throws and how it went (theirs once their dice are down).
@@ -95,7 +97,7 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
     const down = now >= s.shownAt;
     const [a, b] = s.mine;
     const [c, d] = s.theirs;
-    const verdict = !down ? t('games.theyThrow', { name: esc(v.name) }) : s.what === 'won' ? t('games.won', { n: s.stake }) : s.what === 'lost' ? t('games.lost', { n: s.stake }) : t('games.push');
+    const verdict = !down ? t('games.theyThrow', { name: esc(v.name) }) : s.what === 'won' ? t('games.won', { n: s.stake, m: s.stake * 2 }) : s.what === 'lost' ? t('games.lost', { n: s.stake }) : t('games.push', { n: s.stake });
     result = `<div class="dice-result" data-what="${down ? s.what : 'wait'}">
       <div class="dice-row"><span class="dice-who">${t('games.you')}</span>${dieFace(a, 28)}${dieFace(b, 28)}<b class="dice-sum">= ${a + b}</b></div>
       <div class="dice-row theirs"><span class="dice-who">${esc(v.name)}</span>${down ? `${dieFace(c, 28)}${dieFace(d, 28)}<b class="dice-sum">= ${c + d}</b>` : `<span class="dice-wait">${dieFace(0, 28)}${dieFace(0, 28)}</span>`}</div>
@@ -175,6 +177,10 @@ export class WrestleCard {
         this.send(OP.TRAIN, Number(b.dataset.side));
       });
       b.addEventListener('contextmenu', (e) => e.preventDefault());
+      // (A key on the focused pad: its press too. Pointer clicks were sent on the way down.)
+      b.addEventListener('click', (e) => {
+        if (e.detail === 0) this.send(OP.TRAIN, Number(b.dataset.side));
+      });
     }
     this.el.querySelector('.train-stop')!.addEventListener('click', () => this.send(OP.TRAIN, 3));
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
@@ -204,7 +210,9 @@ export class WrestleCard {
     }
     setText(this.clock, `0:${String(v.left).padStart(2, '0')}`);
     this.knot.style.left = `${(v.bar * 100).toFixed(1)}%`;
-    this.el.querySelector('.tug-bar')!.setAttribute('aria-valuenow', String(Math.round(v.bar * 100)));
+    const bar = this.el.querySelector('.tug-bar')!;
+    bar.setAttribute('aria-valuenow', String(Math.round(v.bar * 100)));
+    bar.setAttribute('aria-valuetext', v.bar > 0.52 ? t('wrestle.ahead') : v.bar < 0.48 ? t('wrestle.behind', { name: v.name }) : t('wrestle.even'));
     this.el.classList.toggle('surge', v.surge);
     this.el.classList.toggle('winning', v.bar > 0.75);
     this.el.classList.toggle('losing', v.bar < 0.25);
@@ -258,6 +266,8 @@ export class PickCard {
   /** What a screen reader hears: the pins set, and the warnings as they come and go. */
   private readonly say: HTMLElement;
   private said = '';
+  /** Slips at this lock so far (each one said). */
+  private slips = 0;
   private shown = '';
   private pinsShown = -1;
   private usesShown = -1;
@@ -289,6 +299,9 @@ export class PickCard {
       this.onSet();
     });
     this.pad.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.pad.addEventListener('click', (e) => {
+      if (e.detail === 0) this.onSet();
+    });
     this.el.querySelector('.train-stop')!.addEventListener('click', () => this.onStop());
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
     document.body.append(this.el);
@@ -304,6 +317,7 @@ export class PickCard {
       this.shown = '';
       this.pinsShown = -1;
       this.usesShown = -1;
+      this.slips = 0;
       return;
     }
     const key = `${v.key}|${v.of}|${currentLang()}`;
@@ -321,6 +335,7 @@ export class PickCard {
       // A pin set: the row ticks over; a slip (uses down, pins the same): the card jolts red.
       const slipped = this.usesShown > v.uses && v.pins === this.pinsShown;
       const set = this.pinsShown >= 0 && v.pins > this.pinsShown;
+      if (slipped) this.slips++;
       this.pins.innerHTML = Array.from({ length: v.of }, (_, k) => `<i class="${k < v.pins ? 'set' : k === v.pins ? 'now' : ''}"></i>`).join('');
       setText(this.count, t('pick.count', { n: v.pins, of: v.of }));
       setText(this.note, `${TOUCH ? t('pick.touch') : t('pick.keys')} · ${v.uses === 1 ? t('pick.uses1') : t('pick.uses', { n: v.uses })}`);
@@ -338,7 +353,7 @@ export class PickCard {
     this.mark.classList.toggle('in', v.marker >= v.from && v.marker <= v.to);
     this.ear.classList.toggle('hidden', !v.heard);
     this.eye.classList.toggle('hidden', !v.watched);
-    const said = [t('pick.count', { n: v.pins, of: v.of }), v.watched ? t('pick.watched') : '', v.heard ? t('pick.heard') : ''].filter(Boolean).join('. ');
+    const said = [this.slips ? t('pick.slipped', { n: this.slips }) : '', t('pick.sr', { n: v.pins, of: v.of }), v.watched ? t('pick.watched') : '', v.heard ? t('pick.heard') : ''].filter(Boolean).join('. ');
     if (said !== this.said) {
       this.said = said;
       setText(this.say, said);

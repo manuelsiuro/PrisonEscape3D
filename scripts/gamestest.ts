@@ -216,7 +216,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.cash = 200;
   let checked = 0;
   let wrong = 0;
-  for (const mask of [0, 1, 2, 3, 0, 3]) {
+  for (const mask of [0, 1, 2, 0, 1, 2]) {
     if (playedToday(s, 2) >= GAMES_A_DAY) s.played[2] = 0;
     blind();
     const op = s.inmates[2].opinion;
@@ -245,6 +245,9 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.cash = 20;
   talk(TALK.DICE, 2);
   check(s.cash === 0 && s.dice.length === 4, 'the stake goes on the table as the dice are thrown');
+  // Both dice again: no such choice (one at most), nothing happens.
+  talk(TALK.REROLL, 3);
+  check(s.dice.length === 4, 'both dice thrown again: refused, the dice still on the table');
   talk(TALK.GIFT_CASH, 5);
   check(refusals(seen).at(-1) === 'cash' && s.cash === 0, 'the stake can\'t be spent meanwhile');
   talk(TALK.REROLL, 0);
@@ -297,13 +300,16 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   talk(TALK.DICE, 0);
   to(1, 12, 0);
   check(!s.dice.length && last(seen, 'dice')!.what !== 'rolled', 'free time over: the dice stand');
-  // The odds: rethrowing every die of 3 or less, against the inmate's way.
+  // The odds: rethrowing the lower die when it shows 3 or less, against the inmate's way.
   let won = 0;
   let lost = 0;
   let push = 0;
   for (let salt = 1; salt <= 200; salt++)
     for (let st = 1000; st < 1020; st++) {
-      const m = [die(salt, st, 0), die(salt, st, 1)].map((d, k) => (d <= 3 ? die(salt, st + 1, 2 + k) : d));
+      // (One die thrown again at most: the lower, when it shows 3 or less.)
+      const m = [die(salt, st, 0), die(salt, st, 1)];
+      const lo = m[0] <= m[1] ? 0 : 1;
+      if (m[lo] <= 3) m[lo] = die(salt, st + 1, 2 + lo);
       let a = die(salt, st + 1, 4);
       let b = die(salt, st + 1, 5);
       if (a + b <= m[0] + m[1]) {
@@ -315,7 +321,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
       else push++;
     }
   const all = won + lost + push;
-  console.log(`dice: ${checked} games as roll() throws them; dice left on the table stand; the warning agrees ${agree}/${trials}; rethrowing 1–3: won ${Math.round((won / all) * 100)}%, lost ${Math.round((lost / all) * 100)}%, tied ${Math.round((push / all) * 100)}%`);
+  console.log(`dice: ${checked} games as roll() throws them; dice left on the table stand; the warning agrees ${agree}/${trials}; rethrowing a low die: won ${Math.round((won / all) * 100)}%, lost ${Math.round((lost / all) * 100)}%, tied ${Math.round((push / all) * 100)}%`);
   check(s.feats[FEAT.dice] > 0 && s.feats[FEAT.diceWon] > 0, 'the ledger counts games and wins');
 }
 
@@ -679,7 +685,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.inmates[0].opinion = 70;
   s.cash = 50;
   talk(TALK.DICE, 1);
-  check(s.dice.length === 4 && twin(sim, [command(0, OP.TALK, TALK.REROLL, 3), 0, 0]), 'saved with the dice on the table: the same game');
+  check(s.dice.length === 4 && twin(sim, [command(0, OP.TALK, TALK.REROLL, 1), 0, 0]), 'saved with the dice on the table: the same game');
   talk(TALK.WRESTLE);
   check(s.bout.length === 4 && twin(sim, Array.from({ length: 60 }, (_, k) => (k % 3 ? 0 : command(0, OP.TRAIN, 1 + ((k / 3) % 2))))), 'saved mid-bout: the same bout');
   // Damaged: dice that aren't dice, a bout with nobody, a lock that isn't a door.

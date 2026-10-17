@@ -96,8 +96,10 @@ export class TalkPanel {
       // A die tapped (P22): chosen to throw again, or not.
       const die = (e.target as HTMLElement).closest<HTMLElement>('[data-die]');
       if (die) {
+        // (One die at most: choosing one lets go of the other; choosing it again, of it.)
         this.click();
-        this.diceMask ^= 1 << Number(die.dataset.die);
+        const bit = 1 << Number(die.dataset.die);
+        this.diceMask = this.diceMask & bit ? 0 : bit;
         this.drawn = '';
         return;
       }
@@ -242,11 +244,19 @@ export class TalkPanel {
     }
     // (A redraw keeps the keyboard's place: the die or button that had the focus has it again.)
     const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
-    const again = had?.dataset.die !== undefined ? `[data-die="${had.dataset.die}"]` : had?.dataset.act ? `[data-act="${had.dataset.act}"]${had.dataset.arg !== undefined ? `[data-arg="${had.dataset.arg}"]` : ''}` : '';
+    const again = had?.dataset.die !== undefined ? `[data-die="${had.dataset.die}"]` : had?.dataset.stand ? '[data-stand]' : had?.dataset.act ? `[data-act="${had.dataset.act}"]${had.dataset.arg !== undefined ? `[data-arg="${had.dataset.arg}"]` : ''}` : '';
+    // (And a bet asking twice stays asking across a redraw: a guard glancing over doesn't disarm it.)
+    const armed = this.el.querySelector<HTMLElement>('.armed[data-act]');
+    const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
       ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
-    if (again) this.el.querySelector<HTMLElement>(again)?.focus();
+    if (rearm) {
+      const b = this.el.querySelector<HTMLElement>(rearm);
+      if (b && !(b as HTMLButtonElement).disabled) confirmed(b);
+    }
+    // (The button gone, the games' first live control takes the focus: a die, a stake, else the panel's close.)
+    if (again) (this.el.querySelector<HTMLElement>(again) ?? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])') ?? this.el.querySelector<HTMLElement>('[data-act="close"]'))?.focus();
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));

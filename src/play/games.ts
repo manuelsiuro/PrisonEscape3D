@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { BAR, BOUT_STEPS, CROWD_OPINION, DICE_HEAT, GAME_OPINION, GAMES_A_DAY, PICK_MISS_NOISE, PICK_SPEED, PLAY_OPINION, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES, WIN_OPINION } from '../content/games';
+import { BAR, BOUT_STEPS, CROWD_OPINION, DICE_HEAT, GAME_OPINION, GAMES_A_DAY, PICK_MISS_NOISE, PICK_SPEED, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES } from '../content/games';
 import { KEY_ITEM_COLORS } from '../content/items';
 import { t } from '../i18n';
 import { OP } from '../sim/command';
@@ -83,6 +83,8 @@ export function announceGames(sim: Sim, e: SimEvent) {
         show.mine = [e.mine[0], e.mine[1]];
         show.theirs = [0, 0];
         show.at = [now, now, 0, 0];
+        // (The stake goes down on the table: said, as the HUD drops by it.)
+        floatUp(`−$${e.stake}`, 'taken');
         show.what = 'rolled';
         show.until = Infinity;
         taps++;
@@ -120,14 +122,15 @@ export function announceGames(sim: Sim, e: SimEvent) {
           if (what === 'won') {
             sound.coin(stake >= 20);
             buzz('attended');
-            floatUp(`+$${stake}`, 'cash');
+            // (What lands back in the pocket: the stake, and the winnings.)
+            floatUp(`+$${stake * 2}`, 'cash');
             banner.toast(t('toast.diceWon', { n: stake, name }), 'good', 3600);
           } else if (what === 'lost') {
             sound.sting();
-            floatUp(`−$${stake}`, 'taken');
             banner.toast(t('toast.diceLost', { n: stake, name }), 'bad', 3600);
           } else {
             sound.click();
+            floatUp(`+$${stake}`, 'cash');
             banner.toast(t('toast.dicePush', { name }), undefined, 3200);
           }
         }, show.shownAt - now);
@@ -144,19 +147,24 @@ export function announceGames(sim: Sim, e: SimEvent) {
         if ((e.crowd ?? 0) > 0) sound.cheer();
         sound.levelUp();
         buzz('attended');
-        floatUp(`+1 ${t('attr.strShort')}`, 'gain');
-        banner.toast(t(e.crowd ? 'toast.boutWonCrowd' : 'toast.boutWon', { name, n: WIN_OPINION, m: CROWD_OPINION, crowd: e.crowd ?? 0 }), 'good', 4200);
+        if (e.str) floatUp(`+1 ${t('attr.strShort')}`, 'gain');
+        // (What it actually brought: opinion as it moved, Strength unless at its top, the crowd who cheered.)
+        const parts = [e.gain ? t('toast.partOpinion', { n: e.gain }) : '', e.str ? t('toast.partStr') : t('toast.partStrTop'), e.crowd ? t('toast.partCrowd', { m: CROWD_OPINION }) : ''].filter(Boolean);
+        banner.toast(`${t('toast.boutBeat', { name })} ${parts.join(', ')}`, 'good', 4200);
         const left = SPORTS_WINS - (e.wins ?? 0);
         if ((e.wins ?? 0) > 0 && left > 0) itemsUI.toast(t(left === 1 ? 'toast.sportsWin1' : 'toast.sportsWins', { left, prize: SPORTS_PRIZE }));
       } else if (e.what === 'lost') {
         sound.sting();
-        banner.toast(t('toast.boutLost', { name, n: PLAY_OPINION }), 'bad', 3600);
+        banner.toast(e.gain ? t('toast.boutLost', { name, n: e.gain }) : t('toast.boutLostNone', { name }), 'bad', 3600);
       } else if (e.what === 'draw') {
         sound.click();
-        banner.toast(t('toast.boutDraw', { name, n: PLAY_OPINION }), undefined, 3600);
+        banner.toast(e.gain ? t('toast.boutDraw', { name, n: e.gain }) : t('toast.boutDrawNone'), undefined, 3600);
       } else if (e.what === 'gaveUp') {
         sound.click();
         itemsUI.toast(t('toast.boutGaveUp', { name }));
+      } else if (e.what === 'off' && !sim.state.escaped) {
+        // Broken off (the sirens, a knockout, the talk over, the games' hours done): said, never silent.
+        itemsUI.toast(t('toast.boutOff'));
       }
       break;
     }
@@ -201,7 +209,7 @@ export function gamesOffer(sim: Sim): GamesView | null {
   const why = gameRefusal(sim, who);
   v.name = nameOf(sim, who);
   v.open = why === null;
-  v.why = why === 'gamesClosed' ? t('games.closed') : why === 'gameOpinion' ? t('games.needOpinion', { n: GAME_OPINION }) : why === 'played' ? t('games.playedOut', { n: GAMES_A_DAY }) : '';
+  v.why = why === 'gamesClosed' ? t('games.closed') : why === 'gamesLockdown' ? t('refused.gamesLockdown') : why === 'seated' ? t('refused.seated') : why === 'gameOpinion' ? t('games.needOpinion', { n: GAME_OPINION }) : why === 'played' ? t('games.playedOut', { n: GAMES_A_DAY }) : '';
   v.left = GAMES_A_DAY - playedToday(s, who);
   v.stakes.length = 0;
   for (let k = 0; k < STAKES.length; k++) v.stakes.push({ k, n: STAKES[k], ok: s.cash >= STAKES[k] });
@@ -301,9 +309,10 @@ export function wireGames() {
 
 // ------------------------------------------------------------------ the picture
 
-const diceFrame: NonNullable<GamesFrame['dice']> = { x: 0, z: 0, fromX: 0, fromZ: 0, oppX: 0, oppZ: 0, mine: [0, 0], theirs: [0, 0], t: [-1, -1, -1, -1], seed: 0 };
+const diceFrame: NonNullable<GamesFrame['dice']> = { who: -1, x: 0, z: 0, fromX: 0, fromZ: 0, oppX: 0, oppZ: 0, mine: [0, 0], theirs: [0, 0], t: [-1, -1, -1, -1], seed: 0 };
 const boutFrame: NonNullable<GamesFrame['bout']> = { who: -1, strain: 0, surge: false };
-const gamesFrame: GamesFrame = { bout: null, dice: null, taps: 0, sports: false };
+const gamesFrame: GamesFrame = { bout: null, dice: null, taps: 0, sports: false, lock: null };
+const lockAt0 = { x: 0, z: 0 };
 
 /**
  * The games in the frame: the arm-wrestle (how it's going for the player), the dice on the
@@ -315,6 +324,11 @@ export function gamesFrameOf(sim: Sim, px: number, pz: number, rival: { x: numbe
   const f = gamesFrame;
   f.taps = taps;
   f.sports = sportsOn(sim);
+  if (s.pick.length) {
+    lockAt0.x = (s.pick[0] % 64) + 0.5;
+    lockAt0.z = Math.floor(s.pick[0] / 64) + 0.5;
+    f.lock = lockAt0;
+  } else f.lock = null;
   if (s.bout.length) {
     boutFrame.who = s.bout[0];
     boutFrame.strain = (s.bout[1] / BAR) * 2 - 1;
@@ -326,6 +340,7 @@ export function gamesFrameOf(sim: Sim, px: number, pz: number, rival: { x: numbe
   if (shown && rival && s.layer === LAYER.GROUND && s.talk === shown.who) {
     const now = performance.now();
     const d = diceFrame;
+    d.who = shown.who;
     d.fromX = px;
     d.fromZ = pz;
     d.oppX = rival.x;
