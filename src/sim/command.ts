@@ -42,6 +42,14 @@ export const OP = {
 export const EXT = {
   /** Throw the item in hand (P14): b and c = the ground tile aimed at (see tossArgs), wherever the player is by then. */
   THROW: 1,
+  /**
+   * The pet rat (P20): sent to fetch from a container or someone's pockets (b and c = its
+   * container index, see tossArgs), sent to leave the item in hand there, let loose at the
+   * player's feet.
+   */
+  RAT_FETCH: 2,
+  RAT_LEAVE: 3,
+  RAT_LOOSE: 4,
 } as const;
 
 /** What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a bribe: BRIBE). Never renumber. */

@@ -5,7 +5,7 @@
  * A game saved before the ledger existed loads PARTIAL: its earlier days are UNKNOWN, and
  * anything that needs the whole run (a clean record, a pacifist) can't be earned in it.
  */
-import { itemNumber } from '../../content/items';
+import { itemDef, itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
 import { CHASE_HEAT, UNIT } from '../tuning';
@@ -68,6 +68,15 @@ export const FEATS = [
   'dogsAsleep',
   'dogFriends',
   'washed',
+  // v1.14 (P20, the pet rat): rats caught in a trap, tamed, errands that brought something back (a key from a guard's pockets among them), things left by the rat, panics started, a guard's own key put back in his pockets while he slept, guards who woke to find their key gone.
+  'ratsCaught',
+  'ratsTamed',
+  'ratFetched',
+  'ratKeys',
+  'ratLeft',
+  'ratPanics',
+  'keyHeists',
+  'keyless',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -202,6 +211,23 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'washed':
         f[FEAT.washed]++;
+        break;
+      case 'rat': {
+        const guard = (e.who ?? -1) >= s.inmates.length;
+        if (e.what === 'caught') f[FEAT.ratsCaught]++;
+        else if (e.what === 'tamed') f[FEAT.ratsTamed]++;
+        else if (e.what === 'loose') f[FEAT.ratPanics]++;
+        else if (e.what === 'took' && e.item) {
+          f[FEAT.ratFetched]++;
+          if (guard && itemDef(e.item)?.cat === 'key') f[FEAT.ratKeys]++;
+        } else if (e.what === 'left') {
+          f[FEAT.ratLeft]++;
+          if (guard && e.heist) f[FEAT.keyHeists]++;
+        }
+        break;
+      }
+      case 'keyless':
+        f[FEAT.keyless]++;
         break;
       case 'bedCheck':
         // Passed with nobody in the cell: the dummy under the blanket did it.

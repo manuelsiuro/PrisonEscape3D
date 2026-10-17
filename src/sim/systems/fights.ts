@@ -6,7 +6,7 @@
 import { byCanteen, inFoodFight } from './calendar';
 import { itemDef } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
-import { nearestDir as faceTo } from '../ai/path';
+import { nearestDir as faceTo, tileAt } from '../ai/path';
 import { lineOfSight } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
@@ -237,6 +237,43 @@ export function recover(sim: SimContext) {
       s.keyAlarm = true;
     }
     sim.events.push({ type: 'cameTo', who: id, keyMissing: missing });
+  });
+  raiseKeyAlarm(sim);
+}
+
+/** The guards asleep (in bed, or dozing at a nap stop) and not out cold, a bit each (P20: those who wake without their key). */
+export function sleepingGuards(s: { guards: readonly Guard[] }): number {
+  let mask = 0;
+  s.guards.forEach((g, k) => {
+    if (g.ko <= 0 && (g.doing === DOING.SLEEP || g.doze > 0)) mask |= 1 << k;
+  });
+  return mask;
+}
+
+/**
+ * Guards asleep as the step began (`was`) and awake now (P20): one whose key is gone (a rat
+ * took it from his pockets) radios it in, as one coming round does: a spare key, and the alarm.
+ */
+export function wokeKeyless(sim: SimContext, was: number) {
+  if (!was || sim.noRats) return;
+  const s = sim.state;
+  const w = sim.world;
+  s.guards.forEach((g, k) => {
+    if (!(was & (1 << k)) || g.ko > 0 || g.doing === DOING.SLEEP || g.doze > 0) return;
+    const pockets = s.items.containers[pocketOf(w, s.inmates.length + k)];
+    const key = guardKit(w, k)[0];
+    if (pockets.some((v) => itemOf(v) === key)) return;
+    // (Pockets stuffed full: the last thing that isn't his kit goes on the floor for the spare, so he misses his key once, not every morning.)
+    let free = pockets.indexOf(0);
+    if (free < 0) {
+      const kit = guardKit(w, k);
+      for (let j = pockets.length - 1; j >= 0 && free < 0; j--) if (!kit.includes(itemOf(pockets[j]))) free = j;
+      if (free >= 0) s.items.ground.push([tileAt(g.body.x, g.body.z), pockets[free]]);
+    }
+    if (free >= 0) pockets[free] = slot(key);
+    s.items.rev++;
+    s.keyAlarm = true;
+    sim.events.push({ type: 'keyless', guard: k });
   });
   raiseKeyAlarm(sim);
 }

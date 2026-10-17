@@ -17,9 +17,10 @@ import type { Body } from './movement';
 /**
  * What the use button does with the item in hand: a tool strikes (chip, cut, unscrew, dig,
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
- * takes the player down off a roof, an alarm clock is wound (P14).
+ * takes the player down off a roof, an alarm clock is wound (P14), soap washes the scent off
+ * (P19), a caught rat is fed and a rat trap set down (P20).
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -79,6 +80,10 @@ export const RAFT = ITEM_ID('raft');
 export const ALARM_CLOCK = ITEM_ID('alarm_clock');
 export const FIRECRACKER = ITEM_ID('firecracker');
 export const SOAP = ITEM_ID('soap');
+/** P20: a rat trap (set down), a caught rat (fed: potato, chocolate or jerky). */
+const RAT_TRAP = ITEM_ID('rat_trap');
+const CAUGHT_RAT = ITEM_ID('caught_rat');
+const BAIT = ['potato', 'chocolate', 'jerky'].map(ITEM_ID);
 /** What blinds a camera (GDD §5.6). */
 export const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
 const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
@@ -240,6 +245,9 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
   // A bar of soap (P19): the player's scent rubbed off.
   if (held === SOAP && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
+  // A caught rat (P20): fed the first bait in the hotbar. A rat trap: set down where the player stands (`tile`).
+  if (held === CAUGHT_RAT) return { action: 'feed', layer, tile: -1, fits: pockets.some((v, k) => k < 6 && BAIT.includes(v & 255)), hp: 0 };
+  if (held === RAT_TRAP) return { action: 'setTrap', layer, tile: bodyTile(b), fits: true, hp: 0 };
   const here = bodyTile(b);
   const ahead = aheadOf(b);
   // A comb or toothbrush against a wall: rubbed into a shiv (hp: the strokes it takes).

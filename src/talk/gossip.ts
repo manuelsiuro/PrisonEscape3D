@@ -1,5 +1,7 @@
 import { itemDef, itemNumber } from '../content/items';
 import { handlersOf, pillsDesk } from '../sim/systems/k9';
+import { RAT_ROOMS } from '../sim/systems/rats';
+import { floorOf } from '../sim/ai/places';
 import { containersOf } from '../sim/world/containers';
 import { ROUTINE } from '../content/routine';
 import type { ZoneId } from '../content/zones';
@@ -17,7 +19,7 @@ import { grateAt, underSea } from '../sim/systems/structure';
 import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN, DOG_DAY_FROM, DOG_DAY_TO, DOG_NIGHT_FROM, DOG_NIGHT_TO, DOG_FIRST_DAY } from '../sim/tuning';
 
 const PILLS = itemNumber('sleeping_pills');
-const DOG_FACTS: ReadonlySet<string> = new Set(['dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper']);
+const DOG_FACTS: ReadonlySet<string> = new Set(['dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratDogs']);
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
@@ -30,11 +32,11 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper']);
+export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs']);
 
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
@@ -122,7 +124,12 @@ function lastingFacts(sim: Sim): Fact[] {
     add({ kind: 'dogTreat' });
     add({ kind: 'dogWash' });
     add({ kind: 'dogPepper' });
+    add({ kind: 'ratDogs' });
   }
+  // The pet rat (P20): where to trap one, and what a guard does without his key.
+  if (floorOf(w, RAT_ROOMS).length) add({ kind: 'ratTrap' });
+  add({ kind: 'ratTunnel' });
+  if (!relaxed) add({ kind: 'ratKey' });
   lasting.set(def.id, out);
   return out;
 }
@@ -231,6 +238,10 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   dogWash: [],
   dogPepper: [],
   pills: ['inmate'],
+  ratTrap: [],
+  ratTunnel: [],
+  ratKey: [],
+  ratDogs: [],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */

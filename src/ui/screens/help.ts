@@ -47,6 +47,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['ways', 'hook', '#ff7714'],
     ['delivery', 'truck', '#3fc79a'],
     ['dogs', 'paw', '#e0a050', 'shankton'],
+    ['rat', 'rat', '#d98aa8'],
     ['weather', 'snow', '#2f78be', 'stalag-flucht'],
     ['shell', 'shield', '#5d6b7a', 'shankton'],
     ['mines', 'mine', '#c8372d', 'san-pancho'],
@@ -67,6 +68,7 @@ const keys = (): Array<[string, Key]> => [
   ['%KeyF%', 'help.k.throwAhead'],
   ['%KeyC%', 'help.k.craft'],
   ['%KeyI%', 'help.k.file'],
+  ['%KeyT%', 'help.k.rat'],
   ['%KeyH%', 'help.k.help'],
   [t('help.k.esc'), 'help.k.pause'],
 ];
@@ -80,6 +82,7 @@ const TOUCHES: Array<[string, Key]> = [
   ['target', 'help.t.lock'],
   ['hammer', 'help.t.slots'],
   ['coin', 'help.t.file'],
+  ['rat', 'help.t.rat'],
   ['pause', 'help.t.pause'],
 ];
 

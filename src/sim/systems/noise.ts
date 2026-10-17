@@ -27,6 +27,7 @@ import { changeOpinion } from './social';
 import { muffled } from './calendar';
 import { ALARM_CLOCK, FIRECRACKER, type ToolTarget } from './structure';
 import { catchTreat } from './k9';
+import { CAUGHT_RAT, throwRat } from './rats';
 
 /** A noise: where it's made and how many tiles it carries. */
 export interface NoiseAt {
@@ -181,9 +182,10 @@ export function earshot(sim: SimContext, n: NoiseAt | null, out: number[] = []):
  * A noise made: the guards awake within earshot hear it, and the nearest (not already chasing
  * the player) go and look, unless one is already looking close by. A bang first wakes the
  * guards asleep within earshot, sends more of them, whoever is looking already, and keeps them
- * looking longer.
+ * looking longer. (`send` and `look`, P20: how many guards a noise sends at most, and how long
+ * they look; 0 as the kind says.)
  */
-export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile: number, loud: number) {
+export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile: number, loud: number, send = 0, look = 0) {
   if (tile < 0 || loud <= 0) return;
   // (P17: the rain, a storm, the film's soundtrack drown it.)
   const n = muffled(sim, layer, tile, loud);
@@ -204,10 +206,10 @@ export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile:
   const looking = !bang && guards.some((g) => g.mode === GUARD.INVESTIGATE && g.target >= 0 && Math.max(Math.abs((g.target % MAP_W) - x0), Math.abs(Math.floor(g.target / MAP_W) - z0)) <= LOOK_NEAR);
   if (!looking) {
     for (const k of heard) {
-      if (sent.length >= (bang ? BANG_GUARDS : NOISE_GUARDS)) break;
+      if (sent.length >= (send || (bang ? BANG_GUARDS : NOISE_GUARDS))) break;
       const g = guards[k];
       if (g.mode === GUARD.CHASE) continue;
-      sendToLook(g, lookSpot(w, tileOfGuard(g)), bang ? BANG_LOOK : NOISE_LOOK);
+      sendToLook(g, lookSpot(w, tileOfGuard(g)), look || (bang ? BANG_LOOK : NOISE_LOOK));
       sent.push(k);
     }
   }
@@ -342,6 +344,8 @@ export function throwItem(sim: SimContext, tile: number) {
   const dz = centerZ(to) - p.z;
   if (dx || dz) p.facing = nearestDir(dx, dz);
   if (item === FIRECRACKER) s.fuses.push([placeKey(LAYER.GROUND, to), s.step + FUSE_STEPS]);
+  // (P20: a caught rat lands loose and runs.)
+  else if (item === CAUGHT_RAT) throwRat(sim, to);
   // (P19: a treat or pepper landing by a dog is the dog's.)
   else if (!catchTreat(sim, item, to)) it.ground.push([placeKey(LAYER.GROUND, to), v]);
   const hit = s.inmates.findIndex((m) => tileAt(m.body.x, m.body.z) === to);

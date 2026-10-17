@@ -37,6 +37,9 @@ import { facts, GOSSIP, napStop, type Fact } from '../src/talk/gossip';
 import { dayMinute, planOf, today } from '../src/sim/systems/calendar';
 import { searchMinute, thorough } from '../src/sim/systems/delivery';
 import { dogDef, FOR_DOGS, handlersOf, onShift, pillsDesk } from '../src/sim/systems/k9';
+import { RAT_ROOMS, trapChance } from '../src/sim/systems/rats';
+import { floorOf } from '../src/sim/ai/places';
+import { TRAP_KITCHEN, TRAP_MINUTE, TRAP_TUNNEL } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { Bot, n } from './bots';
 import { check } from './assert';
@@ -117,6 +120,15 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'dogPepper':
       return s.dogs.length > 0 && FOR_DOGS.has(n('pepper'));
     case 'dogWash':
+      return s.dogs.length > 0;
+    // The pet rat (P20): traps catch at 04:00 where rats come (kitchens, canteens, storerooms; tunnels nearly always), dogs go after rats (rattest proves the rules).
+    case 'ratTrap':
+      return TRAP_MINUTE === 240 && TRAP_KITCHEN > 0 && floorOf(sim.world, RAT_ROOMS).some((t) => trapChance(sim.world, LAYER.GROUND, t) === TRAP_KITCHEN);
+    case 'ratTunnel':
+      return TRAP_TUNNEL > TRAP_KITCHEN && TRAP_TUNNEL >= 80;
+    case 'ratKey':
+      return !sim.prison.rules?.relaxed;
+    case 'ratDogs':
       return s.dogs.length > 0;
     default:
       return true;

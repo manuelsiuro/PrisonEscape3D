@@ -2,6 +2,7 @@
  * Inmates and the player (GDD §10.3–10.4): talking, opinion, trades and gifts, favors,
  * followers and the foes they go after, and grudges that turn into ambushes.
  */
+import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { lineOfSight } from '../ai/sight';
@@ -276,6 +277,9 @@ export function socialNow(sim: SimContext): Social {
   s.jobs.forEach((who, j) => {
     if (who >= 0 && who < n) so.work[who] = rooms[j].zone;
   });
+  // Rats running loose (P20): the inmates near one flee it.
+  so.scare.length = 0;
+  for (const r of s.rats) if (r.mode === RAT.LOOSE) so.scare.push(r);
   const about = s.layer === LAYER.GROUND && !sim.away;
   if (!about) return so;
   for (const id of s.followers) {

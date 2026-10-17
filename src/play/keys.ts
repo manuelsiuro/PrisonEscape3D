@@ -1,7 +1,8 @@
 import { t } from '../i18n';
 import { OP } from '../sim/command';
 import { targets, usePress } from './buttons';
-import { board, click, closeSocial, itemsUI, profile, socialOpen, sound, tools, toggleProfile } from './context';
+import { board, click, closeSocial, itemsUI, profile, ratPanel, socialOpen, sound, tools, toggleProfile } from './context';
+import { toggleRat } from './rat';
 import { play, sendOp } from './game';
 import { autosave, openHelp, pause } from './session';
 import { aiming, cancelThrow, throwAhead } from './aim';
@@ -13,6 +14,7 @@ export function act() {
   play.game.pilot.stop();
   itemsUI.closeCraft();
   profile.close();
+  ratPanel.close();
   sendOp(OP.INTERACT);
 }
 
@@ -61,6 +63,11 @@ function onKeyDown(e: KeyboardEvent) {
     toggleProfile();
   }
   if (e.code === 'KeyH') openHelp();
+  // T: the pet rat's panel (P20).
+  if (e.code === 'KeyT' && !itemsUI.panelOpen) {
+    if (!ratPanel.isOpen) closeSocial();
+    toggleRat(true);
+  }
   // Training (GDD §3.2): left and right in turn fill the bar.
   if (g.rec.sim.state.train >= 0 && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
@@ -76,6 +83,8 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Space: the tool in hand (not while a panel is open: the tool controls are put away then).
   if (e.code === 'Space') {
+    // (A button in the rat's panel with the focus: Space presses it.)
+    if (ratPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.rat-panel')) return;
     e.preventDefault();
     if (itemsUI.panelOpen || socialOpen()) return;
     tools.held = true;

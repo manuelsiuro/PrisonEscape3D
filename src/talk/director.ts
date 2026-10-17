@@ -1,3 +1,4 @@
+import { RAT } from '../sim/systems/rats';
 import { itemDef } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import { SEARCH_REACH } from '../content/days';
@@ -534,6 +535,19 @@ export class Director {
         if (e.what === 'fed' || e.what === 'friend') this.queueUp(now, 're.dogFed.in', this.inmatesNear(sim, d.body.x / UNIT, d.body.z / UNIT, 8), 2, 'dogFed', undefined, 0.8);
         break;
       }
+      // The pet rat (P20): a panic's shrieks and grumbles, a guard missing his key, a rat on the player's shoulder noticed.
+      case 'rat': {
+        const r = e.what === 'loose' ? (s.rats.find((x) => x.mode === RAT.LOOSE && x.wild === !!e.wild) ?? null) : null;
+        if (r) {
+          this.queueUp(now, 're.ratPanic.in', this.inmatesNear(sim, r.x / UNIT, r.z / UNIT, 7), 4, 'ratPanic', 'shout', 0.2);
+          this.queueUp(now, 're.ratPanic.gu', this.guardsNear(sim, r.x / UNIT, r.z / UNIT, 9), 4, 'ratPanicGu', undefined, 1.1);
+        }
+        if (e.what === 'tamed' || (e.what === 'home' && this.random() < 0.3)) this.queueUp(now, 're.ratShoulder.in', this.inmatesNear(sim, px, pz, 5), 2, 'ratShoulder', undefined, 0.9);
+        break;
+      }
+      case 'keyless':
+        if (s.guards[e.guard]) this.queueUp(now, 're.keyless.gu', [n + e.guard], 5, 'keyless', 'shout', 0.2);
+        break;
       case 'shot':
         this.incident('shot', px, pz, now);
         this.noteDay('shot');

@@ -60,6 +60,8 @@ export const RECIPES: readonly RecipeDef[] = [
   r('alarm_clock', 30, 'battery', 'wire', 'plastic_cup'),
   // P19: a treat for a dog that should sleep.
   r('sleepy_jerky', 30, 'jerky', 'sleeping_pills'),
+  // P20: a cup propped over some bait, for catching a rat.
+  r('rat_trap', 20, 'plastic_cup', 'potato|chocolate|jerky'),
 ];
 
 /** The item ids an ingredient accepts. */

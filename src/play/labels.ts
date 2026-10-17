@@ -13,7 +13,8 @@ import { clockRinging } from '../sim/systems/noise';
 import { DIRT, STRIKES, underSea, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { energyCost } from '../sim/systems/weather';
 import { dogDef } from '../sim/systems/k9';
-import { STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
+import { petOf, trapChance } from '../sim/systems/rats';
+import { RAT_MEALS, STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
@@ -36,8 +37,8 @@ export const NEED: Record<string, string> = {
   rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat' };
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
@@ -77,7 +78,7 @@ export function personName(sim: Sim, id: number): string {
 }
 
 /** What a container is called ("your desk", "bookshelf", someone's pockets). */
-function thingName(sim: Sim, index: number): string {
+export function thingName(sim: Sim, index: number): string {
   const who = ownerOf(sim.world, index);
   if (who >= 0) return personName(sim, who);
   const c = containersOf(sim.world)[index];
@@ -269,6 +270,24 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   if (tt.action === 'wash') {
     v.what = t('thing.scent');
     v.fits = sim.state.scent.length > 0;
+    v.repeat = false;
+    v.progress = null;
+    return v;
+  }
+  // A caught rat (P20): fed (its meals so far out of RAT_MEALS); grey with no bait in the hotbar, or a rat already tame.
+  if (tt.action === 'feed') {
+    const pet = !!petOf(sim.state);
+    v.what = pet ? t('thing.ratHaveOne') : tt.fits ? t('thing.ratMeals', { n: usesOf(sim.state.items.inv[sim.state.items.hand]), of: RAT_MEALS }) : t('thing.ratBait');
+    v.fits = tt.fits && !pet;
+    v.repeat = false;
+    v.progress = pet ? null : usesOf(sim.state.items.inv[sim.state.items.hand]) / RAT_MEALS;
+    return v;
+  }
+  // A rat trap (P20): set down here, and the odds of a rat by morning.
+  if (tt.action === 'setTrap') {
+    const chance = trapChance(w, sim.state.layer, tt.tile);
+    v.what = chance ? t('thing.trapOdds', { n: chance }) : t('thing.trapNone');
+    v.fits = true;
     v.repeat = false;
     v.progress = null;
     return v;

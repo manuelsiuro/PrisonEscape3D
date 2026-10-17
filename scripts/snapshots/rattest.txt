@@ -1,0 +1,11 @@
+data: 47 small items; every prison has a kitchen or canteen for traps
+odds: canteen 59%, tunnel 88% over 400 nights
+traps: 4 of 5 caught at day 2 04:01
+taming: two meals (potato before chocolate before jerky), one pet
+errands: furniture within reach, the best small thing and the change back, a small thing left
+keys: a guard who wakes without his key raises the alarm (day 4 08:02)
+the heist: key fetched, molded, put back; 08:00 no alarm (day 2 08:01)
+woken: the rat comes back empty
+panics: 7 people at breakfast; the squeak, the inmates fleeing, 20 s, once a day; a caught rat thrown
+dogs: after a rat they see, the rat home without its errand
+saves: mid-errand the same; off the floor it waits; old saves have no rat

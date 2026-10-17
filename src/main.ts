@@ -16,6 +16,7 @@ import { frame } from './play/loop';
 import { pause } from './play/session';
 import { chatterStats, director } from './play/chatter';
 import { firstDay } from './play/tips';
+import { wireRatPanel } from './play/rat';
 
 /**
  * Wiring: storage first, then the long-lived objects (play/context.ts, made as it's imported),
@@ -37,6 +38,8 @@ tools.onPress = usePress;
 controls.onAim = onAim;
 itemsUI.onThrow = armThrow;
 aimUI.onCancel = cancelThrow;
+// The pet rat (P20): its panel's buttons, and the HUD's pill opening it.
+wireRatPanel();
 listenKeys();
 
 // The title shows the first prison drifting by.

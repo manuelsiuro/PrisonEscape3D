@@ -105,6 +105,32 @@ const SHAPES: Record<string, Shape> = {
   shaker: (c, a) => [cyl(0.06, 0.16, c, 0, 0, 0, 14), cyl(0.065, 0.05, a, 0, 0.16, 0, 14), cyl(0.04, 0.02, a, 0, 0.21, 0, 10)],
   /** A pill bottle (P19) on its side, with its cap and label. */
   pills: (c, a) => [rod(0.07, 0.2, c, 0, 0.07, 0, 14), rod(0.075, 0.06, a, 0.12, 0.07, 0, 14), rod(0.072, 0.09, 0xf4f4ef, -0.02, 0.07, 0, 14)],
+  /** A rat trap (P20): a cup tipped mouth down over the bait, its raised rim propped on a matchstick, on a scrap of board. */
+  trap: (c, a) => {
+    const r = 0.085;
+    const h = 0.17;
+    const tilt = 0.42;
+    const sin = Math.sin(tilt);
+    const cos = Math.cos(tilt);
+    // The low rim on the board at x −0.13 (y 0.02); the raised rim 2r·sin(tilt) up at the far side.
+    const dx = -0.13 - (-r * cos + (h / 2) * sin);
+    const dy = 0.02 - (-r * sin - (h / 2) * cos);
+    const cup = cyl(r, h, c, 0, -h / 2, 0, 14).rotateZ(tilt).translate(dx, dy, 0);
+    const rimX = r * cos + (h / 2) * sin + dx;
+    const rimY = r * sin - (h / 2) * cos + dy;
+    const mouthX = (h / 2) * sin + dx;
+    return [box(0.4, 0.02, 0.28, 0xb07a45), cup, box(0.07, 0.025, 0.06, a, mouthX, 0.02, 0), box(0.014, rimY - 0.02, 0.014, 0xe8c45a, rimX - 0.012, 0.02, 0)];
+  },
+  /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
+  caughtRat: (c, a) => [
+    box(0.4, 0.02, 0.28, 0xb07a45),
+    cyl(0.1, 0.16, c, 0, 0.02, 0, 16),
+    cyl(0.104, 0.012, 0xd8dde3, 0, 0.165, 0, 16),
+    box(0.09, 0.012, 0.016, 0xd89aa0, 0.14, 0.02, 0.03),
+    box(0.016, 0.012, 0.045, 0xd89aa0, 0.18, 0.02, 0.05),
+    box(0.04, 0.035, 0.05, a, -0.11, 0.02, -0.02),
+    box(0.012, 0.012, 0.012, 0xd89aa0, -0.135, 0.04, -0.02),
+  ],
 };
 
 const cache = new Map<string, THREE.BufferGeometry>();

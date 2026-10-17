@@ -9,7 +9,7 @@ import { chill } from './systems/weather';
 import { crowdPlan, dayMinute, dayWatch, drillOn, theDay, today } from './systems/calendar';
 import { clockAt, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
-import { fight, keysCarried, raiseKeyAlarm, recover, wearKeys } from './systems/fights';
+import { fight, keysCarried, raiseKeyAlarm, recover, sleepingGuards, wearKeys, wokeKeyless } from './systems/fights';
 import { dutyDue, stepGuards, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
 import { mines } from './systems/mines';
@@ -24,6 +24,7 @@ import { attendance, nextBlock } from './systems/routine';
 import { endTalk, grudges, guardTalking, keepTalk, offerFavors, socialNow } from './systems/social';
 import { bribesWearOff } from './systems/ways';
 import { dogs } from './systems/k9';
+import { rats } from './systems/rats';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -44,8 +45,9 @@ export * from './state';
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, seats → energy and health → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → bribes wearing off → the key alarm →
- * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay → doors.
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → bribes wearing off → the key alarm →
+ * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
+ * guards woken without their key (P20) → doors.
  */
 export class Sim {
   readonly world: World;
@@ -88,6 +90,8 @@ export class Sim {
   legacy = false;
   /** Replaying a run logged before the dogs came (1.13, runlog.ts): they stay in their kennels. Not state. */
   noDogs = false;
+  /** Replaying a run logged before the rats (1.14, runlog.ts): a guard waking without his key raised nothing. Not state. */
+  noRats = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -116,6 +120,8 @@ export class Sim {
     // Who dozes as the step starts (P15): each nap ended in it is told once, whatever ended it.
     let dozing = 0;
     for (let k = 0; k < s.guards.length; k++) if (s.guards[k].doze > 0) dozing |= 1 << k;
+    // (P20: and who sleeps, in bed or dozing: one who wakes without his key raises the alarm.)
+    const sleepers = sleepingGuards(s);
     this.movedBy = null;
     // Where the player is as the step starts (P19: a dog's nose works on a player already about; a trail marks where they left the floor).
     this.aboutBefore = s.layer === LAYER.GROUND && !s.stowed && !this.away;
@@ -156,6 +162,8 @@ export class Sim {
     watch(this);
     // The dogs (P19): the player's trail, noses, the trail followed.
     dogs(this);
+    // The rats (P20): the traps at 04:00, errands, panics.
+    rats(this);
     bribesWearOff(this);
     raiseKeyAlarm(this);
     outOfReach(this);
@@ -165,6 +173,8 @@ export class Sim {
     if (!s.seen && !s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
     // Doors last: they follow where everyone ended up, so the state at the end of a step
     // (a save, a keyframe) says everything about them.
+    // A guard awake again without his key (P20: a rat had it): after everything that wakes guards, before the doors (an alarm locks them).
+    wokeKeyless(this, sleepers);
     this.updateDoors(true);
     if (dozing) this.napsOver(dozing);
     return true;

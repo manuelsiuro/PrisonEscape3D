@@ -994,6 +994,18 @@ export class Sound {
     this.hiss(0.4, 'highpass', 1800, 0.7, 0.05, undefined, 0.38);
   }
 
+  /** A rat (P20): a few high squeaks (`panic`: a frantic run of them, and a scatter of feet). */
+  squeak(gain = 1, panic = false) {
+    const n = panic ? 5 : 2;
+    for (let k = 0; k < n; k++) this.tone(2400 + (k % 2) * 500, 3100 + (k % 3) * 300, 0.06, 'triangle', 0.045 * gain, k * (panic ? 0.11 : 0.15));
+    if (panic) for (let k = 0; k < 6; k++) this.hiss(0.04, 'bandpass', 3200, 3, 0.05 * gain, undefined, 0.05 + k * 0.07);
+  }
+
+  /** A rat scurrying off and back (P20): tiny claws on the floor. */
+  scurry(gain = 1) {
+    for (let k = 0; k < 4; k++) this.hiss(0.03, 'bandpass', 4200 - k * 200, 4, 0.04 * gain, undefined, k * 0.05);
+  }
+
   /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);

@@ -33,6 +33,7 @@ import {
   itemsUI,
   paBoard,
   profile,
+  ratPanel,
   settings,
   sleepVeil,
   socialOpen,
@@ -59,6 +60,8 @@ let pawAt = -1e9;
 const PAW_HOLD_MS = 1500;
 const PILLS = itemNumber('sleeping_pills');
 import { chatterFrame } from './chatter';
+import { ratHud, ratView } from './rat';
+import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
 
 /**
  * Everything over the picture, brought up to date after each draw: the item bar and action
@@ -72,7 +75,7 @@ const GET_UP = { verb: '', what: '' };
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
@@ -166,6 +169,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (P19: what jerky, pepper and the pills are for, the first time one is in hand.)
   if (!busy && FOR_DOGS.has(held)) coachOnce('treatHeld', 'hint.treatHeld');
   if (!busy && held === PILLS) coachOnce('pills', 'hint.pills');
+  // (P20: a rat trap and a caught rat, the first time one is in hand.)
+  if (!busy && held === RAT_TRAP) coachOnce('ratTrap', 'hint.ratTrap');
+  if (!busy && held === CAUGHT_RAT) coachOnce('caughtRat', 'hint.caughtRat');
   // A guard dozing close by, in plain sight (P15): what it means, the first time one is seen.
   if (!busy && st.layer === LAYER.GROUND && !seenTip('nap') && st.guards.some((x) => x.doing === DOING.DOZE && Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT && lineOfSight(sim.world, st.player.x, st.player.z, x.body.x, x.body.z))) coachOnce('nap', 'hint.nap');
   // Each new target takes a new press: a held button never digs on into the next thing.
@@ -189,6 +195,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   sleepVeil.classList.toggle('on', veilOn);
   solitaryPanel.update(st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null, st.peeled);
   stowPanel.update(stowCard(g));
+  // The pet rat (P20): its panel and its pill.
+  ratPanel.update(ratView(sim), busy);
+  hudState.rat = ratHud(sim);
   darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();

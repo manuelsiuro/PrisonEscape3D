@@ -387,6 +387,12 @@ export class Character {
   get lying(): number {
     return this.lie;
   }
+
+  /** On top of a shoulder, in the world (P20: where the pet rat perches): on the body, so a swinging arm never moves it. */
+  shoulder(out: THREE.Vector3): THREE.Vector3 {
+    this.root.updateMatrixWorld();
+    return this.body.localToWorld(out.set(0.27, 0.8, 0));
+  }
   /** Prone in a vent (0–1), and a tool strike's swing (1 at the blow, easing to 0). */
   private crawl = 0;
   /** Dozing on its feet (P15), eased in slowly and out with a start; `startle` is the jolt on waking. */

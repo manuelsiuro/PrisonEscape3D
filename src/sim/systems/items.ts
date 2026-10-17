@@ -396,14 +396,19 @@ export function dropItem(s: ItemState, from: number, b: Body, events: ItemEvent[
  * hands are full (dirt from a dig, a chunk of wall). Returns false if even the floor is full.
  */
 export function give(s: ItemState, item: number, b: Body, layer: number): boolean {
+  return giveSlot(s, slot(item), b, layer);
+}
+
+/** give() for a slot as it is (its wear kept: what the rat brings back, P20). */
+export function giveSlot(s: ItemState, v: number, b: Body, layer: number): boolean {
   const k = freeHotbar(s);
   if (k >= 0) {
-    s.inv[k] = slot(item);
+    s.inv[k] = v;
     return true;
   }
   const key = placeKey(layer, Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT));
   if (s.ground.filter(([t]) => t === key).length >= PILE) return false;
-  s.ground.push([key, slot(item)]);
+  s.ground.push([key, v]);
   return true;
 }
 

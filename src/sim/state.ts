@@ -16,6 +16,7 @@ import type { ClimbAction, ToolAction } from './systems/structure';
 import { mix32 } from './rng';
 import { FEATS, freshFeats, partialLedger } from './systems/ledger';
 import { spawnDogs, type Dog } from './systems/k9';
+import type { Rat, RatRefusal } from './systems/rats';
 import { dayPlan, type ForcedDay } from './systems/calendar';
 import { DAY_BOOKS, DAY_EVENTS, type DayEvent } from '../content/days';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
@@ -186,16 +187,30 @@ export type SimEvent =
    */
   | { type: 'dog'; dog: number; what: DogNews; trust?: number; trail?: boolean }
   | { type: 'washed' }
+  /**
+   * The pet rat (P20, rats.ts): what a rat did or why it couldn't (`why`): a trap caught one
+   * (`at`: its placeKey), a caught rat fed (`item` the bait, `n` its meals so far), tamed, or
+   * not (no bait, a rat already); sent on its errand (`item` it carries, `who` whose pockets,
+   * Cast id, -1 furniture, `container`), what it found there (took `item` and `cash`, left
+   * `item`, nothing to take, no room, the sleeper awake), back on the shoulder; let loose (`n`
+   * people scared; `wild` a caught one thrown), its panic over, a thrown one gone. A guard who
+   * woke without his key (`keyless`).
+   */
+  | { type: 'rat'; what: RatNews; item?: number; cash?: number; who?: number; container?: number; n?: number; at?: number; why?: RatRefusal; wild?: boolean; heist?: boolean }
+  | { type: 'keyless'; guard: number }
   | ItemEvent;
 
+/** What a rat did (P20, the 'rat' event). */
+export type RatNews = 'caught' | 'fed' | 'tamed' | 'hungry' | 'haveOne' | 'sent' | 'took' | 'left' | 'empty' | 'full' | 'woke' | 'home' | 'chased' | 'loose' | 'calm' | 'gone' | 'refused';
+
 /** What a dog did (P19, the 'dog' event). */
-export type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke';
+export type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat';
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
 export type BribeKind = 'look' | 'paper' | 'over';
 
 /** What made a noise (P14). */
-export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark';
+export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark' | 'squeak';
 /** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
 export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 
@@ -366,6 +381,8 @@ export interface SimState {
   dogs: Dog[];
   /** The player's trail out of bounds (P19): [ground tile, the step it was laid, 1 where they left the floor from it], oldest first, at most SCENT_TILES. */
   scent: Array<[number, number, number?]>;
+  /** The rats (P20, rats.ts): the player's pet once tamed, and any caught one thrown loose. */
+  rats: Rat[];
 }
 
 export interface Snapshot {
@@ -473,6 +490,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     stowCaught: 0,
     dogs: spawnDogs(world),
     scent: [],
+    rats: [],
   };
 }
 
@@ -527,6 +545,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // The dogs (P19): a save from before them (or for a prison whose dogs changed) has them in their kennels; a trail that isn't one is gone.
   s.dogs = Array.isArray(st.dogs) && st.dogs.length === fresh.dogs.length ? st.dogs.map((d, k) => ({ ...fresh.dogs[k], ...d })) : fresh.dogs;
   if (!Array.isArray(s.scent) || !s.scent.every((e) => Array.isArray(e) && (e.length === 2 || e.length === 3) && e.every((x) => Number.isInteger(x)))) s.scent = [];
+  // The rats (P20): a save from before them has none (nor one that isn't a list of them).
+  if (!Array.isArray(s.rats) || !s.rats.every((r) => !!r && typeof r === 'object' && Number.isInteger(r.mode) && Array.isArray(r.path))) s.rats = [];
+  // (An errand to a container this prison no longer has, after a map edit: it gives it up and comes back.)
+  for (const r of s.rats) if (r.target >= s.items.containers.length) Object.assign(r, { target: -1, mode: 4, path: [], at: 0 }) // RAT.WAIT;
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

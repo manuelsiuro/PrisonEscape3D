@@ -12,6 +12,8 @@ export interface Game {
   prevGuards: Array<{ x: number; z: number }>;
   /** The dogs' (P19). */
   prevDogs: Array<{ x: number; z: number }>;
+  /** The rats before the step (P20), and what each was up to. */
+  prevRats: Array<{ x: number; z: number; mode: number }>;
   paused: boolean;
   /** How far the player has walked (tiles), for the first-play hint. */
   walked: number;

@@ -35,6 +35,7 @@ import { WALL_H } from './WorldView';
 import { LAYER } from '../sim/world/World';
 import type { NoiseKind } from '../sim/state';
 import { Dogs, type DogFrame } from './Dog';
+import { Rats, type RatFrame } from './Rat';
 import { handlersOf } from '../sim/systems/k9';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
@@ -108,6 +109,8 @@ export interface Frame {
   /** Guard dogs (P19), interpolated; the player's trail ([ground tile, freshness 1 → 0], oldest first). */
   dogs: DogFrame[];
   scent: ReadonlyArray<readonly [number, number]>;
+  /** The rats (P20): the pet and any thrown loose, interpolated. */
+  rats: RatFrame[];
 }
 
 const NO_FUSES: readonly number[] = [];
@@ -290,6 +293,9 @@ export class View {
   private readonly delivery = new Delivery();
   /** The guard dogs, their kennels, the trail (P19). */
   private readonly dogs = new Dogs();
+  /** The rats (P20), and where the player's shoulder is this frame. */
+  private readonly rats = new Rats();
+  private readonly shoulderAt = new THREE.Vector3();
   private readonly noSleepers: number[] = [];
   /** The weather's light this frame (the title has none), and a lightning flash easing away. */
   private wxLight: WeatherFrame | null = null;
@@ -395,7 +401,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -982,6 +988,9 @@ export class View {
     this.dogs.group.visible = f.layer !== LAYER.UNDER;
     this.dogs.update(f.dogs, f.scent, f.x, f.z, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers, f.layer === LAYER.GROUND);
     this.noSleepers.length = 0;
+    // The rats (P20): on the floor seen from the ground floor or a roof; on the shoulder of a player up and about (not in the vents or a tunnel), turning with them.
+    const perch = this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 ? this.player.shoulder(this.shoulderAt) : null;
+    this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, out in the open (ground floor and roofs).
     const wx = f.weather;

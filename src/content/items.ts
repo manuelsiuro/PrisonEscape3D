@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap';
 
 export interface ItemDef {
   id: string;
@@ -36,6 +36,8 @@ export interface ItemDef {
   from: readonly Source[];
   /** How it lands when thrown (P14): 0 soft (unset), 1 hard, 2 metal; the noise carries THUD_NOISE[thud] tiles. */
   thud?: number;
+  /** Small enough for a rat to carry (P20). */
+  small?: boolean;
 }
 
 const m = (id: string, contraband: boolean, value: number, shape: string, color: number, from: Source[], accent?: number): ItemDef => ({
@@ -216,12 +218,23 @@ export const ITEMS: readonly ItemDef[] = [
   m('pepper', false, 6, 'shaker', 0xf4f4ef, ['treats'], 0x2b3038),
   m('sleeping_pills', true, 15, 'pills', 0xe8eef6, ['treats'], 0x6a8fd8),
   m('sleepy_jerky', true, 20, 'jerky', 0x6a3f5a, [], 0x9a7ad0),
+  // P20 (the pet rat): a trap left on the floor overnight, and a rat caught in it (fed twice, it's yours).
+  m('rat_trap', false, 6, 'trap', 0xf4f4ef, [], 0xb8925a),
+  m('caught_rat', true, 10, 'caughtRat', 0xf4f4ef, ['trap'], 0x8a7f78),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
 const HARD = ['timber', 'balsa', 'wall_chunk', 'potato', 'plastic_cup', 'lighter', 'battery', 'duct_tape', 'bleach', 'broom', 'mop', 'tool_handle', 'timber_brace', 'fake_wall', 'raft', 'bat', 'spiked_bat', 'baton', 'nunchucks', 'furniture', ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`)];
 const METAL = ['crowbar', 'sheet_metal', 'metal_file', 'trowel', 'flimsy_shovel', 'light_shovel', 'sturdy_shovel', 'flimsy_pickaxe', 'light_pickaxe', 'sturdy_pickaxe', 'flimsy_cutters', 'light_cutters', 'sturdy_cutters', 'screwdriver', 'powered_screwdriver', 'multitool', 'grappling_hook', 'grapnel', 'plated_outfit', 'meal_tray', 'license_plate', 'alarm_clock'];
 for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud = METAL.includes(d.id) ? 2 : 1;
+
+/** What a rat can carry in its teeth (P20): keys, molds and odds and ends; nothing long, heavy or bulky. */
+const SMALL = [
+  'plastic_comb', 'toothbrush', 'lighter', 'toilet_paper', 'glue', 'duct_tape', 'metal_file', 'sock', 'soap', 'battery', 'wire', 'razor_blade', 'ink', 'foil', 'talcum', 'toothpaste', 'putty', 'molten_plastic',
+  'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky',
+  ...KEY_ITEM_COLORS.flatMap(([c]) => [`key_${c}`, `mold_${c}`, `plastic_key_${c}`]),
+];
+for (const d of ITEMS) if (SMALL.includes(d.id)) d.small = true;
 
 /** An item's number in saves and slots (1 + its place in ITEMS). */
 export const ITEM: Record<string, number> = Object.fromEntries(ITEMS.map((d, i) => [d.id, i + 1]));

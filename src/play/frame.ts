@@ -24,6 +24,7 @@ import { coachItems, coachOnce, seenTip } from './tips';
 import { dayMinute, eventOn, fogNow, sightOf, today, weatherNow } from '../sim/systems/calendar';
 import { searchMinute } from '../sim/systems/delivery';
 import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
+import { inDuct, RAT } from '../sim/systems/rats';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
@@ -153,6 +154,7 @@ const frameData: Frame = {
   delivery: { t: -1, at: 0, search: 0, until: 0, stowed: false },
   dogs: [],
   scent: scentFrame,
+  rats: [],
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -285,6 +287,19 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.pose = dogAsleep(d, st.step) ? 'asleep' : dogDazed(d, st.step) ? 'dazed' : d.mode === DOG.POINT ? 'point' : d.mode === DOG.TRACK ? 'track' : d.mode === DOG.KENNEL ? 'kennel' : 'heel';
     o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / WALK_SPEED_GUARD : 1;
     o.friend = d.trust >= TRUST_IGNORE;
+  });
+  // The rats (P20): from where they were to where they are (not across a jump: off the shoulder, back on it).
+  f.rats.length = st.rats.length;
+  st.rats.forEach((r, k) => {
+    const o = (f.rats[k] ??= { x: 0, z: 0, facing: 0, mode: 'hidden', carry: 0 });
+    const q = g.prevRats[k];
+    const glide = !!q && q.mode !== RAT.SHOULDER && r.mode !== RAT.SHOULDER && Math.abs(q.x - r.x) + Math.abs(q.z - r.z) < UNIT;
+    o.x = lerp(glide ? q!.x : r.x, r.x);
+    o.z = lerp(glide ? q!.z : r.z, r.z);
+    o.facing = Math.atan2(DIR_X[r.facing], DIR_Z[r.facing]);
+    const t = Math.floor(r.z / UNIT) * MAP_W + Math.floor(r.x / UNIT);
+    o.mode = r.mode === RAT.SHOULDER ? 'shoulder' : r.mode === RAT.WAIT || inDuct(sim.world, t) ? 'hidden' : r.mode === RAT.LOOSE ? 'loose' : 'run';
+    o.carry = itemOf(r.carry);
   });
   scentFrame.length = st.scent.length;
   for (let k = 0; k < st.scent.length; k++) {

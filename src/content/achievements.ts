@@ -117,6 +117,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'blessYou', group: 'life', icon: 'wind', run: (r) => f(r, 'dogsPeppered') >= 1 },
   { id: 'sweetDreams', group: 'life', icon: 'moon', run: (r) => f(r, 'dogsAsleep') >= 1 },
   { id: 'squeakyClean', group: 'life', icon: 'drop', run: (r) => f(r, 'washed') >= 1 },
+  // The pet rat (P20).
+  { id: 'piedPiper', group: 'life', icon: 'rat', run: (r) => f(r, 'ratsTamed') >= 1 },
+  { id: 'ratMail', group: 'life', icon: 'gift', run: (r) => f(r, 'ratLeft') >= 1 },
+  { id: 'ratRace', group: 'life', icon: 'siren', run: (r) => f(r, 'ratPanics') >= 1 },
+  { id: 'insideJob', group: 'skills', icon: 'key', run: (r) => f(r, 'keyHeists') >= 1 },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
@@ -127,6 +132,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'drillDodger', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'drillsMissed') >= 1 },
   { id: 'returnToSender', group: 'mishaps', icon: 'box', hidden: true, run: (r) => f(r, 'stowFound') >= 1 },
   { id: 'nosyParker', group: 'mishaps', icon: 'paw', hidden: true, run: (r) => f(r, 'dogDug') >= 1 },
+  { id: 'rudeAwakening', group: 'mishaps', icon: 'key', hidden: true, run: (r) => f(r, 'keyless') >= 1 },
   // Career.
   { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },

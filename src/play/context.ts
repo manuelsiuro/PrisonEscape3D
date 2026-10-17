@@ -18,6 +18,7 @@ import { ItemsUI } from '../ui/items';
 import { ProfilePanel } from '../ui/profile';
 import { SolitaryPanel } from '../ui/solitary';
 import { StowPanel } from '../ui/stow';
+import { RatPanel } from '../ui/rat';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
@@ -111,12 +112,15 @@ export const trainCard = new TrainCard(sendOp);
 export const workChips = new WorkChips();
 /** Throwing and noise over the picture (P14): the aim's hint and labels, guards who heard. */
 export const aimUI = new AimUI();
-/** A social panel is up (the talk, the job board, the file): the tool controls step aside. */
-export const socialOpen = () => talk.open || board.isOpen || profile.isOpen;
+/** The pet rat's panel (P20). */
+export const ratPanel = new RatPanel(click);
+/** A social panel is up (the talk, the job board, the file, the rat's): the tool controls step aside. */
+export const socialOpen = () => talk.open || board.isOpen || profile.isOpen || ratPanel.isOpen;
 export function closeSocial() {
   if (play.game && play.game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
   board.close();
   profile.close();
+  ratPanel.close();
 }
 export function toggleProfile() {
   const game = play.game;
@@ -124,6 +128,7 @@ export function toggleProfile() {
   if (!profile.isOpen) {
     itemsUI.closePanels();
     board.close();
+    ratPanel.close();
     if (game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
   }
   profile.toggle();

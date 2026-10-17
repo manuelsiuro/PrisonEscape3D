@@ -1,11 +1,13 @@
 import { ROUTINE } from '../../content/routine';
 import { zoneIndex, type ZoneId } from '../../content/zones';
 import { clearLine, nearestDir, tileAt } from '../ai/path';
+import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
-import { MAP_W, type World } from '../world/World';
+import { BODY_HALF, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { MAP_H, MAP_W, type World } from '../world/World';
+import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
 import { bodyAt, type Body } from './movement';
 
@@ -212,6 +214,18 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       m.stall = 0;
       m.wait = randomInt(rng, INMATE_REACTION);
     }
+    // A rat running loose close by, in sight (P20): away from it as fast as legs go, then watching it
+    // from a safe distance; once it's over, back to what it was going to (its goal kept, as −2 − goal,
+    // while it flees): walked to afresh, or taken up again on the spot.
+    if (social.scare.length && m.doing !== DOING.SLEEP && flee(c, m, social.scare)) return;
+    if (m.goal <= -2) {
+      m.goal = -2 - m.goal;
+      m.path = [];
+      if (tileAt(m.body.x, m.body.z) === m.goal) {
+        arrive(m, plan, rng);
+        return;
+      }
+    }
     if (m.wait > 0) {
       m.wait--;
       return;
@@ -250,8 +264,70 @@ export interface Social {
   work: readonly number[];
   /** The tile the player sits on (-1 standing). */
   seat: number;
+  /** Rats running loose (P20): inmates flee them. */
+  scare: ReadonlyArray<{ x: number; z: number }>;
 }
-const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [], seat: -1 };
+const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [] };
+
+/**
+ * Scared of a rat running loose (P20): within FLEE_RANGE, away from the nearest, faster than a
+ * walk (turning aside from a wall); a little beyond, standing still facing it. Returns whether
+ * the inmate was scared this step (its path is dropped: walked afresh once it's over).
+ */
+function flee(c: Crowd, m: Inmate, rats: ReadonlyArray<{ x: number; z: number }>): boolean {
+  const b = m.body;
+  let near: { x: number; z: number } | null = null;
+  let best = (FLEE_RANGE + 2 * UNIT) ** 2;
+  for (const r of rats) {
+    const d2 = (b.x - r.x) ** 2 + (b.z - r.z) ** 2;
+    if (d2 <= best && lineOfSight(c.w, r.x, r.z, b.x, b.z)) {
+      best = d2;
+      near = r;
+    }
+  }
+  if (!near) return false;
+  if (m.goal >= 0) m.goal = -2 - m.goal;
+  m.path = [];
+  m.doing = DOING.NOTHING;
+  m.stall = 0;
+  const dx = b.x - near.x;
+  const dz = b.z - near.z;
+  if (best >= FLEE_RANGE * FLEE_RANGE) {
+    b.moving = false;
+    if (dx || dz) b.facing = nearestDir(-dx, -dz);
+    return true;
+  }
+  const away = dx || dz ? nearestDir(dx, dz) : b.facing;
+  for (const turn of [0, 2, -2, 4, -4]) {
+    const dir = ((away - 1 + turn + 16) % 16) + 1;
+    if (shove(c.w, c.grid, b, dir, m.speed + FLEE_SPEED)) return true;
+  }
+  b.moving = false;
+  return true;
+}
+
+/** Moves a body one step in a direction against a grid (each axis in turn, stopping at what blocks it); returns whether it got anywhere. */
+function shove(w: World, grid: Uint8Array, b: Body, dir: number, speed: number): boolean {
+  const x0 = b.x;
+  const z0 = b.z;
+  const free = (x: number, z: number) => {
+    for (const ux of [x - BODY_HALF, x + BODY_HALF - 1])
+      for (const uz of [z - BODY_HALF, z + BODY_HALF - 1]) {
+        const tx = Math.floor(ux / UNIT);
+        const tz = Math.floor(uz / UNIT);
+        if (tx < 0 || tz < 0 || tx >= MAP_W || tz >= MAP_H || !w.inside(tx, tz) || grid[tz * MAP_W + tx]) return false;
+      }
+    return true;
+  };
+  const dx = Math.trunc((DIR_X[dir] * speed) / 1024);
+  const dz = Math.trunc((DIR_Z[dir] * speed) / 1024);
+  if (dx && free(b.x + dx, b.z)) b.x += dx;
+  if (dz && free(b.x, b.z + dz)) b.z += dz;
+  b.facing = dir;
+  b.moving = b.x !== x0 || b.z !== z0;
+  // (Not even a quarter of the way: no good, try another way.)
+  return Math.abs(b.x - x0) + Math.abs(b.z - z0) >= speed / 4;
+}
 
 /**
  * Goes for someone: straight at them when close with nothing between, else along a path

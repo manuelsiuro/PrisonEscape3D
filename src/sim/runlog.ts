@@ -142,7 +142,8 @@ export class RunRecorder {
     else {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
-      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0);
+      // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm.)
+      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -230,6 +231,14 @@ export function beforeDogs(game: string): boolean {
   return a < 1 || (a === 1 && b < 13);
 }
 
+/** Whether a game version came before the pet rat (1.14.0): a guard who woke without his key raised nothing then. */
+export function beforeRats(game: string): boolean {
+  const m = /^(\d+)\.(\d+)\./.exec(game);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a < 1 || (a === 1 && b < 14);
+}
+
 /** Plays a log back from its start, checking the hourly sums (stops at the first that doesn't match). */
 export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (prison.id !== log.prison) return null;
@@ -244,6 +253,8 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   }
   // Played before the dogs came (P19): they stayed in their kennels.
   if (beforeDogs(log.game)) sim.noDogs = true;
+  // Played before the rats (P20): a guard waking without his key went unnoticed.
+  if (beforeRats(log.game)) sim.noRats = true;
   if (sim.state.step !== log.from) return null;
   const sums = new Map(log.sums);
   let verified = log.from;

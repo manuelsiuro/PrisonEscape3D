@@ -37,6 +37,8 @@ import {
   DOG_HEEL_SPEED,
   DOG_NIGHT_FROM,
   DOG_NIGHT_TO,
+  DOG_RAT_RANGE,
+  DOG_RAT_STEPS,
   DOG_RUN_SPEED,
   DOG_SLEEP_STEPS,
   DOG_TRACK_SPEED,
@@ -66,6 +68,7 @@ import { HOTBAR, itemOf, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { aimToss, makeNoise, type TossAim } from './noise';
 import { underShower } from './actions';
+import { chaseOff, ratOut, type Rat } from './rats';
 import { addHeat, afterHours } from './watch';
 
 /** What a dog is up to. Never renumber: saves store them. */
@@ -78,6 +81,8 @@ export const DOG = {
   POINT: 2,
   /** On the player's trail. */
   TRACK: 3,
+  /** After a rat it saw running (P20). */
+  RAT: 4,
 } as const;
 
 /** A guard dog. Plain data, part of the simulation state. */
@@ -299,6 +304,22 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
   const p = s.player;
   const w = sim.world;
   const here = tileAt(b.x, b.z);
+  // After a rat (P20): the nearest one still running, until it's out of sight a while or back on a shoulder.
+  if (d.mode === DOG.RAT) {
+    const r = ratSeen(sim, b, Infinity);
+    // (Its handler out cold: back by him.)
+    if (--d.timer <= 0 || !r || g.ko > 0) {
+      d.mode = DOG.HEEL;
+      d.goal = -1;
+      d.path = [];
+      b.moving = false;
+      return;
+    }
+    const rt = tileAt(r.x, r.z);
+    if (d.goal !== rt && (!d.path.length || (s.step + k) % 10 === 0)) d.goal = -1;
+    goTo(c, d, k, d.goal >= 0 ? d.goal : rt, DOG_RUN_SPEED);
+    return;
+  }
   if (d.mode === DOG.POINT) {
     b.moving = false;
     if (playerAbout(sim) && (p.x !== b.x || p.z !== b.z) && dist(b, p.x, p.z) <= SNIFF_RANGE * 2) b.facing = nearestDir(p.x - b.x, p.z - b.z);
@@ -347,6 +368,18 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
   }
   // (Its handler out cold: it stays by him, and minds nothing else.)
   if (g.ko > 0) return;
+  // A rat running in sight (P20): it's off after it, barking (the rat bolts home).
+  const rat = ratSeen(sim, b, DOG_RAT_RANGE);
+  if (rat) {
+    d.mode = DOG.RAT;
+    d.timer = DOG_RAT_STEPS;
+    d.goal = -1;
+    d.path = [];
+    sim.events.push({ type: 'dog', dog: k, what: 'rat' });
+    makeNoise(sim, 'bark', LAYER.GROUND, here, BARK_NOISE);
+    chaseOff(sim, rat);
+    return;
+  }
   // Its nose: contraband close by.
   if (near && !s.lockdown && d.trust < TRUST_IGNORE && (d.sniffed === 0 || s.step - d.sniffed >= SNIFF_AGAIN) && smellsOfContraband(sim)) {
     d.sniffed = s.step;
@@ -507,7 +540,7 @@ export function catchTreat(sim: SimContext, item: number, tile: number): boolean
     if (was < TRUST_FRIEND && d.trust >= TRUST_FRIEND) sim.events.push({ type: 'dog', dog: k, what: 'friend', trust: d.trust });
     return true;
   }
-  if (d.mode === DOG.TRACK || d.mode === DOG.POINT) d.mode = DOG.HEEL;
+  if (d.mode === DOG.TRACK || d.mode === DOG.POINT || d.mode === DOG.RAT) d.mode = DOG.HEEL;
   d.goal = -1;
   d.path = [];
   d.body.moving = false;
@@ -596,4 +629,19 @@ function put(slots: number[], hidden: number, item: number, table: string) {
       slots[k] = slot(item);
       return;
     }
+}
+
+/** The nearest rat running (on an errand, coming back, loose) within `range` of a dog and in its sight; null none (P20). */
+function ratSeen(sim: SimContext, b: Body, range: number): Rat | null {
+  let best: Rat | null = null;
+  let bestD = range;
+  for (const r of sim.state.rats) {
+    if (!ratOut(r)) continue;
+    const dd = dist(b, r.x, r.z);
+    if (dd <= bestD && lineOfSight(sim.world, b.x, b.z, r.x, r.z)) {
+      best = r;
+      bestD = dd;
+    }
+  }
+  return best;
 }

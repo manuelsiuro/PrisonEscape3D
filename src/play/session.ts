@@ -34,31 +34,7 @@ import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
 import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
-import {
-  banner,
-  board,
-  click,
-  combatUI,
-  controls,
-  darkCell,
-  hint,
-  hud,
-  itemsUI,
-  profile,
-  savedMark,
-  settings,
-  sleepVeil,
-  solitaryPanel,
-  stowPanel,
-  sound,
-  talk,
-  tools,
-  trophyToast,
-  trainCard,
-  view,
-  vignette,
-  workChips,
-} from './context';
+import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
 import { play, type Game } from './game';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
 import { hideLesson, type LessonRun } from './lesson';
@@ -124,6 +100,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
     prevInmates: sim.state.inmates.map((m) => ({ x: m.body.x, z: m.body.z })),
     prevGuards: sim.state.guards.map((m) => ({ x: m.body.x, z: m.body.z })),
     prevDogs: sim.state.dogs.map((d) => ({ x: d.body.x, z: d.body.z })),
+    prevRats: sim.state.rats.map((r) => ({ x: r.x, z: r.z, mode: r.mode })),
     paused: false,
     walked: 0,
     pilot: new Autopilot(sim.world, () => sim.world.routeGrid(sim.state.layer)),
@@ -301,6 +278,7 @@ export function endGame() {
   view.setShift(0, 0);
   board.close();
   profile.close();
+  ratPanel.close();
   trainCard.hide();
   workChips.hide();
   document.body.classList.remove('is-playing', 'panel-open', 'items-open', 'training');

@@ -1,0 +1,139 @@
+/* ------------------------------------------------------------ the pet rat (P20) */
+
+/* Its pill under the HUD rows: a soft rose rim (its squeak's colour), a button to its panel. */
+.hud-alert.hud-rat {
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  font-family: inherit;
+  background: rgba(30, 40, 60, 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(242, 194, 216, 0.6);
+}
+.hud-alert.hud-rat .ic {
+  color: #f2c2d8;
+}
+.hud-alert.hud-rat b {
+  color: #f2c2d8;
+  font-weight: 600;
+}
+.hud-alert.hud-rat b:empty {
+  display: none;
+}
+.hud-alert.hud-rat.busy .ic {
+  animation: rat-scurry 0.5s ease-in-out infinite alternate;
+}
+.hud-alert.hud-rat .hud-alert-bar i {
+  background: #f2c2d8;
+}
+.hud-alert.hud-rat:active {
+  transform: scale(0.95);
+}
+@keyframes rat-scurry {
+  from {
+    transform: translateX(-1.5px);
+  }
+  to {
+    transform: translateX(1.5px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-alert.hud-rat.busy .ic {
+    animation: none;
+  }
+}
+.reduced-motion .hud-alert.hud-rat.busy .ic {
+  animation: none;
+}
+
+/* Its panel: the job board's rows, two buttons each. */
+.rat-panel .panel-head .ic {
+  color: #f2c2d8;
+}
+.rat-status {
+  margin: 0 0 10px;
+  font: 600 13px/1.4 var(--font-ui);
+  color: rgba(255, 255, 255, 0.85);
+}
+.rat-loose {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(242, 194, 216, 0.08);
+}
+.rat-loose small {
+  flex: 1;
+  min-width: 0;
+  font: 500 11.5px/1.3 var(--font-ui);
+  color: rgba(255, 255, 255, 0.65);
+}
+.rat-panel .big-btn.danger {
+  color: #2a1420;
+  background: linear-gradient(180deg, #ffd3e4, #f2a7c4);
+  box-shadow: 0 3px 0 #b86a8a;
+}
+.rat-panel .big-btn.small {
+  flex: none;
+  gap: 5px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.rat-panel .big-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.rat-acts {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 5px;
+}
+.rat-key {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  vertical-align: -3px;
+  border-radius: 6px;
+  color: #1a1a1a;
+  background: var(--key, var(--gold));
+}
+.rat-empty,
+.rat-keys {
+  margin: 8px 0 0;
+  font: 500 12px/1.4 var(--font-ui);
+  color: rgba(255, 255, 255, 0.6);
+}
+.rat-keys {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+@media (max-height: 520px) {
+  .rat-status {
+    margin-bottom: 6px;
+  }
+  .rat-loose {
+    margin-bottom: 8px;
+    padding: 6px 8px;
+  }
+}
+
+/* (Phones on their side hide the job board's note; the rat's says what Leave would take.) */
+@media (max-height: 520px) {
+  .rat-panel .board-note {
+    display: block;
+    margin-bottom: 6px;
+  }
+}
+
+/* A finger's worth of pill to tap on a phone. */
+@media (pointer: coarse) {
+  .hud-alert.hud-rat {
+    min-height: 40px;
+  }
+}

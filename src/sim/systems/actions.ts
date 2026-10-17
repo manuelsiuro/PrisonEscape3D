@@ -37,6 +37,7 @@ import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarge
 import { rep, startTraining, stopTraining, study } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
+import { feedRat, looseRat, sendRat } from './rats';
 import { energyCost } from './weather';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
@@ -174,6 +175,9 @@ export function useItems(sim: SimContext, cmd: number) {
       break;
     case OP.EXT:
       if (a === EXT.THROW) throwItem(sim, tossTile(argB(cmd), argC(cmd)));
+      // The pet rat (P20): sent on an errand (the container in b and c), let loose.
+      else if (a === EXT.RAT_FETCH || a === EXT.RAT_LEAVE) sendRat(sim, tossTile(argB(cmd), argC(cmd)), a === EXT.RAT_LEAVE);
+      else if (a === EXT.RAT_LOOSE) looseRat(sim);
       break;
   }
   if (it.open >= 0 && !stillInReach(sim.world, it, s.player, people(sim))) {
@@ -254,6 +258,15 @@ function strike(sim: SimContext, fresh: boolean) {
     }
     it.inv[it.hand] = 0;
     it.rev++;
+    return;
+  }
+  // A caught rat fed (P20); a rat trap set down where the player stands.
+  if (target.action === 'feed') {
+    feedRat(sim);
+    return;
+  }
+  if (target.action === 'setTrap') {
+    dropItem(it, it.hand, p, sim.events as ItemEvent[], s.layer);
     return;
   }
   if (!STRIKES.has(target.action)) {

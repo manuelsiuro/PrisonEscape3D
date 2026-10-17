@@ -37,6 +37,8 @@ export interface HudState {
   drill: { mustered: boolean; missed: boolean } | null;
   /** Guard dogs (P19): one close by would smell the contraband in the hotbar ('nose'), one is on the player's trail ('track'); null neither. */
   dog: 'nose' | 'track' | null;
+  /** The pet rat (P20): its name, what it's doing ('' on the shoulder), out on an errand or loose, and the seconds left of a panic (null none) out of how many. */
+  rat: { name: string; status: string; busy: boolean; left: number | null; of: number } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -111,6 +113,7 @@ export class Hud {
         <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <button class="pill hud-alert hud-rat hidden">${icon('rat', 15)}<span></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -141,6 +144,8 @@ export class Hud {
     this.cold = q('.hud-cold');
     this.bribe = q('.hud-bribe');
     this.today = q('.hud-today');
+    this.rat = q('.hud-rat');
+    this.rat.addEventListener('click', () => this.onRat());
     this.wx = q('.hud-wx');
     document.body.append(this.el);
   }
@@ -150,6 +155,9 @@ export class Hud {
   private readonly riot: HTMLElement;
   private readonly cold: HTMLElement;
   private readonly today: HTMLElement;
+  private readonly rat: HTMLElement;
+  /** The rat pill tapped (P20): its panel. */
+  onRat: () => void = () => {};
   private readonly wx: HTMLElement;
   private shownAlerts = '';
   private shownWx = '';
@@ -193,6 +201,21 @@ export class Hud {
     setText(el.querySelector('span')!, t(c.hot ? (c.bit ? 'hud.baked' : c.warming ? 'hud.cooling' : 'hud.hot') : c.bit ? 'hud.frozen' : c.warming ? 'hud.warming' : 'hud.cold'));
     setText(el.querySelector('b')!, c.bit ? '×2' : c.warming ? '' : `0:${String(Math.min(59, Math.max(0, Math.ceil(c.left)))).padStart(2, '0')}`);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, c.built)) * 100}%`;
+  }
+
+  /** The pet rat's pill (P20): its name and what it's up to; a bar draining while it runs loose. Tapped, its panel. */
+  private ratChip(r: HudState['rat']) {
+    const el = this.rat;
+    el.classList.toggle('hidden', !r);
+    if (!r) return;
+    el.classList.toggle('busy', r.busy);
+    setText(el.querySelector('span')!, r.name);
+    setText(el.querySelector('b')!, r.left === null ? r.status : `${r.status} 0:${String(Math.ceil(r.left)).padStart(2, '0')}`);
+    const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
+    bar.style.display = r.left === null ? 'none' : '';
+    if (r.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, r.left / r.of)) * 100}%`;
+    el.title = TOUCH ? t('hud.rat') : `${t('hud.rat')} (T)`;
+    el.setAttribute('aria-label', `${r.name}${r.status ? `, ${r.status}` : ''}. ${t('hud.rat')}`);
   }
 
   /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
@@ -275,7 +298,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
@@ -283,6 +306,7 @@ export class Hud {
       this.chill(c);
       this.lookAway(s.bribe);
       this.dayChip(d);
+      this.ratChip(s.rat);
     }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.

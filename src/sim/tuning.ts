@@ -277,3 +277,30 @@ export const TRUST_IGNORE = 60;
 export const TRUST_FRIEND = 100;
 export const DAZE_STEPS = 10 * STEPS_PER_SECOND;
 export const DOG_SLEEP_STEPS = 120 * STEPS_PER_MINUTE;
+
+// The pet rat (P20).
+/** A rat trap left on the floor at 04:00 catches a rat this often (percent): in a kitchen, canteen or storeroom; down a tunnel; anywhere else none. */
+export const TRAP_KITCHEN = 60;
+export const TRAP_TUNNEL = 85;
+/** The minute of the day the traps are checked (04:00). */
+export const TRAP_MINUTE = 240;
+/** A caught rat is tame after this many meals. */
+export const RAT_MEALS = 2;
+/** A rat runs this many tiles of its way at most to an errand (under doors, along the ducts), at this pace (units a step: faster than anyone walks). */
+export const RAT_REACH = 16;
+export const RAT_SPEED = 260;
+/** Back to the player: it finds them anywhere its way reaches (tiles); with no way to them, it waits where it is. */
+export const RAT_HOME = 4096;
+/** Let loose: it takes this many people within PANIC_RANGE (units, in sight) to start a panic, which lasts PANIC_STEPS. */
+export const PANIC_PEOPLE = 3;
+export const PANIC_RANGE = 4 * UNIT;
+export const PANIC_STEPS = 20 * STEPS_PER_SECOND;
+/** Its squeaks carry this far, and draw this many guards to look. */
+export const SQUEAK_NOISE = 10;
+export const SQUEAK_GUARDS = 3;
+/** Inmates this close to a rat running loose flee it (units), at their pace plus this. */
+export const FLEE_RANGE = 6 * UNIT;
+export const FLEE_SPEED = 60;
+/** A dog on shift sees a rat this close (units, in sight) and goes after it this long. */
+export const DOG_RAT_RANGE = 5 * UNIT;
+export const DOG_RAT_STEPS = 5 * STEPS_PER_SECOND;
