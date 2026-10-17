@@ -3,6 +3,7 @@ import { announceRat } from './rat';
 import { announceSmuggle } from './smuggle';
 import { announceGames } from './games';
 import { announceCrew } from './crew';
+import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
 import { NIGHT_OPINION } from '../content/crew';
 import { RECIPES } from '../content/recipes';
@@ -231,7 +232,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
+      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'storm' ? 'toast.glideStorm' : e.why === 'runUp' ? 'toast.glideRunUp' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -274,7 +275,8 @@ export function announce(e: SimEvent, sim: Sim) {
       banner.toast(t('toast.caveIn'), 'bad', 5000);
       break;
     case 'layer':
-      sound.climb();
+      // (Off a roof on a glider, P24: its own sound.)
+      if (e.how !== 'glide') sound.climb();
       play.game?.pilot.stop();
       itemsUI.closeCraft();
       // Into or out of the tunnels: a blink of dark while the view changes.
@@ -728,6 +730,11 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'crew':
       announceCrew(sim, e);
+      break;
+    // Bluff & glider (P24): waved through and the gates shut again; off a roof.
+    case 'bluff':
+    case 'glide':
+      announceGetaway(sim, e);
       break;
     case 'today':
       if (e.event === 'sports' && e.phase === 'prize') announceGames(sim, e);

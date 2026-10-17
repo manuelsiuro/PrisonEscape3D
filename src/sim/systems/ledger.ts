@@ -104,6 +104,11 @@ export const FEATS = [
   'dirtTaken',
   'ambushesStopped',
   'nightsOut',
+  // v1.18 (P24, bluff & glider): waved through the checkpoint, glides off a roof, the longest (tiles), glides that came down inside.
+  'waved',
+  'glides',
+  'glideFar',
+  'glidesIn',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -264,6 +269,14 @@ export function ledger(sim: Sim, x: number, z: number) {
       case 'stow':
         if (e.on) f[FEAT.stowed]++;
         else if (e.found) f[FEAT.stowFound]++;
+        break;
+      case 'bluff':
+        if (e.on) f[FEAT.waved]++;
+        break;
+      case 'glide':
+        f[FEAT.glides]++;
+        if (e.dist > f[FEAT.glideFar]) f[FEAT.glideFar] = e.dist;
+        if (!s.escaped) f[FEAT.glidesIn]++;
         break;
       case 'cold':
         if (e.on && e.hot) f[FEAT.baked]++;

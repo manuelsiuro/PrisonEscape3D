@@ -24,7 +24,7 @@ export interface ItemsView {
   /** Whether a recipe is any use in this prison (its result can be had here). */
   usable: (recipe: number) => boolean;
   /** What the action button would do now: a verb ("Search") and what to ("your desk"), or null. */
-  action: { verb: string; what: string } | null;
+  action: { verb: string; what: string; no?: boolean } | null;
   sleeping: boolean;
   /** The open container is the player's desk with a tunnel dug under it (GDD §9.3): offer the way down. */
   deskTunnel: boolean;
@@ -443,7 +443,10 @@ export class ItemsUI {
     this.act.classList.toggle('hidden', !show || !TOUCH);
     this.prompt.classList.toggle('hidden', !show || TOUCH || v.sleeping);
     if (!show || !a) return;
-    const label = `${a.verb}|${a.what}`;
+    const label = `${a.verb}|${a.what}|${!!a.no}`;
+    // (P24: something there that won't do now, and says why: greyed, as the tool button is.)
+    this.act.classList.toggle('no', !!a.no);
+    this.prompt.classList.toggle('no', !!a.no);
     // A round button with the verb, and what it applies to on a tag beside it (long names fit).
     if (TOUCH) {
       if (this.act.dataset.label === label) return;

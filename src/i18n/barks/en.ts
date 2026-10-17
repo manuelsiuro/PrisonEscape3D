@@ -2115,6 +2115,37 @@ export const enBarks = {
     "Something dropped in the yard? {inmate} will get it.",
     "{inmate} has the quietest feet in here.",
   ],
+  "re.glide.in": [
+    "Is it a bird? Is it a plane? It's {you}!",
+    "Did {you} just fly? Off the roof?",
+    "Ten out of ten for style. Landing needs work.",
+    "Somebody's been reading the wrong library books.",
+    "I'm putting my name down for flying lessons.",
+    "Wheee! Er, I mean: I saw nothing.",
+  ],
+  "re.glide.gu": [
+    "Hey! You! Feet on the ground!",
+    "Did that prisoner just glide in?",
+    "Stay where you are, Icarus!",
+    "Nobody said anything about flying!",
+    "Right, that's going in the report. Somehow.",
+    "Off the roof? On a bedsheet? Freeze!",
+  ],
+  "go.shiftChange": [
+    "Gate shift change at {t1}. Till {t2}, the new man knows nobody.",
+    "Psst: {t1} at the gate. New gatekeeper, no idea who's who till {t2}.",
+    "Gate shift change, {t1} to {t2}. Right uniform, he waves you by.",
+  ],
+  "go.fakeId": [
+    "A blank card, some ink and a magazine photo: that's a guard's ID.",
+    "Fake papers? A blank card off the phone, ink, a magazine face.",
+    "Want to be an officer? Print yourself an ID. Brains needed, mind.",
+  ],
+  "go.glideDay": [
+    "Feel that wind? A glider off the roof would clear the fence today.",
+    "Today's wind would carry a kite right out of here. Just saying.",
+    "Good gliding weather. If you had a glider. And a roof. And nerves.",
+  ],
 } satisfies Record<string, readonly Line[]>;
 
 export type BankId = keyof typeof enBarks;

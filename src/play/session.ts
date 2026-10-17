@@ -338,6 +338,9 @@ export async function escaped() {
     else if (via === 'helicopter' || sim.prison.delivery?.vehicle === 'helicopter') sound.rotor();
     else sound.engine();
   }
+  // Off a roof on a glider (P24): down on the road first.
+  if (via === 'glider') await view.glideDown();
+  if (play.game !== g) return;
   // The escape camera (P16): a slow turn and pull-back, letterboxed, ESCAPED stamped; a tap skips it.
   await showCinema(view.cinema(away), () => view.skipCinema(), settings.reducedMotion);
   if (play.game !== g) return;

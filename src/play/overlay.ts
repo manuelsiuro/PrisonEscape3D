@@ -57,7 +57,8 @@ import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, des
 import { DOG, dogWarning, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
 import { coachOnce, seenTip } from './tips';
-import { FIRECRACKER } from '../sim/systems/structure';
+import { FIRECRACKER, GLIDER } from '../sim/systems/structure';
+import { wavedLeft, windowAction } from './getaway';
 const PEPPER = itemNumber('pepper');
 const JERKY = itemNumber('jerky');
 /** When the paw last lit for a dog's nose (real ms), and how long it stays lit after. */
@@ -84,7 +85,7 @@ const GET_UP = { verb: '', what: '' };
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, wavedLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
@@ -163,7 +164,9 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     STOW.verb = t('act.stow');
     STOW.what = vehicleThe(sim);
   }
-  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : tail ? STOW : describeTarget(sim, target, climb, held, memo.station);
+  // (P24: at the checkpoint's window with papers: showing them comes first there, as the sim has it.)
+  const papers = tail || st.stowed ? null : windowAction(sim, !!target || !!climb);
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
@@ -194,6 +197,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (P20: a rat trap and a caught rat, the first time one is in hand.)
   if (!busy && held === RAT_TRAP) coachOnce('ratTrap', 'hint.ratTrap');
   if (!busy && held === CAUGHT_RAT) coachOnce('caughtRat', 'hint.caughtRat');
+  // (P24: a glider, the first time one is in hand on a roof.)
+  if (!busy && held === GLIDER && st.layer === LAYER.ROOF) coachOnce('glider', 'hint.glider');
   // A guard dozing close by, in plain sight (P15): what it means, the first time one is seen.
   if (!busy && st.layer === LAYER.GROUND && !seenTip('nap') && st.guards.some((x) => x.doing === DOING.DOZE && Math.abs(x.body.x - st.player.x) + Math.abs(x.body.z - st.player.z) <= 8 * UNIT && lineOfSight(sim.world, st.player.x, st.player.z, x.body.x, x.body.z))) coachOnce('nap', 'hint.nap');
   // Each new target takes a new press: a held button never digs on into the next thing.
@@ -275,6 +280,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   let wakes = Infinity;
   for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
   hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
+  // Waved through (P24): the checkpoint's gates open for the player, how long for.
+  hudState.wavedLeft = wavedLeft(sim, a);
   // The cold (P9): shown while it has built up at all, the energy pill frosted once it bites.
   coldHud.built = st.cold / COLD_STEPS;
   coldHud.left = (COLD_STEPS - st.cold) / STEPS_PER_SECOND;

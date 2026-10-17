@@ -139,7 +139,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   check(d.cat === 'gear' && d.contraband && !!d.small && d.uses === 12 && d.thud === 1, 'the lockpick: contraband gear, small (a rat carries it), 12 uses, lands hard');
   const r = RECIPES.find((x) => x.result === 'lockpick');
   check(!!r && r.int === 40 && [...r.ingredients].sort().join() === 'nail_file,wire', 'the lockpick: wire and a nail file, Intellect 40');
-  check(CATALOGUE.at(-1)?.item === 'lockpick' && CATALOGUE.at(-1)?.price === 35, 'the lockpick on the phone at $35 (appended: orders keep their numbers)');
+  check(CATALOGUE[8]?.item === 'lockpick' && CATALOGUE[8]?.price === 35, 'the lockpick on the phone at $35 (appended: orders keep their numbers)');
   check(PINS[KEY.YELLOW] === 2 && PINS[KEY.CYAN] === 3 && PINS[KEY.PURPLE] === 4 && PINS[KEY.RED] === 5 && PINS[KEY.GREEN] === 6, 'pins by colour: yellow 2, cyan 3, purple 4, red 5, green 6 (as the help says)');
   check(STAKES.join() === '5,10,20' && GAME_OPINION === 40 && GAMES_A_DAY === 3 && DICE_HEAT === 10 && BOUT_ENERGY === 6 && WIN_OPINION === 6 && CROWD_OPINION === 2 && PLAY_OPINION === 2, 'the numbers the words say: $5/$10/$20, opinion 40, three a day, +10% heat, 6 energy, +6, +2 watching, +2 a game');
   check(SPORTS_WINS === 3 && SPORTS_PRIZE === 30 && SPORTS_OPINION === 3 && PICK_HIT_NOISE === 2 && PICK_MISS_NOISE === 6 && PICKED_STEPS === 15 * STEPS_PER_SECOND, 'sports day: three wins, $30, +3 everyone; a pin clicks (2), a slip carries 6 tiles; a door open 15 s');

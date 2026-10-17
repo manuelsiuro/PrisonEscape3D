@@ -1,0 +1,16 @@
+data: checkpoints at center-perks, shankton, irongate; gliders out of center-perks, stalag-flucht, shankton; the card $80, the ID Int 50, the frame Int 60, the glider Int 80
+bluff: 19:49 notShift, 19:50 waved, 20:09 waved, 20:10 notShift; orange notGuard, heat 40 papersHot, heat 39 waved, wanted hunted, lockdown hunted; the gates for the player alone, 60 s, never shut on them, at once when wanted; out by bluff
+checkpoints: Irongate's drawbridge for the player alone, out over it, never shut on the rock past it; Shankton's three gates, its gatehouse held open
+glide reach (tailwind, quarter tail, cross, quarter head, head, quarter head, cross, quarter tail):
+  clear 0: 3 3 3 3 3 3 3 3
+  clear 1: 5 4 3 3 2 3 3 4
+  clear 2: 7 5 3 2 1 2 3 5
+  clear 3: 9 6 3 2 1 2 3 6
+  rain 0: 2 2 2 2 2 2 2 2
+  rain 1: 4 3 2 2 1 2 2 3
+  rain 2: 6 4 2 1 1 1 2 4
+  rain 3: 8 5 2 1 1 1 2 5
+glider: the button's promise agrees with the flight 228/228 times off Stalag Flucht's hut; still air 2 of 3 (a fence in the way)
+promises flown: center-perks 60 agree (14 out, 45 down inside); shankton 57 agree (12 out, 44 down inside)
+forced wind: kept, calm in fog, saved
+achievements: Papers, Please; Wing It; Tailwind (7 tiles); Grounded (hidden)

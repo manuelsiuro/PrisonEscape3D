@@ -36,6 +36,8 @@ import { DAY as DAY_BITS, FEATS } from '../src/sim/systems/ledger';
 import { DAY_EVENTS, WEATHERS } from '../src/content/days';
 import { thorough } from '../src/sim/systems/delivery';
 import { Sim } from '../src/sim/Sim';
+import { shiftChange } from '../src/sim/systems/getaway';
+import { BLUFF_HEAT } from '../src/content/getaways';
 
 /** The run's ledger in a line (P16): counters that moved, and each day's bits. */
 export function ledgerLine(feats: readonly number[], days: readonly number[]): string {
@@ -83,7 +85,7 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.until(() => false, 10 * STEPS_PER_MINUTE);
 }
 
-type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway';
+type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider';
 
 /** Where each route goes in a prison: tiles as [x, z], with a facing where it matters. */
 interface Plan {
@@ -140,6 +142,11 @@ interface Plan {
   stowKit?: string[];
   /** Stowaway on a day its search would be thorough: a firecracker thrown here (from the tail) at 14:21 draws the supervisor off before the search. */
   stowLure?: [number, number];
+  /** The bluff (P24): what gets the player to the checkpoint's window in uniform with papers (keys, a pouch through the arches). */
+  bluffKit?: string[];
+  /** The glider (P24): the roof's edge to glide off and which way, and the day's wind forced for it (where from, how strong). */
+  glide?: [number, number, number];
+  glideWind?: [number, number];
 }
 
 const PLANS: Plan[] = [
@@ -147,8 +154,11 @@ const PLANS: Plan[] = [
     def: CENTER_PERKS,
     seed: 11,
     name: (r) => r,
-    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway'],
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'bluff', 'glider'],
     keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_green'],
+    bluffKit: ['plastic_key_green', 'guard_outfit', 'fake_id'],
+    glide: [57, 39, DIR.EAST],
+    glideWind: [6, 1],
     generator: [8, 41],
     generatorFace: DIR.SOUTH,
     fence: [27, 60, DIR.SOUTH],
@@ -167,8 +177,10 @@ const PLANS: Plan[] = [
     def: STALAG_FLUCHT,
     seed: 21,
     name: (r) => `${STALAG_FLUCHT.id}: ${r}`,
-    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway'],
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'glider'],
     keys: ['plastic_key_yellow', 'plastic_key_purple'],
+    glide: [58, 24, DIR.EAST],
+    glideWind: [6, 1],
     generator: [54, 26],
     generatorFace: DIR.NORTH,
     fence: [60, 30, DIR.EAST],
@@ -201,7 +213,11 @@ const PLANS: Plan[] = [
     def: SHANKTON,
     seed: 31,
     name: (r) => `${SHANKTON.id}: ${r}`,
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'bluff', 'glider'],
     keys: ['plastic_key_yellow', 'plastic_key_purple'],
+    bluffKit: ['plastic_key_red', 'guard_outfit', 'fake_id', 'pouch'],
+    glide: [38, 55, DIR.SOUTH],
+    glideWind: [0, 2],
     pouch: true,
     generator: [34, 49],
     generatorFace: DIR.SOUTH,
@@ -255,7 +271,8 @@ const PLANS: Plan[] = [
     def: IRONGATE,
     seed: 51,
     name: (r) => `${IRONGATE.id}: ${r}`,
-    routes: ['raft', 'helicopter', 'takeover', 'stowaway'],
+    routes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff'],
+    bluffKit: ['plastic_key_red', 'guard_outfit', 'fake_id', 'pouch'],
     stowKit: ['plastic_key_red', 'guard_outfit', 'pouch', 'firecracker'],
     stowLure: [33, 50],
     keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_red'],
@@ -746,6 +763,84 @@ function stowaway(p: Plan, from: number) {
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
+// ------------------------------------------------------------------ 9. the bluff (P24)
+/**
+ * The day kept, then (in a guard's uniform from the desk, with keys to the checkpoint and a fake
+ * ID, a pouch where arches stand on the way) to the checkpoint's window in evening free time; the
+ * papers shown as the gate changes shifts at 19:50, and out through the gates opened for the player.
+ */
+function bluff(p: Plan, seed: number) {
+  const c = p.def.checkpoint!;
+  const bot = new Bot(p.def, seed);
+  const kit = p.bluffKit!;
+  bot.stash(...kit);
+  check(bot.routineUntil(1, 19 * 60 + 5), 'the day kept');
+  const places = placesOf(bot.sim.world);
+  check(bot.walkTo(places.deskside[1]), 'beside the desk');
+  bot.face(DIR.EAST);
+  check(bot.open(bot.desk), 'the desk opens');
+  bot.takeAll(kit.length);
+  bot.close();
+  bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
+  check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
+  check(bot.walkTo(tileOf(c.window[0].x, c.window[0].z), 6000), 'at the checkpoint’s window');
+  bot.face(DIR.SOUTH);
+  check(bot.until(() => shiftChange(bot.st.step), 60 * STEPS_PER_MINUTE), 'the gate changing shifts');
+  bot.act();
+  check(bot.st.waved > 0, 'waved through');
+  check(bot.walkTo(tileOf(...p.gates), 800) || bot.done, 'out through the gates');
+  report(p.name('bluff'), bot);
+  check(bot.done && ESCAPES[bot.st.via] === 'bluff', 'waved out through the checkpoint');
+  check(bot.heatPeak < BLUFF_HEAT, 'never too hot for the papers');
+}
+
+// ------------------------------------------------------------------ 10. the glider (P24)
+/**
+ * Lights Out, the dummy in bed, up on the roof (the cell's grate and the vents to the ladder, or
+ * keys to the ladder's room in a guard's uniform), to the edge and off it, on a night the wind
+ * blows the right way (forced for the bot: the forecast tells it).
+ */
+function glider(p: Plan, seed: number) {
+  const bot = new Bot(p.def, seed);
+  const [wind, force] = p.glideWind!;
+  bot.st.calendar = [[1, -1, -1, wind, force]];
+  const st = bot.st;
+  if (p.grate) {
+    bot.stash('screwdriver', 'fake_vent', 'glider', 'bed_dummy');
+    nightfall(bot, 4);
+    const grate = tileOf(...p.grate);
+    check(bot.walkTo(grate), 'under the grate');
+    check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN), 'the grate unscrewed');
+    bot.act();
+    check(st.layer === LAYER.VENTS, 'up into the vents');
+    bot.hold('fake_vent');
+    bot.use();
+    const [lx, lz] = p.ladder!;
+    check(bot.walkTo(tileOf(lx, lz - 1), 3000), 'along the ducts to the ladder');
+    check(bot.walkTo(tileOf(lx, lz), 200), 'at the ladder');
+    bot.act();
+  } else {
+    bot.stash(...p.keys, 'glider', 'bed_dummy', 'guard_outfit');
+    nightfall(bot, p.keys.length + 3);
+    bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));
+    const [lx, lz] = p.ladder!;
+    check(bot.walkTo(tileOf(lx, lz + 1), 3000), 'at the ladder');
+    bot.face(DIR.NORTH);
+    bot.act();
+  }
+  check(st.layer === LAYER.ROOF, 'up on the roof');
+  const [ex, ez, face] = p.glide!;
+  check(bot.walkTo(tileOf(ex, ez), 1200), 'at the roof’s edge');
+  bot.face(face);
+  bot.hold('glider');
+  bot.use();
+  report(p.name('glider'), bot);
+  const flight = bot.sim.events.find((e) => e.type === 'glide');
+  console.log(`  the wind from the ${['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][wind]}, strength ${force}: ${flight && flight.type === 'glide' ? `${flight.dist} tiles` : 'no glide'}`);
+  check(bot.done && ESCAPES[st.via] === 'glider', 'away on the glider');
+  check(bot.heatPeak < 80, 'never wanted on the way');
+}
+
 // ONLY=<prison id> runs one prison's routes (while working on them).
 for (const p of PLANS) {
   if (process.env.ONLY && p.def.id !== process.env.ONLY) continue;
@@ -759,6 +854,8 @@ for (const p of PLANS) {
   if (routes.includes('helicopter')) helicopter(p, p.seed + 6);
   if (routes.includes('takeover')) takeover(p);
   if (routes.includes('stowaway')) stowaway(p, p.seed + 7);
+  if (routes.includes('bluff')) bluff(p, p.seed + 8);
+  if (routes.includes('glider')) glider(p, p.seed + 9);
 }
 
 void DAY;

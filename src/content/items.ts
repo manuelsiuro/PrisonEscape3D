@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone';
 
 export interface ItemDef {
   id: string;
@@ -227,17 +227,22 @@ export const ITEMS: readonly ItemDef[] = [
   { ...m('burner_phone', true, 60, 'phone', 0x2b3038, ['fixer'], 0x5fd3a0), obvious: true },
   // P22 (side games): a bent wire and a nail file, for the pins of a keyed door (a slip wears it).
   gear('lockpick', 25, 'lockpick', 0xc0c8d2, 0xd8a0b8, 12),
+  // P24 (bluff & glider): a blank ID card off the phone, printed up into a guard's papers; a glider for a roof's edge.
+  { ...gear('blank_id', 40, 'card', 0xf4f4ef, 0x9aa2ad), from: ['phone'] },
+  gear('fake_id', 60, 'idCard', 0xf4efe0, 0x1e3a5f),
+  gear('glider_frame', 40, 'frame', 0xe8d2a0, 0xb07a45),
+  gear('glider', 80, 'glider', 0x9fb7d0, 0xe8d2a0),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
-const HARD = ['lockpick', 'timber', 'balsa', 'wall_chunk', 'potato', 'plastic_cup', 'lighter', 'battery', 'duct_tape', 'bleach', 'broom', 'mop', 'tool_handle', 'timber_brace', 'fake_wall', 'raft', 'bat', 'spiked_bat', 'baton', 'nunchucks', 'furniture', ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`)];
+const HARD = ['glider_frame', 'glider', 'lockpick', 'timber', 'balsa', 'wall_chunk', 'potato', 'plastic_cup', 'lighter', 'battery', 'duct_tape', 'bleach', 'broom', 'mop', 'tool_handle', 'timber_brace', 'fake_wall', 'raft', 'bat', 'spiked_bat', 'baton', 'nunchucks', 'furniture', ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`)];
 const METAL = ['crowbar', 'sheet_metal', 'metal_file', 'trowel', 'flimsy_shovel', 'light_shovel', 'sturdy_shovel', 'flimsy_pickaxe', 'light_pickaxe', 'sturdy_pickaxe', 'flimsy_cutters', 'light_cutters', 'sturdy_cutters', 'screwdriver', 'powered_screwdriver', 'multitool', 'grappling_hook', 'grapnel', 'plated_outfit', 'meal_tray', 'license_plate', 'alarm_clock'];
 for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud = METAL.includes(d.id) ? 2 : 1;
 
 /** What a rat can carry in its teeth (P20): keys, molds and odds and ends; nothing long, heavy or bulky. */
 const SMALL = [
   'plastic_comb', 'toothbrush', 'lighter', 'toilet_paper', 'glue', 'duct_tape', 'metal_file', 'sock', 'soap', 'battery', 'wire', 'razor_blade', 'ink', 'foil', 'talcum', 'toothpaste', 'putty', 'molten_plastic',
-  'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky', 'burner_phone', 'lockpick',
+  'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky', 'burner_phone', 'lockpick', 'blank_id', 'fake_id',
   ...KEY_ITEM_COLORS.flatMap(([c]) => [`key_${c}`, `mold_${c}`, `plastic_key_${c}`]),
 ];
 for (const d of ITEMS) if (SMALL.includes(d.id)) d.small = true;

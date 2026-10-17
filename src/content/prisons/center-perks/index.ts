@@ -291,7 +291,9 @@ export const CENTER_PERKS: PrisonDef = {
       { x: 49, z: 53 },
       { x: 34, z: 57 },
     ],
-  ],  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway'],
+  ],
+  // (P24: waved out through the south gate at the shift change; a glider off the roof's north, east or west edge with the wind behind it.)
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'bluff', 'glider'],
   // Delivery day (P18): the supply truck backs up the south drive to the visitation room's gate
   // (propped open while it's unloaded); the yard guard walks round it, and searches it one day
   // in four.
@@ -322,4 +324,17 @@ export const CENTER_PERKS: PrisonDef = {
   // (21:00–22:00, free time: the yard is open to everyone then); visitors sit across the
   // visitation room's counters.
   smuggling: { fixer: 6, drop: [25, 25, 36, 34], droneHours: [780, 840], visits: [24, 38, 37, 44] },
+  // The checkpoint (P24): the gatekeeper's booth on the road beside the south gate; papers are
+  // shown through the wire at the end of the drive.
+  checkpoint: {
+    window: [
+      { x: 30, z: 60 },
+      { x: 31, z: 60 },
+    ],
+    gates: [
+      { x: 30, z: 61 },
+      { x: 31, z: 61 },
+    ],
+    booth: { x: 33, z: 62, face: 13 },
+  },
 };

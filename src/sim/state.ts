@@ -32,7 +32,7 @@ import { LAYER, type World } from './world/World';
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
-export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway'] as const;
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider'] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
 /** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper, a mine, the sea flooding a tunnel. */
 export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3, FLOOD: -4 } as const;
@@ -68,7 +68,7 @@ export type SimEvent =
   | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
-  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent' | 'gate'; action: ToolAction }
+  | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent' | 'gate' | 'storm' | 'runUp'; action: ToolAction }
   /** A tool wore out. */
   | { type: 'broke'; item: number }
   /** A live electric fence: knocked out (GDD §9.1). */
@@ -80,7 +80,7 @@ export type SimEvent =
   /** A tunnel dug under the sea (P12, GDD §4.5): it floods, the player is washed out; the tile dug into, the tunnel tiles lost. */
   | { type: 'flood'; tile: number; lost: number }
   /** Onto another layer (through a grate, up the ladder, into a tunnel…). */
-  | { type: 'layer'; layer: number; from: number; how: ClimbAction | 'digUp' | 'rope' | 'grapnel' }
+  | { type: 'layer'; layer: number; from: number; how: LayerMove }
   /** A cover put over damage or taken off it; a brace set up; chocolate eaten. */
   | { type: 'covered'; item: number; on: boolean }
   | { type: 'braced' }
@@ -184,6 +184,10 @@ export type SimEvent =
    * 14:30, thorough or not, or waved through with nobody there to search.)
    */
   | { type: 'stow'; on: boolean; found?: boolean }
+  /** P24: waved through the checkpoint (its gates open for the player), and its gates shut again (`on` false). */
+  | { type: 'bluff'; on: boolean }
+  /** P24: off a roof's edge on a glider: the roof tile left, the ground tile landed on, how far (tiles), and whether it came down short of where the wind would have carried it. */
+  | { type: 'glide'; from: number; to: number; dist: number; short: boolean }
   /**
    * Guard dogs (P19): what a dog (its index in `dogs`) did: smelled contraband on the player and
    * pointed, picked up the trail, lost it, ran the player down at its end, dug up where it led
@@ -264,7 +268,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -415,7 +419,7 @@ export interface SimState {
   days: number[];
   /** The Daily's twists (P26; none in the campaign). */
   mods: string[];
-  /** Days forced (P17, calendar.ts ForcedDay: bots, tests, the Daily): [day (0 every day), event, weather], -1 as drawn. */
+  /** Days forced (P17, calendar.ts ForcedDay: bots, tests, the Daily): [day (0 every day), event, weather] (P24: and the wind, its strength), -1 as drawn. */
   calendar: ForcedDay[];
   /** What happened today (P17, calendar.ts TODAY bits): the drill's muster, the inspection's blots, the feast. Cleared at 08:00. */
   eventFlags: number;
@@ -458,6 +462,8 @@ export interface SimState {
   brawled: number;
   /** Who got out with the player (inmate indexes), once they're out. */
   crewOut: number[];
+  /** Waved through the checkpoint (P24, ways.ts showId): the step its gates shut on the player again (0: shut). */
+  waved: number;
 }
 
 export interface Snapshot {
@@ -467,7 +473,7 @@ export interface Snapshot {
 }
 
 /** How the player moved onto another layer (the 'layer' event, the escape check). */
-export type LayerMove = ClimbAction | 'digUp' | 'rope' | 'grapnel';
+export type LayerMove = ClimbAction | 'digUp' | 'rope' | 'grapnel' | 'glide';
 
 /**
  * A new game's state: every field with its starting value, in field order (the hash
@@ -578,6 +584,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     crew: [],
     brawled: 0,
     crewOut: [],
+    waved: 0,
   };
 }
 
@@ -619,7 +626,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   else if (st.feats!.length < FEATS.length) s.feats = [...st.feats!, ...freshFeats().slice(st.feats!.length)];
   if (!Array.isArray(s.mods) || !s.mods.every((m) => typeof m === 'string')) s.mods = [];
   // A save from before the day (P17): the day it was made on stays quiet (nothing starts half way through).
-  const days = (v: unknown) => Array.isArray(v) && v.every((d) => Array.isArray(d) && d.length === 3 && d.every((x) => Number.isInteger(x)));
+  const days = (v: unknown) => Array.isArray(v) && v.every((d) => Array.isArray(d) && (d.length === 3 || d.length === 5) && d.every((x) => Number.isInteger(x)));
   if (!days(st.calendar)) s.calendar = [[prisonDay(st.step), 0, 0]];
   if (!Number.isInteger(s.eventFlags)) s.eventFlags = 0;
   // A save from before delivery day (P18): the day it was made on, and tomorrow (the forecast, the gossip may have named it), keep the card the delivery took the place of.
@@ -678,6 +685,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.crew = Array.isArray(s.crew) ? s.crew.filter(crewOk) : [];
   if (!Number.isInteger(s.brawled)) s.brawled = 0;
   if (!Array.isArray(s.crewOut) || !s.crewOut.every((x, k, all) => Number.isInteger(x) && x >= 0 && x < n && all.indexOf(x) === k)) s.crewOut = [];
+  if (!Number.isInteger(s.waved) || s.waved < 0) s.waved = 0;
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

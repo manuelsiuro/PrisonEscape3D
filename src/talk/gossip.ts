@@ -1,3 +1,5 @@
+import { SHIFT_FROM, SHIFT_TO } from '../content/getaways';
+import { checkpointOf, glideOutToday } from '../sim/systems/getaway';
 import { itemDef, itemNumber } from '../content/items';
 import { handlersOf, pillsDesk } from '../sim/systems/k9';
 import { RAT_ROOMS } from '../sim/systems/rats';
@@ -36,11 +38,11 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches', 'gambling', 'lockpick', 'lookout', 'digger', 'muscle', 'smuggler']);
+export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches', 'gambling', 'lockpick', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId']);
 
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
@@ -143,6 +145,11 @@ function lastingFacts(sim: Sim): Fact[] {
   // Side games (P22): what a game of dice under a guard's nose costs, and what a lockpick won't open.
   if (!relaxed) add({ kind: 'gambling', n: DICE_HEAT });
   add({ kind: 'lockpick' });
+  // Bluff & glider (P24): when the gate changes shifts, and what a guard's papers are made of.
+  if (checkpointOf(sim)) {
+    add({ kind: 'shiftChange', t1: SHIFT_FROM, t2: SHIFT_TO });
+    add({ kind: 'fakeId' });
+  }
   lasting.set(def.id, out);
   return out;
 }
@@ -216,6 +223,8 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
     const kind = thorough(sim, plan.day) ? 'searchClose' : 'searchQuick';
     out.push({ kind, key: `search:${plan.day}`, guard: dv.supervisor });
   }
+  // A glider's day (P24): today's wind would carry one off the roof clear out to the road.
+  if ((sim.prison.escapes ?? []).includes('glider') && !sim.prison.rules?.relaxed && glideOutToday(sim)) out.push({ kind: 'glideDay', key: `glideDay:${plan.day}` });
   return out;
 }
 
@@ -281,6 +290,9 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   digger: ['inmate'],
   muscle: ['inmate'],
   smuggler: ['inmate'],
+  shiftChange: ['t1', 't2'],
+  fakeId: [],
+  glideDay: [],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */

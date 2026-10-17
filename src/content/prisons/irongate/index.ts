@@ -393,7 +393,23 @@ export const IRONGATE: PrisonDef = {
     { x: 31, z: 55 },
     { x: 32, z: 46 },
   ],
-  escapes: ['raft', 'helicopter', 'takeover', 'stowaway'],
+  // (P24: waved out through the ferry gate at the shift change, the drawbridge lowered.)
+  escapes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff'],
+  // The checkpoint (P24): the gatekeeper's booth on the rock outside the ferry gate, beside the
+  // drawbridge; papers are shown from the walkway, and waved through, the gate opens and the
+  // drawbridge comes down.
+  checkpoint: {
+    window: [
+      { x: 30, z: 54 },
+      { x: 31, z: 54 },
+    ],
+    gates: [
+      { x: 30, z: 55 },
+      { x: 31, z: 55 },
+    ],
+    bridge: true,
+    booth: { x: 32, z: 56, face: 9 },
+  },
   // Delivery day (P18): the supply helicopter sets down on its pad by day too, the court's gate
   // propped open for the porters from the sally port; the west helipad guard walks round it,
   // and searches it four days in five.

@@ -73,7 +73,7 @@ export type DogCoat = 'shepherd' | 'mastiff' | 'retriever' | 'collie';
 export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';
 
 /** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
-export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway';
+export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider';
 
 /**
  * Delivery day (P18): the vehicle that comes once a week, 12:30–14:31, and the guard who
@@ -99,6 +99,22 @@ export interface DeliveryDef {
   thorough: number;
   /** The way it drives in and out (tiles, from off the map to the bay's middle; drawn only). */
   road: ReadonlyArray<{ x: number; z: number }>;
+}
+
+/**
+ * The checkpoint (P24): the gatekeeper's booth at the gate out, where a player in a guard's
+ * uniform shows a fake ID at the shift change and is waved through. All of it data: the booth
+ * and its gatekeeper are drawn, nothing on the map changes.
+ */
+export interface CheckpointDef {
+  /** Where the player stands to show the ID (tiles, just inside the first gate). */
+  window: ReadonlyArray<{ x: number; z: number }>;
+  /** The gates that open for the player once waved through, in the order they're walked (perimeter doors no key opens). */
+  gates: ReadonlyArray<{ x: number; z: number }>;
+  /** Irongate: the drawbridge (`drawbridge`) comes down for the player too. */
+  bridge?: boolean;
+  /** The gatekeeper's booth (drawn only, just outside the gate where nobody walks): a tile, and the way its hatch faces (1–16). */
+  booth: { x: number; z: number; face: number };
 }
 
 /**
@@ -197,4 +213,6 @@ export interface PrisonDef {
   delivery?: DeliveryDef;
   /** Smuggling (P21): the fixer, the drone's drop, the visiting room; without it, none. */
   smuggling?: SmugglingDef;
+  /** The checkpoint (P24): its window, its gates, its booth; without it, no bluffing out. */
+  checkpoint?: CheckpointDef;
 }

@@ -64,6 +64,10 @@ export const RECIPES: readonly RecipeDef[] = [
   r('rat_trap', 20, 'plastic_cup', 'potato|chocolate|jerky'),
   // P22: for the pins of a keyed door.
   r('lockpick', 40, 'wire', 'nail_file'),
+  // P24: a guard's papers printed on a blank card off the phone (a magazine's photo, ink); a glider for a roof's edge.
+  r('fake_id', 50, 'blank_id', 'ink', 'magazine'),
+  r('glider_frame', 60, 'balsa', 'balsa', 'timber'),
+  r('glider', 80, 'glider_frame', 'bed_sheet', 'duct_tape'),
 ];
 
 /** The item ids an ingredient accepts. */

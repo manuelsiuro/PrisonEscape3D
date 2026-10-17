@@ -45,11 +45,51 @@ import { fixerOf, visitExits } from '../src/sim/systems/smuggling';
 import { lockAt } from '../src/sim/systems/games';
 import { DICE_HEAT } from '../src/content/games';
 import { Bot, n } from './bots';
+import { SHIFT_FROM, SHIFT_TO } from '../src/content/getaways';
+import { RECIPES } from '../src/content/recipes';
+import { CATALOGUE } from '../src/content/smuggling';
+import { airOf, checkpointOf, launchSpots, shiftChange } from '../src/sim/systems/getaway';
+import { glideFrom } from '../src/sim/systems/structure';
+import { prisonDay } from '../src/sim/systems/clock';
+import { command, OP } from '../src/sim/command';
+import { ESCAPES, Sim as SimOf } from '../src/sim/Sim';
 import { check } from './assert';
 
 const DAY = 1440 * STEPS_PER_MINUTE;
 const hhmm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const has = (sim: Sim, kind: number) => Array.from(sim.world.ground.base).includes(kind);
+
+/**
+ * Today's wind carries a glider out (P24): flown for real, from a copy of the game, off the first
+ * edge the ladder's roof reaches where it would (cached by the day).
+ */
+const glideProof = new Map<string, boolean>();
+let glidesFlown = 0;
+function glidesOut(sim: Sim): boolean {
+  const key = `${sim.prison.id}:${sim.state.salt}:${prisonDay(sim.state.step)}`;
+  const known = glideProof.get(key);
+  if (known !== undefined) return known;
+  const snap = sim.snapshot();
+  const twin = new SimOf(sim.prison, 1);
+  let ok = false;
+  for (const [t, facing] of launchSpots(sim.world)) {
+    twin.restore(snap);
+    const s = twin.state;
+    const b = { x: (t % MAP_W) * UNIT + UNIT / 2, z: Math.floor(t / MAP_W) * UNIT + UNIT / 2, facing, moving: false };
+    const g = glideFrom(twin.world, b, airOf(twin));
+    if (!g || g.why || !g.out) continue;
+    s.layer = LAYER.ROOF;
+    Object.assign(s.player, b);
+    s.items.inv[0] = slot(n('glider'));
+    s.items.hand = 0;
+    twin.step(command(0, OP.USE, 1));
+    ok = s.escaped > 0 && ESCAPES[s.via] === 'glider';
+    glidesFlown++;
+    break;
+  }
+  glideProof.set(key, ok);
+  return ok;
+}
 
 /** A fact about now holds in the state as it stands. */
 function holdsNow(sim: Sim, f: Fact): boolean {
@@ -161,6 +201,17 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       return !sim.prison.rules?.relaxed;
     case 'ratDogs':
       return s.dogs.length > 0;
+    // Bluff & glider (P24): the gate's shift change at the minutes the rule opens and closes it; a fake ID's recipe off the phone's card; a glider that gets out today, flown.
+    case 'shiftChange': {
+      const at = (m: number) => shiftChange(((m - ROUTINE[0].start + 1440) % 1440) * STEPS_PER_MINUTE);
+      return !!checkpointOf(sim) && f.t1 === SHIFT_FROM && f.t2 === SHIFT_TO && !at(f.t1! - 1) && at(f.t1!) && at(f.t2! - 1) && !at(f.t2!);
+    }
+    case 'fakeId': {
+      const r = RECIPES.find((x) => x.result === 'fake_id');
+      return !!checkpointOf(sim) && !!sim.prison.smuggling && !!r && [...r.ingredients].sort().join() === 'blank_id,ink,magazine' && CATALOGUE.some((c) => c.item === 'blank_id');
+    }
+    case 'glideDay':
+      return glidesOut(sim);
     default:
       return true;
   }
@@ -398,4 +449,5 @@ for (const prison of [...PRISONS, TRAINING]) {
   console.log(`  naps as told: ${naps}; shakedowns as told: ${shakedowns}`);
   if (lasting.some((f) => f.kind === 'lazy')) check(naps > 0, `${prison.id}: the lazy guard naps as told`);
 }
+console.log(`a glider's day: flown out from a copy ${glidesFlown} times`);
 check(GOSSIP.every((k) => kinds.has(k) || ['heat'].includes(k)), `every kind of gossip came up somewhere (${GOSSIP.filter((k) => !kinds.has(k)).join(', ') || 'all'})`);

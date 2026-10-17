@@ -2113,4 +2113,35 @@ export const frBarks: Barks = {
     "Un truc largué dans la cour ? {inmate} ira le chercher.",
     "{inmate} a les pieds les plus discrets d’ici.",
   ],
+  "re.glide.in": [
+    "C’est un oiseau ? Un avion ? Non, c’est {you} !",
+    "Hé, {you} vient de voler ? Depuis le toit ?",
+    "Dix sur dix pour le style. L’atterrissage, faut revoir.",
+    "Y en a un qui lit les mauvais livres à la bibliothèque.",
+    "Je m’inscris aux cours de pilotage.",
+    "Youpi ! Enfin, je veux dire : j’ai rien vu.",
+  ],
+  "re.glide.gu": [
+    "Hé ! Toi ! Les pieds sur terre !",
+    "Ce détenu vient d’arriver en planant ?",
+    "Bouge pas, Icare !",
+    "Personne n’a parlé de voler !",
+    "Bon, ça va dans le rapport. Je sais pas comment.",
+    "Du toit ? Avec un drap ? Halte !",
+  ],
+  "go.shiftChange": [
+    "Le portail change d’équipe à {t1}. Jusqu’à {t2}, le nouveau connaît personne.",
+    "Psst : {t1} au portail. Nouveau gardien, aucune idée de qui est qui jusqu’à {t2}.",
+    "Relève au portail, {t1}–{t2}. Bon uniforme, et il te fait signe de passer.",
+  ],
+  "go.fakeId": [
+    "Une carte vierge, de l’encre et une photo de magazine : voilà une carte de gardien.",
+    "Des faux papiers ? Une carte vierge au téléphone, de l’encre, un magazine.",
+    "Tu veux être gardien ? Imprime-toi une carte. Faut de la jugeote, quand même.",
+  ],
+  "go.glideDay": [
+    "Tu sens ce vent ? Un planeur depuis le toit passerait la clôture, aujourd’hui.",
+    "Avec le vent d’aujourd’hui, un cerf-volant sortirait d’ici tout seul. Je dis ça…",
+    "Temps idéal pour planer. Si t’avais un planeur. Et un toit. Et du cran.",
+  ],
 };

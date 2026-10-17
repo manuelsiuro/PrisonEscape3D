@@ -10,7 +10,7 @@ import { nearestDir, nearestDir as faceTo, tileAt } from '../ai/path';
 import { placesOf } from '../ai/places';
 import { argA, argB, argC, EXT, OP, opOf, tossTile } from '../command';
 import type { SimContext } from '../context';
-import { SPOT, WAKE } from '../state';
+import { SPOT, WAKE, type LayerMove } from '../state';
 import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, ENERGY_REGEN_STEPS, HEALTH_REGEN_STEPS, KO_STEPS, MEAL_ENERGY, MEAL_STEPS, SHARPEN_STROKES, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE } from '../world/tiles';
@@ -33,8 +33,9 @@ import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
 import { canChat } from './ways';
 import { atTail, climbOut, stow } from './delivery';
+import { airOf, atWindow, showId, windowFirst } from './getaway';
 import { approach, dismissAll, endTalk, talkOp } from './social';
-import { besideOnGround, cavesIn, type ClimbAction, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
+import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
 import { rep, startTraining, stopTraining, study } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
@@ -89,6 +90,11 @@ export function useItems(sim: SimContext, cmd: number) {
       const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k));
       const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
       const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
+      // The checkpoint (P24): a fake ID shown at its window, first at the shift change (else when there's nothing else to do here).
+      if (atWindow(sim) && windowFirst(sim, !!target || !!up)) {
+        showId(sim);
+        break;
+      }
       if (up) {
         climb(sim, up);
         break;
@@ -244,7 +250,7 @@ function strike(sim: SimContext, fresh: boolean) {
   const it = s.items;
   const p = s.player;
   const held = itemOf(it.inv[it.hand]);
-  const target = toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv);
+  const target = toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim));
   if (!target) return;
   // Strikes come at their own pace (holding the button asks every step); the rest at a press.
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
@@ -465,7 +471,7 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
   const it = s.items;
   const t = target.tile;
   if (!target.fits) {
-    sim.events.push({ type: 'cantStrike', why: target.action === 'grapnel' ? 'noRope' : 'poster', action: target.action });
+    sim.events.push({ type: 'cantStrike', why: target.action === 'grapnel' ? 'noRope' : target.glide?.why ?? 'poster', action: target.action });
     return;
   }
   // A hook over a live fence: the shock comes down the rope.
@@ -481,6 +487,13 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
     case 'launch':
       launch(sim);
       break;
+    case 'glide': {
+      // Off the edge (P24): down where the wind brings the glider, which is left in pieces there.
+      const g = target.glide!;
+      moveTo(sim, LAYER.GROUND, t, 'glide');
+      sim.events.push({ type: 'glide', from: target.over!, to: t, dist: g.dist, short: g.short });
+      break;
+    }
     case 'grapnel': {
       // Hooked over the fence onto a roof beyond: across on the line, the sheet rope kept for the way down.
       if (target.layer === LAYER.ROOF) {
@@ -565,7 +578,7 @@ function underDesk(sim: SimContext) {
 }
 
 /** Onto a layer, in the middle of a tile. */
-function moveTo(sim: SimContext, layer: number, tile: number, how: ClimbAction | 'digUp' | 'rope' | 'grapnel') {
+function moveTo(sim: SimContext, layer: number, tile: number, how: LayerMove) {
   const s = sim.state;
   const from = s.layer;
   sim.movedBy = how;

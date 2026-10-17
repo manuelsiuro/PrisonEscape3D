@@ -110,6 +110,12 @@ export class World {
   private beyondTiles: Uint8Array | null = null;
   /** A door the player picked open (P22): it opens for them as their own key would (-1 none); derived by the simulation. */
   pickedDoor = -1;
+  /** 1 on the checkpoint's way out (P24): its gates, and the drawbridge where it comes down for the player too. */
+  readonly checkpoint = new Uint8Array(MAP_W * MAP_H);
+  /** Waved through the checkpoint (P24): its way out open for the player alone; derived by the simulation. */
+  waved = false;
+  /** 1 on ground only the checkpoint's way out leads to (Irongate's rock outside the ferry gate, Shankton's gatehouse): worked out once. */
+  private beyondGate: Uint8Array | null = null;
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
   rev = 0;
 
@@ -153,6 +159,8 @@ export class World {
       this.fill(this.cellOf, x0, z0, x1, z1, k + 1);
     });
     if (def.drawbridge) this.fill(this.bridge, ...def.drawbridge, 1);
+    for (const q of def.checkpoint?.gates ?? []) this.checkpoint[q.z * MAP_W + q.x] = 1;
+    if (def.checkpoint?.bridge && def.drawbridge) this.fill(this.checkpoint, ...def.drawbridge, 1);
     this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0 }));
     for (const p of this.props) if (PROPS[p.kind].solid) this.fill(this.propSolid, p.x, p.z, p.x + p.w - 1, p.z + p.d - 1, 1);
     // A cell's door is the door tile next to one of its tiles; its bed the bed inside it.
@@ -218,6 +226,13 @@ export class World {
     this.refreshBlock();
   }
 
+  /** Waved through the checkpoint or not (P24); its gates follow. */
+  setWaved(on: boolean) {
+    if (on === this.waved) return;
+    this.waved = on;
+    this.refreshBlock();
+  }
+
   /** The takeover on or over; doors follow. */
   setRiot(on: boolean) {
     if (on === this.riot) return;
@@ -249,6 +264,40 @@ export class World {
     if (on && d) this.fill(this.parked, ...d.bay, 1);
     if (open && d) for (const q of d.open ?? []) this.propped[q.z * MAP_W + q.x] = 1;
     this.refreshBlock();
+  }
+
+  /**
+   * Whether a ground tile lies past the checkpoint (P24) where nothing but its way out leads
+   * back: open ground next to its gates or drawbridge that can't be walked to from its window
+   * with them shut (every other door open, as for a key). Waved through and standing there, the
+   * player is never shut out.
+   */
+  pastCheckpoint(tile: number): boolean {
+    const c = this.def.checkpoint;
+    if (!c) return false;
+    if (!this.beyondGate) {
+      const g = this.ground;
+      const walk = (j: number) => (g.kind[j] === TILE.DOOR || !TILE_INFO[g.kind[j]].solid) && !this.propSolid[j] && !this.checkpoint[j];
+      const near = (t: number, x = t % MAP_W) =>
+        [
+          [t - 1, x > 0],
+          [t + 1, x < MAP_W - 1],
+          [t - MAP_W, t >= MAP_W],
+          [t + MAP_W, t < MAP_W * (MAP_H - 1)],
+        ] as const;
+      // From the window, with the checkpoint shut.
+      const home = new Uint8Array(MAP_W * MAP_H);
+      const queue = c.window.map((q) => q.z * MAP_W + q.x);
+      for (const t of queue) home[t] = 1;
+      for (let k = 0; k < queue.length; k++) for (const [j, ok] of near(queue[k])) if (ok && !home[j] && walk(j)) (home[j] = 1), queue.push(j);
+      // What its way out touches that home doesn't reach (short of the road).
+      const out = new Uint8Array(MAP_W * MAP_H);
+      const more: number[] = [];
+      for (let i = 0; i < MAP_W * MAP_H; i++) if (this.checkpoint[i]) for (const [j, ok] of near(i)) if (ok && !home[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
+      for (let k = 0; k < more.length; k++) for (const [j, ok] of near(more[k])) if (ok && !home[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
+      this.beyondGate = out;
+    }
+    return this.beyondGate[tile] === 1;
   }
 
   /** Whether a ground tile lies beyond the delivery's propped doors (where only they let the player out). */
@@ -293,15 +342,20 @@ export class World {
       this.doorShut[i] = shut ? 1 : 0;
       // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
       // (P22: and the door the player picked, as their own key would.)
-      const keyed = shut && (this.riot || (!this.gate[i] && (((this.playerKeys >> g.key[i]) & 1) === 1 || i === this.pickedDoor)));
-      // The drawbridge (P12) is down while the prison is the inmates'.
-      const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid && !(this.riot && this.bridge[i]);
+      // (P24: waved through the checkpoint, its gates open for the player too.)
+      const waved = this.waved && this.checkpoint[i] === 1;
+      const keyed = shut && (this.riot || waved || (!this.gate[i] && (((this.playerKeys >> g.key[i]) & 1) === 1 || i === this.pickedDoor)));
+      // The drawbridge (P12) is down while the prison is the inmates' (P24: and for the player waved through).
+      const lowered = this.riot && this.bridge[i] === 1;
+      const solid = k === TILE.DOOR ? shut && !keyed : TILE_INFO[k].solid && !lowered && !(waved && this.bridge[i]);
       this.block[i] = solid || this.propSolid[i] || this.parked[i] ? 1 : 0;
       // Damage is the player's way: inmates and guards walk the prison as it was built (doors too).
       const damage = DAMAGE_SHOWS.has(k) ? 1 : 0;
       // Nobody walks into a minefield on purpose: inmates, guards, and the player's routes keep out (P11).
       const mine = k === TILE.MINE ? 1 : 0;
-      this.npcBlock[i] = (k === TILE.DOOR ? (shut || this.propSolid[i] ? 1 : 0) : this.block[i]) | damage | mine;
+      // (The drawbridge lowered for the player alone stays water to everyone else.)
+      const own = waved && k !== TILE.DOOR && this.bridge[i] && !lowered ? 1 : 0;
+      this.npcBlock[i] = (k === TILE.DOOR ? (shut || this.propSolid[i] ? 1 : 0) : this.block[i] | own) | damage | mine;
       this.guardBlock[i] = (k !== TILE.DOOR && TILE_INFO[k].solid) || this.propSolid[i] || this.parked[i] || damage || mine ? 1 : 0;
       this.routeBlock[i] = this.block[i] | mine;
     }

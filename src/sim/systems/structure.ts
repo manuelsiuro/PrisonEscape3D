@@ -9,6 +9,8 @@ import { lineOfSight } from '../ai/sight';
 import type { Body } from './movement';
 import { lockAt } from './games';
 import { PINS } from '../../content/games';
+import type { Weather } from '../../content/days';
+import { GLIDE_BASE, GLIDE_MAX, GLIDE_MIN, GLIDE_RAIN, GLIDE_TAIL, RUN_UP } from '../../content/getaways';
 
 /**
  * Layers and destruction (GDD §9): what a tool would strike, what the action button would
@@ -20,9 +22,10 @@ import { PINS } from '../../content/games';
  * What the use button does with the item in hand: a tool strikes (chip, cut, unscrew, dig,
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
  * takes the player down off a roof, an alarm clock is wound (P14), soap washes the scent off
- * (P19), a caught rat is fed and a rat trap set down (P20), a lockpick works a keyed door's pins (P22).
+ * (P19), a caught rat is fed and a rat trap set down (P20), a lockpick works a keyed door's pins (P22),
+ * a glider takes off a roof's edge (P24).
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick' | 'glide';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -35,8 +38,30 @@ export interface ToolTarget {
   fits: boolean;
   /** Hit points the tile has in all (0: nothing gets through it; strikes only). */
   hp: number;
-  /** A grapnel's swing: the fence (or gatehouse roof) tile it hooks (the landing is `tile`). */
+  /** A grapnel's swing: the fence (or gatehouse roof) tile it hooks (the landing is `tile`). P24, a glide: the roof tile it leaves from. */
   over?: number;
+  /** A glide (P24): how far it goes (tiles), whether it comes down short of the wind's reach, whether it lands out on the road, and why it can't go (fits false). */
+  glide?: Glide;
+}
+
+/** The air a glider flies in (P24): the day's wind (where it blows from, 0 north clockwise in eighths; its strength 0–3) and weather. */
+export interface Air {
+  wind: number;
+  force: number;
+  weather: Weather;
+}
+
+/** A glide off a roof's edge (P24, glideFrom). */
+export interface Glide {
+  /** The tiles the wind carries it (GLIDE_MIN–GLIDE_MAX), and where it comes down (tiles from the edge; 0 nowhere). */
+  reach: number;
+  dist: number;
+  /** It comes down short of its reach (a roof, a tower or a fence in the way, nowhere to land beyond). */
+  short: boolean;
+  /** It lands out on the road. */
+  out: boolean;
+  /** Why it can't go: a storm, no run-up behind, nowhere to land; null when it can. */
+  why: 'storm' | 'runUp' | 'noLanding' | null;
 }
 
 /** What the action button does to the structure around the player. */
@@ -87,6 +112,8 @@ const RAT_TRAP = ITEM_ID('rat_trap');
 const CAUGHT_RAT = ITEM_ID('caught_rat');
 /** P22: the lockpick (a keyed door ahead). */
 const LOCKPICK = ITEM_ID('lockpick');
+/** P24: the glider (off a roof's edge). */
+export const GLIDER = ITEM_ID('glider');
 const BAIT = ['potato', 'chocolate', 'jerky'].map(ITEM_ID);
 /** What blinds a camera (GDD §5.6). */
 export const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
@@ -243,7 +270,7 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = f
  * it, the target comes back with `fits` false (the UI says what is needed); null when there
  * is nothing to strike.
  */
-export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = []): ToolTarget | null {
+export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = [], air?: Air): ToolTarget | null {
   const def = held ? itemDef(held) : null;
   if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
@@ -269,6 +296,16 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   // A raft in hand at the end of a pier, the open sea ahead (P12, GDD §4.5): launched, and away.
   if (held === RAFT && layer === LAYER.GROUND && ahead >= 0 && w.ground.kind[here] === TILE.PIER && w.ground.kind[ahead] === TILE.WATER && !w.bridge[ahead]) {
     return { action: 'launch', layer, tile: ahead, fits: true, hp: 0 };
+  }
+  // A glider at a roof's edge (P24): off it, as far as the day's wind carries it.
+  if (held === GLIDER && layer === LAYER.ROOF && air) {
+    const glide = glideFrom(w, b, air, bodies);
+    if (glide) {
+      const sx = stepX(b);
+      const sz = stepZ(b);
+      const land = glide.dist ? here + (sz * MAP_W + sx) * glide.dist : -1;
+      return { action: 'glide', layer: LAYER.GROUND, tile: land, over: here, hp: 0, fits: glide.why === null, glide };
+    }
   }
   // A grapnel at a roof's edge, the perimeter fence in reach beyond (GDD §12): a sheet rope in the pockets gets the player down outside.
   if (held === GRAPNEL && layer === LAYER.ROOF) {
@@ -371,6 +408,87 @@ export function grapnelSwing(w: World, b: Body): { fence: number; land: number; 
     if (roof[i] !== TILE.EMPTY || !TILE_INFO[kind].outdoor || TILE_INFO[kind].solid) return null;
   }
   return null;
+}
+
+/** A body's heading snapped to one of the four sides, as steps along x and z. */
+const stepX = (b: Body) => {
+  const fx = DIR_X[b.facing] ?? 0;
+  const fz = DIR_Z[b.facing] ?? 0;
+  return Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;
+};
+const stepZ = (b: Body) => {
+  const fx = DIR_X[b.facing] ?? 0;
+  const fz = DIR_Z[b.facing] ?? 0;
+  return Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz);
+};
+
+/**
+ * How far the wind carries a glide heading one way (P24; eighths, 0 north, 2 east, 4 south, 6
+ * west): GLIDE_BASE tiles in still air; a tailwind adds GLIDE_TAIL a point of its strength (half
+ * that from a quarter behind), a headwind takes one a point off (half that from a quarter ahead),
+ * a crosswind nothing; rain a tile. Pure: the button and the ring say the same.
+ */
+export function glideReach(air: Air, heading: number): number {
+  const off = ((((air.wind + 4) % 8) - heading) % 8 + 8) % 8;
+  const f = air.force;
+  const wind = off === 0 ? GLIDE_TAIL * f : off === 1 || off === 7 ? (GLIDE_TAIL * f) / 2 : off === 4 ? -f : off === 3 || off === 5 ? -Math.floor(f / 2) : 0;
+  return Math.max(GLIDE_MIN, Math.min(GLIDE_MAX, GLIDE_BASE + wind - (air.weather === 'rain' ? GLIDE_RAIN : 0)));
+}
+
+/**
+ * A glide off the roof's edge the player faces (P24): null away from an edge. It needs RUN_UP
+ * tiles of roof behind, and no storm. It flies straight out over open ground and fences as far
+ * as the wind carries it (glideReach), stopped short by a roof or a tower in the way, and comes
+ * down on the furthest tile it reaches where one can land (open ground: not a fence, the sea,
+ * a minefield, a solid prop, a parked vehicle or someone standing there). Pure: the button, the
+ * ring and the sim agree.
+ */
+export function glideFrom(w: World, b: Body, air: Air, bodies: readonly Body[] = []): Glide | null {
+  const sx = stepX(b);
+  const sz = stepZ(b);
+  const x = Math.floor(b.x / UNIT);
+  const z = Math.floor(b.z / UNIT);
+  const roof = w.layers[LAYER.ROOF].kind;
+  // Only from the edge: the tile ahead has no roof.
+  if (!sx && !sz) return null;
+  if (!w.inside(x + sx, z + sz) || roof[(z + sz) * MAP_W + x + sx] !== TILE.EMPTY) return null;
+  const reach = glideReach(air, sx > 0 ? 2 : sx < 0 ? 6 : sz > 0 ? 4 : 0);
+  const glide: Glide = { reach, dist: 0, short: false, out: false, why: null };
+  // Room to run: roof underfoot all the way behind.
+  for (let k = 1; k <= RUN_UP; k++) {
+    const bx = x - sx * k;
+    const bz = z - sz * k;
+    const r = w.inside(bx, bz) ? roof[bz * MAP_W + bx] : TILE.EMPTY;
+    if (r !== TILE.ROOF && r !== TILE.LADDER) glide.why = 'runUp';
+  }
+  // How far it gets: a roof or a tower in the way brings it down before it.
+  let far = 0;
+  for (let k = 1; k <= reach; k++) {
+    const tx = x + sx * k;
+    const tz = z + sz * k;
+    if (!w.inside(tx, tz)) break;
+    const i = tz * MAP_W + tx;
+    if (roof[i] !== TILE.EMPTY || w.ground.kind[i] === TILE.TOWER) break;
+    far = k;
+  }
+  for (let k = far; k >= 1; k--) {
+    const tx = x + sx * k;
+    const tz = z + sz * k;
+    const i = tz * MAP_W + tx;
+    const kind = w.ground.kind[i];
+    if (!TILE_INFO[kind].outdoor || TILE_INFO[kind].solid || kind === TILE.MINE || w.blocked(tx, tz)) continue;
+    // (Never down on someone: the next tile back.)
+    const mx = tx * UNIT + UNIT / 2;
+    const mz = tz * UNIT + UNIT / 2;
+    if (bodies.some((o) => Math.abs(o.x - mx) < 2 * BODY_HALF && Math.abs(o.z - mz) < 2 * BODY_HALF)) continue;
+    glide.dist = k;
+    glide.short = k < reach;
+    glide.out = w.zoneAt(tx, tz) === 'outside';
+    break;
+  }
+  if (!glide.dist && !glide.why) glide.why = 'noLanding';
+  if (air.weather === 'storm') glide.why = 'storm';
+  return glide;
 }
 
 /** A roof the prison names as a grapnel's landing across a chasm (PrisonDef.landings). */

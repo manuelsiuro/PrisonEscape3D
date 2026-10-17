@@ -1,9 +1,14 @@
+import { WAVED_STEPS } from '../content/getaways';
+import { STEPS_PER_SECOND } from '../sim/tuning';
 import { ROUTINE, routineEnd } from '../content/routine';
 import { formatTime, type Clock } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
 import { currentLang, t, type Key } from '../i18n';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
+
+/** The waved-through chip's full run (P24). */
+const WAVED_SECS = WAVED_STEPS / STEPS_PER_SECOND;
 
 /** What the HUD shows besides the clock and the zone. */
 export interface HudState {
@@ -26,6 +31,8 @@ export interface HudState {
   /** What the power pill says (Irongate's generators each kill their half, P12). */
   powerKey: 'hud.powerOut' | 'hud.powerOutCams' | 'hud.powerOutFence';
   takeoverLeft: number | null;
+  /** Waved through the checkpoint (P24): seconds its gates stay open for the player (null: shut). */
+  wavedLeft: number | null;
   /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double); `hot`: a heatwave's sun instead (P17). */
   cold: { built: number; left: number; bit: boolean; warming: boolean; hot: boolean } | null;
   /** A guard bribed to look the other way (P15): who, until when, game minutes left of it, out of how many (null: none). */
@@ -114,6 +121,7 @@ export class Hud {
       <div class="hud-row hud-alerts">
         <span class="pill hud-alert hud-power hidden" role="status">${icon('plug', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
+        <span class="pill hud-alert hud-waved hidden" role="status">${icon('idCard', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
@@ -147,6 +155,7 @@ export class Hud {
     this.cashPill.addEventListener('animationend', () => this.cashPill.classList.remove('gain', 'spend'));
     this.power = q('.hud-power');
     this.riot = q('.hud-riot');
+    this.waved = q('.hud-waved');
     this.cold = q('.hud-cold');
     this.bribe = q('.hud-bribe');
     this.today = q('.hud-today');
@@ -163,6 +172,7 @@ export class Hud {
   private readonly bribe: HTMLElement;
   private readonly power: HTMLElement;
   private readonly riot: HTMLElement;
+  private readonly waved: HTMLElement;
   private readonly cold: HTMLElement;
   private readonly today: HTMLElement;
   private readonly rat: HTMLElement;
@@ -187,7 +197,8 @@ export class Hud {
     el.classList.toggle('hidden', left === null);
     if (left === null) return;
     setText(el.querySelector('span')!, t(label));
-    setText(el.querySelector('b')!, `0:${String(Math.max(0, Math.ceil(left))).padStart(2, '0')}`);
+    const secs = Math.max(0, Math.ceil(left));
+    setText(el.querySelector('b')!, `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, left / total)) * 100}%`;
     el.classList.toggle('low', left <= 10);
   }
@@ -355,11 +366,12 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
       this.alert(this.riot, 'hud.gatesOpen', s.takeoverLeft, 30);
+      this.alert(this.waved, 'hud.waved', s.wavedLeft, WAVED_SECS);
       this.chill(c);
       this.lookAway(s.bribe);
       this.dayChip(d);

@@ -45,8 +45,12 @@ export interface DayPlan {
   outages: number[];
 }
 
-/** A day forced: [day (0: every day), event (DAY_EVENTS index, -1: as drawn), weather (WEATHERS index, -1: as drawn)]. */
-export type ForcedDay = [number, number, number];
+/**
+ * A day forced: [day (0: every day), event (DAY_EVENTS index, -1: as drawn), weather (WEATHERS
+ * index, -1: as drawn)], and (P24: bots and tests, a glide's day) the wind too: [..., where it
+ * blows from (0–7), its strength (0–3)], -1 as drawn.
+ */
+export type ForcedDay = [number, number, number] | [number, number, number, number, number];
 
 /** Every day quiet and clear: the multi-day tests that aren't about the day keep their numbers. */
 export const quietCalendar = (): ForcedDay[] => [[0, 0, 0]];
@@ -107,11 +111,15 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
   let weather = drawnWeather(prison, salt, day);
   // Forced days: an exact day wins over every day (0). (Never a delivery where no vehicle comes, nor visiting day where nobody visits: a deck without the card.)
   const book = DAY_BOOKS[prison];
+  let forcedWind = -1;
+  let forcedForce = -1;
   for (const pass of [0, 1])
-    for (const [d, e, wx] of calendar) {
+    for (const [d, e, wx, wd = -1, wf = -1] of calendar) {
       if (pass === 0 ? d !== 0 : d !== day) continue;
       if (e >= 0 && e < DAY_EVENTS.length && (!DECK_ONLY.has(DAY_EVENTS[e]) || book?.deck.includes(DAY_EVENTS[e]))) event = e;
       if (wx >= 0 && wx < WEATHERS.length) weather = wx;
+      if (wd >= 0 && wd < 8) forcedWind = wd;
+      if (wf >= 0 && wf <= 3) forcedForce = wf;
     }
   // (Not on day 1: it stays clear whatever the twist.)
   if (day > 1) for (const m of mods) if (MOD_WEATHER[m]) weather = WEATHERS.indexOf(MOD_WEATHER[m]);
@@ -121,7 +129,9 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
   const prevailing = book?.climate.wind ?? 0;
   const turn = rollInt(salt, SALT.WIND, day, 0, 10);
   const wind = turn < 6 ? prevailing : turn < 8 ? (prevailing + 1) % 8 : turn < 9 ? (prevailing + 7) % 8 : rollInt(salt, SALT.WIND, day, 1, 8);
-  const windForce = w === 'fog' ? 0 : w === 'storm' ? 2 + rollInt(salt, SALT.WIND, day, 2, 2) : rollInt(salt, SALT.WIND, day, 2, 3);
+  const drawnForce = w === 'fog' ? 0 : w === 'storm' ? 2 + rollInt(salt, SALT.WIND, day, 2, 2) : rollInt(salt, SALT.WIND, day, 2, 3);
+  // (Forced, P24: still calm in fog.)
+  const windForce = forcedForce >= 0 && w !== 'fog' ? forcedForce : drawnForce;
   const mood = rollInt(salt, SALT.MOOD, day, 0, 3);
   let at = -1;
   let until = -1;
@@ -142,7 +152,7 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
     // One in each part of the night, a cut always over before the next can start.
     for (let k = 0; k < n; k++) outages.push(OUTAGE_FROM + k * span + rollInt(salt, SALT.OUTAGE, day, k + 1, Math.max(1, span - 50)));
   }
-  return { day, event: id, weather: w, wind, windForce, mood, at, until, outages };
+  return { day, event: id, weather: w, wind: forcedWind >= 0 ? forcedWind : wind, windForce, mood, at, until, outages };
 }
 
 /** A sim's plan for a day (today by default). */

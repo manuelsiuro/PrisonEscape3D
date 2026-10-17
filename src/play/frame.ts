@@ -1,3 +1,4 @@
+import { checkpointOf, shiftChange } from '../sim/systems/getaway';
 import { lookingAway } from '../sim/systems/ways';
 import { itemDef, itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
@@ -159,6 +160,7 @@ const frameData: Frame = {
   rats: [],
   smuggle: null,
   games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
+  getaway: { shift: false, waved: false, glide: null },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
 function carriesUnshielded(it: ItemState): boolean {
@@ -454,6 +456,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.takeover = st.takeover;
   frameA = a;
   dayFrame(sim, f);
+  getawayFrame(sim, f);
   // Smuggling (P21): the drone, the drops, visiting day.
   f.smuggle = smuggleFrame(sim, a);
   // The side games (P22): the bout, the dice between the two, the pick's taps, sports day.
@@ -467,6 +470,29 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
  * event on (the screen, the food, the inspectors).
  */
 /** The step's fraction (the frame's interpolation) for the day's clocks. */
+/** Bluff & glider (P24): the checkpoint's shift change and the player waved through; a glider at a roof's edge, where it would come down (the sim's own target). */
+const glidePreview = { fromX: 0, fromZ: 0, toX: 0, toZ: 0, go: false, out: false };
+function getawayFrame(sim: Sim, f: Frame) {
+  const st = sim.state;
+  const gw = f.getaway;
+  gw.shift = !!checkpointOf(sim) && shiftChange(st.step);
+  gw.waved = st.waved > 0;
+  const tt = targets.tool;
+  const g = tt?.action === 'glide' ? tt.glide : undefined;
+  if (!g || !g.dist || st.layer !== LAYER.ROOF) {
+    gw.glide = null;
+    return;
+  }
+  const here = tt!.over!;
+  glidePreview.fromX = (here % MAP_W) + 0.5;
+  glidePreview.fromZ = Math.floor(here / MAP_W) + 0.5;
+  glidePreview.toX = (tt!.tile % MAP_W) + 0.5;
+  glidePreview.toZ = Math.floor(tt!.tile / MAP_W) + 0.5;
+  glidePreview.go = tt!.fits;
+  glidePreview.out = g.out;
+  gw.glide = glidePreview;
+}
+
 let frameA = 0;
 function dayFrame(sim: Sim, f: Frame) {
   const plan = today(sim);

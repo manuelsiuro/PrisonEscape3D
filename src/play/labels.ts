@@ -34,11 +34,11 @@ const LETTER = itemNumber('letter');
 
 /** Why a strike can't land, by what it needs. */
 export const NEED: Record<string, string> = {
-  rope: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig', pick: 'toast.pickGate' };
+  rope: 'toast.noLanding', glide: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig', pick: 'toast.pickGate' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider' };
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
@@ -263,6 +263,7 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   const w = sim.world;
   const v = toolView;
   v.attack = false;
+  v.caption = false;
   v.verb = t(`act.${tt.action}` as Key);
   v.icon = TOOL_ICON[tt.action];
   // An alarm clock (P14): wound, or stopped while it rings.
@@ -309,6 +310,16 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     v.fits = tt.fits;
     v.repeat = false;
     v.progress = at ? s.pick[1] / Math.max(1, tt.hp) : null;
+    return v;
+  }
+  // A glider at a roof's edge (P24): how far the wind carries it and where it comes down, or why it can't go.
+  if (tt.action === 'glide') {
+    const g = tt.glide!;
+    v.caption = true;
+    v.what = g.why === 'storm' ? t('thing.glideStorm') : g.why === 'runUp' ? t('thing.glideRunUp') : g.why === 'noLanding' ? t('thing.glideNowhere') : t(g.out ? (g.dist === 1 ? 'thing.glideOutOne' : 'thing.glideOut') : g.dist === 1 ? 'thing.glideInOne' : 'thing.glideIn', { n: g.dist });
+    v.fits = tt.fits;
+    v.repeat = false;
+    v.progress = null;
     return v;
   }
   // A comb or toothbrush on a wall: strokes so far against those it takes.

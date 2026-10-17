@@ -241,7 +241,11 @@ export function describe(e: SimEvent): string {
       if (e.event !== 'delivery') return '';
       return e.phase === 'start' ? 'the delivery is in' : e.phase === 'search' ? `the vehicle searched (${e.thorough ? 'thoroughly' : 'a quick look'})` : e.phase === 'waved' ? 'the vehicle waved through' : e.phase === 'end' ? 'the delivery leaves' : '';
     case 'refused':
-      return e.why === 'watched' || e.why === 'tailgate' ? `refused: ${e.why}` : '';
+      return e.why === 'watched' || e.why === 'tailgate' || e.why === 'notShift' || e.why === 'notGuard' || e.why === 'papersHot' ? `refused: ${e.why}` : '';
+    case 'bluff':
+      return e.on ? 'waved through the checkpoint' : 'the checkpoint’s gates shut';
+    case 'glide':
+      return `off the roof on a glider: ${e.dist} tiles${e.short ? ' (down short)' : ''}`;
     default:
       return '';
   }

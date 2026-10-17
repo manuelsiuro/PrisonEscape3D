@@ -84,6 +84,12 @@ function stepSim(g: Game, dt: number) {
     let dir = controls.steering ? controls.dir() : g.pilot.dir(p);
     // On the equipment, left and right are reps (sent as ops): only up or down steps off.
     if ((sim.state.train >= 0 || sim.state.bout.length) && (dir === 1 || dir === 9)) dir = 0;
+    // (P24: still in the air on a glider, on screen: down first, then the stick.)
+    if (view.gliding) {
+      dir = 0;
+      op = NO_OP;
+      g.pilot.stop();
+    }
     g.rec.step(command(dir, op[0], op[1], op[2], op[3]));
     g.walked += Math.hypot(p.x - g.prev.x, p.z - g.prev.z) / UNIT;
     // Sound, banners and vibration read the events; the simulation never calls them.

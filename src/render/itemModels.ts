@@ -136,6 +136,21 @@ const SHAPES: Record<string, Shape> = {
     box(0.2, 0.012, 0.016, c, 0.0, 0.0, 0.07),
     box(0.016, 0.012, 0.06, c, -0.1, 0.0, 0.048),
   ],
+  /** A blank ID card (P24): white plastic, a grey band across the top. */
+  card: (c, a) => [box(0.3, 0.015, 0.2, c), box(0.3, 0.018, 0.045, a, 0, 0, -0.078), box(0.07, 0.018, 0.05, 0xd8c070, 0.09, 0, 0.03)],
+  /** A guard's ID, printed up (P24): the navy band, a photo cut from a magazine, lines of type, a stamp. */
+  idCard: (c, a) => [
+    box(0.3, 0.015, 0.2, c),
+    box(0.3, 0.018, 0.045, a, 0, 0, -0.078),
+    box(0.08, 0.02, 0.095, 0xc89a72, -0.085, 0, 0.025),
+    box(0.06, 0.022, 0.03, 0x3a2a1e, -0.085, 0, -0.01),
+    ...[0, 0.035, 0.07].map((z) => box(0.12, 0.018, 0.012, 0x3a4250, 0.05, 0, z - 0.005)),
+    cyl(0.025, 0.02, 0xd23f36, 0.11, 0, 0.065, 10),
+  ],
+  /** A glider's frame (P24): balsa, the keel and two leading edges in a V, a crossbar. */
+  frame: (c, a) => [turn(stick(0.5, 0.016, c), 0, 0, 0), turn(stick(0.44, 0.016, c), 0.5, 0.0, -0.09), turn(stick(0.44, 0.016, c), -0.5, 0.0, 0.09), turn(stick(0.24, 0.012, a), Math.PI / 2, -0.05, 0)],
+  /** A glider (P24): its sheet rolled round the frame, lashed with tape, the bar sticking out. */
+  glider: (c, a) => [stick(0.5, 0.075, c, 0, 0.075), stick(0.56, 0.018, a, 0, 0.16, 0.045), stick(0.56, 0.018, a, 0, 0.16, -0.045), ...[-0.14, 0.14].map((x) => rod(0.082, 0.04, 0x9aa2ad, x, 0.075, 0, 12)), box(0.03, 0.03, 0.26, 0x5a4a35, 0.2, 0.02)],
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [
     box(0.4, 0.02, 0.28, 0xb07a45),

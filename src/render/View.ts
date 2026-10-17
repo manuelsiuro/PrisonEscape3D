@@ -36,6 +36,7 @@ import { LAYER } from '../sim/world/World';
 import type { NoiseKind } from '../sim/state';
 import { Dogs, type DogFrame } from './Dog';
 import { Rats, type RatFrame } from './Rat';
+import { GetawayView, type GetawayFrame } from './Getaway';
 import { SmuggleView, type SmuggleFrame } from './Smuggling';
 import { GamesView, type GamesFrame } from './Games';
 import { handlersOf } from '../sim/systems/k9';
@@ -117,6 +118,8 @@ export interface Frame {
   smuggle: SmuggleFrame | null;
   /** Side games (P22): an arm-wrestle, dice on the ground, the lockpick's taps, sports day's bunting. */
   games: GamesFrame;
+  /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
+  getaway: GetawayFrame;
 }
 
 const NO_FUSES: readonly number[] = [];
@@ -311,6 +314,9 @@ export class View {
   private readonly rats = new Rats();
   /** Smuggling (P21): the drone, the drops' beacons, visiting day. */
   private readonly smuggling = new SmuggleView();
+  /** Bluff & glider (P24): the checkpoint's booth, the glide's preview and flight. */
+  private readonly getaway = new GetawayView();
+  private readonly flyAt = new THREE.Vector3();
   private readonly gamesView = new GamesView();
   /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
   private taps = 0;
@@ -429,7 +435,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -530,6 +536,7 @@ export class View {
     this.events.setWorld(world);
     this.delivery.setWorld(world);
     this.gamesView.setWorld(world);
+    this.getaway.setWorld(world);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {
         const d = world.def.guards[h].dog!;
@@ -666,6 +673,21 @@ export class View {
     if (this.reducedMotion) return;
     const p = this.player.root.position;
     this.noiseFx.toss(item, p.x, p.y + 1.1, p.z, to);
+  }
+
+  /** Off a roof on a glider (P24): the flight from the roof tile to the ground tile; resolves once it's down (at once without motion). */
+  glide(from: number, to: number, dist: number, out: boolean): Promise<void> {
+    return new Promise((done) => this.getaway.glide(from, to, dist, out, !this.reducedMotion, done));
+  }
+
+  /** A glide still in the air on screen (P24: the player's input waits for it to land). */
+  get gliding(): boolean {
+    return this.getaway.flying;
+  }
+
+  /** Resolves once a glide in the air is down (P24: the escape camera waits for it). */
+  glideDown(): Promise<void> {
+    return new Promise((done) => this.getaway.whenDown(done));
   }
 
   /** A firecracker going off (P14): a flash of sparks and smoke, the camera jolted. */
@@ -901,7 +923,8 @@ export class View {
   draw(f: Frame, dt: number, time: number) {
     this.noiseFx.group.visible = true;
     this.dress(f.outfit);
-    this.showLayer(f.layer);
+    // (P24: a glide still higher than the walls keeps the roofs drawn.)
+    this.showLayer(this.getaway.aloft ? LAYER.ROOF : f.layer);
     // Damage, grates and tunnels redrawn when the tiles change.
     const below = f.deskAside;
     if (f.tilesRev !== this.tilesRev || below !== this.drawnBelow) {
@@ -917,7 +940,8 @@ export class View {
     }
     this.player.root.visible = true;
     this.player.hold(f.sleeping || f.knockedOut ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
-    const doing = f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : f.doing;
+    // (P24: hanging from a glider's bar in flight, both hands up.)
+    const doing = this.getaway.flying ? DOING.LIFT : f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : f.doing;
     // Onto the treadmill's belt and off it again, eased; a rep pumps the arms.
     this.trainBlend += ((f.trainAt ? 1 : 0) - this.trainBlend) * Math.min(1, dt * 8);
     if (f.trainAt) this.trainPos.set(f.trainAt.x, f.trainAt.y, f.trainAt.z);
@@ -999,11 +1023,14 @@ export class View {
     // Look-ahead: up to a tile and a half in the walking direction, eased.
     const lead = f.moving && !this.reducedMotion ? 1.4 : 0;
     this.ahead.lerp(this.v.set(Math.sin(f.facing) * lead, 0, Math.cos(f.facing) * lead * 0.8), Math.min(1, dt * 2.2));
+    // (P24: a glide's ring in view, the camera halfway out to it.)
+    const gp = f.getaway.glide;
+    if (gp) this.ahead.lerp(this.v.set((gp.toX - f.x) / 2, 0, (gp.toZ - f.z) / 2), Math.min(1, dt * 3));
     // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
     // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
     const y = LAYER_Y[f.layer];
     // (Aboard the raft or the helicopter, the camera follows them instead: below.)
-    if (this.carrying) {
+    if (this.carrying || this.getaway.flying) {
       /* followed below */
     } else if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
     else this.target.lerp(this.v.set(f.x, y, f.z).add(this.ahead), Math.min(1, dt * 7));
@@ -1074,6 +1101,9 @@ export class View {
     const near = !!this.world?.def.delivery && Math.hypot(f.x - this.world.def.delivery.tail.x - 0.5, f.z - this.world.def.delivery.tail.z - 0.5) < 4;
     this.delivery.update(dv, dt, time, !this.reducedMotion, near, f.layer === LAYER.GROUND);
     for (const t of this.delivery.opening) this.doorsOpen.add(t);
+    // Waved through the checkpoint (P24): its gates stand open all the way out.
+    const cp = this.world?.def.checkpoint;
+    if (f.getaway.waved && cp) for (const q of cp.gates) this.doorsOpen.add(q.z * MAP_W + q.x);
     if (dv.stowed) this.player.root.visible = false;
     // Z's over everyone asleep on the ground floor (the player too).
     this.sleepers.length = 0;
@@ -1124,7 +1154,7 @@ export class View {
     this.carrying = false;
     if (this.island) {
       this.island.group.visible = f.layer !== LAYER.UNDER;
-      this.island.update(dt, time, f.minuteOfDay, f.takeover, !this.reducedMotion, f.delivery);
+      this.island.update(dt, time, f.minuteOfDay, f.takeover || (f.getaway.waved && !!this.world?.def.checkpoint?.bridge), !this.reducedMotion, f.delivery);
       // Leaving: on the raft as it drifts out, or aboard the helicopter (out of sight).
       const on = this.island.carry(this.carried);
       this.carrying = !!on;
@@ -1141,6 +1171,12 @@ export class View {
       this.carrying = true;
       this.player.root.visible = false;
       this.target.lerp(this.v.set(ride.x, 0, ride.z), Math.min(1, dt * 3));
+    }
+    // Off a roof on a glider (P24): carried along its fall, the camera going with them.
+    this.getaway.group.visible = f.layer !== LAYER.UNDER;
+    if (this.getaway.update(f.getaway, dt, time, !this.reducedMotion, this.night, this.flyAt)) {
+      this.player.root.position.copy(this.flyAt);
+      this.target.lerp(this.v.set(this.flyAt.x, 0, this.flyAt.z), Math.min(1, dt * 5));
     }
     // The rats (P20), after the player has gone wherever they go (a raft, the helicopter, a truck): on the floor seen from anywhere but a tunnel;
     // on the shoulder of a player up and about (not lying, not crawling, not in a tunnel), turning with them.
@@ -1266,6 +1302,7 @@ export class View {
     this.noiseFx.group.visible = false;
     this.rats.group.visible = false;
     this.smuggling.clear();
+    this.getaway.clear();
     this.gamesView.update(null, 0, false, false);
     this.player.root.visible = false;
     this.ring.visible = false;

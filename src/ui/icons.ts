@@ -108,6 +108,10 @@ const P: Record<string, string> = {
   arm: '<path d="M4 20c-.8-3.6.2-7.6 3.2-10.6L10 6.5 9 4h4.5l1.5 2.5-3 2.5.8 2.8c2.6-1.4 6.2-.6 7.2 2.4s-1.2 5.8-4.5 5.8Z"/>',
   /** A lockpick and its tension wrench (P22). */
   lockpick: '<path d="M3.5 20.5 14 10l2.2 1.2L18.5 9"/><path d="M8 3.5v6.5h4"/><circle cx="18.8" cy="8.6" r=".4"/>',
+  /** An ID card: a photo and two lines (P24, the bluff). */
+  idCard: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 10h4.5M14 13.5h3"/>',
+  /** A hang glider's wing over its bar (P24). */
+  glider: '<path d="M2 11 12 5l10 6-10-1.6Z"/><path d="M12 9.4V15M9 15h6M12 15l-1.4 4M12 15l1.4 4"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

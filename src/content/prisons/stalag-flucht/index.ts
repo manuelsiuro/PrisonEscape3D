@@ -303,7 +303,8 @@ export const STALAG_FLUCHT: PrisonDef = {
     ],
   ],
   rules: { cold: true },
-  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway'],
+  // (P24: a glider off the generator hut's east edge, with the wind behind it.)
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'glider'],
   // Delivery day (P18): the Red Cross truck backs in through the south gate and up the camp's
   // middle path (a lane left beside it); the south guard walks round it, and searches it two
   // days in five.

@@ -81,7 +81,7 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   const pier = Array.from(g.kind).filter((k) => k === TILE.PIER).length;
   const bridge = Array.from(w.bridge).filter((v) => v).length;
   check(pier === 6 && bridge === 6, `the pier (${pier} tiles) and the drawbridge (${bridge} tiles)`);
-  check(IRONGATE.escapes!.join() === 'raft,helicopter,takeover,stowaway', `four ways out: ${IRONGATE.escapes!.join(', ')}`);
+  check(IRONGATE.escapes!.join() === 'raft,helicopter,takeover,stowaway,bluff', `five ways out: ${IRONGATE.escapes!.join(', ')}`);
   console.log(`island: the sea all round, the landing (${road.length} road tiles) only past the drawbridge, the pier ${pier} tiles`);
 }
 

@@ -5,7 +5,7 @@
  * src/sim/systems/smuggling.ts.
  */
 
-/** The catalogue: an item and its price in dollars. Stored as numbers (orders): append only (P22's lockpick joined it; P24's blank ID card will). */
+/** The catalogue: an item and its price in dollars. Stored as numbers (orders): append only (P22's lockpick joined it, P24's blank ID card). */
 export const CATALOGUE: ReadonlyArray<{ item: string; price: number }> = [
   { item: 'crowbar', price: 70 },
   { item: 'screwdriver', price: 60 },
@@ -17,6 +17,8 @@ export const CATALOGUE: ReadonlyArray<{ item: string; price: number }> = [
   { item: 'battery', price: 15 },
   // P22.
   { item: 'lockpick', price: 35 },
+  // P24: the bluff's papers, printed up in the cell.
+  { item: 'blank_id', price: 80 },
 ];
 
 /** How an order comes: by drone, or with a visitor (a Red Cross parcel where nobody visits). Stored as numbers: never renumber. */

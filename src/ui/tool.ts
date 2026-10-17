@@ -23,6 +23,8 @@ export interface ToolView {
   tossTo?: number;
   /** The burner phone in hand (P21): the button opens its panel. */
   call?: boolean;
+  /** P24, a glide: what it does is said on a tag beside the round button too (on touch the verb alone would hide where it lands). */
+  caption?: boolean;
 }
 
 /**
@@ -106,13 +108,14 @@ export class ToolControls {
     document.body.classList.toggle('tool-up', on);
     if (!on) this.release();
     if (on && v) {
-      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}`;
+      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}|${!!v.caption}`;
       if (key !== this.shown) {
         this.shown = key;
         // Within a guard's earshot (P14): an ear says so, on the button or the prompt.
         const ear = v.heard ? `<i class="tool-ear" title="${t('tool.heard')}">${icon('ear', TOUCH ? 13 : 14)}</i>` : '';
         if (TOUCH) {
-          this.btn.innerHTML = `<i class="tool-round"><i class="tool-ring"></i>${icon(v.icon, 24)}<span></span></i>${ear}`;
+          this.btn.innerHTML = `<i class="tool-round"><i class="tool-ring"></i>${icon(v.icon, 24)}<span></span></i>${ear}${v.caption && v.what ? '<b class="tool-what"></b>' : ''}`;
+          if (v.caption && v.what) this.btn.querySelector('b')!.textContent = v.what;
           // (A treat for a dog, P19: the dog's name says it all on the round button.)
           this.btn.querySelector('span')!.textContent = (v.tossTo ?? -1) >= 0 ? v.what : v.verb;
           this.ring = this.btn.querySelector('.tool-ring');

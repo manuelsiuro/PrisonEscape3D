@@ -531,6 +531,13 @@ export class Director {
       case 'stow':
         if (e.found) this.queueUp(now, 're.stowFound.in', this.inmatesNear(sim, px, pz, 12), 3, 'stowFound', undefined, 1.6);
         break;
+      // A glide (P24) that came down inside: whoever is near where the player landed has a word for it.
+      case 'glide':
+        if (!s.escaped) {
+          this.queueUp(now, 're.glide.gu', this.guardsNear(sim, px, pz, 10), 4, 'glide', 'shout', 0.3);
+          this.queueUp(now, 're.glide.in', this.inmatesNear(sim, px, pz, 12), 3, 'glideIn', undefined, 0.9);
+        }
+        break;
       // Guard dogs (P19): its handler has something to say about what it did; inmates about a dog fed.
       case 'dog': {
         const d = s.dogs[e.dog];

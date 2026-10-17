@@ -74,6 +74,9 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'castaway', group: 'out', icon: 'boat', gives: 'straw', escape: (e) => e.via === 'raft' || e.via === 'helicopter' },
   // (P18.)
   { id: 'specialDelivery', group: 'out', icon: 'truck', escape: (e) => e.via === 'stowaway' },
+  // P24: waved out through the checkpoint on a fake ID; off a roof on a glider.
+  { id: 'papersPlease', group: 'out', icon: 'idCard', escape: (e) => e.via === 'bluff' },
+  { id: 'wingIt', group: 'out', icon: 'glider', escape: (e) => e.via === 'glider' },
   { id: 'houdini', group: 'out', icon: 'star', gives: 'topHat', career: (c) => c.prisons.some((p) => p.routes.length >= p.of) },
   { id: 'grandTour', group: 'out', icon: 'map', gives: 'crown', career: (c) => c.prisons.every((p) => p.routes.length > 0), progress: (c) => [c.prisons.filter((p) => p.routes.length > 0).length, c.prisons.length] },
   // Speed.
@@ -140,6 +143,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'diversion', group: 'life', icon: 'fist', run: (r) => f(r, 'brawls') >= 1 },
   { id: 'legwork', group: 'skills', icon: 'box', run: (r) => f(r, 'crewFetched') >= 1 },
   { id: 'manyHands', group: 'skills', icon: 'shovel', run: (r) => f(r, 'dirtTaken') >= 20 },
+  // P24: a glide of 7 tiles or more (the wind behind it).
+  { id: 'tailwind', group: 'skills', icon: 'wind', run: (r) => f(r, 'glideFar') >= 7 },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },
@@ -149,6 +154,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'sunstroke', group: 'mishaps', icon: 'heat', hidden: true, run: (r) => f(r, 'baked') >= 1 },
   { id: 'drillDodger', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'drillsMissed') >= 1 },
   { id: 'returnToSender', group: 'mishaps', icon: 'box', hidden: true, run: (r) => f(r, 'stowFound') >= 1 },
+  // P24: a glide that came down inside the walls.
+  { id: 'grounded', group: 'mishaps', icon: 'glider', hidden: true, run: (r) => f(r, 'glidesIn') >= 1 },
   { id: 'nosyParker', group: 'mishaps', icon: 'paw', hidden: true, run: (r) => f(r, 'dogDug') >= 1 },
   { id: 'rudeAwakening', group: 'mishaps', icon: 'key', hidden: true, run: (r) => f(r, 'keyless') >= 1 },
   { id: 'findersKeepers', group: 'mishaps', icon: 'drone', hidden: true, run: (r) => f(r, 'dropsSeized') + f(r, 'parcelsSeized') >= 1 },

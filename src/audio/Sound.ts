@@ -1082,6 +1082,34 @@ export class Sound {
     this.tone(f, f * 0.78, 0.22, 'sawtooth', 0.04, 0.2);
   }
 
+  /** Waved through the checkpoint (P24): a rubber stamp on the papers, then the gate's buzzer-lock giving. */
+  stamp() {
+    this.tone(150, 70, 0.09, 'triangle', 0.16);
+    this.hiss(0.06, 'lowpass', 900, 0.8, 0.12);
+    this.tone(118, 116, 0.5, 'square', 0.035, 0.32);
+    this.tone(236, 232, 0.5, 'sawtooth', 0.018, 0.32);
+    this.tone(900, 420, 0.12, 'triangle', 0.06, 0.86);
+  }
+
+  /** The checkpoint's gates shut again (P24): a heavy clunk. */
+  gateShut() {
+    this.tone(90, 45, 0.22, 'triangle', 0.16);
+    this.hiss(0.14, 'lowpass', 700, 0.8, 0.12);
+  }
+
+  /** Off a roof on a glider (P24): the run-up's last steps, then a long rush of air, the sheet thrumming (`secs`: the flight). */
+  glide(secs: number) {
+    for (const d of [0, 0.14, 0.26]) this.hiss(0.05, 'lowpass', 600, 0.9, 0.09, undefined, d);
+    this.hiss(secs + 0.3, 'bandpass', 700, 0.6, 0.11, undefined, 0.3, 0.4);
+    this.tone(62, 70, secs, 'sawtooth', 0.012, 0.35);
+  }
+
+  /** A glider coming down (P24): a scuff and a thump. */
+  touchdown() {
+    this.hiss(0.25, 'lowpass', 900, 0.7, 0.16);
+    this.tone(110, 50, 0.16, 'sine', 0.14);
+  }
+
   /** A lockpick's pin set (P22): a tiny bright click. */
   pickClick() {
     this.tone(3400, 2900, 0.025, 'square', 0.04);

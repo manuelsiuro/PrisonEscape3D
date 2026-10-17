@@ -32,6 +32,7 @@ import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
 import { endBout, games, stopPick } from './systems/games';
 import { crew, crewEscape } from './systems/crew';
+import { checkpointGates } from './systems/getaway';
 import { watch } from './systems/watch';
 import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, HEAT_DECAY_STEPS, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
@@ -48,7 +49,7 @@ export * from './state';
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → bribes wearing off → the key alarm →
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
  */
@@ -174,6 +175,8 @@ export class Sim {
     // Smuggling (P21): the drone's drop and what guards see of it, the visitor, the Red Cross parcel.
     smuggle(this);
     bribesWearOff(this);
+    // The checkpoint (P24): waved through, its gates shut again after their minute (or at once, wanted).
+    checkpointGates(this);
     raiseKeyAlarm(this);
     outOfReach(this);
     attendance(this);
@@ -271,7 +274,7 @@ export class Sim {
   }
 
   /**
-   * On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), out of the gates in a takeover, through a gate with its keys (San Pancho's supply road), or through the fence.
+   * On the road outside: free (GDD §12), and how: dug up out there, over the fence on a grapnel (or down a rope off a roof beyond it), off a roof on a glider (P24), out of the gates in a takeover, waved through the checkpoint (P24), through a gate with its keys (San Pancho's supply road), or through the fence.
    * Or away over the sea (Irongate): on a raft off the pier, in the helicopter off its pad; or away in the delivery's vehicle (P18).
    * (`from`: the tile the player stood on before walking this step; -1 not walking.)
    */
@@ -282,7 +285,9 @@ export class Sim {
     if (s.layer !== LAYER.GROUND || !(this.boarded || (!s.stowed && this.playerZone === 'outside'))) return false;
     s.escaped = s.step;
     const gate = from >= 0 && this.world.ground.kind[from] === TILE.DOOR;
-    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : gate ? 'gate' : 'fence'));
+    // (P24: off a roof on a glider; waved out through the checkpoint, its gates or its lowered drawbridge.)
+    const bluff = from >= 0 && s.waved > 0 && this.world.checkpoint[from] === 1;
+    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : this.movedBy === 'glide' ? 'glider' : s.takeover ? 'takeover' : bluff ? 'bluff' : gate ? 'gate' : 'fence'));
     closeBox(this);
     // The crew close by slip out too (P23), on a way out they can take.
     s.crewOut = crewEscape(this, ESCAPES[s.via]);
@@ -434,6 +439,8 @@ export class Sim {
     w.setLockedCells(mask);
     // A door picked open (P22): for the player, until they're through it.
     w.setPicked(s.picked.length ? s.picked[0] : -1);
+    // Waved through the checkpoint (P24): its way out open for the player.
+    w.setWaved(s.waved > 0);
     // Delivery day (P18): the vehicle's bay solid and its doors propped open while it's in; anyone where it parks steps aside.
     const arriving = !w.delivering;
     // (Its doors stay open behind it, that day, while the player is still out there: never shut out.)
