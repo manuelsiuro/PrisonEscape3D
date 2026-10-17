@@ -1738,7 +1738,7 @@ export const en = {
   "toast.parcel": "A Red Cross parcel in your desk: {item}",
   "toast.parcelSeized": "The truck's thorough search seized the parcel: {item}",
   "toast.parcelWaits": "Your desk is full: the Red Cross parcel waits for room",
-  "hint.phone": "The phone's button opens it: order things in from outside. Never hold it in a guard's sight",
+  "hint.phone": "The Call button opens the phone: order things in from outside. Never hold it in a guard's sight",
   "hint.phoneKeys": "Space or %KeyP% opens the phone: order things in from outside. Never hold it in a guard's sight",
   "hint.drone": "The drone's buzz brings guards to look. Be there when it drops, and pick it up before one sees it",
   "hint.visit": "On visiting day, sit across a counter or table where the visitors come (the day's card says where) and wait. Leaving, you pass arches: a pouch helps",
@@ -1755,10 +1755,10 @@ export const en = {
   "pa.forecastEvent.visiting": "And it's visiting day.",
   "rumor.nextVisiting": "Visiting day on day {n}.",
   "rumor.fixer": "{Inmate} sells burner phones, to people they trust.",
-  "rumor.droneDrop": "Drones drop things {place.at} at night.",
+  "rumor.droneDrop": "Drones drop things {place.at} after dark.",
   "rumor.visitArches": "On visiting day, arches stand at the doors of {place.the}.",
   "help.smuggling.t": "Smuggling",
-  "help.smuggling": "Every prison has a fixer, one of the merchants: someone they trust (opinion 60) can buy a burner phone for $60 in free time. It's contraband, and plain to see in your hand. With it in hand, open its panel (the tool button, or %KeyP% on a keyboard) and order from the catalogue, one thing at a time, paid on the spot. By drone (+$20) it comes on the first night it can (ordered at least an hour before, else the next night; never on a storm day): it drops the item in the yard, drifting with the wind, and its buzz brings guards to look. A guard who sees it lying there takes it, so be there first. With a visitor (+$10) it comes on the next visiting day after today, once a week: sit across a counter or table where the visitors sit (the visiting room, or the canteen) between 10:00 and 12:00 and your visitor comes with $10–20 (order or not) and slips your order across. While visiting hours last, the room's doors have arches, and anyone still inside at noon is scanned too: a pouch gets contraband through. At Stalag Flucht nobody visits: the order comes in a Red Cross parcel with the truck, into your desk at 14:45, unless the truck's search that day is thorough and finds contraband. The order's pill at the top of the screen says when; tap it (%KeyP%) for where.",
+  "help.smuggling": "Each prison in the campaign has a fixer, one of the merchants: someone they trust (opinion 60) can buy a burner phone for $60 in free time. It's contraband, and plain to see in your hand. With it in hand, open its panel (the tool button, or %KeyP% on a keyboard) and order from the catalogue, one thing at a time, paid on the spot. By drone (+$20) it comes on the first night it can (ordered at least an hour before, else the next night; never on a storm day): it drops the item in the yard (the phone says where), drifting with the wind, and its buzz brings guards to look. With a guard looking right where it would land, it turns back for another night; a guard who sees it lying there later takes it, so be there first. With a visitor (+$10) it comes on the next visiting day after today, once a week: sit across a counter or table where the visitors sit (the visiting room, or the canteen) between 10:00 and 12:00 and your visitor comes with $10–20 (order or not) and slips your order across. While visiting hours last, the room's doors have arches, and anyone still inside at noon is scanned too: a pouch gets contraband through. At Stalag Flucht nobody visits: the order comes in a Red Cross parcel with the truck, into your desk at 14:45, unless the truck's search that day is thorough and finds contraband. The order's pill at the top of the screen says when; tap it (%KeyP%) for where.",
   "help.k.phone": "The burner phone: orders",
   "help.t.phone": "Your order's pill (once you've ordered): the phone's panel",
   "ach.onTheLine": "On the Line",
@@ -1771,6 +1771,10 @@ export const en = {
   "ach.findersKeepers.d": "Lose an order to the guards.",
   "phone.closed": "Free time only.",
   "refused.noWay": "Nothing's coming that way for weeks",
+  "phone.pillNow": "now",
+  "hud.visitor": "Your visitor",
+  "phone.fee": "+${n}",
+  "toast.turnedBackWatched": "The drone saw {guard} watching and turned back ({item}). It tries another night: the phone says when",
 };
 
 export type Strings = typeof en;

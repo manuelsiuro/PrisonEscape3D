@@ -101,7 +101,7 @@ export function arrival(sim: Pick<SimContext, 'world' | 'prison' | 'state'>, ord
     }
     const p = planOf(sim, day);
     // (Today only while there's still time to sit the visit out.)
-    if (d.parcel ? p.event === 'delivery' : p.event === 'visiting' && (day > now || minute + VISIT_STEPS / STEPS_PER_MINUTE <= p.until)) return { day, minute: d.parcel ? PARCEL_MINUTE : p.at };
+    if (d.parcel ? p.event === 'delivery' : p.event === 'visiting' && (day > now || minute + VISIT_STEPS / STEPS_PER_MINUTE < p.until)) return { day, minute: d.parcel ? PARCEL_MINUTE : p.at };
   }
   return null;
 }
@@ -181,7 +181,11 @@ export function visitExits(w: World): ReadonlySet<number> {
           const nx = x + dx;
           const nz = z + dz;
           if (nx < 0 || nz < 0 || nx >= MAP_W || nz >= MAP_H || inRect(r, nx, nz) || !walkable(w, nz * MAP_W + nx)) continue;
-          if (detector(w, nz * MAP_W + nx)) {
+          // (Nor where a detector arch stands just beyond the way out: a door, then the arch.)
+          const fx = nx + dx;
+          const fz = nz + dz;
+          const beyond = fx >= 0 && fz >= 0 && fx < MAP_W && fz < MAP_H && detector(w, fz * MAP_W + fx);
+          if (detector(w, nz * MAP_W + nx) || beyond) {
             out.delete(t);
             break;
           }
@@ -314,10 +318,12 @@ function minute(sim: SimContext, d: SmugglingDef) {
   const o = s.order;
   if (o.length === 3 && o[2] <= day) {
     if (o[1] === WAY.DRONE && droneFlies(sim, day) && m === droneMinute(sim, day)) {
-      // The sirens on: it turns back, and tries again tomorrow night.
-      if (s.lockdown) {
+      // The sirens on, or a guard looking right where it would land (P21 review: it would be seized as it fell):
+      // it turns back, and tries again tomorrow night.
+      const watcher = s.lockdown ? -1 : watching(sim, landingTile(sim, day));
+      if (s.lockdown || watcher >= 0) {
         s.order = [o[0], o[1], day + 1];
-        sim.events.push({ type: 'smuggle', what: 'turnedBack', item: catalogueItem(o[0]) });
+        sim.events.push(watcher >= 0 ? { type: 'smuggle', what: 'turnedBack', item: catalogueItem(o[0]), guard: watcher } : { type: 'smuggle', what: 'turnedBack', item: catalogueItem(o[0]) });
       } else drop(sim, day);
     }
     if (o[1] === WAY.VISITOR && d.parcel && m >= PARCEL_MINUTE && today(sim).event === 'delivery') parcel(sim, m);
@@ -327,8 +333,8 @@ function minute(sim: SimContext, d: SmugglingDef) {
   if (d.visits && p.event === 'visiting' && m === p.until && s.layer === LAYER.GROUND && !sim.away && !s.stowed) {
     const x = Math.floor(s.player.x / UNIT);
     const z = Math.floor(s.player.z / UNIT);
-    // (Not twice: one stood in an arch was scanned there.)
-    if (inRect(d.visits, x, z) && !s.scanned) frisk(sim, z * MAP_W + x);
+    // (Not twice: one stood in an arch was scanned as they stepped into it.)
+    if (inRect(d.visits, x, z) && !visitExits(sim.world).has(z * MAP_W + x)) frisk(sim, z * MAP_W + x);
   }
 }
 
@@ -371,7 +377,6 @@ function drop(sim: SimContext, day: number) {
 function watchDrops(sim: SimContext) {
   const s = sim.state;
   const ground = s.items.ground;
-  const point = sim.scratch.point;
   for (let k = s.drops.length - 1; k >= 0; k--) {
     const [key, item] = s.drops[k];
     const tile = tileOfKey(key);
@@ -381,15 +386,23 @@ function watchDrops(sim: SimContext) {
       sim.events.push({ type: 'smuggle', what: 'collected', item, tile });
       continue;
     }
-    point.x = (tile % MAP_W) * UNIT + UNIT / 2;
-    point.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
-    const guard = s.guards.findIndex((g) => awake(g) && !lookingAway(g, s.step) && canSee(sim.world, g.body, point, sightOf(sim, g)));
+    const guard = watching(sim, tile);
     if (guard < 0) continue;
     ground.splice(at, 1);
     s.items.rev++;
     s.drops.splice(k, 1);
     sim.events.push({ type: 'smuggle', what: 'seized', item, tile, guard });
   }
+}
+
+/** The first guard (awake, not looking the other way) who sees a ground tile's middle now; -1 none. */
+function watching(sim: SimContext, tile: number): number {
+  const s = sim.state;
+  if (tile < 0) return -1;
+  const point = sim.scratch.point;
+  point.x = (tile % MAP_W) * UNIT + UNIT / 2;
+  point.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  return s.guards.findIndex((g) => awake(g) && !lookingAway(g, s.step) && canSee(sim.world, g.body, point, sightOf(sim, g)));
 }
 
 /** The visitor sits down across from the player: the gift, and the order slipped across (no room in the hotbar: kept for next time). */

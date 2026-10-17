@@ -204,7 +204,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   ratPanel.update(ratView(sim), busy);
   hudState.rat = ratHud(sim);
   // Smuggling (P21): the phone's panel, the order's pill, the visitor's wait.
-  phonePanel.update(phoneView(sim), busy);
+  // (Its view only while it's open: never strings worked out a frame for nothing.)
+  phonePanel.update(phonePanel.isOpen ? phoneView(sim) : null, busy);
   hudState.order = orderHud(sim);
   smuggleHints(sim, busy || panel);
   darkCell.classList.toggle('on', st.solitary > 0);

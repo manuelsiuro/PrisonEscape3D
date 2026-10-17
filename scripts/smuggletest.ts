@@ -253,6 +253,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   const buzz = seen.find((e) => e.type === 'noise' && e.kind === 'buzz') as Extract<SimEvent, { type: 'noise' }> | undefined;
   check(!!buzz && buzz.tile === tile && buzz.reach <= DRONE_NOISE && buzz.sent.length <= DRONE_GUARDS, `its buzz: reach ${buzz?.reach}, ${buzz?.sent.length} sent to look`);
   check(!s.order.length && s.drops.length === 1, 'the order done, the drop lying there');
+  check(s.feats[FEAT.decoys] === 0, 'the drone\'s buzz is no decoy of the player\'s');
   // Guards looking the other way leave it be; the player picks it up.
   for (let k = 0; k < 40; k++) step();
   check(s.drops.length === 1, 'nobody seized it (every guard looking the other way)');
@@ -316,6 +317,27 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   to(4, 8 + Math.floor(again.minute / 60), again.minute % 60);
   step();
   check(news(seen, 'dropped').length === 1 && prisonDay(s.step) === 4, 'and it came the night after');
+}
+{
+  // A guard looking right where it would land: the drone turns back (never seized as it falls).
+  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 7);
+  const s = sim.state;
+  to(2, 9, 0);
+  phone();
+  order(0, WAY.DRONE);
+  const when = arrival(sim)!;
+  for (const g of s.guards) g.bribed = s.step + 1e7;
+  const due = (when.day - 1) * DAY_STEPS + when.minute * STEPS_PER_MINUTE;
+  while (s.step < due - 1) step();
+  const g = s.guards[1];
+  g.bribed = 0;
+  putTile(g.body, dropTile(sim, when.day) - 2);
+  g.body.facing = 1;
+  g.wait = 200;
+  seen.length = 0;
+  step();
+  const back = news(seen, 'turnedBack')[0];
+  check(!!back && back.guard === 1 && !news(seen, 'dropped').length && s.order[2] === when.day + 1 && !s.drops.length, 'a guard watching the landing spot: turned back, tomorrow night');
 }
 {
   // Downwind: over many nights, a strong wind carries it off the middle the way it blows.
@@ -433,6 +455,17 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   check(seen.some((e) => e.type === 'scanned' && e.tripped), '12:00: scanned on the way out of the room');
   s.heat = 0;
   s.lockdown = false;
+  // Stood in an arch at noon: scanned once, as they stepped in (not again by the noon scan).
+  {
+    const q = game(CENTER_PERKS, 5, [[0, 0, 0], [3, VISITING, 0]]);
+    q.to(3, 11, 58);
+    q.sim.state.items.inv[1] = slot(n('crowbar'));
+    q.sim.state.items.inv[2] = slot(n('pouch'));
+    putTile(q.sim.state.player, 38 * MAP_W + 30);
+    q.seen.length = 0;
+    for (let k = 0; k < 3 * STEPS_PER_MINUTE; k++) q.step(0, false);
+    check(q.seen.filter((e) => e.type === 'scanned').length === 1, 'stood in an arch through noon: scanned once');
+  }
   // After hours, the opening is an opening again.
   seen.length = 0;
   for (let k = 0; k < 30 && Math.floor(s.player.z / UNIT) > 36; k++) step(command(13), false);
@@ -537,6 +570,13 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   fixed.restore(bad);
   for (let k = 0; k < DAY_STEPS + 10; k++) fixed.step(0);
   check(fixed.state.order.length === 0 && fixed.state.drops.length === 0, 'a damaged save: the broken order and drop are gone');
+  // A drop with nothing lying where it says: forgotten, never counted as picked up.
+  const ghost = sim.snapshot();
+  Object.assign(ghost.state, { drops: [[1885, catalogueItem(0), 5]] });
+  const g2 = new Sim(CENTER_PERKS, 1);
+  g2.restore(ghost);
+  g2.step(0);
+  check(g2.state.drops.length === 0 && g2.state.feats[FEAT.drops] === 0, 'a save with a drop that isn\'t there: no pick-up counted');
   // A run logged before P21 replays with the old card.
   const rec = new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.14.2' });
   const replay = replayLog({ ...rec.toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, CENTER_PERKS);

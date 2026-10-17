@@ -1062,11 +1062,12 @@ export class View {
     // (Hands busy, it ducks into a pocket a moment: never an arm through it.)
     const perch = this.player.perched && this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.player.armsBusy ? this.player.shoulder(this.shoulderAt) : null;
     this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
-    // Smuggling (P21): the drone is in the sky (seen from the ground floor and the roofs), the rest on the ground floor.
-    this.smuggling.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
-    this.smuggling.update(f.smuggle, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND);
+    // Smuggling (P21): the drone, the drops, visiting day's arches and visitors.
+    // (From the vents and the roof the ground floor shows too, its visitors and arches with it.)
+    this.smuggling.group.visible = f.layer !== LAYER.UNDER;
+    this.smuggling.update(f.smuggle, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
-    const drone = this.smuggling.group.visible ? this.smuggling.droneAt : null;
+    const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.smuggling.droneAt : null;
     if (drone && (this.buzzClock -= dt) <= 0) {
       this.buzzClock = 1.3;
       this.onDrone(drone.x, drone.z);

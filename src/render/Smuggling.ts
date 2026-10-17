@@ -10,7 +10,7 @@ export interface SmuggleFrame {
    * edge of the map it comes from (upwind) and goes back to, what it carries, and whether it
    * lets go (not with the sirens on: it turns back); null while it isn't about.
    */
-  drone: { t: number; x: number; z: number; fromX: number; fromZ: number; item: number; lets: boolean } | null;
+  drone: { t: number; x: number; z: number; fromX: number; fromZ: number; item: number; lets: boolean; dropped: boolean } | null;
   /** What it dropped that still lies there (tile middles): a beacon blinks over each. */
   drops: Array<{ x: number; z: number }>;
   /** Visiting hours (P21): the arches at the visiting room's ways out (tiles, and whether each faces along x). */
@@ -293,9 +293,10 @@ export class SmuggleView {
     // Its lights blink (steady with reduced motion).
     this.lightsMat.color.setScalar(motion && Math.sin(time * 6) < -0.3 ? 0.25 : 1);
     // The parcel: slung under it until the drop's last moments, then falling to where it lands.
-    if (d.lets && t < 0) {
+    // (Turned back, it flies off with the parcel still slung.)
+    if (t < 0 || !d.dropped) {
       this.parcel.visible = true;
-      const fall = t > -FALL ? 1 - -t / FALL : 0;
+      const fall = d.lets && t < 0 && t > -FALL ? 1 - -t / FALL : 0;
       const slung = y - 0.15;
       this.parcel.position.set(x, slung - (slung - 0.29) * fall * fall, z);
       this.parcel.rotation.set(0, yaw + fall * 1.5, 0);

@@ -44,10 +44,23 @@ export function favorText(sim: Sim, f: { kind: number; item: number; target: num
  */
 export function confirmed(b: HTMLElement): boolean {
   if (!b.dataset.confirm || b.classList.contains('armed')) return true;
-  b.closest('.item-panel')?.querySelectorAll('.armed').forEach((o) => o.classList.remove('armed'));
+  b.closest('.item-panel')?.querySelectorAll<HTMLElement>('.armed').forEach(disarm);
   b.classList.add('armed');
-  setTimeout(() => b.classList.remove('armed'), 2800);
+  // (A screen reader hears the question too, on the button itself, until it disarms.)
+  if (b.hasAttribute('aria-label')) b.dataset.label = b.getAttribute('aria-label')!;
+  b.setAttribute('aria-label', b.dataset.confirm);
+  setTimeout(() => disarm(b), 2800);
   return false;
+}
+
+/** A costly tap's question put away: the button says what it does again. */
+function disarm(b: HTMLElement) {
+  if (!b.classList.contains('armed')) return;
+  b.classList.remove('armed');
+  if (b.dataset.label !== undefined) {
+    b.setAttribute('aria-label', b.dataset.label);
+    delete b.dataset.label;
+  } else b.removeAttribute('aria-label');
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);

@@ -116,23 +116,24 @@ export class PhonePanel {
     this.status.querySelector('i')!.innerHTML = icon(v.statusIcon, 16);
     setText(this.status.querySelector('span')!, v.status || t('phone.nothing'));
     setText(this.say, v.say);
-    if (!v.ways.some((w) => w.way === this.way)) this.way = v.ways[0]?.way ?? 0;
+    // (A way nothing can come by: the first open one instead, never a panel of dead buttons.)
+    if (!v.ways.some((w) => w.way === this.way && w.open)) this.way = (v.ways.find((w) => w.open) ?? v.ways[0])?.way ?? 0;
     const key = JSON.stringify([v.ready, v.note, v.ways, v.rows, v.cash, this.way]) + currentLang();
     if (key === this.drawn) return;
     this.drawn = key;
     this.el.querySelector('[data-phone="close"]')!.setAttribute('aria-label', t('box.close'));
     const chosen = v.ways.find((w) => w.way === this.way) ?? v.ways[0];
     const ways = v.ways
-      .map((w) => `<button class="phone-way${w.way === this.way ? ' on' : ''}" data-phone="way" data-way="${w.way}" role="radio" aria-checked="${w.way === this.way}"><i>${icon(w.icon, 18)}</i><span><b>${esc(w.label)} <em>+$${w.fee}</em></b><small>${esc(w.when)}</small></span></button>`)
+      .map((w) => `<button class="phone-way${w.way === this.way ? ' on' : ''}" data-phone="way" data-way="${w.way}" role="radio" aria-checked="${w.way === this.way}"><i>${icon(w.icon, 18)}</i><span><b>${esc(w.label)} <em>${esc(t('phone.fee', { n: w.fee }))}</em></b><small>${esc(w.when)}</small></span></button>`)
       .join('');
     const rows = v.rows
       .map((r) => {
         const price = r.price + (chosen?.fee ?? 0);
         const ok = v.ready && !!chosen?.open && v.cash >= price;
-        return `<div class="board-row phone-row"><span class="phone-img"><img src="${itemIcons()[r.item]}" alt="" draggable="false">${r.contraband ? '<i class="slot-cb"></i>' : ''}</span><span class="board-text"><b>${esc(r.name)}</b><small>${t('phone.priceNote', { n: r.price, fee: chosen?.fee ?? 0 })}</small></span><button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-phone="order" data-k="${r.k}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirm', { n: price }))}" aria-label="${esc(t('phone.orderAria', { item: r.name, n: price, way: chosen?.label ?? '' }))}">${icon('cart', 16)}<span>$${price}</span></button></div>`;
+        return `<div class="board-row phone-row"><span class="phone-img"><img src="${itemIcons()[r.item]}" alt="" draggable="false">${r.contraband ? '<i class="slot-cb"></i>' : ''}</span><span class="board-text"><b>${esc(r.name)}</b><small>${t('phone.priceNote', { n: r.price, fee: chosen?.fee ?? 0 })}</small></span><button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-phone="order" data-k="${r.k}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirm', { n: price }))}" aria-describedby="phone-note" aria-label="${esc(t('phone.orderAria', { item: r.name, n: price, way: chosen?.label ?? '' }))}">${icon('cart', 16)}<span>$${price}</span></button></div>`;
       })
       .join('');
-    const note = v.note ? `<p class="phone-note">${icon(v.ready ? 'coin' : 'phone', 14)}<span>${esc(v.note)}</span></p>` : '';
+    const note = v.note ? `<p class="phone-note" id="phone-note">${icon(v.ready ? 'coin' : 'phone', 14)}<span>${esc(v.note)}</span></p>` : '';
     const had = this.body.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
     const was = had ? `${had.dataset.phone}|${had.dataset.way ?? had.dataset.k ?? ''}` : '';
     this.body.innerHTML = `<div class="phone-ways" role="radiogroup" aria-label="${esc(t('phone.ways'))}">${ways}</div>${note}<div class="board-list">${rows}</div>${TOUCH ? '' : `<p class="rat-keys">${t('phone.keys')}</p>`}`;

@@ -582,6 +582,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (A damaged one: an order for nothing in the catalogue, a way that doesn't exist, a drop of no item.)
   if (!(Array.isArray(s.order) && (s.order.length === 0 || (ints(s.order, 3) && s.order[0] >= 0 && s.order[0] < CATALOGUE.length && (s.order[1] === 0 || s.order[1] === 1))))) s.order = [];
   if (!Array.isArray(s.drops) || !s.drops.every((d) => ints(d, 3) && d[1] >= 1 && d[1] <= ITEMS.length)) s.drops = [];
+  // (A drop with nothing lying where it says: forgotten, never counted as picked up.)
+  s.drops = s.drops.filter(([key, item]) => s.items.ground.some(([k, v]) => k === key && (v & 255) === item));
   if (!Number.isInteger(s.visit)) s.visit = 0;
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];

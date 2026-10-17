@@ -149,7 +149,8 @@ export function ledger(sim: Sim, x: number, z: number) {
         bits |= DAY.FIGHT;
         break;
       case 'noise':
-        if (e.kind !== 'strike' && e.sent.length > 0) f[FEAT.decoys]++;
+        // (Not the drone's buzz, P21: the player didn't make that noise.)
+        if (e.kind !== 'strike' && e.kind !== 'buzz' && e.sent.length > 0) f[FEAT.decoys]++;
         break;
       case 'bang':
         f[FEAT.bangs]++;

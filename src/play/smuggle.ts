@@ -5,10 +5,11 @@ import { placePhrase } from '../i18n/barks/grammar';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { planOf } from '../sim/systems/calendar';
-import { prisonDay } from '../sim/systems/clock';
+import { dayMinute, prisonDay } from '../sim/systems/clock';
 import { itemOf } from '../sim/systems/items';
 import { archesUp, arrival, awaitingVisit, catalogueItem, dropTile, firstDay, guestSpot, landingTile, PHONE, smugglingOf, visitExits, visitPairs, wayOpen } from '../sim/systems/smuggling';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
+import { seatSpot } from '../sim/systems/rest';
 import { DIR_X, DIR_Z } from '../sim/command';
 import { DAY_STEPS } from '../sim/systems/clock';
 import { TODAY } from '../sim/systems/calendar';
@@ -24,7 +25,7 @@ import { guardSubject } from '../ui/social';
 import { banner, closeSocial, hud, itemsUI, phonePanel, sound } from './context';
 import { dayTime } from './day';
 import { play, sendOp } from './game';
-import { coachOnce } from './tips';
+import { coachOnce, markTip, seenTip } from './tips';
 import { TOUCH } from '../ui/dom';
 
 /**
@@ -123,13 +124,33 @@ export function phoneView(sim: Sim): PhoneView | null {
 }
 
 /** The HUD's order pill: an order on its way, a drop lying, the visitor coming (null: none of them). */
-const hudOrder: NonNullable<HudState['order']> = { icon: '', text: '', sr: '', urgent: false, done: null };
+const hudOrder: NonNullable<HudState['order']> = { icon: '', text: '', sr: '', urgent: false, done: null, panel: true };
+/** Worked out once a step (and again with the language): its strings never change between steps. */
+let hudKey = '';
+let hudLast: HudState['order'] = null;
 export function orderHud(sim: Sim): HudState['order'] {
+  const s = sim.state;
+  const key = `${s.step}|${s.items.rev}|${currentLang()}`;
+  if (key === hudKey) return hudLast;
+  hudKey = key;
+  hudLast = orderPill(sim);
+  return hudLast;
+}
+
+/** Whether the phone's panel has anything to show: a phone carried, an order on its way, a drop lying. */
+export function phoneMatters(sim: Sim): boolean {
+  const s = sim.state;
+  return !!smugglingOf(sim) && (s.items.inv.some((v) => itemOf(v) === PHONE) || s.order.length > 0 || s.drops.length > 0);
+}
+
+function orderPill(sim: Sim): HudState['order'] {
   const d = smugglingOf(sim);
   if (!d) return null;
   const s = sim.state;
   hudOrder.done = null;
   hudOrder.urgent = false;
+  // (Tapped, the phone's panel, if there's anything for it to show; a visitor alone has nothing there.)
+  hudOrder.panel = phoneMatters(sim);
   // Sat waiting for the visitor: how long it's been.
   if (awaitingVisit(sim)) {
     hudOrder.icon = 'users';
@@ -149,7 +170,9 @@ export function orderHud(sim: Sim): HudState['order'] {
   const a = arrival(sim);
   const look = wayLook(sim, s.order[1]);
   hudOrder.icon = look.icon;
-  hudOrder.text = !a ? '…' : a.day === prisonDay(s.step) ? dayTime(a.minute) : t('phone.pillDay', { n: a.day });
+  // (Its time today; "now" once it's come round: visiting hours on, the parcel waiting for room.)
+  const today = !!a && a.day === prisonDay(s.step);
+  hudOrder.text = !a ? '…' : !today ? t('phone.pillDay', { n: a.day }) : dayMinute(s.step) >= a.minute ? t('phone.pillNow') : dayTime(a.minute);
   hudOrder.sr = orderStatus(sim).text;
   return hudOrder;
 }
@@ -157,6 +180,8 @@ export function orderHud(sim: Sim): HudState['order'] {
 /** The panel's Order button, and the pill. */
 export function wirePhone() {
   hud.onOrder = () => {
+    const g = play.game;
+    if (!g || g.paused || (!phonePanel.isOpen && !phoneMatters(g.rec.sim))) return;
     sound.click();
     if (!phonePanel.isOpen) {
       closeSocial();
@@ -175,10 +200,7 @@ export function togglePhone(focus = false) {
   const g = play.game;
   if (!g || g.paused) return;
   const sim = g.rec.sim;
-  const s = sim.state;
-  if (!smugglingOf(sim)) return;
-  const has = s.items.inv.some((v) => itemOf(v) === PHONE) || s.order.length > 0 || s.drops.length > 0;
-  if (!has && !phonePanel.isOpen) return;
+  if (!phoneMatters(sim) && !phonePanel.isOpen) return;
   if (!phonePanel.isOpen) closeSocial();
   phonePanel.toggle(focus);
 }
@@ -207,7 +229,9 @@ export function announceSmuggle(sim: Sim, e: Extract<SimEvent, { type: 'smuggle'
       coachOnce('ordered', e.way === WAY.DRONE ? 'hint.drone' : smugglingOf(sim)?.parcel ? 'hint.parcel' : 'hint.visit');
       break;
     case 'turnedBack':
-      itemsUI.toast(t('toast.turnedBack', { item }));
+      // (The sirens, or a guard looking right where it would land.)
+      if (e.guard !== undefined) itemsUI.toast(t('toast.turnedBackWatched', { item, guard: t('guard.the', { name: sim.prison.guards[e.guard]?.name ?? '' }) }));
+      else itemsUI.toast(t('toast.turnedBack', { item }));
       break;
     case 'dropped': {
       const tile = e.tile ?? 0;
@@ -247,14 +271,18 @@ export function announceSmuggle(sim: Sim, e: Extract<SimEvent, { type: 'smuggle'
 /** Each frame's hint: the first time the player sits at a visiting seat in visiting hours, what happens next. */
 export function smuggleHints(sim: Sim, busy: boolean) {
   if (busy) return;
-  if (awaitingVisit(sim)) coachOnce('visitWait', 'hint.visitWait');
+  // (Short: the visitor comes in three seconds.)
+  if (awaitingVisit(sim) && !seenTip('visitWait')) {
+    markTip('visitWait');
+    banner.toast(t('hint.visitWait'), 'info', 2600);
+  }
   const s = sim.state;
   if (itemOf(s.items.inv[s.items.hand]) === PHONE) coachOnce('phone', TOUCH ? 'hint.phone' : 'hint.phoneKeys');
 }
 
 // ------------------------------------------------------------------ in the picture
 
-const droneNow: NonNullable<SmuggleFrame['drone']> = { t: 0, x: 0, z: 0, fromX: 0, fromZ: 0, item: 0, lets: true };
+const droneNow: NonNullable<SmuggleFrame['drone']> = { t: 0, x: 0, z: 0, fromX: 0, fromZ: 0, item: 0, lets: true, dropped: false };
 const frame: SmuggleFrame = { drone: null, drops: [], arches: [], visitors: [] };
 /** The drone's flight seen last (its drop step, the tile it lands on, its item): kept so it flies off after what it dropped is picked up. */
 const flight = { step: -1, tile: -1, item: 0 };
@@ -338,7 +366,8 @@ export function smuggleFrame(sim: Sim, a: number): SmuggleFrame | null {
   const d = smugglingOf(sim);
   if (!d) return null;
   const s = sim.state;
-  const now = s.step + a;
+  // (A step behind, as everyone is drawn: between the last step and this one.)
+  const now = s.step - 1 + a;
   // The drone to come (an order by drone, due within its flight in), or the drop it just made.
   if (s.order.length === 3 && s.order[1] === WAY.DRONE) {
     const when = arrival(sim);
@@ -369,6 +398,8 @@ export function smuggleFrame(sim: Sim, a: number): SmuggleFrame | null {
     v.fromZ = v.z + FROM[wind][1] * FLY_FROM;
     v.item = flight.item;
     v.lets = !s.lockdown;
+    // (Whether it let go: a drop made at its minute; the sirens or a guard watching turn it back with the parcel.)
+    v.dropped = !!last && last[2] === flight.step;
     frame.drone = v;
   }
   frame.drops.length = 0;
@@ -399,21 +430,40 @@ export function smuggleFrame(sim: Sim, a: number): SmuggleFrame | null {
   const at = came ? metAt : mine;
   const k0 = came ? 1 : s.visit / VISIT_STEPS;
   const playerLook = day * 31 + 7;
-  // A few others at the tables, the same ones all morning whoever sits where (one across from the player's seat is the player's visitor).
+  // Where the player sits: nobody drawn on them.
+  const own = s.seat >= 0 ? seatTile(sim) : -1;
+  // A few others at the tables, the same ones all morning whoever sits where: one across from the
+  // player's seat is the player's visitor (already there); none where the player or an inmate sits.
   let n = 0;
-  for (let k = 0; k < guests.length && n < AMBIENT; k++) {
+  let met = false;
+  for (let k = 0; k < Math.min(AMBIENT, guests.length); k++) {
     const g = guests[(k * 7 + day * 5 + (s.salt % 11)) % guests.length];
-    if (g.tile === at && at >= 0) continue;
+    if (g.tile === own || occupied(sim, g.tile)) continue;
+    if (g.tile === at && at >= 0) met = true;
     seat(n++, g, g.tile + day * 13, 1);
   }
-  if (at >= 0 && (came || k0 >= 0.4)) {
-    const g = guests.find((x) => x.tile === at);
-    if (g) seat(n, g, playerLook, came ? 1 : (k0 - 0.4) / 0.6);
+  if (at >= 0 && !met && (came || k0 >= 0.4)) {
+    for (const g of guests) if (g.tile === at && !occupied(sim, g.tile)) seat(n++, g, playerLook, came ? 1 : (k0 - 0.4) / 0.6);
   }
   return frame;
 }
 
 const NONE: SmuggleFrame['arches'] = [];
+
+/** The tile the player's seat is (they stand beside it; the view seats them there). */
+function seatTile(sim: Sim): number {
+  const sp = seatSpot(sim.world, sim.state.seat, sim.state.player);
+  return sp.z * MAP_W + sp.x;
+}
+
+/** An inmate standing or sitting still on a ground tile (one walking by doesn't count). */
+function occupied(sim: Sim, tile: number): boolean {
+  const cx = (tile % MAP_W) * UNIT + UNIT / 2;
+  const cz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  for (const m of sim.state.inmates) if (!m.body.moving && Math.abs(m.body.x - cx) < OCCUPIED && Math.abs(m.body.z - cz) < OCCUPIED) return true;
+  return false;
+}
+const OCCUPIED = Math.round(UNIT * 0.7);
 const dropPoints = Array.from({ length: 4 }, () => ({ x: 0, z: 0 }));
 
 /** A game starts or loads: no flight remembered, no visitor met. */

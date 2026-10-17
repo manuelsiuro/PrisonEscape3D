@@ -226,3 +226,22 @@
     padding: 6px 8px;
   }
 }
+
+/* A visitor coming with nothing ordered: the pill only tells (no phone to open). */
+.hud-alert.hud-order.inert {
+  cursor: default;
+}
+.hud-alert.hud-order.inert:active {
+  transform: none;
+}
+
+/* A finger's worth on touch: the Order buttons and the close button. */
+@media (pointer: coarse) {
+  .phone-row .big-btn.small {
+    height: 40px;
+  }
+  .phone-panel [data-phone='close'] {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}

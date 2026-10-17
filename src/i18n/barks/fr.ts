@@ -1891,7 +1891,7 @@ export const frBarks: Barks = {
   ],
   "re.visit.in": [
     "C’est qui, {you} ? Ta mamie ?",
-    "C’est gentil d’être venus te voir.",
+    "C’est gentil de passer te voir.",
     "Oh. Quelqu’un t’aime.",
     "Ils ont apporté à manger ? Partage.",
     "La famille. On ne s’en évade pas.",

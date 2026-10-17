@@ -615,7 +615,8 @@ export function announce(e: SimEvent, sim: Sim) {
       view.noise(e.kind, e.tile, e.reach, e.tiles, e.sent.length > 0, e.kind === 'thud' ? lastFlight : 0);
       if (e.sent.length) {
         aimUI.heard(e.sent.map((k) => sim.state.inmates.length + k));
-        coachOnce('heard', 'hint.heard');
+        // (The tip is about the player's own noise: never the drone's buzz.)
+        if (e.kind !== 'buzz') coachOnce('heard', 'hint.heard');
       }
       break;
     }

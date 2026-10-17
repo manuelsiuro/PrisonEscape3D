@@ -40,7 +40,7 @@ export interface HudState {
   /** The pet rat (P20): its name, what it's doing ('' on the shoulder), out on an errand or loose, and the seconds left of a panic (null none) out of how many. */
   rat: { name: string; status: string; busy: boolean; left: number | null; of: number; usable: boolean } | null;
   /** Smuggling (P21): an order on its way (its way's icon and when: a time today, else the day), a drop lying where it fell (`urgent`), the visitor coming (`done`: how far, 0–1); null none. */
-  order: { icon: string; text: string; sr: string; urgent: boolean; done: number | null } | null;
+  order: { icon: string; text: string; sr: string; urgent: boolean; done: number | null; panel: boolean } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -242,8 +242,12 @@ export class Hud {
     const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
     bar.style.display = o.done === null ? 'none' : '';
     if (o.done !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, o.done)) * 100}%`;
-    el.title = TOUCH ? t('hud.order') : `${t('hud.order')} (P)`;
-    el.setAttribute('aria-label', `${o.sr.replace(/\.\s*$/, '')}. ${t('hud.order')}`);
+    // (A visitor coming with nothing ordered: no phone to open, said as it is.)
+    el.classList.toggle('inert', !o.panel);
+    if (o.panel) el.setAttribute('aria-keyshortcuts', 'P');
+    else el.removeAttribute('aria-keyshortcuts');
+    el.title = !o.panel ? t('hud.visitor') : TOUCH ? t('hud.order') : `${t('hud.order')} (P)`;
+    el.setAttribute('aria-label', o.panel ? `${o.sr.replace(/\.\s*$/, '')}. ${t('hud.order')}` : o.sr);
   }
 
   /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
@@ -326,7 +330,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
