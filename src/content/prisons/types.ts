@@ -1,3 +1,4 @@
+import type { Speciality } from '../crew';
 import type { DecorPlacement } from '../decor';
 import type { JobId } from '../jobs';
 import type { PropPlacement } from '../props';
@@ -167,6 +168,8 @@ export interface PrisonDef {
   names: readonly string[];
   /** Cells whose inmates run a contraband shop during free time (GDD §10.3). */
   merchants: readonly number[];
+  /** What each inmate is good at in a crew (P23), by cell (cell 2 first, as `names`). */
+  crew: readonly Speciality[];
   /** The jobs on offer (GDD §11) and who holds each on day 1: a cell number (1: the player), 0 for open. */
   jobs: ReadonlyArray<{ id: JobId; cell: number }>;
   /** Security cameras (GDD §5.6): the floor tile each hangs over (against a wall) and the way it looks (1–16), sweeping ±45°. */

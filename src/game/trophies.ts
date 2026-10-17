@@ -141,7 +141,7 @@ export function escapeRun(rec: EscapeRecord): Achievement[] {
     addStats({ escapes: 1 });
   }
   syncRun();
-  const e: EscapeView = { ...viewOf(sim), via: ESCAPES[sim.state.via], day: sim.clock.day, medal: rec.medal, weather: weatherNow(sim) };
+  const e: EscapeView = { ...viewOf(sim), via: ESCAPES[sim.state.via], day: sim.clock.day, medal: rec.medal, weather: weatherNow(sim), crew: sim.state.crewOut.length };
   const got = award(ACHIEVEMENTS.filter((a) => a.escape?.(e) || a.run?.(e)));
   return [...got, ...syncCareer(false)];
 }

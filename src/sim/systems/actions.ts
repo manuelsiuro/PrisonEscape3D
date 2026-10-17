@@ -3,6 +3,7 @@
  * on the structure, covers, braces and ropes, climbing between layers, toilets, bed, seats,
  * showers, and energy and health coming back.
  */
+import { digHelp, recall } from './crew';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { nearestDir, nearestDir as faceTo, tileAt } from '../ai/path';
@@ -190,6 +191,8 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.RAT_LOOSE) looseRat(sim);
       // Smuggling (P21): an order on the burner phone in hand.
       else if (a === EXT.ORDER) placeOrder(sim, argB(cmd), argC(cmd));
+      // The crew (P23): someone with an order whistled back.
+      else if (a === EXT.RECALL) recall(sim, argB(cmd));
       break;
   }
   if (it.open >= 0 && !stillInReach(sim.world, it, s.player, people(sim))) {
@@ -301,14 +304,17 @@ function strike(sim: SimContext, fresh: boolean) {
   // The last blow on the ground floor with full pockets would leave the chunk or the dirt at
   // the player's feet, in plain view: not until there's room.
   const yields = target.action === 'chip' || (target.action === 'dig' && target.layer === LAYER.GROUND);
-  const full = yields && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + tool0.damage >= target.hp && !hasRoom(it);
+  // (P23: a digger in the crew at the player's side, or at the top of the shaft, speeds it up and takes what it yields.)
+  const help = digHelp(sim, target.action, target.layer, helper);
+  const dmg = tool0 ? Math.floor((tool0.damage * help) / 4) : 0;
+  const digger = helper[0];
+  const full = yields && digger < 0 && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + dmg >= target.hp && !hasRoom(it);
   const cost = tool0 ? energyCost(sim, tool0.energy) : 0;
   const why = target.hp === 0 ? (target.layer === LAYER.UNDER ? 'boulder' : 'reinforced') : !target.fits || !tool0 ? 'tool' : s.energy < cost ? 'tired' : full ? 'full' : null;
   if (why) {
     sim.events.push({ type: 'cantStrike', why, action: target.action });
     return;
   }
-  const tool = tool0!;
   s.struckAt = s.step;
   s.energy -= cost;
   it.rev++;
@@ -339,7 +345,7 @@ function strike(sim: SimContext, fresh: boolean) {
   // The work is heard (P14): guards within earshot come and look.
   const noise = strikeNoise(s.layer, target, held);
   if (noise) makeNoise(sim, 'strike', noise.layer, noise.tile, noise.reach);
-  const taken = (s.wear[key] ?? 0) + tool.damage;
+  const taken = (s.wear[key] ?? 0) + dmg;
   if (taken < target.hp) {
     s.wear[key] = taken;
     sim.wearRev++;
@@ -350,7 +356,7 @@ function strike(sim: SimContext, fresh: boolean) {
   switch (target.action) {
     case 'chip':
       setTile(sim, LAYER.GROUND, t, TILE.HOLE);
-      give(it, WALL_CHUNK, p, s.layer);
+      yieldTo(sim, digger, WALL_CHUNK);
       s.tally[0]++;
       break;
     case 'cut':
@@ -378,7 +384,7 @@ function strike(sim: SimContext, fresh: boolean) {
           return;
         }
       }
-      give(it, DIRT, p, s.layer);
+      yieldTo(sim, digger, DIRT);
       s.tally[1]++;
       break;
     case 'digUp': {
@@ -388,7 +394,7 @@ function strike(sim: SimContext, fresh: boolean) {
         return;
       }
       setTile(sim, LAYER.GROUND, t, TILE.SHAFT);
-      give(it, DIRT, p, s.layer);
+      yieldTo(sim, digger, DIRT);
       s.tally[1]++;
       sim.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
       // Out through the new hole.
@@ -398,6 +404,14 @@ function strike(sim: SimContext, fresh: boolean) {
     }
   }
   sim.events.push({ type: 'strike', action: target.action, layer: target.layer, tile: t, broke: true });
+}
+
+/** The digger helping (P23) takes the dirt or the rubble off the player's hands; with nobody helping it's theirs (at their feet without room). */
+const helper = [-1];
+function yieldTo(sim: SimContext, digger: number, item: number) {
+  const s = sim.state;
+  if (digger >= 0) sim.events.push({ type: 'crew', what: 'dirt', who: digger, item });
+  else give(s.items, item, s.player, s.layer);
 }
 
 /** A live electric fence (cut or hooked with the power on): knocked out, then the infirmary (GDD §9.1). */

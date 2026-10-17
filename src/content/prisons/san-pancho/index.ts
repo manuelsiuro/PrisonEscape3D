@@ -300,6 +300,7 @@ export const SAN_PANCHO: PrisonDef = {
   guards,
   names: ['Chuy', 'Flaco', 'Tigre', 'Lobo', 'Chato', 'Toro', 'Nacho', 'Primo', 'Rata', 'Diablo', 'Zorro', 'Paco', 'Gallo'],
   merchants: [3, 6, 9, 12],
+  crew: ['lookout', 'lookout', 'muscle', 'muscle', 'digger', 'muscle', 'smuggler', 'smuggler', 'digger', 'muscle', 'lookout', 'digger', 'lookout'],
   // The player starts as the janitor (GDD §4.4); every job but the gym's is on offer, the woodshop open.
   jobs: [
     { id: 'janitor', cell: 1 },

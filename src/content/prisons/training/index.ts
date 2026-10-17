@@ -83,6 +83,7 @@ export const TRAINING: PrisonDef = {
   ],
   names: ['Sparky'],
   merchants: [],
+  crew: ['lookout'],
   jobs: [],
   // Lessons, not a sentence: missed blocks cost nothing, no searches, and contraband in sight
   // raises the heat at a quarter of the pace (time to read what to do about it).

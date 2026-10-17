@@ -8,6 +8,7 @@
 import { itemDef, itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
+import { ORDER } from '../command';
 import { CHASE_HEAT, UNIT } from '../tuning';
 
 /** The ledger's counters, in `feats` order. Stored as numbers: append only, never renumber. */
@@ -95,6 +96,14 @@ export const FEATS = [
   'champion',
   'locksPicked',
   'slips',
+  // v1.17 (P23, the crew): orders given, lookouts' whistles, brawls started, drops fetched by a smuggler, loads of dirt or rubble a digger took, ambushes a muscle stopped, nights out with company.
+  'crewOrders',
+  'whistles',
+  'brawls',
+  'crewFetched',
+  'dirtTaken',
+  'ambushesStopped',
+  'nightsOut',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -218,6 +227,16 @@ export function ledger(sim: Sim, x: number, z: number) {
       case 'pick':
         if (e.what === 'open') f[FEAT.locksPicked]++;
         else if (e.what === 'slip') f[FEAT.slips]++;
+        break;
+      case 'crew':
+        if (e.what === 'order') {
+          f[FEAT.crewOrders]++;
+          if (e.order === ORDER.BRAWL) f[FEAT.brawls]++;
+        } else if (e.what === 'whistle') f[FEAT.whistles]++;
+        else if (e.what === 'handed') f[FEAT.crewFetched]++;
+        else if (e.what === 'nightOut') f[FEAT.nightsOut]++;
+        else if (e.what === 'dirt') f[FEAT.dirtTaken]++;
+        else if (e.what === 'stopped') f[FEAT.ambushesStopped]++;
         break;
       case 'crafted':
         f[FEAT.crafted]++;

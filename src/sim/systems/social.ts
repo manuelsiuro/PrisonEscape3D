@@ -6,7 +6,7 @@ import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { lineOfSight } from '../ai/sight';
-import { TALK } from '../command';
+import { ORDER, TALK } from '../command';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import type { Refusal } from '../state';
@@ -27,6 +27,7 @@ import { bribe, canChat } from './ways';
 import { fixerOf, PHONE } from './smuggling';
 import { PHONE_OPINION, PHONE_PRICE } from '../../content/smuggling';
 import { endBout, reroll, settleDice, startBout, startDice, stopPick } from './games';
+import { crewOrder, crewTargets, dropCrew, nightOf, stopAmbush } from './crew';
 
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
 export function refuse(sim: SimContext, why: Refusal) {
@@ -178,6 +179,8 @@ export function talkOp(sim: SimContext, a: number, b: number) {
     }
     case TALK.RECRUIT:
       if (s.followers.includes(who)) return;
+      // (P23: not someone in the middle of a brawl with the crew.)
+      if (s.crew.some((e) => e[1] === ORDER.BRAWL && e[3] === who)) return refuse(sim, 'crewBusy');
       if (m.opinion < OPINION_HIGH) return refuse(sim, 'opinion');
       if (s.followers.length >= MAX_FOLLOWERS) return refuse(sim, 'followers');
       s.followers.push(who);
@@ -210,6 +213,10 @@ export function talkOp(sim: SimContext, a: number, b: number) {
     case TALK.WRESTLE:
       startBout(sim, who);
       return;
+    // The crew (P23): an order to a follower, in his line of work.
+    case TALK.CREW:
+      crewOrder(sim, who, b);
+      return;
     case TALK.TIP:
       // A recipe they know (P8+): from those who like the player, once a day each.
       if (m.opinion < TIP_OPINION) return refuse(sim, 'tipOpinion');
@@ -225,13 +232,22 @@ export function dismiss(sim: SimContext, who: number) {
   const s = sim.state;
   const k = s.followers.indexOf(who);
   if (k < 0) return;
+  dropCrew(sim, who);
   s.followers.splice(k, 1);
   sim.events.push({ type: 'recruit', who, on: false });
 }
 
-/** Every follower leaves (Lights Out, the player caught or floored). */
+/** Every follower leaves (the player caught or floored). */
 export function dismissAll(sim: SimContext) {
   for (const id of [...sim.state.followers]) dismiss(sim, id);
+}
+
+/** Lights Out: followers go to their beds, but for those staying on through tonight (P23). */
+export function dismissForNight(sim: SimContext) {
+  for (const id of [...sim.state.followers]) {
+    if (!nightOf(sim.state, id)) dismiss(sim, id);
+    else sim.events.push({ type: 'crew', what: 'nightOut', who: id });
+  }
 }
 
 /**
@@ -285,6 +301,8 @@ export function grudges(sim: SimContext) {
     if (m.opinion > OPINION_LOW || m.angry > 0 || m.ko > 0 || s.followers.includes(who)) return;
     if (dist2(m.body, p) > AMBUSH_RANGE * AMBUSH_RANGE || inmateZone(sim.world, m) !== zone) return;
     if (!lineOfSight(sim.world, m.body.x, m.body.z, p.x, p.z) || randomInt(s, AMBUSH_ODDS) !== 0) return;
+    // (P23: a muscle watching the player's back close by: they think better of it.)
+    if (stopAmbush(sim, who)) return;
     m.angry = ANGRY_STEPS;
     m.doing = DOING.NOTHING;
     m.wait = 0;
@@ -297,9 +315,10 @@ export function socialNow(sim: SimContext): Social {
   const s = sim.state;
   const so = sim.scratch.social;
   const n = s.inmates.length;
-  so.follow.length = so.gap.length = so.work.length = sim.scratch.allyFoe.length = n;
+  so.follow.length = so.gap.length = so.work.length = so.doing.length = sim.scratch.allyFoe.length = n;
   so.follow.fill(null);
   so.gap.fill(0);
+  so.doing.fill(0);
   so.work.fill(-1);
   sim.scratch.allyFoe.fill(-1);
   so.talk = s.talk;
@@ -313,16 +332,18 @@ export function socialNow(sim: SimContext): Social {
   // Rats running loose (P20): the inmates near one flee it.
   so.scare.length = 0;
   for (const r of s.rats) if (r.mode === RAT.LOOSE) so.scare.push(r);
+  // The crew's orders (P23) send some where the player isn't: a post, the drop, the shaft, a brawl.
+  const placed = s.followers.length ? crewTargets(sim, so) : 0;
   const about = s.layer === LAYER.GROUND && !sim.away;
   if (!about) return so;
-  for (const id of s.followers) {
+  s.followers.forEach((id, k) => {
     const m = s.inmates[id];
-    if (!m || m.ko > 0) continue;
+    if (!m || m.ko > 0 || placed & (1 << k)) return;
     const foe = foeOf(sim, m);
     sim.scratch.allyFoe[id] = foe;
     so.follow[id] = foe >= 0 ? personOf(s, foe)!.body : s.player;
     so.gap[id] = foe >= 0 ? STAND_OFF : FOLLOW_GAP;
-  }
+  });
   return so;
 }
 

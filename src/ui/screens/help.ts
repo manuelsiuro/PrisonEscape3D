@@ -31,6 +31,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['searches', 'bell', '#d9930a'],
     ['work', 'coin', '#c99a12'],
     ['inmates', 'chat', '#3fb07a'],
+    ['crew', 'users', '#ffa94d'],
     ['chatter', 'ear', '#d9a21b'],
     ['day', 'calendar', '#d9930a'],
     ['train', 'dumbbell', '#8e4fc4'],
@@ -73,6 +74,7 @@ const keys = (): Array<[string, Key]> => [
   ['%KeyI%', 'help.k.file'],
   ['%KeyT%', 'help.k.rat'],
   ['%KeyP%', 'help.k.phone'],
+  ['%KeyG%', 'help.k.crew'],
   ['%KeyH%', 'help.k.help'],
   [t('help.k.esc'), 'help.k.pause'],
 ];
@@ -88,6 +90,7 @@ const TOUCHES: Array<[string, Key]> = [
   ['coin', 'help.t.file'],
   ['rat', 'help.t.rat'],
   ['phone', 'help.t.phone'],
+  ['users', 'help.t.crew'],
   ['pause', 'help.t.pause'],
 ];
 

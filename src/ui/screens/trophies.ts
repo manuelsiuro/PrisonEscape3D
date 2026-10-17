@@ -111,7 +111,7 @@ function medalsTab(): string {
         </li>`;
       })
       .join('');
-    return `<section class="medal-prison"><h3 class="shelf-sub">${t(`prison.${p.id}` as Key)}<span>${r.routes.length} / ${escapesOf(p).length}</span></h3><ul class="medal-list">${rows}</ul></section>`;
+    return `<section class="medal-prison"><h3 class="shelf-sub">${t(`prison.${p.id}` as Key)}<span>${r.routes.length} / ${escapesOf(p).length}</span></h3><ul class="medal-list">${rows}</ul>${r.crew ? `<p class="medal-crew">${icon('users', 14)}<span>${t('trophy.bestCrew', { n: r.crew })}</span></p>` : ''}</section>`;
   }).join('') + more;
 }
 

@@ -270,6 +270,7 @@ export const STALAG_FLUCHT: PrisonDef = {
   guards,
   names: ['Ferret', 'Kipper', 'Biscuit', 'Badger', 'Ginger', 'Taffy', 'Chalky', 'Scraps', 'Nobby'],
   merchants: [3, 7, 9],
+  crew: ['digger', 'lookout', 'smuggler', 'digger', 'lookout', 'muscle', 'digger', 'smuggler', 'muscle'],
   // The player starts in the kitchen (GDD §4.2); the woodshop is open (Intellect 40, as the player starts).
   jobs: [
     { id: 'kitchen', cell: 1 },

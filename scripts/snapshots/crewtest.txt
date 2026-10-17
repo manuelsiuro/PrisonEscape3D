@@ -1,0 +1,2 @@
+data: center-perks 2/2/2/1; stalag-flucht 2/3/2/2; shankton 3/3/3/2; san-pancho 4/3/4/2; irongate 4/3/3/3
+dig: a sturdy pick 25 → 37 with a digger, a sturdy shovel underground 25 → 31; dirt taken 3

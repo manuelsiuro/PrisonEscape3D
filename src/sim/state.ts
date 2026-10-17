@@ -14,6 +14,7 @@ import { fixtureUse, START_INT, startItems, startPockets, type FixtureUse, type 
 import { bodyAt, type Body } from './systems/movement';
 import type { ClimbAction, ToolAction } from './systems/structure';
 import { mix32 } from './rng';
+import { ORDER } from './command';
 import { FEATS, freshFeats, partialLedger } from './systems/ledger';
 import { spawnDogs, type Dog } from './systems/k9';
 import type { Rat, RatRefusal } from './systems/rats';
@@ -91,7 +92,7 @@ export type SimEvent =
   | { type: 'found'; kind: number }
   | { type: 'repaired'; n: number }
   /** Out on the road: free (GDD §4.0), and how. */
-  | { type: 'escaped'; via: EscapeRoute }
+  | { type: 'escaped'; via: EscapeRoute; crew?: number[] }
   /** Security (GDD §5.4–5.6): the power off and back on; a pass through a detector arch (tripped, or shielded by the pouch: its passes left); a camera blinded or seeing again; a sniper taking aim and shooting; the takeover. */
   | { type: 'power'; on: boolean; by: 'player' | 'guard' | 'storm' | 'maintenance'; gen?: number }
   | { type: 'scanned'; tripped: boolean; pouch: number; tile: number }
@@ -221,7 +222,19 @@ export type SimEvent =
   | { type: 'dice'; what: DiceNews; who: number; stake: number; mine: number[]; theirs?: number[]; mask?: number }
   | { type: 'bout'; what: BoutNews; who: number; crowd?: number; wins?: number; str?: number; gain?: number }
   | { type: 'pick'; what: PickNews; tile: number; pin?: number; of?: number }
+  /**
+   * The crew (P23, crew.ts): an order taken (`order`: ORDER), a lookout's whistle (`guard`
+   * coming), someone with an order whistled back; a brawl started (`other`: the inmate he
+   * scraps with, `guards` sent) and over; the drop picked up (`item`), handed over, or given up
+   * (`why`); an ambush stopped by the muscle (`other`: who meant to jump the player); the dirt or
+   * rubble taken off the player's hands (`item`); the night's company over at 06:00, called off
+   * before it, and staying on as Lights Out begins.
+   */
+  | { type: 'crew'; what: CrewNews; who: number; order?: number; guard?: number; other?: number; guards?: number[]; item?: number; why?: 'gone' | 'far' }
   | ItemEvent;
+
+/** What the crew did (P23, the 'crew' event). */
+export type CrewNews = 'order' | 'whistle' | 'recalled' | 'brawl' | 'brawlOver' | 'fetched' | 'handed' | 'fetchFailed' | 'stopped' | 'dirt' | 'nightOver' | 'nightOff' | 'nightOut';
 
 /** A dice game (P22, the 'dice' event). */
 export type DiceNews = 'rolled' | 'rerolled' | 'won' | 'lost' | 'push';
@@ -251,7 +264,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -434,6 +447,17 @@ export interface SimState {
   picked: number[];
   /** The prison day each inmate last cheered the player's win at arm-wrestling (by inmate index; 0 never): once a day each. */
   cheered: number[];
+  /**
+   * The crew's orders (P23, crew.ts): [the follower (inmate index), ORDER, its place (a post's
+   * tile, the shaft's, a brawl's end step, the drop's placeKey: -1 none), more of it (a guard
+   * mask, the spot beside the shaft, the inmate brawled with, the fetch's deadline or the item
+   * carried), 1 staying on through tonight]. A follower with none just follows.
+   */
+  crew: number[][];
+  /** The prison day the crew last started a brawl (0 never): once a day. */
+  brawled: number;
+  /** Who got out with the player (inmate indexes), once they're out. */
+  crewOut: number[];
 }
 
 export interface Snapshot {
@@ -551,6 +575,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     pick: [],
     picked: [],
     cheered: [],
+    crew: [],
+    brawled: 0,
+    crewOut: [],
   };
 }
 
@@ -636,6 +663,21 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!(Array.isArray(s.pick) && (s.pick.length === 0 || (ints(s.pick, 3) && door(s.pick[0]) && s.pick[1] >= 0)))) s.pick = [];
   if (!Array.isArray(s.cheered) || !s.cheered.every((x) => Number.isInteger(x) && x >= 0)) s.cheered = [];
   if (!(Array.isArray(s.picked) && (s.picked.length === 0 || (ints(s.picked, 3) && door(s.picked[0]))))) s.picked = [];
+  // The crew (P23): orders to someone who isn't following any more, or that aren't orders, are forgotten.
+  const tiles = world.ground.kind.length;
+  const crewOk = (c: unknown, k: number, all: unknown[]) => {
+    if (!ints(c, 5)) return false;
+    const [who, order, arg, aux, night] = c as number[];
+    if (!s.followers.includes(who) || order < 0 || order > ORDER.FETCH || (night !== 0 && night !== 1) || all.findIndex((o) => (o as number[])[0] === who) !== k) return false;
+    if (order === ORDER.WATCH) return arg >= 0 && arg < tiles;
+    if (order === ORDER.DIG) return arg < tiles && aux < tiles;
+    if (order === ORDER.BRAWL) return aux >= 0 && aux < n && aux !== who;
+    if (order === ORDER.FETCH) return arg >= 0 || (aux >= 1 && aux <= ITEMS.length);
+    return true;
+  };
+  s.crew = Array.isArray(s.crew) ? s.crew.filter(crewOk) : [];
+  if (!Number.isInteger(s.brawled)) s.brawled = 0;
+  if (!Array.isArray(s.crewOut) || !s.crewOut.every((x) => Number.isInteger(x) && x >= 0 && x < n)) s.crewOut = [];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

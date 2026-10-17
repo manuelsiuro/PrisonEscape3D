@@ -14,7 +14,7 @@ import { awake, GUARD } from '../sim/systems/guards';
 import { handlersOf } from '../sim/systems/k9';
 import { itemOf } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { DIR_X, DIR_Z, ORDER } from '../sim/command';
 import { OPINION_HIGH, OPINION_LOW, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { fill, nameOf, type FillContext } from './fill';
@@ -613,6 +613,36 @@ export class Director {
         if (bank && e.who !== s.talk) this.queueUp(now, bank, [e.who], 3, bank);
         break;
       }
+      // The crew (P23): an order taken (in the talk panel, or a bubble), a lookout's whistle, a brawl and its crowd, a drop handed over, an ambush called off.
+      case 'crew':
+        switch (e.what) {
+          case 'order': {
+            const bank = this.answerBank(e, sim);
+            if (bank && e.who !== s.talk) this.queueUp(now, bank, [e.who], 3, bank);
+            break;
+          }
+          case 'whistle':
+            this.queueUp(now, 're.whistle.in', [e.who], 5, `whistle:${e.who}`, 'shout', 0, 2);
+            break;
+          case 'recalled':
+            this.queueUp(now, 're.recalled.in', [e.who], 3, 'recalled', undefined, 0.4);
+            break;
+          case 'brawl': {
+            const other = e.other ?? -1;
+            const c = at(other);
+            this.queueUp(now, 're.brawl.in', [e.who], 5, 'brawl', 'shout');
+            if (other >= 0) this.queueUp(now, 're.brawled.in', [other], 5, 'brawled', 'shout', 1.3);
+            this.queueUp(now, 're.brawlCrowd.in', this.inmatesNear(sim, c.x, c.z, 8).filter((k) => k !== e.who && k !== other), 3, 'brawlCrowd', 'shout', 2.4);
+            break;
+          }
+          case 'handed':
+            this.queueUp(now, 're.handed.in', [e.who], 3, 'handed', 'whisper');
+            break;
+          case 'stopped':
+            this.queueUp(now, 're.stopped.in', [e.who], 4, 'stopped');
+            break;
+        }
+        break;
       case 'routine':
         if (this.random() < 0.5) this.queueUp(now, 're.bell.in', this.inmatesNear(sim, px, pz, 14), 2, 'bell', undefined, 1);
         break;
@@ -871,6 +901,9 @@ export class Director {
         return e.on ? 're.recruit.in' : 're.dismiss.in';
       case 'tip':
         return e.who >= 0 ? 're.tip.in' : null;
+      case 'crew':
+        if (e.what !== 'order') return null;
+        return e.order === ORDER.WATCH ? 're.crewWatch.in' : e.order === ORDER.DIG ? 're.crewDig.in' : e.order === ORDER.BACK ? 're.crewBack.in' : e.order === ORDER.FETCH ? 're.crewFetch.in' : e.order === ORDER.NIGHT ? 're.crewNight.in' : e.order === ORDER.FOLLOW ? 're.crewFollow.in' : null;
       default:
         return null;
     }

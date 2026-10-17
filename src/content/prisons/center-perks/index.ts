@@ -261,6 +261,7 @@ export const CENTER_PERKS: PrisonDef = {
   guards,
   names: ['Rusty', 'Tank', 'Mouse', 'Doc', 'Lefty', 'Bones', 'Slim'],
   merchants: [2, 6, 7],
+  crew: ['digger', 'muscle', 'lookout', 'digger', 'smuggler', 'muscle', 'lookout'],
   // The player starts in the laundry; the woodshop is open (Intellect 40, as the player starts).
   jobs: [
     { id: 'laundry', cell: 1 },

@@ -41,6 +41,8 @@ export interface HudState {
   rat: { name: string; status: string; busy: boolean; left: number | null; of: number; usable: boolean } | null;
   /** Smuggling (P21): an order on its way (its way's icon and when: a time today, else the day), a drop lying where it fell (`urgent`), the visitor coming (`done`: how far, 0–1); null none. */
   order: { icon: string; text: string; sr: string; urgent: boolean; done: number | null; panel: boolean } | null;
+  /** The crew (P23): while someone has an order, their orders' icons and the first one's status; flashing as a lookout whistles. */
+  crew: { icons: string[]; text: string; alert: boolean } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -117,6 +119,7 @@ export class Hud {
         <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <button class="pill hud-alert hud-rat hidden" aria-keyshortcuts="T">${icon('rat', 15)}<span></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
         <button class="pill hud-alert hud-order hidden" aria-keyshortcuts="P"><i class="hud-order-ic"></i><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
+        <button class="pill hud-alert hud-crew hidden" aria-keyshortcuts="G"><i class="hud-crew-ic"></i><b></b></button>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -151,6 +154,8 @@ export class Hud {
     this.rat.addEventListener('click', () => this.onRat());
     this.order = q('.hud-order');
     this.order.addEventListener('click', () => this.onOrder());
+    this.crew = q('.hud-crew');
+    this.crew.addEventListener('click', () => this.onCrew());
     this.wx = q('.hud-wx');
     document.body.append(this.el);
   }
@@ -163,6 +168,10 @@ export class Hud {
   private readonly rat: HTMLElement;
   /** The rat pill tapped (P20): its panel. */
   onRat: () => void = () => {};
+  private readonly crew: HTMLElement;
+  private crewIcons = '';
+  /** The crew's pill tapped (P23): their panel. */
+  onCrew: () => void = () => {};
   private readonly order: HTMLElement;
   private orderIcon = '';
   /** The order pill tapped (P21): the phone's panel. */
@@ -250,6 +259,22 @@ export class Hud {
     el.setAttribute('aria-label', o.panel ? `${o.sr.replace(/\.\s*$/, '')}. ${t('hud.order')}` : o.sr);
   }
 
+  /** The crew's pill (P23): the orders in force (their icons) and how the first is getting on; it flashes as a lookout whistles. Tapped, their panel. */
+  private crewChip(c: HudState['crew']) {
+    const el = this.crew;
+    el.classList.toggle('hidden', !c);
+    if (!c) return;
+    el.classList.toggle('urgent', c.alert);
+    const icons = c.icons.join(',');
+    if (icons !== this.crewIcons) {
+      this.crewIcons = icons;
+      el.querySelector('.hud-crew-ic')!.innerHTML = c.icons.map((i) => icon(i, 15)).join('');
+    }
+    setText(el.querySelector('b')!, c.text);
+    el.title = TOUCH ? t('hud.crew') : `${t('hud.crew')} (G)`;
+    el.setAttribute('aria-label', `${c.text}. ${t('hud.crew')}`);
+  }
+
   /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
   private dayChip(d: HudState['today']) {
     const el = this.today;
@@ -330,7 +355,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
@@ -340,6 +365,7 @@ export class Hud {
       this.dayChip(d);
       this.ratChip(s.rat);
       this.orderChip(s.order);
+      this.crewChip(s.crew);
     }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.

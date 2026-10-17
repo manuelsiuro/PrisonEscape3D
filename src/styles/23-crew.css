@@ -1,0 +1,244 @@
+/* ------------------------------------------------------------ the crew (P23) */
+
+/* The crew's colour: the inmates' orange, warmer. */
+:root {
+  --crew: #ffa94d;
+  --crew-soft: rgba(255, 169, 77, 0.16);
+}
+
+/* Everyone's line of work in the talk panel's chips. */
+.chip.spec {
+  color: #ffe2c2;
+  background: var(--crew-soft);
+}
+.chip.spec .ic {
+  color: var(--crew);
+}
+
+/* A follower's orders: his line, what he's at, one row per order (the button, what it does or why not). */
+.talk-crew {
+  padding: 8px 12px 6px;
+  border-radius: 14px;
+  background: rgba(255, 169, 77, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(255, 169, 77, 0.24);
+}
+.talk-crew .box-label .ic {
+  color: var(--crew);
+}
+.crew-status {
+  margin: 2px 0 8px;
+  color: #ffe2c2;
+  font-weight: 600;
+}
+.crew-orders {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 10px;
+}
+/* (Buttons in one column as wide as the widest, the notes lined up beside them.) */
+.crew-order {
+  display: contents;
+}
+.crew-order .big-btn.small {
+  justify-content: flex-start;
+  width: 100%;
+  gap: 5px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13.5px;
+}
+.crew-order .big-btn.on {
+  color: #2a1a08;
+  background: linear-gradient(180deg, #ffd8a8, var(--crew));
+  box-shadow:
+    0 3px 0 #b8722a,
+    0 0 0 2px rgba(255, 169, 77, 0.35);
+  opacity: 1;
+}
+.crew-order .big-btn:disabled:not(.on) {
+  opacity: 0.45;
+}
+.crew-order small {
+  flex: 1;
+  min-width: 0;
+  font: 500 11.5px/1.3 var(--font-ui);
+  color: rgba(255, 255, 255, 0.66);
+}
+
+/* The crew's pill under the HUD rows: orange, a button to their panel; ringing as a lookout whistles. */
+.hud-alert.hud-crew {
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  font-family: inherit;
+  background: rgba(30, 40, 60, 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 169, 77, 0.6);
+}
+.hud-alert.hud-crew .hud-crew-ic {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--crew);
+}
+.hud-alert.hud-crew b {
+  overflow: hidden;
+  max-width: 60vw;
+  color: #ffe2c2;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hud-alert.hud-crew.urgent {
+  box-shadow: inset 0 0 0 2px #ff6b4a;
+  animation: crew-ring 0.5s ease-in-out 3;
+}
+.hud-alert.hud-crew.urgent .hud-crew-ic {
+  color: #ff8a6a;
+}
+.hud-alert.hud-crew:active {
+  transform: scale(0.95);
+}
+@keyframes crew-ring {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px #ff6b4a,
+      0 0 16px rgba(255, 107, 74, 0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-alert.hud-crew.urgent {
+    animation: none;
+  }
+}
+.reduced-motion .hud-alert.hud-crew.urgent {
+  animation: none;
+}
+@media (pointer: coarse) {
+  .hud-alert.hud-crew {
+    min-height: 40px;
+  }
+}
+
+/* The crew's panel: the job board's rows, a whistle each. */
+.crew-panel .panel-head .ic {
+  color: var(--crew);
+}
+.crew-row .board-text b em {
+  margin-left: 6px;
+  color: var(--crew);
+  font: 600 11px/1 var(--font-ui);
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.crew-row .board-text small {
+  color: #ffe2c2;
+}
+.crew-moon {
+  display: inline-grid;
+  margin-left: 5px;
+  vertical-align: -2px;
+  color: #c8d4ff;
+}
+.crew-panel .big-btn.small {
+  flex: none;
+  gap: 5px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.crew-panel .board-note {
+  display: block;
+  margin: 10px 0 4px;
+}
+.crew-panel .rat-keys {
+  margin-bottom: 18px;
+}
+
+/* A chip over each of the crew's heads: their line's icon, lit while on an order, ringing as a lookout whistles. */
+.crew-chip {
+  position: fixed;
+  z-index: 18;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  color: rgba(255, 226, 194, 0.85);
+  background: rgba(18, 24, 36, 0.78);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 169, 77, 0.45),
+    0 4px 10px -4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+.crew-chip.busy {
+  color: #2a1a08;
+  background: var(--crew);
+  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.6);
+}
+.crew-chip.alert {
+  color: white;
+  background: #ff6b4a;
+  animation: chip-ring 0.4s ease-in-out 4;
+}
+@keyframes chip-ring {
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 107, 74, 0.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-chip.alert {
+    animation: none;
+  }
+}
+.reduced-motion .crew-chip.alert {
+  animation: none;
+}
+
+/* The victory card (P23): who got out too, under the way out. */
+.v-crew {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px 0 12px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  text-align: left;
+  color: #5a3208;
+  font: 700 13.5px/1.3 var(--font-ui);
+  background: linear-gradient(135deg, #ffe2c2, #ffc98a);
+}
+.v-crew .ic {
+  flex: none;
+  color: #b8722a;
+}
+@media (max-height: 520px) {
+  .v-crew {
+    margin: -4px 0 8px;
+    padding: 5px 10px;
+    font-size: 12.5px;
+  }
+}
+
+/* The medals tab (P23): the most of the crew ever out with you, under the prison's routes. */
+.medal-crew {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 4px 0;
+  color: var(--ink-soft);
+  font: 600 12.5px/1.3 var(--font-ui);
+}
+.medal-crew .ic {
+  color: #d9822b;
+}
+
+/* A panel open beside it on a phone on its side: the pill's line kept short of it. */
+@media (max-height: 520px) {
+  .panel-open .hud-alert.hud-crew b {
+    display: none;
+  }
+}

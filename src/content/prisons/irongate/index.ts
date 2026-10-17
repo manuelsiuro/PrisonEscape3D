@@ -341,6 +341,7 @@ export const IRONGATE: PrisonDef = {
   guards,
   names: ['Brick', 'Gull', 'Barnacle', 'Fog', 'Anchor', 'Tide', 'Crab', 'Mutton', 'Bosun', 'Kipper', 'Shanty', 'Rook', 'Granite'],
   merchants: [2, 6, 9, 13],
+  crew: ['muscle', 'lookout', 'digger', 'lookout', 'muscle', 'smuggler', 'digger', 'muscle', 'lookout', 'smuggler', 'lookout', 'smuggler', 'digger'],
   // The player starts in the woodshop (its timber and balsa make braces and rafts); every job is on offer, the mailroom open.
   jobs: [
     { id: 'woodshop', cell: 1 },

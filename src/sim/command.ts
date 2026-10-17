@@ -52,15 +52,25 @@ export const EXT = {
   RAT_LOOSE: 4,
   /** Smuggling (P21): an order on the burner phone in hand (b = its place in the catalogue, c = the way it comes: WAY). */
   ORDER: 5,
+  /** The crew (P23): someone with an order (b = the inmate's index), whistled back to the player's heels, wherever they both are. */
+  RECALL: 6,
 } as const;
 
 /**
  * What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a
  * bribe: BRIBE; P21's PHONE: a burner phone from the fixer; P22's games: DICE, b = the stake's
  * place in STAKES; REROLL, b = the dice thrown again (bit 0 the first, bit 1 the second; 0
- * stands); WRESTLE, a bout). Never renumber.
+ * stands); WRESTLE, a bout; P23's CREW, an order to a follower, b = ORDER). Never renumber.
  */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13 } as const;
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14 } as const;
+
+/**
+ * What a follower in the crew is told (P23, TALK.CREW's b): back at the player's heels, keep
+ * watch here (a lookout), dig with me (a digger), watch my back and start a brawl (muscle),
+ * fetch the drop (a smuggler), tonight's the night (anyone who thinks the world of the player:
+ * on through Lights Out; told again, off). Never renumber.
+ */
+export const ORDER = { FOLLOW: 0, WATCH: 1, DIG: 2, BACK: 3, BRAWL: 4, FETCH: 5, NIGHT: 6 } as const;
 
 /** What a bribe to a guard buys (P15, TALK.BRIBE's b): looking the other way, the paperwork lost. Never renumber. */
 export const BRIBE = { LOOK: 1, PAPER: 2 } as const;

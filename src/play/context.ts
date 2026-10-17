@@ -19,6 +19,7 @@ import { ProfilePanel } from '../ui/profile';
 import { SolitaryPanel } from '../ui/solitary';
 import { StowPanel } from '../ui/stow';
 import { RatPanel } from '../ui/rat';
+import { CrewChips, CrewPanel } from '../ui/crew';
 import { PhonePanel } from '../ui/phone';
 import { PickCard, WrestleCard } from '../ui/games';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
@@ -121,14 +122,18 @@ export const phonePanel = new PhonePanel(click);
 /** The side games (P22): the arm-wrestle's card and the lockpick's. */
 export const wrestleCard = new WrestleCard(sendOp);
 export const pickCard = new PickCard();
-/** A social panel is up (the talk, the job board, the file, the rat's, the phone's): the tool controls step aside. */
-export const socialOpen = () => talk.open || board.isOpen || profile.isOpen || ratPanel.isOpen || phonePanel.isOpen;
+/** The crew (P23): their panel, and the chips over their heads. */
+export const crewPanel = new CrewPanel(click);
+export const crewChips = new CrewChips();
+/** A social panel is up (the talk, the job board, the file, the rat's, the phone's, the crew's): the tool controls step aside. */
+export const socialOpen = () => talk.open || board.isOpen || profile.isOpen || ratPanel.isOpen || phonePanel.isOpen || crewPanel.isOpen;
 export function closeSocial() {
   if (play.game && play.game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
   board.close();
   profile.close();
   ratPanel.close();
   phonePanel.close();
+  crewPanel.close();
 }
 export function toggleProfile() {
   const game = play.game;
@@ -138,6 +143,7 @@ export function toggleProfile() {
     board.close();
     ratPanel.close();
     phonePanel.close();
+    crewPanel.close();
     if (game.rec.sim.state.talk >= 0) sendOp(OP.CLOSE);
   }
   profile.toggle();

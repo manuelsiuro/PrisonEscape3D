@@ -14,6 +14,8 @@ export interface PrisonRecord {
   bestDay: number;
   bestMinute: number;
   byRoute: Record<string, RouteBest>;
+  /** The most of the crew ever out with the player here (P23; 0 none, or a record from before the crew). */
+  crew: number;
 }
 
 type Records = Record<string, PrisonRecord>;
@@ -41,6 +43,7 @@ export function recordOf(prison: string): PrisonRecord {
     bestDay: typeof r?.bestDay === 'number' ? r.bestDay : 0,
     bestMinute: typeof r?.bestMinute === 'number' ? r.bestMinute : 0,
     byRoute,
+    crew: typeof r?.crew === 'number' && r.crew > 0 ? Math.floor(r.crew) : 0,
   };
 }
 
@@ -61,7 +64,7 @@ export interface EscapeRecord {
  * route's), and the route's medal goes up if this one is better. `minutes` counts game
  * minutes from day 1 08:00 (comparing escapes across days).
  */
-export function recordEscape(prison: string, route: string, day: number, minutes: number): EscapeRecord {
+export function recordEscape(prison: string, route: string, day: number, minutes: number, crew = 0): EscapeRecord {
   const all = readJSON<Records>(KEYS.escapes, {});
   const was = recordOf(prison);
   const newRoute = !was.routes.includes(route);
@@ -77,6 +80,7 @@ export function recordEscape(prison: string, route: string, day: number, minutes
     bestDay: best ? day : was.bestDay,
     bestMinute: best ? minutes : was.bestMinute,
     byRoute,
+    crew: Math.max(was.crew, crew),
   };
   writeJSON(KEYS.escapes, { ...all, [prison]: record });
   return { newRoute, best, routeBest, medal, newMedal, record };

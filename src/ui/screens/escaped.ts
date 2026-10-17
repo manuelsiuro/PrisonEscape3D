@@ -1,7 +1,7 @@
 import { h } from '../dom';
 import { routeIcon } from './trophies';
 import { icon } from '../icons';
-import { t, type Key } from '../../i18n';
+import { listOf, t, type Key } from '../../i18n';
 import type { Achievement } from '../../content/achievements';
 import type { Medal } from '../../content/medals';
 import { medalDisc } from './trophies';
@@ -34,6 +34,8 @@ export interface Victory {
   bronzeBy?: number;
   /** Achievements this escape earned. */
   earned?: readonly Achievement[];
+  /** The crew who got out too (P23), by name. */
+  crew?: readonly string[];
 }
 
 export type VictoryChoice = 'again' | 'next' | 'title';
@@ -76,6 +78,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       <p class="v-sub"></p>
       <div class="v-left">
       <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}</div>
+      ${v.crew?.length ? `<div class="v-crew">${icon('users', 18)}<span>${t(v.crew.length === 1 ? 'victory.crew1' : 'victory.crew', { names: listOf([...v.crew]) })}</span></div>` : ''}
       <div class="v-stats">
         ${stat('clock', v.day, 'victory.days')}
         ${stat('pick', walls, 'victory.walls')}

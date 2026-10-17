@@ -28,6 +28,8 @@ export interface EscapeView extends RunView {
   day: number;
   medal: Medal | null;
   weather?: string;
+  /** How many of the crew got out too (P23; unknown for escapes from the records). */
+  crew?: number;
 }
 
 /** A career: lifetime stats (stats.ts keys), and each prison's ways out found and medals won. */
@@ -131,6 +133,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'ironArm', group: 'skills', icon: 'arm', run: (r) => f(r, 'boutsWon') >= 5 },
   { id: 'openSesame', group: 'skills', icon: 'lockpick', run: (r) => f(r, 'locksPicked') >= 1 },
   { id: 'champion', group: 'days', icon: 'trophy', run: (r) => f(r, 'champion') >= 1 },
+  // The crew (P23).
+  { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
+  { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },
+  { id: 'eyesPeeled', group: 'life', icon: 'eye', run: (r) => f(r, 'whistles') >= 5 },
+  { id: 'diversion', group: 'life', icon: 'fist', run: (r) => f(r, 'brawls') >= 1 },
+  { id: 'legwork', group: 'skills', icon: 'box', run: (r) => f(r, 'crewFetched') >= 1 },
+  { id: 'manyHands', group: 'skills', icon: 'shovel', run: (r) => f(r, 'dirtTaken') >= 20 },
   // Mishaps (hidden).
   { id: 'shocking', group: 'mishaps', icon: 'bolt', hidden: true, run: (r) => f(r, 'shocked') >= 1 },
   { id: 'headRoom', group: 'mishaps', icon: 'pick', hidden: true, run: (r) => f(r, 'caveIns') >= 1 },

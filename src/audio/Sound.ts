@@ -1065,6 +1065,23 @@ export class Sound {
     }
   }
 
+  /** A lookout's warning (P23): a lip whistle, up then down, that a guard wouldn't take for anything. */
+  lookout() {
+    this.tone(1300, 2500, 0.16, 'sine', 0.09);
+    this.tone(2350, 1250, 0.3, 'sine', 0.09, 0.2);
+    this.hiss(0.42, 'bandpass', 2000, 3, 0.012);
+  }
+
+  /** A brawl breaking out (P23): a scuffle of thumps and a grunt or two. */
+  scuffle() {
+    for (const d of [0, 0.16, 0.29, 0.5]) {
+      this.hiss(0.08, 'lowpass', 500 + Math.random() * 200, 0.9, 0.14, undefined, d);
+      this.tone(110 + Math.random() * 30, 50, 0.1, 'sine', 0.1, d);
+    }
+    const f = 140 + Math.random() * 30;
+    this.tone(f, f * 0.78, 0.22, 'sawtooth', 0.04, 0.2);
+  }
+
   /** A lockpick's pin set (P22): a tiny bright click. */
   pickClick() {
     this.tone(3400, 2900, 0.025, 'square', 0.04);

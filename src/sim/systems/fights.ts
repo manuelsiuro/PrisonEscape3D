@@ -3,6 +3,7 @@
  * throws, knockouts and coming round (a guard's missing key raises the alarm), blows on the
  * player and what happens at 0 health. The numbers (damage, reach, pace) are in combat.ts.
  */
+import { allyDamage } from './crew';
 import { byCanteen, inFoodFight } from './calendar';
 import { itemDef } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
@@ -359,7 +360,8 @@ export function fight(sim: SimContext) {
     m.swing = s.step;
     if (m.body.x !== f.body.x || m.body.z !== f.body.z) m.body.facing = faceTo(f.body.x - m.body.x, f.body.z - m.body.z);
     const guard = isGuard(s, foe);
-    const dmg = damage(m.str, 0, guard ? guardDefense(sim.world, foe - s.inmates.length) : INMATE_DEFENSE);
+    // (P23: a muscle watching the player's back hits half as hard again.)
+    const dmg = allyDamage(s, id, damage(m.str, 0, guard ? guardDefense(sim.world, foe - s.inmates.length) : INMATE_DEFENSE));
     f.hp = Math.max(0, f.hp - dmg);
     if (guard && (f as Guard).doing === DOING.SLEEP) (f as Guard).doing = DOING.NOTHING;
     else if (guard && rouse(f as Guard)) sim.events.push({ type: 'nap', guard: foe - s.inmates.length, on: false });

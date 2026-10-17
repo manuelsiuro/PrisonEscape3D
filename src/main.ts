@@ -17,6 +17,7 @@ import { pause } from './play/session';
 import { chatterStats, director } from './play/chatter';
 import { firstDay } from './play/tips';
 import { wireRatPanel } from './play/rat';
+import { wireCrewPanel } from './play/crew';
 import { wirePhone } from './play/smuggle';
 import { wireGames } from './play/games';
 
@@ -42,6 +43,7 @@ itemsUI.onThrow = armThrow;
 aimUI.onCancel = cancelThrow;
 // The pet rat (P20): its panel's buttons, and the HUD's pill opening it.
 wireRatPanel();
+wireCrewPanel();
 wirePhone();
 wireGames();
 listenKeys();

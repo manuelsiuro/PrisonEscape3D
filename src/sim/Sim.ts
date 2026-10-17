@@ -31,6 +31,7 @@ import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
 import { endBout, games, stopPick } from './systems/games';
+import { crew, crewEscape } from './systems/crew';
 import { watch } from './systems/watch';
 import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, HEAT_DECAY_STEPS, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
@@ -46,7 +47,7 @@ export * from './state';
  * noise (fuses, alarm clocks) → clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
- * the takeover → talk, grudges, training, the side games (P22), seats → energy and health → showers → solitary →
+ * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → showers → solitary →
  * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → bribes wearing off → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
@@ -155,6 +156,8 @@ export class Sim {
     keepTraining(this);
     // Side games (P22): a bout's push and shove, a lock being picked, a door picked open.
     games(this);
+    // The crew (P23): lookouts' whistles, a brawl's course, the drop fetched, the night's company.
+    crew(this);
     keepSeat(this);
     noteCarried(this);
     regenerate(this);
@@ -281,7 +284,9 @@ export class Sim {
     const gate = from >= 0 && this.world.ground.kind[from] === TILE.DOOR;
     s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : s.takeover ? 'takeover' : gate ? 'gate' : 'fence'));
     closeBox(this);
-    this.events.push({ type: 'escaped', via: ESCAPES[s.via] });
+    // The crew close by slip out too (P23), on a way out they can take.
+    s.crewOut = crewEscape(this, ESCAPES[s.via]);
+    this.events.push(s.crewOut.length ? { type: 'escaped', via: ESCAPES[s.via], crew: s.crewOut.slice() } : { type: 'escaped', via: ESCAPES[s.via] });
     return true;
   }
 

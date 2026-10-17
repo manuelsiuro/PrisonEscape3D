@@ -89,6 +89,12 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     // Side games (P22): nobody's arm is stronger; the dice's heat is the rule's (gamestest proves it); the lockpick never opens a gate.
     case 'champ':
       return s.inmates.every((m) => m.str <= s.inmates[f.inmate!].str);
+    // The crew (P23): the line of work is the inmate's own (the prison's data).
+    case 'lookout':
+    case 'digger':
+    case 'muscle':
+    case 'smuggler':
+      return sim.prison.crew[s.inmates[f.inmate!].cell - 2] === f.kind;
     case 'gambling':
       return f.n === DICE_HEAT && !sim.prison.rules?.relaxed;
     case 'lockpick': {

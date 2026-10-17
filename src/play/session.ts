@@ -2,6 +2,8 @@ import { buzz } from '../app/haptics';
 import { resetRat } from './rat';
 import { resetSmuggle } from './smuggle';
 import { resetGames } from './games';
+import { resetCrew } from './crew';
+import { inmateName } from '../ui/social';
 import { itemNumber, KEY_ITEM_COLORS } from '../content/items';
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordEscape } from '../game/records';
@@ -37,7 +39,7 @@ import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
 import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
-import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
+import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, crewChips, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
 import { play, type Game } from './game';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
 import { hideLesson, type LessonRun } from './lesson';
@@ -133,6 +135,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   resetRat();
   resetSmuggle();
   resetGames();
+  resetCrew();
   // No aim carried over from another game (P14).
   cancelThrow();
   play.acc = 0;
@@ -286,8 +289,10 @@ export function endGame() {
   profile.close();
   ratPanel.close();
   phonePanel.close();
+  crewPanel.close();
   trainCard.hide();
   workChips.hide();
+  crewChips.hide();
   document.body.classList.remove('is-playing', 'panel-open', 'items-open', 'training');
   quit?.();
 }
@@ -314,7 +319,7 @@ export async function escaped() {
   // The first way out of a prison opens the next one (GDD §4).
   const next = nextPrison(sim.prison);
   const wasOpen = !!next && isOpen(PRISONS.indexOf(next));
-  const rec = recordEscape(sim.prison.id, via, clock.day, Math.floor(st.step / STEPS_PER_MINUTE));
+  const rec = recordEscape(sim.prison.id, via, clock.day, Math.floor(st.step / STEPS_PER_MINUTE), st.crewOut.length);
   // What the escape earned (P16), and its run log kept to watch again (the prison's quickest too).
   const earned = escapeRun(rec);
   // Toasts still queued give way to the victory card (the shelf marks them new).
@@ -356,6 +361,7 @@ export async function escaped() {
       bronzeBy: MEDAL_DAYS[sim.prison.id]?.[via]?.[2],
       earned,
       campaign: !next && rec.record.routes.length === 1 && rec.newRoute,
+      crew: st.crewOut.map((id) => inmateName(sim, id)),
     },
     click,
   );

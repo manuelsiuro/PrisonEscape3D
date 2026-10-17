@@ -2,7 +2,9 @@ import { buzz } from '../app/haptics';
 import { announceRat } from './rat';
 import { announceSmuggle } from './smuggle';
 import { announceGames } from './games';
+import { announceCrew } from './crew';
 import { itemDef, itemNumber } from '../content/items';
+import { NIGHT_OPINION } from '../content/crew';
 import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
 import { listOf, t, type Key } from '../i18n';
@@ -20,7 +22,7 @@ import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
 import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
-import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, settings, sleepVeil, sound, tools, view } from './context';
+import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
 import { dogName, NEED } from './labels';
 import { dogDef, outOfBounds } from '../sim/systems/k9';
@@ -171,6 +173,7 @@ export function announce(e: SimEvent, sim: Sim) {
       itemsUI.closeCraft();
       ratPanel.close();
       phonePanel.close();
+      crewPanel.close();
       sound.drawer();
       if (ownerOf(sim.world, e.container) < 0 && !seenTip('items')) {
         markTip('items');
@@ -484,6 +487,7 @@ export function announce(e: SimEvent, sim: Sim) {
       profile.close();
       ratPanel.close();
       phonePanel.close();
+      crewPanel.close();
       board.show();
       break;
     case 'train':
@@ -535,6 +539,7 @@ export function announce(e: SimEvent, sim: Sim) {
         profile.close();
         ratPanel.close();
         phonePanel.close();
+        crewPanel.close();
         // A guard (P15): what talking to one is for.
         coachOnce(e.who >= sim.state.inmates.length ? 'guardTalk' : 'talk', e.who >= sim.state.inmates.length ? 'hint.guardTalk' : 'hint.talk');
       }
@@ -600,7 +605,8 @@ export function announce(e: SimEvent, sim: Sim) {
       lastCant = now;
       sound.sting();
       // (P22's games say their own numbers: the opinion they need, the games a day.)
-      itemsUI.toast(t(`refused.${e.why}` as Key, { n: e.why === 'gameOpinion' ? GAME_OPINION : e.why === 'played' ? GAMES_A_DAY : BRIBE_REPORT_HEAT }));
+      // (P23's crew: the opinion a night out needs.)
+      itemsUI.toast(t(`refused.${e.why}` as Key, { n: e.why === 'gameOpinion' ? GAME_OPINION : e.why === 'played' ? GAMES_A_DAY : e.why === 'nightOpinion' ? NIGHT_OPINION : BRIBE_REPORT_HEAT }));
       break;
     }
     // Noise and distractions (P14): a throw flies, lands with its clatter; a noise sends out its
@@ -719,6 +725,9 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'bout':
     case 'pick':
       announceGames(sim, e);
+      break;
+    case 'crew':
+      announceCrew(sim, e);
       break;
     case 'today':
       if (e.event === 'sports' && e.phase === 'prize') announceGames(sim, e);

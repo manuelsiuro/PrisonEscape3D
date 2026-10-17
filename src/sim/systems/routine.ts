@@ -8,7 +8,7 @@ import { cancelTasks, GUARD } from './guards';
 import { restock } from './items';
 import { newDay, settleWork, startWork } from './jobs';
 import { shakedown } from './justice';
-import { dismissAll } from './social';
+import { dismissForNight } from './social';
 import { addHeat } from './watch';
 import { treats } from './k9';
 
@@ -51,8 +51,8 @@ export function nextBlock(sim: SimContext, clock: Clock) {
     newDay(sim);
   }
   if (ROUTINE[now].id === 'work') startWork(sim);
-  // Lights Out: followers go to their beds.
-  if (night) dismissAll(sim);
+  // Lights Out: followers go to their beds (P23: but for those staying on through tonight).
+  if (night) dismissForNight(sim);
 }
 
 /** The player checks in to the block on reaching one of its zones. */

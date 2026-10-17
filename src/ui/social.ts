@@ -1,3 +1,5 @@
+import { crewSection, SPEC_ICON, type CrewTalkView } from './crew';
+import { nightOf, specialityOf } from '../sim/systems/crew';
 import { itemDef, itemNumber } from '../content/items';
 import { JOBS, type JobId } from '../content/jobs';
 import { ROUTINE } from '../content/routine';
@@ -84,6 +86,8 @@ export class TalkPanel {
   knows: (key: string) => boolean = () => false;
   /** The games on offer with this inmate (P22), from the play layer. */
   games: (sim: Sim) => GamesView | null = () => null;
+  /** The crew's orders for a follower (P23, play/crew.ts). */
+  crew: (sim: Sim, who: number) => CrewTalkView | null = () => null;
   /** The dice chosen to throw again (bit per die), and the dice game they were chosen in. */
   private diceMask = 0;
   private diceGame = -1;
@@ -153,7 +157,14 @@ export class TalkPanel {
     const now = performance.now();
     const shown = gv?.show;
     const gamesKey = gv ? [gv.id, gv.open, gv.why, gv.left, gv.seen, gv.dice?.mine.join(',') ?? '', shown ? (now < shown.shownAt ? 1 : 2) : 0, shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '', gv.arm, gv.tired, gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '', this.diceMask, gv.stakes.map((x) => x.ok).join(',')].join(':') : '';
-    const key = [gamesKey, who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    // The crew (P23): a follower's orders; everyone's line of work.
+    const cv = this.crew(sim, who);
+    const spec = specialityOf(sim.world, who, m.cell);
+    // (A brawl's countdown is written in place: the panel isn't rebuilt every second for it.)
+    const crewKey = cv ? JSON.stringify(cv).replace(/\d+:\d\d/g, '') : '';
+    const statusEl = cv ? this.el.querySelector('.crew-status') : null;
+    if (statusEl && statusEl.textContent !== cv!.status) statusEl.textContent = cv!.status;
+    const key = [crewKey, gamesKey, who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -168,6 +179,7 @@ export class TalkPanel {
       fixer ? `<span class="chip fixer">${icon('phone', 13)}${t('role.fixer')}</span>` : '',
       job >= 0 ? `<span class="chip">${icon('briefcase', 13)}${esc(t(`job.${sim.prison.jobs[job].id}` as Key))}</span>` : '',
       following ? `<span class="chip ally">${icon('star', 13)}${t('role.follower')}</span>` : '',
+      `<span class="chip spec" data-spec="${spec}">${icon(SPEC_ICON[spec], 13)}${t(`spec.${spec}`)}</span>`,
     ].join('');
     // The favor: what they ask, what it pays, what can be done about it now.
     let favorHtml = '';
@@ -236,7 +248,7 @@ export class TalkPanel {
     const tipHtml = `<button class="big-btn ${tipOk ? 'primary' : 'ghost'} small" data-act="${TALK.TIP}" ${tipOk ? '' : 'disabled'}>${icon('book', 16)}<span>${t('talk.tip')}</span></button><span class="talk-note">${none ? t('talk.tipNone') : tipped ? t('talk.tipDone') : tipOk ? t('talk.tipNote') : t('talk.tipNeed', { n: TIP_OPINION })}</span>`;
     // Recruiting (GDD §10.3): from 80 opinion, two at most.
     let foot: string;
-    if (following) foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t('talk.followingNote')}</span>`;
+    if (following) foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t(nightOf(s, who) ? 'talk.followingNight' : 'talk.followingNote')}</span>`;
     else {
       const full = s.followers.length >= MAX_FOLLOWERS;
       const ok = m.opinion >= OPINION_HIGH && !full;
@@ -250,13 +262,14 @@ export class TalkPanel {
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${favorHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (rearm) {
       const b = this.el.querySelector<HTMLElement>(rearm);
       if (b && !(b as HTMLButtonElement).disabled) confirmed(b);
     }
     // (The button gone, the games' first live control takes the focus: a die, a stake, else the panel's close.)
-    if (again) (this.el.querySelector<HTMLElement>(again) ?? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])') ?? this.el.querySelector<HTMLElement>('[data-act="close"]'))?.focus();
+    // (P23: an order given greys its own button: the focus goes on to the crew's next live one.)
+    if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? this.el.querySelector<HTMLElement>('.talk-games [data-die], .talk-games button:not([disabled])') ?? (had?.closest('.talk-crew') ? this.el.querySelector<HTMLElement>('.talk-crew button:not([disabled])') : null) ?? this.el.querySelector<HTMLElement>('[data-act="close"]'))?.focus();
     if (first) {
       this.el.classList.remove('hidden');
       this.el.setAttribute('aria-label', inmateName(sim, who));

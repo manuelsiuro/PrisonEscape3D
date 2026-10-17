@@ -301,6 +301,7 @@ export const SHANKTON: PrisonDef = {
   guards,
   names: ['Rivet', 'Hammer', 'Smokes', 'Knuckles', 'Deacon', 'Flint', 'Sparky', 'Moose', 'Weasel', 'Preacher', 'Lugnut'],
   merchants: [2, 6, 9, 11],
+  crew: ['digger', 'muscle', 'smuggler', 'muscle', 'smuggler', 'digger', 'lookout', 'muscle', 'lookout', 'lookout', 'digger'],
   // The player starts in the metalshop (GDD §4.3); every job is on offer, the woodshop open.
   jobs: [
     { id: 'metalshop', cell: 1 },

@@ -194,10 +194,10 @@ function trainReps(reps: number): number {
 
 /**
  * The badge over an inmate (GDD §13.2): the letter the player carries for them, a favor done
- * (hand it in) or on offer, a merchant open for business, a follower.
+ * (hand it in) or on offer, a merchant open for business.
  */
 const badgeMemo = { step: -1, rev: -1, kinds: [] as BadgeKind[] };
-function badgeOf(sim: Sim, who: number): BadgeKind {
+export function badgeOf(sim: Sim, who: number): BadgeKind {
   const s = sim.state;
   // Worked out once a step (or when the items change), not every frame.
   if (badgeMemo.step !== s.step || badgeMemo.rev !== s.items.rev) {
@@ -216,7 +216,7 @@ function badgeNow(sim: Sim, who: number): BadgeKind {
   if (f && (f.state === FAVOR_STATE.DONE || ((f.kind === 0 || f.kind === 1) && f.state === FAVOR_STATE.TAKEN && s.items.inv.slice(0, 6).some((v) => itemOf(v) === f.item)))) return 'done';
   if (f?.state === FAVOR_STATE.OFFERED) return 'favor';
   if (sim.shopsOpen && sim.merchantOf(who) >= 0 && s.shops[sim.merchantOf(who)].some((v) => v)) return 'shop';
-  if (s.followers.includes(who)) return 'ally';
+  // (A follower's badge is the crew's chip now, P23: their line of work, ui/crew.ts.)
   return '';
 }
 

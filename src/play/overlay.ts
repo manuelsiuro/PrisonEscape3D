@@ -35,6 +35,8 @@ import {
   profile,
   ratPanel,
   phonePanel,
+  crewPanel,
+  crewChips,
   settings,
   sleepVeil,
   socialOpen,
@@ -68,6 +70,7 @@ import { orderHud, phoneView, smuggleHints } from './smuggle';
 import { PHONE, smugglingOf } from '../sim/systems/smuggling';
 import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
 import { cashShown, pickNow, wrestleNow } from './games';
+import { crewChipList, crewPill, crewRows } from './crew';
 
 /**
  * Everything over the picture, brought up to date after each draw: the item bar and action
@@ -81,7 +84,7 @@ const GET_UP = { verb: '', what: '' };
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
@@ -89,6 +92,9 @@ const workHud = { place: '', quota: 0, of: 0, paid: false };
 let tense = false;
 
 const projectAt = (x: number, y: number, z: number, out: { x: number; y: number }) => view.screenAt(x, y, z, out);
+/** Over someone's head (P23: the crew's chips). */
+const chipAt = (id: number, out: { x: number; y: number }, height: number) => view.screenOf(id, out, height);
+const NO_CREW: never[] = [];
 
 /**
  * Keeps the player in sight while a panel is open: a side panel reaching past the middle (phone
@@ -217,6 +223,11 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (Its view only while it's open: never strings worked out a frame for nothing.)
   phonePanel.update(phonePanel.isOpen ? phoneView(sim) : null, busy);
   hudState.order = orderHud(sim);
+  // The crew (P23): their panel, their pill, the chips over their heads.
+  crewPanel.update(crewPanel.isOpen ? crewRows(sim) : null, busy);
+  hudState.crew = crewPill(sim);
+  const chipsOff = busy || panel || st.layer !== LAYER.GROUND || !st.followers.length;
+  crewChips.update(chipsOff ? NO_CREW : crewChipList(sim), chipAt, chipsOff);
   smuggleHints(sim, busy || panel);
   darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.

@@ -1,3 +1,5 @@
+import { SPEC_ICON } from './crew';
+import { specialityOf } from '../sim/systems/crew';
 import { ROUTINE } from '../content/routine';
 import { dogDef } from '../sim/systems/k9';
 import { prisonDay } from '../sim/systems/clock';
@@ -93,7 +95,11 @@ export class ProfilePanel {
             })
             .join('')}</div></div>`
         : '';
-    const allies = s.followers.length ? `<div class="talk-chips">${s.followers.map((id) => `<span class="chip ally">${icon('star', 13)}${esc(inmateName(sim, id))}</span>`).join('')}</div>` : `<p class="talk-note">${t('profile.noFollowers')}</p>`;
+    const allies = s.followers.length ? `<div class="talk-chips">${s.followers.map((id) => {
+          // (P23: each one's line of work.)
+          const spec = specialityOf(sim.world, id, s.inmates[id].cell);
+          return `<span class="chip ally">${icon(SPEC_ICON[spec], 13)}${esc(inmateName(sim, id))} · ${t(`spec.${spec}`)}</span>`;
+        }).join('')}</div>` : `<p class="talk-note">${t('profile.noFollowers')}</p>`;
     const favorList = favors.length
       ? favors
           .map((f) => {

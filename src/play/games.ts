@@ -19,6 +19,7 @@ import { inmateName } from '../ui/social';
 import { banner, combatUI, itemsUI, pickCard, sound, talk, view } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
+import { crewTalk } from './crew';
 
 /**
  * The side games on screen (P22): the talk panel's games (what's on offer, the dice in play and
@@ -296,6 +297,7 @@ export function pickNow(sim: Sim, a: number): PickView | null {
 /** The talk panel's games, and the lockpick card's Set (a fresh use of the pick) and Step back. */
 export function wireGames() {
   talk.games = gamesOffer;
+  talk.crew = crewTalk;
   pickCard.onSet = () => {
     const g = play.game;
     if (!g || g.paused) return;

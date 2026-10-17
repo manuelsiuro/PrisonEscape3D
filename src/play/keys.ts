@@ -1,13 +1,14 @@
 import { t } from '../i18n';
 import { OP } from '../sim/command';
 import { targets, usePress } from './buttons';
-import { board, click, closeSocial, itemsUI, profile, ratPanel, phonePanel, socialOpen, sound, tools, toggleProfile } from './context';
+import { board, click, closeSocial, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, tools, toggleProfile } from './context';
 import { toggleRat } from './rat';
 import { togglePhone } from './smuggle';
 import { play, sendOp } from './game';
 import { autosave, openHelp, pause } from './session';
 import { aiming, cancelThrow, throwAhead } from './aim';
 import { toggleWait } from './day';
+import { toggleCrew } from './crew';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -17,6 +18,7 @@ export function act() {
   profile.close();
   ratPanel.close();
   phonePanel.close();
+  crewPanel.close();
   sendOp(OP.INTERACT);
 }
 
@@ -75,6 +77,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // P: the burner phone's panel (P21).
   if (e.code === 'KeyP' && !itemsUI.panelOpen) togglePhone(true);
+  // G: the crew's panel (P23).
+  if (e.code === 'KeyG' && !itemsUI.panelOpen && g.rec.sim.state.followers.length) {
+    if (!crewPanel.isOpen) closeSocial();
+    toggleCrew(true);
+  }
   // Training (GDD §3.2): left and right in turn fill the bar (P22: and push in an arm-wrestle).
   if ((g.rec.sim.state.train >= 0 || g.rec.sim.state.bout.length) && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
@@ -93,6 +100,7 @@ function onKeyDown(e: KeyboardEvent) {
     // (A button in the rat's panel with the focus: Space presses it.)
     if (ratPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.rat-panel')) return;
     if (phonePanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.phone-panel')) return;
+    if (crewPanel.isOpen && (document.activeElement as HTMLElement | null)?.closest('.crew-panel')) return;
     // (P22: a die, a bet or a game's button in the talk panel with the focus: Space presses it.)
     if ((document.activeElement as HTMLElement | null)?.closest('.talk-panel, .train-card')) return;
     e.preventDefault();
