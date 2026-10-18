@@ -8,6 +8,9 @@ import { TRAINING } from '../src/content/prisons/training';
 import { BRIBE, command, dirFromVector, EXT, OP, ORDER, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { drillOn, prisonDay } from '../src/sim/systems/calendar';
 import { dropTile } from '../src/sim/systems/smuggling';
+import { markerAt, sweetSpot } from '../src/sim/systems/games';
+import { thorough } from '../src/sim/systems/delivery';
+import { checkpointOf, shiftChange } from '../src/sim/systems/getaway';
 import { WAY } from '../src/content/smuggling';
 import { containersOf } from '../src/sim/world/containers';
 import { GUARD } from '../src/sim/systems/guards';
@@ -17,7 +20,7 @@ import { placesOf } from '../src/sim/ai/places';
 import { UNIT } from '../src/sim/tuning';
 
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
-import { MAP_W, tileOfKey } from '../src/sim/world/World';
+import { LAYER, MAP_W, tileOfKey } from '../src/sim/world/World';
 import { CHAPTERS, LESSONS, myDesk, type LessonCtx } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
 import { Bot, DIR } from './bots';
@@ -267,6 +270,54 @@ play('crew', (bot) => {
   console.log(`crew, posted far: ended at step ${progress.k + 1} (${progress.step?.fail?.(ctx)})`);
 }
 
+// ---------------------------------------------------------------- Ways out
+
+play('lockpick', (bot) => {
+  bot.use();
+  check(bot.st.pick.length === 3, 'lockpick: picking the purple door');
+  const door = bot.st.pick[0];
+  const spot: [number, number] = [0, 0];
+  const inZone = (k: number) => {
+    sweetSpot(bot.st.salt, door, bot.st.pick[1], bot.st.items.int, spot);
+    const m = markerAt(k);
+    return m >= spot[0] && m <= spot[1];
+  };
+  for (let pin = 0; pin < 4 && bot.st.pick.length; pin++) {
+    for (let g = 0; g < 200 && bot.st.pick.length && !inZone(bot.st.step + 1 - bot.st.pick[2]); g++) bot.step();
+    bot.use();
+  }
+  check(bot.st.picked.length > 0, 'lockpick: open');
+  check(bot.walkTo(tile(43, 19)), 'lockpick: through into the generator room');
+});
+
+play('stowaway', (bot) => {
+  check(!thorough(bot.sim, 1), 'stowaway: the lesson\'s day is a quick look, as it says');
+  const d = bot.sim.prison.delivery!;
+  check(bot.walkTo(d.tail.z * MAP_W + d.tail.x), 'stowaway: at the truck\'s tail');
+  check(bot.until(() => !bot.st.seen && !bot.st.guards.some((g) => g.mode === GUARD.CHASE), 60 * 20), 'stowaway: nobody looking');
+  bot.act();
+  check(bot.st.stowed, 'stowaway: hidden in the truck');
+  bot.until(() => bot.st.escaped > 0, 2 * 60 * 20);
+});
+
+play('bluff', (bot) => {
+  const c = checkpointOf(bot.sim)!;
+  check(bot.walkTo(c.window[0].z * MAP_W + c.window[0].x, 2000), 'bluff: at the window');
+  bot.face(DIR.SOUTH);
+  check(bot.until(() => shiftChange(bot.st.step), 30 * 20), 'bluff: the shift change');
+  bot.act();
+  check(bot.st.waved > 0, 'bluff: waved through');
+  bot.walkTo(c.gates[0].z * MAP_W + c.gates[0].x + MAP_W, 400);
+});
+
+play('glider', (bot) => {
+  check(bot.walkTo(tile(57, 39), 600), 'glider: at the roof\'s east edge');
+  bot.face(DIR.EAST);
+  bot.use();
+});
+
+const carriesLockpick = (bot: Bot) => bot.slotOf('lockpick') >= 0;
+
 /** A lesson set up and followed through a bot's steps (no checks): for the ways it can end badly. */
 function follow(id: string) {
   const index = LESSONS.findIndex((l) => l.id === id);
@@ -301,6 +352,72 @@ function follow(id: string) {
   console.log(`smuggle, left lying: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
 }
 
+{
+  // The lockpick worn out on misses: the lesson says so.
+  const { bot, progress, why } = follow('lockpick');
+  bot.use();
+  for (let k = 0; k < 40 && carriesLockpick(bot); k++) {
+    const door = bot.st.pick[0];
+    const spot: [number, number] = [0, 0];
+    if (door === undefined) break;
+    sweetSpot(bot.st.salt, door, bot.st.pick[1], bot.st.items.int, spot);
+    for (let g = 0; g < 200; g++) {
+      const m = markerAt(bot.st.step + 1 - bot.st.pick[2]);
+      const was = markerAt(bot.st.step - bot.st.pick[2]);
+      if ((m < spot[0] || m > spot[1]) && (was < spot[0] || was > spot[1])) break;
+      bot.step();
+    }
+    bot.use();
+  }
+  check(why() === 'lesson.lockpick.broke', `lockpick: worn out on slips ends the lesson (${why()})`);
+  console.log(`lockpick, worn out: ended at step ${progress.k + 1} (${why()})`);
+}
+{
+  // Never climbing in: the truck leaves without the player.
+  const { bot, progress, why } = follow('stowaway');
+  bot.until(() => !!why(), 2 * 60 * 20);
+  check(why() === 'lesson.stowaway.missed', `stowaway: the truck gone without the player ends the lesson (${why()})`);
+  console.log(`stowaway, missed: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // At the window too late: the shift change over.
+  const { bot, progress, why } = follow('bluff');
+  bot.until(() => !!why(), 40 * 20 * 60);
+  check(why() === 'lesson.bluff.late', `bluff: the shift change missed ends the lesson (${why()})`);
+  console.log(`bluff, late: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // Off the east edge into a strong east wind: down short of the fence, the glider wrecked.
+  const { bot, progress, why } = follow('glider');
+  bot.st.calendar = [[1, -1, -1, 2, 4]];
+  bot.walkTo(tile(57, 39), 600);
+  bot.face(DIR.EAST);
+  bot.use();
+  bot.step();
+  check(bot.st.escaped === 0 && why() === 'lesson.glider.inside', `glider: down inside ends the lesson (${why()})`);
+  console.log(`glider, inside: ended at step ${progress.k + 1} (${why()})`);
+}
+
+{
+  // Waved through, then standing about: the gates shut again (the shift change long over), the lesson says so.
+  const { bot, progress, why } = follow('bluff');
+  const c = checkpointOf(bot.sim)!;
+  bot.walkTo(c.window[0].z * MAP_W + c.window[0].x, 2000);
+  bot.face(DIR.SOUTH);
+  bot.until(() => shiftChange(bot.st.step), 30 * 20);
+  bot.act();
+  check(bot.st.waved > 0, 'bluff: waved through');
+  bot.until(() => !!why(), 3 * 60 * 20);
+  check(why() === 'lesson.bluff.shut', `bluff: the gates shut again ends the lesson (${why()})`);
+  console.log(`bluff, gates shut: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // On the roof past the night's bed checks: the dummy in bed keeps it quiet (no lockdown, nothing failed).
+  const { bot, why } = follow('glider');
+  bot.until(() => !!why() || bot.st.lockdown, 3 * 60 * 20);
+  check(!why() && !bot.st.lockdown, `glider: the bed checks pass with the dummy (${why()}, lockdown ${bot.st.lockdown})`);
+  console.log(`glider, waiting on the roof: ${bot.time}, no lockdown`);
+}
 // Done another way than the bot's (the review's repros): still through, never stuck.
 {
   // At roll call before the bell: the bell and the muster in one step, both steps ticked.
@@ -386,7 +503,9 @@ for (const lesson of LESSONS) {
   for (const s of lesson.steps) {
     const goal = s.goal?.(bot.sim);
     if (goal === undefined || goal === null) continue;
-    check(!bot.sim.world.propSolid[goal] && !TILE_INFO[bot.sim.world.ground.kind[goal]].solid, `${lesson.id}: the goal ${goal % MAP_W},${Math.floor(goal / MAP_W)} is open floor`);
+    // (On the roof, open roof the player can walk.)
+    const open = bot.st.layer === LAYER.GROUND ? !bot.sim.world.propSolid[goal] && !TILE_INFO[bot.sim.world.ground.kind[goal]].solid : !bot.sim.world.routeGrid(bot.st.layer)[goal];
+    check(open, `${lesson.id}: the goal ${goal % MAP_W},${Math.floor(goal / MAP_W)} is open floor`);
   }
 }
 console.log('every lesson goal is open floor');

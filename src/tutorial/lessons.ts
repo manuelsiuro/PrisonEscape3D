@@ -10,14 +10,18 @@ import { itemOf, slot, usesOf } from '../sim/systems/items';
 import { NOISE_LOOK, STEPS_PER_MINUTE, TRUST_IGNORE, UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
-import { MAP_W } from '../sim/world/World';
+import { LAYER, MAP_W } from '../sim/world/World';
 import { CENTER_PERKS } from '../content/prisons/center-perks';
-import { DAY_EVENTS } from '../content/days';
+import { DAY_EVENTS, SIGN_OFF_MINUTES, WEATHERS } from '../content/days';
+import { SHIFT_TO } from '../content/getaways';
+import { atWindow, checkpointOf } from '../sim/systems/getaway';
+import { searchMinute, vehicleIn } from '../sim/systems/delivery';
+import { HOLDER } from '../sim/systems/economy';
 import { isFloor } from '../sim/ai/places';
 import { lineOfSight } from '../sim/ai/sight';
 import { WATCH_RANGE } from '../content/crew';
 import { ORDER } from '../sim/command';
-import { DAY_STEPS, planOf, prisonDay, TODAY } from '../sim/systems/calendar';
+import { DAY_STEPS, dayMinute, planOf, prisonDay, TODAY } from '../sim/systems/calendar';
 import { postOf } from '../sim/systems/crew';
 import { smellsOfContraband } from '../sim/systems/k9';
 import { guardTalking } from '../sim/systems/social';
@@ -44,8 +48,9 @@ export interface LessonStep {
   /** Done when this holds (checked every frame), or (`on`) once an event it waits for has happened while it's the step showing. */
   done?: (c: LessonCtx) => boolean;
   on?: (e: SimEvent, sim: Sim) => boolean;
-  /** Where the floor arrows lead meanwhile (a tile), if anywhere. */
+  /** Where the floor arrows lead meanwhile (a tile), if anywhere, and on which layer (the ground floor unless it says). */
   goal?: (sim: Sim) => number | null;
+  layer?: number;
   /** The game runs faster while this step waits (time to pass, nothing to do). */
   speed?: number;
   /** Seconds it shows at least before it can tick (something to read in it; the lesson's card only, not tutorialtest). */
@@ -139,6 +144,8 @@ function waitAt(sim: Sim, who: number, x: number, z: number, facing = 9) {
 /** The other inmate's desk on the Training Block (Sparky's). */
 const sparkyDesk = (sim: Sim) => containersOf(sim.world).findIndex((c) => !c.mine && c.prop.kind === 'desk');
 
+/** A Center Perks seed whose day-1 delivery search is a quick look (tutorialtest holds it to that). */
+const STOW_SEED = 51;
 /** Center Perks' corrupt guard (P15): Officer Pratt. */
 const PRATT = 1;
 /** The second prison day (P19: the dogs' first) at a step of the day (`at`). */
@@ -480,6 +487,85 @@ export const LESSONS: readonly Lesson[] = [
       },
     ],
   },
+  // ---------------------------------------------------------------- Ways out
+  {
+    // The lockpick (P22): a keyed door opened without its key, pin by pin.
+    id: 'lockpick',
+    icon: 'lockpick',
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      place(sim, 42, 22, 13);
+      pockets(sim, 'lockpick');
+      sim.state.items.hand = 0;
+    },
+    steps: [
+      { text: 'lesson.lockpick.start', touch: 'lesson.lockpick.startTouch', on: (e) => e.type === 'pick' && e.what === 'start', goal: () => tile(42, 22), fail: pickFail },
+      { text: 'lesson.lockpick.pins', touch: 'lesson.lockpick.pinsTouch', done: (c) => c.sim.state.picked.length > 0 || zone('generator')(c), fail: pickFail },
+      // (It shuts again before long: picked again, or the lockpick broken on it.)
+      { text: 'lesson.lockpick.through', done: zone('generator'), goal: () => tile(43, 19), fail: pickFail },
+    ],
+  },
+  {
+    // The stowaway (P18): hidden in the delivery's truck, away with it when it leaves.
+    id: 'stowaway',
+    icon: 'truck',
+    prison: CENTER_PERKS,
+    // (A delivery day whose search is a quick look: tutorialtest holds it to that.)
+    seed: STOW_SEED,
+    setup: (sim) => {
+      sim.state.calendar = [[1, DAY_EVENTS.indexOf('delivery'), WEATHERS.indexOf('clear')]];
+      clockTo(sim, at(13));
+      place(sim, 25, 50, 1);
+      // No job to be at in the Work Period (the HUD would ask for the laundry's quota).
+      sim.state.jobs = sim.state.jobs.map((h) => (h === HOLDER.PLAYER ? HOLDER.NOBODY : h));
+    },
+    steps: [
+      { text: 'lesson.stowaway.tail', done: (c) => apart(c.sim.state.player, centre(tailOf(c.sim))) < 1.2 || c.sim.state.stowed, goal: tailOf, fail: stowFail },
+      { text: 'lesson.stowaway.hide', touch: 'lesson.stowaway.hideTouch', done: (c) => c.sim.state.stowed || c.sim.state.escaped > 0, fail: stowFail },
+      { text: 'lesson.stowaway.wait', touch: 'lesson.stowaway.waitTouch', done: (c) => c.sim.state.escaped > 0, fail: stowFail },
+    ],
+  },
+  {
+    // The bluff (P24): a guard's uniform and a fake ID at the checkpoint's window as the gatekeepers change shifts.
+    id: 'bluff',
+    icon: 'idCard',
+    prison: CENTER_PERKS,
+    seed: 41,
+    setup: (sim) => {
+      clockTo(sim, at(19, 34));
+      place(sim, 26, 56, 1);
+      pockets(sim, 'fake_id', 'plastic_key_green');
+      sim.state.items.hand = 2;
+      sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
+    },
+    steps: [
+      { text: 'lesson.bluff.window', done: (c) => atWindow(c.sim) || c.sim.state.waved > 0, goal: (sim) => checkpointOf(sim)!.window[0].z * MAP_W + checkpointOf(sim)!.window[0].x, fail: bluffFail },
+      { text: 'lesson.bluff.show', touch: 'lesson.bluff.showTouch', done: (c) => c.sim.state.waved > 0 || c.sim.state.escaped > 0, fail: bluffFail },
+      { text: 'lesson.bluff.out', done: (c) => c.sim.state.escaped > 0, fail: (c) => (!c.sim.state.waved && !c.sim.state.escaped ? 'lesson.bluff.shut' : null), goal: (sim) => (checkpointOf(sim)!.gates[0].z + 1) * MAP_W + checkpointOf(sim)!.gates[0].x },
+    ],
+  },
+  {
+    // The glider (P24): off the roof's edge with the wind behind, out over the fence to the road.
+    id: 'glider',
+    icon: 'glider',
+    prison: CENTER_PERKS,
+    seed: 42,
+    setup: (sim) => {
+      // A west wind (a tailwind going east), and the night: up on the roof after Lights Out.
+      sim.state.calendar = [[1, -1, -1, 6, 1]];
+      clockTo(sim, at(23, 20));
+      place(sim, 52, 39, 1);
+      sim.state.layer = LAYER.ROOF;
+      pockets(sim, 'glider');
+      sim.state.items.hand = 0;
+      // A dummy asleep in the player's bed for the night's bed checks.
+      fill(sim, containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'), 'bed_dummy');
+    },
+    steps: [
+      { text: 'lesson.glider.edge', done: (c) => c.sim.state.escaped > 0 || apart(c.sim.state.player, centre(tile(57, 39))) < 0.7, goal: () => tile(57, 39), layer: LAYER.ROOF, fail: glideFail },
+      { text: 'lesson.glider.fly', touch: 'lesson.glider.flyTouch', done: (c) => c.sim.state.escaped > 0, fail: glideFail },
+    ],
+  },
 ];
 
 /** Whether a lookout posted on a tile would ever see a guard's round (any tile of it within WATCH_RANGE and in sight). */
@@ -498,6 +584,33 @@ function seesRound(sim: Sim, post: number, guard: number): boolean {
   return false;
 }
 
+/** The delivery's vehicle's tail (where the player climbs in). */
+function tailOf(sim: Sim): number {
+  return sim.prison.delivery!.tail.z * MAP_W + sim.prison.delivery!.tail.x;
+}
+/** The stowaway lesson's dead end: the vehicle gone without the player. */
+function stowFail(c: LessonCtx): Key | null {
+  const s = c.sim.state;
+  if (s.escaped || s.stowed) return null;
+  // (From the sign-off on the supervisor stands at the tail: nobody climbs in unseen any more.)
+  const p = planOf(c.sim);
+  return dayMinute(s.step) >= searchMinute(p) - SIGN_OFF_MINUTES || (!vehicleIn(c.sim) && dayMinute(s.step) > p.at) ? 'lesson.stowaway.missed' : null;
+}
+/** The lockpick lesson's dead end: the lockpick broken before the door is open. */
+function pickFail(c: LessonCtx): Key | null {
+  return !carries(c.sim, 'lockpick') && !c.sim.state.picked.length && c.sim.playerZone !== 'generator' ? 'lesson.lockpick.broke' : null;
+}
+/** The bluff lesson's dead end: the shift change over and the player not waved through. */
+function bluffFail(c: LessonCtx): Key | null {
+  const s = c.sim.state;
+  return !s.waved && !s.escaped && clockAt(s.step).minuteOfDay >= SHIFT_TO ? 'lesson.bluff.late' : null;
+}
+/** The glider lesson's dead end: glided and come down inside (the glider wrecked). */
+function glideFail(c: LessonCtx): Key | null {
+  if (c.sim.state.escaped) return null;
+  if (!carries(c.sim, 'glider')) return 'lesson.glider.inside';
+  return c.sim.state.lockdown ? 'lesson.glider.lockdown' : null;
+}
 /** The guards lesson's dead ends: the heat cooled off by itself (nothing left to pay off), or the money spent elsewhere. */
 function guardsFail(c: LessonCtx): Key | null {
   if (c.sim.state.heat <= 0) return 'lesson.guards.cooled';
@@ -529,6 +642,7 @@ function smuggleFail(sim: Sim): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'crew'] },
+  { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 
 /** Where a lesson (its index in LESSONS) stands: its chapter, its number in it (from 1) and how many the chapter has. */

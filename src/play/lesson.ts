@@ -1,10 +1,12 @@
 import { markLessonDone } from '../game/lessons';
+import { ESCAPES } from '../sim/Sim';
+import { LAYER } from '../sim/world/World';
 import { t, type Key } from '../i18n';
 import type { SimEvent } from '../sim/Sim';
 import { chapterOf, LESSONS, type LessonCtx } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
 import { LessonCard, showLessonResult, type LessonResult } from '../ui/lessonCard';
-import { board, click, controls, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, talk, tools } from './context';
+import { board, click, controls, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, talk, tools, view } from './context';
 import { play, type Game } from './game';
 
 /**
@@ -40,7 +42,10 @@ export function newLessonRun(index: number, finish: (r: LessonResult | 'quit') =
 export function lessonGoal(g: Game): number | null {
   const run = g.lesson;
   if (!run || run.ended) return null;
-  return run.progress.step?.goal?.(g.rec.sim) ?? null;
+  const step = run.progress.step;
+  // (Only on the layer it's on: a goal on the ground floor leads nowhere from the roof.)
+  if (!step?.goal || (step.layer ?? LAYER.GROUND) !== g.rec.sim.state.layer) return null;
+  return step.goal(g.rec.sim);
 }
 
 /** Every frame: steps ticked off, the card, the game's pace, the end. */
@@ -114,8 +119,21 @@ async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
   card.hide();
   if (won) markLessonDone(LESSONS[run.index].id);
   sound.music('title');
-  // A breath to see it done (or the guard's hand on the shoulder) before the card.
+  // A breath to see it done (or the guard's hand on the shoulder) before the card; off a roof on a glider (P24), down on the road first.
   await new Promise((r) => setTimeout(r, won ? 700 : 1200));
+  if (play.game !== g) return;
+  // (And a moment on the road; the delivery's vehicle away with the player hidden in it, P18.)
+  if (view.gliding) {
+    await view.glideDown();
+    await new Promise((r) => setTimeout(r, 600));
+  }
+  const sim = g.rec.sim;
+  if (won && ESCAPES[sim.state.via] === 'stowaway') {
+    view.depart('stowaway');
+    if (sim.prison.delivery?.vehicle === 'helicopter') sound.rotor();
+    else sound.engine();
+    await new Promise((r) => setTimeout(r, view.reducedMotion ? 900 : 3200));
+  }
   if (play.game !== g) return;
   const ch = chapterOf(run.index);
   const choice = await showLessonResult(won ? 'lesson.done' : why, run.index + 1 < LESSONS.length ? (ch.n === ch.of ? 'chapter' : 'lesson') : null, t(`lesson.${LESSONS[run.index].id}.t` as Key), click);

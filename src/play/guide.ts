@@ -90,11 +90,11 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const places = placesOf(w);
   const home = places.bedside[1];
   // A lockdown ends when the guards catch you, wherever you are; solitary and a knockout go
-  // nowhere; off the ground floor the player knows their own way.
-  if (s.lockdown || s.solitary > 0 || s.ko > 0 || s.layer !== LAYER.GROUND) return null;
-  // A lesson's step that leads somewhere: there.
+  // nowhere; off the ground floor the player knows their own way (but for a lesson's step: there, on the roof too).
+  if (s.lockdown || s.solitary > 0 || s.ko > 0) return null;
   const goal = play.game ? lessonGoal(play.game) : null;
   if (goal !== null) return (i) => i === goal;
+  if (s.layer !== LAYER.GROUND) return null;
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
@@ -143,7 +143,7 @@ export function updateGuide(g: Game, dt: number) {
   const goal = riot ? (i: number) => sim.world.ground.kind[i] === TILE.ROAD : guideTarget(sim);
   // On the prison as built: the arrows never lead through the player's own holes (in a takeover,
   // every door is open to them; in a lesson, the doors their keys open and the holes it had them make). Never across mines.
-  const grid = riot || lessonGoal(g) !== null ? sim.world.routeBlock : sim.world.npcBlock;
+  const grid = sim.state.layer !== LAYER.GROUND ? sim.world.routeGrid(sim.state.layer) : riot || lessonGoal(g) !== null ? sim.world.routeBlock : sim.world.npcBlock;
   const path = goal && findPath(sim.world, from, goal, -1, 4000, undefined, grid);
   g.guide = path && path.length ? smooth(sim.world, path, p.x, p.z, undefined, grid).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
 }
