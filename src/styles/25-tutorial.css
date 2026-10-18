@@ -1,0 +1,29 @@
+/* ------------------------------------------------------------ the tutorial's chapters */
+/* Each chapter a heading (its icon, name and lessons done) over its lesson cards. */
+.lesson-chapter {
+  display: grid;
+  gap: 8px;
+}
+
+.lesson-chapter + .lesson-chapter {
+  margin-top: 6px;
+}
+
+.lesson-chapter > .shelf-sub {
+  margin: 4px 2px 0;
+}
+
+.lesson-chapter > .shelf-sub .ic {
+  color: var(--orange);
+}
+
+/* A short landscape phone: each chapter's cards in two columns under its heading. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .lesson-chapter {
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+  }
+  .lesson-chapter > .shelf-sub {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,7 +1,7 @@
 import { markLessonDone } from '../game/lessons';
 import { t, type Key } from '../i18n';
 import type { SimEvent } from '../sim/Sim';
-import { LESSONS, type LessonCtx } from '../tutorial/lessons';
+import { chapterOf, LESSONS, type LessonCtx } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
 import { LessonCard, showLessonResult, type LessonResult } from '../ui/lessonCard';
 import { board, click, controls, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, talk, tools } from './context';
@@ -20,6 +20,8 @@ export interface LessonRun {
   shown: number;
   /** Seconds the tick stays up. */
   tick: number;
+  /** Seconds the step showing has been up (play time). */
+  since: number;
   /** Settles the tutorial flow's wait with the player's choice. */
   finish: (r: LessonResult | 'quit') => void;
   ended: boolean;
@@ -31,7 +33,7 @@ const ctx: LessonCtx = { sim: null as never, craftOpen: false };
 const TICK = 0.9;
 
 export function newLessonRun(index: number, finish: (r: LessonResult | 'quit') => void): LessonRun {
-  return { index, progress: new LessonProgress(LESSONS[index]), shown: 0, tick: 0, finish, ended: false };
+  return { index, progress: new LessonProgress(LESSONS[index]), shown: 0, tick: 0, since: 0, finish, ended: false };
 }
 
 /** The step's goal (a tile) for the floor arrows, if it has one. */
@@ -48,7 +50,10 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   ctx.sim = g.rec.sim;
   ctx.craftOpen = itemsUI.craftIsOpen;
   if (!run.ended && !g.paused) {
-    if (run.progress.update(ctx) && run.tick <= 0) {
+    // A step with something to read in it shows a few seconds before it can tick (it may be done the moment it comes up).
+    const now = run.progress.step;
+    const hold = !!now?.least && (run.shown !== run.progress.k || run.since < now.least);
+    if (run.progress.update(ctx, hold) && run.tick <= 0) {
       run.tick = TICK;
       sound.chime();
     }
@@ -61,10 +66,12 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   }
   // The tick on the step just done, then on to the next (one at a time); it waits while the
   // game is paused, so a lesson never ends under the pause card or the help.
+  if (!g.paused) run.since += dt;
   if (run.tick > 0 && !g.paused) {
     run.tick -= dt;
     if (run.tick <= 0) {
       run.shown++;
+      run.since = 0;
       if (run.shown < run.progress.k) run.tick = TICK;
     }
   }
@@ -72,7 +79,8 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   const step = lesson.steps[Math.min(run.shown, lesson.steps.length - 1)];
   // Waiting for time to pass: the clock hurries (never while the player could miss something).
   if (!g.paused && !run.ended) g.speed = run.tick <= 0 && run.shown === run.progress.k ? (step.speed ?? 1) : 1;
-  card.update(run.index + 1, LESSONS.length, lesson.id, step.text, step.touch, lesson.steps.length, Math.min(run.shown, lesson.steps.length), run.tick > 0, hidden || run.ended);
+  const ch = chapterOf(run.index);
+  card.update(ch.n, ch.of, ch.id, lesson.id, step.text, step.touch, lesson.steps.length, Math.min(run.shown, lesson.steps.length), run.tick > 0, hidden || run.ended);
   if (!run.ended && run.shown >= lesson.steps.length) end(g, true);
 }
 
@@ -80,6 +88,7 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
 export function lessonEvent(g: Game, e: SimEvent) {
   const run = g.lesson;
   if (!run || run.ended || run.progress.done) return;
+  run.progress.event(e, g.rec.sim);
   if (e.type === 'caught') end(g, false);
   else if (e.type === 'floored') end(g, false, 'lesson.knocked');
 }
@@ -108,7 +117,8 @@ async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
   // A breath to see it done (or the guard's hand on the shoulder) before the card.
   await new Promise((r) => setTimeout(r, won ? 700 : 1200));
   if (play.game !== g) return;
-  const choice = await showLessonResult(won ? 'lesson.done' : why, run.index + 1 < LESSONS.length, t(`lesson.${LESSONS[run.index].id}.t` as Key), click);
+  const ch = chapterOf(run.index);
+  const choice = await showLessonResult(won ? 'lesson.done' : why, run.index + 1 < LESSONS.length ? (ch.n === ch.of ? 'chapter' : 'lesson') : null, t(`lesson.${LESSONS[run.index].id}.t` as Key), click);
   run.finish(choice);
 }
 
@@ -118,9 +128,24 @@ export function hideLesson() {
 }
 
 /**
- * Whether a panel covers the card: a talk, the board or the file. Containers and crafting leave
- * it up (they sit at the side or the bottom), since a step often says what to do in them.
+ * Whether a panel covers the card: a talk, the board, the file, the rat's, the phone's or the
+ * crew's, where it would overlap it (on a phone, mostly; on a wide screen they sit side by side,
+ * and a step often says what to do in the panel). Containers and crafting leave it up (they sit
+ * at the side or the bottom).
  */
 export function lessonHidden(): boolean {
-  return socialOpen();
+  if (!socialOpen()) return false;
+  const c = card.at;
+  if (!c) return true;
+  for (const p of [talk, board, profile, ratPanel, phonePanel, crewPanel]) {
+    const r = p.el.getBoundingClientRect();
+    if (r.width && r.height && r.left < c.right && r.right > c.left && r.top < c.bottom && r.bottom > c.top) return true;
+  }
+  return false;
+}
+
+/** "Prison life · Lesson 3 of 7" (the pause card in a lesson). */
+export function lessonPlace(index: number): string {
+  const ch = chapterOf(index);
+  return `${t(`chapter.${ch.id}` as Key)} · ${t('lesson.of', { n: ch.n, of: ch.of })}`;
 }

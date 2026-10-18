@@ -9,5 +9,19 @@ fight: 2 steps done by day 1 10:31
 noise: 3 steps done by day 1 10:45
 noise, missed: ended at step 2 (lesson.noise.missed)
 escape: 4 steps done by day 1 10:48
+guards: 2 steps done by day 1 10:30
+day: 3 steps done by day 1 11:04
+dogs: 3 steps done by day 2 10:32
+rat: 4 steps done by day 1 10:34
+smuggle: 4 steps done by day 1 21:23
+games: 3 steps done by day 1 18:16
+crew: 3 steps done by day 1 10:33
+crew, posted far: ended at step 3 (lesson.crew.far)
+day, missed: ended at step 2 (lesson.day.missed) by day 1 10:59
+smuggle, left lying: ended at step 4 (lesson.smuggle.seized) by day 1 21:29
+guards, never paid: ended at step 1 (lesson.guards.cooled) by day 1 15:36
+games, never played: ended at step 1 (lesson.games.closed) by day 1 22:00
+rat, dropped: ended at step 1 (lesson.rat.lost)
+2 chapters: basics 10, life 7
 training: its guard out cold, no takeover
 every lesson goal is open floor

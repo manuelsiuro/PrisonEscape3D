@@ -42,8 +42,7 @@ import { resetButtons } from './buttons';
 import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, crewChips, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
 import { play, type Game } from './game';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
-import { hideLesson, type LessonRun } from './lesson';
-import { LESSONS } from '../tutorial/lessons';
+import { hideLesson, lessonPlace, type LessonRun } from './lesson';
 
 /**
  * A game from start to end: into it (new or loaded), the saves along the way, pausing, and
@@ -201,7 +200,7 @@ export async function pause() {
   for (;;) {
     // A lesson isn't saved: the card says which one it is.
     const lesson = play.game.lesson;
-    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? t('lesson.of', { n: lesson.index + 1, of: LESSONS.length }) : note, !!lesson, lesson ? '' : `${prisonName(play.game.rec.sim.prison)} · ${t('hud.day', { n: play.game.rec.sim.clock.day })}`);
+    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? lessonPlace(lesson.index) : note, !!lesson, lesson ? '' : `${prisonName(play.game.rec.sim.prison)} · ${t('hud.day', { n: play.game.rec.sim.clock.day })}`);
     note = '';
     if (!play.game) return;
     if (choice === 'settings') {

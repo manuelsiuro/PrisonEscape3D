@@ -14,6 +14,6 @@ irongate: 67 lasting facts (bedChecks, dummy, brace, takeover, keyColor, steady,
   checked: bedChecks 1160, brace 1160, camera 1160, champ 1160, corrupt 1160, digger 1160, dogNight 776, dogPepper 776, dogShift 776, dogTreat 776, dogWash 776, droneDrop 1160, dummy 1160, fakeId 1160, favor 3480, fixer 1160, flood 1160, gambling 1160, grate 2320, heli 1160, job 1424, keyColor 11600, koTime 1160, lazy 1160, lockpick 1160, lookout 1160, muscle 1160, nextDelivery 98, nextDrill 192, nextInspection 194, nextSports 96, nextVisiting 288, pills 776, pouch 1160, ratDogs 776, ratKey 1160, ratTrap 1160, ratTunnel 1160, searchClose 26, shakedown 3286, shakedownYou 388, shell 1160, shiftChange 1160, smuggler 1160, solitary 1160, steady 8120, stock 16352, stormCut 78, strict 1160, takeover 1160, toilets 1160, visitArches 1160
   naps as told: 12; shakedowns as told: 16
 training: 10 lasting facts (fenceOff, brace, keyColor, steady, toilets, koTime, ratTrap, ratTunnel, lockpick, favor); fence dead 45 s; tunnel holds 2 tiles; 1 bribe as told
-  checked: brace 1160, favor 1160, fenceOff 1160, keyColor 1160, koTime 1160, lockpick 1160, ratTrap 1160, ratTunnel 1160, steady 1160, toilets 1160
+  checked: brace 1160, dogPepper 776, dogShift 776, dogTreat 776, dogWash 776, favor 870, fenceOff 1160, keyColor 1160, koTime 1160, lockpick 1160, pills 776, ratDogs 776, ratTrap 1160, ratTunnel 1160, steady 1160, toilets 1160
   naps as told: 0; shakedowns as told: 0
 a glider's day: flown out from a copy 6 times

@@ -9,22 +9,29 @@ import { icon } from './icons';
 export class LessonCard {
   private readonly el = h('div', 'coach lesson-coach hidden');
   private shown = '';
+  /** Where it was last seen on screen. */
+  at: DOMRect | null = null;
 
   constructor(parent: HTMLElement) {
     this.el.setAttribute('role', 'status');
     parent.append(this.el);
   }
 
-  /** The lesson (number, of, its id), the step showing (its prompt and its touch variant), the steps and how many are done; hidden while a panel covers it. */
-  update(n: number, of: number, id: string, text: Key, touch: Key | undefined, steps: number, done: number, tick: boolean, hidden: boolean) {
+  /** The lesson (its number in its chapter, of how many, the chapter's id, its id), the step showing (its prompt and its touch variant), the steps and how many are done; hidden while a panel covers it. */
+  update(n: number, of: number, chapter: string, id: string, text: Key, touch: Key | undefined, steps: number, done: number, tick: boolean, hidden: boolean) {
     this.el.classList.toggle('hidden', hidden);
-    const key = `${n}:${done}:${tick}:${text}`;
+    // Where it stands while shown (a panel is judged against it while it's hidden).
+    if (!hidden) {
+      const r = this.el.getBoundingClientRect();
+      if (r.width) this.at = r;
+    }
+    const key = `${chapter}:${n}:${done}:${tick}:${text}`;
     if (key === this.shown) return;
     this.shown = key;
     this.el.classList.toggle('done', tick);
     const dots = Array.from({ length: steps }, (_, k) => `<i class="${k < done ? 'on' : k === done ? 'now' : ''}"></i>`).join('');
     this.el.innerHTML = `<span class="coach-ic">${icon(tick ? 'check' : 'bulb', 18)}</span>
-      <span class="coach-text"><small>${t('lesson.of', { n, of })} · ${t(`lesson.${id}.t` as Key)}</small><b>${t(TOUCH && touch ? touch : text)}</b><span class="lesson-dots">${dots}</span></span>`;
+      <span class="coach-text"><small>${t(`chapter.${chapter}` as Key)} · ${t('lesson.of', { n, of })} · ${t(`lesson.${id}.t` as Key)}</small><b>${t(TOUCH && touch ? touch : text)}</b><span class="lesson-dots">${dots}</span></span>`;
   }
 
   hide() {
@@ -35,8 +42,8 @@ export class LessonCard {
 
 export type LessonResult = 'next' | 'list' | 'again' | 'play';
 
-/** The end of a lesson: done (the next one, or all lessons; after the last, the real game), or failed (again, or all lessons). */
-export function showLessonResult(head: Key, hasNext: boolean, title: string, click: () => void): Promise<LessonResult> {
+/** The end of a lesson: done (the next one, the next chapter after a chapter's last, or all lessons; after the very last, the real game), or failed (again, or all lessons). */
+export function showLessonResult(head: Key, next: 'lesson' | 'chapter' | null, title: string, click: () => void): Promise<LessonResult> {
   const won = head === 'lesson.done';
   const el = h(
     'div',
@@ -47,7 +54,7 @@ export function showLessonResult(head: Key, hasNext: boolean, title: string, cli
       <p class="card-note"></p>
       <div class="actions">
         <button class="big-btn ghost" data-c="list">${icon('book', 18)}${t('lesson.list')}</button>
-        ${won ? (hasNext ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}${t('lesson.next')}</button>` : `<button class="big-btn primary" data-c="play">${icon('play', 18)}${t('title.play')}</button>`) : `<button class="big-btn primary" data-c="again">${icon('replay', 18)}${t('lesson.again')}</button>`}
+        ${won ? (next ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}${t(next === 'chapter' ? 'lesson.nextChapter' : 'lesson.next')}</button>` : `<button class="big-btn primary" data-c="play">${icon('play', 18)}${t('title.play')}</button>`) : `<button class="big-btn primary" data-c="again">${icon('replay', 18)}${t('lesson.again')}</button>`}
       </div>
     </div>`,
   );

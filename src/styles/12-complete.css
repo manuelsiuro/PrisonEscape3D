@@ -854,9 +854,7 @@ body.touch .coach-skip {
   .lessons-card .settings-head h2 {
     font-size: 24px;
   }
-  .lessons-list {
-    grid-template-columns: 1fr 1fr;
-  }
+  /* (Two columns of cards in each chapter: 25-tutorial.css.) */
 }
 
 /* The tutorial suggested to a newcomer: a soft pulse round its button. */

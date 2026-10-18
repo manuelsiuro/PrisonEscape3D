@@ -1,27 +1,31 @@
 import { t, type Key } from '../../i18n';
-import type { Lesson } from '../../tutorial/lessons';
+import { CHAPTERS, type Lesson } from '../../tutorial/lessons';
 import { h } from '../dom';
 import { icon } from '../icons';
 
 /**
- * The tutorial (P8+): the lessons in order, each a card (its number, icon, name and what it
+ * The tutorial (P8+): the lessons in order by chapter (each chapter a heading with how many of
+ * its lessons are done), each a card (its number in the chapter, icon, name and what it
  * teaches, a tick once done), the next one to take highlighted. Resolves with the lesson
  * picked (its index), or null when closed.
  */
 export function showLessons(lessons: readonly Lesson[], done: readonly string[], click: () => void): Promise<number | null> {
   const next = lessons.findIndex((l) => !done.includes(l.id));
   const count = lessons.filter((l) => done.includes(l.id)).length;
-  const cards = lessons
-    .map((l, k) => {
-      const ok = done.includes(l.id);
-      return `<button class="lesson-card${ok ? ' done' : ''}${k === next ? ' next' : ''}" data-k="${k}" style="--d:${k * 0.035}s">
-        <span class="lesson-num">${ok ? icon('check', 16) : k + 1}</span>
+  const card = (l: Lesson, k: number, n: number) => {
+    const ok = done.includes(l.id);
+    return `<button class="lesson-card${ok ? ' done' : ''}${k === next ? ' next' : ''}" data-k="${k}" style="--d:${Math.min(k, 12) * 0.035}s">
+        <span class="lesson-num">${ok ? icon('check', 16) : n}</span>
         <span class="lesson-ic">${icon(l.icon, 22)}</span>
         <span class="lesson-text"><b>${t(`lesson.${l.id}.t` as Key)}${ok ? `<span class="sr-only"> · ${t('lessons.doneOne')}</span>` : ''}</b><small>${t(`lesson.${l.id}.d` as Key)}</small></span>
         ${icon(k === next ? 'play' : 'chevronRight', 16)}
       </button>`;
-    })
-    .join('');
+  };
+  const cards = CHAPTERS.map((c) => {
+    const of = c.lessons.map((id) => lessons.findIndex((l) => l.id === id));
+    const got = c.lessons.filter((id) => done.includes(id)).length;
+    return `<section class="lesson-chapter" aria-labelledby="chapter-${c.id}"><h3 class="shelf-sub" id="chapter-${c.id}">${icon(c.icon, 15)}${t(`chapter.${c.id}` as Key)}<span>${got} / ${c.lessons.length}</span></h3>${of.map((k, j) => card(lessons[k], k, j + 1)).join('')}</section>`;
+  }).join('');
   const el = h(
     'div',
     'modal lessons-modal',

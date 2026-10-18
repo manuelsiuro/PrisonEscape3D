@@ -18,6 +18,7 @@ import { play, type Game } from './game';
 import { seenTip } from './tips';
 import { visitPlaceAt } from './smuggle';
 import { SPORTS_PRIZE, SPORTS_WINS } from '../content/games';
+import { LESSONS } from '../tutorial/lessons';
 
 /**
  * The day in play (P17): the warden's speakers (the morning card at 08:00, warnings fifteen
@@ -66,8 +67,8 @@ export function weatherName(sim: Sim, w: Weather): WeatherName {
   return w;
 }
 
-/** Whether a prison has days at all (the Training Block doesn't), and the game isn't a lesson. */
-const hasDays = (g: Game | null): g is Game => !!g && !g.lesson && !!DAY_BOOKS[g.rec.sim.prison.id];
+/** Whether a prison has days at all (the Training Block doesn't), and the game isn't a lesson (but one about the day). */
+const hasDays = (g: Game | null): g is Game => !!g && (!g.lesson || !!LESSONS[g.lesson.index].days) && !!DAY_BOOKS[g.rec.sim.prison.id];
 
 export const wardenOf = (sim: Sim) => t(`warden.${sim.prison.id}` as Key);
 

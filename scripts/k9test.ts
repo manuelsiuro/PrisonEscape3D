@@ -49,7 +49,7 @@ import { setTile } from '../src/sim/systems/watch';
 import { ROUTINE } from '../src/content/routine';
 import { check } from './assert';
 
-const DOGS: Record<string, string[]> = { shankton: ['Brutus'], 'san-pancho': ['Canela', 'Bandido'], irongate: ['Admiral'] };
+const DOGS: Record<string, string[]> = { shankton: ['Brutus'], 'san-pancho': ['Canela', 'Bandido'], irongate: ['Admiral'], training: ['Biscuit'] };
 const n = (id: string) => itemNumber(id);
 const tileOf = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
 const put = (b: { x: number; z: number }, x: number, z: number) => {

@@ -31,8 +31,9 @@ export async function tutorialFlow(): Promise<boolean> {
 /** One lesson: its scene set up on a fresh game, played until it ends one way or the other. */
 function runLesson(k: number): Promise<LessonResult | 'quit'> {
   return new Promise((resolve) => {
-    const sim = new Sim(TRAINING, 7 + k);
-    LESSONS[k].setup(sim);
+    const lesson = LESSONS[k];
+    const sim = new Sim(lesson.prison ?? TRAINING, lesson.seed ?? 7 + k);
+    lesson.setup(sim);
     let settled = false;
     const run = newLessonRun(k, (r) => {
       if (settled) return;
@@ -41,6 +42,8 @@ function runLesson(k: number): Promise<LessonResult | 'quit'> {
       if (r !== 'quit') endGame();
       resolve(r);
     });
-    startGame(sim, false, run);
+    // Guards' ways the lesson takes as known: as rumors heard (the talk panel names them).
+    const rumors = (lesson.known ?? []).map(({ guard, kind }) => ({ fact: { kind, key: `trait:${guard}`, guard }, step: 0, by: -1 }));
+    startGame(sim, false, run, rumors);
   });
 }

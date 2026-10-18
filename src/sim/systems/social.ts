@@ -263,6 +263,8 @@ export function offerFavors(sim: SimContext) {
     if (s.favors.some((f) => f.by === by) || s.followers.includes(by)) continue;
     const kind = randomInt(s, 4);
     let target = -1;
+    // (Alone on the block, the Training Block's one inmate: nobody else to rob or beat up.)
+    if ((kind === FAVOR.RETRIEVE || kind === FAVOR.BEATDOWN) && n < 2) continue;
     if (kind === FAVOR.RETRIEVE || kind === FAVOR.BEATDOWN) {
       target = randomInt(s, n - 1);
       if (target >= by) target++;
