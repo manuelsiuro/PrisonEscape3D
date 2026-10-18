@@ -10,6 +10,9 @@ import { drillOn, prisonDay } from '../src/sim/systems/calendar';
 import { dropTile } from '../src/sim/systems/smuggling';
 import { markerAt, sweetSpot } from '../src/sim/systems/games';
 import { thorough } from '../src/sim/systems/delivery';
+import { jobRooms, priceOf } from '../src/sim/systems/economy';
+import { itemDef } from '../src/content/items';
+import { itemOf } from '../src/sim/systems/items';
 import { checkpointOf, shiftChange } from '../src/sim/systems/getaway';
 import { WAY } from '../src/content/smuggling';
 import { containersOf } from '../src/sim/world/containers';
@@ -23,7 +26,7 @@ import { TILE, TILE_INFO } from '../src/sim/world/tiles';
 import { LAYER, MAP_W, tileOfKey } from '../src/sim/world/World';
 import { CHAPTERS, LESSONS, myDesk, type LessonCtx } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
-import { Bot, DIR } from './bots';
+import { Bot, DIR, n } from './bots';
 import { check } from './assert';
 
 const tile = (x: number, z: number) => z * MAP_W + x;
@@ -154,6 +157,119 @@ play('escape', (bot) => {
 });
 
 
+// ---------------------------------------------------------------- Getting by
+
+/** Faces a tile from where the player stands (a step's turn toward it). */
+function faceTile(bot: Bot, t: number) {
+  const dx = ((t % MAP_W) + 0.5) * UNIT - bot.st.player.x;
+  const dz = (Math.floor(t / MAP_W) + 0.5) * UNIT - bot.st.player.z;
+  bot.face(dirFromVector(dx, dz));
+}
+/** To a free tile beside a prop, facing it, and Interact. */
+function useProp(bot: Bot, prop: number) {
+  const w = bot.sim.world;
+  const p = w.props[prop];
+  bot.pilot.goToAny((i) => {
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    const side = (x === p.x - 1 || x === p.x + p.w) !== (z === p.z - 1 || z === p.z + p.d);
+    return side && x >= p.x - 1 && x <= p.x + p.w && z >= p.z - 1 && z <= p.z + p.d && !w.blocked(x, z);
+  });
+  bot.until(() => !bot.pilot.active, 3000, () => command(bot.pilot.dir(bot.st.player)));
+  bot.face(dirFromVector((p.x + p.w / 2) * UNIT - bot.st.player.x, (p.z + p.d / 2) * UNIT - bot.st.player.z));
+  bot.act();
+}
+
+play('talk', (bot) => {
+  check(talkTo(bot, bot.st.inmates[0].body), 'talk: talking to Sparky');
+  bot.op(OP.TALK, TALK.GIFT, bot.slotOf('chocolate'));
+  bot.op(OP.TALK, TALK.ACCEPT);
+  bot.op(OP.CLOSE);
+  check(bot.walkTo(deskTileOf(bot) + MAP_W), 'talk: at the desk');
+  bot.face(DIR.NORTH);
+  check(bot.open(myDesk(bot.sim)), 'talk: the desk opens');
+  bot.takeAll(16);
+  bot.close();
+  check(bot.slotOf('magazine') >= 0, 'talk: the magazine in the pockets');
+  check(talkTo(bot, bot.st.inmates[0].body), 'talk: talking to him again');
+  bot.op(OP.TALK, TALK.HAND_IN);
+});
+
+play('trade', (bot) => {
+  const who = bot.st.inmates.findIndex((m) => m.cell === bot.sim.prison.merchants[0]);
+  check(talkTo(bot, bot.st.inmates[who].body), 'trade: talking to the merchant');
+  const shop = bot.st.shops[bot.sim.merchantOf(who)];
+  const k = shop.findIndex((v) => v && priceOf(itemDef(itemOf(v)).value, bot.st.inmates[who].opinion) <= bot.st.cash);
+  check(k >= 0, 'trade: something affordable on the stall');
+  bot.op(OP.TALK, TALK.BUY, k);
+});
+
+play('job', (bot) => {
+  // (A step first: the Work Period's doors open as the step ends.)
+  bot.step();
+  const room = jobRooms(bot.sim.world)[0];
+  useProp(bot, room.take);
+  check(bot.slotOf('dirty_laundry') >= 0, 'job: a load of dirty laundry');
+  const machine = room.machines[0];
+  useProp(bot, machine);
+  check(bot.st.machines[machine] !== undefined, 'job: in the machine');
+  bot.until(() => bot.st.machines[machine] <= bot.st.step, 3000);
+  useProp(bot, machine);
+  check(bot.slotOf('clean_laundry') >= 0, 'job: the clean load out');
+  useProp(bot, room.put);
+});
+
+play('gym', (bot) => {
+  bot.act();
+  check(bot.st.train >= 0, 'gym: on the weights');
+  for (let k = 0; k < 3000 && !bot.sim.events.some((e) => e.type === 'trained'); k++) bot.op(OP.TRAIN, 1 + (k % 2));
+});
+
+play('disguise', (bot) => {
+  bot.op(OP.EQUIP, 0);
+  check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'disguise: in uniform');
+  check(bot.walkTo(tile(38, 29)), 'disguise: into the gym');
+  bot.until(() => bot.st.guards[0].sees, 3000);
+  check(bot.st.heat === 0, 'disguise: Bell pays no mind');
+});
+
+play('tunnel', (bot) => {
+  const desk = deskTileOf(bot);
+  const below = desk + MAP_W;
+  check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT), 'tunnel: the entrance under the desk');
+  check(bot.walkTo(tile(22, 19)), 'tunnel: by the toilet');
+  bot.face(DIR.SOUTH);
+  bot.hold('dirt');
+  bot.act();
+  check(bot.slotOf('dirt') < 0, 'tunnel: the dirt flushed');
+  bot.walkTo(below);
+  bot.face(DIR.NORTH);
+  bot.open(myDesk(bot.sim));
+  bot.act(1);
+  check(bot.st.layer === LAYER.UNDER, 'tunnel: down');
+  const x = desk % MAP_W;
+  [16, 15, 14, 13, 12, 11, 10, 9].forEach((z, k) => {
+    if (k % 3 === 2) {
+      bot.hold('timber_brace');
+      bot.use();
+    }
+    bot.face(DIR.NORTH);
+    check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tile(x, z)] !== TILE.SOIL), `tunnel: ${x},${z} dug`);
+    check(bot.walkTo(tile(x, z), 400), `tunnel: along to ${x},${z}`);
+  });
+  bot.face(DIR.SOUTH);
+  check(bot.strikeUntil('sturdy_shovel', () => bot.st.layer === LAYER.GROUND), 'tunnel: dug up');
+});
+
+play('vents', (bot) => {
+  check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[tile(9, 9)] === TILE.GRATE_OPEN), 'vents: the grate unscrewed');
+  bot.act();
+  check(bot.st.layer === LAYER.VENTS, 'vents: up in the ducts');
+  check(bot.walkTo(tile(13, 38), 3000), 'vents: along to the ladder');
+  check(bot.walkTo(tile(13, 39), 200), 'vents: at the ladder');
+  bot.act();
+});
+
 // ---------------------------------------------------------------- Prison life
 
 /** Up to someone (a body), then facing them and Interact: a talk. Whether one started. */
@@ -161,6 +277,12 @@ function talkTo(bot: Bot, body: { x: number; z: number }, limit = 1500): boolean
   for (let k = 0; k < limit; k++) {
     const dx = body.x - bot.st.player.x;
     const dz = body.z - bot.st.player.z;
+    // (Far: along the way round walls; close: straight up to them.)
+    if (Math.hypot(dx, dz) > 2 * UNIT) {
+      bot.pilot.goTo(Math.floor(body.z / UNIT) * MAP_W + Math.floor(body.x / UNIT));
+      bot.step(command(bot.pilot.dir(bot.st.player)));
+      continue;
+    }
     if (Math.hypot(dx, dz) > 1.15 * UNIT) {
       bot.step(command(dirFromVector(dx, dz)));
       continue;
@@ -317,6 +439,11 @@ play('glider', (bot) => {
 });
 
 const carriesLockpick = (bot: Bot) => bot.slotOf('lockpick') >= 0;
+/** The player's desk's tile. */
+function deskTileOf(bot: Bot): number {
+  const p = containersOf(bot.sim.world)[myDesk(bot.sim)].prop;
+  return p.z * MAP_W + p.x;
+}
 
 /** A lesson set up and followed through a bot's steps (no checks): for the ways it can end badly. */
 function follow(id: string) {
@@ -418,6 +545,38 @@ function follow(id: string) {
   check(!why() && !bot.st.lockdown, `glider: the bed checks pass with the dummy (${why()}, lockdown ${bot.st.lockdown})`);
   console.log(`glider, waiting on the roof: ${bot.time}, no lockdown`);
 }
+{
+  // Standing about: noon comes, the stall shuts.
+  const { bot, progress, why } = follow('trade');
+  bot.until(() => !!why(), 3 * 60 * 20);
+  check(why() === 'lesson.trade.closed', `trade: free time over ends the lesson (${why()})`);
+  console.log(`trade, never bought: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // Standing about: 15:00 comes with nothing washed.
+  const { bot, progress, why } = follow('job');
+  bot.until(() => !!why(), 4 * 60 * 20);
+  check(why() === 'lesson.job.late', `job: the Work Period over ends the lesson (${why()})`);
+  console.log(`job, idle: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // The favor taken, then the magazine given away as a gift: the lesson says so.
+  const { bot, progress, why } = follow('talk');
+  talkTo(bot, bot.st.inmates[0].body);
+  bot.op(OP.TALK, TALK.GIFT, bot.slotOf('chocolate'));
+  bot.op(OP.TALK, TALK.ACCEPT);
+  bot.op(OP.CLOSE);
+  bot.walkTo(deskTileOf(bot) + MAP_W);
+  bot.face(DIR.NORTH);
+  bot.open(myDesk(bot.sim));
+  bot.takeAll(16);
+  bot.close();
+  talkTo(bot, bot.st.inmates[0].body);
+  bot.op(OP.TALK, TALK.GIFT, bot.slotOf('magazine'));
+  bot.step();
+  check(why() === 'lesson.talk.lost', `talk: the magazine given away ends the lesson (${why()})`);
+  console.log(`talk, magazine given away: ended at step ${progress.k + 1} (${why()})`);
+}
 // Done another way than the bot's (the review's repros): still through, never stuck.
 {
   // At roll call before the bell: the bell and the muster in one step, both steps ticked.
@@ -504,7 +663,8 @@ for (const lesson of LESSONS) {
     const goal = s.goal?.(bot.sim);
     if (goal === undefined || goal === null) continue;
     // (On the roof, open roof the player can walk.)
-    const open = bot.st.layer === LAYER.GROUND ? !bot.sim.world.propSolid[goal] && !TILE_INFO[bot.sim.world.ground.kind[goal]].solid : !bot.sim.world.routeGrid(bot.st.layer)[goal];
+    const layer = s.layer ?? LAYER.GROUND;
+    const open = layer === LAYER.GROUND ? !bot.sim.world.propSolid[goal] && !TILE_INFO[bot.sim.world.ground.kind[goal]].solid : !bot.sim.world.routeGrid(layer)[goal];
     check(open, `${lesson.id}: the goal ${goal % MAP_W},${Math.floor(goal / MAP_W)} is open floor`);
   }
 }

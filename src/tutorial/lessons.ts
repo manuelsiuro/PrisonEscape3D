@@ -16,8 +16,8 @@ import { DAY_EVENTS, SIGN_OFF_MINUTES, WEATHERS } from '../content/days';
 import { SHIFT_TO } from '../content/getaways';
 import { atWindow, checkpointOf } from '../sim/systems/getaway';
 import { searchMinute, vehicleIn } from '../sim/systems/delivery';
-import { HOLDER } from '../sim/systems/economy';
-import { isFloor } from '../sim/ai/places';
+import { FAVOR, FAVOR_STATE, HOLDER, jobRooms } from '../sim/systems/economy';
+import { isFloor, placesOf } from '../sim/ai/places';
 import { lineOfSight } from '../sim/ai/sight';
 import { WATCH_RANGE } from '../content/crew';
 import { ORDER } from '../sim/command';
@@ -332,6 +332,140 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.escape.out', done: (c) => c.sim.state.escaped > 0, goal: () => tile(29, 54) },
     ],
   },
+  // ---------------------------------------------------------------- Getting by
+  {
+    // Talking (GDD §10.3–10.4): a gift for a friend's opinion, a favor taken on and handed in.
+    id: 'talk',
+    icon: 'chat',
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      place(sim, 23, 23, 1);
+      waitAt(sim, 0, 25, 23);
+      pockets(sim, 'chocolate');
+      sim.state.items.hand = 1;
+      fill(sim, myDesk(sim), '', '', '', '', '', '', 'magazine');
+      // His favor: a magazine (the player's desk has one).
+      sim.state.favors = [{ by: 0, kind: FAVOR.SCAVENGE, item: n('magazine'), target: -1, reward: 25, state: FAVOR_STATE.OFFERED }];
+    },
+    steps: [
+      { text: 'lesson.talk.talk', touch: 'lesson.talk.talkTouch', done: (c) => c.sim.state.talk === 0, goal: (sim) => tileOfBody(sim.state.inmates[0].body) },
+      { text: 'lesson.talk.gift', touch: 'lesson.talk.giftTouch', on: (e) => e.type === 'gift' },
+      // (Taken on before the gift, or handed in already: the state says, whatever order it was done in.)
+      { text: 'lesson.talk.favor', done: (c) => c.sim.state.favors.every((f) => f.state !== FAVOR_STATE.OFFERED) },
+      { text: 'lesson.talk.handIn', done: (c) => c.sim.state.favors.length === 0, fail: talkFail, goal: (sim) => (carries(sim, 'magazine') ? tileOfBody(sim.state.inmates[0].body) : deskStand(sim)) },
+    ],
+  },
+  {
+    // Merchants (GDD §10.3): open in free time, cheaper to friends.
+    id: 'trade',
+    icon: 'cart',
+    prison: CENTER_PERKS,
+    seed: 61,
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      const m = sim.state.inmates[merchantAt(sim)];
+      const [x, z] = near(sim, Math.floor(m.body.x / UNIT) + 1, Math.floor(m.body.z / UNIT));
+      place(sim, x, z, 9);
+      sim.state.cash = 60;
+    },
+    steps: [
+      { text: 'lesson.trade.talk', touch: 'lesson.trade.talkTouch', done: (c) => c.sim.state.talk === merchantAt(c.sim), goal: (sim) => tileOfBody(sim.state.inmates[merchantAt(sim)].body), fail: tradeFail },
+      { text: 'lesson.trade.buy', on: (e) => e.type === 'bought', fail: tradeFail },
+    ],
+  },
+  {
+    // A job (GDD §11): the Work Period at the laundry, a load through the machine for the quota.
+    id: 'job',
+    icon: 'briefcase',
+    prison: CENTER_PERKS,
+    seed: 62,
+    setup: (sim) => {
+      clockTo(sim, at(12, 1));
+      sim.state.jobs = sim.state.jobs.map((h, k) => (k === LAUNDRY ? HOLDER.PLAYER : h === HOLDER.PLAYER ? HOLDER.NOBODY : h));
+      sim.state.jobDay = 1;
+      place(sim, 14, 13, 1);
+    },
+    steps: [
+      { text: 'lesson.job.go', done: zone('laundry'), goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].take), fail: jobFail },
+      { text: 'lesson.job.take', touch: 'lesson.job.takeTouch', done: (c) => carries(c.sim, 'dirty_laundry') || machineOn(c.sim) || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].take), fail: jobFail },
+      { text: 'lesson.job.wash', touch: 'lesson.job.washTouch', done: (c) => machineOn(c.sim) || carries(c.sim, 'clean_laundry') || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].machines[0]), fail: jobFail },
+      // (The machine's load: back to it once it's done, then to the clean basket.)
+      { text: 'lesson.job.deliver', done: (c) => c.sim.state.quota > 0, goal: (sim) => besideProp(sim, carries(sim, 'clean_laundry') ? jobRooms(sim.world)[LAUNDRY].put : loadedMachine(sim)), fail: jobFail },
+    ],
+  },
+  {
+    // Training (GDD §3.2): a set on the weights for Strength.
+    id: 'gym',
+    icon: 'dumbbell',
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      place(sim, 35, 33, 9);
+      sim.state.energy = 100;
+    },
+    steps: [
+      { text: 'lesson.gym.start', touch: 'lesson.gym.startTouch', done: (c) => c.sim.state.train >= 0, goal: () => tile(35, 33) },
+      { text: 'lesson.gym.lift', touch: 'lesson.gym.liftTouch', on: (e) => e.type === 'trained' },
+    ],
+  },
+  {
+    // The disguise (GDD §7): a guard's uniform past a guard, at night out of the cell; not too close.
+    id: 'disguise',
+    icon: 'shirt',
+    setup: (sim) => {
+      clockTo(sim, at(23, 30));
+      place(sim, 36, 23, 1);
+      pockets(sim, 'guard_outfit');
+      sim.state.items.hand = 1;
+    },
+    steps: [
+      { text: 'lesson.disguise.wear', touch: 'lesson.disguise.wearTouch', done: (c) => itemOf(c.sim.state.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), goal: () => tile(38, 29) },
+      { text: 'lesson.disguise.walk', done: (c) => c.sim.playerZone === 'gym' && c.sim.state.guards[0].sees && itemOf(c.sim.state.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), goal: () => tile(38, 29) },
+      { text: 'lesson.disguise.close', least: 6, done: () => true },
+    ],
+  },
+  {
+    // Tunnels (GDD §9.2): the entrance under the desk, its dirt down the toilet, braces every third tile, up past the fence.
+    id: 'tunnel',
+    icon: 'shovel',
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      // Below the desk, facing it (the chair stands at its side).
+      place(sim, 22, 18, 13);
+      pockets(sim, 'sturdy_shovel', 'timber_brace', 'timber_brace', 'timber_brace');
+      sim.state.items.hand = 0;
+      sim.state.energy = 100;
+    },
+    steps: [
+      { text: 'lesson.tunnel.shaft', touch: 'lesson.tunnel.shaftTouch', done: (c) => c.sim.world.ground.kind[deskTile(c.sim)] === TILE.SHAFT, goal: (sim) => deskStand(sim) },
+      { text: 'lesson.tunnel.dirt', touch: 'lesson.tunnel.dirtTouch', done: (c) => !carries(c.sim, 'dirt') || c.sim.state.layer === LAYER.UNDER, goal: () => tile(22, 19) },
+      { text: 'lesson.tunnel.down', touch: 'lesson.tunnel.downTouch', done: (c) => c.sim.state.layer === LAYER.UNDER, goal: (sim) => deskStand(sim) },
+      // (Three tiles past the fence's line, z 12: digging up comes out a tile back along the tunnel, clear of the fence.)
+      { text: 'lesson.tunnel.dig', touch: 'lesson.tunnel.digTouch', done: (c) => c.sim.state.layer === LAYER.UNDER && Math.floor(c.sim.state.player.z / UNIT) <= 9 },
+      { text: 'lesson.tunnel.up', touch: 'lesson.tunnel.upTouch', done: (c) => c.sim.state.layer === LAYER.GROUND && Math.floor(c.sim.state.player.z / UNIT) <= 10 },
+    ],
+  },
+  {
+    // The vents (GDD §9.3): the cell's grate unscrewed, the ducts crawled to the ladder, up on the roof.
+    id: 'vents',
+    icon: 'screw',
+    prison: CENTER_PERKS,
+    seed: 63,
+    setup: (sim) => {
+      // After Lights Out, a dummy in bed: no guard sweeps the cells then to see the grate open.
+      clockTo(sim, at(23, 15));
+      place(sim, 9, 9, 13);
+      pockets(sim, 'screwdriver');
+      fill(sim, containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'), 'bed_dummy');
+      sim.state.items.hand = 0;
+      sim.state.energy = 100;
+    },
+    steps: [
+      { text: 'lesson.vents.grate', touch: 'lesson.vents.grateTouch', done: (c) => c.sim.world.layers[LAYER.VENTS].kind[tile(9, 9)] === TILE.GRATE_OPEN || c.sim.state.layer !== LAYER.GROUND, goal: () => tile(9, 9) },
+      { text: 'lesson.vents.up', touch: 'lesson.vents.upTouch', done: (c) => c.sim.state.layer !== LAYER.GROUND },
+      { text: 'lesson.vents.crawl', done: (c) => c.sim.state.layer === LAYER.ROOF || (c.sim.state.layer === LAYER.VENTS && apart(c.sim.state.player, centre(tile(13, 38))) < 1.2), goal: () => tile(13, 38), layer: LAYER.VENTS },
+      { text: 'lesson.vents.roof', touch: 'lesson.vents.roofTouch', done: (c) => c.sim.state.layer === LAYER.ROOF },
+    ],
+  },
   // ---------------------------------------------------------------- Prison life
   {
     // Guard ways (P15): a corrupt guard, paid to lose the paperwork.
@@ -584,6 +718,56 @@ function seesRound(sim: Sim, post: number, guard: number): boolean {
   return false;
 }
 
+/** A Center Perks merchant (the first in its list: an inmate whose stall opens in free time). */
+function merchantAt(sim: Sim): number {
+  return sim.state.inmates.findIndex((m) => m.cell === sim.prison.merchants[0]);
+}
+/** The talk lesson's dead end: the magazine for the favor gone (given away, dropped) with none left in the desk. */
+function talkFail(c: LessonCtx): Key | null {
+  const it = c.sim.state.items;
+  const mag = n('magazine');
+  const somewhere = it.inv.some((v) => itemOf(v) === mag) || it.containers.some((box, k) => box.some((v) => itemOf(v) === mag) && containersOf(c.sim.world)[k]?.mine) || it.ground.some(([, v]) => itemOf(v) === mag);
+  return !somewhere && c.sim.state.favors.length > 0 ? 'lesson.talk.lost' : null;
+}
+/** The trade lesson's dead end: the stalls shut (free time over). */
+function tradeFail(c: LessonCtx): Key | null {
+  return !c.sim.shopsOpen ? 'lesson.trade.closed' : null;
+}
+/** The job lesson's dead end: the Work Period over without a load done. */
+function jobFail(c: LessonCtx): Key | null {
+  return ROUTINE[c.sim.state.routine].id !== 'work' && c.sim.state.quota === 0 ? 'lesson.job.late' : null;
+}
+/** An open floor tile beside a prop (where the player stands to use it), the first found round it. */
+function besideProp(sim: Sim, prop: number): number | null {
+  const p = sim.world.props[prop];
+  if (!p) return null;
+  for (let x = p.x; x < p.x + p.w; x++)
+    for (const z of [p.z - 1, p.z + p.d]) if (isFloor(sim.world, x, z)) return z * MAP_W + x;
+  for (let z = p.z; z < p.z + p.d; z++) for (const x of [p.x - 1, p.x + p.w]) if (isFloor(sim.world, x, z)) return z * MAP_W + x;
+  return null;
+}
+/** Where the player stands to work at their desk: below it if that's open floor (the Training Block's chair is at its side), else beside it. */
+function deskStand(sim: Sim): number {
+  const below = deskTile(sim) + MAP_W;
+  return isFloor(sim.world, below % MAP_W, Math.floor(below / MAP_W)) ? below : placesOf(sim.world).deskside[1];
+}
+/** The laundry machine with a load in it (the first, if none has). */
+function loadedMachine(sim: Sim): number {
+  const room = jobRooms(sim.world)[LAUNDRY];
+  return room.machines.find((i) => sim.state.machines[i] !== undefined) ?? room.machines[0];
+}
+/** Center Perks' laundry job (its place in the jobs list). */
+const LAUNDRY = 0;
+/** A machine at work in the player's job room (a load in it). */
+function machineOn(sim: Sim): boolean {
+  const room = jobRooms(sim.world)[LAUNDRY];
+  return !!room && room.machines.some((i) => sim.state.machines[i] !== undefined);
+}
+/** The player's desk's tile (where a tunnel's entrance goes, under it). */
+function deskTile(sim: Sim): number {
+  const p = containersOf(sim.world)[myDesk(sim)].prop;
+  return p.z * MAP_W + p.x;
+}
 /** The delivery's vehicle's tail (where the player climbs in). */
 function tailOf(sim: Sim): number {
   return sim.prison.delivery!.tail.z * MAP_W + sim.prison.delivery!.tail.x;
@@ -641,6 +825,7 @@ function smuggleFail(sim: Sim): Key | null {
 /** The chapters, in order, each its lessons (in the order LESSONS has them). */
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
+  { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
   { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'crew'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
