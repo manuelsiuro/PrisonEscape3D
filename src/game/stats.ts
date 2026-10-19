@@ -8,7 +8,7 @@ import { KEYS, readJSON, writeJSON } from './storage';
 export type Stats = Record<string, number>;
 
 /** Stats kept as the highest seen, not a sum. */
-export const HIGHS: readonly string[] = ['maxHeat'];
+export const HIGHS: readonly string[] = ['maxHeat', 'dailyStreak'];
 
 export function readStats(): Stats {
   const raw = readJSON<Record<string, unknown>>(KEYS.stats, {});

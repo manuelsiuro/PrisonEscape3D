@@ -9,13 +9,13 @@ import { DIR_X, DIR_Z, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
 import { FAVOR_STATE, type Station } from '../sim/systems/economy';
-import { alertOf, CHASE_SPEED, GUARD } from '../sim/systems/guards';
+import { alertOf, CHASE_SPEED, GUARD, stirSteps } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/systems/items';
 import { seatSpot } from '../sim/systems/rest';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from '../sim/systems/security';
 import type { ClimbTarget } from '../sim/systems/structure';
-import { MEAL_STEPS, SCENT_STEPS, STEPS_PER_MINUTE, STIR_STEPS, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
+import { MEAL_STEPS, SCENT_STEPS, STEPS_PER_MINUTE, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
@@ -276,7 +276,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.alert = alertOf(m);
     o.away = lookingAway(m, st.step);
     o.awayLeft = o.away ? m.bribed - st.step : 0;
-    o.stir = m.doze > 0 ? Math.min(1, m.stir / STIR_STEPS) : 0;
+    o.stir = m.doze > 0 ? Math.min(1, m.stir / stirSteps(sim.state)) : 0;
     // How far it sees now (P17): the cone is drawn exactly that long.
     o.range = sightOf(sim, m) / UNIT;
     const chasing = m.mode === GUARD.CHASE;

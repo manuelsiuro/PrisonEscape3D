@@ -2,6 +2,7 @@
  * Caught and punished (GDD §5.3, §5.6): the capture, waking up in solitary or the infirmary,
  * peeling potatoes, the morning shakedown, the night bed check and cell searches.
  */
+import { CRACKDOWN_CELLS, twist } from './twists';
 import { washScent } from './k9';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
@@ -172,12 +173,13 @@ const shakedownGuard = (w: World) => w.def.guards.findIndex((g) => g.duties?.inc
  * The cells a day's 08:00 shakedown names (GDD §2.1): two (a strict guard's, three), drawn
  * with roll() (P15), so they are known ahead: what inmates whisper about the next one is true.
  */
-export function shakedownCells(w: World, salt: number, day: number, inspection = false): number[] {
+export function shakedownCells(w: World, salt: number, day: number, inspection = false, crackdown = false): number[] {
   const n = w.def.cells.length;
   const k = shakedownGuard(w);
   if (k < 0 || n < 2 || w.def.rules?.relaxed) return [];
   // An inspection morning (P17): more cells (the first ones the same as any other morning's).
-  const count = Math.min(n, inspection ? INSPECTION_CELLS : w.def.guards[k].trait === 'strict' ? STRICT_CELLS : SHAKEDOWN_CELLS);
+  // (P26: a Crackdown, more again.)
+  const count = Math.min(n, (inspection ? INSPECTION_CELLS : w.def.guards[k].trait === 'strict' ? STRICT_CELLS : SHAKEDOWN_CELLS) + (crackdown ? CRACKDOWN_CELLS : 0));
   const cells: number[] = [];
   for (let j = 0; cells.length < count; j++) {
     const c = 1 + rollInt(salt, SALT.SHAKEDOWN, day, j, n);
@@ -195,7 +197,7 @@ export function shakedown(sim: SimContext) {
   // The draws the cells once came from, still made (P15): every later draw stays as it was.
   randomInt(s, n);
   randomInt(s, n - 1);
-  const cells = shakedownCells(sim.world, s.salt, clockAt(s.step).day, today(sim).event === 'inspection');
+  const cells = shakedownCells(sim.world, s.salt, clockAt(s.step).day, today(sim).event === 'inspection', twist(s, 'crackdown'));
   assign(s.guards[k], GUARD.SHAKEDOWN, cells);
   sim.events.push({ type: 'shakedown', cells: [...cells] });
 }

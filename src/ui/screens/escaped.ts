@@ -48,7 +48,7 @@ function medalRow(v: Victory): string {
 }
 
 /** Achievements the escape earned (P16): a chip each, the first few. */
-function earnedRow(list: readonly Achievement[]): string {
+export function earnedRow(list: readonly Achievement[]): string {
   if (!list.length) return '';
   const shown = list.slice(0, 5);
   const more = list.length - shown.length;

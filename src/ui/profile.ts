@@ -1,9 +1,10 @@
+import { wageOf } from '../sim/systems/jobs';
 import { SPEC_ICON } from './crew';
 import { specialityOf } from '../sim/systems/crew';
 import { ROUTINE } from '../content/routine';
-import { dogDef } from '../sim/systems/k9';
+import { dogDef, dogsFrom } from '../sim/systems/k9';
 import { prisonDay } from '../sim/systems/clock';
-import { DOG_FIRST_DAY, TRUST_FRIEND } from '../sim/tuning';
+import { TRUST_FRIEND } from '../sim/tuning';
 import { FAVOR, FAVOR_STATE, jobRooms } from '../sim/systems/economy';
 import { ATTRS, type Sim } from '../sim/Sim';
 import { ATTR_MAX, ATTR_MIN, ATTR_START } from '../sim/tuning';
@@ -93,12 +94,12 @@ export class ProfilePanel {
     else {
       const d = jobRooms(sim.world)[job].def;
       const later = s.jobDay > sim.today;
-      const today = later ? t('board.tomorrow') : s.paid ? t('profile.paid', { n: d.wage }) : t('profile.quota', { n: s.quota, of: d.quota });
+      const today = later ? t('board.tomorrow') : s.paid ? t('profile.paid', { n: wageOf(s, d.wage) }) : t('profile.quota', { n: s.quota, of: d.quota });
       jobHtml = fileRow('briefcase', '#c99a12', esc(t(`job.${d.id}` as Key)), esc(t(`jobTask.${d.id}` as Key, { n: d.quota })), { tag: esc(today), tagCls: s.paid ? 'done' : '' });
     }
     // The guard dogs (P19), once they're at work: how far each trusts the player, and whether it's had today's jerky.
     const dogs =
-      s.dogs.length && prisonDay(s.step) >= DOG_FIRST_DAY
+      s.dogs.length && prisonDay(s.step) >= dogsFrom(s)
         ? `<div class="box-section"><div class="box-label"><span>${t('profile.dogs')}</span></div><div class="file-list">${s.dogs
             .map((d, k) => {
               const fed = d.fed === prisonDay(s.step);

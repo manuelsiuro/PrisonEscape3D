@@ -26,6 +26,7 @@ import { dayMinute, DAY_STEPS, prisonDay } from './clock';
 import { cutPower, generatorsOf, offFor, summon } from './power';
 import { addHeat } from './watch';
 import { deliveryMinute } from './delivery';
+import { EAGLE_SIGHT, twist } from './twists';
 
 export { DAY_STEPS, dayMinute, prisonDay };
 
@@ -123,6 +124,10 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
     }
   // (Not on day 1: it stays clear whatever the twist.)
   if (day > 1) for (const m of mods) if (MOD_WEATHER[m]) weather = WEATHERS.indexOf(MOD_WEATHER[m]);
+  // (Big Freeze: no heatwave, no rain; the cold's dry days.)
+  if (mods.includes('bigFreeze') && (WEATHERS[weather] === 'heatwave' || WEATHERS[weather] === 'rain')) weather = WEATHERS.indexOf('clear');
+  // (Truck Strike: no vehicle comes; the day deals the card the delivery took the place of.)
+  if (DAY_EVENTS[event] === 'delivery' && mods.includes('truckStrike')) event = DAY_EVENTS.indexOf(book?.before ?? 'none');
   const id = DAY_EVENTS[event];
   const w = WEATHERS[weather];
   // The wind: the prevailing one most days, else from anywhere; calm in fog, strong in a storm.
@@ -221,6 +226,8 @@ const outdoors = (sim: SimContext, x: number, z: number) => TILE_INFO[sim.world.
 export function sightOf(sim: SimContext, g: Guard): number {
   let r = sim.world.def.rules?.sightRange ?? 7;
   if (eventOn(sim, 'inspection')) r += INSPECTION_SIGHT;
+  // (P26: Eagle Eyes, further still.)
+  if (twist(sim.state, 'eagleEyes')) r += EAGLE_SIGHT;
   const cap = WEATHER_SIGHT[weatherNow(sim)];
   if (cap !== undefined && r > cap && outdoors(sim, Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT))) r = cap;
   return r * UNIT;

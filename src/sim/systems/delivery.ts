@@ -12,6 +12,7 @@
  * while the player hides raises it as ever). At 14:31 it drives off, and a
  * stowaway still aboard is out (route `stowaway`).
  */
+import { twist } from './twists';
 import type { DeliveryDef, Waypoint } from '../../content/prisons/types';
 import { SEARCH_REACH, SIGN_OFF_MINUTES, WARY_DAYS } from '../../content/days';
 import { nearestDir } from '../ai/path';
@@ -51,7 +52,8 @@ export function thorough(sim: Pick<SimContext, 'world' | 'state'>, day = prisonD
   const d = sim.world.def.delivery;
   if (!d) return false;
   const s = sim.state;
-  if (traitOf(sim.world.def.guards[d.supervisor]) === 'strict') return true;
+  // (P26: Customs, every one.)
+  if (traitOf(sim.world.def.guards[d.supervisor]) === 'strict' || twist(s, 'customs')) return true;
   if (s.stowCaught > 0 && day > s.stowCaught && day <= s.stowCaught + WARY_DAYS) return true;
   return rollInt(s.salt, SALT.DELIVERY, day, 0, 100) < d.thorough;
 }

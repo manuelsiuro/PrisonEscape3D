@@ -3,7 +3,7 @@ import { icon } from '../icons';
 import { t } from '../../i18n';
 import { keysReady } from '../../i18n/keys';
 
-export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'trophies' | 'help' | 'settings';
+export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'trophies' | 'help' | 'settings' | 'daily';
 
 export interface TitleInfo {
   /** Where Play goes: the prison and its security level, or how many prisons are open to choose from. */
@@ -17,6 +17,8 @@ export interface TitleInfo {
   /** The tutorial's progress ("3 of 9 lessons"), and whether it's where a newcomer should start. */
   tutorial: string;
   newcomer: boolean;
+  /** The Daily Escape (P26): today's ("#12 · Shankton · 2 twists"), whether it's done today, the streak; locked before a first escape. */
+  daily: { line: string; done: boolean; streak: number; locked: boolean };
   /** Achievements earned ("12/42"), and whether some are new since the shelf was last opened (P16). */
   trophies: string;
   trophiesNew: boolean;
@@ -66,6 +68,11 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         </button>`
             : ''
         }
+        <button class="menu-btn daily-btn${info.daily.locked ? ' locked' : info.daily.done ? ' done' : ''}" data-c="daily" style="--tone:#2fb6c8;--tone-2:#1d7f9a"${info.daily.locked ? ' aria-disabled="true"' : ''}>
+          <span class="menu-ic">${icon(info.daily.locked ? 'lock' : 'calendar', 18)}</span>
+          <span class="menu-text"><span class="menu-label">${t('daily.title')}</span><small></small></span>
+          ${info.daily.locked ? '' : info.daily.done ? `<span class="daily-pill done">${icon('check', 12)}${info.daily.streak > 1 ? t('daily.streakShort', { n: info.daily.streak }) : t('daily.doneShort')}</span>` : info.daily.streak ? `<span class="daily-pill" aria-label="${t('daily.streakShort', { n: info.daily.streak })}">${icon('flame', 12)}${info.daily.streak}</span>` : `<span class="daily-pill new">${t('daily.new')}</span>`}
+        </button>
         <button class="menu-btn${info.newcomer ? ' suggest' : ''}" data-c="tutorial" style="--tone:#8e4fc4;--tone-2:#6a35a0">
           <span class="menu-ic">${icon('book', 18)}</span>
           <span class="menu-text"><span class="menu-label">${t('title.tutorial')}</span><small>${info.tutorial}</small></span>
@@ -101,12 +108,22 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         if (!muted) click();
         return;
       }
-      const c = target.closest<HTMLElement>('[data-c]')?.dataset.c as TitleChoice | undefined;
+      const btn = target.closest<HTMLElement>('[data-c]');
+      const c = btn?.dataset.c as TitleChoice | undefined;
       if (!c) return;
+      // (The Daily before a first escape: says what opens it.)
+      if (btn!.getAttribute('aria-disabled') === 'true') {
+        click();
+        btn!.classList.remove('shake');
+        void btn!.offsetWidth;
+        btn!.classList.add('shake');
+        return;
+      }
       click();
       el.remove();
       resolve(c);
     };
+    el.querySelector('.daily-btn small')!.textContent = info.daily.line;
     document.body.append(el);
     if (info.focus) el.querySelector<HTMLElement>(`[data-c="${info.focus}"]`)?.focus({ preventScroll: true });
     // The keys' labels follow the keyboard once the browser says which it is (Z Q S D on AZERTY).

@@ -90,9 +90,12 @@ export type SimEvent =
   | { type: 'clogged' }
   /** Guards found damage or evidence (and repaired what they found, after a capture). */
   | { type: 'found'; kind: number }
-  | { type: 'repaired'; n: number }
+  /** (P26: `quick`, Quick Fix's morning mending, not what guards found.) */
+  | { type: 'repaired'; n: number; quick?: boolean }
   /** Out on the road: free (GDD §4.0), and how. */
   | { type: 'escaped'; via: EscapeRoute; crew?: number[] }
+  /** A Three Days run's time is up (P26): the fourth day dawns, the run is over. */
+  | { type: 'timeUp' }
   /** Security (GDD §5.4–5.6): the power off and back on; a pass through a detector arch (tripped, or shielded by the pouch: its passes left); a camera blinded or seeing again; a sniper taking aim and shooting; the takeover. */
   | { type: 'power'; on: boolean; by: 'player' | 'guard' | 'storm' | 'maintenance'; gen?: number }
   | { type: 'scanned'; tripped: boolean; pouch: number; tile: number }
@@ -268,7 +271,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -480,7 +483,7 @@ export type LayerMove = ClimbAction | 'digUp' | 'rope' | 'grapnel' | 'glide';
  * stringifies the state, so the order is part of it). Day 1's coins, stock and favors are
  * the Sim's to add (they draw on the RNG after this).
  */
-export function freshState(world: World, prison: PrisonDef, seed: number): SimState {
+export function freshState(world: World, prison: PrisonDef, seed: number, mods: readonly string[] = []): SimState {
   const s = { rng: seed | 0 };
   const inmates = spawnInmates(world, s);
   const items = startItems(world, s);
@@ -564,7 +567,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number): SimSt
     salt: mix32(seed),
     feats: freshFeats(),
     days: [],
-    mods: [],
+    mods: [...mods],
     calendar: [],
     eventFlags: 0,
     stowed: false,

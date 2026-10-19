@@ -130,18 +130,20 @@ export function checkRun(): Achievement[] {
   return got;
 }
 
-/** Out (the records already updated): the escape's achievements, the run's, the career's. Returned for the victory card (no toasts). */
-export function escapeRun(rec: EscapeRecord): Achievement[] {
+/** Out (the records already updated): the escape's achievements, the run's, the career's. Returned for the victory card (no toasts). A Daily's (P26) says so. */
+export function escapeRun(rec: Pick<EscapeRecord, 'medal'>, daily?: EscapeView['daily']): Achievement[] {
   if (!run) return [];
   const sim = run.sim;
   // Once a run (by its salt): the same save escaped from twice is one escape.
   const store = readStore();
-  if (!store.escaped!.includes(sim.state.salt)) {
-    writeJSON(KEYS.trophies, { ...store, escaped: [...store.escaped!, sim.state.salt].slice(-200) });
+  // (A Daily's tries share a seed, so a salt: each try is its own run, P26.)
+  const runKey = daily ? (sim.state.salt ^ Math.imul(daily.tries, 0x9e3779b1)) | 0 : sim.state.salt;
+  if (!store.escaped!.includes(runKey)) {
+    writeJSON(KEYS.trophies, { ...store, escaped: [...store.escaped!, runKey].slice(-200) });
     addStats({ escapes: 1 });
   }
   syncRun();
-  const e: EscapeView = { ...viewOf(sim), via: ESCAPES[sim.state.via], day: sim.clock.day, medal: rec.medal, weather: weatherNow(sim), crew: sim.state.crewOut.length };
+  const e: EscapeView = { ...viewOf(sim), via: ESCAPES[sim.state.via], day: sim.clock.day, medal: rec.medal, weather: weatherNow(sim), crew: sim.state.crewOut.length, ...(daily ? { daily } : {}) };
   const got = award(ACHIEVEMENTS.filter((a) => a.escape?.(e) || a.run?.(e)));
   return [...got, ...syncCareer(false)];
 }

@@ -20,6 +20,9 @@ import { settingsChanged } from '../play/tips';
 import { lessonsDone } from '../game/lessons';
 import { LESSONS } from '../tutorial/lessons';
 import { tutorialFlow } from './tutorial';
+import { dailyFlow } from './daily';
+import { dailyNumber, dailyOf } from '../content/daily';
+import { dailyRecord, streakOf } from '../game/daily';
 import { intakeFlow } from './intake';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { readPrisoner } from '../game/prisoner';
@@ -59,6 +62,7 @@ export async function titleFlow() {
             saves: ALL_SLOTS.some((k) => readSave(k)),
             tutorial: t('title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
             newcomer: !resume && lessonsDone().length === 0 && !found,
+            daily: dailyCard(found > 0),
             trophies: `${earned}/${ACHIEVEMENTS.length}`,
             trophiesNew: unseenTrophies().length > 0,
             focus: back,
@@ -92,6 +96,10 @@ export async function titleFlow() {
         await intakeFlow();
       }
       markTrophiesSeen();
+      continue;
+    }
+    if (choice === 'daily') {
+      await dailyFlow();
       continue;
     }
     if (choice === 'tutorial') {
@@ -165,4 +173,17 @@ function showUpdate() {
 export function offerUpdate(version: string | null, restart: () => void) {
   update = { version, restart };
   showUpdate();
+}
+
+/** The title's Daily card (P26): today's prison and how many twists, done or not, the streak; locked before a first escape anywhere. */
+function dailyCard(open: boolean) {
+  const n = dailyNumber(new Date());
+  const d = dailyOf(n);
+  if (!open) return { line: t('daily.locked'), done: false, streak: 0, locked: true };
+  return {
+    line: t(d.twists.length === 1 ? 'daily.line1' : 'daily.line', { n: n + 1, prison: prisonName(d.prison), twists: d.twists.length }),
+    done: !!dailyRecord(n).best,
+    streak: streakOf(n),
+    locked: false,
+  };
 }

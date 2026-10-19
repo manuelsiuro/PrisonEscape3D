@@ -1,3 +1,4 @@
+import { dailyTimeUp } from './daily';
 import { governQuality } from '../app/quality';
 import { ROUTINE } from '../content/routine';
 import { command, EXT, OP } from '../sim/command';
@@ -109,6 +110,8 @@ function stepSim(g: Game, dt: number) {
       lessonEvent(g, e);
       // Out on the road: the escape screen.
       if (e.type === 'escaped') escaped();
+      // (P26: a Three Days Daily, the fourth day dawned with the player still inside.)
+      if (e.type === 'timeUp') dailyTimeUp(g);
       // Carried somewhere (solitary, the infirmary, into bed): no slide from the old spot.
       if (e.type === 'solitary' || e.type === 'infirmary' || (e.type === 'sleep' && e.on)) {
         g.prev.x = p.x;

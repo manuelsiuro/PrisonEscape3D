@@ -48,6 +48,8 @@ const STATS: Array<[string, string, ((n: number) => string)?]> = [
   ['bribes', 'hand'],
   ['chocolate', 'cookie'],
   ['meals', 'clock'],
+  ['dailies', 'calendar'],
+  ['dailyStreak', 'flame'],
 ];
 
 /** A medal as a little disc (none: an empty ring). */

@@ -4,6 +4,7 @@
  * shakedown's cells with the justice (justice.ts), what a bribed guard won't see with the
  * watch (watch.ts).
  */
+import { twist } from './twists';
 import { BRIBE } from '../command';
 import type { SimContext } from '../context';
 import { BRIBE_PER_LEVEL, BRIBE_REPORT_HEAT, CHASE_HEAT, LOOK_AWAY_PRICE, LOOK_AWAY_STEPS, PAPER_HEAT, PAPER_PRICE } from '../tuning';
@@ -48,7 +49,8 @@ export function bribe(sim: SimContext, k: number, kind: number) {
     addHeat(sim, BRIBE_REPORT_HEAT);
     return;
   }
-  if (trait !== 'corrupt') return refuse(sim, 'honest');
+  // (P26: a Straight-Laced Daily, not even the corrupt one.)
+  if (trait !== 'corrupt' || twist(s, 'straightLaced')) return refuse(sim, 'honest');
   const look = kind === BRIBE.LOOK;
   const day = clockAt(s.step).day;
   if (look && lookingAway(g, s.step)) return refuse(sim, 'lookingAway');

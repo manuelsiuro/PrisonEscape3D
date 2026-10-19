@@ -2,6 +2,7 @@
  * Inmates and the player (GDD §10.3–10.4): talking, opinion, trades and gifts, favors,
  * followers and the foes they go after, and grudges that turn into ambushes.
  */
+import { twist } from './twists';
 import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
@@ -181,6 +182,8 @@ export function talkOp(sim: SimContext, a: number, b: number) {
       if (s.followers.includes(who)) return;
       // (P23: not someone in the middle of a brawl with the crew.)
       if (s.crew.some((e) => e[1] === ORDER.BRAWL && e[3] === who)) return refuse(sim, 'crewBusy');
+      // (P26: Lone Wolf, nobody signs up.)
+      if (twist(s, 'loneWolf')) return refuse(sim, 'loneWolf');
       if (m.opinion < OPINION_HIGH) return refuse(sim, 'opinion');
       if (s.followers.length >= MAX_FOLLOWERS) return refuse(sim, 'followers');
       s.followers.push(who);
@@ -192,7 +195,7 @@ export function talkOp(sim: SimContext, a: number, b: number) {
     case TALK.PHONE: {
       // A burner phone (P21), from the fixer only, in the merchants' hours, to a friend; one at a time.
       if (who !== fixerOf(sim)) return;
-      if (!sim.shopsOpen) return refuse(sim, 'closed');
+      if (!sim.fixerOpen) return refuse(sim, 'closed');
       if (m.opinion < PHONE_OPINION) return refuse(sim, 'opinion');
       if (it.inv.slice(0, HOTBAR).some((v) => itemOf(v) === PHONE)) return refuse(sim, 'havePhone');
       if (s.cash < PHONE_PRICE) return refuse(sim, 'cash');
@@ -293,7 +296,7 @@ const HOSTILE_BLOCKS: readonly string[] = [...GRUDGE_BLOCKS, 'freeTime', 'exerci
 export function grudges(sim: SimContext) {
   const s = sim.state;
   const id = ROUTINE[s.routine].id;
-  if (!(sim.world.def.rules?.hostile ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown || s.stowed) return;
+  if (!(hostile(sim) ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown || s.stowed) return;
   const p = s.player;
   const zone = sim.playerZone;
   // At a block with its own rooms, in them; in free time, wherever the two meet.
@@ -368,3 +371,6 @@ function foeOf(sim: SimContext, m: Inmate): number {
   });
   return best;
 }
+
+/** A lawless interior (San Pancho, GDD §4.4), or a Bad Blood Daily (P26): grudges from day 1, settled in free time and the yard too. */
+export const hostile = (sim: SimContext): boolean => !!sim.world.def.rules?.hostile || twist(sim.state, 'badBlood');

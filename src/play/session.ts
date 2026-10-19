@@ -40,7 +40,9 @@ import { cancelThrow } from './aim';
 import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
 import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, crewChips, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
-import { play, type Game } from './game';
+import { play, type DailyRun, type Game } from './game';
+import { dailyBanner, dailyEscaped, dailyPlace, dailyRestart, dailyTwistsHtml } from './daily';
+import { ask } from '../ui/screens/ask';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
 import { hideLesson, lessonPlace, objectivesOf, type LessonRun } from './lesson';
 import { showObjectives } from '../ui/screens/objectives';
@@ -73,7 +75,8 @@ export function autosave(g: Game, show = false) {
   if (g.over || g.lesson) return;
   // The lifetime stats catch up with the run as it's saved (P16).
   syncRun();
-  g.saved = writeSave('auto', g.rec.sim, undefined, director.rumors, g.rec.toLog());
+  // (A Daily's run in its own slot, P26: the campaign's game in progress stays as it was.)
+  g.saved = g.daily ? writeSave('daily', g.rec.sim, undefined, director.rumors, g.rec.toLog(), g.daily.n) : writeSave('auto', g.rec.sim, undefined, director.rumors, g.rec.toLog());
   if (g.saved && show) flashSaved();
 }
 
@@ -82,7 +85,7 @@ export function autosave(g: Game, show = false) {
  * stays away, a "welcome back" instead). `origin`: where its run log starts (P16): a new
  * game's seed, or the log saved with the game loaded.
  */
-export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null, rumors: readonly Rumor[] = [], origin: { seed: number } | { log: RunLog | null } = { seed: 0 }) {
+export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null, rumors: readonly Rumor[] = [], origin: { seed: number } | { log: RunLog | null } = { seed: 0 }, daily: DailyRun | null = null) {
   view.setWorld(sim.world);
   // Your prisoner (P16): how the player looks, and the name friends call them.
   const prisoner = readPrisoner();
@@ -120,6 +123,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
     guardKeys: sim.prison.guards.map((d) => itemNumber(`key_${d.key}`)),
     saved: false,
     lesson,
+    daily,
   };
   tipsSeen.clear();
   // Achievements and stats follow the run (not a lesson's).
@@ -151,6 +155,8 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   const later = (ms: number, f: () => void) => startTimers.push(window.setTimeout(() => play.game === g && !g.paused && f(), ms));
   // A lesson: its card says what to do; no day one, no guide, no saves.
   if (lesson) return;
+  // A Daily (P26): what today's twists are, as the game begins (or is picked up again).
+  if (daily) later(resumed ? 4200 : 4400, () => dailyBanner(sim, daily));
   if (resumed) {
     // Back where they left: the block they're in, and when.
     later(500, () => banner.show(routineName(sim.state.routine), t('toast.loaded', { when: `${t('hud.day', { n: sim.clock.day })} · ${formatTime(sim.clock)}` })));
@@ -201,7 +207,18 @@ export async function pause() {
   for (;;) {
     // A lesson isn't saved: the card says which one it is.
     const lesson = play.game.lesson;
-    const choice = await showPause(click, play.game.saved, !play.game.over && !lesson, lesson ? lessonPlace(lesson.index) : note, !!lesson, lesson ? '' : `${prisonName(play.game.rec.sim.prison)} · ${t('hud.day', { n: play.game.rec.sim.clock.day })}`);
+    // (A Daily, P26: saved in its own slot only; its twists said, and a new try offered.)
+    const daily = play.game.daily;
+    const sim = play.game.rec.sim;
+    const choice = await showPause(
+      click,
+      play.game.saved,
+      !play.game.over && !lesson && !daily,
+      lesson ? lessonPlace(lesson.index) : note,
+      !!lesson,
+      lesson ? '' : daily ? dailyPlace(sim, daily) : `${prisonName(sim.prison)} · ${t('hud.day', { n: sim.clock.day })}`,
+      daily ? dailyTwistsHtml(sim.state.mods) : '',
+    );
     note = '';
     if (!play.game) return;
     if (choice === 'settings') {
@@ -229,6 +246,17 @@ export async function pause() {
     if (choice === 'restart' && play.game.lesson) {
       // The same lesson from its start (the tutorial flow sets it up again).
       play.game.lesson.finish('again');
+      return;
+    }
+    if (choice === 'restart' && play.game.daily) {
+      // A new try at the Daily (this one's run let go: asked first).
+      if (!(await ask(t('daily.restartSure'), t('daily.tryAgain'), click))) continue;
+      if (!play.game) return;
+      const n = play.game.daily.n;
+      play.game.over = true;
+      deleteSave('daily');
+      dailyRestart(n);
+      endGame();
       return;
     }
     if (choice === 'resume') {
@@ -315,6 +343,8 @@ export async function escaped() {
   sound.siren(false);
   sound.chime();
   buzz('attended');
+  // A Daily (P26): its own records and its own card.
+  if (g.daily) return dailyEscaped(g);
   const sim = g.rec.sim;
   const st = sim.state;
   const clock = sim.clock;
@@ -332,22 +362,7 @@ export async function escaped() {
   const log = g.rec.toLog();
   deleteSave('auto');
   keepReplay(log, rec.best);
-  firstDay.stop();
-  sound.music('title');
-  // Away over the sea (P12): the raft pushes off, the helicopter lifts away; (P18) the delivery drives (or flies) off with the player hidden in it. A longer moment to watch it.
-  const away = via === 'raft' || via === 'helicopter' || via === 'stowaway';
-  if (away) {
-    view.depart(via);
-    if (via === 'raft') sound.launch();
-    else if (via === 'helicopter' || sim.prison.delivery?.vehicle === 'helicopter') sound.rotor();
-    else sound.engine();
-  }
-  // Off a roof on a glider (P24): down on the road first.
-  if (via === 'glider') await view.glideDown();
-  if (play.game !== g) return;
-  // The escape camera (P16): a slow turn and pull-back, letterboxed, ESCAPED stamped; a tap skips it.
-  await showCinema(view.cinema(away), () => view.skipCinema(), settings.reducedMotion);
-  if (play.game !== g) return;
+  if (!(await escapeScene(g))) return;
   const choice = await showVictory(
     {
       prison: t(`prison.${sim.prison.id}` as Key),
@@ -383,4 +398,28 @@ export function takePlayAgain(): PrisonDef | null {
   const again = playAgain;
   playAgain = null;
   return again;
+}
+
+/**
+ * The way out played to its end, then the escape camera (P16): away over the sea (P12) or off
+ * with the delivery (P18), a longer moment to watch it; off a roof on a glider (P24), down on
+ * the road first. False when the game was left meanwhile.
+ */
+export async function escapeScene(g: Game): Promise<boolean> {
+  const sim = g.rec.sim;
+  const via = ESCAPES[sim.state.via];
+  firstDay.stop();
+  sound.music('title');
+  const away = via === 'raft' || via === 'helicopter' || via === 'stowaway';
+  if (away) {
+    view.depart(via);
+    if (via === 'raft') sound.launch();
+    else if (via === 'helicopter' || sim.prison.delivery?.vehicle === 'helicopter') sound.rotor();
+    else sound.engine();
+  }
+  if (via === 'glider') await view.glideDown();
+  if (play.game !== g) return false;
+  // A slow turn and pull-back, letterboxed, ESCAPED stamped; a tap skips it.
+  await showCinema(view.cinema(away), () => view.skipCinema(), settings.reducedMotion);
+  return play.game === g;
 }

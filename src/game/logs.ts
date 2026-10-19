@@ -8,7 +8,7 @@ import { KEYS, readJSON, removeKey, replayBestKey, writeJSON, type StorageKey } 
  * so a game loaded from a slot carries on that slot's run), the last escape's, and each
  * prison's quickest. The replay viewer (P25) plays them back.
  */
-const LOG_OF: Record<SlotId, StorageKey> = { auto: KEYS.logAuto, 1: KEYS.log1, 2: KEYS.log2, 3: KEYS.log3 };
+const LOG_OF: Record<SlotId, StorageKey> = { auto: KEYS.logAuto, 1: KEYS.log1, 2: KEYS.log2, 3: KEYS.log3, daily: KEYS.logDaily };
 
 /** The longest log kept (characters of commands, about 300 KB): longer runs aren't logged, so saves keep their room. */
 export const LOG_MAX = 400_000;

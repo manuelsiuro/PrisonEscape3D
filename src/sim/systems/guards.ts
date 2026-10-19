@@ -1,4 +1,5 @@
 import type { GuardDef, GuardTrait, Waypoint } from '../../content/prisons/types';
+import { twist } from './twists';
 import { ROUTINE } from '../../content/routine';
 import { centerX, centerZ, clearLine, nearestDir, tileAt } from '../ai/path';
 import { lineOfSight, SIGHT_RANGE } from '../ai/sight';
@@ -151,13 +152,20 @@ function bedOf(w: World, k: number): number {
 }
 
 /** A guard's duty during a routine block: a post, its day round, its night round or bed; the delivery's supervisor (P18) the vehicle's round or its sign-off. */
-function dutyOf(def: GuardDef, routine: number, k: number, delivery: DeliveryDuty | null): number {
+function dutyOf(def: GuardDef, routine: number, k: number, delivery: DeliveryDuty | null, mods: readonly string[] = []): number {
   if (delivery?.guard === k) return delivery.signOff ? PLAN_SIGN : PLAN_DELIVERY;
   const id = ROUTINE[routine].id;
   if (def.posts?.[id]) return routine;
   if (id !== 'lightsOut') return PLAN_ROUND;
-  return def.night ? PLAN_NIGHT : PLAN_BED;
+  // (P26: a Double Shift Daily, nobody goes to bed: who has no night round walks its day one.)
+  return def.night || twist({ mods }, 'doubleShift') ? PLAN_NIGHT : PLAN_BED;
 }
+
+/** The round a guard walks at night: its own, or (a Double Shift Daily, P26) its day round. */
+const nightRound = (def: GuardDef) => def.night ?? def.beat;
+
+/** Steps the player stands at a dozing guard's elbow before it wakes (P26: half that with Light Sleepers). */
+export const stirSteps = (s: { readonly mods: readonly string[] }) => (twist(s, 'lightSleepers') ? STIR_STEPS / 2 : STIR_STEPS);
 
 const tileOf = (p: Waypoint) => p.z * MAP_W + p.x;
 
@@ -208,6 +216,8 @@ export function stepGuards(
   salt = 0,
   /** The delivery's supervisor and what it's to do (P18; null while no vehicle is in). */
   delivery: DeliveryDuty | null = null,
+  /** The Daily's twists (P26: Double Shift, Light Sleepers, Straight-Laced). */
+  mods: readonly string[] = [],
 ) {
   const crowd: Crowd = { w, grid: w.guardBlock, all: guards, others: playerHere ? [player, ...inmates] : inmates, step };
   const chasers: Crowd = { ...crowd, others: inmates };
@@ -338,7 +348,7 @@ export function stepGuards(
         break;
       }
       default:
-        duty(crowd, g, k, def, routine, step, w, player, playerHere, report, salt, delivery);
+        duty(crowd, g, k, def, routine, step, w, player, playerHere, report, salt, delivery, mods);
     }
   });
 }
@@ -412,15 +422,15 @@ export function assign(g: Guard, mode: number, cells: number[]) {
 }
 
 /** Whether a guard's duty changes with this block (a new round, a post, bed): a talk with it ends (P15). */
-export const dutyDue = (def: GuardDef, g: Guard, routine: number, k: number, delivery: DeliveryDuty | null) => g.plan !== PLAN_NONE && dutyOf(def, routine, k, delivery) !== g.plan;
+export const dutyDue = (def: GuardDef, g: Guard, routine: number, k: number, delivery: DeliveryDuty | null, mods: readonly string[] = []) => g.plan !== PLAN_NONE && dutyOf(def, routine, k, delivery, mods) !== g.plan;
 
 /**
  * Rounds, posts and bed. A lazy guard on its night round dozes off at its nap stop between
  * 01:00 and 05:00, once a night (P15): blind until the nap is over (05:00 at the latest), a
  * noise wakes it (noise.ts), or the player stands at its elbow a moment.
  */
-function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World, player: Body, playerHere: boolean, report: (r: GuardReport) => void, salt: number, delivery: DeliveryDuty | null) {
-  const plan = dutyOf(def, routine, k, delivery);
+function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, step: number, w: World, player: Body, playerHere: boolean, report: (r: GuardReport) => void, salt: number, delivery: DeliveryDuty | null, mods: readonly string[]) {
+  const plan = dutyOf(def, routine, k, delivery, mods);
   if (plan !== g.plan) {
     if (rouse(g)) report({ kind: 'nap', guard: k, on: false });
     g.plan = plan;
@@ -429,7 +439,7 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
     g.timer = 0;
     g.doing = DOING.NOTHING;
     // Off to the round: start at its nearest stop.
-    const round = plan === PLAN_NIGHT ? def.night! : plan === PLAN_DELIVERY ? delivery!.round : def.beat;
+    const round = plan === PLAN_NIGHT ? nightRound(def) : plan === PLAN_DELIVERY ? delivery!.round : def.beat;
     if (plan === PLAN_ROUND || plan === PLAN_NIGHT || plan === PLAN_DELIVERY) g.leg = nearest(g.body, round);
   }
   if (g.wait > 0) {
@@ -461,7 +471,7 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
     } else head(c, g, tileOf(post));
     return;
   }
-  const round = plan === PLAN_NIGHT ? def.night! : plan === PLAN_DELIVERY ? delivery!.round : def.beat;
+  const round = plan === PLAN_NIGHT ? nightRound(def) : plan === PLAN_DELIVERY ? delivery!.round : def.beat;
   const stop = round[g.leg % round.length];
   if (g.goal !== tileOf(stop)) {
     head(c, g, tileOf(stop));
@@ -481,15 +491,17 @@ function duty(c: Crowd, g: Guard, k: number, def: GuardDef, routine: number, ste
     const near = playerHere && Math.max(Math.abs(player.x - g.body.x), Math.abs(player.z - g.body.z)) <= STIR_RANGE;
     g.stir = near ? g.stir + 1 : 0;
     const late = clockAt(step).minuteOfDay >= NAP_TO;
-    if (--g.doze <= 0 || late || g.stir >= STIR_STEPS) {
+    const stir = stirSteps({ mods });
+    if (--g.doze <= 0 || late || g.stir >= stir) {
       // Someone right there: it comes to with a start, facing them.
-      if (g.stir >= STIR_STEPS && (player.x !== g.body.x || player.z !== g.body.z)) g.body.facing = nearestDir(player.x - g.body.x, player.z - g.body.z);
+      if (g.stir >= stir && (player.x !== g.body.x || player.z !== g.body.z)) g.body.facing = nearestDir(player.x - g.body.x, player.z - g.body.z);
       rouse(g);
       report({ kind: 'nap', guard: k, on: false });
     }
     return;
   }
-  if (stop.nap && plan === PLAN_NIGHT && traitOf(def) === 'lazy') {
+  // (P26: never on a Straight-Laced Daily.)
+  if (stop.nap && plan === PLAN_NIGHT && traitOf(def) === 'lazy' && !twist({ mods }, 'straightLaced')) {
     const clock = clockAt(step);
     if (clock.minuteOfDay >= NAP_FROM && clock.minuteOfDay < NAP_TO && g.napDay !== clock.day) {
       g.napDay = clock.day;

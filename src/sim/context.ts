@@ -38,6 +38,7 @@ export type SimContext = Pick<
   | 'jobActive'
   | 'merchantOf'
   | 'shopsOpen'
+  | 'fixerOpen'
 >;
 
 /** Arrays and objects the systems refill every step instead of allocating (asleep, hundreds of steps run a second). Not state. */

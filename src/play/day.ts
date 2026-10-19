@@ -1,14 +1,15 @@
+import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import { COMMENDATION, DAY_BOOKS, DRILL_HEAT, FEAST_ENERGY, MUSTER_MINUTES, SIGN_OFF_MINUTES, WEATHER_SIGHT, type DayEvent, type Weather } from '../content/days';
 import type { StowView } from '../ui/stow';
 import { guardSubject } from '../ui/social';
 import { listOf, t, type Key } from '../i18n';
 import { ROUTINE } from '../content/routine';
-import { handlersOf } from '../sim/systems/k9';
+import { handlersOf, dogsFrom } from '../sim/systems/k9';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, dayRoll, eventOn, planOf, TODAY, today, weatherNow, type DayPlan } from '../sim/systems/calendar';
 import { searchMinute } from '../sim/systems/delivery';
-import { DOG_DAY_FROM, DOG_FIRST_DAY, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
+import { DOG_DAY_FROM, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
 import type { PaRow } from '../ui/pa';
@@ -60,7 +61,7 @@ export function dayTime(dayMin: number): string {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 }
 
-const cold = (sim: Sim) => !!sim.world.def.rules?.cold;
+const cold = (sim: Sim) => freezing(sim);
 /** How the weather is named in this prison. */
 export function weatherName(sim: Sim, w: Weather): WeatherName {
   if (cold(sim)) return w === 'clear' ? 'snow' : w === 'storm' ? 'blizzard' : w;
@@ -166,7 +167,7 @@ export function dayStep(sim: Sim) {
   const p = today(sim);
   if (WARNED.has(p.event) && m === p.at - WARN_AHEAD) say(sim, t(`pa.warn.${p.event}` as Key, { vehicle: vehicleThe(sim) }));
   // The dogs' first shift (P19): the warden introduces them.
-  if (p.day === DOG_FIRST_DAY && m === DOG_DAY_FROM - ROUTINE[0].start && st.dogs.length && !sim.noDogs) {
+  if (p.day === dogsFrom(st) && m === DOG_DAY_FROM - ROUTINE[0].start && st.dogs.length && !sim.noDogs) {
     const names = handlersOf(sim.world).map((h) => sim.prison.guards[h].dog!.name);
     say(sim, t(names.length === 1 ? 'pa.dog1' : 'pa.dogs', { names: listOf(names) }));
   }

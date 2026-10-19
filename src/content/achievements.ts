@@ -9,8 +9,8 @@ import { FEAT, type Feat } from '../sim/systems/ledger';
 import { ATTR_MAX } from '../sim/tuning';
 import type { Medal } from './medals';
 
-export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'days' | 'mishaps' | 'career';
-export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'days', 'mishaps', 'career'];
+export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'days' | 'daily' | 'mishaps' | 'career';
+export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'days', 'daily', 'mishaps', 'career'];
 
 /** A run as the checks see it: the ledger and a few of the player's numbers. */
 export interface RunView {
@@ -30,6 +30,8 @@ export interface EscapeView extends RunView {
   weather?: string;
   /** How many of the crew got out too (P23; unknown for escapes from the records). */
   crew?: number;
+  /** A Daily Escape's (P26): its twists, the try it was won on, the streak it makes. */
+  daily?: { twists: number; tries: number; streak: number };
 }
 
 /** A career: lifetime stats (stats.ts keys), and each prison's ways out found and medals won. */
@@ -161,6 +163,14 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'findersKeepers', group: 'mishaps', icon: 'drone', hidden: true, run: (r) => f(r, 'dropsSeized') + f(r, 'parcelsSeized') >= 1 },
   { id: 'snakeEyes', group: 'mishaps', icon: 'dice', hidden: true, run: (r) => f(r, 'snakeEyes') >= 1 },
   // Career.
+  // The Daily Escape (P26).
+  { id: 'dailyBread', group: 'daily', icon: 'calendar', escape: (e) => !!e.daily },
+  { id: 'firstTry', group: 'daily', icon: 'star', escape: (e) => e.daily?.tries === 1 },
+  { id: 'twisted', group: 'daily', icon: 'storm', escape: (e) => (e.daily?.twists ?? 0) >= 3 },
+  { id: 'dailyGold', group: 'daily', icon: 'trophy', escape: (e) => !!e.daily && e.medal === 'gold' },
+  { id: 'onARoll', group: 'daily', icon: 'flame', ...counted('dailyStreak', 3) },
+  { id: 'weekInside', group: 'daily', icon: 'sun', ...counted('dailyStreak', 7) },
+  { id: 'dailyRegular', group: 'daily', icon: 'clock', ...counted('dailies', 10) },
   { id: 'regular', group: 'career', icon: 'sun', ...counted('days', 10) },
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },
   { id: 'seasoned', group: 'career', icon: 'route', ...counted('escapes', 10) },

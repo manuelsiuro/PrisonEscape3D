@@ -35,6 +35,10 @@ export const KEYS = {
   log2: `${PREFIX}.log.2`,
   log3: `${PREFIX}.log.3`,
   replayLast: `${PREFIX}.replay.last`,
+  /** P26: the Daily Escape's history (daily.ts: tries and the best escape of each), its run in progress and that run's log. */
+  daily: `${PREFIX}.daily`,
+  saveDaily: `${PREFIX}.save.daily`,
+  logDaily: `${PREFIX}.log.daily`,
 } as const;
 
 /** The quickest escape's run log for a prison (P16). */
@@ -43,7 +47,7 @@ export const replayBestKey = (prison: string) => `${PREFIX}.replay.best.${prison
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS] | ReturnType<typeof replayBestKey>;
 
 /** The keys "Reset progress" wipes (and every prison's best replay: resetProgress). */
-export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3, KEYS.lessons, KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log1, KEYS.log2, KEYS.log3, KEYS.replayLast];
+export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3, KEYS.lessons, KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log1, KEYS.log2, KEYS.log3, KEYS.replayLast, KEYS.daily, KEYS.saveDaily, KEYS.logDaily];
 
 export function readText(key: StorageKey): string | null {
   try {

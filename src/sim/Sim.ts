@@ -7,7 +7,7 @@ import { ESCAPES, freshState, loadState, type Attr, type LayerMove, type SimEven
 import { closeBox, keepSeat, regenerate, shower, standUp, underShower, useItems } from './systems/actions';
 import { chill } from './systems/weather';
 import { crowdPlan, dayMinute, dayWatch, drillOn, theDay, today } from './systems/calendar';
-import { clockAt, hourStarts, type Clock } from './systems/clock';
+import { clockAt, DAY_STEPS, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
 import { fight, keysCarried, raiseKeyAlarm, recover, sleepingGuards, wearKeys, wokeKeyless } from './systems/fights';
 import { dutyDue, stepGuards, type GuardReport } from './systems/guards';
@@ -34,7 +34,8 @@ import { endBout, games, stopPick } from './systems/games';
 import { crew, crewEscape } from './systems/crew';
 import { checkpointGates } from './systems/getaway';
 import { watch } from './systems/watch';
-import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, HEAT_DECAY_STEPS, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
+import { coolEvery, dayOneTwists, LAST_DAY, OWL_CHECKS, twist } from './systems/twists';
+import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 
@@ -67,10 +68,14 @@ export class Sim {
   constructor(
     readonly prison: PrisonDef,
     seed = 1,
+    /** The Daily's twists (P26; none in the campaign): day 1 is set up under them. */
+    mods: readonly string[] = [],
   ) {
     this.world = new World(prison);
     for (const p of this.world.props) if (p.kind === 'shower') this.showerTiles.add(p.z * MAP_W + p.x);
-    this.state = freshState(this.world, prison, seed);
+    this.state = freshState(this.world, prison, seed, mods);
+    // (P26: the Daily's twists that set day 1 up: grudges, a care package; no draw from the RNG.)
+    if (mods.length) dayOneTwists(this);
     // Day 1: change in desks and pockets, the merchants' stock, the first favors.
     spreadCoins(this);
     for (const shop of this.state.shops) stockSlots('merchant', 0, shop, this.state);
@@ -102,6 +107,11 @@ export class Sim {
   /** Away on a raft from the pier, or the helicopter off the pad, this step (P12: the escape check reads it), or off with the delivery's vehicle (P18); not state. */
   boarded: 'raft' | 'helicopter' | 'stowaway' | null = null;
 
+  /** A Three Days run (P26) still inside as the fourth day begins: over, lost. */
+  get timeUp(): boolean {
+    return this.state.mods.length > 0 && twist(this.state, 'threeDays') && !this.state.escaped && this.state.step >= LAST_DAY * DAY_STEPS;
+  }
+
   get clock(): Clock {
     return clockAt(this.state.step);
   }
@@ -118,9 +128,14 @@ export class Sim {
   private advance(cmd: number): boolean {
     const s = this.state;
     this.events = [];
-    // Out: the game is won, nothing more happens.
-    if (s.escaped) return false;
+    // Out: the game is won, nothing more happens (P26: nor once a Three Days run's time is up).
+    if (s.escaped || this.timeUp) return false;
     s.step++;
+    // (Three Days: the fourth day dawns and the run is over; the step only says so.)
+    if (this.timeUp) {
+      this.events.push({ type: 'timeUp' });
+      return true;
+    }
     // Who dozes as the step starts (P15): each nap ended in it is told once, whatever ended it.
     let dozing = 0;
     for (let k = 0; k < s.guards.length; k++) if (s.guards[k].doze > 0) dozing |= 1 << k;
@@ -142,7 +157,8 @@ export class Sim {
     // The day (P17): its event starts and ends, the drill's muster is called, a storm cuts the power.
     theDay(this);
     // 00:30 and 04:00: the night bed check (GDD §5.3).
-    if (s.step % STEPS_PER_MINUTE === 0 && BED_CHECK_MINUTES.includes(clock.minuteOfDay) && !this.world.def.rules?.relaxed) bedCheck(this);
+    // (P26: a Night Owl warden's two more.)
+    if (s.step % STEPS_PER_MINUTE === 0 && (BED_CHECK_MINUTES.includes(clock.minuteOfDay) || (OWL_CHECKS.includes(clock.minuteOfDay) && twist(s, 'nightOwl'))) && !this.world.def.rules?.relaxed) bedCheck(this);
     // The knocked out come round (GDD §10.2): a guard missing its key raises the alarm.
     recover(this);
     this.everyoneMoves();
@@ -182,7 +198,8 @@ export class Sim {
     attendance(this);
     dayWatch(this);
     // Heat cools while no guard is looking.
-    if (!s.seen && !s.lockdown && s.heat > 0 && s.step % HEAT_DECAY_STEPS === 0) s.heat--;
+    // (P26: Short Fuse, at half the pace.)
+    if (!s.seen && !s.lockdown && s.heat > 0 && s.step % coolEvery(s) === 0) s.heat--;
     // Doors last: they follow where everyone ended up, so the state at the end of a step
     // (a save, a keyframe) says everything about them.
     // A guard awake again without his key (P20: a rat had it): after everything that wakes guards, before the doors (an alarm locks them).
@@ -226,8 +243,8 @@ export class Sim {
     clockIn(this);
     // A guard talking with the player has somewhere else to be at a new block (P15): the talk ends.
     const k = guardTalking(s);
-    if (k >= 0 && dutyDue(w.def.guards[k], s.guards[k], s.routine, k, delivery)) endTalk(this);
-    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about, guardTalking(s), s.salt, delivery);
+    if (k >= 0 && dutyDue(w.def.guards[k], s.guards[k], s.routine, k, delivery, s.mods)) endTalk(this);
+    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about, guardTalking(s), s.salt, delivery, s.mods);
   }
 
   /** The player's turn: out cold, or awake to walk and act. Returns true once they're out on the road (the step ends there). */
@@ -383,8 +400,13 @@ export class Sim {
     return m ? this.world.def.merchants.indexOf(m.cell) : -1;
   }
 
-  /** Merchants deal during free time (GDD §10.3). */
+  /** Merchants deal during free time (GDD §10.3); never on a Closed Shop Daily (P26). */
   get shopsOpen(): boolean {
+    return this.fixerOpen && !twist(this.state, 'closedShop');
+  }
+
+  /** The fixer's hours (P21): the merchants' (a Closed Shop leaves him be: he's no shop). */
+  get fixerOpen(): boolean {
     const id = ROUTINE[this.state.routine].id;
     return (id === 'freeTime' || id === 'eveningFreeTime') && !this.state.lockdown;
   }

@@ -247,7 +247,7 @@ export function ledger(sim: Sim, x: number, z: number) {
         f[FEAT.crafted]++;
         break;
       case 'cash':
-        if (e.why === 'wage') f[FEAT.wages]++;
+        if (e.why === 'wage' && e.n > 0) f[FEAT.wages]++;
         break;
       case 'favor':
         if (e.state === 'paid') f[FEAT.favors]++;

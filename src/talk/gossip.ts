@@ -1,7 +1,8 @@
 import { SHIFT_FROM, SHIFT_TO } from '../content/getaways';
+import { twist } from '../sim/systems/twists';
 import { checkpointOf, glideOutToday } from '../sim/systems/getaway';
 import { itemDef, itemNumber } from '../content/items';
-import { handlersOf, pillsDesk } from '../sim/systems/k9';
+import { handlersOf, pillsDesk, dogsFrom } from '../sim/systems/k9';
 import { RAT_ROOMS } from '../sim/systems/rats';
 import { floorOf } from '../sim/ai/places';
 import { containersOf } from '../sim/world/containers';
@@ -22,7 +23,7 @@ import { SPECIALITIES } from '../content/crew';
 import { specialityOf } from '../sim/systems/crew';
 import type { GuardDef } from '../content/prisons/types';
 import { grateAt, underSea } from '../sim/systems/structure';
-import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN, DOG_DAY_FROM, DOG_DAY_TO, DOG_NIGHT_FROM, DOG_NIGHT_TO, DOG_FIRST_DAY } from '../sim/tuning';
+import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN, DOG_DAY_FROM, DOG_DAY_TO, DOG_NIGHT_FROM, DOG_NIGHT_TO } from '../sim/tuning';
 
 const PILLS = itemNumber('sleeping_pills');
 const DOG_FACTS: ReadonlySet<string> = new Set(['dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratDogs']);
@@ -74,14 +75,16 @@ function hasTile(sim: Sim, kind: number): boolean {
 /** The facts that never change in a prison (worked out once). */
 function lastingFacts(sim: Sim): Fact[] {
   const def = sim.prison;
-  const cached = lasting.get(def.id);
+  // (Keyed by the Daily's twists too, P26: a Night Owl's checks aren't the usual two.)
+  const id = `${def.id}|${sim.state.mods.join(',')}`;
+  const cached = lasting.get(id);
   if (cached) return cached;
   const out: Fact[] = [];
   const add = (f: Omit<Fact, 'key'> & { key?: string }) => out.push({ ...f, key: f.key ?? f.kind });
   const relaxed = !!def.rules?.relaxed;
   const duty = (d: 'bedCheck' | 'shakedown') => def.guards.some((g) => g.duties?.includes(d));
   if (!relaxed && duty('bedCheck')) {
-    add({ kind: 'bedChecks', t1: BED_CHECK_MINUTES[0], t2: BED_CHECK_MINUTES[1] });
+    if (!twist(sim.state, 'nightOwl')) add({ kind: 'bedChecks', t1: BED_CHECK_MINUTES[0], t2: BED_CHECK_MINUTES[1] });
     add({ kind: 'dummy' });
   }
   // One generator powering an electric fence (Irongate's two split it: no simple rule to tell).
@@ -98,6 +101,8 @@ function lastingFacts(sim: Sim): Fact[] {
   def.guards.forEach((g, k) => {
     if (!g.name) return;
     const trait = traitOf(g);
+    // (P26: a Straight-Laced Daily, none takes a bribe or naps: nothing to tell of those.)
+    if ((trait === 'lazy' || trait === 'corrupt') && twist(sim.state, 'straightLaced')) return;
     if (trait !== 'lazy') return add({ kind: trait, key: `trait:${k}`, guard: k });
     const at = napStop(g);
     const place = at && sim.world.zoneAt(at.x, at.z);
@@ -150,7 +155,7 @@ function lastingFacts(sim: Sim): Fact[] {
     add({ kind: 'shiftChange', t1: SHIFT_FROM, t2: SHIFT_TO });
     add({ kind: 'fakeId' });
   }
-  lasting.set(def.id, out);
+  lasting.set(id, out);
   return out;
 }
 
@@ -158,10 +163,11 @@ function lastingFacts(sim: Sim): Fact[] {
 export function facts(sim: Sim, speaker = -1): Fact[] {
   const s = sim.state;
   // (The dogs' facts once they've started work, P19: on day 1 they're still in their kennels.)
-  const dogsOut = prisonDay(s.step) >= DOG_FIRST_DAY && !sim.noDogs;
+  const dogsOut = prisonDay(s.step) >= dogsFrom(s) && !sim.noDogs;
   const out = lastingFacts(sim).filter((f) => dogsOut || !DOG_FACTS.has(f.kind));
   // A merchant's stock (items people know how to say), if the merchant would sell to the player.
-  sim.prison.merchants.forEach((cell, k) => {
+  // (P26: none on a Closed Shop Daily.)
+  if (!twist(s, 'closedShop')) sim.prison.merchants.forEach((cell, k) => {
     const who = s.inmates.findIndex((m) => m.cell === cell);
     if (who < 0 || who === speaker || s.inmates[who].opinion <= OPINION_LOW) return;
     for (const v of s.shops[k] ?? []) {
@@ -195,7 +201,7 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // The next 08:00 shakedown's cells (P15: drawn ahead with roll(), so known): whose, and the player's.
   const clock = sim.clock;
   const day = clock.minuteOfDay >= ROUTINE[0].start ? clock.day + 1 : clock.day;
-  for (const cell of shakedownCells(sim.world, s.salt, day, planOf(sim, day).event === 'inspection')) {
+  for (const cell of shakedownCells(sim.world, s.salt, day, planOf(sim, day).event === 'inspection', twist(s, 'crackdown'))) {
     if (cell === 1) out.push({ kind: 'shakedownYou', key: `shakedown:${day}:1`, n: day });
     else {
       const who = s.inmates.findIndex((m) => m.cell === cell);

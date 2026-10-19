@@ -1,3 +1,4 @@
+import { wageOf } from '../sim/systems/jobs';
 import { crewSection, SPEC_ICON, type CrewTalkView } from './crew';
 import { nightOf, specialityOf } from '../sim/systems/crew';
 import { itemDef, itemNumber } from '../content/items';
@@ -20,6 +21,7 @@ import { itemName } from './items';
 import { fixerOf, PHONE } from '../sim/systems/smuggling';
 import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
 import { gamesSection, type GamesView } from './games';
+import { twist } from '../sim/systems/twists';
 
 type Send = (op: number, a?: number, b?: number) => void;
 
@@ -164,7 +166,7 @@ export class TalkPanel {
     const crewKey = cv ? JSON.stringify(cv).replace(/\d+:\d\d/g, '') : '';
     const statusEl = cv ? this.el.querySelector('.crew-status') : null;
     if (statusEl && statusEl.textContent !== cv!.status) statusEl.textContent = cv!.status;
-    const key = [crewKey, gamesKey, who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    const key = [crewKey, gamesKey, who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -212,14 +214,14 @@ export class TalkPanel {
           return `<button class="shop-item${afford ? '' : ' poor'}" data-act="${TALK.BUY}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.buy', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false">${d.contraband ? '<i class="slot-cb"></i>' : ''}<span>${esc(itemName(n))}</span><b>$${price}</b>${price < d.value ? `<s>$${d.value}</s>` : ''}</button>`;
         })
         .join('');
-      const note = grudge ? t('talk.shopGrudge') : closed ? t('talk.shopClosed') : !items ? t('talk.soldOut') : '';
+      const note = grudge ? t('talk.shopGrudge') : closed ? t(twist(s, 'closedShop') ? 'talk.shopShut' : 'talk.shopClosed') : !items ? t('talk.soldOut') : '';
       shopHtml = `<section class="talk-shop"><div class="box-label">${icon('cart', 14)}<span>${t('talk.shop')}</span>${off > 0 && !grudge ? `<em class="discount">${t('talk.discount', { n: off })}</em>` : ''}</div>
         ${items ? `<div class="shop-list">${items}</div>` : ''}${note ? `<p class="talk-note">${note}</p>` : ''}</section>`;
     }
     // The fixer's burner phone (P21): in the merchants' hours, to a friend, one at a time.
     let phoneHtml = '';
     if (fixer) {
-      const closed = !sim.shopsOpen;
+      const closed = !sim.fixerOpen;
       const friend = m.opinion >= PHONE_OPINION;
       const ok = !closed && friend && !hasPhone;
       const note = hasPhone ? t('phone.haveOne') : closed ? t('phone.closed') : !friend ? t('phone.needOpinion', { n: PHONE_OPINION }) : s.cash < PHONE_PRICE ? t('phone.needCash', { n: PHONE_PRICE }) : t('phone.offer');
@@ -251,8 +253,10 @@ export class TalkPanel {
     if (following) foot = `<button class="big-btn ghost small" data-act="${TALK.DISMISS}">${icon('close', 16)}<span>${t('talk.dismiss')}</span></button><span class="talk-note">${t(nightOf(s, who) ? 'talk.followingNight' : 'talk.followingNote')}</span>`;
     else {
       const full = s.followers.length >= MAX_FOLLOWERS;
-      const ok = m.opinion >= OPINION_HIGH && !full;
-      foot = `<button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-act="${TALK.RECRUIT}" ${ok ? '' : 'disabled'}>${icon('users', 16)}<span>${t('talk.recruit')}</span></button><span class="talk-note">${ok ? t('talk.recruitNote') : full ? t('talk.recruitFull', { n: MAX_FOLLOWERS }) : t('talk.recruitNeed', { n: OPINION_HIGH })}</span>`;
+      // (P26: a Lone Wolf Daily, nobody signs up.)
+      const lone = twist(s, 'loneWolf');
+      const ok = m.opinion >= OPINION_HIGH && !full && !lone;
+      foot = `<button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-act="${TALK.RECRUIT}" ${ok ? '' : 'disabled'}>${icon('users', 16)}<span>${t('talk.recruit')}</span></button><span class="talk-note">${lone ? t('refused.loneWolf') : ok ? t('talk.recruitNote') : full ? t('talk.recruitFull', { n: MAX_FOLLOWERS }) : t('talk.recruitNeed', { n: OPINION_HIGH })}</span>`;
     }
     // (A redraw keeps the keyboard's place: the die or button that had the focus has it again.)
     const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
@@ -286,7 +290,9 @@ export class TalkPanel {
     const k = who - s.inmates.length;
     const g = s.guards[k];
     const def = sim.prison.guards[k];
-    const trait = this.knows(`trait:${k}`) ? traitOf(def) : null;
+    // (P26: a Straight-Laced Daily, the crooked and the idle are by the book today.)
+    const known = this.knows(`trait:${k}`) ? traitOf(def) : null;
+    const trait = known && (known === 'corrupt' || known === 'lazy') && twist(s, 'straightLaced') ? 'steady' : known;
     const look = lookAwayPrice(sim.prison.difficulty);
     const paper = paperPrice(sim.prison.difficulty);
     // Looking away until when (the clock's time: it reads like the HUD's, and only changes with a new bribe).
@@ -405,7 +411,7 @@ export class BoardPanel {
         const later = you && s.jobDay > sim.today ? `<em class="board-later">${t('board.tomorrow')}</em>` : '';
         // The job the prison gave on day 1 (above the player's Intellect): theirs to take back.
         const first = !you && can && s.items.int < d.int ? `<em class="board-later">${t('board.firstJob')}</em>` : '';
-        return `<div class="board-row${you ? ' mine' : ''}${open ? ' open' : ''}"><span class="board-ic">${icon(JOB_ICONS[d.id], 20)}</span><span class="board-text"><b>${esc(t(`job.${d.id}` as Key))}${later}${first}</b><small>${esc(t(`jobTask.${d.id}` as Key, { n: d.quota }))}</small><span class="board-meta"><i class="${s.items.int >= d.int || you || can ? '' : 'short'}">${icon('brain', 12)}${d.int}</i><i class="wage">${icon('coin', 12)}$${d.wage}</i><i class="holder${open ? ' open' : you ? ' you' : ''}">${esc(who)}</i></span></span>${action}</div>`;
+        return `<div class="board-row${you ? ' mine' : ''}${open ? ' open' : ''}"><span class="board-ic">${icon(JOB_ICONS[d.id], 20)}</span><span class="board-text"><b>${esc(t(`job.${d.id}` as Key))}${later}${first}</b><small>${esc(t(`jobTask.${d.id}` as Key, { n: d.quota }))}</small><span class="board-meta"><i class="${s.items.int >= d.int || you || can ? '' : 'short'}">${icon('brain', 12)}${d.int}</i><i class="wage">${icon('coin', 12)}$${wageOf(s, d.wage)}</i><i class="holder${open ? ' open' : you ? ' you' : ''}">${esc(who)}</i></span></span>${action}</div>`;
       })
       .join('');
     this.el.innerHTML = `<div class="panel-head"><b>${icon('board', 20)}${t('board.title')}</b><button class="icon-btn small" data-job="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>

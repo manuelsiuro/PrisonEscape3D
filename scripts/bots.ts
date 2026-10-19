@@ -33,8 +33,13 @@ export class Bot {
   start: Snapshot | null = null;
   readonly cmds: number[] = [];
 
+  /** The Daily's twists every new bot plays under (dailytest; none in the campaign), and the last bot made. */
+  static mods: readonly string[] = [];
+  static last: Bot | null = null;
+
   constructor(prison: PrisonDef, seed: number) {
-    this.sim = new Sim(prison, seed);
+    this.sim = new Sim(prison, seed, Bot.mods);
+    Bot.last = this;
     this.pilot = new Autopilot(this.sim.world, () => this.sim.world.routeGrid(this.sim.state.layer));
   }
 

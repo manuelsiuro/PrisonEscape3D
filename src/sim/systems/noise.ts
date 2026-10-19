@@ -10,6 +10,7 @@
  * when its fuse has burnt down, an alarm clock ringing once a second (wound, it counts down
  * wherever it is: in the pockets, in a desk, on the floor).
  */
+import { twist } from './twists';
 import { itemDef } from '../../content/items';
 import { centerX, centerZ, nearestDir, tileAt } from '../ai/path';
 import { lineOfSight } from '../ai/sight';
@@ -116,7 +117,11 @@ const tileOfGuard = (g: Guard) => tileAt(g.body.x, g.body.z);
  * Whether a guard dozing at its nap stop (P15) wakes to the last noise worked out: a bang
  * anywhere in earshot, anything else NAP_WAKE tiles short of its reach.
  */
-const stirs = (g: Guard, n: number, bang: boolean) => g.doze > 0 && g.ko <= 0 && cost[tileOfGuard(g)] >= 0 && (bang || cost[tileOfGuard(g)] <= n - NAP_WAKE);
+const stirs = (g: Guard, n: number, bang: boolean) => g.doze > 0 && g.ko <= 0 && cost[tileOfGuard(g)] >= 0 && (bang || cost[tileOfGuard(g)] <= n - spare);
+
+/** The tiles to spare a noise needs to wake a dozing guard: NAP_WAKE, none on a Light Sleepers Daily (P26). Set from the state as each noise is worked out. */
+let spare = NAP_WAKE;
+const spareFor = (sim: SimContext) => (spare = twist(sim.state, 'lightSleepers') ? 0 : NAP_WAKE);
 
 /**
  * The guards awake within earshot of the last noise worked out (guard indexes), nearest first
@@ -161,6 +166,7 @@ const heardScratch: number[] = [];
 export function hearers(sim: SimContext, n: NoiseAt | null, out: number[] = [], wake = false): number[] {
   out.length = 0;
   if (!n) return out;
+  spareFor(sim);
   const reach = muffled(sim, n.layer, n.tile, n.reach);
   spread(sim.world, { layer: n.layer, tile: n.tile, reach });
   return listeners(sim.state.guards, out, reach, wake);
@@ -187,6 +193,7 @@ export function earshot(sim: SimContext, n: NoiseAt | null, out: number[] = []):
  */
 export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile: number, loud: number, send = 0, look = 0) {
   if (tile < 0 || loud <= 0) return;
+  spareFor(sim);
   // (P17: the rain, a storm, the film's soundtrack drown it.)
   const n = muffled(sim, layer, tile, loud);
   const w = sim.world;

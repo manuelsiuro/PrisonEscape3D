@@ -16,6 +16,7 @@
  *   lets contraband by, a friend at TRUST_FRIEND never tracks the player), pepper (sneezing, the
  *   trail gone), sleepy jerky (asleep for 2 game hours). Soap or a shower washes the scent off.
  */
+import { twist } from './twists';
 import { itemDef, itemNumber } from '../../content/items';
 import { LOOT } from '../../content/loot';
 import type { DogDef } from '../../content/prisons/types';
@@ -143,7 +144,7 @@ export const dogDazed = (d: Dog, step: number) => d.daze > step;
 /** Whether a dog works now: from day 2, its shifts, every lockdown (not a run logged before the dogs came). */
 export function onShift(sim: SimContext, def: DogDef): boolean {
   const s = sim.state;
-  if (sim.noDogs || prisonDay(s.step) < DOG_FIRST_DAY) return false;
+  if (sim.noDogs || prisonDay(s.step) < dogsFrom(s)) return false;
   if (s.lockdown) return true;
   const m = clockAt(s.step).minuteOfDay;
   return (m >= DOG_DAY_FROM && m < DOG_DAY_TO) || (!!def.night && m >= DOG_NIGHT_FROM && m < DOG_NIGHT_TO);
@@ -203,7 +204,7 @@ export function dogWarning(sim: SimContext): 'nose' | 'track' | null {
  */
 export function dogs(sim: SimContext) {
   const s = sim.state;
-  if (!s.dogs.length || sim.noDogs || prisonDay(s.step) < DOG_FIRST_DAY) return;
+  if (!s.dogs.length || sim.noDogs || prisonDay(s.step) < dogsFrom(s)) return;
   layScent(sim);
   const w = sim.world;
   const handlers = handlersOf(w);
@@ -599,7 +600,7 @@ export function treatTarget(sim: SimContext): { dog: number; tile: number } | nu
  */
 export function treats(sim: SimContext) {
   const s = sim.state;
-  if (!s.dogs.length || sim.noDogs || prisonDay(s.step) < DOG_FIRST_DAY) return;
+  if (!s.dogs.length || sim.noDogs || prisonDay(s.step) < dogsFrom(s)) return;
   const list = containersOf(sim.world);
   list.forEach((c, i) => {
     if (c.table !== 'canteenCounter') return;
@@ -649,3 +650,6 @@ function ratSeen(sim: SimContext, b: Body, range: number): Rat | null {
   }
   return best;
 }
+
+/** The first prison day the dogs work (P26: from day 1 on a Dog Day Daily). */
+export const dogsFrom = (s: { readonly mods: readonly string[] }): number => (twist(s, 'dogDay') ? 1 : DOG_FIRST_DAY);

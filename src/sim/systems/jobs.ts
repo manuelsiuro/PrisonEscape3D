@@ -2,6 +2,7 @@
  * Jobs and cash (GDD §11, §3.1): the stations, the quota and the wage, the Work Period's start
  * and settling, the job board, a new day's vacancies, and loose change in desks and pockets.
  */
+import { twist } from './twists';
 import { itemDef } from '../../content/items';
 import { WORK_ITEMS } from '../../content/jobs';
 import { ROUTINE } from '../../content/routine';
@@ -104,10 +105,14 @@ export function quotaUp(sim: SimContext) {
   sim.events.push({ type: 'quota', n: s.quota, of: def.quota });
   if (s.quota < def.quota || s.paid) return;
   s.paid = true;
-  s.cash += def.wage;
-  sim.events.push({ type: 'cash', n: def.wage, why: 'wage' });
-  s.tally[3] += def.wage;
+  const wage = wageOf(s, def.wage);
+  s.cash += wage;
+  sim.events.push({ type: 'cash', n: wage, why: 'wage' });
+  s.tally[3] += wage;
 }
+
+/** What a job pays (P26: nothing on an Unpaid Labour Daily). */
+export const wageOf = (s: { readonly mods: readonly string[] }, wage: number) => (twist(s, 'unpaidLabour') ? 0 : wage);
 
 /** 12:00: the janitor's puddles appear in the corridors, the mailman's round is drawn; inmates head to work. */
 export function startWork(sim: SimContext) {

@@ -1,4 +1,5 @@
 /** The daily routine (GDD §2): blocks starting and ending, and the player checking in to them. */
+import { quickFix } from './twists';
 import { ROUTINE, routineAt } from '../../content/routine';
 import type { SimContext } from '../context';
 import { MISSED_ROUTINE_HEAT } from '../tuning';
@@ -48,6 +49,8 @@ export function nextBlock(sim: SimContext, clock: Clock) {
     reissueKit(sim);
     sim.events.push({ type: 'restock' });
     if (!sim.world.def.rules?.relaxed) shakedown(sim);
+    // (P26: a Quick Fix Daily, the night's damage mended.)
+    quickFix(sim);
     newDay(sim);
   }
   if (ROUTINE[now].id === 'work') startWork(sim);

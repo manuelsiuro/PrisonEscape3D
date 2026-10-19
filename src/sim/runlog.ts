@@ -22,6 +22,8 @@ export interface RunLog {
   prison: string;
   /** The new game's seed; -1 when it starts from `start` (a game loaded from a save made before logs). */
   seed: number;
+  /** The Daily's twists the new game was set up under (P26; none in the campaign). */
+  mods?: string[];
   start?: Snapshot;
   /** The game's version when the run began. */
   game: string;
@@ -114,6 +116,7 @@ export function fitLog(v: unknown): RunLog | null {
   if (typeof l.prison !== 'string' || typeof l.seed !== 'number' || typeof l.from !== 'number' || typeof l.steps !== 'number' || typeof l.data !== 'string' || typeof l.game !== 'string') return null;
   if (!Array.isArray(l.sums) || !l.sums.every((s) => Array.isArray(s) && typeof s[0] === 'number' && typeof s[1] === 'string')) return null;
   if (l.seed < 0 && !(l.start && typeof l.start === 'object' && l.start.prison === l.prison)) return null;
+  if (l.mods !== undefined && !(Array.isArray(l.mods) && l.mods.every((m) => typeof m === 'string'))) return null;
   return l as RunLog;
 }
 
@@ -139,7 +142,7 @@ export class RunRecorder {
     origin: { seed: number; game: string } | { log: RunLog | null; game: string },
   ) {
     const from = sim.state.step;
-    if ('seed' in origin) this.head = { v: 1, prison: sim.prison.id, seed: origin.seed, game: origin.game, from };
+    if ('seed' in origin) this.head = { v: 1, prison: sim.prison.id, seed: origin.seed, ...(sim.state.mods.length ? { mods: [...sim.state.mods] } : {}), game: origin.game, from };
     else {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
@@ -148,7 +151,7 @@ export class RunRecorder {
       const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
-        this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
+        this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
         this.put(encodeRuns(runs));
         this.steps = log.steps;
         this.sums.push(...log.sums);
@@ -262,7 +265,7 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
   if (prison.id !== log.prison) return null;
   const runs = decodeRuns(fromBase64(log.data) ?? new Uint8Array());
   if (!runs) return null;
-  const sim = new Sim(prison, log.seed < 0 ? 1 : log.seed);
+  const sim = new Sim(prison, log.seed < 0 ? 1 : log.seed, log.mods);
   if (log.seed < 0) sim.restore(log.start!);
   // Played before the day's events (P17): every day was quiet then.
   if (beforeDays(log.game)) {

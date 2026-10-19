@@ -39,6 +39,14 @@ export interface Game {
   saved: boolean;
   /** A tutorial lesson (P8+): no saves, no records, its own end. */
   lesson: LessonRun | null;
+  /** A Daily Escape's run (P26): its own save, its own result; null in the campaign. */
+  daily: DailyRun | null;
+}
+
+/** A Daily Escape under way (P26): which Daily, and the try it is. */
+export interface DailyRun {
+  n: number;
+  tries: number;
 }
 
 /**

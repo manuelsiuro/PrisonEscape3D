@@ -12,17 +12,20 @@ export type PauseChoice = 'resume' | 'quit' | 'settings' | 'save' | 'help' | 're
  */
 /** In a lesson (`lesson`): no saving, a restart, and the way out goes back to the lessons. */
 /** `place`: where the run is ("Stalag Flucht · Day 3"), above the title; none in a lesson. */
-export function showPause(click: () => void, saved: boolean, canSave = true, note = '', lesson = false, place = ''): Promise<PauseChoice> {
+/** In a Daily (`twists`, P26: its twists' chips): no saving to a slot, the twists under the title, and Try again. */
+export function showPause(click: () => void, saved: boolean, canSave = true, note = '', lesson = false, place = '', twists = ''): Promise<PauseChoice> {
   const el = h(
     'div',
     'modal',
     `<div class="card pause-card">
       ${place ? `<p class="pause-place">${icon('pin', 13)}<span></span></p>` : ''}
       <h2>${t('pause.title')}</h2>
+      ${twists ? `<div class="twist-chips" role="list" aria-label="${t('daily.twists')}">${twists}</div>` : ''}
       <p class="card-note${note.startsWith('!') || (!note && !saved) ? ' warn' : ''}">${note.startsWith('!') ? note.slice(1) : note ? `${lesson ? '' : icon('check', 14)}${note}` : saved ? `${icon('check', 14)}${t('pause.saved')}` : t('pause.notSaved')}</p>
       <div class="pause-links">
         ${canSave ? `<button class="link-btn" data-c="save">${icon('save', 16)}${t('pause.save')}</button>` : ''}
         ${lesson ? `<button class="link-btn" data-c="objectives">${icon('bulb', 16)}${t('hud.objectives')}</button><button class="link-btn" data-c="restart">${icon('replay', 16)}${t('lesson.restart')}</button>` : ''}
+        ${twists ? `<button class="link-btn" data-c="restart">${icon('replay', 16)}${t('daily.tryAgain')}</button>` : ''}
         <button class="link-btn" data-c="help">${icon('help', 16)}${t('pause.help')}</button>
         <button class="link-btn" data-c="settings">${icon('gear', 16)}${t('pause.settings')}</button>
       </div>

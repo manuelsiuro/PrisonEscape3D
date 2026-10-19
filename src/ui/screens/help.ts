@@ -23,6 +23,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['craft', 'hammer', '#6f93b8'],
     ['energy', 'heart', '#e0507a'],
     ['trophies', 'trophy', '#e2a21b'],
+    ['daily', 'calendar', '#2fb6c8'],
   ],
   life: [
     ['guards', 'eye', '#1e3a5f'],

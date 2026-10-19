@@ -1,4 +1,6 @@
+import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
+import { hostile } from '../sim/systems/social';
 import { announceRat } from './rat';
 import { announceSmuggle } from './smuggle';
 import { announceGames } from './games';
@@ -309,7 +311,7 @@ export function announce(e: SimEvent, sim: Sim) {
       itemsUI.toast(t('toast.clogged'));
       break;
     case 'repaired':
-      banner.toast(t('toast.repaired'), 'info', 4500);
+      banner.toast(t(e.quick ? 'toast.quickFix' : 'toast.repaired'), 'info', 4500);
       break;
     // 'escaped' is the session's: the step loop puts up the escape screen.
     // ---------------------------------------------------------------- security (GDD §5.4–5.6, §12)
@@ -322,7 +324,7 @@ export function announce(e: SimEvent, sim: Sim) {
         // P17: lightning (both halves at once: one banner) or the generator's service.
         if (e.by === 'storm') {
           // (In the snow a blizzard takes the power: no lightning.)
-          if (e.gen !== 1) banner.show(t(sim.world.def.rules?.cold ? 'banner.blizzard' : 'banner.storm'), t('banner.stormSub'), 'alarm', 3800);
+          if (e.gen !== 1) banner.show(t(freezing(sim) ? 'banner.blizzard' : 'banner.storm'), t('banner.stormSub'), 'alarm', 3800);
         } else if (e.by === 'maintenance') {
           if (e.gen !== 1) banner.show(t('banner.service'), t('banner.serviceSub', { time: dayTime(today(sim).until) }), 'routine', 3800);
         } else banner.show(t(split ? (e.gen === 1 ? 'banner.gen2Off' : 'banner.gen1Off') : 'banner.powerOff'), t(split ? (e.gen === 1 ? 'banner.gen2OffSub' : 'banner.gen1OffSub') : 'banner.powerOffSub'), 'routine', 3500);
@@ -447,6 +449,10 @@ export function announce(e: SimEvent, sim: Sim) {
           buzz('attended');
           banner.show(t('banner.paid', { n: e.n }), t('banner.paidSub', { job: jobName(sim, sim.playerJob) }), 'routine', 3600);
         }
+      } else if (e.why === 'wage') {
+        // (P26: an Unpaid Labour Daily, the quota done for nothing.)
+        buzz('attended');
+        banner.show(t('banner.unpaid'), t('banner.paidSub', { job: jobName(sim, sim.playerJob) }), 'routine', 3600);
       }
       break;
     case 'work':
@@ -578,8 +584,8 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.whistle();
       buzz('missed');
       banner.toast(t('toast.ambush', { name: inmateName(sim, e.who) }), 'bad', 4500);
-      // A lawless prison (San Pancho): how scores are settled there, told once.
-      if (sim.world.def.rules?.hostile) coachOnce('hostile', 'hint.hostile');
+      // A lawless prison (San Pancho, or a Bad Blood Daily): how scores are settled there, told once.
+      if (hostile(sim)) coachOnce('hostile', 'hint.hostile');
       break;
     case 'allyHit':
       sound.punch(e.ko, false);

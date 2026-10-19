@@ -13,7 +13,7 @@ import { KEYS, readJSON, removeKey, writeJSON, type StorageKey } from './storage
  * phone may close a tab in the background at any time); "Continue" picks it up. Three slots
  * keep games the player saved by hand.
  */
-export type SlotId = 'auto' | 1 | 2 | 3;
+export type SlotId = 'auto' | 1 | 2 | 3 | 'daily';
 export const HAND_SLOTS = [1, 2, 3] as const;
 export const ALL_SLOTS: readonly SlotId[] = ['auto', ...HAND_SLOTS];
 
@@ -30,9 +30,11 @@ export interface SaveFile {
   snap: Snapshot;
   /** Rumors heard (P13, the prisoner's file): kept with the game, optional. */
   rumors?: Rumor[];
+  /** A Daily Escape's run (P26, the 'daily' slot): which Daily it is (its number). */
+  daily?: number;
 }
 
-const KEY_OF: Record<SlotId, StorageKey> = { auto: KEYS.saveAuto, 1: KEYS.save1, 2: KEYS.save2, 3: KEYS.save3 };
+const KEY_OF: Record<SlotId, StorageKey> = { auto: KEYS.saveAuto, 1: KEYS.save1, 2: KEYS.save2, 3: KEYS.save3, daily: KEYS.saveDaily };
 
 /** The save file for a game as it stands now. */
 export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly Rumor[] = []): SaveFile {
@@ -54,8 +56,8 @@ export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly 
  * Writes a game to a slot, and its run log next to it (P16; a log that doesn't fit in storage
  * is dropped, the save comes first); false when storage is full or blocked.
  */
-export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__, rumors: readonly Rumor[] = [], log: RunLog | null = null): boolean {
-  const file = saveFileOf(sim, Date.now(), game, rumors);
+export function writeSave(slot: SlotId, sim: Sim, game = __APP_VERSION__, rumors: readonly Rumor[] = [], log: RunLog | null = null, daily?: number): boolean {
+  const file = daily === undefined ? saveFileOf(sim, Date.now(), game, rumors) : { ...saveFileOf(sim, Date.now(), game, rumors), daily };
   let ok = writeJSON(KEY_OF[slot], file);
   // Storage full: the logs make room for the save (this slot's first, then every log and replay).
   if (!ok) {
@@ -90,6 +92,8 @@ export function readSave(slot: SlotId): SaveFile | null {
   if (!ok) return null;
   // Rumors from an older or damaged save: dropped, not trusted.
   if (f.rumors !== undefined && !(Array.isArray(f.rumors) && f.rumors.every((r) => r && typeof r.step === 'number' && typeof r.fact?.kind === 'string' && typeof r.fact.key === 'string'))) delete f.rumors;
+  // (The Daily's slot holds only a Daily's run, and a Daily's run only that slot.)
+  if ((slot === 'daily') !== Number.isInteger(f.daily)) return null;
   return f as SaveFile;
 }
 

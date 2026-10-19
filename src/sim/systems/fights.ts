@@ -3,6 +3,7 @@
  * throws, knockouts and coming round (a guard's missing key raises the alarm), blows on the
  * player and what happens at 0 health. The numbers (damage, reach, pace) are in combat.ts.
  */
+import { twist } from './twists';
 import { allyDamage } from './crew';
 import { byCanteen, inFoodFight } from './calendar';
 import { itemDef } from '../../content/items';
@@ -82,6 +83,8 @@ function wearKey(sim: SimContext, color: number) {
 /** The weapon the player fights with: one in hand, else the one in the weapon slot (0: fists). */
 function weapon(sim: SimContext): { item: number; slot: number } {
   const it = sim.state.items;
+  // (P26: a Bare Hands Daily, fists only: no weapon does anything, molten chocolate neither.)
+  if (twist(sim.state, 'bareHands')) return { item: 0, slot: SLOT.WEAPON };
   const inHand = itemOf(it.inv[it.hand]);
   if (inHand && itemDef(inHand).cat === 'weapon') return { item: inHand, slot: it.hand };
   return { item: itemOf(it.inv[SLOT.WEAPON]), slot: SLOT.WEAPON };

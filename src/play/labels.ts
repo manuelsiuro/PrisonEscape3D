@@ -1,3 +1,4 @@
+import { twist } from '../sim/systems/twists';
 import { itemDef, itemNumber, KEY_ITEM_COLORS } from '../content/items';
 import { currentLang, t, type Key } from '../i18n';
 import { lineOfSight } from '../sim/ai/sight';
@@ -213,7 +214,8 @@ export function describeAttack(sim: Sim): ToolView | null {
   if (s.lock < 0 || s.layer !== LAYER.GROUND) return null;
   const f = personOf(s, s.lock);
   if (!f) return null;
-  const weapon = weaponOf(s.items);
+  // (P26: a Bare Hands Daily, fists only, as the sim fights.)
+  const weapon = twist(s, 'bareHands') ? 0 : weaponOf(s.items);
   const d = weapon ? itemDef(weapon) : null;
   const thrown = !!d?.thrown;
   const reach = thrown ? THROW_RANGE : reachOf(d);

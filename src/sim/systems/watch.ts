@@ -3,6 +3,7 @@
  * evidence on the floor, and what that costs in heat (up to the lockdown). Tiles changed and
  * put right go through here too, so the state and the world never disagree.
  */
+import { trickle } from './twists';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { RESTRICTED } from '../../content/zones';
@@ -115,7 +116,8 @@ export function watch(sim: SimContext) {
   // Something new noticed (in a lockdown there is nothing more to notice).
   if (reason && reason !== s.spotted && !s.lockdown) sim.events.push({ type: 'spotted', reason: SPOT[reason] });
   s.spotted = reason;
-  if (heat) addHeat(sim, heat);
+  // (P26: Short Fuse, half as much again while it trickles in.)
+  if (heat) addHeat(sim, trickle(s, heat));
   // Under a camera's eye, heat doesn't cool either.
   if (filmed) s.seen = true;
   // Snipers by day.
@@ -171,10 +173,8 @@ function noticeDamage(sim: SimContext): boolean {
   for (const k in s.tiles) {
     const key = Number(k);
     const kind = s.tiles[key];
-    const layer = layerOfKey(key);
     const tile = tileOfKey(key);
-    const shows = layer === LAYER.GROUND ? DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && underMyDesk(w, tile) && !s.deskAside) : layer === LAYER.VENTS && kind === TILE.GRATE_OPEN;
-    if (!shows || s.found.includes(key) || !seenAt(tile)) continue;
+    if (!damageShows(sim, key) || s.found.includes(key) || !seenAt(tile)) continue;
     s.found.push(key);
     sim.events.push({ type: 'found', kind });
     any = true;
@@ -190,6 +190,15 @@ function noticeDamage(sim: SimContext): boolean {
     any = true;
   }
   return any;
+}
+
+/** Whether a changed tile is damage a guard could see: a hole, a cut, an open grate, a shaft (not the one under the player's desk, unless the desk is pushed aside). */
+export function damageShows(sim: SimContext, key: number): boolean {
+  const s = sim.state;
+  const kind = s.tiles[key];
+  const layer = layerOfKey(key);
+  if (layer === LAYER.VENTS) return kind === TILE.GRATE_OPEN;
+  return layer === LAYER.GROUND && DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && underMyDesk(sim.world, tileOfKey(key)) && !s.deskAside);
 }
 
 /** Damage the guards found is put right (concreted over, the grate screwed back): after a capture. */

@@ -5,6 +5,7 @@
  * indoors (all the way: four times as fast as it came). A heatwave's sun (P17, 11:00–18:00)
  * does the same to anyone out in it, whatever they wear; a shower cools them at once.
  */
+import { twist } from './twists';
 import { itemNumber } from '../../content/items';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
@@ -25,7 +26,7 @@ export function exposed(sim: SimContext): boolean {
   // (Hidden in the delivery's vehicle, P18: out of the wind and the sun.)
   if (sim.away || s.stowed) return false;
   // A heatwave's day (P17): only its sun counts (whatever the prison's usual cold); else the cold, without a warm outfit.
-  const exposure = baking(sim) ? sunBites(sim) : sim.world.def.rules?.cold && !WARM.has(itemOf(s.items.inv[SLOT.OUTFIT]));
+  const exposure = baking(sim) ? sunBites(sim) : freezing(sim) && !WARM.has(itemOf(s.items.inv[SLOT.OUTFIT]));
   if (!exposure) return false;
   if (s.layer === LAYER.ROOF) return true;
   if (s.layer !== LAYER.GROUND) return false;
@@ -55,3 +56,6 @@ export function chill(sim: SimContext) {
     sim.events.push(baking(sim) ? { type: 'cold', on: now, hot: true } : { type: 'cold', on: now });
   }
 }
+
+/** A freezing prison (Stalag Flucht, GDD §4.2), or a Big Freeze Daily anywhere (P26). */
+export const freezing = (sim: SimContext): boolean => !!sim.world.def.rules?.cold || twist(sim.state, 'bigFreeze');
