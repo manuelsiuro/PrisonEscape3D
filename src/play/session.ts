@@ -4,7 +4,7 @@ import { resetSmuggle } from './smuggle';
 import { resetGames } from './games';
 import { resetCrew } from './crew';
 import { inmateName } from '../ui/social';
-import { itemNumber, KEY_ITEM_COLORS } from '../content/items';
+import { itemNumber } from '../content/items';
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordEscape } from '../game/records';
 import { MEDAL_DAYS } from '../content/medals';
@@ -13,22 +13,20 @@ import { prisonName, securityOf } from '../ui/screens/prisons';
 import type { PrisonDef } from '../content/prisons/types';
 import { deleteSave, writeSave } from '../game/saves';
 import { t, type Key } from '../i18n';
-import type { BedPose } from '../render/Character';
 import { Autopilot } from '../sim/ai/autopilot';
-import { placesOf } from '../sim/ai/places';
 import { RunRecorder, type RunLog } from '../sim/runlog';
 import { keepReplay } from '../game/logs';
 import { readPrisoner } from '../game/prisoner';
 import { escapeRun, startRun, stopRun, syncRun } from '../game/trophies';
 import { PLAYER } from '../talk/fill';
-import { showCinema } from '../ui/cinema';
 import { ESCAPES, type Sim } from '../sim/Sim';
 import { formatTime } from '../sim/systems/clock';
 import { ladderFootOf } from '../sim/systems/structure';
-import { STEPS_PER_MINUTE, UNIT, WALK_SPEED } from '../sim/tuning';
+import { STEPS_PER_MINUTE } from '../sim/tuning';
 import { TOUCH, h } from '../ui/dom';
 import { routineName } from '../ui/hud';
-import { showVictory } from '../ui/screens/escaped';
+import { showVictory, type Victory, type VictoryChoice } from '../ui/screens/escaped';
+import { watchReplay } from './replay';
 import { showHelp } from '../ui/screens/help';
 import { showPause } from '../ui/screens/pause';
 import { showSaves } from '../ui/screens/saves';
@@ -46,6 +44,9 @@ import { ask } from '../ui/screens/ask';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
 import { hideLesson, lessonPlace, objectivesOf, type LessonRun } from './lesson';
 import { showObjectives } from '../ui/screens/objectives';
+import { escapeScene, stageWorld } from './stage';
+
+export { escapeScene };
 
 /**
  * A game from start to end: into it (new or loaded), the saves along the way, pausing, and
@@ -72,7 +73,7 @@ function flashSaved() {
 
 /** Writes the game in progress (never once it's over: an escape ends the run). */
 export function autosave(g: Game, show = false) {
-  if (g.over || g.lesson) return;
+  if (g.over || g.lesson || g.replay) return;
   // The lifetime stats catch up with the run as it's saved (P16).
   syncRun();
   // (A Daily's run in its own slot, P26: the campaign's game in progress stays as it was.)
@@ -86,22 +87,12 @@ export function autosave(g: Game, show = false) {
  * game's seed, or the log saved with the game loaded.
  */
 export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = null, rumors: readonly Rumor[] = [], origin: { seed: number } | { log: RunLog | null } = { seed: 0 }, daily: DailyRun | null = null) {
-  view.setWorld(sim.world);
   // Your prisoner (P16): how the player looks, and the name friends call them.
   const prisoner = readPrisoner();
-  view.setPrisoner(prisoner);
+  stageWorld(sim, prisoner);
   PLAYER.name = prisoner?.name ?? '';
   // The speech bubbles (P13): this prison's voices, and the rumors the save kept.
   chatterStart(sim, rumors);
-  // Start a little wide and settle in on the player.
-  view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
-  // (Set, not multiplied: one game's zoom never compounds into the next's.)
-  view.zoomTo(1.25);
-  view.setCast(sim.state.inmates.map((m) => ({ cell: m.cell, gait: m.speed / WALK_SPEED })));
-  view.setGuards(
-    guardBeds(sim),
-    sim.prison.guards.map((d) => KEY_ITEM_COLORS.find(([c]) => c === d.key)![2]),
-  );
   play.game = {
     rec: new RunRecorder(sim, { ...origin, game: __APP_VERSION__ }),
     prev: { x: sim.state.player.x, z: sim.state.player.z },
@@ -173,17 +164,6 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   if (!seenTip('walk')) {
     later(4600, () => hint.show(TOUCH ? [t('hint.walkTouch'), t('hint.tapWalk'), t('hint.arrows')] : [t('hint.walkKeys'), t('hint.clickWalk'), t('hint.arrows')]));
   }
-}
-
-/** Where each guard sleeps at night: the guard-quarters beds, in order, for those without a night round. */
-function guardBeds(sim: Sim): Array<BedPose | undefined> {
-  const beds = placesOf(sim.world).guardBeds;
-  let n = 0;
-  return sim.prison.guards.map((d) => {
-    if (d.night) return undefined;
-    const b = sim.world.props[beds[n++]?.bed ?? -1];
-    return b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 };
-  });
 }
 
 /** Timers set when a game starts (cleared when it ends, so they never reach the next one). */
@@ -359,35 +339,41 @@ export async function escaped() {
   // Toasts still queued give way to the victory card (the shelf marks them new).
   trophyToast.clear();
   // The run is over: nothing left to continue (games kept in slots stay); its log (room freed first) kept to watch again.
-  const log = g.rec.toLog();
+  const log: RunLog = { ...g.rec.toLog(), via };
   deleteSave('auto');
   keepReplay(log, rec.best);
   if (!(await escapeScene(g))) return;
-  const choice = await showVictory(
-    {
-      prison: t(`prison.${sim.prison.id}` as Key),
-      prisonId: sim.prison.id,
-      day: clock.day,
-      time: formatTime(clock),
-      via,
-      routes: escapesOf(sim.prison),
-      found: rec.record.routes,
-      newRoute: rec.newRoute,
-      best: rec.best,
-      tally: st.tally,
-      bestDay: rec.record.bestDay,
-      unlocked: next && !wasOpen ? { name: prisonName(next), security: securityOf(next) } : undefined,
-      medal: rec.medal,
-      newMedal: rec.newMedal,
-      routeBest: rec.routeBest,
-      bronzeBy: MEDAL_DAYS[sim.prison.id]?.[via]?.[2],
-      earned,
-      campaign: !next && rec.record.routes.length === 1 && rec.newRoute,
-      crew: st.crewOut.map((id) => inmateName(sim, id)),
-    },
-    click,
-  );
-  if (play.game !== g) return;
+  const victory: Victory = {
+    prison: t(`prison.${sim.prison.id}` as Key),
+    prisonId: sim.prison.id,
+    day: clock.day,
+    time: formatTime(clock),
+    via,
+    routes: escapesOf(sim.prison),
+    found: rec.record.routes,
+    newRoute: rec.newRoute,
+    best: rec.best,
+    tally: st.tally,
+    bestDay: rec.record.bestDay,
+    unlocked: next && !wasOpen ? { name: prisonName(next), security: securityOf(next) } : undefined,
+    medal: rec.medal,
+    newMedal: rec.newMedal,
+    routeBest: rec.routeBest,
+    bronzeBy: MEDAL_DAYS[sim.prison.id]?.[via]?.[2],
+    earned,
+    campaign: !next && rec.record.routes.length === 1 && rec.newRoute,
+    crew: st.crewOut.map((id) => inmateName(sim, id)),
+    watch: true,
+  };
+  // (Watch the replay, P25: then the card again.)
+  let choice: VictoryChoice;
+  for (let back = false; ; back = true) {
+    choice = await showVictory(victory, click, back);
+    if (play.game !== g) return;
+    if (choice !== 'watch') break;
+    await watchReplay({ log, guest: false, by: null }, g);
+    if (play.game !== g) return;
+  }
   playAgain = choice === 'again' ? sim.prison : choice === 'next' ? (next ?? null) : null;
   endGame();
 }
@@ -398,28 +384,4 @@ export function takePlayAgain(): PrisonDef | null {
   const again = playAgain;
   playAgain = null;
   return again;
-}
-
-/**
- * The way out played to its end, then the escape camera (P16): away over the sea (P12) or off
- * with the delivery (P18), a longer moment to watch it; off a roof on a glider (P24), down on
- * the road first. False when the game was left meanwhile.
- */
-export async function escapeScene(g: Game): Promise<boolean> {
-  const sim = g.rec.sim;
-  const via = ESCAPES[sim.state.via];
-  firstDay.stop();
-  sound.music('title');
-  const away = via === 'raft' || via === 'helicopter' || via === 'stowaway';
-  if (away) {
-    view.depart(via);
-    if (via === 'raft') sound.launch();
-    else if (via === 'helicopter' || sim.prison.delivery?.vehicle === 'helicopter') sound.rotor();
-    else sound.engine();
-  }
-  if (via === 'glider') await view.glideDown();
-  if (play.game !== g) return false;
-  // A slow turn and pull-back, letterboxed, ESCAPED stamped; a tap skips it.
-  await showCinema(view.cinema(away), () => view.skipCinema(), settings.reducedMotion);
-  return play.game === g;
 }

@@ -15,6 +15,7 @@ import { openObjectives } from './play/lesson';
 import { act, listenKeys } from './play/keys';
 import { frame } from './play/loop';
 import { pause } from './play/session';
+import { pauseReplay } from './play/replay';
 import { chatterStats, director } from './play/chatter';
 import { firstDay } from './play/tips';
 import { wireRatPanel } from './play/rat';
@@ -28,7 +29,8 @@ import { wireGames } from './play/games';
  * so each flow reads as a script (title → play → pause → …). The simulation runs in fixed steps;
  * the view interpolates between the last two (play/loop.ts).
  */
-hooks.pause = () => pause();
+// (A replay, P25: the HUD's pause waits the replay.)
+hooks.pause = () => (play.game?.replay ? pauseReplay() : pause());
 view.onStep = (surface) => sound.step(surface);
 /** Tap or click a spot: walk there, or lock on to someone. */
 controls.onTap = onTap;

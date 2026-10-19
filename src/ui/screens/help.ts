@@ -24,6 +24,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['energy', 'heart', '#e0507a'],
     ['trophies', 'trophy', '#e2a21b'],
     ['daily', 'calendar', '#2fb6c8'],
+    ['replay', 'film', '#7b6fd6'],
   ],
   life: [
     ['guards', 'eye', '#1e3a5f'],

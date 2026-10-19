@@ -28,6 +28,7 @@ import { ACHIEVEMENTS } from '../content/achievements';
 import { readPrisoner } from '../game/prisoner';
 import { careerOf, earnedTrophies, markTrophiesSeen, syncCareer, unseenTrophies } from '../game/trophies';
 import { showTrophies } from '../ui/screens/trophies';
+import { watchReplay } from '../play/replay';
 
 // ------------------------------------------------------------------ flows
 /** The title, and from it into a game (new, continued or loaded) and back, for good. */
@@ -89,11 +90,15 @@ export async function titleFlow() {
       continue;
     }
     if (choice === 'trophies') {
-      // The shelf, and from it the Intake (back to the shelf after).
+      // The shelf, and from it the Intake or a replay (P25; back to the shelf after).
       let back: Awaited<ReturnType<typeof showTrophies>> = null;
-      while ((back = await showTrophies({ earned: earnedTrophies(), unseen: unseenTrophies(), career: careerOf(), prisoner: readPrisoner() }, click, back?.tab, !!back))) {
+      while ((back = await showTrophies({ earned: earnedTrophies(), unseen: unseenTrophies(), career: careerOf(), prisoner: readPrisoner() }, click, back?.tab, back?.to === 'intake' ? '[data-intake]' : back?.to === 'watch' ? back.from : null))) {
         markTrophiesSeen();
-        await intakeFlow();
+        if (back.to === 'watch') {
+          await watchReplay(back.replay, null);
+          view.setWorld(new Sim(backdrop).world);
+          sound.music('title');
+        } else await intakeFlow();
       }
       markTrophiesSeen();
       continue;

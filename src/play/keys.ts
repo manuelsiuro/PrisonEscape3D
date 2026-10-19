@@ -6,6 +6,7 @@ import { toggleRat } from './rat';
 import { togglePhone } from './smuggle';
 import { play, sendOp } from './game';
 import { autosave, openHelp, pause } from './session';
+import { pauseReplay } from './replay';
 import { aiming, cancelThrow, throwAhead } from './aim';
 import { toggleWait } from './day';
 import { toggleCrew } from './crew';
@@ -25,7 +26,7 @@ export function act() {
 
 function onKeyDown(e: KeyboardEvent) {
   const game = play.game;
-  if (!game || game.paused || e.metaKey || e.ctrlKey || e.repeat) return;
+  if (!game || game.paused || game.replay || e.metaKey || e.ctrlKey || e.repeat) return;
   // Escape closes a panel first (or lets go of an aim), and pauses only when none is open.
   if (e.code === 'Escape') {
     if (aiming()) cancelThrow();
@@ -140,6 +141,8 @@ export function listenKeys() {
   // A hidden page pauses the game (phones switching apps, a closed laptop).
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden || !play.game) return;
+    // (A replay, P25: it waits; nothing of it is saved.)
+    if (play.game.replay) return pauseReplay();
     // Saved whatever is open (a help page, the pause card, a panel); paused if it wasn't.
     autosave(play.game);
     if (!play.game.paused) pause();

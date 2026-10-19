@@ -1,6 +1,7 @@
 import type { Autopilot } from '../sim/ai/autopilot';
 import type { RunRecorder } from '../sim/runlog';
 import type { LessonRun } from './lesson';
+import type { ReplayRun } from './replay';
 
 // ------------------------------------------------------------------ the game
 export interface Game {
@@ -41,6 +42,8 @@ export interface Game {
   lesson: LessonRun | null;
   /** A Daily Escape's run (P26): its own save, its own result; null in the campaign. */
   daily: DailyRun | null;
+  /** A replay being watched (P25): this game is its picture, played from the log; null in play. */
+  replay?: ReplayRun | null;
 }
 
 /** A Daily Escape under way (P26): which Daily, and the try it is. */

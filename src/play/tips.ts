@@ -18,7 +18,7 @@ const GUARD_OUTFIT = itemNumber('guard_outfit');
  */
 export const tipsSeen = new Map<string, boolean>();
 export function seenTip(name: string): boolean {
-  if (!settings.tips || play.game?.lesson) return true;
+  if (!settings.tips || play.game?.lesson || play.game?.replay) return true;
   let v = tipsSeen.get(name);
   if (v === undefined) tipsSeen.set(name, (v = hasSeen(name)));
   return v;

@@ -36,9 +36,11 @@ export interface Victory {
   earned?: readonly Achievement[];
   /** The crew who got out too (P23), by name. */
   crew?: readonly string[];
+  /** P25: the escape can be watched again (its replay). */
+  watch?: boolean;
 }
 
-export type VictoryChoice = 'again' | 'next' | 'title';
+export type VictoryChoice = 'again' | 'next' | 'title' | 'watch';
 
 /** The medal won (P16), or how quick bronze needed to be. */
 function medalRow(v: Victory): string {
@@ -58,9 +60,10 @@ export function earnedRow(list: readonly Achievement[]): string {
 /**
  * The victory screen (GDD §13.2): how the player got out, the days it took and the tally
  * (walls chipped, tunnel dug, guards knocked out, cash earned), the ways out of this prison
- * found so far; then play again or back to the title.
+ * found so far; then play again or back to the title (or watch it again, P25: `back`, the card
+ * shown again after the replay, without its confetti).
  */
-export function showVictory(v: Victory, click: () => void): Promise<VictoryChoice> {
+export function showVictory(v: Victory, click: () => void, back = false): Promise<VictoryChoice> {
   const stat = (ic: string, n: string | number, label: Key) => `<div class="v-stat">${icon(ic, 18)}<b>${n}</b><small>${t(label)}</small></div>`;
   const [walls, dug, guards, cash] = v.tally;
   const pips = v.routes
@@ -71,13 +74,13 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
     .join('');
   const el = h(
     'div',
-    'modal escaped victory',
+    `modal escaped victory${back ? ' back' : ''}`,
     `<div class="card">
       <div class="escaped-icon">${icon('trophy', 34)}</div>
       <h2>${t('escaped.title')}</h2>
       <p class="v-sub"></p>
       <div class="v-left">
-      <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}</div>
+      <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}${v.watch ? `<button class="v-watch" data-c="watch" aria-label="${t('replay.watch')}" title="${t('replay.watch')}">${icon('film', 16)}<span>${t('replay.watchShort')}</span></button>` : ''}</div>
       ${v.crew?.length ? `<div class="v-crew">${icon('users', 18)}<span>${t(v.crew.length === 1 ? 'victory.crew1' : 'victory.crew', { names: listOf([...v.crew]) })}</span></div>` : ''}
       <div class="v-stats">
         ${stat('clock', v.day, 'victory.days')}
@@ -110,7 +113,7 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
     bit.style.cssText = `--x:${(Math.random() * 100).toFixed(1)}vw;--d:${(Math.random() * 0.6).toFixed(2)}s;--t:${(1.8 + Math.random() * 1.4).toFixed(2)}s;--r:${Math.round(Math.random() * 720 - 360)}deg;--s:${(Math.random() * 30 - 15).toFixed(0)}vw;background:${colors[k % colors.length]}`;
     burst.append(bit);
   }
-  el.prepend(burst);
+  if (!back) el.prepend(burst);
   el.querySelector('.v-sub')!.textContent = t('escaped.sub', { prison: v.prison, day: v.day, time: v.time });
   el.querySelector('.v-routes-label')!.textContent = t('victory.routes', { n: v.found.length, of: v.routes.length });
   if (v.unlocked) {
@@ -127,6 +130,6 @@ export function showVictory(v: Victory, click: () => void): Promise<VictoryChoic
       resolve(c);
     };
     document.body.append(el);
-    el.querySelector<HTMLElement>(v.unlocked ? '[data-c="next"]' : '[data-c="again"]')?.focus();
+    el.querySelector<HTMLElement>(back ? '[data-c="watch"]' : v.unlocked ? '[data-c="next"]' : '[data-c="again"]')?.focus();
   });
 }

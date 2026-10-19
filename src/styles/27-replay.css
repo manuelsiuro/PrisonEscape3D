@@ -1,0 +1,580 @@
+/* ------------------------------------------------------------ the replay viewer (P25) */
+
+/* In a replay the HUD only shows: no pause button (the bar has its own), nothing to press. */
+body.is-replay .hud-pause,
+body.is-replay .hud-lesson {
+  display: none;
+}
+
+body.is-replay .hud button {
+  pointer-events: none;
+}
+
+/* The bar at the foot of the screen, the highlight's caption and a standing note above it. */
+.rp {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  transition:
+    transform 0.35s var(--ease),
+    opacity 0.35s;
+}
+
+.rp.away {
+  transform: translateY(120%);
+  opacity: 0;
+}
+
+.rp-panel,
+.rp-note {
+  pointer-events: auto;
+}
+
+.rp-panel {
+  width: min(720px, 100%);
+  padding: 10px 12px 12px;
+  border-radius: 20px;
+  color: var(--dlg-text);
+  background: linear-gradient(180deg, var(--dlg-top), var(--dlg-bottom));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 140, 60, 0.55),
+    inset 0 0 0 1px var(--dlg-line),
+    0 14px 34px -12px rgba(0, 0, 0, 0.7);
+}
+
+.rp-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rp-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 99px;
+  font: 700 11.5px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #7b6fd6, #5546b3);
+}
+
+.rp-title {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rp-title b,
+.rp-title small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rp-title b {
+  flex: none;
+  max-width: 70%;
+  font: 600 16px var(--font-display);
+  color: #fff;
+}
+
+.rp-title small {
+  min-width: 0;
+  font: 600 12.5px var(--font-ui);
+  color: var(--dlg-soft);
+}
+
+.rp-close {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+/* The scrubber: the days marked under it, the highlights over it. */
+.rp-scrub {
+  position: relative;
+  margin: 0 9px;
+  padding: 26px 0 18px;
+  /* (Room for a second row of marks.) */
+  margin-top: 14px;
+  cursor: pointer;
+  outline: none;
+  touch-action: none;
+}
+
+.rp-scrub:focus-visible .rp-knob {
+  box-shadow:
+    0 0 0 3px var(--dlg-top),
+    0 0 0 6px var(--orange),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.rp-track {
+  position: relative;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rp-scouted,
+.rp-played {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+}
+
+.rp-scouted {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.rp.checking .rp-scouted {
+  animation: rp-check 1s ease-in-out infinite alternate;
+}
+
+@keyframes rp-check {
+  to {
+    background: rgba(255, 255, 255, 0.34);
+  }
+}
+
+.rp-played {
+  background: linear-gradient(90deg, var(--orange-2), var(--orange));
+}
+
+.rp-knob {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 4px rgba(255, 119, 20, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.rp-days i {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.rp-days span {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 700 10px var(--font-ui);
+  color: var(--dlg-faint);
+}
+
+.rp-mark {
+  position: absolute;
+  top: calc(-23px - var(--row, 0) * 15px);
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  border-radius: 50%;
+  color: #fff;
+  background: #3d5f84;
+  box-shadow:
+    0 0 0 1.5px var(--dlg-top),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.rp-mark.caught,
+.rp-mark.lockdown,
+.rp-mark.mishap {
+  background: #c94848;
+}
+
+.rp-mark.ko {
+  background: #b0562a;
+}
+
+.rp-mark.escape {
+  background: var(--ok-2);
+}
+
+/* Play or pause, the speed, the quiet times, the time, to the escape. */
+.rp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 13px;
+  font: 700 14px var(--font-ui);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rp-btn:disabled {
+  opacity: 0.4;
+}
+
+.rp-play {
+  width: 50px;
+  background: linear-gradient(135deg, var(--orange), var(--orange-2));
+  box-shadow: 0 6px 14px -6px rgba(242, 107, 29, 0.8);
+}
+
+.rp-speed {
+  flex-direction: column;
+  gap: 0;
+  min-width: 60px;
+  line-height: 1.1;
+}
+
+.rp-speed small {
+  font: 600 10.5px var(--font-ui);
+  color: var(--dlg-soft);
+}
+
+.rp-speed small:empty {
+  display: none;
+}
+
+.rp-quiet {
+  gap: 0;
+  color: var(--dlg-soft);
+}
+
+.rp-quiet i {
+  display: inline-flex;
+  margin-left: 1px;
+}
+
+.rp-quiet i .ic + .ic {
+  margin-left: -8px;
+}
+
+.rp-quiet.on {
+  color: #fff;
+  background: rgba(123, 111, 214, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(180, 170, 255, 0.55);
+}
+
+.rp-time {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: 600 14px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rp-cap {
+  padding: 7px 14px;
+  border-radius: 99px;
+  font: 700 14px var(--font-ui);
+  color: #fff;
+  background: rgba(18, 28, 44, 0.9);
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.25s,
+    transform 0.25s var(--ease);
+}
+
+.rp-cap.on {
+  opacity: 1;
+  transform: none;
+}
+
+.rp-note {
+  max-width: min(720px, 100%);
+  padding: 8px 14px;
+  border-radius: 14px;
+  font: 600 13px var(--font-ui);
+  color: #3b2a00;
+  background: var(--gold);
+}
+
+/* Narrow phones: "To the escape" as its icon alone. */
+@media (max-width: 520px) {
+  .rp-finale span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .rp-finale {
+    width: 44px;
+  }
+  .rp-title {
+    flex-direction: column;
+    gap: 0;
+  }
+  .rp-title b {
+    max-width: 100%;
+  }
+}
+
+/* Landscape phones: everything tighter, the title beside the badge. */
+@media (max-height: 520px) {
+  .rp {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 6px;
+  }
+  .rp-panel {
+    padding: 6px 10px 8px;
+  }
+  .rp-close {
+    width: 32px;
+    height: 32px;
+  }
+  .rp-scrub {
+    padding: 23px 0 15px;
+  }
+  .rp-btn {
+    height: 38px;
+    min-width: 38px;
+  }
+  .rp-play {
+    width: 46px;
+  }
+  /* One row under the scrubber: the controls, then what is being watched and the way out of it. */
+  .rp-panel {
+    display: grid;
+    grid-template-columns: auto auto auto auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      'scrub scrub scrub scrub scrub scrub scrub scrub'
+      'play speed quiet badge title time finale close';
+    align-items: center;
+    column-gap: 8px;
+  }
+  .rp-head,
+  .rp-row {
+    display: contents;
+  }
+  .rp-scrub {
+    grid-area: scrub;
+    margin-top: 16px;
+  }
+  .rp-play {
+    grid-area: play;
+  }
+  .rp-speed {
+    grid-area: speed;
+  }
+  .rp-quiet {
+    grid-area: quiet;
+  }
+  .rp-badge {
+    grid-area: badge;
+    padding: 6px;
+  }
+  .rp-badge b {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .rp-title {
+    grid-area: title;
+    flex-direction: column;
+    gap: 0;
+  }
+  .rp-title b {
+    max-width: 100%;
+    font-size: 15px;
+  }
+  .rp-time {
+    grid-area: time;
+    flex: none;
+  }
+  .rp-finale {
+    grid-area: finale;
+  }
+  .rp-close {
+    grid-area: close;
+  }
+}
+
+/* ------------------------------------------------------------ Watch, on the escape card */
+.v-watch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 99px;
+  font: 700 13px var(--font-ui);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.v-watch:hover,
+.v-watch:focus-visible {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.v-watch .ic {
+  color: var(--gold);
+}
+
+/* Beside "New way out!" on a narrow card: its icon alone. */
+@media (max-width: 480px) {
+  .v-method em + .v-watch span {
+    display: none;
+  }
+  .v-method em + .v-watch {
+    padding: 7px;
+  }
+}
+
+/* ------------------------------------------------------------ the replays, on the Medals tab */
+.replays {
+  margin-bottom: 14px;
+}
+
+.replays .shelf-sub .ic {
+  color: #b3a9ff;
+}
+
+.replay-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.replay-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 14px;
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.rr-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #d4ceff;
+  background: rgba(123, 111, 214, 0.22);
+}
+
+.rr-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rr-text b {
+  font: 600 15px var(--font-display);
+  color: #fff;
+}
+
+.rr-text small {
+  font: 600 11.5px var(--font-ui);
+  color: var(--dlg-soft);
+}
+
+.rr-watch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 11px;
+  font: 700 13px var(--font-ui);
+  color: #fff;
+  background: linear-gradient(135deg, var(--orange), var(--orange-2));
+}
+
+.rr-save {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.replay-none {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dlg-soft);
+}
+
+.replay-open {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+
+.rr-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 11px;
+  font: 600 13px var(--font-ui);
+  color: var(--dlg-text);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.replay-msg {
+  font: 600 12.5px var(--font-ui);
+  color: var(--ok);
+}
+
+.replay-msg.bad {
+  color: #ff8a80;
+}

@@ -685,6 +685,11 @@ export class View {
     return this.getaway.flying;
   }
 
+  /** A replay's jump in time (P25): the weather shown as it is at once, not eased in from the moment before. */
+  jumped() {
+    this.wxFresh = true;
+  }
+
   /** Resolves once a glide in the air is down (P24: the escape camera waits for it). */
   glideDown(): Promise<void> {
     return new Promise((done) => this.getaway.whenDown(done));

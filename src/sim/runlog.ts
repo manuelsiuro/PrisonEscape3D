@@ -10,7 +10,7 @@
 import { planOf, prisonDay, quietCalendar } from './systems/calendar';
 import { DAY_BOOKS, DAY_EVENTS } from '../content/days';
 import { fnv1a } from './rng';
-import { Sim, type Snapshot } from './Sim';
+import { ESCAPES, Sim, type Snapshot } from './Sim';
 import { STEPS_PER_MINUTE } from './tuning';
 import type { PrisonDef } from '../content/prisons/types';
 
@@ -24,6 +24,9 @@ export interface RunLog {
   seed: number;
   /** The Daily's twists the new game was set up under (P26; none in the campaign). */
   mods?: string[];
+  /** P25, kept with an escape's log: the way out (ESCAPES name), and the Daily it was (P26). */
+  via?: string;
+  daily?: number;
   start?: Snapshot;
   /** The game's version when the run began. */
   game: string;
@@ -114,9 +117,12 @@ export function fitLog(v: unknown): RunLog | null {
   const l = v as Partial<RunLog> | null;
   if (!l || typeof l !== 'object' || l.v !== 1) return null;
   if (typeof l.prison !== 'string' || typeof l.seed !== 'number' || typeof l.from !== 'number' || typeof l.steps !== 'number' || typeof l.data !== 'string' || typeof l.game !== 'string') return null;
+  // (Whole numbers, a start and a length that can be: a file from elsewhere may say anything, P25.)
+  if (!Number.isSafeInteger(l.seed) || !Number.isSafeInteger(l.from) || !Number.isSafeInteger(l.steps) || l.from < 0 || l.steps < 0) return null;
   if (!Array.isArray(l.sums) || !l.sums.every((s) => Array.isArray(s) && typeof s[0] === 'number' && typeof s[1] === 'string')) return null;
   if (l.seed < 0 && !(l.start && typeof l.start === 'object' && l.start.prison === l.prison)) return null;
   if (l.mods !== undefined && !(Array.isArray(l.mods) && l.mods.every((m) => typeof m === 'string'))) return null;
+  if ((l.via !== undefined && !(ESCAPES as readonly unknown[]).includes(l.via)) || (l.daily !== undefined && !(Number.isSafeInteger(l.daily) && l.daily >= 0))) return null;
   return l as RunLog;
 }
 
@@ -260,8 +266,12 @@ export function beforeSports(game: string): boolean {
   return a < 1 || (a === 1 && b < 16);
 }
 
-/** Plays a log back from its start, checking the hourly sums (stops at the first that doesn't match). */
-export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
+/**
+ * A log's game set up to be played back (P25: the replay viewer's scout and its picture share
+ * it): the sim at the log's start, with the rules of the version it was played under, and its
+ * commands. Null when the log doesn't fit this prison or its commands are damaged.
+ */
+export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs: Array<[number, number]> } | null {
   if (prison.id !== log.prison) return null;
   const runs = decodeRuns(fromBase64(log.data) ?? new Uint8Array());
   if (!runs) return null;
@@ -289,6 +299,14 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
     for (let day = prisonDay(log.from); day <= prisonDay(log.from + log.steps); day++) if (planOf(sim, day).event === 'sports') s.calendar = [...s.calendar, [day, before, -1]];
   }
   if (sim.state.step !== log.from) return null;
+  return { sim, runs };
+}
+
+/** Plays a log back from its start, checking the hourly sums (stops at the first that doesn't match). */
+export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
+  const set = prepareReplay(log, prison);
+  if (!set) return null;
+  const { sim, runs } = set;
   const sums = new Map(log.sums);
   let verified = log.from;
   let checked = 0;

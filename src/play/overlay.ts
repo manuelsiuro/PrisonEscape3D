@@ -141,7 +141,6 @@ export function keepPlayerClear(open: boolean) {
 export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }, busy: boolean, held: number, panel: boolean) {
   const sim = g.rec.sim;
   const p = sim.state.player;
-  const clock = sim.clock;
   const st = sim.state;
   const it = st.items;
   const memo = targets;
@@ -248,14 +247,11 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   stowPanel.update(stowCard(g));
   // The pet rat (P20): its panel and its pill.
   ratPanel.update(ratView(sim), busy);
-  hudState.rat = ratHud(sim);
   // Smuggling (P21): the phone's panel, the order's pill, the visitor's wait.
   // (Its view only while it's open: never strings worked out a frame for nothing.)
   phonePanel.update(phonePanel.isOpen ? phoneView(sim) : null, busy);
-  hudState.order = orderHud(sim);
   // The crew (P23): their panel, their pill, the chips over their heads.
   crewPanel.update(crewPanel.isOpen ? crewRows(sim) : null, busy);
-  hudState.crew = crewPill(sim);
   const chipsOff = busy || panel || st.layer !== LAYER.GROUND || !st.followers.length;
   crewChips.update(chipsOff ? NO_CREW : crewChipList(sim), chipAt, chipsOff, chipsOff ? 57 : unitPx(st.player.x / UNIT, st.player.z / UNIT));
   smuggleHints(sim, busy || panel);
@@ -264,6 +260,26 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (st.solitary > 0 && hint.visible) hint.hide();
   // First time something is in reach: how to use it.
   if (target && !hint.visible && !seenTip('interact') && seenTip('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
+  hudFrame(g, a, tile, busy);
+  // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
+  // (Hidden in the delivery's vehicle the talk goes on: the search's words are for the player in there.)
+  chatterFrame(g, (busy && !(st.stowed && !g.paused && !g.over)) || panel || !!g.lesson);
+  // Throwing (P14): the aim follows the pointer; a "?" over the guards on their way to look.
+  updateAim(busy || panel);
+  aimUI.frame(headAt, busy || st.layer !== LAYER.GROUND);
+}
+
+/**
+ * The HUD for the moment shown (in play, and in a replay, P25): the clock, the routine, the
+ * heat and every pill, the lockdown's red and siren, the music and the ambience.
+ */
+export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, busy: boolean) {
+  const sim = g.rec.sim;
+  const st = sim.state;
+  const clock = sim.clock;
+  hudState.rat = ratHud(sim);
+  hudState.order = orderHud(sim);
+  hudState.crew = crewPill(sim);
   vignette.classList.toggle('on', st.lockdown);
   sound.siren(st.lockdown && !g.paused);
   const zone = sim.playerZone;
@@ -338,12 +354,6 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
   const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
   sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
-  // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
-  // (Hidden in the delivery's vehicle the talk goes on: the search's words are for the player in there.)
-  chatterFrame(g, (busy && !(st.stowed && !g.paused && !g.over)) || panel || !!g.lesson);
-  // Throwing (P14): the aim follows the pointer; a "?" over the guards on their way to look.
-  updateAim(busy || panel);
-  aimUI.frame(headAt, busy || st.layer !== LAYER.GROUND);
 }
 
 const headAt = (id: number, out: { x: number; y: number }) => view.screenOf(id, out, 1.95);

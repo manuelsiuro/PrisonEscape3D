@@ -4,6 +4,9 @@ import type { Prisoner } from '../../content/prisoner';
 import { escapesOf, PRISONS } from '../../content/prisons';
 import { isOpen } from '../../game/campaign';
 import { recordOf } from '../../game/records';
+import { readPrisoner } from '../../game/prisoner';
+import { FILE_MAX, readReplayFile, replayDay, replayFile, replayFileName, replaysKept, type Replay } from '../../game/replays';
+import type { RunLog } from '../../sim/runlog';
 import { currentLang, t, type Key } from '../../i18n';
 import { h } from '../dom';
 import { icon } from '../icons';
@@ -11,8 +14,9 @@ import { icon } from '../icons';
 /**
  * The trophy shelf (P16), from the title: your prisoner (and the way to the Intake), then
  * three tabs: the achievements by group (earned in gold, the rest with what they take; mishaps
- * a mystery until they happen), each prison's medals by way out, and the lifetime stats.
- * Resolves with 'intake' to edit your prisoner, or null when closed.
+ * a mystery until they happen), each prison's medals by way out (and the escapes to watch
+ * again, P25), and the lifetime stats. Resolves with 'intake' to edit your prisoner, a replay
+ * to watch, or null when closed.
  */
 type Tab = 'trophies' | 'medals' | 'stats';
 const TABS: Tab[] = ['trophies', 'medals', 'stats'];
@@ -91,6 +95,47 @@ function trophiesTab(s: Shelf): string {
   }).join('');
 }
 
+/** One replay kept: which escape, and its buttons (watch it, save it as a file). */
+function replayRow(id: string, label: string, log: RunLog, quickest = false): string {
+  const prison = t(`prison.${log.prison}` as Key);
+  const where = [log.daily !== undefined ? t('daily.name', { n: log.daily + 1 }) : '', prison, log.via ? t(`route.${log.via}` as Key) : '', t('hud.day', { n: replayDay(log) }), quickest ? t('replay.quickest') : ''].filter(Boolean).join(' · ');
+  return `<li class="replay-row">
+    <span class="rr-ic" aria-hidden="true">${icon(log.via ? routeIcon(log.via, log.prison) : 'film', 18)}</span>
+    <span class="rr-text"><b>${label}</b><small>${where}</small></span>
+    <button class="rr-watch" data-watch="${id}" aria-label="${t('replay.rowLabel', { act: t('replay.watch'), what: `${label}, ${where}` })}">${icon('play', 14)}<span>${t('replay.watchShort')}</span></button>
+    <button class="icon-btn rr-save" data-save="${id}" aria-label="${t('replay.rowLabel', { act: t('replay.save'), what: `${label}, ${where}` })}" title="${t('replay.save')}">${icon('save', 18)}</button>
+  </li>`;
+}
+
+/** The escapes to watch again (P25): the last, each prison's quickest; a replay file to open. */
+function replaysBlock(): string {
+  const kept = replaysKept();
+  const same = (a: RunLog, b: RunLog) => a.prison === b.prison && a.from === b.from && a.steps === b.steps && a.data === b.data;
+  const rows = [kept.last ? replayRow('last', t('replay.last'), kept.last, kept.best.some((b) => same(b.log, kept.last!))) : '', ...kept.best.filter((b) => !kept.last || !same(b.log, kept.last)).map((b) => replayRow(b.prison, t('replay.best'), b.log))].join('');
+  return `<section class="replays"><h3 class="shelf-sub">${icon('film', 14)}${t('replay.list')}</h3>
+    ${rows ? `<ul class="replay-list">${rows}</ul>` : `<p class="replay-none">${t('replay.none')}</p>`}
+    <div class="replay-open"><button class="rr-open" data-open>${icon('folder', 16)}<span>${t('replay.open')}</span></button><input type="file" class="replay-file" accept=".json,application/json" tabindex="-1" aria-hidden="true" hidden><span class="replay-msg" role="status"></span></div>
+  </section>`;
+}
+
+/** A replay kept, by its row's id ('last', else the prison's quickest). */
+function keptLog(id: string): RunLog | null {
+  const kept = replaysKept();
+  return id === 'last' ? kept.last : (kept.best.find((b) => b.prison === id)?.log ?? null);
+}
+
+/** Saves a text as a file (the browser's download). */
+function download(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
 function medalsTab(): string {
   // Prisons still shut: one line for them all (no spoilers of their ways out).
   const shut = PRISONS.filter((_, k) => !isOpen(k)).length;
@@ -117,6 +162,8 @@ function medalsTab(): string {
   }).join('') + more;
 }
 
+export type ShelfResult = { to: 'intake'; tab: Tab } | { to: 'watch'; replay: Replay; tab: Tab; from: string } | null;
+
 function statsTab(s: Shelf): string {
   const st = s.career.stats;
   const cards = STATS.map(([k, ic, write]) => `<li class="stat"><span class="stat-ic">${icon(ic, 18)}</span><b>${write ? write(st[k] ?? 0) : fmt(st[k] ?? 0)}</b><small>${t(`stat.${k}` as Key)}</small></li>`).join('');
@@ -125,8 +172,8 @@ function statsTab(s: Shelf): string {
 
 export type ShelfTab = Tab;
 
-/** `start`: the tab shown; `fromIntake`: back from the Intake (its button keeps the focus). */
-export function showTrophies(shelf: Shelf, click: () => void, start: Tab = 'trophies', fromIntake = false): Promise<{ to: 'intake'; tab: Tab } | null> {
+/** `start`: the tab shown; `focus`: back from the Intake or a replay, the button that opened it (a selector). */
+export function showTrophies(shelf: Shelf, click: () => void, start: Tab = 'trophies', focus: string | null = null): Promise<ShelfResult> {
   let tab = start;
   const got = ACHIEVEMENTS.filter((a) => a.id in shelf.earned).length;
   const medals = shelf.career.prisons.flatMap((p) => p.medals);
@@ -159,13 +206,38 @@ export function showTrophies(shelf: Shelf, click: () => void, start: Tab = 'trop
       b.classList.toggle('on', b.dataset.tab === tab);
       b.setAttribute('aria-selected', String(b.dataset.tab === tab));
     }
-    pane.innerHTML = tab === 'trophies' ? trophiesTab(shelf) : tab === 'medals' ? medalsTab() : statsTab(shelf);
+    pane.innerHTML = tab === 'trophies' ? trophiesTab(shelf) : tab === 'medals' ? replaysBlock() + medalsTab() : statsTab(shelf);
+    pane.querySelector<HTMLInputElement>('.replay-file')?.addEventListener('change', openFile);
     pane.setAttribute('aria-labelledby', `shelf-tab-${tab}`);
     pane.scrollTop = 0;
   };
+  /** A word under the replays (saved; a file that won't open). */
+  const say = (text: string, bad = false) => {
+    const m = pane.querySelector<HTMLElement>('.replay-msg');
+    if (!m) return;
+    m.textContent = text;
+    m.classList.toggle('bad', bad);
+  };
+  let opened: ((r: Replay) => void) | null = null;
+  /** A replay file chosen: read, checked, then watched (a guest's: it counts for nothing). */
+  async function openFile(this: HTMLInputElement) {
+    const f = this.files?.[0];
+    this.value = '';
+    if (!f) return;
+    if (f.size > FILE_MAX) return say(t('replay.err.tooBig'), true);
+    let text = '';
+    try {
+      text = await f.text();
+    } catch {
+      return say(t('replay.err.notReplay'), true);
+    }
+    const r = readReplayFile(text);
+    if (typeof r === 'string') return say(t(`replay.err.${r}` as Key), true);
+    opened?.(r);
+  }
   show();
   return new Promise((resolve) => {
-    const done = (v: { to: 'intake'; tab: Tab } | null) => {
+    const done = (v: ShelfResult) => {
       click();
       removeEventListener('keydown', key, true);
       el.remove();
@@ -185,6 +257,7 @@ export function showTrophies(shelf: Shelf, click: () => void, start: Tab = 'trop
       }
     };
     addEventListener('keydown', key, true);
+    opened = (replay) => done({ to: 'watch', replay, tab, from: '[data-open]' });
     el.onclick = (e) => {
       const target = e.target as HTMLElement;
       const k = target.closest<HTMLElement>('[data-tab]')?.dataset.tab as Tab | undefined;
@@ -194,9 +267,27 @@ export function showTrophies(shelf: Shelf, click: () => void, start: Tab = 'trop
         return show();
       }
       if (target.closest('[data-intake]')) return done({ to: 'intake', tab });
+      // The replays (P25): watch one, save one as a file, open one from a file.
+      const watch = target.closest<HTMLElement>('[data-watch]')?.dataset.watch;
+      if (watch) {
+        const log = keptLog(watch);
+        return log ? done({ to: 'watch', replay: { log, guest: false, by: null }, tab, from: `[data-watch="${watch}"]` }) : say(t('replay.cantPlay'), true);
+      }
+      const save = target.closest<HTMLElement>('[data-save]')?.dataset.save;
+      if (save) {
+        click();
+        const log = keptLog(save);
+        if (!log) return say(t('replay.cantPlay'), true);
+        download(replayFileName(log), replayFile(log, readPrisoner()));
+        return say(t('replay.saved'));
+      }
+      if (target.closest('[data-open]')) {
+        click();
+        return pane.querySelector<HTMLInputElement>('.replay-file')?.click();
+      }
       if (target.closest('[data-done]') || target === el) done(null);
     };
     document.body.append(el);
-    (fromIntake ? el.querySelector<HTMLElement>('[data-intake]') : pane)?.focus();
+    ((focus && el.querySelector<HTMLElement>(focus)) || pane)?.focus();
   });
 }

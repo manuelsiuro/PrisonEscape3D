@@ -215,21 +215,23 @@ export interface DailyResult {
   strip: readonly number[];
   code: string;
   earned: readonly Achievement[];
+  /** P25: the escape can be watched again (its replay). */
+  watch?: boolean;
 }
 
-/** Out of a Daily: the medal, the day and time, the tries, the strip, the streak, the check code; Share, Try again, the title. */
-export function showDailyResult(v: DailyResult, click: () => void): Promise<'again' | 'title'> {
+/** Out of a Daily: the medal, the day and time, the tries, the strip, the streak, the check code; Share, Try again, the title (and Watch, P25; `back`: shown again after it). */
+export function showDailyResult(v: DailyResult, click: () => void, back = false): Promise<'again' | 'title' | 'watch'> {
   const stat = (ic: string, n: string | number, label: string) => `<div class="v-stat">${icon(ic, 18)}<b>${n}</b><small>${label}</small></div>`;
   const earned = earnedRow(v.earned);
   const el = h(
     'div',
-    'modal escaped victory daily-result',
+    `modal escaped victory daily-result${back ? ' back' : ''}`,
     `<div class="card">
       <div class="escaped-icon">${icon('calendar', 34)}</div>
       <h2 id="daily-result-h">${t('daily.out', { n: v.n + 1 })}</h2>
       <p class="v-sub"></p>
       <div class="v-left">
-        <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.late ? `<em>${t('daily.late')}</em>` : ''}</div>
+        <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.late ? `<em>${t('daily.late')}</em>` : ''}${v.watch ? `<button class="v-watch" data-c="watch" aria-label="${t('replay.watch')}" title="${t('replay.watch')}">${icon('film', 16)}<span>${t('replay.watchShort')}</span></button>` : ''}</div>
         <div class="v-stats">
           ${stat('clock', v.day, t('victory.days'))}
           ${stat('replay', v.tries, t('daily.triesLabel'))}
@@ -263,10 +265,10 @@ export function showDailyResult(v: DailyResult, click: () => void): Promise<'aga
         return;
       }
       el.remove();
-      resolve(c === 'again' ? 'again' : 'title');
+      resolve(c === 'again' ? 'again' : c === 'watch' ? 'watch' : 'title');
     };
     document.body.append(el);
-    el.querySelector<HTMLElement>('[data-c="share"]')?.focus();
+    el.querySelector<HTMLElement>(back ? '[data-c="watch"]' : '[data-c="share"]')?.focus();
   });
 }
 

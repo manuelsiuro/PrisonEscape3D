@@ -11,7 +11,10 @@ import { ESCAPES, type Sim } from '../sim/Sim';
 import { formatTime } from '../sim/systems/clock';
 import { STEPS_PER_MINUTE } from '../sim/tuning';
 import { icon } from '../ui/icons';
-import { showDailyResult, showTimeUp } from '../ui/screens/daily';
+import { showDailyResult, showTimeUp, type DailyResult } from '../ui/screens/daily';
+import { keepReplay } from '../game/logs';
+import type { RunLog } from '../sim/runlog';
+import { watchReplay } from './replay';
 import { prisonName } from '../ui/screens/prisons';
 import { banner, click, controls, itemsUI, sound, tools, trophyToast } from './context';
 import { play, type DailyRun, type Game } from './game';
@@ -68,32 +71,39 @@ export async function dailyEscaped(g: Game) {
   addStats({ ...(first ? { dailies: 1 } : {}), dailyStreak: streak });
   const earned = escapeRun({ medal: rec.medal }, { twists: st.mods.length, tries: d.tries, streak });
   trophyToast.clear();
-  // The run is over: its slot is free again.
+  // The run is over: its slot is free again; its log kept as the last escape's, to watch again (P25).
+  const log: RunLog = { ...g.rec.toLog(), via, daily: d.n };
   deleteSave('daily');
+  keepReplay(log, false);
   if (!(await escapeScene(g))) return;
   const daily = dailyOf(d.n);
-  const choice = await showDailyResult(
-    {
-      n: d.n,
-      late: d.n < dailyNumber(new Date()),
-      prison: prisonName(sim.prison),
-      prisonId: sim.prison.id,
-      twists: daily.twists,
-      via,
-      day: sim.clock.day,
-      time: formatTime(sim.clock),
-      tries: d.tries,
-      medal: rec.medal,
-      best: rec.best,
-      bestDay: rec.record.best?.day ?? sim.clock.day,
-      streak,
-      strip,
-      code,
-      earned,
-    },
-    click,
-  );
-  if (play.game !== g) return;
+  const result: DailyResult = {
+    n: d.n,
+    late: d.n < dailyNumber(new Date()),
+    prison: prisonName(sim.prison),
+    prisonId: sim.prison.id,
+    twists: daily.twists,
+    via,
+    day: sim.clock.day,
+    time: formatTime(sim.clock),
+    tries: d.tries,
+    medal: rec.medal,
+    best: rec.best,
+    bestDay: rec.record.best?.day ?? sim.clock.day,
+    streak,
+    strip,
+    code,
+    earned,
+    watch: true,
+  };
+  let choice: Awaited<ReturnType<typeof showDailyResult>>;
+  for (let back = false; ; back = true) {
+    choice = await showDailyResult(result, click, back);
+    if (play.game !== g) return;
+    if (choice !== 'watch') break;
+    await watchReplay({ log, guest: false, by: null }, g);
+    if (play.game !== g) return;
+  }
   again = choice === 'again' ? d.n : null;
   endGame();
 }

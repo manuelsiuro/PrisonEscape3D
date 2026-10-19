@@ -18,6 +18,7 @@ import { dayEvent, dayFrame, dayStep } from './day';
 import { checkRun } from '../game/trophies';
 import { markTip, updateFirstDay } from './tips';
 import { lessonEvent, lessonHidden, updateLesson } from './lesson';
+import { replayFrame } from './replay';
 
 const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
 const USE_OP: [number, number, number, number] = [OP.USE, 0, 0, 0];
@@ -141,6 +142,8 @@ export function frame(now: number) {
     view.drawTitle(dt, now / 1000);
     return;
   }
+  // (A replay, P25: played from its log, not from the controls.)
+  if (g.replay) return replayFrame(g, dt, now);
   const sim = g.rec.sim;
   const p = sim.state.player;
   if (!g.paused) {
