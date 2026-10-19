@@ -57,6 +57,8 @@ export interface LessonStep {
   least?: number;
   /** Why the lesson can't go on now (it ends, to be tried again), if it can't; null while it can. */
   fail?: (c: LessonCtx) => Key | null;
+  /** Or an event that ends it (while it's the step showing): why, or null. */
+  failOn?: (e: SimEvent, sim: Sim) => Key | null;
 }
 
 export interface Lesson {
@@ -439,9 +441,9 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.tunnel.shaft', touch: 'lesson.tunnel.shaftTouch', done: (c) => c.sim.world.ground.kind[deskTile(c.sim)] === TILE.SHAFT, goal: (sim) => deskStand(sim) },
       { text: 'lesson.tunnel.dirt', touch: 'lesson.tunnel.dirtTouch', done: (c) => !carries(c.sim, 'dirt') || c.sim.state.layer === LAYER.UNDER, goal: () => tile(22, 19) },
       { text: 'lesson.tunnel.down', touch: 'lesson.tunnel.downTouch', done: (c) => c.sim.state.layer === LAYER.UNDER, goal: (sim) => deskStand(sim) },
-      // (Three tiles past the fence's line, z 12: digging up comes out a tile back along the tunnel, clear of the fence.)
-      { text: 'lesson.tunnel.dig', touch: 'lesson.tunnel.digTouch', done: (c) => c.sim.state.layer === LAYER.UNDER && Math.floor(c.sim.state.player.z / UNIT) <= 9 },
-      { text: 'lesson.tunnel.up', touch: 'lesson.tunnel.upTouch', done: (c) => c.sim.state.layer === LAYER.GROUND && Math.floor(c.sim.state.player.z / UNIT) <= 10 },
+      // (Three tiles past the fence's line, z 12, clear of it; up any sooner past it does too. Up inside it: try again.)
+      { text: 'lesson.tunnel.dig', touch: 'lesson.tunnel.digTouch', done: (c) => (c.sim.state.layer === LAYER.UNDER && Math.floor(c.sim.state.player.z / UNIT) <= 9) || outside(c.sim), failOn: upInside },
+      { text: 'lesson.tunnel.up', touch: 'lesson.tunnel.upTouch', done: (c) => outside(c.sim), failOn: upInside },
     ],
   },
   {
@@ -734,6 +736,15 @@ function tradeFail(c: LessonCtx): Key | null {
   return !c.sim.shopsOpen ? 'lesson.trade.closed' : null;
 }
 /** The job lesson's dead end: the Work Period over without a load done. */
+/** The tunnel lesson: up on the ground outside the fence (any side of it). */
+function outside(sim: Sim): boolean {
+  const zone = sim.playerZone;
+  return sim.state.layer === LAYER.GROUND && (zone === 'perimeter' || zone === 'outside');
+}
+/** The tunnel lesson: dug up inside the fence (never a hole dug down, nor climbing back out through the desk). */
+function upInside(e: SimEvent, sim: Sim): Key | null {
+  return e.type === 'layer' && e.how === 'digUp' && !outside(sim) ? 'lesson.tunnel.early' : null;
+}
 function jobFail(c: LessonCtx): Key | null {
   return ROUTINE[c.sim.state.routine].id !== 'work' && c.sim.state.quota === 0 ? 'lesson.job.late' : null;
 }

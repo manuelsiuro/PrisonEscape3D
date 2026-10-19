@@ -305,7 +305,7 @@ export async function escaped() {
   g.paused = true;
   controls.enabled = false;
   controls.reset();
-  tools.held = false;
+  tools.release();
   itemsUI.closePanels();
   sound.siren(false);
   sound.chime();

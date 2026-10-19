@@ -209,7 +209,8 @@ body:not(.touch) .act-prompt {
 }
 
 /* ------------------------------------------------------------ the coach hint clears the tool button */
-.touch.is-playing.has-tool .hint {
+.touch.is-playing.has-tool .hint,
+.touch.is-playing.dig-up .hint {
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 248px);
 }
 
@@ -235,8 +236,104 @@ body:not(.touch) .act-prompt {
     bottom: calc(max(10px, env(safe-area-inset-bottom)) + 56px);
   }
 
-  .touch.is-playing.has-tool .hint {
+  .touch.is-playing.has-tool .hint,
+  .touch.is-playing.dig-up .hint {
     bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px);
+  }
+}
+
+/* ------------------------------------------------------------ Dig up, in a tunnel (beside the tool button; the lock button's place, never shown underground) */
+.up-btn {
+  position: fixed;
+  right: calc(max(23px, calc(env(safe-area-inset-right) + 7px)) + 74px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 176px);
+  z-index: 31;
+  padding: 0;
+  color: white;
+  background: none;
+  touch-action: none;
+}
+
+.up-round {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font: 800 10px/1.1 var(--font-ui);
+  font-style: normal;
+  background: radial-gradient(circle at 40% 30%, #b48a5c, #6e4a26);
+  box-shadow: 0 10px 22px -8px rgba(60, 36, 12, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.08s;
+}
+
+.up-round span {
+  max-width: 50px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-btn.down .up-round {
+  transform: scale(0.92);
+}
+
+.up-btn.no .up-round {
+  background: radial-gradient(circle at 40% 30%, #8a919b, #565d68);
+}
+
+/* The U prompt (keyboard), above the Space prompt. */
+.up-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 170px);
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  color: white;
+  font: 600 14px var(--font-ui);
+  background: rgba(92, 60, 32, 0.9);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: toast-in 0.25s var(--spring);
+}
+
+.up-prompt b {
+  font-weight: 800;
+  color: #f0d4b0;
+}
+
+.up-prompt.no {
+  background: rgba(60, 64, 72, 0.86);
+}
+
+.up-prompt.no b {
+  color: #c8ccd2;
+}
+
+.item-card .up-prompt {
+  visibility: hidden;
+}
+
+@media (max-width: 520px) {
+  .up-btn {
+    right: calc(max(20px, calc(env(safe-area-inset-right) + 4px)) + 74px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 156px);
+  }
+}
+
+/* Landscape phones: above the tool button, clear of the action button's tag (it sits above that button there). */
+@media (max-height: 520px) {
+  .up-btn {
+    right: calc(max(16px, env(safe-area-inset-right)) + 110px);
+    bottom: calc(max(18px, env(safe-area-inset-bottom)) + 124px);
   }
 }
 
@@ -299,29 +396,36 @@ body:not(.touch) .act-prompt {
 }
 
 /* ------------------------------------------------------------ toasts clear the tool controls */
-.is-playing.tool-up .toasts {
+.is-playing.tool-up .toasts,
+.is-playing.dig-up .toasts {
   bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 166px), var(--hint-clear, 0px));
 }
 
-.is-playing.tool-up .item-toast {
+.is-playing.tool-up .item-toast,
+.is-playing.dig-up .item-toast {
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 168px);
 }
 
-.touch.is-playing.tool-up .toasts {
+.touch.is-playing.tool-up .toasts,
+.touch.is-playing.dig-up .toasts {
   bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 214px), var(--hint-clear, 0px));
 }
 
-.touch.is-playing.tool-up .item-toast {
+.touch.is-playing.tool-up .item-toast,
+.touch.is-playing.dig-up .item-toast {
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 226px);
 }
 
 @media (max-height: 520px) {
   .is-playing.tool-up .toasts,
-  .touch.is-playing.tool-up .toasts {
+  .touch.is-playing.tool-up .toasts,
+  .is-playing.dig-up .toasts,
+  .touch.is-playing.dig-up .toasts {
     bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 74px), var(--hint-clear, 0px));
   }
 
-  .touch.is-playing.tool-up .item-toast {
+  .touch.is-playing.tool-up .item-toast,
+  .touch.is-playing.dig-up .item-toast {
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 130px);
   }
 }
@@ -348,6 +452,27 @@ body:not(.touch) .act-prompt {
 
 /* Desktop: the coach hint sits above the Space prompt. */
 body:not(.touch).is-playing.tool-up .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 170px);
+}
+
+/* Desktop, Dig up: the U prompt in the Space prompt's place when that's away, above it when not; the hint and toasts above both. */
+body:not(.touch).dig-up:not(.tool-up) .up-prompt {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 124px);
+}
+
+body:not(.touch).is-playing.dig-up.tool-up .hint {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 216px);
+}
+
+body:not(.touch).is-playing.dig-up.tool-up .toasts {
+  bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 212px), var(--hint-clear, 0px));
+}
+
+body:not(.touch).is-playing.dig-up.tool-up .item-toast {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 214px);
+}
+
+body:not(.touch).is-playing.dig-up:not(.tool-up) .hint {
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 170px);
 }
 

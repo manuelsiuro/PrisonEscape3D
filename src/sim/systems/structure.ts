@@ -347,6 +347,18 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
 }
 
 /**
+ * Dig up (the Dig up button, U): in a tunnel, up through the floor right overhead, whichever
+ * way the player faces; null where nothing could be dug through (a wall, the fence, furniture,
+ * someone standing there, the entrance or the desk over it). `fits`: a digging tool in hand.
+ */
+export function digUpTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[]): ToolTarget | null {
+  if (layer !== LAYER.UNDER) return null;
+  const here = bodyTile(b);
+  if (!isTunnel(w.layers[LAYER.UNDER].kind[here]) || !canDigFloor(w, here, bodies, true) || underMyDesk(w, here)) return null;
+  return { action: 'digUp', layer: LAYER.GROUND, tile: here, hp: FLOOR_HP, fits: !!held && toolFits(itemDef(held), 'dig') };
+}
+
+/**
  * A cover, a brace or a sheet rope in hand (GDD §9.2–9.3, §12): a fake vent cover over an
  * open grate (from below or above), a fake wall block into a hole, a poster over a hole in
  * the player's own cell (elsewhere it wouldn't pass: `fits` false), a fake fence cover over

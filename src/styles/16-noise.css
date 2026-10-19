@@ -135,7 +135,8 @@
 }
 
 /* The tool button and the Space prompt: a guard would hear the work. */
-.tool-btn .tool-ear {
+.tool-btn .tool-ear,
+.up-btn .tool-ear {
   position: absolute;
   top: -5px;
   right: -5px;
@@ -150,7 +151,8 @@
   animation: heard-pop 0.32s var(--spring);
 }
 
-.tool-prompt .tool-ear {
+.tool-prompt .tool-ear,
+.up-prompt .tool-ear {
   display: grid;
   flex: none;
   place-items: center;
@@ -164,6 +166,7 @@
 
 /* While aiming, the prompts and the coach's hint under the aim's hint step aside. */
 body.aiming .tool-prompt,
+body.aiming .up-prompt,
 body.aiming .act-prompt,
 body.aiming .hint {
   display: none;
@@ -214,6 +217,7 @@ body.aiming .hint {
 
 body.reduced-motion .heard-pop.on,
 body.reduced-motion .tool-btn .tool-ear,
+body.reduced-motion .up-btn .tool-ear,
 body.reduced-motion .slot-clock.ringing,
 body.reduced-motion .aim-hint {
   animation: none;

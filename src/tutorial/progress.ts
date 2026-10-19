@@ -1,4 +1,5 @@
 import type { Sim, SimEvent } from '../sim/Sim';
+import type { Key } from '../i18n';
 import type { Lesson, LessonCtx } from './lessons';
 
 /**
@@ -14,6 +15,8 @@ export class LessonProgress {
   /** Events since the last update (each checked against the steps as they come up). */
   private readonly seen: SimEvent[] = [];
   private sim: Sim | null = null;
+  /** Why the lesson ended on an event (a step's `failOn`), if it did. */
+  failed: Key | null = null;
 
   constructor(readonly lesson: Lesson) {}
 
@@ -27,7 +30,9 @@ export class LessonProgress {
 
   /** An event from the game, kept for the next update. */
   event(e: SimEvent, sim: Sim) {
-    if (this.done || this.seen.length >= 256) return;
+    if (this.done) return;
+    this.failed ??= this.step.failOn?.(e, sim) ?? null;
+    if (this.seen.length >= 256) return;
     this.seen.push(e);
     this.sim = sim;
   }

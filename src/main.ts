@@ -6,7 +6,7 @@ import { offerUpdate, titleFlow } from './flows/title';
 import { warmIcons } from './render/itemIcons';
 import { OP } from './sim/command';
 import { Sim } from './sim/Sim';
-import { usePress } from './play/buttons';
+import { upPress, usePress } from './play/buttons';
 import { aimUI, combatUI, controls, hooks, itemsUI, renderer, sound, tools, view } from './play/context';
 import { armThrow, cancelThrow, onAim } from './play/aim';
 import { play, sendOp } from './play/game';
@@ -37,6 +37,7 @@ combatUI.onLock = () => {
 };
 itemsUI.onAction = act;
 tools.onPress = usePress;
+tools.onUpPress = upPress;
 // Throwing (P14): the right button or a press while armed aims; Throw in the item's menu arms it.
 controls.onAim = onAim;
 itemsUI.onThrow = armThrow;

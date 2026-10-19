@@ -10,18 +10,19 @@ import { lookingAway } from '../sim/systems/ways';
 import { lineOfSight } from '../sim/ai/sight';
 import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
 import { guardSubject } from '../ui/social';
-import { baking, exposed } from '../sim/systems/weather';
+import { baking, energyCost, exposed } from '../sim/systems/weather';
 import { dayHud, stowCard, vehicleThe } from './day';
 import { atTail, searchMinute } from '../sim/systems/delivery';
 import { dayMinute, today } from '../sim/systems/calendar';
 import { containersOf } from '../sim/world/containers';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
-import { LAYER, MAP_W } from '../sim/world/World';
+import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
 import { TOUCH } from '../ui/dom';
 import type { HudState } from '../ui/hud';
 import type { ItemsView } from '../ui/items';
+import type { UpView } from '../ui/tool';
 import { press, targets } from './buttons';
 import {
   aimUI,
@@ -60,6 +61,8 @@ import { coachOnce, seenTip } from './tips';
 import { FIRECRACKER, GLIDER } from '../sim/systems/structure';
 import { wavedLeft, windowAction } from './getaway';
 const PEPPER = itemNumber('pepper');
+/** The Dig up button's face, refilled in place. */
+const upView: UpView = { fits: true, progress: 0, heard: false };
 const JERKY = itemNumber('jerky');
 /** When the paw last lit for a dog's nose (real ms), and how long it stays lit after. */
 let pawAt = -1e9;
@@ -174,7 +177,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The tool button: a blow at the locked-on target, else what a strike would hit.
   const tt = memo.tool;
   const fight = busy ? null : describeAttack(sim);
-  press.toolNow = fight ?? describeTool(sim, tt, held);
+  // (Digging up has its own button, whichever way the player faces: not on this one too.)
+  press.toolNow = fight ?? (tt?.action === 'digUp' && memo.up ? null : describeTool(sim, tt, held));
   // A firecracker in hand (P14): nothing to strike, but its own button throws it.
   if (!press.toolNow && held === FIRECRACKER && !busy && st.layer === LAYER.GROUND) press.toolNow = describeToss();
   // The burner phone in hand (P21): its button opens its panel.
@@ -208,6 +212,19 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // (P22: an arm-wrestle and a lock being picked have their own cards, as training has.)
   const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0;
   tools.update(training ? null : press.toolNow, st.energy, !!(held && itemDef(held).tool) || training, busy || panel, st.health / maxHealth(st.str), fighting);
+  // Dig up, in a tunnel (the floor overhead): a new tile takes a new press.
+  const up = memo.up;
+  const upKey = up ? up.tile : -1;
+  if (upKey !== press.upKey) {
+    press.upKey = upKey;
+    tools.releaseUp();
+  }
+  if (up) {
+    upView.fits = up.fits && st.energy >= energyCost(sim, (held && itemDef(held).tool?.energy) || 0);
+    upView.progress = Math.min(1, (st.wear[placeKey(up.layer, up.tile)] ?? 0) / up.hp);
+    upView.heard = memo.upHeard;
+  }
+  tools.updateUp(up && !fight && !training ? upView : null, busy || panel);
   // The target card, and the lock button while anyone is in range (worked out once a step).
   combatUI.update(targetInfo(sim), memo.canLock && !training, busy || panel || training);
   // Social life and work (P6): the talk, the job board (closed out of its reach), the file, the training card, machines at work.

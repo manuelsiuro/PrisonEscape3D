@@ -54,6 +54,8 @@ export const EXT = {
   ORDER: 5,
   /** The crew (P23): someone with an order (b = the inmate's index), whistled back to the player's heels, wherever they both are. */
   RECALL: 6,
+  /** Dig up (U, the Dig up button): in a tunnel, a strike up through the floor overhead, whichever way the player faces. */
+  DIG_UP: 7,
 } as const;
 
 /**

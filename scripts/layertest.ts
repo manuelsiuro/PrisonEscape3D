@@ -20,13 +20,13 @@ import { ITEMS, itemNumber } from '../src/content/items';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
-import { command, OP } from '../src/sim/command';
+import { command, EXT, OP } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { GUARD, type Guard } from '../src/sim/systems/guards';
 import { itemOf, slot } from '../src/sim/systems/items';
-import { ladderFootOf } from '../src/sim/systems/structure';
-import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
+import { digUpTarget, ladderFootOf } from '../src/sim/systems/structure';
+import { STEPS_PER_MINUTE, STRIKE_STEPS, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
@@ -338,6 +338,33 @@ let midTunnel: ReturnType<Sim['snapshot']> | null = null;
   }
   check(a.hash() === b.hash(), 'and replays the same');
   console.log(`restore mid-tunnel: ${a.hash() === b.hash() ? 'same' : 'DIFFERENT'} after 200 steps`);
+}
+
+// ------------------------------------------------------------------ Dig up (U, its button): whichever way the player faces
+{
+  const sim = new Sim(NO_GUARDS, 6);
+  sim.restore(midTunnel!);
+  const st = sim.state;
+  // Along the tunnel, where the floor overhead could be dug through (never under the desk).
+  const over = [7, 6, 5, 4, 3].map((z) => `${z}:${digUpTarget(sim.world, LAYER.UNDER, { ...st.player, x: 10 * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2 }, n('sturdy_shovel'), []) ? 'up' : '-'}`);
+  console.log(`dig up along the tunnel: ${over.join(' ')}`);
+  check(over[0] === '7:-', 'no digging up under the desk');
+  // Facing the earth ahead (Space would dig on north): Dig up still goes up.
+  check(st.player.facing === NORTH && kindAt(sim, LAYER.UNDER, 10, 2) === TILE.SOIL, 'at the dig face, facing the earth');
+  sim.step(command(0, OP.SELECT, 3));
+  sim.step(command(0, OP.EXT, EXT.DIG_UP));
+  check(sim.events.some((e) => e.type === 'cantStrike' && e.why === 'tool'), 'no digging tool in hand: it says so');
+  sim.step(command(0, OP.SELECT, 0));
+  let strikes = 0;
+  let steps = 0;
+  while (st.layer === LAYER.UNDER && steps++ < 400) {
+    sim.step(command(0, OP.EXT, EXT.DIG_UP));
+    strikes += sim.events.filter((e) => e.type === 'strike').length;
+  }
+  console.log(`dig up at the face: ${strikes} strikes in ${steps} steps, ${st.layer === LAYER.GROUND ? 'up' : 'still under'} at ${Math.floor(st.player.x / UNIT)},${Math.floor(st.player.z / UNIT)}`);
+  check(st.layer === LAYER.GROUND && kindAt(sim, LAYER.GROUND, 10, 3) === TILE.SHAFT, 'dug up through the floor overhead');
+  check(kindAt(sim, LAYER.UNDER, 10, 2) === TILE.SOIL, 'the earth ahead untouched');
+  check(strikes <= Math.ceil(steps / STRIKE_STEPS) + 1, 'strikes at the tool\'s own pace');
 }
 
 // ------------------------------------------------------------------ discovery

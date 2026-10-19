@@ -436,7 +436,9 @@
 body.gaming .act-btn,
 body.gaming .act-prompt,
 body.gaming .tool-btn,
-body.gaming .tool-prompt {
+body.gaming .tool-prompt,
+body.gaming .up-btn,
+body.gaming .up-prompt {
   display: none;
 }
 

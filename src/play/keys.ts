@@ -1,6 +1,6 @@
 import { t } from '../i18n';
 import { OP } from '../sim/command';
-import { targets, usePress } from './buttons';
+import { targets, upPress, usePress } from './buttons';
 import { board, click, closeSocial, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, tools, toggleProfile } from './context';
 import { toggleRat } from './rat';
 import { togglePhone } from './smuggle';
@@ -108,6 +108,11 @@ function onKeyDown(e: KeyboardEvent) {
     tools.held = true;
     usePress();
   }
+  // U: dig up, in a tunnel (held, it strikes on).
+  if (e.code === 'KeyU' && !itemsUI.panelOpen && !socialOpen()) {
+    tools.upHeld = true;
+    upPress();
+  }
   if (e.code === 'KeyQ' && g.rec.sim.state.items.inv[g.rec.sim.state.items.hand]) sendOp(OP.DROP, g.rec.sim.state.items.hand);
   // F: the item in hand thrown straight ahead (P14).
   if (e.code === 'KeyF' && !itemsUI.panelOpen && !socialOpen()) throwAhead();
@@ -122,6 +127,7 @@ export function listenKeys() {
   addEventListener('keydown', onKeyDown);
   addEventListener('keyup', (e) => {
     if (e.code === 'Space') tools.release();
+    if (e.code === 'KeyU') tools.releaseUp();
   });
   // Focus gone with Space held: the keyup never comes.
   addEventListener('blur', () => tools.release());

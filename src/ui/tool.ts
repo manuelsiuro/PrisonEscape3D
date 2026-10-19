@@ -1,4 +1,5 @@
 import { currentLang, t } from '../i18n';
+import { keyLabel } from '../i18n/keys';
 import { h, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -27,11 +28,20 @@ export interface ToolView {
   caption?: boolean;
 }
 
+/** Dig up, in a tunnel: whether the tool in hand digs, how far the floor overhead has given way, and a guard in earshot. */
+export interface UpView {
+  fits: boolean;
+  progress: number;
+  heard: boolean;
+}
+
 /**
  * The tool controls (GDD §13.1 "Use Tool"): on touch a round button above the action button,
  * held to keep striking, with a ring filling as the wall, fence, grate or earth gives way; on
- * a keyboard a Space prompt above the E prompt. Beside the hotbar, the energy meter (GDD
- * §3.1), shown while it matters (a tool in hand, or below full).
+ * a keyboard a Space prompt above the E prompt. In a tunnel, Dig up beside it (a smaller
+ * round button, or a U prompt above the Space prompt), wherever the floor overhead can be dug.
+ * Beside the hotbar, the energy meter (GDD §3.1), shown while it matters (a tool in hand, or
+ * below full).
  */
 export class ToolControls {
   private readonly btn: HTMLButtonElement;
@@ -51,6 +61,13 @@ export class ToolControls {
   held = false;
   /** Called on a press (a one-press action fires here; strikes repeat while `held`). */
   onPress: () => void = () => {};
+  private readonly upBtn: HTMLButtonElement;
+  private readonly upPrompt: HTMLElement;
+  private upShown = '';
+  /** Dig up held down (touch or U): it strikes on while held. */
+  upHeld = false;
+  /** Called on a Dig up press. */
+  onUpPress: () => void = () => {};
 
   constructor() {
     this.btn = h('button', 'tool-btn hidden');
@@ -75,24 +92,74 @@ export class ToolControls {
     this.btn.addEventListener('pointerdown', down);
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) this.btn.addEventListener(ev, up);
     this.btn.addEventListener('contextmenu', (e) => e.preventDefault());
-    document.body.append(this.btn, this.prompt, this.energy);
+    this.upBtn = h('button', 'up-btn hidden', `<i class="up-round"><i class="tool-ring"></i>${icon('up', 22)}<span></span></i>`);
+    this.upPrompt = h('div', 'up-prompt hidden');
+    this.upBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (this.upBtn.classList.contains('hidden')) return;
+      this.upHeld = true;
+      this.upBtn.classList.add('down');
+      this.onUpPress();
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) this.upBtn.addEventListener(ev, () => this.releaseUp());
+    this.upBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.body.append(this.btn, this.upBtn, this.prompt, this.upPrompt, this.energy);
   }
 
-  /** Lets go of the button (the target changed under the hold, the window lost focus). */
+  /** Lets go of the buttons (the target changed under the hold, the window lost focus). */
   release() {
     this.held = false;
     this.btn.classList.remove('down');
+    this.releaseUp();
+  }
+
+  /** Lets go of Dig up. */
+  releaseUp() {
+    this.upHeld = false;
+    this.upBtn.classList.remove('down');
   }
 
   show(on: boolean) {
     if (!on) {
-      for (const el of [this.btn, this.prompt, this.energy]) el.classList.add('hidden');
-      document.body.classList.remove('has-tool', 'tool-up', 'has-vitals');
+      for (const el of [this.btn, this.prompt, this.upBtn, this.upPrompt, this.energy]) el.classList.add('hidden');
+      document.body.classList.remove('has-tool', 'tool-up', 'has-vitals', 'dig-up');
       this.shown = '';
+      this.upShown = '';
       this.shownEnergy = -1;
       this.shownHealth = -1;
       this.held = false;
+      this.upHeld = false;
     }
+  }
+
+  /** Each frame: Dig up (null: nothing overhead to dig through, or not in a tunnel), unless the controls are put away. */
+  updateUp(v: UpView | null, blocked: boolean) {
+    const on = !!v && !blocked;
+    this.upBtn.classList.toggle('hidden', !on || !TOUCH);
+    this.upPrompt.classList.toggle('hidden', !on || TOUCH);
+    document.body.classList.toggle('dig-up', on);
+    if (!on) this.releaseUp();
+    if (!on || !v) return;
+    const key = `${v.fits}|${v.heard}|${currentLang()}`;
+    if (key !== this.upShown) {
+      this.upShown = key;
+      const ear = v.heard ? `<i class="tool-ear" title="${t('tool.heard')}">${icon('ear', TOUCH ? 13 : 14)}</i>` : '';
+      if (TOUCH) {
+        this.upBtn.querySelector('.tool-ear')?.remove();
+        if (ear) this.upBtn.insertAdjacentHTML('beforeend', ear);
+        this.upBtn.querySelector('span')!.textContent = t('act.digUp');
+        this.upBtn.setAttribute('aria-label', `${t('act.digUp')} ${t('thing.surface')}${v.heard ? `. ${t('tool.heard')}` : ''}`);
+      } else {
+        this.upPrompt.innerHTML = `<kbd>${keyLabel('KeyU')}</kbd><span></span><b></b>${ear}<i class="tool-bar"><i></i></i>`;
+        this.upPrompt.querySelector('span')!.textContent = t('act.digUp');
+        this.upPrompt.querySelector('b')!.textContent = t('thing.surface');
+      }
+      this.upBtn.classList.toggle('no', !v.fits);
+      this.upPrompt.classList.toggle('no', !v.fits);
+    }
+    const p = `${Math.round(v.progress * 100)}%`;
+    if (TOUCH) this.upBtn.querySelector<HTMLElement>('.tool-ring')!.style.setProperty('--p', p);
+    else this.upPrompt.querySelector<HTMLElement>('.tool-bar i')!.style.width = p;
   }
 
   /**

@@ -19,7 +19,7 @@ export const keysReady: Promise<void> = (
   ?.getLayoutMap?.()
   .then((m) => {
     labels.clear();
-    for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyQ', 'KeyE', 'KeyR', 'KeyC', 'KeyH', 'KeyI']) {
+    for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyQ', 'KeyE', 'KeyR', 'KeyC', 'KeyH', 'KeyI', 'KeyU']) {
       const k = m.get(code);
       if (k) labels.set(code, k.toUpperCase());
     }

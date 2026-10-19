@@ -1,12 +1,12 @@
 import { governQuality } from '../app/quality';
 import { ROUTINE } from '../content/routine';
-import { command, OP } from '../sim/command';
+import { command, EXT, OP } from '../sim/command';
 import { itemOf } from '../sim/systems/items';
 import { tileOfBody } from '../sim/systems/movement';
 import { STEPS_PER_SECOND, STRIKE_STEPS, UNIT } from '../sim/tuning';
 import { announce, tickTock } from './announce';
 import { chatterEvent } from './chatter';
-import { press, updateTargets } from './buttons';
+import { press, targets, updateTargets } from './buttons';
 import { controls, hint, itemsUI, settings, socialOpen, tools, view } from './context';
 import { buildFrame } from './frame';
 import { play, type Game } from './game';
@@ -21,6 +21,7 @@ import { lessonEvent, lessonHidden, updateLesson } from './lesson';
 const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
 const USE_OP: [number, number, number, number] = [OP.USE, 0, 0, 0];
 const PRESS_OP: [number, number, number, number] = [OP.USE, 1, 0, 0];
+const UP_OP: [number, number, number, number] = [OP.EXT, EXT.DIG_UP, 0, 0];
 const SLEEP_SPEED = 40;
 /** Hidden in the delivery's vehicle with Wait pressed (P18): the afternoon passes eight times as fast. */
 const WAIT_SPEED = 8;
@@ -79,6 +80,11 @@ function stepSim(g: Game, dt: number) {
     if (!op && press.pressQueued && (!toolNow?.repeat || ready)) {
       op = PRESS_OP;
       press.pressQueued = false;
+    }
+    // Dig up (U or its button): a press waits for the arm to come back; held, it strikes on.
+    if (!op && (press.upQueued || (tools.upHeld && targets.up)) && sim.state.step + 1 - sim.state.struckAt >= STRIKE_STEPS) {
+      op = UP_OP;
+      press.upQueued = false;
     }
     op ??= tools.held && toolNow?.repeat ? USE_OP : NO_OP;
     let dir = controls.steering ? controls.dir() : g.pilot.dir(p);

@@ -46,7 +46,7 @@ function play(id: string, moves: (bot: Bot, ctx: LessonCtx) => void) {
     for (const e of bot.sim.events) progress.event(e, bot.sim);
     const before = progress.k;
     if (progress.update(ctx)) for (let k = before; k < progress.k; k++) order.push(k);
-    const why = progress.step?.fail?.(ctx);
+    const why = progress.failed ?? progress.step?.fail?.(ctx);
     check(!why, `${id}: the lesson failed on the way (${why})`);
   };
   progress.update(ctx);
@@ -233,7 +233,8 @@ play('disguise', (bot) => {
   check(bot.st.heat === 0, 'disguise: Bell pays no mind');
 });
 
-play('tunnel', (bot) => {
+/** The tunnel lesson's way down: the entrance under the desk, the dirt flushed, down through the desk. */
+function tunnelDown(bot: Bot) {
   const desk = deskTileOf(bot);
   const below = desk + MAP_W;
   check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT), 'tunnel: the entrance under the desk');
@@ -247,18 +248,37 @@ play('tunnel', (bot) => {
   bot.open(myDesk(bot.sim));
   bot.act(1);
   check(bot.st.layer === LAYER.UNDER, 'tunnel: down');
-  const x = desk % MAP_W;
-  [16, 15, 14, 13, 12, 11, 10, 9].forEach((z, k) => {
+}
+/** North along the tunnel to each row given, a brace every third tile. */
+function tunnelNorth(bot: Bot, rows: number[]) {
+  const x = deskTileOf(bot) % MAP_W;
+  tunnelAlong(bot, DIR.NORTH, rows.map((z) => tile(x, z)));
+}
+/** Along the tunnel one way, tile by tile, a brace every third tile. */
+function tunnelAlong(bot: Bot, dir: number, tiles: number[]) {
+  tiles.forEach((t, k) => {
     if (k % 3 === 2) {
       bot.hold('timber_brace');
       bot.use();
     }
-    bot.face(DIR.NORTH);
-    check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tile(x, z)] !== TILE.SOIL), `tunnel: ${x},${z} dug`);
-    check(bot.walkTo(tile(x, z), 400), `tunnel: along to ${x},${z}`);
+    bot.face(dir);
+    check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[t] !== TILE.SOIL), `tunnel: ${t % MAP_W},${Math.floor(t / MAP_W)} dug`);
+    check(bot.walkTo(t, 400), `tunnel: along to ${t % MAP_W},${Math.floor(t / MAP_W)}`);
   });
-  bot.face(DIR.SOUTH);
-  check(bot.strikeUntil('sturdy_shovel', () => bot.st.layer === LAYER.GROUND), 'tunnel: dug up');
+}
+/** Dig up (U, its button), facing on north: a press each until up. */
+function digUp(bot: Bot) {
+  bot.hold('sturdy_shovel');
+  for (let k = 0; k < 400 && bot.st.layer === LAYER.UNDER; k++) bot.op(OP.EXT, EXT.DIG_UP);
+}
+
+play('tunnel', (bot) => {
+  tunnelDown(bot);
+  tunnelNorth(bot, [16, 15, 14, 13, 12, 11, 10, 9]);
+  // (Still facing the earth ahead: Dig up goes up all the same.)
+  check(bot.st.player.facing === DIR.NORTH, 'tunnel: facing on north');
+  digUp(bot);
+  check(bot.st.layer === LAYER.GROUND, 'tunnel: dug up');
 });
 
 play('vents', (bot) => {
@@ -459,7 +479,7 @@ function follow(id: string) {
     for (const e of bot.sim.events) progress.event(e, bot.sim);
     progress.update(ctx);
   };
-  return { bot, progress, why: () => progress.step?.fail?.(ctx) ?? null };
+  return { bot, progress, why: () => progress.failed ?? progress.step?.fail?.(ctx) ?? null };
 }
 {
   // The drill's bell, and the player stays where they are: too late, the lesson ends.
@@ -577,7 +597,40 @@ function follow(id: string) {
   check(why() === 'lesson.talk.lost', `talk: the magazine given away ends the lesson (${why()})`);
   console.log(`talk, magazine given away: ended at step ${progress.k + 1} (${why()})`);
 }
+{
+  // Dug up in the yard, inside the fence: the lesson says so.
+  const { bot, progress, why } = follow('tunnel');
+  tunnelDown(bot);
+  tunnelNorth(bot, [16, 15]);
+  digUp(bot);
+  check(bot.st.layer === LAYER.GROUND && why() === 'lesson.tunnel.early', `tunnel: dug up inside the fence ends the lesson (${why()})`);
+  console.log(`tunnel, up in the yard: ended at step ${progress.k + 1} (${why()})`);
+}
 // Done another way than the bot's (the review's repros): still through, never stuck.
+{
+  // A stray hole dug down in the cell first (Space held facing the wrong way), then the lesson as the bot plays it: never "dug up inside".
+  const { bot, progress, why } = follow('tunnel');
+  bot.face(DIR.WEST);
+  bot.hold('sturdy_shovel');
+  check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[tile(21, 18)] === TILE.SHAFT), 'tunnel: a stray hole dug down');
+  for (let k = 0; k < 6; k++) if (itemOf(bot.st.items.inv[k]) === n('dirt')) bot.st.items.inv[k] = 0;
+  bot.walkTo(tile(22, 18));
+  bot.face(DIR.NORTH);
+  tunnelDown(bot);
+  tunnelNorth(bot, [16, 15, 14, 13, 12, 11, 10, 9]);
+  digUp(bot);
+  bot.until(() => progress.done, 200);
+  check(progress.done && !why(), `tunnel: a stray hole dug down first, still done (${why()}, step ${progress.k + 1})`);
+}
+{
+  // West under the side fence (x 14) and up outside it: done too (the lesson says north, but any side is out).
+  const { bot, progress, why } = follow('tunnel');
+  tunnelDown(bot);
+  tunnelAlong(bot, DIR.WEST, [21, 20, 19, 18, 17, 16, 15, 14, 13].map((x) => tile(x, 17)));
+  digUp(bot);
+  bot.until(() => progress.done, 200);
+  check(progress.done && !why(), `tunnel: up outside the west fence, done (${why()}, zone ${bot.sim.playerZone}, step ${progress.k + 1})`);
+}
 {
   // At roll call before the bell: the bell and the muster in one step, both steps ticked.
   const { bot, progress } = follow('day');

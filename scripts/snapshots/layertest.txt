@@ -13,6 +13,8 @@ tunnel north: 6:TUNNEL 5:TUNNEL 4:CAVE-IN (health 50)
 tunnel: dug to 10,1 under the road; dirt left in the tunnel: 2 piles; day 1 09:08
 tunnel escape: escaped day 1 09:11
 restore mid-tunnel: same after 200 steps
+dig up along the tunnel: 7:- 6:- 5:up 4:up 3:up
+dig up at the face: 2 strikes in 10 steps, up at 10,4
 discovery: open hole seen → LOCKDOWN (1 found)
 after the capture: repaired, 12,20 is BRICK
 discovery: covered hole → unnoticed; dirt on the floor → LOCKDOWN

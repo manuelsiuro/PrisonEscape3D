@@ -63,7 +63,7 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
       sound.chime();
     }
     // A step that can't be done any more (the firecrackers gone off out of earshot): try again.
-    const why = run.progress.step?.fail?.(ctx);
+    const why = run.progress.failed ?? run.progress.step?.fail?.(ctx);
     if (why) {
       end(g, false, why);
       return;

@@ -1039,7 +1039,9 @@
 body.training .act-btn,
 body.training .act-prompt,
 body.training .tool-btn,
-body.training .tool-prompt {
+body.training .tool-prompt,
+body.training .up-btn,
+body.training .up-prompt {
   display: none;
 }
 

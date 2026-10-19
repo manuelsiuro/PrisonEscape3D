@@ -35,7 +35,7 @@ import { canChat } from './ways';
 import { atTail, climbOut, stow } from './delivery';
 import { airOf, atWindow, showId, windowFirst } from './getaway';
 import { approach, dismissAll, endTalk, talkOp } from './social';
-import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
+import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, digUpTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
 import { rep, startTraining, stopTraining, study } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
@@ -199,6 +199,11 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.ORDER) placeOrder(sim, argB(cmd), argC(cmd));
       // The crew (P23): someone with an order whistled back.
       else if (a === EXT.RECALL) recall(sim, argB(cmd));
+      // Dig up: a strike at the floor overhead (a press each, as Space at the tunnel's end).
+      else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
+        standUp(sim);
+        strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));
+      }
       break;
   }
   if (it.open >= 0 && !stillInReach(sim.world, it, s.player, people(sim))) {
@@ -244,13 +249,14 @@ function landing(sim: SimContext, tile: number): number {
  * (not the button held down): digging up, eating and putting things in place need one, so
  * a held button never carries on into them.
  */
-function strike(sim: SimContext, fresh: boolean) {
+function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   const s = sim.state;
   const w = sim.world;
   const it = s.items;
   const p = s.player;
   const held = itemOf(it.inv[it.hand]);
-  const target = toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim));
+  // (`up`: the Dig up button's own target, whichever way the player faces.)
+  const target = up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim));
   if (!target) return;
   // Strikes come at their own pace (holding the button asks every step); the rest at a press.
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;

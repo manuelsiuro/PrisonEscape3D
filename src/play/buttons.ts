@@ -7,7 +7,7 @@ import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import { interactTarget, type Target } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
-import { climbTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import { climbTarget, digUpTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { strikeNoise, wouldHear } from '../sim/systems/noise';
 import { canChat } from '../sim/systems/ways';
 import { TOUCH } from '../ui/dom';
@@ -19,9 +19,11 @@ import { play } from './game';
 import { togglePhone } from './smuggle';
 
 /** What the buttons would do, worked out once per simulation step. */
-export const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; canLock: boolean; fighting: boolean; station: Station | null; heard: boolean } = {
+export const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; up: ToolTarget | null; upHeard: boolean; canLock: boolean; fighting: boolean; station: Station | null; heard: boolean } = {
   station: null,
   heard: false,
+  up: null,
+  upHeard: false,
   step: -1,
   busy: false,
   panel: false,
@@ -42,18 +44,38 @@ export const lockList: number[] = [];
  * or a cave-in, the hold ends) and of what it was pressed on; a fresh press waiting for the next
  * step; the steps between the player's blows now (the press waits for it, as the sim does).
  */
-export const press: { toolNow: ToolView | null; toolKey: number; heldOn: number; pressQueued: boolean; attackPace: number } = {
+export const press: { toolNow: ToolView | null; toolKey: number; heldOn: number; pressQueued: boolean; attackPace: number; upQueued: boolean; upKey: number } = {
   toolNow: null,
   toolKey: 0,
   heldOn: 0,
   pressQueued: false,
   attackPace: 14,
+  upQueued: false,
+  upKey: -1,
 };
 
 /** A new game: nothing worked out yet, no press waiting. */
 export function resetButtons() {
   targets.step = -1;
   press.pressQueued = false;
+  press.upQueued = false;
+}
+
+/**
+ * Dig up pressed (U or its button): a strike up through the floor overhead, waiting for the
+ * arm to come back from the last one; held, it strikes on (see stepSim). Underground with
+ * nothing overhead to dig through, it says so.
+ */
+export function upPress() {
+  const game = play.game;
+  if (!game || game.paused) return;
+  if (!targets.up) {
+    tools.releaseUp();
+    if (game.rec.sim.state.layer === LAYER.UNDER) itemsUI.toast(t('toast.noDigUp'));
+    return;
+  }
+  game.pilot.stop();
+  press.upQueued = true;
 }
 
 /**
@@ -138,6 +160,10 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     // The ear on the tool button (P14): a guard awake would hear this strike (the sim's own rule).
     const tool = memo.tool;
     memo.heard = !!tool && STRIKES.has(tool.action) && tool.fits && tool.hp > 0 && wouldHear(sim, strikeNoise(st.layer, tool, held));
+    // Dig up, in a tunnel: the floor overhead, whichever way the player faces.
+    const up = busy || panel ? null : digUpTarget(sim.world, st.layer, p, held, bodiesOf(sim));
+    memo.up = up;
+    memo.upHeard = !!up && up.fits && wouldHear(sim, strikeNoise(st.layer, up, held));
     memo.canLock = !busy && st.layer === LAYER.GROUND && lockCandidates(sim.world, st, p, lockList).length > 0;
     let fighting = false;
     for (const m of st.inmates) if (m.angry > 0) fighting = true;
