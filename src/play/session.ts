@@ -42,7 +42,8 @@ import { resetButtons } from './buttons';
 import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, crewChips, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
 import { play, type Game } from './game';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
-import { hideLesson, lessonPlace, type LessonRun } from './lesson';
+import { hideLesson, lessonPlace, objectivesOf, type LessonRun } from './lesson';
+import { showObjectives } from '../ui/screens/objectives';
 
 /**
  * A game from start to end: into it (new or loaded), the saves along the way, pausing, and
@@ -209,6 +210,10 @@ export async function pause() {
     }
     if (choice === 'help') {
       await showHelp(click);
+      continue;
+    }
+    if (choice === 'objectives' && play.game.lesson) {
+      await showObjectives(objectivesOf(play.game.lesson), click);
       continue;
     }
     if (choice === 'save') {

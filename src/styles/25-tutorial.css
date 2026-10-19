@@ -27,3 +27,259 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ------------------------------------------------------------ a lesson's bulb and its objectives */
+/* The bulb beside the pause button (a lesson under way): gold, the card's own bulb; a dot while
+   a step came up that the card couldn't show (a panel over it, asleep). It takes the top row's
+   free middle; the pause button sits right beside it. */
+.hud .hud-lesson {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+  color: var(--ink);
+  background: linear-gradient(150deg, #ffd66b, var(--gold));
+}
+
+.hud .hud-lesson:not(.hidden) + .hud-pause {
+  flex: none;
+  margin-left: 0;
+}
+
+/* Narrow phones: the two buttons a little smaller, so the zone's name keeps its room. */
+@media (max-width: 380px) {
+  .hud-row:has(.hud-lesson:not(.hidden)) {
+    gap: 5px;
+  }
+  .hud .hud-lesson:not(.hidden),
+  .hud .hud-lesson:not(.hidden) + .hud-pause {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.hud .hud-lesson:active {
+  transform: scale(0.94);
+}
+
+.hud-lesson-new {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 2px rgba(18, 24, 36, 0.9);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.2s, transform 0.3s var(--spring);
+}
+
+.hud-lesson.new .hud-lesson-new {
+  opacity: 1;
+  transform: none;
+}
+
+.hud-lesson.new {
+  animation: bulb-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes bulb-glow {
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 194, 61, 0.35), 0 0 18px rgba(255, 194, 61, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-lesson.new {
+    animation: none;
+  }
+}
+
+.reduced-motion .hud-lesson.new {
+  animation: none;
+}
+
+/* The objectives: where the lesson stands, the steps done (ticked, quieter), the one to do now. */
+.objectives-card {
+  width: min(440px, 100%);
+  text-align: left;
+}
+
+.objectives-card h2 {
+  margin: 2px 0 4px;
+}
+
+.objectives-card .card-note {
+  margin: 0 0 14px;
+}
+
+.obj-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--dlg-soft);
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.obj-place .ic {
+  color: var(--gold);
+}
+
+.obj-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.obj-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.obj-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+}
+
+.obj-steps li.done {
+  color: var(--dlg-soft);
+}
+
+.obj-steps li.done .obj-ic {
+  color: white;
+  background: linear-gradient(150deg, var(--ok), var(--ok-2));
+}
+
+.obj-steps li.now {
+  padding: 10px 12px 10px 10px;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  background: rgba(255, 194, 61, 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 194, 61, 0.55);
+}
+
+.obj-steps li.now .obj-ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  color: #12233a;
+  background: linear-gradient(150deg, #ffd66b, var(--gold));
+}
+
+.obj-steps li.now > span:last-child {
+  align-self: center;
+}
+
+.obj-left {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dlg-soft);
+}
+
+.objectives-card .actions {
+  margin-top: 16px;
+}
+
+/* A short landscape phone: the card scrolls inside the screen. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .objectives-card {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+}
+
+/* ------------------------------------------------------------ a lesson's card, clear of everything */
+/* A banner (a new block, the drill's bell, the power off) never fades the lesson's card: a step
+   often comes up just then. Where the two would meet (phones), the banner comes down under it. */
+.banner-up .coach.lesson-coach {
+  opacity: 1;
+}
+
+@media (max-width: 520px) {
+  body.lesson-on .banner {
+    top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--lesson-bottom, 0px) + 10px));
+  }
+  /* Toasts with a sheet open, or at a game or a lock: under the card, never over its text. */
+  body.lesson-on.is-playing.panel-open .toasts,
+  body.lesson-on.is-playing.gaming .toasts,
+  body.lesson-on.touch.is-playing.gaming .toasts {
+    top: max(calc(max(12px, env(safe-area-inset-top)) + 150px), calc(var(--lesson-bottom, 0px) + 8px)) !important;
+  }
+  body.lesson-on.is-playing.gaming .item-toast {
+    top: max(calc(max(12px, env(safe-area-inset-top)) + 150px), calc(var(--lesson-bottom, 0px) + 8px)) !important;
+  }
+}
+
+/* Landscape phones: the banner centred on what the card leaves free; at a game or a lock (its card
+   docked on the left, where the lesson's sits), the lesson's card takes the top row's free middle. */
+@media (max-height: 520px) and (orientation: landscape) {
+  body.lesson-on:not(.gaming) .banner {
+    left: calc((100vw + var(--lesson-right, 0px)) / 2);
+    max-width: calc(100vw - var(--lesson-right, 0px) - 28px);
+  }
+  body.gaming .coach.lesson-coach {
+    top: 0;
+    /* (Left of the heat meter under the bulb and the pause button, right of the cash.) */
+    right: 184px;
+    left: auto;
+    max-width: min(400px, calc(100vw - 560px));
+  }
+  body.lesson-on.is-playing.gaming .toasts,
+  body.lesson-on.touch.is-playing.gaming .toasts {
+    top: max(calc(max(10px, env(safe-area-inset-top)) + 112px), calc(var(--lesson-bottom, 0px) + 8px)) !important;
+  }
+}
+
+/* The step docked at the top of a panel over the card (a screen too narrow for both side by side),
+   staying there as the panel scrolls (solid: the panel's content slides under it). */
+.lesson-strip {
+  position: sticky;
+  top: -14px;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font: 600 13px/1.35 var(--font-ui);
+  color: #fff;
+  background: linear-gradient(rgba(255, 194, 61, 0.1), rgba(255, 194, 61, 0.1)), rgb(28, 34, 48);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 194, 61, 0.5), 0 6px 14px -6px rgba(0, 0, 0, 0.6);
+}
+
+.lesson-strip .ic {
+  flex: none;
+  margin-top: 1px;
+  color: var(--gold);
+}
+
+.lesson-strip.done .ic {
+  color: var(--ok);
+}
+
+.lesson-strip.done span {
+  opacity: 0.6;
+  text-decoration: line-through;
+}

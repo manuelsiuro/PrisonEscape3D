@@ -46,7 +46,7 @@ function play(id: string, moves: (bot: Bot, ctx: LessonCtx) => void) {
     for (const e of bot.sim.events) progress.event(e, bot.sim);
     const before = progress.k;
     if (progress.update(ctx)) for (let k = before; k < progress.k; k++) order.push(k);
-    const why = progress.failed ?? progress.step?.fail?.(ctx);
+    const why = progress.verdict(ctx);
     check(!why, `${id}: the lesson failed on the way (${why})`);
   };
   progress.update(ctx);
@@ -479,7 +479,7 @@ function follow(id: string) {
     for (const e of bot.sim.events) progress.event(e, bot.sim);
     progress.update(ctx);
   };
-  return { bot, progress, why: () => progress.failed ?? progress.step?.fail?.(ctx) ?? null };
+  return { bot, progress, ctx, why: () => progress.verdict(ctx) };
 }
 {
   // The drill's bell, and the player stays where they are: too late, the lesson ends.
@@ -692,6 +692,124 @@ function follow(id: string) {
   bot.step();
   check(why() === 'lesson.rat.lost', `rat: the caught rat dropped ends the lesson (${why()})`);
   console.log(`rat, dropped: ended at step ${progress.k + 1} (${why()})`);
+}
+
+// The review's dead ends (v1.23): each now ends the lesson with a reason, or can't happen.
+{
+  // The fence cut while it's live (before the generator): shocked, the kit taken on waking. The lesson ends.
+  const { bot, progress, why } = follow('escape');
+  bot.step();
+  bot.walkTo(tile(29, 51));
+  bot.face(DIR.SOUTH);
+  bot.until(() => !!why(), 400, () => command(0, OP.USE));
+  check(why() === 'lesson.shocked', `escape: shocked by the live fence ends the lesson (${why()})`);
+  console.log(`escape, shocked: ended at step ${progress.k + 1} (${why()})`);
+}
+{
+  // Roll call missed (standing about in the cell block): the lesson ends, never waiting a day for the next one.
+  const { bot, progress, why } = follow('routine');
+  bot.until(() => !!why(), 3 * 60 * 20);
+  check(progress.k === 1 && why() === 'lesson.routine.missed', `routine: roll call missed ends the lesson (${why()})`);
+  console.log(`routine, missed: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // Posted, then told to follow: no lookout left to whistle. The lesson ends.
+  const { bot, progress, why } = follow('crew');
+  talkTo(bot, bot.st.inmates[0].body);
+  bot.op(OP.TALK, TALK.RECRUIT);
+  bot.op(OP.TALK, TALK.CREW, ORDER.WATCH);
+  bot.op(OP.TALK, TALK.CREW, ORDER.FOLLOW);
+  bot.step();
+  check(progress.k === 2 && why() === 'lesson.crew.off', `crew: called off his post ends the lesson (${why()})`);
+  console.log(`crew, called off: ended at step ${progress.k + 1} (${why()})`);
+}
+{
+  // The battery by a visitor instead of the drone: said so, not "too late".
+  const { bot, progress, why } = follow('smuggle');
+  bot.op(OP.EXT, EXT.ORDER, 7, WAY.VISITOR);
+  bot.step();
+  check(why() === 'lesson.smuggle.wrong', `smuggle: the wrong way ends the lesson, saying so (${why()})`);
+  console.log(`smuggle, by visitor: ended at step ${progress.k + 1} (${why()})`);
+}
+{
+  // Out on the road some other way (the plain east fence cut in the heat lesson): the lesson ends instead of the game standing still.
+  const { bot, progress, why } = follow('heat');
+  bot.step();
+  check(bot.walkTo(tile(48, 40), 4000), 'heat: at the east fence');
+  bot.face(DIR.EAST);
+  bot.strikeUntil('light_cutters', () => bot.sim.world.ground.kind[tile(49, 40)] === TILE.FENCE_CUT);
+  // (The cutters put away: the last step, nothing contraband in hand, holds; the first never happened.)
+  bot.op(OP.SELECT, 1);
+  bot.until(() => bot.st.escaped > 0, 600, () => command(DIR.EAST));
+  check(bot.st.escaped > 0 && why() === 'lesson.outEarly', `heat: out another way ends the lesson (${why()})`);
+  console.log(`heat, out the east fence: ended at step ${progress.k + 1} (${why()})`);
+}
+{
+  // Roll call skipped at home in the cell (Lights Out's place, where the check-in comes back true): ended all the same.
+  const { bot, progress, why } = follow('routine');
+  bot.walkTo(tile(20, 19));
+  bot.until(() => !!why(), 3 * 60 * 20);
+  check(progress.k === 1 && why() === 'lesson.routine.missed', `routine: roll call skipped in the cell ends the lesson (${why()}, by ${bot.time})`);
+}
+{
+  // The favor gone with nothing new asked (it lapsed overnight): ended, never won with nothing handed in.
+  const { bot, progress, why } = follow('talk');
+  talkTo(bot, bot.st.inmates[0].body);
+  bot.op(OP.TALK, TALK.GIFT, bot.slotOf('chocolate'));
+  bot.st.favors = [];
+  bot.step();
+  check(!progress.done && why() === 'lesson.talk.lapsed', `talk: the favor gone ends the lesson (${why()}, step ${progress.k + 1})`);
+}
+{
+  // Braced on every tile from the start (every brace gone soonest): still past the fence, and up outside it.
+  const { bot, progress, why } = follow('tunnel');
+  tunnelDown(bot);
+  const x = deskTileOf(bot) % MAP_W;
+  for (const z of [16, 15, 14, 13, 12, 11]) {
+    if (bot.slotOf('timber_brace') >= 0) {
+      bot.hold('timber_brace');
+      bot.use();
+    }
+    bot.face(DIR.NORTH);
+    check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tile(x, z)] !== TILE.SOIL), `tunnel, braced early: ${x},${z} dug`);
+    check(bot.walkTo(tile(x, z), 400), `tunnel, braced early: along to ${x},${z}`);
+  }
+  check(bot.st.health > 0 && progress.k === 4, `tunnel, braced early: past the fence with no cave-in (step ${progress.k + 1}, health ${bot.st.health})`);
+  digUp(bot);
+  bot.until(() => progress.done, 200);
+  check(progress.done && !why(), `tunnel, braced early: up outside, done (${why()}, zone ${bot.sim.playerZone})`);
+}
+{
+  // Down a stray hole beside the desk, not under it: the first steps pass, and up outside it ends done.
+  const { bot, progress, why } = follow('tunnel');
+  bot.face(DIR.WEST);
+  bot.hold('sturdy_shovel');
+  check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[tile(21, 18)] === TILE.SHAFT), 'tunnel: a stray hole');
+  // (Facing it from beside it: Climb down.)
+  bot.act();
+  check(bot.st.layer === LAYER.UNDER && progress.k === 3, `tunnel: down the stray hole, on to the dig (step ${progress.k + 1})`);
+  console.log(`tunnel, down a stray hole: on at step ${progress.k + 1} (${why()})`);
+}
+{
+  // Everything dropped at the player's feet by mistake (Q): the firecrackers lie there to pick up, the lesson goes on.
+  const { bot, progress, why } = follow('noise');
+  for (const k of [0, 1, 2]) bot.op(OP.DROP, k);
+  bot.until(() => false, 40);
+  check(progress.k === 1 && !why(), `noise: firecrackers dropped, not lost (${why()}, step ${progress.k + 1})`);
+}
+{
+  // The warning on the last step of the disguise shows: never ticked in the same breath as the step before.
+  const lesson = LESSONS.find((l) => l.id === 'disguise')!;
+  const progress = new LessonProgress(lesson);
+  const bot = new Bot(TRAINING, 7 + LESSONS.indexOf(lesson));
+  lesson.setup(bot.sim);
+  bot.op(OP.EQUIP, 0);
+  const ctx: LessonCtx = { sim: bot.sim, craftOpen: false };
+  progress.update(ctx);
+  bot.walkTo(tile(38, 29));
+  bot.until(() => bot.st.guards[0].sees, 3000);
+  progress.update(ctx);
+  check(progress.k === 2 && !progress.done, `disguise: the warning step comes up and waits to be read (at ${progress.k})`);
 }
 
 // Every lesson is in exactly one chapter, the chapters in the order the list has them.

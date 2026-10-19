@@ -294,6 +294,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  /* (Its own width: left at 50% would cap it at half the screen, a short title wrapping on a phone.) */
+  width: max-content;
   max-width: calc(100vw - 32px);
   padding: 12px 22px 12px 16px;
   border-radius: 20px;

@@ -7,10 +7,11 @@ import { warmIcons } from './render/itemIcons';
 import { OP } from './sim/command';
 import { Sim } from './sim/Sim';
 import { upPress, usePress } from './play/buttons';
-import { aimUI, combatUI, controls, hooks, itemsUI, renderer, sound, tools, view } from './play/context';
+import { aimUI, combatUI, controls, hooks, hud, itemsUI, renderer, sound, tools, view } from './play/context';
 import { armThrow, cancelThrow, onAim } from './play/aim';
 import { play, sendOp } from './play/game';
 import { onTap } from './play/guide';
+import { openObjectives } from './play/lesson';
 import { act, listenKeys } from './play/keys';
 import { frame } from './play/loop';
 import { pause } from './play/session';
@@ -38,6 +39,8 @@ combatUI.onLock = () => {
 itemsUI.onAction = act;
 tools.onPress = usePress;
 tools.onUpPress = upPress;
+// A lesson's bulb beside the pause button: its objectives.
+hud.onLesson = openObjectives;
 // Throwing (P14): the right button or a press while armed aims; Throw in the item's menu arms it.
 controls.onAim = onAim;
 itemsUI.onThrow = armThrow;

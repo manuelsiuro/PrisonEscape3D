@@ -78,6 +78,7 @@ const keys = (): Array<[string, Key]> => [
   ['%KeyT%', 'help.k.rat'],
   ['%KeyP%', 'help.k.phone'],
   ['%KeyG%', 'help.k.crew'],
+  ['%KeyO%', 'help.k.objectives'],
   ['%KeyH%', 'help.k.help'],
   [t('help.k.esc'), 'help.k.pause'],
 ];
@@ -95,6 +96,7 @@ const TOUCHES: Array<[string, Key]> = [
   ['rat', 'help.t.rat'],
   ['phone', 'help.t.phone'],
   ['users', 'help.t.crew'],
+  ['bulb', 'help.t.objectives'],
   ['pause', 'help.t.pause'],
 ];
 

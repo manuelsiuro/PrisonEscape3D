@@ -2,7 +2,7 @@ import { h } from '../dom';
 import { icon } from '../icons';
 import { t } from '../../i18n';
 
-export type PauseChoice = 'resume' | 'quit' | 'settings' | 'save' | 'help' | 'restart';
+export type PauseChoice = 'resume' | 'quit' | 'settings' | 'save' | 'help' | 'restart' | 'objectives';
 
 /**
  * The pause card; resolves with Resume, Save, How to play, Settings or Title screen (Escape
@@ -22,7 +22,7 @@ export function showPause(click: () => void, saved: boolean, canSave = true, not
       <p class="card-note${note.startsWith('!') || (!note && !saved) ? ' warn' : ''}">${note.startsWith('!') ? note.slice(1) : note ? `${lesson ? '' : icon('check', 14)}${note}` : saved ? `${icon('check', 14)}${t('pause.saved')}` : t('pause.notSaved')}</p>
       <div class="pause-links">
         ${canSave ? `<button class="link-btn" data-c="save">${icon('save', 16)}${t('pause.save')}</button>` : ''}
-        ${lesson ? `<button class="link-btn" data-c="restart">${icon('replay', 16)}${t('lesson.restart')}</button>` : ''}
+        ${lesson ? `<button class="link-btn" data-c="objectives">${icon('bulb', 16)}${t('hud.objectives')}</button><button class="link-btn" data-c="restart">${icon('replay', 16)}${t('lesson.restart')}</button>` : ''}
         <button class="link-btn" data-c="help">${icon('help', 16)}${t('pause.help')}</button>
         <button class="link-btn" data-c="settings">${icon('gear', 16)}${t('pause.settings')}</button>
       </div>

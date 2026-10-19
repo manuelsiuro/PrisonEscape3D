@@ -8,7 +8,11 @@ import { icon } from './icons';
  */
 export class LessonCard {
   private readonly el = h('div', 'coach lesson-coach hidden');
+  /** The step showing, at the top of a panel that covers the card (a talk, the board…, on a screen too narrow for both). */
+  private readonly strip = h('div', 'lesson-strip');
   private shown = '';
+  /** Where the card's bottom and right edge were last set for the banner and the toasts to keep clear of (px). */
+  private edge = '';
   /** Where it was last seen on screen. */
   at: DOMRect | null = null;
 
@@ -20,10 +24,17 @@ export class LessonCard {
   /** The lesson (its number in its chapter, of how many, the chapter's id, its id), the step showing (its prompt and its touch variant), the steps and how many are done; hidden while a panel covers it. */
   update(n: number, of: number, chapter: string, id: string, text: Key, touch: Key | undefined, steps: number, done: number, tick: boolean, hidden: boolean) {
     this.el.classList.toggle('hidden', hidden);
-    // Where it stands while shown (a panel is judged against it while it's hidden).
+    document.body.classList.toggle('lesson-on', !hidden);
+    // Where it stands while shown (a panel is judged against it while it's hidden); the banner and the toasts keep clear of it.
     if (!hidden) {
       const r = this.el.getBoundingClientRect();
       if (r.width) this.at = r;
+      const edge = `${Math.round(r.bottom)}:${Math.round(r.right)}`;
+      if (r.width && edge !== this.edge) {
+        this.edge = edge;
+        document.documentElement.style.setProperty('--lesson-bottom', `${Math.round(r.bottom)}px`);
+        document.documentElement.style.setProperty('--lesson-right', `${Math.round(r.right)}px`);
+      }
     }
     const key = `${chapter}:${n}:${done}:${tick}:${text}`;
     if (key === this.shown) return;
@@ -32,10 +43,21 @@ export class LessonCard {
     const dots = Array.from({ length: steps }, (_, k) => `<i class="${k < done ? 'on' : k === done ? 'now' : ''}"></i>`).join('');
     this.el.innerHTML = `<span class="coach-ic">${icon(tick ? 'check' : 'bulb', 18)}</span>
       <span class="coach-text"><small>${t(`chapter.${chapter}` as Key)} · ${t('lesson.of', { n, of })} · ${t(`lesson.${id}.t` as Key)}</small><b>${t(TOUCH && touch ? touch : text)}</b><span class="lesson-dots">${dots}</span></span>`;
+    this.strip.classList.toggle('done', tick);
+    this.strip.innerHTML = `${icon(tick ? 'check' : 'bulb', 15)}<span></span>`;
+    this.strip.querySelector('span')!.textContent = t(TOUCH && touch ? touch : text);
+  }
+
+  /** The step docked at the top of the panel covering the card (or taken down): a panel that redraws itself gets it back the next frame. */
+  dock(panel: HTMLElement | null) {
+    if (!panel) this.strip.remove();
+    else if (this.strip.parentElement !== panel) panel.prepend(this.strip);
   }
 
   hide() {
     this.el.classList.add('hidden');
+    document.body.classList.remove('lesson-on');
+    this.strip.remove();
     this.shown = '';
   }
 }

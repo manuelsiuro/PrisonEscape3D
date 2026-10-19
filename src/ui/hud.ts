@@ -4,6 +4,7 @@ import { ROUTINE, routineEnd } from '../content/routine';
 import { formatTime, type Clock } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
 import { currentLang, t, type Key } from '../i18n';
+import { keyLabel } from '../i18n/keys';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -112,6 +113,7 @@ export class Hud {
         <span class="pill big hud-clock"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b><i class="hud-wx" role="img"></i></span>
         <span class="pill big hud-zone">${icon('pin', 16)}<span></span></span>
         <button class="pill big hud-cash">${icon('coin', 16)}<b></b></button>
+        <button class="icon-btn hud-lesson hidden" aria-keyshortcuts="O">${icon('bulb')}<i class="hud-lesson-new"></i></button>
         <button class="icon-btn hud-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
       </div>
       <div class="hud-row">
@@ -149,6 +151,8 @@ export class Hud {
     this.pawSr = q('.hud-paw-sr');
     for (const el of [this.zonePill, this.badge, this.heatPill, this.routinePill]) el.addEventListener('animationend', () => el.classList.remove('pulse', 'pop', 'bump'));
     q('.hud-pause').addEventListener('click', onPause);
+    this.lessonBtn = q('.hud-lesson');
+    this.lessonBtn.addEventListener('click', () => this.onLesson());
     this.cashPill = q('.hud-cash');
     this.cashText = q('.hud-cash b');
     this.cashPill.addEventListener('click', onProfile);
@@ -167,6 +171,21 @@ export class Hud {
     this.crew.addEventListener('click', () => this.onCrew());
     this.wx = q('.hud-wx');
     document.body.append(this.el);
+  }
+
+  private readonly lessonBtn: HTMLElement;
+  /** The bulb tapped (a lesson under way): its objectives. */
+  onLesson: () => void = () => {};
+  /** The bulb beside the pause button while a lesson is under way; `fresh`: a step came up while the lesson's card was hidden (a dot on it until seen). */
+  lesson(on: boolean, fresh = false) {
+    this.lessonBtn.classList.toggle('hidden', !on);
+    this.lessonBtn.classList.toggle('new', on && fresh);
+    const label = t(fresh ? 'hud.objectivesNew' : 'hud.objectives');
+    if (this.lessonBtn.getAttribute('aria-label') !== label) {
+      this.lessonBtn.setAttribute('aria-label', label);
+      // (A keyboard's tooltip names its key.)
+      this.lessonBtn.title = TOUCH ? '' : `${label} (${keyLabel('KeyO')})`;
+    }
   }
 
   private readonly bribe: HTMLElement;

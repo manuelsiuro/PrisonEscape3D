@@ -6,6 +6,7 @@ import type { SimEvent } from '../sim/Sim';
 import { chapterOf, LESSONS, type LessonCtx } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
 import { LessonCard, showLessonResult, type LessonResult } from '../ui/lessonCard';
+import { showObjectives, type Objectives } from '../ui/screens/objectives';
 import { board, click, controls, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, talk, tools, view } from './context';
 import { play, type Game } from './game';
 
@@ -27,6 +28,8 @@ export interface LessonRun {
   /** Settles the tutorial flow's wait with the player's choice. */
   finish: (r: LessonResult | 'quit') => void;
   ended: boolean;
+  /** The last step the player saw on the card (one that came up while it was hidden puts a dot on the bulb). */
+  seen: number;
 }
 
 const card = new LessonCard(hud.el);
@@ -35,7 +38,7 @@ const ctx: LessonCtx = { sim: null as never, craftOpen: false };
 const TICK = 0.9;
 
 export function newLessonRun(index: number, finish: (r: LessonResult | 'quit') => void): LessonRun {
-  return { index, progress: new LessonProgress(LESSONS[index]), shown: 0, tick: 0, since: 0, finish, ended: false };
+  return { index, progress: new LessonProgress(LESSONS[index]), shown: 0, tick: 0, since: 0, finish, ended: false, seen: 0 };
 }
 
 /** The step's goal (a tile) for the floor arrows, if it has one. */
@@ -62,10 +65,10 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
       run.tick = TICK;
       sound.chime();
     }
-    // A step that can't be done any more (the firecrackers gone off out of earshot): try again.
-    const why = run.progress.failed ?? run.progress.step?.fail?.(ctx);
+    // A step that can't be done any more (the firecrackers gone off out of earshot), or out on the road some other way: try again (or done, if getting out was the goal).
+    const why = run.progress.verdict(ctx);
     if (why) {
-      end(g, false, why);
+      end(g, why === 'won', why === 'won' ? undefined : why);
       return;
     }
   }
@@ -86,16 +89,22 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   if (!g.paused && !run.ended) g.speed = run.tick <= 0 && run.shown === run.progress.k ? (step.speed ?? 1) : 1;
   const ch = chapterOf(run.index);
   card.update(ch.n, ch.of, ch.id, lesson.id, step.text, step.touch, lesson.steps.length, Math.min(run.shown, lesson.steps.length), run.tick > 0, hidden || run.ended);
+  // A panel over the card: its step at the panel's top instead (what to do in the panel, often).
+  const over = run.ended ? null : coveringPanel();
+  card.dock(over);
+  // The bulb beside the pause button: the objectives at any time, a dot on it while a step the card couldn't show waits unseen.
+  // (Shown at a panel's top counts as seen.)
+  if (!hidden || over) run.seen = run.shown;
+  hud.lesson(!run.ended, run.seen < Math.min(run.shown, lesson.steps.length - 1));
   if (!run.ended && run.shown >= lesson.steps.length) end(g, true);
 }
 
-/** What the lesson makes of the game's events: caught or knocked out fails it (once every step is done, nothing does). */
+/** What the lesson makes of the game's events: caught, knocked out, shocked or a step's own end fails it at once (once every step is done, nothing does). */
 export function lessonEvent(g: Game, e: SimEvent) {
   const run = g.lesson;
   if (!run || run.ended || run.progress.done) return;
   run.progress.event(e, g.rec.sim);
-  if (e.type === 'caught') end(g, false);
-  else if (e.type === 'floored') end(g, false, 'lesson.knocked');
+  if (run.progress.failed) end(g, false, run.progress.failed);
 }
 
 async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
@@ -117,6 +126,7 @@ async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
   phonePanel.close();
   crewPanel.close();
   card.hide();
+  hud.lesson(false);
   if (won) markLessonDone(LESSONS[run.index].id);
   sound.music('title');
   // A breath to see it done (or the guard's hand on the shoulder) before the card; off a roof on a glider (P24), down on the road first.
@@ -143,6 +153,38 @@ async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
 /** The lesson's card comes down (the game ended). */
 export function hideLesson() {
   card.hide();
+  hud.lesson(false);
+}
+
+/** What the objectives show for a lesson under way (the bulb, O, the pause card's link); seen, the bulb's dot goes. */
+export function objectivesOf(run: LessonRun): Objectives {
+  const lesson = LESSONS[run.index];
+  run.seen = run.shown;
+  hud.lesson(!run.ended);
+  return {
+    place: lessonPlace(run.index),
+    title: t(`lesson.${lesson.id}.t` as Key),
+    about: t(`lesson.${lesson.id}.d` as Key),
+    steps: lesson.steps,
+    done: Math.min(run.progress.k, lesson.steps.length - 1),
+  };
+}
+
+/** The bulb (or O): the lesson's objectives over the paused game, the steps done and the one to do now. */
+export async function openObjectives() {
+  const g = play.game;
+  const run = g?.lesson;
+  if (!g || !run || run.ended || g.paused) return;
+  click();
+  g.paused = true;
+  controls.enabled = false;
+  controls.reset();
+  tools.release();
+  await showObjectives(objectivesOf(run), click);
+  if (play.game !== g || g.over || run.ended) return;
+  g.paused = false;
+  controls.enabled = true;
+  play.last = performance.now();
 }
 
 /**
@@ -152,14 +194,18 @@ export function hideLesson() {
  * at the side or the bottom).
  */
 export function lessonHidden(): boolean {
-  if (!socialOpen()) return false;
+  return !!coveringPanel();
+}
+
+/** The panel over the card's spot, if one is (the card then waits under it, its step docked at the panel's top). */
+function coveringPanel(): HTMLElement | null {
+  if (!socialOpen()) return null;
   const c = card.at;
-  if (!c) return true;
   for (const p of [talk, board, profile, ratPanel, phonePanel, crewPanel]) {
     const r = p.el.getBoundingClientRect();
-    if (r.width && r.height && r.left < c.right && r.right > c.left && r.top < c.bottom && r.bottom > c.top) return true;
+    if (r.width && r.height && (!c || (r.left < c.right && r.right > c.left && r.top < c.bottom && r.bottom > c.top))) return p.el;
   }
-  return false;
+  return null;
 }
 
 /** "Prison life · Lesson 3 of 7" (the pause card in a lesson). */

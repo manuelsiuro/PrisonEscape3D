@@ -77,6 +77,9 @@ function stepSim(g: Game, dt: number) {
     // (A blow waits for the fighter's own pace, a strike for the tool's.)
     const toolNow = press.toolNow;
     const ready = toolNow?.attack ? sim.state.step + 1 - sim.state.swingAt >= press.attackPace : sim.state.step + 1 - sim.state.struckAt >= STRIKE_STEPS;
+    // (The old dig up, at a tunnel's end facing back along it, is U's alone now: Space there does nothing, so it never surfaces a player by surprise. The rule stays in the sim for old replays.)
+    const upBehind = targets.tool?.action === 'digUp';
+    if (upBehind) press.pressQueued = false;
     if (!op && press.pressQueued && (!toolNow?.repeat || ready)) {
       op = PRESS_OP;
       press.pressQueued = false;
@@ -86,7 +89,7 @@ function stepSim(g: Game, dt: number) {
       op = UP_OP;
       press.upQueued = false;
     }
-    op ??= tools.held && toolNow?.repeat ? USE_OP : NO_OP;
+    op ??= tools.held && toolNow?.repeat && !upBehind ? USE_OP : NO_OP;
     let dir = controls.steering ? controls.dir() : g.pilot.dir(p);
     // On the equipment, left and right are reps (sent as ops): only up or down steps off.
     if ((sim.state.train >= 0 || sim.state.bout.length) && (dir === 1 || dir === 9)) dir = 0;

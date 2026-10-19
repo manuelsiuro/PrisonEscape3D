@@ -9,6 +9,7 @@ import { autosave, openHelp, pause } from './session';
 import { aiming, cancelThrow, throwAhead } from './aim';
 import { toggleWait } from './day';
 import { toggleCrew } from './crew';
+import { openObjectives } from './lesson';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -38,6 +39,11 @@ function onKeyDown(e: KeyboardEvent) {
     return;
   }
   const g = game;
+  // O: a lesson's objectives (asleep, hidden in a vehicle or knocked out too: the card is down then).
+  if (e.code === 'KeyO' && g.lesson) {
+    openObjectives();
+    return;
+  }
   // Asleep: only waking up (E) means anything; knocked out, nothing does.
   if (g.rec.sim.state.ko > 0) return;
   if (g.rec.sim.state.sleeping && e.code !== 'KeyE') return;
