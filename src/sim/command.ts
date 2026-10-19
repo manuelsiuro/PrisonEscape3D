@@ -81,7 +81,8 @@ export const BRIBE = { LOOK: 1, PAPER: 2 } as const;
 export const SLOT = { HOTBAR: 0, WEAPON: 6, OUTFIT: 7, CONTAINER: 8 } as const;
 
 export const command = (dir: number, op = 0, a = 0, b = 0, c = 0) => (dir & 31) | ((op & 15) << 5) | ((a & 255) << 9) | ((b & 255) << 17) | ((c & 63) << 25);
-export const dirOf = (cmd: number) => cmd & 31;
+/** The direction asked for; 17–31 (no compass point: a corrupt or hand-made log) is standing still. */
+export const dirOf = (cmd: number) => (cmd & 31) <= DIRS ? cmd & 31 : 0;
 export const opOf = (cmd: number) => (cmd >>> 5) & 15;
 export const argA = (cmd: number) => (cmd >>> 9) & 255;
 export const argB = (cmd: number) => (cmd >>> 17) & 255;

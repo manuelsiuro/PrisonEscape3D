@@ -75,6 +75,15 @@ assisted.state.player.x = 8 * UNIT + UNIT / 2 + 380;
 for (let i = 0; i < 60 && tileOfBody(assisted.state.player).z < 13; i++) assisted.step(command(S));
 check(assisted.playerZone === 'cellBlock', 'a door frame slides the player into the doorway and out to the hall');
 
+// A direction with no compass point (17–31, a corrupt or hand-made log): standing still, never NaN.
+const odd = new Sim(CENTER_PERKS);
+const at = { x: odd.state.player.x, z: odd.state.player.z, facing: odd.state.player.facing };
+for (const d of [17, 29, 31]) for (let i = 0; i < 5; i++) odd.step(command(d));
+const p = odd.state.player;
+check(p.x === at.x && p.z === at.z && p.facing === at.facing, 'a direction with no compass point stands still');
+for (let i = 0; i < 10; i++) odd.step(command(E));
+check(Number.isFinite(p.x) && p.x > at.x, 'and the player walks on afterwards');
+
 // Speed: about 3.6 tiles a second on open floor.
 const run = new Sim(CENTER_PERKS);
 run.state.player.x = 10 * UNIT;
