@@ -98,7 +98,7 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   { kind: 'bush', x: 24, z: 28 },
   { kind: 'bush', x: 37, z: 31 },
   { kind: 'bush', x: 28, z: 34 },
-  { kind: 'hoop', x: 34, z: 34, rot: 2 },
+  { kind: 'hoop', x: 31, z: 25 },
   // Woodshop: timber, the tool rack, a sawhorse.
   { kind: 'timber', x: 46, z: 25, w: 2 },
   { kind: 'toolRack', x: 39, z: 25, w: 2 },

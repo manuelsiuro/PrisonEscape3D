@@ -132,8 +132,8 @@ export class TalkPanel {
   update(sim: Sim, busy: boolean) {
     const s = sim.state;
     const who = s.talk;
-    // (P22: an arm-wrestle has its own card meanwhile.)
-    if (who < 0 || busy || s.bout.length) {
+    // (P22: an arm-wrestle has its own card meanwhile; P27: so do a hand of Cheat and the old-timer's board.)
+    if (who < 0 || busy || s.bout.length || s.cheat || s.board?.seated) {
       if (this.open) this.hide();
       return;
     }
@@ -158,7 +158,7 @@ export class TalkPanel {
     }
     const now = performance.now();
     const shown = gv?.show;
-    const gamesKey = gv ? [gv.id, gv.open, gv.why, gv.left, gv.seen, gv.dice?.mine.join(',') ?? '', shown ? (now < shown.shownAt ? 1 : 2) : 0, shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '', gv.arm, gv.tired, gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '', this.diceMask, gv.stakes.map((x) => x.ok).join(',')].join(':') : '';
+    const gamesKey = gv ? [gv.id, gv.open, gv.why, gv.left, gv.seen, gv.dice?.mine.join(',') ?? '', shown ? (now < shown.shownAt ? 1 : 2) : 0, shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '', gv.arm, gv.tired, gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '', this.diceMask, gv.stakes.map((x) => x.ok).join(','), gv.court, gv.elder ? `${gv.elder.open}${gv.elder.why}${gv.elder.game}` : ''].join(':') : '';
     // The crew (P23): a follower's orders; everyone's line of work.
     const cv = this.crew(sim, who);
     const spec = specialityOf(sim.world, who, m.cell);

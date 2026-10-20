@@ -29,6 +29,10 @@ import { fixerOf, PHONE } from './smuggling';
 import { PHONE_OPINION, PHONE_PRICE } from '../../content/smuggling';
 import { endBout, reroll, settleDice, startBout, startDice, stopPick } from './games';
 import { crewOrder, crewTargets, dropCrew, nightOf, stopAmbush } from './crew';
+import { callLiar, endCheat, playCards, startCheat } from './cards';
+import { hoopsPartner, startShootout } from './hoops';
+import { checkersOp, elderOf, getUp, moveOn } from './checkers';
+import { HOOPS_GAP } from '../../content/games';
 
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
 export function refuse(sim: SimContext, why: Refusal) {
@@ -82,6 +86,9 @@ export function endTalk(sim: SimContext) {
   // (P22: the dice still on the table, the player stands on them; a bout is broken off.)
   settleDice(sim);
   endBout(sim, 'off');
+  // (P27: up and away from a hand of Cheat folds it, unless it's the sirens or a knockout that ended it; up from the old-timer's board, which stays set up.)
+  if (s.cheat) endCheat(sim, sim.away || s.lockdown ? 'off' : 'folded');
+  getUp(sim);
   s.talk = -1;
   sim.events.push({ type: 'talk', who: -1 });
 }
@@ -98,8 +105,8 @@ export function changeOpinion(sim: SimContext, who: number, by: number) {
   if (m.opinion !== was) sim.events.push({ type: 'opinion', who, by: m.opinion - was });
 }
 
-/** What the player asks of the inmate they're talking to (OP.TALK). */
-export function talkOp(sim: SimContext, a: number, b: number) {
+/** What the player asks of the inmate they're talking to (OP.TALK; c: P27's MOVE, the square to). */
+export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
   const s = sim.state;
   const it = s.items;
   const who = s.talk;
@@ -215,6 +222,25 @@ export function talkOp(sim: SimContext, a: number, b: number) {
       return;
     case TALK.WRESTLE:
       startBout(sim, who);
+      return;
+    // P27: a game of Cheat for a stake, cards laid, a call; a shootout at the hoop; the old-timer's board and a step on it.
+    case TALK.CHEAT:
+      startCheat(sim, who, b);
+      return;
+    case TALK.PLAY:
+      if (s.cheat?.who === who) playCards(sim, b);
+      return;
+    case TALK.LIAR:
+      if (s.cheat?.who === who) callLiar(sim);
+      return;
+    case TALK.HOOPS:
+      startShootout(sim, who);
+      return;
+    case TALK.CHECKERS:
+      if (who === elderOf(sim)) checkersOp(sim, b);
+      return;
+    case TALK.MOVE:
+      if (who === elderOf(sim)) moveOn(sim, b, c);
       return;
     // The crew (P23): an order to a follower, in his line of work.
     case TALK.CREW:
@@ -341,6 +367,12 @@ export function socialNow(sim: SimContext): Social {
   const placed = s.followers.length ? crewTargets(sim, so) : 0;
   const about = s.layer === LAYER.GROUND && !sim.away;
   if (!about) return so;
+  // A shootout's partner (P27) keeps near the player at the court.
+  const partner = hoopsPartner(s);
+  if (partner >= 0 && !s.followers.includes(partner) && s.inmates[partner]?.ko === 0) {
+    so.follow[partner] = s.player;
+    so.gap[partner] = HOOPS_GAP;
+  }
   s.followers.forEach((id, k) => {
     const m = s.inmates[id];
     if (!m || m.ko > 0 || placed & (1 << k)) return;

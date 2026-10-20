@@ -39,7 +39,11 @@ import { Rats, type RatFrame } from './Rat';
 import { GetawayView, type GetawayFrame } from './Getaway';
 import { SmuggleView, type SmuggleFrame } from './Smuggling';
 import { GamesView, type GamesFrame } from './Games';
+import { PastimesView, type PastimesFrame } from './Pastimes';
 import { handlersOf } from '../sim/systems/k9';
+
+/** The old-timer's hair (P27): white with age. */
+const ELDER_HAIR = 0xd8d3c8;
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
 export interface Frame {
@@ -118,6 +122,8 @@ export interface Frame {
   smuggle: SmuggleFrame | null;
   /** Side games (P22): an arm-wrestle, dice on the ground, the lockpick's taps, sports day's bunting. */
   games: GamesFrame;
+  /** Card sharks (P27): the court's lit spot, the ball, cards on the ground, the old-timer's board. */
+  pastimes: PastimesFrame;
   /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
   getaway: GetawayFrame;
 }
@@ -318,6 +324,7 @@ export class View {
   private readonly getaway = new GetawayView();
   private readonly flyAt = new THREE.Vector3();
   private readonly gamesView = new GamesView();
+  private readonly pastimesView = new PastimesView();
   /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
   private taps = 0;
   private buzzClock = 0;
@@ -435,7 +442,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -536,6 +543,7 @@ export class View {
     this.events.setWorld(world);
     this.delivery.setWorld(world);
     this.gamesView.setWorld(world);
+    this.pastimesView.setWorld(world);
     this.getaway.setWorld(world);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {
@@ -569,13 +577,13 @@ export class View {
     this.cones.setCount(beds.length);
   }
 
-  /** The other inmates: one character each, looks varied by cell, legs paced by walking speed. */
-  setCast(cast: Array<{ cell: number; gait: number }> | 0) {
+  /** The other inmates: one character each, looks varied by cell, legs paced by walking speed (P27: the old-timer's hair gone white). */
+  setCast(cast: Array<{ cell: number; gait: number; elder?: boolean }> | 0) {
     for (const c of this.cast) {
       this.scene.remove(c.root);
       c.dispose();
     }
-    this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), gait: c.gait })) : [];
+    this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 2 } : {}), gait: c.gait })) : [];
     for (const c of this.cast) this.scene.add(c.root);
   }
 
@@ -1196,6 +1204,9 @@ export class View {
     // The side games (P22): dice on the ground floor, sports day's bunting (seen from the roofs too).
     this.gamesView.group.visible = f.layer !== LAYER.UNDER;
     this.gamesView.update(f.games, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    // Card sharks (P27): the court's spots, the ball, the cards, the board (the ground floor only).
+    this.pastimesView.group.visible = f.layer === LAYER.GROUND;
+    this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND);
     // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
     const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.smuggling.droneAt : null;
     if (drone && (this.buzzClock -= dt) <= 0) {
@@ -1309,6 +1320,7 @@ export class View {
     this.smuggling.clear();
     this.getaway.clear();
     this.gamesView.update(null, 0, false, false);
+    this.pastimesView.update(null, 0, 0, 0, false, false);
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;
@@ -1439,11 +1451,13 @@ export class View {
     this.events.warm(true);
     this.delivery.warm(true);
     this.gamesView.warm(true);
+    this.pastimesView.warm(true);
     this.renderer.compile(this.scene, this.camera);
     this.weather.warm(false);
     this.events.warm(false);
     this.delivery.warm(false);
     this.gamesView.warm(false);
+    this.pastimesView.warm(false);
   }
 
   /** Who the day's events put on stage this frame (the inspectors), for the contact shadows. */

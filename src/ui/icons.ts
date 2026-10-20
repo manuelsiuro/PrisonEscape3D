@@ -107,6 +107,11 @@ const P: Record<string, string> = {
   /** A flexed arm (P22: arm-wrestling). */
   arm: '<path d="M4 20c-.8-3.6.2-7.6 3.2-10.6L10 6.5 9 4h4.5l1.5 2.5-3 2.5.8 2.8c2.6-1.4 6.2-.6 7.2 2.4s-1.2 5.8-4.5 5.8Z"/>',
   /** A lockpick and its tension wrench (P22). */
+  cards: '<rect x="3.5" y="5.5" width="10" height="14" rx="1.6" transform="rotate(-12 8.5 12.5)"/><rect x="10" y="4" width="10" height="14" rx="1.6" transform="rotate(10 15 11)"/><path d="m15.4 8.6-1.8 2.8 1.8 2.8 1.8-2.8Z"/>',
+  ball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/><path d="M5.6 5.6a12 12 0 0 1 0 12.8M18.4 5.6a12 12 0 0 0 0 12.8"/>',
+  checkers: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="18" r="1.4"/>',
+  hoop: '<path d="M5 4h14v7H5Z"/><path d="M9 11h6"/><path d="m9 11 1 8M15 11l-1 8M10 15h4"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
   lockpick: '<path d="M3.5 20.5 14 10l2.2 1.2L18.5 9"/><path d="M8 3.5v6.5h4"/><circle cx="18.8" cy="8.6" r=".4"/>',
   /** An ID card: a photo and two lines (P24, the bluff). */
   idCard: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 10h4.5M14 13.5h3"/>',

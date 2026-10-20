@@ -21,7 +21,10 @@ import type { Rat, RatRefusal } from './systems/rats';
 import { dayPlan, type ForcedDay } from './systems/calendar';
 import { DAY_BOOKS, DAY_EVENTS, type DayEvent } from '../content/days';
 import { CATALOGUE } from '../content/smuggling';
-import { BAR, STAKES } from '../content/games';
+import { BAR, CHIPS, CLAIM_MAX, HAND, STAKES } from '../content/games';
+import type { Cheat, CheatNews } from './systems/cards';
+import type { Shootout, ShotResult } from './systems/hoops';
+import type { Board, CheckersNews } from './systems/checkers';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
@@ -238,6 +241,19 @@ export type SimEvent =
    * before it, and staying on as Lights Out begins.
    */
   | { type: 'crew'; what: CrewNews; who: number; order?: number; guard?: number; other?: number; guards?: number[]; item?: number; why?: 'gone' | 'far' }
+  /**
+   * P27 (cards.ts, hoops.ts, checkers.ts): a game of Cheat (a round dealt, cards laid (`by` 0 the
+   * player, 1 the inmate; `n` how many, `tell` its tell showing), a call (`by` the caller, `lie`,
+   * the `cards` turned over, the `loser` of the chip), and its end: won, lost, folded, off); a shot
+   * at the hoop (`by` -1 the player, else the inmate; the `spot`, how it went, the `power` and the
+   * power it `need`ed) and a shootout begun and ended (as a bout's: `crowd`, `wins`, `spd`, `gain`;
+   * the baskets each); the old-timer's board: sat at, got up from, a move (`by`, its `path`; `more`
+   * when the jump goes on), the game won, lost or drawn (`int` the point it taught).
+   */
+  | { type: 'cheat'; what: CheatNews; who: number; round?: number; by?: number; n?: number; tell?: boolean; lie?: boolean; cards?: number[]; loser?: number; stake?: number }
+  | { type: 'hoopShot'; by: number; spot: number; result: ShotResult; power: number; need: number }
+  | { type: 'hoops'; what: 'start' | 'won' | 'lost' | 'draw' | 'off' | 'practice'; who: number; crowd?: number; wins?: number; spd?: number; gain?: number; mine?: number; theirs?: number }
+  | { type: 'checkers'; what: CheckersNews; who: number; by?: number; path?: number[]; more?: boolean; int?: number; gain?: number }
   | ItemEvent;
 
 /** What the crew did (P23, the 'crew' event). */
@@ -271,7 +287,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -467,6 +483,16 @@ export interface SimState {
   crewOut: number[];
   /** Waved through the checkpoint (P24, ways.ts showId): the step its gates shut on the player again (0: shut). */
   waved: number;
+  /** A game of Cheat under way (P27, cards.ts), null none. */
+  cheat: Cheat | null;
+  /** A shootout at the hoop (P27, hoops.ts), null none; the ball held up for a shot: [the step it went up, the spot], [] none. */
+  shootout: Shootout | null;
+  shot: number[];
+  /** Baskets on one's own today (P27): prison day × 16 + baskets (a point of Speed at PRACTICE_MAKES). */
+  practice: number;
+  /** The old-timer's board (P27, checkers.ts), null before the first game; the games with him: [won, lost, drawn, the prison day one last taught a point]. */
+  board: Board | null;
+  elder: number[];
 }
 
 export interface Snapshot {
@@ -588,6 +614,12 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     brawled: 0,
     crewOut: [],
     waved: 0,
+    cheat: null,
+    shootout: null,
+    shot: [],
+    practice: 0,
+    board: null,
+    elder: [0, 0, 0, 0],
   };
 }
 
@@ -689,10 +721,40 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!Number.isInteger(s.brawled)) s.brawled = 0;
   if (!Array.isArray(s.crewOut) || !s.crewOut.every((x, k, all) => Number.isInteger(x) && x >= 0 && x < n && all.indexOf(x) === k)) s.crewOut = [];
   if (!Number.isInteger(s.waved) || s.waved < 0) s.waved = 0;
+  // P27: a hand of Cheat, a shootout, a shot held, the old-timer's board; damaged ones are dropped.
+  if (!cheatOk(s.cheat, n)) s.cheat = null;
+  const so = s.shootout as Shootout | null;
+  if (!(so === null || (!!so && typeof so === 'object' && [so.who, so.k, so.mine, so.theirs, so.turn, so.at].every((x) => Number.isInteger(x)) && so.who >= 0 && so.who < n && so.k >= 0 && so.k < 16 && (so.turn === 0 || so.turn === 1)))) s.shootout = null;
+  const spots = prison.leisure?.hoop.spots.length ?? 0;
+  if (!(Array.isArray(s.shot) && (s.shot.length === 0 || (ints(s.shot, 2) && s.shot[1] >= 0 && s.shot[1] < spots)))) s.shot = [];
+  if (!Number.isInteger(s.practice) || s.practice < 0) s.practice = 0;
+  if (!boardOk(s.board)) s.board = null;
+  if (!ints(s.elder, 4) || s.elder.some((x) => x < 0)) s.elder = [0, 0, 0, 0];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
   return s;
+}
+
+/** A hand of Cheat as a save holds it (P27): with someone, at a stake, its chips and cards as they can be. */
+function cheatOk(c: Cheat | null, n: number): boolean {
+  if (c === null) return true;
+  if (!c || typeof c !== 'object') return false;
+  const card = (x: unknown) => Number.isInteger(x) && (x as number) >= 1 && (x as number) <= 4;
+  const hand = (h: unknown) => Array.isArray(h) && h.length <= HAND && h.every(card);
+  return (
+    [c.who, c.stake, c.round, c.table, c.turn, c.at, c.by, c.pile, c.lead, c.laid, c.spent].every((x) => Number.isInteger(x)) &&
+    c.who >= 0 && c.who < n && c.stake >= 0 && c.stake < STAKES.length && c.table >= 1 && c.table <= 3 && c.turn >= 0 && c.turn <= 2 && c.by >= -1 && c.by <= 1 && (c.lead === 0 || c.lead === 1) &&
+    Array.isArray(c.chips) && c.chips.length === 2 && c.chips.every((x) => Number.isInteger(x) && x >= 1 && x <= CHIPS) &&
+    hand(c.mine) && hand(c.theirs) && Array.isArray(c.last) && c.last.length <= CLAIM_MAX && c.last.every(card) && typeof c.tell === 'boolean'
+  );
+}
+
+/** The old-timer's board as a save holds it (P27): 32 squares of pieces, whose move, the rest in range. */
+function boardOk(b: Board | null): boolean {
+  if (b === null) return true;
+  if (!b || typeof b !== 'object' || !Array.isArray(b.sq) || b.sq.length !== 32 || !b.sq.every((x) => Number.isInteger(x) && x >= 0 && x <= 4)) return false;
+  return [b.turn, b.chain, b.quiet, b.plies, b.at, b.over].every((x) => Number.isInteger(x)) && (b.turn === 0 || b.turn === 1) && b.chain >= -1 && b.chain < 32 && b.over >= 0 && b.over <= 3 && typeof b.seated === 'boolean' && Array.isArray(b.last) && b.last.every((x) => Number.isInteger(x) && x >= 0 && x < 32);
 }
 
 /**

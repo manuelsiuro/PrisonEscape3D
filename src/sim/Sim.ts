@@ -276,6 +276,8 @@ export class Sim {
     // (P22: a step out of a bout gives it up; a step away from a lock stops the picking.)
     if (s.bout.length && dirOf(cmd) !== 0) endBout(this, 'gaveUp');
     if (s.pick.length && dirOf(cmd) !== 0) stopPick(this);
+    // (P27: a step with the ball held up puts it down again.)
+    if (s.shot.length && dirOf(cmd) !== 0) s.shot = [];
     // A step gets the player up off a seat or a bed.
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
     const from = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);

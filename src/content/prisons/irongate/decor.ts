@@ -93,8 +93,8 @@ export const IRONGATE_DECOR: readonly DecorPlacement[] = [
   { kind: 'tv', x: 49, z: 50, rot: 2 },
   // Solitary: the drain.
   { kind: 'drain', x: 50, z: 11 },
-  // The yard: a basketball hoop, the flagpole.
-  { kind: 'hoop', x: 15, z: 23 },
+  // The yard: a basketball hoop at its west end, facing down the yard (P27: its court), the flagpole.
+  { kind: 'hoop', x: 8, z: 24, rot: 1 },
   { kind: 'flagpole', x: 43, z: 23 },
   // The helipad court: the windsock, a life ring on the wall.
   { kind: 'windsock', x: 40, z: 42 },

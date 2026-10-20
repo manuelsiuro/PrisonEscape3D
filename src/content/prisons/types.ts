@@ -155,6 +155,26 @@ export interface PrisonRules {
   sightRange?: number;
 }
 
+/**
+ * Free time (P27): where a prison's pastimes are, all of it data (drawn by the render: nothing on
+ * the map changes). The hoop: its rim over a floor tile, facing into the court (the decor's hoop,
+ * on its pole, stands there), and the spots it's shot from (open yard floor, in sight of the rim;
+ * see court()).
+ * The old-timer: the inmate (by cell) who plays checkers.
+ */
+export interface LeisureDef {
+  hoop: Court;
+  oldTimer: number;
+}
+
+/** A basketball hoop (P27): the floor tile under its rim, the way it faces into the court (1, 5, 9 or 13), its SHOOT_SPOTS spots in shooting order. */
+export interface Court {
+  x: number;
+  z: number;
+  face: number;
+  spots: ReadonlyArray<{ x: number; z: number }>;
+}
+
 /** Everything that defines one prison. Maps are ASCII pictures, the rest is plain data. */
 export interface PrisonDef {
   id: string;
@@ -215,4 +235,6 @@ export interface PrisonDef {
   smuggling?: SmugglingDef;
   /** The checkpoint (P24): its window, its gates, its booth; without it, no bluffing out. */
   checkpoint?: CheckpointDef;
+  /** Free time (P27): the hoop and its court, the old-timer; without it, neither. */
+  leisure?: LeisureDef;
 }

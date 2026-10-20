@@ -1984,6 +1984,11 @@ export const frBarks: Barks = {
     "Un crochet ouvre les portes. Pas les portails, attention.",
     "Rate ton coup avec un crochet et tout le bloc l’entend.",
   ],
+  "go.oldTimer": [
+    "{inmate} est là depuis toujours. Il joue aux dames.",
+    "Bats {inmate} aux dames et le vieux se met à causer.",
+    "{inmate} ne perd jamais aux dames. Enfin. Presque jamais.",
+  ],
   "go.nextSports": [
     "Journée sportive le jour {n}. Commence les pompes.",
     "Le jour {n}, c’est la journée sportive. Trois victoires et y a un prix.",

@@ -138,6 +138,12 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'ironArm', group: 'skills', icon: 'arm', run: (r) => f(r, 'boutsWon') >= 5 },
   { id: 'openSesame', group: 'skills', icon: 'lockpick', run: (r) => f(r, 'locksPicked') >= 1 },
   { id: 'champion', group: 'days', icon: 'trophy', run: (r) => f(r, 'champion') >= 1 },
+  // Card sharks (P27).
+  { id: 'mindReader', group: 'life', icon: 'cards', run: (r) => f(r, 'liarsCaught') >= 5 },
+  { id: 'cardShark', group: 'life', icon: 'cards', run: (r) => f(r, 'cheatsWon') >= 3 },
+  { id: 'nothingButNet', group: 'skills', icon: 'ball', run: (r) => f(r, 'swishes') >= 10 },
+  { id: 'courtKing', group: 'skills', icon: 'trophy', run: (r) => f(r, 'shootoutsWon') >= 3 },
+  { id: 'grandmaster', group: 'skills', icon: 'checkers', run: (r) => f(r, 'boardWins') >= 3 },
   // The crew (P23).
   { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
   { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },
@@ -162,6 +168,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'rudeAwakening', group: 'mishaps', icon: 'key', hidden: true, run: (r) => f(r, 'keyless') >= 1 },
   { id: 'findersKeepers', group: 'mishaps', icon: 'drone', hidden: true, run: (r) => f(r, 'dropsSeized') + f(r, 'parcelsSeized') >= 1 },
   { id: 'snakeEyes', group: 'mishaps', icon: 'dice', hidden: true, run: (r) => f(r, 'snakeEyes') >= 1 },
+  // P27: five airballs in a run.
+  { id: 'brickLayer', group: 'mishaps', icon: 'ball', hidden: true, run: (r) => f(r, 'airballs') >= 5 },
   // Career.
   // The Daily Escape (P26).
   { id: 'dailyBread', group: 'daily', icon: 'calendar', escape: (e) => !!e.daily },

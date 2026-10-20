@@ -56,15 +56,20 @@ export const EXT = {
   RECALL: 6,
   /** Dig up (U, the Dig up button): in a tunnel, a strike up through the floor overhead, whichever way the player faces. */
   DIG_UP: 7,
+  /** Hoops (P27): the ball held up for a shot on a spot (b = 0), let go (b = 1). */
+  SHOOT: 8,
 } as const;
 
 /**
  * What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a
  * bribe: BRIBE; P21's PHONE: a burner phone from the fixer; P22's games: DICE, b = the stake's
  * place in STAKES; REROLL, b = the dice thrown again (bit 0 the first, bit 1 the second; 0
- * stands); WRESTLE, a bout; P23's CREW, an order to a follower, b = ORDER). Never renumber.
+ * stands); WRESTLE, a bout; P23's CREW, an order to a follower, b = ORDER; P27's CHEAT, a game of
+ * Cheat, b = the stake's place in STAKES; PLAY, cards laid, b = which of the hand (bit per card);
+ * LIAR, the inmate's last play called; HOOPS, a shootout; CHECKERS, b = 1 to the old-timer's
+ * board, 0 up from it, 2 resigning; MOVE, a step on the board, b = from, c = to). Never renumber.
  */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14 } as const;
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20 } as const;
 
 /**
  * What a follower in the crew is told (P23, TALK.CREW's b): back at the player's heels, keep

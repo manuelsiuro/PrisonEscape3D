@@ -4,6 +4,7 @@ import { hostile } from '../sim/systems/social';
 import { announceRat } from './rat';
 import { announceSmuggle } from './smuggle';
 import { announceGames } from './games';
+import { announcePastimes } from './pastimes';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
@@ -733,6 +734,13 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'bout':
     case 'pick':
       announceGames(sim, e);
+      break;
+    // Card sharks (P27): Cheat, the hoop, the old-timer's board.
+    case 'cheat':
+    case 'hoopShot':
+    case 'hoops':
+    case 'checkers':
+      announcePastimes(sim, e);
       break;
     case 'crew':
       announceCrew(sim, e);

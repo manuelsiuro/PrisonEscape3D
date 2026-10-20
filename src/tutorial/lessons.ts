@@ -31,6 +31,7 @@ import { guardTalking } from '../sim/systems/social';
 import { dropTile } from '../sim/systems/smuggling';
 import { gameOn, gameRefusal, gamesOpen } from '../sim/systems/games';
 import { baitSlot, petOf } from '../sim/systems/rats';
+import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
 
 /**
  * The tutorial (P8+): short lessons on the Training Block, each a scene set up on a fresh game
@@ -621,6 +622,77 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Cheat (P27): a hand for $5 with Sparky, played out to its last chip.
+    id: 'cards',
+    icon: 'cards',
+    setup: (sim) => {
+      clockTo(sim, at(18, 15));
+      place(sim, 24, 31, 1);
+      waitAt(sim, 0, 26, 31);
+      sim.state.inmates[0].opinion = 50;
+      sim.state.cash = 20;
+    },
+    steps: [
+      { text: 'lesson.cards.start', touch: 'lesson.cards.startTouch', on: (e) => e.type === 'cheat' && e.what === 'dealt' && e.round === 0, fail: gamesFail },
+      { text: 'lesson.cards.lay', touch: 'lesson.cards.layTouch', on: (e) => e.type === 'cheat' && e.what === 'played' && e.by === 0, failOn: cheatOff },
+      { text: 'lesson.cards.call', touch: 'lesson.cards.callTouch', on: (e) => e.type === 'cheat' && e.what === 'called', failOn: cheatOff },
+      { text: 'lesson.cards.end', on: (e) => e.type === 'cheat' && (e.what === 'won' || e.what === 'lost'), failOn: cheatOff },
+    ],
+  },
+  {
+    // Hoops (P27): a basket on one's own, then a shootout with Sparky.
+    id: 'hoops',
+    icon: 'ball',
+    setup: (sim) => {
+      clockTo(sim, at(18, 15));
+      const c = sim.prison.leisure!.hoop;
+      place(sim, c.spots[0].x + 1, c.spots[0].z + 1, 13);
+      waitAt(sim, 0, c.spots[0].x + 2, c.spots[0].z + 1);
+      sim.state.inmates[0].opinion = 50;
+    },
+    steps: [
+      { text: 'lesson.hoops.shoot', touch: 'lesson.hoops.shootTouch', on: (e) => e.type === 'hoopShot' && e.by < 0, goal: (sim) => spotOn(sim, 0) },
+      { text: 'lesson.hoops.basket', touch: 'lesson.hoops.basketTouch', on: (e) => e.type === 'hoopShot' && e.by < 0 && (e.result === 'swish' || e.result === 'in') },
+      { text: 'lesson.hoops.shootout', touch: 'lesson.hoops.shootoutTouch', on: (e) => e.type === 'hoops' && e.what === 'start', fail: gamesFail },
+      {
+        text: 'lesson.hoops.finish',
+        on: (e) => e.type === 'hoops' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw'),
+        // (The lit spot, as the shootout goes on.)
+        goal: (sim) => (sim.state.shootout ? spotOn(sim, sim.state.shootout.k % sim.prison.leisure!.hoop.spots.length) : null),
+        failOn: (e) => (e.type === 'hoops' && e.what === 'off' ? 'lesson.hoops.off' : null),
+      },
+    ],
+  },
+  {
+    // Checkers (P27): the old-timer's game left set up, won with a double jump; his secret.
+    id: 'checkers',
+    icon: 'checkers',
+    setup: (sim) => {
+      clockTo(sim, at(18, 15));
+      place(sim, 24, 31, 1);
+      waitAt(sim, 0, 26, 31);
+      sim.state.inmates[0].opinion = 50;
+      // His last two men in reach of the player's: one move, two jumps.
+      const b = newBoard();
+      b.sq.fill(PIECE.EMPTY);
+      for (const [r, c, p] of [
+        [5, 2, PIECE.MAN],
+        [7, 4, PIECE.MAN],
+        [6, 7, PIECE.MAN],
+        [4, 3, PIECE.HIS_MAN],
+        [2, 5, PIECE.HIS_MAN],
+      ] as const)
+        b.sq[squareAt(r, c)] = p;
+      b.seated = false;
+      sim.state.board = b;
+    },
+    steps: [
+      { text: 'lesson.checkers.sit', touch: 'lesson.checkers.sitTouch', on: (e) => e.type === 'checkers' && e.what === 'sat', fail: gamesFail },
+      { text: 'lesson.checkers.jump', touch: 'lesson.checkers.jumpTouch', on: (e) => e.type === 'checkers' && e.what === 'won' },
+      { text: 'lesson.checkers.secret', done: () => true, least: 6 },
+    ],
+  },
+  {
     // The crew (P23): a friend recruited and posted as lookout by the patrol hall's doorway, whistling as the guard comes by.
     id: 'crew',
     icon: 'users',
@@ -853,6 +925,16 @@ function ratFail(c: LessonCtx): Key | null {
   return baitSlot(s.items.inv) < 0 ? 'lesson.rat.hungry' : null;
 }
 /** The games lesson's dead end: free time over (and no game on the table) before it's through. */
+/** A hand of Cheat folded (walked away from) or broken off: the lesson can't go on. */
+function cheatOff(e: SimEvent): Key | null {
+  return e.type === 'cheat' && (e.what === 'folded' || e.what === 'off') ? 'lesson.cards.folded' : null;
+}
+/** A spot on the court, as a tile. */
+function spotOn(sim: Sim, k: number): number {
+  const q = sim.prison.leisure!.hoop.spots[k];
+  return tile(q.x, q.z);
+}
+
 function gamesFail(c: LessonCtx): Key | null {
   return !gamesOpen(c.sim) && !gameOn(c.sim.state) ? 'lesson.games.closed' : null;
 }
@@ -871,7 +953,7 @@ function smuggleFail(sim: Sim): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'crew'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'crew'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 

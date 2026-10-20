@@ -1016,6 +1016,39 @@ export class Character {
       legL -= 0.35 * ga;
       legR -= 0.35 * ga;
       bob -= 0.1 * ga;
+    } else if (doing === DOING.CARDS) {
+      // Cheat (P27): crouched over the pile, the hand of cards held up close in the left, the
+      // right laying them down now and then.
+      const ga = this.act;
+      const lay = motion ? Math.max(0, Math.sin(t * 1.3)) ** 6 : 0;
+      armLx += -1.15 * ga;
+      armLz += 0.32 * ga;
+      armRx += (-0.6 - lay * 0.5) * ga;
+      armRz += -0.12 * ga;
+      legL -= 0.35 * ga;
+      legR -= 0.35 * ga;
+      bob -= 0.1 * ga;
+    } else if (doing === DOING.BOARD) {
+      // Checkers (P27): crouched at the board, chin on the left fist, the right hand hovering over the pieces.
+      const ga = this.act;
+      const hover = motion ? Math.sin(t * 0.9) * 0.08 : 0;
+      armLx += -1.6 * ga;
+      armLz += 0.42 * ga;
+      armRx += (-0.75 + hover) * ga;
+      armRz += -0.1 * ga;
+      legL -= 0.4 * ga;
+      legR -= 0.4 * ga;
+      bob -= 0.11 * ga;
+    } else if (doing === DOING.SHOOT) {
+      // A shot at the hoop (P27): the ball up over the head in both hands, the knees bent.
+      const ga = this.act;
+      armLx += -2.75 * ga;
+      armRx += -2.75 * ga;
+      armLz -= 0.18 * ga;
+      armRz += 0.18 * ga;
+      legL -= 0.18 * ga;
+      legR -= 0.18 * ga;
+      bob -= 0.035 * ga;
     } else if (doing === DOING.LOOKOUT) {
       // On watch (P23): a hand at the brow, clear of the head (a salute's reach: a rigid arm can't
       // get in front of the face), the other arm a little out; the whole body sweeps from side to
@@ -1055,7 +1088,8 @@ export class Character {
       (doing === DOING.READ ? 0.12 * this.act : 0) +
       (doing === DOING.WRESTLE ? (0.12 + this.strainNow * 0.1) * this.act : 0) +
       (doing === DOING.PICK ? 0.32 * this.act : 0) +
-      (doing === DOING.DICE ? 0.12 * this.act : 0) +
+      (doing === DOING.DICE || doing === DOING.CARDS ? 0.12 * this.act : 0) +
+      (doing === DOING.BOARD ? 0.18 * this.act : 0) +
       (doing === DOING.BRAWL ? 0.08 * this.act : 0);
     // From one activity to another: limbs, height and lean ease from where they were (before a blow, which never waits).
     if (this.blend < 1) {

@@ -21,7 +21,8 @@ export function stageWorld(sim: Sim, prisoner: Prisoner | null) {
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
   // (Set, not multiplied: one game's zoom never compounds into the next's.)
   view.zoomTo(1.25);
-  view.setCast(sim.state.inmates.map((m) => ({ cell: m.cell, gait: m.speed / WALK_SPEED })));
+  // (P27: the old-timer grey-haired.)
+  view.setCast(sim.state.inmates.map((m) => ({ cell: m.cell, gait: m.speed / WALK_SPEED, elder: m.cell === sim.prison.leisure?.oldTimer })));
   view.setGuards(
     guardBeds(sim),
     sim.prison.guards.map((d) => KEY_ITEM_COLORS.find(([c]) => c === d.key)![2]),

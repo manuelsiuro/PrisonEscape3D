@@ -1,0 +1,463 @@
+/* ------------------------------------------------------------ card sharks (P27) */
+
+/* Cheat's card: felt green, the cards ivory, the Liar! button red. */
+.cheat-card .train-ic {
+  background: #2e8a5e;
+}
+.cheat-card .train-value .ic,
+.court-card .train-value .ic {
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+.cheat-chips {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 6px;
+  font: 700 12.5px var(--font-ui);
+}
+.cheat-chips > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.cheat-chips em {
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.75);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cheat-chips .them {
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.cheat-chips .them small {
+  flex-basis: 100%;
+  text-align: right;
+  font: 600 11px var(--font-ui);
+  color: rgba(255, 255, 255, 0.5);
+}
+.chips {
+  display: inline-flex;
+  gap: 3px;
+}
+.chips i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+.chips i.on {
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #ffc23d 19% 100%);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.cheat-chips .pile {
+  margin: 0 auto;
+  font: 800 14px var(--font-ui);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* A playing card. */
+.pcard {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 54px;
+  border-radius: 6px;
+  color: #1d2026;
+  background: #f7f3e8;
+  box-shadow:
+    inset 0 0 0 1px rgba(80, 70, 50, 0.3),
+    0 3px 6px -2px rgba(0, 0, 0, 0.5);
+  font: 900 22px/1 var(--font-display);
+}
+.pcard i {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font: 800 10px/1 var(--font-ui);
+  font-style: normal;
+}
+.pcard[data-card='2'] {
+  color: #c8302a;
+}
+.pcard[data-card='4'] {
+  color: #7a43ab;
+}
+.pcard.back {
+  background:
+    repeating-linear-gradient(45deg, rgba(242, 214, 160, 0.25) 0 3px, transparent 3px 7px),
+    #9a2a2a;
+  box-shadow:
+    inset 0 0 0 2px #f2d6a0,
+    0 3px 6px -2px rgba(0, 0, 0, 0.5);
+}
+.pcard.back i {
+  display: none;
+}
+.pcard.pile {
+  width: 22px;
+  height: 31px;
+  border-radius: 4px;
+}
+.pcard.big {
+  width: 44px;
+  height: 62px;
+  font-size: 26px;
+}
+.pcard.flip {
+  animation: pcard-flip 0.35s var(--spring);
+}
+@keyframes pcard-flip {
+  from {
+    transform: rotateY(90deg);
+  }
+}
+.cheat-table {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto auto;
+  column-gap: 12px;
+  align-items: center;
+  margin: 2px 0 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(46, 160, 98, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(110, 220, 150, 0.22);
+}
+.cheat-table .pcard {
+  grid-row: 1 / span 3;
+}
+.cheat-label {
+  font: 700 11px var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.cheat-table b {
+  font: 800 17px var(--font-display);
+}
+.cheat-table small {
+  font: 600 11.5px var(--font-ui);
+  color: rgba(255, 255, 255, 0.55);
+}
+.cheat-now {
+  min-height: 42px;
+}
+.cheat-claim {
+  margin: 0 0 4px;
+  font: 700 13.5px/1.3 var(--font-ui);
+}
+.cheat-claim.mine {
+  color: rgba(255, 255, 255, 0.7);
+}
+.cheat-tell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font: 700 12.5px var(--font-ui);
+  color: #ffc58a;
+}
+.cheat-tell .ic {
+  flex: none;
+}
+.cheat-reveal {
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.cheat-reveal[data-loser='1'] {
+  background: rgba(63, 199, 154, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(63, 199, 154, 0.4);
+}
+.cheat-reveal[data-loser='0'] {
+  background: rgba(255, 95, 109, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 95, 109, 0.3);
+}
+.cheat-call {
+  margin: 0 0 6px;
+  font: 800 14px var(--font-display);
+}
+.cheat-flip {
+  display: flex;
+  gap: 6px;
+}
+.cheat-verdict {
+  margin: 6px 0 0;
+  font: 800 13.5px var(--font-ui);
+}
+.cheat-reveal[data-loser='1'] .cheat-verdict {
+  color: #7ff0c2;
+}
+.cheat-reveal[data-loser='0'] .cheat-verdict {
+  color: #ffa3ab;
+}
+.cheat-hand {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 8px;
+}
+.pcard-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: 10px;
+  background: transparent;
+  transition: transform 0.15s var(--spring);
+}
+.pcard-btn .pcard {
+  width: 46px;
+  height: 66px;
+  font-size: 26px;
+}
+.pcard-btn.on {
+  transform: translateY(-8px);
+}
+.pcard-btn.on .pcard {
+  box-shadow:
+    inset 0 0 0 2px var(--gold),
+    0 8px 14px -6px rgba(255, 194, 61, 0.8);
+}
+.pcard-btn:disabled {
+  opacity: 0.75;
+}
+.pcard-btn kbd,
+.cheat-acts kbd {
+  position: absolute;
+  bottom: -4px;
+  right: -2px;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 10px;
+}
+.cheat-acts kbd {
+  position: static;
+  margin-left: 2px;
+}
+.cheat-card .big-btn.danger {
+  color: white;
+  background: linear-gradient(#e5484d, #b8352d);
+  box-shadow: 0 3px 0 #7a1f1a;
+}
+.cheat-status {
+  margin-top: 2px;
+}
+
+/* The court's card: the ball's orange; the scoreboard's dots; the meter's window and its swish third. */
+.court-card .train-ic {
+  background: #e8742c;
+}
+.court-board {
+  margin: 8px 0 2px;
+}
+.court-board.hidden {
+  display: none;
+}
+.court-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 20px;
+  font: 700 12px var(--font-ui);
+}
+.court-row em {
+  flex: 0 0 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.72);
+}
+.court-row i {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+.court-row i.in {
+  background: #3fc79a;
+  box-shadow: none;
+}
+.court-row i.out {
+  background: #c8413a;
+  box-shadow: none;
+}
+.court-meter .sweep-zone.sweet {
+  background: linear-gradient(rgba(126, 240, 194, 0.95), rgba(63, 199, 154, 0.85));
+}
+.court-card.off-spot .court-meter,
+.court-card:not(.holding) .sweep-mark {
+  opacity: 0.35;
+}
+.court-pad:disabled {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+body.courting .tool-btn,
+body.courting .tool-prompt {
+  display: none;
+}
+
+/* The old-timer's board: dark green squares, cream and red pieces, kings crowned in gold. */
+.board-card .train-ic {
+  background: #5a3a1e;
+}
+.board-card .train-value {
+  color: rgba(255, 255, 255, 0.8);
+}
+.checkers {
+  --side: min(300px, calc(100vw - 72px));
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  width: var(--side);
+  height: var(--side);
+  margin: 10px auto 6px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 4px #5a3a1e,
+    0 8px 18px -6px rgba(0, 0, 0, 0.7);
+}
+.checkers .light {
+  background: #e9dcb8;
+}
+.checkers .sq {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 0;
+  background: #2f4a2c;
+}
+.checkers .sq:disabled {
+  cursor: default;
+}
+.checkers .sq.last {
+  background: #45663f;
+}
+.checkers .sq.can {
+  box-shadow: inset 0 0 0 2px rgba(255, 194, 61, 0.55);
+}
+.checkers .sq.chosen {
+  box-shadow: inset 0 0 0 3px var(--gold);
+}
+.checkers .sq.target::after {
+  content: '';
+  width: 32%;
+  height: 32%;
+  border-radius: 50%;
+  background: rgba(255, 194, 61, 0.85);
+}
+.checkers .piece {
+  width: 66%;
+  height: 66%;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.25),
+    0 2px 3px rgba(0, 0, 0, 0.5);
+}
+.checkers .p1 .piece,
+.checkers .p2 .piece {
+  background: radial-gradient(circle at 40% 35%, #fffaf0, #e9dcc0 70%);
+}
+.checkers .p3 .piece,
+.checkers .p4 .piece {
+  background: radial-gradient(circle at 40% 35%, #e0584e, #a8322a 70%);
+}
+.checkers .p2 .piece,
+.checkers .p4 .piece {
+  box-shadow:
+    inset 0 0 0 3px var(--gold),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.25),
+    0 2px 3px rgba(0, 0, 0, 0.5);
+}
+.checkers-status[data-over='1'] {
+  color: #7ff0c2;
+  font-weight: 800;
+}
+.checkers-status[data-over='2'] {
+  color: #ffa3ab;
+  font-weight: 800;
+}
+.checkers-record {
+  margin: 2px 0 8px;
+  font: 600 11.5px var(--font-ui);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Landscape phones: the cards docked to the left (as the arm-wrestle's), the Shoot pad at the right thumb. */
+@media (max-height: 520px) {
+  .cheat-card,
+  .court-card,
+  .board-card {
+    animation: card-fade 0.25s ease-out;
+    left: max(14px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: min(340px, calc(50vw - 70px));
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 12px);
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+  }
+  .court-card {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 100px);
+  }
+  .court-card .court-pad {
+    position: fixed;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    width: 150px;
+    height: 92px;
+    margin: 0;
+  }
+  .board-card .checkers {
+    --side: min(220px, calc(100vh - 200px));
+    margin: 6px auto 4px;
+  }
+  .cheat-chips {
+    margin: 6px 0 4px;
+  }
+  .cheat-table {
+    margin: 0 0 4px;
+    padding: 4px 8px;
+  }
+  .cheat-hand {
+    margin: 4px 0;
+  }
+  .pcard-btn .pcard {
+    width: 40px;
+    height: 56px;
+    font-size: 22px;
+  }
+}
+
+body.reduced-motion .pcard.flip,
+body.reduced-motion .pcard-btn,
+body.reduced-motion .cheat-card,
+body.reduced-motion .court-card,
+body.reduced-motion .board-card {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Wide screens: the hand of Cheat, the court and the board docked left, clear of the players in the middle (and of the action's prompt). */
+@media (min-width: 900px) and (min-height: 521px) {
+  .cheat-card,
+  .court-card,
+  .board-card {
+    left: max(24px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
+  }
+}

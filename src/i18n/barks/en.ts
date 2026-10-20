@@ -1986,6 +1986,11 @@ export const enBarks = {
     "A lockpick opens doors. Not the outer gates, mind.",
     "Slip with a lockpick and the whole block hears.",
   ],
+  "go.oldTimer": [
+    "{inmate}'s been here forever. Plays checkers all day.",
+    "Beat {inmate} at checkers and the old-timer talks.",
+    "{inmate} never loses at checkers. Well. Almost never.",
+  ],
   "go.nextSports": [
     "Sports day on day {n}. Start doing push-ups.",
     "Day {n}'s sports day. Three wins and there's a prize.",

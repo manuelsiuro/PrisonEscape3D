@@ -109,6 +109,18 @@ export const FEATS = [
   'glides',
   'glideFar',
   'glidesIn',
+  // v2.2 (P27, card sharks): games of Cheat played and won, liars caught (a call that turned up a lie), shots at the hoop, baskets, swishes, airballs, shootouts and wins, games of checkers finished and won.
+  'cheats',
+  'cheatsWon',
+  'liarsCaught',
+  'shots',
+  'baskets',
+  'swishes',
+  'airballs',
+  'shootouts',
+  'shootoutsWon',
+  'boardGames',
+  'boardWins',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -228,6 +240,26 @@ export function ledger(sim: Sim, x: number, z: number) {
       case 'bout':
         if (e.what === 'start') f[FEAT.bouts]++;
         else if (e.what === 'won') f[FEAT.boutsWon]++;
+        break;
+      case 'cheat':
+        if (e.what === 'dealt' && e.round === 0) f[FEAT.cheats]++;
+        else if (e.what === 'won') f[FEAT.cheatsWon]++;
+        else if (e.what === 'called' && e.by === 0 && e.lie) f[FEAT.liarsCaught]++;
+        break;
+      case 'hoopShot':
+        if (e.by >= 0) break;
+        f[FEAT.shots]++;
+        if (e.result === 'swish' || e.result === 'in') f[FEAT.baskets]++;
+        if (e.result === 'swish') f[FEAT.swishes]++;
+        else if (e.result === 'air') f[FEAT.airballs]++;
+        break;
+      case 'hoops':
+        if (e.what === 'start') f[FEAT.shootouts]++;
+        else if (e.what === 'won') f[FEAT.shootoutsWon]++;
+        break;
+      case 'checkers':
+        if (e.what === 'won' || e.what === 'lost' || e.what === 'drawn') f[FEAT.boardGames]++;
+        if (e.what === 'won') f[FEAT.boardWins]++;
         break;
       case 'pick':
         if (e.what === 'open') f[FEAT.locksPicked]++;

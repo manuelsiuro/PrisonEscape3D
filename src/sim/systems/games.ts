@@ -29,6 +29,9 @@ import { stopTraining } from './training';
 import { addHeat } from './watch';
 import { lookingAway } from './ways';
 import { energyCost } from './weather';
+import { keepCheat } from './cards';
+import { keepHoops } from './hoops';
+import { keepCheckers } from './checkers';
 
 export const LOCKPICK = itemNumber('lockpick');
 
@@ -64,7 +67,8 @@ export function gameRefusal(sim: SimContext, who: number): Refusal | null {
 /** What an inmate does sat down. */
 const SEATED: ReadonlySet<number> = new Set([DOING.SIT, DOING.SIT_READ, DOING.EAT]);
 
-function countGame(sim: SimContext, who: number) {
+/** A game played with an inmate today (one of GAMES_A_DAY). */
+export function countGame(sim: SimContext, who: number) {
   const s = sim.state;
   while (s.played.length <= who) s.played.push(0);
   s.played[who] = prisonDay(s.step) * 4 + playedToday(s, who) + 1;
@@ -79,8 +83,8 @@ export function eyesOn(s: Pick<SimState, 'guards'>, at: number): boolean {
   return s.guards.some((g) => g.sees && !lookingAway(g, at));
 }
 
-/** A game under way (the dice on the table, an arm-wrestle). */
-export const gameOn = (s: Pick<SimState, 'dice' | 'bout'>) => s.dice.length > 0 || s.bout.length > 0;
+/** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout). */
+export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout;
 
 // ------------------------------------------------------------------ dice
 
@@ -219,7 +223,7 @@ export function endBout(sim: SimContext, how: BoutEnd) {
     s.trained |= 1 << ATTRS.indexOf('str');
     const wins = sportsWin(sim);
     sim.events.push({ type: 'bout', what: 'won', who, crowd: crowd.length, wins, str, gain: m.opinion - was });
-    if (wins >= SPORTS_WINS && !(s.eventFlags & TODAY.SPORTS_PRIZE)) sportsPrize(sim);
+    if (wins >= SPORTS_WINS) sportsPrizeIfDue(sim);
     return;
   }
   const was = s.inmates[who]?.opinion ?? 0;
@@ -227,8 +231,8 @@ export function endBout(sim: SimContext, how: BoutEnd) {
   sim.events.push({ type: 'bout', what: how, who, gain: (s.inmates[who]?.opinion ?? 0) - was });
 }
 
-/** Inmates who see a bout (up and calm, close enough, a clear line), but the one wrestling. */
-function watchers(sim: SimContext, who: number): number[] {
+/** Inmates who see a bout or a shootout (up and calm, close enough, a clear line), but the one playing. */
+export function watchers(sim: SimContext, who: number): number[] {
   const s = sim.state;
   const p = s.player;
   const out: number[] = [];
@@ -242,8 +246,8 @@ function watchers(sim: SimContext, who: number): number[] {
   return out;
 }
 
-/** Sports day (P22): a bout won while it's on counts toward the prize (the wins so far today, else 0). */
-function sportsWin(sim: SimContext): number {
+/** Sports day (P22): a bout won while it's on counts toward the prize (P27: a shootout too; the wins so far today, else 0). */
+export function sportsWin(sim: SimContext): number {
   const s = sim.state;
   if (!sportsOn(sim)) return 0;
   const wins = Math.min(SPORTS_WINS, sportsWins(s) + 1);
@@ -256,6 +260,11 @@ export const sportsOn = (sim: SimContext) => eventOn(sim, 'sports') && !sim.worl
 
 /** Bouts won today on sports day (0 – SPORTS_WINS). */
 export const sportsWins = (s: Pick<SimState, 'eventFlags'>) => (s.eventFlags & TODAY.SPORTS_WINS) / TODAY.SPORTS_WIN;
+
+/** The day's prize, once: SPORTS_WINS won today. */
+export function sportsPrizeIfDue(sim: SimContext) {
+  if (!(sim.state.eventFlags & TODAY.SPORTS_PRIZE)) sportsPrize(sim);
+}
 
 /** The day's champion: the prize, and everyone thinks a little more of the player. */
 function sportsPrize(sim: SimContext) {
@@ -403,7 +412,12 @@ function inDoor(s: SimState, tile: number): boolean {
   return s.layer === LAYER.GROUND && p.x + BODY_HALF > tx && p.x - BODY_HALF < tx + UNIT && p.z + BODY_HALF > tz && p.z - BODY_HALF < tz + UNIT;
 }
 
-/** The games' step (after training): the games' hours over (the dice stand, a bout is broken off), a bout's push and shove, a lock being picked, a door picked open. */
+/**
+ * The games' step (after training): the games' hours over (the dice stand, a bout is broken off),
+ * a bout's push and shove, a lock being picked, a door picked open; P27: a hand of Cheat (the
+ * inmate's move, the next deal), the court (a shot held, the shootout's inmate), the old-timer's
+ * board (his move).
+ */
 export function games(sim: SimContext) {
   const s = sim.state;
   if ((s.dice.length || s.bout.length) && !gamesOpen(sim)) {
@@ -413,4 +427,7 @@ export function games(sim: SimContext) {
   keepBout(sim);
   keepPick(sim);
   keepPicked(sim);
+  keepCheat(sim);
+  keepHoops(sim);
+  keepCheckers(sim);
 }

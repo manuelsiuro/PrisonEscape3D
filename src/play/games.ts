@@ -20,6 +20,8 @@ import { banner, combatUI, itemsUI, pickCard, sound, talk, view } from './contex
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { crewTalk } from './crew';
+import { atCourt, courtOf } from '../sim/systems/hoops';
+import { elderOffer } from './pastimes';
 
 /**
  * The side games on screen (P22): the talk panel's games (what's on offer, the dice in play and
@@ -198,7 +200,7 @@ export function announceGames(sim: Sim, e: SimEvent) {
 
 // ------------------------------------------------------------------ the talk panel's games
 
-const gamesView: GamesView = { id: 0, open: true, why: '', left: 0, stakes: [], seen: false, heat: DICE_HEAT, dice: null, show: null, arm: 'even', tired: false, energy: BOUT_ENERGY, sports: null, name: '' };
+const gamesView: GamesView = { id: 0, open: true, why: '', left: 0, stakes: [], seen: false, heat: DICE_HEAT, dice: null, show: null, arm: 'even', tired: false, energy: BOUT_ENERGY, sports: null, name: '', hasCourt: false, court: false, elder: null };
 
 /** The games on offer with the inmate the player is talking to (null for a guard, or nobody). */
 export function gamesOffer(sim: Sim): GamesView | null {
@@ -225,6 +227,10 @@ export function gamesOffer(sim: Sim): GamesView | null {
   v.energy = energyCost(sim, BOUT_ENERGY);
   v.sports = sportsOn(sim) ? { wins: sportsWins(s), of: SPORTS_WINS, prize: SPORTS_PRIZE, won: (s.eventFlags & 4096) !== 0 } : null;
   v.id = show.id;
+  // P27: the hoop (a shootout from the court), the old-timer's board.
+  v.hasCourt = !!courtOf(sim);
+  v.court = v.hasCourt && atCourt(sim, who);
+  v.elder = elderOffer(sim, who);
   return v;
 }
 

@@ -959,6 +959,22 @@ export class Director {
     return got.text;
   }
 
+  /**
+   * The old-timer's secret (P27), for a game of checkers lost to the player: a lasting truth
+   * about the prison the player hasn't heard yet (else any lasting one), kept in the file as
+   * told by him. Returns the rumor's words, or null when there's nothing left to tell.
+   */
+  secret(sim: Sim, who: number): string | null {
+    const heard = new Set(this.rumors.map((r) => r.fact.key));
+    const lasting = facts(sim, who).filter((f) => LASTING.has(f.kind));
+    const fresh = lasting.filter((f) => !heard.has(f.key));
+    const from = fresh.length ? fresh : lasting;
+    if (!from.length) return null;
+    const fact = from[Math.floor(this.random() * from.length)];
+    this.rumors = keepRumors([{ fact, step: sim.state.step, by: who }, ...this.rumors.filter((r) => r.fact.key !== fact.key)]);
+    return fill(t(`rumor.${fact.kind}` as Key), this.context(sim, -1, fact));
+  }
+
   /** The rumors heard, newest first, as the prisoner's file lists them (stale news marked). */
   notebook(sim: Sim): Array<{ text: string; old: boolean; day: number; by: string | null; self: boolean }> {
     if (!this.rumors.length) return [];

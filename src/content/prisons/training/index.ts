@@ -1,4 +1,5 @@
 import type { PropPlacement } from '../../props';
+import { court } from '../../leisure';
 import type { PrisonDef } from '../types';
 import { TRAINING_DECOR } from './decor';
 import { L0 } from './L0.map';
@@ -92,4 +93,6 @@ export const TRAINING: PrisonDef = {
   // raises the heat at a quarter of the pace (time to read what to do about it).
   rules: { relaxed: true, contrabandEvery: 4 },
   escapes: ['fence'],
+  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
+  leisure: { hoop: court(40, 35, 5), oldTimer: 2 },
 };

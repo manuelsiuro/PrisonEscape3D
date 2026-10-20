@@ -28,6 +28,7 @@ import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
 import { smuggleFrame } from './smuggle';
 import { diceRival, gamesDoing, gamesFrameOf } from './games';
+import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles } from './pastimes';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
@@ -160,6 +161,7 @@ const frameData: Frame = {
   rats: [],
   smuggle: null,
   games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
+  pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
   getaway: { shift: false, waved: false, glide: null },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
@@ -263,6 +265,14 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The side games (P22): the dice partner crouches over the dice with the player (the arm-wrestle's pose is the view's, from the bout).
   const rival = diceRival(sim);
   if (rival >= 0 && f.inmates[rival] && st.talk === rival) f.inmates[rival].doing = DOING.DICE;
+  // Card sharks (P27): the one across the cards or the board crouches over them too, facing the player (and the player them).
+  const across = pastimesPartner(sim);
+  const partner = across && f.inmates[across.who] && st.talk === across.who ? f.inmates[across.who] : null;
+  if (partner && across) {
+    partner.doing = across.doing;
+    partner.facing = Math.atan2(f.x - partner.x, f.z - partner.z);
+    f.facing = Math.atan2(partner.x - f.x, partner.z - f.z);
+  }
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
     const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0, stir: 0, range: 7 });
@@ -391,6 +401,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The side games (P22): at a lock, in an arm-wrestle, over the dice.
   const game = gamesDoing(sim);
   if (game >= 0 && !seated) f.doing = game;
+  // (P27: over the cards, at the board, the ball up for a shot: facing the rim.)
+  const past = pastimesDoing(sim);
+  if (past >= 0 && !seated) f.doing = past;
+  if (past === DOING.SHOOT) {
+    const rim = rimInTiles(sim);
+    if (rim) f.facing = Math.atan2(rim.x - f.x, rim.z - f.z);
+  }
   if (!seated && trainKind === 'treadmill') {
     const tp = sim.world.props[st.train];
     trainAt.x = tp.x + tp.w / 2;
@@ -461,6 +478,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.smuggle = smuggleFrame(sim, a);
   // The side games (P22): the bout, the dice between the two, the pick's taps, sports day.
   f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? f.inmates[rival] ?? null : null);
+  // Card sharks (P27): the court, the ball, the cards between the two, the board.
+  f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner, partner);
   return f;
 }
 

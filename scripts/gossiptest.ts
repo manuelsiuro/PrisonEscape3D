@@ -42,6 +42,7 @@ import { floorOf } from '../src/sim/ai/places';
 import { TRAP_KITCHEN, TRAP_MINUTE, TRAP_TUNNEL } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { fixerOf, visitExits } from '../src/sim/systems/smuggling';
+import { elderOf } from '../src/sim/systems/checkers';
 import { lockAt } from '../src/sim/systems/games';
 import { DICE_HEAT } from '../src/content/games';
 import { Bot, n } from './bots';
@@ -135,6 +136,9 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'muscle':
     case 'smuggler':
       return sim.prison.crew[s.inmates[f.inmate!].cell - 2] === f.kind;
+    // Card sharks (P27): the old-timer is the prison's own.
+    case 'oldTimer':
+      return f.inmate === elderOf(sim);
     case 'gambling':
       return f.n === DICE_HEAT && !sim.prison.rules?.relaxed;
     case 'lockpick': {

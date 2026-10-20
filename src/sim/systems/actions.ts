@@ -42,6 +42,7 @@ import { washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
 import { placeOrder } from './smuggling';
 import { endBout, pickLock, push, stopPick } from './games';
+import { aimShot, releaseShot } from './hoops';
 import { energyCost } from './weather';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
@@ -144,7 +145,7 @@ export function useItems(sim: SimContext, cmd: number) {
       if (s.seat >= 0) standUp(sim);
       break;
     case OP.TALK:
-      talkOp(sim, a, argB(cmd));
+      talkOp(sim, a, argB(cmd), argC(cmd));
       break;
     case OP.JOB:
       jobOp(sim, a);
@@ -200,6 +201,11 @@ export function useItems(sim: SimContext, cmd: number) {
       // The crew (P23): someone with an order whistled back.
       else if (a === EXT.RECALL) recall(sim, argB(cmd));
       // Dig up: a strike at the floor overhead (a press each, as Space at the tunnel's end).
+      // Hoops (P27): the ball up for a shot, let go.
+      else if (a === EXT.SHOOT && s.solitary <= 0) {
+        if (argB(cmd) === 0) aimShot(sim);
+        else releaseShot(sim);
+      }
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));

@@ -1129,6 +1129,58 @@ export class Sound {
     this.hiss(0.1, 'lowpass', 900, 0.9, 0.08, undefined, 0.08);
   }
 
+  /** Cards dealt (P27): a quick riffle, then a card slid out to each in turn. */
+  cardDeal() {
+    this.hiss(0.32, 'bandpass', 3800, 1.4, 0.05);
+    for (let k = 0; k < 6; k++) this.hiss(0.035, 'highpass', 3000, 0.8, 0.05, undefined, 0.36 + k * 0.07);
+  }
+
+  /** Cards laid face down (P27, `n` of them): a soft slap each. */
+  cardLay(n = 1) {
+    for (let k = 0; k < Math.max(1, n); k++) this.hiss(0.05, 'bandpass', 1900, 1.1, 0.08, undefined, k * 0.09);
+  }
+
+  /** Cards turned over on a call (P27): a snap. */
+  cardFlip() {
+    this.hiss(0.06, 'highpass', 2500, 0.9, 0.09);
+    this.tone(1200, 700, 0.05, 'triangle', 0.03);
+  }
+
+  /** "Liar!" called (P27): a palm slapped on the table. */
+  slap() {
+    this.hiss(0.09, 'lowpass', 1400, 0.8, 0.18);
+    this.tone(160, 80, 0.1, 'sine', 0.12);
+  }
+
+  /** A basketball bounced (P27, `gain`: how near). */
+  bounce(gain = 1) {
+    if (gain <= 0.02) return;
+    this.tone(150, 70, 0.12, 'sine', 0.16 * gain);
+    this.hiss(0.05, 'lowpass', 900, 0.8, 0.06 * gain);
+  }
+
+  /** Nothing but net (P27): a soft swish. */
+  swish(gain = 1) {
+    this.hiss(0.28, 'bandpass', 3200, 0.9, 0.09 * gain, undefined, 0, 0.12);
+  }
+
+  /** The ball off the rim (P27): a ringing clang. */
+  rimClang(gain = 1) {
+    this.tone(640, 600, 0.35, 'triangle', 0.07 * gain);
+    this.tone(1530, 1490, 0.25, 'sine', 0.035 * gain);
+    this.hiss(0.05, 'highpass', 2500, 1, 0.05 * gain);
+  }
+
+  /** A checker set down on the board (P27): a wooden clack (`jump`: a capture, two). */
+  checker(jump = false) {
+    this.tone(900, 700, 0.04, 'square', 0.035);
+    this.hiss(0.04, 'bandpass', 1700, 2, 0.07);
+    if (jump) {
+      this.tone(820, 640, 0.04, 'square', 0.03, 0.11);
+      this.hiss(0.04, 'bandpass', 1500, 2, 0.06, undefined, 0.11);
+    }
+  }
+
   /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);

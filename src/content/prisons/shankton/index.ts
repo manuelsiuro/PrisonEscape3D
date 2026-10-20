@@ -1,3 +1,4 @@
+import { court } from '../../leisure';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
@@ -366,4 +367,6 @@ export const SHANKTON: PrisonDef = {
   // Smuggling (P21): Deacon sells burner phones; the drone drops on the roll call square in the
   // yard inside the shell; visitors sit in the canteen.
   smuggling: { fixer: 6, drop: [25, 30, 38, 34], visits: [24, 9, 39, 22] },
+  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
+  leisure: { hoop: court(39, 31, 9), oldTimer: 7 },
 };

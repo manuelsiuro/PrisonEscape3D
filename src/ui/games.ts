@@ -48,6 +48,11 @@ export interface GamesView {
   /** Sports day: bouts won today, of the prize's count; the prize already won. */
   sports: { wins: number; of: number; prize: number; won: boolean } | null;
   name: string;
+  /** P27: the prison has a hoop, and the two are at it (a shootout can start). */
+  hasCourt: boolean;
+  court: boolean;
+  /** P27: the old-timer's board (null: this isn't him): he'll play now (else `why`), a game set up, over, or none. */
+  elder: { open: boolean; why: string; game: 'none' | 'on' | 'over'; won: number } | null;
 }
 
 const PIPS: Record<number, ReadonlyArray<readonly [number, number]>> = {
@@ -113,9 +118,25 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
   const warn = v.open && v.seen ? `<p class="talk-note games-warn">${icon('eye', 13)}<span>${t('games.seen', { n: v.heat })}</span></p>` : '';
   const armOk = v.open && !v.tired;
   const armNote = v.tired ? t('games.tired') : t(`games.arm.${v.arm}` as Key, { n: v.energy });
-  return `<section class="talk-games">${label}${sports}${result}${why}
-    <div class="bribe-row"><span class="bribe-text"><b>${t('games.dice')}</b><small>${t('games.diceNote')}</small></span><div class="stake-row">${stakes}</div></div>${warn}
-    <div class="bribe-row"><span class="bribe-text"><b>${t('games.wrestle')}</b><small>${esc(armNote)}</small></span><button class="big-btn ${armOk ? 'primary' : 'ghost'} small" data-act="${TALK.WRESTLE}" ${armOk ? '' : 'disabled'}>${icon('arm', 16)}<span>${t('games.wrestleGo')}</span></button></div></section>`;
+  // P27: Cheat for the same stakes, a shootout at the hoop, the old-timer's checkers.
+  const cheatStakes = v.stakes
+    .map((s) => {
+      const ok = v.open && s.ok;
+      return `<button class="cash-btn stake" data-act="${TALK.CHEAT}" data-arg="${s.k}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('cheat.confirm', { n: s.n }))}" aria-label="${esc(t('cheat.stakeAria', { n: s.n }))}">$${s.n}</button>`;
+    })
+    .join('');
+  const hoopsOk = v.open && v.court;
+  const hoops = v.hasCourt
+    ? `<div class="bribe-row"><span class="bribe-text"><b>${t('hoops.title')}</b><small>${esc(v.court ? t('hoops.note') : t('hoops.notHere'))}</small></span><button class="big-btn ${hoopsOk ? 'primary' : 'ghost'} small" data-act="${TALK.HOOPS}" ${hoopsOk ? '' : 'disabled'}>${icon('ball', 16)}<span>${t('hoops.go')}</span></button></div>`
+    : '';
+  const e = v.elder;
+  const elder = e
+    ? `<div class="bribe-row elder-row"><span class="bribe-text"><b>${t('checkers.name')}</b><small>${esc(!e.open ? e.why : e.game === 'on' ? t('checkers.onNote') : t('checkers.note', { name: v.name }))}</small></span><button class="big-btn ${e.open ? 'primary' : 'ghost'} small" data-act="${TALK.CHECKERS}" data-arg="1" ${e.open ? '' : 'disabled'}>${icon('checkers', 16)}<span>${t(e.game === 'on' ? 'checkers.resume' : 'checkers.play')}</span></button></div>`
+    : '';
+  return `<section class="talk-games">${label}${sports}${result}${elder}${why}
+    <div class="bribe-row"><span class="bribe-text"><b>${t('games.dice')}</b><small>${t('games.diceNote')}</small></span><div class="stake-row">${stakes}</div></div>
+    <div class="bribe-row"><span class="bribe-text"><b>${t('cheat.name')}</b><small>${t('cheat.note')}</small></span><div class="stake-row">${cheatStakes}</div></div>${warn}
+    <div class="bribe-row"><span class="bribe-text"><b>${t('games.wrestle')}</b><small>${esc(armNote)}</small></span><button class="big-btn ${armOk ? 'primary' : 'ghost'} small" data-act="${TALK.WRESTLE}" ${armOk ? '' : 'disabled'}>${icon('arm', 16)}<span>${t('games.wrestleGo')}</span></button></div>${hoops}</section>`;
 }
 
 /** A die just thrown (its tumble still playing in the picture): the panel's face tumbles in too. */

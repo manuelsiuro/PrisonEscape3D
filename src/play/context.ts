@@ -22,6 +22,7 @@ import { RatPanel } from '../ui/rat';
 import { CrewChips, CrewPanel } from '../ui/crew';
 import { PhonePanel } from '../ui/phone';
 import { PickCard, WrestleCard } from '../ui/games';
+import { BoardCard, CheatCard, CourtCard } from '../ui/pastimes';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
@@ -122,6 +123,10 @@ export const phonePanel = new PhonePanel(click);
 /** The side games (P22): the arm-wrestle's card and the lockpick's. */
 export const wrestleCard = new WrestleCard(sendOp);
 export const pickCard = new PickCard();
+/** Card sharks (P27): a hand of Cheat, the court's card, the old-timer's checkers board. */
+export const cheatCard = new CheatCard(sendOp, click);
+export const courtCard = new CourtCard();
+export const boardCard = new BoardCard(sendOp, click);
 /** The crew (P23): their panel, and the chips over their heads. */
 export const crewPanel = new CrewPanel(click);
 export const crewChips = new CrewChips();

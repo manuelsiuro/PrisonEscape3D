@@ -1,3 +1,4 @@
+import { court } from '../../leisure';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
@@ -373,4 +374,6 @@ export const SAN_PANCHO: PrisonDef = {
   // Smuggling (P21): Primo sells burner phones; the drone drops on the plaza's south end;
   // visitors sit in the canteen.
   smuggling: { fixer: 9, drop: [28, 32, 35, 42], visits: [17, 32, 26, 40] },
+  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
+  leisure: { hoop: court(30, 22, 5), oldTimer: 5 },
 };

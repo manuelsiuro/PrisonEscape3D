@@ -45,8 +45,9 @@ export const TRAINING_DECOR: readonly DecorPlacement[] = [
   { kind: 'posterC', x: 43, z: 26 },
   { kind: 'punchingBag', x: 42, z: 29 },
   { kind: 'mat', x: 38, z: 31, w: 2 },
-  // Outside: the flag by roll call, trees and bushes off the paths.
+  // Outside: the flag by roll call, trees and bushes off the paths; a basketball hoop by the building (P27: its court).
   { kind: 'flagpole', x: 34, z: 38 },
+  { kind: 'hoop', x: 40, z: 35 },
   { kind: 'tree', x: 16, z: 40 },
   { kind: 'tree', x: 45, z: 40 },
   { kind: 'tree', x: 41, z: 46 },

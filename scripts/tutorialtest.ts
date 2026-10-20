@@ -9,6 +9,9 @@ import { BRIBE, command, dirFromVector, EXT, OP, ORDER, SLOT, TALK, tossArgs } f
 import { drillOn, prisonDay } from '../src/sim/systems/calendar';
 import { dropTile } from '../src/sim/systems/smuggling';
 import { markerAt, sweetSpot } from '../src/sim/systems/games';
+import { isTrue } from '../src/sim/systems/cards';
+import { courtOf, powerAt, shotWindow } from '../src/sim/systems/hoops';
+import { squareAt } from '../src/sim/systems/checkers';
 import { thorough } from '../src/sim/systems/delivery';
 import { jobRooms, priceOf } from '../src/sim/systems/economy';
 import { itemDef } from '../src/content/items';
@@ -383,6 +386,65 @@ play('games', (bot) => {
   for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(command(0, OP.TRAIN, 1 + (k % 2)));
 });
 
+play('cards', (bot) => {
+  check(talkTo(bot, bot.st.inmates[0].body), 'cards: talking to Sparky');
+  bot.op(OP.TALK, TALK.CHEAT, 0);
+  // True cards when there are (one if not), a call on his tell or his empty hand; to the end.
+  for (let k = 0; k < 4000 && bot.st.cheat; k++) {
+    const c = bot.st.cheat;
+    if (c.turn !== 0) {
+      bot.step();
+      continue;
+    }
+    if (c.by === 1 && (c.tell || !c.theirs.length || !c.mine.length)) bot.op(OP.TALK, TALK.LIAR);
+    else {
+      const ks = c.mine.map((card, j) => (isTrue(card, c.table) ? j : -1)).filter((j) => j >= 0).slice(0, 3);
+      bot.op(OP.TALK, TALK.PLAY, (ks.length ? ks : [0]).reduce((m, j) => m | (1 << j), 0));
+    }
+  }
+});
+
+/** A shot from the spot the bot stands on, let go at the best moment (the sim's own window). */
+function shoot(bot: Bot, spot: number) {
+  bot.op(OP.EXT, EXT.SHOOT, 0);
+  const from = bot.st.shot[0];
+  const win = shotWindow(bot.sim, spot);
+  let best = 1;
+  for (let j = 1; j < 48; j++) if (Math.abs(powerAt(j) - win[0]) < Math.abs(powerAt(best) - win[0])) best = j;
+  while (bot.st.shot.length && bot.st.step + 1 - from < best) bot.step();
+  bot.op(OP.EXT, EXT.SHOOT, 1);
+}
+
+play('hoops', (bot) => {
+  const c = courtOf(bot.sim)!;
+  const spot = (k: number) => tile(c.spots[k].x, c.spots[k].z);
+  check(bot.walkTo(spot(0)), 'hoops: on the first spot');
+  shoot(bot, 0);
+  bot.until(() => false, 30);
+  check(talkTo(bot, bot.st.inmates[0].body), 'hoops: talking to Sparky');
+  bot.op(OP.TALK, TALK.HOOPS);
+  check(!!bot.st.shootout, 'hoops: a shootout on');
+  for (let k = 0; k < 40 && bot.st.shootout; k++) {
+    const o = bot.st.shootout;
+    if (o.turn !== 0) {
+      bot.until(() => !bot.st.shootout || bot.st.shootout.turn === 0, 200);
+      continue;
+    }
+    const at = o.k % c.spots.length;
+    check(bot.walkTo(spot(at)), `hoops: on spot ${at + 1}`);
+    shoot(bot, at);
+  }
+});
+
+play('checkers', (bot) => {
+  check(talkTo(bot, bot.st.inmates[0].body), 'checkers: talking to Sparky');
+  bot.op(OP.TALK, TALK.CHECKERS, 1);
+  check(!!bot.st.board?.seated, 'checkers: at the board');
+  bot.op(OP.TALK, TALK.MOVE, squareAt(5, 2), squareAt(3, 4));
+  bot.op(OP.TALK, TALK.MOVE, squareAt(3, 4), squareAt(1, 6));
+  check(bot.st.board?.over === 1, 'checkers: won with the double jump');
+});
+
 play('crew', (bot) => {
   check(talkTo(bot, bot.st.inmates[0].body), 'crew: talking to Sparky');
   bot.op(OP.TALK, TALK.RECRUIT);
@@ -677,6 +739,23 @@ function follow(id: string) {
   bot.until(() => !!why(), 8 * 60 * 20);
   check(why() === 'lesson.guards.cooled', `guards: heat cooled off before paying ends the lesson (${why()})`);
   console.log(`guards, never paid: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // Cheat walked away from (folded): the lesson says so; a shootout left behind on the court, the same.
+  const cards = follow('cards');
+  check(talkTo(cards.bot, cards.bot.st.inmates[0].body), 'cards: talking to Sparky');
+  cards.bot.op(OP.TALK, TALK.CHEAT, 0);
+  for (let k = 0; k < 40; k++) cards.bot.step(command(DIR.EAST));
+  check(cards.why() === 'lesson.cards.folded', `cards: walking away from the table ends the lesson (${cards.why()})`);
+  const hoops = follow('hoops');
+  const c = courtOf(hoops.bot.sim)!;
+  hoops.bot.walkTo(tile(c.spots[0].x, c.spots[0].z));
+  shoot(hoops.bot, 0);
+  check(talkTo(hoops.bot, hoops.bot.st.inmates[0].body), 'hoops: talking to Sparky');
+  hoops.bot.op(OP.TALK, TALK.HOOPS);
+  hoops.bot.walkTo(tile(30, 31));
+  check(hoops.why() === 'lesson.hoops.off', `hoops: leaving the court ends the lesson (${hoops.why()})`);
+  console.log(`cards, folded: ended at step ${cards.progress.k + 1}; hoops, court left: ended at step ${hoops.progress.k + 1}`);
 }
 {
   // No game played before the evening's free time ends: the lesson says so.

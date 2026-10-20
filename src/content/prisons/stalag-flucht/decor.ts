@@ -84,8 +84,9 @@ export const STALAG_FLUCHT_DECOR: readonly DecorPlacement[] = [
   { kind: 'drum', x: 49, z: 28 },
   // Solitary: a drain.
   { kind: 'drain', x: 51, z: 44 },
-  // The roll call square's flag, sacks and drums by the barracks.
+  // The roll call square's flag, sacks and drums by the barracks; a basketball hoop by the first row of cabins (P27: its court).
   { kind: 'flagpole', x: 29, z: 21 },
+  { kind: 'hoop', x: 8, z: 21 },
   { kind: 'sacks', x: 59, z: 20 },
   { kind: 'drum', x: 59, z: 21 },
 ];

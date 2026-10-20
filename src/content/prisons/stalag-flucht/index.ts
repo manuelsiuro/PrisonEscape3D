@@ -1,3 +1,4 @@
+import { court } from '../../leisure';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
@@ -330,4 +331,6 @@ export const STALAG_FLUCHT: PrisonDef = {
   // Smuggling (P21): Scraps sells burner phones; the drone drops on the open ground east of roll
   // call; nobody visits up here: a Red Cross parcel comes with the truck instead.
   smuggling: { fixer: 9, drop: [30, 22, 38, 28], parcel: true },
+  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
+  leisure: { hoop: court(8, 21, 5), oldTimer: 5 },
 };

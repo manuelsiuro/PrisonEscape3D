@@ -9,7 +9,7 @@ vents: 48 duct tiles, 3 grates, 1 ladder; roof tiles 1782
 == stalag-flucht · picture 1002a882
 tiles: brick 596, concrete 206, detector 4, dirt 512, door 34, electric 281, grass 1096, road 496, tiled 146, tower 27, wood 698
 zones: canteen 84, cellBlock 104, corridor 56, generator 54, guardQuarters 96, gym 70, infirmary 24, inmateCell 144, janitor 28, kitchen 42, laundry 24, library 56, metalshop 28, none 126, outside 496, perimeter 966, playerCell 16, rollCall 90, showers 56, solitary 96, storeroom 16, woodshop 56, yard 1368
-decor: 65 pieces
+decor: 66 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, playerCell, rollCall, showers, yard
 guards: 6, 40 stops, 4 asleep at night
 delivery: redCross, 10 tiles, tail 20,53, supervised by Fink (5 stops), thorough 40%
@@ -25,7 +25,7 @@ vents: 126 duct tiles, 3 grates, 1 ladder; roof tiles 2214
 == san-pancho · picture 1323cfe8
 tiles: asphalt 20, brick 484, concrete 571, detector 2, dirt 220, door 35, grass 352, mine 1024, reinforced 400, road 496, tiled 226, tower 36, wood 230
 zones: canteen 90, cellBlock 40, controlRoom 42, corridor 152, generator 24, guardQuarters 28, gym 81, infirmary 35, inmateCell 208, janitor 18, kitchen 36, laundry 27, library 42, mailroom 27, metalshop 60, minefield 1040, none 877, outside 496, perimeter 20, playerCell 16, rollCall 70, showers 54, solitary 21, walkway 372, woodshop 70, yard 150
-decor: 94 pieces
+decor: 95 pieces
 walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, yard
 guards: 8, 45 stops, 2 asleep at night
 delivery: produce, 6 tiles, tail 31,56, supervised by Ochoa (4 stops), thorough 60%
@@ -41,7 +41,7 @@ vents: 59 duct tiles, 2 grates, 1 ladder; roof tiles 1910
 == training · picture 9be5d540
 tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144
 zones: canteen 110, corridor 78, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, woodshop 50, yard 823
-decor: 37 pieces
+decor: 38 pieces
 walkable from the cell: canteen, corridor, gym, inmateCell, playerCell, rollCall, woodshop, yard
 guards: 1, 6 stops, 0 asleep at night
 vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 534

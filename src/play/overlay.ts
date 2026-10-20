@@ -49,6 +49,9 @@ import {
   trainCard,
   pickCard,
   wrestleCard,
+  cheatCard,
+  courtCard,
+  boardCard,
   vignette,
   view,
   workChips,
@@ -73,6 +76,7 @@ import { ratHud, ratView } from './rat';
 import { orderHud, phoneView, smuggleHints } from './smuggle';
 import { PHONE, smugglingOf } from '../sim/systems/smuggling';
 import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
+import { boardNow, cheatNow, courtNow } from './pastimes';
 import { cashShown, pickNow, wrestleNow } from './games';
 import { crewChipList, crewPill, crewRows } from './crew';
 
@@ -209,7 +213,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (tools.held && press.toolKey !== press.heldOn) tools.release();
   const fighting = st.lock >= 0 || memo.fighting;
   // (P22: an arm-wrestle and a lock being picked have their own cards, as training has.)
-  const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0;
+  // (P27: so do a hand of Cheat and the old-timer's board.)
+  const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0 || !!st.cheat || !!st.board?.seated;
   tools.update(training ? null : press.toolNow, st.energy, !!(held && itemDef(held).tool) || training, busy || panel, st.health / maxHealth(st.str), fighting);
   // Dig up, in a tunnel (the floor overhead): a new tile takes a new press.
   const up = memo.up;
@@ -237,7 +242,15 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const pick = busy ? null : pickNow(sim, a);
   wrestleCard.update(bout);
   pickCard.update(pick, !settings.reducedMotion);
-  document.body.classList.toggle('gaming', !!bout || !!pick);
+  // Card sharks (P27): a hand of Cheat and the old-timer's board have their cards (as a bout); the court's card while on a spot.
+  const cheat = busy ? null : cheatNow(sim);
+  const boardV = busy ? null : boardNow(sim);
+  const court = busy || panel ? null : courtNow(sim, a);
+  cheatCard.update(cheat);
+  boardCard.update(boardV);
+  courtCard.update(court);
+  document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV);
+  document.body.classList.toggle('courting', !!court);
   workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');

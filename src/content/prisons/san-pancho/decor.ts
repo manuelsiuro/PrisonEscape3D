@@ -73,8 +73,9 @@ export const SAN_PANCHO_DECOR: readonly DecorPlacement[] = [
   { kind: 'pigeonholes', x: 34, z: 12 },
   { kind: 'parcels', x: 34, z: 19 },
   { kind: 'sacks', x: 36, z: 19 },
-  // The plaza: the flagpole, saguaros by the benches.
+  // The plaza: the flagpole, saguaros by the benches; a basketball hoop at its north end (P27: its court).
   { kind: 'flagpole', x: 33, z: 23 },
+  { kind: 'hoop', x: 30, z: 22 },
   { kind: 'cactus', x: 27, z: 33 },
   { kind: 'cactus', x: 36, z: 33 },
   { kind: 'cactus', x: 27, z: 39 },

@@ -1,3 +1,4 @@
+import { court } from '../../leisure';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
@@ -337,4 +338,6 @@ export const CENTER_PERKS: PrisonDef = {
     ],
     booth: { x: 33, z: 62, face: 13 },
   },
+  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
+  leisure: { hoop: court(31, 25, 5), oldTimer: 5 },
 };

@@ -11,6 +11,7 @@ import { aiming, cancelThrow, throwAhead } from './aim';
 import { toggleWait } from './day';
 import { toggleCrew } from './crew';
 import { openObjectives } from './lesson';
+import { pastimeKey, shootKey } from './pastimes';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -68,6 +69,11 @@ function onKeyDown(e: KeyboardEvent) {
     if (e.code === 'KeyH') openHelp();
     return;
   }
+  // Card sharks (P27): the hand of Cheat's keys (1–5, Enter, L) come before the hotbar's.
+  if (pastimeKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
   if (e.code === 'KeyC') {
     closeSocial();
     itemsUI.toggleCraft();
@@ -112,6 +118,8 @@ function onKeyDown(e: KeyboardEvent) {
     if ((document.activeElement as HTMLElement | null)?.closest('.talk-panel, .train-card')) return;
     e.preventDefault();
     if (itemsUI.panelOpen || socialOpen()) return;
+    // (P27: on a spot at the hoop, Space raises the ball for a shot; let go, it goes.)
+    if (shootKey(true)) return;
     tools.held = true;
     usePress();
   }
@@ -133,7 +141,10 @@ function onKeyDown(e: KeyboardEvent) {
 export function listenKeys() {
   addEventListener('keydown', onKeyDown);
   addEventListener('keyup', (e) => {
-    if (e.code === 'Space') tools.release();
+    if (e.code === 'Space') {
+      shootKey(false);
+      tools.release();
+    }
     if (e.code === 'KeyU') tools.releaseUp();
   });
   // Focus gone with Space held: the keyup never comes.
