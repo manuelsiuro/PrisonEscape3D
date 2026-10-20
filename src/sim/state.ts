@@ -854,6 +854,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!quizOk(s.quiz, n, s.step)) s.quiz = null;
   for (const k of ['stageDay', 'quizDay'] as const) if (!Number.isInteger(s[k]) || s[k] < 0) s[k] = 0;
   if (!(Array.isArray(s.acted) && (s.acted.length === 0 || (ints(s.acted, 2) && s.acted[0] >= 0 && s.acted[1] >= 0 && s.acted[1] < 16)))) s.acted = [];
+  // (A save from before no-shows, 2.5.1: the night it was made on stands as it did then, every act played.)
+  if (st.acted === undefined) s.acted = [prisonDay(st.step), 15];
   if (st.stageDay === undefined) {
     const was = DAY_BOOKS[prison.id]?.beforeStage;
     for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) {

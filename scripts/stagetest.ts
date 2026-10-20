@@ -580,6 +580,22 @@ function playQuiz(seed: number, wait: number, knows: boolean) {
   check(dayPlan('center-perks', loaded.salt, day, loaded.calendar).event === was.talent && loaded.show === null && loaded.stageDay === 0, `a save from before P30 on a talent night: ${was.talent} instead`);
   const fresh = loadState(plain.world, CENTER_PERKS, JSON.parse(JSON.stringify(plain.state)));
   check(dayPlan('center-perks', fresh.salt, day, fresh.calendar).event === 'talent', 'a save from after: the talent night stands');
+  // A save from 2.5.0 made at 19:40, its acts played: loaded, none of them turns into a no-show.
+  {
+    const n = game(TALENT);
+    n.jump(1, 18, 30);
+    while (n.sim.state.step < at(1, 19, 40)) n.step();
+    const k0 = tonight(n.sim).length;
+    check(k0 > 0 && tonight(n.sim).every((_, k) => acted(n.sim.state, k)), 'the acts so far stood');
+    const old250 = JSON.parse(JSON.stringify(n.sim.state));
+    delete old250.acted;
+    const twin = new Sim(CENTER_PERKS, 5);
+    twin.state = loadState(twin.world, CENTER_PERKS, old250);
+    check(tonight(twin).every((_, k) => !noShow(twin, k)), 'a save from 2.5.0 mid talent night: its acts stand (none a no-show)');
+    const now = new Sim(CENTER_PERKS, 5);
+    now.state = loadState(now.world, CENTER_PERKS, JSON.parse(JSON.stringify(n.sim.state)));
+    check(JSON.stringify(now.state.acted) === JSON.stringify(n.sim.state.acted), 'one from 2.5.1 keeps its own');
+  }
   // A log from before stage nights.
   check(beforeStage('2.4.0') && beforeStage('1.20.3') && !beforeStage('2.5.0') && !beforeStage('3.0.1'), 'logs from before 2.5.0 are from before stage nights');
   const log = { v: 1 as const, prison: 'center-perks', seed: 7, game: '2.4.0', from: 0, steps: at(day + 1, 8), data: '', sums: [] as Array<[number, string]> };
