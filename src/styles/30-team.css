@@ -345,3 +345,10 @@ body.reduced-motion .ink-card.lead .ink-pen {
     max-width: min(400px, calc(100vw - 600px));
   }
 }
+.bribe-row.ink-row .cash-btn.design span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.15;
+  text-align: left;
+}
