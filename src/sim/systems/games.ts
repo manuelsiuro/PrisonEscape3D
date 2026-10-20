@@ -8,7 +8,7 @@
  * screen show exactly what the rules will judge. Nothing here happens without the player
  * asking, so the escape bots' runs are untouched.
  */
-import { keepShow } from './talent';
+import { keepActs, keepShow } from './talent';
 import { keepQuiz } from './quiz';
 import { itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
@@ -436,7 +436,8 @@ export function games(sim: SimContext) {
   keepCheckers(sim);
   keepMatch(sim);
   keepInk(sim);
-  // Stage nights (P30).
+  // Stage nights (P30): which acts stood, the player's act.
+  keepActs(sim);
   keepShow(sim);
   keepQuiz(sim);
 }

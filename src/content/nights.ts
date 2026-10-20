@@ -110,6 +110,13 @@ export const ACT_MINUTES = 10;
 export const ACT_GAP = 12;
 /** An act's performer walks over this long before its slot, and waits in the wings (the stage's side) for it. */
 export const ACT_WALK = 10;
+/**
+ * 2.5.1: an act's performer is called this long before his slot (minutes; the next one as soon as
+ * the act before him is on: a walk across the prison takes a good ten), and not on the boards
+ * NO_SHOW minutes into it (knocked out, busy, lost on the way) he's a no-show, out of the running.
+ */
+export const ACT_CALL = 20;
+export const NO_SHOW = 5;
 export const RIVAL_MARK = 50;
 export const RIVAL_SPREAD = 36;
 /** The prize money by place (first, second, third; nothing after), times the song's share (per cent, by level). */

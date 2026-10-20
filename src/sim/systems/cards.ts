@@ -1,10 +1,12 @@
 /**
  * Cheat (P27): a card game of bluff with an inmate, for a stake (TALK.CHEAT; it counts as one of
- * the day's games). Each round deals five cards each from the 20 (DECK) and turns up the table
+ * the day's games). Each round deals five cards each from the 14 (DECK) and turns up the table
  * card (a King, a Queen or an Ace; the Joker is wild). Turn about, a player lays 1–3 cards face
  * down "as" the table card (TALK.PLAY, b: the hand's cards as bits), or calls "Liar!" on the last
  * play (TALK.LIAR): the cards turn over, and whoever was wrong (the liar, or the caller) loses a
- * chip. A hand played out must be called. The last chip lost loses the stake.
+ * chip. A hand played out must be called. The last chip lost loses the stake. The player has
+ * TURN_STEPS for each move (2.5.1), and a game still on at roll call or Lights Out is settled on
+ * the chips there and then.
  *
  * The inmate plays true when it can and bluffs when it can't; it calls a claim its own cards prove
  * false, and otherwise as the claim's size and its own plight make it doubt. Its tell (by cell)
@@ -12,7 +14,8 @@
  * shuffle and every choice comes from roll(): nothing here touches the state's rng, and nothing
  * happens without the player asking.
  */
-import { CALL_DOUBT, CALL_FLOOR, CALL_MAX, CALL_STUCK, CARD, CHIPS, CLAIM_MAX, DECK, DICE_HEAT, FALSE_TELL, HAND, PLAY_OPINION, REVEAL_STEPS, STAKES, TELL_BASE, TELL_MAX, TELLS, THINK_STEPS, type Tell } from '../../content/games';
+import { CALL_DOUBT, CALL_FLOOR, CALL_MAX, CALL_STUCK, CARD, CHIPS, CLAIM_MAX, DECK, DICE_HEAT, FALSE_TELL, HAND, PLAY_OPINION, REVEAL_STEPS, STAKES, TELL_BASE, TELL_MAX, TELLS, THINK_STEPS, TURN_STEPS, type Tell } from '../../content/games';
+import { ROUTINE } from '../../content/routine';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { closeBox } from './actions';
@@ -49,6 +52,8 @@ export interface Cheat {
   /** Cards the inmate has laid itself this round, and how many of them true (it knows they're out of play). */
   laid: number;
   spent: number;
+  /** The step the player's move is due by (2.5.1; 0 or missing: not their move, or the clock not yet started). */
+  due?: number;
 }
 
 /** What a game of Cheat did (the 'cheat' event). */
@@ -63,7 +68,7 @@ export const isTrue = (card: number, table: number) => card === table || card ==
 /** The odds (out of 100) the inmate's tell shows on a lie, for the player's Intellect. */
 export const tellOdds = (int: number) => Math.min(TELL_MAX, TELL_BASE + Math.floor(Math.max(0, int) / 4));
 
-/** The 20 cards, shuffled for a deal at a step: every card's place from roll(). */
+/** The 14 cards, shuffled for a deal at a step: every card's place from roll(). */
 function shuffled(salt: number, step: number): number[] {
   const deck: number[] = [];
   DECK.forEach((n, k) => {
@@ -195,8 +200,9 @@ function reveal(sim: SimContext, c: Cheat, caller: number) {
 
 /**
  * How a game of Cheat ended: won or lost on the chips, folded (the player walked away from the
- * table: the stake is the inmate's), or off (the sirens, someone knocked out: the stake comes
- * back). A game begun plays out past the games' hours.
+ * table, or let their move's clock run out: the stake is the inmate's), or off (the sirens,
+ * someone knocked out, level at the roll call's bell: the stake comes back). A game begun plays
+ * out past the games' hours, up to roll call or Lights Out.
  */
 export function endCheat(sim: SimContext, how: 'won' | 'lost' | 'folded' | 'off') {
   const s = sim.state;
@@ -277,7 +283,16 @@ function inmateMove(sim: SimContext, c: Cheat) {
   sim.events.push({ type: 'cheat', what: 'played', who: c.who, by: 1, n: d.ks.length, tell: d.tell });
 }
 
-/** Each step of a game of Cheat: the sirens or the inmate in no state to play (off), the inmate's move, the next deal. */
+/** Blocks a game of Cheat (or a shootout) can't run on into (2.5.1): the roll calls and Lights Out. */
+export const gamesBell = (s: { routine: number }) => {
+  const id = ROUTINE[s.routine]?.id;
+  return id === 'rollCall' || id === 'eveningRollCall' || id === 'lightsOut';
+};
+
+/**
+ * Each step of a game of Cheat: the sirens or the inmate in no state to play (off), the inmate's
+ * move, the next deal; 2.5.1: the player's move on a clock, the roll call's bell settling it.
+ */
 export function keepCheat(sim: SimContext) {
   const s = sim.state;
   const c = s.cheat;
@@ -286,6 +301,19 @@ export function keepCheat(sim: SimContext) {
   // (A game begun plays out past the games' hours: only the sirens, or the inmate in no state to play, break it off.)
   if (!m || m.ko > 0 || m.angry > 0 || s.lockdown) return endCheat(sim, 'off');
   if (s.talk !== c.who) return endCheat(sim, sim.away ? 'off' : 'folded');
+  if (!sim.rules250) {
+    // Roll call or Lights Out: settled on the chips (more wins, level: the stake back), never stalled into the sirens a missed roll call brings.
+    if (gamesBell(s)) return endCheat(sim, c.chips[0] > c.chips[1] ? 'won' : c.chips[0] < c.chips[1] ? 'lost' : 'off');
+    // (No clock in the lessons: the tutorial's prison takes its time.)
+    if (c.turn !== 0 || sim.world.def.rules?.relaxed) c.due = 0;
+    else if (!c.due) c.due = s.step + TURN_STEPS;
+    else if (s.step >= c.due) {
+      // The clock out: the call made for them if that's all they could do, else they've left the table.
+      c.due = 0;
+      if (!canPlay(c) && canCall(c)) return reveal(sim, c, 0);
+      return endCheat(sim, 'folded');
+    }
+  }
   if (c.turn === 1 && s.step >= c.at) inmateMove(sim, c);
   else if (c.turn === 2 && s.step >= c.at) {
     c.round++;

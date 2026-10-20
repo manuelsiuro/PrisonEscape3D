@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { CHIPS, CROWD_OPINION, ELDER_OPINION, PRACTICE_MAKES, SHOOT_SPOTS, STAKES, SUDDEN_DEATH } from '../content/games';
+import { CHIPS, CLOCK_SHOWN, CROWD_OPINION, ELDER_OPINION, PRACTICE_MAKES, SHOOT_SPOTS, STAKES, SUDDEN_DEATH } from '../content/games';
 import { t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -200,7 +200,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
 
 // ------------------------------------------------------------------ Cheat's card
 
-const cheatView: CheatView = { name: '', stake: 0, chips: [CHIPS, CHIPS], of: CHIPS, table: 1, mine: [], theirs: 0, pile: 0, phase: 'yours', last: null, tell: '', reveal: null, canPlay: false, canCall: false, mustCall: false, deal: 0 };
+const cheatView: CheatView = { name: '', stake: 0, chips: [CHIPS, CHIPS], of: CHIPS, table: 1, mine: [], theirs: 0, pile: 0, phase: 'yours', last: null, tell: '', reveal: null, canPlay: false, canCall: false, mustCall: false, deal: 0, clock: 0 };
 let lastCheat: CheatView | null = null;
 
 /** The hand of Cheat under way (null: none), or the last one's verdict for a moment after. */
@@ -230,6 +230,9 @@ export function cheatNow(sim: Sim): CheatView | null {
   v.canCall = canCall(c);
   v.mustCall = c.by === 1 && c.theirs.length === 0 && c.turn === 0;
   v.deal = deals;
+  // (The move's clock, its last seconds shown.)
+  const left = c.turn === 0 && c.due ? c.due - s.step : 0;
+  v.clock = left > 0 && left <= CLOCK_SHOWN ? Math.ceil(left / 20) : 0;
   lastCheat = { ...v, chips: [v.chips[0], v.chips[1]], mine: v.mine.slice() };
   return v;
 }

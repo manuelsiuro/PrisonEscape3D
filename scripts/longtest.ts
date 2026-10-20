@@ -37,6 +37,8 @@ import { STEPS_PER_MINUTE, UNIT, walkSpeed } from '../src/sim/tuning';
 import { LAYER, MAP_W, placeKey } from '../src/sim/world/World';
 import { shakedownCells } from '../src/sim/systems/justice';
 import { check } from './assert';
+import { en } from '../src/i18n/en';
+import { fr } from '../src/i18n/fr';
 
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
 const put = (b: { x: number; z: number }, t: number) => {
@@ -572,6 +574,22 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   const card = rivals(sim.state, 1);
   check(card.length === 3 && new Set(card.map((e) => e.owner)).size === 3, 'three rivals a night, three different inmates');
   check(JSON.stringify(card) === JSON.stringify(rivals(sim.state, 1)), 'the card is pure');
+  // Never two rats of one name on a card (two cells 12 apart would share one), and the pet's names
+  // (rat.names) never a rival's (race.names), in either language.
+  let shared = 0;
+  for (const p of PRISONS)
+    for (let seed = 1; seed <= 12; seed++) {
+      const s0 = new Sim(p, seed).state;
+      for (let day = 1; day <= 30; day++) {
+        const names = rivals(s0, day).map((e) => e.name);
+        if (new Set(names).size !== names.length) shared++;
+      }
+    }
+  check(shared === 0, `no card with two rats of one name (${shared})`);
+  for (const [lang, d] of [['en', en], ['fr', { ...en, ...fr }]] as const) {
+    const pets = new Set(d['rat.names'].split('|'));
+    check(d['race.names'].split('|').every((n) => !pets.has(n)), `${lang}: the pet's names and the rivals' apart`);
+  }
   const odds = oddsOf(sim.state.salt, 1, card);
   check(card.every((e, i) => card.every((f, j) => e.speed <= f.speed || odds[i] <= odds[j])), `odds by speed: the fastest pays least (${card.map((e, i) => `${e.speed} ×${odds[i] / 10}`).join(', ')})`);
   check(JSON.stringify(odds) === JSON.stringify(oddsOf(sim.state.salt, 1, card.map((e) => ({ ...e, fed: !e.fed })))), 'the bookie can’t know who ate');

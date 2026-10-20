@@ -170,6 +170,8 @@ export interface LeisureDef {
   race: Track;
   /** P29: the football pitch (open yard floor; its goals' nets in the end tiles' middle two). */
   pitch: Pitch;
+  /** Where the pitch was before 2.5.1, if it has moved since (replays of runs from then: Sim.rules250). */
+  pitchWas?: Pitch;
   /** P30: talent night's stage in the canteen, and quiz night's four places in the library (a prison without day cards has neither). */
   stage?: Stage;
   quiz?: QuizPlace;

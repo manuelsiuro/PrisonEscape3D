@@ -14,6 +14,8 @@
  * - tonight's the night: on through Lights Out (outside the player's cell while they're in it,
  *   so its door still locks), to bed at 06:00; the others go to bed at Lights Out;
  * - the crew escape: those within 4 tiles get out too, never through a hole or in a vehicle;
+ * - 2.5.1: the digger's help and the crew's way out never across a fence (a cut in it is a way);
+ *   no post beside the player's cell door; no brawl with someone busy at the evening's doings;
  * - saves: every order carries on the same; damaged ones are dropped; dismissing, a blow from the
  *   player, a capture end them.
  */
@@ -27,7 +29,10 @@ import { lineOfSight } from '../src/sim/ai/sight';
 import { command, EXT, OP, ORDER, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { DAY_STEPS } from '../src/sim/systems/clock';
-import { allyDamage, backedBy, brawlWith, cantOrder, carryingOf, crewEscape, crewEntry, orderOf, postOf, shaftOf, specialityOf } from '../src/sim/systems/crew';
+import { allyDamage, backedBy, brawlWith, cantOrder, carryingOf, crewEscape, crewEntry, digHelp, orderOf, postable, postOf, shaftOf, specialityOf } from '../src/sim/systems/crew';
+import { IRONGATE } from '../src/content/prisons/irongate';
+import { DAY_EVENTS } from '../src/content/days';
+import { performerTonight, tonight } from '../src/sim/systems/talent';
 import { damage, INMATE_DEFENSE } from '../src/sim/systems/combat';
 import { awake, GUARD } from '../src/sim/systems/guards';
 import { DOING } from '../src/sim/systems/inmates';
@@ -738,4 +743,76 @@ function chipSpot(sim: Sim): number {
     g.step(command(0, OP.USE, 1));
   }
   check(!sim.state.followers.length && !sim.state.crew.length, 'hit by the player: gone, with his order');
+}
+
+// ------------------------------------------------------------------ 2.5.1: fences, the cell door, the evening's busy
+{
+  // Irongate's walkway and yard, a chain-link fence between (x 7): sight goes through it, feet don't.
+  const sim = new Sim(IRONGATE, 3);
+  const s = sim.state;
+  const tile = (x: number, z: number) => z * MAP_W + x;
+  check(sim.world.ground.kind[tile(7, 24)] === TILE.FENCE && !sim.world.blocked(6, 24) && !sim.world.blocked(8, 24) && !sim.world.blocked(9, 24), 'Irongate: a fence at 7,24 between open ground');
+  const who = 2;
+  s.followers = [who];
+  s.crew = [[who, ORDER.DIG, -1, -1, 0]];
+  const digger = s.inmates[who].body;
+  const help = () => {
+    const out = [-1];
+    return [digHelp(sim, 'chip', LAYER.GROUND, out), out[0]];
+  };
+  put(s.player, tile(8, 24));
+  put(digger, tile(6, 24));
+  check(help()[0] === 4 && help()[1] === -1, 'the digger across a fence: no help (he can see the player, not get to him)');
+  check(crewEscape(sim, 'fence').length === 0, 'nor does a follower across a fence slip out with the player');
+  sim.rules250 = true;
+  check(help()[0] === DIG_HELP && crewEscape(sim, 'fence').join() === String(who), 'a 2.5.0 replay: both as they were (through the fence)');
+  sim.rules250 = false;
+  put(digger, tile(9, 24));
+  check(help()[0] === DIG_HELP && help()[1] === who && crewEscape(sim, 'fence').join() === String(who), 'on the same side: the help and the way out as ever');
+  // Through a cut in the fence, he can come round.
+  sim.world.setKind(LAYER.GROUND, tile(7, 24), TILE.FENCE_CUT);
+  put(digger, tile(6, 25));
+  check(help()[0] === DIG_HELP && crewEscape(sim, 'fence').join() === String(who), 'a cut in the fence: through it');
+}
+{
+  // A lookout never posted beside the player's cell door (its doorstep, inside, either side).
+  const sim = new Sim(CENTER_PERKS, 5);
+  const w = sim.world;
+  const door = w.cellDoor[1];
+  const [dx, dz] = [door % MAP_W, Math.floor(door / MAP_W)];
+  const near = [-1, 0, 1].flatMap((a) => [-1, 0, 1].map((b) => (dz + b) * MAP_W + dx + a)).filter((t) => t !== door && !w.blocked(t % MAP_W, Math.floor(t / MAP_W)));
+  check(near.length >= 2 && near.every((t) => !postable(w, t)), `no post beside the cell door (${near.map((t) => `${t % MAP_W},${Math.floor(t / MAP_W)}`).join(' ')})`);
+  check(near.some((t) => postable(w, t, true)), '(2.5.0 refused only the door itself)');
+  const step = placesOf(w).doorstep[1];
+  const further = step + (step - door);
+  check(postable(w, further) || w.blocked(further % MAP_W, Math.floor(further / MAP_W)), 'a step further out: a post again');
+}
+{
+  // Start a brawl: never with someone busy at the evening's doings with the player (here a shootout).
+  const g = game(5);
+  const { sim } = g;
+  g.to(1, 10, 5);
+  const y = yardSpot(sim);
+  clearOut(sim, [CP.muscle]);
+  check(g.recruit(CP.muscle, 85, y), 'the muscle recruited');
+  const other = CP.digger;
+  put(sim.state.inmates[other].body, y + MAP_W * 3);
+  check(brawlWith(sim, CP.muscle) === other, `someone to brawl with (${other})`);
+  sim.state.shootout = { who: other, k: 0, mine: 0, theirs: 0, turn: 1, at: sim.state.step + 1000 };
+  check(brawlWith(sim, CP.muscle) !== other, 'not the inmate at the hoop with the player');
+  sim.rules250 = true;
+  check(brawlWith(sim, CP.muscle) === other, '(a 2.5.0 replay: as it was)');
+  sim.rules250 = false;
+  sim.state.shootout = null;
+  // Talent night: not the act on the stage.
+  const t = new Sim(CENTER_PERKS, 81);
+  t.state.calendar = [[0, 0, 0], [1, DAY_EVENTS.indexOf('talent'), 0]];
+  t.state.step = at(1, 19, 2);
+  t.state.followers = [CP.muscle];
+  const act = tonight(t)[0];
+  const m = t.state.inmates[CP.muscle].body;
+  put(t.state.inmates[act.who].body, tileOf(m) + 1);
+  check(performerTonight(t) === act.who && brawlWith(t, CP.muscle) !== act.who, 'not the act on the stage (or walking on)');
+  t.rules250 = true;
+  check(brawlWith(t, CP.muscle) === act.who, '(a 2.5.0 replay: the act would do)');
 }

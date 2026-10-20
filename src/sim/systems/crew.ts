@@ -29,8 +29,8 @@ import { ORDER } from '../command';
 import type { SimContext } from '../context';
 import type { EscapeRoute, Refusal } from '../state';
 import { STEPS_PER_MINUTE, TALK_REACH, UNIT } from '../tuning';
-import { LAYER, placeKey, tileOfKey, type World } from '../world/World';
-import { TILE } from '../world/tiles';
+import { LAYER, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
+import { TILE, TILE_INFO } from '../world/tiles';
 import { jobRooms } from './economy';
 import { clockAt, prisonDay } from './clock';
 import { awake, GUARD, sendToLook } from './guards';
@@ -39,6 +39,8 @@ import { HOTBAR, itemOf, pocketOf, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { dismiss, guardTalking, refuse } from './social';
 import { besideOnGround } from './structure';
+import { hoopsPartner } from './hoops';
+import { performerTonight } from './talent';
 
 /** A crew order's entry (state.crew): [who, ORDER, place, more, night]. */
 export type CrewEntry = number[];
@@ -113,7 +115,7 @@ export function cantOrder(sim: SimContext, who: number, order: number): Refusal 
   if (!line) return 'notHisLine';
   if (specialityOf(sim.world, who, m.cell) !== line) return 'notHisLine';
   // A post: on the ground floor, not in a doorway nor a work room (someone standing there would hold its door open).
-  if (order === ORDER.WATCH && !postable(sim.world, tileAt(m.body.x, m.body.z))) return 'badPost';
+  if (order === ORDER.WATCH && !postable(sim.world, tileAt(m.body.x, m.body.z), sim.rules250)) return 'badPost';
   if (order === ORDER.BRAWL) {
     if (s.lockdown) return 'crewLockdown';
     if (s.brawled === prisonDay(s.step)) return 'brawlToday';
@@ -222,9 +224,15 @@ function giveBack(sim: SimContext, e: CrewEntry) {
   e[ARG] = e[AUX] = -1;
 }
 
-/** Where a lookout can be posted: open ground-floor floor, not a doorway (nor beside the player's cell door), not inside a work room. */
-export function postable(w: World, tile: number): boolean {
-  if (tile < 0 || w.ground.kind[tile] === TILE.DOOR || w.doorRoom[tile] || tile === w.cellDoor[1]) return false;
+/**
+ * Where a lookout can be posted: open ground-floor floor, not a doorway, not beside the player's
+ * cell door (its doorstep, the tile inside, either side: he'd stand in the way of it), not inside
+ * a work room. (`old`: as 2.5.0 had it, when only the door itself was refused.)
+ */
+export function postable(w: World, tile: number, old = false): boolean {
+  if (tile < 0 || w.ground.kind[tile] === TILE.DOOR || w.doorRoom[tile]) return false;
+  const door = w.cellDoor[1];
+  if (!old && door >= 0 && Math.max(Math.abs((tile % MAP_W) - (door % MAP_W)), Math.abs(Math.floor(tile / MAP_W) - Math.floor(door / MAP_W))) <= 1) return false;
   const zone = w.ground.zone[tile];
   return !jobRooms(w).some((r) => r.zone === zone);
 }
@@ -234,16 +242,22 @@ function tidy(s: { crew: number[][] }) {
   for (let k = s.crew.length - 1; k >= 0; k--) if (s.crew[k][ORD] === ORDER.FOLLOW && !s.crew[k][NIGHT]) s.crew.splice(k, 1);
 }
 
-/** The inmate a muscle would brawl with: the nearest within BRAWL_RANGE he can see, up and about, not in the crew (-1 none). */
+/**
+ * The inmate a muscle would brawl with: the nearest within BRAWL_RANGE he can see, up and about,
+ * not in the crew, not busy at the evening's doings (on the stage or walking on, at the quiz, in a
+ * match, under the needle, at the hoop with the player) (-1 none).
+ */
 export function brawlWith(sim: SimContext, who: number): number {
   const s = sim.state;
   const m = s.inmates[who];
   if (!m || m.ko > 0 || s.layer !== LAYER.GROUND || sim.away) return -1;
   let best = -1;
   let bestD = (BRAWL_RANGE * UNIT) ** 2 + 1;
+  const act = sim.rules250 ? -1 : performerTonight(sim);
   s.inmates.forEach((o, k) => {
     if (k === who || s.followers.includes(k) || o.ko > 0 || o.angry > 0 || o.doing === DOING.SLEEP || s.talk === k) return;
     if (s.dice[0] === k || s.bout[0] === k) return;
+    if (!sim.rules250 && (k === act || s.quiz?.who.includes(k) || s.match?.team.includes(k) || s.ink?.who === k || hoopsPartner(s) === k)) return;
     const d = (o.body.x - m.body.x) ** 2 + (o.body.z - m.body.z) ** 2;
     if (d >= bestD || !lineOfSight(sim.world, m.body.x, m.body.z, o.body.x, o.body.z)) return;
     bestD = d;
@@ -481,7 +495,7 @@ export function digHelp(sim: SimContext, action: string, layer: number, out: num
     if (e[ORD] !== ORDER.DIG) continue;
     const m = s.inmates[e[WHO]];
     if (!m || m.ko > 0) continue;
-    if (ground && e[ARG] < 0 && cheb(m.body, s.player) <= DIG_REACH * UNIT && lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z)) {
+    if (ground && e[ARG] < 0 && cheb(m.body, s.player) <= DIG_REACH * UNIT && lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z) && (sim.rules250 || onFoot(sim.world, m.body, s.player, DIG_REACH + 1))) {
       out[0] = e[WHO];
       return DIG_HELP;
     }
@@ -536,6 +550,51 @@ export function crewEscape(sim: SimContext, via: EscapeRoute): number[] {
   if (!CREW_ROUTES.has(via)) return [];
   return s.followers.filter((who) => {
     const m = s.inmates[who];
-    return !!m && m.ko <= 0 && cheb(m.body, s.player) <= CREW_ESCAPE_REACH * UNIT && lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z);
+    return !!m && m.ko <= 0 && cheb(m.body, s.player) <= CREW_ESCAPE_REACH * UNIT && lineOfSight(sim.world, m.body.x, m.body.z, s.player.x, s.player.z) && (sim.rules250 || onFoot(sim.world, m.body, s.player, CREW_ESCAPE_REACH + 2));
   });
+}
+
+/** Scratch for onFoot (not state): the search's marks by tile, and its queue. */
+const reached = new Int32Array(MAP_W * MAP_H);
+let search = 0;
+const queue: number[] = [];
+const depth: number[] = [];
+
+/**
+ * Whether someone could walk over to a point on the ground floor in at most `steps` tile steps
+ * (eight ways, never cutting a corner): sight goes through a chain-link fence, feet don't (nor
+ * across the sea, a wall or a shaft). Doors count as open, a cut fence as a way through; props
+ * are stepped round. The point's own tile always counts as reached (the player on a raft).
+ */
+export function onFoot(w: World, from: { x: number; z: number }, to: { x: number; z: number }, steps: number): boolean {
+  const start = tileAt(from.x, from.z);
+  const goal = tileAt(to.x, to.z);
+  if (start === goal) return true;
+  const kind = w.ground.kind;
+  const open = (x: number, z: number) => x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && (kind[z * MAP_W + x] === TILE.DOOR || !TILE_INFO[kind[z * MAP_W + x]].solid);
+  search++;
+  queue.length = depth.length = 0;
+  queue.push(start);
+  depth.push(0);
+  reached[start] = search;
+  for (let k = 0; k < queue.length; k++) {
+    const t = queue[k];
+    if (depth[k] >= steps) continue;
+    const x = t % MAP_W;
+    const z = (t - x) / MAP_W;
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dz) continue;
+        const nx = x + dx;
+        const nz = z + dz;
+        const j = nz * MAP_W + nx;
+        if (nx < 0 || nz < 0 || nx >= MAP_W || nz >= MAP_H || reached[j] === search) continue;
+        if (j === goal && (!dx || !dz || (open(x + dx, z) && open(x, z + dz)))) return true;
+        if (!open(nx, nz) || (dx && dz && !(open(x + dx, z) && open(x, z + dz)))) continue;
+        reached[j] = search;
+        queue.push(j);
+        depth.push(depth[k] + 1);
+      }
+  }
+  return false;
 }

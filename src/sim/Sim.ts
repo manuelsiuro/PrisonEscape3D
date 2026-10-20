@@ -105,6 +105,14 @@ export class Sim {
   noDogs = false;
   /** Replaying a run logged before the rats (1.14, runlog.ts): a guard waking without his key raised nothing. Not state. */
   noRats = false;
+  /**
+   * Replaying a run logged under 2.5.0 or before (runlog.ts): the P23–P30 rules fixed in 2.5.1 as
+   * they were then (no clock on the player's turn at Cheat or the shootout, no no-shows at talent
+   * night and performers kept to their free-time linger, brawls with the night's busy, the
+   * digger's help and the crew's way out across a fence, lookouts beside the cell door, a glide
+   * down between the fences, the pitches where they were). Not state.
+   */
+  rules250 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;

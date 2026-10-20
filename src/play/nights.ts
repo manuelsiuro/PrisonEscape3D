@@ -7,7 +7,7 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute } from '../sim/systems/clock';
 import { today } from '../sim/systems/calendar';
 import { HOTBAR, itemOf } from '../sim/systems/items';
-import { actNow, boardsOf, GUITAR, markOf, prizeOf, stageOf, stageRefusal, talentOn, tonight, turnFrom } from '../sim/systems/talent';
+import { actNow, boardsOf, GUITAR, markOf, noShow, prizeOf, stageFreeFrom, stageOf, stageRefusal, talentOn, tonight } from '../sim/systems/talent';
 import { nearestPlace, questionNow, quizOf, quizOn, quizRefusal, type Choice, type Question } from '../sim/systems/quiz';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
@@ -58,7 +58,7 @@ export function resetNights() {
 function refusalText(sim: Sim, why: string): string {
   switch (why) {
     case 'actsOn':
-      return t('stage.after', { time: formatTime(turnFrom(tonight(sim)) + 480) });
+      return t('stage.after', { time: formatTime(stageFreeFrom(sim) + 480) });
     case 'offStage':
       return t('stage.onBoards');
     default:
@@ -91,8 +91,9 @@ export function stageNow(sim: Sim, a: number): StageView | null {
   const acts = tonight(sim);
   const m = dayMinute(s.step);
   const on = actNow(sim);
-  v.acts = acts.map((x, k) => ({ name: nameOf(sim, x.who), inst: x.inst, song: x.song, mark: m >= x.until ? x.mark : -1, on: k === on, at: formatTime(x.at + 480) }));
-  v.of = acts.length + 1;
+  // (A no-show: no mark, -2, and out of the running.)
+  v.acts = acts.map((x, k) => ({ name: nameOf(sim, x.who), inst: x.inst, song: x.song, mark: noShow(sim, k) ? -2 : m >= x.until ? x.mark : -1, on: k === on, at: formatTime(x.at + 480) }));
+  v.of = acts.filter((_, k) => !noShow(sim, k)).length + 1;
   if (o) {
     v.phase = 'play';
     v.song = o.song;
@@ -114,7 +115,7 @@ export function stageNow(sim: Sim, a: number): StageView | null {
   const why = stageRefusal(sim, INSTRUMENT.DRUMS);
   v.why = why ? refusalText(sim, why) : '';
   v.played = why === 'performed';
-  v.turnAt = formatTime(turnFrom(acts) + 480);
+  v.turnAt = formatTime(stageFreeFrom(sim) + 480);
   v.hasGuitar = s.items.inv.slice(0, HOTBAR).some((x) => itemOf(x) === GUITAR);
   v.prizes = SONGS.map((_, k) => prizeOf(0, k));
   return v;

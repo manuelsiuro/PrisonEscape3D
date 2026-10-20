@@ -20,7 +20,7 @@ const { decodeRuns, encodeRuns, fitLog, fromBase64, replayLog, RunRecorder, SUM_
 const { Sim } = await import('../src/sim/Sim');
 const { CENTER_PERKS } = await import('../src/content/prisons/center-perks');
 const { STALAG_FLUCHT } = await import('../src/content/prisons/stalag-flucht');
-const { STEPS_PER_MINUTE } = await import('../src/sim/tuning');
+const { STEPS_PER_MINUTE, UNIT } = await import('../src/sim/tuning');
 const { Bot } = await import('./bots');
 const { readLog, keepReplay, readReplay } = await import('../src/game/logs');
 const { deleteSave, writeSave } = await import('../src/game/saves');
@@ -381,6 +381,41 @@ console.log('replay ok');
     check(worst <= 0, 'progress never vouches past where it got');
   }
   console.log('replay viewer ok');
+}
+
+// 2.5.1: a replay file's start (or a save) with headings that aren't one of the 16 and places that
+// aren't whole units: each body faces south, back where it started; nobody sees all round, no NaN.
+{
+  const { canSee } = await import('../src/sim/ai/sight');
+  const { DIR_X } = await import('../src/sim/command');
+  const sim = new Sim(CENTER_PERKS, 4);
+  for (let k = 0; k < 200; k++) sim.step(0);
+  const snap = JSON.parse(JSON.stringify(sim.snapshot()));
+  const odd = [20, -1, 2.5, 'x', null];
+  snap.state.player.facing = 20;
+  snap.state.player.x = null;
+  snap.state.inmates.forEach((m: { body: { facing: unknown }; face: unknown }, k: number) => {
+    m.body.facing = odd[k % odd.length];
+    m.face = 99;
+  });
+  snap.state.guards.forEach((g: { body: { facing: unknown; z: unknown }; face: unknown }, k: number) => {
+    g.body.facing = odd[k % odd.length];
+    g.face = odd[k % odd.length];
+    if (k === 0) g.body.z = 1.5;
+  });
+  const twin = new Sim(CENTER_PERKS, 1);
+  twin.restore(snap);
+  const s = twin.state;
+  const bodies = [s.player, ...s.inmates.map((m) => m.body), ...s.guards.map((g) => g.body)];
+  check(bodies.every((b) => Number.isInteger(b.facing) && b.facing >= 1 && b.facing <= 16 && DIR_X[b.facing] !== undefined && Number.isSafeInteger(b.x) && Number.isSafeInteger(b.z)), 'damaged headings and places load as a heading south, the place it started');
+  check(s.inmates.every((m) => m.face >= 1 && m.face <= 16) && s.guards.every((x) => Number.isInteger(x.face) && x.face >= 1 && x.face <= 16), 'and the way an inmate or a guard faces on arrival');
+  // (Should one slip through anyway: sight with no heading sees nothing past touching, never all round.)
+  const g = s.guards[1].body;
+  const ring = [0, 4, 8, 12].map((d) => ({ x: g.x + Math.round(Math.cos((d * Math.PI) / 8) * 2 * UNIT), z: g.z + Math.round(Math.sin((d * Math.PI) / 8) * 2 * UNIT) }));
+  check(ring.every((p) => !canSee(twin.world, { ...g, facing: 99 }, p)), 'a heading that isn\'t one sees nothing past touching (never all round)');
+  for (let k = 0; k < 40; k++) twin.step(0);
+  check([twin.state.player, ...twin.state.inmates.map((m) => m.body), ...twin.state.guards.map((x) => x.body)].every((b) => Number.isFinite(b.x) && Number.isFinite(b.z)), 'and it plays on with every place a number');
+  console.log('damaged headings: fixed on load');
 }
 
 function clockOf(step: number) {

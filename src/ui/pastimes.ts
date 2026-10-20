@@ -53,6 +53,8 @@ export interface CheatView {
   mustCall: boolean;
   /** Bumps with each deal (the selection clears). */
   deal: number;
+  /** Seconds left on the player's move once its clock is nearly out (2.5.1; 0: not shown). */
+  clock: number;
 }
 
 /**
@@ -153,7 +155,8 @@ export class CheatCard {
         : '';
       const tell = v.tell ? `<p class="cheat-tell">${icon('eye', 13)}<span>${esc(v.tell)}</span></p>` : '';
       const status = v.phase === 'theirs' ? t('cheat.thinking', { name: esc(v.name) }) : v.mustCall ? t('cheat.mustCall', { name: esc(v.name) }) : v.canCall ? t('cheat.yourMoveCall') : t('cheat.yourMove', { card: esc(cardName(v.table, true)) });
-      now = `${last}${tell}<p class="train-note cheat-status">${status}</p>`;
+      const clock = v.clock > 0 && v.phase === 'yours' ? ` <b class="cheat-clock">${t('cheat.clock', { n: v.clock })}</b>` : '';
+      now = `${last}${tell}<p class="train-note cheat-status">${status}${clock}</p>`;
     }
     const hand = v.mine.map((c, k) => `<button class="pcard-btn${(this.sel >> k) & 1 ? ' on' : ''}" data-pick="${k}" aria-pressed="${(this.sel >> k) & 1 ? 'true' : 'false'}" aria-label="${esc(cardName(c))}" ${v.canPlay ? '' : 'disabled'}>${cardFace(c)}${TOUCH ? '' : `<kbd>${k + 1}</kbd>`}</button>`).join('');
     const n = bitsOf(this.sel);

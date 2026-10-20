@@ -83,7 +83,7 @@ export const sideOf = (k: number) => (k < TEAM.CAPTAIN ? 0 : 1);
 export type FootballNews = 'start' | 'kickoff' | 'goal' | 'restart' | 'kick' | 'whiff' | 'won' | 'lost' | 'draw' | 'off' | 'foul';
 
 /** The prison's pitch (null: none). */
-export const pitchOf = (sim: Pick<SimContext, 'world'>): Pitch | null => sim.world.def.leisure?.pitch ?? null;
+export const pitchOf = (sim: Pick<SimContext, 'world'> & { rules250?: boolean }): Pitch | null => (sim.rules250 ? sim.world.def.leisure?.pitchWas : null) ?? sim.world.def.leisure?.pitch ?? null;
 
 /**
  * The pitch in play terms: the long way (`along` x, else z) from the player's goal line a0 to the
@@ -255,8 +255,8 @@ export function releaseKick(sim: SimContext) {
     sim.events.push({ type: 'football', what: 'whiff', power });
     return;
   }
-  o.ball[2] = Math.trunc((DIR_X[p.facing] * power) / 1024);
-  o.ball[3] = Math.trunc((DIR_Z[p.facing] * power) / 1024);
+  o.ball[2] = Math.trunc(((DIR_X[p.facing] ?? 0) * power) / 1024);
+  o.ball[3] = Math.trunc(((DIR_Z[p.facing] ?? 0) * power) / 1024);
   o.last = -1;
   o.kick = -1;
   o.cool[PLAYER_COOL] = s.step + KICK_COOL;
@@ -313,6 +313,8 @@ export function matchTargets(sim: SimContext, so: { follow: Array<Body | null>; 
   o.team.forEach((id, k) => {
     const m = s.inmates[id];
     if (!m || m.ko > 0 || m.angry > 0) return;
+    // (2.5.1: on the pitch now, whatever he was lingering over.)
+    if (!sim.rules250) m.wait = 0;
     const mark = marks[k];
     let pace = m.speed;
     if (set) kickoffSpot(f, k, mark);
@@ -400,8 +402,8 @@ export function keepMatch(sim: SimContext) {
   // The player runs into it: dribbled on, a little faster than the walk (a ball already going faster that way rolls on).
   if (pl.moving && o.kick !== 1 && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 < TOUCH * TOUCH) {
     const push = walkSpeed(s.spd) + DRIBBLE_PUSH;
-    const dx = DIR_X[pl.facing];
-    const dz = DIR_Z[pl.facing];
+    const dx = DIR_X[pl.facing] ?? 0;
+    const dz = DIR_Z[pl.facing] ?? 0;
     if ((b[2] * dx + b[3] * dz) / 1024 < push) {
       b[2] = Math.trunc((dx * push) / 1024);
       b[3] = Math.trunc((dz * push) / 1024);

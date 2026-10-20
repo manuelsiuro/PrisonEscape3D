@@ -22,6 +22,7 @@ export type SimContext = Pick<
   | 'legacy'
   | 'noDogs'
   | 'noRats'
+  | 'rules250'
   | 'aboutBefore'
   | 'groundFrom'
   | 'ladderFoot'

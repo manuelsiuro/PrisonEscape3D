@@ -36,9 +36,9 @@ import { CHARTS, countIn, QUIZ_QUESTIONS, REVEAL_STEPS, SONGS, songSteps } from 
 import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
-import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
+import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY, UNIT } from './tuning';
 import { containersOf } from './world/containers';
-import { LAYER, type World } from './world/World';
+import { LAYER, MAP_H, MAP_W, type World } from './world/World';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing'] as const;
@@ -572,6 +572,12 @@ export interface SimState {
   stageDay: number;
   quiz: Quiz | null;
   quizDay: number;
+  /**
+   * Talent night's acts that stood (2.5.1, talent.ts keepActs): [the prison day, a bit per act
+   * whose performer took the boards in his slot, or was kept from them by the player]; [] none.
+   * An act past its grace without its bit is a no-show.
+   */
+  acted: number[];
 }
 
 export interface Snapshot {
@@ -711,6 +717,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     stageDay: 0,
     quiz: null,
     quizDay: 0,
+    acted: [],
   };
 }
 
@@ -815,7 +822,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // P27: a hand of Cheat, a shootout, a shot held, the old-timer's board; damaged ones are dropped.
   if (!cheatOk(s.cheat, n)) s.cheat = null;
   const so = s.shootout as Shootout | null;
-  if (!(so === null || (!!so && typeof so === 'object' && [so.who, so.k, so.mine, so.theirs, so.turn, so.at].every((x) => Number.isInteger(x)) && so.who >= 0 && so.who < n && so.k >= 0 && so.k < 16 && (so.turn === 0 || so.turn === 1)))) s.shootout = null;
+  if (!(so === null || (!!so && typeof so === 'object' && [so.who, so.k, so.mine, so.theirs, so.turn, so.at].every((x) => Number.isInteger(x)) && so.who >= 0 && so.who < n && so.k >= 0 && so.k < 16 && (so.turn === 0 || so.turn === 1) && (so.due === undefined || (Number.isInteger(so.due) && so.due >= 0))))) s.shootout = null;
   const spots = prison.leisure?.hoop.spots.length ?? 0;
   if (!(Array.isArray(s.shot) && (s.shot.length === 0 || (ints(s.shot, 2) && s.shot[1] >= 0 && s.shot[1] < spots)))) s.shot = [];
   if (!Number.isInteger(s.practice) || s.practice < 0) s.practice = 0;
@@ -846,6 +853,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!showOk(s.show, s.step)) s.show = null;
   if (!quizOk(s.quiz, n, s.step)) s.quiz = null;
   for (const k of ['stageDay', 'quizDay'] as const) if (!Number.isInteger(s[k]) || s[k] < 0) s[k] = 0;
+  if (!(Array.isArray(s.acted) && (s.acted.length === 0 || (ints(s.acted, 2) && s.acted[0] >= 0 && s.acted[1] >= 0 && s.acted[1] < 16)))) s.acted = [];
   if (st.stageDay === undefined) {
     const was = DAY_BOOKS[prison.id]?.beforeStage;
     for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) {
@@ -853,6 +861,28 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
       if (was && (e === 'talent' || e === 'quiz')) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(was[e]), -1]];
     }
   }
+  // (A damaged save or a replay file's start: a heading that isn't one of the 16 faces south, a
+  // place that isn't whole units on the map is where that body started; nobody sees all round
+  // or kicks the ball into NaN.)
+  const fix = (b: Body | undefined, home: Body) => {
+    if (!b || typeof b !== 'object') return;
+    if (!Number.isInteger(b.facing) || b.facing < 1 || b.facing > 16) b.facing = 5;
+    if (!Number.isSafeInteger(b.x) || !Number.isSafeInteger(b.z) || b.x < 0 || b.z < 0 || b.x >= MAP_W * UNIT || b.z >= MAP_H * UNIT) {
+      b.x = home.x;
+      b.z = home.z;
+    }
+    if (typeof b.moving !== 'boolean') b.moving = false;
+  };
+  fix(s.player, fresh.player);
+  s.inmates.forEach((m, k) => {
+    fix(m.body, fresh.inmates[k]?.body ?? fresh.player);
+    if (!Number.isInteger(m.face) || m.face < 1 || m.face > 16) m.face = 5;
+  });
+  s.guards.forEach((g, k) => {
+    fix(g.body, fresh.guards[k].body);
+    if (!Number.isInteger(g.face) || g.face < 1 || g.face > 16) g.face = fresh.guards[k].face;
+  });
+  s.dogs.forEach((d, k) => fix(d.body, fresh.dogs[k].body));
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
@@ -932,7 +962,8 @@ function cheatOk(c: Cheat | null, n: number): boolean {
     [c.who, c.stake, c.round, c.table, c.turn, c.at, c.by, c.pile, c.lead, c.laid, c.spent].every((x) => Number.isInteger(x)) &&
     c.who >= 0 && c.who < n && c.stake >= 0 && c.stake < STAKES.length && c.table >= 1 && c.table <= 3 && c.turn >= 0 && c.turn <= 2 && c.by >= -1 && c.by <= 1 && (c.lead === 0 || c.lead === 1) &&
     Array.isArray(c.chips) && c.chips.length === 2 && c.chips.every((x) => Number.isInteger(x) && x >= 1 && x <= CHIPS) &&
-    hand(c.mine) && hand(c.theirs) && Array.isArray(c.last) && c.last.length <= CLAIM_MAX && c.last.every(card) && typeof c.tell === 'boolean'
+    hand(c.mine) && hand(c.theirs) && Array.isArray(c.last) && c.last.length <= CLAIM_MAX && c.last.every(card) && typeof c.tell === 'boolean' &&
+    (c.due === undefined || (Number.isInteger(c.due) && c.due >= 0))
   );
 }
 

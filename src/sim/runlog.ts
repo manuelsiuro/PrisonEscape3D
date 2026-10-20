@@ -153,8 +153,8 @@ export class RunRecorder {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
       // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm; nor one from before visiting day, P21: the week's cards changed.)
-      // (Nor one from before sports day, P22: the week's cards changed again; nor stage nights, P30.)
-      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '') || beforeStage(log?.game ?? '');
+      // (Nor one from before sports day, P22: the week's cards changed again; nor stage nights, P30; nor the P23–P30 fixes of 2.5.1.)
+      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '') || beforeStage(log?.game ?? '') || beforeFixes(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -274,6 +274,14 @@ export function beforeStage(game: string): boolean {
   return a < 2 || (a === 2 && b < 5);
 }
 
+/** Whether a game version came before the P23–P30 fixes (2.5.1): Sim.rules250 plays it as it was. */
+export function beforeFixes(game: string): boolean {
+  const m = /^(\d+)\.(\d+)\.(\d+)/.exec(game);
+  if (!m) return false;
+  const [a, b, c] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  return a < 2 || (a === 2 && (b < 5 || (b === 5 && c < 1)));
+}
+
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
 const lastDay = (log: RunLog) => Math.min(prisonDay(log.from + log.steps), prisonDay(log.from) + LEGACY_DAYS);
@@ -319,6 +327,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
       if (was && (e === 'talent' || e === 'quiz')) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(was[e]), -1]];
     }
   }
+  // Played before the P23–P30 fixes (2.5.1): those rules as they were.
+  if (beforeFixes(log.game)) sim.rules250 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

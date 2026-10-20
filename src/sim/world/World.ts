@@ -300,6 +300,40 @@ export class World {
     return this.beyondGate[tile] === 1;
   }
 
+  /** The ground on foot from the player's cell or the road (afoot), and the rev it was worked out at. Not state. */
+  private afootTiles: Uint8Array | null = null;
+  private afootRev = -1;
+
+  /**
+   * Whether a ground tile can be walked to from the player's cell or from the road, as the tiles
+   * are now (doors as open, a cut fence a way through; fences, walls and the sea in the way). A
+   * glide (P24) never comes down where it's neither: between two fences, say.
+   */
+  afoot(tile: number): boolean {
+    if (!this.afootTiles || this.afootRev !== this.rev) {
+      const g = this.ground;
+      const seen = this.afootTiles ?? new Uint8Array(MAP_W * MAP_H);
+      seen.fill(0);
+      const walk = (j: number) => g.kind[j] === TILE.DOOR || !TILE_INFO[g.kind[j]].solid;
+      const queue: number[] = [];
+      for (let i = 0; i < MAP_W * MAP_H; i++) if ((this.cellOf[i] === 1 || ZONES[g.zone[i]] === 'outside') && walk(i)) (seen[i] = 1), queue.push(i);
+      for (let k = 0; k < queue.length; k++) {
+        const t = queue[k];
+        const x = t % MAP_W;
+        for (const [j, ok] of [
+          [t - 1, x > 0],
+          [t + 1, x < MAP_W - 1],
+          [t - MAP_W, t >= MAP_W],
+          [t + MAP_W, t < MAP_W * (MAP_H - 1)],
+        ] as const)
+          if (ok && !seen[j] && walk(j)) (seen[j] = 1), queue.push(j);
+      }
+      this.afootTiles = seen;
+      this.afootRev = this.rev;
+    }
+    return this.afootTiles[tile] === 1;
+  }
+
   /** Whether a ground tile lies beyond the delivery's propped doors (where only they let the player out). */
   beyond(tile: number): boolean {
     const d = this.def.delivery;

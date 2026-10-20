@@ -380,6 +380,8 @@ export function quizTargets(sim: SimContext, so: { follow: Array<Body | null>; g
   o.who.forEach((k, j) => {
     const m = s.inmates[k];
     if (!m || m.ko > 0 || m.angry > 0) return;
+    // (2.5.1: at his place now, whatever he was lingering over.)
+    if (!sim.rules250) m.wait = 0;
     const at = marks[j];
     const c = pl.spots[o.seats[j + 1]];
     at.x = c.x * UNIT + UNIT / 2;
