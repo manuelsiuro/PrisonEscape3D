@@ -21,6 +21,7 @@ import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { director } from './chatter';
 import { TOUCH } from '../ui/dom';
+import { PausableClock } from './pausableClock';
 
 /**
  * Card sharks (P27) on screen: Cheat's card, the court's card and the old-timer's board, filled
@@ -63,13 +64,24 @@ let ball: BallShow | null = null;
 export const FLIGHT_S = 0.9;
 export const AFTER_S = 1.2;
 
+/**
+ * The shots' clock (ms): it runs only while the game does, so a ball in the air holds still
+ * under the pause menu (and in a paused replay), and what happens as it lands (the sound, the
+ * toast) waits for it. Read once a frame from the picture, and at each event.
+ */
+const shotClock = new PausableClock();
+
 /** A new game (or a load): nothing to show. */
 export function resetPastimes() {
   endView = null;
   endUntil = 0;
   ball = null;
+  shotClock.clear();
   deals++;
 }
+
+/** The clock now (ms): runs it on while the game isn't paused, then whatever was due. */
+const shotNow = () => shotClock.tick(performance.now(), !play.game || play.game.paused);
 
 // ------------------------------------------------------------------ the events
 
@@ -125,30 +137,32 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       if (!c) break;
       const m = e.by >= 0 ? sim.state.inmates[e.by] : null;
       const from = m ? m.body : sim.state.player;
-      ball = { by: e.by >= 0 ? e.by : -1, fromX: from.x / UNIT, fromZ: from.z / UNIT, result: e.result, short: e.by < 0 ? e.power < e.need : (e.power + e.spot) % 2 === 0, at: now };
+      // (On the shots' clock: the flight, and what happens as it lands, hold still while paused.)
+      ball = { by: e.by >= 0 ? e.by : -1, fromX: from.x / UNIT, fromZ: from.z / UNIT, result: e.result, short: e.by < 0 ? e.power < e.need : (e.power + e.spot) % 2 === 0, at: shotNow() };
       const land = FLIGHT_S * 1000;
-      window.setTimeout(() => {
+      shotClock.after(land, () => {
         if (play.game !== g) return;
         if (e.result === 'swish') sound.swish();
         else if (e.result === 'in') {
           sound.rimClang(0.6);
-          window.setTimeout(() => play.game === g && sound.swish(0.6), 160);
+          shotClock.after(160, () => play.game === g && sound.swish(0.6));
         } else if (e.result === 'rim') sound.rimClang();
         else sound.bounce();
         if (e.by < 0) {
           floatUp(t(e.result === 'swish' ? 'toast.swish' : e.result === 'in' ? 'toast.basket' : e.result === 'rim' ? 'toast.rimOut' : 'toast.airball'), e.result === 'swish' || e.result === 'in' ? 'gain' : 'taken');
           if (e.result === 'swish' || e.result === 'in') buzz('attended');
         } else itemsUI.toast(t(e.result === 'swish' || e.result === 'in' ? 'toast.theyScore' : 'toast.theyMiss', { name: nameOf(sim, e.by) }));
-      }, land);
-      window.setTimeout(() => play.game === g && e.result !== 'air' && sound.bounce(0.6), land + 420);
+      });
+      shotClock.after(land + 420, () => play.game === g && e.result !== 'air' && sound.bounce(0.6));
       break;
     }
     case 'hoops': {
       const name = e.who >= 0 ? nameOf(sim, e.who) : '';
       const m = e.mine ?? 0;
       const n = e.theirs ?? 0;
-      // (After the last ball has come down.)
-      const later = (f: () => void) => window.setTimeout(() => play.game === g && f(), FLIGHT_S * 1000 + 300);
+      // (After the last ball has come down, on the shots' clock.)
+      shotNow();
+      const later = (f: () => void) => shotClock.after(FLIGHT_S * 1000 + 300, () => play.game === g && f());
       if (e.what === 'start') {
         coachOnce('hoops', 'hint.hoops');
         sound.whistle();
@@ -390,10 +404,12 @@ export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: 
   const at = spotAt(sim);
   f.spot = o ? spotOf(o.k) : at;
   const now = performance.now();
-  if (ball && (now - ball.at) / 1000 < FLIGHT_S + AFTER_S && s.layer === LAYER.GROUND) {
+  // (The ball on the shots' clock: held still while paused.)
+  const shot = shotNow();
+  if (ball && (shot - ball.at) / 1000 < FLIGHT_S + AFTER_S && s.layer === LAYER.GROUND) {
     ballFrame.show = ball;
     // (From over the shooter's head: where the hands held it.)
-    ballFrame.t = (now - ball.at) / 1000;
+    ballFrame.t = (shot - ball.at) / 1000;
     f.ball = ballFrame;
   } else f.ball = null;
   if (s.shot.length) {
@@ -446,7 +462,7 @@ function besideLine(ax: number, az: number, bx: number, bz: number, by: number, 
 
 /** Who's shooting in the picture (a shot just let go: the arms still up, following through), -1 the player, else the inmate; null nobody. */
 export function shooterNow(): number | null {
-  return ball && (performance.now() - ball.at) / 1000 < 0.35 ? ball.by : null;
+  return ball && (shotClock.time - ball.at) / 1000 < 0.35 ? ball.by : null;
 }
 
 /** The rim in the picture (tiles), for the ball's flight. */
