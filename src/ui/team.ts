@@ -27,8 +27,9 @@ export interface MatchView {
   score: [number, number];
   /** The last goal was the player's side's (for the 'goal' phase). */
   ours: boolean;
-  /** Who scored it ('' the player; else a name). */
+  /** Who scored it ('' the player; else a name), and whether into his own side's net. */
   by: string;
+  own: boolean;
   /** Space or the pad held for a kick: its power 0–1; the ball at the player's feet (a kick would reach it). */
   holding: boolean;
   power: number;
@@ -59,7 +60,7 @@ export class MatchCard {
       `<div class="train-head"><i class="train-ic">${icon('ball', 18)}</i><b></b><span class="train-value match-score"></span></div>
       <p class="match-teams"></p>
       <i class="match-clock" role="timer"><i></i></i>
-      <p class="train-note" role="status"></p>
+      <p class="train-note"></p>
       <button class="pick-pad match-pad">${icon('ball', 22)}<span></span><i class="match-power" aria-hidden="true"><i></i></i></button>`,
     );
     this.title = this.el.querySelector('.train-head b')!;
@@ -101,7 +102,7 @@ export class MatchCard {
       this.drawn = '';
       return;
     }
-    const key = [v.name, v.phase, v.left, v.score.join(), v.ours, v.by, v.atFeet, v.mates.join(), v.rivals.join(), currentLang(), TOUCH].join('|');
+    const key = [v.name, v.phase, v.left, v.score.join(), v.ours, v.by, v.own, v.atFeet, v.mates.join(), v.rivals.join(), currentLang(), TOUCH].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       setText(this.title, t('football.title', { name: v.name }));
@@ -115,13 +116,15 @@ export class MatchCard {
         v.phase === 'gather'
           ? t('football.gather')
           : v.phase === 'goal'
-            ? v.ours
+            ? v.own
               ? v.by
-                ? t('football.goalBy', { name: v.by })
-                : t('football.goalYou')
-              : v.by
-                ? t('football.goalThem', { name: v.by })
+                ? t('football.ownGoalBy', { name: v.by })
                 : t('football.ownGoal')
+              : v.ours
+                ? v.by
+                  ? t('football.goalBy', { name: v.by })
+                  : t('football.goalYou')
+                : t('football.goalThem', { name: v.by })
             : v.atFeet
               ? t(TOUCH ? 'football.kickTouch' : 'football.kickKeys')
               : t(TOUCH ? 'football.playTouch' : 'football.playKeys');
@@ -165,7 +168,6 @@ export class InkCard {
   private readonly el: HTMLElement;
   private readonly title: HTMLElement;
   private readonly value: HTMLElement;
-  private readonly art: HTMLElement;
   private readonly guide: SVGPolylineElement;
   private readonly line: SVGPolylineElement;
   private readonly pen: SVGCircleElement;
@@ -181,14 +183,13 @@ export class InkCard {
       'div',
       'train-card ink-card hidden',
       `<div class="train-head"><i class="train-ic">${icon('needle', 18)}</i><b></b><span class="train-value"></span></div>
-      <div class="ink-art" aria-hidden="true"><svg viewBox="-4 -4 108 108"><rect class="ink-skin" x="-4" y="-4" width="108" height="108" rx="10"/><polyline class="ink-guide"/><polyline class="ink-line"/><circle class="ink-pen" r="4.2"/><circle class="ink-needle" r="1.8"/></svg></div>
+      <div class="ink-art" aria-hidden="true"><svg viewBox="-4 -4 108 108"><rect class="ink-skin" x="-4" y="-4" width="108" height="108" rx="10"/><polyline class="ink-guide"/><polyline class="ink-line"/><circle class="ink-pen" r="4.2"/><circle class="ink-needle" r="2.6"/></svg></div>
       <i class="match-clock ink-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></i>
       <p class="train-note" role="status"></p>
       <button class="big-btn ghost small ink-quit">${icon('close', 16)}<span></span></button>`,
     );
     this.title = this.el.querySelector('.train-head b')!;
     this.value = this.el.querySelector('.train-value')!;
-    this.art = this.el.querySelector('.ink-art')!;
     this.guide = this.el.querySelector('.ink-guide')!;
     this.line = this.el.querySelector('.ink-line')!;
     this.pen = this.el.querySelector('.ink-pen')!;
@@ -220,7 +221,8 @@ export class InkCard {
     if (key !== this.drawn) {
       this.drawn = key;
       const design = t(`design.${d.id}` as 'design.heart');
-      setText(this.title, v.mine ? t('ink.mineTitle', { design, name: v.name }) : t('ink.title', { design, name: v.name }));
+      const designA = t(`designA.${d.id}` as 'designA.heart');
+      setText(this.title, v.mine ? t('ink.mineTitle', { design: designA, name: v.name }) : t('ink.title', { design, name: v.name }));
       setText(this.value, v.mine ? '' : `$${v.pays}`);
       this.value.setAttribute('aria-label', v.mine ? '' : t('ink.paysAria', { n: v.pays }));
       this.guide.setAttribute('points', pointsOf(d.path));
@@ -230,7 +232,6 @@ export class InkCard {
       setText(this.quit.querySelector('span')!, t('ink.quit'));
       this.quit.classList.toggle('hidden', v.mine);
       this.el.classList.toggle('mine', v.mine);
-      this.art.classList.toggle('hidden', v.mine);
     }
     if (!v.mine) {
       // (The line inked: redrawn as it grows.)

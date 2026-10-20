@@ -182,9 +182,11 @@ const SHAPES: Record<string, Shape> = {
   /** A tattoo gun (P29): a toothbrush handle (its colour), the battery's motor on its back, the razor's needle out of the end, a wire between. */
   inkGun: (c, a) => [
     box(0.32, 0.045, 0.06, c, -0.02, 0, 0),
-    cyl(0.04, 0.12, a, 0.02, 0.045, 0, 10).rotateZ(Math.PI / 2).translate(0.07, 0.07, 0),
+    // (The battery lying along the handle on its back: turned about its own middle, then set in place.)
+    cyl(0.04, 0.12, a, 0, -0.06, 0, 10).rotateZ(Math.PI / 2).translate(0.05, 0.085, 0),
     box(0.06, 0.012, 0.01, 0xd8dde3, 0.17, 0.016, 0),
-    box(0.02, 0.06, 0.012, 0xc0392b, -0.08, 0.045, 0.02),
+    // (A wire from the battery's end down to the handle.)
+    box(0.012, 0.05, 0.012, 0xc0392b, -0.02, 0.04, 0.03),
   ],
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [

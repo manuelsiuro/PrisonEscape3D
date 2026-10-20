@@ -20,7 +20,7 @@
  */
 import { BRAWL_GUARDS } from '../../content/crew';
 import { CROWD_RANGE } from '../../content/games';
-import { AIM_WIDE, BALL_KEEP, KEEPER_COOL, KEEPER_REACH, SHOOT_RANGE, BALL_R, BALL_STOP, BEHIND, BOUNCE_KEEP, CALL_RANGE, DRIBBLE_PUSH, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, GOAL_PAUSE, KEEPER_RUSH, KICK_COOL, KICK_HOLD, KICK_INMATE, KICK_MAX, KICK_MIN, KICK_NOISE, KICK_REACH, KICK_SPREAD, MATCH_STEPS, PASS_ODDS, PITCH_LEAVE, PITCH_RANGE, TEAM_CROWD_OPINION, TEAM_PLAY_OPINION, TEAM_WIN_OPINION, TOUCH, YARD_EYES } from '../../content/team';
+import { AIM_WIDE, KICKOFF_STEPS, BALL_KEEP, KEEPER_COOL, KEEPER_REACH, SHOOT_RANGE, BALL_R, BALL_STOP, BEHIND, BOUNCE_KEEP, CALL_RANGE, DRIBBLE_PUSH, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, GOAL_PAUSE, KEEPER_RUSH, KICK_COOL, KICK_HOLD, KICK_INMATE, KICK_MAX, KICK_MIN, KICK_NOISE, KICK_REACH, KICK_SPREAD, MATCH_STEPS, PASS_ODDS, PITCH_LEAVE, PITCH_RANGE, TEAM_CROWD_OPINION, TEAM_PLAY_OPINION, TEAM_WIN_OPINION, TOUCH, YARD_EYES } from '../../content/team';
 import type { Pitch } from '../../content/prisons/types';
 import { nearestDir, tileAt } from '../ai/path';
 import { DIR_X, DIR_Z } from '../command';
@@ -32,7 +32,7 @@ import { TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';
 import { sightOf } from './calendar';
 import { prisonDay } from './clock';
-import { countGame, gameOn, gameRefusal, sportsPrizeIfDue, sportsWin } from './games';
+import { countGame, gameOn, gameRefusal, gamesOpen, sportsPrizeIfDue, sportsWin } from './games';
 import { awake, GUARD, sendToLook, type Guard } from './guards';
 import { DOING } from './inmates';
 import { bodyAt, type Body } from './movement';
@@ -59,13 +59,20 @@ export interface Match {
   last: number;
   /** After a goal, the step play goes on again (0: in play). */
   pause: number;
-  /** The step each of `team` may kick again. */
+  /** The step each of `team` may kick again (the last: the player). */
   cool: number[];
   /** The step Space went down for a kick (0: not held). */
   hold: number;
   /** The player's own goals in it. */
   scored: number;
+  /** The step play went on again after the last goal (0 none yet). */
+  restart: number;
+  /** The side kicking off (0 the player's, 1 the other; -1 the ball's in open play): the other side can't touch it until they have. */
+  kick: number;
 }
+
+/** Match.cool's place for the player's own kick. */
+const PLAYER_COOL = 5;
 
 /** Places in Match.team. */
 export const TEAM = { KEEPER: 0, MATE: 1, CAPTAIN: 2, RIVAL: 3, RIVAL_KEEPER: 4 } as const;
@@ -126,15 +133,19 @@ export function centreOf(p: Pitch): { x: number; z: number } {
 
 // ------------------------------------------------------------------ the cover
 
-/** A match is being played (the whistle has blown) and a guard is watching it: awake, outdoors, near the pitch. */
+/**
+ * A match is being played (the whistle has blown) and a guard is watching it: awake and on duty
+ * (never one chasing or sent to look), outdoors near the pitch, with the ball in plain view (a
+ * guard round a corner or behind a wall doesn't watch what he can't see).
+ */
 export function watchingMatch(sim: Pick<SimContext, 'world' | 'state'>, g: Guard): boolean {
   const s = sim.state;
   const p = pitchOf(sim);
-  if (!p || !s.match || !s.match.at || !awake(g)) return false;
+  if (!p || !s.match || !s.match.at || !awake(g) || g.mode !== GUARD.DUTY) return false;
   const tx = Math.floor(g.body.x / UNIT);
   const tz = Math.floor(g.body.z / UNIT);
-  if (!TILE_INFO[sim.world.ground.kind[tz * MAP_W + tx]].outdoor) return false;
-  return offBy(p, g.body.x, g.body.z) <= YARD_EYES;
+  if (!TILE_INFO[sim.world.ground.kind[tz * MAP_W + tx]].outdoor || offBy(p, g.body.x, g.body.z) > YARD_EYES) return false;
+  return lineOfSight(sim.world, g.body.x, g.body.z, s.match.ball[0], s.match.ball[1]);
 }
 
 /** How far a guard sees a point now (units): its sight today, halved for a point off the pitch while it watches a match. */
@@ -146,11 +157,14 @@ export function sightFor(sim: SimContext, g: Guard, x: number, z: number): numbe
 
 // ------------------------------------------------------------------ the teams
 
+/** What an inmate won't get up from for a match: sleep, a meal, a seat, a game with someone. */
+const BUSY: ReadonlySet<number> = new Set([DOING.SLEEP, DOING.EAT, DOING.SIT, DOING.SIT_READ, DOING.BOARD, DOING.CARDS, DOING.DICE, DOING.WRESTLE, DOING.LOOKOUT, DOING.BRAWL]);
+
 /** Whether an inmate could play now: up and about, not busy with the player or the crew's orders, near the pitch. */
 function free(sim: SimContext, k: number, p: Pitch): boolean {
   const s = sim.state;
   const m = s.inmates[k];
-  if (!m || m.ko > 0 || m.angry > 0 || m.doing === DOING.SLEEP || m.doing === DOING.EAT) return false;
+  if (!m || m.ko > 0 || m.angry > 0 || BUSY.has(m.doing)) return false;
   if (s.dice[0] === k || s.bout[0] === k || s.cheat?.who === k || s.shootout?.who === k || s.ink?.who === k) return false;
   if (s.crew.some((e) => e[0] === k && e[1] !== 0)) return false;
   return offBy(p, m.body.x, m.body.z) <= CALL_RANGE;
@@ -187,6 +201,7 @@ export function matchRefusal(sim: SimContext, who: number): ReturnType<typeof ga
   const why = gameRefusal(sim, who);
   if (why) return why;
   if (s.layer !== LAYER.GROUND || offBy(p, s.player.x, s.player.z) > PITCH_RANGE || offBy(p, m.body.x, m.body.z) > PITCH_RANGE) return 'noPitch';
+  if (s.crew.some((e) => e[0] === who && e[1] !== 0)) return 'crewBusy';
   if (!teamsFor(sim, who)) return 'fewPlayers';
   return null;
 }
@@ -209,7 +224,7 @@ export function startMatch(sim: SimContext, who: number) {
     m.path = [];
   }
   const c = centreOf(p);
-  s.match = { who, team, from: s.step, at: 0, goals: [0, 0], ball: [c.x, c.z, 0, 0], last: -2, pause: 0, cool: [0, 0, 0, 0, 0], hold: 0, scored: 0 };
+  s.match = { who, team, from: s.step, at: 0, goals: [0, 0], ball: [c.x, c.z, 0, 0], last: -2, pause: 0, cool: [0, 0, 0, 0, 0, 0], hold: 0, scored: 0, restart: 0, kick: 1 };
   sim.events.push({ type: 'football', what: 'start', who, team: team.slice() });
 }
 
@@ -235,7 +250,7 @@ export function releaseKick(sim: SimContext) {
   o.hold = 0;
   const p = s.player;
   const [bx, bz] = o.ball;
-  const inPlay = o.at > 0 && !o.pause;
+  const inPlay = o.at > 0 && !o.pause && o.kick !== 1 && s.step >= o.cool[PLAYER_COOL];
   if (!inPlay || (bx - p.x) ** 2 + (bz - p.z) ** 2 > KICK_REACH * KICK_REACH) {
     sim.events.push({ type: 'football', what: 'whiff', power });
     return;
@@ -243,6 +258,8 @@ export function releaseKick(sim: SimContext) {
   o.ball[2] = Math.trunc((DIR_X[p.facing] * power) / 1024);
   o.ball[3] = Math.trunc((DIR_Z[p.facing] * power) / 1024);
   o.last = -1;
+  o.kick = -1;
+  o.cool[PLAYER_COOL] = s.step + KICK_COOL;
   sim.events.push({ type: 'football', what: 'kick', power });
   makeNoise(sim, 'thud', LAYER.GROUND, tileAt(bx, bz), KICK_NOISE);
 }
@@ -328,7 +345,8 @@ export function matchTargets(sim: SimContext, so: { follow: Array<Body | null>; 
     }
     so.follow[id] = mark;
     so.gap[id] = 0;
-    so.doing[id] = DOING.FOOTBALL;
+    // (Nothing special drawn: they run, and stand; the kick's wind-up is the player's own.)
+    so.doing[id] = DOING.NOTHING;
     so.pace[id] = pace;
   });
 }
@@ -348,11 +366,14 @@ export function keepMatch(sim: SimContext) {
   const p = pitchOf(sim);
   if (!p) return endMatch(sim, 'off');
   if (o.hold && s.step - o.hold >= KICK_HOLD) releaseKick(sim);
-  // A blow at a rival: a hard foul; at a team-mate, the match is off.
-  if ([TEAM.CAPTAIN, TEAM.RIVAL, TEAM.RIVAL_KEEPER].some((k) => (s.inmates[o.team[k]]?.angry ?? 0) > 0)) return endMatch(sim, 'foul');
+  // The player's blow at one of the other side: a hard foul (one of them going for the player on his own, a grudge, an ambush: off).
+  const rivals = [o.team[TEAM.CAPTAIN], o.team[TEAM.RIVAL], o.team[TEAM.RIVAL_KEEPER]];
+  if (sim.events.some((e) => e.type === 'hit' && rivals.includes(e.who))) return endMatch(sim, 'foul');
   const pl = s.player;
   const far = s.layer !== LAYER.GROUND || offBy(p, pl.x, pl.z) > PITCH_LEAVE;
   if (s.lockdown || sim.away || s.sleeping || s.stowed || far || o.team.some((id) => !s.inmates[id] || s.inmates[id].ko > 0 || s.inmates[id].angry > 0)) return endMatch(sim, 'off');
+  // The bell for the next block: full time there and then (a match begun never keeps anyone from where they should be).
+  if (!gamesOpen(sim)) return o.at ? fullTime(sim, o) : endMatch(sim, 'off');
   const f = fieldOf(p);
   if (!o.at) {
     // Walking on: the whistle once everyone's on the field (the player too), or after GATHER_STEPS.
@@ -363,18 +384,21 @@ export function keepMatch(sim: SimContext) {
     }
     return;
   }
-  if (s.step - o.at >= MATCH_STEPS) return endMatch(sim, o.goals[0] > o.goals[1] ? 'won' : o.goals[0] < o.goals[1] ? 'lost' : 'draw');
+  if (s.step - o.at >= MATCH_STEPS) return fullTime(sim, o);
   if (o.pause) {
     if (s.step < o.pause) return;
     const c = centreOf(p);
     o.ball = [c.x, c.z, 0, 0];
     o.pause = 0;
     o.last = -2;
+    o.restart = s.step;
     sim.events.push({ type: 'football', what: 'restart' });
   }
   const b = o.ball;
+  // (The kick-off: the other side keeps off it until the side kicking off has touched it, or for KICKOFF_STEPS at most.)
+  if (o.kick >= 0 && s.step - Math.max(o.at, o.restart) >= KICKOFF_STEPS) o.kick = -1;
   // The player runs into it: dribbled on, a little faster than the walk (a ball already going faster that way rolls on).
-  if (pl.moving && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 < TOUCH * TOUCH) {
+  if (pl.moving && o.kick !== 1 && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 < TOUCH * TOUCH) {
     const push = walkSpeed(s.spd) + DRIBBLE_PUSH;
     const dx = DIR_X[pl.facing];
     const dz = DIR_Z[pl.facing];
@@ -382,14 +406,17 @@ export function keepMatch(sim: SimContext) {
       b[2] = Math.trunc((dx * push) / 1024);
       b[3] = Math.trunc((dz * push) / 1024);
       o.last = -1;
+      o.kick = -1;
     }
   }
-  // An inmate at the ball, or in its way this step, kicks it (one kick a step, in team order; a keeper reaches further).
-  for (let k = 0; k < o.team.length; k++) {
+  // An inmate at the ball, or in its way this step, kicks it (one kick a step; who's asked first turns with the step, so neither side always wins a ball both reach; a keeper reaches further).
+  for (let j = 0; j < o.team.length; j++) {
+    const k = (j + s.step) % o.team.length;
     const m = s.inmates[o.team[k]];
     const reach = k === TEAM.KEEPER || k === TEAM.RIVAL_KEEPER ? KEEPER_REACH : TOUCH;
-    if (s.step < o.cool[k] || nearPath(b, m.body) >= reach * reach) continue;
+    if (s.step < o.cool[k] || (o.kick >= 0 && sideOf(k) !== o.kick) || nearPath(b, m.body) >= reach * reach) continue;
     inmateKick(sim, o, f, k);
+    o.kick = -1;
     break;
   }
   roll(sim, o, f);
@@ -464,8 +491,13 @@ function roll(sim: SimContext, o: Match, f: Field) {
     l = 2 * (f.l1 - BALL_R) - l;
     vl = Math.trunc((-vl * BOUNCE_KEEP) / 100);
   }
-  const mouth = Math.abs(l - f.mid) < GOAL_HALF - BALL_R;
-  if (mouth && (a < f.a0 || a > f.a1)) return goal(sim, o, f, a < f.a0 ? 0 : 1, l);
+  // A goal: across the line inside the mouth, judged where it crossed (not where the step left it).
+  const a1 = along(f, b[0], b[1]);
+  const l1 = across(f, b[0], b[1]);
+  const end = a < f.a0 ? f.a0 : a > f.a1 ? f.a1 : 0;
+  const crossL = end && a !== a1 ? l1 + Math.trunc(((l - l1) * (end - a1)) / (a - a1)) : l;
+  const mouth = Math.abs((end ? crossL : l) - f.mid) < GOAL_HALF - BALL_R;
+  if (mouth && end) return goal(sim, o, f, a < f.a0 ? 0 : 1, crossL);
   if (!mouth && a < f.a0 + BALL_R) {
     a = 2 * (f.a0 + BALL_R) - a;
     va = Math.trunc((-va * BOUNCE_KEEP) / 100);
@@ -493,6 +525,8 @@ function goal(sim: SimContext, o: Match, f: Field, end: number, l: number) {
   put(f, sim.scratch.point, a, l);
   o.ball = [sim.scratch.point.x, sim.scratch.point.z, 0, 0];
   o.pause = s.step + GOAL_PAUSE;
+  // (The side that let it in kicks off again.)
+  o.kick = end === 0 ? 0 : 1;
   const by = o.last >= 0 ? o.team[o.last] : o.last;
   sim.events.push({ type: 'football', what: 'goal', mine, by, score: o.goals.slice() });
   // Every eye that was on the match goes to the net (a guard on his round or post stops to look).
@@ -504,6 +538,9 @@ function goal(sim: SimContext, o: Match, f: Field, end: number, l: number) {
     if (at.x !== g.body.x || at.z !== g.body.z) g.body.facing = nearestDir(at.x - g.body.x, at.z - g.body.z);
   }
 }
+
+/** Full time: won, lost or drawn on the score. */
+const fullTime = (sim: SimContext, o: Match) => endMatch(sim, o.goals[0] > o.goals[1] ? 'won' : o.goals[0] < o.goals[1] ? 'lost' : 'draw');
 
 /** How a match ended: won, lost, drawn, off (the sirens, someone gone), or a foul (a brawl). */
 export function endMatch(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off' | 'foul') {

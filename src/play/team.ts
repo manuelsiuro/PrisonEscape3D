@@ -5,7 +5,7 @@ import { t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { eyesOn } from '../sim/systems/games';
-import { kickPower, matchRefusal, pitchOf, TEAM } from '../sim/systems/football';
+import { kickPower, matchRefusal, pitchOf, sideOf, TEAM } from '../sim/systems/football';
 import { inkRefusal, payOf, qualityOf, TATTOO_GUN, traceSteps, penAt } from '../sim/systems/tattoo';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import { STEPS_PER_SECOND, UNIT } from '../sim/tuning';
@@ -36,14 +36,17 @@ function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
 const trail: Array<[number, number]> = [];
 let trailStep = -1;
 /** The last goal, as the card says it a moment. */
-let lastGoal = { ours: false, by: '' };
+let lastGoal = { ours: false, by: '', own: false };
+/** When the ball was last at the player's feet (ms): the card's word on it held half a second, never flickering. */
+let feetAt = -1e9;
 
 /** A new game (or a load): nothing to show. */
 export function resetTeam() {
   trail.length = 0;
   trailStep = -1;
   kicking = false;
-  lastGoal = { ours: false, by: '' };
+  lastGoal = { ours: false, by: '', own: false };
+  feetAt = -1e9;
 }
 
 // ------------------------------------------------------------------ the talk panel's rows
@@ -52,6 +55,8 @@ export function resetTeam() {
 export function footballOffer(sim: Sim, who: number): { open: boolean; why: string } | null {
   if (!pitchOf(sim)) return null;
   const why = matchRefusal(sim, who);
+  // (Away from the pitch, no row at all: it's only for when one could play.)
+  if (why === 'noPitch') return null;
   return { open: !why, why: why ? refusalText(why) : t('football.note') };
 }
 
@@ -89,7 +94,7 @@ function refusalText(why: string): string {
 
 // ------------------------------------------------------------------ the match's card
 
-const matchView: MatchView = { name: '', phase: 'gather', left: 0, score: [0, 0], ours: false, by: '', holding: false, power: 0, atFeet: false, mates: [], rivals: [] };
+const matchView: MatchView = { name: '', phase: 'gather', left: 0, score: [0, 0], ours: false, by: '', own: false, holding: false, power: 0, atFeet: false, mates: [], rivals: [] };
 
 /** The match under way (null: none), between steps (`a`). */
 export function matchNow(sim: Sim, a: number): MatchView | null {
@@ -104,10 +109,13 @@ export function matchNow(sim: Sim, a: number): MatchView | null {
   v.score = [o.goals[0], o.goals[1]];
   v.ours = lastGoal.ours;
   v.by = lastGoal.by;
+  v.own = lastGoal.own;
   v.holding = o.hold > 0;
   v.power = o.hold ? (kickPower(s.step - o.hold + a) - kickPower(0)) / (kickPower(KICK_HOLD) - kickPower(0)) : 0;
   const [bx, bz] = o.ball;
-  v.atFeet = !!o.at && !o.pause && (bx - s.player.x) ** 2 + (bz - s.player.z) ** 2 <= KICK_REACH * KICK_REACH;
+  const now = performance.now();
+  if (o.at && !o.pause && o.kick !== 1 && (bx - s.player.x) ** 2 + (bz - s.player.z) ** 2 <= KICK_REACH * KICK_REACH) feetAt = now;
+  v.atFeet = !!o.at && !o.pause && now - feetAt < 500;
   v.mates = [o.team[TEAM.KEEPER], o.team[TEAM.MATE]].map((k) => nameOf(sim, k));
   v.rivals = [o.team[TEAM.CAPTAIN], o.team[TEAM.RIVAL], o.team[TEAM.RIVAL_KEEPER]].map((k) => nameOf(sim, k));
   return v;
@@ -177,7 +185,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
       const name = e.who !== undefined && e.who >= 0 ? nameOf(sim, e.who) : '';
       const sc = e.score ?? [0, 0];
       if (e.what === 'start') {
-        coachOnce('football', 'hint.football');
+        coachOnce('football', TOUCH ? 'hint.footballTouch' : 'hint.football');
         itemsUI.toast(t('toast.footballStart', { name }));
       } else if (e.what === 'kickoff' || e.what === 'restart') sound.whistle();
       else if (e.what === 'kick') {
@@ -187,7 +195,10 @@ export function announceTeam(sim: Sim, e: SimEvent) {
         sound.whoosh();
         kicking = false;
       } else if (e.what === 'goal') {
-        lastGoal = { ours: !!e.mine, by: e.by === undefined || e.by < 0 ? '' : nameOf(sim, e.by) };
+        // (Whose side the scorer is on against the net it went in: an own goal said so.)
+        const place = e.by === undefined || e.by < 0 ? -1 : (sim.state.match?.team.indexOf(e.by) ?? -1);
+        const side = place < 0 ? 0 : sideOf(place);
+        lastGoal = { ours: !!e.mine, by: e.by === undefined || e.by < 0 ? '' : nameOf(sim, e.by), own: (side === 0) !== !!e.mine };
         sound.swish();
         sound.cheer();
         if (e.mine) {
@@ -221,6 +232,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
     case 'tattoo': {
       const name = nameOf(sim, e.who);
       const design = t(`design.${DESIGNS[e.design]?.id ?? 'heart'}` as Key);
+      const designA = t(`designA.${DESIGNS[e.design]?.id ?? 'heart'}` as Key);
       if (e.what === 'start') {
         trail.length = 0;
         trailStep = -1;
@@ -233,7 +245,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
         banner.toast(t('toast.tattooDone', { name, design, q: e.quality ?? 0, n: e.pay ?? 0, g: e.gain ?? 0 }), (e.quality ?? 0) >= 50 ? 'good' : undefined, 4200);
       } else if (e.what === 'inked') {
         sound.levelUp();
-        banner.toast(t('toast.inked', { name, design }), 'good', 4200);
+        banner.toast(t('toast.inked', { name, design: designA }), 'good', 4200);
       } else if (e.what === 'quit') itemsUI.toast(t(e.mine ? 'toast.inkMeQuit' : 'toast.tattooQuit', { name }));
       else if (e.what === 'off' && !sim.state.escaped) itemsUI.toast(t('toast.tattooOff', { name }));
       break;
@@ -253,7 +265,9 @@ export function teamSounds(sim: Sim, paused: boolean) {
 
 // ------------------------------------------------------------------ the picture
 
-const frame: TeamFrame = { pitch: null, ball: null, mates: [], rivals: [] };
+const frame: TeamFrame = { pitch: null, theme: '', ball: null, mates: [], rivals: [] };
+/** The ball as the last two steps left it (the picture draws it between them, as it draws everyone). Not state. */
+const ballSteps = { step: -1, x0: 0, z0: 0, x1: 0, z1: 0 };
 const NONE: number[] = [];
 const mates: number[] = [];
 const rivals: number[] = [];
@@ -263,7 +277,9 @@ const ballAt = { x: 0, z: 0, moving: false };
 export function teamFrameOf(sim: Sim, a: number): TeamFrame {
   const o = sim.state.match;
   frame.pitch = pitchOf(sim);
+  frame.theme = sim.world.def.theme ?? 'suburban';
   if (!o) {
+    ballSteps.step = -1;
     frame.ball = null;
     frame.mates = frame.rivals = NONE;
     return frame;
@@ -273,8 +289,18 @@ export function teamFrameOf(sim: Sim, a: number): TeamFrame {
   frame.mates = mates;
   frame.rivals = rivals;
   const [x, z, vx, vz] = o.ball;
-  ballAt.x = (x + vx * a) / UNIT;
-  ballAt.z = (z + vz * a) / UNIT;
+  // (A new step: the last one's place becomes the one it's drawn from; a jump, back to the spot or into the net, isn't eased.)
+  const st = sim.state.step;
+  if (ballSteps.step !== st) {
+    const jump = ballSteps.step < 0 || st - ballSteps.step > 1 || Math.abs(x - ballSteps.x1) + Math.abs(z - ballSteps.z1) > 2 * UNIT;
+    ballSteps.x0 = jump ? x : ballSteps.x1;
+    ballSteps.z0 = jump ? z : ballSteps.z1;
+    ballSteps.x1 = x;
+    ballSteps.z1 = z;
+    ballSteps.step = st;
+  }
+  ballAt.x = (ballSteps.x0 + (x - ballSteps.x0) * a) / UNIT;
+  ballAt.z = (ballSteps.z0 + (z - ballSteps.z0) * a) / UNIT;
   ballAt.moving = vx !== 0 || vz !== 0;
   frame.ball = ballAt;
   return frame;

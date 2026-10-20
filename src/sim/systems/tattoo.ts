@@ -12,7 +12,7 @@
  *
  * Either way the ink's used as it starts. A guard who sees it going on: INK_HEAT, once a sitting.
  */
-import { DESIGNS, FRIEND_INK, INK_GAIN, INK_GAIN_BASE, INK_HEAT, INK_ME_STEPS, INK_OPINION, INK_POOR, INK_QUIT, INK_SLACK, LEAD_IN, MAX_INKED, NEEDLE_SPEED, PAY_MIN, PAY_SPAN, PEN_SPEED, INK_LINGER } from '../../content/team';
+import { DESIGNS, FRIEND_INK, INK_GAIN, INK_GAIN_BASE, INK_HEAT, INK_ME_STEPS, INK_OPINION, INK_POOR, INK_QUIT, INK_SLACK, LEAD_IN, MAX_INKED, NEEDLE_SPEED, PAY_MIN, PAY_SPAN, PEN_SPEED, INK_LINGER, INKS_A_DAY } from '../../content/team';
 import { GAMES_A_DAY } from '../../content/games';
 import { itemNumber } from '../../content/items';
 import { DIR_X, DIR_Z } from '../command';
@@ -23,6 +23,13 @@ import { HOTBAR, itemOf } from './items';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
 import { addHeat } from './watch';
+import { prisonDay } from './clock';
+import { LAYER } from '../world/World';
+import { UNIT } from '../tuning';
+
+/** Further apart than this (units, the larger way), a sitting is off; its first steps give the other time to come over. */
+const INK_APART = 3 * UNIT;
+const INK_GATHER = 60;
 import { crowdPlan } from './calendar';
 import { tileAt } from '../ai/path';
 
@@ -89,6 +96,9 @@ export const payOf = (design: number, quality: number) => Math.floor((DESIGNS[de
 /** What it does for the client's opinion. */
 export const gainOf = (quality: number) => INK_GAIN_BASE + Math.floor((INK_GAIN * quality) / 100);
 
+/** Tattoos given to inmates today. */
+export const inksToday = (s: Pick<SimState, 'inkDays' | 'step'>) => s.inkDays.filter((d) => d === prisonDay(s.step)).length;
+
 /** The hotbar slot holding an item (-1 none). */
 const carried = (s: Pick<SimState, 'items'>, item: number) => s.items.inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === item);
 
@@ -101,6 +111,9 @@ export function inkRefusal(sim: SimContext, who: number, mine: boolean, design =
   if (!gamesOpen(sim)) return 'gamesClosed';
   if (m.opinion < (mine ? FRIEND_INK : INK_OPINION)) return mine ? 'inkFriend' : 'inkOpinion';
   if (!mine && playedToday(s, who) >= GAMES_A_DAY) return 'played';
+  // (One a day for each, a few a day in all: a gun and a steady hand aren't a mint.)
+  if (!mine && (s.inkDays[who] ?? 0) === prisonDay(s.step)) return 'inkedToday';
+  if (!mine && inksToday(s) >= INKS_A_DAY) return 'inkedEnough';
   if (carried(s, TATTOO_GUN) < 0) return 'noGun';
   if (carried(s, INK) < 0) return 'noInk';
   if (mine && s.inked.length >= MAX_INKED) return 'armsFull';
@@ -115,7 +128,11 @@ export function startInk(sim: SimContext, who: number, design: number, mine: boo
   if (!d || gameOn(s)) return;
   const why = inkRefusal(sim, who, mine, design);
   if (why) return refuse(sim, why);
-  if (!mine) countGame(sim, who);
+  if (!mine) {
+    countGame(sim, who);
+    while (s.inkDays.length <= who) s.inkDays.push(0);
+    s.inkDays[who] = prisonDay(s.step);
+  }
   stopTraining(sim);
   endTalk(sim);
   // The ink goes into the gun.
@@ -154,7 +171,9 @@ export function keepInk(sim: SimContext) {
   const o = s.ink;
   if (!o) return;
   const m = s.inmates[o.who];
-  if (!m || m.ko > 0 || m.angry > 0 || s.lockdown || sim.away || s.sleeping || s.stowed) return endInk(sim, 'off');
+  // (Off: the sirens, either of them out of it, the two apart, the player off the ground floor.)
+  const apart = !m || Math.max(Math.abs(m.body.x - s.player.x), Math.abs(m.body.z - s.player.z)) > INK_APART;
+  if (!m || m.ko > 0 || m.angry > 0 || s.lockdown || sim.away || s.sleeping || s.stowed || s.layer !== LAYER.GROUND || (o.k > INK_GATHER && apart)) return endInk(sim, 'off');
   seenInking(sim);
   o.k++;
   if (o.mine) {

@@ -294,3 +294,54 @@ body.reduced-motion .ink-card.lead .ink-pen {
 .match-teams span:last-child {
   color: #ffa0a0;
 }
+
+/* Touch: a drag on the tattoo's card (on its design above all) steers the needle as a drag on the picture would: only Give up takes the touch. */
+.ink-card {
+  pointer-events: none;
+}
+.ink-card button {
+  pointer-events: auto;
+}
+/* The talk panel's tattoo rows: the text above, the design buttons in a row of their own under it. */
+.bribe-row.ink-row {
+  flex-wrap: wrap;
+}
+.bribe-row.ink-row .bribe-text {
+  flex: 1 1 100%;
+}
+.bribe-row.ink-row .bribe-text b {
+  white-space: nowrap;
+}
+.bribe-row.ink-row .stake-row {
+  flex: 1 1 100%;
+  justify-content: flex-start;
+}
+.bribe-row.ink-row .cash-btn.design {
+  flex: 1 1 0;
+  justify-content: center;
+}
+.cash-btn.design.have::after {
+  content: '✓';
+  margin-left: 2px;
+  color: #3fc79a;
+}
+.ink-card.mine .ink-pen,
+.ink-card.mine .ink-needle {
+  display: none;
+}
+.ink-quit {
+  width: auto;
+  align-self: start;
+}
+@media (max-height: 520px) {
+  .ink-card .ink-art svg {
+    width: min(150px, calc(100vh - 90px));
+  }
+  .ink-card {
+    max-width: min(520px, calc(100vw - 210px));
+  }
+  body.matching .coach.lesson-coach,
+  body.inking .coach.lesson-coach {
+    max-width: min(400px, calc(100vw - 600px));
+  }
+}

@@ -285,7 +285,7 @@ export class View {
   player = new Character(INMATE_LOOK);
   private outfit = -1;
   /** The tattoos inked in the prison the player is drawn with (P29). */
-  private inkedShown = '';
+  private inkedShown: number[] = [];
   /** Your prisoner (P16): how the player looks (null: the plain jumpsuit). */
   private prisoner: Prisoner | null = null;
   /** The Intake's preview (P16): your prisoner standing in their cell behind the title, turned by `previewTurn`. */
@@ -935,10 +935,11 @@ export class View {
 
   /** Dresses the player: your prisoner in the outfit (a white vest with none on; the guard cap with the guard's uniform). */
   private dress(outfit: number, inked: readonly number[] = []) {
-    const ink = inked.join();
-    if (outfit === this.outfit && ink === this.inkedShown) return;
+    // (The designs compared one by one: no string a frame.)
+    const same = inked.length === this.inkedShown.length && inked.every((d, k) => d === this.inkedShown[k]);
+    if (outfit === this.outfit && same) return;
     this.outfit = outfit;
-    this.inkedShown = ink;
+    this.inkedShown = inked.slice();
     const old = this.player;
     this.player = new Character(lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked));
     this.player.root.position.copy(old.root.position);
@@ -1225,8 +1226,8 @@ export class View {
     this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
-    // Team & ink (P29): the pitch and the ball (the ground floor, and from the roofs).
-    this.teamView.update(f.team, f.inmates, dt, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
+    // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
+    this.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);

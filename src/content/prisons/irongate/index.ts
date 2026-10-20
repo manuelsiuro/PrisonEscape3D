@@ -446,5 +446,5 @@ export const IRONGATE: PrisonDef = {
   // (off the ferry) sit in the canteen.
   smuggling: { fixer: 13, drop: [36, 22, 50, 26], visits: [14, 27, 24, 38] },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(8, 24, 1), oldTimer: 4, garden: { x: 44, z: 24, w: 3, d: 2 }, race: { x: 26, z: 15, dir: 1, len: 6 }, pitch: pitch(14, 22, 13, 5) },
+  leisure: { hoop: court(8, 24, 1), oldTimer: 4, garden: { x: 44, z: 24, w: 3, d: 2 }, race: { x: 26, z: 15, dir: 1, len: 6 }, pitch: pitch(33, 22, 10, 5) },
 };

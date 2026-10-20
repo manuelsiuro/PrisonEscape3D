@@ -120,9 +120,9 @@ function onKeyDown(e: KeyboardEvent) {
     e.preventDefault();
     if (itemsUI.panelOpen || socialOpen()) return;
     // (P27: on a spot at the hoop, Space raises the ball for a shot; let go, it goes.)
-    if (shootKey(true)) return;
-    // (P29: in a match, Space held is a kick, let go it goes.)
+    // (P29: in a match, Space held is a kick, let go it goes; before the hoop's shot, whose spots lie on some pitches.)
     if (kickKey(true)) return;
+    if (shootKey(true)) return;
     tools.held = true;
     usePress();
   }

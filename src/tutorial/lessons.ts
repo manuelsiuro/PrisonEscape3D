@@ -822,7 +822,7 @@ export const LESSONS: readonly Lesson[] = [
       place(sim, 36, 23, 1);
       waitAt(sim, 0, 38, 23);
       sim.state.inmates[0].opinion = 72;
-      pockets(sim, 'toothbrush', 'battery', 'razor_blade', 'ink', 'ink');
+      pockets(sim, 'toothbrush', 'battery', 'razor_blade', 'ink', 'ink', 'ink');
     },
     steps: [
       { text: 'lesson.tattoo.craft', touch: 'lesson.tattoo.craftTouch', done: (c) => carries(c.sim, 'tattoo_gun'), fail: inkFail },

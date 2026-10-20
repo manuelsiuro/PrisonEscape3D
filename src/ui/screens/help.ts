@@ -102,6 +102,7 @@ const TOUCHES: Array<[string, Key]> = [
   ['hand', 'help.t.act'],
   ['pick', 'help.t.use'],
   ['toss', 'help.t.throw'],
+  ['ball', 'help.t.kick'],
   ['up', 'help.t.digUp'],
   ['target', 'help.t.lock'],
   ['hammer', 'help.t.slots'],

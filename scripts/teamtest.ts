@@ -24,7 +24,7 @@ import { centreOf, fieldOf, kickPower, onPitch, pitchOf, sightFor, TEAM, watchin
 import { GUARD } from '../src/sim/systems/guards';
 import { slot } from '../src/sim/systems/items';
 import { nearestDir } from '../src/sim/ai/path';
-import { penAt, payOf, qualityOf, traceSteps } from '../src/sim/systems/tattoo';
+import { inksToday, penAt, payOf, qualityOf, traceSteps } from '../src/sim/systems/tattoo';
 import { sightOf } from '../src/sim/systems/calendar';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { MAP_W } from '../src/sim/world/World';
@@ -162,6 +162,14 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
         if ((zone !== 'yard' && zone !== 'rollCall') || w.blocked(x, z) || prop || decor) bad.push(`${x},${z} ${zone}${prop ? ' prop' : ''}${decor ? ' decor' : ''}`);
       }
     check(bad.length === 0, `${p.id}: the pitch is open yard floor clear of the garden, the hoop, props and decor (${bad.join('; ')})`);
+    // No roll-call spot or hoop spot in a net (nobody lines up, or shoots, inside a goal).
+    const inNet = [...p.rollCall, ...p.leisure!.hoop.spots].filter(({ x, z }) => {
+      if (x < pitch.x || x >= pitch.x + pitch.w || z < pitch.z || z >= pitch.z + pitch.d) return false;
+      const a = f.along ? x : z;
+      const l = f.along ? z : x;
+      return (a * UNIT < f.a0 || a * UNIT >= f.a1) && Math.abs(l * UNIT + UNIT / 2 - f.mid) < UNIT;
+    });
+    check(inNet.length === 0, `${p.id}: no roll-call or hoop spot in a net (${inNet.map((q) => `${q.x},${q.z}`).join(' ')})`);
     check((f.a1 - f.a0) / UNIT >= 8 && (f.l1 - f.l0) / UNIT >= 4, `${p.id}: the field is at least 8 tiles long and 4 wide`);
     lines.push(`${p.id}: pitch ${pitch.w}×${pitch.d} at ${pitch.x},${pitch.z}, field ${(f.a1 - f.a0) / UNIT}×${(f.l1 - f.l0) / UNIT} along ${f.along ? 'x' : 'z'}`);
   }
@@ -330,6 +338,106 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   console.log(`the cover: sight ${full / UNIT} tiles on the pitch, ${Math.floor(full / 2) / UNIT} off it; a goal holds a guard's eyes ${GOAL_LOOK} steps`);
 }
 
+// ------------------------------------------------------------------ the rules review's cases
+{
+  // A guard who can't see the ball (round a corner, behind a wall) doesn't watch it; one chasing never does.
+  const g = game();
+  const { sim } = g;
+  g.jump(1, 10, 30);
+  atPitch(g, 0);
+  g.talk(TALK.FOOTBALL);
+  const o = sim.state.match!;
+  o.at = sim.state.step;
+  const guard = sim.state.guards[0];
+  guard.mode = GUARD.DUTY;
+  // (Center Perks: north of the yard's wall, outdoors on the path, the pitch out of sight.)
+  put(guard.body, 27, 12);
+  check(!watchingMatch(sim, guard), 'a guard who cannot see the ball is not watching it');
+  const c = centreOf(pitchOf(sim)!);
+  guard.body.x = c.x;
+  guard.body.z = c.z - 2 * UNIT;
+  check(watchingMatch(sim, guard), 'one by the pitch is');
+  guard.mode = GUARD.CHASE;
+  check(!watchingMatch(sim, guard) && sightFor(sim, guard, c.x, c.z - 8 * UNIT) === sightOf(sim, guard), 'a guard giving chase sees as far as ever');
+  guard.mode = GUARD.DUTY;
+  // A goal: the ball judged where it crossed the line. Wide of the mouth as it crosses, back inside by the step's end: no goal.
+  const f = fieldOf(pitchOf(sim)!);
+  o.cool = o.cool.map(() => sim.state.step + 1000);
+  o.kick = -1;
+  const wide = f.mid + 1000;
+  // (Along x at Center Perks: from just short of the line, heading out and back in across.)
+  o.ball = [f.a1 - 100, wide, 400, -500];
+  g.step();
+  check(o.goals[0] === 0 && !o.pause, 'across the line wide of the mouth: no goal, whatever the step ends on');
+}
+{
+  // The kick-off: the side that let a goal in kicks off; the other keeps off the ball (the player too) until they've touched it.
+  const g = game();
+  const { sim } = g;
+  g.jump(1, 10, 30);
+  atPitch(g, 0);
+  g.talk(TALK.FOOTBALL);
+  for (let k = 0; k < GATHER_STEPS + 2 && !sim.state.match!.at; k++) g.step();
+  const o = sim.state.match!;
+  check(o.kick === 1, 'the first kick-off is the other side\'s');
+  // The player on the spot: neither dribble nor kick moves the ball before they've touched it.
+  o.cool = o.cool.map((x, k) => (k < 5 ? sim.state.step + 1000 : x));
+  sim.state.player.x = o.ball[0] - 300;
+  sim.state.player.z = o.ball[1];
+  sim.state.player.facing = 1;
+  g.step(command(1));
+  g.step(command(1, OP.EXT, EXT.KICK, 0));
+  g.step(command(1, OP.EXT, EXT.KICK, 1));
+  check(o.ball[2] === 0 && o.ball[3] === 0 && o.kick === 1, 'the player can\'t take the other side\'s kick-off');
+  for (let k = 0; k < 70; k++) g.step();
+  check(o.kick === -1, 'after a few seconds it is anyone\'s ball');
+}
+{
+  // A rival going for the player on his own (a grudge, an ambush) isn't the player's foul: the match is off, no brawl.
+  const g = game();
+  g.jump(1, 10, 30);
+  atPitch(g, 0);
+  g.talk(TALK.FOOTBALL);
+  const o = g.sim.state.match!;
+  g.sim.state.inmates[o.team[TEAM.RIVAL]].angry = 300;
+  g.step();
+  check(!g.sim.state.match && of(g.seen, 'football').some((e) => e.what === 'off') && !of(g.seen, 'football').some((e) => e.what === 'foul'), 'a rival\'s own ambush ends the match as off, not a foul');
+  // The bell for the next block: full time there and then.
+  const h = game();
+  h.jump(1, 11, 58);
+  atPitch(h, 0);
+  h.talk(TALK.FOOTBALL);
+  h.sim.state.match!.at = h.sim.state.step;
+  for (let k = 0; k < 3 * 60 * 20 && h.sim.state.match; k++) h.step();
+  const end = of(h.seen, 'football').find((e) => e.what === 'won' || e.what === 'lost' || e.what === 'draw' || e.what === 'off');
+  check(!!end && end.what !== 'off' && h.sim.state.step < at(1, 12, 1), `the bell for lunch: full time at once (${end?.what})`);
+}
+{
+  // Tattoos: one a day for each inmate, three a day in all.
+  const g = game(TRAINING, 3);
+  g.jump(1, 10, 30);
+  const s = g.sim.state;
+  const ready = () => {
+    s.items.inv[0] = slot(n('tattoo_gun'));
+    s.items.inv[1] = slot(n('ink'));
+    const m = s.inmates[0];
+    m.opinion = 60;
+    put(m.body, Math.floor(s.player.x / UNIT) - 1, Math.floor(s.player.z / UNIT));
+    m.goal = -1;
+    m.path = [];
+    s.player.facing = 9;
+    g.step(command(0, OP.INTERACT));
+  };
+  ready();
+  g.talk(TALK.TATTOO, 0);
+  while (s.ink) g.step();
+  ready();
+  g.talk(TALK.TATTOO, 0);
+  check(!s.ink && refusals(g.seen).includes('inkedToday'), 'the same inmate twice a day: no');
+  s.inkDays = [1, 1, 1];
+  check(inksToday(s) === 3, 'three given today');
+  // (In a Training Block with one inmate the total is proved by the count alone; the rule reads it.)
+}
 // ------------------------------------------------------------------ off, and fouls
 {
   const g = game();
@@ -346,9 +454,18 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   atPitch(h, 0);
   h.talk(TALK.FOOTBALL);
   const o = h.sim.state.match!;
-  const rival = h.sim.state.inmates[o.team[TEAM.RIVAL]];
-  rival.angry = 10;
-  h.step();
+  // (A real blow: the rival beside the player, locked on, a punch.)
+  const id = o.team[TEAM.RIVAL];
+  const rival = h.sim.state.inmates[id];
+  rival.body.x = h.sim.state.player.x + 600;
+  rival.body.z = h.sim.state.player.z;
+  rival.path = [];
+  h.step(command(0, OP.LOCK, 2 + id));
+  for (let k = 0; k < 40 && h.sim.state.match; k++) {
+    rival.body.x = h.sim.state.player.x + 600;
+    rival.body.z = h.sim.state.player.z;
+    h.step(command(0, OP.USE, k === 0 ? 1 : 0));
+  }
   const foul = of(h.seen, 'football').find((e) => e.what === 'foul');
   check(!h.sim.state.match && !!foul, 'a blow at a rival: a foul, the match over');
   check([TEAM.CAPTAIN, TEAM.RIVAL, TEAM.RIVAL_KEEPER].every((k) => h.sim.state.inmates[o.team[k]].angry > 0), 'the other side goes for the player (a brawl)');

@@ -40,6 +40,8 @@ export const KICK_INMATE = 260;
 export const KICK_SPREAD = 220;
 export const AIM_WIDE = 800;
 export const KICK_COOL = 12;
+/** At a kick-off the other side keeps off the ball until the side kicking off has touched it, this long at most (steps). */
+export const KICKOFF_STEPS = 3 * STEPS_PER_SECOND;
 /** An inmate shoots from within SHOOT_RANGE of the goal (units); further out he knocks it on up the field. A keeper reaches KEEPER_REACH. */
 export const SHOOT_RANGE = 4 * UNIT;
 export const KEEPER_REACH = 440;
@@ -100,6 +102,8 @@ export const DESIGNS: readonly Design[] = [
 ];
 /** An inmate takes a tattoo from the player at this opinion or more (and it's one of the day's games with them); a friend inks the player's own at FRIEND_INK. */
 export const INK_OPINION = 30;
+/** Tattoos for inmates: one a prison day for each, INKS_A_DAY in all (a day's work for one gun). */
+export const INKS_A_DAY = 3;
 export const FRIEND_INK = 70;
 /** Tracing: the pen runs along the design at PEN_SPEED (box units a step) after a LEAD_IN still at its start; the needle moves at NEEDLE_SPEED the way the stick or keys point. */
 export const PEN_SPEED = 16;

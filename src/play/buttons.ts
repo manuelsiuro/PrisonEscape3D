@@ -151,7 +151,9 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     memo.busy = busy;
     memo.panel = panel;
     memo.rev = it.rev;
-    const reach = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim));
+    const near = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim));
+    // (P29: in a match, the players running by aren't offered for a talk: the action button never pops up under the thumb for them.)
+    const reach = near?.kind === 'person' && st.match?.team.includes(near.who) ? null : near;
     memo.station = busy || st.layer !== LAYER.GROUND ? null : sim.station();
     const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, ladderFoot, bodiesOf(sim)), faced);

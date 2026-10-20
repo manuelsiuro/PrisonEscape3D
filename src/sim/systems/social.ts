@@ -413,7 +413,6 @@ export function socialNow(sim: SimContext): Social {
   if (inker >= 0 && s.inmates[inker]?.ko === 0) {
     so.follow[inker] = s.player;
     so.gap[inker] = INK_GAP;
-    so.doing[inker] = DOING.TATTOO;
   }
   // A match's players (P29) where the match wants them (crew or not: it comes first).
   matchTargets(sim, so);

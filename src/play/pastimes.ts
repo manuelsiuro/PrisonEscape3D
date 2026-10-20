@@ -332,7 +332,7 @@ export function shootKey(down: boolean): boolean {
     sendOp(OP.EXT, EXT.SHOOT, 1);
     return true;
   }
-  if (spotAt(sim) < 0 || (s.shootout && (s.shootout.turn !== 0 || spotAt(sim) !== spotOf(s.shootout.k)))) return false;
+  if (s.match || s.ink || spotAt(sim) < 0 || (s.shootout && (s.shootout.turn !== 0 || spotAt(sim) !== spotOf(s.shootout.k)))) return false;
   shooting = true;
   sendOp(OP.EXT, EXT.SHOOT, 0);
   return true;

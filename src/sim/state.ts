@@ -325,7 +325,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -548,6 +548,8 @@ export interface SimState {
   match: Match | null;
   ink: Ink | null;
   inked: number[];
+  /** The prison day each inmate last had a tattoo from the player (by inmate index; 0 never). */
+  inkDays: number[];
 }
 
 export interface Snapshot {
@@ -682,6 +684,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     match: null,
     ink: null,
     inked: [],
+    inkDays: [],
   };
 }
 
@@ -811,6 +814,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // P29: a match or a sitting as they can be (else over), the designs on the player's arms.
   if (!matchOk(s.match, n)) s.match = null;
   if (!inkOk(s.ink, n)) s.ink = null;
+  if (!Array.isArray(s.inkDays) || s.inkDays.length > n || !s.inkDays.every((d) => Number.isInteger(d) && d >= 0)) s.inkDays = [];
   if (!(Array.isArray(s.inked) && s.inked.length <= 3 && s.inked.every((d, k, all) => Number.isInteger(d) && d >= 0 && d < DESIGNS.length && all.indexOf(d) === k))) s.inked = [];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
@@ -829,11 +833,13 @@ function matchOk(o: Match | null, n: number): boolean {
     ints(o.team, 5) &&
     o.team.every((k, i, all) => k >= 0 && k < n && all.indexOf(k) === i) &&
     o.team[2] === o.who &&
-    [o.from, o.at, o.last, o.pause, o.hold, o.scored].every(int) &&
+    [o.from, o.at, o.last, o.pause, o.hold, o.scored, o.restart, o.kick].every(int) &&
+    o.kick >= -1 &&
+    o.kick <= 1 &&
     ints(o.goals, 2) &&
     o.goals.every((g) => g >= 0) &&
     ints(o.ball, 4) &&
-    ints(o.cool, 5) &&
+    ints(o.cool, 6) &&
     o.last >= -2 &&
     o.last < 5
   );

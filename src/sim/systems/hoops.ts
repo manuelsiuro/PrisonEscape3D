@@ -155,7 +155,8 @@ export function startShootout(sim: SimContext, who: number) {
 /** The ball held up for a shot (EXT.SHOOT 0): on a spot (in a shootout, the spot it's at, on the player's turn). */
 export function aimShot(sim: SimContext) {
   const s = sim.state;
-  if (s.shot.length || s.bout.length || s.pick.length || s.cheat || s.seat >= 0 || s.train >= 0 || s.sleeping) return;
+  // (P29: in a football match or at a tattoo, Space is theirs.)
+  if (s.shot.length || s.bout.length || s.pick.length || s.cheat || s.match || s.ink || s.seat >= 0 || s.train >= 0 || s.sleeping) return;
   const spot = spotAt(sim);
   if (spot < 0) return;
   // (The yard open: no sirens, not the night.)
