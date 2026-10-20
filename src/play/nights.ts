@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { CHARTS, COUNT_IN, INSTRUMENT, QUESTION_STEPS, QUIZ_PRIZE, QUIZ_RANGE, SONGS } from '../content/nights';
+import { CHARTS, countIn, INSTRUMENT, QUESTION_STEPS, QUIZ_PRIZE, QUIZ_RANGE, SONGS } from '../content/nights';
 import { KEY_ITEM_COLORS } from '../content/items';
 import { listOf, t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
@@ -11,6 +11,7 @@ import { actNow, boardsOf, GUITAR, markOf, prizeOf, stageOf, stageRefusal, talen
 import { nearestPlace, questionNow, quizOf, quizOn, quizRefusal, type Choice, type Question } from '../sim/systems/quiz';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
+import { TILE } from '../sim/world/tiles';
 import type { NightsFrame } from '../render/Nights';
 import type { QuizView, StageView } from '../ui/nights';
 import { inmateName } from '../ui/social';
@@ -43,7 +44,6 @@ function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
 let stageResult: { at: number; mark: number; place: number; prize: number; crowd: number; heat: number; song: number; inst: number } | null = null;
 let quizResult: { at: number; what: 'won' | 'tie' | 'lost'; pts: number[]; prize: number; int: number; names: string[] } | null = null;
 let judged = { grade: 0, at: 0 };
-let streak = 0;
 const RESULT_MS = 6000;
 
 /** A new game (or a load): nothing to show. */
@@ -51,7 +51,6 @@ export function resetNights() {
   stageResult = null;
   quizResult = null;
   judged = { grade: 0, at: 0 };
-  streak = 0;
   beat.song = -1;
 }
 
@@ -69,7 +68,7 @@ function refusalText(sim: Sim, why: string): string {
 
 // ------------------------------------------------------------------ talent night's card
 
-const stageView: StageView = { phase: 'offer', acts: [], why: '', played: false, turnAt: '', hasGuitar: false, prizes: [], song: 0, inst: 0, t: 0, hits: [], mark: 0, streak: 0, judged: 0, judgedAt: 0, place: 0, of: 0, prize: 0, crowd: 0, heat: 0 };
+const stageView: StageView = { phase: 'offer', acts: [], why: '', played: false, turnAt: '', hasGuitar: false, prizes: [], song: 0, inst: 0, t: 0, hits: [], mark: 0, judged: 0, judgedAt: 0, place: 0, of: 0, prize: 0, crowd: 0, heat: 0 };
 
 /** Close enough to the stage for its card: on the ground floor, within a tile of its boards. */
 function byStage(sim: Sim): boolean {
@@ -99,10 +98,9 @@ export function stageNow(sim: Sim, a: number): StageView | null {
     v.song = o.song;
     v.inst = o.inst;
     // (Where the song is between steps: the card's lanes run with the clock, as the picture does.)
-    v.t = s.step + a - o.from - COUNT_IN;
+    v.t = s.step + a - o.from - countIn(o.song);
     v.hits = o.hits;
     v.mark = markOf(o);
-    v.streak = streak;
     v.judged = judged.grade;
     v.judgedAt = judged.at;
     return v;
@@ -144,7 +142,12 @@ export function questionText(sim: Sim, q: Question): { text: string; choices: st
         return t(`quiz.${q.id}.${c.k}` as Key);
     }
   };
-  const items = (q.items ?? []).map((id) => itemName(id));
+  // (The same item twice: once, counted.)
+  const ids = q.items ?? [];
+  const items = [...new Set(ids)].map((id) => {
+    const n = ids.filter((x) => x === id).length;
+    return n > 1 ? `${n} × ${itemName(id)}` : itemName(id);
+  });
   const text = q.id === 'key' ? t('quiz.key', { name: guardLabel(sim, q.guard ?? 0) }) : q.id === 'recipe' ? t('quiz.recipe', { items: listOf(items) }) : t(`quiz.${q.id}` as Key);
   return { text, choices: q.choices.map(choice) };
 }
@@ -197,6 +200,12 @@ export function quizNow(sim: Sim): QuizView | null {
 
 // ------------------------------------------------------------------ the keys
 
+/** On the stage, or at the quiz's table (joined): the other actions wait. */
+export const nightsBusy = (s: { show: unknown; quiz: unknown }) => !!s.show || !!s.quiz;
+
+/** Keys the act and the quiz keep from everything else: the hotbar's digits, the action, the tool, a drop, a throw. */
+const KEPT = /^(?:Digit[1-6]|Numpad[1-6]|KeyE|Space|KeyF|KeyQ|KeyU|KeyR)$/;
+
 /** The lanes' keys on the stage (A or ←, S or ↓ / W or ↑, D or →) and the answers' (1–4): sent, and taken (true) so nothing else has them. */
 export function nightsKey(code: string): boolean {
   const g = play.game;
@@ -204,15 +213,13 @@ export function nightsKey(code: string): boolean {
   const s = g.rec.sim.state;
   if (s.show) {
     const lane = code === 'KeyA' || code === 'ArrowLeft' ? 0 : code === 'KeyS' || code === 'ArrowDown' || code === 'KeyW' || code === 'ArrowUp' ? 1 : code === 'KeyD' || code === 'ArrowRight' ? 2 : -1;
-    if (lane < 0) return false;
-    lanePress(lane);
-    return true;
+    if (lane >= 0) lanePress(lane);
+    return lane >= 0 || KEPT.test(code);
   }
-  if (s.quiz && s.quiz.q >= 0 && !s.quiz.until && s.quiz.said[0] < 0) {
+  if (s.quiz) {
     const d = /^(?:Digit|Numpad)([1-4])$/.exec(code);
-    if (!d) return false;
-    sendOp(OP.EXT, EXT.ANSWER, Number(d[1]) - 1);
-    return true;
+    if (d && s.quiz.q >= 0 && !s.quiz.until && s.quiz.said[0] < 0) sendOp(OP.EXT, EXT.ANSWER, Number(d[1]) - 1);
+    return KEPT.test(code);
   }
   return false;
 }
@@ -233,17 +240,14 @@ export function announceNights(sim: Sim, e: SimEvent) {
   switch (e.type) {
     case 'stage': {
       if (e.what === 'start') {
-        streak = 0;
         judged = { grade: 0, at: 0 };
         coachOnce('talent', TOUCH ? 'hint.talentTouch' : 'hint.talent');
       } else if (e.what === 'hit') {
-        streak++;
         judged = { grade: e.grade ?? 2, at: performance.now() };
         const o = sim.state.show;
         if (o?.inst === INSTRUMENT.GUITAR) sound.strum(e.pitch ?? 0, e.grade === 3 ? 1 : 0.75);
         else sound.drum(e.lane ?? 0, e.grade === 3 ? 1 : 0.75);
       } else if (e.what === 'miss' || e.what === 'stray') {
-        streak = 0;
         judged = { grade: 1, at: performance.now() };
         sound.dud();
       } else if (e.what === 'done') {
@@ -269,7 +273,7 @@ export function announceNights(sim: Sim, e: SimEvent) {
         if (e.by === 0) floatUp('+1', 'gain');
       } else if (e.what === 'wrong') sound.buzzer();
       else if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {
-        const o = { names: [t('games.you'), ...(sim.state.quiz?.who ?? lastWho).map((k) => nameOf(sim, k))] };
+        const o = { names: [t('games.you'), ...(e.who ?? []).map((k) => nameOf(sim, k))] };
         quizResult = { at: performance.now(), what: e.what, pts: e.pts ?? [0, 0, 0, 0], prize: e.prize ?? 0, int: e.int ?? 0, names: o.names };
         if (e.what === 'won') {
           sound.levelUp();
@@ -278,13 +282,10 @@ export function announceNights(sim: Sim, e: SimEvent) {
         } else if (e.what === 'tie') sound.coin();
         else sound.sting();
       } else if (e.what === 'off' && !sim.state.escaped) itemsUI.toast(t('toast.quizOff'));
-      if (e.who) lastWho = e.who;
       break;
     }
   }
 }
-/** The last quiz's contestants (the end's event comes after the quiz is cleared). */
-let lastWho: number[] = [];
 
 // ------------------------------------------------------------------ the music
 
@@ -307,12 +308,15 @@ export function nightsSounds(sim: Sim, a: number, paused: boolean): boolean {
   let act = -1;
   if (o) {
     song = o.song;
-    from = o.from + COUNT_IN;
+    from = o.from + countIn(o.song);
   } else {
     const k = actNow(sim);
     const st = stageOf(sim.world);
-    if (k >= 0 && st && s.layer === LAYER.GROUND) {
-      const x = tonight(sim)[k];
+    const x = k >= 0 ? tonight(sim)[k] : null;
+    const performer = x ? s.inmates[x.who] : null;
+    // (Heard in the canteen, the act's performer there to play it.)
+    const there = !!performer && !!st && Math.floor(performer.body.x / UNIT) === st.x && Math.floor(performer.body.z / UNIT) === st.z;
+    if (x && st && there && s.layer === LAYER.GROUND && sim.playerZone === 'canteen') {
       const d = Math.hypot(s.player.x / UNIT - st.x, s.player.z / UNIT - st.z);
       gain = Math.max(0, 1 - d / 16);
       song = x.song;
@@ -353,13 +357,13 @@ export function nightsSounds(sim: Sim, a: number, paused: boolean): boolean {
   if (i === 0 || i === 4) sound.bass(sg.chords[bar], gain);
   // An act: its own notes, as it plays them (some go astray, as its mark has it).
   if (act >= 0) {
-    const x = tonight(sim)[act];
+    const xa = tonight(sim)[act];
     const c = CHARTS[song];
     for (let n = 0; n < c.length; n++) {
       if (c[n][0] !== eighth * sg.steps) continue;
-      const missed = ((n * 2654435761) >>> 0) % 100 >= x.mark;
+      const missed = ((n * 2654435761) >>> 0) % 100 >= xa.mark;
       if (missed) sound.dud(gain * 0.5);
-      else if (x.inst === INSTRUMENT.GUITAR) sound.strum(c[n][2], gain * 0.8);
+      else if (xa.inst === INSTRUMENT.GUITAR) sound.strum(c[n][2], gain * 0.8);
       else sound.drum(c[n][1], gain * 0.8);
     }
   }
@@ -368,7 +372,7 @@ export function nightsSounds(sim: Sim, a: number, paused: boolean): boolean {
 
 // ------------------------------------------------------------------ the picture
 
-const frame: NightsFrame = { stage: null, quiz: null, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] };
+const frame: NightsFrame = { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] };
 const lights = [0, 0, 0, 0];
 
 /** What the 3D shows of P30 this frame: the stage set up on talent night's evening, the buzzers on quiz night's, lit as they buzz. */
@@ -376,6 +380,13 @@ export function nightsFrameOf(sim: Sim): NightsFrame {
   const s = sim.state;
   frame.stage = stageOf(sim.world);
   frame.quiz = quizOf(sim.world);
+  // (A wall behind each of the back row's three tiles.)
+  const st = frame.stage;
+  if (st) {
+    const [fx, fz] = [st.face === 1 ? 1 : st.face === 9 ? -1 : 0, st.face === 5 ? 1 : st.face === 13 ? -1 : 0];
+    const wall = (x: number, z: number) => sim.world.inside(x, z) && sim.world.blocked(x, z) && sim.world.ground.base[z * MAP_W + x] !== TILE.DOOR;
+    frame.backed = [-1, 0, 1].every((k) => wall(st.x - fx - fz * k, st.z - fz + fx * k));
+  } else frame.backed = false;
   const ev = sim.world.def.rules?.relaxed ? 'none' : today(sim).event;
   const m = dayMinute(s.step);
   // (Set up from the evening's free time, 18:00, to evening roll call, 22:00.)

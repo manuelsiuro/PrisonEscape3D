@@ -280,7 +280,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const otherGame = !!(bout || pick || cheat || boardV || match || inkV);
   const stageV = busy || otherGame ? null : stageNow(sim, a);
   const quizV = busy || otherGame || stageV ? null : quizNow(sim);
-  stageCard.update(stageV, !settings.reducedMotion);
+  stageCard.update(stageV);
   quizCard.update(quizV);
   songOn = nightsSounds(sim, a, g.paused || g.over);
   document.body.classList.toggle('performing', stageV?.phase === 'play');

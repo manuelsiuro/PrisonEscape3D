@@ -88,8 +88,8 @@ export const CHARTS: ReadonlyArray<readonly Note[]> = SONGS.map((s) => {
 /** How long a song lasts after its count-in (steps): its bars, and a beat to ring out. */
 export const songSteps = (song: number) => SONGS[song].bars.length * 8 * SONGS[song].steps + 2 * SONGS[song].steps;
 
-/** The count-in: the first note comes this long after the song starts (steps). */
-export const COUNT_IN = 2 * STEPS_PER_SECOND;
+/** The count-in: four beats of the song's own pace, then its first note (steps). */
+export const countIn = (song: number) => 8 * SONGS[song].steps;
 /**
  * Judging a press (a step's lane, EXT.NOTE): within PERFECT steps of a note in that lane, perfect;
  * within GOOD, good; otherwise it's a stray press, and costs. A press reaches the simulation on
@@ -115,7 +115,7 @@ export const RIVAL_SPREAD = 36;
 /** The prize money by place (first, second, third; nothing after), times the song's share (per cent, by level). */
 export const PRIZES = [30, 15, 5] as const;
 export const SONG_PAY = [100, 150, 200] as const;
-/** Opinion: everyone in the canteen at a mark of APPLAUSE or more (STAGE_OPINION), twice that from first place; below it, nothing. */
+/** Opinion: everyone in the canteen at a mark of APPLAUSE or more (STAGE_OPINION), twice that from first place; below it, nothing (and no prize either). */
 export const APPLAUSE = 50;
 export const STAGE_OPINION = 1;
 /** A mark of GOODWILL or more wins the warden's goodwill: this much heat off. */
@@ -133,6 +133,8 @@ export const QUIZ_GATHER = 10 * STEPS_PER_SECOND;
 export const QUIZ_RANGE = 2;
 export const QUIZ_CALL = 40;
 export const QUIZ_LEAVE = 4;
+/** Joining closes at QUIZ_LAST (minutes into the prison day: 20:00), time for the whole quiz before evening roll call. */
+export const QUIZ_LAST = 12 * 60;
 /** An inmate's wits (its Intellect, by roll() for its cell): WITS_MIN to WITS_MIN + WITS_SPAN − 1. */
 export const WITS_MIN = 25;
 export const WITS_SPAN = 51;

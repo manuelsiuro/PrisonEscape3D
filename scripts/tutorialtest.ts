@@ -4,7 +4,7 @@
  * and the lesson end done. The lessons are data (src/tutorial/lessons.ts); this proves none
  * can get stuck.
  */
-import { CHARTS, COUNT_IN, LATE, songSteps } from '../src/content/nights';
+import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
 import { tonight, turnFrom } from '../src/sim/systems/talent';
 import { questionNow } from '../src/sim/systems/quiz';
 import { dayMinute } from '../src/sim/systems/clock';
@@ -567,8 +567,8 @@ play('talent', (bot) => {
   bot.op(OP.EXT, EXT.STAGE, 0, 0);
   check(!!bot.st.show, 'talent: the act on');
   const o = bot.st.show!;
-  const due = new Map(CHARTS[0].map(([t, lane]) => [o.from + COUNT_IN + LATE + t - 1, lane] as const));
-  bot.until(() => !bot.st.show, COUNT_IN + songSteps(0) + 40, () => {
+  const due = new Map(CHARTS[0].map(([t, lane]) => [o.from + countIn(o.song) + LATE + t - 1, lane] as const));
+  bot.until(() => !bot.st.show, countIn(0) + songSteps(0) + 40, () => {
     const lane = due.get(bot.st.step);
     return lane === undefined ? 0 : command(0, OP.EXT, EXT.NOTE, lane);
   });

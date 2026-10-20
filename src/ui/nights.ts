@@ -1,7 +1,8 @@
-import { CHARTS, INSTRUMENT, SONGS } from '../content/nights';
+import { CHARTS, INSTRUMENT, QUIZ_QUESTIONS, SONGS } from '../content/nights';
 import { currentLang, t, type Key } from '../i18n';
 import { withKeys } from '../i18n/keys';
 import { EXT, OP } from '../sim/command';
+import { STAGE_QUIT } from '../sim/systems/talent';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
@@ -41,13 +42,12 @@ export interface StageView {
   turnAt: string;
   hasGuitar: boolean;
   prizes: number[];
-  /** The song being played, where it is (steps into it, fractional; below 0 counted in), each note's judgement, the mark so far, notes in a row. */
+  /** The song being played, where it is (steps into it, fractional; below 0 counted in), each note's judgement, the mark so far. */
   song: number;
   inst: number;
   t: number;
   hits: readonly number[];
   mark: number;
-  streak: number;
   /** The last judgement (0 none, 1 missed, 2 good, 3 perfect, 4 a stray press) and when (ms), for its flash. */
   judged: number;
   judgedAt: number;
@@ -84,6 +84,7 @@ export class StageCard {
   private song = 0;
   private inst: number = INSTRUMENT.DRUMS;
   private judgedShown = 0;
+  private counting = false;
   /** A lane's pad pressed (the play layer sends it), lit a moment. */
   onLane: (lane: number) => void = () => {};
   private lit = [0, 0, 0];
@@ -105,7 +106,8 @@ export class StageCard {
       <div class="stage-play" aria-hidden="true"><canvas class="stage-lanes"></canvas><b class="stage-judge"></b></div>
       <div class="stage-pads">${[0, 1, 2].map((k) => `<button class="pick-pad stage-pad" data-lane="${k}" style="--lane:${LANE_COLOR[k]}"><i class="lane-shape s${k}"></i><kbd></kbd></button>`).join('')}</div>
       <i class="match-clock stage-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></i>
-      <p class="train-note"></p>`,
+      <p class="train-note"></p>
+      <button class="big-btn ghost small stage-quit">${icon('close', 16)}<span></span></button>`,
     );
     this.title = this.el.querySelector('.train-head b')!;
     this.value = this.el.querySelector('.train-value')!;
@@ -134,6 +136,11 @@ export class StageCard {
         this.pickDrawn = '';
         return;
       }
+      if (el.closest('.stage-quit')) {
+        this.click();
+        this.send(OP.EXT, EXT.STAGE, STAGE_QUIT);
+        return;
+      }
       if (el.closest('.stage-go')) {
         this.click();
         this.send(OP.EXT, EXT.STAGE, this.song, this.inst);
@@ -160,7 +167,7 @@ export class StageCard {
     this.lit[lane] = performance.now();
   }
 
-  update(v: StageView | null, motion: boolean) {
+  update(v: StageView | null) {
     this.el.classList.toggle('hidden', !v);
     if (!v) {
       this.drawn = '';
@@ -181,10 +188,12 @@ export class StageCard {
         })
         .join('');
       for (const b of this.pads.querySelectorAll('kbd')) b.textContent = TOUCH ? '' : withKeys(['← %KeyA%', '↓ %KeyS%', '→ %KeyD%'][Number((b.parentElement as HTMLElement).dataset.lane)]);
+      this.pads.querySelectorAll<HTMLElement>('[data-lane]').forEach((p, k) => p.setAttribute('aria-label', t('stage.laneAria', { n: k + 1 })));
       if (v.phase === 'offer') setText(this.note, v.why || t('stage.pickNote'));
       else if (v.phase === 'play') setText(this.note, t(TOUCH ? 'stage.playTouch' : 'stage.playKeys'));
       else setText(this.note, this.verdict(v));
       setText(this.go.querySelector('span')!, t('stage.go'));
+      setText(this.el.querySelector('.stage-quit span')!, t('stage.quit'));
       this.go.disabled = !!v.why;
     }
     // The pick (redrawn as it changes, the song's prize with it).
@@ -206,7 +215,7 @@ export class StageCard {
       setText(this.value, '');
     } else if (v.phase === 'play') {
       setText(this.value, `${v.mark}%`);
-      this.draw(v, motion);
+      this.draw(v);
       const n = CHARTS[v.song].length;
       const done = v.hits.filter((x) => x > 0).length;
       (this.bar.firstElementChild as HTMLElement).style.width = `${((done / n) * 100).toFixed(1)}%`;
@@ -220,9 +229,16 @@ export class StageCard {
         void this.judge.offsetWidth;
         this.judge.classList.add('pop');
       }
+      // The count-in: 4, 3, 2, 1 on its four beats (as the clicks), gone with the first note.
+      const beatLen = SONGS[v.song].steps * 2;
       if (v.t < 0) {
-        this.judge.textContent = String(Math.ceil(-v.t / (SONGS[v.song].steps * 2)) || '');
+        this.judge.textContent = String(Math.min(4, Math.ceil(-v.t / beatLen)));
         this.judge.dataset.grade = '0';
+        this.counting = true;
+      } else if (this.counting) {
+        this.counting = false;
+        this.judge.textContent = '';
+        this.judge.dataset.grade = '';
       }
     } else setText(this.value, v.prize ? `+$${v.prize}` : `${v.mark}%`);
     const now = performance.now();
@@ -240,7 +256,7 @@ export class StageCard {
   }
 
   /** The lanes: the notes coming down to the line (shapes by lane), those played gone, those missed greyed. */
-  private draw(v: StageView, motion: boolean) {
+  private draw(v: StageView) {
     const c = this.lanes;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = c.clientWidth;
@@ -286,7 +302,6 @@ export class StageCard {
       g.lineWidth = now - this.lit[k] < 120 ? 4 : 2;
       shape(g, k, k * lw + lw / 2, line, r + 3, true);
     }
-    void motion;
   }
 }
 
@@ -366,12 +381,21 @@ export class QuizCard {
     this.note = this.el.querySelector('.train-note')!;
     this.join = this.el.querySelector('.quiz-join')!;
     this.quit = this.el.querySelector('.quiz-quit')!;
+    // An answer on the press (the buttons are redrawn as others buzz: a click could miss them between down and up); from the keyboard, on Enter or Space.
+    const answer = (c: HTMLButtonElement | null) => {
+      if (!c || c.disabled) return false;
+      this.click();
+      this.send(OP.EXT, EXT.ANSWER, Number(c.dataset.choice));
+      return true;
+    };
+    this.el.addEventListener('pointerdown', (e) => {
+      if (answer((e.target as HTMLElement).closest<HTMLButtonElement>('[data-choice]'))) e.preventDefault();
+    });
     this.el.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       const c = el.closest<HTMLButtonElement>('[data-choice]');
-      if (c && !c.disabled) {
-        this.click();
-        this.send(OP.EXT, EXT.ANSWER, Number(c.dataset.choice));
+      if (c) {
+        if ((e as MouseEvent).detail === 0) answer(c);
         return;
       }
       if (el.closest('.quiz-join')) {
@@ -402,7 +426,7 @@ export class QuizCard {
       this.el.dataset.phase = v.phase;
       setText(this.title, t('quiz.title'));
       const asking = v.phase === 'ask' || v.phase === 'reveal';
-      setText(this.value, asking ? t('quiz.of', { n: v.q + 1, of: 8 }) : '');
+      setText(this.value, asking ? t('quiz.of', { n: v.q + 1, of: QUIZ_QUESTIONS }) : '');
       this.board.innerHTML =
         v.phase === 'offer'
           ? ''

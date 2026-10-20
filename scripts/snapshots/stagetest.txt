@@ -1,7 +1,7 @@
-center-perks: stage 56,11 facing 9; quiz 17,34 18,34 20,34 21,34; was none/inspection
-stalag-flucht: stage 11,30 facing 5; quiz 9,56 10,56 11,56 12,56; was movie/none
-shankton: stage 35,9 facing 5; quiz 25,42 26,42 28,42 29,42; was movie/none
-san-pancho: stage 26,36 facing 9; quiz 39,43 40,43 42,43 43,43; was none/feast
+center-perks: stage 56,11 facing 9; quiz 17,34 18,34 20,34 21,34; was none/maintenance
+stalag-flucht: stage 11,30 facing 5; quiz 9,56 10,56 11,56 12,56; was maintenance/none
+shankton: stage 35,9 facing 5; quiz 25,42 26,42 28,42 29,42; was movie/maintenance
+san-pancho: stage 26,36 facing 9; quiz 39,43 40,43 42,43 43,43; was foodFight/inspection
 irongate: stage 16,37 facing 13; quiz 36,29 37,29 39,29 40,29; was none/drill
 shuffle: level 1, 53 notes, 39.0 s, lanes 17/21/15
 lightsOut: level 2, 80 notes, 40.5 s, lanes 25/33/22
@@ -18,3 +18,4 @@ san-pancho: 27 kinds asked over 30 nights (breakfast cells delivery key lightsOu
 irongate: 27 kinds asked over 30 nights (breakfast cells delivery key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)
 quiz bots over 40 nights: knows, 3 s: 40 won 0 tied; knows, 5 s: 25 won 3 tied; knows, 7.5 s: 2 won 1 tied; guesses, 1.5 s: 0 won 0 tied; silent: 0
 saves: mid-act and mid-quiz round trips ok; an old save's talent night (day 8) is none again
+reviews: every card dealt; 7 two-act nights pay nothing for nothing; give-up, the performer's tile, late join and knockouts checked

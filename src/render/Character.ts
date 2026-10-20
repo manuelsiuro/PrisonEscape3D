@@ -257,17 +257,31 @@ const part = (w: number, h: number, d: number, color: number, x: number, y: numb
 let made: { buckets: THREE.BufferGeometry; stick: THREE.BufferGeometry; guitar: THREE.BufferGeometry } | null = null;
 function instruments() {
   if (made) return made;
+  // (Under the fists: the sticks come down on the heads, the fists a little outside the middle.)
   const bucket = (x: number, h: number) => [cyl(0.13, h, 0x3d78c4, x, 0, 0.42, 12), cyl(0.135, 0.025, 0x2c5a96, x, h - 0.02, 0.42, 12), cyl(0.12, 0.004, 0xe8eef5, x, h, 0.42, 12)];
   const g = new THREE.BoxGeometry(0.025, 0.025, 0.26);
   g.translate(0, 0, 0.11);
-  const neck = new THREE.BoxGeometry(0.06, 0.035, 0.42);
-  neck.rotateY(-Math.PI / 2 + 0.35);
-  neck.rotateZ(-0.5);
-  neck.translate(-0.22, 0.6, 0.24);
+  // The guitar a hand's depth in front of the body (the strumming fist in front of it); the neck out to the left, the head at its end.
+  const Z = 0.28;
+  const along = (len: number, h: number, d: number, color: number, x0: number, y0: number, x1: number, y1: number, z: number) => {
+    const b = new THREE.BoxGeometry(len, h, d);
+    b.rotateZ(Math.atan2(y1 - y0, x1 - x0));
+    b.translate((x0 + x1) / 2, (y0 + y1) / 2, z);
+    return paint(b, color);
+  };
   made = {
-    buckets: merge([...bucket(-0.14, 0.3), ...bucket(0.15, 0.25)]),
+    buckets: merge([...bucket(-0.22, 0.3), ...bucket(0.22, 0.25)]),
     stick: merge([paint(g, 0xd9b27a)], false),
-    guitar: merge([box(0.3, 0.26, 0.07, 0xc98a4a, 0.04, 0.38, 0.22), box(0.22, 0.12, 0.071, 0xb37538, 0.0, 0.56, 0.22), box(0.09, 0.09, 0.075, 0x3a2414, 0.04, 0.42, 0.22), paint(neck, 0x5e3a1e), box(0.08, 0.06, 0.05, 0x3a2414, -0.42, 0.75, 0.25)], false),
+    guitar: merge(
+      [
+        box(0.3, 0.2, 0.07, 0xc98a4a, 0.04, 0.38, Z),
+        box(0.22, 0.12, 0.08, 0xb37538, 0.0, 0.56, Z),
+        box(0.09, 0.09, 0.085, 0x3a2414, 0.04, 0.44, Z),
+        along(0.38, 0.05, 0.035, 0x5e3a1e, -0.1, 0.62, -0.46, 0.66, Z),
+        along(0.1, 0.075, 0.045, 0x3a2414, -0.45, 0.66, -0.55, 0.67, Z),
+      ],
+      false,
+    ),
   };
   return made;
 }
@@ -741,6 +755,8 @@ export class Character {
     for (const arm of [this.armL, this.armR]) {
       const st = new THREE.Mesh(instruments().stick, kitMaterial);
       st.position.set(0, -0.42, 0.04);
+      // (Tipped down in the fist, onto the bucket's head.)
+      st.rotation.x = 0.9;
       st.visible = false;
       this.sticks.push(st);
       arm.add(st);
@@ -1136,16 +1152,16 @@ export class Character {
       // A guitar (P30): the left hand up the neck, the right strumming across the body.
       const ga = this.act;
       const strum = motion ? Math.sin(t * 12) * 0.16 : 0;
-      armLx += -0.95 * ga;
+      armLx += -1.1 * ga;
       armLz += 0.42 * ga;
-      armRx += (-0.55 + strum) * ga;
+      armRx += (-1.0 + strum * 0.6) * ga;
       armRz -= 0.42 * ga;
       bob += (motion ? Math.abs(Math.sin(t * 4)) * 0.015 : 0) * ga;
     } else if (doing === DOING.QUIZ) {
       // At the buzzer (P30): the right hand ready over it, the left at the side, a little forward.
       const ga = this.act;
-      armRx += -0.62 * ga;
-      armRz -= 0.1 * ga;
+      armRx += -1.0 * ga;
+      armRz -= 0.35 * ga;
       armLx += -0.15 * ga;
     } else if (doing === DOING.FOOTBALL && !moving) {
       // A kick wound up (P29): the kicking leg back, the arms out for balance.
@@ -1334,7 +1350,9 @@ export class Character {
         o.material.dispose();
         return;
       }
-      if (o !== this.held && m.geometry !== dropGeometry && m.geometry !== sprayGeometry) m.geometry?.dispose();
+      // (P30's instruments too: one set for everyone.)
+      const shared = m.geometry === dropGeometry || m.geometry === sprayGeometry || (!!made && (m.geometry === made.buckets || m.geometry === made.stick || m.geometry === made.guitar));
+      if (o !== this.held && !shared) m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
       for (const mat of mats) if (mat !== kitMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();
     });

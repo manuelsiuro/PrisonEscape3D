@@ -17,7 +17,7 @@ import { DAY_BOOKS, DAY_EVENTS, MOVIE_NOISE } from '../src/content/days';
 import { itemNumber, KEY_ITEM_COLORS } from '../src/content/items';
 import { RECIPES } from '../src/content/recipes';
 import { ROUTINE } from '../src/content/routine';
-import { CHARTS, COUNT_IN, GOODWILL, GOODWILL_HEAT, HISTORY, INSTRUMENT, LATE, QUESTION_STEPS, QUIZ_GATHER, QUIZ_PRIZE, QUIZ_QUESTIONS, SONGS, songSteps } from '../src/content/nights';
+import { CHARTS, countIn, GOODWILL, GOODWILL_HEAT, HISTORY, INSTRUMENT, LATE, QUESTION_STEPS, QUIZ_GATHER, QUIZ_PRIZE, QUIZ_QUESTIONS, SONGS, songSteps } from '../src/content/nights';
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { command, EXT } from '../src/sim/command';
@@ -160,7 +160,9 @@ const put = (b: { x: number; z: number }, x: number, z: number) => {
   check(inCanteen >= sim.state.inmates.length / 2, `the evening's crowd in the canteen (${inCanteen}/${sim.state.inmates.length})`);
   // The music's cover.
   const t = st.z * MAP_W + st.x;
-  check(muffled(sim, LAYER.GROUND, t, 10) === MOVIE_NOISE, 'a noise in the canteen carries as little as on movie night');
+  check(muffled(sim, LAYER.GROUND, t, 10) === 10, 'no music after the acts: a noise in the canteen carries as ever');
+  g.jump(1, 19, 5);
+  check(muffled(sim, LAYER.GROUND, t, 10) === MOVIE_NOISE, 'while an act plays, a noise in the canteen carries as little as on movie night');
   console.log(`acts: ${acts.map((a) => `${a.who} ${SONGS[a.song].id} ${a.inst ? 'guitar' : 'drums'} ${a.mark}% ${a.at}–${a.until}`).join(' | ')}; ${inCanteen} in the canteen`);
 }
 
@@ -178,9 +180,9 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
   const chart = CHARTS[song];
   const due = new Map<number, number>();
   chart.forEach(([t, lane], i) => {
-    if (every > 0 && i % every === 0) due.set(o.from + COUNT_IN + LATE + t + late - 1, lane);
+    if (every > 0 && i % every === 0) due.set(o.from + countIn(o.song) + LATE + t + late - 1, lane);
   });
-  for (let k = 0; k < COUNT_IN + songSteps(song) + 10 && sim.state.show; k++) {
+  for (let k = 0; k < countIn(song) + songSteps(song) + 10 && sim.state.show; k++) {
     const lane = due.get(sim.state.step);
     if (lane !== undefined) g.ext(EXT.NOTE, lane);
     else if (stray && k % stray === 0) g.ext(EXT.NOTE, k % 3);
@@ -506,4 +508,86 @@ function planOfDay(sim: Sim, day: number) {
     for (let k = 0; k < 150 * STEPS_PER_MINUTE; k++) g.step();
     check(!g.sim.state.show && !g.sim.state.quiz && g.sim.state.stageDay === 0 && g.sim.state.quizDay === 0 && !of(g.seen, 'stage').length && !of(g.seen, 'quiz').length, `${DAY_EVENTS[card]} night untouched: nothing of the player's`);
   }
+}
+
+// ------------------------------------------------------------------ the reviews' cases
+{
+  // Every card dealt somewhere in the campaign (the new ones took no card's last place).
+  const dealt = new Set(PRISONS.flatMap((p) => DAY_BOOKS[p.id].deck));
+  const lost = DAY_EVENTS.filter((e) => !dealt.has(e));
+  check(lost.length === 0, `every day card is still dealt in some prison (${lost.join(' ') || 'all'})`);
+  // A poor act wins nothing, however few the acts.
+  let two = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const r = playSong(2, 0, 0, 0, INSTRUMENT.DRUMS, seed);
+    if (tonight(r.g.sim).length === 2) {
+      two++;
+      check(r.done?.prize === 0 && r.done.place === 2, `seed ${seed}: two acts, nothing played: third, and no prize`);
+    }
+  }
+  check(two > 0, 'a night with two acts tried');
+  // Given up: off, the night's turn used.
+  const g = game(TALENT);
+  const st = stageOf(g.sim.world)!;
+  g.jump(1, 19, 45);
+  const side = boardsOf(st)[3];
+  put(g.sim.state.player, side % MAP_W, Math.floor(side / MAP_W));
+  g.ext(EXT.STAGE, 0, 0);
+  check(Math.floor(g.sim.state.player.x / UNIT) === st.x && Math.floor(g.sim.state.player.z / UNIT) === st.z, 'an act begun on the boards: on the performer\'s own tile');
+  g.ext(EXT.STAGE, 255);
+  check(!g.sim.state.show && of(g.seen, 'stage').some((e) => e.what === 'off'), 'an act given up: off');
+  g.ext(EXT.STAGE, 0, 0);
+  check(refusals(g.seen).includes('performed'), 'and the night\'s turn used');
+  // On the stage, no talk, no seat, no strike: only the act's own commands.
+  const h = game(TALENT);
+  h.jump(1, 19, 45);
+  put(h.sim.state.player, st.x, st.z);
+  h.ext(EXT.STAGE, 0, 0);
+  h.step(command(0, 1));
+  check(h.sim.state.talk < 0 && h.sim.state.seat < 0 && !!h.sim.state.show, 'Interact on the stage does nothing');
+  // A damaged act from the future, a quiz put ahead of now: none.
+  const bad = JSON.parse(JSON.stringify(h.sim.state));
+  bad.show.from = bad.step + 5000;
+  check(loadState(h.sim.world, CENTER_PERKS, bad).show === null, 'an act begun after its save: none (never a player held still for ever)');
+  // Late in the evening, no quiz.
+  const q = game(QUIZ);
+  const pl = quizOf(q.sim.world)!;
+  q.jump(1, 20, 5);
+  put(q.sim.state.player, pl.spots[0].x, pl.spots[0].z);
+  q.ext(EXT.QUIZ, 0);
+  check(!q.sim.state.quiz && refusals(q.seen).includes('quizLate'), 'after 20:00: too late to start the quiz');
+  // Joined at the last minute: over before evening roll call, whatever happens.
+  const latest = playQuizAt(19, 59, -1);
+  check(latest.ended >= 0 && latest.ended < 22 * 60, `joined at 19:59: over by ${Math.floor(latest.ended / 60)}:${String(latest.ended % 60).padStart(2, '0')}`);
+  // A contestant knocked out: off, never a win by default.
+  const k = game(QUIZ);
+  k.jump(1, 19, 0);
+  put(k.sim.state.player, pl.spots[0].x, pl.spots[0].z);
+  k.ext(EXT.QUIZ, 0);
+  for (let j = 0; j < QUIZ_GATHER + 10; j++) k.step();
+  k.sim.state.inmates[k.sim.state.quiz!.who[0]].ko = 200;
+  k.step();
+  check(!k.sim.state.quiz && of(k.seen, 'quiz').some((e) => e.what === 'off') && !of(k.seen, 'quiz').some((e) => e.what === 'won'), 'a contestant knocked out: the quiz is off');
+  // Straight-Laced (P26): no question about who takes bribes or who dozes.
+  const sl = new Sim(CENTER_PERKS, 3, ['straightLaced']);
+  let asked = 0;
+  for (let day = 1; day <= 30; day++) asked += questionsOf(sl, day).filter((x) => x.id === 'trait.corrupt' || x.id === 'trait.lazy').length;
+  check(asked === 0, 'under Straight-Laced, no bribe or nap questions');
+  console.log(`reviews: every card dealt; ${two} two-act nights pay nothing for nothing; give-up, the performer's tile, late join and knockouts checked`);
+}
+
+/** A quiz joined at a time, answered never (-1) or `wait` steps in: the minute of the prison clock it ended at. */
+function playQuizAt(hour: number, minute: number, wait: number) {
+  const g = game(QUIZ);
+  const pl = quizOf(g.sim.world)!;
+  g.jump(1, hour, minute);
+  put(g.sim.state.player, pl.spots[0].x, pl.spots[0].z);
+  g.ext(EXT.QUIZ, 0);
+  let ended = -1;
+  for (let k = 0; k < 4000 && g.sim.state.quiz; k++) {
+    g.step();
+    if (!g.sim.state.quiz) ended = (Math.floor((g.sim.state.step % DAY_STEPS) / STEPS_PER_MINUTE) + 480) % 1440;
+  }
+  void wait;
+  return { ended };
 }

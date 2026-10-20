@@ -13,11 +13,13 @@ import { toggleCrew } from './crew';
 import { openObjectives } from './lesson';
 import { pastimeKey, shootKey } from './pastimes';
 import { kickKey } from './team';
-import { nightsKey } from './nights';
+import { nightsBusy, nightsKey } from './nights';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
   if (!play.game) return;
+  // (P30: on the stage, at the quiz's table: the action button and E do nothing.)
+  if (nightsBusy(play.game.rec.sim.state)) return;
   play.game.pilot.stop();
   itemsUI.closeCraft();
   profile.close();

@@ -302,7 +302,8 @@ export class Sim {
     // Through a detector arch (GDD §5.4).
     scan(this);
     // Nothing gets done in your sleep, and the press that woke you doesn't put you back to bed.
-    useItems(this, s.sleeping || wokenByPlayer ? dirOf(cmd) : cmd);
+    // (P30: on the stage only the act's own commands: a talk, a seat or a strike would only get in its way.)
+    useItems(this, s.sleeping || wokenByPlayer || (s.show && opOf(cmd) !== OP.EXT) ? dirOf(cmd) : cmd);
     return this.out(from);
   }
 

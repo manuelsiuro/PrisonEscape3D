@@ -26,6 +26,7 @@ import { dayMinute, DAY_STEPS, prisonDay } from './clock';
 import { cutPower, generatorsOf, offFor, summon } from './power';
 import { addHeat } from './watch';
 import { deliveryMinute } from './delivery';
+import { musicOn } from './talent';
 import { EAGLE_SIGHT, twist } from './twists';
 
 export { DAY_STEPS, dayMinute, prisonDay };
@@ -246,8 +247,8 @@ export function muffled(sim: SimContext, layer: number, tile: number, reach: num
   // (A wall being chipped from the yard is out in the open too: its noise is the yard's.)
   const open = layer === LAYER.ROOF || (layer === LAYER.GROUND && (outdoors(sim, x, z) || (TILE_INFO[sim.world.ground.kind[tile]].solid && openBeside(sim, x, z))));
   if (open) share = WEATHER_NOISE[weatherNow(sim)] ?? 10;
-  // (P30: talent night's music, as loud.)
-  if (layer === LAYER.GROUND && (eventOn(sim, 'movie') || eventOn(sim, 'talent')) && sim.world.zoneAt(x, z) === 'canteen') share = Math.min(share, MOVIE_NOISE);
+  // (P30: talent night's music while it plays, as loud.)
+  if (layer === LAYER.GROUND && (eventOn(sim, 'movie') || (eventOn(sim, 'talent') && musicOn(sim))) && sim.world.zoneAt(x, z) === 'canteen') share = Math.min(share, MOVIE_NOISE);
   return share === 10 ? reach : Math.max(1, Math.floor((reach * share) / 10));
 }
 

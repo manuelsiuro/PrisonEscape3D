@@ -870,9 +870,10 @@ export const LESSONS: readonly Lesson[] = [
       place(sim, q.spots[0].x, q.spots[0].z + 0, q.face);
     },
     steps: [
-      { text: 'lesson.quiz.join', on: (e) => e.type === 'quiz' && e.what === 'start', goal: (sim) => tile(sim.prison.leisure!.quiz!.spots[0].x, sim.prison.leisure!.quiz!.spots[0].z), fail: (c) => (quizOn(c.sim) ? null : 'lesson.quiz.late') },
-      { text: 'lesson.quiz.answer', touch: 'lesson.quiz.answerTouch', on: (e) => e.type === 'quiz' && (e.what === 'right' || e.what === 'wrong') && e.by === 0, failOn: quizFail },
-      { text: 'lesson.quiz.play', on: (e) => e.type === 'quiz' && (e.what === 'won' || e.what === 'tie' || e.what === 'lost'), failOn: quizFail },
+      { text: 'lesson.quiz.join', touch: 'lesson.quiz.joinTouch', on: (e) => e.type === 'quiz' && e.what === 'start', goal: (sim) => tile(sim.prison.leisure!.quiz!.spots[0].x, sim.prison.leisure!.quiz!.spots[0].z), fail: (c) => (quizOn(c.sim) ? null : 'lesson.quiz.late') },
+      // (Or the quiz played out without an answer of the player's: the others were quicker every time.)
+      { text: 'lesson.quiz.answer', touch: 'lesson.quiz.answerTouch', on: (e) => e.type === 'quiz' && (((e.what === 'right' || e.what === 'wrong') && e.by === 0) || e.what === 'won' || e.what === 'tie' || e.what === 'lost'), failOn: quizFail },
+      { text: 'lesson.quiz.play', on: (e) => e.type === 'quiz' && (e.what === 'won' || e.what === 'tie' || e.what === 'lost'), done: (c) => !c.sim.state.quiz && c.sim.state.quizDay > 0, failOn: quizFail },
       { text: 'lesson.quiz.over', done: () => true, least: 7 },
     ],
   },

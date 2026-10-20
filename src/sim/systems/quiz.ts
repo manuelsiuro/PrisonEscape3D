@@ -16,7 +16,7 @@
  *   and QUIZ_WIN_OPINION with the contestants; playing it out, QUIZ_OPINION. Given up (EXT.QUIZ 1)
  *   or off (the player QUIZ_LEAVE away, a lockdown): nothing.
  */
-import { BUZZ_MIN, BUZZ_SPAN, HISTORY, QUESTION_STEPS, QUIZ_CALL, QUIZ_GATHER, QUIZ_HISTORY, QUIZ_INTELLECT, QUIZ_LEAVE, QUIZ_OPINION, QUIZ_PRIZE, QUIZ_QUESTIONS, QUIZ_RANGE, QUIZ_WIN_OPINION, REVEAL_STEPS, RIGHT_BASE, RIGHT_PER, WITS_MIN, WITS_SPAN } from '../../content/nights';
+import { BUZZ_MIN, BUZZ_SPAN, HISTORY, QUESTION_STEPS, QUIZ_CALL, QUIZ_GATHER, QUIZ_HISTORY, QUIZ_INTELLECT, QUIZ_LAST, QUIZ_LEAVE, QUIZ_OPINION, QUIZ_PRIZE, QUIZ_QUESTIONS, QUIZ_RANGE, QUIZ_WIN_OPINION, REVEAL_STEPS, RIGHT_BASE, RIGHT_PER, WITS_MIN, WITS_SPAN } from '../../content/nights';
 import { DAY_BOOKS, EVENT_TIMES } from '../../content/days';
 import { KEY_ITEM_COLORS } from '../../content/items';
 import { RECIPES } from '../../content/recipes';
@@ -28,7 +28,7 @@ import type { Refusal, SimState } from '../state';
 import { ATTR_MAX, UNIT } from '../tuning';
 import { LAYER, type World } from '../world/World';
 import { bodyAt, type Body } from './movement';
-import { eventOn, prisonDay } from './calendar';
+import { dayMinute, eventOn, prisonDay } from './calendar';
 import { gameOn } from './games';
 import { DOING } from './inmates';
 import { ATTRS } from '../state';
@@ -103,7 +103,7 @@ const blockAt = (id: string) => ROUTINE.find((r) => r.id === id)!.start;
 const plainRecipes = RECIPES.filter((r) => r.ingredients.every((i) => !i.includes('|') && !i.startsWith('key_') && !i.startsWith('mold_')) && !r.keep);
 
 /** The questions about this prison that it can be asked (each always true in the running game). */
-function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: number): Question[] {
+function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: number, mods: readonly string[]): Question[] {
   const p = sim.prison;
   const out: Question[] = [];
   out.push(timeQuestion('rollCall', blockAt('eveningRollCall'), salt, day, 0));
@@ -113,6 +113,8 @@ function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: num
   // The guards' ways: one with it, three without (named guards only).
   const named = p.guards.map((g, k) => ({ g, k })).filter((e) => !!e.g.name);
   for (const trait of ['corrupt', 'lazy', 'strict'] as const) {
+    // (P26's Straight-Laced: nobody takes a bribe, nobody naps; those questions would be false.)
+    if (trait !== 'strict' && mods.includes('straightLaced')) continue;
     const yes = named.filter((e) => e.g.trait === trait);
     const no = named.filter((e) => (e.g.trait ?? 'steady') !== trait);
     if (!yes.length || no.length < 3) continue;
@@ -150,9 +152,10 @@ function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: num
 const asked = new Map<string, Question[]>();
 
 /** The night's eight questions, in order: escape history and this prison by turns. Pure (and kept). */
-export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt'> }, day: number): Question[] {
+export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt' | 'mods'> }, day: number): Question[] {
   const salt = sim.state.salt;
-  const key = `${sim.prison.id}:${salt}:${day}`;
+  const mods = sim.state.mods ?? [];
+  const key = `${sim.prison.id}:${salt}:${day}:${mods.join()}`;
   const had = asked.get(key);
   if (had) return had;
   const history = shuffled(HISTORY.map((_, k) => k), salt, day, 1)
@@ -161,7 +164,7 @@ export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimS
       const order = shuffled([0, 1, 2, 3], salt, day, 20 + j);
       return { id: `h.${HISTORY[k]}`, choices: order.map((a): Choice => ({ kind: 'h', k: a })), answer: order.indexOf(0) };
     });
-  const local = shuffled(prisonQuestions(sim, salt, day), salt, day, 2).slice(0, QUIZ_QUESTIONS - history.length);
+  const local = shuffled(prisonQuestions(sim, salt, day, mods), salt, day, 2).slice(0, QUIZ_QUESTIONS - history.length);
   const out: Question[] = [];
   for (let k = 0; out.length < history.length + local.length; k++) {
     if (k < history.length) out.push(history[k]);
@@ -233,6 +236,8 @@ export function quizRefusal(sim: SimContext): Refusal | null {
   if (!quizOn(sim)) return 'quizClosed';
   if (s.lockdown) return 'gamesLockdown';
   if (s.quizDay === prisonDay(s.step)) return 'quizzed';
+  // (Late in the evening there's no time for eight questions before roll call.)
+  if (dayMinute(s.step) >= QUIZ_LAST) return 'quizLate';
   if (nearestPlace(sim) < 0) return 'notAtQuiz';
   if (!contestantsFor(sim)) return 'fewQuiz';
   return null;
@@ -296,6 +301,8 @@ export function keepQuiz(sim: SimContext) {
   const pl = quizOf(sim.world);
   if (!o) return;
   if (!pl || s.lockdown || sim.away || s.sleeping || s.stowed || s.ko > 0 || s.layer !== LAYER.GROUND || offBy(pl, o.seats[0], s.player.x, s.player.z) > QUIZ_LEAVE) return endQuiz(sim, 'off');
+  // (A contestant knocked out or going for the player: the quiz is off, never won by default.)
+  if (o.who.some((k) => !s.inmates[k] || s.inmates[k].ko > 0 || s.inmates[k].angry > 0)) return endQuiz(sim, 'off');
   if (o.q < 0) {
     // Walking over: under way once all three are at their places, or after QUIZ_GATHER.
     const there = o.who.every((k, j) => {
@@ -317,7 +324,7 @@ export function keepQuiz(sim: SimContext) {
   // The buzzers, in order round the table: the first right takes it.
   for (let j = 0; j < 3; j++) {
     const m = s.inmates[o.who[j]];
-    if (o.said[j + 1] >= 0 || !m || m.ko > 0 || m.angry > 0) continue;
+    if (o.said[j + 1] >= 0 || !m) continue;
     const b = buzzOf(s, day, o.q, o.who[j], q.answer);
     if (b.at !== k) continue;
     o.said[j + 1] = b.says;
@@ -344,7 +351,7 @@ export function endQuiz(sim: SimContext, how: 'done' | 'quit' | 'off') {
   const o = s.quiz;
   if (!o) return;
   s.quiz = null;
-  if (how !== 'done') return void sim.events.push({ type: 'quiz', what: how });
+  if (how !== 'done') return void sim.events.push({ type: 'quiz', what: how, who: o.who.slice() });
   const top = Math.max(...o.pts.slice(1));
   const won = o.pts[0] > top;
   const tie = !won && o.pts[0] === top && top > 0;
@@ -361,7 +368,7 @@ export function endQuiz(sim: SimContext, how: 'done' | 'quit' | 'off') {
     s.trained |= 1 << ATTRS.indexOf('int');
   }
   for (const k of o.who) changeOpinion(sim, k, won ? QUIZ_WIN_OPINION : QUIZ_OPINION);
-  sim.events.push({ type: 'quiz', what: won ? 'won' : tie ? 'tie' : 'lost', pts: o.pts.slice(), prize, int: Math.max(0, gain) });
+  sim.events.push({ type: 'quiz', what: won ? 'won' : tie ? 'tie' : 'lost', who: o.who.slice(), pts: o.pts.slice(), prize, int: Math.max(0, gain) });
 }
 
 /** The contestants at their places, facing the same way (socialNow). */

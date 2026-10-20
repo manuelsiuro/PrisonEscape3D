@@ -3,7 +3,7 @@
  * on the structure, covers, braces and ropes, climbing between layers, toilets, bed, seats,
  * showers, and energy and health coming back.
  */
-import { playNote, startShow } from './talent';
+import { playNote, quitShow, STAGE_QUIT, startShow } from './talent';
 import { answerQuiz, endQuiz, joinQuiz } from './quiz';
 import { digHelp, recall } from './crew';
 import { itemDef, itemNumber } from '../../content/items';
@@ -223,6 +223,7 @@ export function useItems(sim: SimContext, cmd: number) {
         else releaseKick(sim);
       } else if (a === EXT.INK) endInk(sim, 'quit');
       // Stage nights (P30): the player's act and its notes; the quiz joined or given up, an answer.
+      else if (a === EXT.STAGE && argB(cmd) === STAGE_QUIT) quitShow(sim);
       else if (a === EXT.STAGE && s.solitary <= 0) startShow(sim, argB(cmd), argC(cmd));
       else if (a === EXT.NOTE) playNote(sim, argB(cmd));
       else if (a === EXT.QUIZ && s.solitary <= 0) {

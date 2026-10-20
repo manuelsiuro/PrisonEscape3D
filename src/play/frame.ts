@@ -169,7 +169,7 @@ const frameData: Frame = {
   pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
   long: null,
   team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },
-  nights: { stage: null, quiz: null, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
+  nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
 };
@@ -455,7 +455,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.puddles = st.puddles;
   f.craters = st.craters;
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
-  f.held = trainKind === 'shelf' ? MAGAZINE : held;
+  // (P30: on the stage, at the quiz's table, empty-handed: the instrument, the buzzer.)
+  f.held = st.show || st.quiz ? 0 : trainKind === 'shelf' ? MAGAZINE : held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;

@@ -44,43 +44,43 @@ export interface DayBook {
 /** prison → its days. */
 export const DAY_BOOKS: Record<string, DayBook> = {
   // Suburban and mild: a bit of everything, rarely too hot; families visit once a week, and the yard holds its sports day.
-  // (P30: a talent night on the quiet day, a quiz night in place of the inspection.)
+  // (P30: a talent night on the quiet day, a quiz night in place of the generator's service.)
   'center-perks': {
-    deck: ['talent', 'delivery', 'quiz', 'visiting', 'sports', 'drill', 'maintenance'],
+    deck: ['talent', 'delivery', 'inspection', 'visiting', 'sports', 'drill', 'quiz'],
     climate: { weights: [45, 15, 25, 10, 5], keep: 35, wind: 6 },
     before: 'none',
     beforeVisits: 'feast',
     beforeSports: 'movie',
-    beforeStage: { talent: 'none', quiz: 'inspection' },
+    beforeStage: { talent: 'none', quiz: 'maintenance' },
   },
   // The Alps: clear (snowing), fog in the valleys, blizzards; never rain, never a heatwave.
   // (The Red Cross truck comes once a week; the camp's own Olympics too.)
   'stalag-flucht': {
-    // (P30: the camp's cabaret where the film was, a quiz on the quiet day.)
-    deck: ['quiz', 'inspection', 'drill', 'delivery', 'sports', 'maintenance', 'talent'],
+    // (P30: the camp's cabaret in place of the generator's service, a quiz on the quiet day; the film still shows.)
+    deck: ['quiz', 'inspection', 'drill', 'delivery', 'sports', 'talent', 'movie'],
     climate: { weights: [50, 30, 0, 20, 0], keep: 40, wind: 0 },
     before: 'drill',
     beforeSports: 'feast',
-    beforeStage: { talent: 'movie', quiz: 'none' },
+    beforeStage: { talent: 'maintenance', quiz: 'none' },
   },
   // Industrial and grey: rain and smog, scuffles at meals; visiting day once a week, in the canteen; a sports day instead of a drill.
   shankton: {
-    // (P30: a talent night where the film was, a quiz on the quiet day.)
-    deck: ['quiz', 'inspection', 'foodFight', 'sports', 'maintenance', 'talent', 'visiting'],
+    // (P30: a talent night where the film was, a quiz in place of the generator's service; a quiet day still.)
+    deck: ['none', 'inspection', 'foodFight', 'sports', 'quiz', 'talent', 'visiting'],
     climate: { weights: [35, 20, 30, 15, 0], keep: 35, wind: 5 },
     beforeVisits: 'none',
     beforeSports: 'drill',
-    beforeStage: { talent: 'movie', quiz: 'none' },
+    beforeStage: { talent: 'movie', quiz: 'maintenance' },
   },
   // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about; the produce truck once a week; sports day in the dust.
   'san-pancho': {
-    // (P30: a talent night on the quiet day, a quiz where the feast was.)
-    deck: ['talent', 'foodFight', 'delivery', 'quiz', 'visiting', 'inspection', 'sports'],
+    // (P30: a talent night where the food fight was, a quiz in place of the inspection; the feast and a quiet day still.)
+    deck: ['none', 'talent', 'delivery', 'feast', 'visiting', 'quiz', 'sports'],
     climate: { weights: [45, 5, 0, 15, 35], keep: 40, wind: 2 },
     before: 'foodFight',
     beforeVisits: 'movie',
     beforeSports: 'drill',
-    beforeStage: { talent: 'none', quiz: 'feast' },
+    beforeStage: { talent: 'foodFight', quiz: 'inspection' },
   },
   // The island: sea fog and squalls, and inspectors on the ferry; a sports day where the food fight was.
   // (The supply helicopter by day once a week; families come over on the ferry once a week.)

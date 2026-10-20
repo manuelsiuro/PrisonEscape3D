@@ -32,7 +32,7 @@ import type { FootballNews, Match } from './systems/football';
 import type { Ink } from './systems/tattoo';
 import type { Show } from './systems/talent';
 import type { Quiz } from './systems/quiz';
-import { CHARTS, QUIZ_QUESTIONS, SONGS } from '../content/nights';
+import { CHARTS, countIn, QUIZ_QUESTIONS, REVEAL_STEPS, SONGS, songSteps } from '../content/nights';
 import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
@@ -338,7 +338,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -843,8 +843,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!Array.isArray(s.inkDays) || s.inkDays.length > n || !s.inkDays.every((d) => Number.isInteger(d) && d >= 0)) s.inkDays = [];
   if (!(Array.isArray(s.inked) && s.inked.length <= 3 && s.inked.every((d, k, all) => Number.isInteger(d) && d >= 0 && d < DESIGNS.length && all.indexOf(d) === k))) s.inked = [];
   // P30: an act or a quiz as they can be (else over); a save from before stage nights keeps the cards they took the places of, on the day it's loaded and the next.
-  if (!showOk(s.show)) s.show = null;
-  if (!quizOk(s.quiz, n)) s.quiz = null;
+  if (!showOk(s.show, s.step)) s.show = null;
+  if (!quizOk(s.quiz, n, s.step)) s.quiz = null;
   for (const k of ['stageDay', 'quizDay'] as const) if (!Number.isInteger(s[k]) || s[k] < 0) s[k] = 0;
   if (st.stageDay === undefined) {
     const was = DAY_BOOKS[prison.id]?.beforeStage;
@@ -883,14 +883,15 @@ function matchOk(o: Match | null, n: number): boolean {
 }
 
 /** An act as a save holds it (P30): a song and an instrument there are, a judgement for each of its notes. */
-function showOk(o: Show | null): boolean {
+function showOk(o: Show | null, step: number): boolean {
   if (o === null) return true;
   if (!o || typeof o !== 'object') return false;
-  return [o.song, o.inst, o.from, o.stray].every((x) => Number.isInteger(x)) && o.song >= 0 && o.song < SONGS.length && (o.inst === 0 || o.inst === 1) && o.stray >= 0 && Array.isArray(o.hits) && o.hits.length === CHARTS[o.song].length && o.hits.every((h) => Number.isInteger(h) && h >= 0 && h <= 3);
+  // (Begun no later than now, and not yet over: never a song that keeps the player still for ever.)
+  return [o.song, o.inst, o.from, o.stray].every((x) => Number.isInteger(x)) && o.song >= 0 && o.song < SONGS.length && o.from <= step && step - o.from <= countIn(o.song) + songSteps(o.song) && o.song >= 0 && o.song < SONGS.length && (o.inst === 0 || o.inst === 1) && o.stray >= 0 && Array.isArray(o.hits) && o.hits.length === CHARTS[o.song].length && o.hits.every((h) => Number.isInteger(h) && h >= 0 && h <= 3);
 }
 
 /** A quiz as a save holds it (P30): three different contestants at three of the four places, its numbers whole. */
-function quizOk(o: Quiz | null, n: number): boolean {
+function quizOk(o: Quiz | null, n: number, step: number): boolean {
   if (o === null) return true;
   if (!o || typeof o !== 'object') return false;
   const ints = (v: unknown, k: number) => Array.isArray(v) && v.length === k && v.every((x) => Number.isInteger(x));
@@ -900,6 +901,9 @@ function quizOk(o: Quiz | null, n: number): boolean {
     ints(o.seats, 4) &&
     [0, 1, 2, 3].every((k) => o.seats.includes(k)) &&
     [o.from, o.q, o.at, o.got, o.until].every((x) => Number.isInteger(x)) &&
+    o.from <= step &&
+    o.at <= step &&
+    o.until <= step + REVEAL_STEPS &&
     o.q >= -1 &&
     o.q < QUIZ_QUESTIONS &&
     o.got >= -1 &&

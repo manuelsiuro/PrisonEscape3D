@@ -16,7 +16,7 @@
  *
  * The music drowns noise in the canteen meanwhile (calendar.ts `muffled`), as movie night's does.
  */
-import { ACT_GAP, ACT_MINUTES, ACT_WALK, APPLAUSE, CHARTS, COUNT_IN, GOOD, GOOD_POINTS, GOODWILL, GOODWILL_HEAT, INSTRUMENT, LATE, PERFECT, PERFECT_POINTS, PRIZES, RIVAL_MARK, RIVAL_SPREAD, RIVALS_MIN, RIVALS_SPAN, SONG_PAY, SONGS, songSteps, STAGE_OPINION, STRAY_POINTS } from '../../content/nights';
+import { ACT_GAP, ACT_MINUTES, ACT_WALK, APPLAUSE, CHARTS, countIn, GOOD, GOOD_POINTS, GOODWILL, GOODWILL_HEAT, INSTRUMENT, LATE, PERFECT, PERFECT_POINTS, PRIZES, RIVAL_MARK, RIVAL_SPREAD, RIVALS_MIN, RIVALS_SPAN, SONG_PAY, SONGS, songSteps, STAGE_OPINION, STRAY_POINTS } from '../../content/nights';
 import { EVENT_TIMES } from '../../content/days';
 import type { Stage } from '../../content/prisons/types';
 import { itemNumber } from '../../content/items';
@@ -153,13 +153,17 @@ export function startShow(sim: SimContext, song: number, inst: number) {
   endTalk(sim);
   s.stageDay = prisonDay(s.step);
   s.show = { song, inst, from: s.step, hits: CHARTS[song].map(() => 0), stray: 0 };
+  // (On the performer's own tile, facing the room: clear of the mic stand and the speakers.)
+  const st = stageOf(sim.world)!;
+  s.player.x = st.x * UNIT + UNIT / 2;
+  s.player.z = st.z * UNIT + UNIT / 2;
   s.player.moving = false;
-  s.player.facing = stageOf(sim.world)!.face;
+  s.player.facing = st.face;
   sim.events.push({ type: 'stage', what: 'start', song, inst });
 }
 
 /** Steps into the song (after the count-in): negative while it's counted in. */
-export const songTime = (s: Pick<SimState, 'step'>, o: Show) => s.step - o.from - COUNT_IN;
+export const songTime = (s: Pick<SimState, 'step'>, o: Show) => s.step - o.from - countIn(o.song);
 
 /** A press in a lane (EXT.NOTE): the nearest note not yet played in that lane, within the window, or a stray. */
 export function playNote(sim: SimContext, lane: number) {
@@ -205,6 +209,13 @@ export const placeOf = (mark: number, acts: readonly Act[]) => acts.filter((a) =
 /** The prize money for a place with a song (dollars). */
 export const prizeOf = (place: number, song: number) => (place < PRIZES.length ? Math.floor((PRIZES[place] * SONG_PAY[SONGS[song].level - 1]) / 100) : 0);
 
+/** The act given up (EXT.STAGE with b = STAGE_QUIT): off, the night's turn used. */
+export const STAGE_QUIT = 255;
+export const quitShow = (sim: SimContext) => endShow(sim, false);
+
+/** Talent night's music is playing: an act on the stage, or the player's. */
+export const musicOn = (sim: SimContext) => !!sim.state.show || actNow(sim) >= 0;
+
 /** Each step of the act: the notes gone by unplayed missed; off when it can't go on; the verdict at the end. */
 export function keepShow(sim: SimContext) {
   const s = sim.state;
@@ -231,7 +242,8 @@ function endShow(sim: SimContext, done: boolean) {
   const mark = markOf(o);
   const acts = tonight(sim);
   const place = placeOf(mark, acts);
-  const prize = prizeOf(place, o.song);
+  // (No prize for a poor act, whatever the field: a mark of APPLAUSE or more.)
+  const prize = mark >= APPLAUSE ? prizeOf(place, o.song) : 0;
   if (prize) {
     s.cash += prize;
     s.tally[3] += prize;

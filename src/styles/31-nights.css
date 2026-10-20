@@ -476,3 +476,31 @@ body.performing .act-prompt,
 body.quizzing[data-quiz='on'] .act-prompt {
   display: none;
 }
+/* (Nor the lock-on button: it would sit over the lanes on a phone.) */
+body.performing .lock-btn,
+body.quizzing[data-quiz='on'] .lock-btn {
+  display: none;
+}
+
+.stage-quit {
+  display: none;
+  width: auto;
+  margin-top: 6px;
+}
+.stage-card[data-phase='play'] .stage-quit {
+  display: inline-flex;
+}
+
+@media (max-height: 520px) {
+  /* (A question being asked: its note steps aside, the four answers and Give up in view.) */
+  .quiz-card[data-phase='ask'] .train-note {
+    display: none;
+  }
+}
+/* (Nor the action and dig-up buttons: on a phone they sit over the right-hand pad and the quiz's answers.) */
+body.performing .act-btn,
+body.performing .up-btn,
+body.quizzing[data-quiz='on'] .act-btn,
+body.quizzing[data-quiz='on'] .up-btn {
+  display: none;
+}
