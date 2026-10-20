@@ -249,7 +249,7 @@
   /* (The place's name kept short beside it, so the cash beyond it stays clear of the card: « Cour intérieure ».) */
   body.lesson-on.gaming .hud-zone,
   body.lesson-on.courting .hud-zone {
-    max-width: 150px;
+    max-width: 96px;
   }
   body.lesson-on.gaming .hud-zone span,
   body.lesson-on.courting .hud-zone span {
