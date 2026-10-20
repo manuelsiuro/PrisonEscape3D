@@ -10,7 +10,7 @@ import { chatterEvent } from './chatter';
 import { press, targets, updateTargets } from './buttons';
 import { controls, hint, itemsUI, settings, socialOpen, tools, view } from './context';
 import { buildFrame } from './frame';
-import { play, type Game } from './game';
+import { play, tickPlayClock, type Game } from './game';
 import { updateGuide } from './guide';
 import { keepPlayerClear, updateOverlay } from './overlay';
 import { autosave, escaped } from './session';
@@ -149,6 +149,8 @@ export function frame(now: number) {
   const p = sim.state.player;
   if (!g.paused) {
     governQuality(dt, settings.quality, view);
+    // (Before the steps: what they announce is stamped with this frame's play time.)
+    tickPlayClock(dt * 1000);
     stepSim(g, dt);
     if (hint.visible && g.walked > 4) {
       hint.hide();

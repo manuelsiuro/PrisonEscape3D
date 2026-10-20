@@ -54,11 +54,25 @@ export const press: { toolNow: ToolView | null; toolKey: number; heldOn: number;
   upKey: -1,
 };
 
+/** P28: how long a first press on Drink stays armed, waiting for the second (real time: it's the player's hand, not the prison's clock). */
+export const DRINK_CONFIRM_MS = 2500;
+/** When the armed Drink lapses (performance.now()), 0: not armed. */
+let drinkUntil = 0;
+
+/** The pruno's first press made and still waiting for the second. */
+export const drinkArmed = () => drinkUntil > 0 && performance.now() < drinkUntil;
+
+/** The armed Drink let go (the target changed: another item in hand, a new game). */
+export function disarmDrink() {
+  drinkUntil = 0;
+}
+
 /** A new game: nothing worked out yet, no press waiting. */
 export function resetButtons() {
   targets.step = -1;
   press.pressQueued = false;
   press.upQueued = false;
+  drinkUntil = 0;
 }
 
 /**
@@ -103,6 +117,16 @@ export function usePress() {
     else if (TOUCH) armThrow();
     else throwAhead();
     return;
+  }
+  // Pruno in hand (P28): the first press arms Drink ("Drink it?"), the second within DRINK_CONFIRM_MS drinks.
+  if (press.toolNow?.confirm) {
+    if (!drinkArmed()) {
+      drinkUntil = performance.now() + DRINK_CONFIRM_MS;
+      tools.release();
+      itemsUI.toast(t(TOUCH ? 'toast.drinkAgainTouch' : 'toast.drinkAgain'));
+      return;
+    }
+    drinkUntil = 0;
   }
   // A fresh press (arg 1): only a fresh press digs up, eats or puts things in place. It waits
   // for the arm to come back from the last strike (a quick tap is never lost).

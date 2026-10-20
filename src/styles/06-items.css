@@ -708,6 +708,22 @@ kbd {
   }
 }
 
+/* Narrow phones (360–400 px): the eight slots and Craft shrink to fit the width, never off its edges. */
+@media (max-width: 400px) {
+  .hotbar .slot {
+    --s: min(40px, calc((100vw - 88px) / 8));
+  }
+
+  .hotbar {
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .hotbar .craft-btn {
+    padding: 0 5px;
+  }
+}
+
 @keyframes sheet-in {
   from {
     opacity: 0;

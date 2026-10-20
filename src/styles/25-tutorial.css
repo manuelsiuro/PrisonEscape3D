@@ -238,7 +238,8 @@
     left: calc((100vw + var(--lesson-right, 0px)) / 2);
     max-width: calc(100vw - var(--lesson-right, 0px) - 28px);
   }
-  body.gaming .coach.lesson-coach {
+  body.gaming .coach.lesson-coach,
+  body.courting .coach.lesson-coach {
     top: 0;
     /* (Left of the heat meter under the bulb and the pause button, right of the cash.) */
     right: 184px;
@@ -246,7 +247,9 @@
     max-width: min(400px, calc(100vw - 560px));
   }
   body.lesson-on.is-playing.gaming .toasts,
-  body.lesson-on.touch.is-playing.gaming .toasts {
+  body.lesson-on.touch.is-playing.gaming .toasts,
+  body.lesson-on.is-playing.courting .toasts,
+  body.lesson-on.touch.is-playing.courting .toasts {
     top: max(calc(max(10px, env(safe-area-inset-top)) + 112px), calc(var(--lesson-bottom, 0px) + 8px)) !important;
   }
 }
@@ -282,4 +285,21 @@
 .lesson-strip.done span {
   opacity: 0.6;
   text-decoration: line-through;
+}
+
+/* Landscape phones: the lesson's card squeezed into the top row beside a game's card (a game, the
+   court, the pitch, the needle, the track, the stage, the quiz): its kicker ("Prison life · Lesson
+   13 of 17 · Yard football") on one line, cut short, so the card stays low over the play. */
+@media (max-height: 520px) and (orientation: landscape) {
+  body.gaming .coach.lesson-coach .coach-text small,
+  body.courting .coach.lesson-coach .coach-text small,
+  body.matching .coach.lesson-coach .coach-text small,
+  body.inking .coach.lesson-coach .coach-text small,
+  body.racing .coach.lesson-coach .coach-text small,
+  body.staging .coach.lesson-coach .coach-text small,
+  body.quizzing .coach.lesson-coach .coach-text small {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }

@@ -63,3 +63,34 @@ export const play: { game: Game | null; acc: number; last: number } = { game: nu
 export function sendOp(op: number, a = 0, b = 0, c = 0) {
   play.game?.ops.push([op, a, b, c]);
 }
+
+/**
+ * Play time (ms): real time that has passed with a game on screen and not paused (a replay's
+ * too, while it plays). The cards' and pictures' short holds (a verdict shown 6 s, a ball in
+ * the air) count it, so a pause never eats them. Never reset: only differences are read.
+ */
+const playClock = { ms: 0 };
+/** Things to do after some play time (a ball's landing sound), soonest first. */
+const playTimers: Array<{ at: number; fn: () => void }> = [];
+
+/** Play time now (ms). */
+export const playNow = () => playClock.ms;
+
+/** Runs `fn` after `ms` of play time (held while the game is paused). */
+export function playLater(ms: number, fn: () => void) {
+  const at = playClock.ms + ms;
+  let k = playTimers.length;
+  while (k > 0 && playTimers[k - 1].at > at) k--;
+  playTimers.splice(k, 0, { at, fn });
+}
+
+/** A frame of play (not paused): the clock moves on `dtMs`, and what's due runs. */
+export function tickPlayClock(dtMs: number) {
+  playClock.ms += dtMs;
+  while (playTimers.length && playTimers[0].at <= playClock.ms) playTimers.shift()!.fn();
+}
+
+/** A new game, a load, the title: what was waiting is dropped. */
+export function clearPlayTimers() {
+  playTimers.length = 0;
+}

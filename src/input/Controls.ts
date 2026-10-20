@@ -19,6 +19,8 @@ const KEYS_Z: Record<string, number> = { KeyW: -1, ArrowUp: -1, KeyS: 1, ArrowDo
  */
 export class Controls {
   enabled = false;
+  /** A replay (P25): with the controls off, the wheel and a two-finger pinch still zoom; nothing steers or taps. */
+  zoomOnly = false;
   private readonly held = new Set<string>();
   private readonly stick: HTMLElement;
   private readonly knob: HTMLElement;
@@ -67,7 +69,7 @@ export class Controls {
     surface.addEventListener(
       'wheel',
       (e) => {
-        if (!this.enabled) return;
+        if (!this.enabled && !this.zoomOnly) return;
         e.preventDefault();
         this.onZoom(Math.exp(-e.deltaY * 0.0015));
       },
@@ -76,7 +78,13 @@ export class Controls {
   }
 
   private down(e: PointerEvent) {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      // (Zoom only, a replay: the fingers are counted for a pinch, nothing else.)
+      if (!this.zoomOnly || e.pointerType === 'mouse') return;
+      this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.pointers.size === 2) this.pinch = this.spread();
+      return;
+    }
     // Aiming a throw (P14): this press is the aim's, not the stick's or a tap.
     if (this.onAim && this.aimId === null && (e.button === 2 || (this.aimArmed && e.button === 0))) {
       this.aimId = e.pointerId;

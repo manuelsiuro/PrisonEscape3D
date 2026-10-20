@@ -42,7 +42,7 @@ import { cancelThrow } from './aim';
 import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
 import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, crewChips, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
-import { play, type DailyRun, type Game } from './game';
+import { clearPlayTimers, play, type DailyRun, type Game } from './game';
 import { dailyBanner, dailyEscaped, dailyPlace, dailyRestart, dailyTwistsHtml } from './daily';
 import { ask } from '../ui/screens/ask';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
@@ -131,6 +131,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   tools.show(true);
   combatUI.show(true);
   resetButtons();
+  clearPlayTimers();
   resetRat();
   resetSmuggle();
   resetGames();

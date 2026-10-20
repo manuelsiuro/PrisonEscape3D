@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { OP } from '../sim/command';
+import { EXT, OP } from '../sim/command';
 import { targets, upPress, usePress } from './buttons';
 import { board, click, closeSocial, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, tools, toggleProfile } from './context';
 import { toggleRat } from './rat';
@@ -41,6 +41,8 @@ function onKeyDown(e: KeyboardEvent) {
     // (P22: out of an arm-wrestle, away from a lock.)
     else if (game.rec.sim.state.bout.length) sendOp(OP.TRAIN, 3);
     else if (game.rec.sim.state.pick.length) sendOp(OP.CLOSE);
+    // (P29: a tattoo sitting, either chair: given up, as its card's Give up button does.)
+    else if (game.rec.sim.state.ink) sendOp(OP.EXT, EXT.INK, 0);
     else pause();
     return;
   }

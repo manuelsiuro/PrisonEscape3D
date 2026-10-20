@@ -26,6 +26,10 @@ export interface ToolView {
   call?: boolean;
   /** P24, a glide: what it does is said on a tag beside the round button too (on touch the verb alone would hide where it lands). */
   caption?: boolean;
+  /** P28, pruno: a one-way press that takes a second press to go (the first arms it, see usePress). */
+  confirm?: boolean;
+  /** The first press made, waiting for the second (the button says "Drink it?" and glows). */
+  armed?: boolean;
 }
 
 /** Dig up, in a tunnel: whether the tool in hand digs, how far the floor overhead has given way, and a guard in earshot. */
@@ -175,7 +179,7 @@ export class ToolControls {
     document.body.classList.toggle('tool-up', on);
     if (!on) this.release();
     if (on && v) {
-      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}|${!!v.caption}`;
+      const key = `${v.verb}|${v.what}|${v.icon}|${v.fits}|${v.progress === null}|${!!v.attack}|${!!v.heard}|${!!v.caption}|${!!v.armed}`;
       if (key !== this.shown) {
         this.shown = key;
         // Within a guard's earshot (P14): an ear says so, on the button or the prompt.
@@ -197,6 +201,8 @@ export class ToolControls {
         this.prompt.classList.toggle('no', !v.fits);
         this.btn.classList.toggle('attack', !!v.attack);
         this.prompt.classList.toggle('attack', !!v.attack);
+        this.btn.classList.toggle('armed', !!v.armed);
+        this.prompt.classList.toggle('armed', !!v.armed);
       }
       const p = Math.round((v.progress ?? 0) * 100);
       if (this.ring) this.ring.style.setProperty('--p', `${p}%`);

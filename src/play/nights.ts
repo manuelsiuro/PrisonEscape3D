@@ -16,7 +16,7 @@ import type { NightsFrame } from '../render/Nights';
 import type { QuizView, StageView } from '../ui/nights';
 import { inmateName } from '../ui/social';
 import { banner, combatUI, itemsUI, sound, view } from './context';
-import { play, sendOp } from './game';
+import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 
@@ -40,7 +40,7 @@ function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
   if (at) combatUI.float(text, at.x, at.y, kind);
 }
 
-/** The last act's verdict and the last quiz's end, held a moment for the cards (ms); the last judgement's flash; notes in a row. Not state. */
+/** The last act's verdict and the last quiz's end, held a moment for the cards (ms of play time: a pause doesn't eat them); the last judgement's flash; notes in a row. Not state. */
 let stageResult: { at: number; mark: number; place: number; prize: number; crowd: number; heat: number; song: number; inst: number } | null = null;
 let quizResult: { at: number; what: 'won' | 'tie' | 'lost'; pts: number[]; prize: number; int: number; names: string[] } | null = null;
 let judged = { grade: 0, at: 0 };
@@ -84,7 +84,7 @@ function byStage(sim: Sim): boolean {
 export function stageNow(sim: Sim, a: number): StageView | null {
   const s = sim.state;
   const o = s.show;
-  const now = performance.now();
+  const now = playNow();
   const held = stageResult && now - stageResult.at < RESULT_MS ? stageResult : null;
   if (!o && !held && !(talentOn(sim) && byStage(sim))) return null;
   const v = stageView;
@@ -157,7 +157,7 @@ export function questionText(sim: Sim, q: Question): { text: string; choices: st
 export function quizNow(sim: Sim): QuizView | null {
   const s = sim.state;
   const o = s.quiz;
-  const now = performance.now();
+  const now = playNow();
   const held = quizResult && now - quizResult.at < RESULT_MS ? quizResult : null;
   if (!o && !held && !(quizOn(sim) && nearestPlace(sim) >= 0)) return null;
   const v = quizView;
@@ -251,7 +251,7 @@ export function announceNights(sim: Sim, e: SimEvent) {
         judged = { grade: 1, at: performance.now() };
         sound.dud();
       } else if (e.what === 'done') {
-        stageResult = { at: performance.now(), mark: e.mark ?? 0, place: e.place ?? 0, prize: e.prize ?? 0, crowd: e.crowd ?? 0, heat: e.heat ?? 0, song: e.song ?? 0, inst: e.inst ?? 0 };
+        stageResult = { at: playNow(), mark: e.mark ?? 0, place: e.place ?? 0, prize: e.prize ?? 0, crowd: e.crowd ?? 0, heat: e.heat ?? 0, song: e.song ?? 0, inst: e.inst ?? 0 };
         window.setTimeout(() => {
           if (play.game !== g) return;
           if ((e.mark ?? 0) >= 50) sound.cheer();
@@ -274,7 +274,7 @@ export function announceNights(sim: Sim, e: SimEvent) {
       } else if (e.what === 'wrong') sound.buzzer();
       else if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {
         const o = { names: [t('games.you'), ...(e.who ?? []).map((k) => nameOf(sim, k))] };
-        quizResult = { at: performance.now(), what: e.what, pts: e.pts ?? [0, 0, 0, 0], prize: e.prize ?? 0, int: e.int ?? 0, names: o.names };
+        quizResult = { at: playNow(), what: e.what, pts: e.pts ?? [0, 0, 0, 0], prize: e.prize ?? 0, int: e.int ?? 0, names: o.names };
         if (e.what === 'won') {
           sound.levelUp();
           buzz('attended');

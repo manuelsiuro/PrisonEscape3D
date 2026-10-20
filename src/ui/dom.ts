@@ -71,3 +71,13 @@ export function carousel(row: HTMLElement, arrow: (dir: 'left' | 'right') => str
   requestAnimationFrame(update);
   return update;
 }
+
+/** An arrow key in a radio group: +1 (right, down), -1 (left, up), else 0. Taken from the page's keys (they'd walk the player). */
+export function arrowStep(e: KeyboardEvent): number {
+  const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+  if (d) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  return d;
+}

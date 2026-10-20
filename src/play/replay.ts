@@ -18,7 +18,7 @@ import { ReplayBar, SPEEDS, whenOf } from '../ui/replayBar';
 import { banner, click, combatUI, controls, crewChips, darkCell, hint, hud, itemsUI, sleepVeil, solitaryPanel, sound, tools, vignette, view, workChips } from './context';
 import { press, targets } from './buttons';
 import { buildFrame } from './frame';
-import { play, type Game } from './game';
+import { play, tickPlayClock, type Game } from './game';
 import { hudFrame } from './overlay';
 import { escapeScene, stageWorld } from './stage';
 
@@ -296,6 +296,7 @@ export function replayFrame(g: Game, dt: number, now: number) {
     r.bar.note(t('replay.cantPlay'));
   }
   g.paused = !r.playing || r.seekTo !== null;
+  if (!g.paused) tickPlayClock(dt * 1000);
   const st = sim.state;
   const a = g.paused ? 1 : Math.min(1, play.acc * STEPS_PER_SECOND);
   const tile = tileOfBody(st.player);
@@ -402,6 +403,8 @@ export function watchReplay(rp: Replay, back: Game | null): Promise<void> {
   crewChips.hide();
   controls.enabled = false;
   controls.reset();
+  // (The wheel and a pinch still zoom the picture, as in play.)
+  controls.zoomOnly = true;
   // (The first day's walking hint, a solitary card: the game's, not the picture's.)
   hint.hide();
   solitaryPanel.update(null, 0);
@@ -521,6 +524,8 @@ export function watchReplay(rp: Replay, back: Game | null): Promise<void> {
       scout.stop();
       bar.remove();
       removeEventListener('keydown', key);
+      controls.zoomOnly = false;
+      controls.reset();
       hud.el.inert = false;
       sleepVeil.classList.remove('on', 'ko');
       darkCell.classList.remove('on');

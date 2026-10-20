@@ -122,7 +122,7 @@ export function showDaily(info: DailyInfo, click: () => void): Promise<DailyChoi
     const stars = Array.from({ length: 5 }, (_, i) => `<i class="${i < d.prison.difficulty ? 'on' : ''}">${icon('star', 11)}</i>`).join('');
     const tabs = late
       ? `<div class="daily-tabs" role="tablist">${[info.today, yesterday]
-          .map((k) => `<button role="tab" class="daily-tab${k === n ? ' on' : ''}" aria-selected="${k === n}" data-n="${k}">${t(k === info.today ? 'daily.today' : 'daily.yesterday')}<small>${t('daily.num', { n: k + 1 })}</small></button>`)
+          .map((k) => `<button role="tab" class="daily-tab${k === n ? ' on' : ''}" aria-selected="${k === n}" tabindex="${k === n ? 0 : -1}" data-n="${k}">${t(k === info.today ? 'daily.today' : 'daily.yesterday')}<small>${t('daily.num', { n: k + 1 })}</small></button>`)
           .join('')}</div>`
       : '';
     const saved = info.saved === n;
@@ -162,6 +162,20 @@ export function showDaily(info: DailyInfo, click: () => void): Promise<DailyChoi
       resolve(c);
     };
     const key = (e: KeyboardEvent) => {
+      // The tabs (Today, Yesterday): the arrow keys move between them, as tabs do.
+      const tab = (e.target as HTMLElement | null)?.closest?.<HTMLElement>('[role="tab"]');
+      if (tab && el.contains(tab) && /^Arrow(Left|Right|Up|Down)$/.test(e.key)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const tabs = [...el.querySelectorAll<HTMLElement>('[role="tab"]')].map((b) => Number(b.dataset.n));
+        const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
+        const k = tabs.indexOf(n);
+        click();
+        n = tabs[(k + d + tabs.length) % tabs.length];
+        draw();
+        el.querySelector<HTMLElement>(`[data-n="${n}"]`)?.focus();
+        return;
+      }
       if (e.code !== 'Escape') return;
       e.stopImmediatePropagation();
       click();
