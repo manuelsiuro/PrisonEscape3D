@@ -112,6 +112,13 @@ const P: Record<string, string> = {
   checkers: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="18" r="1.4"/>',
   hoop: '<path d="M5 4h14v7H5Z"/><path d="M9 11h6"/><path d="m9 11 1 8M15 11l-1 8M10 15h4"/><circle cx="17.5" cy="17.5" r="2.5"/>',
   flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
+  // P28: a bag of pruno bubbling, a seedling, fruit, a watering cup, a race track's lanes, a ticket (a bet).
+  brew: '<path d="M9 3h6l-1 3.5c3 1.2 4.5 4 4.5 7A6.5 6.5 0 0 1 12 20a6.5 6.5 0 0 1-6.5-6.5c0-3 1.5-5.8 4.5-7Z"/><circle cx="10" cy="14" r="1"/><circle cx="13.8" cy="15.6" r="1.3"/><circle cx="12.6" cy="11.4" r=".8"/>',
+  sprout: '<path d="M12 21v-8"/><path d="M12 13C12 9 9 7 5 7c0 4 3 6 7 6Z"/><path d="M12 14c0-3 2.5-5.5 6.5-5.5 0 3.5-2.5 5.5-6.5 5.5Z"/><path d="M6 21h12"/>',
+  fruit: '<path d="M12 8c-4-2-8 1-8 5.5S7 21 9.5 21c1 0 1.5-.5 2.5-.5s1.5.5 2.5.5C17 21 20 18 20 13.5S16 6 12 8Z"/><path d="M12 8c0-2 1-4 3-5"/>',
+  water: '<path d="M6 8h10l-1 12H7Z"/><path d="M16 10h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M12 2.5c1.5 2 2 3 2 3.8a2 2 0 0 1-4 0c0-.8.5-1.8 2-3.8Z" fill="currentColor" stroke="none"/>',
+  race: '<path d="M3 6h18M3 12h18M3 18h18"/><path d="M18 3v18" stroke-dasharray="1.5 1.5"/><circle cx="8" cy="9" r="1.3" fill="currentColor"/><circle cx="12" cy="15" r="1.3" fill="currentColor"/>',
+  ticket: '<path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4Z"/><path d="M14 7v10" stroke-dasharray="1.5 1.5"/>',
   lockpick: '<path d="M3.5 20.5 14 10l2.2 1.2L18.5 9"/><path d="M8 3.5v6.5h4"/><circle cx="18.8" cy="8.6" r=".4"/>',
   /** An ID card: a photo and two lines (P24, the bluff). */
   idCard: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 10h4.5M14 13.5h3"/>',

@@ -2149,4 +2149,29 @@ export const frBarks: Barks = {
     "Avec le vent d’aujourd’hui, un cerf-volant sortirait d’ici tout seul. Je dis ça…",
     "Temps idéal pour planer. Si t’avais un planeur. Et un toit. Et du cran.",
   ],
+  "go.pruno": [
+    "Planque le pruno dans le réservoir. Les fouilles l’oublient. Les chiens, non.",
+    "Deux matins dans un bureau et le pruno est prêt. Gare aux chiens.",
+    "Les fouilles ne regardent jamais un réservoir de WC. Les chiens, si...",
+  ],
+  "go.gardenHole": [
+    "Creuse sous un chou et aucun gardien ne regarde deux fois.",
+    "Un carré planté cache un trou. Les gardiens ignorent les légumes.",
+    "Un tunnel que personne ne voit ? Commence-le au potager.",
+  ],
+  "go.raceNight": [
+    "Courses de rats les soirs impairs à {t1}, au bloc. Prends du fric.",
+    "Soirs impairs, {t1} : courses de rats. Mise sur un rat nourri.",
+    "Course à {t1} les jours impairs. Le bookmaker ignore qui a mangé.",
+  ],
+  "go.ratFed": [
+    "Le rat de {inmate} a mangé comme un roi. Il va voler ce soir.",
+    "Psst : {inmate} a bien nourri son rat aujourd’hui.",
+    "Le rat de {inmate} est repu et fringant aujourd’hui.",
+  ],
+  "go.ratHungry": [
+    "Le rat de {inmate} n’a pas mangé aujourd’hui. Mise pas dessus.",
+    "Psst : le rat de {inmate} boude sa gamelle aujourd’hui.",
+    "{inmate} a oublié de nourrir son rat. Il sera lent ce soir.",
+  ],
 };

@@ -7,6 +7,8 @@ import { ROUTINE } from '../content/routine';
 import { BRIBE, OP, TALK } from '../sim/command';
 import { traitOf } from '../sim/systems/guards';
 import { lookAwayPrice, lookingAway, paperPrice } from '../sim/systems/ways';
+import { STAPLES } from '../content/long';
+import { saleOf, stapleSlot } from '../sim/systems/pantry';
 import { CASH_GIFTS, cashOpinion, discountOf, FAVOR, FAVOR_KINDS, FAVOR_STATE, giftOpinion, HOLDER, jobRooms, priceOf, qualifies } from '../sim/systems/economy';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import type { Sim } from '../sim/Sim';
@@ -214,9 +216,24 @@ export class TalkPanel {
           return `<button class="shop-item${afford ? '' : ' poor'}" data-act="${TALK.BUY}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.buy', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false">${d.contraband ? '<i class="slot-cb"></i>' : ''}<span>${esc(itemName(n))}</span><b>$${price}</b>${price < d.value ? `<s>$${d.value}</s>` : ''}</button>`;
         })
         .join('');
+      // (P28: the staples, always in stock: sugar and seed packets.)
+      const staples = STAPLES.map((id, k) => {
+        const n = itemNumber(id);
+        const d = itemDef(n);
+        const price = priceOf(d.value, m.opinion);
+        return `<button class="shop-item staple${s.cash >= price ? '' : ' poor'}" data-act="${TALK.BUY}" data-arg="${stapleSlot(k)}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.buy', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(itemName(n))}</span><b>$${price}</b>${price < d.value ? `<s>$${d.value}</s>` : ''}</button>`;
+      }).join('');
+      // (P28: what the merchant buys from the hotbar: ripe pruno, vegetables.)
+      const sales = inv
+        .map((v, k) => {
+          const n = itemOf(v);
+          const price = v ? saleOf(n) : 0;
+          return price ? `<button class="shop-item sell" data-act="${TALK.SELL}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.sell', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(t('talk.sellItem', { item: itemName(n) }))}</span><b>+$${price}</b></button>` : '';
+        })
+        .join('');
       const note = grudge ? t('talk.shopGrudge') : closed ? t(twist(s, 'closedShop') ? 'talk.shopShut' : 'talk.shopClosed') : !items ? t('talk.soldOut') : '';
       shopHtml = `<section class="talk-shop"><div class="box-label">${icon('cart', 14)}<span>${t('talk.shop')}</span>${off > 0 && !grudge ? `<em class="discount">${t('talk.discount', { n: off })}</em>` : ''}</div>
-        ${items ? `<div class="shop-list">${items}</div>` : ''}${note ? `<p class="talk-note">${note}</p>` : ''}</section>`;
+        ${items ? `<div class="shop-list">${items}</div>` : ''}${note ? `<p class="talk-note">${note}</p>` : ''}<div class="shop-list staples">${staples}</div>${sales ? `<div class="shop-list sales">${sales}</div>` : ''}</section>`;
     }
     // The fixer's burner phone (P21): in the merchants' hours, to a friend, one at a time.
     let phoneHtml = '';

@@ -30,7 +30,9 @@ import { touchesMyCell } from '../sim/systems/structure';
 import { guardTalking } from '../sim/systems/social';
 import { dropTile } from '../sim/systems/smuggling';
 import { gameOn, gameRefusal, gamesOpen } from '../sim/systems/games';
-import { baitSlot, petOf } from '../sim/systems/rats';
+import { baitSlot, newRat, petOf } from '../sim/systems/rats';
+import { CROP, GROWN, RACE_MINUTE } from '../content/long';
+import { atTrack, cardUp } from '../sim/systems/races';
 import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
 
 /**
@@ -702,6 +704,77 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Pruno (P28): a bag brewed and hidden; last night's ripe by morning, and drunk.
+    id: 'pruno',
+    icon: 'brew',
+    setup: (sim) => {
+      // Lights Out, in the cell: fruit and sugar in the pockets, and a bag hidden in the desk two nights ago.
+      clockTo(sim, at(23, 5));
+      place(sim, 20, 19, 1);
+      pockets(sim, 'fruit', 'fruit', 'sugar');
+      fill(sim, myDesk(sim), '');
+      sim.state.items.containers[myDesk(sim)][0] = slot(n('pruno_bag'), 1);
+    },
+    steps: [
+      { text: 'lesson.pruno.brew', touch: 'lesson.pruno.brewTouch', done: (c) => carries(c.sim, 'pruno_bag') || bagsHidden(c.sim) >= 2 },
+      { text: 'lesson.pruno.hide', touch: 'lesson.pruno.hideTouch', done: (c) => bagsHidden(c.sim) >= 2, goal: (sim) => tile(...near(sim, 21, 20)) },
+      { text: 'lesson.pruno.sleep', touch: 'lesson.pruno.sleepTouch', on: (e) => e.type === 'pruno' && e.what === 'ripe' && !!e.mine, goal: () => tile(20, 18) },
+      { text: 'lesson.pruno.drink', touch: 'lesson.pruno.drinkTouch', on: (e) => e.type === 'pruno' && e.what === 'drunk', goal: () => tile(21, 18) },
+      { text: 'lesson.pruno.over', done: () => true, least: 6 },
+    ],
+  },
+  {
+    // The garden (P28): a bed planted and watered, a wilted one saved, a ripe one picked; the hole under a plant.
+    id: 'garden',
+    icon: 'sprout',
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      const g = sim.prison.leisure!.garden;
+      place(sim, g.x, g.z + g.d, 13);
+      pockets(sim, 'veg_seeds', 'plastic_cup');
+      sim.state.items.hand = 0;
+      // The far beds: one of fruit ripe to pick, one of vegetables wilted (a day dry).
+      const beds = g.w * g.d;
+      sim.state.plots = Array.from({ length: beds }, () => [CROP.NONE, 0, 0, 0]);
+      sim.state.plots[g.w - 1] = [CROP.FRUIT, GROWN, 0, 0];
+      sim.state.plots[beds - 1] = [CROP.VEG, 1, 1, 0];
+    },
+    steps: [
+      { text: 'lesson.garden.plant', touch: 'lesson.garden.plantTouch', on: (e) => e.type === 'garden' && e.what === 'planted', goal: (sim) => gardenBed(sim, 0, 1) },
+      { text: 'lesson.garden.water', touch: 'lesson.garden.waterTouch', done: (c) => c.sim.state.plots.some((b, k) => k !== wiltedBed(c.sim) && b[0] !== CROP.NONE && b[3] > 0 && b[1] < GROWN) },
+      { text: 'lesson.garden.wilted', touch: 'lesson.garden.wiltedTouch', done: (c) => (c.sim.state.plots[wiltedBed(c.sim)]?.[3] ?? 0) > 0, goal: (sim) => gardenBed(sim, wiltedBed(sim), 1) },
+      // (Picked already, whatever step showed then.)
+      { text: 'lesson.garden.pick', touch: 'lesson.garden.pickTouch', done: (c) => c.sim.state.plots[c.sim.prison.leisure!.garden.w - 1]?.[0] === CROP.NONE, goal: (sim) => tile(sim.prison.leisure!.garden.x + sim.prison.leisure!.garden.w, sim.prison.leisure!.garden.z) },
+      { text: 'lesson.garden.secret', done: () => true, least: 6 },
+    ],
+  },
+  {
+    // Rat racing (P28): the pet run on its track, then race night: entered, a bet, the race.
+    id: 'ratRace',
+    icon: 'race',
+    setup: (sim) => {
+      // Evening free time on a race night (day 1 is odd), in the cell, the rat on the shoulder.
+      clockTo(sim, at(19, 40));
+      place(sim, 20, 19, 1);
+      pockets(sim, 'rat_track', 'potato');
+      sim.state.items.hand = 0;
+      sim.state.cash = 20;
+      const pet = newRat(false, sim.state.player.x, sim.state.player.z);
+      pet.speed = 60;
+      sim.state.rats = [pet];
+    },
+    steps: [
+      { text: 'lesson.ratRace.train', touch: 'lesson.ratRace.trainTouch', done: (c) => petOf(c.sim.state)?.fed === 1, fail: raceFail },
+      { text: 'lesson.ratRace.go', done: (c) => atTrack(c.sim), goal: (sim) => trackStart(sim), fail: raceFail },
+      { text: 'lesson.ratRace.card', speed: 8, done: (c) => cardUp(c.sim) && atTrack(c.sim), goal: (sim) => trackStart(sim), fail: raceFail },
+      // (Entered and backed in either order: each step looks at the race as it stands.)
+      { text: 'lesson.ratRace.enter', touch: 'lesson.ratRace.enterTouch', done: (c) => raceState(c.sim, 4) === 1, goal: (sim) => trackStart(sim), fail: (c) => (raceState(c.sim, 4) !== 1 && pastOff(c.sim) ? 'lesson.ratRace.late' : null) },
+      { text: 'lesson.ratRace.bet', touch: 'lesson.ratRace.betTouch', done: (c) => raceState(c.sim, 1) >= 0, goal: (sim) => trackStart(sim), fail: raceFail },
+      { text: 'lesson.ratRace.watch', speed: 6, on: (e) => e.type === 'race' && e.what === 'result', failOn: (e) => (e.type === 'race' && (e.what === 'off' || e.what === 'scratched') ? 'lesson.ratRace.off' : null) },
+      { text: 'lesson.ratRace.over', done: () => true, least: 6 },
+    ],
+  },
+  {
     // The crew (P23): a friend recruited and posted as lookout by the patrol hall's doorway, whistling as the guard comes by.
     id: 'crew',
     icon: 'users',
@@ -944,6 +1017,44 @@ function spotOn(sim: Sim, k: number): number {
   return tile(q.x, q.z);
 }
 
+/** Bags of pruno in the player's own desk and toilet tank. */
+function bagsHidden(sim: Sim): number {
+  const list = containersOf(sim.world);
+  let k = 0;
+  list.forEach((c, i) => {
+    if (c.mine && (c.prop.kind === 'desk' || c.prop.kind === 'toilet')) for (const v of sim.state.items.containers[i]) if (itemOf(v) === n('pruno_bag')) k++;
+  });
+  return k;
+}
+/** The garden lesson's wilted bed (the plot's last). */
+const wiltedBed = (sim: Sim) => {
+  const g = sim.prison.leisure!.garden;
+  return g.w * g.d - 1;
+};
+/** A garden bed's tile, a row (dz) off it: where to stand to face it. */
+function gardenBed(sim: Sim, k: number, dz: number): number {
+  const g = sim.prison.leisure!.garden;
+  return tile(g.x + (k % g.w), g.z + Math.floor(k / g.w) + (dz > 0 ? g.d - Math.floor(k / g.w) : -1 - Math.floor(k / g.w)));
+}
+/** Tonight's race as the state has it (races.ts RACE: 1 the lane bet on, 4 entered), -1 none today. */
+function raceState(sim: Sim, k: number): number {
+  const r = sim.state.race;
+  return r[0] === prisonDay(sim.state.step) ? r[k] : -1;
+}
+/** Past the off (the card down for tonight). */
+const pastOff = (sim: Sim) => dayMinute(sim.state.step) >= RACE_MINUTE - ROUTINE[0].start && !cardUp(sim);
+/** The race lesson's dead end: past the off with no bet placed, or no cash to bet. */
+function raceFail(c: LessonCtx): Key | null {
+  if (raceState(c.sim, 1) >= 0) return null;
+  if (pastOff(c.sim)) return 'lesson.ratRace.late';
+  return c.sim.state.cash < 5 ? 'lesson.ratRace.broke' : null;
+}
+/** The track's first tile (the arrows). */
+const trackStart = (sim: Sim) => {
+  const r = sim.prison.leisure!.race;
+  return tile(r.x, r.z);
+};
+
 /** Up from the old-timer's board with free time over: no sitting down again until the next. */
 function boardFail(c: LessonCtx): Key | null {
   return !c.sim.state.board?.seated && !gamesOpen(c.sim) ? 'lesson.games.closed' : null;
@@ -968,7 +1079,7 @@ function smuggleFail(sim: Sim): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'crew'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'crew'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 

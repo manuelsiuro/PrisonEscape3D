@@ -144,6 +144,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'nothingButNet', group: 'skills', icon: 'ball', run: (r) => f(r, 'swishes') >= 10 },
   { id: 'courtKing', group: 'skills', icon: 'trophy', run: (r) => f(r, 'shootoutsWon') >= 3 },
   { id: 'grandmaster', group: 'skills', icon: 'checkers', run: (r) => f(r, 'boardWins') >= 3 },
+  // Long games (P28).
+  { id: 'moonshiner', group: 'life', icon: 'brew', run: (r) => f(r, 'brewed') >= 3 },
+  { id: 'greenThumb', group: 'skills', icon: 'sprout', run: (r) => f(r, 'harvests') >= 5 },
+  { id: 'ratDerby', group: 'skills', icon: 'rat', run: (r) => f(r, 'raceWins') >= 1 },
+  { id: 'longShot', group: 'life', icon: 'trophy', run: (r) => f(r, 'longShots') >= 1 },
   // The crew (P23).
   { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
   { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },

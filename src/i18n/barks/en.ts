@@ -2151,6 +2151,31 @@ export const enBarks = {
     "Today's wind would carry a kite right out of here. Just saying.",
     "Good gliding weather. If you had a glider. And a roof. And nerves.",
   ],
+  "go.pruno": [
+    "Hide pruno in the toilet tank. Searches skip it. Dogs don't.",
+    "Two mornings in a desk and pruno's ready. Mind the dogs.",
+    "Shakedowns never check a toilet tank. The dogs, though...",
+  ],
+  "go.gardenHole": [
+    "Dig under a cabbage and no guard looks twice.",
+    "A planted bed hides a hole. Guards don't check the veg.",
+    "Want a tunnel nobody sees? Start it in the garden.",
+  ],
+  "go.raceNight": [
+    "Rat races, odd nights at {t1}, cell block. Bring cash.",
+    "Odd nights at {t1}: rat racing in the block. Back a fed one.",
+    "Race night's at {t1}, odd days. The bookie can't tell who ate.",
+  ],
+  "go.ratFed": [
+    "{inmate}'s rat ate like a king today. It'll fly tonight.",
+    "Psst: {inmate} fed their rat well today.",
+    "{inmate}'s rat is fed and frisky today.",
+  ],
+  "go.ratHungry": [
+    "{inmate}'s rat hasn't eaten today. Don't back it.",
+    "Psst: {inmate}'s rat is off its food today.",
+    "{inmate} forgot to feed their rat. Slow tonight, mark my words.",
+  ],
 } satisfies Record<string, readonly Line[]>;
 
 export type BankId = keyof typeof enBarks;

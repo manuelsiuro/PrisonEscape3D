@@ -368,5 +368,5 @@ export const SHANKTON: PrisonDef = {
   // yard inside the shell; visitors sit in the canteen.
   smuggling: { fixer: 6, drop: [25, 30, 38, 34], visits: [24, 9, 39, 22] },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(39, 31, 9), oldTimer: 7 },
+  leisure: { hoop: court(39, 31, 9), oldTimer: 7, garden: { x: 25, z: 28, w: 3, d: 2 }, race: { x: 15, z: 12, dir: 5, len: 6 } },
 };

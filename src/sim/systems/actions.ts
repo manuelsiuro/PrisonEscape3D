@@ -44,6 +44,10 @@ import { placeOrder } from './smuggling';
 import { endBout, pickLock, push, stopPick } from './games';
 import { aimShot, releaseShot } from './hoops';
 import { energyCost } from './weather';
+import { drink } from './pruno';
+import { raceOp, trainRat } from './races';
+import { bedTarget, tend } from './garden';
+import { take } from './pantry';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
 export function closeBox(sim: SimContext) {
@@ -206,6 +210,9 @@ export function useItems(sim: SimContext, cmd: number) {
         if (argB(cmd) === 0) aimShot(sim);
         else releaseShot(sim);
       }
+      // Long games (P28): fruit, sugar or seeds from the open furniture; a race night's bet, the pet entered.
+      else if (a === EXT.TAKE && s.solitary <= 0) take(sim, argB(cmd));
+      else if (a === EXT.RACE && s.solitary <= 0) raceOp(sim, argB(cmd), argC(cmd));
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));
@@ -262,7 +269,7 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   const p = s.player;
   const held = itemOf(it.inv[it.hand]);
   // (`up`: the Dig up button's own target, whichever way the player faces.)
-  const target = up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim));
+  const target = up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim), s.plots);
   if (!target) return;
   // Strikes come at their own pace (holding the button asks every step); the rest at a press.
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
@@ -281,6 +288,20 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   }
   if (target.action === 'wind') {
     wind(sim);
+    return;
+  }
+  // P28: pruno drunk, the rat's laps on its track, a garden bed tended.
+  if (target.action === 'drink') {
+    drink(sim);
+    return;
+  }
+  if (target.action === 'track') {
+    trainRat(sim);
+    return;
+  }
+  if (target.action === 'plant' || target.action === 'water' || target.action === 'harvest') {
+    const bed = bedTarget(w, s.layer, p, held, s.plots);
+    if (bed) tend(sim, bed);
     return;
   }
   // A bar of soap (P19): the scent rubbed off, the soap used up (with no trail to wash off, it keeps).

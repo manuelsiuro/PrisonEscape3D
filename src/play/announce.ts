@@ -5,6 +5,7 @@ import { announceRat } from './rat';
 import { announceSmuggle } from './smuggle';
 import { announceGames } from './games';
 import { announcePastimes } from './pastimes';
+import { announceLong } from './long';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
@@ -741,6 +742,14 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'hoops':
     case 'checkers':
       announcePastimes(sim, e);
+      break;
+    // Long games (P28): pruno, the garden, the rat's track, race nights, a sale.
+    case 'pruno':
+    case 'garden':
+    case 'track':
+    case 'race':
+    case 'sold':
+      announceLong(sim, e);
       break;
     case 'crew':
       announceCrew(sim, e);

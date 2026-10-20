@@ -28,7 +28,7 @@ export interface AimView {
 }
 
 type Kind = NoiseKind;
-const WAVE_COLOR: Record<Kind, number> = { strike: 0xffd27a, thud: 0xffb347, bang: 0xff7a2e, ring: 0xffe08a, bark: 0xffc04a, squeak: 0xf2c2d8, buzz: 0xa8e6ff };
+const WAVE_COLOR: Record<Kind, number> = { strike: 0xffd27a, thud: 0xffb347, bang: 0xff7a2e, ring: 0xffe08a, bark: 0xffc04a, squeak: 0xf2c2d8, buzz: 0xa8e6ff, stumble: 0xd9c27a, cheer: 0xffe08a };
 const AMBER = 0xffb347;
 const RED = 0xff4a3a;
 

@@ -52,6 +52,7 @@ import {
   cheatCard,
   courtCard,
   boardCard,
+  raceCard,
   vignette,
   view,
   workChips,
@@ -79,6 +80,9 @@ import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
 import { boardNow, cheatNow, courtNow } from './pastimes';
 import { cashShown, pickNow, wrestleNow } from './games';
 import { crewChipList, crewPill, crewRows } from './crew';
+import { tipsyNow } from '../sim/systems/pruno';
+import { NO_TAKE, raceCoach, raceNow, takeOffers } from './long';
+import { TIPSY_STEPS } from '../content/long';
 
 /**
  * Everything over the picture, brought up to date after each draw: the item bar and action
@@ -86,13 +90,15 @@ import { crewChipList, crewPill, crewRows } from './crew';
  * music and ambience that follow the game.
  */
 
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false };
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false, take: [] };
 const GET_UP = { verb: '', what: '' };
 /** Delivery day (P18): into the vehicle at its tail, out of it while hidden. */
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, wavedLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, wavedLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null, tipsy: null };
+/** Tipsy (P28): the HUD's pill, refilled in place. */
+const tipsyHud = { until: '', left: 0, of: TIPSY_STEPS / STEPS_PER_MINUTE };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
 const workHud = { place: '', quota: 0, of: 0, paid: false };
@@ -178,6 +184,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
+  v.take = box ? takeOffers(sim, box.table) : NO_TAKE;
   itemsUI.update(v);
   // The tool button: a blow at the locked-on target, else what a strike would hit.
   const tt = memo.tool;
@@ -251,8 +258,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   cheatCard.update(cheat);
   boardCard.update(boardV);
   courtCard.update(court);
+  // Long games (P28): the race card at the track (not over another game's card).
+  const race = busy || panel || cheat || boardV || court || bout || pick ? null : raceNow(sim, a);
+  raceCard.update(race);
+  raceCoach(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV);
-  document.body.classList.toggle('courting', !!court);
+  document.body.classList.toggle('courting', !!court || !!race);
   // (A hand of Cheat, the board: the hotbar steps aside on a phone held sideways, for the card.)
   document.body.classList.toggle('seated-game', !!cheat || !!boardV);
   workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);
@@ -351,6 +362,12 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
     bribeHud.until = formatTime(clockAt(st.guards[away].bribed));
   }
   hudState.bribe = away >= 0 ? bribeHud : null;
+  if (tipsyNow(st)) {
+    tipsyHud.left = Math.ceil((st.tipsy[0] - st.step) / STEPS_PER_MINUTE);
+    tipsyHud.until = formatTime(clockAt(st.tipsy[0]));
+    hudState.tipsy = tipsyHud;
+  } else hudState.tipsy = null;
+  document.body.classList.toggle('tipsy', tipsyNow(st));
   document.body.classList.toggle('chilled', coldHud.bit && !coldHud.hot);
   document.body.classList.toggle('baked', coldHud.bit && coldHud.hot);
   // The day (P17): the weather by the clock, the event's chip, the drill.

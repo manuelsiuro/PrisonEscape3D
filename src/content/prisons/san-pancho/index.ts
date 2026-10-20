@@ -375,5 +375,5 @@ export const SAN_PANCHO: PrisonDef = {
   // visitors sit in the canteen.
   smuggling: { fixer: 9, drop: [28, 32, 35, 42], visits: [17, 32, 26, 40] },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(30, 22, 5), oldTimer: 5 },
+  leisure: { hoop: court(30, 22, 5), oldTimer: 5, garden: { x: 31, z: 38, w: 3, d: 2 }, race: { x: 19, z: 28, dir: 1, len: 6 } },
 };

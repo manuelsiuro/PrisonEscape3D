@@ -32,6 +32,7 @@ import { awake, type Guard } from './guards';
 import { DOING, type Inmate } from './inmates';
 import { giveSlot, guardKit, HOTBAR, itemOf, ownerOf, pocketOf, slot, usesOf } from './items';
 import { makeNoise } from './noise';
+import { RAT_START_SPEED } from '../../content/long';
 
 /** What a rat is up to. Never renumber: saves store them. */
 export const RAT = {
@@ -70,6 +71,10 @@ export interface Rat {
   wild: boolean;
   /** The prison day the pet last ran loose (once a day). */
   looseDay: number;
+  /** P28 (races.ts): the pet's speed on the track (0–100), the prison day it was last fed (on the track), the step its laps there end. */
+  speed?: number;
+  fed?: number;
+  lap?: number;
 }
 
 export const RAT_TRAP = itemNumber('rat_trap');
@@ -299,8 +304,10 @@ export function throwRat(sim: SimContext, tile: number) {
   panic(sim, r, tile, r.x, r.z, n);
 }
 
-function newRat(wild: boolean, x: number, z: number): Rat {
-  return { mode: RAT.SHOULDER, x, z, facing: 5, path: [], at: 0, target: -1, leave: false, carry: 0, cash: 0, tile: -1, until: 0, wild, looseDay: 0 };
+export function newRat(wild: boolean, x: number, z: number): Rat {
+  const r: Rat = { mode: RAT.SHOULDER, x, z, facing: 5, path: [], at: 0, target: -1, leave: false, carry: 0, cash: 0, tile: -1, until: 0, wild, looseDay: 0 };
+  // (P28: a pet's racing form, from the start.)
+  return wild ? r : Object.assign(r, { speed: RAT_START_SPEED, fed: 0, lap: 0 });
 }
 
 /** A panic: the rat darting about where it was let go, its squeaks bringing guards to look. */

@@ -165,6 +165,25 @@ export interface PrisonRules {
 export interface LeisureDef {
   hoop: Court;
   oldTimer: number;
+  /** P28: the garden plot (a rectangle of beds, a tile each, on open yard soil) and the rat track (its start tile, the way it runs: 1 east, 5 south, 9 west, 13 north, its length in tiles). */
+  garden: Plot;
+  race: Track;
+}
+
+/** A garden plot (P28): its beds' tiles, from (x, z), w across and d deep. */
+export interface Plot {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
+}
+
+/** The rat track (P28): from the start tile, `len` tiles one way (`dir`); the rats run side by side in lanes across it. */
+export interface Track {
+  x: number;
+  z: number;
+  dir: number;
+  len: number;
 }
 
 /** A basketball hoop (P27): the floor tile under its rim, the way it faces into the court (1, 5, 9 or 13), its SHOOT_SPOTS spots in shooting order. */

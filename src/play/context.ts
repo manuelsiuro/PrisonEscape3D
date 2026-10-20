@@ -23,6 +23,7 @@ import { CrewChips, CrewPanel } from '../ui/crew';
 import { PhonePanel } from '../ui/phone';
 import { PickCard, WrestleCard } from '../ui/games';
 import { BoardCard, CheatCard, CourtCard } from '../ui/pastimes';
+import { RaceCard } from '../ui/long';
 import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
@@ -127,6 +128,8 @@ export const pickCard = new PickCard();
 export const cheatCard = new CheatCard(sendOp, click);
 export const courtCard = new CourtCard();
 export const boardCard = new BoardCard(sendOp, click);
+/** Long games (P28): the race card at the track. */
+export const raceCard = new RaceCard(sendOp, click);
 /** The crew (P23): their panel, and the chips over their heads. */
 export const crewPanel = new CrewPanel(click);
 export const crewChips = new CrewChips();

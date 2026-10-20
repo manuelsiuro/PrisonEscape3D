@@ -27,6 +27,8 @@ import { type Body, tileOfBody } from './movement';
 import { changeOpinion, dismiss, dismissAll, endTalk, favorDone } from './social';
 import { stopTraining } from './training';
 import { addHeat } from './watch';
+import { tipsyNow } from './pruno';
+import { TIPSY_BLOW } from '../../content/long';
 
 /** Bit k: the player carries a key (real or plastic) for door color k (keys work from the hotbar). */
 export function keysCarried(sim: SimContext): number {
@@ -140,7 +142,9 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
   const who = s.lock;
   const guard = isGuard(s, who);
   s.selfDefense = false;
-  const dmg = damage(s.str, wdef?.attack ?? 0, guard ? guardDefense(sim.world, who - s.inmates.length) : INMATE_DEFENSE);
+  const base = damage(s.str, wdef?.attack ?? 0, guard ? guardDefense(sim.world, who - s.inmates.length) : INMATE_DEFENSE);
+  // (P28: tipsy, a blow lands harder.)
+  const dmg = tipsyNow(s) ? Math.floor((base * TIPSY_BLOW) / 2) : base;
   f.hp = Math.max(0, f.hp - dmg);
   const ko = f.hp === 0;
   // They know who hit them.

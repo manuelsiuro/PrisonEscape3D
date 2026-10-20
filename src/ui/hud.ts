@@ -51,6 +51,8 @@ export interface HudState {
   order: { icon: string; text: string; sr: string; urgent: boolean; done: number | null; panel: boolean } | null;
   /** The crew (P23): while someone has an order, their orders' icons and the first one's status; flashing as a lookout whistles. */
   crew: { icons: string[]; text: string; alert: boolean } | null;
+  /** Tipsy (P28): until when (the clock's time), game minutes left, out of how many; null sober. */
+  tipsy: { until: string; left: number; of: number } | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -125,6 +127,7 @@ export class Hud {
         <span class="pill hud-alert hud-riot hidden" role="status">${icon('users', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-waved hidden" role="status">${icon('idCard', 15)}<span></span><b></b><i class="hud-alert-bar"><i></i></i></span>
         <span class="pill hud-alert hud-bribe hidden">${icon('eyeOff', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
+        <span class="pill hud-alert hud-tipsy hidden">${icon('brew', 15)}<span role="status"></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-cold hidden"><i class="hud-cold-ic">${icon('snow', 15)}</i><span role="status"></span><b aria-hidden="true"></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <span class="pill hud-alert hud-today hidden"><i class="hud-today-ic"></i><span aria-hidden="true"></span><b aria-hidden="true"></b><span class="sr-only" role="status"></span><i class="hud-alert-bar" aria-hidden="true"><i></i></i></span>
         <button class="pill hud-alert hud-rat hidden" aria-keyshortcuts="T">${icon('rat', 15)}<span></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
@@ -162,6 +165,7 @@ export class Hud {
     this.waved = q('.hud-waved');
     this.cold = q('.hud-cold');
     this.bribe = q('.hud-bribe');
+    this.tipsy = q('.hud-tipsy');
     this.today = q('.hud-today');
     this.rat = q('.hud-rat');
     this.rat.addEventListener('click', () => this.onRat());
@@ -189,6 +193,7 @@ export class Hud {
   }
 
   private readonly bribe: HTMLElement;
+  private readonly tipsy: HTMLElement;
   private readonly power: HTMLElement;
   private readonly riot: HTMLElement;
   private readonly waved: HTMLElement;
@@ -228,6 +233,17 @@ export class Hud {
     el.classList.toggle('hidden', !b);
     if (!b) return;
     setText(el.querySelector('span')!, t('hud.bribe', { name: b.name }));
+    setText(el.querySelector('b')!, t('hud.bribeUntil', { time: b.until }));
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, b.left / b.of)) * 100}%`;
+    el.classList.toggle('low', b.left <= 15);
+  }
+
+  /** Tipsy (P28): "Tipsy until 13:30", the bar draining. */
+  private tipsyChip(b: HudState['tipsy']) {
+    const el = this.tipsy;
+    el.classList.toggle('hidden', !b);
+    if (!b) return;
+    setText(el.querySelector('span')!, t('hud.tipsy'));
     setText(el.querySelector('b')!, t('hud.bribeUntil', { time: b.until }));
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, b.left / b.of)) * 100}%`;
     el.classList.toggle('low', b.left <= 15);
@@ -385,7 +401,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
@@ -393,6 +409,7 @@ export class Hud {
       this.alert(this.waved, 'hud.waved', s.wavedLeft, WAVED_SECS);
       this.chill(c);
       this.lookAway(s.bribe);
+      this.tipsyChip(s.tipsy);
       this.dayChip(d);
       this.ratChip(s.rat);
       this.orderChip(s.order);

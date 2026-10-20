@@ -3,6 +3,7 @@ import { resetRat } from './rat';
 import { resetSmuggle } from './smuggle';
 import { resetGames } from './games';
 import { resetPastimes } from './pastimes';
+import { resetLong } from './long';
 import { resetCrew } from './crew';
 import { inmateName } from '../ui/social';
 import { itemNumber } from '../content/items';
@@ -132,6 +133,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   resetSmuggle();
   resetGames();
   resetPastimes();
+  resetLong();
   resetCrew();
   // No aim carried over from another game (P14).
   cancelThrow();

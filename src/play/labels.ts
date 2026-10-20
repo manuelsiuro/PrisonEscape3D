@@ -24,6 +24,11 @@ import { itemName } from '../ui/items';
 import { inmateName } from '../ui/social';
 import type { ToolView } from '../ui/tool';
 import { press } from './buttons';
+import { trackCheck } from '../sim/systems/races';
+import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
+import { CROP, GROWN, TIPSY_STEPS, WATER_MAX } from '../content/long';
+import { STEPS_PER_MINUTE } from '../sim/tuning';
+import { ratName } from './rat';
 
 /**
  * The words on the buttons and cards: who someone is, what a container is called, what the
@@ -38,8 +43,8 @@ export const NEED: Record<string, string> = {
   rope: 'toast.noLanding', glide: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig', pick: 'toast.pickGate' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide', 'drink', 'track', 'plant', 'water', 'harvest'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider', drink: 'brew', track: 'race', plant: 'sprout', water: 'water', harvest: 'fruit' };
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
@@ -292,6 +297,38 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     v.fits = tt.fits && !pet;
     v.repeat = false;
     v.progress = pet ? null : usesOf(sim.state.items.inv[sim.state.items.hand]) / RAT_MEALS;
+    return v;
+  }
+  // Long games (P28): pruno drunk (tipsy, and the heat if seen); the rat's laps (its speed, or why not now); a garden bed (its crop, its stage, today's cupfuls).
+  if (tt.action === 'drink') {
+    v.what = t('thing.pruno', { n: TIPSY_STEPS / STEPS_PER_MINUTE / 60 });
+    v.fits = true;
+    v.repeat = false;
+    v.progress = null;
+    return v;
+  }
+  if (tt.action === 'track') {
+    const why = trackCheck(sim);
+    const pet = petOf(sim.state);
+    v.what = why ? t(`thing.track.${why}` as Key) : t('thing.trackSpeed', { name: ratName(sim), n: pet?.speed ?? 0 });
+    v.fits = !why;
+    v.repeat = false;
+    v.progress = pet && !why ? (pet.speed ?? 0) / 100 : null;
+    return v;
+  }
+  if (tt.action === 'plant' || tt.action === 'water' || tt.action === 'harvest') {
+    const k = bedAt(w, tt.tile);
+    const b = bedOf(sim.state.plots, k);
+    const crop = t(b[BED.CROP] === CROP.FRUIT ? 'thing.fruitBed' : 'thing.vegBed');
+    v.what =
+      tt.action === 'plant'
+        ? t('thing.gardenBed')
+        : tt.action === 'harvest'
+          ? crop
+          : t(wilted(b) ? 'thing.bedWilted' : 'thing.bedGrowing', { crop, n: b[BED.GROWN], of: GROWN, w: b[BED.WATER], m: WATER_MAX });
+    v.fits = tt.fits;
+    v.repeat = false;
+    v.progress = tt.action === 'water' ? b[BED.GROWN] / GROWN : null;
     return v;
   }
   // A rat trap (P20): set down here, and the odds of a rat by morning.

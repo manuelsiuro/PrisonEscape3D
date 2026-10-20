@@ -34,6 +34,9 @@ import { endBout, games, stopPick } from './systems/games';
 import { crew, crewEscape } from './systems/crew';
 import { checkpointGates } from './systems/getaway';
 import { watch } from './systems/watch';
+import { tipsy, tipsyNow } from './systems/pruno';
+import { races } from './systems/races';
+import { TIPSY_PACE } from '../content/long';
 import { coolEvery, dayOneTwists, LAST_DAY, OWL_CHECKS, twist } from './systems/twists';
 import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
@@ -49,8 +52,8 @@ export * from './state';
  * noise (fuses, alarm clocks) → clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
- * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
+ * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → the cold → tipsy (P28) → showers → solitary →
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → race nights (P28) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
  */
@@ -179,6 +182,8 @@ export class Sim {
     noteCarried(this);
     regenerate(this);
     chill(this);
+    // Tipsy (P28): a stumble now and then, sober again.
+    tipsy(this);
     shower(this);
     // Solitary: time served (and potatoes peeled) sets the player free.
     if (s.solitary > 0 && --s.solitary === 0) release(this);
@@ -190,6 +195,8 @@ export class Sim {
     rats(this);
     // Smuggling (P21): the drone's drop and what guards see of it, the visitor, the Red Cross parcel.
     smuggle(this);
+    // Race nights (P28): the off, a guard seeing the player at it, the finish.
+    races(this);
     bribesWearOff(this);
     // The checkpoint (P24): waved through, its gates shut again after their minute (or at once, wanted).
     checkpointGates(this);
@@ -281,7 +288,9 @@ export class Sim {
     // A step gets the player up off a seat or a bed.
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
     const from = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
-    walk(w, s.player, s.sleeping ? 0 : dirOf(cmd), s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd), s.layer);
+    // (P28: tipsy, at TIPSY_PACE of the pace.)
+    const pace = s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd);
+    walk(w, s.player, s.sleeping ? 0 : dirOf(cmd), tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);
     // Onto a buried mine (P11).
     mines(this);
     wearKeys(this);

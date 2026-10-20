@@ -94,5 +94,5 @@ export const TRAINING: PrisonDef = {
   rules: { relaxed: true, contrabandEvery: 4 },
   escapes: ['fence'],
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(40, 35, 5), oldTimer: 2 },
+  leisure: { hoop: court(40, 35, 5), oldTimer: 2, garden: { x: 30, z: 13, w: 3, d: 2 }, race: { x: 22, z: 23, dir: 1, len: 6 } },
 };

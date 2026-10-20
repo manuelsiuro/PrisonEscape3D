@@ -34,6 +34,13 @@ export function noteCarried(sim: SimContext) {
 /** Made anywhere, whatever the furniture: dirt and chunks dug and chipped, shivs, potatoes, what the player starts with. */
 const ANYWHERE: readonly Source[] = ['start', 'sharpen', 'dig', 'chip', 'solitary'];
 const obtainableOf = new WeakMap<World, ReadonlySet<number>>();
+/** P28's goods taken on request (pantry.ts), and the tables of the furniture (or the merchants) they're taken from. */
+const PANTRY: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['fruit', ['canteenCounter']],
+  ['sugar', ['kitchenFreezer', 'merchant']],
+  ['veg_seeds', ['libraryShelf', 'merchant']],
+  ['fruit_seeds', ['libraryShelf', 'merchant']],
+];
 
 /**
  * Every item that can be had in this prison: what its furniture, the inmates' pockets, its
@@ -51,6 +58,10 @@ export function obtainable(w: World): ReadonlySet<number> {
   // (P19: a prison with dogs stocks their treats, and the pills.)
   const dogs = w.def.guards.some((g) => g.dog);
   for (const d of ITEMS) if (d.from.some((f) => ANYWHERE.includes(f) || (f === 'job' && w.def.jobs.length > 0) || (f === 'treats' && dogs))) have.add(d.id);
+  // (P28: taken on request, never stocked: fruit at a canteen counter, sugar from a kitchen freezer, seed packets off a library shelf; the
+  // merchants' staples; a garden's harvest.)
+  for (const [id, from] of PANTRY) if (from.some((t) => tables.has(t))) have.add(id);
+  if (w.def.leisure?.garden && (have.has('veg_seeds') || have.has('fruit_seeds'))) for (const id of ['vegetable', 'fruit']) have.add(id);
   for (let changed = true; changed; ) {
     changed = false;
     for (const r of RECIPES) {
@@ -59,6 +70,8 @@ export function obtainable(w: World): ReadonlySet<number> {
       changed = true;
     }
   }
+  // (P28: a bag of pruno ferments into pruno.)
+  if (have.has('pruno_bag')) have.add('pruno');
   set = new Set([...have].map(itemNumber));
   obtainableOf.set(w, set);
   return set;

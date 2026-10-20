@@ -33,6 +33,8 @@ import { callLiar, endCheat, playCards, startCheat } from './cards';
 import { hoopsPartner, startShootout } from './hoops';
 import { checkersOp, elderOf, getUp, moveOn } from './checkers';
 import { HOOPS_GAP } from '../../content/games';
+import { SHOP_SLOTS } from '../../content/loot';
+import { buyStaple, sell } from './pantry';
 
 /** A blow of the player's this recent (steps) knocked the Cheat partner out: their own doing, the game folded. */
 const CHEAT_BLOW_STEPS = 40;
@@ -131,6 +133,8 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
   it.rev++;
   switch (a) {
     case TALK.BUY: {
+      // (P28: past the shop's own slots, the staples every merchant sells.)
+      if (b >= SHOP_SLOTS) return buyStaple(sim, who, b - SHOP_SLOTS);
       const shop = s.shops[sim.merchantOf(who)];
       const v = shop?.[b];
       if (!v) return;
@@ -147,6 +151,9 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       changeOpinion(sim, who, BUY_OPINION);
       return;
     }
+    case TALK.SELL:
+      sell(sim, who, b);
+      return;
     case TALK.GIFT: {
       const v = b < HOTBAR ? it.inv[b] : 0;
       if (!v) return;

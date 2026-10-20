@@ -12,6 +12,8 @@ import { shakedown } from './justice';
 import { dismissForNight } from './social';
 import { addHeat } from './watch';
 import { treats } from './k9';
+import { ferment } from './pruno';
+import { growGarden } from './garden';
 
 /** A new block settles the last one: a missed block costs heat, the Work Period pays or fires, 08:00 starts a new day. */
 export function nextBlock(sim: SimContext, clock: Clock) {
@@ -46,6 +48,9 @@ export function nextBlock(sim: SimContext, clock: Clock) {
     restock(w, s.items, s);
     // (P19: the dogs' treats, and the pills, where there are dogs.)
     treats(sim);
+    // (P28: pruno ferments a day more; the garden's beds look back on yesterday.)
+    ferment(sim);
+    growGarden(sim);
     reissueKit(sim);
     sim.events.push({ type: 'restock' });
     if (!sim.world.def.rules?.relaxed) shakedown(sim);

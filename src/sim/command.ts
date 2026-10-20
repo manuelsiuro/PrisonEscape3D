@@ -58,6 +58,9 @@ export const EXT = {
   DIG_UP: 7,
   /** Hoops (P27): the ball held up for a shot on a spot (b = 0), let go (b = 1). */
   SHOOT: 8,
+  /** Long games (P28): fruit, sugar or a seed packet taken from the open furniture (b = TAKE); a race night's bet (b = the lane, c = the stake's place in BETS) or the pet entered (b = RACE_ENTER). */
+  TAKE: 9,
+  RACE: 10,
 } as const;
 
 /**
@@ -67,9 +70,10 @@ export const EXT = {
  * stands); WRESTLE, a bout; P23's CREW, an order to a follower, b = ORDER; P27's CHEAT, a game of
  * Cheat, b = the stake's place in STAKES; PLAY, cards laid, b = which of the hand (bit per card);
  * LIAR, the inmate's last play called; HOOPS, a shootout; CHECKERS, b = 1 to the old-timer's
- * board, 0 up from it, 2 resigning; MOVE, a step on the board, b = from, c = to). Never renumber.
+ * board, 0 up from it, 2 resigning; MOVE, a step on the board, b = from, c = to; P28's SELL, b =
+ * the hotbar slot sold to a merchant; BUY's b past the shop's slots, a staple). Never renumber.
  */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20 } as const;
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20, SELL: 21 } as const;
 
 /**
  * What a follower in the crew is told (P23, TALK.CREW's b): back at the player's heels, keep

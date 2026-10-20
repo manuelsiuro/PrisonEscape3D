@@ -11,6 +11,7 @@ import { lockAt } from './games';
 import { PINS } from '../../content/games';
 import type { Weather } from '../../content/days';
 import { GLIDE_BASE, GLIDE_MAX, GLIDE_MIN, GLIDE_RAIN, GLIDE_TAIL, RUN_UP } from '../../content/getaways';
+import { bedTarget } from './garden';
 
 /**
  * Layers and destruction (GDD §9): what a tool would strike, what the action button would
@@ -23,9 +24,10 @@ import { GLIDE_BASE, GLIDE_MAX, GLIDE_MIN, GLIDE_RAIN, GLIDE_TAIL, RUN_UP } from
  * dig up), chocolate is eaten, a cover goes over damage, a brace goes up, a sheet rope
  * takes the player down off a roof, an alarm clock is wound (P14), soap washes the scent off
  * (P19), a caught rat is fed and a rat trap set down (P20), a lockpick works a keyed door's pins (P22),
- * a glider takes off a roof's edge (P24).
+ * a glider takes off a roof's edge (P24); ripe pruno is drunk, the rat runs its track, and a garden
+ * bed is planted, watered or harvested (P28).
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick' | 'glide';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick' | 'glide' | 'drink' | 'track' | 'plant' | 'water' | 'harvest';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -110,6 +112,9 @@ export const SOAP = ITEM_ID('soap');
 /** P20: a rat trap (set down), a caught rat (fed: potato, chocolate or jerky). */
 const RAT_TRAP = ITEM_ID('rat_trap');
 const CAUGHT_RAT = ITEM_ID('caught_rat');
+/** P28: ripe pruno (drunk), the rat's track. */
+const PRUNO = ITEM_ID('pruno');
+const RAT_TRACK = ITEM_ID('rat_track');
 /** P22: the lockpick (a keyed door ahead). */
 const LOCKPICK = ITEM_ID('lockpick');
 /** P24: the glider (off a roof's edge). */
@@ -270,8 +275,14 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = f
  * it, the target comes back with `fits` false (the UI says what is needed); null when there
  * is nothing to strike.
  */
-export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = [], air?: Air): ToolTarget | null {
+export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = [], air?: Air, plots?: readonly number[][]): ToolTarget | null {
   const def = held ? itemDef(held) : null;
+  // The garden (P28): a ripe bed ahead (or underfoot) harvested whatever is in hand; seeds planted, a cup watering.
+  const bed = plots ? bedTarget(w, layer, b, held, plots) : null;
+  if (bed) return { action: bed.action, layer: LAYER.GROUND, tile: bed.tile, fits: bed.fits, hp: 0 };
+  // Ripe pruno drunk; the rat's track (P28).
+  if (held === PRUNO) return { action: 'drink', layer, tile: -1, fits: true, hp: 0 };
+  if (held === RAT_TRACK) return { action: 'track', layer, tile: -1, fits: true, hp: 0 };
   if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
   // A bar of soap (P19): the player's scent rubbed off.

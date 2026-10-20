@@ -25,6 +25,9 @@ import { BAR, CHIPS, CLAIM_MAX, HAND, STAKES } from '../content/games';
 import type { Cheat, CheatNews } from './systems/cards';
 import type { Shootout, ShotResult } from './systems/hoops';
 import type { Board, CheckersNews } from './systems/checkers';
+import type { TrackRefusal } from './systems/races';
+import { bedCount } from './systems/garden';
+import { CROP, RAT_START_SPEED } from '../content/long';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
@@ -32,7 +35,7 @@ import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
 export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider'] as const;
@@ -123,7 +126,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -150,6 +153,8 @@ export type SimEvent =
   | { type: 'talk'; who: number }
   | { type: 'opinion'; who: number; by: number }
   | { type: 'bought'; who: number; item: number; price: number }
+  /** P28: something sold to a merchant (ripe pruno, a vegetable). */
+  | { type: 'sold'; who: number; item: number; price: number }
   | { type: 'gift'; who: number; item: number; cash: number }
   | { type: 'favor'; who: number; kind: number; state: 'offered' | 'taken' | 'done' | 'paid' }
   | { type: 'recruit'; who: number; on: boolean }
@@ -254,7 +259,27 @@ export type SimEvent =
   | { type: 'hoopShot'; by: number; spot: number; result: ShotResult; power: number; need: number }
   | { type: 'hoops'; what: 'start' | 'won' | 'lost' | 'draw' | 'off' | 'practice'; who: number; crowd?: number; wins?: number; spd?: number; gain?: number; mine?: number; theirs?: number }
   | { type: 'checkers'; what: CheckersNews; who: number; by?: number; path?: number[]; more?: boolean; int?: number; gain?: number }
+  /**
+   * P28 (pruno.ts, garden.ts, races.ts): pruno ripe at 08:00 (in which `container`, `mine` the
+   * player's cell's), seized where a dog smelled it, drunk, a stumble, sober again; a garden bed
+   * planted (`crop`), watered (`n` cupfuls today), grown a stage (`n` stages), ripe, wilted, dead,
+   * harvested (`n` of its yield), or why not (`why`); the rat's laps on the track (its `speed` now,
+   * the `gain`, the bait eaten) or why not; a race night: a bet (`lane`, `stake`, `odds`), the pet
+   * entered or scratched, the off, the result (the finishing `order` of lanes, what the bet `won`,
+   * the `purse`), or called off (`stake` back).
+   */
+  | { type: 'pruno'; what: PrunoNews; container?: number; mine?: boolean }
+  | { type: 'garden'; what: GardenNews; bed: number; crop?: number; n?: number; why?: 'watered' }
+  | { type: 'track'; what: 'trained' | 'refused'; speed?: number; gain?: number; item?: number; why?: TrackRefusal }
+  | { type: 'race'; what: RaceNews; lane?: number; stake?: number; odds?: number; order?: number[]; won?: number; purse?: number }
   | ItemEvent;
+
+/** What pruno did (P28, the 'pruno' event). */
+export type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
+/** What a garden bed did (P28, the 'garden' event). */
+export type GardenNews = 'planted' | 'watered' | 'grew' | 'ripe' | 'wilted' | 'died' | 'harvested' | 'refused';
+/** A race night (P28, the 'race' event). */
+export type RaceNews = 'bet' | 'entered' | 'scratched' | 'start' | 'result' | 'off';
 
 /** What the crew did (P23, the 'crew' event). */
 export type CrewNews = 'order' | 'whistle' | 'recalled' | 'brawl' | 'brawlOver' | 'fetched' | 'handed' | 'fetchFailed' | 'stopped' | 'dirt' | 'nightOver' | 'nightOff' | 'nightOut';
@@ -273,13 +298,13 @@ export type SmuggleNews = 'ordered' | 'turnedBack' | 'dropped' | 'seized' | 'col
 export type RatNews = 'caught' | 'fed' | 'tamed' | 'hungry' | 'haveOne' | 'sent' | 'took' | 'left' | 'empty' | 'full' | 'woke' | 'home' | 'chased' | 'loose' | 'calm' | 'gone' | 'refused';
 
 /** What a dog did (P19, the 'dog' event). */
-export type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat';
+export type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew';
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
 export type BribeKind = 'look' | 'paper' | 'over';
 
 /** What made a noise (P14). */
-export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark' | 'squeak' | 'buzz';
+export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark' | 'squeak' | 'buzz' | 'stumble' | 'cheer';
 /** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
 export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 
@@ -287,7 +312,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -493,6 +518,16 @@ export interface SimState {
   /** The old-timer's board (P27, checkers.ts), null before the first game; the games with him: [won, lost, drawn, the prison day one last taught a point]. */
   board: Board | null;
   elder: number[];
+  /**
+   * P28's long games: what was last taken on request ([the meal fruit was taken at, the day sugar
+   * was, the day a seed packet was]); tipsy ([the step it wears off, the step a guard last saw it];
+   * [] never); the garden's beds ([crop, stages grown, dry days, cupfuls today] each, garden.ts);
+   * tonight's race (races.ts RACE; [] none).
+   */
+  pantry: number[];
+  tipsy: number[];
+  plots: number[][];
+  race: number[];
 }
 
 export interface Snapshot {
@@ -620,6 +655,10 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     practice: 0,
     board: null,
     elder: [0, 0, 0, 0],
+    pantry: [0, 0, 0],
+    tipsy: [],
+    plots: [],
+    race: [],
   };
 }
 
@@ -730,6 +769,14 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!Number.isInteger(s.practice) || s.practice < 0) s.practice = 0;
   if (!boardOk(s.board)) s.board = null;
   if (!ints(s.elder, 4) || s.elder.some((x) => x < 0)) s.elder = [0, 0, 0, 0];
+  // P28: what was taken, tipsy, the garden (fitted to this prison's plot), tonight's race; damaged ones start again.
+  if (!ints(s.pantry, 3)) s.pantry = [0, 0, 0];
+  if (!(Array.isArray(s.tipsy) && (s.tipsy.length === 0 || ints(s.tipsy, 2)))) s.tipsy = [];
+  const beds = bedCount(world);
+  if (!(Array.isArray(s.plots) && s.plots.length <= beds && s.plots.every((b) => ints(b, 4) && b[0] >= CROP.NONE && b[0] <= CROP.FRUIT && b[1] >= 0 && b[2] >= 0 && b[3] >= 0))) s.plots = [];
+  if (!(Array.isArray(s.race) && (s.race.length === 0 || ints(s.race, 8)))) s.race = [];
+  // (The pet rat's racing form, P28: a rat tamed before it, at the start.)
+  for (const r of s.rats) if (!r.wild) Object.assign(r, { speed: Number.isInteger(r.speed) ? r.speed : RAT_START_SPEED, fed: Number.isInteger(r.fed) ? r.fed : 0, lap: Number.isInteger(r.lap) ? r.lap : 0 });
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;

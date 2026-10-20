@@ -41,6 +41,9 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['cheat', 'cards', '#2e8a5e'],
     ['hoops', 'ball', '#e8742c'],
     ['checkers', 'checkers', '#8a5a2e'],
+    ['pruno', 'brew', '#c98a2e'],
+    ['garden', 'sprout', '#4f9a3a'],
+    ['race', 'race', '#b0602e'],
     ['fight', 'fist', '#c0392b'],
   ],
   escape: [

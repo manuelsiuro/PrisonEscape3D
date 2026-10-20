@@ -12,6 +12,7 @@ import { markerAt, sweetSpot } from '../src/sim/systems/games';
 import { isTrue } from '../src/sim/systems/cards';
 import { courtOf, powerAt, shotWindow } from '../src/sim/systems/hoops';
 import { squareAt } from '../src/sim/systems/checkers';
+import { cardUp, RACE_ENTER, raceCard } from '../src/sim/systems/races';
 import { thorough } from '../src/sim/systems/delivery';
 import { jobRooms, priceOf } from '../src/sim/systems/economy';
 import { itemDef } from '../src/content/items';
@@ -445,6 +446,64 @@ play('checkers', (bot) => {
   check(bot.st.board?.over === 1, 'checkers: won with the double jump');
 });
 
+play('pruno', (bot, ctx) => {
+  // The bag brewed on the bench, hidden in the toilet's tank; to bed; last night's bag drunk in the morning.
+  ctx.craftOpen = true;
+  bot.op(OP.CRAFT, (1 << 0) | (1 << 1) | (1 << 2));
+  ctx.craftOpen = false;
+  check(bot.slotOf('pruno_bag') >= 0, 'pruno: a bag brewed');
+  const toilet = containersOf(bot.sim.world).findIndex((c) => c.mine && c.prop.kind === 'toilet');
+  const t = containersOf(bot.sim.world)[toilet].prop;
+  check(bot.walkTo(tile(t.x - 1, t.z)), 'pruno: by the toilet');
+  bot.face(DIR.EAST);
+  check(bot.open(toilet), 'pruno: the tank opens');
+  bot.putIn('pruno_bag', 0);
+  bot.close();
+  bot.walkTo(placesOf(bot.sim.world).bedside[1]);
+  bot.face(DIR.WEST);
+  bot.act();
+  check(bot.st.sleeping, 'pruno: asleep');
+  check(
+    bot.until(() => bot.events.some((e) => e.type === 'pruno' && e.what === 'ripe'), 12 * 60 * 20 * 60),
+    'pruno: last night\'s bag ripe by morning',
+  );
+  check(bot.walkTo(deskTileOf(bot) + MAP_W), 'pruno: at the desk');
+  bot.face(DIR.NORTH);
+  check(bot.open(myDesk(bot.sim)), 'pruno: the desk opens');
+  bot.takeAll(1);
+  bot.close();
+  bot.hold('pruno');
+  bot.use();
+});
+
+play('garden', (bot) => {
+  const g = TRAINING.leisure!.garden;
+  // The bed ahead planted and watered; the wilted one at the end watered; the ripe one picked from beside it.
+  bot.hold('veg_seeds');
+  bot.use();
+  bot.hold('plastic_cup');
+  bot.use();
+  check(bot.walkTo(tile(g.x + g.w - 1, g.z + g.d)), 'garden: below the wilted bed');
+  bot.face(DIR.NORTH);
+  bot.use();
+  check(bot.walkTo(tile(g.x + g.w, g.z)), 'garden: beside the ripe bed');
+  bot.face(DIR.WEST);
+  bot.use();
+  check(bot.slotOf('fruit') >= 0, 'garden: fruit picked');
+});
+
+play('ratRace', (bot) => {
+  // Laps on the track at home (the potato eaten), to the track, entered, $5 on the pet, the race.
+  bot.hold('rat_track');
+  bot.use();
+  const r = TRAINING.leisure!.race;
+  check(bot.walkTo(tile(r.x, r.z - 1)), 'ratRace: at the track');
+  check(bot.until(() => cardUp(bot.sim), 2 * 60 * 20 * 60), 'ratRace: the card up');
+  bot.op(OP.EXT, EXT.RACE, RACE_ENTER);
+  bot.op(OP.EXT, EXT.RACE, raceCard(bot.st, prisonDay(bot.st.step)).length - 1, 0);
+  check(bot.until(() => bot.events.some((e) => e.type === 'race' && e.what === 'result'), 90 * 20 * 60), 'ratRace: the race run');
+});
+
 play('crew', (bot) => {
   check(talkTo(bot, bot.st.inmates[0].body), 'crew: talking to Sparky');
   bot.op(OP.TALK, TALK.RECRUIT);
@@ -768,6 +827,27 @@ function follow(id: string) {
   quit.bot.op(OP.TALK, TALK.CHECKERS, 2);
   check(quit.why() === 'lesson.checkers.resigned', `checkers: resigning ends the lesson (${quit.why()})`);
   console.log(`cards, folded: ended at step ${cards.progress.k + 1}; hoops, court left: ended at step ${hoops.progress.k + 1}; checkers, up past free time and resigned: said`);
+}
+{
+  // P28: the race night missed (never at the track by the off), and the pet scratched (walked away with it before the off).
+  const late = follow('ratRace');
+  late.bot.hold('rat_track');
+  late.bot.use();
+  late.bot.until(() => !!late.why(), 3 * 60 * 20 * 60);
+  check(late.why() === 'lesson.ratRace.late', `ratRace: not at the track by the off ends the lesson (${late.why()})`);
+  const away = follow('ratRace');
+  away.bot.hold('rat_track');
+  away.bot.use();
+  const r = TRAINING.leisure!.race;
+  away.bot.walkTo(tile(r.x, r.z - 1));
+  away.bot.until(() => cardUp(away.bot.sim), 2 * 60 * 20 * 60);
+  away.bot.op(OP.EXT, EXT.RACE, RACE_ENTER);
+  away.bot.op(OP.EXT, EXT.RACE, 0, 0);
+  check(away.progress.step?.text === 'lesson.ratRace.watch', `ratRace: entered and backed, watching (${away.progress.step?.text})`);
+  away.bot.walkTo(tile(20, 19));
+  away.bot.until(() => !!away.why(), 60 * 20 * 60);
+  check(away.why() === 'lesson.ratRace.off', `ratRace: the pet away at the off ends the lesson (${away.why()})`);
+  console.log(`ratRace, late: ended at step ${late.progress.k + 1}; ratRace, scratched: ended at step ${away.progress.k + 1}`);
 }
 {
   // No game played before the evening's free time ends: the lesson says so.

@@ -71,6 +71,7 @@ import { aimToss, makeNoise, type TossAim } from './noise';
 import { underShower } from './actions';
 import { chaseOff, ratOut, type Rat } from './rats';
 import { addHeat, afterHours } from './watch';
+import { brewNear, seizeBrew } from './pruno';
 
 /** What a dog is up to. Never renumber: saves store them. */
 export const DOG = {
@@ -393,6 +394,23 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
     addHeat(sim, SNIFF_HEAT);
     return;
   }
+  // A brew in the furniture close by (P28: a bag of pruno fermenting, or ripe), smelled through the bars: pointed at, seized.
+  if (!s.lockdown && d.trust < TRUST_IGNORE && (d.sniffed === 0 || s.step - d.sniffed >= SNIFF_AGAIN) && (s.step + k) % 10 === 0) {
+    const c = brewNear(sim, b);
+    if (c >= 0) {
+      d.sniffed = s.step;
+      const { tile } = seizeBrew(sim, c);
+      const mine = containersOf(w)[c].mine;
+      point(sim, k, g, 'brew', tile);
+      sim.events.push({ type: 'pruno', what: 'seized', container: c, mine });
+      // In the player's cell: theirs, and the guards know it.
+      if (mine) {
+        if (!s.lockdown) sim.events.push({ type: 'spotted', reason: 'sniffed' });
+        addHeat(sim, SNIFF_HEAT);
+      }
+      return;
+    }
+  }
   // The trail: crossed (any dog on shift in a lockdown sets off along it). A friend never follows the player's;
   // one that has just run the player down or smelled them out gives it a while (its handler is looking already).
   if (d.trust >= TRUST_FRIEND || !s.scent.length || (d.sniffed !== 0 && s.step - d.sniffed < SNIFF_AGAIN) || s.step < d.rest) return;
@@ -488,7 +506,7 @@ function done(sim: SimContext, d: Dog) {
 }
 
 /** Stands pointing and barking (at the player, or at where the trail led): the handler comes to look. */
-function point(sim: SimContext, k: number, g: Guard, what: 'sniff' | 'point' | 'dug', at = -1) {
+function point(sim: SimContext, k: number, g: Guard, what: 'sniff' | 'point' | 'dug' | 'brew', at = -1) {
   const s = sim.state;
   const d = s.dogs[k];
   const b = d.body;
@@ -499,8 +517,10 @@ function point(sim: SimContext, k: number, g: Guard, what: 'sniff' | 'point' | '
   d.path = [];
   b.moving = false;
   const look = at >= 0 ? at : tileAt(p.x, p.z);
-  if (what !== 'sniff') done(sim, d);
+  if (what !== 'sniff' && what !== 'brew') done(sim, d);
   if (at < 0 && (p.x !== b.x || p.z !== b.z)) b.facing = nearestDir(p.x - b.x, p.z - b.z);
+  // (P28: at a brew, it faces the furniture.)
+  if (what === 'brew' && at >= 0) b.facing = nearestDir(centerX(at) - b.x, centerZ(at) - b.z) || b.facing;
   sim.events.push({ type: 'dog', dog: k, what });
   makeNoise(sim, 'bark', LAYER.GROUND, tileAt(b.x, b.z), BARK_NOISE);
   if (awake(g)) sendToLook(g, look);

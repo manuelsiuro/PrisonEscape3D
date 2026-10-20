@@ -29,6 +29,7 @@ import { inDuct, RAT } from '../sim/systems/rats';
 import { smuggleFrame } from './smuggle';
 import { diceRival, gamesDoing, gamesFrameOf } from './games';
 import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
+import { longFrameOf, petOnTrack } from './long';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
@@ -162,6 +163,7 @@ const frameData: Frame = {
   smuggle: null,
   games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
   pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
+  long: null,
   getaway: { shift: false, waved: false, glide: null },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
@@ -328,6 +330,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.facing = Math.atan2(DIR_X[r.facing], DIR_Z[r.facing]);
     const t = Math.floor(r.z / UNIT) * MAP_W + Math.floor(r.x / UNIT);
     o.mode = r.mode === RAT.SHOULDER ? 'shoulder' : r.mode === RAT.WAIT || inDuct(sim.world, t) ? 'hidden' : r.mode === RAT.LOOSE ? 'loose' : 'run';
+    // (P28: the pet away on the track, racing or running its laps: drawn there, not on the shoulder.)
+    if (!r.wild && r.mode === RAT.SHOULDER && petOnTrack(sim)) o.mode = 'hidden';
     o.carry = itemOf(r.carry);
   });
   scentFrame.length = st.scent.length;
@@ -489,6 +493,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? f.inmates[rival] ?? null : null);
   // Card sharks (P27): the court, the ball, the cards between the two, the board.
   f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner, partner);
+  // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
+  f.long = longFrameOf(sim, a);
   return f;
 }
 

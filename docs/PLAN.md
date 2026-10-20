@@ -687,42 +687,48 @@ Ten free-time activities, one vertical slice per phase. Each one is fun on its o
 
 ### P28 Long games (v2.3): Pruno, the garden, rat racing
 
+Nothing here touches a container's stock or draws on the state's RNG: the escape bots' runs stay as they were. New goods are taken on request, not stocked.
+
+**Getting the makings** (on request: `EXT.TAKE`, b = what)
+- **Fruit**: from an open canteen counter during breakfast and dinner, one piece a meal.
+- **Sugar**: from an open kitchen freezer, one bag a prison day (the kitchen is a job room: the kitchen job, or sneaking in).
+- **Seed packets** (vegetable or fruit): from an open library shelf, one packet a prison day.
+- **The merchants' staples**: every merchant also sells sugar and both seed packets, whatever its stock (`TALK.BUY` with b past the shop's slots), and buys ripe pruno and vegetables at their value (`TALK.SELL`, b = the hotbar slot).
+
 **Pruno** (a risky project over several days)
-- **Making it**: new items fruit (the canteen counter at meals) and sugar (the kitchen job, merchants). Fruit ×2 + sugar → a pruno bag (Intellect 20).
-- **Fermenting**: hidden in a desk or a toilet's tank, it ferments for 2 prison days. The days left are kept in the item's uses and count down at 08:00.
+- **Making it**: fruit ×2 + sugar → a pruno bag (Intellect 20).
+- **Fermenting**: left in a desk (any drawer) or a toilet's tank, it ferments for 2 prison days. The days left are the item's uses and count down at 08:00. Carried or on the floor, it doesn't ferment.
 - **The risks**:
-  - It smells: a dog passing within its nose's reach points at the container (P19).
-  - A shakedown or an inspection finds it in a standard drawer. A hidden one is found only by a dog.
-- **Ripe pruno** (contraband):
-  - Sold to merchants for $40, or a gift worth +15 opinion.
-  - Or drunk: tipsy for 3 prison hours. Blows hit 50% harder, but walking is slower and footsteps louder.
-  - A guard who sees the player tipsy: +20% heat.
+  - **The smell**: a dog on shift that passes a container holding a bag (or ripe pruno) within its nose's reach (SNIFF_RANGE, a clear line) points at it; the bag is seized. In the player's cell: sniffed heat.
+  - **Searches**: a shakedown or an inspection finds it in a desk's standard drawers (it's contraband). The hidden drawer and the toilet's tank are never searched: only a dog finds it there.
+- **Ripe pruno** (contraband, worth $40):
+  - Sold to a merchant for $40, or given as a gift (+15 opinion).
+  - Or drunk (the use button): tipsy for 3 prison hours. Blows hit 50% harder; walking is 20% slower; every few seconds of walking a stumble makes a small noise.
+  - A guard who sees the player tipsy: +20% heat, once each time he catches sight of them.
 
 **The garden plot** (care over time, with a secret)
-- **The plot**: a patch in each yard (`leisure.garden`: a rectangle of beds).
-- **Growing**:
-  - Seed packets from merchants or the library shelf. Plant one with Use on a free bed.
-  - Water each prison day with the plastic cup.
-  - Rain waters it; a heatwave needs watering twice.
-  - It grows over 3 days. A missed day wilts it; two missed days kill it.
-- **The harvest**: vegetables (a gift, or sold to the kitchen) and fruit (for pruno).
-- **The secret**:
-  - A planted bed hides a hole dug down through it: no guard sees damage there.
-  - A tunnel can start outdoors.
-  - Digging down from yard soil needs a check against the tunnel rules when this phase starts. A conflict goes in §2.
+- **The plot**: a rectangle of beds in each yard (`leisure.garden`), drawn as tilled soil; each tile is a bed. maptest checks the beds are open, diggable yard floor that nobody needs to stand on.
+- **Growing** (the use button on the bed ahead, or the one underfoot):
+  - Seed packet in hand: planted.
+  - Plastic cup in hand: watered (twice a day at most).
+  - It grows a stage each prison day it was watered: 3 days to ripe. Rain or a storm waters it; a heatwave needs watering twice.
+  - A day without water wilts it (it stops growing); two in a row kill it.
+- **The harvest** (the use button on a ripe bed, whatever is in hand): 2 vegetables (a gift, or sold to a merchant) or 2 fruit (for pruno).
+- **The secret**: a hole dug down through a planted bed doesn't show: no guard sees damage under a plant (a dog following the trail still digs it up). Harvested or dead, the hole is plain to see until something is planted over it again. (Tunnels could already start from the yard's soil, GDD §9.2: dirt, grass or any non-reinforced floor. No conflict.)
 
 **Rat racing** (training and betting; builds on P20)
-- **Training**: the tame rat gets a speed (0–100, appended to the rat's state). It trains on a rat track crafted from a magazine and duct tape, set down in the cell, once each evening free time.
-- **Race nights**:
-  - Evenings of odd prison days, 21:00, in the cell block corridor.
-  - Inmates' rats join (by cell, drawn), and the player bets $5–$20 on any rat.
-  - The outcome comes from `roll()`, the speeds and whether each rat was fed today.
-- **The 3D**: the race is shown down the corridor.
-- **Risks**: the race is noise, and a guard who sees it gives gambling heat.
+- **Training**: the tame rat gets a speed (0–100; 20 when tamed), appended to the rat's state. A rat track is crafted from two magazines and duct tape (Intellect 30; one magazine and tape already make a poster). Used in the player's cell in evening free time, once a prison day, with bait in the hotbar: the rat eats it and runs the track. It gains less the faster it is already. Trained today is fed today.
+- **Race nights**: odd prison days, at 21:00, on a straight track in the cell block (`leisure.race`).
+  - **The card**: from 20:00, three inmates' rats (drawn by cell with `roll()`, each with a name, a speed and whether it was fed today) and the player's, if entered.
+  - **Bets**: at the track before 21:00, $5, $10 or $20 on one rat. The bookie's odds go by the speeds alone: the favourite pays ×2, then ×3, ×5 and ×8 (stake included).
+  - **The race**: 10 legs; each leg a rat runs its speed, plus a bonus fed, plus luck from `roll()`. The furthest wins. Its course is a pure function, so the 3D and the sim agree.
+  - A fed rat beats its odds: the edge is knowing which rats ate (yours, and what the gossip says of the others).
+  - The player's rat winning: a $10 purse.
+- **Risks**: the race is noise (guards come to look), and a guard who sees the player at it with a bet on gives gambling heat. Without the player taking part, nothing happens in the simulation.
 
-**Proof**: `longtest` covers fermentation, the dogs' nose and searches, tipsy, growing, wilting and the weather, the hidden hole, the rat's training, races by `roll()`, saves, and old logs; escapetest unchanged.
+**Proof**: `longtest` covers fermentation (desk, tank, hand), the dogs' nose and searches, tipsy, growing, wilting and the weather, the hidden hole, the rat's training, the race and its odds measured (blind bets lose, informed ones win), saves, and old logs; escapetest unchanged.
 
-**Lessons**: `pruno`, `garden` and `ratRace`.
+**Lessons**: `pruno`, `garden` and `ratRace` in Prison life, after Checkers.
 
 ### P29 Team & ink (v2.4): yard football, the tattoo parlour
 

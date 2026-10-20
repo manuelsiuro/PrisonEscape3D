@@ -34,7 +34,7 @@ function blob(rx: number, ry: number, rz: number, color: number, x = 0, y = 0, z
 }
 
 /** The body and head, nose along +z, feet on y = 0 (one geometry: one draw call a rat). */
-function bodyGeometry(): THREE.BufferGeometry {
+export function bodyGeometry(): THREE.BufferGeometry {
   const head = new THREE.ConeGeometry(0.042, 0.12, 9);
   head.rotateX(Math.PI / 2);
   head.translate(0, 0.075, 0.165);
@@ -56,7 +56,7 @@ function bodyGeometry(): THREE.BufferGeometry {
 }
 
 /** The tail, from its root at the origin out along −z (wagged on its own). */
-function tailGeometry(): THREE.BufferGeometry {
+export function tailGeometry(): THREE.BufferGeometry {
   // (Thick at its root, which rotateX sends to +z.)
   const g = new THREE.CylinderGeometry(0.013, 0.004, 0.26, 6);
   g.rotateX(Math.PI / 2);

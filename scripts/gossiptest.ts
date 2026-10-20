@@ -54,6 +54,8 @@ import { glideFrom } from '../src/sim/systems/structure';
 import { prisonDay } from '../src/sim/systems/clock';
 import { command, OP } from '../src/sim/command';
 import { ESCAPES, Sim as SimOf } from '../src/sim/Sim';
+import { raceNight, rivals } from '../src/sim/systems/races';
+import { RACE_MINUTE } from '../src/content/long';
 import { check } from './assert';
 
 const DAY = 1440 * STEPS_PER_MINUTE;
@@ -216,6 +218,20 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     }
     case 'glideDay':
       return glidesOut(sim);
+    // Long games (P28): a toilet's tank and a desk's hidden drawer are never searched (justice.ts: the standard drawers and the bed), the dogs smell furniture;
+    // a shaft in a planted bed never shows; the race nights at the minute the rule starts them; whose rat ate, as tonight's card has it.
+    case 'pruno':
+      return !sim.prison.rules?.relaxed && sim.prison.guards.some((g) => g.duties?.includes('shakedown'));
+    case 'gardenHole':
+      return !!sim.prison.leisure?.garden;
+    case 'raceNight':
+      return !!sim.prison.leisure?.race && f.t1 === RACE_MINUTE;
+    case 'ratFed':
+    case 'ratHungry': {
+      const day = prisonDay(s.step);
+      const e = rivals(s, day).find((x) => x.owner === f.inmate);
+      return raceNight(day) && !!e && e.fed === (f.kind === 'ratFed') && dayMinute(s.step) < RACE_MINUTE - ROUTINE[0].start;
+    }
     default:
       return true;
   }

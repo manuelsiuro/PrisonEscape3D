@@ -1,6 +1,6 @@
 import { itemDef, ITEMS } from '../content/items';
 import { RECIPES } from '../content/recipes';
-import { OP, SLOT } from '../sim/command';
+import { EXT, OP, SLOT } from '../sim/command';
 import { ingredientOptions } from '../sim/systems/recipes';
 import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
 import { clockRinging, clockSecs } from '../sim/systems/noise';
@@ -30,6 +30,8 @@ export interface ItemsView {
   deskTunnel: boolean;
   /** The open container is a library shelf (GDD §3.2): offer a book to study. */
   study: boolean;
+  /** P28: what can be taken on request from the open furniture (fruit at a meal, sugar, seed packets): TAKE, its label, why not ('' it can be). */
+  take: ReadonlyArray<{ what: number; label: string; why: string }>;
 }
 
 type Send = (op: number, a?: number, b?: number) => void;
@@ -131,6 +133,7 @@ export class ItemsUI {
       `<div class="panel-head"><b></b><button class="icon-btn small" data-close data-t-label="box.close">${icon('close', 18)}</button></div>
       <div class="box-tunnel hidden"><span data-t="box.tunnel"></span><button class="big-btn primary small" data-climb>${icon('down', 18)}<span data-t="box.climbDown"></span></button></div>
       <div class="box-tunnel box-study hidden"><span><b data-t="box.study"></b><small data-t="box.studyNote"></small></span><button class="big-btn primary small" data-study>${icon('book', 18)}<span data-t="train.study"></span></button></div>
+      <div class="box-take hidden"></div>
       <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span data-t="box.hidden"></span><em data-t="box.hiddenNote"></em></div><div class="slot-grid box-hidden"></div></div>
       <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>`,
     );
@@ -150,6 +153,12 @@ export class ItemsUI {
       if ((e.target as HTMLElement).closest('[data-study]')) {
         this.click();
         this.send(OP.TRAIN, 0);
+        return;
+      }
+      const take = (e.target as HTMLElement).closest<HTMLElement>('[data-take]');
+      if (take) {
+        this.click();
+        this.send(OP.EXT, EXT.TAKE, Number(take.dataset.take));
         return;
       }
       this.slotClick(e);
@@ -389,7 +398,7 @@ export class ItemsUI {
     this.updateAction(v);
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.
-    const drawn = `${v.boxTitle}|${v.deskTunnel}|${v.study}`;
+    const drawn = `${v.boxTitle}|${v.deskTunnel}|${v.study}|${v.take.map((x) => `${x.what}:${x.label}:${x.why}`).join(',')}`;
     if (it.rev === this.simRev && this.uiRev === this.drawnUi && drawn === this.drawn) {
       this.tickClocks(it);
       return;
@@ -427,6 +436,10 @@ export class ItemsUI {
       this.box.classList.toggle('plain', v.boxHidden === 0);
       this.box.querySelector('.box-tunnel:not(.box-study)')!.classList.toggle('hidden', !v.deskTunnel);
       this.box.querySelector('.box-study')!.classList.toggle('hidden', !v.study);
+      // (P28: fruit, sugar, a seed packet, taken on request.)
+      const take = this.box.querySelector<HTMLElement>('.box-take')!;
+      take.classList.toggle('hidden', !v.take.length);
+      take.innerHTML = v.take.map((x) => `<button class="big-btn small${x.why ? '' : ' primary'}" data-take="${x.what}"${x.why ? ' aria-disabled="true"' : ''}>${icon(x.what === 0 ? 'fruit' : x.what === 1 ? 'box' : 'sprout', 18)}<span><b>${x.label}</b>${x.why ? `<small>${x.why}</small>` : ''}</span></button>`).join('');
       this.boxHidden.innerHTML = Array.from({ length: v.boxHidden }, (_, k) => cell(k)).join('');
       this.boxDrawers.innerHTML = Array.from({ length: box.length - v.boxHidden }, (_, k) => cell(v.boxHidden + k)).join('');
     }
@@ -567,7 +580,7 @@ export class ItemsUI {
     const d = itemDef(n);
     // An alarm clock says when it rings (P14), not how it wears.
     const clock = n === ALARM_CLOCK ? `<em class="clock">${clockText(value)}</em>` : '';
-    const tags = [d.contraband ? `<em class="cb">${t('items.contraband')}</em>` : '', d.uses ? `<em>${t('items.uses', { n: usesOf(value) })}</em>` : '', clock].join('');
+    const tags = [d.contraband ? `<em class="cb">${t('items.contraband')}</em>` : '', d.uses ? `<em>${d.id === 'pruno_bag' ? t('items.brewDays', { n: usesOf(value) }) : t('items.uses', { n: usesOf(value) })}</em>` : '', clock].join('');
     const buttons: string[] = [];
     if (this.menu !== null) {
       if (addr < HOTBAR && (d.cat === 'weapon' || d.cat === 'outfit')) buttons.push(`<button data-do="equip" data-addr="${addr}">${d.cat === 'weapon' ? t('items.wield') : t('items.equip')}</button>`);

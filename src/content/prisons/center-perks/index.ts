@@ -339,5 +339,5 @@ export const CENTER_PERKS: PrisonDef = {
     booth: { x: 33, z: 62, face: 13 },
   },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(37, 29, 9), oldTimer: 5 },
+  leisure: { hoop: court(37, 29, 9), oldTimer: 5, garden: { x: 29, z: 32, w: 3, d: 2 }, race: { x: 10, z: 13, dir: 1, len: 6 } },
 };

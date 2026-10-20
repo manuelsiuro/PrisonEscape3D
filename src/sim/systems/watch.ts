@@ -24,6 +24,12 @@ import { cameraSeesPlayer, snipe, summon, powered } from './power';
 import { inBeam } from './security';
 import { DIRT, underMyDesk, WALL_CHUNK } from './structure';
 import { lookingAway } from './ways';
+import { tipsyNow } from './pruno';
+import { underPlant } from './garden';
+import { TIPSY_HEAT } from '../../content/long';
+
+/** A tipsy player seen again within this long (steps) is the same sighting: no more heat for it. */
+const TIPSY_SEEN_GAP = 5 * 20;
 
 /**
  * Guards look (GDD §5.1–5.3): who sees the player, what that costs in heat, who gives
@@ -101,6 +107,12 @@ export function watch(sim: SimContext) {
   const def = held ? itemDef(held) : null;
   // (P17: the inspectors in, twice that.)
   if (!reason && eyes && def?.contraband && (def.cat === 'tool' || def.cat === 'weapon' || def.obvious)) [reason, heat] = [SPOT.indexOf('contraband'), s.step % (sim.world.def.rules?.contrabandEvery ?? 1) === 0 ? CONTRABAND_HEAT * (eventOn(sim, 'inspection') ? INSPECTION_CONTRABAND : 1) : 0];
+  // Tipsy (P28): a guard who catches sight of it, TIPSY_HEAT (once a sighting: not again while seen in the last few seconds).
+  if (!reason && eyes && tipsyNow(s)) {
+    const fresh = s.step - (s.tipsy[1] ?? 0) > TIPSY_SEEN_GAP;
+    s.tipsy[1] = s.step;
+    [reason, heat] = [SPOT.indexOf('tipsy'), fresh ? TIPSY_HEAT : 0];
+  }
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
   const close = disguised && s.guards.some((g) => g.sees && !lookingAway(g, s.step) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
   s.near = close ? s.near + 1 : 0;
@@ -198,7 +210,8 @@ export function damageShows(sim: SimContext, key: number): boolean {
   const kind = s.tiles[key];
   const layer = layerOfKey(key);
   if (layer === LAYER.VENTS) return kind === TILE.GRATE_OPEN;
-  return layer === LAYER.GROUND && DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && underMyDesk(sim.world, tileOfKey(key)) && !s.deskAside);
+  // (P28: nor a shaft dug through a planted garden bed: out of sight under the plant.)
+  return layer === LAYER.GROUND && DAMAGE_SHOWS.has(kind) && !(kind === TILE.SHAFT && ((underMyDesk(sim.world, tileOfKey(key)) && !s.deskAside) || underPlant(sim, tileOfKey(key))));
 }
 
 /** Damage the guards found is put right (concreted over, the grate screwed back): after a capture. */

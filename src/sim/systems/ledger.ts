@@ -11,6 +11,10 @@ import { clockAt } from './clock';
 import { ORDER } from '../command';
 import { CHASE_HEAT, UNIT } from '../tuning';
 
+/** P28: ripe pruno (sold), and the odds (tenths) a won bet counts as a long shot from. */
+const PRUNO = itemNumber('pruno');
+const LONG_ODDS = 50;
+
 /** The ledger's counters, in `feats` order. Stored as numbers: append only, never renumber. */
 export const FEATS = [
   'partial',
@@ -121,6 +125,18 @@ export const FEATS = [
   'shootoutsWon',
   'boardGames',
   'boardWins',
+  // v2.3 (P28, long games): pruno ripe in the player's own furniture, drunk, sold, seized by a dog from the player's cell; garden beds planted and harvested; sessions on the rat's track; bets on a race, bets won, won at long odds (×5 or more), races the pet won.
+  'brewed',
+  'drunk',
+  'prunoSold',
+  'brewSeized',
+  'planted',
+  'harvests',
+  'ratTrained',
+  'bets',
+  'betsWon',
+  'longShots',
+  'raceWins',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -260,6 +276,29 @@ export function ledger(sim: Sim, x: number, z: number) {
       case 'checkers':
         if (e.what === 'won' || e.what === 'lost' || e.what === 'drawn') f[FEAT.boardGames]++;
         if (e.what === 'won') f[FEAT.boardWins]++;
+        break;
+      case 'pruno':
+        if (e.what === 'ripe' && e.mine) f[FEAT.brewed]++;
+        else if (e.what === 'drunk') f[FEAT.drunk]++;
+        else if (e.what === 'seized' && e.mine) f[FEAT.brewSeized]++;
+        break;
+      case 'sold':
+        if (e.item === PRUNO) f[FEAT.prunoSold]++;
+        break;
+      case 'garden':
+        if (e.what === 'planted') f[FEAT.planted]++;
+        else if (e.what === 'harvested') f[FEAT.harvests]++;
+        break;
+      case 'track':
+        if (e.what === 'trained') f[FEAT.ratTrained]++;
+        break;
+      case 'race':
+        if (e.what === 'bet') f[FEAT.bets]++;
+        else if (e.what === 'result') {
+          if (e.won) f[FEAT.betsWon]++;
+          if (e.won && (e.odds ?? 0) >= LONG_ODDS) f[FEAT.longShots]++;
+          if (e.purse) f[FEAT.raceWins]++;
+        }
         break;
       case 'pick':
         if (e.what === 'open') f[FEAT.locksPicked]++;

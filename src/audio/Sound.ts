@@ -1181,7 +1181,42 @@ export class Sound {
     }
   }
 
-  /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
+  /** Pruno drunk (P28): three gulps, and a satisfied gasp. */
+  gulp() {
+    for (let k = 0; k < 3; k++) this.tone(260, 140, 0.09, 'sine', 0.09, k * 0.17);
+    this.hiss(0.25, 'lowpass', 900, 0.7, 0.04, undefined, 0.55);
+  }
+
+  /** A tipsy stumble (P28, `gain`: how near): a hiccup and a scuff of feet. */
+  hiccup(gain = 1) {
+    if (gain <= 0.02) return;
+    this.tone(520, 820, 0.07, 'triangle', 0.07 * gain);
+    this.hiss(0.08, 'bandpass', 900, 1.2, 0.07 * gain, undefined, 0.09);
+  }
+
+  /** Water poured on a garden bed (P28): a trickle, then a soft soak. */
+  pour() {
+    this.hiss(0.5, 'bandpass', 2600, 1.6, 0.06, undefined, 0, 0.15);
+    this.hiss(0.3, 'lowpass', 800, 0.7, 0.04, undefined, 0.35);
+  }
+
+  /** A seed pressed into soil (P28): two soft pats. */
+  plant() {
+    for (let k = 0; k < 2; k++) this.hiss(0.07, 'lowpass', 500, 0.8, 0.12, undefined, k * 0.14);
+  }
+
+  /** A crop pulled up (P28): a tug and a pop of earth. */
+  pluck() {
+    this.hiss(0.14, 'lowpass', 700, 0.9, 0.1);
+    this.tone(330, 520, 0.08, 'triangle', 0.06, 0.12);
+  }
+
+  /** The race (P28): tiny feet pattering down the track. */
+  patter(gain = 1) {
+    for (let k = 0; k < 8; k++) this.hiss(0.025, 'bandpass', 3800 + (k % 3) * 400, 4, 0.04 * gain, undefined, k * 0.045);
+  }
+
+    /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);
     this.tone(on ? 330 : 260, on ? 240 : 360, 0.16, 'triangle', 0.05, 0.08);

@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew';
 
 export interface ItemDef {
   id: string;
@@ -232,6 +232,16 @@ export const ITEMS: readonly ItemDef[] = [
   gear('fake_id', 60, 'idCard', 0xf4efe0, 0x1e3a5f),
   gear('glider_frame', 40, 'frame', 0xe8d2a0, 0xb07a45),
   gear('glider', 80, 'glider', 0x9fb7d0, 0xe8d2a0),
+  // P28 (long games): fruit off the canteen counter at meals, sugar from the kitchen, seed packets off the library shelf (the merchants sell both);
+  // a bag of pruno fermenting (its uses: the prison days left), ripe pruno; what a bed in the garden gives; a track for the rat.
+  m('fruit', false, 4, 'fruit', 0xe0573a, ['meal', 'garden'], 0x4f8a2e),
+  m('sugar', false, 6, 'sack', 0xf4f0e6, ['freezer', 'staple'], 0x3a6fd8),
+  { ...m('pruno_bag', true, 10, 'brew', 0xd9c27a, [], 0x9aa2ad), uses: 2 },
+  m('pruno', true, 40, 'brew', 0xc98a2e, ['brew'], 0x6a3f22),
+  m('veg_seeds', false, 5, 'packet', 0x5aa846, ['library', 'staple'], 0xf2d23c),
+  m('fruit_seeds', false, 5, 'packet', 0xd23f6a, ['library', 'staple'], 0xf2d23c),
+  m('vegetable', false, 8, 'veg', 0xe8862e, ['garden'], 0x4f8a2e),
+  m('rat_track', false, 12, 'track', 0xe0574a, [], 0x9aa2ad),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
