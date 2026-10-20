@@ -113,7 +113,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
         });
       } else if (e.what === 'folded') {
         sound.click();
-        itemsUI.toast(t('toast.cheatFolded', { name, n: e.stake ?? 0 }));
+        itemsUI.toast(t(e.late ? 'toast.cheatLate' : 'toast.cheatFolded', { name, n: e.stake ?? 0 }));
       } else if (e.what === 'off' && !sim.state.escaped) {
         floatUp(`+$${e.stake ?? 0}`, 'cash');
         itemsUI.toast(t('toast.cheatOff', { n: e.stake ?? 0 }));

@@ -2414,6 +2414,7 @@ export const en = {
   "toast.cheatWon": "You beat {name} at Cheat: +${n}",
   "toast.cheatLost": "{name} wins at Cheat: your ${n} is gone",
   "toast.cheatFolded": "You fold: {name} keeps your ${n}",
+  "toast.cheatLate": "Time's up: {name} keeps your ${n}",
   "toast.cheatOff": "The game's off: your ${n} back",
   "hint.cheat": "Lay 1 to 3 cards face down as the table card, true or not. Call Liar! when you doubt a play: whoever was wrong loses a chip. Watch for their tell",
   "hoops.title": "Shootout",

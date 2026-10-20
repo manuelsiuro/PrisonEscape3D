@@ -261,7 +261,7 @@ export type SimEvent =
    * the baskets each); the old-timer's board: sat at, got up from, a move (`by`, its `path`; `more`
    * when the jump goes on), the game won, lost or drawn (`int` the point it taught).
    */
-  | { type: 'cheat'; what: CheatNews; who: number; round?: number; by?: number; n?: number; tell?: boolean; lie?: boolean; cards?: number[]; loser?: number; stake?: number }
+  | { type: 'cheat'; what: CheatNews; who: number; round?: number; by?: number; n?: number; tell?: boolean; lie?: boolean; cards?: number[]; loser?: number; stake?: number; late?: boolean }
   | { type: 'hoopShot'; by: number; spot: number; result: ShotResult; power: number; need: number }
   | { type: 'hoops'; what: 'start' | 'won' | 'lost' | 'draw' | 'off' | 'practice'; who: number; crowd?: number; wins?: number; spd?: number; gain?: number; mine?: number; theirs?: number }
   | { type: 'checkers'; what: CheckersNews; who: number; by?: number; path?: number[]; more?: boolean; int?: number; gain?: number }

@@ -2413,6 +2413,7 @@ export const fr: Partial<Strings> = {
   "toast.cheatWon": "Tu bats {name} au Menteur : +{n} $",
   "toast.cheatLost": "{name} gagne au Menteur : adieu tes {n} $",
   "toast.cheatFolded": "Tu abandonnes : {name} garde tes {n} $",
+  "toast.cheatLate": "Temps écoulé : {name} garde tes {n} $",
   "toast.cheatOff": "La partie s’arrête : tes {n} $ te reviennent",
   "hint.cheat": "Pose 1 à 3 cartes face cachée comme la carte de la table, vraies ou non. Crie Menteur ! quand tu doutes : celui qui avait tort perd un jeton. Guette son tic",
   "hoops.title": "Concours de tirs",

@@ -204,7 +204,7 @@ function reveal(sim: SimContext, c: Cheat, caller: number) {
  * someone knocked out, level at the roll call's bell: the stake comes back). A game begun plays
  * out past the games' hours, up to roll call or Lights Out.
  */
-export function endCheat(sim: SimContext, how: 'won' | 'lost' | 'folded' | 'off') {
+export function endCheat(sim: SimContext, how: 'won' | 'lost' | 'folded' | 'off', late = false) {
   const s = sim.state;
   const c = s.cheat;
   if (!c) return;
@@ -215,7 +215,7 @@ export function endCheat(sim: SimContext, how: 'won' | 'lost' | 'folded' | 'off'
     s.cash += back;
     sim.events.push({ type: 'cash', n: back, why: 'dice' });
   }
-  sim.events.push({ type: 'cheat', what: how, who: c.who, stake });
+  sim.events.push(late ? { type: 'cheat', what: how, who: c.who, stake, late } : { type: 'cheat', what: how, who: c.who, stake });
 }
 
 /**
@@ -311,7 +311,7 @@ export function keepCheat(sim: SimContext) {
       // The clock out: the call made for them if that's all they could do, else they've left the table.
       c.due = 0;
       if (!canPlay(c) && canCall(c)) return reveal(sim, c, 0);
-      return endCheat(sim, 'folded');
+      return endCheat(sim, 'folded', true);
     }
   }
   if (c.turn === 1 && s.step >= c.at) inmateMove(sim, c);
