@@ -162,15 +162,17 @@ const SHAPES: Record<string, Shape> = {
   /** A bag of pruno (P28): a swollen plastic bag of mash, knotted at the neck. */
   brew: (c, a) => [
     paint(new THREE.SphereGeometry(0.13, 14, 10).scale(1.25, 0.75, 1).translate(0, 0.1, 0), c),
-    cyl(0.025, 0.05, a, 0.17, 0.08, 0, 8).rotateZ(-0.9).translate(0.04, 0.02, 0),
-    box(0.05, 0.03, 0.04, a, 0.22, 0.1, 0),
+    // (The neck built upright at the origin, tipped over, then set at the bag's shoulder; the knot at its end.)
+    paint(new THREE.CylinderGeometry(0.025, 0.03, 0.07, 8).rotateZ(-0.9).translate(0.18, 0.12, 0), a),
+    box(0.05, 0.035, 0.045, a, 0.215, 0.13, 0),
   ],
   /** A seed packet (P28): a flat paper sachet, its picture on the front. */
   packet: (c, a) => [box(0.2, 0.02, 0.28, a), box(0.16, 0.024, 0.15, c, 0, 0, 0.03), box(0.2, 0.024, 0.03, 0xf4f0e6, 0, 0, -0.12)],
   /** A vegetable (P28): a carrot, its green tops. */
   veg: (c, a) => [
     paint(new THREE.ConeGeometry(0.06, 0.34, 10).rotateZ(Math.PI / 2).translate(0.02, 0.06, 0), c),
-    ...[-0.25, 0, 0.25].map((t) => turn(box(0.14, 0.012, 0.02, a, -0.2, 0.06, 0), t, 0, 0)),
+    // (The tops at the carrot's wide end, +x: the cone's point is at −x.)
+    ...[-0.25, 0, 0.25].map((t) => turn(box(0.14, 0.012, 0.02, a, 0.07, 0.06, 0), t, 0.19, 0)),
   ],
   /** A rat track (P28): an oval run of magazine pages taped into a loop. */
   track: (c, a) => [

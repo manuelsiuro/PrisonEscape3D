@@ -16,22 +16,23 @@ export interface LongFrame {
   track: number[] | null;
   /** Rats racing: the lane, how many lanes, how far along (0–1), the player's pet. */
   rats: Array<{ lane: number; of: number; pos: number; pet: boolean }>;
-  /** The pet's laps on its track at home: where (tiles), how far through the session (0–1). */
-  laps: { x: number; z: number; t: number } | null;
+  /** The pet's laps on its track at home: the middle of the floor tile it's set down on (tiles). */
+  laps: { x: number; z: number } | null;
   /** The player tipsy (the walk sways). */
   tipsy: boolean;
 }
 
 const SOIL = 0x7a5536;
-const SOIL_WET = 0x33200f;
+const SOIL_WET = 0x4f3320;
 const FURROW = 0x4a3220;
 const LEAF = 0x4f9a3a;
-const LEAF_DRY = 0x9a7a3a;
+const LEAF_DRY = 0xd8c060;
 const VEG = 0xe8862e;
 const BERRY = 0xd8344a;
 const CHALK = 0xece6d6;
-/** The lane colours (the race card's: ui/long.ts LANE_COLORS). */
-const LANES = [0xe0574a, 0x3a8ed8, 0xe8b828, 0x5aa846];
+/** The lane colours (the race card's: ui/long.ts LANE_COLORS), and the player's pet's (gold). */
+const LANES = [0xe0574a, 0x3a8ed8, 0x9a5ad8, 0x5aa846];
+const PET = 0xffd34a;
 const MAX_BEDS = 12;
 const MAX_RACERS = 4;
 
@@ -86,7 +87,7 @@ export class LongView {
   private readonly leafMat: THREE.MeshStandardMaterial[] = [];
   private readonly cropMat: THREE.MeshStandardMaterial[] = [];
   private readonly track = new THREE.Group();
-  private trackKey = '';
+  private trackTiles: number[] | null = null;
   private readonly racers: Racer[] = [];
   private readonly lap: THREE.Group;
   private readonly lapRat: Racer;
@@ -107,6 +108,7 @@ export class LongView {
       p.visible = false;
       const cm = new THREE.MeshStandardMaterial({ color: BERRY, roughness: 0.5, vertexColors: true });
       const c = new THREE.Mesh(crop, cm);
+      c.castShadow = true;
       c.visible = false;
       this.soil.push(s);
       this.plants.push(p);
@@ -121,6 +123,10 @@ export class LongView {
     const tail = tailGeometry();
     const fur = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
     const stripe = new THREE.BoxGeometry(0.06, 0.012, 0.16);
+    const rim = new THREE.SphereGeometry(1, 10, 8);
+    rim.scale(0.082, 0.07, 0.142);
+    rim.translate(0, 0.068, -0.005);
+    const rimMat = new THREE.MeshBasicMaterial({ color: 0xd9cabd, side: THREE.BackSide });
     const rig = (color: number): Racer => {
       const root = new THREE.Group();
       const b = new THREE.Mesh(body, fur);
@@ -129,7 +135,8 @@ export class LongView {
       t.position.set(0, 0.05, -0.11);
       const s = new THREE.Mesh(stripe, new THREE.MeshBasicMaterial({ color }));
       s.position.set(0, 0.135, 0);
-      root.add(b, t, s);
+      // (A pale rim round the body, as the floor rats have: a dark rat on a dark floor still reads.)
+      root.add(b, t, s, new THREE.Mesh(rim, rimMat));
       root.scale.setScalar(1.5);
       root.visible = false;
       return { root, tail: t, stripe: s };
@@ -150,12 +157,13 @@ export class LongView {
 
   /** The track's chalk lanes and finish line, drawn once per map. */
   private drawTrack(tiles: number[] | null) {
-    const key = tiles ? tiles.join(',') : '';
-    if (key === this.trackKey) return;
-    this.trackKey = key;
+    if (tiles === this.trackTiles) return;
+    this.trackTiles = tiles;
     for (const c of [...this.track.children]) {
       this.track.remove(c);
-      (c as THREE.Mesh).geometry?.dispose();
+      const m = c as THREE.Mesh;
+      m.geometry?.dispose();
+      (m.material as THREE.Material)?.dispose();
     }
     if (!tiles || tiles.length < 2) return;
     const [x0, z0] = [tiles[0] % MAP_W, Math.floor(tiles[0] / MAP_W)];
@@ -177,12 +185,13 @@ export class LongView {
           parts.push(alongX ? box(0.1, 0.005, 0.1, 0x222222, b, 0.001, a) : box(0.1, 0.005, 0.1, 0x222222, a, 0.001, b));
         }
     const g = merge(parts, false);
-    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false }));
+    // (Lit like the floor it's chalked on: dim at night; under the fog's veil and the blob shadows.)
+    const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false }));
     m.position.set((x0 + x1) / 2 + 0.5, 0.006, (z0 + z1) / 2 + 0.5);
     // (Running the other way: turned round, the finish at its far end.)
     if (alongX && x1 < x0) m.rotation.y = Math.PI;
     if (!alongX && z1 < z0) m.rotation.y = Math.PI;
-    m.renderOrder = 1;
+    m.renderOrder = 0.2;
     this.track.add(m);
   }
 
@@ -208,18 +217,24 @@ export class LongView {
         // (Watered today: dark and glistening.)
         this.soilMat[k].color.setHex(b.watered ? SOIL_WET : SOIL);
         this.soilMat[k].roughness = b.watered ? 0.35 : 1;
-        const scale = b.crop ? 0.45 + Math.min(3, b.grown) * 0.35 : 0;
+        const scale = b.crop ? 0.65 + Math.min(3, b.grown) * 0.3 : 0;
         p.position.set(x, 0.04, z);
         p.scale.set(scale, b.wilted ? scale * 0.7 : scale, scale);
         p.rotation.set(b.wilted ? 0.35 : 0, (b.tile % 7) * 0.9, 0);
         this.leafMat[k].color.setHex(b.wilted ? LEAF_DRY : LEAF);
-        c.position.set(x, 0.04 + scale * 0.12, z);
-        c.scale.setScalar(scale);
+        // (Fruit hangs among the leaves; a vegetable's crop shows as its top at the soil.)
+        if (b.crop === 2) {
+          c.position.set(x, 0.04 + scale * 0.12, z);
+          c.scale.setScalar(scale);
+        } else {
+          c.position.set(x, 0.01, z);
+          c.scale.set(scale, scale * 0.35, scale);
+        }
         this.cropMat[k].color.setHex(b.crop === 2 ? BERRY : VEG);
       }
     }
     // A breeze through the leaves.
-    if (motion) for (let k = 0; k < f.beds.length; k++) if (this.plants[k].visible) this.plants[k].rotation.z = Math.sin(time * 1.3 + k) * 0.05;
+    if (motion) for (let k = 0; k < Math.min(MAX_BEDS, f.beds.length); k++) if (this.plants[k].visible) this.plants[k].rotation.z = Math.sin(time * 1.3 + k) * 0.05;
     this.drawTrack(f.track);
     // The racers down the track, side by side across it.
     const tiles = f.track;
@@ -236,10 +251,11 @@ export class LongView {
       const bz = Math.floor(b / MAP_W) + 0.5;
       const dx = bx - ax;
       const dz = bz - az;
-      const len = Math.hypot(dx, dz) || 1;
-      const across = -0.3 + (r.lane + 0.5) * (0.6 / Math.max(1, r.of)) + 0.0;
-      const x = ax + dx * r.pos + (-dz / len) * across;
-      const z = az + dz * r.pos + (dx / len) * across;
+      // (Between the chalk lines, lane 0 first: west to east across a track running north or south, north to south across one running east or west.)
+      const across = -0.3 + Math.min(3, r.lane) * 0.2;
+      const alongX = Math.abs(dx) > Math.abs(dz);
+      const x = ax + dx * r.pos + (alongX ? 0 : across);
+      const z = az + dz * r.pos + (alongX ? across : 0);
       rig.root.position.set(x, 0, z);
       rig.root.rotation.y = Math.atan2(dx, dz);
       const running = r.pos > 0 && r.pos < 1;
@@ -248,13 +264,15 @@ export class LongView {
         rig.tail.rotation.y = Math.sin(time * 18 + k) * 0.5;
       }
       // The pet wears a gold stripe (its lane's colour otherwise).
-      (rig.stripe.material as THREE.MeshBasicMaterial).color.setHex(r.pet ? 0xffd34a : LANES[r.lane % LANES.length]);
+      const stripe = rig.stripe.material as THREE.MeshBasicMaterial;
+      const hex = r.pet ? PET : LANES[r.lane % LANES.length];
+      if (stripe.color.getHex() !== hex) stripe.color.setHex(hex);
     }
     // The pet's laps at home: round the oval, a lap every second and a half.
     const l = f.laps;
     this.lap.visible = !!l;
     if (l) {
-      this.lap.position.set(l.x + 0.55, 0, l.z + 0.25);
+      this.lap.position.set(l.x, 0, l.z);
       const a = motion ? time * 4.2 : 0;
       const rx = 0.28 * 1.4;
       const rz = 0.28;

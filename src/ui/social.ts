@@ -231,9 +231,10 @@ export class TalkPanel {
           return price ? `<button class="shop-item sell" data-act="${TALK.SELL}" data-arg="${k}" ${closed || grudge ? 'disabled' : ''} aria-label="${esc(t('talk.sell', { item: itemName(n), price }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><span>${esc(t('talk.sellItem', { item: itemName(n) }))}</span><b>+$${price}</b></button>` : '';
         })
         .join('');
-      const note = grudge ? t('talk.shopGrudge') : closed ? t(twist(s, 'closedShop') ? 'talk.shopShut' : 'talk.shopClosed') : !items ? t('talk.soldOut') : '';
+      // (Its own stock sold out, the staples still on offer: no "sold out" over them.)
+      const note = grudge ? t('talk.shopGrudge') : closed ? t(twist(s, 'closedShop') ? 'talk.shopShut' : 'talk.shopClosed') : '';
       shopHtml = `<section class="talk-shop"><div class="box-label">${icon('cart', 14)}<span>${t('talk.shop')}</span>${off > 0 && !grudge ? `<em class="discount">${t('talk.discount', { n: off })}</em>` : ''}</div>
-        ${items ? `<div class="shop-list">${items}</div>` : ''}${note ? `<p class="talk-note">${note}</p>` : ''}<div class="shop-list staples">${staples}</div>${sales ? `<div class="shop-list sales">${sales}</div>` : ''}</section>`;
+        ${items ? `<div class="shop-list">${items}</div>` : ''}${note ? `<p class="talk-note">${note}</p>` : ''}<div class="shop-list staples">${staples}</div>${sales ? `<div class="box-label sales-label"><span>${t('talk.theyBuy')}</span></div><div class="shop-list sales">${sales}</div>` : ''}</section>`;
     }
     // The fixer's burner phone (P21): in the merchants' hours, to a friend, one at a time.
     let phoneHtml = '';

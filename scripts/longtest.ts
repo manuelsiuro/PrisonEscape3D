@@ -19,6 +19,7 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
 import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { itemNumber } from '../src/content/items';
+import { SALES_A_DAY } from '../src/content/long';
 import { BETS, CROP, DRY_DEATH, GROWN, HARVEST, PURSE, RACE_MINUTE, RACE_STEPS, RAT_START_SPEED, STAPLES, TAKE, TIPSY_HEAT, TIPSY_STEPS } from '../src/content/long';
 import { SHOP_SLOTS } from '../src/content/loot';
 import { WEATHERS } from '../src/content/days';
@@ -218,6 +219,7 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   s.cash = 100;
   check(g.talkTo(who), 'talking to a merchant');
   const stock = JSON.stringify(s.shops);
+  const opinionBefore = s.inmates[who].opinion;
   s.items.inv = [0, 0, 0, 0, 0, 0, 0, s.items.inv[SLOT.OUTFIT]];
   STAPLES.forEach((_, k) => g.step(command(0, OP.TALK, TALK.BUY, SHOP_SLOTS + k)));
   const bought = of(seen, 'bought').map((e) => e.item);
@@ -230,8 +232,15 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   g.step(command(0, OP.TALK, TALK.SELL, 4));
   g.step(command(0, OP.TALK, TALK.SELL, 5));
   const sold = of(seen, 'sold');
-  check(sold.length === 2 && sold[0].price === 40 && sold[1].price === 8 && refusals(seen).at(-1) === 'notWanted' && itemOf(s.items.inv[5]) === n('sock'), 'pruno sold for $40, a vegetable for $8, a sock not wanted');
-  console.log(`merchant: staples for $${paid}; pruno $${sold[0].price}, a vegetable $${sold[1].price}`);
+  check(sold.length === 2 && sold[0].price === 30 && sold[1].price === 6 && refusals(seen).at(-1) === 'notWanted' && itemOf(s.items.inv[5]) === n('sock'), 'pruno sold for $30, a vegetable for $6 (three quarters of their value), a sock not wanted');
+  check(s.inmates[who].opinion === opinionBefore, 'staples bring no opinion');
+  // At most SALES_A_DAY sales a day.
+  for (let k = 0; k < SALES_A_DAY; k++) {
+    s.items.inv[3] = slot(n('vegetable'));
+    g.step(command(0, OP.TALK, TALK.SELL, 3));
+  }
+  check(of(seen, 'sold').length === SALES_A_DAY && refusals(seen).at(-1) === 'soldEnough', `${SALES_A_DAY} sales a day at most`);
+  console.log(`merchant: staples for $${paid}; pruno $${sold[0].price}, a vegetable $${sold[1].price}; ${SALES_A_DAY} sales a day`);
 }
 
 // ------------------------------------------------------------------ pruno
@@ -542,6 +551,13 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   s.items.inv[1] = slot(n('potato'));
   g.use();
   check(refused() === 'today', 'once a day');
+  // Entered in tonight's race: no training until it's run (its form fixed as the bets are quoted).
+  s.rats[0].fed = 0;
+  s.race = [1, -1, -1, 0, 1, 0, 0, 0];
+  g.use();
+  check(refused() === 'entered', 'not while entered in tonight\'s race');
+  s.race = [];
+  s.rats[0].fed = 1;
   // The gains grow smaller.
   const gains: number[] = [];
   for (let sp = RAT_START_SPEED; sp < 100; sp += trackGain(sp)) gains.push(trackGain(sp));
@@ -660,16 +676,21 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   check(of(seen, 'race').some((e) => e.what === 'off') && s.cash === 50 && !s.race.length, 'a lockdown at the off: called off, the stake back');
   s.lockdown = false;
   s.heat = 0;
-  // Night 3: the pet entered and backed, then sent off before the off.
+  // Night 3: a bet first, then entering: refused (the odds are quoted on the field as it runs).
   g.jump(3, 20, 10);
   put(s.player, near);
+  g.ext(EXT.RACE, 0, 0);
   g.ext(EXT.RACE, 8);
-  const lane = raceCard(s, 3).length - 1;
-  g.ext(EXT.RACE, lane, 0);
+  check(refusals(seen).at(-1) === 'enterFirst' && !s.race[4], 'no entering after a bet');
+  s.race = [];
+  s.cash = 50;
+  // Entered, then a bet on a rival, then the pet sent off before the off: scratched, every bet void.
+  g.ext(EXT.RACE, 8);
+  g.ext(EXT.RACE, 0, 0);
   // (Let loose somewhere in its panic: not on the shoulder at the off.)
   Object.assign(s.rats[0], { mode: RAT.LOOSE, until: s.step + 5000, tile: near, path: [], at: 0 });
   g.to(3, 21, 1);
-  check(of(seen, 'race').some((e) => e.what === 'scratched') && s.cash === 50, 'the pet away at the off: scratched, the bet on it void');
+  check(of(seen, 'race').some((e) => e.what === 'scratched' && e.stake === BETS[0]) && s.cash === 50 && !s.race.length, 'the pet away at the off: scratched, the bet on a rival void too, the stake back');
   s.rats[0].mode = RAT.SHOULDER;
   // Night 5: a bet, a guard watching the race.
   g.jump(5, 20, 10);
@@ -732,7 +753,7 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   for (const r of old.state.rats) for (const k of ['speed', 'fed', 'lap']) delete r[k];
   const back = new Sim(CENTER_PERKS, 1);
   back.restore(old);
-  check(back.state.plots.length === 0 && back.state.race.length === 0 && back.state.pantry.join() === '0,0,0' && back.state.rats[0].speed === RAT_START_SPEED, 'a save from before: no beds, no race, the pet at its starting speed');
+  check(back.state.plots.length === 0 && back.state.race.length === 0 && back.state.pantry.join() === '0,0,0,0' && back.state.rats[0].speed === RAT_START_SPEED, 'a save from before: no beds, no race, the pet at its starting speed');
   console.log(`saves: mid-race, mid-brew and mid-growth load the same; an older save loads clean (day ${prisonDay(s.step)})`);
 }
 void RACE_MINUTE;

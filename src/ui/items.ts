@@ -44,7 +44,8 @@ function slotInner(v: number): string {
   const n = itemOf(v);
   const d = itemDef(n);
   const uses = d.uses ? usesOf(v) / d.uses : 1;
-  return `<img src="${itemIcons()[n]}" alt="" draggable="false">${d.contraband ? '<i class="slot-cb"></i>' : ''}${d.uses ? `<i class="slot-dur"><i style="width:${Math.round(uses * 100)}%"></i></i>` : ''}`;
+  // (A bag of pruno's uses are mornings to go, not wear: no bar.)
+  return `<img src="${itemIcons()[n]}" alt="" draggable="false">${d.contraband ? '<i class="slot-cb"></i>' : ''}${d.uses && d.id !== 'pruno_bag' ? `<i class="slot-dur"><i style="width:${Math.round(uses * 100)}%"></i></i>` : ''}`;
 }
 
 /** What a wound alarm clock shows (P14): its seconds to go, 'ring' while it rings, '' stopped or not a clock. */

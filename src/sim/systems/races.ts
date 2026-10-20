@@ -68,9 +68,12 @@ export function rivals(s: Pick<SimState, 'salt' | 'inmates'>, day: number): Entr
     const k = rollInt(s.salt, SALT.RACE, day, j, n);
     if (out.some((e) => e.owner === k)) continue;
     const cell = s.inmates[k].cell;
+    // (A name of its own on the card: two cells 12 apart would share one.)
+    let name = (cell + RAT_NAMES - 2) % RAT_NAMES;
+    while (out.some((e) => e.name === name)) name = (name + 1) % RAT_NAMES;
     out.push({
       owner: k,
-      name: (cell + RAT_NAMES - 2) % RAT_NAMES,
+      name,
       speed: RIVAL_SPEED + rollInt(s.salt, SALT.RACE, 0, 1000 + cell, RIVAL_SPREAD + 1),
       fed: rollInt(s.salt, SALT.RACE, day, 2000 + cell, 100) < RIVAL_FED,
     });
@@ -180,6 +183,8 @@ export function raceOp(sim: SimContext, b: number, c: number) {
     if (!pet || pet.mode !== RAT.SHOULDER) return refuse(sim, 'noRat');
     const r = today(s);
     if (r[RACE.ENTERED]) return;
+    // (Entered before any bet: a bet's odds are quoted on the field as it will run.)
+    if (r[RACE.LANE] >= 0) return refuse(sim, 'enterFirst');
     r[RACE.ENTERED] = 1;
     sim.events.push({ type: 'race', what: 'entered', lane: petLane(raceCard(s, day)) });
     return;
@@ -226,10 +231,11 @@ export function races(sim: SimContext) {
     // The pet away on an errand (or the player nowhere near): it isn't at the start: scratched (a bet on it void).
     const pet = petOf(s);
     if (r[RACE.ENTERED] && !(pet && pet.mode === RAT.SHOULDER && atTrack(sim))) {
+      // (Every bet void, its stake back: the odds were quoted on a field with the pet in it.)
+      if (r[RACE.LANE] >= 0) return off(sim, 'scratched');
       const lane = petLane(raceCard(s, day));
       r[RACE.ENTERED] = 0;
       sim.events.push({ type: 'race', what: 'scratched', lane });
-      if (r[RACE.LANE] === lane) return off(sim, 'scratched');
     }
     r[RACE.ON] = 1;
     r[RACE.AT] = s.step;
@@ -290,7 +296,7 @@ function off(sim: SimContext, what: 'off' | 'scratched') {
 // ------------------------------------------------------------------ the track at home
 
 /** Why the rat can't run the track now (null: it can). */
-export type TrackRefusal = 'noRat' | 'notCell' | 'notEvening' | 'today' | 'hungry';
+export type TrackRefusal = 'noRat' | 'notCell' | 'notEvening' | 'today' | 'hungry' | 'entered';
 export function trackCheck(sim: SimContext): TrackRefusal | null {
   const s = sim.state;
   const pet = petOf(s);
@@ -298,6 +304,8 @@ export function trackCheck(sim: SimContext): TrackRefusal | null {
   if (sim.playerZone !== 'playerCell') return 'notCell';
   if (ROUTINE[s.routine].id !== 'eveningFreeTime' || s.lockdown) return 'notEvening';
   if (pet.fed === prisonDay(s.step)) return 'today';
+  // (Entered in tonight's race: its form as the bets were quoted on it, until the race is run.)
+  if (s.race[RACE.DAY] === prisonDay(s.step) && s.race[RACE.ENTERED] === 1) return 'entered';
   if (baitSlot(s.items.inv) < 0) return 'hungry';
   return null;
 }

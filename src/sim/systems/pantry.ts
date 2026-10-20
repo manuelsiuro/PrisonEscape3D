@@ -6,16 +6,16 @@
  * stocked: the furniture holds what it always did, and no draw is made.
  */
 import { itemDef, itemNumber } from '../../content/items';
-import { PANTRY_GOODS, STAPLES, TAKE, WANTED } from '../../content/long';
+import { PANTRY_GOODS, SALE_SHARE, SALES_A_DAY, STAPLES, TAKE, WANTED } from '../../content/long';
 import { ROUTINE } from '../../content/routine';
 import { SHOP_SLOTS } from '../../content/loot';
 import type { SimContext } from '../context';
-import { BUY_OPINION, OPINION_LOW } from '../tuning';
+import { OPINION_LOW } from '../tuning';
 import { containersOf } from '../world/containers';
 import { prisonDay } from './clock';
 import { priceOf } from './economy';
 import { HOTBAR, itemOf, slot } from './items';
-import { changeOpinion, refuse } from './social';
+import { refuse } from './social';
 
 const STAPLE_ITEMS = STAPLES.map(itemNumber);
 const WANTED_ITEMS = WANTED.map(itemNumber);
@@ -55,7 +55,7 @@ export function take(sim: SimContext, what: number) {
   if (why === 'notHere') return;
   if (why) return refuse(sim, why);
   const item = itemNumber(PANTRY_GOODS[what][0]);
-  const pantry = s.pantry.length === 3 ? s.pantry : (s.pantry = [0, 0, 0]);
+  const pantry = s.pantry;
   if (what === TAKE.FRUIT) pantry[MEAL] = mealNow(sim);
   else pantry[what === TAKE.SUGAR ? SUGAR_DAY : SEED_DAY] = prisonDay(s.step);
   s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(item);
@@ -77,15 +77,17 @@ export function buyStaple(sim: SimContext, who: number, k: number) {
   if (free < 0) return refuse(sim, 'room');
   s.items.inv[free] = slot(item);
   s.cash -= price;
+  // (No opinion for them: bought and given back, they'd buy a friend.)
   sim.events.push({ type: 'bought', who, item, price }, { type: 'cash', n: -price, why: 'buy' });
-  changeOpinion(sim, who, BUY_OPINION);
 }
 
 /** The slot TALK.BUY asks for a staple by (its place after the shop's own). */
 export const stapleSlot = (k: number) => SHOP_SLOTS + k;
 
 /** What a merchant pays for an item (its value), 0 for what it doesn't buy. */
-export const saleOf = (item: number): number => (WANTED_ITEMS.includes(item) ? itemDef(item).value : 0);
+export const saleOf = (item: number): number => (WANTED_ITEMS.includes(item) ? Math.floor((itemDef(item).value * SALE_SHARE) / 100) : 0);
+/** Things sold today (state.pantry's last: prison day × 16 + sales). */
+export const salesToday = (s: { step: number; pantry: readonly number[] }) => (Math.floor((s.pantry[3] ?? 0) / 16) === prisonDay(s.step) ? (s.pantry[3] ?? 0) % 16 : 0);
 
 /** TALK.SELL (b: the hotbar slot): ripe pruno or a vegetable sold to a merchant, at its value. */
 export function sell(sim: SimContext, who: number, b: number) {
@@ -98,6 +100,9 @@ export function sell(sim: SimContext, who: number, b: number) {
   if (!price) return refuse(sim, 'notWanted');
   if (!sim.shopsOpen) return refuse(sim, 'closed');
   if (s.inmates[who].opinion <= OPINION_LOW) return refuse(sim, 'grudge');
+  const sold = salesToday(s);
+  if (sold >= SALES_A_DAY) return refuse(sim, 'soldEnough');
+  s.pantry[3] = prisonDay(s.step) * 16 + sold + 1;
   it.inv[b] = 0;
   it.rev++;
   s.cash += price;

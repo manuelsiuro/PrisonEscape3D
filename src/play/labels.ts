@@ -26,7 +26,8 @@ import type { ToolView } from '../ui/tool';
 import { press } from './buttons';
 import { trackCheck } from '../sim/systems/races';
 import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
-import { CROP, GROWN, TIPSY_STEPS, WATER_MAX } from '../content/long';
+import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
+import { planOf } from '../sim/systems/calendar';
 import { STEPS_PER_MINUTE } from '../sim/tuning';
 import { ratName } from './rat';
 
@@ -325,7 +326,7 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
         ? t('thing.gardenBed')
         : tt.action === 'harvest'
           ? crop
-          : t(wilted(b) ? 'thing.bedWilted' : 'thing.bedGrowing', { crop, n: b[BED.GROWN], of: GROWN, w: b[BED.WATER], m: WATER_MAX });
+          : t(wilted(b) ? 'thing.bedWilted' : 'thing.bedGrowing', { crop, n: b[BED.GROWN], of: GROWN, w: b[BED.WATER], m: planOf(sim).weather === 'heatwave' ? HEATWAVE_WATER : 1 });
     v.fits = tt.fits;
     v.repeat = false;
     v.progress = tt.action === 'water' ? b[BED.GROWN] / GROWN : null;

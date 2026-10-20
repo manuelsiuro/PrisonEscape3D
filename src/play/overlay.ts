@@ -81,7 +81,7 @@ import { boardNow, cheatNow, courtNow } from './pastimes';
 import { cashShown, pickNow, wrestleNow } from './games';
 import { crewChipList, crewPill, crewRows } from './crew';
 import { tipsyNow } from '../sim/systems/pruno';
-import { NO_TAKE, raceCoach, raceNow, takeOffers } from './long';
+import { NO_TAKE, raceNow, takeOffers } from './long';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -260,11 +260,11 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   courtCard.update(court);
   // Long games (P28): the race card at the track (not over another game's card).
   const race = busy || panel || cheat || boardV || court || bout || pick ? null : raceNow(sim, a);
-  raceCard.update(race);
-  raceCoach(race);
+  const raceShown = raceCard.update(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV);
-  document.body.classList.toggle('courting', !!court || !!race);
-  document.body.classList.toggle('racing', !!race);
+  document.body.classList.toggle('courting', !!court);
+  // (The race card up: the lesson's card steps aside in landscape; while the race is run, the hotbar too.)
+  document.body.classList.toggle('racing', raceShown);
   // (A hand of Cheat, the board: the hotbar steps aside on a phone held sideways, for the card.)
   document.body.classList.toggle('seated-game', !!cheat || !!boardV);
   workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);

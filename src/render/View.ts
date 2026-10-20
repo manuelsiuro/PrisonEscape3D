@@ -329,6 +329,8 @@ export class View {
   private readonly gamesView = new GamesView();
   private readonly pastimesView = new PastimesView();
   private readonly longView = new LongView();
+  /** How far the tipsy sway is in (0–1, eased). */
+  private tipsySway = 0;
   /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
   private taps = 0;
   private buzzClock = 0;
@@ -1213,8 +1215,10 @@ export class View {
     this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
-    // Tipsy (P28): the walk sways (none with reduced motion).
-    this.player.root.rotation.z = f.long?.tipsy && !this.reducedMotion ? Math.sin(time * 2.3) * 0.07 : 0;
+    // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
+    const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
+    this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
+    this.player.root.rotation.z = this.tipsySway > 0.001 ? Math.sin(time * 2.3) * 0.07 * this.tipsySway : 0;
     // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
     const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.smuggling.droneAt : null;
     if (drone && (this.buzzClock -= dt) <= 0) {

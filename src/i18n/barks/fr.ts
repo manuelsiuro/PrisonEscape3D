@@ -2152,7 +2152,7 @@ export const frBarks: Barks = {
   "go.pruno": [
     "Planque le pruno dans le réservoir. Les fouilles l’oublient. Les chiens, non.",
     "Deux matins dans un bureau et le pruno est prêt. Gare aux chiens.",
-    "Les fouilles ne regardent jamais un réservoir de WC. Les chiens, si...",
+    "Les fouilles ne regardent jamais un réservoir de WC. Les chiens, si…",
   ],
   "go.gardenHole": [
     "Creuse sous un chou et aucun gardien ne regarde deux fois.",

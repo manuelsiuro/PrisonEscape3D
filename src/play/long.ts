@@ -56,11 +56,14 @@ export function takeOffers(sim: Sim, table: string): ReadonlyArray<{ what: numbe
 // ------------------------------------------------------------------ the events
 
 /** The last race's result, held a moment for the card (real ms). */
-let result: { order: number[]; card: Entrant[]; at: number; lane: number; stake: number; odds: number; won: number; purse: number; day: number } | null = null;
+let result: { order: number[]; card: Entrant[]; final: number[]; at: number; lane: number; stake: number; odds: number; won: number; purse: number; day: number } | null = null;
+/** Where the pet runs its laps at home (tiles: a free floor tile beside the player as it set off), held for the session. */
+let lapAt: { x: number; z: number } | null = null;
 const RESULT_MS = 6000;
 
 export function resetLong() {
   result = null;
+  lapAt = null;
 }
 
 export function announceLong(sim: Sim, e: SimEvent) {
@@ -95,12 +98,18 @@ export function announceLong(sim: Sim, e: SimEvent) {
         sound.pluck();
         buzz('attended');
         itemsUI.toast(t(e.crop === CROP.FRUIT ? 'toast.harvestFruit' : 'toast.harvestVeg', { n: e.n ?? 2 }));
-      } else if (e.what === 'ripe') banner.toast(t('toast.bedRipe'), 'good', 3600);
-      else if (e.what === 'wilted') banner.toast(t('toast.bedWilted'), 'bad', 3600);
-      else if (e.what === 'died') banner.toast(t('toast.bedDied'), 'bad', 4200);
+      } else if (e.what === 'ripe' || e.what === 'wilted' || e.what === 'died') {
+        // (Once a kind a morning, however many beds.)
+        const key = `${e.what}:${sim.state.step}`;
+        if (gardenSaid.has(key)) break;
+        gardenSaid.add(key);
+        if (gardenSaid.size > 12) gardenSaid.clear();
+        banner.toast(t(e.what === 'ripe' ? 'toast.bedRipe' : e.what === 'wilted' ? 'toast.bedWilted' : 'toast.bedDied'), e.what === 'ripe' ? 'good' : 'bad', 4000);
+      }
       break;
     case 'track':
       if (e.what === 'trained') {
+        lapAt = lapSpot(sim);
         sound.squeak(1);
         window.setTimeout(() => play.game === g && sound.patter(0.8), 300);
         floatUp(`+${e.gain} ${t('race.speedShort')}`, 'gain');
@@ -123,7 +132,11 @@ export function announceLong(sim: Sim, e: SimEvent) {
       } else if (e.what === 'entered') {
         sound.squeak(1);
         itemsUI.toast(t('toast.ratEntered', { name: ratName(sim) }));
-      } else if (e.what === 'scratched') banner.toast(t('toast.ratScratched', { name: ratName(sim) }), 'bad', 4200);
+      } else if (e.what === 'scratched') {
+        // (A bet on it void: its stake back.)
+        if (e.stake) floatUp(`+$${e.stake}`, 'cash');
+        banner.toast(e.stake ? t('toast.ratScratchedBack', { name: ratName(sim), n: e.stake }) : t('toast.ratScratched', { name: ratName(sim) }), 'bad', 4200);
+      }
       else if (e.what === 'start') {
         sound.whistle();
         sound.cheer();
@@ -131,7 +144,10 @@ export function announceLong(sim: Sim, e: SimEvent) {
       } else if (e.what === 'result') {
         // (The pet's lane: on the card it raced on, which the state no longer says.)
         const order = e.order ?? [];
-        result = { order, card: cardOf(sim, day, order.length), at: performance.now(), lane: e.lane ?? -1, stake: e.stake ?? 0, odds: e.odds ?? 0, won: e.won ?? 0, purse: e.purse ?? 0, day };
+        const raced = cardOf(sim, day, order.length);
+        const fin: number[] = [];
+        positions(runRace(sim.state.salt, day, raced).legs, 1, fin);
+        result = { order, card: raced, final: fin, at: performance.now(), lane: e.lane ?? -1, stake: e.stake ?? 0, odds: e.odds ?? 0, won: e.won ?? 0, purse: e.purse ?? 0, day };
         sound.cheer();
         const winner = result.card[order[0]];
         const name = winner ? entrantName(sim, winner) : '';
@@ -144,12 +160,15 @@ export function announceLong(sim: Sim, e: SimEvent) {
         } else banner.toast(e.lane !== undefined && e.lane >= 0 ? t('toast.betLost', { name }) : t('toast.raceWinner', { name }), e.lane !== undefined && e.lane >= 0 ? 'bad' : 'info', 4500);
       } else if (e.what === 'off') {
         if (e.stake) floatUp(`+$${e.stake}`, 'cash');
-        banner.toast(t('toast.raceOff'), 'bad', 4000);
+        banner.toast(e.stake ? t('toast.raceOffBack', { n: e.stake }) : t('toast.raceOff'), 'bad', 4000);
       }
       break;
     }
   }
 }
+
+/** The garden's morning news told (kind and step): once a kind a morning. */
+const gardenSaid = new Set<string>();
 
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
@@ -167,12 +186,13 @@ function entrantName(sim: Sim, e: Entrant): string {
 
 // ------------------------------------------------------------------ the race card
 
-const raceView: RaceView = { phase: 'card', at: '', lanes: [], bet: null, enter: '', why: '', result: '' };
+const raceView: RaceView = { phase: 'card', at: '', lanes: [], bet: null, enter: '', entered: '', why: '', result: '', cash: 0, day: 0 };
 const lanePool: RaceLane[] = [];
 
 /** How far along each lane is at a fraction of the race (0–1 of the winner's distance). */
 function positions(legs: number[][], f: number, out: number[]) {
-  const end = Math.max(1, ...legs.map((l) => l[LEGS - 1]));
+  let end = 1;
+  for (const l of legs) end = Math.max(end, l[LEGS - 1]);
   const x = Math.max(0, Math.min(1, f)) * LEGS;
   const k = Math.floor(x);
   legs.forEach((l, i) => {
@@ -194,18 +214,23 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
   const running = s.race[RACE.DAY] === day && s.race[RACE.ON] === 1;
   const showResult = !running && result && result.day === day && now - result.at < RESULT_MS;
   if (!running && !showResult && !(cardUp(sim) && atTrack(sim))) return null;
+  v.day = day;
+  v.cash = s.cash;
+  v.entered = '';
   v.at = formatTime(clockAt((day - 1) * 1440 * STEPS_PER_MINUTE + (RACE_MINUTE - 480) * STEPS_PER_MINUTE));
   const card = showResult ? result!.card : raceCard(s, day);
   const odds = oddsOf(s.salt, day, card);
   const pet = petLane(card);
   v.lanes.length = 0;
   card.forEach((e, k) => {
-    const l = (lanePool[k] ??= { name: '', owner: '', speed: 0, odds: 0, mine: false, pos: 0, place: 0 });
+    const l = (lanePool[k] ??= { name: '', owner: '', speed: 0, odds: 0, mine: false, fed: null, pos: 0, place: 0 });
     l.name = entrantName(sim, e);
     l.owner = e.owner >= 0 ? inmateName(sim, e.owner) : '';
     l.speed = e.speed;
     l.odds = odds[k];
     l.mine = k === pet;
+    // (The player knows whether their own rat ate; the rivals', only the gossip says.)
+    l.fed = l.mine ? e.fed : null;
     l.pos = 0;
     l.place = 0;
     v.lanes.push(l);
@@ -227,11 +252,12 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
     result!.order.forEach((ln, k) => {
       if (v.lanes[ln]) {
         v.lanes[ln].place = k + 1;
-        v.lanes[ln].pos = 1;
+        v.lanes[ln].pos = result!.final[ln] ?? 1;
       }
     });
     const w = card[result!.order[0]];
-    v.result = w ? (result!.won ? t('race.resultWon', { name: entrantName(sim, w), n: result!.won }) : t('race.result', { name: entrantName(sim, w) })) : '';
+    const said = w ? (result!.won ? t('race.resultWon', { name: entrantName(sim, w), n: result!.won }) : t('race.result', { name: entrantName(sim, w) })) : '';
+    v.result = result!.purse ? `${said} ${t('toast.purse', { n: result!.purse })}` : said;
     v.enter = '';
     v.why = '';
     return v;
@@ -241,13 +267,10 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
   const why = raceCheck(sim);
   v.why = why ? t(`refused.${why}` as Key) : '';
   const p = petOf(s);
-  v.enter = p && p.mode === RAT.SHOULDER && !(s.race[RACE.DAY] === day && s.race[RACE.ENTERED]) ? ratName(sim) : '';
+  const entered = s.race[RACE.DAY] === day && s.race[RACE.ENTERED] === 1;
+  v.enter = p && p.mode === RAT.SHOULDER && !entered ? ratName(sim) : '';
+  v.entered = entered ? ratName(sim) : '';
   return v;
-}
-
-/** The race card's lanes coach the first time it's up. */
-export function raceCoach(v: RaceView | null) {
-  if (v?.phase === 'card') coachOnce('raceCard', 'hint.raceCard');
 }
 
 // ------------------------------------------------------------------ the picture
@@ -280,7 +303,7 @@ export function longFrameOf(sim: Sim, a: number): LongFrame {
     f.beds.push(v);
   }
   const track = trackOf(w);
-  f.track = track ? trackTiles(track) : null;
+  f.track = track ? tilesOf(track) : null;
   f.rats.length = 0;
   const day = prisonDay(s.step);
   if (track && s.race[RACE.DAY] === day && s.race[RACE.ON] === 1) {
@@ -301,13 +324,22 @@ export function longFrameOf(sim: Sim, a: number): LongFrame {
       const r = (ratPool[k] ??= { lane: 0, of: 0, pos: 0, pet: false });
       r.lane = k;
       r.of = result!.card.length;
-      r.pos = 1;
+      r.pos = result!.final[k] ?? 1;
       r.pet = result!.card[k].owner < 0;
       f.rats.push(r);
     });
   }
   const pet = petOf(s);
-  f.laps = pet && (pet.lap ?? 0) > s.step && s.layer === LAYER.GROUND ? { x: s.player.x / UNIT, z: s.player.z / UNIT, t: 1 - ((pet.lap ?? 0) - s.step - a) / (8 * 20) } : null;
+  if (pet && (pet.lap ?? 0) > s.step && s.layer === LAYER.GROUND) {
+    // (A load mid-session: the spot worked out from where the player is now.)
+    lapAt ??= lapSpot(sim);
+    lapFrame.x = lapAt.x;
+    lapFrame.z = lapAt.z;
+    f.laps = lapFrame;
+  } else {
+    lapAt = null;
+    f.laps = null;
+  }
   f.tipsy = tipsyNow(s);
   return f;
 }
@@ -318,7 +350,32 @@ export function petOnTrack(sim: Sim): boolean {
   const pet = petOf(s);
   if (!pet) return false;
   const day = prisonDay(s.step);
-  return (s.race[RACE.DAY] === day && s.race[RACE.ON] === 1 && s.race[RACE.ENTERED] === 1) || (pet.lap ?? 0) > s.step;
+  // (And a moment after its race, at the finish line on the result's card.)
+  const finish = !!result && result.day === day && performance.now() - result.at < RESULT_MS && result.card.some((e) => e.owner < 0);
+  return (s.race[RACE.DAY] === day && s.race[RACE.ON] === 1 && s.race[RACE.ENTERED] === 1) || (pet.lap ?? 0) > s.step || finish;
+}
+
+const lapFrame = { x: 0, z: 0 };
+/** A free floor tile beside the player (east, south, west, north; else their own), for the home track: its middle, in tiles. */
+function lapSpot(sim: Sim): { x: number; z: number } {
+  const w = sim.world;
+  const x0 = Math.floor(sim.state.player.x / UNIT);
+  const z0 = Math.floor(sim.state.player.z / UNIT);
+  const zone = w.zoneAt(x0, z0);
+  for (const [dx, dz] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+    const x = x0 + dx;
+    const z = z0 + dz;
+    if (w.blocked(x, z) || w.zoneAt(x, z) !== zone || w.props.some((p) => x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d)) continue;
+    return { x: x + 0.5, z: z + 0.5 };
+  }
+  return { x: x0 + 0.5, z: z0 + 0.5 };
+}
+/** The track's tiles, worked out once a track. */
+const tilesCache = new WeakMap<object, number[]>();
+function tilesOf(t: NonNullable<ReturnType<typeof trackOf>>): number[] {
+  let v = tilesCache.get(t);
+  if (!v) tilesCache.set(t, (v = trackTiles(t)));
+  return v;
 }
 
 /** The race nights (for the help and the lessons): tonight's a race night. */

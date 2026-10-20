@@ -161,7 +161,7 @@
 
 /* Landscape phones and wide screens: docked to the left, as the court's card. */
 @media (max-height: 520px) {
-  /* The race card up at the track: the hotbar steps aside (as at the cards), the card down to the bottom. */
+  /* The race card up (it can be closed): the hotbar steps aside (as at the cards), the card down to the bottom. */
   body.racing .hotbar,
   body.racing .energy {
     display: none;
@@ -186,6 +186,13 @@
   .race-card .train-note {
     margin: 2px 0;
     font-size: 12px;
+  }
+  .race-row {
+    min-height: 0;
+  }
+  .race-enter {
+    margin: 2px 0 4px;
+    min-height: 34px;
   }
 }
 @media (min-width: 900px) and (min-height: 521px) {
@@ -216,4 +223,38 @@ body.reduced-motion .race-card {
     left: auto;
     max-width: min(400px, calc(100vw - 560px));
   }
+}
+
+.race-card .train-head .race-close {
+  margin-left: 6px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.race-stakes .seg.poor {
+  opacity: 0.5;
+}
+.race-row .big-btn {
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.05;
+}
+.race-row .big-btn small {
+  font: 600 10.5px var(--font-ui);
+  opacity: 0.9;
+}
+.race-row .big-btn.poor {
+  opacity: 0.6;
+}
+
+.race-speed {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+.race-speed small {
+  font: 700 10.5px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: #7fd18a;
 }

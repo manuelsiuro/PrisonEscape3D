@@ -9,7 +9,7 @@
  * the trail still finds it; harvested or dead, the hole is plain to see again.
  */
 import { CROP, DRY_DEATH, GROWN, HARVEST, HEATWAVE_WATER, WATER_MAX } from '../../content/long';
-import { itemNumber } from '../../content/items';
+import { itemDef, itemNumber } from '../../content/items';
 import type { Plot } from '../../content/prisons/types';
 import type { SimContext } from '../context';
 import { MAP_W, LAYER, type World } from '../world/World';
@@ -89,11 +89,13 @@ export function bedTarget(w: World, layer: number, b: Body, held: number, plots:
   const sx = Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;
   const sz = Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz);
   const ahead = here + sz * MAP_W + sx;
+  const tool = held > 0 && !!itemDef(held).tool;
   for (const tile of [ahead, here]) {
     const bed = bedAt(w, tile);
     if (bed < 0) continue;
     const st = bedOf(plots, bed);
-    if (ripe(st)) return { action: 'harvest', bed, tile, fits: true };
+    // (A ripe bed underfoot never takes a tool's press meant for the tile ahead.)
+    if (ripe(st) && (tile === ahead || !tool)) return { action: 'harvest', bed, tile, fits: true };
     if (SEEDS.has(held) && st[BED.CROP] === CROP.NONE) return { action: 'plant', bed, tile, fits: true };
     if (held === CUP && st[BED.CROP] !== CROP.NONE) return { action: 'water', bed, tile, fits: st[BED.WATER] < WATER_MAX };
   }

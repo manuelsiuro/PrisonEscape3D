@@ -17,6 +17,9 @@ export const PANTRY_GOODS: ReadonlyArray<readonly [item: string, table: string]>
 /** What every merchant sells besides its stock (TALK.BUY, b = SHOP_SLOTS + its place here), and what it buys (TALK.SELL) at its value. */
 export const STAPLES: readonly string[] = ['sugar', 'veg_seeds', 'fruit_seeds'];
 export const WANTED: readonly string[] = ['pruno', 'vegetable'];
+/** What a merchant pays for what it buys (percent of its value), and how many things the player can sell in a prison day (all merchants together). */
+export const SALE_SHARE = 75;
+export const SALES_A_DAY = 4;
 
 /** Pruno: a bag ferments this many prison days in a desk or a toilet's tank (its uses, counted down at 08:00). */
 export const BREW_DAYS = 2;
@@ -67,7 +70,7 @@ export const BETS: readonly number[] = [5, 10, 20];
  */
 export const ODDS_SAMPLES = 400;
 export const ODDS_MARGIN = 85;
-export const ODDS_MIN = 11;
+export const ODDS_MIN = 12;
 export const ODDS_MAX = 200;
 /** The race: LEGS legs, each a rat running its speed, FED_BONUS more fed, and up to LUCK more by roll(). */
 export const LEGS = 10;

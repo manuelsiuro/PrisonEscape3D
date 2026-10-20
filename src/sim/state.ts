@@ -27,7 +27,7 @@ import type { Shootout, ShotResult } from './systems/hoops';
 import type { Board, CheckersNews } from './systems/checkers';
 import type { TrackRefusal } from './systems/races';
 import { bedCount } from './systems/garden';
-import { CROP, RAT_START_SPEED } from '../content/long';
+import { BETS, CROP, ODDS_MAX, ODDS_MIN, RAT_START_SPEED } from '../content/long';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
@@ -312,7 +312,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -655,7 +655,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     practice: 0,
     board: null,
     elder: [0, 0, 0, 0],
-    pantry: [0, 0, 0],
+    pantry: [0, 0, 0, 0],
     tipsy: [],
     plots: [],
     race: [],
@@ -770,13 +770,21 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!boardOk(s.board)) s.board = null;
   if (!ints(s.elder, 4) || s.elder.some((x) => x < 0)) s.elder = [0, 0, 0, 0];
   // P28: what was taken, tipsy, the garden (fitted to this prison's plot), tonight's race; damaged ones start again.
-  if (!ints(s.pantry, 3)) s.pantry = [0, 0, 0];
+  if (ints(s.pantry, 3)) s.pantry = [...s.pantry, 0];
+  if (!ints(s.pantry, 4)) s.pantry = [0, 0, 0, 0];
   if (!(Array.isArray(s.tipsy) && (s.tipsy.length === 0 || ints(s.tipsy, 2)))) s.tipsy = [];
   const beds = bedCount(world);
   if (!(Array.isArray(s.plots) && s.plots.length <= beds && s.plots.every((b) => ints(b, 4) && b[0] >= CROP.NONE && b[0] <= CROP.FRUIT && b[1] >= 0 && b[2] >= 0 && b[3] >= 0))) s.plots = [];
-  if (!(Array.isArray(s.race) && (s.race.length === 0 || ints(s.race, 8)))) s.race = [];
+  // (A race as it can be: today or before, a lane on the card and a stake with odds when bet, flags 0/1, started no later than now.)
+  const raceOk = (r: number[]) => {
+    const [day, lane, stake, odds, entered, on, at, seen] = r;
+    const bet = lane >= 0 && lane <= 3 && stake >= 0 && stake < BETS.length && odds >= ODDS_MIN && odds <= ODDS_MAX;
+    const none = lane === -1 && stake === -1;
+    return day >= 1 && day <= prisonDay(st.step) && (bet || none) && [entered, on, seen].every((x) => x === 0 || x === 1) && at >= 0 && at <= st.step;
+  };
+  if (!(Array.isArray(s.race) && (s.race.length === 0 || (ints(s.race, 8) && raceOk(s.race))))) s.race = [];
   // (The pet rat's racing form, P28: a rat tamed before it, at the start.)
-  for (const r of s.rats) if (!r.wild) Object.assign(r, { speed: Number.isInteger(r.speed) ? r.speed : RAT_START_SPEED, fed: Number.isInteger(r.fed) ? r.fed : 0, lap: Number.isInteger(r.lap) ? r.lap : 0 });
+  for (const r of s.rats) if (!r.wild) Object.assign(r, { speed: Number.isInteger(r.speed) ? Math.max(0, Math.min(100, r.speed!)) : RAT_START_SPEED, fed: Number.isInteger(r.fed) ? r.fed : 0, lap: Number.isInteger(r.lap) ? r.lap : 0 });
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
