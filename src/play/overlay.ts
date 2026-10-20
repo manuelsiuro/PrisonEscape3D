@@ -251,6 +251,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   courtCard.update(court);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV);
   document.body.classList.toggle('courting', !!court);
+  // (A hand of Cheat, the board: the hotbar steps aside on a phone held sideways, for the card.)
+  document.body.classList.toggle('seated-game', !!cheat || !!boardV);
   workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);
   const veilOn = st.sleeping || st.ko > 0;
   if (st.ko > 0 && !sleepVeil.classList.contains('ko')) sleepVeil.querySelector('span')!.textContent = t('sleep.knockedOut');

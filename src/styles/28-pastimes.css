@@ -303,6 +303,7 @@
   opacity: 0.45;
   filter: grayscale(0.6);
 }
+/* On a spot at the hoop: the Shoot pad takes the tool button's place (the action stays: a partner to talk to). */
 body.courting .tool-btn,
 body.courting .tool-prompt {
   display: none;
@@ -412,17 +413,138 @@ body.courting .tool-prompt {
   .court-card {
     bottom: calc(max(10px, env(safe-area-inset-bottom)) + 100px);
   }
+  /* (At the right thumb, above the action and lock buttons.) */
   .court-card .court-pad {
     position: fixed;
     right: max(14px, env(safe-area-inset-right));
-    bottom: max(12px, env(safe-area-inset-bottom));
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 136px);
     width: 150px;
     height: 92px;
     margin: 0;
   }
+  /* The board at the left of its card, the title, the status and the buttons beside it: between the HUD and the hotbar. */
+  .board-card {
+    display: grid;
+    grid-template-columns: auto minmax(120px, 150px);
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      'board head'
+      'board status'
+      'board record'
+      'board acts';
+    column-gap: 12px;
+    width: auto;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 66px);
+    padding: 10px 12px;
+  }
+  .board-card .train-head {
+    grid-area: head;
+    flex-wrap: wrap;
+  }
+  .board-card .train-head b {
+    font-size: 15px;
+  }
   .board-card .checkers {
-    --side: min(220px, calc(100vh - 200px));
-    margin: 6px auto 4px;
+    grid-area: board;
+    --side: min(230px, calc(100vh - 196px));
+    margin: 2px;
+  }
+  .board-card .checkers-status {
+    grid-area: status;
+    margin-top: 6px;
+  }
+  .board-card .checkers-record {
+    grid-area: record;
+  }
+  .board-card .dice-acts {
+    grid-area: acts;
+    flex-direction: column;
+    align-self: end;
+  }
+  /* A hand of Cheat or the board: the hotbar (and the vitals over it) step aside, the card goes down to the bottom. */
+  body.seated-game .hotbar,
+  body.seated-game .energy {
+    display: none;
+  }
+  .cheat-card {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: calc(100vh - 116px);
+    padding: 8px 12px;
+  }
+  .board-card {
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .board-card .checkers {
+    --side: min(250px, calc(100vh - 130px));
+  }
+  .cheat-card .cheat-table small {
+    display: none;
+  }
+  /* The table card on one line, the hand and its buttons smaller. */
+  .cheat-card .cheat-table {
+    display: flex;
+    gap: 8px;
+    padding: 4px 8px;
+  }
+  .cheat-card .cheat-table b {
+    font-size: 15px;
+  }
+  .cheat-card .pcard.big {
+    width: 24px;
+    height: 34px;
+    font-size: 15px;
+  }
+  .cheat-card .pcard.big i {
+    display: none;
+  }
+  .cheat-card .train-head .icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .cheat-card .cheat-claim,
+  .cheat-card .cheat-tell {
+    margin-bottom: 2px;
+    font-size: 12.5px;
+  }
+  .cheat-card .cheat-status {
+    font-size: 11.5px;
+  }
+  .cheat-card .pcard-btn {
+    padding: 2px;
+  }
+  .cheat-card .cheat-hand .pcard {
+    width: 34px;
+    height: 48px;
+    font-size: 20px;
+  }
+  .cheat-card .cheat-acts {
+    flex-wrap: nowrap;
+  }
+  .cheat-card .cheat-acts .big-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 36px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  .cheat-card .cheat-acts .big-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cheat-card .cheat-flip .pcard {
+    width: 30px;
+    height: 42px;
+    font-size: 18px;
+  }
+  .cheat-card .cheat-reveal {
+    padding: 4px 8px;
+  }
+  .cheat-card .cheat-call {
+    margin-bottom: 3px;
+  }
+  .cheat-card .cheat-now {
+    min-height: 0;
   }
   .cheat-chips {
     margin: 6px 0 4px;
@@ -433,11 +555,6 @@ body.courting .tool-prompt {
   }
   .cheat-hand {
     margin: 4px 0;
-  }
-  .pcard-btn .pcard {
-    width: 40px;
-    height: 56px;
-    font-size: 22px;
   }
 }
 
