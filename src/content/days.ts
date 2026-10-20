@@ -7,7 +7,7 @@
  */
 
 /** The day's event. Stored as numbers: append only, never renumber. */
-export const DAY_EVENTS = ['none', 'inspection', 'drill', 'feast', 'maintenance', 'movie', 'foodFight', 'delivery', 'visiting', 'sports'] as const;
+export const DAY_EVENTS = ['none', 'inspection', 'drill', 'feast', 'maintenance', 'movie', 'foodFight', 'delivery', 'visiting', 'sports', 'talent', 'quiz'] as const;
 export type DayEvent = (typeof DAY_EVENTS)[number];
 
 /** The weather. Stored as numbers: append only. In the snow (Stalag Flucht) the storm is a blizzard. */
@@ -37,49 +37,61 @@ export interface DayBook {
   beforeVisits?: DayEvent;
   /** The card sports day (P22) took the place of, likewise. */
   beforeSports?: DayEvent;
+  /** The cards talent night and quiz night (P30) took the places of, likewise. */
+  beforeStage?: { talent: DayEvent; quiz: DayEvent };
 }
 
 /** prison → its days. */
 export const DAY_BOOKS: Record<string, DayBook> = {
   // Suburban and mild: a bit of everything, rarely too hot; families visit once a week, and the yard holds its sports day.
+  // (P30: a talent night on the quiet day, a quiz night in place of the inspection.)
   'center-perks': {
-    deck: ['none', 'delivery', 'inspection', 'visiting', 'sports', 'drill', 'maintenance'],
+    deck: ['talent', 'delivery', 'quiz', 'visiting', 'sports', 'drill', 'maintenance'],
     climate: { weights: [45, 15, 25, 10, 5], keep: 35, wind: 6 },
     before: 'none',
     beforeVisits: 'feast',
     beforeSports: 'movie',
+    beforeStage: { talent: 'none', quiz: 'inspection' },
   },
   // The Alps: clear (snowing), fog in the valleys, blizzards; never rain, never a heatwave.
   // (The Red Cross truck comes once a week; the camp's own Olympics too.)
   'stalag-flucht': {
-    deck: ['none', 'inspection', 'drill', 'delivery', 'sports', 'maintenance', 'movie'],
+    // (P30: the camp's cabaret where the film was, a quiz on the quiet day.)
+    deck: ['quiz', 'inspection', 'drill', 'delivery', 'sports', 'maintenance', 'talent'],
     climate: { weights: [50, 30, 0, 20, 0], keep: 40, wind: 0 },
     before: 'drill',
     beforeSports: 'feast',
+    beforeStage: { talent: 'movie', quiz: 'none' },
   },
   // Industrial and grey: rain and smog, scuffles at meals; visiting day once a week, in the canteen; a sports day instead of a drill.
   shankton: {
-    deck: ['none', 'inspection', 'foodFight', 'sports', 'maintenance', 'movie', 'visiting'],
+    // (P30: a talent night where the film was, a quiz on the quiet day.)
+    deck: ['quiz', 'inspection', 'foodFight', 'sports', 'maintenance', 'talent', 'visiting'],
     climate: { weights: [35, 20, 30, 15, 0], keep: 35, wind: 5 },
     beforeVisits: 'none',
     beforeSports: 'drill',
+    beforeStage: { talent: 'movie', quiz: 'none' },
   },
   // The desert: heatwaves and the odd tropical storm; the yard throws its dinner about; the produce truck once a week; sports day in the dust.
   'san-pancho': {
-    deck: ['none', 'foodFight', 'delivery', 'feast', 'visiting', 'inspection', 'sports'],
+    // (P30: a talent night on the quiet day, a quiz where the feast was.)
+    deck: ['talent', 'foodFight', 'delivery', 'quiz', 'visiting', 'inspection', 'sports'],
     climate: { weights: [45, 5, 0, 15, 35], keep: 40, wind: 2 },
     before: 'foodFight',
     beforeVisits: 'movie',
     beforeSports: 'drill',
+    beforeStage: { talent: 'none', quiz: 'feast' },
   },
   // The island: sea fog and squalls, and inspectors on the ferry; a sports day where the food fight was.
   // (The supply helicopter by day once a week; families come over on the ferry once a week.)
   irongate: {
-    deck: ['none', 'inspection', 'delivery', 'drill', 'maintenance', 'visiting', 'sports'],
+    // (P30: a talent night on the quiet day, a quiz in place of the drill.)
+    deck: ['talent', 'inspection', 'delivery', 'quiz', 'maintenance', 'visiting', 'sports'],
     climate: { weights: [35, 30, 20, 15, 0], keep: 35, wind: 7 },
     before: 'inspection',
     beforeVisits: 'movie',
     beforeSports: 'foodFight',
+    beforeStage: { talent: 'none', quiz: 'drill' },
   },
 };
 
@@ -107,6 +119,9 @@ export const EVENT_TIMES: Record<Exclude<DayEvent, 'none'>, { at: number | Reado
   visiting: { at: 120, length: 120 },
   // 10:00–22:00: the yard's games all day (P22; played in free time and the exercise hour).
   sports: { at: 120, length: 720 },
+  // 19:00–21:00: talent night in the canteen, quiz night in the library (P30).
+  talent: { at: 660, length: 120 },
+  quiz: { at: 660, length: 120 },
 };
 
 /** The fire drill: minutes after the bell by which the player must be at roll call, and what missing it costs. */

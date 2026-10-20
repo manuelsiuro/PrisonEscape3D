@@ -1,0 +1,478 @@
+/* ------------------------------------------------------------ stage nights (P30) */
+
+/* Talent night's card: the acts, the pick, the lanes and their pads. */
+.stage-card .train-ic {
+  background: #d9488f;
+}
+.quiz-card .train-ic {
+  background: #3d7fd0;
+}
+.stage-card .train-head b,
+.quiz-card .train-head b {
+  min-width: 0;
+}
+.stage-acts {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.stage-acts li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 9px;
+  font: 600 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+.stage-acts li.on {
+  color: white;
+  background: rgba(217, 72, 143, 0.35);
+}
+.stage-acts .ic {
+  flex: none;
+  opacity: 0.8;
+}
+.stage-who {
+  flex: none;
+  font-weight: 800;
+}
+.stage-song {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.5);
+}
+.stage-acts b,
+.stage-acts em,
+.stage-acts li > span:last-child {
+  flex: none;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+.stage-acts b {
+  color: var(--gold);
+}
+.stage-acts em {
+  color: #ffb3d6;
+}
+.stage-pick {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.stage-songs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.stage-song-btn {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 6px;
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+}
+.stage-song-btn b {
+  font: 700 12px/1.15 var(--font-ui);
+}
+.stage-song-btn span {
+  font: 700 11px var(--font-ui);
+  color: var(--gold);
+  white-space: nowrap;
+}
+.stage-song-btn.on {
+  background: rgba(217, 72, 143, 0.4);
+  box-shadow: inset 0 0 0 2px #ff8cc3;
+}
+.stage-insts {
+  background: rgba(255, 255, 255, 0.08);
+}
+.stage-insts button {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.stage-insts button.on {
+  color: var(--ink);
+}
+.stage-insts button:disabled {
+  opacity: 0.4;
+}
+.stage-go:disabled {
+  opacity: 0.45;
+}
+/* The lanes: a canvas the notes come down, the judgement over it. */
+.stage-play,
+.stage-pads,
+.stage-bar {
+  display: none;
+}
+.stage-card[data-phase='play'] .stage-play,
+.stage-card[data-phase='play'] .stage-pads,
+.stage-card[data-phase='play'] .stage-bar {
+  display: block;
+}
+.stage-card[data-phase='play'] .stage-pads {
+  display: grid;
+}
+.stage-card[data-phase='play'] .stage-acts,
+.stage-card:not([data-phase='offer']) .stage-pick {
+  display: none;
+}
+.stage-play {
+  position: relative;
+  margin-top: 8px;
+}
+.stage-lanes {
+  /* (Not the 3D view's canvas: in the card's flow.) */
+  position: relative;
+  inset: auto;
+  display: block;
+  width: 100%;
+  height: 190px;
+  border-radius: 12px;
+  background: linear-gradient(rgba(10, 14, 24, 0.6), rgba(40, 18, 40, 0.75));
+}
+.stage-judge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38%;
+  text-align: center;
+  font: 800 22px var(--font-display);
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  opacity: 0;
+}
+.stage-judge[data-grade='0'] {
+  opacity: 1;
+  font-size: 34px;
+}
+.stage-judge[data-grade='3'] {
+  color: #ffe066;
+}
+.stage-judge[data-grade='2'] {
+  color: #9fe6b9;
+}
+.stage-judge[data-grade='1'] {
+  color: #ff9a9a;
+}
+.stage-judge.pop {
+  animation: judge-pop 0.5s ease-out;
+}
+@keyframes judge-pop {
+  0% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.stage-pads {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.stage-pad {
+  flex-direction: column;
+  gap: 2px;
+  height: 56px;
+  margin: 0;
+  background: linear-gradient(color-mix(in srgb, var(--lane) 70%, #222), color-mix(in srgb, var(--lane) 45%, #111));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.touch .stage-pad {
+  height: 76px;
+}
+.stage-pad.lit {
+  transform: scale(0.95);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 3px var(--lane);
+}
+.stage-pad kbd {
+  font: 700 11px var(--font-ui);
+  color: rgba(255, 255, 255, 0.85);
+}
+.lane-shape {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: white;
+}
+.lane-shape.s0 {
+  border-radius: 50%;
+}
+.lane-shape.s1 {
+  width: 15px;
+  height: 15px;
+  transform: rotate(45deg);
+}
+.lane-shape.s2 {
+  border-radius: 2px;
+}
+.stage-bar {
+  margin-bottom: 4px;
+}
+.stage-card .train-note {
+  margin-top: 6px;
+}
+.stage-card[data-phase='result'] .train-note {
+  color: white;
+  font-size: 13px;
+}
+
+/* Quiz night's card: the points, the question, its four answers two by two, the time. */
+.quiz-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.quiz-board:empty {
+  display: none;
+}
+.quiz-board li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font: 600 11.5px var(--font-ui);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+}
+.quiz-board li b {
+  font: 800 13px var(--font-ui);
+  color: white;
+  font-variant-numeric: tabular-nums;
+}
+.quiz-board li.me {
+  color: #bfe0ff;
+  box-shadow: inset 0 0 0 1.5px rgba(95, 179, 255, 0.6);
+}
+.quiz-board li.got {
+  background: rgba(63, 199, 154, 0.45);
+}
+.quiz-board li.out {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.quiz-q {
+  margin: 10px 0 0;
+  font: 700 15px/1.3 var(--font-ui);
+}
+.quiz-q:empty {
+  display: none;
+}
+.quiz-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+.quiz-choices:empty {
+  display: none;
+}
+.quiz-choice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 9px;
+  border-radius: 12px;
+  text-align: left;
+  font: 700 12.5px/1.2 var(--font-ui);
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+}
+.quiz-choice kbd {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font: 800 11px var(--font-ui);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.85);
+}
+.touch .quiz-choice kbd {
+  display: none;
+}
+.quiz-choice span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.quiz-choice span::first-letter {
+  text-transform: uppercase;
+}
+.quiz-choice:disabled {
+  cursor: default;
+}
+.quiz-choice.mine {
+  box-shadow: inset 0 0 0 2px #5fb3ff;
+}
+.quiz-choice.wrong {
+  background: rgba(229, 72, 77, 0.45);
+}
+.quiz-choice.struck span {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.quiz-choice.right {
+  background: rgba(63, 199, 154, 0.55);
+  box-shadow: inset 0 0 0 2px #9fe6b9;
+}
+.quiz-bar.hidden,
+.quiz-join.hidden,
+.quiz-quit.hidden {
+  display: none;
+}
+.quiz-bar > i {
+  background: linear-gradient(90deg, #3d7fd0, #8fc8ff);
+}
+.quiz-join,
+.quiz-quit {
+  margin-top: 8px;
+}
+.quiz-quit {
+  width: auto;
+}
+.quiz-card .train-note {
+  margin-top: 8px;
+}
+
+/* Phones upright: above the hotbar; while playing, the card takes the lower half (the pads at the thumbs). */
+@media (max-width: 899px) and (min-height: 521px) {
+  .stage-card,
+  .quiz-card {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+  }
+  body.performing .stage-card {
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  body.performing .hotbar,
+  body.performing .energy {
+    display: none;
+  }
+  .stage-lanes {
+    height: min(230px, calc(100vh - 560px));
+    min-height: 150px;
+  }
+}
+
+/* Landscape phones: docked to the left, the lanes as tall as they fit; the hotbar steps aside while playing. */
+@media (max-height: 520px) {
+  .stage-card,
+  .quiz-card {
+    animation: card-fade 0.25s ease-out;
+    left: max(14px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: min(340px, calc(50vw - 40px));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    padding: 8px 12px;
+  }
+  .stage-lanes {
+    height: max(110px, calc(100vh - 262px));
+  }
+  /* (Below the clock and the place at the top left.) */
+  .stage-card,
+  .quiz-card {
+    max-height: calc(100vh - 70px);
+  }
+  .stage-acts li {
+    padding: 3px 8px;
+  }
+  .quiz-q {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+  .quiz-choice {
+    min-height: 38px;
+  }
+  body.performing .hotbar,
+  body.performing .energy,
+  body.quizzing .hotbar,
+  body.quizzing .energy {
+    display: none;
+  }
+  /* (A lesson's card steps up to the top, clear of the stage's and the quiz's cards.) */
+  body.staging .coach.lesson-coach,
+  body.quizzing .coach.lesson-coach {
+    top: 0;
+    right: 184px;
+    left: auto;
+    max-width: min(400px, calc(100vw - 600px));
+  }
+}
+
+/* Wide screens: docked left, clear of the stage in the middle. */
+@media (min-width: 900px) and (min-height: 521px) {
+  .stage-card,
+  .quiz-card {
+    left: max(24px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
+  }
+}
+
+body.reduced-motion .stage-card,
+body.reduced-motion .quiz-card,
+body.reduced-motion .stage-judge.pop {
+  animation: none !important;
+  transition: none !important;
+}
+body.reduced-motion .stage-judge.pop {
+  opacity: 1;
+}
+/* While playing, the tool button and its prompt step aside (the lanes' keys and pads are the controls). */
+body.performing .tool-btn,
+body.performing .tool-prompt,
+body.quizzing .tool-btn,
+body.quizzing .tool-prompt {
+  display: none;
+}
+
+.stage-pad kbd {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border: 0;
+}
+.stage-card.played .stage-pick {
+  display: none;
+}
+/* (Nor the action's prompt: at the quiz or on the stage, a seat or a talk would only get in the way.) */
+body.performing .act-prompt,
+body.quizzing[data-quiz='on'] .act-prompt {
+  display: none;
+}

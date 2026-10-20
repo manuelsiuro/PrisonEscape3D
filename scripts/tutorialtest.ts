@@ -4,6 +4,10 @@
  * and the lesson end done. The lessons are data (src/tutorial/lessons.ts); this proves none
  * can get stuck.
  */
+import { CHARTS, COUNT_IN, LATE, songSteps } from '../src/content/nights';
+import { tonight, turnFrom } from '../src/sim/systems/talent';
+import { questionNow } from '../src/sim/systems/quiz';
+import { dayMinute } from '../src/sim/systems/clock';
 import { TRAINING } from '../src/content/prisons/training';
 import { BRIBE, command, dirFromVector, EXT, OP, ORDER, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { drillOn, prisonDay } from '../src/sim/systems/calendar';
@@ -553,6 +557,39 @@ play('tattoo', (bot, ctx) => {
   check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Sparky again');
   bot.op(OP.TALK, TALK.INK_ME, 1);
   check(bot.until(() => bot.st.inked.length > 0, 400), 'tattoo: a skull on the arm');
+});
+
+play('talent', (bot) => {
+  // The acts watched; onto the stage; the easy song on the drums, every note on its step.
+  check(bot.until(() => dayMinute(bot.st.step) >= turnFrom(tonight(bot.sim)), 60 * 20 * 60), 'talent: the acts over');
+  const st = bot.sim.prison.leisure!.stage!;
+  check(bot.walkTo(tile(st.x, st.z)), 'talent: on the stage');
+  bot.op(OP.EXT, EXT.STAGE, 0, 0);
+  check(!!bot.st.show, 'talent: the act on');
+  const o = bot.st.show!;
+  const due = new Map(CHARTS[0].map(([t, lane]) => [o.from + COUNT_IN + LATE + t - 1, lane] as const));
+  bot.until(() => !bot.st.show, COUNT_IN + songSteps(0) + 40, () => {
+    const lane = due.get(bot.st.step);
+    return lane === undefined ? 0 : command(0, OP.EXT, EXT.NOTE, lane);
+  });
+});
+
+play('quiz', (bot) => {
+  // Joined at the first place; each question answered right three seconds in.
+  bot.op(OP.EXT, EXT.QUIZ, 0);
+  check(!!bot.st.quiz, 'quiz: joined');
+  let asked = -1;
+  let put = 0;
+  bot.until(() => !bot.st.quiz, 4000, () => {
+    const o = bot.st.quiz;
+    const q = questionNow(bot.sim);
+    if (!o || !q) return 0;
+    if (o.q !== asked) {
+      asked = o.q;
+      put = bot.st.step;
+    }
+    return !o.until && o.said[0] < 0 && bot.st.step - put >= 60 ? command(0, OP.EXT, EXT.ANSWER, q.answer) : 0;
+  });
 });
 
 play('crew', (bot) => {

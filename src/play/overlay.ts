@@ -55,6 +55,8 @@ import {
   raceCard,
   matchCard,
   inkCard,
+  stageCard,
+  quizCard,
   vignette,
   view,
   workChips,
@@ -85,6 +87,7 @@ import { crewChipList, crewPill, crewRows } from './crew';
 import { tipsyNow } from '../sim/systems/pruno';
 import { NO_TAKE, raceNow, takeOffers } from './long';
 import { inkNow, matchNow, teamSounds } from './team';
+import { nightsSounds, quizNow, stageNow } from './nights';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -127,6 +130,9 @@ function unitPx(x: number, z: number): number {
  * middle of the space left free. Measured a few times a second, not every frame.
  */
 let shiftCheck = 0;
+/** A song on the stage is heard (P30): the score steps back for it. */
+let songOn = false;
+
 export function keepPlayerClear(open: boolean) {
   if (!open) {
     view.setShift(0, 0);
@@ -270,7 +276,18 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   teamSounds(sim, g.paused || g.over);
   document.body.classList.toggle('matching', !!match);
   document.body.classList.toggle('inking', !!inkV);
-  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV ? null : raceNow(sim, a);
+  // Stage nights (P30): talent night's card at the stage (the lanes while playing), quiz night's at the table.
+  const otherGame = !!(bout || pick || cheat || boardV || match || inkV);
+  const stageV = busy || otherGame ? null : stageNow(sim, a);
+  const quizV = busy || otherGame || stageV ? null : quizNow(sim);
+  stageCard.update(stageV, !settings.reducedMotion);
+  quizCard.update(quizV);
+  songOn = nightsSounds(sim, a, g.paused || g.over);
+  document.body.classList.toggle('performing', stageV?.phase === 'play');
+  document.body.classList.toggle('staging', !!stageV);
+  document.body.classList.toggle('quizzing', !!quizV);
+  document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
+  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);
@@ -395,7 +412,8 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   const chased = tense;
   const night = ROUTINE[st.routine].id === 'lightsOut' || st.sleeping;
   // Paused or reading a card, the music steps back.
-  sound.duck(g.paused && !g.over);
+  // (P30: and under a song on the stage.)
+  sound.duck((g.paused && !g.over) || songOn);
   // Out on the road: the title theme plays over the victory screen.
   if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
   const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);

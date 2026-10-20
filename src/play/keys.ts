@@ -13,6 +13,7 @@ import { toggleCrew } from './crew';
 import { openObjectives } from './lesson';
 import { pastimeKey, shootKey } from './pastimes';
 import { kickKey } from './team';
+import { nightsKey } from './nights';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -72,6 +73,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Card sharks (P27): the hand of Cheat's keys (1–5, Enter, L) come before the hotbar's.
   if (pastimeKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // Stage nights (P30): the lanes' keys on the stage, the answers' (1–4) at the quiz.
+  if (nightsKey(e.code)) {
     e.preventDefault();
     return;
   }

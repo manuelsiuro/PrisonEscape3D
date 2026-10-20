@@ -154,6 +154,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'teamPlayer', group: 'life', icon: 'users', run: (r) => f(r, 'matchWins') >= 3 },
   { id: 'steadyHand', group: 'skills', icon: 'needle', gives: 'eagleInk', run: (r) => f(r, 'cleanLines') >= 3 },
   { id: 'inkedUp', group: 'life', icon: 'needle', gives: 'skullInk', run: (r) => f(r, 'inked') >= 3 },
+  // P30 (stage nights): first on a talent night; a mark the warden smiles at; a quiz night won.
+  { id: 'headliner', group: 'life', icon: 'music', run: (r) => f(r, 'actWins') >= 1 },
+  { id: 'starTurn', group: 'skills', icon: 'star', run: (r) => f(r, 'starActs') >= 1 },
+  { id: 'quizChamp', group: 'skills', icon: 'brain', run: (r) => f(r, 'quizWins') >= 1 },
   // The crew (P23).
   { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
   { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },

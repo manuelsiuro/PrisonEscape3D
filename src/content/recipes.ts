@@ -73,6 +73,8 @@ export const RECIPES: readonly RecipeDef[] = [
   r('rat_track', 30, 'magazine', 'magazine', 'duct_tape'),
   // P29: a tattoo gun (the toothbrush the handle, the battery's motor, the razor blade's needle).
   r('tattoo_gun', 30, 'toothbrush', 'battery', 'razor_blade'),
+  // P30: a guitar (the timber its body and neck, the wire its strings, taped up).
+  r('guitar', 30, 'timber', 'wire', 'duct_tape'),
 ];
 
 /** The item ids an ingredient accepts. */

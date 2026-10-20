@@ -125,6 +125,10 @@ const P: Record<string, string> = {
   /** A hang glider's wing over its bar (P24). */
   needle: '<path d="M4 20 9.5 14.5"/><rect x="9" y="5.5" width="5.5" height="9" rx="1.6" transform="rotate(45 11.75 10)"/><path d="M15.5 4.5 19.5 8.5"/><path d="M13.5 2.5 21.5 10.5"/>',
   glider: '<path d="M2 11 12 5l10 6-10-1.6Z"/><path d="M12 9.4V15M9 15h6M12 15l-1.4 4M12 15l1.4 4"/>',
+  /** A bucket drum and its two sticks (P30, talent night). */
+  drum: '<path d="M5 11h14l-1.6 9H6.6Z"/><path d="M5 11c0-1.2 3.1-2 7-2s7 .8 7 2"/><path d="M8 3l3 6M16 3l-3 6"/>',
+  /** A guitar (P30): its body, the sound hole, the neck. */
+  guitar: '<path d="M14 10a4 4 0 0 0-5.6-.4 3.5 3.5 0 0 0-2.9 1.6 3.6 3.6 0 0 0 .9 5 3.6 3.6 0 0 0 5 .9 3.5 3.5 0 0 0 1.6-2.9A4 4 0 0 0 14 10Z"/><circle cx="10" cy="14" r="1.1"/><path d="M13 11 20 4M18.5 2.5l3 3"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

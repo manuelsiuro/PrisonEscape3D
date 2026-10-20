@@ -30,8 +30,8 @@ import { LESSONS } from '../tutorial/lessons';
  * warden says is what happens.
  */
 
-export const EVENT_ICON: Record<DayEvent, string> = { none: 'calendar', inspection: 'clipboard', drill: 'siren', feast: 'utensils', maintenance: 'wrench', movie: 'film', foodFight: 'splash', delivery: 'truck', visiting: 'users', sports: 'trophy' };
-export const EVENT_COLOR: Record<DayEvent, string> = { none: '#8aa0b8', inspection: '#5fa8e8', drill: '#ff7a1a', feast: '#e2a21b', maintenance: '#f0b429', movie: '#a77bff', foodFight: '#ff5f6d', delivery: '#3fc79a', visiting: '#ff9ec7', sports: '#7ed957' };
+export const EVENT_ICON: Record<DayEvent, string> = { none: 'calendar', inspection: 'clipboard', drill: 'siren', feast: 'utensils', maintenance: 'wrench', movie: 'film', foodFight: 'splash', delivery: 'truck', visiting: 'users', sports: 'trophy', talent: 'music', quiz: 'brain' };
+export const EVENT_COLOR: Record<DayEvent, string> = { none: '#8aa0b8', inspection: '#5fa8e8', drill: '#ff7a1a', feast: '#e2a21b', maintenance: '#f0b429', movie: '#a77bff', foodFight: '#ff5f6d', delivery: '#3fc79a', visiting: '#ff9ec7', sports: '#7ed957', talent: '#ff6fb5', quiz: '#5fb3ff' };
 /** An event's icon here (P18: Irongate's delivery comes by helicopter). */
 export const eventIcon = (sim: Sim, e: DayEvent) => (e === 'delivery' && sim.prison.delivery?.vehicle === 'helicopter' ? 'heli' : EVENT_ICON[e]);
 
@@ -48,7 +48,7 @@ type WeatherName = Weather | 'snow' | 'blizzard';
 const WX_ICON: Record<WeatherName, string> = { clear: 'sun', snow: 'snow', fog: 'fog', rain: 'rain', storm: 'storm', blizzard: 'storm', heatwave: 'heat' };
 const WX_COLOR: Record<WeatherName, string> = { clear: '#ffd76a', snow: '#e6f3ff', fog: '#cfd8e2', rain: '#8cc8ff', storm: '#b8a8ff', blizzard: '#cfe6ff', heatwave: '#ffb35a' };
 /** Events the warden warns of fifteen minutes ahead (the drill is a surprise; a food fight just happens). */
-const WARNED: ReadonlySet<DayEvent> = new Set(['inspection', 'feast', 'maintenance', 'movie', 'delivery', 'visiting', 'sports']);
+const WARNED: ReadonlySet<DayEvent> = new Set(['inspection', 'feast', 'maintenance', 'movie', 'delivery', 'visiting', 'sports', 'talent', 'quiz']);
 const WARN_AHEAD = 15;
 /** 22:00: tomorrow's forecast; 14:30: a quip on a quiet afternoon (minutes into the prison day). */
 const FORECAST_AT = 14 * 60;

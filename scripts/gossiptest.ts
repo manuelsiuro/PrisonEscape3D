@@ -128,7 +128,9 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'nextDelivery':
     case 'nextVisiting':
     case 'nextSports':
-      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery', nextVisiting: 'visiting', nextSports: 'sports' } as const)[f.kind];
+    case 'nextTalent':
+    case 'nextQuiz':
+      return f.n === today(sim).day + 1 && planOf(sim, f.n!).event === ({ nextInspection: 'inspection', nextDrill: 'drill', nextFoodFight: 'foodFight', nextDelivery: 'delivery', nextVisiting: 'visiting', nextSports: 'sports', nextTalent: 'talent', nextQuiz: 'quiz' } as const)[f.kind];
     // Side games (P22): nobody's arm is stronger; the dice's heat is the rule's (gamestest proves it); the lockpick never opens a gate.
     case 'champ':
       return s.inmates.every((m) => m.str <= s.inmates[f.inmate!].str);

@@ -1222,6 +1222,51 @@ export class Sound {
     this.hiss(0.05, 'lowpass', 1400, 0.8, 0.06 + 0.06 * power);
   }
 
+  // ---------------------------------------------------------------- stage nights (P30)
+
+  /** A bucket drum struck (lane 0 the big one, 1 the snare-ish rim, 2 the small one). */
+  drum(lane: number, gain = 1) {
+    if (gain <= 0.02) return;
+    if (lane === 1) {
+      this.hiss(0.11, 'bandpass', 2200, 0.9, 0.12 * gain);
+      this.tone(240, 180, 0.08, 'triangle', 0.08 * gain);
+    } else {
+      const f = lane === 0 ? 120 : 200;
+      this.tone(f, f * 0.55, 0.18, 'sine', 0.22 * gain);
+      this.hiss(0.04, 'lowpass', 1600, 0.8, 0.06 * gain);
+    }
+  }
+
+  /** A guitar note (semitones above A3): a plucked string, bright then dark. */
+  strum(pitch: number, gain = 1) {
+    if (gain <= 0.02) return;
+    const f = 220 * 2 ** (pitch / 12);
+    this.tone(f, f * 0.998, 0.5, 'sawtooth', 0.045 * gain);
+    this.tone(f * 2, f * 1.996, 0.25, 'triangle', 0.03 * gain);
+    this.hiss(0.02, 'highpass', 3000, 1, 0.03 * gain);
+  }
+
+  /** A note fluffed: a dull clunk. */
+  dud(gain = 1) {
+    if (gain <= 0.02) return;
+    this.tone(95, 70, 0.12, 'square', 0.035 * gain);
+  }
+
+  /** The backing's beat: a kick, a snare, a hat. */
+  beat(kind: 'kick' | 'snare' | 'hat', gain = 1) {
+    if (gain <= 0.02) return;
+    if (kind === 'kick') this.tone(110, 45, 0.16, 'sine', 0.2 * gain);
+    else if (kind === 'snare') this.hiss(0.12, 'highpass', 1800, 0.7, 0.07 * gain);
+    else this.hiss(0.03, 'highpass', 7000, 0.7, 0.03 * gain);
+  }
+
+  /** The bass on a chord's root (semitones above A3, played two octaves down). */
+  bass(root: number, gain = 1) {
+    if (gain <= 0.02) return;
+    const f = 55 * 2 ** (root / 12);
+    this.tone(f, f, 0.35, 'triangle', 0.12 * gain);
+  }
+
   /** The tattoo gun at work (P29): a short electric buzz (played again and again while it works). */
   needle(gain = 1) {
     this.tone(118, 118, 0.2, 'sawtooth', 0.022 * gain);

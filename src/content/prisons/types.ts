@@ -170,6 +170,22 @@ export interface LeisureDef {
   race: Track;
   /** P29: the football pitch (open yard floor; its goals' nets in the end tiles' middle two). */
   pitch: Pitch;
+  /** P30: talent night's stage in the canteen, and quiz night's four places in the library (a prison without day cards has neither). */
+  stage?: Stage;
+  quiz?: QuizPlace;
+}
+
+/** Talent night's stage (P30): the performer's tile and the way they face the room (1, 5, 9 or 13); the boards run a tile either side of it across, and a tile out in front (open canteen floor). */
+export interface Stage {
+  x: number;
+  z: number;
+  face: number;
+}
+
+/** Quiz night's places (P30): four tiles in a row (open library floor): the player at the nearest, three contestants at the others, all facing the same way (1, 5, 9 or 13). */
+export interface QuizPlace {
+  spots: ReadonlyArray<{ x: number; z: number }>;
+  face: number;
 }
 
 /** A football pitch (P29): from (x, z), w across and d deep; the goals at the ends of the longer side, the field between them (content/team.ts). */

@@ -42,6 +42,7 @@ import { GamesView, type GamesFrame } from './Games';
 import { PastimesView, type PastimesFrame } from './Pastimes';
 import { LongView, type LongFrame } from './Long';
 import { TeamView, type TeamFrame } from './Team';
+import { NightsView, type NightsFrame } from './Nights';
 import { handlersOf } from '../sim/systems/k9';
 
 /** The old-timer's hair (P27): white with age. */
@@ -130,6 +131,8 @@ export interface Frame {
   long: LongFrame | null;
   /** Team & ink (P29): the pitch and the ball. */
   team: TeamFrame;
+  /** Stage nights (P30): the stage set up, the quiz's buzzers. */
+  nights: NightsFrame;
   /** P29: the designs inked on the player's arms. */
   inked: readonly number[];
   /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
@@ -337,6 +340,7 @@ export class View {
   private readonly pastimesView = new PastimesView();
   private readonly longView = new LongView();
   private readonly teamView = new TeamView();
+  private readonly nightsView = new NightsView();
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
   /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
@@ -456,7 +460,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.nightsView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -1228,6 +1232,8 @@ export class View {
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
     this.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER);
+    // Stage nights (P30): the stage, the buzzers (the ground floor, and from the vents and roofs over it).
+    this.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
@@ -1348,6 +1354,7 @@ export class View {
     this.pastimesView.update(null, 0, 0, 0, false, false);
     this.longView.update(null, 0, false, false);
     this.teamView.update(null, [], 0, false);
+    this.nightsView.update(null, 0, false, false);
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;

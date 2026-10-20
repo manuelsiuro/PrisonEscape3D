@@ -153,8 +153,8 @@ export class RunRecorder {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
       // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm; nor one from before visiting day, P21: the week's cards changed.)
-      // (Nor one from before sports day, P22: the week's cards changed again.)
-      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '');
+      // (Nor one from before sports day, P22: the week's cards changed again; nor stage nights, P30.)
+      const stale = beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '') || beforeStage(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -266,6 +266,18 @@ export function beforeSports(game: string): boolean {
   return a < 1 || (a === 1 && b < 16);
 }
 
+/** Whether a game version came before stage nights (2.5.0): the cards they took the places of were dealt then. */
+export function beforeStage(game: string): boolean {
+  const m = /^(\d+)\.(\d+)\./.exec(game);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a < 2 || (a === 2 && b < 5);
+}
+
+/** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
+const LEGACY_DAYS = 1000;
+const lastDay = (log: RunLog) => Math.min(prisonDay(log.from + log.steps), prisonDay(log.from) + LEGACY_DAYS);
+
 /**
  * A log's game set up to be played back (P25: the replay viewer's scout and its picture share
  * it): the sim at the log's start, with the rules of the version it was played under, and its
@@ -290,13 +302,22 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeVisits(log.game) && !beforeDays(log.game)) {
     const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeVisits ?? 'none');
     const s = sim.state;
-    for (let day = prisonDay(log.from); day <= prisonDay(log.from + log.steps); day++) if (planOf(sim, day).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
+    for (let day = prisonDay(log.from); day <= lastDay(log); day++) if (planOf(sim, day).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
   }
   // Played before sports day (P22): likewise.
   if (beforeSports(log.game) && !beforeDays(log.game)) {
     const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeSports ?? 'none');
     const s = sim.state;
-    for (let day = prisonDay(log.from); day <= prisonDay(log.from + log.steps); day++) if (planOf(sim, day).event === 'sports') s.calendar = [...s.calendar, [day, before, -1]];
+    for (let day = prisonDay(log.from); day <= lastDay(log); day++) if (planOf(sim, day).event === 'sports') s.calendar = [...s.calendar, [day, before, -1]];
+  }
+  // Played before stage nights (P30): likewise, for both.
+  if (beforeStage(log.game) && !beforeDays(log.game)) {
+    const was = DAY_BOOKS[prison.id]?.beforeStage;
+    const s = sim.state;
+    for (let day = prisonDay(log.from); day <= lastDay(log); day++) {
+      const e = planOf(sim, day).event;
+      if (was && (e === 'talent' || e === 'quiz')) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(was[e]), -1]];
+    }
   }
   if (sim.state.step !== log.from) return null;
   return { sim, runs };

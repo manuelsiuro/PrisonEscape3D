@@ -7,6 +7,7 @@ import { announceGames } from './games';
 import { announcePastimes } from './pastimes';
 import { announceLong } from './long';
 import { announceTeam } from './team';
+import { announceNights } from './nights';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
@@ -756,6 +757,11 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'football':
     case 'tattoo':
       announceTeam(sim, e);
+      break;
+    // Stage nights (P30): an act on the stage, a quiz.
+    case 'stage':
+    case 'quiz':
+      announceNights(sim, e);
       break;
     case 'crew':
       announceCrew(sim, e);

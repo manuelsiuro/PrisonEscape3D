@@ -30,6 +30,9 @@ import { bedCount } from './systems/garden';
 import { BETS, CROP, ODDS_MAX, ODDS_MIN, RAT_START_SPEED } from '../content/long';
 import type { FootballNews, Match } from './systems/football';
 import type { Ink } from './systems/tattoo';
+import type { Show } from './systems/talent';
+import type { Quiz } from './systems/quiz';
+import { CHARTS, QUIZ_QUESTIONS, SONGS } from '../content/nights';
 import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
@@ -129,7 +132,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -285,6 +288,16 @@ export type SimEvent =
    */
   | { type: 'football'; what: FootballNews; who?: number; team?: number[]; mine?: boolean; by?: number; score?: number[]; power?: number; crowd?: number; spd?: number; wins?: number; guards?: number[]; scored?: number }
   | { type: 'tattoo'; what: 'start' | 'done' | 'quit' | 'off' | 'inked'; who: number; design: number; mine: boolean; quality?: number; pay?: number; gain?: number }
+  /**
+   * P30 (talent.ts, quiz.ts): the player's act begun (the `song`, the `inst`rument), a note played
+   * (its place, `lane`, `grade` 2 good or 3 perfect, its `pitch`), one missed, a stray press; the
+   * act over (the `mark`, its `place` among the night's acts, the `prize`, the `crowd` won over, the
+   * `heat` the warden let go) or off. A quiz joined (the contestants `who`), a question put (`q`),
+   * an answer right or wrong (`by` 0 the player, 1–3 a contestant; the `choice`), time up, and its
+   * end: won, a tie, lost (the `pts`, the `prize`, the `int`ellect gained), given up or off.
+   */
+  | { type: 'stage'; what: 'start' | 'hit' | 'miss' | 'stray' | 'done' | 'off'; song?: number; inst?: number; note?: number; lane?: number; grade?: number; pitch?: number; mark?: number; place?: number; prize?: number; crowd?: number; heat?: number }
+  | { type: 'quiz'; what: 'start' | 'question' | 'right' | 'wrong' | 'timeUp' | 'won' | 'tie' | 'lost' | 'quit' | 'off'; who?: number[]; q?: number; by?: number; choice?: number; pts?: number[]; prize?: number; int?: number }
   | ItemEvent;
 
 /** What pruno did (P28, the 'pruno' event). */
@@ -325,7 +338,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -550,6 +563,15 @@ export interface SimState {
   inked: number[];
   /** The prison day each inmate last had a tattoo from the player (by inmate index; 0 never). */
   inkDays: number[];
+  /**
+   * P30: the player's act on talent night (talent.ts), null none; the prison day of their last act
+   * (0 never: one a night); a quiz under way (quiz.ts), null none; the prison day of the last one
+   * joined (0 never).
+   */
+  show: Show | null;
+  stageDay: number;
+  quiz: Quiz | null;
+  quizDay: number;
 }
 
 export interface Snapshot {
@@ -685,6 +707,10 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     ink: null,
     inked: [],
     inkDays: [],
+    show: null,
+    stageDay: 0,
+    quiz: null,
+    quizDay: 0,
   };
 }
 
@@ -816,6 +842,17 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!inkOk(s.ink, n)) s.ink = null;
   if (!Array.isArray(s.inkDays) || s.inkDays.length > n || !s.inkDays.every((d) => Number.isInteger(d) && d >= 0)) s.inkDays = [];
   if (!(Array.isArray(s.inked) && s.inked.length <= 3 && s.inked.every((d, k, all) => Number.isInteger(d) && d >= 0 && d < DESIGNS.length && all.indexOf(d) === k))) s.inked = [];
+  // P30: an act or a quiz as they can be (else over); a save from before stage nights keeps the cards they took the places of, on the day it's loaded and the next.
+  if (!showOk(s.show)) s.show = null;
+  if (!quizOk(s.quiz, n)) s.quiz = null;
+  for (const k of ['stageDay', 'quizDay'] as const) if (!Number.isInteger(s[k]) || s[k] < 0) s[k] = 0;
+  if (st.stageDay === undefined) {
+    const was = DAY_BOOKS[prison.id]?.beforeStage;
+    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) {
+      const e = dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event;
+      if (was && (e === 'talent' || e === 'quiz')) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(was[e]), -1]];
+    }
+  }
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
@@ -842,6 +879,35 @@ function matchOk(o: Match | null, n: number): boolean {
     ints(o.cool, 6) &&
     o.last >= -2 &&
     o.last < 5
+  );
+}
+
+/** An act as a save holds it (P30): a song and an instrument there are, a judgement for each of its notes. */
+function showOk(o: Show | null): boolean {
+  if (o === null) return true;
+  if (!o || typeof o !== 'object') return false;
+  return [o.song, o.inst, o.from, o.stray].every((x) => Number.isInteger(x)) && o.song >= 0 && o.song < SONGS.length && (o.inst === 0 || o.inst === 1) && o.stray >= 0 && Array.isArray(o.hits) && o.hits.length === CHARTS[o.song].length && o.hits.every((h) => Number.isInteger(h) && h >= 0 && h <= 3);
+}
+
+/** A quiz as a save holds it (P30): three different contestants at three of the four places, its numbers whole. */
+function quizOk(o: Quiz | null, n: number): boolean {
+  if (o === null) return true;
+  if (!o || typeof o !== 'object') return false;
+  const ints = (v: unknown, k: number) => Array.isArray(v) && v.length === k && v.every((x) => Number.isInteger(x));
+  return (
+    ints(o.who, 3) &&
+    o.who.every((k, i, all) => k >= 0 && k < n && all.indexOf(k) === i) &&
+    ints(o.seats, 4) &&
+    [0, 1, 2, 3].every((k) => o.seats.includes(k)) &&
+    [o.from, o.q, o.at, o.got, o.until].every((x) => Number.isInteger(x)) &&
+    o.q >= -1 &&
+    o.q < QUIZ_QUESTIONS &&
+    o.got >= -1 &&
+    o.got <= 3 &&
+    ints(o.pts, 4) &&
+    o.pts.every((x) => x >= 0) &&
+    ints(o.said, 4) &&
+    o.said.every((x) => x >= -1 && x <= 3)
   );
 }
 

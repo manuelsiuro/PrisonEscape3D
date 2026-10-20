@@ -5,6 +5,7 @@ import { resetGames } from './games';
 import { resetPastimes } from './pastimes';
 import { resetLong } from './long';
 import { resetTeam } from './team';
+import { resetNights } from './nights';
 import { resetCrew } from './crew';
 import { inmateName } from '../ui/social';
 import { itemNumber } from '../content/items';
@@ -136,6 +137,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   resetPastimes();
   resetLong();
   resetTeam();
+  resetNights();
   resetCrew();
   // No aim carried over from another game (P14).
   cancelThrow();

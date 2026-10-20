@@ -42,7 +42,7 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
@@ -221,7 +221,7 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // The day (P17): tomorrow's inspection, drill or food fight (the plan is drawn ahead: true), and tonight's storm's first power cut still to come.
   const plan = today(sim);
   const next = planOf(sim, plan.day + 1);
-  const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : next.event === 'delivery' ? 'nextDelivery' : next.event === 'visiting' ? 'nextVisiting' : next.event === 'sports' ? 'nextSports' : null;
+  const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : next.event === 'delivery' ? 'nextDelivery' : next.event === 'visiting' ? 'nextVisiting' : next.event === 'sports' ? 'nextSports' : next.event === 'talent' ? 'nextTalent' : next.event === 'quiz' ? 'nextQuiz' : null;
   if (ahead && !sim.prison.rules?.relaxed) out.push({ kind: ahead, key: `${ahead}:${next.day}`, n: next.day });
   const m = dayMinute(s.step);
   const cut = plan.outages.find((o) => o > m);
@@ -318,6 +318,8 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   raceNight: ['t1'],
   ratFed: ['inmate'],
   ratHungry: ['inmate'],
+  nextTalent: ['n'],
+  nextQuiz: ['n'],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */

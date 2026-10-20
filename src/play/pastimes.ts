@@ -14,7 +14,8 @@ import { LAYER, MAP_W } from '../sim/world/World';
 import type { PastimesFrame } from '../render/Pastimes';
 import type { BoardView, CheatView, CourtView } from '../ui/pastimes';
 import { inmateName } from '../ui/social';
-import { banner, cheatCard, combatUI, courtCard, itemsUI, matchCard, sound, view } from './context';
+import { banner, cheatCard, combatUI, courtCard, itemsUI, matchCard, sound, stageCard, view } from './context';
+import { lanePress, setLaneFlash } from './nights';
 import { kickKey } from './team';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
@@ -344,6 +345,9 @@ export function wirePastimes() {
   courtCard.onHold = (down) => shootKey(down);
   // (P29: the match's Kick pad.)
   matchCard.onHold = (down) => kickKey(down);
+  // (P30: the stage's lane pads, and their flash from the keys.)
+  stageCard.onLane = (lane) => lanePress(lane);
+  setLaneFlash((lane) => stageCard.flash(lane));
 }
 
 /** Keys for the cards (P27): 1–5 choose cards, Enter lays them, L calls; returns whether the key was theirs. */

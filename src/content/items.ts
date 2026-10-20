@@ -244,10 +244,12 @@ export const ITEMS: readonly ItemDef[] = [
   m('rat_track', false, 12, 'track', 0xe0574a, [], 0x9aa2ad),
   // P29 (team & ink): a homemade tattoo gun (a toothbrush, a battery's motor, a razor blade's needle); each tattoo uses a jar of ink.
   gear('tattoo_gun', 30, 'inkGun', 0x3fb8a8, 0x2b3038),
+  // P30 (stage nights): a guitar for talent night (a plank's body and neck, wire for strings: nothing wrong with it).
+  { ...gear('guitar', 25, 'guitar', 0xc98a4a, 0x5e3a1e), contraband: false },
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
-const HARD = ['glider_frame', 'glider', 'lockpick', 'timber', 'balsa', 'wall_chunk', 'potato', 'plastic_cup', 'lighter', 'battery', 'duct_tape', 'bleach', 'broom', 'mop', 'tool_handle', 'timber_brace', 'fake_wall', 'raft', 'bat', 'spiked_bat', 'baton', 'nunchucks', 'furniture', ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`)];
+const HARD = ['guitar', 'glider_frame', 'glider', 'lockpick', 'timber', 'balsa', 'wall_chunk', 'potato', 'plastic_cup', 'lighter', 'battery', 'duct_tape', 'bleach', 'broom', 'mop', 'tool_handle', 'timber_brace', 'fake_wall', 'raft', 'bat', 'spiked_bat', 'baton', 'nunchucks', 'furniture', ...KEY_ITEM_COLORS.map(([c]) => `key_${c}`)];
 const METAL = ['crowbar', 'sheet_metal', 'metal_file', 'trowel', 'flimsy_shovel', 'light_shovel', 'sturdy_shovel', 'flimsy_pickaxe', 'light_pickaxe', 'sturdy_pickaxe', 'flimsy_cutters', 'light_cutters', 'sturdy_cutters', 'screwdriver', 'powered_screwdriver', 'multitool', 'grappling_hook', 'grapnel', 'plated_outfit', 'meal_tray', 'license_plate', 'alarm_clock'];
 for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud = METAL.includes(d.id) ? 2 : 1;
 

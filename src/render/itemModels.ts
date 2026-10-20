@@ -188,6 +188,15 @@ const SHAPES: Record<string, Shape> = {
     // (A wire from the battery's end down to the handle.)
     box(0.012, 0.05, 0.012, 0xc0392b, -0.02, 0.04, 0.03),
   ],
+  /** A homemade guitar (P30): a plank body with its sound hole, a neck along x, a taped-on head, wire strings down it. */
+  guitar: (c, a) => [
+    box(0.2, 0.04, 0.17, c, -0.12, 0, 0),
+    box(0.11, 0.041, 0.13, c, 0.01, 0, 0),
+    cyl(0.03, 0.043, a, -0.09, 0, 0, 10),
+    box(0.22, 0.03, 0.04, a, 0.17, 0.005, 0),
+    box(0.05, 0.035, 0.06, 0x9aa2ad, 0.3, 0.004, 0),
+    ...[-0.012, 0.012].map((z) => box(0.42, 0.006, 0.004, 0xd8dde3, 0.06, 0.042, z)),
+  ],
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [
     box(0.4, 0.02, 0.28, 0xb07a45),

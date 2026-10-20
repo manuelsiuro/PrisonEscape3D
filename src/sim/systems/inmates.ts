@@ -17,7 +17,7 @@ import { bodyAt, type Body } from './movement';
  * arm-wrestle, a lock being picked, dice thrown; the sim never sets them.) P23: BRAWL, two inmates
  * scrapping (the sim's); LOOKOUT, a lookout on watch (the view's).
  */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;
@@ -192,6 +192,8 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       closeIn(c, m, k, lead, social.pace?.[k] || m.speed + 30, social.gap[k]);
       // (A lookout at his post, P23: facing south, as the camera sees him.)
       if (m.doing === DOING.LOOKOUT && !m.body.moving) m.body.facing = 5;
+      // (P30: on the stage, at the quiz, facing the way the place does.)
+      else if (social.face?.[k] && !m.body.moving) m.body.facing = social.face[k];
       return;
     }
     // Talking to the player: it stands and listens.
@@ -274,8 +276,10 @@ export interface Social {
   doing: readonly number[];
   /** The pace each one led about goes at (P29: a match's players; 0 or missing: a follower's). */
   pace?: readonly number[];
+  /** The way each one led about faces once there (P30: an act on the stage, a contestant; 0 or missing: as it came). */
+  face?: readonly number[];
 }
-const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], pace: [] };
+const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], pace: [], face: [] };
 
 /**
  * Scared of a rat running loose (P20): within FLEE_RANGE, away from the nearest, faster than a

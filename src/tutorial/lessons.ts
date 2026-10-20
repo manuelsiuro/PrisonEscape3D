@@ -1,3 +1,5 @@
+import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
+import { quizOn } from '../sim/systems/quiz';
 import { itemDef, itemNumber } from '../content/items';
 import type { PrisonDef } from '../content/prisons/types';
 import { ROUTINE, routineAt } from '../content/routine';
@@ -833,6 +835,48 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Talent night (P30): the night's acts at Center Perks, then the player's song on the canteen's stage.
+    id: 'talent',
+    icon: 'music',
+    prison: CENTER_PERKS,
+    seed: 81,
+    days: true,
+    setup: (sim) => {
+      sim.state.calendar = [[1, DAY_EVENTS.indexOf('talent'), -1]];
+      // The last act on as it begins, in the canteen a few steps from the stage.
+      const acts = tonight(sim);
+      clockTo(sim, at(19, acts[acts.length - 1].at - 660 - 2));
+      const st = sim.prison.leisure!.stage!;
+      place(sim, st.x - 4, st.z, 1);
+    },
+    steps: [
+      { text: 'lesson.talent.watch', done: (c) => dayMinute(c.sim.state.step) >= turnFrom(tonight(c.sim)), least: 5 },
+      { text: 'lesson.talent.stage', touch: 'lesson.talent.stageTouch', on: (e) => e.type === 'stage' && e.what === 'start', goal: (sim) => stageTile(sim), fail: (c) => (talentOn(c.sim) ? null : 'lesson.talent.late') },
+      { text: 'lesson.talent.play', touch: 'lesson.talent.playTouch', on: (e) => e.type === 'stage' && e.what === 'done', failOn: (e) => (e.type === 'stage' && e.what === 'off' ? 'lesson.talent.off' : null) },
+      { text: 'lesson.talent.over', done: () => true, least: 7 },
+    ],
+  },
+  {
+    // Quiz night (P30): eight questions in Center Perks' library against three inmates.
+    id: 'quiz',
+    icon: 'brain',
+    prison: CENTER_PERKS,
+    seed: 84,
+    days: true,
+    setup: (sim) => {
+      sim.state.calendar = [[1, DAY_EVENTS.indexOf('quiz'), -1]];
+      clockTo(sim, at(19, 1));
+      const q = sim.prison.leisure!.quiz!;
+      place(sim, q.spots[0].x, q.spots[0].z + 0, q.face);
+    },
+    steps: [
+      { text: 'lesson.quiz.join', on: (e) => e.type === 'quiz' && e.what === 'start', goal: (sim) => tile(sim.prison.leisure!.quiz!.spots[0].x, sim.prison.leisure!.quiz!.spots[0].z), fail: (c) => (quizOn(c.sim) ? null : 'lesson.quiz.late') },
+      { text: 'lesson.quiz.answer', touch: 'lesson.quiz.answerTouch', on: (e) => e.type === 'quiz' && (e.what === 'right' || e.what === 'wrong') && e.by === 0, failOn: quizFail },
+      { text: 'lesson.quiz.play', on: (e) => e.type === 'quiz' && (e.what === 'won' || e.what === 'tie' || e.what === 'lost'), failOn: quizFail },
+      { text: 'lesson.quiz.over', done: () => true, least: 7 },
+    ],
+  },
+  {
     // The crew (P23): a friend recruited and posted as lookout by the patrol hall's doorway, whistling as the guard comes by.
     id: 'crew',
     icon: 'users',
@@ -1134,6 +1178,15 @@ function smuggleFail(sim: Sim): Key | null {
 }
 
 /** The football lesson's dead ends: the match off (gone from the pitch, the sirens), a foul, the whistle before a kick. */
+/** The stage's own tile (where the performer stands). */
+const stageTile = (sim: Sim) => {
+  const st = sim.prison.leisure?.stage;
+  return st ? tile(st.x, st.z) : null;
+};
+/** The quiz walked away from or given up. */
+function quizFail(e: SimEvent): Key | null {
+  return e.type === 'quiz' && (e.what === 'off' || e.what === 'quit') ? 'lesson.quiz.off' : null;
+}
 function matchFail(e: SimEvent): Key | null {
   if (e.type !== 'football') return null;
   if (e.what === 'off') return 'lesson.football.off';
@@ -1165,7 +1218,7 @@ function inkOff(e: SimEvent): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'crew'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 

@@ -8,6 +8,8 @@
  * screen show exactly what the rules will judge. Nothing here happens without the player
  * asking, so the escape bots' runs are untouched.
  */
+import { keepShow } from './talent';
+import { keepQuiz } from './quiz';
 import { itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { BAR, BOUT_ENERGY, BOUT_STEPS, CROWD_OPINION, CROWD_RANGE, DICE_HEAT, DRAIN_BASE, GAME_BLOCKS, GAME_OPINION, GAMES_A_DAY, PICK_HIT_NOISE, PICK_MISS_NOISE, PICK_SPEED, PICK_ZONE, PICKED_STEPS, PINS, PLAY_OPINION, PUSH_BASE, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES, SURGE_ODDS, WIN_OPINION } from '../../content/games';
@@ -86,7 +88,7 @@ export function eyesOn(s: Pick<SimState, 'guards'>, at: number): boolean {
 }
 
 /** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout, the player at the old-timer's board; P29: a match, a tattoo sitting). */
-export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board' | 'match' | 'ink'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated || !!s.match || !!s.ink;
+export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board' | 'match' | 'ink' | 'show' | 'quiz'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated || !!s.match || !!s.ink || !!s.show || !!s.quiz;
 
 // ------------------------------------------------------------------ dice
 
@@ -434,4 +436,7 @@ export function games(sim: SimContext) {
   keepCheckers(sim);
   keepMatch(sim);
   keepInk(sim);
+  // Stage nights (P30).
+  keepShow(sim);
+  keepQuiz(sim);
 }

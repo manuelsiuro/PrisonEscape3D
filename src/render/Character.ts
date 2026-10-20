@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { DOING } from '../sim/systems/inmates';
-import { box, kitMaterial, merge, type Part } from './kit';
+import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 
 export interface Look {
   outfit: number;
@@ -253,6 +253,25 @@ const DROPS = 10;
 /** A box w×h×d centered on (x, y, z), painted. */
 const part = (w: number, h: number, d: number, color: number, x: number, y: number, z: number): Part => box(w, h, d, color, x, y - h / 2, z);
 
+/** Talent night's instruments (P30), built once and shared: two upturned buckets, a drumstick, a guitar (in the body's terms). */
+let made: { buckets: THREE.BufferGeometry; stick: THREE.BufferGeometry; guitar: THREE.BufferGeometry } | null = null;
+function instruments() {
+  if (made) return made;
+  const bucket = (x: number, h: number) => [cyl(0.13, h, 0x3d78c4, x, 0, 0.42, 12), cyl(0.135, 0.025, 0x2c5a96, x, h - 0.02, 0.42, 12), cyl(0.12, 0.004, 0xe8eef5, x, h, 0.42, 12)];
+  const g = new THREE.BoxGeometry(0.025, 0.025, 0.26);
+  g.translate(0, 0, 0.11);
+  const neck = new THREE.BoxGeometry(0.06, 0.035, 0.42);
+  neck.rotateY(-Math.PI / 2 + 0.35);
+  neck.rotateZ(-0.5);
+  neck.translate(-0.22, 0.6, 0.24);
+  made = {
+    buckets: merge([...bucket(-0.14, 0.3), ...bucket(0.15, 0.25)]),
+    stick: merge([paint(g, 0xd9b27a)], false),
+    guitar: merge([box(0.3, 0.26, 0.07, 0xc98a4a, 0.04, 0.38, 0.22), box(0.22, 0.12, 0.071, 0xb37538, 0.0, 0.56, 0.22), box(0.09, 0.09, 0.075, 0x3a2414, 0.04, 0.42, 0.22), paint(neck, 0x5e3a1e), box(0.08, 0.06, 0.05, 0x3a2414, -0.42, 0.75, 0.25)], false),
+  };
+  return made;
+}
+
 /** A colour a share of the way to another (stubble: skin toward the hair). */
 const mix = (a: number, b: number, k: number) => new THREE.Color(a).lerp(new THREE.Color(b), k).getHex();
 
@@ -478,6 +497,10 @@ export class Character {
   /** Props that come and go with what the character does. */
   private readonly blanket: THREE.Mesh;
   private readonly tray: THREE.Mesh;
+  /** P30: talent night's instruments: two upturned buckets and the sticks in the hands, or a guitar slung in front. */
+  private readonly buckets: THREE.Mesh;
+  private readonly sticks: THREE.Mesh[] = [];
+  private readonly guitar: THREE.Mesh;
   private readonly water = new THREE.Group();
   private readonly zs: THREE.Sprite[] = [];
   private readonly stars: THREE.Sprite[] = [];
@@ -711,6 +734,20 @@ export class Character {
     );
     this.tray.visible = false;
     this.root.add(this.tray);
+    // On the stage (P30): bucket drums before the knees, sticks in the fists; a guitar across the front.
+    this.buckets = new THREE.Mesh(instruments().buckets, kitMaterial);
+    this.buckets.visible = false;
+    this.root.add(this.buckets);
+    for (const arm of [this.armL, this.armR]) {
+      const st = new THREE.Mesh(instruments().stick, kitMaterial);
+      st.position.set(0, -0.42, 0.04);
+      st.visible = false;
+      this.sticks.push(st);
+      arm.add(st);
+    }
+    this.guitar = new THREE.Mesh(instruments().guitar, kitMaterial);
+    this.guitar.visible = false;
+    this.body.add(this.guitar);
     // Under a shower head: falling water.
     for (let k = 0; k < DROPS; k++) {
       const d = new THREE.Mesh(dropGeometry, dropMaterial);
@@ -1084,6 +1121,32 @@ export class Character {
       armRz -= 0.15 * ga;
       armLz += 0.15 * ga;
       bob -= 0.02 * ga;
+    } else if (doing === DOING.DRUMS) {
+      // Bucket drums (P30): both sticks down onto the buckets in turn, on the beat; the head nods along.
+      const ga = this.act;
+      const beat = motion ? Math.sin(t * 13) : 0;
+      armRx += (-0.62 + beat * 0.3) * ga;
+      armLx += (-0.62 - beat * 0.3) * ga;
+      armRz -= 0.12 * ga;
+      armLz += 0.12 * ga;
+      legL -= 0.25 * ga;
+      legR -= 0.25 * ga;
+      bob += (motion ? Math.abs(Math.sin(t * 6.5)) * 0.02 : 0) * ga - 0.06 * ga;
+    } else if (doing === DOING.GUITAR) {
+      // A guitar (P30): the left hand up the neck, the right strumming across the body.
+      const ga = this.act;
+      const strum = motion ? Math.sin(t * 12) * 0.16 : 0;
+      armLx += -0.95 * ga;
+      armLz += 0.42 * ga;
+      armRx += (-0.55 + strum) * ga;
+      armRz -= 0.42 * ga;
+      bob += (motion ? Math.abs(Math.sin(t * 4)) * 0.015 : 0) * ga;
+    } else if (doing === DOING.QUIZ) {
+      // At the buzzer (P30): the right hand ready over it, the left at the side, a little forward.
+      const ga = this.act;
+      armRx += -0.62 * ga;
+      armRz -= 0.1 * ga;
+      armLx += -0.15 * ga;
     } else if (doing === DOING.FOOTBALL && !moving) {
       // A kick wound up (P29): the kicking leg back, the arms out for balance.
       const ga = this.act;
@@ -1225,6 +1288,10 @@ export class Character {
       st.position.set(Math.cos(a2) * 0.32, 0.55 + Math.sin(a2 * 2) * 0.04, -0.95 + Math.sin(a2) * 0.32);
     });
     this.tray.visible = doing === DOING.EAT && this.act > 0.3;
+    const drums = doing === DOING.DRUMS && this.act > 0.3;
+    this.buckets.visible = drums;
+    for (const st of this.sticks) st.visible = drums;
+    this.guitar.visible = doing === DOING.GUITAR && this.act > 0.3;
     this.water.visible = this.wet && doing === DOING.SHOWER && this.act > 0.2;
     if (this.water.visible) {
       for (const d of this.water.children) {

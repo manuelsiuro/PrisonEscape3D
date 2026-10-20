@@ -64,6 +64,11 @@ export const EXT = {
   /** Team & ink (P29): a football kick, Space held (b = 0) and let go (b = 1); a tattoo sitting given up (b = 0). */
   KICK: 11,
   INK: 12,
+  /** Stage nights (P30): the player's act on talent night (b = the song, c = the instrument), a press in a lane (b = 0–2); quiz night joined (b = 0) or given up (b = 1), an answer (b = the choice, 0–3). */
+  STAGE: 13,
+  NOTE: 14,
+  QUIZ: 15,
+  ANSWER: 16,
 } as const;
 
 /**

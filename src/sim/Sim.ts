@@ -290,8 +290,9 @@ export class Sim {
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
     const from = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
     // (P29: tattooing, the moves steer the needle; being inked, the player keeps still.)
-    const inking = !!s.ink;
-    if (inking) steerNeedle(s, dirOf(cmd));
+    // (P30: on the stage, the player keeps still too: the keys play the lanes.)
+    const inking = !!s.ink || !!s.show;
+    if (s.ink) steerNeedle(s, dirOf(cmd));
     // (P28: tipsy, at TIPSY_PACE of the pace.)
     const pace = s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd);
     walk(w, s.player, s.sleeping || inking ? 0 : dirOf(cmd), tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);

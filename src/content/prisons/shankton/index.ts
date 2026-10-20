@@ -1,5 +1,6 @@
 import { court } from '../../leisure';
 import { pitch } from '../../team';
+import { quizAt, stage } from '../../nights';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
@@ -369,5 +370,5 @@ export const SHANKTON: PrisonDef = {
   // yard inside the shell; visitors sit in the canteen.
   smuggling: { fixer: 6, drop: [25, 30, 38, 34], visits: [24, 9, 39, 22] },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(39, 31, 9), oldTimer: 7, garden: { x: 25, z: 28, w: 3, d: 2 }, race: { x: 15, z: 12, dir: 5, len: 6 }, pitch: pitch(24, 30, 11, 5) },
+  leisure: { hoop: court(39, 31, 9), oldTimer: 7, garden: { x: 25, z: 28, w: 3, d: 2 }, race: { x: 15, z: 12, dir: 5, len: 6 }, pitch: pitch(24, 30, 11, 5), stage: stage(35, 9, 5), quiz: quizAt(5, [25, 42], [26, 42], [28, 42], [29, 42]) },
 };

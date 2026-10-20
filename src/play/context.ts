@@ -1,3 +1,4 @@
+import { QuizCard, StageCard } from '../ui/nights';
 import * as THREE from 'three';
 import { setHaptics } from '../app/haptics';
 import { TIERS, tierFor } from '../app/quality';
@@ -134,6 +135,9 @@ export const raceCard = new RaceCard(sendOp, click);
 /** Team & ink (P29): the match's card, the tattoo's. */
 export const matchCard = new MatchCard();
 export const inkCard = new InkCard(sendOp, click);
+/** Stage nights (P30): talent night's card, quiz night's. */
+export const stageCard = new StageCard(sendOp, click);
+export const quizCard = new QuizCard(sendOp, click);
 /** The crew (P23): their panel, and the chips over their heads. */
 export const crewPanel = new CrewPanel(click);
 export const crewChips = new CrewChips();

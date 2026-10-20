@@ -31,6 +31,8 @@ import { diceRival, gamesDoing, gamesFrameOf } from './games';
 import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
 import { longFrameOf, petOnTrack } from './long';
 import { teamFrameOf } from './team';
+import { nightsFrameOf } from './nights';
+import { INSTRUMENT } from '../content/nights';
 import { sightFor } from '../sim/systems/football';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
@@ -167,6 +169,7 @@ const frameData: Frame = {
   pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
   long: null,
   team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },
+  nights: { stage: null, quiz: null, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
 };
@@ -428,6 +431,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   }
   // (P29: a kick wound up; at work on a tattoo, or being inked, facing the other.)
   if (!seated && st.match?.hold) f.doing = DOING.FOOTBALL;
+  // (P30: on the stage, the instrument played; at the quiz, the buzzer, facing the way the places do.)
+  if (!seated && st.show) f.doing = st.show.inst === INSTRUMENT.GUITAR ? DOING.GUITAR : DOING.DRUMS;
+  if (!seated && st.quiz) {
+    f.doing = DOING.QUIZ;
+    const qf = sim.world.def.leisure?.quiz?.face ?? 5;
+    if (!p.moving) f.facing = qf === 1 ? Math.PI / 2 : qf === 9 ? -Math.PI / 2 : qf === 13 ? Math.PI : 0;
+  }
   if (!seated && st.ink) {
     f.doing = DOING.TATTOO;
     const m = st.inmates[st.ink.who];
@@ -509,6 +519,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.long = longFrameOf(sim, a);
   // Team & ink (P29): the pitch, the ball.
   f.team = teamFrameOf(sim, a);
+  // Stage nights (P30): the stage set up, the buzzers.
+  f.nights = nightsFrameOf(sim);
   f.inked = st.inked;
   return f;
 }

@@ -37,6 +37,8 @@ import { SHOP_SLOTS } from '../../content/loot';
 import { buyStaple, sell } from './pantry';
 import { matchTargets, startMatch } from './football';
 import { inkPartner, startInk } from './tattoo';
+import { stageTargets } from './talent';
+import { quizTargets } from './quiz';
 import { INK_GAP } from '../../content/team';
 
 /** A blow of the player's this recent (steps) knocked the Cheat partner out: their own doing, the game folded. */
@@ -372,8 +374,9 @@ export function socialNow(sim: SimContext): Social {
   const s = sim.state;
   const so = sim.scratch.social;
   const n = s.inmates.length;
-  so.follow.length = so.gap.length = so.work.length = so.doing.length = so.pace.length = sim.scratch.allyFoe.length = n;
+  so.follow.length = so.gap.length = so.work.length = so.doing.length = so.pace.length = so.face.length = sim.scratch.allyFoe.length = n;
   so.pace.fill(0);
+  so.face.fill(0);
   so.follow.fill(null);
   so.gap.fill(0);
   so.doing.fill(0);
@@ -393,6 +396,8 @@ export function socialNow(sim: SimContext): Social {
   // The crew's orders (P23) send some where the player isn't: a post, the drop, the shaft, a brawl.
   const placed = s.followers.length ? crewTargets(sim, so) : 0;
   const about = s.layer === LAYER.GROUND && !sim.away;
+  // Talent night (P30): the act on the stage (wherever the player is).
+  stageTargets(sim, so);
   if (!about) return so;
   // A shootout's partner (P27) keeps near the player at the court.
   const partner = hoopsPartner(s);
@@ -416,6 +421,8 @@ export function socialNow(sim: SimContext): Social {
   }
   // A match's players (P29) where the match wants them (crew or not: it comes first).
   matchTargets(sim, so);
+  // Quiz night (P30): the contestants at their places.
+  quizTargets(sim, so);
   return so;
 }
 

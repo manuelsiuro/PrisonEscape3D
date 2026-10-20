@@ -1,5 +1,6 @@
 import { court } from '../../leisure';
 import { pitch } from '../../team';
+import { quizAt, stage } from '../../nights';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
@@ -340,5 +341,5 @@ export const CENTER_PERKS: PrisonDef = {
     booth: { x: 33, z: 62, face: 13 },
   },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(37, 29, 9), oldTimer: 5, garden: { x: 29, z: 32, w: 3, d: 2 }, race: { x: 10, z: 13, dir: 1, len: 6 }, pitch: pitch(26, 28, 11, 4) },
+  leisure: { hoop: court(37, 29, 9), oldTimer: 5, garden: { x: 29, z: 32, w: 3, d: 2 }, race: { x: 10, z: 13, dir: 1, len: 6 }, pitch: pitch(26, 28, 11, 4), stage: stage(56, 11, 9), quiz: quizAt(13, [17, 34], [18, 34], [20, 34], [21, 34]) },
 };

@@ -1,5 +1,6 @@
 import { court } from '../../leisure';
 import { pitch } from '../../team';
+import { quizAt, stage } from '../../nights';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
 import { L0 } from './L0.map';
@@ -446,5 +447,5 @@ export const IRONGATE: PrisonDef = {
   // (off the ferry) sit in the canteen.
   smuggling: { fixer: 13, drop: [36, 22, 50, 26], visits: [14, 27, 24, 38] },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(8, 24, 1), oldTimer: 4, garden: { x: 44, z: 24, w: 3, d: 2 }, race: { x: 26, z: 15, dir: 1, len: 6 }, pitch: pitch(33, 22, 10, 5) },
+  leisure: { hoop: court(8, 24, 1), oldTimer: 4, garden: { x: 44, z: 24, w: 3, d: 2 }, race: { x: 26, z: 15, dir: 1, len: 6 }, pitch: pitch(33, 22, 10, 5), stage: stage(16, 37, 13), quiz: quizAt(5, [36, 29], [37, 29], [39, 29], [40, 29]) },
 };

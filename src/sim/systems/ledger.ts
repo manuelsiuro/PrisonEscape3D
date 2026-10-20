@@ -5,6 +5,7 @@
  * A game saved before the ledger existed loads PARTIAL: its earlier days are UNKNOWN, and
  * anything that needs the whole run (a clean record, a pacifist) can't be earned in it.
  */
+import { GOODWILL } from '../../content/nights';
 import { itemDef, itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
@@ -147,6 +148,12 @@ export const FEATS = [
   'tattoos',
   'cleanLines',
   'inked',
+  // v2.5 (P30, stage nights): acts played to the end, those placed first, those marked GOODWILL or more; quizzes played out, won.
+  'acts',
+  'actWins',
+  'starActs',
+  'quizzes',
+  'quizWins',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -323,6 +330,19 @@ export function ledger(sim: Sim, x: number, z: number) {
           f[FEAT.tattoos]++;
           if ((e.quality ?? 0) >= CLEAN_LINE) f[FEAT.cleanLines]++;
         } else if (e.what === 'inked') f[FEAT.inked]++;
+        break;
+      case 'stage':
+        if (e.what === 'done') {
+          f[FEAT.acts]++;
+          if (e.place === 0) f[FEAT.actWins]++;
+          if ((e.mark ?? 0) >= GOODWILL) f[FEAT.starActs]++;
+        }
+        break;
+      case 'quiz':
+        if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {
+          f[FEAT.quizzes]++;
+          if (e.what === 'won') f[FEAT.quizWins]++;
+        }
         break;
       case 'pick':
         if (e.what === 'open') f[FEAT.locksPicked]++;

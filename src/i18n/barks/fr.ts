@@ -1989,6 +1989,16 @@ export const frBarks: Barks = {
     "Bats {inmate} aux dames et le vieux se met à causer.",
     "{inmate} ne perd jamais aux dames. Enfin. Presque jamais.",
   ],
+  "go.nextTalent": [
+    "Soirée des talents le jour {n}. Je fais mon solo de batterie.",
+    "Le jour {n}, soirée des talents. Prends des bouchons d’oreilles.",
+    "Psst : soirée des talents le jour {n}. Le directeur craque pour un bon numéro.",
+  ],
+  "go.nextQuiz": [
+    "Soirée quiz le jour {n}. Révise ton Alcatraz.",
+    "Le jour {n}, soirée quiz. Trente dollars pour les cerveaux.",
+    "Psst : soirée quiz le jour {n}. La moitié des questions parlent d’ici.",
+  ],
   "go.nextSports": [
     "Journée sportive le jour {n}. Commence les pompes.",
     "Le jour {n}, c’est la journée sportive. Trois victoires et y a un prix.",

@@ -1991,6 +1991,16 @@ export const enBarks = {
     "Beat {inmate} at checkers and the old-timer talks.",
     "{inmate} never loses at checkers. Well. Almost never.",
   ],
+  "go.nextTalent": [
+    "Talent night on day {n}. I'm doing my drum solo.",
+    "Day {n}: talent night. Bring earplugs.",
+    "Psst: talent night's day {n}. The warden goes soft for a good act.",
+  ],
+  "go.nextQuiz": [
+    "Quiz night on day {n}. Bone up on your Alcatraz.",
+    "Day {n}'s quiz night. Thirty bucks for the brains.",
+    "Psst: quiz night, day {n}. Half the questions are about this place.",
+  ],
   "go.nextSports": [
     "Sports day on day {n}. Start doing push-ups.",
     "Day {n}'s sports day. Three wins and there's a prize.",
