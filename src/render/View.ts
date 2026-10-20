@@ -41,6 +41,7 @@ import { SmuggleView, type SmuggleFrame } from './Smuggling';
 import { GamesView, type GamesFrame } from './Games';
 import { PastimesView, type PastimesFrame } from './Pastimes';
 import { LongView, type LongFrame } from './Long';
+import { TeamView, type TeamFrame } from './Team';
 import { handlersOf } from '../sim/systems/k9';
 
 /** The old-timer's hair (P27): white with age. */
@@ -127,6 +128,10 @@ export interface Frame {
   pastimes: PastimesFrame;
   /** Long games (P28): the garden, the rat track and its racers, the pet's laps, tipsy (null: none yet). */
   long: LongFrame | null;
+  /** Team & ink (P29): the pitch and the ball. */
+  team: TeamFrame;
+  /** P29: the designs inked on the player's arms. */
+  inked: readonly number[];
   /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
   getaway: GetawayFrame;
 }
@@ -279,6 +284,8 @@ export class View {
   private world: World | null = null;
   player = new Character(INMATE_LOOK);
   private outfit = -1;
+  /** The tattoos inked in the prison the player is drawn with (P29). */
+  private inkedShown = '';
   /** Your prisoner (P16): how the player looks (null: the plain jumpsuit). */
   private prisoner: Prisoner | null = null;
   /** The Intake's preview (P16): your prisoner standing in their cell behind the title, turned by `previewTurn`. */
@@ -329,6 +336,7 @@ export class View {
   private readonly gamesView = new GamesView();
   private readonly pastimesView = new PastimesView();
   private readonly longView = new LongView();
+  private readonly teamView = new TeamView();
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
   /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
@@ -448,7 +456,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -926,11 +934,13 @@ export class View {
   }
 
   /** Dresses the player: your prisoner in the outfit (a white vest with none on; the guard cap with the guard's uniform). */
-  private dress(outfit: number) {
-    if (outfit === this.outfit) return;
+  private dress(outfit: number, inked: readonly number[] = []) {
+    const ink = inked.join();
+    if (outfit === this.outfit && ink === this.inkedShown) return;
     this.outfit = outfit;
+    this.inkedShown = ink;
     const old = this.player;
-    this.player = new Character(lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT));
+    this.player = new Character(lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked));
     this.player.root.position.copy(old.root.position);
     this.player.root.rotation.copy(old.root.rotation);
     this.scene.remove(old.root);
@@ -941,7 +951,7 @@ export class View {
   /** Draws a frame of play: the camera follows the player, looking a little ahead. */
   draw(f: Frame, dt: number, time: number) {
     this.noiseFx.group.visible = true;
-    this.dress(f.outfit);
+    this.dress(f.outfit, f.inked);
     // (P24: a glide still higher than the walls keeps the roofs drawn.)
     this.showLayer(this.getaway.aloft ? LAYER.ROOF : f.layer);
     // Damage, grates and tunnels redrawn when the tiles change.
@@ -1215,6 +1225,8 @@ export class View {
     this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
+    // Team & ink (P29): the pitch and the ball (the ground floor, and from the roofs).
+    this.teamView.update(f.team, dt, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
@@ -1334,6 +1346,7 @@ export class View {
     this.gamesView.update(null, 0, false, false);
     this.pastimesView.update(null, 0, 0, 0, false, false);
     this.longView.update(null, 0, false, false);
+    this.teamView.update(null, 0, false);
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;

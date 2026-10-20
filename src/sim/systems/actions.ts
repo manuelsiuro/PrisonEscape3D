@@ -48,6 +48,8 @@ import { drink } from './pruno';
 import { raceOp, trainRat } from './races';
 import { bedTarget, tend } from './garden';
 import { take } from './pantry';
+import { holdKick, releaseKick } from './football';
+import { endInk } from './tattoo';
 
 /** The open container's panel closes (caught, knocked out, climbing, asleep…). */
 export function closeBox(sim: SimContext) {
@@ -213,6 +215,11 @@ export function useItems(sim: SimContext, cmd: number) {
       // Long games (P28): fruit, sugar or seeds from the open furniture; a race night's bet, the pet entered.
       else if (a === EXT.TAKE && s.solitary <= 0) take(sim, argB(cmd));
       else if (a === EXT.RACE && s.solitary <= 0) raceOp(sim, argB(cmd), argC(cmd));
+      // Team & ink (P29): a kick held and let go; a tattoo given up.
+      else if (a === EXT.KICK && s.solitary <= 0) {
+        if (argB(cmd) === 0) holdKick(sim);
+        else releaseKick(sim);
+      } else if (a === EXT.INK) endInk(sim, 'quit');
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));

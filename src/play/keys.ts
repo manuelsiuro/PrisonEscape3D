@@ -12,6 +12,7 @@ import { toggleWait } from './day';
 import { toggleCrew } from './crew';
 import { openObjectives } from './lesson';
 import { pastimeKey, shootKey } from './pastimes';
+import { kickKey } from './team';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -120,6 +121,8 @@ function onKeyDown(e: KeyboardEvent) {
     if (itemsUI.panelOpen || socialOpen()) return;
     // (P27: on a spot at the hoop, Space raises the ball for a shot; let go, it goes.)
     if (shootKey(true)) return;
+    // (P29: in a match, Space held is a kick, let go it goes.)
+    if (kickKey(true)) return;
     tools.held = true;
     usePress();
   }
@@ -143,6 +146,7 @@ export function listenKeys() {
   addEventListener('keyup', (e) => {
     if (e.code === 'Space') {
       shootKey(false);
+      kickKey(false);
       tools.release();
     }
     if (e.code === 'KeyU') tools.releaseUp();

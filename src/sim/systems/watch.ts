@@ -26,6 +26,7 @@ import { DIRT, underMyDesk, WALL_CHUNK } from './structure';
 import { lookingAway } from './ways';
 import { tipsyNow } from './pruno';
 import { underPlant } from './garden';
+import { sightFor } from './football';
 import { TIPSY_HEAT } from '../../content/long';
 
 /** A tipsy player seen again within this long (steps) is the same sighting: no more heat for it. */
@@ -150,7 +151,8 @@ export function afterHours(s: SimState): boolean {
 function inView(sim: SimContext, g: Guard): boolean {
   const s = sim.state;
   const eye = g.body;
-  if (s.layer === LAYER.GROUND) return canSee(sim.world, eye, s.player, sightOf(sim, g));
+  // (P29: a guard watching a match sees what's off the pitch at half his range.)
+  if (s.layer === LAYER.GROUND) return canSee(sim.world, eye, s.player, sightFor(sim, g, s.player.x, s.player.z));
   if (s.layer !== LAYER.ROOF) return false;
   const t = tileOfBody(eye);
   return TILE_INFO[sim.world.ground.kind[t.z * MAP_W + t.x]].outdoor && canSee(sim.world, eye, s.player, sightOf(sim, g), false);
@@ -177,7 +179,7 @@ function noticeDamage(sim: SimContext): boolean {
     for (const [fx, fz] of FACES) {
       point.x = cx + fx;
       point.z = cz + fz;
-      if (watchers.some((g) => canSee(w, g.body, point, sightOf(sim, g)))) return true;
+      if (watchers.some((g) => canSee(w, g.body, point, sightFor(sim, g, point.x, point.z)))) return true;
     }
     return false;
   };

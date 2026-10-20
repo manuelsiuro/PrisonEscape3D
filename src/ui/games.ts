@@ -2,6 +2,7 @@ import { currentLang, t, type Key } from '../i18n';
 import { OP, TALK } from '../sim/command';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
+import { DESIGNS } from '../content/team';
 
 type Send = (op: number, a?: number, b?: number) => void;
 
@@ -53,6 +54,11 @@ export interface GamesView {
   court: boolean;
   /** P27: the old-timer's board (null: this isn't him): he'll play now (else `why`), a game set up, over, or none. */
   elder: { open: boolean; why: string; game: 'none' | 'on' | 'over'; won: number } | null;
+  /** P29: football on the pitch (null: no pitch): he'll play now (else `why`). */
+  football: { open: boolean; why: string } | null;
+  /** P29: a tattoo gun in the hotbar (null: none): a design for him (else `why`), one from him on the player's arm (else `mineWhy`), those inked already; a guard sees it (`heat`). */
+  ink: { why: string; designs: Array<{ k: number; price: number }>; mineWhy: string; inked: number[] } | null;
+  inkHeat: number;
 }
 
 const PIPS: Record<number, ReadonlyArray<readonly [number, number]>> = {
@@ -133,10 +139,28 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
   const elder = e
     ? `<div class="bribe-row elder-row"><span class="bribe-text"><b>${t('checkers.name')}</b><small>${esc(!e.open ? e.why : e.game === 'on' ? t('checkers.onNote') : t('checkers.note', { name: v.name }))}</small></span><button class="big-btn ${e.open ? 'primary' : 'ghost'} small" data-act="${TALK.CHECKERS}" data-arg="1" ${e.open ? '' : 'disabled'} aria-label="${esc(t(e.game === 'on' ? 'checkers.resumeAria' : 'checkers.playAria', { name: v.name }))}">${icon('checkers', 16)}<span>${t(e.game === 'on' ? 'checkers.resume' : 'checkers.play')}</span></button></div>`
     : '';
-  return `<section class="talk-games">${label}${sports}${result}${why}${elder}
+  // P29: a match he captains; a tattoo for him (its price), one from him (on the player's arm).
+  const f = v.football;
+  const football = f
+    ? `<div class="bribe-row"><span class="bribe-text"><b>${t('football.name')}</b><small>${esc(f.why)}</small></span><button class="big-btn ${f.open ? 'primary' : 'ghost'} small" data-act="${TALK.FOOTBALL}" ${f.open ? '' : 'disabled'} aria-label="${esc(t('football.goAria', { name: v.name }))}">${icon('ball', 16)}<span>${t('football.go')}</span></button></div>`
+    : '';
+  const ink = v.ink;
+  const designName = (k: number) => t(`design.${DESIGNS[k].id}` as Key);
+  const tattoo = ink
+    ? `<div class="bribe-row ink-row"><span class="bribe-text"><b>${t('ink.name')}</b><small>${esc(ink.why || t('ink.note'))}</small></span><div class="stake-row">${ink.designs.map((d) => `<button class="cash-btn stake design" data-act="${TALK.TATTOO}" data-arg="${d.k}" ${ink.why ? 'disabled' : ''} aria-label="${esc(t('ink.forAria', { design: designName(d.k), n: d.price, name: v.name }))}">${designIcon(d.k)}<span>$${d.price}</span></button>`).join('')}</div></div>
+      <div class="bribe-row ink-row"><span class="bribe-text"><b>${t('ink.mine')}</b><small>${esc(ink.mineWhy || t('ink.mineOffer', { name: v.name }))}</small></span><div class="stake-row">${ink.designs.map((d) => `<button class="cash-btn stake design" data-act="${TALK.INK_ME}" data-arg="${d.k}" ${ink.mineWhy || ink.inked.includes(d.k) ? 'disabled' : ''} aria-label="${esc(t('ink.mineAria', { design: designName(d.k), name: v.name }))}">${designIcon(d.k)}<span>${esc(designName(d.k))}</span></button>`).join('')}</div></div>${v.inkHeat ? `<p class="talk-note games-warn">${icon('eye', 13)}<span>${t('ink.seenWarn', { n: v.inkHeat })}</span></p>` : ''}`
+    : '';
+  return `<section class="talk-games">${label}${sports}${result}${why}${elder}${football}${tattoo}
     <div class="bribe-row"><span class="bribe-text"><b>${t('games.dice')}</b><small>${t('games.diceNote')}</small></span><div class="stake-row">${stakes}</div></div>
     <div class="bribe-row"><span class="bribe-text"><b>${t('cheat.name')}</b><small>${t('cheat.note')}</small></span><div class="stake-row">${cheatStakes}</div></div>${warn}
     <div class="bribe-row"><span class="bribe-text"><b>${t('games.wrestle')}</b><small>${esc(armNote)}</small></span><button class="big-btn ${armOk ? 'primary' : 'ghost'} small" data-act="${TALK.WRESTLE}" ${armOk ? '' : 'disabled'}>${icon('arm', 16)}<span>${t('games.wrestleGo')}</span></button></div>${hoops}</section>`;
+}
+
+/** A tattoo design as a small picture (its path in its ink). */
+function designIcon(k: number): string {
+  const d = DESIGNS[k];
+  const pts = d.path.map(([x, y]) => `${(x / 1000) * 20 + 2},${(y / 1000) * 20 + 2}`).join(' ');
+  return `<svg class="design-ic" viewBox="0 0 24 24" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="#${d.color.toString(16).padStart(6, '0')}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
 
 /** A die just thrown (its tumble still playing in the picture): the panel's face tumbles in too. */

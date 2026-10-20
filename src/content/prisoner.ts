@@ -82,6 +82,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   c('star', 'tattoo', 0x2f4f6f, 3, true),
   c('swallow', 'tattoo', 0x2f4f6f, 4, true),
   c('flame', 'tattoo', 0xe2601c, 5, true),
+  // P29: the parlour's designs.
+  c('skullInk', 'tattoo', 0x2b3038, 6, true),
+  c('eagleInk', 'tattoo', 0x6a4a2a, 7, true),
   // Jumpsuit trims: cuffs, collar and a stripe, in the orange family.
   c('noTrim', 'trim', 0, 0),
   c('amber', 'trim', 0xffb000, 1, true),

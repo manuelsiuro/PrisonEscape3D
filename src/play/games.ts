@@ -1,3 +1,4 @@
+import { footballOffer, inkHeatNow, inkOffer } from './team';
 import { buzz } from '../app/haptics';
 import { BAR, BOUT_STEPS, CROWD_OPINION, DICE_HEAT, GAME_OPINION, GAMES_A_DAY, PICK_MISS_NOISE, PICK_SPEED, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES } from '../content/games';
 import { KEY_ITEM_COLORS } from '../content/items';
@@ -200,7 +201,7 @@ export function announceGames(sim: Sim, e: SimEvent) {
 
 // ------------------------------------------------------------------ the talk panel's games
 
-const gamesView: GamesView = { id: 0, open: true, why: '', left: 0, stakes: [], seen: false, heat: DICE_HEAT, dice: null, show: null, arm: 'even', tired: false, energy: BOUT_ENERGY, sports: null, name: '', hasCourt: false, court: false, elder: null };
+const gamesView: GamesView = { id: 0, open: true, why: '', left: 0, stakes: [], seen: false, heat: DICE_HEAT, dice: null, show: null, arm: 'even', tired: false, energy: BOUT_ENERGY, sports: null, name: '', hasCourt: false, court: false, elder: null, football: null, ink: null, inkHeat: 0 };
 
 /** The games on offer with the inmate the player is talking to (null for a guard, or nobody). */
 export function gamesOffer(sim: Sim): GamesView | null {
@@ -231,6 +232,10 @@ export function gamesOffer(sim: Sim): GamesView | null {
   v.hasCourt = !!courtOf(sim);
   v.court = v.hasCourt && atCourt(sim, who);
   v.elder = elderOffer(sim, who);
+  // P29: football at the pitch, the tattoo parlour.
+  v.football = footballOffer(sim, who);
+  v.ink = inkOffer(sim, who);
+  v.inkHeat = v.ink ? inkHeatNow(sim) : 0;
   return v;
 }
 

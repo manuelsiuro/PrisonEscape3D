@@ -35,6 +35,8 @@ export interface Look {
   tattoo?: number;
   tattooColor?: number;
   trim?: number;
+  /** P29: tattoos inked in the prison ([shape, colour] each, in order): the left forearm's front, its outer side, the right forearm's outer side. */
+  inked?: ReadonlyArray<readonly [number, number]>;
 }
 
 /** The orange jumpsuit (tech plan §6.2). */
@@ -354,9 +356,30 @@ function tattooParts(kind: number, color: number): Part[] {
       return [part(0.066, 0.016, d, color, 0, -0.27, z), part(0.016, 0.066, d, color, 0, -0.27, z)];
     case 4:
       return [part(0.03, 0.014, d, color, -0.02, -0.262, z), part(0.03, 0.014, d, color, 0.02, -0.262, z), part(0.016, 0.04, d, color, 0, -0.285, z)];
+    case 6:
+      // A skull (P29): the cranium, the jaw, two eyes in skin.
+      return [part(0.052, 0.036, d, color, 0, -0.252, z), part(0.032, 0.02, d, color, 0, -0.284, z), part(0.012, 0.012, d + 0.002, 0xe8c8a8, -0.012, -0.262, z), part(0.012, 0.012, d + 0.002, 0xe8c8a8, 0.012, -0.262, z)];
+    case 7:
+      // An eagle (P29): the wings spread, the body and head between them.
+      return [part(0.07, 0.014, d, color, 0, -0.258, z), part(0.022, 0.012, d, color, -0.036, -0.248, z), part(0.022, 0.012, d, color, 0.036, -0.248, z), part(0.016, 0.044, d, color, 0, -0.272, z), part(0.012, 0.012, d, 0xe8b828, 0, -0.243, z)];
     default:
       return [part(0.042, 0.05, d, 0xe2601c, 0, -0.29, z), part(0.026, 0.03, d, 0xf2a03c, 0, -0.255, z), part(0.012, 0.02, d, 0xffd23f, 0, -0.232, z)];
   }
+}
+
+/** The tattoos inked in the prison (P29) on one arm: on the left, the forearm's front and its outer side; on the right, its outer side (the front is the Intake's). */
+function inkedParts(inked: ReadonlyArray<readonly [number, number]>, left: boolean): Part[] {
+  const out: Part[] = [];
+  const places = left ? [0, 1] : [2];
+  for (const k of places) {
+    const t = inked[k];
+    if (!t) continue;
+    const parts = tattooParts(t[0], t[1]);
+    // (The outer side: turned a quarter about the arm, away from the body.)
+    if (k > 0) for (const p of parts) p.rotateY(left ? -Math.PI / 2 : Math.PI / 2);
+    out.push(...parts);
+  }
+  return out;
 }
 
 /**
@@ -559,6 +582,8 @@ export class Character {
           part(0.14, 0.09, 0.15, skin, 0, -0.38, 0),
           ...(trim !== undefined ? [part(0.156, 0.034, 0.166, trim, 0, -0.187, 0)] : []),
           ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f) : []),
+          // (P29: those inked inside: the left forearm's front and outer side, the right's outer side.)
+          ...inkedParts(look.inked ?? [], x < 0),
         ],
         pivot,
       );
@@ -1050,6 +1075,22 @@ export class Character {
       legL -= 0.18 * ga;
       legR -= 0.18 * ga;
       bob -= 0.035 * ga;
+    } else if (doing === DOING.TATTOO) {
+      // A tattoo (P29): both arms out in front, the working hand buzzing a little.
+      const ga = this.act;
+      const buzz = motion ? Math.sin(t * 40) * 0.03 : 0;
+      armRx += (-1.2 + buzz) * ga;
+      armLx += -1.05 * ga;
+      armRz -= 0.25 * ga;
+      armLz += 0.25 * ga;
+    } else if (doing === DOING.FOOTBALL && !moving) {
+      // A kick wound up (P29): the kicking leg back, the arms out for balance.
+      const ga = this.act;
+      legR += 0.75 * ga;
+      legL -= 0.12 * ga;
+      armLz += 0.45 * ga;
+      armRz -= 0.45 * ga;
+      bob -= 0.03 * ga;
     } else if (doing === DOING.LOOKOUT) {
       // On watch (P23): a hand at the brow, clear of the head (a salute's reach: a rigid arm can't
       // get in front of the face), the other arm a little out; the whole body sweeps from side to

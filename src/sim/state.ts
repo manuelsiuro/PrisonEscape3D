@@ -28,6 +28,9 @@ import type { Board, CheckersNews } from './systems/checkers';
 import type { TrackRefusal } from './systems/races';
 import { bedCount } from './systems/garden';
 import { BETS, CROP, ODDS_MAX, ODDS_MIN, RAT_START_SPEED } from '../content/long';
+import type { FootballNews, Match } from './systems/football';
+import type { Ink } from './systems/tattoo';
+import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
@@ -35,7 +38,7 @@ import { containersOf } from './world/containers';
 import { LAYER, type World } from './world/World';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
 export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider'] as const;
@@ -126,7 +129,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -272,6 +275,16 @@ export type SimEvent =
   | { type: 'garden'; what: GardenNews; bed: number; crop?: number; n?: number; why?: 'watered' }
   | { type: 'track'; what: 'trained' | 'refused'; speed?: number; gain?: number; item?: number; why?: TrackRefusal }
   | { type: 'race'; what: RaceNews; lane?: number; stake?: number; odds?: number; order?: number[]; won?: number; purse?: number }
+  /**
+   * P29 (football.ts, tattoo.ts): a match begun (the `team`), its whistle, a goal (`mine` the
+   * player's side's, `by` the scorer: an inmate, -1 the player; the `score`), play on again, a
+   * kick of the player's (its `power`) or one at the air, and its end (won with the `crowd`, `spd`
+   * and sports day's `wins`; lost, drawn, off, or a foul and the `guards` it drew; `scored` the
+   * player's own goals); a tattoo begun, traced (its `quality`, the `pay`, the opinion `gain`),
+   * given up or off, or inked on the player's arm (`mine`).
+   */
+  | { type: 'football'; what: FootballNews; who?: number; team?: number[]; mine?: boolean; by?: number; score?: number[]; power?: number; crowd?: number; spd?: number; wins?: number; guards?: number[]; scored?: number }
+  | { type: 'tattoo'; what: 'start' | 'done' | 'quit' | 'off' | 'inked'; who: number; design: number; mine: boolean; quality?: number; pay?: number; gain?: number }
   | ItemEvent;
 
 /** What pruno did (P28, the 'pruno' event). */
@@ -312,7 +325,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -528,6 +541,13 @@ export interface SimState {
   tipsy: number[];
   plots: number[][];
   race: number[];
+  /**
+   * P29: a football match under way (football.ts), null none; a tattoo sitting (tattoo.ts), null
+   * none; the designs on the player's arms (DESIGNS places, in the order inked).
+   */
+  match: Match | null;
+  ink: Ink | null;
+  inked: number[];
 }
 
 export interface Snapshot {
@@ -659,6 +679,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     tipsy: [],
     plots: [],
     race: [],
+    match: null,
+    ink: null,
+    inked: [],
   };
 }
 
@@ -785,10 +808,42 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!(Array.isArray(s.race) && (s.race.length === 0 || (ints(s.race, 8) && raceOk(s.race))))) s.race = [];
   // (The pet rat's racing form, P28: a rat tamed before it, at the start.)
   for (const r of s.rats) if (!r.wild) Object.assign(r, { speed: Number.isInteger(r.speed) ? Math.max(0, Math.min(100, r.speed!)) : RAT_START_SPEED, fed: Number.isInteger(r.fed) ? r.fed : 0, lap: Number.isInteger(r.lap) ? r.lap : 0 });
+  // P29: a match or a sitting as they can be (else over), the designs on the player's arms.
+  if (!matchOk(s.match, n)) s.match = null;
+  if (!inkOk(s.ink, n)) s.ink = null;
+  if (!(Array.isArray(s.inked) && s.inked.length <= 3 && s.inked.every((d, k, all) => Number.isInteger(d) && d >= 0 && d < DESIGNS.length && all.indexOf(d) === k))) s.inked = [];
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
   return s;
+}
+
+/** A match as a save holds it (P29): five different inmates, its numbers whole. */
+function matchOk(o: Match | null, n: number): boolean {
+  if (o === null) return true;
+  if (!o || typeof o !== 'object') return false;
+  const int = (x: unknown) => Number.isInteger(x);
+  const ints = (v: unknown, k: number) => Array.isArray(v) && v.length === k && v.every(int);
+  return (
+    int(o.who) &&
+    ints(o.team, 5) &&
+    o.team.every((k, i, all) => k >= 0 && k < n && all.indexOf(k) === i) &&
+    o.team[2] === o.who &&
+    [o.from, o.at, o.last, o.pause, o.hold, o.scored].every(int) &&
+    ints(o.goals, 2) &&
+    o.goals.every((g) => g >= 0) &&
+    ints(o.ball, 4) &&
+    ints(o.cool, 5) &&
+    o.last >= -2 &&
+    o.last < 5
+  );
+}
+
+/** A tattoo sitting as a save holds it (P29). */
+function inkOk(o: Ink | null, n: number): boolean {
+  if (o === null) return true;
+  if (!o || typeof o !== 'object') return false;
+  return [o.who, o.design, o.k, o.nx, o.nz, o.err, o.mine, o.seen].every((x) => Number.isInteger(x)) && o.who >= 0 && o.who < n && o.design >= 0 && o.design < DESIGNS.length && o.k >= 0 && o.err >= 0 && [o.mine, o.seen].every((x) => x === 0 || x === 1) && o.nx >= 0 && o.nx <= 1000 && o.nz >= 0 && o.nz <= 1000;
 }
 
 /** A hand of Cheat as a save holds it (P27): with someone, at a stake, its chips and cards as they can be. */

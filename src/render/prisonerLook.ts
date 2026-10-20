@@ -1,5 +1,6 @@
 import { cosmetic, DEFAULT_PRISONER, type LookPart, type Prisoner } from '../content/prisoner';
 import { INMATE_LOOK, type Look } from './Character';
+import { DESIGNS } from '../content/team';
 
 /** The guards' uniform colours (Character.guardLook): worn in disguise, the cap comes with them. */
 const GUARD_TROUSERS = 0x1f2c44;
@@ -11,7 +12,7 @@ const GUARD_CAP = 0x1b2638;
  * the trim comes off (a disguise looks the part); trims show on the jumpsuit only (`jumpsuit`:
  * the inmate outfit itself, not the padded or plated ones of the same orange).
  */
-export function lookFor(p: Prisoner | null, outfit: number | null, disguise: boolean, jumpsuit = outfit === INMATE_LOOK.outfit): Look {
+export function lookFor(p: Prisoner | null, outfit: number | null, disguise: boolean, jumpsuit = outfit === INMATE_LOOK.outfit, inked: readonly number[] = []): Look {
   const pr = p ?? DEFAULT_PRISONER;
   const get = (part: LookPart) => cosmetic(pr.look[part]) ?? cosmetic(DEFAULT_PRISONER.look[part])!;
   const hat = get('hat');
@@ -30,5 +31,7 @@ export function lookFor(p: Prisoner | null, outfit: number | null, disguise: boo
     ...(glasses.shape ? { glasses: glasses.shape, glassesColor: glasses.color } : {}),
     ...(tattoo.shape ? { tattoo: tattoo.shape, tattooColor: tattoo.color } : {}),
     ...(jumpsuit && !disguise && trim.shape ? { trim: trim.color } : {}),
+    // (P29: the tattoos inked in the prison.)
+    ...(inked.length ? { inked: inked.map((k) => [DESIGNS[k].shape, DESIGNS[k].color] as const) } : {}),
   };
 }

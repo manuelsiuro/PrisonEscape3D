@@ -53,6 +53,8 @@ import {
   courtCard,
   boardCard,
   raceCard,
+  matchCard,
+  inkCard,
   vignette,
   view,
   workChips,
@@ -82,6 +84,7 @@ import { cashShown, pickNow, wrestleNow } from './games';
 import { crewChipList, crewPill, crewRows } from './crew';
 import { tipsyNow } from '../sim/systems/pruno';
 import { NO_TAKE, raceNow, takeOffers } from './long';
+import { inkNow, matchNow, teamSounds } from './team';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -223,7 +226,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const fighting = st.lock >= 0 || memo.fighting;
   // (P22: an arm-wrestle and a lock being picked have their own cards, as training has.)
   // (P27: so do a hand of Cheat and the old-timer's board.)
-  const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0 || !!st.cheat || !!st.board?.seated;
+  const training = st.train >= 0 || st.bout.length > 0 || st.pick.length > 0 || !!st.cheat || !!st.board?.seated || !!st.ink;
   tools.update(training ? null : press.toolNow, st.energy, !!(held && itemDef(held).tool) || training, busy || panel, st.health / maxHealth(st.str), fighting);
   // Dig up, in a tunnel (the floor overhead): a new tile takes a new press.
   const up = memo.up;
@@ -259,9 +262,17 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   boardCard.update(boardV);
   courtCard.update(court);
   // Long games (P28): the race card at the track (not over another game's card).
-  const race = busy || panel || cheat || boardV || court || bout || pick ? null : raceNow(sim, a);
+  // Team & ink (P29): the match's card, the tattoo's (the needle's buzz meanwhile).
+  const match = busy ? null : matchNow(sim, a);
+  const inkV = busy ? null : inkNow(sim);
+  matchCard.update(match);
+  inkCard.update(inkV);
+  teamSounds(sim, g.paused || g.over);
+  document.body.classList.toggle('matching', !!match);
+  document.body.classList.toggle('inking', !!inkV);
+  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);
-  document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV);
+  document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);
   // (The race card up: the lesson's card steps aside in landscape; while the race is run, the hotbar too.)
   document.body.classList.toggle('racing', raceShown);

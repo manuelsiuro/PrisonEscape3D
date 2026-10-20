@@ -71,6 +71,8 @@ export const RECIPES: readonly RecipeDef[] = [
   // P28: fruit and sugar in a bag, to ferment; a track for the rat (two magazines' pages taped into a run).
   r('pruno_bag', 20, 'fruit', 'fruit', 'sugar'),
   r('rat_track', 30, 'magazine', 'magazine', 'duct_tape'),
+  // P29: a tattoo gun (the toothbrush the handle, the battery's motor, the razor blade's needle).
+  r('tattoo_gun', 30, 'toothbrush', 'battery', 'razor_blade'),
 ];
 
 /** The item ids an ingredient accepts. */

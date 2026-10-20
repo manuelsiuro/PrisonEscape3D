@@ -242,6 +242,8 @@ export const ITEMS: readonly ItemDef[] = [
   m('fruit_seeds', false, 5, 'packet', 0xd23f6a, ['library', 'staple'], 0xf2d23c),
   m('vegetable', false, 8, 'veg', 0xe8862e, ['garden'], 0x4f8a2e),
   m('rat_track', false, 12, 'track', 0xe0574a, [], 0x9aa2ad),
+  // P29 (team & ink): a homemade tattoo gun (a toothbrush, a battery's motor, a razor blade's needle); each tattoo uses a jar of ink.
+  gear('tattoo_gun', 30, 'inkGun', 0x3fb8a8, 0x2b3038),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */

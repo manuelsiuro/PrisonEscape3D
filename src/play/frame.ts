@@ -22,7 +22,7 @@ import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
 import { press, targets } from './buttons';
 import type { Game } from './game';
 import { coachItems, coachOnce, seenTip } from './tips';
-import { dayMinute, eventOn, fogNow, sightOf, today, weatherNow } from '../sim/systems/calendar';
+import { dayMinute, eventOn, fogNow, today, weatherNow } from '../sim/systems/calendar';
 import { searchMinute } from '../sim/systems/delivery';
 import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
@@ -30,6 +30,8 @@ import { smuggleFrame } from './smuggle';
 import { diceRival, gamesDoing, gamesFrameOf } from './games';
 import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
 import { longFrameOf, petOnTrack } from './long';
+import { teamFrameOf } from './team';
+import { sightFor } from '../sim/systems/football';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
@@ -164,6 +166,8 @@ const frameData: Frame = {
   games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
   pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
   long: null,
+  team: { pitch: null, ball: null },
+  inked: [],
   getaway: { shift: false, waved: false, glide: null },
 };
 /** Contraband in the pockets, weapon or outfit, and no pouch in the hotbar to shield it (what a detector would catch). */
@@ -298,7 +302,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.awayLeft = o.away ? m.bribed - st.step : 0;
     o.stir = m.doze > 0 ? Math.min(1, m.stir / stirSteps(sim.state)) : 0;
     // How far it sees now (P17): the cone is drawn exactly that long.
-    o.range = sightOf(sim, m) / UNIT;
+    // (P29: watching a match, half that for the player off the pitch.)
+    o.range = sightFor(sim, m, st.player.x, st.player.z) / UNIT;
     const chasing = m.mode === GUARD.CHASE;
     o.pace = (chasing ? CHASE_SPEED : m.speed) / WALK_SPEED;
     o.held = chasing ? BATON : 0;
@@ -421,6 +426,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const rim = rimInTiles(sim);
     if (rim) f.facing = Math.atan2(rim.x - f.x, rim.z - f.z);
   }
+  // (P29: a kick wound up; at work on a tattoo, or being inked, facing the other.)
+  if (!seated && st.match?.hold) f.doing = DOING.FOOTBALL;
+  if (!seated && st.ink) {
+    f.doing = DOING.TATTOO;
+    const m = st.inmates[st.ink.who];
+    if (m && (m.body.x !== p.x || m.body.z !== p.z)) f.facing = Math.atan2(m.body.x - p.x, m.body.z - p.z);
+  }
   if (!seated && trainKind === 'treadmill') {
     const tp = sim.world.props[st.train];
     trainAt.x = tp.x + tp.w / 2;
@@ -495,6 +507,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner, partner);
   // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
   f.long = longFrameOf(sim, a);
+  // Team & ink (P29): the pitch, the ball.
+  f.team = teamFrameOf(sim, a);
+  f.inked = st.inked;
   return f;
 }
 

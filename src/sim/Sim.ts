@@ -1,3 +1,4 @@
+import { steerNeedle } from './systems/tattoo';
 import type { PowerUse, PrisonDef } from '../content/prisons/types';
 import { ROUTINE } from '../content/routine';
 import { dirOf, OP, opOf } from './command';
@@ -288,9 +289,12 @@ export class Sim {
     // A step gets the player up off a seat or a bed.
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
     const from = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
+    // (P29: tattooing, the moves steer the needle; being inked, the player keeps still.)
+    const inking = !!s.ink;
+    if (inking) steerNeedle(s, dirOf(cmd));
     // (P28: tipsy, at TIPSY_PACE of the pace.)
     const pace = s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd);
-    walk(w, s.player, s.sleeping ? 0 : dirOf(cmd), tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);
+    walk(w, s.player, s.sleeping || inking ? 0 : dirOf(cmd), tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);
     // Onto a buried mine (P11).
     mines(this);
     wearKeys(this);

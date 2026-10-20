@@ -6,6 +6,7 @@ import { announceSmuggle } from './smuggle';
 import { announceGames } from './games';
 import { announcePastimes } from './pastimes';
 import { announceLong } from './long';
+import { announceTeam } from './team';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
@@ -750,6 +751,11 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'race':
     case 'sold':
       announceLong(sim, e);
+      break;
+    // Team & ink (P29): a match, a tattoo.
+    case 'football':
+    case 'tattoo':
+      announceTeam(sim, e);
       break;
     case 'crew':
       announceCrew(sim, e);

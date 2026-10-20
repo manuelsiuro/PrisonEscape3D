@@ -14,6 +14,8 @@ import { CHASE_HEAT, UNIT } from '../tuning';
 /** P28: ripe pruno (sold), and the odds (tenths) a won bet counts as a long shot from. */
 const PRUNO = itemNumber('pruno');
 const LONG_ODDS = 50;
+/** P29: a tattoo's line counts as clean from this quality. */
+const CLEAN_LINE = 90;
 
 /** The ledger's counters, in `feats` order. Stored as numbers: append only, never renumber. */
 export const FEATS = [
@@ -137,6 +139,14 @@ export const FEATS = [
   'betsWon',
   'longShots',
   'raceWins',
+  // v2.4 (P29, team & ink): matches played to full time, won; the player's goals, matches with three of them; tattoos traced for inmates, those traced cleanly (90+); the player's own.
+  'matches',
+  'matchWins',
+  'goals',
+  'hatTricks',
+  'tattoos',
+  'cleanLines',
+  'inked',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -299,6 +309,20 @@ export function ledger(sim: Sim, x: number, z: number) {
           if (e.won && (e.odds ?? 0) >= LONG_ODDS) f[FEAT.longShots]++;
           if (e.purse) f[FEAT.raceWins]++;
         }
+        break;
+      case 'football':
+        if (e.what === 'goal' && e.mine && e.by === -1) f[FEAT.goals]++;
+        else if (e.what === 'won' || e.what === 'lost' || e.what === 'draw') {
+          f[FEAT.matches]++;
+          if (e.what === 'won') f[FEAT.matchWins]++;
+          if ((e.scored ?? 0) >= 3) f[FEAT.hatTricks]++;
+        }
+        break;
+      case 'tattoo':
+        if (e.what === 'done') {
+          f[FEAT.tattoos]++;
+          if ((e.quality ?? 0) >= CLEAN_LINE) f[FEAT.cleanLines]++;
+        } else if (e.what === 'inked') f[FEAT.inked]++;
         break;
       case 'pick':
         if (e.what === 'open') f[FEAT.locksPicked]++;

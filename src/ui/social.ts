@@ -160,7 +160,7 @@ export class TalkPanel {
     }
     const now = performance.now();
     const shown = gv?.show;
-    const gamesKey = gv ? [gv.id, gv.open, gv.why, gv.left, gv.seen, gv.dice?.mine.join(',') ?? '', shown ? (now < shown.shownAt ? 1 : 2) : 0, shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '', gv.arm, gv.tired, gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '', this.diceMask, gv.stakes.map((x) => x.ok).join(','), gv.court, gv.elder ? `${gv.elder.open}${gv.elder.why}${gv.elder.game}` : ''].join(':') : '';
+    const gamesKey = gv ? [gv.id, gv.open, gv.why, gv.left, gv.seen, gv.dice?.mine.join(',') ?? '', shown ? (now < shown.shownAt ? 1 : 2) : 0, shown ? shown.at.map((a) => (a > 0 && now - a < 450 ? 1 : 0)).join('') : '', gv.arm, gv.tired, gv.sports ? `${gv.sports.wins}:${gv.sports.won}` : '', this.diceMask, gv.stakes.map((x) => x.ok).join(','), gv.court, gv.elder ? `${gv.elder.open}${gv.elder.why}${gv.elder.game}` : '', gv.football ? `${gv.football.open}${gv.football.why}` : '', gv.ink ? `${gv.ink.why}|${gv.ink.mineWhy}|${gv.ink.inked.join()}` : '', gv.inkHeat].join(':') : '';
     // The crew (P23): a follower's orders; everyone's line of work.
     const cv = this.crew(sim, who);
     const spec = specialityOf(sim.world, who, m.cell);

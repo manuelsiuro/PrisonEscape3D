@@ -123,6 +123,7 @@ const P: Record<string, string> = {
   /** An ID card: a photo and two lines (P24, the bluff). */
   idCard: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 10h4.5M14 13.5h3"/>',
   /** A hang glider's wing over its bar (P24). */
+  needle: '<path d="M4 20 9.5 14.5"/><rect x="9" y="5.5" width="5.5" height="9" rx="1.6" transform="rotate(45 11.75 10)"/><path d="M15.5 4.5 19.5 8.5"/><path d="M13.5 2.5 21.5 10.5"/>',
   glider: '<path d="M2 11 12 5l10 6-10-1.6Z"/><path d="M12 9.4V15M9 15h6M12 15l-1.4 4M12 15l1.4 4"/>',
 };
 

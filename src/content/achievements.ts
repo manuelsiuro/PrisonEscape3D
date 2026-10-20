@@ -149,6 +149,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'greenThumb', group: 'skills', icon: 'sprout', run: (r) => f(r, 'harvests') >= 5 },
   { id: 'ratDerby', group: 'skills', icon: 'rat', run: (r) => f(r, 'raceWins') >= 1 },
   { id: 'longShot', group: 'life', icon: 'trophy', run: (r) => f(r, 'longShots') >= 1 },
+  // Team & ink (P29).
+  { id: 'hatTrick', group: 'skills', icon: 'ball', run: (r) => f(r, 'hatTricks') >= 1 },
+  { id: 'teamPlayer', group: 'life', icon: 'users', run: (r) => f(r, 'matchWins') >= 3 },
+  { id: 'steadyHand', group: 'skills', icon: 'needle', gives: 'eagleInk', run: (r) => f(r, 'cleanLines') >= 3 },
+  { id: 'inkedUp', group: 'life', icon: 'needle', gives: 'skullInk', run: (r) => f(r, 'inked') >= 3 },
   // The crew (P23).
   { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
   { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },

@@ -168,6 +168,16 @@ export interface LeisureDef {
   /** P28: the garden plot (a rectangle of beds, a tile each, on open yard soil) and the rat track (its start tile, the way it runs: 1 east, 5 south, 9 west, 13 north, its length in tiles). */
   garden: Plot;
   race: Track;
+  /** P29: the football pitch (open yard floor; its goals' nets in the end tiles' middle two). */
+  pitch: Pitch;
+}
+
+/** A football pitch (P29): from (x, z), w across and d deep; the goals at the ends of the longer side, the field between them (content/team.ts). */
+export interface Pitch {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
 }
 
 /** A garden plot (P28): its beds' tiles, from (x, z), w across and d deep. */

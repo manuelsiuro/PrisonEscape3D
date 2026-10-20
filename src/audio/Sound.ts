@@ -1216,6 +1216,18 @@ export class Sound {
     for (let k = 0; k < 8; k++) this.hiss(0.025, 'bandpass', 3800 + (k % 3) * 400, 4, 0.04 * gain, undefined, k * 0.045);
   }
 
+  /** A football kicked (P29, `power` 0–1): a leather thump. */
+  kick(power = 0.5) {
+    this.tone(150, 70, 0.09, 'sine', 0.12 + 0.1 * power);
+    this.hiss(0.05, 'lowpass', 1400, 0.8, 0.06 + 0.06 * power);
+  }
+
+  /** The tattoo gun at work (P29): a short electric buzz (played again and again while it works). */
+  needle(gain = 1) {
+    this.tone(118, 118, 0.2, 'sawtooth', 0.022 * gain);
+    this.tone(236, 236, 0.2, 'square', 0.007 * gain);
+  }
+
     /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);

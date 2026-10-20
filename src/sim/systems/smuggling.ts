@@ -17,6 +17,7 @@
  * When and where it all happens is pure (`arrival`, `droneMinute`, `dropTile`): what the phone
  * says is what happens, and the gossip can tell it.
  */
+import { sightFor } from './football';
 import { itemDef, itemNumber } from '../../content/items';
 import type { Rect, SmugglingDef } from '../../content/prisons/types';
 import { CATALOGUE, DRONE_GUARDS, DRONE_HOURS, DRONE_NOISE, FEES, GIFT_MAX, GIFT_MIN, LOOKAHEAD, ORDER_LEAD, PARCEL_MINUTE, VISIT_STEPS, WAY } from '../../content/smuggling';
@@ -28,7 +29,7 @@ import { STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import { containersOf } from '../world/containers';
-import { eventOn, planOf, sightOf, today, TODAY } from './calendar';
+import { eventOn, planOf, today, TODAY } from './calendar';
 import { dayMinute, prisonDay } from './clock';
 import { awake } from './guards';
 import { HOTBAR, itemOf, slot } from './items';
@@ -402,7 +403,7 @@ function watching(sim: SimContext, tile: number): number {
   const point = sim.scratch.point;
   point.x = (tile % MAP_W) * UNIT + UNIT / 2;
   point.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
-  return s.guards.findIndex((g) => awake(g) && !lookingAway(g, s.step) && canSee(sim.world, g.body, point, sightOf(sim, g)));
+  return s.guards.findIndex((g) => awake(g) && !lookingAway(g, s.step) && canSee(sim.world, g.body, point, sightFor(sim, g, point.x, point.z)));
 }
 
 /** The visitor sits down across from the player: the gift, and the order slipped across (no room in the hotbar: kept for next time). */

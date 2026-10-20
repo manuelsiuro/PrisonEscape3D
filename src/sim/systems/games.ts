@@ -32,6 +32,8 @@ import { energyCost } from './weather';
 import { keepCheat } from './cards';
 import { keepHoops } from './hoops';
 import { keepCheckers } from './checkers';
+import { keepMatch } from './football';
+import { keepInk } from './tattoo';
 
 export const LOCKPICK = itemNumber('lockpick');
 
@@ -83,8 +85,8 @@ export function eyesOn(s: Pick<SimState, 'guards'>, at: number): boolean {
   return s.guards.some((g) => g.sees && !lookingAway(g, at));
 }
 
-/** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout, the player at the old-timer's board). */
-export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated;
+/** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout, the player at the old-timer's board; P29: a match, a tattoo sitting). */
+export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board' | 'match' | 'ink'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated || !!s.match || !!s.ink;
 
 // ------------------------------------------------------------------ dice
 
@@ -430,4 +432,6 @@ export function games(sim: SimContext) {
   keepCheat(sim);
   keepHoops(sim);
   keepCheckers(sim);
+  keepMatch(sim);
+  keepInk(sim);
 }

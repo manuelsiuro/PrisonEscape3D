@@ -35,6 +35,9 @@ import { checkersOp, elderOf, getUp, moveOn } from './checkers';
 import { HOOPS_GAP } from '../../content/games';
 import { SHOP_SLOTS } from '../../content/loot';
 import { buyStaple, sell } from './pantry';
+import { matchTargets, startMatch } from './football';
+import { inkPartner, startInk } from './tattoo';
+import { INK_GAP } from '../../content/team';
 
 /** A blow of the player's this recent (steps) knocked the Cheat partner out: their own doing, the game folded. */
 const CHEAT_BLOW_STEPS = 40;
@@ -251,6 +254,14 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
     case TALK.HOOPS:
       startShootout(sim, who);
       return;
+    // Team & ink (P29): a match he captains; a tattoo for him, or one from him.
+    case TALK.FOOTBALL:
+      startMatch(sim, who);
+      return;
+    case TALK.TATTOO:
+    case TALK.INK_ME:
+      startInk(sim, who, b, a === TALK.INK_ME);
+      return;
     case TALK.CHECKERS:
       if (who === elderOf(sim)) checkersOp(sim, b);
       return;
@@ -361,7 +372,8 @@ export function socialNow(sim: SimContext): Social {
   const s = sim.state;
   const so = sim.scratch.social;
   const n = s.inmates.length;
-  so.follow.length = so.gap.length = so.work.length = so.doing.length = sim.scratch.allyFoe.length = n;
+  so.follow.length = so.gap.length = so.work.length = so.doing.length = so.pace.length = sim.scratch.allyFoe.length = n;
+  so.pace.fill(0);
   so.follow.fill(null);
   so.gap.fill(0);
   so.doing.fill(0);
@@ -396,6 +408,15 @@ export function socialNow(sim: SimContext): Social {
     so.follow[id] = foe >= 0 ? personOf(s, foe)!.body : s.player;
     so.gap[id] = foe >= 0 ? STAND_OFF : FOLLOW_GAP;
   });
+  // A tattoo's client (or the friend at work, P29) at the player's side.
+  const inker = inkPartner(s);
+  if (inker >= 0 && s.inmates[inker]?.ko === 0) {
+    so.follow[inker] = s.player;
+    so.gap[inker] = INK_GAP;
+    so.doing[inker] = DOING.TATTOO;
+  }
+  // A match's players (P29) where the match wants them (crew or not: it comes first).
+  matchTargets(sim, so);
   return so;
 }
 
