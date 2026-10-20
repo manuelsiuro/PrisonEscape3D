@@ -92,7 +92,8 @@ function stepSim(g: Game, dt: number) {
       press.upQueued = false;
     }
     op ??= tools.held && toolNow?.repeat && !upBehind ? USE_OP : NO_OP;
-    let dir = controls.steering ? controls.dir() : g.pilot.dir(p);
+    // (P29: at a tattoo the moves steer the needle: the stick or the keys, never a tap's walk.)
+    let dir = controls.steering ? controls.dir() : sim.state.ink ? 0 : g.pilot.dir(p);
     // On the equipment, left and right are reps (sent as ops): only up or down steps off.
     if ((sim.state.train >= 0 || sim.state.bout.length) && (dir === 1 || dir === 9)) dir = 0;
     // (P24: still in the air on a glider, on screen: down first, then the stick.)

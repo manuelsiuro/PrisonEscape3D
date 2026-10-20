@@ -5,8 +5,14 @@
   background: #2f9e5a;
 }
 .match-score {
+  flex: none;
+  white-space: nowrap;
   font: 800 20px var(--font-display);
   letter-spacing: 0.02em;
+}
+.match-card .train-head b,
+.ink-card .train-head b {
+  min-width: 0;
 }
 .match-teams {
   display: flex;
@@ -254,6 +260,14 @@ body.matching .tool-prompt {
   body.inking .hotbar,
   body.inking .energy {
     display: none;
+  }
+  /* (A lesson's card steps up to the top, clear of the pitch and of the tattoo's card.) */
+  body.matching .coach.lesson-coach,
+  body.inking .coach.lesson-coach {
+    top: 0;
+    right: 184px;
+    left: auto;
+    max-width: min(400px, calc(100vw - 560px));
   }
 }
 
