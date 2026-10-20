@@ -58,7 +58,7 @@ export interface Frame {
   moving: boolean;
   /** Game time of day in minutes, fractional (lighting). */
   minuteOfDay: number;
-  /** Roll call is on, or minutes off (P29: its paint over a football pitch shows only then). */
+  /** Roll call is on or minutes off, or a fire drill musters there (P29: its paint over a football pitch shows only then). */
   rollCall: boolean;
   /** The tile kind under the player (footstep dust and sound). */
   surface: number;

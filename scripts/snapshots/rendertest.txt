@@ -14,6 +14,7 @@ pitch: san-pancho 10×6; hoop spots on it 0; roll call baked
 pitch: irongate 10×5; hoop spots on it 0; roll call on its own layer (shown for roll call)
 pitch: training 13×6; hoop spots on it 0; roll call baked
 pitch: the roll call's marks over a pitch show for roll call and 20 minutes before
+pitch: the roll call's marks show for the drill at 11:02 at stalag-flucht
 match: center-perks 412×915 0.846, 360×780 0.846, 915×412 1.250, 1280×800 1.250
 match: stalag-flucht 412×915 0.733, 360×780 0.733, 915×412 1.250, 1280×800 1.250
 match: shankton 412×915 0.846, 360×780 0.846, 915×412 1.250, 1280×800 1.250

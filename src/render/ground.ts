@@ -4,6 +4,8 @@ import { ROUTINE } from '../content/routine';
 import { KEY, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import type { PrisonDef } from '../content/prisons/types';
+import type { SimContext } from '../sim/context';
+import { drillOn } from '../sim/systems/calendar';
 
 /**
  * Two baked layers over the floors, drawn once per prison on canvases:
@@ -129,6 +131,14 @@ export function rollCallSoon(routine: number, minute: number): boolean {
   if (now?.zones.includes('rollCall')) return true;
   const next = ROUTINE[(routine + 1) % ROUTINE.length];
   return !!next?.zones.includes('rollCall') && (next.start - minute + 1440) % 1440 <= ROLL_CALL_LEAD;
+}
+
+/**
+ * Whether the roll call's marks over a pitch show now: roll call and the minutes before it, and
+ * a fire drill (P17), which musters everyone there outside the routine.
+ */
+export function rollCallShows(sim: Pick<SimContext, 'prison' | 'state'>, minute: number): boolean {
+  return drillOn(sim) || rollCallSoon(sim.state.routine, minute);
 }
 
 /** That layer (null where the roll call keeps off the pitch): a decal over the roll call's tiles, faded in and out by its material's opacity. */

@@ -5,7 +5,7 @@ import { ROUTINE } from '../content/routine';
 import type { BadgeKind } from '../render/Character';
 import type { Frame } from '../render/View';
 import { ROOF_Y } from '../render/Structure';
-import { rollCallSoon } from '../render/ground';
+import { rollCallShows } from '../render/ground';
 import { DIR_X, DIR_Z, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
@@ -253,7 +253,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.facing = Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]);
   f.moving = p.moving && !g.paused;
   f.minuteOfDay = clock.minuteOfDay + ((st.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE;
-  f.rollCall = rollCallSoon(st.routine, clock.minuteOfDay);
+  f.rollCall = rollCallShows(sim, clock.minuteOfDay);
   f.layer = st.layer;
   f.tilesRev = sim.tilesRev;
   f.wearRev = sim.wearRev;

@@ -14,7 +14,14 @@ import { PRISONS } from '../src/content/prisons';
 import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { CANOPY, CANOPY_SHADE, canopyCovers, decorMatrix, HOOP_BOARD, HOOP_RIM, ROT_ANGLE } from '../src/render/decor';
-import { ROLL_CALL_LEAD, rollCallOverPitch, rollCallSoon } from '../src/render/ground';
+import { ROLL_CALL_LEAD, rollCallOverPitch, rollCallShows, rollCallSoon } from '../src/render/ground';
+import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
+import { DAY_EVENTS, WEATHERS } from '../src/content/days';
+import { routineAt } from '../src/content/routine';
+import { Sim } from '../src/sim/Sim';
+import { drillOn, planOf } from '../src/sim/systems/calendar';
+import { clockAt, DAY_STEPS } from '../src/sim/systems/clock';
+import { STEPS_PER_MINUTE } from '../src/sim/tuning';
 import { spotsOnPitch } from '../src/render/Pastimes';
 import { matchFit } from '../src/render/Team';
 import { ZOOM_MIN } from '../src/render/View';
@@ -122,6 +129,25 @@ const ALL = [...PRISONS, TRAINING];
   ];
   for (const [id, minute, want] of cases) check(rollCallSoon(at(id), minute) === want, `pitch: roll call's marks at ${id} ${minute} ${want ? 'shown' : 'hidden'}`);
   console.log(`pitch: the roll call's marks over a pitch show for roll call and ${ROLL_CALL_LEAD} minutes before`);
+  // A fire drill (P17) musters everyone at roll call outside the routine: the marks show for it too.
+  const sim = new Sim(STALAG_FLUCHT, 5);
+  sim.state.calendar = [
+    [0, 0, 0],
+    [2, DAY_EVENTS.indexOf('drill'), WEATHERS.indexOf('clear')],
+  ];
+  const plan = planOf(sim, 2);
+  const put = (dayMin: number) => {
+    sim.state.step = DAY_STEPS + dayMin * STEPS_PER_MINUTE;
+    const minute = clockAt(sim.state.step).minuteOfDay;
+    sim.state.routine = routineAt(minute);
+    return minute;
+  };
+  check(plan.event === 'drill', 'pitch: the forced drill day');
+  const during = put(plan.at + 1);
+  check(drillOn(sim) && !rollCallSoon(sim.state.routine, during) && rollCallShows(sim, during), `pitch: the marks show for the drill at ${during} (out of the routine's roll call)`);
+  const after = put(plan.until + 5);
+  check(!drillOn(sim) && rollCallShows(sim, after) === rollCallSoon(sim.state.routine, after), 'pitch: the drill over, the routine decides again');
+  console.log(`pitch: the roll call's marks show for the drill at ${String(Math.floor(during / 60)).padStart(2, '0')}:${String(during % 60).padStart(2, '0')} at ${STALAG_FLUCHT.id}`);
 }
 
 // ------------------------------------------------------------------ a match framed whole
