@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { World } from '../sim/world/World';
-import type { Court } from '../content/prisons/types';
+import type { Court, Pitch } from '../content/prisons/types';
 
 /**
  * What card sharks (P27) show this frame: the court's lit spot, the ball (up in the hands, in
@@ -32,6 +32,16 @@ const REST_T = 2;
 const FLIGHT = 0.9;
 /** The spots: a painted disc each, and the ring over the lit one. */
 const SPOT_R = 0.3;
+/** The spots' paint (lit like the pitch's lines, under the fog veil at renderOrder 0.5). */
+const SPOT_PAINT = 0xf4f1e6;
+const SPOT_OPACITY = 0.55;
+/** Spots on the football pitch (P29) show only within this far of the rim (tiles; the farthest spot is 4 out), never in a match. */
+const COURT_NEAR = 5.5;
+
+/** Which of a court's spots lie on the prison's football pitch (their paint kept off it but for a game of hoops). */
+export function spotsOnPitch(c: Court, p: Pitch | null | undefined): boolean[] {
+  return c.spots.map((q) => !!p && q.x >= p.x && q.x < p.x + p.w && q.z >= p.z && q.z < p.z + p.d);
+}
 /** A playing card (tiles), the checkers board's side and a piece. */
 const CARD_W = 0.15;
 const CARD_H = 0.21;
@@ -124,6 +134,9 @@ function boardTexture(): THREE.CanvasTexture {
 export class PastimesView {
   readonly group = new THREE.Group();
   private readonly spots: THREE.InstancedMesh;
+  /** The spots on the football pitch (P29): chalked in only near the court, out of a match. */
+  private readonly pitchSpots: THREE.InstancedMesh;
+  private pitchChalk = 0;
   private readonly ring: THREE.Mesh;
   private readonly ball: THREE.Mesh;
   private readonly backs: THREE.InstancedMesh;
@@ -141,11 +154,18 @@ export class PastimesView {
   private readonly counts = [0, 0, 0, 0];
 
   constructor() {
-    const paint = new THREE.MeshBasicMaterial({ color: 0xf4f1e6, transparent: true, opacity: 0.55, depthWrite: false });
-    this.spots = new THREE.InstancedMesh(new THREE.RingGeometry(SPOT_R * 0.62, SPOT_R, 24).rotateX(-Math.PI / 2), paint, 5);
-    this.spots.count = 0;
-    this.spots.frustumCulled = false;
-    this.spots.renderOrder = 1;
+    // (Paint lit like the pitch's lines: dim at night, under the fog veil; the lit spot's gold ring stays a bright cue.)
+    const spot = new THREE.RingGeometry(SPOT_R * 0.62, SPOT_R, 24).rotateX(-Math.PI / 2);
+    const paint = () => new THREE.MeshLambertMaterial({ color: SPOT_PAINT, transparent: true, opacity: SPOT_OPACITY, depthWrite: false });
+    this.spots = new THREE.InstancedMesh(spot, paint(), 5);
+    this.pitchSpots = new THREE.InstancedMesh(spot, paint(), 5);
+    for (const s of [this.spots, this.pitchSpots]) {
+      s.count = 0;
+      s.frustumCulled = false;
+      s.receiveShadow = true;
+      s.renderOrder = 0.25;
+    }
+    this.pitchSpots.visible = false;
     this.ring = new THREE.Mesh(new THREE.RingGeometry(SPOT_R * 0.9, SPOT_R * 1.25, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffc23d, transparent: true, opacity: 0.85, depthWrite: false }));
     this.ring.renderOrder = 2;
     this.ring.visible = false;
@@ -179,20 +199,24 @@ export class PastimesView {
       x.count = 0;
       x.frustumCulled = false;
     }
-    this.group.add(this.spots, this.ring, this.ball, this.backs, ...this.faces, this.board, this.mine, this.his);
+    this.group.add(this.spots, this.pitchSpots, this.ring, this.ball, this.backs, ...this.faces, this.board, this.mine, this.his);
   }
 
-  /** A prison: its court's spots painted on the ground. */
+  /** A prison: its court's spots painted on the ground (those on the football pitch apart). */
   setWorld(world: World) {
     this.court = world.def.leisure?.hoop ?? null;
     const c = this.court;
-    this.spots.count = c ? c.spots.length : 0;
+    const onPitch = c ? spotsOnPitch(c, world.def.leisure?.pitch) : [];
+    this.spots.count = this.pitchSpots.count = 0;
     c?.spots.forEach((q, k) => {
       this.p.set(q.x + 0.5, 0.012, q.z + 0.5);
       this.m.compose(this.p, this.q.identity(), this.s.set(1, 1, 1));
-      this.spots.setMatrixAt(k, this.m);
+      const mesh = onPitch[k] ? this.pitchSpots : this.spots;
+      mesh.setMatrixAt(mesh.count++, this.m);
     });
     this.spots.instanceMatrix.needsUpdate = true;
+    this.pitchSpots.instanceMatrix.needsUpdate = true;
+    this.pitchChalk = 0;
   }
 
   /**
@@ -250,11 +274,19 @@ export class PastimesView {
     out.set(x + vx * tHit + vx * 0.6 * roll, BALL_R + Math.max(0, h), z + vz * tHit + vz * 0.6 * roll);
   }
 
-  update(f: PastimesFrame | null, px: number, pz: number, time: number, motion: boolean, ground: boolean) {
+  /** A frame; `match`: a football match is on (P29: the pitch's paint alone then), `dt` for the chalk's fade. */
+  update(f: PastimesFrame | null, px: number, pz: number, time: number, motion: boolean, ground: boolean, match = false, dt = 0) {
     const on = !!f && ground;
     this.spots.visible = ground && this.spots.count > 0;
-    // The lit spot: a gold ring, breathing.
     const c = this.court;
+    // The spots on the pitch: chalked in walking up to the court (or in a game of hoops), never in a match.
+    const near = on && !match && !!c && (f.spot >= 0 || !!f.ball || !!f.holding || Math.hypot(px - c.x - 0.5, pz - c.z - 0.5) <= COURT_NEAR);
+    const k = motion ? Math.min(1, dt * 3) : 1;
+    this.pitchChalk += ((near ? 1 : 0) - this.pitchChalk) * k;
+    if (this.pitchChalk < 0.01 && !near) this.pitchChalk = 0;
+    this.pitchSpots.visible = ground && this.pitchSpots.count > 0 && this.pitchChalk > 0;
+    (this.pitchSpots.material as THREE.MeshLambertMaterial).opacity = SPOT_OPACITY * this.pitchChalk;
+    // The lit spot: a gold ring, breathing.
     if (on && c && f.spot >= 0 && c.spots[f.spot]) {
       const q = c.spots[f.spot];
       this.ring.position.set(q.x + 0.5, 0.014, q.z + 0.5);

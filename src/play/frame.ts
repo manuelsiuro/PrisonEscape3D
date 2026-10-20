@@ -5,6 +5,7 @@ import { ROUTINE } from '../content/routine';
 import type { BadgeKind } from '../render/Character';
 import type { Frame } from '../render/View';
 import { ROOF_Y } from '../render/Structure';
+import { rollCallSoon } from '../render/ground';
 import { DIR_X, DIR_Z, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
@@ -24,6 +25,7 @@ import type { Game } from './game';
 import { coachItems, coachOnce, seenTip } from './tips';
 import { dayMinute, eventOn, fogNow, today, weatherNow } from '../sim/systems/calendar';
 import { searchMinute } from '../sim/systems/delivery';
+import { freezing } from '../sim/systems/weather';
 import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
 import { smuggleFrame } from './smuggle';
@@ -127,6 +129,7 @@ const frameData: Frame = {
   facing: 0,
   moving: false,
   minuteOfDay: 0,
+  rollCall: false,
   surface: 0,
   inmates: [],
   guide: null,
@@ -158,7 +161,7 @@ const frameData: Frame = {
   security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
   takeover: false,
   fuses: fuseFrame,
-  weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 },
+  weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false },
   events: { movie: false, foodFight: false, inspection: false },
   delivery: { t: -1, at: 0, search: 0, until: 0, stowed: false },
   dogs: [],
@@ -250,6 +253,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.facing = Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]);
   f.moving = p.moving && !g.paused;
   f.minuteOfDay = clock.minuteOfDay + ((st.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE;
+  f.rollCall = rollCallSoon(st.routine, clock.minuteOfDay);
   f.layer = st.layer;
   f.tilesRev = sim.tilesRev;
   f.wearRev = sim.wearRev;
@@ -568,6 +572,8 @@ function dayFrame(sim: Sim, f: Frame) {
   const b = (plan.wind * Math.PI) / 4;
   w.windAngle = Math.atan2(Math.cos(b), -Math.sin(b));
   w.windForce = plan.windForce;
+  // (P26: a Big Freeze Daily snows on any prison, as Stalag Flucht always does.)
+  w.snow = freezing(sim);
   const e = f.events;
   e.movie = eventOn(sim, 'movie');
   e.foodFight = eventOn(sim, 'foodFight');

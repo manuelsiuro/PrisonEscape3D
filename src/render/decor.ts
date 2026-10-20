@@ -12,6 +12,8 @@ import { seeThrough } from './occlusion';
 interface Model {
   parts: Part[];
   glow?: Part[];
+  /** A tree's leaves: their own mesh, faded while someone stands under or behind them (DecorView.shelter). */
+  canopy?: Part[];
 }
 type Builder = (w: number, d: number) => Model;
 
@@ -27,6 +29,41 @@ const LEAF = 0x3f7d33;
 const RED = 0xd23b2e;
 /** How far off the wall a wall piece's front is (its back is at the wall). */
 const ON_WALL = (d: number) => -d / 2;
+
+/** A tree's canopy: three stacked cylinders (radius, bottom and top, offset from the trunk; tiles). */
+export const CANOPY: ReadonlyArray<{ r: number; y0: number; y1: number; x: number; z: number }> = [
+  { r: 0.75, y0: 1.1, y1: 2.0, x: 0, z: 0 },
+  { r: 0.58, y0: 1.85, y1: 2.55, x: 0.1, z: -0.05 },
+  { r: 0.34, y0: 2.45, y1: 2.95, x: -0.05, z: 0.05 },
+];
+/**
+ * Where a standing character is hidden by a tree's canopy, from the trunk (tiles): the camera
+ * looks down from the south (24 back for 38 up), so the leaves hide a body standing up to two
+ * tiles north of the trunk, round the ends. A capsule: within `r` of the line from
+ * `north` (behind the trunk) to `south` (in front of it). Someone there has the canopy faded.
+ */
+export const CANOPY_SHADE = { r: 0.93, north: 1.15, south: -0.04 };
+export function canopyCovers(dx: number, dz: number): boolean {
+  const z = Math.max(-CANOPY_SHADE.north, Math.min(CANOPY_SHADE.south, dz));
+  return dx * dx + (dz - z) * (dz - z) < CANOPY_SHADE.r * CANOPY_SHADE.r;
+}
+/** How much of a faded canopy's pixels are dithered away (the rest stays, a ghost of the leaves). */
+const CANOPY_CUT = 0.82;
+
+/**
+ * A hoop on a side wall (facing east or west) would show its backboard edge-on to the camera
+ * (which looks north): it is turned this far toward the camera (radians) about the rim, which
+ * stays where the court has it (render/Pastimes.ts RIM_Y and the court's tile).
+ */
+export const HOOP_TURN = 0.6;
+/** The rim's middle in the hoop's model (tiles, from the tile's middle; facing +z). */
+export const HOOP_RIM = { y: 2.32, z: -0.02 };
+/** The backboard: its width, thickness and middle (z, behind the rim). */
+export const HOOP_BOARD = { w: 0.9, d: 0.04, z: -0.24 };
+/** The extra turn a decor piece gets toward the camera (radians about y; 0 for most). */
+export const cameraTurn = (kind: DecorKind, rot: number): number => (kind !== 'hoop' ? 0 : rot === 1 ? -HOOP_TURN : rot === 3 ? HOOP_TURN : 0);
+/** The base turn of a decor piece by its `rot` (0 south, 1 east, 2 north, 3 west). */
+export const ROT_ANGLE = [0, Math.PI / 2, Math.PI, -Math.PI / 2] as const;
 
 const poster = (bg: number, ink: number, mark: number): Builder => (_w, d) => {
   const z = ON_WALL(d) + 0.015;
@@ -203,7 +240,7 @@ const BUILDERS: Record<DecorKind, Builder> = {
   },
   mat: (w, d) => ({ parts: [box(w - 0.15, 0.03, d - 0.25, 0x2f6fd0, 0, 0, 0), box(w - 0.3, 0.005, 0.04, 0x5f95e8, 0, 0.03, 0)] }),
   flagpole: () => ({ parts: [cyl(0.2, 0.15, 0x9aa1a9, 0, 0, 0, 10), cyl(0.04, 3.4, STEEL, 0, 0.15, 0, 8), box(0.02, 0.48, 0.8, 0x2b5fb8, 0, 2.95, 0.42), box(0.025, 0.12, 0.8, WHITE, 0, 3.1, 0.42)] }),
-  tree: () => ({ parts: [cyl(0.14, 1.2, 0x6e4a2b, 0, 0, 0, 8), cyl(0.75, 0.9, LEAF, 0, 1.1, 0, 9), cyl(0.58, 0.7, GREEN, 0.1, 1.85, -0.05, 9), cyl(0.34, 0.5, 0x5d9e46, -0.05, 2.45, 0.05, 8)] }),
+  tree: () => ({ parts: [cyl(0.14, 1.2, 0x6e4a2b, 0, 0, 0, 8)], canopy: CANOPY.map((c, k) => cyl(c.r, c.y1 - c.y0, [LEAF, GREEN, 0x5d9e46][k], c.x, c.y0, c.z, k === 2 ? 8 : 9)) }),
   bush: () => ({ parts: [cyl(0.42, 0.42, LEAF, 0, 0, 0, 8), cyl(0.3, 0.3, GREEN, 0.12, 0.32, 0.06, 7)] }),
   cactus: () => ({
     parts: [
@@ -258,11 +295,11 @@ const BUILDERS: Record<DecorKind, Builder> = {
   hoop: () => ({
     parts: [
       cyl(0.05, 2.75, DARK, 0, 0, -0.3, 8),
-      box(0.9, 0.6, 0.04, WHITE, 0, 2.2, -0.24),
-      box(0.92, 0.04, 0.05, DARK, 0, 2.18, -0.24),
+      box(HOOP_BOARD.w, 0.6, HOOP_BOARD.d, WHITE, 0, 2.2, HOOP_BOARD.z),
+      box(HOOP_BOARD.w + 0.02, 0.04, HOOP_BOARD.d + 0.01, DARK, 0, 2.18, HOOP_BOARD.z),
       box(0.3, 0.22, 0.01, RED, 0, 2.3, -0.215),
       box(0.05, 0.04, 0.2, 0xe8642c, 0, 2.3, -0.12),
-      paint(new THREE.TorusGeometry(0.2, 0.018, 6, 20).rotateX(Math.PI / 2).translate(0, 2.32, -0.02), 0xe8642c),
+      paint(new THREE.TorusGeometry(0.2, 0.018, 6, 20).rotateX(Math.PI / 2).translate(0, HOOP_RIM.y, HOOP_RIM.z), 0xe8642c),
       paint(new THREE.CylinderGeometry(0.19, 0.12, 0.22, 12, 1, true).translate(0, 2.2, -0.02), 0xf4f4ef),
     ],
   }),
@@ -296,21 +333,79 @@ const BUILDERS: Record<DecorKind, Builder> = {
   phone: () => ({ parts: [box(0.18, 0.32, 0.08, DARK, 0, 0, -0.05), box(0.05, 0.2, 0.05, 0x23262b, 0.1, 0.06, 0.02), box(0.12, 0.08, 0.02, 0x6b737c, 0, 0.2, -0.005)] }),
 };
 
-/** A decor model's geometries (the glow part may be empty). */
-function geometryOf(kind: DecorKind, w: number, d: number): { base: THREE.BufferGeometry; glow: THREE.BufferGeometry | null } {
+/** A decor model's geometries (the glow part and the canopy may be empty). */
+function geometryOf(kind: DecorKind, w: number, d: number): { base: THREE.BufferGeometry; glow: THREE.BufferGeometry | null; canopy: THREE.BufferGeometry | null } {
   const m = BUILDERS[kind](w, d);
-  return { base: merge(m.parts), glow: m.glow?.length ? merge(m.glow) : null };
+  // (The canopy unshaded: high off the ground, the foot's shade never reached it in one piece with the trunk either.)
+  return { base: merge(m.parts), glow: m.glow?.length ? merge(m.glow) : null, canopy: m.canopy?.length ? merge(m.canopy, false) : null };
+}
+
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+const tq = new THREE.Quaternion();
+const tv = new THREE.Vector3();
+const ts = new THREE.Vector3(1, 1, 1);
+
+/**
+ * Where a decor piece stands (its instance matrix): on its tiles, turned by its `rot`; a hoop on
+ * a side wall turned a little more toward the camera about its rim (the rim stays put).
+ */
+export function decorMatrix(p: DecorPlacement, out: THREE.Matrix4): THREE.Matrix4 {
+  const rot = p.rot ?? 0;
+  const base = ROT_ANGLE[rot];
+  const extra = cameraTurn(p.kind, rot);
+  const a = base + extra;
+  // (Turned about the rim: the rim's offset turned by the base angle, less the same turned by the whole.)
+  const ox = extra ? HOOP_RIM.z * (Math.sin(base) - Math.sin(a)) : 0;
+  const oz = extra ? HOOP_RIM.z * (Math.cos(base) - Math.cos(a)) : 0;
+  tq.setFromAxisAngle(Y_AXIS, a);
+  return out.compose(tv.set(p.x + (p.w ?? 1) / 2 + ox, p.y ?? 0, p.z + (p.d ?? 1) / 2 + oz), tq, ts);
+}
+
+const CANOPY_FRAGMENT_DECL = /* glsl */ `
+varying float vFade;
+const float CANOPY_BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+float canopyBayer(vec2 p) {
+  ivec2 q = ivec2(mod(floor(p), 4.0));
+  return (CANOPY_BAYER[q.x + q.y * 4] + 0.5) / 16.0;
+}
+`;
+
+/**
+ * The canopies' material: the kit's, each instance dithered away by its `aFade` (0 whole … 1
+ * faded, a ghost of the leaves kept). Its shadow stays (the shadow pass isn't patched).
+ */
+function canopyMaterial(): THREE.MeshStandardMaterial {
+  const m = kitMaterial.clone();
+  m.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float aFade;\nvarying float vFade;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFade = aFade;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\n${CANOPY_FRAGMENT_DECL}`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\nif (vFade * ${CANOPY_CUT.toFixed(3)} > canopyBayer(gl_FragCoord.xy)) discard;`);
+  };
+  // (A program of its own: never the plain kit material's.)
+  m.customProgramCacheKey = () => 'decor-canopy-fade';
+  return m;
+}
+
+/** A kind's canopies: the mesh, each one's fade (0 … 1), each tree's trunk (tiles). */
+interface Canopies {
+  fade: THREE.InstancedBufferAttribute;
+  xs: Float32Array;
+  zs: Float32Array;
 }
 
 /**
  * Every decor piece of a prison, instanced by kind and size; furniture's see-through cut
  * near the player (above waist height) applies to them as to props. `update` dims what glows
- * when the power is out and lets the monitors flicker now and then.
+ * when the power is out and lets the monitors flicker now and then; `shelter` fades a tree's
+ * leaves over anyone standing under or behind it (a lookout posted under a tree stays in view).
  */
 export class DecorView {
   readonly group = new THREE.Group();
   private readonly glowMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
   private readonly base = seeThrough(kitMaterial.clone(), 0.6);
+  private readonly leaves = canopyMaterial();
+  private readonly canopies: Canopies[] = [];
   private lit = 1;
 
   constructor(list: readonly DecorPlacement[]) {
@@ -325,25 +420,51 @@ export class DecorView {
       groups.get(key)!.push(p);
     }
     const m = new THREE.Matrix4();
-    const q = new THREE.Quaternion();
-    const s = new THREE.Vector3(1, 1, 1);
-    const at = new THREE.Vector3();
-    const up = new THREE.Vector3(0, 1, 0);
     for (const [key, ps] of groups) {
       const [kind, size] = key.split(':');
       const [w, d] = size.split('x').map(Number);
-      const { base, glow } = geometryOf(kind as DecorKind, w, d);
+      const { base, glow, canopy } = geometryOf(kind as DecorKind, w, d);
       const meshes: THREE.InstancedMesh[] = [new THREE.InstancedMesh(base, this.base, ps.length)];
       if (glow) meshes.push(new THREE.InstancedMesh(glow, this.glowMat, ps.length));
+      if (canopy) {
+        const fade = new THREE.InstancedBufferAttribute(new Float32Array(ps.length), 1).setUsage(THREE.DynamicDrawUsage);
+        canopy.setAttribute('aFade', fade);
+        const leaves = new THREE.InstancedMesh(canopy, this.leaves, ps.length);
+        leaves.castShadow = leaves.receiveShadow = true;
+        meshes.push(leaves);
+        this.canopies.push({ fade, xs: Float32Array.from(ps, (p) => p.x + (p.w ?? 1) / 2), zs: Float32Array.from(ps, (p) => p.z + (p.d ?? 1) / 2) });
+      }
       ps.forEach((p, i) => {
-        const rot = p.rot ?? 0;
-        q.setFromAxisAngle(up, [0, Math.PI / 2, Math.PI, -Math.PI / 2][rot]);
-        at.set(p.x + (p.w ?? 1) / 2, p.y ?? 0, p.z + (p.d ?? 1) / 2);
-        m.compose(at, q, s);
+        decorMatrix(p, m);
         for (const mesh of meshes) mesh.setMatrixAt(i, m);
       });
       meshes[0].castShadow = meshes[0].receiveShadow = true;
       for (const mesh of meshes) this.group.add(mesh);
+    }
+  }
+
+  /**
+   * Fades each tree's leaves while someone stands where they would hide them (`at`: x, z pairs
+   * in tiles, the first `n` of them) and brings them back once they've gone; eased (at once
+   * with reduced motion).
+   */
+  shelter(at: ArrayLike<number>, n: number, dt: number, motion = true) {
+    const k = motion ? Math.min(1, dt * 6) : 1;
+    for (const c of this.canopies) {
+      const f = c.fade.array as Float32Array;
+      let changed = false;
+      for (let i = 0; i < f.length; i++) {
+        let goal = 0;
+        for (let j = 0; j < n && !goal; j++) if (canopyCovers(at[j * 2] - c.xs[i], at[j * 2 + 1] - c.zs[i])) goal = 1;
+        const was = f[i];
+        let now = was + (goal - was) * k;
+        if (Math.abs(goal - now) < 0.01) now = goal;
+        if (now !== was) {
+          f[i] = now;
+          changed = true;
+        }
+      }
+      if (changed) c.fade.needsUpdate = true;
     }
   }
 
@@ -367,5 +488,6 @@ export class DecorView {
     }
     this.base.dispose();
     this.glowMat.dispose();
+    this.leaves.dispose();
   }
 }
