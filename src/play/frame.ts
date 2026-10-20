@@ -28,7 +28,7 @@ import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
 import { inDuct, RAT } from '../sim/systems/rats';
 import { smuggleFrame } from './smuggle';
 import { diceRival, gamesDoing, gamesFrameOf } from './games';
-import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles } from './pastimes';
+import { pastimesDoing, pastimesFrameOf, pastimesPartner, rimInTiles, shooterNow } from './pastimes';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 
 /**
@@ -273,6 +273,14 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     partner.facing = Math.atan2(f.x - partner.x, f.z - partner.z);
     f.facing = Math.atan2(partner.x - f.x, partner.z - f.z);
   }
+  // (A shootout's inmate taking his shot: arms up, facing the rim, a moment as the ball goes.)
+  const shooter = shooterNow();
+  const rimAt = shooter !== null ? rimInTiles(sim) : null;
+  if (shooter !== null && shooter >= 0 && rimAt && f.inmates[shooter]) {
+    const m = f.inmates[shooter];
+    m.doing = DOING.SHOOT;
+    m.facing = Math.atan2(rimAt.x - m.x, rimAt.z - m.z);
+  }
   f.guards.length = st.guards.length;
   st.guards.forEach((m, k) => {
     const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: true, away: false, awayLeft: 0, stir: 0, range: 7 });
@@ -402,7 +410,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   const game = gamesDoing(sim);
   if (game >= 0 && !seated) f.doing = game;
   // (P27: over the cards, at the board, the ball up for a shot: facing the rim.)
-  const past = pastimesDoing(sim);
+  // (And a moment after letting go: the follow-through.)
+  const past = shooter === -1 && !seated ? DOING.SHOOT : pastimesDoing(sim);
   if (past >= 0 && !seated) f.doing = past;
   if (past === DOING.SHOOT) {
     const rim = rimInTiles(sim);

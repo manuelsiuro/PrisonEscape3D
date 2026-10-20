@@ -755,7 +755,19 @@ function follow(id: string) {
   hoops.bot.op(OP.TALK, TALK.HOOPS);
   hoops.bot.walkTo(tile(30, 31));
   check(hoops.why() === 'lesson.hoops.off', `hoops: leaving the court ends the lesson (${hoops.why()})`);
-  console.log(`cards, folded: ended at step ${cards.progress.k + 1}; hoops, court left: ended at step ${hoops.progress.k + 1}`);
+  // The board left (up from it) until free time is over: said; resigning the set-up game: said.
+  const up = follow('checkers');
+  check(talkTo(up.bot, up.bot.st.inmates[0].body), 'checkers: talking to Sparky');
+  up.bot.op(OP.TALK, TALK.CHECKERS, 1);
+  up.bot.op(OP.TALK, TALK.CHECKERS, 0);
+  up.bot.until(() => !!up.why(), 5 * 60 * 20 * 60);
+  check(up.why() === 'lesson.games.closed', `checkers: up from the board until free time ends ends the lesson (${up.why()})`);
+  const quit = follow('checkers');
+  check(talkTo(quit.bot, quit.bot.st.inmates[0].body), 'checkers: talking to Sparky');
+  quit.bot.op(OP.TALK, TALK.CHECKERS, 1);
+  quit.bot.op(OP.TALK, TALK.CHECKERS, 2);
+  check(quit.why() === 'lesson.checkers.resigned', `checkers: resigning ends the lesson (${quit.why()})`);
+  console.log(`cards, folded: ended at step ${cards.progress.k + 1}; hoops, court left: ended at step ${hoops.progress.k + 1}; checkers, up past free time and resigned: said`);
 }
 {
   // No game played before the evening's free time ends: the lesson says so.

@@ -332,5 +332,5 @@ export const STALAG_FLUCHT: PrisonDef = {
   // call; nobody visits up here: a Red Cross parcel comes with the truck instead.
   smuggling: { fixer: 9, drop: [30, 22, 38, 28], parcel: true },
   // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(8, 21, 5), oldTimer: 5 },
+  leisure: { hoop: court(11, 21, 5), oldTimer: 5 },
 };

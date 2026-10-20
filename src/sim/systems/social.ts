@@ -34,6 +34,9 @@ import { hoopsPartner, startShootout } from './hoops';
 import { checkersOp, elderOf, getUp, moveOn } from './checkers';
 import { HOOPS_GAP } from '../../content/games';
 
+/** A blow of the player's this recent (steps) knocked the Cheat partner out: their own doing, the game folded. */
+const CHEAT_BLOW_STEPS = 40;
+
 /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
 export function refuse(sim: SimContext, why: Refusal) {
   sim.events.push({ type: 'refused', why });
@@ -87,7 +90,12 @@ export function endTalk(sim: SimContext) {
   settleDice(sim);
   endBout(sim, 'off');
   // (P27: up and away from a hand of Cheat folds it, unless it's the sirens or a knockout that ended it; up from the old-timer's board, which stays set up.)
-  if (s.cheat) endCheat(sim, sim.away || s.lockdown ? 'off' : 'folded');
+  if (s.cheat) {
+    // (The inmate knocked out by someone else, not by the player's own blow a moment ago: off, the stake back.)
+    const m = s.inmates[s.cheat.who];
+    const theirs = !!m && m.ko > 0 && s.step - s.swingAt > CHEAT_BLOW_STEPS;
+    endCheat(sim, sim.away || s.lockdown || theirs ? 'off' : 'folded');
+  }
   getUp(sim);
   s.talk = -1;
   sim.events.push({ type: 'talk', who: -1 });

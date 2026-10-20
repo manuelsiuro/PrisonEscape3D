@@ -11,19 +11,23 @@ export interface PastimesFrame {
   spot: number;
   /** A shot shown: who threw it, from where (tiles), how it went, short or long; seconds since it left the hand. */
   ball: { show: { by: number; fromX: number; fromZ: number; result: 'swish' | 'in' | 'rim' | 'air'; short: boolean; at: number }; t: number; fromY: number } | null;
-  /** The ball held up for a shot (the marker 0–1: the arms dip and rise with it). */
-  holding: { who: number; power: number } | null;
+  /** The ball held up for a shot (the marker 0–1: the arms dip and rise with it), the way to the rim (a unit vector: it's held a little that way). */
+  holding: { who: number; power: number; dx: number; dz: number } | null;
   /** Cards between the player and the inmate: the middle, the way from the player to them, face-down cards on the pile, a call's cards face up. */
   cards: { x: number; z: number; angle: number; pile: number; reveal: number[] | null } | null;
   /** The old-timer's board between him and the player: its middle, the way from the player to him, its squares (PIECE), the last move's squares. */
   board: { x: number; z: number; angle: number; sq: number[]; last: number[] } | null;
 }
 
-/** The rim's height and radius (the decor's hoop: render/decor.ts), the ball's radius, where it's held over the head. */
-const RIM_Y = 2.15;
+/** The rim's height and radius (the decor's hoop: render/decor.ts), the board's face behind it, the ball's radius, where it's held over the head (between the hands, clear of the head: Character's SHOOT). */
+const RIM_Y = 2.32;
 const RIM_R = 0.2;
+const BOARD_FACE = 0.2;
 const BALL_R = 0.1;
-const HOLD_Y = 1.25;
+const HOLD_Y = 1.45;
+const HOLD_AHEAD = 0.1;
+/** The ball comes to rest this long after it's let go (s; reduced motion: there at once). */
+const REST_T = 2;
 /** The flight's time (play/pastimes.ts FLIGHT_S) and the ground. */
 const FLIGHT = 0.9;
 /** The spots: a painted disc each, and the ring over the lit one. */
@@ -133,6 +137,8 @@ export class PastimesView {
   private readonly p = new THREE.Vector3();
   private readonly s = new THREE.Vector3(1, 1, 1);
   private readonly yAxis = new THREE.Vector3(0, 1, 0);
+  /** Face-up cards of each kind this frame (refilled). */
+  private readonly counts = [0, 0, 0, 0];
 
   constructor() {
     const paint = new THREE.MeshBasicMaterial({ color: 0xf4f1e6, transparent: true, opacity: 0.55, depthWrite: false });
@@ -156,7 +162,13 @@ export class PastimesView {
       mesh.frustumCulled = false;
       return mesh;
     });
-    this.board = new THREE.Mesh(new THREE.BoxGeometry(BOARD, 0.025, BOARD), [new THREE.MeshStandardMaterial({ color: 0x5a3a1e, roughness: 0.8 }), new THREE.MeshStandardMaterial({ color: 0x5a3a1e, roughness: 0.8 }), new THREE.MeshStandardMaterial({ map: boardTexture(), roughness: 0.75 }), new THREE.MeshStandardMaterial({ color: 0x5a3a1e }), new THREE.MeshStandardMaterial({ color: 0x5a3a1e, roughness: 0.8 }), new THREE.MeshStandardMaterial({ color: 0x5a3a1e, roughness: 0.8 })]);
+    // (The wooden board, and the squares on its top: two draws.)
+    const wood = new THREE.MeshStandardMaterial({ color: 0x5a3a1e, roughness: 0.8 });
+    const top = new THREE.MeshStandardMaterial({ map: boardTexture(), roughness: 0.75 });
+    this.board = new THREE.Mesh(new THREE.BoxGeometry(BOARD, 0.025, BOARD), wood);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(BOARD, BOARD).rotateX(-Math.PI / 2).translate(0, 0.0126, 0), top);
+    face.receiveShadow = true;
+    this.board.add(face);
     this.board.castShadow = true;
     this.board.receiveShadow = true;
     this.board.visible = false;
@@ -183,7 +195,12 @@ export class PastimesView {
     this.spots.instanceMatrix.needsUpdate = true;
   }
 
-  /** The ball where a shot has it `t` seconds in: up from the hands, the arc, then whatever its end is (through the net, off the rim, short or long), and rolling to rest. */
+  /**
+   * The ball where a shot has it `t` seconds in: up from the hands in an arc to its end (the
+   * rim's middle for a swish; its near edge for a basket off the rim or a rim-out; short of it, or
+   * on the board's face for a long airball), then on with the speed it arrived with (damped by
+   * what it met): down through the net, off the rim and away, back off the board, a bounce or two.
+   */
   private ballAt(b: NonNullable<PastimesFrame['ball']>, out: THREE.Vector3) {
     const c = this.court!;
     const { fromX, fromZ, result, short } = b.show;
@@ -195,36 +212,42 @@ export class PastimesView {
     const ux = dx / len;
     const uz = dz / len;
     const t = b.t;
-    // Where the arc comes down: the rim's middle (a basket), its near edge (a rim-out, in off the rim), short or past it (an airball).
-    const end = result === 'swish' ? 0 : result === 'in' || result === 'rim' ? -RIM_R * 0.8 : short ? -0.7 : 0.45;
-    const endY = result === 'air' ? RIM_Y - 0.35 : RIM_Y + (result === 'swish' ? 0.02 : 0.03);
+    const long = result === 'air' && !short;
+    const end = result === 'swish' ? 0 : result === 'in' || result === 'rim' ? -RIM_R * 0.7 : long ? BOARD_FACE - BALL_R : -0.7;
+    const endY = result === 'air' ? (long ? RIM_Y + 0.25 : RIM_Y - 0.35) : RIM_Y + 0.03;
     const ex = rx + ux * end;
     const ez = rz + uz * end;
+    // The arc: a quadratic through the hands, up past the apex, to the end.
+    const ctrl = 2 * (Math.max(b.fromY, endY) + 0.9) - (b.fromY + endY) / 2;
     if (t <= FLIGHT) {
       const e = t / FLIGHT;
-      const apex = Math.max(b.fromY, endY) + 0.9;
-      // A parabola through the hands, the apex and the end.
-      const y = (1 - e) * (1 - e) * b.fromY + 2 * (1 - e) * e * (2 * apex - (b.fromY + endY) / 2) + e * e * endY;
-      out.set(fromX + (ex - fromX) * e, y, fromZ + (ez - fromZ) * e);
+      out.set(fromX + (ex - fromX) * e, (1 - e) * (1 - e) * b.fromY + 2 * (1 - e) * e * ctrl + e * e * endY, fromZ + (ez - fromZ) * e);
       return;
     }
-    const a = t - FLIGHT;
-    // Down through the net and onto the ground under the rim, a bounce or two.
-    const fall = (x: number, z: number, y0: number, vx: number, vz: number) => {
-      const g = 9;
-      const tHit = Math.sqrt((2 * (y0 - BALL_R)) / g);
-      if (a < tHit) {
-        out.set(x + vx * a, y0 - 0.5 * g * a * a, z + vz * a);
-        return;
-      }
-      const b2 = a - tHit;
-      const up = 2.2;
-      const h = Math.max(0, up * b2 - 0.5 * g * b2 * b2);
-      out.set(x + vx * tHit + vx * 0.5 * b2, BALL_R + (b2 < (2 * up) / g ? h : 0), z + vz * tHit + vz * 0.5 * b2);
-    };
-    if (result === 'swish' || result === 'in') fall(rx, rz, RIM_Y, -ux * 0.15, -uz * 0.15);
-    else if (result === 'rim') fall(ex, ez, RIM_Y + 0.05, -ux * 0.9 + uz * 0.4, -uz * 0.9 - ux * 0.4);
-    else fall(ex, ez, endY, short ? -ux * 0.4 : ux * -0.6, short ? -uz * 0.4 : uz * -0.6);
+    // Its speed as it arrives (tiles a second): along the shot, and down.
+    const vAlong = len / FLIGHT;
+    const vDown = (2 * (endY - ctrl)) / FLIGHT;
+    // Then what it meets: the net (through, slowed), the rim (up and back out), the board (back off it), nothing (on its way).
+    const [vx, vz, vy] =
+      result === 'swish' ? [ux * 0.1, uz * 0.1, vDown * 0.35] : result === 'in' ? [ux * 0.6, uz * 0.6, vDown * 0.3] : result === 'rim' ? [-ux * 0.9 + uz * 0.35, -uz * 0.9 - ux * 0.35, 1.2] : long ? [-ux * vAlong * 0.35, -uz * vAlong * 0.35, 0.4] : [ux * vAlong * 0.5, uz * vAlong * 0.5, vDown * 0.6];
+    this.fall(ex, endY, ez, vx, vy, vz, t - FLIGHT, out);
+  }
+
+  /** A ball let go at a point with a speed (tiles a second, y up): falling, a bounce or two, rolling to rest. */
+  private fall(x: number, y: number, z: number, vx: number, vy: number, vz: number, a: number, out: THREE.Vector3) {
+    const g = 9;
+    // (When it first meets the ground: y + vy·t − g·t²/2 = the ball's radius.)
+    const tHit = (vy + Math.sqrt(vy * vy + 2 * g * Math.max(0, y - BALL_R))) / g;
+    if (a < tHit) {
+      out.set(x + vx * a, y + vy * a - 0.5 * g * a * a, z + vz * a);
+      return;
+    }
+    const b2 = a - tHit;
+    const up = Math.min(2.4, Math.abs(vy - g * tHit) * 0.45);
+    const h = b2 < (2 * up) / g ? up * b2 - 0.5 * g * b2 * b2 : 0;
+    // (Along the ground it slows to a stop.)
+    const roll = 1 - Math.exp(-b2 * 1.5);
+    out.set(x + vx * tHit + vx * 0.6 * roll, BALL_R + Math.max(0, h), z + vz * tHit + vz * 0.6 * roll);
   }
 
   update(f: PastimesFrame | null, px: number, pz: number, time: number, motion: boolean, ground: boolean) {
@@ -241,53 +264,62 @@ export class PastimesView {
     } else this.ring.visible = false;
     // The ball: in flight (or coming down), else up in the player's hands.
     if (on && c && f.ball) {
+      // (Reduced motion: straight to where it comes to rest.)
+      const t = f.ball.t;
+      if (!motion) f.ball.t = REST_T;
       this.ballAt(f.ball, this.p);
+      f.ball.t = t;
       this.ball.position.copy(this.p);
       this.ball.rotation.x = motion ? -f.ball.t * 9 : 0;
       this.ball.visible = true;
     } else if (on && f.holding) {
-      // (Down a little at the bottom of the marker's sweep, up at the top: the knees and arms work it.)
-      this.ball.position.set(px, HOLD_Y + f.holding.power * 0.12, pz);
+      // (Over the head, a little toward the rim; down at the bottom of the marker's sweep, up at the top: the knees and arms work it.)
+      const h = f.holding;
+      this.ball.position.set(px + h.dx * HOLD_AHEAD, HOLD_Y + h.power * 0.1, pz + h.dz * HOLD_AHEAD);
       this.ball.rotation.x = 0;
       this.ball.visible = true;
     } else this.ball.visible = false;
-    // The cards: the pile face down (a little scattered), a call's cards face up beside it.
+    // The cards: the pile face down (a little scattered), a call's cards face up in a row beside it, turned to the camera.
     const cd = on ? f.cards : null;
     let n = 0;
-    const counts = [0, 0, 0, 0];
+    const counts = this.counts;
+    counts.fill(0);
     if (cd) {
-      const fx = Math.sin(cd.angle);
-      const fz = Math.cos(cd.angle);
       const pile = Math.min(14, cd.pile - (cd.reveal?.length ?? 0));
       for (let k = 0; k < pile; k++) {
         const j = Math.sin(k * 12.9898) * 43758.5453;
         const jx = (j - Math.floor(j) - 0.5) * 0.08;
-        const jz = (Math.sin(k * 7.13) * 0.5) * 0.06;
-        // (The pile a little toward the inmate: the turned-up cards toward the player.)
-        this.p.set(cd.x + jx + fx * 0.1, 0.004 + k * 0.002, cd.z + jz + fz * 0.1);
+        const jz = Math.sin(k * 7.13) * 0.5 * 0.06;
+        this.p.set(cd.x + jx, 0.004 + k * 0.002, cd.z + jz - 0.06);
         this.q.setFromAxisAngle(this.yAxis, cd.angle + Math.sin(k * 3.7) * 0.5);
         this.m.compose(this.p, this.q, this.s.set(1, 1, 1));
         this.backs.setMatrixAt(n++, this.m);
       }
-      (cd.reveal ?? []).forEach((card, k) => {
+      const shown = cd.reveal ?? [];
+      for (let k = 0; k < shown.length; k++) {
+        const card = shown[k];
         const mesh = this.faces[card - 1];
-        if (!mesh) return;
-        // In a row across the line between the two (the player's right: (−fz, fx)).
-        const off = (k - ((cd.reveal?.length ?? 1) - 1) / 2) * (CARD_W + 0.025);
-        this.p.set(cd.x - fx * 0.12 - fz * off, 0.006, cd.z - fz * 0.12 + fx * off);
-        this.q.setFromAxisAngle(this.yAxis, cd.angle);
+        if (!mesh || counts[card - 1] >= 3) continue;
+        // (On top of the pile's height, toward the camera, across the screen.)
+        this.p.set(cd.x + (k - (shown.length - 1) / 2) * (CARD_W + 0.025), 0.034, cd.z + 0.14);
+        this.q.identity();
         this.m.compose(this.p, this.q, this.s.set(1, 1, 1));
         mesh.setMatrixAt(counts[card - 1]++, this.m);
-      });
+      }
     }
-    this.backs.count = n;
+    if (n !== this.backs.count || n) {
+      this.backs.count = n;
+      this.backs.instanceMatrix.needsUpdate = true;
+    }
     this.backs.visible = n > 0;
-    this.backs.instanceMatrix.needsUpdate = true;
-    this.faces.forEach((mesh, k) => {
-      mesh.count = counts[k];
+    for (let k = 0; k < this.faces.length; k++) {
+      const mesh = this.faces[k];
+      if (counts[k] !== mesh.count || counts[k]) {
+        mesh.count = counts[k];
+        mesh.instanceMatrix.needsUpdate = true;
+      }
       mesh.visible = counts[k] > 0;
-      mesh.instanceMatrix.needsUpdate = true;
-    });
+    }
     // The board: square to the two, the player's side nearest them; the pieces on their squares (a king stacked two high).
     const b = on ? f.board : null;
     this.board.visible = !!b;
@@ -311,7 +343,7 @@ export class PastimesView {
         const x = b.x + fx * along - fz * across;
         const z = b.z + fz * along + fx * across;
         const king = p === 2 || p === 4;
-        for (let h = 0; h < (king ? 2 : 1); h++) {
+        for (let h = 0; h < (king ? 2 : 1) && (p <= 2 ? nm : nh) < 24; h++) {
           this.p.set(x, 0.032 + h * 0.015, z);
           this.m.compose(this.p, this.q.identity(), this.s.set(1, 1, 1));
           if (p <= 2) this.mine.setMatrixAt(nm++, this.m);
@@ -319,12 +351,16 @@ export class PastimesView {
         }
       }
     }
-    this.mine.count = Math.min(24, nm);
-    this.his.count = Math.min(24, nh);
-    this.mine.visible = nm > 0;
-    this.his.visible = nh > 0;
-    this.mine.instanceMatrix.needsUpdate = true;
-    this.his.instanceMatrix.needsUpdate = true;
+    for (const [mesh, k] of [
+      [this.mine, nm],
+      [this.his, nh],
+    ] as const) {
+      if (mesh.count !== k || k) {
+        mesh.count = k;
+        mesh.instanceMatrix.needsUpdate = true;
+      }
+      mesh.visible = k > 0;
+    }
   }
 
   /** Shown for a moment while the renderer compiles their shaders (a new game), then hidden again. */

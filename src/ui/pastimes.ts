@@ -165,8 +165,10 @@ export class CheatCard {
     this.el.append(this.say);
     this.el.setAttribute('aria-label', t('cheat.title', { name: v.name }));
     if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? this.el.querySelector<HTMLElement>('.cheat-acts button:not([disabled])'))?.focus();
-    // What a screen reader hears: the call's verdict, the inmate's play and tell, whose move.
-    const said = this.el.querySelector('.cheat-now')!.textContent!.replace(/\s+/g, ' ').trim();
+    // What a screen reader hears: the call's verdict (the cards turned over by name), the inmate's play and tell, whose move.
+    const nowEl = this.el.querySelector('.cheat-now')!;
+    const flipped = v.reveal ? v.reveal.cards.map((c) => cardName(c)).join(', ') : '';
+    const said = [...nowEl.querySelectorAll('p')].map((p) => p.textContent!.trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ') + (flipped ? ` (${flipped})` : '');
     if (said !== this.said) {
       this.said = said;
       setText(this.say, said);
@@ -342,8 +344,14 @@ export class BoardCard {
   private drawn = '';
   private chosen = -1;
 
+  /** What a screen reader hears (one live region, kept across redraws): whose move, the result. */
+  private readonly say: HTMLElement;
+  private said = '';
+
   constructor(private readonly send: Send, private readonly click: () => void) {
     this.el = h('div', 'train-card board-card hidden');
+    this.say = h('span', 'sr-only');
+    this.say.setAttribute('role', 'status');
     this.el.setAttribute('role', 'dialog');
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
     this.el.addEventListener('click', (e) => {
@@ -415,20 +423,26 @@ export class BoardCard {
         const p = v.sq[i];
         const cls = [p ? `p${p}` : '', i === this.chosen ? 'chosen' : '', targets.has(i) ? 'target' : '', movable.has(i) && i !== this.chosen ? 'can' : '', last.has(i) ? 'last' : ''].filter(Boolean).join(' ');
         const live = targets.has(i) || movable.has(i);
-        const label = p ? t(p === 1 ? 'checkers.yourMan' : p === 2 ? 'checkers.yourKing' : p === 3 ? 'checkers.hisMan' : 'checkers.hisKing', { name: v.name }) : t('checkers.empty');
-        cells += `<button class="sq ${cls}" data-sq="${i}" ${live ? '' : 'disabled'} aria-label="${esc(`${label}, ${'abcdefgh'[c]}${8 - r}`)}">${p ? '<span class="piece"></span>' : ''}</button>`;
+        const label = p ? t(p === 1 ? 'checkers.yourMan' : p === 2 ? 'checkers.yourKing' : p === 3 ? 'checkers.hisMan' : 'checkers.hisKing', { name: v.name }) : targets.has(i) ? t('checkers.moveHere') : t('checkers.empty');
+        const pressed = movable.has(i) ? ` aria-pressed="${i === this.chosen ? 'true' : 'false'}"` : '';
+        cells += `<button class="sq ${cls}" data-sq="${i}" ${live ? '' : 'disabled'}${pressed} aria-label="${esc(`${label}, ${'abcdefgh'[c]}${8 - r}`)}">${p ? '<span class="piece"></span>' : ''}</button>`;
       }
     const status =
-      v.over === 1 ? t('checkers.won', { name: v.name }) : v.over === 2 ? t('checkers.lost', { name: v.name }) : v.over === 3 ? t('checkers.drawn') : v.thinking ? t('checkers.thinking', { name: v.name }) : v.chain >= 0 ? t('checkers.jumpOn') : v.steps.some((s) => Math.abs(s.to - s.from) > 5) ? t('checkers.mustJump') : t('checkers.yourMove');
+      v.over === 1 ? t('checkers.won', { name: v.name }) : v.over === 2 ? t('checkers.lost', { name: v.name }) : v.over === 3 ? t('checkers.drawn') : v.thinking ? t('checkers.thinking', { name: v.name }) : v.chain >= 0 ? t('checkers.jumpOn') : v.steps.some((s) => Math.abs(s.to - s.from) > 5) ? t('checkers.mustJump') : t(TOUCH ? 'checkers.yourMoveTouch' : 'checkers.yourMove');
     const acts =
       v.over > 0
         ? `<button class="big-btn primary small" data-do="new">${icon('replay', 16)}<span>${t('checkers.newGame')}</span></button><button class="big-btn ghost small" data-do="up">${icon('close', 16)}<span>${t('checkers.getUp')}</span></button>`
         : `<button class="big-btn ghost small" data-do="up">${icon('close', 16)}<span>${t('checkers.later')}</span></button><button class="big-btn ghost small" data-do="resign" data-confirm="${esc(t('checkers.resignConfirm'))}">${icon('flag', 16)}<span>${t('checkers.resign')}</span></button>`;
-    this.el.innerHTML = `<div class="train-head"><i class="train-ic">${icon('checkers', 18)}</i><b>${esc(t('checkers.title', { name: v.name }))}</b><span class="train-value">${v.mine}–${v.his}</span></div>
-      <div class="checkers" role="grid" aria-label="${esc(t('checkers.board'))}">${cells}</div>
-      <p class="train-note checkers-status" role="status" data-over="${v.over}">${esc(status)}</p>
+    this.el.innerHTML = `<div class="train-head"><i class="train-ic">${icon('checkers', 18)}</i><b>${esc(t('checkers.title', { name: v.name }))}</b><span class="train-value" aria-label="${esc(t('checkers.pieces', { n: v.mine, m: v.his, name: v.name }))}">${v.mine}–${v.his}</span></div>
+      <div class="checkers" role="group" aria-label="${esc(t('checkers.board'))}">${cells}</div>
+      <p class="train-note checkers-status" data-over="${v.over}">${esc(status)}</p>
       <p class="checkers-record">${esc(t('checkers.record', { name: v.name, w: v.won, l: v.lost, d: v.drawn }))}</p><div class="dice-acts">${acts}</div>`;
     this.el.setAttribute('aria-label', t('checkers.title', { name: v.name }));
+    this.el.append(this.say);
+    if (status !== this.said) {
+      this.said = status;
+      setText(this.say, status);
+    }
     if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? this.el.querySelector<HTMLElement>('.sq:not([disabled])') ?? this.el.querySelector<HTMLElement>('[data-do]'))?.focus();
   }
 }

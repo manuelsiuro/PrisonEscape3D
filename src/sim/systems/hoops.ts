@@ -15,6 +15,7 @@
  */
 import { COURT_LEAVE, COURT_RANGE, CROWD_OPINION, HOLD_MAX, INMATE_SHOT, NEED_BASE, NEED_PER_TILE, NEED_WIND, PLAY_OPINION, POWER_SPEED, PRACTICE_MAKES, RIM_NOISE, RIM_OUT, SHOOT_SPOTS, SKILL_BASE, SKILL_PER_TILE, SKILL_SPREAD, SPORTS_WINS, SUDDEN_DEATH, WIN_OPINION, WINDOW_BASE, WINDOW_MIN, WINDOW_PER_TILE, WINDOW_RAIN } from '../../content/games';
 import type { Court } from '../../content/prisons/types';
+import { ROUTINE } from '../../content/routine';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { ATTRS, type SimState } from '../state';
@@ -157,6 +158,8 @@ export function aimShot(sim: SimContext) {
   if (s.shot.length || s.bout.length || s.pick.length || s.cheat || s.seat >= 0 || s.train >= 0 || s.sleeping) return;
   const spot = spotAt(sim);
   if (spot < 0) return;
+  // (The yard open: no sirens, not the night.)
+  if (s.lockdown || ROUTINE[s.routine].id === 'lightsOut') return;
   const o = s.shootout;
   if (o && (o.turn !== 0 || spot !== spotOf(o.k))) return;
   s.shot = [s.step, spot];

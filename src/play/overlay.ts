@@ -126,16 +126,18 @@ export function keepPlayerClear(open: boolean) {
   }
   if (shiftCheck-- > 0) return;
   shiftCheck = 8;
-  const el = document.querySelector<HTMLElement>('.item-panel:not(.hidden)');
+  const el = document.querySelector<HTMLElement>('.item-panel:not(.hidden), .cheat-card:not(.hidden), .board-card:not(.hidden)');
   if (!el) return view.setShift(0, 0);
   const r = el.getBoundingClientRect();
   const w = innerWidth;
   const h = innerHeight;
   const top = 110;
-  if (r.top < h * 0.45 && r.left > w * 0.2) {
+  // (P27: a card docked to the left reaching past the middle (a phone held sideways): the picture slides right.)
+  if (r.left < w * 0.1 && r.right < w * 0.75 && r.top < h * 0.45) view.setShift(r.right > w / 2 - 60 ? Math.round((r.right + w) / 2 - w / 2) : 0, 0);
+  else if (r.top < h * 0.45 && r.left > w * 0.2) {
     // To the side: centre the player in what's left of the width.
     view.setShift(r.left < w / 2 + 60 ? Math.round(r.left / 2 - w / 2) : 0, 0);
-  } else if (r.top >= h * 0.3) {
+  } else if (r.top >= h * 0.3 && r.left < w / 2 && r.right > w / 2) {
     // A sheet from the bottom: between the HUD and its top edge.
     view.setShift(0, r.top < h / 2 + 60 ? Math.round((top + r.top) / 2 - h / 2) : 0);
   } else view.setShift(0, 0);

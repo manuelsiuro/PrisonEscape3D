@@ -83,8 +83,8 @@ export function eyesOn(s: Pick<SimState, 'guards'>, at: number): boolean {
   return s.guards.some((g) => g.sees && !lookingAway(g, at));
 }
 
-/** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout). */
-export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout;
+/** A game under way (the dice on the table, an arm-wrestle; P27: a hand of Cheat, a shootout, the player at the old-timer's board). */
+export const gameOn = (s: Pick<SimState, 'dice' | 'bout' | 'cheat' | 'shootout' | 'board'>) => s.dice.length > 0 || s.bout.length > 0 || !!s.cheat || !!s.shootout || !!s.board?.seated;
 
 // ------------------------------------------------------------------ dice
 

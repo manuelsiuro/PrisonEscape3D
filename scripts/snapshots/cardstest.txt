@@ -1,7 +1,7 @@
 data: center-perks Doc, spots 2.2/3.2/4/3.2/2.2 | stalag-flucht Badger, spots 2.2/3.2/4/3.2/2.2 | shankton Flint, spots 2.2/3.2/4/3.2/2.2 | san-pancho Lobo, spots 2.2/3.2/4/3.2/2.2 | irongate Barnacle, spots 2.2/3.2/4/3.2/2.2 | training Sparky, spots 2.2/3.2/4/3.2/2.2
 cheat in the game: the deal, 2 calls, lost; folded walking away; off in a lockdown; three a day
-cheat, the tell: Int 0: tell on 30% of 2836 lies, 20% of 97164 truths; Int 80: tell on 49% of 2836 lies, 20% of 97164 truths
-cheat, ways of playing (games won of 2000): trusting (Int 10) 42%, trusting (Int 80) 42%, readsTells (Int 10) 49%, readsTells (Int 80) 58%, callsAll (Int 10) 5%, callsAll (Int 80) 5%, bluffer (Int 10) 20%, bluffer (Int 80) 27%
+cheat, the tell: Int 0: tell on 40% of 2836 lies, 20% of 97164 truths; Int 80: tell on 59% of 2836 lies, 20% of 97164 truths
+cheat, ways of playing (games won of 2000): trusting (Int 10) 40%, trusting (Int 80) 40%, readsTells (Int 10) 48%, readsTells (Int 80) 55%, counts (Int 10) 58%, counts (Int 80) 58%, callsAll (Int 10) 2%, callsAll (Int 80) 2%, bluffer (Int 10) 28%, bluffer (Int 80) 32%
 hoops: center-perks windows (calm) 580±87, 730±72, 850±60, 730±72, 580±87; a gale behind 730±40, against 970±40
 hoops: a swish on the mark, an airball off it; practice +1 Speed at 5; a shootout won 5–2; off the court, off
 checkers: rules (forced captures, jumps that go on); his move the same every time; level 0: the random player won 1, lost 9, drew 2; level 2: the random player won 0, lost 11, drew 1; level 4: the random player won 0, lost 12, drew 0

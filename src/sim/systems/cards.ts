@@ -12,7 +12,7 @@
  * shuffle and every choice comes from roll(): nothing here touches the state's rng, and nothing
  * happens without the player asking.
  */
-import { CALL_DOUBT, CALL_FLOOR, CALL_MAX, CALL_PRESS, CALL_STUCK, CARD, CHIPS, CLAIM_MAX, DECK, DICE_HEAT, FALSE_TELL, HAND, PLAY_OPINION, REVEAL_STEPS, STAKES, TELL_BASE, TELL_MAX, TELLS, THINK_STEPS, type Tell } from '../../content/games';
+import { CALL_DOUBT, CALL_FLOOR, CALL_MAX, CALL_STUCK, CARD, CHIPS, CLAIM_MAX, DECK, DICE_HEAT, FALSE_TELL, HAND, PLAY_OPINION, REVEAL_STEPS, STAKES, TELL_BASE, TELL_MAX, TELLS, THINK_STEPS, type Tell } from '../../content/games';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { closeBox } from './actions';
@@ -215,9 +215,10 @@ export function endCheat(sim: SimContext, how: 'won' | 'lost' | 'folded' | 'off'
 /**
  * The inmate's move (pure): call the player's play, or the cards it lays and whether its tell
  * shows. It calls a hand played out, and any claim its own cards prove false (there are only so
- * many of the table card and the Jokers); else as much as it doubts (a big claim, a big pile,
- * nothing true of its own to lay). It lays its true cards (table cards before Jokers), up to
- * three; with none, a bluff of one or two. (What
+ * many of the table card and the Jokers); else as much as it doubts (the claim's odds as it sees
+ * them, nothing true of its own to lay). It lays some of its true cards (table cards before
+ * Jokers: one to three, as many as roll() says, the rest kept back), and with none a bluff of one
+ * to three: the size of a play gives nothing away. (What
  * it knows: its own hand, and the true cards it has laid itself this round.)
  */
 export function decide(c: Cheat, salt: number, step: number, int: number): { call: true } | { call: false; ks: number[]; tell: boolean } {
@@ -229,17 +230,14 @@ export function decide(c: Cheat, salt: number, step: number, int: number): { cal
     if (odds === 0) return { call: true };
     // Else as much as it doubts: the less likely the claim, the likelier the call (more so with nothing true of its own to lay, and with the player nearly out).
     const doubt = Math.max(0, 100 - odds - CALL_FLOOR);
-    if (r(1, 100) < Math.min(CALL_MAX, Math.floor((doubt * CALL_DOUBT) / 100) + (own ? 0 : CALL_STUCK) + (c.mine.length <= 2 ? CALL_PRESS : 0))) return { call: true };
+    if (r(1, 100) < Math.min(CALL_MAX, Math.floor((doubt * CALL_DOUBT) / 100) + (own ? 0 : CALL_STUCK))) return { call: true };
   }
   const order = c.theirs.map((card, k) => ({ card, k })).filter((x) => isTrue(x.card, c.table));
   order.sort((a, b) => (a.card === CARD.JOKER ? 1 : 0) - (b.card === CARD.JOKER ? 1 : 0) || a.k - b.k);
+  // (How many it lays tells nothing: some of its true cards, kept back for later plays, or a bluff of any size.)
   let ks: number[];
-  if (order.length) {
-    ks = order.slice(0, CLAIM_MAX).map((x) => x.k);
-  } else {
-    const n = Math.min(c.theirs.length, r(3, 100) < 70 ? 1 : 2);
-    ks = Array.from({ length: n }, (_, k) => k);
-  }
+  if (order.length) ks = order.slice(0, 1 + r(5, Math.min(CLAIM_MAX, order.length))).map((x) => x.k);
+  else ks = Array.from({ length: 1 + r(3, Math.min(CLAIM_MAX, c.theirs.length)) }, (_, k) => k);
   const lie = ks.some((k) => !isTrue(c.theirs[k], c.table));
   return { call: false, ks, tell: r(4, 100) < (lie ? tellOdds(int) : FALSE_TELL) };
 }

@@ -254,7 +254,18 @@ const BUILDERS: Record<DecorKind, Builder> = {
     const ring = (from: number, color: number) => paint(new THREE.TorusGeometry(0.2, 0.06, 6, 6, Math.PI / 2).rotateZ(from).translate(0, 0.9, z), color);
     return { parts: [ring(0, RED), ring(Math.PI / 2, WHITE), ring(Math.PI, RED), ring((3 * Math.PI) / 2, WHITE), box(0.04, 0.12, 0.02, 0xc8a86a, 0, 1.12, z - 0.03)] };
   },
-  hoop: () => ({ parts: [cyl(0.05, 2.4, DARK, 0, 0, -0.3, 8), box(0.9, 0.6, 0.04, WHITE, 0, 2.2, -0.24), box(0.3, 0.22, 0.01, RED, 0, 2.25, -0.215), cyl(0.2, 0.03, 0xe8642c, 0, 2.15, -0.02, 14)] }),
+  /** A basketball hoop on its pole (P27: a court's): the board, an open ring of a rim on its bracket (a ball goes through it: render/Pastimes.ts RIM_Y), a white net hanging under it. */
+  hoop: () => ({
+    parts: [
+      cyl(0.05, 2.75, DARK, 0, 0, -0.3, 8),
+      box(0.9, 0.6, 0.04, WHITE, 0, 2.2, -0.24),
+      box(0.92, 0.04, 0.05, DARK, 0, 2.18, -0.24),
+      box(0.3, 0.22, 0.01, RED, 0, 2.3, -0.215),
+      box(0.05, 0.04, 0.2, 0xe8642c, 0, 2.3, -0.12),
+      paint(new THREE.TorusGeometry(0.2, 0.018, 6, 20).rotateX(Math.PI / 2).translate(0, 2.32, -0.02), 0xe8642c),
+      paint(new THREE.CylinderGeometry(0.19, 0.12, 0.22, 12, 1, true).translate(0, 2.2, -0.02), 0xf4f4ef),
+    ],
+  }),
   filing: () => ({ parts: [box(0.5, 1.1, 0.5, 0x8a96a3, 0, 0, 0), ...[0.22, 0.48, 0.74].map((y) => box(0.42, 0.2, 0.01, 0x9fabb7, 0, y, 0.255)), ...[0.3, 0.56, 0.82].map((y) => box(0.12, 0.03, 0.02, DARK, 0, y, 0.265))] }),
   ivStand: () => ({ parts: [cyl(0.2, 0.04, DARK, 0, 0, 0, 8), cyl(0.02, 1.5, STEEL, 0, 0.04, 0, 6), box(0.3, 0.02, 0.02, STEEL, 0, 1.52, 0), box(0.12, 0.2, 0.06, 0xd9eef7, 0.1, 1.3, 0)] }),
   rug: (w, d) => ({ parts: [box(w - 0.3, 0.012, d - 0.3, 0x8e3b2e, 0, 0, 0), box(w - 0.6, 0.014, d - 0.6, 0xc58f5a, 0, 0, 0), box(w - 0.9, 0.016, d - 0.9, 0x8e3b2e, 0, 0, 0)] }),

@@ -169,7 +169,8 @@ export function frame(now: number) {
   const panel = itemsUI.panelOpen || socialOpen();
   document.body.classList.toggle('panel-open', panel);
   document.body.classList.toggle('items-open', itemsUI.panelOpen);
-  keepPlayerClear(panel && !g.paused);
+  // (P27: and a hand of Cheat's card, the old-timer's board, on a phone.)
+  keepPlayerClear((panel || document.body.classList.contains('seated-game')) && !g.paused);
   updateTargets(sim, g.ladderFoot, busy, panel, held);
   view.draw(buildFrame(g, a, tile, busy, held), dt, now / 1000);
   dayFrame(g, dt, g.over || st.ko > 0 || st.solitary > 0);

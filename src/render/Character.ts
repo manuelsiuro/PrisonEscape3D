@@ -1029,11 +1029,11 @@ export class Character {
       legR -= 0.35 * ga;
       bob -= 0.1 * ga;
     } else if (doing === DOING.BOARD) {
-      // Checkers (P27): crouched at the board, chin on the left fist, the right hand hovering over the pieces.
+      // Checkers (P27): crouched at the board, the left hand on the knee, the right hovering over the pieces.
       const ga = this.act;
       const hover = motion ? Math.sin(t * 0.9) * 0.08 : 0;
-      armLx += -1.6 * ga;
-      armLz += 0.42 * ga;
+      armLx += -0.55 * ga;
+      armLz += 0.12 * ga;
       armRx += (-0.75 + hover) * ga;
       armRz += -0.1 * ga;
       legL -= 0.4 * ga;
@@ -1042,10 +1042,11 @@ export class Character {
     } else if (doing === DOING.SHOOT) {
       // A shot at the hoop (P27): the ball up over the head in both hands, the knees bent.
       const ga = this.act;
+      // (The hands in under the ball, either side of it: in toward the middle.)
       armLx += -2.75 * ga;
       armRx += -2.75 * ga;
-      armLz -= 0.18 * ga;
-      armRz += 0.18 * ga;
+      armLz += 0.35 * ga;
+      armRz -= 0.35 * ga;
       legL -= 0.18 * ga;
       legR -= 0.18 * ga;
       bob -= 0.035 * ga;

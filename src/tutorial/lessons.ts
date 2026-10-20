@@ -637,6 +637,8 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.cards.lay', touch: 'lesson.cards.layTouch', on: (e) => e.type === 'cheat' && e.what === 'played' && e.by === 0, failOn: cheatOff },
       { text: 'lesson.cards.call', touch: 'lesson.cards.callTouch', on: (e) => e.type === 'cheat' && e.what === 'called', failOn: cheatOff },
       { text: 'lesson.cards.end', on: (e) => e.type === 'cheat' && (e.what === 'won' || e.what === 'lost'), failOn: cheatOff },
+      // (A moment with the game's result on screen before the lesson's done.)
+      { text: 'lesson.cards.over', done: () => true, least: 5 },
     ],
   },
   {
@@ -661,6 +663,7 @@ export const LESSONS: readonly Lesson[] = [
         goal: (sim) => (sim.state.shootout ? spotOn(sim, sim.state.shootout.k % sim.prison.leisure!.hoop.spots.length) : null),
         failOn: (e) => (e.type === 'hoops' && e.what === 'off' ? 'lesson.hoops.off' : null),
       },
+      { text: 'lesson.hoops.over', done: () => true, least: 5 },
     ],
   },
   {
@@ -687,8 +690,14 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.board = b;
     },
     steps: [
-      { text: 'lesson.checkers.sit', touch: 'lesson.checkers.sitTouch', on: (e) => e.type === 'checkers' && e.what === 'sat', fail: gamesFail },
-      { text: 'lesson.checkers.jump', touch: 'lesson.checkers.jumpTouch', on: (e) => e.type === 'checkers' && e.what === 'won' },
+      { text: 'lesson.checkers.sit', touch: 'lesson.checkers.sitTouch', on: (e) => e.type === 'checkers' && e.what === 'sat', fail: boardFail },
+      {
+        text: 'lesson.checkers.jump',
+        touch: 'lesson.checkers.jumpTouch',
+        on: (e) => e.type === 'checkers' && e.what === 'won',
+        fail: boardFail,
+        failOn: (e) => (e.type === 'checkers' && e.what === 'lost' ? 'lesson.checkers.resigned' : null),
+      },
       { text: 'lesson.checkers.secret', done: () => true, least: 6 },
     ],
   },
@@ -935,6 +944,12 @@ function spotOn(sim: Sim, k: number): number {
   return tile(q.x, q.z);
 }
 
+/** Up from the old-timer's board with free time over: no sitting down again until the next. */
+function boardFail(c: LessonCtx): Key | null {
+  return !c.sim.state.board?.seated && !gamesOpen(c.sim) ? 'lesson.games.closed' : null;
+}
+
+/** Why the games can't go on (free time over, nothing under way). */
 function gamesFail(c: LessonCtx): Key | null {
   return !gamesOpen(c.sim) && !gameOn(c.sim.state) ? 'lesson.games.closed' : null;
 }

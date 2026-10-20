@@ -583,7 +583,7 @@ export class View {
       this.scene.remove(c.root);
       c.dispose();
     }
-    this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 2 } : {}), gait: c.gait })) : [];
+    this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 1, beard: 3 } : {}), gait: c.gait })) : [];
     for (const c of this.cast) this.scene.add(c.root);
   }
 

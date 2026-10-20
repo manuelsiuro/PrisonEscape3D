@@ -16,7 +16,7 @@ import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { ATTRS, type Refusal } from '../state';
 import { ATTR_MAX } from '../tuning';
-import { gamesOpen } from './games';
+import { gameOn, gamesOpen } from './games';
 import { prisonDay } from './clock';
 import { changeOpinion, refuse } from './social';
 
@@ -284,11 +284,13 @@ export function checkersOp(sim: SimContext, b: number) {
   // (At the board already, a sitting begun goes on: resigning, or a new game once one's over.)
   const sitting = !!s.board?.seated && atBoard(sim);
   if (b === 2) {
-    if (sitting && !s.board!.over) finish(sim, 2);
+    if (sitting && !s.board!.over) finish(sim, 2, true);
     return;
   }
   const why = sitting ? null : elderRefusal(sim);
   if (why) return refuse(sim, why);
+  // (Not in the middle of another game: dice on the table, a bout, a hand of Cheat, a shootout.)
+  if (!sitting && gameOn(s)) return;
   if (!s.board || s.board.over) {
     s.board = newBoard();
   } else s.board.seated = true;
@@ -343,7 +345,7 @@ function settle(sim: SimContext) {
 }
 
 /** A game over (1 the player won, 2 he did, 3 drawn): what it brings, the board left as it ended. */
-function finish(sim: SimContext, over: number) {
+function finish(sim: SimContext, over: number, resigned = false) {
   const s = sim.state;
   const b = s.board!;
   b.over = over;
@@ -353,10 +355,11 @@ function finish(sim: SimContext, over: number) {
   const was = m?.opinion ?? 0;
   while (s.elder.length < 4) s.elder.push(0);
   s.elder[over === 1 ? ELDER.WON : over === 2 ? ELDER.LOST : ELDER.DRAWN]++;
-  changeOpinion(sim, who, over === 1 ? ELDER_WIN_OPINION : PLAY_OPINION);
-  // A point of Intellect: for a win always, for any game finished once a prison day.
+  // (A game resigned brings nothing: no respect, no lesson. Played to its end, it does.)
+  if (!resigned) changeOpinion(sim, who, over === 1 ? ELDER_WIN_OPINION : PLAY_OPINION);
+  // A point of Intellect: for a win always, for any game played to its end once a prison day.
   const day = prisonDay(s.step);
-  const teach = (over === 1 || s.elder[ELDER.TAUGHT] !== day) && s.items.int < ATTR_MAX;
+  const teach = !resigned && (over === 1 || s.elder[ELDER.TAUGHT] !== day) && s.items.int < ATTR_MAX;
   if (teach) {
     s.items.int++;
     s.items.rev++;

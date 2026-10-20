@@ -578,3 +578,26 @@ body.reduced-motion .board-card {
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
   }
 }
+
+/* The ghost buttons on the dark cards: light text on a faint fill (the shared ghost is for light dialogs). */
+.train-card .big-btn.ghost {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+.train-card .big-btn.ghost:disabled {
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.07);
+  opacity: 1;
+}
+
+/* Phones upright: the court's card above the action and lock buttons (their thumb's place stays theirs). */
+@media (max-width: 899px) and (min-height: 521px) {
+  .court-card {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 214px);
+  }
+  .cheat-card .train-stop {
+    width: 42px;
+    height: 42px;
+  }
+}

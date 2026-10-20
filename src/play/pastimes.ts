@@ -18,6 +18,7 @@ import { banner, cheatCard, combatUI, courtCard, itemsUI, sound, view } from './
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { director } from './chatter';
+import { TOUCH } from '../ui/dom';
 
 /**
  * Card sharks (P27) on screen: Cheat's card, the court's card and the old-timer's board, filled
@@ -175,7 +176,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
     }
     case 'checkers': {
       const name = nameOf(sim, e.who);
-      if (e.what === 'sat') coachOnce('checkers', 'hint.checkers');
+      if (e.what === 'sat') coachOnce('checkers', TOUCH ? 'hint.checkersTouch' : 'hint.checkers');
       else if (e.what === 'moved') sound.checker((e.path?.length ?? 0) > 2 || Math.abs((e.path?.[1] ?? 0) - (e.path?.[0] ?? 0)) > 5);
       else if (e.what === 'won') {
         sound.fanfare();
@@ -188,7 +189,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       } else if (e.what === 'lost' || e.what === 'drawn') {
         sound.click();
         if (e.int) floatUp(`+1 ${t('attr.intShort')}`, 'gain');
-        banner.toast(`${t(e.what === 'lost' ? 'toast.checkersLost' : 'toast.checkersDrawn', { name })}${e.int ? `: ${t('toast.partInt')}` : ''}`, undefined, 3600);
+        banner.toast(t(e.what === 'lost' ? (e.int ? 'toast.checkersLostInt' : 'toast.checkersLost') : e.int ? 'toast.checkersDrawnInt' : 'toast.checkersDrawn', { name }), undefined, 3600);
       }
       break;
     }
@@ -351,7 +352,8 @@ export function pastimeKey(code: string): boolean {
     sound.click();
     return true;
   }
-  if (code === 'Enter' || code === 'NumpadEnter') {
+  // (Enter on a button of the card with the focus: that button's, not a lay.)
+  if ((code === 'Enter' || code === 'NumpadEnter') && !(document.activeElement as HTMLElement | null)?.closest('.cheat-card button')) {
     cheatCard.lay();
     return true;
   }
@@ -365,8 +367,8 @@ export function pastimeKey(code: string): boolean {
 // ------------------------------------------------------------------ the picture
 
 const frame: PastimesFrame = { spot: -1, ball: null, holding: null, cards: null, board: null };
-const ballFrame: NonNullable<PastimesFrame['ball']> = { show: { by: -1, fromX: 0, fromZ: 0, result: 'air', short: false, at: 0 }, t: 0, fromY: 1.25 };
-const holdFrame = { who: -1, power: 0 };
+const ballFrame: NonNullable<PastimesFrame['ball']> = { show: { by: -1, fromX: 0, fromZ: 0, result: 'air', short: false, at: 0 }, t: 0, fromY: 1.5 };
+const holdFrame = { who: -1, power: 0, dx: 0, dz: 0 };
 const cardsFrame = { x: 0, z: 0, angle: 0, pile: 0, reveal: null as number[] | null };
 const boardFrame = { x: 0, z: 0, angle: 0, sq: [] as number[], last: [] as number[] };
 
@@ -390,13 +392,17 @@ export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: 
   if (s.shot.length) {
     holdFrame.who = -1;
     holdFrame.power = powerAt(s.step - s.shot[0]) / 1000;
+    // (Toward the rim: held a little that way.)
+    const rim = rimInTiles(sim);
+    const len = rim ? Math.hypot(rim.x - px, rim.z - pz) || 1 : 1;
+    holdFrame.dx = rim ? (rim.x - px) / len : 0;
+    holdFrame.dz = rim ? (rim.z - pz) / len : 0;
     f.holding = holdFrame;
   } else f.holding = null;
   const c = s.cheat;
   if ((c || (endView && now < endUntil)) && partner && s.layer === LAYER.GROUND) {
-    // (Between the two, a little toward the camera: their backs would hide them otherwise, as the dice.)
-    cardsFrame.x = (px + partner.x) / 2;
-    cardsFrame.z = (pz + partner.z) / 2 + 0.34;
+    // (Between the two, pushed out to the side of the line between them that faces the camera: their bodies would hide them otherwise.)
+    besideLine(px, pz, partner.x, partner.z, 0.36, cardsFrame);
     cardsFrame.angle = Math.atan2(partner.x - px, partner.z - pz);
     cardsFrame.pile = c ? c.pile : (endView?.pile ?? 0);
     cardsFrame.reveal = c ? (c.turn === 2 ? reveal.cards : null) : reveal.cards;
@@ -404,14 +410,36 @@ export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: 
   } else f.cards = null;
   const b = s.board;
   if (b?.seated && elder && s.layer === LAYER.GROUND) {
-    boardFrame.x = (px + elder.x) / 2;
-    boardFrame.z = (pz + elder.z) / 2 + 0.18;
+    besideLine(px, pz, elder.x, elder.z, 0.22, boardFrame);
     boardFrame.angle = Math.atan2(elder.x - px, elder.z - pz);
     boardFrame.sq = b.sq;
     boardFrame.last = b.last;
     f.board = boardFrame;
   } else f.board = null;
   return f;
+}
+
+/**
+ * The middle of the line between two people, pushed `by` (tiles) across it toward the camera
+ * (south, +z); side by side north and south, across it to the east.
+ */
+function besideLine(ax: number, az: number, bx: number, bz: number, by: number, out: { x: number; z: number }) {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const len = Math.hypot(dx, dz) || 1;
+  let nx = -dz / len;
+  let nz = dx / len;
+  if (nz < -0.05 || (Math.abs(nz) <= 0.05 && nx < 0)) {
+    nx = -nx;
+    nz = -nz;
+  }
+  out.x = (ax + bx) / 2 + nx * by;
+  out.z = (az + bz) / 2 + nz * by;
+}
+
+/** Who's shooting in the picture (a shot just let go: the arms still up, following through), -1 the player, else the inmate; null nobody. */
+export function shooterNow(): number | null {
+  return ball && (performance.now() - ball.at) / 1000 < 0.35 ? ball.by : null;
 }
 
 /** The rim in the picture (tiles), for the ball's flight. */

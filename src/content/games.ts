@@ -70,7 +70,7 @@ export const REVEAL_STEPS = 80;
  * Its tell (by cell): shown on a lie with these odds out of 100 (plus the player's Intellect / 4,
  * at most TELL_MAX), and on the truth with FALSE_TELL: Intellect reads people, never for certain.
  */
-export const TELL_BASE = 30;
+export const TELL_BASE = 40;
 export const TELL_MAX = 80;
 export const FALSE_TELL = 20;
 export const TELLS = ['ear', 'glance', 'drum', 'whistle'] as const;
@@ -78,15 +78,13 @@ export type Tell = (typeof TELLS)[number];
 /**
  * The inmate calls "Liar!" on a claim it can't prove false with odds (out of 100) of CALL_DOUBT
  * per cent of its doubt past CALL_FLOOR (its doubt: 100 less the claim's odds as it sees them),
- * CALL_STUCK more with no true card of its own to lay, CALL_PRESS more with the player down to two
- * cards or fewer (a hand played out is a chip lost), at most CALL_MAX. (Measured in cardstest:
- * a player who never calls wins about 47%, one who reads the tells 53–61%, one who calls every
- * play 6%, one who bluffs every play 24%.)
+ * CALL_STUCK more with no true card of its own to lay, at most CALL_MAX. (Measured in cardstest:
+ * a player who never calls wins about 41%, one who reads the tells 48–54%, one who counts the
+ * inmate's plays 58%, one who calls every play 2%, one who bluffs every play 28%.)
  */
 export const CALL_DOUBT = 60;
 export const CALL_FLOOR = 20;
 export const CALL_STUCK = 10;
-export const CALL_PRESS = 30;
 export const CALL_MAX = 85;
 
 /**

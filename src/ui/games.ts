@@ -127,13 +127,13 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
     .join('');
   const hoopsOk = v.open && v.court;
   const hoops = v.hasCourt
-    ? `<div class="bribe-row"><span class="bribe-text"><b>${t('hoops.title')}</b><small>${esc(v.court ? t('hoops.note') : t('hoops.notHere'))}</small></span><button class="big-btn ${hoopsOk ? 'primary' : 'ghost'} small" data-act="${TALK.HOOPS}" ${hoopsOk ? '' : 'disabled'}>${icon('ball', 16)}<span>${t('hoops.go')}</span></button></div>`
+    ? `<div class="bribe-row"><span class="bribe-text"><b>${t('hoops.title')}</b><small>${esc(v.court ? t('hoops.note') : t('hoops.notHere'))}</small></span><button class="big-btn ${hoopsOk ? 'primary' : 'ghost'} small" data-act="${TALK.HOOPS}" ${hoopsOk ? '' : 'disabled'} aria-label="${esc(t('hoops.goAria'))}">${icon('ball', 16)}<span>${t('hoops.go')}</span></button></div>`
     : '';
   const e = v.elder;
   const elder = e
-    ? `<div class="bribe-row elder-row"><span class="bribe-text"><b>${t('checkers.name')}</b><small>${esc(!e.open ? e.why : e.game === 'on' ? t('checkers.onNote') : t('checkers.note', { name: v.name }))}</small></span><button class="big-btn ${e.open ? 'primary' : 'ghost'} small" data-act="${TALK.CHECKERS}" data-arg="1" ${e.open ? '' : 'disabled'}>${icon('checkers', 16)}<span>${t(e.game === 'on' ? 'checkers.resume' : 'checkers.play')}</span></button></div>`
+    ? `<div class="bribe-row elder-row"><span class="bribe-text"><b>${t('checkers.name')}</b><small>${esc(!e.open ? e.why : e.game === 'on' ? t('checkers.onNote') : t('checkers.note', { name: v.name }))}</small></span><button class="big-btn ${e.open ? 'primary' : 'ghost'} small" data-act="${TALK.CHECKERS}" data-arg="1" ${e.open ? '' : 'disabled'} aria-label="${esc(t(e.game === 'on' ? 'checkers.resumeAria' : 'checkers.playAria', { name: v.name }))}">${icon('checkers', 16)}<span>${t(e.game === 'on' ? 'checkers.resume' : 'checkers.play')}</span></button></div>`
     : '';
-  return `<section class="talk-games">${label}${sports}${result}${elder}${why}
+  return `<section class="talk-games">${label}${sports}${result}${why}${elder}
     <div class="bribe-row"><span class="bribe-text"><b>${t('games.dice')}</b><small>${t('games.diceNote')}</small></span><div class="stake-row">${stakes}</div></div>
     <div class="bribe-row"><span class="bribe-text"><b>${t('cheat.name')}</b><small>${t('cheat.note')}</small></span><div class="stake-row">${cheatStakes}</div></div>${warn}
     <div class="bribe-row"><span class="bribe-text"><b>${t('games.wrestle')}</b><small>${esc(armNote)}</small></span><button class="big-btn ${armOk ? 'primary' : 'ghost'} small" data-act="${TALK.WRESTLE}" ${armOk ? '' : 'disabled'}>${icon('arm', 16)}<span>${t('games.wrestleGo')}</span></button></div>${hoops}</section>`;

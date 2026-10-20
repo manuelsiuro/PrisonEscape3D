@@ -73,6 +73,8 @@ const keys = (): Array<[string, Key]> => [
   ['%KeyE%', 'help.k.act'],
   [t('help.k.space'), 'help.k.use'],
   ['%KeyR%', 'help.k.lock'],
+  ['1 – 5 · Enter · %KeyL%', 'help.k.cheat'],
+  [t('help.k.space'), 'help.k.shoot'],
   ['1 – 6', 'help.k.slots'],
   ['%KeyQ%', 'help.k.drop'],
   [t('help.k.rightMouse'), 'help.k.throw'],
