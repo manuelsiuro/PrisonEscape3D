@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DOING } from '../sim/systems/inmates';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 
 export interface Look {
@@ -416,23 +417,78 @@ function inkedParts(inked: ReadonlyArray<readonly [number, number]>, left: boole
 }
 
 /**
+ * Characters' own copy of the kit material: every body is a skinned mesh, so they never share
+ * a material (and shader) with the unskinned furniture (no program switch between them).
+ */
+const bodyMaterial = kitMaterial.clone();
+/** Their shadow-pass material, likewise kept apart from the unskinned meshes'. */
+const bodyDepth = new THREE.MeshDepthMaterial();
+/** Generous bounds round a character (standing, lying in bed, prone in a vent), in its own frame: the skinned body is culled by these. */
+const BODY_BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 0.5, -0.2), 1.6);
+
+/**
+ * One skinned mesh from the limbs' parts (each given in its pivot's frame): every vertex
+ * follows its own pivot (a bone), so the whole body is a single draw call however the limbs
+ * move. Bound with the pivots as they stand now (rest), relative to `root`.
+ */
+function skinned(limbs: Array<[Part[], THREE.Bone]>, root: THREE.Object3D, material: THREE.Material): THREE.SkinnedMesh {
+  // (The root unscaled at the origin: the bones' world matrices are their rest pose in its frame.)
+  root.updateMatrixWorld(true);
+  const bones: THREE.Bone[] = [];
+  const geos = limbs.map(([parts, bone]) => {
+    let b = bones.indexOf(bone);
+    if (b < 0) b = bones.push(bone) - 1;
+    const g = merge(parts, false).applyMatrix4(bone.matrixWorld);
+    const n = g.attributes.position.count;
+    const index = new Uint16Array(n * 4);
+    const weight = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) {
+      index[i * 4] = b;
+      weight[i * 4] = 1;
+    }
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(index, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(weight, 4));
+    return g;
+  });
+  const geo = mergeGeometries(geos);
+  for (const g of geos) g.dispose();
+  const mesh = new THREE.SkinnedMesh(geo, material);
+  mesh.castShadow = true;
+  mesh.customDepthMaterial = bodyDepth;
+  mesh.boundingSphere = BODY_BOUNDS.clone();
+  mesh.bind(new THREE.Skeleton(bones), new THREE.Matrix4());
+  return mesh;
+}
+
+/** The silhouette's copy of a skinned body: the same geometry and bones, the flat tint. */
+function ghostSkin(body: THREE.SkinnedMesh, material: THREE.Material): THREE.SkinnedMesh {
+  const copy = new THREE.SkinnedMesh(body.geometry, material);
+  copy.boundingSphere = BODY_BOUNDS.clone();
+  copy.bind(body.skeleton, new THREE.Matrix4());
+  return copy;
+}
+
+/**
  * A blocky character, a 3D take on the Escapists sprites: a big head with blinking eyes,
  * a jumpsuit with a number patch and rolled sleeves, arms and legs on pivots. Faces +z at
- * rotation 0; about 1.25 tiles tall. Each limb is one merged, vertex-colored mesh (7 draw
- * calls a character). When given a silhouette color, it shows through walls and furniture
- * as a flat tint wherever something hides it (stencil-masked, so it never tints itself).
+ * rotation 0; about 1.25 tiles tall. The limbs are bones of one skinned, vertex-colored mesh
+ * (one draw call a character, and one in the shadow pass). When given a silhouette color, it
+ * shows through walls and furniture as a flat tint wherever something hides it
+ * (stencil-masked, so it never tints itself).
  * Poses: walking, standing (with glances), and what inmates do at their spots: lining up,
  * eating, exercising, showering and sleeping in bed.
  */
 export class Character {
   readonly root = new THREE.Group();
-  private readonly body = new THREE.Group();
-  private readonly head = new THREE.Group();
-  private readonly eyes: THREE.Mesh;
-  private readonly armL = new THREE.Group();
-  private readonly armR = new THREE.Group();
-  private readonly legL = new THREE.Group();
-  private readonly legR = new THREE.Group();
+  // The pivots are bones of one skinned mesh (the whole body is one draw call, and one in the shadow pass).
+  private readonly body = new THREE.Bone();
+  private readonly head = new THREE.Bone();
+  private readonly eyes = new THREE.Bone();
+  private readonly armL = new THREE.Bone();
+  private readonly armR = new THREE.Bone();
+  private readonly legL = new THREE.Bone();
+  private readonly legR = new THREE.Bone();
+  private readonly skeleton: THREE.Skeleton;
   private readonly material: THREE.Material;
   private phase = 0;
   private swing = 0;
@@ -493,8 +549,8 @@ export class Character {
   /** A punch (1 at the blow, easing to 0) and a flinch from a blow taken (the same). */
   private jab = 0;
   private recoil = 0;
-  /** The key on a guard's belt (hidden once taken). */
-  private readonly keyTag: THREE.Mesh | null = null;
+  /** The key on a guard's belt (a bone: scaled to nothing once taken). */
+  private readonly keyTag: THREE.Bone | null = null;
   /** The floor's height under the character (vents and roofs stand above the ground floor). */
   baseY = 0;
   private act = 0;
@@ -540,7 +596,7 @@ export class Character {
 
   constructor(look: Look) {
     this.material =
-      look.silhouette !== undefined ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, ...STENCIL_MARK }) : kitMaterial;
+      look.silhouette !== undefined ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, ...STENCIL_MARK }) : bodyMaterial;
     const outfit = look.outfit;
     const outfitDark = new THREE.Color(outfit).multiplyScalar(0.78).getHex();
     const trousers = look.trousers ?? outfit;
@@ -551,12 +607,9 @@ export class Character {
     const white = 0xf2f2ee;
     const dark = 0x1b1b22;
     const shoe = 0x2a2a30;
-    const mesh = (parts: Part[], parent: THREE.Object3D) => {
-      const m = new THREE.Mesh(merge(parts, false), this.material);
-      m.castShadow = true;
-      parent.add(m);
-      return m;
-    };
+    // Each limb's parts, in its pivot's frame: skinned to that pivot (bone) below.
+    const limbs: Array<[Part[], THREE.Bone]> = [];
+    const mesh = (parts: Part[], bone: THREE.Bone) => void limbs.push([parts, bone]);
 
     // Legs: pivots at the hips.
     for (const [pivot, x] of [
@@ -682,22 +735,22 @@ export class Character {
       );
     }
     mesh(face, this.head);
-    const eyes = new THREE.Group();
-    eyes.position.set(0, 0.24, 0.222);
-    this.eyes = mesh([part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], eyes);
-    this.head.add(eyes);
+    this.eyes.position.set(0, 0.24, 0.222);
+    mesh([part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], this.eyes);
+    this.head.add(this.eyes);
 
     // A guard's key: a ring and a key in its color, hanging from the belt.
     if (look.key !== undefined) {
-      this.keyTag = new THREE.Mesh(
-        merge([part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0), part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0), part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0)], false),
-        kitMaterial,
-      );
+      this.keyTag = new THREE.Bone();
+      mesh([part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0), part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0), part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0)], this.keyTag);
       this.keyTag.position.set(-0.2, 0.02, 0.16);
       this.body.add(this.keyTag);
     }
     this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
     this.root.add(this.body);
+    const whole = skinned(limbs, this.root, this.material);
+    this.skeleton = whole.skeleton;
+    this.root.add(whole);
     this.root.scale.setScalar(look.size ?? 1);
     this.gait = look.gait ?? 1;
     // The silhouette covers the body only, not the props below.
@@ -880,7 +933,7 @@ export class Character {
     const meshes: THREE.Mesh[] = [];
     this.root.traverse((o) => o instanceof THREE.Mesh && meshes.push(o));
     for (const m of meshes) {
-      const copy = new THREE.Mesh(m.geometry, ghost);
+      const copy = m instanceof THREE.SkinnedMesh ? ghostSkin(m, ghost) : new THREE.Mesh(m.geometry, ghost);
       copy.renderOrder = 20;
       m.add(copy);
     }
@@ -903,7 +956,7 @@ export class Character {
 
   /** Shows or hides the key on a guard's belt. */
   showKey(on: boolean) {
-    if (this.keyTag) this.keyTag.visible = on;
+    this.keyTag?.scale.setScalar(on ? 1 : 0);
   }
 
   /**
@@ -1354,7 +1407,9 @@ export class Character {
       const shared = m.geometry === dropGeometry || m.geometry === sprayGeometry || (!!made && (m.geometry === made.buckets || m.geometry === made.stick || m.geometry === made.guitar));
       if (o !== this.held && !shared) m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) if (mat !== kitMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();
+      for (const mat of mats) if (mat !== kitMaterial && mat !== bodyMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();
     });
+    // (The bones' matrices live in a small texture per character.)
+    this.skeleton.dispose();
   }
 }

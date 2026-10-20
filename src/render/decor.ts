@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { DecorKind, DecorPlacement } from '../content/decor';
+import { batched, disposeTree, type Piece } from './batch';
 import { box, cyl, disc, kitMaterial, merge, paint, rod, type Part } from './kit';
 import { seeThrough } from './occlusion';
 
@@ -296,16 +297,11 @@ const BUILDERS: Record<DecorKind, Builder> = {
   phone: () => ({ parts: [box(0.18, 0.32, 0.08, DARK, 0, 0, -0.05), box(0.05, 0.2, 0.05, 0x23262b, 0.1, 0.06, 0.02), box(0.12, 0.08, 0.02, 0x6b737c, 0, 0.2, -0.005)] }),
 };
 
-/** A decor model's geometries (the glow part may be empty). */
-function geometryOf(kind: DecorKind, w: number, d: number): { base: THREE.BufferGeometry; glow: THREE.BufferGeometry | null } {
-  const m = BUILDERS[kind](w, d);
-  return { base: merge(m.parts), glow: m.glow?.length ? merge(m.glow) : null };
-}
-
 /**
- * Every decor piece of a prison, instanced by kind and size; furniture's see-through cut
- * near the player (above waist height) applies to them as to props. `update` dims what glows
- * when the power is out and lets the monitors flicker now and then.
+ * Every decor piece of a prison, one shape per kind and size, all of them in one batched mesh
+ * (the parts that glow in a second): two draw calls however many pieces. Furniture's
+ * see-through cut near the player (above waist height) applies to them as to props. `update`
+ * dims what glows when the power is out and lets the monitors flicker now and then.
  */
 export class DecorView {
   readonly group = new THREE.Group();
@@ -315,36 +311,38 @@ export class DecorView {
 
   constructor(list: readonly DecorPlacement[]) {
     seeThrough(this.glowMat, 0.6);
-    const groups = new Map<string, DecorPlacement[]>();
-    for (const p of list) {
-      const w = p.w ?? 1;
-      const d = p.d ?? 1;
-      const turned = (p.rot ?? 0) % 2 === 1;
-      const key = `${p.kind}:${turned ? d : w}x${turned ? w : d}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(p);
-    }
-    const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const s = new THREE.Vector3(1, 1, 1);
     const at = new THREE.Vector3();
     const up = new THREE.Vector3(0, 1, 0);
-    for (const [key, ps] of groups) {
-      const [kind, size] = key.split(':');
-      const [w, d] = size.split('x').map(Number);
-      const { base, glow } = geometryOf(kind as DecorKind, w, d);
-      const meshes: THREE.InstancedMesh[] = [new THREE.InstancedMesh(base, this.base, ps.length)];
-      if (glow) meshes.push(new THREE.InstancedMesh(glow, this.glowMat, ps.length));
-      ps.forEach((p, i) => {
-        const rot = p.rot ?? 0;
-        q.setFromAxisAngle(up, [0, Math.PI / 2, Math.PI, -Math.PI / 2][rot]);
-        at.set(p.x + (p.w ?? 1) / 2, p.y ?? 0, p.z + (p.d ?? 1) / 2);
-        m.compose(at, q, s);
-        for (const mesh of meshes) mesh.setMatrixAt(i, m);
-      });
-      meshes[0].castShadow = meshes[0].receiveShadow = true;
-      for (const mesh of meshes) this.group.add(mesh);
+    const bases: Piece[] = [];
+    const glows: Piece[] = [];
+    // A model's parts, built once per kind and size (the base and the glow come from one build).
+    const built = new Map<string, { parts: Part[]; glow?: Part[] }>();
+    const build = (key: string, kind: DecorKind, w: number, d: number) => {
+      if (!built.has(key)) built.set(key, BUILDERS[kind](w, d));
+      return built.get(key)!;
+    };
+    for (const p of list) {
+      const w0 = p.w ?? 1;
+      const d0 = p.d ?? 1;
+      const turned = (p.rot ?? 0) % 2 === 1;
+      const w = turned ? d0 : w0;
+      const d = turned ? w0 : d0;
+      const key = `${p.kind}:${w}x${d}`;
+      q.setFromAxisAngle(up, [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot ?? 0]);
+      at.set(p.x + w0 / 2, p.y ?? 0, p.z + d0 / 2);
+      const matrix = new THREE.Matrix4().compose(at, q, s);
+      bases.push({ key, make: () => merge(build(key, p.kind, w, d).parts), matrix });
+      if (build(key, p.kind, w, d).glow?.length) glows.push({ key, make: () => merge(build(key, p.kind, w, d).glow!), matrix });
     }
+    const base = batched(this.base, bases);
+    if (base) {
+      base.castShadow = base.receiveShadow = true;
+      this.group.add(base);
+    }
+    const glow = batched(this.glowMat, glows);
+    if (glow) this.group.add(glow);
   }
 
   /**
@@ -360,12 +358,6 @@ export class DecorView {
   }
 
   dispose() {
-    // The instanced meshes' own buffers go with them (InstancedMesh.dispose), then the shared parts.
-    for (const c of this.group.children) {
-      (c as THREE.InstancedMesh).geometry.dispose();
-      (c as THREE.InstancedMesh).dispose();
-    }
-    this.base.dispose();
-    this.glowMat.dispose();
+    disposeTree(this.group, () => false);
   }
 }

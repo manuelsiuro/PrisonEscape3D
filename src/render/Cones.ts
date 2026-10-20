@@ -49,11 +49,12 @@ const AWAY = 0x34d399;
 /** The last 10 game minutes of a bribe (steps). */
 const ENDING = 200;
 
+/** Vertices per cone: the guard, then the end of each ray. */
+const VERTS = RAYS + 2;
+
 interface Cone {
-  mesh: THREE.Mesh;
-  material: THREE.MeshBasicMaterial;
-  positions: Float32Array;
-  uvs: Float32Array;
+  /** Its first vertex in the shared buffers. */
+  first: number;
   /** The angle drawn (eased toward the guard's heading) and the color. */
   angle: number;
   color: THREE.Color;
@@ -68,12 +69,19 @@ interface Cone {
 /**
  * Guards' vision cones on the floor (GDD §5.1): a fan of rays from each guard, each cut
  * where sight stops (walls, shut doors; the same test the rules use), tinted by alert.
- * Buffers are made once per guard and refilled every frame. The angle eases so a guard
- * glancing around sweeps its cone instead of snapping it.
+ * Every cone is a stretch of one mesh (one draw call for them all), its tint and strength
+ * in the vertices' colors; buffers are made once per count and refilled every frame. The
+ * angle eases so a guard glancing around sweeps its cone instead of snapping it.
  */
 export class Cones {
   readonly group = new THREE.Group();
   private cones: Cone[] = [];
+  private mesh: THREE.Mesh | null = null;
+  private readonly material = new THREE.MeshBasicMaterial({ map: fade(), vertexColors: true, transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -1, side: THREE.DoubleSide });
+  private positions = new Float32Array(0);
+  private uvs = new Float32Array(0);
+  /** RGBA per vertex: the cone's tint, and its opacity in alpha. */
+  private colorsOf = new Float32Array(0);
   world: World | null = null;
   private readonly range: number;
   private readonly colors: Record<number, number>;
@@ -89,34 +97,41 @@ export class Cones {
 
   /** One cone per guard. */
   setCount(n: number) {
-    for (const c of this.cones) {
-      this.group.remove(c.mesh);
-      c.mesh.geometry.dispose();
-      c.material.dispose();
+    if (this.mesh) {
+      this.group.remove(this.mesh);
+      this.mesh.geometry.dispose();
+      this.mesh = null;
     }
     this.cones = [];
+    if (!n) return;
+    this.positions = new Float32Array(n * VERTS * 3);
+    this.uvs = new Float32Array(n * VERTS * 2);
+    this.colorsOf = new Float32Array(n * VERTS * 4);
+    const index: number[] = [];
     for (let k = 0; k < n; k++) {
-      const positions = new Float32Array((RAYS + 2) * 3);
-      const uvs = new Float32Array((RAYS + 2) * 2);
-      const index: number[] = [];
-      for (let r = 0; r < RAYS; r++) index.push(0, r + 2, r + 1);
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
-      geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2).setUsage(THREE.DynamicDrawUsage));
-      geometry.setIndex(index);
-      const material = new THREE.MeshBasicMaterial({ map: fade(), transparent: true, opacity: 0.3, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -1, side: THREE.DoubleSide });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.renderOrder = 1;
-      mesh.frustumCulled = false;
-      this.group.add(mesh);
-      this.cones.push({ mesh, material, positions, uvs, angle: NaN, color: new THREE.Color(), strength: 0.32, flash: 0, shown: 0, range: NaN });
+      const o = k * VERTS;
+      for (let r = 0; r < RAYS; r++) index.push(o, o + r + 2, o + r + 1);
+      this.cones.push({ first: o, angle: NaN, color: new THREE.Color(), strength: 0.32, flash: 0, shown: 0, range: NaN });
     }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(this.uvs, 2).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('color', new THREE.BufferAttribute(this.colorsOf, 4).setUsage(THREE.DynamicDrawUsage));
+    geometry.setIndex(index);
+    const mesh = new THREE.Mesh(geometry, this.material);
+    mesh.renderOrder = 1;
+    // (Spread over the whole map, refilled every frame.)
+    mesh.frustumCulled = false;
+    mesh.visible = false;
+    this.group.add(mesh);
+    this.mesh = mesh;
   }
 
   /** Redraws every cone; `night` (0–1) makes them a little stronger in the dark. */
   update(guards: readonly ConeFrame[], dt: number, night: number, motion: boolean) {
     const w = this.world;
     this.clock += dt;
+    let any = false;
     this.cones.forEach((c, k) => {
       const g = guards[k];
       const on = !!g && !!w && g.alert !== ALERT.NONE;
@@ -125,8 +140,15 @@ export class Cones {
       if (on && was < 0.05 && motion && this.clock > 1) c.flash = 1;
       c.flash = Math.max(0, c.flash - dt * 3);
       c.shown += ((on ? 1 : 0) - c.shown) * Math.min(1, dt * (c.flash > 0 ? 10 : 6));
-      c.mesh.visible = c.shown > 0.02;
-      if (!c.mesh.visible || !g || !w) return;
+      const p = this.positions;
+      const uv = this.uvs;
+      const o = c.first;
+      if (c.shown <= 0.02 || !g || !w) {
+        // Not drawn: folded to a point (no area, nothing to fill).
+        p.fill(0, o * 3, (o + VERTS) * 3);
+        return;
+      }
+      any = true;
       // Ease toward the heading the short way round (in the sim's angle: 0 = +x).
       const goal = Math.PI / 2 - g.facing;
       if (Number.isNaN(c.angle) || !motion) c.angle = goal;
@@ -134,13 +156,11 @@ export class Cones {
         const d = Math.atan2(Math.sin(goal - c.angle), Math.cos(goal - c.angle));
         c.angle += d * Math.min(1, dt * 18);
       }
-      const p = c.positions;
-      const uv = c.uvs;
-      p[0] = g.x;
-      p[1] = 0.05;
-      p[2] = g.z;
-      uv[0] = 0.5;
-      uv[1] = 1;
+      p[o * 3] = g.x;
+      p[o * 3 + 1] = 0.05;
+      p[o * 3 + 2] = g.z;
+      uv[o * 2] = 0.5;
+      uv[o * 2 + 1] = 1;
       // As far as it sees now: the cone drawn is the rule (sight.ts sightReach, calendar.ts sightOf),
       // eased when it changes (a guard stepping out into the fog), at once with reduced motion.
       const want = g.range ?? this.range;
@@ -151,15 +171,13 @@ export class Cones {
       for (let r = 0; r <= RAYS; r++) {
         const a = c.angle - SIGHT_HALF_ANGLE + (2 * SIGHT_HALF_ANGLE * r) / RAYS;
         const reach = sightReach(w, g.x, g.z, a, range);
-        p[(r + 1) * 3] = g.x + Math.cos(a) * reach;
-        p[(r + 1) * 3 + 1] = 0.05;
-        p[(r + 1) * 3 + 2] = g.z + Math.sin(a) * reach;
-        uv[(r + 1) * 2] = 0.5;
-        uv[(r + 1) * 2 + 1] = 1 - reach / range;
+        const v = o + r + 1;
+        p[v * 3] = g.x + Math.cos(a) * reach;
+        p[v * 3 + 1] = 0.05;
+        p[v * 3 + 2] = g.z + Math.sin(a) * reach;
+        uv[v * 2] = 0.5;
+        uv[v * 2 + 1] = 1 - reach / range;
       }
-      c.mesh.geometry.attributes.position.needsUpdate = true;
-      c.mesh.geometry.attributes.uv.needsUpdate = true;
-      c.mesh.geometry.computeBoundingSphere();
       // An alarm snaps on (easing yellow to red would pass through orange: "suspicious"); calm
       // and looking away ease into each other. A bribed cone breathes (a cue beyond color) and
       // over its last minutes pulses back toward the calm yellow (still: half way). Fading out
@@ -180,12 +198,26 @@ export class Cones {
           c.strength += (strength - c.strength) * e;
         }
       }
-      c.material.color.copy(c.color);
-      c.material.opacity = c.shown * (c.strength + night * 0.12) * (1 + 0.8 * c.flash);
+      const alpha = c.shown * (c.strength + night * 0.12) * (1 + 0.8 * c.flash);
+      const col = this.colorsOf;
+      for (let v = o; v < o + VERTS; v++) {
+        col[v * 4] = c.color.r;
+        col[v * 4 + 1] = c.color.g;
+        col[v * 4 + 2] = c.color.b;
+        col[v * 4 + 3] = alpha;
+      }
     });
+    if (!this.mesh) return;
+    this.mesh.visible = any;
+    if (!any) return;
+    const geo = this.mesh.geometry;
+    geo.attributes.position.needsUpdate = true;
+    geo.attributes.uv.needsUpdate = true;
+    geo.attributes.color.needsUpdate = true;
   }
 
   dispose() {
     this.setCount(0);
+    this.material.dispose();
   }
 }

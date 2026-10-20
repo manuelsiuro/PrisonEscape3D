@@ -25,6 +25,7 @@ import { NoiseFx, type AimView } from './Noise';
 import { FIRECRACKER } from '../sim/systems/structure';
 import { Underground } from './Underground';
 import { setTheme } from './textures';
+import { skipEmpty } from './batch';
 import { Blobs } from './Blobs';
 import { Snowfall } from './Snow';
 import { Weather, type WeatherFrame, type WeatherView } from './Weather';
@@ -387,6 +388,8 @@ export class View {
   private island: Island | null = null;
   private riot = false;
   private underground: Underground | null = null;
+  /** The last prison's parts, taken off screen and freed after the next frame (setWorld). */
+  private readonly retired: Array<() => void> = [];
   /** The layer drawn (the player's), and the tiles revision the damage was drawn for. */
   private layer = -1;
   private tilesRev = -1;
@@ -497,38 +500,51 @@ export class View {
     if (this.world) this.warmDay();
   }
 
+  /**
+   * Puts a prison on screen. The old prison's meshes are let go only after the new one's first
+   * frame (`retired`): its materials' shaders are still in use when the new ones ask for the
+   * same, so none is compiled again (a world change used to recompile about twenty). The same
+   * World staged again (P25: a replay's Watch again, its state restored in place) keeps the
+   * floors, walls, doors, furniture and decor built for it, redrawn from the state; the rest is
+   * made afresh.
+   */
   setWorld(world: World) {
     this.snores.clear();
     // The escape camera ends with the game (the title's picture is the classic angle again).
     this.endCinema();
     this.carrying = false;
-    if (this.worldView) {
-      this.scene.remove(this.worldView.group);
-      this.worldView.dispose();
+    const same = world === this.world && !!this.worldView && !!this.structure && !!this.decor;
+    const retire = (objects: THREE.Object3D[], dispose: () => void) => {
+      this.scene.remove(...objects);
+      this.retired.push(dispose);
+    };
+    if (this.worldView && !same) {
+      const old = this.worldView;
+      retire([old.group], () => old.dispose());
     }
-    if (this.structure) {
-      this.scene.remove(this.structure.group, this.structure.roofs);
-      this.structure.dispose();
+    if (this.structure && !same) {
+      const old = this.structure;
+      retire([old.group, old.roofs], () => old.dispose());
+    }
+    if (this.decor && !same) {
+      const old = this.decor;
+      retire([old.group], () => old.dispose());
     }
     if (this.underground) {
-      this.scene.remove(this.underground.group, this.underground.lantern);
-      this.underground.dispose();
+      const old = this.underground;
+      retire([old.group, old.lantern], () => old.dispose());
     }
     if (this.security) {
-      this.scene.remove(this.security.group);
-      this.security.dispose();
-    }
-    if (this.decor) {
-      this.scene.remove(this.decor.group);
-      this.decor.dispose();
+      const old = this.security;
+      retire([old.group], () => old.dispose());
     }
     if (this.minefield) {
-      this.scene.remove(this.minefield.group);
-      this.minefield.dispose();
+      const old = this.minefield;
+      retire([old.group], () => old.dispose());
     }
     if (this.island) {
-      this.scene.remove(this.island.group);
-      this.island.dispose();
+      const old = this.island;
+      retire([old.group], () => old.dispose());
       this.island = null;
     }
     // The prison's look (snow at Stalag Flucht): the textures drawn from here on follow it.
@@ -537,8 +553,10 @@ export class View {
     this.chairs.clear();
     for (const p of world.props) if (p.kind === 'chair') this.chairs.add(p.z * MAP_W + p.x);
     this.security = new Security(world);
-    this.decor = new DecorView(world.def.decor ?? []);
-    this.scene.add(this.decor.group);
+    if (!same) {
+      this.decor = new DecorView(world.def.decor ?? []);
+      this.scene.add(this.decor.group);
+    }
     this.minefield = new Minefield(world);
     this.scene.add(this.minefield.group);
     // An island's sea and shore, the drawbridge, the helicopter (P12).
@@ -547,20 +565,28 @@ export class View {
       this.scene.add(this.island.group);
     }
     this.scene.add(this.security.group);
-    this.worldView = new WorldView(world);
-    this.smuggling.setLampMaterial(this.worldView.archLight);
-    this.structure = new Structure(world, this.worldView);
+    if (same) {
+      // (Walls, fences and the damage follow the tiles at the next frame: tilesRev below.)
+      this.worldView!.reset();
+    } else {
+      this.worldView = new WorldView(world);
+      this.structure = new Structure(world, this.worldView);
+      this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs);
+    }
+    this.smuggling.setLampMaterial(this.worldView!.archLight);
     this.underground = new Underground(world);
-    this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs, this.underground.group, this.underground.lantern);
+    this.scene.add(this.underground.group, this.underground.lantern);
     this.layer = -1;
     this.tilesRev = -1;
     this.wearRev = -1;
     this.showLayer(LAYER.GROUND);
     this.guide.world = world;
     this.cones.world = world;
-    this.events.setWorld(world);
-    this.delivery.setWorld(world);
-    this.gamesView.setWorld(world);
+    // (Their last prison's parts freed after the next frame, as the rest.)
+    const later = (dispose: () => void) => void this.retired.push(dispose);
+    this.events.setWorld(world, later);
+    this.delivery.setWorld(world, later);
+    this.gamesView.setWorld(world, later);
     this.pastimesView.setWorld(world);
     this.getaway.setWorld(world);
     this.dogs.setDogs(
@@ -585,10 +611,7 @@ export class View {
 
   /** The guards: one character each (its key's color on the belt), and the bed each sleeps in at night (if any). */
   setGuards(beds: Array<BedPose | undefined>, keys: number[] = []) {
-    for (const c of this.guardCast) {
-      this.scene.remove(c.root);
-      c.dispose();
-    }
+    for (const c of this.guardCast) this.retireCharacter(c);
     this.guardCast = beds.map((_, k) => new Character(guardLook(k, keys[k], !!this.world?.def.guards[k]?.riot)));
     this.guardBeds = beds;
     for (const c of this.guardCast) this.scene.add(c.root);
@@ -597,10 +620,7 @@ export class View {
 
   /** The other inmates: one character each, looks varied by cell, legs paced by walking speed (P27: the old-timer's hair gone white). */
   setCast(cast: Array<{ cell: number; gait: number; elder?: boolean }> | 0) {
-    for (const c of this.cast) {
-      this.scene.remove(c.root);
-      c.dispose();
-    }
+    for (const c of this.cast) this.retireCharacter(c);
     this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 1, beard: 3 } : {}), gait: c.gait })) : [];
     for (const c of this.cast) this.scene.add(c.root);
   }
@@ -890,8 +910,7 @@ export class View {
    */
   setPreview(p: Prisoner | null) {
     if (this.model) {
-      this.scene.remove(this.model.root);
-      this.model.dispose();
+      this.retireCharacter(this.model);
       this.model = null;
     } else if (p) this.titleZoom = this.zoomGoal;
     if (!p) {
@@ -948,9 +967,14 @@ export class View {
     this.player = new Character(lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked));
     this.player.root.position.copy(old.root.position);
     this.player.root.rotation.copy(old.root.rotation);
-    this.scene.remove(old.root);
-    old.dispose();
+    this.retireCharacter(old);
     this.scene.add(this.player.root);
+  }
+
+  /** A character off screen, freed after the next frame (its materials' shaders kept for the next one's: setWorld). */
+  private retireCharacter(c: Character) {
+    this.scene.remove(c.root);
+    this.retired.push(() => c.dispose());
   }
 
   /** Draws a frame of play: the camera follows the player, looking a little ahead. */
@@ -1459,7 +1483,10 @@ export class View {
     if (this.model) stage.push(this.model);
     this.blobs.update(stage);
     updateOcclusion(this.renderer, this.camera, focus, dt);
+    skipEmpty(this.scene);
     this.renderer.render(this.scene, this.camera);
+    // The last prison's meshes, now that the new one's shaders are in use (setWorld).
+    if (this.retired.length) for (const dispose of this.retired.splice(0)) dispose();
   }
 
   /** How the view sees the weather (P17): the rain's box as wide as the view, the lockdown's red as it pulses, the layer, where a point higher up lands on the ground (the camera's angle, turned by the escape camera). */

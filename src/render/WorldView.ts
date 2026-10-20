@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { KEY, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { buildGround } from './ground';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { batched, disposeTree, type Piece } from './batch';
 import { box, cyl, kitMaterial, merge, paint } from './kit';
 import { Lights } from './lights';
 import { seeThrough } from './occlusion';
@@ -49,11 +51,45 @@ const isFence = (k: number) => k === TILE.FENCE || k === TILE.ELECTRIC;
 
 interface DoorMesh {
   index: number;
-  leaf: THREE.Object3D;
-  /** The leaf's closed position and the direction it slides to open (into the wall). */
+  /** The leaf's parts: instances of the doors' shared meshes (one draw call per part for every door). */
+  parts: Array<[THREE.InstancedMesh, number]>;
+  /** The leaf's closed position, the direction it slides to open (into the wall), its turn. */
   home: THREE.Vector3;
   slide: THREE.Vector3;
+  angle: number;
   open: number;
+  /** How far open it was last drawn (NaN: not yet). */
+  drawn: number;
+}
+
+/**
+ * A wall block whose faces are ordered sides first, then top and bottom: two material groups
+ * (sides, top) instead of BoxGeometry's six, so a wall kind is two draw calls, not six.
+ */
+function wallBlock(): THREE.BufferGeometry {
+  const g = new THREE.BoxGeometry(1, WALL_H, 1);
+  const idx = Array.from(g.index!.array);
+  // (BoxGeometry's faces, 6 indices each: +x, -x, +y, -y, +z, -z.)
+  const sides: number[] = [];
+  const caps: number[] = [];
+  for (let f = 0; f < 6; f++) (f === 2 || f === 3 ? caps : sides).push(...idx.slice(f * 6, f * 6 + 6));
+  g.setIndex([...sides, ...caps]);
+  g.clearGroups();
+  g.addGroup(0, sides.length, 0);
+  g.addGroup(sides.length, caps.length, 1);
+  return g;
+}
+
+/** Joins plain (unpainted) geometries into one, freeing the parts. */
+function join(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const g = mergeGeometries(parts.map((p) => (p.index ? p.toNonIndexed() : p)));
+  for (const p of parts) p.dispose();
+  return g;
+}
+
+/** A box w×h×d centered on (x, y, z) (unpainted). */
+function placedBox(w: number, h: number, d: number, x: number, y: number, z: number): THREE.BufferGeometry {
+  return new THREE.BoxGeometry(w, h, d).translate(x, y, z);
 }
 
 /**
@@ -81,6 +117,8 @@ export class WorldView {
   private readonly one = new THREE.Vector3(1, 1, 1);
   private readonly pos = new THREE.Vector3();
   private readonly scale = new THREE.Vector3();
+  /** Textures made for this view (the wall, fence and grass map clones): freed with it; the shared TEX ones and the ground's cached canvases are not. */
+  private readonly ownMaps = new Set<THREE.Texture>();
 
   constructor(readonly world: World) {
     this.buildFloors();
@@ -90,6 +128,7 @@ export class WorldView {
     this.buildDetectors();
     this.buildTowers();
     this.buildProps();
+    // (The ground's canvases are its cache's: kept for the same prison staged again.)
     this.group.add(buildGround(world));
     this.lights = new Lights(world);
     this.group.add(this.lights.group);
@@ -152,7 +191,7 @@ export class WorldView {
 
   /** Brick walls (chipped through, they hide: `wallAt`), and reinforced concrete in its own panels, which nothing breaks. */
   private buildWalls() {
-    const geo = new THREE.BoxGeometry(1, WALL_H, 1);
+    const geo = wallBlock();
     const brickTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 }));
     // Reinforced concrete is concrete on top too: from above, the walls no tool chips read as such (San Pancho's sand all round them).
     const concreteTop = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.reinforced(), color: 0xc4c4c4, roughness: 0.95 }));
@@ -166,10 +205,11 @@ export class WorldView {
       const map = tex.clone();
       map.repeat.set(1, WALL_H);
       map.needsUpdate = true;
+      this.ownMaps.add(map);
       const side = seeThrough(new THREE.MeshStandardMaterial({ map, roughness }));
-      // Box faces: +x, -x, +y, -y, +z, -z.
+      // (wallBlock's groups: the sides, then the top and bottom.)
       const top = kind === TILE.REINFORCED ? concreteTop : brickTop;
-      const mesh = new THREE.InstancedMesh(geo, [side, side, top, top, side, side], cells.length / 2);
+      const mesh = new THREE.InstancedMesh(geo, [side, top], cells.length / 2);
       for (let i = 0; i < cells.length / 2; i++) {
         this.matrix.makeTranslation(cells[i * 2] + 0.5, WALL_H / 2, cells[i * 2 + 1] + 0.5);
         mesh.setMatrixAt(i, this.matrix);
@@ -231,6 +271,7 @@ export class WorldView {
       if (!cells.length) continue;
       const tex = TEX.fence().clone();
       tex.needsUpdate = true;
+      this.ownMaps.add(tex);
       const mat = new THREE.MeshStandardMaterial({ map: tex, color: tint, emissive, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.5 });
       const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, h), mat, cells.length / 2);
       const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.09, h + 0.15, 0.09), postMat, cells.length / 2);
@@ -268,95 +309,107 @@ export class WorldView {
     this.group.add(wire);
   }
 
+  /**
+   * Doors: every leaf and lintel is an instance of a few shared meshes (bars by height, steel
+   * slabs, their key bands and windows, lintels), so 36 doors draw in a handful of calls.
+   */
   private buildDoors() {
-    const frameMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x4a515c, roughness: 0.55, metalness: 0.4 }));
-    const steel = seeThrough(new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.5, metalness: 0.45 }));
-    const glassMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 }));
-    this.windows.push(glassMat);
-    const keyMats = new Map<number, THREE.MeshStandardMaterial>();
-    const keyMat = (key: number, metal: boolean) => {
-      const id = key * 2 + (metal ? 1 : 0);
-      if (!keyMats.has(id)) keyMats.set(id, seeThrough(new THREE.MeshStandardMaterial({ color: KEY_COLORS[key] ?? 0x888888, roughness: metal ? 0.4 : 0.55, metalness: metal ? 0.5 : 0.1 })));
-      return keyMats.get(id)!;
-    };
     const wallLike = (k: number) => isWall(k) || k === TILE.DOOR || isFence(k);
+    interface Spec { x: number; z: number; i: number; key: number; ax: boolean; h: number; leafH: number; bars: boolean }
+    const specs: Spec[] = [];
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (this.kindAt(x, z) !== TILE.DOOR) continue;
         const i = z * MAP_W + x;
         const key = this.world.ground.key[i];
-        const ax = this.alongX(x, z, wallLike);
         const inFence = [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(isFence);
         const h = inFence ? 1.8 : WALL_H;
-        const leafH = h * 0.86;
-        const leaf = new THREE.Group();
-        if (key === KEY.YELLOW || inFence) {
-          // Cell doors and gates: bars in a frame.
-          const parts = [box(0.96, 0.07, 0.07, 0xffffff, 0, 0, 0), box(0.96, 0.07, 0.07, 0xffffff, 0, leafH - 0.07, 0), box(0.96, 0.05, 0.05, 0xffffff, 0, leafH * 0.45, 0)];
-          for (let b = 0; b < 6; b++) parts.push(cyl(0.025, leafH, 0xffffff, -0.4 + b * 0.16, 0, 0, 6));
-          const bars = new THREE.Mesh(merge(parts), keyMat(key, true));
-          bars.castShadow = true;
-          leaf.add(bars);
-        } else {
-          // Work, utility and security doors: a steel slab, a window, a band of the key color.
-          const slab = new THREE.Mesh(new THREE.BoxGeometry(0.96, leafH, 0.1), steel);
-          slab.position.y = leafH / 2;
-          slab.castShadow = true;
-          const band = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.16, 0.12), keyMat(key, false));
-          band.position.y = leafH * 0.32;
-          const glass = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, 0.12), glassMat);
-          glass.position.y = leafH * 0.72;
-          leaf.add(slab, band, glass);
-        }
-        if (!ax) leaf.rotation.y = Math.PI / 2;
-        const home = new THREE.Vector3(x + 0.5, 0, z + 0.5);
-        leaf.position.copy(home);
-        // A lintel over the gap.
-        const lintel = new THREE.Mesh(new THREE.BoxGeometry(ax ? 1 : 0.34, h - leafH, ax ? 0.34 : 1), frameMat);
-        lintel.position.set(x + 0.5, leafH + (h - leafH) / 2, z + 0.5);
-        lintel.castShadow = true;
-        this.group.add(leaf, lintel);
-        this.doors.push({ index: i, leaf, home, slide: new THREE.Vector3(ax ? 0.92 : 0, 0, ax ? 0 : 0.92), open: this.world.doorShut[i] ? 0 : 1 });
+        // Cell doors and gates: bars in a frame. Work, utility and security doors: a steel slab, a window, a band of the key color.
+        specs.push({ x, z, i, key, ax: this.alongX(x, z, wallLike), h, leafH: h * 0.86, bars: key === KEY.YELLOW || inFence });
       }
     }
+    if (!specs.length) return;
+    const frameMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x4a515c, roughness: 0.55, metalness: 0.4 }));
+    const steel = seeThrough(new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.5, metalness: 0.45 }));
+    const glassMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0x24303d, roughness: 0.15, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 }));
+    this.windows.push(glassMat);
+    // (White, tinted per door in its key's color.)
+    const barsMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.5 }));
+    const bandMat = seeThrough(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.1 }));
+    const color = new THREE.Color();
+    const tint = (key: number) => color.setHex(KEY_COLORS[key] ?? 0x888888);
+    const instanced = (geo: THREE.BufferGeometry, mat: THREE.Material, n: number, shadow: boolean, moving: boolean) => {
+      const mesh = new THREE.InstancedMesh(geo, mat, n);
+      mesh.castShadow = shadow;
+      // (The leaves slide: their bounds would go stale; they're spread over the whole map anyway.)
+      mesh.frustumCulled = !moving;
+      this.group.add(mesh);
+      return mesh;
+    };
+    // Bars, one mesh per leaf height (walls', fences').
+    const barsOf = new Map<number, { mesh: THREE.InstancedMesh; n: number }>();
+    for (const leafH of new Set(specs.filter((d) => d.bars).map((d) => d.leafH))) {
+      const parts = [box(0.96, 0.07, 0.07, 0xffffff, 0, 0, 0), box(0.96, 0.07, 0.07, 0xffffff, 0, leafH - 0.07, 0), box(0.96, 0.05, 0.05, 0xffffff, 0, leafH * 0.45, 0)];
+      for (let b = 0; b < 6; b++) parts.push(cyl(0.025, leafH, 0xffffff, -0.4 + b * 0.16, 0, 0, 6));
+      barsOf.set(leafH, { mesh: instanced(merge(parts), barsMat, specs.filter((d) => d.bars && d.leafH === leafH).length, true, true), n: 0 });
+    }
+    // Slabs (only in walls: one height).
+    const slabs = specs.filter((d) => !d.bars).length;
+    const slabH = WALL_H * 0.86;
+    const slab = slabs ? instanced(new THREE.BoxGeometry(0.96, slabH, 0.1).translate(0, slabH / 2, 0), steel, slabs, true, true) : null;
+    const band = slabs ? instanced(new THREE.BoxGeometry(0.97, 0.16, 0.12).translate(0, slabH * 0.32, 0), bandMat, slabs, false, true) : null;
+    const glass = slabs ? instanced(new THREE.BoxGeometry(0.3, 0.22, 0.12).translate(0, slabH * 0.72, 0), glassMat, slabs, false, true) : null;
+    // Lintels over the gaps: a unit-high block, scaled to the gap over the leaf.
+    const lintels = instanced(new THREE.BoxGeometry(1, 1, 0.34), frameMat, specs.length, true, false);
+    let s = 0;
+    specs.forEach((d, k) => {
+      const parts: Array<[THREE.InstancedMesh, number]> = [];
+      if (d.bars) {
+        const b = barsOf.get(d.leafH)!;
+        b.mesh.setColorAt(b.n, tint(d.key));
+        parts.push([b.mesh, b.n++]);
+      } else {
+        band!.setColorAt(s, tint(d.key));
+        parts.push([slab!, s], [band!, s], [glass!, s]);
+        s++;
+      }
+      const angle = d.ax ? 0 : Math.PI / 2;
+      this.place(lintels, k, d.x + 0.5, d.leafH + (d.h - d.leafH) / 2, d.z + 0.5, angle, 1, d.h - d.leafH, 1);
+      this.doors.push({ index: d.i, parts, home: new THREE.Vector3(d.x + 0.5, 0, d.z + 0.5), slide: new THREE.Vector3(d.ax ? 0.92 : 0, 0, d.ax ? 0 : 0.92), angle, open: this.world.doorShut[d.i] ? 0 : 1, drawn: NaN });
+    });
+    this.moveDoors(0, undefined, false);
   }
 
   /** The arches' lamps (P21: the visiting room's portable arches share it). */
   readonly archLight = new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 });
   private archFlash = 0;
 
+  /** The detector arches, all in one mesh (the lamps in another: they light and flash). */
   private buildDetectors() {
-    const mat = seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 }));
-    const light = this.archLight;
+    const frames: THREE.BufferGeometry[] = [];
+    const lamps: THREE.BufferGeometry[] = [];
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (this.kindAt(x, z) !== TILE.DETECTOR) continue;
-        const ax = this.alongX(x, z, (k) => isWall(k) || k === TILE.DETECTOR);
-        const arch = new THREE.Group();
-        for (const s of [-1, 1]) {
-          const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.25, 0.24), mat);
-          post.position.set(s * 0.44, 0.625, 0);
-          post.castShadow = true;
-          arch.add(post);
-        }
-        const beam = new THREE.Mesh(new THREE.BoxGeometry(1, 0.16, 0.26), mat);
-        beam.position.y = 1.3;
-        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 0.1), light);
-        lamp.position.y = 1.41;
-        arch.add(beam, lamp);
-        arch.position.set(x + 0.5, 0, z + 0.5);
-        if (!ax) arch.rotation.y = Math.PI / 2;
-        this.group.add(arch);
+        const a = this.alongX(x, z, (k) => isWall(k) || k === TILE.DETECTOR) ? 0 : Math.PI / 2;
+        const at = (g: THREE.BufferGeometry) => g.rotateY(a).translate(x + 0.5, 0, z + 0.5);
+        for (const s of [-1, 1]) frames.push(at(placedBox(0.12, 1.25, 0.24, s * 0.44, 0.625, 0)));
+        frames.push(at(placedBox(1, 0.16, 0.26, 0, 1.3, 0)));
+        lamps.push(at(placedBox(0.14, 0.06, 0.1, 0, 1.41, 0)));
       }
     }
+    if (!frames.length) return;
+    const arch = new THREE.Mesh(join(frames), seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 })));
+    arch.castShadow = true;
+    this.group.add(arch, new THREE.Mesh(join(lamps), this.archLight));
   }
 
+  /** The watchtowers, every one in four meshes (legs and decks, cabins, windows, roofs). */
   private buildTowers() {
-    const legMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7 });
-    const cabinMat = new THREE.MeshStandardMaterial({ color: 0xc9b99a, roughness: 0.8 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x223040, roughness: 0.1, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 });
-    this.windows.push(glassMat);
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x6e3328, roughness: 0.8 });
+    const legs: THREE.BufferGeometry[] = [];
+    const cabins: THREE.BufferGeometry[] = [];
+    const panes: THREE.BufferGeometry[] = [];
+    const roofs: THREE.BufferGeometry[] = [];
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
         if (this.kindAt(x, z) !== TILE.TOWER || this.kindAt(x - 1, z) === TILE.TOWER || this.kindAt(x, z - 1) === TILE.TOWER) continue;
@@ -364,61 +417,54 @@ export class WorldView {
         while (this.kindAt(x + w, z) === TILE.TOWER) w++;
         let d = 0;
         while (this.kindAt(x, z + d) === TILE.TOWER) d++;
-        const tower = new THREE.Group();
         const H = 4.2;
         for (const [sx, sz] of [
           [0.3, 0.3],
           [w - 0.3, 0.3],
           [0.3, d - 0.3],
           [w - 0.3, d - 0.3],
-        ]) {
-          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.25, H, 0.25), legMat);
-          leg.position.set(sx, H / 2, sz);
-          leg.castShadow = true;
-          tower.add(leg);
-        }
+        ])
+          legs.push(placedBox(0.25, H, 0.25, x + sx, H / 2, z + sz));
         // Braces make it read as a structure, not a box on stilts.
-        for (const y of [1.3, 2.8]) {
-          const brace = new THREE.Mesh(new THREE.BoxGeometry(w - 0.4, 0.08, 0.08), legMat);
-          brace.position.set(w / 2, y, d - 0.3);
-          tower.add(brace);
-        }
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.15, d + 0.3), legMat);
-        deck.position.set(w / 2, H, d / 2);
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(w - 0.2, 1.3, d - 0.2), cabinMat);
-        cabin.position.set(w / 2, H + 0.72, d / 2);
-        const glass = new THREE.Mesh(new THREE.BoxGeometry(w - 0.18, 0.5, d - 0.18), glassMat);
-        glass.position.set(w / 2, H + 0.95, d / 2);
-        const roof = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.82, 0.9, 4), roofMat);
-        roof.rotation.y = Math.PI / 4;
-        roof.position.set(w / 2, H + 1.82, d / 2);
-        for (const m of [deck, cabin, roof]) m.castShadow = true;
-        tower.add(deck, cabin, glass, roof);
-        tower.position.set(x, 0, z);
-        this.group.add(tower);
+        for (const y of [1.3, 2.8]) legs.push(placedBox(w - 0.4, 0.08, 0.08, x + w / 2, y, z + d - 0.3));
+        legs.push(placedBox(w + 0.3, 0.15, d + 0.3, x + w / 2, H, z + d / 2));
+        cabins.push(placedBox(w - 0.2, 1.3, d - 0.2, x + w / 2, H + 0.72, z + d / 2));
+        panes.push(placedBox(w - 0.18, 0.5, d - 0.18, x + w / 2, H + 0.95, z + d / 2));
+        roofs.push(new THREE.ConeGeometry(Math.max(w, d) * 0.82, 0.9, 4).rotateY(Math.PI / 4).translate(x + w / 2, H + 1.82, z + d / 2));
       }
+    }
+    if (!legs.length) return;
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x223040, roughness: 0.1, metalness: 0.6, emissive: 0xffc27a, emissiveIntensity: 0 });
+    this.windows.push(glassMat);
+    const parts: Array<[THREE.BufferGeometry[], THREE.Material, boolean]> = [
+      [legs, new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.7 }), true],
+      [cabins, new THREE.MeshStandardMaterial({ color: 0xc9b99a, roughness: 0.8 }), true],
+      [panes, glassMat, false],
+      [roofs, new THREE.MeshStandardMaterial({ color: 0x6e3328, roughness: 0.8 }), true],
+    ];
+    for (const [list, mat, shadow] of parts) {
+      const mesh = new THREE.Mesh(join(list), mat);
+      mesh.castShadow = shadow;
+      this.group.add(mesh);
     }
   }
 
+  /** The furniture: one shape per kind and size, every piece in one batched mesh (one draw call, each piece culled on its own). */
   private buildProps() {
-    const groups = new Map<string, Array<{ x: number; z: number; w: number; d: number; rot: number }>>();
-    for (const p of this.world.props) {
+    const pieces: Piece[] = this.world.props.map((p) => {
       const turned = p.rot % 2 === 1;
-      const key = `${p.kind}:${turned ? p.d : p.w}x${turned ? p.w : p.d}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(p);
-    }
-    // Furniture is cut above waist height only: low pieces next to the player stay whole.
-    const material = seeThrough(kitMaterial.clone(), 0.6);
-    for (const [key, list] of groups) {
-      const [kind, size] = key.split(':');
-      const [w, d] = size.split('x').map(Number);
-      const mesh = new THREE.InstancedMesh(propGeometry(kind as never, w, d), material, list.length);
+      const w = turned ? p.d : p.w;
+      const d = turned ? p.w : p.d;
       // rot: 0 front south (+z), 1 east, 2 north, 3 west.
-      list.forEach((p, i) => this.place(mesh, i, p.x + p.w / 2, 0, p.z + p.d / 2, [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot]));
-      mesh.castShadow = mesh.receiveShadow = true;
-      this.group.add(mesh);
-    }
+      this.q.setFromAxisAngle(this.up, [0, Math.PI / 2, Math.PI, -Math.PI / 2][p.rot]);
+      const matrix = new THREE.Matrix4().compose(this.pos.set(p.x + p.w / 2, 0, p.z + p.d / 2), this.q, this.one);
+      return { key: `${p.kind}:${w}x${d}`, make: () => propGeometry(p.kind, w, d), matrix };
+    });
+    // Furniture is cut above waist height only: low pieces next to the player stay whole.
+    const mesh = batched(seeThrough(kitMaterial.clone(), 0.6), pieces);
+    if (!mesh) return;
+    mesh.castShadow = mesh.receiveShadow = true;
+    this.group.add(mesh);
   }
 
   /** Whether a fence tile runs along x (for the damage drawn on it). */
@@ -437,6 +483,7 @@ export class WorldView {
     const tex = TEX.grass().clone();
     tex.needsUpdate = true;
     tex.repeat.set(200, 200);
+    this.ownMaps.add(tex);
     const theme = this.world.def.theme ?? 'suburban';
     const alpine = theme === 'alpine';
     const ground = new THREE.Mesh(
@@ -493,14 +540,7 @@ export class WorldView {
    * player with a key, in `open`); lights follow the time of day (0 day … 1 night).
    */
   update(dt: number, night: number, open?: ReadonlySet<number>, power = 1, riot = false, arches = power) {
-    for (const d of this.doors) {
-      // A takeover (GDD §12): every door stands open.
-      const target = this.world.doorShut[d.index] && !open?.has(d.index) && !riot ? 0 : 1;
-      if (d.open !== target) d.open = target > d.open ? Math.min(target, d.open + dt * 3) : Math.max(target, d.open - dt * 3);
-      // Eased, sliding into the wall.
-      const e = d.open * d.open * (3 - 2 * d.open);
-      d.leaf.position.copy(d.home).addScaledVector(d.slide, e);
-    }
+    this.moveDoors(dt, open, riot);
     this.lights.setNight(night, power);
     // Lit from inside after dark (the tower cabins, the doors' windows); dark with the power out.
     for (const m of this.windows) m.emissiveIntensity = night * power * 0.85;
@@ -511,17 +551,42 @@ export class WorldView {
     this.archLight.emissive.setHex(flash ? 0xff2a1a : arches > 0.5 ? 0x2a9a3a : 0x000000);
   }
 
+  /** The doors slide toward their state; a leaf's instances are written only when it moved. */
+  private moveDoors(dt: number, open: ReadonlySet<number> | undefined, riot: boolean) {
+    for (const d of this.doors) {
+      // A takeover (GDD §12): every door stands open.
+      const target = this.world.doorShut[d.index] && !open?.has(d.index) && !riot ? 0 : 1;
+      if (d.open !== target) d.open = target > d.open ? Math.min(target, d.open + dt * 3) : Math.max(target, d.open - dt * 3);
+      // Eased, sliding into the wall.
+      const e = d.open * d.open * (3 - 2 * d.open);
+      if (e === d.drawn) continue;
+      d.drawn = e;
+      this.q.setFromAxisAngle(this.up, d.angle);
+      this.matrix.compose(this.pos.copy(d.home).addScaledVector(d.slide, e), this.q, this.one);
+      for (const [mesh, i] of d.parts) {
+        mesh.setMatrixAt(i, this.matrix);
+        mesh.instanceMatrix.needsUpdate = true;
+      }
+    }
+  }
+
+  /**
+   * The same prison staged again (P25: a replay's Watch again): the doors stand at once as the
+   * restored state has them, no arch still flashing. (Walls and fences follow the tiles at the
+   * next refreshTiles, which the view's damage redraw calls.)
+   */
+  reset() {
+    this.archFlash = 0;
+    this.moveDoors(Infinity, undefined, this.world.riot);
+  }
+
   /** A detector arch tripped (GDD §5.4): its lamps flash red a moment. */
   tripArch() {
     this.archFlash = 1.6;
   }
 
+  /** Frees the view's buffers, materials and its own textures (the map clones); the shared TEX ones and the ground's cached canvases are not. */
   dispose() {
-    this.group.traverse((o) => {
-      const m = o as THREE.Mesh;
-      m.geometry?.dispose();
-      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) if (mat !== kitMaterial) mat.dispose();
-    });
+    disposeTree(this.group, (t) => this.ownMaps.has(t), new Set([kitMaterial]));
   }
 }

@@ -32,6 +32,9 @@ varying vec3 vOccWorld;
 
 const VERTEX_BODY = /* glsl */ `
 vec4 occWorld = vec4(transformed, 1.0);
+#ifdef USE_BATCHING
+occWorld = batchingMatrix * occWorld;
+#endif
 #ifdef USE_INSTANCING
 occWorld = instanceMatrix * occWorld;
 #endif

@@ -10,18 +10,51 @@ import { MAP_H, MAP_W, type World } from '../sim/world/World';
  * - contact shadows: a blurred map of what stands on the floor (walls, furniture), multiplied
  *   over everything, so walls sit in soft corners and furniture on soft shadows (baked
  *   ambient occlusion, free at run time and on every phone).
+ *
+ * The two canvases (about 7 MB on the GPU) are kept for the last prison drawn and used again
+ * while what they show is the same (P25: a replay's Watch again, Play again, the title's
+ * backdrop of the same prison); drawing another prison's frees them. They are the cache's,
+ * never the view's: a view's dispose leaves them (`groundTextures` lists them).
  */
 export function buildGround(world: World): THREE.Group {
+  const key = fingerprint(world);
+  if (cached?.key !== key) {
+    cached?.paint.dispose();
+    cached?.ao.dispose();
+    cached = { key, paint: paintLayer(world), ao: contactShadows(world) };
+  }
   const group = new THREE.Group();
-  group.add(paintLayer(world), contactShadows(world));
+  group.add(
+    overlay(cached.paint, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), 0.002, 0.1),
+    overlay(cached.ao, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.MultiplyBlending, premultipliedAlpha: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), 0.004, 0.2),
+  );
   return group;
 }
 
+/** The last prison's canvases, and what they were drawn from. */
+let cached: { key: string; paint: THREE.CanvasTexture; ao: THREE.CanvasTexture } | null = null;
+
+/** The ground textures held for reuse (a view's dispose leaves these to the cache). */
+export function groundTextures(): readonly THREE.Texture[] {
+  return cached ? [cached.paint, cached.ao] : [];
+}
+
+/** What the canvases show depends on: the prison, its ground floor's tiles and keys (a save's dug walls), the furniture. */
+function fingerprint(world: World): string {
+  let h = 0x811c9dc5;
+  const mix = (v: number) => (h = Math.imul(h ^ v, 0x01000193));
+  for (const a of [world.ground.kind, world.ground.key]) for (let i = 0; i < a.length; i++) mix(a[i]);
+  for (const p of world.props) {
+    mix(p.x);
+    mix(p.z);
+    mix(p.w * 16 + p.d);
+    mix(p.kind.length);
+  }
+  return `${world.def.id}:${world.props.length}:${(h >>> 0).toString(36)}`;
+}
+
 /** (Floor decals draw under P17's fog veil, at renderOrder 0.5: orders below it, their own order kept.) */
-function overlay(canvas: HTMLCanvasElement, material: THREE.MeshBasicMaterial, y: number, order: number): THREE.Mesh {
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+function overlay(tex: THREE.Texture, material: THREE.MeshBasicMaterial, y: number, order: number): THREE.Mesh {
   material.map = tex;
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W, MAP_H).rotateX(-Math.PI / 2), material);
   mesh.position.set(MAP_W / 2, y, MAP_H / 2);
@@ -29,10 +62,22 @@ function overlay(canvas: HTMLCanvasElement, material: THREE.MeshBasicMaterial, y
   return mesh;
 }
 
+/** A canvas as a texture (`mipmaps` off for a blurred one: never shrunk enough on screen to need them). */
+function canvasTexture(canvas: HTMLCanvasElement, mipmaps: boolean): THREE.CanvasTexture {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  if (mipmaps) tex.anisotropy = 4;
+  else {
+    tex.generateMipmaps = false;
+    tex.minFilter = THREE.LinearFilter;
+  }
+  return tex;
+}
+
 // ------------------------------------------------------------------ paint
 const PAINT_RES = 16;
 
-function paintLayer(world: World): THREE.Mesh {
+function paintLayer(world: World): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = MAP_W * PAINT_RES;
   canvas.height = MAP_H * PAINT_RES;
@@ -88,7 +133,7 @@ function paintLayer(world: World): THREE.Mesh {
       c.restore();
     }
   }
-  return overlay(canvas, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), 0.002, 0.1);
+  return canvasTexture(canvas, true);
 }
 
 // ------------------------------------------------------------------ contact shadows
@@ -118,7 +163,7 @@ function blur(a: Float32Array, w: number, h: number, radius: number, passes: num
   }
 }
 
-function contactShadows(world: World): THREE.Mesh {
+function contactShadows(world: World): THREE.CanvasTexture {
   const W = MAP_W * AO_RES;
   const H = MAP_H * AO_RES;
   const cover = new Float32Array(W * H);
@@ -171,6 +216,5 @@ function contactShadows(world: World): THREE.Mesh {
     img.data[i * 4 + 3] = 255;
   }
   c.putImageData(img, 0, 0);
-  const material = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.MultiplyBlending, premultipliedAlpha: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  return overlay(canvas, material, 0.004, 0.2);
+  return canvasTexture(canvas, false);
 }
