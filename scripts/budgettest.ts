@@ -9,7 +9,9 @@
  * state has them at once.
  *
  * Headless: the canvases are stand-ins (nothing is drawn), the counts are of objects, not of
- * a GPU's calls (culling and the shadow pass come on top in a browser).
+ * a GPU's calls (culling and the shadow pass come on top in a browser). A BatchedMesh is one call
+ * where the browser has WEBGL_multi_draw (Chrome, Edge, Safari); without it three draws each
+ * piece on its own, and a roll call's yard measured 166–254 calls (v2.5.0: 280–497).
  */
 import * as THREE from 'three';
 import { check } from './assert';

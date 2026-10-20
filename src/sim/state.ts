@@ -7,7 +7,7 @@ import { SHOP_SLOTS } from '../content/loot';
 import { routineAt } from '../content/routine';
 import { HOLDER, type Favor, type StationAct } from './systems/economy';
 import { maxHealth } from './systems/combat';
-import { clockAt, prisonDay } from './systems/clock';
+import { clockAt, dayMinute, prisonDay } from './systems/clock';
 import { spawnGuards, type Guard } from './systems/guards';
 import { fighter, spawnInmates, type Inmate } from './systems/inmates';
 import { fixtureUse, START_INT, startItems, startPockets, type FixtureUse, type ItemEvent, type ItemState } from './systems/items';
@@ -19,7 +19,7 @@ import { FEATS, freshFeats, partialLedger } from './systems/ledger';
 import { spawnDogs, type Dog } from './systems/k9';
 import type { Rat, RatRefusal } from './systems/rats';
 import { dayPlan, type ForcedDay } from './systems/calendar';
-import { DAY_BOOKS, DAY_EVENTS, type DayEvent } from '../content/days';
+import { DAY_BOOKS, DAY_EVENTS, EVENT_TIMES, type DayEvent } from '../content/days';
 import { CATALOGUE } from '../content/smuggling';
 import { BAR, CHIPS, CLAIM_MAX, HAND, STAKES } from '../content/games';
 import type { Cheat, CheatNews } from './systems/cards';
@@ -32,7 +32,7 @@ import type { FootballNews, Match } from './systems/football';
 import type { Ink } from './systems/tattoo';
 import type { Show } from './systems/talent';
 import type { Quiz } from './systems/quiz';
-import { CHARTS, countIn, QUIZ_QUESTIONS, REVEAL_STEPS, SONGS, songSteps } from '../content/nights';
+import { ACT_GAP, CHARTS, countIn, QUIZ_QUESTIONS, REVEAL_STEPS, SONGS, songSteps } from '../content/nights';
 import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
@@ -854,8 +854,13 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!quizOk(s.quiz, n, s.step)) s.quiz = null;
   for (const k of ['stageDay', 'quizDay'] as const) if (!Number.isInteger(s[k]) || s[k] < 0) s[k] = 0;
   if (!(Array.isArray(s.acted) && (s.acted.length === 0 || (ints(s.acted, 2) && s.acted[0] >= 0 && s.acted[1] >= 0 && s.acted[1] < 16)))) s.acted = [];
-  // (A save from before no-shows, 2.5.1: the night it was made on stands as it did then, every act played.)
-  if (st.acted === undefined) s.acted = [prisonDay(st.step), 15];
+  // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
+  if (st.acted === undefined) {
+    const m = dayMinute(s.step);
+    let bits = 0;
+    for (let k = 0; k < 4; k++) if (m >= (EVENT_TIMES.talent.at as number) + k * ACT_GAP) bits |= 1 << k;
+    s.acted = bits ? [prisonDay(s.step), bits] : [];
+  }
   if (st.stageDay === undefined) {
     const was = DAY_BOOKS[prison.id]?.beforeStage;
     for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) {

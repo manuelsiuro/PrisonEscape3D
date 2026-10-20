@@ -203,10 +203,10 @@ export class PastimesView {
   }
 
   /** A prison: its court's spots painted on the ground (those on the football pitch apart). */
-  setWorld(world: World) {
+  setWorld(world: World, pitch: Pitch | null = world.def.leisure?.pitch ?? null) {
     this.court = world.def.leisure?.hoop ?? null;
     const c = this.court;
-    const onPitch = c ? spotsOnPitch(c, world.def.leisure?.pitch) : [];
+    const onPitch = c ? spotsOnPitch(c, pitch) : [];
     this.spots.count = this.pitchSpots.count = 0;
     c?.spots.forEach((q, k) => {
       this.p.set(q.x + 0.5, 0.012, q.z + 0.5);

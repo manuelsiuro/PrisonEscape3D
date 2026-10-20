@@ -139,10 +139,16 @@ export function actNow(sim: SimContext): number {
   return k >= 0 && noShow(sim, k) ? -1 : k;
 }
 
-/** The inmate due on the stage now or walking on for the next act (-1 none): busy for the evening. */
-export function performerTonight(sim: SimContext): number {
-  const k = actNow(sim) >= 0 ? actNow(sim) : actComing(sim);
-  return k >= 0 ? tonight(sim)[k].who : -1;
+/**
+ * The inmates busy with tonight's acts (busy for the evening): from the call before the first act
+ * (stageTargets), every performer whose act isn't over and hasn't been left empty (a no-show).
+ */
+export function performersTonight(sim: SimContext): number[] {
+  if (!stageOf(sim.world) || sim.world.def.rules?.relaxed || today(sim).event !== 'talent') return [];
+  const acts = tonight(sim);
+  const m = dayMinute(sim.state.step);
+  if (!acts.length || m < acts[0].at - ACT_CALL) return [];
+  return acts.filter((a, k) => m < a.until && !noShow(sim, k)).map((a) => a.who);
 }
 
 /**

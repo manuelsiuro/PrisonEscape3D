@@ -40,7 +40,7 @@ import { bodyAt, type Body } from './movement';
 import { dismiss, guardTalking, refuse } from './social';
 import { besideOnGround } from './structure';
 import { hoopsPartner } from './hoops';
-import { performerTonight } from './talent';
+import { performersTonight } from './talent';
 
 /** A crew order's entry (state.crew): [who, ORDER, place, more, night]. */
 export type CrewEntry = number[];
@@ -244,7 +244,7 @@ function tidy(s: { crew: number[][] }) {
 
 /**
  * The inmate a muscle would brawl with: the nearest within BRAWL_RANGE he can see, up and about,
- * not in the crew, not busy at the evening's doings (on the stage or walking on, at the quiz, in a
+ * not in the crew, not busy at the evening's doings (on the stage or called to it, at the quiz, in a
  * match, under the needle, at the hoop with the player) (-1 none).
  */
 export function brawlWith(sim: SimContext, who: number): number {
@@ -253,11 +253,11 @@ export function brawlWith(sim: SimContext, who: number): number {
   if (!m || m.ko > 0 || s.layer !== LAYER.GROUND || sim.away) return -1;
   let best = -1;
   let bestD = (BRAWL_RANGE * UNIT) ** 2 + 1;
-  const act = sim.rules250 ? -1 : performerTonight(sim);
+  const acts = sim.rules250 ? [] : performersTonight(sim);
   s.inmates.forEach((o, k) => {
     if (k === who || s.followers.includes(k) || o.ko > 0 || o.angry > 0 || o.doing === DOING.SLEEP || s.talk === k) return;
     if (s.dice[0] === k || s.bout[0] === k) return;
-    if (!sim.rules250 && (k === act || s.quiz?.who.includes(k) || s.match?.team.includes(k) || s.ink?.who === k || hoopsPartner(s) === k)) return;
+    if (!sim.rules250 && (acts.includes(k) || s.quiz?.who.includes(k) || s.match?.team.includes(k) || s.ink?.who === k || hoopsPartner(s) === k)) return;
     const d = (o.body.x - m.body.x) ** 2 + (o.body.z - m.body.z) ** 2;
     if (d >= bestD || !lineOfSight(sim.world, m.body.x, m.body.z, o.body.x, o.body.z)) return;
     bestD = d;

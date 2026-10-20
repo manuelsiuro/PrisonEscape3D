@@ -850,6 +850,11 @@ export const LESSONS: readonly Lesson[] = [
       clockTo(sim, at(19, acts[acts.length - 1].at - 660 - 2));
       const st = sim.prison.leisure!.stage!;
       place(sim, st.x - 4, st.z, 1);
+      // (The acts before it played earlier in the evening; the last one's performer already on the boards, not a no-show.)
+      sim.state.acted = [prisonDay(sim.state.step), (1 << (acts.length - 1)) - 1];
+      const last = sim.state.inmates[acts[acts.length - 1].who].body;
+      last.x = st.x * UNIT + UNIT / 2;
+      last.z = st.z * UNIT + UNIT / 2;
     },
     steps: [
       { text: 'lesson.talent.watch', done: (c) => dayMinute(c.sim.state.step) >= turnFrom(tonight(c.sim)), least: 5 },

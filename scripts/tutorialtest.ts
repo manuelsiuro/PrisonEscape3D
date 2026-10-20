@@ -5,7 +5,7 @@
  * can get stuck.
  */
 import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
-import { tonight, turnFrom } from '../src/sim/systems/talent';
+import { standing, tonight, turnFrom } from '../src/sim/systems/talent';
 import { questionNow } from '../src/sim/systems/quiz';
 import { dayMinute } from '../src/sim/systems/clock';
 import { TRAINING } from '../src/content/prisons/training';
@@ -562,6 +562,7 @@ play('tattoo', (bot, ctx) => {
 play('talent', (bot) => {
   // The acts watched; onto the stage; the easy song on the drums, every note on its step.
   check(bot.until(() => dayMinute(bot.st.step) >= turnFrom(tonight(bot.sim)), 60 * 20 * 60), 'talent: the acts over');
+  check(standing(bot.sim).length === tonight(bot.sim).length, `talent: every act stood, none a no-show (${standing(bot.sim).length} of ${tonight(bot.sim).length})`);
   const st = bot.sim.prison.leisure!.stage!;
   check(bot.walkTo(tile(st.x, st.z)), 'talent: on the stage');
   bot.op(OP.EXT, EXT.STAGE, 0, 0);

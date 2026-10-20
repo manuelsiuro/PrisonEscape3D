@@ -3,7 +3,7 @@ import { PROPS } from '../content/props';
 import { ROUTINE } from '../content/routine';
 import { KEY, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
-import type { PrisonDef } from '../content/prisons/types';
+import type { Pitch, PrisonDef } from '../content/prisons/types';
 import type { SimContext } from '../sim/context';
 import { drillOn } from '../sim/systems/calendar';
 
@@ -20,12 +20,12 @@ import { drillOn } from '../sim/systems/calendar';
  * backdrop of the same prison); drawing another prison's frees them. They are the cache's,
  * never the view's: a view's dispose leaves them (`groundTextures` lists them).
  */
-export function buildGround(world: World): THREE.Group {
-  const key = fingerprint(world);
+export function buildGround(world: World, pitch: Pitch | null = world.def.leisure?.pitch ?? null): THREE.Group {
+  const key = `${fingerprint(world)}:${pitch ? `${pitch.x},${pitch.z},${pitch.w},${pitch.d}` : '-'}`;
   if (cached?.key !== key) {
     cached?.paint.dispose();
     cached?.ao.dispose();
-    cached = { key, paint: paintLayer(world), ao: contactShadows(world) };
+    cached = { key, paint: paintLayer(world, pitch), ao: contactShadows(world) };
   }
   const group = new THREE.Group();
   group.add(
@@ -43,7 +43,7 @@ export function groundTextures(): readonly THREE.Texture[] {
   return cached ? [cached.paint, cached.ao] : [];
 }
 
-/** What the canvases show depends on: the prison, its ground floor's tiles and keys (a save's dug walls), the furniture. */
+/** What the canvases show depends on: the prison, its ground floor's tiles and keys (a save's dug walls), the furniture (and the pitch in use: buildGround). */
 function fingerprint(world: World): string {
   let h = 0x811c9dc5;
   const mix = (v: number) => (h = Math.imul(h ^ v, 0x01000193));
@@ -81,7 +81,7 @@ function canvasTexture(canvas: HTMLCanvasElement, mipmaps: boolean): THREE.Canva
 // ------------------------------------------------------------------ paint
 const PAINT_RES = 16;
 
-function paintLayer(world: World): THREE.CanvasTexture {
+function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = MAP_W * PAINT_RES;
   canvas.height = MAP_H * PAINT_RES;
@@ -99,7 +99,7 @@ function paintLayer(world: World): THREE.CanvasTexture {
   }
 
   // Roll call: a painted border and a box per standing spot (P29: on its own layer where it would cross the football pitch).
-  if (!rollCallOverPitch(world.def)) drawRollCall(c, world.def, 0, 0);
+  if (!rollCallOverPitch(world.def, pitch)) drawRollCall(c, world.def, 0, 0);
 
   // Hazard stripes under detector arches and gates.
   for (let z = 0; z < MAP_H; z++) {
@@ -159,10 +159,10 @@ function rollCallBounds(def: PrisonDef): { x0: number; z0: number; x1: number; z
 /**
  * Whether the roll call's paint would cross the football pitch (P29: Stalag Flucht's and
  * Shankton's roll call squares are their pitches): it goes on a layer of its own then, shown for
- * roll call only, and the pitch's lines are left clean the rest of the day.
+ * roll call only, and the pitch's lines are left clean the rest of the day. `p`: the pitch in use
+ * (a 2.5.0 replay's is the one it had then: football.ts pitchOf).
  */
-export function rollCallOverPitch(def: PrisonDef): boolean {
-  const p = def.leisure?.pitch;
+export function rollCallOverPitch(def: PrisonDef, p: Pitch | null | undefined = def.leisure?.pitch): boolean {
   const b = rollCallBounds(def);
   return !!p && !!b && b.x0 < p.x + p.w && b.x1 >= p.x && b.z0 < p.z + p.d && b.z1 >= p.z;
 }
@@ -187,8 +187,8 @@ export function rollCallShows(sim: Pick<SimContext, 'prison' | 'state'>, minute:
 }
 
 /** That layer (null where the roll call keeps off the pitch): a decal over the roll call's tiles, faded in and out by its material's opacity. */
-export function rollCallLayer(world: World): THREE.Mesh | null {
-  const b = rollCallOverPitch(world.def) ? rollCallBounds(world.def) : null;
+export function rollCallLayer(world: World, pitch: Pitch | null = world.def.leisure?.pitch ?? null): THREE.Mesh | null {
+  const b = rollCallOverPitch(world.def, pitch) ? rollCallBounds(world.def) : null;
   if (!b) return null;
   const w = b.x1 - b.x0 + 1;
   const d = b.z1 - b.z0 + 1;

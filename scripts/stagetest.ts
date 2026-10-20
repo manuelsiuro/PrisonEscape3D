@@ -595,6 +595,16 @@ function playQuiz(seed: number, wait: number, knows: boolean) {
     const now = new Sim(CENTER_PERKS, 5);
     now.state = loadState(now.world, CENTER_PERKS, JSON.parse(JSON.stringify(n.sim.state)));
     check(JSON.stringify(now.state.acted) === JSON.stringify(n.sim.state.acted), 'one from 2.5.1 keeps its own');
+    // Made before the acts began (18:00): nothing stands yet, so a rival who misses his slot that evening is a no-show as ever.
+    const early = JSON.parse(JSON.stringify(n.sim.state));
+    delete early.acted;
+    early.step = at(1, 18);
+    const e250 = new Sim(CENTER_PERKS, 5);
+    e250.state = loadState(e250.world, CENTER_PERKS, early);
+    check(e250.state.acted.length === 0, `a save from 2.5.0 made before the acts: none stands yet (${JSON.stringify(e250.state.acted)})`);
+    early.step = at(1, 19, 13);
+    const mid = loadState(e250.world, CENTER_PERKS, early);
+    check(mid.acted[1] === 3, `made at 19:13: the two acts begun stand, the rest are judged as ever (${JSON.stringify(mid.acted)})`);
   }
   // A log from before stage nights.
   check(beforeStage('2.4.0') && beforeStage('1.20.3') && !beforeStage('2.5.0') && !beforeStage('3.0.1'), 'logs from before 2.5.0 are from before stage nights');

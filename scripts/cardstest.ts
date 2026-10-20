@@ -278,7 +278,8 @@ function yardTile(sim: Sim): number {
   const ahead = bell([2, 1]);
   const behind = bell([1, 2]);
   const level = bell([1, 1]);
-  check(ahead === 'won $120' && behind === 'lost $80' && level === 'off $100', `the roll call's bell: ahead won, behind lost, level the stake back (${ahead}, ${behind}, ${level})`);
+  // (Never won at the bell: a player one chip up could stall to it for a sure profit.)
+  check(ahead === 'off $100' && behind === 'lost $80' && level === 'off $100', `the roll call's bell: behind lost, ahead or level the stake back (${ahead}, ${behind}, ${level})`);
   console.log(`cheat's clock: ${TURN_STEPS} steps, then folded (or the call made); at the bell: ${ahead}, ${behind}, ${level}`);
 }
 

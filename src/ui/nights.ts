@@ -223,6 +223,9 @@ export class StageCard {
       const pk = [this.song, this.inst, v.hasGuitar, v.prizes.join(), lang].join('|');
       if (pk !== this.pickDrawn) {
         this.pickDrawn = pk;
+        // (Redrawn with the focus in it, an act's news say: it stays on the choice.)
+        const active = document.activeElement;
+        this.refocus ??= this.songs.contains(active) ? this.songs : this.insts.contains(active) ? this.insts : null;
         this.songs.innerHTML = SONGS.map(
           (s, k) =>
             `<button role="radio" data-song="${k}" class="stage-song-btn${k === this.song ? ' on' : ''}" aria-checked="${k === this.song}" tabindex="${k === this.song ? 0 : -1}"><b>${t(`song.${s.id}` as Key)}</b><span>${'★'.repeat(s.level)}${'☆'.repeat(3 - s.level)} · ${t('stage.firstPrize', { n: v.prizes[k] })}</span></button>`,
@@ -232,7 +235,7 @@ export class StageCard {
           .join('');
         this.songs.setAttribute('aria-label', t('stage.songsAria'));
         this.insts.setAttribute('aria-label', t('stage.instsAria'));
-        // (Moved by an arrow key: the new choice keeps the focus.)
+        // (Moved by an arrow key, or redrawn under the focus: the choice keeps it.)
         this.refocus?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
         this.refocus = null;
       }

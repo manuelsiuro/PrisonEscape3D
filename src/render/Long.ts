@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { now, type Later } from './batch';
 import { box, cyl, merge, paint } from './kit';
 import { bodyGeometry, tailGeometry } from './Rat';
 import { MAP_W } from '../sim/world/World';
@@ -181,16 +182,28 @@ export class LongView {
     this.group.add(this.lap);
   }
 
+  /** When to free the last track's chalk (setWorld). */
+  private later: Later = now;
+
+  /** A prison staged (View.setWorld): the last one's track freed `later`, once the next prison's shaders are in use. */
+  setWorld(later: Later) {
+    this.later = later;
+  }
+
   /** The track's chalk lanes and finish line, drawn once per map. */
   private drawTrack(tiles: number[] | null) {
     if (tiles === this.trackTiles) return;
     this.trackTiles = tiles;
-    for (const c of [...this.track.children]) {
-      this.track.remove(c);
-      const m = c as THREE.Mesh;
-      m.geometry?.dispose();
-      (m.material as THREE.Material)?.dispose();
-    }
+    const old = [...this.track.children];
+    this.track.clear();
+    // (Freed after the next frame when a prison is staged: setWorld.)
+    this.later(() => {
+      for (const c of old) {
+        const m = c as THREE.Mesh;
+        m.geometry?.dispose();
+        (m.material as THREE.Material)?.dispose();
+      }
+    });
     if (!tiles || tiles.length < 2) return;
     const [x0, z0] = [tiles[0] % MAP_W, Math.floor(tiles[0] / MAP_W)];
     const [x1, z1] = [tiles[tiles.length - 1] % MAP_W, Math.floor(tiles[tiles.length - 1] / MAP_W)];

@@ -2397,7 +2397,7 @@ export const en = {
   "cheat.mustCall": "{name} has no cards left: you must call it.",
   "cheat.yourMoveCall": "Your move: lay cards on top, or call Liar!",
   "cheat.yourMove": "Your move: lay 1 to 3 cards as {card}",
-  "cheat.clock": "{n} s left",
+  "cheat.clock": "· {n} s left",
   "cheat.lay1": "Lay 1 as {card}",
   "cheat.lay": "Lay {n} as {card}",
   "cheat.pick": "Pick 1 to 3 cards",

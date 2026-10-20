@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Pitch } from '../content/prisons/types';
 import { KEY, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { buildGround } from './ground';
@@ -120,7 +121,11 @@ export class WorldView {
   /** Textures made for this view (the wall, fence and grass map clones): freed with it; the shared TEX ones and the ground's cached canvases are not. */
   private readonly ownMaps = new Set<THREE.Texture>();
 
-  constructor(readonly world: World) {
+  constructor(
+    readonly world: World,
+    /** The football pitch in use (its lines kept clean of the roll call's paint: ground.ts). */
+    pitch: Pitch | null = world.def.leisure?.pitch ?? null,
+  ) {
     this.buildFloors();
     this.buildWalls();
     this.buildFences();
@@ -129,7 +134,7 @@ export class WorldView {
     this.buildTowers();
     this.buildProps();
     // (The ground's canvases are its cache's: kept for the same prison staged again.)
-    this.group.add(buildGround(world));
+    this.group.add(buildGround(world, pitch));
     this.lights = new Lights(world);
     this.group.add(this.lights.group);
     this.buildSurroundings();

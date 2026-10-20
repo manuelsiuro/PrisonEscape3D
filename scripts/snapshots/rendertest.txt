@@ -15,3 +15,4 @@ pitch: irongate 10×5; hoop spots on it 0; roll call on its own layer (shown for
 pitch: training 13×6; hoop spots on it 0; roll call baked
 pitch: the roll call's marks over a pitch show for roll call and 20 minutes before
 pitch: the roll call's marks show for the drill at 11:02 at stalag-flucht
+replay pitch: stalag-flucht 2.5.0 replays on 13,22 13×5: roll call on its own layer, hoop spots on it 1

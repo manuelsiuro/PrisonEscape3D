@@ -246,6 +246,15 @@
     left: auto;
     max-width: min(400px, calc(100vw - 560px));
   }
+  /* (The place's name kept short beside it, so the cash beyond it stays clear of the card: « Cour intérieure ».) */
+  body.lesson-on.gaming .hud-zone,
+  body.lesson-on.courting .hud-zone {
+    max-width: 150px;
+  }
+  body.lesson-on.gaming .hud-zone span,
+  body.lesson-on.courting .hud-zone span {
+    white-space: nowrap;
+  }
   body.lesson-on.is-playing.gaming .toasts,
   body.lesson-on.touch.is-playing.gaming .toasts,
   body.lesson-on.is-playing.courting .toasts,

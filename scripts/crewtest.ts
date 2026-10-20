@@ -28,11 +28,11 @@ import { placesOf } from '../src/sim/ai/places';
 import { lineOfSight } from '../src/sim/ai/sight';
 import { command, EXT, OP, ORDER, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
-import { DAY_STEPS } from '../src/sim/systems/clock';
+import { DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
 import { allyDamage, backedBy, brawlWith, cantOrder, carryingOf, crewEscape, crewEntry, digHelp, orderOf, postable, postOf, shaftOf, specialityOf } from '../src/sim/systems/crew';
 import { IRONGATE } from '../src/content/prisons/irongate';
 import { DAY_EVENTS } from '../src/content/days';
-import { performerTonight, tonight } from '../src/sim/systems/talent';
+import { performersTonight, tonight } from '../src/sim/systems/talent';
 import { damage, INMATE_DEFENSE } from '../src/sim/systems/combat';
 import { awake, GUARD } from '../src/sim/systems/guards';
 import { DOING } from '../src/sim/systems/inmates';
@@ -812,7 +812,17 @@ function chipSpot(sim: Sim): number {
   const act = tonight(t)[0];
   const m = t.state.inmates[CP.muscle].body;
   put(t.state.inmates[act.who].body, tileOf(m) + 1);
-  check(performerTonight(t) === act.who && brawlWith(t, CP.muscle) !== act.who, 'not the act on the stage (or walking on)');
+  check(performersTonight(t).includes(act.who) && brawlWith(t, CP.muscle) !== act.who, 'not the act on the stage (or walking on)');
   t.rules250 = true;
   check(brawlWith(t, CP.muscle) === act.who, '(a 2.5.0 replay: the act would do)');
+  t.rules250 = false;
+  // Nor the next act's performer, called to the wings while the first plays (nor anyone before 19:00 once they're called).
+  const next = tonight(t)[1];
+  t.state.step = at(1, 19, 5);
+  t.state.acted = [prisonDay(t.state.step), 1];
+  put(t.state.inmates[act.who].body, tileOf(m) + MAP_W * 6);
+  put(t.state.inmates[next.who].body, tileOf(m) + 1);
+  check(brawlWith(t, CP.muscle) !== next.who, 'not the next act, waiting in the wings');
+  t.state.step = at(1, 18, 50);
+  check(performersTonight(t).length === tonight(t).length && brawlWith(t, CP.muscle) !== next.who, 'nor any act called before 19:00');
 }

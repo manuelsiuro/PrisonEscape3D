@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Pitch } from '../content/prisons/types';
 import { BALL_R, GOAL_HALF } from '../content/team';
 import { UNIT } from '../sim/tuning';
+import { now, type Later } from './batch';
 import { box, cyl, merge, paint } from './kit';
 
 /**
@@ -85,15 +86,35 @@ export class TeamView {
     this.group.add(this.rings);
   }
 
+  /** When to free the last pitch's meshes (setWorld: after the next prison's first frame, its shaders in use by then). */
+  private later: Later = now;
+
+  /**
+   * A prison staged (View.setWorld): its pitch built now, before the view warms its shaders, the
+   * last one's freed `later` (so the shaders they share are never compiled twice).
+   */
+  setWorld(pitch: Pitch | null, theme: string, later: Later) {
+    this.later = later;
+    const key = pitch ? `${pitch.x},${pitch.z},${pitch.w},${pitch.d},${theme}` : '';
+    if (key === this.drawn) return;
+    if (pitch) this.build(pitch, theme);
+    else this.clear();
+    this.drawn = key;
+  }
+
   /** Lets go of the pitch's meshes (their geometries and materials). */
   private clear() {
-    this.lines.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh) return;
-      m.geometry.dispose();
-      (m.material as THREE.Material).dispose();
-    });
+    const old = [...this.lines.children];
     this.lines.clear();
+    this.later(() => {
+      for (const o of old)
+        o.traverse((c) => {
+          const m = c as THREE.Mesh;
+          if (!m.isMesh) return;
+          m.geometry.dispose();
+          (m.material as THREE.Material).dispose();
+        });
+    });
   }
 
   /** The pitch's paint, goals and nets, built once per map: three meshes. */

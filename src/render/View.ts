@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Pitch } from '../content/prisons/types';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
@@ -290,6 +291,8 @@ export class View {
   private readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, 0x4a5a3a, 1);
   private worldView: WorldView | null = null;
   private world: World | null = null;
+  /** The football pitch in use with it (setWorld). */
+  private pitch: Pitch | null = null;
   player = new Character(INMATE_LOOK);
   private outfit = -1;
   /** The tattoos inked in the prison the player is drawn with (P29). */
@@ -519,12 +522,12 @@ export class View {
    * floors, walls, doors, furniture and decor built for it, redrawn from the state; the rest is
    * made afresh.
    */
-  setWorld(world: World) {
+  setWorld(world: World, pitch: Pitch | null = world.def.leisure?.pitch ?? null) {
     this.snores.clear();
     // The escape camera ends with the game (the title's picture is the classic angle again).
     this.endCinema();
     this.carrying = false;
-    const same = world === this.world && !!this.worldView && !!this.structure && !!this.decor;
+    const same = world === this.world && pitch === this.pitch && !!this.worldView && !!this.structure && !!this.decor;
     const retire = (objects: THREE.Object3D[], dispose: () => void) => {
       this.scene.remove(...objects);
       this.retired.push(dispose);
@@ -571,6 +574,7 @@ export class View {
     // The prison's look (snow at Stalag Flucht): the textures drawn from here on follow it.
     setTheme(world.def.theme ?? 'suburban');
     this.world = world;
+    this.pitch = pitch;
     this.chairs.clear();
     for (const p of world.props) if (p.kind === 'chair') this.chairs.add(p.z * MAP_W + p.x);
     this.security = new Security(world);
@@ -579,7 +583,7 @@ export class View {
       this.scene.add(this.decor.group);
     }
     // (P29: the roll call's paint where it crosses the football pitch, shown for roll call only.)
-    this.rollCallPaint = rollCallLayer(world);
+    this.rollCallPaint = rollCallLayer(world, pitch);
     this.rollCallShown = 0;
     if (this.rollCallPaint) this.scene.add(this.rollCallPaint);
     this.minefield = new Minefield(world);
@@ -594,7 +598,7 @@ export class View {
       // (Walls, fences and the damage follow the tiles at the next frame: tilesRev below.)
       this.worldView!.reset();
     } else {
-      this.worldView = new WorldView(world);
+      this.worldView = new WorldView(world, pitch);
       this.structure = new Structure(world, this.worldView);
       this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs);
     }
@@ -612,7 +616,9 @@ export class View {
     this.events.setWorld(world, later);
     this.delivery.setWorld(world, later);
     this.gamesView.setWorld(world, later);
-    this.pastimesView.setWorld(world);
+    this.teamView.setWorld(pitch, world.def.theme ?? 'suburban', later);
+    this.longView.setWorld(later);
+    this.pastimesView.setWorld(world, pitch);
     this.getaway.setWorld(world);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {

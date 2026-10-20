@@ -17,6 +17,7 @@ import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
 import { DAY_EVENTS, WEATHERS } from '../src/content/days';
 import { routineAt } from '../src/content/routine';
 import { Sim } from '../src/sim/Sim';
+import { pitchOf } from '../src/sim/systems/football';
 import { drillOn, planOf } from '../src/sim/systems/calendar';
 import { clockAt, DAY_STEPS } from '../src/sim/systems/clock';
 import { STEPS_PER_MINUTE } from '../src/sim/tuning';
@@ -143,4 +144,18 @@ const ALL = [...PRISONS, TRAINING];
   const after = put(plan.until + 5);
   check(!drillOn(sim) && rollCallShows(sim, after) === rollCallSoon(sim.state.routine, after), 'pitch: the drill over, the routine decides again');
   console.log(`pitch: the roll call's marks show for the drill at ${String(Math.floor(during / 60)).padStart(2, '0')}:${String(during % 60).padStart(2, '0')} at ${STALAG_FLUCHT.id}`);
+}
+
+// ------------------------------------------------------------------ a 2.5.0 replay's pitch
+{
+  // A replay of a 2.5.0 run plays on the pitch it had (football.ts pitchOf): the paint keeps off that one.
+  const def = STALAG_FLUCHT;
+  const was = def.leisure!.pitchWas!;
+  const old = new Sim(def, 3);
+  old.rules250 = true;
+  check(pitchOf(old) === was && pitchOf(new Sim(def, 3)) === def.leisure!.pitch, 'replay pitch: a 2.5.0 replay plays on the old pitch, a game on the new');
+  const crossed = rollCallOverPitch(def, was);
+  const spots = spotsOnPitch(def.leisure!.hoop!, was).filter(Boolean).length;
+  check(crossed && !rollCallOverPitch(def), 'replay pitch: the roll call goes on its own layer over the old pitch, baked beside the new');
+  console.log(`replay pitch: ${def.id} 2.5.0 replays on ${was.x},${was.z} ${was.w}×${was.d}: roll call ${crossed ? 'on its own layer' : 'baked'}, hoop spots on it ${spots}`);
 }

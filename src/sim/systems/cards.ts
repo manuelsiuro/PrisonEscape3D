@@ -201,7 +201,7 @@ function reveal(sim: SimContext, c: Cheat, caller: number) {
 /**
  * How a game of Cheat ended: won or lost on the chips, folded (the player walked away from the
  * table, or let their move's clock run out: the stake is the inmate's), or off (the sirens,
- * someone knocked out, level at the roll call's bell: the stake comes back). A game begun plays
+ * someone knocked out, not behind at the roll call's bell: the stake comes back). A game begun plays
  * out past the games' hours, up to roll call or Lights Out.
  */
 export function endCheat(sim: SimContext, how: 'won' | 'lost' | 'folded' | 'off', late = false) {
@@ -302,8 +302,8 @@ export function keepCheat(sim: SimContext) {
   if (!m || m.ko > 0 || m.angry > 0 || s.lockdown) return endCheat(sim, 'off');
   if (s.talk !== c.who) return endCheat(sim, sim.away ? 'off' : 'folded');
   if (!sim.rules250) {
-    // Roll call or Lights Out: settled on the chips (more wins, level: the stake back), never stalled into the sirens a missed roll call brings.
-    if (gamesBell(s)) return endCheat(sim, c.chips[0] > c.chips[1] ? 'won' : c.chips[0] < c.chips[1] ? 'lost' : 'off');
+    // Roll call or Lights Out: behind, the hand is lost; else the stake comes back (never won at the bell: a lead stalled to it would be a sure profit), never stalled into the sirens a missed roll call brings.
+    if (gamesBell(s)) return endCheat(sim, c.chips[0] < c.chips[1] ? 'lost' : 'off');
     // (No clock in the lessons: the tutorial's prison takes its time.)
     if (c.turn !== 0 || sim.world.def.rules?.relaxed) c.due = 0;
     else if (!c.due) c.due = s.step + TURN_STEPS;

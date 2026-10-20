@@ -3,6 +3,7 @@ import type { Prisoner } from '../content/prisoner';
 import type { BedPose } from '../render/Character';
 import { placesOf } from '../sim/ai/places';
 import { ESCAPES, type Sim } from '../sim/Sim';
+import { pitchOf } from '../sim/systems/football';
 import { UNIT, WALK_SPEED } from '../sim/tuning';
 import { showCinema } from '../ui/cinema';
 import { settings, sound, view } from './context';
@@ -15,7 +16,8 @@ import { firstDay } from './tips';
  * (the escape camera) at the end of either.
  */
 export function stageWorld(sim: Sim, prisoner: Prisoner | null) {
-  view.setWorld(sim.world);
+  // (The pitch in use: a 2.5.0 replay's is the one it had then.)
+  view.setWorld(sim.world, pitchOf(sim));
   view.setPrisoner(prisoner);
   // Start a little wide and settle in on the player.
   view.snapTo(sim.state.player.x / UNIT, sim.state.player.z / UNIT, settings.reducedMotion ? 1 : 0.8);
