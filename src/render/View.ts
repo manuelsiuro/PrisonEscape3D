@@ -1226,7 +1226,7 @@ export class View {
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // Team & ink (P29): the pitch and the ball (the ground floor, and from the roofs).
-    this.teamView.update(f.team, dt, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
+    this.teamView.update(f.team, f.inmates, dt, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
@@ -1346,7 +1346,7 @@ export class View {
     this.gamesView.update(null, 0, false, false);
     this.pastimesView.update(null, 0, 0, 0, false, false);
     this.longView.update(null, 0, false, false);
-    this.teamView.update(null, 0, false);
+    this.teamView.update(null, [], 0, false);
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;

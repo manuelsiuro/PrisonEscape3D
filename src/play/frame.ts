@@ -166,7 +166,7 @@ const frameData: Frame = {
   games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
   pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
   long: null,
-  team: { pitch: null, ball: null },
+  team: { pitch: null, ball: null, mates: [], rivals: [] },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
 };

@@ -28,9 +28,11 @@ checkers: 3 steps done by day 1 18:15
 pruno: 5 steps done by day 2 08:01
 garden: 5 steps done by day 1 10:31
 ratRace: 7 steps done by day 1 21:12
+football: 4 steps done by day 1 10:51
+tattoo: 5 steps done by day 1 10:19
 crew: 3 steps done by day 1 10:33
 crew, posted far: ended at step 3 (lesson.crew.far)
-lockpick: 3 steps done by day 1 10:36
+lockpick: 3 steps done by day 1 10:35
 stowaway: 3 steps done by day 1 14:31
 bluff: 3 steps done by day 1 19:50
 glider: 2 steps done by day 1 23:21
@@ -57,6 +59,6 @@ crew, called off: ended at step 3 (lesson.crew.off)
 smuggle, by visitor: ended at step 1 (lesson.smuggle.wrong)
 heat, out the east fence: ended at step 1 (lesson.outEarly)
 tunnel, down a stray hole: on at step 4 (null)
-4 chapters: basics 10, getby 7, life 13, ways 4
+4 chapters: basics 10, getby 7, life 15, ways 4
 training: its guard out cold, no takeover
 every lesson goal is open floor

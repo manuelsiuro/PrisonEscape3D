@@ -13,6 +13,9 @@ import { isTrue } from '../src/sim/systems/cards';
 import { courtOf, powerAt, shotWindow } from '../src/sim/systems/hoops';
 import { squareAt } from '../src/sim/systems/checkers';
 import { cardUp, RACE_ENTER, raceCard } from '../src/sim/systems/races';
+import { fieldOf, pitchOf } from '../src/sim/systems/football';
+import { penAt } from '../src/sim/systems/tattoo';
+import { nearestDir } from '../src/sim/ai/path';
 import { thorough } from '../src/sim/systems/delivery';
 import { jobRooms, priceOf } from '../src/sim/systems/economy';
 import { itemDef } from '../src/content/items';
@@ -502,6 +505,54 @@ play('ratRace', (bot) => {
   bot.op(OP.EXT, EXT.RACE, RACE_ENTER);
   bot.op(OP.EXT, EXT.RACE, raceCard(bot.st, prisonDay(bot.st.step)).length - 1, 0);
   check(bot.until(() => bot.events.some((e) => e.type === 'race' && e.what === 'result'), 90 * 20 * 60), 'ratRace: the race run');
+});
+
+play('football', (bot) => {
+  // Talked into a match; kicks at the far net (a simple player), to the final whistle.
+  check(talkTo(bot, bot.st.inmates[0].body), 'football: talking to the captain');
+  bot.op(OP.TALK, TALK.FOOTBALL);
+  check(!!bot.st.match, 'football: a match on');
+  const f = fieldOf(pitchOf(bot.sim)!);
+  let held = 0;
+  bot.until(() => !bot.st.match, 4000, () => {
+    const o = bot.st.match;
+    if (!o) return 0;
+    const [bx, bz] = o.ball;
+    const gx = f.along ? f.a1 + UNIT : f.mid;
+    const gz = f.along ? f.mid : f.a1 + UNIT;
+    const pl = bot.st.player;
+    const toGoal = nearestDir(gx - pl.x, gz - pl.z);
+    if (held) return ++held > 10 ? ((held = 0), command(toGoal, OP.EXT, EXT.KICK, 1)) : command(toGoal);
+    if (o.at && !o.pause && Math.hypot(bx - pl.x, bz - pl.z) < 600) {
+      held = 1;
+      return command(toGoal, OP.EXT, EXT.KICK, 0);
+    }
+    const d = Math.hypot(gx - bx, gz - bz) || 1;
+    const sx = bx - ((gx - bx) * 450) / d;
+    const sz = bz - ((gz - bz) * 450) / d;
+    return command(nearestDir(sx - pl.x, sz - pl.z));
+  });
+});
+
+play('tattoo', (bot, ctx) => {
+  // The gun crafted; a heart traced for Sparky, following the pen; a skull of his on the player's arm.
+  ctx.craftOpen = true;
+  bot.op(OP.CRAFT, (1 << 0) | (1 << 1) | (1 << 2));
+  ctx.craftOpen = false;
+  check(bot.slotOf('tattoo_gun') >= 0, 'tattoo: the gun crafted');
+  check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Sparky');
+  bot.op(OP.TALK, TALK.TATTOO, 0);
+  check(!!bot.st.ink, 'tattoo: a sitting');
+  const pen: [number, number] = [0, 0];
+  bot.until(() => !bot.st.ink, 600, () => {
+    const o = bot.st.ink;
+    if (!o) return 0;
+    penAt(o.design, o.k + 1, pen);
+    return Math.hypot(pen[0] - o.nx, pen[1] - o.nz) < 8 ? 0 : command(nearestDir(pen[0] - o.nx, pen[1] - o.nz));
+  });
+  check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Sparky again');
+  bot.op(OP.TALK, TALK.INK_ME, 1);
+  check(bot.until(() => bot.st.inked.length > 0, 400), 'tattoo: a skull on the arm');
 });
 
 play('crew', (bot) => {

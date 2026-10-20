@@ -15,7 +15,7 @@ export const pitch = (x: number, z: number, w: number, d: number): Pitch => ({ x
 /** A match: 45 seconds of play from the whistle (about the exercise hour's length in play time). */
 export const MATCH_STEPS = 45 * STEPS_PER_SECOND;
 /** Before the whistle, the players walk on: it blows once all are on the field, or after this long. */
-export const GATHER_STEPS = 10 * STEPS_PER_SECOND;
+export const GATHER_STEPS = 15 * STEPS_PER_SECOND;
 /** After a goal, the ball stays in the net this long, then it's back on the spot. */
 export const GOAL_PAUSE = 2 * STEPS_PER_SECOND;
 /** The goal's mouth: this far either side of the end's middle (units: the nets' two tiles wide). */
@@ -52,7 +52,7 @@ export const KEEPER_RUSH = 2600;
 /** How far before the ball an inmate gets ready to kick it (units, behind it on the way to the goal). */
 export const BEHIND = 300;
 /** Who'll play: inmates within this many tiles of the pitch's middle; the player and the captain within PITCH_RANGE tiles of the pitch to start. */
-export const CALL_RANGE = 16;
+export const CALL_RANGE = 40;
 export const PITCH_RANGE = 3;
 /** The match goes on while the player is within this many tiles of the pitch (on the ground floor). */
 export const PITCH_LEAVE = 10;
@@ -122,3 +122,5 @@ export const MAX_INKED = 3;
 export const INK_HEAT = 15;
 /** The client (or the friend at work) stands this close (units, centre to centre). */
 export const INK_GAP = 900;
+/** After a sitting, the client stays put this long (steps). */
+export const INK_LINGER = 15 * STEPS_PER_SECOND;

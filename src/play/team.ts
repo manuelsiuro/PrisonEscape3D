@@ -253,7 +253,10 @@ export function teamSounds(sim: Sim, paused: boolean) {
 
 // ------------------------------------------------------------------ the picture
 
-const frame: TeamFrame = { pitch: null, ball: null };
+const frame: TeamFrame = { pitch: null, ball: null, mates: [], rivals: [] };
+const NONE: number[] = [];
+const mates: number[] = [];
+const rivals: number[] = [];
 const ballAt = { x: 0, z: 0, moving: false };
 
 /** What the 3D shows of P29 this frame: the pitch, the ball where it is between steps (`a`). */
@@ -262,8 +265,13 @@ export function teamFrameOf(sim: Sim, a: number): TeamFrame {
   frame.pitch = pitchOf(sim);
   if (!o) {
     frame.ball = null;
+    frame.mates = frame.rivals = NONE;
     return frame;
   }
+  mates.length = rivals.length = 0;
+  o.team.forEach((k, i) => (i < 2 ? mates : rivals).push(k));
+  frame.mates = mates;
+  frame.rivals = rivals;
   const [x, z, vx, vz] = o.ball;
   ballAt.x = (x + vx * a) / UNIT;
   ballAt.z = (z + vz * a) / UNIT;

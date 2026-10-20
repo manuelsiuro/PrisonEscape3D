@@ -14,11 +14,17 @@ export interface TeamFrame {
   pitch: Pitch | null;
   /** The ball where it is between steps (tiles), null no match; on the move. */
   ball: { x: number; z: number; moving: boolean } | null;
+  /** The match's players (inmate indexes): the player's side's two, the other side's three. */
+  mates: readonly number[];
+  rivals: readonly number[];
 }
 
 const PAINT = 0xf2f0e6;
 const POST = 0xf4f4ef;
 const R = BALL_R / UNIT;
+/** The sides' rings under the players' feet: the player's side green, the other red. */
+const MATE = 0x3fc79a;
+const RIVAL = 0xe5484d;
 
 /** A football: an icosphere, white with the dark patches round its twelve points. */
 function ballGeometry(): THREE.BufferGeometry {
@@ -30,7 +36,7 @@ function ballGeometry(): THREE.BufferGeometry {
     if (!points.some((q) => q.distanceTo(p) < 0.01)) points.push(p);
   }
   ico.dispose();
-  const g = new THREE.IcosahedronGeometry(R, 2).toNonIndexed();
+  const g = new THREE.IcosahedronGeometry(R, 2);
   const pos = g.attributes.position;
   const colors = new Float32Array(pos.count * 3);
   const c = new THREE.Vector3();
@@ -59,7 +65,17 @@ export class TeamView {
     this.ball.castShadow = true;
     this.ball.visible = false;
     this.group.add(this.lines, this.ball);
+    const ring = new THREE.RingGeometry(0.3, 0.4, 28);
+    ring.rotateX(-Math.PI / 2);
+    for (let k = 0; k < 5; k++) {
+      const m = new THREE.Mesh(ring, new THREE.MeshBasicMaterial({ color: k < 2 ? MATE : RIVAL, transparent: true, opacity: 0.75, depthWrite: false }));
+      m.renderOrder = 0.3;
+      m.visible = false;
+      this.rings.push(m);
+      this.group.add(m);
+    }
   }
+  private readonly rings: THREE.Mesh[] = [];
 
   /** The pitch's paint and goals, built once per map. */
   private build(p: Pitch) {
@@ -167,7 +183,14 @@ export class TeamView {
     }
   }
 
-  update(f: TeamFrame | null, dt: number, onGround: boolean) {
+  update(f: TeamFrame | null, inmates: ReadonlyArray<{ x: number; z: number }>, dt: number, onGround: boolean) {
+    // Who's on which side: a ring under each.
+    const players = f ? [...f.mates, ...f.rivals] : [];
+    this.rings.forEach((r, k) => {
+      const m = inmates[players[k]];
+      r.visible = !!m && onGround;
+      if (m) r.position.set(m.x, 0.012, m.z);
+    });
     const p = f?.pitch ?? null;
     const key = p ? `${p.x},${p.z},${p.w},${p.d}` : '';
     if (key !== this.drawn) {

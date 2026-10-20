@@ -12,7 +12,7 @@
  *
  * Either way the ink's used as it starts. A guard who sees it going on: INK_HEAT, once a sitting.
  */
-import { DESIGNS, FRIEND_INK, INK_GAIN, INK_GAIN_BASE, INK_HEAT, INK_ME_STEPS, INK_OPINION, INK_POOR, INK_QUIT, INK_SLACK, LEAD_IN, MAX_INKED, NEEDLE_SPEED, PAY_MIN, PAY_SPAN, PEN_SPEED } from '../../content/team';
+import { DESIGNS, FRIEND_INK, INK_GAIN, INK_GAIN_BASE, INK_HEAT, INK_ME_STEPS, INK_OPINION, INK_POOR, INK_QUIT, INK_SLACK, LEAD_IN, MAX_INKED, NEEDLE_SPEED, PAY_MIN, PAY_SPAN, PEN_SPEED, INK_LINGER } from '../../content/team';
 import { GAMES_A_DAY } from '../../content/games';
 import { itemNumber } from '../../content/items';
 import { DIR_X, DIR_Z } from '../command';
@@ -23,6 +23,8 @@ import { HOTBAR, itemOf } from './items';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
 import { addHeat } from './watch';
+import { crowdPlan } from './calendar';
+import { tileAt } from '../ai/path';
 
 export const TATTOO_GUN = itemNumber('tattoo_gun');
 export const INK = itemNumber('ink');
@@ -159,6 +161,7 @@ export function keepInk(sim: SimContext) {
     if (o.k >= INK_ME_STEPS) {
       s.inked.push(o.design);
       s.ink = null;
+      linger(sim, o.who);
       sim.events.push({ type: 'tattoo', what: 'inked', who: o.who, design: o.design, mine: true });
     }
     return;
@@ -170,6 +173,18 @@ export function keepInk(sim: SimContext) {
   if (o.k >= traceSteps(o.design)) endInk(sim, 'done');
 }
 
+/** The client (or the friend) stays where they are a moment after a sitting, admiring it: time for the player to ask for another. */
+function linger(sim: SimContext, who: number) {
+  const m = sim.state.inmates[who];
+  if (!m || m.ko > 0 || m.angry > 0) return;
+  m.plan = crowdPlan(sim, sim.state.routine);
+  m.goal = tileAt(m.body.x, m.body.z);
+  m.path = [];
+  m.doing = 0;
+  m.then = 0;
+  m.wait = INK_LINGER;
+}
+
 /** A sitting over: traced (paid), given up (EXT.INK 0: no pay, and a client let down), or off. */
 export function endInk(sim: SimContext, how: 'done' | 'quit' | 'off') {
   const s = sim.state;
@@ -177,6 +192,7 @@ export function endInk(sim: SimContext, how: 'done' | 'quit' | 'off') {
   if (!o) return;
   s.ink = null;
   const m = s.inmates[o.who];
+  if (how !== 'off') linger(sim, o.who);
   if (how === 'done') {
     const quality = qualityOf(o.err, o.k - LEAD_IN);
     const pay = payOf(o.design, quality);

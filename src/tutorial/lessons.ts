@@ -777,6 +777,62 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Yard football (P29): a match with Center Perks' inmates, a kick, the final whistle; the cover a match gives.
+    id: 'football',
+    icon: 'ball',
+    prison: CENTER_PERKS,
+    seed: 72,
+    setup: (sim) => {
+      clockTo(sim, at(10, 5));
+      const p = sim.prison.leisure!.pitch;
+      const cx = p.x + Math.floor(p.w / 2);
+      const cz = p.z + Math.floor(p.d / 2);
+      place(sim, cx, cz, 9);
+      // The captain at the player's side; everyone else about the yard, two of them good friends.
+      waitAt(sim, 0, cx - 1, cz);
+      sim.state.inmates.forEach((m, k) => {
+        m.opinion = k === 1 || k === 2 ? 75 : 60;
+        if (k === 0) return;
+        const [x, z] = near(sim, p.x + 1 + ((k * 2) % (p.w - 2)), p.z + p.d + 1);
+        m.body.x = x * UNIT + UNIT / 2;
+        m.body.z = z * UNIT + UNIT / 2;
+        m.goal = -1;
+        m.path = [];
+      });
+    },
+    steps: [
+      { text: 'lesson.football.talk', touch: 'lesson.football.talkTouch', on: (e) => e.type === 'football' && e.what === 'start', goal: (sim) => tileOfBody(sim.state.inmates[0].body), fail: gamesFail },
+      {
+        text: 'lesson.football.kick',
+        touch: 'lesson.football.kickTouch',
+        on: (e) => e.type === 'football' && e.what === 'kick',
+        goal: (sim) => (sim.state.match ? tile(Math.floor(sim.state.match.ball[0] / UNIT), Math.floor(sim.state.match.ball[1] / UNIT)) : null),
+        failOn: matchFail,
+      },
+      { text: 'lesson.football.play', on: (e) => e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw'), goal: (sim) => farNet(sim), failOn: (e) => (e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw') ? null : matchFail(e)) },
+      { text: 'lesson.football.over', done: () => true, least: 7 },
+    ],
+  },
+  {
+    // The tattoo parlour (P29): a gun crafted, a heart traced for Sparky, a design of his on the player's arm.
+    id: 'tattoo',
+    icon: 'needle',
+    setup: (sim) => {
+      clockTo(sim, at(10, 5));
+      place(sim, 36, 23, 1);
+      waitAt(sim, 0, 38, 23);
+      sim.state.inmates[0].opinion = 72;
+      pockets(sim, 'toothbrush', 'battery', 'razor_blade', 'ink', 'ink');
+    },
+    steps: [
+      { text: 'lesson.tattoo.craft', touch: 'lesson.tattoo.craftTouch', done: (c) => carries(c.sim, 'tattoo_gun'), fail: inkFail },
+      { text: 'lesson.tattoo.offer', touch: 'lesson.tattoo.offerTouch', on: (e) => e.type === 'tattoo' && e.what === 'start' && !e.mine, goal: (sim) => tileOfBody(sim.state.inmates[0].body), fail: (c) => gamesFail(c) ?? inkFail(c) },
+      { text: 'lesson.tattoo.trace', touch: 'lesson.tattoo.traceTouch', on: (e) => e.type === 'tattoo' && e.what === 'done', failOn: inkOff },
+      { text: 'lesson.tattoo.mine', touch: 'lesson.tattoo.mineTouch', on: (e) => e.type === 'tattoo' && e.what === 'inked', goal: (sim) => tileOfBody(sim.state.inmates[0].body), fail: (c) => (c.sim.state.ink ? null : (gamesFail(c) ?? inkFail(c))), failOn: inkOff },
+      { text: 'lesson.tattoo.over', done: () => true, least: 6 },
+    ],
+  },
+  {
     // The crew (P23): a friend recruited and posted as lookout by the patrol hall's doorway, whistling as the guard comes by.
     id: 'crew',
     icon: 'users',
@@ -1077,11 +1133,39 @@ function smuggleFail(sim: Sim): Key | null {
   return null;
 }
 
+/** The football lesson's dead ends: the match off (gone from the pitch, the sirens), a foul, the whistle before a kick. */
+function matchFail(e: SimEvent): Key | null {
+  if (e.type !== 'football') return null;
+  if (e.what === 'off') return 'lesson.football.off';
+  if (e.what === 'foul') return 'lesson.football.foul';
+  if (e.what === 'won' || e.what === 'lost' || e.what === 'draw') return 'lesson.football.noKick';
+  return null;
+}
+/** The net the player's side shoots at (the far end's middle tile). */
+function farNet(sim: Sim): number | null {
+  const p = sim.prison.leisure?.pitch;
+  if (!p || !sim.state.match) return null;
+  return p.w >= p.d ? tile(p.x + p.w - 1, p.z + Math.floor(p.d / 2)) : tile(p.x + Math.floor(p.w / 2), p.z + p.d - 1);
+}
+/** The tattoo lesson's dead ends: the makings gone (the gun not made and its parts gone; no ink left for what's still to do). */
+function inkFail(c: LessonCtx): Key | null {
+  const sim = c.sim;
+  if (sim.state.ink) return null;
+  const gun = carries(sim, 'tattoo_gun') || (carries(sim, 'toothbrush') && carries(sim, 'battery') && carries(sim, 'razor_blade'));
+  if (!gun) return 'lesson.tattoo.noGun';
+  if (!carries(sim, 'ink')) return 'lesson.tattoo.noInk';
+  return null;
+}
+/** A sitting given up or broken off. */
+function inkOff(e: SimEvent): Key | null {
+  return e.type === 'tattoo' && (e.what === 'quit' || e.what === 'off') ? 'lesson.tattoo.off' : null;
+}
+
 /** The chapters, in order, each its lessons (in the order LESSONS has them). */
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'crew'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'crew'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 

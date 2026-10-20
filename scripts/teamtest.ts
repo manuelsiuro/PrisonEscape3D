@@ -225,13 +225,14 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   g.talk(TALK.FOOTBALL);
   check(!sim.state.match && refusals(g.seen).includes('gamesClosed'), 'not in the morning\'s work (only the games\' hours)');
   g.jump(1, 10, 30);
-  // Too few to play: everyone else far away.
+  // Too few to play: everyone else out cold.
   atPitch(g, 0);
   sim.state.inmates.forEach((m, k) => {
-    if (k > 2) put(m.body, 2, 2);
+    if (k > 2) m.ko = 400;
   });
   g.talk(TALK.FOOTBALL);
-  check(!sim.state.match && refusals(g.seen).includes('fewPlayers'), 'too few near the pitch: no match');
+  check(!sim.state.match && refusals(g.seen).includes('fewPlayers'), 'too few to play: no match');
+  sim.state.inmates.forEach((m) => (m.ko = 0));
   atPitch(g, 0);
   // Not at the pitch.
   put(sim.state.player, 2, 2);

@@ -274,3 +274,9 @@ body.reduced-motion .ink-card.lead .ink-pen {
   animation: none !important;
   transition: none !important;
 }
+.cash-btn.design span::first-letter {
+  text-transform: uppercase;
+}
+.match-teams span:last-child {
+  color: #ffa0a0;
+}
