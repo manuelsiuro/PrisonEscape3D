@@ -160,6 +160,7 @@ export class StageCard {
     this.songs.addEventListener('keydown', (e) => {
       const d = arrowStep(e);
       if (!d) return;
+      this.click();
       this.song = (this.song + d + SONGS.length) % SONGS.length;
       this.pickDrawn = '';
       this.refocus = this.songs;
@@ -169,6 +170,7 @@ export class StageCard {
       if (!d) return;
       const on = [...this.insts.querySelectorAll<HTMLButtonElement>('[data-inst]')].filter((b) => !b.disabled).map((b) => Number(b.dataset.inst));
       const k = on.indexOf(this.inst);
+      if (on.length > 1) this.click();
       this.inst = on[(k + d + on.length) % on.length] ?? this.inst;
       this.pickDrawn = '';
       this.refocus = this.insts;

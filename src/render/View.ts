@@ -33,6 +33,7 @@ import { DayEvents, type EventsFrame } from './DayEvents';
 import { ROOF_Y as ROOF_HEIGHT } from './Structure';
 import { WALL_H } from './WorldView';
 import { LAYER } from '../sim/world/World';
+import { pitchFraming } from './pitchFrame';
 import type { NoiseKind } from '../sim/state';
 import { Dogs, type DogFrame } from './Dog';
 import { Rats, type RatFrame } from './Rat';
@@ -209,8 +210,6 @@ const PREVIEW_ZOOM = 4.2;
 /** The Intake's camera: lower than play's, nearly face on (a mugshot, not a map). */
 const PREVIEW_OFFSET = new THREE.Vector3(0, 16, 24).normalize().multiplyScalar(60);
 export const ZOOM_MIN = 0.6;
-/** How much ground a screen's height holds over its own height (the camera looks down at about 58°). */
-const PITCH_DEPTH = 1.18;
 export const ZOOM_MAX = 1.9;
 
 /** Light by time of day: [minute, sun intensity, sun color, ambient intensity, sky color]. */
@@ -833,7 +832,9 @@ export class View {
   /**
    * A match on (P29): both goals stay in the picture. The zoom eases out until the pitch (a tile
    * round it) fits across the screen, as on a phone held upright, and the look-ahead is bent so
-   * the camera stays between the goals (following the player as far as the pitch allows).
+   * the camera stays between the goals (following the player as far as the pitch allows). The
+   * player is kept in the box too: off the pitch (up to PITCH_LEAVE tiles while the match is on),
+   * the picture widens to hold both, and where it can't, the player stays on screen.
    */
   private framePitch(f: Frame, dt: number) {
     const p = f.team.pitch;
@@ -841,20 +842,9 @@ export class View {
       this.fitZoom = 0;
       return;
     }
-    const aspect = innerWidth / Math.max(1, innerHeight);
-    // What the screen holds at zoom 1 (tiles): across, and down the ground (stretched by the camera's tilt).
-    const wide = Math.max(15 * aspect, 11);
-    const deep = Math.max(15, 11 / aspect) * PITCH_DEPTH;
-    const fit = Math.min(wide / (p.w + 2), deep / (p.d + 2));
-    this.fitZoom = THREE.MathUtils.clamp(fit, ZOOM_MIN, ZOOM_MAX);
-    // Where the camera may look, along each way: within slack of the pitch's middle.
-    const zoom = Math.max(this.zoom, 1e-3);
-    const slackX = Math.max(0, (wide / zoom - (p.w + 2)) / 2);
-    const slackZ = Math.max(0, (deep / zoom - (p.d + 2)) / 2);
-    const cx = p.x + p.w / 2;
-    const cz = p.z + p.d / 2;
-    const want = this.v.set(THREE.MathUtils.clamp(f.x + this.ahead.x, cx - slackX, cx + slackX) - f.x, 0, THREE.MathUtils.clamp(f.z + this.ahead.z, cz - slackZ, cz + slackZ) - f.z);
-    this.ahead.lerp(want, this.reducedMotion ? 1 : Math.min(1, dt * 4));
+    const aim = pitchFraming(p, f.x, f.z, this.ahead, this.zoom, innerWidth / Math.max(1, innerHeight), ZOOM_MIN, ZOOM_MAX);
+    this.fitZoom = aim.fit;
+    this.ahead.lerp(this.v.set(aim.x, 0, aim.z), this.reducedMotion ? 1 : Math.min(1, dt * 4));
   }
 
   /** Multiplies the zoom (wheel, pinch), within limits; the camera eases to it. */
