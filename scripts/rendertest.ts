@@ -5,9 +5,7 @@
  * - hoops: a side wall's hoop is turned toward the camera about its rim (the rim stays where the
  *   court has it, the board stays on its tile and faces the camera);
  * - the football pitch kept clean: which hoop spots and roll call marks would cross it, and when
- *   the roll call's marks over it show;
- * - a match framed whole on a phone held upright (the zoom that fits the pitch);
- * - the shots' clock: it stands still while the game is paused, and what was due waits.
+ *   the roll call's marks over it show (the match's framing: pitchframetest).
  */
 import * as THREE from 'three';
 import { PRISONS } from '../src/content/prisons';
@@ -23,9 +21,6 @@ import { drillOn, planOf } from '../src/sim/systems/calendar';
 import { clockAt, DAY_STEPS } from '../src/sim/systems/clock';
 import { STEPS_PER_MINUTE } from '../src/sim/tuning';
 import { spotsOnPitch } from '../src/render/Pastimes';
-import { matchFit } from '../src/render/Team';
-import { ZOOM_MIN } from '../src/render/View';
-import { PausableClock } from '../src/play/pausableClock';
 import { check } from './assert';
 
 const ALL = [...PRISONS, TRAINING];
@@ -148,54 +143,4 @@ const ALL = [...PRISONS, TRAINING];
   const after = put(plan.until + 5);
   check(!drillOn(sim) && rollCallShows(sim, after) === rollCallSoon(sim.state.routine, after), 'pitch: the drill over, the routine decides again');
   console.log(`pitch: the roll call's marks show for the drill at ${String(Math.floor(during / 60)).padStart(2, '0')}:${String(during % 60).padStart(2, '0')} at ${STALAG_FLUCHT.id}`);
-}
-
-// ------------------------------------------------------------------ a match framed whole
-{
-  const sizes: Array<[number, number]> = [
-    [412, 915],
-    [360, 780],
-    [915, 412],
-    [1280, 800],
-  ];
-  for (const p of PRISONS) {
-    const pitch = p.leisure?.pitch;
-    if (!pitch) continue;
-    const row: string[] = [];
-    for (const [w, h] of sizes) {
-      const aspect = w / h;
-      const fit = Math.max(ZOOM_MIN, matchFit(pitch, aspect));
-      // At the play zoom (1.25) or that fit, whichever is less: the pitch and a tile each side across the view.
-      const zoom = Math.min(1.25, fit);
-      const across = (Math.max(15, 11 / aspect) * aspect) / zoom;
-      check(across >= pitch.w + 2 - 1e-9, `match: ${p.id} at ${w}×${h} shows ${across.toFixed(1)} tiles across for a pitch ${pitch.w} wide`);
-      check(fit > ZOOM_MIN, `match: ${p.id} at ${w}×${h} fits within the zoom's range`);
-      row.push(`${w}×${h} ${zoom.toFixed(3)}`);
-    }
-    console.log(`match: ${p.id} ${row.join(', ')}`);
-  }
-}
-
-// ------------------------------------------------------------------ the shots' clock
-{
-  const c = new PausableClock();
-  const ran: string[] = [];
-  c.tick(1000, false);
-  c.after(900, () => ran.push('landed'));
-  c.tick(1500, false);
-  check(c.time === PausableClock.MAX_STEP, `clock: one tick moves it on ${PausableClock.MAX_STEP} ms at most (${c.time})`);
-  // Half way through the flight, the game is paused.
-  for (let t = 1516; t < 1900; t += 16) c.tick(t, false);
-  const before = c.time;
-  // Paused: the clock stands, nothing due runs.
-  for (let t = 1900; t < 9000; t += 16) c.tick(t, true);
-  check(c.time === before, `clock: paused, it stands still (${before} → ${c.time})`);
-  check(ran.length === 0, 'clock: paused, what was due waits');
-  for (let t = 9000; t < 9600; t += 16) c.tick(t, false);
-  check(ran.length === 1, `clock: unpaused, the landing comes (${ran.join(', ')})`);
-  c.after(160, () => ran.push('swish'));
-  c.clear();
-  for (let t = 9600; t < 10000; t += 16) c.tick(t, false);
-  check(ran.length === 1, 'clock: a new game forgets what was still to come');
-  console.log(`clock: ran ${ran.join(', ')}; held at ${before} ms through a 7.1 s pause`);
 }

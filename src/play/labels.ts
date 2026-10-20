@@ -23,7 +23,7 @@ import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
 import { inmateName } from '../ui/social';
 import type { ToolView } from '../ui/tool';
-import { press } from './buttons';
+import { drinkArmed, press } from './buttons';
 import { trackCheck } from '../sim/systems/races';
 import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
 import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
@@ -236,6 +236,8 @@ export function describeAttack(sim: Sim): ToolView | null {
   v.progress = null;
   v.repeat = !thrown;
   v.attack = true;
+  v.confirm = false;
+  v.armed = false;
   return v;
 }
 
@@ -272,6 +274,8 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   const v = toolView;
   v.attack = false;
   v.caption = false;
+  v.confirm = false;
+  v.armed = false;
   v.verb = t(`act.${tt.action}` as Key);
   v.icon = TOOL_ICON[tt.action];
   // An alarm clock (P14): wound, or stopped while it rings.
@@ -302,6 +306,10 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   }
   // Long games (P28): pruno drunk (tipsy, and the heat if seen); the rat's laps (its speed, or why not now); a garden bed (its crop, its stage, today's cupfuls).
   if (tt.action === 'drink') {
+    // (One press only arms it: the second, within DRINK_CONFIRM_MS, drinks. A stray tap never downs a $40 bottle.)
+    v.confirm = true;
+    v.armed = drinkArmed();
+    if (v.armed) v.verb = t('act.drinkSure');
     v.what = t('thing.pruno', { n: TIPSY_STEPS / STEPS_PER_MINUTE / 60 });
     v.fits = true;
     v.repeat = false;

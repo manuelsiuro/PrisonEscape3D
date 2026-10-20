@@ -169,6 +169,11 @@
   opacity: 0.72;
 }
 
+/* (Nowhere asked of the player, a lesson about something else: the pill keeps to one line.) */
+.hud-routine-place:empty {
+  display: none;
+}
+
 .hud-badge {
   flex: none;
   display: inline-flex;
@@ -503,6 +508,23 @@ body.reduced-motion .alarm-vignette.on {
     gap: 4px;
     padding-inline: 9px;
   }
+}
+
+/* Narrow phones (360 px): tighter pills, so the place's name ("Roof", "Your cell") stays whole. */
+@media (max-width: 380px) {
+  .hud-row {
+    gap: 5px;
+  }
+
+  .hud .pill.big {
+    gap: 4px;
+    padding-inline: 9px;
+  }
+}
+
+/* (No weather to show: no empty gap for it in the clock's pill.) */
+.hud-wx:empty {
+  display: none;
 }
 
 /* Security (P7): chips while something runs out (the power, a takeover's open gates). */

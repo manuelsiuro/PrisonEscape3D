@@ -2,7 +2,7 @@ import { BETS } from '../content/long';
 import { currentLang, t } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { RACE_ENTER } from '../sim/systems/races';
-import { h, setText } from './dom';
+import { arrowStep, h, setText } from './dom';
 import { icon } from './icons';
 
 type Send = (op: number, a?: number, b?: number, c?: number) => void;
@@ -94,7 +94,7 @@ export class RaceCard {
       'train-card race-card hidden',
       `<div class="train-head"><i class="train-ic">${icon('race', 18)}</i><b></b><span class="train-value"></span><button class="icon-btn small race-close">${icon('close', 16)}</button></div>
       <div class="race-stakes" role="radiogroup"></div>
-      <button class="big-btn small race-enter hidden">${icon('rat', 18)}<span></span></button>
+      <button class="big-btn primary small race-enter hidden">${icon('rat', 18)}<span></span></button>
       <div class="race-rows"></div>
       <p class="train-note" role="status"></p>`,
     );
@@ -131,9 +131,8 @@ export class RaceCard {
     });
     // The stakes as a radio group: arrow keys move the choice (and the focus) along it.
     this.stakes.addEventListener('keydown', (e) => {
-      const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+      const d = arrowStep(e);
       if (!d) return;
-      e.preventDefault();
       this.pick((this.stake + d + BETS.length) % BETS.length);
       this.stakes.querySelector<HTMLElement>(`[data-stake="${this.stake}"]`)?.focus();
     });

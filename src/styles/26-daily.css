@@ -414,6 +414,11 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
+/* (The achievements earned, wrapped on two lines, kept clear of the buttons and the focused one's ring.) */
+.daily-result .v-earned {
+  margin-bottom: 10px;
+}
+
 @media (max-height: 520px) and (orientation: landscape) {
   .victory.daily-result .card {
     display: grid;

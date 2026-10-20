@@ -3,7 +3,7 @@ import { currentLang, t, type Key } from '../i18n';
 import { withKeys } from '../i18n/keys';
 import { EXT, OP } from '../sim/command';
 import { STAGE_QUIT } from '../sim/systems/talent';
-import { h, setText, TOUCH } from './dom';
+import { arrowStep, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
 type Send = (op: number, a?: number, b?: number, c?: number) => void;
@@ -85,6 +85,8 @@ export class StageCard {
   private inst: number = INSTRUMENT.DRUMS;
   private judgedShown = 0;
   private counting = false;
+  /** An arrow key moved a pick: its checked radio takes the focus back once redrawn. */
+  private refocus: HTMLElement | null = null;
   /** A lane's pad pressed (the play layer sends it), lit a moment. */
   onLane: (lane: number) => void = () => {};
   private lit = [0, 0, 0];
@@ -154,6 +156,25 @@ export class StageCard {
       this.onLane(Number(pad.dataset.lane));
     });
     this.pads.addEventListener('contextmenu', (e) => e.preventDefault());
+    // The song and the instrument as radio groups: arrow keys move the choice (and the focus) along them.
+    this.songs.addEventListener('keydown', (e) => {
+      const d = arrowStep(e);
+      if (!d) return;
+      this.click();
+      this.song = (this.song + d + SONGS.length) % SONGS.length;
+      this.pickDrawn = '';
+      this.refocus = this.songs;
+    });
+    this.insts.addEventListener('keydown', (e) => {
+      const d = arrowStep(e);
+      if (!d) return;
+      const on = [...this.insts.querySelectorAll<HTMLButtonElement>('[data-inst]')].filter((b) => !b.disabled).map((b) => Number(b.dataset.inst));
+      const k = on.indexOf(this.inst);
+      if (on.length > 1) this.click();
+      this.inst = on[(k + d + on.length) % on.length] ?? this.inst;
+      this.pickDrawn = '';
+      this.refocus = this.insts;
+    });
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
     document.body.append(this.el);
   }
@@ -204,13 +225,16 @@ export class StageCard {
         this.pickDrawn = pk;
         this.songs.innerHTML = SONGS.map(
           (s, k) =>
-            `<button role="radio" data-song="${k}" class="stage-song-btn${k === this.song ? ' on' : ''}" aria-checked="${k === this.song}"><b>${t(`song.${s.id}` as Key)}</b><span>${'★'.repeat(s.level)}${'☆'.repeat(3 - s.level)} · ${t('stage.firstPrize', { n: v.prizes[k] })}</span></button>`,
+            `<button role="radio" data-song="${k}" class="stage-song-btn${k === this.song ? ' on' : ''}" aria-checked="${k === this.song}" tabindex="${k === this.song ? 0 : -1}"><b>${t(`song.${s.id}` as Key)}</b><span>${'★'.repeat(s.level)}${'☆'.repeat(3 - s.level)} · ${t('stage.firstPrize', { n: v.prizes[k] })}</span></button>`,
         ).join('');
         this.insts.innerHTML = [INSTRUMENT.DRUMS, INSTRUMENT.GUITAR]
-          .map((k) => `<button role="radio" data-inst="${k}" class="${k === this.inst ? 'on' : ''}" aria-checked="${k === this.inst}" ${k === INSTRUMENT.GUITAR && !v.hasGuitar ? 'disabled' : ''}>${icon(k === INSTRUMENT.GUITAR ? 'guitar' : 'drum', 15)}${t(k === INSTRUMENT.GUITAR ? 'stage.guitar' : 'stage.drums')}</button>`)
+          .map((k) => `<button role="radio" data-inst="${k}" class="${k === this.inst ? 'on' : ''}" aria-checked="${k === this.inst}" tabindex="${k === this.inst ? 0 : -1}" ${k === INSTRUMENT.GUITAR && !v.hasGuitar ? 'disabled' : ''}>${icon(k === INSTRUMENT.GUITAR ? 'guitar' : 'drum', 15)}${t(k === INSTRUMENT.GUITAR ? 'stage.guitar' : 'stage.drums')}</button>`)
           .join('');
         this.songs.setAttribute('aria-label', t('stage.songsAria'));
         this.insts.setAttribute('aria-label', t('stage.instsAria'));
+        // (Moved by an arrow key: the new choice keeps the focus.)
+        this.refocus?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+        this.refocus = null;
       }
       setText(this.value, '');
     } else if (v.phase === 'play') {

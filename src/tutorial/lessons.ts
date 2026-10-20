@@ -78,6 +78,8 @@ export interface Lesson {
   seed?: number;
   /** The warden's board and the HUD's day (P17) as in a game (lessons are quiet otherwise). */
   days?: boolean;
+  /** false: the routine isn't what the lesson is about (on the roof after Lights Out): the HUD's routine pill shows the block alone, no place, no PENDING. */
+  routine?: false;
   /** Guards whose ways the player knows from the start (as if heard in the yard: their talk panel says so). */
   known?: ReadonlyArray<{ guard: number; kind: 'corrupt' | 'strict' | 'lazy' }>;
   /** Sets the scene on a fresh game (before its first step). */
@@ -702,7 +704,7 @@ export const LESSONS: readonly Lesson[] = [
         fail: boardFail,
         failOn: (e) => (e.type === 'checkers' && e.what === 'lost' ? 'lesson.checkers.resigned' : null),
       },
-      { text: 'lesson.checkers.secret', done: () => true, least: 6 },
+      { text: 'lesson.checkers.secret', touch: 'lesson.checkers.secretTouch', done: () => true, least: 6 },
     ],
   },
   {
@@ -968,6 +970,7 @@ export const LESSONS: readonly Lesson[] = [
     icon: 'glider',
     prison: CENTER_PERKS,
     seed: 42,
+    routine: false,
     setup: (sim) => {
       // A west wind (a tailwind going east), and the night: up on the roof after Lights Out.
       sim.state.calendar = [[1, -1, -1, 6, 1]];

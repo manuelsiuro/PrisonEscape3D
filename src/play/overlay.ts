@@ -21,9 +21,10 @@ import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
 import { TOUCH } from '../ui/dom';
 import type { HudState } from '../ui/hud';
+import { LESSONS } from '../tutorial/lessons';
 import type { ItemsView } from '../ui/items';
 import type { UpView } from '../ui/tool';
-import { press, targets } from './buttons';
+import { disarmDrink, press, targets } from './buttons';
 import {
   aimUI,
   board,
@@ -229,6 +230,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // Each new target takes a new press: a held button never digs on into the next thing.
   press.toolKey = fight ? -2 - st.lock : tt ? (ACTION_IDS.indexOf(tt.action) + 1) * 100000 + tt.layer * 10000 + tt.tile : 0;
   if (tools.held && press.toolKey !== press.heldOn) tools.release();
+  // (P28: Drink armed, then something else in hand or nothing to drink: the arming lapses.)
+  if (!press.toolNow?.confirm) disarmDrink();
   const fighting = st.lock >= 0 || memo.fighting;
   // (P22: an arm-wrestle and a lock being picked have their own cards, as training has.)
   // (P27: so do a hand of Cheat and the old-timer's board.)
@@ -343,6 +346,8 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   hudState.routine = st.routine;
   // At Lights Out the badge says whether the player is in the cell right now.
   hudState.attended = ROUTINE[st.routine].id === 'lightsOut' ? zone === 'playerCell' : st.attended;
+  // (P24's glider lesson, on the roof after Lights Out: the routine pill asks nothing of the player.)
+  hudState.quietRoutine = !!g.lesson && LESSONS[g.lesson.index].routine === false;
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;

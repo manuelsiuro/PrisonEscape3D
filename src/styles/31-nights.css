@@ -429,6 +429,8 @@
   }
   body.performing .hotbar,
   body.performing .energy,
+  body.staging .hotbar,
+  body.staging .energy,
   body.quizzing .hotbar,
   body.quizzing .energy {
     display: none;

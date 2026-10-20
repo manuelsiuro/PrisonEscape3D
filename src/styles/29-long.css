@@ -258,3 +258,28 @@ body.reduced-motion .race-card {
   text-align: center;
   color: #7fd18a;
 }
+
+/* P28: Drink armed by a first press ("Drink it?"): the button glows amber until the second press or it lapses. */
+.tool-btn.armed .tool-round {
+  color: #1b1206;
+  background: radial-gradient(circle at 40% 30%, #ffd27a, #f29a1a);
+  box-shadow: 0 0 0 3px rgba(255, 194, 61, 0.55), 0 10px 22px -8px rgba(90, 50, 10, 0.9);
+  animation: drink-armed 0.8s ease-in-out infinite alternate;
+}
+
+.tool-prompt.armed {
+  background: rgba(150, 96, 20, 0.92);
+  box-shadow: 0 0 0 2px rgba(255, 194, 61, 0.6);
+}
+
+@keyframes drink-armed {
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-btn.armed .tool-round {
+    animation: none;
+  }
+}

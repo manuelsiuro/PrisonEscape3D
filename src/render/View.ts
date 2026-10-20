@@ -35,6 +35,7 @@ import { DayEvents, type EventsFrame } from './DayEvents';
 import { ROOF_Y as ROOF_HEIGHT } from './Structure';
 import { WALL_H } from './WorldView';
 import { LAYER } from '../sim/world/World';
+import { pitchFraming } from './pitchFrame';
 import type { NoiseKind } from '../sim/state';
 import { Dogs, type DogFrame } from './Dog';
 import { Rats, type RatFrame } from './Rat';
@@ -43,7 +44,7 @@ import { SmuggleView, type SmuggleFrame } from './Smuggling';
 import { GamesView, type GamesFrame } from './Games';
 import { PastimesView, type PastimesFrame } from './Pastimes';
 import { LongView, type LongFrame } from './Long';
-import { matchFit, TeamView, type TeamFrame } from './Team';
+import { TeamView, type TeamFrame } from './Team';
 import { NightsView, type NightsFrame } from './Nights';
 import { handlersOf } from '../sim/systems/k9';
 
@@ -426,10 +427,8 @@ export class View {
   private readonly lightInverse = new THREE.Matrix4();
   private zoom = 1;
   private zoomGoal = 1;
-  /** The most the zoom may be for now (P29: a match framed whole on a phone upright); the player's own zoom comes back after. */
-  private zoomCap = Infinity;
-  /** Easing back from that cap (as slowly as out to it). */
-  private zoomEase = false;
+  /** P29, a match: the zoom that fits the whole pitch on screen (0: none), never closer than the player's own zoom. */
+  private fitZoom = 0;
   private shadowHalf = 20;
   /** The lock-on ring, and the cup of molten chocolate in flight (from, to, 0–1 along the way). */
   private readonly ring = lockRing();
@@ -872,6 +871,24 @@ export class View {
     this.applyZoom();
   }
 
+  /**
+   * A match on (P29): both goals stay in the picture. The zoom eases out until the pitch (a tile
+   * round it) fits across the screen, as on a phone held upright, and the look-ahead is bent so
+   * the camera stays between the goals (following the player as far as the pitch allows). The
+   * player is kept in the box too: off the pitch (up to PITCH_LEAVE tiles while the match is on),
+   * the picture widens to hold both, and where it can't, the player stays on screen.
+   */
+  private framePitch(f: Frame, dt: number) {
+    const p = f.team.pitch;
+    if (!p || !f.team.ball || f.layer !== LAYER.GROUND) {
+      this.fitZoom = 0;
+      return;
+    }
+    const aim = pitchFraming(p, f.x, f.z, this.ahead, this.zoom, innerWidth / Math.max(1, innerHeight), ZOOM_MIN, ZOOM_MAX);
+    this.fitZoom = aim.fit;
+    this.ahead.lerp(this.v.set(aim.x, 0, aim.z), this.reducedMotion ? 1 : Math.min(1, dt * 4));
+  }
+
   /** Multiplies the zoom (wheel, pinch), within limits; the camera eases to it. */
   zoomBy(f: number) {
     this.zoomGoal = THREE.MathUtils.clamp(this.zoomGoal * f, ZOOM_MIN, ZOOM_MAX);
@@ -1110,23 +1127,15 @@ export class View {
     // (P24: a glide's ring in view, the camera halfway out to it.)
     const gp = f.getaway.glide;
     if (gp) this.ahead.lerp(this.v.set((gp.toX - f.x) / 2, 0, (gp.toZ - f.z) / 2), Math.min(1, dt * 3));
+    // (P29: in a match, both goals kept in the picture: see framePitch.)
+    this.framePitch(f, dt);
     // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
     // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
     const y = LAYER_Y[f.layer];
-    // A match (P29) on a pitch too wide for the view (a phone held upright): the zoom eases out to
-    // the whole pitch and the camera holds on its middle, both goals in sight; the player's own zoom
-    // comes back at full time. (Off the pitch, the camera follows them as ever.)
-    const tp = f.team.pitch;
-    const fit = f.team.ball && tp && f.layer === LAYER.GROUND ? Math.max(ZOOM_MIN, matchFit(tp, innerWidth / Math.max(1, innerHeight))) : Infinity;
-    const cap = fit < this.zoomGoal ? fit : Infinity;
-    if (cap === Infinity && this.zoomCap < Infinity) this.zoomEase = true;
-    this.zoomCap = cap;
-    const framed = cap < Infinity && tp && f.x > tp.x - 1.5 && f.x < tp.x + tp.w + 1.5 && f.z > tp.z - 1.5 && f.z < tp.z + tp.d + 1.5;
     // (Aboard the raft or the helicopter, the camera follows them instead: below.)
     if (this.carrying || this.getaway.flying) {
       /* followed below */
-    } else if (framed && tp) this.target.lerp(this.v.set(tp.x + tp.w / 2, y, tp.z + tp.d / 2), Math.min(1, dt * 4));
-    else if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
+    } else if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
     else this.target.lerp(this.v.set(f.x, y, f.z).add(this.ahead), Math.min(1, dt * 7));
     this.underground?.follow(f.x, f.z);
     this.feet.set(f.x, 0, f.z);
@@ -1446,7 +1455,7 @@ export class View {
     this.nightsView.update(null, 0, false, false);
     // (The trees whole again; no match's framing.)
     this.decor?.shelter(this.people, 0, dt, false);
-    this.zoomCap = Infinity;
+    this.fitZoom = 0;
     if (this.rollCallPaint) this.rollCallPaint.visible = false;
     this.rollCallShown = 0;
     this.player.root.visible = false;
@@ -1490,12 +1499,12 @@ export class View {
 
   private render(minute: number, dt: number, focus: THREE.Vector3 | null, time: number) {
     this.easeShift(dt);
-    const zoomGoal = Math.min(this.zoomGoal, this.zoomCap);
-    if (Math.abs(this.zoom - zoomGoal) > 1e-4) {
-      // (Out to a match's framing and back a little slower than a wheel's step.)
-      this.zoom += (zoomGoal - this.zoom) * Math.min(1, dt * (this.zoomCap < Infinity || this.zoomEase ? 4 : 10));
+    // (P29: in a match, out as far as the pitch needs; the player's zoom comes back after.)
+    const zoomTo = this.fitZoom ? Math.min(this.zoomGoal, this.fitZoom) : this.zoomGoal;
+    if (Math.abs(this.zoom - zoomTo) > 1e-4) {
+      this.zoom += (zoomTo - this.zoom) * Math.min(1, dt * (this.fitZoom ? 3 : 10));
       this.applyZoom();
-    } else this.zoomEase = false;
+    }
     const night = (this.night = this.light(minute));
     // The weather first: a lockdown's red pulses through a storm's grey (not washed out by it).
     this.weatherLight(dt);

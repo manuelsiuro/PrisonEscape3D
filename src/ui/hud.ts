@@ -53,6 +53,8 @@ export interface HudState {
   crew: { icons: string[]; text: string; alert: boolean } | null;
   /** Tipsy (P28): until when (the clock's time), game minutes left, out of how many; null sober. */
   tipsy: { until: string; left: number; of: number } | null;
+  /** A lesson that isn't about the routine (the glider's, on the roof after Lights Out): the block's name and end alone, no place, no badge. */
+  quietRoutine?: boolean;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -449,7 +451,7 @@ export class Hud {
   private updateRoutine(s: HudState) {
     const w = s.work;
     const mandatory = ROUTINE[s.routine].zones.length > 0 || !!w;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}`;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
@@ -493,11 +495,13 @@ export class Hud {
     // Narrow phones: "Canteen · until 10:00" on the second line (the name keeps the first).
     const place = w ? w.place : routinePlace(s.routine);
     const pending = w ? !w.paid : !s.attended;
-    setText(this.routinePlace, NARROW.matches && mandatory && pending ? `${place} · ${until}` : place);
+    // (A lesson about something else, P24's glider: "Lights out · until 08:00", nothing asked of the player.)
+    const quiet = !!s.quietRoutine && !w;
+    setText(this.routinePlace, quiet ? (NARROW.matches ? until : '') : NARROW.matches && mandatory && pending ? `${place} · ${until}` : place);
     setText(this.routineUntil, until);
     // At work the badge counts the quota (GDD §11), and says PAID once it's done.
     const done = w ? w.paid : s.attended;
-    this.badge.className = `hud-badge${mandatory ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}`;
+    this.badge.className = `hud-badge${mandatory && !quiet ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}`;
     this.badge.innerHTML = w ? (w.paid ? `${icon('check', 12)}${t('routine.paid')}` : `${w.quota}/${w.of}`) : s.attended ? `${icon('check', 12)}${t('routine.attended')}` : t('routine.pending');
     // Checked in (or a load done): the badge pops. A new block: the whole pill does.
     const [wasRoutine, wasAttended] = was.split('|');
