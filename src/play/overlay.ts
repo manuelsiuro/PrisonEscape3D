@@ -264,6 +264,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   raceCoach(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV);
   document.body.classList.toggle('courting', !!court || !!race);
+  document.body.classList.toggle('racing', !!race);
   // (A hand of Cheat, the board: the hotbar steps aside on a phone held sideways, for the card.)
   document.body.classList.toggle('seated-game', !!cheat || !!boardV);
   workChips.update(sim, projectAt, busy || st.layer !== LAYER.GROUND);

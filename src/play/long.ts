@@ -56,7 +56,7 @@ export function takeOffers(sim: Sim, table: string): ReadonlyArray<{ what: numbe
 // ------------------------------------------------------------------ the events
 
 /** The last race's result, held a moment for the card (real ms). */
-let result: { order: number[]; card: Entrant[]; at: number; lane: number; won: number; purse: number; day: number } | null = null;
+let result: { order: number[]; card: Entrant[]; at: number; lane: number; stake: number; odds: number; won: number; purse: number; day: number } | null = null;
 const RESULT_MS = 6000;
 
 export function resetLong() {
@@ -129,10 +129,9 @@ export function announceLong(sim: Sim, e: SimEvent) {
         sound.cheer();
         window.setTimeout(() => play.game === g && sound.patter(), 200);
       } else if (e.what === 'result') {
-        const card = raceCard(sim.state, day);
         // (The pet's lane: on the card it raced on, which the state no longer says.)
         const order = e.order ?? [];
-        result = { order, card: e.purse || (e.lane !== undefined && e.lane >= 0) || order.length > card.length ? cardOf(sim, day, order.length) : card, at: performance.now(), lane: e.lane ?? -1, won: e.won ?? 0, purse: e.purse ?? 0, day };
+        result = { order, card: cardOf(sim, day, order.length), at: performance.now(), lane: e.lane ?? -1, stake: e.stake ?? 0, odds: e.odds ?? 0, won: e.won ?? 0, purse: e.purse ?? 0, day };
         sound.cheer();
         const winner = result.card[order[0]];
         const name = winner ? entrantName(sim, winner) : '';
@@ -212,7 +211,7 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
     v.lanes.push(l);
   });
   const lane = s.race[RACE.DAY] === day ? s.race[RACE.LANE] : -1;
-  v.bet = lane >= 0 ? { lane, stake: BETS[s.race[RACE.STAKE]], odds: s.race[RACE.ODDS] } : showResult && result!.lane >= 0 ? { lane: result!.lane, stake: 0, odds: 0 } : null;
+  v.bet = lane >= 0 ? { lane, stake: BETS[s.race[RACE.STAKE]], odds: s.race[RACE.ODDS] } : showResult && result!.lane >= 0 ? { lane: result!.lane, stake: result!.stake, odds: result!.odds } : null;
   if (running) {
     v.phase = 'running';
     const run = runRace(s.salt, day, card);

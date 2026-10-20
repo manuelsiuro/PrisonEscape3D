@@ -714,6 +714,8 @@ export const LESSONS: readonly Lesson[] = [
       pockets(sim, 'fruit', 'fruit', 'sugar');
       fill(sim, myDesk(sim), '');
       sim.state.items.containers[myDesk(sim)][0] = slot(n('pruno_bag'), 1);
+      // (The tank empty: room for the new bag.)
+      fill(sim, containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'toilet'), '');
     },
     steps: [
       { text: 'lesson.pruno.brew', touch: 'lesson.pruno.brewTouch', done: (c) => carries(c.sim, 'pruno_bag') || bagsHidden(c.sim) >= 2 },

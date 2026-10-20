@@ -2552,7 +2552,7 @@ export const en = {
   "item.fruit_seeds": "Fruit seeds",
   "item.vegetable": "Vegetable",
   "item.rat_track": "Rat track",
-  "items.brewDays": "Ferments in a desk or a toilet's tank: ripe in {n} days",
+  "items.brewDays": "Ripe in {n} days (in a desk or a toilet tank)",
   "act.drink": "Drink",
   "act.track": "Train",
   "act.plant": "Plant",

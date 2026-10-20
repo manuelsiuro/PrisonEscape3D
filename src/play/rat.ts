@@ -27,7 +27,13 @@ import { TOUCH } from '../ui/dom';
 /** The rat's name: one of the language's names, by the run (the same in a language; a French game calls it by a French one). */
 export function ratName(sim: Sim): string {
   const names = t('rat.names').split('|');
-  return names[(sim.state.salt >>> 0) % names.length];
+  // (Never a guard dog's name: the Training Block's Biscuit and a rat called Biscuit are two different animals.)
+  const dogs = new Set(sim.prison.guards.map((g) => g.dog?.name).filter(Boolean));
+  for (let k = 0; k < names.length; k++) {
+    const name = names[((sim.state.salt >>> 0) + k) % names.length];
+    if (!dogs.has(name)) return name;
+  }
+  return names[0];
 }
 
 const ICONS: Record<string, string> = { desk: 'box', bed: 'home', toilet: 'drop', shelf: 'book', counter: 'utensils', bin: 'trash', freezer: 'snow', shower: 'drop' };

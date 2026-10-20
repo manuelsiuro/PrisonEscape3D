@@ -22,8 +22,8 @@ export interface LongFrame {
   tipsy: boolean;
 }
 
-const SOIL = 0x5a3d26;
-const SOIL_WET = 0x3d2818;
+const SOIL = 0x7a5536;
+const SOIL_WET = 0x33200f;
 const FURROW = 0x4a3220;
 const LEAF = 0x4f9a3a;
 const LEAF_DRY = 0x9a7a3a;
@@ -205,7 +205,9 @@ export class LongView {
         const x = (b.tile % MAP_W) + 0.5;
         const z = Math.floor(b.tile / MAP_W) + 0.5;
         s.position.set(x, 0, z);
+        // (Watered today: dark and glistening.)
         this.soilMat[k].color.setHex(b.watered ? SOIL_WET : SOIL);
+        this.soilMat[k].roughness = b.watered ? 0.35 : 1;
         const scale = b.crop ? 0.45 + Math.min(3, b.grown) * 0.35 : 0;
         p.position.set(x, 0.04, z);
         p.scale.set(scale, b.wilted ? scale * 0.7 : scale, scale);
