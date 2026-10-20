@@ -38,6 +38,8 @@ export interface WeatherFrame {
   /** Where the wind blows to (radians in the view, 0 = +x) and how hard (0–3). */
   windAngle: number;
   windForce: number;
+  /** Snow falls: a freezing prison (Stalag Flucht), or a Big Freeze Daily anywhere (P26). */
+  snow: boolean;
 }
 
 /**

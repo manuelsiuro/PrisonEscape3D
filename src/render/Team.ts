@@ -29,6 +29,22 @@ const R = BALL_R / UNIT;
 const MATE = 0x3fc79a;
 const RIVAL = 0xe5484d;
 
+/** The view at zoom 1 (render/View.ts applyZoom): about 15 tiles tall, never under 11 wide. */
+const VIEW_TALL = (aspect: number) => Math.max(15, 11 / aspect);
+/** How much ground a tile of the view's height covers (the camera looks down 38 for 24 back). */
+const GROUND_PER_TALL = Math.hypot(38, 24) / 38;
+/** The margin kept round the pitch in view (tiles): its goals' nets and a step beyond. */
+const PITCH_MARGIN = 2;
+
+/**
+ * The zoom at which a pitch fits the view whole, a margin round it (a phone held upright is too
+ * narrow for it at the play zoom: P29, both goals in sight during a match).
+ */
+export function matchFit(p: Pitch, aspect: number): number {
+  const tall = VIEW_TALL(aspect);
+  return Math.min((tall * aspect) / (p.w + PITCH_MARGIN), (tall * GROUND_PER_TALL) / (p.d + PITCH_MARGIN + 1));
+}
+
 /** A football: an icosphere, white with the dark patches round its twelve points. */
 function ballGeometry(): THREE.BufferGeometry {
   const ico = new THREE.IcosahedronGeometry(1, 0);

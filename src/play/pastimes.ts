@@ -21,6 +21,7 @@ import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { director } from './chatter';
 import { TOUCH } from '../ui/dom';
+import { PausableClock } from './pausableClock';
 
 /**
  * Card sharks (P27) on screen: Cheat's card, the court's card and the old-timer's board, filled
@@ -63,19 +64,30 @@ let ball: BallShow | null = null;
 export const FLIGHT_S = 0.9;
 export const AFTER_S = 1.2;
 
+/**
+ * The shows' clock (ms): it runs only while the game does, so a ball in the air holds still
+ * under the pause menu (and in a paused replay), and what happens as it lands (the sound, the
+ * toast) waits for it; so does a game of Cheat's last hand, left up a moment with its verdict.
+ * Read once a frame from the picture, and at each event.
+ */
+const showClock = new PausableClock();
+
 /** A new game (or a load): nothing to show. */
 export function resetPastimes() {
   endView = null;
   endUntil = 0;
   ball = null;
+  showClock.clear();
   deals++;
 }
+
+/** The clock now (ms): runs it on while the game isn't paused, then whatever was due. */
+const showNow = () => showClock.tick(performance.now(), !play.game || play.game.paused);
 
 // ------------------------------------------------------------------ the events
 
 export function announcePastimes(sim: Sim, e: SimEvent) {
   const g = play.game;
-  const now = performance.now();
   switch (e.type) {
     case 'cheat': {
       const name = nameOf(sim, e.who);
@@ -86,20 +98,22 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       } else if (e.what === 'played') sound.cardLay(e.n ?? 1);
       else if (e.what === 'called') {
         sound.slap();
-        window.setTimeout(() => play.game === g && sound.cardFlip(), 220);
+        showNow();
+        showClock.after(220, () => play.game === g && sound.cardFlip());
         reveal.cards = e.cards ?? [];
         reveal.by = e.by ?? 0;
         reveal.lie = !!e.lie;
         reveal.loser = e.loser ?? 0;
         buzz(e.loser === 0 ? 'missed' : 'strike');
       } else if (e.what === 'won' || e.what === 'lost') {
-        // The last call's cards stay up a moment with the verdict.
+        // The last call's cards stay up a moment with the verdict (on the shows' clock: held while paused).
+        const now = showNow();
         if (lastCheat) {
           endView = { ...lastCheat, chips: [lastCheat.chips[0] - (reveal.loser === 0 ? 1 : 0), lastCheat.chips[1] - (reveal.loser === 1 ? 1 : 0)] as [number, number], phase: 'reveal', reveal: { ...reveal }, canPlay: false, canCall: false, mustCall: false, last: null, tell: '' };
           endUntil = now + 2600;
         }
         const n = e.stake ?? 0;
-        window.setTimeout(() => {
+        showClock.after(650, () => {
           if (play.game !== g) return;
           if (e.what === 'won') {
             sound.coin(n >= 20);
@@ -110,7 +124,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
             sound.sting();
             banner.toast(t('toast.cheatLost', { name, n }), 'bad', 3600);
           }
-        }, 650);
+        });
       } else if (e.what === 'folded') {
         sound.click();
         itemsUI.toast(t('toast.cheatFolded', { name, n: e.stake ?? 0 }));
@@ -125,30 +139,32 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       if (!c) break;
       const m = e.by >= 0 ? sim.state.inmates[e.by] : null;
       const from = m ? m.body : sim.state.player;
-      ball = { by: e.by >= 0 ? e.by : -1, fromX: from.x / UNIT, fromZ: from.z / UNIT, result: e.result, short: e.by < 0 ? e.power < e.need : (e.power + e.spot) % 2 === 0, at: now };
+      // (On the shows' clock: the flight, and what happens as it lands, hold still while paused.)
+      ball = { by: e.by >= 0 ? e.by : -1, fromX: from.x / UNIT, fromZ: from.z / UNIT, result: e.result, short: e.by < 0 ? e.power < e.need : (e.power + e.spot) % 2 === 0, at: showNow() };
       const land = FLIGHT_S * 1000;
-      window.setTimeout(() => {
+      showClock.after(land, () => {
         if (play.game !== g) return;
         if (e.result === 'swish') sound.swish();
         else if (e.result === 'in') {
           sound.rimClang(0.6);
-          window.setTimeout(() => play.game === g && sound.swish(0.6), 160);
+          showClock.after(160, () => play.game === g && sound.swish(0.6));
         } else if (e.result === 'rim') sound.rimClang();
         else sound.bounce();
         if (e.by < 0) {
           floatUp(t(e.result === 'swish' ? 'toast.swish' : e.result === 'in' ? 'toast.basket' : e.result === 'rim' ? 'toast.rimOut' : 'toast.airball'), e.result === 'swish' || e.result === 'in' ? 'gain' : 'taken');
           if (e.result === 'swish' || e.result === 'in') buzz('attended');
         } else itemsUI.toast(t(e.result === 'swish' || e.result === 'in' ? 'toast.theyScore' : 'toast.theyMiss', { name: nameOf(sim, e.by) }));
-      }, land);
-      window.setTimeout(() => play.game === g && e.result !== 'air' && sound.bounce(0.6), land + 420);
+      });
+      showClock.after(land + 420, () => play.game === g && e.result !== 'air' && sound.bounce(0.6));
       break;
     }
     case 'hoops': {
       const name = e.who >= 0 ? nameOf(sim, e.who) : '';
       const m = e.mine ?? 0;
       const n = e.theirs ?? 0;
-      // (After the last ball has come down.)
-      const later = (f: () => void) => window.setTimeout(() => play.game === g && f(), FLIGHT_S * 1000 + 300);
+      // (After the last ball has come down, on the shows' clock.)
+      showNow();
+      const later = (f: () => void) => showClock.after(FLIGHT_S * 1000 + 300, () => play.game === g && f());
       if (e.what === 'start') {
         coachOnce('hoops', 'hint.hoops');
         sound.whistle();
@@ -209,7 +225,7 @@ export function cheatNow(sim: Sim): CheatView | null {
   const c = s.cheat;
   if (!c) {
     lastCheat = null;
-    return endView && performance.now() < endUntil ? endView : null;
+    return endView && showClock.time < endUntil ? endView : null;
   }
   endView = null;
   const v = cheatView;
@@ -392,11 +408,12 @@ export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: 
   const o = s.shootout;
   const at = spotAt(sim);
   f.spot = o ? spotOf(o.k) : at;
-  const now = performance.now();
-  if (ball && (now - ball.at) / 1000 < FLIGHT_S + AFTER_S && s.layer === LAYER.GROUND) {
+  // (The ball, and Cheat's last hand, on the shows' clock: held still while paused.)
+  const shot = showNow();
+  if (ball && (shot - ball.at) / 1000 < FLIGHT_S + AFTER_S && s.layer === LAYER.GROUND) {
     ballFrame.show = ball;
     // (From over the shooter's head: where the hands held it.)
-    ballFrame.t = (now - ball.at) / 1000;
+    ballFrame.t = (shot - ball.at) / 1000;
     f.ball = ballFrame;
   } else f.ball = null;
   if (s.shot.length) {
@@ -410,7 +427,7 @@ export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: 
     f.holding = holdFrame;
   } else f.holding = null;
   const c = s.cheat;
-  if ((c || (endView && now < endUntil)) && partner && s.layer === LAYER.GROUND) {
+  if ((c || (endView && shot < endUntil)) && partner && s.layer === LAYER.GROUND) {
     // (Between the two, pushed out to the side of the line between them that faces the camera: their bodies would hide them otherwise.)
     besideLine(px, pz, partner.x, partner.z, 0.36, cardsFrame);
     cardsFrame.angle = Math.atan2(partner.x - px, partner.z - pz);
@@ -449,7 +466,7 @@ function besideLine(ax: number, az: number, bx: number, bz: number, by: number, 
 
 /** Who's shooting in the picture (a shot just let go: the arms still up, following through), -1 the player, else the inmate; null nobody. */
 export function shooterNow(): number | null {
-  return ball && (performance.now() - ball.at) / 1000 < 0.35 ? ball.by : null;
+  return ball && (showClock.time - ball.at) / 1000 < 0.35 ? ball.by : null;
 }
 
 /** The rim in the picture (tiles), for the ball's flight. */

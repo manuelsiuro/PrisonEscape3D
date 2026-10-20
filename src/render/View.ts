@@ -11,6 +11,7 @@ import { Dust } from './Dust';
 import { Island } from './Island';
 import { Snores, Sparks } from './Particles';
 import { DecorView } from './decor';
+import { rollCallLayer } from './ground';
 import { Minefield } from './Minefield';
 import { Guide } from './Guide';
 import { itemDef, itemNumber } from '../content/items';
@@ -42,7 +43,7 @@ import { SmuggleView, type SmuggleFrame } from './Smuggling';
 import { GamesView, type GamesFrame } from './Games';
 import { PastimesView, type PastimesFrame } from './Pastimes';
 import { LongView, type LongFrame } from './Long';
-import { TeamView, type TeamFrame } from './Team';
+import { matchFit, TeamView, type TeamFrame } from './Team';
 import { NightsView, type NightsFrame } from './Nights';
 import { handlersOf } from '../sim/systems/k9';
 
@@ -58,6 +59,8 @@ export interface Frame {
   moving: boolean;
   /** Game time of day in minutes, fractional (lighting). */
   minuteOfDay: number;
+  /** Roll call is on or minutes off, or a fire drill musters there (P29: its paint over a football pitch shows only then). */
+  rollCall: boolean;
   /** The tile kind under the player (footstep dust and sound). */
   surface: number;
   /** The other inmates, interpolated like the player. */
@@ -149,7 +152,7 @@ const BOUT_SIDE = 0.21;
 const BOUT_LEAN = 0.09;
 /** Where the player stands to pick a lock: this far from the door tile's middle (the hands at its face, the pick in the keyhole). */
 const PICK_STAND = 0.7;
-const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 };
+const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false };
 const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
 
 export interface GuardFrame {
@@ -322,6 +325,8 @@ export class View {
   private readonly blobs = new Blobs();
   /** Everyone on stage, for the contact shadows (refilled per frame). */
   private readonly onStage: Character[] = [];
+  /** Where everyone stands this frame (x, z pairs, tiles): the trees' leaves fade over them. */
+  private readonly people: number[] = [];
   private readonly snow = new Snowfall();
   /** The day (P17): rain, ripples and fog; the movie screen, the food fight, the inspectors. */
   private readonly weather = new Weather();
@@ -365,7 +370,7 @@ export class View {
   private readonly rainOnRoofs = (x: number, z: number) => (this.openSky(x, z) ? 0 : ROOF_HEIGHT);
   /** On the roofs: puddles on the roofs and on hard open ground. */
   private readonly wetRoofs = (x: number, z: number) => !this.openSky(x, z) || this.puddly(x, z);
-  private readonly wxSnow: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0 };
+  private readonly wxSnow: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false };
   /** Open sky over hard ground (paths, roads, concrete): where rain ripples (P17). */
   private readonly puddly = (x: number, z: number) => {
     if (!this.openSky(x, z) || !this.world?.inside(x, z)) return false;
@@ -382,6 +387,9 @@ export class View {
   /** Chair tiles (someone sitting there sits a little higher). */
   private readonly chairs = new Set<number>();
   private decor: DecorView | null = null;
+  /** The roll call's paint over a football pitch (P29), and how far it's faded in (0 … 1). */
+  private rollCallPaint: THREE.Mesh | null = null;
+  private rollCallShown = 0;
   private structure: Structure | null = null;
   private security: Security | null = null;
   private minefield: Minefield | null = null;
@@ -418,6 +426,10 @@ export class View {
   private readonly lightInverse = new THREE.Matrix4();
   private zoom = 1;
   private zoomGoal = 1;
+  /** The most the zoom may be for now (P29: a match framed whole on a phone upright); the player's own zoom comes back after. */
+  private zoomCap = Infinity;
+  /** Easing back from that cap (as slowly as out to it). */
+  private zoomEase = false;
   private shadowHalf = 20;
   /** The lock-on ring, and the cup of molten chocolate in flight (from, to, 0–1 along the way). */
   private readonly ring = lockRing();
@@ -538,6 +550,16 @@ export class View {
       const old = this.security;
       retire([old.group], () => old.dispose());
     }
+    if (this.rollCallPaint) {
+      const old = this.rollCallPaint;
+      retire([old], () => {
+        old.geometry.dispose();
+        const m = old.material as THREE.MeshBasicMaterial;
+        m.map?.dispose();
+        m.dispose();
+      });
+      this.rollCallPaint = null;
+    }
     if (this.minefield) {
       const old = this.minefield;
       retire([old.group], () => old.dispose());
@@ -557,6 +579,10 @@ export class View {
       this.decor = new DecorView(world.def.decor ?? []);
       this.scene.add(this.decor.group);
     }
+    // (P29: the roll call's paint where it crosses the football pitch, shown for roll call only.)
+    this.rollCallPaint = rollCallLayer(world);
+    this.rollCallShown = 0;
+    if (this.rollCallPaint) this.scene.add(this.rollCallPaint);
     this.minefield = new Minefield(world);
     this.scene.add(this.minefield.group);
     // An island's sea and shore, the drawbridge, the helicopter (P12).
@@ -1087,10 +1113,20 @@ export class View {
     // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
     // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
     const y = LAYER_Y[f.layer];
+    // A match (P29) on a pitch too wide for the view (a phone held upright): the zoom eases out to
+    // the whole pitch and the camera holds on its middle, both goals in sight; the player's own zoom
+    // comes back at full time. (Off the pitch, the camera follows them as ever.)
+    const tp = f.team.pitch;
+    const fit = f.team.ball && tp && f.layer === LAYER.GROUND ? Math.max(ZOOM_MIN, matchFit(tp, innerWidth / Math.max(1, innerHeight))) : Infinity;
+    const cap = fit < this.zoomGoal ? fit : Infinity;
+    if (cap === Infinity && this.zoomCap < Infinity) this.zoomEase = true;
+    this.zoomCap = cap;
+    const framed = cap < Infinity && tp && f.x > tp.x - 1.5 && f.x < tp.x + tp.w + 1.5 && f.z > tp.z - 1.5 && f.z < tp.z + tp.d + 1.5;
     // (Aboard the raft or the helicopter, the camera follows them instead: below.)
     if (this.carrying || this.getaway.flying) {
       /* followed below */
-    } else if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
+    } else if (framed && tp) this.target.lerp(this.v.set(tp.x + tp.w / 2, y, tp.z + tp.d / 2), Math.min(1, dt * 4));
+    else if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
     else this.target.lerp(this.v.set(f.x, y, f.z).add(this.ahead), Math.min(1, dt * 7));
     this.underground?.follow(f.x, f.z);
     this.feet.set(f.x, 0, f.z);
@@ -1146,6 +1182,27 @@ export class View {
       this.doorsOpen.add(Math.floor(g.z) * MAP_W + Math.floor(g.x));
       if (g.moving) this.doorsOpen.add(tz * MAP_W + tx);
     });
+    // A tree's leaves fade over anyone standing under or behind them (P23: a lookout posted there stays in view).
+    if (this.decor) {
+      const at = this.people;
+      let n = 0;
+      if (f.layer === LAYER.GROUND && this.player.root.visible) {
+        at[0] = px;
+        at[1] = pz;
+        n = 1;
+      }
+      for (const m of f.inmates) {
+        at[n * 2] = m.x;
+        at[n * 2 + 1] = m.z;
+        n++;
+      }
+      for (const g of f.guards) {
+        at[n * 2] = g.x;
+        at[n * 2 + 1] = g.z;
+        n++;
+      }
+      this.decor.shelter(at, n, dt, !this.reducedMotion);
+    }
     // The player's key opens the door they walk into (on screen as for guards).
     if (f.layer === LAYER.GROUND && this.world) {
       const here = Math.floor(f.z) * MAP_W + Math.floor(f.x);
@@ -1176,14 +1233,14 @@ export class View {
     this.dogs.update(f.dogs, f.scent, f.x, f.z, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers, f.layer === LAYER.GROUND);
     this.noSleepers.length = 0;
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
-    // Snow over an alpine prison, out in the open (ground floor and roofs).
+    // Snow over an alpine prison, or on a Big Freeze Daily anywhere (P26), out in the open (ground floor and roofs).
     const wx = f.weather;
-    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && this.world?.def.theme === 'alpine' && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF), f.layer === LAYER.ROOF ? undefined : this.openSky, wx.rain >= 2 ? 3 : wx.windForce, wx.windAngle);
+    const snowing = this.world?.def.theme === 'alpine' || wx.snow;
+    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && snowing && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF), f.layer === LAYER.ROOF ? undefined : this.openSky, wx.rain >= 2 ? 3 : wx.windForce, wx.windAngle);
     // The weather (P17): no rain in the snow (a storm there is a blizzard of it, above).
-    const alpine = this.world?.def.theme === 'alpine';
     this.wxLight = wx;
     let wxNow = wx;
-    if (alpine && wx.rain) {
+    if (snowing && wx.rain) {
       Object.assign(this.wxSnow, wx);
       this.wxSnow.rain = 0;
       wxNow = this.wxSnow;
@@ -1251,9 +1308,17 @@ export class View {
     this.gamesView.update(f.games, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Card sharks (P27): the court's spots, the ball, the cards, the board (the ground floor only).
     this.pastimesView.group.visible = f.layer === LAYER.GROUND;
-    this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND);
+    this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND, !!f.team.ball, dt);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
+    // The roll call's boxes over the pitch: chalked in for roll call, gone for the rest of the day (and any match).
+    if (this.rollCallPaint) {
+      const goal = f.rollCall && !f.team.ball ? 1 : 0;
+      this.rollCallShown += (goal - this.rollCallShown) * (this.reducedMotion ? 1 : Math.min(1, dt * 2));
+      if (Math.abs(goal - this.rollCallShown) < 0.01) this.rollCallShown = goal;
+      (this.rollCallPaint.material as THREE.MeshBasicMaterial).opacity = this.rollCallShown;
+      this.rollCallPaint.visible = this.rollCallShown > 0 && f.layer !== LAYER.UNDER;
+    }
     // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
     this.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER);
     // Stage nights (P30): the stage, the buzzers (the ground floor, and from the vents and roofs over it).
@@ -1379,6 +1444,11 @@ export class View {
     this.longView.update(null, 0, false, false);
     this.teamView.update(null, [], 0, false);
     this.nightsView.update(null, 0, false, false);
+    // (The trees whole again; no match's framing.)
+    this.decor?.shelter(this.people, 0, dt, false);
+    this.zoomCap = Infinity;
+    if (this.rollCallPaint) this.rollCallPaint.visible = false;
+    this.rollCallShown = 0;
     this.player.root.visible = false;
     this.ring.visible = false;
     this.cup.visible = false;
@@ -1420,10 +1490,12 @@ export class View {
 
   private render(minute: number, dt: number, focus: THREE.Vector3 | null, time: number) {
     this.easeShift(dt);
-    if (Math.abs(this.zoom - this.zoomGoal) > 1e-4) {
-      this.zoom += (this.zoomGoal - this.zoom) * Math.min(1, dt * 10);
+    const zoomGoal = Math.min(this.zoomGoal, this.zoomCap);
+    if (Math.abs(this.zoom - zoomGoal) > 1e-4) {
+      // (Out to a match's framing and back a little slower than a wheel's step.)
+      this.zoom += (zoomGoal - this.zoom) * Math.min(1, dt * (this.zoomCap < Infinity || this.zoomEase ? 4 : 10));
       this.applyZoom();
-    }
+    } else this.zoomEase = false;
     const night = (this.night = this.light(minute));
     // The weather first: a lockdown's red pulses through a storm's grey (not washed out by it).
     this.weatherLight(dt);
