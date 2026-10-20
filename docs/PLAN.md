@@ -577,3 +577,211 @@ real touch feel) and the known limits.
 - **P26 Daily Escape (v2.0.0)**, on the user's go (2026-10-19; P25 the replay viewer stays put off): a Daily a day, the same for everyone (§2): a prison, a seed and 1–3 of 21 twists to a weekly rhythm and budget, Daily #1 on 19 October 2026; its own save, unlimited tries, yesterday's a day late, the streak, the result card to share (medal, day, tries, strip, check code). The escape bots moved to `scripts/escapes.ts` (escapetest's output unchanged) so dailytest can play each prison's hardest Daily: 28 routes, every twist there at once but those closing them, all out (Lone Wolf and Bare Hands close the takeover, Bare Hands the helicopter, Closed Shop the roof, the raft and the helicopter). Two independent reviews before release (rules with probes; UI and text in the browser at the three sizes in both languages; no 3D change, so no 3D review). Rules: Quick Fix mended the shaft under the player's desk and wiped the tunnels' digging (now only what a guard could see, and ground-floor wear but under the desk); Big Freeze dealt at prisons with heatwaves (no heatwave or rain under it; its storms are blizzards); the tool button promised a weapon under Bare Hands, Recruit under Lone Wolf, a bribe under Straight-Laced with chatter off; pairs where one twist made the other moot (Light Sleepers with Straight-Laced, Customs with Truck Strike, Three Days with either); unpaid days counted as wages; the best kept another escape's medal; a Daily's tries counted one escape; a saved run of yesterday's out of reach. UI and text: the care package's cash, French words for heat, the fixer and the crew, "this run is over", no "today" on yesterday's card, Double Shift's guards only, landscape fits (two columns, three twists in view), tab numbers in French, labels for screen readers, the share text shown to copy where nothing else works.
 - **P25 Escape replays (v2.1.0)**, on the user's go (2026-10-19), the roadmap's last phase (§2): Watch on the escape cards, the Replays list on the Medals tab (last, each prison's quickest, files out and in), the scout in a worker (keyframes, highlights, quiet times, checked to the last matching hour), the picture's own sim at Auto or 1–64×, skip quiet times, the scrubber, to the escape, the escape camera at the end. Daily escapes are kept as the last escape (never a prison's quickest). Three independent reviews before the release. Rules: a replay froze on its first frame on the buttons' targets left from the last game (now cleared); files that hung, crashed or filled memory (endless numbers, a length the commands don't have, a start that isn't a game, a log running on past its escape: refused, and the scout stops at the escape); the picture ran up to an hour past a missed checksum; the game's music over the card after closing; the highlight ending a skipped quiet time lost. 3D: the escape camera over a rewound picture (nothing moves the picture while the escape plays out), the picture shaking at 64× while digging (hits only at slow speeds), a glide in the air now real time, the escape scene kept behind the card, the weather at once after a jump. UI and text: the day counted two ways (now the clock's everywhere, ticks at midnight), French narrow spaces, "Caught" said before a skip, focus kept (Watch again, back on Watch), the play's hint and solitary card hidden, the HUD inert, the screen-reader names (the bar's region, the speed's pace, each row's save), PageUp past close highlights, "To the escape" only where there is one, time never split across lines.
 - **The Prison Life roadmap is complete (P13–P26).**
+- **The "Free time" roadmap (decided 2026-10-20)**: the user asked for more to do in free time, beyond dice and arm-wrestling, "as many possible actions as they can". From a list of ten proposals they chose **all ten**, built in the proposed groups and in that order, with **a tutorial lesson for each, added to the Prison life chapter**. Pruno (prison hooch) and tattoos are kept as proposed. P27 Card sharks → P28 Long games → P29 Team & ink → P30 Stage nights (§9).
+
+## 9. Free time (P27–P30)
+
+Ten free-time activities, one vertical slice per phase. Each one is fun on its own and feeds back into the escape (money, opinion, attributes, secrets, cover).
+
+### Rules for every activity
+- **When**: free time, morning and evening, and the exercise hour, never in a lockdown (`gamesOpen`), unless the activity says otherwise.
+- **Who**: an inmate who thinks well enough of the player (`GAME_OPINION`), on their feet. Each activity has its own daily limit, so a new game doesn't use up the dice games.
+- **The sim**:
+  - Every draw comes from `roll()` with a new `SALT`, never the state's rng.
+  - New state fields are appended and load as optional.
+  - Inputs:
+    - **Talk actions**: new `TALK` codes from 15 up (b, and c where needed).
+    - **Other actions**: new `EXT` codes from 8 up.
+    - The free `OP` slots 14 and 15 stay free.
+  - What a card shows is a pure function of the state, so the screen and the rules never disagree. This is the lockpick's pattern.
+- **No map edits** where it can be avoided. A prison's places for the activities are data (`PrisonDef.leisure`): a hoop, a pitch, a garden or a stage. They are drawn by the render and checked by `maptest` (open floor, in the right zone, reachable).
+- **The escape bots stay byte-identical.** Nothing new happens unless the player asks for it.
+  - A new day card replaces a card "in place of" one, as sports day did.
+  - It comes with a guard for older saves and run logs, like `beforeSports`, so older replays play the same.
+- **Every phase ships**:
+  - the sim with its rules;
+  - 3D models and poses;
+  - phone and desktop UI (touch pads, keyboard keys, cards docked left in landscape);
+  - English and French text;
+  - help, bubbles, rumours, achievements and ledger counters;
+  - a lesson per activity, appended to **Prison life** (`CHAPTERS.life`);
+  - a test script per phase;
+  - three independent reviews (rules, UI and text, 3D) before the release.
+
+### P27 Card sharks (v2.2): Cheat, Hoops, Checkers
+
+**Cheat, the card game** (bluffing; in French « Menteur »)
+- **The table**:
+  - With an inmate in the games' hours, from the talk panel's Games, for a stake ($5, $10 or $20, as dice; asked twice).
+  - The deck is 20 cards: 6 Kings, 6 Queens, 6 Aces and 2 Jokers (wild), shuffled by `roll()`.
+  - 5 cards each, and a table card (K, Q or A) is drawn each round.
+- **A turn**:
+  - Play 1–3 cards face down, claimed to be the table card, or call **"Liar!"** on the last play.
+  - The caller is right: the liar loses a chip. The caller is wrong: the caller loses a chip.
+  - After a call, a new round is dealt.
+  - A hand played out with no call: the other player must call.
+  - First to lose 2 chips loses the stake. The stake is held on the table, as with dice.
+- **The inmate**:
+  - Plays true when it holds the table card, and bluffs otherwise.
+  - Calls with certainty when the claim can't be true given its own cards. Otherwise its calls follow its nerve (by cell) and the size of the claim.
+- **Tells**: each inmate has a tell of its own (scratching an ear, a glance away, drumming its fingers, a whistle). It shows on the card and as a bubble.
+  - When it lies, the odds of a tell are 50% + Intellect/4, at most 90%.
+  - When it tells the truth, a false tell shows 20% of the time.
+  - So Intellect lets the player read people, but never with certainty.
+- **Heat and rewards**:
+  - A guard who sees the game gives gambling heat, as with dice.
+  - Any game gives +2 opinion.
+  - The ledger counts games, wins and correct calls.
+
+**Hoops** (aim and timing; the wind and the rain matter)
+- **The court**: a hoop on the edge of each prison's yard (`leisure.hoop`: a tile and its facing). It is drawn as a pole, a backboard and a painted key, with 5 shooting spots on the ground.
+- **The shootout**: against an inmate, 5 shots each from the 5 spots, taking turns. Most baskets wins; a tie goes to sudden death, at most 3 more.
+- **Solo practice**: anytime the yard is open.
+- **A shot**:
+  - Stand on the lit spot and hold Space or the Shoot pad. The power marker rises and falls.
+  - Release: the sim judges the step of release, or the one before, against a make window.
+  - The window is centred on the power needed for that distance:
+    - it is wider with Speed;
+    - it is narrower with distance and rain;
+    - the wind (P14) moves it.
+  - Inside the middle third of the window: a swish. Elsewhere inside it: in off the rim. Just outside: a rim-out. Further out: an airball.
+  - The rim's clang is a small noise.
+- **The inmate**: it shoots by `roll()` with a skill drawn by cell.
+- **Rewards**:
+  - A win gives +6 opinion and +1 Speed (trained today), and the crowd cheers as at a bout (once a day each).
+  - A shootout won counts for **sports day** like a bout won.
+  - Practice gives +1 Speed at most once a day.
+- **The 3D**: the ball's arc follows the same pure function the sim judges.
+
+**Checkers with the old-timer** (strategy; the prize is a secret)
+- **The old-timer**: one inmate per prison (`leisure.oldTimer`: a cell), grey-haired, who has been inside for decades. He plays from opinion 20, seated or not, with no stakes and no heat.
+- **The game**:
+  - English draughts on 8×8: forced captures, multi-jumps and kings.
+  - The player's move is `TALK.MOVE` (b = from, c = to, 0–31). A multi-jump is one jump per command.
+  - A draw: 40 moves with no capture and no new king.
+- **The board stays set up**: one free time is only about two real minutes. The board is kept in the state, so the game goes on next time, possibly over several days.
+- **His moves**:
+  - A deterministic alpha-beta search with an integer evaluation and ties broken by `roll()`.
+  - The depth grows with the games he has lost, from 2 up to 6.
+  - He answers after 1–3 seconds of "thinking".
+- **Rewards**:
+  - A win: he tells a **secret**, a lasting fact the player hasn't heard yet. Examples: a camera's blind time, the lazy guard's nap stop, a loose grate, the next shakedown. It comes from the gossip facts and is kept in the prisoner's file.
+  - A win also gives +1 Intellect and +4 opinion.
+  - Any finished game gives +1 Intellect, at most once a day.
+
+**Proof**: `cardstest` covers:
+- the deal, the turns, the calls and the chips;
+- the tell odds, measured;
+- the inmate never calling against what its own cards prove;
+- checkers' rules: forced captures, multi-jumps, kings and the draw;
+- the search's determinism and the time each move takes;
+- shots judged at release, the wind and the rain;
+- sports day, saves, and older logs;
+- escapetest unchanged.
+
+**Lessons**: `cards`, `hoops` and `checkers` in Prison life.
+
+### P28 Long games (v2.3): Pruno, the garden, rat racing
+
+**Pruno** (a risky project over several days)
+- **Making it**: new items fruit (the canteen counter at meals) and sugar (the kitchen job, merchants). Fruit ×2 + sugar → a pruno bag (Intellect 20).
+- **Fermenting**: hidden in a desk or a toilet's tank, it ferments for 2 prison days. The days left are kept in the item's uses and count down at 08:00.
+- **The risks**:
+  - It smells: a dog passing within its nose's reach points at the container (P19).
+  - A shakedown or an inspection finds it in a standard drawer. A hidden one is found only by a dog.
+- **Ripe pruno** (contraband):
+  - Sold to merchants for $40, or a gift worth +15 opinion.
+  - Or drunk: tipsy for 3 prison hours. Blows hit 50% harder, but walking is slower and footsteps louder.
+  - A guard who sees the player tipsy: +20% heat.
+
+**The garden plot** (care over time, with a secret)
+- **The plot**: a patch in each yard (`leisure.garden`: a rectangle of beds).
+- **Growing**:
+  - Seed packets from merchants or the library shelf. Plant one with Use on a free bed.
+  - Water each prison day with the plastic cup.
+  - Rain waters it; a heatwave needs watering twice.
+  - It grows over 3 days. A missed day wilts it; two missed days kill it.
+- **The harvest**: vegetables (a gift, or sold to the kitchen) and fruit (for pruno).
+- **The secret**:
+  - A planted bed hides a hole dug down through it: no guard sees damage there.
+  - A tunnel can start outdoors.
+  - Digging down from yard soil needs a check against the tunnel rules when this phase starts. A conflict goes in §2.
+
+**Rat racing** (training and betting; builds on P20)
+- **Training**: the tame rat gets a speed (0–100, appended to the rat's state). It trains on a rat track crafted from a magazine and duct tape, set down in the cell, once each evening free time.
+- **Race nights**:
+  - Evenings of odd prison days, 21:00, in the cell block corridor.
+  - Inmates' rats join (by cell, drawn), and the player bets $5–$20 on any rat.
+  - The outcome comes from `roll()`, the speeds and whether each rat was fed today.
+- **The 3D**: the race is shown down the corridor.
+- **Risks**: the race is noise, and a guard who sees it gives gambling heat.
+
+**Proof**: `longtest` covers fermentation, the dogs' nose and searches, tipsy, growing, wilting and the weather, the hidden hole, the rat's training, races by `roll()`, saves, and old logs; escapetest unchanged.
+
+**Lessons**: `pruno`, `garden` and `ratRace`.
+
+### P29 Team & ink (v2.4): yard football, the tattoo parlour
+
+**Yard football** (a 3-a-side team match, and cover)
+- **The pitch**: each yard has one (`leisure.pitch`: its rectangle and two goals, drawn as frames and painted lines).
+- **Starting a match**: in the exercise hour (or yard free time), talk to the captain. The player and 2 friends play 3 inmates.
+- **The match**: 45 seconds, about the length of the exercise hour.
+- **The ball**:
+  - Integer position and speed, with friction.
+  - It bounces off walls and fences.
+  - Run into it to dribble. Hold Space to kick toward where the player faces, harder the longer it's held.
+- **The inmates**: they chase the ball and keep goal.
+- **Fouls**: a hard foul on a rival can start a brawl (P23's rules).
+- **Cover**:
+  - While a match is on, guards in the yard watch the ball. For anything off the pitch their sight range is halved.
+  - A goal turns every eye in the yard to the goal for 5 seconds.
+- **Rewards**: a win gives +3 opinion with the teammates and +1 with everyone watching, and +1 Speed.
+
+**The tattoo parlour** (tracing, cosmetics, money)
+- **The gun**: a crafted item, a toothbrush + a battery + a razor blade. It is contraband, and each tattoo uses one `ink`.
+- **A job**: an inmate at opinion 30 or more takes a design: a heart for $15, a skull for $25 or an eagle for $40.
+- **Tracing**:
+  - The needle follows the stick or the keys over the design's path, at a set speed, deterministic from the commands.
+  - The distance from the path adds up. A cleaner line pays up to 150% and more opinion; a poor one pays as little as 50%.
+- **The player's own tattoos**: a friend inks the player. They show on the prisoner's arms and in the file.
+- **Heat**: a guard who sees tattooing gives +15% heat.
+
+**Proof**: `teamtest` covers:
+- the ball's physics and goals;
+- the inmates' play;
+- the guards' halved sight during a match;
+- fouls and brawls;
+- tracing scores from fixed command sequences;
+- pay, the look, saves and old logs;
+- escapetest unchanged.
+
+**Lessons**: `football` and `tattoo`.
+
+### P30 Stage nights (v2.5): talent night, quiz night
+
+**Talent night** (rhythm)
+- **The card**: a new day card in place of a card in every deck, with a guard for old saves and logs. It runs 19:00–21:00 on a stage in the canteen.
+- **The instruments**: bucket drums (free) or a homemade guitar (crafted).
+- **The song**: notes scroll in 2–3 lanes, and the sim judges each press by its step.
+  - Within ±1 step: perfect. Within ±2 steps: good.
+  - The music is synthesized from the same note chart.
+  - 3 songs of about 40 seconds.
+- **The competition**: 2–3 inmates perform, with scores from `roll()`.
+- **Rewards**:
+  - Opinion with everyone in the canteen.
+  - Prize money by place.
+  - A score of 80% or more wins the warden's goodwill: −20% heat.
+
+**Quiz night** (knowledge)
+- **The card**: a day card in the library (or the canteen where there's none), 19:00–21:00.
+- **The quiz**: 8 questions with 4 choices and 10 seconds each, against 3 inmates.
+  - Inmates buzz at a time drawn by `roll()`, and answer right with odds by their Intellect.
+  - The player answers with `EXT.ANSWER`.
+- **The questions** come in two kinds, in English and French:
+  - **Escape history**: Alcatraz 1962, the Great Escape's tunnels and the like. These are written facts, checked.
+  - **This prison**: generated from the game's own data and constants, the way gossip is, so they are always true. Examples: roll call's time, the colour of a guard's key, what the lazy guard does.
+- **Rewards**: a win gives $30, +2 Intellect and opinion.
+
+**Proof**: `stagetest` covers note judging at the step, the inmates' scores, the questions' answers against the running game, the day cards in the decks, old saves and logs, and escapetest unchanged.
+
+**Lessons**: `talent` and `quiz`.
