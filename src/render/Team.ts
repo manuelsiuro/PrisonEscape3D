@@ -59,7 +59,10 @@ export class TeamView {
   readonly group = new THREE.Group();
   private readonly lines = new THREE.Group();
   private readonly ball: THREE.Mesh;
-  private readonly rings: THREE.Mesh[] = [];
+  /** The sides' rings, one instanced mesh (one draw call): the shown ones first, the rest not drawn. */
+  private readonly rings: THREE.InstancedMesh;
+  private readonly at = new THREE.Matrix4();
+  private readonly tint = new THREE.Color();
   private drawn = '';
   private readonly last = { x: 0, z: 0, set: false };
   private readonly axis = new THREE.Vector3();
@@ -71,13 +74,15 @@ export class TeamView {
     this.group.add(this.lines, this.ball);
     const ring = new THREE.RingGeometry(0.3, 0.4, 28);
     ring.rotateX(-Math.PI / 2);
-    for (let k = 0; k < 5; k++) {
-      const m = new THREE.Mesh(ring, new THREE.MeshBasicMaterial({ color: k < 2 ? MATE : RIVAL, transparent: true, opacity: 0.75, depthWrite: false }));
-      m.renderOrder = 0.3;
-      m.visible = false;
-      this.rings.push(m);
-      this.group.add(m);
-    }
+    // (White, tinted per ring: the player's side, the other.)
+    this.rings = new THREE.InstancedMesh(ring, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false }), 5);
+    this.rings.renderOrder = 0.3;
+    // (They follow the players over the pitch.)
+    this.rings.frustumCulled = false;
+    // (Tinted from the start: one shader before and after the first match.)
+    this.rings.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(5 * 3).fill(1), 3);
+    this.rings.count = 0;
+    this.group.add(this.rings);
   }
 
   /** Lets go of the pitch's meshes (their geometries and materials). */
@@ -176,12 +181,19 @@ export class TeamView {
     this.lines.visible = !!p && shown;
     // Who's on which side: a ring under each.
     const mates = f?.mates.length ?? 0;
-    for (let k = 0; k < this.rings.length; k++) {
+    let n = 0;
+    for (let k = 0; k < 5; k++) {
       const id = k < 2 ? f?.mates[k] : f?.rivals[k - 2];
       const m = id === undefined ? undefined : inmates[id];
-      const r = this.rings[k];
-      r.visible = !!m && shown && (k < 2 ? k < mates : true);
-      if (m) r.position.set(m.x, 0.012, m.z);
+      if (!m || !shown || (k < 2 && k >= mates)) continue;
+      this.rings.setMatrixAt(n, this.at.makeTranslation(m.x, 0.012, m.z));
+      this.rings.setColorAt(n, this.tint.setHex(k < 2 ? MATE : RIVAL));
+      n++;
+    }
+    this.rings.count = n;
+    if (n) {
+      this.rings.instanceMatrix.needsUpdate = true;
+      this.rings.instanceColor!.needsUpdate = true;
     }
     const b = f?.ball ?? null;
     this.ball.visible = !!b && shown;

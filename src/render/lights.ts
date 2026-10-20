@@ -6,8 +6,13 @@ import { LAMP_ARM, LAMP_BULB_Y } from './props';
 /** Zones lit by daylight only (open sky); every other zone gets ceiling lights at night. */
 const OPEN_AIR = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none']);
 
-/** A soft round glow, white in the middle and fading out. */
+/** A soft round glow, white in the middle and fading out: one for every prison (made once, never freed with a view). */
+let glow: THREE.CanvasTexture | null = null;
 function glowTexture(): THREE.CanvasTexture {
+  return (glow ??= drawGlow());
+}
+
+function drawGlow(): THREE.CanvasTexture {
   const n = 64;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = n;

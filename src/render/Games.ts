@@ -3,6 +3,7 @@ import type { World } from '../sim/world/World';
 import { DECOR } from '../content/decor';
 import { LAYER, MAP_H, MAP_W } from '../sim/world/World';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
+import { now, type Later } from './batch';
 
 /** What the side games show this frame (P22). */
 export interface GamesFrame {
@@ -159,11 +160,14 @@ export class GamesView {
    * flagpole or a bush): the longest stretches of open yard (at least STRETCH), a line from a pole
    * to a pole each, sagging between them, its pennants a palm apart.
    */
-  setWorld(world: World) {
-    if (this.strings) {
-      this.group.remove(this.strings);
-      this.strings.geometry.dispose();
-      (this.strings.material as THREE.Material).dispose();
+  setWorld(world: World, later: Later = now) {
+    const strings = this.strings;
+    if (strings) {
+      this.group.remove(strings);
+      later(() => {
+        strings.geometry.dispose();
+        (strings.material as THREE.Material).dispose();
+      });
       this.strings = null;
     }
     this.flagCount = 0;

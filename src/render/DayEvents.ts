@@ -4,6 +4,7 @@ import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { TILE_INFO } from '../sim/world/tiles';
 import { Character, type Look } from './Character';
+import type { Later } from './batch';
 import { itemGeometry } from './itemModels';
 import { WALL_H } from './WorldView';
 
@@ -74,9 +75,9 @@ export class DayEvents {
     this.group.add(this.blobs);
   }
 
-  /** A prison: where its canteen is (the screen goes up over its north wall). */
-  setWorld(world: World) {
-    this.clear();
+  /** A prison: where its canteen is (the screen goes up over its north wall). The last one's parts are freed `later`. */
+  setWorld(world: World, later?: Later) {
+    this.clear(later);
     this.world = world;
     // The inspectors made now, hidden (not in the middle of a day the first time they're needed).
     this.inspectorCast();
@@ -404,27 +405,34 @@ export class DayEvents {
   }
 
   /** A new prison (or none): the screen and the inspectors go. */
-  private clear() {
-    if (this.screen) {
-      this.group.remove(this.screen);
-      this.screen.geometry.dispose();
-      (this.screen.material as THREE.Material).dispose();
-      const frame = this.screen.children[0] as THREE.Mesh | undefined;
-      frame?.geometry.dispose();
-      (frame?.material as THREE.Material | undefined)?.dispose();
+  private clear(later: Later = (dispose) => dispose()) {
+    const screen = this.screen;
+    if (screen) {
+      this.group.remove(screen);
+      later(() => {
+        screen.geometry.dispose();
+        (screen.material as THREE.Material).dispose();
+        const frame = screen.children[0] as THREE.Mesh | undefined;
+        frame?.geometry.dispose();
+        (frame?.material as THREE.Material | undefined)?.dispose();
+      });
       this.screen = null;
     }
-    if (this.beam) {
-      this.group.remove(this.beam);
-      this.beam.geometry.dispose();
-      (this.beam.material as THREE.Material).dispose();
+    const beam = this.beam;
+    if (beam) {
+      this.group.remove(beam);
+      later(() => {
+        beam.geometry.dispose();
+        (beam.material as THREE.Material).dispose();
+      });
       this.beam = null;
     }
-    this.film?.tex.dispose();
+    const film = this.film;
+    if (film) later(() => film.tex.dispose());
     this.film = null;
     for (const c of this.inspectors) {
       this.group.remove(c.root);
-      c.dispose();
+      later(() => c.dispose());
     }
     this.inspectors = [];
     this.trailGuard = -1;

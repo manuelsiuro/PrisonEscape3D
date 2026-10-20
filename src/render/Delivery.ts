@@ -3,6 +3,7 @@ import type { DeliveryDef } from '../content/prisons/types';
 import { DIR_X, DIR_Z } from '../sim/command';
 import { MAP_W, type World } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
+import { disposeTree, now, type Later } from './batch';
 import { box, kitMaterial, merge, paint, rod, type Part } from './kit';
 
 /** What the delivery looks like this frame (P18), from the day's plan. */
@@ -76,8 +77,8 @@ export class Delivery {
   private wasMoving = 0;
 
   /** A prison: its vehicle (none without a delivery, or with the helicopter: the island draws that). */
-  setWorld(world: World) {
-    this.clear();
+  setWorld(world: World, later?: Later) {
+    this.clear(later);
     const d = world.def.delivery;
     if (!d) return;
     this.def = d;
@@ -324,20 +325,17 @@ export class Delivery {
     return this.leaving >= 0;
   }
 
-  clear() {
-    this.group.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (mesh.isMesh) {
-        mesh.geometry.dispose();
-        if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose();
-        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-        for (const mat of mats) if (mat !== kitMaterial) mat.dispose();
-      }
-    });
+  /** Lets the vehicle go (its meshes freed `later`: setWorld). */
+  clear(later: Later = now) {
+    const parts = [...this.group.children];
     this.group.clear();
+    const mat = this.mat;
+    later(() => {
+      for (const p of parts) disposeTree(p, () => false, new Set([kitMaterial]));
+      mat?.dispose();
+    });
     this.def = null;
     this.body = this.gate = this.lamps = this.ring = null;
-    this.mat?.dispose();
     this.mat = null;
     this.fade = 1;
     this.wheels = null;

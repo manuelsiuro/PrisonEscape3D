@@ -35,6 +35,7 @@ const LANES = [0xe0574a, 0x3a8ed8, 0x9a5ad8, 0x5aa846];
 const PET = 0xffd34a;
 const MAX_BEDS = 12;
 const MAX_RACERS = 4;
+const UP = new THREE.Vector3(0, 1, 0);
 
 /** A plant: a few leaves round a stem, unit size (scaled by its stage). */
 function plantGeometry(): THREE.BufferGeometry {
@@ -78,17 +79,46 @@ interface Racer {
   stripe: THREE.Mesh;
 }
 
+/** One rat of the race, as instances: its body (and rim), its tail, its lane's stripe. */
+const TAIL_AT = new THREE.Vector3(0, 0.05, -0.11);
+const STRIPE_AT = new THREE.Vector3(0, 0.135, 0);
+const RACER_SCALE = 1.5;
+
+/** A plant's breeze and tilt, for its instance. */
+interface Bed {
+  x: number;
+  z: number;
+  scale: number;
+  wilted: boolean;
+  turn: number;
+}
+
+/**
+ * The garden's beds and the race's rats as instanced meshes, tinted per instance (a handful of
+ * draw calls for twelve beds and four racers, not one per piece); the pet's laps at home are
+ * one rat on its own.
+ */
 export class LongView {
   readonly group = new THREE.Group();
-  private readonly soil: THREE.Mesh[] = [];
-  private readonly plants: THREE.Mesh[] = [];
-  private readonly crops: THREE.Mesh[] = [];
-  private readonly soilMat: THREE.MeshStandardMaterial[] = [];
-  private readonly leafMat: THREE.MeshStandardMaterial[] = [];
-  private readonly cropMat: THREE.MeshStandardMaterial[] = [];
+  /** Soil dry and soil watered (glistening: its own roughness), the plants, the crops. */
+  private readonly soilDry: THREE.InstancedMesh;
+  private readonly soilWet: THREE.InstancedMesh;
+  private readonly plants: THREE.InstancedMesh;
+  private readonly crops: THREE.InstancedMesh;
+  private readonly growing: Bed[] = [];
+  private readonly racerBody: THREE.InstancedMesh;
+  private readonly racerRim: THREE.InstancedMesh;
+  private readonly racerTail: THREE.InstancedMesh;
+  private readonly racerStripe: THREE.InstancedMesh;
+  private readonly m = new THREE.Matrix4();
+  private readonly part = new THREE.Matrix4();
+  private readonly q = new THREE.Quaternion();
+  private readonly e = new THREE.Euler();
+  private readonly v = new THREE.Vector3();
+  private readonly sc = new THREE.Vector3();
+  private readonly tint = new THREE.Color();
   private readonly track = new THREE.Group();
   private trackTiles: number[] | null = null;
-  private readonly racers: Racer[] = [];
   private readonly lap: THREE.Group;
   private readonly lapRat: Racer;
   private shown = '';
@@ -97,27 +127,23 @@ export class LongView {
     const soil = merge([box(0.86, 0.04, 0.86, 0xffffff), ...[-0.25, 0, 0.25].map((x) => box(0.08, 0.05, 0.8, FURROW, x, 0.005, 0))], false);
     const plant = plantGeometry();
     const crop = cropGeometry();
-    for (let k = 0; k < MAX_BEDS; k++) {
-      const sm = new THREE.MeshStandardMaterial({ color: SOIL, roughness: 1, vertexColors: true });
-      const s = new THREE.Mesh(soil, sm);
-      s.receiveShadow = true;
-      s.visible = false;
-      const lm = new THREE.MeshStandardMaterial({ color: LEAF, roughness: 0.8, vertexColors: true });
-      const p = new THREE.Mesh(plant, lm);
-      p.castShadow = true;
-      p.visible = false;
-      const cm = new THREE.MeshStandardMaterial({ color: BERRY, roughness: 0.5, vertexColors: true });
-      const c = new THREE.Mesh(crop, cm);
-      c.castShadow = true;
-      c.visible = false;
-      this.soil.push(s);
-      this.plants.push(p);
-      this.crops.push(c);
-      this.soilMat.push(sm);
-      this.leafMat.push(lm);
-      this.cropMat.push(cm);
-      this.group.add(s, p, c);
-    }
+    // (White materials, each instance tinted: the soil's wetness, the leaves' dryness, the crop's kind.)
+    // (The tinted ones get their colors from the start: their shader is the same before and after the first tint, compiled once.)
+    const instanced = (geo: THREE.BufferGeometry, mat: THREE.Material, n: number, tinted = false) => {
+      const mesh = new THREE.InstancedMesh(geo, mat, n);
+      if (tinted) mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3).fill(1), 3);
+      mesh.count = 0;
+      // (Placed anew whenever they change, anywhere on the map.)
+      mesh.frustumCulled = false;
+      this.group.add(mesh);
+      return mesh;
+    };
+    this.soilDry = instanced(soil, new THREE.MeshStandardMaterial({ roughness: 1, vertexColors: true }), MAX_BEDS, true);
+    this.soilWet = instanced(soil, new THREE.MeshStandardMaterial({ roughness: 0.35, vertexColors: true }), MAX_BEDS, true);
+    this.plants = instanced(plant, new THREE.MeshStandardMaterial({ roughness: 0.8, vertexColors: true }), MAX_BEDS, true);
+    this.crops = instanced(crop, new THREE.MeshStandardMaterial({ roughness: 0.5, vertexColors: true }), MAX_BEDS, true);
+    this.soilDry.receiveShadow = this.soilWet.receiveShadow = true;
+    this.plants.castShadow = this.crops.castShadow = true;
     this.group.add(this.track);
     const body = bodyGeometry();
     const tail = tailGeometry();
@@ -141,11 +167,11 @@ export class LongView {
       root.visible = false;
       return { root, tail: t, stripe: s };
     };
-    for (let k = 0; k < MAX_RACERS; k++) {
-      const r = rig(LANES[k]);
-      this.racers.push(r);
-      this.group.add(r.root);
-    }
+    this.racerBody = instanced(body, fur, MAX_RACERS);
+    this.racerBody.castShadow = true;
+    this.racerRim = instanced(rim, rimMat, MAX_RACERS);
+    this.racerTail = instanced(tail, fur, MAX_RACERS);
+    this.racerStripe = instanced(stripe, new THREE.MeshBasicMaterial({ color: 0xffffff }), MAX_RACERS, true);
     this.lap = new THREE.Group();
     this.lap.add(new THREE.Mesh(lapTrackGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 })));
     this.lapRat = rig(LANES[0]);
@@ -202,47 +228,49 @@ export class LongView {
     const key = f.beds.map((b) => `${b.tile}:${b.crop}:${b.grown}:${b.wilted}:${b.watered}:${b.ripe}:${b.hole}`).join('|');
     if (key !== this.shown) {
       this.shown = key;
-      for (let k = 0; k < MAX_BEDS; k++) {
-        const b = f.beds[k];
-        const s = this.soil[k];
-        const p = this.plants[k];
-        const c = this.crops[k];
-        s.visible = !!b && !b.hole;
-        p.visible = !!b && b.crop > 0;
-        c.visible = !!b && b.ripe;
-        if (!b) continue;
+      let dry = 0;
+      let wet = 0;
+      let crops = 0;
+      this.growing.length = 0;
+      for (const b of f.beds.slice(0, MAX_BEDS)) {
         const x = (b.tile % MAP_W) + 0.5;
         const z = Math.floor(b.tile / MAP_W) + 0.5;
-        s.position.set(x, 0, z);
-        // (Watered today: dark and glistening.)
-        this.soilMat[k].color.setHex(b.watered ? SOIL_WET : SOIL);
-        this.soilMat[k].roughness = b.watered ? 0.35 : 1;
-        const scale = b.crop ? 0.65 + Math.min(3, b.grown) * 0.3 : 0;
-        p.position.set(x, 0.04, z);
-        p.scale.set(scale, b.wilted ? scale * 0.7 : scale, scale);
-        p.rotation.set(b.wilted ? 0.35 : 0, (b.tile % 7) * 0.9, 0);
-        this.leafMat[k].color.setHex(b.wilted ? LEAF_DRY : LEAF);
-        // (Fruit hangs among the leaves; a vegetable's crop shows as its top at the soil.)
-        if (b.crop === 2) {
-          c.position.set(x, 0.04 + scale * 0.12, z);
-          c.scale.setScalar(scale);
-        } else {
-          c.position.set(x, 0.01, z);
-          c.scale.set(scale, scale * 0.35, scale);
+        // (Watered today: dark and glistening. A hole dug through it: no soil.)
+        if (!b.hole) {
+          const soil = b.watered ? this.soilWet : this.soilDry;
+          const n = b.watered ? wet++ : dry++;
+          soil.setMatrixAt(n, this.m.makeTranslation(x, 0, z));
+          soil.setColorAt(n, this.tint.setHex(b.watered ? SOIL_WET : SOIL));
         }
-        this.cropMat[k].color.setHex(b.crop === 2 ? BERRY : VEG);
+        const scale = b.crop ? 0.65 + Math.min(3, b.grown) * 0.3 : 0;
+        if (b.crop > 0) {
+          this.plants.setColorAt(this.growing.length, this.tint.setHex(b.wilted ? LEAF_DRY : LEAF));
+          this.growing.push({ x, z, scale, wilted: b.wilted, turn: (b.tile % 7) * 0.9 });
+        }
+        if (b.ripe) {
+          // (Fruit hangs among the leaves; a vegetable's crop shows as its top at the soil.)
+          if (b.crop === 2) this.m.compose(this.v.set(x, 0.04 + scale * 0.12, z), this.q.identity(), this.sc.setScalar(scale));
+          else this.m.compose(this.v.set(x, 0.01, z), this.q.identity(), this.sc.set(scale, scale * 0.35, scale));
+          this.crops.setMatrixAt(crops, this.m);
+          this.crops.setColorAt(crops++, this.tint.setHex(b.crop === 2 ? BERRY : VEG));
+        }
       }
+      for (const [mesh, n] of [[this.soilDry, dry], [this.soilWet, wet], [this.crops, crops], [this.plants, this.growing.length]] as const) {
+        mesh.count = n;
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      }
+      this.placePlants(0, false);
     }
     // A breeze through the leaves.
-    if (motion) for (let k = 0; k < Math.min(MAX_BEDS, f.beds.length); k++) if (this.plants[k].visible) this.plants[k].rotation.z = Math.sin(time * 1.3 + k) * 0.05;
+    if (motion && this.growing.length) this.placePlants(time, true);
     this.drawTrack(f.track);
     // The racers down the track, side by side across it.
     const tiles = f.track;
-    for (let k = 0; k < MAX_RACERS; k++) {
+    let n = 0;
+    for (let k = 0; k < MAX_RACERS && tiles; k++) {
       const r = f.rats[k];
-      const rig = this.racers[k];
-      rig.root.visible = !!r && !!tiles;
-      if (!r || !tiles) continue;
+      if (!r) continue;
       const a = tiles[0];
       const b = tiles[tiles.length - 1];
       const ax = (a % MAP_W) + 0.5;
@@ -256,17 +284,24 @@ export class LongView {
       const alongX = Math.abs(dx) > Math.abs(dz);
       const x = ax + dx * r.pos + (alongX ? 0 : across);
       const z = az + dz * r.pos + (alongX ? across : 0);
-      rig.root.position.set(x, 0, z);
-      rig.root.rotation.y = Math.atan2(dx, dz);
       const running = r.pos > 0 && r.pos < 1;
-      if (motion && running) {
-        rig.root.position.y = Math.abs(Math.sin(time * 22 + k)) * 0.02;
-        rig.tail.rotation.y = Math.sin(time * 18 + k) * 0.5;
-      }
+      const hop = motion && running ? Math.abs(Math.sin(time * 22 + k)) * 0.02 : 0;
+      const wag = motion && running ? Math.sin(time * 18 + k) * 0.5 : 0;
+      this.q.setFromAxisAngle(UP, Math.atan2(dx, dz));
+      this.m.compose(this.v.set(x, hop, z), this.q, this.sc.setScalar(RACER_SCALE));
+      this.racerBody.setMatrixAt(n, this.m);
+      this.racerRim.setMatrixAt(n, this.m);
+      this.racerStripe.setMatrixAt(n, this.part.makeTranslation(STRIPE_AT).premultiply(this.m));
+      this.racerTail.setMatrixAt(n, this.part.makeRotationY(wag).setPosition(TAIL_AT).premultiply(this.m));
       // The pet wears a gold stripe (its lane's colour otherwise).
-      const stripe = rig.stripe.material as THREE.MeshBasicMaterial;
-      const hex = r.pet ? PET : LANES[r.lane % LANES.length];
-      if (stripe.color.getHex() !== hex) stripe.color.setHex(hex);
+      this.racerStripe.setColorAt(n, this.tint.setHex(r.pet ? PET : LANES[r.lane % LANES.length]));
+      n++;
+    }
+    for (const mesh of [this.racerBody, this.racerRim, this.racerTail, this.racerStripe]) {
+      mesh.count = n;
+      if (!n) continue;
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
     // The pet's laps at home: round the oval, a lap every second and a half.
     const l = f.laps;
@@ -282,5 +317,15 @@ export class LongView {
       this.lapRat.root.scale.setScalar(1.2);
       if (motion) this.lapRat.tail.rotation.y = Math.sin(time * 18) * 0.5;
     }
+  }
+
+  /** The plants' instances: grown to their stage, drooping when wilted, swaying in a breeze (`sway`). */
+  private placePlants(time: number, sway: boolean) {
+    this.growing.forEach((b, k) => {
+      this.e.set(b.wilted ? 0.35 : 0, b.turn, sway ? Math.sin(time * 1.3 + k) * 0.05 : 0);
+      this.m.compose(this.v.set(b.x, 0.04, b.z), this.q.setFromEuler(this.e), this.sc.set(b.scale, b.wilted ? b.scale * 0.7 : b.scale, b.scale));
+      this.plants.setMatrixAt(k, this.m);
+    });
+    this.plants.instanceMatrix.needsUpdate = true;
   }
 }

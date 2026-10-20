@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { DeliveryFrame } from './Delivery';
 import { isSea, TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
+import { disposeTree } from './batch';
 import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { TEX } from './textures';
 
@@ -412,12 +413,8 @@ export class Island {
     return this.leaving?.kind === 'helicopter';
   }
 
+  /** Frees it all, its textures with it (the sea's, the shallows', the foam's, the drawbridge's: all drawn for this island, none shared). */
   dispose() {
-    this.group.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      mesh.geometry?.dispose();
-      const mats = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
-      for (const mat of mats) if (mat !== kitMaterial) mat.dispose();
-    });
+    disposeTree(this.group, () => true, new Set([kitMaterial]));
   }
 }
