@@ -117,11 +117,12 @@ function inTheWay(sim: SimContext): boolean {
 
 /** The air today (P24: what a glider flies in), from the day's plan. One object, refilled. */
 const air: Air = { wind: 0, force: 0, weather: 'clear' };
-export function airOf(sim: Pick<SimContext, 'prison' | 'state'>): Air {
+export function airOf(sim: Pick<SimContext, 'prison' | 'state'> & { rules250?: boolean }): Air {
   const p = today(sim);
   air.wind = p.wind;
   air.force = p.windForce;
   air.weather = p.weather;
+  air.old = !!sim.rules250;
   return air;
 }
 

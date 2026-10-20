@@ -183,8 +183,8 @@ export class StageCard {
       setText(this.title, t('stage.title'));
       this.acts.innerHTML = v.acts
         .map((a) => {
-          const state = a.mark >= 0 ? `<b>${a.mark}%</b>` : a.on ? `<em>${t('stage.onNow')}</em>` : `<span>${a.at}</span>`;
-          return `<li class="${a.on ? 'on' : ''}">${icon(a.inst === INSTRUMENT.GUITAR ? 'guitar' : 'drum', 14)}<span class="stage-who">${esc(a.name)}</span><span class="stage-song">${t(`song.${SONGS[a.song].id}` as Key)}</span>${state}</li>`;
+          const state = a.mark >= 0 ? `<b>${a.mark}%</b>` : a.mark === -2 ? `<em>${t('stage.noShow')}</em>` : a.on ? `<em>${t('stage.onNow')}</em>` : `<span>${a.at}</span>`;
+          return `<li class="${a.on ? 'on' : a.mark === -2 ? 'noshow' : ''}">${icon(a.inst === INSTRUMENT.GUITAR ? 'guitar' : 'drum', 14)}<span class="stage-who">${esc(a.name)}</span><span class="stage-song">${t(`song.${SONGS[a.song].id}` as Key)}</span>${state}</li>`;
         })
         .join('');
       for (const b of this.pads.querySelectorAll('kbd')) b.textContent = TOUCH ? '' : withKeys(['← %KeyA%', '↓ %KeyS%', '→ %KeyD%'][Number((b.parentElement as HTMLElement).dataset.lane)]);

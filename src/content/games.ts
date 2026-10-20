@@ -67,6 +67,14 @@ export const CLAIM_MAX = 3;
 export const THINK_STEPS = 30;
 export const REVEAL_STEPS = 80;
 /**
+ * The player's turn has a clock (2.5.1): this long (steps: a minute) to lay cards or call, else
+ * the hand's called for them when calling is all they can do, and otherwise they've left the
+ * table (folded: the stake is the inmate's). Its last CLOCK_SHOWN steps count down on the card.
+ * (Not in the lessons: the tutorial's prison is forgiving.)
+ */
+export const TURN_STEPS = 1200;
+export const CLOCK_SHOWN = 300;
+/**
  * Its tell (by cell): shown on a lie with these odds out of 100 (plus the player's Intellect / 4,
  * at most TELL_MAX), and on the truth with FALSE_TELL: Intellect reads people, never for certain.
  */
@@ -79,8 +87,8 @@ export type Tell = (typeof TELLS)[number];
  * The inmate calls "Liar!" on a claim it can't prove false with odds (out of 100) of CALL_DOUBT
  * per cent of its doubt past CALL_FLOOR (its doubt: 100 less the claim's odds as it sees them),
  * CALL_STUCK more with no true card of its own to lay, at most CALL_MAX. (Measured in cardstest:
- * a player who never calls wins about 41%, one who reads the tells 48–54%, one who counts the
- * inmate's plays 58%, one who calls every play 2%, one who bluffs every play 28%.)
+ * a player who never calls wins about 40%, one who reads the tells 48–55%, one who counts the
+ * inmate's plays 58%, one who calls every play 2%, one who bluffs every play 28–32%.)
  */
 export const CALL_DOUBT = 60;
 export const CALL_FLOOR = 20;
@@ -99,6 +107,8 @@ export const SUDDEN_DEATH = 3;
 export const POWER_SPEED = 42;
 /** A shot held this long goes up anyway (steps). */
 export const HOLD_MAX = 120;
+/** A shootout's shot clock (2.5.1): the player's shot this long after their turn comes (steps: 30 seconds), else it's an airball (not in the lessons). */
+export const SHOT_CLOCK = 600;
 /** The power a shot needs: NEED_BASE + NEED_PER_TILE a tile from the rim; the wind moves it NEED_WIND a point of strength. */
 export const NEED_BASE = 250;
 export const NEED_PER_TILE = 150;

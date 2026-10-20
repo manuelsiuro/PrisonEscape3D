@@ -15,9 +15,12 @@
  *   (its move ends), kings both ways; his move (the same every time, quick enough at every depth),
  *   how he fares against a player moving at random at each level; the draw; a game won (Intellect,
  *   opinion, his level), resigned; the board kept between times;
+ * - 2.5.1: the player's move at Cheat and their shot in a shootout on a clock; a game still on
+ *   at roll call settled on the chips (a shootout off);
  * - saves: a hand of Cheat, a shootout and the board carry on the same; damaged ones are dropped.
  */
-import { CALL_MAX, CARD, COURT_LEAVE, COURT_RANGE, CHIPS, DECK, DRAW_PLIES, ELDER_DEPTH, ELDER_OPINION, FALSE_TELL, GAMES_A_DAY, HAND, NEED_BASE, NEED_PER_TILE, PLAY_OPINION, PRACTICE_MAKES, REVEAL_STEPS, SHOOT_SPOTS, SPORTS_WINS, STAKES, THINK_STEPS, WIN_OPINION } from '../src/content/games';
+import { CALL_MAX, CARD, COURT_LEAVE, COURT_RANGE, CHIPS, DECK, DRAW_PLIES, ELDER_DEPTH, ELDER_OPINION, FALSE_TELL, GAMES_A_DAY, HAND, NEED_BASE, NEED_PER_TILE, PLAY_OPINION, PRACTICE_MAKES, REVEAL_STEPS, SHOOT_SPOTS, SHOT_CLOCK, SPORTS_WINS, STAKES, THINK_STEPS, TURN_STEPS, WIN_OPINION } from '../src/content/games';
+import { ROUTINE } from '../src/content/routine';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
@@ -206,6 +209,77 @@ function yardTile(sim: Sim): number {
   talk(TALK.CHEAT, 0);
   check(refusals(seen).at(-1) === 'played' && playedToday(s, 0) === GAMES_A_DAY, `three games a day each (Cheat among them)`);
   console.log(`cheat in the game: the deal, ${calls.length} calls, ${end?.what}; folded walking away; off in a lockdown; three a day`);
+}
+
+// ------------------------------------------------------------------ 2.5.1: the player's move on a clock, the roll call's bell
+{
+  const { sim, seen, step, to, talkTo, talk, blind } = game();
+  const s = sim.state;
+  const tile = yardTile(sim);
+  to(1, 10, 30);
+  check(talkTo(0, tile), 'at the table');
+  s.inmates[0].opinion = 60;
+  s.cash = 100;
+  blind();
+  talk(TALK.CHEAT, 1);
+  const from = s.step;
+  while (s.cheat && s.step - from < TURN_STEPS * 2) step();
+  check(!s.cheat && s.cash === 90 && seen.some((e) => e.type === 'cheat' && e.what === 'folded') && s.step - from <= TURN_STEPS + 2, `the player's move let run out (${TURN_STEPS / 20} s): folded, the stake lost (${s.step - from} steps)`);
+  // Nothing to do but call (the inmate's hand played out): the clock calls for them.
+  talk(TALK.CHEAT, 0);
+  const c = s.cheat!;
+  Object.assign(c, { by: 1, theirs: [], last: [CARD.JOKER], turn: 0, due: s.step + 5 });
+  const before = seen.length;
+  for (let k = 0; k < 10 && s.cheat?.turn === 0; k++) step();
+  check(seen.slice(before).some((e) => e.type === 'cheat' && e.what === 'called' && e.by === 0), 'only a call left them: the clock makes it');
+  s.cheat = null;
+  // A 2.5.0 replay: no clock.
+  s.played = [];
+  talk(TALK.CHEAT, 0);
+  sim.rules250 = true;
+  s.cheat!.due = s.step + 2;
+  for (let k = 0; k < 100; k++) step();
+  check(!!s.cheat && s.cheat.turn === 0, '(a 2.5.0 replay: the move waits, as it did, its clock long out)');
+  sim.rules250 = false;
+  s.cheat = null;
+  // The lessons' prison: no clock (a beginner reads the lesson first).
+  {
+    const l = game(TRAINING);
+    l.to(1, 18, 30);
+    if (l.talkTo(0, yardTile(l.sim))) {
+      l.sim.state.inmates[0].opinion = 60;
+      l.sim.state.cash = 100;
+      l.blind();
+      l.talk(TALK.CHEAT, 0);
+      for (let k = 0; k < TURN_STEPS * 2 && l.sim.state.cheat; k++) l.step();
+      check(!!l.sim.state.cheat && l.sim.state.cheat.turn === 0 && !l.sim.state.cheat.due, 'the lessons\' prison: the move waits (no clock)');
+    } else check(false, 'a game of Cheat in the lessons\' prison');
+  }
+  // Still at it at the evening roll call: settled on the chips there and then (the stake back when level).
+  const bell = (chips: [number, number]) => {
+    const g = game();
+    g.to(1, 21, 58);
+    g.talkTo(0, yardTile(g.sim));
+    g.sim.state.inmates[0].opinion = 60;
+    g.sim.state.cash = 100;
+    g.blind();
+    g.talk(TALK.CHEAT, 2);
+    const ch = g.sim.state.cheat;
+    if (!ch) return 'none';
+    ch.chips = chips;
+    // (A move made in time each go: the clock never runs out here.)
+    while (g.sim.state.cheat && g.sim.state.step < at(1, 22, 1)) {
+      if (g.sim.state.cheat.turn === 0) g.sim.state.cheat.due = 0;
+      g.step();
+    }
+    const e = g.seen.filter((x) => x.type === 'cheat').at(-1) as Extract<SimEvent, { type: 'cheat' }>;
+    return `${e.what} $${g.sim.state.cash}`;
+  };
+  const ahead = bell([2, 1]);
+  const behind = bell([1, 2]);
+  const level = bell([1, 1]);
+  check(ahead === 'won $120' && behind === 'lost $80' && level === 'off $100', `the roll call's bell: ahead won, behind lost, level the stake back (${ahead}, ${behind}, ${level})`);
+  console.log(`cheat's clock: ${TURN_STEPS} steps, then folded (or the call made); at the bell: ${ahead}, ${behind}, ${level}`);
 }
 
 // ------------------------------------------------------------------ Cheat: the inmate's ways, measured
@@ -444,6 +518,32 @@ function yardTile(sim: Sim): number {
   put(s.player, away(COURT_LEAVE + 1));
   step();
   check(!s.shootout && seen.some((e) => e.type === 'hoops' && e.what === 'off'), 'walked off the court: the shootout off');
+  // 2.5.1: the shot clock. Left standing on their turn, the player's shot is an airball and the inmate shoots.
+  s.played = [];
+  check(talkTo(0, spotTile(1) - 1), 'a shootout once more');
+  talk(TALK.HOOPS);
+  const clockFrom = s.step;
+  const airs = () => seen.filter((e) => e.type === 'hoopShot' && e.by === -1 && e.result === 'air').length;
+  const air0 = airs();
+  while (s.shootout && s.shootout.turn === 0 && s.step - clockFrom < SHOT_CLOCK * 2) step();
+  check(!!s.shootout && s.shootout.turn === 1 && airs() === air0 + 1 && s.step - clockFrom <= SHOT_CLOCK + 2, `no shot in ${SHOT_CLOCK / 20} s: an airball, the inmate's shot (${s.step - clockFrom} steps)`);
+  let n = 0;
+  while (s.shootout && n++ < (SHOT_CLOCK + 60) * 12) step();
+  check(!s.shootout, 'stood still on the spot: the shootout plays itself out');
+  // The roll call's bell ends it.
+  s.played = [];
+  const day = Math.floor(s.step / DAY_STEPS) + 1;
+  s.step = at(day, 21, 58);
+  s.attended = s.excused = true;
+  check(talkTo(0, spotTile(1) - 1), 'and once more, late in the evening');
+  talk(TALK.HOOPS);
+  check(!!s.shootout, 'a shootout at 21:58');
+  while (s.shootout && s.step < at(day, 22, 0) + 1) {
+    if (s.shootout.turn === 0) s.shootout.due = 0;
+    step();
+  }
+  const last = seen.filter((e) => e.type === 'hoops').at(-1) as Extract<SimEvent, { type: 'hoops' }> | undefined;
+  check(!s.shootout && last?.what === 'off' && ROUTINE[s.routine].id === 'eveningRollCall', 'the roll call\'s bell: off');
   console.log(`hoops: a swish on the mark, an airball off it; practice +1 Speed at ${PRACTICE_MAKES}; a shootout won ${end?.mine}–${end?.theirs}; off the court, off`);
   // Sports day: a shootout won counts as a bout won.
   const sd = game(CENTER_PERKS, 6, [[0, DAY_EVENTS.indexOf('sports'), 0]]);

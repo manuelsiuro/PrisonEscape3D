@@ -56,8 +56,8 @@ export function canSee(w: World, eye: Body, target: { x: number; z: number }, ra
   const d2 = dx * dx + dz * dz;
   if (d2 > range * range) return false;
   if (d2 > SIGHT_TOUCH * SIGHT_TOUCH) {
-    const fx = DIR_X[eye.facing];
-    const fz = DIR_Z[eye.facing];
+    const fx = DIR_X[eye.facing] ?? 0;
+    const fz = DIR_Z[eye.facing] ?? 0;
     const dot = fx * dx + fz * dz;
     // cos² 30° = 3/4.
     if (dot <= 0 || 4 * dot * dot < 3 * (fx * fx + fz * fz) * d2) return false;

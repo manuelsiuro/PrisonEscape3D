@@ -66,7 +66,7 @@ function inTheWay(c: Crowd, m: Walker, k: number, dx: number, dz: number, dist: 
     const d2 = ox * ox + oz * oz;
     return d2 < PERSONAL_SPACE * PERSONAL_SPACE && (ox * dx + oz * dz) * 2 > Math.sqrt(d2) * dist;
   };
-  const coming = (o: Body) => o.moving && DIR_X[o.facing] * dx + DIR_Z[o.facing] * dz < 0;
+  const coming = (o: Body) => o.moving && (DIR_X[o.facing] ?? 0) * dx + (DIR_Z[o.facing] ?? 0) * dz < 0;
   for (const o of c.others) if (ahead(o)) return coming(o) ? GIVE_WAY : WAIT;
   for (let j = 0; j < c.all.length; j++) {
     const o = c.all[j];

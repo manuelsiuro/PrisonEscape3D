@@ -66,6 +66,30 @@ for (const def of [...PRISONS, TRAINING]) {
         if (g && !g.why && g.out) out = true;
       }
   check(routes.includes('glider') === out, `${def.id}: the glider listed exactly where it can land out (${out})`);
+  // 2.5.1: every landing, in every wind and weather, out on the road or on ground walked to from the
+  // player's cell (never between two fences: neither in nor out); 2.5.0's could be (Shankton's).
+  let landings = 0;
+  let penned = 0;
+  let pennedOld = 0;
+  for (const [t, facing] of launchSpots(w))
+    for (let wind = 0; wind < 8; wind++)
+      for (const force of [0, 1, 2, 3])
+        for (const weather of ['clear', 'rain'] as const)
+          for (const old of [false, true]) {
+            Object.assign(b, { x: (t % MAP_W) * UNIT + UNIT / 2, z: Math.floor(t / MAP_W) * UNIT + UNIT / 2, facing });
+            const g = glideFrom(w, b, { wind, force, weather, old });
+            if (!g?.dist) continue;
+            const [sx, sz] = facing === 1 ? [1, 0] : facing === 5 ? [0, 1] : facing === 9 ? [-1, 0] : [0, -1];
+            const land = t + (sz * MAP_W + sx) * g.dist;
+            const bad = !g.out && !w.afoot(land);
+            if (old) pennedOld += bad ? 1 : 0;
+            else {
+              landings++;
+              penned += bad ? 1 : 0;
+            }
+          }
+  check(penned === 0, `${def.id}: every glide comes down out or on ground that walks home (${landings} landings, ${penned} between; 2.5.0: ${pennedOld})`);
+  if (def.id === 'shankton') check(pennedOld > 0, 'shankton: 2.5.0 could come down between the fences (the case is covered)');
   if (!c) continue;
   for (const q of c.window) check(!w.blocked(q.x, q.z) && w.ground.kind[at(q.x, q.z)] !== TILE.DOOR, `${def.id}: the window ${q.x},${q.z} is floor to stand on`);
   check(c.window.some((q) => c.gates.some((g) => Math.abs(g.x - q.x) + Math.abs(g.z - q.z) === 1)), `${def.id}: the window is beside the first gate`);

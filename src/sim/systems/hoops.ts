@@ -13,7 +13,7 @@
  * respect and the crowd's (as an arm-wrestle), a point of Speed, a win towards sports day.
  * Shots on one's own count too: PRACTICE_MAKES baskets in a day are worth a point of Speed.
  */
-import { COURT_LEAVE, COURT_RANGE, CROWD_OPINION, HOLD_MAX, INMATE_SHOT, NEED_BASE, NEED_PER_TILE, NEED_WIND, PLAY_OPINION, POWER_SPEED, PRACTICE_MAKES, RIM_NOISE, RIM_OUT, SHOOT_SPOTS, SKILL_BASE, SKILL_PER_TILE, SKILL_SPREAD, SPORTS_WINS, SUDDEN_DEATH, WIN_OPINION, WINDOW_BASE, WINDOW_MIN, WINDOW_PER_TILE, WINDOW_RAIN } from '../../content/games';
+import { COURT_LEAVE, COURT_RANGE, CROWD_OPINION, HOLD_MAX, SHOT_CLOCK, INMATE_SHOT, NEED_BASE, NEED_PER_TILE, NEED_WIND, PLAY_OPINION, POWER_SPEED, PRACTICE_MAKES, RIM_NOISE, RIM_OUT, SHOOT_SPOTS, SKILL_BASE, SKILL_PER_TILE, SKILL_SPREAD, SPORTS_WINS, SUDDEN_DEATH, WIN_OPINION, WINDOW_BASE, WINDOW_MIN, WINDOW_PER_TILE, WINDOW_RAIN } from '../../content/games';
 import type { Court } from '../../content/prisons/types';
 import { ROUTINE } from '../../content/routine';
 import type { SimContext } from '../context';
@@ -25,6 +25,7 @@ import { today } from './calendar';
 import { prisonDay } from './clock';
 import { countGame, gameOn, gameRefusal, sportsPrizeIfDue, sportsWin, watchers } from './games';
 import { makeNoise } from './noise';
+import { gamesBell } from './cards';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
 
@@ -40,6 +41,8 @@ export interface Shootout {
   /** Whose shot: 0 the player's, 1 the inmate's (at step `at`). */
   turn: number;
   at: number;
+  /** The step the player's shot is due by (2.5.1, SHOT_CLOCK; 0 or missing: not their shot, or the clock not yet started). */
+  due?: number;
 }
 
 /** How a shot went: nothing but net, in off the rim, off the rim and out, nowhere near. */
@@ -278,9 +281,19 @@ export function keepHoops(sim: SimContext) {
   const c = courtOf(sim);
   const r = c ? rimOf(c) : null;
   const far = !r || s.layer !== LAYER.GROUND || Math.max(Math.abs(s.player.x - r.x), Math.abs(s.player.z - r.z)) > COURT_LEAVE * UNIT;
-  // (Begun, it plays out past the games' hours: the sirens break it off.)
-  if (!m || m.ko > 0 || m.angry > 0 || s.lockdown || sim.away || s.sleeping || s.stowed || far) return endShootout(sim, 'off');
+  // (Begun, it plays out past the games' hours: the sirens break it off; 2.5.1: and roll call or Lights Out.)
+  if (!m || m.ko > 0 || m.angry > 0 || s.lockdown || sim.away || s.sleeping || s.stowed || far || (!sim.rules250 && gamesBell(s))) return endShootout(sim, 'off');
   if (o.turn === 1 && s.step >= o.at) inmateShot(sim, o);
+  else if (o.turn === 0 && !sim.rules250 && !sim.world.def.rules?.relaxed) {
+    // (2.5.1: the shot clock, from the player's turn coming; held up, the ball goes anyway at HOLD_MAX.)
+    if (!o.due) o.due = s.step + SHOT_CLOCK;
+    else if (s.step >= o.due && !s.shot.length) {
+      sim.events.push({ type: 'hoopShot', by: -1, spot: spotOf(o.k), result: 'air', power: 0, need: 0 });
+      o.turn = 1;
+      o.at = s.step + INMATE_SHOT;
+    }
+  }
+  if (o.turn !== 0) o.due = 0;
 }
 
 /** The shootout's partner keeps near the player meanwhile (inmates.ts follows it). */

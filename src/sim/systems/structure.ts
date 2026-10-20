@@ -51,6 +51,8 @@ export interface Air {
   wind: number;
   force: number;
   weather: Weather;
+  /** Replaying a 2.5.0 run (Sim.rules250): a glide could come down where nobody walks to (between the fences). */
+  old?: boolean;
 }
 
 /** A glide off a roof's edge (P24, glideFrom). */
@@ -500,6 +502,8 @@ export function glideFrom(w: World, b: Body, air: Air, bodies: readonly Body[] =
     const i = tz * MAP_W + tx;
     const kind = w.ground.kind[i];
     if (!TILE_INFO[kind].outdoor || TILE_INFO[kind].solid || kind === TILE.MINE || w.blocked(tx, tz)) continue;
+    // (2.5.1: nor where there's no walking in or out from: between the fences, short of the road.)
+    if (!air.old && !w.afoot(i)) continue;
     // (Never down on someone: the next tile back.)
     const mx = tx * UNIT + UNIT / 2;
     const mz = tz * UNIT + UNIT / 2;

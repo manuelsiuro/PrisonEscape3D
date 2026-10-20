@@ -251,6 +251,10 @@
 .cheat-status {
   margin-top: 2px;
 }
+.cheat-clock {
+  color: #ffb84d;
+  white-space: nowrap;
+}
 
 /* The court's card: the ball's orange; the scoreboard's dots; the meter's window and its swish third. */
 .court-card .train-ic {

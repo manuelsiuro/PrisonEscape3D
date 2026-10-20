@@ -1,5 +1,5 @@
 center-perks: pitch 11×4 at 26,28, field 9×4 along x
-stalag-flucht: pitch 13×5 at 13,22, field 11×5 along x
+stalag-flucht: pitch 13×4 at 4,41, field 11×4 along x
 shankton: pitch 11×5 at 24,30, field 9×5 along x
 san-pancho: pitch 10×6 at 27,32, field 8×6 along x
 irongate: pitch 10×5 at 33,22, field 8×5 along x
