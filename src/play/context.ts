@@ -5,7 +5,7 @@ import { TIERS, tierFor } from '../app/quality';
 import { Sound } from '../audio/Sound';
 import { loadSettings, saveSettings } from '../game/settings';
 import { migrateStorage } from '../game/storage';
-import { setLang } from '../i18n';
+import { setLang, t } from '../i18n';
 import { Controls } from '../input/Controls';
 import { View } from '../render/View';
 import { OP } from '../sim/command';
@@ -154,6 +154,14 @@ export function closeSocial() {
 export function toggleProfile() {
   const game = play.game;
   if (!game || game.paused) return;
+  // In solitary, hidden in the delivery or knocked out the file can't come up (overlay.ts): the
+  // button says why and when, rather than opening it later unasked.
+  const st = game.rec.sim.state;
+  const away = st.solitary > 0 ? 'hud.fileSolitary' : st.stowed ? 'hud.fileStowed' : st.ko > 0 ? 'hud.fileKo' : null;
+  if (away && !profile.isOpen) {
+    banner.toast(t(away), 'info', 3500);
+    return;
+  }
   if (!profile.isOpen) {
     itemsUI.closePanels();
     board.close();

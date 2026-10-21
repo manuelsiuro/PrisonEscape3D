@@ -62,7 +62,7 @@ function onKeyDown(e: KeyboardEvent) {
     else if (board.isOpen) board.close();
     else act();
   }
-  // Hidden in the delivery's vehicle (P18): E climbs out (above), Space waits (the clock fast until the search), I and H still open the file and the help; nothing else.
+  // Hidden in the delivery's vehicle (P18): E climbs out (above), Space waits (the clock fast until the search), H opens the help, I says the file waits; nothing else.
   if (g.rec.sim.state.stowed) {
     if (e.code === 'Space') {
       e.preventDefault();
