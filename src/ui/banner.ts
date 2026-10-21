@@ -39,10 +39,23 @@ export class Banner {
   }
 
   toast(text: string, kind: 'bad' | 'good' | 'info' = 'info', ms = 3200) {
+    // The same line again while it's up (a button tapped twice): it stays longer instead of piling up.
+    const last = this.toasts.lastElementChild as HTMLElement | null;
+    if (last && last.textContent === text && last.classList.contains(kind) && !last.classList.contains('leaving')) {
+      clearTimeout(this.leaving.get(last));
+      this.leaving.set(last, this.leave(last, ms));
+      return;
+    }
     const el = h('div', `toast ${kind}`, icon(kind === 'bad' ? 'flame' : kind === 'good' ? 'check' : 'lock', 16));
     el.append(text);
     this.toasts.append(el);
-    setTimeout(() => {
+    this.leaving.set(el, this.leave(el, ms));
+  }
+
+  private readonly leaving = new WeakMap<HTMLElement, number>();
+
+  private leave(el: HTMLElement, ms: number): number {
+    return window.setTimeout(() => {
       el.classList.add('leaving');
       setTimeout(() => el.remove(), 350);
     }, ms);

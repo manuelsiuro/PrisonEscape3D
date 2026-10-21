@@ -52,7 +52,12 @@ function onKeyDown(e: KeyboardEvent) {
     openObjectives();
     return;
   }
-  // Asleep: only waking up (E) means anything; knocked out, nothing does.
+  // Asleep: only waking up (E) and the file (I) mean anything; knocked out, only I (it says the file waits).
+  if ((g.rec.sim.state.ko > 0 || g.rec.sim.state.sleeping) && e.code === 'KeyI') {
+    click();
+    toggleProfile();
+    return;
+  }
   if (g.rec.sim.state.ko > 0) return;
   if (g.rec.sim.state.sleeping && e.code !== 'KeyE') return;
   if (e.code === 'KeyE') {

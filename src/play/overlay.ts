@@ -61,6 +61,7 @@ import {
   vignette,
   view,
   workChips,
+  fileAway,
 } from './context';
 import { play, playNow, type Game } from './game';
 import { portraitOf } from '../render/portrait';
@@ -258,7 +259,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   if (board.isOpen && nearestProp(sim.world, p, (q) => q.kind === 'jobBoard', STATION_REACH + UNIT / 2) < 0) board.close();
   talk.update(sim, busy);
   board.update(sim, busy);
+  // (Put away in solitary, hidden in the vehicle or knocked out: it doesn't come back unasked after.)
+  if (profile.isOpen && fileAway(st)) profile.close();
   profile.update(sim, busy && !st.sleeping);
+  clearOfCards();
   trainCard.update(sim, busy);
   // The side games (P22): the arm-wrestle's card, the lockpick's (the tool controls step aside for them).
   const bout = busy ? null : wrestleNow(sim, frameDt(g));
@@ -474,6 +478,18 @@ function fileButton(g: Game) {
   // (Spent once it shows: a game left before then shows it next time.)
   if (tip && !seenTip('fileButton')) markTip('fileButton');
   hud.fileTip(tip);
+}
+
+/** The solitary or stow card up: the toasts keep above it (its height follows its text). */
+let cardClear = -1;
+function clearOfCards() {
+  const card = document.querySelector<HTMLElement>('.solitary-panel:not(.hidden), .stow-panel:not(.hidden)');
+  const clear = card ? Math.round(innerHeight - card.getBoundingClientRect().top + 8) : 0;
+  if (clear === cardClear) return;
+  cardClear = clear;
+  document.body.classList.toggle('card-up', clear > 0);
+  if (clear) document.body.style.setProperty('--card-clear', `${clear}px`);
+  else document.body.style.removeProperty('--card-clear');
 }
 
 function frameDt(g: Game): number {

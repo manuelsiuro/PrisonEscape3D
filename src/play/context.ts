@@ -151,14 +151,18 @@ export function closeSocial() {
   phonePanel.close();
   crewPanel.close();
 }
+/** In solitary, hidden in the delivery or knocked out, the file can't come up: what the button says then (null: it can). */
+export function fileAway(st: { solitary: number; stowed: unknown; ko: number }): 'hud.fileSolitary' | 'hud.fileStowed' | 'hud.fileKo' | null {
+  return st.solitary > 0 ? 'hud.fileSolitary' : st.stowed ? 'hud.fileStowed' : st.ko > 0 ? 'hud.fileKo' : null;
+}
+
 export function toggleProfile() {
   const game = play.game;
   if (!game || game.paused) return;
-  // In solitary, hidden in the delivery or knocked out the file can't come up (overlay.ts): the
-  // button says why and when, rather than opening it later unasked.
-  const st = game.rec.sim.state;
-  const away = st.solitary > 0 ? 'hud.fileSolitary' : st.stowed ? 'hud.fileStowed' : st.ko > 0 ? 'hud.fileKo' : null;
-  if (away && !profile.isOpen) {
+  // The file put away meanwhile (overlay.ts): the button says why and when, rather than opening it later unasked.
+  const away = fileAway(game.rec.sim.state);
+  if (away) {
+    profile.close();
     banner.toast(t(away), 'info', 3500);
     return;
   }

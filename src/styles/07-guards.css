@@ -270,3 +270,8 @@
 .reduced-motion .hud .hud-heat .hud-paw .ic {
   animation: none;
 }
+
+/* The solitary or stow card up: the toasts keep above it, however tall its text makes it (overlay.ts measures it). */
+body.card-up .toasts {
+  bottom: max(var(--card-clear, 0px), var(--hint-clear, 0px)) !important;
+}
