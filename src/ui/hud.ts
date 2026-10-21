@@ -67,7 +67,9 @@ export function setZonesHere(zones: ReadonlySet<string> | null) {
 export function routinePlace(k: number): string {
   const names = ROUTINE[k].zones.filter((z) => !zonesHere || zonesHere.has(z)).map((z) => t(`zone.${z}` as Key));
   if (!names.length) return t('routine.free');
-  return names.reduce((a, b) => t('routine.or', { a, b }));
+  // ("Gym, Courtyard or Sports ground": the last two joined by "or", the rest by commas.)
+  const last = names.pop()!;
+  return names.length ? t('routine.or', { a: names.join(', '), b: last }) : last;
 }
 
 /** The zones that are layers, and the pill's icon for each. */

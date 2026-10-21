@@ -135,7 +135,9 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
         then = DOING.JOG;
         break;
       }
-      spot = pickSpot(all, tiles(floorOf(w, r ? ['sports'] : ['gym']), 1 + randomInt(rng, 16)), rng);
+      // (Jumping jacks on the ground, never up on the bleachers.)
+      const seats = new Set(places.rests.map((q) => q.tile));
+      spot = pickSpot(all, tiles(floorOf(w, r ? ['sports'] : ['gym']).filter((t) => !seats.has(t)), 1 + randomInt(rng, 16)), rng);
       then = DOING.EXERCISE;
       break;
     }
