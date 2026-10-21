@@ -915,7 +915,7 @@ Each prison's phase begins with an ASCII sketch of the new ground floor, and the
 - **Lessons:** in the Prison life chapter, `laps` (the track and the weights corner) and `gardener` (one shift). The existing hoops, football and garden lessons move onto the new places.
 
 ### Phases
-Each phase is one vertical slice: sim, render, UI, EN/FR, help, tests, three reviews, then release on the user's go.
+Each phase is one vertical slice: sim, render, UI, EN/FR, help, tests, three reviews, then merged to main and released on the user's go (user, 2026-10-21: merge each phase).
 - **P31 Grounds (v2.7):**
   - Infrastructure: zones, the gate's hours, the map number and restarted saves, new decor and props, the track, the pull-up bar, the gardener job and the kitchen bonus.
   - Rebuilt: the **Training Block** and **Center Perks**.
