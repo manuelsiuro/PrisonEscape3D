@@ -1514,6 +1514,68 @@ export class View {
     this.render(600, dt, model ? this.feet : null, time);
   }
 
+  /**
+   * Dev tool (scripts/dev/mapimage.ts, the map viewer's "In game" picture): the whole prison at
+   * the classic angle in one frame, as drawn behind the title (nobody in it, at 10:00). The
+   * camera is orthographic, so the floor stays a regular grid: a tile `px` wide and `px * rows`
+   * deep, the floor's north edge `top` pixels down. Drawn `ss` times over and scaled down; the
+   * camera, the shadow box and the drawing size are put back after.
+   */
+  mapShot(px = 40, ss = 2): { canvas: HTMLCanvasElement; top: number; rows: number } {
+    const off = CAMERA_OFFSET.clone().normalize();
+    const rows = off.y; // a floor tile's depth on screen, in tiles (the view's tilt)
+    const lift = Math.hypot(off.x, off.z); // a unit of height on screen, in tiles
+    const pad = WALL_H * 2 * lift + 0.5;
+    const half = (MAP_H / 2) * rows;
+    const w = MAP_W * px;
+    const h = Math.ceil((half * 2 + pad + 0.5) * px);
+    const target = new THREE.Vector3(MAP_W / 2, 0, MAP_H / 2);
+    const kept = { target: this.target.clone(), shadow: this.sun.shadow.mapSize.x, ratio: this.renderer.getPixelRatio() };
+    const cam = this.camera;
+    cam.left = -MAP_W / 2;
+    cam.right = MAP_W / 2;
+    cam.top = half + pad;
+    cam.bottom = cam.top - h / px;
+    cam.updateProjectionMatrix();
+    cam.position.copy(target).add(CAMERA_OFFSET);
+    cam.lookAt(target);
+    // The shadows over the whole map, finer.
+    this.target.copy(target);
+    this.shadowHalf = 50;
+    const s = this.sun.shadow.camera;
+    s.left = s.bottom = -this.shadowHalf;
+    s.right = s.top = this.shadowHalf;
+    s.updateProjectionMatrix();
+    const resize = (n: number) => {
+      this.sun.shadow.mapSize.set(n, n);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    };
+    if (this.sun.castShadow) resize(4096);
+    this.placeSun(600);
+    const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.guide.group].filter((o) => o.visible);
+    for (const o of hidden) o.visible = false;
+    this.renderer.setPixelRatio(ss);
+    this.renderer.setSize(w, h, false);
+    skipEmpty(this.scene);
+    this.renderer.render(this.scene, cam);
+    // Read at once, before the browser lets the drawing buffer go.
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const g = canvas.getContext('2d')!;
+    g.imageSmoothingQuality = 'high';
+    // (The whole drawing buffer: a browser may cap its size below w·ss × h·ss.)
+    const el = this.renderer.domElement;
+    g.drawImage(el, 0, 0, el.width, el.height, 0, 0, w, h);
+    for (const o of hidden) o.visible = true;
+    if (this.sun.castShadow) resize(kept.shadow);
+    this.renderer.setPixelRatio(kept.ratio);
+    this.target.copy(kept.target);
+    this.resize();
+    return { canvas, top: Math.round(pad * px), rows };
+  }
+
   private render(minute: number, dt: number, focus: THREE.Vector3 | null, time: number) {
     this.easeShift(dt);
     // (P29: in a match, out as far as the pitch needs; the player's zoom comes back after.)
