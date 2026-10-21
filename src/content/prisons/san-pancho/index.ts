@@ -8,7 +8,8 @@ import { SAN_PANCHO_DECOR } from './decor';
 
 /**
  * Cells: two wings of seven, each a hall between two columns of cells; the column on the
- * plaza side has three and a vestibule out onto the plaza. Cells whose door is on their east
+ * plaza side has three and a vestibule out onto the plaza (P33: and south, into the canteen
+ * from the west wing, the gym from the east one). Cells whose door is on their east
  * wall have the desk and the toilet against it, the others mirror them. Cell 1, the
  * player's, is the west wing's first (north-west corner, against the compound wall).
  */
@@ -44,8 +45,9 @@ props.push(
   { kind: 'oven', x: 13, z: 40, rot: 2 },
   { kind: 'counter', x: 15, z: 38, d: 3, rot: 3 },
   // Canteen: four tables, benches either side, the serving counter by the kitchen; aisles
-  // between and along the plaza side, so the whole compound files in through the wide door.
-  ...[34, 38].flatMap((z) =>
+  // between and along the east side, where the whole compound files in from the west wing's lobby;
+  // the stage at the south end (P33).
+  ...[33, 37].flatMap((z) =>
     [19, 22].flatMap((x) => [
       { kind: 'table', x, z, w: 2 } as const,
       { kind: 'seat', x, z: z - 1, w: 2 } as const,
@@ -61,8 +63,8 @@ props.push(
   // Metalshop (behind its own): the metal bin, two presses, the output bin.
   { kind: 'bin', x: 20, z: 43 },
   { kind: 'press', x: 20, z: 47, w: 2 },
-  { kind: 'press', x: 24, z: 47, w: 2 },
-  { kind: 'bin', x: 25, z: 51 },
+  { kind: 'press', x: 23, z: 47, w: 2 },
+  { kind: 'bin', x: 24, z: 51 },
   // Laundry: the dirty bin, three washers along the west wall, the clean bin.
   { kind: 'bin', x: 29, z: 12 },
   { kind: 'washer', x: 27, z: 13, rot: 1 },
@@ -76,20 +78,20 @@ props.push(
   { kind: 'sortingDesk', x: 34, z: 14, d: 3, rot: 1 },
   { kind: 'sortingDesk', x: 36, z: 14, d: 3, rot: 3 },
   { kind: 'shelf', x: 35, z: 12, rot: 0 },
-  // Gym: treadmills, weights, the job board.
-  { kind: 'treadmill', x: 39, z: 32, d: 2 },
-  { kind: 'treadmill', x: 41, z: 32, d: 2 },
-  { kind: 'weights', x: 40, z: 39 },
-  { kind: 'weights', x: 43, z: 39 },
-  { kind: 'jobBoard', x: 45, z: 33, rot: 3 },
-  // Showers: heads along the north and south walls.
-  ...[47, 48, 49, 50, 51].flatMap((x) => [{ kind: 'shower', x, z: 32 } as const, { kind: 'shower', x, z: 40, rot: 2 } as const]),
+  // Gym and showers (P33: one room off the east wing's lobby): treadmills, weights, the job
+  // board; the heads along the south wall and the east one, clear of the library's door.
+  { kind: 'treadmill', x: 43, z: 32, d: 2 },
+  { kind: 'treadmill', x: 44, z: 32, d: 2 },
+  // (The weights a tile off the board's front, so it reads from any side.)
+  { kind: 'weights', x: 43, z: 35 },
+  { kind: 'jobBoard', x: 41, z: 35, rot: 1 },
+  ...[42, 43, 44].map((x) => ({ kind: 'shower', x, z: 40, rot: 2 }) as const),
+  { kind: 'shower', x: 44, z: 38, rot: 3 },
   // Library.
-  { kind: 'shelf', x: 38, z: 42, w: 3 },
+  // (A way clear down its west side, from the gym's door to the generator room's.)
   { kind: 'shelf', x: 42, z: 42, w: 3 },
-  { kind: 'table', x: 39, z: 44, w: 2 },
   { kind: 'table', x: 42, z: 44, w: 2 },
-  ...[39, 40, 42, 43].map((x) => ({ kind: 'chair', x, z: 45, rot: 2 }) as const),
+  ...[42, 43].map((x) => ({ kind: 'chair', x, z: 45, rot: 2 }) as const),
   // Infirmary.
   { kind: 'bed', x: 47, z: 42, d: 2 },
   { kind: 'bed', x: 49, z: 42, d: 2 },
@@ -100,25 +102,40 @@ props.push(
   ...[45, 46, 50, 51].map((x) => ({ kind: 'bed', x, z: 48, d: 2 }) as const),
   { kind: 'table', x: 47, z: 51, w: 2 },
   // Solitary.
-  { kind: 'bed', x: 27, z: 45, d: 2 },
+  { kind: 'bed', x: 27, z: 48, d: 2 },
   { kind: 'bed', x: 27, z: 50, d: 2, rot: 2 },
-  // The control room, on the supply road out.
-  { kind: 'controlDesk', x: 36, z: 46, d: 3, rot: 3 },
-  { kind: 'chair', x: 35, z: 47, rot: 1 },
-  // The plaza: benches along its sides, lamps at its corners.
-  { kind: 'bench', x: 27, z: 36, d: 2, rot: 1 },
-  { kind: 'bench', x: 36, z: 36, d: 2, rot: 3 },
-  { kind: 'bench', x: 27, z: 40, d: 2, rot: 1 },
-  { kind: 'bench', x: 36, z: 40, d: 2, rot: 3 },
+  // The control room, on the supply road out (P33: behind the generator room).
+  { kind: 'controlDesk', x: 36, z: 48, d: 3, rot: 3 },
+  { kind: 'chair', x: 35, z: 49, rot: 1 },
+  // The yard: benches either side, lamps at its north corners.
+  { kind: 'bench', x: 27, z: 23, d: 2, rot: 1 },
+  { kind: 'bench', x: 36, z: 23, d: 2, rot: 3 },
   ...[
     [27, 22],
     [36, 22],
-    [27, 43],
-    [36, 43],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+  // The sports ground (P33, the plaza's south half): the court, the weights corner and the
+  // bleachers north of the track; lamps at its corners.
+  { kind: 'pullup', x: 36, z: 32, w: 2 },
+  { kind: 'weights', x: 39, z: 33 },
+  { kind: 'weights', x: 39, z: 35 },
+  { kind: 'bleachers', x: 33, z: 36, w: 6 },
+  { kind: 'lamp', x: 26, z: 46 },
+  { kind: 'lamp', x: 39, z: 46 },
+  { kind: 'lamp', x: 26, z: 36 },
+  { kind: 'lamp', x: 39, z: 36 },
+  // The garden (P33, the old showers): the planters and the tool shed along the north wall,
+  // the crate under the shed; two more planters behind the beds (the wall hides the rows in
+  // front of it from the camera, the crops stand above it).
+  { kind: 'planter', x: 46, z: 32, w: 2 },
+  { kind: 'planter', x: 48, z: 32, w: 2 },
+  { kind: 'toolShed', x: 50, z: 32, w: 2, d: 2 },
+  { kind: 'crate', x: 50, z: 34 },
+  { kind: 'planter', x: 47, z: 39, w: 2 },
+  { kind: 'planter', x: 49, z: 39, w: 2 },
 );
 
-/** Two rows of seven at the plaza's north end, facing the warden. */
+/** Two rows of seven in the yard (the plaza's north half), facing the warden. */
 const rollCall = [27, 29].flatMap((z) => [28, 29, 30, 31, 32, 33, 34].map((x) => ({ x, z })));
 
 /**
@@ -135,16 +152,18 @@ const rollCall = [27, 29].flatMap((z) => [28, 29, 30, 31, 32, 33, 34].map((x) =>
  *   through the mines.
  * - The staff guard walks the generator room, the quarters, the infirmary and the library.
  * The sweeper and the staff guard sleep in the quarters at night.
- * Keys (GDD §10.2): the warden and the gate guard red (the supply road, solitary, the
- * quarters), the sweeper green (the outer gate), the north and south walkway guards yellow
- * and purple, the east and west cyan, the staff guard purple (the generator room).
+ * Keys (GDD §10.2): the warden and the gate guard red (the supply road, solitary; since P33 the
+ * road out runs from the library through the generator room and the control room), the
+ * sweeper green (the outer gate), the north and south walkway guards yellow and purple, the
+ * east and west cyan, the staff guard purple (the guards' quarters: with the generator room's
+ * red, the GDD's "[P][GEN][R]" guard post).
  */
 const guards: GuardDef[] = [
   {
     name: 'Varga',
     beat: [
-      { x: 34, z: 48, wait: 20, face: 9 },
-      { x: 31, z: 41, wait: 4, face: 13 },
+      { x: 33, z: 49, wait: 20, face: 9 },
+      { x: 31, z: 26, wait: 4, face: 13 },
     ],
     posts: { rollCall: { x: 31, z: 25, face: 5 }, eveningRollCall: { x: 31, z: 25, face: 5 } },
     night: [
@@ -164,10 +183,13 @@ const guards: GuardDef[] = [
       { x: 23, z: 29, wait: 2, face: 1 },
       { x: 21, z: 36, wait: 3, face: 9 },
       { x: 16, z: 49, wait: 3, face: 13 },
-      { x: 32, z: 33, wait: 3, face: 5 },
+      { x: 32, z: 26, wait: 3, face: 5 },
+      // (P33 review: through the sports ground and the garden too, which nobody would see otherwise.)
+      { x: 37, z: 34, wait: 3, face: 9 },
       { x: 44, z: 14, wait: 3, face: 5 },
-      { x: 41, z: 36, wait: 3, face: 1 },
-      { x: 41, z: 44, wait: 3, face: 5 },
+      { x: 43, z: 36, wait: 3, face: 1 },
+      { x: 47, z: 34, wait: 3, face: 5 },
+      { x: 41, z: 45, wait: 3, face: 1 },
       { x: 33, z: 49, wait: 40, face: 13 },
     ],
     duties: ['shakedown'],
@@ -248,7 +270,7 @@ const guards: GuardDef[] = [
       { x: 42, z: 49, wait: 4, face: 9 },
       { x: 48, z: 50, wait: 4, face: 13 },
       { x: 48, z: 44, wait: 4, face: 1 },
-      { x: 41, z: 43, wait: 4, face: 5 },
+      { x: 41, z: 46, wait: 4, face: 13 },
     ],
     key: 'purple',
   },
@@ -278,28 +300,32 @@ export const SAN_PANCHO: PrisonDef = {
     ['cellBlock', 21, 27, 25, 30],
     ['cellBlock', 38, 27, 42, 30],
     ['kitchen', 12, 32, 15, 40],
-    ['canteen', 17, 32, 26, 40],
+    ['canteen', 17, 32, 24, 40],
     ['woodshop', 12, 42, 18, 51],
-    ['metalshop', 20, 42, 25, 51],
+    ['metalshop', 20, 42, 24, 51],
     ['laundry', 27, 12, 29, 20],
     ['janitor', 31, 12, 32, 20],
     ['mailroom', 34, 12, 36, 20],
-    ['yard', 27, 22, 36, 43],
-    ['rollCall', 27, 25, 36, 31],
-    ['solitary', 27, 45, 29, 51],
-    ['controlRoom', 31, 45, 36, 51],
-    ['gym', 37, 32, 45, 40],
-    ['showers', 46, 32, 51, 40],
-    ['library', 38, 41, 44, 46],
+    ['yard', 27, 22, 36, 30],
+    ['rollCall', 27, 25, 36, 30],
+    ['solitary', 27, 48, 29, 51],
+    ['controlRoom', 31, 48, 36, 51],
+    ['gym', 41, 32, 44, 36],
+    ['showers', 41, 37, 44, 40],
+    ['library', 41, 41, 44, 46],
     ['infirmary', 45, 42, 51, 46],
     ['generator', 38, 48, 43, 51],
     ['guardQuarters', 45, 48, 51, 51],
+    // P33: the sports ground in the plaza's south half, behind the yard's fence; the garden in
+    // the showers' old place, through the gym.
+    ['sports', 26, 32, 39, 46],
+    ['garden', 46, 32, 51, 40],
   ],
   cells,
   props,
   rollCall,
   spawn: { x: 13, z: 13 },
-  reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary'],
+  reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],
   guards,
   names: ['Chuy', 'Flaco', 'Tigre', 'Lobo', 'Chato', 'Toro', 'Nacho', 'Primo', 'Rata', 'Diablo', 'Zorro', 'Paco', 'Gallo'],
   merchants: [3, 6, 9, 12],
@@ -312,6 +338,7 @@ export const SAN_PANCHO: PrisonDef = {
     { id: 'woodshop', cell: 0 },
     { id: 'metalshop', cell: 8 },
     { id: 'mailman', cell: 11 },
+    { id: 'gardener', cell: 6 },
   ],
   // Cameras watch the guards' world, not the inmates': the walkway's four corners, the halls by night, the control and generator rooms.
   cameras: [
@@ -373,9 +400,22 @@ export const SAN_PANCHO: PrisonDef = {
       { x: 32, z: 58.5 },
     ],
   },
-  // Smuggling (P21): Primo sells burner phones; the drone drops on the plaza's south end;
-  // visitors sit in the canteen.
-  smuggling: { fixer: 9, drop: [28, 32, 35, 42], visits: [17, 32, 26, 40] },
-  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(30, 22, 5), oldTimer: 5, garden: { x: 31, z: 38, w: 3, d: 2 }, race: { x: 19, z: 28, dir: 1, len: 6 }, pitch: pitch(27, 32, 10, 6), stage: stage(26, 36, 9), quiz: quizAt(5, [39, 43], [40, 43], [42, 43], [43, 43]) },
+  // Smuggling (P21): Primo sells burner phones; the drone drops on the roll call square (P33:
+  // the plaza's south half is the sports ground); visitors sit in the canteen.
+  smuggling: { fixer: 9, drop: [27, 25, 36, 30], visits: [17, 32, 24, 40] },
+  // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the
+  // sports ground, the beds in the garden (P33).
+  leisure: {
+    hoop: court(29, 32, 5),
+    oldTimer: 5,
+    garden: { x: 46, z: 37, w: 6, d: 2 },
+    race: { x: 19, z: 28, dir: 1, len: 6 },
+    // (Two rows clear along the south wall, which would hide the track's lane from the camera.)
+    pitch: pitch(27, 38, 12, 6),
+    track: { x: 26, z: 37, w: 14, d: 8 },
+    stage: stage(21, 40, 13),
+    quiz: quizAt(5, [41, 43], [42, 43], [43, 43], [44, 43]),
+  },
+  // Rebuilt in 2.9 (P33): the sports ground in the plaza's south half, the garden in the showers' old place.
+  map: 1,
 };

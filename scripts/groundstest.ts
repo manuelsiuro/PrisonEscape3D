@@ -59,7 +59,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ the places, as data
 {
-  check(REBUILT.length === 4 && REBUILT.every((p) => p.map === 1), 'rebuilt so far (P31, P32): Center Perks, the Training Block, Stalag Flucht and Shankton, map 1');
+  check(REBUILT.length === PRISONS.length + 1 && REBUILT.every((p) => p.map === 1), 'rebuilt (P31–P33): every prison and the Training Block, map 1');
   const lines: string[] = [];
   for (const p of REBUILT) {
     const sim = new Sim(p, 1);
@@ -327,7 +327,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   check(c.sim.dutyZones.join() === 'gym,sports', `Center Perks' exercise hour: ${c.sim.dutyZones.join(', ')}`);
   const d = arena(PRISONS.find((q) => q.id === 'san-pancho')!, at(1, 15, 1));
   d.step();
-  check(d.sim.dutyZones.join() === 'gym,yard,sports', 'a prison not rebuilt: the exercise hour as it was');
+  check(d.sim.dutyZones.join() === 'gym,sports', `San Pancho's exercise hour: ${d.sim.dutyZones.join(', ')}`);
   console.log(`holes: ${live.size} live fence tiles round Center Perks' places; no lookout posts in them; no laps in a lockdown; exercise at Center Perks: ${c.sim.dutyZones.join(', ')}`);
 }
 
@@ -339,7 +339,8 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   const before = { ...now };
   delete before.map;
   check(rebuiltSince(before), 'a Center Perks save from 2.6: its prison has been rebuilt since (the run starts again)');
-  const pancho = saveFileOf(new Sim(PRISONS.find((p) => p.id === 'san-pancho')!, 1), 0, 'test');
-  check(pancho.map === undefined && !rebuiltSince(pancho), 'a save of a prison not rebuilt loads as ever');
-  console.log('saves: from before a rebuild, the run starts again there; others load as ever');
+  // (Every prison is rebuilt since P33: a save made now in each loads as ever.)
+  const fresh = PRISONS.map((p) => saveFileOf(new Sim(p, 1), 0, 'test'));
+  check(fresh.every((f) => f.map === 1 && !rebuiltSince(f)), 'a save made now in any prison loads as ever');
+  console.log('saves: from before a rebuild, the run starts again there; saves made now load as ever');
 }

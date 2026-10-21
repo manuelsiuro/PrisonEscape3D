@@ -551,8 +551,21 @@ function tracking(tiles: number[], seed = 5) {
   step(throwTo(sim, n('jerky')));
   check(dogEvents(seen, 'full') === 1 && d.trust === TREAT_TRUST && sim.state.items.ground.length === grounded + 1, 'a second the same day: she\'s had hers, it stays on the floor');
   to(3, 11, 0);
+  // (Thrown to her where she stands at one of her handler's stops, not on her way between two, and
+  // with room round her to throw from.)
   blind();
-  step(throwTo(sim, n('jerky')));
+  let toss = 0;
+  for (let k = 0; k < 4800 && !toss; k++) {
+    if (!d.path.length)
+      try {
+        toss = throwTo(sim, n('jerky'));
+        break;
+      } catch {
+        // (Nowhere to throw from here: on to her next stop.)
+      }
+    step();
+  }
+  step(toss);
   check(d.trust === TREAT_TRUST * 2, `the next day: trust ${d.trust}`);
   d.trust = TRUST_FRIEND - TREAT_TRUST;
   to(4, 11, 0);

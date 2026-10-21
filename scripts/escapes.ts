@@ -144,6 +144,8 @@ export interface Plan {
   startAt?: number;
   /** Takeover: the chocolate kept for the riot guards (Irongate's armored four), the rest beaten by hand; and every chaser beaten before walking out (a riot guard catches a player who runs). */
   riotCups?: boolean;
+  /** Takeover: the rally point held (a chokepoint), the guards let come to it one doorway at a time instead of gone after (Irongate since P33: chased out into the yard, three at once are too many). */
+  hold?: boolean;
   /** Stowaway (P18): what the delivery's vehicle takes (keys and a uniform from the desk), the tile to wait at before slipping to the tail. */
   stowKit?: string[];
   /** Stowaway on a day its search would be thorough: a firecracker thrown here (from the tail) at 14:21 draws the supervisor off before the search. */
@@ -257,7 +259,7 @@ export const PLANS: Plan[] = [
     desk: [15, 12],
     toilet: [15, 14],
     dig: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((z) => [15, z, DIR.NORTH]),
-    rally: [31, 40],
+    rally: [31, 26],
     alarmFirst: true,
     trained: 100,
     strongest: true,
@@ -270,7 +272,8 @@ export const PLANS: Plan[] = [
   // dead fence cut, the raft launched off the pier's end. The helicopter: the vents to GEN-1's
   // ladder, a grapnel across the yard onto the south roofs, a sheet rope down into the court,
   // the two riot guards put down with molten chocolate, aboard in uniform. The takeover in the
-  // cell block's vestibule, a chokepoint, once roll call is over (ten guards, four in riot
+  // cell block's vestibule, a chokepoint held till the prison falls (P33: the canteen's guard
+  // across the yard now, three at once would come; the fifth cup on whoever is nearest), once roll call is over (ten guards, four in riot
   // gear: chocolate for the riot guards, every one put down), out by the sally port, the ferry gate and the
   // lowered drawbridge.
   {
@@ -291,12 +294,13 @@ export const PLANS: Plan[] = [
     chasm: [36, 21, DIR.SOUTH],
     court: [32, 44, DIR.EAST],
     pad: [34, 45],
-    rally: [30, 18],
+    rally: [30, 19],
     trained: 100,
     strongest: true,
     chocolate: 5,
     startAt: 9 * 60 + 5,
     riotCups: true,
+    hold: true,
     pouch: true,
     gates: [30, 59],
   },
@@ -536,6 +540,14 @@ function takeover(p: Plan) {
       continue;
     }
     const gb = st.guards[g].body;
+    if (d > 3 * UNIT && p.hold && p.rally && !st.takeover && st.guards.some((q) => awake(q) && q.mode === GUARD.CHASE)) {
+      // Held till the prison falls, while any are coming: back to the rally point if pushed off it, else wait there for the next one.
+      if (bot.tile !== tileOf(...p.rally)) {
+        if (k % 20 === 0) bot.pilot.goTo(tileOf(...p.rally));
+        bot.step(command(bot.pilot.dir(st.player)));
+      } else bot.step(0);
+      continue;
+    }
     if (d > 3 * UNIT) {
       // Far: walk there (re-planned now and then).
       if (k % 20 === 0) bot.pilot.goTo(Math.floor(gb.z / UNIT) * MAP_W + Math.floor(gb.x / UNIT));
@@ -545,7 +557,9 @@ function takeover(p: Plan) {
     bot.pilot.stop();
     if (st.lock !== inmates + g) bot.op(OP.LOCK, 2 + inmates + g);
     // A cup of molten chocolate left (once the alarm is up, where it has to be raised first): thrown from where the player stands.
-    if (cups.length && (!p.alarmFirst || st.lockdown) && (!p.riotCups || p.def.guards[g].riot) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
+    // (With riot guards about, the cups kept for them; one more than they need goes on whoever is nearest.)
+    const spare = p.riotCups && st.items.inv.filter((it) => it && itemOf(it) === n('molten_chocolate')).length > st.guards.filter((q, k) => awake(q) && p.def.guards[k].riot).length;
+    if (cups.length && (!p.alarmFirst || st.lockdown) && (!p.riotCups || p.def.guards[g].riot || spare) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
       bot.hold('molten_chocolate');
       bot.op(OP.USE, 1);
       continue;

@@ -2,10 +2,12 @@
  * HMP Irongate, ground floor (layer 0, GDD §4.5): a supermax fortress on a rock in the sea,
  * 64×64 tiles. The ocean (`~`) all round; the outer wall (`@`) with its four towers, the
  * guards' walkway inside it, the fortress wall. Inside, the north block (two rows of cells
- * either side of the hall, solitary, GEN-1 and its ladder), the open-air yard (the roofs'
- * chasm), the middle block (kitchen, canteen, gym and showers, library and infirmary,
- * laundry, janitor, mailroom), the main corridor, the south block (the workshops behind their
- * arches, the control room, the sally port, the helipad court, GEN-2, the guards' quarters).
+ * either side of the hall, solitary, GEN-1 and its ladder); south of it, west, the sports
+ * ground on its turf down to the main corridor (P33), and east the open-air yard (the roofs'
+ * chasm) with the walled garden at its end; the middle block (kitchen, canteen, gym and
+ * showers, laundry and mailroom, infirmary and library), the main corridor, the south block
+ * (the workshops behind their arches, the janitor's closet, the control room, the sally port,
+ * the helipad court, GEN-2, the guards' quarters).
  * East, the dock behind its electric fence and the pier (`P`); south, the ferry gates, the
  * drawbridge (water until a takeover lowers it) and the landing. Legend in
  * src/sim/world/tiles.ts (LEGEND); `.` is rock and turf here. Edit the picture, then run
@@ -34,35 +36,35 @@ export const L0 = String.raw`
 ~..@...@____#____#____#____#____#____#____#_________@...@.~~~~~~
 ~..@...@____#____#____#____#_DD_#____#____#_________@...@.~~~~~~
 ~..@...@#####################yy#####################@...@~~~~~~~
-~~.@...=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=...@%%%%~~~
-~..@...=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=...@aaa%~~~
-~..@...=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=...@aaa%~~~
-~..@...=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=...raaa%~~~
-~~.@...=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=...@aaa%~~~
-~~.@...@##########DD#########__#######_########c####@...@aaa%PP~
-~~.@...@:::::#:::::::::::#wwwwwwww#wwwwwww#:::::::::@...@aaa%PP~
-~..@...@:::::#:::::::::::#wwwwwwww#wwwwwww#:::::::::@...@aaa%PP~
-~~.@...@:::::#:::::::::::#wwwwwwww#wwwwwww#:::::::::@...@aaa%~~~
-~..@...@:::::c:::::::::::#wwwwwwww#wwwwwww#:::::::::@...gaaa%~~~
-~~.@...@:::::#:::::::::::#wwwwwwww#wwwwwww##########@...@aaa%~~~
-~~.@...@:::::#:::::::::::####::#######:####____#wwww@...@aaa%~~~
-~..@...@:::::#:::::::::::#::::::::#:::::::#____#wwww@...@%%%%~~~
-~..@...@:::::#:::::::::::#::::::::#:::::::#____#wwww@...@~~~~~~~
-~..@...@:::::#:::::::::::#::::::::#:::::::#____#wwww@...@.~~~~~~
-~..@...@:::::#:::::::::::#::::::::#:::::::#____#wwww@...@.~~~~~~
-~..@...@############__################_######c###c##@...@..~~~~~
+~~.@...=..............=aaaaaaaaaaaaaaaaaaaa=........=...@%%%%~~~
+~..@...=..............caaaaaaaaaaaaaaaaaaaa=........=...@aaa%~~~
+~..@...=..............caaaaaaaaaaaaaaaaaaaac........=...@aaa%~~~
+~..@...=..............=aaaaaaaaaaaaaaaaaaaac........=...raaa%~~~
+~~.@...=..............=aaaaaaaaaaaaaaaaaaaa=........=...@aaa%~~~
+~~.@...@..............#########DD####__###c#########@...@aaa%PP~
+~~.@...@..............#::::#:::::::#wwwww#:::::#::::@...@aaa%PP~
+~..@...@..............#::::#:::::::#wwwww#:::::#::::@...@aaa%PP~
+~~.@...@..............#::::#:::::::#wwwww#:::::#::::@...@aaa%~~~
+~..@...@..............#::::c:::::::#wwwww#:::::#::::@...gaaa%~~~
+~~.@...@..............#::::#:::::::#wwwww#:::::#::::@...@aaa%~~~
+~~.@...@..............#::::#:::::::###:##########:##@...@aaa%~~~
+~..@...@..............#::::#:::::::#:::::#wwwww#wwww@...@%%%%~~~
+~..@...@..............#::::#:::::::#:::::#wwwww#wwww@...@~~~~~~~
+~..@...@..............#::::#:::::::#:::::#wwwww#wwww@...@.~~~~~~
+~..@...@..............#::::#:::::::#:::::#wwwww#wwww@...@.~~~~~~
+~..@...@#########################__#########c####__#@...@..~~~~~
 ~~.@...@____________________________________________@...@.~~~~~~
 ~~.@...@____________________________________________@...@.~~~~~~
-~..@...@###c######c######r####rr############p####r##@...@.~~~~~~
-~~.@...@wwwDww#___D__#_______#__#aaaaaaaa#_____#wwww@...@..~~~~~
-~..@...@wwwwww#______#_______#__#aaaaaaaa#_____#wwww@...@.~~~~~~
-~..@...@wwwwww#______#_______#__#aaaaaaaa#_____#wwww@...@..~~~~~
-~..@...@wwwwww#______#_______#__#aaaaaaaa#_____#wwww@...@.~~~~~~
-~..@...@wwwwww#______#_______#__raaaaaaaa#_____#wwww@...@.~~~~~~
-~..@...@wwwwww#______#_______#__#aaaaaaaa#_____#wwww@...@.~~~~~~
-~~.@...@wwwwww#______#_______#__#aaaaaaaa#_____#wwww@...@.~~~~~~
-~~.@...@wwwwww#______#_______#__#aaaaaaaa#_____#wwww@...@..~~~~~
-~..@...@wwwwww#______#_______#__#aaaaaaaa#_____#wwww@...@.~~~~~~
+~..@...@###c######c###c##r####rr############p####r##@...@.~~~~~~
+~~.@...@wwwDww#___D__#__#____#__#aaaaaaaa#_____#wwww@...@..~~~~~
+~..@...@wwwwww#______#__#____#__#aaaaaaaa#_____#wwww@...@.~~~~~~
+~..@...@wwwwww#______#__#____#__#aaaaaaaa#_____#wwww@...@..~~~~~
+~..@...@wwwwww#______#__#____#__#aaaaaaaa#_____#wwww@...@.~~~~~~
+~..@...@wwwwww#______#__#____#__raaaaaaaa#_____#wwww@...@.~~~~~~
+~..@...@wwwwww#______#__#____#__#aaaaaaaa#_____#wwww@...@.~~~~~~
+~~.@...@wwwwww#______#__#____#__#aaaaaaaa#_____#wwww@...@.~~~~~~
+~~.@...@wwwwww#______#__#____#__#aaaaaaaa#_____#wwww@...@..~~~~~
+~..@...@wwwwww#______#__#____#__#aaaaaaaa#_____#wwww@...@.~~~~~~
 ~..@...@@@@@@@@@@@@@@@@@@@@@@@rr@@@@@@@@@@@@@@@@@@@@@...@.~~~~~~
 ~..@....................................................@.~~~~~~
 ~~.TTT................................................TTT..~~~~~
