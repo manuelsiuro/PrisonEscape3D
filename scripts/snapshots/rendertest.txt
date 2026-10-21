@@ -3,16 +3,16 @@ trees: center-perks 7 (25,30 36,26 31,30 10,58 20,59 42,58 52,59)
 trees: training 2 (16,40 47,14)
 hoops: center-perks rot 0, the board 1.00 toward the camera, 0.24 off the wall
 hoops: stalag-flucht rot 0, the board 1.00 toward the camera, 0.24 off the wall
-hoops: shankton rot 3, the board 0.56 toward the camera, 0.03 off the wall
+hoops: shankton rot 0, the board 1.00 toward the camera, 0.24 off the wall
 hoops: san-pancho rot 0, the board 1.00 toward the camera, 0.24 off the wall
 hoops: irongate rot 1, the board 0.56 toward the camera, 0.03 off the wall
 hoops: training rot 0, the board 1.00 toward the camera, 0.24 off the wall
 pitch: center-perks 14×7; hoop spots on it 0; roll call baked
-pitch: stalag-flucht 13×4; hoop spots on it 0; roll call baked
-pitch: shankton 11×5; hoop spots on it 0; roll call on its own layer (shown for roll call)
+pitch: stalag-flucht 14×7; hoop spots on it 0; roll call baked
+pitch: shankton 12×6; hoop spots on it 0; roll call baked
 pitch: san-pancho 10×6; hoop spots on it 0; roll call baked
 pitch: irongate 10×5; hoop spots on it 0; roll call on its own layer (shown for roll call)
 pitch: training 13×8; hoop spots on it 0; roll call baked
 pitch: the roll call's marks over a pitch show for roll call and 20 minutes before
 pitch: the roll call's marks show for the drill at 11:02 at stalag-flucht
-replay pitch: stalag-flucht 2.5.0 replays on 13,22 13×5: roll call on its own layer, hoop spots on it 1
+replay pitch: stalag-flucht 2.5.0 replays on 13,22 13×5: roll call on its own layer, hoop spots on it 0

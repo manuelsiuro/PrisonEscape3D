@@ -1,5 +1,5 @@
 center-perks: world 35 calls, decor 3; freed 63 of 76 (4 own textures, 12 shared)
-stalag-flucht: world 32 calls, decor 2; freed 58 of 70 (3 own textures, 11 shared)
+stalag-flucht: world 34 calls, decor 2; freed 62 of 74 (4 own textures, 11 shared)
 shankton: world 35 calls, decor 2; freed 64 of 77 (5 own textures, 12 shared)
 san-pancho: world 32 calls, decor 2; freed 57 of 72 (3 own textures, 14 shared)
 irongate: world 34 calls, decor 2; freed 61 of 74 (4 own textures, 13 shared)

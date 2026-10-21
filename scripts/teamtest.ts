@@ -170,12 +170,10 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
       return (a * UNIT < f.a0 || a * UNIT >= f.a1) && Math.abs(l * UNIT + UNIT / 2 - f.mid) < UNIT;
     });
     check(inNet.length === 0, `${p.id}: no roll-call or hoop spot in a net (${inNet.map((q) => `${q.x},${q.z}`).join(' ')})`);
-    // No roll-call box or hoop spot painted on the pitch at all (2.5.1), but where the yard has no room
-    // for both: Shankton's roll call fills its yard's middle rows (moving the boxes would move the
-    // inmates at every roll call). (Center Perks' court shared its small yard until its sports ground, P31.)
+    // No roll-call box or hoop spot painted on the pitch at all (2.5.1). (Center Perks' court shared
+    // its small yard until its sports ground, P31; Shankton's roll call its yard's middle until its rec ground, P32.)
     const onIt = [...p.rollCall, ...p.leisure!.hoop.spots].filter(({ x, z }) => x >= pitch.x && x < pitch.x + pitch.w && z >= pitch.z && z < pitch.z + pitch.d);
-    const known = ({ shankton: 8 } as Record<string, number>)[p.id] ?? 0;
-    check(onIt.length === known, `${p.id}: ${known ? `only the ${known} known` : 'no'} roll-call or hoop spots on the pitch (${onIt.map((q) => `${q.x},${q.z}`).join(' ')})`);
+    check(onIt.length === 0, `${p.id}: no roll-call or hoop spots on the pitch (${onIt.map((q) => `${q.x},${q.z}`).join(' ')})`);
     check((f.a1 - f.a0) / UNIT >= 8 && (f.l1 - f.l0) / UNIT >= 4, `${p.id}: the field is at least 8 tiles long and 4 wide`);
     lines.push(`${p.id}: pitch ${pitch.w}×${pitch.d} at ${pitch.x},${pitch.z}, field ${(f.a1 - f.a0) / UNIT}×${(f.l1 - f.l0) / UNIT} along ${f.along ? 'x' : 'z'}`);
   }

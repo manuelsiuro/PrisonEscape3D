@@ -43,6 +43,7 @@ import { STEPS_PER_MINUTE, UNIT, walkSpeed } from '../src/sim/tuning';
 import { reachableFrom } from '../src/sim/world/reach';
 import { MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
+import { Bot } from './bots';
 
 const n = (id: string) => itemNumber(id);
 const DAY = 1440 * STEPS_PER_MINUTE;
@@ -858,4 +859,24 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   const here = obtainable(training.world);
   check(here.has(n('key_red')) && !here.has(n('key_yellow')) && here.has(n('mold_red')) && !here.has(n('mold_yellow')), 'the Training Block: only its guard\'s key and mold can be had');
   check(['key_yellow', 'key_cyan', 'key_purple', 'key_green', 'key_red'].every((id) => obtainable(new Sim(CENTER_PERKS, 1).world).has(n(id))), 'Center Perks: every guard key can be had');
+}
+
+// ------------------------------------------------------------------ the inmates' shifts in every campaign prison (P32 review)
+{
+  // Day 1 at 14:59, the player keeping the routine: every job an inmate holds, he's clocked in, in its room (the rebuilt maps moved some rooms).
+  const lines: string[] = [];
+  for (const def of PRISONS) {
+    const bot = new Bot(def, 1);
+    const st = bot.sim.state;
+    const at = ((14 * 60 + 59 - 8 * 60) * STEPS_PER_MINUTE);
+    bot.keepRoutine(() => st.step >= at, at + 1);
+    const held = def.jobs.map((j, k) => ({ j, h: st.jobs[k] })).filter(({ h }) => h >= 0);
+    const off = held.filter(({ j, h }) => {
+      const m = st.inmates[h];
+      return m.shift !== 1 || ZONES[bot.sim.world.ground.zone[Math.floor(m.body.z / UNIT) * MAP_W + Math.floor(m.body.x / UNIT)]] !== JOBS[j.id].zone;
+    });
+    check(held.length > 0 && off.length === 0, `${def.id}: every inmate holding a job at work at 14:59 (${off.map(({ j }) => j.id).join(', ')})`);
+    lines.push(`${def.id} ${held.length}`);
+  }
+  console.log(`inmates at work at 14:59 on day 1: ${lines.join(', ')}`);
 }

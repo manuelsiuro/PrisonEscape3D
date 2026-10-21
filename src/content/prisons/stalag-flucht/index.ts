@@ -98,9 +98,9 @@ props.push(
   { kind: 'generator', x: 54, z: 24, w: 2, d: 2 },
   { kind: 'ladder', x: 57, z: 23 },
   { kind: 'controlDesk', x: 49, z: 23, w: 2, rot: 0 },
-  // Solitary.
-  { kind: 'bed', x: 47, z: 45, d: 2, rot: 2 },
-  { kind: 'bed', x: 56, z: 45, d: 2, rot: 2 },
+  // Solitary (since P32 its north half: the sports ground took the south).
+  { kind: 'bed', x: 47, z: 41, d: 2, rot: 2 },
+  { kind: 'bed', x: 56, z: 41, d: 2, rot: 2 },
   // Yard benches along the roll call square.
   { kind: 'bench', x: 8, z: 23, w: 2 },
   { kind: 'bench', x: 32, z: 23, w: 2 },
@@ -122,9 +122,26 @@ props.push(
     [59, 16],
     [44, 34],
     [59, 34],
-    [44, 50],
-    [59, 50],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+);
+
+// The sports ground (P32), the guards' compound's south end behind its own electric fence: the
+// weights corner by the gate, the bleachers by the pitch, lamps. The garden (P32), along the
+// north wire behind cabin B (clear of the boulders under cabin A's): the gardener's tool shed,
+// planters and produce crate by its gate.
+props.push(
+  { kind: 'weights', x: 44, z: 45 },
+  { kind: 'weights', x: 46, z: 45 },
+  { kind: 'pullup', x: 48, z: 45, w: 2 },
+  { kind: 'bleachers', x: 47, z: 49, w: 6 },
+  ...[
+    [43, 60],
+    [60, 60],
+    [60, 45],
+  ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+  { kind: 'toolShed', x: 37, z: 4, w: 2, d: 2 },
+  ...[24, 27, 30, 33].map((x) => ({ kind: 'planter', x, z: 4, w: 3 }) as const),
+  { kind: 'crate', x: 38, z: 3 },
 );
 
 /** Two rows of five on the snow, facing the warden at the north end. */
@@ -137,7 +154,8 @@ const rollCall = [23, 25].flatMap((z) => [14, 17, 20, 23, 26].map((x) => ({ x, z
  * - The canteen guard watches meals and walks the canteen and kitchen.
  * - The gym guard walks the gym and showers, watches showers, and searches cells at the
  *   morning shakedown.
- * - The yard guard walks the yard and the avenue, watches exercise, and walks the yard at night.
+ * - The yard guard walks the yard and the avenue, watches exercise (from the sports ground,
+ *   P32), and walks the yard at night.
  * - The east guard keeps the guards' compound: the inner gate, the barracks, the generator hut, solitary.
  * - The workshop guard walks the service blocks' corridors and rooms.
  * The canteen, gym, east and workshop guards sleep in the barracks at night.
@@ -197,7 +215,7 @@ const guards: GuardDef[] = [
       { x: 40, z: 30, wait: 3, face: 9 },
       { x: 30, z: 22, wait: 2, face: 5 },
     ],
-    posts: { exercise: { x: 21, z: 28, face: 5 } },
+    posts: { exercise: { x: 50, z: 47, face: 5 } },
     night: [
       { x: 21, z: 22, wait: 3, face: 5 },
       { x: 10, z: 42, wait: 3, face: 1 },
@@ -263,13 +281,16 @@ export const STALAG_FLUCHT: PrisonDef = {
     // The guards' compound: its open ground is the perimeter.
     ['guardQuarters', 46, 6, 57, 13],
     ['generator', 49, 23, 57, 28],
-    ['solitary', 46, 39, 57, 46],
+    ['solitary', 46, 39, 57, 42],
+    // P32: the sports ground behind its fence, and the garden behind cabin B.
+    ['sports', 43, 45, 60, 60],
+    ['garden', 23, 3, 38, 5],
   ],
   cells,
   props,
   rollCall,
   spawn: { x: 6, z: 9 },
-  reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor'],
+  reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],
   guards,
   names: ['Ferret', 'Kipper', 'Biscuit', 'Badger', 'Ginger', 'Taffy', 'Chalky', 'Scraps', 'Nobby'],
   merchants: [3, 7, 9],
@@ -281,6 +302,7 @@ export const STALAG_FLUCHT: PrisonDef = {
     { id: 'woodshop', cell: 0 },
     { id: 'metalshop', cell: 6 },
     { id: 'janitor', cell: 8 },
+    { id: 'gardener', cell: 3 },
   ],
   // Cameras (GDD §5.6): the generator hut, the barracks.
   cameras: [
@@ -333,8 +355,20 @@ export const STALAG_FLUCHT: PrisonDef = {
   // Smuggling (P21): Scraps sells burner phones; the drone drops on the open ground east of roll
   // call; nobody visits up here: a Red Cross parcel comes with the truck instead.
   smuggling: { fixer: 9, drop: [30, 22, 38, 28], parcel: true },
-  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  // (2.5.1: the football pitch on the open ground between the middle huts, clear of the roll-call
-  // boxes and the court it used to be painted over.)
-  leisure: { hoop: court(11, 21, 5), oldTimer: 5, garden: { x: 34, z: 24, w: 3, d: 2 }, race: { x: 9, z: 13, dir: 1, len: 6 }, pitch: pitch(4, 41, 13, 4), pitchWas: pitch(13, 22, 13, 5), stage: stage(11, 30, 5), quiz: quizAt(13, [9, 56], [10, 56], [11, 56], [12, 56]) },
+  // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the sports ground, the beds in the garden (P32).
+  leisure: {
+    hoop: court(56, 45, 5),
+    oldTimer: 5,
+    // (The beds along the wire, the planters behind them: cabin B's wall hides the two rows in front of it from the camera.)
+    garden: { x: 24, z: 3, w: 12, d: 1 },
+    race: { x: 9, z: 13, dir: 1, len: 6 },
+    pitch: pitch(45, 51, 14, 7),
+    track: { x: 44, z: 50, w: 16, d: 9 },
+    // (Where the pitch was before 2.5.1, for replays of runs from then.)
+    pitchWas: pitch(13, 22, 13, 5),
+    stage: stage(11, 30, 5),
+    quiz: quizAt(13, [9, 56], [10, 56], [11, 56], [12, 56]),
+  },
+  // Rebuilt in 2.8 (P32): the sports ground in the guards' compound, the garden along the north wire.
+  map: 1,
 };

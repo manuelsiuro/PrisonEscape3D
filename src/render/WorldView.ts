@@ -104,6 +104,8 @@ export class WorldView {
   /** Per tile, the wall or fence instance standing there (-1 for none): damage hides them (refreshTiles). */
   private readonly wallAt = new Int32Array(MAP_W * MAP_H).fill(-1);
   private readonly fenceAt = new Int32Array(MAP_W * MAP_H).fill(-1);
+  /** A junction's second panel (a fence meeting another across it: P32 review), -1 none. */
+  private readonly fenceAt2 = new Int32Array(MAP_W * MAP_H).fill(-1);
   private wallMesh: THREE.InstancedMesh | null = null;
   /** Window glass, lit at night. */
   private readonly windows: THREE.MeshStandardMaterial[] = [];
@@ -168,7 +170,10 @@ export class WorldView {
   /** The floor a tile shows: its own kind's, but a gate in a fence stands on the ground either side of it (P31's sports ground gates: grass, not a slab of concrete). */
   private floorOf(x: number, z: number): keyof typeof TEX | undefined {
     const k = this.kindAt(x, z);
-    if (k === TILE.DOOR && [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(isFence)) {
+    const nextTo = (x: number, z: number, f: (k: number) => boolean) => [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(f);
+    // (A gate's second leaf touches only the first, the fence beyond it: P32 review, Stalag's garden gate.)
+    const inFence = (x: number, z: number) => nextTo(x, z, isFence) || [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dz]) => this.kindAt(x + dx, z + dz) === TILE.DOOR && nextTo(x + dx, z + dz, isFence));
+    if (k === TILE.DOOR && inFence(x, z)) {
       // (Grass first where either side has it: a gate from the roll-call asphalt into the garden stands on the garden's grass.)
       let found: keyof typeof TEX | undefined;
       for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
@@ -278,6 +283,7 @@ export class WorldView {
         const f = this.fenceMeshes[this.fenceOf[i]];
         const on = kind[i] !== TILE.FENCE_CUT;
         this.show(f.panel, this.fenceAt[i], on);
+        if (this.fenceAt2[i] >= 0) this.show(f.panel, this.fenceAt2[i], on);
       }
     }
   }
@@ -296,17 +302,39 @@ export class WorldView {
       tex.needsUpdate = true;
       this.ownMaps.add(tex);
       const mat = new THREE.MeshStandardMaterial({ map: tex, color: tint, emissive, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.5 });
-      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, h), mat, cells.length / 2);
+      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, h), mat, cells.length);
       const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.09, h + 0.15, 0.09), postMat, cells.length / 2);
+      let panels = 0;
       for (let i = 0; i < cells.length / 2; i++) {
         const x = cells[i * 2];
         const z = cells[i * 2 + 1];
         const ax = this.alongX(x, z, fenceLike);
-        this.place(mesh, i, x + 0.5, h / 2, z + 0.5, ax ? 0 : Math.PI / 2);
+        const t = z * MAP_W + x;
+        this.fenceOf[t] = this.fenceMeshes.length;
+        // A junction (P32 review: Stalag's fence along z44 meeting the inner fence and the perimeter): the line
+        // running through it whole, and a half panel toward the one that ends there, not a whole one sticking out past it.
+        const w = fenceLike(this.kindAt(x - 1, z));
+        const e = fenceLike(this.kindAt(x + 1, z));
+        const n = fenceLike(this.kindAt(x, z - 1));
+        const so = fenceLike(this.kindAt(x, z + 1));
+        if ((w || e) && (n || so) && (w !== e || n !== so)) {
+          const throughX = w && e;
+          const half = (dx: number, dz: number) => this.place(mesh, panels, x + 0.5 + dx * 0.25, h / 2, z + 0.5 + dz * 0.25, dx ? 0 : Math.PI / 2, 0.5);
+          if (throughX) this.place(mesh, panels, x + 0.5, h / 2, z + 0.5, 0);
+          else if (n && so) this.place(mesh, panels, x + 0.5, h / 2, z + 0.5, Math.PI / 2);
+          else half(w ? -1 : 1, 0);
+          this.fenceAt[t] = panels++;
+          if (throughX) half(0, n ? -1 : 1);
+          else half(n && so ? (w ? -1 : 1) : 0, n && so ? 0 : n ? -1 : 1);
+          this.fenceAt2[t] = panels++;
+          this.place(posts, i, x + 0.5, (h + 0.15) / 2, z + 0.5);
+          continue;
+        }
+        this.place(mesh, panels, x + 0.5, h / 2, z + 0.5, ax ? 0 : Math.PI / 2);
         this.place(posts, i, ax ? x : x + 0.5, (h + 0.15) / 2, ax ? z + 0.5 : z);
-        this.fenceAt[z * MAP_W + x] = i;
-        this.fenceOf[z * MAP_W + x] = this.fenceMeshes.length;
+        this.fenceAt[t] = panels++;
       }
+      mesh.count = panels;
       mesh.castShadow = posts.castShadow = true;
       this.group.add(mesh, posts);
       this.fenceMeshes.push({ panel: mesh, posts, kind });

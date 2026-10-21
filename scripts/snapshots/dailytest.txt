@@ -48,7 +48,7 @@ the escape bots, every twist of their prison at once (but those closing their wa
   shankton fence: out day 1 23:33 under 19 twists (all there are)
   shankton tunnel: out day 1 23:21 under 19 twists (all there are)
   shankton roof: out day 1 23:48 under 18 twists (all but closedShop)
-  shankton takeover: out day 1 09:11 under 17 twists (all but bareHands, loneWolf)
+  shankton takeover: out day 1 09:09 under 17 twists (all but bareHands, loneWolf)
   shankton bluff: out day 1 19:52 under 19 twists (all there are)
   shankton glider: out day 1 23:44 under 19 twists (all there are)
   san-pancho tunnel: out day 1 23:24 under 20 twists (all there are)
