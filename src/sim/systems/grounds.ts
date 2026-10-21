@@ -21,7 +21,7 @@ export function laps(sim: SimContext) {
   if (!r) return;
   const s = sim.state;
   const t = tileOfBody(s.player);
-  if (sim.away || s.sleeping || s.stowed || s.layer !== LAYER.GROUND || !onTrack(r, t.x, t.z)) {
+  if (sim.away || s.sleeping || s.stowed || s.lockdown || s.layer !== LAYER.GROUND || !onTrack(r, t.x, t.z)) {
     if (s.lap.length) s.lap = [];
     return;
   }

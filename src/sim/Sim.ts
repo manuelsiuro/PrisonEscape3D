@@ -1,6 +1,6 @@
 import { steerNeedle } from './systems/tattoo';
 import type { PowerUse, PrisonDef } from '../content/prisons/types';
-import { OPEN_HOURS, ROUTINE } from '../content/routine';
+import { OPEN_HOURS, ROUTINE, zonesOf } from '../content/routine';
 import { zoneIndex, type ZoneId } from '../content/zones';
 
 /** P31: the places open by the hour, as pairs. */
@@ -344,12 +344,18 @@ export class Sim {
     return true;
   }
 
+  /** The zones this prison's map has (P31: where the routine may send the player). */
+  private get zonesHere(): ReadonlySet<string> {
+    return (this.zoneSet ??= new Set(this.prison.zones.map(([z]) => z)));
+  }
+  private zoneSet: ReadonlySet<string> | null = null;
+
   /** Where the block wants the player: the routine's zones, or during the Work Period, the job's room (GDD §2.1: mandatory if employed). */
   get dutyZones(): readonly string[] {
     // The fire drill (P17): everyone out to roll call until it's over.
     if (drillOn(this) && !this.state.lockdown) return MUSTER;
     const r = ROUTINE[this.state.routine];
-    if (r.id !== 'work') return r.zones;
+    if (r.id !== 'work') return this.prison.leisure?.track ? zonesOf(this.state.routine, (z) => this.zonesHere.has(z)) : r.zones;
     const job = this.jobActive();
     return job >= 0 ? [jobRooms(this.world)[job].def.zone] : r.zones;
   }

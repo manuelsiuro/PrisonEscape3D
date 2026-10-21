@@ -1,5 +1,5 @@
-== center-perks · picture 12d6db8c
-tiles: asphalt 160, brick 546, concrete 731, detector 4, dirt 30, door 31, electric 14, fence 300, grass 1296, road 496, tiled 303, tower 18, wood 167
+== center-perks · picture ecd79c1c
+tiles: asphalt 160, brick 546, concrete 731, detector 4, dirt 30, door 31, electric 100, fence 214, grass 1296, road 496, tiled 303, tower 18, wood 167
 zones: canteen 175, cellBlock 119, controlRoom 42, corridor 278, garden 210, generator 48, guardQuarters 42, gym 40, infirmary 32, inmateCell 112, janitor 28, kitchen 35, laundry 35, library 35, mailroom 40, none 478, outside 496, perimeter 1098, playerCell 16, rollCall 160, showers 28, solitary 42, sports 210, visitation 77, woodshop 52, yard 168
 decor: 140 pieces
 walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, sports, visitation, woodshop, yard

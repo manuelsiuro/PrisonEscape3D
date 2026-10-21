@@ -4,4 +4,5 @@ laps: 46 lane tiles a lap at Center Perks; +2 Speed and 12 energy each, either w
 gates: rollCall --, freeTime SG, work -G, exercise SG, showers --, eveningFreeTime SG, eveningRollCall --, lightsOut --
 gardener: quota 4 crates, $35; fresh meals +10 energy and health for a day
 exercise hour: 1174 inmate-steps on the sports ground, 854 of them jogging the track
+holes: 86 live fence tiles round Center Perks' places; no lookout posts in them; no laps in a lockdown; exercise at Center Perks: gym, sports
 saves: from before a rebuild, the run starts again there; others load as ever

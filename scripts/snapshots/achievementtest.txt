@@ -1,6 +1,6 @@
 107 achievements (out 14, speed 3, conduct 5, skills 25, life 24, days 10, daily 7, mishaps 14, career 5); 35 cosmetics to earn, 27 free
 28 medal rows: center-perks fence 3/5/8, tunnel 2/4/7, roof 3/5/8, takeover 4/7/10, stowaway 8/15/22, bluff 4/7/10, glider 5/8/12; stalag-flucht fence 3/6/9, tunnel 3/5/8, roof 4/6/9, takeover 5/8/12, stowaway 8/15/22, glider 6/10/14; shankton fence 4/7/10, tunnel 4/6/10, roof 4/7/10, takeover 6/9/13, bluff 5/8/12, glider 7/11/15; san-pancho tunnel 5/8/12, gate 5/8/12, takeover 7/10/14, stowaway 8/15/22; irongate raft 6/9/13, helicopter 7/10/14, takeover 8/12/16, stowaway 8/15/22, bluff 7/11/15
-two days: no counts; walked 630 tiles; days 0/0/0
+two days: no counts; walked 669 tiles; days 0/0/0
 run achievements on the way: none (1 check)
 a day-2 tunnel escape earns: freshAir, mole, quickStep, goldStandard, pacifist, ghost, cleanRecord, modelPrisoner, calm
 career so far: allEars newly; 10 earned in all; 10 unseen

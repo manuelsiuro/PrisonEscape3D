@@ -864,7 +864,7 @@ User decisions (2026-10-21), on the branch `feature/sports-and-gardens`:
 
     The planters are solid raised beds with crops drawn in them. The water butt is decor.
   - **In the kitchen:** when the quota is met, the next day's meals are fresh, with a small health or energy gain at meals (the size is tuned in P31). If it is missed, nothing changes.
-    - **Built:** the meals for 24 game hours after it are fresh: +10 energy and +10 health at each, with a toast. This happens when the player fills the quota, or at 15:00 when an inmate gardener worked the whole shift.
+    - **Built:** the meals for 24 game hours after it are fresh: +10 energy and +10 health at each, with a toast. This happens only when the player fills the quota (the rules review: an inmate gardener's shift made every meal fresh from day 1, unearned).
   - **Who holds it:** each campaign prison lists the job; an inmate holds it on day 1.
 - **The old courtyard** becomes the quiet yard: benches, trees, the old-timer's checkers and the roll-call ground where it already is. Everything that can be played moves to the sports ground.
 - **Sports day** (P22) puts its bunting over the sports ground instead of the yard.

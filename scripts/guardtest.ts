@@ -65,7 +65,7 @@ function modelPrisoner(sim: Sim) {
       want = key;
       if (key === 'lockdown' || key === 'lightsOut') pilot.goTo(places.bedside[1]);
       else if (key === 'rollCall' || key === 'eveningRollCall') pilot.goTo(places.rollCall[0].tile);
-      else if (r.zones.length) pilot.goToAny((i) => r.zones.includes(ZONES[s.world.ground.zone[i]]));
+      else if (r.zones.length) pilot.goToAny((i) => s.dutyZones.includes(ZONES[s.world.ground.zone[i]]));
       else pilot.stop();
     }
     return command(pilot.dir(st.player));

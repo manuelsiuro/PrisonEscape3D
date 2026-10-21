@@ -38,4 +38,4 @@ day 2 08:00 shakedown: cells 8 and 6 and 1
 day 2 08:28 cell 8 searched (0 taken)
 day 2 08:42 cell 6 searched (0 taken)
 day 2 08:55 cell 1 searched (1 taken)
-rounds over 3 days: 363, 288, 275, 486, 207 stops; 6 bed checks, the longest 35 game minutes
+rounds over 3 days: 363, 288, 275, 488, 207 stops; 6 bed checks, the longest 35 game minutes

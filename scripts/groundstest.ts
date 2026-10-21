@@ -23,6 +23,10 @@ import { quotaUp, settleWork } from '../src/sim/systems/jobs';
 import { freshMeals } from '../src/sim/systems/grounds';
 import { FRESH_ENERGY, FRESH_FOR, GYM_ENERGY, MEAL_ENERGY, STEPS_PER_MINUTE, TRAIN_GAIN, UNIT } from '../src/sim/tuning';
 import { MAP_W } from '../src/sim/world/World';
+import { TILE } from '../src/sim/world/tiles';
+import { slot } from '../src/sim/systems/items';
+import { n } from './bots';
+import { postable } from '../src/sim/systems/crew';
 import { check } from './assert';
 
 (globalThis as { localStorage?: unknown }).localStorage = { getItem: () => null, setItem: () => undefined, removeItem: () => undefined, key: () => null, length: 0 };
@@ -233,13 +237,13 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   // A day on: the kitchen's back to the usual.
   a.st.step += FRESH_FOR;
   check(!freshMeals(a.sim), 'a day after, the meals are as ever');
-  // An inmate gardener who worked the shift: the crates reach the kitchen at 15:00.
+  // An inmate gardener's shift: his own crates, no fresh meals (they're the player's to earn).
   const b = arena(CENTER_PERKS, at(1, 14, 59));
   const who = b.st.jobs[job];
   check(who >= 0, 'an inmate holds the gardener\'s job on day 1');
   b.st.inmates[who].shift = 1;
   settleWork(b.sim);
-  check(freshMeals(b.sim) && b.st.jobs[job] === who, 'an inmate gardener at work all shift: fresh meals, the job kept');
+  check(!freshMeals(b.sim) && b.st.jobs[job] === who, 'an inmate gardener at work all shift: the job kept, no fresh meals for it');
   console.log(`gardener: quota ${JOBS.gardener.quota} crates, $${JOBS.gardener.wage}; fresh meals +${FRESH_ENERGY} energy and health for a day`);
 }
 
@@ -260,6 +264,53 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   }
   check(jogging > 0 && out > jogging, `the exercise hour: inmates out on the sports ground, some jogging the track (${out} inmate-steps out, ${jogging} jogging)`);
   console.log(`exercise hour: ${out} inmate-steps on the sports ground, ${jogging} of them jogging the track`);
+}
+
+// ------------------------------------------------------------------ the review's holes (P31): the fences, lookouts, lockdowns, the courtyard
+{
+  // The fences round Center Perks' sports ground and garden are live: cutting out by day knocks the player flat (the power off first, as for the perimeter).
+  const a = arena(CENTER_PERKS, at(1, 10, 35));
+  const w = a.sim.world;
+  const live = new Set<number>();
+  for (const [x0, z0, x1, z1] of [
+    [5, 46, 5, 56],
+    [27, 46, 27, 56],
+    [5, 56, 27, 56],
+    [35, 46, 35, 56],
+    [57, 46, 57, 56],
+    [35, 56, 57, 56],
+  ])
+    for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) if (w.ground.kind[z * MAP_W + x] === TILE.ELECTRIC) live.add(z * MAP_W + x);
+  check(live.size === 86, `Center Perks: the new places' fences are electric all round (${live.size} tiles)`);
+  put(a.st.player, 6, 50);
+  a.st.player.facing = 9;
+  a.st.items.inv[0] = slot(n('sturdy_cutters'));
+  a.st.items.hand = 0;
+  for (let k = 0; k < 400 && !a.seen.some((e) => e.type === 'shocked'); k++) a.step(command(0, OP.USE, 1));
+  check(a.seen.some((e) => e.type === 'shocked') && w.ground.kind[50 * MAP_W + 5] === TILE.ELECTRIC, 'cutting the sports ground\'s fence with the power on: shocked, the fence stands');
+  // A lookout can't be posted on the sports ground or in the garden (he'd hold the gate open all night).
+  for (const [x, z] of [
+    [16, 51],
+    [46, 50],
+  ])
+    check(!postable(w, z * MAP_W + x), `no lookout post at ${x},${z} (${w.zoneAt(x, z)})`);
+  // No laps in a lockdown.
+  const b = arena(CENTER_PERKS, at(1, 15, 10));
+  b.st.lockdown = true;
+  const r = CENTER_PERKS.leisure!.track!;
+  for (const c of [...cornersOf(r), cornersOf(r)[0]]) {
+    put(b.st.player, c.x, c.z);
+    b.step();
+  }
+  check(!b.seen.some((e) => e.type === 'lap') && !b.st.lap.length, 'in a lockdown, no lap');
+  // The exercise hour: the gym or the sports ground, not the quiet courtyard (no guard posted there).
+  const c = arena(CENTER_PERKS, at(1, 15, 1));
+  c.step();
+  check(c.sim.dutyZones.join() === 'gym,sports', `Center Perks' exercise hour: ${c.sim.dutyZones.join(', ')}`);
+  const d = arena(PRISONS.find((q) => q.id === 'stalag-flucht')!, at(1, 15, 1));
+  d.step();
+  check(d.sim.dutyZones.join() === 'gym,yard,sports', 'a prison not rebuilt: the exercise hour as it was');
+  console.log(`holes: ${live.size} live fence tiles round Center Perks' places; no lookout posts in them; no laps in a lockdown; exercise at Center Perks: ${c.sim.dutyZones.join(', ')}`);
 }
 
 // ------------------------------------------------------------------ saves from before the rebuild

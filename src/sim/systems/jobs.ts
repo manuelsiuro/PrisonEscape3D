@@ -160,8 +160,6 @@ export function settleWork(sim: SimContext) {
   s.jobs.forEach((who, j) => {
     const shift = s.inmates[who]?.shift;
     if (who >= 0 && (shift === 2 || (shift === 0 && !s.excused))) vacate(sim, j, who, 'fired');
-    // (P31: an inmate gardener's shift worked: the crates are in the kitchen.)
-    else if (who >= 0 && shift === 1 && jobRooms(sim.world)[j]?.def.id === 'gardener') gardenDelivered(sim);
   });
 }
 

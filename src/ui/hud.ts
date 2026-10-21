@@ -1,6 +1,6 @@
 import { WAVED_STEPS } from '../content/getaways';
 import { STEPS_PER_SECOND } from '../sim/tuning';
-import { ROUTINE, routineEnd } from '../content/routine';
+import { ROUTINE, routineEnd, zonesOf } from '../content/routine';
 import { formatTime, type Clock } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
 import { currentLang, t, type Key } from '../i18n';
@@ -65,7 +65,7 @@ export function setZonesHere(zones: ReadonlySet<string> | null) {
 }
 
 export function routinePlace(k: number): string {
-  const names = ROUTINE[k].zones.filter((z) => !zonesHere || zonesHere.has(z)).map((z) => t(`zone.${z}` as Key));
+  const names = (zonesHere ? zonesOf(k, (z) => zonesHere!.has(z)) : ROUTINE[k].zones).map((z) => t(`zone.${z}` as Key));
   if (!names.length) return t('routine.free');
   // ("Gym, Courtyard or Sports ground": the last two joined by "or", the rest by commas.)
   const last = names.pop()!;
