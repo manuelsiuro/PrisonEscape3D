@@ -623,6 +623,19 @@ real touch feel) and the known limits.
       - a fence junction drawn in halves; a gate's second leaf on the ground.
   - **Escape bots:** all 28 escapes still won. Shankton's cutout bot is recognized once in uniform on the way (35% heat).
   - **Accepted:** a 2-tile tunnel under Stalag's north wire was possible from that strip of yard before P32; a planted bed now hides its shaft, but the tunnel is no shorter.
+- **P33 Grounds III (v2.9.0)**, sketches approved by the user (2026-10-21, "yes"), merged and released on "ok". See §10 and the §2 row. Every prison is now rebuilt.
+  - **What changed:** San Pancho and HMP Irongate are rebuilt (`map: 1`).
+    - San Pancho: the sports ground fills the plaza's south half behind the yard's fence, the yard keeps roll call; the canteen and the gym (one room with the showers) are reached from the wings' lobbies; the garden is in the showers' old place; the road out runs from the library through the generator room and the control room.
+    - Irongate: the sports ground takes the yard's west third down to the main corridor on turf; the yard's east two thirds stay the 5-deep chasm the helicopter route's grapnel crosses, the garden at their end; the middle block is narrower and moved east, the janitor's closet beside the control room.
+    - Both have the gardener job.
+  - **Not as planned (§2):** San Pancho has no spare cells (14 for 14), and growing Irongate's whole yard would have broken the grapnel's crossing (reach 6).
+  - **Three reviews:**
+    - rules: no guard ever went onto San Pancho's sports ground or into its garden (the sweeper walks them now); Irongate's takeover much harder with the canteen by the yard (the canteen guard's beat moved, the bot's fifth cup on the nearest guard); stops on quiz and roll-call spots; a bench on a doorstep;
+    - UI: San Pancho's job board taken by the weights in front of it; the help's "plaza" and "where there is one";
+    - 3D: Irongate's bunting down the pitch edge on (now along x only on a sports ground, the Training Block's too), its poles beside props; Irongate's shed and a planter hiding the garden's beds and planters (the garden 8 wide, the shed beside the beds); stations and decor in rows walls hide; the grounds dark at their north corners.
+  - **Found in the browser while building:** San Pancho's track lane hidden by a full-height wall with one clear row: two now.
+  - **Escape bots:** all 28 escapes still won. Irongate's takeover bot holds the lobby till the prison falls; its bluff bot is recognized once on the way (20% heat).
+  - **Accepted:** San Pancho's snipers reach part of the new garden (a wanted player there can be shot).
 
 ## 9. Free time (P27–P30)
 
