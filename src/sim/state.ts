@@ -132,7 +132,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' | 'phone' | 'mail' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -299,9 +299,18 @@ export type SimEvent =
    * end: won, a tie, lost (the `pts`, the `prize`, the `int`ellect gained), given up or off.
    */
   | { type: 'stage'; what: 'start' | 'hit' | 'miss' | 'stray' | 'done' | 'off'; song?: number; inst?: number; note?: number; lane?: number; grade?: number; pitch?: number; mark?: number; place?: number; prize?: number; crowd?: number; heat?: number }
+  /**
+   * The pay phone (P34, phone.ts): the queue (joined, left, the player's turn come and gone, a place
+   * bought, cut in, the one pushed back swinging), an inmate's call begun (`who`), the player's call
+   * (begun, hung up, done: what it did), the mail, Lou (a line said, silence, the job understood or
+   * not, blown or not), his jobs coming off, a tip's search, a secret overheard (`who`).
+   */
+  | { type: 'phone'; what: PhoneNews; who?: number; to?: number; sub?: number; arg?: number; n?: number; tier?: number; ok?: boolean; blown?: boolean; tile?: number; cell?: number; learned?: number }
   | { type: 'quiz'; what: 'start' | 'question' | 'right' | 'wrong' | 'timeUp' | 'won' | 'tie' | 'lost' | 'quit' | 'off'; who?: number[]; q?: number; by?: number; choice?: number; pts?: number[]; prize?: number; int?: number }
   | ItemEvent;
 
+/** What the pay phone did (P34, the 'phone' event). */
+export type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
 /** What pruno did (P28, the 'pruno' event). */
 export type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
 /** What a garden bed did (P28, the 'garden' event). */
@@ -340,7 +349,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -587,6 +596,40 @@ export interface SimState {
    */
   lap: number[];
   fresh: number;
+  /**
+   * P34, the pay phone (phone.ts): who is on it ([the inmate (index; -1 nobody), the step his call
+   * ends (0: still walking to it), steps the player has listened in, the step he set off for it]); the queue in order (inmate
+   * indexes, -1 the player); the step the player's turn came (0 none); the player's call (null
+   * none); Lou ([deep codes learned (codeBit), calls made, the step a diversion goes off (0 none),
+   * 1 if it's blown, the cake (0 none, 1 coming, 2 blown), the prison day a car waits (0 none; −day:
+   * driven off in), 1 if it's blown, the prison day the cake was asked for]); the rest ([the prison
+   * day the last money order was asked for (0 never), the dollars waiting at mail call, the prison
+   * day a retainer runs out (0 none), the cell tipped off (0 none), inmates overheard today (a bit
+   * each), that prison day, 1 once the player has used the phone (inmates queue from then on)]); who has
+   * queued today ([the prison day, a bit per inmate per free time: 2k morning, 2k+1 evening]).
+   */
+  booth: number[];
+  line: number[];
+  turn: number;
+  call: Call | null;
+  lou: number[];
+  phoned: number[];
+  rang: number[];
+}
+
+/** The player's call on the pay phone (P34): plain data in the state. */
+export interface Call {
+  /** CALLEE, what's asked (LAWYER or JOB), its argument (Lou's diversion: the hour; a tip: the cell). */
+  to: number;
+  sub: number;
+  arg: number;
+  /** The step it began; the step it's over (home, lawyer, tip) or the line's time runs out (Lou). */
+  from: number;
+  ends: number;
+  /** Lou: the line being said (0–2; 3 said), the kind of phrase said on each (TIER, -1 none yet), the guard listening (-1 nobody). */
+  at: number;
+  said: number[];
+  ear: number;
 }
 
 export interface Snapshot {
@@ -729,6 +772,13 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     acted: [],
     lap: [],
     fresh: 0,
+    booth: [-1, 0, 0, 0],
+    line: [],
+    turn: 0,
+    call: null,
+    lou: [0, 0, 0, 0, 0, 0, 0, 0],
+    phoned: [0, 0, 0, 0, 0, 0, 0],
+    rang: [],
   };
 }
 
@@ -868,6 +918,14 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // P31: a lap as it can be (else none), fresh meals' step.
   if (!(Array.isArray(s.lap) && (s.lap.length === 0 || (ints(s.lap, 4) && s.lap[0] >= 0 && s.lap[0] < 4 && s.lap[1] >= 0 && s.lap[1] < 4 && Math.abs(s.lap[2]) <= 1 && s.lap[3] >= 0 && s.lap[3] < 4)))) s.lap = [];
   if (!Number.isInteger(s.fresh) || s.fresh < 0) s.fresh = 0;
+  // P34: the pay phone as it can be (else nobody on it, nobody queuing, no call), Lou's and the rest's numbers whole.
+  if (!(ints(s.booth, 4) && s.booth[0] >= -1 && s.booth[0] < n && s.booth[1] >= 0 && s.booth[2] >= 0 && s.booth[3] >= 0)) s.booth = [-1, 0, 0, 0];
+  if (!(Array.isArray(s.line) && s.line.length <= n + 1 && s.line.every((k, i, all) => Number.isInteger(k) && k >= -1 && k < n && all.indexOf(k) === i) && !(s.booth[0] >= 0 && s.line.includes(s.booth[0])))) s.line = [];
+  if (!Number.isInteger(s.turn) || s.turn < 0 || s.turn > s.step) s.turn = 0;
+  if (!callOk(s.call, s.step, s.guards.length)) s.call = null;
+  if (!(ints(s.lou, 8) && s.lou.every((x, k) => k === 5 || x >= 0) && s.lou[4] <= 2)) s.lou = [0, 0, 0, 0, 0, 0, 0, 0];
+  if (!(ints(s.phoned, 7) && s.phoned.every((x) => x >= 0))) s.phoned = [0, 0, 0, 0, 0, 0, 0];
+  if (!(Array.isArray(s.rang) && (s.rang.length === 0 || ints(s.rang, 2)))) s.rang = [];
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);
@@ -939,6 +997,29 @@ function showOk(o: Show | null, step: number): boolean {
   if (!o || typeof o !== 'object') return false;
   // (Begun no later than now, and not yet over: never a song that keeps the player still for ever.)
   return [o.song, o.inst, o.from, o.stray].every((x) => Number.isInteger(x)) && o.song >= 0 && o.song < SONGS.length && o.from <= step && step - o.from <= countIn(o.song) + songSteps(o.song) && o.song >= 0 && o.song < SONGS.length && (o.inst === 0 || o.inst === 1) && o.stray >= 0 && Array.isArray(o.hits) && o.hits.length === CHARTS[o.song].length && o.hits.every((h) => Number.isInteger(h) && h >= 0 && h <= 3);
+}
+
+/** The player's call as a save holds it (P34): to someone the phone calls, its numbers whole, Lou's lines as they can be. */
+function callOk(c: Call | null, step: number, guards: number): boolean {
+  if (c === null) return true;
+  if (!c || typeof c !== 'object') return false;
+  return (
+    [c.to, c.sub, c.arg, c.from, c.ends, c.at, c.ear].every((x) => Number.isInteger(x)) &&
+    c.to >= 0 &&
+    c.to <= 3 &&
+    c.sub >= 0 &&
+    c.sub <= 2 &&
+    c.arg >= 0 &&
+    c.arg < 64 &&
+    c.from <= step &&
+    c.at >= 0 &&
+    c.at <= 3 &&
+    c.ear >= -1 &&
+    c.ear < guards &&
+    Array.isArray(c.said) &&
+    c.said.length === 3 &&
+    c.said.every((x) => Number.isInteger(x) && x >= -1 && x <= 2)
+  );
 }
 
 /** A quiz as a save holds it (P30): three different contestants at three of the four places, its numbers whole. */

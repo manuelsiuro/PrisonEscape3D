@@ -13,6 +13,8 @@
  * and every phrasing of every fact, in English and French, says the fact's own numbers.
  * Zero false facts; the snapshot holds how many of each kind were checked.
  */
+import { LINE_DAY } from '../src/content/phone';
+import { wantsCall } from '../src/sim/systems/phone';
 import { itemDef } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
 import { TRAINING } from '../src/content/prisons/training';
@@ -234,6 +236,12 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       const e = rivals(s, day).find((x) => x.owner === f.inmate);
       return raceNight(day) && !!e && e.fed === (f.kind === 'ratFed') && dayMinute(s.step) < RACE_MINUTE - ROUTINE[0].start;
     }
+    // The pay phone (P34): the inmate wants a call today at that minute (the queue's own draw), from LINE_DAY.
+    case 'phoneCall': {
+      const day = prisonDay(s.step);
+      const at = (f.t1! - ROUTINE[0].start + 1440) % 1440;
+      return !!sim.prison.comms && day >= LINE_DAY && s.phoned[6] > 0 && [0, 1].some((b) => wantsCall(s.salt, day, b, f.inmate!) === at);
+    }
     default:
       return true;
   }
@@ -405,6 +413,8 @@ for (const prison of [...PRISONS, TRAINING]) {
   for (const seed of [1, 2, 3, 4]) {
     const bot = new Bot(prison, seed);
     const sim = bot.sim;
+    // (P34: in the last run the phone has been used, so inmates queue and say who rings when.)
+    if (seed === 4) sim.state.phoned[6] = 1;
     const checks: number[] = [];
     const end = 3 * DAY;
     const worded = new Set<string>();

@@ -2,6 +2,8 @@ import { OPEN_HOURS } from '../content/routine';
 import { cornersOf } from '../content/grounds';
 import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
 import { quizOn } from '../sim/systems/quiz';
+import { atPhone, phoneOpen, placeInLine } from '../sim/systems/phone';
+import { CALLEE } from '../content/phone';
 import { itemDef, itemNumber } from '../content/items';
 import type { PrisonDef } from '../content/prisons/types';
 import { ROUTINE, routineAt } from '../content/routine';
@@ -90,6 +92,8 @@ export interface Lesson {
 }
 
 const tile = (x: number, z: number) => z * MAP_W + x;
+/** The pay phone's lessons (P34): off once the phone shuts (free time over, a lockdown). */
+const phoneFail = (c: LessonCtx): Key | null => (phoneOpen(c.sim) ? null : 'lesson.payphone.shut');
 const n = (id: string) => itemNumber(id);
 /** The minute of day 1 as a step (the game starts at 08:00). */
 const at = (hour: number, minute = 0) => ((hour - 8) * 60 + minute) * STEPS_PER_MINUTE;
@@ -947,11 +951,64 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.gardener.crate', done: (c) => c.sim.state.quota > 0, goal: (sim) => besideProp(sim, carries(sim, 'produce') ? jobRooms(sim.world)[GARDENER].put : loadedMachine(sim, GARDENER)), fail: jobFail },
     ],
   },
+  {
+    // The pay phone (P34): someone on it, a place in line, a secret overheard while waiting, a call home, the money at mail call.
+    id: 'payphone',
+    icon: 'phone',
+    prison: CENTER_PERKS,
+    seed: 91,
+    setup: (sim) => {
+      clockTo(sim, at(10, 2));
+      const s = sim.state;
+      const c = sim.prison.comms!;
+      s.cash = 10;
+      // Rusty on the phone, a long call (day 1: nobody else queues).
+      const on = 0;
+      const m = s.inmates[on];
+      m.body.x = c.phone.x * UNIT + UNIT / 2;
+      m.body.z = c.phone.z * UNIT + UNIT / 2;
+      m.goal = -1;
+      m.path = [];
+      s.booth = [on, s.step + 40 * STEPS_PER_MINUTE, 0, s.step];
+      place(sim, c.line[2].x, c.line[2].z + 1, 13);
+    },
+    steps: [
+      { text: 'lesson.payphone.join', touch: 'lesson.payphone.joinTouch', on: (e) => e.type === 'phone' && e.what === 'joined' && e.who === -1, goal: (sim) => tile(sim.prison.comms!.line[0].x, sim.prison.comms!.line[0].z), fail: (c) => (c.sim.state.booth[0] < 0 ? 'lesson.payphone.missed' : phoneFail(c)) },
+      { text: 'lesson.payphone.listen', on: (e) => e.type === 'phone' && e.what === 'overheard', goal: (sim) => tile(sim.prison.comms!.line[0].x, sim.prison.comms!.line[0].z), fail: (c) => (c.sim.state.booth[0] < 0 && !c.sim.state.phoned[4] ? 'lesson.payphone.missed' : phoneFail(c)) },
+      { text: 'lesson.payphone.call', on: (e) => e.type === 'phone' && e.what === 'home', goal: (sim) => tile(sim.prison.comms!.phone.x, sim.prison.comms!.phone.z), fail: (c) => (placeInLine(c.sim.state) < 0 && !c.sim.state.call && !atPhone(c.sim) ? 'lesson.payphone.left' : phoneFail(c)) },
+      { text: 'lesson.payphone.mail', on: (e) => e.type === 'phone' && e.what === 'mail', speed: 8 },
+    ],
+  },
+  {
+    // Cousin Lou (P34): a cake with a file in it, asked for on a tapped line in three phrases.
+    id: 'cousin',
+    icon: 'route',
+    prison: CENTER_PERKS,
+    seed: 92,
+    setup: (sim) => {
+      clockTo(sim, at(10, 2));
+      sim.state.cash = 60;
+      const c = sim.prison.comms!;
+      place(sim, c.phone.x, c.phone.z, c.phone.face);
+    },
+    steps: [
+      { text: 'lesson.cousin.dial', on: (e) => e.type === 'phone' && e.what === 'call' && e.to === CALLEE.COUSIN, goal: (sim) => tile(sim.prison.comms!.phone.x, sim.prison.comms!.phone.z), fail: phoneFail },
+      {
+        text: 'lesson.cousin.say',
+        touch: 'lesson.cousin.sayTouch',
+        on: (e) => e.type === 'phone' && e.what === 'lou' && !!e.ok && !e.blown,
+        failOn: (e) => (e.type === 'phone' ? (e.what === 'lou' && !e.ok ? 'lesson.cousin.lost' : e.what === 'lou' && e.blown ? 'lesson.cousin.blown' : e.what === 'silence' || e.what === 'hungUp' ? 'lesson.cousin.hungUp' : null) : null),
+      },
+      { text: 'lesson.cousin.over', done: () => true, least: 8 },
+    ],
+  },
   // ---------------------------------------------------------------- Ways out
   {
     // The lockpick (P22): a keyed door opened without its key, pin by pin.
     id: 'lockpick',
     icon: 'lockpick',
+    // (Its seed as it was before the phone's lessons came before it in the list.)
+    seed: 43,
     setup: (sim) => {
       clockTo(sim, MORNING);
       place(sim, 42, 22, 13);
@@ -1293,7 +1350,7 @@ function inkOff(e: SimEvent): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 

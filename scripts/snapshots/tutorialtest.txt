@@ -40,8 +40,11 @@ lockpick: 3 steps done by day 1 10:35
 stowaway: 3 steps done by day 1 14:31
 bluff: 3 steps done by day 1 19:50
 glider: 2 steps done by day 1 23:21
+payphone: 4 steps done by day 1 12:00
+cousin: 3 steps done by day 1 10:02
 day, missed: ended at step 2 (lesson.day.missed) by day 1 10:59
 smuggle, left lying: ended at step 4 (lesson.smuggle.seized) by day 1 21:29
+cousin, not understood: ended at step 2; silent: lesson.cousin.hungUp
 lockpick, worn out: ended at step 2 (lesson.lockpick.broke)
 stowaway, missed: ended at step 1 (lesson.stowaway.missed) by day 1 14:25
 bluff, late: ended at step 1 (lesson.bluff.late) by day 1 20:10
@@ -63,6 +66,6 @@ crew, called off: ended at step 3 (lesson.crew.off)
 smuggle, by visitor: ended at step 1 (lesson.smuggle.wrong)
 heat, out the east fence: ended at step 1 (lesson.outEarly)
 tunnel, down a stray hole: on at step 4 (null)
-4 chapters: basics 10, getby 7, life 19, ways 4
+4 chapters: basics 10, getby 7, life 21, ways 4
 training: its guard out cold, no takeover
 every lesson goal is open floor

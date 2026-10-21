@@ -36,6 +36,8 @@ export interface Victory {
   earned?: readonly Achievement[];
   /** The crew who got out too (P23), by name. */
   crew?: readonly string[];
+  /** P34: away in cousin Lou's car. */
+  wheels?: boolean;
   /** P25: the escape can be watched again (its replay). */
   watch?: boolean;
 }
@@ -81,6 +83,7 @@ export function showVictory(v: Victory, click: () => void, back = false): Promis
       <p class="v-sub"></p>
       <div class="v-left">
       <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}${v.watch ? `<button class="v-watch" data-c="watch" aria-label="${t('replay.watch')}" title="${t('replay.watch')}">${icon('film', 16)}<span>${t('replay.watchShort')}</span></button>` : ''}</div>
+      ${v.wheels ? `<div class="v-crew">${icon('truck', 18)}<span>${t('victory.wheels')}</span></div>` : ''}
       ${v.crew?.length ? `<div class="v-crew">${icon('users', 18)}<span>${t(v.crew.length === 1 ? 'victory.crew1' : 'victory.crew', { names: listOf([...v.crew]) })}</span></div>` : ''}
       <div class="v-stats">
         ${stat('clock', v.day, 'victory.days')}

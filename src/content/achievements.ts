@@ -158,6 +158,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'headliner', group: 'life', icon: 'music', run: (r) => f(r, 'actWins') >= 1 },
   { id: 'starTurn', group: 'skills', icon: 'star', run: (r) => f(r, 'starActs') >= 1 },
   { id: 'quizChamp', group: 'skills', icon: 'brain', run: (r) => f(r, 'quizWins') >= 1 },
+  // P34: the pay phone.
+  { id: 'collectCall', group: 'life', icon: 'phone', ...counted('homeCalls', 5) },
+  { id: 'familyBusiness', group: 'life', icon: 'route', ...counted('louJobs', 3) },
+  { id: 'codeTalker', group: 'skills', icon: 'chat', ...counted('codesLearned', 5) },
+  { id: 'walls', group: 'life', icon: 'ear', ...counted('overheard', 3) },
+  { id: 'tipOff', group: 'life', icon: 'phone', run: (r) => f(r, 'tipsFound') >= 1 },
+  { id: 'wheels', group: 'out', icon: 'truck', run: (r) => f(r, 'wheels') >= 1 },
   // The crew (P23).
   { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
   { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },

@@ -31,6 +31,7 @@ import { bribesWearOff } from './systems/ways';
 import { dogs } from './systems/k9';
 import { rats } from './systems/rats';
 import { smuggle } from './systems/smuggling';
+import { phone, wheels } from './systems/phone';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -118,6 +119,8 @@ export class Sim {
    * down between the fences, the pitches where they were). Not state.
    */
   rules250 = false;
+  /** Replaying a run logged before the pay phone (2.10, runlog.ts): nobody queued for it. Not state. */
+  noQueue = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -211,6 +214,8 @@ export class Sim {
     rats(this);
     // Smuggling (P21): the drone's drop and what guards see of it, the visitor, the Red Cross parcel.
     smuggle(this);
+    // The pay phone (P34): the queue, the calls, the mail, Lou's jobs.
+    phone(this);
     // Race nights (P28): the off, a guard seeing the player at it, the finish.
     races(this);
     bribesWearOff(this);
@@ -340,6 +345,8 @@ export class Sim {
     closeBox(this);
     // The crew close by slip out too (P23), on a way out they can take.
     s.crewOut = crewEscape(this, ESCAPES[s.via]);
+    // (P34: Lou's car waiting tonight on the road.)
+    wheels(this, ESCAPES[s.via]);
     this.events.push(s.crewOut.length ? { type: 'escaped', via: ESCAPES[s.via], crew: s.crewOut.slice() } : { type: 'escaped', via: ESCAPES[s.via] });
     return true;
   }

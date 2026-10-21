@@ -55,7 +55,7 @@ float occBayer(vec2 p) {
   return (OCC_BAYER[q.x + q.y * 4] + 0.5) / 16.0;
 }
 float occCut() {
-  if (uOccStrength <= 0.0 || vOccWorld.z < uOccFocusZ - 0.45 || vOccWorld.y < OCC_MIN_Y) return 0.0;
+  if (uOccStrength <= 0.0 || vOccWorld.z < uOccFocusZ - OCC_Z_MARGIN || vOccWorld.y < OCC_MIN_Y) return 0.0;
   vec2 d = (gl_FragCoord.xy - uOccFocus) / uOccRadius;
   float r = dot(d, d);
   // Full cut in the middle, a soft dithered edge, and the foot of the wall kept as a guide.
@@ -81,12 +81,14 @@ const patched = new WeakSet<THREE.Material>();
 
 /**
  * Makes a material see-through around the player. Below `minY` (world height) nothing is
- * cut: the foot of a wall stays as a guide, low furniture stays whole. Safe to call twice.
+ * cut: the foot of a wall stays as a guide, low furniture stays whole. Only what stands south
+ * of `zMargin` short of the player's z is cut: things hung on the wall the player stands right
+ * before (the pay phone) pass a smaller margin so they stay whole. Safe to call twice.
  */
-export function seeThrough<M extends THREE.Material>(material: M, minY = 0.06): M {
+export function seeThrough<M extends THREE.Material>(material: M, minY = 0.06, zMargin = 0.45): M {
   if (patched.has(material)) return material;
   patched.add(material);
-  material.defines = { ...material.defines, OCC_MIN_Y: minY.toFixed(3) };
+  material.defines = { ...material.defines, OCC_MIN_Y: minY.toFixed(3), OCC_Z_MARGIN: zMargin.toFixed(3) };
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
@@ -100,7 +102,7 @@ export function seeThrough<M extends THREE.Material>(material: M, minY = 0.06): 
       .replace('#include <dithering_fragment>', FRAGMENT_RIM);
   };
   // A different program from the unpatched material of the same type.
-  material.customProgramCacheKey = () => `see-through-${minY}`;
+  material.customProgramCacheKey = () => `see-through-${minY}-${zMargin}`;
   material.needsUpdate = true;
   return material;
 }

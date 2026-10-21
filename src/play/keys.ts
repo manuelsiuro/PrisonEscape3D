@@ -14,6 +14,7 @@ import { openObjectives } from './lesson';
 import { pastimeKey, shootKey } from './pastimes';
 import { kickKey } from './team';
 import { nightsBusy, nightsKey } from './nights';
+import { payphoneKey } from './payphone';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -87,6 +88,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Stage nights (P30): the lanes' keys on the stage, the answers' (1–4) at the quiz.
   if (nightsKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // The pay phone (P34): on Lou's line, 1–3 say a phrase.
+  if (payphoneKey(e.code)) {
     e.preventDefault();
     return;
   }

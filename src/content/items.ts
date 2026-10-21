@@ -249,6 +249,8 @@ export const ITEMS: readonly ItemDef[] = [
   // P31 (sports grounds & gardens): the gardener's work, a tray of seedlings from the shed for a planter, a crate of what it grew for the kitchen.
   work('seedlings', 'seedTray', 0x5aa846, 0x8a5a2e),
   work('produce', 'vegCrate', 0xb07a45, 0xe8862e),
+  // P34 (the pay phone): the cake cousin Lou sends in at a visit, a metal file baked inside (nothing wrong with a cake).
+  m('cake', false, 15, 'cake', 0xf2d9a8, ['phone'], 0xd23f6a),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */

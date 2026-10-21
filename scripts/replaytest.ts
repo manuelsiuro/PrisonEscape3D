@@ -190,6 +190,8 @@ console.log('replay ok');
   const seed = 7;
   const old = new Sim(CENTER_PERKS, seed);
   old.state.calendar = quietCalendar();
+  // (Nobody queued for the pay phone then, P34.)
+  old.noQueue = true;
   const r = new RunRecorder(old, { seed, game: '1.10.1' });
   for (let k = 0; k < 2 * 1440 * STEPS_PER_MINUTE + 600; k++) r.step(0);
   const log = r.toLog();

@@ -49,6 +49,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['tattoo', 'needle', '#3a3f5a'],
     ['talent', 'music', '#ff6fb5'],
     ['quiz', 'brain', '#5fb3ff'],
+    ['payphone', 'phone', '#2f9e8f'],
     ['fight', 'fist', '#c0392b'],
   ],
   escape: [
@@ -86,6 +87,7 @@ const keys = (): Array<[string, Key]> => [
   [t('help.k.space'), 'help.k.kick'],
   ['%KeyA% %KeyS% %KeyD%', 'help.k.lanes'],
   ['1 – 4', 'help.k.answer'],
+  ['1 – 3', 'help.k.call'],
   ['1 – 6', 'help.k.slots'],
   ['%KeyQ%', 'help.k.drop'],
   [t('help.k.rightMouse'), 'help.k.throw'],

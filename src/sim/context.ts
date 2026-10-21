@@ -23,6 +23,7 @@ export type SimContext = Pick<
   | 'noDogs'
   | 'noRats'
   | 'rules250'
+  | 'noQueue'
   | 'aboutBefore'
   | 'groundFrom'
   | 'ladderFoot'

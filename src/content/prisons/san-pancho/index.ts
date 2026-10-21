@@ -1,3 +1,4 @@
+import { comms } from '../../phone';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
@@ -417,5 +418,7 @@ export const SAN_PANCHO: PrisonDef = {
     quiz: quizAt(5, [41, 43], [42, 43], [43, 43], [44, 43]),
   },
   // Rebuilt in 2.9 (P33): the sports ground in the plaza's south half, the garden in the showers' old place.
+  // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
+  comms: comms([19, 12, 13], [[20, 12], [20, 13], [20, 14], [20, 15]], [31, 51], [35, 63, 1]),
   map: 1,
 };

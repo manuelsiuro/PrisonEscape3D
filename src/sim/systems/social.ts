@@ -2,6 +2,7 @@
  * Inmates and the player (GDD §10.3–10.4): talking, opinion, trades and gifts, favors,
  * followers and the foes they go after, and grudges that turn into ambushes.
  */
+import { phoneTargets, swapPlace } from './phone';
 import { twist } from './twists';
 import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
@@ -137,6 +138,10 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
   const free = it.inv.slice(0, HOTBAR).indexOf(0);
   it.rev++;
   switch (a) {
+    // P34: the inmate's place in the pay phone's queue, bought.
+    case TALK.SWAP:
+      swapPlace(sim, who);
+      break;
     case TALK.BUY: {
       // (P28: past the shop's own slots, the staples every merchant sells.)
       if (b >= SHOP_SLOTS) return buyStaple(sim, who, b - SHOP_SLOTS);
@@ -396,6 +401,8 @@ export function socialNow(sim: SimContext): Social {
   // The crew's orders (P23) send some where the player isn't: a post, the drop, the shaft, a brawl.
   const placed = s.followers.length ? crewTargets(sim, so) : 0;
   const about = s.layer === LAYER.GROUND && !sim.away;
+  // The pay phone (P34): the caller and the queue (the stage, the crew and the games come first: set after).
+  phoneTargets(sim, so);
   // Talent night (P30): the act on the stage (wherever the player is).
   stageTargets(sim, so);
   if (!about) return so;

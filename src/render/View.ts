@@ -48,6 +48,7 @@ import { LongView, type LongFrame } from './Long';
 import { TeamView, type TeamFrame } from './Team';
 import { GroundsView } from './Grounds';
 import { NightsView, type NightsFrame } from './Nights';
+import { PhoneView, type PhoneFrame } from './Phone';
 import { handlersOf } from '../sim/systems/k9';
 
 /** The old-timer's hair (P27): white with age. */
@@ -142,6 +143,8 @@ export interface Frame {
   team: TeamFrame;
   /** Stage nights (P30): the stage set up, the quiz's buzzers. */
   nights: NightsFrame;
+  /** The pay phone (P34): its handset off the hook, Lou's car waiting on the road. */
+  phone: PhoneFrame;
   /** P29: the designs inked on the player's arms. */
   inked: readonly number[];
   /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
@@ -358,6 +361,8 @@ export class View {
   /** P31: the sports ground's track and court paint, the garden's crops. */
   private readonly groundsView = new GroundsView();
   private readonly nightsView = new NightsView();
+  /** P34: the pay phone, Lou's car, the diversion's beacon. */
+  private readonly phoneView = new PhoneView();
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
   /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
@@ -484,7 +489,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -628,6 +633,7 @@ export class View {
     this.groundsView.setWorld(world, later);
     this.pastimesView.setWorld(world, pitch);
     this.getaway.setWorld(world);
+    this.phoneView.setWorld(world, later);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {
         const d = world.def.guards[h].dog!;
@@ -1349,6 +1355,8 @@ export class View {
     this.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER);
     // Stage nights (P30): the stage, the buzzers (the ground floor, and from the vents and roofs over it).
     this.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    // The pay phone (P34): the handset, Lou's car, the diversion's beacon (not from the tunnels).
+    this.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.night, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
@@ -1393,6 +1401,16 @@ export class View {
       return;
     }
     this.island?.depart(kind, p.x, p.z);
+  }
+
+  /** Lou's car pulls away with the player in it (P34, the phone's 'wheels' event): along its facing, fading out. */
+  carAway() {
+    this.phoneView.carAway();
+  }
+
+  /** The diversion at the gate (P34, the phone's 'diversion' and 'ignored' events): an amber beacon flashes at the ground tile for ten game minutes (steady with reduced motion). */
+  phoneAlarm(tile: number) {
+    this.phoneView.alarm(tile);
   }
 
   /** Delivery day's sounds (the play layer plays them): reversing beeps, the tailgate, the engine. */
@@ -1470,6 +1488,7 @@ export class View {
     this.longView.update(null, 0, false, false);
     this.teamView.update(null, [], 0, false);
     this.nightsView.update(null, 0, false, false);
+    this.phoneView.update(null, dt, 0, 0, false, 0, false);
     // (The trees whole again; no match's framing.)
     this.decor?.shelter(this.people, 0, dt, false);
     this.fitZoom = 0;

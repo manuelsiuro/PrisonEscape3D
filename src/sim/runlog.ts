@@ -226,6 +226,14 @@ export interface Replayed {
   verified: number;
 }
 
+/** Whether a game version came before the pay phone (2.10.0): nobody queued for it then. */
+export function beforePhone(game: string): boolean {
+  const m = /^(\d+)\.(\d+)\./.exec(game);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a < 2 || (a === 2 && b < 10);
+}
+
 /** Whether a game version came before the day's events (1.11.0): its days were all quiet. */
 export function beforeDays(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
@@ -329,6 +337,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   }
   // Played before the P23–P30 fixes (2.5.1): those rules as they were.
   if (beforeFixes(log.game)) sim.rules250 = true;
+  // Played before the pay phone (P34): nobody queued for it.
+  if (beforePhone(log.game)) sim.noQueue = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

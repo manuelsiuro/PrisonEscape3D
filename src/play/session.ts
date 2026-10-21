@@ -7,6 +7,7 @@ import { resetPastimes } from './pastimes';
 import { resetLong } from './long';
 import { resetTeam } from './team';
 import { resetNights } from './nights';
+import { resetPayphone } from './payphone';
 import { resetCrew } from './crew';
 import { inmateName } from '../ui/social';
 import { itemNumber } from '../content/items';
@@ -142,6 +143,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   resetLong();
   resetTeam();
   resetNights();
+  resetPayphone();
   resetCrew();
   // No aim carried over from another game (P14).
   cancelThrow();
@@ -375,6 +377,7 @@ export async function escaped() {
     earned,
     campaign: !next && rec.record.routes.length === 1 && rec.newRoute,
     crew: st.crewOut.map((id) => inmateName(sim, id)),
+    wheels: st.lou[5] < 0,
     watch: true,
   };
   // (Watch the replay, P25: then the card again.)

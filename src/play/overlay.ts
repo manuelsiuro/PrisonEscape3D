@@ -58,6 +58,7 @@ import {
   inkCard,
   stageCard,
   quizCard,
+  payphoneCard,
   vignette,
   view,
   workChips,
@@ -92,6 +93,7 @@ import { tipsyNow } from '../sim/systems/pruno';
 import { NO_TAKE, raceNow, takeOffers } from './long';
 import { inkNow, matchNow, teamSounds } from './team';
 import { nightsSounds, quizNow, stageNow } from './nights';
+import { payphoneNow } from './payphone';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -295,6 +297,11 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   document.body.classList.toggle('performing', stageV?.phase === 'play');
   document.body.classList.toggle('staging', !!stageV);
   document.body.classList.toggle('quizzing', !!quizV);
+  // The pay phone (P34): its card at the phone, in its queue, on a call (not over another game's card).
+  const phoneV = busy || otherGame || stageV || quizV ? null : payphoneNow(sim);
+  payphoneCard.update(phoneV);
+  document.body.classList.toggle('phoning', !!phoneV);
+  document.body.dataset.phone = phoneV?.phase === 'lou' ? 'on' : '';
   document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
   const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);

@@ -118,6 +118,20 @@ export interface CheckpointDef {
 }
 
 /**
+ * The pay phone (P34): where the caller stands (the phone hangs on the wall they face: a north
+ * wall, facing 13, the camera sees), the queue's tiles nearest the phone first, and the inside of
+ * the front gate (where Lou's diversion draws guards), the road where his car waits. All of it data: the phone is drawn,
+ * nothing on the map changes.
+ */
+export interface CommsDef {
+  phone: { x: number; z: number; face: number };
+  line: ReadonlyArray<{ x: number; z: number }>;
+  gate: { x: number; z: number };
+  /** Where Lou's getaway car waits on the road (drawn only), and the way it faces to drive off. */
+  car: { x: number; z: number; face: number };
+}
+
+/**
  * Smuggling (P21): who sells burner phones, where the fixer's drone drops what's ordered (and
  * when), and where visitors sit on visiting day. All of it data: the drone, the visitors and
  * the arches at the visiting room's doors are drawn.
@@ -294,6 +308,8 @@ export interface PrisonDef {
   checkpoint?: CheckpointDef;
   /** Free time (P27): the hoop and its court, the old-timer; without it, neither. */
   leisure?: LeisureDef;
+  /** The pay phone (P34): where it hangs, its queue, the front gate; without it, none. */
+  comms?: CommsDef;
   /**
    * The map's revision (P31: raised when the prison is rebuilt; none: 0). A save from an older
    * one starts the run again there (saves.ts rebuiltSince).

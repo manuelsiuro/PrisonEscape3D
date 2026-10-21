@@ -92,6 +92,11 @@ const STENCIL_MARK: Partial<THREE.MeshStandardMaterialParameters> = {
 /** How far a head turns either way glancing about with a rat on the shoulder (P20; ±0.55 otherwise): its side stays clear of the rat. */
 const PERCHED_GLANCE = 0.2;
 
+/** On the pay phone (P34): drawn this far to their right of where they stand (tiles). */
+const PHONE_SHIFT = 0.27;
+/** On the pay phone: the raised arm's turn (nearly straight up beside the head, the fist just over the ear). */
+const PHONE_ARM = -2.75;
+
 /** Mattress height and how far the sleeper's feet sit from the bed's middle. */
 const BED_TOP = 0.6;
 const BED_FEET = 0.55;
@@ -254,8 +259,8 @@ const DROPS = 10;
 /** A box w×h×d centered on (x, y, z), painted. */
 const part = (w: number, h: number, d: number, color: number, x: number, y: number, z: number): Part => box(w, h, d, color, x, y - h / 2, z);
 
-/** Talent night's instruments (P30), built once and shared: two upturned buckets, a drumstick, a guitar (in the body's terms). */
-let made: { buckets: THREE.BufferGeometry; stick: THREE.BufferGeometry; guitar: THREE.BufferGeometry } | null = null;
+/** Talent night's instruments (P30), built once and shared: two upturned buckets, a drumstick, a guitar (in the body's terms); and the pay phone's handset (P34, in the left hand's). */
+let made: { buckets: THREE.BufferGeometry; stick: THREE.BufferGeometry; guitar: THREE.BufferGeometry; handset: THREE.BufferGeometry } | null = null;
 function instruments() {
   if (made) return made;
   // (Under the fists: the sticks come down on the heads, the fists a little outside the middle.)
@@ -283,8 +288,32 @@ function instruments() {
       ],
       false,
     ),
+    handset: handsetGeometry(),
   };
   return made;
+}
+
+/**
+ * The pay phone's handset (P34), in the raised arm's terms (the arm up beside the head at
+ * PHONE_ARM, the fist just over the ear): it lies along the side of the head, its ear cup by the fist
+ * and the ear, the mouthpiece down and forward by the mouth; on the head's side of the arm.
+ */
+export const HANDSET_EAR = new THREE.Vector3(0.09, -0.37, 0.07);
+export const HANDSET_MOUTH = new THREE.Vector3(0.09, -0.17, -0.2);
+function handsetGeometry(): THREE.BufferGeometry {
+  const E = HANDSET_EAR;
+  const M = HANDSET_MOUTH;
+  const dir = new THREE.Vector3().subVectors(E, M);
+  const len = dir.length();
+  // A bar from the mouthpiece to the ear cup (along z, then turned onto the line between them), a cup at each end, a grey strip down its back.
+  const piece = (w: number, h: number, d: number, color: number, at: number, out = 0) => {
+    const b = new THREE.BoxGeometry(w, h, d);
+    b.translate(out, 0, (at - 0.5) * len);
+    b.rotateX(-Math.atan2(dir.y, dir.z));
+    b.translate((E.x + M.x) / 2, (E.y + M.y) / 2, (E.z + M.z) / 2);
+    return paint(b, color);
+  };
+  return merge([piece(0.07, 0.07, len + 0.04, 0x24272e, 0.5), piece(0.11, 0.1, 0.11, 0x24272e, 0.98, 0.02), piece(0.11, 0.1, 0.11, 0x24272e, 0.02, 0.02), piece(0.02, 0.075, len * 0.6, 0x5a6270, 0.5, -0.03)], false);
 }
 
 /** A colour a share of the way to another (stubble: skin toward the hair). */
@@ -571,6 +600,8 @@ export class Character {
   private readonly buckets: THREE.Mesh;
   private readonly sticks: THREE.Mesh[] = [];
   private readonly guitar: THREE.Mesh;
+  /** On the pay phone (P34): the handset at the ear, in the left hand. */
+  private readonly handset: THREE.Mesh;
   private readonly water = new THREE.Group();
   private readonly zs: THREE.Sprite[] = [];
   private readonly stars: THREE.Sprite[] = [];
@@ -817,6 +848,9 @@ export class Character {
     this.guitar = new THREE.Mesh(instruments().guitar, kitMaterial);
     this.guitar.visible = false;
     this.body.add(this.guitar);
+    this.handset = new THREE.Mesh(instruments().handset, kitMaterial);
+    this.handset.visible = false;
+    this.armL.add(this.handset);
     // Under a shower head: falling water.
     for (let k = 0; k < DROPS; k++) {
       const d = new THREE.Mesh(dropGeometry, dropMaterial);
@@ -1039,6 +1073,14 @@ export class Character {
       this.blend = motion ? 0 : 1;
     }
     this.act = moving ? 0 : Math.min(1, this.act + dt * 3);
+    // On the pay phone (P34): drawn a little to the right (away from the raised hand's side), so the
+    // empty hook and the stretched cord show beside them, the hand clear of the hood's side.
+    if (doing === DOING.PHONE && !ko) {
+      const r = this.root.rotation.y;
+      const o = PHONE_SHIFT * this.act;
+      this.root.position.x += Math.cos(r) * o;
+      this.root.position.z -= Math.sin(r) * o;
+    }
     const a = this.act * (motion ? 1 : 0);
     const t = time + this.offset;
     // Seated (a canteen bench, a chair, a yard bench): legs forward, a little lower.
@@ -1226,6 +1268,22 @@ export class Character {
       armLz += 0.45 * ga;
       armRz -= 0.45 * ga;
       bob -= 0.03 * ga;
+    } else if (doing === DOING.PHONE) {
+      // On the pay phone (P34): the left hand up at the ear with the handset (the head tipped to
+      // it), the right hand talking a little at the side. Held still with reduced motion.
+      const ga = this.act;
+      const talk = motion ? Math.sin(t * 1.7) * 0.14 + Math.sin(t * 0.6) * 0.06 : 0;
+      armLx += PHONE_ARM * ga;
+      armLz += -0.1 * ga;
+      armRx += (-0.42 + talk) * ga;
+      armRz += -0.08 * ga;
+    } else if (doing === DOING.QUEUE) {
+      // Waiting in line for the phone (P34): arms crossed, the weight shifting slowly from foot to foot (below).
+      const ga = this.act;
+      armLx += -0.95 * ga;
+      armRx += -0.95 * ga;
+      armLz += 0.55 * ga;
+      armRz -= 0.55 * ga;
     } else if (doing === DOING.LOOKOUT) {
       // On watch (P23): a hand at the brow, clear of the head (a salute's reach: a rigid arm can't
       // get in front of the face), the other arm a little out; the whole body sweeps from side to
@@ -1305,7 +1363,9 @@ export class Character {
     this.armR.rotation.set(armRx, 0, armRz);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
     this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI);
-    this.body.rotation.z = motion ? Math.sin(t * 0.7) * 0.06 * dz : 0;
+    // (In line for the phone, P34: a slow shift of the weight from foot to foot.)
+    const shift = doing === DOING.QUEUE && motion ? Math.sin(t * 0.55) * 0.04 * this.act : 0;
+    this.body.rotation.z = (motion ? Math.sin(t * 0.7) * 0.06 * dz : 0) + shift;
     this.body.rotation.x =
       0.08 * this.swing -
       (Math.PI / 2) * this.lie +
@@ -1363,6 +1423,7 @@ export class Character {
     this.buckets.visible = drums;
     for (const st of this.sticks) st.visible = drums;
     this.guitar.visible = doing === DOING.GUITAR && this.act > 0.3;
+    this.handset.visible = doing === DOING.PHONE && this.act > 0.3;
     this.water.visible = this.wet && doing === DOING.SHOWER && this.act > 0.2;
     if (this.water.visible) {
       for (const d of this.water.children) {
@@ -1382,11 +1443,14 @@ export class Character {
 
     // Standing still for a while: glance around now and then (not in line, nor asleep).
     this.idle = moving ? 0 : this.idle + dt;
-    const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || doing >= DOING.WORK || ko;
+    // (In line for the phone, P34, they look about as they wait.)
+    const still = doing === DOING.CRAWL || doing === DOING.LINE_UP || doing === DOING.SLEEP || doing === DOING.EXERCISE || doing === DOING.SEARCH || (doing >= DOING.WORK && doing !== DOING.QUEUE) || ko;
     if (this.idle > 2.5 && motion && !still && Math.random() < dt * 0.6) this.glanceGoal = (Math.random() - 0.5) * (this.perched ? PERCHED_GLANCE * 2 : 1.1);
     if (this.idle === 0 || still) this.glanceGoal = 0;
     this.glance += (this.glanceGoal - this.glance) * k(5);
     this.head.rotation.y = this.glance;
+    // (On the phone: the head tipped toward the handset.)
+    this.head.rotation.z = doing === DOING.PHONE ? 0.16 * this.act : 0;
     // Nodding off: the chin sinks for 4 s and jerks back up (still, it just hangs).
     const n = (t * 0.2) % 1;
     const sink = n < 0.85 ? n / 0.85 : 1 - (n - 0.85) / 0.15;
@@ -1406,7 +1470,7 @@ export class Character {
         return;
       }
       // (P30's instruments too: one set for everyone.)
-      const shared = m.geometry === dropGeometry || m.geometry === sprayGeometry || (!!made && (m.geometry === made.buckets || m.geometry === made.stick || m.geometry === made.guitar));
+      const shared = m.geometry === dropGeometry || m.geometry === sprayGeometry || (!!made && (m.geometry === made.buckets || m.geometry === made.stick || m.geometry === made.guitar || m.geometry === made.handset));
       if (o !== this.held && !shared) m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
       for (const mat of mats) if (mat !== kitMaterial && mat !== bodyMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();

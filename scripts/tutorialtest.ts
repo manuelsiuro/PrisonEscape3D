@@ -4,12 +4,13 @@
  * and the lesson end done. The lessons are data (src/tutorial/lessons.ts); this proves none
  * can get stuck.
  */
+import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
 import { standing, tonight, turnFrom } from '../src/sim/systems/talent';
 import { questionNow } from '../src/sim/systems/quiz';
 import { dayMinute } from '../src/sim/systems/clock';
 import { TRAINING } from '../src/content/prisons/training';
-import { BRIBE, command, dirFromVector, EXT, OP, ORDER, SLOT, TALK, tossArgs } from '../src/sim/command';
+import { BRIBE, command, dirFromVector, EXT, LINE, OP, ORDER, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { drillOn, prisonDay } from '../src/sim/systems/calendar';
 import { dropTile } from '../src/sim/systems/smuggling';
 import { markerAt, sweetSpot } from '../src/sim/systems/games';
@@ -37,6 +38,8 @@ import { TILE, TILE_INFO } from '../src/sim/world/tiles';
 import { LAYER, MAP_W, tileOfKey } from '../src/sim/world/World';
 import { CHAPTERS, LESSONS, myDesk, type LessonCtx } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
+import { CALLEE, JOB, TIER } from '../src/content/phone';
+import { phrasesOf } from '../src/sim/systems/phone';
 import { Bot, DIR, n } from './bots';
 import { check } from './assert';
 
@@ -704,6 +707,29 @@ play('glider', (bot) => {
   bot.use();
 });
 
+play('payphone', (bot) => {
+  // In line beside the phone, Sparky talking: the secret overheard while waiting; then the call home, the money at mail call.
+  const c = CENTER_PERKS.comms!;
+  bot.walkTo(tile(c.line[0].x, c.line[0].z));
+  bot.op(OP.EXT, EXT.LINE, LINE.JOIN);
+  check(bot.st.line[0] === -1, 'payphone: in line');
+  bot.until(() => bot.st.booth[0] < 0 && bot.st.turn > 0, 20 * 60 * 20);
+  bot.walkTo(tile(c.phone.x, c.phone.z));
+  bot.op(OP.EXT, EXT.CALL, CALLEE.HOME * 16, 0);
+  check(!!bot.st.call, 'payphone: calling home');
+  bot.until(() => bot.st.phoned[0] > 0 && bot.st.phoned[1] === 0, 20 * 60 * 120);
+});
+
+play('cousin', (bot) => {
+  // Plain, coded, a deep code: clear enough for Lou, the deep code learned.
+  bot.op(OP.EXT, EXT.CALL, CALLEE.COUSIN * 16 + JOB.CAKE, 0);
+  check(!!bot.st.call, 'cousin: on the line to Lou');
+  for (const tier of [TIER.PLAIN, TIER.CODED, TIER.DEEP]) {
+    const call = bot.st.call!;
+    bot.op(OP.EXT, EXT.SAY, phrasesOf(bot.st, call, call.at).findIndex(([k]) => k === tier));
+  }
+});
+
 const carriesLockpick = (bot: Bot) => bot.slotOf('lockpick') >= 0;
 /** The player's desk's tile. */
 function deskTileOf(bot: Bot): number {
@@ -743,6 +769,29 @@ function follow(id: string) {
   bot.until(() => !!why(), 4 * 60 * 20);
   check(why() === 'lesson.smuggle.seized', 'smuggle: a drop left lying is seized and the lesson ends');
   console.log(`smuggle, left lying: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+
+{
+  // Lou's line: three deep codes he doesn't know yet, and he doesn't get it; silence, and the line goes dead.
+  const { bot, progress, why } = follow('cousin');
+  bot.op(OP.EXT, EXT.CALL, CALLEE.COUSIN * 16 + JOB.CAKE, 0);
+  for (let k = 0; k < 3 && bot.st.call; k++) bot.op(OP.EXT, EXT.SAY, phrasesOf(bot.st, bot.st.call, bot.st.call.at).findIndex(([t]) => t === TIER.DEEP));
+  check(why() === 'lesson.cousin.lost', `cousin: Lou not getting it ends the lesson (${why()})`);
+  const quiet = follow('cousin');
+  quiet.bot.op(OP.EXT, EXT.CALL, CALLEE.COUSIN * 16 + JOB.CAKE, 0);
+  quiet.bot.until(() => !!quiet.why(), 60 * 20);
+  check(quiet.why() === 'lesson.cousin.hungUp', `cousin: saying nothing ends the lesson (${quiet.why()})`);
+  console.log(`cousin, not understood: ended at step ${progress.k + 1}; silent: ${quiet.why()}`);
+  // The queue walked away from: the place lost, the lesson ends.
+  const away = follow('payphone');
+  const c = CENTER_PERKS.comms!;
+  away.bot.walkTo(tile(c.line[0].x, c.line[0].z));
+  away.bot.op(OP.EXT, EXT.LINE, LINE.JOIN);
+  away.bot.walkTo(tile(c.phone.x, c.phone.z + 2));
+  away.bot.until(() => away.bot.st.booth[0] < 0, 20 * 60 * 20);
+  away.bot.walkTo(tile(c.phone.x - 8, c.phone.z + 1));
+  away.bot.until(() => !!away.why(), 60 * 20);
+  check(!!away.why(), `payphone: walking off ends the lesson (${away.why()})`);
 }
 
 {

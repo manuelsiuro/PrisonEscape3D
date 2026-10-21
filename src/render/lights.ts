@@ -8,7 +8,7 @@ const OPEN_AIR = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none', 's
 
 /** A soft round glow, white in the middle and fading out: one for every prison (made once, never freed with a view). */
 let glow: THREE.CanvasTexture | null = null;
-function glowTexture(): THREE.CanvasTexture {
+export function glowTexture(): THREE.CanvasTexture {
   return (glow ??= drawGlow());
 }
 

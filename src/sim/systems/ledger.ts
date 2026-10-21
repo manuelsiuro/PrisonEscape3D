@@ -154,6 +154,16 @@ export const FEATS = [
   'starActs',
   'quizzes',
   'quizWins',
+  // v2.10 (P34, the pay phone): calls made, calls home; Lou's jobs pulled off (understood, not caught), caught; deep codes he learned; secrets overheard; tips that found something; cutting in; away in Lou's car.
+  'phoneCalls',
+  'homeCalls',
+  'louJobs',
+  'louBlown',
+  'codesLearned',
+  'overheard',
+  'tipsFound',
+  'lineCuts',
+  'wheels',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -337,6 +347,18 @@ export function ledger(sim: Sim, x: number, z: number) {
           if (e.place === 0) f[FEAT.actWins]++;
           if ((e.mark ?? 0) >= GOODWILL) f[FEAT.starActs]++;
         }
+        break;
+      case 'phone':
+        if (e.what === 'call') f[FEAT.phoneCalls]++;
+        else if (e.what === 'home') f[FEAT.homeCalls]++;
+        else if (e.what === 'lou' && e.ok) {
+          if (e.blown) f[FEAT.louBlown]++;
+          else f[FEAT.louJobs]++;
+          f[FEAT.codesLearned] += e.learned ?? 0;
+        } else if (e.what === 'overheard') f[FEAT.overheard]++;
+        else if (e.what === 'tipFound') f[FEAT.tipsFound]++;
+        else if (e.what === 'cut') f[FEAT.lineCuts]++;
+        else if (e.what === 'wheels') f[FEAT.wheels]++;
         break;
       case 'quiz':
         if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {
