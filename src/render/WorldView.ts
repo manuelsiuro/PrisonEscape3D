@@ -169,10 +169,16 @@ export class WorldView {
   private floorOf(x: number, z: number): keyof typeof TEX | undefined {
     const k = this.kindAt(x, z);
     if (k === TILE.DOOR && [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(isFence)) {
+      // (Grass first where either side has it: a gate from the roll-call asphalt into the garden stands on the garden's grass.)
+      let found: keyof typeof TEX | undefined;
       for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
         const n = this.kindAt(x + dx, z + dz);
-        if (n !== TILE.DOOR && !isFence(n) && TILE_INFO[n]?.outdoor && !TILE_INFO[n].solid && FLOOR_OF[n]) return FLOOR_OF[n];
+        if (n !== TILE.DOOR && !isFence(n) && TILE_INFO[n]?.outdoor && !TILE_INFO[n].solid && FLOOR_OF[n]) {
+          if (n === TILE.GRASS) return FLOOR_OF[n];
+          found ??= FLOOR_OF[n];
+        }
       }
+      if (found) return found;
     }
     return FLOOR_OF[k];
   }

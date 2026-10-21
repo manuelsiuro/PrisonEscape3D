@@ -109,6 +109,8 @@ export interface Frame {
   reps: number;
   /** Puddles to mop (tiles), and a number that changes whenever they do. */
   puddles: readonly number[];
+  /** P31: the gardener's planters at work (prop index → how far the seedlings have grown, 0–1); the rest grown. */
+  planters: ReadonlyMap<number, number>;
   puddlesRev: number;
   /** Mines set off today (P11): their ground tiles. */
   craters: readonly number[];
@@ -1331,6 +1333,7 @@ export class View {
     // Card sharks (P27): the court's spots, the ball, the cards, the board (the ground floor only).
     this.pastimesView.group.visible = f.layer === LAYER.GROUND;
     this.groundsView.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
+    this.groundsView.update(f.planters);
     this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND, !!f.team.ball, dt);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);

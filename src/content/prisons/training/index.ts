@@ -36,7 +36,7 @@ const props: PropPlacement[] = [
   { kind: 'weights', x: 45, z: 37 },
   { kind: 'weights', x: 47, z: 37 },
   { kind: 'pullup', x: 46, z: 40, w: 2 },
-  { kind: 'bleachers', x: 35, z: 41, w: 4 },
+  { kind: 'bleachers', x: 35, z: 40, w: 4 },
   { kind: 'lamp', x: 48, z: 36 },
   { kind: 'toolShed', x: 24, z: 47, w: 2, d: 2 },
 ];
@@ -109,8 +109,9 @@ export const TRAINING: PrisonDef = {
     oldTimer: 2,
     garden: { x: 17, z: 47, w: 6, d: 2 },
     race: { x: 22, z: 23, dir: 1, len: 6 },
-    pitch: pitch(35, 43, 13, 8),
-    track: { x: 34, z: 42, w: 15, d: 10 },
+    // (A row of grass between the track and the south fence: from the camera, the fence's mesh would hide its lane.)
+    pitch: pitch(35, 42, 13, 8),
+    track: { x: 34, z: 41, w: 15, d: 10 },
   },
   // Rebuilt in 2.7 (P31): the sports ground and the garden in the south yard.
   map: 1,

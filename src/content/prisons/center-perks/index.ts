@@ -368,6 +368,7 @@ export const CENTER_PERKS: PrisonDef = {
     oldTimer: 5,
     garden: { x: 44, z: 51, w: 6, d: 2 },
     race: { x: 10, z: 13, dir: 1, len: 6 },
+    // (The track's south lane runs along the fence: seen through its mesh. A row of grass there would cost the pitch a row, and a match its goals.)
     pitch: pitch(12, 48, 14, 7),
     track: { x: 11, z: 47, w: 16, d: 9 },
     stage: stage(56, 11, 9),

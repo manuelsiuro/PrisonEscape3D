@@ -178,19 +178,22 @@ const BUILDERS: Record<PropKind, Builder> = {
   /** A pull-up bar: two posts and a bar overhead, w tiles across. */
   pullup: (w) => {
     const x = w / 2 - 0.12;
-    return [cyl(0.06, 2.1, 0x3d4652, -x, 0, 0, 8), cyl(0.06, 2.1, 0x3d4652, x, 0, 0, 8), rod(0.03, w - 0.16, METAL, 0, 2.05, 0), box(0.2, 0.04, 0.2, DARK, -x, 0, 0), box(0.2, 0.04, 0.2, DARK, x, 0, 0)];
+    return [cyl(0.06, 1.95, 0x3d4652, -x, 0, 0, 8), cyl(0.06, 1.95, 0x3d4652, x, 0, 0, 8), rod(0.03, w - 0.16, METAL, 0, 1.9, 0), box(0.2, 0.04, 0.2, DARK, -x, 0, 0), box(0.2, 0.04, 0.2, DARK, x, 0, 0)];
   },
-  /** Bleachers: three tiers of aluminium planks rising away from the field (it faces +z), on a steel frame. */
+  /**
+   * Bleachers: a footboard, the seat plank across the tile's middle (where people sit, at a
+   * bench's height) and a higher tier behind it, on a steel frame; it faces +z.
+   */
   bleachers: (w, d) => {
     const parts: Part[] = [];
-    const tiers = 3;
-    const depth = d / tiers;
-    for (let k = 0; k < tiers; k++) {
-      const z = d / 2 - depth * (k + 0.5);
-      const y = 0.28 + k * 0.32;
-      parts.push(box(w - 0.08, 0.06, depth * 0.62, 0xc9d0d8, 0, y, z), box(w - 0.08, y, 0.04, 0x8a929c, 0, 0, z + depth * 0.3));
-    }
-    for (let x = -w / 2 + 0.2; x <= w / 2 - 0.19; x += Math.max(1, (w - 0.4) / Math.max(1, Math.round(w / 2)))) parts.push(box(0.06, 0.28 + (tiers - 1) * 0.32, 0.06, DARK, x, 0, -d / 2 + 0.12));
+    const back = -d / 2;
+    const tiers: Array<[number, number]> = [
+      [d / 2 - 0.12, 0.1],
+      [0, 0.28],
+      [Math.max(back + 0.12, -0.3), 0.56],
+    ];
+    for (const [z, y] of tiers) parts.push(box(w - 0.08, 0.05, 0.22, 0xc9d0d8, 0, y, z), box(w - 0.08, y, 0.03, 0x8a929c, 0, 0, z - 0.1));
+    for (let x = -w / 2 + 0.2; x <= w / 2 - 0.19; x += Math.max(1, (w - 0.4) / Math.max(1, Math.round(w / 2)))) parts.push(box(0.05, 0.61, 0.05, DARK, x, 0, tiers[2][0] - 0.08));
     return parts;
   },
   /** A raised planter: a timber frame of soil (the crops in it drawn with the job's state). */

@@ -25,6 +25,7 @@ const VEG = [0xe8862e, 0xd23f36, 0xe8d23a];
  */
 export class GroundsView {
   readonly group = new THREE.Group();
+  private readonly planters = new Map<number, { leaves: THREE.Mesh; veg: THREE.Mesh }>();
 
   setWorld(world: World, later: Later = now) {
     const old = [...this.group.children] as THREE.Mesh[];
@@ -51,26 +52,44 @@ export class GroundsView {
     };
     flat(rubber, 0.92, 0.15);
     flat(paintParts, 0.8, 0.2);
-    // The crops in the gardener's planters: clumps of leaves along each, a ripe one here and there.
-    const crops: Part[] = [];
+    // The crops in the gardener's planters: clumps of leaves along each, a ripe one here and there (one mesh a planter: update() grows what's planted).
+    this.planters.clear();
     world.props.forEach((p, i) => {
       if (p.kind !== 'planter') return;
+      const crops: Part[] = [];
+      const ripe: Part[] = [];
       const along = (p.rot ?? 0) % 2 === 0;
       const len = along ? p.w : p.d;
+      const cx = p.x + p.w / 2;
+      const cz = p.z + p.d / 2;
       for (let k = 0; k < len * 2; k++) {
-        const t = (k + 0.5) / 2;
-        const x = along ? p.x + t : p.x + p.w / 2;
-        const z = along ? p.z + p.d / 2 : p.z + t;
+        const t = (k + 0.5) / 2 - len / 2;
+        const x = along ? t : 0;
+        const z = along ? 0 : t;
         const h = 0.12 + ((i * 7 + k * 3) % 5) * 0.025;
-        crops.push(box(0.28, h, 0.26, k % 2 ? LEAF : LEAF_DARK, x, 0.38, z), box(0.18, h * 0.8, 0.34, LEAF, x, 0.38, z));
-        if ((i + k) % 3 === 0) crops.push(box(0.12, 0.1, 0.12, VEG[(i + k) % VEG.length], x + 0.06, 0.38 + h * 0.5, z + 0.05));
+        crops.push(box(0.28, h, 0.26, k % 2 ? LEAF : LEAF_DARK, x, 0, z), box(0.18, h * 0.8, 0.34, LEAF, x, 0, z));
+        if ((i + k) % 3 === 0) ripe.push(box(0.12, 0.1, 0.12, VEG[(i + k) % VEG.length], x + 0.06, h * 0.5, z + 0.05));
       }
+      const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
+      const leaves = new THREE.Mesh(merge(crops), mat);
+      const veg = new THREE.Mesh(merge(ripe), mat.clone());
+      for (const m of [leaves, veg]) {
+        m.position.set(cx, 0.38, cz);
+        m.castShadow = true;
+        m.receiveShadow = true;
+        this.group.add(m);
+      }
+      this.planters.set(i, { leaves, veg });
     });
-    if (crops.length) {
-      const mesh = new THREE.Mesh(merge(crops), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 }));
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.group.add(mesh);
+  }
+
+  /** The planters at work (prop index → grown 0–1): seedlings coming up, their crop showing once ripe; the others grown. */
+  update(growing: ReadonlyMap<number, number>) {
+    for (const [i, { leaves, veg }] of this.planters) {
+      const g = growing.get(i);
+      const s = g === undefined ? 1 : 0.2 + 0.8 * g;
+      leaves.scale.set(0.5 + 0.5 * s, s, 0.5 + 0.5 * s);
+      veg.visible = g === undefined || g >= 1;
     }
   }
 

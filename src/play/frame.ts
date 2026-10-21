@@ -1,3 +1,5 @@
+import { JOBS } from '../content/jobs';
+import { STEPS_PER_SECOND } from '../sim/tuning';
 import { checkpointOf, shiftChange } from '../sim/systems/getaway';
 import { lookingAway } from '../sim/systems/ways';
 import { itemDef, itemNumber } from '../content/items';
@@ -156,6 +158,7 @@ const frameData: Frame = {
   restBed: null,
   reps: 0,
   puddles: [],
+  planters: new Map(),
   puddlesRev: 0,
   craters: [],
   security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
@@ -456,16 +459,25 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     trainAt.facing = Math.PI;
     f.trainAt = trainAt;
   } else if (!seated && trainKind === 'pullup') {
-    // (P31: under the pull-up bar, hands up on it, facing out of the weights corner.)
+    // (P31: at the pull-up bar, just in front of it facing it, hands up on it, lifted a little off the grass:
+    // a step back from it, or the see-through cut round the player would take the bar away.)
     const tp = sim.world.props[st.train];
     trainAt.x = tp.x + tp.w / 2;
-    trainAt.z = tp.z + tp.d / 2;
-    trainAt.y = 0.12;
-    trainAt.facing = 0;
+    trainAt.z = tp.z + tp.d / 2 + 0.55;
+    trainAt.y = 0.2;
+    trainAt.facing = Math.PI;
     f.trainAt = trainAt;
   } else if (!seated || seated.kind === 'bed') f.trainAt = null;
   f.reps = trainReps(st.reps);
   f.puddles = st.puddles;
+  // (P31: the gardener's planters growing what was planted in them.)
+  const grow = f.planters as Map<number, number>;
+  grow.clear();
+  for (const k in st.machines) {
+    const i = Number(k);
+    if (sim.world.props[i]?.kind !== 'planter') continue;
+    grow.set(i, Math.max(0, Math.min(1, 1 - (st.machines[i] - st.step) / (JOBS.gardener.cycle! * STEPS_PER_SECOND))));
+  }
   f.craters = st.craters;
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
   // (P30: on the stage, at the quiz's table, empty-handed: the instrument, the buzzer.)

@@ -1,3 +1,4 @@
+import { OPEN_HOURS } from '../content/routine';
 import { cornersOf } from '../content/grounds';
 import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
 import { quizOn } from '../sim/systems/quiz';
@@ -922,9 +923,9 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.energy = 100;
     },
     steps: [
-      { text: 'lesson.laps.go', done: zone('sports'), goal: () => tile(35, 39) },
-      { text: 'lesson.laps.run', on: (e) => e.type === 'lap', goal: (sim) => nextCorner(sim) },
-      { text: 'lesson.laps.pullup', touch: 'lesson.laps.pullupTouch', on: (e) => e.type === 'trained' && e.attr === 'str', goal: (sim) => besideProp(sim, sim.world.props.findIndex((q) => q.kind === 'pullup')) },
+      { text: 'lesson.laps.go', done: zone('sports'), goal: () => tile(35, 39), fail: lapsFail },
+      { text: 'lesson.laps.run', on: (e) => e.type === 'lap', goal: (sim) => nextCorner(sim), fail: lapsFail },
+      { text: 'lesson.laps.pullup', touch: 'lesson.laps.pullupTouch', on: (e) => e.type === 'trained' && e.attr === 'str', goal: (sim) => besideProp(sim, sim.world.props.findIndex((q) => q.kind === 'pullup')), fail: lapsFail },
     ],
   },
   {
@@ -942,7 +943,7 @@ export const LESSONS: readonly Lesson[] = [
     steps: [
       { text: 'lesson.gardener.go', done: zone('garden'), goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take), fail: jobFail },
       { text: 'lesson.gardener.take', touch: 'lesson.gardener.takeTouch', done: (c) => carries(c.sim, 'seedlings') || machineOn(c.sim, GARDENER) || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take), fail: jobFail },
-      { text: 'lesson.gardener.plant', touch: 'lesson.gardener.plantTouch', done: (c) => machineOn(c.sim, GARDENER) || carries(c.sim, 'produce') || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].machines[0]), fail: jobFail },
+      { text: 'lesson.gardener.plant', touch: 'lesson.gardener.plantTouch', done: (c) => machineOn(c.sim, GARDENER) || carries(c.sim, 'produce') || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, nearestMachine(sim, GARDENER)), fail: jobFail },
       { text: 'lesson.gardener.crate', done: (c) => c.sim.state.quota > 0, goal: (sim) => besideProp(sim, carries(sim, 'produce') ? jobRooms(sim.world)[GARDENER].put : loadedMachine(sim, GARDENER)), fail: jobFail },
     ],
   },
@@ -1078,6 +1079,19 @@ function outside(sim: Sim): boolean {
 /** The tunnel lesson: dug up inside the fence (never a hole dug down, nor climbing back out through the desk). */
 function upInside(e: SimEvent, sim: Sim): Key | null {
   return e.type === 'layer' && e.how === 'digUp' && !outside(sim) ? 'lesson.tunnel.early' : null;
+}
+/** The laps lesson (P31): free time over with the sports field's gate shut (the lesson can't go on). */
+function lapsFail(c: LessonCtx): Key | null {
+  return OPEN_HOURS.sports!.includes(ROUTINE[c.sim.state.routine].id) || c.sim.state.lockdown ? null : 'lesson.laps.late';
+}
+/** The machine of a job's room nearest the player (the gardener's planters, P31). */
+function nearestMachine(sim: Sim, job: number): number {
+  const p = sim.state.player;
+  const d2 = (i: number) => {
+    const q = sim.world.props[i];
+    return ((q.x + q.w / 2) * UNIT - p.x) ** 2 + ((q.z + q.d / 2) * UNIT - p.z) ** 2;
+  };
+  return jobRooms(sim.world)[job].machines.reduce((a, b) => (d2(b) < d2(a) ? b : a));
 }
 /** The track's next corner on the lap under way (P31), else the nearest one to begin from. */
 function nextCorner(sim: Sim): number | null {

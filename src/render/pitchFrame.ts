@@ -34,10 +34,13 @@ export function pitchFraming(
   zMax: number,
 ): { fit: number; x: number; z: number } {
   const { wide, deep } = screenTiles(aspect);
-  const x0 = Math.min(p.x - 1, px - 1);
-  const x1 = Math.max(p.x + p.w + 1, px + 1);
-  const z0 = Math.min(p.z - 1, pz - 1);
-  const z1 = Math.max(p.z + p.d + 1, pz + 1);
+  // (A tile's margin round the pitch, but less past the goal lines: the goals stand just behind them, P31's bigger pitches.)
+  const mx = p.w >= p.d ? 0.4 : 1;
+  const mz = p.w >= p.d ? 1 : 0.4;
+  const x0 = Math.min(p.x - mx, px - 1);
+  const x1 = Math.max(p.x + p.w + mx, px + 1);
+  const z0 = Math.min(p.z - mz, pz - 1);
+  const z1 = Math.max(p.z + p.d + mz, pz + 1);
   const fit = clamp(Math.min(wide / (x1 - x0), deep / (z1 - z0)), zMin, zMax);
   const k = Math.max(zoom, 1e-3);
   const along = (at: number, lead: number, lo: number, hi: number, span: number) => {
