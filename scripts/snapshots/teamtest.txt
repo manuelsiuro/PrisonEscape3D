@@ -1,12 +1,12 @@
-center-perks: pitch 11×4 at 26,28, field 9×4 along x
+center-perks: pitch 14×7 at 12,48, field 12×7 along x
 stalag-flucht: pitch 13×4 at 4,41, field 11×4 along x
 shankton: pitch 11×5 at 24,30, field 9×5 along x
 san-pancho: pitch 10×6 at 27,32, field 8×6 along x
 irongate: pitch 10×5 at 33,22, field 8×5 along x
-training: pitch 13×6 at 31,40, field 11×6 along x
-the ball: rolled 44 steps across and stopped
-walk on: the whistle after 32 steps
-a simple bot over 30 matches: won 18, lost 5, drawn 7, off 0; goals 32–13; kicks 192
+training: pitch 13×8 at 35,42, field 11×8 along x
+the ball: rolled 56 steps across and stopped
+walk on: the whistle after 20 steps
+a simple bot over 30 matches: won 19, lost 5, drawn 6, off 0; goals 31–13; kicks 161
 the cover: sight 7 tiles on the pitch, 3.5 off it; a goal holds a guard's eyes 100 steps
 heart: 168 steps, pays $7–$22
 skull: 184 steps, pays $12–$37

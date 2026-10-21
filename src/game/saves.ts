@@ -32,6 +32,8 @@ export interface SaveFile {
   rumors?: Rumor[];
   /** A Daily Escape's run (P26, the 'daily' slot): which Daily it is (its number). */
   daily?: number;
+  /** The prison's map as it was then (P31: PrisonDef.map; none before 2.7). */
+  map?: number;
 }
 
 const KEY_OF: Record<SlotId, StorageKey> = { auto: KEYS.saveAuto, 1: KEYS.save1, 2: KEYS.save2, 3: KEYS.save3, daily: KEYS.saveDaily };
@@ -48,6 +50,7 @@ export function saveFileOf(sim: Sim, at: number, game: string, rumors: readonly 
     at,
     game,
     snap: sim.snapshot(),
+    ...(sim.prison.map ? { map: sim.prison.map } : {}),
     ...(rumors.length ? { rumors: rumors.map((r) => ({ fact: { ...r.fact }, step: r.step, ...(r.by !== undefined ? { by: r.by } : {}) })) } : {}),
   };
 }
@@ -102,6 +105,15 @@ export function deleteSave(slot: SlotId) {
   deleteLog(slot);
 }
 
+/**
+ * Whether a save's prison has been rebuilt since (P31: a new map, PrisonDef.map): its game
+ * can't go on there (walls where the player stood, holes in the wrong places); the run starts
+ * again in that prison instead.
+ */
+export function rebuiltSince(f: SaveFile): boolean {
+  return (f.map ?? 0) < (prisonOf(f.prison)?.map ?? 0);
+}
+
 export function prisonOf(id: unknown): PrisonDef | undefined {
   return PRISONS.find((p) => p.id === id);
 }
@@ -109,7 +121,7 @@ export function prisonOf(id: unknown): PrisonDef | undefined {
 /** The game a save holds, ready to play (null if it can't be loaded). */
 export function loadSave(f: SaveFile): Sim | null {
   const prison = prisonOf(f.prison);
-  if (!prison) return null;
+  if (!prison || rebuiltSince(f)) return null;
   try {
     const sim = new Sim(prison, 1);
     sim.restore(f.snap);

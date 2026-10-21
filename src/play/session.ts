@@ -1,3 +1,4 @@
+import { setZonesHere } from '../ui/hud';
 import { buzz } from '../app/haptics';
 import { resetRat } from './rat';
 import { resetSmuggle } from './smuggle';
@@ -94,6 +95,8 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   // Your prisoner (P16): how the player looks, and the name friends call them.
   const prisoner = readPrisoner();
   stageWorld(sim, prisoner);
+  // (Where the routine sends the player, as this prison has it: P31's sports ground only where there is one.)
+  setZonesHere(new Set(sim.world.def.zones.map(([z]) => z)));
   PLAYER.name = prisoner?.name ?? '';
   // The speech bubbles (P13): this prison's voices, and the rumors the save kept.
   chatterStart(sim, rumors);

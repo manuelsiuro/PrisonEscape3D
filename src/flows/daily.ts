@@ -1,8 +1,9 @@
 import { dailyNumber, dailyOf } from '../content/daily';
 import { dailyRecord, dailyTry, streakOf } from '../game/daily';
-import { deleteSave, loadSave, readSave } from '../game/saves';
+import { deleteSave, loadSave, readSave, rebuiltSince } from '../game/saves';
 import { readLog } from '../game/logs';
 import { t } from '../i18n';
+import { prisonName } from '../ui/screens/prisons';
 import { Sim } from '../sim/Sim';
 import { ask } from '../ui/screens/ask';
 import { showDaily } from '../ui/screens/daily';
@@ -30,7 +31,13 @@ export async function dailyFlow(): Promise<void> {
     if (choice.act === 'play' && saved !== null && !(await ask(t('daily.replaceSure', { n: saved + 1 }), t('daily.play'), click))) continue;
     const d = dailyOf(choice.n);
     let sim: Sim | null;
-    if (choice.act === 'continue' && f) {
+    // (P31: a run saved before its prison was rebuilt can't go on: a fresh try of the same Daily.)
+    if (choice.act === 'continue' && f && rebuiltSince(f)) {
+      deleteSave('daily');
+      banner.toast(t('toast.rebuilt', { prison: prisonName(d.prison) }), 'info', 6000);
+      sim = new Sim(d.prison, d.seed, d.twists);
+      startGame(sim, false, null, [], { seed: d.seed }, { n: choice.n, tries: Math.max(1, dailyRecord(choice.n).tries) });
+    } else if (choice.act === 'continue' && f) {
       sim = loadSave(f);
       // (A Three Days run saved as its time ran out: over, its slot let go.)
       if (sim?.timeUp) {

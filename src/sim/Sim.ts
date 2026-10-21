@@ -1,6 +1,10 @@
 import { steerNeedle } from './systems/tattoo';
 import type { PowerUse, PrisonDef } from '../content/prisons/types';
-import { ROUTINE } from '../content/routine';
+import { OPEN_HOURS, ROUTINE, zonesOf } from '../content/routine';
+import { zoneIndex, type ZoneId } from '../content/zones';
+
+/** P31: the places open by the hour, as pairs. */
+const OPEN_PLACES = Object.entries(OPEN_HOURS);
 import { dirOf, OP, opOf } from './command';
 import { newScratch } from './context';
 import { fnv1a } from './rng';
@@ -31,6 +35,7 @@ import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
+import { laps } from './systems/grounds';
 import { endBout, games, stopPick } from './systems/games';
 import { crew, crewEscape } from './systems/crew';
 import { checkpointGates } from './systems/getaway';
@@ -183,6 +188,8 @@ export class Sim {
     keepTalk(this);
     grudges(this);
     keepTraining(this);
+    // The running track (P31): a lap round it.
+    laps(this);
     // Side games (P22): a bout's push and shove, a lock being picked, a door picked open.
     games(this);
     // The crew (P23): lookouts' whistles, a brawl's course, the drop fetched, the night's company.
@@ -337,12 +344,18 @@ export class Sim {
     return true;
   }
 
+  /** The zones this prison's map has (P31: where the routine may send the player). */
+  private get zonesHere(): ReadonlySet<string> {
+    return (this.zoneSet ??= new Set(this.prison.zones.map(([z]) => z)));
+  }
+  private zoneSet: ReadonlySet<string> | null = null;
+
   /** Where the block wants the player: the routine's zones, or during the Work Period, the job's room (GDD §2.1: mandatory if employed). */
   get dutyZones(): readonly string[] {
     // The fire drill (P17): everyone out to roll call until it's over.
     if (drillOn(this) && !this.state.lockdown) return MUSTER;
     const r = ROUTINE[this.state.routine];
-    if (r.id !== 'work') return r.zones;
+    if (r.id !== 'work') return this.prison.leisure?.track ? zonesOf(this.state.routine, (z) => this.zonesHere.has(z)) : r.zones;
     const job = this.jobActive();
     return job >= 0 ? [jobRooms(this.world)[job].def.zone] : r.zones;
   }
@@ -452,6 +465,12 @@ export class Sim {
     // Job rooms (GDD §11): open for the Work Period, and to let out whoever is still inside.
     let rooms = 0n;
     if (ROUTINE[s.routine].id === 'work' && !s.lockdown) for (const r of jobRooms(w)) rooms |= 1n << BigInt(r.zone);
+    // (P31: the sports ground and the garden, open by the hour.)
+    if (!s.lockdown)
+      for (const [zone, blocks] of OPEN_PLACES) {
+        const z = zoneIndex(zone as ZoneId);
+        if (blocks!.includes(ROUTINE[s.routine].id) && w.doorRoom.includes(z)) rooms |= 1n << BigInt(z);
+      }
     // Someone in a job room, or anywhere in its doorway (a foot still in it is enough: a door never shuts on anyone), keeps its door open.
     const zoneBit = (b: Body) => {
       const i = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);

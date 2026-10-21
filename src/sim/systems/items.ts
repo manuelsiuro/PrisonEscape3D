@@ -171,8 +171,8 @@ export type Target =
  * (Speed), the generator (the power, GDD §5.5); seats, benches and chairs to sit on, the
  * infirmary's beds to rest on (GDD §3.1); Irongate's helipad, to board the helicopter (P12).
  */
-export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', helipad: 'helicopter' };
+export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup';
+const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit' };
 
 /** What a prop is used for by standing at it (an infirmary bed is for resting; a cell bed is a container). */
 export function fixtureUse(w: World, p: { kind: string; x: number; z: number }): FixtureUse | undefined {

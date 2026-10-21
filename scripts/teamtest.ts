@@ -159,7 +159,7 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
         const zone = w.zoneAt(x, z);
         const prop = w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d);
         const decor = (p.decor ?? []).some((d) => x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
-        if ((zone !== 'yard' && zone !== 'rollCall') || w.blocked(x, z) || prop || decor) bad.push(`${x},${z} ${zone}${prop ? ' prop' : ''}${decor ? ' decor' : ''}`);
+        if ((zone !== 'yard' && zone !== 'rollCall' && zone !== 'sports') || w.blocked(x, z) || prop || decor) bad.push(`${x},${z} ${zone}${prop ? ' prop' : ''}${decor ? ' decor' : ''}`);
       }
     check(bad.length === 0, `${p.id}: the pitch is open yard floor clear of the garden, the hoop, props and decor (${bad.join('; ')})`);
     // No roll-call spot or hoop spot in a net (nobody lines up, or shoots, inside a goal).
@@ -171,10 +171,10 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
     });
     check(inNet.length === 0, `${p.id}: no roll-call or hoop spot in a net (${inNet.map((q) => `${q.x},${q.z}`).join(' ')})`);
     // No roll-call box or hoop spot painted on the pitch at all (2.5.1), but where the yard has no room
-    // for both: Center Perks' court fills the east end of its small yard, Shankton's roll call fills
-    // its yard's middle rows (moving the boxes would move the inmates at every roll call).
+    // for both: Shankton's roll call fills its yard's middle rows (moving the boxes would move the
+    // inmates at every roll call). (Center Perks' court shared its small yard until its sports ground, P31.)
     const onIt = [...p.rollCall, ...p.leisure!.hoop.spots].filter(({ x, z }) => x >= pitch.x && x < pitch.x + pitch.w && z >= pitch.z && z < pitch.z + pitch.d);
-    const known = ({ 'center-perks': 4, shankton: 8 } as Record<string, number>)[p.id] ?? 0;
+    const known = ({ shankton: 8 } as Record<string, number>)[p.id] ?? 0;
     check(onIt.length === known, `${p.id}: ${known ? `only the ${known} known` : 'no'} roll-call or hoop spots on the pitch (${onIt.map((q) => `${q.x},${q.z}`).join(' ')})`);
     check((f.a1 - f.a0) / UNIT >= 8 && (f.l1 - f.l0) / UNIT >= 4, `${p.id}: the field is at least 8 tiles long and 4 wide`);
     lines.push(`${p.id}: pitch ${pitch.w}×${pitch.d} at ${pitch.x},${pitch.z}, field ${(f.a1 - f.a0) / UNIT}×${(f.l1 - f.l0) / UNIT} along ${f.along ? 'x' : 'z'}`);
@@ -199,7 +199,8 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   // (Everyone well away from the ball for this.)
   for (const id of o.team) o.cool[o.team.indexOf(id)] = sim.state.step + 10_000;
   const c = centreOf(p);
-  o.ball = [c.x, c.z, f.along ? 0 : 200, f.along ? 200 : 0];
+  // (Hard enough to reach the boards across the widest field: 7 tiles at Center Perks since P31.)
+  o.ball = [c.x, c.z, f.along ? 0 : 400, f.along ? 400 : 0];
   sim.state.player.x = c.x + 3 * UNIT * (f.along ? 1 : 0);
   let steps = 0;
   let bounced = false;

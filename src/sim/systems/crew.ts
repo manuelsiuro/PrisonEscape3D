@@ -234,6 +234,8 @@ export function postable(w: World, tile: number, old = false): boolean {
   const door = w.cellDoor[1];
   if (!old && door >= 0 && Math.max(Math.abs((tile % MAP_W) - (door % MAP_W)), Math.abs(Math.floor(tile / MAP_W) - Math.floor(door / MAP_W))) <= 1) return false;
   const zone = w.ground.zone[tile];
+  // (P31: nor in a place behind a gate open by the hour, the sports ground or the garden: he'd hold its gate open all night.)
+  if (!old && w.doorRoom.includes(zone)) return false;
   return !jobRooms(w).some((r) => r.zone === zone);
 }
 

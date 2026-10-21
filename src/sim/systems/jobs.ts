@@ -2,6 +2,7 @@
  * Jobs and cash (GDD §11, §3.1): the stations, the quota and the wage, the Work Period's start
  * and settling, the job board, a new day's vacancies, and loose change in desks and pockets.
  */
+import { gardenDelivered } from './grounds';
 import { twist } from './twists';
 import { itemDef } from '../../content/items';
 import { WORK_ITEMS } from '../../content/jobs';
@@ -109,6 +110,8 @@ export function quotaUp(sim: SimContext) {
   s.cash += wage;
   sim.events.push({ type: 'cash', n: wage, why: 'wage' });
   s.tally[3] += wage;
+  // (P31: the gardener's crates, into the kitchen.)
+  if (def.id === 'gardener') gardenDelivered(sim);
 }
 
 /** What a job pays (P26: nothing on an Unpaid Labour Daily). */

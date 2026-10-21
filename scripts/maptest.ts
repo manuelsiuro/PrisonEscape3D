@@ -10,7 +10,8 @@ import { DECOR } from '../src/content/decor';
 
 /** A wall a decor piece can hang on (brick or concrete; holes and covers count, they look like wall). */
 const isWallTile = (k: number) => k === TILE.BRICK || k === TILE.REINFORCED;
-import { ZONES } from '../src/content/zones';
+import { ZONES, zoneIndex, type ZoneId } from '../src/content/zones';
+import { OPEN_HOURS } from '../src/content/routine';
 import { DAY_BOOKS } from '../src/content/days';
 import { findPath } from '../src/sim/ai/path';
 import { isFloor, placesOf } from '../src/sim/ai/places';
@@ -144,8 +145,17 @@ for (const def of [...PRISONS, TRAINING]) {
   for (const r of def.rollCall) check(reach[r.z * MAP_W + r.x] === 1, `${def.id}: roll call spot ${r.x},${r.z} can be walked to`);
   const reached = new Set<string>();
   for (let i = 0; i < MAP_W * MAP_H; i++) if (reach[i]) reached.add(ZONES[g.zone[i]]);
+  // (P31: the places open by the hour, the sports ground and the garden, with their gates open.)
+  let hours = 0n;
+  for (const z of Object.keys(OPEN_HOURS)) hours |= 1n << BigInt(zoneIndex(z as ZoneId));
+  w.setOpenRooms(hours);
+  const open = reachableFrom(w, sx, sz);
+  w.setOpenRooms(0n);
+  for (let i = 0; i < MAP_W * MAP_H; i++) if (open[i]) reached.add(ZONES[g.zone[i]]);
   for (const z of def.reachable) check(reached.has(z), `${def.id}: ${z} can be walked to from the cell`);
   for (const z of ['outside', 'perimeter'] as const) check(!reached.has(z), `${def.id}: ${z} can't be reached without keys or tools`);
+  // Every place open by the hour has a gate (a door that opens by the hour), and only the gates it should.
+  for (const z of Object.keys(OPEN_HOURS)) if (reached.has(z)) check(w.doorRoom.includes(zoneIndex(z as ZoneId)), `${def.id}: ${z} has a gate`);
   console.log('walkable from the cell:', [...reached].sort().join(', '));
 
   // Guards: every stop and post is free floor, all of them reachable from each other with a
@@ -158,7 +168,7 @@ for (const def of [...PRISONS, TRAINING]) {
     check(findPath(w, first.z * MAP_W + first.x, (i) => i === p.z * MAP_W + p.x, p.z * MAP_W + p.x, MAP_W * MAP_H, undefined, w.guardBlock) !== null, `${def.id}: guard stop ${p.x},${p.z} can be reached`);
   }
   // A post stands where it watches (a shower watch in the showers, a meal watch in the canteen).
-  const WATCHES: Record<string, readonly string[]> = { showers: ['showers'], breakfast: ['canteen'], lunch: ['canteen'], dinner: ['canteen'], exercise: ['yard', 'gym'], rollCall: ['rollCall', 'yard'], eveningRollCall: ['rollCall', 'yard'] };
+  const WATCHES: Record<string, readonly string[]> = { showers: ['showers'], breakfast: ['canteen'], lunch: ['canteen'], dinner: ['canteen'], exercise: ['yard', 'gym', 'sports'], rollCall: ['rollCall', 'yard'], eveningRollCall: ['rollCall', 'yard'] };
   for (const d of def.guards) {
     for (const [block, p] of Object.entries(d.posts ?? {})) {
       const want = WATCHES[block];

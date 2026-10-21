@@ -246,6 +246,9 @@ export const ITEMS: readonly ItemDef[] = [
   gear('tattoo_gun', 30, 'inkGun', 0x3fb8a8, 0x2b3038),
   // P30 (stage nights): a guitar for talent night (a plank's body and neck, wire for strings: nothing wrong with it).
   { ...gear('guitar', 25, 'guitar', 0xc98a4a, 0x5e3a1e), contraband: false },
+  // P31 (sports grounds & gardens): the gardener's work, a tray of seedlings from the shed for a planter, a crate of what it grew for the kitchen.
+  work('seedlings', 'seedTray', 0x5aa846, 0x8a5a2e),
+  work('produce', 'vegCrate', 0xb07a45, 0xe8862e),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */

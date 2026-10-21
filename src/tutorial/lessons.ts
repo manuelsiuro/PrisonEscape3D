@@ -1,3 +1,5 @@
+import { OPEN_HOURS } from '../content/routine';
+import { cornersOf } from '../content/grounds';
 import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
 import { quizOn } from '../sim/systems/quiz';
 import { itemDef, itemNumber } from '../content/items';
@@ -911,6 +913,40 @@ export const LESSONS: readonly Lesson[] = [
       },
     ],
   },
+  {
+    // The sports ground (P31): a lap of the running track for Speed, a set on the pull-up bar for Strength.
+    id: 'laps',
+    icon: 'run',
+    setup: (sim) => {
+      clockTo(sim, MORNING);
+      place(sim, 31, 38, 1);
+      sim.state.energy = 100;
+    },
+    steps: [
+      { text: 'lesson.laps.go', done: zone('sports'), goal: () => tile(35, 39), fail: lapsFail },
+      { text: 'lesson.laps.run', on: (e) => e.type === 'lap', goal: (sim) => nextCorner(sim), fail: lapsFail },
+      { text: 'lesson.laps.pullup', touch: 'lesson.laps.pullupTouch', on: (e) => e.type === 'trained' && e.attr === 'str', goal: (sim) => besideProp(sim, sim.world.props.findIndex((q) => q.kind === 'pullup')), fail: lapsFail },
+    ],
+  },
+  {
+    // The gardener (P31): the Work Period in the vegetable garden, seedlings into a planter, a crate of produce for the kitchen.
+    id: 'gardener',
+    icon: 'sprout',
+    prison: CENTER_PERKS,
+    seed: 62,
+    setup: (sim) => {
+      clockTo(sim, at(12, 1));
+      sim.state.jobs = sim.state.jobs.map((h, k) => (k === GARDENER ? HOLDER.PLAYER : h === HOLDER.PLAYER ? HOLDER.NOBODY : h));
+      sim.state.jobDay = 1;
+      place(sim, 47, 37, 5);
+    },
+    steps: [
+      { text: 'lesson.gardener.go', done: zone('garden'), goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take), fail: jobFail },
+      { text: 'lesson.gardener.take', touch: 'lesson.gardener.takeTouch', done: (c) => carries(c.sim, 'seedlings') || machineOn(c.sim, GARDENER) || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take), fail: jobFail },
+      { text: 'lesson.gardener.plant', touch: 'lesson.gardener.plantTouch', done: (c) => machineOn(c.sim, GARDENER) || carries(c.sim, 'produce') || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, nearestMachine(sim, GARDENER)), fail: jobFail },
+      { text: 'lesson.gardener.crate', done: (c) => c.sim.state.quota > 0, goal: (sim) => besideProp(sim, carries(sim, 'produce') ? jobRooms(sim.world)[GARDENER].put : loadedMachine(sim, GARDENER)), fail: jobFail },
+    ],
+  },
   // ---------------------------------------------------------------- Ways out
   {
     // The lockpick (P22): a keyed door opened without its key, pin by pin.
@@ -939,7 +975,8 @@ export const LESSONS: readonly Lesson[] = [
     setup: (sim) => {
       sim.state.calendar = [[1, DAY_EVENTS.indexOf('delivery'), WEATHERS.indexOf('clear')]];
       clockTo(sim, at(13));
-      place(sim, 25, 50, 1);
+      // (On the grass west of the drive, between the sports ground's fence and the truck's bay.)
+      place(sim, 28, 52, 1);
       // No job to be at in the Work Period (the HUD would ask for the laundry's quota).
       sim.state.jobs = sim.state.jobs.map((h) => (h === HOLDER.PLAYER ? HOLDER.NOBODY : h));
     },
@@ -958,7 +995,8 @@ export const LESSONS: readonly Lesson[] = [
     seed: 41,
     setup: (sim) => {
       clockTo(sim, at(19, 34));
-      place(sim, 26, 56, 1);
+      // (South of the sports ground's fence, on the way to the gates.)
+      place(sim, 28, 57, 1);
       pockets(sim, 'fake_id', 'plastic_key_green');
       sim.state.items.hand = 2;
       sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
@@ -1042,6 +1080,33 @@ function outside(sim: Sim): boolean {
 function upInside(e: SimEvent, sim: Sim): Key | null {
   return e.type === 'layer' && e.how === 'digUp' && !outside(sim) ? 'lesson.tunnel.early' : null;
 }
+/** The laps lesson (P31): free time over with the sports field's gate shut (the lesson can't go on). */
+function lapsFail(c: LessonCtx): Key | null {
+  return OPEN_HOURS.sports!.includes(ROUTINE[c.sim.state.routine].id) || c.sim.state.lockdown ? null : 'lesson.laps.late';
+}
+/** The machine of a job's room nearest the player (the gardener's planters, P31). */
+function nearestMachine(sim: Sim, job: number): number {
+  const p = sim.state.player;
+  const d2 = (i: number) => {
+    const q = sim.world.props[i];
+    return ((q.x + q.w / 2) * UNIT - p.x) ** 2 + ((q.z + q.d / 2) * UNIT - p.z) ** 2;
+  };
+  return jobRooms(sim.world)[job].machines.reduce((a, b) => (d2(b) < d2(a) ? b : a));
+}
+/** The track's next corner on the lap under way (P31), else the nearest one to begin from. */
+function nextCorner(sim: Sim): number | null {
+  const r = sim.prison.leisure?.track;
+  if (!r) return null;
+  const corners = cornersOf(r);
+  const lap = sim.state.lap;
+  if (lap.length) {
+    const c = corners[(lap[1] + (lap[2] || 1) + 4) % 4];
+    return c.z * MAP_W + c.x;
+  }
+  const p = sim.state.player;
+  const best = corners.reduce((a, b) => ((a.x + 0.5) * UNIT - p.x) ** 2 + ((a.z + 0.5) * UNIT - p.z) ** 2 <= ((b.x + 0.5) * UNIT - p.x) ** 2 + ((b.z + 0.5) * UNIT - p.z) ** 2 ? a : b);
+  return best.z * MAP_W + best.x;
+}
 function jobFail(c: LessonCtx): Key | null {
   return ROUTINE[c.sim.state.routine].id !== 'work' && c.sim.state.quota === 0 ? 'lesson.job.late' : null;
 }
@@ -1060,15 +1125,16 @@ function deskStand(sim: Sim): number {
   return isFloor(sim.world, below % MAP_W, Math.floor(below / MAP_W)) ? below : placesOf(sim.world).deskside[1];
 }
 /** The laundry machine with a load in it (the first, if none has). */
-function loadedMachine(sim: Sim): number {
-  const room = jobRooms(sim.world)[LAUNDRY];
+function loadedMachine(sim: Sim, job = LAUNDRY): number {
+  const room = jobRooms(sim.world)[job];
   return room.machines.find((i) => sim.state.machines[i] !== undefined) ?? room.machines[0];
 }
-/** Center Perks' laundry job (its place in the jobs list). */
+/** Center Perks' laundry job (its place in the jobs list), and its gardener's (P31). */
 const LAUNDRY = 0;
+const GARDENER = CENTER_PERKS.jobs.findIndex((j) => j.id === 'gardener');
 /** A machine at work in the player's job room (a load in it). */
-function machineOn(sim: Sim): boolean {
-  const room = jobRooms(sim.world)[LAUNDRY];
+function machineOn(sim: Sim, job = LAUNDRY): boolean {
+  const room = jobRooms(sim.world)[job];
   return !!room && room.machines.some((i) => sim.state.machines[i] !== undefined);
 }
 /** The player's desk's tile (where a tunnel's entrance goes, under it). */
@@ -1227,7 +1293,7 @@ function inkOff(e: SimEvent): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 

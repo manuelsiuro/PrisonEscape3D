@@ -174,6 +174,10 @@ const SHAPES: Record<string, Shape> = {
     // (The tops at the carrot's wide end, +x: the cone's point is at −x.)
     ...[-0.25, 0, 0.25].map((t) => turn(box(0.14, 0.012, 0.02, a, 0.07, 0.06, 0), t, 0.19, 0)),
   ],
+  /** P31: a tray of seedlings (the gardener's): a shallow tray, a grid of little green shoots. */
+  seedTray: (c, a) => [box(0.36, 0.05, 0.26, a), ...[-0.12, 0, 0.12].flatMap((x) => [-0.07, 0.07].map((z) => box(0.05, 0.08, 0.05, c, x, 0.05, z)))],
+  /** P31: a crate of produce: a slatted crate heaped with vegetables. */
+  vegCrate: (c, a) => [box(0.36, 0.16, 0.26, c), box(0.37, 0.02, 0.27, 0x8a5a2e, 0, 0.07), box(0.28, 0.05, 0.18, a, 0, 0.16), box(0.08, 0.05, 0.07, 0x4f8a2e, -0.08, 0.2, 0.03), box(0.07, 0.05, 0.07, 0xd23f36, 0.08, 0.2, -0.03)],
   /** A rat track (P28): an oval run of magazine pages taped into a loop. */
   track: (c, a) => [
     paint(new THREE.TorusGeometry(0.16, 0.035, 6, 20).rotateX(Math.PI / 2).scale(1.35, 1, 1).translate(0, 0.035, 0), c),

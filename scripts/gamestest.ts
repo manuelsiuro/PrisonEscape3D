@@ -42,6 +42,7 @@ import { planOf, TODAY } from '../src/sim/systems/calendar';
 import { DAY_STEPS } from '../src/sim/systems/clock';
 import { drainOf, eyesOn, gamesOpen, lockAt, markerAt, pinsOf, playedToday, pushOf, sportsWins, surging, sweetSpot } from '../src/sim/systems/games';
 import { DOING } from '../src/sim/systems/inmates';
+import { coolEvery } from '../src/sim/systems/twists';
 import { itemOf, slot, usesOf } from '../src/sim/systems/items';
 import { FEAT } from '../src/sim/systems/ledger';
 import { wouldHear } from '../src/sim/systems/noise';
@@ -91,6 +92,8 @@ function game(seed = 5, calendar: Array<[number, number, number]> = [[0, 0, 0]])
     sim.state.player.facing = 9;
     m.goal = -1;
     m.path = [];
+    // (On its feet: one sat down where it was taken from doesn't get up for a game.)
+    m.doing = DOING.NOTHING;
     step(command(0, OP.INTERACT));
     return sim.state.talk === who;
   };
@@ -284,7 +287,8 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     });
     const warn = eyesOn(s, s.step);
     sim.step(command(0, OP.TALK, TALK.DICE, 0));
-    const hot = s.heat === DICE_HEAT && sim.events.some((e) => e.type === 'spotted' && e.reason === 'gambling');
+    // (Seen on a step the heat cools on, the tenth comes off it at once.)
+    const hot = (s.heat === DICE_HEAT || (s.heat === DICE_HEAT - 1 && s.step % coolEvery(s) === 0)) && sim.events.some((e) => e.type === 'spotted' && e.reason === 'gambling');
     if (warn) warned++;
     if (hot) heated++;
     if (warn === hot && (hot || s.heat === 0)) agree++;

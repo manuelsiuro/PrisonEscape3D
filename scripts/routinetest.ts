@@ -8,6 +8,7 @@
  * - all seven inmates make every mandatory block, and sleep in their cells at night.
  * Prints the event log of each run; the snapshot pins the timings.
  */
+import { zoneIndex } from '../src/content/zones';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { ROUTINE, routineAt } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
@@ -58,7 +59,10 @@ check(routineAt(3 * 60) === ROUTINE.length - 1, 'before 08:00 it is still Lights
 check(ROUTINE.every((r) => (r.miss !== null) === (r.zones.length > 0 && r.id !== 'lightsOut')), 'every mandatory block but Lights Out has a penalty');
 {
   const sim = new Sim(CENTER_PERKS);
+  // (The sports ground's gate open, as it is for the exercise hour: P31.)
+  sim.world.setOpenRooms(1n << BigInt(zoneIndex('sports')));
   const reach = reachableFrom(sim.world, CENTER_PERKS.spawn.x, CENTER_PERKS.spawn.z);
+  sim.world.setOpenRooms(0n);
   for (const r of ROUTINE) {
     for (const z of r.zones) {
       let ok = false;
@@ -89,7 +93,7 @@ function modelPrisoner(sim: Sim): Bot {
       want = key;
       if (key === 'lockdown' || key === 'lightsOut') pilot.goTo(places.bedside[1]);
       else if (key === 'rollCall' || key === 'eveningRollCall') pilot.goTo(places.rollCall[0].tile);
-      else if (r.zones.length) pilot.goToAny((i) => r.zones.includes(ZONES[s.world.ground.zone[i]]));
+      else if (r.zones.length) pilot.goToAny((i) => s.dutyZones.includes(ZONES[s.world.ground.zone[i]]));
       else pilot.stop();
     }
     return command(pilot.dir(st.player));

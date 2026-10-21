@@ -4,9 +4,10 @@ import { ZONES, zoneIndex } from '../../content/zones';
 import { DAMAGE_SHOWS, KEY, LEGEND, TILE, TILE_INFO, UNDER_LEGEND, VENT_LEGEND } from './tiles';
 import { doorOpen } from './doors';
 import { JOBS } from '../../content/jobs';
+import { OPEN_HOURS } from '../../content/routine';
 
-/** Zones where jobs are done: their doors open for the Work Period. */
-const WORK_ZONES = new Set<string>(Object.values(JOBS).map((j) => j.zone));
+/** Zones behind doors that open by the hour: where jobs are done (for the Work Period), the sports ground and the garden (P31: OPEN_HOURS). */
+const WORK_ZONES = new Set<string>([...Object.values(JOBS).map((j) => j.zone), ...Object.keys(OPEN_HOURS)]);
 
 export const MAP_W = 64;
 export const MAP_H = 64;

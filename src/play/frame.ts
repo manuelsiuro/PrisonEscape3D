@@ -1,3 +1,5 @@
+import { JOBS } from '../content/jobs';
+import { STEPS_PER_SECOND } from '../sim/tuning';
 import { checkpointOf, shiftChange } from '../sim/systems/getaway';
 import { lookingAway } from '../sim/systems/ways';
 import { itemDef, itemNumber } from '../content/items';
@@ -156,6 +158,7 @@ const frameData: Frame = {
   restBed: null,
   reps: 0,
   puddles: [],
+  planters: new Map(),
   puddlesRev: 0,
   craters: [],
   security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
@@ -270,7 +273,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
     // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
     o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
-    o.doing = m.doing;
+    // (Jogging the track, P31: running as it goes.)
+    o.doing = o.moving && m.then === DOING.JOG ? DOING.RUN : m.doing;
     o.cell = m.cell;
     o.angry = m.angry > 0;
     o.badge = badgeOf(sim, k);
@@ -398,7 +402,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
           : focusOf(sim, target, climb, memo.station);
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
-  f.doing = trainKind === 'weights' ? DOING.LIFT : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : DOING.NOTHING;
+  f.doing = trainKind === 'weights' || trainKind === 'pullup' ? DOING.LIFT : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : DOING.NOTHING;
   f.restBed = null;
   // Seated (GDD §3.1): on the seat's tile facing the table, eating while the meal lasts; resting on an infirmary bed: lying on it.
   const seated = st.seat >= 0 ? sim.world.props[st.seat] : null;
@@ -454,9 +458,26 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     trainAt.y = 0.14;
     trainAt.facing = Math.PI;
     f.trainAt = trainAt;
+  } else if (!seated && trainKind === 'pullup') {
+    // (P31: at the pull-up bar, just in front of it facing it, hands up on it, lifted a little off the grass:
+    // a step back from it, or the see-through cut round the player would take the bar away.)
+    const tp = sim.world.props[st.train];
+    trainAt.x = tp.x + tp.w / 2;
+    trainAt.z = tp.z + tp.d / 2 + 0.55;
+    trainAt.y = 0.2;
+    trainAt.facing = Math.PI;
+    f.trainAt = trainAt;
   } else if (!seated || seated.kind === 'bed') f.trainAt = null;
   f.reps = trainReps(st.reps);
   f.puddles = st.puddles;
+  // (P31: the gardener's planters growing what was planted in them.)
+  const grow = f.planters as Map<number, number>;
+  grow.clear();
+  for (const k in st.machines) {
+    const i = Number(k);
+    if (sim.world.props[i]?.kind !== 'planter') continue;
+    grow.set(i, Math.max(0, Math.min(1, 1 - (st.machines[i] - st.step) / (JOBS.gardener.cycle! * STEPS_PER_SECOND))));
+  }
   f.craters = st.craters;
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
   // (P30: on the stage, at the quiz's table, empty-handed: the instrument, the buzzer.)
@@ -485,6 +506,12 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     // The first time a camera has the player in its eye: what cameras do, and how to blind one.
     if (o.sees && !busy) coachOnce('camera', 'hint.camera');
   });
+  // (P31: the first time out on the sports ground, or in the garden: what's there.)
+  if (st.layer === LAYER.GROUND && !busy) {
+    const here = sim.playerZone;
+    if (here === 'sports') coachOnce('sports', 'hint.sports');
+    else if (here === 'garden') coachOnce('gardenPlace', 'hint.gardenPlace');
+  }
   // Walking up to a live detector arch with contraband and no pouch (GDD §5.4): a warning, once.
   if (memo.step === st.step && sim.powered('detectors') && st.layer === LAYER.GROUND && !busy && !seenTip('detectorAhead') && carriesUnshielded(it)) {
     for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (sim.world.ground.kind[(tile.z + dz) * MAP_W + tile.x + dx] === TILE.DETECTOR) coachOnce('detectorAhead', 'hint.detectorAhead');

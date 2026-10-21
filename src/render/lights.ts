@@ -4,7 +4,7 @@ import { MAP_W, type World } from '../sim/world/World';
 import { LAMP_ARM, LAMP_BULB_Y } from './props';
 
 /** Zones lit by daylight only (open sky); every other zone gets ceiling lights at night. */
-const OPEN_AIR = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none']);
+const OPEN_AIR = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none', 'sports', 'garden']);
 
 /** A soft round glow, white in the middle and fading out: one for every prison (made once, never freed with a view). */
 let glow: THREE.CanvasTexture | null = null;

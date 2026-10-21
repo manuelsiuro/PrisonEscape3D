@@ -26,10 +26,10 @@ export function setAttr(sim: SimContext, a: Attr, v: number) {
   }
 }
 
-/** What a prop trains: the weights Strength, the treadmill Speed, a library shelf Intellect. */
+/** What a prop trains: the weights (and P31's pull-up bar) Strength, the treadmill Speed, a library shelf Intellect. */
 export function trainsOn(sim: SimContext, prop: number): Attr | null {
   const kind = sim.world.props[prop]?.kind;
-  return kind === 'weights' ? 'str' : kind === 'treadmill' ? 'spd' : kind === 'shelf' ? 'int' : null;
+  return kind === 'weights' || kind === 'pullup' ? 'str' : kind === 'treadmill' ? 'spd' : kind === 'shelf' ? 'int' : null;
 }
 
 /** On the equipment: the set's bar starts empty. Too tired (under 10% energy), nothing doing. */

@@ -13,6 +13,8 @@ import { placesOf } from '../ai/places';
 import { argA, argB, argC, EXT, OP, opOf, tossTile } from '../command';
 import type { SimContext } from '../context';
 import { SPOT, WAKE, type LayerMove } from '../state';
+import { freshMeals } from './grounds';
+import { FRESH_ENERGY, FRESH_HEALTH } from '../tuning';
 import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, ENERGY_REGEN_STEPS, HEALTH_REGEN_STEPS, KO_STEPS, MEAL_ENERGY, MEAL_STEPS, SHARPEN_STROKES, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE } from '../world/tiles';
@@ -725,12 +727,15 @@ export function keepSeat(sim: SimContext) {
     if (++s.eaten === MEAL_STEPS) {
       // A feast (P17): a tray piled high, and health back to full.
       const feast = feastNow(sim);
-      s.energy = Math.min(100, s.energy + (feast ? FEAST_ENERGY : MEAL_ENERGY));
+      // (P31: fresh from the garden, a little more.)
+      const fresh = freshMeals(sim);
+      s.energy = Math.min(100, s.energy + (feast ? FEAST_ENERGY : MEAL_ENERGY) + (fresh ? FRESH_ENERGY : 0));
+      if (fresh) s.health = Math.min(maxHealth(s.str), s.health + FRESH_HEALTH);
       if (feast) {
         s.health = Math.max(s.health, maxHealth(s.str));
         s.eventFlags |= TODAY.FEASTED;
       }
-      sim.events.push(feast ? { type: 'meal', feast } : { type: 'meal' });
+      sim.events.push(feast ? { type: 'meal', feast, ...(fresh ? { fresh } : {}) } : fresh ? { type: 'meal', fresh } : { type: 'meal' });
     }
   }
 }

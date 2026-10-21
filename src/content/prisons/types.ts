@@ -175,6 +175,16 @@ export interface LeisureDef {
   /** P30: talent night's stage in the canteen, and quiz night's four places in the library (a prison without day cards has neither). */
   stage?: Stage;
   quiz?: QuizPlace;
+  /** P31: the sports ground's running track, round its pitch (its lanes: the edge tiles of this rectangle, open sports floor). */
+  track?: Ring;
+}
+
+/** A running track (P31): the rectangle whose edge tiles are its lanes, from (x, z), w across and d deep. */
+export interface Ring {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
 }
 
 /** Talent night's stage (P30): the performer's tile and the way they face the room (1, 5, 9 or 13); the boards run a tile either side of it across, and a tile out in front (open canteen floor). */
@@ -284,4 +294,9 @@ export interface PrisonDef {
   checkpoint?: CheckpointDef;
   /** Free time (P27): the hoop and its court, the old-timer; without it, neither. */
   leisure?: LeisureDef;
+  /**
+   * The map's revision (P31: raised when the prison is rebuilt; none: 0). A save from an older
+   * one starts the run again there (saves.ts rebuiltSince).
+   */
+  map?: number;
 }

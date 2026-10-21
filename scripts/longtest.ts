@@ -14,6 +14,7 @@
  *   scratched pet, gambling heat;
  * - saves mid-brew, mid-growth and mid-race; nothing happens without the player.
  */
+import { sendToLook } from '../src/sim/systems/guards';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
@@ -131,7 +132,7 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
       const x = t % MAP_W;
       const z = Math.floor(t / MAP_W);
       check(bedAt(w, t) === k, `${p.id}: bed ${k} is where it says`);
-      check(w.zoneAt(x, z) === 'yard', `${p.id}: bed ${k} in the yard`);
+      check(w.zoneAt(x, z) === 'yard' || w.zoneAt(x, z) === 'garden', `${p.id}: bed ${k} in the yard or the garden`);
       check(canDigFloor(w, t, []) && !reserved(w).has(t), `${p.id}: bed ${k} diggable soil nobody needs to stand on`);
       check(!props(x, z) && !decor(x, z) && !spots.has(t), `${p.id}: bed ${k} clear of furniture, decor and the court`);
       // Clear of the court: no bed within 2 tiles of a shooting spot or the rim.
@@ -485,22 +486,19 @@ function ripeBed(b: number[]) {
   g.setCalm(false);
   s.heat = 0;
   const guard = s.guards[0];
-  for (let k = 0; k < 20; k++) {
-    put(guard.body, t - 2);
-    guard.body.facing = 1;
-    guard.goal = -1;
-    guard.path = [];
+  // (Sent to look at the bed beside it: walking up to it, then looking round there.)
+  put(guard.body, t + 3 * MAP_W);
+  sendToLook(guard, t + MAP_W);
+  for (let k = 0; k < 60; k++) {
     put(s.player, t - MAP_W * 3);
     g.step();
   }
   check(!s.found.includes(placeKey(LAYER.GROUND, t)) && !of(seen, 'found').length, 'a guard looking at the bed sees no hole');
   // The bed emptied (the plant dies): the hole is plain to see.
   s.plots[4][BED.CROP] = CROP.NONE;
-  for (let k = 0; k < 20 && !s.found.length; k++) {
-    put(guard.body, t - 2);
-    guard.body.facing = 1;
-    g.step();
-  }
+  put(guard.body, t + 3 * MAP_W);
+  sendToLook(guard, t + MAP_W);
+  for (let k = 0; k < 60 && !s.found.length; k++) g.step();
   check(s.found.includes(placeKey(LAYER.GROUND, t)), 'with the plant gone, the hole is found');
   console.log('garden: a hole dug through a planted bed unseen; found once the bed is bare');
 }

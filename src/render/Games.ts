@@ -1,3 +1,4 @@
+import { zoneIndex } from '../content/zones';
 import * as THREE from 'three';
 import type { World } from '../sim/world/World';
 import { DECOR } from '../content/decor';
@@ -176,8 +177,10 @@ export class GamesView {
     // Open yard: the yard's floor with nothing overhead, a tile and a bit from any tree or
     // flagpole, a step from anything else standing there (a bush, a hoop: no pole in it).
     const decor = (world.def.decor ?? []).filter((d) => !DECOR[d.kind].wall);
+    // (P31: over the sports ground where there is one, the games' place.)
+    const over = world.ground.zone.includes(zoneIndex('sports')) ? 'sports' : 'yard';
     const open = (x: number, z: number) => {
-      if (!world.inside(x, z) || world.zoneAt(x, z) !== 'yard') return false;
+      if (!world.inside(x, z) || world.zoneAt(x, z) !== over) return false;
       const i = z * MAP_W + x;
       if (TILE_INFO[world.ground.kind[i]].solid || world.propSolid[i] || roof[i] !== TILE.EMPTY) return false;
       return !decor.some((d) => {

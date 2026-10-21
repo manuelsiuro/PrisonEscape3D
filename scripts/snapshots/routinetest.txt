@@ -6,9 +6,9 @@ day 1 09:05 attended breakfast
 day 1 10:00 routine freeTime
 day 1 12:00 routine work
 day 1 15:00 routine exercise
-day 1 15:03 attended exercise
+day 1 15:10 attended exercise
 day 1 16:00 routine showers
-day 1 16:04 attended showers
+day 1 16:03 attended showers
 day 1 17:00 routine dinner
 day 1 17:07 attended dinner
 day 1 18:00 routine eveningFreeTime
@@ -25,9 +25,9 @@ day 2 09:05 attended breakfast
 day 2 10:00 routine freeTime
 day 2 12:00 routine work
 day 2 15:00 routine exercise
-day 2 15:03 attended exercise
+day 2 15:10 attended exercise
 day 2 16:00 routine showers
-day 2 16:04 attended showers
+day 2 16:03 attended showers
 day 2 17:00 routine dinner
 day 2 17:07 attended dinner
 day 2 18:00 routine eveningFreeTime
@@ -44,9 +44,9 @@ day 3 09:05 attended breakfast
 day 3 10:00 routine freeTime
 day 3 12:00 routine work
 day 3 15:00 routine exercise
-day 3 15:03 attended exercise
+day 3 15:10 attended exercise
 day 3 16:00 routine showers
-day 3 16:04 attended showers
+day 3 16:03 attended showers
 day 3 17:00 routine dinner
 day 3 17:07 attended dinner
 day 3 18:00 routine eveningFreeTime
@@ -81,12 +81,12 @@ day 1 22:00 routine eveningRollCall
 day 1 23:00 missed eveningRollCall +100% heat
 day 1 23:00 LOCKDOWN
 day 1 23:00 routine lightsOut
-day 1 23:05 caught (solitary)
-day 1 23:05 lockdown lifted
-day 1 23:35 into solitary
-day 2 01:35 out of solitary
-day 2 01:35 attended lightsOut
-day 2 01:35 cells locked
+day 1 23:02 caught (solitary)
+day 1 23:02 lockdown lifted
+day 1 23:32 into solitary
+day 2 01:32 out of solitary
+day 2 01:32 attended lightsOut
+day 2 01:32 cells locked
 day 2 08:00 routine rollCall
 day 2 08:00 cells unlocked
 truant heat at the end of day 1: 0%

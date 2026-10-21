@@ -174,6 +174,61 @@ const BUILDERS: Record<PropKind, Builder> = {
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) parts.push(cyl(0.06, 0.08, 0x2b3038, sx * (w / 2 - 0.18), 0, sz * (d / 2 - 0.18), 8), cyl(0.045, 0.04, 0x8fe08a, sx * (w / 2 - 0.18), 0.08, sz * (d / 2 - 0.18), 8));
     return parts;
   },
+  // P31 (sports grounds & gardens).
+  /** A pull-up bar: two posts and a bar overhead, w tiles across. */
+  pullup: (w) => {
+    const x = w / 2 - 0.12;
+    return [cyl(0.06, 1.95, 0x3d4652, -x, 0, 0, 8), cyl(0.06, 1.95, 0x3d4652, x, 0, 0, 8), rod(0.03, w - 0.16, METAL, 0, 1.9, 0), box(0.2, 0.04, 0.2, DARK, -x, 0, 0), box(0.2, 0.04, 0.2, DARK, x, 0, 0)];
+  },
+  /**
+   * Bleachers: a footboard, the seat plank across the tile's middle (where people sit, at a
+   * bench's height) and a higher tier behind it, on a steel frame; it faces +z.
+   */
+  bleachers: (w, d) => {
+    const parts: Part[] = [];
+    const back = -d / 2;
+    const tiers: Array<[number, number]> = [
+      [d / 2 - 0.12, 0.1],
+      [0, 0.28],
+      [Math.max(back + 0.12, -0.3), 0.56],
+    ];
+    for (const [z, y] of tiers) parts.push(box(w - 0.08, 0.05, 0.22, 0xc9d0d8, 0, y, z), box(w - 0.08, y, 0.03, 0x8a929c, 0, 0, z - 0.1));
+    for (let x = -w / 2 + 0.2; x <= w / 2 - 0.19; x += Math.max(1, (w - 0.4) / Math.max(1, Math.round(w / 2)))) parts.push(box(0.05, 0.61, 0.05, DARK, x, 0, tiers[2][0] - 0.08));
+    return parts;
+  },
+  /** A raised planter: a timber frame of soil (the crops in it drawn with the job's state). */
+  planter: (w, d) => [
+    box(w - 0.08, 0.36, d - 0.12, 0x7a5434, 0, 0, 0),
+    box(w - 0.2, 0.02, d - 0.24, 0x4a3322, 0, 0.36, 0),
+    box(0.06, 0.38, d - 0.1, WOOD_DARK, -w / 2 + 0.05, 0, 0),
+    box(0.06, 0.38, d - 0.1, WOOD_DARK, w / 2 - 0.05, 0, 0),
+  ],
+  /** The tool shed: timber walls, a pitched felt roof, its door to the front (+z) and a rack of tools by it. */
+  toolShed: (w, d) => {
+    const iw = w - 0.12;
+    const id = d - 0.16;
+    const roof = 0x3a3f46;
+    return [
+      box(iw, 1.75, id, 0x8a6a48, 0, 0, 0),
+      box(iw + 0.02, 0.06, id + 0.02, WOOD_DARK, 0, 1.75, 0),
+      box(iw + 0.24, 0.08, id / 2 + 0.2, roof, 0, -0.04, 0).rotateX(-0.32).translate(0, 2.02, -id / 4),
+      box(iw + 0.24, 0.08, id / 2 + 0.2, roof, 0, -0.04, 0).rotateX(0.32).translate(0, 2.02, id / 4),
+      box(0.7, 1.4, 0.04, WOOD_DARK, -iw / 4, 0, id / 2),
+      box(0.05, 0.05, 0.05, METAL, -iw / 4 + 0.25, 0.75, id / 2 + 0.03),
+      box(0.04, 0.9, 0.04, WOOD, iw / 4 - 0.1, 0.1, id / 2 + 0.06),
+      box(0.18, 0.06, 0.04, METAL, iw / 4 - 0.1, 0.98, id / 2 + 0.06),
+      box(0.04, 0.8, 0.04, WOOD, iw / 4 + 0.15, 0.1, id / 2 + 0.06),
+    ];
+  },
+  /** The produce crate: slatted timber, vegetables heaped in it. */
+  crate: () => [
+    box(0.72, 0.42, 0.56, 0xb07a45, 0, 0, 0),
+    box(0.74, 0.04, 0.58, 0x8a5a2e, 0, 0.14, 0),
+    box(0.74, 0.04, 0.58, 0x8a5a2e, 0, 0.3, 0),
+    box(0.6, 0.08, 0.44, 0xe8862e, 0, 0.42, 0),
+    box(0.2, 0.08, 0.16, 0x4f8a2e, -0.16, 0.48, 0.06),
+    box(0.18, 0.08, 0.14, 0xd23f36, 0.17, 0.48, -0.08),
+  ],
 };
 
 /** The merged model of a prop kind at a size (local, before turning). */

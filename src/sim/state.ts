@@ -145,7 +145,9 @@ export type SimEvent =
   /** Sat down or got up (a seat, bench or chair), lay down on or got off an infirmary bed. */
   | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
-  | { type: 'meal'; feast?: boolean }
+  | { type: 'meal'; feast?: boolean; fresh?: boolean }
+  /** P31: a lap of the running track run. */
+  | { type: 'lap' }
   /** A recipe told to the player: by studying (who -1) or by an inmate. */
   | { type: 'tip'; recipe: number; who: number }
   /** Chilled to the bone in the snow, or (`hot`, P17) baked by a heatwave's sun: energy costs double while it lasts. */
@@ -578,6 +580,13 @@ export interface SimState {
    * An act past its grace without its bit is a no-show.
    */
   acted: number[];
+  /**
+   * P31: a lap of the running track under way (grounds.ts laps: [first corner, last, the way
+   * round, corners passed]; [] none); the step after the gardener's crates were filled (fresh
+   * meals for a day after; 0 none).
+   */
+  lap: number[];
+  fresh: number;
 }
 
 export interface Snapshot {
@@ -718,6 +727,8 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     quiz: null,
     quizDay: 0,
     acted: [],
+    lap: [],
+    fresh: 0,
   };
 }
 
@@ -854,6 +865,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!quizOk(s.quiz, n, s.step)) s.quiz = null;
   for (const k of ['stageDay', 'quizDay'] as const) if (!Number.isInteger(s[k]) || s[k] < 0) s[k] = 0;
   if (!(Array.isArray(s.acted) && (s.acted.length === 0 || (ints(s.acted, 2) && s.acted[0] >= 0 && s.acted[1] >= 0 && s.acted[1] < 16)))) s.acted = [];
+  // P31: a lap as it can be (else none), fresh meals' step.
+  if (!(Array.isArray(s.lap) && (s.lap.length === 0 || (ints(s.lap, 4) && s.lap[0] >= 0 && s.lap[0] < 4 && s.lap[1] >= 0 && s.lap[1] < 4 && Math.abs(s.lap[2]) <= 1 && s.lap[3] >= 0 && s.lap[3] < 4)))) s.lap = [];
+  if (!Number.isInteger(s.fresh) || s.fresh < 0) s.fresh = 0;
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);

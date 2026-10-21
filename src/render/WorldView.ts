@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Pitch } from '../content/prisons/types';
-import { KEY, TILE } from '../sim/world/tiles';
+import { KEY, TILE, TILE_INFO } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { buildGround } from './ground';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -165,11 +165,29 @@ export class WorldView {
     mesh.setMatrixAt(i, this.matrix);
   }
 
+  /** The floor a tile shows: its own kind's, but a gate in a fence stands on the ground either side of it (P31's sports ground gates: grass, not a slab of concrete). */
+  private floorOf(x: number, z: number): keyof typeof TEX | undefined {
+    const k = this.kindAt(x, z);
+    if (k === TILE.DOOR && [this.kindAt(x - 1, z), this.kindAt(x + 1, z), this.kindAt(x, z - 1), this.kindAt(x, z + 1)].some(isFence)) {
+      // (Grass first where either side has it: a gate from the roll-call asphalt into the garden stands on the garden's grass.)
+      let found: keyof typeof TEX | undefined;
+      for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        const n = this.kindAt(x + dx, z + dz);
+        if (n !== TILE.DOOR && !isFence(n) && TILE_INFO[n]?.outdoor && !TILE_INFO[n].solid && FLOOR_OF[n]) {
+          if (n === TILE.GRASS) return FLOOR_OF[n];
+          found ??= FLOOR_OF[n];
+        }
+      }
+      if (found) return found;
+    }
+    return FLOOR_OF[k];
+  }
+
   private buildFloors() {
     const byTex = new Map<keyof typeof TEX, number[]>();
     for (let z = 0; z < MAP_H; z++) {
       for (let x = 0; x < MAP_W; x++) {
-        const tex = FLOOR_OF[this.kindAt(x, z)];
+        const tex = this.floorOf(x, z);
         if (!tex) continue;
         if (!byTex.has(tex)) byTex.set(tex, []);
         byTex.get(tex)!.push(x, z);

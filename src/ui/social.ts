@@ -439,7 +439,7 @@ export class BoardPanel {
 }
 
 /** Every job's icon (typed by JobId: a new job can't be left without one). */
-const JOB_ICONS: Record<JobId, string> = { laundry: 'shirt', janitor: 'drop', kitchen: 'flame', woodshop: 'hammer', mailman: 'letter', metalshop: 'gear' };
+const JOB_ICONS: Record<JobId, string> = { laundry: 'shirt', janitor: 'drop', kitchen: 'flame', woodshop: 'hammer', mailman: 'letter', metalshop: 'gear', gardener: 'sprout' };
 
 /**
  * Training (GDD §3.2): the set's bar, filled by pressing left and right in turn (A and D, or

@@ -43,6 +43,8 @@ export const POTATO_STEPS = 10 * STEPS_PER_MINUTE;
 
 /** Inmates stroll a little slower than the player can walk (units per step). */
 export const INMATE_SPEED = 150;
+/** P31: an inmate jogging the running track goes this much faster than its walk (units a step). */
+export const JOG_EXTRA = 60;
 /** After a bell, inmates set off within this many steps (not all at once). */
 export const INMATE_REACTION = 6 * STEPS_PER_SECOND;
 
@@ -127,6 +129,10 @@ export const GYM_ENERGY = 12;
 export const STUDY_ENERGY = 10;
 /** Below this much energy: no tools, no training (GDD §3.1). */
 export const TIRED = 10;
+/** P31: fresh meals from the garden (the gardener's quota filled): this much more energy and health at each, for a day after. */
+export const FRESH_ENERGY = 10;
+export const FRESH_HEALTH = 10;
+export const FRESH_FOR = 1440 * STEPS_PER_MINUTE;
 /** Talking to an inmate: within this reach (units, either axis), nothing between. */
 export const TALK_REACH = Math.round(1.4 * UNIT);
 /** Opinion (GDD §10.3): 0–100 from 50; at or under LOW an inmate may jump the player at meals and showers; from HIGH it joins them. */

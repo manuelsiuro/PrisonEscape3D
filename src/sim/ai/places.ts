@@ -68,7 +68,7 @@ function build(w: World): Places {
   const showers: Spot[] = [];
   const rests: Spot[] = [];
   for (const p of w.props) {
-    if (p.kind === 'chair' || p.kind === 'bench')
+    if (p.kind === 'chair' || p.kind === 'bench' || p.kind === 'bleachers')
       for (let x = p.x; x < p.x + p.w; x++) for (let z = p.z; z < p.z + p.d; z++) rests.push({ tile: z * MAP_W + x, face: facingAt(w, p, x, z) });
     if (p.kind === 'table' && g.zone[p.z * MAP_W + p.x] === canteen) {
       for (let x = p.x; x < p.x + p.w; x++) {

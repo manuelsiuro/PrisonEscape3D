@@ -1004,21 +1004,23 @@ export class Character {
     this.root.rotation.y += d * k(14);
     this.swing += ((moving ? 1 : 0) - this.swing) * k(10);
     let stepped = false;
+    // (Jogging, P31: running while it goes, quicker strides, a longer swing, more bounce.)
+    const running = moving && doing === DOING.RUN ? 1 : 0;
     if (moving) {
       const before = Math.floor(this.phase / Math.PI);
-      this.phase += dt * 11 * this.gait;
+      this.phase += dt * 11 * this.gait * (1 + 0.45 * running);
       stepped = Math.floor(this.phase / Math.PI) !== before;
     }
-    const s = Math.sin(this.phase) * 0.75 * this.swing;
+    const s = Math.sin(this.phase) * (0.75 + 0.3 * running) * this.swing;
     let legL = s;
     let legR = -s;
     // (A rat perched on the left shoulder, P20: that arm holds still while walking.)
-    let armLx = this.perched ? 0 : -s * 0.85;
-    let armRx = s * 0.85;
+    let armLx = this.perched ? 0 : -s * (0.85 + 0.25 * running);
+    let armRx = s * (0.85 + 0.25 * running);
     let armLz = 0;
     let armRz = 0;
     let legZ = 0;
-    let bob = Math.abs(Math.cos(this.phase)) * 0.045 * this.swing + (motion ? Math.sin(time * 2.2 + this.offset) * 0.006 * (1 - this.swing) : 0);
+    let bob = Math.abs(Math.cos(this.phase)) * (0.045 + 0.04 * running) * this.swing + (motion ? Math.sin(time * 2.2 + this.offset) * 0.006 * (1 - this.swing) : 0);
 
     // Activities fade in once the character has stopped at its spot.
     if (doing !== this.actKind) {

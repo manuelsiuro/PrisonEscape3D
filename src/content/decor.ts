@@ -69,6 +69,8 @@ export const DECOR = {
   drain: { wall: false },
   potatoes: { wall: false },
   globe: { wall: false },
+  /** P31: the garden's water butt, a barrel with a tap and a can beside it. */
+  waterButt: { wall: false },
   // On top of furniture (with y).
   trays: { wall: false },
   pans: { wall: false },

@@ -111,7 +111,7 @@ function yardTile(sim: Sim): number {
       const zone = w.zoneAt(q.x, q.z);
       check(!w.blocked(q.x, q.z) && w.propSolid[q.z * MAP_W + q.x] === 0, `${p.id}: spot ${q.x},${q.z} open floor`);
       check(!(p.decor ?? []).some((d) => q.x >= d.x && q.x < d.x + (d.w ?? 1) && q.z >= d.z && q.z < d.z + (d.d ?? 1)), `${p.id}: spot ${q.x},${q.z} clear of decor`);
-      check(zone === 'yard' || zone === 'rollCall', `${p.id}: spot ${q.x},${q.z} in the yard (${zone})`);
+      check(zone === 'yard' || zone === 'rollCall' || zone === 'sports', `${p.id}: spot ${q.x},${q.z} in the yard or on the sports ground (${zone})`);
       check(lineOfSight(w, q.x * UNIT + UNIT / 2, q.z * UNIT + UNIT / 2, r.x, r.z), `${p.id}: spot ${q.x},${q.z} in sight of the rim`);
       // (Nothing standing in the way of the shot: no bench, tree or bush between the spot and the rim.)
       let clear = true;

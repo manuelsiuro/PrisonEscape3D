@@ -5,7 +5,7 @@ san-pancho: clear 49%, fog 6%, storm 14%, heatwave 31%; kept 55%; none 14%, feas
 irongate: clear 35%, fog 30%, rain 23%, storm 13%; kept 51%; inspection 14%, maintenance 14%, delivery 14%, visiting 14%, sports 14%, talent 14%, quiz 14%
 inspection 10:00–16:00: shakedown 3, 4, 5, 6; sight 7 → 8; the model prisoner commended: +$25
 contraband in sight: +2 a step, +4 during an inspection
-fire drill at 19:41: 7/7 inmates out at roll call as the muster closes; the model prisoner mustered in time, heat 0%
+fire drill at 19:41: 5/7 inmates out at roll call as the muster closes, 7 on their way; the model prisoner mustered in time, heat 0%
 feast: the tray +75 energy, health 90
 movie night: 7/7 inmates in the canteen; a chip in there carries 2 tiles (6 elsewhere: 6)
 food fight: a blow at an inmate under a guard's eyes, heat +0
