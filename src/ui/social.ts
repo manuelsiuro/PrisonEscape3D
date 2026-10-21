@@ -1,3 +1,4 @@
+import { SWAP_PRICE } from '../content/phone';
 import { wageOf } from '../sim/systems/jobs';
 import { crewSection, SPEC_ICON, type CrewTalkView } from './crew';
 import { nightOf, specialityOf } from '../sim/systems/crew';
@@ -168,7 +169,11 @@ export class TalkPanel {
     const crewKey = cv ? JSON.stringify(cv).replace(/\d+:\d\d/g, '') : '';
     const statusEl = cv ? this.el.querySelector('.crew-status') : null;
     if (statusEl && statusEl.textContent !== cv!.status) statusEl.textContent = cv!.status;
-    const key = [crewKey, gamesKey, who, m.opinion, fixer, hasPhone, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    // The pay phone's queue (P34): ahead of the player, his place is for sale.
+    const mine = s.line.indexOf(-1);
+    const his = s.line.indexOf(who);
+    const ahead = mine > 0 && his >= 0 && his < mine;
+    const key = [crewKey, gamesKey, who, m.opinion, fixer, hasPhone, ahead, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -246,6 +251,11 @@ export class TalkPanel {
       phoneHtml = `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.fixerTitle')}</span></div>
         <div class="bribe-row"><span class="bribe-text"><b>${t('item.burner_phone')}</b><small>${esc(note)}</small></span><button class="big-btn ${ok && s.cash >= PHONE_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.PHONE}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirmBuy', { n: PHONE_PRICE }))}" aria-label="${esc(t('talk.buy', { item: t('item.burner_phone'), price: PHONE_PRICE }))}"><img class="btn-item" src="${itemIcons()[PHONE]}" alt="" draggable="false"><span>$${PHONE_PRICE}</span></button></div></section>`;
     }
+    // The pay phone's queue (P34): the place of an inmate ahead, bought.
+    const swapHtml = ahead
+      ? `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.title')}</span></div>
+        <div class="bribe-row"><span class="bribe-text"><b>${t('talk.swap')}</b><small>${esc(t('talk.swapNote', { n: his + 1 }))}</small></span><button class="big-btn ${s.cash >= SWAP_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.SWAP}" ${s.cash >= SWAP_PRICE ? '' : 'disabled'} aria-label="${esc(t('talk.swapAria', { n: SWAP_PRICE }))}"><span>$${SWAP_PRICE}</span></button></div></section>`
+      : '';
     // The games (P22): dice and an arm-wrestle.
     const gamesHtml = gv ? gamesSection(gv, this.diceMask, now) : '';
     // Gifts: anything worth something from the hotbar, or a little cash.
@@ -284,7 +294,7 @@ export class TalkPanel {
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (rearm) {
       const b = this.el.querySelector<HTMLElement>(rearm);
       if (b && !(b as HTMLButtonElement).disabled) confirmed(b);

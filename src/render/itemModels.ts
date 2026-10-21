@@ -201,6 +201,17 @@ const SHAPES: Record<string, Shape> = {
     box(0.05, 0.035, 0.06, 0x9aa2ad, 0.3, 0.004, 0),
     ...[-0.012, 0.012].map((z) => box(0.42, 0.006, 0.004, 0xd8dde3, 0.06, 0.042, z)),
   ],
+  /** Lou's cake (P34): two round sponge layers, a pink filling between, pink icing on top with a rim of cream, a cherry and a candle (the file is inside: it doesn't show). */
+  cake: (c, a) => [
+    cyl(0.16, 0.075, c, 0, 0, 0, 18),
+    cyl(0.163, 0.022, a, 0, 0.075, 0, 18),
+    cyl(0.16, 0.07, c, 0, 0.097, 0, 18),
+    cyl(0.165, 0.018, a, 0, 0.167, 0, 18),
+    ...Array.from({ length: 8 }, (_, k) => box(0.035, 0.03, 0.035, 0xfaf3e4, Math.cos((k * Math.PI) / 4) * 0.13, 0.185, Math.sin((k * Math.PI) / 4) * 0.13)),
+    box(0.04, 0.04, 0.04, 0xc0182e, 0.05, 0.185, 0.03),
+    cyl(0.012, 0.09, 0xf4f1e6, -0.03, 0.185, -0.02, 6),
+    box(0.022, 0.035, 0.022, 0xffc23d, -0.03, 0.275, -0.02),
+  ],
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [
     box(0.4, 0.02, 0.28, 0xb07a45),

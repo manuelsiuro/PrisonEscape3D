@@ -2,6 +2,7 @@
  * Caught and punished (GDD §5.3, §5.6): the capture, waking up in solitary or the infirmary,
  * peeling potatoes, the morning shakedown, the night bed check and cell searches.
  */
+import { retained } from './phone';
 import { CRACKDOWN_CELLS, twist } from './twists';
 import { washScent } from './k9';
 import { itemDef, itemNumber } from '../../content/items';
@@ -95,7 +96,8 @@ export function wakeUp(sim: SimContext) {
   const lightsOut = ROUTINE[s.routine].id === 'lightsOut';
   if (s.wake === WAKE.SOLITARY && places.solitary >= 0) {
     taken += search(sim, 1);
-    s.solitary = SOLITARY_STEPS;
+    // (P34: the lawyer on a retainer gets the stretch halved.)
+    s.solitary = retained(s) ? SOLITARY_STEPS / 2 : SOLITARY_STEPS;
     s.peeled = 0;
     place(sim, places.solitary);
     sim.events.push({ type: 'solitary', on: true, taken });

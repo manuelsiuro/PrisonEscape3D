@@ -69,7 +69,18 @@ export const EXT = {
   NOTE: 14,
   QUIZ: 15,
   ANSWER: 16,
+  /**
+   * The pay phone (P34): a call begun at it (b = CALLEE × 16 + what's asked: LAWYER or JOB; c =
+   * Lou's diversion's hour, 0–23, or the cell tipped off); a phrase said on Lou's line (b = its
+   * place on the card, 0–2; 3 hangs up); the queue (b = LINE).
+   */
+  CALL: 17,
+  SAY: 18,
+  LINE: 19,
 } as const;
+
+/** What EXT.LINE asks (P34): a place at the end of the queue, out of it, cut in at the front. Never renumber. */
+export const LINE = { JOIN: 0, LEAVE: 1, CUT: 2 } as const;
 
 /**
  * What OP.TALK asks for (b: the merchant's slot, the hotbar slot given, the dollars given; a
@@ -80,9 +91,10 @@ export const EXT = {
  * LIAR, the inmate's last play called; HOOPS, a shootout; CHECKERS, b = 1 to the old-timer's
  * board, 0 up from it, 2 resigning; MOVE, a step on the board, b = from, c = to; P28's SELL, b =
  * the hotbar slot sold to a merchant; BUY's b past the shop's slots, a staple; P29's FOOTBALL, a match captained by the inmate;
- * TATTOO, b = the design inked on him; INK_ME, b = the design he inks on the player). Never renumber.
+ * TATTOO, b = the design inked on him; INK_ME, b = the design he inks on the player; P34's SWAP,
+ * his place in the pay phone's queue bought). Never renumber.
  */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20, SELL: 21, FOOTBALL: 22, TATTOO: 23, INK_ME: 24 } as const;
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20, SELL: 21, FOOTBALL: 22, TATTOO: 23, INK_ME: 24, SWAP: 25 } as const;
 
 /**
  * What a follower in the crew is told (P23, TALK.CREW's b): back at the player's heels, keep

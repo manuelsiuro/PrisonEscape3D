@@ -3,6 +3,7 @@
  * on the structure, covers, braces and ropes, climbing between layers, toilets, bed, seats,
  * showers, and energy and health coming back.
  */
+import { CAKE, eatCake, lineOp, say, startCall } from './phone';
 import { playNote, quitShow, STAGE_QUIT, startShow } from './talent';
 import { answerQuiz, endQuiz, joinQuiz } from './quiz';
 import { digHelp, recall } from './crew';
@@ -232,6 +233,10 @@ export function useItems(sim: SimContext, cmd: number) {
         if (argB(cmd) === 0) joinQuiz(sim);
         else endQuiz(sim, 'quit');
       } else if (a === EXT.ANSWER) answerQuiz(sim, argB(cmd));
+      // The pay phone (P34): a call, a phrase on Lou's line (or hung up), the queue.
+      else if (a === EXT.CALL && s.solitary <= 0) startCall(sim, argB(cmd), argC(cmd));
+      else if (a === EXT.SAY) say(sim, argB(cmd));
+      else if (a === EXT.LINE && s.solitary <= 0) lineOp(sim, argB(cmd));
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));
@@ -293,6 +298,7 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   // Strikes come at their own pace (holding the button asks every step); the rest at a press.
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
   if ((target.action === 'digUp' || !STRIKES.has(target.action)) && !fresh) return;
+  if (target.action === 'eat' && held === CAKE) return eatCake(sim);
   if (target.action === 'eat') {
     // Full of energy: the bar keeps for later.
     if (s.energy >= 100) {

@@ -1,3 +1,4 @@
+import { comms } from '../../phone';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
@@ -398,5 +399,7 @@ export const SHANKTON: PrisonDef = {
     quiz: quizAt(5, [25, 42], [26, 42], [28, 42], [29, 42]),
   },
   // Rebuilt in 2.8 (P32): the rec ground in the kitchen's old block, the garden plot in the courtyard.
+  // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
+  comms: comms([36, 24, 13], [[37, 24], [38, 24], [39, 24], [40, 24]], [51, 54], [55, 63, 9]),
   map: 1,
 };

@@ -1013,6 +1013,32 @@ export class Sound {
     for (const at of [0.28, 0.4]) this.tone(440, 480, 0.08, 'triangle', 0.05, at);
   }
 
+  /** The pay phone (P34): coins dropping into the box, then the dial tone's hum (`ring`: the far end ringing twice instead). */
+  payphone(ring = false) {
+    this.tone(2600, 2400, 0.04, 'triangle', 0.04);
+    this.tone(2200, 2000, 0.04, 'triangle', 0.035, 0.09);
+    this.tone(160, 150, 0.08, 'triangle', 0.05, 0.2);
+    if (ring) for (const at of [0.45, 0.95]) {
+      this.tone(440, 440, 0.32, 'sine', 0.025, at);
+      this.tone(480, 480, 0.32, 'sine', 0.025, at);
+    } else {
+      this.tone(350, 350, 0.5, 'sine', 0.02, 0.32);
+      this.tone(440, 440, 0.5, 'sine', 0.02, 0.32);
+    }
+  }
+
+  /** The handset put back on its hook (P34): a plastic clunk. */
+  hangUp() {
+    this.tone(320, 140, 0.07, 'square', 0.03);
+    this.hiss(0.05, 'lowpass', 900, 0.7, 0.05);
+  }
+
+  /** A car alarm far off at the gate (P34): a few whooping rises, then honks. */
+  carAlarm() {
+    for (let k = 0; k < 4; k++) this.tone(620, 1180, 0.32, 'sawtooth', 0.016, k * 0.34);
+    for (let k = 0; k < 3; k++) this.tone(420, 410, 0.16, 'square', 0.018, 1.45 + k * 0.28);
+  }
+
   /** A drone overhead (P21): the whine of four little rotors, beating against each other, swelling and fading (`gain`: how near). */
   droneBuzz(gain = 1) {
     if (gain <= 0.02) return;

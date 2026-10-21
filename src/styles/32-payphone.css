@@ -1,0 +1,265 @@
+/* ------------------------------------------------------------ the pay phone (P34) */
+
+/* Its card at the phone: the queue, the dial's rows, a call, Lou's three phrases a line. */
+.phone-card .train-ic {
+  background: #2f9e8f;
+}
+.phone-card .train-head b {
+  min-width: 0;
+}
+.phone-on,
+.phone-ear,
+.phone-calling {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 8px 0 0;
+  font: 600 12.5px/1.25 var(--font-ui);
+  color: rgba(255, 255, 255, 0.82);
+}
+.phone-on .ic,
+.phone-ear .ic,
+.phone-calling .ic {
+  flex: none;
+  opacity: 0.85;
+}
+.phone-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: line;
+}
+.phone-line li {
+  counter-increment: line;
+  min-width: 0;
+  padding: 3px 8px;
+  border-radius: 9px;
+  font: 600 11.5px var(--font-ui);
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.06);
+}
+.phone-line li::before {
+  content: counter(line) '. ';
+  opacity: 0.6;
+}
+.phone-line li.me {
+  color: white;
+  background: rgba(47, 158, 143, 0.4);
+}
+.phone-body {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+.phone-body:empty {
+  display: none;
+}
+.phone-row,
+.phone-back,
+.phone-say {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  text-align: left;
+  font: 700 12.5px/1.2 var(--font-ui);
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+}
+.phone-row > span {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.phone-row small {
+  font: 500 11px/1.25 var(--font-ui);
+  color: rgba(255, 255, 255, 0.66);
+}
+.phone-row em {
+  flex: none;
+  font: 800 12px var(--font-ui);
+  font-style: normal;
+  color: #ffd76a;
+}
+.phone-row:disabled {
+  opacity: 0.55;
+}
+.phone-row:disabled small {
+  color: #ffb4a8;
+}
+.phone-back {
+  min-height: 34px;
+  width: auto;
+  justify-self: start;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: transparent;
+}
+.phone-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.phone-pick span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font: 700 12.5px var(--font-ui);
+}
+.phone-pick button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 36px;
+  border-radius: 10px;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+.phone-step {
+  margin: 4px 0 2px;
+  font: 600 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.7);
+}
+.phone-step b {
+  color: white;
+}
+.phone-says {
+  display: grid;
+  gap: 5px;
+}
+.phone-say kbd {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font: 800 11px var(--font-ui);
+  color: #0f1a2b;
+  background: rgba(255, 255, 255, 0.85);
+}
+.phone-say > span {
+  flex: 1;
+  min-width: 0;
+}
+.phone-say.known {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 215, 106, 0.55);
+}
+.phone-known {
+  flex: none;
+  color: #ffd76a;
+}
+.phone-result {
+  margin: 8px 0 0;
+  font: 700 13px/1.35 var(--font-ui);
+}
+.phone-result.good {
+  color: #9be8b0;
+}
+.phone-result.bad {
+  color: #ffb4a8;
+}
+.phone-bar.hidden {
+  display: none;
+}
+.phone-bar > i {
+  background: linear-gradient(90deg, #2f9e8f, #9be8d8);
+}
+.phone-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.phone-actions:empty {
+  display: none;
+}
+.phone-actions .big-btn {
+  width: auto;
+  flex: 1 1 auto;
+}
+.phone-actions .big-btn.armed {
+  box-shadow: inset 0 0 0 2px #ffb4a8;
+}
+.phone-card .train-note {
+  margin-top: 8px;
+}
+.phone-card .train-note:empty {
+  display: none;
+}
+
+/* Phones upright: above the hotbar. */
+@media (max-width: 899px) and (min-height: 521px) {
+  .phone-card {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+    max-height: calc(100vh - 260px);
+    overflow-y: auto;
+  }
+}
+
+/* Landscape phones: docked to the left, below the clock; the hotbar steps aside. */
+@media (max-height: 520px) {
+  .phone-card {
+    animation: card-fade 0.25s ease-out;
+    left: max(14px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: min(340px, calc(50vw - 40px));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 8px 12px;
+  }
+  .phone-row,
+  .phone-say {
+    min-height: 38px;
+  }
+  body.phoning .hotbar,
+  body.phoning .energy {
+    display: none;
+  }
+  body.phoning .coach.lesson-coach {
+    top: 0;
+    right: 184px;
+    left: auto;
+    max-width: min(400px, calc(100vw - 600px));
+  }
+  .phone-card[data-phase='lou'] .train-note {
+    display: none;
+  }
+}
+
+/* Wide screens: docked left. */
+@media (min-width: 900px) and (min-height: 521px) {
+  .phone-card {
+    left: max(24px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
+}
+
+body.reduced-motion .phone-card {
+  animation: none !important;
+  transition: none !important;
+}
+/* On Lou's line the digits are the phrases: the tool button, its prompt and the lock-on step aside. */
+body.phoning[data-phone='on'] .tool-btn,
+body.phoning[data-phone='on'] .tool-prompt,
+body.phoning[data-phone='on'] .lock-btn,
+body.phoning[data-phone='on'] .act-btn,
+body.phoning[data-phone='on'] .act-prompt {
+  display: none;
+}

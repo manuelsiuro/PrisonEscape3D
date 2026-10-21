@@ -1,3 +1,5 @@
+import { LINE_DAY } from '../content/phone';
+import { commsOf, phoneUsed, wantsCall } from '../sim/systems/phone';
 import { SHIFT_FROM, SHIFT_TO } from '../content/getaways';
 import { twist } from '../sim/systems/twists';
 import { checkpointOf, glideOutToday } from '../sim/systems/getaway';
@@ -42,7 +44,7 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
@@ -224,6 +226,15 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   const ahead = next.event === 'inspection' ? 'nextInspection' : next.event === 'drill' ? 'nextDrill' : next.event === 'foodFight' ? 'nextFoodFight' : next.event === 'delivery' ? 'nextDelivery' : next.event === 'visiting' ? 'nextVisiting' : next.event === 'sports' ? 'nextSports' : next.event === 'talent' ? 'nextTalent' : next.event === 'quiz' ? 'nextQuiz' : null;
   if (ahead && !sim.prison.rules?.relaxed) out.push({ kind: ahead, key: `${ahead}:${next.day}`, n: next.day });
   const m = dayMinute(s.step);
+  // The pay phone (P34): who rings home in a free time still to come today, and when (drawn ahead with roll(): true; once the player has used it, inmates queue).
+  if (commsOf(sim) && plan.day >= LINE_DAY && phoneUsed(s) && !sim.noQueue)
+    s.inmates.forEach((_, k) => {
+      if (k === speaker) return;
+      for (const b of [0, 1]) {
+        const at = wantsCall(s.salt, plan.day, b, k);
+        if (at > m) out.push({ kind: 'phoneCall', key: `phoneCall:${plan.day}:${b}:${k}`, inmate: k, t1: (at + ROUTINE[0].start) % 1440 });
+      }
+    });
   const cut = plan.outages.find((o) => o > m);
   if (cut !== undefined && !sim.prison.rules?.relaxed) out.push({ kind: 'stormCut', key: `stormCut:${plan.day}:${cut}`, t1: (cut + ROUTINE[0].start) % 1440 });
   // The dogs (P19): whose desk the day's sleeping pills are in, while they're still there.
@@ -320,6 +331,7 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   ratHungry: ['inmate'],
   nextTalent: ['n'],
   nextQuiz: ['n'],
+  phoneCall: ['inmate', 't1'],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */

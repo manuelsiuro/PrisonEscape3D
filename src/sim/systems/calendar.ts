@@ -292,6 +292,11 @@ export const TODAY = {
   SPORTS_WIN: 1024,
   SPORTS_WINS: 3072,
   SPORTS_PRIZE: 4096,
+  /** The pay phone (P34): a call home, the lawyer's appeal, a tip, Lou's diversion booked, today. */
+  CALLED_HOME: 8192,
+  APPEALED: 16384,
+  TIPPED: 32768,
+  DIVERTED: 65536,
 } as const;
 
 /** A food fight's guards: this many drawn into the canteen for as long as it lasts. */

@@ -105,6 +105,8 @@ export const FAKE_VENT = ITEM_ID('fake_vent');
 export const BRACE = ITEM_ID('timber_brace');
 export const SHEET_ROPE = ITEM_ID('sheet_rope');
 export const CHOCOLATE = ITEM_ID('chocolate');
+/** P34: Lou's cake (a file inside). */
+export const CAKE = ITEM_ID('cake');
 export const GRAPNEL = ITEM_ID('grapnel');
 export const RAFT = ITEM_ID('raft');
 /** P14: the alarm clock (wound with the use button) and the firecracker (thrown). */
@@ -285,7 +287,7 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   // Ripe pruno drunk; the rat's track (P28).
   if (held === PRUNO) return { action: 'drink', layer, tile: -1, fits: true, hp: 0 };
   if (held === RAT_TRACK) return { action: 'track', layer, tile: -1, fits: true, hp: 0 };
-  if (held === CHOCOLATE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  if (held === CHOCOLATE || held === CAKE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
   // A bar of soap (P19): the player's scent rubbed off.
   if (held === SOAP && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };

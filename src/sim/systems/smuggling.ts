@@ -17,6 +17,7 @@
  * When and where it all happens is pure (`arrival`, `droneMinute`, `dropTile`): what the phone
  * says is what happens, and the gossip can tell it.
  */
+import { cakeAtVisit } from './phone';
 import { sightFor } from './football';
 import { itemDef, itemNumber } from '../../content/items';
 import type { Rect, SmugglingDef } from '../../content/prisons/types';
@@ -436,6 +437,8 @@ function visit(sim: SimContext) {
   }
   sim.events.push({ type: 'smuggle', what: 'visit', cash: gift, item });
   if (kept) sim.events.push({ type: 'smuggle', what: 'noRoom', item: kept });
+  // P34: Lou's cake, if one's coming.
+  cakeAtVisit(sim);
 }
 
 /** The player's desk (a container index; -1 none). */

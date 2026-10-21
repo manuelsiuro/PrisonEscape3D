@@ -9,6 +9,7 @@ import { announcePastimes } from './pastimes';
 import { announceLong } from './long';
 import { announceTeam } from './team';
 import { announceNights } from './nights';
+import { announcePhone } from './payphone';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
@@ -773,6 +774,10 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'crew':
       announceCrew(sim, e);
+      break;
+    // The pay phone (P34): the queue, calls, Lou and his jobs, a secret overheard.
+    case 'phone':
+      announcePhone(sim, e);
       break;
     // Bluff & glider (P24): waved through and the gates shut again; off a roof.
     case 'bluff':

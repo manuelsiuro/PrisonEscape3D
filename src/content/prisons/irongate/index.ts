@@ -1,3 +1,4 @@
+import { comms } from '../../phone';
 import { court } from '../../leisure';
 import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
@@ -481,5 +482,7 @@ export const IRONGATE: PrisonDef = {
     quiz: quizAt(5, [48, 35], [49, 35], [50, 35], [51, 35]),
   },
   // Rebuilt in 2.9 (P33): the sports ground in the yard's west third, the garden at its east end.
+  // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
+  comms: comms([40, 39, 13], [[39, 39], [38, 39], [37, 39], [36, 39]], [30, 54], [32, 60, 9]),
   map: 1,
 };

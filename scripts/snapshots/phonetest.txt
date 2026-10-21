@@ -1,0 +1,15 @@
+center-perks: phone 41,21 (corridor); queue 40,21 39,21 38,21 37,21; gate 30,60 (perimeter); car 34,63
+stalag-flucht: phone 13,51 (corridor); queue 14,51 15,51 16,51 17,51; gate 20,60 (yard); car 24,63
+shankton: phone 36,24 (corridor); queue 37,24 38,24 39,24 40,24; gate 51,54 (controlRoom); car 55,63
+san-pancho: phone 19,12 (corridor); queue 20,12 20,13 20,14 20,15; gate 31,51 (controlRoom); car 35,63
+irongate: phone 40,39 (corridor); queue 39,39 38,39 37,39 36,39; gate 30,54 (walkway); car 32,60
+queue: 22 inmate calls over days 2–5, at most 3 waiting
+cutting in: 13 swings in 60
+tips: 3 found something, 9 found nothing, word got round 2 times in 12
+plain: understood 80/80, blown 80; safe and clear by listener: strict 0/19, steady 0/33, lazy 0/16, corrupt 0/12, nobody 0/0
+coded: understood 80/80, blown 19; safe and clear by listener: strict 0/19, steady 33/33, lazy 16/16, corrupt 12/12, nobody 0/0
+deep: understood 0/80, blown 0; safe and clear by listener: strict 0/19, steady 0/33, lazy 0/16, corrupt 0/12, nobody 0/0
+plainCodedDeep: understood 80/80, blown 19; safe and clear by listener: strict 0/19, steady 33/33, lazy 16/16, corrupt 12/12, nobody 0/0
+codedCodedPlain: understood 80/80, blown 52; safe and clear by listener: strict 0/19, steady 0/33, lazy 16/16, corrupt 12/12, nobody 0/0
+plainDeepDeep: understood 0/80, blown 0; safe and clear by listener: strict 0/19, steady 0/33, lazy 0/16, corrupt 0/12, nobody 0/0
+phone ok

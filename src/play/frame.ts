@@ -39,6 +39,7 @@ import { nightsFrameOf } from './nights';
 import { INSTRUMENT } from '../content/nights';
 import { sightFor } from '../sim/systems/football';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
+import { carWaiting, commsOf } from '../sim/systems/phone';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -176,6 +177,7 @@ const frameData: Frame = {
   long: null,
   team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },
   nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
+  phone: { offHook: false, car: false },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
 };
@@ -446,6 +448,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const qf = sim.world.def.leisure?.quiz?.face ?? 5;
     if (!p.moving) f.facing = qf === 1 ? Math.PI / 2 : qf === 9 ? -Math.PI / 2 : qf === 13 ? Math.PI : 0;
   }
+  // (P34: on the pay phone, the handset at the ear, facing the phone on its wall.)
+  const comms = st.call !== null && !seated ? commsOf(sim) : null;
+  if (comms) {
+    f.doing = DOING.PHONE;
+    const ph = comms.phone;
+    if (!p.moving) f.facing = Math.atan2(ph.x + 0.5 + DIR_X[ph.face] / 2048 - f.x, ph.z + 0.5 + DIR_Z[ph.face] / 2048 - f.z);
+  }
   if (!seated && st.ink) {
     f.doing = DOING.TATTOO;
     const m = st.inmates[st.ink.who];
@@ -553,6 +562,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.team = teamFrameOf(sim, a);
   // Stage nights (P30): the stage set up, the buzzers.
   f.nights = nightsFrameOf(sim);
+  // The pay phone (P34): off the hook while an inmate's call has begun or the player's is on; Lou's car on its night.
+  f.phone.offHook = (st.booth[0] >= 0 && st.booth[1] > 0) || st.call !== null;
+  f.phone.car = carWaiting(st);
   f.inked = st.inked;
   return f;
 }
