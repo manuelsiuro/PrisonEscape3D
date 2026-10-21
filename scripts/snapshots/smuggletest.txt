@@ -1,7 +1,7 @@
 center-perks: fixer Lefty, 120 drop tiles, 14 visiting seats, 6 arch tiles
 stalag-flucht: fixer Scraps, 61 drop tiles, the Red Cross parcel
 shankton: fixer Deacon, 54 drop tiles, 24 visiting seats, 3 arch tiles
-san-pancho: fixer Primo, 60 drop tiles, 16 visiting seats, 3 arch tiles
+san-pancho: fixer Primo, 60 drop tiles, 16 visiting seats, 2 arch tiles
 irongate: fixer Rook, 48 drop tiles, 16 visiting seats, 3 arch tiles
 phone: the fixer is Lefty; $60 at opinion 60
 drone: ordered 09:00 day 2, came at minute 800 (21:20) on tile 31,28

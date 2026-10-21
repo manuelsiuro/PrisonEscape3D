@@ -46,10 +46,10 @@ export const IRONGATE_DECOR: readonly DecorPlacement[] = [
   // Kitchen: pans on the wall, the sink, a sack of potatoes.
   { kind: 'panRack', x: 24, z: 28, w: 2 },
   { kind: 'sink', x: 23, z: 34, rot: 1 },
-  { kind: 'potatoes', x: 23, z: 36 },
+  { kind: 'potatoes', x: 23, z: 35 },
   // Gym: the punching bag, dumbbells.
-  { kind: 'punchingBag', x: 36, z: 32 },
-  { kind: 'dumbbells', x: 39, z: 31 },
+  { kind: 'punchingBag', x: 39, z: 28 },
+  { kind: 'dumbbells', x: 40, z: 31 },
   // Showers: towel hooks, a mirror, the drains.
   { kind: 'towelHooks', x: 36, z: 35, rot: 1 },
   { kind: 'mirror', x: 40, z: 35, rot: 3 },
@@ -58,19 +58,19 @@ export const IRONGATE_DECOR: readonly DecorPlacement[] = [
   // Library: books and a lamp on the table, a globe.
   { kind: 'books', x: 49, z: 36, y: TABLE },
   { kind: 'deskLamp', x: 50, z: 36, y: TABLE },
-  { kind: 'globe', x: 51, z: 37 },
+  { kind: 'globe', x: 48, z: 34 },
   // Infirmary: the medicine cabinet, a drip stand.
   { kind: 'medCabinet', x: 51, z: 31, rot: 3 },
   { kind: 'ivStand', x: 49, z: 28 },
   // Laundry: a basket, an ironing board.
-  { kind: 'basket', x: 45, z: 28 },
+  { kind: 'basket', x: 45, z: 29 },
   { kind: 'ironingBoard', x: 42, z: 30 },
   // Janitor's closet: the mop bucket, a wet-floor sign. Mailroom: pigeonholes, parcels, sacks.
   { kind: 'mopBucket', x: 23, z: 49 },
   { kind: 'wetSign', x: 23, z: 48 },
   { kind: 'pigeonholes', x: 42, z: 37, rot: 1 },
-  { kind: 'parcels', x: 43, z: 37 },
-  { kind: 'sacks', x: 45, z: 37 },
+  { kind: 'parcels', x: 43, z: 36 },
+  { kind: 'sacks', x: 45, z: 36 },
   // Woodshop: the tool rack, timber, a sawhorse. Metalshop: the rack, drums.
   { kind: 'toolRack', x: 12, z: 42, w: 2 },
   { kind: 'timber', x: 8, z: 49 },
@@ -97,7 +97,7 @@ export const IRONGATE_DECOR: readonly DecorPlacement[] = [
   { kind: 'flagpole', x: 25, z: 25 },
   { kind: 'hoop', x: 10, z: 22 },
   { kind: 'dumbbells', x: 21, z: 22 },
-  { kind: 'waterButt', x: 45, z: 26 },
+  { kind: 'waterButt', x: 51, z: 24 },
   // The helipad court: the windsock, a life ring on the wall.
   { kind: 'windsock', x: 40, z: 42 },
   { kind: 'lifebuoy', x: 36, z: 50, rot: 2 },

@@ -273,7 +273,7 @@ export const PLANS: Plan[] = [
   // ladder, a grapnel across the yard onto the south roofs, a sheet rope down into the court,
   // the two riot guards put down with molten chocolate, aboard in uniform. The takeover in the
   // cell block's vestibule, a chokepoint held till the prison falls (P33: the canteen's guard
-  // across the yard now, three at once would come), once roll call is over (ten guards, four in riot
+  // across the yard now, three at once would come; the fifth cup on whoever is nearest), once roll call is over (ten guards, four in riot
   // gear: chocolate for the riot guards, every one put down), out by the sally port, the ferry gate and the
   // lowered drawbridge.
   {
@@ -557,7 +557,9 @@ function takeover(p: Plan) {
     bot.pilot.stop();
     if (st.lock !== inmates + g) bot.op(OP.LOCK, 2 + inmates + g);
     // A cup of molten chocolate left (once the alarm is up, where it has to be raised first): thrown from where the player stands.
-    if (cups.length && (!p.alarmFirst || st.lockdown) && (!p.riotCups || p.def.guards[g].riot) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
+    // (With riot guards about, the cups kept for them; one more than they need goes on whoever is nearest.)
+    const spare = p.riotCups && st.items.inv.filter((it) => it && itemOf(it) === n('molten_chocolate')).length > st.guards.filter((q, k) => awake(q) && p.def.guards[k].riot).length;
+    if (cups.length && (!p.alarmFirst || st.lockdown) && (!p.riotCups || p.def.guards[g].riot || spare) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
       bot.hold('molten_chocolate');
       bot.op(OP.USE, 1);
       continue;

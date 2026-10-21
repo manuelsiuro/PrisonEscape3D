@@ -195,8 +195,9 @@ export class GamesView {
       const pt = over === 'sports' ? lei?.pitch : null;
       if (pt && x >= pt.x && x < pt.x + pt.w && z >= pt.z && z < pt.z + pt.d) return false;
       if (over === 'sports' && lei?.track && onTrack(lei.track, x, z)) return false;
-      // (Nor through the bleachers or anything else standing there.)
-      if (world.props.some((q) => x >= q.x && x < q.x + q.w && z >= q.z && z < q.z + q.d)) return false;
+      // (Nor through the bleachers or anything else standing there; P33 review: nor a tile from it, a
+      // second post beside a lamp or a pole into the weights bench.)
+      if (world.props.some((q) => x >= q.x - 1 && x <= q.x + q.w && z >= q.z - 1 && z <= q.z + q.d)) return false;
       return ![-1, 1, -MAP_W, MAP_W].some((d) => world.ground.kind[z * MAP_W + x + d] === TILE.DOOR);
     };
     const poleAt = (along: boolean, c: number, a: number) => poleOK(along ? Math.floor(a) : c, along ? c : Math.floor(a));
@@ -240,6 +241,9 @@ export class GamesView {
       return Math.min(r.a1 - r.a0, 20) + (r.along ? 3 : 0) - 0.6 * (r.along ? Math.hypot(mid - cx, r.c - cz) : Math.hypot(r.c - cx, mid - cz));
     };
     runs.sort((p, q) => score(q) - score(p) || p.c - q.c);
+    // (P33 review: over the sports ground strung along x only, where a line that long can run: along z,
+    // over the pitch, its pennants are slivers edge on to the camera.)
+    if (over === 'sports' && runs.some((r) => r.along)) runs.splice(0, runs.length, ...runs.filter((r) => r.along));
     const chosen: typeof runs = [];
     for (const r of runs) {
       if (chosen.length >= 2) break;

@@ -49,9 +49,9 @@ export const SAN_PANCHO_DECOR: readonly DecorPlacement[] = [
   { kind: 'extinguisher', x: 43, z: 25, rot: 1 },
   // Canteen: the menu, a plant, the water cooler, a vending machine, trays left on the tables.
   { kind: 'menuBoard', x: 20, z: 32, w: 2 },
-  { kind: 'plant', x: 18, z: 40 },
+  { kind: 'plant', x: 17, z: 33 },
   { kind: 'waterCooler', x: 18, z: 32 },
-  { kind: 'vending', x: 24, z: 40, rot: 3 },
+  { kind: 'vending', x: 24, z: 39, rot: 3 },
   { kind: 'trays', x: 20, z: 33, y: TABLE },
   { kind: 'trays', x: 23, z: 37, y: TABLE },
   // Kitchen: pans on the wall, the sink, a sack of potatoes.
@@ -80,11 +80,12 @@ export const SAN_PANCHO_DECOR: readonly DecorPlacement[] = [
   // The sports ground (P33): the hoop on its post (its court), dumbbells by the weights.
   { kind: 'hoop', x: 29, z: 32 },
   { kind: 'dumbbells', x: 38, z: 32 },
-  // The garden (P33): the water butt by the shed, saguaros along its south wall.
+  // The garden (P33): the water butt by the shed, saguaros by the beds.
   { kind: 'waterButt', x: 51, z: 35 },
-  ...[46, 51].map((x) => ({ kind: 'cactus', x, z: 40 }) as const),
+  { kind: 'cactus', x: 48, z: 34 },
+  { kind: 'cactus', x: 51, z: 36 },
   // Gym and showers: a mat and dumbbells; towel hooks, a mirror, the drain.
-  { kind: 'mat', x: 43, z: 35 },
+  { kind: 'mat', x: 42, z: 37 },
   { kind: 'dumbbells', x: 41, z: 36 },
   { kind: 'towelHooks', x: 44, z: 37, rot: 3 },
   { kind: 'mirror', x: 41, z: 38, rot: 1 },

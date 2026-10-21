@@ -82,7 +82,8 @@ props.push(
   // board; the heads along the south wall and the east one, clear of the library's door.
   { kind: 'treadmill', x: 43, z: 32, d: 2 },
   { kind: 'treadmill', x: 44, z: 32, d: 2 },
-  { kind: 'weights', x: 42, z: 35 },
+  // (The weights a tile off the board's front, so it reads from any side.)
+  { kind: 'weights', x: 43, z: 35 },
   { kind: 'jobBoard', x: 41, z: 35, rot: 1 },
   ...[42, 43, 44].map((x) => ({ kind: 'shower', x, z: 40, rot: 2 }) as const),
   { kind: 'shower', x: 44, z: 38, rot: 3 },
@@ -114,13 +115,15 @@ props.push(
     [36, 22],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
   // The sports ground (P33, the plaza's south half): the court, the weights corner and the
-  // bleachers north of the track; lamps at its south corners.
+  // bleachers north of the track; lamps at its corners.
   { kind: 'pullup', x: 36, z: 32, w: 2 },
   { kind: 'weights', x: 39, z: 33 },
   { kind: 'weights', x: 39, z: 35 },
   { kind: 'bleachers', x: 33, z: 36, w: 6 },
   { kind: 'lamp', x: 26, z: 46 },
   { kind: 'lamp', x: 39, z: 46 },
+  { kind: 'lamp', x: 26, z: 36 },
+  { kind: 'lamp', x: 39, z: 36 },
   // The garden (P33, the old showers): the planters and the tool shed along the north wall,
   // the crate under the shed; two more planters behind the beds (the wall hides the rows in
   // front of it from the camera, the crops stand above it).
@@ -181,8 +184,11 @@ const guards: GuardDef[] = [
       { x: 21, z: 36, wait: 3, face: 9 },
       { x: 16, z: 49, wait: 3, face: 13 },
       { x: 32, z: 26, wait: 3, face: 5 },
+      // (P33 review: through the sports ground and the garden too, which nobody would see otherwise.)
+      { x: 37, z: 34, wait: 3, face: 9 },
       { x: 44, z: 14, wait: 3, face: 5 },
       { x: 43, z: 36, wait: 3, face: 1 },
+      { x: 47, z: 34, wait: 3, face: 5 },
       { x: 41, z: 45, wait: 3, face: 1 },
       { x: 33, z: 49, wait: 40, face: 13 },
     ],
@@ -264,7 +270,7 @@ const guards: GuardDef[] = [
       { x: 42, z: 49, wait: 4, face: 9 },
       { x: 48, z: 50, wait: 4, face: 13 },
       { x: 48, z: 44, wait: 4, face: 1 },
-      { x: 41, z: 43, wait: 4, face: 5 },
+      { x: 41, z: 46, wait: 4, face: 13 },
     ],
     key: 'purple',
   },

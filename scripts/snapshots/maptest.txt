@@ -22,17 +22,17 @@ walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, in
 guards: 8, 54 stops, 5 asleep at night
 perimeter roofs (grapnel landings): 40 tiles
 vents: 126 duct tiles, 3 grates, 1 ladder; roof tiles 2026
-== san-pancho · picture 1a5568f1
-tiles: asphalt 20, brick 487, concrete 535, detector 2, dirt 354, door 41, fence 8, grass 352, mine 1024, reinforced 400, road 496, tiled 182, tower 36, wood 159
+== san-pancho · picture 9e37f70f
+tiles: asphalt 20, brick 488, concrete 535, detector 2, dirt 354, door 40, fence 8, grass 352, mine 1024, reinforced 400, road 496, tiled 182, tower 36, wood 159
 zones: canteen 72, cellBlock 40, controlRoom 24, corridor 152, garden 54, generator 24, guardQuarters 28, gym 20, infirmary 35, inmateCell 208, janitor 18, kitchen 36, laundry 27, library 24, mailroom 27, metalshop 50, minefield 1040, none 907, outside 496, perimeter 28, playerCell 16, rollCall 60, showers 16, solitary 12, sports 210, walkway 372, woodshop 70, yard 30
 decor: 96 pieces
 walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, sports, yard
-guards: 8, 45 stops, 2 asleep at night
+guards: 8, 47 stops, 2 asleep at night
 delivery: produce, 6 tiles, tail 31,56, supervised by Ochoa (4 stops), thorough 60%
 vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 1806
-== irongate · picture a3e69306
-tiles: asphalt 210, brick 395, concrete 644, detector 6, door 40, electric 19, fence 16, grass 1106, pier 6, reinforced 348, road 18, tiled 177, tower 36, water 925, wood 150
-zones: canteen 84, cellBlock 108, controlRoom 36, corridor 88, dock 39, garden 35, generator 81, guardQuarters 36, gym 30, helipad 72, infirmary 20, inmateCell 208, janitor 18, kitchen 40, laundry 30, library 24, mailroom 30, metalshop 54, none 744, outside 18, perimeter 1267, playerCell 16, rollCall 48, showers 25, solitary 16, sports 224, walkway 594, woodshop 54, yard 57
+== irongate · picture 2ea7bc6f
+tiles: asphalt 205, brick 395, concrete 644, detector 6, door 40, electric 19, fence 16, grass 1111, pier 6, reinforced 348, road 18, tiled 177, tower 36, water 925, wood 150
+zones: canteen 84, cellBlock 108, controlRoom 36, corridor 88, dock 39, garden 40, generator 81, guardQuarters 36, gym 30, helipad 72, infirmary 20, inmateCell 208, janitor 18, kitchen 40, laundry 30, library 24, mailroom 30, metalshop 54, none 744, outside 18, perimeter 1267, playerCell 16, rollCall 48, showers 25, solitary 16, sports 224, walkway 594, woodshop 54, yard 52
 decor: 86 pieces
 walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, sports, yard
 guards: 10, 58 stops, 4 asleep at night

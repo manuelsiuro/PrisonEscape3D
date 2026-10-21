@@ -41,8 +41,8 @@ props.push(
   // The middle block (P33: east of the sports ground, its rooms narrower). Kitchen: the
   // freezer, two ovens, the counter the meals go out on.
   { kind: 'freezer', x: 23, z: 28, d: 2, rot: 1 },
-  { kind: 'oven', x: 24, z: 37, rot: 2 },
-  { kind: 'oven', x: 25, z: 37, rot: 2 },
+  { kind: 'oven', x: 24, z: 36, rot: 2 },
+  { kind: 'oven', x: 25, z: 36, rot: 2 },
   { kind: 'counter', x: 26, z: 33, d: 3, rot: 3 },
   // Canteen: four two-seat tables in two aisles, benches either side, the serving counter by
   // the kitchen; the stage at its south end, clear of the corridor's door.
@@ -58,15 +58,15 @@ props.push(
   { kind: 'treadmill', x: 36, z: 29, d: 2 },
   { kind: 'treadmill', x: 37, z: 29, d: 2 },
   { kind: 'weights', x: 40, z: 30 },
-  { kind: 'weights', x: 40, z: 32 },
+  { kind: 'weights', x: 39, z: 30 },
   { kind: 'jobBoard', x: 40, z: 28, rot: 3 },
   // Showers: heads along the south wall.
   ...[36, 37, 38, 39, 40].map((x) => ({ kind: 'shower', x, z: 37, rot: 2 }) as const),
   // Laundry: the dirty bin, three washers along the south wall, the clean bin.
-  { kind: 'bin', x: 42, z: 28 },
-  { kind: 'washer', x: 44, z: 32, rot: 2 },
-  { kind: 'washer', x: 45, z: 32, rot: 2 },
-  { kind: 'washer', x: 46, z: 32, rot: 2 },
+  { kind: 'bin', x: 43, z: 28 },
+  { kind: 'washer', x: 44, z: 31, rot: 2 },
+  { kind: 'washer', x: 45, z: 31, rot: 2 },
+  { kind: 'washer', x: 46, z: 31, rot: 2 },
   { kind: 'bin', x: 46, z: 28 },
   // Mailroom: sorting desks either side of the aisle, the outgoing shelf.
   { kind: 'sortingDesk', x: 42, z: 34, d: 3, rot: 1 },
@@ -109,33 +109,36 @@ props.push(
   { kind: 'bench', x: 39, z: 22, w: 2 },
   ...[
     [23, 22],
-    [43, 22],
+    [41, 22],
     [33, 42],
     [40, 50],
     [57, 23],
     [59, 33],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
   // The sports ground (P33, the yard's west third down to the corridor): the court, the
-  // weights corner and the bleachers north of the track; lamps at its south corners.
+  // weights corner and the bleachers north of the track; lamps at its corners.
   { kind: 'pullup', x: 15, z: 22, w: 2 },
   { kind: 'weights', x: 18, z: 22 },
   { kind: 'weights', x: 20, z: 22 },
   { kind: 'bleachers', x: 14, z: 27, w: 6 },
   { kind: 'lamp', x: 8, z: 37 },
   { kind: 'lamp', x: 21, z: 37 },
-  // The garden (P33, the yard's east end, fenced from the walkway): the beds in front, a planter
-  // on their east; the tool shed, the crate and three more planters behind them (the wall
-  // hides the two rows in front of it from the camera, the crops and the shed stand above it).
-  { kind: 'planter', x: 51, z: 22, d: 2 },
-  { kind: 'planter', x: 46, z: 25, w: 2 },
-  { kind: 'planter', x: 49, z: 25 },
-  { kind: 'planter', x: 48, z: 26, w: 2 },
-  { kind: 'toolShed', x: 50, z: 25, w: 2, d: 2 },
-  { kind: 'crate', x: 47, z: 26 },
+  { kind: 'lamp', x: 8, z: 27 },
+  { kind: 'lamp', x: 21, z: 27 },
+  // The garden (P33, the yard's east end, fenced from the walkway): the beds and the tool shed
+  // along the north block's wall (the shed, tall, in the back rows would hide the beds); the
+  // planters in the row behind, the crate in the corner (the wall hides those two rows from the
+  // camera, the crops stand above it).
+  { kind: 'toolShed', x: 50, z: 22, w: 2, d: 2 },
+  { kind: 'planter', x: 45, z: 25, w: 2 },
+  { kind: 'planter', x: 47, z: 25, w: 2 },
+  { kind: 'planter', x: 49, z: 25, w: 2 },
+  { kind: 'planter', x: 51, z: 25, d: 2 },
+  { kind: 'crate', x: 44, z: 26 },
 );
 
 /** One row of fourteen through the middle of the yard (it is only five tiles deep), facing the warden at its north side: the painted box clear of the walls and doorways on every side. */
-const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 29 + k, z: 24 }));
+const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 28 + k, z: 24 }));
 
 /**
  * Ten guards (GDD §4.5), four of them armored riot guards. Directions: 1 east, 5 south,
@@ -172,7 +175,7 @@ const guards: GuardDef[] = [
     night: [
       { x: 9, z: 14, wait: 4, face: 1 },
       { x: 50, z: 15, wait: 4, face: 9 },
-      { x: 39, z: 24, wait: 3, face: 9 },
+      { x: 37, z: 23, wait: 3, face: 9 },
       { x: 50, z: 40, wait: 3, face: 9 },
       { x: 9, z: 39, wait: 3, face: 1 },
     ],
@@ -182,7 +185,8 @@ const guards: GuardDef[] = [
   {
     name: 'Finch',
     beat: [
-      { x: 29, z: 28, wait: 3, face: 5 },
+      // (P33 review: the beat kept off the yard's door, the canteen just south of the yard now.)
+      { x: 29, z: 32, wait: 3, face: 1 },
       { x: 34, z: 32, wait: 3, face: 9 },
       { x: 24, z: 30, wait: 3, face: 1 },
       { x: 32, z: 36, wait: 3, face: 13 },
@@ -216,7 +220,7 @@ const guards: GuardDef[] = [
     posts: { exercise: { x: 20, z: 26, face: 9 } },
     night: [
       { x: 23, z: 23, wait: 4, face: 1 },
-      { x: 42, z: 25, wait: 4, face: 9, nap: true },
+      { x: 41, z: 26, wait: 4, face: 9, nap: true },
     ],
     key: 'green',
   },
@@ -327,8 +331,8 @@ export const IRONGATE: PrisonDef = {
     ['solitary', 48, 9, 51, 12],
     ['generator', 43, 17, 51, 20],
     // The yard (P33: its east two thirds, five tiles deep: the roofs' chasm).
-    ['yard', 23, 22, 43, 26],
-    ['rollCall', 28, 23, 43, 25],
+    ['yard', 23, 22, 42, 26],
+    ['rollCall', 27, 23, 42, 25],
     // The middle block (P33: east of the sports ground).
     ['kitchen', 23, 28, 26, 37],
     ['canteen', 28, 27, 34, 38],
@@ -350,7 +354,7 @@ export const IRONGATE: PrisonDef = {
     // P33: the sports ground in the yard's west third, down to the corridor; the garden at the
     // yard's east end.
     ['sports', 8, 22, 21, 37],
-    ['garden', 45, 22, 51, 26],
+    ['garden', 44, 22, 51, 26],
   ],
   cells,
   props,
@@ -462,13 +466,13 @@ export const IRONGATE: PrisonDef = {
   drawbridge: [30, 56, 31, 58],
   // Smuggling (P21): Rook sells burner phones; the drone drops on the roll call box in the
   // yard; visitors (off the ferry) sit in the canteen.
-  smuggling: { fixer: 13, drop: [28, 23, 43, 25], visits: [28, 27, 34, 38] },
+  smuggling: { fixer: 13, drop: [27, 23, 42, 25], visits: [28, 27, 34, 38] },
   // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the
   // sports ground, the beds in the garden (P33).
   leisure: {
     hoop: court(10, 22, 5),
     oldTimer: 4,
-    garden: { x: 45, z: 22, w: 6, d: 2 },
+    garden: { x: 44, z: 22, w: 6, d: 2 },
     race: { x: 26, z: 15, dir: 1, len: 6 },
     // (Two rows clear along the corridor's wall, which would hide the track's lane from the camera.)
     pitch: pitch(9, 29, 12, 6),
