@@ -100,7 +100,8 @@ props.push(
   { kind: 'bed', x: 46, z: 53, d: 2, rot: 2 },
   // The control room, by the main gate.
   { kind: 'controlDesk', x: 54, z: 49, d: 3, rot: 3 },
-  // The courtyard's bench, by the roll call rows.
+  // The courtyard's benches, along its south wall behind the roll call rows.
+  { kind: 'bench', x: 34, z: 35, w: 2, rot: 2 },
   { kind: 'bench', x: 37, z: 35, w: 2, rot: 2 },
   // Chairs: the library's tables, the quarters' table, the control desk.
   ...[25, 26, 28, 29].map((x) => ({ kind: 'chair', x, z: 45, rot: 2 }) as const),
@@ -125,12 +126,13 @@ props.push(
   { kind: 'pullup', x: 50, z: 9, w: 2 },
   { kind: 'weights', x: 53, z: 10 },
   { kind: 'weights', x: 53, z: 12 },
-  { kind: 'planter', x: 24, z: 28, w: 3 },
-  { kind: 'planter', x: 27, z: 28, w: 3 },
-  { kind: 'planter', x: 26, z: 35, w: 2 },
-  { kind: 'planter', x: 28, z: 35, w: 2 },
-  { kind: 'toolShed', x: 24, z: 34, w: 2, d: 2 },
-  { kind: 'crate', x: 29, z: 34 },
+  // (The beds and planters clear of the two rows the corridor's wall hides from the camera.)
+  { kind: 'toolShed', x: 24, z: 28, w: 2, d: 2 },
+  { kind: 'planter', x: 26, z: 28, w: 2 },
+  { kind: 'planter', x: 28, z: 28, w: 2 },
+  { kind: 'planter', x: 25, z: 33, w: 2 },
+  { kind: 'planter', x: 27, z: 33, w: 2 },
+  { kind: 'crate', x: 24, z: 30 },
 );
 
 /** Three rows of four in the courtyard east of the garden (P32), facing the warden at the north end. */
@@ -204,7 +206,7 @@ const guards: GuardDef[] = [
     trait: 'lazy',
     beat: [
       { x: 30, z: 25, wait: 3, face: 5 },
-      { x: 36, z: 30, wait: 3, face: 9 },
+      { x: 37, z: 31, wait: 3, face: 9 },
       { x: 31, z: 34, wait: 3, face: 13 },
       { x: 45, z: 38, wait: 2, face: 9 },
       { x: 30, z: 38, wait: 2, face: 13 },
@@ -296,7 +298,7 @@ export const SHANKTON: PrisonDef = {
     ['yard', 24, 27, 39, 36],
     // P32: the walled garden plot in the courtyard's west end; roll call east of it.
     ['garden', 24, 28, 29, 35],
-    ['rollCall', 31, 29, 39, 35],
+    ['rollCall', 31, 29, 39, 34],
     ['woodshop', 41, 28, 47, 35],
     ['metalshop', 49, 28, 54, 35],
     ['library', 24, 41, 30, 46],
@@ -382,15 +384,16 @@ export const SHANKTON: PrisonDef = {
   },
   // Smuggling (P21): Deacon sells burner phones; the drone drops on the roll call square in the
   // yard inside the shell; visitors sit in the canteen.
-  smuggling: { fixer: 6, drop: [31, 29, 39, 35], visits: [24, 14, 39, 22] },
+  smuggling: { fixer: 6, drop: [31, 29, 39, 34], visits: [24, 14, 39, 22] },
   // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the rec ground, the beds in the garden (P32).
   leisure: {
     hoop: court(44, 9, 5),
     oldTimer: 7,
     garden: { x: 24, z: 31, w: 6, d: 2 },
     race: { x: 15, z: 12, dir: 5, len: 6 },
-    pitch: pitch(42, 15, 12, 7),
-    track: { x: 41, z: 14, w: 14, d: 9 },
+    // (A row clear along the south wall, which would hide the track's lane from the camera.)
+    pitch: pitch(42, 15, 12, 6),
+    track: { x: 41, z: 14, w: 14, d: 8 },
     stage: stage(31, 14, 5),
     quiz: quizAt(5, [25, 42], [26, 42], [28, 42], [29, 42]),
   },

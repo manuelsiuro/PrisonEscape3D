@@ -11,6 +11,6 @@ glide reach (tailwind, quarter tail, cross, quarter head, head, quarter head, cr
   rain 2: 6 4 2 1 1 1 2 4
   rain 3: 8 5 2 1 1 1 2 5
 glider: the button's promise agrees with the flight 228/228 times off Stalag Flucht's hut; still air 2 of 3 (a fence in the way)
-promises flown: center-perks 60 agree (14 out, 42 down inside); shankton 57 agree (11 out, 45 down inside)
+promises flown: center-perks 60 agree (14 out, 42 down inside); shankton 57 agree (11 out, 44 down inside)
 forced wind: kept, calm in fog, saved
 achievements: Papers, Please; Wing It; Tailwind (7 tiles); Grounded (hidden)

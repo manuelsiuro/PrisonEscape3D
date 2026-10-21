@@ -64,7 +64,7 @@ export const SHANKTON_DECOR: readonly DecorPlacement[] = [
   { kind: 'flagpole', x: 37, z: 28 },
   { kind: 'hoop', x: 44, z: 9 },
   { kind: 'dumbbells', x: 54, z: 9 },
-  { kind: 'waterButt', x: 29, z: 33 },
+  { kind: 'waterButt', x: 24, z: 34 },
   // Woodshop: the tool rack, a sawhorse, timber.
   { kind: 'toolRack', x: 45, z: 28, w: 2 },
   { kind: 'sawhorse', x: 43, z: 34 },

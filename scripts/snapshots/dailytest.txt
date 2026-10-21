@@ -39,7 +39,7 @@ the escape bots, every twist of their prison at once (but those closing their wa
   center-perks stowaway: out day 1 14:31 under 17 twists (all but threeDays, customs, truckStrike)
   center-perks bluff: out day 1 19:50 under 20 twists (all there are)
   center-perks glider: out day 1 23:45 under 20 twists (all there are)
-  stalag-flucht fence: out day 1 23:34 under 19 twists (all there are)
+  stalag-flucht fence: out day 1 23:33 under 19 twists (all there are)
   stalag-flucht tunnel: out day 1 23:21 under 19 twists (all there are)
   stalag-flucht roof: out day 1 23:30 under 18 twists (all but closedShop)
   stalag-flucht takeover: out day 1 08:55 under 17 twists (all but bareHands, loneWolf)

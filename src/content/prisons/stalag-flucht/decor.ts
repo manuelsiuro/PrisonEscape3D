@@ -92,6 +92,6 @@ export const STALAG_FLUCHT_DECOR: readonly DecorPlacement[] = [
   { kind: 'hoop', x: 56, z: 45 },
   { kind: 'dumbbells', x: 51, z: 45, w: 2 },
   { kind: 'mat', x: 45, z: 48 },
-  // The garden (P32): the water butt in the corner by the gate.
-  { kind: 'waterButt', x: 23, z: 3 },
+  // The garden (P32): the water butt by the shed.
+  { kind: 'waterButt', x: 36, z: 3 },
 ];

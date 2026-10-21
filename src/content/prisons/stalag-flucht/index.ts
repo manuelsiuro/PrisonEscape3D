@@ -139,9 +139,9 @@ props.push(
     [60, 60],
     [60, 45],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
-  { kind: 'toolShed', x: 37, z: 3, w: 2, d: 3 },
-  ...[25, 28, 31, 34].map((x) => ({ kind: 'planter', x, z: 3, w: 3 }) as const),
-  { kind: 'crate', x: 24, z: 3 },
+  { kind: 'toolShed', x: 37, z: 4, w: 2, d: 2 },
+  ...[24, 27, 30, 33].map((x) => ({ kind: 'planter', x, z: 4, w: 3 }) as const),
+  { kind: 'crate', x: 38, z: 3 },
 );
 
 /** Two rows of five on the snow, facing the warden at the north end. */
@@ -359,8 +359,8 @@ export const STALAG_FLUCHT: PrisonDef = {
   leisure: {
     hoop: court(56, 45, 5),
     oldTimer: 5,
-    // (The beds a row in from cabin B's wall, which would hide them from the camera.)
-    garden: { x: 24, z: 4, w: 12, d: 1 },
+    // (The beds along the wire, the planters behind them: cabin B's wall hides the two rows in front of it from the camera.)
+    garden: { x: 24, z: 3, w: 12, d: 1 },
     race: { x: 9, z: 13, dir: 1, len: 6 },
     pitch: pitch(45, 51, 14, 7),
     track: { x: 44, z: 50, w: 16, d: 9 },

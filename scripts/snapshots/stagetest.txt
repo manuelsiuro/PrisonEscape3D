@@ -12,7 +12,7 @@ lightsOut: perfect 100, ±1 100/100, +2 60, half 50, none 0, mashing 0
 breakout: perfect 100, ±1 100/100, +2 60, half 50, none 0, mashing 0
 verdict: the hardest song perfect: place 0, $60, 7 won over, 20 heat off; every other note of the easiest: 50% place 3 $0
 no-shows: all out cold, 50% first at 689; the best of 2 out cold, 50% placed 1
-acts on the boards, 5 prisons × 4 nights: 45/45 (2.5.0: 32/45)
+acts on the boards, 5 prisons × 4 nights: 45/45 (2.5.0: 34/45)
 center-perks: 27 kinds asked over 30 nights (breakfast cells delivery key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)
 stalag-flucht: 26 kinds asked over 30 nights (breakfast cells delivery key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict)
 shankton: 26 kinds asked over 30 nights (breakfast cells key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)

@@ -9,7 +9,7 @@ hoops: irongate rot 1, the board 0.56 toward the camera, 0.03 off the wall
 hoops: training rot 0, the board 1.00 toward the camera, 0.24 off the wall
 pitch: center-perks 14×7; hoop spots on it 0; roll call baked
 pitch: stalag-flucht 14×7; hoop spots on it 0; roll call baked
-pitch: shankton 12×7; hoop spots on it 0; roll call baked
+pitch: shankton 12×6; hoop spots on it 0; roll call baked
 pitch: san-pancho 10×6; hoop spots on it 0; roll call baked
 pitch: irongate 10×5; hoop spots on it 0; roll call on its own layer (shown for roll call)
 pitch: training 13×8; hoop spots on it 0; roll call baked

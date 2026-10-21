@@ -26,14 +26,14 @@ stalag-flucht laundry: day 1 12:40 +$30 (wage)
 stalag-flucht woodshop: day 1 12:25 +$50 (wage)
 stalag-flucht metalshop: day 1 12:46 +$65 (wage)
 stalag-flucht janitor: day 1 12:22 +$35 (wage)
-stalag-flucht gardener: day 1 12:50 +$35 (wage)
+stalag-flucht gardener: day 1 12:36 +$35 (wage)
 shankton metalshop: day 1 12:23 +$65 (wage)
 shankton kitchen: day 1 12:30 +$40 (wage)
 shankton laundry: day 1 12:30 +$30 (wage)
 shankton woodshop: day 1 12:15 +$50 (wage)
-shankton janitor: day 1 12:29 +$35 (wage)
-shankton mailman: day 1 12:56 +$55 (wage)
-shankton gardener: day 1 12:21 +$35 (wage)
+shankton janitor: day 1 12:26 +$35 (wage)
+shankton mailman: day 1 12:48 +$55 (wage)
+shankton gardener: day 1 12:32 +$35 (wage)
 san-pancho janitor: day 1 12:28 +$35 (wage)
 san-pancho kitchen: day 1 12:29 +$40 (wage)
 san-pancho laundry: day 1 12:36 +$30 (wage)
@@ -55,3 +55,4 @@ speed: 3.59 tiles a second at SPD 40, 4.30 at 100
 merchant: sold foil at $15, $8 to a friend
 follower: at most 1.8 tiles behind on a walk down the corridor
 recipes: studying told sheet_rope, an inmate told poster
+inmates at work at 14:59 on day 1: center-perks 4, stalag-flucht 4, shankton 5, san-pancho 4, irongate 4

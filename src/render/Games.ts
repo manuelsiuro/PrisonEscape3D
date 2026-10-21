@@ -5,6 +5,7 @@ import { DECOR } from '../content/decor';
 import { LAYER, MAP_H, MAP_W } from '../sim/world/World';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { now, type Later } from './batch';
+import { onTrack } from '../content/grounds';
 
 /** What the side games show this frame (P22). */
 export interface GamesFrame {
@@ -188,6 +189,15 @@ export class GamesView {
         return x + 0.5 > d.x - r + 0.5 && x + 0.5 < d.x + (d.w ?? 1) + r - 0.5 && z + 0.5 > d.z - r + 0.5 && z + 0.5 < d.z + (d.d ?? 1) + r - 0.5;
       });
     };
+    // (P32 review: a pole never on the pitch or the track's lanes, where the games are played, nor in a doorway's mouth.)
+    const lei = world.def.leisure;
+    const poleOK = (x: number, z: number) => {
+      const pt = over === 'sports' ? lei?.pitch : null;
+      if (pt && x >= pt.x && x < pt.x + pt.w && z >= pt.z && z < pt.z + pt.d) return false;
+      if (over === 'sports' && lei?.track && onTrack(lei.track, x, z)) return false;
+      return ![-1, 1, -MAP_W, MAP_W].some((d) => world.ground.kind[z * MAP_W + x + d] === TILE.DOOR);
+    };
+    const poleAt = (along: boolean, c: number, a: number) => poleOK(along ? Math.floor(a) : c, along ? c : Math.floor(a));
     // Every row and column's stretches of open yard; the best strung (long, near the middle), then
     // the next best running the same way at least 3 tiles off it (two lines at most: more would hide the yard's
     // people from the steep camera).
@@ -199,7 +209,12 @@ export class GamesView {
           const ok = a < (along ? MAP_W : MAP_H) && open(along ? a : c, along ? c : a);
           if (ok && run < 0) run = a;
           if (ok || run < 0) continue;
-          if (a - run >= STRETCH) runs.push({ along, c, a0: run, a1: a });
+          // (Its ends drawn in to where a pole may stand.)
+          let a0 = run;
+          let a1 = a;
+          while (a0 < a1 && !poleAt(along, c, a0 + 0.3)) a0++;
+          while (a1 > a0 && !poleAt(along, c, a1 - 0.3)) a1--;
+          if (a1 - a0 >= STRETCH) runs.push({ along, c, a0, a1 });
           run = -1;
         }
       }
@@ -218,7 +233,8 @@ export class GamesView {
     const cz = sz / Math.max(1, n);
     const score = (r: (typeof runs)[number]) => {
       const mid = (r.a0 + r.a1) / 2;
-      return Math.min(r.a1 - r.a0, 20) - 0.6 * (r.along ? Math.hypot(mid - cx, r.c - cz) : Math.hypot(r.c - cx, mid - cz));
+      // (Strung along x it faces the camera; along z its pennants are seen edge on.)
+      return Math.min(r.a1 - r.a0, 20) + (r.along ? 3 : 0) - 0.6 * (r.along ? Math.hypot(mid - cx, r.c - cz) : Math.hypot(r.c - cx, mid - cz));
     };
     runs.sort((p, q) => score(q) - score(p) || p.c - q.c);
     const chosen: typeof runs = [];
@@ -236,8 +252,16 @@ export class GamesView {
       // (A long run: a pole every SPAN tiles or so, each span sagging on its own.)
       const a0 = r.a0 + 0.3;
       const a1 = r.a1 - 0.3;
+      // (The poles between spans moved, a tile or two at most, off where a pole mayn't stand; one long span if they can't be.)
       const spans = Math.ceil((a1 - a0) / SPAN);
-      for (let k = 0; k < spans; k++) this.string(r.along, r.c + 0.5, a0 + ((a1 - a0) * k) / spans, a0 + ((a1 - a0) * (k + 1)) / spans, l * 5 + k, at, seg, poles, color);
+      const stops = [a0];
+      for (let k = 1; k < spans; k++) {
+        const want = a0 + ((a1 - a0) * k) / spans;
+        const near = [0, 1, -1, 2, -2, 3, -3].map((d) => want + d).find((a) => a > stops[stops.length - 1] + 2 && a < a1 - 2 && poleAt(r.along, r.c, a));
+        if (near !== undefined) stops.push(near);
+      }
+      stops.push(a1);
+      for (let k = 0; k + 1 < stops.length; k++) this.string(r.along, r.c + 0.5, stops[k], stops[k + 1], l * 5 + k, at, seg, poles, color);
     });
     this.flagAt = new Float32Array(at);
     this.flagCount = Math.min(MAX_FLAGS, at.length / 5);
