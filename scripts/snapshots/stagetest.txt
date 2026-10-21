@@ -1,6 +1,6 @@
 center-perks: stage 56,11 facing 9; quiz 17,34 18,34 20,34 21,34; was none/maintenance
 stalag-flucht: stage 11,30 facing 5; quiz 9,56 10,56 11,56 12,56; was maintenance/none
-shankton: stage 35,9 facing 5; quiz 25,42 26,42 28,42 29,42; was movie/maintenance
+shankton: stage 31,14 facing 5; quiz 25,42 26,42 28,42 29,42; was movie/maintenance
 san-pancho: stage 26,36 facing 9; quiz 39,43 40,43 42,43 43,43; was foodFight/inspection
 irongate: stage 16,37 facing 13; quiz 36,29 37,29 39,29 40,29; was none/drill
 shuffle: level 1, 53 notes, 39.0 s, lanes 17/21/15
@@ -12,7 +12,7 @@ lightsOut: perfect 100, ±1 100/100, +2 60, half 50, none 0, mashing 0
 breakout: perfect 100, ±1 100/100, +2 60, half 50, none 0, mashing 0
 verdict: the hardest song perfect: place 0, $60, 7 won over, 20 heat off; every other note of the easiest: 50% place 3 $0
 no-shows: all out cold, 50% first at 689; the best of 2 out cold, 50% placed 1
-acts on the boards, 5 prisons × 4 nights: 45/45 (2.5.0: 36/45)
+acts on the boards, 5 prisons × 4 nights: 45/45 (2.5.0: 32/45)
 center-perks: 27 kinds asked over 30 nights (breakfast cells delivery key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)
 stalag-flucht: 26 kinds asked over 30 nights (breakfast cells delivery key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict)
 shankton: 26 kinds asked over 30 nights (breakfast cells key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)

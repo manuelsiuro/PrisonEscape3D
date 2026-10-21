@@ -1,4 +1,6 @@
 center-perks: track 16×9 (46 lanes), pitch 14×7, 12 beds, 6 planters
+stalag-flucht: track 16×9 (46 lanes), pitch 14×7, 12 beds, 4 planters
+shankton: track 14×9 (42 lanes), pitch 12×7, 12 beds, 4 planters
 training: track 15×10 (46 lanes), pitch 13×8, 12 beds, no gardener
 laps: 46 lane tiles a lap at Center Perks; +2 Speed and 12 energy each, either way round; turned back or off the lanes, none
 gates: rollCall --, freeTime SG, work -G, exercise SG, showers --, eveningFreeTime SG, eveningRollCall --, lightsOut --

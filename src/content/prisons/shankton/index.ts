@@ -38,28 +38,26 @@ for (const wing of [9, 41]) {
 
 props.push(
   // Canteen: four long tables, benches either side, the serving counter on the east wall.
-  ...[12, 17].flatMap((z) =>
+  ...[16, 20].flatMap((z) =>
     [26, 33].flatMap((x) => [
       { kind: 'table', x, z, w: 3 } as const,
       { kind: 'seat', x, z: z - 1, w: 3 } as const,
       { kind: 'seat', x, z: z + 1, w: 3, rot: 2 } as const,
     ]),
   ),
-  { kind: 'counter', x: 39, z: 15, d: 3, rot: 3 },
-  // Kitchen.
-  { kind: 'freezer', x: 54, z: 10, d: 2, rot: 3 },
-  { kind: 'oven', x: 45, z: 15, rot: 2 },
-  { kind: 'oven', x: 46, z: 15, rot: 2 },
-  { kind: 'counter', x: 49, z: 15, w: 3, rot: 2 },
-  // Laundry.
-  { kind: 'bin', x: 41, z: 17 },
-  { kind: 'washer', x: 42, z: 17 },
-  { kind: 'washer', x: 43, z: 17 },
-  { kind: 'washer', x: 46, z: 17 },
-  { kind: 'bin', x: 47, z: 21 },
-  // Janitor's closet.
-  { kind: 'bin', x: 49, z: 17 },
-  { kind: 'shelf', x: 53, z: 17, w: 2 },
+  { kind: 'counter', x: 39, z: 17, d: 3, rot: 3 },
+  // Behind the canteen (P32: the rec ground took their block): the kitchen, the laundry, the janitor's closet.
+  { kind: 'freezer', x: 24, z: 9, d: 2, rot: 1 },
+  { kind: 'oven', x: 24, z: 12, rot: 2 },
+  { kind: 'oven', x: 25, z: 12, rot: 2 },
+  { kind: 'counter', x: 28, z: 9, w: 2 },
+  { kind: 'bin', x: 31, z: 9 },
+  { kind: 'washer', x: 32, z: 9 },
+  { kind: 'washer', x: 33, z: 9 },
+  { kind: 'washer', x: 34, z: 9 },
+  { kind: 'bin', x: 35, z: 12 },
+  { kind: 'bin', x: 37, z: 9 },
+  { kind: 'shelf', x: 38, z: 9, w: 2 },
   // Showers: heads along the north and south walls.
   ...[9, 10, 11, 12].flatMap((x) => [{ kind: 'shower', x, z: 28 } as const, { kind: 'shower', x, z: 35, rot: 2 } as const]),
   // Gym.
@@ -102,17 +100,16 @@ props.push(
   { kind: 'bed', x: 46, z: 53, d: 2, rot: 2 },
   // The control room, by the main gate.
   { kind: 'controlDesk', x: 54, z: 49, d: 3, rot: 3 },
-  // Courtyard benches either side of the way through.
-  { kind: 'bench', x: 25, z: 35, w: 2, rot: 2 },
+  // The courtyard's bench, by the roll call rows.
   { kind: 'bench', x: 37, z: 35, w: 2, rot: 2 },
   // Chairs: the library's tables, the quarters' table, the control desk.
   ...[25, 26, 28, 29].map((x) => ({ kind: 'chair', x, z: 45, rot: 2 }) as const),
   ...[48, 49].map((x) => ({ kind: 'chair', x, z: 45, rot: 2 }) as const),
   { kind: 'chair', x: 53, z: 50, rot: 1 },
-  // Lamps: the courtyard's north corners, the gravel round the shell.
+  // Lamps: the courtyard's north-east corner, the rec ground's, the gravel round the shell.
   ...[
-    [24, 28],
     [39, 28],
+    [54, 13],
     [6, 6],
     [31, 6],
     [57, 6],
@@ -122,10 +119,22 @@ props.push(
     [20, 57],
     [57, 57],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+  // The rec ground (P32): the court, the bleachers and the weights corner north of the track.
+  // The garden plot (P32), walled in the courtyard's west end: the planters, the tool shed, the crate.
+  { kind: 'bleachers', x: 47, z: 13, w: 5 },
+  { kind: 'pullup', x: 50, z: 9, w: 2 },
+  { kind: 'weights', x: 53, z: 10 },
+  { kind: 'weights', x: 53, z: 12 },
+  { kind: 'planter', x: 24, z: 28, w: 3 },
+  { kind: 'planter', x: 27, z: 28, w: 3 },
+  { kind: 'planter', x: 26, z: 35, w: 2 },
+  { kind: 'planter', x: 28, z: 35, w: 2 },
+  { kind: 'toolShed', x: 24, z: 34, w: 2, d: 2 },
+  { kind: 'crate', x: 29, z: 34 },
 );
 
-/** Two rows of six in the courtyard, facing the warden at the north end. */
-const rollCall = [31, 33].flatMap((z) => [26, 28, 30, 33, 35, 37].map((x) => ({ x, z })));
+/** Three rows of four in the courtyard east of the garden (P32), facing the warden at the north end. */
+const rollCall = [30, 32, 34].flatMap((z) => [32, 34, 36, 38].map((x) => ({ x, z })));
 
 /**
  * Eight guards (GDD §4.3). Directions: 1 east, 5 south, 9 west, 13 north.
@@ -135,9 +144,9 @@ const rollCall = [31, 33].flatMap((z) => [26, 28, 30, 33, 35, 37].map((x) => ({ 
  * - The wing guard walks the north wing's hall, the gym and showers (a dead end off the north
  *   corridor: its post is a step away), watches showers, and searches cells at the morning
  *   shakedown.
- * - The yard guard walks the courtyard and both corridors, watches exercise, and at night
- *   walks the corridors.
- * - The workshop guard walks the laundry, the janitor's closet and the shops.
+ * - The yard guard walks the courtyard and both corridors, watches exercise (from the rec
+ *   ground, P32), and at night walks the corridors.
+ * - The workshop guard walks the laundry, the janitor's closet (behind the canteen since P32) and the shops.
  * - The south guard walks the library, mailroom, infirmary and generator room.
  * - The staff guard keeps the quarters, solitary and the control room.
  * - The corridor guard walks the two security corridors, day and night.
@@ -154,9 +163,9 @@ const guards: GuardDef[] = [
       { x: 15, z: 10, wait: 3, face: 5 },
       { x: 16, z: 21, wait: 2, face: 13 },
       { x: 20, z: 25, wait: 3, face: 1 },
-      { x: 28, z: 29, wait: 3, face: 5 },
+      { x: 36, z: 29, wait: 3, face: 5 },
     ],
-    posts: { rollCall: { x: 32, z: 29, face: 5 }, eveningRollCall: { x: 32, z: 29, face: 5 } },
+    posts: { rollCall: { x: 35, z: 28, face: 5 }, eveningRollCall: { x: 35, z: 28, face: 5 } },
     night: [
       { x: 15, z: 10, wait: 4, face: 5 },
       { x: 16, z: 22, wait: 3, face: 13 },
@@ -169,12 +178,12 @@ const guards: GuardDef[] = [
   {
     name: 'Sully',
     beat: [
-      { x: 25, z: 10, wait: 4, face: 5 },
-      { x: 37, z: 10, wait: 3, face: 9 },
+      { x: 25, z: 15, wait: 4, face: 5 },
+      { x: 37, z: 15, wait: 3, face: 9 },
       { x: 37, z: 21, wait: 3, face: 13 },
-      { x: 47, z: 12, wait: 3, face: 9 },
+      { x: 27, z: 10, wait: 3, face: 5 },
     ],
-    posts: { breakfast: { x: 31, z: 15, face: 13 }, dinner: { x: 31, z: 15, face: 13 } },
+    posts: { breakfast: { x: 31, z: 18, face: 13 }, dinner: { x: 31, z: 18, face: 13 } },
     key: 'cyan',
   },
   {
@@ -196,15 +205,15 @@ const guards: GuardDef[] = [
     beat: [
       { x: 30, z: 25, wait: 3, face: 5 },
       { x: 36, z: 30, wait: 3, face: 9 },
-      { x: 30, z: 34, wait: 3, face: 13 },
+      { x: 31, z: 34, wait: 3, face: 13 },
       { x: 45, z: 38, wait: 2, face: 9 },
       { x: 30, z: 38, wait: 2, face: 13 },
     ],
-    posts: { exercise: { x: 36, z: 29, face: 9 } },
+    posts: { exercise: { x: 49, z: 11, face: 5 } },
     night: [
       { x: 30, z: 25, wait: 3, face: 9 },
       { x: 45, z: 25, wait: 3, face: 9 },
-      { x: 30, z: 31, wait: 3, face: 5 },
+      { x: 36, z: 31, wait: 3, face: 9 },
       { x: 45, z: 38, wait: 3, face: 9, nap: true },
       { x: 30, z: 38, wait: 3, face: 13 },
     ],
@@ -217,8 +226,8 @@ const guards: GuardDef[] = [
       { x: 44, z: 25, wait: 2, face: 5 },
       { x: 44, z: 30, wait: 3, face: 5 },
       { x: 51, z: 30, wait: 3, face: 5 },
-      { x: 44, z: 20, wait: 3, face: 13 },
-      { x: 51, z: 20, wait: 3, face: 13 },
+      { x: 33, z: 10, wait: 3, face: 13 },
+      { x: 38, z: 11, wait: 3, face: 13 },
     ],
     key: 'cyan',
   },
@@ -273,17 +282,21 @@ export const SHANKTON: PrisonDef = {
   zones: [
     ['cellBlock', 14, 9, 17, 23],
     ['cellBlock', 14, 40, 17, 54],
-    ['canteen', 24, 9, 39, 22],
+    ['canteen', 24, 14, 39, 22],
     ['canteen', 31, 23, 32, 23],
-    ['kitchen', 41, 9, 54, 15],
-    ['laundry', 41, 17, 47, 22],
-    ['janitor', 49, 17, 54, 22],
+    // P32: the kitchen, laundry and janitor's closet behind the canteen; the rec ground in their old block.
+    ['kitchen', 24, 9, 29, 12],
+    ['laundry', 31, 9, 35, 12],
+    ['janitor', 37, 9, 39, 12],
+    ['sports', 41, 9, 54, 22],
     ['corridor', 9, 24, 54, 26],
     ['corridor', 9, 37, 54, 39],
     ['showers', 9, 28, 12, 35],
     ['gym', 14, 28, 22, 35],
     ['yard', 24, 27, 39, 36],
-    ['rollCall', 25, 30, 38, 34],
+    // P32: the walled garden plot in the courtyard's west end; roll call east of it.
+    ['garden', 24, 28, 29, 35],
+    ['rollCall', 31, 29, 39, 35],
     ['woodshop', 41, 28, 47, 35],
     ['metalshop', 49, 28, 54, 35],
     ['library', 24, 41, 30, 46],
@@ -300,7 +313,7 @@ export const SHANKTON: PrisonDef = {
   props,
   rollCall,
   spawn: { x: 10, z: 10 },
-  reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary'],
+  reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],
   guards,
   names: ['Rivet', 'Hammer', 'Smokes', 'Knuckles', 'Deacon', 'Flint', 'Sparky', 'Moose', 'Weasel', 'Preacher', 'Lugnut'],
   merchants: [2, 6, 9, 11],
@@ -313,6 +326,7 @@ export const SHANKTON: PrisonDef = {
     { id: 'woodshop', cell: 0 },
     { id: 'janitor', cell: 8 },
     { id: 'mailman', cell: 10 },
+    { id: 'gardener', cell: 7 },
   ],
   // Cameras in every corridor (GDD §4.3): both ends and two along each; and the generator room and quarters.
   cameras: [
@@ -368,7 +382,18 @@ export const SHANKTON: PrisonDef = {
   },
   // Smuggling (P21): Deacon sells burner phones; the drone drops on the roll call square in the
   // yard inside the shell; visitors sit in the canteen.
-  smuggling: { fixer: 6, drop: [25, 30, 38, 34], visits: [24, 9, 39, 22] },
-  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(39, 31, 9), oldTimer: 7, garden: { x: 25, z: 28, w: 3, d: 2 }, race: { x: 15, z: 12, dir: 5, len: 6 }, pitch: pitch(24, 30, 11, 5), stage: stage(35, 9, 5), quiz: quizAt(5, [25, 42], [26, 42], [28, 42], [29, 42]) },
+  smuggling: { fixer: 6, drop: [31, 29, 39, 35], visits: [24, 14, 39, 22] },
+  // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the rec ground, the beds in the garden (P32).
+  leisure: {
+    hoop: court(44, 9, 5),
+    oldTimer: 7,
+    garden: { x: 24, z: 31, w: 6, d: 2 },
+    race: { x: 15, z: 12, dir: 5, len: 6 },
+    pitch: pitch(42, 15, 12, 7),
+    track: { x: 41, z: 14, w: 14, d: 9 },
+    stage: stage(31, 14, 5),
+    quiz: quizAt(5, [25, 42], [26, 42], [28, 42], [29, 42]),
+  },
+  // Rebuilt in 2.8 (P32): the rec ground in the kitchen's old block, the garden plot in the courtyard.
+  map: 1,
 };

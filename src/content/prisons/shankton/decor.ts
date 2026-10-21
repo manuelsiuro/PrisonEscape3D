@@ -25,23 +25,22 @@ export const SHANKTON_DECOR: readonly DecorPlacement[] = [
   { kind: 'extinguisher', x: 17, z: 44, rot: 3 },
   { kind: 'speaker', x: 14, z: 50, rot: 1 },
   // Canteen: the menu, plants in the corners, a water cooler and a vending machine.
-  { kind: 'menuBoard', x: 30, z: 9, w: 2 },
-  { kind: 'plant', x: 24, z: 9 },
-  { kind: 'plant', x: 39, z: 9 },
+  { kind: 'menuBoard', x: 35, z: 14, w: 2 },
+  { kind: 'plant', x: 24, z: 14 },
+  { kind: 'plant', x: 36, z: 22 },
   { kind: 'waterCooler', x: 24, z: 21 },
   { kind: 'vending', x: 39, z: 21 },
-  { kind: 'trays', x: 27, z: 12, y: TABLE },
-  { kind: 'trays', x: 34, z: 17, y: TABLE },
-  // Kitchen: pans on the wall, the sink, potatoes.
-  { kind: 'panRack', x: 43, z: 9, w: 2 },
-  { kind: 'sink', x: 48, z: 9 },
-  { kind: 'potatoes', x: 52, z: 13 },
-  { kind: 'pans', x: 41, z: 15 },
+  { kind: 'trays', x: 27, z: 16, y: TABLE },
+  { kind: 'trays', x: 34, z: 20, y: TABLE },
+  // Kitchen (behind the canteen since P32): pans on the wall, the sink, potatoes.
+  { kind: 'panRack', x: 26, z: 9, w: 2 },
+  { kind: 'sink', x: 29, z: 10, rot: 3 },
+  { kind: 'potatoes', x: 29, z: 12 },
   // Laundry: a basket, an ironing board. Janitor's closet: the mop bucket, a wet-floor sign.
-  { kind: 'basket', x: 45, z: 20 },
-  { kind: 'ironingBoard', x: 42, z: 21 },
-  { kind: 'mopBucket', x: 50, z: 21 },
-  { kind: 'wetSign', x: 53, z: 21 },
+  { kind: 'basket', x: 35, z: 10 },
+  { kind: 'ironingBoard', x: 31, z: 12 },
+  { kind: 'mopBucket', x: 37, z: 12 },
+  { kind: 'wetSign', x: 39, z: 12 },
   // The corridors: warnings at the arches, notices, clocks, pipes.
   { kind: 'warningSign', x: 25, z: 24 },
   { kind: 'warningSign', x: 25, z: 39, rot: 2 },
@@ -60,9 +59,12 @@ export const SHANKTON_DECOR: readonly DecorPlacement[] = [
   { kind: 'mirror', x: 16, z: 28 },
   { kind: 'towelHooks', x: 12, z: 30, rot: 3 },
   { kind: 'drain', x: 10, z: 31 },
-  // The courtyard: the flag, a hoop on the east wall.
-  { kind: 'flagpole', x: 28, z: 28 },
-  { kind: 'hoop', x: 39, z: 31, rot: 3 },
+  // The courtyard: the flag. The rec ground (P32): the hoop on its post (its court), dumbbells by the weights.
+  // The garden plot (P32): the water butt by the crate, sacks by the shed.
+  { kind: 'flagpole', x: 37, z: 28 },
+  { kind: 'hoop', x: 44, z: 9 },
+  { kind: 'dumbbells', x: 54, z: 9 },
+  { kind: 'waterButt', x: 29, z: 33 },
   // Woodshop: the tool rack, a sawhorse, timber.
   { kind: 'toolRack', x: 45, z: 28, w: 2 },
   { kind: 'sawhorse', x: 43, z: 34 },

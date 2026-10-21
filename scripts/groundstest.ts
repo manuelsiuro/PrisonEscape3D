@@ -13,7 +13,7 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { OPEN_HOURS, ROUTINE } from '../src/content/routine';
-import { zoneIndex } from '../src/content/zones';
+import { ZONES, zoneIndex } from '../src/content/zones';
 import { command, OP } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { DAY_STEPS, clockAt } from '../src/sim/systems/clock';
@@ -59,7 +59,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ the places, as data
 {
-  check(REBUILT.length === 2 && REBUILT.every((p) => p.map === 1), 'rebuilt so far (P31): Center Perks and the Training Block, map 1');
+  check(REBUILT.length === 4 && REBUILT.every((p) => p.map === 1), 'rebuilt so far (P31, P32): Center Perks, the Training Block, Stalag Flucht and Shankton, map 1');
   const lines: string[] = [];
   for (const p of REBUILT) {
     const sim = new Sim(p, 1);
@@ -91,6 +91,24 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
       for (let i = 0; i < MAP_W * MAP_W; i++) if (w.doorRoom[i] === z) gates++;
       check(gates === 2, `${p.id}: the ${zone}'s gate (2 tiles: ${gates})`);
     }
+    // No way out by day through a plain fence (the P31 review's hole): any fence round the new places has the prison on its other side.
+    const out: string[] = [];
+    for (let i = 0; i < MAP_W * MAP_W; i++) {
+      const at = ZONES[w.ground.zone[i]];
+      if ((at !== 'sports' && at !== 'garden') || w.ground.kind[i] === TILE.FENCE) continue;
+      for (const [dx, dz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
+        const f = i + dx + dz * MAP_W;
+        const past = w.zoneAt((i % MAP_W) + 2 * dx, Math.floor(i / MAP_W) + 2 * dz);
+        if (w.ground.kind[f] === TILE.FENCE && (past === 'perimeter' || past === 'outside' || past === 'none')) out.push(`${f % MAP_W},${Math.floor(f / MAP_W)}`);
+      }
+    }
+    // (The Training Block's own fence is plain: the tutorial's.)
+    if (p !== TRAINING) check(out.length === 0, `${p.id}: no plain fence between the new places and the perimeter (${out.join(' ')})`);
     const job = p.jobs.findIndex((j) => j.id === 'gardener');
     if (p.jobs.length) {
       check(job >= 0, `${p.id}: the gardener's job is on the board`);
@@ -307,7 +325,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   const c = arena(CENTER_PERKS, at(1, 15, 1));
   c.step();
   check(c.sim.dutyZones.join() === 'gym,sports', `Center Perks' exercise hour: ${c.sim.dutyZones.join(', ')}`);
-  const d = arena(PRISONS.find((q) => q.id === 'stalag-flucht')!, at(1, 15, 1));
+  const d = arena(PRISONS.find((q) => q.id === 'san-pancho')!, at(1, 15, 1));
   d.step();
   check(d.sim.dutyZones.join() === 'gym,yard,sports', 'a prison not rebuilt: the exercise hour as it was');
   console.log(`holes: ${live.size} live fence tiles round Center Perks' places; no lookout posts in them; no laps in a lockdown; exercise at Center Perks: ${c.sim.dutyZones.join(', ')}`);
@@ -321,7 +339,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   const before = { ...now };
   delete before.map;
   check(rebuiltSince(before), 'a Center Perks save from 2.6: its prison has been rebuilt since (the run starts again)');
-  const stalag = saveFileOf(new Sim(PRISONS.find((p) => p.id === 'stalag-flucht')!, 1), 0, 'test');
-  check(stalag.map === undefined && !rebuiltSince(stalag), 'a save of a prison not rebuilt loads as ever');
+  const pancho = saveFileOf(new Sim(PRISONS.find((p) => p.id === 'san-pancho')!, 1), 0, 'test');
+  check(pancho.map === undefined && !rebuiltSince(pancho), 'a save of a prison not rebuilt loads as ever');
   console.log('saves: from before a rebuild, the run starts again there; others load as ever');
 }

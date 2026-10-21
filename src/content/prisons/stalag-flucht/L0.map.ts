@@ -2,17 +2,18 @@
  * Stalag Flucht, ground floor (layer 0, GDD §4.2): an alpine POW camp, 64×64 tiles. West of
  * the electrified inner fence, the prisoners' compound: two log cabins of cells, the canteen,
  * the gym and showers, the service block (workshops, library, infirmary, janitor) round a
- * snowy roll call yard; east of it, the guards' barracks, the generator hut and solitary. The
- * whole perimeter is electric. Legend in src/sim/world/tiles.ts (LEGEND); `.` is snow here,
+ * snowy roll call yard, the garden along the north wire behind cabin B (P32); east of it, the
+ * guards' barracks, the generator hut, solitary and, behind its own electric fence at the
+ * south end, the sports ground (P32), its gate on the dirt road. The whole perimeter is electric. Legend in src/sim/world/tiles.ts (LEGEND); `.` is snow here,
  * `d` a trodden path. Edit the picture, then run `npm test -- map`.
  */
 export const L0 = String.raw`
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%,,
-,,TTT.....................................%................TTT,,
-,,TTT.....................................%................TTT,,
-,,TTT.....................................%..##############TTT,,
+,,TTT.................=................=..%................TTT,,
+,,TTT.................c................=..%................TTT,,
+,,TTT.................c................=..%..##############TTT,,
 ,,%.################...################...%..#wwwwwwwwwwww#..%,,
 ,,%.#wwww#wwww#wwww#ddd#wwww#wwww#wwww#ddd%..#wwwwwwwwwwww#..%,,
 ,,%.#wwww#wwww#wwww#ddd#wwww#wwww#wwww#ddd%..#wwwwwwwwwwww#..%,,
@@ -50,12 +51,12 @@ export const L0 = String.raw`
 ,,%.################ddd################ddd%..#____________#..%,,
 ,,%ddddddddddddddddddddddddddddddddddddddd%..#____________#..%,,
 ,,%ddddddddddddddddddddddddddddddddddddddd%..#____________#..%,,
-,,%ddddddddddddddddddddddddddddddddddddddd%..#____________#..%,,
-,,%ddddddddddddddddddddddddddddddddddddddd%..#____________#..%,,
-,,%.################ddd################ddd%..#____________#..%,,
-,,%.#wwwwwwwwwwwwww#ddd#::::::#_______#ddd%..#____________#..%,,
-,,%.#wwwwwwwwwwwwww#ddd#::::::#_______#ddd%..##############..%,,
+,,%ddddddddddddddddddddddddddddddddddddddd%..##############..%,,
+,,%ddddddddddddddddddddddddddddddddddddddd%%%%%%%%%%%%%%%%%%%%,,
+,,%.################ddd################ddd%..................%,,
 ,,%.#wwwwwwwwwwwwww#ddd#::::::#_______#ddd%..................%,,
+,,%.#wwwwwwwwwwwwww#ddd#::::::#_______#dddc..................%,,
+,,%.#wwwwwwwwwwwwww#ddd#::::::#_______#dddc..................%,,
 ,,%.#wwwwwwwwwwwwww#ddd#::::::#_______#ddd%..................%,,
 ,,%.#######c########ddd####c######c####ddd%..................%,,
 ,,%.ywwwwwwwwwwwwwwydddywwwwwwwwwwwwwwyddd%..................%,,
