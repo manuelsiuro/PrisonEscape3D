@@ -107,6 +107,10 @@ export class Hud {
   private shownCash = -1;
   private readonly cashPill: HTMLElement;
   private readonly cashText: HTMLElement;
+  private readonly face: HTMLImageElement;
+  private readonly tip: HTMLElement;
+  private shownFace = '';
+  private news = false;
   private lang = currentLang();
 
   constructor(onPause: () => void, onProfile: () => void = () => {}) {
@@ -114,9 +118,9 @@ export class Hud {
       'div',
       'hud hidden',
       `<div class="hud-row">
+        <button class="pill big hud-cash" aria-keyshortcuts="I"><span class="hud-face">${icon('person', 18)}<img alt="" draggable="false" hidden><i class="hud-news"></i></span><b></b><span class="hud-me-tip" aria-hidden="true"></span></button>
         <span class="pill big hud-clock"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b><i class="hud-wx" role="img"></i></span>
         <span class="pill big hud-zone">${icon('pin', 16)}<span></span></span>
-        <button class="pill big hud-cash">${icon('coin', 16)}<b></b></button>
         <button class="icon-btn hud-lesson hidden" aria-keyshortcuts="O">${icon('bulb')}<i class="hud-lesson-new"></i></button>
         <button class="icon-btn hud-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
       </div>
@@ -160,6 +164,8 @@ export class Hud {
     this.lessonBtn.addEventListener('click', () => this.onLesson());
     this.cashPill = q('.hud-cash');
     this.cashText = q('.hud-cash b');
+    this.face = q('.hud-face img');
+    this.tip = q('.hud-me-tip');
     this.cashPill.addEventListener('click', onProfile);
     this.cashPill.addEventListener('animationend', () => this.cashPill.classList.remove('gain', 'spend'));
     this.power = q('.hud-power');
@@ -354,6 +360,32 @@ export class Hud {
     this.shownAlerts = '';
   }
 
+  /** Your prisoner's face on the file's button (a data URL: render/portrait.ts); the person icon until then. */
+  setFace(url: string) {
+    if (url === this.shownFace) return;
+    this.shownFace = url;
+    this.face.src = url;
+    this.face.hidden = false;
+    this.cashPill.classList.add('has-face');
+  }
+
+  /** Something new in the file since it was last opened (a rumor, a favor taken or ready, a job, tomorrow's forecast): a dot on the face. */
+  setNews(on: boolean) {
+    if (on === this.news) return;
+    this.news = on;
+    this.cashPill.classList.toggle('news', on);
+    this.label();
+  }
+
+  /** The first run's label under the button ("Your file"), for a few seconds. */
+  fileTip(on: boolean) {
+    this.cashPill.classList.toggle('tip', on);
+  }
+
+  private label() {
+    this.cashPill.setAttribute('aria-label', `${t('hud.cash')} $${Math.max(0, this.shownCash)}. ${t('hud.profile')}${this.news ? `. ${t('hud.fileNew')}` : ''}`);
+  }
+
   update(clock: Clock, zone: ZoneId, s: HudState) {
     // The language changed (settings, from the pause menu): rewrite everything.
     if (currentLang() !== this.lang) {
@@ -366,7 +398,7 @@ export class Hud {
     const minute = `${clock.day}:${clock.minuteOfDay}:${NARROW.matches}`;
     if (minute !== this.shownMinute) {
       this.shownMinute = minute;
-      // Narrow phones: "D1" leaves the zone room for its name beside the cash.
+      // Narrow phones: "D1" leaves the zone room for its name.
       setText(this.day, t(NARROW.matches ? 'hud.dayShort' : 'hud.day', { n: clock.day }));
       this.day.title = t('hud.day', { n: clock.day });
       setText(this.time, formatTime(clock));
@@ -428,7 +460,8 @@ export class Hud {
       setText(this.cashText, `$${s.cash}`);
       // The keyboard's shortcut in the tooltip (not on touch).
       this.cashPill.title = TOUCH ? t('hud.profile') : `${t('hud.profile')} (I)`;
-      this.cashPill.setAttribute('aria-label', `${t('hud.cash')} $${s.cash}. ${t('hud.profile')}`);
+      this.label();
+      setText(this.tip, t('hud.profile'));
     }
     // The eye opens while a guard is looking (so stealth can be read at a glance).
     if (s.seen !== this.shownSeen) {

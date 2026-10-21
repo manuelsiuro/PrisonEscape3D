@@ -3,7 +3,7 @@ import type { Pitch } from '../content/prisons/types';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
-import { Character, guardLook, INMATE_LOOK, inmateLook, type BadgeKind, type BedPose } from './Character';
+import { Character, guardLook, INMATE_LOOK, inmateLook, type BadgeKind, type BedPose, type Look } from './Character';
 import { Cones } from './Cones';
 import { Security, type SecurityFrame } from './Security';
 import { ALERT } from '../sim/systems/guards';
@@ -294,6 +294,8 @@ export class View {
   /** The football pitch in use with it (setWorld). */
   private pitch: Pitch | null = null;
   player = new Character(INMATE_LOOK);
+  /** How the player is drawn now (the HUD's portrait follows it: portrait.ts). */
+  playerLook: Look = INMATE_LOOK;
   private outfit = -1;
   /** The tattoos inked in the prison the player is drawn with (P29). */
   private inkedShown: number[] = [];
@@ -1013,7 +1015,8 @@ export class View {
     this.outfit = outfit;
     this.inkedShown = inked.slice();
     const old = this.player;
-    this.player = new Character(lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked));
+    this.playerLook = lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked);
+    this.player = new Character(this.playerLook);
     this.player.root.position.copy(old.root.position);
     this.player.root.rotation.copy(old.root.rotation);
     this.retireCharacter(old);

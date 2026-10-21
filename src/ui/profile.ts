@@ -21,7 +21,7 @@ const ATTR_ICONS = { str: 'dumbbell', spd: 'run', int: 'brain' } as const;
 /**
  * The prisoner's file (GDD §13.2 stats: STR, SPD, INT, CASH): the three attributes with
  * where to train them (and whether they were trained today: untrained, they slip), the cash,
- * the job and today's quota, followers and favors under way. Opened from the cash pill (or I).
+ * the job and today's quota, followers and favors under way. Opened from the HUD's button with your face and cash (or I).
  */
 export class ProfilePanel {
   readonly el: HTMLElement;
@@ -33,6 +33,14 @@ export class ProfilePanel {
   notebook: () => ReadonlyArray<{ text: string; old: boolean; day: number; by: string | null; self?: boolean }> = () => [];
   /** What one of the crew is at (P23, play/crew.ts). */
   crewLine: (sim: Sim, who: number) => string = () => '';
+  /** Your prisoner's face at the file's head (render/portrait.ts; the book until it's taken). */
+  face = '';
+  /** What the file held when last opened (its news: newsFor). */
+  private seen = new Set<string>();
+  private newsSim: Sim | null = null;
+  private newsLang = '';
+  private newsTick = -1;
+  private news = false;
 
   constructor(private readonly click: () => void) {
     this.el = h('div', 'item-panel profile-panel hidden');
@@ -58,6 +66,41 @@ export class ProfilePanel {
     this.el.classList.add('hidden');
   }
 
+  /**
+   * Whether the file holds something new since it was last open (a dot on the HUD's button):
+   * a rumor heard, a favor taken on or ready, a job, tomorrow's forecast. A game begun (or the
+   * language changed: the rumors are told again) starts with nothing new. Checked once a game
+   * second, every frame while open (it's all seen then).
+   */
+  newsFor(sim: Sim): boolean {
+    const tick = Math.floor(sim.state.step / 20);
+    if (sim !== this.newsSim || currentLang() !== this.newsLang) {
+      this.newsSim = sim;
+      this.newsLang = currentLang();
+      this.seen = new Set(this.newsKeys(sim));
+      this.newsTick = tick;
+      return (this.news = false);
+    }
+    if (tick === this.newsTick && !this.isOpen) return this.news;
+    this.newsTick = tick;
+    const now = this.newsKeys(sim);
+    if (this.isOpen) {
+      this.seen = new Set(now);
+      return (this.news = false);
+    }
+    return (this.news = now.some((k) => !this.seen.has(k)));
+  }
+
+  private newsKeys(sim: Sim): string[] {
+    const s = sim.state;
+    const keys = this.notebook().map((r) => `r:${r.text}`);
+    for (const f of s.favors) if (f.state !== FAVOR_STATE.OFFERED) keys.push(`f:${f.by}:${f.kind}:${f.state}`);
+    if (sim.playerJob >= 0) keys.push(`j:${sim.playerJob}`);
+    const day = this.day();
+    if (day?.tomorrow) keys.push(`w:${day.day}`);
+    return keys;
+  }
+
   update(sim: Sim, busy: boolean) {
     if (!this.isOpen || busy) {
       this.el.classList.add('hidden');
@@ -74,7 +117,7 @@ export class ProfilePanel {
       const line = this.el.querySelector(`.file-row[data-who="${id}"] small`);
       if (line && line.textContent !== crewLines[k]) line.textContent = crewLines[k];
     });
-    const key = [crewLines.join('/').replace(/\d+:\d\d/g, ''), s.crew.map((e) => e[4]).join(','), s.dogs.map((d) => `${d.trust}:${d.fed}`).join(','), day?.key ?? '', rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name].join('|');
+    const key = [crewLines.join('/').replace(/\d+:\d\d/g, ''), s.crew.map((e) => e[4]).join(','), s.dogs.map((d) => `${d.trust}:${d.fed}`).join(','), day?.key ?? '', rumors.map((r) => `${r.text}${r.old ? '~' : ''}`).join('/'), s.str, s.spd, s.items.int, s.trained, s.cash, s.jobs.join(','), s.jobDay, s.quota, s.paid, s.followers.join(','), favors.map((f) => `${f.by}:${f.state}`).join(','), sim.today, currentLang(), PLAYER.name, this.face].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const attrs = ATTRS.map((a, k) => {
@@ -142,7 +185,7 @@ export class ProfilePanel {
       : '';
     // (A rebuild keeps the keyboard's place on the close button.)
     const hadClose = this.el.contains(document.activeElement) && !!(document.activeElement as HTMLElement).closest('[data-close]');
-    this.el.innerHTML = `<div class="panel-head"><b>${icon('book', 20)}${title}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
+    this.el.innerHTML = `<div class="panel-head"><b>${this.face ? `<img class="profile-face" src="${this.face}" alt="">` : icon('book', 20)}${title}</b><span class="profile-cash">${icon('coin', 16)}$${s.cash}</span><button class="icon-btn small" data-close aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${dayHtml}
       <div class="box-section"><div class="box-label"><span>${t('profile.stats')}</span><em>${t('profile.statsNote')}</em></div><div class="file-list">${attrs}</div></div>
       <div class="box-section"><div class="box-label"><span>${t('profile.job')}</span>${working && job >= 0 ? `<em>${t('profile.workNow')}</em>` : ''}</div>${jobHtml}</div>

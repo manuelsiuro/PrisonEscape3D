@@ -62,11 +62,13 @@ import {
   view,
   workChips,
 } from './context';
-import { play, type Game } from './game';
+import { play, playNow, type Game } from './game';
+import { portraitOf } from '../render/portrait';
+import type { Look } from '../render/Character';
 import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, describeTreat, describeCall, dogName, targetInfo } from './labels';
 import { DOG, dogWarning, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
-import { coachOnce, seenTip } from './tips';
+import { coachOnce, markTip, seenTip } from './tips';
 import { FIRECRACKER, GLIDER } from '../sim/systems/structure';
 import { wavedLeft, windowAction } from './getaway';
 const PEPPER = itemNumber('pepper');
@@ -407,6 +409,7 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   // The day (P17): the weather by the clock, the event's chip, the drill.
   dayHud(sim, hudState, a);
   hud.update(clock, zone, hudState);
+  fileButton(g);
   paBoard.reducedMotion = settings.reducedMotion;
   // (The warden's clock is play time: paused or over, nothing runs out and nothing new is said.)
   paBoard.frame(g.paused || g.over);
@@ -429,6 +432,41 @@ const headAt = (id: number, out: { x: number; y: number }) => view.screenOf(id, 
 
 /** Real seconds since the last overlay (the arm-wrestle's bar eases with it). */
 let lastOverlay = performance.now();
+/** The look last photographed for the file's button (render/portrait.ts). */
+let faceLook: Look | null = null;
+/** The first run's "Your file" label under the button: from (play time, ms) and until. */
+let fileTipAt = -1;
+const FILE_TIP_WAIT = 1500;
+const FILE_TIP_MS = 6000;
+
+/**
+ * The HUD's file button: your prisoner's face (taken again in an idle moment when the look
+ * changes: the Intake's, a disguise, a tattoo inked), also at the file's head; a dot while
+ * the file holds news; on the first run, its "Your file" label for a few seconds (gone once
+ * the file is opened).
+ */
+function fileButton(g: Game) {
+  const look = view.playerLook;
+  if (look !== faceLook) {
+    faceLook = look;
+    const idle = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 400 }) : setTimeout(f, 16));
+    idle(() => {
+      if (view.playerLook !== look) return;
+      const url = portraitOf(look);
+      hud.setFace(url);
+      profile.face = url;
+    });
+  }
+  hud.setNews(!g.replay && profile.newsFor(g.rec.sim));
+  if (fileTipAt < 0 && !g.paused && !seenTip('fileButton')) {
+    markTip('fileButton');
+    fileTipAt = playNow() + FILE_TIP_WAIT;
+  }
+  const now = playNow();
+  if (fileTipAt >= 0 && profile.isOpen) fileTipAt = 0;
+  hud.fileTip(fileTipAt > 0 && now >= fileTipAt && now < fileTipAt + FILE_TIP_MS);
+}
+
 function frameDt(g: Game): number {
   const now = performance.now();
   const dt = Math.min(0.1, (now - lastOverlay) / 1000);
