@@ -839,6 +839,11 @@ User decisions (2026-10-21), on the branch `feature/sports-and-gardens`:
   - **The running track:** chalk lanes round the pitch, with four corner markers.
     - **Running a lap** means passing the corners in order without leaving the track. A lap trains Speed as a treadmill set does: +2 Speed, the same energy cost, the same tiredness gate (`training.ts`).
     - **During the exercise hour**, some inmates jog the track instead of doing jumping jacks.
+    - **Built:**
+      - a third of the exercisers jog, corner to corner, at a walk plus 60 (`JOG_EXTRA`), in the run pose;
+      - one in three goes to the gym, the rest to the sports ground, never onto the bleachers;
+      - in free time, `HANGOUTS_GROUNDS` adds the sports ground (twice) and the garden;
+      - the courtyard stays a hangout, but a quiet one.
   - **The weights corner:** the `weights` prop outdoors, plus a new `pullup` bar prop that trains Strength. It counts for the exercise roll call, like the gym does.
   - **Bleachers:** a new decor piece. Inmates watching from them count for the crowd at matches and shootouts (`CROWD_RANGE`).
   - **The guards:** the exercise guard's post moves to the ground. The towers and searchlights still see it as before. Football's cover (`watchingMatch`) works there unchanged.
@@ -851,7 +856,15 @@ User decisions (2026-10-21), on the branch `feature/sports-and-gardens`:
   - **Requirement and pay:** Intellect 20; about $35 a day.
   - **The shift:** take the can from the shed, water the dry rows, pick what's ripe, and carry it to the crate. The quota is a number of crates filled.
   - **Rows:** they ripen and dry out from the sim's own draws (`roll()` with a new salt), never from the state's RNG.
+  - **Built (P31):** the job is a 'machine' job like the laundry, so the job board, the station buttons, the inmates' shifts and economytest's checks all work unchanged:
+    - a tray of seedlings from the tool shed (`toolShed`, the take);
+    - into a raised planter (`planter`, the machine, 6 s);
+    - a crate of produce out of it, into the crate by the gate (`crate`, the put);
+    - quota 4, $35, Intellect 20.
+
+    The planters are solid raised beds with crops drawn in them. The water butt is decor.
   - **In the kitchen:** when the quota is met, the next day's meals are fresh, with a small health or energy gain at meals (the size is tuned in P31). If it is missed, nothing changes.
+    - **Built:** the meals for 24 game hours after it are fresh: +10 energy and +10 health at each, with a toast. This happens when the player fills the quota, or at 15:00 when an inmate gardener worked the whole shift.
   - **Who holds it:** each campaign prison lists the job; an inmate holds it on day 1.
 - **The old courtyard** becomes the quiet yard: benches, trees, the old-timer's checkers and the roll-call ground where it already is. Everything that can be played moves to the sports ground.
 - **Sports day** (P22) puts its bunting over the sports ground instead of the yard.
