@@ -162,6 +162,7 @@ Sources:
 | Courtyard, sports and garden | (not covered) | The GDD draws one courtyard per prison. From P31 (2026-10-21, user's request) every prison is redrawn with a fenced **sports ground** (pitch, court, running track, weights, bleachers) and a **vegetable garden** with a gardener job; the courtyard is a quiet yard. Saves from an older map restart that prison; the escape bots are re-tuned (their snapshots may change in P31–P33 only). See §10 |
 | Shankton's rooms, Stalag's garden (P32) | §4.2, §4.3 | §10 planned Shankton's kitchen, laundry and janitor's closet into spare cells, but Shankton has 12 cells for 12 people (GDD §4.3: 12 inmates), so they line the canteen's north side instead, the rec ground taking their block (14×14, a 12×7 pitch). The GDD's central roll-call courtyard keeps roll call (three rows of four) beside a walled garden plot. Stalag's garden is behind cabin B, not cabin A: cabin A's strip is the GDD's boulder field for the zig-zag tunnel (§4.2 layer −1), left as it is; its beds lie along the wire (cabin B's wall hides the two rows in front of it from the camera), and the two boulders under them moved a tile north, under the wire, where they still bar the same line. Solitary gives up its empty south half to the sports ground |
 | San Pancho's and Irongate's grounds (P33) | §4.4, §4.5 | §10 planned San Pancho's sports ground by narrowing the canteen and gym beside the plaza ("about 20 cells for 14 people"), and Irongate's yard grown to about 11 deep. San Pancho has 14 cells for 14 people (§4.4: 14 inmates) and the plaza's middle band is 9 rows, too shallow for a pitch and its track: the ground takes the plaza's south half (14×15) with the control room and solitary shortened under it, the plaza's north half stays the yard and roll-call square (§4.4 "central plaza & roll call square") behind a see-through fence; the canteen and the gym, which opened onto the plaza, are reached from the wings' lobbies; the road out runs library → generator room (red) → control room (red), with the quarters' door purple: the GDD's "[P][GEN][R]" guard post, the same red and green keys out (§4.4). Irongate's yard is the roofs' chasm the helicopter route's grapnel crosses (§4.5 Escape B; reach 6 tiles): grown to 11 the route breaks, so the ground takes the yard's west third down to the main corridor (14×16) and the yard's east two thirds stay 5 deep; the middle block's rooms move east, narrower (the canteen 4 tables, not 6), the janitor's closet into the south block beside the control room |
+| Phone, kiosk and the paperwork escape (P34–P36) | Not in the GDD | From P34 (2026-10-21, user's request) every campaign prison gets a **pay phone** (calls home, a lawyer, a cousin outside on a tapped line, anonymous tips; inmates queue; eavesdropping) and an **internet kiosk** in the library (mail, a legal shop, the news, courses, and hacking a guard's account). An 11th way out, **paperwork**: your name on tomorrow's release list, out through the front gate in your own clothes. The GDD's routes are all physical escapes; this one is earned at the kiosk and still checked at the gate. See §11 |
 Any further conflict found during the build is added to this table in the same commit.
 
 ## 3. Architecture
@@ -980,3 +981,130 @@ Each phase is one vertical slice: sim, render, UI, EN/FR, help, tests, three rev
   - The lessons.
 - **P32 (v2.8):** **Stalag Flucht** and **Shankton** rebuilt.
 - **P33 (v2.9):** **San Pancho** and **HMP Irongate** rebuilt. The courtyard clean-up is finished everywhere.
+
+## 11. Phone & kiosk (P34–P36)
+
+Prison life has no line to the outside. Every campaign prison gets two: a **pay phone** in a corridor and an **internet kiosk** in the library. Both are cheap, legal and open to everyone, and the guards watch them. The fun is bending them into an escape plan.
+
+User decisions (2026-10-21):
+- **Both machines**, in three phases: the phone, then the kiosk, then hacking.
+- **The tapped line is a minigame**: the player picks the words, not a hidden risk roll.
+- **Paperwork is a new way out** (an 11th route, `paperwork`), with an escape bot in every prison that has a front gate.
+- Parked for later (see memory): gangs and turf, the riot, the parole board.
+
+### Rules for every phase
+- **Where**: the five campaign prisons. The Training Block has no library, mail room or visits, so these lessons run at Center Perks (as the stage and the quiz do).
+- **Places are data**: `PrisonDef.comms = { phone, kiosk, release? }`. Each is a wall piece on a north wall (it faces the camera) or a side wall turned to the camera, and the tile in front of it, where the player stands.
+  - They are **decor, not props**: nothing solid is added, so no inmate's or guard's path changes.
+  - Candidates from the maps (final tiles picked at build and checked in the browser, never in the two rows a wall hides):
+    - **Phone**: Center Perks' north corridor (41,21); Stalag Flucht's corridor (z51); Shankton's first corridor (28,24); San Pancho's wing hall (20,12); Irongate's main corridor (40,39).
+    - **Kiosk**: Center Perks' library (19,30, the globe moves); Stalag Flucht's (17,54); Shankton's (24,43, side wall); San Pancho's (44,44, side wall, x=41 kept clear); Irongate's (48,34, the globe moves).
+  - `stagetest`'s pattern checks them: open floor, the right zone, reachable, clear of decor on the floor.
+- **The sim**:
+  - New system files: `systems/phone.ts` (P34), `systems/kiosk.ts` (P35), `systems/hack.ts` (P36).
+  - Inputs: `EXT` codes from 17 (`CALL`, `LINE`, `SAY`, `KIOSK`, `HACK`…), `TALK` from 25 (`SWAP`). OP 14 and 15 stay free.
+  - Every draw from `roll()` with new `SALT`s from 27. `DOING` from 30 (`PHONE`, `QUEUE`). `TODAY` bits from 8192.
+  - New state fields appended, loading as optional. What a card shows is a pure function of the state.
+- **The escape bots stay byte-identical.** Everything is on the player's request, except inmates queuing for the phone.
+  - The queue starts on **prison day 2** (as the dogs). Inmates are led there through `socialNow` (no draw from the state's RNG).
+  - If a multi-day bot (the takeover bots train for days) still changes, the queue waits for the player's first call in the run. It is never fixed by accepting a changed snapshot.
+- **Time**: one game minute is one real second. Every card has a clock the player can see (as Cheat's 60 s), and a lesson's step has a least reading time.
+- **Every phase ships** sim, 3D, phone and desktop UI (cards docked left in landscape), EN and FR, help, bubbles, rumours, achievements and ledger counters, lessons, a test script, three reviews (rules, UI and text, 3D), then a release. Then I wait for the go.
+
+### P34 The pay phone (v2.10)
+**The booth**: a wall phone with a hood, a coin box and a handset on its cord.
+- Open in the morning and evening free time (`fixerOpen`), never in a lockdown. Each call costs coins up front.
+- **On the phone** the player stands at the booth, the handset to their ear (`DOING.PHONE` pose). Walking away hangs up.
+
+**The queue** (from prison day 2)
+- In each free time, a few inmates want to call: `roll(SALT.CALLS, day, inmate)`, about one in four, the line at most 4 (`LINE_MAX`). They wait on the tiles along the wall, then talk 10–20 game minutes each.
+- The player gets in line with Act at a busy booth. Their place shows on the HUD; leaving the line's tiles loses it.
+- **Buy a place**: talk to the inmate ahead, "Swap places" for $5 (`TALK.SWAP`).
+- **Cut in**: straight to the front (`EXT.LINE`). Everyone in line thinks 10 less of the player, and the inmate pushed back may swing at them (`roll()`, more likely at San Pancho).
+
+**The calls** (`EXT.CALL`, b = who, c = an argument)
+| Call | Cost | What it does |
+|---|---|---|
+| **Home** | $2 | +15 energy, once a prison day. Once every 7 prison days the family sends a **money order** ($15–30, `roll()`), paid at the next mail call |
+| **Lawyer** | $30 / $40 | **Appeal**: heat −30, once a prison day, refused while wanted (heat 80+) or in a lockdown. **Retainer**: for 3 prison days, a stretch in solitary is halved |
+| **Your cousin Lou** | $2 + the job | The escape helper, on a tapped line (below) |
+| **Anonymous tip** | $2 | Name a cell. The shakedown guard searches it within the hour (`assign(…, GUARD.SHAKEDOWN, [cell])`): a search you choose, and a guard drawn away. Nothing found: +15 heat. Once a prison day. A 1-in-4 chance (`roll()`) that word gets round: its inmate thinks 30 less of the player ("Snitch!") |
+
+**Mail call** (new): at 12:00 each day, outside a lockdown, a guard hands out the post. P34 pays money orders; P35 adds shop goods and photos (into the player's desk's open slots, as the Red Cross parcel does).
+
+**The tapped line** (the cousin's minigame)
+- The player picks a job, then says it in **three lines** (who, what, when). Each line offers three phrases, shuffled by `roll()`:
+  - **plain** ("Bring a file in a cake"): clear to Lou, but loud to a listener;
+  - **coded** ("Bake that cake Mum made"): half clear, half loud;
+  - **deep code** ("The rooster crows twice"): silent, and Lou misses it, *unless he has already learned it*.
+- **Lou understands** when the clarity adds up (tuned in the build). If he doesn't, the money is lost and Lou says "What are you on about?".
+- **The listener**: a guard on duty, drawn per call; the card names them. Their trait sets how much risk they catch: strict the least, then steady, then lazy and corrupt. A corrupt guard bribed to look away today isn't listening. Too loud: +40 heat and the job is blown (the cake seized at the visit, the diversion ignored, the car turned away).
+- **Codes are learned**: a deep code Lou has understood once (from a plain or coded line in the same call) is his for the run, kept in state: clear *and* silent from then on. Early calls are risky; later ones get smooth.
+- Measured in `phonetest` with pure strategies (all plain, all coded, all deep, learning): none is safe *and* clear on every listener at the first call.
+
+**Lou's jobs**
+| Job | Cost | What happens |
+|---|---|---|
+| **Diversion** | $30 | At the hour the player names (1–24 h ahead), a disturbance at the front gate: car alarm, flashing light, a PA line; the 3 nearest awake guards go and look for 10 game minutes (`summon`), then return to their beats. Once a prison day |
+| **Cake with a file** | $25 | At the next visit (Stalag Flucht: the next Red Cross parcel), a cake. It isn't contraband, so the frisk passes it. Eating it gives energy and a **metal file** |
+| **Getaway car** | $50 | Tonight (23:00–05:00) a car waits on the road. An escape that ends on the road that night drives off in it: its own escape scene, a line on the victory card and an achievement. A reward, not an advantage |
+
+**Eavesdropping**: an inmate on the phone talks about things they know. A player within 2 tiles for 8 game minutes overhears **a true secret**: a sim event, then the `Director` picks a lasting fact the player hasn't heard (as the old-timer's secret does) and it goes in the file. Once a prison day per inmate.
+
+**Also**: the phone's wall piece, the handset and queue poses, the cake, the car on the road, the gate's alarm light; the phone card (the dial, the coin, the clock) and the line card (three rows of phrases, the listener and their trait, the learned codes marked); the line on the HUD; sounds (coins, dial tone, the ring, a car alarm); the PA's diversion and mail-call lines; bubbles in the queue; rumours (`phoneLine`: who calls when); help topic **Pay phone**; achievements (calls home, a cousin's job done, wheels, secrets overheard, a successful tip, a line cut); lessons `payphone` (calls, mail call, eavesdropping) and `cousin` (a job on the tapped line) in Prison life, both at Center Perks with their own seeds.
+
+**Proof**: `phonetest` (the places in every prison; the queue's draws, its places, swaps and cuts; each call's rules and refusals; money orders at mail call; lawyer's appeal and retainer; tips and their search; the line's phrases, listeners, learned codes and the strategies measured; each job through the real sim: the diversion's guards and their return, the cake through a frisk, the car's night; eavesdropping true; saves and old logs); `gossiptest` (the new rumour true); `tutorialtest` (both lessons and their dead ends); escapetest byte-identical.
+
+### P35 The internet kiosk (v2.11)
+**The kiosk**: a wall terminal with a glowing screen and a keyboard shelf, in each library. Open in the free times outside a lockdown. **$1 per 10 game minutes** while logged in (`EXT.KIOSK`), paid up front for each block.
+
+**The apps**
+| App | What it does |
+|---|---|
+| **Mail** | Write home: once every 7 prison days the money order (shared with the phone: one a week, whichever asks). Once a prison day, a reply at the next mail call with a **photo** (a family drawing chosen by `roll()`); up to 3 pinned on the cell wall over the player's bed |
+| **Shop** | Legal goods only (soap, chocolate, a magazine, toothpaste, talcum, ink, a battery, an alarm clock…), cheaper than the merchants, one order a prison day, into the desk at the next mail call. Nothing is stocked (P28's rule). `kiosktest` checks no item is contraband. Plus a **thick book**: with a razor blade (Intellect 30) it becomes a **hollow book** holding one small item; a frisk, the noon frisk, a cell search and a detector don't find it; a dog still smells what dogs smell |
+| **News** | The next 3 days' cards, weather and wind (`planOf`, pure), the next delivery and visiting day, and headlines from the run (a lockdown, the quiz and talent winners) |
+| **Courses** | 5 questions from the quiz bank (history and true questions about this prison: `questionsOf` under its own salt, not quiz night's set); 4 right: +3 Intellect. $5 and 10 energy, once a prison day |
+
+**Also**: the kiosk model, the photos on the cell wall, the kiosk panel (tabs for the apps, the clock and the bill), sounds (keys, a chime), help topic **Internet kiosk**, achievements (photos, courses passed, the hollow book), lesson `kiosk` in Prison life (Center Perks).
+
+**Proof**: `kiosktest` (the places, billing, each app's rules, mail call's goods and a full desk, the forecast equal to the days that come, courses' questions true and their reward, the hollow book through every search, saves); `tutorialtest`; escapetest byte-identical.
+
+### P36 Hacking & the paperwork escape (v2.12)
+**Guards have lives**: each guard gets `about = { nick, home, team }` as data (names, the same in every language), beside their dog's name where they have one.
+- New lasting rumours: `guardNick`, `guardHome`, `guardTeam`. Inmates gossip them. A guard the player chats with (`canChat`) lets one slip, once a prison day.
+
+**The boot stick**: a `usb_stick` (contraband) in the smuggling catalogue (appended); with a battery, Intellect 60, it becomes a `boot_stick` (checked by the recipe graph). Contraband in hand heats as any.
+
+**Logging in** (at the kiosk, the boot stick in hand: the **Admin** tab)
+- Pick a guard's account. The password is one of their words (the dog, nickname, hometown or team), chosen by `roll(SALT.HACK, guard, week)`.
+- The screen lists **8 words**: that guard's words and decoys from the other guards'. A guess shows how many letters are **in the right place** (Mastermind-style). **4 tries**; a fourth miss locks the account for the day and writes a line in the logs.
+- What the player has heard in rumours is marked on the list ("Brutus: Duffy's dog"), so talk and gossip shorten the hack.
+
+**Admin actions** (each takes a game minute and writes a log line; any guard's account unless noted)
+| Action | Effect |
+|---|---|
+| **Loop the cameras** | Every camera blind for 30 game minutes, with no tampering (the tape blinds one for 60, but someone has to climb up to it) |
+| **Open a door** | One locked door, never a perimeter gate, open for a few game minutes (`state.remote`, as a picked door) |
+| **Wipe the record** | Heat to 0, once a prison day, refused in a lockdown |
+| **Tonight's roster** | Who is on nights, their rounds, the lazy guard's nap stop and window, the dogs' shifts (all pure); written in the file |
+| **Move a beat** | One night guard (not the bed check, not the delivery supervisor) stays in the quarters tonight. Once a prison week |
+| **Clear the logs** | Removes every log line. One more minute at the screen |
+
+- **The IT check** at 22:00: any log line left means a lockdown, the player's cell searched and the kiosk shut for 3 prison days.
+
+**The paperwork escape** (route `paperwork`)
+- **The release list**: from the strict guard's account (the shakedown guard: a supervisor) and Intellect 80, put the player's name on **tomorrow's** list. It's a log line like any other.
+- **The release**: at 10:00 the next day the PA calls the player's name. Between 10:00 and 10:30 they report at the release point: the checkpoint's window at Center Perks, Shankton and Irongate; at Stalag Flucht and San Pancho a release spot by the front gate (`comms.release`).
+- **The gate's checks**: heat under 40, no lockdown, nothing contraband on them. A failed check: heat +40 and the name struck off.
+- **Out**: the player changes into their own clothes (a new outfit, `own_clothes`), the gates open for them alone (`World.setWaved`), and they walk out onto the road. At Irongate the drawbridge comes down.
+- **The catch**: the IT check the night before strikes the name too, if the logs weren't cleared.
+
+**Also**: the boot stick model and recipe, the Admin tab (the word list, likeness, tries, the logs' count), the remote door's light, the release call, the change of clothes and the walk out (its own escape scene), help topic **Hacking**, achievements and medals for `paperwork`, rumours checked by `gossiptest`, lessons `hack` and `paperwork` in **Ways out** (Center Perks).
+
+**Proof**: `hacktest` (the guards' data, passwords pure, likeness, tries, lockouts; each admin action and its log; the IT check; the release list, the release's checks and the walk out in each prison; saves); **5 new escape bots** for `paperwork` (Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate), the 28 others unchanged; achievementtest (the route's medals); `tutorialtest`.
+
+### Phases
+- **P34 The pay phone (v2.10)**: `comms` data and its checks; the queue; mail call; home, lawyer, tips, the cousin's tapped line and his three jobs; eavesdropping; two lessons.
+- **P35 The internet kiosk (v2.11)**: the kiosk; mail and photos, the shop and the hollow book, the news, courses; one lesson.
+- **P36 Hacking & the paperwork escape (v2.12)**: the guards' lives, the boot stick, logging in, admin actions and the IT check, the release list and route `paperwork` with five bots; two lessons.
