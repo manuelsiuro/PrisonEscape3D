@@ -607,6 +607,20 @@ real touch feel) and the known limits.
     - 3D: joggers' running gait; the pull-up bar cut away by the see-through; bleachers' seat height; closer match framing; gates standing on grass; seedlings growing in the planters.
   - **Escape bots:** the four other prisons' bots are byte-identical; Center Perks' seven escapes are still won (timings moved).
   - **Accepted:** Center Perks' track's south lane runs along the fence (14×6 to make room cost the pitch its goals).
+- **P32 Grounds II (v2.8.0)**, sketches approved by the user (2026-10-21, "ok"), merged and released on "ok". See §10 and the §2 row.
+  - **What changed:** Stalag Flucht and Shankton are rebuilt (`map: 1`).
+    - Stalag: the sports ground is in the guards' compound's south end behind its own electric fence, and solitary is halved. The garden runs along the north wire behind cabin B.
+    - Shankton: an open-sky rec ground takes the kitchen's old block, and the kitchen, laundry and janitor's closet move behind the canteen. A walled garden plot sits in the courtyard, and roll call is regrouped.
+    - Both have the gardener job.
+  - **Three reviews:**
+    - rules: no new way out; Briggs on a roll-call spot; the courtyard's bench lost to the roll-call zone; inmates' shifts now tested in every campaign prison;
+    - UI: the French "rebuilt" notice's gender (now « nouveau plan »); the help's name for Shankton's ground;
+    - 3D:
+      - rows hidden behind the wall south of them: Stalag's beds, now along the wire; Shankton's track lane, the track now a row shorter with a 12×6 pitch; Shankton's south planters;
+      - the bunting's poles: they stood on the pitch, the track, a doorway and Center Perks' bleachers, and a line now runs across the camera;
+      - a fence junction drawn in halves; a gate's second leaf on the ground.
+  - **Escape bots:** all 28 escapes still won. Shankton's cutout bot is recognized once in uniform on the way (35% heat).
+  - **Accepted:** a 2-tile tunnel under Stalag's north wire was possible from that strip of yard before P32; a planted bed now hides its shaft, but the tunnel is no shorter.
 
 ## 9. Free time (P27–P30)
 
