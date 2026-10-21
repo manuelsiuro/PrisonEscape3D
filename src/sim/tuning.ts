@@ -43,6 +43,8 @@ export const POTATO_STEPS = 10 * STEPS_PER_MINUTE;
 
 /** Inmates stroll a little slower than the player can walk (units per step). */
 export const INMATE_SPEED = 150;
+/** P31: an inmate jogging the running track goes this much faster than its walk (units a step). */
+export const JOG_EXTRA = 60;
 /** After a bell, inmates set off within this many steps (not all at once). */
 export const INMATE_REACTION = 6 * STEPS_PER_SECOND;
 

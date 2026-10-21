@@ -622,6 +622,42 @@ play('crew', (bot) => {
   console.log(`crew, posted far: ended at step ${progress.k + 1} (${progress.step?.fail?.(ctx)})`);
 }
 
+play('laps', (bot) => {
+  // (P31: through the gate onto the sports ground, a lap along the lanes from the nearest corner, then the pull-up bar.
+  // A step first: the gate opens for free time as the step ends.)
+  bot.step();
+  check(bot.walkTo(tile(35, 39)), 'laps: on the sports ground');
+  const r = bot.sim.prison.leisure!.track!;
+  const ring: number[] = [];
+  for (let x = r.x; x < r.x + r.w; x++) ring.push(tile(x, r.z));
+  for (let z = r.z + 1; z < r.z + r.d; z++) ring.push(tile(r.x + r.w - 1, z));
+  for (let x = r.x + r.w - 2; x >= r.x; x--) ring.push(tile(x, r.z + r.d - 1));
+  for (let z = r.z + r.d - 2; z > r.z; z--) ring.push(tile(r.x, z));
+  check(bot.walkTo(ring[0]), 'laps: at the track\'s first corner');
+  for (let k = 1; k <= ring.length && !bot.sim.events.some((e) => e.type === 'lap'); k++) bot.walkTo(ring[k % ring.length]);
+  check(bot.st.lap.length === 4 && bot.st.spd > 40, `laps: a lap run, Speed up (${bot.st.spd})`);
+  const bar = bot.sim.world.props.findIndex((q) => q.kind === 'pullup');
+  useProp(bot, bar);
+  check(bot.st.train === bar, 'laps: on the pull-up bar');
+  for (let k = 0; k < 3000 && !bot.sim.events.some((e) => e.type === 'trained'); k++) bot.op(OP.TRAIN, 1 + (k % 2));
+});
+
+play('gardener', (bot) => {
+  // (P31: the gardener's job at Center Perks, one crate for the quota.)
+  bot.step();
+  const room = jobRooms(bot.sim.world)[bot.sim.prison.jobs.findIndex((j) => j.id === 'gardener')];
+  check(bot.walkTo(tile(47, 47), 3000), 'gardener: down to the garden');
+  useProp(bot, room.take);
+  check(bot.slotOf('seedlings') >= 0, 'gardener: a tray of seedlings');
+  const planter = room.machines[0];
+  useProp(bot, planter);
+  check(bot.st.machines[planter] !== undefined, 'gardener: planted');
+  bot.until(() => bot.st.machines[planter] <= bot.st.step, 3000);
+  useProp(bot, planter);
+  check(bot.slotOf('produce') >= 0, 'gardener: a crate of produce');
+  useProp(bot, room.put);
+});
+
 // ---------------------------------------------------------------- Ways out
 
 play('lockpick', (bot) => {

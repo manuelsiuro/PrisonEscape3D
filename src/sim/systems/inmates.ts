@@ -6,7 +6,7 @@ import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { BODY_HALF, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { BODY_HALF, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
 import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
@@ -275,7 +275,8 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       return;
     }
     if (m.path.length) {
-      if (walkPath(c, m, k)) arrive(m, plan, rng);
+      // (Jogging the track, P31: a jog's pace, not a walk's.)
+      if (walkPath(c, m, k, m.then === DOING.JOG ? m.speed + JOG_EXTRA : m.speed)) arrive(m, plan, rng);
       return;
     }
     if (tileAt(m.body.x, m.body.z) !== m.goal) {

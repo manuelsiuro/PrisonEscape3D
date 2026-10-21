@@ -1,3 +1,4 @@
+import { FRESH_ENERGY } from '../sim/tuning';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import { hostile } from '../sim/systems/social';
@@ -522,9 +523,16 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'meal':
       sound.eat();
       buzz('attended');
-      floatAt(-1, t('float.meal', { n: e.feast ? FEAST_ENERGY : MEAL_ENERGY }), 'gain');
+      floatAt(-1, t('float.meal', { n: (e.feast ? FEAST_ENERGY : MEAL_ENERGY) + (e.fresh ? FRESH_ENERGY : 0) }), 'gain');
       // A feast (P17): and health back to full.
       if (e.feast) banner.toast(t('toast.feast', { n: FEAST_ENERGY }), 'good', 4500);
+      // (P31: the gardener's produce on the tray.)
+      else if (e.fresh) banner.toast(t('toast.fresh', { n: FRESH_ENERGY }), 'good', 4500);
+      break;
+    case 'lap':
+      sound.chime();
+      buzz('attended');
+      floatAt(-1, t('float.lap'), 'gain');
       break;
     case 'rep':
       sound.rep();

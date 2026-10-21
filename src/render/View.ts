@@ -46,6 +46,7 @@ import { GamesView, type GamesFrame } from './Games';
 import { PastimesView, type PastimesFrame } from './Pastimes';
 import { LongView, type LongFrame } from './Long';
 import { TeamView, type TeamFrame } from './Team';
+import { GroundsView } from './Grounds';
 import { NightsView, type NightsFrame } from './Nights';
 import { handlersOf } from '../sim/systems/k9';
 
@@ -352,6 +353,8 @@ export class View {
   private readonly pastimesView = new PastimesView();
   private readonly longView = new LongView();
   private readonly teamView = new TeamView();
+  /** P31: the sports ground's track and court paint, the garden's crops. */
+  private readonly groundsView = new GroundsView();
   private readonly nightsView = new NightsView();
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
@@ -479,7 +482,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.nightsView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -620,6 +623,7 @@ export class View {
     this.gamesView.setWorld(world, later);
     this.teamView.setWorld(pitch, world.def.theme ?? 'suburban', later);
     this.longView.setWorld(later);
+    this.groundsView.setWorld(world, later);
     this.pastimesView.setWorld(world, pitch);
     this.getaway.setWorld(world);
     this.dogs.setDogs(
@@ -1326,6 +1330,7 @@ export class View {
     this.gamesView.update(f.games, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Card sharks (P27): the court's spots, the ball, the cards, the board (the ground floor only).
     this.pastimesView.group.visible = f.layer === LAYER.GROUND;
+    this.groundsView.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
     this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND, !!f.team.ball, dt);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
     this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);

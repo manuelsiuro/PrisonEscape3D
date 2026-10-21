@@ -58,8 +58,14 @@ export interface HudState {
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
+/** The zones the prison being played has (P31: the sports ground only where there is one); null: all of them. */
+let zonesHere: ReadonlySet<string> | null = null;
+export function setZonesHere(zones: ReadonlySet<string> | null) {
+  zonesHere = zones;
+}
+
 export function routinePlace(k: number): string {
-  const names = ROUTINE[k].zones.map((z) => t(`zone.${z}` as Key));
+  const names = ROUTINE[k].zones.filter((z) => !zonesHere || zonesHere.has(z)).map((z) => t(`zone.${z}` as Key));
   if (!names.length) return t('routine.free');
   return names.reduce((a, b) => t('routine.or', { a, b }));
 }

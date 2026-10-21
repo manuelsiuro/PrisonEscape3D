@@ -37,6 +37,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['chatter', 'ear', '#d9a21b'],
     ['day', 'calendar', '#d9930a'],
     ['train', 'dumbbell', '#8e4fc4'],
+    ['grounds', 'run', '#b0553f'],
     ['games', 'dice', '#7ed957'],
     ['cheat', 'cards', '#2e8a5e'],
     ['hoops', 'ball', '#e8742c'],
