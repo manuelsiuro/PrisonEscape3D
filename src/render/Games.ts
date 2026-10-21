@@ -195,6 +195,8 @@ export class GamesView {
       const pt = over === 'sports' ? lei?.pitch : null;
       if (pt && x >= pt.x && x < pt.x + pt.w && z >= pt.z && z < pt.z + pt.d) return false;
       if (over === 'sports' && lei?.track && onTrack(lei.track, x, z)) return false;
+      // (Nor through the bleachers or anything else standing there.)
+      if (world.props.some((q) => x >= q.x && x < q.x + q.w && z >= q.z && z < q.z + q.d)) return false;
       return ![-1, 1, -MAP_W, MAP_W].some((d) => world.ground.kind[z * MAP_W + x + d] === TILE.DOOR);
     };
     const poleAt = (along: boolean, c: number, a: number) => poleOK(along ? Math.floor(a) : c, along ? c : Math.floor(a));
@@ -214,7 +216,8 @@ export class GamesView {
           let a1 = a;
           while (a0 < a1 && !poleAt(along, c, a0 + 0.3)) a0++;
           while (a1 > a0 && !poleAt(along, c, a1 - 0.3)) a1--;
-          if (a1 - a0 >= STRETCH) runs.push({ along, c, a0, a1 });
+          // (On the sports ground a line long enough to read over the games, not a stub in a corner.)
+          if (a1 - a0 >= (over === 'sports' ? 8 : STRETCH)) runs.push({ along, c, a0, a1 });
           run = -1;
         }
       }
