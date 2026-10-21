@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prison Map Viewer</title>
+<meta name="description" content="Every Prison Escape 3D prison drawn from its data: pan, zoom, inspect any tile and leave notes.">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #eceae4;
+  --panel: #fbfaf7;
+  --panel-2: #f3f1eb;
+  --raise: #ffffff;
+  --text: #1d1c19;
+  --muted: #6d6a62;
+  --line: #dcd8ce;
+  --line-strong: #c4bfb2;
+  --accent: #f2b705;
+  --accent-ink: #3a2c00;
+  --accent-soft: rgba(242, 183, 5, 0.16);
+  --danger: #c0392b;
+  --stage: #d9d6cd;
+  --stage-dot: rgba(0, 0, 0, 0.07);
+  --shadow: 0 1px 2px rgba(30, 25, 10, 0.06), 0 8px 24px rgba(30, 25, 10, 0.10);
+  --radius: 12px;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141412;
+    --panel: #1c1c19;
+    --panel-2: #23231f;
+    --raise: #2a2a25;
+    --text: #edeae2;
+    --muted: #9c988c;
+    --line: #33322c;
+    --line-strong: #46443c;
+    --accent: #f6c431;
+    --accent-ink: #2a2000;
+    --accent-soft: rgba(246, 196, 49, 0.14);
+    --danger: #ef6b5b;
+    --stage: #0e0e0d;
+    --stage-dot: rgba(255, 255, 255, 0.05);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141412;
+  --panel: #1c1c19;
+  --panel-2: #23231f;
+  --raise: #2a2a25;
+  --text: #edeae2;
+  --muted: #9c988c;
+  --line: #33322c;
+  --line-strong: #46443c;
+  --accent: #f6c431;
+  --accent-ink: #2a2000;
+  --accent-soft: rgba(246, 196, 49, 0.14);
+  --danger: #ef6b5b;
+  --stage: #0e0e0d;
+  --stage-dot: rgba(255, 255, 255, 0.05);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; }
+kbd {
+  font: 600 11px var(--mono);
+  padding: 1px 5px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--raise);
+  color: var(--text);
+}
+
+/* ---------- Shell ---------- */
+.app {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr) 320px;
+  grid-template-rows: 56px 1fr;
+  grid-template-areas: "top top top" "side stage notes";
+  height: 100vh;
+  height: 100dvh;
+}
+.app.notes-hidden { grid-template-columns: 272px minmax(0, 1fr) 0; }
+.app.notes-hidden .notes { display: none; }
+
+.top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  z-index: 3;
+}
+.top::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 3px;
+  background: repeating-linear-gradient(-45deg, var(--accent) 0 10px, #1d1c19 10px 20px);
+  opacity: 0.9;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-mark {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink);
+  flex: none;
+}
+.brand-title { font-weight: 750; letter-spacing: -0.01em; white-space: nowrap; }
+.brand-sub { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.chip {
+  font: 600 11px var(--mono);
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.spacer { flex: 1; }
+.toolbar { display: flex; align-items: center; gap: 4px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; min-width: 32px; padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--raise);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, transform 0.06s;
+}
+.btn:hover { border-color: var(--line-strong); background: var(--panel-2); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible, .prison:focus-visible, .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn.icon { padding: 0; width: 32px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 650; }
+.btn.primary:hover { filter: brightness(1.05); background: var(--accent); }
+.btn.danger { color: var(--danger); }
+.btn.small { height: 28px; font-size: 12.5px; padding: 0 9px; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.zoom-label { font: 600 12px var(--mono); color: var(--muted); width: 48px; text-align: center; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- Sidebar ---------- */
+.side {
+  grid-area: side;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 14px 12px 18px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin: 0 4px 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.prisons { display: flex; flex-direction: column; gap: 4px; }
+.prison {
+  display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  padding: 8px 10px; border-radius: 10px;
+  border: 1px solid transparent; background: transparent; cursor: pointer;
+}
+.prison:hover { background: var(--panel-2); }
+.prison[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.prison-num {
+  width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center;
+  font: 700 12px var(--mono); background: var(--panel-2); border: 1px solid var(--line);
+}
+.prison[aria-current="true"] .prison-num { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.prison-name { font-weight: 650; display: block; line-height: 1.2; }
+.prison-meta { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.pips { display: inline-flex; gap: 2px; }
+.pip { width: 6px; height: 6px; border-radius: 2px; background: var(--line-strong); }
+.pip.on { background: var(--accent); }
+.badge {
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  font: 700 11px var(--mono); display: grid; place-items: center;
+  background: var(--text); color: var(--panel);
+}
+.seg {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;
+  padding: 3px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line);
+}
+.seg button {
+  border: 0; border-radius: 7px; padding: 7px 4px; background: transparent; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--muted);
+}
+.seg button[aria-pressed="true"] { background: var(--raise); color: var(--text); box-shadow: var(--shadow); }
+.seg button:disabled { opacity: 0.35; cursor: not-allowed; }
+.about { font-size: 12.5px; color: var(--muted); margin: 0 4px; }
+.about b { color: var(--text); }
+.guards { display: flex; flex-direction: column; gap: 6px; margin: 0 4px; }
+.guard { display: grid; grid-template-columns: 12px 1fr; gap: 8px; align-items: start; font-size: 12.5px; }
+.guard i { width: 12px; height: 12px; border-radius: 3px; margin-top: 3px; }
+.guard small { display: block; color: var(--muted); font-size: 11.5px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 12px; color: var(--muted); margin: 0 4px; align-items: center; }
+
+/* ---------- Stage ---------- */
+.stage {
+  grid-area: stage;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--stage);
+  background-image: radial-gradient(var(--stage-dot) 1px, transparent 1px);
+  background-size: 18px 18px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.stage.panning { cursor: grabbing; }
+.stage img.map {
+  position: absolute; left: 0; top: 0;
+  transform-origin: 0 0;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  will-change: transform;
+}
+.overlay { position: absolute; inset: 0; pointer-events: none; }
+.hl, .sel {
+  position: absolute; pointer-events: none; border-radius: 3px;
+}
+.hl { border: 2px solid rgba(255, 255, 255, 0.95); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55); }
+.sel { border: 3px solid var(--accent); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6), 0 0 18px var(--accent); }
+.pin {
+  position: absolute; pointer-events: auto; cursor: pointer;
+  transform: translate(-50%, -100%);
+  width: 26px; height: 32px;
+  display: grid; place-items: start center;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+.pin span {
+  width: 26px; height: 26px; border-radius: 50% 50% 50% 2px; transform: rotate(-45deg);
+  background: var(--accent); border: 2px solid #1d1c19;
+  display: grid; place-items: center;
+}
+.pin b { transform: rotate(45deg); font: 800 11px var(--mono); color: #1d1c19; }
+.pin.active span { background: #fff; }
+.loading {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  color: var(--muted); font-weight: 600; opacity: 0; transition: opacity 0.2s;
+}
+.loading.on { opacity: 1; }
+.hud-zoom {
+  position: absolute; right: 12px; bottom: 12px;
+  display: flex; gap: 4px; padding: 4px; border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+.peek {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  padding: 6px 12px; border-radius: 999px; font-weight: 650; font-size: 12.5px;
+  background: var(--text); color: var(--panel); pointer-events: none;
+  opacity: 0; transition: opacity 0.15s;
+}
+.peek.on { opacity: 0.92; }
+
+/* Inspector card */
+.card {
+  position: absolute; left: 12px; bottom: 12px;
+  width: 340px; max-height: calc(100% - 24px); overflow-y: auto;
+  background: color-mix(in srgb, var(--panel) 95%, transparent);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  padding: 12px 14px 14px;
+  cursor: default;
+  user-select: text; -webkit-user-select: text;
+  touch-action: auto;
+}
+.card[hidden] { display: none; }
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.coord { font: 800 18px var(--mono); letter-spacing: -0.02em; }
+.coord small { font-weight: 600; font-size: 12px; color: var(--muted); }
+.state-tag { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.state-tag.locked { color: var(--accent); }
+.rows { display: grid; grid-template-columns: 64px 1fr; gap: 5px 10px; font-size: 13px; }
+.rows dt { color: var(--muted); font-size: 12px; padding-top: 1px; }
+.rows dd { margin: 0; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, 0.35); vertical-align: -1px; margin-right: 6px; }
+.tagline { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font-size: 12px; padding: 1px 7px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); }
+.tag.decor { font-style: italic; color: #a21caf; }
+:root[data-theme="dark"] .tag.decor { color: #f0abfc; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tag.decor { color: #f0abfc; } }
+.marks { margin: 0; padding-left: 16px; font-size: 12.5px; }
+.hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.editor { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line-strong); }
+.editor label { font-size: 12px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 6px; }
+textarea {
+  width: 100%; min-height: 72px; resize: vertical;
+  font: 13.5px/1.4 var(--sans); color: var(--text);
+  background: var(--raise); border: 1px solid var(--line-strong); border-radius: 8px;
+  padding: 8px 10px;
+}
+textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+.editor-actions { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+.editor-actions .spacer { flex: 1; }
+
+/* ---------- Notes ---------- */
+.notes {
+  grid-area: notes;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  display: flex; flex-direction: column; min-width: 0;
+}
+.notes-head { padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+.notes-head h2 { margin: 0 0 2px; font-size: 15px; }
+.notes-head p { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+.notes-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.scope { display: flex; gap: 6px; margin-top: 10px; font-size: 12px; }
+.scope label { display: flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; }
+.note-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.note {
+  border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: var(--raise);
+  cursor: pointer; transition: border-color 0.12s;
+}
+.note:hover { border-color: var(--line-strong); }
+.note.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.note-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.note-num {
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  font: 800 10.5px var(--mono); background: var(--accent); color: var(--accent-ink); flex: none;
+}
+.note-where { font: 700 12px var(--mono); }
+.note-ctx { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-text { font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+.note-prison { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 6px 2px 0; }
+.empty { text-align: center; color: var(--muted); padding: 30px 16px; font-size: 13px; }
+.empty svg { width: 34px; height: 34px; opacity: 0.6; margin-bottom: 6px; }
+
+/* ---------- Toast / dialog ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px);
+  background: var(--text); color: var(--panel); padding: 9px 14px; border-radius: 10px;
+  font-weight: 600; font-size: 13px; opacity: 0; transition: opacity 0.18s, transform 0.18s;
+  pointer-events: none; z-index: 20; box-shadow: var(--shadow);
+}
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.sheet-bg { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: grid; place-items: center; z-index: 30; padding: 16px; }
+.sheet-bg[hidden] { display: none; }
+.sheet {
+  width: min(520px, 100%); max-height: 90vh; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 18px 20px;
+}
+.sheet h2 { margin: 0 0 12px; font-size: 17px; }
+.sheet table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sheet td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.sheet td:first-child { white-space: nowrap; width: 1%; padding-right: 14px; }
+.sheet p { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 1100px) {
+  .app, .app.notes-hidden { grid-template-columns: 240px minmax(0, 1fr) 0; }
+  .app .notes { display: none; }
+  .app.notes-open .notes {
+    display: flex; position: fixed; right: 0; top: 56px; bottom: 0; width: min(340px, 100%);
+    z-index: 10; box-shadow: var(--shadow);
+  }
+}
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  .app, .app.notes-hidden {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 52px auto minmax(420px, 1fr);
+    grid-template-areas: "top" "side" "stage";
+  }
+  .top { padding: 0 10px; gap: 8px; }
+  .brand-sub, .top .chip, .hide-narrow { display: none; }
+  .side {
+    min-width: 0;
+    border-right: 0; border-bottom: 1px solid var(--line);
+    padding: 10px 12px; gap: 10px; overflow: visible;
+  }
+  .side .section-title { display: none; }
+  .prisons { flex-direction: row; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px; }
+  .prisons::-webkit-scrollbar { display: none; }
+  .prison { width: auto; grid-template-columns: 24px auto auto; padding: 6px 10px 6px 6px; flex: none; }
+  .prison-num { width: 24px; height: 24px; }
+  .prison-meta { display: none; }
+  .side .about, .side .guards-wrap, .side .keys-wrap { display: none; }
+  .card { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 52%; }
+  .hud-zoom { top: 8px; right: 8px; bottom: auto; }
+  .app.notes-open .notes { top: 52px; width: 100%; }
+}
+@media (max-height: 560px) and (min-width: 761px) {
+  .app, .app.notes-hidden { grid-template-rows: 48px 1fr; grid-template-columns: 200px minmax(0, 1fr) 0; }
+  .brand-sub, #btnHelp { display: none; }
+  .brand-mark { width: 28px; height: 28px; }
+  .side { padding: 8px 8px 12px; gap: 10px; }
+  .side .about, .side .guards-wrap, .side .keys-wrap, .side .section-title span { display: none; }
+  .section-title { margin-bottom: 5px; }
+  .prison { padding: 4px 8px; gap: 8px; grid-template-columns: 24px 1fr auto; }
+  .prison-num { width: 24px; height: 24px; }
+  .prison-meta { display: none; }
+  .seg button { padding: 5px 2px; font-size: 12px; }
+  .card { width: 270px; padding: 9px 11px 10px; font-size: 12.5px; }
+  .coord { font-size: 15px; }
+  .rows { font-size: 12.5px; gap: 3px 8px; }
+  .editor { margin-top: 8px; padding-top: 8px; }
+  textarea { min-height: 46px; }
+  .app.notes-open .notes { top: 48px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+      </div>
+      <div>
+        <div class="brand-title">Prison Map Viewer</div>
+        <div class="brand-sub">Prison Escape 3D · drawn from the game's data</div>
+      </div>
+      <span class="chip" id="version">v—</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="toolbar">
+      <button class="btn hide-narrow" id="btnHelp" title="Shortcuts (?)">
+        <svg class="i" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+        Shortcuts
+      </button>
+      <button class="btn icon" id="btnTheme" title="Light / dark">
+        <svg class="i" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <button class="btn" id="btnNotes" title="Notes (N)" aria-pressed="true">
+        <svg class="i" viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg>
+        <span class="hide-narrow">Notes</span> <span class="badge" id="noteTotal">0</span>
+      </button>
+    </div>
+  </header>
+
+  <aside class="side" id="side">
+    <div>
+      <div class="section-title">Prisons <span><kbd>1</kbd>–<kbd>6</kbd></span></div>
+      <div class="prisons" id="prisons"></div>
+    </div>
+    <div>
+      <div class="section-title">View <span><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd></span></div>
+      <div class="seg" id="views" role="group" aria-label="View">
+        <button data-view="game" title="The 3D prison as the game draws it, from its own camera (G)">In game</button>
+        <button data-view="layout" title="Tiles, zones, doors, cells, props, decor (L)">Layout</button>
+        <button data-view="people" title="Guards, cameras, free time, smuggling, delivery, checkpoint (P)">People</button>
+        <button data-view="vents" title="Vents and boulders (V)">Vents</button>
+      </div>
+    </div>
+    <p class="about" id="about"></p>
+    <div class="guards-wrap">
+      <div class="section-title">Guards</div>
+      <div class="guards" id="guards"></div>
+    </div>
+    <div class="keys-wrap">
+      <div class="section-title">Using it</div>
+      <div class="keys">
+        <span>Drag</span><span>pan the map</span>
+        <span>Wheel · pinch</span><span>zoom</span>
+        <span>Click a tile</span><span>inspect it, write a note</span>
+        <span><kbd>Space</kbd> held</span><span>peek at another view</span>
+        <span><kbd>F</kbd></span><span>fit the map</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="stage" id="stage" aria-label="Map">
+    <img class="map" id="map" alt="" draggable="false">
+    <div class="overlay" id="overlay">
+      <div class="hl" id="hl" hidden></div>
+      <div class="sel" id="sel" hidden></div>
+    </div>
+    <div class="loading" id="loading">Loading map…</div>
+    <div class="peek" id="peek"></div>
+    <div class="hud-zoom">
+      <button class="btn icon" id="btnOut" title="Zoom out (−)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button class="btn small zoom-label" id="btnOne" title="Actual size (0)">100%</button>
+      <button class="btn icon" id="btnIn" title="Zoom in (+)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="btn icon" id="btnFit" title="Fit (F)"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+    <section class="card" id="card" hidden></section>
+  </main>
+
+  <aside class="notes" id="notes">
+    <div class="notes-head">
+      <h2>Notes</h2>
+      <p>What's wrong, what to change. Saved in this browser.</p>
+      <div class="notes-actions">
+        <button class="btn small primary" id="btnCopy" title="Copy every note as Markdown">
+          <svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>
+          Copy all
+        </button>
+        <button class="btn small" id="btnDownload" title="Download every note as a .md file">
+          <svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+          .md
+        </button>
+        <button class="btn small danger" id="btnClear" title="Delete this prison's notes">Clear</button>
+      </div>
+      <div class="scope">
+        <label><input type="radio" name="scope" value="prison" checked> This prison</label>
+        <label><input type="radio" name="scope" value="all"> All prisons</label>
+      </div>
+    </div>
+    <div class="note-list" id="noteList"></div>
+  </aside>
+</div>
+
+<div class="sheet-bg" id="help" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <h2 id="helpTitle">Shortcuts</h2>
+    <table>
+      <tr><td><kbd>1</kbd> – <kbd>6</kbd></td><td>Training Block, Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate</td></tr>
+      <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Previous / next prison</td></tr>
+      <tr><td><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd></td><td>In game · Layout · People &amp; places · Vents</td></tr>
+      <tr><td><kbd>Space</kbd> held</td><td>Peek at the same spot: the layout from any other view, in game from the layout</td></tr>
+      <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> <kbd>F</kbd></td><td>Zoom in, out, actual size, fit</td></tr>
+      <tr><td>Arrow keys</td><td>Pan</td></tr>
+      <tr><td>Click a tile</td><td>Inspect it and write a note (<kbd>Enter</kbd> to write, <kbd>⌘/Ctrl</kbd>+<kbd>Enter</kbd> to save)</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Let go of the tile</td></tr>
+      <tr><td><kbd>N</kbd></td><td>Show or hide the notes</td></tr>
+    </table>
+    <p>Regenerate the pictures and this page's data with <code>npm run maps</code>. Notes stay in this browser; use “Copy all” to send them on.</p>
+    <div style="text-align:right"><button class="btn primary" id="helpClose">Got it</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  'use strict';
+  const D = window.MAP_DATA;
+  const $ = (id) => document.getElementById(id);
+  if (!D) {
+    document.body.innerHTML = '<p style="padding:24px;font:15px system-ui">No map data. Run <code>npm run maps</code> to write <code>assets/maps/data.js</code>.</p>';
+    return;
+  }
+  const G = D.geometry;
+  const VIEW_NAMES = { game: 'In game', layout: 'Layout', people: 'People & places', vents: 'Vents' };
+  const TILE_COLORS = {
+    empty: '#1b1b1b', grass: '#8fbf5a', road: '#5f6166', concrete: '#d6d1c4', tiled: '#bcd6df', wood: '#cf9f66',
+    asphalt: '#868990', dirt: '#c29361', brick: '#8a3b2e', reinforced: '#3a3d45', fence: '#a7a9ad', electric: '#f0cf2a',
+    door: '#ffffff', detector: '#b07cc6', tower: '#262626', water: '#3b7dd8', mine: '#e2c48c', pier: '#8b6a3e',
+  };
+  const KEY_COLORS = { yellow: '#f4c20d', cyan: '#14b8c8', purple: '#8e44ad', red: '#e2372b', green: '#27a249' };
+  const words = (s) => s.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  // ---------- Storage (never throws) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
+  };
+  const NOTES_KEY = 'pe3d-mapviewer.notes.v1';
+  let notes = store.get(NOTES_KEY, []);
+  if (!Array.isArray(notes)) notes = [];
+  const saveNotes = () => store.set(NOTES_KEY, notes);
+
+  // ---------- State ----------
+  const app = $('app'), stage = $('stage'), img = $('map'), overlay = $('overlay');
+  const st = { p: 0, view: 'game', s: 1, tx: 0, ty: 0, touched: false, hover: null, sel: null, peek: false, scope: 'prison' };
+  const prison = () => D.prisons[st.p];
+  const hasView = (p, v) => p.views.some((x) => x.kind === v);
+  /** What a held Space shows instead: the layout from any other view; from the layout, the game's picture (or the people). */
+  const peekOf = (v) => (v !== 'layout' ? 'layout' : hasView(prison(), 'game') ? 'game' : 'people');
+  const shownView = () => (st.peek ? peekOf(st.view) : st.view);
+  /**
+   * Where the floor's tiles are in a view's picture: the drawn maps are square tiles under a title
+   * and rulers; the game's picture has its own numbers (its rows shallower, the tilt of its camera).
+   */
+  function geo(view = shownView()) {
+    const v = prison().views.find((x) => x.kind === view) || prison().views.find((x) => x.kind === 'layout');
+    return v.tileW
+      ? { file: v.file, ox: v.originX, oy: v.originY, tw: v.tileW, th: v.tileH, w: v.width, h: v.height }
+      : { file: v.file, ox: G.margin, oy: G.title + G.margin, tw: G.tile, th: G.tile, w: G.width, h: G.height };
+  }
+  let drawn = null; // the geometry of the picture on screen
+
+  // Per-prison lookups, built once.
+  const index = D.prisons.map((p) => {
+    const at = Array.from({ length: G.mapW * G.mapH }, () => ({ props: [], decor: [], marks: [], above: [] }));
+    const cover = (list, key) => list.forEach(([kind, x, z, w, d]) => {
+      for (let j = z; j < z + d; j++) for (let i = x; i < x + w; i++) if (i >= 0 && j >= 0 && i < G.mapW && j < G.mapH) at[j * G.mapW + i][key].push(kind);
+    });
+    cover(p.props, 'props');
+    cover(p.decor, 'decor');
+    p.marks.forEach(([x, z, s]) => at[z * G.mapW + x].marks.push(s));
+    p.above.forEach(([x, z, s]) => at[z * G.mapW + x].above.push(s));
+    p.doors.forEach(([x, z, key, cell, gate]) => { at[z * G.mapW + x].door = { key, cell, gate }; });
+    p.cells.forEach(([x0, z0, x1, z1, who], k) => {
+      for (let j = z0; j <= z1; j++) for (let i = x0; i <= x1; i++) at[j * G.mapW + i].cell = { n: k + 1, who };
+    });
+    return at;
+  });
+
+  function describe(pi, x, z) {
+    const p = D.prisons[pi];
+    const i = z * G.mapW + x;
+    const tile = D.tileNames[p.tiles[i]] || '?';
+    const info = index[pi][i];
+    const zone = p.zones[i] === 0 ? 'none (walls, doors)' : D.zoneNames[p.zones[i]];
+    let what = words(tile);
+    if (info.door) what = info.door.gate ? `${info.door.key} perimeter gate` : info.door.cell ? `${info.door.key} door of cell ${info.door.cell}` : `${info.door.key} door`;
+    return { tile, what, zone, info };
+  }
+  const shortCtx = (d) => [d.what, d.zone.startsWith('none') ? null : d.zone, ...d.info.props].filter(Boolean).join(' · ');
+
+  // ---------- Sidebar ----------
+  function renderPrisons() {
+    const counts = D.prisons.map((p) => notes.filter((n) => n.prison === p.id).length);
+    $('prisons').innerHTML = D.prisons.map((p, k) => `
+      <button class="prison" data-k="${k}" aria-current="${k === st.p}" title="${esc(p.name)} (${k + 1})">
+        <span class="prison-num">${k + 1}</span>
+        <span>
+          <span class="prison-name">${esc(p.name)}</span>
+          <span class="prison-meta"><span class="pips">${[1, 2, 3, 4, 5].map((n) => `<i class="pip${n <= p.difficulty ? ' on' : ''}"></i>`).join('')}</span>${esc(p.theme)} · rev ${p.map}</span>
+        </span>
+        ${counts[k] ? `<span class="badge" title="${counts[k]} notes">${counts[k]}</span>` : '<span></span>'}
+      </button>`).join('');
+    $('noteTotal').textContent = notes.length;
+  }
+  function renderSide() {
+    const p = prison();
+    renderPrisons();
+    document.querySelectorAll('#views button').forEach((b) => {
+      b.disabled = !hasView(p, b.dataset.view);
+      b.setAttribute('aria-pressed', String(b.dataset.view === st.view));
+    });
+    $('about').innerHTML = `<b>${esc(p.name)}</b>${p.difficulty ? ` · difficulty ${p.difficulty}/5` : ' · tutorial'}<br>${esc(p.info)}`;
+    $('guards').innerHTML = p.guards.map((g) => `
+      <div class="guard"><i style="background:${g.color}"></i><span>${esc(g.name)}<small>${esc([`${g.key} key`, g.trait, ...g.tags].join(' · '))}</small></span></div>`).join('') || '<span class="about">No guards.</span>';
+  }
+
+  // ---------- Map image ----------
+  const cache = new Map();
+  function srcOf(p, v) { return p.views.find((x) => x.kind === v)?.file; }
+  function preload(p) {
+    for (const v of p.views) if (!cache.has(v.file)) { const im = new Image(); im.src = v.file; cache.set(v.file, im); }
+  }
+  function showImage() {
+    const g = geo();
+    if (img.getAttribute('src') === g.file) return;
+    // The same floor point stays under the middle of the stage when the picture's frame changes.
+    if (drawn && (drawn.oy !== g.oy || drawn.th !== g.th || drawn.ox !== g.ox)) {
+      const r = rect();
+      const fx = ((r.width / 2 - st.tx) / st.s - drawn.ox) / drawn.tw;
+      const fz = ((r.height / 2 - st.ty) / st.s - drawn.oy) / drawn.th;
+      st.tx = r.width / 2 - (g.ox + fx * g.tw) * st.s;
+      st.ty = r.height / 2 - (g.oy + fz * g.th) * st.s;
+    }
+    drawn = g;
+    $('loading').classList.add('on');
+    img.onload = () => $('loading').classList.remove('on');
+    img.onerror = () => { $('loading').textContent = `Can't load ${g.file}. Run npm run maps.`; };
+    img.src = g.file;
+    img.width = g.w;
+    img.height = g.h;
+    if (img.complete && img.naturalWidth) $('loading').classList.remove('on');
+    if (st.touched) render(); else fit();
+  }
+
+  // ---------- Pan & zoom ----------
+  const rect = () => stage.getBoundingClientRect();
+  const fitScale = () => { const r = rect(); const g = geo(); return Math.min((r.width - 24) / g.w, (r.height - 24) / g.h); };
+  const minS = () => Math.min(fitScale() * 0.6, 0.15);
+  const MAX_S = 4;
+  function fit() {
+    const r = rect();
+    st.s = fitScale();
+    const g = geo();
+    st.tx = (r.width - g.w * st.s) / 2;
+    st.ty = (r.height - g.h * st.s) / 2;
+    render();
+  }
+  function zoomAt(sx, sy, f) {
+    const s = Math.max(minS(), Math.min(MAX_S, st.s * f));
+    const k = s / st.s;
+    st.tx = sx - (sx - st.tx) * k;
+    st.ty = sy - (sy - st.ty) * k;
+    st.s = s;
+    st.touched = true;
+    render();
+  }
+  function zoomCenter(f) { const r = rect(); zoomAt(r.width / 2, r.height / 2, f); }
+  function setScale(s) { zoomCenter(s / st.s); }
+  /** Centre on a tile, zoomed in at least to `s`. */
+  function focusTile(x, z, s = 1) {
+    const r = rect();
+    st.s = Math.max(st.s, s);
+    const [ix, iy] = tileCenter(x, z);
+    st.tx = r.width / 2 - ix * st.s;
+    st.ty = r.height / 2 - iy * st.s;
+    st.touched = true;
+    render();
+  }
+  const tileCenter = (x, z) => { const g = geo(); return [g.ox + (x + 0.5) * g.tw, g.oy + (z + 0.5) * g.th]; };
+  function tileAt(sx, sy) {
+    const ix = (sx - st.tx) / st.s, iy = (sy - st.ty) / st.s;
+    const g = geo();
+    const x = Math.floor((ix - g.ox) / g.tw), z = Math.floor((iy - g.oy) / g.th);
+    return x >= 0 && z >= 0 && x < G.mapW && z < G.mapH ? { x, z } : null;
+  }
+  function placeBox(el, t) {
+    if (!t) { el.hidden = true; return; }
+    el.hidden = false;
+    const g = geo();
+    el.style.left = `${st.tx + (g.ox + t.x * g.tw) * st.s}px`;
+    el.style.top = `${st.ty + (g.oy + t.z * g.th) * st.s}px`;
+    el.style.width = `${g.tw * st.s}px`;
+    el.style.height = `${g.th * st.s}px`;
+  }
+  function render() {
+    img.style.transform = `translate(${st.tx}px, ${st.ty}px) scale(${st.s})`;
+    $('btnOne').textContent = `${Math.round(st.s * 100)}%`;
+    placeBox($('hl'), st.hover && !(st.sel && st.hover.x === st.sel.x && st.hover.z === st.sel.z) ? st.hover : null);
+    placeBox($('sel'), st.sel);
+    renderPins();
+  }
+
+  // ---------- Pins ----------
+  const prisonNotes = () => notes.filter((n) => n.prison === prison().id);
+  function renderPins() {
+    overlay.querySelectorAll('.pin').forEach((e) => e.remove());
+    prisonNotes().forEach((n, k) => {
+      const [ix, iy] = tileCenter(n.x, n.z);
+      const el = document.createElement('div');
+      el.className = 'pin' + (st.sel && st.sel.x === n.x && st.sel.z === n.z ? ' active' : '');
+      el.style.left = `${st.tx + ix * st.s}px`;
+      el.style.top = `${st.ty + (iy - geo().th * 0.2) * st.s}px`;
+      el.title = n.text;
+      el.innerHTML = `<span><b>${k + 1}</b></span>`;
+      el.addEventListener('pointerdown', (e) => e.stopPropagation());
+      el.addEventListener('click', (e) => { e.stopPropagation(); select({ x: n.x, z: n.z }); });
+      overlay.appendChild(el);
+    });
+  }
+
+  // ---------- Inspector ----------
+  function renderCard() {
+    const card = $('card');
+    const t = st.sel || st.hover;
+    if (!t) { card.hidden = true; return; }
+    card.hidden = false;
+    const d = describe(st.p, t.x, t.z);
+    const { info } = d;
+    const color = info.door ? KEY_COLORS[info.door.key] : TILE_COLORS[d.tile] || '#ccc';
+    const rows = [
+      ['Tile', `<span class="sw" style="background:${color}"></span>${esc(d.what)}`],
+      ['Zone', esc(d.zone)],
+    ];
+    if (info.cell) rows.push(['Cell', `Cell ${info.cell.n} · ${esc(info.cell.who)}`]);
+    if (info.props.length) rows.push(['Props', `<span class="tagline">${info.props.map((k) => `<span class="tag">${esc(k)}</span>`).join('')}</span>`]);
+    if (info.decor.length) rows.push(['Decor', `<span class="tagline">${info.decor.map((k) => `<span class="tag decor">${esc(k)}</span>`).join('')}</span>`]);
+    if (info.above.length) rows.push(['Layers', esc(info.above.join(', '))]);
+    if (info.marks.length) rows.push(['Here', `<ul class="marks">${info.marks.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`]);
+    const note = st.sel && notes.find((n) => n.prison === prison().id && n.x === st.sel.x && n.z === st.sel.z);
+    card.innerHTML = `
+      <div class="card-head">
+        <div class="coord">(${t.x}, ${t.z}) <small>x, z</small></div>
+        <span class="state-tag${st.sel ? ' locked' : ''}">${st.sel ? 'Selected' : 'Hover'}</span>
+      </div>
+      <dl class="rows">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
+      ${st.sel ? `
+        <div class="editor">
+          <label for="noteText">${note ? 'Your note on this tile' : 'Write a note on this tile'}</label>
+          <textarea id="noteText" placeholder="What's wrong here, what should change…">${note ? esc(note.text) : ''}</textarea>
+          <div class="editor-actions">
+            <button class="btn small primary" id="noteSave">${note ? 'Update' : 'Save note'}</button>
+            ${note ? '<button class="btn small danger" id="noteDel">Delete</button>' : ''}
+            <span class="spacer"></span>
+            <button class="btn small" id="noteClose">Done</button>
+          </div>
+        </div>` : '<div class="hint">Click the tile to select it and write a note.</div>'}`;
+    if (!st.sel) return;
+    const ta = $('noteText');
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveNote(); }
+      if (e.key === 'Escape') { e.preventDefault(); ta.blur(); }
+      e.stopPropagation();
+    });
+    $('noteSave').onclick = saveNote;
+    if (note) $('noteDel').onclick = () => { notes = notes.filter((n) => n !== note); saveNotes(); toast('Note deleted'); refreshNotes(); };
+    $('noteClose').onclick = () => select(null);
+  }
+  function saveNote() {
+    const text = $('noteText').value.trim();
+    const t = st.sel;
+    if (!t) return;
+    const p = prison();
+    const old = notes.find((n) => n.prison === p.id && n.x === t.x && n.z === t.z);
+    if (!text) {
+      if (old) { notes = notes.filter((n) => n !== old); saveNotes(); toast('Note deleted'); }
+      refreshNotes();
+      return;
+    }
+    const ctx = shortCtx(describe(st.p, t.x, t.z));
+    if (old) Object.assign(old, { text, ctx, view: st.view, t: Date.now() });
+    else notes.push({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, prison: p.id, view: st.view, x: t.x, z: t.z, text, ctx, t: Date.now() });
+    notes.sort((a, b) => D.prisons.findIndex((p2) => p2.id === a.prison) - D.prisons.findIndex((p2) => p2.id === b.prison) || a.z - b.z || a.x - b.x);
+    saveNotes();
+    toast(old ? 'Note updated' : 'Note saved');
+    refreshNotes();
+  }
+  function select(t) {
+    st.sel = t;
+    render();
+    renderCard();
+    renderNoteList();
+  }
+  function refreshNotes() { renderPrisons(); render(); renderCard(); renderNoteList(); }
+
+  // ---------- Notes panel ----------
+  function renderNoteList() {
+    const list = $('noteList');
+    const shown = st.scope === 'all' ? notes : prisonNotes();
+    if (!shown.length) {
+      list.innerHTML = `<div class="empty"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg><div>${st.scope === 'all' ? 'No notes yet.' : `No notes on ${esc(prison().name)} yet.`}</div><div>Click any tile on the map to leave one.</div></div>`;
+      return;
+    }
+    let html = '';
+    let last = '';
+    for (const p of D.prisons) {
+      const mine = shown.filter((n) => n.prison === p.id);
+      mine.forEach((n, k) => {
+        if (st.scope === 'all' && last !== p.id) { html += `<div class="note-prison">${esc(p.name)}</div>`; last = p.id; }
+        const active = n.prison === prison().id && st.sel && st.sel.x === n.x && st.sel.z === n.z;
+        html += `<div class="note${active ? ' active' : ''}" data-id="${esc(n.id)}">
+          <div class="note-top"><span class="note-num">${k + 1}</span><span class="note-where">(${n.x}, ${n.z})</span><span class="note-ctx">${esc(n.ctx || '')}</span></div>
+          <div class="note-text">${esc(n.text)}</div></div>`;
+      });
+    }
+    list.innerHTML = html;
+  }
+  $('noteList').addEventListener('click', (e) => {
+    const el = e.target.closest('.note');
+    if (!el) return;
+    const n = notes.find((q) => q.id === el.dataset.id);
+    if (!n) return;
+    const k = D.prisons.findIndex((p) => p.id === n.prison);
+    if (k !== st.p) goPrison(k, false);
+    focusTile(n.x, n.z, 1);
+    select({ x: n.x, z: n.z });
+    if (matchMedia('(max-width: 1100px)').matches) app.classList.remove('notes-open');
+  });
+  document.querySelectorAll('input[name=scope]').forEach((r) => r.addEventListener('change', () => { st.scope = r.value; renderNoteList(); }));
+
+  function markdown() {
+    const lines = [`# Map notes — Prison Escape 3D v${D.version}`, ''];
+    for (const p of D.prisons) {
+      const mine = notes.filter((n) => n.prison === p.id);
+      if (!mine.length) continue;
+      lines.push(`## ${p.name}`, '');
+      mine.forEach((n) => lines.push(`- **(${n.x}, ${n.z})** ${n.ctx ? `_${n.ctx}_ ` : ''}— ${n.text.replace(/\n+/g, ' / ')}`));
+      lines.push('');
+    }
+    return lines.join('\n');
+  }
+  async function copyText(s) {
+    try { await navigator.clipboard.writeText(s); return true; } catch { /* fall back */ }
+    const ta = document.createElement('textarea');
+    ta.value = s; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { ok = false; }
+    ta.remove();
+    return ok;
+  }
+  $('btnCopy').onclick = async () => {
+    if (!notes.length) return toast('No notes to copy yet');
+    toast((await copyText(markdown())) ? `Copied ${notes.length} note${notes.length > 1 ? 's' : ''} as Markdown` : 'Copy failed: use the .md download');
+  };
+  $('btnDownload').onclick = () => {
+    if (!notes.length) return toast('No notes to download yet');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([markdown()], { type: 'text/markdown' }));
+    a.download = 'map-notes.md';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  let clearArmed = 0;
+  $('btnClear').onclick = () => {
+    const mine = st.scope === 'all' ? notes : prisonNotes();
+    if (!mine.length) return toast('Nothing to clear');
+    if (Date.now() - clearArmed > 3000) {
+      clearArmed = Date.now();
+      $('btnClear').textContent = `Delete ${mine.length}?`;
+      setTimeout(() => { $('btnClear').textContent = 'Clear'; }, 3000);
+      return;
+    }
+    clearArmed = 0;
+    notes = notes.filter((n) => !mine.includes(n));
+    saveNotes();
+    $('btnClear').textContent = 'Clear';
+    toast(`Deleted ${mine.length} note${mine.length > 1 ? 's' : ''}`);
+    refreshNotes();
+  };
+
+  // ---------- Navigation ----------
+  function goPrison(k, keepSel) {
+    st.p = (k + D.prisons.length) % D.prisons.length;
+    if (!hasView(prison(), st.view)) st.view = hasView(prison(), 'game') ? 'game' : 'layout';
+    if (!keepSel) { st.sel = null; }
+    preload(prison());
+    renderSide(); showImage(); render(); renderCard(); renderNoteList(); writeHash();
+  }
+  function goView(v) {
+    if (!hasView(prison(), v)) return toast(`${prison().name} has no ${VIEW_NAMES[v].toLowerCase()} picture`);
+    st.view = v;
+    renderSide(); showImage(); writeHash();
+  }
+  function writeHash() {
+    try { history.replaceState(null, '', `#${prison().id}/${st.view}`); } catch { /* file:// in some browsers */ }
+  }
+  function readHash() {
+    const [id, view] = location.hash.slice(1).split('/');
+    const k = D.prisons.findIndex((p) => p.id === id);
+    if (k >= 0) st.p = k;
+    if (view && VIEW_NAMES[view] && hasView(prison(), view)) st.view = view;
+  }
+  $('prisons').addEventListener('click', (e) => { const b = e.target.closest('.prison'); if (b) goPrison(+b.dataset.k); });
+  $('views').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.disabled) goView(b.dataset.view); });
+
+  // ---------- Pointer input ----------
+  const pts = new Map();
+  let gesture = null;
+  const local = (e) => { const r = rect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.card, .hud-zoom')) return;
+    try { stage.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
+    const [x, y] = local(e);
+    pts.set(e.pointerId, { x, y });
+    if (pts.size === 1) gesture = { sx: x, sy: y, moved: 0, t: performance.now(), pinch: false };
+    else if (gesture) gesture.pinch = true;
+  });
+  stage.addEventListener('pointermove', (e) => {
+    const [x, y] = local(e);
+    if (!pts.has(e.pointerId)) {
+      if (e.pointerType === 'mouse' && !e.target.closest('.card, .hud-zoom')) {
+        const t = tileAt(x, y);
+        if (t?.x !== st.hover?.x || t?.z !== st.hover?.z) { st.hover = t; render(); if (!st.sel) renderCard(); }
+      }
+      return;
+    }
+    const prev = pts.get(e.pointerId);
+    if (pts.size === 1) {
+      st.tx += x - prev.x; st.ty += y - prev.y;
+      gesture.moved += Math.abs(x - prev.x) + Math.abs(y - prev.y);
+      if (gesture.moved > 4) stage.classList.add('panning');
+      pts.set(e.pointerId, { x, y });
+      st.touched = true;
+      render();
+    } else if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      const other = a === prev ? b : a;
+      const d0 = Math.hypot(prev.x - other.x, prev.y - other.y);
+      const d1 = Math.hypot(x - other.x, y - other.y);
+      const m0 = [(prev.x + other.x) / 2, (prev.y + other.y) / 2];
+      const m1 = [(x + other.x) / 2, (y + other.y) / 2];
+      st.tx += m1[0] - m0[0]; st.ty += m1[1] - m0[1];
+      pts.set(e.pointerId, { x, y });
+      if (d0 > 0) zoomAt(m1[0], m1[1], d1 / d0); else render();
+    }
+  });
+  const end = (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (pts.size === 0) {
+      stage.classList.remove('panning');
+      if (gesture && !gesture.pinch && gesture.moved < 6 && performance.now() - gesture.t < 600) {
+        const [x, y] = local(e);
+        const t = tileAt(x, y);
+        if (!t || (st.sel && st.sel.x === t.x && st.sel.z === t.z)) select(null);
+        else select(t);
+      }
+      gesture = null;
+    }
+  };
+  stage.addEventListener('pointerup', end);
+  stage.addEventListener('pointercancel', end);
+  stage.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'mouse' && st.hover) { st.hover = null; render(); if (!st.sel) renderCard(); }
+  });
+  stage.addEventListener('wheel', (e) => {
+    if (e.target.closest('.card')) return;
+    e.preventDefault();
+    const [x, y] = local(e);
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    zoomAt(x, y, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0018)));
+  }, { passive: false });
+  stage.addEventListener('dblclick', (e) => { if (!e.target.closest('.card, .hud-zoom')) { const [x, y] = local(e); zoomAt(x, y, 2); } });
+
+  $('btnIn').onclick = () => zoomCenter(1.4);
+  $('btnOut').onclick = () => zoomCenter(1 / 1.4);
+  $('btnOne').onclick = () => setScale(1);
+  $('btnFit').onclick = fit;
+
+  // ---------- Keyboard ----------
+  const typing = (e) => e.target instanceof Element && e.target.closest('textarea, input');
+  document.addEventListener('keydown', (e) => {
+    if (!$('help').hidden) { if (e.key === 'Escape' || e.key === '?') closeHelp(); return; }
+    if (typing(e) || e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (k >= '1' && k <= '9' && +k <= D.prisons.length) goPrison(+k - 1);
+    else if (k === ']') goPrison(st.p + 1);
+    else if (k === '[') goPrison(st.p - 1);
+    else if (k === 'g' || k === 'G') goView('game');
+    else if (k === 'l' || k === 'L') goView('layout');
+    else if (k === 'p' || k === 'P') goView('people');
+    else if (k === 'v' || k === 'V') goView('vents');
+    else if (k === 'f' || k === 'F') fit();
+    else if (k === '+' || k === '=') zoomCenter(1.4);
+    else if (k === '-' || k === '_') zoomCenter(1 / 1.4);
+    else if (k === '0') setScale(1);
+    else if (k === 'n' || k === 'N') toggleNotes();
+    else if (k === '?') openHelp();
+    else if (k === 'Escape') select(null);
+    else if (k === 'Enter' && st.sel) { e.preventDefault(); $('noteText')?.focus(); }
+    else if (k.startsWith('Arrow')) {
+      const step = 80;
+      if (k === 'ArrowLeft') st.tx += step;
+      if (k === 'ArrowRight') st.tx -= step;
+      if (k === 'ArrowUp') st.ty += step;
+      if (k === 'ArrowDown') st.ty -= step;
+      st.touched = true;
+      render();
+    } else if (k === ' ') {
+      e.preventDefault();
+      if (!st.peek) {
+        st.peek = true;
+        $('peek').textContent = `Peeking: ${VIEW_NAMES[peekOf(st.view)]}`;
+        $('peek').classList.add('on');
+        showImage();
+      }
+    } else return;
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.key === ' ' && st.peek) { st.peek = false; $('peek').classList.remove('on'); showImage(); }
+  });
+  window.addEventListener('blur', () => { if (st.peek) { st.peek = false; $('peek').classList.remove('on'); showImage(); } });
+
+  // ---------- Chrome ----------
+  function toggleNotes() {
+    if (matchMedia('(max-width: 1100px)').matches) app.classList.toggle('notes-open');
+    else app.classList.toggle('notes-hidden');
+    const open = matchMedia('(max-width: 1100px)').matches ? app.classList.contains('notes-open') : !app.classList.contains('notes-hidden');
+    $('btnNotes').setAttribute('aria-pressed', String(open));
+    store.set('pe3d-mapviewer.notesHidden', !open);
+    requestAnimationFrame(() => { if (!st.touched) fit(); else render(); });
+  }
+  $('btnNotes').onclick = toggleNotes;
+  function openHelp() { $('help').hidden = false; $('helpClose').focus(); }
+  function closeHelp() { $('help').hidden = true; }
+  $('btnHelp').onclick = openHelp;
+  $('helpClose').onclick = closeHelp;
+  $('help').addEventListener('click', (e) => { if (e.target === $('help')) closeHelp(); });
+  const root = document.documentElement;
+  const theme = store.get('pe3d-mapviewer.theme', null);
+  if (theme) root.dataset.theme = theme;
+  $('btnTheme').onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    store.set('pe3d-mapviewer.theme', root.dataset.theme);
+  };
+  let toastTimer = 0;
+  function toast(s) {
+    const t = $('toast');
+    t.textContent = s;
+    t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('on'), 1800);
+  }
+  new ResizeObserver(() => { if (!st.touched) fit(); else render(); }).observe(stage);
+
+  // ---------- Start ----------
+  $('version').textContent = `v${D.version}`;
+  if (store.get('pe3d-mapviewer.notesHidden', false) && !matchMedia('(max-width: 1100px)').matches) {
+    app.classList.add('notes-hidden');
+    $('btnNotes').setAttribute('aria-pressed', 'false');
+  }
+  if (matchMedia('(max-width: 1100px)').matches) $('btnNotes').setAttribute('aria-pressed', 'false');
+  readHash();
+  window.addEventListener('hashchange', () => { const [p0, v0] = [st.p, st.view]; readHash(); if (st.p !== p0 || st.view !== v0) goPrison(st.p, false); });
+  D.prisons.forEach(preload);
+  goPrison(st.p, false);
+  fit();
+})();
+</script>
+</body>
+</html>
