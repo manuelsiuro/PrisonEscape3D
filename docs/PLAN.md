@@ -159,6 +159,7 @@ Sources:
 | Escape replays (P25, v2.1.0) | Not in the GDD (the plan: a scout worker, a display sim within 4 ms a frame, Auto and 1–64×, skip quiet times, a scrubber with days and highlights, skip to the escape, a mismatch plays to the last verified hour, export/import, guests never grant anything; the victory card and the Medals tab) | **Every escape can be watched again** from its log (P16's recorder): Watch on the victory card and the Daily result card (back to the card after), and a **Replays** list on Trophies › Medals (the last escape, a Daily's too, and each prison's quickest; Save as a file; Open a replay file). **A scout** (`replay/scout.ts`, in a worker, the main thread a few ms a frame where there's none) plays the log through checking its hourly checksums and leaves keyframes every half game hour, a finale keyframe half an hour before the end, **highlights** (caught, lockdown, a knockout, a mishap, breaking through, into the tunnel, the vents, onto the roof, a power cut, the takeover, stowed away, waved through, the glide, the escape; one per kind an hour) and **quiet times** (asleep, out cold, solitary). **The picture** is a second sim stepped from the commands (≤4 ms a frame), jumping by keyframes; **Auto** runs ordinary time at 32× and eases to 2× round each highlight, quiet times at 96×; or 1, 4, 16, 64×; the moon (on by default) skips the quiet times. **After a rules change** a checksum stops matching: the replay plays to the last hour that did, and says so. It ends on the escape camera, then Watch again. **Watching counts for nothing** (no records, achievements, stats, saves, Daily history; a test reads the viewer's code for it). **Files** (`.pe3d.json`) carry the log and the player's prisoner (name and look: "Played by …"); a file from elsewhere is checked hard (whole numbers, at most 60 days, its commands as long as it says, a prison, twists and a way out this game has, a start that plays) and is a guest's. The HUD shows (inert), no hotbar, no tips; effects that shake the picture only at slow speeds; a glide in the air plays in real time |
 
 | P23–P30 polish (v2.6.0) | Not in the GDD (the known limits and three reviews of P23–P30) | **Clocks on stalls**: Cheat's move 60 s (§9) and the shootout's shot 30 s (an airball); both games end at roll call or Lights Out (Cheat: behind lost, else the stake back; the shootout off). **Talent night's no-shows**: every performer still to come is called 20 minutes before the first act (dropping whatever free-time linger he was on) and kept by the wings; an act whose performer isn't on the boards 5 minutes into his slot is a no-show (no music cover, out of the ranking, "no-show" on the card); one the player holds (a talk, following, a game with them) counts as played; `state.acted` [day, bits] (a 2.5.0 save keeps the acts already begun). Knocking a rival out before his act takes him out of the ranking (the usual heat and fight costs apply); a crew brawl never picks anyone called for an act, at the quiz, in a match, under the needle or at the hoop with the player. **Crew**: no lookout post within one tile of the player's cell door (as the help said); the digger's help and the crew's escape count need a short walk on foot (a fence blocks), not a line of sight. **The glide** never comes down on ground neither inside nor out (Shankton's double fence: `World.afoot`). **The pitch kept clean**: Stalag Flucht's pitch moved to the walkway (4,41 13×4), clear of the roll call and the hoop; elsewhere the render time-gates the other paint (the roll call's marks over a pitch show for roll call, the 20 minutes before it and a fire drill; hoop spots on a pitch only near the court and never in a match), since moving roll call spots or courts would move inmates and the escape bots. Guard Huber's day and night rounds still stop at the new pitch's middle (10,42): moving the stop changed an escape bot. **Old runs**: logs from 2.5.0 and before replay by their own rules (`Sim.rules250`, `beforeFixes`; Stalag's old pitch is `leisure.pitchWas`, painted as it was). **French money**: "$5" in labels and chips, "5 $" in sentences (two conventions on purpose). **The draw-call budget** holds where the browser has WEBGL_multi_draw (one call per BatchedMesh); without it a roll call's yard measured 166–254 (v2.5.0: 280–497) |
+| Courtyard, sports and garden | (not covered) | The GDD draws one courtyard per prison. From P31 (2026-10-21, user's request) every prison is redrawn with a fenced **sports ground** (pitch, court, running track, weights, bleachers) and a **vegetable garden** with a gardener job; the courtyard is a quiet yard. Saves from an older map restart that prison; the escape bots are re-tuned (their snapshots may change in P31–P33 only). See §10 |
 Any further conflict found during the build is added to this table in the same commit.
 
 ## 3. Architecture
@@ -814,3 +815,110 @@ Nothing here happens without the player asking, and nothing draws on the state's
 **Proof**: `stagetest` covers note judging at the step, the inmates' scores, the questions' answers against the running game, the day cards in the decks, old saves and logs, and escapetest unchanged.
 
 **Lessons**: `talent` and `quiz` (built: both at Center Perks, after Tattoos).
+
+## 10. Sports grounds & gardens (P31–P33)
+
+The free-time games (P22–P29) all landed in each prison's one courtyard. There, the pitch, the hoop, the garden beds, the benches and the trees overlap, and the result is confusing (user, 2026-10-21). Every prison is now **rebuilt** around two new places, and the courtyard goes back to being a quiet yard.
+
+User decisions (2026-10-21), on the branch `feature/sports-and-gardens`:
+- **The maps change.** Every prison is redrawn so it has room for both new places. The cells, the escape routes and the secrets stay where they are wherever possible.
+- **A full sports complex**, fenced, with:
+  - a football pitch;
+  - a basketball court, with hoops on posts and its lines painted;
+  - a running track round the pitch;
+  - an outdoor weights corner;
+  - bleachers.
+- **A vegetable garden and a gardening job**, with its produce going to the kitchen.
+- **Saves and bots.** A run saved in a rebuilt prison restarts there, with a notice; records, trophies and stats are kept. The escape bots are re-tuned to the new maps. They must still win every escape, but for these three phases their snapshots may change. This lifts the "byte-identical" rule for P31–P33 only.
+
+### The places (every prison)
+- **The sports ground** is its own zone, `sports`. It is open air, fenced, and has one gate that inmates can use.
+  - **Open:** during the exercise hour (15:00) and the morning and evening free time. The gate is shut at lights out and in a lockdown, as the job rooms' doors are (`doorRoom`, with a new list of open blocks).
+  - **The pitch:** football (P29) moves here. It is bigger than now, about 14×7 where the map allows it. Its goals and lines are drawn by `TeamView`.
+  - **The court:** the hoop (P27) moves here, onto a post with a painted key and arc. The five shooting spots stay where `court()` puts them.
+  - **The running track:** chalk lanes round the pitch, with four corner markers.
+    - **Running a lap** means passing the corners in order without leaving the track. A lap trains Speed as a treadmill set does: +2 Speed, the same energy cost, the same tiredness gate (`training.ts`).
+    - **During the exercise hour**, some inmates jog the track instead of doing jumping jacks.
+  - **The weights corner:** the `weights` prop outdoors, plus a new `pullup` bar prop that trains Strength. It counts for the exercise roll call, like the gym does.
+  - **Bleachers:** a new decor piece. Inmates watching from them count for the crowd at matches and shootouts (`CROWD_RANGE`).
+  - **The guards:** the exercise guard's post moves to the ground. The towers and searchlights still see it as before. Football's cover (`watchingMatch`) works there unchanged.
+- **The vegetable garden** is its own zone, `garden`.
+  - **The allotment:** the player's beds (P28), with the same rules as now. There are more of them: up to 12, the most the renderer draws.
+  - **The prison's rows:** the gardener's work. They are kept by the sim, never by the player's beds.
+  - **A shed** holds a watering can and a hoe (work items, handed back at 15:00), with a water butt beside it and a produce crate.
+  - **Open:** the allotment is open during free time and the exercise hour, as the sports ground is. The rows are worked during the Work Period.
+- **The gardener job** (`gardener`), a new job flow:
+  - **Requirement and pay:** Intellect 20; about $35 a day.
+  - **The shift:** take the can from the shed, water the dry rows, pick what's ripe, and carry it to the crate. The quota is a number of crates filled.
+  - **Rows:** they ripen and dry out from the sim's own draws (`roll()` with a new salt), never from the state's RNG.
+  - **In the kitchen:** when the quota is met, the next day's meals are fresh, with a small health or energy gain at meals (the size is tuned in P31). If it is missed, nothing changes.
+  - **Who holds it:** each campaign prison lists the job; an inmate holds it on day 1.
+- **The old courtyard** becomes the quiet yard: benches, trees, the old-timer's checkers and the roll-call ground where it already is. Everything that can be played moves to the sports ground.
+- **Sports day** (P22) puts its bunting over the sports ground instead of the yard.
+- **The drone and parcel drop** (P21) moves to whichever open ground suits each prison (`smuggling.drop`, at least 20 landable tiles, in one zone).
+
+### Where the room comes from
+Each prison's phase begins with an ASCII sketch of the new ground floor, and the user approves it before anything is built.
+- **Training Block:** there is plenty of room inside the fence.
+  - The sports ground goes in the south-east, about 17×17, next to the roll-call asphalt.
+  - The garden goes along the north fence.
+  - The tutorial's coordinates move with it, and tutorialtest gets new tiles.
+- **Center Perks:** the south grounds (56×14, unzoned today) take both places, one on each side of the delivery drive, which stays where it is.
+  - The sports ground goes west of the drive, about 22×12. The garden goes east of it.
+  - Two new passages from the south corridor lead to them: the visitation room and the guards' quarters each give up two tiles of width.
+  - The new places get their own fence, so the drive, the bay and the perimeter stay off limits. The searchlights' sweeps, the towers and the truck's round are kept as they are.
+- **Stalag Flucht:**
+  - The sports ground is cut out of the south end of the guards' compound, behind its inner electric fence: about 18×13, reached from the dirt road.
+  - The garden is rows along the north wire, in the camp. The prisoners of the real camps gardened too.
+  - The pitch's old place, the dirt road, is freed.
+- **Shankton** (maximum security): a walled rec ground inside the shell. It has open sky but no grass. It takes the north hall's place, about 31×14.
+  - The canteen moves to the old yard's place.
+  - The kitchen, laundry and janitor rooms fit into the spare cells: there are 18 cells for 12 people.
+  - The garden is a small walled plot.
+- **San Pancho:**
+  - The dirt plaza grows into the sports ground by narrowing the canteen and gym blocks beside it. The prison has about 20 cells for 14 people.
+  - The garden is a dry-land plot with cacti round it.
+  - The minefield, the walkway and the supply road stay exactly as they are.
+- **HMP Irongate:** the yard is a strip 5 deep. It grows to about 11 deep by moving the middle band's rooms down; they are larger than they need to be.
+  - The garden is a walled sea-wind plot.
+  - The dock, the drawbridge and the helipad stay where they are.
+
+### Rules and guards
+- **Zones.** `sports` and `garden` are appended to `ZONES`, with names in English and French and with outdoor light (`OPEN_AIR`). They are added to:
+  - `HANGOUTS`;
+  - the exercise routine's zones (`gym`, `yard`, `sports`);
+  - maptest's `WATCHES`;
+  - each prison's `reachable` list.
+- **The gate:** an inner fence is an ordinary fence. Cutting it is damage, as anywhere else, and a tower's sniper sees a cut in daylight. Cutting it is never an escape in itself: you are out only on the road.
+- **Saves:**
+  - Each prison gets a `PrisonDef.map` number, and each save records the number of its prison.
+  - A save from an older map loads as a fresh start in that prison, after a notice (`toast.rebuilt`). This applies to the auto save, hand slots and the Daily.
+  - A run log from an older map starts a fresh log. Its replay stops where it stops matching, with the notice it already has (`replay.changed`).
+  - Records, trophies, stats and medals are kept. Medal par days are checked against the new maps.
+- **Tests:**
+  - maptest: the new zones, the gate, the places on open floor, every place reachable when it's open.
+  - teamtest, cardstest and longtest read the places from data and now accept `sports` and `garden`.
+  - A new `groundstest` covers:
+    - laps counted only in order and on the track;
+    - the pull-up bar;
+    - the gate's hours;
+    - the gardener's shift with its quota, pay and kitchen bonus;
+    - old saves restarting;
+    - every place usable in every prison.
+  - escapetest and dailytest: the bots' `PLANS` are moved onto the new maps; every escape still wins. Each new snapshot is read before it is accepted.
+- **The render:**
+  - new decor: bleachers, garden shed, water butt, produce crate, rows of crops and a hoop post;
+  - new props: `pullup` and the crate;
+  - painted court lines and the track's lanes, from the rat track's chalk-line code;
+  - per-prison themes: grass, dirt or asphalt grounds, and snow at Stalag;
+  - everything checked at desktop size, 412×915 and 915×412.
+- **Lessons:** in the Prison life chapter, `laps` (the track and the weights corner) and `gardener` (one shift). The existing hoops, football and garden lessons move onto the new places.
+
+### Phases
+Each phase is one vertical slice: sim, render, UI, EN/FR, help, tests, three reviews, then release on the user's go.
+- **P31 Grounds (v2.7):**
+  - Infrastructure: zones, the gate's hours, the map number and restarted saves, new decor and props, the track, the pull-up bar, the gardener job and the kitchen bonus.
+  - Rebuilt: the **Training Block** and **Center Perks**.
+  - The lessons.
+- **P32 (v2.8):** **Stalag Flucht** and **Shankton** rebuilt.
+- **P33 (v2.9):** **San Pancho** and **HMP Irongate** rebuilt. The courtyard clean-up is finished everywhere.
