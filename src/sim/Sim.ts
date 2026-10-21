@@ -1,6 +1,10 @@
 import { steerNeedle } from './systems/tattoo';
 import type { PowerUse, PrisonDef } from '../content/prisons/types';
-import { ROUTINE } from '../content/routine';
+import { OPEN_HOURS, ROUTINE } from '../content/routine';
+import { zoneIndex, type ZoneId } from '../content/zones';
+
+/** P31: the places open by the hour, as pairs. */
+const OPEN_PLACES = Object.entries(OPEN_HOURS);
 import { dirOf, OP, opOf } from './command';
 import { newScratch } from './context';
 import { fnv1a } from './rng';
@@ -31,6 +35,7 @@ import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
+import { laps } from './systems/grounds';
 import { endBout, games, stopPick } from './systems/games';
 import { crew, crewEscape } from './systems/crew';
 import { checkpointGates } from './systems/getaway';
@@ -183,6 +188,8 @@ export class Sim {
     keepTalk(this);
     grudges(this);
     keepTraining(this);
+    // The running track (P31): a lap round it.
+    laps(this);
     // Side games (P22): a bout's push and shove, a lock being picked, a door picked open.
     games(this);
     // The crew (P23): lookouts' whistles, a brawl's course, the drop fetched, the night's company.
@@ -452,6 +459,12 @@ export class Sim {
     // Job rooms (GDD §11): open for the Work Period, and to let out whoever is still inside.
     let rooms = 0n;
     if (ROUTINE[s.routine].id === 'work' && !s.lockdown) for (const r of jobRooms(w)) rooms |= 1n << BigInt(r.zone);
+    // (P31: the sports ground and the garden, open by the hour.)
+    if (!s.lockdown)
+      for (const [zone, blocks] of OPEN_PLACES) {
+        const z = zoneIndex(zone as ZoneId);
+        if (blocks!.includes(ROUTINE[s.routine].id) && w.doorRoom.includes(z)) rooms |= 1n << BigInt(z);
+      }
     // Someone in a job room, or anywhere in its doorway (a foot still in it is enough: a door never shuts on anyone), keeps its door open.
     const zoneBit = (b: Body) => {
       const i = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);

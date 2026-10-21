@@ -41,6 +41,9 @@ export const ZONES = [
   // P12 (HMP Irongate): the helipad's walled court, the dock behind its electric fence.
   'helipad',
   'dock',
+  // P31 (sports grounds & gardens): the fenced sports ground, the vegetable garden.
+  'sports',
+  'garden',
 ] as const;
 
 export type ZoneId = (typeof ZONES)[number];

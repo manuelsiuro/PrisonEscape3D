@@ -217,13 +217,18 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const sim = bot.sim;
   check(sim.dutyZones.includes('rollCall'), 'the drill: roll call is where to be');
   until(2, (at + 8 * 60 + MUSTER_MINUTES) % 1440);
-  const out = sim.state.inmates.filter((m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'rollCall').length;
+  const atRollCall = () => sim.state.inmates.filter((m) => sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'rollCall').length;
+  const out = atRollCall();
+  // (Those still on their way: from the far end of the sports ground or the garden, P31.)
+  const coming = sim.state.inmates.filter((m) => m.goal >= 0 && sim.world.zoneAt(m.goal % MAP_W, Math.floor(m.goal / MAP_W)) === 'rollCall').length;
   until(2, (at + 8 * 60 + MUSTER_MINUTES + 1) % 1440);
   const mustered = seen.some((e) => e.type === 'today' && e.phase === 'muster');
-  console.log(`fire drill at ${hhmm(at)}: ${out}/${sim.state.inmates.length} inmates out at roll call as the muster closes; the model prisoner mustered ${mustered ? 'in time' : 'late'}, heat ${bot.st.heat}%`);
-  check(out === sim.state.inmates.length, 'the drill empties the buildings: everyone out at roll call');
+  console.log(`fire drill at ${hhmm(at)}: ${out}/${sim.state.inmates.length} inmates out at roll call as the muster closes, ${coming} on their way; the model prisoner mustered ${mustered ? 'in time' : 'late'}, heat ${bot.st.heat}%`);
+  check(coming === sim.state.inmates.length, 'the drill empties the buildings: everyone out at roll call or on the way there');
   check(mustered && !seen.some((e) => e.type === 'today' && e.phase === 'missed') && bot.st.heat === 0, 'mustered in time: no heat');
   check(bot.st.feats[FEAT.mustered] === 1, 'the ledger counts the muster (Present and Correct)');
+  until(2, (at + 8 * 60 + 18) % 1440);
+  check(atRollCall() === sim.state.inmates.length, 'everyone out at roll call a few minutes on');
   until(2, (at + 8 * 60 + 21) % 1440);
   check(seen.some((e) => e.type === 'today' && e.event === 'drill' && e.phase === 'end') && !sim.dutyZones.includes('rollCall'), 'the drill over: back to the routine');
   // Staying put in the cell: +40 heat when the muster closes.
@@ -316,6 +321,8 @@ function resumesSame(bot: Bot, steps: number): boolean {
       m.body.x = (pick[1] % MAP_W) * UNIT + UNIT / 2;
       m.body.z = Math.floor(pick[1] / MAP_W) * UNIT + UNIT / 2;
       st.items.inv[SLOT.WEAPON] = slot(n('sock_mace'));
+      // (Tough enough to stay up until the guard, looking around, sees a blow land.)
+      m.hp = 10_000;
       bot.op(OP.LOCK, 2 + near);
       const h0 = st.heat;
       for (let k = 0; k < 200 && !watched; k++) {

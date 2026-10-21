@@ -3,14 +3,14 @@
   day 1 23:30 power OFF (player)
   day 1 23:46 ESCAPED (fence)
   saved and loaded at day 1 15:53 (yard) resumes, day 1 22:11 (rollCall) resumes, day 1 23:27 (corridor) resumes, day 1 23:41 (perimeter) resumes
-  ledger: powerCuts 1; walked 475 tiles; days escaped
+  ledger: powerCuts 1; walked 474 tiles; days escaped
   → out day 1 23:46 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:19 digUp → layer 1
   day 1 23:19 ESCAPED (tunnel)
-  saved and loaded at day 1 15:39 (yard) resumes, day 1 21:47 (playerCell) resumes, day 1 23:00 (playerCell) resumes, day 1 23:14 (tunnels) resumes
-  ledger: nothing; walked 355 tiles; days escaped
+  saved and loaded at day 1 15:39 (yard) resumes, day 1 21:47 (playerCell) resumes, day 1 23:01 (playerCell) resumes, day 1 23:14 (tunnels) resumes
+  ledger: nothing; walked 356 tiles; days escaped
   → out day 1 23:19 by tunnel; heat peak 0%; walls 0, tunnel tiles 8, guards out cold 0, cash $0
 == rooftop grapnel
   day 1 23:11 climbVent → layer 2
@@ -48,7 +48,7 @@
   day 1 19:50 waved through the checkpoint
   day 1 19:50 ESCAPED (bluff)
   saved and loaded at day 1 13:55 (laundry) resumes, day 1 18:39 (playerCell) resumes, day 1 19:36 (perimeter) resumes, day 1 19:46 (perimeter) resumes
-  ledger: waved 1; walked 364 tiles; days escaped
+  ledger: waved 1; walked 363 tiles; days escaped
   → out day 1 19:50 by bluff; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == glider
   day 1 23:11 climbVent → layer 2
@@ -56,7 +56,7 @@
   day 1 23:45 glide → layer 1
   day 1 23:45 off the roof on a glider: 5 tiles
   day 1 23:45 ESCAPED (glider)
-  saved and loaded at day 1 15:52 (yard) resumes, day 1 22:10 (rollCall) resumes, day 1 23:26 (vents) resumes, day 1 23:40 (roof) resumes
+  saved and loaded at day 1 15:52 (yard) resumes, day 1 22:11 (rollCall) resumes, day 1 23:26 (vents) resumes, day 1 23:40 (roof) resumes
   ledger: glides 1, glideFar 5; walked 434 tiles; days escaped
   → out day 1 23:45 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the west, strength 1: 5 tiles

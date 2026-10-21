@@ -1,4 +1,5 @@
-import { ROUTINE } from '../../content/routine';
+import { cornersOf } from '../../content/grounds';
+import { OPEN_HOURS, ROUTINE } from '../../content/routine';
 import { zoneIndex, type ZoneId } from '../../content/zones';
 import { clearLine, nearestDir, tileAt } from '../ai/path';
 import { lineOfSight } from '../ai/sight';
@@ -17,7 +18,7 @@ import { bodyAt, type Body } from './movement';
  * arm-wrestle, a lock being picked, dice thrown; the sim never sets them.) P23: BRAWL, two inmates
  * scrapping (the sim's); LOOKOUT, a lookout on watch (the view's).
  */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;
@@ -44,6 +45,8 @@ export interface Inmate extends Walker, Fighter {
 
 /** Where inmates like to spend free time (their own cell is added). */
 const HANGOUTS: readonly ZoneId[] = ['yard', 'yard', 'library', 'gym', 'cellBlock', 'rollCall', 'corridor', 'canteen'];
+/** P31: where they go with a sports ground and a garden open (the courtyard is the quiet yard now). */
+const HANGOUTS_GROUNDS: readonly ZoneId[] = ['yard', 'sports', 'sports', 'garden', 'library', 'gym', 'cellBlock', 'rollCall', 'corridor', 'canteen'];
 
 /** One inmate per cell after the player's, starting in bed-side position (in a hostile prison, cooler towards the player). */
 export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
@@ -118,10 +121,24 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       spot = pickSpot(all, places.seats, rng);
       then = DOING.EAT;
       break;
-    case 'exercise':
-      spot = pickSpot(all, tiles(floorOf(w, randomInt(rng, 3) ? ['yard'] : ['gym']), 1 + randomInt(rng, 16)), rng);
+    case 'exercise': {
+      // (P31: with a sports ground, out there: a third of them jog the track.)
+      const ring = w.def.leisure?.track;
+      if (!ring || !floorOf(w, ['sports']).length) {
+        spot = pickSpot(all, tiles(floorOf(w, randomInt(rng, 3) ? ['yard'] : ['gym']), 1 + randomInt(rng, 16)), rng);
+        then = DOING.EXERCISE;
+        break;
+      }
+      const r = randomInt(rng, 3);
+      if (r === 2) {
+        spot = pickSpot(all, cornersOf(ring).map((q) => ({ tile: q.z * MAP_W + q.x, face: 1 })), rng);
+        then = DOING.JOG;
+        break;
+      }
+      spot = pickSpot(all, tiles(floorOf(w, r ? ['sports'] : ['gym']), 1 + randomInt(rng, 16)), rng);
       then = DOING.EXERCISE;
       break;
+    }
     case 'showers': {
       const free = places.showers.filter((s) => !taken(all, s.tile));
       spot = free.length ? pickSpot(all, free, rng) : pickSpot(all, tiles(floorOf(w, ['showers']), 1 + randomInt(rng, 16)), rng);
@@ -147,15 +164,19 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       if (randomInt(rng, 3) === 0) {
         const lib = zoneIndex('library');
         const yard = zoneIndex('yard');
-        const free = places.rests.filter((r) => (w.ground.zone[r.tile] === lib || w.ground.zone[r.tile] === yard || w.cellOf[r.tile] === m.cell) && !taken(all, r.tile));
+        // (P31: the sports ground's bleachers too, while it's open.)
+        const stands = OPEN_HOURS.sports!.includes(id) ? zoneIndex('sports') : -1;
+        const free = places.rests.filter((r) => (w.ground.zone[r.tile] === lib || w.ground.zone[r.tile] === yard || w.ground.zone[r.tile] === stands || w.cellOf[r.tile] === m.cell) && !taken(all, r.tile));
         if (free.length) {
           spot = free[randomInt(rng, free.length)];
           then = w.ground.zone[spot.tile] === lib ? DOING.SIT_READ : DOING.SIT;
           break;
         }
       }
-      const r = randomInt(rng, HANGOUTS.length + 1);
-      const list = r === HANGOUTS.length ? own() : floorOf(w, [HANGOUTS[r]]);
+      // (P31: the sports ground and the garden while they're open.)
+      const hangouts = OPEN_HOURS.sports!.includes(id) && w.def.leisure?.track ? HANGOUTS_GROUNDS : HANGOUTS;
+      const r = randomInt(rng, hangouts.length + 1);
+      const list = r === hangouts.length ? own() : floorOf(w, [hangouts[r]]);
       spot = pickSpot(all, tiles(list, 1 + randomInt(rng, 16)), rng);
     }
   }
@@ -234,6 +255,18 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     }
     if (m.wait > 0) {
       m.wait--;
+      return;
+    }
+    // Jogging the track (P31): at a corner, on round to the next (no draw: the way round is the same for all).
+    if (m.doing === DOING.JOG && plan !== LOCKDOWN_PLAN && ROUTINE[plan].id === 'exercise' && !m.path.length && w.def.leisure?.track) {
+      const corners = cornersOf(w.def.leisure.track);
+      const at = corners.findIndex((q) => q.z * MAP_W + q.x === m.goal);
+      const next = corners[(at + 1) % 4];
+      m.goal = next.z * MAP_W + next.x;
+      m.doing = DOING.NOTHING;
+      m.then = DOING.JOG;
+      m.face = 1;
+      route(c, m);
       return;
     }
     if (m.goal < 0) {

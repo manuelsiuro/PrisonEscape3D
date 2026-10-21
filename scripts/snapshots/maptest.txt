@@ -1,8 +1,8 @@
-== center-perks · picture 5586bd84
-tiles: asphalt 160, brick 542, concrete 721, detector 4, dirt 30, door 27, electric 14, fence 214, grass 1382, road 496, tiled 303, tower 18, wood 185
-zones: canteen 175, cellBlock 119, controlRoom 42, corridor 250, generator 48, guardQuarters 60, gym 40, infirmary 32, inmateCell 112, janitor 28, kitchen 35, laundry 35, library 35, mailroom 40, none 467, outside 496, perimeter 1518, playerCell 16, rollCall 160, showers 28, solitary 42, visitation 98, woodshop 52, yard 168
-decor: 132 pieces
-walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, visitation, woodshop, yard
+== center-perks · picture 12d6db8c
+tiles: asphalt 160, brick 546, concrete 731, detector 4, dirt 30, door 31, electric 14, fence 300, grass 1296, road 496, tiled 303, tower 18, wood 167
+zones: canteen 175, cellBlock 119, controlRoom 42, corridor 278, garden 210, generator 48, guardQuarters 42, gym 40, infirmary 32, inmateCell 112, janitor 28, kitchen 35, laundry 35, library 35, mailroom 40, none 478, outside 496, perimeter 1098, playerCell 16, rollCall 160, showers 28, solitary 42, sports 210, visitation 77, woodshop 52, yard 168
+decor: 140 pieces
+walkable from the cell: canteen, cellBlock, corridor, garden, gym, infirmary, inmateCell, library, none, playerCell, rollCall, showers, sports, visitation, woodshop, yard
 guards: 5, 37 stops, 3 asleep at night
 delivery: truck, 10 tiles, tail 30,46, supervised by Moss (5 stops), thorough 25%
 vents: 48 duct tiles, 3 grates, 1 ladder; roof tiles 1782
@@ -38,10 +38,10 @@ walkable from the cell: canteen, cellBlock, corridor, gym, infirmary, inmateCell
 guards: 10, 58 stops, 4 asleep at night
 delivery: helicopter, 16 tiles, tail 36,48, supervised by Doyle (4 stops), thorough 80%
 vents: 59 duct tiles, 2 grates, 1 ladder; roof tiles 1910
-== training · picture 9be5d540
-tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 5, electric 10, fence 138, grass 2268, road 1036, tiled 96, wood 144
-zones: canteen 110, corridor 78, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, woodshop 50, yard 823
-decor: 38 pieces
-walkable from the cell: canteen, corridor, gym, inmateCell, playerCell, rollCall, woodshop, yard
+== training · picture 26c0accb
+tiles: asphalt 96, brick 152, concrete 137, dirt 14, door 9, electric 10, fence 185, grass 2217, road 1036, tiled 96, wood 144
+zones: canteen 110, corridor 78, garden 72, generator 20, gym 117, inmateCell 16, none 2, outside 1036, perimeter 1732, playerCell 16, rollCall 96, sports 240, woodshop 50, yard 511
+decor: 39 pieces
+walkable from the cell: canteen, corridor, garden, gym, inmateCell, playerCell, rollCall, sports, woodshop, yard
 guards: 1, 6 stops, 0 asleep at night
-vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 534
+vents: 0 duct tiles, 0 grates, 0 ladder; roof tiles 538

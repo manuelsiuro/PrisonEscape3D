@@ -81,13 +81,13 @@ props.push(
   { kind: 'bed', x: 16, z: 43, d: 2, rot: 2 },
   { kind: 'bed', x: 22, z: 43, d: 2, rot: 2 },
   // Visitation.
-  { kind: 'counter', x: 26, z: 41, w: 4 },
+  { kind: 'counter', x: 27, z: 41, w: 3 },
   { kind: 'counter', x: 32, z: 41, w: 4 },
   // Guard quarters and control room.
   { kind: 'bed', x: 39, z: 43, d: 2, rot: 2 },
   { kind: 'bed', x: 41, z: 43, d: 2, rot: 2 },
-  { kind: 'bed', x: 46, z: 43, d: 2, rot: 2 },
-  { kind: 'bed', x: 48, z: 43, d: 2, rot: 2 },
+  { kind: 'bed', x: 43, z: 43, d: 2, rot: 2 },
+  { kind: 'bed', x: 45, z: 43, d: 2, rot: 2 },
   { kind: 'table', x: 39, z: 40, w: 2 },
   { kind: 'controlDesk', x: 56, z: 40, d: 3, rot: 3 },
   // Courtyard benches.
@@ -122,8 +122,24 @@ props.push(
   ...cells.map(([x0, z0], k) => ({ kind: 'chair', x: x0 + 2, z: k < 4 ? z0 : z0 + 3, rot: 1 }) as const),
   ...[16, 17, 21, 22].map((x) => ({ kind: 'chair', x, z: 33, rot: 2 }) as const),
   ...[39, 40].map((x) => ({ kind: 'chair', x, z: 41, rot: 2 }) as const),
-  ...[26, 27, 28, 29, 32, 33, 34, 35].flatMap((x) => [{ kind: 'chair', x, z: 40, rot: 0 } as const, { kind: 'chair', x, z: 42, rot: 2 } as const]),
+  ...[27, 28, 29, 32, 33, 34, 35].flatMap((x) => [{ kind: 'chair', x, z: 40, rot: 0 } as const, { kind: 'chair', x, z: 42, rot: 2 } as const]),
   { kind: 'chair', x: 55, z: 41, rot: 1 },
+);
+
+// The sports ground and the vegetable garden (P31), south of the building either side of the
+// delivery drive: the weights corner, the bleachers by the pitch, lamps; the gardener's
+// planters, the tool shed and the produce crate by the gate.
+props.push(
+  { kind: 'weights', x: 6, z: 52 },
+  { kind: 'weights', x: 8, z: 52 },
+  { kind: 'pullup', x: 7, z: 54, w: 2 },
+  { kind: 'bleachers', x: 12, z: 46, w: 9 },
+  { kind: 'lamp', x: 26, z: 46 },
+  { kind: 'lamp', x: 6, z: 55 },
+  ...[47, 50, 53].flatMap((z) => [{ kind: 'planter', x: 37, z, w: 3 } as const, { kind: 'planter', x: 41, z, w: 3 } as const]),
+  { kind: 'toolShed', x: 52, z: 47, w: 3, d: 2 },
+  { kind: 'crate', x: 50, z: 47 },
+  { kind: 'lamp', x: 56, z: 55 },
 );
 
 /** Two rows of four, facing the guard at the north end. */
@@ -136,8 +152,8 @@ const rollCall = [12, 15].flatMap((z) => [29, 31, 34, 36].map((x) => ({ x, z }))
  * - The canteen guard watches meals and walks the canteen and kitchen.
  * - The wing guard walks the north corridor, gym and showers, watches showers, and searches
  *   cells at the morning shakedown.
- * - The yard guard walks the courtyard and the south corridor, watches exercise, and at
- *   night walks the yards.
+ * - The yard guard walks the courtyard and the south corridor, watches exercise (from the
+ *   sports ground, P31), and at night walks the yards.
  * - The east guard walks the workshops, the mailroom and the staff rooms.
  * The canteen, wing and east guards sleep in the guard quarters at night.
  * Their ways (P15): the canteen guard takes bribes, the wing guard goes by the book to the
@@ -200,7 +216,7 @@ const guards: GuardDef[] = [
       { x: 19, z: 37, wait: 2, face: 1 },
       { x: 10, z: 36, wait: 2, face: 1 },
     ],
-    posts: { exercise: { x: 30, z: 29, face: 1 } },
+    posts: { exercise: { x: 22, z: 46, face: 5 } },
     night: [
       { x: 32, z: 10, wait: 4, face: 5 },
       { x: 33, z: 18, wait: 3, face: 13 },
@@ -252,15 +268,20 @@ export const CENTER_PERKS: PrisonDef = {
     ['janitor', 50, 31, 56, 34],
     ['generator', 7, 39, 14, 44],
     ['solitary', 16, 39, 22, 44],
-    ['visitation', 24, 38, 37, 44],
-    ['guardQuarters', 39, 39, 48, 44],
+    ['visitation', 27, 38, 37, 44],
+    ['guardQuarters', 39, 39, 45, 44],
     ['controlRoom', 50, 39, 56, 44],
+    // P31: the passages down to the sports ground and the garden, and the two places.
+    ['corridor', 24, 38, 25, 44],
+    ['corridor', 47, 38, 48, 44],
+    ['sports', 6, 46, 26, 55],
+    ['garden', 36, 46, 56, 55],
   ],
   cells,
   props,
   rollCall,
   spawn: { x: 9, z: 9 },
-  reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation'],
+  reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation', 'sports', 'garden'],
   guards,
   names: ['Rusty', 'Tank', 'Mouse', 'Doc', 'Lefty', 'Bones', 'Slim'],
   merchants: [2, 6, 7],
@@ -272,6 +293,7 @@ export const CENTER_PERKS: PrisonDef = {
     { id: 'kitchen', cell: 5 },
     { id: 'woodshop', cell: 0 },
     { id: 'mailman', cell: 8 },
+    { id: 'gardener', cell: 4 },
   ],
   // Cameras (GDD §5.6): the staff corridor (its west end, looking down it past the generator and
   // solitary doors), the woodshop's corner, the control room.
@@ -326,7 +348,7 @@ export const CENTER_PERKS: PrisonDef = {
   // Smuggling (P21): Lefty sells burner phones; the drone comes over the courtyard in the evening
   // (21:00–22:00, free time: the yard is open to everyone then); visitors sit across the
   // visitation room's counters.
-  smuggling: { fixer: 6, drop: [25, 25, 36, 34], droneHours: [780, 840], visits: [24, 38, 37, 44] },
+  smuggling: { fixer: 6, drop: [25, 25, 36, 34], droneHours: [780, 840], visits: [27, 38, 37, 44] },
   // The checkpoint (P24): the gatekeeper's booth on the road beside the south gate; papers are
   // shown through the wire at the end of the drive.
   checkpoint: {
@@ -340,6 +362,17 @@ export const CENTER_PERKS: PrisonDef = {
     ],
     booth: { x: 33, z: 62, face: 13 },
   },
-  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(37, 29, 9), oldTimer: 5, garden: { x: 29, z: 32, w: 3, d: 2 }, race: { x: 10, z: 13, dir: 1, len: 6 }, pitch: pitch(26, 28, 11, 4), stage: stage(56, 11, 9), quiz: quizAt(13, [17, 34], [18, 34], [20, 34], [21, 34]) },
+  // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the sports ground, the beds in the garden (P31).
+  leisure: {
+    hoop: court(8, 46, 5),
+    oldTimer: 5,
+    garden: { x: 44, z: 51, w: 6, d: 2 },
+    race: { x: 10, z: 13, dir: 1, len: 6 },
+    pitch: pitch(12, 48, 14, 7),
+    track: { x: 11, z: 47, w: 16, d: 9 },
+    stage: stage(56, 11, 9),
+    quiz: quizAt(13, [17, 34], [18, 34], [20, 34], [21, 34]),
+  },
+  // Rebuilt in 2.7 (P31): the sports ground and the garden in the south grounds.
+  map: 1,
 };

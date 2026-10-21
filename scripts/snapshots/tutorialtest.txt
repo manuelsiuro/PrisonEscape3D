@@ -8,7 +8,7 @@ dig: 2 steps done by day 1 10:32
 fight: 2 steps done by day 1 10:31
 noise: 3 steps done by day 1 10:45
 noise, missed: ended at step 2 (lesson.noise.missed)
-escape: 4 steps done by day 1 10:48
+escape: 4 steps done by day 1 10:49
 talk: 4 steps done by day 1 10:35
 trade: 2 steps done by day 1 10:30
 job: 4 steps done by day 1 12:22
@@ -26,9 +26,9 @@ cards: 5 steps done by day 1 18:39
 hoops: 5 steps done by day 1 18:36
 checkers: 3 steps done by day 1 18:15
 pruno: 5 steps done by day 2 08:01
-garden: 5 steps done by day 1 10:31
+garden: 5 steps done by day 1 10:32
 ratRace: 7 steps done by day 1 21:12
-football: 4 steps done by day 1 10:51
+football: 4 steps done by day 1 10:50
 tattoo: 5 steps done by day 1 10:19
 talent: 4 steps done by day 1 20:04
 quiz: 4 steps done by day 1 19:55
@@ -50,7 +50,7 @@ trade, never bought: ended at step 1 (lesson.trade.closed) by day 1 12:00
 job, idle: ended at step 1 (lesson.job.late) by day 1 15:00
 talk, magazine given away: ended at step 4 (lesson.talk.lost)
 tunnel, up in the yard: ended at step 4 (lesson.tunnel.early)
-guards, never paid: ended at step 1 (lesson.guards.cooled) by day 1 15:36
+guards, never paid: ended at step 1 (lesson.guards.cooled) by day 1 15:32
 cards, folded: ended at step 2; hoops, court left: ended at step 4; checkers, up past free time and resigned: said
 ratRace, late: ended at step 2; ratRace, scratched: ended at step 6
 games, never played: ended at step 1 (lesson.games.closed) by day 1 22:00

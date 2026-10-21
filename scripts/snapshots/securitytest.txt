@@ -4,7 +4,7 @@ camera: chipping in the woodshop → LOCKDOWN (facing 5)
 camera taped: unseen for 60 s, then watching again
 control room camera: uniform passes, inmate LOCKDOWN, power off unseen
 searchlight: a second in the beam → +35%, 2 guard(s) sent; uniform, day, no power → 0
-sniper: 4 shots (3 hits, 29 each) → down, solitary; towers at 3.5,59.5 60.5,59.5
+sniper: 5 shots (4 hits, 29 each) → down, solitary; towers at 3.5,59.5 60.5,59.5
 takeover: 5/5 down → gates open; one comes round → shut
 grapnel: without a rope refused; with one → out (roof)
 old save: same state

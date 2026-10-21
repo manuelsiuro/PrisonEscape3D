@@ -20,22 +20,22 @@ day 2 01:04 bed check: pass
 day 2 04:00 bed check: start
 day 2 04:28 bed check: pass
 day 2 08:00 shakedown: cells 5 and 1 and 8
-day 2 08:34 cell 5 searched (0 taken)
+day 2 08:34 cell 5 searched (1 taken)
 day 2 08:45 cell 1 searched (1 taken)
 == no dummy
 day 2 00:30 bed check: start
 day 2 01:04 bed check: fail
 day 2 01:04 spotted: bedCheck
 day 2 01:04 LOCKDOWN
-day 2 01:12 caught → solitary
-day 2 01:12 lockdown over
-day 2 01:42 into solitary (0 taken)
-day 2 03:42 out of solitary
+day 2 01:13 caught → solitary
+day 2 01:13 lockdown over
+day 2 01:43 into solitary (0 taken)
+day 2 03:43 out of solitary
 day 2 04:00 bed check: start
-day 2 04:34 bed check: pass
+day 2 04:32 bed check: pass
 == shakedowns
 day 2 08:00 shakedown: cells 8 and 6 and 1
 day 2 08:28 cell 8 searched (0 taken)
 day 2 08:42 cell 6 searched (0 taken)
 day 2 08:55 cell 1 searched (1 taken)
-rounds over 3 days: 363, 289, 277, 491, 207 stops; 6 bed checks, the longest 35 game minutes
+rounds over 3 days: 363, 288, 275, 486, 207 stops; 6 bed checks, the longest 35 game minutes

@@ -1,4 +1,4 @@
-data: center-perks 3×2 beds at 29,32, track 6 tiles from 10,13 in the cellBlock; stalag-flucht 3×2 beds at 34,24, track 6 tiles from 9,13 in the cellBlock; shankton 3×2 beds at 25,28, track 6 tiles from 15,12 in the cellBlock; san-pancho 3×2 beds at 31,38, track 6 tiles from 19,28 in the corridor; irongate 3×2 beds at 44,24, track 6 tiles from 26,15 in the cellBlock; training 3×2 beds at 30,13, track 6 tiles from 22,23 in the corridor
+data: center-perks 6×2 beds at 44,51, track 6 tiles from 10,13 in the cellBlock; stalag-flucht 3×2 beds at 34,24, track 6 tiles from 9,13 in the cellBlock; shankton 3×2 beds at 25,28, track 6 tiles from 15,12 in the cellBlock; san-pancho 3×2 beds at 31,38, track 6 tiles from 19,28 in the corridor; irongate 3×2 beds at 44,24, track 6 tiles from 26,15 in the cellBlock; training 6×2 beds at 17,47, track 6 tiles from 22,23 in the corridor
 pantry: fruit at breakfast and dinner, sugar and seed packets once a day; refused takenToday, notMeal, room
 merchant: staples for $16; pruno $30, a vegetable $6; 4 sales a day
 pruno: desk ripe, tank ripe, carried 2 left after two mornings

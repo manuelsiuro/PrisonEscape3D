@@ -34,13 +34,23 @@ export const ROUTINE: readonly RoutineDef[] = [
   { id: 'freeTime', start: 10 * 60, zones: [], miss: null },
   // Mandatory only with a job (P6); until then, more free time.
   { id: 'work', start: 12 * 60, zones: [], miss: null },
-  { id: 'exercise', start: 15 * 60, zones: ['gym', 'yard'], miss: 'heat' },
+  { id: 'exercise', start: 15 * 60, zones: ['gym', 'yard', 'sports'], miss: 'heat' },
   { id: 'showers', start: 16 * 60, zones: ['showers'], miss: 'heat' },
   { id: 'dinner', start: 17 * 60, zones: ['canteen'], miss: 'heat' },
   { id: 'eveningFreeTime', start: 18 * 60, zones: [], miss: null },
   { id: 'eveningRollCall', start: 22 * 60, zones: ['rollCall'], miss: 'lockdown' },
   { id: 'lightsOut', start: 23 * 60, zones: ['playerCell'], miss: null },
 ];
+
+/**
+ * P31: the places outdoors whose gates open by the routine (the sports ground, the garden):
+ * the blocks they're open for (never in a lockdown; anyone still inside keeps the gate open
+ * until they're out, as a job room's door does). The garden is also the gardener's work room.
+ */
+export const OPEN_HOURS: Partial<Record<ZoneId, readonly RoutineId[]>> = {
+  sports: ['freeTime', 'exercise', 'eveningFreeTime'],
+  garden: ['freeTime', 'exercise', 'eveningFreeTime'],
+};
 
 /** The block running at a minute of the day (before 08:00 it is still Lights Out). */
 export function routineAt(minuteOfDay: number): number {

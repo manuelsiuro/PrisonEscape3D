@@ -939,7 +939,8 @@ export const LESSONS: readonly Lesson[] = [
     setup: (sim) => {
       sim.state.calendar = [[1, DAY_EVENTS.indexOf('delivery'), WEATHERS.indexOf('clear')]];
       clockTo(sim, at(13));
-      place(sim, 25, 50, 1);
+      // (On the grass west of the drive, between the sports ground's fence and the truck's bay.)
+      place(sim, 28, 52, 1);
       // No job to be at in the Work Period (the HUD would ask for the laundry's quota).
       sim.state.jobs = sim.state.jobs.map((h) => (h === HOLDER.PLAYER ? HOLDER.NOBODY : h));
     },
@@ -958,7 +959,8 @@ export const LESSONS: readonly Lesson[] = [
     seed: 41,
     setup: (sim) => {
       clockTo(sim, at(19, 34));
-      place(sim, 26, 56, 1);
+      // (South of the sports ground's fence, on the way to the gates.)
+      place(sim, 28, 57, 1);
       pockets(sim, 'fake_id', 'plastic_key_green');
       sim.state.items.hand = 2;
       sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));

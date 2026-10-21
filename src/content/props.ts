@@ -35,6 +35,17 @@ export const PROPS = {
   press: { solid: true },
   /** HMP Irongate's helipad (P12): kept clear (nobody walks onto it, the helicopter sets down on it at night); boarded from beside it. */
   helipad: { solid: true },
+  // P31 (sports grounds & gardens).
+  /** A pull-up bar in the sports ground's weights corner: trains Strength, as the weights do. */
+  pullup: { solid: true },
+  /** Bleachers along a pitch: tiers of seats, sat on like a yard bench (and stepped over). */
+  bleachers: { solid: false },
+  /** A raised planter in the garden's rows: the gardener's machine (seedlings in, produce out). */
+  planter: { solid: true },
+  /** The garden's tool shed: where the gardener takes seedlings. */
+  toolShed: { solid: true },
+  /** The produce crate by the garden gate: the gardener's crates go in it, for the kitchen. */
+  crate: { solid: true },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

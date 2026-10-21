@@ -92,13 +92,14 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   { kind: 'sink', x: 7, z: 34, rot: 1 },
   { kind: 'filing', x: 14, z: 34 },
   { kind: 'posterC', x: 11, z: 31 },
-  // Courtyard: trees, bushes, a hoop.
+  // Courtyard (the quiet yard since P31): trees, bushes.
   { kind: 'tree', x: 25, z: 30 },
   { kind: 'tree', x: 36, z: 26 },
+  { kind: 'tree', x: 31, z: 30 },
   { kind: 'bush', x: 24, z: 28 },
   { kind: 'bush', x: 37, z: 31 },
   { kind: 'bush', x: 28, z: 34 },
-  { kind: 'hoop', x: 37, z: 29, rot: 3 },
+  { kind: 'bush', x: 33, z: 25 },
   // Woodshop: timber, the tool rack, a sawhorse.
   { kind: 'timber', x: 46, z: 25, w: 2 },
   { kind: 'toolRack', x: 39, z: 25, w: 2 },
@@ -130,17 +131,17 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   { kind: 'potatoes', x: 18, z: 42 },
   { kind: 'potatoes', x: 20, z: 42 },
   // Visitation: a vending machine, phones on the counters, plants, a clock.
-  { kind: 'vending', x: 24, z: 39 },
+  { kind: 'vending', x: 27, z: 39 },
   { kind: 'phone', x: 27, z: 41, y: COUNTER },
   { kind: 'phone', x: 34, z: 41, y: COUNTER },
   { kind: 'plant', x: 37, z: 39 },
-  { kind: 'plant', x: 24, z: 44 },
+  { kind: 'plant', x: 27, z: 44 },
   { kind: 'plant', x: 37, z: 44 },
   { kind: 'clock', x: 35, z: 39 },
-  { kind: 'posterC', x: 26, z: 39 },
+  { kind: 'posterC', x: 28, z: 39 },
   // Guard quarters: lockers, the TV, coffee.
-  { kind: 'lockers', x: 45, z: 39, w: 3 },
-  { kind: 'tv', x: 42, z: 39 },
+  { kind: 'lockers', x: 43, z: 39, w: 3 },
+  { kind: 'tv', x: 41, z: 39 },
   { kind: 'coffee', x: 40, z: 40, y: TABLE },
   { kind: 'rug', x: 42, z: 41, w: 2, d: 2 },
   // Control room: the CCTV wall, the key cabinet, files.
@@ -148,13 +149,23 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   { kind: 'keyCabinet', x: 55, z: 39 },
   { kind: 'filing', x: 50, z: 44 },
   { kind: 'filing', x: 51, z: 44 },
-  // Outside: trees and bushes on the grass, clear of the path to the road and the lamps.
-  { kind: 'tree', x: 9, z: 48 },
-  { kind: 'tree', x: 18, z: 52 },
-  { kind: 'tree', x: 44, z: 50 },
-  { kind: 'tree', x: 54, z: 48 },
-  { kind: 'bush', x: 23, z: 47 },
-  { kind: 'bush', x: 38, z: 47 },
-  { kind: 'bush', x: 13, z: 54 },
-  { kind: 'bush', x: 50, z: 54 },
+  // The passages to the sports ground and the garden (P31): notices, an extinguisher.
+  { kind: 'noticeBoard', x: 24, z: 41, rot: 1 },
+  { kind: 'extinguisher', x: 48, z: 39, rot: 3 },
+  // The sports ground (P31): the hoop on its post, a mat and dumbbells by the weights.
+  { kind: 'hoop', x: 8, z: 46 },
+  { kind: 'dumbbells', x: 9, z: 55, w: 2 },
+  { kind: 'mat', x: 6, z: 53 },
+  // The garden (P31): the water butt by the shed, sacks of compost, bushes in its corners.
+  { kind: 'waterButt', x: 55, z: 47 },
+  { kind: 'sacks', x: 56, z: 49 },
+  { kind: 'bush', x: 36, z: 55 },
+  { kind: 'bush', x: 56, z: 52 },
+  // Outside: trees on the grass south of the new fences, clear of the drive and the lamps.
+  { kind: 'tree', x: 10, z: 58 },
+  { kind: 'tree', x: 20, z: 59 },
+  { kind: 'tree', x: 42, z: 58 },
+  { kind: 'tree', x: 52, z: 59 },
+  { kind: 'bush', x: 3, z: 50 },
+  { kind: 'bush', x: 60, z: 50 },
 ];

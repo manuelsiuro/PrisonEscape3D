@@ -402,14 +402,14 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   phone();
   order(0, WAY.VISITOR);
   check(arrival(sim)?.day === 3 && arrival(sim)?.minute === 120, 'a visitor on the next visiting day, from 10:00');
-  // A chair at the visitation counter (the inmates' side, north of it).
-  const chair = w.props.findIndex((q) => q.kind === 'chair' && q.x === 26 && q.z === 40);
+  // A chair at the visitation counter (the inmates' side, north of it; the room's west end since P31).
+  const chair = w.props.findIndex((q) => q.kind === 'chair' && q.x === 27 && q.z === 40);
   const sit = () => {
-    putTile(s.player, 39 * MAP_W + 26);
+    putTile(s.player, 39 * MAP_W + 27);
     s.player.facing = 5;
     s.seat = chair;
   };
-  check(chair >= 0 && seatSpot(w, chair, { ...s.player, x: 26 * UNIT + 512, z: 39 * UNIT + 512 }).facing === 5, 'the chair faces the counter');
+  check(chair >= 0 && seatSpot(w, chair, { ...s.player, x: 27 * UNIT + 512, z: 39 * UNIT + 512 }).facing === 5, 'the chair faces the counter');
   to(3, 9, 50);
   sit();
   for (let k = 0; k < VISIT_STEPS + 5; k++) step();
@@ -417,7 +417,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   s.seat = -1;
   to(3, 10, 0);
   sit();
-  check(guestSpot(sim) === 42 * MAP_W + 26, 'the visitor sits across the counter');
+  check(guestSpot(sim) === 42 * MAP_W + 27, 'the visitor sits across the counter');
   const cash = s.cash;
   seen.length = 0;
   for (let k = 0; k < VISIT_STEPS - 1; k++) step();

@@ -28,11 +28,17 @@ const props: PropPlacement[] = [
     [18, 36],
     [31, 36],
     [29, 50],
-    [34, 50],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
   // Chairs at each desk.
   { kind: 'chair', x: 21, z: 17, rot: 1 },
   { kind: 'chair', x: 26, z: 17, rot: 1 },
+  // The sports ground (P31): weights and a pull-up bar, bleachers by the pitch, a lamp; the garden's tool shed.
+  { kind: 'weights', x: 45, z: 37 },
+  { kind: 'weights', x: 47, z: 37 },
+  { kind: 'pullup', x: 46, z: 40, w: 2 },
+  { kind: 'bleachers', x: 35, z: 41, w: 4 },
+  { kind: 'lamp', x: 48, z: 36 },
+  { kind: 'toolShed', x: 24, z: 47, w: 2, d: 2 },
 ];
 
 /**
@@ -55,6 +61,9 @@ export const TRAINING: PrisonDef = {
     ['canteen', 24, 25, 25, 25],
     ['gym', 32, 25, 44, 33],
     ['rollCall', 19, 37, 30, 44],
+    // P31: the sports ground (east of the path to the gate) and the garden (south of roll call).
+    ['sports', 34, 36, 48, 51],
+    ['garden', 15, 46, 26, 51],
   ],
   cells: [
     [19, 17, 22, 20],
@@ -67,7 +76,7 @@ export const TRAINING: PrisonDef = {
     { x: 27, z: 40 },
   ],
   spawn: { x: 20, z: 19 },
-  reachable: ['corridor', 'woodshop', 'canteen', 'gym', 'rollCall', 'yard'],
+  reachable: ['corridor', 'woodshop', 'canteen', 'gym', 'rollCall', 'yard', 'sports', 'garden'],
   guards: [
     {
       name: 'Bell',
@@ -94,6 +103,15 @@ export const TRAINING: PrisonDef = {
   // raises the heat at a quarter of the pace (time to read what to do about it).
   rules: { relaxed: true, contrabandEvery: 4 },
   escapes: ['fence'],
-  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(40, 35, 5), oldTimer: 2, garden: { x: 30, z: 13, w: 3, d: 2 }, race: { x: 22, z: 23, dir: 1, len: 6 }, pitch: pitch(31, 40, 13, 6) },
+  // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the sports ground, the beds in the garden (P31).
+  leisure: {
+    hoop: court(41, 36, 5),
+    oldTimer: 2,
+    garden: { x: 17, z: 47, w: 6, d: 2 },
+    race: { x: 22, z: 23, dir: 1, len: 6 },
+    pitch: pitch(35, 43, 13, 8),
+    track: { x: 34, z: 42, w: 15, d: 10 },
+  },
+  // Rebuilt in 2.7 (P31): the sports ground and the garden in the south yard.
+  map: 1,
 };

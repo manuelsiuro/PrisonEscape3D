@@ -1,4 +1,4 @@
-center-perks 11×4: zoom on the pitch desktop 1.25, upright 0.85, sideways 1.25, narrow 0.85
+center-perks 14×7: zoom on the pitch desktop 1.25, upright 0.69, sideways 1.25, narrow 0.69
 stalag-flucht 13×4: zoom on the pitch desktop 1.25, upright 0.73, sideways 1.25, narrow 0.73
 shankton 11×5: zoom on the pitch desktop 1.25, upright 0.85, sideways 1.25, narrow 0.85
 san-pancho 10×6: zoom on the pitch desktop 1.25, upright 0.92, sideways 1.25, narrow 0.92

@@ -1,8 +1,8 @@
-125 items, 58 recipes
+127 items, 58 recipes
 obtainable in P2 from reachable containers and crafting: 58 items
 containers: bed:bed 8, bin:janitorBin 1, bin:laundryBin 2, bin:woodshopBin 2, counter:canteenCounter 1, desk:inmateDesk 7, desk:playerDesk 1, freezer:kitchenFreezer 1, shelf:libraryShelf 2, shower:shower 6, toilet:toilet 8
 cell 2's desk on day 1: sock, soap
-replay: 162 steps, 44 commands, state e2c469ba
+replay: 162 steps, 44 commands, state 763d3112
 restock: cell 2's desk 0 → 3 items; woke at day 2 07:55
 workbench: all 58 recipes craft into a slot; worn and wielded results stay on
 piles: 6 items a tile; stale previews refused; the cell toilet restocks
