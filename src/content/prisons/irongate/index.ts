@@ -38,51 +38,49 @@ for (let x0 = 8; x0 <= 43; x0 += 5) cell(x0, 9, true);
 for (const x0 of [8, 13, 18, 23, 33, 38]) cell(x0, 17, false);
 
 props.push(
-  // Kitchen: the freezer, two ovens, the counter the meals go out on.
-  { kind: 'freezer', x: 8, z: 28, d: 2, rot: 1 },
-  { kind: 'oven', x: 9, z: 37, rot: 2 },
-  { kind: 'oven', x: 10, z: 37, rot: 2 },
-  { kind: 'counter', x: 12, z: 33, d: 3, rot: 3 },
-  // Canteen: six two-seat tables in three aisles, benches either side, the serving counter by the kitchen.
+  // The middle block (P33: east of the sports ground, its rooms narrower). Kitchen: the
+  // freezer, two ovens, the counter the meals go out on.
+  { kind: 'freezer', x: 23, z: 28, d: 2, rot: 1 },
+  { kind: 'oven', x: 24, z: 37, rot: 2 },
+  { kind: 'oven', x: 25, z: 37, rot: 2 },
+  { kind: 'counter', x: 26, z: 33, d: 3, rot: 3 },
+  // Canteen: four two-seat tables in two aisles, benches either side, the serving counter by
+  // the kitchen; the stage at its south end, clear of the corridor's door.
   ...[30, 34].flatMap((z) =>
-    [16, 19, 22].flatMap((x) => [
+    [30, 33].flatMap((x) => [
       { kind: 'table', x, z, w: 2 } as const,
       { kind: 'seat', x, z: z - 1, w: 2 } as const,
       { kind: 'seat', x, z: z + 1, w: 2, rot: 2 } as const,
     ]),
   ),
-  { kind: 'counter', x: 14, z: 33, d: 3, rot: 1 },
+  { kind: 'counter', x: 28, z: 33, d: 3, rot: 1 },
   // Gym: treadmills, weights, the job board.
-  { kind: 'treadmill', x: 26, z: 29, d: 2 },
-  { kind: 'treadmill', x: 27, z: 29, d: 2 },
-  { kind: 'weights', x: 32, z: 29 },
-  { kind: 'weights', x: 32, z: 31 },
-  { kind: 'jobBoard', x: 33, z: 28, rot: 3 },
+  { kind: 'treadmill', x: 36, z: 29, d: 2 },
+  { kind: 'treadmill', x: 37, z: 29, d: 2 },
+  { kind: 'weights', x: 40, z: 30 },
+  { kind: 'weights', x: 40, z: 32 },
+  { kind: 'jobBoard', x: 40, z: 28, rot: 3 },
   // Showers: heads along the south wall.
-  ...[26, 27, 28, 31, 32, 33].map((x) => ({ kind: 'shower', x, z: 37, rot: 2 }) as const),
-  // Library: shelves along the north wall, two tables.
-  { kind: 'shelf', x: 35, z: 28, w: 3 },
-  { kind: 'shelf', x: 39, z: 28, w: 3 },
-  { kind: 'table', x: 36, z: 30, w: 2 },
-  { kind: 'table', x: 39, z: 30, w: 2 },
-  ...[36, 37, 39, 40].map((x) => ({ kind: 'chair', x, z: 31, rot: 2 }) as const),
-  // Infirmary.
-  { kind: 'bed', x: 35, z: 34, d: 2 },
-  { kind: 'bed', x: 37, z: 34, d: 2 },
-  { kind: 'bed', x: 40, z: 34, d: 2 },
+  ...[36, 37, 38, 39, 40].map((x) => ({ kind: 'shower', x, z: 37, rot: 2 }) as const),
   // Laundry: the dirty bin, three washers along the south wall, the clean bin.
-  { kind: 'bin', x: 43, z: 28 },
-  { kind: 'washer', x: 49, z: 31, rot: 2 },
-  { kind: 'washer', x: 50, z: 31, rot: 2 },
-  { kind: 'washer', x: 51, z: 31, rot: 2 },
-  { kind: 'bin', x: 51, z: 28 },
-  // Janitor's closet.
-  { kind: 'bin', x: 43, z: 33 },
-  { kind: 'shelf', x: 46, z: 33 },
+  { kind: 'bin', x: 42, z: 28 },
+  { kind: 'washer', x: 44, z: 32, rot: 2 },
+  { kind: 'washer', x: 45, z: 32, rot: 2 },
+  { kind: 'washer', x: 46, z: 32, rot: 2 },
+  { kind: 'bin', x: 46, z: 28 },
   // Mailroom: sorting desks either side of the aisle, the outgoing shelf.
-  { kind: 'sortingDesk', x: 48, z: 35, d: 3, rot: 1 },
-  { kind: 'sortingDesk', x: 51, z: 35, d: 3, rot: 3 },
-  { kind: 'shelf', x: 49, z: 33, w: 2 },
+  { kind: 'sortingDesk', x: 42, z: 34, d: 3, rot: 1 },
+  { kind: 'sortingDesk', x: 46, z: 34, d: 3, rot: 3 },
+  { kind: 'shelf', x: 43, z: 34, w: 2 },
+  // Infirmary (through the library).
+  { kind: 'bed', x: 48, z: 28, d: 2 },
+  { kind: 'bed', x: 51, z: 28, d: 2 },
+  // Library (off the corridor): a shelf, a table with the quiz's places north of it.
+  { kind: 'shelf', x: 50, z: 34, w: 2 },
+  { kind: 'table', x: 49, z: 36, w: 2 },
+  // Janitor's closet (P33: off the corridor, beside the control room).
+  { kind: 'bin', x: 23, z: 43 },
+  { kind: 'shelf', x: 23, z: 46 },
   // Woodshop (behind its detector arch): the timber bin, two benches, the output bin.
   { kind: 'bin', x: 8, z: 43 },
   { kind: 'workbench', x: 9, z: 46, w: 2 },
@@ -106,25 +104,38 @@ props.push(
   ...[43, 46, 49].flatMap((z) => [{ kind: 'bed', x: 48, z, d: 2 } as const, { kind: 'bed', x: 51, z, d: 2 } as const]),
   // The helipad, in its walled court.
   { kind: 'helipad', x: 35, z: 44, w: 4, d: 4 },
-  // The yard: benches against the blocks, lamps; the court's lamps; the dock's.
-  { kind: 'bench', x: 10, z: 22, w: 2 },
-  { kind: 'bench', x: 46, z: 22, w: 2 },
-  { kind: 'bench', x: 12, z: 26, w: 2, rot: 2 },
-  { kind: 'bench', x: 44, z: 26, w: 2, rot: 2 },
+  // The yard: benches against the north block, lamps; the court's lamps; the dock's.
+  { kind: 'bench', x: 24, z: 22, w: 2 },
+  { kind: 'bench', x: 39, z: 22, w: 2 },
   ...[
-    [8, 22],
-    [51, 22],
-    [8, 26],
-    [51, 26],
+    [23, 22],
+    [43, 22],
     [33, 42],
     [40, 50],
     [57, 23],
     [59, 33],
   ].map(([x, z]) => ({ kind: 'lamp', x, z }) as const),
+  // The sports ground (P33, the yard's west third down to the corridor): the court, the
+  // weights corner and the bleachers north of the track; lamps at its south corners.
+  { kind: 'pullup', x: 15, z: 22, w: 2 },
+  { kind: 'weights', x: 18, z: 22 },
+  { kind: 'weights', x: 20, z: 22 },
+  { kind: 'bleachers', x: 14, z: 27, w: 6 },
+  { kind: 'lamp', x: 8, z: 37 },
+  { kind: 'lamp', x: 21, z: 37 },
+  // The garden (P33, the yard's east end, fenced from the walkway): the beds in front, a planter
+  // on their east; the tool shed, the crate and three more planters behind them (the wall
+  // hides the two rows in front of it from the camera, the crops and the shed stand above it).
+  { kind: 'planter', x: 51, z: 22, d: 2 },
+  { kind: 'planter', x: 46, z: 25, w: 2 },
+  { kind: 'planter', x: 49, z: 25 },
+  { kind: 'planter', x: 48, z: 26, w: 2 },
+  { kind: 'toolShed', x: 50, z: 25, w: 2, d: 2 },
+  { kind: 'crate', x: 47, z: 26 },
 );
 
 /** One row of fourteen through the middle of the yard (it is only five tiles deep), facing the warden at its north side: the painted box clear of the walls and doorways on every side. */
-const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 19 + k, z: 24 }));
+const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 29 + k, z: 24 }));
 
 /**
  * Ten guards (GDD §4.5), four of them armored riot guards. Directions: 1 east, 5 south,
@@ -134,7 +145,8 @@ const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 19 + k, z: 24 }));
  * - The canteen guard walks the canteen and kitchen and watches meals.
  * - The wing guard walks the hall, the gym and the showers, watches showers, and searches
  *   cells at the morning shakedown.
- * - The yard guard walks the yard and the main corridor, watches exercise, and at night the yard.
+ * - The yard guard walks the yard and the main corridor, watches exercise (P33: on the sports
+ *   ground), and at night the yard.
  * - The workshop guard walks the laundry, the janitor's closet, the mailroom and the shops.
  * - The staff guard walks GEN-1, solitary, GEN-2 and the quarters.
  * - Two riot guards walk the walkway between the fortress and the outer wall, day and night:
@@ -156,7 +168,7 @@ const guards: GuardDef[] = [
       { x: 25, z: 40, wait: 3, face: 13 },
       { x: 30, z: 23, wait: 4, face: 5 },
     ],
-    posts: { rollCall: { x: 26, z: 22, face: 5 }, eveningRollCall: { x: 26, z: 22, face: 5 } },
+    posts: { rollCall: { x: 35, z: 22, face: 5 }, eveningRollCall: { x: 35, z: 22, face: 5 } },
     night: [
       { x: 9, z: 14, wait: 4, face: 1 },
       { x: 50, z: 15, wait: 4, face: 9 },
@@ -170,12 +182,12 @@ const guards: GuardDef[] = [
   {
     name: 'Finch',
     beat: [
-      { x: 15, z: 28, wait: 3, face: 5 },
-      { x: 24, z: 32, wait: 3, face: 9 },
-      { x: 10, z: 30, wait: 3, face: 1 },
-      { x: 21, z: 37, wait: 3, face: 13 },
+      { x: 29, z: 28, wait: 3, face: 5 },
+      { x: 34, z: 32, wait: 3, face: 9 },
+      { x: 24, z: 30, wait: 3, face: 1 },
+      { x: 32, z: 36, wait: 3, face: 13 },
     ],
-    posts: { breakfast: { x: 24, z: 28, face: 7 }, dinner: { x: 24, z: 28, face: 7 } },
+    posts: { breakfast: { x: 34, z: 28, face: 7 }, dinner: { x: 34, z: 28, face: 7 } },
     key: 'cyan',
   },
   {
@@ -184,11 +196,11 @@ const guards: GuardDef[] = [
     beat: [
       { x: 12, z: 15, wait: 3, face: 1 },
       { x: 29, z: 18, wait: 3, face: 13 },
-      { x: 30, z: 28, wait: 3, face: 5 },
-      { x: 29, z: 35, wait: 3, face: 1 },
+      { x: 38, z: 31, wait: 3, face: 5 },
+      { x: 37, z: 35, wait: 3, face: 1 },
       { x: 45, z: 14, wait: 3, face: 9 },
     ],
-    posts: { showers: { x: 30, z: 34, face: 5 } },
+    posts: { showers: { x: 38, z: 34, face: 5 } },
     duties: ['shakedown'],
     key: 'yellow',
   },
@@ -196,15 +208,15 @@ const guards: GuardDef[] = [
     name: 'Penrose',
     trait: 'lazy',
     beat: [
-      { x: 9, z: 24, wait: 3, face: 1 },
-      { x: 50, z: 24, wait: 3, face: 9 },
+      { x: 23, z: 24, wait: 3, face: 1 },
+      { x: 42, z: 22, wait: 3, face: 9 },
       { x: 50, z: 39, wait: 3, face: 9 },
       { x: 9, z: 40, wait: 3, face: 1 },
     ],
-    posts: { exercise: { x: 37, z: 23, face: 7 } },
+    posts: { exercise: { x: 20, z: 26, face: 9 } },
     night: [
-      { x: 9, z: 23, wait: 4, face: 1 },
-      { x: 50, z: 25, wait: 4, face: 9, nap: true },
+      { x: 23, z: 23, wait: 4, face: 1 },
+      { x: 42, z: 25, wait: 4, face: 9, nap: true },
     ],
     key: 'green',
   },
@@ -212,9 +224,9 @@ const guards: GuardDef[] = [
     name: 'Quill',
     trait: 'corrupt',
     beat: [
-      { x: 45, z: 29, wait: 3, face: 5 },
-      { x: 45, z: 35, wait: 3, face: 1 },
-      { x: 49, z: 36, wait: 3, face: 13 },
+      { x: 44, z: 30, wait: 3, face: 5 },
+      { x: 44, z: 36, wait: 3, face: 1 },
+      { x: 22, z: 45, wait: 3, face: 1 },
       { x: 11, z: 45, wait: 3, face: 5 },
       { x: 17, z: 45, wait: 3, face: 5 },
     ],
@@ -314,33 +326,37 @@ export const IRONGATE: PrisonDef = {
     ['cellBlock', 28, 16, 31, 20],
     ['solitary', 48, 9, 51, 12],
     ['generator', 43, 17, 51, 20],
-    // The yard.
-    ['yard', 8, 22, 51, 26],
-    ['rollCall', 18, 23, 33, 25],
-    // The middle block.
-    ['kitchen', 8, 28, 12, 37],
-    ['canteen', 14, 27, 24, 38],
-    ['gym', 26, 27, 33, 32],
-    ['showers', 26, 33, 33, 37],
-    ['library', 35, 27, 41, 32],
-    ['infirmary', 35, 33, 41, 38],
-    ['laundry', 43, 28, 51, 31],
-    ['janitor', 43, 33, 46, 37],
-    ['mailroom', 48, 33, 51, 37],
+    // The yard (P33: its east two thirds, five tiles deep: the roofs' chasm).
+    ['yard', 23, 22, 43, 26],
+    ['rollCall', 28, 23, 43, 25],
+    // The middle block (P33: east of the sports ground).
+    ['kitchen', 23, 28, 26, 37],
+    ['canteen', 28, 27, 34, 38],
+    ['gym', 36, 27, 40, 32],
+    ['showers', 36, 33, 40, 37],
+    ['laundry', 42, 27, 46, 32],
+    ['mailroom', 42, 33, 46, 38],
+    ['infirmary', 48, 28, 51, 32],
+    ['library', 48, 33, 51, 38],
     // The main corridor, then the south block.
     ['corridor', 8, 39, 51, 40],
     ['woodshop', 8, 42, 13, 50],
     ['metalshop', 15, 42, 20, 50],
-    ['controlRoom', 22, 42, 28, 50],
+    ['janitor', 22, 42, 23, 50],
+    ['controlRoom', 25, 42, 28, 50],
     ['helipad', 33, 42, 40, 50],
     ['generator', 42, 42, 46, 50],
     ['guardQuarters', 48, 42, 51, 50],
+    // P33: the sports ground in the yard's west third, down to the corridor; the garden at the
+    // yard's east end.
+    ['sports', 8, 22, 21, 37],
+    ['garden', 45, 22, 51, 26],
   ],
   cells,
   props,
   rollCall,
   spawn: { x: 10, z: 11 },
-  reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor'],
+  reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],
   guards,
   names: ['Brick', 'Gull', 'Barnacle', 'Fog', 'Anchor', 'Tide', 'Crab', 'Mutton', 'Bosun', 'Kipper', 'Shanty', 'Rook', 'Granite'],
   merchants: [2, 6, 9, 13],
@@ -353,6 +369,7 @@ export const IRONGATE: PrisonDef = {
     { id: 'metalshop', cell: 8 },
     { id: 'janitor', cell: 11 },
     { id: 'mailman', cell: 0 },
+    { id: 'gardener', cell: 7 },
   ],
   // Cameras (on GEN-1): both ends of the hall and of the main corridor, the control room, both generator rooms, the sally port.
   cameras: [
@@ -360,7 +377,7 @@ export const IRONGATE: PrisonDef = {
     { x: 51, z: 15, face: 9 },
     { x: 8, z: 39, face: 1 },
     { x: 51, z: 40, face: 9 },
-    { x: 22, z: 42, face: 3 },
+    { x: 25, z: 42, face: 3 },
     { x: 43, z: 17, face: 3 },
     { x: 46, z: 42, face: 7 },
     { x: 30, z: 42, face: 5 },
@@ -443,9 +460,22 @@ export const IRONGATE: PrisonDef = {
   // The roofs south of the yard: a grapnel swings across the chasm onto them from the north block's.
   landings: [[7, 27, 52, 51]],
   drawbridge: [30, 56, 31, 58],
-  // Smuggling (P21): Rook sells burner phones; the drone drops at the yard's east end; visitors
-  // (off the ferry) sit in the canteen.
-  smuggling: { fixer: 13, drop: [36, 22, 50, 26], visits: [14, 27, 24, 38] },
-  // Free time (P27): the hoop on the wall and its court, the old-timer who plays checkers.
-  leisure: { hoop: court(8, 24, 1), oldTimer: 4, garden: { x: 44, z: 24, w: 3, d: 2 }, race: { x: 26, z: 15, dir: 1, len: 6 }, pitch: pitch(33, 22, 10, 5), stage: stage(16, 37, 13), quiz: quizAt(5, [36, 29], [37, 29], [39, 29], [40, 29]) },
+  // Smuggling (P21): Rook sells burner phones; the drone drops on the roll call box in the
+  // yard; visitors (off the ferry) sit in the canteen.
+  smuggling: { fixer: 13, drop: [28, 23, 43, 25], visits: [28, 27, 34, 38] },
+  // Free time (P27): the old-timer who plays checkers; the hoop, the pitch and its track on the
+  // sports ground, the beds in the garden (P33).
+  leisure: {
+    hoop: court(10, 22, 5),
+    oldTimer: 4,
+    garden: { x: 45, z: 22, w: 6, d: 2 },
+    race: { x: 26, z: 15, dir: 1, len: 6 },
+    // (Two rows clear along the corridor's wall, which would hide the track's lane from the camera.)
+    pitch: pitch(9, 29, 12, 6),
+    track: { x: 8, z: 28, w: 14, d: 8 },
+    stage: stage(30, 37, 13),
+    quiz: quizAt(5, [48, 35], [49, 35], [50, 35], [51, 35]),
+  },
+  // Rebuilt in 2.9 (P33): the sports ground in the yard's west third, the garden at its east end.
+  map: 1,
 };

@@ -8,8 +8,9 @@
  *   crater is safe ground until 08:00, when the mine is laid again; the very strong are left
  *   standing in the open, where the snipers (on duty round the clock) take aim;
  * - digging up out of a tunnel into the minefield sets the mine above off;
- * - the supply road: red keys through the control room and the inner wall, green through the
- *   outer gate, a way down the corridor that never touches a mine;
+ * - the supply road: red keys through the generator room, the control room and the inner wall
+ *   (P33: from the library), green through the outer gate, a way down the corridor that never
+ *   touches a mine;
  * - the lawless interior: a few inmates bear a grudge from day 1, and they settle it in free
  *   time too (where elsewhere only meals and the showers see it).
  * Its jobs and its three escapes are proven by the generic suites (economytest, escapetest).
@@ -160,15 +161,16 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   const bot = new Bot(SAN_PANCHO, 6);
   const w = bot.sim.world;
   const shut = (x: number, z: number) => w.block[tileOf(x, z)] === 1;
-  check(shut(31, 44) && shut(31, 52) && shut(31, 55) && shut(31, 61), 'no keys: the control room, the inner wall and the outer gate are shut');
+  const inner = (f: (x: number, z: number) => boolean) => f(42, 47) && f(37, 51) && f(31, 52) && f(31, 55);
+  check(inner(shut) && shut(31, 61), 'no keys: the generator room, the control room, the inner wall and the outer gate are shut');
   w.setPlayerKeys(1 << KEY.RED);
-  check(!shut(31, 44) && !shut(31, 52) && !shut(31, 55) && shut(31, 61), 'red keys: through the control room and the inner wall, the outer gate still shut');
+  check(inner((x, z) => !shut(x, z)) && shut(31, 61), 'red keys: through the generator room, the control room and the inner wall, the outer gate still shut');
   w.setPlayerKeys((1 << KEY.RED) | (1 << KEY.GREEN));
   check(!shut(31, 61), 'red and green: the outer gate too');
-  const path = findPath(w, tileOf(31, 41), (i) => i === tileOf(31, 62), tileOf(31, 62), MAP_W * MAP_H, undefined, w.routeBlock);
-  check(!!path && path.every((i) => w.ground.kind[i] !== TILE.MINE), `a way from the plaza to the road that never touches a mine (${path?.length ?? 0} tiles)`);
+  const path = findPath(w, tileOf(31, 26), (i) => i === tileOf(31, 62), tileOf(31, 62), MAP_W * MAP_H, undefined, w.routeBlock);
+  check(!!path && path.every((i) => w.ground.kind[i] !== TILE.MINE), `a way from the yard to the road that never touches a mine (${path?.length ?? 0} tiles)`);
   check(findPath(w, tileOf(31, 58), (i) => i === tileOf(26, 58), tileOf(26, 58), MAP_W * MAP_H, undefined, w.routeBlock) === null, 'no route leads into the minefield');
-  console.log(`supply road: red through the control room and the inner wall, green through the gate; ${path?.length} tiles to the road, none of them mined`);
+  console.log(`supply road: red through the generator room, the control room and the inner wall, green through the gate; ${path?.length} tiles from the yard to the road, none of them mined`);
 }
 
 // ------------------------------------------------------------------ snipers round the clock

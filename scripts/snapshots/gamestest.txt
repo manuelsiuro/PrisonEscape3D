@@ -5,7 +5,7 @@ arm-wrestling: the bar as the rule says; a win +6 / +2 x 3 watching / +1 Strengt
   Strength 40 vs 30 · 45 · 60: 5/s won 24.8s · draw · lost; 8/s won 7.0s · won 10.5s · draw; 12/s won 3.0s · won 3.5s · won 5.0s
   Strength 70 vs 30 · 45 · 60: 5/s won 8.6s · won 15.8s · draw; 8/s won 4.3s · won 5.5s · won 8.8s; 12/s won 2.0s · won 2.3s · won 2.9s
 sports day: 3 wins earn $30 and +3 from everyone, once, only on the day
-lockpick doors: center-perks cyan 8, purple 1, red 5, green 2; 2 gates | stalag-flucht cyan 9, red 3, purple 3; 2 gates | shankton cyan 10, red 3, purple 2; 6 gates | san-pancho cyan 6, red 8, purple 1, green 2 | irongate red 8, purple 2, cyan 6, green 1; 3 gates | training purple 1, cyan 4; 2 gates
+lockpick doors: center-perks cyan 8, purple 1, red 5, green 2; 2 gates | stalag-flucht cyan 9, red 3, purple 3; 2 gates | shankton cyan 10, red 3, purple 2; 6 gates | san-pancho cyan 10, red 7, purple 1, green 2 | irongate red 8, purple 2, cyan 10, green 1; 3 gates | training purple 1, cyan 4; 2 gates
 lockpick: start, a slip (6, worn), pins set (2), open for the player alone until through or 15 s, a step stops it, it breaks, never a gate, the cell door at night
 saves: dice and a bout carry on; damaged games dropped; an old save on sports day 3 keeps its movie
 saves: a lock half picked and a door picked open carry on

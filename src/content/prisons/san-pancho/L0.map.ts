@@ -1,9 +1,11 @@
 /**
  * San Pancho, ground floor (layer 0, GDD §4.4): a desert cartel compound, 64×64 tiles. Two
  * walls of reinforced concrete (`@`) with a minefield (`*`) between them; inside the inner
- * one, the guards' walkway round an adobe compound: cell wings, canteen and workshops either
- * side of an open plaza, the control room on the supply road out, a paved corridor through
- * the mines to the outer gate. Legend in src/sim/world/tiles.ts (LEGEND); `.` is sand here.
+ * one, the guards' walkway round an adobe compound: cell wings either side of the yard (the
+ * plaza's north half, roll call), the sports ground behind its fence in the plaza's south half
+ * (P33), the canteen and workshops west of it, the gym, the walled garden, the library and the
+ * infirmary east, the control room on the supply road out behind the generator room, a paved
+ * corridor through the mines to the outer gate. Legend in src/sim/world/tiles.ts (LEGEND); `.` is sand here.
  * Edit the picture, then run `npm test -- map`.
  */
 export const L0 = String.raw`
@@ -38,27 +40,27 @@ export const L0 = String.raw`
 ,,@*****@..#____#_________yddddddddddy_________#____#..@*****@,,
 ,,@*****@..#____y_________yddddddddddy_________y____#..@*****@,,
 ,,@*****@..#____#____#____#dddddddddd#____#____#____#..@*****@,,
-,,@*****@..################dddddddddd################..@*****@,,
-,,@*****@..#::::#:::::::::#dddddddddd#wwwwwwww#:::::#..@*****@,,
-,,@*****@..#::::c:::::::::#dddddddddd#wwwwwwww#:::::#..@*****@,,
-,,@*****@..#::::#::::::::::ddddddddddwwwwwwwww#:::::#..@*****@,,
-,,@*****@..#::::#::::::::::ddddddddddwwwwwwwww::::::#..@*****@,,
-,,@*****@..#::::#::::::::::ddddddddddwwwwwwwww::::::#..@*****@,,
-,,@*****@..#::::#::::::::::ddddddddddwwwwwwwww#:::::#..@*****@,,
-,,@*****@..#::::#:::::::::#dddddddddd#wwwwwwww#:::::#..@*****@,,
-,,@*****@..#::::#:::::::::#dddddddddd#wwwwwwww#:::::#..@*****@,,
-,,@*****@..#::::#:::::::::#dddddddddd#wwwwwwww#:::::#..@*****@,,
-,,@*****@..######c#####c###dddddddddd####w###########..@*****@,,
-,,@*****@..######D#####D###dddddddddd#wwwwwww#::::::#..@*****@,,
-,,@*****@..#wwwwwww#______#dddddddddd#wwwwwww#::::::#..@*****@,,
-,,@*****@..#wwwwwww#______#####rr#####wwwwwww:::::::#..@*****@,,
-,,@*****@..#wwwwwww#______#___#______#wwwwwww#::::::#..@*****@,,
-,,@*****@..#wwwwwww#______#___#______#wwwwwww#::::::#..@*****@,,
-,,@*****@..#wwwwwww#______#___#______###p#######r####..@*****@,,
-,,@*****@..#wwwwwww#______#___r______#______#wwwwwww#..@*****@,,
-,,@*****@..#wwwwwww#______#___#______#______#wwwwwww#..@*****@,,
-,,@*****@..#wwwwwww#______#___#______#______#wwwwwww#..@*****@,,
-,,@*****@..#wwwwwww#______#___#______#______#wwwwwww#..@*****@,,
+,,@*****@..############yy##=====cc===####y###########..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#wwww#dddddd#..@*****@,,
+,,@*****@..#::::c::::::::#dddddddddddddd#wwww#dddddd#..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#wwww#dddddd#..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#wwwwcdddddd#..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#wwwwcdddddd#..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#::::#dddddd#..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#::::#dddddd#..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#::::#dddddd#..@*****@,,
+,,@*****@..#::::#::::::::#dddddddddddddd#::::#dddddd#..@*****@,,
+,,@*****@..######c#####c##dddddddddddddd#w###########..@*****@,,
+,,@*****@..######D#####D##dddddddddddddd#wwww#::::::#..@*****@,,
+,,@*****@..#wwwwwww#_____#dddddddddddddd#wwww:::::::#..@*****@,,
+,,@*****@..#wwwwwww#_____#dddddddddddddd#wwww#::::::#..@*****@,,
+,,@*****@..#wwwwwww#_____#dddddddddddddd#wwww#::::::#..@*****@,,
+,,@*****@..#wwwwwww#_____#dddddddddddddd#wwww#::::::#..@*****@,,
+,,@*****@..#wwwwwww#_____#################r#####p####..@*****@,,
+,,@*****@..#wwwwwww#_____##___r______#______#wwwwwww#..@*****@,,
+,,@*****@..#wwwwwww#_____##___#______#______#wwwwwww#..@*****@,,
+,,@*****@..#wwwwwww#_____##___#______#______#wwwwwww#..@*****@,,
+,,@*****@..#wwwwwww#_____##___#______r______#wwwwwww#..@*****@,,
 ,,@*****@..####################rr####################..@*****@,,
 ,,@*****@..............................................@*****@,,
 ,,@*****@..............................................@*****@,,

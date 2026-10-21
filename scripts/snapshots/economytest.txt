@@ -34,18 +34,20 @@ shankton woodshop: day 1 12:15 +$50 (wage)
 shankton janitor: day 1 12:26 +$35 (wage)
 shankton mailman: day 1 12:48 +$55 (wage)
 shankton gardener: day 1 12:32 +$35 (wage)
-san-pancho janitor: day 1 12:28 +$35 (wage)
-san-pancho kitchen: day 1 12:29 +$40 (wage)
-san-pancho laundry: day 1 12:36 +$30 (wage)
-san-pancho woodshop: day 1 12:16 +$50 (wage)
-san-pancho metalshop: day 1 12:21 +$65 (wage)
-san-pancho mailman: day 1 12:34 +$55 (wage)
-irongate woodshop: day 1 12:19 +$50 (wage)
-irongate kitchen: day 1 12:27 +$40 (wage)
-irongate laundry: day 1 12:30 +$30 (wage)
-irongate metalshop: day 1 12:22 +$65 (wage)
-irongate janitor: day 1 12:23 +$35 (wage)
-irongate mailman: day 1 12:50 +$55 (wage)
+san-pancho janitor: day 1 12:32 +$35 (wage)
+san-pancho kitchen: day 1 12:39 +$40 (wage)
+san-pancho laundry: day 1 12:42 +$30 (wage)
+san-pancho woodshop: day 1 12:27 +$50 (wage)
+san-pancho metalshop: day 1 12:32 +$65 (wage)
+san-pancho mailman: day 1 12:35 +$55 (wage)
+san-pancho gardener: day 1 12:27 +$35 (wage)
+irongate woodshop: day 1 12:22 +$50 (wage)
+irongate kitchen: day 1 12:26 +$40 (wage)
+irongate laundry: day 1 12:17 +$30 (wage)
+irongate metalshop: day 1 12:26 +$65 (wage)
+irongate janitor: day 1 12:18 +$35 (wage)
+irongate mailman: day 1 12:40 +$55 (wage)
+irongate gardener: day 1 12:21 +$35 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
   day 3 08:00 inmate 4 hired: laundry
@@ -55,4 +57,4 @@ speed: 3.59 tiles a second at SPD 40, 4.30 at 100
 merchant: sold foil at $15, $8 to a friend
 follower: at most 1.8 tiles behind on a walk down the corridor
 recipes: studying told sheet_rope, an inmate told poster
-inmates at work at 14:59 on day 1: center-perks 4, stalag-flucht 4, shankton 5, san-pancho 4, irongate 4
+inmates at work at 14:59 on day 1: center-perks 4, stalag-flucht 4, shankton 5, san-pancho 5, irongate 5
