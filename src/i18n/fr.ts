@@ -442,7 +442,8 @@ export const fr: Partial<Strings> = {
   "item.license_plate": "Plaque d’immatriculation",
   "hud.cash": "Argent",
   "hud.profile": "Ton dossier",
-  "hud.fileNew": "Du nouveau dedans",
+  "hud.fileNew": "Du nouveau à lire",
+  "hud.cashIs": "Argent : {n} $",
   "routine.paid": "Payé",
   "combat.inmateNamed": "{name} · cellule {n}",
   "job.laundry": "Blanchisserie",
@@ -2529,7 +2530,7 @@ export const fr: Partial<Strings> = {
   "lesson.checkers.jump": "La prise est obligatoire, et un saut continue : clique sur ton pion allumé, puis saute deux fois pour prendre ses deux derniers",
   "lesson.checkers.jumpTouch": "La prise est obligatoire, et un saut continue : touche ton pion allumé, puis saute deux fois pour prendre ses deux derniers",
   "lesson.checkers.secret": "Battu, le vieux briscard laisse échapper un secret : il est dans ton dossier (%KeyI%). Il jouera mieux la prochaine fois",
-  "lesson.checkers.secretTouch": "Battu, le vieux briscard laisse échapper un secret : il est dans ton dossier (touche ton portrait). Il jouera mieux la prochaine fois",
+  "lesson.checkers.secretTouch": "Battu, le vieux briscard laisse échapper un secret : il est dans ton dossier (touche ton portrait, en haut à gauche). Il jouera mieux la prochaine fois",
   // P27 lessons: checkers resigned.
   "lesson.checkers.resigned": "Tu as abandonné : une toute nouvelle partie, ce n’est plus la leçon. Recommence la leçon",
   // P27 review fixes.

@@ -444,6 +444,7 @@ export const en = {
   "hud.cash": "Cash",
   "hud.profile": "Your file",
   "hud.fileNew": "Something new in it",
+  "hud.cashIs": "Cash ${n}",
   "routine.paid": "Paid",
   "combat.inmateNamed": "{name} · cell {n}",
   "job.laundry": "Laundry",
@@ -2530,7 +2531,7 @@ export const en = {
   "lesson.checkers.jump": "A capture is forced, and a jump goes on: click your lit man, then jump twice to take his last two",
   "lesson.checkers.jumpTouch": "A capture is forced, and a jump goes on: tap your lit man, then jump twice to take his last two",
   "lesson.checkers.secret": "Beaten, the old-timer lets a secret slip: it's in your file (%KeyI%). He'll play better next time",
-  "lesson.checkers.secretTouch": "Beaten, the old-timer lets a secret slip: it's in your file (tap your portrait). He'll play better next time",
+  "lesson.checkers.secretTouch": "Beaten, the old-timer lets a secret slip: it's in your file (tap your portrait, top left). He'll play better next time",
   // P27 lessons: checkers resigned.
   "lesson.checkers.resigned": "You resigned: a whole new game is no lesson. Try the lesson again",
   // P27 review fixes.

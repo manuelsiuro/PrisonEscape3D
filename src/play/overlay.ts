@@ -432,39 +432,48 @@ const headAt = (id: number, out: { x: number; y: number }) => view.screenOf(id, 
 
 /** Real seconds since the last overlay (the arm-wrestle's bar eases with it). */
 let lastOverlay = performance.now();
-/** The look last photographed for the file's button (render/portrait.ts). */
+/** The look last photographed for the file's button (render/portrait.ts: a new WebGL context and shader, so in an idle moment if one comes within 2 s). */
 let faceLook: Look | null = null;
+/** The game the button was last drawn for (a new one: the label may be due again, the face taken at once). */
+let fileGame: Game | null = null;
 /** The first run's "Your file" label under the button: from (play time, ms) and until. */
 let fileTipAt = -1;
 const FILE_TIP_WAIT = 1500;
 const FILE_TIP_MS = 6000;
 
 /**
- * The HUD's file button: your prisoner's face (taken again in an idle moment when the look
- * changes: the Intake's, a disguise, a tattoo inked), also at the file's head; a dot while
- * the file holds news; on the first run, its "Your file" label for a few seconds (gone once
- * the file is opened).
+ * The HUD's file button: your prisoner's face (taken again when the look changes: the
+ * Intake's, a disguise, a tattoo inked; at once in a new game, so the last prisoner's face
+ * never shows, in an idle moment otherwise), also at the file's head; a dot while the file
+ * holds news; on the first run, its "Your file" label for a few seconds of play (gone once the
+ * file is opened).
  */
 function fileButton(g: Game) {
   const look = view.playerLook;
+  const fresh = g !== fileGame;
+  if (fresh) {
+    fileGame = g;
+    fileTipAt = -1;
+  }
   if (look !== faceLook) {
     faceLook = look;
-    const idle = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 400 }) : setTimeout(f, 16));
-    idle(() => {
+    const take = () => {
       if (view.playerLook !== look) return;
       const url = portraitOf(look);
       hud.setFace(url);
       profile.face = url;
-    });
+    };
+    if (fresh) take();
+    else ('requestIdleCallback' in window ? requestIdleCallback(take, { timeout: 2000 }) : setTimeout(take, 16));
   }
   hud.setNews(!g.replay && profile.newsFor(g.rec.sim));
-  if (fileTipAt < 0 && !g.paused && !seenTip('fileButton')) {
-    markTip('fileButton');
-    fileTipAt = playNow() + FILE_TIP_WAIT;
-  }
   const now = playNow();
-  if (fileTipAt >= 0 && profile.isOpen) fileTipAt = 0;
-  hud.fileTip(fileTipAt > 0 && now >= fileTipAt && now < fileTipAt + FILE_TIP_MS);
+  if (fileTipAt < 0 && !g.paused && !seenTip('fileButton')) fileTipAt = now + FILE_TIP_WAIT;
+  if (fileTipAt > 0 && profile.isOpen) fileTipAt = 0;
+  const tip = fileTipAt > 0 && !g.paused && now >= fileTipAt && now < fileTipAt + FILE_TIP_MS;
+  // (Spent once it shows: a game left before then shows it next time.)
+  if (tip && !seenTip('fileButton')) markTip('fileButton');
+  hud.fileTip(tip);
 }
 
 function frameDt(g: Game): number {

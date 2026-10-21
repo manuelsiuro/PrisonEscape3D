@@ -41,6 +41,8 @@ export class ProfilePanel {
   private newsLang = '';
   private newsTick = -1;
   private news = false;
+  /** Open and on screen (it's open but hidden while the player is busy: solitary, stowed away). */
+  private shown = false;
 
   constructor(private readonly click: () => void) {
     this.el = h('div', 'item-panel profile-panel hidden');
@@ -70,7 +72,7 @@ export class ProfilePanel {
    * Whether the file holds something new since it was last open (a dot on the HUD's button):
    * a rumor heard, a favor taken on or ready, a job, tomorrow's forecast. A game begun (or the
    * language changed: the rumors are told again) starts with nothing new. Checked once a game
-   * second, every frame while open (it's all seen then).
+   * second, every frame while it's on screen (it's all seen then: open but hidden isn't seen).
    */
   newsFor(sim: Sim): boolean {
     const tick = Math.floor(sim.state.step / 20);
@@ -81,10 +83,10 @@ export class ProfilePanel {
       this.newsTick = tick;
       return (this.news = false);
     }
-    if (tick === this.newsTick && !this.isOpen) return this.news;
+    if (tick === this.newsTick && !this.shown) return this.news;
     this.newsTick = tick;
     const now = this.newsKeys(sim);
-    if (this.isOpen) {
+    if (this.shown) {
       this.seen = new Set(now);
       return (this.news = false);
     }
@@ -102,7 +104,8 @@ export class ProfilePanel {
   }
 
   update(sim: Sim, busy: boolean) {
-    if (!this.isOpen || busy) {
+    this.shown = this.isOpen && !busy;
+    if (!this.shown) {
       this.el.classList.add('hidden');
       return;
     }

@@ -246,7 +246,7 @@
     left: auto;
     max-width: min(400px, calc(100vw - 560px));
   }
-  /* (The place's name kept short beside it, so the cash beyond it stays clear of the card: « Cour intérieure ».) */
+  /* (The place's name kept short, so the end of the row stays clear of the card: « Cour intérieure ».) */
   body.lesson-on.gaming .hud-zone,
   body.lesson-on.courting .hud-zone {
     max-width: 96px;

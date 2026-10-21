@@ -383,7 +383,7 @@ export class Hud {
   }
 
   private label() {
-    this.cashPill.setAttribute('aria-label', `${t('hud.cash')} $${Math.max(0, this.shownCash)}. ${t('hud.profile')}${this.news ? `. ${t('hud.fileNew')}` : ''}`);
+    this.cashPill.setAttribute('aria-label', `${t('hud.cashIs', { n: Math.max(0, this.shownCash) })}. ${t('hud.profile')}${this.news ? `. ${t('hud.fileNew')}` : ''}`);
   }
 
   update(clock: Clock, zone: ZoneId, s: HudState) {

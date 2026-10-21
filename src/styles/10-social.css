@@ -69,10 +69,11 @@
   }
 }
 
-/* The first run: "Your file" under the button for a few seconds, pointing up at it. */
+/* The first run: "Your file" under the button for a few seconds, pointing up at it; the row
+   below steps down for it meanwhile (the routine's name stays readable). */
 .hud-me-tip {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 9px);
   left: 2px;
   z-index: 2;
   padding: 5px 10px;
@@ -103,6 +104,14 @@
 
 .hud .hud-cash.tip {
   z-index: 3;
+}
+
+.hud > .hud-row:nth-child(2) {
+  transition: margin-top 0.25s var(--ease);
+}
+
+.hud:has(.hud-cash.tip) > .hud-row:nth-child(2) {
+  margin-top: 32px;
 }
 
 .hud-cash.tip .hud-me-tip {
@@ -1313,6 +1322,11 @@ body.training .hint {
     padding-inline: 10px;
   }
 
+  /* (The face took the room the sun or moon had: the time says which.) */
+  .hud .hud-sky {
+    display: none;
+  }
+
   .hud .hud-row {
     gap: 6px;
   }
@@ -1321,6 +1335,20 @@ body.training .hint {
   .hud .hud-zone[data-layer=''] .ic,
   .hud .hud-zone:not([data-layer]) .ic {
     display: none;
+  }
+}
+
+/* 360 px: a hair tighter still, so « Bloc cellulaire » stays whole. */
+@media (max-width: 380px) {
+  .hud .pill.hud-cash {
+    gap: 4px;
+    padding-right: 8px;
+  }
+
+  .hud-face {
+    width: 24px;
+    height: 24px;
+    margin: -2px 0 -2px -8px;
   }
 }
 
