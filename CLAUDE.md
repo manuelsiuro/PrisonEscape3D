@@ -27,6 +27,13 @@ Rules that matter every time:
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
   Dev builds expose `window.__game()` and `window.__view`.
 - **Dev server**: `npm run dev` on port 5310. In dev builds `]` fast-forwards the clock ×30.
+- **Map viewer** (`assets/maps/index.html`): keep it in step with the prisons. When a phase
+  changes a map or adds something placed on it (props, decor, guards, a new `PrisonDef` field
+  such as `comms`), draw the new data in `scripts/dev/mapimage.ts` (picture, legend and the
+  tile info in `tileData`), then run `npm run maps`. If the change shows in 3D, also retake
+  the "In game" photos with `scripts/dev/mapshot.ts` in the dev build. Check that the new
+  thing appears: a group the title screen hides needs showing in `View.mapShot`. Then run
+  `npm run maps` again, and commit the pictures with the phase.
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → poll the live JS bundle
   for the new version.

@@ -200,6 +200,9 @@ security → economy → escape check.
 
 Each phase ships sim, render, phone and desktop UI, i18n, a help entry and tests, then a
 release with `npm version`. Visual checks are done at desktop size, 412×915 and 915×412.
+A phase that changes a map or places something new on it also brings the map viewer
+(`assets/maps/`) up to date: drawn in `scripts/dev/mapimage.ts`, `npm run maps`, and the
+"In game" photos retaken when it shows in 3D (CLAUDE.md, Map viewer).
 
 | Phase | Version | Content | Proof |
 |---|---|---|---|
@@ -1019,7 +1022,7 @@ User decisions (2026-10-21):
   - If a multi-day bot (the takeover bots train for days) still changes, the queue waits for the player's first call in the run. It is never fixed by accepting a changed snapshot.
   - **Built (P34, the rules review):** the economy bot's day 3 changed with the queue from day 2 alone, so the queue (and the `phoneCall` rumour) waits for the player's first use of the phone in the run (a call or a place in line: `phoned[6]`). Every multi-day test is back to its snapshot.
 - **Time**: one game minute is one real second. Every card has a clock the player can see (as Cheat's 60 s), and a lesson's step has a least reading time.
-- **Every phase ships** sim, 3D, phone and desktop UI (cards docked left in landscape), EN and FR, help, bubbles, rumours, achievements and ledger counters, lessons, a test script, three reviews (rules, UI and text, 3D), then a release. Then I wait for the go.
+- **Every phase ships** sim, 3D, phone and desktop UI (cards docked left in landscape), EN and FR, help, bubbles, rumours, achievements and ledger counters, lessons, a test script, the map viewer brought up to date (P35: the kiosk on its wall), three reviews (rules, UI and text, 3D), then a release. Then I wait for the go.
 
 ### P34 The pay phone (v2.10)
 **The booth**: a wall phone with a hood, a coin box and a handset on its cord.
