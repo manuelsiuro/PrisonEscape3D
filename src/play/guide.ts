@@ -13,6 +13,7 @@ import { itemOf, usesOf } from '../sim/systems/items';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { lockList } from './buttons';
+import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { banner, hint, sound, view } from './context';
 import { play, sendOp, type Game } from './game';
 import { firstDay, markTip } from './tips';
@@ -95,6 +96,12 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const goal = play.game ? lessonGoal(play.game) : null;
   if (goal !== null) return (i) => i === goal;
   if (s.layer !== LAYER.GROUND) return null;
+  // The name called (P36): the release desk, till the player reports there.
+  const desk = sim.prison.comms?.release.at;
+  if (desk && calledNow(s) && !freedNow(s)) {
+    const tiles = desk.map((q) => q.z * MAP_W + q.x);
+    return (i) => tiles.includes(i);
+  }
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
@@ -139,7 +146,8 @@ export function updateGuide(g: Game, dt: number) {
   g.guideAge = 0;
   g.guideFrom = from;
   // A takeover (GDD §12): the arrows lead out through the open gates to the road.
-  const riot = sim.state.takeover && sim.state.layer === LAYER.GROUND && sim.state.ko === 0;
+  // (P36: cleared for release, the same: out through the doors open for the player.)
+  const riot = (sim.state.takeover || freedNow(sim.state)) && sim.state.layer === LAYER.GROUND && sim.state.ko === 0;
   const goal = riot ? (i: number) => sim.world.ground.kind[i] === TILE.ROAD : guideTarget(sim);
   // On the prison as built: the arrows never lead through the player's own holes (in a takeover,
   // every door is open to them; in a lesson, the doors their keys open and the holes it had them make). Never across mines.

@@ -66,6 +66,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['delivery', 'truck', '#3fc79a'],
     ['bluff', 'idCard', '#5b8fd8'],
     ['glider', 'glider', '#9fc8e8'],
+    ['paperwork', 'clipboard', '#d8b04a'],
     ['dogs', 'paw', '#e0a050', 'shankton'],
     ['rat', 'rat', '#d98aa8'],
     ['smuggling', 'phone', '#5fd3a0'],

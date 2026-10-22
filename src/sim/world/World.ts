@@ -117,6 +117,10 @@ export class World {
   waved = false;
   /** 1 on ground only the checkpoint's way out leads to (Irongate's rock outside the ferry gate, Shankton's gatehouse): worked out once. */
   private beyondGate: Uint8Array | null = null;
+  /** 1 on the release's way out (P36): its doors, and the drawbridge where it comes down for the player too. */
+  readonly release = new Uint8Array(MAP_W * MAP_H);
+  /** Cleared for release (P36): its way out open for the player alone; derived by the simulation. */
+  freed = false;
   /** Bumps on any tile change, so caches (paths, meshes) know to refresh. */
   rev = 0;
 
@@ -162,6 +166,8 @@ export class World {
     if (def.drawbridge) this.fill(this.bridge, ...def.drawbridge, 1);
     for (const q of def.checkpoint?.gates ?? []) this.checkpoint[q.z * MAP_W + q.x] = 1;
     if (def.checkpoint?.bridge && def.drawbridge) this.fill(this.checkpoint, ...def.drawbridge, 1);
+    for (const q of def.comms?.release.gates ?? []) this.release[q.z * MAP_W + q.x] = 1;
+    if (def.comms?.release.bridge && def.drawbridge) this.fill(this.release, ...def.drawbridge, 1);
     this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0 }));
     for (const p of this.props) if (PROPS[p.kind].solid) this.fill(this.propSolid, p.x, p.z, p.x + p.w - 1, p.z + p.d - 1, 1);
     // A cell's door is the door tile next to one of its tiles; its bed the bed inside it.
@@ -234,6 +240,13 @@ export class World {
     this.refreshBlock();
   }
 
+  /** Cleared for release or not (P36); its doors follow. */
+  setFreed(on: boolean) {
+    if (on === this.freed) return;
+    this.freed = on;
+    this.refreshBlock();
+  }
+
   /** The takeover on or over; doors follow. */
   setRiot(on: boolean) {
     if (on === this.riot) return;
@@ -276,29 +289,35 @@ export class World {
   pastCheckpoint(tile: number): boolean {
     const c = this.def.checkpoint;
     if (!c) return false;
-    if (!this.beyondGate) {
-      const g = this.ground;
-      const walk = (j: number) => (g.kind[j] === TILE.DOOR || !TILE_INFO[g.kind[j]].solid) && !this.propSolid[j] && !this.checkpoint[j];
-      const near = (t: number, x = t % MAP_W) =>
-        [
-          [t - 1, x > 0],
-          [t + 1, x < MAP_W - 1],
-          [t - MAP_W, t >= MAP_W],
-          [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-        ] as const;
-      // From the window, with the checkpoint shut.
-      const home = new Uint8Array(MAP_W * MAP_H);
-      const queue = c.window.map((q) => q.z * MAP_W + q.x);
-      for (const t of queue) home[t] = 1;
-      for (let k = 0; k < queue.length; k++) for (const [j, ok] of near(queue[k])) if (ok && !home[j] && walk(j)) (home[j] = 1), queue.push(j);
-      // What its way out touches that home doesn't reach (short of the road).
-      const out = new Uint8Array(MAP_W * MAP_H);
-      const more: number[] = [];
-      for (let i = 0; i < MAP_W * MAP_H; i++) if (this.checkpoint[i]) for (const [j, ok] of near(i)) if (ok && !home[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
-      for (let k = 0; k < more.length; k++) for (const [j, ok] of near(more[k])) if (ok && !home[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
-      this.beyondGate = out;
-    }
+    this.beyondGate ??= this.beyondWay(this.checkpoint, c.window);
     return this.beyondGate[tile] === 1;
+  }
+
+  /**
+   * The open ground a way out (its tiles marked in `way`) touches that can't be walked to from
+   * `home` with it shut (every other door open, as for a key), short of the road.
+   */
+  private beyondWay(way: Uint8Array, home: ReadonlyArray<{ x: number; z: number }>): Uint8Array {
+    const g = this.ground;
+    const walk = (j: number) => (g.kind[j] === TILE.DOOR || !TILE_INFO[g.kind[j]].solid) && !this.propSolid[j] && !way[j];
+    const near = (t: number, x = t % MAP_W) =>
+      [
+        [t - 1, x > 0],
+        [t + 1, x < MAP_W - 1],
+        [t - MAP_W, t >= MAP_W],
+        [t + MAP_W, t < MAP_W * (MAP_H - 1)],
+      ] as const;
+    // From home, with the way out shut.
+    const reach = new Uint8Array(MAP_W * MAP_H);
+    const queue = home.map((q) => q.z * MAP_W + q.x);
+    for (const t of queue) reach[t] = 1;
+    for (let k = 0; k < queue.length; k++) for (const [j, ok] of near(queue[k])) if (ok && !reach[j] && walk(j)) (reach[j] = 1), queue.push(j);
+    // What the way out touches that home doesn't reach (short of the road).
+    const out = new Uint8Array(MAP_W * MAP_H);
+    const more: number[] = [];
+    for (let i = 0; i < MAP_W * MAP_H; i++) if (way[i]) for (const [j, ok] of near(i)) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
+    for (let k = 0; k < more.length; k++) for (const [j, ok] of near(more[k])) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
+    return out;
   }
 
   /** The ground on foot from the player's cell or the road (afoot), and the rev it was worked out at. Not state. */
@@ -378,7 +397,8 @@ export class World {
       // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
       // (P22: and the door the player picked, as their own key would.)
       // (P24: waved through the checkpoint, its gates open for the player too.)
-      const waved = this.waved && this.checkpoint[i] === 1;
+      // (P36: cleared for release, its doors open for the player too.)
+      const waved = (this.waved && this.checkpoint[i] === 1) || (this.freed && this.release[i] === 1);
       const keyed = shut && (this.riot || waved || (!this.gate[i] && (((this.playerKeys >> g.key[i]) & 1) === 1 || i === this.pickedDoor)));
       // The drawbridge (P12) is down while the prison is the inmates' (P24: and for the player waved through).
       const lowered = this.riot && this.bridge[i] === 1;

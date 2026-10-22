@@ -162,6 +162,7 @@ const rollCall = [27, 29].flatMap((z) => [28, 29, 30, 31, 32, 33, 34].map((x) =>
 const guards: GuardDef[] = [
   {
     name: 'Varga',
+    about: { nick: 'TORITO', home: 'NOGALES', team: 'AGUILAS' },
     beat: [
       { x: 33, z: 49, wait: 20, face: 9 },
       { x: 31, z: 26, wait: 4, face: 13 },
@@ -178,6 +179,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Ríos',
+    about: { nick: 'CORONEL', home: 'TIJUANA', team: 'TOROS' },
     trait: 'strict',
     beat: [
       { x: 18, z: 14, wait: 3, face: 5 },
@@ -199,6 +201,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Molina',
+    about: { nick: 'CHACAL', home: 'TOLUCA', team: 'VENADOS' },
     trait: 'corrupt',
     beat: [
       { x: 10, z: 10, wait: 4, face: 1 },
@@ -212,6 +215,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Cruz',
+    about: { nick: 'SIESTA', home: 'OAXACA', team: 'PUMAS' },
     trait: 'lazy',
     beat: [
       { x: 53, z: 10, wait: 4, face: 5 },
@@ -225,6 +229,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Ortiz',
+    about: { nick: 'FLACO', home: 'DURANGO', team: 'ALACRAN' },
     beat: [
       { x: 53, z: 53, wait: 4, face: 9 },
       { x: 10, z: 54, wait: 4, face: 1 },
@@ -237,6 +242,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Peña',
+    about: { nick: 'GORDO', home: 'COLIMA', team: 'TIGRES' },
     beat: [
       { x: 10, z: 53, wait: 4, face: 13 },
       { x: 9, z: 10, wait: 4, face: 5 },
@@ -249,6 +255,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Ochoa',
+    about: { nick: 'CHATO', home: 'PUEBLA', team: 'RAYOS' },
     beat: [
       { x: 32, z: 50, wait: 8, face: 13 },
       { x: 33, z: 53, wait: 3, face: 1 },
@@ -266,6 +273,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Paz',
+    about: { nick: 'MORDIDA', home: 'CELAYA', team: 'DIABLOS' },
     trait: 'corrupt',
     beat: [
       { x: 42, z: 49, wait: 4, face: 9 },
@@ -378,7 +386,7 @@ export const SAN_PANCHO: PrisonDef = {
   ],
   // No gate a key can't open: cloned red and green keys walk the supply road out (GDD §4.4).
   gates: [],
-  escapes: ['tunnel', 'gate', 'takeover', 'stowaway'],
+  escapes: ['tunnel', 'gate', 'takeover', 'stowaway', 'paperwork'],
   rules: { snipers: 'always', hostile: true },
   // Delivery day (P18): the produce truck comes up the supply road between the mines to the
   // inner wall's door (only keys and a uniform get anyone there); the road's guard walks round
@@ -419,6 +427,7 @@ export const SAN_PANCHO: PrisonDef = {
   },
   // Rebuilt in 2.9 (P33): the sports ground in the plaza's south half, the garden in the showers' old place.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([19, 12, 13], [[20, 12], [20, 13], [20, 14], [20, 15]], [31, 51], [35, 63, 1], [44, 44, 1]),
+  // (P36: the release reported at the library's back door, then through the generator room, the control room and down the supply road.)
+  comms: comms([19, 12, 13], [[20, 12], [20, 13], [20, 14], [20, 15]], [31, 51], [35, 63, 1], [44, 44, 1], { at: [[42, 46]], gates: [[42, 47], [37, 51], [31, 52], [32, 52], [31, 55], [32, 55], [31, 61], [32, 61]] }),
   map: 1,
 };

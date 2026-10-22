@@ -166,6 +166,8 @@ export class Director {
   private prisonId = '';
   /** Each inmate's last greetings (the talk panel's lines, apart from the bubbles' memory). */
   private greeted = new Map<number, number[]>();
+  /** The guards who let something about themselves slip today (P36): `day|guard`. */
+  private slipped = new Set<string>();
   /** Banks with lines tied to moments (only those need the moment worked out). */
   private timed = whenBanks('en');
 
@@ -173,6 +175,7 @@ export class Director {
   reset(sim: Sim, seed = 0) {
     this.active.length = 0;
     this.rumors = [];
+    this.slipped.clear();
     this.forget();
     this.queue = [];
     this.speakerNext.clear();
@@ -950,12 +953,37 @@ export class Director {
     if (!m && !g) return '';
     // A guard (P15): in its own voice; one already bribed winks.
     // A grudge shows first (a merchant who won't sell doesn't welcome anyone to the shop).
+    // A guard lets something about itself slip (P36), once a prison day: a word of its the player hasn't heard.
+    if (!m && !lookingAway(g, s.step)) {
+      const slip = this.slip(sim, who);
+      if (slip) return slip;
+    }
     const bank: BankId = !m ? (lookingAway(g, s.step) ? 'gu.bribed' : 'gr.gu') : m.opinion <= OPINION_LOW ? 'gr.in.low' : s.followers.includes(who) ? 'gr.in.follower' : sim.merchantOf(who) >= 0 && sim.shopsOpen ? 'gr.in.merchant' : m.opinion >= OPINION_HIGH ? 'gr.in.high' : 'gr.in.neutral';
     // Greetings keep their own memory: the last three aren't said again (the bubbles' memory untouched).
     const last = this.greeted.get(who) ?? [];
     const got = this.pickLine(sim, bank, who, undefined, true, last) ?? this.pickLine(sim, bank, who, undefined, true, []);
     if (!got) return '';
     this.greeted.set(who, [...last, got.line].slice(-3));
+    return got.text;
+  }
+
+  /**
+   * What a guard lets slip about itself on a chat (P36): its nickname, home town or team, the
+   * first the player hasn't heard, once a prison day; kept in the file as told by it. Null when
+   * it's said enough today, or there's nothing left to tell.
+   */
+  private slip(sim: Sim, who: number): string | null {
+    const k = who - sim.state.inmates.length;
+    const key = `${clockAt(sim.state.step).day}|${k}`;
+    if (this.slipped.has(key) || !sim.prison.guards[k]?.about) return null;
+    this.slipped.add(key);
+    const heard = new Set(this.rumors.map((r) => r.fact.key));
+    const kind = (['guardNick', 'guardHome', 'guardTeam'] as const).find((x) => !heard.has(`${x}:${k}`));
+    if (!kind) return null;
+    const fact: Fact = { kind, key: `${kind}:${k}`, guard: k };
+    const got = this.pickLine(sim, `gu.slip.${kind.slice(5).toLowerCase()}` as BankId, who, fact);
+    if (!got) return null;
+    this.rumors = keepRumors([{ fact, step: sim.state.step, by: who }, ...this.rumors.filter((r) => r.fact.key !== fact.key)]);
     return got.text;
   }
 

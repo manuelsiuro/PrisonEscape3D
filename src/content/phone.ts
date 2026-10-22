@@ -10,14 +10,23 @@ import { STEPS_PER_MINUTE } from '../sim/tuning';
 /**
  * A prison's pay phone: the tile the caller stands on (the phone hangs on the wall the caller
  * faces), the queue's tiles nearest first, the front gate's inside, Lou's car on the road; and
- * (P35) the internet kiosk, the same way: the tile in front of it, facing its wall.
+ * (P35) the internet kiosk, the same way: the tile in front of it, facing its wall; (P36) the
+ * release: where to report, and the doors out from there.
  */
-export const comms = (phone: [number, number, 1 | 5 | 9 | 13], line: Array<[number, number]>, gate: [number, number], car: [number, number, 1 | 5 | 9 | 13], kiosk: [number, number, 1 | 5 | 9 | 13]): CommsDef => ({
+export const comms = (
+  phone: [number, number, 1 | 5 | 9 | 13],
+  line: Array<[number, number]>,
+  gate: [number, number],
+  car: [number, number, 1 | 5 | 9 | 13],
+  kiosk: [number, number, 1 | 5 | 9 | 13],
+  release: { at: Array<[number, number]>; gates: Array<[number, number]>; bridge?: boolean },
+): CommsDef => ({
   phone: { x: phone[0], z: phone[1], face: phone[2] },
   line: line.map(([x, z]) => ({ x, z })),
   gate: { x: gate[0], z: gate[1] },
   car: { x: car[0], z: car[1], face: car[2] },
   kiosk: { x: kiosk[0], z: kiosk[1], face: kiosk[2] },
+  release: { at: release.at.map(([x, z]) => ({ x, z })), gates: release.gates.map(([x, z]) => ({ x, z })), ...(release.bridge ? { bridge: true } : {}) },
 });
 
 // ------------------------------------------------------------------ who's called

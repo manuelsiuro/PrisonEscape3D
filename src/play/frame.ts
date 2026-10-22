@@ -41,6 +41,7 @@ import { sightFor } from '../sim/systems/football';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 import { carWaiting, commsOf } from '../sim/systems/phone';
 import { kioskOf, loggedIn } from '../sim/systems/kiosk';
+import { calledNow, freedNow } from '../sim/systems/paperwork';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -180,6 +181,7 @@ const frameData: Frame = {
   nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
   phone: { offHook: false, car: false },
   kiosk: { on: false, photos: [] },
+  release: { called: false, freed: false },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
 };
@@ -577,6 +579,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The internet kiosk (P35): the screen awake while the player's logged in; the drawings pinned over the bed.
   f.kiosk.on = loggedIn(st);
   f.kiosk.photos = st.photos;
+  // The release desk (P36): its lamp while the name is called, and while the way out is open.
+  f.release.called = calledNow(st);
+  f.release.freed = freedNow(st);
   f.inked = st.inked;
   return f;
 }

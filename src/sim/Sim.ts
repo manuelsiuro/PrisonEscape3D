@@ -33,6 +33,7 @@ import { rats } from './systems/rats';
 import { smuggle } from './systems/smuggling';
 import { phone, wheels } from './systems/phone';
 import { kiosk } from './systems/kiosk';
+import { freedNow, paperwork } from './systems/paperwork';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -219,6 +220,8 @@ export class Sim {
     phone(this);
     // The internet kiosk (P35): mail call's goods and drawings, the time paid for, a course.
     kiosk(this);
+    // The paperwork escape (P36): the records at 22:00, the release at 10:00, its way out.
+    paperwork(this);
     // Race nights (P28): the off, a guard seeing the player at it, the finish.
     races(this);
     bribesWearOff(this);
@@ -344,7 +347,9 @@ export class Sim {
     const gate = from >= 0 && this.world.ground.kind[from] === TILE.DOOR;
     // (P24: off a roof on a glider; waved out through the checkpoint, its gates or its lowered drawbridge.)
     const bluff = from >= 0 && s.waved > 0 && this.world.checkpoint[from] === 1;
-    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : this.movedBy === 'glide' ? 'glider' : s.takeover ? 'takeover' : bluff ? 'bluff' : gate ? 'gate' : 'fence'));
+    // (P36: cleared for release, out through its doors or its lowered drawbridge.)
+    const paper = from >= 0 && freedNow(s) && this.world.release[from] === 1;
+    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : this.movedBy === 'glide' ? 'glider' : s.takeover ? 'takeover' : paper ? 'paperwork' : bluff ? 'bluff' : gate ? 'gate' : 'fence'));
     closeBox(this);
     // The crew close by slip out too (P23), on a way out they can take.
     s.crewOut = crewEscape(this, ESCAPES[s.via]);
@@ -517,6 +522,8 @@ export class Sim {
     w.setPicked(s.picked.length ? s.picked[0] : -1);
     // Waved through the checkpoint (P24): its way out open for the player.
     w.setWaved(s.waved > 0);
+    // Cleared for release (P36): its way out open for the player.
+    w.setFreed(freedNow(s));
     // Delivery day (P18): the vehicle's bay solid and its doors propped open while it's in; anyone where it parks steps aside.
     const arriving = !w.delivering;
     // (Its doors stay open behind it, that day, while the player is still out there: never shut out.)

@@ -74,6 +74,10 @@ import { updateAim } from './aim';
 import { coachOnce, markTip, seenTip } from './tips';
 import { FIRECRACKER, GLIDER } from '../sim/systems/structure';
 import { wavedLeft, windowAction } from './getaway';
+import { deskAction, freedLeft, releaseChip } from './paperwork';
+import { calledNow } from '../sim/systems/paperwork';
+/** The release's chip (P36), refilled. */
+const releaseHud = { icon: 'clipboard', color: '#d8b04a', text: '', time: '', soon: false, left: null, of: 1, sr: '' };
 const PEPPER = itemNumber('pepper');
 /** The Dig up button's face, refilled in place. */
 const upView: UpView = { fits: true, progress: 0, heard: false };
@@ -110,7 +114,7 @@ const GET_UP = { verb: '', what: '' };
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, wavedLeft: null, cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null, tipsy: null };
+const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, wavedLeft: null, wavedKey: 'hud.waved', cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null, tipsy: null };
 /** Tipsy (P28): the HUD's pill, refilled in place. */
 const tipsyHud = { until: '', left: 0, of: TIPSY_STEPS / STEPS_PER_MINUTE };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
@@ -196,7 +200,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     STOW.what = vehicleThe(sim);
   }
   // (P24: at the checkpoint's window with papers: showing them comes first there, as the sim has it.)
-  const papers = tail || st.stowed ? null : windowAction(sim, !!target || !!climb);
+  const papers = tail || st.stowed ? null : (deskAction(sim) ?? windowAction(sim, !!target || !!climb));
   v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
@@ -396,7 +400,9 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
   hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
   // Waved through (P24): the checkpoint's gates open for the player, how long for.
-  hudState.wavedLeft = wavedLeft(sim, a);
+  hudState.wavedLeft = wavedLeft(sim, a) ?? freedLeft(sim, a);
+  // (P36: or cleared for release, the release's way out: the same chip, its own words.)
+  hudState.wavedKey = st.waved ? 'hud.waved' : 'hud.freed';
   // The cold (P9): shown while it has built up at all, the energy pill frosted once it bites.
   coldHud.built = st.cold / COLD_STEPS;
   coldHud.left = (COLD_STEPS - st.cold) / STEPS_PER_SECOND;
@@ -426,6 +432,14 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   document.body.classList.toggle('baked', coldHud.bit && coldHud.hot);
   // The day (P17): the weather by the clock, the event's chip, the drill.
   dayHud(sim, hudState, a);
+  // (P36: the name on tomorrow's release list, or called this morning: its chip in the day's place.)
+  const rel = releaseChip(sim);
+  if (rel) {
+    releaseHud.text = rel;
+    releaseHud.sr = rel;
+    releaseHud.soon = calledNow(st);
+    hudState.today = releaseHud;
+  }
   hud.update(clock, zone, hudState);
   fileButton(g);
   paBoard.reducedMotion = settings.reducedMotion;

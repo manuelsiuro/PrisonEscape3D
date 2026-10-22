@@ -1,4 +1,6 @@
 import { OPEN_HOURS } from '../content/routine';
+import { FORGE_INT, RECORDS_MINUTE } from '../content/paperwork';
+import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { cornersOf } from '../content/grounds';
 import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
 import { quizOn } from '../sim/systems/quiz';
@@ -1120,7 +1122,66 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.glider.fly', touch: 'lesson.glider.flyTouch', done: (c) => c.sim.state.escaped > 0, fail: glideFail },
     ],
   },
+  {
+    // The paperwork escape, part one (P36): a blank release form forged and slipped into the release desk's tray, then the records at 22:00.
+    id: 'forgery',
+    icon: 'clipboard',
+    prison: CENTER_PERKS,
+    seed: 43,
+    setup: (sim) => {
+      // (An hour and a half before the records at 22:00: time to read, forge, walk and file.)
+      clockTo(sim, at(20, 30));
+      // (In the visiting room, the release desk by its south doors.)
+      place(sim, 30, 40, 5);
+      pockets(sim, 'release_form', 'ink');
+      sim.state.items.int = FORGE_INT;
+    },
+    steps: [
+      { text: 'lesson.forgery.forge', touch: 'lesson.forgery.forgeTouch', done: (c) => carries(c.sim, 'forged_release') || c.sim.state.release[0] > 0, fail: forgeryLate },
+      { text: 'lesson.forgery.file', touch: 'lesson.forgery.fileTouch', done: (c) => c.sim.state.release[0] > 0, goal: (sim) => releaseTile(sim), fail: forgeryLate },
+      { text: 'lesson.forgery.records', speed: 4, on: (e) => e.type === 'paper' && e.what === 'passed', failOn: (e) => (e.type === 'paper' && e.what === 'found' ? 'lesson.forgery.found' : null) },
+    ],
+  },
+  {
+    // The paperwork escape, part two (P36): the name called at 10:00, cleared at the desk, out through the doors.
+    id: 'release',
+    icon: 'run',
+    prison: CENTER_PERKS,
+    seed: 44,
+    setup: (sim) => {
+      clockTo(sim, DAY_TWO + at(9, 55));
+      place(sim, 30, 39, 5);
+      pockets(sim);
+      sim.state.release = [2, 0];
+    },
+    steps: [
+      { text: 'lesson.release.wait', done: (c) => calledNow(c.sim.state) || freedNow(c.sim.state), goal: (sim) => releaseTile(sim) },
+      { text: 'lesson.release.report', touch: 'lesson.release.reportTouch', done: (c) => freedNow(c.sim.state) || c.sim.state.escaped > 0, goal: (sim) => releaseTile(sim), failOn: releaseTurned },
+      { text: 'lesson.release.out', done: (c) => c.sim.state.escaped > 0, goal: () => tile(30, 62), fail: releaseShut },
+    ],
+  },
 ];
+
+/** The release desk's first tile (P36). */
+const releaseTile = (sim: Sim) => {
+  const q = sim.prison.comms!.release.at[0];
+  return tile(q.x, q.z);
+};
+/** The forgery lesson's dead end: 22:00 and no form in the tray. */
+function forgeryLate(c: LessonCtx): Key | null {
+  return !c.sim.state.release[0] && dayMinute(c.sim.state.step) >= RECORDS_MINUTE ? 'lesson.forgery.late' : null;
+}
+/** The release lesson's dead ends, each saying why: turned away at the desk (heat, contraband, a lockdown), not reported by 10:30. */
+function releaseTurned(e: SimEvent): Key | null {
+  if (e.type !== 'paper') return null;
+  if (e.what === 'turnedAway') return `lesson.release.turned.${e.why ?? 'heat'}` as Key;
+  return e.what === 'missed' ? 'lesson.release.late' : null;
+}
+/** Cleared, and the doors shut again before the player was out. */
+function releaseShut(c: LessonCtx): Key | null {
+  const s = c.sim.state;
+  return !s.escaped && !freedNow(s) ? 'lesson.release.shut' : null;
+}
 
 /** Whether a lookout posted on a tile would ever see a guard's round (any tile of it within WATCH_RANGE and in sight). */
 function seesRound(sim: Sim, post: number, guard: number): boolean {
@@ -1384,7 +1445,7 @@ export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readon
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
   { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin', 'kiosk'] },
-  { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
+  { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release'] },
 ];
 
 /** Where a lesson (its index in LESSONS) stands: its chapter, its number in it (from 1) and how many the chapter has. */

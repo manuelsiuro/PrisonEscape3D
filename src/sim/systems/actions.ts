@@ -5,6 +5,7 @@
  */
 import { CAKE, eatCake, lineOp, say, startCall } from './phone';
 import { bookMove, hiddenIn, kioskOp, openBook } from './kiosk';
+import { atRelease, atTray, fileForm, report } from './paperwork';
 import { playNote, quitShow, STAGE_QUIT, startShow } from './talent';
 import { answerQuiz, endQuiz, joinQuiz } from './quiz';
 import { digHelp, recall } from './crew';
@@ -103,6 +104,15 @@ export function useItems(sim: SimContext, cmd: number) {
       const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k));
       const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
       const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
+      // The release desk (P36): reporting there while the name is called, or a forged form slipped into its tray, comes first.
+      if (atRelease(sim)) {
+        report(sim);
+        break;
+      }
+      if (atTray(sim)) {
+        fileForm(sim);
+        break;
+      }
       // The checkpoint (P24): a fake ID shown at its window, first at the shift change (else when there's nothing else to do here).
       if (atWindow(sim) && windowFirst(sim, !!target || !!up)) {
         showId(sim);

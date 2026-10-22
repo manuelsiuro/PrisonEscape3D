@@ -555,7 +555,7 @@ export function askMoney(sim: SimContext): number {
 }
 
 /** Who searches a cell tipped off: the shakedown guard, else the first guard awake (-1 none). */
-function searcher(sim: SimContext): number {
+export function searcher(sim: SimContext): number {
   const s = sim.state;
   const defs = sim.world.def.guards;
   const k = defs.findIndex((d) => d.duties?.includes('shakedown'));

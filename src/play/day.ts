@@ -127,6 +127,8 @@ function say(sim: Sim, text: string) {
   if (settings.pa === 'off' || sim.state.sleeping) return;
   paBoard.say(wardenOf(sim), text);
 }
+/** (P36: the release's call, said by the hacking's announcements.) */
+export const announcePa = say;
 
 /** The morning card (or its short line): the day's greeting, what's on, the weather. */
 function morning(sim: Sim, first: boolean) {

@@ -162,6 +162,22 @@ const SHAPES: Record<string, Shape> = {
     ...[0, 0.035, 0.07].map((z) => box(0.12, 0.018, 0.012, 0x3a4250, 0.05, 0, z - 0.005)),
     cyl(0.025, 0.02, 0xd23f36, 0.11, 0, 0.065, 10),
   ],
+  /** A blank release form (P36): a sheet with its header band, ruled lines and an empty signature line. */
+  formBlank: (c) => [
+    box(0.24, 0.012, 0.32, c),
+    box(0.24, 0.015, 0.04, 0x9aa2ad, 0, 0, -0.135),
+    ...[-0.08, -0.045, -0.01, 0.025].map((z) => box(0.17, 0.015, 0.008, 0xb8b4a8, -0.01, 0, z)),
+    box(0.11, 0.015, 0.006, 0x3a4250, 0.04, 0, 0.1),
+  ],
+  /** A forged one: signed and stamped in navy. */
+  form: (c, a) => [
+    box(0.24, 0.012, 0.32, c),
+    box(0.24, 0.015, 0.04, 0x9aa2ad, 0, 0, -0.135),
+    ...[-0.08, -0.045, -0.01, 0.025].map((z) => box(0.17, 0.015, 0.008, 0xb8b4a8, -0.01, 0, z)),
+    box(0.11, 0.015, 0.006, 0x3a4250, 0.04, 0, 0.1),
+    turn(box(0.09, 0.017, 0.012, a), 0.35, 0.045, 0.085),
+    cyl(0.028, 0.016, a, -0.07, 0, 0.1, 10),
+  ],
   /** A glider's frame (P24): balsa, the keel and two leading edges in a V, a crossbar. */
   frame: (c, a) => [turn(stick(0.5, 0.016, c), 0, 0, 0), turn(stick(0.44, 0.016, c), 0.5, 0.0, -0.09), turn(stick(0.44, 0.016, c), -0.5, 0.0, 0.09), turn(stick(0.24, 0.012, a), Math.PI / 2, -0.05, 0)],
   /** A glider (P24): its sheet rolled round the frame, lashed with tape, the bar sticking out. */

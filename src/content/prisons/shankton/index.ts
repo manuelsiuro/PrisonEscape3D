@@ -162,6 +162,7 @@ const rollCall = [30, 32, 34].flatMap((z) => [32, 34, 36, 38].map((x) => ({ x, z
 const guards: GuardDef[] = [
   {
     name: 'Crane',
+    about: { nick: 'BIRDIE', home: 'TOLEDO', team: 'IRONMEN' },
     beat: [
       { x: 15, z: 10, wait: 3, face: 5 },
       { x: 16, z: 21, wait: 2, face: 13 },
@@ -180,6 +181,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Sully',
+    about: { nick: 'MOOSE', home: 'BUFFALO', team: 'SABRES' },
     beat: [
       { x: 25, z: 15, wait: 4, face: 5 },
       { x: 37, z: 15, wait: 3, face: 9 },
@@ -191,6 +193,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Ortega',
+    about: { nick: 'PADRE', home: 'LAREDO', team: 'MINERS' },
     trait: 'strict',
     beat: [
       { x: 16, z: 21, wait: 2, face: 13 },
@@ -204,6 +207,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Briggs',
+    about: { nick: 'PILLOW', home: 'AKRON', team: 'ROCKETS' },
     trait: 'lazy',
     beat: [
       { x: 30, z: 25, wait: 3, face: 5 },
@@ -224,6 +228,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Gibbs',
+    about: { nick: 'GRIFTER', home: 'CAMDEN', team: 'SHARKS' },
     trait: 'corrupt',
     beat: [
       { x: 44, z: 25, wait: 2, face: 5 },
@@ -236,6 +241,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Hale',
+    about: { nick: 'HAMMER', home: 'FLINT', team: 'PISTONS' },
     beat: [
       { x: 27, z: 43, wait: 3, face: 5 },
       { x: 27, z: 52, wait: 3, face: 13 },
@@ -247,6 +253,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Novak',
+    about: { nick: 'GADGET', home: 'YONKERS', team: 'WELDERS' },
     beat: [
       { x: 47, z: 43, wait: 3, face: 5 },
       { x: 44, z: 51, wait: 3, face: 13 },
@@ -257,6 +264,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Duffy',
+    about: { nick: 'BOOMER', home: 'DUBLIN', team: 'ROVERS' },
     beat: [
       { x: 20, z: 38, wait: 3, face: 1 },
       { x: 50, z: 38, wait: 3, face: 9 },
@@ -371,7 +379,7 @@ export const SHANKTON: PrisonDef = {
   // The gates no key opens (a takeover does): the shell's, and the gatehouse's either side.
   gates: [51, 52].flatMap((x) => [55, 58, 62].map((z) => ({ x, z }))),
   // (P24: waved out through the shell's gate and the gatehouse at the shift change; a glider off the shell with a strong wind behind it.)
-  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'bluff', 'glider'],
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'bluff', 'glider', 'paperwork'],
   // The checkpoint (P24): the gatekeeper's booth on the gravel just outside the shell's gate;
   // papers are shown from the control room, and waved through, the shell's gate and both of the
   // gatehouse's open.
@@ -400,6 +408,7 @@ export const SHANKTON: PrisonDef = {
   },
   // Rebuilt in 2.8 (P32): the rec ground in the kitchen's old block, the garden plot in the courtyard.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([36, 24, 13], [[37, 24], [38, 24], [39, 24], [40, 24]], [51, 54], [55, 63, 9], [24, 43, 9]),
+  // (P36: the release reported at the staff door off the corridor, then through the quarters, the control room and the shell's gates.)
+  comms: comms([36, 24, 13], [[37, 24], [38, 24], [39, 24], [40, 24]], [51, 54], [55, 63, 9], [24, 43, 9], { at: [[47, 39]], gates: [[47, 40], [51, 47], [51, 55], [52, 55], [51, 58], [52, 58], [51, 62], [52, 62]] }),
   map: 1,
 };

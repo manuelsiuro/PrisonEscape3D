@@ -709,6 +709,31 @@ play('glider', (bot) => {
   bot.use();
 });
 
+play('forgery', (bot, ctx) => {
+  // The form forged, filed at the desk with nobody watching, then the records at 22:00.
+  ctx.craftOpen = true;
+  bot.op(OP.CRAFT, (1 << bot.slotOf('release_form')) | (1 << bot.slotOf('ink')));
+  ctx.craftOpen = false;
+  check(bot.slotOf('forged_release') >= 0, 'forgery: the form forged');
+  const q = CENTER_PERKS.comms!.release.at[0];
+  check(bot.walkTo(tile(q.x, q.z), 2000), 'forgery: at the release desk');
+  bot.hold('forged_release');
+  bot.until(() => !bot.st.seen, 20 * 60 * 10);
+  bot.act();
+  check(bot.st.release[0] === 2, 'forgery: the name on tomorrow\'s list');
+  bot.until(() => bot.sim.clock.minuteOfDay >= 22 * 60 + 1, 20 * 60 * 90);
+});
+
+play('release', (bot) => {
+  // Called at 10:00, cleared at the desk, out through the doors to the road.
+  const q = CENTER_PERKS.comms!.release.at[0];
+  bot.until(() => bot.sim.clock.minuteOfDay >= 10 * 60, 20 * 60 * 10);
+  check(bot.walkTo(tile(q.x, q.z), 1000), 'release: at the desk');
+  bot.act();
+  check(bot.st.release[1] > 0, 'release: cleared');
+  bot.walkTo(tile(30, 62), 2000);
+});
+
 play('payphone', (bot) => {
   // In line beside the phone, Sparky talking: the secret overheard while waiting; then the call home, the money at mail call.
   const c = CENTER_PERKS.comms!;
@@ -877,6 +902,29 @@ function follow(id: string) {
   bot.until(() => !!why(), 40 * 20 * 60);
   check(why() === 'lesson.bluff.late', `bluff: the shift change missed ends the lesson (${why()})`);
   console.log(`bluff, late: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
+}
+{
+  // The forgery left in the pocket past 22:00: the lesson ends; the records finding it (the heat up): the same.
+  const late = follow('forgery');
+  late.bot.until(() => !!late.why(), 20 * 60 * 120);
+  check(late.why() === 'lesson.forgery.late', `forgery: 22:00 with no form filed ends the lesson (${late.why()})`);
+  const hot = follow('forgery');
+  hot.ctx.craftOpen = true;
+  hot.bot.op(OP.CRAFT, (1 << hot.bot.slotOf('release_form')) | (1 << hot.bot.slotOf('ink')));
+  const q = CENTER_PERKS.comms!.release.at[0];
+  hot.bot.walkTo(tile(q.x, q.z), 2000);
+  hot.bot.hold('forged_release');
+  hot.bot.until(() => !hot.bot.st.seen, 20 * 60 * 10);
+  hot.bot.act();
+  hot.bot.until(() => hot.bot.sim.clock.minuteOfDay >= 21 * 60 + 59, 20 * 60 * 90);
+  hot.bot.st.heat = 60;
+  hot.bot.until(() => !!hot.why(), 20 * 60 * 5);
+  check(hot.why() === 'lesson.forgery.found', `forgery: the records finding it ends the lesson (${hot.why()})`);
+  // The name not answered by 10:30: off the list, the lesson ends.
+  const off = follow('release');
+  off.bot.until(() => !!off.why(), 20 * 60 * 60);
+  check(off.why() === 'lesson.release.late', `release: not reported by 10:30 ends the lesson (${off.why()})`);
+  console.log(`forgery, late: ${late.why()}; found: ${hot.why()}; release, missed: ${off.why()}`);
 }
 {
   // Off the east edge into a strong east wind: down short of the fence, the glider wrecked.

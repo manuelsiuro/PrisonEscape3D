@@ -79,6 +79,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   // P24: waved out through the checkpoint on a fake ID; off a roof on a glider.
   { id: 'papersPlease', group: 'out', icon: 'idCard', escape: (e) => e.via === 'bluff' },
   { id: 'wingIt', group: 'out', icon: 'glider', escape: (e) => e.via === 'glider' },
+  // P36: walked out the front gate, your name on the release list.
+  { id: 'timeServed', group: 'out', icon: 'clipboard', escape: (e) => e.via === 'paperwork' },
   { id: 'houdini', group: 'out', icon: 'star', gives: 'topHat', career: (c) => c.prisons.some((p) => p.routes.length >= p.of) },
   { id: 'grandTour', group: 'out', icon: 'map', gives: 'crown', career: (c) => c.prisons.every((p) => p.routes.length > 0), progress: (c) => [c.prisons.filter((p) => p.routes.length > 0).length, c.prisons.length] },
   // Speed.
@@ -169,6 +171,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'familyGallery', group: 'life', icon: 'picture', ...counted('photos', 3) },
   { id: 'nightSchool', group: 'skills', icon: 'brain', ...counted('coursesPassed', 3) },
   { id: 'betweenTheLines', group: 'skills', icon: 'book', run: (r) => f(r, 'hiddenContraband') >= 1 },
+  // P36: a forged release form slipped into the tray.
+  { id: 'forger', group: 'skills', icon: 'clipboard', run: (r) => f(r, 'formsFiled') >= 1 },
   // The crew (P23).
   { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
   { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },
@@ -195,6 +199,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'snakeEyes', group: 'mishaps', icon: 'dice', hidden: true, run: (r) => f(r, 'snakeEyes') >= 1 },
   // P27: five airballs in a run.
   { id: 'brickLayer', group: 'mishaps', icon: 'ball', hidden: true, run: (r) => f(r, 'airballs') >= 5 },
+  // P36: the records check found the forgery.
+  { id: 'redTape', group: 'mishaps', icon: 'clipboard', hidden: true, run: (r) => f(r, 'formsFound') >= 1 },
   // Career.
   // The Daily Escape (P26).
   { id: 'dailyBread', group: 'daily', icon: 'calendar', escape: (e) => !!e.daily },

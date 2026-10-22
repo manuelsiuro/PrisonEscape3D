@@ -34,6 +34,8 @@ export interface HudState {
   takeoverLeft: number | null;
   /** Waved through the checkpoint (P24): seconds its gates stay open for the player (null: shut). */
   wavedLeft: number | null;
+  /** P36: whose way out it is (the checkpoint waved through, or cleared for release). */
+  wavedKey: Key;
   /** The cold (P9, GDD §4.2): how far it has built up (0–1; null: warm), seconds until it bites, and whether it has (energy costs double); `hot`: a heatwave's sun instead (P17). */
   cold: { built: number; left: number; bit: boolean; warming: boolean; hot: boolean } | null;
   /** A guard bribed to look the other way (P15): who, until when, game minutes left of it, out of how many (null: none). */
@@ -228,6 +230,8 @@ export class Hud {
   onOrder: () => void = () => {};
   private readonly wx: HTMLElement;
   private shownAlerts = '';
+  /** The open way's chip's icon (P36: the bluff's ID card, or the release's clipboard). */
+  private wavedIcon = 'idCard';
   private shownWx = '';
   private coldIcon = 'snow';
   private todayIcon = '';
@@ -443,12 +447,18 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
       this.alert(this.riot, 'hud.gatesOpen', s.takeoverLeft, 30);
-      this.alert(this.waved, 'hud.waved', s.wavedLeft, WAVED_SECS);
+      // (P36: cleared for release, the release's clipboard in place of the bluff's ID card.)
+      const ic = s.wavedKey === 'hud.freed' ? 'clipboard' : 'idCard';
+      if (ic !== this.wavedIcon) {
+        this.wavedIcon = ic;
+        this.waved.querySelector('svg')?.replaceWith(h('i', '', icon(ic, 15)).firstElementChild!);
+      }
+      this.alert(this.waved, s.wavedKey, s.wavedLeft, WAVED_SECS);
       this.chill(c);
       this.lookAway(s.bribe);
       this.tipsyChip(s.tipsy);

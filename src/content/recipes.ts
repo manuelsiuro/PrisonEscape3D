@@ -1,5 +1,6 @@
 import { KEY_ITEM_COLORS } from './items';
 import { BOOK_INT } from './kiosk';
+import { FORGE_INT } from './paperwork';
 
 /**
  * The crafting handbook (GDD §8.1). Up to three ingredients, in any order; an ingredient
@@ -78,6 +79,8 @@ export const RECIPES: readonly RecipeDef[] = [
   r('guitar', 30, 'timber', 'wire', 'duct_tape'),
   // P35: a thick book's pages cut out with a razor blade (kept: it cuts), a hiding place for one small item.
   { result: 'hollow_book', ingredients: ['thick_book', 'razor_blade'], int: BOOK_INT, keep: ['razor_blade'] },
+  // P36: a blank release form filled in and the strict guard's signature copied (content/paperwork.ts).
+  r('forged_release', FORGE_INT, 'release_form', 'ink'),
 ];
 
 /** The item ids an ingredient accepts. */

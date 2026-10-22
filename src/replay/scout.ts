@@ -22,11 +22,11 @@ const MERGE_STEPS = 60 * STEPS_PER_MINUTE;
 /** Quiet stretches shorter than this aren't worth a skip. */
 const QUIET_MIN = 2 * STEPS_PER_MINUTE;
 
-export const HIGHLIGHTS = ['caught', 'lockdown', 'ko', 'mishap', 'through', 'tunnel', 'vents', 'roof', 'power', 'takeover', 'stow', 'bluff', 'glide', 'escape'] as const;
+export const HIGHLIGHTS = ['caught', 'lockdown', 'ko', 'mishap', 'through', 'tunnel', 'vents', 'roof', 'power', 'takeover', 'stow', 'bluff', 'glide', 'release', 'escape'] as const;
 export type HighlightKind = (typeof HIGHLIGHTS)[number];
 
 /** Each highlight's icon on the scrubber. */
-export const HIGHLIGHT_ICON: Record<HighlightKind, string> = { caught: 'siren', lockdown: 'bell', ko: 'fist', mishap: 'heart', through: 'pick', tunnel: 'shovel', vents: 'screw', roof: 'hook', power: 'plug', takeover: 'users', stow: 'truck', bluff: 'idCard', glide: 'glider', escape: 'run' };
+export const HIGHLIGHT_ICON: Record<HighlightKind, string> = { caught: 'siren', lockdown: 'bell', ko: 'fist', mishap: 'heart', through: 'pick', tunnel: 'shovel', vents: 'screw', roof: 'hook', power: 'plug', takeover: 'users', stow: 'truck', bluff: 'idCard', glide: 'glider', release: 'clipboard', escape: 'run' };
 
 export interface Highlight {
   step: number;
@@ -95,6 +95,9 @@ export function highlightOf(e: SimEvent): HighlightKind | null {
       return e.on ? 'bluff' : null;
     case 'glide':
       return 'glide';
+    // (P36: cleared at the release desk.)
+    case 'paper':
+      return e.what === 'cleared' ? 'release' : null;
     case 'escaped':
       return 'escape';
     default:
