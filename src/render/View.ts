@@ -1574,6 +1574,9 @@ export class View {
     this.placeSun(600);
     const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.guide.group].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
+    // The pay phone hangs on its wall in game, but the title screen behind the shot hides its group.
+    const shown = [this.phoneView.group].filter((o) => !o.visible);
+    for (const o of shown) o.visible = true;
     this.renderer.setPixelRatio(ss);
     this.renderer.setSize(w, h, false);
     skipEmpty(this.scene);
@@ -1588,6 +1591,7 @@ export class View {
     const el = this.renderer.domElement;
     g.drawImage(el, 0, 0, el.width, el.height, 0, 0, w, h);
     for (const o of hidden) o.visible = true;
+    for (const o of shown) o.visible = false;
     if (this.sun.castShadow) resize(kept.shadow);
     this.renderer.setPixelRatio(kept.ratio);
     this.target.copy(kept.target);

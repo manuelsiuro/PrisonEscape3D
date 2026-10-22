@@ -239,6 +239,39 @@ function drawDecor(g: Svg, def: PrisonDef) {
   }
 }
 
+/** The pay phone (P34): a bar on the wall it hangs on (the caller faces it), the queue's tiles 1… nearest first; with `lou`, the car alarm by the front gate and Lou's getaway car on the road. */
+function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
+  const c = def.comms;
+  if (!c) return;
+  const teal = '#0f766e';
+  const [fx, fz] = face(c.phone.face);
+  const ex = cx(c.phone.x) + (fx * S) / 2;
+  const ez = cz(c.phone.z) + (fz * S) / 2;
+  const across = Math.round(fx) !== 0;
+  if (across) g.add(`<line x1="${ex}" y1="${ez - S / 2 + 4}" x2="${ex}" y2="${ez + S / 2 - 4}" stroke="${teal}" stroke-width="7"/>`);
+  else g.add(`<line x1="${ex - S / 2 + 4}" y1="${ez}" x2="${ex + S / 2 - 4}" y2="${ez}" stroke="${teal}" stroke-width="7"/>`);
+  g.rect(px(c.phone.x) + 7, pz(c.phone.z) + 7, S - 14, S - 14, `rx="5" fill="${teal}"`);
+  g.text(cx(c.phone.x), cz(c.phone.z) + 3.5, 'tel', 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
+  const line = [c.phone, ...c.line];
+  g.add(`<polyline points="${line.map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="${teal}" stroke-width="2" stroke-dasharray="3 3"/>`);
+  c.line.forEach((q, k) => {
+    g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="8" fill="#fff" stroke="${teal}" stroke-width="2"/>`);
+    g.text(cx(q.x), cz(q.z) + 3.5, `${k + 1}`, `font-size="9" font-weight="700" fill="${teal}" text-anchor="middle"`);
+  });
+  g.pill(cx(c.phone.x), cz(c.phone.z) + S * 0.62, 'PAY PHONE', 9, teal);
+  if (!lou) return;
+  const red = '#be123c';
+  g.add(`<circle cx="${cx(c.gate.x)}" cy="${cz(c.gate.z)}" r="11" fill="rgba(190,18,60,0.2)" stroke="${red}" stroke-width="2.5" stroke-dasharray="4 3"/>`);
+  g.pill(cx(c.gate.x), cz(c.gate.z) - 18, 'CAR ALARM', 9, red);
+  const [ax, az] = face(c.car.face);
+  const long = Math.round(ax) !== 0;
+  const cw = long ? S * 1.6 : S * 0.8;
+  const cd = long ? S * 0.8 : S * 1.6;
+  g.rect(cx(c.car.x) - cw / 2, cz(c.car.z) - cd / 2, cw, cd, `rx="6" fill="${red}" stroke="#000" stroke-width="1.5"`);
+  arrow(g, c.car.x, c.car.z, c.car.face, '#fff', 14);
+  g.pill(cx(c.car.x), cz(c.car.z) - cd / 2 - 10, "LOU'S CAR", 9, red);
+}
+
 function drawMarks(g: Svg, def: PrisonDef) {
   for (const q of def.rollCall) g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="6" fill="#fff" stroke="#c2410c" stroke-width="2.5"/>`);
   const s = def.spawn;
@@ -431,7 +464,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
           'Red dashed lines: zone borders (between two named zones; walls are "none"). Red pills: zone names, once per patch.',
           'Dark boxes: solid props (named; yellow dot = the side it faces). Light dashed boxes: props walked over (benches, seats, chairs, showers, bleachers).',
           'Pink: decor (pink bar = a wall piece, on the wall it hangs on; pink outline = a floor piece). Doors: c<n> = cell n\'s door, GATE = perimeter gate (no key opens it).',
-          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1).',
+          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…',
         ]
       : kind === 'people'
         ? [
@@ -439,6 +472,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
             'White squares = posts (where a guard stands during a block: rollCa(ll), breakf(ast), exerci(se), showers, dinner…). Lines are straight between stops, not the walked path.',
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
+            'Pay phone: the phone and its queue 1… (teal). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
           ]
         : [
             'Layer +1 over the faded ground floor: grey = ducts, blue V = ceiling grates (down into the room below), green L = the ladder up to the roof.',
@@ -468,7 +502,7 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
   const name = def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id);
-  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint' : 'vents (layer +1) and boulders under the ground (layer -1)';
+  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone' : 'vents (layer +1) and boulders under the ground (layer -1)';
   g.text(M, 30, `${name} — ${what}`, 'font-size="24" font-weight="700" fill="#111"');
   g.text(W - M, 30, `v${pkg.version} · map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
   drawTiles(g, w, kind !== 'layout');
@@ -477,12 +511,14 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
     drawZones(g, w, false);
     drawProps(g, def);
     drawDecor(g, def);
+    drawComms(g, def, false);
     drawCells(g, def);
     drawMarks(g, def);
     drawZones(g, w, true);
   } else if (kind === 'people') {
     drawZones(g, w, false);
     drawPeople(g, def);
+    drawComms(g, def, true);
     drawZones(g, w, true);
   } else {
     drawVents(g, w);
@@ -539,6 +575,13 @@ function tileData(def: PrisonDef, n: number) {
   if (def.delivery) mark(def.delivery.tail.x, def.delivery.tail.z, 'delivery tail (stowaway climbs in)');
   for (const q of def.checkpoint?.window ?? []) mark(q.x, q.z, 'checkpoint ID window');
   if (def.checkpoint) mark(def.checkpoint.booth.x, def.checkpoint.booth.z, 'checkpoint booth');
+  if (def.comms) {
+    const c = def.comms;
+    mark(c.phone.x, c.phone.z, `pay phone (the caller stands here, facing ${c.phone.face})`);
+    c.line.forEach((q, k) => mark(q.x, q.z, `pay phone queue, place ${k + 1}`));
+    mark(c.gate.x, c.gate.z, "Lou's car alarm (inside the front gate)");
+    mark(c.car.x, c.car.z, "Lou's getaway car (on the road)");
+  }
   const V = w.layers[LAYER.VENTS].kind;
   const U = w.layers[LAYER.UNDER].kind;
   const above: Array<[number, number, string]> = [];
