@@ -13,6 +13,8 @@
  * and every phrasing of every fact, in English and French, says the fact's own numbers.
  * Zero false facts; the snapshot holds how many of each kind were checked.
  */
+import { pocketOf } from '../src/sim/systems/items';
+import { RECORDS_HEAT, RECORDS_MINUTE } from '../src/content/paperwork';
 import { LINE_DAY } from '../src/content/phone';
 import { wantsCall } from '../src/sim/systems/phone';
 import { itemDef } from '../src/content/items';
@@ -242,6 +244,15 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       const at = (f.t1! - ROUTINE[0].start + 1440) % 1440;
       return !!sim.prison.comms && day >= LINE_DAY && s.phoned[6] > 0 && [0, 1].some((b) => wantsCall(s.salt, day, b, f.inmate!) === at);
     }
+    // The paperwork escape (P36): the blank forms in that guard's pockets; the records' hour and heat as the rule has them; a guard's words its own.
+    case 'releaseForms':
+      return s.items.containers[pocketOf(sim.world, s.inmates.length + f.guard!)].some((v) => itemOf(v) === n('release_form')) && !!sim.prison.guards[f.guard!].duties?.includes('shakedown');
+    case 'recordsCheck':
+      return f.t1 === (RECORDS_MINUTE + ROUTINE[0].start) % 1440 && f.n === RECORDS_HEAT && !!sim.prison.comms;
+    case 'guardNick':
+    case 'guardHome':
+    case 'guardTeam':
+      return !!sim.prison.guards[f.guard!]?.about;
     default:
       return true;
   }

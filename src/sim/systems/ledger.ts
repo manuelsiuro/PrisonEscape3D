@@ -173,6 +173,11 @@ export const FEATS = [
   'coursesPassed',
   'hidden',
   'hiddenContraband',
+  // v2.12 (P36, the paperwork escape): forged forms slipped into the release tray, forgeries found at the records check, cleared at the release desk, turned away there.
+  'formsFiled',
+  'formsFound',
+  'released',
+  'turnedAway',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -381,6 +386,12 @@ export function ledger(sim: Sim, x: number, z: number) {
           f[FEAT.hidden]++;
           if (e.item && itemDef(e.item).contraband) f[FEAT.hiddenContraband]++;
         }
+        break;
+      case 'paper':
+        if (e.what === 'filed') f[FEAT.formsFiled]++;
+        else if (e.what === 'found') f[FEAT.formsFound]++;
+        else if (e.what === 'cleared') f[FEAT.released]++;
+        else if (e.what === 'turnedAway') f[FEAT.turnedAway]++;
         break;
       case 'quiz':
         if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {

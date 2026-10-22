@@ -60,6 +60,17 @@
   ledger: glides 1, glideFar 5; walked 454 tiles; days escaped
   → out day 1 23:45 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the west, strength 1: 5 tiles
+== paperwork
+  day 1 18:29 form filed: on the release list for day 2
+  day 1 22:00 the records: the form passes
+  day 2 01:04 bed check: pass
+  day 2 04:29 bed check: pass
+  day 2 10:00 the name called
+  day 2 10:09 cleared at the desk
+  day 2 10:14 ESCAPED (paperwork)
+  saved and loaded at day 1 21:07 (playerCell) resumes, day 2 07:37 (playerCell) resumes, day 2 09:43 (canteen) resumes, day 2 10:06 (yard) resumes
+  ledger: formsFiled 1, released 1; walked 592 tiles; days quiet / escaped
+  → out day 2 10:14 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == stalag-flucht
   cutout: the fence cut 5.3 s after the power went off
 == stalag-flucht: perimeter cutout
@@ -118,6 +129,17 @@
   ledger: glides 1, glideFar 5; walked 354 tiles; days escaped
   → out day 1 23:30 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the west, strength 1: 5 tiles
+== stalag-flucht: paperwork
+  day 1 18:27 form filed: on the release list for day 2
+  day 1 22:00 the records: the form passes
+  day 2 01:18 bed check: pass
+  day 2 04:47 bed check: pass
+  day 2 10:00 the name called
+  day 2 10:11 cleared at the desk
+  day 2 10:12 ESCAPED (paperwork)
+  saved and loaded at day 1 21:06 (playerCell) resumes, day 2 07:34 (playerCell) resumes, day 2 09:40 (canteen) resumes, day 2 10:04 (yard) resumes
+  ledger: formsFiled 1, released 1; walked 488 tiles; days quiet / escaped
+  → out day 2 10:12 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == shankton
   cutout: the fence cut 6.9 s after the power went off
 == shankton: perimeter cutout
@@ -185,6 +207,19 @@
   ledger: glides 1, glideFar 7; walked 422 tiles; days escaped
   → out day 1 23:44 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the north, strength 2: 7 tiles
+== shankton: paperwork
+  day 1 18:16 detector: shielded (19 passes left)
+  day 1 18:18 detector: shielded (18 passes left)
+  day 1 18:26 form filed: on the release list for day 2
+  day 1 22:00 the records: the form passes
+  day 2 00:41 bed check: pass
+  day 2 04:30 bed check: pass
+  day 2 10:00 the name called
+  day 2 10:08 cleared at the desk
+  day 2 10:15 ESCAPED (paperwork)
+  saved and loaded at day 1 21:07 (playerCell) resumes, day 2 07:37 (playerCell) resumes, day 2 09:43 (canteen) resumes, day 2 10:07 (corridor) resumes
+  ledger: formsFiled 1, released 1; walked 586 tiles; days quiet / escaped
+  → out day 2 10:15 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == san-pancho
 == san-pancho: tunnel
   day 1 23:12 climbDown → layer 0
@@ -224,6 +259,17 @@
   ledger: stowed 1; walked 273 tiles; days escaped
   → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   seed 49: the search a quick look
+== san-pancho: paperwork
+  day 1 18:23 form filed: on the release list for day 2
+  day 1 22:00 the records: the form passes
+  day 2 01:29 bed check: pass
+  day 2 05:04 bed check: pass
+  day 2 10:00 the name called
+  day 2 10:10 cleared at the desk
+  day 2 10:17 ESCAPED (paperwork)
+  saved and loaded at day 1 21:08 (playerCell) resumes, day 2 07:39 (playerCell) resumes, day 2 09:45 (canteen) resumes, day 2 10:09 (library) resumes
+  ledger: formsFiled 1, released 1; walked 535 tiles; days quiet / escaped
+  → out day 2 10:17 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == irongate
   raft: the dock fence cut 25.8 s after GEN-2 went off
 == irongate: raft
@@ -299,3 +345,16 @@
   saved and loaded at day 1 13:55 (woodshop) resumes, day 1 18:40 (playerCell) resumes, day 1 19:37 (walkway) resumes, day 1 19:47 (walkway) resumes
   ledger: spotted 1, maxHeat 20, waved 1; walked 338 tiles; days spotted+escaped
   → out day 1 19:51 by bluff; heat peak 20%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+== irongate: paperwork
+  day 1 18:18 detector: shielded (19 passes left)
+  day 1 18:20 detector: shielded (18 passes left)
+  day 1 18:25 form filed: on the release list for day 2
+  day 1 22:00 the records: the form passes
+  day 2 01:18 bed check: pass
+  day 2 05:01 bed check: pass
+  day 2 10:00 the name called
+  day 2 10:04 cleared at the desk
+  day 2 10:09 ESCAPED (paperwork)
+  saved and loaded at day 1 21:04 (playerCell) resumes, day 2 07:32 (playerCell) resumes, day 2 09:38 (canteen) resumes, day 2 10:01 (canteen) resumes
+  ledger: formsFiled 1, released 1; walked 526 tiles; days quiet / escaped
+  → out day 2 10:09 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0

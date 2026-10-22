@@ -2220,4 +2220,53 @@ export const frBarks: Barks = {
     "Psst : le rat de {inmate} boude sa gamelle aujourd’hui.",
     "{inmate} a oublié de nourrir son rat. Il sera lent ce soir.",
   ],
+  "go.guardNick": [
+    "Les autres matons appellent {guard} « {nick} ». Pas en face, hein.",
+    "Le surnom de {guard} en salle de pause ? {nick}. Demande pas pourquoi.",
+    "J’ai entendu les gardiens appeler {guard} « {nick} ». Ça lui va bien.",
+  ],
+  "go.guardHome": [
+    "{guard} a grandi à {home}. Intarissable sur le sujet.",
+    "Parle de {home} à {guard} et tu perds une heure.",
+    "{guard} garde une carte postale de sa ville, {home}, au poste de garde.",
+  ],
+  "go.guardTeam": [
+    "{guard} supporte les {team}. Ils ont encore perdu, alors fais gaffe.",
+    "Sur la tasse de {guard}, c’est écrit {team}. Tous les jours.",
+    "Parle des {team} et {guard} devient tout doux.",
+  ],
+  "go.releaseForms": [
+    "C’est {guard} qui a les formulaires de libération vierges. Et qui signe.",
+    "Sortir en règle ? Les formulaires sont dans les poches de {guard}.",
+    "{guard} a les formulaires de libération dans ses poches. Un neuf chaque matin.",
+  ],
+  "go.recordsCheck": [
+    "Formulaires de libération vérifiés à {t1}. Suspicion à {n} %, ils relisent.",
+    "Ton nom sur la liste de libération ? Tiens-toi tranquille jusqu’à {t1}.",
+    "À {t1}, ils relisent les libérations de demain. Têtes brûlées, recalées.",
+  ],
+  "gu.slip.nick": [
+    "Les collègues m’appellent {nick}. T’es pas un collègue.",
+    "M’appelle pas {nick}. Ça, c’est pour le personnel.",
+    "Quelqu’un a crié « {nick} » ? C’est moi. Laisse tomber.",
+    "{nick}, qu’on m’appelle. Longue histoire. Quoi ?",
+    "Agent {me}. Pas {nick}. Pas pour toi.",
+    "Même le directeur m’appelle {nick}, maintenant. Parle.",
+  ],
+  "gu.slip.home": [
+    "Vite. Je préférerais être à {home}.",
+    "Chez moi, à {home}, personne me dérange comme ça.",
+    "Cet endroit ? Tout gris. Rien à voir avec {home}. Quoi ?",
+    "Encore deux ans, et je rentre à {home}. Quoi encore ?",
+    "À {home}, on t’aurait vite remis au pas. Parle.",
+    "Ça sent la pluie. Comme à {home}. Tu veux quoi ?",
+  ],
+  "gu.slip.team": [
+    "Vite, les {team} jouent à vingt heures.",
+    "Si les {team} perdent encore, je serai pas d’humeur. Quoi ?",
+    "Pour les {team} ? Non ? Alors tu veux quoi ?",
+    "Les {team} ont gagné ! Demande. Dans la limite du raisonnable.",
+    "Chut. J’attends le score des {team}. Quoi ?",
+    "Les {team}, en tête du championnat. Bon, quoi ?",
+  ],
 };

@@ -284,6 +284,7 @@ const NEEDS: Record<string, string[][]> = {
   stowaway: [],
   bluff: [['fake_id'], ['guard_outfit']],
   glider: [['glider']],
+  paperwork: [['forged_release']],
 };
 const choices = (ing: string) => ing.split('|');
 function obtainable(closed: readonly string[]): Set<string> {

@@ -170,8 +170,10 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
     if (used + v.length > cap) throw new Error('QuotaExceededError');
     mem.set(k, v);
   };
-  mem.set('pe3d.other.game', 'x'.repeat(Math.max(0, logsSize - 6500)));
-  check(logsSize > 7000, `logs to make room with (${logsSize})`);
+  // (Room for the save, the size it is, only with the logs gone: P36's state made a save bigger than the 6500 this once assumed.)
+  const saveSize = (mem.get('pe3d.save.1') ?? '').length + 50;
+  mem.set('pe3d.other.game', 'x'.repeat(Math.max(0, logsSize - saveSize)));
+  check(logsSize > saveSize + 500, `logs to make room with (${logsSize})`);
   check(writeSave('auto', sim, 'test', [], saved), 'storage full: the save is written');
   check(!mem.has(KEYS.log1) && !mem.has(replayBestKey('center-perks')), 'every log and replay made room for it');
   mem.delete('pe3d.other.game');

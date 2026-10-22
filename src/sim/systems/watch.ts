@@ -74,6 +74,8 @@ export function watch(sim: SimContext) {
   const zone = sim.playerZone;
   const it = s.items;
   const disguised = inDisguise(sim);
+  // (P36: cleared for release, out through staff rooms with the guards' blessing.)
+  const cleared = disguised || s.release[1] > 0;
   let reason = 0;
   let heat = 0;
   // Out of the cell after Lights Out (past the walk home), or somewhere staff only: 100%.
@@ -89,17 +91,17 @@ export function watch(sim: SimContext) {
   else if (tampered) [reason, heat] = [SPOT.indexOf('tampering'), 100];
   else if (found) [reason, heat] = [SPOT.indexOf('damage'), 100];
   else if (swung && !inFoodFight(sim)) [reason, heat] = [SPOT.indexOf('brawl'), s.step === s.swingAt ? SELF_DEFENSE_HEAT : 0];
-  else if (eyes && !disguised && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
-  else if (eyes && !disguised && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
+  else if (eyes && !cleared && late && zone !== 'playerCell') [reason, heat] = [SPOT.indexOf('night'), 100];
+  else if (eyes && !cleared && RESTRICTED.includes(zone)) [reason, heat] = [SPOT.indexOf('restricted'), 100];
   // A camera sees what a guard would sound the alarm for (GDD §5.6).
   const filmed = cameraSeesPlayer(sim);
   if (!reason && filmed) {
     const fighting = s.step - s.swingAt <= STRIKE_SEEN_STEPS && !s.selfDefense;
     const working = s.step - s.struckAt <= STRIKE_SEEN_STEPS;
-    if (fighting || working || (!disguised && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone)))) [reason, heat] = [SPOT.indexOf('camera'), 100];
+    if (fighting || working || (!cleared && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone)))) [reason, heat] = [SPOT.indexOf('camera'), 100];
   }
   // A searchlight's beam at night (GDD §5.2): +35% a second in it, the alarm (guards sent) as it finds the player.
-  const lit = !disguised && powered(sim.world, s, 'searchlights') && ROUTINE[s.routine].id === 'lightsOut' && s.layer === LAYER.GROUND && inBeam(sim.world, p, s.step) >= 0;
+  const lit = !cleared && powered(sim.world, s, 'searchlights') && ROUTINE[s.routine].id === 'lightsOut' && s.layer === LAYER.GROUND && inBeam(sim.world, p, s.step) >= 0;
   if (lit && !s.lit) summon(sim, here, 2);
   s.lit = lit;
   if (!reason && lit) [reason, heat] = [SPOT.indexOf('searchlight'), s.step % 4 === 0 ? SEARCHLIGHT_HEAT : 0];

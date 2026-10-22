@@ -167,6 +167,7 @@ const rollCall = [23, 25].flatMap((z) => [14, 17, 20, 23, 26].map((x) => ({ x, z
 const guards: GuardDef[] = [
   {
     name: 'Kessler',
+    about: { nick: 'KAISER', home: 'LUZERN', team: 'ADLER' },
     beat: [
       { x: 8, z: 13, wait: 3, face: 1 },
       { x: 21, z: 13, wait: 2, face: 5 },
@@ -185,6 +186,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Brandt',
+    about: { nick: 'BRUMMI', home: 'KASSEL', team: 'BULLEN' },
     beat: [
       { x: 11, z: 31, wait: 3, face: 5 },
       { x: 17, z: 35, wait: 3, face: 9 },
@@ -196,6 +198,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Weber',
+    about: { nick: 'PAPST', home: 'MAINZ', team: 'FALKEN' },
     trait: 'strict',
     beat: [
       { x: 31, z: 31, wait: 3, face: 5 },
@@ -209,6 +212,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Huber',
+    about: { nick: 'MURMEL', home: 'BOZEN', team: 'BIBER' },
     trait: 'lazy',
     beat: [
       { x: 10, z: 42, wait: 3, face: 1 },
@@ -227,6 +231,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Lang',
+    about: { nick: 'FUCHS', home: 'PASSAU', team: 'LUCHSE' },
     trait: 'corrupt',
     beat: [
       { x: 43, z: 31, wait: 3, face: 9 },
@@ -239,6 +244,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Fink',
+    about: { nick: 'SPATZ', home: 'DRESDEN', team: 'KICKERS' },
     beat: [
       { x: 8, z: 51, wait: 3, face: 1 },
       { x: 11, z: 48, wait: 3, face: 5 },
@@ -330,7 +336,7 @@ export const STALAG_FLUCHT: PrisonDef = {
   ],
   rules: { cold: true },
   // (P24: a glider off the generator hut's east edge, with the wind behind it.)
-  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'glider'],
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'glider', 'paperwork'],
   // Delivery day (P18): the Red Cross truck backs in through the south gate and up the camp's
   // middle path (a lane left beside it); the south guard walks round it, and searches it two
   // days in five.
@@ -372,6 +378,7 @@ export const STALAG_FLUCHT: PrisonDef = {
   },
   // Rebuilt in 2.8 (P32): the sports ground in the guards' compound, the garden along the north wire.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([13, 51, 13], [[14, 51], [15, 51], [16, 51], [17, 51]], [20, 60], [24, 63, 1], [17, 54, 13]),
+  // (P36: the release reported in the yard at the front gate.)
+  comms: comms([13, 51, 13], [[14, 51], [15, 51], [16, 51], [17, 51]], [20, 60], [24, 63, 1], [17, 54, 13], { at: [[20, 60], [21, 60]], gates: [[20, 61], [21, 61]] }),
   map: 1,
 };

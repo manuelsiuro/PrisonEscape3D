@@ -21,7 +21,7 @@ import { hashStr } from './voice';
  * · {guard} {guard.full} a guard · {here.at} {here.the} where the speaker stands ·
  * {place.at} {place.the} a room · {item} {item.a} {item.the} {item.my} · {time} {block}
  * {next} {day} {weekday} · {meal} today's dish (the meal at hand), {dinner} tonight's · {event}
- * what happened today · and gossip's own: {n} {m} {t1} {t2} {key}.
+ * what happened today · and gossip's own: {n} {m} {t1} {t2} {key} · (P36) a guard's {nick} {home} {team}.
  */
 export interface FillContext {
   lang: Lang;
@@ -55,7 +55,7 @@ export function slotsOf(text: string): string[] {
 }
 
 /** The slots the director can fill (chattertest checks every line's against it). */
-export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'dinner', 'event', 'n', 'm', 't1', 't2', 'key', 'dog']);
+export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'dinner', 'event', 'n', 'm', 't1', 't2', 'key', 'dog', 'nick', 'home', 'team']);
 
 const hhmm = (minute: number) => `${String(Math.floor(minute / 60) % 24).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -219,6 +219,15 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
     case 'key':
       v = fact?.color ? t(`keyColor.${fact.color}` as Key) : null;
       break;
+    // A guard's life (P36): the fact's guard's, else the guard speaking's; as it's said (not the password's capitals).
+    case 'nick':
+    case 'home':
+    case 'team': {
+      const k = fact?.guard ?? ctx.speaker - s.inmates.length;
+      const w = sim.prison.guards[k]?.about?.[name];
+      v = w ? w.charAt(0) + w.slice(1).toLowerCase() : null;
+      break;
+    }
     // A guard dog (P19): the fact's, the dog of the guard speaking, else one of the prison's.
     case 'dog': {
       const dogs = handlersOf(sim.world);

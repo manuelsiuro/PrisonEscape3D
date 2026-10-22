@@ -175,6 +175,8 @@ const playerAbout = (sim: SimContext) => sim.state.layer === LAYER.GROUND && !si
 export function outOfBounds(sim: SimContext): boolean {
   const s = sim.state;
   if (s.lockdown || s.heat >= CHASE_HEAT) return true;
+  // (P36: cleared for release, walked out through staff rooms: no trail.)
+  if (s.release[1] > 0) return false;
   const zone = sim.playerZone;
   return (afterHours(s) && zone !== 'playerCell') || RESTRICTED.includes(zone);
 }

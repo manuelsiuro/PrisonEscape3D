@@ -40,6 +40,7 @@ import { thorough } from '../src/sim/systems/delivery';
 import { Sim } from '../src/sim/Sim';
 import { shiftChange } from '../src/sim/systems/getaway';
 import { BLUFF_HEAT } from '../src/content/getaways';
+import { RELEASE_HEAT } from '../src/content/paperwork';
 
 /** The run's ledger in a line (P16): counters that moved, and each day's bits. */
 export function ledgerLine(feats: readonly number[], days: readonly number[]): string {
@@ -91,7 +92,7 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.until(() => false, 10 * STEPS_PER_MINUTE);
 }
 
-export type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider';
+export type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider' | 'paperwork';
 
 /** Where each route goes in a prison: tiles as [x, z], with a facing where it matters. */
 export interface Plan {
@@ -155,6 +156,8 @@ export interface Plan {
   /** The glider (P24): the roof's edge to glide off and which way, and the day's wind forced for it (where from, how strong). */
   glide?: [number, number, number];
   glideWind?: [number, number];
+  /** Paperwork (P36): what goes to the release desk with the forged form (a pouch through the arches). */
+  paperKit?: string[];
 }
 
 export const PLANS: Plan[] = [
@@ -162,7 +165,7 @@ export const PLANS: Plan[] = [
     def: CENTER_PERKS,
     seed: 11,
     name: (r) => r,
-    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'bluff', 'glider'],
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'bluff', 'glider', 'paperwork'],
     keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_green'],
     bluffKit: ['plastic_key_green', 'guard_outfit', 'fake_id'],
     glide: [57, 39, DIR.EAST],
@@ -185,7 +188,7 @@ export const PLANS: Plan[] = [
     def: STALAG_FLUCHT,
     seed: 21,
     name: (r) => `${STALAG_FLUCHT.id}: ${r}`,
-    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'glider'],
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'glider', 'paperwork'],
     keys: ['plastic_key_yellow', 'plastic_key_purple'],
     glide: [58, 24, DIR.EAST],
     glideWind: [6, 1],
@@ -221,7 +224,8 @@ export const PLANS: Plan[] = [
     def: SHANKTON,
     seed: 31,
     name: (r) => `${SHANKTON.id}: ${r}`,
-    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'bluff', 'glider'],
+    routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'bluff', 'glider', 'paperwork'],
+    paperKit: ['pouch'],
     keys: ['plastic_key_yellow', 'plastic_key_purple'],
     bluffKit: ['plastic_key_red', 'guard_outfit', 'fake_id', 'pouch'],
     glide: [38, 55, DIR.SOUTH],
@@ -253,7 +257,7 @@ export const PLANS: Plan[] = [
     def: SAN_PANCHO,
     seed: 41,
     name: (r) => `${SAN_PANCHO.id}: ${r}`,
-    routes: ['tunnel', 'gate', 'takeover', 'stowaway'],
+    routes: ['tunnel', 'gate', 'takeover', 'stowaway', 'paperwork'],
     stowKit: ['plastic_key_red', 'guard_outfit'],
     keys: ['plastic_key_yellow', 'plastic_key_red', 'plastic_key_green'],
     desk: [15, 12],
@@ -280,7 +284,8 @@ export const PLANS: Plan[] = [
     def: IRONGATE,
     seed: 51,
     name: (r) => `${IRONGATE.id}: ${r}`,
-    routes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff'],
+    routes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff', 'paperwork'],
+    paperKit: ['pouch'],
     bluffKit: ['plastic_key_red', 'guard_outfit', 'fake_id', 'pouch'],
     stowKit: ['plastic_key_red', 'guard_outfit', 'pouch', 'firecracker'],
     stowLure: [33, 50],
@@ -861,6 +866,59 @@ function glider(p: Plan, seed: number) {
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
 
+// ------------------------------------------------------------------ 11. paperwork (P36)
+/**
+ * The day kept, then (the forged release form from the desk, a pouch where arches stand on the
+ * way) to the release desk in evening free time: the form slipped into its tray with no guard
+ * watching. Roll call, the pouch back in the desk, Lights Out; the records pass the form at 22:00
+ * (the heat low). At 10:00 the PA calls the name: reported at the desk, cleared, and out through
+ * the doors that open for the player alone, in their own clothes.
+ */
+function paperwork(p: Plan, seed: number) {
+  const bot = new Bot(p.def, seed);
+  const st = bot.st;
+  const kit = ['forged_release', ...(p.paperKit ?? [])];
+  bot.stash(...kit);
+  check(bot.routineUntil(1, 18 * 60 + 5), 'the day kept');
+  const places = placesOf(bot.sim.world);
+  // (Someone in the way of the desk, an inmate with a grudge about: a minute's wait and again.)
+  let opened = false;
+  for (let t = 0; t < 5 && !opened; t++) {
+    bot.walkTo(places.deskside[1]);
+    bot.face(DIR.EAST);
+    opened = bot.open(bot.desk);
+    if (!opened) bot.until(() => false, STEPS_PER_MINUTE);
+  }
+  check(opened, 'the desk opens');
+  bot.takeAll(kit.length);
+  bot.close();
+  const r = p.def.comms!.release;
+  check(bot.walkTo(tileOf(r.at[0].x, r.at[0].z), 6000), 'at the release desk');
+  check(bot.hold('forged_release'), 'the forged form in hand');
+  // (A guard passing by: wait till nobody's watching, then slip it in.)
+  check(bot.until(() => !st.seen, 30 * STEPS_PER_MINUTE), 'nobody watching');
+  bot.act();
+  check(st.release[0] === 2, 'the name on tomorrow\'s list');
+  bot.op(OP.SELECT, st.items.inv.slice(0, 6).indexOf(0));
+  check(bot.routineUntil(1, 22 * 60 + 15), 'roll call');
+  check(bot.walkTo(places.deskside[1], 6000), 'back beside the desk');
+  bot.face(DIR.EAST);
+  check(bot.open(bot.desk), 'the desk opens');
+  kit.slice(1).forEach((id, k) => bot.putIn(id, k));
+  bot.close();
+  check(st.items.inv.slice(0, 6).every((v) => !v), 'nothing in the pockets');
+  // (Lights Out in the cell: the door locks once the player is in.)
+  check(bot.until(() => bot.sim.cellsLocked && (bot.sim.world.lockedCells & 2n) !== 0n, 60 * STEPS_PER_MINUTE), 'Lights Out, locked in');
+  check(bot.routineUntil(2, 10 * 60), 'the night slept, the morning kept');
+  check(bot.walkTo(tileOf(r.at[0].x, r.at[0].z), 3000), 'at the release desk');
+  bot.act();
+  check(itemOf(st.items.inv[SLOT.OUTFIT]) === n('own_clothes') && st.release[1] > 0, `cleared, in their own clothes (${bot.time})`);
+  check(bot.walkTo(tileOf(...p.gates), 3000) || bot.done, 'out through the doors');
+  report(p.name('paperwork'), bot);
+  check(bot.done && ESCAPES[st.via] === 'paperwork', 'released: out by paperwork');
+  check(bot.heatPeak < RELEASE_HEAT, 'never too hot for the desk');
+}
+
 /** Runs one route's bot in a prison (its seed as escapetest gives it); the bot, done or not. */
 export function runRoute(p: Plan, route: Route): Bot | null {
   Bot.last = null;
@@ -874,6 +932,7 @@ export function runRoute(p: Plan, route: Route): Bot | null {
   else if (route === 'stowaway') stowaway(p, p.seed + 7);
   else if (route === 'bluff') bluff(p, p.seed + 8);
   else if (route === 'glider') glider(p, p.seed + 9);
+  else if (route === 'paperwork') paperwork(p, p.seed + 10);
   return Bot.last;
 }
 

@@ -167,6 +167,7 @@ const rollCall = Array.from({ length: 14 }, (_, k) => ({ x: 28 + k, z: 24 }));
 const guards: GuardDef[] = [
   {
     name: 'Blackwood',
+    about: { nick: 'BISHOP', home: 'POOLE', team: 'PIRATES' },
     beat: [
       { x: 26, z: 46, wait: 25, face: 1 },
       { x: 25, z: 40, wait: 3, face: 13 },
@@ -185,6 +186,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Finch',
+    about: { nick: 'BIRDY', home: 'BRISTOL', team: 'ROBINS' },
     beat: [
       // (P33 review: the beat kept off the yard's door, the canteen just south of the yard now.)
       { x: 29, z: 32, wait: 3, face: 1 },
@@ -197,6 +199,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Pike',
+    about: { nick: 'RULER', home: 'CHESTER', team: 'BLADES' },
     trait: 'strict',
     beat: [
       { x: 12, z: 15, wait: 3, face: 1 },
@@ -211,6 +214,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Penrose',
+    about: { nick: 'SLOTH', home: 'TRURO', team: 'CORNISH' },
     trait: 'lazy',
     beat: [
       { x: 23, z: 24, wait: 3, face: 1 },
@@ -227,6 +231,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Quill',
+    about: { nick: 'FIDDLER', home: 'MARGATE', team: 'MAGPIES' },
     trait: 'corrupt',
     beat: [
       { x: 44, z: 30, wait: 3, face: 5 },
@@ -239,6 +244,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Mercer',
+    about: { nick: 'TAILOR', home: 'GRIMSBY', team: 'TIGERS' },
     beat: [
       { x: 47, z: 18, wait: 4, face: 9 },
       { x: 49, z: 12, wait: 3, face: 13 },
@@ -249,6 +255,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Thorne',
+    about: { nick: 'SPIKE', home: 'DOVER', team: 'CLARETS' },
     beat: [
       { x: 5, z: 50, wait: 4, face: 13 },
       { x: 5, z: 7, wait: 3, face: 1 },
@@ -264,6 +271,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Hask',
+    about: { nick: 'SKIPPER', home: 'WHITBY', team: 'BOROUGH' },
     beat: [
       { x: 31, z: 53, wait: 4, face: 1 },
       { x: 54, z: 52, wait: 3, face: 13 },
@@ -280,6 +288,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Doyle',
+    about: { nick: 'ANCHOR', home: 'WEXFORD', team: 'SAINTS' },
     beat: [
       { x: 33, z: 43, wait: 8, face: 3 },
       { x: 33, z: 49, wait: 6, face: 15 },
@@ -294,6 +303,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Vance',
+    about: { nick: 'RAVEN', home: 'LEEDS', team: 'RANGERS' },
     beat: [
       { x: 40, z: 49, wait: 7, face: 11 },
       { x: 40, z: 43, wait: 9, face: 7 },
@@ -419,7 +429,7 @@ export const IRONGATE: PrisonDef = {
     { x: 32, z: 46 },
   ],
   // (P24: waved out through the ferry gate at the shift change, the drawbridge lowered.)
-  escapes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff'],
+  escapes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff', 'paperwork'],
   // The checkpoint (P24): the gatekeeper's booth on the rock outside the ferry gate, beside the
   // drawbridge; papers are shown from the walkway, and waved through, the gate opens and the
   // drawbridge comes down.
@@ -483,6 +493,7 @@ export const IRONGATE: PrisonDef = {
   },
   // Rebuilt in 2.9 (P33): the sports ground in the yard's west third, the garden at its east end.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([40, 39, 13], [[39, 39], [38, 39], [37, 39], [36, 39]], [30, 54], [32, 60, 9], [48, 34, 13]),
+  // (P36: the release reported at the corridor's south doors, then out through the ferry gate, the drawbridge lowered.)
+  comms: comms([40, 39, 13], [[39, 39], [38, 39], [37, 39], [36, 39]], [30, 54], [32, 60, 9], [48, 34, 13], { at: [[30, 40], [31, 40]], gates: [[30, 41], [31, 41], [30, 51], [31, 51], [30, 55], [31, 55]], bridge: true }),
   map: 1,
 };

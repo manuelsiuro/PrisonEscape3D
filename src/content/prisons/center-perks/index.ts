@@ -166,6 +166,7 @@ const rollCall = [12, 15].flatMap((z) => [29, 31, 34, 36].map((x) => ({ x, z }))
 const guards: GuardDef[] = [
   {
     name: 'Hollis',
+    about: { nick: 'SARGE', home: 'DAYTON', team: 'COMETS' },
     beat: [
       { x: 8, z: 13, wait: 3, face: 1 },
       { x: 24, z: 13, wait: 2, face: 9 },
@@ -184,6 +185,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Pratt',
+    about: { nick: 'SLICK', home: 'FRESNO', team: 'ROLLERS' },
     trait: 'corrupt',
     beat: [
       { x: 44, z: 10, wait: 4, face: 5 },
@@ -196,6 +198,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Dunn',
+    about: { nick: 'DEACON', home: 'PEORIA', team: 'CHIEFS' },
     trait: 'strict',
     beat: [
       { x: 12, z: 22, wait: 2, face: 1 },
@@ -209,6 +212,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Moss',
+    about: { nick: 'DOZER', home: 'TULSA', team: 'SOONERS' },
     trait: 'lazy',
     beat: [
       { x: 30, z: 25, wait: 3, face: 5 },
@@ -228,6 +232,7 @@ const guards: GuardDef[] = [
   },
   {
     name: 'Keller',
+    about: { nick: 'BULLDOG', home: 'BOISE', team: 'BRONCOS' },
     beat: [
       { x: 50, z: 22, wait: 2, face: 9 },
       { x: 43, z: 27, wait: 3, face: 5 },
@@ -319,7 +324,7 @@ export const CENTER_PERKS: PrisonDef = {
     ],
   ],
   // (P24: waved out through the south gate at the shift change; a glider off the roof's north, east or west edge with the wind behind it.)
-  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'bluff', 'glider'],
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'bluff', 'glider', 'paperwork'],
   // Delivery day (P18): the supply truck backs up the south drive to the visitation room's gate
   // (propped open while it's unloaded); the yard guard walks round it, and searches it one day
   // in four.
@@ -377,6 +382,7 @@ export const CENTER_PERKS: PrisonDef = {
   },
   // Rebuilt in 2.7 (P31): the sports ground and the garden in the south grounds.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([41, 21, 13], [[40, 21], [39, 21], [38, 21], [37, 21]], [30, 60], [34, 63, 1], [19, 30, 13]),
+  // (P36: the release reported by the visiting room's doors, then out through them and the south gate.)
+  comms: comms([41, 21, 13], [[40, 21], [39, 21], [38, 21], [37, 21]], [30, 60], [34, 63, 1], [19, 30, 13], { at: [[30, 44], [31, 44]], gates: [[30, 45], [31, 45], [30, 61], [31, 61]] }),
   map: 1,
 };

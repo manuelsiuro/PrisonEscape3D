@@ -37,6 +37,7 @@ import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
+import { FREED_STEPS } from '../content/paperwork';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY, UNIT } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from './world/World';
@@ -45,7 +46,7 @@ import { LAYER, MAP_H, MAP_W, type World } from './world/World';
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
-export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider'] as const;
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider', 'paperwork'] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
 /** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper, a mine, the sea flooding a tunnel. */
 export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3, FLOOD: -4 } as const;
@@ -316,10 +317,19 @@ export type SimEvent =
    * or taken out of it (`item`).
    */
   | { type: 'kiosk'; what: KioskNews; why?: 'asked' | 'left' | 'closed' | 'broke'; item?: number; n?: number; q?: number; choice?: number; right?: boolean; int?: number }
+  /**
+   * The paperwork escape (P36, paperwork.ts): a forged form slipped into the release desk's tray
+   * (`n` the prison day the name is listed for); the records checked at 22:00, the forgery passing
+   * or found; the name called at 10:00, the desk's checks failed (`why`) or passed (the way out open
+   * for the player alone), the name not answered, the way out shut again.
+   */
+  | { type: 'paper'; what: PaperNews; n?: number; why?: 'heat' | 'lockdown' | 'contraband' }
   | ItemEvent;
 
 /** What the pay phone did (P34, the 'phone' event). */
 export type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
+/** What the paperwork did (P36, the 'paper' event). */
+export type PaperNews = 'filed' | 'passed' | 'found' | 'called' | 'turnedAway' | 'cleared' | 'missed' | 'shut';
 /** What the internet kiosk did (P35, the 'kiosk' event). */
 export type KioskNews = 'login' | 'paid' | 'logout' | 'wrote' | 'ordered' | 'goods' | 'goodsWait' | 'photo' | 'course' | 'question' | 'answer' | 'timeUp' | 'passed' | 'failed' | 'quit' | 'hidden' | 'unhidden';
 /** What pruno did (P28, the 'pruno' event). */
@@ -360,7 +370,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -640,6 +650,12 @@ export interface SimState {
   post: number[];
   photos: number[];
   course: number[];
+  /**
+   * P36, the paperwork escape (paperwork.ts): [the prison day the player's name is on the release
+   * list for (0 none), the step the way out shuts on them again once cleared (0: shut), the prison
+   * day of the last lockdown (0 none: the records look twice at a name after one)].
+   */
+  release: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -808,6 +824,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     post: [0, 0, 0, 0, 0, 0],
     photos: [],
     course: [],
+    release: [0, 0, 0],
   };
 }
 
@@ -962,6 +979,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!(Array.isArray(s.course) && (s.course.length === 0 || (ints(s.course, 6) && s.course[0] >= 0 && s.course[0] <= s.step && s.course[1] >= 0 && s.course[1] < COURSE_QUESTIONS && s.course[2] >= 0 && s.course[2] <= s.course[1] + 1 && s.course[3] >= s.course[0] && s.course[4] >= -2 && s.course[4] <= 3 && s.course[5] >= 0)))) s.course = [];
   // (A course only while logged in.)
   if (!s.kiosk) s.course = [];
+  // P36: the release as it can be (else no name listed, the way out shut).
+  if (!(ints(s.release, 3) && s.release[0] >= 0 && s.release[0] <= prisonDay(s.step) + 1 && s.release[1] >= 0 && s.release[1] <= s.step + FREED_STEPS && s.release[2] >= 0 && s.release[2] <= prisonDay(s.step))) s.release = [0, 0, 0];
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);

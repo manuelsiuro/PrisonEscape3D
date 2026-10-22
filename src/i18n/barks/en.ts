@@ -2222,6 +2222,55 @@ export const enBarks = {
     "Psst: {inmate}'s rat is off its food today.",
     "{inmate} forgot to feed their rat. Slow tonight, mark my words.",
   ],
+  "go.guardNick": [
+    "The other screws call {guard} “{nick}”. Not to the face, mind.",
+    "{guard}'s nickname in the staff room? {nick}. Don't ask why.",
+    "Heard the guards call {guard} “{nick}”. Fits, too.",
+  ],
+  "go.guardHome": [
+    "{guard} grew up in {home}. Won't shut up about it.",
+    "Ask {guard} about {home} and you'll lose an hour.",
+    "{guard} keeps a postcard of {home} in the guard room.",
+  ],
+  "go.guardTeam": [
+    "{guard} follows the {team}. They lost again, so tread careful.",
+    "{guard}'s mug says {team} on it. Every single day.",
+    "Mention the {team} and {guard} goes all soft.",
+  ],
+  "go.releaseForms": [
+    "{guard} carries the blank release forms. Signs them, too.",
+    "Want out legal? {guard}'s pockets have the release forms.",
+    "{guard} keeps the release forms on hand. A fresh one every morning.",
+  ],
+  "go.recordsCheck": [
+    "Release forms get checked at {t1}. Heat {n}% or up, they look twice.",
+    "Name on the release list? Keep your nose clean till {t1}.",
+    "At {t1} they check tomorrow's releases. Hot heads don't pass.",
+  ],
+  "gu.slip.nick": [
+    "The lads call me {nick}. You're not the lads.",
+    "Don't you call me {nick}. That's for the staff.",
+    "Someone shouted “{nick}”? That's me. Never mind.",
+    "{nick}, they call me. Long story. What?",
+    "Officer {me}. Not {nick}. Not to you.",
+    "Even the warden calls me {nick} now. Speak.",
+  ],
+  "gu.slip.home": [
+    "Quick. I'd rather be back in {home}.",
+    "Back in {home}, nobody bothers me like this.",
+    "This place? Grey. Nothing like {home}. What?",
+    "Two more years, then home to {home}. What now?",
+    "In {home} we'd sort you out quick. Speak.",
+    "Smells like rain. Like {home}. What do you want?",
+  ],
+  "gu.slip.team": [
+    "Quick, the {team} kick off at eight.",
+    "If the {team} lose again, I'm in no mood. What?",
+    "A {team} fan? No? Then what do you want?",
+    "The {team} won! Ask me anything. Within reason.",
+    "Shh. Listening for the {team} score. What?",
+    "The {team}, top of the league. Right, what?",
+  ],
 } satisfies Record<string, readonly Line[]>;
 
 export type BankId = keyof typeof enBarks;

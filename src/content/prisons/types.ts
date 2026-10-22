@@ -47,6 +47,12 @@ export interface GuardDef {
   trait?: GuardTrait;
   /** Its dog (P19): at its side on shift, in the kennel otherwise. */
   dog?: DogDef;
+  /**
+   * Its life outside the job (P36): its nickname among the staff, its home town, the team it
+   * follows, in capitals (A–Z, 5 to 7 letters; the same in every language). Inmates gossip them,
+   * and it lets one slip on a chat now and then.
+   */
+  about?: { nick: string; home: string; team: string };
 }
 
 /**
@@ -73,7 +79,7 @@ export type DogCoat = 'shepherd' | 'mastiff' | 'retriever' | 'collie';
 export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';
 
 /** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
-export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider';
+export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider' | 'paperwork';
 
 /**
  * Delivery day (P18): the vehicle that comes once a week, 12:30–14:31, and the guard who
@@ -131,6 +137,13 @@ export interface CommsDef {
   car: { x: number; z: number; face: number };
   /** P35: the internet kiosk in the library: the tile the player stands on to use it, facing the wall it hangs on. */
   kiosk: { x: number; z: number; face: number };
+  /**
+   * P36: the release desk. Where a forged release form is slipped into the tray, and where the
+   * player reports on the morning their name is on the list (tiles they can walk to at 10:00 with
+   * no key); the doors from there to the road, in the order they're walked, that open for them
+   * alone once they're cleared (Irongate: the drawbridge comes down too, `bridge`). Route `paperwork`.
+   */
+  release: { at: ReadonlyArray<{ x: number; z: number }>; gates: ReadonlyArray<{ x: number; z: number }>; bridge?: boolean };
 }
 
 /**

@@ -88,9 +88,11 @@ export const pocketOf = (w: World, id: number) => containersOf(w).length + id;
 /** Whose pockets a container index is (-1: furniture, not a person). */
 export const ownerOf = (w: World, index: number) => (index >= containersOf(w).length ? index - containersOf(w).length : -1);
 
-/** What a guard always has on it (GDD §10.2): its key, a baton, its uniform. */
+/** What a guard always has on it (GDD §10.2): its key, a baton, its uniform; P36: the strict one (the shakedown's), a blank release form too. */
 export function guardKit(w: World, k: number): number[] {
-  return [itemNumber(`key_${w.def.guards[k].key}`), itemNumber('baton'), itemNumber('guard_outfit')];
+  const kit = [itemNumber(`key_${w.def.guards[k].key}`), itemNumber('baton'), itemNumber('guard_outfit')];
+  if (w.def.comms && w.def.guards[k].duties?.includes('shakedown')) kit.push(itemNumber('release_form'));
+  return kit;
 }
 
 /** Fresh pockets for everyone (a new game, or a save from before pockets). */
@@ -101,7 +103,10 @@ export function startPockets(w: World, rng: { rng: number }): number[][] {
     stockSlots('pockets', 0, p, rng);
     out.push(p);
   }
-  w.def.guards.forEach((_, k) => out.push([...guardKit(w, k).map((n) => slot(n)), ...new Array(POCKET_SLOTS - 3).fill(0)]));
+  w.def.guards.forEach((_, k) => {
+    const kit = guardKit(w, k);
+    out.push([...kit.map((n) => slot(n)), ...new Array(POCKET_SLOTS - kit.length).fill(0)]);
+  });
   return out;
 }
 

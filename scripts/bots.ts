@@ -251,6 +251,8 @@ export function describe(e: SimEvent): string {
       return e.on ? 'waved through the checkpoint' : 'the checkpoint’s gates shut';
     case 'glide':
       return `off the roof on a glider: ${e.dist} tiles${e.short ? ' (down short)' : ''}`;
+    case 'paper':
+      return e.what === 'filed' ? `form filed: on the release list for day ${e.n}` : e.what === 'passed' ? 'the records: the form passes' : e.what === 'found' ? 'the records: FORGERY FOUND' : e.what === 'called' ? 'the name called' : e.what === 'cleared' ? 'cleared at the desk' : e.what === 'turnedAway' ? `turned away (${e.why})` : e.what === 'missed' ? 'the name missed' : '';
     default:
       return '';
   }
