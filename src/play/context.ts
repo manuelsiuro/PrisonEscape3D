@@ -1,5 +1,6 @@
 import { QuizCard, StageCard } from '../ui/nights';
 import { PayphoneCard } from '../ui/payphone';
+import { KioskCard } from '../ui/kiosk';
 import * as THREE from 'three';
 import { setHaptics } from '../app/haptics';
 import { TIERS, tierFor } from '../app/quality';
@@ -141,6 +142,8 @@ export const stageCard = new StageCard(sendOp, click);
 export const quizCard = new QuizCard(sendOp, click);
 /** The pay phone's card (P34). */
 export const payphoneCard = new PayphoneCard(sendOp, click);
+/** The internet kiosk's card (P35). */
+export const kioskCard = new KioskCard(sendOp, click);
 /** The crew (P23): their panel, and the chips over their heads. */
 export const crewPanel = new CrewPanel(click);
 export const crewChips = new CrewChips();

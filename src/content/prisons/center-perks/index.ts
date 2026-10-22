@@ -377,6 +377,6 @@ export const CENTER_PERKS: PrisonDef = {
   },
   // Rebuilt in 2.7 (P31): the sports ground and the garden in the south grounds.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([41, 21, 13], [[40, 21], [39, 21], [38, 21], [37, 21]], [30, 60], [34, 63, 1]),
+  comms: comms([41, 21, 13], [[40, 21], [39, 21], [38, 21], [37, 21]], [30, 60], [34, 63, 1], [19, 30, 13]),
   map: 1,
 };

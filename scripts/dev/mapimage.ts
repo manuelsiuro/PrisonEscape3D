@@ -239,7 +239,7 @@ function drawDecor(g: Svg, def: PrisonDef) {
   }
 }
 
-/** The pay phone (P34): a bar on the wall it hangs on (the caller faces it), the queue's tiles 1… nearest first; with `lou`, the car alarm by the front gate and Lou's getaway car on the road. */
+/** The pay phone (P34): a bar on the wall it hangs on (the caller faces it), the queue's tiles 1… nearest first; with `lou`, the car alarm by the front gate and Lou's getaway car on the road. The internet kiosk (P35) the same way, in the library. */
 function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   const c = def.comms;
   if (!c) return;
@@ -259,6 +259,16 @@ function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
     g.text(cx(q.x), cz(q.z) + 3.5, `${k + 1}`, `font-size="9" font-weight="700" fill="${teal}" text-anchor="middle"`);
   });
   g.pill(cx(c.phone.x), cz(c.phone.z) + S * 0.62, 'PAY PHONE', 9, teal);
+  // P35: the internet kiosk, the same way (blue: a bar on its wall, the user's tile).
+  const blue = '#1d4ed8';
+  const [kx, kz] = face(c.kiosk.face);
+  const bx = cx(c.kiosk.x) + (kx * S) / 2;
+  const bz = cz(c.kiosk.z) + (kz * S) / 2;
+  if (Math.round(kx) !== 0) g.add(`<line x1="${bx}" y1="${bz - S / 2 + 4}" x2="${bx}" y2="${bz + S / 2 - 4}" stroke="${blue}" stroke-width="7"/>`);
+  else g.add(`<line x1="${bx - S / 2 + 4}" y1="${bz}" x2="${bx + S / 2 - 4}" y2="${bz}" stroke="${blue}" stroke-width="7"/>`);
+  g.rect(px(c.kiosk.x) + 7, pz(c.kiosk.z) + 7, S - 14, S - 14, `rx="5" fill="${blue}"`);
+  g.text(cx(c.kiosk.x), cz(c.kiosk.z) + 3.5, 'net', 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
+  g.pill(cx(c.kiosk.x), cz(c.kiosk.z) + S * 0.62, 'KIOSK', 9, blue);
   if (!lou) return;
   const red = '#be123c';
   g.add(`<circle cx="${cx(c.gate.x)}" cy="${cz(c.gate.z)}" r="11" fill="rgba(190,18,60,0.2)" stroke="${red}" stroke-width="2.5" stroke-dasharray="4 3"/>`);
@@ -464,7 +474,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
           'Red dashed lines: zone borders (between two named zones; walls are "none"). Red pills: zone names, once per patch.',
           'Dark boxes: solid props (named; yellow dot = the side it faces). Light dashed boxes: props walked over (benches, seats, chairs, showers, bleachers).',
           'Pink: decor (pink bar = a wall piece, on the wall it hangs on; pink outline = a floor piece). Doors: c<n> = cell n\'s door, GATE = perimeter gate (no key opens it).',
-          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…',
+          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net).',
         ]
       : kind === 'people'
         ? [
@@ -472,7 +482,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
             'White squares = posts (where a guard stands during a block: rollCa(ll), breakf(ast), exerci(se), showers, dinner…). Lines are straight between stops, not the walked path.',
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
-            'Pay phone: the phone and its queue 1… (teal). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
+            'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
           ]
         : [
             'Layer +1 over the faded ground floor: grey = ducts, blue V = ceiling grates (down into the room below), green L = the ladder up to the roof.',
@@ -502,7 +512,7 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
   const name = def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id);
-  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone' : 'vents (layer +1) and boulders under the ground (layer -1)';
+  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk' : 'vents (layer +1) and boulders under the ground (layer -1)';
   g.text(M, 30, `${name} — ${what}`, 'font-size="24" font-weight="700" fill="#111"');
   g.text(W - M, 30, `v${pkg.version} · map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
   drawTiles(g, w, kind !== 'layout');
@@ -581,6 +591,7 @@ function tileData(def: PrisonDef, n: number) {
     c.line.forEach((q, k) => mark(q.x, q.z, `pay phone queue, place ${k + 1}`));
     mark(c.gate.x, c.gate.z, "Lou's car alarm (inside the front gate)");
     mark(c.car.x, c.car.z, "Lou's getaway car (on the road)");
+    mark(c.kiosk.x, c.kiosk.z, `internet kiosk (its user stands here, facing ${c.kiosk.face})`);
   }
   const V = w.layers[LAYER.VENTS].kind;
   const U = w.layers[LAYER.UNDER].kind;

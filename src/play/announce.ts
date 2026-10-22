@@ -10,6 +10,7 @@ import { announceLong } from './long';
 import { announceTeam } from './team';
 import { announceNights } from './nights';
 import { announcePhone } from './payphone';
+import { announceKiosk } from './kiosk';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
@@ -776,6 +777,9 @@ export function announce(e: SimEvent, sim: Sim) {
       announceCrew(sim, e);
       break;
     // The pay phone (P34): the queue, calls, Lou and his jobs, a secret overheard.
+    case 'kiosk':
+      announceKiosk(e);
+      break;
     case 'phone':
       announcePhone(sim, e);
       break;

@@ -40,6 +40,8 @@ import { CHAPTERS, LESSONS, myDesk, type LessonCtx } from '../src/tutorial/lesso
 import { LessonProgress } from '../src/tutorial/progress';
 import { CALLEE, JOB, TIER } from '../src/content/phone';
 import { phrasesOf } from '../src/sim/systems/phone';
+import { KIOSK, SHOP } from '../src/content/kiosk';
+import { courseQuestion } from '../src/sim/systems/kiosk';
 import { Bot, DIR, n } from './bots';
 import { check } from './assert';
 
@@ -730,6 +732,24 @@ play('cousin', (bot) => {
   }
 });
 
+play('kiosk', (bot) => {
+  // Logged in at the library's terminal: a letter home, the thick book ordered, a course answered right, the book at mail call.
+  const k = CENTER_PERKS.comms!.kiosk;
+  bot.walkTo(tile(k.x, k.z));
+  bot.op(OP.EXT, EXT.KIOSK, KIOSK.LOGIN);
+  check(bot.st.kiosk > 0, 'kiosk: logged in');
+  bot.op(OP.EXT, EXT.KIOSK, KIOSK.WRITE);
+  bot.op(OP.EXT, EXT.KIOSK, KIOSK.ORDER, SHOP.indexOf('thick_book'));
+  bot.op(OP.EXT, EXT.KIOSK, KIOSK.COURSE);
+  check(bot.st.course.length > 0, 'kiosk: in a course');
+  for (let q = 0; q < 5 && bot.st.course.length; q++) {
+    bot.op(OP.EXT, EXT.KIOSK, KIOSK.ANSWER, courseQuestion(bot.sim)!.answer);
+    bot.until(() => !bot.st.course.length || bot.st.course[1] > q, 20 * 60 * 5);
+  }
+  check(bot.sim.state.items.int > 40, 'kiosk: the course passed');
+  bot.until(() => bot.st.post[3] === 0, 20 * 60 * 120);
+});
+
 const carriesLockpick = (bot: Bot) => bot.slotOf('lockpick') >= 0;
 /** The player's desk's tile. */
 function deskTileOf(bot: Bot): number {
@@ -792,6 +812,36 @@ function follow(id: string) {
   away.bot.walkTo(tile(c.phone.x - 8, c.phone.z + 1));
   away.bot.until(() => !!away.why(), 60 * 20);
   check(!!away.why(), `payphone: walking off ends the lesson (${away.why()})`);
+  // The kiosk: walked away mid-lesson (logged out), a course given up.
+  const k = CENTER_PERKS.comms!.kiosk;
+  const off = follow('kiosk');
+  off.bot.walkTo(tile(k.x, k.z));
+  off.bot.op(OP.EXT, EXT.KIOSK, KIOSK.LOGIN);
+  off.bot.walkTo(tile(k.x, k.z + 4));
+  check(off.why() === 'lesson.kiosk.left', `kiosk: walking off logged out ends the lesson (${off.why()})`);
+  const gave = follow('kiosk');
+  gave.bot.walkTo(tile(k.x, k.z));
+  for (const b of [KIOSK.LOGIN, KIOSK.WRITE, KIOSK.ORDER, KIOSK.COURSE, KIOSK.QUIT]) gave.bot.op(OP.EXT, EXT.KIOSK, b, 0);
+  check(gave.why() === 'lesson.kiosk.quit', `kiosk: giving up the course ends the lesson (${gave.why()})`);
+  // Out of order (the course and the order before the letter): every step still ticks, nothing refused stalls it.
+  const loose = follow('kiosk');
+  loose.bot.walkTo(tile(k.x, k.z));
+  loose.bot.op(OP.EXT, EXT.KIOSK, KIOSK.LOGIN);
+  loose.bot.op(OP.EXT, EXT.KIOSK, KIOSK.ORDER, SHOP.indexOf('soap'));
+  loose.bot.op(OP.EXT, EXT.KIOSK, KIOSK.COURSE);
+  for (let q = 0; q < 5 && loose.bot.st.course.length; q++) {
+    loose.bot.op(OP.EXT, EXT.KIOSK, KIOSK.ANSWER, 0);
+    loose.bot.until(() => !loose.bot.st.course.length || loose.bot.st.course[1] > q, 20 * 60 * 5);
+  }
+  loose.bot.op(OP.EXT, EXT.KIOSK, KIOSK.WRITE);
+  loose.bot.until(() => loose.progress.k >= 4 || !!loose.why(), 200);
+  check(loose.progress.k >= 4 && !loose.why(), `kiosk: done out of order, the steps still tick (at ${loose.progress.k + 1}, ${loose.why()})`);
+  // Logged out at the kiosk mid-course: today's course is gone, the lesson says so.
+  const cut = follow('kiosk');
+  cut.bot.walkTo(tile(k.x, k.z));
+  for (const b of [KIOSK.LOGIN, KIOSK.WRITE, KIOSK.ORDER, KIOSK.COURSE, KIOSK.LOGOUT]) cut.bot.op(OP.EXT, EXT.KIOSK, b, 0);
+  check(cut.why() === 'lesson.kiosk.quit', `kiosk: logging out mid-course ends the lesson (${cut.why()})`);
+  console.log(`kiosk, walked off: ${off.why()}; course given up: ${gave.why()}; out of order: step ${loose.progress.k + 1}; logged out mid-course: ${cut.why()}`);
 }
 
 {

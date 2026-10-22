@@ -76,11 +76,11 @@ export const witsOf = (salt: number, cell: number) => WITS_MIN + rollInt(salt, S
 
 // ------------------------------------------------------------------ the questions
 
-/** Shuffles a list by roll() (draw `k` of the night's). */
-function shuffled<T>(list: readonly T[], salt: number, day: number, k: number): T[] {
+/** Shuffles a list by roll() (draw `k` of the night's; `kind`: the questions' own SALT, quiz night's or P35's courses'). */
+function shuffled<T>(list: readonly T[], salt: number, day: number, k: number, kind: number): T[] {
   const out = [...list];
   for (let j = out.length - 1; j > 0; j--) {
-    const i = rollInt(salt, SALT.QUIZ, day, k * 64 + j, j + 1);
+    const i = rollInt(salt, kind, day, k * 64 + j, j + 1);
     [out[j], out[i]] = [out[i], out[j]];
   }
   return out;
@@ -90,8 +90,8 @@ function shuffled<T>(list: readonly T[], salt: number, day: number, k: number): 
 const hours = (m: number, n: number) => (((m + n * 60) % 1440) + 1440) % 1440;
 
 /** A time question: the right time among four an hour apart, in order (where it falls among them by roll()). */
-function timeQuestion(id: string, m: number, salt: number, day: number, k: number): Question {
-  const at = rollInt(salt, SALT.QUIZ, day, 800 + k, 4);
+function timeQuestion(id: string, m: number, salt: number, day: number, k: number, kind: number): Question {
+  const at = rollInt(salt, kind, day, 800 + k, 4);
   const choices = [0, 1, 2, 3].map((j): Choice => ({ kind: 'time', m: hours(m, j - at) }));
   return { id, choices, answer: at };
 }
@@ -103,13 +103,13 @@ const blockAt = (id: string) => ROUTINE.find((r) => r.id === id)!.start;
 const plainRecipes = RECIPES.filter((r) => r.ingredients.every((i) => !i.includes('|') && !i.startsWith('key_') && !i.startsWith('mold_')) && !r.keep);
 
 /** The questions about this prison that it can be asked (each always true in the running game). */
-function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: number, mods: readonly string[]): Question[] {
+function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: number, mods: readonly string[], kind: number): Question[] {
   const p = sim.prison;
   const out: Question[] = [];
-  out.push(timeQuestion('rollCall', blockAt('eveningRollCall'), salt, day, 0));
-  out.push(timeQuestion('lightsOut', blockAt('lightsOut'), salt, day, 1));
-  out.push(timeQuestion('breakfast', blockAt('breakfast'), salt, day, 2));
-  out.push(timeQuestion('showers', blockAt('showers'), salt, day, 3));
+  out.push(timeQuestion('rollCall', blockAt('eveningRollCall'), salt, day, 0, kind));
+  out.push(timeQuestion('lightsOut', blockAt('lightsOut'), salt, day, 1, kind));
+  out.push(timeQuestion('breakfast', blockAt('breakfast'), salt, day, 2, kind));
+  out.push(timeQuestion('showers', blockAt('showers'), salt, day, 3, kind));
   // The guards' ways: one with it, three without (named guards only).
   const named = p.guards.map((g, k) => ({ g, k })).filter((e) => !!e.g.name);
   for (const trait of ['corrupt', 'lazy', 'strict'] as const) {
@@ -118,53 +118,56 @@ function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: num
     const yes = named.filter((e) => e.g.trait === trait);
     const no = named.filter((e) => (e.g.trait ?? 'steady') !== trait);
     if (!yes.length || no.length < 3) continue;
-    const right = yes[rollInt(salt, SALT.QUIZ, day, 500 + trait.length, yes.length)].k;
-    const others = shuffled(no.map((e) => e.k), salt, day, 6 + trait.length).slice(0, 3);
-    const choices = shuffled([right, ...others], salt, day, 9 + trait.length).map((k): Choice => ({ kind: 'guard', k }));
+    const right = yes[rollInt(salt, kind, day, 500 + trait.length, yes.length)].k;
+    const others = shuffled(no.map((e) => e.k), salt, day, 6 + trait.length, kind).slice(0, 3);
+    const choices = shuffled([right, ...others], salt, day, 9 + trait.length, kind).map((k): Choice => ({ kind: 'guard', k }));
     out.push({ id: `trait.${trait}`, choices, answer: choices.findIndex((c) => c.kind === 'guard' && c.k === right) });
   }
   // A guard's key's colour.
   if (named.length) {
-    const g = named[rollInt(salt, SALT.QUIZ, day, 600, named.length)];
-    const others = shuffled(KEY_ITEM_COLORS.map(([c]) => c).filter((c) => c !== g.g.key), salt, day, 13).slice(0, 3);
-    const choices = shuffled([g.g.key, ...others], salt, day, 14).map((c): Choice => ({ kind: 'colour', c }));
+    const g = named[rollInt(salt, kind, day, 600, named.length)];
+    const others = shuffled(KEY_ITEM_COLORS.map(([c]) => c).filter((c) => c !== g.g.key), salt, day, 13, kind).slice(0, 3);
+    const choices = shuffled([g.g.key, ...others], salt, day, 14, kind).map((c): Choice => ({ kind: 'colour', c }));
     out.push({ id: 'key', guard: g.k, choices, answer: choices.findIndex((c) => c.kind === 'colour' && c.c === g.g.key) });
   }
   // The cells in the block.
   // (Four two apart, in order, the right one where roll() puts it: never below one.)
   const cells = p.cells.length;
-  const at = Math.min(rollInt(salt, SALT.QUIZ, day, 900, 4), Math.floor((cells - 1) / 2));
+  const at = Math.min(rollInt(salt, kind, day, 900, 4), Math.floor((cells - 1) / 2));
   out.push({ id: 'cells', choices: [0, 1, 2, 3].map((j): Choice => ({ kind: 'n', n: cells + 2 * (j - at) })), answer: at });
   // What a recipe makes.
   {
-    const r = plainRecipes[rollInt(salt, SALT.QUIZ, day, 700, plainRecipes.length)];
-    const others = shuffled([...new Set(plainRecipes.map((x) => x.result).filter((x) => x !== r.result))], salt, day, 15).slice(0, 3);
-    const choices = shuffled([r.result, ...others], salt, day, 16).map((id): Choice => ({ kind: 'item', id }));
+    const r = plainRecipes[rollInt(salt, kind, day, 700, plainRecipes.length)];
+    const others = shuffled([...new Set(plainRecipes.map((x) => x.result).filter((x) => x !== r.result))], salt, day, 15, kind).slice(0, 3);
+    const choices = shuffled([r.result, ...others], salt, day, 16, kind).map((id): Choice => ({ kind: 'item', id }));
     out.push({ id: 'recipe', items: [...r.ingredients], choices, answer: choices.findIndex((c) => c.kind === 'item' && c.id === r.result) });
   }
   // The day cards' hours, where the deck deals them (minutes into the prison day + 08:00).
   const deck = DAY_BOOKS[p.id]?.deck ?? [];
-  if (deck.includes('delivery')) out.push(timeQuestion('delivery', 480 + (EVENT_TIMES.delivery.at as number) + EVENT_TIMES.delivery.length - 1, salt, day, 4));
-  if (deck.includes('visiting')) out.push(timeQuestion('visiting', 480 + (EVENT_TIMES.visiting.at as number), salt, day, 5));
+  if (deck.includes('delivery')) out.push(timeQuestion('delivery', 480 + (EVENT_TIMES.delivery.at as number) + EVENT_TIMES.delivery.length - 1, salt, day, 4, kind));
+  if (deck.includes('visiting')) out.push(timeQuestion('visiting', 480 + (EVENT_TIMES.visiting.at as number), salt, day, 5, kind));
   return out;
 }
 
 const asked = new Map<string, Question[]>();
 
-/** The night's eight questions, in order: escape history and this prison by turns. Pure (and kept). */
-export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt' | 'mods'> }, day: number): Question[] {
+/**
+ * The night's eight questions, in order: escape history and this prison by turns. Pure (and kept).
+ * (P35: a kiosk course's are drawn the same way under SALT.COURSE, `n` of them, `history` of those from the bank.)
+ */
+export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt' | 'mods'> }, day: number, kind: number = SALT.QUIZ, n = QUIZ_QUESTIONS, historyN = QUIZ_HISTORY): Question[] {
   const salt = sim.state.salt;
   const mods = sim.state.mods ?? [];
-  const key = `${sim.prison.id}:${salt}:${day}:${mods.join()}`;
+  const key = `${sim.prison.id}:${salt}:${day}:${mods.join()}:${kind}:${n}:${historyN}`;
   const had = asked.get(key);
   if (had) return had;
-  const history = shuffled(HISTORY.map((_, k) => k), salt, day, 1)
-    .slice(0, QUIZ_HISTORY)
+  const history = shuffled(HISTORY.map((_, k) => k), salt, day, 1, kind)
+    .slice(0, historyN)
     .map((k, j): Question => {
-      const order = shuffled([0, 1, 2, 3], salt, day, 20 + j);
+      const order = shuffled([0, 1, 2, 3], salt, day, 20 + j, kind);
       return { id: `h.${HISTORY[k]}`, choices: order.map((a): Choice => ({ kind: 'h', k: a })), answer: order.indexOf(0) };
     });
-  const local = shuffled(prisonQuestions(sim, salt, day, mods), salt, day, 2).slice(0, QUIZ_QUESTIONS - history.length);
+  const local = shuffled(prisonQuestions(sim, salt, day, mods, kind), salt, day, 2, kind).slice(0, n - history.length);
   const out: Question[] = [];
   for (let k = 0; out.length < history.length + local.length; k++) {
     if (k < history.length) out.push(history[k]);

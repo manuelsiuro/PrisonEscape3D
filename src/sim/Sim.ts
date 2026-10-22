@@ -32,6 +32,7 @@ import { dogs } from './systems/k9';
 import { rats } from './systems/rats';
 import { smuggle } from './systems/smuggling';
 import { phone, wheels } from './systems/phone';
+import { kiosk } from './systems/kiosk';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -216,6 +217,8 @@ export class Sim {
     smuggle(this);
     // The pay phone (P34): the queue, the calls, the mail, Lou's jobs.
     phone(this);
+    // The internet kiosk (P35): mail call's goods and drawings, the time paid for, a course.
+    kiosk(this);
     // Race nights (P28): the off, a guard seeing the player at it, the finish.
     races(this);
     bribesWearOff(this);

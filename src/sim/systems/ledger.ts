@@ -164,6 +164,15 @@ export const FEATS = [
   'tipsFound',
   'lineCuts',
   'wheels',
+  // v2.11 (P35, the internet kiosk): blocks of time paid for, letters home, drawings pinned up, shop orders, courses finished and passed, items hidden in a hollow book (contraband among them).
+  'kioskTime',
+  'letters',
+  'photos',
+  'shopped',
+  'courses',
+  'coursesPassed',
+  'hidden',
+  'hiddenContraband',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -359,6 +368,19 @@ export function ledger(sim: Sim, x: number, z: number) {
         else if (e.what === 'tipFound') f[FEAT.tipsFound]++;
         else if (e.what === 'cut') f[FEAT.lineCuts]++;
         else if (e.what === 'wheels') f[FEAT.wheels]++;
+        break;
+      case 'kiosk':
+        if (e.what === 'login' || e.what === 'paid') f[FEAT.kioskTime]++;
+        else if (e.what === 'wrote') f[FEAT.letters]++;
+        else if (e.what === 'photo') f[FEAT.photos]++;
+        else if (e.what === 'ordered') f[FEAT.shopped]++;
+        else if (e.what === 'passed' || e.what === 'failed') {
+          f[FEAT.courses]++;
+          if (e.what === 'passed') f[FEAT.coursesPassed]++;
+        } else if (e.what === 'hidden') {
+          f[FEAT.hidden]++;
+          if (e.item && itemDef(e.item).contraband) f[FEAT.hiddenContraband]++;
+        }
         break;
       case 'quiz':
         if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {

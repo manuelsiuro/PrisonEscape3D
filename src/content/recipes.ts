@@ -1,4 +1,5 @@
 import { KEY_ITEM_COLORS } from './items';
+import { BOOK_INT } from './kiosk';
 
 /**
  * The crafting handbook (GDD §8.1). Up to three ingredients, in any order; an ingredient
@@ -75,6 +76,8 @@ export const RECIPES: readonly RecipeDef[] = [
   r('tattoo_gun', 30, 'toothbrush', 'battery', 'razor_blade'),
   // P30: a guitar (the timber its body and neck, the wire its strings, taped up).
   r('guitar', 30, 'timber', 'wire', 'duct_tape'),
+  // P35: a thick book's pages cut out with a razor blade (kept: it cuts), a hiding place for one small item.
+  { result: 'hollow_book', ingredients: ['thick_book', 'razor_blade'], int: BOOK_INT, keep: ['razor_blade'] },
 ];
 
 /** The item ids an ingredient accepts. */

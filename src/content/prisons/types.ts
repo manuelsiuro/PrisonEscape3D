@@ -129,6 +129,8 @@ export interface CommsDef {
   gate: { x: number; z: number };
   /** Where Lou's getaway car waits on the road (drawn only), and the way it faces to drive off. */
   car: { x: number; z: number; face: number };
+  /** P35: the internet kiosk in the library: the tile the player stands on to use it, facing the wall it hangs on. */
+  kiosk: { x: number; z: number; face: number };
 }
 
 /**

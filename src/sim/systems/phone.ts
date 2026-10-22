@@ -511,13 +511,7 @@ function callDone(sim: SimContext, call: Call) {
     s.eventFlags |= TODAY.CALLED_HOME;
     s.energy = Math.min(100, s.energy + HOME_ENERGY);
     sim.events.push({ type: 'phone', what: 'home', n: HOME_ENERGY });
-    // Once a week the family sends money: at the next mail call.
-    if (!s.phoned[0] || day - s.phoned[0] >= MONEY_EVERY) {
-      const n = MONEY_MIN + rollInt(s.salt, SALT.CALLS, day, 3000, MONEY_SPAN);
-      s.phoned[0] = day;
-      s.phoned[1] += n;
-      sim.events.push({ type: 'phone', what: 'moneyOrder', n });
-    }
+    askMoney(sim);
   } else if (call.to === CALLEE.LAWYER) {
     if (call.sub === LAWYER.APPEAL) {
       const n = Math.min(s.heat, APPEAL_HEAT);
@@ -543,6 +537,21 @@ function callDone(sim: SimContext, call: Call) {
       sim.events.push({ type: 'phone', what: 'snitch', who: named });
     }
   }
+}
+
+/**
+ * Once a week the family sends money, paid at the next mail call: asked for by a call home, or
+ * (P35) a letter from the kiosk, whichever comes first that week. The dollars sent (0: not yet).
+ */
+export function askMoney(sim: SimContext): number {
+  const s = sim.state;
+  const day = prisonDay(s.step);
+  if (s.phoned[0] && day - s.phoned[0] < MONEY_EVERY) return 0;
+  const n = MONEY_MIN + rollInt(s.salt, SALT.CALLS, day, 3000, MONEY_SPAN);
+  s.phoned[0] = day;
+  s.phoned[1] += n;
+  sim.events.push({ type: 'phone', what: 'moneyOrder', n });
+  return n;
 }
 
 /** Who searches a cell tipped off: the shakedown guard, else the first guard awake (-1 none). */

@@ -97,6 +97,9 @@ const PHONE_SHIFT = 0.27;
 /** On the pay phone: the raised arm's turn (nearly straight up beside the head, the fist just over the ear). */
 const PHONE_ARM = -2.75;
 
+/** At the internet kiosk (P35): drawn this far back from where they stand (tiles), so the screen shows over their head and the hands come down on the keyboard. */
+const KIOSK_BACK = 0.22;
+
 /** Mattress height and how far the sleeper's feet sit from the bed's middle. */
 const BED_TOP = 0.6;
 const BED_FEET = 0.55;
@@ -1081,6 +1084,13 @@ export class Character {
       this.root.position.x += Math.cos(r) * o;
       this.root.position.z -= Math.sin(r) * o;
     }
+    // At the kiosk (P35): drawn a step back from the wall, the screen in sight over the head.
+    if (doing === DOING.KIOSK && !ko) {
+      const r = this.root.rotation.y;
+      const o = KIOSK_BACK * this.act;
+      this.root.position.x -= Math.sin(r) * o;
+      this.root.position.z -= Math.cos(r) * o;
+    }
     const a = this.act * (motion ? 1 : 0);
     const t = time + this.offset;
     // Seated (a canteen bench, a chair, a yard bench): legs forward, a little lower.
@@ -1277,6 +1287,15 @@ export class Character {
       armLz += -0.1 * ga;
       armRx += (-0.42 + talk) * ga;
       armRz += -0.08 * ga;
+    } else if (doing === DOING.KIOSK) {
+      // At the internet kiosk (P35): both forearms forward over the keyboard on its shelf, a little in
+      // toward the middle, the hands tapping in turn (a typing bob). Held still with reduced motion.
+      const ga = this.act;
+      const tap = motion ? Math.sin(t * 15) * 0.07 + Math.sin(t * 6.1) * 0.03 : 0;
+      armLx += (-1.38 + tap) * ga;
+      armRx += (-1.38 - tap) * ga;
+      armLz += 0.22 * ga;
+      armRz -= 0.22 * ga;
     } else if (doing === DOING.QUEUE) {
       // Waiting in line for the phone (P34): arms crossed, the weight shifting slowly from foot to foot (below).
       const ga = this.act;
@@ -1325,7 +1344,8 @@ export class Character {
       (doing === DOING.PICK ? 0.32 * this.act : 0) +
       (doing === DOING.DICE || doing === DOING.CARDS ? 0.12 * this.act : 0) +
       (doing === DOING.BOARD ? 0.18 * this.act : 0) +
-      (doing === DOING.BRAWL ? 0.08 * this.act : 0);
+      (doing === DOING.BRAWL ? 0.08 * this.act : 0) +
+      (doing === DOING.KIOSK ? 0.05 * this.act : 0);
     // From one activity to another: limbs, height and lean ease from where they were (before a blow, which never waits).
     if (this.blend < 1) {
       this.blend = Math.min(1, this.blend + dt * 5);
@@ -1383,7 +1403,8 @@ export class Character {
     }
 
     // In bed the blanket covers the body: no silhouette through it.
-    if (this.ghost) this.ghost.visible = this.lie < 0.3;
+    // (P35: at the kiosk, the far hand under its screen on a side wall would show through it as an arm in the monitor.)
+    if (this.ghost) this.ghost.visible = this.lie < 0.3 && doing !== DOING.KIOSK;
     // What goes with the activity: the blanket and Zs, the tray, the water.
     this.blanket.visible = this.lie > 0.6 && !ko;
     this.blanket.scale.z = THREE.MathUtils.smoothstep(this.lie, 0.6, 1);

@@ -3,6 +3,7 @@ import { cornersOf } from '../content/grounds';
 import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
 import { quizOn } from '../sim/systems/quiz';
 import { atPhone, phoneOpen, placeInLine } from '../sim/systems/phone';
+import { atKiosk, kioskOpen, loggedIn } from '../sim/systems/kiosk';
 import { CALLEE } from '../content/phone';
 import { itemDef, itemNumber } from '../content/items';
 import type { PrisonDef } from '../content/prisons/types';
@@ -94,6 +95,9 @@ export interface Lesson {
 const tile = (x: number, z: number) => z * MAP_W + x;
 /** The pay phone's lessons (P34): off once the phone shuts (free time over, a lockdown). */
 const phoneFail = (c: LessonCtx): Key | null => (phoneOpen(c.sim) ? null : 'lesson.payphone.shut');
+/** The kiosk's lesson (P35): off once it shuts; logged out and walked off. */
+const kioskFail = (c: LessonCtx): Key | null => (kioskOpen(c.sim) ? null : 'lesson.kiosk.shut');
+const kioskLeft = (c: LessonCtx): Key | null => kioskFail(c) ?? (!loggedIn(c.sim.state) && !atKiosk(c.sim) ? 'lesson.kiosk.left' : null);
 const n = (id: string) => itemNumber(id);
 /** The minute of day 1 as a step (the game starts at 08:00). */
 const at = (hour: number, minute = 0) => ((hour - 8) * 60 + minute) * STEPS_PER_MINUTE;
@@ -1002,6 +1006,35 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.cousin.over', done: () => true, least: 8 },
     ],
   },
+  {
+    // The internet kiosk (P35): logged in at the library's terminal, a letter home, an order off the shop, a course, mail call.
+    id: 'kiosk',
+    icon: 'monitor',
+    prison: CENTER_PERKS,
+    seed: 93,
+    setup: (sim) => {
+      clockTo(sim, at(10, 2));
+      sim.state.cash = 30;
+      sim.state.energy = 80;
+      const k = sim.prison.comms!.kiosk;
+      place(sim, k.x, k.z + 3, 13);
+    },
+    steps: [
+      { text: 'lesson.kiosk.login', touch: 'lesson.kiosk.loginTouch', on: (e) => e.type === 'kiosk' && e.what === 'login', goal: (sim) => tile(sim.prison.comms!.kiosk.x, sim.prison.comms!.kiosk.z), fail: kioskFail },
+      // (Done by what the day holds, not the moment: a letter, an order, a course done before their step still count.)
+      { text: 'lesson.kiosk.write', touch: 'lesson.kiosk.writeTouch', done: (c) => c.sim.state.post[0] === prisonDay(c.sim.state.step), fail: kioskLeft },
+      { text: 'lesson.kiosk.order', touch: 'lesson.kiosk.orderTouch', done: (c) => c.sim.state.post[4] === prisonDay(c.sim.state.step), fail: kioskLeft },
+      {
+        text: 'lesson.kiosk.course',
+        touch: 'lesson.kiosk.courseTouch',
+        done: (c) => c.sim.state.feats[FEAT.courses] > 0,
+        // (Today's course begun and over without an end: given up, or cut short by logging out.)
+        fail: (c) => kioskLeft(c) ?? (c.sim.state.post[5] === prisonDay(c.sim.state.step) && !c.sim.state.course.length && !c.sim.state.feats[FEAT.courses] ? 'lesson.kiosk.quit' : null),
+      },
+      { text: 'lesson.kiosk.mail', on: (e) => e.type === 'kiosk' && e.what === 'goods', speed: 8 },
+      { text: 'lesson.kiosk.over', done: () => true, least: 8 },
+    ],
+  },
   // ---------------------------------------------------------------- Ways out
   {
     // The lockpick (P22): a keyed door opened without its key, pin by pin.
@@ -1350,7 +1383,7 @@ function inkOff(e: SimEvent): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin', 'kiosk'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider'] },
 ];
 

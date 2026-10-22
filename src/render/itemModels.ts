@@ -46,6 +46,21 @@ const SHAPES: Record<string, Shape> = {
   blade: (c) => [box(0.2, 0.01, 0.1, c), box(0.08, 0.012, 0.02, DARK)],
   jar: (c, a) => [cyl(0.08, 0.14, c, 0, 0, 0, 12), cyl(0.085, 0.04, a, 0, 0.14, 0, 12)],
   book: (c, a) => [box(0.3, 0.03, 0.22, c), box(0.18, 0.031, 0.06, a, 0, 0, -0.04)],
+  /**
+   * A thick hardcover (P35): the boards a little proud of a cream page block (its edge lined),
+   * the spine along one side, a title label and gilt bands on the cover, a red ribbon marker
+   * trailing out at one end (it also keeps the thick model inside its inventory icon's frame).
+   */
+  tome: (c, a) => [
+    box(0.32, 0.022, 0.24, c),
+    box(0.3, 0.076, 0.22, a, 0.005, 0.02, 0.006),
+    box(0.32, 0.022, 0.24, c, 0, 0.094),
+    box(0.32, 0.116, 0.03, c, 0, 0, -0.11),
+    ...[0.04, 0.066].map((y) => box(0.3, 0.004, 0.222, 0xcfc6ac, 0.006, y, 0.006)),
+    box(0.14, 0.004, 0.09, a, 0.02, 0.116, 0.02),
+    ...[-0.12, 0.12].map((x) => box(0.02, 0.118, 0.032, 0xd8b24a, x, -0.001, -0.11)),
+    box(0.08, 0.004, 0.022, 0xc0392b, 0.19, 0.05, 0.05),
+  ],
   bottle: (c, a) => [cyl(0.07, 0.24, c, 0, 0, 0, 12), cyl(0.04, 0.06, a, 0, 0.24, 0, 10)],
   blob: (c) => [box(0.2, 0.08, 0.16, c), box(0.12, 0.05, 0.12, c, 0.04, 0.06, -0.02)],
   handle: (c) => [stick(0.44, 0.035, c), box(0.08, 0.08, 0.08, 0x8a5a2e, 0.2, 0, 0)],

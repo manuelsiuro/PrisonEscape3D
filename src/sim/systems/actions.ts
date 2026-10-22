@@ -4,6 +4,7 @@
  * showers, and energy and health coming back.
  */
 import { CAKE, eatCake, lineOp, say, startCall } from './phone';
+import { bookMove, hiddenIn, kioskOp, openBook } from './kiosk';
 import { playNote, quitShow, STAGE_QUIT, startShow } from './talent';
 import { answerQuiz, endQuiz, joinQuiz } from './quiz';
 import { digHelp, recall } from './crew';
@@ -172,7 +173,8 @@ export function useItems(sim: SimContext, cmd: number) {
       } else rep(sim, a);
       break;
     case OP.MOVE:
-      moveItem(it, a, argB(cmd));
+      // (P35: a small item onto an empty hollow book goes inside it.)
+      if (!bookMove(sim, a, argB(cmd))) moveItem(it, a, argB(cmd));
       break;
     case OP.DROP:
       dropItem(it, a, s.player, ev, s.layer);
@@ -237,6 +239,7 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.CALL && s.solitary <= 0) startCall(sim, argB(cmd), argC(cmd));
       else if (a === EXT.SAY) say(sim, argB(cmd));
       else if (a === EXT.LINE && s.solitary <= 0) lineOp(sim, argB(cmd));
+      else if (a === EXT.KIOSK && s.solitary <= 0) kioskOp(sim, argB(cmd), argC(cmd));
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));
@@ -293,7 +296,7 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   const p = s.player;
   const held = itemOf(it.inv[it.hand]);
   // (`up`: the Dig up button's own target, whichever way the player faces.)
-  const target = up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim), s.plots);
+  const target = up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim), s.plots, hiddenIn(it.inv[it.hand]));
   if (!target) return;
   // Strikes come at their own pace (holding the button asks every step); the rest at a press.
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
@@ -315,6 +318,8 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
     wind(sim);
     return;
   }
+  // P35: the hollow book opened.
+  if (target.action === 'unbook') return openBook(sim);
   // P28: pruno drunk, the rat's laps on its track, a garden bed tended.
   if (target.action === 'drink') {
     drink(sim);

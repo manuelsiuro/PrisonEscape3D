@@ -36,6 +36,7 @@ import { ACT_GAP, CHARTS, countIn, QUIZ_QUESTIONS, REVEAL_STEPS, SONGS, songStep
 import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
+import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY, UNIT } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from './world/World';
@@ -132,7 +133,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' | 'phone' | 'mail' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' | 'phone' | 'mail' | 'kiosk' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -307,10 +308,20 @@ export type SimEvent =
    */
   | { type: 'phone'; what: PhoneNews; who?: number; to?: number; sub?: number; arg?: number; n?: number; tier?: number; ok?: boolean; blown?: boolean; tile?: number; cell?: number; learned?: number }
   | { type: 'quiz'; what: 'start' | 'question' | 'right' | 'wrong' | 'timeUp' | 'won' | 'tie' | 'lost' | 'quit' | 'off'; who?: number[]; q?: number; by?: number; choice?: number; pts?: number[]; prize?: number; int?: number }
+  /**
+   * The internet kiosk (P35, kiosk.ts): logged in, a block paid, logged out (`why`); a letter, an
+   * order (`item`); at mail call, the goods (or waiting: the desk full) and a photo (`n`: the
+   * drawing); a course begun, a question put (`q`), answered (`choice`, `right`), time up, its end
+   * (passed with `n` right and `int` gained, or failed; given up); something hidden in a hollow book
+   * or taken out of it (`item`).
+   */
+  | { type: 'kiosk'; what: KioskNews; why?: 'asked' | 'left' | 'closed' | 'broke'; item?: number; n?: number; q?: number; choice?: number; right?: boolean; int?: number }
   | ItemEvent;
 
 /** What the pay phone did (P34, the 'phone' event). */
 export type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
+/** What the internet kiosk did (P35, the 'kiosk' event). */
+export type KioskNews = 'login' | 'paid' | 'logout' | 'wrote' | 'ordered' | 'goods' | 'goodsWait' | 'photo' | 'course' | 'question' | 'answer' | 'timeUp' | 'passed' | 'failed' | 'quit' | 'hidden' | 'unhidden';
 /** What pruno did (P28, the 'pruno' event). */
 export type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
 /** What a garden bed did (P28, the 'garden' event). */
@@ -349,7 +360,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -615,6 +626,20 @@ export interface SimState {
   lou: number[];
   phoned: number[];
   rang: number[];
+  /**
+   * P35, the internet kiosk (kiosk.ts): the step the time paid for runs out (0: logged out); the
+   * post ([the prison day the last letter home was written (0 never), the drawing a reply brings
+   * (its place in PHOTOS + 1; 0 none coming), the prison day its letter was written, the item
+   * ordered off the shop (0 none coming), the prison day of the last order, the prison day of the
+   * last course]); the drawings pinned over
+   * the player's bed (PHOTOS places, oldest first); a course under way ([] none: [the step it
+   * began, the question (0–4), answers right, the step it was put, the choice said (-1 none yet,
+   * -2 time up), the step its answer stops being shown (0 still asked)]).
+   */
+  kiosk: number;
+  post: number[];
+  photos: number[];
+  course: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -779,6 +804,10 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     lou: [0, 0, 0, 0, 0, 0, 0, 0],
     phoned: [0, 0, 0, 0, 0, 0, 0],
     rang: [],
+    kiosk: 0,
+    post: [0, 0, 0, 0, 0, 0],
+    photos: [],
+    course: [],
   };
 }
 
@@ -926,6 +955,13 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!(ints(s.lou, 8) && s.lou.every((x, k) => k === 5 || x >= 0) && s.lou[4] <= 2)) s.lou = [0, 0, 0, 0, 0, 0, 0, 0];
   if (!(ints(s.phoned, 7) && s.phoned.every((x) => x >= 0))) s.phoned = [0, 0, 0, 0, 0, 0, 0];
   if (!(Array.isArray(s.rang) && (s.rang.length === 0 || ints(s.rang, 2)))) s.rang = [];
+  // P35: the kiosk's time as it can be (else logged out), the post's numbers whole, the drawings real, a course as it can be (else none).
+  if (!Number.isInteger(s.kiosk) || s.kiosk < 0 || s.kiosk > s.step + KIOSK_BLOCK) s.kiosk = 0;
+  if (!(ints(s.post, 6) && s.post.every((x) => x >= 0) && s.post[1] <= PHOTOS.length && (s.post[3] === 0 || (s.post[3] <= ITEMS.length && !ITEMS[s.post[3] - 1].contraband)))) s.post = [0, 0, 0, 0, 0, 0];
+  if (!(Array.isArray(s.photos) && s.photos.length <= PHOTO_WALL && s.photos.every((d) => Number.isInteger(d) && d >= 0 && d < PHOTOS.length))) s.photos = [];
+  if (!(Array.isArray(s.course) && (s.course.length === 0 || (ints(s.course, 6) && s.course[0] >= 0 && s.course[0] <= s.step && s.course[1] >= 0 && s.course[1] < COURSE_QUESTIONS && s.course[2] >= 0 && s.course[2] <= s.course[1] + 1 && s.course[3] >= s.course[0] && s.course[4] >= -2 && s.course[4] <= 3 && s.course[5] >= 0)))) s.course = [];
+  // (A course only while logged in.)
+  if (!s.kiosk) s.course = [];
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);

@@ -18,7 +18,7 @@ import { bodyAt, type Body } from './movement';
  * arm-wrestle, a lock being picked, dice thrown; the sim never sets them.) P23: BRAWL, two inmates
  * scrapping (the sim's); LOOKOUT, a lookout on watch (the view's).
  */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;
