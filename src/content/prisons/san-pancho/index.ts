@@ -419,6 +419,6 @@ export const SAN_PANCHO: PrisonDef = {
   },
   // Rebuilt in 2.9 (P33): the sports ground in the plaza's south half, the garden in the showers' old place.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([19, 12, 13], [[20, 12], [20, 13], [20, 14], [20, 15]], [31, 51], [35, 63, 1]),
+  comms: comms([19, 12, 13], [[20, 12], [20, 13], [20, 14], [20, 15]], [31, 51], [35, 63, 1], [44, 44, 1]),
   map: 1,
 };

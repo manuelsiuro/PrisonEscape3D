@@ -1,0 +1,227 @@
+/* ------------------------------------------------------------ the internet kiosk (P35) */
+
+/* Its card at the terminal: the bill and its clock, the apps' tabs, the app. */
+.kiosk-card .train-ic {
+  background: #3a7bd5;
+}
+.kiosk-card .train-head b {
+  min-width: 0;
+}
+.kiosk-bill {
+  margin: 6px 0 0;
+  font: 600 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.72);
+}
+.kiosk-bill:empty {
+  display: none;
+}
+.kiosk-bar.hidden {
+  display: none;
+}
+.kiosk-bar > i {
+  background: linear-gradient(90deg, #3a7bd5, #9cc4ff);
+}
+.kiosk-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 8px;
+}
+.kiosk-tabs:empty {
+  display: none;
+}
+.kiosk-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 2px;
+  border-radius: 10px;
+  font: 700 11px/1.1 var(--font-ui);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+.kiosk-tab span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kiosk-tab.on {
+  color: white;
+  background: rgba(58, 123, 213, 0.5);
+  box-shadow: inset 0 0 0 1.5px rgba(156, 196, 255, 0.6);
+}
+.kiosk-body {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+.kiosk-body:empty {
+  display: none;
+}
+.kiosk-intro,
+.kiosk-sub {
+  margin: 2px 0;
+  font: 600 12px/1.35 var(--font-ui);
+  color: rgba(255, 255, 255, 0.78);
+}
+.kiosk-list {
+  display: grid;
+  gap: 3px;
+  margin: 2px 0;
+  padding: 0;
+  list-style: none;
+  font: 600 12px/1.3 var(--font-ui);
+  color: rgba(255, 255, 255, 0.85);
+}
+.kiosk-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.kiosk-list li .ic {
+  flex: none;
+  margin-top: 1px;
+  opacity: 0.8;
+}
+.kiosk-list span::first-letter {
+  text-transform: uppercase;
+}
+.kiosk-shop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+.kiosk-item {
+  min-height: 40px;
+}
+.kiosk-item small:empty {
+  display: none;
+}
+.kiosk-days {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kiosk-days li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  font: 600 12px/1.3 var(--font-ui);
+  background: rgba(255, 255, 255, 0.06);
+}
+.kiosk-days b {
+  grid-row: span 2;
+  align-self: center;
+  min-width: 64px;
+}
+.kiosk-days small {
+  color: rgba(255, 255, 255, 0.66);
+}
+.kiosk-heads {
+  margin-top: 4px;
+}
+.kiosk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.kiosk-actions:empty {
+  display: none;
+}
+.kiosk-actions .big-btn {
+  width: auto;
+  flex: 1 1 auto;
+}
+.kiosk-card .train-note {
+  margin-top: 8px;
+}
+.kiosk-card .train-note:empty {
+  display: none;
+}
+
+/* Phones upright: above the hotbar (the action's prompt, over the card's buttons there, steps aside). */
+@media (max-width: 899px) and (min-height: 521px) {
+  .kiosk-card {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+    max-height: calc(100vh - 260px);
+    overflow-y: auto;
+  }
+}
+
+/* Landscape phones: docked to the left, below the clock; the hotbar steps aside. */
+@media (max-height: 520px) {
+  .kiosk-card {
+    animation: card-fade 0.25s ease-out;
+    left: max(14px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: min(360px, calc(50vw - 40px));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 8px 12px;
+  }
+  .kiosk-tab {
+    min-height: 36px;
+  }
+  .kiosk-card .quiz-choice,
+  .kiosk-card .phone-row {
+    min-height: 38px;
+  }
+  body.kiosking .hotbar,
+  body.kiosking .energy {
+    display: none;
+  }
+  /* (The routine's pill would sit under the card's head: the bill's clock says the time that matters.) */
+  body.kiosking .hud .hud-routine {
+    visibility: hidden;
+  }
+  body.kiosking .coach.lesson-coach {
+    top: 0;
+    right: 184px;
+    left: auto;
+    max-width: min(400px, calc(100vw - 600px));
+  }
+}
+
+/* Wide screens: docked left. */
+@media (min-width: 900px) and (min-height: 521px) {
+  .kiosk-card {
+    left: max(24px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: 380px;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
+}
+
+body.reduced-motion .kiosk-card {
+  animation: none !important;
+  transition: none !important;
+}
+/* At the kiosk the action and the lock-on aren't its business (the shelves beside it, someone passing), and they sit over the card's buttons on a phone. */
+body.kiosking .act-prompt,
+body.kiosking .act-btn,
+body.kiosking .lock-btn {
+  display: none;
+}
+/* In a course the digits are the answers: the tool button, its prompt and the lock-on step aside. */
+body.kiosking[data-kiosk='course'] .tool-btn,
+body.kiosking[data-kiosk='course'] .tool-prompt,
+body.kiosking[data-kiosk='course'] .lock-btn,
+body.kiosking[data-kiosk='course'] .act-btn,
+body.kiosking[data-kiosk='course'] .act-prompt {
+  display: none;
+}

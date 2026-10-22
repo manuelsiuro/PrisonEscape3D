@@ -77,6 +77,8 @@ export const EXT = {
   CALL: 17,
   SAY: 18,
   LINE: 19,
+  /** The internet kiosk (P35): b = what's asked (content/kiosk.ts KIOSK: logging in and out, a letter, an order, a course), c its argument (the shop's item, an answer). */
+  KIOSK: 20,
 } as const;
 
 /** What EXT.LINE asks (P34): a place at the end of the queue, out of it, cut in at the front. Never renumber. */

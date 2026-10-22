@@ -20,6 +20,7 @@ import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, g
 import { awake, GUARD } from './guards';
 import { DOING, type Inmate, inmateZone, type Social, STAND_OFF } from './inmates';
 import { HOTBAR, itemOf, pocketOf, slot, usesOf } from './items';
+import { HOLLOW_BOOK } from './structure';
 import { quotaUp } from './jobs';
 import { seatSpot } from './rest';
 import { clockAt } from './clock';
@@ -169,6 +170,8 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       if (!v) return;
       const item = itemOf(v);
       if (itemDef(item).value <= 0) return refuse(sim, 'worthless');
+      // (P35: a hollow book given away with something in it: what it hides would go with it.)
+      if (item === HOLLOW_BOOK && usesOf(v)) return refuse(sim, 'bookFull');
       it.inv[b] = 0;
       sim.events.push({ type: 'gift', who, item, cash: 0 });
       changeOpinion(sim, who, giftOpinion(itemDef(item).value));

@@ -15,6 +15,7 @@ import { pastimeKey, shootKey } from './pastimes';
 import { kickKey } from './team';
 import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
+import { kioskKey } from './kiosk';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -93,6 +94,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // The pay phone (P34): on Lou's line, 1–3 say a phrase.
   if (payphoneKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // The kiosk (P35): in a course, 1–4 answer.
+  if (kioskKey(e.code)) {
     e.preventDefault();
     return;
   }

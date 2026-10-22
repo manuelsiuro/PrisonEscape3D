@@ -165,6 +165,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'walls', group: 'life', icon: 'ear', ...counted('overheard', 3) },
   { id: 'tipOff', group: 'life', icon: 'phone', run: (r) => f(r, 'tipsFound') >= 1 },
   { id: 'wheels', group: 'out', icon: 'truck', run: (r) => f(r, 'wheels') >= 1 },
+  // P35: the internet kiosk.
+  { id: 'familyGallery', group: 'life', icon: 'picture', ...counted('photos', 3) },
+  { id: 'nightSchool', group: 'skills', icon: 'brain', ...counted('coursesPassed', 3) },
+  { id: 'betweenTheLines', group: 'skills', icon: 'book', run: (r) => f(r, 'hiddenContraband') >= 1 },
   // The crew (P23).
   { id: 'inGoodCompany', group: 'out', icon: 'users', escape: (e) => (e.crew ?? 0) >= 1 },
   { id: 'wholeGang', group: 'out', icon: 'star', escape: (e) => (e.crew ?? 0) >= 2 },

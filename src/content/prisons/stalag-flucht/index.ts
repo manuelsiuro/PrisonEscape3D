@@ -372,6 +372,6 @@ export const STALAG_FLUCHT: PrisonDef = {
   },
   // Rebuilt in 2.8 (P32): the sports ground in the guards' compound, the garden along the north wire.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
-  comms: comms([13, 51, 13], [[14, 51], [15, 51], [16, 51], [17, 51]], [20, 60], [24, 63, 1]),
+  comms: comms([13, 51, 13], [[14, 51], [15, 51], [16, 51], [17, 51]], [20, 60], [24, 63, 1], [17, 54, 13]),
   map: 1,
 };

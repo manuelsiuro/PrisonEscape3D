@@ -3,6 +3,7 @@ import { RECIPES } from '../content/recipes';
 import { EXT, OP, SLOT } from '../sim/command';
 import { ingredientOptions } from '../sim/systems/recipes';
 import { benchCheck, HOTBAR, ingredientSlots, itemOf, maskOf, usesOf, type ItemState } from '../sim/systems/items';
+import { HOLLOW_BOOK } from '../sim/systems/structure';
 import { clockRinging, clockSecs } from '../sim/systems/noise';
 import { ALARM_CLOCK } from '../sim/systems/structure';
 import { itemIcons } from '../render/itemIcons';
@@ -420,7 +421,9 @@ export class ItemsUI {
       s.classList.toggle('hand', k === it.hand && !this.craftOpen && it.open < 0);
       s.classList.toggle('picked', this.picked === k || this.menu === k);
       s.classList.toggle('on-bench', this.bench.includes(k));
-      s.title = it.inv[k] ? itemName(itemOf(it.inv[k])) : k === SLOT.WEAPON ? t('items.weapon') : k === SLOT.OUTFIT ? t('items.outfit') : '';
+      // (P35: a hollow book says what it hides.)
+      const inside = itemOf(it.inv[k]) === HOLLOW_BOOK ? itemOf(usesOf(it.inv[k])) : 0;
+      s.title = it.inv[k] ? (inside ? t('items.inside', { item: itemName(itemOf(it.inv[k])), inside: itemName(inside) }) : itemName(itemOf(it.inv[k]))) : k === SLOT.WEAPON ? t('items.weapon') : k === SLOT.OUTFIT ? t('items.outfit') : '';
     });
 
     this.lastInv = it.inv.slice();

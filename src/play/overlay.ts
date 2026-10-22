@@ -59,6 +59,7 @@ import {
   stageCard,
   quizCard,
   payphoneCard,
+  kioskCard,
   vignette,
   view,
   workChips,
@@ -94,6 +95,7 @@ import { NO_TAKE, raceNow, takeOffers } from './long';
 import { inkNow, matchNow, teamSounds } from './team';
 import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
+import { kioskNow } from './kiosk';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -302,6 +304,11 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   payphoneCard.update(phoneV);
   document.body.classList.toggle('phoning', !!phoneV);
   document.body.dataset.phone = phoneV?.phase === 'lou' ? 'on' : '';
+  // The internet kiosk (P35): its card at the terminal, logged in or not (not over another's).
+  const kioskV = busy || otherGame || stageV || quizV || phoneV ? null : kioskNow(sim);
+  kioskCard.update(kioskV);
+  document.body.classList.toggle('kiosking', !!kioskV);
+  document.body.dataset.kiosk = kioskV?.phase === 'on' && kioskV.course !== 'offer' ? 'course' : kioskV?.phase === 'on' ? 'on' : '';
   document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
   const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);

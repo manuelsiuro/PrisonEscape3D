@@ -50,6 +50,7 @@ const TOPICS: Record<Exclude<Tab, 'controls'>, Array<[string, string, string, st
     ['talent', 'music', '#ff6fb5'],
     ['quiz', 'brain', '#5fb3ff'],
     ['payphone', 'phone', '#2f9e8f'],
+    ['kiosk', 'monitor', '#3a7bd5'],
     ['fight', 'fist', '#c0392b'],
   ],
   escape: [

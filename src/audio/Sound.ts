@@ -1033,6 +1033,15 @@ export class Sound {
     this.hiss(0.05, 'lowpass', 900, 0.7, 0.05);
   }
 
+  /** Keys typed at the kiosk (P35): a few quick plastic clicks, uneven. */
+  keys() {
+    const at = [0, 0.07, 0.15, 0.2, 0.29, 0.36];
+    at.forEach((d, k) => {
+      this.hiss(0.025, 'highpass', 2600 + (k % 3) * 400, 1.2, 0.035, undefined, d);
+      this.tone(1800 + (k % 2) * 300, 1500, 0.02, 'square', 0.006, d);
+    });
+  }
+
   /** A car alarm far off at the gate (P34): a few whooping rises, then honks. */
   carAlarm() {
     for (let k = 0; k < 4; k++) this.tone(620, 1180, 0.32, 'sawtooth', 0.016, k * 0.34);

@@ -76,9 +76,9 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   { kind: 'drain', x: 21, z: 27 },
   { kind: 'towelHooks', x: 16, z: 26, d: 2, rot: 1 },
   { kind: 'mirror', x: 22, z: 26, d: 2, rot: 3 },
-  // Library: a rug, a globe between the shelves, lamps and books on the tables, plants.
+  // Library: a rug, a globe by the west shelf (P35: the kiosk took its place between the shelves), lamps and books on the tables, plants.
   { kind: 'rug', x: 18, z: 31, w: 3, d: 3 },
-  { kind: 'globe', x: 19, z: 30 },
+  { kind: 'globe', x: 16, z: 31 },
   { kind: 'deskLamp', x: 16, z: 32, y: TABLE },
   { kind: 'deskLamp', x: 22, z: 32, y: TABLE },
   { kind: 'books', x: 17, z: 32, y: TABLE },

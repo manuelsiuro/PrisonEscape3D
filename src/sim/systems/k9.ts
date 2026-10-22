@@ -65,7 +65,7 @@ import { TILE } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import { clockAt, prisonDay } from './clock';
 import { awake, GUARD, sendToLook, type Guard } from './guards';
-import { HOTBAR, itemOf, slot } from './items';
+import { HOTBAR, itemOf, slot, usesOf } from './items';
 import { bodyAt, type Body } from './movement';
 import { aimToss, makeNoise, type TossAim } from './noise';
 import { underShower } from './actions';
@@ -151,7 +151,10 @@ export function onShift(sim: SimContext, def: DogDef): boolean {
   return (m >= DOG_DAY_FROM && m < DOG_DAY_TO) || (!!def.night && m >= DOG_NIGHT_FROM && m < DOG_NIGHT_TO);
 }
 
-/** Contraband in the hotbar with no pouch there to keep the smell in: what a dog's nose finds. */
+/** P35: the hollow book (what it hides kept in its slot's upper bits). */
+const HOLLOW_BOOK = itemNumber('hollow_book');
+
+/** Contraband in the hotbar with no pouch there to keep the smell in: what a dog's nose finds (P35: a hollow book's pages don't hide it). */
 export function smellsOfContraband(sim: SimContext): boolean {
   const inv = sim.state.items.inv;
   let found = false;
@@ -159,6 +162,8 @@ export function smellsOfContraband(sim: SimContext): boolean {
     const n = itemOf(inv[k]);
     if (n === POUCH) return false;
     if (n && itemDef(n).contraband) found = true;
+    const inside = n === HOLLOW_BOOK ? itemOf(usesOf(inv[k])) : 0;
+    if (inside && itemDef(inside).contraband) found = true;
   }
   return found;
 }

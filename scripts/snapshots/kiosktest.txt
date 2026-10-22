@@ -1,0 +1,8 @@
+center-perks: kiosk 19,30 facing 13
+stalag-flucht: kiosk 17,54 facing 13
+shankton: kiosk 24,43 facing 9
+san-pancho: kiosk 44,44 facing 1
+irongate: kiosk 48,34 facing 13
+shop: soap $4, chocolate $6, magazine $6, toothpaste $4, talcum $6, ink $6, battery $7, alarm_clock $8, thick_book $8
+news from day 2 (seed 9): day 3 visiting rain wind 6/1; day 4 drill clear wind 6/0; day 5 quiz clear wind 7/1
+kiosk ok

@@ -17,6 +17,7 @@ import { itemsUI, tools } from './context';
 import { t } from '../i18n';
 import { play } from './game';
 import { togglePhone } from './smuggle';
+import { hiddenIn } from '../sim/systems/kiosk';
 
 /** What the buttons would do, worked out once per simulation step. */
 export const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; up: ToolTarget | null; upHeard: boolean; canLock: boolean; fighting: boolean; station: Station | null; heard: boolean } = {
@@ -182,7 +183,7 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, ladderFoot, bodiesOf(sim)), faced);
     memo.target = memo.climb ? null : reach;
-    memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv, airOf(sim), st.plots);
+    memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv, airOf(sim), st.plots, hiddenIn(it.inv[it.hand]));
     // The ear on the tool button (P14): a guard awake would hear this strike (the sim's own rule).
     const tool = memo.tool;
     memo.heard = !!tool && STRIKES.has(tool.action) && tool.fits && tool.hp > 0 && wouldHear(sim, strikeNoise(st.layer, tool, held));

@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented; P35's 'kiosk': ordered off the internet kiosk's shop). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk';
 
 export interface ItemDef {
   id: string;
@@ -251,6 +251,9 @@ export const ITEMS: readonly ItemDef[] = [
   work('produce', 'vegCrate', 0xb07a45, 0xe8862e),
   // P34 (the pay phone): the cake cousin Lou sends in at a visit, a metal file baked inside (nothing wrong with a cake).
   m('cake', false, 15, 'cake', 0xf2d9a8, ['phone'], 0xd23f6a),
+  // P35 (the internet kiosk): a thick book off its shop, and the same cut hollow with a razor blade (one small item hidden inside: content/kiosk.ts).
+  m('thick_book', false, 12, 'tome', 0x2f5a8a, ['kiosk'], 0xe8e0c8),
+  m('hollow_book', false, 12, 'tome', 0x6a2f2a, [], 0xe8e0c8),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */

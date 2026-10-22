@@ -40,6 +40,7 @@ import { INSTRUMENT } from '../content/nights';
 import { sightFor } from '../sim/systems/football';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 import { carWaiting, commsOf } from '../sim/systems/phone';
+import { kioskOf, loggedIn } from '../sim/systems/kiosk';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -178,6 +179,7 @@ const frameData: Frame = {
   team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },
   nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
   phone: { offHook: false, car: false },
+  kiosk: { on: false, photos: [] },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
 };
@@ -455,6 +457,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const ph = comms.phone;
     if (!p.moving) f.facing = Math.atan2(ph.x + 0.5 + DIR_X[ph.face] / 2048 - f.x, ph.z + 0.5 + DIR_Z[ph.face] / 2048 - f.z);
   }
+  // (P35: logged in at the kiosk, standing at it, typing, facing its screen on the wall; a step off it
+  // and still logged in, not typing at nothing.)
+  const kiosk = loggedIn(st) && !seated && !p.moving ? kioskOf(sim) : null;
+  if (kiosk && Math.hypot(f.x - kiosk.x - 0.5, f.z - kiosk.z - 0.5) < 0.6) {
+    f.doing = DOING.KIOSK;
+    f.facing = Math.atan2(kiosk.x + 0.5 + DIR_X[kiosk.face] / 2048 - f.x, kiosk.z + 0.5 + DIR_Z[kiosk.face] / 2048 - f.z);
+  }
   if (!seated && st.ink) {
     f.doing = DOING.TATTOO;
     const m = st.inmates[st.ink.who];
@@ -565,6 +574,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The pay phone (P34): off the hook while an inmate's call has begun or the player's is on; Lou's car on its night.
   f.phone.offHook = (st.booth[0] >= 0 && st.booth[1] > 0) || st.call !== null;
   f.phone.car = carWaiting(st);
+  // The internet kiosk (P35): the screen awake while the player's logged in; the drawings pinned over the bed.
+  f.kiosk.on = loggedIn(st);
+  f.kiosk.photos = st.photos;
   f.inked = st.inked;
   return f;
 }

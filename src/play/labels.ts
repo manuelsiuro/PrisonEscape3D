@@ -21,6 +21,7 @@ import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
+import { hiddenIn } from '../sim/systems/kiosk';
 import { inmateName } from '../ui/social';
 import type { ToolView } from '../ui/tool';
 import { drinkArmed, press } from './buttons';
@@ -44,8 +45,8 @@ export const NEED: Record<string, string> = {
   rope: 'toast.noLanding', glide: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig', pick: 'toast.pickGate' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide', 'drink', 'track', 'plant', 'water', 'harvest'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider', drink: 'brew', track: 'race', plant: 'sprout', water: 'water', harvest: 'fruit' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide', 'drink', 'track', 'plant', 'water', 'harvest', 'unbook'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider', drink: 'brew', track: 'race', plant: 'sprout', water: 'water', harvest: 'fruit', unbook: 'book' };
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
@@ -283,6 +284,15 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     if (clockRinging(sim.state.items.inv[sim.state.items.hand])) v.verb = t('act.stop');
     v.what = t('thing.clock');
     v.fits = true;
+    v.repeat = false;
+    v.progress = null;
+    return v;
+  }
+  // The hollow book (P35): what it hides taken out (grey with nothing inside: a small item moved onto it goes in).
+  if (tt.action === 'unbook') {
+    const inside = hiddenIn(sim.state.items.inv[sim.state.items.hand]);
+    v.what = inside ? itemName(itemOf(inside)) : t('thing.bookEmpty');
+    v.fits = tt.fits;
     v.repeat = false;
     v.progress = null;
     return v;

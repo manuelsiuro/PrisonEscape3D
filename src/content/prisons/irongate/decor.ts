@@ -55,10 +55,10 @@ export const IRONGATE_DECOR: readonly DecorPlacement[] = [
   { kind: 'mirror', x: 40, z: 35, rot: 3 },
   { kind: 'drain', x: 37, z: 36 },
   { kind: 'drain', x: 39, z: 36 },
-  // Library: books and a lamp on the table, a globe.
+  // Library: books and a lamp on the table, a globe (P35: by the east wall, the kiosk in its old corner).
   { kind: 'books', x: 49, z: 36, y: TABLE },
   { kind: 'deskLamp', x: 50, z: 36, y: TABLE },
-  { kind: 'globe', x: 48, z: 34 },
+  { kind: 'globe', x: 51, z: 36 },
   // Infirmary: the medicine cabinet, a drip stand.
   { kind: 'medCabinet', x: 51, z: 31, rot: 3 },
   { kind: 'ivStand', x: 49, z: 28 },

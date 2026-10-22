@@ -49,6 +49,7 @@ import { TeamView, type TeamFrame } from './Team';
 import { GroundsView } from './Grounds';
 import { NightsView, type NightsFrame } from './Nights';
 import { PhoneView, type PhoneFrame } from './Phone';
+import { KioskView, type KioskFrame } from './Kiosk';
 import { handlersOf } from '../sim/systems/k9';
 
 /** The old-timer's hair (P27): white with age. */
@@ -145,6 +146,8 @@ export interface Frame {
   nights: NightsFrame;
   /** The pay phone (P34): its handset off the hook, Lou's car waiting on the road. */
   phone: PhoneFrame;
+  /** The internet kiosk (P35): logged in or not, the family's drawings over the player's bed. */
+  kiosk: KioskFrame;
   /** P29: the designs inked on the player's arms. */
   inked: readonly number[];
   /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
@@ -363,6 +366,8 @@ export class View {
   private readonly nightsView = new NightsView();
   /** P34: the pay phone, Lou's car, the diversion's beacon. */
   private readonly phoneView = new PhoneView();
+  /** P35: the internet kiosk on the library wall, the family's drawings over the player's bed. */
+  private readonly kioskView = new KioskView();
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
   /** The side games' taps so far (P22: a pin tried, dice thrown), and the inmate in an arm-wrestle (eased apart again after). */
@@ -489,7 +494,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -634,6 +639,7 @@ export class View {
     this.pastimesView.setWorld(world, pitch);
     this.getaway.setWorld(world);
     this.phoneView.setWorld(world, later);
+    this.kioskView.setWorld(world, later);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {
         const d = world.def.guards[h].dog!;
@@ -1357,6 +1363,8 @@ export class View {
     this.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // The pay phone (P34): the handset, Lou's car, the diversion's beacon (not from the tunnels).
     this.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.night, f.layer !== LAYER.UNDER);
+    // The internet kiosk (P35): its screen, its glow after dark; the drawings over the bed (not from the tunnels).
+    this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.night, this.security?.group.visible ? this.security.powerLevel : 1, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
@@ -1489,6 +1497,7 @@ export class View {
     this.teamView.update(null, [], 0, false);
     this.nightsView.update(null, 0, false, false);
     this.phoneView.update(null, dt, 0, 0, false, 0, false);
+    this.kioskView.update(null, 0, false, 0, 1, false);
     // (The trees whole again; no match's framing.)
     this.decor?.shelter(this.people, 0, dt, false);
     this.fitZoom = 0;
@@ -1574,8 +1583,8 @@ export class View {
     this.placeSun(600);
     const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.guide.group].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
-    // The pay phone hangs on its wall in game, but the title screen behind the shot hides its group.
-    const shown = [this.phoneView.group].filter((o) => !o.visible);
+    // The pay phone and the kiosk hang on their walls in game, but the title screen behind the shot hides their groups.
+    const shown = [this.phoneView.group, this.kioskView.group].filter((o) => !o.visible);
     for (const o of shown) o.visible = true;
     this.renderer.setPixelRatio(ss);
     this.renderer.setSize(w, h, false);

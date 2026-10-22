@@ -27,7 +27,7 @@ import { bedTarget } from './garden';
  * a glider takes off a roof's edge (P24); ripe pruno is drunk, the rat runs its track, and a garden
  * bed is planted, watered or harvested (P28).
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick' | 'glide' | 'drink' | 'track' | 'plant' | 'water' | 'harvest';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick' | 'glide' | 'drink' | 'track' | 'plant' | 'water' | 'harvest' | 'unbook';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -107,6 +107,8 @@ export const SHEET_ROPE = ITEM_ID('sheet_rope');
 export const CHOCOLATE = ITEM_ID('chocolate');
 /** P34: Lou's cake (a file inside). */
 export const CAKE = ITEM_ID('cake');
+/** P35: the hollow book (one small item hidden inside). */
+export const HOLLOW_BOOK = ITEM_ID('hollow_book');
 export const GRAPNEL = ITEM_ID('grapnel');
 export const RAFT = ITEM_ID('raft');
 /** P14: the alarm clock (wound with the use button) and the firecracker (thrown). */
@@ -279,7 +281,7 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = f
  * it, the target comes back with `fits` false (the UI says what is needed); null when there
  * is nothing to strike.
  */
-export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = [], air?: Air, plots?: readonly number[][]): ToolTarget | null {
+export function toolTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[], pockets: readonly number[] = [], air?: Air, plots?: readonly number[][], inside = 0): ToolTarget | null {
   const def = held ? itemDef(held) : null;
   // The garden (P28): a ripe bed ahead (or underfoot) harvested whatever is in hand; seeds planted, a cup watering.
   const bed = plots ? bedTarget(w, layer, b, held, plots) : null;
@@ -288,6 +290,8 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   if (held === PRUNO) return { action: 'drink', layer, tile: -1, fits: true, hp: 0 };
   if (held === RAT_TRACK) return { action: 'track', layer, tile: -1, fits: true, hp: 0 };
   if (held === CHOCOLATE || held === CAKE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  // P35: the hollow book opened, what it hides (`inside`: the slot in its upper bits) taken out.
+  if (held === HOLLOW_BOOK) return { action: 'unbook', layer, tile: -1, fits: inside > 0, hp: 0 };
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };
   // A bar of soap (P19): the player's scent rubbed off.
   if (held === SOAP && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
