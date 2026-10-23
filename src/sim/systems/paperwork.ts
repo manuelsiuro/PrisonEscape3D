@@ -94,6 +94,8 @@ function records(sim: SimContext) {
   const s = sim.state;
   const day = prisonDay(s.step);
   if (s.release[0] !== day + 1) return;
+  // (P39: a name the parole board put there has nothing forged to find.)
+  if (s.parole[9] === s.release[0]) return;
   const hot = s.heat >= RECORDS_HEAT || s.release[2] === day || s.lockdown;
   if (!hot) return void sim.events.push({ type: 'paper', what: 'passed', n: day + 1 });
   s.release[0] = 0;

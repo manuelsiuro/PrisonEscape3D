@@ -60,6 +60,7 @@ import {
   quizCard,
   payphoneCard,
   kioskCard,
+  paroleCard,
   vignette,
   view,
   workChips,
@@ -78,6 +79,8 @@ import { deskAction, freedLeft, releaseChip } from './paperwork';
 import { calledNow } from '../sim/systems/paperwork';
 /** The release's chip (P36), refilled. */
 const releaseHud = { icon: 'clipboard', color: '#d8b04a', text: '', time: '', soon: false, left: null, of: 1, sr: '' };
+/** The parole hearing's chip (P39), refilled. */
+const paroleHud = { icon: 'scale', color: '#8a6bd1', text: '', time: '', soon: false, left: null, of: 1, sr: '' };
 const PEPPER = itemNumber('pepper');
 /** The Dig up button's face, refilled in place. */
 const upView: UpView = { fits: true, progress: 0, heard: false };
@@ -100,6 +103,7 @@ import { inkNow, matchNow, teamSounds } from './team';
 import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
 import { kioskNow } from './kiosk';
+import { paroleChip, paroleNow } from './parole';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -314,6 +318,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   document.body.classList.toggle('kiosking', !!kioskV);
   document.body.dataset.kiosk = kioskV?.phase === 'on' && kioskV.course !== 'offer' ? 'course' : kioskV?.phase === 'on' ? 'on' : '';
   document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
+  // The parole board (P39): its card at the release desk, before the board, the verdict a moment (not over another's).
+  const paroleV = busy || otherGame || stageV || quizV || phoneV || kioskV ? null : paroleNow(sim);
+  paroleCard.update(paroleV);
+  document.body.classList.toggle('paroling', !!paroleV);
+  // (Before the board the answers are the controls; the verdict's card a moment, the action button off it too.)
+  document.body.dataset.parole = paroleV && (paroleV.phase === 'ask' || paroleV.phase === 'weigh' || paroleV.phase === 'sat') ? 'on' : paroleV?.phase === 'verdict' ? 'verdict' : '';
   const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
@@ -439,6 +449,15 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
     releaseHud.sr = rel;
     releaseHud.soon = calledNow(st);
     hudState.today = releaseHud;
+  } else {
+    // (P39: a parole hearing to come, or called this morning: its chip there too.)
+    const hearing = paroleChip(sim);
+    if (hearing) {
+      paroleHud.text = hearing.text;
+      paroleHud.sr = hearing.text;
+      paroleHud.soon = hearing.soon;
+      hudState.today = paroleHud;
+    }
   }
   hud.update(clock, zone, hudState);
   fileButton(g);

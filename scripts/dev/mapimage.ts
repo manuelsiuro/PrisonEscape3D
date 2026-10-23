@@ -6,6 +6,7 @@
 // checkpoint), and the vents and the ground under (where the prison has them); and (P41) the
 // outside past the wall, where the manhunt is run. Drawn as SVG,
 // turned into PNG by rsvg-convert (brew install librsvg).
+import { HEARINGS } from '../../src/content/parole';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -284,6 +285,18 @@ function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
     g.text(cx(q.x), cz(q.z) + 3.5, `r${k + 1}`, `font-size="8" font-weight="700" fill="${gold}" text-anchor="middle"`);
   });
   g.pill(cx(r.at[0].x), cz(r.at[0].z) - S * 0.62, r.bridge ? 'RELEASE DESK (+ drawbridge)' : 'RELEASE DESK', 9, gold);
+  // P39: the parole board (purple: its three members' places b1… and the player's seat before them; drawn only, on its hearing's morning).
+  const h = HEARINGS[def.id];
+  if (h) {
+    const purple = '#6d28d9';
+    h.board.forEach((q, k) => {
+      g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="8" fill="${purple}" stroke="#fff" stroke-width="1.5"/>`);
+      g.text(cx(q.x), cz(q.z) + 3.5, `b${k + 1}`, 'font-size="8" font-weight="700" fill="#fff" text-anchor="middle"');
+    });
+    g.rect(px(h.seat.x) + 7, pz(h.seat.z) + 7, S - 14, S - 14, `rx="5" fill="#fff" stroke="${purple}" stroke-width="2"`);
+    g.text(cx(h.seat.x), cz(h.seat.z) + 3.5, 'you', `font-size="8" font-weight="700" fill="${purple}" text-anchor="middle"`);
+    g.pill(cx(h.board[1].x), cz(h.board[1].z) - S * 0.62, 'PAROLE BOARD', 9, purple);
+  }
   if (!lou) return;
   const red = '#be123c';
   g.add(`<circle cx="${cx(c.gate.x)}" cy="${cz(c.gate.z)}" r="11" fill="rgba(190,18,60,0.2)" stroke="${red}" stroke-width="2.5" stroke-dasharray="4 3"/>`);
@@ -489,7 +502,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
           'Red dashed lines: zone borders (between two named zones; walls are "none"). Red pills: zone names, once per patch.',
           'Dark boxes: solid props (named; yellow dot = the side it faces). Light dashed boxes: props walked over (benches, seats, chairs, showers, bleachers).',
           'Pink: decor (pink bar = a wall piece, on the wall it hangs on; pink outline = a floor piece). Doors: c<n> = cell n\'s door, GATE = perimeter gate (no key opens it).',
-          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net); gold: the release desk (rel) and its doors out r1….',
+          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net); gold: the release desk (rel) and its doors out r1…; purple: the parole board b1–b3 and the player\'s seat before it (you).',
         ]
       : kind === 'people'
         ? [
@@ -497,7 +510,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
             'White squares = posts (where a guard stands during a block: rollCa(ll), breakf(ast), exerci(se), showers, dinner…). Lines are straight between stops, not the walked path.',
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
-            'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order. Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
+            'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order; the parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
           ]
         : [
             'Layer +1 over the faded ground floor: grey = ducts, blue V = ceiling grates (down into the room below), green L = the ladder up to the roof.',
@@ -639,7 +652,7 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
   const name = def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id);
-  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk' : 'vents (layer +1) and boulders under the ground (layer -1)';
+  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board' : 'vents (layer +1) and boulders under the ground (layer -1)';
   g.text(M, 30, `${name} — ${what}`, 'font-size="24" font-weight="700" fill="#111"');
   g.text(W - M, 30, `v${pkg.version} · map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
   drawTiles(g, w, kind !== 'layout');
@@ -730,6 +743,12 @@ function tileData(def: PrisonDef, n: number) {
     mark(c.kiosk.x, c.kiosk.z, `internet kiosk (its user stands here, facing ${c.kiosk.face})`);
     for (const q of c.release.at) mark(q.x, q.z, 'release desk (forged form filed here; report here when called at 10:00)');
     c.release.gates.forEach((q, k) => mark(q.x, q.z, `release way out, door ${k + 1} (opens for the player once cleared)`));
+  }
+  // P39: the parole board's places and the player's seat before it.
+  const hp = HEARINGS[def.id];
+  if (hp) {
+    hp.board.forEach((q, k) => mark(q.x, q.z, `parole board, member ${k + 1} (seated on the hearing's morning, 10:00)`));
+    mark(hp.seat.x, hp.seat.z, `the seat before the parole board (the hearing is held anywhere in the ${hp.zone})`);
   }
   const V = w.layers[LAYER.VENTS].kind;
   const U = w.layers[LAYER.UNDER].kind;

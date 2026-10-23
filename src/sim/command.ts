@@ -79,6 +79,8 @@ export const EXT = {
   LINE: 19,
   /** The internet kiosk (P35): b = what's asked (content/kiosk.ts KIOSK: logging in and out, a letter, an order, a course), c its argument (the shop's item, an answer). */
   KIOSK: 20,
+  /** The parole board (P39): b = what's asked (systems/parole.ts PAROLE: applying at the release desk, an answer to the board), c its argument (the answer). */
+  PAROLE: 21,
   /**
    * The manhunt (P41, its own simulation: sim/hunt/): a stone thrown to draw the searchers off (b
    * and c = the ground tile it lands on, see tossArgs); a treat thrown to a dog (b = the dog,

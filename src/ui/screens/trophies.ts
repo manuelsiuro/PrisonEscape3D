@@ -22,7 +22,7 @@ type Tab = 'trophies' | 'medals' | 'stats';
 const TABS: Tab[] = ['trophies', 'medals', 'stats'];
 
 /** Each way out's icon (as on the victory card). */
-export const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli', stowaway: 'truck', bluff: 'idCard', glider: 'glider', paperwork: 'clipboard' };
+export const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli', stowaway: 'truck', bluff: 'idCard', glider: 'glider', paperwork: 'clipboard', parole: 'scale' };
 /** A way out's icon in a prison (P18: Irongate's stowaway rides the helicopter). */
 export const routeIcon = (route: string, prison: string) => (route === 'stowaway' && PRISONS.find((p) => p.id === prison)?.delivery?.vehicle === 'helicopter' ? 'heli' : (ROUTE_ICON[route] ?? 'route'));
 
