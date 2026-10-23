@@ -28,9 +28,10 @@ const STEP = UNIT / 8;
 /**
  * Whether nothing blocks the straight line between two points (units). The tile the line
  * starts on never blocks (a guard standing in a doorway sees out of it), and a line can't
- * slip between two walls that touch at a corner.
+ * slip between two walls that touch at a corner. `open` (a tile index) never blocks either:
+ * the manhunt's player moving in a hedge is seen there, not hidden by the hedge they stand in.
  */
-export function lineOfSight(w: World, ax: number, az: number, bx: number, bz: number): boolean {
+export function lineOfSight(w: World, ax: number, az: number, bx: number, bz: number, open = -1): boolean {
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(bz - az)) / STEP));
   let px = Math.floor(ax / UNIT);
   let pz = Math.floor(az / UNIT);
@@ -38,7 +39,7 @@ export function lineOfSight(w: World, ax: number, az: number, bx: number, bz: nu
     const tx = Math.floor((ax + Math.trunc(((bx - ax) * k) / n)) / UNIT);
     const tz = Math.floor((az + Math.trunc(((bz - az) * k) / n)) / UNIT);
     if (tx === px && tz === pz) continue;
-    if (sightBlocked(w, tx, tz)) return false;
+    if (sightBlocked(w, tx, tz) && tz * MAP_W + tx !== open) return false;
     if (tx !== px && tz !== pz && sightBlocked(w, px, tz) && sightBlocked(w, tx, pz)) return false;
     px = tx;
     pz = tz;
@@ -51,7 +52,7 @@ export function lineOfSight(w: World, ax: number, az: number, bx: number, bz: nu
  * 60° cone and the range with a clear line, or touching. Integer math only (the comparisons are squared), so it is the
  * same on every platform.
  */
-export function canSee(w: World, eye: Body, target: { x: number; z: number }, range = SIGHT_RANGE, walls = true): boolean {
+export function canSee(w: World, eye: Body, target: { x: number; z: number }, range = SIGHT_RANGE, walls = true, open = -1): boolean {
   const dx = target.x - eye.x;
   const dz = target.z - eye.z;
   const d2 = dx * dx + dz * dz;
@@ -64,7 +65,7 @@ export function canSee(w: World, eye: Body, target: { x: number; z: number }, ra
     if (dot <= 0 || 4 * dot * dot < 3 * (fx * fx + fz * fz) * d2) return false;
   }
   // Without `walls` (someone up on a roof, seen from the open yard) nothing on the ground is in the way.
-  return !walls || lineOfSight(w, eye.x, eye.z, target.x, target.z);
+  return !walls || lineOfSight(w, eye.x, eye.z, target.x, target.z, open);
 }
 
 /**

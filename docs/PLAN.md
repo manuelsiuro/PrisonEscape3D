@@ -1388,8 +1388,9 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
   - **The card**: the escape counts at the wall as before (records, medals, achievements, the replay kept); the card
     then offers Keep running or Skip (Skip: the card as it always was). Safe: a clean getaway (`RouteBest.clean`, a
     green star beside the route's medal on the shelf, a line on the card); caught: "Recaptured, n% of the way". With
-    the hunt's line the card goes two columns on screens under 1000 px tall. Legal releases (`LEGAL_ROUTES`, today
-    `['paperwork']`) and the Daily end at the wall: no offer.
+    the hunt's line the card goes two columns on screens under 1000 px tall. Legal releases (`LEGAL_ROUTES`: paperwork
+    and, since the merge with P39, parole) and the Daily end at the wall: no offer. Leaving a hunt from the pause card
+    counts as a recapture in the stats (giving up is being caught; no achievement).
   - **Not built**: a replay of the hunt (the replay kept is the inside run's, as before; "a better replay" is left
     for later), rumours about the outside (no gossip kind), and help pictures (the topic is laid out with a timeline
     and waits for `public/help/manhunt.webp`, then `pic: true`).
@@ -1403,6 +1404,36 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
   - **Lesson** `manhunt`, last of the Ways out chapter: over Center Perks' wall, into the woods, a thicket while a
     searcher goes by, clothes off a line, Lou's car (one searcher, no roadblocks, no helicopter). Dev builds start a
     hunt from the console: `__manhunt('stalag-flucht', 'wall', { minute: 1410, crew: 1, lou: true })`.
+  - **Rules review** (before release; the numbers above are the first cut's, these replace them):
+    - Bugs: a searcher sent to look (a noise, the radio, the helicopter, a lost chase) now walks there, looks round,
+      and goes back (with no way there he looks round where he stands); before, he froze. A ford washes the trail
+      off and a dog tracking it loses it there (it routed across the gap).
+    - Cover hides only someone keeping still in it (`hidden`); moving in it, eyes see them within 3 tiles (the meter
+      at a third of the pace) and the helicopter only right underneath. A chaser who saw them go in, or a handler
+      whose dog points at them there, pushes into cover and catches them within 1.6 tiles. In the open a dog's find
+      is a chase, not a capture. A dog's nose (2.5 tiles) finds the player hidden or not.
+    - Fair arrivals: nobody comes on within 5 tiles of the player or in their sight (they wait), nobody due at the
+      alarm before 4 s into the hunt, mid-map arrivals come on at a map edge or gate (`SearcherDef.from`). A
+      roadblock waits for a loiterer 10 s at most. Cacti block sight (legend, comment and code agree). The
+      helicopter moves with integer math. No washing line is offered in a guard's uniform (the better disguise).
+    - Balance: everyone moves at 45% of the given paces outside (`HUNT.pace`: the country is bigger than a yard;
+      relative speeds as before), the head start is 5–10 s, searchers come out 0–9 s after the alarm (roadblocks 2–8 s,
+      the helicopter 10 s, faster: 180). Each run shuffles the times among those out after the alarm and moves every
+      time up to 4 s, starts patrols at a stop of their own and beats at a stop drawn. Once the alarm is up the
+      searchers out after it sweep the cover (and open ground every 8 tiles) nearest where the player is reckoned
+      to be (`guess`: 1.5 tiles a second along the shortest way to safety from where they were last known; radio
+      and the light call only those within 20 tiles). After the last is out the search widens every 15 s, six times:
+      +1 tile of sight, the dog teams work back where the player was last known every other time, the helicopter
+      searches the same cover, from the second time the patrols sweep too. Keeping still fails in the end (in the
+      cover nearest safety: caught in 65–392 s; in the open where they came out: 40–159 s).
+    - The gauge, `hunttest` (the review's limited bot: `HuntBot` plain, 12-tile view) over 17 starts × night/day ×
+      head start/seen going × jumpsuit/uniform × 3 salts: caught 113/408 (28%, from 0% at Center Perks' wall to 71%
+      at Irongate's gate), a getaway in 51 s on average (25–96 s; a human plays slower); the expert `HuntBot` (it
+      sees everything; looking-round searchers counted all round, washing lines and fords against dogs) gets away in
+      135/136 combinations with one salt or another, and from every start in every light and alarm in one outfit or
+      the other (Shankton's wall by day with the head start only in the uniform). `manhunttest` keeps each rule's
+      test (a look walked and done, cover moving and a chase into it, a dog in the open, the ford, a loitered
+      roadblock, the uniform and the line).
 
 ### P42 Holidays (v2.21)
 The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.

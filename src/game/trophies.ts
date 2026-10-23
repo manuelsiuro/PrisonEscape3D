@@ -159,6 +159,11 @@ export function huntRun(h: HuntView): Achievement[] {
   return [...got, ...syncCareer(false)];
 }
 
+/** A manhunt left from the pause card (P41): counted as a recapture in the stats (giving up is being caught), no achievements. */
+export function huntQuit() {
+  addStats({ hunts: 1, recaptured: 1 });
+}
+
 /** A rumor heard (P13 gossip): counted for the stats and All Ears. */
 export function rumorHeard() {
   addStats({ rumors: 1 });

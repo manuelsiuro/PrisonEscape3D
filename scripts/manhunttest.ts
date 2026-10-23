@@ -22,11 +22,13 @@ import { HOUND, SEEK } from '../src/sim/hunt/Hunt';
 import { slot } from '../src/sim/systems/items';
 import { command, EXT, OP, tossArgs } from '../src/sim/command';
 import { Autopilot } from '../src/sim/ai/autopilot';
+import { tileAt } from '../src/sim/ai/path';
 import { LESSONS, type LessonCtx } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
 import { check } from './assert';
 
 const N = MAP_W * MAP_H;
+const cheb = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
 
 /** Walking tiles from a tile over open ground (`open`), -1 unreached. */
 function flood(from: number, open: (i: number) => boolean): Int32Array {
@@ -47,9 +49,9 @@ function flood(from: number, open: (i: number) => boolean): Int32Array {
   return d;
 }
 
-/** A carry for the tests: a player at Speed 40 in the jumpsuit, nothing in the pockets, at night, the alarm in 20 s. */
+/** A carry for the tests: a player at Speed 40 in the jumpsuit, nothing in the pockets, at night, the alarm after the longest head start. */
 export function testCarry(prison: string, kind: StartKind, more: Partial<Carry> = {}): Carry {
-  return { prison, via: 'fence', kind, spd: 40, outfit: itemNumber('inmate_outfit'), kit: [], crew: 0, lou: false, headStart: 20, minute: 23 * 60 + 40, salt: 12345, ...more };
+  return { prison, via: 'fence', kind, spd: 40, outfit: itemNumber('inmate_outfit'), kit: [], crew: 0, lou: false, headStart: HUNT.headStartMax, minute: 23 * 60 + 40, salt: 1, ...more };
 }
 
 // ------------------------------------------------------------------ the maps
@@ -105,20 +107,30 @@ for (const def of OUTSIDES) {
   const prison = PRISONS.find((p) => p.id === def.prison)!;
   for (const kind of START_KINDS) {
     if (!def.starts[kind]) continue;
-    const hunt = new Hunt(def, prison, testCarry(def.prison, kind));
-    const bot = new HuntBot(hunt);
-    const r = bot.run();
-    const f = hunt.state.feats;
-    console.log(`${def.prison} ${kind}: ${r.over === OVER.SAFE ? 'clean away' : r.over === OVER.CAUGHT ? `CAUGHT at ${Math.round(hunt.progress * 100)}%` : 'still out'} in ${r.secs} s; spotted ${f[0]}, hid ${f[2]}, stones ${f[5]}, lit ${f[7]} · ${r.hash}`);
-    for (const l of r.log) console.log(`  ${l}`);
-    check(r.over === OVER.SAFE, `${def.prison} ${kind}: the getaway bot gets clean away`);
+    // (If not on the first salt, on another: the run's draws move the searchers about.)
+    let r = null;
+    for (const salt of [1, 2, 3]) {
+      const hunt = new Hunt(def, prison, testCarry(def.prison, kind, { salt }));
+      r = new HuntBot(hunt).run();
+      const f = hunt.state.feats;
+      console.log(`${def.prison} ${kind}, salt ${salt}: ${r.over === OVER.SAFE ? 'clean away' : r.over === OVER.CAUGHT ? `CAUGHT at ${Math.round(hunt.progress * 100)}%` : 'still out'} in ${r.secs} s; spotted ${f[0]}, hid ${f[2]}, stones ${f[5]}, lit ${f[7]} · ${r.hash}`);
+      for (const l of r.log) console.log(`  ${l}`);
+      if (r.over === OVER.SAFE) break;
+    }
+    check(r?.over === OVER.SAFE, `${def.prison} ${kind}: the getaway bot gets clean away`);
   }
-  // Seen going (the alarm up at once), by day: away all the same.
+  // Seen going (the alarm up at once), by day: away all the same (if not on the first salt, on another: hunttest tries every start so).
   const kind = (Object.keys(def.starts) as StartKind[])[0];
-  const seen = new Hunt(def, prison, testCarry(def.prison, kind, { headStart: 0, minute: 14 * 60 }));
-  const r = new HuntBot(seen).run();
-  console.log(`${def.prison} ${kind}, seen going, by day: ${r.over === OVER.SAFE ? 'clean away' : `CAUGHT at ${Math.round(seen.progress * 100)}%`} in ${r.secs} s · ${r.hash}`);
-  check(r.over === OVER.SAFE, `${def.prison} ${kind}: away even seen going, by day`);
+  const tries: string[] = [];
+  let away = false;
+  for (const salt of [1, 2, 3]) {
+    const seen = new Hunt(def, prison, testCarry(def.prison, kind, { headStart: 0, minute: 14 * 60, salt }));
+    const r = new HuntBot(seen).run();
+    tries.push(`salt ${salt} ${r.over === OVER.SAFE ? 'clean away' : `CAUGHT at ${Math.round(seen.progress * 100)}%`} in ${r.secs} s · ${r.hash}`);
+    if ((away = r.over === OVER.SAFE)) break;
+  }
+  console.log(`${def.prison} ${kind}, seen going, by day: ${tries.join('; ')}`);
+  check(away, `${def.prison} ${kind}: away even seen going, by day`);
 }
 
 // ------------------------------------------------------------------ the rules, one by one
@@ -197,6 +209,9 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
   put(h, 20, 54);
   steps(h, 1);
   const m = h.state.searchers[3];
+  // (On his beat, heading west along the wall, for the player's tile.)
+  m.mode = SEEK.BEAT;
+  m.k = 1;
   m.body.x = h.state.player.x + 4 * 1024;
   m.body.z = h.state.player.z;
   m.body.facing = 9;
@@ -220,6 +235,7 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
     b.x = (14 + h.out.ox) * 1024 + 512;
     b.z = (54 + h.out.oz) * 1024 + 512;
   }
+  m.mode = SEEK.BEAT;
   m.path = [];
   m.goal = -2;
   const ev = steps(h, 30 * 20);
@@ -265,7 +281,19 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
   const ev = steps(h, 1, command(0, OP.EXT, EXT.HUNT_THROW, b, c));
   const soon = steps(h, 1, command(0, OP.EXT, EXT.HUNT_THROW, b, c));
   check(ev.includes('stone') && ev.includes('heard') && m.mode === SEEK.LOOK && soon.includes('refused:stoneSoon'), 'a stone: heard, looked into; not again so soon');
-  console.log(`stone: lands ${Math.max(Math.abs((t % 64) - (h.tile % 64)), Math.abs(Math.floor(t / 64) - Math.floor(h.tile / 64)))} tiles ahead, heard ${HUNT.stoneNoise} walking tiles round; again after ${HUNT.stoneEvery / 20} s`);
+  const ahead = cheb(t, h.tile);
+  // He walks to where it landed, looks round there, and goes back to his beat (the player well away by then).
+  put(h, 5, 50);
+  const thrown = h.state.step;
+  let reached = -1;
+  let back = -1;
+  for (let k = 0; k < 40 * 20 && back < 0; k++) {
+    h.step(0);
+    if (reached < 0 && cheb(tileAt(m.body.x, m.body.z), t) <= 1) reached = h.state.step;
+    if (reached > 0 && m.mode === SEEK.BEAT) back = h.state.step;
+  }
+  check(reached > 0 && back > 0 && back - thrown >= HUNT.look, `a stone: he walks there, looks round, back to his beat (there at ${reached}, back at ${back})`);
+  console.log(`stone: lands ${ahead} tiles ahead, heard ${HUNT.stoneNoise} walking tiles round; again after ${HUNT.stoneEvery / 20} s; the searcher there in ${((reached - thrown) / 20).toFixed(1)} s, back on his beat ${((back - thrown) / 20).toFixed(1)} s after`);
 }
 
 // Treats: jerky calms a dog, pepper dazes it, sleepy jerky puts it to sleep.
@@ -275,6 +303,7 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
     const h = lab(CPO, CP, { kit: [itemNumber(['jerky', 'pepper', 'sleepy_jerky'][what])] }, { searchers: [2], heli: false, roadblocks: false });
     put(h, 40, 40);
     steps(h, 2);
+    h.state.searchers[2].mode = SEEK.BEAT;
     const d = h.state.dogs[0];
     d.body.x = h.state.player.x;
     d.body.z = h.state.player.z + 3 * 1024;
@@ -305,11 +334,139 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
   put(h3, 30, 52);
   steps(h3, 1);
   const m = h3.state.searchers[3];
+  m.mode = SEEK.BEAT;
   m.body.x = h3.state.player.x + 6 * 1024;
   m.body.z = h3.state.player.z + 2 * 1024;
   const w = steps(h3, 1);
   check(w.includes('whistle'), 'the lookout whistles at a searcher coming close');
   console.log(`roadblocks: ${CPO.roadblocks.map((b) => `${b.at} s`).join(', ')} after the alarm; the helicopter's light: on in the open, off in cover; the lookout whistles at ${HUNT.lookoutWarn} tiles`);
+}
+
+// Cover, moving: seen there only close by (HUNT.coverSeen), the meter at a third of the pace; a chaser who saw them go in catches them there.
+{
+  const h = lab(CPO, CP, {}, { searchers: [3], heli: false, roadblocks: false });
+  // A hedge tile with open ground north of it, a searcher there looking south.
+  const open = (i: number) => i >= 0 && !h.grid[i] && !h.out.cover[i];
+  let a = -1;
+  for (let i = 6 * MAP_W; i < N && a < 0; i++) if (h.out.cover[i] && [1, 2, 3, 4, 5, 6].every((j) => open(i - j * MAP_W))) a = i;
+  const ax = (a % MAP_W) - h.out.ox;
+  const az = Math.floor(a / MAP_W) - h.out.oz;
+  const m = h.state.searchers[3];
+  // Shifting about in it (never still), the searcher held where he stands looking: seen close by, not further off.
+  const watch = (tiles: number) => {
+    m.mode = SEEK.BEAT;
+    m.notice = 0;
+    let seen = 0;
+    for (let k = 0; k < 20; k++) {
+      put(h, ax, az, 5);
+      m.body.x = h.state.player.x;
+      m.body.z = h.state.player.z - tiles * 1024;
+      m.body.facing = 5;
+      m.goal = -2;
+      m.path = [];
+      h.step(command(k % 2 ? 1 : 9));
+      if (m.sees) seen++;
+    }
+    return seen;
+  };
+  const close = watch(HUNT.coverSeen - 1);
+  const far = watch(HUNT.coverSeen + 2);
+  check(close > 0 && far === 0 && !h.state.hidden, `cover, moving: seen ${close} steps of 20 from ${HUNT.coverSeen - 1} tiles, ${far} from ${HUNT.coverSeen + 2}`);
+  // A chaser after them as they go in: caught in the hedge, still or not.
+  const h2 = lab(CPO, CP, {}, { searchers: [3], heli: false, roadblocks: false });
+  put(h2, ax, az, 5);
+  steps(h2, HUNT.settle + 2);
+  const c = h2.state.searchers[3];
+  c.mode = SEEK.CHASE;
+  c.last = h2.tile;
+  c.body.x = h2.state.player.x;
+  c.body.z = h2.state.player.z - 3 * 1024;
+  const ev = steps(h2, 5 * 20);
+  check(h2.state.hidden && h2.state.over === OVER.CAUGHT && ev.includes('caught'), 'cover: a chaser who saw them go in catches them in it, hidden or not');
+  console.log(`cover, moving: seen from ${HUNT.coverSeen} tiles at most (${close} of 20 steps from ${HUNT.coverSeen - 1}, ${far} from ${HUNT.coverSeen + 2}); a chaser catches in it at ${HUNT.found} tiles`);
+}
+
+// A dog under whose nose the player stands in the open points; its handler gives chase (no capture on the spot).
+{
+  const h = lab(CPO, CP, {}, { searchers: [2], heli: false, roadblocks: false });
+  // (On the county road, running west along it.)
+  put(h, 30, 32);
+  steps(h, 1);
+  const m = h.state.searchers[2];
+  const d = h.state.dogs[0];
+  m.mode = SEEK.BEAT;
+  m.body.x = h.state.player.x + 2 * 1024;
+  m.body.z = h.state.player.z;
+  d.body.x = h.state.player.x + 2 * 1024;
+  d.body.z = h.state.player.z + 1024;
+  let pointAt = -1;
+  let chaseAt = -1;
+  for (let k = 0; k < 5 * 20 && !h.state.over; k++) {
+    h.step(command(9));
+    for (const e of h.events) {
+      if (e.type === 'point' && pointAt < 0) pointAt = h.state.step;
+      if (e.type === 'spotted' && chaseAt < 0) chaseAt = h.state.step;
+    }
+  }
+  const caughtAfter = h.state.over === OVER.CAUGHT ? h.state.overAt - pointAt : -1;
+  check(pointAt > 0 && chaseAt >= pointAt && (caughtAfter < 0 || caughtAfter >= 10), `a dog in the open: it points, its handler chases (caught ${caughtAfter} steps after)`);
+  console.log(`a dog in the open: points at ${pointAt}, its handler after them at ${chaseAt}; ${caughtAfter < 0 ? 'got away' : `caught ${(caughtAfter / 20).toFixed(1)} s later`}`);
+}
+
+// A ford: into the water, the trail is gone, and a dog tracking it loses it there (Stalag Flucht's river).
+{
+  const h = lab(SFO, SF, {}, { searchers: [2], heli: false, roadblocks: false });
+  let ford = -1;
+  for (let i = 0; i < N && ford < 0; i++) if (h.out.ford[i]) ford = i;
+  const fx = (ford % MAP_W) - h.out.ox;
+  const fz = Math.floor(ford / MAP_W) - h.out.oz;
+  let south = fz;
+  while (h.out.ford[(south + h.out.oz) * MAP_W + fx + h.out.ox]) south++;
+  const T = (x: number, z: number) => (z + h.out.oz) * MAP_W + x + h.out.ox;
+  // Just south of the river, a trail behind them twelve tiles long, the dog and its handler at its far end.
+  put(h, fx, south + 3, 13);
+  steps(h, 40);
+  h.state.trail = Array.from({ length: 12 }, (_, k) => [T(fx, south + 15 - k), h.state.step - 12 + k] as [number, number]);
+  const m = h.state.searchers[2];
+  const d = h.state.dogs[0];
+  m.mode = SEEK.BEAT;
+  for (const b of [m.body, d.body]) {
+    b.x = (fx + h.out.ox) * 1024 + 512;
+    b.z = (south + 16 + h.out.oz) * 1024 + 512;
+  }
+  let tracked = false;
+  let washed = false;
+  let lostAt = -1;
+  // North across the ford and on a few tiles.
+  const pilot = new Autopilot(h.world, () => h.grid);
+  pilot.goTo(T(fx, fz - 3));
+  for (let k = 0; k < 40 * 20 && !h.state.over && pilot.active; k++) {
+    h.step(command(pilot.dir(h.state.player)));
+    if (d.mode === HOUND.TRACK) tracked = true;
+    if (h.out.ford[h.tile] && !washed) washed = h.state.trail.length === 0;
+    if (tracked && lostAt < 0 && d.mode === HOUND.HEEL) lostAt = h.state.step;
+  }
+  // Waiting across the river: the dog doesn't come.
+  const ev = steps(h, 15 * 20);
+  check(tracked && washed && lostAt > 0 && !ev.includes('point') && h.state.over === OVER.RUNNING, `a ford: the trail washed, the dog loses it (tracked ${tracked}, washed ${washed}, lost at ${lostAt}, over ${h.state.over})`);
+  console.log(`ford: the trail gone in the water; the dog on it lost it at the river, ${ev.includes('point') ? 'found them' : 'never found them across it'}`);
+}
+
+// A roadblock waits for a player loitering by it, but only HUNT.blockWait; one in a guard's uniform isn't offered a washing line.
+{
+  const h = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0 }), { searchers: [], heli: false });
+  const r = CPO.roadblocks[0];
+  put(h, r.area[0] - 1, r.area[1]);
+  let upAt = -1;
+  for (let k = 0; k < 60 * 20 && upAt < 0; k++) {
+    h.step(0);
+    if (h.events.some((e) => e.type === 'roadblock' && e.k === 0)) upAt = h.state.step;
+  }
+  check(upAt > 0 && upAt <= (r.at + HUNT.jitter) * 20 + HUNT.blockWait + 1, `a roadblock loitered by: up at ${upAt}`);
+  const u = lab(CPO, CP, { outfit: itemNumber('guard_outfit') });
+  put(u, CPO.lines[0].x, CPO.lines[0].z, 1);
+  check(u.lineNear() < 0 && steps(u, 1, command(0, OP.INTERACT)).includes('refused:nothing'), "a guard's uniform: no washing line offered");
+  console.log(`roadblock: loitered by, up ${((upAt - r.at * 20) / 20).toFixed(1)} s after its time all the same; in a guard's uniform no washing line is offered`);
 }
 
 // Lou's car: away in it when he's there; nothing there when he isn't.

@@ -54,7 +54,7 @@ import { hideLesson, lessonPlace, objectivesOf, type LessonRun } from './lesson'
 import { showObjectives } from '../ui/screens/objectives';
 import { escapeScene, stageWorld } from './stage';
 import { hasOutside, runHunt, stopHunt } from './hunt';
-import { huntOver } from './huntEnd';
+import { huntLeft, huntOver } from './huntEnd';
 import { isLegal } from '../content/manhunt';
 import { outsideOf } from '../content/outside';
 import { carryFrom } from '../sim/hunt/carry';
@@ -412,6 +412,8 @@ export async function escaped() {
       // Out there: the escape already counted; the hunt adds a clean getaway, or not.
       const lookout = st.crewOut.length ? { name: inmateName(sim, st.crewOut[0]), cell: sim.state.inmates[st.crewOut[0]]?.cell ?? 2 } : null;
       const r = await runHunt(g, carryFrom(sim), { lookout });
+      // (Left from the pause card: given up, so a recapture in the stats.)
+      if (r === 'quit') huntLeft();
       if (play.game !== g || r === 'quit') return;
       const got = huntOver(sim, via, r);
       victory.hunt = { ...victory.hunt, state: r.over === 3 ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };

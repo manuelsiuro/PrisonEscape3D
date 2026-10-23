@@ -29,11 +29,18 @@ export type Area = readonly [number, number, number, number];
 /** What the safe point is (how it's drawn and named): the night bus, a border post, a freight train, a truck stop, a coach out of town. */
 export type SafeKind = 'bus' | 'border' | 'train' | 'truck' | 'coach';
 
-/** A searcher on foot (a dog at the heel if it has one): its beat, walked in a loop, and when it comes out. */
+/**
+ * A searcher on foot (a dog at the heel if it has one): where it comes on, its beat, walked in a
+ * loop, and when it comes out. The hunt shuffles the searchers' times among those out after the
+ * alarm and moves each a few seconds by the run's salt, starts each beat at a stop of its own,
+ * and never brings anyone on within HUNT.clear tiles of the player or in their sight.
+ */
 export interface SearcherDef {
   /** Its surname (the same in every language). */
   name: string;
-  /** Its beat: the first stop is where it comes on (an edge of the map, a gate). */
+  /** Where it comes on (an edge of the map, a gate); its beat's first stop if none. A patrol out before any alarm is already on its beat, at one of its stops. */
+  from?: Spot;
+  /** Its beat. */
   beat: readonly Spot[];
   /** Seconds after the alarm it comes out (negative: out already, a patrol before any alarm). */
   at: number;
@@ -75,10 +82,10 @@ export interface OutsideDef {
  * What each character of an outside picture is (sim/hunt/world.ts builds the world from it):
  * - `.` grass (snow at Stalag Flucht, sand at San Pancho), `,` road, `a` asphalt, `d` a dirt
  *   track, `g` gravel (loud underfoot), `r` a railway line (loud underfoot);
- * - `T` a tree, `k` a cactus, `o` a rock, `c` crates or a wreck: solid, and they block sight
- *   (a cactus doesn't);
+ * - `T` a tree, `k` a cactus (a tall saguaro), `o` a rock, `c` crates or a wreck: solid, and
+ *   they block sight;
  * - `h` a hedge or a thicket and `u` a culvert under a road: cover (walk in, keep still and
- *   no eye finds you; a dog's nose still does);
+ *   no eye finds you; moving in it you're seen only close by; a dog's nose still finds you);
  * - `~` water, `f` a ford (shallow: slow going, and it washes the trail away), `P` a bridge
  *   or a jetty;
  * - `#` a building, `@` the prison's wall, `F` a wire fence (cutters cut through it).
