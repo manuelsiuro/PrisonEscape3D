@@ -63,7 +63,7 @@ export * from './state';
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → the cold → tipsy (P28) → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → race nights (P28) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → the pay phone, the kiosk, the paperwork (P34–P36) → the parole board (P39) → race nights (P28) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
  */
