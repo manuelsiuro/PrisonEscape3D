@@ -14,8 +14,9 @@
  *   tomorrow's release list (paperwork.ts takes it from there); else denied, the two lines that
  *   weighed most kept for the card, and again after APPLY_AGAIN prison days. A lockdown puts the
  *   hearing off a day; not there by 10:30, or walking out, it's lost.
- * - **Plotting** voids an application (or a release granted): damage found (a tunnel, a hole),
- *   cutters or a shovel taken off the player, or seen out at night.
+ * - **Plotting** voids an application (or a release granted, until the desk has cleared the
+ *   player): damage found (a tunnel, a hole), cutters, a shovel or the multitool taken off the
+ *   player, or seen out at night. A grant lost at the desk waits APPLY_AGAIN as a no does.
  *
  * Nothing runs until the player first applies in the run (the escape bots play as before), and
  * every draw comes from roll() (SALT.PAROLE).
@@ -30,6 +31,8 @@ import { dayMinute, prisonDay } from './calendar';
 import { DAY, FEAT } from './ledger';
 import { atDesk, freedNow, releaseOf } from './paperwork';
 import { endTalk, refuse } from './social';
+import { REACH } from './items';
+import { atProp, seatSpot } from './rest';
 import { stopTraining } from './training';
 
 /** What EXT.PAROLE asks (b): apply at the desk, an answer to the board (c: ANSWER). Never renumber. */
@@ -48,6 +51,10 @@ export const WALKED_OUT = 99;
 
 /** A fresh `state.parole`. */
 export const freshParole = () => [0, 0, 0, 0, 0, 0, -1, -1, 0, 0];
+
+/** The lowest and highest score a verdict can have (every line against at its cap and the worst answers; the reverse): a save's bounds. */
+export const SCORE_MIN = -RECORD.reduce((a, r) => a + (r.side < 0 ? r.cap : 0), 0) + MEMBERS.reduce((a, m) => a + Math.min(m.lie, SILENT, 0), 0);
+export const SCORE_MAX = RECORD.reduce((a, r) => a + (r.side > 0 ? r.cap : 0), 0) + MEMBERS.reduce((a, m) => a + Math.max(m.claim, m.own, m.words, 0), 0);
 
 /** A hearing before the board (P39): plain data in the state. */
 export interface Hearing {
@@ -77,7 +84,7 @@ export const paroled = (s: Pick<SimState, 'parole' | 'release'>) => s.parole[P.R
 
 // ------------------------------------------------------------------ the record
 
-/** The ledger's counters each record line counts (cumulative: the record is now's less applying's). Fights are counted in days apart. */
+/** The ledger's counters each record line counts (cumulative: the record is now's less applying's). Fights are counted in days apart; knockouts are the player's own, in fights they started (FEAT.kosDealt). */
 function rawCounts(s: Pick<SimState, 'feats'>): number[] {
   const f = s.feats;
   const at = (k: number) => f[k] ?? 0;
@@ -100,7 +107,7 @@ function rawCounts(s: Pick<SimState, 'feats'>): number[] {
       case 'garden':
         return at(FEAT.planted) + at(FEAT.harvests);
       case 'kos':
-        return at(FEAT.koGuards) + at(FEAT.koInmates);
+        return at(FEAT.kosDealt);
       case 'solitary':
         return at(FEAT.solitary);
       case 'contraband':
@@ -123,8 +130,9 @@ export function recordCounts(s: Pick<SimState, 'feats' | 'days' | 'parole' | 'pa
   const from = s.parole[P.FROM];
   return RECORD.map((r, k) => {
     if (r.id === 'fights') {
+      // (The days with a fight the player started: DAY.STARTED, set only once they've applied, today's cleared on applying.)
       let n = 0;
-      for (let d = Math.max(0, from - 1); d < s.days.length; d++) if (s.days[d] & DAY.FIGHT) n++;
+      for (let d = Math.max(0, from - 1); d < s.days.length; d++) if (s.days[d] & DAY.STARTED) n++;
       return n;
     }
     return Math.max(0, now[k] - (s.paroleBase[k] ?? 0));
@@ -137,13 +145,12 @@ export const linePoints = (counts: readonly number[]) => RECORD.map((r, k) => r.
 /** The record's score: the lines' points added up. */
 export const recordScore = (counts: readonly number[]) => linePoints(counts).reduce((a, b) => a + b, 0);
 
-/** A claim on a topic is true: each of its lines clean (a line for at its need, a line against at no points). */
+/** A claim on a topic is true: each of its lines clean (a line for at its need, a line against at nothing at all). The card's file line says the same (play/parole.ts). */
 export function claimTrue(counts: readonly number[], topic: number): boolean {
   const t = TOPICS[topic];
-  const pts = linePoints(counts);
   return t.lines.every((id) => {
     const k = RECORD.findIndex((r) => r.id === id);
-    return RECORD[k].side > 0 ? counts[k] >= (t.need ?? 1) : pts[k] === 0;
+    return RECORD[k].side > 0 ? counts[k] >= (t.need ?? 1) : counts[k] === 0;
   });
 }
 
@@ -168,13 +175,14 @@ export function topicsOf(salt: number, day: number): number[] {
 
 /**
  * The two lines that weighed most (codes: a RECORD place, ANSWERED + a question, WALKED_OUT): for
- * a denial the worst (lines against, lies and silences, lines for with nothing on them), for a grant the best.
+ * a denial the worst (lines against, lies and silences), for a grant the best. A line worth
+ * nothing never weighed (-1 in its place when there aren't two).
  */
 export function weighed(counts: readonly number[], worth: readonly number[], granted: boolean): number[] {
   const pts = linePoints(counts);
   const all: Array<[number, number]> = [];
-  RECORD.forEach((r, k) => {
-    if (granted ? pts[k] > 0 : pts[k] < 0 || (r.side > 0 && pts[k] === 0)) all.push([k, pts[k]]);
+  RECORD.forEach((_, k) => {
+    if (granted ? pts[k] > 0 : pts[k] < 0) all.push([k, pts[k]]);
   });
   worth.forEach((v, q) => {
     if (granted ? v > 0 : v < 0) all.push([ANSWERED + q, v]);
@@ -202,11 +210,14 @@ export function applyRefusal(sim: SimContext, byPhone = false): Refusal | null {
   return null;
 }
 
-/** Applied (EXT.PAROLE APPLY at the desk; the lawyer's call, `lawyer`): the hearing set, the record from today. */
-export function applyParole(sim: SimContext, lawyer = false) {
+/** Applied (EXT.PAROLE APPLY at the desk; the lawyer's call, `lawyer`): the hearing set, the record from today. False: refused. */
+export function applyParole(sim: SimContext, lawyer = false): boolean {
   const s = sim.state;
   const why = applyRefusal(sim, lawyer);
-  if (why) return refuse(sim, why);
+  if (why) {
+    refuse(sim, why);
+    return false;
+  }
   const day = prisonDay(s.step);
   const p = s.parole;
   p[P.HEARING] = day + HEARING_AFTER - (lawyer ? LAWYER_SOONER : 0);
@@ -220,7 +231,10 @@ export function applyParole(sim: SimContext, lawyer = false) {
   p[P.USED] = 1;
   p[P.RELEASE] = 0;
   s.paroleBase = rawCounts(s);
+  // (Fights count from now: one started earlier today, under an older application, stays off.)
+  if (s.days[day - 1]) s.days[day - 1] &= ~DAY.STARTED;
   sim.events.push({ type: 'parole', what: 'applied', n: p[P.HEARING], lawyer });
+  return true;
 }
 
 // ------------------------------------------------------------------ the hearing
@@ -273,11 +287,19 @@ export function answerBoard(sim: SimContext, choice: number) {
   sim.events.push({ type: 'parole', what: 'answer', q: o.q, choice, worth, lie });
 }
 
-/** The player sits before the board. */
+/** The player sits before the board (on the seat across from it, when they're at it: facing the board). */
 function sitDown(sim: SimContext) {
   const s = sim.state;
   stopTraining(sim);
   endTalk(sim);
+  const h = hearingOf(sim)!;
+  const seat = sim.world.props.findIndex((p) => p.kind !== 'table' && h.seat.x >= p.x && h.seat.x < p.x + p.w && h.seat.z >= p.z && h.seat.z < p.z + p.d);
+  if (seat >= 0 && s.seat < 0 && atProp(sim.world, seat, s.player, REACH)) {
+    s.player.moving = false;
+    s.player.facing = seatSpot(sim.world, seat, s.player).facing;
+    s.seat = seat;
+    sim.events.push({ type: 'sit', on: true, use: 'sit' });
+  }
   s.hearing = { from: s.step, q: -1, at: 0, topics: topicsOf(s.salt, prisonDay(s.step)), said: [-1, -1, -1], worth: [0, 0, 0], until: 0 };
   sim.events.push({ type: 'parole', what: 'sat' });
 }
@@ -332,7 +354,7 @@ function lost(sim: SimContext, how: 'missed' | 'walkedOut') {
   sim.events.push({ type: 'parole', what: how, n: day + APPLY_AGAIN });
 }
 
-/** Put off to tomorrow (a lockdown). */
+/** Put off to tomorrow (a lockdown; knocked out at the hearing by someone else). */
 function postpone(sim: SimContext) {
   const s = sim.state;
   s.hearing = null;
@@ -340,12 +362,12 @@ function postpone(sim: SimContext) {
   sim.events.push({ type: 'parole', what: 'postponed', n: s.parole[P.HEARING] });
 }
 
-/** Caught plotting: the application (or the release granted) void, the record to start again. */
+/** Caught plotting: the application (or the release granted, not yet cleared at the desk) void, the record to start again. */
 function voidIt(sim: SimContext, why: VoidWhy) {
   const s = sim.state;
   const p = s.parole;
   const day = prisonDay(s.step);
-  if (paroled(s) && !freedNow(s)) s.release[0] = 0;
+  if (paroled(s)) s.release[0] = 0;
   s.hearing = null;
   p[P.HEARING] = 0;
   p[P.RELEASE] = 0;
@@ -373,9 +395,13 @@ export function parole(sim: SimContext) {
   const p = s.parole;
   if (!p[P.USED]) return;
   const day = prisonDay(s.step);
-  // (The release granted struck off the list since: missed, turned away, or out of the doors' minute.)
-  if (p[P.RELEASE] && s.release[0] !== p[P.RELEASE]) p[P.RELEASE] = 0;
-  const pending = p[P.HEARING] > 0 || p[P.RELEASE] > 0;
+  // (The release granted struck off the list since: missed, turned away, or out of the doors' minute. Applying again waits as after a no.)
+  if (p[P.RELEASE] && s.release[0] !== p[P.RELEASE]) {
+    p[P.RELEASE] = 0;
+    p[P.AGAIN] = day + APPLY_AGAIN;
+  }
+  // (Cleared at the desk and on the way out: the board's word stands.)
+  const pending = p[P.HEARING] > 0 || (p[P.RELEASE] > 0 && !freedNow(s));
   if (pending) {
     const why = plotting(sim);
     if (why) return voidIt(sim, why);
@@ -395,12 +421,12 @@ export function parole(sim: SimContext) {
   if (inHearingRoom(sim) && !s.quiz && !s.show && !s.call) sitDown(sim);
 }
 
-/** Each step of the hearing: off if the player leaves (or a lockdown puts it off); the questions; the verdict. */
+/** Each step of the hearing: off if the player leaves (put off by a lockdown, or someone knocking them out); the questions; the verdict. */
 function keepHearing(sim: SimContext) {
   const s = sim.state;
   const o = s.hearing!;
-  if (s.lockdown) return postpone(sim);
-  if (!inHearingRoom(sim) || s.ko > 0) return lost(sim, 'walkedOut');
+  if (s.lockdown || s.ko > 0) return postpone(sim);
+  if (!inHearingRoom(sim)) return lost(sim, 'walkedOut');
   if (o.q < 0) {
     if (s.step - o.from >= SIT_STEPS) put(sim, 0);
     return;

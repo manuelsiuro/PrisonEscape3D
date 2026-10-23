@@ -29,12 +29,14 @@ export interface ParoleView {
   canApply: boolean;
   why: string;
   apply: string;
-  /** The member asking (name, place 0–2), the question (its place), its words, what the file says on it, the three answers, the answer said (-1 none, -2 silence). */
+  /** The member asking (name, place 0–2), the question (its place), its words, what the file says on it (and whether a claim holds), the three answers, the answer said (-1 none, -2 silence). */
   member: string;
   memberK: number;
   q: number;
   question: string;
   file: string;
+  /** Whether a claim would hold on what the file says (its mark). */
+  fileOk: boolean;
   answers: string[];
   said: number;
   /** The member's word on the answer, and whether it went down well. */
@@ -149,7 +151,7 @@ export class ParoleCard {
 
   private bodyHtml(v: ParoleView): string {
     const status = v.status ? `<p class="parole-status ${v.statusTone}">${esc(v.status)}</p>` : '';
-    const lines = v.lines.length ? `<ul class="parole-lines">${v.lines.map((l) => `<li class="${l.tone}"><span>${esc(l.text)}</span><b>${esc(l.pts)}</b></li>`).join('')}</ul>` : '';
+    const lines = v.lines.length ? `<ul class="parole-lines">${v.lines.map((l) => `<li class="${l.tone}"><span>${esc(l.text)}</span>${l.pts ? `<b>${esc(l.pts)}</b>` : ''}</li>`).join('')}</ul>` : '';
     const weighed = v.weighed.length ? `<ul class="parole-weighed">${v.weighed.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : '';
     if (v.phase === 'desk') return `${status}${weighed}${lines}`;
     if (v.phase === 'verdict') return `<p class="parole-verdict ${v.verdictGood ? 'good' : 'bad'}">${icon(v.verdictGood ? 'check' : 'close', 18)}<span>${esc(v.verdict)}</span></p>${status}${weighed}`;
@@ -164,6 +166,6 @@ export class ParoleCard {
       })
       .join('');
     const react = v.phase === 'weigh' && v.react ? `<p class="parole-react ${v.reactGood ? 'good' : 'bad'}">${esc(v.react)}</p>` : '';
-    return `${board}<p class="parole-q" role="status">${esc(v.question)}</p><p class="parole-file">${icon('clipboard', 12)}<span>${esc(v.file)}</span></p><div class="parole-answers">${answers}</div>${react}`;
+    return `${board}<p class="parole-q" role="status">${esc(v.question)}</p><p class="parole-file ${v.fileOk ? 'good' : 'bad'}">${icon(v.fileOk ? 'check' : 'close', 12)}<span>${esc(v.file)}</span></p><div class="parole-answers">${answers}</div>${react}`;
   }
 }

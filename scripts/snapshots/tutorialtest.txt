@@ -42,7 +42,7 @@ bluff: 3 steps done by day 1 19:50
 glider: 2 steps done by day 1 23:21
 forgery: 3 steps done by day 1 22:01
 release: 3 steps done by day 2 10:06
-parole: 3 steps done by day 10 10:15
+parole: 4 steps done by day 10 10:15
 payphone: 4 steps done by day 1 12:00
 cousin: 3 steps done by day 1 10:02
 kiosk: 6 steps done by day 1 12:00

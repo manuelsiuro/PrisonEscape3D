@@ -194,6 +194,9 @@ export const FEATS = [
   'showersKept',
   'contrabandFound',
   'eveningHeat',
+  // v2.18 (P39 review): once the player has applied in a run, the knockouts they dealt in fights they started (not in self-defence nor a food fight; never a follower's); parole granted on the lawyer's filing.
+  'kosDealt',
+  'lawyerGranted',
   // v2.19 (P40, the odd jobs board): odd jobs handed in and failed, the fixer's own, a story's steps told and stories told to their end, debts called in, rivals framed.
   'oddJobs',
   'oddJobsFailed',
@@ -218,6 +221,8 @@ export const DAY = {
   /** Played before the ledger was kept (an older save): nothing known. */
   UNKNOWN: 64,
   SOLITARY: 128,
+  /** A fight the player started (not self-defence, not a food fight's free blows): kept only once they've applied for parole (P39's record). */
+  STARTED: 256,
 } as const;
 
 /** A fresh run's counters. */
@@ -258,6 +263,11 @@ export function ledger(sim: Sim, x: number, z: number) {
         f[FEAT.blows]++;
         if (e.free) f[FEAT.foodBlows]++;
         bits |= DAY.FIGHT;
+        // (P39: a blow the player started; the step's verdict on it is still in `selfDefense`.)
+        if (record && !e.free && !s.selfDefense) {
+          bits |= DAY.STARTED;
+          if (e.ko) f[FEAT.kosDealt]++;
+        }
         break;
       case 'koed':
         if (e.who >= s.inmates.length) f[FEAT.koGuards]++;
@@ -271,6 +281,11 @@ export function ledger(sim: Sim, x: number, z: number) {
         f[FEAT.flung]++;
         if (e.free) f[FEAT.foodBlows]++;
         bits |= DAY.FIGHT;
+        // (Molten chocolate puts them out cold at once.)
+        if (record && !e.free && !s.selfDefense) {
+          bits |= DAY.STARTED;
+          f[FEAT.kosDealt]++;
+        }
         break;
       case 'noise':
         // (Not the drone's buzz, P21: the player didn't make that noise.)
@@ -304,7 +319,6 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'spotted':
         f[FEAT.spotted]++;
-        if (record && e.reason === 'contraband') f[FEAT.contrabandFound]++;
         bits |= DAY.SPOTTED;
         if (e.reason === 'wanted') bits |= DAY.WANTED;
         break;
@@ -429,8 +443,11 @@ export function ledger(sim: Sim, x: number, z: number) {
           if (e.lawyer) f[FEAT.lawyerFiled]++;
         } else if (e.what === 'granted' || e.what === 'denied' || e.what === 'walkedOut') {
           f[FEAT.hearings]++;
-          if (e.what === 'granted') f[FEAT.paroleGranted]++;
-          else f[FEAT.paroleDenied]++;
+          if (e.what === 'granted') {
+            f[FEAT.paroleGranted]++;
+            // (The application the board just granted was the lawyer's: parole[2].)
+            if (s.parole[2]) f[FEAT.lawyerGranted]++;
+          } else f[FEAT.paroleDenied]++;
         } else if (e.what === 'voided') f[FEAT.paroleVoided]++;
         else if (e.what === 'answer' && e.lie) f[FEAT.liesCaught]++;
         break;

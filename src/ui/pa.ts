@@ -248,6 +248,15 @@ export class PaBoard {
     window.setTimeout(() => c.el.remove(), 320);
   }
 
+  /** A line no longer worth saying (overtaken by events): off the queue, and put away if it's being said. */
+  drop(text: string) {
+    for (let k = this.queue.length - 1; k >= 0; k--) if (this.queue[k].text === text) this.queue.splice(k, 1);
+    if (this.strip?.line.text === text) {
+      this.typer = null;
+      this.leave();
+    }
+  }
+
   /** Everything down (leaving the game, the announcements switched off). */
   clear() {
     this.typer = null;
