@@ -452,3 +452,8 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
 body.reduced-motion .hud-alert.low b {
   animation: none;
 }
+
+/* The morning card up: a first-time hint already showing steps back until it's read (it would cover its rows). */
+body.pa-card-up .hint {
+  visibility: hidden;
+}

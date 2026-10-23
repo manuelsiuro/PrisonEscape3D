@@ -247,7 +247,21 @@ export function toggleJob() {
     return;
   }
   jobCard = !jobCard;
+  // (Opened: the keyboard's focus goes into it, once it's drawn; closed: back to the chip.)
+  if (jobCard) oddjobsCard.focusOnShow();
+  else oddjobsCard.returnFocus();
 }
+
+/** The job's own card closed (Escape, its Close button, another card docked in its place). Whether it was open. */
+export function closeJobCard(): boolean {
+  if (!jobCard) return false;
+  jobCard = false;
+  oddjobsCard.returnFocus();
+  return true;
+}
+
+/** The job's own card is what shows (not the board's, which closes by walking away). */
+export const jobCardShown = () => jobCard && oddjobsCard.open && oddjobsCard.mode === 'job';
 
 /** B: the job's card (or the whistle). Taken: true. */
 export function oddjobKey(code: string): boolean {
@@ -419,6 +433,10 @@ export function wireOddJobs() {
   hud.onJob = () => {
     sound.click();
     toggleJob();
+  };
+  // (The card's own Close button.)
+  oddjobsCard.onClose = () => {
+    closeJobCard();
   };
   talk.oddJob = oddjobTalk;
 }

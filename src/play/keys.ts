@@ -18,7 +18,7 @@ import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
 import { paroleBusy, paroleKey } from './parole';
-import { oddjobKey } from './oddjobs';
+import { closeJobCard, jobCardShown, oddjobKey } from './oddjobs';
 import { huntKey } from './hunt';
 
 /** The action button / E: use what is in reach (or wake up). */
@@ -61,6 +61,8 @@ function onKeyDown(e: KeyboardEvent) {
     else if (game.rec.sim.state.pick.length) sendOp(OP.CLOSE);
     // (P29: a tattoo sitting, either chair: given up, as its card's Give up button does.)
     else if (game.rec.sim.state.ink) sendOp(OP.EXT, EXT.INK, 0);
+    // (P40: the job's own card, opened from its chip or B: closed, the focus back on the chip.)
+    else if (jobCardShown()) closeJobCard();
     else pause();
     return;
   }

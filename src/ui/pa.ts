@@ -95,6 +95,11 @@ export class PaBoard {
     if (up) document.body.style.setProperty('--pa-h', `${Math.round(up.offsetHeight)}px`);
   }
 
+  /** The morning card is up (the first-time hints hold back meanwhile: they'd cover its rows). */
+  get cardUp() {
+    return !!this.card;
+  }
+
   /** The morning card; `ms` of play until it closes on its own. */
   morning(from: string, text: string, rows: readonly PaRow[], least = 11000) {
     // Long enough to read it all: the line typed out, then the rows.
