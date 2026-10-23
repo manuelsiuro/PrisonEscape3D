@@ -18,9 +18,14 @@ import { play, type Game } from './game';
 import { ratName } from './rat';
 import { shootKey } from './pastimes';
 import { kickKey } from './team';
+import { HEARING_FROM, HEARING_TO } from '../content/parole';
+import { P } from '../sim/systems/parole';
+import { roomOf } from './parole';
 import { HOLIDAY_DAY } from '../content/holidays';
 import { holidayDays } from '../sim/systems/holiday';
 
+/** The parole board's colour (P39: its help topic's). */
+const PAROLE_COLOR = '#8a6bd1';
 /** Race night's colour on the card (the race's own help topic's). */
 const RACE_COLOR = '#d9773a';
 /** The player's pet's name (its own, given when tamed). */
@@ -115,6 +120,17 @@ export function dayView(g: Game): DayView {
     if (planOf(sim, today(sim).day + 1).event === 'none') tomorrow.chips.shift();
     tomorrow.chips.push({ icon: 'race', color: RACE_COLOR, text: t('dayCard.race'), when: hhmm(RACE_MINUTE) });
   }
+  // The parole hearing (P39): its chip and its hour on the day it sits; tomorrow's, once tomorrow is told.
+  const hearing = st.parole[P.HEARING];
+  if (hearing && hearing === pd) {
+    const m = dayMinute(st.step);
+    const over = m >= HEARING_TO && !st.hearing;
+    chips.push({ icon: 'scale', color: PAROLE_COLOR, text: t('dayCard.hearing'), when: dayTime(HEARING_FROM) });
+    const pin: DayPin = { icon: 'scale', color: PAROLE_COLOR, title: t('dayCard.hearing'), when: t('day.when', { from: dayTime(HEARING_FROM), to: dayTime(HEARING_TO) }), sub: t('dayCard.hearingSub', { room: roomOf(sim) }), over, tag: st.hearing ? t('dayCard.hearingOn') : '', tagTone: 'ok' };
+    const k = blockOf(HEARING_FROM);
+    const was = pins.get(k);
+    pins.set(k, was ? [...was, pin] : [pin]);
+  } else if (hearing && hearing === pd + 1 && tomorrow) tomorrow.chips.push({ icon: 'scale', color: PAROLE_COLOR, text: t('dayCard.hearing'), when: dayTime(HEARING_FROM) });
   const job = sim.jobActive();
   const def = job >= 0 ? jobRooms(sim.world)[job].def : null;
   const blocks = ROUTINE.map((r, k): DayBlock => {

@@ -79,7 +79,7 @@ export type DogCoat = 'shepherd' | 'mastiff' | 'retriever' | 'collie';
 export type PowerUse = 'fence' | 'detectors' | 'cameras' | 'searchlights' | 'lights';
 
 /** The ways out a prison has (GDD §12), as the victory screen names them (`ESCAPES` in sim/state.ts). */
-export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider' | 'paperwork';
+export type EscapeRoute = 'fence' | 'tunnel' | 'roof' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider' | 'paperwork' | 'parole';
 
 /**
  * Delivery day (P18): the vehicle that comes once a week, 12:30–14:31, and the guard who

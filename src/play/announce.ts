@@ -12,6 +12,8 @@ import { announceNights } from './nights';
 import { announcePhone } from './payphone';
 import { announceKiosk } from './kiosk';
 import { announcePaper } from './paperwork';
+import { announceParole } from './parole';
+import { APPLY_DAY } from '../content/parole';
 import { announceHoliday } from './holidays';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
@@ -630,7 +632,8 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.sting();
       // (P22's games say their own numbers: the opinion they need, the games a day.)
       // (P23's crew: the opinion a night out needs.)
-      itemsUI.toast(t(`refused.${e.why}` as Key, { n: e.why === 'gameOpinion' ? GAME_OPINION : e.why === 'played' ? GAMES_A_DAY : e.why === 'nightOpinion' ? NIGHT_OPINION : BRIBE_REPORT_HEAT }));
+      // (P39's parole: the day to apply from, the day to apply again.)
+      itemsUI.toast(t(`refused.${e.why}` as Key, { n: e.why === 'gameOpinion' ? GAME_OPINION : e.why === 'played' ? GAMES_A_DAY : e.why === 'nightOpinion' ? NIGHT_OPINION : e.why === 'paroleEarly' ? APPLY_DAY : e.why === 'paroleWait' ? sim.state.parole[3] : BRIBE_REPORT_HEAT }));
       break;
     }
     // Noise and distractions (P14): a throw flies, lands with its clatter; a noise sends out its
@@ -788,6 +791,10 @@ export function announce(e: SimEvent, sim: Sim) {
     // The paperwork escape (P36): the form filed, the records, the release.
     case 'paper':
       announcePaper(sim, e);
+      break;
+    // The parole board (P39): applied, the hearing, the verdict, plotting found out.
+    case 'parole':
+      announceParole(sim, e);
       break;
     // Holidays (P42): the holiday's day, eggs found, the water fight, treats, carving, laughs.
     case 'holiday':

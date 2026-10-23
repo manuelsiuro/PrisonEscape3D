@@ -1236,6 +1236,44 @@ five prisons. It walks out through the front door like paperwork (P36), using th
 - **Proof**: `paroletest`: a model-prisoner bot granted in every prison; a plotting bot voided; a record bot whose
   card lines match the ledger; the denied path and applying again.
 - **Lesson**: the hearing (Center Perks, a forced record).
+- **Built (where):** the room is data (`content/parole.ts` HEARINGS, not `PrisonDef.comms`, so P40's comms changes don't
+  clash): Center Perks' visiting room (the board on the visitors' chairs of the east booths), Stalag Flucht's mess hut
+  (nobody visits there: its west table), the canteen where the others' visitors sit (Shankton, San Pancho, Irongate).
+  The hearing starts on entering the room between 10:00 and 10:30 (the arrows lead to the seat across from the board);
+  leaving it during the hearing is walking out (denied). The board is drawn only: three seated figures in suits (the
+  visitors' model, P21) while the hearing is called, sits and gives its word; nothing on the map changes. The map viewer
+  draws b1–b3 and the player's seat.
+- **Built (applying):** at the desk with EXT.PAROLE (21, b = APPLY or ANSWER), never Interact (the desk's Interact stays
+  P36's). The lawyer is a third call (`LAWYER.PAROLE`, $60, `PAROLE_FEE`): the hearing 6 prison days on instead of 7.
+  Refused: before day 3, a hearing already set, during the 3 days after a no, wanted or in a lockdown, with a name on
+  the release list, away from the desk, in the Daily or at the Training Block (`noParole`).
+- **Built (the record):** a pure function of the ledger: the counters as they stood on applying are kept in the state
+  (`paroleBase`), the record is now's less those (fights: the days with DAY.FIGHT since the day of applying). New
+  counters for what the ledger didn't count (roll calls, meals and showers kept, contraband found on the player or in
+  their desk, the heat at 22:00) count only once the player has applied in the run (`parole[8]`): the escape bots'
+  ledgers stay as they were. 15 lines (RECORD), each `w` points per `each`, capped; "missed roll calls" became "routine
+  missed" (every block missed, from FEAT.missed), "a dog's alert" is FEAT.sniffed.
+- **Built (the hearing):** each member asks about a topic drawn by roll() (9 topics, each resting on record lines). Three
+  answers every time: a claim (true when each of its lines is clean: worth the member's `claim`; else a lie caught,
+  its `lie`), owning up (`own`), fine words (Intellect × `words` / 100). The members weigh them differently (the chair,
+  the doctor who values honesty, the deputy warden who values the record). 25 s to answer, silence −2. Granted from 16
+  (the record and the answers together; the model-prisoner bots keep only the routine and get 22–26). Under each
+  question the card shows what the file says on it, so a lie is a choice, not a trap. A lockdown at 10:00 puts it off a
+  day; missing it or walking out costs the application (again after 3 days, like a no).
+- **Built (verdict):** granted puts the name on tomorrow's release list (`release[0]`, the board's own day in
+  `parole[9]`): P36's call at 10:00, the desk's checks (heat, contraband, a lockdown), its doors; the 22:00 records check
+  skips a name the board put there. Out through them is route `parole` (else `paperwork`).
+- **Built (plotting):** damage found (`found`), cutters or a shovel among what a capture takes (`solitary`/`infirmary`
+  events now say `plot`), or seen out at night (`spotted` night or a failed bed check). Voided, the player may apply
+  again 3 prison days on (the plan didn't say; the same wait as a no).
+- **Built (medals):** applied on day 3 at the soonest, out on day 11 (10 with the lawyer): gold 12/12/13/13/14, silver
+  +4, bronze +5 (Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate); a no and a new application lands in
+  bronze. `paroletest`'s five model prisoners are out on day 11.
+- **Built (also):** help topic Parole (a timeline; its picture is the lead's to take: `helpshot.ts` has SHOTS.parole);
+  lesson `parole` in Ways out (seed 145: fights, work, the heat); achievements Good Behaviour (out on parole, gives the
+  gold reading glasses `paroleSpecs`), Counsel (granted on the lawyer's filing), Caught Out and Back to Square One
+  (hidden); the rumour `paroleBoard`; bubbles on applying, a grant and a void; a replay highlight; the HUD chip and the
+  day's card (the hearing's chip and its hour).
 
 ### P40 The odd jobs board (v2.19)
 Small missions with a bit of story: the next step beyond the four favours (`FAVOR`). They are built only from things
@@ -1364,7 +1402,8 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   `waterFights`, `treats`, `carved`, `laughs`, `giftsGiven`, `fireworkWork`.
 - **Proof**: `holidaytest` (the date's edges, Easter 2026–2035, Settings, the days dealt in every prison, each
   day's rules in the sim, saves and logs, the decor's placement) and `holidaybotstest` (all 33 escape bots under
-  each of the four holidays, about 30 s, so it runs beside the other). No escape snapshot changed. Only counts and
+  each of the four holidays, and P39's model prisoner, whose 11-day run lives through two holiday days, under
+  each holiday at another prison; it runs beside the other). No escape snapshot changed. Only counts and
   the state's hash changed (simtest, replaytest's save size, items, achievements, keys, banks, help).
 
 ### Phases

@@ -1,6 +1,7 @@
 import { buzz } from '../app/haptics';
 import { APPEAL_HEAT, CALL_STEPS, CALLEE, COINS, codeBit, HOME_ENERGY, JOB, JOB_FEES, JOBS, LAWYER_FEES, LINE_STEPS, LINES, RETAINER_DAYS, TAP_HEAT, TIER, TIERS, TURN_STEPS } from '../content/phone';
 import { t, type Key } from '../i18n';
+import { APPLY_DAY, HEARING_AFTER, LAWYER_SOONER } from '../content/parole';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { traitOf } from '../sim/systems/guards';
 import { atPhone, byPhone, callRefusal, commsOf, mailWaiting, nextMoneyDay, phoneBusy, phoneOpen, phrasesOf, placeInLine, PLAYER_IN_LINE } from '../sim/systems/phone';
@@ -32,7 +33,8 @@ const view0: PayphoneView = { phase: 'dial', cash: 0, on: '', walking: false, wa
 const blank: PayphoneView = { ...view0, waiting: [], rows: [], phrases: [], known: [] };
 
 /** Why not, in words. */
-const why = (k: string | null) => (k ? t(`refused.${k}` as Key) : '');
+/** (P39: the parole refusals say their day: from day 3, again from day n.) */
+const why = (k: string | null, again = 0) => (k ? t(`refused.${k}` as Key, { n: k === 'paroleEarly' ? APPLY_DAY : again }) : '');
 
 /** "14:00" for an hour. */
 const hourText = (h: number) => `${String(h).padStart(2, '0')}:00`;
@@ -96,12 +98,14 @@ export function payphoneNow(sim: Sim): PayphoneView | null {
   const parcel = !!smugglingOf(sim)?.parcel;
   const row = (id: DialRow['id'], c: number, price: string, note: string): DialRow => {
     const b = DIAL_B[id];
-    return { id, b, c, price, why: why(callRefusal(sim, b >> 4, b & 15, c)), note };
+    return { id, b, c, price, why: why(callRefusal(sim, b >> 4, b & 15, c), s.parole[3]), note };
   };
   v.rows = [
     row('home', 0, t('phone.price', { n: COINS }), t('phone.home.d', { n: HOME_ENERGY })),
     row('appeal', 0, t('phone.price', { n: LAWYER_FEES[0] }), t('phone.appeal.d', { n: APPEAL_HEAT })),
     row('retainer', 0, t('phone.price', { n: LAWYER_FEES[1] }), t('phone.retainer.d', { n: RETAINER_DAYS })),
+    // (P39: the lawyer files for parole, the hearing a day sooner.)
+    row('parole', 0, t('phone.price', { n: LAWYER_FEES[2] }), t('phone.parole.d', { n: HEARING_AFTER - LAWYER_SOONER })),
     row('diversion', pick.hour, t('phone.pricePlus', { n: COINS, m: JOB_FEES[0] }), t('phone.job.diversion.d')),
     row('cake', 0, t('phone.pricePlus', { n: COINS, m: JOB_FEES[1] }), t(parcel ? 'phone.job.cake.parcel' : 'phone.job.cake.d')),
     row('car', 0, t('phone.pricePlus', { n: COINS, m: JOB_FEES[2] }), t('phone.job.car.d')),

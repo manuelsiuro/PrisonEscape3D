@@ -10,8 +10,9 @@ import { itemDef, itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
 import { ORDER } from '../command';
+import { CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../tuning';
+import { ROUTINE } from '../../content/routine';
 import { fireworksOn } from './holiday';
-import { CHASE_HEAT, UNIT } from '../tuning';
 
 /** P28: ripe pruno (sold), and the odds (tenths) a won bet counts as a long shot from. */
 const PRUNO = itemNumber('pruno');
@@ -179,6 +180,20 @@ export const FEATS = [
   'formsFound',
   'released',
   'turnedAway',
+  // v2.18 (P39, the parole board): applications filed (the lawyer's among them), hearings sat, parole granted and denied, applications voided by plotting, lies the board caught;
+  // and once the player has applied in a run (the record's own counts, systems/parole.ts): roll calls, meals and showers kept, contraband found on the player or in their desk, the heat at each evening's records hour (summed).
+  'paroleFiled',
+  'lawyerFiled',
+  'hearings',
+  'paroleGranted',
+  'paroleDenied',
+  'paroleVoided',
+  'liesCaught',
+  'rollCallsKept',
+  'mealsKept',
+  'showersKept',
+  'contrabandFound',
+  'eveningHeat',
   // v2.21 (P42, holidays): eggs found in the egg hunt, water fights joined, holiday treats taken, pumpkins carved, inmates who laughed at the costume, presents given, tool strikes landed under New Year's fireworks.
   'eggsFound',
   'waterFights',
@@ -216,6 +231,10 @@ export function partialLedger(step: number): { feats: number[]; days: number[] }
 }
 
 const CHOCOLATE = itemNumber('chocolate');
+/** P39: what the record counts as kept (ROUTINE ids). */
+const KEPT: Partial<Record<string, Feat>> = { rollCall: 'rollCallsKept', eveningRollCall: 'rollCallsKept', breakfast: 'mealsKept', dinner: 'mealsKept', showers: 'showersKept' };
+/** P39: the minute of the prison day the evening's heat goes on the record (22:00, as the records are looked over). */
+const EVENING = 14 * 60;
 /** P42: the present from under the tree. */
 const GIFT = itemNumber('gift');
 const PHONE = itemNumber('burner_phone');
@@ -232,6 +251,9 @@ export function ledger(sim: Sim, x: number, z: number) {
   if (moved > 0 && moved < UNIT) f[FEAT.walked] += moved;
   if (s.heat > f[FEAT.maxHeat]) f[FEAT.maxHeat] = s.heat;
   if (s.followers.length > f[FEAT.crew]) f[FEAT.crew] = s.followers.length;
+  // (P39: the record's own counts, once the player has applied for parole in the run.)
+  const record = (s.parole?.[8] ?? 0) > 0;
+  if (record && s.step % STEPS_PER_MINUTE === 0 && Math.floor((s.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE) === EVENING) f[FEAT.eveningHeat] += s.heat;
   for (const e of sim.events) {
     switch (e.type) {
       case 'hit':
@@ -267,7 +289,11 @@ export function ledger(sim: Sim, x: number, z: number) {
         if (e.on) {
           f[FEAT.solitary]++;
           bits |= DAY.SOLITARY;
+          if (record && e.taken > 0) f[FEAT.contrabandFound]++;
         }
+        break;
+      case 'infirmary':
+        if (record && e.taken > 0) f[FEAT.contrabandFound]++;
         break;
       case 'lockdown':
         if (e.on) {
@@ -280,6 +306,7 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'spotted':
         f[FEAT.spotted]++;
+        if (record && e.reason === 'contraband') f[FEAT.contrabandFound]++;
         bits |= DAY.SPOTTED;
         if (e.reason === 'wanted') bits |= DAY.WANTED;
         break;
@@ -398,6 +425,22 @@ export function ledger(sim: Sim, x: number, z: number) {
           if (e.item && itemDef(e.item).contraband) f[FEAT.hiddenContraband]++;
         }
         break;
+      case 'parole':
+        if (e.what === 'applied') {
+          f[FEAT.paroleFiled]++;
+          if (e.lawyer) f[FEAT.lawyerFiled]++;
+        } else if (e.what === 'granted' || e.what === 'denied' || e.what === 'walkedOut') {
+          f[FEAT.hearings]++;
+          if (e.what === 'granted') f[FEAT.paroleGranted]++;
+          else f[FEAT.paroleDenied]++;
+        } else if (e.what === 'voided') f[FEAT.paroleVoided]++;
+        else if (e.what === 'answer' && e.lie) f[FEAT.liesCaught]++;
+        break;
+      case 'attended': {
+        const kept = record ? KEPT[ROUTINE[e.routine]?.id] : undefined;
+        if (kept) f[FEAT[kept]]++;
+        break;
+      }
       case 'paper':
         if (e.what === 'filed') f[FEAT.formsFiled]++;
         else if (e.what === 'found') f[FEAT.formsFound]++;
@@ -534,6 +577,7 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'searched':
         if (e.cell === 1) f[FEAT.searched]++;
+        if (record && e.cell === 1 && e.taken > 0) f[FEAT.contrabandFound]++;
         break;
       case 'recruit':
         if (e.on) f[FEAT.recruits]++;
