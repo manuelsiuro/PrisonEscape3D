@@ -32,7 +32,7 @@ export type HuntEvent =
   | { type: 'point'; dog: number }
   | { type: 'lit'; on: boolean }
   | { type: 'hidden'; on: boolean }
-  | { type: 'swap' }
+  | { type: 'swap'; uniform: boolean }
   | { type: 'cut'; tile: number; done: boolean }
   | { type: 'treat'; dog: number; what: number }
   | { type: 'stone'; tile: number }
@@ -222,6 +222,7 @@ export class Hunt {
       knownAt: 0,
       heat: 0,
       swept: [],
+      sniffed: [],
     };
     this.refreshGrid();
     this.toGoal = this.distances();
@@ -536,13 +537,15 @@ export class Hunt {
     const s = this.state;
     const line = this.lineNear();
     if (line >= 0) {
+      // (Out of a guard's uniform: the eyes know them a little further off, but the dogs lose the trail all the same.)
+      const uniform = s.clothes === 1;
       s.lines |= 1 << line;
       s.clothes = 2;
       s.feats[HFEAT.swaps]++;
       // New clothes, a new scent: the trail so far is no use to a dog.
       s.trail = [];
       for (const d of s.dogs) if (d.mode === HOUND.TRACK || d.mode === HOUND.POINT) this.dogLost(d);
-      this.events.push({ type: 'swap' });
+      this.events.push({ type: 'swap', uniform });
       return;
     }
     const wire = this.wireAhead();
@@ -557,11 +560,10 @@ export class Hunt {
     this.events.push({ type: 'refused', why: 'nothing' });
   }
 
-  /** A washing line within reach not yet used (its index), -1 none (or none worth it: a guard's uniform is the better disguise). */
+  /** A washing line within reach not yet used (its index), -1 none. */
   lineNear(): number {
     const s = this.state;
     const o = this.out;
-    if (s.clothes === 1) return -1;
     return this.def.lines.findIndex((l, k) => !(s.lines & (1 << k)) && within(s.player, { x: (l.x + o.ox) * UNIT + UNIT / 2, z: (l.z + o.oz) * UNIT + UNIT / 2 }, LINE_REACH));
   }
 
@@ -908,12 +910,16 @@ export class Hunt {
     return t;
   }
 
-  /** The next place to sweep (the nearest not yet swept to where the search reckons the player has got to, or once it has widened, for the dog teams every other time, to where they were last known; then nearest him), marked swept; every one swept, round again. */
+  /** The next place to sweep (the nearest not yet swept to where the search reckons the player has got to, or once it has widened, for the dog teams every other time, to where they were last known; then nearest him), marked swept (sniffed, for a dog team); every one done, round again. */
   private nextSweep(m: Searcher) {
     const s = this.state;
     const pts = this.sweepPts;
     if (!pts.length) return;
-    if (s.swept.length >= pts.length) s.swept = [];
+    // (The dog teams keep their own list: only a nose finds someone hidden, so a place an eye has swept is still to be sniffed.)
+    const dog = m.dog >= 0;
+    if (dog) s.sniffed ??= [];
+    const done = dog ? s.sniffed! : s.swept;
+    if (done.length >= pts.length) done.length = 0;
     const here = tileAt(m.body.x, m.body.z);
     // (Once the search widens, the dog teams work back where the player was last known every other time it widens.)
     const turns = s.heat > 0 ? Math.floor((s.step - s.alarmAt - this.rampAt) / HUNT.rampEvery) : 0;
@@ -922,12 +928,12 @@ export class Hunt {
     let best = -1;
     let bestD = Infinity;
     for (const t of pts) {
-      if (s.swept.includes(t)) continue;
+      if (done.includes(t)) continue;
       const d = 2 * cheb(t, aim) + cheb(t, here);
       if (d < bestD) (best = t), (bestD = d);
     }
     if (best < 0) return;
-    s.swept.push(best);
+    done.push(best);
     this.route(m, best);
     if (!m.path.length && !this.arrived(m)) m.goal = -1;
   }

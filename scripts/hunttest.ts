@@ -4,8 +4,8 @@
  * review's limited bot) plays every start of every prison, by night and by day, with the head
  * start and seen going, in the jumpsuit and in a guard's uniform, over a few salts; the table is
  * how often it's caught and how long a getaway takes. The expert bot that knows everything gets
- * clean away from every start, by night and by day, head start or seen going (in one outfit or
- * the other, with one of the salts: the proof each has a careful line). Nobody ever
+ * clean away from every start, by night and by day, head start or seen going, in the jumpsuit and
+ * in the uniform (with one of the salts: the proof each has a careful line). Nobody ever
  * comes on within HUNT.clear tiles of the player or in their sight. Keeping still in the cover
  * nearest safety fails in the end (the search widens), and so does standing about in the open.
  */
@@ -23,6 +23,8 @@ import { HuntBot } from './huntbot';
 
 const VIEW = 12;
 const SALTS = [1, 2, 3];
+/** The expert tries these in turn (the proof needs one run's draws where a careful line gets through). */
+const EXPERT_SALTS = [1, 2, 3, 4, 5, 6];
 const CONDS = [
   ['night', 'head start', 23 * 60 + 40, HUNT.headStartMax],
   ['night', 'seen going', 23 * 60 + 40, 0],
@@ -54,9 +56,7 @@ for (const def of OUTSIDES) {
     let n = 0;
     const secs: number[] = [];
     const cells: string[] = [];
-    for (const [light, how, minute, headStart] of CONDS) {
-      // (A careful line out: the expert away in the jumpsuit or the uniform, with one of the salts.)
-      let line = false;
+    for (const [light, how, minute, headStart] of CONDS)
       for (const [dress, outfit] of OUTFITS) {
         let cc = 0;
         for (const salt of SALTS) {
@@ -86,7 +86,7 @@ for (const def of OUTSIDES) {
         cells.push(String(cc));
         // The expert bot that knows everything: clean away (with the first salt, else another).
         let away = 0;
-        for (const salt of SALTS) {
+        for (const salt of EXPERT_SALTS) {
           const full = new HuntBot(new Hunt(def, prison, carry(def.prison, kind, { minute, headStart, salt, outfit: itemNumber(outfit) }))).run();
           if (full.over === OVER.SAFE) {
             away = salt;
@@ -94,12 +94,10 @@ for (const def of OUTSIDES) {
           }
           expertMisses++;
         }
-        if (away !== SALTS[0]) expertNotes.push(`${def.prison} ${kind} ${light} ${how} ${dress}: ${away ? `away with salt ${away}` : 'NOT AWAY'}`);
+        if (away !== EXPERT_SALTS[0]) expertNotes.push(`${def.prison} ${kind} ${light} ${how} ${dress}: ${away ? `away with salt ${away}` : 'NOT AWAY'}`);
         if (!away) fullFails++;
-        line ||= away > 0;
+        check(away > 0, `${def.prison} ${kind} ${light} ${how} ${dress}: the expert bot gets clean away (with one of the salts)`);
       }
-      check(line, `${def.prison} ${kind} ${light} ${how}: the expert bot gets clean away`);
-    }
     caught += c;
     runs += n;
     safeSecs.push(...secs);

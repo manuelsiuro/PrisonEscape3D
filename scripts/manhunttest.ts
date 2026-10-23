@@ -109,7 +109,7 @@ for (const def of OUTSIDES) {
     if (!def.starts[kind]) continue;
     // (If not on the first salt, on another: the run's draws move the searchers about.)
     let r = null;
-    for (const salt of [1, 2, 3]) {
+    for (const salt of [1, 2, 3, 4, 5, 6]) {
       const hunt = new Hunt(def, prison, testCarry(def.prison, kind, { salt }));
       r = new HuntBot(hunt).run();
       const f = hunt.state.feats;
@@ -123,7 +123,7 @@ for (const def of OUTSIDES) {
   const kind = (Object.keys(def.starts) as StartKind[])[0];
   const tries: string[] = [];
   let away = false;
-  for (const salt of [1, 2, 3]) {
+  for (const salt of [1, 2, 3, 4, 5, 6]) {
     const seen = new Hunt(def, prison, testCarry(def.prison, kind, { headStart: 0, minute: 14 * 60, salt }));
     const r = new HuntBot(seen).run();
     tries.push(`salt ${salt} ${r.over === OVER.SAFE ? 'clean away' : `CAUGHT at ${Math.round(seen.progress * 100)}%`} in ${r.secs} s · ${r.hash}`);
@@ -452,7 +452,7 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
   console.log(`ford: the trail gone in the water; the dog on it lost it at the river, ${ev.includes('point') ? 'found them' : 'never found them across it'}`);
 }
 
-// A roadblock waits for a player loitering by it, but only HUNT.blockWait; one in a guard's uniform isn't offered a washing line.
+// A roadblock waits for a player loitering by it, but only HUNT.blockWait; a washing line in a guard's uniform says it's a worse disguise.
 {
   const h = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0 }), { searchers: [], heli: false });
   const r = CPO.roadblocks[0];
@@ -465,8 +465,9 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
   check(upAt > 0 && upAt <= (r.at + HUNT.jitter) * 20 + HUNT.blockWait + 1, `a roadblock loitered by: up at ${upAt}`);
   const u = lab(CPO, CP, { outfit: itemNumber('guard_outfit') });
   put(u, CPO.lines[0].x, CPO.lines[0].z, 1);
-  check(u.lineNear() < 0 && steps(u, 1, command(0, OP.INTERACT)).includes('refused:nothing'), "a guard's uniform: no washing line offered");
-  console.log(`roadblock: loitered by, up ${((upAt - r.at * 20) / 20).toFixed(1)} s after its time all the same; in a guard's uniform no washing line is offered`);
+  u.step(command(0, OP.INTERACT));
+  check(u.events.some((e) => e.type === 'swap' && e.uniform) && u.state.clothes === 2, "a guard's uniform: the line swaps it, and says it's a worse disguise");
+  console.log(`roadblock: loitered by, up ${((upAt - r.at * 20) / 20).toFixed(1)} s after its time all the same; out of a guard's uniform at a line, told the eyes know you further off`);
 }
 
 // Lou's car: away in it when he's there; nothing there when he isn't.
