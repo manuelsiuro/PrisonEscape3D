@@ -87,6 +87,13 @@ export const EXT = {
    */
   BOARD: 24,
   WHISTLE: 25,
+  /**
+   * The manhunt (P41, its own simulation: sim/hunt/): a stone thrown to draw the searchers off (b
+   * and c = the ground tile it lands on, see tossArgs); a treat thrown to a dog (b = the dog,
+   * c = which: 0 jerky, 1 pepper, 2 sleepy jerky).
+   */
+  HUNT_THROW: 27,
+  HUNT_TREAT: 28,
   /** v2.21 (P42, holidays): the holiday's treat taken from the open furniture (b = content/holidays.ts TREAT). */
   HOLIDAY: 32,
 } as const;

@@ -1,3 +1,4 @@
+import { huntTap } from './hunt';
 import { itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import { t } from '../i18n';
@@ -32,6 +33,8 @@ const tapPoint = { x: 0, y: 0 };
 export function onTap(cx: number, cy: number) {
   const game = play.game;
   if (!game || game.paused) return;
+  // (The manhunt, P41: a walk on its own ground.)
+  if (game.hunt) return huntTap(cx, cy);
   const p = view.groundAt(cx, cy);
   const w = game.rec.sim.world;
   if (!p) return;

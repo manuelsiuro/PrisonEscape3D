@@ -67,6 +67,8 @@ export const COSMETICS: readonly Cosmetic[] = [
   c('bucket', 'hat', 0x6f7d3a, 8, true),
   c('topHat', 'hat', 0x26232a, 9, true),
   c('propeller', 'hat', 0xe94b3c, 10, true),
+  // P41: a woolly hat in forest green (a clean getaway).
+  c('mhBeanie', 'hat', 0x35603d, 1, true),
   // Glasses.
   c('noGlasses', 'glasses', 0, 0),
   c('round', 'glasses', 0x2a2a30, 1),

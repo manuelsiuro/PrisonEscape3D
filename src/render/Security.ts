@@ -33,7 +33,7 @@ export interface SecurityFrame {
 
 /** A soft round pool of light (additive), shared by the searchlights. */
 let poolTex: THREE.CanvasTexture | null = null;
-function pool(): THREE.CanvasTexture {
+export function pool(): THREE.CanvasTexture {
   if (poolTex) return poolTex;
   const c = document.createElement('canvas');
   c.width = c.height = 128;

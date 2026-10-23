@@ -40,9 +40,25 @@ export interface Victory {
   wheels?: boolean;
   /** P25: the escape can be watched again (its replay). */
   watch?: boolean;
+  /**
+   * P41, the manhunt: offered (Keep running or Skip), skipped, or how it went (safe or caught;
+   * how close it got, the seconds out there, where it ended: the safe point's kind or 'lou').
+   * `goal` is the safe point's kind; `lou`: his car waits out there.
+   */
+  hunt?: { state: 'offer' | 'skipped' | 'safe' | 'caught'; goal: string; lou?: boolean; progress?: number; secs?: number; reached?: string };
 }
 
-export type VictoryChoice = 'again' | 'next' | 'title' | 'watch';
+export type VictoryChoice = 'again' | 'next' | 'title' | 'watch' | 'run' | 'skip';
+
+/** The manhunt's line on the card (P41): the offer, a clean getaway, or recaptured and how close. */
+function huntRow(v: Victory): string {
+  const hu = v.hunt;
+  if (!hu || hu.state === 'skipped') return '';
+  const time = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+  if (hu.state === 'offer') return `<div class="v-hunt offer">${icon('run', 20)}<span><b>${t('manhunt.offer')}</b><small>${t(hu.lou ? 'manhunt.offerLou' : 'manhunt.offerSub', { goal: t(`manhunt.goal.${hu.goal}` as Key) })}</small></span></div>`;
+  if (hu.state === 'safe') return `<div class="v-hunt safe" role="status"><span class="v-star">${icon('star', 20)}</span><span><b>${t('manhunt.clean')}</b><small>${t(`manhunt.awaySub.${hu.reached === 'lou' ? 'lou' : hu.goal}` as Key)} · ${time(hu.secs ?? 0)}</small></span></div>`;
+  return `<div class="v-hunt caught" role="status">${icon('siren', 20)}<span><b>${t('manhunt.caught')}</b><small>${t('manhunt.caughtCard', { n: Math.round((hu.progress ?? 0) * 100), goal: t(`manhunt.goal.${hu.goal}` as Key) })}</small></span></div>`;
+}
 
 /** The medal won (P16), or how quick bronze needed to be. */
 function medalRow(v: Victory): string {
@@ -82,7 +98,7 @@ export function showVictory(v: Victory, click: () => void, back = false): Promis
       <h2>${t('escaped.title')}</h2>
       <p class="v-sub"></p>
       <div class="v-left">
-      <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}${v.watch ? `<button class="v-watch" data-c="watch" aria-label="${t('replay.watch')}" title="${t('replay.watch')}">${icon('film', 16)}<span>${t('replay.watchShort')}</span></button>` : ''}</div>
+      <div class="v-method">${icon(routeIcon(v.via, v.prisonId), 20)}<span><small>${t('victory.method')}</small><b>${t(`route.${v.via}` as Key)}</b></span>${v.newRoute ? `<em>${t('victory.newRoute')}</em>` : ''}${v.watch && v.hunt?.state !== 'offer' ? `<button class="v-watch" data-c="watch" aria-label="${t('replay.watch')}" title="${t('replay.watch')}">${icon('film', 16)}<span>${t('replay.watchShort')}</span></button>` : ''}</div>
       ${v.wheels ? `<div class="v-crew">${icon('truck', 18)}<span>${t('victory.wheels')}</span></div>` : ''}
       ${v.crew?.length ? `<div class="v-crew">${icon('users', 18)}<span>${t(v.crew.length === 1 ? 'victory.crew1' : 'victory.crew', { names: listOf([...v.crew]) })}</span></div>` : ''}
       <div class="v-stats">
@@ -95,16 +111,24 @@ export function showVictory(v: Victory, click: () => void, back = false): Promis
       </div>
       </div>
       <div class="v-right">
+      ${huntRow(v)}
       ${medalRow(v)}
       <div class="v-routes"><span class="v-routes-label"></span><span class="v-pips">${pips}</span></div>
       ${earnedRow(v.earned ?? [])}
       ${v.unlocked ? `<div class="v-unlock" role="status">${icon('map', 22)}<span><b></b><small></small></span></div>` : ''}
       ${v.campaign ? `<div class="v-unlock campaign" role="status">${icon('star', 22)}<span><b>${t('victory.campaign')}</b><small>${t('victory.campaignSub')}</small></span></div>` : ''}
-      <div class="actions">
+      ${
+        v.hunt?.state === 'offer'
+          ? `<div class="actions v-hunt-actions">
+        <button class="big-btn primary" data-c="run">${icon('run', 18)}${t('manhunt.keepRunning')}</button>
+        <button class="big-btn ghost" data-c="skip">${icon('chevronRight', 18)}${t('manhunt.skip')}</button>
+      </div>`
+          : `<div class="actions">
         ${v.unlocked ? `<button class="big-btn primary" data-c="next">${icon('play', 18)}<span class="v-next"></span></button>` : ''}
         <button class="big-btn ${v.unlocked ? 'ghost' : 'primary'}" data-c="again">${icon('replay', 18)}${t('victory.again')}</button>
         <button class="big-btn ghost" data-c="title">${icon('home', 18)}${t('escaped.back')}</button>
-      </div>
+      </div>`
+      }
       </div>
     </div>`,
   );
@@ -122,7 +146,7 @@ export function showVictory(v: Victory, click: () => void, back = false): Promis
   if (v.unlocked) {
     el.querySelector('.v-unlock b')!.textContent = t('victory.unlocked', { name: v.unlocked.name });
     el.querySelector('.v-unlock small')!.textContent = v.unlocked.security;
-    el.querySelector('.v-next')!.textContent = t('victory.next', { name: v.unlocked.name });
+    el.querySelector('.v-next')?.replaceChildren(t('victory.next', { name: v.unlocked.name }));
   }
   return new Promise((resolve) => {
     el.onclick = (e) => {
@@ -133,6 +157,6 @@ export function showVictory(v: Victory, click: () => void, back = false): Promis
       resolve(c);
     };
     document.body.append(el);
-    el.querySelector<HTMLElement>(back ? '[data-c="watch"]' : v.unlocked ? '[data-c="next"]' : '[data-c="again"]')?.focus();
+    el.querySelector<HTMLElement>(v.hunt?.state === 'offer' ? '[data-c="run"]' : back ? '[data-c="watch"]' : v.unlocked ? '[data-c="next"]' : '[data-c="again"]')?.focus();
   });
 }

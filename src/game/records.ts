@@ -6,6 +6,8 @@ export interface RouteBest {
   day: number;
   minute: number;
   medal?: Medal;
+  /** P41: a clean getaway after this way out (the manhunt run to safety): a star on the shelf, never taken away. */
+  clean?: true;
 }
 
 /** One prison's escapes: the routes found (ESCAPES names), the quickest (day and game minute), and each route's (P16). */
@@ -23,7 +25,7 @@ type Records = Record<string, PrisonRecord>;
 function fitRouteBest(v: unknown): RouteBest | null {
   const b = v as Partial<RouteBest> | null;
   if (!b || typeof b !== 'object' || typeof b.day !== 'number' || b.day < 1) return null;
-  return { day: b.day, minute: typeof b.minute === 'number' ? b.minute : 0, ...(b.medal && MEDALS.includes(b.medal) ? { medal: b.medal } : {}) };
+  return { day: b.day, minute: typeof b.minute === 'number' ? b.minute : 0, ...(b.medal && MEDALS.includes(b.medal) ? { medal: b.medal } : {}), ...(b.clean === true ? { clean: true as const } : {}) };
 }
 
 /** Every prison's record (an empty one for a prison never escaped). */
@@ -74,7 +76,7 @@ export function recordEscape(prison: string, route: string, day: number, minutes
   const medal = medalFor(prison, route, day);
   const top = betterMedal(old?.medal, medal);
   const newMedal = !!medal && top === medal && medal !== old?.medal;
-  const byRoute = { ...was.byRoute, [route]: { day: routeBest ? day : old.day, minute: routeBest ? minutes : old.minute, ...(top ? { medal: top } : {}) } };
+  const byRoute = { ...was.byRoute, [route]: { day: routeBest ? day : old.day, minute: routeBest ? minutes : old.minute, ...(top ? { medal: top } : {}), ...(old?.clean ? { clean: true as const } : {}) } };
   const record: PrisonRecord = {
     routes: newRoute ? [...was.routes, route] : was.routes,
     bestDay: best ? day : was.bestDay,
@@ -84,4 +86,17 @@ export function recordEscape(prison: string, route: string, day: number, minutes
   };
   writeJSON(KEYS.escapes, { ...all, [prison]: record });
   return { newRoute, best, routeBest, medal, newMedal, record };
+}
+
+/**
+ * A clean getaway (P41): the manhunt after this way out run to safety. The route's star on the
+ * shelf (its escape already recorded at the wall); whether it's the first for the route.
+ */
+export function recordGetaway(prison: string, route: string): boolean {
+  const all = readJSON<Records>(KEYS.escapes, {});
+  const was = recordOf(prison);
+  const b = was.byRoute[route];
+  if (!b || b.clean) return false;
+  writeJSON(KEYS.escapes, { ...all, [prison]: { ...was, byRoute: { ...was.byRoute, [route]: { ...b, clean: true } } } });
+  return true;
 }

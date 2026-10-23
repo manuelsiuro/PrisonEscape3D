@@ -2,6 +2,7 @@ import { markLessonDone } from '../game/lessons';
 import { ESCAPES } from '../sim/Sim';
 import { LAYER } from '../sim/world/World';
 import { t, type Key } from '../i18n';
+import { en } from '../i18n/en';
 import type { SimEvent } from '../sim/Sim';
 import { chapterOf, LESSONS, type LessonCtx } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
@@ -57,6 +58,8 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   if (!run) return;
   ctx.sim = g.rec.sim;
   ctx.craftOpen = itemsUI.craftIsOpen;
+  // (P41: a lesson in the manhunt reads the hunt.)
+  ctx.hunt = g.hunt?.hunt ?? null;
   if (!run.ended && !g.paused) {
     // A step with something to read in it shows a few seconds before it can tick (it may be done the moment it comes up).
     const now = run.progress.step;
@@ -146,7 +149,9 @@ async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
   }
   if (play.game !== g) return;
   const ch = chapterOf(run.index);
-  const choice = await showLessonResult(won ? 'lesson.done' : why, run.index + 1 < LESSONS.length ? (ch.n === ch.of ? 'chapter' : 'lesson') : null, t(`lesson.${LESSONS[run.index].id}.t` as Key), click);
+  // (A short title, and what happened under it when the lesson has words for it: `<why>Sub`.)
+  const sub = `${why}Sub` as Key;
+  const choice = await showLessonResult(won ? 'lesson.done' : why, run.index + 1 < LESSONS.length ? (ch.n === ch.of ? 'chapter' : 'lesson') : null, t(`lesson.${LESSONS[run.index].id}.t` as Key), click, !won && sub in en ? sub : null);
   run.finish(choice);
 }
 

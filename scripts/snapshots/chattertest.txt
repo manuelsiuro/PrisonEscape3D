@@ -1,4 +1,4 @@
-339 banks: 1910 lines in English, 1910 in French; longest 70 / 83 characters
+345 banks: 1948 lines in English, 1948 in French; longest 70 / 83 characters
 30 places and 31 items with words; 77 kinds of gossip
 two days: 324 lines (229 distinct), worst 100 87% distinct, 0 heard again, at most 3 at once
 styles: gossip 6, say 300, whisper 18; kinds: catch, ex, go, gu, in, re, sl; rumors 6

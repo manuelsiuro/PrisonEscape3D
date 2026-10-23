@@ -19,6 +19,7 @@ import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
 import { paroleBusy, paroleKey } from './parole';
 import { oddjobKey } from './oddjobs';
+import { huntKey } from './hunt';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -38,6 +39,17 @@ export function act() {
 function onKeyDown(e: KeyboardEvent) {
   const game = play.game;
   if (!game || game.paused || game.replay || e.metaKey || e.ctrlKey || e.repeat) return;
+  // The manhunt (P41): its own keys (Escape, H and O as in a game, below).
+  if (game.hunt && e.code !== 'Escape' && e.code !== 'KeyH' && e.code !== 'KeyO') {
+    huntKey(e);
+    return;
+  }
+  if (game.hunt) {
+    if (e.code === 'Escape') pause();
+    else if (e.code === 'KeyH') openHelp();
+    else if (e.code === 'KeyO' && game.lesson) openObjectives();
+    return;
+  }
   // Escape closes a panel first (or lets go of an aim), and pauses only when none is open.
   if (e.code === 'Escape') {
     if (aiming()) cancelThrow();

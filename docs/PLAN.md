@@ -696,6 +696,7 @@ real touch feel) and the known limits.
 - **The roadmap P39–P42 (decided 2026-10-23)**: the user asked for ten ideas for more fun and picked four, in this order: the parole board, an odd jobs board, the manhunt, and holidays (with summer and Easter as well as Halloween and Christmas). Planned in §13; §2 has a row. Nothing built yet: each phase starts on the user's go.
 - **P39 The parole board (v2.18.0)**, the P39–P42 roadmap's first phase (§13; the user asked for a team of agents to build P39–P42, 2026-10-23): a 12th way out, `parole`. Apply at the release desk from day 3, or have the lawyer file it ($60, a day sooner); a hearing 7 days on at 10:00 before a board of three (three questions, each with a claim, owning up or fine words, 25 s; the card says whether a claim would hold); the record is read from the ledger after applying (work, courses, calls home, favours; against: fights started, KOs, solitary, contraband taken, the heat at 22:00). Granted goes through P36's release desk the next morning; plotting voids it. Medals, lesson `parole` (Ways out), help page with its picture, 4 achievements (the gold reading glasses), `paroletest`. Built in its own worktree by an agent alongside P40–P42; rules and UI reviews fixed (a negative score lost on load, contraband counted per sighting, a fire drill during the hearing, hidden claim thresholds, the lawyer's fee kept on refusal; the landscape card under the hotbar, the PA strip over the answers).
 - **P40 The odd jobs board (v2.19.0)**, the roadmap's second phase (§13, built by an agent alongside P39, P41 and P42): a cork board on every canteen's north wall (`PrisonDef.board`) with three jobs a day dealt by `roll()`, plus the fixer's own job (1.5× pay, a rare item). Twelve kinds built from what the game already does (lift, drop, frame-up, a fixed arm-wrestle, Cheat or checkers, rat mail, the birthday cake, lookout at a dig, delivery, tip-off, errand); one job at a time, 1–3 prison days (from the next morning if taken from 18:00); hand in to whoever asked; rewards in cash, rare items or a debt (joins the crew, or hands over a tool). A three-step story per prison. Lesson `oddjob` (Prison life), help page with its picture, 6 achievements (two trims), `oddjobstest`, the map viewer (the board drawn and the in-game photos retaken). Rules review fixed (a rat plant judged "seen", leftover lift items blocking later jobs, a hidden-compartment plant never found, the 08:00 timer ignoring the hour taken, leftovers finishing later jobs); UI review fixed (the whistle outside dig hours, the board over the wall top, the digger leaning into the wall, chips under docked cards, the story's tobacco/parcel text).
+- **P41 The manhunt (v2.20.0)**, the roadmap's third phase (§13, built by an agent alongside P39, P40 and P42): over the wall is no longer the end. After a physical way out the escape card (the escape already counted) offers Keep running or Skip; the run goes on in its own deterministic sim (`src/sim/hunt/`) on an outside map per prison (`src/content/outside/`, 60×56: Center Perks' woods to the night bus, Stalag Flucht's river, ford and border post, Shankton's rail yard and estate, San Pancho's desert to the truck stop, Irongate's harbour town to the coach station). Searchers with cones and dogs on the trail, roadblocks, the helicopter's light, a widening search after the last deploy (camping always fails); hide still in hedges and culverts, wash the trail at a ford or a washing line (new clothes), cut wire, throw stones as decoys, treats for dogs; Lou's car if a call set it up, a crew lookout, the glider landing further out. A clean getaway puts a green star by the way out's medal; 8 achievements (the forest beanie), lesson `manhunt` (Ways out), help page with its picture, the map viewer's Outside view, `manhunttest` and `hunttest` (the balance gauge: a 12-tile-view bot caught about a quarter of the time, getaways about 50 s; a full-view bot gets away from every start, in either outfit). Paperwork and parole are legal releases, with no hunt. Reviews fixed: searchers frozen after a look, cover hiding a moving player, fords not washing the trail, searchers appearing beside the player, hunts too short, a soft lock on H, a stale HUD, Lou's car in a house. Known limits: no replay of the hunt; a faint seam in Irongate's sea at the picture's edge; the van, glider and helicopter starts begin on foot.
 
 ## 9. Free time (P27–P30)
 
@@ -1425,6 +1426,111 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
 - **Proof**: `manhunttest`: a getaway bot per prison and per kind of start; every outside map reachable to the safe
   point; the escape bots' snapshots unchanged (they end at the wall).
 - **Lesson**: the manhunt (Center Perks' woods).
+- **Built** (what differs from the plan above, and why):
+  - **Its own simulation.** The hunt is `sim/hunt/Hunt.ts`, a deterministic sim of its own (20 steps a second,
+    packed commands, integer positions, draws from `roll()` with `SALT.HUNT`), built from the outside's data and a
+    `Carry` read once at the wall (`sim/hunt/carry.ts`: the way out and its start kind, Speed, the outfit, the
+    hotbar and weapon, the crew out, Lou's car, the minute, the salt, the head start). The inside run's state is
+    never touched: no new inside state field, no new FEAT, no new TODAY/DOING/TALK code was needed, so every inside
+    snapshot (the escape bots, simtest's hash) stays as it was. The hunt keeps its own counts (`HUNT_FEATS`); the
+    lifetime stats gain `hunts`, `getaways`, `recaptured`.
+  - **The outside maps** are `content/outside/<prison>.ts` (not a `PrisonDef` field: the prisons stay as they
+    were): 60 × 56 pictures in their own legend (trees, cacti, rocks, crates; hedges and culverts as cover; gravel
+    and railway lines loud underfoot; rivers, fords that wash the trail; wire that cutters cut), centred in the 64 ×
+    64 world. The plan said about 40 × 30: a first cut at 48 × 34 was crossed in ten seconds, too short for an act.
+    Past the picture: woods, or the sea where its edge is water. `sim/hunt/world.ts` builds a `World` from it (its
+    trees and crates as solid `parked` tiles, cover and trees in a new `World.veil` that stops sight but not feet),
+    so walking, sight, cones and paths are the inside's own code. Starts are by kind (`content/manhunt.ts
+    startKindOf`): wall (fence, tunnel, roof), gate (takeover, gate, bluff), glider (further out), van (stowaway),
+    sea (raft), air (helicopter; Irongate's stowaway rides the supply helicopter). Safe points: Center Perks' night
+    bus, Stalag Flucht's border (across the wire: a gap far west, cutters, or past the post), Shankton's night
+    freight, San Pancho's truck stop, Irongate's coach station.
+  - **The hunt's rules** (numbers in `content/manhunt.ts HUNT`): searchers walk beats and look with the inside's
+    60° cones (7 tiles by day, 5 after dark); a notice meter (in other clothes they know the player only within 3
+    tiles, in a guard's uniform 2.5); spotted, a chase and the radio; out of sight 3 s, a look round where last seen.
+    Chasers run 176 (inside: 196) and everyone but the dogs slows off the roads (75%), so a chase out there can be
+    shaken. Cover hides from every eye once still for half a second; dogs (2 tiles to pick up a fresh trail, 60 s
+    fresh, 60 tiles long) track it right into a hedge, point and bark, and their handler finds the player there. A
+    ford lays no trail; a washing line gives other clothes and wipes the trail. Noise is walking-distance as inside:
+    gravel crunches, a cut, a bark, and a thrown stone (Space, every 5 s: the plan had no decoy) draw searchers to
+    look. Treats from the hotbar work on dogs as inside (jerky calms, pepper dazes and wipes the trail, sleepy jerky
+    puts to sleep). The alarm comes after the head start (to the next headcount, 5–20 s; none if seen going, in a
+    lockdown or a takeover); searchers come out by their own seconds after it, patrols are out before it, then
+    roadblocks (5–25 s) and the helicopter (15–25 s), whose light finds the player anywhere out of cover and calls
+    everyone in.
+  - **Help from inside**: Lou's car (`wheels`, P34) waits on the outside map, nearer than the safe point from the
+    starts by the walls; a crew member out too keeps watch from a rise and whistles at a searcher coming within 7
+    tiles; the glider's start is further out.
+  - **The card**: the escape counts at the wall as before (records, medals, achievements, the replay kept); the card
+    then offers Keep running or Skip (Skip: the card as it always was). Safe: a clean getaway (`RouteBest.clean`, a
+    green star beside the route's medal on the shelf, a line on the card); caught: "Recaptured, n% of the way". With
+    the hunt's line the card goes two columns on screens under 1000 px tall. Legal releases (`LEGAL_ROUTES`: paperwork
+    and, since the merge with P39, parole) and the Daily end at the wall: no offer. Leaving a hunt from the pause card
+    counts as a recapture in the stats (giving up is being caught; no achievement).
+  - **Not built**: a replay of the hunt (the replay kept is the inside run's, as before; "a better replay" is left
+    for later), rumours about the outside (no gossip kind), and help pictures (the topic is laid out with a timeline
+    and waits for `public/help/manhunt.webp`, then `pic: true`).
+  - **Achievements** (8): Clean Getaway (gives the forest beanie, `mhBeanie`), Without a Trace, Change of Clothes, Out
+    of the Light, Getaway Driver, Long Arm of the Law and So Close (mishaps), All Clear (career: every prison).
+  - **Proof**: `manhunttest`: every map's data (a start for every way out that needs one, the safe point and Lou
+    reachable with every roadblock up and no wire cut, beats walkable, posts and lines reachable), the getaway bot
+    (`scripts/huntbot.ts`: shortest way out of every eye's reach, else into cover) clean away from all 17 starts and
+    again seen going by day, each rule on its own, determinism, the lesson played through. `scripts/dev/huntsweep.ts`
+    sweeps the bot over every start, night and day. The map viewer has an Outside view per prison.
+  - **Lesson** `manhunt`, last of the Ways out chapter: over Center Perks' wall, into the woods, a thicket while a
+    searcher goes by, clothes off a line, Lou's car (one searcher, no roadblocks, no helicopter). Dev builds start a
+    hunt from the console: `__manhunt('stalag-flucht', 'wall', { minute: 1410, crew: 1, lou: true })`.
+  - **Rules review** (before release; the numbers above are the first cut's, these replace them):
+    - Bugs: a searcher sent to look (a noise, the radio, the helicopter, a lost chase) now walks there, looks round,
+      and goes back (with no way there he looks round where he stands); before, he froze. A ford washes the trail
+      off and a dog tracking it loses it there (it routed across the gap).
+    - Cover hides only someone keeping still in it (`hidden`); moving in it, eyes see them within 3 tiles (the meter
+      at a third of the pace) and the helicopter only right underneath. A chaser who saw them go in, or a handler
+      whose dog points at them there, pushes into cover and catches them within 1.6 tiles. In the open a dog's find
+      is a chase, not a capture. A dog's nose (2.5 tiles) finds the player hidden or not.
+    - Fair arrivals: nobody comes on within 5 tiles of the player or in their sight (they wait), nobody due at the
+      alarm before 4 s into the hunt, mid-map arrivals come on at a map edge or gate (`SearcherDef.from`). A
+      roadblock waits for a loiterer 10 s at most. Cacti block sight (legend, comment and code agree). The
+      helicopter moves with integer math. A washing line in a guard's uniform says it's a worse disguise (the
+      eyes know you a little further off) but washes the trail all the same.
+    - Balance: everyone moves at 45% of the given paces outside (`HUNT.pace`: the country is bigger than a yard;
+      relative speeds as before), the head start is 5–10 s, searchers come out 0–9 s after the alarm (roadblocks 2–8 s,
+      the helicopter 10 s, faster: 180). Each run shuffles the times among those out after the alarm and moves every
+      time up to 4 s, starts patrols at a stop of their own and beats at a stop drawn. Once the alarm is up the
+      searchers out after it sweep the cover (and open ground every 8 tiles) nearest where the player is reckoned
+      to be (`guess`: 1.5 tiles a second along the shortest way to safety from where they were last known; radio
+      and the light call only those within 20 tiles). After the last is out the search widens every 15 s, six times:
+      +1 tile of sight, the dog teams work back where the player was last known every other time, the helicopter
+      searches the same cover, from the second time the patrols sweep too; the dog teams keep their own round of
+      places sniffed. Keeping still fails in the end (in the cover nearest safety: caught in 69–360 s; in the open
+      where they came out: 40–181 s).
+    - Every start has a careful line in the jumpsuit: Shankton's estate gained hedges along two rows and culverts
+      under its three roads, and a washing line by the gate road (33,44); Stalag Flucht (40,50) and San Pancho
+      (30,47) gained a line near the gate too.
+    - The gauge, `hunttest` (the review's limited bot: `HuntBot` plain, 12-tile view) over 17 starts × night/day ×
+      head start/seen going × jumpsuit/uniform × 3 salts: caught 106/408 (26%, from 0% at Center Perks' wall to 71%
+      at Irongate's gate), a getaway in 53 s on average (25–123 s; a human plays slower); the expert `HuntBot` (it
+      sees everything; looking-round searchers counted all round, the gates and edges still to open kept clear of, a
+      line or a ford close by when a dog is on the trail) gets away in all 136 combinations, each in either outfit,
+      with one run's draws or another (salts 1–6 tried; 33 need more than the first, none more than 5). `manhunttest` keeps each rule's
+      test (a look walked and done, cover moving and a chase into it, a dog in the open, the ford, a loitered
+      roadblock, the uniform and the line).
+
+  - **UI review**: How to play (H) in a hunt opens on the manhunt topic and the hunt goes on after it; the pause
+    card says leaving counts as recaptured; the HUD starts clean each hunt, says "1 tile", shows a "A dog's on your
+    trail" pill, and keeps the distance on a phone held upright; toasts keep clear of the stone (portrait) and of the
+    strip below the player (landscape). Lou's car stands on its spot (open road, checked); Stalag's border ring sits
+    beyond the wire; Irongate's outside is sea all round (no woods past the town, as the map viewer now shows too),
+    the prison's ferry and patrol boat are no longer drawn there, and Pike's beat keeps west of the gate start; a
+    river running off the world's edge goes on out of sight; a faint glow at the player's feet after dark; head-on
+    into a tree the player slides round it. The helicopter's light shows them whatever they wear and holds a chase
+    (no "lost you" in the light), and calls the nearest searcher when none is within the radio's reach; a guard's
+    uniform fools eyes only till the search has widened twice (a toast says so), so keeping still in the open in it
+    fails as in the jumpsuit (40–181 s). Night-only barks only at night; the lesson's thicket step ticks once the
+    searcher has gone by; its recapture card has a title and a line under it; the hunt's achievements come first on
+    the card. Not done: the van, glider and helicopter starts still begin on foot (no vehicle moment), and the
+    lighter rectangle of Irongate's sea over the picture couldn't be traced without a browser (the data past the
+    picture is the same sea now).
 
 ### P42 Holidays (v2.21)
 The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.
@@ -1504,6 +1610,8 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   date's own, never a holiday picked in Settings). The inmates' holiday talk is the day's own only on the
   holiday's days (the snow and sand jokes any day of a Christmas run). The map
   viewer doesn't draw any of it: the decor depends on the date, not on the prison's data.
+  P41's manhunt is never dressed: its outside world gets no decor (its frame's holiday is none) and its sim never reads
+  `holiday`.
   The help page's picture is staged by `SHOTS.holidays` in scripts/dev/helpshot.ts (Christmas in Center Perks'
   canteen), to be taken in the browser.
 - **Cosmetics** (earned): bunny ears (*Egg Hunter*, 5 eggs in a run), summer shades (*Splashdown*, in the water
