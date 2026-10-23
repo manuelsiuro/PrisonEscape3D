@@ -5,7 +5,7 @@ import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, prisonDay } from '../sim/systems/calendar';
 import { atDesk, atRelease, atTray, calledNow } from '../sim/systems/paperwork';
-import { answerLeft, ANSWERED, applyRefusal, hearingDue, hearingOf, linePoints, OUTCOME, P, recordCounts, recordScore, VOIDS, WALKED_OUT } from '../sim/systems/parole';
+import { answerLeft, ANSWERED, applyRefusal, hearingDue, hearingOf, topicsOf, linePoints, OUTCOME, P, recordCounts, recordScore, VOIDS, WALKED_OUT } from '../sim/systems/parole';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import type { ParoleView } from '../ui/parole';
@@ -14,6 +14,7 @@ import { announcePa, dayTime } from './day';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
+import { LESSONS } from '../tutorial/lessons';
 
 /**
  * The parole board on screen (P39): the card at the release desk (how the application stands,
@@ -25,7 +26,7 @@ import { TOUCH } from '../ui/dom';
 
 /** The verdict held on the card (ms of play time). Not state. */
 const VERDICT_MS = 9000;
-let verdict: { at: number; what: 'granted' | 'denied' | 'walkedOut'; score: number; lines: number[]; record: number[] } | null = null;
+let verdict: { at: number; what: 'granted' | 'denied' | 'walkedOut'; score: number; lines: number[]; record: number[]; topics: number[] } | null = null;
 /** The member's word on the last answer, while it's weighed. Not state. */
 let react: { q: number; text: string; good: boolean } | null = null;
 
@@ -115,13 +116,16 @@ export function paroleNow(sim: Sim): ParoleView | null {
     v.verdict = t(`parole.verdict.${verdict.what}` as Key);
     v.verdictGood = good;
     v.score = t('parole.scoreOf', { n: verdict.score, of: PASS });
-    v.weighed = verdict.lines.filter((c) => c >= 0).map((c) => weighedText(c, verdict!.record));
+    v.weighed = verdict.lines.filter((c) => c >= 0).map((c) => weighedText(c, verdict!.record, verdict!.topics));
     v.status = good ? t('parole.weighedFor') : t('parole.weighedAgainst');
     v.note = good ? t('parole.grantedNote', { time: dayTime(HEARING_FROM) }) : t('parole.againNote', { n: s.parole[P.AGAIN] });
     v.lines = [];
     return v;
   }
   // At the release desk (not reporting there, nor with a form for the tray: the action button has those).
+  // (Not in the Daily, which has no parole board, nor in another lesson's scene at the desk: the paperwork's.)
+  const lesson = play.game?.lesson;
+  if (s.mods.length || (lesson && LESSONS[lesson.index]?.id !== 'parole')) return null;
   if (!atDesk(sim) || atRelease(sim) || atTray(sim) || calledNow(s)) return null;
   v.phase = 'desk';
   const p = s.parole;
@@ -234,7 +238,7 @@ export function announceParole(sim: Sim, e: Extract<SimEvent, { type: 'parole' }
     case 'granted':
     case 'denied':
     case 'walkedOut':
-      verdict = { at: playNow(), what: e.what, score: e.score ?? 0, lines: e.lines ?? (e.what === 'walkedOut' ? [WALKED_OUT] : []), record: recordCounts(s) };
+      verdict = { at: playNow(), what: e.what, score: e.score ?? 0, lines: e.lines ?? (e.what === 'walkedOut' ? [WALKED_OUT] : []), record: recordCounts(s), topics: topicsOf(s.salt, prisonDay(s.step)) };
       react = null;
       if (e.what === 'granted') {
         sound.levelUp();
