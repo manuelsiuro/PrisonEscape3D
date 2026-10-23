@@ -15,6 +15,7 @@
  */
 import { pocketOf } from '../src/sim/systems/items';
 import { RECORDS_HEAT, RECORDS_MINUTE } from '../src/content/paperwork';
+import { HEARING_AFTER, HEARING_FROM, HEARINGS } from '../src/content/parole';
 import { LINE_DAY } from '../src/content/phone';
 import { wantsCall } from '../src/sim/systems/phone';
 import { itemDef } from '../src/content/items';
@@ -250,6 +251,9 @@ function holdsNow(sim: Sim, f: Fact): boolean {
       return s.items.containers[pocketOf(sim.world, s.inmates.length + f.guard!)].some((v) => itemOf(v) === n('release_form')) && !!sim.prison.guards[f.guard!].duties?.includes('shakedown');
     case 'recordsCheck':
       return f.t1 === (RECORDS_MINUTE + ROUTINE[0].start) % 1440 && f.n === RECORDS_HEAT && !!sim.prison.comms;
+    // The parole board (P39): the hour it sits, a week after applying, as the rule has them.
+    case 'paroleBoard':
+      return f.t1 === (HEARING_FROM + ROUTINE[0].start) % 1440 && f.n === HEARING_AFTER && !!HEARINGS[sim.prison.id];
     case 'guardNick':
     case 'guardHome':
     case 'guardTeam':

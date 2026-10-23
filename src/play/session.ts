@@ -8,6 +8,7 @@ import { resetLong } from './long';
 import { resetTeam } from './team';
 import { resetNights } from './nights';
 import { resetPayphone } from './payphone';
+import { resetParole } from './parole';
 import { resetKiosk } from './kiosk';
 import { resetOddJobs } from './oddjobs';
 import { resetCrew } from './crew';
@@ -146,6 +147,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   resetTeam();
   resetNights();
   resetPayphone();
+  resetParole();
   resetKiosk();
   resetOddJobs();
   resetCrew();

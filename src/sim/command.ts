@@ -79,6 +79,8 @@ export const EXT = {
   LINE: 19,
   /** The internet kiosk (P35): b = what's asked (content/kiosk.ts KIOSK: logging in and out, a letter, an order, a course), c its argument (the shop's item, an answer). */
   KIOSK: 20,
+  /** The parole board (P39): b = what's asked (systems/parole.ts PAROLE: applying at the release desk, an answer to the board), c its argument (the answer). */
+  PAROLE: 21,
   /**
    * The odd jobs board (P40): at the board (b = content/oddjobs.ts BOARD: a job taken, c its pin,
    * 0–2, or 3 the story's; the job held given up); the lookout's whistle (anywhere: the dig hides).

@@ -386,7 +386,7 @@ export const SAN_PANCHO: PrisonDef = {
   ],
   // No gate a key can't open: cloned red and green keys walk the supply road out (GDD §4.4).
   gates: [],
-  escapes: ['tunnel', 'gate', 'takeover', 'stowaway', 'paperwork'],
+  escapes: ['tunnel', 'gate', 'takeover', 'stowaway', 'paperwork', 'parole'],
   rules: { snipers: 'always', hostile: true },
   // Delivery day (P18): the produce truck comes up the supply road between the mines to the
   // inner wall's door (only keys and a uniform get anyone there); the road's guard walks round

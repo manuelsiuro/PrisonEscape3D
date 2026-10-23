@@ -1,0 +1,16 @@
+center-perks: the board in the visitation at 33,40 34,40 35,40, the player's seat 34,42; medals 12/16/21
+stalag-flucht: the board in the canteen at 6,30 7,30 8,30, the player's seat 7,32; medals 12/16/21
+shankton: the board in the canteen at 26,15 27,15 28,15, the player's seat 27,17; medals 13/17/22
+san-pancho: the board in the canteen at 19,32 20,32 22,32, the player's seat 20,34; medals 13/17/22
+irongate: the board in the canteen at 30,29 31,29 33,29, the player's seat 31,31; medals 14/18/23
+record: 8 lines for, 7 against (at most +48 / -102); 9 topics; granted from 16
+answers: a claim +4/+2/+5 (a lie -5/-6/-4), owning up +1/+3/+0, words up to +4/+3/+3, silence -2
+denied: solitary twice and a knockout (score -15), again from day 13, the next hearing day 20
+center-perks: applied day 3 10:13, sat day 10 10:07; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:14 by parole (gold by day 12)
+stalag-flucht: applied day 3 10:20, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +5: granted 26; out day 11 10:12 by parole (gold by day 12)
+shankton: applied day 3 10:17, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:15 by parole (gold by day 13)
+san-pancho: applied day 3 10:19, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:17 by parole (gold by day 13)
+irongate: applied day 3 10:14, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +1 +3 +5: granted 23; out day 11 10:09 by parole (gold by day 14)
+plotter: day 3 23:16 parole: voided (night); again from day 6
+record bot: rollCalls 8, meals 7, showers 4, family 1, missed 1, work 0: the card's lines as the ledger has them (8 so far)
+parole ok

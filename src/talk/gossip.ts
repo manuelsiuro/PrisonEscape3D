@@ -16,6 +16,7 @@ import { itemOf } from '../sim/systems/items';
 import { generatorsOf } from '../sim/systems/power';
 import { traitOf } from '../sim/systems/guards';
 import { RECORDS_HEAT, RECORDS_MINUTE } from '../content/paperwork';
+import { HEARING_AFTER, HEARING_FROM, HEARINGS } from '../content/parole';
 import { shakedownCells } from '../sim/systems/justice';
 import { dayMinute, planOf, today } from '../sim/systems/calendar';
 import { prisonDay } from '../sim/systems/clock';
@@ -46,11 +47,11 @@ import { boardNow } from '../sim/systems/oddjobs';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'boardJob'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'paroleBoard', 'boardJob'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
-export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches', 'gambling', 'lockpick', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'pruno', 'gardenHole', 'raceNight', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck']);
+export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches', 'gambling', 'lockpick', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'pruno', 'gardenHole', 'raceNight', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'paroleBoard']);
 
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
@@ -177,6 +178,8 @@ function lastingFacts(sim: Sim): Fact[] {
     add({ kind: 'releaseForms', guard: strict });
     add({ kind: 'recordsCheck', t1: (RECORDS_MINUTE + ROUTINE[0].start) % 1440, n: RECORDS_HEAT });
   }
+  // The parole board (P39): when it sits (a week after applying), and at what hour.
+  if (HEARINGS[def.id] && def.comms && !relaxed) add({ kind: 'paroleBoard', t1: (HEARING_FROM + ROUTINE[0].start) % 1440, n: HEARING_AFTER });
   lasting.set(id, out);
   return out;
 }
@@ -352,6 +355,7 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   guardTeam: ['guard'],
   releaseForms: ['guard'],
   recordsCheck: ['t1', 'n'],
+  paroleBoard: ['t1', 'n'],
   boardJob: ['inmate'],
 };
 

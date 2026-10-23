@@ -92,6 +92,8 @@ export const COSMETICS: readonly Cosmetic[] = [
   c('rust', 'trim', 0xa63f12, 1, true),
   c('cream', 'trim', 0xfff0d0, 1, true),
   c('tangerine', 'trim', 0xff9a3c, 1, true),
+  // v2.18 (P39): reading glasses in gold, for the reformed (out on parole).
+  c('paroleSpecs', 'glasses', 0xc9a227, 2, true),
   // P40: the odd jobs board's stories.
   c('copper', 'trim', 0xc4622d, 1, true),
   c('saffron', 'trim', 0xf4a300, 1, true),

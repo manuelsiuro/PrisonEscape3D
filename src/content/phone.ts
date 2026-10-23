@@ -6,6 +6,7 @@
  */
 import type { CommsDef } from './prisons/types';
 import { STEPS_PER_MINUTE } from '../sim/tuning';
+import { PAROLE_FEE } from './parole';
 
 /**
  * A prison's pay phone: the tile the caller stands on (the phone hangs on the wall the caller
@@ -34,15 +35,15 @@ export const comms = (
 /** Who the player calls (EXT.CALL's b, divided by 16; the rest is SUB). Never renumber: logs store them. */
 export const CALLEE = { HOME: 0, LAWYER: 1, COUSIN: 2, TIP: 3 } as const;
 export const CALLEES = ['home', 'lawyer', 'cousin', 'tip'] as const;
-/** What the lawyer is asked for (EXT.CALL's b mod 16). */
-export const LAWYER = { APPEAL: 0, RETAINER: 1 } as const;
+/** What the lawyer is asked for (EXT.CALL's b mod 16; P39: filing for parole). */
+export const LAWYER = { APPEAL: 0, RETAINER: 1, PAROLE: 2 } as const;
 /** Lou's jobs (EXT.CALL's b mod 16). */
 export const JOB = { DIVERSION: 0, CAKE: 1, CAR: 2 } as const;
 export const JOBS = ['diversion', 'cake', 'car'] as const;
 
 /** The coins a call takes (the lawyer: his fee for what's asked, in place of coins). */
 export const COINS = 2;
-export const LAWYER_FEES = [30, 40] as const;
+export const LAWYER_FEES = [30, 40, PAROLE_FEE] as const;
 /** What each of Lou's jobs costs: paid when he has understood it, on top of the coins. */
 export const JOB_FEES = [30, 25, 50] as const;
 
