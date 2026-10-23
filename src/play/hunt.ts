@@ -308,6 +308,8 @@ export function huntFrame(g: Game, dt: number, now: number) {
   if (s.over && !run.ended) endHunt(g, run);
 }
 
+const searchersPool: Array<{ x: number; z: number }> = [];
+const searchersAt: Array<{ x: number; z: number }> = [];
 const hf: HuntFrame = { heli: { on: false, x: 0, z: 0, lit: false }, blocks: 0, lines: 0, lou: false, over: 0, me: { x: 0, z: 0 } };
 function huntFrameOf(run: HuntRun, a: number): HuntFrame {
   const s = run.hunt.state;
@@ -321,6 +323,18 @@ function huntFrameOf(run: HuntRun, a: number): HuntFrame {
   hf.lines = s.lines;
   hf.lou = run.carry.lou;
   hf.over = s.over === OVER.SAFE ? 1 : s.over === OVER.LOU ? 2 : 0;
+  // (The searchers out, for their glow after dark: one not out yet has none.)
+  let n = 0;
+  s.searchers.forEach((m, k) => {
+    if (m.mode === SEEK.OFF) return;
+    const q = run.prevS[k] ?? m.body;
+    const o = (searchersPool[n++] ??= { x: 0, z: 0 });
+    o.x = (q.x + (m.body.x - q.x) * a) / UNIT;
+    o.z = (q.z + (m.body.z - q.z) * a) / UNIT;
+  });
+  searchersAt.length = 0;
+  for (let k = 0; k < n; k++) searchersAt.push(searchersPool[k]);
+  hf.searchers = searchersAt;
   return hf;
 }
 

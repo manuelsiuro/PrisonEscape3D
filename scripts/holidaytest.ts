@@ -29,7 +29,8 @@ import { LAYER, MAP_W, placeKey } from '../src/sim/world/World';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { RunRecorder, replayLog } from '../src/sim/runlog';
-import { courtRect, HolidaysView, holidayDecor, PARASOL_GAP } from '../src/render/Holidays';
+import { courtRect, HolidaysView, holidayDecor, HOSE_FAN, HOSE_SWAY, LANE, PARASOL_GAP } from '../src/render/Holidays';
+import { HEARINGS } from '../src/content/parole';
 import { DECOR } from '../src/content/decor';
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
 import { facts } from '../src/talk/gossip';
@@ -425,12 +426,37 @@ for (const p of PRISONS) {
     mark('garden', l.garden.x, l.garden.z, l.garden.w, l.garden.d);
     const doors: number[] = [];
     for (let t = 0; t < w.ground.kind.length; t++) if (w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR) doors.push(t);
+    // The openings with no door: a floor tile in a wall's line (a wall beside it along the line) between two zones, a gap up to 4 across (counted here from the map, not by the planner's own openingsOf).
+    const solid = (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_W || TILE_INFO[w.ground.kind[z * MAP_W + x]].solid;
+    const opaque = (x: number, z: number) => solid(x, z) && !!TILE_INFO[w.ground.kind[z * MAP_W + x]]?.opaque;
+    const fence = (k: number) => k === TILE.FENCE || k === TILE.ELECTRIC || k === TILE.FENCE_CUT || k === TILE.FENCE_FAKE;
+    const openings: number[] = [];
+    for (let z = 1; z < MAP_W - 1; z++) {
+      for (let x = 1; x < MAP_W - 1; x++) {
+        if (solid(x, z)) continue;
+        for (const [ax, az] of [[0, 1], [1, 0]]) {
+          if (solid(x - ax, z - az) || solid(x + ax, z + az)) continue;
+          const zones = new Set([w.zoneAt(x - ax, z - az), w.zoneAt(x, z), w.zoneAt(x + ax, z + az)]);
+          if (zones.size < 2) continue;
+          // (Along the wall's line: a wall within 4 tiles both ways.)
+          const reach = (sg: number) => {
+            for (let k = 1; k <= 4; k++) if (solid(x + az * k * sg, z + ax * k * sg)) return k;
+            return 99;
+          };
+          if (reach(-1) + reach(1) - 1 <= 4 && (solid(x - az, z - ax) || solid(x + az, z + ax))) openings.push(z * MAP_W + x);
+        }
+      }
+    }
+    const ways = [...doors, ...openings];
     const hung = new Set<number>();
-    const hungSouth = new Set<number>();
+    const hungWest = new Set<number>();
+    const hungEast = new Set<number>();
     for (const d of p.decor ?? []) if (DECOR[d.kind].wall && (d.rot ?? 0) === 0) for (let x = d.x; x < d.x + (d.w ?? 1); x++) hung.add(d.z * MAP_W + x);
-    for (const d of p.decor ?? []) if (DECOR[d.kind].wall && d.rot === 2) for (let x = d.x; x < d.x + (d.w ?? 1); x++) hungSouth.add((d.z + (d.d ?? 1) - 1) * MAP_W + x);
+    // (On a side wall: turned to face east, the west wall; west, the east wall.)
+    for (const d of p.decor ?? []) if (DECOR[d.kind].wall && d.rot === 1) for (let z = d.z; z < d.z + (d.d ?? 1); z++) hungWest.add(z * MAP_W + d.x);
+    for (const d of p.decor ?? []) if (DECOR[d.kind].wall && d.rot === 3) for (let z = d.z; z < d.z + (d.d ?? 1); z++) hungEast.add(z * MAP_W + d.x + (d.w ?? 1) - 1);
     // (P40's odd jobs board, on a canteen wall.)
-    if (p.board) (p.board.face === 5 ? hungSouth : hung).add(p.board.z * MAP_W + p.board.x);
+    if (p.board) ({ 13: hung, 9: hungWest, 1: hungEast } as Record<number, Set<number>>)[p.board.face]?.add(p.board.z * MAP_W + p.board.x);
     const view = new HolidaysView();
     view.setWorld(w);
     const counts: string[] = [];
@@ -451,18 +477,54 @@ for (const p of PRISONS) {
         const where = d.what === 'garland' || d.y ? 'canteen' : d.what === 'tree' ? (zone === 'canteen' ? 'canteen' : 'yard') : summer && !yardParasols ? 'sports' : 'yard';
         check(floor && (zone === where || (where === 'yard' && zone === 'sports')), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${d.x},${d.z} stands on the ${where}'s floor (${zone}, ${floor ? 'floor' : 'solid'})`);
         if (d.what === 'garland') {
-          check(TILE_INFO[w.ground.kind[(tz + (d.south ? 1 : -1)) * MAP_W + tx]].solid, `${p.id}: a garland hangs on a wall`);
-          const over = Array.from({ length: d.x1! - d.x }, (_, k) => tz * MAP_W + d.x + k).filter((u) => (d.south ? hungSouth : hung).has(u));
-          check(!over.length, `${p.id} ${HOLIDAYS[h]}: the garland ${d.x}–${d.x1} at ${tz} crosses nothing hung on the wall (${over.map((u) => u % MAP_W).join(',')})`);
+          // On the north wall of its row, or a side wall down its column: never the south wall (the camera sees only its back, and the see-through cut shows it floating).
+          const tiles = d.side ? Array.from({ length: d.z1! - d.z }, (_, k) => (d.z + k) * MAP_W + tx) : Array.from({ length: d.x1! - d.x }, (_, k) => tz * MAP_W + d.x + k);
+          check(tiles.length >= 1 && tiles.every((u) => (d.side ? opaque((u % MAP_W) + d.side, Math.floor(u / MAP_W)) : opaque(u % MAP_W, Math.floor(u / MAP_W) - 1))), `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} hangs on a north or a side wall all along`);
+          check(!('south' in d), `${p.id}: no garland on a south wall`);
+          const over = tiles.filter((u) => (d.side ? (d.side < 0 ? hungWest : hungEast) : hung).has(u));
+          check(!over.length, `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} crosses nothing hung on the wall (${over.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
+          // Not behind the parole board's heads (seated in front of the wall at the hearing).
+          const heads = HEARINGS[p.id]?.zone === 'canteen' ? HEARINGS[p.id].board : [];
+          const behind = heads.filter((b) => tiles.includes(b.z * MAP_W + b.x));
+          check(!behind.length, `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} hangs behind none of the parole board (${behind.map((b) => `${b.x},${b.z}`).join('; ')})`);
         } else if (!d.y) {
-          // Out on the floor: on nothing that's there already, and clear of the doorways.
+          // Out on the floor: on nothing that's there already, and clear of the doorways and the openings with no door.
           check(!there.has(t), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} stands on no ${there.get(t)}`);
           if (d.what === 'hose') {
             const reach = Math.hypot(d.x1! - d.x, d.z1! - d.z);
             check(reach >= 1 && reach <= 4.01 && w.zoneAt(Math.floor(d.x1!), Math.floor(d.z1!)) === 'sports', `${p.id}: the hose at ${tx},${tz} sprays ${reach.toFixed(1)} tiles, onto the sports ground`);
+            // Its jets, all across their fan, over nothing standing (furniture, the gym's machines, a wall) and none of the other summer pieces.
+            const others = plan.filter((q) => q !== d && !q.y && q.what !== 'garland').map((q) => Math.floor(q.z) * MAP_W + Math.floor(q.x));
+            const hit: string[] = [];
+            const wide = HOSE_FAN + HOSE_SWAY;
+            for (const a of [-wide, 0, wide]) {
+              const ex = (d.x1! - d.x) * Math.cos(a) - (d.z1! - d.z) * Math.sin(a);
+              const ez = (d.x1! - d.x) * Math.sin(a) + (d.z1! - d.z) * Math.cos(a);
+              for (let u = 0.1; u <= 1.001; u += 0.05) {
+                const [ux, uz] = [Math.floor(d.x + ex * u), Math.floor(d.z + ez * u)];
+                const k = uz * MAP_W + ux;
+                if (k !== t && (solid(ux, uz) || (there.has(k) && !['pitch', 'track', 'court', 'garden'].includes(there.get(k)!)) || others.includes(k))) hit.push(`${ux},${uz}`);
+              }
+            }
+            check(!hit.length, `${p.id}: the hose at ${tx},${tz} sprays over nothing standing (${hit.join('; ')})`);
           }
           const gap = d.what === 'tree' ? 2 : 1;
-          check(!doors.some((u) => near(u, t) <= gap), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} is clear of the doors (${gap} tiles)`);
+          const by = ways.filter((u) => near(u, t) <= gap);
+          check(!by.length, `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} is clear of the doors and the openings (${gap} tiles: ${by.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
+          // Not in a passage a tile wide; a tile off a fence's wire; never just north of a wall, which would hide it from the camera.
+          check(!((solid(tx - 1, tz) && solid(tx + 1, tz)) || (solid(tx, tz - 1) && solid(tx, tz + 1))), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} stands in no passage a tile wide`);
+          const wire = [-1, 0, 1].some((dz) => [-1, 0, 1].some((dx) => fence(w.ground.kind[(tz + dz) * MAP_W + tx + dx])));
+          check(!wire, `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} keeps a tile off the fences`);
+          check(!opaque(tx, tz + 1), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} has no wall just south of it, hiding it from the camera`);
+          // A parasol off the ways in: not in line with a doorway, LANE tiles on from it (a tile either side).
+          if (d.what === 'parasol') {
+            const inLine = ways.filter((u) => {
+              const [ux, uz] = [u % MAP_W, Math.floor(u / MAP_W)];
+              const [dx, dz] = [tx - ux, tz - uz];
+              return (Math.abs(dx) <= 1 && Math.abs(dz) <= LANE && !solid(ux, uz + Math.sign(dz))) || (Math.abs(dz) <= 1 && Math.abs(dx) <= LANE && !solid(ux + Math.sign(dx), uz));
+            });
+            check(!inLine.length, `${p.id}: the parasol at ${tx},${tz} stands off the ways in (${inLine.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
+          }
         }
       }
       const tree = plan.find((d) => d.what === 'tree');
@@ -477,22 +539,29 @@ for (const p of PRISONS) {
         const above = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && ((d.rot ?? 0) % 2 === 0 ? d.z === tz && tx >= d.x - 1 && tx <= d.x + (d.w ?? 1) : d.x === tx && tz >= d.z - 1 && tz <= d.z + (d.d ?? 1)));
         check(!above.length, `${p.id}: the tree stands under nothing hung on a wall (${above.map((d) => d.kind).join(', ')})`);
       }
+      // No two pieces out on the floor side by side (Irongate's lanterns were: all picked before the first was set down).
+      const floor = plan.filter((d) => !d.y && d.what !== 'garland').map((d) => Math.floor(d.z) * MAP_W + Math.floor(d.x));
+      check(floor.every((a, k) => floor.every((b, j) => j === k || near(a, b) >= 2)), `${p.id} ${HOLIDAYS[h]}: no two pieces on the floor side by side`);
       const parasols = plan.filter((d) => d.what === 'parasol').map((d) => Math.floor(d.z) * MAP_W + Math.floor(d.x));
       check(parasols.every((a, k) => parasols.every((b, j) => j === k || near(a, b) >= PARASOL_GAP)), `${p.id} ${HOLIDAYS[h]}: the parasols ${PARASOL_GAP} tiles apart at least`);
       const n = (what: string) => plan.filter((d) => d.what === what).length;
       check(n('garland') > 0, `${p.id} ${HOLIDAYS[h]}: the canteen dressed`);
       if (h === HOLIDAY.CHRISTMAS) check(n('tree') === 1 && n('snowman') === 1, `${p.id}: a Christmas tree and a snowman`);
-      if (h === HOLIDAY.SUMMER) check(n('parasol') >= 2 && n('barbecue') === 1 && n('hose') === 2, `${p.id}: parasols, the barbecue, two hoses on the sports ground`);
+      // (San Pancho's sports ground has room for one parasol off its ways in.)
+      if (h === HOLIDAY.SUMMER) check(n('parasol') >= (p.id === 'san-pancho' ? 1 : 2) && n('barbecue') === 1 && n('hose') === 2, `${p.id}: parasols, the barbecue, two hoses on the sports ground`);
+      // Every table in the canteen dressed (Center Perks' eight, not the first six).
+      const tables = w.props.filter((q) => q.kind === 'table' && w.zoneAt(q.x, q.z) === 'canteen').length;
+      if (h === HOLIDAY.EASTER || h === HOLIDAY.HALLOWEEN) check(plan.filter((d) => d.y).length === tables, `${p.id} ${HOLIDAYS[h]}: something on each of the canteen's ${tables} tables`);
       view.dress(h);
-      check(view.group.children.length >= 3, `${p.id} ${HOLIDAYS[h]}: the decor built`);
+      check(view.group.children.length > view.baseMeshes, `${p.id} ${HOLIDAYS[h]}: the decor built`);
       counts.push(`${HOLIDAYS[h]} ${[...new Set(plan.map((d) => d.what))].map((k) => `${k} ${n(k)}`).join(' ')}`);
     }
     view.dress(0);
-    check(view.group.children.length === 2, `${p.id}: no holiday, no decor (only the sprays' and the sparks' empty meshes)`);
+    check(view.group.children.length === view.baseMeshes, `${p.id}: no holiday, no decor (only the sprays', the sparks' and the warmers' meshes)`);
     view.dispose();
     rows.push(`  ${p.id}: ${counts.join('; ')}`);
   }
-  console.log(`the decor (on nothing, clear of doors, parasols apart, garlands round what hangs on the wall):\n${rows.join('\n')}`);
+  console.log(`the decor (on nothing, clear of doors and openings, a tile off fences, none hidden behind a wall, parasols apart and off the ways in, hoses over nothing, garlands on north or side walls round what hangs there and the parole board):\n${rows.join('\n')}`);
 }
 
 // (The escape bots under each holiday: holidaybotstest.ts; the evenings played by a bot: holidayruntest.ts. Both run beside this one.)
