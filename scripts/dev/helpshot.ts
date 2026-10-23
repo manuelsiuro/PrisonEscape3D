@@ -10,10 +10,24 @@
 // Run it in an isolated browser profile: each shot is a game started, so its escapes, stats and
 // trophies land in that profile's storage.
 import { PLANS, quiet, runRoute, type Route } from '../escapes';
-import { Bot } from '../bots';
+import { Bot, DIR } from '../bots';
 import { TRAINING } from '../../src/content/prisons/training';
 import { WAY } from '../../src/content/smuggling';
-import { EXT, OP, tossArgs } from '../../src/sim/command';
+import { CHARTS, countIn, LATE, songSteps } from '../../src/content/nights';
+import { command, dirFromVector, EXT, LINE, OP, ORDER, TALK, tossArgs } from '../../src/sim/command';
+import { nearestDir } from '../../src/sim/ai/path';
+import { isTrue } from '../../src/sim/systems/cards';
+import { drillOn } from '../../src/sim/systems/calendar';
+import { squareAt } from '../../src/sim/systems/checkers';
+import { dayMinute } from '../../src/sim/systems/clock';
+import { jobRooms } from '../../src/sim/systems/economy';
+import { fieldOf, pitchOf } from '../../src/sim/systems/football';
+import { courtOf, powerAt, shotWindow } from '../../src/sim/systems/hoops';
+import { questionNow } from '../../src/sim/systems/quiz';
+import { cardUp, RACE_ENTER, raceCard } from '../../src/sim/systems/races';
+import { tonight, turnFrom } from '../../src/sim/systems/talent';
+import { penAt } from '../../src/sim/systems/tattoo';
+import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
 import { prisonDay } from '../../src/sim/systems/calendar';
 import { dropTile } from '../../src/sim/systems/smuggling';
 import { containersOf } from '../../src/sim/world/containers';
@@ -23,7 +37,7 @@ import { endGame, startGame } from '../../src/play/session';
 import * as THREE from 'three';
 import type { View } from '../../src/render/View';
 import { Sim } from '../../src/sim/Sim';
-import { LAYER } from '../../src/sim/world/World';
+import { LAYER, MAP_W } from '../../src/sim/world/World';
 import { UNIT } from '../../src/sim/tuning';
 
 quiet.on = true;
@@ -81,7 +95,348 @@ const on = (type: string) => (sim: Sim) => sim.events.some((e) => e.type === typ
 const tileX = (sim: Sim) => Math.floor(sim.state.player.x / UNIT);
 const tileZ = (sim: Sim) => Math.floor(sim.state.player.z / UNIT);
 
+// ------------------------------------------------------------ lesson moves (as tutorialtest's bots play them)
+const tile = (x: number, z: number) => z * MAP_W + x;
+/** Up to someone and talking to them. */
+function talkTo(bot: Bot, body: { x: number; z: number }, limit = 1500): boolean {
+  for (let k = 0; k < limit; k++) {
+    const dx = body.x - bot.st.player.x;
+    const dz = body.z - bot.st.player.z;
+    if (Math.hypot(dx, dz) > 2 * UNIT) {
+      bot.pilot.goTo(Math.floor(body.z / UNIT) * MAP_W + Math.floor(body.x / UNIT));
+      bot.step(command(bot.pilot.dir(bot.st.player)));
+      continue;
+    }
+    if (Math.hypot(dx, dz) > 1.15 * UNIT) {
+      bot.step(command(dirFromVector(dx, dz)));
+      continue;
+    }
+    bot.step(command(dirFromVector(dx, dz)));
+    bot.act();
+    if (bot.st.talk >= 0) return true;
+  }
+  return false;
+}
+/** Up to a prop and using it. */
+function useProp(bot: Bot, prop: number) {
+  const w = bot.sim.world;
+  const p = w.props[prop];
+  bot.pilot.goToAny((i) => {
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    const side = (x === p.x - 1 || x === p.x + p.w) !== (z === p.z - 1 || z === p.z + p.d);
+    return side && x >= p.x - 1 && x <= p.x + p.w && z >= p.z - 1 && z <= p.z + p.d && !w.blocked(x, z);
+  });
+  bot.until(() => !bot.pilot.active, 3000, () => command(bot.pilot.dir(bot.st.player)));
+  bot.face(dirFromVector((p.x + p.w / 2) * UNIT - bot.st.player.x, (p.z + p.d / 2) * UNIT - bot.st.player.z));
+  bot.act();
+}
+/** A shot at the hoop from the spot stood on, let go at the best moment. */
+function shoot(bot: Bot, spot: number) {
+  bot.op(OP.EXT, EXT.SHOOT, 0);
+  const from = bot.st.shot[0];
+  const win = shotWindow(bot.sim, spot);
+  let best = 1;
+  for (let j = 1; j < 48; j++) if (Math.abs(powerAt(j) - win[0]) < Math.abs(powerAt(best) - win[0])) best = j;
+  while (bot.st.shot.length && bot.st.step + 1 - from < best) bot.step();
+  bot.op(OP.EXT, EXT.SHOOT, 1);
+}
+const sparky = (bot: Bot) => talkTo(bot, bot.st.inmates[0].body);
+/** A moment part way through the run (0–1). */
+const at = (f: number) => (_s: Sim, k: number, n: number) => k >= n * f;
+
 export const SHOTS: Record<string, Shot> = {
+  // ------------------------------------------------------------ prison life (P38)
+  guards: { lesson: 'guards', moves: (bot) => void talkTo(bot, bot.st.guards[1].body), when: at(0.6), zoom: 1.8, dx: 2 },
+  inmates: {
+    lesson: 'talk',
+    moves: (bot) => {
+      sparky(bot);
+      bot.op(OP.TALK, TALK.GIFT, bot.slotOf('chocolate'));
+      bot.until(() => false, 20);
+    },
+    when: at(0.97),
+    zoom: 2.8,
+  },
+  fight: {
+    lesson: 'fight',
+    moves: (bot) => {
+      bot.op(OP.LOCK, 2);
+      const m = bot.st.inmates[0];
+      for (let k = 0; k < 600 && m.ko === 0; k++) {
+        const dx = m.body.x - bot.st.player.x;
+        const dz = m.body.z - bot.st.player.z;
+        if (Math.hypot(dx, dz) > 1.1 * UNIT) bot.step(command(dirFromVector(dx, dz)));
+        else bot.op(OP.USE, 1);
+      }
+      bot.until(() => false, 30);
+    },
+    when: at(0.97),
+    zoom: 2.4,
+  },
+  day: {
+    lesson: 'day',
+    moves: (bot) => {
+      bot.until(() => drillOn(bot.sim), 20 * 60 * 20);
+      const spot = bot.sim.prison.rollCall[0];
+      bot.walkTo(spot.z * MAP_W + spot.x);
+      bot.until(() => false, 20 * 60 * 5);
+    },
+    when: at(0.99),
+    zoom: 1.5,
+  },
+  work: {
+    lesson: 'job',
+    moves: (bot) => {
+      bot.step();
+      const room = jobRooms(bot.sim.world)[0];
+      useProp(bot, room.take);
+      useProp(bot, room.machines[0]);
+    },
+    when: at(0.99),
+    zoom: 2.2,
+    dx: 1,
+  },
+  train: {
+    lesson: 'gym',
+    moves: (bot) => {
+      bot.act();
+      for (let k = 0; k < 200; k++) bot.op(OP.TRAIN, 1 + (k % 2));
+    },
+    when: at(0.5),
+    zoom: 2.4,
+    dz: -1.5,
+  },
+  grounds: {
+    lesson: 'laps',
+    moves: (bot) => {
+      bot.step();
+      bot.walkTo(tile(35, 39));
+      const r = bot.sim.prison.leisure!.track!;
+      bot.walkTo(tile(r.x, r.z));
+      bot.walkTo(tile(r.x + Math.floor(r.w / 2), r.z));
+    },
+    when: at(0.97),
+    zoom: 1.4,
+  },
+  games: {
+    lesson: 'games',
+    moves: (bot) => {
+      sparky(bot);
+      bot.op(OP.TALK, TALK.DICE, 0);
+      bot.op(OP.TALK, TALK.REROLL, 0);
+      bot.op(OP.TALK, TALK.WRESTLE);
+      for (let k = 0; k < 2000 && bot.st.bout.length; k++) bot.step(command(0, OP.TRAIN, 1 + (k % 2)));
+    },
+    when: (s) => s.state.bout.length > 0,
+    after: 40,
+    zoom: 2.6,
+  },
+  cheat: {
+    lesson: 'cards',
+    moves: (bot) => {
+      sparky(bot);
+      bot.op(OP.TALK, TALK.CHEAT, 0);
+      for (let k = 0; k < 4000 && bot.st.cheat; k++) {
+        const c = bot.st.cheat;
+        if (c.turn !== 0) {
+          bot.step();
+          continue;
+        }
+        if (c.by === 1 && (c.tell || !c.theirs.length || !c.mine.length)) bot.op(OP.TALK, TALK.LIAR);
+        else {
+          const ks = c.mine.map((card, j) => (isTrue(card, c.table) ? j : -1)).filter((j) => j >= 0).slice(0, 3);
+          bot.op(OP.TALK, TALK.PLAY, (ks.length ? ks : [0]).reduce((m, j) => m | (1 << j), 0));
+        }
+      }
+    },
+    when: (s) => !!s.state.cheat,
+    after: 200,
+    zoom: 3.4,
+  },
+  hoops: {
+    lesson: 'hoops',
+    moves: (bot) => {
+      const c = courtOf(bot.sim)!;
+      bot.walkTo(tile(c.spots[0].x, c.spots[0].z));
+      shoot(bot, 0);
+      bot.until(() => false, 30);
+    },
+    when: (s) => s.events.some((e) => e.type === 'shot'),
+    after: 12,
+    zoom: 2,
+    dz: -1.5,
+  },
+  checkers: {
+    lesson: 'checkers',
+    moves: (bot) => {
+      sparky(bot);
+      bot.op(OP.TALK, TALK.CHECKERS, 1);
+      bot.until(() => false, 40);
+      bot.op(OP.TALK, TALK.MOVE, squareAt(5, 2), squareAt(3, 4));
+      bot.until(() => false, 40);
+    },
+    when: at(0.98),
+    zoom: 3.6,
+    dz: 0.5,
+  },
+  football: {
+    lesson: 'football',
+    moves: (bot) => {
+      talkTo(bot, bot.st.inmates[0].body);
+      bot.op(OP.TALK, TALK.FOOTBALL);
+      const f = fieldOf(pitchOf(bot.sim)!);
+      let held = 0;
+      bot.until(() => !bot.st.match, 4000, () => {
+        const o = bot.st.match;
+        if (!o) return 0;
+        const [bx, bz] = o.ball;
+        const gx = f.along ? f.a1 + UNIT : f.mid;
+        const gz = f.along ? f.mid : f.a1 + UNIT;
+        const pl = bot.st.player;
+        const toGoal = nearestDir(gx - pl.x, gz - pl.z);
+        if (held) return ++held > 10 ? ((held = 0), command(toGoal, OP.EXT, EXT.KICK, 1)) : command(toGoal);
+        if (o.at && !o.pause && Math.hypot(bx - pl.x, bz - pl.z) < 600) {
+          held = 1;
+          return command(toGoal, OP.EXT, EXT.KICK, 0);
+        }
+        const d = Math.hypot(gx - bx, gz - bz) || 1;
+        return command(nearestDir(bx - ((gx - bx) * 450) / d - pl.x, bz - ((gz - bz) * 450) / d - pl.z));
+      });
+    },
+    when: (s) => !!s.state.match,
+    after: 300,
+    zoom: 1.6,
+  },
+  race: {
+    lesson: 'ratRace',
+    moves: (bot) => {
+      bot.hold('rat_track');
+      bot.use();
+      const r = TRAINING.leisure!.race;
+      bot.walkTo(tile(r.x, r.z - 1));
+      bot.until(() => cardUp(bot.sim), 2 * 60 * 20 * 60);
+      bot.op(OP.EXT, EXT.RACE, RACE_ENTER);
+      bot.op(OP.EXT, EXT.RACE, raceCard(bot.st, prisonDay(bot.st.step)).length - 1, 0);
+      bot.until(() => bot.sim.events.some((e) => e.type === 'race' && e.what === 'result'), 90 * 20 * 60);
+    },
+    when: (_s, k, n) => k >= n - 60,
+    zoom: 2.8,
+    dx: 3,
+    dz: 1,
+    light: 600,
+  },
+  talent: {
+    lesson: 'talent',
+    moves: (bot) => {
+      bot.until(() => dayMinute(bot.st.step) >= turnFrom(tonight(bot.sim)), 60 * 20 * 60);
+      const st = bot.sim.prison.leisure!.stage!;
+      bot.walkTo(tile(st.x, st.z));
+      bot.op(OP.EXT, EXT.STAGE, 0, 0);
+      const o = bot.st.show!;
+      const due = new Map(CHARTS[0].map(([t, lane]) => [o.from + countIn(o.song) + LATE + t - 1, lane] as const));
+      bot.until(() => !bot.st.show, countIn(0) + songSteps(0) + 40, () => {
+        const lane = due.get(bot.st.step);
+        return lane === undefined ? 0 : command(0, OP.EXT, EXT.NOTE, lane);
+      });
+    },
+    when: (s) => !!s.state.show,
+    after: 200,
+    zoom: 2.2,
+    dx: -3,
+  },
+  quiz: {
+    lesson: 'quiz',
+    moves: (bot) => {
+      bot.op(OP.EXT, EXT.QUIZ, 0);
+      let asked = -1;
+      let put = 0;
+      bot.until(() => !bot.st.quiz, 4000, () => {
+        const o = bot.st.quiz;
+        const q = questionNow(bot.sim);
+        if (!o || !q) return 0;
+        if (o.q !== asked) {
+          asked = o.q;
+          put = bot.st.step;
+        }
+        return !o.until && o.said[0] < 0 && bot.st.step - put >= 60 ? command(0, OP.EXT, EXT.ANSWER, q.answer) : 0;
+      });
+    },
+    when: at(0.4),
+    zoom: 2.4,
+    dz: -2,
+  },
+  garden: {
+    lesson: 'garden',
+    moves: (bot) => {
+      bot.hold('veg_seeds');
+      bot.use();
+      bot.hold('plastic_cup');
+      bot.use();
+      // (Stepped back from the bed just planted: it, and the ripe one at the end, in view.)
+      for (let k = 0; k < 5; k++) bot.step(command(DIR.SOUTH));
+      bot.until(() => false, 20);
+    },
+    when: at(0.98),
+    zoom: 2.4,
+  },
+  tattoo: {
+    lesson: 'tattoo',
+    moves: (bot) => {
+      bot.op(OP.CRAFT, (1 << 0) | (1 << 1) | (1 << 2));
+      sparky(bot);
+      bot.op(OP.TALK, TALK.TATTOO, 0);
+      const pen: [number, number] = [0, 0];
+      bot.until(() => !bot.st.ink, 600, () => {
+        const o = bot.st.ink;
+        if (!o) return 0;
+        penAt(o.design, o.k + 1, pen);
+        return Math.hypot(pen[0] - o.nx, pen[1] - o.nz) < 8 ? 0 : command(nearestDir(pen[0] - o.nx, pen[1] - o.nz));
+      });
+    },
+    when: (s) => !!s.state.ink,
+    after: 100,
+    zoom: 3.6,
+  },
+  crew: {
+    lesson: 'crew',
+    moves: (bot) => {
+      sparky(bot);
+      bot.op(OP.TALK, TALK.RECRUIT);
+      bot.op(OP.TALK, TALK.CREW, ORDER.WATCH);
+      bot.until(() => bot.sim.events.some((e) => e.type === 'crew' && e.what === 'whistle'), 3000);
+    },
+    when: (_s, k, n) => k >= n - 2,
+    zoom: 1.6,
+    dz: 1,
+  },
+  payphone: {
+    lesson: 'payphone',
+    moves: (bot) => {
+      // (In line beside the phone till the inmate on it hangs up: the handset free, in view.)
+      const c = CENTER_PERKS.comms!;
+      bot.walkTo(tile(c.line[0].x, c.line[0].z));
+      bot.op(OP.EXT, EXT.LINE, LINE.JOIN);
+      bot.until(() => bot.st.booth[0] < 0 && bot.st.turn > 0, 20 * 60 * 20);
+      bot.until(() => false, 10);
+    },
+    when: at(0.99),
+    zoom: 2.4,
+    dx: -1,
+  },
+  kiosk: {
+    lesson: 'kiosk',
+    moves: (bot) => {
+      // (A tile beside the terminal, so the player doesn't hide it.)
+      const k = CENTER_PERKS.comms!.kiosk;
+      bot.walkTo(tile(k.x + 1, k.z + 1));
+      bot.until(() => false, 60);
+    },
+    when: at(0.98),
+    zoom: 2.8,
+  },
+
+  // ------------------------------------------------------------ basics and escaping (P37)
   ways: { prison: 'center-perks', route: 'cutout', when: (_s, k, n) => k >= n - 30, zoom: 2.2, light: 600 },
   layers: { prison: 'center-perks', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100), zoom: 2.6, dz: -1.5 },
   delivery: { prison: 'center-perks', route: 'stowaway', when: (s) => s.state.stowed, after: -6, zoom: 2.1 },
@@ -227,7 +582,7 @@ function offset(dx: number, dz: number) {
   const to = new THREE.Vector3();
   target.lerp = (v, a) => THREE.Vector3.prototype.lerp.call(target, to.set(v.x + dx, v.y, v.z + dz), a);
   // (In the tunnels the camera is put on the player outright.)
-  target.set = (x, y, z) => THREE.Vector3.prototype.set.call(target, x + dx, y, z + dz);
+  target.set = (x, y, z = 0) => THREE.Vector3.prototype.set.call(target, x + dx, y, z + dz);
 }
 
 function hideUi(on: boolean) {

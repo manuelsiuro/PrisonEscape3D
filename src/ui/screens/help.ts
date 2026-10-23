@@ -23,52 +23,74 @@ import { medalDisc } from './trophies';
  */
 const TABS: HelpTab[] = ['basics', 'life', 'escape', 'controls'];
 
-/** Read when shown (the language and the keyboard's labels may change). */
-const keys = (): Array<[string, Key]> => [
-  ['%KeyW% %KeyA% %KeyS% %KeyD%', 'help.k.walk'],
-  [t('help.k.clickKey'), 'help.k.click'],
-  ['%KeyE%', 'help.k.act'],
-  [t('help.k.space'), 'help.k.use'],
-  ['%KeyR%', 'help.k.lock'],
-  ['1 – 5 · Enter · %KeyL%', 'help.k.cheat'],
-  [t('help.k.space'), 'help.k.shoot'],
-  [t('help.k.space'), 'help.k.kick'],
-  ['%KeyA% %KeyS% %KeyD%', 'help.k.lanes'],
-  ['1 – 4', 'help.k.answer'],
-  ['1 – 3', 'help.k.call'],
-  ['1 – 6', 'help.k.slots'],
-  ['%KeyQ%', 'help.k.drop'],
-  [t('help.k.rightMouse'), 'help.k.throw'],
-  ['%KeyF%', 'help.k.throwAhead'],
-  ['%KeyU%', 'help.k.digUp'],
-  ['%KeyC%', 'help.k.craft'],
-  ['%KeyI%', 'help.k.file'],
-  ['%KeyT%', 'help.k.rat'],
-  ['%KeyP%', 'help.k.phone'],
-  ['%KeyG%', 'help.k.crew'],
-  ['%KeyO%', 'help.k.objectives'],
-  ['%KeyH%', 'help.k.help'],
-  [t('help.k.esc'), 'help.k.pause'],
+/** The keys, in groups (read when shown: the language and the keyboard's labels may change). */
+const keys = (): Array<[string, Array<[string, Key]>]> => [
+  ['move', [['%KeyW% %KeyA% %KeyS% %KeyD%', 'help.k.walk'], [t('help.k.clickKey'), 'help.k.click']]],
+  [
+    'do',
+    [
+      ['%KeyE%', 'help.k.act'],
+      [t('help.k.space'), 'help.k.use'],
+      ['%KeyR%', 'help.k.lock'],
+      ['1 – 6', 'help.k.slots'],
+      ['%KeyQ%', 'help.k.drop'],
+      [t('help.k.rightMouse'), 'help.k.throw'],
+      ['%KeyF%', 'help.k.throwAhead'],
+      ['%KeyU%', 'help.k.digUp'],
+      ['1 – 3', 'help.k.call'],
+    ],
+  ],
+  [
+    'panels',
+    [
+      ['%KeyC%', 'help.k.craft'],
+      ['%KeyI%', 'help.k.file'],
+      ['%KeyT%', 'help.k.rat'],
+      ['%KeyP%', 'help.k.phone'],
+      ['%KeyG%', 'help.k.crew'],
+      ['%KeyO%', 'help.k.objectives'],
+      ['%KeyH%', 'help.k.help'],
+      [t('help.k.esc'), 'help.k.pause'],
+    ],
+  ],
+  [
+    'games',
+    [
+      ['1 – 5 · Enter · %KeyL%', 'help.k.cheat'],
+      [t('help.k.space'), 'help.k.shoot'],
+      [t('help.k.space'), 'help.k.kick'],
+      ['%KeyA% %KeyS% %KeyD%', 'help.k.lanes'],
+      ['1 – 4', 'help.k.answer'],
+    ],
+  ],
 ];
 
-const TOUCHES: Array<[string, Key]> = [
-  ['walk', 'help.t.stick'],
-  ['pin', 'help.t.tap'],
-  ['hand', 'help.t.act'],
-  ['pick', 'help.t.use'],
-  ['toss', 'help.t.throw'],
-  ['ball', 'help.t.kick'],
-  ['music', 'help.t.lanes'],
-  ['brain', 'help.t.answer'],
-  ['up', 'help.t.digUp'],
-  ['target', 'help.t.lock'],
-  ['hammer', 'help.t.slots'],
-  ['coin', 'help.t.file'],
-  ['rat', 'help.t.rat'],
-  ['phone', 'help.t.phone'],
-  ['users', 'help.t.crew'],
-  ['bulb', 'help.t.objectives'],
-  ['pause', 'help.t.pause'],
+/** The touch controls, in groups: each the HUD's own icon for it. */
+const TOUCHES: Array<[string, Array<[string, Key]>]> = [
+  ['move', [['walk', 'help.t.stick'], ['pin', 'help.t.tap']]],
+  [
+    'do',
+    [
+      ['hand', 'help.t.act'],
+      ['pick', 'help.t.use'],
+      ['target', 'help.t.lock'],
+      ['hammer', 'help.t.slots'],
+      ['toss', 'help.t.throw'],
+      ['up', 'help.t.digUp'],
+    ],
+  ],
+  [
+    'panels',
+    [
+      ['coin', 'help.t.file'],
+      ['rat', 'help.t.rat'],
+      ['phone', 'help.t.phone'],
+      ['users', 'help.t.crew'],
+      ['bulb', 'help.t.objectives'],
+      ['pause', 'help.t.pause'],
+    ],
+  ],
+  ['games', [['ball', 'help.t.kick'], ['music', 'help.t.lanes'], ['brain', 'help.t.answer']]],
 ];
 
 // ------------------------------------------------------------ words
@@ -89,7 +111,7 @@ const open = (tp: HelpTopic) => !tp.prison || openPrisons().some((p) => p.id ===
 
 /** Every word a topic says, for the search (lower case, accents off). */
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae');
-const SEARCHED = ['hook', 'sum', 'steps', 'list', 'nums', 'tip', 'warn', 'more', 'meter', 'tl', 'bars'];
+const SEARCHED = ['hook', 'sum', 'sh', 'steps', 'lh', 'list', 'lh2', 'list2', 'nums', 'tip', 'warn', 'more', 'dh', 'meter', 'tl', 'bars'];
 const words = (id: string) => fold([title(id), ...SEARCHED.map((p) => part(id, p)), shaped(id) ? '' : t(`help.${id}` as Key)].join(' ')).split(/[^a-z0-9]+/);
 /** A topic found: each word searched for begins one of its words. */
 const found = (id: string, q: readonly string[]) => {
@@ -103,7 +125,14 @@ const tone = (tp: HelpTopic) => `--tone:${tp.tone}`;
 const badge = (tp: HelpTopic, size = 22) => `<span class="help-ic" style="${tone(tp)}">${icon(tp.icon, size)}</span>`;
 const itemImg = (id: string, cls = '') => `<img class="hd-item ${cls}" src="${itemIcons()[itemNumber(id)]}" alt="" draggable="false">`;
 /** An icon for a line: an item's picture or a UI icon. */
-const lineIcon = (name: string | undefined) => (!name ? '' : name.startsWith('item:') ? `<span class="hd-li-ic item">${itemImg(name.slice(5))}</span>` : `<span class="hd-li-ic">${icon(name, 16)}</span>`);
+const lineIcon = (name: string | undefined) =>
+  !name
+    ? ''
+    : name.startsWith('item:')
+      ? `<span class="hd-li-ic item">${itemImg(name.slice(5))}</span>`
+      : name.startsWith('dot:')
+        ? `<span class="hd-li-ic dot"><i style="background:${name.slice(4)}"></i></span>`
+        : `<span class="hd-li-ic">${icon(name, 16)}</span>`;
 
 function tile(tp: HelpTopic) {
   const hook = part(tp.id, 'hook');
@@ -212,12 +241,14 @@ function picture(tp: HelpTopic) {
   return '';
 }
 
-function list(id: string, p: 'steps' | 'list', icons: readonly string[] | undefined) {
+/** Its steps (numbered) or a list (`list`, and a second one, `list2`), each with its heading. */
+function list(id: string, p: 'steps' | 'list' | 'list2', icons: readonly string[] | undefined) {
   const items = lines(part(id, p));
   if (!items.length) return '';
-  const head = part(id, p === 'steps' ? 'sh' : 'lh') || (p === 'steps' ? t('help.how') : '');
+  const head = part(id, p === 'steps' ? 'sh' : p === 'list' ? 'lh' : 'lh2') || (p === 'steps' ? t('help.how') : '');
   const tag = p === 'steps' ? 'ol' : 'ul';
-  return `${head ? `<h4 class="hd-h">${head}</h4>` : ''}<${tag} class="hd-${p}${icons ? ' iconed' : ''}">${items.map((s, k) => `<li>${icons ? lineIcon(icons[k]) : ''}<span>${s}</span></li>`).join('')}</${tag}>`;
+  const cls = p === 'steps' ? 'hd-steps' : 'hd-list';
+  return `${head ? `<h4 class="hd-h">${head}</h4>` : ''}<${tag} class="${cls}${icons ? ' iconed' : ''}">${items.map((s, k) => `<li>${icons ? lineIcon(icons[k]) : ''}<span>${s}</span></li>`).join('')}</${tag}>`;
 }
 
 function callout(id: string, p: 'tip' | 'warn') {
@@ -260,6 +291,7 @@ function page(tp: HelpTopic, lessons: boolean, seq: readonly HelpTopic[]) {
     ${tp.diagram && part(id, 'dh') ? `<h4 class="hd-h">${part(id, 'dh')}</h4>` : ''}${diagram(tp)}
     ${list(id, 'steps', tp.stepIcons)}
     ${list(id, 'list', tp.listIcons)}
+    ${list(id, 'list2', tp.list2Icons)}
     ${recipes}
     ${callout(id, 'tip')}
     ${callout(id, 'warn')}
@@ -303,10 +335,11 @@ function controls(touch: boolean) {
   const which = `<div class="seg help-device" role="radiogroup">${(['keys', 'touch'] as const)
     .map((d) => `<button role="radio" data-device="${d}" class="${(d === 'touch') === touch ? 'on' : ''}" aria-checked="${(d === 'touch') === touch}">${icon(d === 'keys' ? 'keyboard' : 'hand', 15)}${t(`help.device.${d}`)}</button>`)
     .join('')}</div>`;
-  const items = touch
-    ? TOUCHES.map(([ic, k]) => `<li><span class="help-btn">${icon(ic, 18)}</span><span>${t(k)}</span></li>`).join('')
-    : keys().map(([label, k]) => `<li><kbd>${withKeys(label)}</kbd><span>${t(k)}</span></li>`).join('');
-  return `${which}<ul class="help-keys">${items}</ul><p class="help-foot">${t(touch ? 'help.t.zoom' : 'help.k.zoom')}</p>`;
+  const groups = touch
+    ? TOUCHES.map(([g, rows]) => [g, rows.map(([ic, k]) => `<li><span class="help-btn">${icon(ic, 18)}</span><span>${t(k)}</span></li>`).join('')] as const)
+    : keys().map(([g, rows]) => [g, rows.map(([label, k]) => `<li><kbd>${withKeys(label)}</kbd><span>${t(k)}</span></li>`).join('')] as const);
+  const body = groups.map(([g, items]) => `<h4 class="help-group">${t(`help.cg.${g}` as Key)}</h4><ul class="help-keys">${items}</ul>`).join('');
+  return `${which}${body}<p class="help-foot">${t(touch ? 'help.t.zoom' : 'help.k.zoom')}</p>`;
 }
 
 export interface HelpOptions {
