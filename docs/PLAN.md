@@ -1295,6 +1295,59 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
 - **Proof**: `manhunttest`: a getaway bot per prison and per kind of start; every outside map reachable to the safe
   point; the escape bots' snapshots unchanged (they end at the wall).
 - **Lesson**: the manhunt (Center Perks' woods).
+- **Built** (what differs from the plan above, and why):
+  - **Its own simulation.** The hunt is `sim/hunt/Hunt.ts`, a deterministic sim of its own (20 steps a second,
+    packed commands, integer positions, draws from `roll()` with `SALT.HUNT`), built from the outside's data and a
+    `Carry` read once at the wall (`sim/hunt/carry.ts`: the way out and its start kind, Speed, the outfit, the
+    hotbar and weapon, the crew out, Lou's car, the minute, the salt, the head start). The inside run's state is
+    never touched: no new inside state field, no new FEAT, no new TODAY/DOING/TALK code was needed, so every inside
+    snapshot (the escape bots, simtest's hash) stays as it was. The hunt keeps its own counts (`HUNT_FEATS`); the
+    lifetime stats gain `hunts`, `getaways`, `recaptured`.
+  - **The outside maps** are `content/outside/<prison>.ts` (not a `PrisonDef` field: the prisons stay as they
+    were): 60 × 56 pictures in their own legend (trees, cacti, rocks, crates; hedges and culverts as cover; gravel
+    and railway lines loud underfoot; rivers, fords that wash the trail; wire that cutters cut), centred in the 64 ×
+    64 world. The plan said about 40 × 30: a first cut at 48 × 34 was crossed in ten seconds, too short for an act.
+    Past the picture: woods, or the sea where its edge is water. `sim/hunt/world.ts` builds a `World` from it (its
+    trees and crates as solid `parked` tiles, cover and trees in a new `World.veil` that stops sight but not feet),
+    so walking, sight, cones and paths are the inside's own code. Starts are by kind (`content/manhunt.ts
+    startKindOf`): wall (fence, tunnel, roof), gate (takeover, gate, bluff), glider (further out), van (stowaway),
+    sea (raft), air (helicopter; Irongate's stowaway rides the supply helicopter). Safe points: Center Perks' night
+    bus, Stalag Flucht's border (across the wire: a gap far west, cutters, or past the post), Shankton's night
+    freight, San Pancho's truck stop, Irongate's coach station.
+  - **The hunt's rules** (numbers in `content/manhunt.ts HUNT`): searchers walk beats and look with the inside's
+    60° cones (7 tiles by day, 5 after dark); a notice meter (in other clothes they know the player only within 3
+    tiles, in a guard's uniform 2.5); spotted, a chase and the radio; out of sight 3 s, a look round where last seen.
+    Chasers run 176 (inside: 196) and everyone but the dogs slows off the roads (75%), so a chase out there can be
+    shaken. Cover hides from every eye once still for half a second; dogs (2 tiles to pick up a fresh trail, 60 s
+    fresh, 60 tiles long) track it right into a hedge, point and bark, and their handler finds the player there. A
+    ford lays no trail; a washing line gives other clothes and wipes the trail. Noise is walking-distance as inside:
+    gravel crunches, a cut, a bark, and a thrown stone (Space, every 5 s: the plan had no decoy) draw searchers to
+    look. Treats from the hotbar work on dogs as inside (jerky calms, pepper dazes and wipes the trail, sleepy jerky
+    puts to sleep). The alarm comes after the head start (to the next headcount, 5–20 s; none if seen going, in a
+    lockdown or a takeover); searchers come out by their own seconds after it, patrols are out before it, then
+    roadblocks (5–25 s) and the helicopter (15–25 s), whose light finds the player anywhere out of cover and calls
+    everyone in.
+  - **Help from inside**: Lou's car (`wheels`, P34) waits on the outside map, nearer than the safe point from the
+    starts by the walls; a crew member out too keeps watch from a rise and whistles at a searcher coming within 7
+    tiles; the glider's start is further out.
+  - **The card**: the escape counts at the wall as before (records, medals, achievements, the replay kept); the card
+    then offers Keep running or Skip (Skip: the card as it always was). Safe: a clean getaway (`RouteBest.clean`, a
+    green star beside the route's medal on the shelf, a line on the card); caught: "Recaptured, n% of the way". With
+    the hunt's line the card goes two columns on screens under 1000 px tall. Legal releases (`LEGAL_ROUTES`, today
+    `['paperwork']`) and the Daily end at the wall: no offer.
+  - **Not built**: a replay of the hunt (the replay kept is the inside run's, as before; "a better replay" is left
+    for later), rumours about the outside (no gossip kind), and help pictures (the topic is laid out with a timeline
+    and waits for `public/help/manhunt.webp`, then `pic: true`).
+  - **Achievements** (8): Clean Getaway (gives the forest beanie, `mhBeanie`), Without a Trace, Change of Clothes, Out
+    of the Light, Getaway Driver, Long Arm of the Law and So Close (mishaps), All Clear (career: every prison).
+  - **Proof**: `manhunttest`: every map's data (a start for every way out that needs one, the safe point and Lou
+    reachable with every roadblock up and no wire cut, beats walkable, posts and lines reachable), the getaway bot
+    (`scripts/huntbot.ts`: shortest way out of every eye's reach, else into cover) clean away from all 17 starts and
+    again seen going by day, each rule on its own, determinism, the lesson played through. `scripts/dev/huntsweep.ts`
+    sweeps the bot over every start, night and day. The map viewer has an Outside view per prison.
+  - **Lesson** `manhunt`, last of the Ways out chapter: over Center Perks' wall, into the woods, a thicket while a
+    searcher goes by, clothes off a line, Lou's car (one searcher, no roadblocks, no helicopter). Dev builds start a
+    hunt from the console: `__manhunt('stalag-flucht', 'wall', { minute: 1410, crew: 1, lou: true })`.
 
 ### P42 Holidays (v2.21)
 The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.
