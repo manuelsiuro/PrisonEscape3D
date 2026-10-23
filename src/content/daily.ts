@@ -81,7 +81,8 @@ export function dailyOf(n: number): Daily {
   const prison = prisonOf(n);
   // The toughest prisons leave less of the budget to the twists.
   const budget = rhythm.budget - (prison.difficulty >= 4 ? 1 : 0);
-  const routes = escapesOf(prison);
+  // (P39: never parole: the Daily deals no parole board.)
+  const routes = escapesOf(prison).filter((r) => r !== 'parole');
   const fits = TWISTS.filter((t) => !t.at || t.at(prison));
   let best: TwistId[] = [];
   // Shuffled afresh until a hand fits (a few tries are plenty; the first that deals them all wins).

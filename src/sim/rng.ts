@@ -38,7 +38,7 @@ export function mix32(h: number): number {
 }
 
 /** What a roll() is for (its own stream). Never renumber: saves replay them. */
-export const SALT = { SHAKEDOWN: 1, NAP: 2, DECK: 3, WEATHER: 4, WIND: 5, MOOD: 6, EVENT_TIME: 7, OUTAGE: 8, DELIVERY: 9, TREATS: 10, TRAPS: 11, SCURRY: 12, DRONE: 13, VISIT: 14, DICE: 15, SURGE: 16, PINS: 17, DAILY: 18, CARE: 19, CARDS: 20, HOOPS: 21, CHECKERS: 22, RACE: 23, FOOTBALL: 24, STAGE: 25, QUIZ: 26, CALLS: 27, TAP: 28, KIOSK: 29, COURSE: 30 } as const;
+export const SALT = { SHAKEDOWN: 1, NAP: 2, DECK: 3, WEATHER: 4, WIND: 5, MOOD: 6, EVENT_TIME: 7, OUTAGE: 8, DELIVERY: 9, TREATS: 10, TRAPS: 11, SCURRY: 12, DRONE: 13, VISIT: 14, DICE: 15, SURGE: 16, PINS: 17, DAILY: 18, CARE: 19, CARDS: 20, HOOPS: 21, CHECKERS: 22, RACE: 23, FOOTBALL: 24, STAGE: 25, QUIZ: 26, CALLS: 27, TAP: 28, KIOSK: 29, COURSE: 30, PAROLE: 31 } as const;
 
 /** A number in [0, 2³²) for a draw of a kind (SALT) and its arguments: pure, never the same stream as another kind. */
 export const roll = (salt: number, kind: number, a: number, b = 0) => mix32(mix32(mix32(salt ^ Math.imul(kind, 0x9e3779b9)) ^ a) ^ Math.imul(b + 1, 0x27d4eb2f));
