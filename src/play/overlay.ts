@@ -62,6 +62,7 @@ import {
   kioskCard,
   paroleCard,
   oddjobsCard,
+  storyCard,
   vignette,
   view,
   workChips,
@@ -105,7 +106,7 @@ import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
 import { kioskNow } from './kiosk';
 import { paroleChip, paroleNow } from './parole';
-import { jobHud, oddjobsNow } from './oddjobs';
+import { closeJobCard, jobHud, oddjobsNow } from './oddjobs';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -319,10 +320,6 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   kioskCard.update(kioskV);
   document.body.classList.toggle('kiosking', !!kioskV);
   document.body.dataset.kiosk = kioskV?.phase === 'on' && kioskV.course !== 'offer' ? 'course' : kioskV?.phase === 'on' ? 'on' : '';
-  // The odd jobs board (P40): its card at the board, the job's own card from its chip (not over another's).
-  const jobsV = busy || otherGame || stageV || quizV || phoneV || kioskV ? null : oddjobsNow(sim);
-  oddjobsCard.update(jobsV);
-  document.body.classList.toggle('jobbing', !!jobsV);
   document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
   // The parole board (P39): its card at the release desk, before the board, the verdict a moment (not over another's).
   const paroleV = busy || otherGame || stageV || quizV || phoneV || kioskV ? null : paroleNow(sim);
@@ -330,8 +327,18 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   document.body.classList.toggle('paroling', !!paroleV);
   // (Before the board the answers are the controls; the verdict's card a moment, the action button off it too.)
   document.body.dataset.parole = paroleV && (paroleV.phase === 'ask' || paroleV.phase === 'weigh' || paroleV.phase === 'sat') ? 'on' : paroleV?.phase === 'verdict' ? 'verdict' : '';
-  // (P40: the odd jobs' card docked left takes the place of the race's while it's open.)
-  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV || jobsV ? null : raceNow(sim, a);
+  // The odd jobs board (P40): its card at the board, the job's own card from its chip — one card docked at a time:
+  // any other game's or place's card (the parole board's at the desk, the hearing, the verdict) comes first, and the
+  // job's own card, asked for from its chip, is closed for it (not left to come back later on its own).
+  const docked = !!(otherGame || court || st.train >= 0 || stageV || quizV || phoneV || kioskV || paroleV);
+  if (docked) closeJobCard();
+  const jobsV = busy || docked ? null : oddjobsNow(sim);
+  oddjobsCard.update(jobsV);
+  document.body.classList.toggle('jobbing', !!jobsV);
+  // (A story's card waits while another card is docked where it docks; it takes the race's place while it's up.)
+  storyCard.wait(docked);
+  // (P40: the odd jobs' card docked left takes the place of the race's while it's open; so do the phone's, the kiosk's, the parole board's.)
+  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV || phoneV || kioskV || paroleV || jobsV || storyCard.open ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);
@@ -359,8 +366,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   darkCell.classList.toggle('on', st.solitary > 0);
   // The solitary card takes the hint's place.
   if (st.solitary > 0 && hint.visible) hint.hide();
-  // First time something is in reach: how to use it.
-  if (target && !hint.visible && !seenTip('interact') && seenTip('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
+  // First time something is in reach: how to use it (not over the warden's morning card: after it).
+  if (target && !hint.visible && !paBoard.cardUp && !seenTip('interact') && seenTip('walk')) hint.show([TOUCH ? t('hint.interactTouch') : t('hint.interactKeys')], 'hand');
   hudFrame(g, a, tile, busy);
   // Speech bubbles (P13): over the picture, never over an open panel; none in a lesson.
   // (Hidden in the delivery's vehicle the talk goes on: the search's words are for the player in there.)

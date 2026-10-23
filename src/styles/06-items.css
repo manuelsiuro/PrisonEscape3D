@@ -651,6 +651,18 @@ kbd {
   bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 120px), var(--hint-clear, 0px));
 }
 
+/* Phones on their side: just over the hotbar and the vitals (as with the vitals pill up), clear of the player in
+   the middle of the screen and of who stands just below them (a speech bubble, a digger). */
+@media (max-height: 520px) {
+  .touch.is-playing:not(.pa-up, .hunting) .toasts {
+    bottom: max(calc(max(14px, env(safe-area-inset-bottom)) + 84px), var(--hint-clear, 0px));
+  }
+  /* (A banner up there, just over the hotbar: the toasts above it. The warden's strip and the manhunt place them their own way.) */
+  .touch.banner-up.is-playing:not(.pa-up, .hunting) .toasts {
+    bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 120px), var(--hint-clear, 0px));
+  }
+}
+
 /* ------------------------------------------------------------ phones */
 @media (max-width: 520px) {
   .slot {
