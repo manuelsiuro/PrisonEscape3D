@@ -111,12 +111,12 @@ export function outsideWorld(def: OutsideDef, prison: PrisonDef): OutsideWorld {
         deco[i] = k.deco ?? DECO.NONE;
         continue;
       }
-      // Past the picture: the edge's water carries on out to sea, its roads a little way into the woods; the rest is woods.
+      // Past the picture: an island town's is the sea all round (as the Island view draws it); elsewhere the edge's water carries on out, its roads a little way into the woods, the rest woods.
       const ex = Math.min(w - 1, Math.max(0, px));
       const ez = Math.min(h - 1, Math.max(0, pz));
       const edge = rows[ez][ex];
       const far = Math.max(ex - px, px - ex, ez - pz, pz - ez);
-      if (edge === '~' || edge === 'f') row += '~';
+      if (edge === '~' || edge === 'f' || prison.theme === 'island') row += '~';
       else if ((edge === ',' || edge === 'a') && far <= 3) {
         row += ',';
         solid[i] = 1;

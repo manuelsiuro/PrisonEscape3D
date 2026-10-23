@@ -1515,6 +1515,22 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
       test (a look walked and done, cover moving and a chase into it, a dog in the open, the ford, a loitered
       roadblock, the uniform and the line).
 
+  - **UI review**: How to play (H) in a hunt opens on the manhunt topic and the hunt goes on after it; the pause
+    card says leaving counts as recaptured; the HUD starts clean each hunt, says "1 tile", shows a "A dog's on your
+    trail" pill, and keeps the distance on a phone held upright; toasts keep clear of the stone (portrait) and of the
+    strip below the player (landscape). Lou's car stands on its spot (open road, checked); Stalag's border ring sits
+    beyond the wire; Irongate's outside is sea all round (no woods past the town, as the map viewer now shows too),
+    the prison's ferry and patrol boat are no longer drawn there, and Pike's beat keeps west of the gate start; a
+    river running off the world's edge goes on out of sight; a faint glow at the player's feet after dark; head-on
+    into a tree the player slides round it. The helicopter's light shows them whatever they wear and holds a chase
+    (no "lost you" in the light), and calls the nearest searcher when none is within the radio's reach; a guard's
+    uniform fools eyes only till the search has widened twice (a toast says so), so keeping still in the open in it
+    fails as in the jumpsuit (40–181 s). Night-only barks only at night; the lesson's thicket step ticks once the
+    searcher has gone by; its recapture card has a title and a line under it; the hunt's achievements come first on
+    the card. Not done: the van, glider and helicopter starts still begin on foot (no vehicle moment), and the
+    lighter rectangle of Irongate's sea over the picture couldn't be traced without a browser (the data past the
+    picture is the same sea now).
+
 ### P42 Holidays (v2.21)
 The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.
 

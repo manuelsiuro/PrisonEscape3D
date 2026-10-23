@@ -1246,14 +1246,14 @@ export const LESSONS: readonly Lesson[] = [
   // P41: the manhunt, outside Center Perks: into the woods, a thicket while a searcher goes by, clothes off a line, Lou's car.
   {
     id: 'manhunt',
-    icon: 'run',
+    icon: 'flag',
     prison: CENTER_PERKS,
     seed: 45,
     hunt: { kind: 'wall', searchers: [3], headStart: 0, minute: 23 * 60 + 30, lou: true },
     setup: () => {},
     steps: [
       { text: 'lesson.manhunt.run', done: (c) => !!c.hunt && huntWalked(c.hunt) >= 5, fail: huntCaught },
-      { text: 'lesson.manhunt.hide', done: (c) => !!c.hunt && c.hunt.state.hidden && searcherWithin(c.hunt, 7), fail: huntCaught },
+      { text: 'lesson.manhunt.hide', done: (c) => !!c.hunt && goneBy(c.hunt), fail: huntCaught },
       { text: 'lesson.manhunt.clothes', done: (c) => c.hunt?.state.clothes === 2, fail: huntCaught },
       { text: 'lesson.manhunt.lou', done: (c) => !!c.hunt && (c.hunt.state.over === OVER.LOU || c.hunt.state.over === OVER.SAFE), fail: huntCaught },
     ],
@@ -1281,6 +1281,12 @@ function huntWalked(h: Hunt): number {
 function searcherWithin(h: Hunt, tiles: number): boolean {
   const p = h.state.player;
   return h.state.searchers.some((m) => m.mode !== SEEK.OFF && Math.hypot(m.body.x - p.x, m.body.z - p.z) <= tiles * UNIT);
+}
+/** The searcher came close while the player kept hidden, then went on by: well away again, the player still in cover. */
+const passing = new WeakMap<Hunt, boolean>();
+function goneBy(h: Hunt): boolean {
+  if (h.state.hidden && searcherWithin(h, 6)) passing.set(h, true);
+  return !!passing.get(h) && h.out.cover[h.tile] === 1 && !searcherWithin(h, 9);
 }
 /** Recaptured: the lesson is tried again. */
 function huntCaught(c: LessonCtx): Key | null {

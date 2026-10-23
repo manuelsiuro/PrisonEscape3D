@@ -168,9 +168,9 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   fadeIn();
   document.body.classList.add('is-playing');
   const g = play.game;
-  // (Held back while the game is paused, by the day's card or the help: never lost.)
+  // (Held back while the game is paused, by the day's card or the help: never lost. Dropped once a manhunt runs, P41: the inside's banners don't belong over the outside.)
   const later = (ms: number, f: () => void) => {
-    const run = () => play.game === g && (g.paused ? startTimers.push(window.setTimeout(run, 250)) : f());
+    const run = () => play.game === g && !g.hunt && (g.paused ? startTimers.push(window.setTimeout(run, 250)) : f());
     startTimers.push(window.setTimeout(run, ms));
   };
   // A lesson: its card says what to do; no day one, no guide, no saves.
@@ -223,7 +223,8 @@ export async function pause() {
       click,
       play.game.saved,
       !play.game.over && !lesson && !daily,
-      lesson ? lessonPlace(lesson.index) : note,
+      // (In the manhunt, P41: leaving counts as recaptured, said instead of the save.)
+      lesson ? lessonPlace(lesson.index) : note || (play.game.hunt ? `!${t('manhunt.leaveNote')}` : ''),
       !!lesson,
       lesson ? '' : daily ? dailyPlace(sim, daily) : play.game.hunt ? `${prisonName(sim.prison)} · ${t('manhunt.title')}` : `${prisonName(sim.prison)} · ${t('hud.day', { n: sim.clock.day })}`,
       daily ? dailyTwistsHtml(sim.state.mods) : '',
@@ -235,7 +236,7 @@ export async function pause() {
       continue;
     }
     if (choice === 'help') {
-      await showHelp(click);
+      await showHelp(click, play.game.hunt ? { topic: 'manhunt' } : {});
       continue;
     }
     if (choice === 'objectives' && play.game.lesson) {
@@ -292,8 +293,9 @@ export async function openHelp() {
   controls.enabled = false;
   controls.reset();
   tools.release();
-  await showHelp(click);
-  if (play.game !== g || g.over) return;
+  // (In the manhunt, P41: on its topic; the run is over but the hunt goes on.)
+  await showHelp(click, g.hunt ? { topic: 'manhunt' } : {});
+  if (play.game !== g || (g.over && !g.hunt)) return;
   g.paused = false;
   controls.enabled = true;
   play.last = performance.now();
@@ -419,7 +421,8 @@ export async function escaped() {
       if (play.game !== g || r === 'quit') return;
       const got = huntOver(sim, via, r);
       victory.hunt = { ...victory.hunt, state: r.over === 3 ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };
-      victory.earned = [...(victory.earned ?? []), ...got];
+      // (The hunt's own first: they're what this card is about now, never behind the "+N".)
+      victory.earned = [...got, ...(victory.earned ?? []).filter((a) => !got.includes(a))];
       // (A clean getaway: the confetti again.)
       back = r.over === 3;
       choice = await showVictory(victory, click, back);

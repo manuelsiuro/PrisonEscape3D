@@ -2341,8 +2341,8 @@ export const frBarks: Barks = {
   "gu.hunt.out": [
     "Déployez-vous ! Il n’a pas pu aller loin.",
     "Allez, les gars. Chaque haie, chaque fossé.",
-    "Tiré du lit pour ça. Merci bien.",
-    "Lampes allumées. Cherchez des traces.",
+    { t: "Tiré du lit pour ça. Merci bien.", when: ["night"] },
+    { t: "Lampes allumées. Cherchez des traces.", when: ["night"] },
     "Vérifiez les buses. Ils tentent toujours les buses.",
     "Rapport radio toutes les dix minutes. On bouge !",
     "Quelqu’un fait du café ? On en a pour un moment.",
@@ -2385,7 +2385,7 @@ export const frBarks: Barks = {
     "Et on rentre.",
     "Terminus, mon grand.",
     "Attrapé ! Du calme, maintenant.",
-    "Assez couru pour cette nuit.",
+    { t: "Assez couru pour cette nuit.", when: ["night"] },
     "On rentre. Le directeur t’attend.",
   ],
 };

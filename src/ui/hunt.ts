@@ -15,8 +15,8 @@ export interface HuntHudState {
   dogs: boolean;
   roadblocks: boolean;
   heli: boolean;
-  /** How the player stands: hidden in cover, lit by the helicopter, being chased, crossing cover, or nothing to say. */
-  state: 'hidden' | 'lit' | 'chased' | 'cover' | '';
+  /** How the player stands: hidden in cover, lit by the helicopter, being chased, a dog on their trail, crossing cover, or nothing to say. */
+  state: 'hidden' | 'lit' | 'chased' | 'tracked' | 'cover' | '';
   /** The crew member keeping watch, by name ('' none). */
   lookout: string;
   /** The action button: its icon, its verb, what it's for (null: hidden); a cut's progress (0–1). */
@@ -102,6 +102,11 @@ export class HuntHud {
       this.stoneBtn.classList.add('hidden');
     }
     this.shownGoal = this.shownAct = this.shownState = this.shownTiers = '';
+    // (A new hunt starts clean: no state pill or tiers left from the last one.)
+    this.statePill.className = 'pill hud-alert hunt-state hidden';
+    this.statePill.innerHTML = '';
+    this.tiers.innerHTML = '';
+    this.alarmPill.classList.remove('up');
   }
 
   update(s: HuntHudState) {
@@ -111,9 +116,11 @@ export class HuntHud {
       setText(this.goalName, t(`manhunt.place.${s.goal}` as Key));
       this.goal.classList.toggle('lou', s.goal === 'lou');
     }
-    setText(this.goalDist, t('manhunt.tiles', { n: Math.max(0, s.dist) }));
+    const n = Math.max(0, s.dist);
+    const dist = t(n === 1 ? 'manhunt.tile' : 'manhunt.tiles', { n });
+    setText(this.goalDist, dist);
     this.arrow.style.transform = `rotate(${s.angle.toFixed(2)}rad)`;
-    this.goal.setAttribute('aria-label', `${t(`manhunt.place.${s.goal}` as Key)}, ${t('manhunt.tiles', { n: Math.max(0, s.dist) })}`);
+    this.goal.setAttribute('aria-label', `${t(`manhunt.place.${s.goal}` as Key)}, ${dist}`);
     // The alarm: counting down, then how long it's been up.
     const up = s.alarm <= 0;
     const secs = Math.abs(Math.ceil(s.alarm));
@@ -129,7 +136,7 @@ export class HuntHud {
     if (s.state !== this.shownState) {
       this.shownState = s.state;
       this.statePill.className = `pill hud-alert hunt-state${s.state ? ` st-${s.state}` : ' hidden'}`;
-      if (s.state) this.statePill.innerHTML = `${icon(s.state === 'hidden' ? 'eyeOff' : s.state === 'lit' ? 'sun' : s.state === 'chased' ? 'siren' : 'eye', 15)}<span>${t(`manhunt.state.${s.state}` as Key)}</span>`;
+      if (s.state) this.statePill.innerHTML = `${icon(s.state === 'hidden' ? 'eyeOff' : s.state === 'lit' ? 'sun' : s.state === 'chased' ? 'siren' : s.state === 'tracked' ? 'paw' : 'eye', 15)}<span>${t(`manhunt.state.${s.state}` as Key)}</span>`;
     }
     this.crewPill.classList.toggle('hidden', !s.lookout);
     if (s.lookout) setText(this.crewPill.querySelector('span')!, t('manhunt.lookout', { name: s.lookout }));
