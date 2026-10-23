@@ -3,7 +3,7 @@
  * followers and the foes they go after, and grudges that turn into ambushes.
  */
 import { phoneTargets, swapPlace } from './phone';
-import { oddjobTargets, owes, R, talkJob } from './oddjobs';
+import { delivering, oddjobTargets, owes, R, talkJob } from './oddjobs';
 import { twist } from './twists';
 import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
@@ -181,8 +181,10 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       // (P35: a hollow book given away with something in it: what it hides would go with it.)
       if (item === HOLLOW_BOOK && usesOf(v)) return refuse(sim, 'bookFull');
       it.inv[b] = 0;
+      // (P40: a delivery's parcel handed over isn't a gift.)
+      const job = delivering(s, who, item);
       sim.events.push({ type: 'gift', who, item, cash: 0 });
-      changeOpinion(sim, who, giftOpinion(itemDef(item).value));
+      if (!job) changeOpinion(sim, who, giftOpinion(itemDef(item).value));
       return;
     }
     case TALK.GIFT_CASH:

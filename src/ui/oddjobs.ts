@@ -112,8 +112,7 @@ export class OddJobsCard {
   }
 
   update(v: OddJobsView | null) {
-    // (Shown again: from its top, not where it was last scrolled to.)
-    if (v && this.el.classList.contains('hidden')) this.el.scrollTop = 0;
+    const shown = !!v && this.el.classList.contains('hidden');
     this.el.classList.toggle('hidden', !v);
     if (!v) {
       this.drawn = '';
@@ -130,6 +129,11 @@ export class OddJobsCard {
     const held = v.job ? heldHtml(v.job, v.mode === 'job') : '';
     const pins = v.pins.map(pinHtml).join('');
     this.body.innerHTML = `${held}${pins ? `<div class="oddjobs-pins">${pins}</div>` : ''}`;
+    // (Shown again: from its top, not where it was last scrolled to; once it's displayed and drawn, and again a frame on.)
+    if (shown) {
+      this.el.scrollTop = 0;
+      requestAnimationFrame(() => (this.el.scrollTop = 0));
+    }
     return true;
   }
 }

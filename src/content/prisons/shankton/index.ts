@@ -410,7 +410,7 @@ export const SHANKTON: PrisonDef = {
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported at the staff door off the corridor, then through the quarters, the control room and the shell's gates.)
   comms: comms([36, 24, 13], [[37, 24], [38, 24], [39, 24], [40, 24]], [51, 54], [55, 63, 9], [24, 43, 9], { at: [[47, 39]], gates: [[47, 40], [51, 47], [51, 55], [52, 55], [51, 58], [52, 58], [51, 62], [52, 62]] }),
-  // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
-  board: { x: 38, z: 14, face: 13 },
+  // The odd jobs board (P40): on the canteen's north wall (brick behind it, not a door), clear of the stage and of the two rows a wall hides.
+  board: { x: 25, z: 14, face: 13 },
   map: 1,
 };

@@ -43,6 +43,7 @@ import { newRat } from '../src/sim/systems/rats';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
+import { TILE } from '../src/sim/world/tiles';
 import type { PrisonDef } from '../src/content/prisons/types';
 import { check } from './assert';
 
@@ -141,7 +142,8 @@ function canteenPair(sim: Sim): [number, number] {
     const onFloor = (x: number, z: number) => w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d) || (p.decor ?? []).some((d) => !DECOR[d.kind].wall && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
     const zone = w.zoneAt(b.x, b.z);
     check(!w.blocked(b.x, b.z) && !onFloor(b.x, b.z) && zone === 'canteen', `${p.id}: the board's tile is open floor in the canteen (${zone})`);
-    check(b.face === 13 && w.blocked(b.x, b.z - 1), `${p.id}: it hangs on the north wall (the camera sees it)`);
+    const behind = w.ground.kind[(b.z - 1) * MAP_W + b.x];
+    check(b.face === 13 && (behind === TILE.BRICK || behind === TILE.REINFORCED), `${p.id}: it hangs on the north wall, a real wall behind it (not a door; the camera sees it)`);
     const wallDecor = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && d.x <= b.x && d.x + (d.w ?? 1) > b.x && d.z <= b.z && d.z + (d.d ?? 1) > b.z);
     check(wallDecor.length === 0, `${p.id}: nothing else hangs on its bit of wall (${wallDecor.map((d) => d.kind).join(' ')})`);
     check(!w.blocked(b.x, b.z + 1) && !w.blocked(b.x, b.z + 2), `${p.id}: no wall in the two rows in front of it`);
@@ -1040,6 +1042,34 @@ function handIn(g: Game, deal: Deal) {
     g.step();
     putTile(gd.body, d.tile + 4);
     check(whistleNow(g.sim as never), 'a guard coming: B and the chip whistle');
+  }
+  // Off watch (away from the door) in the dig's hours: no guard "coming", nothing to whistle at.
+  {
+    const { g, pin } = dealt(CENTER_PERKS, KIND.LOOKOUT)!;
+    const s = g.sim.state;
+    takeAt(g, pin);
+    const d = digOf(g.sim)!;
+    g.jump(prisonDay(s.step), 18, 5);
+    const gd = s.guards[0];
+    const seen = g.seen.length;
+    for (let k = 0; k < 40; k++) {
+      put(s.player, 2, 2);
+      putTile(gd.body, d.tile + 4);
+      gd.path = [];
+      g.step();
+    }
+    check(!g.seen.slice(seen).some((e) => e.type === 'oddjob' && e.what === 'coming') && jobOf(s)![J.WARN] === 0 && !whistleNow(g.sim as never), 'off watch, a guard near the dig: no "coming" toast');
+  }
+  // A delivery's parcel handed over isn't a gift: what he thinks of the player stays.
+  {
+    const { g, pin, deal } = dealt(CENTER_PERKS, KIND.DELIVER)!;
+    const s = g.sim.state;
+    takeAt(g, pin);
+    s.inmates[deal.target].opinion = 60;
+    g.talkTo(deal.target);
+    const was = s.inmates[deal.target].opinion;
+    g.talk(TALK.GIFT, inHand(g.sim, n('parcel')));
+    check(jobOf(s)?.[J.STAGE] === STAGE.DONE && s.inmates[deal.target].opinion === was, `the parcel delivered: done, his opinion unchanged (${was} → ${s.inmates[deal.target].opinion})`);
   }
   // The digger faces open floor at his bed, in every prison, whoever digs.
   for (const p of PRISONS) {

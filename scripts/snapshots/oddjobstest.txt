@@ -1,6 +1,6 @@
 center-perks: board 49,7; story for cell 5: deliver, lift, checkers
 stalag-flucht: board 5,30; story for cell 2: errand, lookout, frame
-shankton: board 38,14; story for cell 11: cheat, deliver, tip
+shankton: board 25,14; story for cell 11: cheat, deliver, tip
 san-pancho: board 17,32; story for cell 7: errand, cake, wrestle
 irongate: board 29,28; story for cell 3: lift, drop, checkers
 center-perks: lift 32, drop 24, frame 27, wrestle 34, cheat 30, checkers 25, rat 33, cake 7, lookout 53, deliver 32, tip 36, errand 27; fixer 120
