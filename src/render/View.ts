@@ -1620,7 +1620,8 @@ export class View {
     };
     if (this.sun.castShadow) resize(4096);
     this.placeSun(600);
-    const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.guide.group].filter((o) => o.visible);
+    // (P42: nor a holiday's decor: the map viewer's pictures never depend on the date.)
+    const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.guide.group, this.holidaysView.group].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
     // The pay phone and the kiosk hang on their walls in game, but the title screen behind the shot hides their groups.
     const shown = [this.phoneView.group, this.kioskView.group, this.releaseView.group].filter((o) => !o.visible);
