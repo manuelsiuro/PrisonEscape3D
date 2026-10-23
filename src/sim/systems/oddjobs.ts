@@ -25,7 +25,7 @@ import { LOOT } from '../../content/loot';
 import { ROUTINE } from '../../content/routine';
 import { PARCEL_MINUTE } from '../../content/smuggling';
 import { lineOfSight } from '../ai/sight';
-import { placesOf } from '../ai/places';
+import { isFloor, placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { OddJobFail, Refusal, SimState } from '../state';
@@ -577,12 +577,23 @@ function coming(sim: SimContext, tile: number): number {
   return bits;
 }
 
-/** The lookout's whistle (EXT.WHISTLE): the dig hides (a guard coming), or it's a false alarm and time is lost. */
+/** The whistle can be blown: on watch in the dig's hours, the digger up and at it (or hiding from a whistle). */
+export function canWhistle(sim: SimContext): boolean {
+  return onWatch(sim) && digHours(sim) && diggerFree(sim);
+}
+
+/** B or the job's chip whistle now (a guard coming at the dig); otherwise they open the job's card. */
+export function whistleNow(sim: SimContext): boolean {
+  const job = jobOf(sim.state);
+  return !!job && job[J.KIND] === KIND.LOOKOUT && job[J.WARN] > 0 && canWhistle(sim);
+}
+
+/** The lookout's whistle (EXT.WHISTLE): the dig hides (a guard coming), or it's a false alarm and time is lost. Not outside the dig's hours. */
 export function whistle(sim: SimContext) {
   const s = sim.state;
   const job = jobOf(s);
   const d = digOf(sim);
-  if (!job || !d || !onWatch(sim)) return refuse(sim, 'notLookout');
+  if (!job || !d || !canWhistle(sim)) return refuse(sim, 'notLookout');
   job[J.AUX] = s.step + HIDE_STEPS;
   if (job[J.WARN]) sim.events.push({ type: 'oddjob', what: 'whistled', who: d.who });
   else {
@@ -635,7 +646,24 @@ export function oddjobTargets(sim: SimContext, so: { follow: Array<Body | null>;
   so.follow[d.who] = mark;
   so.gap[d.who] = 0;
   so.doing[d.who] = digging(sim) ? DOING.DIG : DOING.NOTHING;
-  so.face[d.who] = 0;
+  so.face[d.who] = digFace(sim.world, d.tile);
+}
+
+/** The way a digger faces at his bed: toward the most open floor beside it (never the bed nor a wall), east first on a tie. */
+export function digFace(w: SimContext['world'], tile: number): number {
+  const x = tile % MAP_W;
+  const z = Math.floor(tile / MAP_W);
+  let best = 1;
+  let most = -1;
+  for (const [face, dx, dz] of [[1, 1, 0], [5, 0, 1], [9, -1, 0], [13, 0, -1]] as const) {
+    let open = 0;
+    while (open < 2 && isFloor(w, x + dx * (open + 1), z + dz * (open + 1))) open++;
+    if (open > most) {
+      most = open;
+      best = face;
+    }
+  }
+  return best;
 }
 const mark: Body = bodyAt(0, 0);
 

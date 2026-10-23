@@ -1357,7 +1357,7 @@ export class Character {
       (doing === DOING.BOARD ? 0.18 * this.act : 0) +
       (doing === DOING.BRAWL ? 0.08 * this.act : 0) +
       (doing === DOING.KIOSK ? 0.05 * this.act : 0) +
-      (doing === DOING.DIG ? 0.45 * this.act : 0);
+      (doing === DOING.DIG ? 0.32 * this.act : 0);
     // From one activity to another: limbs, height and lean ease from where they were (before a blow, which never waits).
     if (this.blend < 1) {
       this.blend = Math.min(1, this.blend + dt * 5);

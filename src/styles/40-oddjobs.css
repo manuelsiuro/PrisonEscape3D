@@ -120,7 +120,15 @@
   color: rgba(255, 255, 255, 0.72);
 }
 .oddjobs-card .big-btn.urgent {
-  animation: order-pulse 0.9s ease-in-out infinite;
+  animation: job-urgent 0.9s ease-in-out infinite;
+}
+/* A guard coming at the dig: a red pulse (not the order's green). */
+@keyframes job-urgent {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px #ff6b4a,
+      0 0 14px rgba(255, 107, 74, 0.6);
+  }
 }
 
 /* The job's pill on the HUD (the order's look, in the board's cork brown). */
@@ -152,7 +160,7 @@
 }
 .hud-alert.hud-job.urgent {
   box-shadow: inset 0 0 0 2px #ff6b4a;
-  animation: order-pulse 0.9s ease-in-out infinite;
+  animation: job-urgent 0.9s ease-in-out infinite;
 }
 
 /* A story's short card: over the middle of the screen, up until tapped (docked left in landscape). */
@@ -206,8 +214,11 @@
   display: flex;
 }
 
-/* Phones upright: above the hotbar. */
+/* Phones upright: above the hotbar; the job's pill has its row to itself, so the width of the screen. */
 @media (max-width: 899px) and (min-height: 521px) {
+  .hud-alert.hud-job {
+    max-width: calc(100vw - 32px);
+  }
   .oddjobs-card {
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
     max-height: calc(100vh - 260px);
@@ -254,6 +265,14 @@
   }
   .hud-alert.hud-job {
     max-width: 40vw;
+  }
+  /* (The HUD's chips clear of a card docked left — the board's, a story's — and of a panel docked right — the file, a container.) */
+  body.jobbing .hud-alerts,
+  body.story-up .hud-alerts {
+    padding-left: calc(min(360px, 50vw - 40px) + 10px);
+  }
+  body:has(.item-panel:not(.hidden)) .hud-alerts {
+    padding-right: calc(min(360px, 100vw - 32px) + 6px);
   }
 }
 

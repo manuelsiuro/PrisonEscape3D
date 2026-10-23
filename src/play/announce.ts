@@ -580,6 +580,8 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'gift':
       sound.pickup();
+      // (A delivery done by it: the job's own banner says it, once.)
+      if (sim.events.some((o) => o.type === 'oddjob' && o.what === 'done')) break;
       itemsUI.toast(e.item ? t('toast.gaveItem', { item: lower(itemName(e.item)), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
       break;
     case 'favor':
@@ -595,6 +597,8 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'recruit':
       if (e.on) {
         sound.levelUp();
+        // (One who owed the player from an odd job: its own toast says it, once.)
+        if (sim.events.some((o) => o.type === 'oddjob' && o.what === 'owedJoin' && o.who === e.who)) break;
         banner.toast(t('toast.recruited', { name: inmateName(sim, e.who) }), 'good', 4500);
       } else banner.toast(t('toast.leftYou', { name: inmateName(sim, e.who) }), 'info');
       break;
