@@ -1262,6 +1262,50 @@ the game can already do.
   deals never ask for something the prison doesn't have.
 - **Lesson**: one job from the board (Center Perks).
 
+**Built** (what differs from the plan above, and why):
+- **The board**: `PrisonDef.board` (its own field, not inside `comms`: nothing in the phone's data changes, and the
+  other phases' edits to `comms()` can't collide with it). On the canteen's north wall in all five prisons, clear of
+  the stage and of the two rows a wall hides: Center Perks 49,7; Stalag Flucht 5,30; Shankton 38,14; San Pancho 17,32;
+  Irongate 29,28. Its checks live in `oddjobstest` (the kiosk's checks, done the same way), not in phonetest.
+  Drawn by `render/OddJobs.ts` (the decor kit's parts and the notice board's colours, not a `DECOR` kind: its cards
+  come down as their pins are taken, a tag hangs while a job is held).
+- **Taking a job**: standing on the board's tile opens its card (the kiosk's way, no action key); the job's own card
+  opens from its HUD chip or **B**. Board jobs can be taken at any hour outside a lockdown; the fixer's in his hours
+  (free time) from opinion 50, once a prison day.
+- **Kinds**: twelve. The plan's examples are all there (Lift it: a guard's whistle, or the head cook's mug from the
+  kitchen freezer instead of the warden's mug from an office: no prison has an office container; drop, frame, fix the
+  arm-wrestle / Cheat / checkers either way, rat mail, the cake, lookout), plus **delivery** (in person), **the tip-off**
+  (P34's anonymous call) and **the errand** (sugar from a merchant). A garden kind was dropped: a bed takes three days
+  to ripen, longer than a job's timer.
+- **Lookout**: the one who asked digs under his bed in the free times (`DOING.DIG`) while the player stays within 4
+  tiles of his cell door; 15 game minutes of digging in all. A guard within 6 tiles is "coming" (a toast, the chip
+  flashes); the whistle (B, the chip, or the card) hides the dig while he's near; one within 2 tiles who can see in
+  finds it (failed). A whistle with nobody coming costs 3 minutes of the dig.
+- **Frame-up**: the one who asked tips the guards off at 19:00 each day the stash is in place (the phone tip's
+  searcher); the morning shakedown finding it counts too. Planted in a guard's sight: failed and +35% heat.
+- **Drop**: seen as the parcel lands in the desk (`state.seen` that step): failed. A parcel (or stash) left in that
+  desk by an earlier job doesn't count: only one more than it held when the job was taken.
+- **Cake**: dealt only when a visiting day (Stalag Flucht: the Red Cross parcel's delivery day) falls inside the job's
+  days, so it can always be done; it comes at the next visit after it's taken (Lou's cake waits for the day after).
+- **Every job ends with the one who asked** (TALK.JOB_IN), as favours do: cash, and on some a rare item or a debt.
+  A debt: he joins the crew whatever he thinks of the player (the debt is paid), or hands over a tool (TALK.CALL_IN).
+- **The fixer's job**: one of his kinds (lift, drop, frame, tip), 1.5× the pay and a rare item always.
+- **Story chains**: three steps each (not four), from prison day 2, a step a prison day, on a fourth card beside the
+  pins; a short card as each is taken and handed in. Center Perks: Doc's watch; Stalag Flucht: Ferret's tunnel;
+  Shankton: the Preacher's collection (not the fixer's: Deacon is Shankton's fixer); San Pancho: Toro's birthday;
+  Irongate: Gull's message ashore. The cosmetic is earned through achievements: a story finished gives the copper
+  trim, five stories the saffron trim.
+- **Codes**: EXT.BOARD 24, EXT.WHISTLE 25; TALK.ODD_JOB 28, JOB_IN 29, CALL_IN 30; DOING.DIG 35; SALT.ODDJOBS 35,
+  FIXER_JOB 36, ODDJOB_PERK 37; TODAY.FIXER_JOB 524288, ODD_JOB 1048576. State: `oddjob`, `oddjobs` (appended,
+  optional on load). Items appended: parcel, stash, note, whistle, mug, birthday_cake, pocket_watch.
+- **Not changed for anyone until a job is taken**: the deals are pure (`roll()` with the prison's own key), and only
+  a lookout's digger walks where he wouldn't; every escape and multi-day bot snapshot is byte-identical.
+- **Achievements**: oddJobber (5 handed in), storyTime (copper trim), wholeStory (saffron trim), framedUp,
+  fixersFriend (3 of his), calledIn. Ledger: oddJobs, oddJobsFailed, fixerJobs, storySteps, stories, debtsCalled,
+  framed. A rumour (`boardJob`: who pinned a job today), bubbles for the digger and for a job handed in or failed.
+- **How to play**: the `oddjobs` page in the P37 shape, without its picture yet (`pic` off until
+  `public/help/oddjobs.webp` is taken in the browser pass).
+
 ### P41 The manhunt (v2.20)
 Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.
 - **When**: after the physical routes (fence, tunnel, roof, takeover, gate, raft, helicopter, stowaway, glider,

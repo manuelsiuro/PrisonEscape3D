@@ -94,6 +94,16 @@ export function deskOf(sim: Pick<SimContext, 'world' | 'state'>, who: number): n
 /** The kitchen freezer the head cook's mug is left in (-1 none). */
 export const freezerOf = (sim: Pick<SimContext, 'world'>) => containersOf(sim.world).findIndex((c) => !c.mine && c.prop.kind === 'freezer');
 
+/**
+ * The guards a whistle (or a keepsake) is lifted from: those without the shakedown duty (that one's
+ * pockets are full: P36's blank forms), all of them in a prison where every guard has it.
+ */
+export function liftGuards(sim: Pick<SimContext, 'world'>): number[] {
+  const defs = sim.world.def.guards;
+  const pool = defs.map((d, k) => (d.duties?.includes('shakedown') ? -1 : k)).filter((k) => k >= 0);
+  return pool.length ? pool : defs.map((_, k) => k);
+}
+
 /** A visit (or the Red Cross parcel's delivery day) between the day after `day` and the job's last day: a birthday cake can come in. */
 export function cakeComes(sim: Pick<SimContext, 'world' | 'prison' | 'state'>, day: number, days: number): boolean {
   const d = sim.world.def.rules?.relaxed ? undefined : sim.world.def.smuggling;
@@ -157,7 +167,8 @@ function shape(sim: SimContext, salt: number, day: number, n: number, kind: numb
     // (A whistle off a guard, or the cook's mug from the freezer: whichever the prison has, else by roll().)
     const both = s.guards.length > 0 && freezerOf(sim) >= 0;
     const variant = both ? rollInt(s.salt, salt, day, n + 2, 2) : s.guards.length > 0 ? LIFT.WHISTLE : LIFT.MUG;
-    return { variant, target: variant === LIFT.WHISTLE ? rollInt(s.salt, salt, day, n + 3, s.guards.length) : -1 };
+    const pool = liftGuards(sim);
+    return { variant, target: variant === LIFT.WHISTLE ? pool[rollInt(s.salt, salt, day, n + 3, pool.length)] : -1 };
   }
   if (kind === KIND.CAKE && !cakeComes(sim, day, KIND_DEFS.cake.days)) return null;
   const pool = targetsFor(sim, kind, giver);
@@ -244,7 +255,10 @@ export function chainDeal(sim: SimContext, day = prisonDay(sim.state.step)): Dea
   if (giver < 0) return null;
   let target = st.target ? inCell(s, st.target) : -1;
   if (st.kind === KIND.CHECKERS) target = elderOf(sim);
-  if (st.kind === KIND.LIFT && st.variant !== LIFT.MUG) target = s.guards.length ? rollInt(s.salt, SALT.ODDJOBS, day, 900 + k, s.guards.length) : -1;
+  if (st.kind === KIND.LIFT && st.variant !== LIFT.MUG) {
+    const pool = liftGuards(sim);
+    target = pool.length ? pool[rollInt(s.salt, SALT.ODDJOBS, day, 900 + k, pool.length)] : -1;
+  }
   if ((st.target && target < 0) || (st.kind === KIND.CAKE && !cakeComes(sim, day, KIND_DEFS.cake.days))) return null;
   return { kind: st.kind, variant: st.variant, giver, target, days: KIND_DEFS[KINDS[st.kind]].days, pay: st.pay, perk: st.perk, item: st.item ? itemNumber(st.item) : 0 };
 }
@@ -304,15 +318,23 @@ export function fixerJobRefusal(sim: SimContext, who: number): Refusal | null {
   return null;
 }
 
-/** Puts an item into a container (its first open slot past the hidden ones; full: the last), as a favor's thief gets it. */
-function plant(sim: SimContext, box: number, item: number) {
+/**
+ * Puts an item where a job says it's to be found: none there yet (one already is: that's it), into
+ * the first open slot past the hidden ones; full, the last slot (`over`: the freezer's restocked
+ * food) or nowhere (a guard's pockets: his key and baton stay).
+ */
+function plant(sim: SimContext, box: number, item: number, over: boolean) {
   const slots = sim.state.items.containers[box];
-  if (!slots) return;
+  if (!slots || slots.some((v) => itemOf(v) === item)) return;
   const hidden = box < containersOf(sim.world).length ? containersOf(sim.world)[box].hidden : 0;
   const k = slots.indexOf(0, hidden);
+  if (k < 0 && !over) return;
   slots[k >= 0 ? k : slots.length - 1] = slot(item);
   sim.state.items.rev++;
 }
+
+/** How many of an item a container holds. */
+const countIn = (sim: Pick<SimContext, 'state'>, box: number, item: number) => (box >= 0 ? sim.state.items.containers[box]?.filter((v) => itemOf(v) === item).length ?? 0 : 0);
 
 /** A deal taken on (the refusals already passed). */
 function take(sim: SimContext, d: Deal, from: number) {
@@ -328,9 +350,11 @@ function take(sim: SimContext, d: Deal, from: number) {
   // What's to be lifted is put where it's to be found.
   if (d.kind === KIND.LIFT) {
     const item = itemNumber(LIFTS[d.variant] ?? LIFTS[0]);
-    if (d.variant === LIFT.MUG) plant(sim, freezerOf(sim), item);
-    else if (d.target >= 0) plant(sim, pocketOf(sim.world, s.inmates.length + d.target), item);
+    if (d.variant === LIFT.MUG) plant(sim, freezerOf(sim), item, true);
+    else if (d.target >= 0) plant(sim, pocketOf(sim.world, s.inmates.length + d.target), item, false);
   }
+  // (A drop or a frame-up: what the desk holds of it already, left there by an earlier job; only one more counts.)
+  if (d.kind === KIND.DROP || d.kind === KIND.FRAME) s.oddjob[J.WARN] = countIn(sim, deskOf(sim, d.target), d.kind === KIND.DROP ? PARCEL : STASH);
   sim.events.push({ type: 'oddjob', what: 'taken', kind: d.kind, who: d.giver, from, n: d.days });
 }
 
@@ -583,9 +607,6 @@ function birthdayParcel(sim: SimContext, job: number[]) {
 
 // ------------------------------------------------------------------ each step
 
-/** Whether a container holds an item. */
-const holds = (sim: SimContext, box: number, item: number) => box >= 0 && !!sim.state.items.containers[box]?.some((v) => itemOf(v) === item);
-
 /** Each step: the job's time, and what's been done toward it (from the step's events and the state). */
 export function oddjobs(sim: SimContext) {
   const s = sim.state;
@@ -598,11 +619,11 @@ export function oddjobs(sim: SimContext) {
   switch (kind) {
     case KIND.DROP:
       // Into the desk: seen doing it, it's off.
-      if (holds(sim, deskOf(sim, target), PARCEL)) return s.seen ? fail(sim, 'seen') : done(sim, job);
+      if (countIn(sim, deskOf(sim, target), PARCEL) > job[J.WARN]) return s.seen ? fail(sim, 'seen') : done(sim, job);
       return;
     case KIND.FRAME: {
       const desk = deskOf(sim, target);
-      const planted = holds(sim, desk, STASH);
+      const planted = countIn(sim, desk, STASH) > job[J.WARN];
       if (planted && !job[J.PROG]) {
         if (s.seen) return fail(sim, 'caught');
         job[J.PROG] = 1;
