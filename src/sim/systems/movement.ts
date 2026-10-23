@@ -18,7 +18,7 @@ const tile = (u: number) => Math.floor(u / UNIT);
  * straight move is blocked on one side only (a door frame), the walker slides toward the
  * opening, so 1-tile doors are easy to hit with a thumb stick.
  */
-function slide(w: World, b: Body, d: number, alongX: boolean, assist: boolean, layer: number) {
+function slide(w: Pick<World, 'blocked'>, b: Body, d: number, alongX: boolean, assist: boolean, layer: number) {
   if (d === 0) return;
   const pos = alongX ? b.x : b.z;
   const side = alongX ? b.z : b.x;
@@ -47,7 +47,7 @@ function slide(w: World, b: Body, d: number, alongX: boolean, assist: boolean, l
 }
 
 /** Walks a body one step in a direction (0 = stand still), on the ground floor unless a layer is given. */
-export function walk(w: World, b: Body, dir: number, speed = WALK_SPEED, layer: number = LAYER.GROUND) {
+export function walk(w: Pick<World, 'blocked'>, b: Body, dir: number, speed = WALK_SPEED, layer: number = LAYER.GROUND) {
   b.moving = dir !== 0;
   if (!dir) return;
   b.facing = dir;

@@ -15,7 +15,8 @@ export const SIGHT_TOUCH = Math.round(UNIT * 0.9);
 export function sightBlocked(w: World, x: number, z: number): boolean {
   if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return true;
   const i = z * MAP_W + x;
-  if (w.parked[i]) return true;
+  // (P41: and outside, what hides from the eye: a hedge, a culvert, a tree.)
+  if (w.parked[i] || w.veil[i]) return true;
   const k = w.ground.kind[i];
   if (k === TILE.DOOR) return w.doorShut[i] === 1;
   return TILE_INFO[k].opaque;

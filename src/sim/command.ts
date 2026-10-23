@@ -79,6 +79,13 @@ export const EXT = {
   LINE: 19,
   /** The internet kiosk (P35): b = what's asked (content/kiosk.ts KIOSK: logging in and out, a letter, an order, a course), c its argument (the shop's item, an answer). */
   KIOSK: 20,
+  /**
+   * The manhunt (P41, its own simulation: sim/hunt/): a stone thrown to draw the searchers off (b
+   * and c = the ground tile it lands on, see tossArgs); a treat thrown to a dog (b = the dog,
+   * c = which: 0 jerky, 1 pepper, 2 sleepy jerky).
+   */
+  HUNT_THROW: 27,
+  HUNT_TREAT: 28,
 } as const;
 
 /** What EXT.LINE asks (P34): a place at the end of the queue, out of it, cut in at the front. Never renumber. */
