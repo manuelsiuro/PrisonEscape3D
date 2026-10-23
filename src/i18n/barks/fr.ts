@@ -310,6 +310,40 @@ export const frBarks: Barks = {
     'Allô ? Allô ? Maman, ça coupe…',
     { t: 'De mon temps, un appel coûtait dix sous. DIX SOUS.', v: ['oldTimer'] },
   ],
+  // P40 : il creuse sous son lit pendant que le joueur fait le guet (un petit boulot).
+  'in.dig': [
+    'Chut. Surveille le couloir, pas moi.',
+    'Encore un centimètre. Juste un.',
+    'Cuillère, cuillère, cuillère. Qui a besoin d’une pelle ?',
+    'Si on te demande, je cherche ma chaussette.',
+    'Siffle si tu vois un uniforme. Fort.',
+    'Encore de la terre dans mon lit. Ça vaut le coup.',
+    'Ouvre l’œil. Je suis sérieux.',
+  ],
+  're.jobPaid.in': [
+    'Boulot fait. Tiens, comme promis.',
+    'Propre et net. J’aime ça.',
+    'T’es doué. Repasse demain.',
+    'Un plaisir de faire affaire, {you}.',
+    'Pas un mot à personne, hein ?',
+    'Ça, c’est du sérieux.',
+  ],
+  're.jobFailed.in': [
+    'Tu m’as laissé tomber, {you}.',
+    'Je t’avais fait confiance.',
+    'La prochaine fois, je demande à un autre.',
+    'Super. Et maintenant, je fais quoi ?',
+    'T’approche plus de mon annonce.',
+    'Tu parles d’un coup de main.',
+  ],
+  're.jobTaken.in': [
+    'Discret et rapide.',
+    'Tu le tiens pas de moi.',
+    'Fais-le bien et y en aura d’autres.',
+    'Bon choix. File.',
+    'Pas de questions. C’est le deal.',
+    'Me fais pas regretter ça.',
+  ],
   'in.queue': [
     'Y en a qui ont une famille aussi, tu sais.',
     'Combien de temps on peut parler de la météo ?',
@@ -2199,6 +2233,11 @@ export const frBarks: Barks = {
     "Creuse sous un chou et aucun gardien ne regarde deux fois.",
     "Un carré planté cache un trou. Les gardiens ignorent les légumes.",
     "Un tunnel que personne ne voit ? Commence-le au potager.",
+  ],
+  "go.boardJob": [
+    "{inmate} a affiché un boulot sur le tableau aujourd’hui. Va voir.",
+    "Besoin de fric ? {inmate} a mis une carte au tableau.",
+    "{inmate} cherche quelqu’un. C’est sur le tableau en liège.",
   ],
   "go.phoneCall": [
     "{inmate} appelle sa mère vers {t1}. Et il parle fort.",

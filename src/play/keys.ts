@@ -17,6 +17,7 @@ import { kickKey } from './team';
 import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
+import { oddjobKey } from './oddjobs';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -105,6 +106,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // The kiosk (P35): in a course, 1–4 answer.
   if (kioskKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // B: the odd job's card (P40; on watch at a dig, the whistle).
+  if (oddjobKey(e.code)) {
     e.preventDefault();
     return;
   }

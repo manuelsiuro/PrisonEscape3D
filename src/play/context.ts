@@ -1,6 +1,7 @@
 import { QuizCard, StageCard } from '../ui/nights';
 import { PayphoneCard } from '../ui/payphone';
 import { KioskCard } from '../ui/kiosk';
+import { OddJobsCard, StoryCard } from '../ui/oddjobs';
 import * as THREE from 'three';
 import { setHaptics } from '../app/haptics';
 import { TIERS, tierFor } from '../app/quality';
@@ -144,6 +145,9 @@ export const quizCard = new QuizCard(sendOp, click);
 export const payphoneCard = new PayphoneCard(sendOp, click);
 /** The internet kiosk's card (P35). */
 export const kioskCard = new KioskCard(sendOp, click);
+/** The odd jobs board's card, and a story's short cards (P40). */
+export const oddjobsCard = new OddJobsCard(sendOp, click);
+export const storyCard = new StoryCard(click);
 /** The crew (P23): their panel, and the chips over their heads. */
 export const crewPanel = new CrewPanel(click);
 export const crewChips = new CrewChips();

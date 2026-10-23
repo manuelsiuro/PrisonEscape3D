@@ -42,6 +42,7 @@ import { dayTime, vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
 import { FEAST_ENERGY } from '../content/days';
 import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
+import { announceOddJob } from './oddjobs';
 
 /** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
@@ -780,6 +781,10 @@ export function announce(e: SimEvent, sim: Sim) {
     // The pay phone (P34): the queue, calls, Lou and his jobs, a secret overheard.
     case 'kiosk':
       announceKiosk(e);
+      break;
+    // The odd jobs board (P40): a job taken, done, handed in, failed; a story's cards.
+    case 'oddjob':
+      announceOddJob(sim, e);
       break;
     case 'phone':
       announcePhone(sim, e);

@@ -6,6 +6,7 @@
  * anything that needs the whole run (a clean record, a pacifist) can't be earned in it.
  */
 import { GOODWILL } from '../../content/nights';
+import { FROM, KIND } from '../../content/oddjobs';
 import { itemDef, itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
@@ -178,6 +179,14 @@ export const FEATS = [
   'formsFound',
   'released',
   'turnedAway',
+  // v2.19 (P40, the odd jobs board): odd jobs handed in and failed, the fixer's own, a story's steps told and stories told to their end, debts called in, rivals framed.
+  'oddJobs',
+  'oddJobsFailed',
+  'fixerJobs',
+  'storySteps',
+  'stories',
+  'debtsCalled',
+  'framed',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -386,6 +395,17 @@ export function ledger(sim: Sim, x: number, z: number) {
           f[FEAT.hidden]++;
           if (e.item && itemDef(e.item).contraband) f[FEAT.hiddenContraband]++;
         }
+        break;
+      case 'oddjob':
+        if (e.what === 'paid') {
+          f[FEAT.oddJobs]++;
+          if (e.from === FROM.FIXER) f[FEAT.fixerJobs]++;
+          if (e.kind === KIND.FRAME) f[FEAT.framed]++;
+        } else if (e.what === 'failed') f[FEAT.oddJobsFailed]++;
+        else if (e.what === 'chain') {
+          f[FEAT.storySteps]++;
+          if (!e.more) f[FEAT.stories]++;
+        } else if (e.what === 'calledIn') f[FEAT.debtsCalled]++;
         break;
       case 'paper':
         if (e.what === 'filed') f[FEAT.formsFiled]++;

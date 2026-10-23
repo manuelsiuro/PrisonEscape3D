@@ -6,6 +6,8 @@ import { talentOn, tonight, turnFrom } from '../sim/systems/talent';
 import { quizOn } from '../sim/systems/quiz';
 import { atPhone, phoneOpen, placeInLine } from '../sim/systems/phone';
 import { atKiosk, kioskOpen, loggedIn } from '../sim/systems/kiosk';
+import { jobOf } from '../sim/systems/oddjobs';
+import { J, KIND, STAGE } from '../content/oddjobs';
 import { CALLEE } from '../content/phone';
 import { itemDef, itemNumber } from '../content/items';
 import type { PrisonDef } from '../content/prisons/types';
@@ -100,6 +102,16 @@ const phoneFail = (c: LessonCtx): Key | null => (phoneOpen(c.sim) ? null : 'less
 /** The kiosk's lesson (P35): off once it shuts; logged out and walked off. */
 const kioskFail = (c: LessonCtx): Key | null => (kioskOpen(c.sim) ? null : 'lesson.kiosk.shut');
 const kioskLeft = (c: LessonCtx): Key | null => kioskFail(c) ?? (!loggedIn(c.sim.state) && !atKiosk(c.sim) ? 'lesson.kiosk.left' : null);
+/** The odd jobs board's lesson (P40): on the board's own tile; where the job held's giver or target stands. */
+const onBoard = (sim: Sim) => {
+  const b = sim.prison.board!;
+  return Math.floor(sim.state.player.x / UNIT) === b.x && Math.floor(sim.state.player.z / UNIT) === b.z;
+};
+function jobTile(sim: Sim, field: number): number | null {
+  const job = jobOf(sim.state);
+  const m = job ? sim.state.inmates[job[field]] : null;
+  return m ? Math.floor(m.body.z / UNIT) * MAP_W + Math.floor(m.body.x / UNIT) : null;
+}
 const n = (id: string) => itemNumber(id);
 /** The minute of day 1 as a step (the game starts at 08:00). */
 const at = (hour: number, minute = 0) => ((hour - 8) * 60 + minute) * STEPS_PER_MINUTE;
@@ -1036,6 +1048,36 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.kiosk.over', done: () => true, least: 8 },
     ],
   },
+  {
+    // The odd jobs board (P40): the board read, the Delivery taken (seed 94's middle pin), the parcel given, the job handed in.
+    id: 'oddjob',
+    icon: 'pin',
+    prison: CENTER_PERKS,
+    seed: 94,
+    setup: (sim) => {
+      clockTo(sim, at(10, 5));
+      sim.state.energy = 80;
+      const b = sim.prison.board!;
+      place(sim, b.x, b.z + 4, 13);
+    },
+    steps: [
+      { text: 'lesson.oddjob.board', done: (c) => onBoard(c.sim), goal: (sim) => tile(sim.prison.board!.x, sim.prison.board!.z) },
+      {
+        text: 'lesson.oddjob.take',
+        done: (c) => jobOf(c.sim.state)?.[J.KIND] === KIND.DELIVER,
+        failOn: (e) => (e.type === 'oddjob' && e.what === 'taken' && e.kind !== KIND.DELIVER ? 'lesson.oddjob.wrong' : null),
+      },
+      {
+        text: 'lesson.oddjob.give',
+        touch: 'lesson.oddjob.giveTouch',
+        done: (c) => jobOf(c.sim.state)?.[J.STAGE] === STAGE.DONE,
+        goal: (sim) => jobTile(sim, J.TARGET),
+        fail: (c) => (jobOf(c.sim.state) ? null : 'lesson.oddjob.lost'),
+      },
+      { text: 'lesson.oddjob.back', on: (e) => e.type === 'oddjob' && e.what === 'paid', goal: (sim) => jobTile(sim, J.GIVER), fail: (c) => (jobOf(c.sim.state) || c.sim.state.feats[FEAT.oddJobs] ? null : 'lesson.oddjob.lost') },
+      { text: 'lesson.oddjob.over', done: () => true, least: 8 },
+    ],
+  },
   // ---------------------------------------------------------------- Ways out
   {
     // The lockpick (P22): a keyed door opened without its key, pin by pin.
@@ -1443,7 +1485,7 @@ function inkOff(e: SimEvent): Key | null {
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin', 'kiosk'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release'] },
 ];
 
