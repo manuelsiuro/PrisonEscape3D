@@ -1,4 +1,4 @@
-# Prison Escape 3D
+# Prison Escape 3D [![The game's version](https://img.shields.io/github/package-json/v/manuelsiuro/PrisonEscape3D?label=&color=ff7714&style=flat)](https://github.com/manuelsiuro/PrisonEscape3D/tags)
 
 **Play the model prisoner. Plan the perfect escape.**
 
