@@ -1489,13 +1489,17 @@ The prisons dress up for the holidays of the real calendar, each with its own da
 - **Decor** (`render/Holidays.ts`, render only, planned from the map by `holidayDecor` and checked by
   holidaytest): garlands (lights at Christmas) along the canteen's north wall, broken round what hangs there
   (the menu board, the clock, posters, P40's odd jobs board), on the south wall where that leaves no run of two
-  tiles (Irongate); the tree never under a garland nor beside the odd jobs board; egg baskets (Easter) or jack-o'-lanterns (Halloween) on its tables;
+  tiles (Irongate), the Christmas lights on a drooping wire; the tree never under a garland nor under anything
+  hung on a wall (its column, a tile either side: the menu board, the odd jobs board); egg baskets (Easter) or jack-o'-lanterns (Halloween) on its tables;
   parasols, deckchairs, a barbecue and two hoses' sprays on the sports ground (summer); lanterns along the yard's walls (Halloween); a lit tree with presents in a canteen corner and a snowman
   in a Santa hat (a sandman in the desert) for Christmas; fireworks just above and ahead of the player at
   midnight (within 3 tiles across and 1–4 ahead, in view on a phone). Nothing stands on furniture, the prison's
-  own floor decor, a pastime's ground (pitch, track, hoop and court, garden, rat track, stage) or by a door
+  own floor decor, a pastime's ground (pitch, track, the court's whole painted half, garden, rat track, stage;
+  and, but for a hose against the wall, not within a tile of the track or the court) or by a door
   (the tree two tiles off); parasols keep 3 tiles apart, their deckchairs only where there's floor for them,
-  and a canopy fades over whoever stands under it (the camera looks down). The title's
+  and a canopy fades over whoever stands under it (the camera looks down); where the sports ground has no room
+  left by them (Center Perks'), the parasols stand in the yard beside it. Each hose sprays a short fan of three
+  jets 3 tiles out from its wall (`HOSE_REACH`), splashing where they land. The title's
   prison is dressed for the date. The Daily plays without a holiday; only its decor follows the date (the
   date's own, never a holiday picked in Settings). The inmates' holiday talk is the day's own only on the
   holiday's days (the snow and sand jokes any day of a Christmas run). The map
