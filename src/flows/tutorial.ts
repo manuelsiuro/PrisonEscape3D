@@ -7,6 +7,8 @@ import { showLessons } from '../ui/screens/lessons';
 import { click, view } from '../play/context';
 import { endGame, startGame } from '../play/session';
 import { newLessonRun } from '../play/lesson';
+import { lessonHunt } from '../play/hunt';
+import { play } from '../play/game';
 
 /**
  * The tutorial from the title (P8+): the list of lessons, then a lesson on the Training Block,
@@ -50,5 +52,7 @@ function runLesson(k: number): Promise<LessonResult | 'quit'> {
     // Guards' ways the lesson takes as known: as rumors heard (the talk panel names them).
     const rumors = (lesson.known ?? []).map(({ guard, kind }) => ({ fact: { kind, key: `trait:${guard}`, guard }, step: 0, by: -1 }));
     startGame(sim, false, run, rumors);
+    // (P41: a lesson in the manhunt goes straight outside.)
+    if (lesson.hunt && play.game) lessonHunt(play.game, lesson.hunt);
   });
 }

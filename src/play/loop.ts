@@ -20,6 +20,7 @@ import { checkRun } from '../game/trophies';
 import { markTip, updateFirstDay } from './tips';
 import { lessonEvent, lessonHidden, updateLesson } from './lesson';
 import { replayFrame } from './replay';
+import { huntFrame } from './hunt';
 
 const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
 const USE_OP: [number, number, number, number] = [OP.USE, 0, 0, 0];
@@ -147,6 +148,8 @@ export function frame(now: number) {
   }
   // (A replay, P25: played from its log, not from the controls.)
   if (g.replay) return replayFrame(g, dt, now);
+  // (The manhunt, P41: the outside, its own simulation.)
+  if (g.hunt) return huntFrame(g, dt, now);
   const sim = g.rec.sim;
   const p = sim.state.player;
   if (!g.paused) {

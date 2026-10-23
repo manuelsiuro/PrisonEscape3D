@@ -548,30 +548,7 @@ export class WorldView {
     // Trees in a ring outside the road: a seeded scatter, one draw call.
     let s = 12345;
     const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
-    // Leafy trees in the suburbs; in the Alps, tall dark pines with snow on their tiers; by
-    // the state highway, scrub: dusty olive bushes on thin stems; in the desert, saguaros.
-    const tree = theme === 'desert'
-      ? merge([
-          cyl(0.15, 1.5, 0x5f7f3d, 0, 0, 0, 8),
-          cyl(0.15, 0.08, 0x6d8d48, 0, 1.5, 0, 8),
-          cyl(0.09, 0.14, 0x5f7f3d, 0.18, 0.62, 0, 7),
-          cyl(0.1, 0.55, 0x5f7f3d, 0.3, 0.66, 0, 7),
-          cyl(0.09, 0.12, 0x5f7f3d, -0.17, 0.86, 0, 7),
-          cyl(0.09, 0.42, 0x5f7f3d, -0.28, 0.9, 0, 7),
-        ])
-      : theme === 'industrial'
-      ? merge([cyl(0.07, 0.35, 0x5e5243, 0, 0, 0, 5), cyl(0.42, 0.45, 0x6b6e4c, 0, 0.3, 0, 6), cyl(0.3, 0.35, 0x7a7d58, 0.12, 0.62, 0.05, 6)])
-      : alpine
-      ? merge([
-          cyl(0.1, 0.5, 0x5a3c24, 0, 0, 0, 6),
-          cone(0.62, 0.9, 0x24503a, 0, 0.4),
-          cone(0.5, 0.18, 0xf2f6fb, 0, 0.98),
-          cone(0.48, 0.8, 0x2b5c43, 0, 1.0),
-          cone(0.38, 0.16, 0xf2f6fb, 0, 1.52),
-          cone(0.34, 0.7, 0x316a4c, 0, 1.55),
-          cone(0.22, 0.32, 0xf7fafd, 0, 2.0),
-        ])
-      : merge([cyl(0.12, 0.7, 0x6b4a2f, 0, 0, 0, 6), cyl(0.55, 0.9, 0x3f7a3a, 0, 0.6, 0, 7), cyl(0.4, 0.7, 0x4c8c44, 0, 1.3, 0, 7), cyl(0.22, 0.5, 0x5a9c4f, 0, 1.85, 0, 6)]);
+    const tree = sceneryTree(theme);
     const spots: Array<[number, number, number]> = [];
     for (let k = 0; k < 1500 && spots.length < 280; k++) {
       const x = -24 + rand() * (MAP_W + 48);
@@ -640,4 +617,35 @@ export class WorldView {
   dispose() {
     disposeTree(this.group, (t) => this.ownMaps.has(t), new Set([kitMaterial]));
   }
+}
+
+/**
+ * A tree of the scenery (and P41's outside), by the prison's look: leafy trees in the suburbs; in
+ * the Alps, tall dark pines with snow on their tiers; by the state highway, scrub: dusty olive
+ * bushes on thin stems; in the desert, saguaros.
+ */
+export function sceneryTree(theme: string): THREE.BufferGeometry {
+  const alpine = theme === 'alpine';
+  return theme === 'desert'
+    ? merge([
+        cyl(0.15, 1.5, 0x5f7f3d, 0, 0, 0, 8),
+        cyl(0.15, 0.08, 0x6d8d48, 0, 1.5, 0, 8),
+        cyl(0.09, 0.14, 0x5f7f3d, 0.18, 0.62, 0, 7),
+        cyl(0.1, 0.55, 0x5f7f3d, 0.3, 0.66, 0, 7),
+        cyl(0.09, 0.12, 0x5f7f3d, -0.17, 0.86, 0, 7),
+        cyl(0.09, 0.42, 0x5f7f3d, -0.28, 0.9, 0, 7),
+      ])
+    : theme === 'industrial'
+    ? merge([cyl(0.07, 0.35, 0x5e5243, 0, 0, 0, 5), cyl(0.42, 0.45, 0x6b6e4c, 0, 0.3, 0, 6), cyl(0.3, 0.35, 0x7a7d58, 0.12, 0.62, 0.05, 6)])
+    : alpine
+    ? merge([
+        cyl(0.1, 0.5, 0x5a3c24, 0, 0, 0, 6),
+        cone(0.62, 0.9, 0x24503a, 0, 0.4),
+        cone(0.5, 0.18, 0xf2f6fb, 0, 0.98),
+        cone(0.48, 0.8, 0x2b5c43, 0, 1.0),
+        cone(0.38, 0.16, 0xf2f6fb, 0, 1.52),
+        cone(0.34, 0.7, 0x316a4c, 0, 1.55),
+        cone(0.22, 0.32, 0xf7fafd, 0, 2.0),
+      ])
+    : merge([cyl(0.12, 0.7, 0x6b4a2f, 0, 0, 0, 6), cyl(0.55, 0.9, 0x3f7a3a, 0, 0.6, 0, 7), cyl(0.4, 0.7, 0x4c8c44, 0, 1.3, 0, 7), cyl(0.22, 0.5, 0x5a9c4f, 0, 1.85, 0, 6)]);
 }

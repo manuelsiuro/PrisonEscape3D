@@ -43,6 +43,8 @@ import { baitSlot, newRat, petOf } from '../sim/systems/rats';
 import { CROP, GROWN, RACE_MINUTE } from '../content/long';
 import { atTrack, cardUp } from '../sim/systems/races';
 import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
+import type { StartKind } from '../content/outside/types';
+import { OVER, SEEK, type Hunt } from '../sim/hunt/Hunt';
 
 /**
  * The tutorial (P8+): short lessons on the Training Block, each a scene set up on a fresh game
@@ -50,10 +52,11 @@ import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
  * player's lessons and the bots in `tutorialtest`, which prove every lesson can be finished.
  */
 
-/** What a step looks at: the game, and the bits of the screen the sim doesn't know. */
+/** What a step looks at: the game, and the bits of the screen the sim doesn't know (P41: and the manhunt under way, if any). */
 export interface LessonCtx {
   sim: Sim;
   craftOpen: boolean;
+  hunt?: Hunt | null;
 }
 
 export interface LessonStep {
@@ -89,6 +92,12 @@ export interface Lesson {
   routine?: false;
   /** Guards whose ways the player knows from the start (as if heard in the yard: their talk panel says so). */
   known?: ReadonlyArray<{ guard: number; kind: 'corrupt' | 'strict' | 'lazy' }>;
+  /**
+   * P41: played outside, in the manhunt (the prison's own scene never shows): where the player
+   * starts, the searchers out (their places in the outside's list), the head start (seconds),
+   * the minute of the day, cousin Lou's car waiting. No roadblocks, no helicopter.
+   */
+  hunt?: { kind: StartKind; searchers: readonly number[]; headStart: number; minute: number; lou: boolean };
   /** Sets the scene on a fresh game (before its first step). */
   setup: (sim: Sim) => void;
   steps: LessonStep[];
@@ -1159,7 +1168,37 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.release.out', done: (c) => c.sim.state.escaped > 0, goal: () => tile(30, 62), fail: releaseShut },
     ],
   },
+  // P41: the manhunt, outside Center Perks: into the woods, a thicket while a searcher goes by, clothes off a line, Lou's car.
+  {
+    id: 'manhunt',
+    icon: 'run',
+    prison: CENTER_PERKS,
+    seed: 45,
+    hunt: { kind: 'wall', searchers: [3], headStart: 0, minute: 23 * 60 + 30, lou: true },
+    setup: () => {},
+    steps: [
+      { text: 'lesson.manhunt.run', done: (c) => !!c.hunt && huntWalked(c.hunt) >= 5, fail: huntCaught },
+      { text: 'lesson.manhunt.hide', done: (c) => !!c.hunt && c.hunt.state.hidden && searcherWithin(c.hunt, 7), fail: huntCaught },
+      { text: 'lesson.manhunt.clothes', done: (c) => c.hunt?.state.clothes === 2, fail: huntCaught },
+      { text: 'lesson.manhunt.lou', done: (c) => !!c.hunt && (c.hunt.state.over === OVER.LOU || c.hunt.state.over === OVER.SAFE), fail: huntCaught },
+    ],
+  },
 ];
+
+/** The manhunt's lesson (P41): tiles from where the player came over the wall. */
+function huntWalked(h: Hunt): number {
+  const a = h.tile;
+  return Math.max(Math.abs((a % MAP_W) - (h.start % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(h.start / MAP_W)));
+}
+/** A searcher out within this many tiles of the player. */
+function searcherWithin(h: Hunt, tiles: number): boolean {
+  const p = h.state.player;
+  return h.state.searchers.some((m) => m.mode !== SEEK.OFF && Math.hypot(m.body.x - p.x, m.body.z - p.z) <= tiles * UNIT);
+}
+/** Recaptured: the lesson is tried again. */
+function huntCaught(c: LessonCtx): Key | null {
+  return c.hunt?.state.over === OVER.CAUGHT ? 'lesson.manhunt.caught' : null;
+}
 
 /** The release desk's first tile (P36). */
 const releaseTile = (sim: Sim) => {
@@ -1444,7 +1483,7 @@ export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readon
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
   { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin', 'kiosk'] },
-  { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release'] },
+  { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'manhunt'] },
 ];
 
 /** Where a lesson (its index in LESSONS) stands: its chapter, its number in it (from 1) and how many the chapter has. */
