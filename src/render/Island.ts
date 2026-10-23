@@ -90,6 +90,9 @@ function foamTexture(): THREE.CanvasTexture {
   return t;
 }
 
+/** The shallows reach this many tiles past the map's edge (land within 3 of it, and the blur, carry on out). */
+const SHALLOW_PAST = 6;
+
 /** Sea level under the map's ground (y 0): the water shows where no floor is drawn. */
 const SEA_Y = -0.42;
 
@@ -152,12 +155,7 @@ export class Island {
             break;
           }
         }
-        if (!land && world.bridge[i] === 0) {
-          if (near) foam.push(x, z);
-          let d = 99;
-          for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dz)));
-          if (d <= 3) shallow.push(x, z);
-        }
+        if (!land && world.bridge[i] === 0 && near) foam.push(x, z);
       }
     }
     // Sea stacks and rocks off the island, beyond the map's edge too.
@@ -212,10 +210,21 @@ export class Island {
     rock.castShadow = rock.receiveShadow = true;
     this.group.add(rock);
     // Shallows over the rock shelf: a lighter, greener sea fading out from the shore (one soft texture, no tile steps).
+    // (Past the map's edge too, SHALLOW_PAST tiles: land within 3 tiles of the edge, the manhunt's town 2 in, had its
+    // shallows cut off square at the edge, a hard line down the sea: full review of v2.21.0.)
+    const M = SHALLOW_PAST;
+    for (let z = -M; z < MAP_H + M; z++) {
+      for (let x = -M; x < MAP_W + M; x++) {
+        if (!sea(x, z) || (world.inside(x, z) && world.bridge[z * MAP_W + x] !== 0)) continue;
+        let d = 99;
+        for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dz)));
+        if (d <= 3) shallow.push(x, z);
+      }
+    }
     const R = 4;
     const sc = document.createElement('canvas');
-    sc.width = MAP_W * R;
-    sc.height = MAP_H * R;
+    sc.width = (MAP_W + M * 2) * R;
+    sc.height = (MAP_H + M * 2) * R;
     const sx = sc.getContext('2d')!;
     for (let k = 0; k < shallow.length / 2; k++) {
       const x = shallow[k * 2];
@@ -223,7 +232,7 @@ export class Island {
       let d = 9;
       for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (!sea(x + dx, z + dz)) d = Math.min(d, Math.hypot(dx, dz));
       sx.fillStyle = `rgba(95,179,184,${Math.max(0, 0.55 - d * 0.17).toFixed(3)})`;
-      sx.fillRect(x * R, z * R, R, R);
+      sx.fillRect((x + M) * R, (z + M) * R, R, R);
     }
     // Blur it into a gradient.
     const soft = document.createElement('canvas');
@@ -234,7 +243,7 @@ export class Island {
     sf.drawImage(sc, 0, 0);
     const shallowTex = new THREE.CanvasTexture(soft);
     shallowTex.colorSpace = THREE.SRGBColorSpace;
-    const shallowMesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W, MAP_H).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shallowTex, transparent: true, depthWrite: false }));
+    const shallowMesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W + M * 2, MAP_H + M * 2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shallowTex, transparent: true, depthWrite: false }));
     shallowMesh.position.set(MAP_W / 2, SEA_Y + 0.02, MAP_H / 2);
     shallowMesh.renderOrder = 0.12;
     this.group.add(shallowMesh);

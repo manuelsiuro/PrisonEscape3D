@@ -1553,6 +1553,9 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
     them), and the woods past the world's edge are the HuntView's, clear of those and of the rivers. The next
     hunt's helicopter no longer eases in from where the last one was. A glow round each searcher after dark is
     drawn from `HuntFrame.searchers` (the play loop fills it).
+  - **Built (Irongate's sea seam, re-check):** the line down the sea was the Island view's shallows, a canvas the size
+    of the map: where land lies within 3 tiles of its edge (the manhunt's town 2 in, the prison's west shore 1 in) their
+    paler gradient stopped square at the edge. The shallows are now drawn 6 tiles past the edge.
 
 ### P42 Holidays (v2.21)
 The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.
