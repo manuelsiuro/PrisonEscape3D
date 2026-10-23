@@ -17,12 +17,14 @@ import { kickKey } from './team';
 import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
+import { paroleBusy, paroleKey } from './parole';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
   if (!play.game) return;
   // (P30: on the stage, at the quiz's table: the action button and E do nothing.)
-  if (nightsBusy(play.game.rec.sim.state)) return;
+  // (P39: nor before the parole board.)
+  if (nightsBusy(play.game.rec.sim.state) || paroleBusy(play.game.rec.sim.state)) return;
   play.game.pilot.stop();
   itemsUI.closeCraft();
   profile.close();
@@ -105,6 +107,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // The kiosk (P35): in a course, 1–4 answer.
   if (kioskKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // The parole board (P39): before it, 1–3 answer.
+  if (paroleKey(e.code)) {
     e.preventDefault();
     return;
   }

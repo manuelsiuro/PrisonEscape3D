@@ -208,6 +208,9 @@ export function resumes(bot: Bot, cuts: readonly number[]): string[] {
 
 export function describe(e: SimEvent): string {
   switch (e.type) {
+    // (P39: the parole board, only ever in a run that applied: the escape bots' logs as they were.)
+    case 'parole':
+      return e.what === 'question' || e.what === 'answer' || e.what === 'silent' ? '' : `parole: ${e.what}${e.why ? ` (${e.why})` : ''}${e.score !== undefined ? ` at ${e.score}` : ''}`;
     case 'lockdown':
       return e.on ? 'LOCKDOWN' : 'lockdown lifted';
     case 'spotted':

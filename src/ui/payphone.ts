@@ -18,7 +18,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 /** What can be called, as the dial lists it: `id` names its text, `b` and `c` what's sent. */
 export interface DialRow {
-  id: 'home' | 'appeal' | 'retainer' | 'diversion' | 'cake' | 'car' | 'tip';
+  id: 'home' | 'appeal' | 'retainer' | 'parole' | 'diversion' | 'cake' | 'car' | 'tip';
   b: number;
   c: number;
   price: string;
@@ -212,14 +212,14 @@ export class PayphoneCard {
     if (v.phase === 'queue' || v.closed) return '';
     // The dial: the main menu, or one caller's options.
     const row = (r: DialRow) => {
-      const label = t(`phone.${r.id === 'home' || r.id === 'tip' ? r.id : r.id === 'appeal' || r.id === 'retainer' ? r.id : `job.${r.id}`}` as never);
+      const label = t(`phone.${r.id === 'home' || r.id === 'tip' ? r.id : r.id === 'appeal' || r.id === 'retainer' || r.id === 'parole' ? r.id : `job.${r.id}`}` as never);
       return `<button class="phone-row" data-call="${r.b}" data-arg="${r.c}" ${r.why ? 'disabled' : ''}><span><b>${esc(label)}</b><small>${esc(r.why || r.note)}</small></span><em>${esc(r.price)}</em></button>`;
     };
     const rows = (ids: DialRow['id'][]) => v.rows.filter((r) => ids.includes(r.id)).map(row).join('');
     const back = `<button class="phone-back" data-menu="main">${icon('chevronLeft', 14)}<span>${esc(t('phone.back'))}</span></button>`;
     switch (this.pick.menu) {
       case 'lawyer':
-        return `${back}${rows(['appeal', 'retainer'])}`;
+        return `${back}${rows(['appeal', 'retainer', 'parole'])}`;
       case 'cousin': {
         const hour = `<div class="phone-pick"><button data-hour="-1" aria-label="${esc(t('phone.earlier'))}">${icon('chevronLeft', 14)}</button><span>${esc(t('phone.at', { hour: `${String(this.pick.hour).padStart(2, '0')}:00` }))}</span><button data-hour="1" aria-label="${esc(t('phone.later'))}">${icon('chevronRight', 14)}</button></div>`;
         return `${back}${hour}${rows(['diversion'])}${rows(['cake', 'car'])}`;
@@ -251,6 +251,7 @@ export const DIAL_B = {
   home: CALLEE.HOME * 16,
   appeal: CALLEE.LAWYER * 16 + LAWYER.APPEAL,
   retainer: CALLEE.LAWYER * 16 + LAWYER.RETAINER,
+  parole: CALLEE.LAWYER * 16 + LAWYER.PAROLE,
   diversion: CALLEE.COUSIN * 16 + JOB.DIVERSION,
   cake: CALLEE.COUSIN * 16 + JOB.CAKE,
   car: CALLEE.COUSIN * 16 + JOB.CAR,
