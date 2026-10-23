@@ -1,11 +1,12 @@
 import { buzz } from '../app/haptics';
+import { LAYER } from '../sim/world/World';
 import { DAY_BOOKS } from '../content/days';
 import { HOLIDAY_DAY, HOLIDAYS, TREATS, WET_SIGHT, type HolidayDay } from '../content/holidays';
 import type { PrisonDef } from '../content/prisons/types';
 import { runHoliday } from '../game/holidays';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { holidayDays, holidayOf, treatCheck } from '../sim/systems/holiday';
+import { fireworksOn, holidayDays, holidayOf, treatCheck } from '../sim/systems/holiday';
 import { HOLIDAY_TAKE, itemName } from '../ui/items';
 import type { PaRow } from '../ui/pa';
 import { inmateName } from '../ui/social';
@@ -136,4 +137,11 @@ export function announceHoliday(sim: Sim, e: Extract<SimEvent, { type: 'holiday'
       itemsUI.toast(t('holiday.toast.laugh', { name: inmateName(sim, e.who) }));
       break;
   }
+}
+
+/** After each step: New Year's fireworks crackling and booming while they last (not asleep, not in a tunnel). */
+export function holidayStep(sim: Sim) {
+  const st = sim.state;
+  if (!st.holiday || st.sleeping || st.step % 7 !== 0 || !fireworksOn(sim)) return;
+  if (Math.random() < 0.45) sound.bang(st.layer === LAYER.UNDER ? 0.12 : 0.25 + Math.random() * 0.45);
 }

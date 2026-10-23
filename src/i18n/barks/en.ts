@@ -2272,6 +2272,14 @@ export const enBarks = {
     "The {team}, top of the league. Right, what?",
   ],
   // ---------------------------------------------------------------- v2.21 (P42, holidays): each holiday's talk, a ghost story on costume night, Christmas in the snow and in the desert; soaked guards, festive guards; laughs at the costume, the water fight, the fireworks, the eggs.
+  'go.eggDesk': [
+    "{inmate}'s desk has a chocolate egg in it. Shh.",
+    "Egg hunt tip: try {inmate}'s desk.",
+    "{inmate} hasn't found the egg in their own desk yet.",
+    "Psst: an egg in {inmate}'s drawer. Go on.",
+    "Chocolate in {inmate}'s desk. The bunny's been.",
+    "Check {inmate}'s desk before {inmate} does.",
+  ],
   'in.hol.easter': [
     "Happy Easter! Seen any eggs? Asking for a friend.",
     "I found an egg in my sock. Not complaining.",

@@ -27,6 +27,9 @@ import { LAYER, MAP_W } from '../src/sim/world/World';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { RunRecorder, replayLog } from '../src/sim/runlog';
+import { HolidaysView, holidayDecor } from '../src/render/Holidays';
+import { TILE_INFO } from '../src/sim/world/tiles';
+import { facts } from '../src/talk/gossip';
 
 // ------------------------------------------------------------------ the date
 const EASTERS = ['2026-04-05', '2027-03-28', '2028-04-16', '2029-04-01', '2030-04-21', '2031-04-13', '2032-03-28', '2033-04-17', '2034-04-09', '2035-03-25'];
@@ -136,6 +139,11 @@ for (const p of PRISONS) {
   const again = game(HOLIDAY.EASTER);
   runTo(again, 2, 1);
   check(JSON.stringify(again.state.items) === JSON.stringify(sim.state.items), 'the same eggs in the same places for the same run');
+  // The rumour (P42's gossip): whose desk hides an egg, each one true.
+  const tips = facts(sim).filter((f) => f.kind === 'eggDesk');
+  const deskOf = (who: number) => list.findIndex((c) => c.table === 'inmateDesk' && sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] === sim.state.inmates[who].cell);
+  check(tips.length === EGG_DESKS && tips.every((f) => sim.state.items.containers[deskOf(f.inmate!)].some((v) => itemOf(v) === CHOC_EGG && usesOf(v) === 1)), `the inmates tell whose desk hides an egg (${tips.length} tips, every one true)`);
+  check(!facts(game(0)).some((f) => f.kind === 'eggDesk'), '(no egg hunt, no such tip)');
   // One taken from an inmate's desk (as the player would: the desk open, moved to the hotbar).
   const desk = list.findIndex((c, k) => c.table === 'inmateDesk' && sim.state.items.containers[k].some((v) => itemOf(v) === CHOC_EGG));
   const k = sim.state.items.containers[desk].findIndex((v) => itemOf(v) === CHOC_EGG);
@@ -279,6 +287,44 @@ for (const p of PRISONS) {
   delete st.state.laughed;
   old.restore(st);
   check(old.state.holiday === 0 && old.state.hol.join() === '0,0' && old.state.laughed.length === 0, 'a save from before holidays loads with none');
+}
+
+// ------------------------------------------------------------------ the decor (render only)
+{
+  const rows: string[] = [];
+  for (const p of PRISONS) {
+    const w = new Sim(p).world;
+    const view = new HolidaysView();
+    view.setWorld(w);
+    const counts: string[] = [];
+    for (let h = 1; h < HOLIDAYS.length; h++) {
+      const plan = holidayDecor(w, h);
+      // Every piece on open floor (a garland along the canteen's north wall, the rest standing on a floor tile: a table's top for those on one).
+      for (const d of plan) {
+        const tx = Math.floor(d.x);
+        const tz = Math.floor(d.z);
+        const kind = w.ground.kind[tz * MAP_W + tx];
+        const floor = !TILE_INFO[kind].solid;
+        const zone = w.zoneAt(tx, tz);
+        const where = d.what === 'garland' || d.what === 'tree' || d.y ? 'canteen' : 'yard';
+        check(floor && (zone === where || (where === 'yard' && zone === 'sports')), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${d.x},${d.z} stands on the ${where}'s floor (${zone}, ${floor ? 'floor' : 'solid'})`);
+        if (d.what === 'tree') check(!w.props.some((q) => tx >= q.x && tx < q.x + q.w && tz >= q.z && tz < q.z + q.d), `${p.id}: the tree stands clear of the furniture`);
+        if (d.what === 'garland') check(TILE_INFO[w.ground.kind[(tz - 1) * MAP_W + tx]].solid, `${p.id}: a garland hangs on a wall`);
+      }
+      const n = (what: string) => plan.filter((d) => d.what === what).length;
+      check(n('garland') > 0, `${p.id} ${HOLIDAYS[h]}: the canteen dressed`);
+      if (h === HOLIDAY.CHRISTMAS) check(n('tree') === 1 && n('snowman') === 1, `${p.id}: a Christmas tree and a snowman`);
+      if (h === HOLIDAY.SUMMER) check(n('parasol') === 3 && n('barbecue') === 1 && n('hose') === 2, `${p.id}: parasols, the barbecue, two hoses`);
+      view.dress(h);
+      check(view.group.children.length >= 3, `${p.id} ${HOLIDAYS[h]}: the decor built`);
+      counts.push(`${HOLIDAYS[h]} ${[...new Set(plan.map((d) => d.what))].map((k) => `${k} ${n(k)}`).join(' ')}`);
+    }
+    view.dress(0);
+    check(view.group.children.length === 2, `${p.id}: no holiday, no decor (only the sprays' and the sparks' empty meshes)`);
+    view.dispose();
+    rows.push(`  ${p.id}: ${counts.join('; ')}`);
+  }
+  console.log(`the decor:\n${rows.join('\n')}`);
 }
 
 // (The escape bots under each holiday: holidaybotstest.ts, run beside this one.)

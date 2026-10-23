@@ -56,11 +56,13 @@ export const holidayFeast = (sim: HolidaySim) => !!sim.state.holiday && holidayD
 /** The fireworks are going off (New Year's Eve, 00:00–00:10): every noise is drowned. */
 export const fireworksOn = (sim: HolidaySim) => holidayNow(sim, 'newYearsEve');
 
-/** A guard soaked by the water fight: out in the yard while it's on. Sees no further than WET_SIGHT. */
+/** A guard soaked by the water fight: out in the yard (or on the sports ground) while it's on. Sees no further than WET_SIGHT. */
 export function soaked(sim: SimContext, g: Guard): boolean {
   if (!sim.state.holiday || !holidayNow(sim, 'waterFight')) return false;
-  return sim.world.zoneAt(Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT)) === 'yard';
+  return WATER_ZONES.includes(sim.world.zoneAt(Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT)));
 }
+/** Where the water fight's hoses reach: the yard and the sports ground. */
+const WATER_ZONES: readonly string[] = ['yard', 'sports'];
 export { WET_SIGHT };
 
 /** Each step: the holiday's day starts and ends on the minute; eggs found; the costume's laughs. */
@@ -82,7 +84,7 @@ export function holidays(sim: SimContext) {
   }
   if (s.holiday === HOLIDAY.EASTER) eggsFound(sim);
   if (s.holiday === HOLIDAY.HALLOWEEN && s.step % 10 === 0) laughs(sim);
-  if (s.holiday === HOLIDAY.SUMMER && holidayNow(sim, 'waterFight') && !sim.away && s.layer === LAYER.GROUND && sim.playerZone === 'yard' && !(s.eventFlags & HOLIDAY_TODAY.SPLASHED)) {
+  if (s.holiday === HOLIDAY.SUMMER && holidayNow(sim, 'waterFight') && !sim.away && s.layer === LAYER.GROUND && WATER_ZONES.includes(sim.playerZone) && !(s.eventFlags & HOLIDAY_TODAY.SPLASHED)) {
     s.eventFlags |= HOLIDAY_TODAY.SPLASHED;
     sim.events.push({ type: 'holiday', what: 'splash', day: 'waterFight' });
   }

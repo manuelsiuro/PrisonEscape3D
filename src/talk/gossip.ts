@@ -12,7 +12,8 @@ import { ROUTINE } from '../content/routine';
 import type { ZoneId } from '../content/zones';
 import type { Sim } from '../sim/Sim';
 import { FAVOR_STATE, HOLDER, jobRooms } from '../sim/systems/economy';
-import { itemOf } from '../sim/systems/items';
+import { itemOf, usesOf } from '../sim/systems/items';
+import { holidayNow } from '../sim/systems/holiday';
 import { generatorsOf } from '../sim/systems/power';
 import { traitOf } from '../sim/systems/guards';
 import { RECORDS_HEAT, RECORDS_MINUTE } from '../content/paperwork';
@@ -32,6 +33,8 @@ import { grateAt, underSea } from '../sim/systems/structure';
 import { BED_CHECK_MINUTES, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TAKEOVER_SHARE, TOILET_LOADS, UNBRACED_RUN, DOG_DAY_FROM, DOG_DAY_TO, DOG_NIGHT_FROM, DOG_NIGHT_TO } from '../sim/tuning';
 
 const PILLS = itemNumber('sleeping_pills');
+/** P42: the egg hunt's eggs (still hidden: their uses bit). */
+const CHOC_EGG = itemNumber('choc_egg');
 const DOG_FACTS: ReadonlySet<string> = new Set(['dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratDogs']);
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
@@ -45,7 +48,7 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'eggDesk'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
@@ -249,6 +252,13 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
     });
   const cut = plan.outages.find((o) => o > m);
   if (cut !== undefined && !sim.prison.rules?.relaxed) out.push({ kind: 'stormCut', key: `stormCut:${plan.day}:${cut}`, t1: (cut + ROUTINE[0].start) % 1440 });
+  // The egg hunt (P42): whose desk still hides an egg (the inmates know their neighbours' drawers).
+  if (holidayNow(sim, 'eggHunt'))
+    containersOf(sim.world).forEach((c, k) => {
+      if (c.table !== 'inmateDesk' || !s.items.containers[k].some((v) => itemOf(v) === CHOC_EGG && usesOf(v) === 1)) return;
+      const who = s.inmates.findIndex((im) => im.cell === sim.world.cellOf[c.prop.z * MAP_W + c.prop.x]);
+      if (who >= 0 && who !== speaker) out.push({ kind: 'eggDesk', key: `eggDesk:${plan.day}:${who}`, inmate: who });
+    });
   // The dogs (P19): whose desk the day's sleeping pills are in, while they're still there.
   const desk = pillsDesk(sim);
   if (desk >= 0 && s.items.containers[desk].some((v) => itemOf(v) === PILLS)) {
@@ -349,6 +359,7 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   guardTeam: ['guard'],
   releaseForms: ['guard'],
   recordsCheck: ['t1', 'n'],
+  eggDesk: ['inmate'],
 };
 
 /** Where a lazy guard naps (its night round's nap stop), if it has one. */

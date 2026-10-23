@@ -15,6 +15,7 @@ import { updateGuide } from './guide';
 import { keepPlayerClear, updateOverlay } from './overlay';
 import { autosave, escaped } from './session';
 import { dayEvent, dayFrame, dayStep } from './day';
+import { holidayStep } from './holidays';
 import { raceStep } from './long';
 import { checkRun } from '../game/trophies';
 import { markTip, updateFirstDay } from './tips';
@@ -127,6 +128,8 @@ function stepSim(g: Game, dt: number) {
     tickTock(sim, speed);
     // The warden's clock (P17): warnings, the forecast, a quip, on the minute; race night's card going up (2.16).
     dayStep(sim);
+    // (P42: New Year's fireworks crackling while they last.)
+    holidayStep(sim);
     raceStep(sim);
   }
   if (play.acc > 1) play.acc = 0;
