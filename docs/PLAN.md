@@ -687,6 +687,7 @@ real touch feel) and the known limits.
     - pictures: the subject hidden by the player (the phone, the kiosk), too small (cards, checkers, the tattoo gun) or off the phone strip (hoops, the quiz, the talent stage, the gym); the rat race too dark.
   - **Found in the browser while building:** the see-also badges stretched to the button's width (since v2.13.0).
   - **Accepted:** the day's topic has no picture (an empty roll call said nothing about events or weather: its icons do); the walls' see-through cut shows round the player in some pictures, as in the game.
+- **Title tiles (v2.14.1)**, the user's polish request (2026-10-23): Trophies, How to play and Settings had their icons and names at different heights (Trophies' "0/119" line pushed its own up) and a wash from the left that looked lopsided on narrow tiles. Now the three are laid out from the top (icon and name level in each), the tone glows down from the icon, and the count is a gold badge on the trophy (red when some are new, replacing the dot) with a gold bar along the tile's foot; screen readers hear "0 of 119 achievements earned". A name too long for one line ("Comment jouer" at 360 px, cut before) takes two and the row grows with it.
 
 ## 9. Free time (P27–P30)
 
