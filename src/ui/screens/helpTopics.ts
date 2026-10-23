@@ -5,12 +5,11 @@
  * points on to. Its words are i18n keys, help.<id>.*:
  * - `.t` the title, `.hook` the tile's line, `.sum` the summary, in bold, at the top;
  * - `.steps` numbered (one a line; `.sh` names the list, else "How it works"), `.list` bulleted
- *   (`.lh` names it);
+ *   (`.lh` names it), and a second, `.list2` (`.lh2`), for a topic in two parts;
  * - `.nums` the key numbers as chips ("value|what", one a line);
  * - `.tip`, `.warn` call-outs (a line each item);
  * - `.more` the fine print, folded (one fact a line);
  * - a diagram's own lines: `.meter`, `.tl` (a timeline), `.bars` ("n|what").
- * A topic still in the old shape (one paragraph, help.<id>) shows that paragraph.
  * A prison's own rules name it, and show once it's open (no spoilers of the campaign ahead).
  */
 export type HelpTab = 'basics' | 'life' | 'escape' | 'controls';
@@ -31,9 +30,10 @@ export interface HelpTopic {
   lessons?: readonly string[];
   /** Topics it leads on to (ids). */
   see?: readonly string[];
-  /** An icon for each line of `.steps` / `.list`: an item ('item:<id>') or a UI icon. */
+  /** An icon for each line of `.steps` / `.list` / `.list2`: an item ('item:<id>'), a colour ('dot:#rrggbb') or a UI icon. */
   stepIcons?: readonly string[];
   listIcons?: readonly string[];
+  list2Icons?: readonly string[];
 }
 
 export interface HelpGroup {
@@ -73,36 +73,58 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
   life: [
     {
       id: 'guards',
-      topics: [T('guards', 'eye', '#1e3a5f', { lessons: ['guards'] }), T('guardWays', 'shield', '#5b6fa8', { lessons: ['guards'] }), T('caught', 'siren', '#e5484d'), T('searches', 'bell', '#d9930a', { lessons: ['stash'] })],
+      topics: [
+        T('guards', 'eye', '#1e3a5f', { pic: true, lessons: ['guards'], listIcons: ['dot:#f5c542', 'dot:#ff8c2a', 'dot:#e5484d'], see: ['guardWays', 'caught'] }),
+        T('guardWays', 'shield', '#5b6fa8', { lessons: ['guards'], listIcons: ['book', 'moon', 'eye', 'coin'] }),
+        T('caught', 'siren', '#e5484d', { listIcons: ['hammer'], see: ['heat'] }),
+        T('searches', 'bell', '#d9930a', { recipes: ['bed_dummy'], lessons: ['stash'], listIcons: ['sun', 'moon'], see: ['items'] }),
+      ],
     },
     {
       id: 'people',
-      topics: [T('inmates', 'chat', '#3fb07a', { lessons: ['talk', 'trade'] }), T('crew', 'users', '#ffa94d', { lessons: ['crew'] }), T('chatter', 'ear', '#d9a21b'), T('fight', 'fist', '#c0392b', { lessons: ['fight'] })],
+      topics: [
+        T('inmates', 'chat', '#3fb07a', { pic: true, lessons: ['talk', 'trade'], listIcons: ['coin', 'users', 'fist'], see: ['crew', 'games'] }),
+        T('crew', 'users', '#ffa94d', { pic: true, lessons: ['crew'], listIcons: ['eye', 'pick', 'fist', 'drone'] }),
+        T('chatter', 'ear', '#d9a21b', { listIcons: ['chat', 'star'] }),
+        T('fight', 'fist', '#c0392b', { pic: true, lessons: ['fight'] }),
+      ],
     },
     {
       id: 'days',
-      topics: [T('day', 'calendar', '#d9930a', { lessons: ['day'] }), T('work', 'coin', '#c99a12', { lessons: ['job'] }), T('train', 'dumbbell', '#8e4fc4', { lessons: ['gym', 'laps'] }), T('grounds', 'run', '#b0553f', { lessons: ['laps', 'gardener'] })],
+      topics: [
+        T('day', 'calendar', '#d9930a', { lessons: ['day'], listIcons: ['eye', 'bell', 'star'], list2Icons: ['fog', 'rain', 'storm', 'heat'] }),
+        T('work', 'coin', '#c99a12', { pic: true, lessons: ['job', 'gardener'], listIcons: ['cart', 'gift'] }),
+        T('train', 'dumbbell', '#8e4fc4', { pic: true, lessons: ['gym', 'laps'], listIcons: ['dumbbell', 'run', 'book'], see: ['grounds'] }),
+        T('grounds', 'run', '#b0553f', { pic: true, lessons: ['laps', 'gardener'], see: ['garden', 'hoops', 'football'] }),
+      ],
     },
     {
       id: 'games',
       topics: [
-        T('games', 'dice', '#7ed957', { lessons: ['games'] }),
-        T('cheat', 'cards', '#2e8a5e', { lessons: ['cards'] }),
-        T('hoops', 'ball', '#e8742c', { lessons: ['hoops'] }),
-        T('checkers', 'checkers', '#8a5a2e', { lessons: ['checkers'] }),
-        T('football', 'ball', '#2f9e5a', { lessons: ['football'] }),
-        T('race', 'race', '#b0602e', { lessons: ['ratRace'] }),
-        T('talent', 'music', '#ff6fb5', { lessons: ['talent'] }),
-        T('quiz', 'brain', '#5fb3ff', { lessons: ['quiz'] }),
+        T('games', 'dice', '#7ed957', { pic: true, lessons: ['games'] }),
+        T('cheat', 'cards', '#2e8a5e', { pic: true, lessons: ['cards'] }),
+        T('hoops', 'ball', '#e8742c', { pic: true, lessons: ['hoops'] }),
+        T('checkers', 'checkers', '#8a5a2e', { pic: true, lessons: ['checkers'] }),
+        T('football', 'ball', '#2f9e5a', { pic: true, lessons: ['football'] }),
+        T('race', 'race', '#b0602e', { pic: true, diagram: 'timeline', recipes: ['rat_track'], lessons: ['ratRace'], see: ['rat'] }),
+        T('talent', 'music', '#ff6fb5', { pic: true, diagram: 'timeline', recipes: ['guitar'], lessons: ['talent'] }),
+        T('quiz', 'brain', '#5fb3ff', { pic: true, lessons: ['quiz'] }),
       ],
     },
     {
       id: 'pastimes',
-      topics: [T('pruno', 'brew', '#c98a2e', { lessons: ['pruno'] }), T('garden', 'sprout', '#4f9a3a', { lessons: ['garden'] }), T('tattoo', 'needle', '#3a3f5a', { lessons: ['tattoo'] })],
+      topics: [
+        T('pruno', 'brew', '#c98a2e', { recipes: ['pruno_bag'], lessons: ['pruno'], listIcons: ['coin', 'gift', 'brew'], see: ['garden'] }),
+        T('garden', 'sprout', '#4f9a3a', { pic: true, lessons: ['garden'], listIcons: ['rain', 'sun'], see: ['pruno'] }),
+        T('tattoo', 'needle', '#3a3f5a', { pic: true, recipes: ['tattoo_gun'], lessons: ['tattoo'] }),
+      ],
     },
     {
       id: 'outside',
-      topics: [T('payphone', 'phone', '#2f9e8f', { lessons: ['payphone', 'cousin'] }), T('kiosk', 'monitor', '#3a7bd5', { lessons: ['kiosk'] })],
+      topics: [
+        T('payphone', 'phone', '#2f9e8f', { pic: true, lessons: ['payphone', 'cousin'], listIcons: ['home', 'briefcase', 'megaphone', 'person'] }),
+        T('kiosk', 'monitor', '#3a7bd5', { pic: true, recipes: ['hollow_book'], lessons: ['kiosk'], listIcons: ['letter', 'cart', 'news', 'brain'] }),
+      ],
     },
   ],
   escape: [

@@ -1,4 +1,4 @@
-54 topics in 14 groups: 29 laid out as pages (2469 words before the fine print), 25 still a paragraph (3159 words); 17 pictures
+54 topics in 14 groups: 54 laid out as pages (5170 words before the fine print), 0 still a paragraph (0 words); 36 pictures
 every part in French with as many lines; every item, recipe, icon, lesson, prison and picture there
   goal        78 words on the page,  45 folded; 4 steps, 1 chips, 1 lessons
   routine     40 words on the page,   0 folded; 2 steps, 0 chips, schedule, 1 lessons
@@ -9,6 +9,31 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   trophies    77 words on the page,  18 folded; 0 steps, 0 chips, medals
   daily       74 words on the page,  52 folded; 0 steps, 0 chips
   replay      91 words on the page,  35 folded; 0 steps, 4 chips
+  guards      32 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
+  guardWays  148 words on the page,  41 folded; 0 steps, 3 chips, 1 lessons
+  caught      32 words on the page,   0 folded; 0 steps, 2 chips
+  searches    48 words on the page,   0 folded; 0 steps, 0 chips, 1 recipes, 1 lessons
+  inmates     32 words on the page,   0 folded; 0 steps, 0 chips, 2 lessons
+  crew       176 words on the page, 121 folded; 3 steps, 2 chips, 1 lessons
+  chatter     47 words on the page,   0 folded; 0 steps, 0 chips
+  fight       40 words on the page,   0 folded; 3 steps, 0 chips, 1 lessons
+  day        107 words on the page,   9 folded; 0 steps, 0 chips, 1 lessons
+  work        26 words on the page,   0 folded; 0 steps, 0 chips, 2 lessons
+  train       30 words on the page,   0 folded; 0 steps, 0 chips, 2 lessons
+  grounds    130 words on the page,  59 folded; 0 steps, 0 chips, 2 lessons
+  games      148 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
+  cheat      136 words on the page,  50 folded; 4 steps, 0 chips, 1 lessons
+  hoops      149 words on the page,  11 folded; 2 steps, 1 chips, 1 lessons
+  checkers   112 words on the page,  10 folded; 0 steps, 0 chips, 1 lessons
+  football   155 words on the page,  27 folded; 3 steps, 2 chips, 1 lessons
+  race       128 words on the page,   0 folded; 2 steps, 0 chips, timeline, 1 recipes, 1 lessons
+  talent     106 words on the page,  77 folded; 3 steps, 3 chips, timeline, 1 recipes, 1 lessons
+  quiz       120 words on the page,  13 folded; 3 steps, 2 chips, 1 lessons
+  pruno      143 words on the page,   0 folded; 3 steps, 0 chips, 1 recipes, 1 lessons
+  garden     110 words on the page,   0 folded; 3 steps, 0 chips, 1 lessons
+  tattoo     135 words on the page,  19 folded; 3 steps, 0 chips, 1 recipes, 1 lessons
+  payphone   235 words on the page,  49 folded; 0 steps, 0 chips, 2 lessons
+  kiosk      176 words on the page,  59 folded; 0 steps, 0 chips, 1 recipes, 1 lessons
   tools       34 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
   lockpick    97 words on the page,  13 folded; 4 steps, 0 chips, pins, 1 recipes, 1 lessons
   noise       61 words on the page,  11 folded; 0 steps, 0 chips, bars, 1 lessons
