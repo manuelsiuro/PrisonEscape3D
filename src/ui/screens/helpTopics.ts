@@ -92,7 +92,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'days',
       topics: [
-        T('day', 'calendar', '#d9930a', { lessons: ['day'], listIcons: ['eye', 'bell', 'star'], list2Icons: ['fog', 'rain', 'storm', 'heat'] }),
+        T('day', 'calendar', '#d9930a', { lessons: ['day'], listIcons: ['eye', 'bell', 'star'], list2Icons: ['fog', 'rain', 'storm', 'heat'], see: ['holidays'] }),
         T('work', 'coin', '#c99a12', { pic: true, lessons: ['job', 'gardener'], listIcons: ['cart', 'gift'] }),
         T('train', 'dumbbell', '#8e4fc4', { pic: true, lessons: ['gym', 'laps'], listIcons: ['dumbbell', 'run', 'book'], see: ['grounds'] }),
         T('grounds', 'run', '#b0553f', { pic: true, lessons: ['laps', 'gardener'], see: ['garden', 'hoops', 'football'] }),
