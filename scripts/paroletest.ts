@@ -28,12 +28,15 @@ import { MEDAL_DAYS } from '../src/content/medals';
 import { dailyOf } from '../src/content/daily';
 import { command, EXT, OP, SLOT } from '../src/sim/command';
 import { ESCAPES, Sim, type SimEvent } from '../src/sim/Sim';
-import { loadState } from '../src/sim/state';
+import { loadState, WAKE } from '../src/sim/state';
 import { DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
 import { slot } from '../src/sim/systems/items';
-import { DAY, FEAT } from '../src/sim/systems/ledger';
-import { answerWorth, applyRefusal, claimTrue, linePoints, OUTCOME, P, PAROLE, recordCounts, recordScore, topicsOf, WALKED_OUT, ANSWERED } from '../src/sim/systems/parole';
-import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
+import { DAY, FEAT, ledger } from '../src/sim/systems/ledger';
+import { drillOn, TODAY } from '../src/sim/systems/calendar';
+import { DAY_EVENTS } from '../src/content/days';
+import { ACHIEVEMENTS } from '../src/content/achievements';
+import { answerWorth, applyRefusal, claimTrue, linePoints, OUTCOME, P, PAROLE, parole as paroleStep, recordCounts, recordScore, SCORE_MAX, SCORE_MIN, topicsOf, WALKED_OUT, ANSWERED, weighed } from '../src/sim/systems/parole';
+import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../src/sim/tuning';
 import { MAP_H, MAP_W, type World } from '../src/sim/world/World';
 import { check } from './assert';
 import { Bot, tileOf } from './bots';
@@ -95,7 +98,11 @@ function game(prison = CENTER_PERKS, seed = 5, mods: string[] = []) {
     while (sim.state.step < target && !sim.state.escaped) step();
   };
   const r = prison.comms!.release;
-  const toDesk = () => put(sim.state.player, r.at[0].x, r.at[0].z);
+  // (Carried there: up off the hearing's seat first.)
+  const toDesk = () => {
+    sim.state.seat = -1;
+    put(sim.state.player, r.at[0].x, r.at[0].z);
+  };
   const h = HEARINGS[prison.id];
   const toRoom = () => put(sim.state.player, h.seat.x, h.seat.z);
   const setCalm = (on: boolean) => (calm = on);
@@ -219,9 +226,9 @@ function game(prison = CENTER_PERKS, seed = 5, mods: string[] = []) {
   s.feats[FEAT.wages] += 2;
   s.feats[FEAT.solitary] += 1;
   s.feats[FEAT.missed] += 3;
-  s.days[3] |= DAY.FIGHT;
+  s.days[3] |= DAY.FIGHT | DAY.STARTED;
   // (A fight before the day of applying stays off it.)
-  s.days[1] |= DAY.FIGHT;
+  s.days[1] |= DAY.FIGHT | DAY.STARTED;
   const counts = recordCounts(s);
   const k = (id: string) => RECORD.findIndex((r) => r.id === id);
   check(counts[k('work')] === 2 && counts[k('solitary')] === 1 && counts[k('missed')] === 3 && counts[k('fights')] === 1, `the record follows the ledger from the day of applying (${counts.join(',')})`);
@@ -264,6 +271,8 @@ function applied(prison = CENTER_PERKS) {
   g.toRoom();
   g.step();
   check(!!s.hearing && news(seen, 'sat').length === 1, 'in the room: sat before the board');
+  const seat = sim.world.props[s.seat];
+  check(!!seat && seat.x <= HEARINGS[CENTER_PERKS.id].seat.x && HEARINGS[CENTER_PERKS.id].seat.x < seat.x + seat.w && s.player.facing === 13, 'on the seat across from the board, facing it');
   for (let k = 0; k < 200 && s.hearing!.q < 0; k++) g.step();
   check(s.hearing!.q === 0 && news(seen, 'question').length === 1, 'the first question put');
   // A clean, empty record (the routine wasn't kept here): every claim on a line against is true, on a line for a lie.
@@ -336,7 +345,7 @@ function applied(prison = CENTER_PERKS) {
   const { sim, seen } = g;
   const s = sim.state;
   s.feats[FEAT.solitary] += 2;
-  s.feats[FEAT.koInmates] += 1;
+  s.feats[FEAT.kosDealt] += 1;
   g.to(10, 10, 0);
   g.toRoom();
   g.step();
@@ -370,10 +379,10 @@ function applied(prison = CENTER_PERKS) {
   const s = g.sim.state;
   s.feats[FEAT.solitary] += 1;
   s.feats[FEAT.missed] += 1;
-  s.feats[FEAT.koGuards] += 1;
+  s.feats[FEAT.kosDealt] += 1;
   s.feats[FEAT.contrabandFound] += 1;
   s.feats[FEAT.eveningHeat] += 30;
-  s.days[4] |= DAY.FIGHT;
+  s.days[4] |= DAY.FIGHT | DAY.STARTED;
   g.to(10, 10, 0);
   g.toRoom();
   g.step();
@@ -474,6 +483,271 @@ function applied(prison = CENTER_PERKS) {
   const b = new Sim(CENTER_PERKS, 5);
   b.state = loadState(b.world, CENTER_PERKS, bad);
   check(b.state.parole.join() === '0,0,0,0,0,0,-1,-1,0,0' && b.state.hearing === null, 'damaged numbers load as none');
+}
+
+// ------------------------------------------------------------------ the rules review (P39)
+/** Through the hearing: each question answered by `pick` (its place, its topic) `late` steps after it's put. */
+function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) => number, late = 0) {
+  const s = g.sim.state;
+  for (let k = 0; k < 20000 && s.hearing; k++) {
+    const o = s.hearing;
+    g.step(o.q >= 0 && !o.until && s.step - o.at >= late ? answer(pick(o.q, o.topics[o.q])) : 0);
+  }
+}
+{
+  // A denial below zero: kept by a save and by a snapshot (replays seek through restore()).
+  const g = applied();
+  const s = g.sim.state;
+  s.feats[FEAT.solitary] += 2;
+  s.feats[FEAT.kosDealt] += 1;
+  g.to(10, 10, 0);
+  g.toRoom();
+  g.step();
+  hearAll(g, () => ANSWER.OWN);
+  check(s.parole[P.OUTCOME] === OUTCOME.DENIED && s.parole[P.SCORE] < 0 && s.parole[P.SCORE] >= SCORE_MIN, `a denial at ${s.parole[P.SCORE]} (the lowest a score can be ${SCORE_MIN}, the highest ${SCORE_MAX})`);
+  const back = new Sim(CENTER_PERKS, 5);
+  back.state = loadState(back.world, CENTER_PERKS, JSON.parse(JSON.stringify(s)));
+  check(JSON.stringify(back.state) === JSON.stringify(s), `a save keeps the denial below zero (${back.state.parole.join()})`);
+  const r = new Sim(CENTER_PERKS, 5);
+  r.restore(g.sim.snapshot());
+  check(r.state.parole.join() === s.parole.join() && r.hash() === g.sim.hash(), 'and so does a snapshot restored');
+  for (let k = 0; k < 600; k++) {
+    g.sim.step(0);
+    back.step(0);
+    r.step(0);
+  }
+  check(back.hash() === g.sim.hash() && r.hash() === g.sim.hash(), 'and both play on the same');
+  put(back.state.player, CENTER_PERKS.comms!.release.at[0].x, CENTER_PERKS.comms!.release.at[0].z);
+  back.step(APPLY);
+  check(back.events.some((e) => e.type === 'refused' && e.why === 'paroleWait'), 'loaded, the wait after a no still runs');
+  const far = JSON.parse(JSON.stringify(s));
+  far.parole[P.SCORE] = SCORE_MIN - 1;
+  const b2 = new Sim(CENTER_PERKS, 5);
+  b2.state = loadState(b2.world, CENTER_PERKS, far);
+  check(b2.state.parole.join() === '0,0,0,0,0,0,-1,-1,0,0', 'a score below what can be loads as none');
+}
+{
+  // Contraband: seen in hand is not found; taken off the player at a capture, once.
+  const g = game();
+  const s = g.sim.state;
+  g.jump(3, 10, 5);
+  g.toDesk();
+  g.step(APPLY);
+  g.setCalm(false);
+  g.jump(4, 10, 5);
+  s.items.inv[s.items.hand] = slot(itemNumber('screwdriver'));
+  s.items.rev++;
+  const sights = () => of(g.seen, 'spotted').filter((e) => e.reason === 'contraband').length;
+  for (const gd of s.guards) {
+    for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2], [3, 0], [-3, 0], [0, 3], [0, -3]]) {
+      if (sights()) break;
+      s.player.x = gd.body.x + dx * UNIT;
+      s.player.z = gd.body.z + dz * UNIT;
+      g.step();
+    }
+    if (sights()) break;
+  }
+  const k = RECORD.findIndex((r) => r.id === 'contraband');
+  check(sights() >= 1 && s.feats[FEAT.contrabandFound] === 0 && recordCounts(s)[k] === 0, `seen with a screwdriver ${sights()} times: nothing found yet`);
+  s.ko = 1;
+  s.wake = WAKE.SOLITARY;
+  g.step();
+  const caught = of(g.seen, 'solitary').find((e) => e.on);
+  check(!!caught && caught.taken > 0 && s.feats[FEAT.contrabandFound] === 1 && recordCounts(s)[k] === 1, `taken off the player at a capture (${caught?.taken} items): found once`);
+}
+{
+  // A fire drill during the hearing: the board first, the muster excused (seed 5 rings it at 10:40).
+  const g = game(CENTER_PERKS, 5);
+  const s = g.sim.state;
+  g.jump(3, 10, 5);
+  g.toDesk();
+  g.step(APPLY);
+  s.calendar = [[0, 0, 0], [10, DAY_EVENTS.indexOf('drill'), -1]];
+  g.jump(10, 9, 59);
+  put(s.player, 20, 20);
+  g.to(10, 10, 0);
+  g.toRoom();
+  g.step();
+  const zones = new Set<string>();
+  let rang = 0;
+  for (let k = 0; k < 20000 && s.hearing; k++) {
+    const o = s.hearing;
+    if (drillOn(g.sim)) {
+      rang++;
+      zones.add(g.sim.dutyZones.join());
+    }
+    g.step(o.q >= 0 && !o.until && s.step - o.at === 20 * STEPS_PER_SECOND ? answer(ANSWER.OWN) : 0);
+  }
+  const drill = of(g.seen, 'today').filter((e) => e.event === 'drill').map((e) => e.phase);
+  check(rang > 0 && [...zones].join() === 'visitation', `the drill rings while seated: the routine keeps the player before the board (${[...zones].join()})`);
+  check(!drill.includes('missed') && (s.eventFlags & TODAY.EXCUSED) !== 0 && !news(g.seen, 'walkedOut').length && news(g.seen, 'denied').length + news(g.seen, 'granted').length === 1, `the muster excused, the board's word given (drill: ${drill.join()})`);
+}
+{
+  // Cleared at the desk, then damage found as the player walks out: the board's word stands.
+  const g = game();
+  const s = g.sim.state;
+  g.jump(3, 10, 5);
+  g.toDesk();
+  g.step(APPLY);
+  s.parole[P.HEARING] = 0;
+  s.parole[P.RELEASE] = 4;
+  s.parole[P.OUTCOME] = OUTCOME.GRANTED;
+  s.release[0] = 4;
+  g.jump(4, 10, 1);
+  g.toDesk();
+  g.step(command(0, OP.INTERACT));
+  check(s.release[1] > 0, 'granted and cleared at the desk');
+  g.sim.events.length = 0;
+  g.sim.events.push({ type: 'found', kind: 1 });
+  paroleStep(g.sim);
+  check(!g.sim.events.some((e) => e.type === 'parole' && e.what === 'voided') && s.parole[P.RELEASE] === 4 && s.release[0] === 4, 'damage found after the desk cleared them: nothing voided');
+  let n = 0;
+  while (!s.escaped && n++ < 3000) g.step(command(5));
+  check(s.escaped > 0 && ESCAPES[s.via] === 'parole', `out by parole still (${ESCAPES[s.via]})`);
+}
+{
+  // The lawyer's filing refused by the call's end (wanted meanwhile): the fee back.
+  const g = game();
+  const s = g.sim.state;
+  const c = CENTER_PERKS.comms!.phone;
+  g.jump(3, 10, 5);
+  put(s.player, c.x, c.z);
+  s.player.facing = c.face;
+  s.cash = PAROLE_FEE + 5;
+  g.step(command(0, OP.EXT, EXT.CALL, CALLEE.LAWYER * 16 + LAWYER.PAROLE));
+  check(!!s.call && s.cash === 5, 'the lawyer paid');
+  g.setCalm(false);
+  for (let k = 0; k < 6 * STEPS_PER_MINUTE && s.call; k++) {
+    if (k === 50) s.heat = 85;
+    g.step();
+  }
+  check(!news(g.seen, 'applied').length && refusals(g.seen).includes('hunted') && s.cash === PAROLE_FEE + 5 && !s.parole[P.HEARING], `refused at the call's end: the $${PAROLE_FEE} back ($${s.cash})`);
+}
+{
+  // A grant lost at the desk (turned away, too hot): applying again waits 3 days, as after a no.
+  const g = game();
+  const s = g.sim.state;
+  g.jump(3, 10, 5);
+  g.toDesk();
+  g.step(APPLY);
+  s.parole[P.HEARING] = 0;
+  s.parole[P.RELEASE] = 4;
+  s.parole[P.OUTCOME] = OUTCOME.GRANTED;
+  s.release[0] = 4;
+  g.jump(4, 10, 1);
+  g.toDesk();
+  s.heat = 60;
+  g.setCalm(false);
+  g.step(command(0, OP.INTERACT));
+  s.heat = 0;
+  g.step();
+  check(of(g.seen, 'paper').some((e) => e.what === 'turnedAway') && s.parole[P.RELEASE] === 0 && s.parole[P.AGAIN] === 4 + APPLY_AGAIN, `turned away: the grant lost, again from day ${s.parole[P.AGAIN]}`);
+  g.step(APPLY);
+  check(refusals(g.seen).at(-1) === 'paroleWait' && news(g.seen, 'applied').length === 1, 'not at once');
+}
+{
+  // Fights: only those the player started, from the step of applying; knockouts only the player's own.
+  const g = game();
+  const s = g.sim.state;
+  g.jump(3, 9, 0);
+  const x = s.player.x;
+  const z = s.player.z;
+  const day = () => s.days[prisonDay(s.step) - 1];
+  const blow = (ko: boolean, selfDefense: boolean, free = false) => {
+    s.selfDefense = selfDefense;
+    g.sim.events.length = 0;
+    g.sim.events.push(free ? { type: 'hit', who: 0, dmg: 5, ko, weapon: 0, free } : { type: 'hit', who: 0, dmg: 5, ko, weapon: 0 });
+    ledger(g.sim, x, z);
+  };
+  // (Under an older application: a started fight this morning.)
+  s.parole[P.USED] = 1;
+  blow(false, false);
+  check((day() & DAY.STARTED) !== 0, 'a fight started is marked on the day');
+  g.jump(3, 10, 5);
+  g.toDesk();
+  g.step(APPLY);
+  const k = (id: string) => RECORD.findIndex((r) => r.id === id);
+  check(recordCounts(s)[k('fights')] === 0, 'a fight before applying, the same morning, stays off the record');
+  blow(true, true);
+  blow(true, false, true);
+  g.sim.events.length = 0;
+  g.sim.events.push({ type: 'koed', who: 1 });
+  ledger(g.sim, x, z);
+  check(recordCounts(s)[k('fights')] === 0 && recordCounts(s)[k('kos')] === 0, 'self-defence, a food fight\'s blows and a follower\'s knockout: nothing on the record');
+  blow(true, false);
+  blow(false, false);
+  check(recordCounts(s)[k('fights')] === 1 && recordCounts(s)[k('kos')] === 1, 'a fight the player started: a day, and its knockout');
+}
+{
+  // Knocked out before the board by someone else: put off to tomorrow, not walked out.
+  const g = applied();
+  const s = g.sim.state;
+  g.to(10, 10, 0);
+  g.toRoom();
+  g.step();
+  for (let k = 0; k < 400 && s.hearing!.q < 0; k++) g.step();
+  s.ko = 60;
+  s.wake = WAKE.FLOORED;
+  g.step();
+  check(news(g.seen, 'postponed')[0]?.n === 11 && !news(g.seen, 'walkedOut').length && s.parole[P.HEARING] === 11 && !s.hearing, 'knocked out at the hearing: put off to tomorrow');
+}
+{
+  // The multitool digs: taken off the player, it's plotting.
+  const g = applied();
+  const s = g.sim.state;
+  g.jump(6, 13, 0);
+  s.items.inv[0] = slot(itemNumber('multitool'));
+  s.ko = 1;
+  s.wake = WAKE.SOLITARY;
+  g.step();
+  check(news(g.seen, 'voided')[0]?.why === 'tools', 'the multitool taken off the player: voided');
+}
+{
+  // Counsel: granted on the lawyer's filing only.
+  const grant = (lawyer: boolean) => {
+    const g = applied();
+    const s = g.sim.state;
+    s.parole[P.LAWYER] = lawyer ? 1 : 0;
+    s.feats[FEAT.wages] += 5;
+    s.feats[FEAT.rollCallsKept] += 14;
+    s.feats[FEAT.mealsKept] += 14;
+    s.feats[FEAT.showersKept] += 7;
+    g.to(10, 10, 0);
+    g.toRoom();
+    g.step();
+    const counts = recordCounts(s);
+    hearAll(g, (_, t) => (claimTrue(counts, t) ? ANSWER.CLAIM : ANSWER.OWN));
+    return s;
+  };
+  const a = grant(true);
+  const b = grant(false);
+  check(a.parole[P.OUTCOME] === OUTCOME.GRANTED && a.feats[FEAT.lawyerGranted] === 1 && b.parole[P.OUTCOME] === OUTCOME.GRANTED && b.feats[FEAT.lawyerGranted] === 0, 'the ledger counts a grant on the lawyer\'s filing, not on the desk\'s');
+  const counsel = ACHIEVEMENTS.find((x) => x.id === 'counsel')!;
+  const run = (s: typeof a) => counsel.run!({ prison: CENTER_PERKS.id, feats: s.feats, days: s.days, str: s.str, spd: s.spd, int: s.items.int });
+  check(run(a) && !run(b), 'Counsel: granted on the lawyer\'s filing');
+}
+{
+  // A save with a hearing but none set for today (damaged): no hearing.
+  const g = game();
+  g.jump(3, 10, 5);
+  const saved = JSON.parse(JSON.stringify(g.sim.state));
+  saved.hearing = { from: saved.step, q: -1, at: 0, topics: [0, 1, 2], said: [-1, -1, -1], worth: [0, 0, 0], until: 0 };
+  const b = new Sim(CENTER_PERKS, 5);
+  b.state = loadState(b.world, CENTER_PERKS, saved);
+  check(b.state.hearing === null, 'a hearing with nothing applied for loads as none');
+}
+{
+  // The claims: what the card's file line says. A favour done bears out "I help out"; the evening's heat at all doesn't bear out "nothing on me".
+  const counts = RECORD.map(() => 0);
+  const k = (id: string) => RECORD.findIndex((r) => r.id === id);
+  const T = (id: string) => TOPICS.findIndex((t) => t.id === id);
+  counts[k('favors')] = 1;
+  counts[k('heat')] = 9;
+  check(claimTrue(counts, T('favors')) && !claimTrue(counts, T('heat')), 'one favour bears out the claim; 9% of heat at 22:00 is not "nothing"');
+  // What weighed: never a line worth nothing.
+  counts[k('heat')] = 0;
+  const lines = weighed(counts, [1, 3, 0], false);
+  check(lines.every((c) => c < 0 || c >= ANSWERED || linePoints(counts)[c] !== 0), `a denial names no line worth nothing (${lines.join()})`);
 }
 
 // ------------------------------------------------------------------ bots

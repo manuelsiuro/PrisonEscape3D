@@ -76,14 +76,15 @@ export type RecordId = (typeof RECORD)[number]['id'];
 
 /**
  * What the board asks about: the record's lines a claim rests on. A claim ("I've worked every day
- * I could") is true when each of its lines is clean: a line for at `need` or more, a line against
- * at nothing. Never reorder (the hearing keeps its topics by their place).
+ * I could") is true when each of its lines is clean: a line for at `need` (default 1) or more, a
+ * line against at nothing. The card says under each question whether a claim would hold (and the
+ * need), so a lie is a choice, not a trap. Never reorder (the hearing keeps its topics by their place).
  */
 export const TOPICS: ReadonlyArray<{ id: string; lines: readonly string[]; need?: number }> = [
   { id: 'work', lines: ['work'], need: 3 },
   { id: 'study', lines: ['courses'], need: 1 },
   { id: 'family', lines: ['family'], need: 1 },
-  { id: 'favors', lines: ['favors'], need: 2 },
+  { id: 'favors', lines: ['favors'] },
   { id: 'routine', lines: ['missed'] },
   { id: 'fights', lines: ['fights', 'kos'] },
   { id: 'contraband', lines: ['contraband', 'dogs'] },
