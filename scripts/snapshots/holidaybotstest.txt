@@ -22,3 +22,8 @@ the escape bots under christmas:
   shankton: fence d1 23:33, tunnel d1 23:21, roof d1 23:48, takeover d1 09:09, bluff d1 19:52, glider d1 23:44, paperwork d2 10:15
   san-pancho: tunnel d1 23:24, gate d1 23:33, takeover d1 09:03, stowaway d1 14:31, paperwork d2 10:17
   irongate: raft d2 00:11, helicopter d1 23:51, takeover d1 09:36, stowaway d1 14:31, bluff d1 19:51, paperwork d2 10:09
+the parole board's model prisoner under a holiday:
+  easter: center-perks: applied day 3 10:13, sat day 10 10:07; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:14 by parole (gold by day 12)
+  summer: san-pancho: applied day 3 10:19, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:17 by parole (gold by day 13)
+  halloween: shankton: applied day 3 10:17, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +1: granted 22; out day 11 10:15 by parole (gold by day 13)
+  christmas: stalag-flucht: applied day 3 10:20, sat day 10 10:00; record 14 (rollCalls +7, meals +4, showers +3), answers +4 +3 +5: granted 26; out day 11 10:12 by parole (gold by day 12)

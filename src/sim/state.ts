@@ -38,6 +38,8 @@ import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FREED_STEPS } from '../content/paperwork';
+import { HEARING_AFTER, RECORD } from '../content/parole';
+import { freshParole, hearingOk, type Hearing, type VoidWhy } from './systems/parole';
 import { HOLIDAYS, type HolidayDay } from '../content/holidays';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY, UNIT } from './tuning';
 import { containersOf } from './world/containers';
@@ -47,7 +49,7 @@ import { LAYER, MAP_H, MAP_W, type World } from './world/World';
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing'] as const;
 export type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
-export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider', 'paperwork'] as const;
+export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider', 'paperwork', 'parole'] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
 /** Who hurt the player besides people (Cast ids): a tunnel's roof, a sniper, a mine, the sea flooding a tunnel. */
 export const HURT_BY = { CAVE_IN: -1, SNIPER: -2, MINE: -3, FLOOD: -4 } as const;
@@ -72,8 +74,8 @@ export type SimEvent =
   /** A chasing guard caught the player: knocked out, then solitary or the infirmary. */
   | { type: 'caught'; solitary: boolean }
   /** Into solitary (with how many contraband items were taken) and out again. */
-  | { type: 'solitary'; on: boolean; taken: number }
-  | { type: 'infirmary'; taken: number }
+  | { type: 'solitary'; on: boolean; taken: number; plot?: boolean }
+  | { type: 'infirmary'; taken: number; plot?: boolean }
   /** A press on the potato; `done` when a whole potato is peeled (10 minutes off). */
   | { type: 'peel'; done: boolean }
   /** 08:00: the cells to be searched this morning; a guard has searched one. */
@@ -326,6 +328,14 @@ export type SimEvent =
    */
   | { type: 'paper'; what: PaperNews; n?: number; why?: 'heat' | 'lockdown' | 'contraband' }
   /**
+   * The parole board (P39, parole.ts): applied (`n` the hearing's prison day, `lawyer` by phone);
+   * the hearing called at 10:00, the player sat down before the board, a question put (`q`, its
+   * `topic`), answered (the `choice`, what it was `worth`, a `lie` caught) or not (silence); the
+   * verdict (`score`, the two `lines` that weighed most, `n` the release's day or the day to apply
+   * again); put off by a lockdown (`n` the new day), missed, walked out of; voided by plotting (`why`).
+   */
+  | { type: 'parole'; what: ParoleNews; n?: number; lawyer?: boolean; q?: number; topic?: number; choice?: number; worth?: number; lie?: boolean; score?: number; lines?: number[]; why?: VoidWhy }
+  /**
    * v2.21 (P42, holiday.ts): a holiday day begun and over (`day`); the egg hunt's eggs hidden (`n`
    * of them), one found (in the player's pockets); in the water fight; a treat taken from the open
    * furniture (`item`); a pumpkin carved; an inmate laughing at the costume (`who`).
@@ -338,6 +348,8 @@ export type HolidayNews = 'start' | 'end' | 'hidden' | 'egg' | 'splash' | 'took'
 
 /** What the pay phone did (P34, the 'phone' event). */
 export type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
+/** What the parole board did (P39, the 'parole' event). */
+export type ParoleNews = 'applied' | 'called' | 'sat' | 'question' | 'answer' | 'silent' | 'granted' | 'denied' | 'postponed' | 'missed' | 'walkedOut' | 'voided';
 /** What the paperwork did (P36, the 'paper' event). */
 export type PaperNews = 'filed' | 'passed' | 'found' | 'called' | 'turnedAway' | 'cleared' | 'missed' | 'shut';
 /** What the internet kiosk did (P35, the 'kiosk' event). */
@@ -380,7 +392,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate' | 'noParole' | 'paroleOn' | 'paroleEarly' | 'paroleWait' | 'notAtDesk';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -672,6 +684,18 @@ export interface SimState {
    */
   blocks: number[];
   /**
+   * v2.18 (P39, the parole board, parole.ts P): [the prison day of the hearing (0 none), the prison
+   * day the record runs from (the day of applying), 1 if the lawyer filed it, the prison day the
+   * player may apply again (0 any), how the last application ended (OUTCOME), its score, the two
+   * lines that weighed most (codes; -1 none; a void's reason in the first), 1 once the player has
+   * applied this run (the record's own counters run from then), the prison day of the release
+   * granted (0 none)]; the ledger's counters as they stood on applying (RECORD order); a hearing
+   * under way (null none).
+   */
+  parole: number[];
+  paroleBase: number[];
+  hearing: Hearing | null;
+  /**
    * v2.21 (P42 holidays, holiday.ts): the run's holiday (content/holidays.ts HOLIDAYS index, 0
    * none), set when the run began; the treats taken ([the prison day, a bit per TREAT taken
    * that day]); costume night's laughs ([the prison day, the inmates (indexes) who laughed]; [] none).
@@ -849,6 +873,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     course: [],
     release: [0, 0, 0],
     blocks: ROUTINE.map(() => 0),
+    parole: freshParole(),
+    paroleBase: [],
+    hearing: null,
     holiday: holiday > 0 && holiday < HOLIDAYS.length ? holiday : 0,
     hol: [0, 0],
     laughed: [],
@@ -1014,6 +1041,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     // (The block under way keeps its check-in.)
     if (s.attended && ROUTINE[s.routine]?.miss) s.blocks[s.routine] = BLOCK.ATTENDED;
   }
+  // v2.18 (P39): the parole board as it can be (else nothing applied for), its counters whole, a hearing as it can be (else none).
+  if (!(ints(s.parole, 10) && s.parole.every((x, k) => x >= (k === 6 || k === 7 ? -1 : 0)) && s.parole[0] <= prisonDay(s.step) + HEARING_AFTER + 1 && s.parole[9] <= prisonDay(s.step) + 1)) s.parole = freshParole();
+  if (!(Array.isArray(s.paroleBase) && (s.paroleBase.length === 0 || ints(s.paroleBase, RECORD.length)))) s.paroleBase = [];
+  if (!hearingOk(s.hearing, s.step)) s.hearing = null;
   // P42: a holiday that isn't one is none; the treats and laughs as they can be (else none).
   if (!Number.isInteger(s.holiday) || s.holiday < 0 || s.holiday >= HOLIDAYS.length) s.holiday = 0;
   if (!(ints(s.hol, 2) && s.hol.every((x) => x >= 0))) s.hol = [0, 0];

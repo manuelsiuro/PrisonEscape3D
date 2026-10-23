@@ -92,6 +92,8 @@ export const COSMETICS: readonly Cosmetic[] = [
   c('rust', 'trim', 0xa63f12, 1, true),
   c('cream', 'trim', 0xfff0d0, 1, true),
   c('tangerine', 'trim', 0xff9a3c, 1, true),
+  // v2.18 (P39): reading glasses in gold, for the reformed (out on parole).
+  c('paroleSpecs', 'glasses', 0xc9a227, 2, true),
   // v2.21 (P42, holidays): bunny ears (Easter's egg hunt), a Santa hat (a present given), a witch's hat (laughs on costume night), summer shades (the water fight).
   c('holBunny', 'hat', 0xf4f1ea, 11, true),
   c('holSanta', 'hat', 0xd23f36, 12, true),

@@ -27,6 +27,8 @@ import { dayTime } from './day';
 import { play, sendOp } from './game';
 import { coachOnce, markTip, seenTip } from './tips';
 import { TOUCH } from '../ui/dom';
+import { HEARINGS } from '../content/parole';
+import { boardShown } from './parole';
 
 /**
  * Smuggling on screen (P21): the phone's panel (what an order costs each way, and when and
@@ -346,6 +348,9 @@ function guestsOf(sim: Sim): Guest[] {
 const AMBIENT = 3;
 /** The visitors drawn this frame, reused. */
 const pool: Array<SmuggleFrame['visitors'][number]> = Array.from({ length: AMBIENT + 1 }, () => ({ x: 0, z: 0, facing: 0, look: 0, chair: false, arrive: 1 }));
+/** The parole board's three (P39): suits, never the guards' navy nor the inmates' orange. */
+const members: Array<SmuggleFrame['visitors'][number]> = [0x34363c, 0x5a4636, 0x55595f].map((suit, k) => ({ x: 0, z: 0, facing: 0, look: 101 + k * 17, chair: false, arrive: 1, suit }));
+const NO_TILES: number[] = [];
 /** Where the player's visitor sat today (a guest tile, -1 none): they stay there until visiting hours are over. */
 let metAt = -1;
 let metDay = 0;
@@ -413,6 +418,22 @@ export function smuggleFrame(sim: Sim, a: number): SmuggleFrame | null {
   const up = archesUp(sim);
   frame.arches = up ? archesOf(sim) : NONE;
   frame.visitors.length = 0;
+  // The parole board (P39): its three at their places while the hearing is called, sits and gives its word.
+  const board = boardShown(sim) ? HEARINGS[sim.prison.id] : null;
+  if (board) {
+    const facing = Math.atan2(DIR_X[board.face], DIR_Z[board.face]);
+    board.board.forEach((q, k) => {
+      const tile = q.z * MAP_W + q.x;
+      if (occupied(sim, tile)) return;
+      const v = members[k];
+      v.x = q.x + 0.5;
+      v.z = q.z + 0.5;
+      v.facing = facing;
+      v.chair = sim.world.props.some((r) => r.kind === 'chair' && r.x === q.x && r.z === q.z);
+      frame.visitors.push(v);
+    });
+  }
+  const taken = board ? board.board.map((q) => q.z * MAP_W + q.x) : NO_TILES;
   if (!up) {
     metAt = -1;
     return frame;
@@ -438,7 +459,7 @@ export function smuggleFrame(sim: Sim, a: number): SmuggleFrame | null {
   let met = false;
   for (let k = 0; k < Math.min(AMBIENT, guests.length); k++) {
     const g = guests[(k * 7 + day * 5 + (s.salt % 11)) % guests.length];
-    if (g.tile === own || occupied(sim, g.tile)) continue;
+    if (g.tile === own || occupied(sim, g.tile) || taken.includes(g.tile)) continue;
     if (g.tile === at && at >= 0) met = true;
     seat(n++, g, g.tile + day * 13, 1);
   }

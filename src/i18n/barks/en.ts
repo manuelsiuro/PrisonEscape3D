@@ -2271,6 +2271,35 @@ export const enBarks = {
     "Shh. Listening for the {team} score. What?",
     "The {team}, top of the league. Right, what?",
   ],
+  "go.paroleBoard": [
+    "Parole board sits {n} days after you apply. {t1} sharp.",
+    "Applied for parole? {n} days of being a saint, then {t1}.",
+    "The board’s at {t1}. They’ve read your file before you sit.",
+  ],
+  "re.parole.in": [
+    "Parole? You? Good luck.",
+    "Going straight, are we?",
+    "The board’ll eat you alive.",
+    "Parole. Fancy.",
+    "Model prisoner now, is it?",
+    "Don’t forget your old friends.",
+  ],
+  "re.paroleVoid.gu": [
+    "Parole? Not after that.",
+    "That’s your application in the bin.",
+    "So much for good behaviour.",
+    "The board won’t be hearing from you.",
+    "Parole, was it? Forget it.",
+    "I’ll be writing this up for the board.",
+  ],
+  "re.paroleGranted.in": [
+    "Parole! Lucky so-and-so.",
+    "Don’t forget us out there.",
+    "Granted? Who did you pay?",
+    "Out the front door. Show-off.",
+    "Send us a postcard.",
+    "Well, I’ll be. Parole.",
+  ],
   // ---------------------------------------------------------------- v2.21 (P42, holidays): each holiday's talk, a ghost story on costume night, Christmas in the snow and in the desert; soaked guards, festive guards; laughs at the costume, the water fight, the fireworks, the eggs.
   'go.eggDesk': [
     "{inmate}'s desk has a chocolate egg in it. Shh.",

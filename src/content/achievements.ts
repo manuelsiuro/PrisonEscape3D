@@ -215,6 +215,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'seasoned', group: 'career', icon: 'route', ...counted('escapes', 10) },
   { id: 'marathon', group: 'career', icon: 'walk', ...counted('walked', 10000) },
   { id: 'graduate', group: 'career', icon: 'bulb', career: (c) => c.lessons >= c.lessonsOf, progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf] },
+  // v2.18 (P39, the parole board): out on parole; parole granted on the lawyer's filing; a lie the board caught; an application voided by plotting.
+  { id: 'goodBehaviour', group: 'out', icon: 'scale', gives: 'paroleSpecs', escape: (e) => e.via === 'parole' },
+  { id: 'counsel', group: 'life', icon: 'briefcase', run: (r) => f(r, 'lawyerFiled') >= 1 && f(r, 'paroleGranted') >= 1 },
+  { id: 'caughtOut', group: 'mishaps', icon: 'scale', hidden: true, run: (r) => f(r, 'liesCaught') >= 1 },
+  { id: 'backToSquareOne', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'paroleVoided') >= 1 },
   // v2.21 (P42, holidays): five eggs found in one egg hunt's run; in the water fight; three inmates laughing at the costume; a present given; work done under New Year's fireworks.
   { id: 'eggHunter', group: 'holidays', icon: 'egg', gives: 'holBunny', run: (r) => f(r, 'eggsFound') >= 5 },
   { id: 'splashdown', group: 'holidays', icon: 'splash', gives: 'holShades', run: (r) => f(r, 'waterFights') >= 1 },

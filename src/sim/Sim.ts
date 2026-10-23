@@ -34,6 +34,7 @@ import { smuggle } from './systems/smuggling';
 import { phone, wheels } from './systems/phone';
 import { kiosk } from './systems/kiosk';
 import { freedNow, paperwork } from './systems/paperwork';
+import { hearingZones, parole, paroled } from './systems/parole';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { holidays } from './systems/holiday';
@@ -63,7 +64,7 @@ export * from './state';
  * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → the holiday (P42) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → the cold → tipsy (P28) → showers → solitary →
- * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → race nights (P28) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
+ * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → the pay phone, the kiosk, the paperwork (P34–P36) → the parole board (P39) → race nights (P28) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
  * a lockdown called off → attendance → the day's watch (the drill's muster, the inspection's blots) → heat decay →
  * guards woken without their key (P20) → doors.
  */
@@ -234,6 +235,8 @@ export class Sim {
     kiosk(this);
     // The paperwork escape (P36): the records at 22:00, the release at 10:00, its way out.
     paperwork(this);
+    // The parole board (P39): plotting found out, the hearing at 10:00, its questions and verdict.
+    parole(this);
     // Race nights (P28): the off, a guard seeing the player at it, the finish.
     races(this);
     bribesWearOff(this);
@@ -361,7 +364,7 @@ export class Sim {
     const bluff = from >= 0 && s.waved > 0 && this.world.checkpoint[from] === 1;
     // (P36: cleared for release, out through its doors or its lowered drawbridge.)
     const paper = from >= 0 && freedNow(s) && this.world.release[from] === 1;
-    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : this.movedBy === 'glide' ? 'glider' : s.takeover ? 'takeover' : paper ? 'paperwork' : bluff ? 'bluff' : gate ? 'gate' : 'fence'));
+    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : this.movedBy === 'glide' ? 'glider' : s.takeover ? 'takeover' : paper ? (paroled(s) ? 'parole' : 'paperwork') : bluff ? 'bluff' : gate ? 'gate' : 'fence'));
     closeBox(this);
     // The crew close by slip out too (P23), on a way out they can take.
     s.crewOut = crewEscape(this, ESCAPES[s.via]);
@@ -381,6 +384,9 @@ export class Sim {
   get dutyZones(): readonly string[] {
     // The fire drill (P17): everyone out to roll call until it's over.
     if (drillOn(this) && !this.state.lockdown) return MUSTER;
+    // (P39: the parole board sitting, or the hearing called: the room it sits in.)
+    const board = hearingZones(this);
+    if (board) return board;
     const r = ROUTINE[this.state.routine];
     if (r.id !== 'work') return this.prison.leisure?.track ? zonesOf(this.state.routine, (z) => this.zonesHere.has(z)) : r.zones;
     const job = this.jobActive();
