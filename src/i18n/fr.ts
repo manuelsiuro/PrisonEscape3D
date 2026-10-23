@@ -1204,6 +1204,7 @@ export const fr: Partial<Strings> = {
   "rumor.shakedownYou": "Fouille du jour {n} : ta cellule.",
   "common.cancel": "Annuler",
   "title.trophies": "Trophées",
+  "title.trophiesSr": "{n} succès obtenus sur {of}",
   "ach.freshAir": "Bol d’air",
   "ach.freshAir.d": "S’évader d’une prison.",
   "ach.mole": "La taupe",
