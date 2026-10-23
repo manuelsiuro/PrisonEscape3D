@@ -1,0 +1,78 @@
+center-perks: 60×56, 6 searchers (2 dogs), 2 roadblocks, 2 washing lines, 152 cover tiles; to safety: wall 86 (Lou 33), gate 60 (Lou 39), van 77 (Lou 24), glider 25 (Lou 28)
+stalag-flucht: 60×56, 6 searchers (2 dogs), 2 roadblocks, 1 washing lines, 41 cover tiles; to safety: wall 64 (Lou 27), gate 88 (Lou 23), van 26 (Lou 88), glider 39 (Lou 62)
+shankton: 60×56, 6 searchers (2 dogs), 2 roadblocks, 2 washing lines, 44 cover tiles; to safety: wall 95 (Lou 47), gate 75 (Lou 27), glider 53 (Lou 55)
+san-pancho: 60×56, 6 searchers (2 dogs), 2 roadblocks, 2 washing lines, 56 cover tiles; to safety: wall 83 (Lou 25), gate 69 (Lou 31), van 58 (Lou 28)
+irongate: 60×56, 7 searchers (2 dogs), 3 roadblocks, 3 washing lines, 69 cover tiles; to safety: sea 65 (Lou 49), air 39 (Lou 23), gate 47 (Lou 28)
+center-perks wall: clean away in 27 s; spotted 0, hid 0, stones 0, lit 0 · 91a3b0d5
+  0:20 the alarm
+  0:25 roadblock 0 up
+  0:26 SAFE
+center-perks gate: clean away in 18 s; spotted 0, hid 0, stones 0, lit 0 · c30fd36d
+  0:17 SAFE
+center-perks glider: clean away in 10 s; spotted 0, hid 0, stones 0, lit 0 · 6857ae72
+  0:09 SAFE
+center-perks van: clean away in 27 s; spotted 0, hid 0, stones 0, lit 0 · 5ff42dfc
+  0:20 the alarm
+  0:25 roadblock 0 up
+  0:26 SAFE
+center-perks wall, seen going, by day: clean away in 27 s · 0dbdee4b
+stalag-flucht wall: clean away in 25 s; spotted 0, hid 0, stones 1, lit 0 · e923e794
+  0:00 stone
+  0:20 the alarm
+  0:24 SAFE
+stalag-flucht gate: clean away in 31 s; spotted 0, hid 0, stones 1, lit 0 · 94cddd6d
+  0:00 stone
+  0:20 the alarm
+  0:20 dog 0 on the trail
+  0:25 roadblock 0 up
+  0:30 SAFE
+stalag-flucht glider: clean away in 16 s; spotted 0, hid 0, stones 1, lit 0 · 343eb360
+  0:00 stone
+  0:15 SAFE
+stalag-flucht van: clean away in 23 s; spotted 0, hid 0, stones 1, lit 0 · 6254c755
+  0:00 stone
+  0:20 the alarm
+  0:22 SAFE
+stalag-flucht wall, seen going, by day: clean away in 25 s · f78f0ec8
+shankton wall: clean away in 23 s; spotted 0, hid 0, stones 0, lit 0 · 846520cc
+  0:20 the alarm
+  0:22 SAFE
+shankton gate: clean away in 17 s; spotted 0, hid 0, stones 0, lit 0 · 29531496
+  0:16 SAFE
+shankton glider: clean away in 11 s; spotted 0, hid 0, stones 0, lit 0 · 96f50279
+  0:10 SAFE
+shankton wall, seen going, by day: clean away in 47 s · a4ac98a8
+san-pancho wall: clean away in 24 s; spotted 0, hid 0, stones 0, lit 0 · 35b47045
+  0:20 the alarm
+  0:23 SAFE
+san-pancho gate: clean away in 20 s; spotted 0, hid 0, stones 0, lit 0 · 529a5aa0
+  0:20 the alarm
+  0:20 SAFE
+san-pancho van: clean away in 21 s; spotted 0, hid 0, stones 0, lit 0 · 64b79c50
+  0:20 the alarm
+  0:20 SAFE
+san-pancho wall, seen going, by day: clean away in 25 s · ced435ec
+irongate gate: clean away in 27 s; spotted 0, hid 0, stones 0, lit 0 · da6492e8
+  0:20 the alarm
+  0:25 roadblock 0 up
+  0:26 SAFE
+irongate sea: clean away in 22 s; spotted 0, hid 0, stones 0, lit 0 · bac53462
+  0:20 the alarm
+  0:22 SAFE
+irongate air: clean away in 19 s; spotted 0, hid 0, stones 0, lit 0 · 7d6f3fb2
+  0:18 SAFE
+irongate sea, seen going, by day: clean away in 33 s · 79338f76
+head start: night 20 s, just before breakfast 5 s, afternoon 20 s, before the 04:00 bed check 10 s
+carry: fence → wall, Speed 52, outfit guard, kit 2, crew 1, Lou true, head start 20 s at 480
+starts: center-perks fence→wall tunnel→wall roof→wall takeover→gate stowaway→van bluff→gate glider→glider paperwork→legal; stalag-flucht fence→wall tunnel→wall roof→wall takeover→gate stowaway→van glider→glider paperwork→legal; shankton fence→wall tunnel→wall roof→wall takeover→gate bluff→gate glider→glider paperwork→legal; san-pancho tunnel→wall gate→gate takeover→gate stowaway→van paperwork→legal; irongate raft→sea helicopter→air takeover→gate stowaway→air bluff→gate paperwork→legal
+cover: hidden after 10 still steps, a searcher 3 tiles off looking right at the hedge sees nothing
+caught: spotted, then caught after 31 steps; 6% of the way
+dogs: track yes, point yes, caught yes (hidden true)
+washing line: other clothes, the trail gone, nothing more to take
+wire: refused without cutters; cut in 40 steps with them, heard 5 tiles off
+stone: lands 6 tiles ahead, heard 5 walking tiles round; again after 5 s
+treats: jerky calm, pepper dazed, sleepy jerky asleep
+roadblocks: 5 s, 15 s after the alarm; the helicopter's light: on in the open, off in cover; the lookout whistles at 7 tiles
+Lou's car: away in it when a call set it up; an empty track otherwise
+deterministic: stalag-flucht gate twice, 94cddd6d both times
+lesson manhunt: 4 steps done in 17 s
