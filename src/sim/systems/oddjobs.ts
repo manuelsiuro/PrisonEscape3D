@@ -6,9 +6,11 @@
  *   for the day. The story chain's next step is pinned beside them (from CHAIN_DAY, a step a day).
  * - **The fixer** (P21) offers a job of his own each prison day (SALT.FIXER_JOB): the riskier
  *   kinds, better paid, a rare item on top. Taken by talking to him (TALK.ODD_JOB).
- * - **One job at a time**, until 08:00 after its last day. What it hands over goes into the hotbar
- *   (the parcel, the stash, the note); what it lifts is put where it's to be found (a guard's
- *   pockets, the kitchen freezer). Done, it's handed in to the one who asked (TALK.JOB_IN): cash,
+ * - **One job at a time**, until 08:00 after its last day (taken from 18:00, its days count from
+ *   the next prison day). What it hands over goes into the hotbar (the parcel, the stash, the
+ *   note); what it lifts is put where it's to be found (a guard's pockets, the kitchen freezer),
+ *   and counts only once it's out of there. Its work done by 08:00 (or what's to be brought in hand
+ *   then), it waits to be handed in to the one who asked (TALK.JOB_IN), with no time limit: cash,
  *   maybe a rare item or a debt (he owes the player one: he joins the crew whatever he thinks of
  *   them, or hands over a tool when it's called in, TALK.CALL_IN).
  * - **Failing** (the time up, given up, seen, the wrong result, the dig found): the job goes and
@@ -17,8 +19,9 @@
  * Nothing changes for anyone until the player takes a job (the escape bots never do): the deals
  * are pure, and only a lookout's digger walks anywhere he wouldn't. Never the state's RNG.
  */
-import { BOARD, CAUGHT_TILES, J, JOB_LEN, R, STAGE, CHAIN_DAY, CHAIN_PIN, CHAINS, DEBT_ODDS, DEBT_TOOLS, DIG_STEPS, FAIL_OPINION, FALSE_STEPS, FIXER_JOB_OPINION, FIXER_PAY, FRAME_HEAT, FRAME_MINUTE, FROM, HIDE_STEPS, KIND, KIND_DEFS, KINDS, LIFT, LIFTS, PAID_OPINION, PERK, PERK_ODDS, PINS, RARE_ITEMS, WARN_TILES, WATCH_TILES } from '../../content/oddjobs';
+import { BOARD, CAUGHT_TILES, J, JOB_LEN, R, STAGE, CHAIN_DAY, CHAIN_PIN, CHAINS, DEBT_ODDS, DEBT_TOOLS, DIG_STEPS, FAIL_OPINION, FALSE_STEPS, FIXER_JOB_OPINION, FIXER_PAY, FRAME_HEAT, FRAME_MINUTE, FROM, HIDE_STEPS, KIND, KIND_DEFS, KINDS, LATE_MINUTE, LIFT, LIFTS, PAID_OPINION, PERK, PERK_ODDS, PINS, RARE_ITEMS, WARN_TILES, WATCH_TILES } from '../../content/oddjobs';
 import { itemNumber } from '../../content/items';
+import { LOOT } from '../../content/loot';
 import { ROUTINE } from '../../content/routine';
 import { PARCEL_MINUTE } from '../../content/smuggling';
 import { lineOfSight } from '../ai/sight';
@@ -40,6 +43,7 @@ import { commsOf, searcher } from './phone';
 import { changeOpinion, refuse } from './social';
 import { fixerOf, smugglingOf } from './smuggling';
 import { addHeat } from './watch';
+import { lookingAway } from './ways';
 
 export { J, JOB_LEN, R, STAGE } from '../../content/oddjobs';
 
@@ -288,6 +292,11 @@ export function bringsOf(job: readonly number[]): number {
 
 /** Whether the hotbar holds an item (its slot; -1 not). */
 const carrying = (s: SimState, item: number) => s.items.inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === item);
+/** A job whose item is to be brought, with it in hand (lifted for this job, the cake come in for it). */
+const inHand = (s: SimState, job: readonly number[]) => {
+  const brings = bringsOf(job);
+  return !!brings && carrying(s, brings) >= 0 && (job[J.KIND] === KIND.ERRAND || job[J.PROG] > 0);
+};
 
 // ------------------------------------------------------------------ taking a job
 
@@ -302,6 +311,7 @@ export function boardRefusal(sim: SimContext, pin: number): Refusal | null {
   const deal = pin === CHAIN_PIN ? chainDeal(sim) : dealsOf(sim)[pin];
   if (!deal) return 'noDeal';
   if (givesOf(deal.kind) && s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';
+  if (deal.kind === KIND.LIFT && !liftSpot(sim, deal.variant, deal.target)) return 'liftFull';
   return null;
 }
 
@@ -315,32 +325,82 @@ export function fixerJobRefusal(sim: SimContext, who: number): Refusal | null {
   if (s.eventFlags & TODAY.FIXER_JOB) return 'fixerToday';
   const deal = fixerDeal(sim)!;
   if (givesOf(deal.kind) && s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';
+  if (deal.kind === KIND.LIFT && !liftSpot(sim, deal.variant, deal.target)) return 'liftFull';
   return null;
 }
 
+/** The item a Lift it job lifts, and the container it's left in for the player to find (-1: none: no freezer, no such guard). */
+function liftBox(sim: Pick<SimContext, 'world' | 'state'>, variant: number, target: number): { box: number; item: number } {
+  const item = itemNumber(LIFTS[variant] ?? LIFTS[0]);
+  if (variant === LIFT.MUG) return { box: freezerOf(sim), item };
+  return { box: target >= 0 && target < sim.state.guards.length ? pocketOf(sim.world, sim.state.inmates.length + target) : -1, item };
+}
+
+/** Anything a Lift it job leaves (a whistle, the mug, a keepsake). */
+const LIFTED = LIFTS.map((id) => itemNumber(id));
+
 /**
- * Puts an item where a job says it's to be found: none there yet (one already is: that's it), into
- * the first open slot past the hidden ones; full, the last slot (`over`: the freezer's restocked
- * food) or nowhere (a guard's pockets: his key and baton stay).
+ * Where a Lift it job's item is left for the player to find (null: nowhere: then it isn't offered):
+ * where one already is; else the first open slot past the hidden ones; full, over something an
+ * earlier job left there, else over the container's own stock (the freezer's food; never what the
+ * player hid there, nor a guard's key and baton).
  */
-function plant(sim: SimContext, box: number, item: number, over: boolean) {
-  const slots = sim.state.items.containers[box];
-  if (!slots || slots.some((v) => itemOf(v) === item)) return;
-  const hidden = box < containersOf(sim.world).length ? containersOf(sim.world)[box].hidden : 0;
+export function liftSpot(sim: Pick<SimContext, 'world' | 'state'>, variant: number, target: number): { box: number; k: number; item: number } | null {
+  const { box, item } = liftBox(sim, variant, target);
+  const slots = box >= 0 ? sim.state.items.containers[box] : null;
+  if (!slots) return null;
+  const at = slots.findIndex((v) => itemOf(v) === item);
+  if (at >= 0) return { box, k: at, item };
+  const list = containersOf(sim.world);
+  const c = box < list.length ? list[box] : null;
+  const hidden = c ? c.hidden : 0;
   const k = slots.indexOf(0, hidden);
-  if (k < 0 && !over) return;
-  slots[k >= 0 ? k : slots.length - 1] = slot(item);
+  if (k >= 0) return { box, k, item };
+  for (let j = slots.length - 1; j >= hidden; j--) if (LIFTED.includes(itemOf(slots[j]))) return { box, k: j, item };
+  const t = c ? LOOT[c.table] : undefined;
+  const stock = t ? [...(t.fixed ?? []), ...t.items.map(([id]) => id)].map((id) => itemNumber(id)) : [];
+  for (let j = slots.length - 1; j >= hidden; j--) if (stock.includes(itemOf(slots[j]))) return { box, k: j, item };
+  return null;
+}
+
+/** A Lift it job's item put where it's to be found (liftSpot). */
+function plant(sim: SimContext, variant: number, target: number) {
+  const at = liftSpot(sim, variant, target);
+  if (!at) return;
+  sim.state.items.containers[at.box][at.k] = slot(at.item);
   sim.state.items.rev++;
 }
 
-/** How many of an item a container holds. */
-const countIn = (sim: Pick<SimContext, 'state'>, box: number, item: number) => (box >= 0 ? sim.state.items.containers[box]?.filter((v) => itemOf(v) === item).length ?? 0 : 0);
+/** A Lift it job gone without its item lifted: the item taken back from where it was left (so it fills nobody's pockets for good). */
+function unplant(sim: SimContext, job: readonly number[]) {
+  const { box, item } = liftBox(sim, job[J.VAR], job[J.TARGET]);
+  const slots = box >= 0 ? sim.state.items.containers[box] : null;
+  const k = slots ? slots.findIndex((v) => itemOf(v) === item) : -1;
+  if (k < 0) return;
+  slots![k] = 0;
+  sim.state.items.rev++;
+}
+
+/** How many of an item a container holds (from slot `from` on). */
+const countIn = (sim: Pick<SimContext, 'state'>, box: number, item: number, from = 0) => (box >= 0 ? sim.state.items.containers[box]?.slice(from).filter((v) => itemOf(v) === item).length ?? 0 : 0);
+/** A frame-up's stash in a desk where a search finds it: its standard drawers (the hidden compartment is never searched). */
+const stashIn = (sim: Pick<SimContext, 'state' | 'world'>, desk: number) => (desk >= 0 ? countIn(sim, desk, STASH, containersOf(sim.world)[desk].hidden) : 0);
+/** What a drop or a frame-up counts in the target's desk now. */
+const deskCount = (sim: Pick<SimContext, 'state' | 'world'>, job: readonly number[]) => {
+  const desk = deskOf(sim, job[J.TARGET]);
+  return job[J.KIND] === KIND.DROP ? countIn(sim, desk, PARCEL) : stashIn(sim, desk);
+};
+
+/** The step a job taken now runs out: 08:00 after its last prison day, counted from tomorrow when taken from 18:00 on. */
+export function endsFor(step: number, days: number): number {
+  const first = prisonDay(step) + (dayMinute(step) >= LATE_MINUTE ? 1 : 0);
+  return (first - 1 + days) * DAY_STEPS;
+}
 
 /** A deal taken on (the refusals already passed). */
 function take(sim: SimContext, d: Deal, from: number) {
   const s = sim.state;
-  const day = prisonDay(s.step);
-  s.oddjob = [d.kind, d.variant, d.giver, d.target, (day - 1 + d.days) * DAY_STEPS, from, STAGE.ON, 0, 0, d.pay, d.perk, d.item, 0];
+  s.oddjob = [d.kind, d.variant, d.giver, d.target, endsFor(s.step, d.days), from, STAGE.ON, 0, 0, d.pay, d.perk, d.item, 0];
   const gives = givesOf(d.kind);
   if (gives) {
     const free = s.items.inv.slice(0, HOTBAR).indexOf(0);
@@ -348,13 +408,9 @@ function take(sim: SimContext, d: Deal, from: number) {
     s.items.rev++;
   }
   // What's to be lifted is put where it's to be found.
-  if (d.kind === KIND.LIFT) {
-    const item = itemNumber(LIFTS[d.variant] ?? LIFTS[0]);
-    if (d.variant === LIFT.MUG) plant(sim, freezerOf(sim), item, true);
-    else if (d.target >= 0) plant(sim, pocketOf(sim.world, s.inmates.length + d.target), item, false);
-  }
+  if (d.kind === KIND.LIFT) plant(sim, d.variant, d.target);
   // (A drop or a frame-up: what the desk holds of it already, left there by an earlier job; only one more counts.)
-  if (d.kind === KIND.DROP || d.kind === KIND.FRAME) s.oddjob[J.WARN] = countIn(sim, deskOf(sim, d.target), d.kind === KIND.DROP ? PARCEL : STASH);
+  if (d.kind === KIND.DROP || d.kind === KIND.FRAME) s.oddjob[J.WARN] = deskCount(sim, s.oddjob);
   sim.events.push({ type: 'oddjob', what: 'taken', kind: d.kind, who: d.giver, from, n: d.days });
 }
 
@@ -410,8 +466,12 @@ export function handInRefusal(sim: SimContext, who: number): Refusal | null {
   if (job[J.GIVER] !== who) return 'notHisJob';
   const brings = bringsOf(job);
   if (brings) {
+    // (What's lifted out of where it was left for this job, the cake come in for it: not one kept from before.)
+    if ((job[J.KIND] === KIND.LIFT || job[J.KIND] === KIND.CAKE) && !job[J.PROG]) return 'notDone';
     if (carrying(s, brings) < 0) return 'missing';
   } else if (job[J.STAGE] !== STAGE.DONE) return 'notDone';
+  // (The parcel taken back out of the desk: not delivered.)
+  else if (job[J.KIND] === KIND.DROP && deskCount(sim, job) <= job[J.WARN]) return 'notDone';
   if (job[J.PERK] === PERK.ITEM && job[J.ITEM] && s.items.inv.slice(0, HOTBAR).filter((v) => !v).length + (brings ? 1 : 0) < 1) return 'room';
   return null;
 }
@@ -452,10 +512,14 @@ export function fail(sim: SimContext, why: OddJobFail) {
   const job = jobOf(s);
   if (!job) return;
   s.oddjob = [];
+  if (job[J.KIND] === KIND.LIFT) unplant(sim, job);
   changeOpinion(sim, job[J.GIVER], FAIL_OPINION);
   if (why === 'caught' && job[J.KIND] === KIND.FRAME) addHeat(sim, FRAME_HEAT);
   sim.events.push({ type: 'oddjob', what: 'failed', why, kind: job[J.KIND], who: job[J.GIVER], from: job[J.FROM] });
 }
+
+/** An item the pet rat left in a container this step. */
+const byRat = (sim: SimContext, box: number, item: number) => sim.events.some((e) => e.type === 'rat' && e.what === 'left' && e.item === item && e.container === box);
 
 /** The job's work done: back to the one who asked. */
 function done(sim: SimContext, job: number[]) {
@@ -551,7 +615,7 @@ function lookout(sim: SimContext, job: number[]) {
   const there = offTile(d.tile, m.body) <= 0;
   if (there) {
     for (const g of s.guards) {
-      if (!awake(g) || offTile(d.tile, g.body) > CAUGHT_TILES || !lineOfSight(sim.world, g.body.x, g.body.z, cx, cz)) continue;
+      if (!awake(g) || lookingAway(g, s.step) || offTile(d.tile, g.body) > CAUGHT_TILES || !lineOfSight(sim.world, g.body.x, g.body.z, cx, cz)) continue;
       return fail(sim, 'found');
     }
   }
@@ -577,32 +641,51 @@ const mark: Body = bodyAt(0, 0);
 
 // ------------------------------------------------------------------ the birthday cake
 
-/** The birthday cake at a visit (smuggling.ts visit): into the hotbar (no room: the next visit). */
-export function birthdayAtVisit(sim: SimContext) {
-  const s = sim.state;
-  const job = jobOf(s);
-  if (!job || job[J.KIND] !== KIND.CAKE || job[J.PROG]) return;
-  const free = s.items.inv.slice(0, HOTBAR).indexOf(0);
-  if (free < 0) return void sim.events.push({ type: 'oddjob', what: 'cakeKept' });
-  s.items.inv[free] = slot(BIRTHDAY_CAKE);
-  s.items.rev++;
-  job[J.PROG] = 1;
-  sim.events.push({ type: 'oddjob', what: 'cake', who: job[J.GIVER] });
+/** The player's own desk (-1 none) and its first open drawer past the hidden compartment (-1 full). */
+function ownDesk(sim: SimContext): { desk: number; free: number } {
+  const list = containersOf(sim.world);
+  const desk = list.findIndex((c) => c.mine && c.prop.kind === 'desk');
+  const box = desk >= 0 ? sim.state.items.containers[desk] : null;
+  return { desk, free: box ? box.indexOf(0, list[desk].hidden) : -1 };
 }
 
-/** Stalag Flucht's: in the Red Cross parcel on delivery day (from PARCEL_MINUTE), into the desk's open drawers. */
+/**
+ * The birthday cake comes in: at a visit into the hotbar, else (no room) the desk; in the Red Cross
+ * parcel (`parcel`) into the desk, else the hotbar. Neither has room: it waits (once a day told why).
+ */
+function cakeIn(sim: SimContext, job: number[], parcel: boolean) {
+  const s = sim.state;
+  const hot = s.items.inv.slice(0, HOTBAR).indexOf(0);
+  const own = ownDesk(sim);
+  const toDesk = own.free >= 0 && (parcel || hot < 0);
+  if (!toDesk && hot < 0) {
+    const day = prisonDay(s.step);
+    if (job[J.AUX] !== day) {
+      job[J.AUX] = day;
+      sim.events.push({ type: 'oddjob', what: 'cakeKept', n: parcel ? 1 : 0 });
+    }
+    return;
+  }
+  if (toDesk) s.items.containers[own.desk][own.free] = slot(BIRTHDAY_CAKE);
+  else s.items.inv[hot] = slot(BIRTHDAY_CAKE);
+  s.items.rev++;
+  job[J.PROG] = 1;
+  // (n: 1 in the desk from the parcel, 2 in the desk from a visit for want of room in the hotbar, 3 in the hotbar from the parcel for want of room in the desk.)
+  sim.events.push({ type: 'oddjob', what: 'cake', who: job[J.GIVER], ...(parcel ? { n: toDesk ? 1 : 3 } : toDesk ? { n: 2 } : {}) });
+}
+
+/** The birthday cake at a visit (smuggling.ts visit). */
+export function birthdayAtVisit(sim: SimContext) {
+  const job = jobOf(sim.state);
+  if (!job || job[J.KIND] !== KIND.CAKE || job[J.PROG] || job[J.STAGE] !== STAGE.ON) return;
+  cakeIn(sim, job, false);
+}
+
+/** Stalag Flucht's: in the Red Cross parcel on delivery day (from PARCEL_MINUTE). */
 function birthdayParcel(sim: SimContext, job: number[]) {
   const d = smugglingOf(sim);
   if (job[J.PROG] || !d?.parcel || dayMinute(sim.state.step) < PARCEL_MINUTE || today(sim).event !== 'delivery') return;
-  const w = sim.world;
-  const desk = containersOf(w).findIndex((c) => c.mine && c.prop.kind === 'desk');
-  const box = desk >= 0 ? sim.state.items.containers[desk] : null;
-  const free = box ? box.indexOf(0, containersOf(w)[desk].hidden) : -1;
-  if (!box || free < 0) return;
-  box[free] = slot(BIRTHDAY_CAKE);
-  sim.state.items.rev++;
-  job[J.PROG] = 1;
-  sim.events.push({ type: 'oddjob', what: 'cake', who: job[J.GIVER], n: 1 });
+  cakeIn(sim, job, true);
 }
 
 // ------------------------------------------------------------------ each step
@@ -612,20 +695,40 @@ export function oddjobs(sim: SimContext) {
   const s = sim.state;
   const job = jobOf(s);
   if (!job) return;
-  if (job[J.STAGE] === STAGE.ON && s.step >= job[J.ENDS]) return fail(sim, 'time');
-  if (job[J.STAGE] !== STAGE.ON) return;
+  // 08:00 after its last day: the work not done (nor what's to be brought in hand), it's gone; done, it waits to be handed in.
+  if (job[J.STAGE] === STAGE.ON && s.step >= job[J.ENDS]) {
+    if (!inHand(s, job)) return fail(sim, 'time');
+    job[J.STAGE] = STAGE.DONE;
+  }
   const kind = job[J.KIND];
   const target = job[J.TARGET];
+  if (job[J.STAGE] !== STAGE.ON) {
+    // (A parcel dropped, then taken back out of the desk: not delivered any more.)
+    if (kind === KIND.DROP && deskCount(sim, job) <= job[J.WARN]) job[J.STAGE] = STAGE.ON;
+    return;
+  }
   switch (kind) {
-    case KIND.DROP:
-      // Into the desk: seen doing it, it's off.
-      if (countIn(sim, deskOf(sim, target), PARCEL) > job[J.WARN]) return s.seen ? fail(sim, 'seen') : done(sim, job);
+    case KIND.LIFT: {
+      // Lifted: out of where it was left for this job (one kept from an earlier job doesn't count).
+      const { box, item } = liftBox(sim, job[J.VAR], target);
+      if (!job[J.PROG] && countIn(sim, box, item) === 0) job[J.PROG] = 1;
       return;
+    }
+    case KIND.DROP: {
+      // Into the desk: seen doing it by hand, it's off (the rat's doing is nobody's sight of the player).
+      const n = deskCount(sim, job);
+      job[J.WARN] = Math.min(job[J.WARN], n);
+      if (n > job[J.WARN]) return s.seen && !byRat(sim, deskOf(sim, target), PARCEL) ? fail(sim, 'seen') : done(sim, job);
+      return;
+    }
     case KIND.FRAME: {
       const desk = deskOf(sim, target);
-      const planted = countIn(sim, desk, STASH) > job[J.WARN];
+      // (Not yet planted: an old stash searched out lowers what's already there.)
+      const n = stashIn(sim, desk);
+      if (!job[J.PROG]) job[J.WARN] = Math.min(job[J.WARN], n);
+      const planted = n > job[J.WARN];
       if (planted && !job[J.PROG]) {
-        if (s.seen) return fail(sim, 'caught');
+        if (s.seen && !byRat(sim, desk, STASH)) return fail(sim, 'caught');
         job[J.PROG] = 1;
         sim.events.push({ type: 'oddjob', what: 'planted', who: job[J.GIVER] });
       } else if (!planted && job[J.PROG]) {

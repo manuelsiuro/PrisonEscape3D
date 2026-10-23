@@ -103,6 +103,8 @@ export const PAID_OPINION = 12;
 
 /** Frame: the one who asked tips the guards off at this minute into the prison day (19:00) each day the stash is in place. */
 export const FRAME_MINUTE = 11 * 60;
+/** A job taken from this minute into the prison day (18:00, the evening free time) on counts its days from the next prison day. */
+export const LATE_MINUTE = 10 * 60;
 
 /**
  * Lookout: the dig runs in a free time while the player keeps within WATCH tiles of the digger's
@@ -159,7 +161,12 @@ export const CHAINS: Record<string, ChainDef> = {
   irongate: { who: 3, steps: [step(KIND.LIFT, LIFT.WHISTLE, 0, 30), step(KIND.DROP, 0, 11, 35), step(KIND.CHECKERS, 0, 4, 30, PERK.DEBT)] },
 };
 
-/** The job held (`state.oddjob`), field by field (WARN: the guards coming at a dig, a bit each; a drop's or a frame-up's: what the desk held of it as it was taken). */
+/**
+ * The job held (`state.oddjob`), field by field. PROG: a dig's steps, a frame-up's stash in place,
+ * the cake come in, what's to be lifted out of where it was left. AUX: a whistle's hiding, the day of
+ * a frame-up's tip, the day the cake found no room. WARN: the guards coming at a dig, a bit each; a
+ * drop's or a frame-up's: the fewest of it the desk has held since the job was taken.
+ */
 export const J = { KIND: 0, VAR: 1, GIVER: 2, TARGET: 3, ENDS: 4, FROM: 5, STAGE: 6, PROG: 7, AUX: 8, PAY: 9, PERK: 10, ITEM: 11, WARN: 12 } as const;
 export const JOB_LEN = 13;
 /** The record (`state.oddjobs`): [the prison day of the pins taken, which (a bit each), the story's next step, the prison day its last was handed in, who owes the player (a bit per inmate)]. */
