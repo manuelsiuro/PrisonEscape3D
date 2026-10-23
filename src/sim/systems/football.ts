@@ -3,11 +3,14 @@
  * Talked into it by an inmate at the pitch in the games' hours (TALK.FOOTBALL: he captains the
  * other side), the player plays with the two inmates who think most of them, against him and the
  * two others nearest. The players walk on; the whistle blows once they're on the field (or after
- * GATHER_STEPS), and the match runs MATCH_STEPS.
+ * GATHER_STEPS), and the match runs MATCH_STEPS (`matchSteps`).
  *
  * The ball: an integer position and speed, slowed a little each step, bouncing off the pitch's
  * boards (its sides and ends but for the goals' mouths). The player dribbles by running into it,
  * and kicks it (EXT.KICK: Space held, let go) the way they face, harder the longer it was held.
+ * Since 2.16 (not under Sim.rules215): Kick held goes the moment the ball's in reach, a kick let go
+ * a moment early waits for it, one roughly at the far net goes at its mouth and one at their own
+ * net is cleared wide.
  * The inmates chase it and keep goal; a kick of theirs goes at the other goal, give or take, by
  * roll() (a team-mate passes to the player ahead of him now and then).
  *
@@ -20,7 +23,7 @@
  */
 import { BRAWL_GUARDS } from '../../content/crew';
 import { CROWD_RANGE } from '../../content/games';
-import { AIM_WIDE, KICKOFF_STEPS, BALL_KEEP, KEEPER_COOL, KEEPER_REACH, SHOOT_RANGE, BALL_R, BALL_STOP, BEHIND, BOUNCE_KEEP, CALL_RANGE, DRIBBLE_PUSH, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, GOAL_PAUSE, KEEPER_RUSH, KICK_COOL, KICK_HOLD, KICK_INMATE, KICK_MAX, KICK_MIN, KICK_NOISE, KICK_REACH, KICK_SPREAD, MATCH_STEPS, PASS_ODDS, PITCH_LEAVE, PITCH_RANGE, TEAM_CROWD_OPINION, TEAM_PLAY_OPINION, TEAM_WIN_OPINION, TOUCH, YARD_EYES } from '../../content/team';
+import { AIM_HELP, AIM_IN, AIM_WIDE, KICK_GRACE, KICK_LIFT, KICK_TAP, KICKOFF_STEPS, MATCH_STEPS_215, TACKLE_COOL, BALL_KEEP, KEEPER_COOL, KEEPER_REACH, SHOOT_RANGE, BALL_R, BALL_STOP, BEHIND, BOUNCE_KEEP, CALL_RANGE, DRIBBLE_PUSH, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, GOAL_PAUSE, KEEPER_RUSH, KICK_COOL, KICK_HOLD, KICK_INMATE, KICK_MAX, KICK_MIN, KICK_NOISE, KICK_REACH, KICK_SPREAD, MATCH_STEPS, PASS_ODDS, PITCH_LEAVE, PITCH_RANGE, TEAM_CROWD_OPINION, TEAM_PLAY_OPINION, TEAM_WIN_OPINION, TOUCH, YARD_EYES } from '../../content/team';
 import type { Pitch } from '../../content/prisons/types';
 import { nearestDir, tileAt } from '../ai/path';
 import { DIR_X, DIR_Z } from '../command';
@@ -69,6 +72,10 @@ export interface Match {
   restart: number;
   /** The side kicking off (0 the player's, 1 the other; -1 the ball's in open play): the other side can't touch it until they have. */
   kick: number;
+  /** 2.16: the step Kick was let go with the ball out of reach (the kick waits KICK_GRACE for it); 0 or absent none. */
+  late?: number;
+  /** 2.16: Kick went down with the ball already at the player's feet (1): it charges until let go (or full power), not on contact; once the ball's away, it goes on the next touch. */
+  feet?: number;
 }
 
 /** Match.cool's place for the player's own kick. */
@@ -157,14 +164,18 @@ export function sightFor(sim: SimContext, g: Guard, x: number, z: number): numbe
 
 // ------------------------------------------------------------------ the teams
 
-/** What an inmate won't get up from for a match: sleep, a meal, a seat, a game with someone. */
-const BUSY: ReadonlySet<number> = new Set([DOING.SLEEP, DOING.EAT, DOING.SIT, DOING.SIT_READ, DOING.BOARD, DOING.CARDS, DOING.DICE, DOING.WRESTLE, DOING.LOOKOUT, DOING.BRAWL]);
+/** What an inmate won't get up from for a match: sleep, a meal, a game with someone (before 2.16, a seat too: the benches by the pitch kept players off it). */
+const BUSY: ReadonlySet<number> = new Set([DOING.SLEEP, DOING.EAT, DOING.BOARD, DOING.CARDS, DOING.DICE, DOING.WRESTLE, DOING.LOOKOUT, DOING.BRAWL]);
+const BUSY_215: ReadonlySet<number> = new Set([...BUSY, DOING.SIT, DOING.SIT_READ]);
+
+/** How long a match is played (steps from the whistle). */
+export const matchSteps = (sim: Pick<SimContext, 'rules215'>) => (sim.rules215 ? MATCH_STEPS_215 : MATCH_STEPS);
 
 /** Whether an inmate could play now: up and about, not busy with the player or the crew's orders, near the pitch. */
 function free(sim: SimContext, k: number, p: Pitch): boolean {
   const s = sim.state;
   const m = s.inmates[k];
-  if (!m || m.ko > 0 || m.angry > 0 || BUSY.has(m.doing)) return false;
+  if (!m || m.ko > 0 || m.angry > 0 || (sim.rules215 ? BUSY_215 : BUSY).has(m.doing)) return false;
   if (s.dice[0] === k || s.bout[0] === k || s.cheat?.who === k || s.shootout?.who === k || s.ink?.who === k) return false;
   if (s.crew.some((e) => e[0] === k && e[1] !== 0)) return false;
   return offBy(p, m.body.x, m.body.z) <= CALL_RANGE;
@@ -230,38 +241,99 @@ export function startMatch(sim: SimContext, who: number) {
 
 // ------------------------------------------------------------------ the player's kick
 
-/** Space down for a kick (EXT.KICK 0): in a match, on the ground floor. */
+/** Space down for a kick (EXT.KICK 0): in a match, on the ground floor (a kick let go early and still waiting: begun again). */
 export function holdKick(sim: SimContext) {
   const s = sim.state;
   const o = s.match;
-  if (!o || o.hold || s.layer !== LAYER.GROUND || s.sleeping || s.ko > 0) return;
+  if (!o || (o.hold && !o.late) || s.layer !== LAYER.GROUND || s.sleeping || s.ko > 0) return;
   o.hold = s.step;
+  o.late = 0;
+  o.feet = !sim.rules215 && inReach(sim, o) ? 1 : 0;
 }
 
 /** How hard a kick held this many steps goes (units a step). */
 export const kickPower = (held: number) => KICK_MIN + Math.floor(((KICK_MAX - KICK_MIN) * Math.min(KICK_HOLD, Math.max(0, held))) / KICK_HOLD);
 
-/** Space let go (EXT.KICK 1, or held to KICK_HOLD): the ball kicked the way the player faces if it's at their feet; else a kick at the air. */
+/** The ball is the player's to kick now: in play, not the other side's kick-off, their kick ready, at their feet. */
+function inReach(sim: SimContext, o: Match): boolean {
+  const s = sim.state;
+  const p = s.player;
+  return o.at > 0 && !o.pause && o.kick !== 1 && s.step >= o.cool[PLAYER_COOL] && (o.ball[0] - p.x) ** 2 + (o.ball[1] - p.z) ** 2 <= KICK_REACH * KICK_REACH;
+}
+
+/**
+ * Space let go (EXT.KICK 1, or held to KICK_HOLD): the ball kicked the way the player faces if
+ * it's at their feet; else a kick at the air (since 2.16, one let go a moment early waits for the
+ * ball KICK_GRACE steps first: keepMatch).
+ */
 export function releaseKick(sim: SimContext) {
   const s = sim.state;
   const o = s.match;
-  if (!o || !o.hold) return;
-  const power = kickPower(s.step - o.hold);
+  if (!o || !o.hold || o.late) return;
+  if (!inReach(sim, o) && !sim.rules215) {
+    o.late = s.step;
+    return;
+  }
+  kickOrWhiff(sim, o, s.step);
+}
+
+/** The kick held from `o.hold` to `to` goes now: at the ball if it's in reach, else at the air. */
+function kickOrWhiff(sim: SimContext, o: Match, to: number) {
+  const s = sim.state;
+  const power = kickPower(to - o.hold) + (sim.rules215 ? 0 : KICK_LIFT);
   o.hold = 0;
-  const p = s.player;
+  o.late = 0;
+  o.feet = 0;
   const [bx, bz] = o.ball;
-  const inPlay = o.at > 0 && !o.pause && o.kick !== 1 && s.step >= o.cool[PLAYER_COOL];
-  if (!inPlay || (bx - p.x) ** 2 + (bz - p.z) ** 2 > KICK_REACH * KICK_REACH) {
+  if (!inReach(sim, o)) {
     sim.events.push({ type: 'football', what: 'whiff', power });
     return;
   }
-  o.ball[2] = Math.trunc(((DIR_X[p.facing] ?? 0) * power) / 1024);
-  o.ball[3] = Math.trunc(((DIR_Z[p.facing] ?? 0) * power) / 1024);
+  const [dx, dz] = kickWay(sim, o);
+  o.ball[2] = Math.trunc((dx * power) / 1024);
+  o.ball[3] = Math.trunc((dz * power) / 1024);
   o.last = -1;
   o.kick = -1;
   o.cool[PLAYER_COOL] = s.step + KICK_COOL;
   sim.events.push({ type: 'football', what: 'kick', power });
   makeNoise(sim, 'thud', LAYER.GROUND, tileAt(bx, bz), KICK_NOISE);
+}
+
+/**
+ * The way the player's kick goes (×1024): the way they face; since 2.16, within AIM_HELP of the
+ * way to the far net, at its mouth (where their way crosses its line, kept AIM_IN of its middle).
+ */
+function kickWay(sim: SimContext, o: Match): [number, number] {
+  const face = sim.state.player.facing;
+  const dx = DIR_X[face] ?? 0;
+  const dz = DIR_Z[face] ?? 0;
+  const p = pitchOf(sim);
+  if (sim.rules215 || !p) return [dx, dz];
+  const f = fieldOf(p);
+  const ba = along(f, o.ball[0], o.ball[1]);
+  const bl = across(f, o.ball[0], o.ball[1]);
+  const fa = f.along ? dx : dz;
+  const fl = f.along ? dz : dx;
+  const ga = f.a1 - ba;
+  const gl = f.mid - bl;
+  const gd = Math.sqrt(ga * ga + gl * gl) || 1;
+  // (At the player's own net: cleared out wide instead, to the nearer side and a little up the field.)
+  if (fa < 0) {
+    const cross = bl + Math.trunc((fl * (ba - f.a0)) / -fa);
+    if (Math.abs(cross - f.mid) > GOAL_HALF + AIM_WIDE / 2) return [dx, dz];
+    const side = bl >= f.mid ? 1 : -1;
+    const va = 300;
+    const vl = side * 980;
+    return f.along ? [va, vl] : [vl, va];
+  }
+  if (ga <= 0 || (fa * ga + fl * gl) / gd < AIM_HELP) return [dx, dz];
+  const tl = Math.max(f.mid - AIM_IN, Math.min(f.mid + AIM_IN, bl + Math.trunc((fl * ga) / fa)));
+  // (At the point on the line itself: it crosses where aimed.)
+  const ta = ga;
+  const d = Math.sqrt(ta * ta + (tl - bl) ** 2) || 1;
+  const va = Math.trunc((ta * 1024) / d);
+  const vl = Math.trunc(((tl - bl) * 1024) / d);
+  return f.along ? [va, vl] : [vl, va];
 }
 
 // ------------------------------------------------------------------ the match, each step
@@ -367,7 +439,10 @@ export function keepMatch(sim: SimContext) {
   if (!o) return;
   const p = pitchOf(sim);
   if (!p) return endMatch(sim, 'off');
-  if (o.hold && s.step - o.hold >= KICK_HOLD) releaseKick(sim);
+  // The kick let go a moment early (since 2.16): it waits KICK_GRACE for the ball. Held to full power before 2.16: it goes, at the ball or the air.
+  if (o.late) {
+    if (inReach(sim, o) || s.step - o.late >= KICK_GRACE) kickOrWhiff(sim, o, o.late);
+  } else if (o.hold && s.step - o.hold >= KICK_HOLD && sim.rules215) releaseKick(sim);
   // The player's blow at one of the other side: a hard foul (one of them going for the player on his own, a grudge, an ambush: off).
   const rivals = [o.team[TEAM.CAPTAIN], o.team[TEAM.RIVAL], o.team[TEAM.RIVAL_KEEPER]];
   if (sim.events.some((e) => e.type === 'hit' && rivals.includes(e.who))) return endMatch(sim, 'foul');
@@ -386,7 +461,7 @@ export function keepMatch(sim: SimContext) {
     }
     return;
   }
-  if (s.step - o.at >= MATCH_STEPS) return fullTime(sim, o);
+  if (s.step - o.at >= matchSteps(sim)) return fullTime(sim, o);
   if (o.pause) {
     if (s.step < o.pause) return;
     const c = centreOf(p);
@@ -399,8 +474,15 @@ export function keepMatch(sim: SimContext) {
   const b = o.ball;
   // (The kick-off: the other side keeps off it until the side kicking off has touched it, or for KICKOFF_STEPS at most.)
   if (o.kick >= 0 && s.step - Math.max(o.at, o.restart) >= KICKOFF_STEPS) o.kick = -1;
-  // The player runs into it: dribbled on, a little faster than the walk (a ball already going faster that way rolls on).
-  if (pl.moving && o.kick !== 1 && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 < TOUCH * TOUCH) {
+  // Kick held (since 2.16): it goes the moment the ball's in reach, as hard as it's been held; held down with the ball already at the feet, it charges until let go or full (the ball once away, it goes on the next touch).
+  if (!sim.rules215 && o.hold > 0 && !o.late) {
+    const near = inReach(sim, o);
+    if (o.feet && !near) o.feet = 0;
+    if (near && s.step - o.hold >= (o.feet ? KICK_HOLD : KICK_TAP)) kickOrWhiff(sim, o, s.step);
+  }
+  const kicked = !sim.rules215 && o.cool[PLAYER_COOL] === s.step + KICK_COOL;
+  // The player runs into it: dribbled on, a little faster than the walk (a ball already going faster that way rolls on; one just kicked goes where it was kicked).
+  if (!kicked && pl.moving && o.kick !== 1 && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 < TOUCH * TOUCH) {
     const push = walkSpeed(s.spd) + DRIBBLE_PUSH;
     const dx = DIR_X[pl.facing] ?? 0;
     const dz = DIR_Z[pl.facing] ?? 0;
@@ -419,6 +501,8 @@ export function keepMatch(sim: SimContext) {
     if (s.step < o.cool[k] || (o.kick >= 0 && sideOf(k) !== o.kick) || nearPath(b, m.body) >= reach * reach) continue;
     inmateKick(sim, o, f, k);
     o.kick = -1;
+    // (A rival's tackle, never the keeper's save: the ball off the player's feet, theirs again only in a moment.)
+    if (!sim.rules215 && sideOf(k) === 1 && k !== TEAM.RIVAL_KEEPER && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 <= KICK_REACH * KICK_REACH) o.cool[PLAYER_COOL] = Math.max(o.cool[PLAYER_COOL], s.step + TACKLE_COOL);
     break;
   }
   roll(sim, o, f);

@@ -123,6 +123,13 @@ export class Sim {
   rules250 = false;
   /** Replaying a run logged before the pay phone (2.10, runlog.ts): nobody queued for it. Not state. */
   noQueue = false;
+  /**
+   * Replaying a run logged under 2.15 or before (runlog.ts): quiz night, football and race night as
+   * they were before 2.16 made them easier (no reading time at the quiz, the match's ball not held
+   * at the feet nor its kicks aimed, 45-second matches with seated inmates left out, the race card
+   * up at 20:00, the pet scratched away from the track). Not state.
+   */
+  rules215 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;

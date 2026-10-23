@@ -366,6 +366,8 @@ export class View {
   private readonly pastimesView = new PastimesView();
   private readonly longView = new LongView();
   private readonly teamView = new TeamView();
+  /** The player where they're drawn this frame (the match's ring under them). */
+  private readonly meAt = { x: 0, z: 0 };
   /** P31: the sports ground's track and court paint, the garden's crops. */
   private readonly groundsView = new GroundsView();
   private readonly nightsView = new NightsView();
@@ -1368,7 +1370,9 @@ export class View {
       this.rollCallPaint.visible = this.rollCallShown > 0 && f.layer !== LAYER.UNDER;
     }
     // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
-    this.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER);
+    this.meAt.x = f.x;
+    this.meAt.z = f.z;
+    this.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER, this.meAt);
     // Stage nights (P30): the stage, the buzzers (the ground floor, and from the vents and roofs over it).
     this.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // The pay phone (P34): the handset, Lou's car, the diversion's beacon (not from the tunnels).

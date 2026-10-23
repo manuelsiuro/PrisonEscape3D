@@ -5,7 +5,7 @@
  *   free time, once a prison day, with bait in the hotbar: the rat eats it (fed today) and runs,
  *   gaining TRACK_GAIN + what's left to 100 / TRACK_SLOW of speed.
  * - **Race nights:** odd prison days at RACE_MINUTE, on the track in the cell block
- *   (`leisure.race`). From CARD_MINUTE the card is up: RIVALS inmates' rats (drawn by cell with
+ *   (`leisure.race`). From CARD_MINUTE (`cardMinute`) the card is up: RIVALS inmates' rats (drawn by cell with
  *   roll(), each with its own speed and fed or not today), and the player's pet after them if
  *   entered. At the track before the off, one bet a night ($5–$20 on a lane), at the bookie's
  *   odds then (from the speeds alone: he can't know who ate).
@@ -17,7 +17,7 @@
  *
  * Nothing happens in the simulation unless the player bets or enters: the card is worked out, never stored.
  */
-import { BET_RANGE, BETS, CARD_MINUTE, FED_BONUS, LEGS, LUCK, ODDS_MARGIN, ODDS_MAX, ODDS_MIN, ODDS_SAMPLES, PURSE, RACE_MINUTE, RACE_NOISE, RACE_STEPS, RAT_NAMES, RAT_START_SPEED, RIVAL_FED, RIVAL_SPEED, RIVAL_SPREAD, RIVALS, TRACK_GAIN, TRACK_SLOW, TRACK_STEPS } from '../../content/long';
+import { BET_RANGE, BETS, CARD_MINUTE, CARD_MINUTE_215, FED_BONUS, START_RANGE, LEGS, LUCK, ODDS_MARGIN, ODDS_MAX, ODDS_MIN, ODDS_SAMPLES, PURSE, RACE_MINUTE, RACE_NOISE, RACE_STEPS, RAT_NAMES, RAT_START_SPEED, RIVAL_FED, RIVAL_SPEED, RIVAL_SPREAD, RIVALS, TRACK_GAIN, TRACK_SLOW, TRACK_STEPS } from '../../content/long';
 import { DICE_HEAT } from '../../content/games';
 import { ROUTINE } from '../../content/routine';
 import type { Track } from '../../content/prisons/types';
@@ -138,21 +138,24 @@ export function runRace(salt: number, day: number, card: readonly Entrant[]): Ra
   return { legs, order };
 }
 
-/** Within BET_RANGE tiles of the track (on the ground floor). */
-export function atTrack(sim: SimContext): boolean {
+/** Within `range` tiles of the track (BET_RANGE: at it), on the ground floor. */
+export function atTrack(sim: SimContext, range = BET_RANGE): boolean {
   const s = sim.state;
   const t = trackOf(sim.world);
   if (!t || s.layer !== LAYER.GROUND || sim.away || s.stowed) return false;
   const px = Math.floor(s.player.x / UNIT);
   const pz = Math.floor(s.player.z / UNIT);
-  return trackTiles(t).some((i) => Math.max(Math.abs((i % MAP_W) - px), Math.abs(Math.floor(i / MAP_W) - pz)) <= BET_RANGE);
+  return trackTiles(t).some((i) => Math.max(Math.abs((i % MAP_W) - px), Math.abs(Math.floor(i / MAP_W) - pz)) <= range);
 }
 
-/** The card is up and bets are taken: a race night, from CARD_MINUTE to the off, no lockdown. */
+/** When the card goes up (minutes of the day): 19:00, 20:00 before 2.16. */
+export const cardMinute = (sim: Pick<SimContext, 'rules215'>) => (sim.rules215 ? CARD_MINUTE_215 : CARD_MINUTE);
+
+/** The card is up and bets are taken: a race night, from the card's minute to the off, no lockdown. */
 export function cardUp(sim: SimContext): boolean {
   const s = sim.state;
   const m = clockAt(s.step).minuteOfDay;
-  return !!trackOf(sim.world) && raceNight(prisonDay(s.step)) && m >= CARD_MINUTE && m < RACE_MINUTE && !s.lockdown;
+  return !!trackOf(sim.world) && raceNight(prisonDay(s.step)) && m >= cardMinute(sim) && m < RACE_MINUTE && !s.lockdown;
 }
 
 /** Today's race state (a fresh one if there's none for today). */
@@ -228,9 +231,9 @@ export function races(sim: SimContext) {
       return;
     }
     if (s.lockdown) return off(sim, 'off');
-    // The pet away on an errand (or the player nowhere near): it isn't at the start: scratched (a bet on it void).
+    // The pet away on an errand (or the player nowhere near: since 2.16, START_RANGE away): it isn't at the start: scratched (a bet on it void).
     const pet = petOf(s);
-    if (r[RACE.ENTERED] && !(pet && pet.mode === RAT.SHOULDER && atTrack(sim))) {
+    if (r[RACE.ENTERED] && !(pet && pet.mode === RAT.SHOULDER && atTrack(sim, sim.rules215 ? BET_RANGE : START_RANGE))) {
       // (Every bet void, its stake back: the odds were quoted on a field with the pet in it.)
       if (r[RACE.LANE] >= 0) return off(sim, 'scratched');
       const lane = petLane(raceCard(s, day));

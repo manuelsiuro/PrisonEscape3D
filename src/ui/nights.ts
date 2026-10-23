@@ -357,12 +357,15 @@ export interface QuizView {
   pts: number[];
   said: number[];
   got: number;
-  /** The question (its place, 0–7), its text and answers, the right one (shown in the reveal), the time left (0–1). */
+  /** The question (its place, 0–7), its text and answers, the right one (shown in the reveal), the time left (0–1: of the head start while it's read, then of the answering); the seconds left of it all. */
   q: number;
   question: string;
   choices: string[];
   answer: number;
   left: number;
+  secs: number;
+  /** While it's read, before the others' buzzers open: the seconds of that head start left (0: open). */
+  reading: number;
   /** The end: won, a tie, lost; the prize and the Intellect. */
   end: 'won' | 'tie' | 'lost' | '';
   prize: number;
@@ -476,36 +479,43 @@ export class QuizCard {
             })
             .join('')
         : '';
-      const note =
-        v.phase === 'offer'
-          ? v.why || t('quiz.offer')
-          : v.phase === 'gather'
-            ? t('quiz.gather')
-            : v.phase === 'reveal'
-              ? v.got === 0
-                ? t('quiz.gotYou')
-                : v.got > 0
-                  ? t('quiz.gotThem', { name: v.names[v.got] })
-                  : t('quiz.nobody')
-              : v.phase === 'ask'
-                ? v.said[0] >= 0
-                  ? t('quiz.outYou')
-                  : t(TOUCH ? 'quiz.askTouch' : 'quiz.askKeys')
-                : v.end === 'won'
-                  ? t('quiz.won', { n: v.prize, m: v.int })
-                  : v.end === 'tie'
-                    ? t('quiz.tie', { n: v.prize, m: v.int })
-                    : t('quiz.lost');
-      setText(this.note, note);
+
       setText(this.join.querySelector('span')!, t('quiz.join'));
       setText(this.quit.querySelector('span')!, t('quiz.quit'));
       this.join.classList.toggle('hidden', v.phase !== 'offer');
       this.join.disabled = !!v.why;
       this.quit.classList.toggle('hidden', v.phase === 'offer' || v.phase === 'result');
     }
+    // (The note outside the redraw: the head start counts down each second, the answers left as they are.)
+    const note =
+      v.phase === 'offer'
+        ? v.why || t('quiz.offer')
+        : v.phase === 'gather'
+          ? t('quiz.gather')
+          : v.phase === 'reveal'
+            ? v.got === 0
+              ? t('quiz.gotYou')
+              : v.got > 0
+                ? t('quiz.gotThem', { name: v.names[v.got] })
+                : t('quiz.nobody')
+            : v.phase === 'ask'
+              ? v.said[0] >= 0
+                ? t('quiz.outYou')
+                : v.reading
+                  ? t('quiz.reading', { n: v.reading })
+                  : t(TOUCH ? 'quiz.askTouch' : 'quiz.askKeys')
+              : v.end === 'won'
+                ? t('quiz.won', { n: v.prize, m: v.int })
+                : v.end === 'tie'
+                  ? t('quiz.tie', { n: v.prize, m: v.int })
+                  : t('quiz.lost');
+    setText(this.note, note);
+    this.el.classList.toggle('reading', v.phase === 'ask' && v.reading > 0 && v.said[0] < 0);
     (this.bar.firstElementChild as HTMLElement).style.width = `${(Math.max(0, Math.min(1, v.left)) * 100).toFixed(1)}%`;
     this.bar.classList.toggle('hidden', v.phase !== 'ask');
-    this.bar.setAttribute('aria-label', t('quiz.leftAria', { n: Math.ceil(v.left * 10) }));
+    // (The head start in gold while the question is read, then the answering's own clock.)
+    this.bar.classList.toggle('reading', v.reading > 0);
+    this.bar.setAttribute('aria-label', t('quiz.leftAria', { n: v.secs }));
     return true;
   }
 }

@@ -41,7 +41,8 @@ export interface DayBlock {
   /** The block under way: how far through (0–1) and what's left ("27 min left"). */
   through?: number;
   left?: string;
-  pin?: DayPin;
+  /** What's on in it (the day's event, race night). */
+  pins: DayPin[];
 }
 
 export interface DayView {
@@ -70,10 +71,12 @@ function block(b: DayBlock): string {
     b.at === 'now' && b.through !== undefined
       ? `<span class="dc-now"><span class="dc-now-tag">${t('dayCard.now')}</span><i class="dc-bar"><i style="width:${Math.round(b.through * 100)}%"></i></i><small>${esc(b.left ?? '')}</small></span>`
       : '';
-  const p = b.pin;
-  const pin = p
-    ? `<div class="dc-pin${p.over ? ' over' : ''}" style="--c:${p.color}"><span class="dc-pin-ic">${icon(p.icon, 14)}</span><span class="dc-pin-text"><b>${esc(p.title)}${p.when ? `<em>${esc(p.when)}</em>` : ''}</b><small>${esc(p.sub)}</small></span>${p.tag ? `<em class="dc-tag ${p.tagTone}">${p.tagTone === 'ok' ? icon('check', 12) : ''}${esc(p.tag)}</em>` : ''}</div>`
-    : '';
+  const pin = b.pins
+    .map(
+      (p) =>
+        `<div class="dc-pin${p.over ? ' over' : ''}" style="--c:${p.color}"><span class="dc-pin-ic">${icon(p.icon, 14)}</span><span class="dc-pin-text"><b>${esc(p.title)}${p.when ? `<em>${esc(p.when)}</em>` : ''}</b><small>${esc(p.sub)}</small></span>${p.tag ? `<em class="dc-tag ${p.tagTone}">${p.tagTone === 'ok' ? icon('check', 12) : ''}${esc(p.tag)}</em>` : ''}</div>`,
+    )
+    .join('');
   return `<li class="dc-block ${b.at}${b.must ? ' must' : ''}"${b.at === 'now' ? ' aria-current="time"' : ''}>
     <time datetime="${b.time}">${b.time}</time><span class="dc-dot" aria-hidden="true"></span>
     <span class="dc-body"><span class="dc-row"><span class="dc-ic">${icon(b.icon, 16)}</span><span class="dc-text"><b>${esc(b.name)}</b><small>${esc(b.place)}</small></span>${tag}</span>${now}${pin}</span>

@@ -8,7 +8,8 @@ import { box, cyl, merge, paint } from './kit';
 /**
  * What yard football (P29) shows: the pitch painted on the yard (its lines, the halfway line and
  * circle, a box before each goal), the two goals (posts, crossbar and a net) and the ball while a
- * match is on, rolling as it goes.
+ * match is on, rolling as it goes, a ring round it seen through the players; rings under the
+ * players' feet (each side's colour, the player's own sky blue).
  */
 export interface TeamFrame {
   /** The prison's pitch (null: none), and its theme (the paint stands out on the snow too). */
@@ -26,9 +27,13 @@ const PAINT = 0xf2f0e6;
 const PAINT_SNOW = 0x3a6fb0;
 const POST = 0xf4f4ef;
 const R = BALL_R / UNIT;
-/** The sides' rings under the players' feet: the player's side green, the other red. */
+/** The sides' rings under the players' feet: the player's side green, the other red; the player's own sky blue (gold is the lock-on's). */
 const MATE = 0x3fc79a;
 const RIVAL = 0xe5484d;
+const ME = 0x4fd2ff;
+const ME_SCALE = 1.4;
+/** The ball's ring: white, blue on the snow (as the paint is). */
+const BALL_RING = 0xffffff;
 
 /** A football: an icosphere, white with the dark patches round its twelve points. */
 function ballGeometry(): THREE.BufferGeometry {
@@ -60,8 +65,10 @@ export class TeamView {
   readonly group = new THREE.Group();
   private readonly lines = new THREE.Group();
   private readonly ball: THREE.Mesh;
-  /** The sides' rings, one instanced mesh (one draw call): the shown ones first, the rest not drawn. */
+  /** The sides' rings, one instanced mesh (one draw call): the shown ones first, the rest not drawn (the player's last). */
   private readonly rings: THREE.InstancedMesh;
+  /** The ball's ring on the ground, seen through the players (a ball in a crowd is never lost). */
+  private readonly ballRing: THREE.Mesh;
   private readonly at = new THREE.Matrix4();
   private readonly tint = new THREE.Color();
   private drawn = '';
@@ -76,14 +83,20 @@ export class TeamView {
     const ring = new THREE.RingGeometry(0.3, 0.4, 28);
     ring.rotateX(-Math.PI / 2);
     // (White, tinted per ring: the player's side, the other.)
-    this.rings = new THREE.InstancedMesh(ring, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false }), 5);
+    this.rings = new THREE.InstancedMesh(ring, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false }), 6);
     this.rings.renderOrder = 0.3;
     // (They follow the players over the pitch.)
     this.rings.frustumCulled = false;
     // (Tinted from the start: one shader before and after the first match.)
-    this.rings.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(5 * 3).fill(1), 3);
+    this.rings.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(6 * 3).fill(1), 3);
     this.rings.count = 0;
     this.group.add(this.rings);
+    const around = new THREE.RingGeometry(R * 1.7, R * 2.3, 24);
+    around.rotateX(-Math.PI / 2);
+    this.ballRing = new THREE.Mesh(around, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }));
+    this.ballRing.renderOrder = 5;
+    this.ballRing.visible = false;
+    this.group.add(this.ballRing);
   }
 
   /** When to free the last pitch's meshes (setWorld: after the next prison's first frame, its shaders in use by then). */
@@ -191,7 +204,8 @@ export class TeamView {
     this.lines.add(lines, goals, nets);
   }
 
-  update(f: TeamFrame | null, inmates: ReadonlyArray<{ x: number; z: number }>, dt: number, shown: boolean) {
+  /** The frame: the pitch, the sides' rings (and the player's, at `me`), the ball. */
+  update(f: TeamFrame | null, inmates: ReadonlyArray<{ x: number; z: number }>, dt: number, shown: boolean, me: { x: number; z: number } | null = null) {
     const p = f?.pitch ?? null;
     const key = p ? `${p.x},${p.z},${p.w},${p.d},${f!.theme}` : '';
     if (key !== this.drawn) {
@@ -211,6 +225,13 @@ export class TeamView {
       this.rings.setColorAt(n, this.tint.setHex(k < 2 ? MATE : RIVAL));
       n++;
     }
+    // (The player's own, sky blue, while a match is on: which one is you, in the scrum.)
+    if (me && f?.ball && shown) {
+      // (Wider and bolder than the sides' rings, not told apart by its colour alone.)
+      this.rings.setMatrixAt(n, this.at.makeScale(ME_SCALE, 1, ME_SCALE).setPosition(me.x, 0.013, me.z));
+      this.rings.setColorAt(n, this.tint.setHex(ME));
+      n++;
+    }
     this.rings.count = n;
     if (n) {
       this.rings.instanceMatrix.needsUpdate = true;
@@ -218,6 +239,11 @@ export class TeamView {
     }
     const b = f?.ball ?? null;
     this.ball.visible = !!b && shown;
+    this.ballRing.visible = !!b && shown;
+    if (b) {
+      this.ballRing.position.set(b.x, 0.015, b.z);
+      (this.ballRing.material as THREE.MeshBasicMaterial).color.setHex(f!.theme === 'alpine' ? PAINT_SNOW : BALL_RING);
+    }
     if (!b) {
       this.last.set = false;
       return;

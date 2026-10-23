@@ -1,14 +1,15 @@
 import { buzz } from '../app/haptics';
-import { DESIGNS, FRIEND_INK, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, INK_OPINION, KICK_HOLD, KICK_REACH, LEAD_IN, MATCH_STEPS, TEAM_CROWD_OPINION } from '../content/team';
+import { DESIGNS, FRIEND_INK, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, INK_OPINION, KICK_HOLD, KICK_REACH, LEAD_IN, TEAM_CROWD_OPINION } from '../content/team';
 import { GAMES_A_DAY } from '../content/games';
 import { t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { eyesOn } from '../sim/systems/games';
-import { kickPower, matchRefusal, pitchOf, sideOf, TEAM } from '../sim/systems/football';
+import { kickPower, matchRefusal, matchSteps, pitchOf, sideOf, TEAM } from '../sim/systems/football';
 import { inkRefusal, payOf, qualityOf, TATTOO_GUN, traceSteps, penAt } from '../sim/systems/tattoo';
 import { HOTBAR, itemOf } from '../sim/systems/items';
-import { STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { routineEnd } from '../content/routine';
 import { LAYER } from '../sim/world/World';
 import type { InkView, MatchView } from '../ui/team';
 import type { TeamFrame } from '../render/Team';
@@ -45,6 +46,7 @@ export function resetTeam() {
   trail.length = 0;
   trailStep = -1;
   kicking = false;
+  pressed = false;
   lastGoal = { ours: false, by: '', own: false };
   feetAt = -1e9;
 }
@@ -94,7 +96,7 @@ function refusalText(why: string): string {
 
 // ------------------------------------------------------------------ the match's card
 
-const matchView: MatchView = { name: '', phase: 'gather', left: 0, score: [0, 0], ours: false, by: '', own: false, holding: false, power: 0, atFeet: false, mates: [], rivals: [] };
+const matchView: MatchView = { name: '', phase: 'gather', left: 0, of: 0, score: [0, 0], ours: false, by: '', own: false, holding: false, power: 0, atFeet: false, mates: [], rivals: [] };
 
 /** The match under way (null: none), between steps (`a`). */
 export function matchNow(sim: Sim, a: number): MatchView | null {
@@ -104,14 +106,18 @@ export function matchNow(sim: Sim, a: number): MatchView | null {
   const v = matchView;
   v.name = nameOf(sim, o.who);
   v.phase = !o.at ? 'gather' : o.pause ? 'goal' : 'play';
-  const played = o.at ? s.step - o.at : 0;
-  v.left = Math.max(0, Math.ceil((MATCH_STEPS - played) / STEPS_PER_SECOND));
+  // (Full time, or the bell for the next block if it comes first: the match ends there, so the clock does too.)
+  const from = o.at || s.step;
+  const bell = s.step + ((routineEnd(s.routine) - sim.clock.minuteOfDay + 1440) % 1440) * STEPS_PER_MINUTE - (s.step % STEPS_PER_MINUTE);
+  const end = Math.min(from + matchSteps(sim), bell);
+  v.of = Math.max(1, (end - from) / STEPS_PER_SECOND);
+  v.left = Math.max(0, Math.ceil((end - s.step) / STEPS_PER_SECOND));
   v.score = [o.goals[0], o.goals[1]];
   v.ours = lastGoal.ours;
   v.by = lastGoal.by;
   v.own = lastGoal.own;
   v.holding = o.hold > 0;
-  v.power = o.hold ? (kickPower(s.step - o.hold + a) - kickPower(0)) / (kickPower(KICK_HOLD) - kickPower(0)) : 0;
+  v.power = o.hold ? (kickPower((o.late || s.step + a) - o.hold) - kickPower(0)) / (kickPower(KICK_HOLD) - kickPower(0)) : 0;
   const [bx, bz] = o.ball;
   const now = performance.now();
   if (o.at && !o.pause && o.kick !== 1 && (bx - s.player.x) ** 2 + (bz - s.player.z) ** 2 <= KICK_REACH * KICK_REACH) feetAt = now;
@@ -157,24 +163,31 @@ export function inkNow(sim: Sim): InkView | null {
 
 // ------------------------------------------------------------------ Space and the Kick pad
 
-/** Space (or the Kick pad) held and let go in a match: the kick. Returns whether it was taken as one. */
+/**
+ * Space (or the Kick pad) held and let go in a match: the kick. Returns whether it was taken as
+ * one. (Let go while paused, or the focus lost: the release still goes, taken on the resume, so a
+ * kick never stays armed with nothing held.)
+ */
 export function kickKey(down: boolean): boolean {
   const g = play.game;
-  if (!g || g.paused || g.replay) return false;
+  if (!g || g.replay) return false;
   const s = g.rec.sim.state;
   if (!down) {
+    pressed = false;
     if (!kicking) return false;
     kicking = false;
     sendOp(OP.EXT, EXT.KICK, 1);
     return true;
   }
-  if (!s.match || s.layer !== LAYER.GROUND) return false;
+  if (g.paused || !s.match || s.layer !== LAYER.GROUND) return false;
+  pressed = true;
   if (!kicking) sendOp(OP.EXT, EXT.KICK, 0);
   kicking = true;
   return true;
 }
-/** A kick held from the keys or the pad (its release is owed). */
+/** A kick held from the keys or the pad (its release is owed); the key or pad still down (2.16: a kick on contact goes, and the next one is armed while it's held). */
 let kicking = false;
+let pressed = false;
 
 // ------------------------------------------------------------------ the events
 
@@ -190,7 +203,9 @@ export function announceTeam(sim: Sim, e: SimEvent) {
       } else if (e.what === 'kickoff' || e.what === 'restart') sound.whistle();
       else if (e.what === 'kick') {
         sound.kick(Math.min(1, ((e.power ?? 0) - kickPower(0)) / (kickPower(KICK_HOLD) - kickPower(0))));
-        kicking = false;
+        // (Still held: the next kick armed, for the next touch of the ball.)
+        kicking = pressed && !!sim.state.match && !g?.paused;
+        if (kicking) sendOp(OP.EXT, EXT.KICK, 0);
       } else if (e.what === 'whiff') {
         sound.whoosh();
         kicking = false;

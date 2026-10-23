@@ -12,8 +12,9 @@ export const pitch = (x: number, z: number, w: number, d: number): Pitch => ({ x
 
 // ------------------------------------------------------------------ football
 
-/** A match: 45 seconds of play from the whistle (about the exercise hour's length in play time). */
-export const MATCH_STEPS = 45 * STEPS_PER_SECOND;
+/** A match: 90 seconds of play from the whistle (45 before 2.16, Sim.rules215). */
+export const MATCH_STEPS = 90 * STEPS_PER_SECOND;
+export const MATCH_STEPS_215 = 45 * STEPS_PER_SECOND;
 /** Before the whistle, the players walk on: it blows once all are on the field, or after this long. */
 export const GATHER_STEPS = 15 * STEPS_PER_SECOND;
 /** After a goal, the ball stays in the net this long, then it's back on the spot. */
@@ -33,6 +34,23 @@ export const KICK_MIN = 240;
 export const KICK_MAX = 560;
 export const KICK_HOLD = 30;
 export const KICK_REACH = 700;
+/**
+ * 2.16 (not under Sim.rules215), the kick on contact: Kick held KICK_TAP steps or more goes the
+ * moment the ball is in reach (as hard as it was held); let go with the ball out of reach, it waits
+ * KICK_GRACE steps for it. Every kick of the player's goes KICK_LIFT harder. A rival's kick at the
+ * player's feet takes the ball off them for TACKLE_COOL steps.
+ */
+export const KICK_TAP = 4;
+export const KICK_GRACE = 6;
+export const KICK_LIFT = 60;
+export const TACKLE_COOL = 10;
+/**
+ * 2.16, aim help: a kick within AIM_HELP of the way to the far net (its cosine, ×1024: 60°) goes at
+ * the mouth, where the player's way crosses its line, AIM_IN at most from its middle (units); one
+ * at their own net's mouth is cleared out wide instead.
+ */
+export const AIM_HELP = 512;
+export const AIM_IN = 700;
 /** A kick's thud, heard this many tiles away. */
 export const KICK_NOISE = 3;
 /** The inmates: a kick's speed (KICK_INMATE + up to KICK_SPREAD by roll()), how wide of the goal's middle they aim (up to, units), and the steps before one kicks again. */

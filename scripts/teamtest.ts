@@ -15,13 +15,14 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
 import { itemNumber } from '../src/content/items';
 import { RECIPES } from '../src/content/recipes';
-import { DESIGNS, GATHER_STEPS, GOAL_LOOK, INK_HEAT, INK_ME_STEPS, KICK_MAX, KICK_MIN, MATCH_STEPS, TEAM_WIN_OPINION } from '../src/content/team';
+import { AIM_IN, DESIGNS, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, INK_HEAT, INK_ME_STEPS, KICK_GRACE, KICK_MAX, KICK_MIN, KICK_TAP, MATCH_STEPS, MATCH_STEPS_215, TEAM_WIN_OPINION } from '../src/content/team';
 import { command, EXT, OP, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { loadState } from '../src/sim/state';
 import { DAY_STEPS } from '../src/sim/systems/clock';
-import { centreOf, fieldOf, kickPower, onPitch, pitchOf, sightFor, TEAM, watchingMatch } from '../src/sim/systems/football';
+import { centreOf, fieldOf, kickPower, matchSteps, onPitch, pitchOf, sightFor, TEAM, teamsFor, watchingMatch } from '../src/sim/systems/football';
 import { GUARD } from '../src/sim/systems/guards';
+import { DOING } from '../src/sim/systems/inmates';
 import { slot } from '../src/sim/systems/items';
 import { nearestDir } from '../src/sim/ai/path';
 import { inksToday, penAt, payOf, qualityOf, traceSteps } from '../src/sim/systems/tattoo';
@@ -229,6 +230,96 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   console.log(`the ball: rolled ${steps} steps across and stopped`);
 }
 
+// ------------------------------------------------------------------ the kick (2.16): on contact, a moment's grace, aim help, the clearance
+{
+  const g = game();
+  const { sim } = g;
+  g.jump(1, 10, 30);
+  atPitch(g, 0);
+  g.talk(TALK.FOOTBALL);
+  const p = pitchOf(sim)!;
+  const f = fieldOf(p);
+  const c = centreOf(p);
+  check(f.along, 'Center Perks: the pitch runs east–west (the player shoots east)');
+  /** A fresh moment of play: nobody else on the ball, the player at (a, l) in field terms facing `face`, the ball still at (ba, bl). */
+  const setUp = (a: number, l: number, face: number, ba: number, bl: number) => {
+    const o = sim.state.match!;
+    o.at = sim.state.step - 100;
+    o.pause = 0;
+    o.kick = -1;
+    o.hold = 0;
+    o.late = 0;
+    o.cool = o.cool.map((_, k) => (k < 5 ? sim.state.step + 10_000 : 0));
+    sim.state.player.x = a;
+    sim.state.player.z = l;
+    sim.state.player.facing = face;
+    o.ball = [ba, bl, 0, 0];
+    g.seen.length = 0;
+  };
+  const kicks = () => of(g.seen, 'football').filter((e) => e.what === 'kick').length;
+  const whiffs = () => of(g.seen, 'football').filter((e) => e.what === 'whiff').length;
+  // Held while running at the ball: kicked the moment it's in reach, no letting go needed.
+  setUp(c.x - 2 * UNIT, c.z, 1, c.x, c.z);
+  g.ext(EXT.KICK, 0);
+  for (let k = 0; k < 20 && !kicks(); k++) g.step(command(1));
+  const o = sim.state.match!;
+  check(kicks() === 1 && o.ball[2] > KICK_MIN && !o.hold, `Kick held running at the ball: kicked on reaching it, east (${o.ball[2]} units a step)`);
+  // Held down with the ball already at the feet: it charges until let go (no kick on contact), then goes harder.
+  setUp(c.x - 400, c.z, 1, c.x, c.z);
+  g.ext(EXT.KICK, 0);
+  for (let k = 0; k < 20; k++) g.step();
+  const charged = kicks() === 0;
+  g.step(command(0, OP.EXT, EXT.KICK, 1));
+  check(charged && kicks() === 1 && sim.state.match!.ball[2] >= kickPower(20), `held at the feet: charged until let go, then kicked hard (${sim.state.match!.ball[2]})`);
+  // Let go a moment early: the kick waits for the ball (KICK_GRACE).
+  setUp(c.x - 1300, c.z, 1, c.x, c.z);
+  g.ext(EXT.KICK, 0);
+  for (let k = 0; k < KICK_TAP; k++) g.step();
+  g.step(command(1, OP.EXT, EXT.KICK, 1));
+  for (let k = 0; k < KICK_GRACE && !kicks(); k++) g.step(command(1));
+  check(kicks() === 1 && whiffs() === 0, 'let go a step early, running at it: still kicked');
+  setUp(c.x - 5 * UNIT, c.z, 1, c.x, c.z);
+  g.ext(EXT.KICK, 0);
+  for (let k = 0; k < KICK_TAP; k++) g.step();
+  g.step(command(0, OP.EXT, EXT.KICK, 1));
+  for (let k = 0; k < KICK_GRACE + 2; k++) g.step();
+  check(kicks() === 0 && whiffs() === 1 && !sim.state.match!.hold, 'let go with the ball far off: a kick at the air');
+  // Aim help: facing 45° off the way to the net, the kick goes at its mouth (before 2.16: the way faced, wide of it).
+  const crossing = () => {
+    const b = sim.state.match!.ball;
+    return b[2] > 0 ? b[1] + (b[3] * (f.a1 - b[0])) / b[2] : Infinity;
+  };
+  const aimAt = (old: boolean) => {
+    sim.rules215 = old;
+    setUp(f.a1 - 6 * UNIT, f.l0 + UNIT, 3, f.a1 - 6 * UNIT + 400, f.l0 + UNIT);
+    g.ext(EXT.KICK, 0);
+    g.step(command(0, OP.EXT, EXT.KICK, 1));
+    const at = crossing();
+    sim.rules215 = false;
+    return at;
+  };
+  const aimed = aimAt(false);
+  const raw = aimAt(true);
+  check(Math.abs(aimed - f.mid) <= AIM_IN + 50, `facing 45° off the net: the kick goes at its mouth (crosses ${Math.round(aimed - f.mid)} from its middle)`);
+  check(Math.abs(raw - f.mid) > GOAL_HALF, `before 2.16: the way faced, wide of it (${Math.round(raw - f.mid)})`);
+  // At the player's own net: cleared out wide, up the field.
+  setUp(f.a0 + 3 * UNIT, f.mid + 300, 9, f.a0 + 3 * UNIT - 400, f.mid + 300);
+  g.ext(EXT.KICK, 0);
+  g.step(command(0, OP.EXT, EXT.KICK, 1));
+  const cb = sim.state.match!.ball;
+  check(kicks() === 1 && cb[2] > 0 && Math.abs(cb[3]) > Math.abs(cb[2]), `facing their own net: cleared out wide (${cb[2]}, ${cb[3]})`);
+  // A rival's tackle at the player's feet: not theirs again for a moment.
+  setUp(c.x, c.z, 1, c.x + 300, c.z);
+  const ro = sim.state.match!;
+  ro.cool[TEAM.RIVAL] = 0;
+  const rival = sim.state.inmates[ro.team[TEAM.RIVAL]];
+  rival.body.x = c.x + 500;
+  rival.body.z = c.z;
+  g.step();
+  check(of(g.seen, 'football').every((e) => e.what !== 'kick') && ro.cool[5] > sim.state.step, 'a rival takes the ball off their feet: theirs again only in a moment');
+  console.log(`the kick: aimed at the mouth ${Math.round(aimed - f.mid)} from its middle (the way faced: ${Math.round(raw - f.mid)})`);
+}
+
 // ------------------------------------------------------------------ refusals, the teams, the walk on
 {
   const g = game();
@@ -272,6 +363,24 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   console.log(`walk on: the whistle after ${sim.state.match!.at - o.from} steps`);
 }
 
+// ------------------------------------------------------------------ 2.16: seated inmates play, 90 seconds
+{
+  const g = game();
+  const { sim } = g;
+  g.jump(1, 10, 30);
+  atPitch(g, 0);
+  // (The captain and the four others needed sat down on the benches, everyone else asleep.)
+  sim.state.inmates.forEach((m, k) => {
+    if (k > 0) m.doing = k <= 4 ? DOING.SIT : DOING.SLEEP;
+  });
+  check(teamsFor(sim, 0) !== null, 'inmates sat on the benches get up for a match');
+  sim.rules215 = true;
+  check(teamsFor(sim, 0) === null, 'before 2.16: they stayed sat (too few to play)');
+  check(matchSteps(sim) === MATCH_STEPS_215 && MATCH_STEPS_215 === 45 * 20, 'before 2.16: 45-second matches');
+  sim.rules215 = false;
+  check(matchSteps(sim) === MATCH_STEPS && MATCH_STEPS === 90 * 20, 'a match: 90 seconds');
+}
+
 // ------------------------------------------------------------------ matches: the inmates' play against a bot
 {
   const tally = { won: 0, lost: 0, draw: 0, off: 0, goalsFor: 0, goalsAgainst: 0, kicks: 0 };
@@ -301,9 +410,69 @@ function bot(sim: Sim, hold: number, state: { held: number }): number {
   }
   console.log(`a simple bot over ${N} matches: won ${tally.won}, lost ${tally.lost}, drawn ${tally.draw}, off ${tally.off}; goals ${tally.goalsFor}–${tally.goalsAgainst}; kicks ${tally.kicks}`);
   check(tally.off === 0, 'no match was called off');
-  check(tally.won >= N / 5 && tally.won <= (N * 4) / 5, 'a simple bot wins some and not all');
+  // (2.16: a frame-perfect bot, sixteen ways and no reaction time, wins nearly all of its 90-second matches; never every one.)
+  check(tally.won >= N / 5 && tally.won < N, 'a simple bot wins most and not all');
   check(tally.goalsFor + tally.goalsAgainst >= N, 'about a goal a match or more');
   check(tally.goalsAgainst > 0, 'the inmates score too');
+}
+
+// ------------------------------------------------------------------ 2.16: a newcomer's matches, before and after
+/**
+ * A newcomer: runs straight at the ball (keys: eight directions; a quarter of a second behind
+ * it), holds Kick once near, turns for the far net and lets go a moment later.
+ */
+function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number }): number {
+  const s = sim.state;
+  const o = s.match;
+  if (!o) return 0;
+  const f = fieldOf(pitchOf(sim)!);
+  seen.push([o.ball[0], o.ball[1]]);
+  const [bx, bz] = seen[Math.max(0, seen.length - 6)];
+  const eight = (d: number) => ((Math.round((d - 1) / 2) * 2) % 16) + 1;
+  const toNet = eight(nearestDir(f.a1 + UNIT - s.player.x, f.mid - s.player.z));
+  if (st.held) {
+    st.held++;
+    if (!o.hold && st.held > 2) st.held = 0;
+    else if (st.held > 14) {
+      st.held = 0;
+      return command(toNet, OP.EXT, EXT.KICK, 1);
+    }
+    return command(toNet);
+  }
+  if (Math.hypot(bx - s.player.x, bz - s.player.z) < 650 && o.at && !o.pause) {
+    st.held = 1;
+    return command(eight(nearestDir(bx - s.player.x, bz - s.player.z)), OP.EXT, EXT.KICK, 0);
+  }
+  return command(eight(nearestDir(bx - s.player.x, bz - s.player.z)));
+}
+{
+  const N = Number(process.env.MATCHES ?? 30);
+  const play = (before216: boolean) => {
+    const t = { won: 0, lost: 0, draw: 0, scored: 0, own: 0 };
+    for (let seed = 1; seed <= N; seed++) {
+      const g = game(CENTER_PERKS, seed * 7);
+      const { sim } = g;
+      sim.rules215 = before216;
+      g.jump(1, 10, 30);
+      atPitch(g, (seed * 3) % sim.state.inmates.length);
+      g.talk(TALK.FOOTBALL);
+      if (!sim.state.match) continue;
+      const seen: Array<[number, number]> = [];
+      const st = { held: 0 };
+      for (let k = 0; k < GATHER_STEPS + matchSteps(sim) + 50 && sim.state.match; k++) g.step(newcomer(sim, seen, st));
+      const fb = of(g.seen, 'football');
+      const end = fb.find((e) => e.what === 'won' || e.what === 'lost' || e.what === 'draw');
+      if (end) t[end.what as 'won' | 'lost' | 'draw']++;
+      t.scored += end?.scored ?? 0;
+      t.own += fb.filter((e) => e.what === 'goal' && !e.mine && e.by === -1).length;
+    }
+    return t;
+  };
+  const was = play(true);
+  const now = play(false);
+  console.log(`a newcomer over ${N} matches: before 2.16 won ${was.won}, lost ${was.lost}, drawn ${was.draw}, their goals ${was.scored}, own goals ${was.own}; now won ${now.won}, lost ${now.lost}, drawn ${now.draw}, their goals ${now.scored}, own goals ${now.own}`);
+  check(now.won >= was.won + 4 && now.scored >= 2 * was.scored, 'a newcomer wins more matches and scores more goals than before 2.16');
+  check(now.own <= was.own, 'and puts no more in their own net');
 }
 
 // ------------------------------------------------------------------ the cover

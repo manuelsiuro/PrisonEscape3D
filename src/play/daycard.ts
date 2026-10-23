@@ -1,18 +1,28 @@
+import { BETS, RACE_MINUTE, RACE_STEPS } from '../content/long';
 import { BLOCK, ROUTINE, routineAt, routineEnd } from '../content/routine';
 import { DRILL_HEAT } from '../content/days';
 import { t, type Key } from '../i18n';
 import { dayMinute, formatTime } from '../sim/systems/clock';
 import { planOf, TODAY, today } from '../sim/systems/calendar';
 import { jobRooms } from '../sim/systems/economy';
+import { cardMinute, RACE, raceNight, trackOf } from '../sim/systems/races';
+import { petOf } from '../sim/systems/rats';
 import { MISSED_ROUTINE_HEAT, STEPS_PER_MINUTE } from '../sim/tuning';
+import { prisonDay } from '../sim/systems/clock';
 import { routineName, routinePlace } from '../ui/hud';
 import { prisonName } from '../ui/screens/prisons';
 import { showDay, type DayBlock, type DayChip, type DayPin, type DayView } from '../ui/screens/day';
 import { click, controls, tools } from './context';
 import { dayRows, dayTime, EVENT_COLOR, eventIcon, FORECAST_AT, hasDays, whenOf } from './day';
 import { play, type Game } from './game';
+import { ratName } from './rat';
 import { shootKey } from './pastimes';
 import { kickKey } from './team';
+
+/** Race night's colour on the card (the race's own help topic's). */
+const RACE_COLOR = '#d9773a';
+/** The player's pet's name (its own, given when tamed). */
+const petName = (g: Game) => ratName(g.rec.sim);
 
 /** Each block's icon down the card's line. */
 const BLOCK_ICON: Record<string, string> = {
@@ -45,7 +55,7 @@ export function dayView(g: Game): DayView {
   const mod = sim.clock.minuteOfDay;
   const night = mod >= 21 * 60 || mod < 6 * 60;
   const chips: DayChip[] = [];
-  const pins = new Map<number, DayPin>();
+  const pins = new Map<number, DayPin[]>();
   let tomorrow: DayView['tomorrow'] = null;
   if (days) {
     const p = today(sim);
@@ -63,13 +73,34 @@ export function dayView(g: Game): DayView {
         else if (st.eventFlags & TODAY.EXCUSED) Object.assign(pin, { tag: t('dayCard.excused'), tagTone: 'quiet' });
       }
       if (p.event === 'foodFight') pin.when = t('day.when', { from: dayTime(p.at), to: dayTime(p.until) });
-      pins.set(blockOf(p.at), pin);
+      pins.set(blockOf(p.at), [pin]);
     }
     // Tomorrow, once the warden has forecast it (22:00).
     if (m >= FORECAST_AT) {
       const next = dayRows(sim, planOf(sim, p.day + 1), true, true);
       tomorrow = { label: t(sim.clock.day !== p.day ? 'profile.fromMorning' : 'profile.tomorrow'), chips: next.map((r) => ({ icon: r.icon, color: r.color, text: r.title, when: r.when })) };
     }
+  }
+  // Race night (odd nights, at a prison with a rat track): a chip, and the card's hours pinned in the evening (with the player's bet, their rat entered).
+  const track = !!trackOf(sim.world);
+  const pd = prisonDay(st.step);
+  if (track && raceNight(pd)) {
+    const m = mod;
+    const from = cardMinute(sim);
+    const r = st.race[RACE.DAY] === pd ? st.race : null;
+    const over = m >= RACE_MINUTE + Math.ceil(RACE_STEPS / STEPS_PER_MINUTE) || m < 8 * 60;
+    // (Nothing else on: the race in its place, never "Nothing on" beside it.)
+    if (days && today(sim).event === 'none') chips.shift();
+    chips.push({ icon: 'race', color: RACE_COLOR, text: t('dayCard.race'), when: hhmm(RACE_MINUTE) });
+    const bet = r && r[RACE.LANE] >= 0 ? t('dayCard.raceBet', { n: BETS[r[RACE.STAKE]] ?? 0 }) : '';
+    const entered = r && r[RACE.ENTERED] ? t('dayCard.raceEntered', { name: petName(g) }) : '';
+    const pin: DayPin = { icon: 'race', color: RACE_COLOR, title: t('dayCard.race'), when: t('day.when', { from: hhmm(from), to: hhmm(RACE_MINUTE) }), sub: over ? t('day.eventD.over') : t(petOf(st) ? 'dayCard.raceSubPet' : 'dayCard.raceSub'), over, tag: [entered, bet].filter(Boolean).join(' · '), tagTone: 'ok' };
+    const k = routineAt(from);
+    const was = pins.get(k);
+    pins.set(k, was ? [...was, pin] : [pin]);
+  } else if (track && tomorrow && raceNight(pd + 1)) {
+    if (planOf(sim, today(sim).day + 1).event === 'none') tomorrow.chips.shift();
+    tomorrow.chips.push({ icon: 'race', color: RACE_COLOR, text: t('dayCard.race'), when: hhmm(RACE_MINUTE) });
   }
   const job = sim.jobActive();
   const def = job >= 0 ? jobRooms(sim.world)[job].def : null;
@@ -104,7 +135,7 @@ export function dayView(g: Game): DayView {
       // (In a lockdown the blocks ahead are let off as they come: nothing said of missing them.)
       else if (stakes && !st.lockdown) tag = { text: lock ? t('dayCard.missLock') : t('dayCard.missHeat', { n: MISSED_ROUTINE_HEAT }), tone: lock ? 'bad' : 'warn' };
     }
-    const block: DayBlock = { time: hhmm(r.start), icon: BLOCK_ICON[r.id], name: routineName(k), place, at, must, tag, pin: pins.get(k) };
+    const block: DayBlock = { time: hhmm(r.start), icon: BLOCK_ICON[r.id], name: routineName(k), place, at, must, tag, pins: pins.get(k) ?? [] };
     if (at === 'now') {
       const len = (routineEnd(k) - r.start + 1440) % 1440;
       const into = (mod - r.start + 1440) % 1440;

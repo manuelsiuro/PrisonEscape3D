@@ -805,15 +805,13 @@ export const LESSONS: readonly Lesson[] = [
       const cx = p.x + Math.floor(p.w / 2);
       const cz = p.z + Math.floor(p.d / 2);
       place(sim, cx, cz, 9);
-      // The captain at the player's side; everyone else about the yard, two of them good friends.
+      // The captain at the player's side; everyone else by the pitch, two of them good friends (all waiting there however long the reading takes: wandered off, there'd be no match).
       waitAt(sim, 0, cx - 1, cz);
       sim.state.inmates.forEach((m, k) => {
         m.opinion = k === 1 || k === 2 ? 75 : 60;
         if (k === 0) return;
         const [x, z] = near(sim, p.x + 1 + ((k * 2) % (p.w - 2)), p.z + p.d + 1);
-        m.body.x = x * UNIT + UNIT / 2;
-        m.body.z = z * UNIT + UNIT / 2;
-        m.goal = -1;
+        waitAt(sim, k, x, z, 13);
         m.path = [];
       });
     },

@@ -5,8 +5,10 @@ san-pancho: pitch 12×6 at 27,38, field 10×6 along x
 irongate: pitch 12×6 at 9,29, field 10×6 along x
 training: pitch 13×8 at 35,42, field 11×8 along x
 the ball: rolled 56 steps across and stopped
+the kick: aimed at the mouth 683 from its middle (the way faced: 3696)
 walk on: the whistle after 20 steps
-a simple bot over 30 matches: won 19, lost 5, drawn 6, off 0; goals 31–13; kicks 161
+a simple bot over 30 matches: won 27, lost 0, drawn 3, off 0; goals 101–19; kicks 280
+a newcomer over 30 matches: before 2.16 won 1, lost 12, drawn 17, their goals 2, own goals 0; now won 10, lost 11, drawn 9, their goals 14, own goals 0
 the cover: sight 7 tiles on the pitch, 3.5 off it; a goal holds a guard's eyes 100 steps
 heart: 168 steps, pays $7–$22
 skull: 184 steps, pays $12–$37
@@ -14,4 +16,4 @@ eagle: 202 steps, pays $20–$60
 heart: followed 100 ($22, +12), left still 0 ($7, +2)
 skull: followed 100 ($37, +12), left still 0 ($12, +2)
 eagle: followed 100 ($60, +12), left still 0 ($20, +2)
-saves: mid-match round trip ok (score 0–1)
+saves: mid-match round trip ok (score 1–1)

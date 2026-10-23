@@ -15,6 +15,7 @@ import { updateGuide } from './guide';
 import { keepPlayerClear, updateOverlay } from './overlay';
 import { autosave, escaped } from './session';
 import { dayEvent, dayFrame, dayStep } from './day';
+import { raceStep } from './long';
 import { checkRun } from '../game/trophies';
 import { markTip, updateFirstDay } from './tips';
 import { lessonEvent, lessonHidden, updateLesson } from './lesson';
@@ -124,8 +125,9 @@ function stepSim(g: Game, dt: number) {
       if (e.type === 'pickup') pickedUp = true;
     }
     tickTock(sim, speed);
-    // The warden's clock (P17): warnings, the forecast, a quip, on the minute.
+    // The warden's clock (P17): warnings, the forecast, a quip, on the minute; race night's card going up (2.16).
     dayStep(sim);
+    raceStep(sim);
   }
   if (play.acc > 1) play.acc = 0;
 }
