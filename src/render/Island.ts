@@ -202,9 +202,12 @@ export class Island {
       model.translate(x, SEA_Y + 0.2, z);
       return model;
     };
-    const boats = new THREE.Mesh(merge([boat(31, 62.7, 7, 2, 0x2b4a6b, 0xeef1f4, true), boat(62.2, 32.4, 3, 1.1, 0x3b4048, 0xc8ccd2, false)]), kitMaterial);
-    boats.castShadow = true;
-    this.group.add(boats);
+    // (Not round the manhunt's outside, P41: they're moored at the prison, not the town.)
+    if (!world.def.id.startsWith('outside-')) {
+      const boats = new THREE.Mesh(merge([boat(31, 62.7, 7, 2, 0x2b4a6b, 0xeef1f4, true), boat(62.2, 32.4, 3, 1.1, 0x3b4048, 0xc8ccd2, false)]), kitMaterial);
+      boats.castShadow = true;
+      this.group.add(boats);
+    }
     const rock = new THREE.Mesh(merge(skirt), kitMaterial);
     rock.castShadow = rock.receiveShadow = true;
     this.group.add(rock);

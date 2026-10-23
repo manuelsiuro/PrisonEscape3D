@@ -3,7 +3,7 @@ stalag-flucht: 60×56, 6 searchers (2 dogs), 2 roadblocks, 2 washing lines, 41 c
 shankton: 60×56, 6 searchers (2 dogs), 2 roadblocks, 3 washing lines, 92 cover tiles; to safety: wall 95 (Lou 47), gate 75 (Lou 27), glider 53 (Lou 55)
 san-pancho: 60×56, 6 searchers (2 dogs), 2 roadblocks, 3 washing lines, 56 cover tiles; to safety: wall 83 (Lou 25), gate 69 (Lou 31), van 58 (Lou 28)
 irongate: 60×56, 7 searchers (2 dogs), 3 roadblocks, 3 washing lines, 69 cover tiles; to safety: sea 65 (Lou 49), air 39 (Lou 23), gate 47 (Lou 28)
-center-perks wall, salt 1: CAUGHT at 80% in 132 s; spotted 3, hid 1, stones 3, lit 2 · ea49f664
+center-perks wall, salt 1: CAUGHT at 80% in 129 s; spotted 2, hid 1, stones 3, lit 2 · 2371c9a2
   0:10 the alarm
   0:12 roadblock 1 up
   0:13 roadblock 0 up
@@ -19,10 +19,7 @@ center-perks wall, salt 1: CAUGHT at 80% in 132 s; spotted 3, hid 1, stones 3, l
   1:54 lit by the helicopter
   1:54 lit by the helicopter
   2:01 spotted by Harker
-  2:10 dog 0 on the trail
-  2:11 Harker lost them
-  2:12 spotted by Harker
-  2:12 CAUGHT by Harker
+  2:08 CAUGHT by Harker
 center-perks wall, salt 2: CAUGHT at 91% in 151 s; spotted 1, hid 8, stones 5, lit 0 · 092b4be4
   0:10 the alarm
   0:11 roadblock 0 up
@@ -65,7 +62,7 @@ center-perks gate, salt 1: clean away in 184 s; spotted 0, hid 4, stones 5, lit 
   2:18 stone
   2:23 stone
   3:04 SAFE
-center-perks glider, salt 1: CAUGHT at 85% in 65 s; spotted 1, hid 0, stones 0, lit 1 · 57eefcc8
+center-perks glider, salt 1: CAUGHT at 85% in 65 s; spotted 1, hid 0, stones 0, lit 1 · 075c5f24
   0:10 the alarm
   0:12 roadblock 1 up
   0:13 roadblock 0 up
@@ -103,7 +100,7 @@ stalag-flucht wall, salt 1: CAUGHT at 90% in 56 s; spotted 1, hid 0, stones 0, l
   0:48 lit by the helicopter
   0:56 spotted by Fuchs
   0:56 CAUGHT by Fuchs
-stalag-flucht wall, salt 2: CAUGHT at 89% in 84 s; spotted 1, hid 3, stones 3, lit 1 · 03485ed4
+stalag-flucht wall, salt 2: CAUGHT at 71% in 69 s; spotted 1, hid 2, stones 3, lit 1 · 547905f8
   0:10 the alarm
   0:11 roadblock 0 up
   0:17 roadblock 1 up
@@ -111,21 +108,10 @@ stalag-flucht wall, salt 2: CAUGHT at 89% in 84 s; spotted 1, hid 3, stones 3, l
   0:37 lit by the helicopter
   0:43 stone
   0:48 stone
-  1:01 stone
+  1:03 stone
   1:04 dog 1 on the trail
-  1:05 dog 1 points
-  1:07 spotted by Lang
-  1:10 spotted by Keller
-  1:11 spotted by Brandt
-  1:13 Keller lost them
-  1:15 Brandt lost them
-  1:15 spotted by Huber
-  1:15 spotted by Fuchs
-  1:15 dog 0 on the trail
-  1:19 Huber lost them
-  1:19 Fuchs lost them
-  1:23 dog 1 points
-  1:23 CAUGHT by Lang
+  1:06 spotted by Brandt
+  1:08 CAUGHT by Brandt
 stalag-flucht wall, salt 3: clean away in 50 s; spotted 0, hid 0, stones 0, lit 0 · f4cfceb4
   0:10 the alarm
   0:10 roadblock 0 up
@@ -222,7 +208,7 @@ shankton glider, salt 1: clean away in 25 s; spotted 0, hid 0, stones 0, lit 0 �
   0:21 the helicopter up
   0:24 SAFE
 shankton wall, seen going, by day: salt 1 clean away in 67 s · 15f6c3a9
-san-pancho wall, salt 1: CAUGHT at 78% in 65 s; spotted 3, hid 0, stones 0, lit 1 · 2f133d05
+san-pancho wall, salt 1: CAUGHT at 78% in 65 s; spotted 3, hid 0, stones 0, lit 1 · 03aa9721
   0:10 the alarm
   0:12 roadblock 1 up
   0:13 roadblock 0 up
@@ -322,7 +308,7 @@ san-pancho van, salt 1: clean away in 39 s; spotted 0, hid 0, stones 0, lit 0 ·
   0:34 dog 1 on the trail
   0:38 SAFE
 san-pancho wall, seen going, by day: salt 1 clean away in 66 s · cd3d0620
-irongate gate, salt 1: clean away in 34 s; spotted 0, hid 0, stones 0, lit 0 · b3019db0
+irongate gate, salt 1: clean away in 34 s; spotted 0, hid 0, stones 0, lit 0 · cfa29ffe
   0:10 the alarm
   0:10 clothes off the line
   0:12 roadblock 1 up
@@ -330,7 +316,7 @@ irongate gate, salt 1: clean away in 34 s; spotted 0, hid 0, stones 0, lit 0 · 
   0:21 roadblock 2 up
   0:21 the helicopter up
   0:34 SAFE
-irongate sea, salt 1: clean away in 54 s; spotted 0, hid 0, stones 0, lit 0 · fdae2479
+irongate sea, salt 1: clean away in 54 s; spotted 0, hid 0, stones 0, lit 0 · b9249dfc
   0:10 the alarm
   0:12 roadblock 1 up
   0:13 roadblock 0 up
@@ -339,7 +325,7 @@ irongate sea, salt 1: clean away in 54 s; spotted 0, hid 0, stones 0, lit 0 · f
   0:40 dog 1 on the trail
   0:51 dog 0 on the trail
   0:54 SAFE
-irongate air, salt 1: CAUGHT at 92% in 40 s; spotted 1, hid 0, stones 1, lit 0 · eb2009ac
+irongate air, salt 1: CAUGHT at 92% in 40 s; spotted 1, hid 0, stones 1, lit 0 · 90631f9f
   0:10 the alarm
   0:12 roadblock 1 up
   0:13 roadblock 0 up
@@ -348,14 +334,14 @@ irongate air, salt 1: CAUGHT at 92% in 40 s; spotted 1, hid 0, stones 1, lit 0 �
   0:34 stone
   0:37 spotted by Quinn
   0:40 CAUGHT by Quinn
-irongate air, salt 2: clean away in 37 s; spotted 0, hid 0, stones 0, lit 0 · fe2fcb95
+irongate air, salt 2: clean away in 37 s; spotted 0, hid 0, stones 0, lit 0 · e4fd11c3
   0:10 the alarm
   0:11 roadblock 0 up
   0:14 roadblock 2 up
   0:17 roadblock 1 up
   0:20 the helicopter up
   0:36 SAFE
-irongate sea, seen going, by day: salt 1 clean away in 60 s · 8442984a
+irongate sea, seen going, by day: salt 1 clean away in 59 s · 4426ad14
 head start: night 10 s, just before breakfast 5 s, afternoon 10 s, before the 04:00 bed check 10 s
 carry: fence → wall, Speed 52, outfit guard, kit 2, crew 1, Lou true, head start 10 s at 480
 starts: center-perks fence→wall tunnel→wall roof→wall takeover→gate stowaway→van bluff→gate glider→glider paperwork→legal parole→legal; stalag-flucht fence→wall tunnel→wall roof→wall takeover→gate stowaway→van glider→glider paperwork→legal parole→legal; shankton fence→wall tunnel→wall roof→wall takeover→gate bluff→gate glider→glider paperwork→legal parole→legal; san-pancho tunnel→wall gate→gate takeover→gate stowaway→van paperwork→legal parole→legal; irongate raft→sea helicopter→air takeover→gate stowaway→air bluff→gate paperwork→legal parole→legal
@@ -373,4 +359,4 @@ ford: the trail gone in the water; the dog on it lost it at the river, never fou
 roadblock: loitered by, up 10.0 s after its time all the same; out of a guard's uniform at a line, told the eyes know you further off
 Lou's car: away in it when a call set it up; an empty track otherwise
 deterministic: stalag-flucht gate twice, 6577d7b8 both times
-lesson manhunt: 4 steps done in 42 s
+lesson manhunt: 4 steps done in 61 s

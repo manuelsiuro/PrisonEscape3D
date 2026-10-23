@@ -1,3 +1,4 @@
+import type { Line } from '../talk/types';
 import { HUNT } from '../content/manhunt';
 import { itemNumber } from '../content/items';
 import { outsideOf } from '../content/outside';
@@ -296,7 +297,7 @@ export function huntFrame(g: Game, dt: number, now: number) {
   }
   const a = g.paused ? 1 : play.acc * STEPS_PER_SECOND;
   const night = h.night ? 1 : 0;
-  huntView.update(huntFrameOf(run), dt, now / 1000, night, !settings.reducedMotion);
+  huntView.update(huntFrameOf(run, a), dt, now / 1000, night, !settings.reducedMotion);
   view.draw(frameOf(run, a, g.paused), dt, now / 1000);
   huntHud.update(hudOf(run));
   // (Nothing of the inside's tips out here.)
@@ -307,9 +308,11 @@ export function huntFrame(g: Game, dt: number, now: number) {
   if (s.over && !run.ended) endHunt(g, run);
 }
 
-const hf: HuntFrame = { heli: { on: false, x: 0, z: 0, lit: false }, blocks: 0, lines: 0, lou: false, over: 0 };
-function huntFrameOf(run: HuntRun): HuntFrame {
+const hf: HuntFrame = { heli: { on: false, x: 0, z: 0, lit: false }, blocks: 0, lines: 0, lou: false, over: 0, me: { x: 0, z: 0 } };
+function huntFrameOf(run: HuntRun, a: number): HuntFrame {
   const s = run.hunt.state;
+  hf.me.x = (run.prev.x + (s.player.x - run.prev.x) * a) / UNIT;
+  hf.me.z = (run.prev.z + (s.player.z - run.prev.z) * a) / UNIT;
   hf.heli.on = s.heli.on;
   hf.heli.x = s.heli.x / UNIT;
   hf.heli.z = s.heli.z / UNIT;
@@ -484,7 +487,7 @@ function hudOf(run: HuntRun): HuntHudState {
   st.dogs = age >= 0 && s.dogs.some((d) => s.searchers[d.handler].mode !== SEEK.OFF);
   st.roadblocks = s.blocks !== 0;
   st.heli = s.heli.on;
-  st.state = s.heli.lit ? 'lit' : s.searchers.some((m) => m.mode === SEEK.CHASE) ? 'chased' : s.hidden ? 'hidden' : o.cover[here] ? 'cover' : '';
+  st.state = s.heli.lit ? 'lit' : s.searchers.some((m) => m.mode === SEEK.CHASE) ? 'chased' : s.dogs.some((d) => d.mode === HOUND.TRACK || d.mode === HOUND.POINT) ? 'tracked' : s.hidden ? 'hidden' : o.cover[here] ? 'cover' : '';
   st.lookout = run.lookout?.name ?? '';
   const a = run.ended ? null : actionOf(h);
   st.act = !a ? null : a.kind === 'line' ? { icon: 'shirt', verb: 'manhunt.act.clothes', what: '' } : a.kind === 'cut' ? { icon: 'cutters', verb: 'manhunt.act.cut', what: '' } : { icon: 'bone', verb: 'manhunt.act.treat', what: t(`manhunt.treat.${a.what}` as Key, { name: h.def.searchers[s.dogs[a.dog].handler]?.dog?.name ?? '' }) };
@@ -513,6 +516,8 @@ function huntEvent(e: HuntEvent, run: HuntRun) {
     case 'widen':
       // (Once: the search widening, dogs through the hedges.)
       if (e.heat === 1) banner.toast(t('manhunt.widen'), 'bad', 3500);
+      // (And when the uniform stops fooling them.)
+      if (e.heat === HUNT.uniformHeat && h.state.clothes === 1) banner.toast(t('manhunt.uniformKnown'), 'bad', 3500);
       break;
     case 'spotted':
       sound.whistle();
@@ -521,7 +526,8 @@ function huntEvent(e: HuntEvent, run: HuntRun) {
       break;
     case 'lost':
       say(run, e.who, 'gu.hunt.lost', 'say');
-      banner.toast(t('manhunt.lost'), 'good', 2600);
+      // (Only when nobody's after them any more, and never in the helicopter's light.)
+      if (!h.state.heli.lit && !h.state.searchers.some((m) => m.mode === SEEK.CHASE)) banner.toast(t('manhunt.lost'), 'good', 2600);
       break;
     case 'heard':
       if (Math.random() < 0.5) say(run, e.who, 'gu.hunt.heard', 'say');
@@ -632,12 +638,15 @@ function say(run: HuntRun, who: number, bank: BankId, style: 'say' | 'shout') {
   if (settings.chatter === 'off' || who < 0) return;
   if (settings.chatter === 'some' && style === 'say' && Math.random() < 0.5) return;
   const lang = currentLang();
-  const lines = (lang === 'fr' ? frBarks : enBarks)[bank] ?? enBarks[bank];
-  if (!lines?.length) return;
-  let k = Math.floor(Math.random() * lines.length);
-  if (k === last.get(bank) && lines.length > 1) k = (k + 1) % lines.length;
+  const all = (lang === 'fr' ? frBarks : enBarks)[bank] ?? enBarks[bank];
+  // (A line for the dark only after dark: torches, a warm bed.)
+  const night = run.hunt.night;
+  const fits = ((all ?? []) as readonly Line[]).map((l, k) => [l, k] as const).filter(([l]) => typeof l === 'string' || !l.when?.includes('night') || night);
+  if (!fits.length) return;
+  let j = Math.floor(Math.random() * fits.length);
+  if (fits[j][1] === last.get(bank) && fits.length > 1) j = (j + 1) % fits.length;
+  const [l, k] = fits[j];
   last.set(bank, k);
-  const l = lines[k];
   const text = typo(lang, typeof l === 'string' ? l : l.t);
   const now = performance.now() / 1000;
   // One bubble a speaker: a new line replaces theirs.

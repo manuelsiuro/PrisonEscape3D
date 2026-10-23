@@ -131,7 +131,12 @@ for (const def of OUTSIDES) {
     const o = new Hunt(def, prison, carry(def.prison, kind, { minute }));
     for (let k = 0; k < 20 * 600 && !o.state.over; k++) o.step(0);
     check(o.state.over === OVER.CAUGHT, `${def.prison} ${light}: standing in the open where they came out, caught in the end`);
-    out.push(`${light}: in cover ${h.toGoal[best]} tiles from safety caught at ${camp}, in the open at the start ${o.state.over === OVER.CAUGHT ? `${Math.round(o.state.overAt / 20)} s` : 'never'}`);
+    // (And in a guard's uniform: it fools them only so long.)
+    const u = new Hunt(def, prison, carry(def.prison, kind, { minute, outfit: itemNumber('guard_outfit') }));
+    for (let k = 0; k < 20 * 600 && !u.state.over; k++) u.step(0);
+    check(u.state.over === OVER.CAUGHT && u.state.overAt <= 20 * 240, `${def.prison} ${light}: standing in the open in a guard's uniform, caught within 4 minutes`);
+    const when = (x: Hunt) => (x.state.over === OVER.CAUGHT ? `${Math.round(x.state.overAt / 20)} s` : 'never');
+    out.push(`${light}: in cover ${h.toGoal[best]} tiles from safety caught at ${camp}, in the open at the start ${when(o)} (in a guard's uniform ${when(u)})`);
   }
   console.log(`keeping still, ${def.prison}: ${out.join('; ')}`);
 }

@@ -44,8 +44,9 @@ export const HUNT = {
   sightNight: 5,
   /** In other clothes (a guard's uniform, your own, off a washing line) a searcher knows you only this close (tiles). */
   disguised: 3,
-  /** In a guard's uniform, only this close (tiles: the inside's RECOGNIZE_RANGE). */
+  /** In a guard's uniform, only this close (tiles: the inside's RECOGNIZE_RANGE), till the search has widened this many times (the radio says a uniform's gone missing); in the helicopter's light, at sight's length whatever they wear. */
   uniform: 2.5,
+  uniformHeat: 2,
   /** The notice meter: full at this (a step in sight adds 1, 3 within `near` tiles; out of sight it drains 1 a step). */
   spot: 12,
   near: 2.5,

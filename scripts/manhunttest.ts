@@ -20,7 +20,7 @@ import { Sim } from '../src/sim/Sim';
 import { carryFrom, headStartAt } from '../src/sim/hunt/carry';
 import { HOUND, SEEK } from '../src/sim/hunt/Hunt';
 import { slot } from '../src/sim/systems/items';
-import { command, EXT, OP, tossArgs } from '../src/sim/command';
+import { command, DIR_X, DIR_Z, EXT, OP, tossArgs } from '../src/sim/command';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { tileAt } from '../src/sim/ai/path';
 import { LESSONS, type LessonCtx } from '../src/tutorial/lessons';
@@ -82,6 +82,13 @@ for (const def of OUTSIDES) {
     // (Nearer from where the walls leave the player; a glider, a van or a helicopter may set them down past it.)
     check(lou > 0 && (lou < best || !['wall', 'gate', 'sea'].includes(kind)), `${def.prison} ${kind}: Lou's car reachable, and nearer than the safe point (${lou} against ${best})`);
     lines.push(`${kind} ${best} (Lou ${lou})`);
+  }
+  // Lou's car (drawn on its spot, 2.8 tiles long the way it faces): its spot and a tile either way along it open ground.
+  {
+    const fx = Math.round(DIR_X[def.lou.face ?? 5] / 1024);
+    const fz = Math.round(DIR_Z[def.lou.face ?? 5] / 1024);
+    const foot = [-1, 0, 1].map((k) => T({ x: def.lou.x + k * fx, z: def.lou.z + k * fz }));
+    check(foot.every((i) => !o.base[i] && o.inside[i] && !o.cover[i]), `${def.prison}: Lou's car stands on open ground`);
   }
   const anyStart = T(Object.values(def.starts)[0]!);
   const all = flood(anyStart, (i) => !o.base[i]);

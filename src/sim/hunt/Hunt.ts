@@ -253,8 +253,11 @@ export class Hunt {
 
   /** How close a searcher must be to know the player in what they wear (tiles). */
   get knownAt(): number {
-    const c = this.state.clothes;
-    return c === 1 ? HUNT.uniform : c === 2 ? HUNT.disguised : this.sight;
+    const s = this.state;
+    // (In the helicopter's light nothing fools them; a guard's uniform only till the search has widened HUNT.uniformHeat times: by then the radio says one's gone missing.)
+    if (s.heli.lit) return this.sight;
+    const c = s.clothes;
+    return c === 1 && s.heat < HUNT.uniformHeat ? HUNT.uniform : c === 2 ? HUNT.disguised : this.sight;
   }
 
   /** How close they got: the share of the way to safety walked (0–1). */
@@ -485,7 +488,17 @@ export class Hunt {
       else if (++s.cutting[1] >= HUNT.cutSteps) this.cutThrough(s.cutting[0]);
     }
     const from = this.tile;
+    const was = { x: p.x, z: p.z };
     walk(this.feet, p, dir, this.paceAt(from), LAYER.GROUND);
+    // Head-on into a tree, a rock, a corner: round it, along whichever way is open (an eighth turn either side), rather than stuck.
+    if (dir !== 0 && p.x === was.x && p.z === was.z) {
+      for (const turn of [2, -2]) {
+        const d = ((dir - 1 + turn + 16) % 16) + 1;
+        walk(this.feet, p, d, this.paceAt(from), LAYER.GROUND);
+        if (p.x !== was.x || p.z !== was.z) break;
+      }
+      p.facing = dir;
+    }
     const t = this.tile;
     if (t !== s.at) {
       s.at = t;
@@ -799,14 +812,17 @@ export class Hunt {
     }
     switch (m.mode) {
       case SEEK.CHASE: {
-        m.unseen = m.sees ? 0 : m.unseen + 1;
+        // (In the helicopter's light the chase never loses them: it says on the radio where they are.)
+        const shown = m.sees || s.heli.lit;
+        if (s.heli.lit) m.last = this.tile;
+        m.unseen = shown ? 0 : m.unseen + 1;
         if (m.unseen >= HUNT.lose) {
           s.feats[HFEAT.lost]++;
           this.events.push({ type: 'lost', who: k });
           this.lookAt(k, m.last);
           return;
         }
-        const target = m.sees ? this.tile : m.last;
+        const target = shown ? this.tile : m.last;
         if (m.goal !== target && (s.step % HUNT.replan === 0 || !m.path.length)) this.route(m, target, this.chaseGrid);
         this.follow(m, HUNT.chase, true, this.chaseGrid);
         return;
@@ -1141,12 +1157,21 @@ export class Hunt {
       h.hold = HUNT.heliHold;
       this.know(this.tile);
       if (!h.lit || s.step % HELI_CALL === 0) {
-        // The light on them: every searcher out within the radio's reach comes running (a chaser keeps on).
+        // The light on them: every searcher out within the radio's reach comes running (a chaser keeps on); none that near, the nearest comes all the same.
         const t = this.tile;
+        let nearest = -1;
+        let near = Infinity;
+        let came = false;
         s.searchers.forEach((m, j) => {
-          if (m.mode === SEEK.OFF || m.mode === SEEK.CHASE || this.isPost(j) || !within(m.body, s.player, HUNT.radio)) return;
+          if (m.mode === SEEK.OFF || this.isPost(j)) return;
+          if (m.mode === SEEK.CHASE) return void (came = true);
+          const d = dist2(m.body, s.player);
+          if (d < near) (near = d), (nearest = j);
+          if (!within(m.body, s.player, HUNT.radio)) return;
           this.lookAt(j, t);
+          came = true;
         });
+        if (!came && nearest >= 0) this.lookAt(nearest, t);
       }
     }
     if (lit !== h.lit) {

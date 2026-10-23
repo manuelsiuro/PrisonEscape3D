@@ -2343,8 +2343,8 @@ export const enBarks = {
   "gu.hunt.out": [
     "Fan out! They can't have got far.",
     "Right, lads. Every hedge, every ditch.",
-    "Out of my warm bed for this. Thanks a lot.",
-    "Torches on. Look for footprints.",
+    { t: "Out of my warm bed for this. Thanks a lot.", when: ["night"] },
+    { t: "Torches on. Look for footprints.", when: ["night"] },
     "Check the culverts. They always try the culverts.",
     "Radio in every ten minutes. Move!",
     "Somebody put the kettle on. We'll be a while.",
@@ -2368,7 +2368,7 @@ export const enBarks = {
   ],
   "gu.hunt.heard": [
     "What was that?",
-    "Hear that? Over by there.",
+    "Hear that? Over that way.",
     "Something moved. Going to look.",
     "Probably a fox. Probably.",
     "Hello? Anyone there?",
@@ -2387,7 +2387,7 @@ export const enBarks = {
     "And back we go.",
     "End of the line, sunshine.",
     "Gotcha! Steady now.",
-    "That's enough running for one night.",
+    { t: "That's enough running for one night.", when: ["night"] },
     "Back inside. The warden's waiting.",
   ],
 } satisfies Record<string, readonly Line[]>;

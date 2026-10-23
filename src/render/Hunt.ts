@@ -20,6 +20,8 @@ export interface HuntFrame {
   lou: boolean;
   /** OVER: once safe, the vehicle pulls away. */
   over: number;
+  /** Where the player is drawn (tiles): a faint glow round them after dark, so a dark uniform still reads. */
+  me: { x: number; z: number };
 }
 
 const faceAngle = (face: number | undefined) => Math.atan2(DIR_X[face ?? 5] ?? 0, DIR_Z[face ?? 5] ?? 1);
@@ -60,6 +62,8 @@ export class HuntView {
   private vehicleFace = 0;
   private gone = 0;
   private ring: THREE.Mesh | null = null;
+  private glow: THREE.Mesh | null = null;
+  private glowMat: THREE.MeshBasicMaterial | null = null;
   private ringMat: THREE.MeshBasicMaterial | null = null;
 
   /** The outside of a hunt (`lou`: his car waits there). */
@@ -88,6 +92,8 @@ export class HuntView {
     this.car = null;
     this.vehicle = null;
     this.ring = null;
+    this.glow = null;
+    this.glowMat = null;
     this.gone = 0;
     this.heliShown = 0;
   }
@@ -182,25 +188,33 @@ export class HuntView {
     instanced(merge(stones, false), at[DECO.GRAVEL], low, (t, _k, m) => put(m, t, 0, 1, hash(t, 5) * Math.PI * 2), false);
   }
 
-  /** Rivers and fords (an island's sea is the Island view's): water where the floor isn't drawn, shallows a little paler. */
+  /** Rivers and fords (an island's sea is the Island view's): water where the floor isn't drawn, shallows a little paler; a river running off the world's edge carries on out of sight. */
   private water(o: OutsideWorld, theme: string) {
-    const deep: number[] = [];
-    const ford: number[] = [];
+    const deep: Array<[number, number]> = [];
+    const ford: Array<[number, number]> = [];
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       if (o.world.ground.kind[i] !== TILE.WATER) continue;
-      if (o.ford[i]) ford.push(i);
-      else if (theme !== 'island') deep.push(i);
+      const x = i % MAP_W;
+      const z = Math.floor(i / MAP_W);
+      if (o.ford[i]) ford.push([x, z]);
+      else if (theme !== 'island') {
+        deep.push([x, z]);
+        // (At the world's edge: on out, never ending square.)
+        const [dx, dz] = x === 0 ? [-1, 0] : x === MAP_W - 1 ? [1, 0] : z === 0 ? [0, -1] : z === MAP_H - 1 ? [0, 1] : [0, 0];
+        if (dx || dz) for (let k = 1; k <= 40; k++) deep.push([x + dx * k, z + dz * k]);
+      }
     }
     const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-    const lay = (tiles: number[], color: number, y: number, opacity: number) => {
+    const lay = (tiles: Array<[number, number]>, color: number, y: number, opacity: number) => {
       if (!tiles.length) return;
       const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.25, metalness: 0.1, transparent: opacity < 1, opacity });
       const mesh = new THREE.InstancedMesh(geo, mat, tiles.length);
       const m = new THREE.Matrix4();
-      tiles.forEach((t, k) => mesh.setMatrixAt(k, m.makeTranslation((t % MAP_W) + 0.5, y, Math.floor(t / MAP_W) + 0.5)));
+      tiles.forEach(([x, z], k) => mesh.setMatrixAt(k, m.makeTranslation(x + 0.5, y, z + 0.5)));
       mesh.receiveShadow = true;
       this.group.add(mesh);
     };
+    // (Over the ground round the map, which lies a touch lower.)
     lay(deep, theme === 'alpine' ? 0x35607e : 0x3e7090, -0.008, 1);
     // A ford: the stream bed showing through.
     lay(ford, theme === 'alpine' ? 0x7fa8bf : 0x7aa4b4, 0.004, 0.85);
@@ -257,12 +271,12 @@ export class HuntView {
     this.vehicle = g;
     this.group.add(g);
     const [x0, z0, x1, z1] = def.safe;
-    const r = Math.min(4, Math.max(x1 - x0 + 1, z1 - z0 + 1) / 2 + 0.3);
+    const r = Math.min(4, (def.safeKind === 'border' ? z1 - z0 + 1 : Math.max(x1 - x0 + 1, z1 - z0 + 1)) / 2 + 0.3);
     this.ringMat = new THREE.MeshBasicMaterial({ color: 0x7dff9a, transparent: true, opacity: 0.6, depthWrite: false });
     this.ring = new THREE.Mesh(new THREE.RingGeometry(r - 0.12, r, 48).rotateX(-Math.PI / 2), this.ringMat);
-    // (A border: the ring at the post, where the wire is crossed by the road.)
+    // (A border, a strip across the map: the ring by the post's road, in the middle of the safe ground beyond the wire.)
     const cx = def.safeKind === 'border' ? (t % MAP_W) + 0.5 : x0 + o.ox + (x1 - x0 + 1) / 2;
-    const cz = def.safeKind === 'border' ? Math.floor(t / MAP_W) - 0.5 : z0 + o.oz + (z1 - z0 + 1) / 2;
+    const cz = z0 + o.oz + (z1 - z0 + 1) / 2;
     this.ring.position.set(cx, 0.05, cz);
     this.ring.renderOrder = 6;
     this.group.add(this.ring);
@@ -275,9 +289,9 @@ export class HuntView {
     mesh.castShadow = true;
     g.add(mesh);
     const t = spotTile(at, o.ox, o.oz);
-    // Pulled over beside the spot (the player gets in from it), its nose the way it faces.
+    // On the spot itself (open road, a tile either way along its length: manhunttest checks), its nose the way it faces.
     const a = faceAngle(at.face);
-    g.position.set((t % MAP_W) + 0.5 + Math.cos(a) * 0.9, 0, Math.floor(t / MAP_W) + 0.5 - Math.sin(a) * 0.9);
+    g.position.set((t % MAP_W) + 0.5, 0, Math.floor(t / MAP_W) + 0.5);
     g.rotation.y = a;
     this.car = g;
     this.group.add(g);
@@ -321,6 +335,16 @@ export class HuntView {
 
   // ---------------------------------------------------------------- every frame
   update(f: HuntFrame, dt: number, time: number, night: number, motion: boolean) {
+    // A faint glow at the player's feet after dark (their outline reads against the ground, in any clothes).
+    if (!this.glow) {
+      this.glowMat = new THREE.MeshBasicMaterial({ color: 0xbfd8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+      this.glow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 28).rotateX(-Math.PI / 2), this.glowMat);
+      this.glow.renderOrder = 5;
+      this.group.add(this.glow);
+    }
+    this.glow.position.set(f.me.x, 0.05, f.me.z);
+    this.glowMat!.opacity = 0.16 * night;
+    this.glow.visible = night > 0;
     // The helicopter: in from the edge as it comes up, the rotor turning, its light on the ground (brighter after dark, white on the player when it holds them).
     const h = f.heli;
     this.heliShown += ((h.on ? 1 : 0) - this.heliShown) * Math.min(1, dt * 1.5);
