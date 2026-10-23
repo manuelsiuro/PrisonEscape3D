@@ -163,6 +163,7 @@ Sources:
 | Shankton's rooms, Stalag's garden (P32) | §4.2, §4.3 | §10 planned Shankton's kitchen, laundry and janitor's closet into spare cells, but Shankton has 12 cells for 12 people (GDD §4.3: 12 inmates), so they line the canteen's north side instead, the rec ground taking their block (14×14, a 12×7 pitch). The GDD's central roll-call courtyard keeps roll call (three rows of four) beside a walled garden plot. Stalag's garden is behind cabin B, not cabin A: cabin A's strip is the GDD's boulder field for the zig-zag tunnel (§4.2 layer −1), left as it is; its beds lie along the wire (cabin B's wall hides the two rows in front of it from the camera), and the two boulders under them moved a tile north, under the wire, where they still bar the same line. Solitary gives up its empty south half to the sports ground |
 | San Pancho's and Irongate's grounds (P33) | §4.4, §4.5 | §10 planned San Pancho's sports ground by narrowing the canteen and gym beside the plaza ("about 20 cells for 14 people"), and Irongate's yard grown to about 11 deep. San Pancho has 14 cells for 14 people (§4.4: 14 inmates) and the plaza's middle band is 9 rows, too shallow for a pitch and its track: the ground takes the plaza's south half (14×15) with the control room and solitary shortened under it, the plaza's north half stays the yard and roll-call square (§4.4 "central plaza & roll call square") behind a see-through fence; the canteen and the gym, which opened onto the plaza, are reached from the wings' lobbies; the road out runs library → generator room (red) → control room (red), with the quarters' door purple: the GDD's "[P][GEN][R]" guard post, the same red and green keys out (§4.4). Irongate's yard is the roofs' chasm the helicopter route's grapnel crosses (§4.5 Escape B; reach 6 tiles): grown to 11 the route breaks, so the ground takes the yard's west third down to the main corridor (14×16) and the yard's east two thirds stay 5 deep; the middle block's rooms move east, narrower (the canteen 4 tables, not 6), the janitor's closet into the south block beside the control room |
 | Phone, kiosk and the paperwork escape (P34–P36) | Not in the GDD | From P34 (2026-10-21, user's request) every campaign prison gets a **pay phone** (calls home, a lawyer, a cousin outside on a tapped line, anonymous tips; inmates queue; eavesdropping) and an **internet kiosk** in the library (mail, a legal shop, the news, courses). An 11th way out, **paperwork**: a forged release form puts your name on tomorrow's release list, out through the front door in your own clothes. The GDD's routes are all physical escapes; this one is earned with a stolen form and a forger's hand, checked by the records at 22:00 and again at the release desk. (Built as forged paperwork, 2026-10-22, the user's choice: the planned kiosk hacking was dropped.) See §11 |
+| Parole, odd jobs, the manhunt and holidays (P39–P42) | Not in the GDD | From P39 (2026-10-23, user's request) the GDD's all-escape game gains a **second, slower win**: parole, a 12th way out (`parole`) earned with a good record and a hearing, voided by plotting. **Odd jobs** grow the GDD's four favour types into small missions with story chains. The GDD ends a run at the wall; the **manhunt** adds a last act outside (a clean getaway), and the escape still counts at the wall. **Holidays** (Easter, summer, Halloween, Christmas and New Year) follow the real date, read once when a run starts and kept in the state. See §13 |
 Any further conflict found during the build is added to this table in the same commit.
 
 ## 3. Architecture
@@ -692,6 +693,7 @@ real touch feel) and the known limits.
 - **Easier quiz, football and race nights (v2.16.0)**, the user's request (2026-10-23: players found Quiz Night's time too short, football practically unplayable, the rat races hard). Measured first with human-like bots in the real sim (a quarter of a second behind, eight keyboard directions), since bots pass what people fail. Quiz: the rivals' first right answer came at 4.8 s on a "10 s" bar; now each question is the player's alone while it's read (3 s, 4 s for escape history and recipes, the bar gold, "Your head start"), the buzzers open after, 15 s a question, joining closes 19:30 so it ends before roll call. Football: a kick only landed if the ball was still in reach when Space was let go (the dribbled ball had run off), and went exactly the way faced (a newcomer running at the ball lost 41 of 60, worse than standing still). Now Kick held goes the moment the ball's in reach (held at the feet, it charges until let go), a release a moment early waits for the ball, every kick a little harder, one roughly at the far net goes at its mouth, one at the player's own net is cleared wide, a rival's tackle (never the keeper's save) takes the ball off them a moment; 90-second matches (the clock runs to the bell if it comes first), inmates on the benches play, the lesson's inmates wait by the pitch (they had wandered off and greyed out Play); a sky-blue ring under the player and a ring round the ball seen through the players. Over 150 matches a human-like player went from 32 won / 62 lost to 66 / 42, a newcomer from 10 / 60 to 31 / 60 (a slow one 9 / 60 to 46 / 41). Races: the card is up from 19:00, a reminder at that minute, race nights on the day card (a chip, and a pin with the player's bet or entry), the pet runs if the player is within 12 tiles at the off. The user's choices: reading time and slower rivals; kick help with aim help (the ball held at the feet while Kick was down measured worse, rivals walked up and took it, so the kick on contact replaced it); timing for the races; one release. Old run logs replay the old rules (`Sim.rules215`, `beforeEasier`; checked step by step). Reviewed three ways (rules, UI and text, play): the fixes folded in (the keeper's saves out of the tackle, aim at the goal line itself, a held kick re-armed, a kick released across a pause or lost focus, the snow-blue ball ring at Stalag Flucht, the head start shown on landscape phones, no "Nothing on" beside the race).
 - **Share the game (v2.17.0)**, the user's request (2026-10-23): the title's controls line (W A S D or Z Q S D, or drag and pinch on a phone) is gone (How to play, the first lesson and the first day's walk tip still teach the keys); a Share pill beside the sound switch opens a card with the game's QR code (public/share-qr.png, drawn once from the online address with qrcode-generator, checked with the browser's QR reader), the address, and Copy link on a desktop or the phone's share sheet. The address is the online one even from a local build. On a phone on its side the code sits left of the words. Reviewed three ways (code, UI and text, accessibility): the fixes folded in (focus back on Share after closing, the title out of reach of Tab under the card, so no second card; one share at a time; « Code QR » in French). « Lien copié » not read out, as the Daily's « Copié ».
 - **Share, quieter (v2.17.1)**, the user's request (2026-10-23): the Share pill in glass with an orange icon (its orange had competed with Play); the README's title picture retaken without the controls line (same progress shown: 5 prisons open, 6 of 33 ways out, 7 trophies).
+- **The roadmap P39–P42 (decided 2026-10-23)**: the user asked for ten ideas for more fun and picked four, in this order: the parole board, an odd jobs board, the manhunt, and holidays (with summer and Easter as well as Halloween and Christmas). Planned in §13; §2 has a row. Nothing built yet: each phase starts on the user's go.
 
 ## 9. Free time (P27–P30)
 
@@ -1179,3 +1181,145 @@ details; two releases.
   Escaping (29 topics) rewritten; Play the lesson.
 - **P38 (v2.14)**: Prison life (25 topics) and Controls in the same shape, with 19 pictures from the
   lessons' scenes.
+
+## 13. Parole, odd jobs, the manhunt, holidays (P39–P42)
+The user asked (2026-10-23) for more fun and a better experience. From a list of ten proposals, they picked four and
+the order: **the parole board**, **an odd jobs board**, **the manhunt**, then **holidays**. The holidays include summer
+and Easter as well as Halloween and Christmas. The other six stay in the memory notes: gangs and turf, the riot,
+photo mode and the postcard, the custom escape, the escape planner, and a story through the prisons.
+
+### Rules for every phase
+- **Where**: the five campaign prisons. The Training Block gets none of it, so lessons run at Center Perks.
+- **The escape bots stay byte-identical.**
+  - Everything here starts on the player's request: applying for parole, taking an odd job, running after the
+    wall. A prison's holiday is off unless a test forces one.
+  - If a multi-day bot still changes, the new thing waits for the player's first use in the run (as the phone's
+    queue did in P34). It is never fixed by accepting a changed snapshot.
+- **The sim**:
+  - New `EXT`, `TALK`, `DOING`, `SALT` and `TODAY` codes continue after the last ones.
+  - New state fields are appended and load as optional.
+  - Every draw comes from `roll()`. Holidays come from the real date only through the run's start (below), never
+    from `Date` inside the sim.
+- **Nothing already earned is taken away.** An escape still counts the moment the player is over the wall: records,
+  medals and achievements stay as they are today. The manhunt only adds to them.
+- **Every phase ships**:
+  - sim, 3D, phone and desktop UI (cards docked left in landscape), EN and FR;
+  - How to play in the P37 page shape, with pictures;
+  - bubbles, rumours, achievements and ledger counters;
+  - lessons (a fourth chapter grows, or a new one);
+  - a test script, and the map viewer brought up to date when something new is placed on a map;
+  - three reviews (rules, UI and text, 3D), then a release. Then I wait for the go.
+
+### P39 The parole board (v2.18)
+A second, slower way out that rewards playing the model prisoner. It is **route `parole`**, a 12th way out, in all
+five prisons. It walks out through the front door like paperwork (P36), using the release desk and gates already in
+`PrisonDef.comms.release`.
+- **Applying**:
+  - At the release desk's tray: Apply for parole. The player can apply from prison day 3.
+  - The lawyer (P34) can also file it by phone for a fee, and gets the hearing a day sooner.
+  - The hearing is set for the 7th prison day after applying, at 10:00, in the visiting room.
+    The day's card announces it, and the routine sends the player there.
+- **The record**: a pure function of the ledger (`feats`, `days`) from the day of applying. The card shows it as
+  lines, for and against:
+  - **For**: days worked with the quota met; courses passed (P35); roll calls, meals and showers attended; calls
+    home (P34); favours done; the garden.
+  - **Against**: fights started, KOs, solitary, contraband found on you or in your desk, the heat each evening,
+    missed roll calls, a dog's alert.
+- **The hearing**: three board members (a minigame of a few questions, as the quiz is). Answers are worth more with a
+  good record and Intellect, and a lie can be caught by what the record shows.
+  - Granted: released the next morning at 10:00, out in the player's own clothes.
+  - Denied: the card says the two lines that weighed most, and the player can apply again after 3 prison days.
+- **Caught plotting**: a tunnel or hole found, cutters or a shovel found on you, or caught off limits at night.
+  Any of these voids the application, and the record starts again from that day.
+- **Medals**: slow on purpose (gold around day 12–16, tuned with the bots) in `MEDAL_DAYS`. The Daily never deals
+  parole.
+- **Proof**: `paroletest`: a model-prisoner bot granted in every prison; a plotting bot voided; a record bot whose
+  card lines match the ledger; the denied path and applying again.
+- **Lesson**: the hearing (Center Perks, a forced record).
+
+### P40 The odd jobs board (v2.19)
+Small missions with a bit of story: the next step beyond the four favours (`FAVOR`). They are built only from things
+the game can already do.
+- **The board**: a cork board on a canteen wall in every prison. It is decor plus the tile in front, like the phone,
+  and checked by the comms tests. It holds three jobs at a time, dealt each morning by `roll()`. The fixer (P21) also
+  offers one job of his own.
+- **One job at a time**, with a timer of 1–3 prison days. The HUD chip and the file's Today show its steps, and floor
+  arrows appear where the step names a place.
+- **Kinds** (about a dozen, as data in `content/oddjobs.ts`), for example:
+  - **Lift it**: the warden's mug from the office, a guard's whistle.
+  - **Drop it**: a parcel into someone's desk without being seen.
+  - **Frame**: plant contraband in a rival's desk before the shakedown.
+  - **Fix the game**: lose (or win) a set at checkers or Cheat, or at the arm-wrestle, for someone.
+  - **The rat**: carry a note by rat.
+  - **The cake**: smuggle a birthday cake in through visiting.
+  - **Lookout**: whistle when a guard comes during someone's dig.
+- **Story chains**: each prison has one chain of 3–4 jobs for a named inmate, told in short cards. For example, at
+  Center Perks, the old-timer's lost watch.
+- **Rewards**: cash, a rare item, an Intake cosmetic, or a debt: the inmate owes you one, so they join your crew
+  without the opinion, or hand over a tool.
+- **Failing**: the job goes, opinion drops, and a frame caught out brings heat.
+- **Proof**: `oddjobstest`: every kind done by a bot in every prison it can be dealt in; the chain finished; the
+  deals never ask for something the prison doesn't have.
+- **Lesson**: one job from the board (Center Perks).
+
+### P41 The manhunt (v2.20)
+Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.
+- **When**: after the physical routes (fence, tunnel, roof, takeover, gate, raft, helicopter, stowaway, glider,
+  bluff). Paperwork and parole are legal releases: a short bus-stop scene, and no manhunt.
+- **The escape counts first.** The card shows "Escaped". Then Keep running, or Skip: a skip keeps today's ending.
+- **The outside**: a small map per prison (`PrisonDef.outside`, ASCII, a new layer of data, `maptest`-checked).
+  The player starts where the route left them, and the safe point is across it.
+
+  | Prison | Outside |
+  |---|---|
+  | Center Perks | woods and a road |
+  | Stalag Flucht | snow, a river, the border post |
+  | Shankton | a rail yard and an industrial estate |
+  | San Pancho | scrub desert and a highway |
+  | Irongate | a harbour town, reached by raft or helicopter |
+
+- **The hunt**:
+  - searchers on foot with dogs (k9 rules: scent, trail);
+  - the helicopter's searchlight (searchlight rules);
+  - roadblocks;
+  - noise heard as inside;
+  - the alarm's age raises the pressure.
+  The player hides in hedges and culverts, and can swap clothes off a washing line.
+- **Help from inside**: what the player arranged earlier counts.
+  - **Lou** (P34), if a call set it up, waits with a car at a point on the map: a shorter run.
+  - A crew member who escaped with the player keeps watch.
+  - The glider lands further out.
+- **The outcome**:
+  - Safe: **a clean getaway** (a star on the escape card and the medal shelf, achievements, a better replay).
+  - Caught: recaptured, and the escape still counts. The card says how close the player got.
+- **Proof**: `manhunttest`: a getaway bot per prison and per kind of start; every outside map reachable to the safe
+  point; the escape bots' snapshots unchanged (they end at the wall).
+- **Lesson**: the manhunt (Center Perks' woods).
+
+### P42 Holidays (v2.21)
+The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.
+
+| Holiday | When (real date) | The day and what's new |
+|---|---|---|
+| **Easter / Pâques** | Good Friday to Easter Monday (computed each year) | An **egg hunt** in the yard and the desks: chocolate eggs to find before the inmates do (they trade them as cash). Bunny ears in the Intake. The feast has a lamb roast. |
+| **Summer** | 1 July – 31 August | **Sports day** on the grounds: races, tug of war, a medal. A **barbecue** in the yard, and a **water fight** with hoses that soaks the guards (wet: a moment's cover). An ice-cream van comes on delivery day. Heatwaves come more often. |
+| **Halloween** | 24 October – 2 November | **Costume night**: a costume is a disguise that fools no one but makes everyone laugh. Pumpkin carving in the kitchen. A ghost story at lights-out; the rat scares a guard. |
+| **Christmas & New Year** | 15 December – 6 January | **Christmas dinner** and a gift swap (a gift raises opinion). A snowball fight where there is snow, and jokes about it at San Pancho. **New Year's Eve fireworks** at midnight, loud enough to cover the noise of work. |
+
+- **How the date gets in**: the play layer reads the date when a run starts (as the Daily does) and stores
+  `state.holiday`. Inside the sim it is only data, so a replay plays back the same.
+- **Settings**: Holidays: by the calendar (default), any holiday now, or off.
+- **The Daily** keeps its deal for every player alike. Only the decor follows the date there.
+- **Render only, where possible**: decor (wreaths, eggs, bunting, pumpkins, lights) from the decor kit, and nothing
+  solid that could change a path.
+- **Proof**: `holidaytest`: every escape bot under each holiday still gets out; the Easter dates for 2026–2035;
+  each holiday's day dealt and its items gained.
+- **Lesson**: none (each holiday's day explains itself on the warden's card).
+
+### Phases
+- **P39 The parole board (v2.18)**: the application, the record from the ledger, the hearing minigame, route
+  `parole` with five bots, medals; one lesson.
+- **P40 The odd jobs board (v2.19)**: the board in every canteen, a dozen kinds of job, a story chain per prison,
+  rewards and debts; one lesson.
+- **P41 The manhunt (v2.20)**: five outside maps, the hunt, help from inside, the clean getaway; one lesson.
+- **P42 Holidays (v2.21)**: Easter, summer, Halloween, Christmas and New Year; the setting; decor, items, trophies.
