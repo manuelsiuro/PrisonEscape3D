@@ -31,6 +31,8 @@ import { dayMinute, prisonDay } from './calendar';
 import { DAY, FEAT } from './ledger';
 import { atDesk, freedNow, releaseOf } from './paperwork';
 import { endTalk, refuse } from './social';
+import { REACH } from './items';
+import { atProp, seatSpot } from './rest';
 import { stopTraining } from './training';
 
 /** What EXT.PAROLE asks (b): apply at the desk, an answer to the board (c: ANSWER). Never renumber. */
@@ -285,11 +287,19 @@ export function answerBoard(sim: SimContext, choice: number) {
   sim.events.push({ type: 'parole', what: 'answer', q: o.q, choice, worth, lie });
 }
 
-/** The player sits before the board. */
+/** The player sits before the board (on the seat across from it, when they're at it: facing the board). */
 function sitDown(sim: SimContext) {
   const s = sim.state;
   stopTraining(sim);
   endTalk(sim);
+  const h = hearingOf(sim)!;
+  const seat = sim.world.props.findIndex((p) => p.kind !== 'table' && h.seat.x >= p.x && h.seat.x < p.x + p.w && h.seat.z >= p.z && h.seat.z < p.z + p.d);
+  if (seat >= 0 && s.seat < 0 && atProp(sim.world, seat, s.player, REACH)) {
+    s.player.moving = false;
+    s.player.facing = seatSpot(sim.world, seat, s.player).facing;
+    s.seat = seat;
+    sim.events.push({ type: 'sit', on: true, use: 'sit' });
+  }
   s.hearing = { from: s.step, q: -1, at: 0, topics: topicsOf(s.salt, prisonDay(s.step)), said: [-1, -1, -1], worth: [0, 0, 0], until: 0 };
   sim.events.push({ type: 'parole', what: 'sat' });
 }
