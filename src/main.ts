@@ -15,7 +15,6 @@ import { openObjectives } from './play/lesson';
 import { openDay } from './play/daycard';
 import { act, listenKeys } from './play/keys';
 import { frame } from './play/loop';
-import { pause } from './play/session';
 import { pauseReplay } from './play/replay';
 import { chatterStats, director } from './play/chatter';
 import { firstDay } from './play/tips';
@@ -24,6 +23,10 @@ import { wireCrewPanel } from './play/crew';
 import { wirePhone } from './play/smuggle';
 import { wireGames } from './play/games';
 import { wirePastimes } from './play/pastimes';
+import { runHunt } from './play/hunt';
+import { pause, startGame } from './play/session';
+import { itemNumber } from './content/items';
+import type { Carry } from './sim/hunt/state';
 
 /**
  * Wiring: storage first, then the long-lived objects (play/context.ts, made as it's imported),
@@ -85,4 +88,15 @@ if (import.meta.env.DEV)
     __aimUI: aimUI,
     // The update offer, as a new version would show it.
     __offerUpdate: () => offerUpdate('9.9.9', () => location.reload()),
+    // The manhunt (P41) straight away, from the title: __manhunt('stalag-flucht', 'wall', { minute: 1410, lou: true, crew: 1 }).
+    __manhunt: (prison = 'center-perks', kind: Carry['kind'] = 'wall', more: Partial<Carry> = {}) => {
+      const def = PRISONS.find((p) => p.id === prison) ?? PRISONS[0];
+      document.querySelector('.title-screen')?.remove();
+      startGame(new Sim(def, 5));
+      const g = play.game!;
+      g.over = true;
+      const n = itemNumber;
+      const carry: Carry = { prison: def.id, via: 'fence', kind, spd: 40, outfit: n('inmate_outfit'), kit: [n('light_cutters'), n('jerky'), n('pepper'), n('sleepy_jerky')], crew: 0, lou: false, headStart: 15, minute: 23 * 60 + 40, salt: 9, ...more };
+      return runHunt(g, carry, { lookout: carry.crew ? { name: def.names[1] ?? 'Rocco', cell: 3 } : null });
+    },
   });

@@ -72,32 +72,34 @@
 }
 
 /* How the player stands. */
-.hunt-state {
+.hud-alert.hunt-state {
   gap: 6px;
+  padding-bottom: 6px;
   color: white;
   font-weight: 700;
-  background: rgba(18, 24, 36, 0.78);
+  background: rgba(18, 24, 36, 0.86);
 }
 
-.hunt-state.st-lit {
+.hud-alert.hunt-state.st-lit {
   color: #2b2100;
   background: #ffe27a;
 }
 
-.hunt-state.st-chased {
+.hud-alert.hunt-state.st-chased {
   background: rgba(214, 48, 39, 0.92);
 }
 
-.hunt-state.st-cover {
+.hud-alert.hunt-state.st-cover {
   background: rgba(46, 104, 64, 0.88);
 }
 
-.hud .pill.hunt-state.st-hidden {
+.hud-alert.hunt-state.st-hidden {
   background: rgba(31, 157, 99, 0.9);
 }
 
-.hunt-crew {
+.hud-alert.hunt-crew {
   gap: 6px;
+  padding-bottom: 6px;
   color: #5a3208;
   font-weight: 700;
   background: linear-gradient(135deg, #ffe2c2, #ffc98a);
@@ -210,5 +212,49 @@ body.hunting .hud:not(.hunt-hud) {
 
   .ha-tiers {
     display: none;
+  }
+}
+
+/*
+ * The escape card with the manhunt's line on it is longer: two halves side by side (how it went |
+ * the hunt, what it earned, where next) on a phone on its side and on a screen not tall enough
+ * for one column, so the buttons stay in view.
+ */
+@media (max-height: 520px) and (orientation: landscape), (min-width: 820px) and (max-height: 1000px) {
+  .victory .card:has(.v-hunt) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    width: min(880px, 100%);
+  }
+
+  .victory .card:has(.v-hunt) > h2,
+  .victory .card:has(.v-hunt) > .v-sub,
+  .victory .card:has(.v-hunt) > .escaped-icon {
+    grid-column: 1 / -1;
+  }
+
+  .victory .card:has(.v-hunt) .v-left,
+  .victory .card:has(.v-hunt) .v-right {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .victory .card:has(.v-hunt) .v-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .victory .card:has(.v-hunt) .v-medal {
+    margin-top: 0;
+  }
+
+  .victory .card:has(.v-hunt) .v-routes {
+    margin: 8px 0 0;
+  }
+
+  .victory .card:has(.v-hunt) .actions {
+    margin-top: auto;
+    padding-top: 8px;
   }
 }

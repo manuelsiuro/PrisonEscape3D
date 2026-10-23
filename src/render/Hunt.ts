@@ -129,7 +129,7 @@ export class HuntView {
     // Trees (an island town's are the suburbs' leafy ones), the woods past the edge bigger and looser.
     const tree = sceneryTree(theme === 'island' ? 'suburban' : theme);
     const trees = [...(at[DECO.TREE] ?? []), ...(at[DECO.WOODS] ?? [])];
-    instanced(tree, trees, tall, (t, _k, m) => put(m, t, o.inside[t] ? 0.25 : 0.7, (o.inside[t] ? 1.05 : 1.2) + hash(t, 3) * 0.4, hash(t, 5) * Math.PI * 2));
+    instanced(tree, trees, tall, (t, _k, m) => put(m, t, o.inside[t] ? 0.25 : 0.7, (o.inside[t] ? 0.82 : 1.05) + hash(t, 3) * 0.3, hash(t, 5) * Math.PI * 2));
     instanced(sceneryTree('desert'), at[DECO.CACTUS], tall, (t, _k, m) => put(m, t, 0.2, 0.8 + hash(t, 3) * 0.3, hash(t, 5) * Math.PI * 2));
     // Rocks: a boulder or two, grey (sandstone in the desert, snow-capped in the Alps).
     const rockColor = theme === 'desert' ? 0xb48a62 : theme === 'industrial' ? 0x7c7a72 : 0x8d9096;
@@ -150,13 +150,24 @@ export class HuntView {
     const leaf2 = theme === 'alpine' ? 0xe8eef4 : theme === 'desert' ? 0x9c9a5a : theme === 'industrial' ? 0x6e7a50 : 0x4f8f45;
     const hedge = merge([cyl(0.5, 0.62, leaf, 0, 0, 0, 7), cyl(0.36, 0.3, leaf2, 0.1, 0.55, -0.05, 7), cyl(0.3, 0.25, leaf, -0.18, 0.52, 0.16, 6)]);
     instanced(hedge, at[DECO.HEDGE], tall, (t, _k, m) => put(m, t, 0.1, 0.95 + hash(t, 3) * 0.15, hash(t, 5) * Math.PI * 2));
-    // Culverts: a concrete pipe's mouth under the road, dark inside.
-    const pipe = merge([rod(0.42, 1.0, 0x9a9890, 0, 0.0, 0, 10), rod(0.3, 1.02, 0x22262c, 0, 0.0, 0, 10)]);
-    instanced(pipe, at[DECO.CULVERT], low, (t, _k, m) => {
-      const x = t % MAP_W;
+    // Culverts: under the road, a concrete headwall and the pipe's dark mouth at each edge of it.
+    const mouth = merge([box(0.96, 0.3, 0.14, 0x9a9890, 0, -0.04, 0), paint(new THREE.CircleGeometry(0.26, 12, 0, Math.PI).translate(0, -0.02, 0.075), 0x14171c), box(0.62, 0.05, 0.16, 0x7e7c75, 0, 0.26, 0)]);
+    const mouths: number[] = [];
+    const mouthTurn: number[] = [];
+    for (const t of at[DECO.CULVERT] ?? []) {
+      // The road runs along x (its neighbours east or west are road): the pipe runs across it, along z; its mouths face north and south where the road ends.
       const roadAlongX = o.world.ground.kind[t - 1] === TILE.ROAD || o.world.ground.kind[t + 1] === TILE.ROAD;
-      q.setFromAxisAngle(up, roadAlongX ? Math.PI / 2 : 0);
-      m.compose(v.set(x + 0.5, -0.12, Math.floor(t / MAP_W) + 0.5), q, sc.set(1, 1, 1));
+      for (const [d, turn] of roadAlongX ? ([[-MAP_W, Math.PI], [MAP_W, 0]] as const) : ([[-1, -Math.PI / 2], [1, Math.PI / 2]] as const)) {
+        const n = t + d;
+        if (o.deco[n] === DECO.CULVERT || o.world.ground.kind[n] === TILE.ROAD) continue;
+        mouths.push(t);
+        mouthTurn.push(turn);
+      }
+    }
+    instanced(mouth, mouths, low, (t, k, m) => {
+      const turn = mouthTurn[k];
+      q.setFromAxisAngle(up, turn);
+      m.compose(v.set((t % MAP_W) + 0.5 + Math.sin(turn) * 0.5, 0, Math.floor(t / MAP_W) + 0.5 + Math.cos(turn) * 0.5), q, sc.set(1, 1, 1));
     }, false);
     // Railway lines: two rails on sleepers, along the line's run.
     const rails = merge([box(1.0, 0.05, 0.14, 0x5a4634, 0, 0, -0.32), box(1.0, 0.05, 0.14, 0x5a4634, 0, 0, 0.32), box(0.16, 0.05, 0.86, 0x5a4634, -0.3, 0), box(0.16, 0.05, 0.86, 0x5a4634, 0.2, 0), box(1.0, 0.07, 0.05, 0xa4a8ae, 0, 0.05, -0.2), box(1.0, 0.07, 0.05, 0xa4a8ae, 0, 0.05, 0.2)], false);
@@ -190,9 +201,9 @@ export class HuntView {
       mesh.receiveShadow = true;
       this.group.add(mesh);
     };
-    lay(deep, theme === 'alpine' ? 0x3f6f8e : 0x3e7090, -0.06, 1);
+    lay(deep, theme === 'alpine' ? 0x35607e : 0x3e7090, -0.008, 1);
     // A ford: the stream bed showing through.
-    lay(ford, theme === 'alpine' ? 0x7fa8bf : 0x7aa4b4, 0.0, 0.85);
+    lay(ford, theme === 'alpine' ? 0x7fa8bf : 0x7aa4b4, 0.004, 0.85);
   }
 
   /** A washing line: two posts, the line between them, clothes pegged on it (gone once taken). */
