@@ -468,7 +468,9 @@ export const SHOTS: Record<string, Shot> = {
     dz: -1,
   },
 
-  // P42: Christmas Day in Center Perks' canteen, free time on day 2 (a run begun under Christmas): the tree in its corner, the lights along the north wall.
+  // P42: Christmas Day in Center Perks' canteen, free time on day 2 (a run begun under Christmas): the tree standing free with its
+  // presents (50.5,11.5), the player two tiles east of it facing it (beside, not in front: the camera looks from the south), the
+  // lights along the north wall up and to the left (x 40–47, row 7). The camera aimed between the two, a little wider than play's.
   // (No picture yet: take it with h.take('holidays'), then give the topic its `pic`.)
   holidays: {
     make: () => {
@@ -477,14 +479,15 @@ export const SHOTS: Record<string, Shot> = {
       Bot.holiday = 0;
       bot.routineUntil(2, 10 * 60 + 5);
       const t = holidayDecor(bot.sim.world, HOLIDAY.CHRISTMAS).find((d) => d.what === 'tree')!;
-      bot.walkTo(tile(Math.floor(t.x) - 1, Math.floor(t.z) + 2));
-      bot.face(DIR.NORTH);
+      bot.walkTo(tile(Math.floor(t.x) + 2, Math.floor(t.z)));
+      bot.face(DIR.WEST);
       bot.until(() => false, 20);
       return bot;
     },
     when: at(0.999),
-    zoom: 2.2,
-    dz: -1.2,
+    zoom: 1.5,
+    dx: -3.5,
+    dz: -2,
   },
 
   // ------------------------------------------------------------ basics and escaping (P37)

@@ -401,6 +401,7 @@ for (const p of PRISONS) {
 }
 
 // ------------------------------------------------------------------ the decor (render only)
+
 {
   const rows: string[] = [];
   const near = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
@@ -446,7 +447,8 @@ for (const p of PRISONS) {
         const summer = d.what === 'parasol' || d.what === 'barbecue' || d.what === 'hose';
         // (Parasols out in the yard only where the sports ground has no room for one: Center Perks'.)
         const yardParasols = d.what === 'parasol' && !plan.some((q) => q.what === 'parasol' && w.zoneAt(Math.floor(q.x), Math.floor(q.z)) === 'sports');
-        const where = d.what === 'garland' || d.what === 'tree' || d.y ? 'canteen' : summer && !yardParasols ? 'sports' : 'yard';
+        // (The tree in the canteen; out in the yard where the canteen has no room for one anywhere, San Pancho's.)
+        const where = d.what === 'garland' || d.y ? 'canteen' : d.what === 'tree' ? (zone === 'canteen' ? 'canteen' : 'yard') : summer && !yardParasols ? 'sports' : 'yard';
         check(floor && (zone === where || (where === 'yard' && zone === 'sports')), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${d.x},${d.z} stands on the ${where}'s floor (${zone}, ${floor ? 'floor' : 'solid'})`);
         if (d.what === 'garland') {
           check(TILE_INFO[w.ground.kind[(tz + (d.south ? 1 : -1)) * MAP_W + tx]].solid, `${p.id}: a garland hangs on a wall`);
@@ -467,6 +469,9 @@ for (const p of PRISONS) {
       if (tree) {
         const tx = Math.floor(tree.x);
         const tz = Math.floor(tree.z);
+        // Its boughs and presents (0.7 tiles out, and 0.2 more) touch no furniture, no prop, no floor decor.
+        const touching = [...there.entries()].filter(([u, what]) => !['pitch', 'track', 'court', 'garden'].includes(what) && Math.max(Math.abs((u % MAP_W) + 0.5 - tree.x), Math.abs(Math.floor(u / MAP_W) + 0.5 - tree.z)) < 0.5 + 0.9);
+        check(!touching.length, `${p.id}: the tree at ${tree.x},${tree.z} touches nothing (${touching.map(([u, what]) => `${what} ${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
         check(!plan.some((g) => g.what === 'garland' && g.z === tz && tx >= g.x - 1 && tx <= g.x1!), `${p.id}: the tree stands under no garland`);
         check(!p.board || !(p.board.z === tz && Math.abs(p.board.x - tx) <= 1), `${p.id}: the tree hides no part of the odd jobs board`);
         const above = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && ((d.rot ?? 0) % 2 === 0 ? d.z === tz && tx >= d.x - 1 && tx <= d.x + (d.w ?? 1) : d.x === tx && tz >= d.z - 1 && tz <= d.z + (d.d ?? 1)));
