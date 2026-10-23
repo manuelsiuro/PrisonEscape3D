@@ -274,7 +274,7 @@ export function jobRow(sim: Sim): PaRow | null {
     label: t('oddjob.fileLabel'),
     title: `${t(`oddjob.kind.${KINDS[job[J.KIND]]}` as Key)} · ${inmateName(sim, job[J.GIVER])}`,
     when: leftOf(sim, job),
-    sub: steps.map((x, i) => `${x.done ? '✓' : i === k ? '→' : '·'} ${x.text}`).join('\n'),
+    sub: steps.map((x, i) => `${x.done ? '✓' : i === k ? '→' : '…'} ${x.text}`).join('  ·  '),
   };
 }
 /** What makes the file's Today redraw for the job. */
