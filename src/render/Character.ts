@@ -411,8 +411,11 @@ function hatParts(kind: number, color: number): Part[] {
         paint(new THREE.SphereGeometry(0.065, 8, 6).translate(0, 0.5 + 0.42 * Math.cos(0.6), -0.03 - 0.42 * Math.sin(0.6)), 0xfafafa),
       ];
     case 13:
-      // P42: a witch's hat, a wide brim, a purple band, its point bent back.
-      return [part(0.8, 0.03, 0.76, color, 0, 0.5, 0), part(0.46, 0.06, 0.44, 0x8e4fc4, 0, 0.55, 0), part(0.42, 0.14, 0.4, color, 0, 0.64, 0), part(0.3, 0.14, 0.28, color, 0.01, 0.78, -0.03), part(0.18, 0.12, 0.16, color, 0.03, 0.9, -0.07), part(0.08, 0.1, 0.08, color, 0.06, 1.0, -0.12)];
+      // P42: a witch's hat, a brim a little wider than the head, a purple band, its point bent back; the whole hat
+      // tipped back on the head, its brim's front raised, so the game's camera, looking down, still sees the face and the hair under it.
+      return [part(0.62, 0.03, 0.58, color, 0, 0.5, 0), part(0.46, 0.06, 0.44, 0x8e4fc4, 0, 0.55, 0), part(0.42, 0.14, 0.4, color, 0, 0.64, 0), part(0.3, 0.14, 0.28, color, 0.01, 0.78, -0.03), part(0.18, 0.12, 0.16, color, 0.03, 0.9, -0.07), part(0.08, 0.1, 0.08, color, 0.06, 1.0, -0.12)].map((g) =>
+        g.translate(0, -0.5, 0).rotateX(-0.28).translate(0, 0.52, -0.04),
+      );
     default:
       return [
         part(0.25, 0.12, 0.24, color, -0.125, 0.53, 0.115),

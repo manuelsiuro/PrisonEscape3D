@@ -1532,6 +1532,14 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
     the card. Not done: the van, glider and helicopter starts still begin on foot (no vehicle moment), and the
     lighter rectangle of Irongate's sea over the picture couldn't be traced without a browser (the data past the
     picture is the same sea now).
+  - **Built (full review of v2.21.0, 3D):** the seams at the world's edge. The contact shadows' multiplied layer
+    darkens even its white a little (the tone curve), and only over the 64×64 world: it now carries on past the
+    edge round the sea (Irongate's prison and outside) and round the manhunt's outside, with open ground's average
+    shade. The fields past the outside's edge are its own grass (untinted, the floors' shade), the picture's roads,
+    dirt tracks and railway lines run on 44 tiles off its edge (over the woods band too, rails and gravel with
+    them), and the woods past the world's edge are the HuntView's, clear of those and of the rivers. The next
+    hunt's helicopter no longer eases in from where the last one was. A glow round each searcher after dark is
+    drawn from `HuntFrame.searchers` (the play loop fills it).
 
 ### P42 Holidays (v2.21)
 The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.
@@ -1630,6 +1638,20 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   commands at Center Perks: tool work through the water fight, costume night's laughs and none after 21:00,
   the present given, ten strikes on the cell wall under the fireworks, heard 1 tile off). No escape snapshot changed. Only counts and
   the state's hash changed (simtest, replaytest's save size, items, achievements, keys, banks, help).
+- **Built (full review of v2.21.0, 3D):** the openings between rooms with no door (`openingsOf`: a gap in a wall's
+  line up to 4 across, another zone through it) are doorways to the decor, and nothing stands in line with a
+  doorway (`lanesOf`, 4 tiles on; parasols a tile either side too), in a one-wide passage or within a tile of a
+  fence's wire; nothing by a wall stands just north of one (the wall hid it from the camera: the lanterns,
+  barbecues and hoses the review listed); a tile in from a fence counts as by the edge where a sports ground or yard
+  has no wall (Stalag Flucht's). Ground pieces are picked one at a time, each keeping the tiles round it (Irongate's
+  lanterns stood side by side). Garlands never hang on a south wall (Irongate's now on its side walls) nor
+  behind the parole board's seats (Stalag Flucht's and San Pancho's broken there). Irongate's tree, which stood in
+  the canteen's south opening, has no room left in the canteen: it stands by the sports ground. Each hose has a
+  tap, a reel and a nozzle on a stake, its fan of jets over nothing standing nor the other summer pieces. Baskets
+  and lanterns on every canteen table (Center Perks' eight). San Pancho's sports ground has room for one parasol
+  off its ways in. The parasols share one two-sided material and eight faded steps (one shader, compiled with the
+  prison: the first parasol cost a ~190 ms hitch). Fireworks: bigger sparks with trails and a flash, none drawn
+  with reduced motion. The witch's hat: a narrower brim, the hat tipped back, so the face shows from above.
 
 ### Phases
 - **P39 The parole board (v2.18)**: the application, the record from the ledger, the hearing minigame, route
