@@ -326,6 +326,11 @@ export interface PrisonDef {
   /** The pay phone (P34): where it hangs, its queue, the front gate; without it, none. */
   comms?: CommsDef;
   /**
+   * The odd jobs board (P40): a cork board on a canteen wall, the tile the player stands on to read
+   * it, facing the wall it hangs on (decor: drawn, nothing on the map changes); without it, none.
+   */
+  board?: { x: number; z: number; face: number };
+  /**
    * The map's revision (P31: raised when the prison is rebuilt; none: 0). A save from an older
    * one starts the run again there (saves.ts rebuiltSince).
    */

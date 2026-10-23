@@ -3,6 +3,7 @@
  * followers and the foes they go after, and grudges that turn into ambushes.
  */
 import { phoneTargets, swapPlace } from './phone';
+import { oddjobTargets, owes, R, talkJob } from './oddjobs';
 import { twist } from './twists';
 import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
@@ -139,6 +140,13 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
   const free = it.inv.slice(0, HOTBAR).indexOf(0);
   it.rev++;
   switch (a) {
+    // P40: the fixer's own odd job, the job handed in, a debt called in.
+    case TALK.ODD_JOB:
+      return talkJob(sim, who, 'take');
+    case TALK.JOB_IN:
+      return talkJob(sim, who, 'in');
+    case TALK.CALL_IN:
+      return talkJob(sim, who, 'call');
     // P34: the inmate's place in the pay phone's queue, bought.
     case TALK.SWAP:
       swapPlace(sim, who);
@@ -219,8 +227,13 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       if (s.crew.some((e) => e[1] === ORDER.BRAWL && e[3] === who)) return refuse(sim, 'crewBusy');
       // (P26: Lone Wolf, nobody signs up.)
       if (twist(s, 'loneWolf')) return refuse(sim, 'loneWolf');
-      if (m.opinion < OPINION_HIGH) return refuse(sim, 'opinion');
+      // (P40: one who owes the player from an odd job signs up whatever he thinks of them: the debt is paid.)
+      if (m.opinion < OPINION_HIGH && !owes(s, who)) return refuse(sim, 'opinion');
       if (s.followers.length >= MAX_FOLLOWERS) return refuse(sim, 'followers');
+      if (m.opinion < OPINION_HIGH) {
+        s.oddjobs[R.OWED] &= ~(1 << who);
+        sim.events.push({ type: 'oddjob', what: 'owedJoin', who });
+      }
       s.followers.push(who);
       sim.events.push({ type: 'recruit', who, on: true });
       return;
@@ -408,6 +421,8 @@ export function socialNow(sim: SimContext): Social {
   phoneTargets(sim, so);
   // Talent night (P30): the act on the stage (wherever the player is).
   stageTargets(sim, so);
+  // The odd jobs board (P40): a lookout job's digger at his bed in the free times (only once the player has taken one).
+  oddjobTargets(sim, so);
   if (!about) return so;
   // A shootout's partner (P27) keeps near the player at the court.
   const partner = hoopsPartner(s);

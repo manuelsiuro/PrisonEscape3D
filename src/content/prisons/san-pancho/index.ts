@@ -429,5 +429,7 @@ export const SAN_PANCHO: PrisonDef = {
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported at the library's back door, then through the generator room, the control room and down the supply road.)
   comms: comms([19, 12, 13], [[20, 12], [20, 13], [20, 14], [20, 15]], [31, 51], [35, 63, 1], [44, 44, 1], { at: [[42, 46]], gates: [[42, 47], [37, 51], [31, 52], [32, 52], [31, 55], [32, 55], [31, 61], [32, 61]] }),
+  // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
+  board: { x: 17, z: 32, face: 13 },
   map: 1,
 };

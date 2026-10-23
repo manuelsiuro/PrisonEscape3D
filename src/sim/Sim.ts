@@ -34,6 +34,7 @@ import { smuggle } from './systems/smuggling';
 import { phone, wheels } from './systems/phone';
 import { kiosk } from './systems/kiosk';
 import { freedNow, paperwork } from './systems/paperwork';
+import { oddjobs } from './systems/oddjobs';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { ladderFootOf, reserved } from './systems/structure';
@@ -229,6 +230,8 @@ export class Sim {
     kiosk(this);
     // The paperwork escape (P36): the records at 22:00, the release at 10:00, its way out.
     paperwork(this);
+    // The odd jobs board (P40): the job held, its time, what's been done toward it this step.
+    oddjobs(this);
     // Race nights (P28): the off, a guard seeing the player at it, the finish.
     races(this);
     bribesWearOff(this);
