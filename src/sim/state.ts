@@ -4,7 +4,7 @@
  */
 import type { PrisonDef } from '../content/prisons/types';
 import { SHOP_SLOTS } from '../content/loot';
-import { routineAt } from '../content/routine';
+import { BLOCK, ROUTINE, routineAt } from '../content/routine';
 import { HOLDER, type Favor, type StationAct } from './systems/economy';
 import { maxHealth } from './systems/combat';
 import { clockAt, dayMinute, prisonDay } from './systems/clock';
@@ -656,6 +656,11 @@ export interface SimState {
    * day of the last lockdown (0 none: the records look twice at a name after one)].
    */
   release: number[];
+  /**
+   * Today's blocks as they went (a ROUTINE index each, cleared at 08:00): 0 nothing to say (not
+   * yet, or nothing asked), BLOCK.ATTENDED, BLOCK.MISSED (it cost heat or a lockdown), BLOCK.EXCUSED.
+   */
+  blocks: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -825,6 +830,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     photos: [],
     course: [],
     release: [0, 0, 0],
+    blocks: ROUTINE.map(() => 0),
   };
 }
 
@@ -981,6 +987,12 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!s.kiosk) s.course = [];
   // P36: the release as it can be (else no name listed, the way out shut).
   if (!(ints(s.release, 3) && s.release[0] >= 0 && s.release[0] <= prisonDay(s.step) + 1 && s.release[1] >= 0 && s.release[1] <= s.step + FREED_STEPS && s.release[2] >= 0 && s.release[2] <= prisonDay(s.step))) s.release = [0, 0, 0];
+  // Today's blocks as they went (a save from before them: nothing said of the day so far).
+  if (!(ints(s.blocks, ROUTINE.length) && s.blocks.every((b) => b >= 0 && b <= BLOCK.EXCUSED))) {
+    s.blocks = ROUTINE.map(() => 0);
+    // (The block under way keeps its check-in.)
+    if (s.attended && ROUTINE[s.routine]?.miss) s.blocks[s.routine] = BLOCK.ATTENDED;
+  }
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);

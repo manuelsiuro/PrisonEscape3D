@@ -10,7 +10,7 @@
  */
 import { zoneIndex } from '../src/content/zones';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
-import { ROUTINE, routineAt } from '../src/content/routine';
+import { BLOCK, ROUTINE, routineAt } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
@@ -174,6 +174,24 @@ check(truant.log.some((l) => l.startsWith('day 1 09:') && l.endsWith('caught (so
 check(truant.log.some((l) => l.endsWith('out of solitary')), 'the truant serves its time');
 check(truant.log.some((l) => l.endsWith('missed showers +25% heat')), 'missing showers costs heat');
 console.log(`truant heat at the end of day 1: ${truant.sim.state.heat}%`);
+
+// The day's blocks as they went (the day's card): kept through the night, cleared at 08:00.
+{
+  const day = (bot: (sim: Sim) => Bot) => {
+    let night: number[] = [];
+    const r = run(bot, DAY + 1, 3, (sim) => {
+      if (sim.state.step === DAY - 1) night = [...sim.state.blocks];
+    });
+    return { night, morning: r.sim.state.blocks };
+  };
+  const good = day(modelPrisoner);
+  const bad = day(() => () => 0);
+  const word = (b: number[]) => b.map((x) => '.oxe'[x]).join('');
+  console.log(`blocks at 07:59 (o made, x missed or fired, e excused): model ${word(good.night)}, truant ${word(bad.night)}`);
+  check(ROUTINE.every((r, k) => !r.miss || good.night[k] === BLOCK.ATTENDED), 'the model prisoner made every block, on the card');
+  check(bad.night[0] === BLOCK.MISSED && bad.night[1] === BLOCK.EXCUSED, 'the truant missed roll call, and was excused breakfast in the lockdown');
+  check(good.morning.every((x) => x === 0) && bad.morning.every((x) => x === 0), 'a new day starts with a clean card');
+}
 
 // The night owl: a model prisoner until evening roll call, out in the cell block at Lights Out, home by 23:10 (within the grace).
 const owl = run(

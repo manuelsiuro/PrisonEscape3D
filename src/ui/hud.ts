@@ -129,7 +129,7 @@ export class Hud {
       'hud hidden',
       `<div class="hud-row">
         <button class="pill big hud-cash" aria-keyshortcuts="I"><span class="hud-face">${icon('person', 18)}<img alt="" draggable="false" hidden><i class="hud-news"></i></span><b></b><span class="hud-me-tip" aria-hidden="true"></span></button>
-        <span class="pill big hud-clock"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b><i class="hud-wx" role="img"></i></span>
+        <button class="pill big hud-clock" aria-keyshortcuts="J"><i class="hud-sky"></i><span class="hud-day"></span><b class="hud-time"></b><i class="hud-wx" role="img"></i></button>
         <span class="pill big hud-zone">${icon('pin', 16)}<span></span></span>
         <button class="icon-btn hud-lesson hidden" aria-keyshortcuts="O">${icon('bulb')}<i class="hud-lesson-new"></i></button>
         <button class="icon-btn hud-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
@@ -191,10 +191,23 @@ export class Hud {
     this.order.addEventListener('click', () => this.onOrder());
     this.crew = q('.hud-crew');
     this.crew.addEventListener('click', () => this.onCrew());
+    // The clock: the day's card (its routine block by block, what's on).
+    this.clockPill = q('.hud-clock');
+    this.clockPill.addEventListener('click', () => this.onDay());
+    this.clockPill.setAttribute('aria-haspopup', 'dialog');
     this.wx = q('.hud-wx');
     document.body.append(this.el);
   }
 
+  private readonly clockPill: HTMLElement;
+  private clockSaid = '';
+  private wxSaid = '';
+  /** The clock's name to a screen reader: the day in full (narrow phones show "D1"), the time, the weather, what a press opens. */
+  private sayClock() {
+    this.clockPill.setAttribute('aria-label', `${this.clockSaid}${this.wxSaid ? `, ${this.wxSaid}` : ''}. ${t('hud.dayCard')}`);
+  }
+  /** The clock tapped: the day's card. */
+  onDay: () => void = () => {};
   private readonly lessonBtn: HTMLElement;
   /** The bulb tapped (a lesson under way): its objectives. */
   onLesson: () => void = () => {};
@@ -412,8 +425,10 @@ export class Hud {
       this.shownMinute = minute;
       // Narrow phones: "D1" leaves the zone room for its name.
       setText(this.day, t(NARROW.matches ? 'hud.dayShort' : 'hud.day', { n: clock.day }));
-      this.day.title = t('hud.day', { n: clock.day });
       setText(this.time, formatTime(clock));
+      this.clockPill.title = TOUCH ? '' : `${t('hud.dayCard')} (${keyLabel('KeyJ')})`;
+      this.clockSaid = `${t('hud.day', { n: clock.day })}, ${formatTime(clock)}`;
+      this.sayClock();
     }
     if (zone !== this.shownZone || !this.zone.textContent) {
       setText(this.zone, t(`zone.${zone}`));
@@ -442,6 +457,8 @@ export class Hud {
       this.wx.style.setProperty('--wx', s.weather.color);
       this.wx.setAttribute('aria-label', t('hud.weather', { weather: s.weather.name }));
       this.wx.title = t('hud.weather', { weather: s.weather.name });
+      this.wxSaid = s.weather.icon ? t('hud.weather', { weather: s.weather.name }) : '';
+      this.sayClock();
     }
     this.updateRoutine(s);
     this.updateHeat(s.heat);

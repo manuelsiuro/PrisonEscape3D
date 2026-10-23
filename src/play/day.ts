@@ -45,13 +45,13 @@ const supervisorOf = (sim: Sim) => {
 };
 /** The weather as it's named and drawn: in the snow (Stalag Flucht) a clear day snows, a storm is a blizzard. */
 type WeatherName = Weather | 'snow' | 'blizzard';
-const WX_ICON: Record<WeatherName, string> = { clear: 'sun', snow: 'snow', fog: 'fog', rain: 'rain', storm: 'storm', blizzard: 'storm', heatwave: 'heat' };
-const WX_COLOR: Record<WeatherName, string> = { clear: '#ffd76a', snow: '#e6f3ff', fog: '#cfd8e2', rain: '#8cc8ff', storm: '#b8a8ff', blizzard: '#cfe6ff', heatwave: '#ffb35a' };
+export const WX_ICON: Record<WeatherName, string> = { clear: 'sun', snow: 'snow', fog: 'fog', rain: 'rain', storm: 'storm', blizzard: 'storm', heatwave: 'heat' };
+export const WX_COLOR: Record<WeatherName, string> = { clear: '#ffd76a', snow: '#e6f3ff', fog: '#cfd8e2', rain: '#8cc8ff', storm: '#b8a8ff', blizzard: '#cfe6ff', heatwave: '#ffb35a' };
 /** Events the warden warns of fifteen minutes ahead (the drill is a surprise; a food fight just happens). */
 const WARNED: ReadonlySet<DayEvent> = new Set(['inspection', 'feast', 'maintenance', 'movie', 'delivery', 'visiting', 'sports', 'talent', 'quiz']);
 const WARN_AHEAD = 15;
 /** 22:00: tomorrow's forecast; 14:30: a quip on a quiet afternoon (minutes into the prison day). */
-const FORECAST_AT = 14 * 60;
+export const FORECAST_AT = 14 * 60;
 const QUIP_AT = 6 * 60 + 30;
 const QUIPS = 3;
 
@@ -69,12 +69,12 @@ export function weatherName(sim: Sim, w: Weather): WeatherName {
 }
 
 /** Whether a prison has days at all (the Training Block doesn't), and the game isn't a lesson (but one about the day). */
-const hasDays = (g: Game | null): g is Game => !!g && (!g.lesson || !!LESSONS[g.lesson.index].days) && !!DAY_BOOKS[g.rec.sim.prison.id];
+export const hasDays = (g: Game | null): g is Game => !!g && (!g.lesson || !!LESSONS[g.lesson.index].days) && !!DAY_BOOKS[g.rec.sim.prison.id];
 
 export const wardenOf = (sim: Sim) => t(`warden.${sim.prison.id}` as Key);
 
 /** When an event happens, as the card and the file say it. */
-function whenOf(p: DayPlan): string {
+export function whenOf(p: DayPlan): string {
   if (p.event === 'none') return '';
   if (p.event === 'drill') return t('day.whenBell');
   if (p.event === 'foodFight') return t('day.whenMeal');

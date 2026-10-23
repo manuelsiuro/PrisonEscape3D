@@ -42,6 +42,9 @@ export const ROUTINE: readonly RoutineDef[] = [
   { id: 'lightsOut', start: 23 * 60, zones: ['playerCell'], miss: null },
 ];
 
+/** How a block went today (`state.blocks`): checked in, missed (heat or a lockdown), let off (a lockdown, solitary, out cold, away). */
+export const BLOCK = { ATTENDED: 1, MISSED: 2, EXCUSED: 3 } as const;
+
 /**
  * P31: the places outdoors whose gates open by the routine (the sports ground, the garden):
  * the blocks they're open for (never in a lockdown; anyone still inside keeps the gate open

@@ -1,6 +1,6 @@
 /** The daily routine (GDD §2): blocks starting and ending, and the player checking in to them. */
 import { quickFix } from './twists';
-import { ROUTINE, routineAt } from '../../content/routine';
+import { BLOCK, ROUTINE, routineAt } from '../../content/routine';
 import type { SimContext } from '../context';
 import { MISSED_ROUTINE_HEAT } from '../tuning';
 import type { Clock } from './clock';
@@ -26,7 +26,8 @@ export function nextBlock(sim: SimContext, clock: Clock) {
     const heat = past.miss === 'lockdown' ? 100 : MISSED_ROUTINE_HEAT;
     sim.events.push({ type: 'missed', routine: s.routine, heat });
     addHeat(sim, heat);
-  }
+    s.blocks[s.routine] = BLOCK.MISSED;
+  } else if (past.miss && !s.attended && s.excused) s.blocks[s.routine] = BLOCK.EXCUSED;
   // The Work Period settled (GDD §11), while the block's own excuse still stands: wages were paid
   // as quotas were met; an unmet one costs the job.
   if (past.id === 'work') settleWork(sim);
@@ -45,6 +46,7 @@ export function nextBlock(sim: SimContext, clock: Clock) {
   // A new day: desks, shelves and counters are stocked again (GDD §6.2), and two cells
   // are named for the shakedown during roll call.
   if (now === 0) {
+    s.blocks.fill(0);
     restock(w, s.items, s);
     // (P19: the dogs' treats, and the pills, where there are dogs.)
     treats(sim);
@@ -70,6 +72,7 @@ export function attendance(sim: SimContext) {
   // (Hidden in the delivery's vehicle, P18, the player is nowhere a block wants them.)
   if (!s.attended && !s.stowed && sim.dutyZones.includes(zone)) {
     s.attended = true;
+    s.blocks[s.routine] = BLOCK.ATTENDED;
     sim.events.push({ type: 'attended', routine: s.routine });
   }
 }

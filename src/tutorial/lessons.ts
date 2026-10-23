@@ -9,7 +9,7 @@ import { atKiosk, kioskOpen, loggedIn } from '../sim/systems/kiosk';
 import { CALLEE } from '../content/phone';
 import { itemDef, itemNumber } from '../content/items';
 import type { PrisonDef } from '../content/prisons/types';
-import { ROUTINE, routineAt } from '../content/routine';
+import { BLOCK, ROUTINE, routineAt } from '../content/routine';
 import type { Key } from '../i18n';
 import { SLOT } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -110,6 +110,7 @@ function clockTo(sim: Sim, step: number) {
   s.step = step;
   s.routine = routineAt(clockAt(step).minuteOfDay);
   s.attended = true;
+  s.blocks[s.routine] = BLOCK.ATTENDED;
 }
 /** Puts the player on a tile, facing a way (1 east, 5 south, 9 west, 13 north). */
 function place(sim: Sim, x: number, z: number, facing = 5) {
