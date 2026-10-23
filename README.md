@@ -6,7 +6,9 @@ A 3D prison escape game in the spirit of *The Escapists*, for phones and desktop
 Keep your head down through roll calls and work shifts while you secretly craft tools, dig, bribe, bluff and
 plot your way out of five prisons, each harder than the last.
 
-### ▶ [Play it now](https://manuelsiuro.github.io/PrisonEscape3D/)
+<p align="center">
+  <a href="https://manuelsiuro.github.io/PrisonEscape3D/"><img src="docs/screenshots/play-button.png" alt="▶ Play it now" width="380"></a>
+</p>
 
 No download and no account. It plays in the browser, can be installed as an app and then works offline. In
 English and French.
