@@ -16,3 +16,8 @@ export function runHoliday(s: Pick<Settings, 'holidays' | 'holidayPick'>, date: 
   if (s.holidays === 'pick') return Math.max(0, HOLIDAYS.indexOf(s.holidayPick));
   return holidayOn(date.getFullYear(), date.getMonth() + 1, date.getDate());
 }
+
+/** The date's holiday, whatever was picked (none with holidays off): what a Daily's decor follows. */
+export function dateHoliday(s: Pick<Settings, 'holidays'>, date: Date = new Date()): number {
+  return s.holidays === 'off' ? 0 : holidayOn(date.getFullYear(), date.getMonth() + 1, date.getDate());
+}

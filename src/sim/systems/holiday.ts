@@ -56,13 +56,13 @@ export const holidayFeast = (sim: HolidaySim) => !!sim.state.holiday && holidayD
 /** The fireworks are going off (New Year's Eve, 00:00–00:10): every noise is drowned. */
 export const fireworksOn = (sim: HolidaySim) => holidayNow(sim, 'newYearsEve');
 
-/** A guard soaked by the water fight: out in the yard (or on the sports ground) while it's on. Sees no further than WET_SIGHT. */
+/** A guard soaked by the water fight: out on the sports ground while it's on. Sees no further than WET_SIGHT. */
 export function soaked(sim: SimContext, g: Guard): boolean {
   if (!sim.state.holiday || !holidayNow(sim, 'waterFight')) return false;
   return WATER_ZONES.includes(sim.world.zoneAt(Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT)));
 }
-/** Where the water fight's hoses reach: the yard and the sports ground. */
-const WATER_ZONES: readonly string[] = ['yard', 'sports'];
+/** Where the water fight's hoses reach: the sports ground (every prison has one), where the exercise hour wants the player (routine.ts zonesOf: never the courtyard's). */
+const WATER_ZONES: readonly string[] = ['sports'];
 export { WET_SIGHT };
 
 /** Each step: the holiday's day starts and ends on the minute; eggs found; the costume's laughs. */

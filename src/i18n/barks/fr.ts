@@ -2327,7 +2327,7 @@ export const frBarks: Barks = {
     "Soirée déguisée ! Je viens en homme libre.",
     "C’est une citrouille ou la tête du directeur ?",
     "Bouh ! Ha, je t’ai eu.",
-    "Creuse une citrouille en cuisine. Personne ne dit rien.",
+    "Sculpte une citrouille en cuisine. Personne ne dit rien.",
     "Un bonbon ou un sort ? Un bonbon. Toujours.",
     "Remarque, c’est effrayant ici tous les soirs.",
   ],

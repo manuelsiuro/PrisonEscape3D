@@ -34,7 +34,7 @@ export interface HolidayDayDef {
 export const HOLIDAY_DAY: Record<HolidayDay, HolidayDayDef> = {
   // Easter: eggs hidden at 08:00 in the inmates' desks and about the yard; what's left at 22:00 (in the yard, in their desks) the inmates found first. A lamb roast at dinner.
   eggHunt: { holiday: HOLIDAY.EASTER, first: 2, at: 0, length: 840, feast: true },
-  // Summer: the water fight in the exercise hour (15:00–15:30) soaks the guards out in the yard. The barbecue at dinner.
+  // Summer: the water fight in the exercise hour (15:00–15:30) soaks the guards out on the sports ground (where the exercise hour is held). The barbecue at dinner.
   waterFight: { holiday: HOLIDAY.SUMMER, first: 2, at: 420, length: 30, feast: true },
   // Halloween: costume night, 19:00–21:00 (the costume and a pumpkin to be had from 08:00).
   costumeNight: { holiday: HOLIDAY.HALLOWEEN, first: 2, at: 660, length: 120 },
@@ -119,7 +119,7 @@ export const TREATS: ReadonlyArray<{ item: string; table: string; day: HolidayDa
 /** The egg hunt: eggs hidden in this many of the inmates' desks (those with room), and lying about the yard. */
 export const EGG_DESKS = 6;
 export const EGG_YARD = 6;
-/** The water fight: a soaked guard out in the yard sees this far (tiles) while it lasts. */
+/** The water fight: a soaked guard out on the sports ground sees this far (tiles) while it lasts. */
 export const WET_SIGHT = 2;
 /** Costume night: an inmate within this reach of the player in costume laughs (once a night each), and likes them this much more. */
 export const LAUGH_REACH = 2;

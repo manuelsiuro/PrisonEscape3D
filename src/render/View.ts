@@ -1324,7 +1324,7 @@ export class View {
     // The holiday (P42): its decor, the water fight's sprays, New Year's fireworks (from anywhere but a tunnel).
     this.holidaysView.dress(f.holiday.kind, this.later);
     this.holidaysView.group.visible = f.layer !== LAYER.UNDER;
-    this.holidaysView.update(f.holiday, dt, time, f.x, f.z, !this.reducedMotion, this.security?.powerLevel ?? 1);
+    this.holidaysView.update(f.holiday, dt, time, f.x, f.z, !this.reducedMotion, this.security?.powerLevel ?? 1, f.guards, f.inmates);
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);

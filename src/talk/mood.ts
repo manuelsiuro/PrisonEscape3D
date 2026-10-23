@@ -170,17 +170,23 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   return mood('in.idle', 0.3, 'say', ['in.bored']);
 }
 
-/** The holiday's talk for an inmate (P42): by the holiday, and at Christmas by the prison (snowballs in the Alps, jokes about snow in the desert); null without one. */
+/**
+ * The holiday's talk for an inmate (P42): by the holiday, and at Christmas by the prison (snowballs
+ * in the Alps, jokes about snow in the desert); null without one. Its talk of the day (the eggs, the
+ * water fight at three, costume night, dinner at five, the fireworks) only on the holiday's own
+ * days; the snow and the sand, out there all run long, any day of a Christmas run.
+ */
 function holidayBank(sim: Sim, id: number): BankId | null {
   const h = holidayOf(sim);
   if (!h) return null;
+  const theme = sim.prison.theme;
+  const seasonal = h === HOLIDAY.CHRISTMAS && (theme === 'alpine' || theme === 'desert') && (id + sim.clock.hour) % 2 === 0 ? (theme === 'alpine' ? 'in.hol.snow' : 'in.hol.desert') : null;
+  if (!holidayDays(sim).length) return seasonal;
   if (h === HOLIDAY.EASTER) return 'in.hol.easter';
   if (h === HOLIDAY.SUMMER) return 'in.hol.summer';
   if (h === HOLIDAY.HALLOWEEN) return 'in.hol.halloween';
   if (holidayDays(sim).includes('newYearsEve')) return 'in.hol.newYear';
-  const theme = sim.prison.theme;
-  if ((theme === 'alpine' || theme === 'desert') && (id + sim.clock.hour) % 2 === 0) return theme === 'alpine' ? 'in.hol.snow' : 'in.hol.desert';
-  return 'in.hol.christmas';
+  return seasonal ?? 'in.hol.christmas';
 }
 
 /** A guard's mood (Cast id), or null when out cold. */

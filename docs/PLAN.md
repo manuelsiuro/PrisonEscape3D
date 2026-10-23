@@ -1390,8 +1390,10 @@ The prisons dress up for the holidays of the real calendar, each with its own da
     hidden in the yard (one carried off elsewhere, as by the rat, stays where it lies). Eggs are
     eaten like chocolate or sold to a merchant. Inmates tip off whose desk hides one (gossip kind `eggDesk`).
     Dinner is a feast (the lamb roast).
-  - *Water fight* (summer, 15:00–15:30): a guard in the yard **or on the sports ground** sees 2 tiles
-    (`WET_SIGHT`). Shankton's yard is only a strip, so the sports ground counts too. An ice lolly at the canteen
+  - *Water fight* (summer, 15:00–15:30): a guard **on the sports ground** sees 2 tiles (`WET_SIGHT`). It is
+    held there in every prison because the exercise hour (15:00–16:00) wants the player in the gym or on the
+    ground, never the courtyard (`zonesOf`); held in the yard, it cost "Missed Exercise" (UI review). The
+    warden, the banner, the help and *Splashdown* say "the sports ground". An ice lolly at the canteen
     counter that day, and the barbecue is dinner's feast. Heatwaves come more often all summer where the climate
     has them (weight ×2 + 10; never in the Alps, nor at Shankton and Irongate, whose climates have none).
   - *Costume night* (Halloween, 19:00–21:00): a witch's costume at the canteen counter and a pumpkin in the
@@ -1410,18 +1412,27 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   since Shankton has no delivery); no new sports day with races and tug of war (sports day is already in four decks);
   the rat scaring a guard and the snowball fight are words only (barks, the snowman, a sandman at San Pancho).
 - **Decor** (`render/Holidays.ts`, render only, planned from the map by `holidayDecor` and checked by
-  holidaytest): garlands (lights at Christmas) along the canteen's north wall; egg baskets (Easter) or
-  jack-o'-lanterns (Halloween) on its tables; parasols, deckchairs, a barbecue and two hoses' sprays in the yard
-  (summer); lanterns along the yard's walls (Halloween); a lit tree with presents in a canteen corner and a snowman
-  in a Santa hat (a sandman in the desert) for Christmas; fireworks over the player at midnight. The title's
-  prison is dressed for the date. The Daily plays without a holiday; only its decor follows the date. The map
+  holidaytest): garlands (lights at Christmas) along the canteen's north wall, broken round what hangs there
+  (the menu board, the clock, posters); egg baskets (Easter) or jack-o'-lanterns (Halloween) on its tables;
+  parasols, deckchairs, a barbecue and two hoses' sprays on the sports ground (summer); lanterns along the yard's walls (Halloween); a lit tree with presents in a canteen corner and a snowman
+  in a Santa hat (a sandman in the desert) for Christmas; fireworks just above and ahead of the player at
+  midnight (within 3 tiles across and 1–4 ahead, in view on a phone). Nothing stands on furniture, the prison's
+  own floor decor, a pastime's ground (pitch, track, hoop and court, garden, rat track, stage) or by a door
+  (the tree two tiles off); parasols keep 3 tiles apart, their deckchairs only where there's floor for them,
+  and a canopy fades over whoever stands under it (the camera looks down). The title's
+  prison is dressed for the date. The Daily plays without a holiday; only its decor follows the date (the
+  date's own, never a holiday picked in Settings). The inmates' holiday talk is the day's own only on the
+  holiday's days (the snow and sand jokes any day of a Christmas run). The map
   viewer doesn't draw any of it: the decor depends on the date, not on the prison's data.
+  The help page's picture is staged by `SHOTS.holidays` in scripts/dev/helpshot.ts (Christmas in Center Perks'
+  canteen), to be taken in the browser.
 - **Cosmetics** (earned): bunny ears (*Egg Hunter*, 5 eggs in a run), summer shades (*Splashdown*, in the water
   fight), a witch's hat (*Trick or Treat*, 3 laughs), a Santa hat (*Secret Santa*, a present given); and *Out With
   a Bang* (5 tool strikes under the fireworks). They form a new shelf group, Holidays. Ledger: `eggsFound`,
   `waterFights`, `treats`, `carved`, `laughs`, `giftsGiven`, `fireworkWork`.
 - **Proof**: `holidaytest` (the date's edges, Easter 2026–2035, Settings, the days dealt in every prison, each
-  day's rules in the sim, saves and logs, the decor's placement) and `holidaybotstest` (all 33 escape bots under
+  day's rules in the sim, saves and logs, the decor's placement rules in every prison and holiday, the
+  holiday talk on its days only, a player at the water fight present for Exercise) and `holidaybotstest` (all 33 escape bots under
   each of the four holidays, and P39's model prisoner, whose 11-day run lives through two holiday days, under
   each holiday at another prison; it runs beside the other), and `holidayruntest` (a bot playing the evenings by
   commands at Center Perks: tool work through the water fight, costume night's laughs and none after 21:00,

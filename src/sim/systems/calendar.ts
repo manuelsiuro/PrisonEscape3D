@@ -239,7 +239,7 @@ export function sightOf(sim: SimContext, g: Guard): number {
   if (twist(sim.state, 'eagleEyes')) r += EAGLE_SIGHT;
   const cap = WEATHER_SIGHT[weatherNow(sim)];
   if (cap !== undefined && r > cap && outdoors(sim, Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT))) r = cap;
-  // (P42: soaked in the water fight, out in the yard.)
+  // (P42: soaked in the water fight, out on the sports ground.)
   if (r > WET_SIGHT && soaked(sim, g)) r = WET_SIGHT;
   return r * UNIT;
 }

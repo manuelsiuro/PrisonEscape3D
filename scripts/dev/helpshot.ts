@@ -29,6 +29,8 @@ import { tonight, turnFrom } from '../../src/sim/systems/talent';
 import { penAt } from '../../src/sim/systems/tattoo';
 import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
 import { HEARINGS } from '../../src/content/parole';
+import { HOLIDAY } from '../../src/content/holidays';
+import { holidayDecor } from '../../src/render/Holidays';
 import { prisonDay } from '../../src/sim/systems/calendar';
 import { dropTile } from '../../src/sim/systems/smuggling';
 import { containersOf } from '../../src/sim/world/containers';
@@ -54,6 +56,8 @@ export interface Shot {
   /** Or a lesson's scene, played on by these moves (as tutorialtest's bot plays it). */
   lesson?: string;
   moves?: (bot: Bot) => void;
+  /** Or a run of its own (P42's holidays: a run begun under one). */
+  make?: () => Bot;
   /** The moment: the first step where this holds (the run's steps, k of n). */
   when: (sim: Sim, k: number, n: number) => boolean;
   /** Steps on from there. */
@@ -451,6 +455,25 @@ export const SHOTS: Record<string, Shot> = {
     dz: -1,
   },
 
+  // P42: Christmas Day in Center Perks' canteen, free time on day 2 (a run begun under Christmas): the tree in its corner, the lights along the north wall.
+  // (No picture yet: take it with h.take('holidays'), then give the topic its `pic`.)
+  holidays: {
+    make: () => {
+      Bot.holiday = HOLIDAY.CHRISTMAS;
+      const bot = new Bot(CENTER_PERKS, 7);
+      Bot.holiday = 0;
+      bot.routineUntil(2, 10 * 60 + 5);
+      const t = holidayDecor(bot.sim.world, HOLIDAY.CHRISTMAS).find((d) => d.what === 'tree')!;
+      bot.walkTo(tile(Math.floor(t.x) - 1, Math.floor(t.z) + 2));
+      bot.face(DIR.NORTH);
+      bot.until(() => false, 20);
+      return bot;
+    },
+    when: at(0.999),
+    zoom: 2.2,
+    dz: -1.2,
+  },
+
   // ------------------------------------------------------------ basics and escaping (P37)
   ways: { prison: 'center-perks', route: 'cutout', when: (_s, k, n) => k >= n - 30, zoom: 2.2, light: 600 },
   layers: { prison: 'center-perks', route: 'tunnel', when: onLayerFor(LAYER.UNDER, 100), zoom: 2.6, dz: -1.5 },
@@ -509,6 +532,7 @@ const frames = (n: number) => new Promise<void>((done) => {
 /** A route played through once (kept: the moments are picked from it again and again). */
 const runs = new Map<string, Bot>();
 export function run(s: Shot): Bot {
+  if (s.make) return s.make();
   if (s.lesson) {
     const k = LESSONS.findIndex((l) => l.id === s.lesson);
     const lesson = LESSONS[k];
