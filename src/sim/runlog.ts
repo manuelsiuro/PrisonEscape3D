@@ -13,6 +13,7 @@ import { fnv1a } from './rng';
 import { ESCAPES, Sim, type Snapshot } from './Sim';
 import { STEPS_PER_MINUTE } from './tuning';
 import type { PrisonDef } from '../content/prisons/types';
+import { HOLIDAYS } from '../content/holidays';
 
 /** A checksum every game hour. */
 export const SUM_STEPS = STEPS_PER_MINUTE * 60;
@@ -24,6 +25,8 @@ export interface RunLog {
   seed: number;
   /** The Daily's twists the new game was set up under (P26; none in the campaign). */
   mods?: string[];
+  /** v2.21 (P42): the holiday the new game began under (content/holidays.ts HOLIDAYS index; none when left out). */
+  holiday?: number;
   /** P25, kept with an escape's log: the way out (ESCAPES name), and the Daily it was (P26). */
   via?: string;
   daily?: number;
@@ -122,6 +125,7 @@ export function fitLog(v: unknown): RunLog | null {
   if (!Array.isArray(l.sums) || !l.sums.every((s) => Array.isArray(s) && typeof s[0] === 'number' && typeof s[1] === 'string')) return null;
   if (l.seed < 0 && !(l.start && typeof l.start === 'object' && l.start.prison === l.prison)) return null;
   if (l.mods !== undefined && !(Array.isArray(l.mods) && l.mods.every((m) => typeof m === 'string'))) return null;
+  if (l.holiday !== undefined && !(Number.isInteger(l.holiday) && l.holiday >= 0 && l.holiday < HOLIDAYS.length)) return null;
   if ((l.via !== undefined && !(ESCAPES as readonly unknown[]).includes(l.via)) || (l.daily !== undefined && !(Number.isSafeInteger(l.daily) && l.daily >= 0))) return null;
   return l as RunLog;
 }
@@ -148,7 +152,7 @@ export class RunRecorder {
     origin: { seed: number; game: string } | { log: RunLog | null; game: string },
   ) {
     const from = sim.state.step;
-    if ('seed' in origin) this.head = { v: 1, prison: sim.prison.id, seed: origin.seed, ...(sim.state.mods.length ? { mods: [...sim.state.mods] } : {}), game: origin.game, from };
+    if ('seed' in origin) this.head = { v: 1, prison: sim.prison.id, seed: origin.seed, ...(sim.state.mods.length ? { mods: [...sim.state.mods] } : {}), ...(sim.state.holiday ? { holiday: sim.state.holiday } : {}), game: origin.game, from };
     else {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
@@ -157,7 +161,7 @@ export class RunRecorder {
       const stale = beforeEasier(log?.game ?? '') || beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '') || beforeStage(log?.game ?? '') || beforeFixes(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
-        this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
+        this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
         this.put(encodeRuns(runs));
         this.steps = log.steps;
         this.sums.push(...log.sums);
@@ -311,7 +315,7 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (prison.id !== log.prison) return null;
   const runs = decodeRuns(fromBase64(log.data) ?? new Uint8Array());
   if (!runs) return null;
-  const sim = new Sim(prison, log.seed < 0 ? 1 : log.seed, log.mods);
+  const sim = new Sim(prison, log.seed < 0 ? 1 : log.seed, log.mods, log.holiday ?? 0);
   if (log.seed < 0) sim.restore(log.start!);
   // Played before the day's events (P17): every day was quiet then.
   if (beforeDays(log.game)) {

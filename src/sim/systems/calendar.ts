@@ -28,6 +28,10 @@ import { addHeat } from './watch';
 import { deliveryMinute } from './delivery';
 import { musicOn } from './talent';
 import { EAGLE_SIGHT, twist } from './twists';
+import { FIREWORK_NOISE, HOLIDAY, SUMMER_HEAT } from '../../content/holidays';
+import { fireworksOn, holidayFeast, soaked, WET_SIGHT } from './holiday';
+
+const HEATWAVE = WEATHERS.indexOf('heatwave');
 
 export { DAY_STEPS, dayMinute, prisonDay };
 
@@ -61,13 +65,16 @@ export const quietCalendar = (): ForcedDay[] => [[0, 0, 0]];
 const drawn = new Map<string, number[]>();
 
 /** The weather a day draws (before anything is forced): day 1 clear; then yesterday's again, or one by the climate's weights. */
-function drawnWeather(prison: string, salt: number, day: number): number {
+function drawnWeather(prison: string, salt: number, day: number, holiday = 0): number {
   const book = DAY_BOOKS[prison];
   if (!book || day <= 1) return 0;
-  const key = `${prison}:${salt}`;
+  // (P42: summer brings heatwaves more often, where the climate has them at all.)
+  const summer = holiday === HOLIDAY.SUMMER && book.climate.weights[HEATWAVE] > 0;
+  const key = `${prison}:${salt}${summer ? ':summer' : ''}`;
   let list = drawn.get(key);
   if (!list) drawn.set(key, (list = [0, 0]));
-  const { weights, keep } = book.climate;
+  const { keep } = book.climate;
+  const weights = summer ? book.climate.weights.map((w, k) => (k === HEATWAVE ? w * 2 + SUMMER_HEAT : w)) : book.climate.weights;
   const total = weights.reduce((a, b) => a + b, 0);
   for (let d = list.length; d <= day; d++) {
     const was = list[d - 1];
@@ -108,9 +115,9 @@ const MOD_WEATHER: Record<string, Weather> = { fogDays: 'fog', storm: 'storm' };
  * the inmates' talk, the tests). A prison without a day book (the Training Block) is always
  * quiet; day 1 is always quiet and clear (the escape bots' day, untouched).
  */
-export function dayPlan(prison: string, salt: number, day: number, calendar: readonly ForcedDay[] = [], mods: readonly string[] = []): DayPlan {
+export function dayPlan(prison: string, salt: number, day: number, calendar: readonly ForcedDay[] = [], mods: readonly string[] = [], holiday = 0): DayPlan {
   let event = drawnEvent(prison, salt, day);
-  let weather = drawnWeather(prison, salt, day);
+  let weather = drawnWeather(prison, salt, day, holiday);
   // Forced days: an exact day wins over every day (0). (Never a delivery where no vehicle comes, nor visiting day where nobody visits: a deck without the card.)
   const book = DAY_BOOKS[prison];
   let forcedWind = -1;
@@ -164,7 +171,7 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
 /** A sim's plan for a day (today by default). */
 export function planOf(sim: Pick<SimContext, 'prison' | 'state'>, day = prisonDay(sim.state.step)): DayPlan {
   const s = sim.state;
-  return dayPlan(sim.prison.id, s.salt, day, s.calendar, s.mods);
+  return dayPlan(sim.prison.id, s.salt, day, s.calendar, s.mods, s.holiday);
 }
 
 /** Today's plan, kept while the day and the forced days stay the same (it's asked every step, by every guard). */
@@ -231,6 +238,8 @@ export function sightOf(sim: SimContext, g: Guard): number {
   if (twist(sim.state, 'eagleEyes')) r += EAGLE_SIGHT;
   const cap = WEATHER_SIGHT[weatherNow(sim)];
   if (cap !== undefined && r > cap && outdoors(sim, Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT))) r = cap;
+  // (P42: soaked in the water fight, out in the yard.)
+  if (r > WET_SIGHT && soaked(sim, g)) r = WET_SIGHT;
   return r * UNIT;
 }
 
@@ -249,6 +258,8 @@ export function muffled(sim: SimContext, layer: number, tile: number, reach: num
   if (open) share = WEATHER_NOISE[weatherNow(sim)] ?? 10;
   // (P30: talent night's music while it plays, as loud.)
   if (layer === LAYER.GROUND && (eventOn(sim, 'movie') || (eventOn(sim, 'talent') && musicOn(sim))) && sim.world.zoneAt(x, z) === 'canteen') share = Math.min(share, MOVIE_NOISE);
+  // (P42: New Year's fireworks drown everything, everywhere.)
+  if (sim.state.holiday && fireworksOn(sim)) share = Math.min(share, FIREWORK_NOISE);
   return share === 10 ? reach : Math.max(1, Math.floor((reach * share) / 10));
 }
 
@@ -420,7 +431,7 @@ export function byCanteen(sim: SimContext, x: number, z: number): boolean {
 }
 
 /** A feast's tray (dinner on a feast day). */
-export const feastNow = (sim: SimContext) => eventOn(sim, 'feast') && ROUTINE[sim.state.routine].id === 'dinner';
+export const feastNow = (sim: SimContext) => (eventOn(sim, 'feast') || holidayFeast(sim)) && ROUTINE[sim.state.routine].id === 'dinner';
 
 /** A number in [0, 1) for presentation that wants the day's own randomness (the warden's lines), never the sim's. */
 export const dayRoll = (salt: number, day: number, k: number) => roll(salt, SALT.MOOD, day, k + 1) / 4294967296;

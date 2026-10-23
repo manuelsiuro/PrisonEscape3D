@@ -37,6 +37,9 @@ export interface ItemsView {
 
 type Send = (op: number, a?: number, b?: number) => void;
 
+/** P42: take buttons past this `what` are a holiday's treats (play/holidays.ts TREAT_OFFSET), each with its icon. */
+export const HOLIDAY_TAKE = 100;
+const HOLIDAY_TAKE_ICON: readonly string[] = ['heat', 'shirt', 'pumpkin', 'gift'];
 export const itemName = (n: number) => t(`item.${itemDef(n).id}` as Key);
 
 /** A slot's inner HTML: the icon, a contraband mark and a durability bar. */
@@ -160,7 +163,10 @@ export class ItemsUI {
       const take = (e.target as HTMLElement).closest<HTMLElement>('[data-take]');
       if (take) {
         this.click();
-        this.send(OP.EXT, EXT.TAKE, Number(take.dataset.take));
+        // (P42: a holiday's treat, its `what` past HOLIDAY_TAKE.)
+        const what = Number(take.dataset.take);
+        if (what >= HOLIDAY_TAKE) this.send(OP.EXT, EXT.HOLIDAY, what - HOLIDAY_TAKE);
+        else this.send(OP.EXT, EXT.TAKE, what);
         return;
       }
       this.slotClick(e);
@@ -443,7 +449,7 @@ export class ItemsUI {
       // (P28: fruit, sugar, a seed packet, taken on request.)
       const take = this.box.querySelector<HTMLElement>('.box-take')!;
       take.classList.toggle('hidden', !v.take.length);
-      take.innerHTML = v.take.map((x) => `<button class="big-btn small${x.why ? '' : ' primary'}" data-take="${x.what}"${x.why ? ' aria-disabled="true"' : ''}>${icon(x.what === 0 ? 'fruit' : x.what === 1 ? 'box' : 'sprout', 18)}<span><b>${x.label}</b>${x.why ? `<small>${x.why}</small>` : ''}</span></button>`).join('');
+      take.innerHTML = v.take.map((x) => `<button class="big-btn small${x.why ? '' : ' primary'}" data-take="${x.what}"${x.why ? ' aria-disabled="true"' : ''}>${icon(x.what >= HOLIDAY_TAKE ? (HOLIDAY_TAKE_ICON[x.what - HOLIDAY_TAKE] ?? 'gift') : x.what === 0 ? 'fruit' : x.what === 1 ? 'box' : 'sprout', 18)}<span><b>${x.label}</b>${x.why ? `<small>${x.why}</small>` : ''}</span></button>`).join('');
       this.boxHidden.innerHTML = Array.from({ length: v.boxHidden }, (_, k) => cell(k)).join('');
       this.boxDrawers.innerHTML = Array.from({ length: box.length - v.boxHidden }, (_, k) => cell(v.boxHidden + k)).join('');
     }

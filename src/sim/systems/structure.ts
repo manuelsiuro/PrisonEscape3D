@@ -27,7 +27,7 @@ import { bedTarget } from './garden';
  * a glider takes off a roof's edge (P24); ripe pruno is drunk, the rat runs its track, and a garden
  * bed is planted, watered or harvested (P28).
  */
-export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick' | 'glide' | 'drink' | 'track' | 'plant' | 'water' | 'harvest' | 'unbook';
+export type ToolAction = 'chip' | 'cut' | 'unscrew' | 'dig' | 'digUp' | 'eat' | 'cover' | 'brace' | 'rope' | 'sharpen' | 'grapnel' | 'tape' | 'launch' | 'wind' | 'wash' | 'feed' | 'setTrap' | 'pick' | 'glide' | 'drink' | 'track' | 'plant' | 'water' | 'harvest' | 'unbook' | 'carve';
 
 /** The actions that strike (and wear down a tile, or sharpen a comb on it); the others happen at one press. */
 export const STRIKES: ReadonlySet<ToolAction> = new Set(['chip', 'cut', 'unscrew', 'dig', 'digUp', 'sharpen']);
@@ -109,6 +109,10 @@ export const CHOCOLATE = ITEM_ID('chocolate');
 export const CAKE = ITEM_ID('cake');
 /** P35: the hollow book (one small item hidden inside). */
 export const HOLLOW_BOOK = ITEM_ID('hollow_book');
+/** P42: a chocolate egg and an ice lolly (eaten as chocolate is), a pumpkin (carved in the kitchen). */
+export const CHOC_EGG = ITEM_ID('choc_egg');
+export const ICE_LOLLY = ITEM_ID('ice_lolly');
+export const PUMPKIN = ITEM_ID('pumpkin');
 export const GRAPNEL = ITEM_ID('grapnel');
 export const RAFT = ITEM_ID('raft');
 /** P14: the alarm clock (wound with the use button) and the firecracker (thrown). */
@@ -289,7 +293,9 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   // Ripe pruno drunk; the rat's track (P28).
   if (held === PRUNO) return { action: 'drink', layer, tile: -1, fits: true, hp: 0 };
   if (held === RAT_TRACK) return { action: 'track', layer, tile: -1, fits: true, hp: 0 };
-  if (held === CHOCOLATE || held === CAKE) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  if (held === CHOCOLATE || held === CAKE || held === CHOC_EGG || held === ICE_LOLLY) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  // P42: a pumpkin carved into a lantern, in the kitchen only.
+  if (held === PUMPKIN) return { action: 'carve', layer, tile: -1, fits: layer === LAYER.GROUND && w.zoneAt(Math.floor(b.x / UNIT), Math.floor(b.z / UNIT)) === 'kitchen', hp: 0 };
   // P35: the hollow book opened, what it hides (`inside`: the slot in its upper bits) taken out.
   if (held === HOLLOW_BOOK) return { action: 'unbook', layer, tile: -1, fits: inside > 0, hp: 0 };
   if (held === ALARM_CLOCK) return { action: 'wind', layer, tile: -1, fits: true, hp: 0 };

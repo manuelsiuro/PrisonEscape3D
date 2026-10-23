@@ -25,7 +25,7 @@ export interface Look {
   riot?: boolean;
   /**
    * Your prisoner (P16, content/prisoner.ts): facial hair (0 none, 1 stubble, 2 moustache,
-   * 3 full beard, 4 goatee, 5 sideburns), a hat (shape 1–10) and glasses (1–6) in a colour, a
+   * 3 full beard, 4 goatee, 5 sideburns), a hat (shape 1–13) and glasses (1–7) in a colour, a
    * tattoo on the right forearm (1–5), the jumpsuit's trim colour (cuffs, waistband, side stripes).
    */
   beard?: number;
@@ -363,6 +363,9 @@ function glassesParts(kind: number, color: number): Part[] {
       return [part(0.53, 0.04, 0.53, 0x5a3d22, 0, 0.3, -0.01), ...rim(-0.1, 0.15, 0.13), ...rim(0.1, 0.15, 0.13), bridge];
     case 6:
       return [...rim(-0.1, 0.15, 0.12), ...rim(0.1, 0.15, 0.12), part(0.04, 0.04, 0.015, color, -0.19, 0.31, z), part(0.04, 0.04, 0.015, color, 0.19, 0.31, z), bridge, ...arms];
+    case 7:
+      // P42: summer shades, big dark lenses in bright frames.
+      return [part(0.16, 0.12, 0.012, 0x121216, -0.1, 0.24, z - 0.002), part(0.16, 0.12, 0.012, 0x121216, 0.1, 0.24, z - 0.002), ...rim(-0.1, 0.17, 0.14), ...rim(0.1, 0.17, 0.14), bridge, ...arms];
     default:
       return [...rim(-0.1), ...rim(0.1), bridge, ...arms];
   }
@@ -397,6 +400,15 @@ function hatParts(kind: number, color: number): Part[] {
       return [part(0.62, 0.04, 0.6, dark, 0, 0.47, 0), part(0.5, 0.16, 0.5, color, 0, 0.56, -0.01)];
     case 9:
       return [part(0.66, 0.03, 0.62, color, 0, 0.5, 0), part(0.5, 0.04, 0.49, color, 0, 0.53, -0.01), part(0.42, 0.36, 0.4, color, 0, 0.71, 0), part(0.43, 0.05, 0.41, 0xa3262a, 0, 0.57, 0)];
+    case 11:
+      // P42: bunny ears on a band, pink inside.
+      return [part(0.5, 0.04, 0.08, color, 0, 0.53, 0), ...[-0.1, 0.1].flatMap((x) => [part(0.08, 0.32, 0.04, color, x, 0.7, 0), part(0.04, 0.24, 0.012, 0xf7a8c8, x, 0.7, 0.024)])];
+    case 12:
+      // P42: a Santa hat, its white brim, the red flopping back to a bobble.
+      return [part(0.52, 0.08, 0.5, 0xfafafa, 0, 0.5, -0.01), part(0.44, 0.12, 0.42, color, 0, 0.6, -0.02), part(0.3, 0.12, 0.28, color, 0, 0.71, -0.07), part(0.16, 0.1, 0.16, color, 0, 0.79, -0.14), part(0.1, 0.1, 0.1, 0xfafafa, 0, 0.8, -0.24)];
+    case 13:
+      // P42: a witch's hat, a wide brim, a purple band, its point bent back.
+      return [part(0.8, 0.03, 0.76, color, 0, 0.5, 0), part(0.46, 0.06, 0.44, 0x8e4fc4, 0, 0.55, 0), part(0.42, 0.14, 0.4, color, 0, 0.64, 0), part(0.3, 0.14, 0.28, color, 0.01, 0.78, -0.03), part(0.18, 0.12, 0.16, color, 0.03, 0.9, -0.07), part(0.08, 0.1, 0.08, color, 0.06, 1.0, -0.12)];
     default:
       return [
         part(0.25, 0.12, 0.24, color, -0.125, 0.53, 0.115),

@@ -27,6 +27,9 @@ export interface Settings {
   voices: boolean;
   /** The warden's announcements (P17): all of them (the morning card too), short lines only, or none (the HUD's chip still shows the day). */
   pa: 'full' | 'short' | 'off';
+  /** v2.21 (P42): holidays by the calendar (a run begun on one has it), one picked now (`holidayPick`), or none. */
+  holidays: 'calendar' | 'pick' | 'off';
+  holidayPick: 'easter' | 'summer' | 'halloween' | 'christmas';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -42,6 +45,8 @@ export const DEFAULT_SETTINGS: Settings = {
   chatter: 'lots',
   voices: true,
   pa: 'full',
+  holidays: 'calendar',
+  holidayPick: 'christmas',
 };
 
 /** Stored settings, each field checked against its default's type (a bad value gets the default). */
@@ -54,6 +59,8 @@ export function loadSettings(): Settings {
   if (!['auto', 'high', 'low'].includes(out.quality)) out.quality = 'auto';
   if (!['lots', 'some', 'off'].includes(out.chatter)) out.chatter = 'lots';
   if (!['full', 'short', 'off'].includes(out.pa)) out.pa = 'full';
+  if (!['calendar', 'pick', 'off'].includes(out.holidays)) out.holidays = 'calendar';
+  if (!['easter', 'summer', 'halloween', 'christmas'].includes(out.holidayPick)) out.holidayPick = 'christmas';
   out.sfxVolume = Math.min(1, Math.max(0, Number.isFinite(out.sfxVolume) ? out.sfxVolume : DEFAULT_SETTINGS.sfxVolume));
   out.musicVolume = Math.min(1, Math.max(0, Number.isFinite(out.musicVolume) ? out.musicVolume : DEFAULT_SETTINGS.musicVolume));
   return out;

@@ -38,6 +38,7 @@ import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FREED_STEPS } from '../content/paperwork';
+import { HOLIDAYS, type HolidayDay } from '../content/holidays';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY, UNIT } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from './world/World';
@@ -324,7 +325,16 @@ export type SimEvent =
    * for the player alone), the name not answered, the way out shut again.
    */
   | { type: 'paper'; what: PaperNews; n?: number; why?: 'heat' | 'lockdown' | 'contraband' }
+  /**
+   * v2.21 (P42, holiday.ts): a holiday day begun and over (`day`); the egg hunt's eggs hidden (`n`
+   * of them), one found (in the player's pockets); in the water fight; a treat taken from the open
+   * furniture (`item`); a pumpkin carved; an inmate laughing at the costume (`who`).
+   */
+  | { type: 'holiday'; what: HolidayNews; day?: HolidayDay; n?: number; item?: number; who?: number }
   | ItemEvent;
+
+/** What a holiday did (P42, the 'holiday' event). */
+export type HolidayNews = 'start' | 'end' | 'hidden' | 'egg' | 'splash' | 'took' | 'carved' | 'laugh';
 
 /** What the pay phone did (P34, the 'phone' event). */
 export type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
@@ -661,6 +671,14 @@ export interface SimState {
    * yet, or nothing asked), BLOCK.ATTENDED, BLOCK.MISSED (it cost heat or a lockdown), BLOCK.EXCUSED.
    */
   blocks: number[];
+  /**
+   * v2.21 (P42 holidays, holiday.ts): the run's holiday (content/holidays.ts HOLIDAYS index, 0
+   * none), set when the run began; the treats taken ([the prison day, a bit per TREAT taken
+   * that day]); costume night's laughs ([the prison day, the inmates (indexes) who laughed]; [] none).
+   */
+  holiday: number;
+  hol: number[];
+  laughed: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -692,7 +710,7 @@ export type LayerMove = ClimbAction | 'digUp' | 'rope' | 'grapnel' | 'glide';
  * stringifies the state, so the order is part of it). Day 1's coins, stock and favors are
  * the Sim's to add (they draw on the RNG after this).
  */
-export function freshState(world: World, prison: PrisonDef, seed: number, mods: readonly string[] = []): SimState {
+export function freshState(world: World, prison: PrisonDef, seed: number, mods: readonly string[] = [], holiday = 0): SimState {
   const s = { rng: seed | 0 };
   const inmates = spawnInmates(world, s);
   const items = startItems(world, s);
@@ -831,6 +849,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     course: [],
     release: [0, 0, 0],
     blocks: ROUTINE.map(() => 0),
+    holiday: holiday > 0 && holiday < HOLIDAYS.length ? holiday : 0,
+    hol: [0, 0],
+    laughed: [],
   };
 }
 
@@ -993,6 +1014,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     // (The block under way keeps its check-in.)
     if (s.attended && ROUTINE[s.routine]?.miss) s.blocks[s.routine] = BLOCK.ATTENDED;
   }
+  // P42: a holiday that isn't one is none; the treats and laughs as they can be (else none).
+  if (!Number.isInteger(s.holiday) || s.holiday < 0 || s.holiday >= HOLIDAYS.length) s.holiday = 0;
+  if (!(ints(s.hol, 2) && s.hol.every((x) => x >= 0))) s.hol = [0, 0];
+  if (!(Array.isArray(s.laughed) && s.laughed.length <= n + 1 && s.laughed.every((x, k) => Number.isInteger(x) && x >= 0 && (k === 0 || x < n)))) s.laughed = [];
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);

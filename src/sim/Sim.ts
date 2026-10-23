@@ -36,6 +36,7 @@ import { kiosk } from './systems/kiosk';
 import { freedNow, paperwork } from './systems/paperwork';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
+import { holidays } from './systems/holiday';
 import { ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
 import { laps } from './systems/grounds';
@@ -59,7 +60,7 @@ export * from './state';
  * on the prison, the seed and the commands, never on frame time, the DOM or Three.js, so
  * the tests replay it headless. Systems (src/sim/systems/) run in a fixed order:
  * noise (fuses, alarm clocks) → clock (the generator, camera tapes) → routine (a block settled, restock, shakedown, a new
- * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → bed checks → the knocked out come round → inmates → job clock-in →
+ * day, the Work Period) → the day (P17: its event, the drill, a storm's power cuts) → the holiday (P42) → bed checks → the knocked out come round → inmates → job clock-in →
  * guards → the player (waking, walking, keys, detectors, the action, the escape) → fights →
  * the takeover → talk, grudges, training, the side games (P22), the crew (P23), seats → energy and health → the cold → tipsy (P28) → showers → solitary →
  * what guards see (heat, chases, damage, cameras, searchlights, snipers) → the dogs (P19) → the rats (P20) → smuggling (P21) → race nights (P28) → bribes wearing off → the checkpoint's gates (P24) → the key alarm →
@@ -82,10 +83,12 @@ export class Sim {
     seed = 1,
     /** The Daily's twists (P26; none in the campaign): day 1 is set up under them. */
     mods: readonly string[] = [],
+    /** v2.21 (P42): the run's holiday (content/holidays.ts HOLIDAYS index; 0 none), as the play layer read it off the date. */
+    holiday = 0,
   ) {
     this.world = new World(prison);
     for (const p of this.world.props) if (p.kind === 'shower') this.showerTiles.add(p.z * MAP_W + p.x);
-    this.state = freshState(this.world, prison, seed, mods);
+    this.state = freshState(this.world, prison, seed, mods, holiday);
     // (P26: the Daily's twists that set day 1 up: grudges, a care package; no draw from the RNG.)
     if (mods.length) dayOneTwists(this);
     // Day 1: change in desks and pockets, the merchants' stock, the first favors.
@@ -185,6 +188,8 @@ export class Sim {
     nextBlock(this, clock);
     // The day (P17): its event starts and ends, the drill's muster is called, a storm cuts the power.
     theDay(this);
+    // The holiday (P42): its day starts and ends, the egg hunt's eggs hidden and found, the costume's laughs.
+    holidays(this);
     // 00:30 and 04:00: the night bed check (GDD §5.3).
     // (P26: a Night Owl warden's two more.)
     if (s.step % STEPS_PER_MINUTE === 0 && (BED_CHECK_MINUTES.includes(clock.minuteOfDay) || (OWL_CHECKS.includes(clock.minuteOfDay) && twist(s, 'nightOwl'))) && !this.world.def.rules?.relaxed) bedCheck(this);

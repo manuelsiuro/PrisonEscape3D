@@ -20,6 +20,18 @@ const PA: Choice<'pa'> = [
   ['short', 'settings.paShort'],
   ['off', 'settings.paOff'],
 ];
+/** P42: holidays by the date, one picked now, or none; and which one when picked. */
+const HOLIDAYS: Choice<'holidays'> = [
+  ['calendar', 'holiday.setCalendar'],
+  ['pick', 'holiday.setPick'],
+  ['off', 'holiday.setOff'],
+];
+const HOLIDAY_PICK: Choice<'holidayPick'> = [
+  ['easter', 'holiday.short.easter'],
+  ['summer', 'holiday.short.summer'],
+  ['halloween', 'holiday.short.halloween'],
+  ['christmas', 'holiday.short.christmas'],
+];
 const LANGS: Choice<'lang'> = [
   ['auto', 'settings.auto'],
   ['en', 'settings.english'],
@@ -42,7 +54,7 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
   let done = '';
   const toggle = (k: Toggle, label: Key, ic: string) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><button class="switch ${settings[k] ? 'on' : ''}" role="switch" aria-checked="${settings[k]}" data-toggle="${k}" aria-label="${t(label)}"><i></i></button></div>`;
-  const choice = <K extends 'quality' | 'lang' | 'chatter' | 'pa'>(k: K, label: Key, ic: string, options: Choice<K>) =>
+  const choice = <K extends 'quality' | 'lang' | 'chatter' | 'pa' | 'holidays' | 'holidayPick'>(k: K, label: Key, ic: string, options: Choice<K>) =>
     `<div class="set-row"><span class="set-name">${icon(ic, 17)}${t(label)}</span><div class="seg" role="radiogroup" aria-label="${t(label)}">${options
       .map(([v, l]) => `<button role="radio" aria-checked="${settings[k] === v}" class="${settings[k] === v ? 'on' : ''}" data-choice="${k}" data-value="${v}">${t(l)}</button>`)
       .join('')}</div></div>`;
@@ -61,6 +73,9 @@ export function showSettings(settings: Settings, apply: () => void, click: () =>
         ${choice('chatter', 'settings.chatter', 'users', CHATTER)}
         ${toggle('voices', 'settings.voices', 'ear')}
         ${choice('pa', 'settings.pa', 'megaphone', PA)}
+        ${choice('holidays', 'holiday.setting', 'tree', HOLIDAYS)}
+        ${settings.holidays === 'pick' ? choice('holidayPick', 'holiday.settingPick', 'calendar', HOLIDAY_PICK).replace('class="set-row"', 'class="set-row set-wide"') : ''}
+        ${settings.holidays !== 'off' ? `<p class="set-note">${t('holiday.settingNote')}</p>` : ''}
         ${choice('quality', 'settings.quality', 'sun', QUALITY)}
         ${choice('lang', 'settings.language', 'chat', LANGS)}
         <div class="set-actions">

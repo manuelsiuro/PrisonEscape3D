@@ -20,6 +20,8 @@ import { seenTip } from './tips';
 import { visitPlaceAt } from './smuggle';
 import { SPORTS_PRIZE, SPORTS_WINS } from '../content/games';
 import { LESSONS } from '../tutorial/lessons';
+import { HOLIDAY_DAY } from '../content/holidays';
+import { holidayMorning, holidayRows } from './holidays';
 
 /**
  * The day in play (P17): the warden's speakers (the morning card at 08:00, warnings fifteen
@@ -114,9 +116,13 @@ export function dayRows(sim: Sim, p: DayPlan, forecast = false, inFile = false):
     }
   })();
   const w = weatherName(sim, p.weather);
+  // (P42: the holiday's own day, besides the deck's card.)
+  const m0 = isToday ? m : -1;
+  const hol = holidayRows(sim, p.day, forecast, inFile, (id) => m0 >= HOLIDAY_DAY[id].at + HOLIDAY_DAY[id].length);
   return [
     { icon: eventIcon(sim, p.event), color: EVENT_COLOR[p.event], label: t(inFile ? 'pa.event' : forecast ? 'profile.tomorrow' : 'pa.today'), title: p.event === 'delivery' ? vehicleName(sim) : t(`day.event.${ev}` as Key), when: ev === 'rowdy' ? '' : p.event === 'drill' && begun ? t('day.rang', { time: dayTime(p.at) }) : p.event === 'foodFight' && begun ? t('day.when', { from: dayTime(p.at), to: dayTime(p.until) }) : whenOf(p), sub },
     { icon: WX_ICON[w], color: WX_COLOR[w], label: t('pa.weather'), title: t(`weather.${w}` as Key), when: '', note: t(`windForce.${p.windForce}` as Key, { dir: t(`wind.${p.wind}` as Key) }), sub: t(`weatherD.${w}` as Key, { n: WEATHER_SIGHT[p.weather] ?? 7 }) },
+    ...hol,
   ];
 }
 
@@ -135,7 +141,7 @@ function morning(sim: Sim, first: boolean) {
   if (settings.pa === 'off' || sim.state.sleeping) return;
   const p = today(sim);
   const id = sim.prison.id;
-  const what = t(`pa.morning.${p.event}` as Key, { time: dayTime(p.at), from: dayTime(p.at), to: dayTime(p.until), vehicle: vehicleThe(sim) });
+  const what = [t(`pa.morning.${p.event}` as Key, { time: dayTime(p.at), from: dayTime(p.at), to: dayTime(p.until), vehicle: vehicleThe(sim) }), holidayMorning(sim, p.day)].filter(Boolean).join(' ');
   const sky = t(`pa.weatherSay.${weatherName(sim, p.weather)}` as Key);
   if (settings.pa === 'short') {
     paBoard.say(wardenOf(sim), `${what} ${sky}`);

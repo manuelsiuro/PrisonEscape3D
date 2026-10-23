@@ -33,6 +33,7 @@ import { Snowfall } from './Snow';
 import { Weather, type WeatherFrame, type WeatherView } from './Weather';
 import { Delivery, type DeliveryFrame } from './Delivery';
 import { DayEvents, type EventsFrame } from './DayEvents';
+import { HolidaysView, NO_HOLIDAY, type HolidayFrame } from './Holidays';
 import { ROOF_Y as ROOF_HEIGHT } from './Structure';
 import { WALL_H } from './WorldView';
 import { LAYER } from '../sim/world/World';
@@ -155,6 +156,8 @@ export interface Frame {
   inked: readonly number[];
   /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
   getaway: GetawayFrame;
+  /** v2.21 (P42): the holiday dressed for, the water fight, New Year's fireworks. */
+  holiday: HolidayFrame;
 }
 
 const NO_FUSES: readonly number[] = [];
@@ -219,6 +222,7 @@ export interface Quality {
 const CAMERA_OFFSET = new THREE.Vector3(0, 38, 24).normalize().multiplyScalar(60);
 const GUARD_OUTFIT = itemNumber('guard_outfit');
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
+const COSTUME = itemNumber('costume');
 const OWN_CLOTHES = itemNumber('own_clothes');
 const OWN_JEANS = 0x4a6a96;
 /** The escape camera (P16): how far it turns round the player (radians) and pulls back (a share of the zoom). */
@@ -351,6 +355,9 @@ export class View {
   /** The day (P17): rain, ripples and fog; the movie screen, the food fight, the inspectors. */
   private readonly weather = new Weather();
   private readonly events = new DayEvents();
+  /** P42: the holidays' decor, sprays and fireworks; the holiday behind the title (the date's, as Settings have it). */
+  private readonly holidaysView = new HolidaysView();
+  private titleHoliday = 0;
   /** Delivery day's vehicle (P18; Irongate's helicopter is the island's). */
   private readonly delivery = new Delivery();
   /** The guard dogs, their kennels, the trail (P19). */
@@ -428,6 +435,12 @@ export class View {
   private underground: Underground | null = null;
   /** The last prison's parts, taken off screen and freed after the next frame (setWorld). */
   private readonly retired: Array<() => void> = [];
+  /** Frees something after the next frame (as a world change does). */
+  private readonly later = (dispose: () => void) => void this.retired.push(dispose);
+  /** The holiday behind the title (P42: the date's, as Settings have it; 0 none). */
+  setHoliday(kind: number) {
+    this.titleHoliday = kind;
+  }
   /** The layer drawn (the player's), and the tiles revision the damage was drawn for. */
   private layer = -1;
   private tilesRev = -1;
@@ -503,7 +516,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.releaseView.group, this.getaway.group, this.holidaysView.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -650,6 +663,7 @@ export class View {
     this.phoneView.setWorld(world, later);
     this.kioskView.setWorld(world, later);
     this.releaseView.setWorld(world, later);
+    this.holidaysView.setWorld(world, later);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {
         const d = world.def.guards[h].dog!;
@@ -1046,6 +1060,8 @@ export class View {
     this.playerLook = lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked);
     // (P36: their own clothes on release: an off-white tee over jeans, nothing like a guard's navy.)
     if (outfit === OWN_CLOTHES) this.playerLook = { ...this.playerLook, trousers: OWN_JEANS };
+    // (P42: the costume on costume night: a witch's robe and hat. It fools nobody.)
+    if (outfit === COSTUME) this.playerLook = { ...this.playerLook, trousers: 0x2a1f36, hat: 13, hatColor: 0x2a1f36 };
     this.player = new Character(this.playerLook);
     this.player.root.position.copy(old.root.position);
     this.player.root.rotation.copy(old.root.rotation);
@@ -1305,6 +1321,10 @@ export class View {
       o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
     }
     this.inspecting = this.events.update(f.events, dt, time, spots, f.inmates, f.layer === LAYER.GROUND, !this.reducedMotion, !this.reducedMotion, f.x, f.z, f.layer !== LAYER.UNDER, this.security?.powerLevel ?? 1);
+    // The holiday (P42): its decor, the water fight's sprays, New Year's fireworks (from anywhere but a tunnel).
+    this.holidaysView.dress(f.holiday.kind, this.later);
+    this.holidaysView.group.visible = f.layer !== LAYER.UNDER;
+    this.holidaysView.update(f.holiday, dt, time, f.x, f.z, !this.reducedMotion, this.security?.powerLevel ?? 1);
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
@@ -1554,6 +1574,9 @@ export class View {
     this.wxLight = null;
     this.weather.update(NO_WEATHER, dt, time, this.target.x, this.target.z, 0, WALL_H + 0.45, 0, !this.reducedMotion, false, this.rainBelow, this.puddly);
     this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false, false);
+    this.holidaysView.dress(this.titleHoliday, this.later);
+    this.holidaysView.group.visible = true;
+    this.holidaysView.update(NO_HOLIDAY, dt, time, this.target.x, this.target.z, !this.reducedMotion);
     this.delivery.update(null, dt, time, false, false);
     this.render(600, dt, model ? this.feet : null, time);
   }

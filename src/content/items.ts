@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented; P35's 'kiosk': ordered off the internet kiosk's shop; P36's 'release': handed back at the gate on the morning out). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk' | 'release';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented; P35's 'kiosk': ordered off the internet kiosk's shop; P36's 'release': handed back at the gate on the morning out; P42's 'holiday': a holiday's eggs and treats, only in a run that has the holiday). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk' | 'release' | 'holiday';
 
 export interface ItemDef {
   id: string;
@@ -258,6 +258,15 @@ export const ITEMS: readonly ItemDef[] = [
   { ...gear('release_form', 55, 'formBlank', 0xf4efe0, 0x9aa2ad), from: ['guard'] },
   gear('forged_release', 40, 'form', 0xf4efe0, 0x1e3a5f),
   outfit('own_clothes', 0, false, 0xe2ddd0, 0x4a6a96, ['release']),
+  // v2.21 (P42, holidays): a chocolate egg in foil (the egg hunt: eaten, or sold to a merchant), an ice lolly (the summer's
+  // water fight day), a witch's costume that fools no one (costume night), a pumpkin from the kitchen and the same carved
+  // into a lantern there, a present from under the tree (given to an inmate, it's the gift swap).
+  m('choc_egg', false, 8, 'egg', 0x7a4a2a, ['holiday'], 0xe8b828),
+  m('ice_lolly', false, 4, 'lolly', 0xff6fa0, ['holiday'], 0xe8d2a0),
+  { ...outfit('costume', 0, false, 0x4b2a6e, 0x1d1a22, ['holiday']), value: 10 },
+  m('pumpkin', false, 6, 'pumpkin', 0xf28c28, ['holiday'], 0x4f8a2e),
+  m('jack_lantern', false, 14, 'lantern', 0xf28c28, ['holiday'], 0xffd23f),
+  m('gift', false, 30, 'gift', 0xd23f36, ['holiday'], 0xf4c542),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
@@ -267,6 +276,7 @@ for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud =
 
 /** What a rat can carry in its teeth (P20): keys, molds and odds and ends; nothing long, heavy or bulky. */
 const SMALL = [
+  'choc_egg', 'ice_lolly',
   'plastic_comb', 'toothbrush', 'lighter', 'toilet_paper', 'glue', 'duct_tape', 'metal_file', 'sock', 'soap', 'battery', 'wire', 'razor_blade', 'ink', 'foil', 'talcum', 'toothpaste', 'putty', 'molten_plastic',
   'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky', 'burner_phone', 'lockpick', 'blank_id', 'fake_id', 'release_form', 'forged_release',
   ...KEY_ITEM_COLORS.flatMap(([c]) => [`key_${c}`, `mold_${c}`, `plastic_key_${c}`]),

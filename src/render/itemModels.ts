@@ -243,6 +243,22 @@ const SHAPES: Record<string, Shape> = {
     cyl(0.012, 0.09, 0xf4f1e6, -0.03, 0.185, -0.02, 6),
     box(0.022, 0.035, 0.022, 0xffc23d, -0.03, 0.275, -0.02),
   ],
+  /** P42: a chocolate egg in foil, a band of gold round its middle. */
+  egg: (c, a) => [paint(new THREE.SphereGeometry(0.1, 14, 10).scale(1, 1.3, 1).translate(0, 0.13, 0), c), cyl(0.102, 0.03, a, 0, 0.12, 0, 14)],
+  /** P42: an ice lolly on its stick, a bite out of its corner. */
+  lolly: (c, a) => [box(0.2, 0.05, 0.12, c, -0.05, 0.025, 0), box(0.05, 0.051, 0.05, 0xf4e1c8, -0.13, 0.025, 0.04), box(0.16, 0.02, 0.03, a, 0.12, 0.02, 0)],
+  /** P42: a pumpkin, its ribs, its stalk. */
+  pumpkin: (c, a) => [paint(new THREE.SphereGeometry(0.15, 14, 10).scale(1, 0.75, 1).translate(0, 0.11, 0), c), ...[0, 1, 2].map((k) => turn(box(0.31, 0.2, 0.02, c, 0, 0.11, 0), (k * Math.PI) / 3)), cyl(0.02, 0.07, a, 0, 0.23, 0, 6)],
+  /** P42: the pumpkin carved: its face lit yellow, a lid on top. */
+  lantern: (c, a) => [
+    paint(new THREE.SphereGeometry(0.15, 14, 10).scale(1, 0.75, 1).translate(0, 0.11, 0), c),
+    box(0.04, 0.04, 0.02, a, -0.05, 0.14, 0.142),
+    box(0.04, 0.04, 0.02, a, 0.05, 0.14, 0.142),
+    box(0.12, 0.025, 0.02, a, 0, 0.07, 0.138),
+    cyl(0.02, 0.07, 0x4f8a2e, 0, 0.23, 0, 6),
+  ],
+  /** P42: a present, wrapped, a ribbon both ways and a bow. */
+  gift: (c, a) => [box(0.26, 0.18, 0.22, c, 0, 0.09, 0), box(0.04, 0.185, 0.225, a, 0, 0.09, 0), box(0.265, 0.185, 0.04, a, 0, 0.09, 0), box(0.06, 0.05, 0.12, a, -0.03, 0.2, 0), box(0.06, 0.05, 0.12, a, 0.03, 0.2, 0)],
   /** A rat caught (P20): the cup down over it, its tail out on the board, its nose at the rim. */
   caughtRat: (c, a) => [
     box(0.4, 0.02, 0.28, 0xb07a45),

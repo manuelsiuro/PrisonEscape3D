@@ -534,6 +534,13 @@ export class Director {
       case 'stow':
         if (e.found) this.queueUp(now, 're.stowFound.in', this.inmatesNear(sim, px, pz, 12), 3, 'stowFound', undefined, 1.6);
         break;
+      // Holidays (P42): a laugh at the costume, the water fight, the fireworks, the eggs hidden.
+      case 'holiday':
+        if (e.what === 'laugh' && e.who !== undefined) this.queueUp(now, 're.hol.laugh.in', [e.who], 4, 'holLaugh', 'shout', 0.1);
+        else if (e.what === 'start' && e.day === 'waterFight') this.queueUp(now, 're.hol.water.in', this.inmatesNear(sim, px, pz, 24), 3, 'holWater', 'shout', 0.4);
+        else if (e.what === 'start' && e.day === 'newYearsEve') this.queueUp(now, 're.hol.fireworks.in', this.inmatesNear(sim, px, pz, 30), 3, 'holFireworks', 'shout', 0.6);
+        else if (e.what === 'hidden') this.queueUp(now, 're.hol.eggs.in', this.inmatesNear(sim, px, pz, 30), 2, 'holEggs', undefined, 2, 5);
+        break;
       // A glide (P24) that came down inside: whoever is near where the player landed has a word for it.
       case 'glide':
         if (!s.escaped) {

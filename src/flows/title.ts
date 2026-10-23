@@ -29,6 +29,9 @@ import { readPrisoner } from '../game/prisoner';
 import { careerOf, earnedTrophies, markTrophiesSeen, syncCareer, unseenTrophies } from '../game/trophies';
 import { showTrophies } from '../ui/screens/trophies';
 import { watchReplay } from '../play/replay';
+import { newRunHoliday } from '../play/holidays';
+import { runHoliday } from '../game/holidays';
+import { DAY_BOOKS } from '../content/days';
 
 // ------------------------------------------------------------------ flows
 /** The title, and from it into a game (new, continued or loaded) and back, for good. */
@@ -40,6 +43,8 @@ export async function titleFlow() {
   for (;;) {
     sound.music('title');
     showUpdate();
+    // (P42: the prison behind the title dressed for the holiday, the date's as Settings have it.)
+    view.setHoliday(DAY_BOOKS[backdrop.id] ? runHoliday(settings) : 0);
     const again = takePlayAgain();
     const open = openPrisons();
     // Progress reset (settings): the prison behind the title may be locked again.
@@ -144,7 +149,7 @@ export async function titleFlow() {
         if (!(await intakeFlow(true))) continue;
       }
       seed = Date.now() & 0x7fffffff;
-      sim = new Sim(prison, seed);
+      sim = new Sim(prison, seed, [], newRunHoliday(prison));
     } else {
       slot = choice === 'continue' ? 'auto' : await showSaves('load', click);
       if (slot === null) continue;
@@ -155,7 +160,7 @@ export async function titleFlow() {
         deleteSave(slot);
         banner.toast(t('toast.rebuilt', { prison: prisonName(prison) }), 'info', 6000);
         seed = Date.now() & 0x7fffffff;
-        sim = new Sim(prison, seed);
+        sim = new Sim(prison, seed, [], newRunHoliday(prison));
         startGame(sim, false, null, [], { seed });
         backdrop = sim.prison;
         await untilQuit();
