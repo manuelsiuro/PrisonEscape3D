@@ -175,6 +175,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* (Cropped to a strip, the topic's subject kept in it: helpTopics.ts's picAt, else the middle.) */
+  object-position: var(--pic-at, 50% 50%);
 }
 
 .hd-sum {

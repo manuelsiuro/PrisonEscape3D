@@ -1,4 +1,5 @@
-import { currentLang, t } from '../i18n';
+import { currentLang, t, type Key } from '../i18n';
+import { MEMBERS } from '../content/parole';
 import { EXT, OP } from '../sim/command';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
@@ -63,6 +64,9 @@ export class ParoleCard {
   private readonly bar: HTMLElement;
   private readonly note: HTMLElement;
   private readonly apply: HTMLButtonElement;
+  /** Read out politely, once each: the question put (and who asks), the member's word on the answer, the verdict. */
+  private readonly live: HTMLElement;
+  private said = '';
   private drawn = '';
 
   constructor(
@@ -72,12 +76,16 @@ export class ParoleCard {
     this.el = h(
       'div',
       'train-card parole-card hidden',
-      `<div class="train-head"><i class="train-ic">${icon('scale', 18)}</i><b></b><span class="train-value"></span></div>
+      `<div class="train-head"><i class="train-ic">${icon('scale', 18)}</i><b id="parole-title"></b><span class="train-value"></span></div>
       <div class="parole-body"></div>
       <i class="match-clock parole-bar" role="timer"><i></i></i>
       <p class="train-note"></p>
-      <button class="big-btn primary small parole-apply">${icon('clipboard', 18)}<span></span></button>`,
+      <button class="big-btn primary small parole-apply">${icon('clipboard', 18)}<span></span></button>
+      <p class="sr-only parole-live" aria-live="polite" aria-atomic="true"></p>`,
     );
+    this.el.setAttribute('role', 'dialog');
+    this.el.setAttribute('aria-labelledby', 'parole-title');
+    this.live = this.el.querySelector('.parole-live')!;
     this.title = this.el.querySelector('.train-head b')!;
     this.value = this.el.querySelector('.train-value')!;
     this.body = this.el.querySelector('.parole-body')!;
@@ -127,6 +135,8 @@ export class ParoleCard {
     if (!v) {
       this.drawn = '';
       this.picked = -1;
+      this.said = '';
+      setText(this.live, '');
       return false;
     }
     if (v.phase !== 'ask') this.picked = -1;
@@ -138,15 +148,34 @@ export class ParoleCard {
       const asking = v.phase === 'ask' || v.phase === 'weigh';
       setText(this.value, asking ? t('parole.qOf', { n: v.q + 1, of: 3 }) : v.phase === 'verdict' || v.phase === 'desk' ? v.score : '');
       this.body.innerHTML = this.bodyHtml(v);
-      setText(this.apply.querySelector('span')!, v.apply);
+      // (The view's label is the desk's; hidden elsewhere, it still follows the language.)
+      setText(this.apply.querySelector('span')!, v.phase === 'desk' && v.apply ? v.apply : t('parole.apply'));
       this.apply.classList.toggle('hidden', v.phase !== 'desk' || (!v.canApply && !v.why));
       this.apply.disabled = !v.canApply;
     }
     setText(this.note, v.phase === 'desk' && v.why ? v.why : v.note);
+    this.announce(v);
     (this.bar.firstElementChild as HTMLElement).style.width = `${(Math.max(0, Math.min(1, v.left)) * 100).toFixed(1)}%`;
     this.bar.classList.toggle('hidden', v.phase !== 'ask');
     this.bar.setAttribute('aria-label', t('parole.leftAria', { n: v.secs }));
     return true;
+  }
+
+  /** What a screen reader hears as the hearing goes: who asks and the question, the member's word, the verdict and what weighed. */
+  private announce(v: ParoleView) {
+    const say =
+      v.phase === 'ask'
+        ? `${t('parole.qOf', { n: v.q + 1, of: 3 })}. ${v.member}: ${v.question}`
+        : v.phase === 'weigh'
+          ? v.react
+          : v.phase === 'verdict'
+            ? [v.verdict, v.status, ...v.weighed].filter(Boolean).join('. ')
+            : v.phase === 'sat'
+              ? v.note
+              : '';
+    if (!say || say === this.said) return;
+    this.said = say;
+    setText(this.live, say);
   }
 
   private bodyHtml(v: ParoleView): string {
@@ -155,7 +184,14 @@ export class ParoleCard {
     const weighed = v.weighed.length ? `<ul class="parole-weighed">${v.weighed.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : '';
     if (v.phase === 'desk') return `${status}${weighed}${lines}`;
     if (v.phase === 'verdict') return `<p class="parole-verdict ${v.verdictGood ? 'good' : 'bad'}">${icon(v.verdictGood ? 'check' : 'close', 18)}<span>${esc(v.verdict)}</span></p>${status}${weighed}`;
-    const board = `<ol class="parole-board">${[0, 1, 2].map((k) => `<li class="${k === v.memberK && v.phase !== 'sat' ? 'on' : ''}" style="--member:${MEMBER_COLOR[k]}"><i>${icon('person', 14)}</i></li>`).join('')}${v.phase !== 'sat' ? `<li class="who">${esc(v.member)}</li>` : ''}</ol>`;
+    // (Each face named for a screen reader, the one asking marked; the name beside them is the eye's.)
+    const board = `<ol class="parole-board" aria-label="${esc(t('parole.board'))}">${[0, 1, 2]
+      .map((k) => {
+        const on = k === v.memberK && v.phase !== 'sat';
+        const name = MEMBERS[k] ? t(`parole.member.${MEMBERS[k].id}` as Key) : '';
+        return `<li class="${on ? 'on' : ''}" style="--member:${MEMBER_COLOR[k]}"${on ? ' aria-current="true"' : ''}><i role="img" aria-label="${esc(name)}">${icon('person', 14)}</i></li>`;
+      })
+      .join('')}${v.phase !== 'sat' ? `<li class="who" aria-hidden="true">${esc(v.member)}</li>` : ''}</ol>`;
     if (v.phase === 'sat') return `${status}${board}`;
     const said = v.said >= 0 ? v.said : this.picked;
     const answers = v.answers
@@ -166,6 +202,6 @@ export class ParoleCard {
       })
       .join('');
     const react = v.phase === 'weigh' && v.react ? `<p class="parole-react ${v.reactGood ? 'good' : 'bad'}">${esc(v.react)}</p>` : '';
-    return `${board}<p class="parole-q" role="status">${esc(v.question)}</p><p class="parole-file ${v.fileOk ? 'good' : 'bad'}">${icon(v.fileOk ? 'check' : 'close', 12)}<span>${esc(v.file)}</span></p><div class="parole-answers">${answers}</div>${react}`;
+    return `${board}<p class="parole-q">${esc(v.question)}</p><p class="parole-file ${v.fileOk ? 'good' : 'bad'}">${icon(v.fileOk ? 'check' : 'close', 12)}<span>${esc(v.file)}</span></p><div class="parole-answers">${answers}</div>${react}`;
   }
 }

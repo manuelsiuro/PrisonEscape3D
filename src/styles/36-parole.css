@@ -275,13 +275,31 @@
   body.paroling .energy {
     display: none;
   }
-  /* (A lesson's card goes to the bottom right, clear of the board's card and the board itself above the player.) */
+  /* (A lesson's card goes to the bottom right of the screen — fixed to it, not to the HUD's box it sits in,
+     whose bottom is the top row's — clear of the board's card and the board itself above the player, of the
+     HUD's chips and the heat; at the desk and at the verdict, left of the action and tool buttons.) */
   body.paroling .coach.lesson-coach {
+    position: fixed;
     top: auto;
     bottom: max(10px, env(safe-area-inset-bottom));
-    right: max(14px, env(safe-area-inset-right));
+    right: calc(max(16px, env(safe-area-inset-right)) + 184px);
     left: auto;
-    max-width: min(380px, calc(50vw - 100px));
+    max-width: min(380px, calc(100vw - min(340px, 50vw - 40px) - max(14px, env(safe-area-inset-left)) - 226px));
+  }
+  /* (Before the board the buttons step aside: the card takes the corner.) */
+  body.paroling[data-parole='on'] .coach.lesson-coach {
+    right: max(14px, env(safe-area-inset-right));
+    max-width: min(380px, calc(100vw - min(340px, 50vw - 40px) - max(14px, env(safe-area-inset-left)) - 40px));
+  }
+  /* (So the banner and the toasts come down under the HUD's chips, right of the board's card, clear of the lesson's.) */
+  body.lesson-on.paroling.is-playing .banner {
+    top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--hud-alerts, 0px) + 10px));
+    bottom: auto;
+  }
+  body.lesson-on.paroling.is-playing .toasts {
+    top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--hud-alerts, 0px) + 10px));
+    bottom: auto;
+    flex-direction: column;
   }
   /* (The warden's line on the right, under the heat, clear of the answers.) */
   body.paroling .pa-strip {

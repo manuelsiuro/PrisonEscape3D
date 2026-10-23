@@ -4,6 +4,19 @@
 .oddjobs-card .train-ic {
   background: #b98a55;
 }
+/* The job's own card: its Close button at the end of its head (Escape and its chip close it too). */
+.oddjobs-card .oddjobs-close {
+  flex: none;
+  margin-left: auto;
+}
+body.touch .oddjobs-card .oddjobs-close {
+  width: 40px;
+  height: 40px;
+}
+/* (The card itself takes the focus only to keep it when a redraw takes its button away: no ring for that.) */
+.oddjobs-card:focus {
+  outline: none;
+}
 .oddjobs-note {
   margin: 6px 0 0;
 }
@@ -290,14 +303,25 @@
   body.story-up:has(.item-panel:not(.hidden)) .hud-alert.hud-job {
     display: none;
   }
-  /* (A story's card docked left: the toasts and the banner centre on what's left of the screen.) */
-  body.story-up.is-playing .toasts {
+  /* (A story's card or the board's docked left: the toasts and the banner — the fire drill's — centre on what's left of the screen.) */
+  body.story-up.is-playing .toasts,
+  body.jobbing.is-playing .toasts {
     left: calc(50% + (min(360px, 50vw - 40px) + 14px) / 2);
     width: min(480px, calc(100vw - min(360px, 50vw - 40px) - 46px));
   }
-  body.story-up.is-playing .banner {
+  body.story-up.is-playing .banner,
+  body.jobbing.is-playing .banner {
     left: calc(50% + (min(360px, 50vw - 40px) + 14px) / 2);
     max-width: calc(100vw - min(360px, 50vw - 40px) - 46px);
+  }
+  /* (The parole board's card, as wide: the same.) */
+  body.paroling.is-playing .toasts {
+    left: calc(50% + (min(340px, 50vw - 40px) + 14px) / 2);
+    width: min(480px, calc(100vw - min(340px, 50vw - 40px) - 46px));
+  }
+  body.paroling.is-playing .banner {
+    left: calc(50% + (min(340px, 50vw - 40px) + 14px) / 2);
+    max-width: calc(100vw - min(340px, 50vw - 40px) - 46px);
   }
 }
 

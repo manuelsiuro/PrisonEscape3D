@@ -65,7 +65,12 @@ export class OddJobsCard {
   private readonly title: HTMLElement;
   private readonly body: HTMLElement;
   private readonly note: HTMLElement;
+  private readonly closeBtn: HTMLButtonElement;
   private drawn = '';
+  /** The keyboard's focus goes into the card the next time it shows (opened from its chip or B). */
+  private focusNext = false;
+  /** The job's own card's Close button (the play layer closes it). */
+  onClose: () => void = () => {};
 
   constructor(
     private readonly send: Send,
@@ -74,18 +79,26 @@ export class OddJobsCard {
     this.el = h(
       'div',
       'train-card oddjobs-card hidden',
-      `<div class="train-head"><i class="train-ic">${icon('pin', 18)}</i><b></b></div>
+      `<div class="train-head"><i class="train-ic">${icon('pin', 18)}</i><b id="oddjobs-title"></b><button class="icon-btn small oddjobs-close hidden" data-close>${icon('close', 16)}</button></div>
       <p class="train-note oddjobs-note"></p>
       <div class="oddjobs-body"></div>`,
     );
     this.el.setAttribute('role', 'dialog');
+    this.el.setAttribute('aria-labelledby', 'oddjobs-title');
+    this.el.tabIndex = -1;
     this.title = this.el.querySelector('.train-head b')!;
     this.note = this.el.querySelector('.oddjobs-note')!;
     this.body = this.el.querySelector('.oddjobs-body')!;
+    this.closeBtn = this.el.querySelector('.oddjobs-close')!;
     this.el.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
       if (!b || b.disabled) return;
       const d = b.dataset;
+      if (d.close !== undefined) {
+        this.click();
+        this.onClose();
+        return;
+      }
       // (Giving up asks twice: the first press arms it.)
       if (d.confirm && !b.classList.contains('armed')) {
         this.click();
@@ -111,8 +124,29 @@ export class OddJobsCard {
     return !this.el.classList.contains('hidden');
   }
 
+  /** What it shows: the board's card or the job's own. */
+  get mode(): OddJobsView['mode'] | '' {
+    return (this.el.dataset.mode as OddJobsView['mode'] | undefined) ?? '';
+  }
+
+  /** Opened from its chip or B: the focus goes into it as it shows. */
+  focusOnShow() {
+    this.focusNext = true;
+  }
+
+  /** Closed: the focus, if it was in the card, back to the job's chip (or let go, the chip gone with the job). */
+  returnFocus() {
+    this.focusNext = false;
+    if (!this.el.contains(document.activeElement)) return;
+    const chip = document.querySelector<HTMLElement>('.hud:not(.hidden) .hud-job:not(.hidden)');
+    if (chip) chip.focus();
+    else (document.activeElement as HTMLElement | null)?.blur();
+  }
+
   update(v: OddJobsView | null) {
     const shown = !!v && this.el.classList.contains('hidden');
+    // (Hidden with the focus in it: given back to the chip, never left on a hidden button.)
+    if (!v && this.open) this.returnFocus();
     this.el.classList.toggle('hidden', !v);
     if (!v) {
       this.drawn = '';
@@ -125,10 +159,22 @@ export class OddJobsCard {
     this.drawn = key;
     this.el.dataset.mode = v.mode;
     setText(this.title, t(v.mode === 'board' ? 'oddjob.title' : 'oddjob.yourJob'));
+    // (The job's own card closes with its button, Escape or its chip; the board's, by walking away.)
+    this.closeBtn.classList.toggle('hidden', v.mode !== 'job');
+    this.closeBtn.setAttribute('aria-label', t('common.close'));
+    this.closeBtn.title = TOUCH ? '' : `${t('common.close')} (Esc)`;
     setText(this.note, v.note);
     const held = v.job ? heldHtml(v.job, v.mode === 'job') : '';
     const pins = v.pins.map(pinHtml).join('');
+    // (Redrawn with the focus on a button that goes: kept on the card, not dropped to the page.)
+    const lost = this.body.contains(document.activeElement);
     this.body.innerHTML = `${held}${pins ? `<div class="oddjobs-pins">${pins}</div>` : ''}`;
+    if (lost) this.el.focus({ preventScroll: true });
+    // (Opened from its chip or B: the focus into it, on its Close button.)
+    if (this.focusNext) {
+      this.focusNext = false;
+      if (v.mode === 'job') this.closeBtn.focus({ preventScroll: true });
+    }
     // (Shown again: from its top, not where it was last scrolled to; once it's displayed and drawn, and again a frame on.)
     if (shown) {
       this.el.scrollTop = 0;
@@ -161,6 +207,8 @@ function pinHtml(p: PinView): string {
 export class StoryCard {
   private readonly el: HTMLElement;
   private timer = 0;
+  /** Put aside for another card (see wait). */
+  private waiting = false;
 
   constructor(private readonly click: () => void) {
     this.el = h('div', 'story-card hidden', `<div class="story-head"><i>${icon('book', 18)}</i><span><b></b><small></small></span></div><p class="story-text"></p><button class="big-btn primary small story-ok">${icon('check', 16)}<span></span></button>`);
@@ -183,6 +231,7 @@ export class StoryCard {
     setText(this.el.querySelector('.story-head small')!, sub);
     setText(this.el.querySelector('.story-text')!, text);
     setText(this.el.querySelector('.story-ok span')!, t('oddjob.storyOk'));
+    this.waiting = false;
     this.el.classList.remove('hidden');
     document.body.classList.add('story-up');
     clearTimeout(this.timer);
@@ -191,7 +240,24 @@ export class StoryCard {
 
   hide() {
     clearTimeout(this.timer);
+    this.waiting = false;
     this.el.classList.add('hidden');
     document.body.classList.remove('story-up');
+  }
+
+  /** Put aside while another card is docked where it docks (one card at a time), shown again after for a while. */
+  wait(on: boolean) {
+    if (on && this.open) {
+      clearTimeout(this.timer);
+      this.waiting = true;
+      this.el.classList.add('hidden');
+      document.body.classList.remove('story-up');
+    } else if (!on && this.waiting) {
+      this.waiting = false;
+      this.el.classList.remove('hidden');
+      document.body.classList.add('story-up');
+      clearTimeout(this.timer);
+      this.timer = window.setTimeout(() => this.hide(), 9000);
+    }
   }
 }

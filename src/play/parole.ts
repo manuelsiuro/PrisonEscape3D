@@ -13,6 +13,7 @@ import { banner, combatUI, itemsUI, paBoard, paroleCard, sound, view } from './c
 import { announcePa, dayTime } from './day';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
+import { releaseChip } from './paperwork';
 import { TOUCH } from '../ui/dom';
 import { LESSONS } from '../tutorial/lessons';
 
@@ -215,7 +216,8 @@ export function announceParole(sim: Sim, e: Extract<SimEvent, { type: 'parole' }
       // (Seated already, the moment it's called: nothing to send them to.)
       if (s.hearing) return;
       announcePa(sim, t('pa.hearing', { name: PLAYER.name || t('pa.releaseNumber'), room: roomOf(sim) }));
-      banner.toast(t('toast.parole.called', { room: roomOf(sim), time: dayTime(HEARING_TO) }), 'good', 4200);
+      // (The HUD's chip says the same words from now on: no toast piled on it, unless the release's chip has its place.)
+      if (releaseChip(sim)) banner.toast(t('toast.parole.called', { room: roomOf(sim), time: dayTime(HEARING_TO) }), 'good', 4200);
       return;
     case 'sat':
       // (The call to the room, still to be said or being said, has been answered.)

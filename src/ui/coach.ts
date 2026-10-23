@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { currentLang, t } from '../i18n';
 import { TOUCH, h } from './dom';
 import { icon } from './icons';
 
@@ -120,7 +120,8 @@ export class FirstDay {
     }
     this.el.classList.toggle('hidden', hidden);
     const doneNow = this.hold > 0 && !this.finishing;
-    const key = `${this.k}:${doneNow}:${this.finishing}`;
+    // (The language changed meanwhile, in the settings: drawn again in it.)
+    const key = `${this.k}:${doneNow}:${this.finishing}:${currentLang()}`;
     if (key === this.shownKey) return;
     this.shownKey = key;
     if (this.finishing) {
