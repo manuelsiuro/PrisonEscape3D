@@ -42,6 +42,8 @@ import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 import { carWaiting, commsOf } from '../sim/systems/phone';
 import { kioskOf, loggedIn } from '../sim/systems/kiosk';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
+import { fireworksOn, holidayNow } from '../sim/systems/holiday';
+import { decorHoliday } from './holidays';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -169,6 +171,7 @@ const frameData: Frame = {
   fuses: fuseFrame,
   weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false },
   events: { movie: false, foodFight: false, inspection: false },
+  holiday: { kind: 0, water: false, fireworks: false },
   delivery: { t: -1, at: 0, search: 0, until: 0, stowed: false },
   dogs: [],
   scent: scentFrame,
@@ -634,6 +637,11 @@ function dayFrame(sim: Sim, f: Frame) {
   e.movie = eventOn(sim, 'movie');
   e.foodFight = eventOn(sim, 'foodFight');
   e.inspection = eventOn(sim, 'inspection');
+  // The holiday (P42): the run's own, or (a Daily, which plays without one) the date's, for the decor only.
+  const hd = f.holiday;
+  hd.kind = decorHoliday(sim);
+  hd.water = holidayNow(sim, 'waterFight');
+  hd.fireworks = fireworksOn(sim);
   // Delivery day (P18): the vehicle's day, in fractional minutes (it drives in before 12:30 and out after 14:31).
   const d = f.delivery;
   const st = sim.state;

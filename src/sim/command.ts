@@ -79,6 +79,8 @@ export const EXT = {
   LINE: 19,
   /** The internet kiosk (P35): b = what's asked (content/kiosk.ts KIOSK: logging in and out, a letter, an order, a course), c its argument (the shop's item, an answer). */
   KIOSK: 20,
+  /** v2.21 (P42, holidays): the holiday's treat taken from the open furniture (b = content/holidays.ts TREAT). */
+  HOLIDAY: 32,
 } as const;
 
 /** What EXT.LINE asks (P34): a place at the end of the queue, out of it, cut in at the front. Never renumber. */

@@ -35,6 +35,7 @@ import { makeNoise, strikeNoise, throwItem, wind } from './noise';
 import { board, flood, launch } from './sea';
 import { powered, snipersOnDuty, switchPower } from './power';
 import { feastNow, TODAY } from './calendar';
+import { carve, takeTreat } from './holiday';
 import { FEAST_ENERGY } from '../../content/days';
 import { atProp, seatSpot } from './rest';
 import { sniperOn } from './security';
@@ -250,6 +251,8 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.SAY) say(sim, argB(cmd));
       else if (a === EXT.LINE && s.solitary <= 0) lineOp(sim, argB(cmd));
       else if (a === EXT.KIOSK && s.solitary <= 0) kioskOp(sim, argB(cmd), argC(cmd));
+      // Holidays (P42): the holiday's treat from the open furniture.
+      else if (a === EXT.HOLIDAY && s.solitary <= 0) takeTreat(sim, argB(cmd));
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));
@@ -312,6 +315,11 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
   if ((target.action === 'digUp' || !STRIKES.has(target.action)) && !fresh) return;
   if (target.action === 'eat' && held === CAKE) return eatCake(sim);
+  // P42: a pumpkin carved (in the kitchen).
+  if (target.action === 'carve') {
+    if (target.fits) carve(sim);
+    return;
+  }
   if (target.action === 'eat') {
     // Full of energy: the bar keeps for later.
     if (s.energy >= 100) {

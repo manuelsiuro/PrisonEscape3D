@@ -16,7 +16,7 @@ export const PANTRY_GOODS: ReadonlyArray<readonly [item: string, table: string]>
 ];
 /** What every merchant sells besides its stock (TALK.BUY, b = SHOP_SLOTS + its place here), and what it buys (TALK.SELL) at its value. */
 export const STAPLES: readonly string[] = ['sugar', 'veg_seeds', 'fruit_seeds'];
-export const WANTED: readonly string[] = ['pruno', 'vegetable'];
+export const WANTED: readonly string[] = ['pruno', 'vegetable', 'choc_egg', 'pumpkin', 'jack_lantern'];
 /** What a merchant pays for what it buys (percent of its value), and how many things the player can sell in a prison day (all merchants together). */
 export const SALE_SHARE = 75;
 export const SALES_A_DAY = 4;

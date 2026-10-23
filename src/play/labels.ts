@@ -11,7 +11,7 @@ import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/sys
 import { genOf, offFor } from '../sim/systems/power';
 import { helicopterIn } from '../sim/systems/sea';
 import { clockRinging } from '../sim/systems/noise';
-import { DIRT, STRIKES, underSea, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import { CHOC_EGG, DIRT, ICE_LOLLY, STRIKES, underSea, WALL_CHUNK, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { energyCost } from '../sim/systems/weather';
 import { dogDef } from '../sim/systems/k9';
 import { petOf, trapChance } from '../sim/systems/rats';
@@ -45,8 +45,8 @@ export const NEED: Record<string, string> = {
   rope: 'toast.noLanding', glide: 'toast.noLanding', chip: 'toast.needChip', cut: 'toast.needCut', unscrew: 'toast.needUnscrew', dig: 'toast.needDig', digUp: 'toast.needDig', eat: 'toast.needDig', pick: 'toast.pickGate' };
 
 /** Tool actions as numbers (the held button's target key, compared each frame without strings). */
-export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide', 'drink', 'track', 'plant', 'water', 'harvest', 'unbook'];
-const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider', drink: 'brew', track: 'race', plant: 'sprout', water: 'water', harvest: 'fruit', unbook: 'book' };
+export const ACTION_IDS = ['chip', 'cut', 'unscrew', 'dig', 'digUp', 'eat', 'cover', 'brace', 'rope', 'sharpen', 'grapnel', 'tape', 'launch', 'wind', 'wash', 'feed', 'setTrap', 'pick', 'glide', 'drink', 'track', 'plant', 'water', 'harvest', 'unbook', 'carve'];
+const TOOL_ICON: Record<string, string> = { chip: 'pick', dig: 'shovel', digUp: 'up', cut: 'cutters', unscrew: 'screw', eat: 'cookie', cover: 'lock', brace: 'hammer', rope: 'down', sharpen: 'sword', grapnel: 'hook', tape: 'eyeOff', launch: 'boat', wind: 'clock', wash: 'drop', feed: 'cookie', setTrap: 'rat', pick: 'lockpick', glide: 'glider', drink: 'brew', track: 'race', plant: 'sprout', water: 'water', harvest: 'fruit', unbook: 'book', carve: 'pumpkin' };
 
 /** A firecracker in hand (P14): the tool button throws it. */
 const tossView: ToolView = { verb: '', what: '', icon: 'toss', fits: true, progress: null, repeat: false, toss: true };
@@ -297,6 +297,14 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
     v.progress = null;
     return v;
   }
+  // P42: a pumpkin carved into a lantern (grey but in the kitchen).
+  if (tt.action === 'carve') {
+    v.what = tt.fits ? itemName(held) : t('holiday.carveWhere');
+    v.fits = tt.fits;
+    v.repeat = false;
+    v.progress = null;
+    return v;
+  }
   // A bar of soap (P19): the scent washed off (grey with none to wash).
   if (tt.action === 'wash') {
     v.what = t('thing.scent');
@@ -396,7 +404,9 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   if (!strike) {
     v.what =
       tt.action === 'eat'
-        ? t('thing.chocolate')
+        ? held === CHOC_EGG || held === ICE_LOLLY
+          ? itemName(held)
+          : t('thing.chocolate')
         : tt.action === 'cover'
           ? t(tt.layer === LAYER.VENTS ? 'thing.grate' : 'thing.hole')
           : tt.action === 'brace'

@@ -137,6 +137,11 @@ const P: Record<string, string> = {
   news: '<path d="M4 5h13v13a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2Z"/><path d="M17 9h3v9a2 2 0 0 1-2 2M7 8h7M7 12h7M7 16h4"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   picture: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/><circle cx="15.5" cy="8.5" r="1.5"/>',
+  // v2.21 (P42, holidays): an egg, a pumpkin, a burst of fireworks, a Christmas tree.
+  egg: '<path d="M12 3c-3.5 0-6.5 5.5-6.5 10a6.5 6.5 0 0 0 13 0C18.5 8.5 15.5 3 12 3Z"/><path d="M6 13l3-2 3 2 3-2 3 2"/>',
+  pumpkin: '<path d="M12 7c-5-1-9 2-9 7s3 7 6 7c1 0 2-.5 3-.5s2 .5 3 .5c3 0 6-2 6-7s-4-8-9-7Z"/><path d="M12 7c-1.5 2-1.5 11 0 13.5M12 7c1.5 2 1.5 11 0 13.5M12 7c0-2 1-3.5 2.5-4"/>',
+  sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
+  tree: '<path d="M12 2.5 6.5 9h3L5 15h4l-3.5 4.5h13L15 15h4l-4.5-6h3Z"/><path d="M12 19.5V22"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

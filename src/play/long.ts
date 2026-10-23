@@ -20,6 +20,7 @@ import { banner, combatUI, itemsUI, sound, view } from './context';
 import { play } from './game';
 import { ratName } from './rat';
 import { coachOnce } from './tips';
+import { treatOffers } from './holidays';
 
 /**
  * Long games (P28) on screen: what can be taken from the open furniture, the race card, the
@@ -46,6 +47,8 @@ export function takeOffers(sim: Sim, table: string): ReadonlyArray<{ what: numbe
   const list = TAKES_OF[table];
   if (!list) return NO_TAKE;
   offers.length = 0;
+  // (P42: a holiday's treat first, where there is one today.)
+  offers.push(...treatOffers(sim, table));
   for (const what of list) {
     const why = takeCheck(sim, what);
     offers.push({ what, label: t(TAKE_LABEL[what]), why: why === 'notMeal' ? t('take.notMeal') : why === 'takenToday' ? t(what === TAKE.FRUIT ? 'take.meal' : 'take.today') : why === 'room' ? t('refused.room') : '' });

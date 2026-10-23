@@ -10,6 +10,7 @@ import { itemDef, itemNumber } from '../../content/items';
 import type { Sim } from '../Sim';
 import { clockAt } from './clock';
 import { ORDER } from '../command';
+import { fireworksOn } from './holiday';
 import { CHASE_HEAT, UNIT } from '../tuning';
 
 /** P28: ripe pruno (sold), and the odds (tenths) a won bet counts as a long shot from. */
@@ -178,6 +179,14 @@ export const FEATS = [
   'formsFound',
   'released',
   'turnedAway',
+  // v2.21 (P42, holidays): eggs found in the egg hunt, water fights joined, holiday treats taken, pumpkins carved, inmates who laughed at the costume, presents given, tool strikes landed under New Year's fireworks.
+  'eggsFound',
+  'waterFights',
+  'treats',
+  'carved',
+  'laughs',
+  'giftsGiven',
+  'fireworkWork',
 ] as const;
 export type Feat = (typeof FEATS)[number];
 /** A counter's index in `feats`. */
@@ -207,6 +216,8 @@ export function partialLedger(step: number): { feats: number[]; days: number[] }
 }
 
 const CHOCOLATE = itemNumber('chocolate');
+/** P42: the present from under the tree. */
+const GIFT = itemNumber('gift');
 const PHONE = itemNumber('burner_phone');
 
 /** Counts the step just run (`x`, `z`: where the player stood before it). */
@@ -415,6 +426,19 @@ export function ledger(sim: Sim, x: number, z: number) {
         break;
       case 'crafted':
         f[FEAT.crafted]++;
+        break;
+      case 'holiday':
+        if (e.what === 'egg') f[FEAT.eggsFound]++;
+        else if (e.what === 'splash') f[FEAT.waterFights]++;
+        else if (e.what === 'took') f[FEAT.treats]++;
+        else if (e.what === 'carved') f[FEAT.carved]++;
+        else if (e.what === 'laugh') f[FEAT.laughs]++;
+        break;
+      case 'gift':
+        if (e.item === GIFT) f[FEAT.giftsGiven]++;
+        break;
+      case 'strike':
+        if (s.holiday && fireworksOn(sim)) f[FEAT.fireworkWork]++;
         break;
       case 'cash':
         if (e.why === 'wage' && e.n > 0) f[FEAT.wages]++;

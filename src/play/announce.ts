@@ -12,6 +12,7 @@ import { announceNights } from './nights';
 import { announcePhone } from './payphone';
 import { announceKiosk } from './kiosk';
 import { announcePaper } from './paperwork';
+import { announceHoliday } from './holidays';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
@@ -787,6 +788,10 @@ export function announce(e: SimEvent, sim: Sim) {
     // The paperwork escape (P36): the form filed, the records, the release.
     case 'paper':
       announcePaper(sim, e);
+      break;
+    // Holidays (P42): the holiday's day, eggs found, the water fight, treats, carving, laughs.
+    case 'holiday':
+      announceHoliday(sim, e);
       break;
     // Bluff & glider (P24): waved through and the gates shut again; off a roof.
     case 'bluff':

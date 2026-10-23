@@ -12,6 +12,8 @@ import { TILE_INFO } from '../sim/world/tiles';
 import type { Style } from './types';
 import { dayMinute, drillOn, eventOn, feastNow, sunBites, today, weatherNow } from '../sim/systems/calendar';
 import type { ZoneId } from '../content/zones';
+import { HOLIDAY } from '../content/holidays';
+import { holidayDays, holidayOf, soaked } from '../sim/systems/holiday';
 
 /**
  * Moods (P13): what someone feels right now, read from the game (never stored): the bank a
@@ -155,6 +157,10 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   // What the day holds, talked over (P17): the inspectors, the generator's service.
   const today = eventOn(sim, 'inspection') ? 'in.day.inspection' : maintenanceDay(sim) ? 'in.day.maintenance' : null;
   if (today && (id + sim.clock.hour) % 2 === 0) return mood(today, 0.45, 'say', some('in.idle', weather, friend));
+  // The holiday (P42): its own talk now and then; a ghost story after Lights Out on costume night.
+  const hol = holidayBank(sim, id);
+  if (block === 'lightsOut' && hol && holidayDays(sim).includes('costumeNight')) return mood('in.hol.ghost', 0.5, 'whisper', ['in.sleepy']);
+  if (hol && (id + sim.clock.hour) % 3 === 1) return mood(hol, 0.45, 'say', some('in.idle', friend));
   if (friend) return mood('in.friendly', 0.6, 'say', some('in.idle', weather, today));
   if (block === 'lightsOut' || block === 'eveningRollCall') return mood('in.sleepy', 0.5, 'say', ['in.idle']);
   if (block === 'rollCall' || (minute >= 16 * 60 + 30 && minute < 17 * 60) || (minute >= 8 * 60 + 30 && minute < 9 * 60)) return mood('in.hungry', 0.5, 'say', some('in.idle', weather));
@@ -162,6 +168,19 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (block === 'eveningFreeTime' && (id + sim.clock.hour) % 3 === 0) return mood('in.homesick', 0.3, 'say', ['in.idle']);
   if (block === 'freeTime' || block === 'eveningFreeTime' || block === 'work') return mood('in.bored', 0.4, 'say', some('in.idle', block === 'eveningFreeTime' && 'in.homesick'));
   return mood('in.idle', 0.3, 'say', ['in.bored']);
+}
+
+/** The holiday's talk for an inmate (P42): by the holiday, and at Christmas by the prison (snowballs in the Alps, jokes about snow in the desert); null without one. */
+function holidayBank(sim: Sim, id: number): BankId | null {
+  const h = holidayOf(sim);
+  if (!h) return null;
+  if (h === HOLIDAY.EASTER) return 'in.hol.easter';
+  if (h === HOLIDAY.SUMMER) return 'in.hol.summer';
+  if (h === HOLIDAY.HALLOWEEN) return 'in.hol.halloween';
+  if (holidayDays(sim).includes('newYearsEve')) return 'in.hol.newYear';
+  const theme = sim.prison.theme;
+  if ((theme === 'alpine' || theme === 'desert') && (id + sim.clock.hour) % 2 === 0) return theme === 'alpine' ? 'in.hol.snow' : 'in.hol.desert';
+  return 'in.hol.christmas';
 }
 
 /** A guard's mood (Cast id), or null when out cold. */
@@ -186,6 +205,8 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   // Bribed to look the other way (P15), with the player close by: it makes a show of seeing nothing.
   if (lookingAway(g, s.step) && d <= 6) return mood('gu.bribed', 0.7);
   if (s.heat >= 50 && d <= 5) return mood('gu.wary', 0.6);
+  // Soaked in the water fight (P42).
+  if (s.holiday && soaked(sim, g)) return mood('gu.hol.soaked', 0.8, 'shout');
   const block = ROUTINE[s.routine].id;
   // Night duty: its own lines only (the day's grumbles don't fit after Lights Out; a storm's do).
   if (block === 'lightsOut') return mood('gu.drowsy', 0.5, 'say', some(weatherNow(sim) === 'storm' && sim.prison.theme !== 'alpine' && 'gu.wx.storm'));
@@ -196,6 +217,8 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   if (eventOn(sim, 'movie') && inZone(sim, g.body, 'canteen')) return mood('gu.day.movie', 0.45, 'say', ['gu.bored']);
   const usual: BankId = g.body.moving ? 'gu.idle' : 'gu.bored';
   const other: BankId = usual === 'gu.idle' ? 'gu.bored' : 'gu.idle';
+  // (P42: a word about the holiday now and then.)
+  if (holidayOf(sim) && (id + sim.clock.hour) % 3 === 0) return mood('gu.hol.festive', 0.4, 'say', [usual]);
   // The moment's own lines first: the morning count, the canteen, the yard.
   const t = tileOfBody(g.body);
   const zone = sim.world.zoneAt(t.x, t.z);

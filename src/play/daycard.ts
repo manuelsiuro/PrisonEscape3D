@@ -18,6 +18,8 @@ import { play, type Game } from './game';
 import { ratName } from './rat';
 import { shootKey } from './pastimes';
 import { kickKey } from './team';
+import { HOLIDAY_DAY } from '../content/holidays';
+import { holidayDays } from '../sim/systems/holiday';
 
 /** Race night's colour on the card (the race's own help topic's). */
 const RACE_COLOR = '#d9773a';
@@ -60,8 +62,19 @@ export function dayView(g: Game): DayView {
   if (days) {
     const p = today(sim);
     const m = dayMinute(st.step);
-    const [ev, wx] = dayRows(sim, p, false, true);
+    const [ev, wx, ...hol] = dayRows(sim, p, false, true);
     chips.push({ icon: ev.icon, color: ev.color, text: ev.title, when: ev.when }, { icon: wx.icon, color: wx.color, text: wx.title, when: '' });
+    // (P42: the holiday's own day, a chip and a pin where it falls.)
+    holidayDays(sim, p.day).forEach((id, k) => {
+      const r = hol[k];
+      if (!r) return;
+      chips.push({ icon: r.icon, color: r.color, text: r.title, when: r.when });
+      const d = HOLIDAY_DAY[id];
+      const over = m >= d.at + d.length;
+      const pin: DayPin = { icon: r.icon, color: r.color, title: r.title, when: r.when, sub: r.sub, over, tag: '', tagTone: '' };
+      const at = blockOf(d.at);
+      pins.set(at, [...(pins.get(at) ?? []), pin]);
+    });
     // The event where it falls (the drill once its bell has rung, a food fight once it has broken out: neither is said before).
     const begun = m >= p.at;
     if (p.event !== 'none' && (begun || (p.event !== 'drill' && p.event !== 'foodFight'))) {

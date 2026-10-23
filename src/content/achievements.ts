@@ -9,8 +9,8 @@ import { FEAT, type Feat } from '../sim/systems/ledger';
 import { ATTR_MAX } from '../sim/tuning';
 import type { Medal } from './medals';
 
-export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'days' | 'daily' | 'mishaps' | 'career';
-export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'days', 'daily', 'mishaps', 'career'];
+export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'days' | 'daily' | 'holidays' | 'mishaps' | 'career';
+export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'days', 'daily', 'holidays', 'mishaps', 'career'];
 
 /** A run as the checks see it: the ledger and a few of the player's numbers. */
 export interface RunView {
@@ -215,6 +215,12 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'seasoned', group: 'career', icon: 'route', ...counted('escapes', 10) },
   { id: 'marathon', group: 'career', icon: 'walk', ...counted('walked', 10000) },
   { id: 'graduate', group: 'career', icon: 'bulb', career: (c) => c.lessons >= c.lessonsOf, progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf] },
+  // v2.21 (P42, holidays): five eggs found in one egg hunt's run; in the water fight; three inmates laughing at the costume; a present given; work done under New Year's fireworks.
+  { id: 'eggHunter', group: 'holidays', icon: 'egg', gives: 'holBunny', run: (r) => f(r, 'eggsFound') >= 5 },
+  { id: 'splashdown', group: 'holidays', icon: 'splash', gives: 'holShades', run: (r) => f(r, 'waterFights') >= 1 },
+  { id: 'trickOrTreat', group: 'holidays', icon: 'pumpkin', gives: 'holWitch', run: (r) => f(r, 'laughs') >= 3 },
+  { id: 'secretSanta', group: 'holidays', icon: 'gift', gives: 'holSanta', run: (r) => f(r, 'giftsGiven') >= 1 },
+  { id: 'withABang', group: 'holidays', icon: 'sparkle', run: (r) => f(r, 'fireworkWork') >= 5 },
 ];
 
 export const achievement = (id: string) => ACHIEVEMENTS.find((a) => a.id === id);

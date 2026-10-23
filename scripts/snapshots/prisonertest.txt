@@ -1,2 +1,2 @@
-skin 6 (0 to earn), hair 8 (3 to earn), style 7 (3 to earn), beard 6 (3 to earn), build 3 (0 to earn), hat 11 (9 to earn), glasses 7 (5 to earn), tattoo 8 (7 to earn), trim 6 (5 to earn)
+skin 6 (0 to earn), hair 8 (3 to earn), style 7 (3 to earn), beard 6 (3 to earn), build 3 (0 to earn), hat 14 (12 to earn), glasses 8 (6 to earn), tattoo 8 (7 to earn), trim 6 (5 to earn)
 prisoner ok

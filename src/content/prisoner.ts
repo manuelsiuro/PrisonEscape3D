@@ -92,6 +92,11 @@ export const COSMETICS: readonly Cosmetic[] = [
   c('rust', 'trim', 0xa63f12, 1, true),
   c('cream', 'trim', 0xfff0d0, 1, true),
   c('tangerine', 'trim', 0xff9a3c, 1, true),
+  // v2.21 (P42, holidays): bunny ears (Easter's egg hunt), a Santa hat (a present given), a witch's hat (laughs on costume night), summer shades (the water fight).
+  c('holBunny', 'hat', 0xf4f1ea, 11, true),
+  c('holSanta', 'hat', 0xd23f36, 12, true),
+  c('holWitch', 'hat', 0x2a1f36, 13, true),
+  c('holShades', 'glasses', 0xff7714, 7, true),
 ];
 
 export const cosmetic = (id: string): Cosmetic | undefined => COSMETICS.find((x) => x.id === id);
