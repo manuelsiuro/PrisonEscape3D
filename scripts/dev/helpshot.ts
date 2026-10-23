@@ -436,6 +436,19 @@ export const SHOTS: Record<string, Shot> = {
     when: at(0.98),
     zoom: 2.8,
   },
+  // P40: the odd jobs board on the canteen wall, seen from a tile aside so the player doesn't hide its cards.
+  oddjobs: {
+    lesson: 'oddjob',
+    moves: (bot) => {
+      const b = CENTER_PERKS.board!;
+      bot.walkTo(tile(b.x + 1, b.z + 1));
+      bot.until(() => false, 60);
+    },
+    when: at(0.98),
+    zoom: 3.4,
+    dx: -0.6,
+    dz: -1.2,
+  },
 
   // P39: before the parole board, the first question put (the parole lesson's scene: the board seated in the visiting room).
   parole: {
