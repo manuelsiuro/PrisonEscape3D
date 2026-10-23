@@ -6,7 +6,7 @@ import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { prisonDay } from '../sim/systems/calendar';
 import { HOTBAR, itemOf } from '../sim/systems/items';
-import { atBoard, boardOf, boardNow, boardRefusal, bringsOf, type Deal, digOf, fixerDeal, fixerJobRefusal, freezerOf, handInRefusal, jobOf, onWatch, owes } from '../sim/systems/oddjobs';
+import { atBoard, boardOf, boardNow, boardRefusal, bringsOf, type Deal, digOf, endsFor, fixerDeal, fixerJobRefusal, freezerOf, handInRefusal, jobOf, onWatch, owes } from '../sim/systems/oddjobs';
 import { fixerOf, smugglingOf } from '../sim/systems/smuggling';
 import { UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
@@ -53,10 +53,16 @@ function askOf(sim: Sim, d: { kind: number; variant: number; giver: number; targ
   return t(`oddjob.ask.${kind}` as Key, { name });
 }
 
-/** How long a job runs and what it pays, and what comes with it. */
-function metaOf(d: Deal): { meta: string; perk: string } {
-  const days = d.days === 1 ? t('oddjob.oneDay') : t('oddjob.days', { n: d.days });
-  return { meta: `${days} · ${t('oddjob.pay', { n: d.pay })}`, perk: d.perk === PERK.ITEM && d.item ? t('oddjob.perkItem', { item: lower(itemName(d.item)) }) : d.perk === PERK.DEBT ? t('oddjob.perkDebt') : '' };
+/** When a job taken now runs out ("Until 08:00 tomorrow", "Until 08:00 on day 7"). */
+function untilOf(sim: Sim, days: number): string {
+  const end = prisonDay(endsFor(sim.state.step, days));
+  return end === prisonDay(sim.state.step) + 1 ? t('oddjob.untilTomorrow') : t('oddjob.until', { n: end });
+}
+
+/** When a job runs out and what it pays (a rat's job: that it needs one), and what comes with it. */
+function metaOf(sim: Sim, d: Deal): { meta: string; perk: string } {
+  const rat = d.kind === KIND.RAT ? ` · ${t('oddjob.needsRat')}` : '';
+  return { meta: `${untilOf(sim, d.days)} · ${t('oddjob.pay', { n: d.pay })}${rat}`, perk: d.perk === PERK.ITEM && d.item ? t('oddjob.perkItem', { item: lower(itemName(d.item)) }) : d.perk === PERK.DEBT ? t('oddjob.perkDebt') : '' };
 }
 
 /** A story's title and step ("Doc’s watch · 2/3"). */
@@ -102,10 +108,10 @@ export function jobSteps(sim: Sim): Step[] {
         const f = freezerOf(sim);
         const p = f >= 0 ? containersOf(sim.world)[f].prop : null;
         const near = p ? [p.z * MAP_W + p.x - 1, p.z * MAP_W + p.x + 1, (p.z - 1) * MAP_W + p.x, (p.z + 1) * MAP_W + p.x].filter((i) => !sim.world.block[i]) : null;
-        steps.push({ text: t('oddjob.step.mug'), done: carrying, goal: near });
+        steps.push({ text: t('oddjob.step.mug'), done: carrying && job[J.PROG] > 0, goal: near });
       } else {
         const g = s.guards[target];
-        steps.push({ text: t('oddjob.step.lift', { item: lower(itemName(brings)), guard: guardName(sim, target) }), done: carrying, goal: g ? [tileOfBody(g.body)] : null });
+        steps.push({ text: t('oddjob.step.lift', { item: lower(itemName(brings)), guard: guardName(sim, target) }), done: carrying && job[J.PROG] > 0, goal: g ? [tileOfBody(g.body)] : null });
       }
       break;
     }
@@ -206,12 +212,12 @@ export function oddjobsNow(sim: Sim): OddJobsView | null {
   pins.length = 0;
   now.pins.forEach((d, k) => {
     if (!d) return;
-    pins.push({ pin: k, icon: KIND_ICON[d.kind], kind: t(`oddjob.kind.${KINDS[d.kind]}` as Key), who: inmateName(sim, d.giver), ask: askOf(sim, d), ...metaOf(d), why: why(boardRefusal(sim as never, k)), story: '' });
+    pins.push({ pin: k, icon: KIND_ICON[d.kind], kind: t(`oddjob.kind.${KINDS[d.kind]}` as Key), who: inmateName(sim, d.giver), ask: askOf(sim, d), ...metaOf(sim, d), why: why(boardRefusal(sim as never, k)), story: '' });
   });
   if (now.chain) {
     const d = now.chain;
     const step = s.oddjobs[2];
-    pins.push({ pin: CHAIN_PIN, icon: KIND_ICON[d.kind], kind: t(`oddjob.kind.${KINDS[d.kind]}` as Key), who: inmateName(sim, d.giver), ask: t(`oddjob.chain.${sim.prison.id}.${step}` as Key), ...metaOf(d), why: why(boardRefusal(sim as never, CHAIN_PIN)), story: storyTitle(sim, step) });
+    pins.push({ pin: CHAIN_PIN, icon: KIND_ICON[d.kind], kind: t(`oddjob.kind.${KINDS[d.kind]}` as Key), who: inmateName(sim, d.giver), ask: t(`oddjob.chain.${sim.prison.id}.${step}` as Key), ...metaOf(sim, d), why: why(boardRefusal(sim as never, CHAIN_PIN)), story: storyTitle(sim, step) });
   }
   const note = !pins.length ? t('oddjob.empty') : s.lockdown ? t('refused.gamesLockdown') : held ? '' : t('oddjob.note');
   return { mode: 'board', note, pins, job: held };
@@ -298,7 +304,7 @@ export function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
     const d = fixerDeal(sim as never);
     if (d) {
       const r = fixerJobRefusal(sim as never, who);
-      const m = metaOf(d);
+      const m = metaOf(sim, d);
       out.offer = { text: `${t(`oddjob.kind.${KINDS[d.kind]}` as Key)}: ${askOf(sim, d)}`, pay: `${m.meta}${m.perk ? ` · ${m.perk}` : ''}`, why: r === 'opinion' ? t('oddjob.fixerOpinion', { n: FIXER_JOB_OPINION }) : r === 'closed' ? t('phone.closed') : why(r) };
     }
   }
@@ -311,6 +317,9 @@ export function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
 
 /** The words of a failure. */
 const FAIL_KEY: Record<string, Key> = { time: 'toast.oddjob.time', quit: 'toast.oddjob.quit', seen: 'toast.oddjob.seen', caught: 'toast.oddjob.caught', fixed: 'toast.oddjob.fixed', found: 'toast.oddjob.found' };
+
+/** Where the birthday cake came in (the 'cake' news's n): the hotbar at a visit, the desk from the parcel, the desk from a visit, the hotbar from the parcel. */
+const CAKE_KEY: readonly Key[] = ['toast.oddjob.cake', 'toast.oddjob.cakeDesk', 'toast.oddjob.cakeVisitDesk', 'toast.oddjob.cakePocket'];
 
 /** What the odd jobs board does on screen: toasts, sounds, a story's cards. */
 export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }>) {
@@ -352,9 +361,9 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
       return itemsUI.toast(t('toast.oddjob.tipped', { guard: e.guard !== undefined ? guardSubject(sim, e.guard) : '' }));
     case 'cake':
       sound.chime();
-      return banner.toast(t(e.n ? 'toast.oddjob.cakeDesk' : 'toast.oddjob.cake', { name }), 'good', 4500);
+      return banner.toast(t(CAKE_KEY[e.n ?? 0] ?? 'toast.oddjob.cake', { name }), 'good', 4500);
     case 'cakeKept':
-      return banner.toast(t('toast.oddjob.cakeKept'), 'bad', 3600);
+      return banner.toast(t(e.n ? 'toast.oddjob.cakeWaits' : 'toast.oddjob.cakeKept'), 'bad', 4500);
     case 'digging':
       sound.blip();
       coachOnce('lookout', 'hint.lookout');

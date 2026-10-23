@@ -1360,6 +1360,20 @@ the game can already do.
   framed. A rumour (`boardJob`: who pinned a job today), bubbles for the digger and for a job handed in or failed.
 - **How to play**: the `oddjobs` page in the P37 shape, without its picture yet (`pic` off until
   `public/help/oddjobs.webp` is taken in the browser pass).
+- **Built (rules review):** a stash or parcel the pet rat leaves is never "seen" (only one put in by hand while a
+  guard sees the player). A frame-up counts only the desk's standard drawers (the search never opens the hidden
+  compartment). A lift's item is left where it's found (`liftSpot`: an open slot, else over an earlier job's leftover,
+  else over the container's own stock, never the player's things nor a guard's kit; nowhere: not offered,
+  `liftFull`); a lift given up or failed takes it back; it counts only once out of there (PROG), so a whistle, mug or
+  cake kept from an earlier job finishes nothing. A drop's parcel taken back out undoes the drop. A drop's or
+  frame-up's count of what the desk already held follows it down (an old stash searched out). **Time**: taken from
+  18:00 (the evening free time), a job's days count from the next prison day; the card says when it ends ("Until
+  08:00 tomorrow / on day N"). At 08:00 a job whose work is done, or whose item is in hand, waits to be handed in
+  with no deadline; otherwise it fails. The cake: no room in the hotbar at a visit, into the player's desk; no room
+  in the desk for the parcel, into the hotbar; neither, a toast once a day and it waits. A bribed guard looking away
+  doesn't find the dig. A rat's job says on its card that it needs a pet rat (it's still dealt without one: the
+  rat can be had within its 3 days). Left as is: the fixer's rare item every day is generous (one job a day, opinion
+  50, the riskier kinds); to revisit if it makes tools too easy.
 
 ### P41 The manhunt (v2.20)
 Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.
