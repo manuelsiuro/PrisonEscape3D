@@ -82,7 +82,7 @@ for (let n = -7; n < YEARS; n++) {
     spent <= budget &&
     ts.every((t) => !t.at || t.at(d.prison)) &&
     ts.every((t) => !t.not?.some((x) => d.twists.includes(x))) &&
-    escapesOf(d.prison).some((route) => !closed.has(route)) &&
+    escapesOf(d.prison).some((route) => route !== 'parole' && !closed.has(route)) &&
     !(ts.length === 1 && ts[0].cost < 0) &&
     new Set(d.twists).size === d.twists.length &&
     d.seed > 0;

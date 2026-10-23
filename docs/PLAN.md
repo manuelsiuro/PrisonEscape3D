@@ -694,6 +694,7 @@ real touch feel) and the known limits.
 - **Share the game (v2.17.0)**, the user's request (2026-10-23): the title's controls line (W A S D or Z Q S D, or drag and pinch on a phone) is gone (How to play, the first lesson and the first day's walk tip still teach the keys); a Share pill beside the sound switch opens a card with the game's QR code (public/share-qr.png, drawn once from the online address with qrcode-generator, checked with the browser's QR reader), the address, and Copy link on a desktop or the phone's share sheet. The address is the online one even from a local build. On a phone on its side the code sits left of the words. Reviewed three ways (code, UI and text, accessibility): the fixes folded in (focus back on Share after closing, the title out of reach of Tab under the card, so no second card; one share at a time; « Code QR » in French). « Lien copié » not read out, as the Daily's « Copié ».
 - **Share, quieter (v2.17.1)**, the user's request (2026-10-23): the Share pill in glass with an orange icon (its orange had competed with Play); the README's title picture retaken without the controls line (same progress shown: 5 prisons open, 6 of 33 ways out, 7 trophies).
 - **The roadmap P39–P42 (decided 2026-10-23)**: the user asked for ten ideas for more fun and picked four, in this order: the parole board, an odd jobs board, the manhunt, and holidays (with summer and Easter as well as Halloween and Christmas). Planned in §13; §2 has a row. Nothing built yet: each phase starts on the user's go.
+- **P39 The parole board (v2.18.0)**, the P39–P42 roadmap's first phase (§13; the user asked for a team of agents to build P39–P42, 2026-10-23): a 12th way out, `parole`. Apply at the release desk from day 3, or have the lawyer file it ($60, a day sooner); a hearing 7 days on at 10:00 before a board of three (three questions, each with a claim, owning up or fine words, 25 s; the card says whether a claim would hold); the record is read from the ledger after applying (work, courses, calls home, favours; against: fights started, KOs, solitary, contraband taken, the heat at 22:00). Granted goes through P36's release desk the next morning; plotting voids it. Medals, lesson `parole` (Ways out), help page with its picture, 4 achievements (the gold reading glasses), `paroletest`. Built in its own worktree by an agent alongside P40–P42; rules and UI reviews fixed (a negative score lost on load, contraband counted per sighting, a fire drill during the hearing, hidden claim thresholds, the lawyer's fee kept on refusal; the landscape card under the hotbar, the PA strip over the answers).
 
 ## 9. Free time (P27–P30)
 
@@ -1236,6 +1237,60 @@ five prisons. It walks out through the front door like paperwork (P36), using th
 - **Proof**: `paroletest`: a model-prisoner bot granted in every prison; a plotting bot voided; a record bot whose
   card lines match the ledger; the denied path and applying again.
 - **Lesson**: the hearing (Center Perks, a forced record).
+- **Built (where):** the room is data (`content/parole.ts` HEARINGS, not `PrisonDef.comms`, so P40's comms changes don't
+  clash): Center Perks' visiting room (the board on the visitors' chairs of the east booths), Stalag Flucht's mess hut
+  (nobody visits there: its west table), the canteen where the others' visitors sit (Shankton, San Pancho, Irongate).
+  The hearing starts on entering the room between 10:00 and 10:30 (the arrows lead to the seat across from the board);
+  leaving it during the hearing is walking out (denied). The board is drawn only: three seated figures in suits (the
+  visitors' model, P21) while the hearing is called, sits and gives its word; nothing on the map changes. The map viewer
+  draws b1–b3 and the player's seat.
+- **Built (applying):** at the desk with EXT.PAROLE (21, b = APPLY or ANSWER), never Interact (the desk's Interact stays
+  P36's). The lawyer is a third call (`LAWYER.PAROLE`, $60, `PAROLE_FEE`): the hearing 6 prison days on instead of 7.
+  Refused: before day 3, a hearing already set, during the 3 days after a no, wanted or in a lockdown, with a name on
+  the release list, away from the desk, in the Daily or at the Training Block (`noParole`).
+- **Built (the record):** a pure function of the ledger: the counters as they stood on applying are kept in the state
+  (`paroleBase`), the record is now's less those (fights: the days with DAY.FIGHT since the day of applying). New
+  counters for what the ledger didn't count (roll calls, meals and showers kept, contraband found on the player or in
+  their desk, the heat at 22:00) count only once the player has applied in the run (`parole[8]`): the escape bots'
+  ledgers stay as they were. 15 lines (RECORD), each `w` points per `each`, capped; "missed roll calls" became "routine
+  missed" (every block missed, from FEAT.missed), "a dog's alert" is FEAT.sniffed.
+- **Built (the hearing):** each member asks about a topic drawn by roll() (9 topics, each resting on record lines). Three
+  answers every time: a claim (true when each of its lines is clean: worth the member's `claim`; else a lie caught,
+  its `lie`), owning up (`own`), fine words (Intellect × `words` / 100). The members weigh them differently (the chair,
+  the doctor who values honesty, the deputy warden who values the record). 25 s to answer, silence −2. Granted from 16
+  (the record and the answers together; the model-prisoner bots keep only the routine and get 22–26). Under each
+  question the card shows what the file says on it, so a lie is a choice, not a trap. A lockdown at 10:00 puts it off a
+  day; missing it or walking out costs the application (again after 3 days, like a no).
+- **Built (verdict):** granted puts the name on tomorrow's release list (`release[0]`, the board's own day in
+  `parole[9]`): P36's call at 10:00, the desk's checks (heat, contraband, a lockdown), its doors; the 22:00 records check
+  skips a name the board put there. Out through them is route `parole` (else `paperwork`).
+- **Built (plotting):** damage found (`found`), cutters or a shovel among what a capture takes (`solitary`/`infirmary`
+  events now say `plot`), or seen out at night (`spotted` night or a failed bed check). Voided, the player may apply
+  again 3 prison days on (the plan didn't say; the same wait as a no).
+- **Built (medals):** applied on day 3 at the soonest, out on day 11 (10 with the lawyer): gold 12/12/13/13/14, silver
+  +4, bronze +5 (Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate); a no and a new application lands in
+  bronze. `paroletest`'s five model prisoners are out on day 11.
+- **Built (also):** help topic Parole (a timeline; its picture is the lead's to take: `helpshot.ts` has SHOTS.parole);
+  lesson `parole` in Ways out (seed 145: fights, work, the heat); achievements Good Behaviour (out on parole, gives the
+  gold reading glasses `paroleSpecs`), Counsel (granted on the lawyer's filing), Caught Out and Back to Square One
+  (hidden); the rumour `paroleBoard`; bubbles on applying, a grant and a void; a replay highlight; the HUD chip and the
+  day's card (the hearing's chip and its hour).
+- **Built (rules review):** a denial's score below zero is kept by saves and snapshots (bounded by `SCORE_MIN`/`SCORE_MAX`);
+  a hearing loads only with an application whose hearing is today. "Contraband found" counts only what is taken off the
+  player at a capture or out of their desk in a search (a sighting is not a find). Fights are the days the player started
+  one (DAY.STARTED: not self-defence, not a food fight), from the step of applying; knockouts only the player's own in
+  them (`kosDealt`), never a follower's. A claim on a line against holds only at nothing at all (9% of heat is not
+  "nothing on me"); favours need 1; under each question the card marks whether a claim holds (and the need for work).
+  A denial names no line worth 0 points. The hearing comes before a fire drill's muster, which excuses the player. Once
+  cleared at the desk nothing voids the grant (route stays `parole`); a grant lost at the desk waits 3 days as a no does;
+  the lawyer's $60 comes back when the filing is refused at the call's end; knocked out at the hearing puts it off a
+  day; the multitool counts as a plotting tool; Counsel needs the grant on the lawyer's filing (`lawyerGranted`).
+- **Built (UI review):** at the seat across from the board the player sits on it, facing the board. On a phone held
+  sideways the hotbar steps aside for every parole card, the card clears the HUD's chips, the warden's line goes top
+  right and a lesson's card bottom right (the board stays in view); upright, the desk's record stays below the player
+  (tight rows, it scrolls), the for-lines at nothing on one line and no "0" points. The verdict hides the action button;
+  the call to the room is dropped once the player sits. San Pancho's and Irongate's boards stay split across two
+  tables: their canteens have only two-seat benches. The lesson holds the verdict 6 s before it ends.
 
 ### P40 The odd jobs board (v2.19)
 Small missions with a bit of story: the next step beyond the four favours (`FAVOR`). They are built only from things

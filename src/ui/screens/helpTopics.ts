@@ -48,7 +48,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'start',
       topics: [
-        T('goal', 'route', '#ff7714', { pic: true, lessons: ['escape'], see: ['ways', 'delivery', 'bluff', 'glider', 'paperwork'] }),
+        T('goal', 'route', '#ff7714', { pic: true, lessons: ['escape'], see: ['ways', 'delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
         T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['routine'] }),
         T('heat', 'flame', '#e5484d', { diagram: 'meter', lessons: ['heat'], listIcons: ['clock', 'eye', 'lock'] }),
         T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),
@@ -150,11 +150,12 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
     {
       id: 'ways',
       topics: [
-        T('ways', 'hook', '#ff7714', { pic: true, recipes: ['grapnel'], lessons: ['escape', 'tunnel'], listIcons: ['item:light_cutters', 'item:light_shovel', 'item:grapnel', 'fist'], see: ['delivery', 'bluff', 'glider', 'paperwork'] }),
+        T('ways', 'hook', '#ff7714', { pic: true, recipes: ['grapnel'], lessons: ['escape', 'tunnel'], listIcons: ['item:light_cutters', 'item:light_shovel', 'item:grapnel', 'fist'], see: ['delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
         T('delivery', 'truck', '#3fc79a', { pic: true, diagram: 'timeline', lessons: ['stowaway'] }),
         T('bluff', 'idCard', '#5b8fd8', { pic: true, diagram: 'timeline', recipes: ['fake_id'], lessons: ['bluff'] }),
         T('glider', 'glider', '#9fc8e8', { pic: true, recipes: ['glider_frame', 'glider'], lessons: ['glider'] }),
-        T('paperwork', 'clipboard', '#d8b04a', { pic: true, diagram: 'timeline', recipes: ['forged_release'], lessons: ['forgery', 'release'] }),
+        T('paperwork', 'clipboard', '#d8b04a', { pic: true, diagram: 'timeline', recipes: ['forged_release'], lessons: ['forgery', 'release'], see: ['parole'] }),
+        T('parole', 'scale', '#8a6bd1', { pic: true, diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
         // P41 (picture to come: public/help/manhunt.webp, then `pic: true`).
         T('manhunt', 'run', '#e0603a', { diagram: 'timeline', lessons: ['manhunt'], listIcons: ['shirt', 'water', 'toss', 'bone', 'item:light_cutters', 'truck', 'users'], see: ['dogs', 'ways'] }),
       ],

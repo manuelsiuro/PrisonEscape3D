@@ -64,7 +64,7 @@ irongate air: clean away in 19 s; spotted 0, hid 0, stones 0, lit 0 · 7d6f3fb2
 irongate sea, seen going, by day: clean away in 33 s · 79338f76
 head start: night 20 s, just before breakfast 5 s, afternoon 20 s, before the 04:00 bed check 10 s
 carry: fence → wall, Speed 52, outfit guard, kit 2, crew 1, Lou true, head start 20 s at 480
-starts: center-perks fence→wall tunnel→wall roof→wall takeover→gate stowaway→van bluff→gate glider→glider paperwork→legal; stalag-flucht fence→wall tunnel→wall roof→wall takeover→gate stowaway→van glider→glider paperwork→legal; shankton fence→wall tunnel→wall roof→wall takeover→gate bluff→gate glider→glider paperwork→legal; san-pancho tunnel→wall gate→gate takeover→gate stowaway→van paperwork→legal; irongate raft→sea helicopter→air takeover→gate stowaway→air bluff→gate paperwork→legal
+starts: center-perks fence→wall tunnel→wall roof→wall takeover→gate stowaway→van bluff→gate glider→glider paperwork→legal parole→legal; stalag-flucht fence→wall tunnel→wall roof→wall takeover→gate stowaway→van glider→glider paperwork→legal parole→legal; shankton fence→wall tunnel→wall roof→wall takeover→gate bluff→gate glider→glider paperwork→legal parole→legal; san-pancho tunnel→wall gate→gate takeover→gate stowaway→van paperwork→legal parole→legal; irongate raft→sea helicopter→air takeover→gate stowaway→air bluff→gate paperwork→legal parole→legal
 cover: hidden after 10 still steps, a searcher 3 tiles off looking right at the hedge sees nothing
 caught: spotted, then caught after 31 steps; 6% of the way
 dogs: track yes, point yes, caught yes (hidden true)

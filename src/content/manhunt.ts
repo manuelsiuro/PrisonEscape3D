@@ -8,9 +8,9 @@ import type { StartKind } from './outside/types';
 
 /**
  * The legal ways out: a release, not an escape, so nobody comes after the player (a short
- * bus-stop scene and no manhunt). P39 adds `parole` at the merge.
+ * bus-stop scene and no manhunt): forged release papers (P36) and parole (P39).
  */
-export const LEGAL_ROUTES: readonly string[] = ['paperwork'];
+export const LEGAL_ROUTES: readonly string[] = ['paperwork', 'parole'];
 
 /** Whether a way out ends at the wall as before (a legal release), or is followed by a manhunt. */
 export const isLegal = (via: string) => LEGAL_ROUTES.includes(via);

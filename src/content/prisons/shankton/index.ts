@@ -379,7 +379,7 @@ export const SHANKTON: PrisonDef = {
   // The gates no key opens (a takeover does): the shell's, and the gatehouse's either side.
   gates: [51, 52].flatMap((x) => [55, 58, 62].map((z) => ({ x, z }))),
   // (P24: waved out through the shell's gate and the gatehouse at the shift change; a glider off the shell with a strong wind behind it.)
-  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'bluff', 'glider', 'paperwork'],
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'bluff', 'glider', 'paperwork', 'parole'],
   // The checkpoint (P24): the gatekeeper's booth on the gravel just outside the shell's gate;
   // papers are shown from the control room, and waved through, the shell's gate and both of the
   // gatehouse's open.

@@ -34,7 +34,8 @@ import { ORDER } from '../sim/command';
 import { DAY_STEPS, dayMinute, planOf, prisonDay, TODAY } from '../sim/systems/calendar';
 import { postOf } from '../sim/systems/crew';
 import { smellsOfContraband } from '../sim/systems/k9';
-import { FEAT } from '../sim/systems/ledger';
+import { DAY, FEAT } from '../sim/systems/ledger';
+import { HEARINGS, RECORD } from '../content/parole';
 import { touchesMyCell } from '../sim/systems/structure';
 import { guardTalking } from '../sim/systems/social';
 import { dropTile } from '../sim/systems/smuggling';
@@ -1168,6 +1169,38 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.release.out', done: (c) => c.sim.state.escaped > 0, goal: () => tile(30, 62), fail: releaseShut },
     ],
   },
+  {
+    // The parole board (P39): a week's record behind the player (forced: three days' work, the routine kept, one scuffle), the hearing at 10:00 in the visiting room.
+    id: 'parole',
+    icon: 'scale',
+    prison: CENTER_PERKS,
+    // (The board asks about fights first, then work, then the heat: a lie to see through, two claims the file bears out.)
+    seed: 145,
+    setup: (sim) => {
+      const s = sim.state;
+      s.calendar = [[10, 0, 0]];
+      clockTo(sim, 9 * DAY_STEPS + at(9, 50));
+      // (In the canteen, the visiting room's doors to the south.)
+      place(sim, 31, 36, 5);
+      pockets(sim);
+      // Applied on day 3; the record since, as the ledger has it.
+      s.parole = [10, 3, 0, 0, 0, 0, -1, -1, 1, 0];
+      s.paroleBase = RECORD.map(() => 0);
+      s.feats[FEAT.wages] = 3;
+      s.feats[FEAT.rollCallsKept] = 14;
+      s.feats[FEAT.mealsKept] = 14;
+      s.feats[FEAT.showersKept] = 7;
+      s.days = new Array(9).fill(0);
+      s.days[5] = DAY.FIGHT | DAY.STARTED;
+    },
+    steps: [
+      { text: 'lesson.parole.go', done: (c) => !!c.sim.state.hearing, goal: (sim) => hearingSeat(sim), speed: 2, failOn: paroleLost },
+      { text: 'lesson.parole.read', touch: 'lesson.parole.readTouch', least: 4, on: (e) => e.type === 'parole' && (e.what === 'answer' || e.what === 'silent'), failOn: paroleLost },
+      { text: 'lesson.parole.rest', on: (e) => e.type === 'parole' && e.what === 'granted', failOn: paroleLost },
+      // (The verdict's card a moment, to be read.)
+      { text: 'lesson.parole.over', done: () => true, least: 6 },
+    ],
+  },
   // P41: the manhunt, outside Center Perks: into the woods, a thicket while a searcher goes by, clothes off a line, Lou's car.
   {
     id: 'manhunt',
@@ -1185,6 +1218,18 @@ export const LESSONS: readonly Lesson[] = [
   },
 ];
 
+/** The seat before the parole board (P39). */
+const hearingSeat = (sim: Sim) => {
+  const h = HEARINGS[sim.prison.id];
+  return h ? tile(h.seat.x, h.seat.z) : null;
+};
+/** The parole lesson's dead ends: the hearing missed, walked out of, the board saying no. */
+function paroleLost(e: SimEvent): Key | null {
+  if (e.type !== 'parole') return null;
+  if (e.what === 'missed') return 'lesson.parole.late';
+  if (e.what === 'walkedOut') return 'lesson.parole.walked';
+  return e.what === 'denied' ? 'lesson.parole.denied' : null;
+}
 /** The manhunt's lesson (P41): tiles from where the player came over the wall. */
 function huntWalked(h: Hunt): number {
   const a = h.tile;
@@ -1483,7 +1528,7 @@ export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readon
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
   { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin', 'kiosk'] },
-  { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'manhunt'] },
+  { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 
 /** Where a lesson (its index in LESSONS) stands: its chapter, its number in it (from 1) and how many the chapter has. */

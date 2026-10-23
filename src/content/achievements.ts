@@ -230,6 +230,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'seasoned', group: 'career', icon: 'route', ...counted('escapes', 10) },
   { id: 'marathon', group: 'career', icon: 'walk', ...counted('walked', 10000) },
   { id: 'graduate', group: 'career', icon: 'bulb', career: (c) => c.lessons >= c.lessonsOf, progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf] },
+  // v2.18 (P39, the parole board): out on parole; parole granted on the lawyer's filing; a lie the board caught; an application voided by plotting.
+  { id: 'goodBehaviour', group: 'out', icon: 'scale', gives: 'paroleSpecs', escape: (e) => e.via === 'parole' },
+  { id: 'counsel', group: 'life', icon: 'briefcase', run: (r) => f(r, 'lawyerGranted') >= 1 },
+  { id: 'caughtOut', group: 'mishaps', icon: 'scale', hidden: true, run: (r) => f(r, 'liesCaught') >= 1 },
+  { id: 'backToSquareOne', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'paroleVoided') >= 1 },
   // v2.20 (P41, the manhunt): a clean getaway, one never seen, in clothes off a line, out of the helicopter's light, in Lou's car; recaptured, and within sight of safety; clean away from every prison.
   { id: 'cleanGetaway', group: 'out', icon: 'route', gives: 'mhBeanie', hunt: (h) => h.safe },
   { id: 'withoutTrace', group: 'skills', icon: 'eyeOff', hunt: (h) => h.safe && h.spotted === 0 },

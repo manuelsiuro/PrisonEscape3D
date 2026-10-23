@@ -21,6 +21,7 @@
  *
  * Every draw comes from roll() (SALT.CALLS, SALT.TAP), never the state's RNG.
  */
+import { applyParole, applyRefusal } from './parole';
 import { APPEAL_HEAT, CAKE_ENERGY, CALL_STEPS, CALL_WANT, CALLEE, CAR_FROM, CAR_TO, CATCH, CLARITY, CLEAR_NEED, codeBit, COINS, CUT_OPINION, CUT_SWING, DIVERT_AHEAD, DIVERT_GUARDS, DIVERT_LOOK, HOME_ENERGY, HOSTILE_SWING, INMATE_CALL_MIN, INMATE_CALL_SPAN, JOB, JOB_FEES, LAWYER, LAWYER_FEES, LEARNED_CLARITY, LINE_DAY, LINE_MAX, LINE_REACH, LINE_STEPS, MAIL_MINUTE, MONEY_EVERY, MONEY_MIN, MONEY_SPAN, OVERHEAR_RANGE, OVERHEAR_STEPS, REACH_STEPS, RETAINER_DAYS, WANT_WITHIN, RISK, SNITCH_ODDS, SNITCH_OPINION, SWAP_PRICE, TAP_HEAT, TIER, TIP_HEAT, TURN_STEPS, VARIANTS } from '../../content/phone';
 import { itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
@@ -88,7 +89,7 @@ export const placeInLine = (s: Pick<SimState, 'line'>) => s.line.indexOf(PLAYER_
 export const retained = (s: Pick<SimState, 'phoned' | 'step'>) => s.phoned[2] > 0 && prisonDay(s.step) < s.phoned[2];
 
 /** What a call costs up front: coins (Lou's fee is paid once he understands), the lawyer's fee. */
-export const callCost = (to: number, sub: number) => (to === CALLEE.LAWYER ? LAWYER_FEES[sub] ?? LAWYER_FEES[0] : COINS);
+export const callCost = (to: number, sub: number): number => (to === CALLEE.LAWYER ? LAWYER_FEES[sub] ?? LAWYER_FEES[0] : COINS);
 
 /** The step a diversion called for at an hour goes off: that hour's next stroke at least DIVERT_AHEAD on (-1 no such hour). */
 export function divertStep(step: number, hour: number): number {
@@ -342,6 +343,10 @@ export function callRefusal(sim: SimContext, to: number, sub: number, arg: numbe
       if (s.eventFlags & TODAY.APPEALED) return 'appealed';
     } else if (sub === LAWYER.RETAINER) {
       if (retained(s)) return 'retained';
+    } else if (sub === LAWYER.PAROLE) {
+      // (P39: the lawyer files for parole, the hearing a day sooner: whatever would stop it at the desk stops it here.)
+      const why = applyRefusal(sim, true);
+      if (why) return why;
     } else return 'noPhone';
   } else if (to === CALLEE.TIP) {
     if (s.eventFlags & TODAY.TIPPED || s.phoned[3] > 0) return 'tipped';
@@ -518,6 +523,13 @@ function callDone(sim: SimContext, call: Call) {
       s.heat -= n;
       s.eventFlags |= TODAY.APPEALED;
       sim.events.push({ type: 'phone', what: 'appeal', n });
+    } else if (call.sub === LAWYER.PAROLE) {
+      // (Refused by the call's end, wanted or in a lockdown meanwhile: the fee back.)
+      if (!applyParole(sim, true)) {
+        const fee = callCost(CALLEE.LAWYER, LAWYER.PAROLE);
+        s.cash += fee;
+        sim.events.push({ type: 'cash', n: fee, why: 'phone' });
+      }
     } else {
       s.phoned[2] = day + RETAINER_DAYS;
       sim.events.push({ type: 'phone', what: 'retainer', n: RETAINER_DAYS });
