@@ -11,6 +11,7 @@ import { aiming, cancelThrow, throwAhead } from './aim';
 import { toggleWait } from './day';
 import { toggleCrew } from './crew';
 import { openObjectives } from './lesson';
+import { openDay } from './daycard';
 import { pastimeKey, shootKey } from './pastimes';
 import { kickKey } from './team';
 import { nightsBusy, nightsKey } from './nights';
@@ -52,6 +53,11 @@ function onKeyDown(e: KeyboardEvent) {
   // O: a lesson's objectives (asleep, hidden in a vehicle or knocked out too: the card is down then).
   if (e.code === 'KeyO' && g.lesson) {
     openObjectives();
+    return;
+  }
+  // J: the day's card (asleep, knocked out or hidden in a vehicle too: when does the next block start?).
+  if (e.code === 'KeyJ') {
+    openDay();
     return;
   }
   // Asleep: only waking up (E) and the file (I) mean anything; knocked out, only I (it says the file waits).

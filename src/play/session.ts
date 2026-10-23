@@ -159,7 +159,11 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   fadeIn();
   document.body.classList.add('is-playing');
   const g = play.game;
-  const later = (ms: number, f: () => void) => startTimers.push(window.setTimeout(() => play.game === g && !g.paused && f(), ms));
+  // (Held back while the game is paused, by the day's card or the help: never lost.)
+  const later = (ms: number, f: () => void) => {
+    const run = () => play.game === g && (g.paused ? startTimers.push(window.setTimeout(run, 250)) : f());
+    startTimers.push(window.setTimeout(run, ms));
+  };
   // A lesson: its card says what to do; no day one, no guide, no saves.
   if (lesson) return;
   // A Daily (P26): what today's twists are, as the game begins (or is picked up again).

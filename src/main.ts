@@ -12,6 +12,7 @@ import { armThrow, cancelThrow, onAim } from './play/aim';
 import { play, sendOp } from './play/game';
 import { onTap } from './play/guide';
 import { openObjectives } from './play/lesson';
+import { openDay } from './play/daycard';
 import { act, listenKeys } from './play/keys';
 import { frame } from './play/loop';
 import { pause } from './play/session';
@@ -44,6 +45,8 @@ tools.onPress = usePress;
 tools.onUpPress = upPress;
 // A lesson's bulb beside the pause button: its objectives.
 hud.onLesson = openObjectives;
+// The clock: the day's card.
+hud.onDay = openDay;
 // Throwing (P14): the right button or a press while armed aims; Throw in the item's menu arms it.
 controls.onAim = onAim;
 itemsUI.onThrow = armThrow;

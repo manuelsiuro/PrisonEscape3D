@@ -6,7 +6,7 @@ import { gardenDelivered } from './grounds';
 import { twist } from './twists';
 import { itemDef } from '../../content/items';
 import { WORK_ITEMS } from '../../content/jobs';
-import { ROUTINE } from '../../content/routine';
+import { BLOCK, ROUTINE } from '../../content/routine';
 import { zoneIndex } from '../../content/zones';
 import { nearestDir as faceTo } from '../ai/path';
 import { placesOf } from '../ai/places';
@@ -148,6 +148,8 @@ export function settleWork(sim: SimContext) {
   const job = sim.jobActive();
   // A lockdown (or the player out cold) excuses the block: nobody loses a job over it.
   if (job >= 0 && !s.paid && !s.excused) vacate(sim, job, HOLDER.PLAYER, 'fired');
+  // (The day's card: paid, fired, or let off.)
+  if (job >= 0) s.blocks[s.routine] = s.paid ? BLOCK.ATTENDED : s.excused ? BLOCK.EXCUSED : BLOCK.MISSED;
   const work = (v: number) => !!v && WORK_ITEMS.includes(itemDef(itemOf(v)).id);
   for (let k = 0; k < HOTBAR; k++) if (work(it.inv[k])) it.inv[k] = 0;
   // Dropped ones are picked up too.

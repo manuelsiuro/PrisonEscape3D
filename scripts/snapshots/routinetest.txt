@@ -90,6 +90,7 @@ day 2 01:32 cells locked
 day 2 08:00 routine rollCall
 day 2 08:00 cells unlocked
 truant heat at the end of day 1: 0%
+blocks at 07:59 (o made, x missed or fired, e excused): model oo.xooo.oo, truant xe.xxxx.xo
 == night owl
 day 1 22:00 routine eveningRollCall
 day 1 22:03 attended eveningRollCall

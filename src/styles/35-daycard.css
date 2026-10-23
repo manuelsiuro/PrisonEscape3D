@@ -1,0 +1,538 @@
+/* ------------------------------------------------------------ the day's card (the HUD's clock, J) */
+
+/* The clock is a button: it opens the day. */
+.hud .hud-clock {
+  cursor: pointer;
+  transition:
+    transform 0.15s var(--spring),
+    background 0.15s;
+}
+
+.hud .hud-clock:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) {
+  .hud .hud-clock:hover {
+    background: rgba(30, 40, 58, 0.88);
+  }
+}
+
+.day-card {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 16px 14px;
+  text-align: left;
+}
+
+/* The head: the sky by the clock, the day, the prison and the time. */
+.dc-head {
+  position: sticky;
+  top: -18px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -18px -16px 0;
+  padding: 18px 16px 8px;
+  border-radius: 24px 24px 0 0;
+  /* (Solid, with the card's warm top edge kept; the list fades under it.) */
+  background:
+    linear-gradient(90deg, transparent 8%, rgba(255, 150, 60, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    var(--dlg-top);
+}
+
+.dc-head::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(var(--dlg-top), rgba(34, 48, 71, 0));
+  pointer-events: none;
+}
+
+.dc-sky {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #3a2600;
+  background: radial-gradient(circle at 35% 30%, #ffe597, var(--gold) 60%, #d99a12);
+  box-shadow: 0 0 0 4px rgba(255, 194, 61, 0.14);
+}
+
+.dc-sky .ic {
+  fill: currentColor;
+}
+
+/* (By night, the moon.) */
+.dc-sky.moon {
+  color: #e9f0ff;
+  background: radial-gradient(circle at 35% 30%, #7d93c9, #3e4f84 65%, #2a3762);
+  box-shadow: 0 0 0 4px rgba(125, 147, 201, 0.16);
+}
+
+.dc-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.day-card h2 {
+  margin: 0;
+  font: 700 26px/1.1 var(--font-display);
+}
+
+.dc-title small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dlg-soft);
+}
+
+.dc-close {
+  flex: none;
+  align-self: flex-start;
+}
+
+/* Today's event and weather (tomorrow's at the foot). */
+.dc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.dc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 38%, transparent);
+}
+
+.dc-chip-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  background: color-mix(in srgb, var(--c) 72%, #000);
+}
+
+.dc-chip b {
+  font-weight: 700;
+}
+
+.dc-chip em {
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dlg-soft);
+}
+
+/* A lockdown or solitary: the routine is held. */
+.dc-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 74, 74, 0.13);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 90, 90, 0.5);
+}
+
+.dc-alert-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(150deg, #ff6b5a, #c8322a);
+}
+
+.dc-alert b,
+.dc-alert small {
+  display: block;
+}
+
+.dc-alert small {
+  font-size: 12.5px;
+  color: #ffc4be;
+}
+
+.dc-line.held .dc-ic,
+.dc-line.held .dc-text b {
+  opacity: 0.6;
+}
+
+/* The routine down a line: the time, a dot on the line, the block. */
+.dc-line {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dc-block {
+  display: grid;
+  grid-template-columns: 42px 14px minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.dc-block time {
+  padding-top: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--dlg-soft);
+  text-align: right;
+}
+
+.dc-dot {
+  position: relative;
+}
+
+/* The line runs through the dots: lit gold as far as the clock has come. */
+.dc-dot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 6px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dc-block:first-child .dc-dot::before {
+  top: 20px;
+}
+
+.dc-block:last-child .dc-dot::before {
+  bottom: auto;
+  height: 20px;
+}
+
+.dc-block.past .dc-dot::before {
+  background: rgba(255, 194, 61, 0.42);
+}
+
+.dc-dot::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 2px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid var(--dlg-faint);
+  border-radius: 50%;
+  background: var(--dlg-bottom);
+}
+
+.dc-block.must .dc-dot::after {
+  border-color: #c7d4e5;
+  background: #c7d4e5;
+}
+
+.dc-block.past .dc-dot::after {
+  border-color: #b9913a;
+  background: var(--dlg-bottom);
+}
+
+.dc-block.past.must .dc-dot::after {
+  background: #b9913a;
+}
+
+.dc-block.now .dc-dot::after {
+  top: 19px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-color: #fff3c9;
+  background: var(--gold);
+  box-shadow: 0 0 0 4px rgba(255, 194, 61, 0.25);
+  animation: dc-beat 1.6s ease-in-out infinite;
+}
+
+@keyframes dc-beat {
+  50% {
+    box-shadow: 0 0 0 7px rgba(255, 194, 61, 0.08);
+  }
+}
+
+.dc-body {
+  min-width: 0;
+  padding: 5px 0;
+}
+
+/* (A tag that doesn't fit beside the block goes under it: the place is never cut.) */
+.dc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.dc-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  color: var(--dlg-soft);
+  background: var(--dlg-surface);
+}
+
+.dc-text {
+  display: flex;
+  flex: 1 1 6.5em;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dc-text b {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.dc-text small {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--dlg-soft);
+}
+
+/* Gone by: quieter (the place and how it went stay readable). */
+.dc-block.past .dc-ic,
+.dc-block.past .dc-text b {
+  opacity: 0.6;
+}
+
+/* Under way: lit, with what's left of it. */
+.dc-block.now .dc-body {
+  margin: 2px 0;
+  padding: 8px 10px 9px;
+  border-radius: 14px;
+  background: rgba(255, 194, 61, 0.09);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 194, 61, 0.5);
+}
+
+.dc-block.now time {
+  padding-top: 19px;
+  color: var(--gold);
+}
+
+.dc-block.now .dc-dot::before {
+  background: linear-gradient(rgba(255, 194, 61, 0.42) 24px, rgba(255, 255, 255, 0.1) 24px);
+}
+
+.dc-block.now .dc-ic {
+  color: #3a2600;
+  background: linear-gradient(150deg, #ffd66b, var(--gold));
+}
+
+.dc-block.now .dc-text b {
+  font-size: 15.5px;
+  color: #fff;
+}
+
+.dc-now-tag {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a2600;
+  background: var(--gold);
+}
+
+.dc-now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 7px;
+}
+
+.dc-bar {
+  flex: 1 1 60px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dc-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffd66b, var(--gold));
+}
+
+.dc-now small {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #ffe2a3;
+}
+
+/* How a block went, what missing it costs, the quota. */
+.dc-tag {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.dc-tag .ic {
+  flex: none;
+}
+
+.dc-tag.ok {
+  color: #fff;
+  background: #2f9e55;
+}
+
+.dc-tag.bad {
+  color: #ffb0b0;
+  background: rgba(255, 80, 80, 0.16);
+}
+
+.dc-tag.warn {
+  color: #ffd98a;
+  background: rgba(255, 194, 61, 0.14);
+}
+
+.dc-tag.quiet {
+  color: var(--dlg-soft);
+  background: var(--dlg-surface);
+}
+
+.dc-tag.job {
+  color: #f3d27a;
+  background: rgba(201, 154, 18, 0.2);
+}
+
+/* The day's event, where it falls. */
+.dc-pin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c) 13%, transparent);
+  box-shadow: inset 3px 0 0 var(--c);
+}
+
+.dc-pin.over {
+  opacity: 0.55;
+}
+
+.dc-pin-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  color: #fff;
+  background: color-mix(in srgb, var(--c) 72%, #000);
+}
+
+.dc-pin-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dc-pin-text b {
+  font-size: 13px;
+}
+
+.dc-pin-text em {
+  margin-left: 6px;
+  white-space: nowrap;
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dlg-soft);
+}
+
+.dc-pin-text small {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--dlg-soft);
+}
+
+/* Tomorrow, once forecast. */
+.dc-tomorrow {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dlg-line);
+}
+
+.dc-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dlg-soft);
+}
+
+.dc-tomorrow .dc-chips {
+  margin-top: 8px;
+}
+
+.day-card .actions {
+  margin-top: 16px;
+}
+
+.dc-keys {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--dlg-soft);
+  text-align: center;
+}
+
+/* Narrow phones: the times closer in. */
+@media (max-width: 380px) {
+  .dc-block {
+    grid-template-columns: 38px 14px minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .dc-ic {
+    display: none;
+  }
+}

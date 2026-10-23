@@ -45,6 +45,7 @@ const keys = (): Array<[string, Array<[string, Key]>]> => [
     [
       ['%KeyC%', 'help.k.craft'],
       ['%KeyI%', 'help.k.file'],
+      ['%KeyJ%', 'help.k.day'],
       ['%KeyT%', 'help.k.rat'],
       ['%KeyP%', 'help.k.phone'],
       ['%KeyG%', 'help.k.crew'],
@@ -83,6 +84,7 @@ const TOUCHES: Array<[string, Array<[string, Key]>]> = [
     'panels',
     [
       ['coin', 'help.t.file'],
+      ['clock', 'help.t.day'],
       ['rat', 'help.t.rat'],
       ['phone', 'help.t.phone'],
       ['users', 'help.t.crew'],
