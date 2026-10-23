@@ -32,7 +32,7 @@ export interface HolidayDayDef {
 
 /** Each holiday day's place and time. */
 export const HOLIDAY_DAY: Record<HolidayDay, HolidayDayDef> = {
-  // Easter: eggs hidden at 08:00 in the inmates' desks and about the yard; what's left out in the yard at 22:00 the inmates found first. A lamb roast at dinner.
+  // Easter: eggs hidden at 08:00 in the inmates' desks and about the yard; what's left at 22:00 (in the yard, in their desks) the inmates found first. A lamb roast at dinner.
   eggHunt: { holiday: HOLIDAY.EASTER, first: 2, at: 0, length: 840, feast: true },
   // Summer: the water fight in the exercise hour (15:00–15:30) soaks the guards out in the yard. The barbecue at dinner.
   waterFight: { holiday: HOLIDAY.SUMMER, first: 2, at: 420, length: 30, feast: true },
@@ -105,7 +105,7 @@ export function holidayOn(y: number, m: number, d: number): number {
  * Taken on request (EXT.HOLIDAY, b): the ice lolly at a canteen counter on the water fight's day
  * (the ice-cream van's been), the costume there on costume night's, a pumpkin from the kitchen
  * freezer that day, a present from under the tree (a canteen counter) on Christmas Day. One each a
- * prison day. Never renumber.
+ * prison day, from 08:00 until the holiday day is over (holiday.ts treatHours). Never renumber.
  */
 export const TREAT = { LOLLY: 0, COSTUME: 1, PUMPKIN: 2, GIFT: 3 } as const;
 /** Each treat: its item, the furniture it's had from (the container's table), the holiday day it's had on. */
