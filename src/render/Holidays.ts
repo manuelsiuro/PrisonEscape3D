@@ -34,7 +34,9 @@ const hash = (a: number, b = 0) => {
 
 const FIREWORK_BURSTS = 6;
 const SPARKS = 28;
-const DROPS = 48;
+const DROPS = 96;
+/** A hose's splash where its jets land: this many of its drops. */
+const SPLASH = 12;
 
 /**
  * Holidays in the picture (P42), drawn once per prison and holiday from the map, render only (nothing
@@ -55,7 +57,7 @@ export class HolidaysView {
   private readonly drops: THREE.InstancedMesh;
   private readonly bursts = Array.from({ length: FIREWORK_BURSTS }, () => ({ t: 99, life: 1.6, x: 0, y: 0, z: 0, color: 0 }));
   private burstClock = 0;
-  /** The yard's hoses: where each spray comes from and lands. */
+  /** The sports ground's hoses: where each jet comes from and lands (HOSE_REACH tiles on). */
   private hoses: Array<{ x0: number; z0: number; x1: number; z1: number }> = [];
   private readonly m = new THREE.Matrix4();
   private readonly c = new THREE.Color();
@@ -176,15 +178,32 @@ export class HolidaysView {
       }
       c.mat.opacity = see ? c.fade : 1;
     }
-    // The water fight's hoses: droplets along each arc, a stream of them.
+    // The water fight's hoses: each a short fan of jets from the nozzle (three streams, swaying), and a splash where they land.
     let n = 0;
     if (f.water && motion && this.hoses.length) {
       const per = Math.floor(DROPS / this.hoses.length);
+      const jets = per - SPLASH;
       this.hoses.forEach((hz, k) => {
-        for (let i = 0; i < per; i++) {
-          const u = (time * 0.6 + i / per + k * 0.37) % 1;
-          const wob = Math.sin(time * 1.3 + k) * 0.8;
-          this.p.set(hz.x0 + (hz.x1 - hz.x0 + wob) * u, 0.9 + Math.sin(u * Math.PI) * 1.6, hz.z0 + (hz.z1 - hz.z0) * u);
+        const dx = hz.x1 - hz.x0;
+        const dz = hz.z1 - hz.z0;
+        const sway = Math.sin(time * 1.3 + k) * 0.25;
+        for (let i = 0; i < jets; i++) {
+          const jet = (i % 3) - 1;
+          const u = (time * 1.4 + i / jets + k * 0.37) % 1;
+          // (Fanned out a little either side of the jet's line, and swaying.)
+          const a = jet * 0.28 + sway;
+          const ca = Math.cos(a);
+          const sa = Math.sin(a);
+          const ex = dx * ca - dz * sa;
+          const ez = dx * sa + dz * ca;
+          this.p.set(hz.x0 + ex * u, 0.85 + Math.sin(u * Math.PI) * 0.55 - u * 0.75, hz.z0 + ez * u);
+          this.m.makeTranslation(this.p.x, this.p.y, this.p.z);
+          this.drops.setMatrixAt(n++, this.m);
+        }
+        for (let i = 0; i < SPLASH; i++) {
+          const u = (time * 2 + i / SPLASH) % 1;
+          const a = (i / SPLASH) * Math.PI * 2 + k;
+          this.p.set(hz.x1 + Math.cos(a) * 0.45 * u, 0.05 + Math.sin(u * Math.PI) * 0.3, hz.z1 + Math.sin(a) * 0.45 * u);
           this.m.makeTranslation(this.p.x, this.p.y, this.p.z);
           this.drops.setMatrixAt(n++, this.m);
         }
@@ -261,8 +280,8 @@ export interface HolidayPiece {
 export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   const out: HolidayPiece[] = [];
   if (!kind) return out;
-  const { things, grounds } = holidayTaken(w);
-  const free = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 1);
+  const { things, grounds, edges } = holidayTaken(w);
+  const free = (t: number) => !things.has(t) && !grounds.has(t) && !edges.has(t) && !nearDoor(w, t, 1);
   const canteen = canteenOf(w, things, grounds);
   const tables = w.props.filter((p) => p.kind === 'table' && w.zoneAt(p.x, p.z) === 'canteen').slice(0, 6);
   // (Out in the yard; where it has no room, Shankton's strip, the sports ground too.)
@@ -270,7 +289,6 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   const sports = floorOf(w, ['sports']);
   const xz = (t: number) => [t % MAP_W, Math.floor(t / MAP_W)] as const;
   const near = [-1, 0, 1].flatMap((dz) => [-1, 0, 1].map((dx) => dz * MAP_W + dx)).filter((d) => d !== 0);
-  const sides = [1, -1, MAP_W, -MAP_W];
   // (Each piece out on the ground keeps the tiles round it to itself.)
   const used = new Set<number>();
   const place = (t: number) => {
@@ -285,7 +303,7 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   const byWallOf = (ground: readonly number[]) =>
     ground.filter((t) => {
       const [x, z] = xz(t);
-      return free(t) && (solidAt(w, x + 1, z) || solidAt(w, x - 1, z) || solidAt(w, x, z - 1));
+      return free(t) && (solidAt(w, x + 1, z) || solidAt(w, x - 1, z) || solidAt(w, x, z - 1) || solidAt(w, x, z + 1));
     });
   const pick = (list: readonly number[], n: number, salt: number) => {
     const got: number[] = [];
@@ -300,7 +318,8 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   if (canteen) for (const [x0, x1, z, south] of canteen.walls) out.push({ what: 'garland', x: x0, x1, z, ...(south ? { south } : {}) });
   if (kind === HOLIDAY.EASTER) for (const p of tables) out.push({ what: 'basket', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
   else if (kind === HOLIDAY.SUMMER) {
-    const room = roomOf(sports);
+    // (Where the sports ground has no room left by its pitch, track and court, Center Perks', out in the yard by it.)
+    const room = roomOf(sports).length ? roomOf(sports) : roomOf(own);
     const spots: number[] = [];
     for (const t of pick(room, room.length, 11)) {
       if (spots.length >= 3) break;
@@ -318,12 +337,25 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
       out.push({ what: 'barbecue', ...at(bbq) });
       place(bbq);
     }
-    const open = sports.filter((t) => sides.every((d) => sports.includes(t + d)));
-    pick(byWall, 2, 13).forEach((t, k) => {
-      const to = at(open[Math.floor(hash(t, k + 5) * open.length)] ?? t);
-      out.push({ what: 'hose', ...at(t), x1: to.x, z1: to.z });
-      place(t);
+    // (Each hose sprays a short jet, HOSE_REACH tiles out from its wall onto the sports ground.)
+    const onGround = new Set(sports);
+    // (A hose by the wall may stand at a pastime's edge, never on it: its jet points away from the wall.)
+    const hoseAt = sports.filter((t) => {
+      const [x, z] = xz(t);
+      return !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 1) && (solidAt(w, x + 1, z) || solidAt(w, x - 1, z) || solidAt(w, x, z - 1) || solidAt(w, x, z + 1));
     });
+    // (One at a time: the second keeps clear of the first.)
+    for (let k = 0; k < 2; k++) {
+      const t = pick(byWall, 1, 13 + k)[0] ?? pick(hoseAt, 1, 13 + k)[0];
+      if (t === undefined) break;
+      const [x, z] = xz(t);
+      const [dx, dz] = solidAt(w, x + 1, z) ? [-1, 0] : solidAt(w, x - 1, z) ? [1, 0] : solidAt(w, x, z - 1) ? [0, 1] : [0, -1];
+      let reach = HOSE_REACH;
+      while (reach > 1 && !onGround.has(t + (dz * MAP_W + dx) * reach)) reach--;
+      const from = at(t);
+      out.push({ what: 'hose', ...from, x1: from.x + dx * reach, z1: from.z + dz * reach });
+      place(t);
+    }
   } else if (kind === HOLIDAY.HALLOWEEN) {
     for (const p of tables) out.push({ what: 'lantern', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
     // (Along the yard's walls; where it has hardly any free, San Pancho's, the sports ground's too.)
@@ -340,6 +372,9 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   return out;
 }
 
+/** How far a hose's jet reaches from its wall (tiles). */
+export const HOSE_REACH = 3;
+
 /** Parasols stand this many tiles apart at least (their canopies and deckchairs clear of each other). */
 export const PARASOL_GAP = 3;
 
@@ -353,9 +388,10 @@ const chebyshev = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b %
  * places). Nothing goes on either; what spreads over its neighbours (a canopy, a tree's boughs)
  * may reach over a pitch's paint, never a thing.
  */
-export function holidayTaken(w: World): { things: Set<number>; grounds: Set<number> } {
+export function holidayTaken(w: World): { things: Set<number>; grounds: Set<number>; edges: Set<number> } {
   const things = new Set<number>();
   const grounds = new Set<number>();
+  const edges = new Set<number>();
   const rect = (out: Set<number>, x: number, z: number, wd: number, d: number) => {
     for (let zz = z; zz < z + d; zz++) for (let xx = x; xx < x + wd; xx++) if (xx >= 0 && zz >= 0 && xx < MAP_W && zz < MAP_H) out.add(zz * MAP_W + xx);
   };
@@ -367,6 +403,12 @@ export function holidayTaken(w: World): { things: Set<number>; grounds: Set<numb
     if (l.track) rect(grounds, l.track.x, l.track.z, l.track.w, l.track.d);
     rect(grounds, l.hoop.x, l.hoop.z, 1, 1);
     for (const sp of l.hoop.spots) rect(grounds, sp.x, sp.z, 1, 1);
+    // (The half court's painted surface, as render/Grounds.ts lays it: from behind the rim 5 deep and 5 across.)
+    const [cx, cz, cw, cd] = courtRect(l.hoop);
+    rect(grounds, cx, cz, cw, cd);
+    // (A tile's margin round the track and the court: nothing set down right at their edge, corners included.)
+    if (l.track) rect(edges, l.track.x - 1, l.track.z - 1, l.track.w + 2, l.track.d + 2);
+    rect(edges, cx - 1, cz - 1, cw + 2, cd + 2);
     rect(grounds, l.garden.x, l.garden.z, l.garden.w, l.garden.d);
     const r = l.race;
     const [dx, dz] = r.dir === 1 ? [1, 0] : r.dir === 5 ? [0, 1] : r.dir === 9 ? [-1, 0] : [0, -1];
@@ -374,7 +416,22 @@ export function holidayTaken(w: World): { things: Set<number>; grounds: Set<numb
     if (l.stage) rect(grounds, l.stage.x - 1, l.stage.z - 1, 3, 3);
     for (const q of l.quiz?.spots ?? []) rect(grounds, q.x, q.z, 1, 1);
   }
-  return { things, grounds };
+  return { things, grounds, edges };
+}
+
+/** The tiles the basketball court's paint covers ([x, z, w, d]): render/Grounds.ts court(), 5 deep from half a tile behind the rim's tile and 5 across. */
+export function courtRect(c: { x: number; z: number; face: number }): [number, number, number, number] {
+  const [ax, az] = c.face === 1 ? [1, 0] : c.face === 5 ? [0, 1] : c.face === 9 ? [-1, 0] : [0, -1];
+  const [sx, sz] = [-az, ax];
+  const xs: number[] = [];
+  const zs: number[] = [];
+  for (const a of [-0.5, 4.5]) for (const s of [-2.5, 2.5]) {
+    xs.push(c.x + 0.5 + ax * a + sx * s);
+    zs.push(c.z + 0.5 + az * a + sz * s);
+  }
+  const x0 = Math.floor(Math.min(...xs) + 0.01);
+  const z0 = Math.floor(Math.min(...zs) + 0.01);
+  return [x0, z0, Math.ceil(Math.max(...xs) - 0.01) - x0, Math.ceil(Math.max(...zs) - 0.01) - z0];
 }
 
 /** A doorway (a door or a detector arch) within this many tiles: kept clear for whoever comes through. */
@@ -439,8 +496,17 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
     const [x, z] = [t % MAP_W, Math.floor(t / MAP_W)];
     return [solidAt(w, x - 1, z), solidAt(w, x + 1, z), solidAt(w, x, z - 1), solidAt(w, x, z + 1)].filter(Boolean).length;
   };
-  // (Nor under the odd jobs board, nor at its sides: the boughs would cover it.)
-  const byBoard = (t: number) => !!board && Math.abs((t % MAP_W) - board.x) <= 1 && Math.floor(t / MAP_W) === board.z;
+  // (Nor under anything hung on a wall, the odd jobs board too, nor at its sides: the boughs and the star would cover it.)
+  // (A piece on a north or south wall: its row, a tile either side; on a side wall, its column, a tile above or below.)
+  const alongRow = new Set<number>();
+  const alongColumn = new Set<number>();
+  for (const d of w.def.decor ?? []) {
+    if (!DECOR[d.kind].wall) continue;
+    const r = d.rot ?? 0;
+    for (let z = d.z; z < d.z + (d.d ?? 1); z++) for (let x = d.x; x < d.x + (d.w ?? 1); x++) (r === 0 || r === 2 ? alongRow : alongColumn).add(z * MAP_W + x);
+  }
+  if (board) alongRow.add(board.z * MAP_W + board.x);
+  const byBoard = (t: number) => [-1, 0, 1].some((k) => alongRow.has(t + k) || alongColumn.has(t + k * MAP_W));
   // (Nor under a garland: its boughs stand taller than the string hangs.)
   const underGarland = (t: number) => walls.some(([a, b, z]) => z === Math.floor(t / MAP_W) && t % MAP_W >= a - 1 && t % MAP_W <= b);
   const bare = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 2) && !byBoard(t) && !underGarland(t);
@@ -454,7 +520,9 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
     tiles.find((t) => walled(t) >= 2 && bare(t) && elbow(t)) ??
     tiles.find((t) => walled(t) >= 1 && bare(t) && elbow(t)) ??
     // (Stalag Flucht's little hall, tables to the walls: the corner with the least beside it.)
-    tiles.filter((t) => walled(t) >= 2 && bare(t)).sort((a, b) => crowd(a) - crowd(b) || a - b)[0];
+    tiles.filter((t) => walled(t) >= 2 && bare(t)).sort((a, b) => crowd(a) - crowd(b) || a - b)[0] ??
+    // (Center Perks', its walls hung with the menu, the clock, a poster, the odd jobs board: along a wall, the least beside it.)
+    tiles.filter((t) => walled(t) >= 1 && bare(t)).sort((a, b) => crowd(a) - crowd(b) || a - b)[0];
   return { walls, corner: c === undefined ? null : [(c % MAP_W) + 0.5, Math.floor(c / MAP_W) + 0.5] };
 }
 
@@ -468,8 +536,18 @@ function garland(out: Part[], x0: number, x1: number, z: number, colors: readonl
     if (bulbs) out.push(paint(new THREE.SphereGeometry(0.05, 6, 4).translate(x, y - 0.06 - Math.abs(dip), zf), c));
     else out.push(paint(new THREE.ConeGeometry(0.11, 0.2, 3).rotateX(Math.PI).translate(x, y - 0.12 - Math.abs(dip), zf), c));
   }
-  // (The string itself, a thin dark line.)
+  // (The string itself, a thin dark line; the Christmas lights' wire drooping from bulb to bulb.)
   if (!bulbs) out.push(box(x1 - x0 - 0.2, 0.015, 0.015, 0x3a3a3a, (x0 + x1) / 2, y - 0.02, zf));
+  else {
+    const at = (x: number) => y - 0.03 - Math.abs(Math.sin(((x - x0) / 1.5) * Math.PI) * 0.06) - Math.sin(((x - x0) / 0.5) * Math.PI) ** 2 * 0.04;
+    for (let x = x0 + 0.1; x < x1 - 0.1; x += 0.125) {
+      const xb = Math.min(x + 0.125, x1 - 0.1);
+      const ya = at(x);
+      const yb = at(xb);
+      const len = Math.hypot(xb - x, yb - ya);
+      out.push(paint(new THREE.BoxGeometry(len, 0.012, 0.012).rotateZ(Math.atan2(yb - ya, xb - x)).translate((x + xb) / 2, (ya + yb) / 2, zf), 0x2a3a2a));
+    }
+  }
 }
 
 /** Easter: a basket of painted eggs on a table. */

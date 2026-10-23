@@ -29,7 +29,7 @@ import { LAYER, MAP_W, placeKey } from '../src/sim/world/World';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { RunRecorder, replayLog } from '../src/sim/runlog';
-import { HolidaysView, holidayDecor, PARASOL_GAP } from '../src/render/Holidays';
+import { courtRect, HolidaysView, holidayDecor, PARASOL_GAP } from '../src/render/Holidays';
 import { DECOR } from '../src/content/decor';
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
 import { facts } from '../src/talk/gossip';
@@ -418,6 +418,9 @@ for (const p of PRISONS) {
     if (l.track) mark('track', l.track.x, l.track.z, l.track.w, l.track.d);
     mark('hoop', l.hoop.x, l.hoop.z);
     for (const sp of l.hoop.spots) mark('court', sp.x, sp.z);
+    // (The court's whole painted surface, as the render lays it.)
+    const [cx, cz, cw, cd] = courtRect(l.hoop);
+    mark('court', cx, cz, cw, cd);
     mark('garden', l.garden.x, l.garden.z, l.garden.w, l.garden.d);
     const doors: number[] = [];
     for (let t = 0; t < w.ground.kind.length; t++) if (w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR) doors.push(t);
@@ -441,7 +444,9 @@ for (const p of PRISONS) {
         const floor = !TILE_INFO[kind].solid;
         const zone = w.zoneAt(tx, tz);
         const summer = d.what === 'parasol' || d.what === 'barbecue' || d.what === 'hose';
-        const where = d.what === 'garland' || d.what === 'tree' || d.y ? 'canteen' : summer ? 'sports' : 'yard';
+        // (Parasols out in the yard only where the sports ground has no room for one: Center Perks'.)
+        const yardParasols = d.what === 'parasol' && !plan.some((q) => q.what === 'parasol' && w.zoneAt(Math.floor(q.x), Math.floor(q.z)) === 'sports');
+        const where = d.what === 'garland' || d.what === 'tree' || d.y ? 'canteen' : summer && !yardParasols ? 'sports' : 'yard';
         check(floor && (zone === where || (where === 'yard' && zone === 'sports')), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${d.x},${d.z} stands on the ${where}'s floor (${zone}, ${floor ? 'floor' : 'solid'})`);
         if (d.what === 'garland') {
           check(TILE_INFO[w.ground.kind[(tz + (d.south ? 1 : -1)) * MAP_W + tx]].solid, `${p.id}: a garland hangs on a wall`);
@@ -450,6 +455,10 @@ for (const p of PRISONS) {
         } else if (!d.y) {
           // Out on the floor: on nothing that's there already, and clear of the doorways.
           check(!there.has(t), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} stands on no ${there.get(t)}`);
+          if (d.what === 'hose') {
+            const reach = Math.hypot(d.x1! - d.x, d.z1! - d.z);
+            check(reach >= 1 && reach <= 4.01 && w.zoneAt(Math.floor(d.x1!), Math.floor(d.z1!)) === 'sports', `${p.id}: the hose at ${tx},${tz} sprays ${reach.toFixed(1)} tiles, onto the sports ground`);
+          }
           const gap = d.what === 'tree' ? 2 : 1;
           check(!doors.some((u) => near(u, t) <= gap), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} is clear of the doors (${gap} tiles)`);
         }
@@ -460,6 +469,8 @@ for (const p of PRISONS) {
         const tz = Math.floor(tree.z);
         check(!plan.some((g) => g.what === 'garland' && g.z === tz && tx >= g.x - 1 && tx <= g.x1!), `${p.id}: the tree stands under no garland`);
         check(!p.board || !(p.board.z === tz && Math.abs(p.board.x - tx) <= 1), `${p.id}: the tree hides no part of the odd jobs board`);
+        const above = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && ((d.rot ?? 0) % 2 === 0 ? d.z === tz && tx >= d.x - 1 && tx <= d.x + (d.w ?? 1) : d.x === tx && tz >= d.z - 1 && tz <= d.z + (d.d ?? 1)));
+        check(!above.length, `${p.id}: the tree stands under nothing hung on a wall (${above.map((d) => d.kind).join(', ')})`);
       }
       const parasols = plan.filter((d) => d.what === 'parasol').map((d) => Math.floor(d.z) * MAP_W + Math.floor(d.x));
       check(parasols.every((a, k) => parasols.every((b, j) => j === k || near(a, b) >= PARASOL_GAP)), `${p.id} ${HOLIDAYS[h]}: the parasols ${PARASOL_GAP} tiles apart at least`);
