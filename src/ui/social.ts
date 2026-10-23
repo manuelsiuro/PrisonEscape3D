@@ -44,6 +44,8 @@ export interface OddJobTalkView {
   handIn: { text: string; pay: string; why: string } | null;
   offer: { text: string; pay: string; why: string } | null;
   owed: string | null;
+  /** A delivery's parcel to hand over to this inmate (its hotbar slot), from the talk panel. */
+  give: { text: string; slot: number } | null;
   key: string;
 }
 
@@ -270,8 +272,9 @@ export class TalkPanel {
     let ojHtml = '';
     if (oj) {
       const rows: string[] = [];
+      if (oj.give) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.giveParcel')}</b><small>${esc(oj.give.text)}</small></span><button class="big-btn primary small" data-act="${TALK.GIFT}" data-arg="${oj.give.slot}">${icon('gift', 16)}<span>${t('oddjob.give')}</span></button></div>`);
       if (oj.handIn) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.handIn.text)}</b><small>${esc(oj.handIn.why || oj.handIn.pay)}</small></span><button class="big-btn ${oj.handIn.why ? 'ghost' : 'primary'} small" data-act="${TALK.JOB_IN}" ${oj.handIn.why ? 'disabled' : ''}>${icon('coin', 16)}<span>${t('oddjob.handIn')}</span></button></div>`);
-      if (oj.offer) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.offer.text)}</b><small>${esc(oj.offer.why || oj.offer.pay)}</small></span><button class="big-btn ${oj.offer.why ? 'ghost' : 'primary'} small" data-act="${TALK.ODD_JOB}" ${oj.offer.why ? 'disabled' : ''}>${icon('check', 16)}<span>${t('oddjob.take')}</span></button></div>`);
+      if (oj.offer) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.offer.text)}</b><small>${esc(oj.offer.why || oj.offer.pay)}</small></span><button class="big-btn ${oj.offer.why ? 'ghost' : 'primary'} small" data-act="${TALK.ODD_JOB}" aria-label="${esc(`${t('oddjob.take')}: ${oj.offer.text}`)}" ${oj.offer.why ? 'disabled' : ''}>${icon('check', 16)}<span>${t('oddjob.take')}</span></button></div>`);
       if (oj.owed !== null) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.owes')}</b><small>${esc(oj.owed || t('oddjob.owesNote'))}</small></span><button class="big-btn primary small" data-act="${TALK.CALL_IN}" data-confirm="${esc(t('oddjob.callInSure'))}">${icon('wrench', 16)}<span>${t('oddjob.callIn')}</span></button></div>`);
       ojHtml = `<section class="talk-phone talk-oddjob"><div class="box-label">${icon('pin', 14)}<span>${t(oj.offer ? 'oddjob.fixerTitle' : 'oddjob.talkTitle')}</span></div>${rows.join('')}</section>`;
     }

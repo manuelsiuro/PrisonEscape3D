@@ -27,8 +27,12 @@ export interface PinView {
   /** How long and what it pays; what comes with it ('' nothing more). */
   meta: string;
   perk: string;
-  /** Why it can't be taken now ('' it can). */
+  /** Why it can't be taken now ('' it can, or the reason is the card's note: one job at a time). */
   why: string;
+  /** It can't be taken now. */
+  off: boolean;
+  /** The Take button's name for a screen reader (the kind and who asks). */
+  label: string;
   /** The story's card: its title and step ('' a pin). */
   story: string;
 }
@@ -108,6 +112,8 @@ export class OddJobsCard {
   }
 
   update(v: OddJobsView | null) {
+    // (Shown again: from its top, not where it was last scrolled to.)
+    if (v && this.el.classList.contains('hidden')) this.el.scrollTop = 0;
     this.el.classList.toggle('hidden', !v);
     if (!v) {
       this.drawn = '';
@@ -141,7 +147,7 @@ function pinHtml(p: PinView): string {
   return `<div class="oddjob-pin${p.story ? ' story' : ''}">
     <i class="oddjob-ic">${icon(p.icon, 16)}</i>
     <span class="oddjob-text">${p.story ? `<em>${esc(p.story)}</em>` : ''}<b>${esc(p.kind)} · ${esc(p.who)}</b><small>${esc(p.ask)}</small><span class="oddjob-meta">${esc(p.meta)}${p.perk ? ` · <strong>${esc(p.perk)}</strong>` : ''}</span>${p.why ? `<small class="oddjob-why">${esc(p.why)}</small>` : ''}</span>
-    <button class="big-btn ${p.why ? 'ghost' : 'primary'} small" data-op="${BOARD.TAKE}" data-arg="${p.pin}" ${p.why ? 'disabled' : ''}>${icon('check', 16)}<span>${esc(t('oddjob.take'))}</span></button></div>`;
+    <button class="big-btn ${p.off ? 'ghost' : 'primary'} small" data-op="${BOARD.TAKE}" data-arg="${p.pin}" aria-label="${esc(p.label)}" ${p.off ? 'disabled' : ''}>${icon('check', 16)}<span>${esc(t('oddjob.take'))}</span></button></div>`;
 }
 
 /**
@@ -174,6 +180,7 @@ export class StoryCard {
     setText(this.el.querySelector('.story-text')!, text);
     setText(this.el.querySelector('.story-ok span')!, t('oddjob.storyOk'));
     this.el.classList.remove('hidden');
+    document.body.classList.add('story-up');
     clearTimeout(this.timer);
     this.timer = window.setTimeout(() => this.hide(), ms);
   }
@@ -181,5 +188,6 @@ export class StoryCard {
   hide() {
     clearTimeout(this.timer);
     this.el.classList.add('hidden');
+    document.body.classList.remove('story-up');
   }
 }

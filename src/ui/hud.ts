@@ -377,9 +377,9 @@ export class Hud {
     }
     setText(el.querySelector('b')!, j.text);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, j.left)) * 100}%`;
-    const what = t(j.watch ? 'hud.whistle' : 'hud.job');
+    const what = t(j.urgent ? 'hud.whistle' : 'hud.job');
     el.title = TOUCH ? what : `${what} (B)`;
-    el.setAttribute('aria-label', `${j.sr} ${what}`);
+    el.setAttribute('aria-label', `${j.sr}. ${what}`);
   }
 
   /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */

@@ -30,19 +30,19 @@ const PIN_YELLOW = 0xf2c94c;
 const MANILA = 0xe8c77a;
 const TAG = 0xc8322b;
 
-/** The board's size and height (tiles): its frame's middle about 1.3 up the wall. */
+/** The board's size and height (tiles): its frame from 0.5 to 1.3 up the wall, under the wall's top (WALL_H 1.4). */
 const W = 1.1;
 const H = 0.8;
-const Y0 = 0.9;
+const Y0 = 0.5;
 /** The cork's front (off the wall), where the cards lie. */
 const CORK_Z = 0.06;
 
 /** The cards: the three jobs across the left, the story's (manila, bigger) on the right; middle, height, tilt, paper colour, pin colour. */
 const CARDS: ReadonlyArray<{ x: number; y: number; w: number; h: number; tilt: number; paper: number; pin: number }> = [
-  { x: -0.37, y: 1.25, w: 0.2, h: 0.26, tilt: 0.06, paper: 0xf6f3ea, pin: PIN_RED },
-  { x: -0.13, y: 1.22, w: 0.2, h: 0.26, tilt: -0.04, paper: 0xf6e9a0, pin: PIN_BLUE },
-  { x: 0.11, y: 1.26, w: 0.2, h: 0.26, tilt: 0.03, paper: 0xd9ecf4, pin: PIN_YELLOW },
-  { x: 0.34, y: 1.22, w: 0.22, h: 0.3, tilt: -0.07, paper: MANILA, pin: PIN_RED },
+  { x: -0.37, y: Y0 + 0.35, w: 0.2, h: 0.26, tilt: 0.06, paper: 0xf6f3ea, pin: PIN_RED },
+  { x: -0.13, y: Y0 + 0.32, w: 0.2, h: 0.26, tilt: -0.04, paper: 0xf6e9a0, pin: PIN_BLUE },
+  { x: 0.11, y: Y0 + 0.36, w: 0.2, h: 0.26, tilt: 0.03, paper: 0xd9ecf4, pin: PIN_YELLOW },
+  { x: 0.34, y: Y0 + 0.32, w: 0.22, h: 0.3, tilt: -0.07, paper: MANILA, pin: PIN_RED },
 ];
 
 /** A card at the origin (facing +z): the paper, a heading and a few lines of writing. */
@@ -80,8 +80,8 @@ function tagParts(): Part[] {
  */
 export class OddJobsView {
   readonly group = new THREE.Group();
-  /** Hung on the wall the player faces at it: cut only by a player well north of it (behind the wall). */
-  private readonly mat = seeThrough(kitMaterial.clone(), 0.6, -0.05);
+  /** Hung on the wall the player faces at it: cut with its wall (a player north of the board's tile, behind it), never at the tile's middle. */
+  private readonly mat = seeThrough(kitMaterial.clone(), 0.06, 0.38);
   private board: THREE.Group | null = null;
   private cards: THREE.Mesh[] = [];
   private tag: THREE.Mesh | null = null;
@@ -116,7 +116,9 @@ export class OddJobsView {
     g.add(this.tag);
     // On the wall the player faces: half a tile from their tile's middle that way, its front turned back to them.
     const a = faceAngle(b.face);
-    g.position.set(b.x + 0.5 + Math.sin(a) * 0.5, 0, b.z + 0.5 + Math.cos(a) * 0.5);
+    // (In a room's corner, a little away from the wall beside it: clear of its face and top.)
+    const along = world.blocked(b.x - 1, b.z) ? 0.08 : world.blocked(b.x + 1, b.z) ? -0.08 : 0;
+    g.position.set(b.x + 0.5 + Math.sin(a) * 0.5 + along, 0, b.z + 0.5 + Math.cos(a) * 0.5);
     g.rotation.y = a + Math.PI;
     this.board = g;
     this.group.add(g);

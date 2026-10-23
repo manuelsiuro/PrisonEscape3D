@@ -27,7 +27,7 @@ import { BOARD, CAUGHT_TILES, CHAIN_PIN, CHAINS, DIG_STEPS, FAIL_OPINION, FIXER_
 import { CALL_STEPS, CALLEE } from '../src/content/phone';
 import { STAPLES } from '../src/content/long';
 import { ROUTINE } from '../src/content/routine';
-import { placesOf } from '../src/sim/ai/places';
+import { isFloor, placesOf } from '../src/sim/ai/places';
 import { command, EXT, OP, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { loadState } from '../src/sim/state';
@@ -36,7 +36,7 @@ import { planOf, prisonDay, TODAY } from '../src/sim/systems/calendar';
 import { endCheat } from '../src/sim/systems/cards';
 import { elderOf } from '../src/sim/systems/checkers';
 import { HOTBAR, itemOf, pocketOf, slot } from '../src/sim/systems/items';
-import { boardOf, boardNow, boardRefusal, bringsOf, cakeComes, chainDeal, dealsOf, deskOf, type Deal, digOf, endsFor, fixerDeal, freezerOf, handInRefusal, jobOf, oddjobs, owes } from '../src/sim/systems/oddjobs';
+import { boardOf, boardNow, boardRefusal, bringsOf, cakeComes, canWhistle, chainDeal, dealsOf, deskOf, type Deal, digFace, digOf, endsFor, fixerDeal, freezerOf, handInRefusal, jobOf, oddjobs, owes, whistleNow } from '../src/sim/systems/oddjobs';
 import { stapleSlot } from '../src/sim/systems/pantry';
 import { fixerOf, smugglingOf, visitPairs } from '../src/sim/systems/smuggling';
 import { newRat } from '../src/sim/systems/rats';
@@ -1001,5 +1001,60 @@ function handIn(g: Game, deal: Deal) {
   }
   // 11. A rat's job says it needs a pet rat (the card: play/oddjobs.ts metaOf, `oddjob.needsRat`).
   lines.push('rules review: the rat\'s plant, leftovers, the hidden compartment, late jobs, the freezer, the deadline, the cake, a bribed guard: checked');
+  console.log(lines.join('\n'));
+}
+
+// ------------------------------------------------------------------ the UI review (P40)
+{
+  const lines: string[] = [];
+  // The whistle only in the dig's hours: outside them, at the door, B opens the card and a whistle is refused (no false alarm).
+  {
+    const { g, pin } = dealt(CENTER_PERKS, KIND.LOOKOUT)!;
+    const s = g.sim.state;
+    takeAt(g, pin);
+    const d = digOf(g.sim)!;
+    const day = prisonDay(s.step);
+    g.jump(day, 13, 0);
+    putTile(s.player, d.door);
+    g.step();
+    const prog = jobOf(s)![J.PROG];
+    check(!canWhistle(g.sim as never) && !whistleNow(g.sim as never), 'at work, by the door: no whistle (B opens the card)');
+    g.ext(EXT.WHISTLE);
+    check(refusals(g.seen).at(-1) === 'notLookout' && !jobNews(g.seen, 'falseAlarm').length && jobOf(s)![J.PROG] === prog, 'a whistle outside the dig\'s hours: refused, the dig untouched');
+    g.jump(day, 18, 5);
+    const away = () => {
+      for (const gd of s.guards) put(gd.body, 2, 2);
+    };
+    putTile(s.player, d.door);
+    for (let k = 0; k < 2000 && !jobNews(g.seen, 'digging').length; k++) {
+      away();
+      g.step();
+    }
+    away();
+    g.step();
+    check(canWhistle(g.sim as never) && !whistleNow(g.sim as never), 'digging, nobody coming: the card\'s whistle there, B opens the card');
+    // (A guard coming: within WARN_TILES, not yet close enough to see in.)
+    const gd = s.guards[0];
+    putTile(gd.body, d.tile + 4);
+    gd.path = [];
+    g.step();
+    putTile(gd.body, d.tile + 4);
+    check(whistleNow(g.sim as never), 'a guard coming: B and the chip whistle');
+  }
+  // The digger faces open floor at his bed, in every prison, whoever digs.
+  for (const p of PRISONS) {
+    const sim = new Sim(p, 1);
+    const pl = placesOf(sim.world);
+    let n = 0;
+    for (const m of sim.state.inmates) {
+      const tile = pl.bedside[m.cell] ?? -1;
+      if (tile < 0) continue;
+      const f = digFace(sim.world, tile);
+      const step = f === 1 ? 1 : f === 5 ? MAP_W : f === 9 ? -1 : -MAP_W;
+      check(isFloor(sim.world, (tile + step) % MAP_W, Math.floor((tile + step) / MAP_W)), `${p.id}: cell ${m.cell}'s digger faces open floor`);
+      n++;
+    }
+    lines.push(`${p.id}: ${n} dig spots face open floor`);
+  }
   console.log(lines.join('\n'));
 }

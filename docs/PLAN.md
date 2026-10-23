@@ -1374,6 +1374,16 @@ the game can already do.
   doesn't find the dig. A rat's job says on its card that it needs a pet rat (it's still dealt without one: the
   rat can be had within its 3 days). Left as is: the fixer's rare item every day is generous (one job a day, opinion
   50, the riskier kinds); to revisit if it makes tools too easy.
+- **Built (UI review):** the whistle only in the dig's hours with the digger at it (`canWhistle`); B and the chip
+  whistle only while a guard is coming (`whistleNow`), else they open the job's card; a red pulse, not the order's
+  green. The board hangs from 0.5 to 1.3 (under the wall's top), a little off a corner's wall, and fades with its
+  wall's see-through cut. The digger faces the most open floor beside his bed (`digFace`), leaning less. The board's
+  card says "one job at a time" once, starts at its top, and steps aside while a story's card is up; Take buttons
+  named by kind and asker. On a phone held sideways the HUD's chips clear a card docked left and a panel docked
+  right; upright the job's pill takes the screen's width. A delivery's parcel is given from the talk panel; the hand-in
+  row says the job is done; one toast per action (a delivery, a debt's recruit). Center Perks' and Irongate's
+  stories hand over a parcel; Shankton's Preacher keeps his name in French. Not done: the player's head over the
+  middle cards (no browser in this pass); the map viewer's in-game photos to retake in the browser pass.
 
 ### P41 The manhunt (v2.20)
 Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.
