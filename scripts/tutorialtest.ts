@@ -43,6 +43,8 @@ import { phrasesOf } from '../src/sim/systems/phone';
 import { KIOSK, SHOP } from '../src/content/kiosk';
 import { courseQuestion } from '../src/sim/systems/kiosk';
 import { Bot, DIR, n } from './bots';
+import { HEARINGS } from '../src/content/parole';
+import { answerWorth, recordCounts } from '../src/sim/systems/parole';
 import { dealsOf, jobOf } from '../src/sim/systems/oddjobs';
 import { BOARD, J, KIND, STAGE } from '../src/content/oddjobs';
 import { check } from './assert';
@@ -736,6 +738,23 @@ play('release', (bot) => {
   bot.walkTo(tile(30, 62), 2000);
 });
 
+play('parole', (bot) => {
+  // To the seat before the board at 10:00, then each answer the best by the file and Intellect: granted.
+  const h = HEARINGS[CENTER_PERKS.id];
+  check(bot.walkTo(tile(h.seat.x, h.seat.z), 2000), 'parole: at the seat before the board');
+  check(bot.until(() => !!bot.st.hearing, 20 * 60 * 15), 'parole: sat before the board');
+  for (let q = 0; q < 3 && bot.st.hearing; q++) {
+    bot.until(() => !bot.st.hearing || (bot.st.hearing.q === q && !bot.st.hearing.until), 400);
+    const o = bot.st.hearing;
+    if (!o) break;
+    const counts = recordCounts(bot.st);
+    const all = [0, 1, 2].map((c) => answerWorth(q, o.topics[q], c, counts, bot.st.items.int));
+    bot.op(OP.EXT, EXT.PAROLE, 1, all.indexOf(Math.max(...all)));
+  }
+  bot.until(() => !bot.st.hearing, 400);
+  check(bot.st.parole[4] === 1, `parole: granted (${bot.st.parole[5]})`);
+});
+
 play('payphone', (bot) => {
   // In line beside the phone, Sparky talking: the secret overheard while waiting; then the call home, the money at mail call.
   const c = CENTER_PERKS.comms!;
@@ -945,6 +964,25 @@ function follow(id: string) {
   off.bot.until(() => !!off.why(), 20 * 60 * 60);
   check(off.why() === 'lesson.release.late', `release: not reported by 10:30 ends the lesson (${off.why()})`);
   console.log(`forgery, late: ${late.why()}; found: ${hot.why()}; release, missed: ${off.why()}`);
+}
+{
+  // The parole board (P39): sat down, then up and out of the room (walked out); and claiming everything on a record that doesn't bear it out (denied).
+  const h = HEARINGS[CENTER_PERKS.id];
+  const out = follow('parole');
+  out.bot.walkTo(tile(h.seat.x, h.seat.z), 2000);
+  out.bot.until(() => !!out.bot.st.hearing, 20 * 60 * 15);
+  out.bot.walkTo(tile(31, 36), 400);
+  check(out.why() === 'lesson.parole.walked', `parole: walking out on the board ends the lesson (${out.why()})`);
+  const lies = follow('parole');
+  lies.bot.walkTo(tile(h.seat.x, h.seat.z), 2000);
+  lies.bot.until(() => !!lies.bot.st.hearing, 20 * 60 * 15);
+  // (Silence three times over, then: the record alone isn't enough.)
+  lies.bot.until(() => !!lies.why(), 20 * 60 * 5);
+  check(lies.why() === 'lesson.parole.denied', `parole: three silences, denied, ends the lesson (${lies.why()})`);
+  const late = follow('parole');
+  late.bot.until(() => !!late.why(), 20 * 60 * 50);
+  check(late.why() === 'lesson.parole.late', `parole: never there by 10:30 ends the lesson (${late.why()})`);
+  console.log(`parole, walked out: ${out.why()}; silent: ${lies.why()}; late: ${late.why()}`);
 }
 {
   // Off the east edge into a strong east wind: down short of the fence, the glider wrecked.

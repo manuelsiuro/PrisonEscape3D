@@ -324,7 +324,7 @@ export const CENTER_PERKS: PrisonDef = {
     ],
   ],
   // (P24: waved out through the south gate at the shift change; a glider off the roof's north, east or west edge with the wind behind it.)
-  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'bluff', 'glider', 'paperwork'],
+  escapes: ['fence', 'tunnel', 'roof', 'takeover', 'stowaway', 'bluff', 'glider', 'paperwork', 'parole'],
   // Delivery day (P18): the supply truck backs up the south drive to the visitation room's gate
   // (propped open while it's unloaded); the yard guard walks round it, and searches it one day
   // in four.

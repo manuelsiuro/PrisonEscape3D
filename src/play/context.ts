@@ -1,6 +1,7 @@
 import { QuizCard, StageCard } from '../ui/nights';
 import { PayphoneCard } from '../ui/payphone';
 import { KioskCard } from '../ui/kiosk';
+import { ParoleCard } from '../ui/parole';
 import { OddJobsCard, StoryCard } from '../ui/oddjobs';
 import * as THREE from 'three';
 import { setHaptics } from '../app/haptics';
@@ -145,6 +146,8 @@ export const quizCard = new QuizCard(sendOp, click);
 export const payphoneCard = new PayphoneCard(sendOp, click);
 /** The internet kiosk's card (P35). */
 export const kioskCard = new KioskCard(sendOp, click);
+/** The parole board's card (P39): at the release desk, and before the board. */
+export const paroleCard = new ParoleCard(sendOp, click);
 /** The odd jobs board's card, and a story's short cards (P40). */
 export const oddjobsCard = new OddJobsCard(sendOp, click);
 export const storyCard = new StoryCard(click);

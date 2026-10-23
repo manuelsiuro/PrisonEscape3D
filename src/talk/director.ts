@@ -535,6 +535,12 @@ export class Director {
       case 'stow':
         if (e.found) this.queueUp(now, 're.stowFound.in', this.inmatesNear(sim, px, pz, 12), 3, 'stowFound', undefined, 1.6);
         break;
+      // The parole board (P39): inmates by the desk have a word for an application; a guard for one voided.
+      case 'parole':
+        if (e.what === 'applied' && !e.lawyer) this.queueUp(now, 're.parole.in', this.inmatesNear(sim, px, pz, 6), 2, 'parole', undefined, 1);
+        else if (e.what === 'voided') this.queueUp(now, 're.paroleVoid.gu', this.guardsNear(sim, px, pz, 10), 4, 'paroleVoid', undefined, 0.6);
+        else if (e.what === 'granted') this.queueUp(now, 're.paroleGranted.in', this.inmatesNear(sim, px, pz, 8), 2, 'paroleGranted', undefined, 1.4);
+        break;
       // A glide (P24) that came down inside: whoever is near where the player landed has a word for it.
       case 'glide':
         if (!s.escaped) {

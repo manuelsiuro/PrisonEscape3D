@@ -28,6 +28,7 @@ import { cardUp, RACE_ENTER, raceCard } from '../../src/sim/systems/races';
 import { tonight, turnFrom } from '../../src/sim/systems/talent';
 import { penAt } from '../../src/sim/systems/tattoo';
 import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
+import { HEARINGS } from '../../src/content/parole';
 import { prisonDay } from '../../src/sim/systems/calendar';
 import { dropTile } from '../../src/sim/systems/smuggling';
 import { containersOf } from '../../src/sim/world/containers';
@@ -434,6 +435,20 @@ export const SHOTS: Record<string, Shot> = {
     },
     when: at(0.98),
     zoom: 2.8,
+  },
+
+  // P39: before the parole board, the first question put (the parole lesson's scene: the board seated in the visiting room).
+  parole: {
+    lesson: 'parole',
+    moves: (bot) => {
+      const h = HEARINGS['center-perks'];
+      bot.walkTo(tile(h.seat.x, h.seat.z));
+      bot.until(() => !!bot.st.hearing && bot.st.hearing.q >= 0, 20 * 60 * 15);
+      bot.until(() => false, 20);
+    },
+    when: at(0.99),
+    zoom: 2.4,
+    dz: -1,
   },
 
   // ------------------------------------------------------------ basics and escaping (P37)
