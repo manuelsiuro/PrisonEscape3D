@@ -18,6 +18,7 @@ import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
 import { paroleBusy, paroleKey } from './parole';
+import { oddjobKey } from './oddjobs';
 
 /** The action button / E: use what is in reach (or wake up). */
 export function act() {
@@ -112,6 +113,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // The parole board (P39): before it, 1–3 answer.
   if (paroleKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // B: the odd job's card (P40; on watch at a dig, the whistle).
+  if (oddjobKey(e.code)) {
     e.preventDefault();
     return;
   }

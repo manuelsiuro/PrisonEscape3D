@@ -220,6 +220,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'counsel', group: 'life', icon: 'briefcase', run: (r) => f(r, 'lawyerGranted') >= 1 },
   { id: 'caughtOut', group: 'mishaps', icon: 'scale', hidden: true, run: (r) => f(r, 'liesCaught') >= 1 },
   { id: 'backToSquareOne', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'paroleVoided') >= 1 },
+  // P40: the odd jobs board (jobs handed in, a story told to its end, all five, a rival framed, the fixer's regular, a debt called in).
+  { id: 'oddJobber', group: 'life', icon: 'pin', ...counted('oddJobs', 5) },
+  { id: 'storyTime', group: 'life', icon: 'book', gives: 'copper', run: (r) => f(r, 'stories') >= 1 },
+  { id: 'wholeStory', group: 'career', icon: 'book', gives: 'saffron', ...counted('stories', 5) },
+  { id: 'framedUp', group: 'skills', icon: 'clipboard', run: (r) => f(r, 'framed') >= 1 },
+  { id: 'fixersFriend', group: 'life', icon: 'briefcase', ...counted('fixerJobs', 3) },
+  { id: 'calledIn', group: 'life', icon: 'hand', run: (r) => f(r, 'debtsCalled') >= 1 },
   // v2.21 (P42, holidays): five eggs found in one egg hunt's run; in the water fight; three inmates laughing at the costume; a present given; work done under New Year's fireworks.
   { id: 'eggHunter', group: 'holidays', icon: 'egg', gives: 'holBunny', run: (r) => f(r, 'eggsFound') >= 5 },
   { id: 'splashdown', group: 'holidays', icon: 'splash', gives: 'holShades', run: (r) => f(r, 'waterFights') >= 1 },

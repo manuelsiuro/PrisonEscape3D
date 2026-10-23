@@ -81,6 +81,12 @@ export const EXT = {
   KIOSK: 20,
   /** The parole board (P39): b = what's asked (systems/parole.ts PAROLE: applying at the release desk, an answer to the board), c its argument (the answer). */
   PAROLE: 21,
+  /**
+   * The odd jobs board (P40): at the board (b = content/oddjobs.ts BOARD: a job taken, c its pin,
+   * 0–2, or 3 the story's; the job held given up); the lookout's whistle (anywhere: the dig hides).
+   */
+  BOARD: 24,
+  WHISTLE: 25,
   /** v2.21 (P42, holidays): the holiday's treat taken from the open furniture (b = content/holidays.ts TREAT). */
   HOLIDAY: 32,
 } as const;
@@ -98,9 +104,10 @@ export const LINE = { JOIN: 0, LEAVE: 1, CUT: 2 } as const;
  * board, 0 up from it, 2 resigning; MOVE, a step on the board, b = from, c = to; P28's SELL, b =
  * the hotbar slot sold to a merchant; BUY's b past the shop's slots, a staple; P29's FOOTBALL, a match captained by the inmate;
  * TATTOO, b = the design inked on him; INK_ME, b = the design he inks on the player; P34's SWAP,
- * his place in the pay phone's queue bought). Never renumber.
+ * his place in the pay phone's queue bought; P40's ODD_JOB, the fixer's own odd job taken; JOB_IN, the odd job held
+ * handed in to the one who asked; CALL_IN, the debt he owes the player called in: a tool). Never renumber.
  */
-export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20, SELL: 21, FOOTBALL: 22, TATTOO: 23, INK_ME: 24, SWAP: 25 } as const;
+export const TALK = { BUY: 1, GIFT: 2, GIFT_CASH: 3, ACCEPT: 4, HAND_IN: 5, RECRUIT: 6, DISMISS: 7, TIP: 8, BRIBE: 9, PHONE: 10, DICE: 11, REROLL: 12, WRESTLE: 13, CREW: 14, CHEAT: 15, PLAY: 16, LIAR: 17, HOOPS: 18, CHECKERS: 19, MOVE: 20, SELL: 21, FOOTBALL: 22, TATTOO: 23, INK_ME: 24, SWAP: 25, ODD_JOB: 28, JOB_IN: 29, CALL_IN: 30 } as const;
 
 /**
  * What a follower in the crew is told (P23, TALK.CREW's b): back at the player's heels, keep

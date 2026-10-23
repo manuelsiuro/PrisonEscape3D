@@ -61,6 +61,7 @@ import { command, OP } from '../src/sim/command';
 import { ESCAPES, Sim as SimOf } from '../src/sim/Sim';
 import { raceNight, rivals } from '../src/sim/systems/races';
 import { RACE_MINUTE } from '../src/content/long';
+import { dealsOf, pinTaken } from '../src/sim/systems/oddjobs';
 import { check } from './assert';
 
 const DAY = 1440 * STEPS_PER_MINUTE;
@@ -257,6 +258,9 @@ function holdsNow(sim: Sim, f: Fact): boolean {
     case 'guardHome':
     case 'guardTeam':
       return !!sim.prison.guards[f.guard!]?.about;
+    // The odd jobs board (P40): one of today's pins still up is his.
+    case 'boardJob':
+      return dealsOf(sim, prisonDay(s.step)).some((d, k) => d.giver === f.inmate && !pinTaken(s, k));
     default:
       return true;
   }

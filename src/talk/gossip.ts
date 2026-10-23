@@ -40,6 +40,7 @@ const DOG_FACTS: ReadonlySet<string> = new Set(['dogShift', 'dogNight', 'dogTrea
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
+import { boardNow } from '../sim/systems/oddjobs';
 
 /**
  * Gossip (P13): what inmates tell a friend, always true ("warnings proven never wrong").
@@ -49,7 +50,7 @@ import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
  * banks type no number of their own; scripts/gossiptest.ts checks each kind against the
  * running game.
  */
-export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'paroleBoard', 'eggDesk'] as const;
+export const GOSSIP = ['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'stock', 'job', 'favor', 'grudge', 'heat', 'takeoverAll', 'steady', 'lazy', 'strict', 'corrupt', 'shakedown', 'shakedownYou', 'nextInspection', 'nextDrill', 'nextFoodFight', 'stormCut', 'nextDelivery', 'searchClose', 'searchQuick', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'pills', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'fixer', 'droneDrop', 'visitArches', 'nextVisiting', 'champ', 'gambling', 'lockpick', 'nextSports', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'glideDay', 'oldTimer', 'pruno', 'gardenHole', 'raceNight', 'ratFed', 'ratHungry', 'nextTalent', 'nextQuiz', 'phoneCall', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'paroleBoard', 'boardJob', 'eggDesk'] as const;
 export type GossipKind = (typeof GOSSIP)[number];
 
 /** Facts that hold for as long as the game is played (the rest are about now). */
@@ -278,6 +279,8 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // A race night (P28), before the off: whose rat ate today and whose didn't (true: the card is drawn for the day). Not the speaker's own.
   if (sim.prison.leisure?.race && raceNight(plan.day) && m < RACE_MINUTE - ROUTINE[0].start)
     for (const e of rivals(s, plan.day)) if (e.owner !== speaker) out.push({ kind: e.fed ? 'ratFed' : 'ratHungry', key: `ratFed:${plan.day}:${e.owner}`, inmate: e.owner });
+  // The odd jobs board (P40): who pinned a job up today that's still there (the deals are the day's own: true). Not the speaker's own.
+  for (const d of boardNow(sim as never).pins) if (d && d.giver !== speaker) out.push({ kind: 'boardJob', key: `boardJob:${plan.day}:${d.giver}`, inmate: d.giver });
   // A glider's day (P24): today's wind would carry one off the roof clear out to the road.
   if ((sim.prison.escapes ?? []).includes('glider') && !sim.prison.rules?.relaxed && glideOutToday(sim)) out.push({ kind: 'glideDay', key: `glideDay:${plan.day}` });
   return out;
@@ -363,6 +366,7 @@ const NEEDS: Record<GossipKind, ReadonlyArray<keyof Fact>> = {
   releaseForms: ['guard'],
   recordsCheck: ['t1', 'n'],
   paroleBoard: ['t1', 'n'],
+  boardJob: ['inmate'],
   eggDesk: ['inmate'],
 };
 

@@ -422,7 +422,11 @@ for (const p of PRISONS) {
     const doors: number[] = [];
     for (let t = 0; t < w.ground.kind.length; t++) if (w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR) doors.push(t);
     const hung = new Set<number>();
+    const hungSouth = new Set<number>();
     for (const d of p.decor ?? []) if (DECOR[d.kind].wall && (d.rot ?? 0) === 0) for (let x = d.x; x < d.x + (d.w ?? 1); x++) hung.add(d.z * MAP_W + x);
+    for (const d of p.decor ?? []) if (DECOR[d.kind].wall && d.rot === 2) for (let x = d.x; x < d.x + (d.w ?? 1); x++) hungSouth.add((d.z + (d.d ?? 1) - 1) * MAP_W + x);
+    // (P40's odd jobs board, on a canteen wall.)
+    if (p.board) (p.board.face === 5 ? hungSouth : hung).add(p.board.z * MAP_W + p.board.x);
     const view = new HolidaysView();
     view.setWorld(w);
     const counts: string[] = [];
@@ -440,8 +444,8 @@ for (const p of PRISONS) {
         const where = d.what === 'garland' || d.what === 'tree' || d.y ? 'canteen' : summer ? 'sports' : 'yard';
         check(floor && (zone === where || (where === 'yard' && zone === 'sports')), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${d.x},${d.z} stands on the ${where}'s floor (${zone}, ${floor ? 'floor' : 'solid'})`);
         if (d.what === 'garland') {
-          check(TILE_INFO[w.ground.kind[(tz - 1) * MAP_W + tx]].solid, `${p.id}: a garland hangs on a wall`);
-          const over = Array.from({ length: d.x1! - d.x }, (_, k) => tz * MAP_W + d.x + k).filter((u) => hung.has(u));
+          check(TILE_INFO[w.ground.kind[(tz + (d.south ? 1 : -1)) * MAP_W + tx]].solid, `${p.id}: a garland hangs on a wall`);
+          const over = Array.from({ length: d.x1! - d.x }, (_, k) => tz * MAP_W + d.x + k).filter((u) => (d.south ? hungSouth : hung).has(u));
           check(!over.length, `${p.id} ${HOLIDAYS[h]}: the garland ${d.x}–${d.x1} at ${tz} crosses nothing hung on the wall (${over.map((u) => u % MAP_W).join(',')})`);
         } else if (!d.y) {
           // Out on the floor: on nothing that's there already, and clear of the doorways.
@@ -449,6 +453,13 @@ for (const p of PRISONS) {
           const gap = d.what === 'tree' ? 2 : 1;
           check(!doors.some((u) => near(u, t) <= gap), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} is clear of the doors (${gap} tiles)`);
         }
+      }
+      const tree = plan.find((d) => d.what === 'tree');
+      if (tree) {
+        const tx = Math.floor(tree.x);
+        const tz = Math.floor(tree.z);
+        check(!plan.some((g) => g.what === 'garland' && g.z === tz && tx >= g.x - 1 && tx <= g.x1!), `${p.id}: the tree stands under no garland`);
+        check(!p.board || !(p.board.z === tz && Math.abs(p.board.x - tx) <= 1), `${p.id}: the tree hides no part of the odd jobs board`);
       }
       const parasols = plan.filter((d) => d.what === 'parasol').map((d) => Math.floor(d.z) * MAP_W + Math.floor(d.x));
       check(parasols.every((a, k) => parasols.every((b, j) => j === k || near(a, b) >= PARASOL_GAP)), `${p.id} ${HOLIDAYS[h]}: the parasols ${PARASOL_GAP} tiles apart at least`);
