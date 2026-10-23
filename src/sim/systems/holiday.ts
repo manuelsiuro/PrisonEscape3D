@@ -2,8 +2,8 @@
  * Holidays (P42, content/holidays.ts): the run's holiday (`state.holiday`, set when the run began,
  * never from the clock) and its days. Each step (`holidays`) starts and ends the holiday's day on
  * the minute: the egg hunt's eggs hidden at 08:00 (in some of the inmates' desks and about the
- * yard) and the yard's last ones gone at 22:00; the water fight, costume night, Christmas Day and
- * New Year's fireworks. What they change is asked of this module by the other systems: a soaked
+ * yard) and those not found gone at 22:00 (the yard's and the desks'); the water fight, costume
+ * night, Christmas Day and New Year's fireworks. What they change is asked of this module by the other systems: a soaked
  * guard's sight (calendar.ts sightOf), the fireworks' din (muffled), a holiday dinner's feast
  * (feastNow). The rest is on the player's request: a treat taken from the open furniture
  * (`takeTreat`, EXT.HOLIDAY), a pumpkin carved in the kitchen (`carve`), the costume worn on
@@ -18,7 +18,7 @@ import type { SimContext } from '../context';
 import { roll, SALT } from '../rng';
 import { STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
-import { LAYER } from '../world/World';
+import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../world/World';
 import { dayMinute, prisonDay } from './clock';
 import type { Guard } from './guards';
 import { DOING } from './inmates';
@@ -122,12 +122,29 @@ function hideEggs(sim: SimContext) {
   sim.events.push({ type: 'holiday', what: 'hidden', day: 'eggHunt', n });
 }
 
-/** 22:00: the eggs still hidden about the yard were found by the inmates first. */
+/**
+ * 22:00: the eggs not found yet the inmates found first: those still hidden about the yard (where
+ * they were hidden: one carried off and dropped elsewhere stays where it lies), and those still in
+ * the inmates' desks (theirs, eaten; else a desk would keep them for good and fill with them, week
+ * after week, leaving no room for its loot).
+ */
 function eggsGone(sim: SimContext) {
   const it = sim.state.items;
+  const hidden = (v: number) => itemOf(v) === CHOC_EGG && usesOf(v) === HIDDEN;
+  const inYard = (key: number) => layerOfKey(key) === LAYER.GROUND && sim.world.zoneAt(tileOfKey(key) % MAP_W, Math.floor(tileOfKey(key) / MAP_W)) === 'yard';
   const before = it.ground.length;
-  it.ground = it.ground.filter(([, v]) => !(itemOf(v) === CHOC_EGG && usesOf(v) === HIDDEN));
-  if (it.ground.length !== before) it.rev++;
+  it.ground = it.ground.filter(([key, v]) => !(hidden(v) && inYard(key)));
+  let gone = it.ground.length !== before;
+  containersOf(sim.world).forEach((c, k) => {
+    if (c.table !== 'inmateDesk') return;
+    const box = it.containers[k];
+    for (let j = 0; j < box.length; j++) {
+      if (!hidden(box[j])) continue;
+      box[j] = 0;
+      gone = true;
+    }
+  });
+  if (gone) it.rev++;
 }
 
 /** An egg still hidden in the player's pockets: found (it's a plain egg from now on). */
@@ -157,13 +174,21 @@ function laughs(sim: SimContext) {
   });
 }
 
-/** Why a treat can't be had from the open furniture now (null: it can; 'notHere' when it isn't that furniture or that day). */
+/** Whether a treat is on offer now: on its holiday day, from 08:00 until that day's over (the ice lollies until the water fight's end, the costume and the pumpkin until costume night's, the present until Christmas Day's 22:00). */
+export function treatHours(sim: HolidaySim, what: number): boolean {
+  const treat = TREATS[what];
+  if (!treat || !holidayDays(sim).includes(treat.day)) return false;
+  const d = HOLIDAY_DAY[treat.day];
+  return dayMinute(sim.state.step) < d.at + d.length;
+}
+
+/** Why a treat can't be had from the open furniture now (null: it can; 'notHere' when it isn't that furniture, that day or its hours). */
 export function treatCheck(sim: HolidaySim, what: number): 'notHere' | 'takenToday' | 'room' | null {
   const s = sim.state;
   const treat = TREATS[what];
   const open = s.items.open;
   const c = open >= 0 ? containersOf(sim.world)[open] : undefined;
-  if (!treat || !c || c.table !== treat.table || !holidayDays(sim).includes(treat.day)) return 'notHere';
+  if (!treat || !c || c.table !== treat.table || !treatHours(sim, what)) return 'notHere';
   const day = prisonDay(s.step);
   if (s.hol[0] === day && s.hol[1] & (1 << what)) return 'takenToday';
   if (s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';

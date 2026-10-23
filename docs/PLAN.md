@@ -1385,7 +1385,9 @@ The prisons dress up for the holidays of the real calendar, each with its own da
 - **The days** (times as minutes after 08:00 in `HOLIDAY_DAY`):
   - *Egg hunt* (Easter, 08:00–22:00): at 08:00 a chocolate egg goes into 6 inmates' desks with room (never the
     player's own) and 6 about the yard, drawn with `roll(SALT.EGGS)`. An egg counts as found once it is in the
-    player's pockets (a hidden egg carries a uses bit, cleared then). The yard's left at 22:00 are gone. Eggs are
+    player's pockets (a hidden egg carries a uses bit, cleared then). At 22:00 the eggs not found are gone: those
+    still in the inmates' desks (else they pile up week after week and starve the desks' loot) and those still
+    hidden in the yard (one carried off elsewhere, as by the rat, stays where it lies). Eggs are
     eaten like chocolate or sold to a merchant. Inmates tip off whose desk hides one (gossip kind `eggDesk`).
     Dinner is a feast (the lamb roast).
   - *Water fight* (summer, 15:00–15:30): a guard in the yard **or on the sports ground** sees 2 tiles
@@ -1402,7 +1404,8 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   - *New Year's Eve* (00:00–00:10 at the end of day 3): the fireworks cut every noise to 2 tenths of its reach,
     everywhere (`muffled`).
 - **Treats are on request** (`EXT.HOLIDAY` 32, `TREAT`), one of each a prison day, offered as take buttons in the
-  open furniture beside P28's.
+  open furniture beside P28's, from 08:00 until their holiday day is over (`treatHours`: the lolly until 15:30,
+  the costume and the pumpkin until 21:00, the present until 22:00); the day card says so.
 - **Cut to keep it small**: no ice-cream van on delivery day (the lolly comes on the water fight's day instead,
   since Shankton has no delivery); no new sports day with races and tug of war (sports day is already in four decks);
   the rat scaring a guard and the snowball fight are words only (barks, the snowman, a sandman at San Pancho).
@@ -1420,7 +1423,9 @@ The prisons dress up for the holidays of the real calendar, each with its own da
 - **Proof**: `holidaytest` (the date's edges, Easter 2026–2035, Settings, the days dealt in every prison, each
   day's rules in the sim, saves and logs, the decor's placement) and `holidaybotstest` (all 33 escape bots under
   each of the four holidays, and P39's model prisoner, whose 11-day run lives through two holiday days, under
-  each holiday at another prison; it runs beside the other). No escape snapshot changed. Only counts and
+  each holiday at another prison; it runs beside the other), and `holidayruntest` (a bot playing the evenings by
+  commands at Center Perks: tool work through the water fight, costume night's laughs and none after 21:00,
+  the present given, ten strikes on the cell wall under the fireworks, heard 1 tile off). No escape snapshot changed. Only counts and
   the state's hash changed (simtest, replaytest's save size, items, achievements, keys, banks, help).
 
 ### Phases

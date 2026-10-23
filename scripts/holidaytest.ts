@@ -5,10 +5,10 @@
  * (eaten, sold), the yard's gone at 22:00; the water fight's soaked guards and the player's splash,
  * summer's heatwaves; costume night's costume, pumpkin, carving and laughs; Christmas Day's present
  * given and its dinner; New Year's fireworks drowning noise. A holiday kept through a save and a
- * run log. Every escape bot under each holiday: holidaybotstest.ts.
+ * run log. Every escape bot under each holiday: holidaybotstest.ts; the evenings played: holidayruntest.ts.
  */
 import { check } from './assert';
-import { easterSunday, HOLIDAY, HOLIDAY_DAY, HOLIDAY_DAYS, holidayDaysOn, holidayOn, HOLIDAYS, TREAT, WET_SIGHT, FIREWORK_NOISE, EGG_DESKS, EGG_YARD } from '../src/content/holidays';
+import { easterSunday, HOLIDAY, HOLIDAY_DAY, HOLIDAY_DAYS, holidayDaysOn, holidayOn, HOLIDAYS, TREAT, TREATS, WET_SIGHT, FIREWORK_NOISE, EGG_DESKS, EGG_YARD } from '../src/content/holidays';
 import { runHoliday } from '../src/game/holidays';
 import { DAY_BOOKS } from '../src/content/days';
 import { PRISONS } from '../src/content/prisons';
@@ -19,11 +19,12 @@ import { DAY_STEPS, formatTime } from '../src/sim/systems/clock';
 import { dayPlan, feastNow, muffled, sightOf } from '../src/sim/systems/calendar';
 import { saleOf } from '../src/sim/systems/pantry';
 import { inDisguise } from '../src/sim/systems/watch';
-import { itemOf, usesOf } from '../src/sim/systems/items';
+import { itemOf, slot, usesOf } from '../src/sim/systems/items';
+import { treatCheck } from '../src/sim/systems/holiday';
 import { floorOf } from '../src/sim/ai/places';
 import { FEAT } from '../src/sim/systems/ledger';
 import { containersOf } from '../src/sim/world/containers';
-import { LAYER, MAP_W } from '../src/sim/world/World';
+import { LAYER, MAP_W, placeKey } from '../src/sim/world/World';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { RunRecorder, replayLog } from '../src/sim/runlog';
@@ -166,6 +167,76 @@ for (const p of PRISONS) {
   const plain = game(0);
   runTo(plain, 2, 9 * 60 + 30);
   check(!feastNow(plain), '(no holiday: an ordinary dinner)');
+}
+
+// Easter, the rules review: what wasn't found by 22:00 is gone from the inmates' desks too (else, week after week, the eggs fill the desks and leave no room for their loot); an egg carried off out of the yard stays where it lies.
+{
+  const desksOf = (sim: Sim) => containersOf(sim.world).map((c, k) => ({ c, k })).filter(({ c }) => c.table === 'inmateDesk');
+  const hiddenIn = (sim: Sim) => desksOf(sim).reduce((n, { k }) => n + sim.state.items.containers[k].filter((v) => itemOf(v) === CHOC_EGG && usesOf(v) === 1).length, 0);
+  const runs = [0, HOLIDAY.EASTER].map((h) => {
+    const sim = game(h);
+    const loot: string[] = [];
+    const left: number[] = [];
+    for (let d = 2; d <= 58; d++) {
+      // Each morning, just after the eggs are hidden: the inmates' desks looted of all but the eggs (as a player would, every day).
+      runTo(sim, d, 0);
+      sim.step(0);
+      let got = 0;
+      for (const { c, k } of desksOf(sim)) {
+        const box = sim.state.items.containers[k];
+        for (let j = c.hidden; j < box.length; j++) {
+          if (!box[j] || itemOf(box[j]) === CHOC_EGG) continue;
+          got++;
+          box[j] = 0;
+        }
+      }
+      loot.push(`${got}`);
+      if (h && (d - 2) % 7 === 0) {
+        runTo(sim, d, 14 * 60 + 1);
+        left.push(hiddenIn(sim));
+      }
+    }
+    return { loot: loot.join(','), left };
+  });
+  check(runs[1].left.length === 9 && runs[1].left.every((n) => n === 0), `22:00 on every egg hunt in 8 weeks: no egg left hidden in an inmate's desk (${runs[1].left.join(',')})`);
+  check(runs[1].loot === runs[0].loot, `the inmates' desks give as much loot over 8 weeks of Easter as without it (${runs[1].loot} / ${runs[0].loot})`);
+  console.log(`easter over 8 weeks: the inmates' desks' loot as without a holiday (${runs[0].loot.split(',').reduce((a, b) => a + Number(b), 0)} items in 57 mornings), no egg left in a desk after 22:00`);
+  // An egg carried out of the yard (a rat's, dropped at the player's feet indoors) and one up on the roof over the yard: still there at 22:00.
+  const sim = game(HOLIDAY.EASTER);
+  runTo(sim, 2, 13 * 60);
+  const yard = floorOf(sim.world, ['yard'])[0];
+  const canteen = floorOf(sim.world, ['canteen'])[0];
+  sim.state.items.ground.push([canteen, slot(CHOC_EGG, 1)], [placeKey(LAYER.ROOF, yard), slot(CHOC_EGG, 1)]);
+  runTo(sim, 2, 14 * 60 + 1);
+  const still = sim.state.items.ground.filter(([, v]) => itemOf(v) === CHOC_EGG && usesOf(v) === 1).map(([key]) => key);
+  check(still.length === 2 && still.includes(canteen) && still.includes(placeKey(LAYER.ROOF, yard)), `22:00: only the yard's eggs are gone; one carried indoors and one on a roof stay (${still.join(',')})`);
+}
+
+// The treats, the rules review: on offer only until their holiday day is over (the lolly until 15:30, the costume and the pumpkin until 21:00, the present until 22:00).
+{
+  const hours: Array<[number, string, number[]]> = [
+    [HOLIDAY.SUMMER, 'waterFight', [TREAT.LOLLY]],
+    [HOLIDAY.HALLOWEEN, 'costumeNight', [TREAT.COSTUME, TREAT.PUMPKIN]],
+    [HOLIDAY.CHRISTMAS, 'christmasDay', [TREAT.GIFT]],
+  ];
+  const rows: string[] = [];
+  for (const [h, id, treats] of hours) {
+    const sim = game(h);
+    const d = HOLIDAY_DAY[id as keyof typeof HOLIDAY_DAY];
+    const end = d.at + d.length;
+    runTo(sim, 2, end - 1);
+    const open = (what: number) => {
+      sim.state.items.open = containerOf(sim, TREATS[what].table);
+      return treatCheck(sim, what);
+    };
+    check(treats.every((w) => open(w) === null), `${HOLIDAYS[h]}: the treats still on offer at ${formatTime(sim.clock)}`);
+    runTo(sim, 2, end);
+    check(treats.every((w) => open(w) === 'notHere'), `${HOLIDAYS[h]}: and gone at ${formatTime(sim.clock)}`);
+    for (const w of treats) takeTreat(sim, TREATS[w].table, w);
+    check(treats.every((w) => !held(sim, TREATS[w].item)) && sim.state.feats[FEAT.treats] === 0, `${HOLIDAYS[h]}: none taken after hours`);
+    rows.push(`${treats.map((w) => TREATS[w].item).join(' and ')} until ${formatTime(sim.clock)}`);
+  }
+  console.log(`the treats on offer: ${rows.join('; ')}`);
 }
 
 // Summer: the water fight, an ice lolly, heatwaves.
@@ -327,4 +398,4 @@ for (const p of PRISONS) {
   console.log(`the decor:\n${rows.join('\n')}`);
 }
 
-// (The escape bots under each holiday: holidaybotstest.ts, run beside this one.)
+// (The escape bots under each holiday: holidaybotstest.ts; the evenings played by a bot: holidayruntest.ts. Both run beside this one.)

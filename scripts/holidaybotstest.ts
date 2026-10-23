@@ -3,7 +3,8 @@
  * Easter, summer, Halloween and Christmas (each holiday's day on day 2, its eggs, treats,
  * soaked guards, fireworks and summer weather): every one still out by its own way; and the
  * parole board's model prisoner (P39), whose run lives through two holiday days, under each.
- * (Beside holidaytest.ts, so the two run side by side.)
+ * (Beside holidaytest.ts, so the two run side by side; the holiday days' evenings, which these runs
+ * never reach, are played in holidayruntest.ts.)
  */
 import { HOLIDAY, HOLIDAYS } from '../src/content/holidays';
 import { PRISONS } from '../src/content/prisons';
