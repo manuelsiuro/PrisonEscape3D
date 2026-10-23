@@ -1596,7 +1596,10 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   holidaytest): garlands (lights at Christmas) along the canteen's north wall, broken round what hangs there
   (the menu board, the clock, posters, P40's odd jobs board), on the south wall where that leaves no run of two
   tiles (Irongate), the Christmas lights on a drooping wire; the tree never under a garland nor under anything
-  hung on a wall (its column, a tile either side: the menu board, the odd jobs board); egg baskets (Easter) or jack-o'-lanterns (Halloween) on its tables;
+  hung on a wall (its column, a tile either side: the menu board, the odd jobs board), and nothing standing on any
+  tile round it (its boughs and presents never touch a table or the counter): along a wall, else free in the room
+  away from doors and the counter's queue (Center Perks' 50,11, Stalag Flucht's 10,33), else out by the yard
+  (San Pancho's canteen has no room: on the sports ground, 34,34); egg baskets (Easter) or jack-o'-lanterns (Halloween) on its tables;
   parasols, deckchairs, a barbecue and two hoses' sprays on the sports ground (summer); lanterns along the yard's walls (Halloween); a lit tree with presents in a canteen corner and a snowman
   in a Santa hat (a sandman in the desert) for Christmas; fireworks just above and ahead of the player at
   midnight (within 3 tiles across and 1–4 ahead, in view on a phone). Nothing stands on furniture, the prison's
@@ -1613,7 +1616,7 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   P41's manhunt is never dressed: its outside world gets no decor (its frame's holiday is none) and its sim never reads
   `holiday`.
   The help page's picture is staged by `SHOTS.holidays` in scripts/dev/helpshot.ts (Christmas in Center Perks'
-  canteen), to be taken in the browser.
+  canteen: the tree free in the room, the player beside it, the lights on the north wall), to be taken in the browser.
 - **Cosmetics** (earned): bunny ears (*Egg Hunter*, 5 eggs in a run), summer shades (*Splashdown*, in the water
   fight), a witch's hat (*Trick or Treat*, 3 laughs), a Santa hat (*Secret Santa*, a present given); and *Out With
   a Bang* (5 tool strikes under the fireworks). They form a new shelf group, Holidays. Ledger: `eggsFound`,

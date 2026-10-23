@@ -366,7 +366,17 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
     }
   } else if (kind === HOLIDAY.CHRISTMAS) {
     if (canteen?.corner) out.push({ what: 'tree', x: canteen.corner[0], z: canteen.corner[1] });
-    const spot = pick(roomOf(yard), 1, 15)[0];
+    else {
+      // (A canteen with no room for it anywhere, tables to every wall, San Pancho's: the tree out in the yard, or by the sports ground.)
+      const clear = (ground: readonly number[]) => roomOf(ground).filter((u) => !nearDoor(w, u, 2));
+      const t = pick(clear(yard), 1, 16)[0] ?? pick(clear(floorOf(w, ['yard', 'sports'])), 1, 16)[0];
+      if (t !== undefined) {
+        out.push({ what: 'tree', ...at(t) });
+        place(t);
+      }
+    }
+    // (The snowman out in the yard; with the tree there already and no more room, on the sports ground.)
+    const spot = pick(roomOf(yard), 1, 15)[0] ?? pick(roomOf(floorOf(w, ['yard', 'sports'])), 1, 15)[0];
     if (spot !== undefined) out.push({ what: 'snowman', ...at(spot) });
   }
   return out;
@@ -457,8 +467,9 @@ function solidAt(w: World, x: number, z: number): boolean {
  * The canteen: runs of its north wall ([x0, x1, z] with the wall behind row z), broken where
  * something hangs on that wall (a garland never crosses the menu board, the clock, a poster or the
  * odd jobs board);
- * and a tile for the tree: free floor against a wall (a corner first), nothing standing beside
- * it (a plant, the water cooler, a table), no doorway within two tiles.
+ * and a tile for the tree: free floor with nothing standing on any tile round it (a plant, the
+ * water cooler, a table, the counter), against a wall (a corner first) or else free in the room
+ * (clear of the counter's queue), no doorway within two tiles.
  */
 function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<number>): { walls: Array<[number, number, number, boolean]>; corner: [number, number] | null } | null {
   const tiles: number[] = [];
@@ -510,19 +521,27 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
   // (Nor under a garland: its boughs stand taller than the string hangs.)
   const underGarland = (t: number) => walls.some(([a, b, z]) => z === Math.floor(t / MAP_W) && t % MAP_W >= a - 1 && t % MAP_W <= b);
   const bare = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 2) && !byBoard(t) && !underGarland(t);
+  // (Nothing standing on any tile round it: its boughs and presents, 0.6 or so out, never touch a table, the counter or a plant.)
   const roomy = (t: number) => [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => !things.has(t + dz * MAP_W + dx)));
-  const crowd = (t: number) => [-1, 0, 1].reduce((n, dz) => n + [-1, 0, 1].filter((dx) => things.has(t + dz * MAP_W + dx)).length, 0);
-  const elbow = (t: number) => [1, -1, MAP_W, -MAP_W].every((d) => !things.has(t + d));
-  // (A corner with room round it first, then anywhere along a wall; in a crowded canteen, nothing standing right beside it.)
+  // (Out in the room: canteen floor all round, off the pastimes' ground, and out of the way of the queue at a serving counter.)
+  const inside = new Set(tiles);
+  const queue = new Set<number>();
+  for (const p of w.props) {
+    if (p.kind !== 'counter' || w.zoneAt(p.x, p.z) !== 'canteen') continue;
+    for (let z = p.z - 1; z < p.z + p.d + 1; z++) for (let x = p.x - 1; x < p.x + p.w + 1; x++) queue.add(z * MAP_W + x);
+  }
+  const doors: number[] = [];
+  for (let t = 0; t < w.ground.kind.length; t++) if ((w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR) && [1, -1, MAP_W, -MAP_W].some((d) => inside.has(t + d))) doors.push(t);
+  const fromDoors = (t: number) => Math.min(99, ...doors.map((d) => Math.abs((d % MAP_W) - (t % MAP_W)) + Math.abs(Math.floor(d / MAP_W) - Math.floor(t / MAP_W))));
+  const open = (t: number) => !queue.has(t) && [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => inside.has(t + dz * MAP_W + dx) && !grounds.has(t + dz * MAP_W + dx)));
+  // (A corner with room round it first, then anywhere along a wall; else standing free in the room, nearest the north wall.)
   const c =
     tiles.find((t) => walled(t) >= 2 && bare(t) && roomy(t)) ??
     tiles.find((t) => walled(t) >= 1 && bare(t) && roomy(t)) ??
-    tiles.find((t) => walled(t) >= 2 && bare(t) && elbow(t)) ??
-    tiles.find((t) => walled(t) >= 1 && bare(t) && elbow(t)) ??
-    // (Stalag Flucht's little hall, tables to the walls: the corner with the least beside it.)
-    tiles.filter((t) => walled(t) >= 2 && bare(t)).sort((a, b) => crowd(a) - crowd(b) || a - b)[0] ??
-    // (Center Perks', its walls hung with the menu, the clock, a poster, the odd jobs board: along a wall, the least beside it.)
-    tiles.filter((t) => walled(t) >= 1 && bare(t)).sort((a, b) => crowd(a) - crowd(b) || a - b)[0];
+    tiles
+      .filter((t) => walled(t) === 0 && bare(t) && roomy(t) && open(t))
+      // (Nearest the north wall's lights; then as far from a doorway, the way people come and go, as can be.)
+      .sort((a, b) => Math.floor(a / MAP_W) - Math.floor(b / MAP_W) || fromDoors(b) - fromDoors(a) || a - b)[0];
   return { walls, corner: c === undefined ? null : [(c % MAP_W) + 0.5, Math.floor(c / MAP_W) + 0.5] };
 }
 
