@@ -1,0 +1,12 @@
+Easter Sundays 2026–2035: 2026-04-05, 2027-03-28, 2028-04-16, 2029-04-01, 2030-04-21, 2031-04-13, 2032-03-28, 2033-04-17, 2034-04-09, 2035-03-25
+window edges: 69 dates checked (Good Friday to Easter Monday for ten years, 1 Jul–31 Aug, 24 Oct–2 Nov, 15 Dec–6 Jan)
+easter: eggHunt 2, eggHunt 9, eggHunt 16
+summer: waterFight 2, waterFight 9, waterFight 16
+halloween: costumeNight 2, costumeNight 9, costumeNight 16
+christmas: christmasDay 2, newYearsEve 3, christmasDay 9, newYearsEve 10, christmasDay 16, newYearsEve 17
+easter at center-perks: 08:00 hidden eggHunt 12, 08:00 start eggHunt; 6 eggs in inmates' desks, 6 about the yard
+summer's water fight: a guard in the yard sees 2 tiles (7 without it)
+heatwave days in 60 (center-perks, stalag-flucht, shankton, san-pancho, irongate): 3, 0, 0, 21, 0; in summer 11, 0, 0, 29, 0
+costume night: 1 laughed, inmate 0's opinion 50 → 55
+christmas: a present given, the inmate's opinion 50 → 65
+new year's eve: a noise of 10 tiles carries 10 before midnight, 2 under the fireworks
