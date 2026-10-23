@@ -1,0 +1,24 @@
+the escape bots under easter:
+  center-perks: fence d1 23:46, tunnel d1 23:19, roof d1 23:35, takeover d1 08:54, stowaway d1 14:31, bluff d1 19:50, glider d1 23:45, paperwork d2 10:14
+  stalag-flucht: fence d1 23:34, tunnel d1 23:21, roof d1 23:30, takeover d1 08:55, stowaway d1 14:31, glider d1 23:30, paperwork d2 10:12
+  shankton: fence d1 23:33, tunnel d1 23:21, roof d1 23:48, takeover d1 09:09, bluff d1 19:52, glider d1 23:44, paperwork d2 10:15
+  san-pancho: tunnel d1 23:24, gate d1 23:33, takeover d1 09:03, stowaway d1 14:31, paperwork d2 10:17
+  irongate: raft d2 00:11, helicopter d1 23:51, takeover d1 09:36, stowaway d1 14:31, bluff d1 19:51, paperwork d2 10:09
+the escape bots under summer:
+  center-perks: fence d1 23:46, tunnel d1 23:19, roof d1 23:35, takeover d1 08:54, stowaway d1 14:31, bluff d1 19:50, glider d1 23:45, paperwork d2 10:14
+  stalag-flucht: fence d1 23:34, tunnel d1 23:21, roof d1 23:30, takeover d1 08:55, stowaway d1 14:31, glider d1 23:30, paperwork d2 10:12
+  shankton: fence d1 23:33, tunnel d1 23:21, roof d1 23:48, takeover d1 09:09, bluff d1 19:52, glider d1 23:44, paperwork d2 10:15
+  san-pancho: tunnel d1 23:24, gate d1 23:33, takeover d1 09:03, stowaway d1 14:31, paperwork d2 10:17
+  irongate: raft d2 00:11, helicopter d1 23:51, takeover d1 09:36, stowaway d1 14:31, bluff d1 19:51, paperwork d2 10:09
+the escape bots under halloween:
+  center-perks: fence d1 23:46, tunnel d1 23:19, roof d1 23:35, takeover d1 08:54, stowaway d1 14:31, bluff d1 19:50, glider d1 23:45, paperwork d2 10:14
+  stalag-flucht: fence d1 23:34, tunnel d1 23:21, roof d1 23:30, takeover d1 08:55, stowaway d1 14:31, glider d1 23:30, paperwork d2 10:12
+  shankton: fence d1 23:33, tunnel d1 23:21, roof d1 23:48, takeover d1 09:09, bluff d1 19:52, glider d1 23:44, paperwork d2 10:15
+  san-pancho: tunnel d1 23:24, gate d1 23:33, takeover d1 09:03, stowaway d1 14:31, paperwork d2 10:17
+  irongate: raft d2 00:11, helicopter d1 23:51, takeover d1 09:36, stowaway d1 14:31, bluff d1 19:51, paperwork d2 10:09
+the escape bots under christmas:
+  center-perks: fence d1 23:46, tunnel d1 23:19, roof d1 23:35, takeover d1 08:54, stowaway d1 14:31, bluff d1 19:50, glider d1 23:45, paperwork d2 10:14
+  stalag-flucht: fence d1 23:34, tunnel d1 23:21, roof d1 23:30, takeover d1 08:55, stowaway d1 14:31, glider d1 23:30, paperwork d2 10:12
+  shankton: fence d1 23:33, tunnel d1 23:21, roof d1 23:48, takeover d1 09:09, bluff d1 19:52, glider d1 23:44, paperwork d2 10:15
+  san-pancho: tunnel d1 23:24, gate d1 23:33, takeover d1 09:03, stowaway d1 14:31, paperwork d2 10:17
+  irongate: raft d2 00:11, helicopter d1 23:51, takeover d1 09:36, stowaway d1 14:31, bluff d1 19:51, paperwork d2 10:09
