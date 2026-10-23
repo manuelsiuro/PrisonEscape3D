@@ -5,11 +5,11 @@ import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, prisonDay } from '../sim/systems/calendar';
 import { atDesk, atRelease, atTray, calledNow } from '../sim/systems/paperwork';
-import { answerLeft, ANSWERED, applyRefusal, hearingDue, hearingOf, topicsOf, linePoints, OUTCOME, P, recordCounts, recordScore, VOIDS, WALKED_OUT } from '../sim/systems/parole';
+import { answerLeft, ANSWERED, applyRefusal, claimTrue, hearingDue, hearingOf, topicsOf, linePoints, OUTCOME, P, recordCounts, recordScore, VOIDS, WALKED_OUT } from '../sim/systems/parole';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import type { ParoleView } from '../ui/parole';
-import { banner, combatUI, itemsUI, paroleCard, sound, view } from './context';
+import { banner, combatUI, itemsUI, paBoard, paroleCard, sound, view } from './context';
 import { announcePa, dayTime } from './day';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
@@ -57,13 +57,16 @@ function weighedText(code: number, counts: readonly number[], topics?: readonly 
   return `${lineText(r.id, counts[code])} (${signed(pts)})`;
 }
 
-const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, q: 0, question: '', file: '', answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
+const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, q: 0, question: '', file: '', fileOk: true, answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
 
-/** The record's lines as the card lists them: every line with something on it (and the lines for, at nothing, while applying). */
+/** The record's lines as the card lists them: every line with something on it, its points when they aren't 0 (and the lines for at nothing, while applying, together on one line). */
 function recordLines(sim: Sim, all: boolean): ParoleView['lines'] {
   const counts = recordCounts(sim.state);
   const pts = linePoints(counts);
-  return RECORD.flatMap((r, k) => (counts[k] || pts[k] || (all && r.side > 0) ? [{ text: lineText(r.id, counts[k]), pts: signed(pts[k]), tone: pts[k] > 0 ? 'good' : pts[k] < 0 ? 'bad' : 'quiet' } as const] : []));
+  const lines: Array<ParoleView['lines'][number]> = RECORD.flatMap((r, k) => (counts[k] || pts[k] ? [{ text: lineText(r.id, counts[k]), pts: pts[k] ? signed(pts[k]) : '', tone: pts[k] > 0 ? 'good' : pts[k] < 0 ? 'bad' : 'quiet' } as const] : []));
+  const none = all ? RECORD.filter((r, k) => r.side > 0 && !counts[k]).map((r) => t(`parole.lineName.${r.id}` as Key)) : [];
+  if (none.length) lines.push({ text: t('parole.nothingYet', { lines: none.join(', ') }), pts: '', tone: 'quiet' });
+  return lines;
 }
 
 /** The card now (null: none). */
@@ -95,8 +98,11 @@ export function paroleNow(sim: Sim): ParoleView | null {
     v.memberK = o.q;
     v.member = t(`parole.member.${MEMBERS[o.q].id}` as Key);
     v.question = t(`parole.q.${topic.id}` as Key);
-    // (What the file says on it: the lines the claim rests on.)
-    v.file = t('parole.file', { lines: topic.lines.map((id) => lineText(id, counts[RECORD.findIndex((r) => r.id === id)])).join(' · ') });
+    // (What the file says on it: the lines the claim rests on, and whether a claim would hold, as claimTrue has it.)
+    const lines = topic.lines.map((id) => lineText(id, counts[RECORD.findIndex((r) => r.id === id)])).join(' · ');
+    v.fileOk = claimTrue(counts, o.topics[o.q]);
+    const need = topic.need ?? 1;
+    v.file = v.fileOk ? t('parole.fileHolds', { lines }) : need > 1 && topic.lines.every((id) => RECORD.find((r) => r.id === id)!.side > 0) ? t('parole.fileNeeds', { lines, n: need }) : t('parole.fileLie', { lines });
     v.answers = [t(`parole.claim.${topic.id}` as Key), t(`parole.own.${topic.id}` as Key), t(`parole.words.${topic.id}` as Key)];
     v.said = o.said[o.q];
     if (o.until && react?.q === o.q) {
@@ -152,6 +158,8 @@ export function paroleNow(sim: Sim): ParoleView | null {
     if (out === 'voided') v.weighed = [t(`parole.void.${VOIDS[p[P.LINE1]] ?? 'dig'}` as Key)];
     else if (out === 'denied') v.weighed = [p[P.LINE1], p[P.LINE2]].filter((c) => c >= 0).map((c) => (c >= ANSWERED || c === WALKED_OUT ? weighedText(c, []) : t(`parole.lineName.${RECORD[c]?.id ?? 'work'}` as Key)));
     v.note = t('parole.offer', { n: HEARING_AFTER, m: HEARING_AFTER - LAWYER_SOONER, time: dayTime(HEARING_FROM), d: APPLY_DAY });
+    // (The status says when already.)
+    if (why === 'paroleWait') v.why = '';
   } else {
     v.status = t('parole.none');
     v.statusTone = 'quiet';
@@ -204,10 +212,14 @@ export function announceParole(sim: Sim, e: Extract<SimEvent, { type: 'parole' }
       coachOnce('parole', 'hint.parole', { n: e.n ?? 0, room: roomOf(sim) });
       return;
     case 'called':
+      // (Seated already, the moment it's called: nothing to send them to.)
+      if (s.hearing) return;
       announcePa(sim, t('pa.hearing', { name: PLAYER.name || t('pa.releaseNumber'), room: roomOf(sim) }));
       banner.toast(t('toast.parole.called', { room: roomOf(sim), time: dayTime(HEARING_TO) }), 'good', 4200);
       return;
     case 'sat':
+      // (The call to the room, still to be said or being said, has been answered.)
+      paBoard.drop(t('pa.hearing', { name: PLAYER.name || t('pa.releaseNumber'), room: roomOf(sim) }));
       sound.chime();
       react = null;
       return;

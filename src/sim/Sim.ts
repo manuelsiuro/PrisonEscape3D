@@ -382,11 +382,11 @@ export class Sim {
 
   /** Where the block wants the player: the routine's zones, or during the Work Period, the job's room (GDD §2.1: mandatory if employed). */
   get dutyZones(): readonly string[] {
-    // The fire drill (P17): everyone out to roll call until it's over.
-    if (drillOn(this) && !this.state.lockdown) return MUSTER;
-    // (P39: the parole board sitting, or the hearing called: the room it sits in.)
+    // (P39: the parole board sitting, or the hearing called: the room it sits in, before a fire drill's muster, which excuses the player.)
     const board = hearingZones(this);
     if (board) return board;
+    // The fire drill (P17): everyone out to roll call until it's over.
+    if (drillOn(this) && !this.state.lockdown) return MUSTER;
     const r = ROUTINE[this.state.routine];
     if (r.id !== 'work') return this.prison.leisure?.track ? zonesOf(this.state.routine, (z) => this.zonesHere.has(z)) : r.zones;
     const job = this.jobActive();

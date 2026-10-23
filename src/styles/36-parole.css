@@ -7,6 +7,10 @@
 .parole-card .train-head b {
   min-width: 0;
 }
+/* (The question's place and the score so far on one line.) */
+.parole-card .train-value {
+  white-space: nowrap;
+}
 .parole-status {
   margin: 8px 0 0;
   font: 700 13px/1.3 var(--font-ui);
@@ -220,12 +224,22 @@
   margin-top: 8px;
 }
 
-/* Phones upright: above the hotbar. */
+/* Phones upright: above the hotbar; the desk's record kept below the player (it scrolls), its rows tight. */
 @media (max-width: 899px) and (min-height: 521px) {
   .parole-card {
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
     max-height: calc(100vh - 200px);
     overflow-y: auto;
+  }
+  .parole-card[data-phase='desk'] {
+    max-height: calc(50vh - 130px);
+  }
+  .parole-lines {
+    gap: 1px;
+  }
+  .parole-lines li {
+    padding: 1px 8px;
+    font-size: 11.5px;
   }
 }
 
@@ -238,9 +252,13 @@
     margin: 0;
     width: min(340px, calc(50vw - 40px));
     bottom: max(10px, env(safe-area-inset-bottom));
-    max-height: calc(100vh - 70px);
+    /* (Clear of the HUD's chips at the top; at the desk, of the hearing's chip too.) */
+    max-height: calc(100vh - max(10px, env(safe-area-inset-bottom)) - max(12px, env(safe-area-inset-top)) - 100px);
     overflow-y: auto;
     padding: 8px 12px;
+  }
+  .parole-card[data-phase='desk'] {
+    max-height: calc(100vh - max(10px, env(safe-area-inset-bottom)) - max(12px, env(safe-area-inset-top)) - 140px);
   }
   .parole-q {
     margin-top: 6px;
@@ -252,16 +270,27 @@
   .parole-card[data-phase='ask'] .train-note {
     display: none;
   }
-  body[data-parole='on'] .hotbar,
-  body[data-parole='on'] .energy {
+  /* (The card has the left side down to the bottom: the hotbar steps aside while it's up.) */
+  body.paroling .hotbar,
+  body.paroling .energy {
     display: none;
   }
-  /* (A lesson's card steps up to the top, clear of the board's.) */
+  /* (A lesson's card goes to the bottom right, clear of the board's card and the board itself above the player.) */
   body.paroling .coach.lesson-coach {
-    top: 0;
-    right: 184px;
+    top: auto;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    right: max(14px, env(safe-area-inset-right));
     left: auto;
-    max-width: min(400px, calc(100vw - 600px));
+    max-width: min(380px, calc(50vw - 100px));
+  }
+  /* (The warden's line on the right, under the heat, clear of the answers.) */
+  body.paroling .pa-strip {
+    top: calc(max(12px, env(safe-area-inset-top)) + 96px);
+    bottom: auto;
+    left: auto;
+    right: max(14px, env(safe-area-inset-right));
+    margin: 0;
+    max-width: calc(50vw - 160px);
   }
 }
 
@@ -288,5 +317,10 @@ body[data-parole='on'] .act-btn,
 body[data-parole='on'] .act-prompt,
 body[data-parole='on'] .up-btn,
 body[data-parole='on'] .lock-btn {
+  display: none;
+}
+/* (The verdict's card a moment: the action button off its last line.) */
+body[data-parole='verdict'] .act-btn,
+body[data-parole='verdict'] .act-prompt {
   display: none;
 }
