@@ -11,6 +11,10 @@ plot your way out of five prisons, each harder than the last.
 No download and no account. It plays in the browser, can be installed as an app and then works offline. In
 English and French.
 
+### 🎬 [Watch the trailer](https://youtu.be/P9cyX4B0F-8) (42 s)
+
+[![The trailer: the escape stamp as the glider lands outside the walls. Click to watch on YouTube](docs/screenshots/trailer.webp)](https://youtu.be/P9cyX4B0F-8)
+
 ![The title screen over the drifting prison](docs/screenshots/title.webp)
 
 ## The game
