@@ -12,6 +12,7 @@ import { fixerOf, smugglingOf } from '../sim/systems/smuggling';
 import { UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { MAP_W } from '../sim/world/World';
+import { TOUCH } from '../ui/dom';
 import { itemName } from '../ui/items';
 import type { HeldView, OddJobsView, PinView } from '../ui/oddjobs';
 import type { PaRow } from '../ui/pa';
@@ -258,7 +259,7 @@ export function oddjobKey(code: string): boolean {
 
 // ------------------------------------------------------------------ the HUD's chip
 
-const chip = { icon: '', text: '', sr: '', left: 0, urgent: false, done: false, watch: false };
+const chip = { icon: '', text: '', tail: '', sr: '', left: 0, urgent: false, done: false, watch: false };
 
 /** The job's chip: its kind's icon, the step under way, the time left (a bar); on watch, the whistle (null: no job). */
 export function jobHud(sim: Sim): typeof chip | null {
@@ -271,10 +272,14 @@ export function jobHud(sim: Sim): typeof chip | null {
   chip.watch = job[J.KIND] === KIND.LOOKOUT && job[J.STAGE] === STAGE.ON && canWhistle(sim as never);
   chip.urgent = whistleNow(sim as never);
   chip.done = job[J.STAGE] === STAGE.DONE;
-  chip.text = chip.watch ? t(chip.urgent ? 'oddjob.chip.coming' : 'oddjob.chip.watch', { n: Math.min(100, Math.floor((job[J.PROG] * 100) / DIG_STEPS)) }) : steps[k]?.text ?? '';
+  const pct = Math.min(100, Math.floor((job[J.PROG] * 100) / DIG_STEPS));
+  // (Off watch at a dig: where to stand, and the dig's progress apart, so a long name never cuts it off.)
+  const toWatch = !chip.watch && job[J.KIND] === KIND.LOOKOUT && job[J.STAGE] === STAGE.ON;
+  chip.text = chip.watch ? t(chip.urgent ? 'oddjob.chip.coming' : 'oddjob.chip.watch', { n: pct }) : toWatch ? t('oddjob.chip.watchAt', { name: inmateName(sim, job[J.GIVER]) }) : steps[k]?.text ?? '';
+  chip.tail = toWatch ? `${pct}%` : '';
   const days = KIND_DEFS[KINDS[job[J.KIND]]].days;
   chip.left = chip.done ? 1 : Math.max(0, Math.min(1, (job[J.ENDS] - s.step) / (days * 1440 * 20)));
-  chip.sr = `${t(`oddjob.kind.${KINDS[job[J.KIND]]}` as Key)}: ${chip.text}. ${leftOf(sim, job)}`;
+  chip.sr = `${t(`oddjob.kind.${KINDS[job[J.KIND]]}` as Key)}: ${chip.text}${chip.tail ? ` ${chip.tail}` : ''}. ${leftOf(sim, job)}`;
   return chip;
 }
 
@@ -292,7 +297,8 @@ export function jobRow(sim: Sim): PaRow | null {
     label: t('oddjob.fileLabel'),
     title: `${t(`oddjob.kind.${KINDS[job[J.KIND]]}` as Key)} · ${inmateName(sim, job[J.GIVER])}`,
     when: leftOf(sim, job),
-    sub: steps.map((x, i) => `${x.done ? '✓' : i === k ? '→' : '○'} ${x.text}`).join('  ·  '),
+    // (The dot kept with the step before it: a line never starts with it.)
+    sub: steps.map((x, i) => `${x.done ? '✓' : i === k ? '→' : '○'} ${x.text}`).join('\u00a0 ·  '),
   };
 }
 /** What makes the file's Today redraw for the job. */
@@ -349,7 +355,7 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
   switch (e.what) {
     case 'taken': {
       sound.chime();
-      coachOnce('oddjob', 'hint.oddjob');
+      coachOnce('oddjob', TOUCH ? 'hint.oddjobTouch' : 'hint.oddjob');
       if (e.from === FROM.CHAIN) {
         const step = sim.state.oddjobs[2];
         storyCard.show(name, storyTitle(sim, step), t(`oddjob.chain.${sim.prison.id}.${step}` as Key));
@@ -388,12 +394,12 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
       return banner.toast(t(e.n ? 'toast.oddjob.cakeWaits' : 'toast.oddjob.cakeKept'), 'bad', 4500);
     case 'digging':
       sound.blip();
-      coachOnce('lookout', 'hint.lookout');
+      coachOnce('lookout', TOUCH ? 'hint.lookoutTouch' : 'hint.lookout');
       return itemsUI.toast(t('toast.oddjob.digging', { name }));
     case 'coming':
       sound.sting();
       buzz('missed');
-      return banner.toast(t('toast.oddjob.coming'), 'bad', 2500);
+      return banner.toast(t(TOUCH ? 'toast.oddjob.comingTouch' : 'toast.oddjob.coming'), 'bad', 2500);
     case 'whistled':
       sound.whistle();
       return itemsUI.toast(t('toast.oddjob.whistled', { name }));

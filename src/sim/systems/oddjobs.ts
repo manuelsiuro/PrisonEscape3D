@@ -81,6 +81,12 @@ export function atBoard(sim: SimContext): boolean {
 
 /** The job held (null: none). */
 export const jobOf = (s: Pick<SimState, 'oddjob'>) => (s.oddjob.length === JOB_LEN ? s.oddjob : null);
+/** Handing this inmate this item delivers the job held's parcel (not a gift: what he thinks of the player stays). */
+export function delivering(s: Pick<SimState, 'oddjob'>, who: number, item: number): boolean {
+  const job = jobOf(s);
+  return !!job && job[J.KIND] === KIND.DELIVER && job[J.STAGE] === STAGE.ON && job[J.TARGET] === who && item === PARCEL;
+}
+
 /** An inmate owes the player one (a debt from a job). */
 export const owes = (s: Pick<SimState, 'oddjobs'>, who: number) => who >= 0 && who < 30 && !!(s.oddjobs[R.OWED] & (1 << who));
 
@@ -605,7 +611,8 @@ export function whistle(sim: SimContext) {
 function lookout(sim: SimContext, job: number[]) {
   const s = sim.state;
   const d = digOf(sim);
-  if (!d || !digHours(sim) || !diggerFree(sim)) {
+  // (Nobody digging, or the player off watch: no guard is "coming" for them to whistle at.)
+  if (!d || !digHours(sim) || !diggerFree(sim) || !onWatch(sim)) {
     job[J.WARN] = 0;
     return;
   }
@@ -613,7 +620,6 @@ function lookout(sim: SimContext, job: number[]) {
   const fresh = bits & ~job[J.WARN];
   job[J.WARN] = bits;
   for (let k = 0; k < s.guards.length; k++) if (fresh & (1 << k)) sim.events.push({ type: 'oddjob', what: 'coming', who: d.who, guard: k });
-  if (!onWatch(sim)) return;
   // Hiding: while one is near, and HIDE_STEPS at least after the whistle.
   if (s.step < job[J.AUX]) {
     if (bits) job[J.AUX] = Math.max(job[J.AUX], s.step + 1);

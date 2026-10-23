@@ -152,6 +152,17 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* (The dig's progress apart from the words: never cut off by the ellipsis.) */
+.hud-alert.hud-job .hud-job-tail {
+  flex: none;
+  font-style: normal;
+  font-weight: 700;
+  color: #e8c77a;
+  font-variant-numeric: tabular-nums;
+}
+.hud-alert.hud-job .hud-job-tail:empty {
+  display: none;
+}
 .hud-alert.hud-job .hud-alert-bar i {
   background: #e8c77a;
 }
@@ -274,10 +285,27 @@
   body:has(.item-panel:not(.hidden)) .hud-alerts {
     padding-right: calc(min(360px, 100vw - 32px) + 6px);
   }
+  /* (Both at once: no room left between them for the job's pill; its card, or the story's, is up anyway.) */
+  body.jobbing:has(.item-panel:not(.hidden)) .hud-alert.hud-job,
+  body.story-up:has(.item-panel:not(.hidden)) .hud-alert.hud-job {
+    display: none;
+  }
+  /* (A story's card docked left: the toasts and the banner centre on what's left of the screen.) */
+  body.story-up.is-playing .toasts {
+    left: calc(50% + (min(360px, 50vw - 40px) + 14px) / 2);
+    width: min(480px, calc(100vw - min(360px, 50vw - 40px) - 46px));
+  }
+  body.story-up.is-playing .banner {
+    left: calc(50% + (min(360px, 50vw - 40px) + 14px) / 2);
+    max-width: calc(100vw - min(360px, 50vw - 40px) - 46px);
+  }
 }
 
-/* Wide screens: docked left. */
+/* Wide screens: docked left; the job's pill a little wider. */
 @media (min-width: 900px) and (min-height: 521px) {
+  .hud-alert.hud-job {
+    max-width: min(420px, 34vw);
+  }
   .oddjobs-card {
     left: max(24px, env(safe-area-inset-left));
     right: auto;

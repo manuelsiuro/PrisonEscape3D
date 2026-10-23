@@ -330,7 +330,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   document.body.classList.toggle('paroling', !!paroleV);
   // (Before the board the answers are the controls; the verdict's card a moment, the action button off it too.)
   document.body.dataset.parole = paroleV && (paroleV.phase === 'ask' || paroleV.phase === 'weigh' || paroleV.phase === 'sat') ? 'on' : paroleV?.phase === 'verdict' ? 'verdict' : '';
-  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV ? null : raceNow(sim, a);
+  // (P40: the odd jobs' card docked left takes the place of the race's while it's open.)
+  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV || jobsV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);

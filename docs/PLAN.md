@@ -1321,7 +1321,7 @@ the game can already do.
 **Built** (what differs from the plan above, and why):
 - **The board**: `PrisonDef.board` (its own field, not inside `comms`: nothing in the phone's data changes, and the
   other phases' edits to `comms()` can't collide with it). On the canteen's north wall in all five prisons, clear of
-  the stage and of the two rows a wall hides: Center Perks 49,7; Stalag Flucht 5,30; Shankton 38,14; San Pancho 17,32;
+  the stage and of the two rows a wall hides: Center Perks 49,7; Stalag Flucht 5,30; Shankton 25,14 (moved off the cyan door at 38,13 in the browser re-check); San Pancho 17,32;
   Irongate 29,28. Its checks live in `oddjobstest` (the kiosk's checks, done the same way), not in phonetest.
   Drawn by `render/OddJobs.ts` (the decor kit's parts and the notice board's colours, not a `DECOR` kind: its cards
   come down as their pins are taken, a tag hangs while a job is held).
@@ -1385,6 +1385,12 @@ the game can already do.
   row says the job is done; one toast per action (a delivery, a debt's recruit). Center Perks' and Irongate's
   stories hand over a parcel; Shankton's Preacher keeps his name in French. Not done: the player's head over the
   middle cards (no browser in this pass); the map viewer's in-game photos to retake in the browser pass.
+- **Built (browser re-check):** Shankton's board moved to 25,14 (38,13 behind it was the cyan door; `oddjobstest`
+  now asks for brick or reinforced wall behind every board). A guard is "coming" only while the player is on watch.
+  A delivery's parcel handed over is not a gift (no opinion), and it leaves the gift row for its own. Touch variants
+  of the job's hints and the "coming" toast; the dig's % apart from the chip's words; the race card steps aside for
+  the job's card; in landscape the toasts clear a story's card, and the job's pill hides when a card and a panel are
+  both open; the board card's scroll reset once it's shown; the Today row's dot kept with the step before it.
 
 ### P41 The manhunt (v2.20)
 Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.

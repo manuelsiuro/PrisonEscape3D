@@ -292,6 +292,8 @@ export class TalkPanel {
         const n = itemOf(v);
         const value = itemDef(n).value;
         if (value <= 0) return '';
+        // (A delivery's parcel: handed over from its own row above, not as a gift.)
+        if (oj?.give && oj.give.slot === k) return '';
         return `<button class="slot gift" data-act="${TALK.GIFT}" data-arg="${k}" data-confirm="${esc(t('talk.confirmGive'))}" aria-label="${esc(t('talk.giveItem', { item: itemName(n) }))}"><img src="${itemIcons()[n]}" alt="" draggable="false"><i class="gift-gain">+${giftOpinion(value)}</i></button>`;
       })
       .join('');

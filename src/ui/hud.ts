@@ -56,7 +56,7 @@ export interface HudState {
   /** Tipsy (P28): until when (the clock's time), game minutes left, out of how many; null sober. */
   tipsy: { until: string; left: number; of: number } | null;
   /** The odd job held (P40): its kind's icon, the step under way, the time left (0–1); on watch at a dig, the whistle (urgent: a guard coming); null none. */
-  oddjob?: { icon: string; text: string; sr: string; left: number; urgent: boolean; done: boolean; watch: boolean } | null;
+  oddjob?: { icon: string; text: string; tail: string; sr: string; left: number; urgent: boolean; done: boolean; watch: boolean } | null;
   /** A lesson that isn't about the routine (the glider's, on the roof after Lights Out): the block's name and end alone, no place, no badge. */
   quietRoutine?: boolean;
 }
@@ -151,7 +151,7 @@ export class Hud {
         <button class="pill hud-alert hud-rat hidden" aria-keyshortcuts="T">${icon('rat', 15)}<span></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
         <button class="pill hud-alert hud-order hidden" aria-keyshortcuts="P"><i class="hud-order-ic"></i><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
         <button class="pill hud-alert hud-crew hidden" aria-keyshortcuts="G"><i class="hud-crew-ic"></i><b></b></button>
-        <button class="pill hud-alert hud-job hidden" aria-keyshortcuts="B"><i class="hud-job-ic"></i><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
+        <button class="pill hud-alert hud-job hidden" aria-keyshortcuts="B"><i class="hud-job-ic"></i><b></b><em class="hud-job-tail"></em><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -376,6 +376,7 @@ export class Hud {
       el.querySelector('.hud-job-ic')!.innerHTML = icon(ic, 15);
     }
     setText(el.querySelector('b')!, j.text);
+    setText(el.querySelector('.hud-job-tail')!, j.tail);
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, j.left)) * 100}%`;
     const what = t(j.urgent ? 'hud.whistle' : 'hud.job');
     el.title = TOUCH ? what : `${what} (B)`;
