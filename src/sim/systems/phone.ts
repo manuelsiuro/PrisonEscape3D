@@ -523,8 +523,14 @@ function callDone(sim: SimContext, call: Call) {
       s.heat -= n;
       s.eventFlags |= TODAY.APPEALED;
       sim.events.push({ type: 'phone', what: 'appeal', n });
-    } else if (call.sub === LAWYER.PAROLE) applyParole(sim, true);
-    else {
+    } else if (call.sub === LAWYER.PAROLE) {
+      // (Refused by the call's end, wanted or in a lockdown meanwhile: the fee back.)
+      if (!applyParole(sim, true)) {
+        const fee = callCost(CALLEE.LAWYER, LAWYER.PAROLE);
+        s.cash += fee;
+        sim.events.push({ type: 'cash', n: fee, why: 'phone' });
+      }
+    } else {
       s.phoned[2] = day + RETAINER_DAYS;
       sim.events.push({ type: 'phone', what: 'retainer', n: RETAINER_DAYS });
     }
