@@ -155,8 +155,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('bluff', 'idCard', '#5b8fd8', { pic: true, diagram: 'timeline', recipes: ['fake_id'], lessons: ['bluff'] }),
         T('glider', 'glider', '#9fc8e8', { pic: true, recipes: ['glider_frame', 'glider'], lessons: ['glider'] }),
         T('paperwork', 'clipboard', '#d8b04a', { pic: true, diagram: 'timeline', recipes: ['forged_release'], lessons: ['forgery', 'release'], see: ['parole'] }),
-        // P39. TODO(lead): pic: true once public/help/parole.webp is taken (scripts/dev/helpshot.ts SHOTS.parole: the parole lesson, before the board).
-        T('parole', 'scale', '#8a6bd1', { diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
+        T('parole', 'scale', '#8a6bd1', { pic: true, diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
       ],
     },
     {
