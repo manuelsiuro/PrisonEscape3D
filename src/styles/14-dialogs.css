@@ -191,18 +191,8 @@
 }
 
 /* ------------------------------------------------------------ how to play */
-.modal .help-row {
-  border-bottom-color: var(--dlg-line);
-}
-
-.modal .help-row p,
 .modal .help-foot {
   color: var(--dlg-soft);
-}
-
-.modal .help-row h3,
-.modal .help-sub {
-  color: #fff;
 }
 
 .modal .help-day li:nth-child(odd) {

@@ -86,7 +86,20 @@ export async function titleFlow() {
       continue;
     }
     if (choice === 'help') {
-      await showHelp(click);
+      // A lesson picked on a topic's page is played, then the page is there again.
+      let topic: string | undefined;
+      for (;;) {
+        const picked = await showHelp(click, { lessons: true, topic });
+        if (!picked) break;
+        topic = picked.topic;
+        const k = LESSONS.findIndex((l) => l.id === picked.lesson);
+        const played = await tutorialFlow(k);
+        view.setWorld(new Sim(backdrop).world);
+        if (played) {
+          next = 'play';
+          break;
+        }
+      }
       continue;
     }
     if (choice === 'trophies') {

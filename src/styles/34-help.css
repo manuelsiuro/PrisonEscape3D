@@ -1,0 +1,916 @@
+/*
+ * How to play, laid out again (P37): a search, tiles in groups, and a page for each topic (its
+ * picture or diagram, summary, key numbers, steps, call-outs, recipes, fine print and lessons).
+ * Always a modal, so in the dialogs' dark colors (14-dialogs.css).
+ */
+.help-card {
+  /* The dialogs' faint grey is too dim for the guide's small type: a lighter one (4.7:1 on the card). */
+  --help-faint: #8a9bb3;
+  /* White numbers sit on a deeper orange than the accent (4.5:1). */
+  --help-num: #c2410c;
+  width: min(600px, 100%);
+  max-height: min(880px, calc(100dvh - 24px));
+}
+
+/* ------------------------------------------------------------ search */
+.help-search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: var(--help-faint);
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.help-search:focus-within {
+  color: var(--orange);
+  box-shadow: inset 0 0 0 1.5px var(--orange);
+}
+
+.help-search input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: none;
+  font: 500 15px var(--font-ui);
+  color: var(--dlg-text);
+  background: transparent;
+}
+
+.help-search input::placeholder {
+  color: var(--help-faint);
+}
+
+.help-modal.on-topic .help-search,
+.help-modal.on-controls .help-search {
+  display: none;
+}
+
+/* ------------------------------------------------------------ tiles */
+.help-group {
+  margin: 14px 2px 8px;
+  font: 700 11.5px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--help-faint);
+}
+
+.help-group:first-child {
+  margin-top: 6px;
+}
+
+.help-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.help-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 14px;
+  text-align: left;
+  color: var(--dlg-text);
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+  cursor: pointer;
+  animation: card-in 0.3s var(--spring) both;
+  transition: background 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
+}
+
+.help-tile:hover,
+.help-tile:focus-visible {
+  background: var(--dlg-surface-hi);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 60%, transparent);
+  transform: translateY(-1px);
+}
+
+.help-tile:active {
+  transform: scale(0.98);
+}
+
+.help-tile .help-ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+.ht-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ht-text b {
+  font: 600 15px/1.2 var(--font-display);
+  color: #fff;
+}
+
+.ht-text small {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--dlg-soft);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.hd-none {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--dlg-soft);
+}
+
+/* ------------------------------------------------------------ a topic's page */
+.hd-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 8px;
+}
+
+.hd-head h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: 600 20px/1.15 var(--font-display);
+  color: #fff;
+}
+
+.hd-head .hd-back {
+  flex: none;
+}
+
+.hd-page {
+  display: grid;
+  gap: 12px;
+  padding-top: 2px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--dlg-soft);
+  animation: card-in 0.3s var(--spring) both;
+}
+
+.hd-pic {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  aspect-ratio: 1040 / 480;
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.hd-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hd-sum {
+  margin: 0;
+  font: 600 16.5px/1.4 var(--font-ui);
+  color: #fff;
+}
+
+.hd-plain {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.hd-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 -4px;
+  font: 700 11.5px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--help-faint);
+}
+
+/* Key numbers: chips. */
+.hd-nums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hd-nums li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+.hd-nums b {
+  font: 700 16px var(--font-display);
+  white-space: nowrap;
+  color: var(--accent-2);
+}
+
+.hd-nums span {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* Steps: numbered discs; lists: an icon or a dot. */
+.hd-steps,
+.hd-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: hd;
+}
+
+.hd-steps li,
+.hd-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hd-steps li > span:last-child,
+.hd-list li > span:last-child {
+  flex: 1;
+  min-width: 0;
+  color: var(--dlg-text);
+}
+
+.hd-steps:not(.iconed) li::before {
+  content: counter(hd);
+  counter-increment: hd;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: -1px;
+  border-radius: 50%;
+  font: 700 13px var(--font-ui);
+  color: #fff;
+  background: var(--help-num);
+  box-shadow: 0 3px 8px -3px rgba(255, 119, 20, 0.8);
+}
+
+.hd-list:not(.iconed) li::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: 8px 4px 0 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+
+.hd-li-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: -3px;
+  border-radius: 9px;
+  color: var(--accent-2);
+  background: var(--dlg-surface-hi);
+}
+
+.hd-li-ic.item {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.hd-li-ic .hd-item {
+  width: 26px;
+  height: 26px;
+}
+
+/* Call-outs. */
+.hd-call {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--dlg-text);
+}
+
+.hd-call b {
+  display: block;
+  margin-bottom: 2px;
+  font: 700 12px var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hd-call p,
+.hd-call ul {
+  margin: 0;
+}
+
+.hd-call ul {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+}
+
+.hd-call-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.hd-call.tip {
+  background: rgba(67, 209, 142, 0.1);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+
+.hd-call.tip b,
+.hd-call.tip .hd-call-ic {
+  color: var(--ok);
+}
+
+.hd-call.tip .hd-call-ic {
+  background: rgba(67, 209, 142, 0.16);
+}
+
+.hd-call.warn {
+  background: rgba(229, 72, 77, 0.12);
+  box-shadow: inset 3px 0 0 #ff6b6f;
+}
+
+.hd-call.warn b,
+.hd-call.warn .hd-call-ic {
+  color: #ff8a8d;
+}
+
+.hd-call.warn .hd-call-ic {
+  background: rgba(229, 72, 77, 0.18);
+}
+
+/* Recipes: the ingredients' pictures, what they make. */
+.hd-recipes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hd-recipe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--dlg-surface);
+}
+
+.hd-ing {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.hd-ing.out {
+  box-shadow: 0 0 0 2px var(--orange);
+}
+
+.hd-item {
+  display: block;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.hd-alt {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font: 700 10px var(--font-ui);
+  font-style: normal;
+  color: #fff;
+  background: var(--steel-2);
+}
+
+.hd-plus,
+.hd-arrow {
+  font: 700 15px var(--font-ui);
+  font-style: normal;
+  color: var(--help-faint);
+}
+
+.hd-arrow {
+  color: var(--orange);
+}
+
+.hd-rname {
+  display: grid;
+  min-width: 0;
+  margin-left: 6px;
+  line-height: 1.25;
+}
+
+.hd-rname b {
+  font-size: 13.5px;
+  color: #fff;
+}
+
+.hd-rname small {
+  font-size: 12px;
+  color: var(--help-faint);
+}
+
+/* Other topics. */
+.hd-see {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 6px;
+}
+
+.hd-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 12px;
+  font: 600 14px var(--font-ui);
+  text-align: left;
+  color: #fff;
+  background: var(--dlg-surface);
+  cursor: pointer;
+}
+
+.hd-link:hover {
+  background: var(--dlg-surface-hi);
+}
+
+.hd-link span {
+  flex: 1;
+  min-width: 0;
+}
+
+.hd-link .help-ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+}
+
+.hd-link > .ic {
+  color: var(--help-faint);
+}
+
+/* The fine print. */
+.hd-more {
+  border-radius: 12px;
+  background: var(--dlg-well);
+}
+
+.hd-more summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  font: 600 14px var(--font-ui);
+  color: var(--dlg-text);
+  list-style: none;
+  cursor: pointer;
+}
+
+.hd-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.hd-more summary .ic {
+  transition: transform 0.2s var(--ease);
+}
+
+.hd-more[open] summary .ic {
+  transform: rotate(90deg);
+}
+
+.hd-more ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 14px 12px 32px;
+  font-size: 13.5px;
+}
+
+/* Lessons. */
+.hd-lessons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hd-lessons .big-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.hd-lessons .big-btn span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hd-lesson-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--help-faint);
+}
+
+/* The topics either side. */
+.hd-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dlg-line);
+}
+
+.hd-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--dlg-text);
+  background: var(--dlg-surface);
+  cursor: pointer;
+}
+
+.hd-nav-btn:hover {
+  background: var(--dlg-surface-hi);
+}
+
+.hd-nav-btn span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.hd-nav-btn.next span {
+  text-align: right;
+}
+
+.hd-nav-btn small {
+  font-size: 11.5px;
+  color: var(--help-faint);
+}
+
+.hd-nav-btn b {
+  font: 600 14px/1.2 var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------ diagrams */
+.hd-meter {
+  padding: 22px 4px 4px;
+}
+
+.hd-bar {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #43d18e, #ffc23d 55%, #ff7714 75%, #e5484d);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.hd-bar i {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.45);
+}
+
+.hd-bar i span {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  font: 700 12px var(--font-ui);
+  font-style: normal;
+  white-space: nowrap;
+  color: #fff;
+  transform: translateX(-50%);
+}
+
+.hd-legend {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hd-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--dlg-text);
+}
+
+.hd-mark {
+  flex: none;
+  min-width: 52px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font: 700 13px var(--font-ui);
+  text-align: center;
+  color: #fff;
+  background: var(--help-num);
+}
+
+.hd-mark.m1 {
+  background: #b91c1c;
+}
+
+/* A timeline: the hours in a column as wide as the longest, a dot and a line down beside what happens. */
+.hd-tl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 14px;
+  margin: 0;
+  padding: 2px 0 2px 8px;
+  list-style: none;
+}
+
+.hd-tl li {
+  display: contents;
+}
+
+.hd-tl time {
+  font: 700 13.5px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--accent-2);
+}
+
+.hd-tl span {
+  position: relative;
+  padding-left: 20px;
+  color: var(--dlg-text);
+}
+
+.hd-tl span::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+
+/* (The line down to the next hour's dot.) */
+.hd-tl li:not(:last-child) span::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  bottom: -14px;
+  left: 4px;
+  width: 2px;
+  background: rgba(255, 119, 20, 0.45);
+}
+
+/* Distances in tiles. */
+.hd-bars {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hd-bars li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hd-bars-what {
+  flex: none;
+  width: 92px;
+  font-size: 13.5px;
+  color: var(--dlg-text);
+}
+
+.hd-tiles {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.hd-tiles i {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(150deg, #ffa25c, #e8963a);
+}
+
+.hd-tiles b {
+  margin-left: 6px;
+  font: 700 14px var(--font-display);
+  color: #fff;
+}
+
+/* The pockets. */
+.hd-pockets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hd-pk-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.hd-pk-group small {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--help-faint);
+}
+
+.hd-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.hd-slot:empty {
+  background: var(--dlg-well);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
+}
+
+/* A keyed door's pins. */
+.hd-pins {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hd-pins li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 10px;
+  background: var(--dlg-surface);
+}
+
+.hd-pins .hd-item {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.hd-pins span {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+}
+
+.hd-pins span i {
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--dlg-soft);
+}
+
+.hd-pins b {
+  font: 700 15px var(--font-display);
+  color: #fff;
+}
+
+/* Medals. */
+.hd-medals {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 4px 0;
+}
+
+.hd-medals > span {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.hd-medals small {
+  font-size: 12.5px;
+  color: var(--dlg-soft);
+}
+
+/* ------------------------------------------------------------ phones */
+@media (max-width: 440px) {
+  .help-tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+  .help-tile {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hd-bars-what {
+    width: 80px;
+  }
+  .hd-tiles i {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+@media (max-height: 520px) {
+  .help-search input {
+    height: 34px;
+  }
+  /* (A phone on its side: the picture a strip, the words in view under it.) */
+  .hd-pic {
+    aspect-ratio: auto;
+    height: 130px;
+  }
+  .hd-head {
+    padding: 0 0 4px;
+  }
+  .hd-head h3 {
+    font-size: 18px;
+  }
+  /* (On a topic's page the back button leads to the tabs: they give their room to the words.) */
+  .help-modal.on-topic .help-tabs {
+    display: none;
+  }
+  .help-group {
+    margin: 10px 2px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .help-tile,
+  .hd-page {
+    animation: none;
+  }
+  .help-tile:hover,
+  .help-tile:focus-visible,
+  .help-tile:active,
+  .hd-more[open] summary .ic {
+    transform: none;
+    transition: none;
+  }
+}
