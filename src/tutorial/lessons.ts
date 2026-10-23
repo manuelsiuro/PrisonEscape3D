@@ -1182,7 +1182,7 @@ export const LESSONS: readonly Lesson[] = [
       s.feats[FEAT.mealsKept] = 14;
       s.feats[FEAT.showersKept] = 7;
       s.days = new Array(9).fill(0);
-      s.days[5] = DAY.FIGHT;
+      s.days[5] = DAY.FIGHT | DAY.STARTED;
     },
     steps: [
       { text: 'lesson.parole.go', done: (c) => !!c.sim.state.hearing, goal: (sim) => hearingSeat(sim), speed: 2, failOn: paroleLost },

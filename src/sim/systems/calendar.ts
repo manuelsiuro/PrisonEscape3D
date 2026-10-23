@@ -13,6 +13,7 @@
  * (`crowdPlan`), the snipers in the weather, the heat of the sun.
  */
 import { COMMENDATION, DAY_BOOKS, DAY_EVENTS, DRILL_HEAT, EVENT_TIMES, FOG_FROM, FOG_UNTIL, HEAT_FROM, HEAT_UNTIL, INSPECTION_SIGHT, MOVIE_NOISE, MUSTER_MINUTES, OUTAGE_FROM, OUTAGE_TO, WEATHER_NOISE, WEATHER_SIGHT, WEATHERS, type DayEvent, type Weather } from '../../content/days';
+import { HEARING_FROM, HEARING_TO } from '../../content/parole';
 import { ROUTINE } from '../../content/routine';
 import { floorOf } from '../ai/places';
 import type { SimContext } from '../context';
@@ -280,7 +281,7 @@ export const TODAY = {
   MISSED_DRILL: 8,
   /** A feast's tray eaten. */
   FEASTED: 16,
-  /** Out cold, in solitary or in a lockdown during the drill's muster: no heat for missing it. */
+  /** Out cold, in solitary, in a lockdown or before the parole board (P39) during the drill's muster: no heat for missing it. */
   EXCUSED: 32,
   /** Delivery day (P18): the vehicle searched (a quick look; thoroughly), or waved through with nobody there to search. */
   SEARCHED: 64,
@@ -353,7 +354,7 @@ function startEvent(sim: SimContext, p: DayPlan) {
     if (mid >= 0) summon(sim, mid, FIGHT_GUARDS, (p.until - p.at) * STEPS_PER_MINUTE);
   }
   if (p.event === 'drill') {
-    if (sim.away || sim.state.lockdown) sim.state.eventFlags |= TODAY.EXCUSED;
+    if (sim.away || sim.state.lockdown || atHearing(sim.state)) sim.state.eventFlags |= TODAY.EXCUSED;
     else if (musterHere(sim)) muster(sim);
   }
 }
@@ -374,6 +375,9 @@ function commend(sim: SimContext) {
   sim.events.push({ type: 'today', event: 'inspection', phase: 'commend' });
 }
 
+/** P39: before the parole board, or called to it (its day, 10:00–10:30, parole.ts hearingDue): the drill's muster excuses the player (the routine sends them to the board). */
+const atHearing = (s: SimContext['state']) => !!s.hearing || (s.parole[0] > 0 && s.parole[0] === prisonDay(s.step) && dayMinute(s.step) >= HEARING_FROM && dayMinute(s.step) < HEARING_TO);
+
 /** The player stands at roll call (where the drill musters). */
 const musterHere = (sim: SimContext) => sim.state.layer === LAYER.GROUND && sim.playerZone === 'rollCall';
 
@@ -392,7 +396,7 @@ export function dayWatch(sim: SimContext) {
   if (p.event === 'none' || sim.world.def.rules?.relaxed) return;
   const m = dayMinute(s.step);
   if (p.event === 'drill' && m >= p.at && m < p.at + MUSTER_MINUTES && !(s.eventFlags & (TODAY.MUSTERED | TODAY.MISSED_DRILL))) {
-    if (sim.away || s.lockdown) s.eventFlags |= TODAY.EXCUSED;
+    if (sim.away || s.lockdown || atHearing(s)) s.eventFlags |= TODAY.EXCUSED;
     else if (musterHere(sim)) muster(sim);
   }
   if (p.event === 'inspection') {

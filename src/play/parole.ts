@@ -5,7 +5,7 @@ import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, prisonDay } from '../sim/systems/calendar';
 import { atDesk, atRelease, atTray, calledNow } from '../sim/systems/paperwork';
-import { answerLeft, ANSWERED, applyRefusal, hearingDue, hearingOf, topicsOf, linePoints, OUTCOME, P, recordCounts, recordScore, VOIDS, WALKED_OUT } from '../sim/systems/parole';
+import { answerLeft, ANSWERED, applyRefusal, claimTrue, hearingDue, hearingOf, topicsOf, linePoints, OUTCOME, P, recordCounts, recordScore, VOIDS, WALKED_OUT } from '../sim/systems/parole';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import type { ParoleView } from '../ui/parole';
@@ -57,7 +57,7 @@ function weighedText(code: number, counts: readonly number[], topics?: readonly 
   return `${lineText(r.id, counts[code])} (${signed(pts)})`;
 }
 
-const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, q: 0, question: '', file: '', answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
+const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, q: 0, question: '', file: '', fileOk: true, answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
 
 /** The record's lines as the card lists them: every line with something on it (and the lines for, at nothing, while applying). */
 function recordLines(sim: Sim, all: boolean): ParoleView['lines'] {
@@ -95,8 +95,11 @@ export function paroleNow(sim: Sim): ParoleView | null {
     v.memberK = o.q;
     v.member = t(`parole.member.${MEMBERS[o.q].id}` as Key);
     v.question = t(`parole.q.${topic.id}` as Key);
-    // (What the file says on it: the lines the claim rests on.)
-    v.file = t('parole.file', { lines: topic.lines.map((id) => lineText(id, counts[RECORD.findIndex((r) => r.id === id)])).join(' · ') });
+    // (What the file says on it: the lines the claim rests on, and whether a claim would hold, as claimTrue has it.)
+    const lines = topic.lines.map((id) => lineText(id, counts[RECORD.findIndex((r) => r.id === id)])).join(' · ');
+    v.fileOk = claimTrue(counts, o.topics[o.q]);
+    const need = topic.need ?? 1;
+    v.file = v.fileOk ? t('parole.fileHolds', { lines }) : need > 1 && topic.lines.every((id) => RECORD.find((r) => r.id === id)!.side > 0) ? t('parole.fileNeeds', { lines, n: need }) : t('parole.fileLie', { lines });
     v.answers = [t(`parole.claim.${topic.id}` as Key), t(`parole.own.${topic.id}` as Key), t(`parole.words.${topic.id}` as Key)];
     v.said = o.said[o.q];
     if (o.until && react?.q === o.q) {

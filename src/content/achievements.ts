@@ -217,7 +217,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'graduate', group: 'career', icon: 'bulb', career: (c) => c.lessons >= c.lessonsOf, progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf] },
   // v2.18 (P39, the parole board): out on parole; parole granted on the lawyer's filing; a lie the board caught; an application voided by plotting.
   { id: 'goodBehaviour', group: 'out', icon: 'scale', gives: 'paroleSpecs', escape: (e) => e.via === 'parole' },
-  { id: 'counsel', group: 'life', icon: 'briefcase', run: (r) => f(r, 'lawyerFiled') >= 1 && f(r, 'paroleGranted') >= 1 },
+  { id: 'counsel', group: 'life', icon: 'briefcase', run: (r) => f(r, 'lawyerGranted') >= 1 },
   { id: 'caughtOut', group: 'mishaps', icon: 'scale', hidden: true, run: (r) => f(r, 'liesCaught') >= 1 },
   { id: 'backToSquareOne', group: 'mishaps', icon: 'siren', hidden: true, run: (r) => f(r, 'paroleVoided') >= 1 },
 ];

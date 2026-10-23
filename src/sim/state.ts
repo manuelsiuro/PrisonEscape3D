@@ -39,7 +39,7 @@ import { ITEMS } from '../content/items';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FREED_STEPS } from '../content/paperwork';
 import { HEARING_AFTER, RECORD } from '../content/parole';
-import { freshParole, hearingOk, type Hearing, type VoidWhy } from './systems/parole';
+import { freshParole, hearingOk, SCORE_MAX, SCORE_MIN, type Hearing, type VoidWhy } from './systems/parole';
 import { GUARD_STR, OPINION_START, START_SPD, START_STR, STUDY_TIP_EVERY, UNIT } from './tuning';
 import { containersOf } from './world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from './world/World';
@@ -1020,10 +1020,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     // (The block under way keeps its check-in.)
     if (s.attended && ROUTINE[s.routine]?.miss) s.blocks[s.routine] = BLOCK.ATTENDED;
   }
-  // v2.18 (P39): the parole board as it can be (else nothing applied for), its counters whole, a hearing as it can be (else none).
-  if (!(ints(s.parole, 10) && s.parole.every((x, k) => x >= (k === 6 || k === 7 ? -1 : 0)) && s.parole[0] <= prisonDay(s.step) + HEARING_AFTER + 1 && s.parole[9] <= prisonDay(s.step) + 1)) s.parole = freshParole();
+  // v2.18 (P39): the parole board as it can be (else nothing applied for; a denial's score may be below zero), its counters whole, a hearing as it can be (else none; nor one with no hearing set for today).
+  if (!(ints(s.parole, 10) && s.parole.every((x, k) => (k === 5 ? x >= SCORE_MIN && x <= SCORE_MAX : x >= (k === 6 || k === 7 ? -1 : 0))) && s.parole[0] <= prisonDay(s.step) + HEARING_AFTER + 1 && s.parole[9] <= prisonDay(s.step) + 1)) s.parole = freshParole();
   if (!(Array.isArray(s.paroleBase) && (s.paroleBase.length === 0 || ints(s.paroleBase, RECORD.length)))) s.paroleBase = [];
-  if (!hearingOk(s.hearing, s.step)) s.hearing = null;
+  if (!hearingOk(s.hearing, s.step) || (s.hearing && !(s.parole[8] > 0 && s.parole[0] === prisonDay(s.step)))) s.hearing = null;
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);
