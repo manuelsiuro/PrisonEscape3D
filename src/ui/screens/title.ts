@@ -19,8 +19,8 @@ export interface TitleInfo {
   newcomer: boolean;
   /** The Daily Escape (P26): today's ("#12 · Shankton · 2 twists"), whether it's done today, the streak; locked before a first escape. */
   daily: { line: string; done: boolean; streak: number; locked: boolean };
-  /** Achievements earned ("12/42"), and whether some are new since the shelf was last opened (P16). */
-  trophies: string;
+  /** Achievements earned (12 of 42), and whether some are new since the shelf was last opened (P16). */
+  trophies: { n: number; of: number };
   trophiesNew: boolean;
   muted: boolean;
   /** The button to focus (the one that opened the screen just closed: Play, Settings…), so a keyboard picks up where it was. */
@@ -79,9 +79,10 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
           ${icon('chevronRight', 16)}
         </button>
         <div class="title-row three">
-          <button class="menu-btn" data-c="trophies" style="--tone:#e2a21b;--tone-2:#b87a0c">
-            <span class="menu-ic">${icon('trophy', 18)}${info.trophiesNew ? `<i class="menu-dot"></i><span class="sr-only">${t('trophy.newSr')}</span>` : ''}</span>
-            <span class="menu-text"><span class="menu-label">${t('title.trophies')}</span><small>${info.trophies}</small></span>
+          <button class="menu-btn" data-c="trophies" style="--tone:#e2a21b;--tone-2:#b87a0c;--done:${Math.round((100 * info.trophies.n) / Math.max(1, info.trophies.of))}%">
+            <span class="menu-ic">${icon('trophy', 18)}<span class="menu-count${info.trophiesNew ? ' new' : ''}" aria-hidden="true">${info.trophies.n}/${info.trophies.of}</span></span>
+            <span class="menu-text"><span class="menu-label">${t('title.trophies')}</span><span class="sr-only">, ${t('title.trophiesSr', info.trophies)}${info.trophiesNew ? `, ${t('trophy.newSr')}` : ''}</span></span>
+            <span class="menu-bar"></span>
           </button>
           <button class="menu-btn" data-c="help" style="--tone:#3fb07a;--tone-2:#1f8a5a">
             <span class="menu-ic">${icon('help', 18)}</span>

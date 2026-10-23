@@ -1205,6 +1205,7 @@ export const en = {
   "rumor.shakedownYou": "Shakedown on day {n}: your cell.",
   "common.cancel": "Cancel",
   "title.trophies": "Trophies",
+  "title.trophiesSr": "{n} of {of} achievements earned",
   "ach.freshAir": "Fresh Air",
   "ach.freshAir.d": "Escape from any prison.",
   "ach.mole": "Mole",

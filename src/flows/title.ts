@@ -64,7 +64,7 @@ export async function titleFlow() {
             tutorial: t('title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
             newcomer: !resume && lessonsDone().length === 0 && !found,
             daily: dailyCard(found > 0),
-            trophies: `${earned}/${ACHIEVEMENTS.length}`,
+            trophies: { n: earned, of: ACHIEVEMENTS.length },
             trophiesNew: unseenTrophies().length > 0,
             focus: back,
             muted: settings.muted,
