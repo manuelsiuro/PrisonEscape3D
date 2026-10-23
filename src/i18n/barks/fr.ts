@@ -2270,6 +2270,14 @@ export const frBarks: Barks = {
     "Les {team}, en tête du championnat. Bon, quoi ?",
   ],
   // ---------------------------------------------------------------- v2.21 (P42, holidays): each holiday's talk, a ghost story on costume night, Christmas in the snow and in the desert; soaked guards, festive guards; laughs at the costume, the water fight, the fireworks, the eggs.
+  'go.eggDesk': [
+    "Le bureau de {inmate} cache un œuf en chocolat. Chut.",
+    "Pour la chasse aux œufs : essaie le bureau de {inmate}.",
+    "{inmate} n’a pas encore trouvé l’œuf dans son propre bureau.",
+    "Psst : un œuf dans le tiroir de {inmate}. Vas-y.",
+    "Du chocolat dans le bureau de {inmate}. Le lapin est passé.",
+    "Fouille le bureau de {inmate} avant {inmate}.",
+  ],
   'in.hol.easter': [
     "Joyeuses Pâques ! T’as vu des œufs ? C’est pour un ami.",
     "J’ai trouvé un œuf dans ma chaussette. Je me plains pas.",

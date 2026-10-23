@@ -88,37 +88,18 @@ export class HolidaysView {
     this.undress(later);
     this.kind = kind;
     if (!kind) return;
-    const w = this.world;
     const parts: Part[] = [];
     const glow: Part[] = [];
-    const canteen = canteenOf(w);
-    const tables = w.props.filter((p) => p.kind === 'table' && w.zoneAt(p.x, p.z) === 'canteen').slice(0, 6);
-    const yard = floorOf(w, ['yard']);
-    const byWall = yard.filter((t) => solidAt(w, (t % MAP_W) + 1, Math.floor(t / MAP_W)) || solidAt(w, (t % MAP_W) - 1, Math.floor(t / MAP_W)) || solidAt(w, t % MAP_W, Math.floor(t / MAP_W) - 1));
-    const pick = (list: readonly number[], n: number, salt: number) => [...list].sort((a, b) => hash(a, salt) - hash(b, salt)).slice(0, n);
-    const at = (t: number) => [(t % MAP_W) + 0.5, Math.floor(t / MAP_W) + 0.5] as const;
-    if (canteen) {
-      const colors = kind === HOLIDAY.EASTER ? PASTEL : kind === HOLIDAY.SUMMER ? BRIGHT : kind === HOLIDAY.HALLOWEEN ? SPOOKY : LIGHTS;
-      for (const [x0, x1, z] of canteen.walls) garland(kind === HOLIDAY.CHRISTMAS ? glow : parts, x0, x1, z, colors, kind === HOLIDAY.CHRISTMAS);
-    }
-    if (kind === HOLIDAY.EASTER) {
-      for (const p of tables) basket(parts, p.x + p.w / 2, p.z + p.d / 2);
-    } else if (kind === HOLIDAY.SUMMER) {
-      for (const t of pick(yard, 3, 11)) parasol(parts, ...at(t), hash(t, 3) * Math.PI * 2);
-      const bbq = pick(byWall, 1, 12)[0];
-      if (bbq !== undefined) barbecue(parts, glow, ...at(bbq));
-      this.hoses = pick(byWall, 2, 13).map((t, k) => {
-        const [x, z] = at(t);
-        const [tx, tz] = at(yard[Math.floor(hash(t, k + 5) * yard.length)] ?? t);
-        return { x0: x, z0: z, x1: tx, z1: tz };
-      });
-    } else if (kind === HOLIDAY.HALLOWEEN) {
-      for (const p of tables) lantern(parts, glow, p.x + p.w / 2, TABLE_TOP, p.z + p.d / 2, 0.8);
-      for (const t of pick(byWall, 4, 14)) lantern(parts, glow, ...xz3(at(t)), 1.2);
-    } else if (kind === HOLIDAY.CHRISTMAS) {
-      if (canteen?.corner) tree(parts, glow, canteen.corner[0], canteen.corner[1]);
-      const spot = pick(yard, 1, 15)[0];
-      if (spot !== undefined) snowman(parts, ...at(spot), w.def.theme === 'desert');
+    const colors = kind === HOLIDAY.EASTER ? PASTEL : kind === HOLIDAY.SUMMER ? BRIGHT : kind === HOLIDAY.HALLOWEEN ? SPOOKY : LIGHTS;
+    for (const d of holidayDecor(this.world, kind)) {
+      if (d.what === 'garland') garland(kind === HOLIDAY.CHRISTMAS ? glow : parts, d.x, d.x1!, d.z, colors, kind === HOLIDAY.CHRISTMAS);
+      else if (d.what === 'basket') basket(parts, d.x, d.z);
+      else if (d.what === 'parasol') parasol(parts, d.x, d.z, hash(d.x * 7 + d.z, 3) * Math.PI * 2);
+      else if (d.what === 'barbecue') barbecue(parts, glow, d.x, d.z);
+      else if (d.what === 'hose') this.hoses.push({ x0: d.x, z0: d.z, x1: d.x1!, z1: d.z1! });
+      else if (d.what === 'lantern') lantern(parts, glow, d.x, d.y ?? 0, d.z, d.y ? 0.8 : 1.2);
+      else if (d.what === 'tree') tree(parts, glow, d.x, d.z);
+      else if (d.what === 'snowman') snowman(parts, d.x, d.z, this.world.def.theme === 'desert');
     }
     const lit = parts.length ? new THREE.Mesh(merge(parts, false), kitMaterial) : null;
     if (lit) {
@@ -208,7 +189,66 @@ export class HolidaysView {
   }
 }
 
-const xz3 = ([x, z]: readonly [number, number]) => [x, 0, z] as const;
+/** A piece of a holiday's decor where it goes (tiles; `x1`/`z1` a garland's or a hose's other end, `y` on a table). */
+export interface HolidayPiece {
+  what: 'garland' | 'basket' | 'parasol' | 'barbecue' | 'hose' | 'lantern' | 'tree' | 'snowman';
+  x: number;
+  z: number;
+  y?: number;
+  x1?: number;
+  z1?: number;
+}
+
+/**
+ * Where a holiday's decor goes in a prison (pure, from the map: holidaytest checks every piece
+ * stands on open floor): garlands along the canteen's north wall; Easter's baskets and Halloween's
+ * lanterns on its tables; summer's parasols in the open yard (or the sports ground, where the yard is
+ * only a strip), the barbecue and the hoses by its walls; Halloween's lanterns along the yard's walls; Christmas's tree in a corner of the canteen
+ * and the snowman out in the yard.
+ */
+export function holidayDecor(w: World, kind: number): HolidayPiece[] {
+  const out: HolidayPiece[] = [];
+  if (!kind) return out;
+  const canteen = canteenOf(w);
+  const tables = w.props.filter((p) => p.kind === 'table' && w.zoneAt(p.x, p.z) === 'canteen').slice(0, 6);
+  // (Out in the yard; where it's only a strip, Shankton's, the sports ground too.)
+  const own = floorOf(w, ['yard']);
+  const yard = own.length >= 40 ? own : floorOf(w, ['yard', 'sports']);
+  const inYard = new Set(yard);
+  const xz = (t: number) => [t % MAP_W, Math.floor(t / MAP_W)] as const;
+  const near = [-1, 0, 1].flatMap((dz) => [-1, 0, 1].map((dx) => dz * MAP_W + dx)).filter((d) => d !== 0);
+  // (Open: yard all round, for what spreads over its neighbours; by a wall: one beside it is solid.)
+  const all = yard.filter((t) => near.every((d) => inYard.has(t + d)));
+  // (A narrow yard, Shankton's: yard on the four sides will do.)
+  const open = all.length >= 4 ? all : yard.filter((t) => [1, -1, MAP_W, -MAP_W].every((d) => inYard.has(t + d)));
+  const byWall = yard.filter((t) => {
+    const [x, z] = xz(t);
+    return solidAt(w, x + 1, z) || solidAt(w, x - 1, z) || solidAt(w, x, z - 1);
+  });
+  const pick = (list: readonly number[], n: number, salt: number) => [...list].sort((a, b) => hash(a, salt) - hash(b, salt) || a - b).slice(0, n);
+  const at = (t: number) => ({ x: (t % MAP_W) + 0.5, z: Math.floor(t / MAP_W) + 0.5 });
+  if (canteen) for (const [x0, x1, z] of canteen.walls) out.push({ what: 'garland', x: x0, x1, z });
+  if (kind === HOLIDAY.EASTER) for (const p of tables) out.push({ what: 'basket', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
+  else if (kind === HOLIDAY.SUMMER) {
+    const spots = pick(open, 3, 11);
+    for (const t of spots) out.push({ what: 'parasol', ...at(t) });
+    const bbq = pick(byWall, 1, 12)[0];
+    if (bbq !== undefined) out.push({ what: 'barbecue', ...at(bbq) });
+    pick(byWall, 2, 13).forEach((t, k) => {
+      const to = at(open[Math.floor(hash(t, k + 5) * open.length)] ?? t);
+      out.push({ what: 'hose', ...at(t), x1: to.x, z1: to.z });
+    });
+  } else if (kind === HOLIDAY.HALLOWEEN) {
+    for (const p of tables) out.push({ what: 'lantern', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
+    for (const t of pick(byWall, 4, 14)) out.push({ what: 'lantern', ...at(t) });
+  } else if (kind === HOLIDAY.CHRISTMAS) {
+    if (canteen?.corner) out.push({ what: 'tree', x: canteen.corner[0], z: canteen.corner[1] });
+    const spot = pick(open, 1, 15)[0];
+    if (spot !== undefined) out.push({ what: 'snowman', ...at(spot) });
+  }
+  return out;
+}
+
 
 function solidAt(w: World, x: number, z: number): boolean {
   if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return false;

@@ -493,4 +493,5 @@ for (const prison of [...PRISONS, TRAINING]) {
   if (lasting.some((f) => f.kind === 'lazy')) check(naps > 0, `${prison.id}: the lazy guard naps as told`);
 }
 console.log(`a glider's day: flown out from a copy ${glidesFlown} times`);
-check(GOSSIP.every((k) => kinds.has(k) || ['heat'].includes(k)), `every kind of gossip came up somewhere (${GOSSIP.filter((k) => !kinds.has(k)).join(', ') || 'all'})`);
+// (P42: the egg hunt's tip comes up only under Easter: holidaytest checks it.)
+check(GOSSIP.every((k) => kinds.has(k) || ['heat', 'eggDesk'].includes(k)), `every kind of gossip came up somewhere (${GOSSIP.filter((k) => !kinds.has(k) && k !== 'eggDesk').join(', ') || 'all'})`);

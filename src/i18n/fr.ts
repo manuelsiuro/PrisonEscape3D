@@ -3799,6 +3799,7 @@ export const fr: Partial<Strings> = {
   "help.k.day": "La journée : chaque créneau, où être, les événements",
   "help.t.day": "L’horloge (en haut) ouvre la journée : chaque créneau, où être, les événements",
   // v2.21 (P42, holidays).
+  "rumor.eggDesk": "Il y a un œuf en chocolat dans le bureau de {inmate} aujourd’hui.",
   "holiday.label": "Fête",
   "holiday.name.none": "Pas de fête",
   "holiday.name.easter": "Pâques",
@@ -3817,7 +3818,7 @@ export const fr: Partial<Strings> = {
   "holiday.day.christmasDay": "Jour de Noël",
   "holiday.day.newYearsEve": "Réveillon du Nouvel An",
   "holiday.dayD.eggHunt": "Des œufs en chocolat cachés dans les bureaux des détenus et dans la cour : trouve-les avant eux (ceux de la cour disparaissent à 22:00). Mange-les ou vends-les. Gigot au dîner.",
-  "holiday.dayD.waterFight": "15:00–15:30, des tuyaux dans la cour : un gardien trempé n’y voit qu’à {n} cases. Une glace au comptoir de la cantine ; barbecue au dîner.",
+  "holiday.dayD.waterFight": "15:00–15:30, des tuyaux dans la cour et sur le terrain de sport : un gardien trempé n’y voit qu’à {n} cases. Une glace au comptoir de la cantine ; barbecue au dîner.",
   "holiday.dayD.costumeNight": "Un costume au comptoir de la cantine, une citrouille dans le congélateur de la cuisine (creuse-la en cuisine). Dès 19:00, le costume ne trompe personne, mais chaque détenu près de toi rit.",
   "holiday.dayD.christmasDay": "Un cadeau sous le sapin, au comptoir de la cantine : offre-le à quelqu’un. Dîner de Noël à 17:00.",
   "holiday.dayD.newYearsEve": "Feu d’artifice à minuit : pendant dix minutes, il couvre tous les bruits que tu fais.",
