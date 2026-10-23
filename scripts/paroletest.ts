@@ -37,7 +37,6 @@ import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { MAP_H, MAP_W, type World } from '../src/sim/world/World';
 import { check } from './assert';
 import { Bot, tileOf } from './bots';
-import { PLANS } from './escapes';
 import { modelPrisoner } from './parolebots';
 
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
