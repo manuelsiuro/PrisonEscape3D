@@ -1,7 +1,7 @@
-import { TOUCH, h } from '../dom';
+import { h } from '../dom';
 import { icon } from '../icons';
 import { t } from '../../i18n';
-import { keysReady } from '../../i18n/keys';
+import { showShare } from './share';
 
 export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'trophies' | 'help' | 'settings' | 'daily';
 
@@ -32,7 +32,7 @@ export interface TitleInfo {
 /**
  * Title screen over the drifting prison; resolves with the player's choice. A hero card for
  * the main action (Continue the game in progress, else Play), New game and Load under it,
- * Trophies (P16), How to play and Settings side by side, a sound switch and the controls in the footer, the
+ * Trophies (P16), How to play and Settings side by side, a sound switch and Share (the game's link as a QR code) in the footer, the
  * version in the corner.
  */
 export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoice> {
@@ -94,7 +94,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
           </button>
         </div>
       </div>
-      <div class="title-foot"><button class="sound-toggle ${info.muted ? 'off' : ''}" data-sound>${sound(info.muted)}</button><span class="title-keys">${t(TOUCH ? 'title.touch' : 'title.keys')}</span></div>
+      <div class="title-foot"><button class="sound-toggle ${info.muted ? 'off' : ''}" data-sound>${sound(info.muted)}</button><button class="share-toggle" data-share>${icon('share', 15)}<span>${t('title.share')}</span></button></div>
     </div>
     <span class="title-version">v${__APP_VERSION__}</span>`,
   );
@@ -107,6 +107,17 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         toggle.classList.toggle('off', muted);
         toggle.innerHTML = sound(muted);
         if (!muted) click();
+        return;
+      }
+      const shareBtn = target.closest<HTMLElement>('[data-share]');
+      if (shareBtn) {
+        click();
+        // (Over the title, which stays, out of reach of Tab meanwhile; the keyboard back on Share once it's closed.)
+        el.inert = true;
+        void showShare(click).then(() => {
+          el.inert = false;
+          shareBtn.focus({ preventScroll: true });
+        });
         return;
       }
       const btn = target.closest<HTMLElement>('[data-c]');
@@ -127,7 +138,5 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
     el.querySelector('.daily-btn small')!.textContent = info.daily.line;
     document.body.append(el);
     if (info.focus) el.querySelector<HTMLElement>(`[data-c="${info.focus}"]`)?.focus({ preventScroll: true });
-    // The keys' labels follow the keyboard once the browser says which it is (Z Q S D on AZERTY).
-    if (!TOUCH) keysReady.then(() => (el.querySelector('.title-keys')!.textContent = t('title.keys')));
   });
 }

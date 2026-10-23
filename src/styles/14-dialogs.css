@@ -730,3 +730,75 @@ body:has(.title-screen:not(.hidden)) .update-card {
   bottom: auto;
   animation-name: uc-in-top;
 }
+
+/* ------------------------------------------------------------ share: the game's QR code */
+.modal .share-card {
+  width: min(360px, 100%);
+  text-align: center;
+}
+
+.modal .share-scan {
+  margin: 6px 0 14px;
+  color: #c9d6e6;
+  font-size: 14.5px;
+  text-wrap: balance;
+}
+
+.share-qr {
+  width: min(246px, 70vw, 42vh);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  padding: 6px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 119, 20, 0.85), 0 14px 34px -10px rgba(255, 119, 20, 0.6);
+}
+
+.share-qr img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  image-rendering: pixelated;
+}
+
+.modal .share-url {
+  margin: 14px 0 18px;
+  font: 600 13.5px var(--font-ui);
+  color: var(--dlg-soft);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+/* A phone on its side: the code on the left, the words and buttons beside it. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .modal .share-card {
+    display: grid;
+    grid-template: 'qr title' auto 'qr scan' auto 'qr foot' 1fr / auto 1fr;
+    column-gap: 22px;
+    width: min(600px, 100%);
+    text-align: left;
+  }
+  .modal .share-card h2 {
+    grid-area: title;
+  }
+  .modal .share-scan {
+    grid-area: scan;
+    margin-bottom: 0;
+  }
+  .share-qr {
+    grid-area: qr;
+    align-self: center;
+    width: min(220px, 60vh);
+  }
+  .share-foot {
+    grid-area: foot;
+    align-self: end;
+  }
+  .modal .share-url {
+    margin: 10px 0 14px;
+  }
+  .modal .share-card .actions {
+    justify-content: flex-start;
+  }
+}
