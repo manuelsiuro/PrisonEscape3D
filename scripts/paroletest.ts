@@ -29,7 +29,9 @@ import { dailyOf } from '../src/content/daily';
 import { command, EXT, OP, SLOT } from '../src/sim/command';
 import { ESCAPES, Sim, type SimEvent } from '../src/sim/Sim';
 import { loadState, WAKE } from '../src/sim/state';
-import { DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
+import { DAY_STEPS, dayMinute, prisonDay } from '../src/sim/systems/clock';
+import { guestSpot } from '../src/sim/systems/smuggling';
+import { VISIT_STEPS } from '../src/content/smuggling';
 import { slot } from '../src/sim/systems/items';
 import { DAY, FEAT, ledger } from '../src/sim/systems/ledger';
 import { drillOn, TODAY } from '../src/sim/systems/calendar';
@@ -581,6 +583,26 @@ function hearAll(g: ReturnType<typeof game>, pick: (q: number, topic: number) =>
   const drill = of(g.seen, 'today').filter((e) => e.event === 'drill').map((e) => e.phase);
   check(rang > 0 && [...zones].join() === 'visitation', `the drill rings while seated: the routine keeps the player before the board (${[...zones].join()})`);
   check(!drill.includes('missed') && (s.eventFlags & TODAY.EXCUSED) !== 0 && !news(g.seen, 'walkedOut').length && news(g.seen, 'denied').length + news(g.seen, 'granted').length === 1, `the muster excused, the board's word given (drill: ${drill.join()})`);
+}
+{
+  // The hearing on visiting day (full review): the board sits on the visiting chairs; no visitor until the verdict, then one, still in visiting hours.
+  const g = game(CENTER_PERKS, 5);
+  const s = g.sim.state;
+  g.jump(3, 10, 5);
+  g.toDesk();
+  g.step(APPLY);
+  s.calendar = [[0, 0, 0], [10, DAY_EVENTS.indexOf('visiting'), 0]];
+  g.jump(10, 9, 59);
+  put(s.player, 20, 20);
+  g.to(10, 10, 0);
+  g.toRoom();
+  g.step();
+  const visits = () => of(g.seen, 'smuggle').filter((e) => e.what === 'visit').length;
+  check(!!s.hearing && guestSpot(g.sim) >= 0, 'visiting day: sat before the board, on a visiting seat');
+  hearAll(g, () => ANSWER.OWN, 20 * STEPS_PER_SECOND);
+  check(visits() === 0 && news(g.seen, 'denied').length + news(g.seen, 'granted').length === 1, `no visitor while the board sits (the verdict at ${dayMinute(s.step)} min)`);
+  for (let k = 0; k < VISIT_STEPS + 5 && !visits(); k++) g.step();
+  check(visits() === 1 && dayMinute(s.step) < 4 * 60, `then the visitor, still in visiting hours (${dayMinute(s.step)} min)`);
 }
 {
   // Cleared at the desk, then damage found as the player walks out: the board's word stands.

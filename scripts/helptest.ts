@@ -7,6 +7,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { RECIPES } from '../src/content/recipes';
 import { ITEM } from '../src/content/items';
+import { FIXER_PAY, KIND_DEFS } from '../src/content/oddjobs';
 import { PRISONS } from '../src/content/prisons';
 import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
@@ -90,6 +91,16 @@ for (const tp of ALL_TOPICS) {
 for (const key of Object.keys(E)) {
   const m = /^help\.(\w+)\.(\w+)$/.exec(key);
   if (m && PARTS.includes(m[2]) && !ids.includes(m[1])) bad(`${key}: no such topic`);
+}
+// Numbers that come from the content (full review): the odd jobs' pay, the fixer's own.
+{
+  const defs = Object.values(KIND_DEFS);
+  const top = (d: (typeof defs)[number]) => d.pay + d.span - 1;
+  const lo = Math.min(...defs.map((d) => d.pay));
+  const hi = Math.max(...defs.map(top));
+  const fixer = Math.max(...defs.filter((d) => d.fixer).map((d) => Math.round((top(d) * FIXER_PAY) / 100)));
+  if (!E['help.oddjobs.nums'].includes(`$${lo}–${hi}|`) || !E['help.oddjobs.nums'].includes(`$${fixer})`)) bad(`help.oddjobs.nums: the pay is $${lo}–${hi}, the fixer's up to $${fixer}`);
+  if (!F['help.oddjobs.nums']?.includes(`${lo}–${hi}\u202f$|`) || !F['help.oddjobs.nums']?.includes(`${fixer}\u202f$`)) bad(`help.oddjobs.nums (fr): the pay is ${lo}–${hi} $, the fixer's up to ${fixer} $`);
 }
 if (problems.length) throw new Error(problems.join('\n'));
 console.log(`${ALL_TOPICS.length} topics in ${Object.values(HELP).flat().length} groups: ${shaped} laid out as pages (${pageWords} words before the fine print), ${ALL_TOPICS.length - shaped} still a paragraph (${oldWords} words); ${pics} pictures`);

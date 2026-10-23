@@ -7,6 +7,7 @@
  */
 import { FEAT, type Feat } from '../sim/systems/ledger';
 import { ATTR_MAX } from '../sim/tuning';
+import { isLegal } from './manhunt';
 import type { Medal } from './medals';
 
 export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'days' | 'daily' | 'holidays' | 'mishaps' | 'career';
@@ -76,6 +77,8 @@ export interface Achievement {
 const f = (r: RunView, k: Feat) => r.feats[FEAT[k]] ?? 0;
 /** The whole run is in the ledger (not a game loaded from before it). */
 const whole = (r: RunView) => f(r, 'partial') === 0;
+/** Conduct: the whole run, and an escape (full review, PLAN §2: a legal release, paperwork or parole, earns no conduct; it asks for it anyway). */
+const conduct = (e: EscapeView) => whole(e) && !isLegal(e.via);
 const stat = (c: Career, k: string) => c.stats[k] ?? 0;
 /** A career count reaching a goal, with its progress. */
 const counted = (k: string, goal: number) => ({ career: (c: Career) => stat(c, k) >= goal, progress: (c: Career) => [Math.min(goal, stat(c, k)), goal] as const });
@@ -102,13 +105,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'dayOne', group: 'speed', icon: 'clock', gives: 'shades', escape: (e) => e.day === 1 },
   { id: 'quickStep', group: 'speed', icon: 'walk', gives: 'tangerine', escape: (e) => e.day <= 3 },
   { id: 'goldStandard', group: 'speed', icon: 'trophy', gives: 'gold', escape: (e) => e.medal === 'gold' },
-  // Conduct: the whole run.
+  // Conduct: the whole run, out by an escape (not a legal release).
   // No blow, nothing thrown at anyone, and nobody knocked out on your account (your followers' fists count too).
-  { id: 'pacifist', group: 'conduct', icon: 'heart', gives: 'heart', escape: (e) => whole(e) && f(e, 'blows') + f(e, 'flung') + f(e, 'koGuards') + f(e, 'koInmates') === 0 },
-  { id: 'ghost', group: 'conduct', icon: 'eyeOff', gives: 'platinum', escape: (e) => whole(e) && f(e, 'spotted') === 0 },
-  { id: 'cleanRecord', group: 'conduct', icon: 'shield', gives: 'cream', escape: (e) => whole(e) && f(e, 'caught') === 0 && f(e, 'solitary') === 0 },
-  { id: 'modelPrisoner', group: 'conduct', icon: 'bell', gives: 'ponytail', escape: (e) => whole(e) && f(e, 'missed') === 0 },
-  { id: 'calm', group: 'conduct', icon: 'sun', gives: 'swallow', escape: (e) => whole(e) && f(e, 'lockdowns') === 0 },
+  { id: 'pacifist', group: 'conduct', icon: 'heart', gives: 'heart', escape: (e) => conduct(e) && f(e, 'blows') + f(e, 'flung') + f(e, 'koGuards') + f(e, 'koInmates') === 0 },
+  { id: 'ghost', group: 'conduct', icon: 'eyeOff', gives: 'platinum', escape: (e) => conduct(e) && f(e, 'spotted') === 0 },
+  { id: 'cleanRecord', group: 'conduct', icon: 'shield', gives: 'cream', escape: (e) => conduct(e) && f(e, 'caught') === 0 && f(e, 'solitary') === 0 },
+  { id: 'modelPrisoner', group: 'conduct', icon: 'bell', gives: 'ponytail', escape: (e) => conduct(e) && f(e, 'missed') === 0 },
+  { id: 'calm', group: 'conduct', icon: 'sun', gives: 'swallow', escape: (e) => conduct(e) && f(e, 'lockdowns') === 0 },
   // Skills.
   { id: 'sweetTooth', group: 'skills', icon: 'cookie', gives: 'curls', run: (r) => f(r, 'chocolate') >= 5 },
   { id: 'bookworm', group: 'skills', icon: 'book', gives: 'square', run: (r) => r.int >= ATTR_MAX },

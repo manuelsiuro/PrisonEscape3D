@@ -37,7 +37,7 @@ import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
-import { J, JOB_LEN, KINDS } from '../content/oddjobs';
+import { FROM, J, JOB_LEN, KINDS, PERK, STAGE } from '../content/oddjobs';
 import { FREED_STEPS } from '../content/paperwork';
 import { HEARING_AFTER, RECORD } from '../content/parole';
 import { freshParole, hearingOk, SCORE_MAX, SCORE_MIN, type Hearing, type VoidWhy } from './systems/parole';
@@ -1073,7 +1073,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!(Array.isArray(s.paroleBase) && (s.paroleBase.length === 0 || ints(s.paroleBase, RECORD.length)))) s.paroleBase = [];
   if (!hearingOk(s.hearing, s.step) || (s.hearing && !(s.parole[8] > 0 && s.parole[0] === prisonDay(s.step)))) s.hearing = null;
   // P40: the job held as it can be (else none), the record whole.
-  if (!(Array.isArray(s.oddjob) && (s.oddjob.length === 0 || (ints(s.oddjob, JOB_LEN) && s.oddjob[J.KIND] >= 0 && s.oddjob[J.KIND] < KINDS.length && s.oddjob[J.GIVER] >= 0 && s.oddjob[J.GIVER] < s.inmates.length && s.oddjob[J.TARGET] >= -1 && s.oddjob[J.TARGET] < Math.max(s.inmates.length, s.guards.length) && s.oddjob[J.ENDS] >= 0 && s.oddjob[J.PAY] >= 0 && s.oddjob[J.ITEM] >= 0 && s.oddjob[J.ITEM] <= ITEMS.length)))) s.oddjob = [];
+  if (!(Array.isArray(s.oddjob) && (s.oddjob.length === 0 || (ints(s.oddjob, JOB_LEN) && s.oddjob[J.KIND] >= 0 && s.oddjob[J.KIND] < KINDS.length && s.oddjob[J.GIVER] >= 0 && s.oddjob[J.GIVER] < s.inmates.length && s.oddjob[J.TARGET] >= -1 && s.oddjob[J.TARGET] < Math.max(s.inmates.length, s.guards.length) && s.oddjob[J.ENDS] >= 0 && s.oddjob[J.FROM] >= 0 && s.oddjob[J.FROM] <= FROM.CHAIN && (s.oddjob[J.STAGE] === STAGE.ON || s.oddjob[J.STAGE] === STAGE.DONE) && s.oddjob[J.PAY] >= 0 && s.oddjob[J.PERK] >= PERK.NONE && s.oddjob[J.PERK] <= PERK.DEBT && s.oddjob[J.ITEM] >= 0 && s.oddjob[J.ITEM] <= ITEMS.length)))) s.oddjob = [];
   if (!(ints(s.oddjobs, 5) && s.oddjobs.every((x) => x >= 0))) s.oddjobs = [0, 0, 0, 0, 0];
   // P42: a holiday that isn't one is none; the treats and laughs as they can be (else none).
   if (!Number.isInteger(s.holiday) || s.holiday < 0 || s.holiday >= HOLIDAYS.length) s.holiday = 0;

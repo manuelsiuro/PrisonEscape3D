@@ -110,6 +110,7 @@ check(!esc('pacifist')(out({ flung: 1 })) && !esc('pacifist')(out({ koGuards: 2 
 check(!runOf('popular')(view({ recruits: 5, crew: 1 })) && runOf('popular')(view({ crew: 2 })), 'Popular: two followers at once (not one recruited twice)');
 check(esc('ghost')(out({})) && !esc('ghost')(out({ spotted: 2 })) && !esc('ghost')(out({ partial: 1 })), 'Ghost: never spotted, the whole run');
 check(esc('cleanRecord')(out({ spotted: 3 })) && !esc('cleanRecord')(out({ solitary: 1 })) && !esc('cleanRecord')(out({ caught: 1 })), 'Clean Record');
+for (const via of ['paperwork', 'parole']) check(['pacifist', 'ghost', 'cleanRecord', 'modelPrisoner', 'calm'].every((id) => !esc(id)(out({}, via))) && esc('freshAir')(out({}, via)), `conduct asks for an escape: none out by ${via} (a legal release)`);
 check(esc('dayOne')(out({}, 'fence', 1)) && !esc('dayOne')(out({}, 'fence', 2)), 'Day One');
 check(esc('mole')(out({})) && !esc('mole')(out({}, 'roof')) && esc('castaway')(out({}, 'raft')) && esc('castaway')(out({}, 'helicopter')), 'ways out');
 
@@ -153,6 +154,20 @@ check(esc('mole')(out({})) && !esc('mole')(out({}, 'roof')) && esc('castaway')(o
   console.log(`career so far: ${Object.keys(trophies.earnedTrophies()).filter((k) => !before.includes(k)).join(', ')} newly; ${Object.keys(trophies.earnedTrophies()).length} earned in all; ${trophies.unseenTrophies().length} unseen`);
   trophies.markTrophiesSeen();
   check(trophies.unseenTrophies().length === 0, 'the shelf looked at: nothing new');
+}
+
+// A manhunt (P41) counted once a run, by its salt (full review): the same save hunted twice is one hunt.
+{
+  const h = { prison: 'center-perks', via: 'tunnel', safe: true, lou: false, progress: 1, spotted: 0, swapped: false, lit: 0 };
+  const was = readStats();
+  trophies.huntRun(h, 77);
+  trophies.huntRun({ ...h, safe: false }, 77);
+  trophies.huntQuit(77);
+  const one = readStats();
+  check((one.hunts ?? 0) - (was.hunts ?? 0) === 1 && (one.getaways ?? 0) - (was.getaways ?? 0) === 1 && (one.recaptured ?? 0) === (was.recaptured ?? 0), 'a run hunted again (or left) from the same save: one hunt, its first getaway');
+  trophies.huntQuit(78);
+  const two = readStats();
+  check((two.hunts ?? 0) - (one.hunts ?? 0) === 1 && (two.recaptured ?? 0) - (one.recaptured ?? 0) === 1, 'another run\'s hunt left: a hunt and a recapture');
 }
 
 // Older records (version 1): migrated, and what they earned backfilled (never conduct).
