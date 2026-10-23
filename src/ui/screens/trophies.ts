@@ -30,6 +30,10 @@ export const routeIcon = (route: string, prison: string) => (route === 'stowaway
 const STATS: Array<[string, string, ((n: number) => string)?]> = [
   ['games', 'play'],
   ['escapes', 'run'],
+  // P41: the manhunts run, the clean getaways, the recaptures.
+  ['hunts', 'map'],
+  ['getaways', 'star'],
+  ['recaptured', 'lock'],
   ['days', 'sun'],
   ['walked', 'walk'],
   ['crafted', 'hammer'],
@@ -154,6 +158,7 @@ function medalsTab(): string {
           <span class="mr-ic" aria-hidden="true">${icon(found ? routeIcon(route, p.id) : 'lock', 18)}</span>
           <span class="mr-text"><b>${found ? t(`route.${route}` as Key) : t('victory.unknownRoute')}</b><small>${goal}</small></span>
           <span class="mr-best">${b ? t('hud.day', { n: b.day }) : found ? t('trophy.dayUnknown') : '—'}</span>
+          ${b?.clean ? `<span class="mr-clean" role="img" aria-label="${t('trophy.cleanSr')}" title="${t('manhunt.clean')}">${icon('star', 14)}</span>` : ''}
           ${medalDisc(b?.medal)}
         </li>`;
       })

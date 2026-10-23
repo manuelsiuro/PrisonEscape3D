@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS, type Achievement, type Career, type EscapeView, type RunView } from '../content/achievements';
+import { ACHIEVEMENTS, type Achievement, type Career, type EscapeView, type HuntView, type RunView } from '../content/achievements';
 import type { Medal } from '../content/medals';
 import { COSMETICS } from '../content/prisoner';
 import { escapesOf, PRISONS } from '../content/prisons';
@@ -148,6 +148,22 @@ export function escapeRun(rec: Pick<EscapeRecord, 'medal'>, daily?: EscapeView['
   return [...got, ...syncCareer(false)];
 }
 
+/**
+ * A manhunt over (P41, the escape already counted at the wall): the hunts, the clean getaways
+ * and recaptures counted in the stats, its achievements and the career's. Returned for the
+ * victory card (no toasts).
+ */
+export function huntRun(h: HuntView): Achievement[] {
+  addStats({ hunts: 1, getaways: h.safe ? 1 : 0, recaptured: h.safe ? 0 : 1 });
+  const got = award(ACHIEVEMENTS.filter((a) => a.hunt?.(h)));
+  return [...got, ...syncCareer(false)];
+}
+
+/** A manhunt left from the pause card (P41): counted as a recapture in the stats (giving up is being caught), no achievements. */
+export function huntQuit() {
+  addStats({ hunts: 1, recaptured: 1 });
+}
+
 /** A rumor heard (P13 gossip): counted for the stats and All Ears. */
 export function rumorHeard() {
   addStats({ rumors: 1 });
@@ -162,7 +178,7 @@ export function careerOf(stats = readStats()): Career {
     stats,
     prisons: PRISONS.map((p) => {
       const r = recordOf(p.id);
-      return { id: p.id, routes: r.routes, of: escapesOf(p).length, medals: Object.values(r.byRoute).flatMap((b) => (b.medal ? [b.medal] : [])) };
+      return { id: p.id, routes: r.routes, of: escapesOf(p).length, medals: Object.values(r.byRoute).flatMap((b) => (b.medal ? [b.medal] : [])), clean: Object.values(r.byRoute).filter((b) => b.clean).length };
     }),
     lessons: lessonsDone().filter((id) => LESSONS.some((l) => l.id === id)).length,
     lessonsOf: LESSONS.length,

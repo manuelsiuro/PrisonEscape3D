@@ -463,12 +463,13 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       <div class="prisons" id="prisons"></div>
     </div>
     <div>
-      <div class="section-title">View <span><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd></span></div>
+      <div class="section-title">View <span><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>O</kbd></span></div>
       <div class="seg" id="views" role="group" aria-label="View">
         <button data-view="game" title="The 3D prison as the game draws it, from its own camera (G)">In game</button>
         <button data-view="layout" title="Tiles, zones, doors, cells, props, decor (L)">Layout</button>
         <button data-view="people" title="Guards, cameras, free time, smuggling, delivery, checkpoint (P)">People</button>
         <button data-view="vents" title="Vents and boulders (V)">Vents</button>
+        <button data-view="outside" title="The outside past the wall, where the manhunt is run (O)">Outside</button>
       </div>
     </div>
     <p class="about" id="about"></p>
@@ -560,7 +561,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     return;
   }
   const G = D.geometry;
-  const VIEW_NAMES = { game: 'In game', layout: 'Layout', people: 'People & places', vents: 'Vents' };
+  const VIEW_NAMES = { game: 'In game', layout: 'Layout', people: 'People & places', vents: 'Vents', outside: 'Outside' };
   const TILE_COLORS = {
     empty: '#1b1b1b', grass: '#8fbf5a', road: '#5f6166', concrete: '#d6d1c4', tiled: '#bcd6df', wood: '#cf9f66',
     asphalt: '#868990', dirt: '#c29361', brick: '#8a3b2e', reinforced: '#3a3d45', fence: '#a7a9ad', electric: '#f0cf2a',
@@ -617,9 +618,22 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     return at;
   });
 
+  // P41: the outside's own tiles and marks (its picture shares the drawn maps' frame: 64 x 64 tiles).
+  const outsideIndex = D.prisons.map((p) => {
+    if (!p.outside) return null;
+    const at = Array.from({ length: G.mapW * G.mapH }, () => []);
+    p.outside.marks.forEach(([x, z, s]) => at[z * G.mapW + x].push(s));
+    return at;
+  });
   function describe(pi, x, z) {
     const p = D.prisons[pi];
     const i = z * G.mapW + x;
+    if (shownView() === 'outside' && p.outside) {
+      const o = p.outside;
+      const tile = D.tileNames[o.tiles[i]] || '?';
+      const what = [words(tile), o.deco[i]].filter(Boolean).join(' · ');
+      return { tile, what, zone: o.inside[i] ? 'the outside' : 'none (past the map: solid)', info: { props: [], decor: [], marks: outsideIndex[pi][i], above: [] } };
+    }
     const tile = D.tileNames[p.tiles[i]] || '?';
     const info = index[pi][i];
     const zone = p.zones[i] === 0 ? 'none (walls, doors)' : D.zoneNames[p.zones[i]];
@@ -1031,6 +1045,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     else if (k === 'l' || k === 'L') goView('layout');
     else if (k === 'p' || k === 'P') goView('people');
     else if (k === 'v' || k === 'V') goView('vents');
+    else if (k === 'o' || k === 'O') goView('outside');
     else if (k === 'f' || k === 'F') fit();
     else if (k === '+' || k === '=') zoomCenter(1.4);
     else if (k === '-' || k === '_') zoomCenter(1 / 1.4);

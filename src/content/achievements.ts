@@ -34,10 +34,23 @@ export interface EscapeView extends RunView {
   daily?: { twists: number; tries: number; streak: number };
 }
 
-/** A career: lifetime stats (stats.ts keys), and each prison's ways out found and medals won. */
+/** A manhunt over (P41): where, after which way out, safe or recaptured (and in Lou's car), how close it got, what the hunt's counts were. */
+export interface HuntView {
+  prison: string;
+  via: string;
+  safe: boolean;
+  lou: boolean;
+  progress: number;
+  /** Times spotted, clothes taken off a line, times lit by the helicopter. */
+  spotted: number;
+  swapped: boolean;
+  lit: number;
+}
+
+/** A career: lifetime stats (stats.ts keys), and each prison's ways out found and medals won (P41: and clean getaways). */
 export interface Career {
   stats: Readonly<Record<string, number>>;
-  prisons: ReadonlyArray<{ id: string; routes: readonly string[]; of: number; medals: readonly Medal[] }>;
+  prisons: ReadonlyArray<{ id: string; routes: readonly string[]; of: number; medals: readonly Medal[]; clean?: number }>;
   /** Tutorial lessons done, of how many. */
   lessons: number;
   lessonsOf: number;
@@ -54,6 +67,8 @@ export interface Achievement {
   run?: (r: RunView) => boolean;
   escape?: (e: EscapeView) => boolean;
   career?: (c: Career) => boolean;
+  /** P41: earned by how a manhunt ended. */
+  hunt?: (h: HuntView) => boolean;
   /** How far along a counted one is, [now, goal]: the shelf's progress bar. */
   progress?: (c: Career) => readonly [number, number];
 }
@@ -227,6 +242,15 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'framedUp', group: 'skills', icon: 'clipboard', run: (r) => f(r, 'framed') >= 1 },
   { id: 'fixersFriend', group: 'life', icon: 'briefcase', ...counted('fixerJobs', 3) },
   { id: 'calledIn', group: 'life', icon: 'hand', run: (r) => f(r, 'debtsCalled') >= 1 },
+  // v2.20 (P41, the manhunt): a clean getaway, one never seen, in clothes off a line, out of the helicopter's light, in Lou's car; recaptured, and within sight of safety; clean away from every prison.
+  { id: 'cleanGetaway', group: 'out', icon: 'route', gives: 'mhBeanie', hunt: (h) => h.safe },
+  { id: 'withoutTrace', group: 'skills', icon: 'eyeOff', hunt: (h) => h.safe && h.spotted === 0 },
+  { id: 'changeOfClothes', group: 'skills', icon: 'shirt', hunt: (h) => h.safe && h.swapped },
+  { id: 'outOfTheLight', group: 'skills', icon: 'heli', hunt: (h) => h.safe && h.lit > 0 },
+  { id: 'getawayDriver', group: 'out', icon: 'truck', hunt: (h) => h.safe && h.lou },
+  { id: 'longArm', group: 'mishaps', icon: 'siren', hidden: true, hunt: (h) => !h.safe },
+  { id: 'soClose', group: 'mishaps', icon: 'flag', hidden: true, hunt: (h) => !h.safe && h.progress >= 0.9 },
+  { id: 'allClear', group: 'career', icon: 'map', career: (c) => c.prisons.every((p) => (p.clean ?? 0) > 0), progress: (c) => [c.prisons.filter((p) => (p.clean ?? 0) > 0).length, c.prisons.length] },
   // v2.21 (P42, holidays): five eggs found in one egg hunt's run; in the water fight; three inmates laughing at the costume; a present given; work done under New Year's fireworks.
   { id: 'eggHunter', group: 'holidays', icon: 'egg', gives: 'holBunny', run: (r) => f(r, 'eggsFound') >= 5 },
   { id: 'splashdown', group: 'holidays', icon: 'splash', gives: 'holShades', run: (r) => f(r, 'waterFights') >= 1 },

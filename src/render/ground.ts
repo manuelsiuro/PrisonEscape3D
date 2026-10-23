@@ -89,9 +89,9 @@ function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
   const R = PAINT_RES;
   const kind = (x: number, z: number) => (world.inside(x, z) ? world.ground.kind[z * MAP_W + x] : TILE.EMPTY);
 
-  // Road: a dashed yellow center line along the ring (an island has no road round it).
+  // Road: a dashed yellow center line along the ring (an island has no road round it, nor the manhunt's outside, P41).
   c.fillStyle = 'rgba(242, 194, 48, 0.85)';
-  for (let i = 2; i < MAP_W - 2 && world.def.theme !== 'island'; i += 2) {
+  for (let i = 2; i < MAP_W - 2 && world.def.theme !== 'island' && !world.def.id.startsWith('outside-'); i += 2) {
     c.fillRect(i * R + 2, 1 * R - 1, R - 4, 2);
     c.fillRect(i * R + 2, (MAP_H - 1) * R - 1, R - 4, 2);
     c.fillRect(1 * R - 1, i * R + 2, 2, R - 4);

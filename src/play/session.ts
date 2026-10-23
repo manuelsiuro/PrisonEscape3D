@@ -54,6 +54,11 @@ import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
 import { hideLesson, lessonPlace, objectivesOf, type LessonRun } from './lesson';
 import { showObjectives } from '../ui/screens/objectives';
 import { escapeScene, stageWorld } from './stage';
+import { hasOutside, runHunt, stopHunt } from './hunt';
+import { huntLeft, huntOver } from './huntEnd';
+import { isLegal } from '../content/manhunt';
+import { outsideOf } from '../content/outside';
+import { carryFrom } from '../sim/hunt/carry';
 
 export { escapeScene };
 
@@ -163,9 +168,9 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   fadeIn();
   document.body.classList.add('is-playing');
   const g = play.game;
-  // (Held back while the game is paused, by the day's card or the help: never lost.)
+  // (Held back while the game is paused, by the day's card or the help: never lost. Dropped once a manhunt runs, P41: the inside's banners don't belong over the outside.)
   const later = (ms: number, f: () => void) => {
-    const run = () => play.game === g && (g.paused ? startTimers.push(window.setTimeout(run, 250)) : f());
+    const run = () => play.game === g && !g.hunt && (g.paused ? startTimers.push(window.setTimeout(run, 250)) : f());
     startTimers.push(window.setTimeout(run, ms));
   };
   // A lesson: its card says what to do; no day one, no guide, no saves.
@@ -218,9 +223,10 @@ export async function pause() {
       click,
       play.game.saved,
       !play.game.over && !lesson && !daily,
-      lesson ? lessonPlace(lesson.index) : note,
+      // (In the manhunt, P41: leaving counts as recaptured, said instead of the save.)
+      lesson ? lessonPlace(lesson.index) : note || (play.game.hunt ? `!${t('manhunt.leaveNote')}` : ''),
       !!lesson,
-      lesson ? '' : daily ? dailyPlace(sim, daily) : `${prisonName(sim.prison)} · ${t('hud.day', { n: sim.clock.day })}`,
+      lesson ? '' : daily ? dailyPlace(sim, daily) : play.game.hunt ? `${prisonName(sim.prison)} · ${t('manhunt.title')}` : `${prisonName(sim.prison)} · ${t('hud.day', { n: sim.clock.day })}`,
       daily ? dailyTwistsHtml(sim.state.mods) : '',
     );
     note = '';
@@ -230,7 +236,7 @@ export async function pause() {
       continue;
     }
     if (choice === 'help') {
-      await showHelp(click);
+      await showHelp(click, play.game.hunt ? { topic: 'manhunt' } : {});
       continue;
     }
     if (choice === 'objectives' && play.game.lesson) {
@@ -264,7 +270,8 @@ export async function pause() {
       return;
     }
     if (choice === 'resume') {
-      if (play.game.over) return;
+      // (Over the wall, running from the manhunt (P41): the run is over, the hunt goes on.)
+      if (play.game.over && !play.game.hunt) return;
       play.game.paused = false;
       controls.enabled = true;
       play.last = performance.now();
@@ -286,8 +293,9 @@ export async function openHelp() {
   controls.enabled = false;
   controls.reset();
   tools.release();
-  await showHelp(click);
-  if (play.game !== g || g.over) return;
+  // (In the manhunt, P41: on its topic; the run is over but the hunt goes on.)
+  await showHelp(click, g.hunt ? { topic: 'manhunt' } : {});
+  if (play.game !== g || (g.over && !g.hunt)) return;
   g.paused = false;
   controls.enabled = true;
   play.last = performance.now();
@@ -299,6 +307,8 @@ export function endGame() {
   if (play.game && !play.game.lesson) stopRun();
   firstDay.stop();
   hideLesson();
+  // (The manhunt, P41: its pieces come down; one still under way ends as left.)
+  stopHunt(play.game);
   play.game = null;
   for (const id of startTimers) clearTimeout(id);
   startTimers = [];
@@ -390,12 +400,38 @@ export async function escaped() {
     wheels: st.lou[5] < 0,
     watch: true,
   };
+  // The manhunt (P41): after a way out over the wall (not a legal release), the card offers to keep running.
+  const outside = !isLegal(via) && hasOutside(sim.prison.id) ? outsideOf(sim.prison.id)! : null;
+  if (outside) victory.hunt = { state: 'offer', goal: outside.safeKind, lou: st.lou[5] < 0 };
   // (Watch the replay, P25: then the card again.)
   let choice: VictoryChoice;
   for (let back = false; ; back = true) {
     choice = await showVictory(victory, click, back);
     if (play.game !== g) return;
+    if (choice === 'skip' && victory.hunt) {
+      victory.hunt = { ...victory.hunt, state: 'skipped' };
+      continue;
+    }
+    if (choice === 'run' && victory.hunt?.state === 'offer') {
+      // Out there: the escape already counted; the hunt adds a clean getaway, or not.
+      const lookout = st.crewOut.length ? { name: inmateName(sim, st.crewOut[0]), cell: sim.state.inmates[st.crewOut[0]]?.cell ?? 2 } : null;
+      const r = await runHunt(g, carryFrom(sim), { lookout });
+      // (Left from the pause card: given up, so a recapture in the stats.)
+      if (r === 'quit') huntLeft();
+      if (play.game !== g || r === 'quit') return;
+      const got = huntOver(sim, via, r);
+      victory.hunt = { ...victory.hunt, state: r.over === 3 ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };
+      // (The hunt's own first: they're what this card is about now, never behind the "+N".)
+      victory.earned = [...got, ...(victory.earned ?? []).filter((a) => !got.includes(a))];
+      // (A clean getaway: the confetti again.)
+      back = r.over === 3;
+      choice = await showVictory(victory, click, back);
+      if (play.game !== g) return;
+      if (choice !== 'watch') break;
+    }
     if (choice !== 'watch') break;
+    // (Back from the outside first, P41: the replay is the inside run's.)
+    stopHunt(g);
     await watchReplay({ log, guest: false, by: null }, g);
     if (play.game !== g) return;
   }

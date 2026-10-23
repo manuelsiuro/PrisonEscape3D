@@ -159,6 +159,8 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('glider', 'glider', '#9fc8e8', { pic: true, recipes: ['glider_frame', 'glider'], lessons: ['glider'] }),
         T('paperwork', 'clipboard', '#d8b04a', { pic: true, diagram: 'timeline', recipes: ['forged_release'], lessons: ['forgery', 'release'], see: ['parole'] }),
         T('parole', 'scale', '#8a6bd1', { pic: true, diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
+        // P41 (picture to come: public/help/manhunt.webp, then `pic: true`).
+        T('manhunt', 'run', '#e0603a', { pic: true, diagram: 'timeline', lessons: ['manhunt'], listIcons: ['shirt', 'water', 'toss', 'bone', 'item:light_cutters', 'truck', 'users'], see: ['dogs', 'ways'] }),
       ],
     },
     {

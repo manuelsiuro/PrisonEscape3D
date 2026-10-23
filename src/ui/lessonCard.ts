@@ -65,7 +65,7 @@ export class LessonCard {
 export type LessonResult = 'next' | 'list' | 'again' | 'play';
 
 /** The end of a lesson: done (the next one, the next chapter after a chapter's last, or all lessons; after the very last, the real game), or failed (again, or all lessons). */
-export function showLessonResult(head: Key, next: 'lesson' | 'chapter' | null, title: string, click: () => void): Promise<LessonResult> {
+export function showLessonResult(head: Key, next: 'lesson' | 'chapter' | null, title: string, click: () => void, sub: Key | null = null): Promise<LessonResult> {
   const won = head === 'lesson.done';
   const el = h(
     'div',
@@ -73,6 +73,7 @@ export function showLessonResult(head: Key, next: 'lesson' | 'chapter' | null, t
     `<div class="card${won ? ' won' : ''}">
       <div class="escaped-icon">${icon(won ? 'star' : 'siren', 32)}</div>
       <h2 id="lesson-result-h">${t(head)}</h2>
+      ${sub ? `<p class="v-sub">${t(sub)}</p>` : ''}
       <p class="card-note"></p>
       <div class="actions">
         <button class="big-btn ghost" data-c="list">${icon('book', 18)}${t('lesson.list')}</button>
