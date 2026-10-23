@@ -89,9 +89,15 @@
   background: rgba(214, 48, 39, 0.92);
 }
 
+/* (A dog on the trail: the HUD's dark pill, an orange edge and icon — not a light chip.) */
 .hud-alert.hunt-state.st-tracked {
-  color: #3a1d00;
-  background: #ffb38a;
+  color: #ffd2b0;
+  background: rgba(58, 30, 14, 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 150, 80, 0.75);
+}
+
+.hud-alert.hunt-state.st-tracked .ic {
+  color: #ff9a4d;
 }
 
 .hud-alert.hunt-state.st-cover {
@@ -102,12 +108,18 @@
   background: rgba(31, 157, 99, 0.9);
 }
 
+/* (The lookout: the HUD's dark pill with the crew's amber edge, as the job's chip has the board's.) */
 .hud-alert.hunt-crew {
   gap: 6px;
   padding-bottom: 6px;
-  color: #5a3208;
+  color: #ffe2bf;
   font-weight: 700;
-  background: linear-gradient(135deg, #ffe2c2, #ffc98a);
+  background: rgba(40, 30, 20, 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 169, 77, 0.6);
+}
+
+.hud-alert.hunt-crew .ic {
+  color: #ffa94d;
 }
 
 /* A cut at the wire: the action button fills as it goes. */

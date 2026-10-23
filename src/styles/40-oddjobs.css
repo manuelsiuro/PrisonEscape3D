@@ -198,9 +198,13 @@ body.touch .oddjobs-card .oddjobs-close {
   width: min(380px, calc(100vw - 32px));
   padding: 14px 16px 12px;
   border-radius: 20px;
-  color: #2b1d10;
-  background: #f6e7c4;
-  box-shadow: 0 20px 50px -14px rgba(0, 0, 0, 0.7), inset 0 0 0 2px #d9b46a;
+  /* (The dialogs' dark skin, warmed with the board's cork: a tint and an amber edge, never a light page.) */
+  color: var(--dlg-text);
+  background:
+    linear-gradient(90deg, transparent 8%, rgba(232, 199, 122, 0.85) 50%, transparent 92%) top / 100% 2px no-repeat,
+    radial-gradient(120% 70% at 50% 0%, rgba(232, 199, 122, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(40, 34, 30, 0.97), rgba(22, 24, 32, 0.97));
+  box-shadow: 0 20px 50px -14px rgba(0, 0, 0, 0.7), inset 0 0 0 1.5px rgba(232, 199, 122, 0.5);
   animation: sheet-in 0.3s var(--spring);
 }
 .story-head {
@@ -222,16 +226,18 @@ body.touch .oddjobs-card .oddjobs-close {
 }
 .story-head b {
   font: 700 15px var(--font-display);
+  color: #fff;
 }
 .story-head small {
   font: 600 11px var(--font-ui);
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #8a5a2e;
+  color: #e8c77a;
 }
 .story-text {
   margin: 10px 0 12px;
   font: 500 14px/1.45 var(--font-ui);
+  color: rgba(255, 255, 255, 0.88);
 }
 .story-ok {
   margin-left: auto;
