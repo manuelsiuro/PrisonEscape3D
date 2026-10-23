@@ -57,7 +57,7 @@ export const HUNT = {
   chase: 176,
   /** Caught: a chaser this close (tiles, centre to centre); a handler this close to a player his dog found, hidden or not. */
   catch: 0.75,
-  found: 1.2,
+  found: 1.6,
   /** Out of sight this long (steps), a chaser has lost them: to where they were last seen, a look round, then back to the beat. */
   lose: 3 * S,
   look: 8 * S,
@@ -66,7 +66,7 @@ export const HUNT = {
   /** The dogs: at the heel, on the trail (units a step); a fresh trail tile this close (tiles) puts a dog on it; this close to the player, it points and barks. */
   dogHeel: 130,
   dogTrack: 168,
-  sniff: 1.6,
+  sniff: 2,
   point: 1.6,
   /** The trail: this many tiles at most, each fresh this long (steps; inside it lasts 90 s). */
   trailTiles: 60,

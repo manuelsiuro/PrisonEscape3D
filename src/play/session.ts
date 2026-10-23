@@ -421,6 +421,8 @@ export async function escaped() {
       if (choice !== 'watch') break;
     }
     if (choice !== 'watch') break;
+    // (Back from the outside first, P41: the replay is the inside run's.)
+    stopHunt(g);
     await watchReplay({ log, guest: false, by: null }, g);
     if (play.game !== g) return;
   }

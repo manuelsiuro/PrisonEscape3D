@@ -614,6 +614,8 @@ function endHunt(g: Game, run: HuntRun) {
     if (g.hunt !== run) return;
     huntHud.show(false);
     huntBubbles.hide();
+    // (The outside stays on screen, still, under the card.)
+    g.paused = true;
     run.resolve(result);
   });
 }
