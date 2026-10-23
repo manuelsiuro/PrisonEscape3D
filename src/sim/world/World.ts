@@ -102,6 +102,8 @@ export class World {
   readonly doorShut = new Uint8Array(MAP_W * MAP_H);
   /** Delivery day (P18): 1 under the vehicle while it's in (solid for everyone, and it stops sight); derived by the simulation. */
   readonly parked = new Uint8Array(MAP_W * MAP_H);
+  /** P41 (the manhunt's outside): 1 on ground that stops sight but not feet (a hedge, a culvert's mouth, a tree); 0 everywhere in a prison. */
+  readonly veil = new Uint8Array(MAP_W * MAP_H);
   /** 1 on doors standing open for the delivery while it's in (for everyone); derived by the simulation. */
   readonly propped = new Uint8Array(MAP_W * MAP_H);
   /** Whether the delivery's vehicle is in (what `parked` shows), and whether its doors stand open (while it's in, and after it while the player is still on its side of them). */
