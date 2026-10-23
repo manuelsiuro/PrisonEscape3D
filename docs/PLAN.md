@@ -695,6 +695,7 @@ real touch feel) and the known limits.
 - **Share, quieter (v2.17.1)**, the user's request (2026-10-23): the Share pill in glass with an orange icon (its orange had competed with Play); the README's title picture retaken without the controls line (same progress shown: 5 prisons open, 6 of 33 ways out, 7 trophies).
 - **The roadmap P39–P42 (decided 2026-10-23)**: the user asked for ten ideas for more fun and picked four, in this order: the parole board, an odd jobs board, the manhunt, and holidays (with summer and Easter as well as Halloween and Christmas). Planned in §13; §2 has a row. Nothing built yet: each phase starts on the user's go.
 - **P39 The parole board (v2.18.0)**, the P39–P42 roadmap's first phase (§13; the user asked for a team of agents to build P39–P42, 2026-10-23): a 12th way out, `parole`. Apply at the release desk from day 3, or have the lawyer file it ($60, a day sooner); a hearing 7 days on at 10:00 before a board of three (three questions, each with a claim, owning up or fine words, 25 s; the card says whether a claim would hold); the record is read from the ledger after applying (work, courses, calls home, favours; against: fights started, KOs, solitary, contraband taken, the heat at 22:00). Granted goes through P36's release desk the next morning; plotting voids it. Medals, lesson `parole` (Ways out), help page with its picture, 4 achievements (the gold reading glasses), `paroletest`. Built in its own worktree by an agent alongside P40–P42; rules and UI reviews fixed (a negative score lost on load, contraband counted per sighting, a fire drill during the hearing, hidden claim thresholds, the lawyer's fee kept on refusal; the landscape card under the hotbar, the PA strip over the answers).
+- **P40 The odd jobs board (v2.19.0)**, the roadmap's second phase (§13, built by an agent alongside P39, P41 and P42): a cork board on every canteen's north wall (`PrisonDef.board`) with three jobs a day dealt by `roll()`, plus the fixer's own job (1.5× pay, a rare item). Twelve kinds built from what the game already does (lift, drop, frame-up, a fixed arm-wrestle, Cheat or checkers, rat mail, the birthday cake, lookout at a dig, delivery, tip-off, errand); one job at a time, 1–3 prison days (from the next morning if taken from 18:00); hand in to whoever asked; rewards in cash, rare items or a debt (joins the crew, or hands over a tool). A three-step story per prison. Lesson `oddjob` (Prison life), help page with its picture, 6 achievements (two trims), `oddjobstest`, the map viewer (the board drawn and the in-game photos retaken). Rules review fixed (a rat plant judged "seen", leftover lift items blocking later jobs, a hidden-compartment plant never found, the 08:00 timer ignoring the hour taken, leftovers finishing later jobs); UI review fixed (the whistle outside dig hours, the board over the wall top, the digger leaning into the wall, chips under docked cards, the story's tobacco/parcel text).
 
 ## 9. Free time (P27–P30)
 
@@ -1316,6 +1317,80 @@ the game can already do.
 - **Proof**: `oddjobstest`: every kind done by a bot in every prison it can be dealt in; the chain finished; the
   deals never ask for something the prison doesn't have.
 - **Lesson**: one job from the board (Center Perks).
+
+**Built** (what differs from the plan above, and why):
+- **The board**: `PrisonDef.board` (its own field, not inside `comms`: nothing in the phone's data changes, and the
+  other phases' edits to `comms()` can't collide with it). On the canteen's north wall in all five prisons, clear of
+  the stage and of the two rows a wall hides: Center Perks 49,7; Stalag Flucht 5,30; Shankton 25,14 (moved off the cyan door at 38,13 in the browser re-check); San Pancho 17,32;
+  Irongate 29,28. Its checks live in `oddjobstest` (the kiosk's checks, done the same way), not in phonetest.
+  Drawn by `render/OddJobs.ts` (the decor kit's parts and the notice board's colours, not a `DECOR` kind: its cards
+  come down as their pins are taken, a tag hangs while a job is held).
+- **Taking a job**: standing on the board's tile opens its card (the kiosk's way, no action key); the job's own card
+  opens from its HUD chip or **B**. Board jobs can be taken at any hour outside a lockdown; the fixer's in his hours
+  (free time) from opinion 50, once a prison day.
+- **Kinds**: twelve. The plan's examples are all there (Lift it: a guard's whistle, or the head cook's mug from the
+  kitchen freezer instead of the warden's mug from an office: no prison has an office container; drop, frame, fix the
+  arm-wrestle / Cheat / checkers either way, rat mail, the cake, lookout), plus **delivery** (in person), **the tip-off**
+  (P34's anonymous call) and **the errand** (sugar from a merchant). A garden kind was dropped: a bed takes three days
+  to ripen, longer than a job's timer.
+- **Lookout**: the one who asked digs under his bed in the free times (`DOING.DIG`) while the player stays within 4
+  tiles of his cell door; 15 game minutes of digging in all. A guard within 6 tiles is "coming" (a toast, the chip
+  flashes); the whistle (B, the chip, or the card) hides the dig while he's near; one within 2 tiles who can see in
+  finds it (failed). A whistle with nobody coming costs 3 minutes of the dig.
+- **Frame-up**: the one who asked tips the guards off at 19:00 each day the stash is in place (the phone tip's
+  searcher); the morning shakedown finding it counts too. Planted in a guard's sight: failed and +35% heat.
+- **Drop**: seen as the parcel lands in the desk (`state.seen` that step): failed. A parcel (or stash) left in that
+  desk by an earlier job doesn't count: only one more than it held when the job was taken.
+- **Cake**: dealt only when a visiting day (Stalag Flucht: the Red Cross parcel's delivery day) falls inside the job's
+  days, so it can always be done; it comes at the next visit after it's taken (Lou's cake waits for the day after).
+- **Every job ends with the one who asked** (TALK.JOB_IN), as favours do: cash, and on some a rare item or a debt.
+  A debt: he joins the crew whatever he thinks of the player (the debt is paid), or hands over a tool (TALK.CALL_IN).
+- **The fixer's job**: one of his kinds (lift, drop, frame, tip), 1.5× the pay and a rare item always.
+- **Story chains**: three steps each (not four), from prison day 2, a step a prison day, on a fourth card beside the
+  pins; a short card as each is taken and handed in. Center Perks: Doc's watch; Stalag Flucht: Ferret's tunnel;
+  Shankton: the Preacher's collection (not the fixer's: Deacon is Shankton's fixer); San Pancho: Toro's birthday;
+  Irongate: Gull's message ashore. The cosmetic is earned through achievements: a story finished gives the copper
+  trim, five stories the saffron trim.
+- **Codes**: EXT.BOARD 24, EXT.WHISTLE 25; TALK.ODD_JOB 28, JOB_IN 29, CALL_IN 30; DOING.DIG 35; SALT.ODDJOBS 35,
+  FIXER_JOB 36, ODDJOB_PERK 37; TODAY.FIXER_JOB 524288, ODD_JOB 1048576. State: `oddjob`, `oddjobs` (appended,
+  optional on load). Items appended: parcel, stash, note, whistle, mug, birthday_cake, pocket_watch.
+- **Not changed for anyone until a job is taken**: the deals are pure (`roll()` with the prison's own key), and only
+  a lookout's digger walks where he wouldn't; every escape and multi-day bot snapshot is byte-identical.
+- **Achievements**: oddJobber (5 handed in), storyTime (copper trim), wholeStory (saffron trim), framedUp,
+  fixersFriend (3 of his), calledIn. Ledger: oddJobs, oddJobsFailed, fixerJobs, storySteps, stories, debtsCalled,
+  framed. A rumour (`boardJob`: who pinned a job today), bubbles for the digger and for a job handed in or failed.
+- **How to play**: the `oddjobs` page in the P37 shape, without its picture yet (`pic` off until
+  `public/help/oddjobs.webp` is taken in the browser pass).
+- **Built (rules review):** a stash or parcel the pet rat leaves is never "seen" (only one put in by hand while a
+  guard sees the player). A frame-up counts only the desk's standard drawers (the search never opens the hidden
+  compartment). A lift's item is left where it's found (`liftSpot`: an open slot, else over an earlier job's leftover,
+  else over the container's own stock, never the player's things nor a guard's kit; nowhere: not offered,
+  `liftFull`); a lift given up or failed takes it back; it counts only once out of there (PROG), so a whistle, mug or
+  cake kept from an earlier job finishes nothing. A drop's parcel taken back out undoes the drop. A drop's or
+  frame-up's count of what the desk already held follows it down (an old stash searched out). **Time**: taken from
+  18:00 (the evening free time), a job's days count from the next prison day; the card says when it ends ("Until
+  08:00 tomorrow / on day N"). At 08:00 a job whose work is done, or whose item is in hand, waits to be handed in
+  with no deadline; otherwise it fails. The cake: no room in the hotbar at a visit, into the player's desk; no room
+  in the desk for the parcel, into the hotbar; neither, a toast once a day and it waits. A bribed guard looking away
+  doesn't find the dig. A rat's job says on its card that it needs a pet rat (it's still dealt without one: the
+  rat can be had within its 3 days). Left as is: the fixer's rare item every day is generous (one job a day, opinion
+  50, the riskier kinds); to revisit if it makes tools too easy.
+- **Built (UI review):** the whistle only in the dig's hours with the digger at it (`canWhistle`); B and the chip
+  whistle only while a guard is coming (`whistleNow`), else they open the job's card; a red pulse, not the order's
+  green. The board hangs from 0.5 to 1.3 (under the wall's top), a little off a corner's wall, and fades with its
+  wall's see-through cut. The digger faces the most open floor beside his bed (`digFace`), leaning less. The board's
+  card says "one job at a time" once, starts at its top, and steps aside while a story's card is up; Take buttons
+  named by kind and asker. On a phone held sideways the HUD's chips clear a card docked left and a panel docked
+  right; upright the job's pill takes the screen's width. A delivery's parcel is given from the talk panel; the hand-in
+  row says the job is done; one toast per action (a delivery, a debt's recruit). Center Perks' and Irongate's
+  stories hand over a parcel; Shankton's Preacher keeps his name in French. Not done: the player's head over the
+  middle cards (no browser in this pass); the map viewer's in-game photos to retake in the browser pass.
+- **Built (browser re-check):** Shankton's board moved to 25,14 (38,13 behind it was the cyan door; `oddjobstest`
+  now asks for brick or reinforced wall behind every board). A guard is "coming" only while the player is on watch.
+  A delivery's parcel handed over is not a gift (no opinion), and it leaves the gift row for its own. Touch variants
+  of the job's hints and the "coming" toast; the dig's % apart from the chip's words; the race card steps aside for
+  the job's card; in landscape the toasts clear a story's card, and the job's pill hides when a card and a panel are
+  both open; the board card's scroll reset once it's shown; the Today row's dot kept with the step before it.
 
 ### P41 The manhunt (v2.20)
 Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.

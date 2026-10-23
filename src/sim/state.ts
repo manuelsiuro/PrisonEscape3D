@@ -37,6 +37,7 @@ import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
+import { J, JOB_LEN, KINDS } from '../content/oddjobs';
 import { FREED_STEPS } from '../content/paperwork';
 import { HEARING_AFTER, RECORD } from '../content/parole';
 import { freshParole, hearingOk, SCORE_MAX, SCORE_MIN, type Hearing, type VoidWhy } from './systems/parole';
@@ -136,7 +137,7 @@ export type SimEvent =
   /** A lockdown called off while the player stayed out of reach (tunnels, vents, roof). */
   | { type: 'gaveUp' }
   /** Economy (GDD §11): cash in or out (signed), and why. */
-  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' | 'phone' | 'mail' | 'kiosk' }
+  | { type: 'cash'; n: number; why: 'loot' | 'wage' | 'favor' | 'buy' | 'gift' | 'bribe' | 'commend' | 'order' | 'visit' | 'dice' | 'prize' | 'sale' | 'bet' | 'purse' | 'tattoo' | 'stage' | 'quiz' | 'phone' | 'mail' | 'kiosk' | 'oddjob' }
   /** Something done at a job station; the quota moved on; the day's wage. */
   | { type: 'work'; act: StationAct; item: number; prop: number }
   | { type: 'quota'; n: number; of: number }
@@ -334,7 +335,21 @@ export type SimEvent =
    * again); put off by a lockdown (`n` the new day), missed, walked out of; voided by plotting (`why`).
    */
   | { type: 'parole'; what: ParoleNews; n?: number; lawyer?: boolean; q?: number; topic?: number; choice?: number; worth?: number; lie?: boolean; score?: number; lines?: number[]; why?: VoidWhy }
+  /**
+   * The odd jobs board (P40, oddjobs.ts): a job taken (`kind`, from `who`, off pin `from`, for `n`
+   * days); its work done; handed in (`n` the pay, `item` and `perk` what came with it); failed
+   * (`why`); a frame's stash planted, the guards tipped off (`guard` sent); the birthday cake in
+   * (`n` 1: in the desk, from the Red Cross parcel), or kept for the next visit (no room); the
+   * lookout's dig begun, a guard coming (`guard`), the whistle, a false alarm; a debt called in
+   * (`item`); someone joining the crew on a debt; a story's step told (`n`; `more` steps to come).
+   */
+  | { type: 'oddjob'; what: OddJobNews; kind?: number; who?: number; from?: number; n?: number; item?: number; perk?: number; why?: OddJobFail; guard?: number; more?: boolean }
   | ItemEvent;
+
+/** What the odd jobs board did (P40, the 'oddjob' event). */
+export type OddJobNews = 'taken' | 'done' | 'paid' | 'failed' | 'planted' | 'tipped' | 'cake' | 'cakeKept' | 'digging' | 'coming' | 'whistled' | 'falseAlarm' | 'calledIn' | 'owedJoin' | 'chain';
+/** Why an odd job failed: its time up, given up, seen dropping it, caught planting the stash, the game's result the wrong way, the dig found. */
+export type OddJobFail = 'time' | 'quit' | 'seen' | 'caught' | 'fixed' | 'found';
 
 /** What the pay phone did (P34, the 'phone' event). */
 export type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
@@ -382,7 +397,7 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate' | 'noParole' | 'paroleOn' | 'paroleEarly' | 'paroleWait' | 'notAtDesk';
+export type Refusal = 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate' | 'noParole' | 'paroleOn' | 'paroleEarly' | 'paroleWait' | 'notAtDesk' | 'noBoard' | 'notAtBoard' | 'haveJob' | 'noJob' | 'pinTaken' | 'noDeal' | 'fixerToday' | 'notOwed' | 'notHisJob' | 'notLookout' | 'liftFull';
 
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
@@ -685,6 +700,15 @@ export interface SimState {
   parole: number[];
   paroleBase: number[];
   hearing: Hearing | null;
+  /**
+   * v2.19 (P40, the odd jobs board: oddjobs.ts): the job held ([] none; else oddjobs.ts J's fields:
+   * its kind, variant, the one who asked, who it's about, the step it runs out, where it came from,
+   * its stage, its progress, a number of its own, the pay, the perk and its item, the guards coming
+   * at a dig); the record (oddjobs.ts R: the prison day of the pins taken and which, the story's
+   * next step and the prison day its last was handed in, who owes the player one).
+   */
+  oddjob: number[];
+  oddjobs: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -858,6 +882,8 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     parole: freshParole(),
     paroleBase: [],
     hearing: null,
+    oddjob: [],
+    oddjobs: [0, 0, 0, 0, 0],
   };
 }
 
@@ -1024,6 +1050,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!(ints(s.parole, 10) && s.parole.every((x, k) => (k === 5 ? x >= SCORE_MIN && x <= SCORE_MAX : x >= (k === 6 || k === 7 ? -1 : 0))) && s.parole[0] <= prisonDay(s.step) + HEARING_AFTER + 1 && s.parole[9] <= prisonDay(s.step) + 1)) s.parole = freshParole();
   if (!(Array.isArray(s.paroleBase) && (s.paroleBase.length === 0 || ints(s.paroleBase, RECORD.length)))) s.paroleBase = [];
   if (!hearingOk(s.hearing, s.step) || (s.hearing && !(s.parole[8] > 0 && s.parole[0] === prisonDay(s.step)))) s.hearing = null;
+  // P40: the job held as it can be (else none), the record whole.
+  if (!(Array.isArray(s.oddjob) && (s.oddjob.length === 0 || (ints(s.oddjob, JOB_LEN) && s.oddjob[J.KIND] >= 0 && s.oddjob[J.KIND] < KINDS.length && s.oddjob[J.GIVER] >= 0 && s.oddjob[J.GIVER] < s.inmates.length && s.oddjob[J.TARGET] >= -1 && s.oddjob[J.TARGET] < Math.max(s.inmates.length, s.guards.length) && s.oddjob[J.ENDS] >= 0 && s.oddjob[J.PAY] >= 0 && s.oddjob[J.ITEM] >= 0 && s.oddjob[J.ITEM] <= ITEMS.length)))) s.oddjob = [];
+  if (!(ints(s.oddjobs, 5) && s.oddjobs.every((x) => x >= 0))) s.oddjobs = [0, 0, 0, 0, 0];
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);

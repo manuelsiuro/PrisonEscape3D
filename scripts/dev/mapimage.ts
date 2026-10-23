@@ -310,6 +310,21 @@ function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   g.pill(cx(c.car.x), cz(c.car.z) - cd / 2 - 10, "LOU'S CAR", 9, red);
 }
 
+/** The odd jobs board (P40): a bar on the wall it hangs on (brown), the reader's tile ('job'). */
+function drawBoard(g: Svg, def: PrisonDef) {
+  const b = def.board;
+  if (!b) return;
+  const brown = '#92400e';
+  const [fx, fz] = face(b.face);
+  const ex = cx(b.x) + (fx * S) / 2;
+  const ez = cz(b.z) + (fz * S) / 2;
+  if (Math.round(fx) !== 0) g.add(`<line x1="${ex}" y1="${ez - S / 2 + 4}" x2="${ex}" y2="${ez + S / 2 - 4}" stroke="${brown}" stroke-width="7"/>`);
+  else g.add(`<line x1="${ex - S / 2 + 4}" y1="${ez}" x2="${ex + S / 2 - 4}" y2="${ez}" stroke="${brown}" stroke-width="7"/>`);
+  g.rect(px(b.x) + 7, pz(b.z) + 7, S - 14, S - 14, `rx="5" fill="${brown}"`);
+  g.text(cx(b.x), cz(b.z) + 3.5, 'job', 'font-size="9" font-weight="700" fill="#fff" text-anchor="middle"');
+  g.pill(cx(b.x), cz(b.z) + S * 0.62, 'ODD JOBS', 9, brown);
+}
+
 function drawMarks(g: Svg, def: PrisonDef) {
   for (const q of def.rollCall) g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="6" fill="#fff" stroke="#c2410c" stroke-width="2.5"/>`);
   const s = def.spawn;
@@ -502,7 +517,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
           'Red dashed lines: zone borders (between two named zones; walls are "none"). Red pills: zone names, once per patch.',
           'Dark boxes: solid props (named; yellow dot = the side it faces). Light dashed boxes: props walked over (benches, seats, chairs, showers, bleachers).',
           'Pink: decor (pink bar = a wall piece, on the wall it hangs on; pink outline = a floor piece). Doors: c<n> = cell n\'s door, GATE = perimeter gate (no key opens it).',
-          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net); gold: the release desk (rel) and its doors out r1…; purple: the parole board b1–b3 and the player\'s seat before it (you).',
+          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net); gold: the release desk (rel) and its doors out r1…; purple: the parole board b1–b3 and the player\'s seat before it (you); brown: the odd jobs board (bar = its wall, job = the reader\'s tile).',
         ]
       : kind === 'people'
         ? [
@@ -510,7 +525,7 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
             'White squares = posts (where a guard stands during a block: rollCa(ll), breakf(ast), exerci(se), showers, dinner…). Lines are straight between stops, not the walked path.',
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
-            'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order; the parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
+            'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order; the parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you); the odd jobs board (brown, job). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
           ]
         : [
             'Layer +1 over the faded ground floor: grey = ducts, blue V = ceiling grates (down into the room below), green L = the ladder up to the roof.',
@@ -661,7 +676,7 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
   const name = def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id);
-  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board' : 'vents (layer +1) and boulders under the ground (layer -1)';
+  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board, odd jobs board' : 'vents (layer +1) and boulders under the ground (layer -1)';
   g.text(M, 30, `${name} — ${what}`, 'font-size="24" font-weight="700" fill="#111"');
   g.text(W - M, 30, `v${pkg.version} · map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
   drawTiles(g, w, kind !== 'layout');
@@ -671,6 +686,7 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
     drawProps(g, def);
     drawDecor(g, def);
     drawComms(g, def, false);
+    drawBoard(g, def);
     drawCells(g, def);
     drawMarks(g, def);
     drawZones(g, w, true);
@@ -678,6 +694,7 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
     drawZones(g, w, false);
     drawPeople(g, def);
     drawComms(g, def, true);
+    drawBoard(g, def);
     drawZones(g, w, true);
   } else {
     drawVents(g, w);
@@ -759,6 +776,7 @@ function tileData(def: PrisonDef, n: number) {
     hp.board.forEach((q, k) => mark(q.x, q.z, `parole board, member ${k + 1} (seated on the hearing's morning, 10:00)`));
     mark(hp.seat.x, hp.seat.z, `the seat before the parole board (the hearing is held anywhere in the ${hp.zone})`);
   }
+  if (def.board) mark(def.board.x, def.board.z, `odd jobs board (its reader stands here, facing ${def.board.face})`);
   const V = w.layers[LAYER.VENTS].kind;
   const U = w.layers[LAYER.UNDER].kind;
   const above: Array<[number, number, string]> = [];

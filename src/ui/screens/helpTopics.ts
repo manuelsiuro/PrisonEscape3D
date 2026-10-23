@@ -124,6 +124,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       topics: [
         T('payphone', 'phone', '#2f9e8f', { pic: true, lessons: ['payphone', 'cousin'], listIcons: ['home', 'briefcase', 'megaphone', 'person'] }),
         T('kiosk', 'monitor', '#3a7bd5', { pic: true, recipes: ['hollow_book'], lessons: ['kiosk'], listIcons: ['letter', 'cart', 'news', 'brain'] }),
+        T('oddjobs', 'pin', '#b98a55', { pic: true, lessons: ['oddjob'], listIcons: ['hand', 'box', 'search', 'cards', 'rat', 'eye'], see: ['games', 'payphone', 'rat'] }),
       ],
     },
   ],
