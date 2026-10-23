@@ -25,7 +25,7 @@ import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../sim/world/World';
 import { press, targets } from './buttons';
 import type { Game } from './game';
 import { coachItems, coachOnce, seenTip } from './tips';
-import { dayMinute, eventOn, fogNow, today, weatherNow } from '../sim/systems/calendar';
+import { dayMinute, eventOn, fogNow, prisonDay, today, weatherNow } from '../sim/systems/calendar';
 import { searchMinute } from '../sim/systems/delivery';
 import { freezing } from '../sim/systems/weather';
 import { DOG, dogAsleep, dogDazed } from '../sim/systems/k9';
@@ -41,6 +41,7 @@ import { sightFor } from '../sim/systems/football';
 import { GUARD_SPEED as WALK_SPEED_GUARD } from '../sim/systems/guards';
 import { carWaiting, commsOf } from '../sim/systems/phone';
 import { kioskOf, loggedIn } from '../sim/systems/kiosk';
+import { boardNow, boardOf } from '../sim/systems/oddjobs';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
 
 /**
@@ -181,6 +182,7 @@ const frameData: Frame = {
   nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
   phone: { offHook: false, car: false },
   kiosk: { on: false, photos: [] },
+  oddjobs: { pins: [false, false, false], chain: false, mine: false },
   release: { called: false, freed: false },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
@@ -579,11 +581,33 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The internet kiosk (P35): the screen awake while the player's logged in; the drawings pinned over the bed.
   f.kiosk.on = loggedIn(st);
   f.kiosk.photos = st.photos;
+  // The odd jobs board (P40): the cards still up today, a tag while a job is held.
+  oddJobsFrame(sim, f);
   // The release desk (P36): its lamp while the name is called, and while the way out is open.
   f.release.called = calledNow(st);
   f.release.freed = freedNow(st);
   f.inked = st.inked;
   return f;
+}
+
+/** What's on the odd jobs board, worked out again only when the day, the pins taken or the story move on (the deals aren't free). */
+let boardKey = '';
+function oddJobsFrame(sim: Sim, f: Frame) {
+  const st = sim.state;
+  const o = f.oddjobs;
+  o.mine = st.oddjob.length > 0;
+  if (!boardOf(sim)) {
+    boardKey = '';
+    o.pins.fill(false);
+    o.chain = false;
+    return;
+  }
+  const key = `${sim.prison.id}|${st.salt}|${prisonDay(st.step)}|${st.oddjobs.join(',')}|${st.oddjob.length}`;
+  if (key === boardKey) return;
+  boardKey = key;
+  const b = boardNow(sim);
+  for (let k = 0; k < o.pins.length; k++) o.pins[k] = !!b.pins[k];
+  o.chain = !!b.chain;
 }
 
 /**

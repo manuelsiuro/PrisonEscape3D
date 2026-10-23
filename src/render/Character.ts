@@ -1115,6 +1115,17 @@ export class Character {
       armLx += (-1.3 + Math.sin(t * 7) * 0.35) * a;
       armRx += (-1.3 + Math.cos(t * 7) * 0.35) * a;
       bob -= 0.03 * a;
+    } else if (doing === DOING.DIG) {
+      // Digging under the bed (P40, the odd jobs' lookout): crouched low, both hands scraping at the
+      // floor in turn, a stroke down and back. (Held still with reduced motion: a crouch over the hole.)
+      const s = motion ? Math.sin(t * 5.5) : 0;
+      armLx += (-1.55 + s * 0.4) * a;
+      armRx += (-1.55 - s * 0.4) * a;
+      armLz -= 0.12 * a;
+      armRz += 0.12 * a;
+      legL += 0.5 * a;
+      legR += 0.5 * a;
+      bob -= (0.16 + (motion ? Math.abs(s) * 0.02 : 0)) * a;
     } else if (ko) {
       // Out cold: arms flung out.
       armLz -= 1.1 * this.lie;
@@ -1345,7 +1356,8 @@ export class Character {
       (doing === DOING.DICE || doing === DOING.CARDS ? 0.12 * this.act : 0) +
       (doing === DOING.BOARD ? 0.18 * this.act : 0) +
       (doing === DOING.BRAWL ? 0.08 * this.act : 0) +
-      (doing === DOING.KIOSK ? 0.05 * this.act : 0);
+      (doing === DOING.KIOSK ? 0.05 * this.act : 0) +
+      (doing === DOING.DIG ? 0.45 * this.act : 0);
     // From one activity to another: limbs, height and lean ease from where they were (before a blow, which never waits).
     if (this.blend < 1) {
       this.blend = Math.min(1, this.blend + dt * 5);
