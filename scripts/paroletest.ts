@@ -98,7 +98,11 @@ function game(prison = CENTER_PERKS, seed = 5, mods: string[] = []) {
     while (sim.state.step < target && !sim.state.escaped) step();
   };
   const r = prison.comms!.release;
-  const toDesk = () => put(sim.state.player, r.at[0].x, r.at[0].z);
+  // (Carried there: up off the hearing's seat first.)
+  const toDesk = () => {
+    sim.state.seat = -1;
+    put(sim.state.player, r.at[0].x, r.at[0].z);
+  };
   const h = HEARINGS[prison.id];
   const toRoom = () => put(sim.state.player, h.seat.x, h.seat.z);
   const setCalm = (on: boolean) => (calm = on);
@@ -267,6 +271,8 @@ function applied(prison = CENTER_PERKS) {
   g.toRoom();
   g.step();
   check(!!s.hearing && news(seen, 'sat').length === 1, 'in the room: sat before the board');
+  const seat = sim.world.props[s.seat];
+  check(!!seat && seat.x <= HEARINGS[CENTER_PERKS.id].seat.x && HEARINGS[CENTER_PERKS.id].seat.x < seat.x + seat.w && s.player.facing === 13, 'on the seat across from the board, facing it');
   for (let k = 0; k < 200 && s.hearing!.q < 0; k++) g.step();
   check(s.hearing!.q === 0 && news(seen, 'question').length === 1, 'the first question put');
   // A clean, empty record (the routine wasn't kept here): every claim on a line against is true, on a line for a lie.

@@ -1284,6 +1284,12 @@ five prisons. It walks out through the front door like paperwork (P36), using th
   cleared at the desk nothing voids the grant (route stays `parole`); a grant lost at the desk waits 3 days as a no does;
   the lawyer's $60 comes back when the filing is refused at the call's end; knocked out at the hearing puts it off a
   day; the multitool counts as a plotting tool; Counsel needs the grant on the lawyer's filing (`lawyerGranted`).
+- **Built (UI review):** at the seat across from the board the player sits on it, facing the board. On a phone held
+  sideways the hotbar steps aside for every parole card, the card clears the HUD's chips, the warden's line goes top
+  right and a lesson's card bottom right (the board stays in view); upright, the desk's record stays below the player
+  (tight rows, it scrolls), the for-lines at nothing on one line and no "0" points. The verdict hides the action button;
+  the call to the room is dropped once the player sits. San Pancho's and Irongate's boards stay split across two
+  tables: their canteens have only two-seat benches. The lesson holds the verdict 6 s before it ends.
 
 ### P40 The odd jobs board (v2.19)
 Small missions with a bit of story: the next step beyond the four favours (`FAVOR`). They are built only from things

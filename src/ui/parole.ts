@@ -151,7 +151,7 @@ export class ParoleCard {
 
   private bodyHtml(v: ParoleView): string {
     const status = v.status ? `<p class="parole-status ${v.statusTone}">${esc(v.status)}</p>` : '';
-    const lines = v.lines.length ? `<ul class="parole-lines">${v.lines.map((l) => `<li class="${l.tone}"><span>${esc(l.text)}</span><b>${esc(l.pts)}</b></li>`).join('')}</ul>` : '';
+    const lines = v.lines.length ? `<ul class="parole-lines">${v.lines.map((l) => `<li class="${l.tone}"><span>${esc(l.text)}</span>${l.pts ? `<b>${esc(l.pts)}</b>` : ''}</li>`).join('')}</ul>` : '';
     const weighed = v.weighed.length ? `<ul class="parole-weighed">${v.weighed.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : '';
     if (v.phase === 'desk') return `${status}${weighed}${lines}`;
     if (v.phase === 'verdict') return `<p class="parole-verdict ${v.verdictGood ? 'good' : 'bad'}">${icon(v.verdictGood ? 'check' : 'close', 18)}<span>${esc(v.verdict)}</span></p>${status}${weighed}`;

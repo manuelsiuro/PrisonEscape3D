@@ -1188,6 +1188,8 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.parole.go', done: (c) => !!c.sim.state.hearing, goal: (sim) => hearingSeat(sim), speed: 2, failOn: paroleLost },
       { text: 'lesson.parole.read', touch: 'lesson.parole.readTouch', least: 4, on: (e) => e.type === 'parole' && (e.what === 'answer' || e.what === 'silent'), failOn: paroleLost },
       { text: 'lesson.parole.rest', on: (e) => e.type === 'parole' && e.what === 'granted', failOn: paroleLost },
+      // (The verdict's card a moment, to be read.)
+      { text: 'lesson.parole.over', done: () => true, least: 6 },
     ],
   },
 ];
