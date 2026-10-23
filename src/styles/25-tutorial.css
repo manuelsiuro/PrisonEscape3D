@@ -238,6 +238,11 @@
     left: calc((100vw + var(--lesson-right, 0px)) / 2);
     max-width: calc(100vw - var(--lesson-right, 0px) - 28px);
   }
+  /* (The lesson's card in its own place, on the left under the routine pill, at the height of the HUD's chips:
+     the chips centre on what it leaves free — the parole hearing's, a job's — instead of going under it.) */
+  body.lesson-on:not(.gaming, .courting, .matching, .inking, .racing, .staging, .quizzing, .phoning, .kiosking, .jobbing, .paroling) .hud:not(.hunt-hud) .hud-alerts {
+    padding-left: calc(min(330px, 36vw) + 8px);
+  }
   body.gaming .coach.lesson-coach,
   body.courting .coach.lesson-coach {
     top: 0;

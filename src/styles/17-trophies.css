@@ -705,6 +705,19 @@
   padding-left: 10px;
 }
 
+/* The buttons clear the last row of chips (and their focus ring doesn't run onto it). */
+.v-earned + .actions,
+.v-earned + .v-unlock {
+  margin-top: 16px;
+}
+
+@media (max-height: 500px) {
+  .v-earned + .actions,
+  .v-earned + .v-unlock {
+    margin-top: 10px;
+  }
+}
+
 /* ------------------------------------------------------------ the Intake */
 .intake {
   position: fixed;
@@ -959,10 +972,17 @@
   color: #ffd98a;
 }
 
+/* (Kept in view at the card's foot while the options scroll under them: a short screen, a part with many — the hats.) */
 .intake-actions {
+  position: sticky;
+  bottom: -14px;
+  z-index: 1;
   display: flex;
   gap: 8px;
-  margin-top: 10px;
+  margin: 2px 0 -14px;
+  padding: 8px 0 14px;
+  background: rgb(20, 29, 43);
+  box-shadow: 0 -12px 12px -6px rgb(20, 29, 43);
 }
 
 .intake-actions .big-btn {
@@ -1001,6 +1021,12 @@ body.intake-on .update-card {
   .intake-head h2 {
     margin-bottom: 6px;
     font-size: 24px;
+  }
+
+  .intake-actions {
+    bottom: calc(-1 * max(12px, env(safe-area-inset-bottom)));
+    margin-bottom: calc(-1 * max(12px, env(safe-area-inset-bottom)));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 
   .intake-parts {
@@ -1048,6 +1074,12 @@ body.intake-on .update-card {
 
   .intake-opts {
     min-height: 0;
+  }
+
+  .intake-actions {
+    bottom: -10px;
+    margin-bottom: -10px;
+    padding: 6px 0 10px;
   }
 
   .intake-parts button {

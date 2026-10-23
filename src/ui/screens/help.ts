@@ -115,11 +115,13 @@ const open = (tp: HelpTopic) => !tp.prison || openPrisons().some((p) => p.id ===
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae');
 const SEARCHED = ['hook', 'sum', 'sh', 'steps', 'lh', 'list', 'lh2', 'list2', 'nums', 'tip', 'warn', 'more', 'dh', 'meter', 'tl', 'bars'];
 const words = (id: string) => fold([title(id), ...SEARCHED.map((p) => part(id, p)), shaped(id) ? '' : t(`help.${id}` as Key)].join(' ')).split(/[^a-z0-9]+/);
-/** A topic found: each word searched for begins one of its words. */
-const found = (id: string, q: readonly string[]) => {
-  const w = words(id);
-  return q.every((x) => w.some((y) => y.startsWith(x)));
-};
+/** A word searched for, said whole by a topic (or its plural: "tunnel", "tunnels"). */
+const whole = (w: readonly string[], x: string) => w.some((y) => y === x || y === `${x}s` || y === `${x}x` || y === `${x}es`);
+/**
+ * A topic found: each word searched for is one of its words — whole, when some topic shown says it
+ * whole ("lou" is Lou, not "loud"), else the start of one (a word still being typed: "tun").
+ */
+const found = (w: readonly string[], q: readonly string[], exact: readonly boolean[]) => q.every((x, k) => (exact[k] ? whole(w, x) : w.some((y) => y.startsWith(x))));
 
 // ------------------------------------------------------------ pieces
 
@@ -239,7 +241,7 @@ function recipe(result: string) {
 }
 
 function picture(tp: HelpTopic) {
-  if (tp.pic) return `<figure class="hd-pic"><img src="./help/${tp.id}.webp" alt="" width="1040" height="480" decoding="async"></figure>`;
+  if (tp.pic) return `<figure class="hd-pic"${tp.picAt ? ` style="--pic-at:${tp.picAt}"` : ''}><img src="./help/${tp.id}.webp" alt="" width="1040" height="480" decoding="async"></figure>`;
   return '';
 }
 
@@ -320,9 +322,11 @@ const shown = (tab: Exclude<HelpTab, 'controls'>) => HELP[tab].flatMap((g) => g.
 function index(tab: Exclude<HelpTab, 'controls'>, query: string) {
   const q = fold(query).split(/[^a-z0-9]+/).filter(Boolean);
   if (q.length) {
-    const hits = TABS.filter((x): x is Exclude<HelpTab, 'controls'> => x !== 'controls')
+    const pool = TABS.filter((x): x is Exclude<HelpTab, 'controls'> => x !== 'controls')
       .flatMap(shown)
-      .filter((tp) => found(tp.id, q));
+      .map((tp) => ({ tp, w: words(tp.id) }));
+    const exact = q.map((x) => pool.some((p) => whole(p.w, x)));
+    const hits = pool.filter((p) => found(p.w, q, exact)).map((p) => p.tp);
     return hits.length ? `<h4 class="help-group">${t('help.results', { n: hits.length })}</h4><div class="help-tiles">${hits.map(tile).join('')}</div>` : `<p class="hd-none">${t('help.noResults')}</p>`;
   }
   return HELP[tab]

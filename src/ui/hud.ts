@@ -447,6 +447,9 @@ export class Hud {
       this.shownKey = this.shownMinute = '';
       this.zone.textContent = '';
       this.cashPill.title = '';
+      this.el.querySelector('.hud-pause')!.setAttribute('aria-label', t('hud.pause'));
+      this.heatPill.setAttribute('aria-label', t('hud.heat'));
+      this.el.querySelector<HTMLElement>('.hud-eye')!.title = t('hud.seen');
     }
     // Text only when it changes: the clock once a game minute, the zone on entering one.
     const minute = `${clock.day}:${clock.minuteOfDay}:${NARROW.matches}`;

@@ -141,6 +141,20 @@
   min-height: 52px;
   border-top: 1px solid #edf0f4;
   font-weight: 600;
+  /* (A name and its choices too long for one line — « Bavardages » and « Beaucoup · Un peu · Aucun » at 412 px:
+     the choices go to a line of their own, at the right, rather than widening the card past the screen's margin.) */
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.set-row > .seg,
+.set-row > .volume,
+.set-row > .switch {
+  margin-left: auto;
+}
+
+.set-row:has(> .seg) {
+  padding-block: 4px;
 }
 
 .volume {

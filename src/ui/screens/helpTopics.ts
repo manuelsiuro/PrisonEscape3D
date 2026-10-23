@@ -23,6 +23,8 @@ export interface HelpTopic {
   prison?: string;
   /** An in-game close-up: public/help/<id>.webp. */
   pic?: true;
+  /** Where its subject is, kept in view when the picture is cropped to a strip (a phone on its side): a CSS object-position ('50% 28%'); the middle when not given. */
+  picAt?: string;
   diagram?: Diagram;
   /** Recipes shown from the handbook (their results' item ids). */
   recipes?: readonly string[];
@@ -97,7 +99,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('train', 'dumbbell', '#8e4fc4', { pic: true, lessons: ['gym', 'laps'], listIcons: ['dumbbell', 'run', 'book'], see: ['grounds'] }),
         T('grounds', 'run', '#b0553f', { pic: true, lessons: ['laps', 'gardener'], see: ['garden', 'hoops', 'football'] }),
         // v2.21 (P42): the holidays (picture to take: public/help/holidays.webp, then pic: true).
-        T('holidays', 'tree', '#4fbf6a', { pic: true, listIcons: ['egg', 'splash', 'pumpkin', 'tree'], list2Icons: ['calendar', 'star', 'close'], see: ['day'] }),
+        T('holidays', 'tree', '#4fbf6a', { pic: true, picAt: '50% 0%', listIcons: ['egg', 'splash', 'pumpkin', 'tree'], list2Icons: ['calendar', 'star', 'close'], see: ['day'] }),
       ],
     },
     {
@@ -126,7 +128,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       topics: [
         T('payphone', 'phone', '#2f9e8f', { pic: true, lessons: ['payphone', 'cousin'], listIcons: ['home', 'briefcase', 'megaphone', 'person'] }),
         T('kiosk', 'monitor', '#3a7bd5', { pic: true, recipes: ['hollow_book'], lessons: ['kiosk'], listIcons: ['letter', 'cart', 'news', 'brain'] }),
-        T('oddjobs', 'pin', '#b98a55', { pic: true, lessons: ['oddjob'], listIcons: ['hand', 'box', 'search', 'cards', 'rat', 'eye'], see: ['games', 'payphone', 'rat'] }),
+        T('oddjobs', 'pin', '#b98a55', { pic: true, picAt: '50% 28%', lessons: ['oddjob'], listIcons: ['hand', 'box', 'search', 'cards', 'rat', 'eye'], see: ['games', 'payphone', 'rat'] }),
       ],
     },
   ],
@@ -137,7 +139,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('tools', 'pick', '#6f93b8', { lessons: ['dig'], see: ['noise', 'layers', 'cover'], listIcons: ['item:light_pickaxe', 'item:light_cutters', 'item:screwdriver', 'item:light_shovel'] }),
         T('lockpick', 'lockpick', '#8d949e', { diagram: 'pins', recipes: ['lockpick'], lessons: ['lockpick'] }),
         T('noise', 'ear', '#e8963a', { diagram: 'bars', lessons: ['noise'], listIcons: ['lock', 'ear'] }),
-        T('layers', 'down', '#8e5a2b', { pic: true, recipes: ['timber_brace'], lessons: ['tunnel', 'vents'], stepIcons: ['item:timber_brace', 'up', 'drop'] }),
+        T('layers', 'down', '#8e5a2b', { pic: true, picAt: '50% 70%', recipes: ['timber_brace'], lessons: ['tunnel', 'vents'], stepIcons: ['item:timber_brace', 'up', 'drop'] }),
         T('cover', 'lock', '#5d6779', { recipes: ['poster', 'fake_wall', 'fake_vent', 'fake_fence'], listIcons: ['item:poster', 'item:fake_wall', 'item:fake_vent', 'item:fake_fence'] }),
       ],
     },
@@ -154,20 +156,20 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       id: 'ways',
       topics: [
         T('ways', 'hook', '#ff7714', { pic: true, recipes: ['grapnel'], lessons: ['escape', 'tunnel'], listIcons: ['item:light_cutters', 'item:light_shovel', 'item:grapnel', 'fist'], see: ['delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
-        T('delivery', 'truck', '#3fc79a', { pic: true, diagram: 'timeline', lessons: ['stowaway'] }),
+        T('delivery', 'truck', '#3fc79a', { pic: true, picAt: '50% 70%', diagram: 'timeline', lessons: ['stowaway'] }),
         T('bluff', 'idCard', '#5b8fd8', { pic: true, diagram: 'timeline', recipes: ['fake_id'], lessons: ['bluff'] }),
         T('glider', 'glider', '#9fc8e8', { pic: true, recipes: ['glider_frame', 'glider'], lessons: ['glider'] }),
         T('paperwork', 'clipboard', '#d8b04a', { pic: true, diagram: 'timeline', recipes: ['forged_release'], lessons: ['forgery', 'release'], see: ['parole'] }),
-        T('parole', 'scale', '#8a6bd1', { pic: true, diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
+        T('parole', 'scale', '#8a6bd1', { pic: true, picAt: '50% 18%', diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
         // P41 (picture to come: public/help/manhunt.webp, then `pic: true`).
-        T('manhunt', 'run', '#e0603a', { pic: true, diagram: 'timeline', lessons: ['manhunt'], listIcons: ['shirt', 'water', 'toss', 'bone', 'item:light_cutters', 'truck', 'users'], see: ['dogs', 'ways'] }),
+        T('manhunt', 'run', '#e0603a', { pic: true, picAt: '50% 40%', diagram: 'timeline', lessons: ['manhunt'], listIcons: ['shirt', 'water', 'toss', 'bone', 'item:light_cutters', 'truck', 'users'], see: ['dogs', 'ways'] }),
       ],
     },
     {
       id: 'getHold',
       topics: [
         T('smuggling', 'phone', '#5fd3a0', { pic: true, lessons: ['smuggle'] }),
-        T('rat', 'rat', '#d98aa8', { pic: true, recipes: ['rat_trap'], lessons: ['rat'] }),
+        T('rat', 'rat', '#d98aa8', { pic: true, picAt: '50% 65%', recipes: ['rat_trap'], lessons: ['rat'] }),
       ],
     },
     {

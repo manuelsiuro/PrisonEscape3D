@@ -1,4 +1,4 @@
-import { t, type Key } from '../i18n';
+import { currentLang, t, type Key } from '../i18n';
 import { h, setText } from './dom';
 import { icon } from './icons';
 
@@ -54,6 +54,8 @@ export class HuntHud {
   private shownAct = '';
   private shownState = '';
   private shownTiers = '';
+  /** The language the words were written in (changed in the settings, from the pause card: all written again). */
+  private lang = '';
   /** The pause button, the action button, the stone. */
   onPause: () => void = () => {};
   onAct: () => void = () => {};
@@ -89,7 +91,6 @@ export class HuntHud {
     this.act = h('button', 'act-btn hunt-act hidden');
     this.act.addEventListener('click', () => this.onAct());
     this.stoneBtn = h('button', 'tool-btn hunt-stone hidden', `<i class="tool-round"><i class="tool-ring"></i>${icon('toss', 22)}<span></span></i>`);
-    this.stoneBtn.querySelector('span')!.textContent = t('manhunt.stone');
     this.stoneBtn.setAttribute('aria-keyshortcuts', 'Space');
     this.stoneBtn.addEventListener('click', () => this.onStone());
     document.body.append(this.el, this.act, this.stoneBtn);
@@ -110,6 +111,13 @@ export class HuntHud {
   }
 
   update(s: HuntHudState) {
+    if (currentLang() !== this.lang) {
+      this.lang = currentLang();
+      // (Not a value any of them takes: each is written again.)
+      this.shownGoal = this.shownAct = this.shownState = this.shownTiers = '?';
+      setText(this.stoneBtn.querySelector('span')!, t('manhunt.stone'));
+      this.el.querySelector('.hunt-pause')!.setAttribute('aria-label', t('hud.pause'));
+    }
     if (s.goal !== this.shownGoal) {
       this.shownGoal = s.goal;
       this.goalIcon.innerHTML = icon(GOAL_ICON[s.goal] ?? 'flag', 18);
