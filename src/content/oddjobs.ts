@@ -159,7 +159,7 @@ export const CHAINS: Record<string, ChainDef> = {
   irongate: { who: 3, steps: [step(KIND.LIFT, LIFT.WHISTLE, 0, 30), step(KIND.DROP, 0, 11, 35), step(KIND.CHECKERS, 0, 4, 30, PERK.DEBT)] },
 };
 
-/** The job held (`state.oddjob`), field by field. */
+/** The job held (`state.oddjob`), field by field (WARN: the guards coming at a dig, a bit each; a drop's or a frame-up's: what the desk held of it as it was taken). */
 export const J = { KIND: 0, VAR: 1, GIVER: 2, TARGET: 3, ENDS: 4, FROM: 5, STAGE: 6, PROG: 7, AUX: 8, PAY: 9, PERK: 10, ITEM: 11, WARN: 12 } as const;
 export const JOB_LEN = 13;
 /** The record (`state.oddjobs`): [the prison day of the pins taken, which (a bit each), the story's next step, the prison day its last was handed in, who owes the player (a bit per inmate)]. */

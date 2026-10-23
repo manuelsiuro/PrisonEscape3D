@@ -186,7 +186,7 @@ function dealOk(sim: Sim, d: Deal, day: number): string | null {
   if (d.days < 1 || d.days > 3 || d.pay <= 0) return 'days or pay';
   switch (d.kind) {
     case KIND.LIFT:
-      if (d.variant === LIFT.WHISTLE) return d.target >= 0 && d.target < s.guards.length ? null : 'no such guard';
+      if (d.variant === LIFT.WHISTLE) return d.target >= 0 && d.target < s.guards.length && (!p.guards[d.target].duties?.includes('shakedown') || p.guards.every((x) => x.duties?.includes('shakedown'))) ? null : 'no such guard, or one whose pockets are full';
       return freezerOf(sim) >= 0 ? null : 'no freezer';
     case KIND.DROP:
     case KIND.FRAME:
@@ -589,6 +589,21 @@ function handIn(g: Game, deal: Deal) {
     oddjobs(g.sim as never);
     g.seen.push(...g.sim.events);
     check(!jobOf(s) && jobNews(g.seen, 'failed').at(-1)?.why === 'seen', 'the parcel dropped in a guard\'s sight: failed');
+  }
+  // A parcel left in the desk by an earlier job: only one more counts.
+  {
+    const { g, pin, deal } = dealt(p, KIND.DROP)!;
+    const s = g.sim.state;
+    const desk = deskOf(g.sim, deal.target);
+    const box = s.items.containers[desk];
+    box[box.indexOf(0, containersOf(g.sim.world)[desk].hidden)] = slot(n('parcel'));
+    takeAt(g, pin);
+    g.step();
+    check(jobOf(s)?.[J.STAGE] === STAGE.ON, 'an old parcel already in the desk: not done by it');
+    g.blind();
+    byDesk(g, deal.target);
+    intoBox(g, desk, inHand(g.sim, n('parcel')));
+    check(jobOf(s)?.[J.STAGE] === STAGE.DONE, 'the new one dropped in: done');
   }
   // A frame caught out: heat.
   {
