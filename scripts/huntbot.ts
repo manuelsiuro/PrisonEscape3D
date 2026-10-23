@@ -19,6 +19,8 @@ import { UNIT } from '../src/sim/tuning';
 import { MAP_H, MAP_W } from '../src/sim/world/World';
 
 const N = MAP_W * MAP_H;
+/** A dog on the trail: a line or a ford this many tiles off is worth the detour. */
+const WASH_NEAR = 20;
 const cheb = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
 
 export interface BotRun {
@@ -75,6 +77,13 @@ export class HuntBot {
     const box = (cx: number, cz: number, r: number, a: Uint8Array) => {
       for (let z = cz - r; z <= cz + r; z++) for (let x = cx - r; x <= cx + r; x++) if (x >= 0 && z >= 0 && x < MAP_W && z < MAP_H) a[z * MAP_W + x] = 1;
     };
+    // (Where those still to come out will come on, an edge or a gate: kept clear of, they'll be looking.)
+    h.def.searchers.forEach((sd, k) => {
+      if (s.searchers[k].mode !== SEEK.OFF || sd.at < 0) return;
+      const e = spotTile(sd.from ?? sd.beat[0], h.out.ox, h.out.oz);
+      // (Not the gate they came out of themselves: those wait till the player is clear.)
+      if (cheb(e, h.start) > 2 * HUNT.clear && this.sees(centerX(e), centerZ(e))) box(e % MAP_W, Math.floor(e / MAP_W), range - 1, d);
+    });
     for (const m of s.searchers) {
       if (m.mode === SEEK.OFF || !this.sees(m.body.x, m.body.z)) continue;
       const mt = tileAt(m.body.x, m.body.z);
@@ -112,12 +121,12 @@ export class HuntBot {
     }
   }
 
-  /** Where the trail can be washed off: beside a washing line not yet used (not in a guard's uniform), or a ford. */
+  /** Where the trail can be washed off: beside a washing line not yet used (not once in other clothes), or a ford. */
   private washer(i: number): boolean {
     const h = this.hunt;
     const s = h.state;
     if (h.out.ford[i]) return true;
-    if (s.clothes === 1) return false;
+    if (s.clothes === 2) return false;
     return h.def.lines.some((l, k) => !(s.lines & (1 << k)) && cheb(i, spotTile(l, h.out.ox, h.out.oz)) <= 0);
   }
 
@@ -173,12 +182,15 @@ export class HuntBot {
       const tracked = s.dogs.some((d) => (d.mode === HOUND.TRACK || d.mode === HOUND.POINT) && this.sees(d.body.x, d.body.z));
       const clear = findPath(h.world, here, this.goalTest, -1, N, this.danger, h.grid);
       const exposed = this.danger[here] === 1;
-      if (clear) this.path = clear;
+      // A dog on the trail: a line or a ford close by washes it off.
+      const wash = tracked ? findPath(h.world, here, (i) => this.washer(i), -1, N, this.eyes, h.grid) : null;
+      if (wash && wash.length <= WASH_NEAR) this.path = wash;
+      else if (clear) this.path = clear;
       else if (tracked) {
-        // A dog on the trail: keeping still is no use. On out of every eye (past the dog if need be); else to wash the trail off (a line, a ford); else on round the searchers.
+        // Keeping still is no use: on out of every eye (past the dog if need be); else to wash the trail further off; else on round the searchers.
         this.path =
           findPath(h.world, here, this.goalTest, -1, N, this.eyes, h.grid) ??
-          findPath(h.world, here, (i) => this.washer(i), -1, N, this.eyes, h.grid) ??
+          wash ??
           findPath(h.world, here, this.goalTest, -1, N, this.near, h.grid) ??
           findPath(h.world, here, this.goalTest, -1, N, undefined, h.grid) ??
           [];
@@ -193,8 +205,8 @@ export class HuntBot {
           [];
       }
     }
-    // Beside a washing line: other clothes (a new scent).
-    if (!this.plain && s.clothes === 0 && h.lineNear() >= 0) return command(0, OP.INTERACT);
+    // Beside a washing line: other clothes (a new scent; out of a guard's uniform only with a dog on the trail).
+    if (!this.plain && h.lineNear() >= 0 && (s.clothes === 0 || (s.clothes === 1 && s.dogs.some((d) => d.mode === HOUND.TRACK || d.mode === HOUND.POINT)))) return command(0, OP.INTERACT);
     // A stone over the head of whoever stands in the way, now and then.
     if (this.stones && !this.path.length && s.step - s.stoneAt >= HUNT.stoneEvery) {
       const t = h.stoneTarget();

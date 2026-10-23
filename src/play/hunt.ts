@@ -553,7 +553,7 @@ function huntEvent(e: HuntEvent, run: HuntRun) {
       break;
     case 'swap':
       sound.pickup();
-      banner.toast(t('manhunt.swapped'), 'good', 3600);
+      banner.toast(t(e.uniform ? 'manhunt.swappedUniform' : 'manhunt.swapped'), 'good', 3600);
       break;
     case 'cut':
       sound.strike('cut', e.done);

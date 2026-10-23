@@ -1490,7 +1490,8 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
     - Fair arrivals: nobody comes on within 5 tiles of the player or in their sight (they wait), nobody due at the
       alarm before 4 s into the hunt, mid-map arrivals come on at a map edge or gate (`SearcherDef.from`). A
       roadblock waits for a loiterer 10 s at most. Cacti block sight (legend, comment and code agree). The
-      helicopter moves with integer math. No washing line is offered in a guard's uniform (the better disguise).
+      helicopter moves with integer math. A washing line in a guard's uniform says it's a worse disguise (the
+      eyes know you a little further off) but washes the trail all the same.
     - Balance: everyone moves at 45% of the given paces outside (`HUNT.pace`: the country is bigger than a yard;
       relative speeds as before), the head start is 5–10 s, searchers come out 0–9 s after the alarm (roadblocks 2–8 s,
       the helicopter 10 s, faster: 180). Each run shuffles the times among those out after the alarm and moves every
@@ -1499,14 +1500,18 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
       to be (`guess`: 1.5 tiles a second along the shortest way to safety from where they were last known; radio
       and the light call only those within 20 tiles). After the last is out the search widens every 15 s, six times:
       +1 tile of sight, the dog teams work back where the player was last known every other time, the helicopter
-      searches the same cover, from the second time the patrols sweep too. Keeping still fails in the end (in the
-      cover nearest safety: caught in 65–392 s; in the open where they came out: 40–159 s).
+      searches the same cover, from the second time the patrols sweep too; the dog teams keep their own round of
+      places sniffed. Keeping still fails in the end (in the cover nearest safety: caught in 69–360 s; in the open
+      where they came out: 40–181 s).
+    - Every start has a careful line in the jumpsuit: Shankton's estate gained hedges along two rows and culverts
+      under its three roads, and a washing line by the gate road (33,44); Stalag Flucht (40,50) and San Pancho
+      (30,47) gained a line near the gate too.
     - The gauge, `hunttest` (the review's limited bot: `HuntBot` plain, 12-tile view) over 17 starts × night/day ×
-      head start/seen going × jumpsuit/uniform × 3 salts: caught 113/408 (28%, from 0% at Center Perks' wall to 71%
-      at Irongate's gate), a getaway in 51 s on average (25–96 s; a human plays slower); the expert `HuntBot` (it
-      sees everything; looking-round searchers counted all round, washing lines and fords against dogs) gets away in
-      135/136 combinations with one salt or another, and from every start in every light and alarm in one outfit or
-      the other (Shankton's wall by day with the head start only in the uniform). `manhunttest` keeps each rule's
+      head start/seen going × jumpsuit/uniform × 3 salts: caught 106/408 (26%, from 0% at Center Perks' wall to 71%
+      at Irongate's gate), a getaway in 53 s on average (25–123 s; a human plays slower); the expert `HuntBot` (it
+      sees everything; looking-round searchers counted all round, the gates and edges still to open kept clear of, a
+      line or a ford close by when a dog is on the trail) gets away in all 136 combinations, each in either outfit,
+      with one run's draws or another (salts 1–6 tried; 33 need more than the first, none more than 5). `manhunttest` keeps each rule's
       test (a look walked and done, cover moving and a chase into it, a dog in the open, the ford, a loitered
       roadblock, the uniform and the line).
 

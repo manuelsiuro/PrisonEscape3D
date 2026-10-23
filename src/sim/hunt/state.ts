@@ -161,4 +161,6 @@ export interface HuntState {
   heat: number;
   /** The places swept since the search widened (tiles, HuntWorld's sweep points), cleared once all are. */
   swept: number[];
+  /** The places the dog teams have sniffed (their own round of the same places). */
+  sniffed?: number[];
 }
