@@ -404,8 +404,12 @@ function hatParts(kind: number, color: number): Part[] {
       // P42: bunny ears on a band, pink inside.
       return [part(0.5, 0.04, 0.08, color, 0, 0.53, 0), ...[-0.1, 0.1].flatMap((x) => [part(0.08, 0.32, 0.04, color, x, 0.7, 0), part(0.04, 0.24, 0.012, 0xf7a8c8, x, 0.7, 0.024)])];
     case 12:
-      // P42: a Santa hat, its white brim, the red flopping back to a bobble.
-      return [part(0.52, 0.08, 0.5, 0xfafafa, 0, 0.5, -0.01), part(0.44, 0.12, 0.42, color, 0, 0.6, -0.02), part(0.3, 0.12, 0.28, color, 0, 0.71, -0.07), part(0.16, 0.1, 0.16, color, 0, 0.79, -0.14), part(0.1, 0.1, 0.1, 0xfafafa, 0, 0.8, -0.24)];
+      // P42: a Santa hat: its white brim, a red cone tipped back, a pompom at its point.
+      return [
+        part(0.52, 0.08, 0.5, 0xfafafa, 0, 0.5, -0.01),
+        paint(new THREE.ConeGeometry(0.24, 0.42, 12).translate(0, 0.21, 0).rotateX(-0.6).translate(0, 0.5, -0.03), color),
+        paint(new THREE.SphereGeometry(0.065, 8, 6).translate(0, 0.5 + 0.42 * Math.cos(0.6), -0.03 - 0.42 * Math.sin(0.6)), 0xfafafa),
+      ];
     case 13:
       // P42: a witch's hat, a wide brim, a purple band, its point bent back.
       return [part(0.8, 0.03, 0.76, color, 0, 0.5, 0), part(0.46, 0.06, 0.44, 0x8e4fc4, 0, 0.55, 0), part(0.42, 0.14, 0.4, color, 0, 0.64, 0), part(0.3, 0.14, 0.28, color, 0.01, 0.78, -0.03), part(0.18, 0.12, 0.16, color, 0.03, 0.9, -0.07), part(0.08, 0.1, 0.08, color, 0.06, 1.0, -0.12)];

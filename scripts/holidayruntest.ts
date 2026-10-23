@@ -2,13 +2,14 @@
  * The holidays' evenings, played (P42 rules review): holidaybotstest's escape bots are out by day 2
  * at 10:17, before any holiday day's evening, so here a bot keeps the routine at Center Perks
  * through each holiday's day, playing it as a player would, by commands only: summer's ice lolly
- * and tool work on the sports ground's wall through the water fight (the soaked guards see two
- * tiles); costume night's costume, worn among the inmates from 19:00 to 21:00 (each laughs once,
+ * and tool work on the sports ground's wall through the water fight (there for the exercise hour;
+ * the soaked guards see two tiles); costume night's costume, worn among the inmates from 19:00 to 21:00 (each laughs once,
  * never after); Christmas Day's present, given; and work on the cell's wall under New Year's
  * fireworks (every strike drowned, nobody sent to look). Each run's outcome is the golden output.
  */
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { HOLIDAY, TREAT, WET_SIGHT } from '../src/content/holidays';
+import { BLOCK, ROUTINE } from '../src/content/routine';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
 import type { SimEvent } from '../src/sim/Sim';
 import { placesOf } from '../src/sim/ai/places';
@@ -147,7 +148,7 @@ const out: string[] = [];
   let wetChecked = 0;
   while (dayMinute(st.step) < 450 && !bot.done) {
     for (const g of st.guards) {
-      if (['yard', 'sports'].includes(zoneOf(tileOfBody(g.body)))) {
+      if (zoneOf(tileOfBody(g.body)) === 'sports') {
         wetChecked++;
         if (!soaked(bot.sim, g) || sightOf(bot.sim, g) !== WET_SIGHT * UNIT) wetSeen++;
       }
@@ -158,7 +159,9 @@ const out: string[] = [];
       bot.use();
     } else bot.step(0);
   }
-  check(wetChecked > 0 && wetSeen === 0, `summer: every guard out in the yard or on the sports ground soaked, seeing ${WET_SIGHT} tiles (${wetChecked} looks)`);
+  check(wetChecked > 0 && wetSeen === 0, `summer: every guard out on the sports ground soaked, seeing ${WET_SIGHT} tiles (${wetChecked} looks)`);
+  const exercise = ROUTINE.findIndex((r) => r.id === 'exercise');
+  check(st.blocks[exercise] === BLOCK.ATTENDED && !bot.log.some((l) => l.includes('missed')), `summer: at the water fight, present for Exercise (block ${st.blocks[exercise]})`);
   const struck = strikes.filter((s) => s.step > fightFrom);
   const caught = spotted.filter((s) => s.step > fightFrom);
   check(struck.length > 0, 'summer: tool work through the water fight');

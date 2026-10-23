@@ -3,7 +3,7 @@ import { LAYER } from '../sim/world/World';
 import { DAY_BOOKS } from '../content/days';
 import { HOLIDAY_DAY, HOLIDAYS, TREATS, WET_SIGHT, type HolidayDay } from '../content/holidays';
 import type { PrisonDef } from '../content/prisons/types';
-import { runHoliday } from '../game/holidays';
+import { dateHoliday, runHoliday } from '../game/holidays';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { fireworksOn, holidayDays, holidayOf, treatCheck } from '../sim/systems/holiday';
@@ -29,14 +29,14 @@ export const newRunHoliday = (prison: PrisonDef): number => (DAY_BOOKS[prison.id
 /** The holiday's name ("Halloween"). */
 export const holidayName = (kind: number) => t(`holiday.name.${HOLIDAYS[kind] ?? 'none'}` as Key);
 
-/** The holiday the picture dresses for: the run's own, else (a Daily: it plays without one) the date's as Settings have it. */
+/** The holiday the picture dresses for: the run's own, else (a Daily: it plays without one) the date's (never a holiday picked in Settings; none with holidays off). */
 const dailyDecor = new WeakMap<Sim, number>();
 export function decorHoliday(sim: Sim): number {
   const own = holidayOf(sim);
   if (own) return own;
   if (!sim.state.mods.length || !DAY_BOOKS[sim.prison.id]) return 0;
   let k = dailyDecor.get(sim);
-  if (k === undefined) dailyDecor.set(sim, (k = runHoliday(settings)));
+  if (k === undefined) dailyDecor.set(sim, (k = dateHoliday(settings)));
   return k;
 }
 
@@ -116,7 +116,8 @@ export function announceHoliday(sim: Sim, e: Extract<SimEvent, { type: 'holiday'
     case 'egg':
       sound.chime();
       buzz('attended');
-      itemsUI.toast(t('holiday.toast.egg'));
+      // (On the banner's toasts, held as long as the others: the hotbar's own note goes as the next one comes, and taking the egg brings one.)
+      banner.toast(t('holiday.toast.egg'), 'good');
       break;
     case 'splash':
       sound.splash();
