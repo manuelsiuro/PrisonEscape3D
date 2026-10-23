@@ -69,8 +69,8 @@ export class HuntHud {
         <button class="icon-btn hud-pause hunt-pause" aria-label="${t('hud.pause')}">${icon('pause')}</button>
       </div>
       <div class="hud-row hud-alerts">
-        <span class="pill hunt-state hidden" role="status"></span>
-        <span class="pill hunt-crew hidden">${icon('users', 15)}<span></span></span>
+        <span class="pill hud-alert hunt-state hidden" role="status"></span>
+        <span class="pill hud-alert hunt-crew hidden">${icon('users', 15)}<span></span></span>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -128,7 +128,7 @@ export class HuntHud {
     }
     if (s.state !== this.shownState) {
       this.shownState = s.state;
-      this.statePill.className = `pill hunt-state${s.state ? ` st-${s.state}` : ' hidden'}`;
+      this.statePill.className = `pill hud-alert hunt-state${s.state ? ` st-${s.state}` : ' hidden'}`;
       if (s.state) this.statePill.innerHTML = `${icon(s.state === 'hidden' ? 'eyeOff' : s.state === 'lit' ? 'sun' : s.state === 'chased' ? 'siren' : 'eye', 15)}<span>${t(`manhunt.state.${s.state}` as Key)}</span>`;
     }
     this.crewPill.classList.toggle('hidden', !s.lookout);

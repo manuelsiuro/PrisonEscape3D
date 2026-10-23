@@ -24,7 +24,7 @@ import { typo } from '../talk/fill';
 import { BUBBLE_HEIGHT, Bubbles } from '../ui/bubbles';
 import { HuntHud, type HuntHudState } from '../ui/hunt';
 import { buzz } from '../app/haptics';
-import { banner, click, combatUI, controls, hooks, hud, itemsUI, settings, sound, tools, view } from './context';
+import { banner, click, combatUI, controls, hint, hooks, hud, itemsUI, settings, sound, tools, view, vignette } from './context';
 import { play, playLater, tickPlayClock, type Game } from './game';
 import { updateLesson } from './lesson';
 
@@ -139,6 +139,9 @@ export function runHunt(g: Game, carry: Carry, opts: HuntOptions & { lookout?: {
     tools.show(false);
     combatUI.show(false);
     huntHud.show(true);
+    // (Nothing of the inside's left on screen: a hint, the alarm's red edges.)
+    hint.hide();
+    vignette.classList.remove('on');
     document.body.classList.add('hunting');
     controls.reset();
     controls.enabled = true;
@@ -296,6 +299,8 @@ export function huntFrame(g: Game, dt: number, now: number) {
   huntView.update(huntFrameOf(run), dt, now / 1000, night, !settings.reducedMotion);
   view.draw(frameOf(run, a, g.paused), dt, now / 1000);
   huntHud.update(hudOf(run));
+  // (Nothing of the inside's tips out here.)
+  if (hint.visible) hint.hide();
   barks(run, g.paused || g.speed > 1);
   // (A lesson in the manhunt: its steps follow the hunt.)
   if (g.lesson) updateLesson(g, dt, false);
