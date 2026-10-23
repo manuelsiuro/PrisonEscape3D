@@ -35,6 +35,7 @@ import { phone, wheels } from './systems/phone';
 import { kiosk } from './systems/kiosk';
 import { freedNow, paperwork } from './systems/paperwork';
 import { hearingZones, parole, paroled } from './systems/parole';
+import { oddjobs } from './systems/oddjobs';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { holidays } from './systems/holiday';
@@ -237,6 +238,8 @@ export class Sim {
     paperwork(this);
     // The parole board (P39): plotting found out, the hearing at 10:00, its questions and verdict.
     parole(this);
+    // The odd jobs board (P40): the job held, its time, what's been done toward it this step.
+    oddjobs(this);
     // Race nights (P28): the off, a guard seeing the player at it, the finish.
     races(this);
     bribesWearOff(this);

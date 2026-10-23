@@ -1,4 +1,4 @@
-56 topics in 14 groups: 56 laid out as pages (5633 words before the fine print), 0 still a paragraph (0 words); 37 pictures
+57 topics in 14 groups: 57 laid out as pages (5878 words before the fine print), 0 still a paragraph (0 words); 38 pictures
 every part in French with as many lines; every item, recipe, icon, lesson, prison and picture there
   goal        78 words on the page,  45 folded; 4 steps, 1 chips, 1 lessons
   routine     58 words on the page,   0 folded; 3 steps, 0 chips, schedule, 1 lessons
@@ -35,6 +35,7 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   tattoo     135 words on the page,  19 folded; 3 steps, 0 chips, 1 recipes, 1 lessons
   payphone   235 words on the page,  49 folded; 0 steps, 0 chips, 2 lessons
   kiosk      176 words on the page,  59 folded; 0 steps, 0 chips, 1 recipes, 1 lessons
+  oddjobs    245 words on the page,  79 folded; 0 steps, 4 chips, 1 lessons
   tools       34 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
   lockpick    97 words on the page,  13 folded; 4 steps, 0 chips, pins, 1 recipes, 1 lessons
   noise       61 words on the page,  11 folded; 0 steps, 0 chips, bars, 1 lessons

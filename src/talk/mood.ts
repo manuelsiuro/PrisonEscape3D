@@ -138,6 +138,9 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
     case DOING.READ:
     case DOING.SIT_READ:
       return mood('in.reading', 0.35, 'say', some('in.idle', 'in.bored'));
+    // The odd jobs board (P40): digging under his bed, the player keeping watch.
+    case DOING.DIG:
+      return mood('in.dig', 0.6, 'whisper', ['in.nervous']);
     // The pay phone (P34): on it, and waiting for it.
     case DOING.PHONE:
       return mood('in.phone', 0.8, 'say', ['in.homesick']);

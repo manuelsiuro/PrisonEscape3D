@@ -22,6 +22,7 @@ import { facts, LASTING, type Fact } from './gossip';
 import { guardMood, inmateMood, outdoors, type Incident, type Mood, type Recent } from './mood';
 import type { Line, LineDef, Style, Tag, Voice } from './types';
 import { CHATTY, guardVoice, hashStr, inmateVoice, PAUSE, PITCH } from './voice';
+import { FROM } from '../content/oddjobs';
 
 /**
  * The speech bubbles' director (P13): who says what, and when. Presentation only: it reads
@@ -631,9 +632,11 @@ export class Director {
       case 'opinion':
       case 'favor':
       case 'recruit':
+      case 'oddjob':
       case 'tip': {
         const bank = this.answerBank(e, sim);
-        if (bank && e.who !== s.talk) this.queueUp(now, bank, [e.who], 3, bank);
+        const who = e.who ?? -1;
+        if (bank && who >= 0 && who !== s.talk) this.queueUp(now, bank, [who], 3, bank);
         break;
       }
       // The crew (P23): an order taken (in the talk panel, or a bubble), a lookout's whistle, a brawl and its crowd, a drop handed over, an ambush called off.
@@ -920,6 +923,9 @@ export class Director {
         return e.by < 0 && (sim.state.inmates[e.who]?.angry ?? 0) <= 0 ? 're.opinionDown.in' : null;
       case 'favor':
         return e.state === 'paid' ? 're.favorDone.in' : null;
+      // (P40: an odd job taken from him, handed in, failed.)
+      case 'oddjob':
+        return e.what === 'paid' ? 're.jobPaid.in' : e.what === 'failed' ? 're.jobFailed.in' : e.what === 'taken' && e.from === FROM.FIXER ? 're.jobTaken.in' : null;
       case 'recruit':
         return e.on ? 're.recruit.in' : 're.dismiss.in';
       case 'tip':

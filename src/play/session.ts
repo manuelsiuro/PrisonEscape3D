@@ -10,6 +10,7 @@ import { resetNights } from './nights';
 import { resetPayphone } from './payphone';
 import { resetParole } from './parole';
 import { resetKiosk } from './kiosk';
+import { resetOddJobs } from './oddjobs';
 import { resetCrew } from './crew';
 import { inmateName } from '../ui/social';
 import { itemNumber } from '../content/items';
@@ -148,6 +149,7 @@ export function startGame(sim: Sim, resumed = false, lesson: LessonRun | null = 
   resetPayphone();
   resetParole();
   resetKiosk();
+  resetOddJobs();
   resetCrew();
   // No aim carried over from another game (P14).
   cancelThrow();

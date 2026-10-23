@@ -95,7 +95,7 @@ export class HolidaysView {
     const glow: Part[] = [];
     const colors = kind === HOLIDAY.EASTER ? PASTEL : kind === HOLIDAY.SUMMER ? BRIGHT : kind === HOLIDAY.HALLOWEEN ? SPOOKY : LIGHTS;
     for (const d of holidayDecor(this.world, kind)) {
-      if (d.what === 'garland') garland(kind === HOLIDAY.CHRISTMAS ? glow : parts, d.x, d.x1!, d.z, colors, kind === HOLIDAY.CHRISTMAS);
+      if (d.what === 'garland') garland(kind === HOLIDAY.CHRISTMAS ? glow : parts, d.x, d.x1!, d.z, colors, kind === HOLIDAY.CHRISTMAS, !!d.south);
       else if (d.what === 'basket') basket(parts, d.x, d.z);
       else if (d.what === 'parasol') this.parasol(parts, d.x, d.z, d.turn);
       else if (d.what === 'barbecue') barbecue(parts, glow, d.x, d.z);
@@ -241,6 +241,8 @@ export interface HolidayPiece {
   y?: number;
   x1?: number;
   z1?: number;
+  /** A garland on the south wall of its row (else the north). */
+  south?: boolean;
   /** A parasol's deckchairs: the way they sit either side of it (radians; none without room). */
   turn?: number;
 }
@@ -295,7 +297,7 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   };
   const yard = roomOf(own).length ? own : floorOf(w, ['yard', 'sports']);
   const at = (t: number) => ({ x: (t % MAP_W) + 0.5, z: Math.floor(t / MAP_W) + 0.5 });
-  if (canteen) for (const [x0, x1, z] of canteen.walls) out.push({ what: 'garland', x: x0, x1, z });
+  if (canteen) for (const [x0, x1, z, south] of canteen.walls) out.push({ what: 'garland', x: x0, x1, z, ...(south ? { south } : {}) });
   if (kind === HOLIDAY.EASTER) for (const p of tables) out.push({ what: 'basket', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
   else if (kind === HOLIDAY.SUMMER) {
     const room = roomOf(sports);
@@ -396,34 +398,52 @@ function solidAt(w: World, x: number, z: number): boolean {
 
 /**
  * The canteen: runs of its north wall ([x0, x1, z] with the wall behind row z), broken where
- * something hangs on that wall (a garland never crosses the menu board, the clock or a poster);
+ * something hangs on that wall (a garland never crosses the menu board, the clock, a poster or the
+ * odd jobs board);
  * and a tile for the tree: free floor against a wall (a corner first), nothing standing beside
  * it (a plant, the water cooler, a table), no doorway within two tiles.
  */
-function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<number>): { walls: Array<[number, number, number]>; corner: [number, number] | null } | null {
+function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<number>): { walls: Array<[number, number, number, boolean]>; corner: [number, number] | null } | null {
   const tiles: number[] = [];
   for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (w.zoneAt(x, z) === 'canteen' && !solidAt(w, x, z)) tiles.push(z * MAP_W + x);
   if (!tiles.length) return null;
-  // (What hangs on a north wall: the floor tiles in front of it.)
+  // (What hangs on a north wall, and on a south one: the floor tiles in front of it.)
   const hung = new Set<number>();
+  const hungSouth = new Set<number>();
   for (const d of w.def.decor ?? []) {
-    if (!DECOR[d.kind].wall || (d.rot ?? 0) !== 0) continue;
-    for (let x = d.x; x < d.x + (d.w ?? 1); x++) hung.add(d.z * MAP_W + x);
+    const r = d.rot ?? 0;
+    if (!DECOR[d.kind].wall || (r !== 0 && r !== 2)) continue;
+    for (let x = d.x; x < d.x + (d.w ?? 1); x++) (r === 0 ? hung : hungSouth).add((r === 0 ? d.z : d.z + (d.d ?? 1) - 1) * MAP_W + x);
   }
-  const walls: Array<[number, number, number]> = [];
-  for (const t of tiles) {
-    const x = t % MAP_W;
-    const z = Math.floor(t / MAP_W);
-    if (!solidAt(w, x, z - 1) || hung.has(t)) continue;
-    const last = walls.at(-1);
-    if (last && last[2] === z && last[1] === x) last[1] = x + 1;
-    else walls.push([x, x + 1, z]);
-  }
+  // (P40's cork board, on the north wall when its reader faces north, the south one when south.)
+  const board = w.def.board;
+  if (board && board.face === 13) hung.add(board.z * MAP_W + board.x);
+  if (board && board.face === 5) hungSouth.add(board.z * MAP_W + board.x);
+  const runs = (south: boolean) => {
+    const out: Array<[number, number, number, boolean]> = [];
+    for (const t of tiles) {
+      const x = t % MAP_W;
+      const z = Math.floor(t / MAP_W);
+      if (!solidAt(w, x, south ? z + 1 : z - 1) || (south ? hungSouth : hung).has(t)) continue;
+      const last = out.at(-1);
+      if (last && last[2] === z && last[1] === x) last[1] = x + 1;
+      else out.push([x, x + 1, z, south]);
+    }
+    // (A single tile, between a doorway and the board say: left bare.)
+    return out.filter(([a, b]) => b - a >= 2);
+  };
+  // (The north wall, facing the camera; where what hangs there leaves no room, Irongate's with the odd jobs board, the south wall.)
+  const north = runs(false);
+  const walls = north.length ? north : runs(true);
   const walled = (t: number) => {
     const [x, z] = [t % MAP_W, Math.floor(t / MAP_W)];
     return [solidAt(w, x - 1, z), solidAt(w, x + 1, z), solidAt(w, x, z - 1), solidAt(w, x, z + 1)].filter(Boolean).length;
   };
-  const bare = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 2);
+  // (Nor under the odd jobs board, nor at its sides: the boughs would cover it.)
+  const byBoard = (t: number) => !!board && Math.abs((t % MAP_W) - board.x) <= 1 && Math.floor(t / MAP_W) === board.z;
+  // (Nor under a garland: its boughs stand taller than the string hangs.)
+  const underGarland = (t: number) => walls.some(([a, b, z]) => z === Math.floor(t / MAP_W) && t % MAP_W >= a - 1 && t % MAP_W <= b);
+  const bare = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 2) && !byBoard(t) && !underGarland(t);
   const roomy = (t: number) => [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => !things.has(t + dz * MAP_W + dx)));
   const crowd = (t: number) => [-1, 0, 1].reduce((n, dz) => n + [-1, 0, 1].filter((dx) => things.has(t + dz * MAP_W + dx)).length, 0);
   const elbow = (t: number) => [1, -1, MAP_W, -MAP_W].every((d) => !things.has(t + d));
@@ -435,14 +455,13 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
     tiles.find((t) => walled(t) >= 1 && bare(t) && elbow(t)) ??
     // (Stalag Flucht's little hall, tables to the walls: the corner with the least beside it.)
     tiles.filter((t) => walled(t) >= 2 && bare(t)).sort((a, b) => crowd(a) - crowd(b) || a - b)[0];
-  // (Short runs over a doorway or a notch: left bare.)
-  return { walls: walls.filter(([a, b]) => b - a >= 3), corner: c === undefined ? null : [(c % MAP_W) + 0.5, Math.floor(c / MAP_W) + 0.5] };
+  return { walls, corner: c === undefined ? null : [(c % MAP_W) + 0.5, Math.floor(c / MAP_W) + 0.5] };
 }
 
-/** A garland along a north wall's face: little flags (or bulbs that glow), dipping between pins. */
-function garland(out: Part[], x0: number, x1: number, z: number, colors: readonly number[], bulbs: boolean) {
+/** A garland along a north wall's face (or a south one's): little flags (or bulbs that glow), dipping between pins. */
+function garland(out: Part[], x0: number, x1: number, z: number, colors: readonly number[], bulbs: boolean, south = false) {
   const y = WALL_H - 0.18;
-  const zf = z + 0.06;
+  const zf = south ? z + 1 - 0.06 : z + 0.06;
   for (let x = x0 + 0.25, k = 0; x < x1 - 0.1; x += 0.5, k++) {
     const dip = Math.sin(((x - x0) / 1.5) * Math.PI) * 0.06;
     const c = colors[k % colors.length];

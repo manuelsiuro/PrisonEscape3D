@@ -20,6 +20,7 @@ import { seenTip } from './tips';
 import { visitPlaceAt } from './smuggle';
 import { SPORTS_PRIZE, SPORTS_WINS } from '../content/games';
 import { LESSONS } from '../tutorial/lessons';
+import { jobKey, jobRow } from './oddjobs';
 import { HOLIDAY_DAY } from '../content/holidays';
 import { holidayMorning, holidayRows } from './holidays';
 import { holidayDays } from '../sim/systems/holiday';
@@ -477,6 +478,10 @@ profile.day = () => {
   const tomorrow = m >= FORECAST_AT ? dayRows(sim, planOf(sim, p.day + 1), true, true) : null;
   // After midnight the clock's day has turned but the prison day runs to 08:00: tonight, and from 08:00.
   const night = sim.clock.day !== p.day;
-  return { day: p.day, today: dayRows(sim, p, false, true), tomorrow, notes, night, key: `${p.day}|${tomorrow ? 1 : 0}|${st.eventFlags}|${m >= p.at}|${m >= p.until}|${night}|${holidaysOver(sim, m)}` };
+  // (P40: the odd job held, its steps.)
+  const rows = dayRows(sim, p, false, true);
+  const job = jobRow(sim);
+  if (job) rows.push(job);
+  return { day: p.day, today: rows, tomorrow, notes, night, key: `${p.day}|${tomorrow ? 1 : 0}|${st.eventFlags}|${m >= p.at}|${m >= p.until}|${night}|${jobKey(sim)}|${holidaysOver(sim, m)}` };
 };
 

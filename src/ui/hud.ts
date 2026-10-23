@@ -55,6 +55,8 @@ export interface HudState {
   crew: { icons: string[]; text: string; alert: boolean } | null;
   /** Tipsy (P28): until when (the clock's time), game minutes left, out of how many; null sober. */
   tipsy: { until: string; left: number; of: number } | null;
+  /** The odd job held (P40): its kind's icon, the step under way, the time left (0–1); on watch at a dig, the whistle (urgent: a guard coming); null none. */
+  oddjob?: { icon: string; text: string; tail: string; sr: string; left: number; urgent: boolean; done: boolean; watch: boolean } | null;
   /** A lesson that isn't about the routine (the glider's, on the roof after Lights Out): the block's name and end alone, no place, no badge. */
   quietRoutine?: boolean;
 }
@@ -149,6 +151,7 @@ export class Hud {
         <button class="pill hud-alert hud-rat hidden" aria-keyshortcuts="T">${icon('rat', 15)}<span></span><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
         <button class="pill hud-alert hud-order hidden" aria-keyshortcuts="P"><i class="hud-order-ic"></i><b></b><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
         <button class="pill hud-alert hud-crew hidden" aria-keyshortcuts="G"><i class="hud-crew-ic"></i><b></b></button>
+        <button class="pill hud-alert hud-job hidden" aria-keyshortcuts="B"><i class="hud-job-ic"></i><b></b><em class="hud-job-tail"></em><i class="hud-alert-bar" aria-hidden="true"><i></i></i></button>
       </div>`,
     );
     const q = <T extends HTMLElement>(sel: string) => this.el.querySelector<T>(sel)!;
@@ -191,6 +194,8 @@ export class Hud {
     this.order.addEventListener('click', () => this.onOrder());
     this.crew = q('.hud-crew');
     this.crew.addEventListener('click', () => this.onCrew());
+    this.job = q('.hud-job');
+    this.job.addEventListener('click', () => this.onJob());
     // The clock: the day's card (its routine block by block, what's on).
     this.clockPill = q('.hud-clock');
     this.clockPill.addEventListener('click', () => this.onDay());
@@ -235,6 +240,10 @@ export class Hud {
   onRat: () => void = () => {};
   private readonly crew: HTMLElement;
   private crewIcons = '';
+  /** The odd job's pill (P40): tapped, the job's card (on watch at a dig: the whistle). */
+  private readonly job: HTMLElement;
+  private jobIcon = '';
+  onJob: () => void = () => {};
   /** The crew's pill tapped (P23): their panel. */
   onCrew: () => void = () => {};
   private readonly order: HTMLElement;
@@ -354,6 +363,26 @@ export class Hud {
     el.setAttribute('aria-label', `${c.text}. ${t('hud.crew')}`);
   }
 
+  /** The odd job's pill (P40): its step, the time left draining; on watch at a dig, the whistle (flashing as a guard comes). */
+  private jobChip(j: HudState['oddjob']) {
+    const el = this.job;
+    el.classList.toggle('hidden', !j);
+    if (!j) return;
+    el.classList.toggle('urgent', j.urgent);
+    el.classList.toggle('done', j.done);
+    const ic = j.watch ? 'megaphone' : j.icon;
+    if (ic !== this.jobIcon) {
+      this.jobIcon = ic;
+      el.querySelector('.hud-job-ic')!.innerHTML = icon(ic, 15);
+    }
+    setText(el.querySelector('b')!, j.text);
+    setText(el.querySelector('.hud-job-tail')!, j.tail);
+    (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, j.left)) * 100}%`;
+    const what = t(j.urgent ? 'hud.whistle' : 'hud.job');
+    el.title = TOUCH ? what : `${what} (B)`;
+    el.setAttribute('aria-label', `${j.sr}. ${what}`);
+  }
+
   /** The day's chip (P17): what's on or coming, its time; the drill's muster draining. */
   private dayChip(d: HudState['today']) {
     const el = this.today;
@@ -464,7 +493,7 @@ export class Hud {
     this.updateHeat(s.heat);
     const c = s.cold;
     const d = s.today;
-    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${this.lang}`;
+    const alerts = `${s.powerLeft === null ? '' : Math.ceil(s.powerLeft)}:${s.powerKey}|${s.takeoverLeft === null ? '' : Math.ceil(s.takeoverLeft)}|${s.wavedLeft === null ? '' : Math.ceil(s.wavedLeft)}:${s.wavedKey}|${c ? `${Math.round(c.built * 40)}:${Math.ceil(c.left)}:${c.bit}:${c.warming}:${c.hot}` : ''}|${s.bribe ? `${s.bribe.name}:${s.bribe.left}` : ''}|${d ? `${d.icon}:${d.text}:${d.time}:${d.soon}:${d.left === null ? '' : Math.ceil(d.left)}` : ''}|${s.rat ? `${s.rat.name}:${s.rat.status}:${s.rat.left === null ? '' : Math.ceil(s.rat.left)}:${s.rat.usable}` : ''}|${s.order ? `${s.order.icon}:${s.order.text}:${s.order.sr}:${s.order.urgent}:${s.order.panel}:${s.order.done === null ? '' : Math.round(s.order.done * 40)}` : ''}|${s.crew ? `${s.crew.icons.join(',')}:${s.crew.text}:${s.crew.alert}` : ''}|${s.tipsy ? `${s.tipsy.until}:${s.tipsy.left}` : ''}|${s.oddjob ? `${s.oddjob.icon}:${s.oddjob.text}:${s.oddjob.urgent}:${s.oddjob.watch}:${s.oddjob.done}:${Math.round(s.oddjob.left * 40)}` : ''}|${this.lang}`;
     if (alerts !== this.shownAlerts) {
       this.shownAlerts = alerts;
       this.alert(this.power, s.powerKey, s.powerLeft, 45);
@@ -483,6 +512,7 @@ export class Hud {
       this.ratChip(s.rat);
       this.orderChip(s.order);
       this.crewChip(s.crew);
+      this.jobChip(s.oddjob ?? null);
     }
     if (s.cash !== this.shownCash || this.cashPill.title === '') {
       // Money in: the pill flashes gold; out: it dips.
