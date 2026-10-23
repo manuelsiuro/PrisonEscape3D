@@ -121,7 +121,7 @@ export function paroleNow(sim: Sim): ParoleView | null {
     const good = verdict.what === 'granted';
     v.verdict = t(`parole.verdict.${verdict.what}` as Key);
     v.verdictGood = good;
-    v.score = t('parole.scoreOf', { n: verdict.score, of: PASS });
+    v.score = t('parole.scoreOf', { n: signed(verdict.score), of: PASS });
     v.weighed = verdict.lines.filter((c) => c >= 0).map((c) => weighedText(c, verdict!.record, verdict!.topics));
     v.status = good ? t('parole.weighedFor') : t('parole.weighedAgainst');
     v.note = good ? t('parole.grantedNote', { time: dayTime(HEARING_FROM) }) : t('parole.againNote', { n: s.parole[P.AGAIN] });

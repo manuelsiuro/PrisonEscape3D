@@ -96,7 +96,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('work', 'coin', '#c99a12', { pic: true, lessons: ['job', 'gardener'], listIcons: ['cart', 'gift'] }),
         T('train', 'dumbbell', '#8e4fc4', { pic: true, lessons: ['gym', 'laps'], listIcons: ['dumbbell', 'run', 'book'], see: ['grounds'] }),
         T('grounds', 'run', '#b0553f', { pic: true, lessons: ['laps', 'gardener'], see: ['garden', 'hoops', 'football'] }),
-        // v2.21 (P42): the holidays (picture to take: public/help/holidays.webp, then pic: true).
+        // v2.21 (P42): the holidays (its picture: public/help/holidays.webp).
         T('holidays', 'tree', '#4fbf6a', { pic: true, listIcons: ['egg', 'splash', 'pumpkin', 'tree'], list2Icons: ['calendar', 'star', 'close'], see: ['day'] }),
       ],
     },
@@ -159,7 +159,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('glider', 'glider', '#9fc8e8', { pic: true, recipes: ['glider_frame', 'glider'], lessons: ['glider'] }),
         T('paperwork', 'clipboard', '#d8b04a', { pic: true, diagram: 'timeline', recipes: ['forged_release'], lessons: ['forgery', 'release'], see: ['parole'] }),
         T('parole', 'scale', '#8a6bd1', { pic: true, diagram: 'timeline', lessons: ['parole'], see: ['paperwork', 'payphone'], listIcons: ['check', 'chat', 'brain'] }),
-        // P41 (picture to come: public/help/manhunt.webp, then `pic: true`).
+        // P41: the manhunt (its picture: public/help/manhunt.webp).
         T('manhunt', 'run', '#e0603a', { pic: true, diagram: 'timeline', lessons: ['manhunt'], listIcons: ['shirt', 'water', 'toss', 'bone', 'item:light_cutters', 'truck', 'users'], see: ['dogs', 'ways'] }),
       ],
     },

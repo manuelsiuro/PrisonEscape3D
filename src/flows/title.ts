@@ -66,7 +66,7 @@ export async function titleFlow() {
             record: found ? t('title.record', { n: found, of: PRISONS.reduce((n, p) => n + escapesOf(p).length, 0) }) : '',
             resume: resume ? saveWhen(resume) : undefined,
             saves: ALL_SLOTS.some((k) => readSave(k)),
-            tutorial: t('title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
+            tutorial: t(lessonsDone().length < 2 ? 'title.tutorialSub1' : 'title.tutorialSub', { n: lessonsDone().length, of: LESSONS.length }),
             newcomer: !resume && lessonsDone().length === 0 && !found,
             daily: dailyCard(found > 0),
             trophies: { n: earned, of: ACHIEVEMENTS.length },

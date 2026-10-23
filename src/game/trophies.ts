@@ -26,6 +26,8 @@ interface Store {
   unseen: string[];
   /** The runs (their salt) whose escape is counted: a save loaded and escaped from again counts once. */
   escaped?: number[];
+  /** The runs (their salt) whose manhunt is counted in the stats (P41, full review): the same save hunted twice counts once. */
+  hunted?: number[];
 }
 
 function readStore(): Store {
@@ -34,7 +36,8 @@ function readStore(): Store {
   if (s.earned && typeof s.earned === 'object') for (const [k, v] of Object.entries(s.earned)) if (typeof v === 'number' && ACHIEVEMENTS.some((a) => a.id === k)) earned[k] = v;
   const unseen = Array.isArray(s.unseen) ? s.unseen.filter((k): k is string => typeof k === 'string' && k in earned) : [];
   const escaped = Array.isArray(s.escaped) ? s.escaped.filter((k): k is number => typeof k === 'number') : [];
-  return { earned, unseen, escaped };
+  const hunted = Array.isArray(s.hunted) ? s.hunted.filter((k): k is number => typeof k === 'number') : [];
+  return { earned, unseen, escaped, hunted };
 }
 
 export const earnedTrophies = (): Record<string, number> => readStore().earned;
@@ -148,20 +151,28 @@ export function escapeRun(rec: Pick<EscapeRecord, 'medal'>, daily?: EscapeView['
   return [...got, ...syncCareer(false)];
 }
 
+/** Counts a run's manhunt in the stats once (by its salt, as an escape is): false if it was already. */
+function firstHunt(salt: number): boolean {
+  const store = readStore();
+  if (store.hunted!.includes(salt)) return false;
+  writeJSON(KEYS.trophies, { ...store, hunted: [...store.hunted!, salt].slice(-200) });
+  return true;
+}
+
 /**
  * A manhunt over (P41, the escape already counted at the wall): the hunts, the clean getaways
- * and recaptures counted in the stats, its achievements and the career's. Returned for the
- * victory card (no toasts).
+ * and recaptures counted in the stats (once a run, by its salt: the same save hunted twice is
+ * one hunt), its achievements and the career's. Returned for the victory card (no toasts).
  */
-export function huntRun(h: HuntView): Achievement[] {
-  addStats({ hunts: 1, getaways: h.safe ? 1 : 0, recaptured: h.safe ? 0 : 1 });
+export function huntRun(h: HuntView, salt: number): Achievement[] {
+  if (firstHunt(salt)) addStats({ hunts: 1, getaways: h.safe ? 1 : 0, recaptured: h.safe ? 0 : 1 });
   const got = award(ACHIEVEMENTS.filter((a) => a.hunt?.(h)));
   return [...got, ...syncCareer(false)];
 }
 
 /** A manhunt left from the pause card (P41): counted as a recapture in the stats (giving up is being caught), no achievements. */
-export function huntQuit() {
-  addStats({ hunts: 1, recaptured: 1 });
+export function huntQuit(salt: number) {
+  if (firstHunt(salt)) addStats({ hunts: 1, recaptured: 1 });
 }
 
 /** A rumor heard (P13 gossip): counted for the stats and All Ears. */

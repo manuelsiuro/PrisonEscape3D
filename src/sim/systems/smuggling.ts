@@ -36,6 +36,7 @@ import { dayMinute, prisonDay } from './clock';
 import { awake } from './guards';
 import { HOTBAR, itemOf, slot } from './items';
 import { landable, makeNoise, pileRoom } from './noise';
+import { hearingDue } from './parole';
 import { frisk } from './power';
 import { facingAt, seatSpot } from './rest';
 import { lookingAway } from './ways';
@@ -264,10 +265,14 @@ export function visitPairs(w: World): readonly VisitPair[] {
   return list;
 }
 
-/** The player is sat at a visiting seat in visiting hours, not visited yet today: the visitor is on the way. */
+/**
+ * The player is sat at a visiting seat in visiting hours, not visited yet today: the visitor is on the way.
+ * (Not while a parole hearing is due or sitting, P39: the board sits on the visiting chairs; the visit
+ * comes after the verdict, still in visiting hours.)
+ */
 export function awaitingVisit(sim: SimContext): boolean {
   const s = sim.state;
-  return archesUp(sim) && s.layer === LAYER.GROUND && !s.lockdown && !sim.away && !(s.eventFlags & TODAY.VISITED) && guestSpot(sim) >= 0;
+  return archesUp(sim) && s.layer === LAYER.GROUND && !s.lockdown && !sim.away && !(s.eventFlags & TODAY.VISITED) && !s.hearing && !hearingDue(s) && guestSpot(sim) >= 0;
 }
 
 // ------------------------------------------------------------------ the phone

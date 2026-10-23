@@ -24,6 +24,8 @@ import { jobKey, jobRow } from './oddjobs';
 import { HOLIDAY_DAY } from '../content/holidays';
 import { holidayMorning, holidayRows } from './holidays';
 import { holidayDays } from '../sim/systems/holiday';
+import { HEARING_FROM, HEARING_TO } from '../content/parole';
+import { P } from '../sim/systems/parole';
 
 /** How many of today's holiday days are over by this minute (P42: the file redraws as one ends). */
 const holidaysOver = (sim: Sim, m: number) => holidayDays(sim).filter((id) => m >= HOLIDAY_DAY[id].at + HOLIDAY_DAY[id].length).length;
@@ -124,11 +126,23 @@ export function dayRows(sim: Sim, p: DayPlan, forecast = false, inFile = false):
   // (P42: the holiday's own day, besides the deck's card.)
   const m0 = isToday ? m : -1;
   const hol = holidayRows(sim, p.day, forecast, inFile, (id) => m0 >= HOLIDAY_DAY[id].at + HOLIDAY_DAY[id].length);
+  // (P39, full review: a parole hearing set for the day.)
+  const hearing = hearingRow(sim, p.day);
   return [
     { icon: eventIcon(sim, p.event), color: EVENT_COLOR[p.event], label: t(inFile ? 'pa.event' : forecast ? 'profile.tomorrow' : 'pa.today'), title: p.event === 'delivery' ? vehicleName(sim) : t(`day.event.${ev}` as Key), when: ev === 'rowdy' ? '' : p.event === 'drill' && begun ? t('day.rang', { time: dayTime(p.at) }) : p.event === 'foodFight' && begun ? t('day.when', { from: dayTime(p.at), to: dayTime(p.until) }) : whenOf(p), sub },
     { icon: WX_ICON[w], color: WX_COLOR[w], label: t('pa.weather'), title: t(`weather.${w}` as Key), when: '', note: t(`windForce.${p.windForce}` as Key, { dir: t(`wind.${p.wind}` as Key) }), sub: t(`weatherD.${w}` as Key, { n: WEATHER_SIGHT[p.weather] ?? 7 }) },
     ...hol,
+    ...(hearing ? [hearing] : []),
   ];
+}
+
+/** A parole hearing set for a day (P39): its row on the morning card and in the file (null: none that day). */
+function hearingRow(sim: Sim, day: number): PaRow | null {
+  if (sim.state.parole[P.HEARING] !== day) return null;
+  const room = t(`parole.room.${sim.prison.id}` as Key);
+  const time = dayTime(HEARING_FROM);
+  const isToday = today(sim).day === day;
+  return { icon: 'scale', color: '#8a6bd1', label: t('parole.title'), title: t('parole.board'), when: t('day.when', { from: time, to: dayTime(HEARING_TO) }), sub: isToday ? t('parole.hearingToday', { time, room }) : t('parole.hearingOn', { n: day, time, room }) };
 }
 
 // ------------------------------------------------------------------ the warden's speakers
@@ -482,6 +496,6 @@ profile.day = () => {
   const rows = dayRows(sim, p, false, true);
   const job = jobRow(sim);
   if (job) rows.push(job);
-  return { day: p.day, today: rows, tomorrow, notes, night, key: `${p.day}|${tomorrow ? 1 : 0}|${st.eventFlags}|${m >= p.at}|${m >= p.until}|${night}|${jobKey(sim)}|${holidaysOver(sim, m)}` };
+  return { day: p.day, today: rows, tomorrow, notes, night, key: `${p.day}|${tomorrow ? 1 : 0}|${st.eventFlags}|${m >= p.at}|${m >= p.until}|${night}|${jobKey(sim)}|${holidaysOver(sim, m)}|${st.parole[P.HEARING]}` };
 };
 

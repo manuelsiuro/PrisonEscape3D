@@ -164,6 +164,7 @@ Sources:
 | San Pancho's and Irongate's grounds (P33) | §4.4, §4.5 | §10 planned San Pancho's sports ground by narrowing the canteen and gym beside the plaza ("about 20 cells for 14 people"), and Irongate's yard grown to about 11 deep. San Pancho has 14 cells for 14 people (§4.4: 14 inmates) and the plaza's middle band is 9 rows, too shallow for a pitch and its track: the ground takes the plaza's south half (14×15) with the control room and solitary shortened under it, the plaza's north half stays the yard and roll-call square (§4.4 "central plaza & roll call square") behind a see-through fence; the canteen and the gym, which opened onto the plaza, are reached from the wings' lobbies; the road out runs library → generator room (red) → control room (red), with the quarters' door purple: the GDD's "[P][GEN][R]" guard post, the same red and green keys out (§4.4). Irongate's yard is the roofs' chasm the helicopter route's grapnel crosses (§4.5 Escape B; reach 6 tiles): grown to 11 the route breaks, so the ground takes the yard's west third down to the main corridor (14×16) and the yard's east two thirds stay 5 deep; the middle block's rooms move east, narrower (the canteen 4 tables, not 6), the janitor's closet into the south block beside the control room |
 | Phone, kiosk and the paperwork escape (P34–P36) | Not in the GDD | From P34 (2026-10-21, user's request) every campaign prison gets a **pay phone** (calls home, a lawyer, a cousin outside on a tapped line, anonymous tips; inmates queue; eavesdropping) and an **internet kiosk** in the library (mail, a legal shop, the news, courses). An 11th way out, **paperwork**: a forged release form puts your name on tomorrow's release list, out through the front door in your own clothes. The GDD's routes are all physical escapes; this one is earned with a stolen form and a forger's hand, checked by the records at 22:00 and again at the release desk. (Built as forged paperwork, 2026-10-22, the user's choice: the planned kiosk hacking was dropped.) See §11 |
 | Parole, odd jobs, the manhunt and holidays (P39–P42) | Not in the GDD | From P39 (2026-10-23, user's request) the GDD's all-escape game gains a **second, slower win**: parole, a 12th way out (`parole`) earned with a good record and a hearing, voided by plotting. **Odd jobs** grow the GDD's four favour types into small missions with story chains. The GDD ends a run at the wall; the **manhunt** adds a last act outside (a clean getaway), and the escape still counts at the wall. **Holidays** (Easter, summer, Halloween, Christmas and New Year) follow the real date, read once when a run starts and kept in the state. See §13 |
+| Conduct achievements and legal releases (full review after v2.21.0) | Not in the GDD (§13.2's achievements are for escapes) | A parole run earned Pacifist, Ghost, Clean Record, Model Prisoner and Calm Waters (and often Gold Standard) without trying: the board asks for exactly that conduct. **The five conduct achievements now need an escape** (a way out not in `LEGAL_ROUTES`: paperwork and parole earn none), as their descriptions always said ("Escape without…"); this also changes them for a forged release form, which used to earn them. Gold Standard and the other speed ones stay for every way out (parole's medal days are already the longest). |
 Any further conflict found during the build is added to this table in the same commit.
 
 ## 3. Architecture
@@ -1294,6 +1295,11 @@ five prisons. It walks out through the front door like paperwork (P36), using th
   (tight rows, it scrolls), the for-lines at nothing on one line and no "0" points. The verdict hides the action button;
   the call to the room is dropped once the player sits. San Pancho's and Irongate's boards stay split across two
   tables: their canteens have only two-seat benches. The lesson holds the verdict 6 s before it ends.
+- **Built (full review, rules and text):** no visitor comes while a hearing is due or sitting (the board sits on the
+  visiting chairs; visiting hours overlap the hearing): the visit comes after the verdict, still in visiting hours
+  (`paroletest`). Conduct achievements need an escape (§2). The verdict's score is signed like the desk's ("−3"); the
+  warden's morning card and the file's Today (and Tomorrow) have a row for a hearing that day. The pay phone's help
+  names the lawyer's filing ($60, the hearing a day sooner).
 
 ### P40 The odd jobs board (v2.19)
 Small missions with a bit of story: the next step beyond the four favours (`FAVOR`). They are built only from things
@@ -1393,6 +1399,9 @@ the game can already do.
   of the job's hints and the "coming" toast; the dig's % apart from the chip's words; the race card steps aside for
   the job's card; in landscape the toasts clear a story's card, and the job's pill hides when a card and a panel are
   both open; the board card's scroll reset once it's shown; the Today row's dot kept with the step before it.
+- **Built (full review, rules and text):** the help's pay reads $15–55 (the fixer's up to $83), and `helptest` checks
+  it against `KIND_DEFS` and `FIXER_PAY`; a save's job with a stage, pin (`FROM`) or perk that can't be loads as none.
+  The Irongate lookout's digger walking to his bed every free time costs about 2% of a step there (measured): left as is.
 
 ### P41 The manhunt (v2.20)
 Over the wall is no longer the end of the run. A short last act follows: reaching safety outside.
@@ -1532,6 +1541,10 @@ Over the wall is no longer the end of the run. A short last act follows: reachin
     the card. Not done: the van, glider and helicopter starts still begin on foot (no vehicle moment), and the
     lighter rectangle of Irongate's sea over the picture couldn't be traced without a browser (the data past the
     picture is the same sea now).
+- **Built (full review, rules and text):** a hunt counts in the stats once a run (its salt, as an escape does: the
+  trophies' store keeps `hunted`), so the same save hunted twice, or left, is one hunt. The help names the touch
+  Stone button beside Space, says plainly that a guard's uniform hides better than washing-line clothes, and the
+  French names the jerky as the item does (viande séchée).
 
 ### P42 Holidays (v2.21)
 The prisons dress up for the holidays of the real calendar, each with its own day, decor, items, words and trophies.
@@ -1630,6 +1643,11 @@ The prisons dress up for the holidays of the real calendar, each with its own da
   commands at Center Perks: tool work through the water fight, costume night's laughs and none after 21:00,
   the present given, ten strikes on the cell wall under the fireworks, heard 1 tile off). No escape snapshot changed. Only counts and
   the state's hash changed (simtest, replaytest's save size, items, achievements, keys, banks, help).
+- **Built (full review, rules and text):** the water fight's bit is `TODAY.SPLASHED` in calendar.ts with the other
+  day bits (same value). The texts say "sports field" ("l'heure de sport" in French) as the older ones do, and the
+  fireworks "muffle every noise to a whisper" (they cut it to 2/10, 1 tile at least), not drown it out. English
+  apostrophes in the P39–P42 keys follow the file: straight in game text, curly in help pages (as since P37). French:
+  "1 leçon sur 48" (the singular under 2).
 
 ### Phases
 - **P39 The parole board (v2.18)**: the application, the record from the ledger, the hearing minigame, route

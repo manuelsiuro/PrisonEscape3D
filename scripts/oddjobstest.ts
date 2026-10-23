@@ -737,6 +737,14 @@ function handIn(g: Game, deal: Deal) {
     const b = new Sim(p, 5);
     b.state = loadState(b.world, p, bad);
     check(b.state.oddjob.length === 0 && b.state.oddjobs.join() === '0,0,0,0,0', 'damaged numbers: dropped');
+    // (Full review: a stage, a pin or a perk that can't be.)
+    for (const [k, v] of [[J.STAGE, 2], [J.FROM, 5], [J.FROM, -1], [J.PERK, 3]] as const) {
+      const odd = JSON.parse(JSON.stringify(s));
+      odd.oddjob[k] = v;
+      const q = new Sim(p, 5);
+      q.state = loadState(q.world, p, odd);
+      check(q.state.oddjob.length === 0, `a job with field ${k} at ${v}: dropped`);
+    }
     check(LIFTS.length === 3 && bringsOf(saved.oddjob) === n('whistle'), 'a whistle to bring');
   }
   console.log(lines.join('\n'));

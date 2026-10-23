@@ -417,7 +417,7 @@ export async function escaped() {
       const lookout = st.crewOut.length ? { name: inmateName(sim, st.crewOut[0]), cell: sim.state.inmates[st.crewOut[0]]?.cell ?? 2 } : null;
       const r = await runHunt(g, carryFrom(sim), { lookout });
       // (Left from the pause card: given up, so a recapture in the stats.)
-      if (r === 'quit') huntLeft();
+      if (r === 'quit') huntLeft(sim);
       if (play.game !== g || r === 'quit') return;
       const got = huntOver(sim, via, r);
       victory.hunt = { ...victory.hunt, state: r.over === 3 ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };

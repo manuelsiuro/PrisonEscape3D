@@ -312,6 +312,8 @@ export const TODAY = {
   /** The odd jobs board (P40): the fixer's own job taken today; an odd job handed in today. */
   FIXER_JOB: 524288,
   ODD_JOB: 1048576,
+  /** Holidays (P42): in the summer water fight today. */
+  SPLASHED: 8388608,
 } as const;
 
 /** A food fight's guards: this many drawn into the canteen for as long as it lasts. */

@@ -19,6 +19,7 @@ import { roll, SALT } from '../rng';
 import { STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
 import { LAYER, layerOfKey, MAP_W, tileOfKey } from '../world/World';
+import { TODAY } from './calendar';
 import { dayMinute, prisonDay } from './clock';
 import type { Guard } from './guards';
 import { DOING } from './inmates';
@@ -84,14 +85,11 @@ export function holidays(sim: SimContext) {
   }
   if (s.holiday === HOLIDAY.EASTER) eggsFound(sim);
   if (s.holiday === HOLIDAY.HALLOWEEN && s.step % 10 === 0) laughs(sim);
-  if (s.holiday === HOLIDAY.SUMMER && holidayNow(sim, 'waterFight') && !sim.away && s.layer === LAYER.GROUND && WATER_ZONES.includes(sim.playerZone) && !(s.eventFlags & HOLIDAY_TODAY.SPLASHED)) {
-    s.eventFlags |= HOLIDAY_TODAY.SPLASHED;
+  if (s.holiday === HOLIDAY.SUMMER && holidayNow(sim, 'waterFight') && !sim.away && s.layer === LAYER.GROUND && WATER_ZONES.includes(sim.playerZone) && !(s.eventFlags & TODAY.SPLASHED)) {
+    s.eventFlags |= TODAY.SPLASHED;
     sim.events.push({ type: 'holiday', what: 'splash', day: 'waterFight' });
   }
 }
-
-/** What happened today (P42's bits in state.eventFlags, calendar.ts TODAY): in the water fight. */
-export const HOLIDAY_TODAY = { SPLASHED: 8388608 } as const;
 
 /** 08:00 on the egg hunt's day: an egg in some of the inmates' desks (those with a free slot), and some about the yard. */
 function hideEggs(sim: SimContext) {
