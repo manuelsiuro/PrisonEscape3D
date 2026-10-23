@@ -236,7 +236,7 @@ export function oddjobsNow(sim: Sim): OddJobsView | null {
 }
 
 /** The job's own card, opened or closed (its chip, B): on watch at a dig, B whistles instead. */
-export function toggleJob() {
+export function toggleJob(keys = true) {
   const g = play.game;
   if (!g || g.replay) return;
   const sim = g.rec.sim;
@@ -247,8 +247,8 @@ export function toggleJob() {
     return;
   }
   jobCard = !jobCard;
-  // (Opened: the keyboard's focus goes into it, once it's drawn; closed: back to the chip.)
-  if (jobCard) oddjobsCard.focusOnShow();
+  // (Opened from the keyboard: its focus goes into it, once it's drawn — not for a tap, which would only light the ring; closed: back to the chip.)
+  if (jobCard && keys) oddjobsCard.focusOnShow();
   else oddjobsCard.returnFocus();
 }
 
@@ -430,9 +430,9 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
 
 /** The HUD's chip and the talk panel's offers, wired once. */
 export function wireOddJobs() {
-  hud.onJob = () => {
+  hud.onJob = (keys) => {
     sound.click();
-    toggleJob();
+    toggleJob(keys);
   };
   // (The card's own Close button.)
   oddjobsCard.onClose = () => {

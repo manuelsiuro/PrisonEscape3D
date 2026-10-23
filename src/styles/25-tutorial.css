@@ -218,7 +218,7 @@
 
 @media (max-width: 520px) {
   body.lesson-on .banner {
-    top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--lesson-bottom, 0px) + 10px));
+    top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--lesson-bottom, 0px) + 10px), calc(var(--hud-chips, 0px) + 10px));
   }
   /* Toasts with a sheet open, or at a game or a lock: under the card, never over its text. */
   body.lesson-on.is-playing.panel-open .toasts,

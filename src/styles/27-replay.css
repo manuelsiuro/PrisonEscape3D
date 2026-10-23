@@ -455,8 +455,24 @@ body.is-replay .hud button {
   color: var(--gold);
 }
 
-/* Beside "New way out!" on a narrow card: its icon alone. */
+/* Beside "New way out!" on a narrow card: its icon alone; and the way out's name kept on one line (« Par la
+   clôture »): the badge and the button go under it when the row has no room for all three. */
 @media (max-width: 480px) {
+  .v-method:has(.v-watch) {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .v-method:has(.v-watch) > span {
+    flex: 1 0 auto;
+    max-width: 100%;
+  }
+  .v-method:has(.v-watch) > em,
+  .v-method > .v-watch {
+    margin-left: auto;
+  }
+  .v-method:has(.v-watch) > em + .v-watch {
+    margin-left: 0;
+  }
   .v-method em + .v-watch span {
     display: none;
   }

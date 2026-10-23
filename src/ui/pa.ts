@@ -52,6 +52,7 @@ export class PaBoard {
   private typer: { typed: HTMLElement; rest: HTMLElement; chars: string[]; shown: number; ms: number } | null = null;
   private measure = 0;
   private alertsBottom = -1;
+  private chipsBottom = -1;
   private last = performance.now();
   private paused = false;
   /** No typing, no slide (the setting). */
@@ -82,9 +83,18 @@ export class PaBoard {
   /** Where the HUD's alert chips (and the first day's guide card) end: the card and strip go below them. How tall the board is (toasts make room in landscape). */
   private place() {
     let bottom = 0;
-    for (const sel of ['.hud-alerts', '.coach:not(.hidden)']) {
+    // (The HUD showing — the manhunt's has its own row; a lesson's card fixed elsewhere on the screen, at the parole board's, isn't under the chips.)
+    let chips = -1;
+    for (const sel of ['.hud:not(.hidden) .hud-alerts', '.coach:not(.hidden)']) {
       const el = document.querySelector<HTMLElement>(sel);
-      if (el && el.offsetParent) bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+      if (el && el.offsetParent && getComputedStyle(el).position !== 'fixed') bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+      // (After the first: the chips' row alone.)
+      if (chips < 0) chips = bottom;
+    }
+    // (The chips' row alone, for the banner — the first day's card fades under a banner — and the toasts' ceiling.)
+    if (chips !== this.chipsBottom) {
+      this.chipsBottom = chips;
+      document.body.style.setProperty('--hud-chips', `${Math.round(chips)}px`);
     }
     if (bottom !== this.alertsBottom) {
       this.alertsBottom = bottom;
@@ -152,9 +162,8 @@ export class PaBoard {
     const dt = Math.min(250, now - this.last);
     this.last = now;
     this.paused = paused;
-    if (this.card || this.strip) {
-      if (++this.measure % 10 === 0) this.place();
-    }
+    // (Measured a few times a second whatever is up: the banner keeps under the HUD's chips by it too.)
+    if (++this.measure % 10 === 0) this.place();
     if (paused) return;
     const banner = document.body.classList.contains('banner-up');
     // The card and the strip run out.

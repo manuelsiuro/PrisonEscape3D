@@ -169,7 +169,7 @@ export class ParoleCard {
         : v.phase === 'weigh'
           ? v.react
           : v.phase === 'verdict'
-            ? [v.verdict, v.status, ...v.weighed].filter(Boolean).join('. ')
+            ? [v.verdict, v.status, ...v.weighed].filter(Boolean).reduce((all, x) => (!all ? x : /:\s*$/.test(all) ? `${all} ${x}` : `${all}. ${x}`), '')
             : v.phase === 'sat'
               ? v.note
               : '';

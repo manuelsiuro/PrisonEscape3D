@@ -659,7 +659,7 @@ kbd {
   }
   /* (A banner up there, just over the hotbar: the toasts above it. The warden's strip and the manhunt place them their own way.) */
   .touch.banner-up.is-playing:not(.pa-up, .hunting) .toasts {
-    bottom: max(calc(max(28px, env(safe-area-inset-bottom)) + 120px), var(--hint-clear, 0px));
+    bottom: min(max(calc(max(28px, env(safe-area-inset-bottom)) + 120px), var(--hint-clear, 0px)), calc(100vh - var(--hud-chips, 0px) - 52px));
   }
 }
 
