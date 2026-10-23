@@ -365,6 +365,10 @@
 .quiz-bar > i {
   background: linear-gradient(90deg, #3d7fd0, #8fc8ff);
 }
+/* (While the question is read: the player's head start, in gold.) */
+.quiz-bar.reading > i {
+  background: linear-gradient(90deg, #e0a21b, #ffd66b);
+}
 .quiz-join,
 .quiz-quit {
   margin-top: 8px;
@@ -504,7 +508,7 @@ body.quizzing[data-quiz='on'] .lock-btn {
 
 @media (max-height: 520px) {
   /* (A question being asked: its note steps aside, the four answers and Give up in view.) */
-  .quiz-card[data-phase='ask'] .train-note {
+  .quiz-card[data-phase='ask']:not(.reading) .train-note {
     display: none;
   }
 }

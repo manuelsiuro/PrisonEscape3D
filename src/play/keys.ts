@@ -185,7 +185,11 @@ export function listenKeys() {
     if (e.code === 'KeyU') tools.releaseUp();
   });
   // Focus gone with Space held: the keyup never comes.
-  addEventListener('blur', () => tools.release());
+  addEventListener('blur', () => {
+    tools.release();
+    kickKey(false);
+    shootKey(false);
+  });
   // A hidden page pauses the game (phones switching apps, a closed laptop).
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden || !play.game) return;

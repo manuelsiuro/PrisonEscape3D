@@ -5,7 +5,7 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
 import { BED, bedCount, bedOf, bedTile, ripe, wilted } from '../sim/systems/garden';
 import { takeCheck } from '../sim/systems/pantry';
-import { atTrack, cardUp, oddsOf, petLane, RACE, raceCard, raceCheck, raceNight, runRace, trackOf, trackTiles, type Entrant } from '../sim/systems/races';
+import { atTrack, cardMinute, cardUp, oddsOf, petLane, RACE, raceCard, raceCheck, raceNight, runRace, trackOf, trackTiles, type Entrant } from '../sim/systems/races';
 import { petOf, RAT } from '../sim/systems/rats';
 import { tipsyNow } from '../sim/systems/pruno';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
@@ -182,6 +182,20 @@ function cardOf(sim: Sim, day: number, lanes: number): Entrant[] {
 /** A rat's name on the card: an inmate's by its cell, the player's by its own name. */
 function entrantName(sim: Sim, e: Entrant): string {
   return e.owner < 0 ? ratName(sim) : (t('race.names').split('|')[e.name] ?? '');
+}
+
+// ------------------------------------------------------------------ race night's reminder
+
+/** After each step: the card going up on a race night (once, in a game of one's own: a lesson guides its own way). */
+export function raceStep(sim: Sim) {
+  const g = play.game;
+  const s = sim.state;
+  if (!g || g.lesson || g.over || s.sleeping || s.step % STEPS_PER_MINUTE !== 0 || sim.rules215) return;
+  if (clockAt(s.step).minuteOfDay !== cardMinute(sim) || !cardUp(sim) || s.solitary > 0 || sim.away || s.stowed) return;
+  const pet = petOf(s);
+  sound.chime();
+  const time = `${String(Math.floor(RACE_MINUTE / 60)).padStart(2, '0')}:${String(RACE_MINUTE % 60).padStart(2, '0')}`;
+  banner.toast(pet && pet.mode === RAT.SHOULDER ? t('toast.raceNightPet', { name: ratName(sim), time }) : t('toast.raceNight', { time }), 'info', 5200);
 }
 
 // ------------------------------------------------------------------ the race card

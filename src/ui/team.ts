@@ -30,6 +30,8 @@ export interface MatchView {
   /** Who scored it ('' the player; else a name), and whether into his own side's net. */
   by: string;
   own: boolean;
+  /** The match's length (seconds): the clock's bar runs down from it. */
+  of: number;
   /** Space or the pad held for a kick: its power 0–1; the ball at the player's feet (a kick would reach it). */
   holding: boolean;
   power: number;
@@ -133,7 +135,7 @@ export class MatchCard {
       this.el.dataset.phase = v.phase;
       this.el.classList.toggle('at-feet', v.atFeet);
     }
-    (this.clock.firstElementChild as HTMLElement).style.width = `${Math.min(100, (v.left / 45) * 100).toFixed(1)}%`;
+    (this.clock.firstElementChild as HTMLElement).style.width = `${Math.min(100, (v.left / Math.max(1, v.of)) * 100).toFixed(1)}%`;
     this.el.classList.toggle('holding', v.holding);
     this.power.style.width = `${(v.power * 100).toFixed(1)}%`;
   }

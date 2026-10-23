@@ -30,6 +30,9 @@
   font-style: normal;
   color: rgba(255, 255, 255, 0.4);
 }
+.match-card .train-note {
+  text-wrap: pretty;
+}
 .match-clock {
   display: block;
   height: 5px;

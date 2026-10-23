@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { CHARTS, countIn, INSTRUMENT, QUESTION_STEPS, QUIZ_PRIZE, QUIZ_RANGE, SONGS } from '../content/nights';
+import { CHARTS, countIn, INSTRUMENT, QUIZ_PRIZE, QUIZ_RANGE, SONGS } from '../content/nights';
 import { KEY_ITEM_COLORS } from '../content/items';
 import { listOf, t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
@@ -8,8 +8,8 @@ import { dayMinute } from '../sim/systems/clock';
 import { today } from '../sim/systems/calendar';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import { actNow, boardsOf, GUITAR, markOf, noShow, prizeOf, stageFreeFrom, stageOf, stageRefusal, talentOn, tonight } from '../sim/systems/talent';
-import { nearestPlace, questionNow, quizOf, quizOn, quizRefusal, type Choice, type Question } from '../sim/systems/quiz';
-import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
+import { nearestPlace, questionNow, questionSteps, quizOf, quizOn, quizRefusal, readOf, type Choice, type Question } from '../sim/systems/quiz';
+import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
 import type { NightsFrame } from '../render/Nights';
@@ -123,7 +123,7 @@ export function stageNow(sim: Sim, a: number): StageView | null {
 
 // ------------------------------------------------------------------ quiz night's card
 
-const quizView: QuizView = { phase: 'offer', why: '', names: [], pts: [], said: [], got: -1, q: 0, question: '', choices: [], answer: 0, left: 1, end: '', prize: 0, int: 0 };
+const quizView: QuizView = { phase: 'offer', why: '', names: [], pts: [], said: [], got: -1, q: 0, question: '', choices: [], answer: 0, left: 1, secs: 0, reading: 0, end: '', prize: 0, int: 0 };
 
 /** A question's words and its four answers', in this language (from the running game's own names). */
 export function questionText(sim: Sim, q: Question): { text: string; choices: string[] } {
@@ -178,7 +178,12 @@ export function quizNow(sim: Sim): QuizView | null {
     v.question = words.text;
     v.choices = words.choices;
     v.answer = q.answer;
-    v.left = o.until ? 0 : 1 - (s.step - o.at) / QUESTION_STEPS;
+    const k = s.step - o.at;
+    const read = readOf(sim, q);
+    const all = questionSteps(sim);
+    v.reading = !o.until && k < read ? Math.ceil((read - k) / STEPS_PER_SECOND) : 0;
+    v.left = o.until ? 0 : k < read ? 1 - k / read : 1 - (k - read) / (all - read);
+    v.secs = o.until ? 0 : Math.max(0, Math.ceil((all - k) / STEPS_PER_SECOND));
     return v;
   }
   if (held) {

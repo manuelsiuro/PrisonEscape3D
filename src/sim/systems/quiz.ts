@@ -4,19 +4,19 @@
  * - **Joining** (EXT.QUIZ 0): within QUIZ_RANGE of a place, once a night. The three nearest
  *   inmates up and about (within QUIZ_CALL) are the contestants; they walk over (QUIZ_GATHER at
  *   most), then the questions are put.
- * - **The questions**: eight, ten seconds each, a pure function of the run and the day
+ * - **The questions**: eight, fifteen seconds each, a pure function of the run and the day
  *   (`questionsOf`). Half escape history (a bank of written, checked facts), half this prison,
  *   made from the game's own data and constants, the way gossip is, so always true: the day's
  *   times, the guards' ways and keys, the cells, what a recipe makes, the day cards' hours.
- * - **The buzzers**: the first right answer takes the question. Each contestant buzzes at a step
- *   drawn by roll(), right with odds by its wits (an Intellect of its own, by roll() for its
+ * - **The buzzers**: the first right answer takes the question. Each question is read first
+ *   (`readOf`: the player may answer while it is); then each contestant buzzes at a step drawn by roll(), right with odds by its wits (an Intellect of its own, by roll() for its
  *   cell); one wrong is out of that question. The player answers with EXT.ANSWER (b = the
  *   choice); wrong, they're out of it too.
  * - **The end**: most points wins QUIZ_PRIZE and QUIZ_INTELLECT (a tie at the top, half of each),
  *   and QUIZ_WIN_OPINION with the contestants; playing it out, QUIZ_OPINION. Given up (EXT.QUIZ 1)
  *   or off (the player QUIZ_LEAVE away, a lockdown): nothing.
  */
-import { BUZZ_MIN, BUZZ_SPAN, HISTORY, QUESTION_STEPS, QUIZ_CALL, QUIZ_GATHER, QUIZ_HISTORY, QUIZ_INTELLECT, QUIZ_LAST, QUIZ_LEAVE, QUIZ_OPINION, QUIZ_PRIZE, QUIZ_QUESTIONS, QUIZ_RANGE, QUIZ_WIN_OPINION, REVEAL_STEPS, RIGHT_BASE, RIGHT_PER, WITS_MIN, WITS_SPAN } from '../../content/nights';
+import { BUZZ_MIN, BUZZ_MIN_215, BUZZ_SPAN, BUZZ_SPAN_215, HISTORY, QUESTION_STEPS, QUESTION_STEPS_215, READ_LONG, READ_STEPS, QUIZ_CALL, QUIZ_GATHER, QUIZ_HISTORY, QUIZ_INTELLECT, QUIZ_LAST, QUIZ_LAST_215, QUIZ_LEAVE, QUIZ_OPINION, QUIZ_PRIZE, QUIZ_QUESTIONS, QUIZ_RANGE, QUIZ_WIN_OPINION, REVEAL_STEPS, RIGHT_BASE, RIGHT_PER, WITS_MIN, WITS_SPAN } from '../../content/nights';
 import { DAY_BOOKS, EVENT_TIMES } from '../../content/days';
 import { KEY_ITEM_COLORS } from '../../content/items';
 import { RECIPES } from '../../content/recipes';
@@ -178,11 +178,17 @@ export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimS
   return out;
 }
 
-/** A contestant's buzz on a question: when (steps after it's put), and whether right; the wrong choice it gives otherwise. */
-export function buzzOf(s: Pick<SimState, 'salt' | 'inmates'>, day: number, q: number, who: number, answer: number): { at: number; right: boolean; says: number } {
+/** How long a question is read before the contestants' buzzers open (steps): longer for escape history and recipes; none before 2.16. */
+export const readOf = (sim: Pick<SimContext, 'rules215'>, q: Pick<Question, 'id'>) => (sim.rules215 ? 0 : q.id.startsWith('h.') || q.id === 'recipe' ? READ_LONG : READ_STEPS);
+
+/** How long a question is open, its reading time included (steps). */
+export const questionSteps = (sim: Pick<SimContext, 'rules215'>) => (sim.rules215 ? QUESTION_STEPS_215 : QUESTION_STEPS);
+
+/** A contestant's buzz on a question: when (steps after it's put: `read` steps of reading first, -1 as before 2.16), and whether right; the wrong choice it gives otherwise. */
+export function buzzOf(s: Pick<SimState, 'salt' | 'inmates'>, day: number, q: number, who: number, answer: number, read: number): { at: number; right: boolean; says: number } {
   const salt = s.salt;
   const wits = witsOf(salt, s.inmates[who]?.cell ?? 0);
-  const at = BUZZ_MIN + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN);
+  const at = read < 0 ? BUZZ_MIN_215 + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN_215) : read + BUZZ_MIN + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN);
   const right = rollInt(salt, SALT.QUIZ, day * 16 + q, 2000 + who, 100) < RIGHT_BASE + Math.floor((wits * RIGHT_PER) / 100);
   const wrong = rollInt(salt, SALT.QUIZ, day * 16 + q, 3000 + who, 3);
   return { at, right, says: right ? answer : wrong >= answer ? wrong + 1 : wrong };
@@ -240,7 +246,7 @@ export function quizRefusal(sim: SimContext): Refusal | null {
   if (s.lockdown) return 'gamesLockdown';
   if (s.quizDay === prisonDay(s.step)) return 'quizzed';
   // (Late in the evening there's no time for eight questions before roll call.)
-  if (dayMinute(s.step) >= QUIZ_LAST) return 'quizLate';
+  if (dayMinute(s.step) >= (sim.rules215 ? QUIZ_LAST_215 : QUIZ_LAST)) return 'quizLate';
   if (nearestPlace(sim) < 0) return 'notAtQuiz';
   if (!contestantsFor(sim)) return 'fewQuiz';
   return null;
@@ -324,17 +330,18 @@ export function keepQuiz(sim: SimContext) {
   if (!q) return endQuiz(sim, 'done');
   const k = s.step - o.at;
   const day = prisonDay(o.from);
+  const read = sim.rules215 ? -1 : readOf(sim, q);
   // The buzzers, in order round the table: the first right takes it.
   for (let j = 0; j < 3; j++) {
     const m = s.inmates[o.who[j]];
     if (o.said[j + 1] >= 0 || !m) continue;
-    const b = buzzOf(s, day, o.q, o.who[j], q.answer);
+    const b = buzzOf(s, day, o.q, o.who[j], q.answer, read);
     if (b.at !== k) continue;
     o.said[j + 1] = b.says;
     sim.events.push({ type: 'quiz', what: b.right ? 'right' : 'wrong', by: j + 1, q: o.q, choice: b.says });
     if (b.right) return taken(sim, j + 1);
   }
-  if (k >= QUESTION_STEPS || o.said.every((x) => x >= 0)) taken(sim, -1);
+  if (k >= questionSteps(sim) || o.said.every((x) => x >= 0)) taken(sim, -1);
 }
 
 /** A question put. */

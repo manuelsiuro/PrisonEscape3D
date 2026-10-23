@@ -1101,7 +1101,7 @@ function follow(id: string) {
   console.log(`cards, folded: ended at step ${cards.progress.k + 1}; hoops, court left: ended at step ${hoops.progress.k + 1}; checkers, up past free time and resigned: said`);
 }
 {
-  // P28: the race night missed (never at the track by the off), and the pet scratched (walked away with it before the off).
+  // P28: the race night missed (never at the track by the off), and the pet scratched (walked off with it, out of the cell block, before the off).
   const late = follow('ratRace');
   late.bot.hold('rat_track');
   late.bot.use();
@@ -1116,7 +1116,8 @@ function follow(id: string) {
   away.bot.op(OP.EXT, EXT.RACE, RACE_ENTER);
   away.bot.op(OP.EXT, EXT.RACE, 0, 0);
   check(away.progress.step?.text === 'lesson.ratRace.watch', `ratRace: entered and backed, watching (${away.progress.step?.text})`);
-  away.bot.walkTo(tile(20, 19));
+  // (Out in the yard: past START_RANGE of the track, its start; the cell next door is near enough since 2.16.)
+  away.bot.walkTo(tile(16, 40));
   away.bot.until(() => !!away.why(), 60 * 20 * 60);
   check(away.why() === 'lesson.ratRace.off', `ratRace: the pet away at the off ends the lesson (${away.why()})`);
   console.log(`ratRace, late: ended at step ${late.progress.k + 1}; ratRace, scratched: ended at step ${away.progress.k + 1}`);

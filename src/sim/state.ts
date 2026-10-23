@@ -958,7 +958,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (The pet rat's racing form, P28: a rat tamed before it, at the start.)
   for (const r of s.rats) if (!r.wild) Object.assign(r, { speed: Number.isInteger(r.speed) ? Math.max(0, Math.min(100, r.speed!)) : RAT_START_SPEED, fed: Number.isInteger(r.fed) ? r.fed : 0, lap: Number.isInteger(r.lap) ? r.lap : 0 });
   // P29: a match or a sitting as they can be (else over), the designs on the player's arms.
-  if (!matchOk(s.match, n)) s.match = null;
+  if (!matchOk(s.match, n, s.step)) s.match = null;
   if (!inkOk(s.ink, n)) s.ink = null;
   if (!Array.isArray(s.inkDays) || s.inkDays.length > n || !s.inkDays.every((d) => Number.isInteger(d) && d >= 0)) s.inkDays = [];
   if (!(Array.isArray(s.inked) && s.inked.length <= 3 && s.inked.every((d, k, all) => Number.isInteger(d) && d >= 0 && d < DESIGNS.length && all.indexOf(d) === k))) s.inked = [];
@@ -1036,7 +1036,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
 }
 
 /** A match as a save holds it (P29): five different inmates, its numbers whole. */
-function matchOk(o: Match | null, n: number): boolean {
+function matchOk(o: Match | null, n: number, step: number): boolean {
   if (o === null) return true;
   if (!o || typeof o !== 'object') return false;
   const int = (x: unknown) => Number.isInteger(x);
@@ -1054,7 +1054,9 @@ function matchOk(o: Match | null, n: number): boolean {
     ints(o.ball, 4) &&
     ints(o.cool, 6) &&
     o.last >= -2 &&
-    o.last < 5
+    o.last < 5 &&
+    (o.late === undefined || (int(o.late) && o.late >= 0 && o.late <= step)) &&
+    (o.feet === undefined || o.feet === 0 || o.feet === 1)
   );
 }
 

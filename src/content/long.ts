@@ -51,10 +51,13 @@ export const TRACK_SLOW = 10;
 /** A session on the track lasts this long (steps: the 3D shows the rat's laps). */
 export const TRACK_STEPS = 8 * 20;
 
-/** Race nights: odd prison days, at RACE_MINUTE (21:00); the card is up from CARD_MINUTE (20:00); bets at most BET_RANGE tiles from the track. */
+/** Race nights: odd prison days, at RACE_MINUTE (21:00); the card is up from CARD_MINUTE (19:00; 20:00 before 2.16, Sim.rules215); bets at most BET_RANGE tiles from the track. */
 export const RACE_MINUTE = 21 * 60;
-export const CARD_MINUTE = 20 * 60;
+export const CARD_MINUTE = 19 * 60;
+export const CARD_MINUTE_215 = 20 * 60;
 export const BET_RANGE = 3;
+/** An entered pet runs if the player is within START_RANGE tiles of the track at the off (2.16; before, BET_RANGE): else it's scratched. */
+export const START_RANGE = 12;
 /** The inmates' rats: this many a night, each with a speed of RIVAL_SPEED + up to RIVAL_SPREAD, fed RIVAL_FED times in 100. */
 export const RIVALS = 3;
 export const RIVAL_SPEED = 30;

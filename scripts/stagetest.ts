@@ -435,9 +435,10 @@ function playSong(song: number, late: number, every = 1, stray = 0, inst: number
 }
 
 /** A quiz night played by a bot: each question answered `wait` steps in (right if `knows`, else a guess), or never (wait < 0). */
-function playQuiz(seed: number, wait: number, knows: boolean) {
+function playQuiz(seed: number, wait: number, knows: boolean, before216 = false) {
   const g = game(QUIZ, CENTER_PERKS, seed);
   const { sim } = g;
+  sim.rules215 = before216;
   const pl = quizOf(sim.world)!;
   g.jump(1, 19, 0);
   put(sim.state.player, pl.spots[0].x, pl.spots[0].z);
@@ -496,14 +497,14 @@ function playQuiz(seed: number, wait: number, knows: boolean) {
   g.ext(EXT.QUIZ, 0);
   check(refusals(g.seen).includes('quizzed'), 'once a night');
   // Bots over 40 nights.
-  const rate = (wait: number, knows: boolean) => {
+  const rate = (wait: number, knows: boolean, before216 = false) => {
     let won = 0;
     let tie = 0;
     let int = 0;
     let cash = 0;
     let played = 0;
     for (let seed = 1; seed <= 40; seed++) {
-      const r = playQuiz(seed, wait, knows);
+      const r = playQuiz(seed, wait, knows, before216);
       if (!r.end) continue;
       played++;
       if (r.end.what === 'won') won++;
@@ -513,20 +514,26 @@ function playQuiz(seed: number, wait: number, knows: boolean) {
     }
     return { won, tie, played, int, cash };
   };
+  // (2.16: each question read before the buzzers open; a player who knows and answers in that time, or soon after, wins.)
   const quick = rate(60, true);
   const mid = rate(100, true);
   const slow = rate(150, true);
+  const slower = rate(200, true);
   const guess = rate(30, false);
   const silent = rate(-1, true);
   check(quick.played === 40, `40 nights joined (${quick.played})`);
-  check(quick.won >= 30, `knowing the answers, answering in 3 s: wins most nights (${quick.won}/40)`);
-  check(mid.won < quick.won && mid.won >= 20, `knowing them, answering in 5 s: wins more often than not (${mid.won}/40)`);
-  check(slow.won < mid.won, `knowing them, slow (7.5 s): wins less (${slow.won}/40)`);
+  check(quick.won >= 38, `knowing the answers, answering in 3 s (while it's read): wins (${quick.won}/40)`);
+  check(mid.won >= 34, `knowing them, answering in 5 s: wins nearly every night (${mid.won}/40)`);
+  check(slow.won < mid.won && slow.won >= 20, `knowing them, slow (7.5 s): wins more often than not (${slow.won}/40)`);
+  check(slower.won < slow.won, `knowing them, slower (10 s): wins less (${slower.won}/40)`);
   check(guess.won <= 4, `guessing: rarely wins (${guess.won}/40)`);
+  // (Before 2.16, Sim.rules215: no reading time, ten seconds a question; answering in 5 s won less.)
+  const old = rate(100, true, true);
+  check(old.won < mid.won && old.won >= 15, `before 2.16, knowing them, answering in 5 s: won less (${old.won}/40)`);
   check(silent.won === 0 && silent.tie === 0, 'never answering: never');
   const r = playQuiz(1, 60, true);
   check(r.end?.what === 'won' && r.end.prize === QUIZ_PRIZE && r.end.int === 2, `a win: $${QUIZ_PRIZE} and 2 Intellect`);
-  console.log(`quiz bots over 40 nights: knows, 3 s: ${quick.won} won ${quick.tie} tied; knows, 5 s: ${mid.won} won ${mid.tie} tied; knows, 7.5 s: ${slow.won} won ${slow.tie} tied; guesses, 1.5 s: ${guess.won} won ${guess.tie} tied; silent: ${silent.won}`);
+  console.log(`quiz bots over 40 nights: knows, 3 s: ${quick.won} won ${quick.tie} tied; knows, 5 s: ${mid.won} won ${mid.tie} tied; knows, 7.5 s: ${slow.won} won ${slow.tie} tied; knows, 10 s: ${slower.won} won ${slower.tie} tied; guesses, 1.5 s: ${guess.won} won ${guess.tie} tied; silent: ${silent.won}; before 2.16, knows, 5 s: ${old.won} won`);
 }
 
 // ------------------------------------------------------------------ saves and logs
@@ -674,13 +681,13 @@ function planOfDay(sim: Sim, day: number) {
   // Late in the evening, no quiz.
   const q = game(QUIZ);
   const pl = quizOf(q.sim.world)!;
-  q.jump(1, 20, 5);
+  q.jump(1, 19, 35);
   put(q.sim.state.player, pl.spots[0].x, pl.spots[0].z);
   q.ext(EXT.QUIZ, 0);
-  check(!q.sim.state.quiz && refusals(q.seen).includes('quizLate'), 'after 20:00: too late to start the quiz');
+  check(!q.sim.state.quiz && refusals(q.seen).includes('quizLate'), 'after 19:30: too late to start the quiz (2.16: the questions are read first, longer)');
   // Joined at the last minute: over before evening roll call, whatever happens.
-  const latest = playQuizAt(19, 59, -1);
-  check(latest.ended >= 0 && latest.ended < 22 * 60, `joined at 19:59: over by ${Math.floor(latest.ended / 60)}:${String(latest.ended % 60).padStart(2, '0')}`);
+  const latest = playQuizAt(19, 29, -1);
+  check(latest.ended >= 0 && latest.ended < 22 * 60, `joined at 19:29: over by ${Math.floor(latest.ended / 60)}:${String(latest.ended % 60).padStart(2, '0')}`);
   // A contestant knocked out: off, never a win by default.
   const k = game(QUIZ);
   k.jump(1, 19, 0);

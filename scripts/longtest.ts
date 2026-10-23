@@ -21,7 +21,7 @@ import { TRAINING } from '../src/content/prisons/training';
 import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { itemNumber } from '../src/content/items';
 import { SALES_A_DAY } from '../src/content/long';
-import { BETS, CROP, DRY_DEATH, GROWN, HARVEST, PURSE, RACE_MINUTE, RACE_STEPS, RAT_START_SPEED, STAPLES, TAKE, TIPSY_HEAT, TIPSY_STEPS } from '../src/content/long';
+import { BETS, CROP, DRY_DEATH, GROWN, HARVEST, PURSE, RACE_MINUTE, RACE_STEPS, RAT_START_SPEED, STAPLES, START_RANGE, TAKE, TIPSY_HEAT, TIPSY_STEPS } from '../src/content/long';
 import { SHOP_SLOTS } from '../src/content/loot';
 import { WEATHERS } from '../src/content/days';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
@@ -30,7 +30,7 @@ import { DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
 import { BED, bedAt, bedCount, bedTile, plotOf } from '../src/sim/systems/garden';
 import { itemOf, slot, usesOf } from '../src/sim/systems/items';
 import { canDigFloor, reserved } from '../src/sim/systems/structure';
-import { oddsOf, payout, raceCard, rivals, runRace, trackOf, trackTiles, trackGain, type Entrant } from '../src/sim/systems/races';
+import { cardUp, oddsOf, payout, RACE, raceCard, rivals, runRace, trackOf, trackTiles, trackGain, type Entrant } from '../src/sim/systems/races';
 import { RAT } from '../src/sim/systems/rats';
 import { containersOf } from '../src/sim/world/containers';
 import { TILE } from '../src/sim/world/tiles';
@@ -640,11 +640,18 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   const s = sim.state;
   const t = trackOf(sim.world)!;
   const near = trackTiles(t)[0] - MAP_W;
-  g.jump(1, 19, 50);
+  g.jump(1, 18, 50);
   put(s.player, near);
   s.cash = 50;
   g.ext(EXT.RACE, 0, 1);
-  check(refusals(seen).at(-1) === 'raceClosed', 'no bets before 20:00');
+  check(refusals(seen).at(-1) === 'raceClosed', 'no bets before 19:00');
+  // (Before 2.16, Sim.rules215: the card went up at 20:00.)
+  g.jump(1, 19, 30);
+  put(s.player, near);
+  sim.rules215 = true;
+  check(!cardUp(sim), 'before 2.16: no card at 19:30');
+  sim.rules215 = false;
+  check(cardUp(sim), 'the card up at 19:30');
   g.jump(1, 20, 10);
   put(s.player, near + MAP_W * 10);
   g.ext(EXT.RACE, 0, 1);
@@ -723,7 +730,27 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
     g.step();
   }
   check(of(seen, 'spotted').some((e) => e.reason === 'gambling') && s.heat >= 10 && s.heat < 20, `seen at the race with a bet on: gambling heat, once (${s.heat}%)`);
-  console.log(`races: called off in a lockdown, a scratched pet, gambling heat ${s.heat}%`);
+  const heat = s.heat;
+  // Entered, then off down the corridor at the off: within START_RANGE it still runs; further, scratched (before 2.16, BET_RANGE).
+  const offAt = (night: number, tiles: number, before216 = false) => {
+    g.jump(night, 20, 10);
+    put(s.player, near);
+    s.race = [];
+    g.ext(EXT.RACE, 8);
+    sim.rules215 = before216;
+    g.to(night, 20, 59);
+    // (Down the cell block, `tiles` rows from the track's.)
+    put(s.player, near + MAP_W * (tiles + 1));
+    g.to(night, 21, 1);
+    sim.rules215 = false;
+    const ran = s.race[RACE.ON] === 1 && s.race[RACE.ENTERED] === 1;
+    s.race = [];
+    return ran;
+  };
+  check(offAt(7, START_RANGE - 2), `entered and ${START_RANGE - 2} tiles off at the off: it runs`);
+  check(!offAt(9, START_RANGE + 6), `${START_RANGE + 6} tiles off: scratched`);
+  check(!offAt(11, START_RANGE - 2, true), `before 2.16, ${START_RANGE - 2} tiles off: scratched`);
+  console.log(`races: called off in a lockdown, a scratched pet, gambling heat ${heat}%`);
 }
 
 // ------------------------------------------------------------------ nothing without the player; saves

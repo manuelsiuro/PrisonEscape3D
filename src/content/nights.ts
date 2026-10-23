@@ -131,23 +131,32 @@ export const GOODWILL_HEAT = 20;
 
 // ------------------------------------------------------------------ quiz night
 
-/** Eight questions, ten seconds each to answer, the right answer shown a moment after; the contestants walk over first (at most QUIZ_GATHER). */
+/** Eight questions, fifteen seconds each to answer, the right answer shown a moment after; the contestants walk over first (at most QUIZ_GATHER). */
 export const QUIZ_QUESTIONS = 8;
-export const QUESTION_STEPS = 10 * STEPS_PER_SECOND;
+export const QUESTION_STEPS = 15 * STEPS_PER_SECOND;
+/** 2.16: each question is read before the contestants' buzzers open (the player may answer while it is): READ_STEPS, READ_LONG for escape history and recipes (longer answers, a list of items). */
+export const READ_STEPS = 3 * STEPS_PER_SECOND;
+export const READ_LONG = 4 * STEPS_PER_SECOND;
+/** Before 2.16 (Sim.rules215): ten seconds a question, no reading time, the buzzers from BUZZ_MIN_215 for BUZZ_SPAN_215 steps. */
+export const QUESTION_STEPS_215 = 10 * STEPS_PER_SECOND;
+export const BUZZ_MIN_215 = 50;
+export const BUZZ_SPAN_215 = 150;
 export const REVEAL_STEPS = 50;
 export const QUIZ_GATHER = 10 * STEPS_PER_SECOND;
 /** The player joins within QUIZ_RANGE tiles of a place; contestants come from up to QUIZ_CALL tiles; the quiz is off if the player strays QUIZ_LEAVE tiles. */
 export const QUIZ_RANGE = 2;
 export const QUIZ_CALL = 40;
 export const QUIZ_LEAVE = 4;
-/** Joining closes at QUIZ_LAST (minutes into the prison day: 20:00), time for the whole quiz before evening roll call. */
-export const QUIZ_LAST = 12 * 60;
+/** Joining closes at QUIZ_LAST (minutes into the prison day: 19:30), time for the whole quiz (eight questions read and answered) before evening roll call. */
+export const QUIZ_LAST = 11 * 60 + 30;
+/** Before 2.16 (Sim.rules215): 20:00, the questions shorter then. */
+export const QUIZ_LAST_215 = 12 * 60;
 /** An inmate's wits (its Intellect, by roll() for its cell): WITS_MIN to WITS_MIN + WITS_SPAN − 1. */
 export const WITS_MIN = 25;
 export const WITS_SPAN = 51;
-/** An inmate buzzes BUZZ_MIN to BUZZ_MIN + BUZZ_SPAN − 1 steps into a question (by roll()), right RIGHT_BASE + wits × RIGHT_PER / 100 times in 100. */
-export const BUZZ_MIN = 50;
-export const BUZZ_SPAN = 150;
+/** An inmate buzzes BUZZ_MIN to BUZZ_MIN + BUZZ_SPAN − 1 steps after the reading time (by roll()), right RIGHT_BASE + wits × RIGHT_PER / 100 times in 100. */
+export const BUZZ_MIN = 20;
+export const BUZZ_SPAN = 200;
 export const RIGHT_BASE = 30;
 export const RIGHT_PER = 70;
 /** A win: QUIZ_PRIZE dollars and QUIZ_INTELLECT Intellect (a tie at the top: half of each); opinion with the contestants: QUIZ_WIN_OPINION on a win, QUIZ_OPINION for playing. */

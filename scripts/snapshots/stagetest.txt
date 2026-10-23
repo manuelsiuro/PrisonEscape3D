@@ -18,6 +18,6 @@ stalag-flucht: 26 kinds asked over 30 nights (breakfast cells delivery key light
 shankton: 26 kinds asked over 30 nights (breakfast cells key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)
 san-pancho: 27 kinds asked over 30 nights (breakfast cells delivery key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)
 irongate: 27 kinds asked over 30 nights (breakfast cells delivery key lightsOut recipe rollCall showers trait.corrupt trait.lazy trait.strict visiting)
-quiz bots over 40 nights: knows, 3 s: 40 won 0 tied; knows, 5 s: 25 won 3 tied; knows, 7.5 s: 2 won 1 tied; guesses, 1.5 s: 0 won 0 tied; silent: 0
+quiz bots over 40 nights: knows, 3 s: 40 won 0 tied; knows, 5 s: 40 won 0 tied; knows, 7.5 s: 28 won 4 tied; knows, 10 s: 5 won 4 tied; guesses, 1.5 s: 0 won 0 tied; silent: 0; before 2.16, knows, 5 s: 25 won
 saves: mid-act and mid-quiz round trips ok; an old save's talent night (day 8) is none again
 reviews: every card dealt; 7 two-act nights pay nothing for nothing; give-up, the performer's tile, late join and knockouts checked
