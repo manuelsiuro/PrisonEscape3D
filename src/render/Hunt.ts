@@ -10,6 +10,7 @@ import { box, cyl, kitMaterial, merge, paint, rod, type Part } from './kit';
 import { seeThrough } from './occlusion';
 import { carParts } from './Phone';
 import { pool } from './Security';
+import { TEX } from './textures';
 import { sceneryTree } from './WorldView';
 
 /** What the outside's own pieces need each frame (P41): the helicopter (tiles), roadblocks up and washing lines used (a bit each), whether Lou waits, how it ended. */
@@ -22,6 +23,8 @@ export interface HuntFrame {
   over: number;
   /** Where the player is drawn (tiles): a faint glow round them after dark, so a dark uniform still reads. */
   me: { x: number; z: number };
+  /** Where the searchers are drawn (tiles): the same faint glow round each after dark (their navy was lost against the woods at night). */
+  searchers?: ReadonlyArray<{ x: number; z: number }>;
 }
 
 const faceAngle = (face: number | undefined) => Math.atan2(DIR_X[face ?? 5] ?? 0, DIR_Z[face ?? 5] ?? 1);
@@ -34,6 +37,19 @@ const hash = (i: number, k: number) => {
 };
 const HELI_Y = 6.5;
 const ROADBLOCK_RISE = 0.5;
+/** How far the picture's roads, tracks and railway lines run on past its edge (tiles), and how far the woods go round past the world's. */
+const RUN_OFF = 44;
+/** The most searchers (and posts) given a glow after dark. */
+const GLOWS = 24;
+/** A tile anywhere, past the world's edge too, as one number. */
+const key = (x: number, z: number) => (z + 256) * 1024 + (x + 256);
+
+/** What runs on off the picture's edge (runOff): the tiles it covers, and the rails and gravel on them. */
+interface RunOff {
+  covered: Set<number>;
+  rails: Array<[number, number, boolean]>;
+  gravel: Array<[number, number]>;
+}
 
 /**
  * The manhunt's outside in the picture (P41, render only): what the World's floors and walls
@@ -64,14 +80,18 @@ export class HuntView {
   private ring: THREE.Mesh | null = null;
   private glow: THREE.Mesh | null = null;
   private glowMat: THREE.MeshBasicMaterial | null = null;
+  private glows: THREE.InstancedMesh | null = null;
   private ringMat: THREE.MeshBasicMaterial | null = null;
+  private readonly m = new THREE.Matrix4();
 
   /** The outside of a hunt (`lou`: his car waits there). */
   set(o: OutsideWorld, lou: boolean) {
     this.clear();
     const theme = o.prison.theme ?? 'suburban';
-    this.scenery(o, theme);
-    this.water(o, theme);
+    const run = this.runOff(o, theme);
+    this.scenery(o, theme, run);
+    const wet = this.water(o, theme);
+    this.woods(theme, run.covered, wet);
     o.def.lines.forEach((l, k) => this.line(o, l, k));
     o.def.roadblocks.forEach((r) => this.roadblock(o, r.area));
     this.safePoint(o);
@@ -93,21 +113,105 @@ export class HuntView {
     this.vehicle = null;
     this.ring = null;
     this.glow = null;
+    this.glows = null;
     this.glowMat = null;
     this.gone = 0;
     this.heliShown = 0;
+    // (The next hunt's helicopter comes in from where it is, not from where the last one's left off.)
+    this.heliAt.set(0, 0, 0);
+  }
+
+  /**
+   * The picture's roads, dirt tracks and railway lines run on off its edge (P41 review: they
+   * stopped square there): straight out from each edge tile of them, over the woods round the
+   * picture and on past the world's edge, RUN_OFF tiles; the woods keep off them (an island
+   * town's sea all round: none).
+   */
+  private runOff(o: OutsideWorld, theme: string): RunOff {
+    const out: RunOff = { covered: new Set(), rails: [], gravel: [] };
+    if (theme === 'island') return out;
+    const { w, h, ox, oz } = o;
+    const kinds = o.world.ground.kind;
+    const byTex = new Map<'road' | 'trail', number[]>();
+    const sides: Array<[number, number, number, number]> = [];
+    for (let px = 0; px < w; px++) sides.push([px, 0, 0, -1], [px, h - 1, 0, 1]);
+    for (let pz = 0; pz < h; pz++) sides.push([0, pz, -1, 0], [w - 1, pz, 1, 0]);
+    for (const [px, pz, dx, dz] of sides) {
+      const x0 = px + ox;
+      const z0 = pz + oz;
+      const i0 = z0 * MAP_W + x0;
+      const k = kinds[i0];
+      const tex = k === TILE.ROAD ? 'road' : k === TILE.DIRT ? 'trail' : null;
+      if (!tex) continue;
+      for (let s = 1; s <= RUN_OFF; s++) {
+        const x = x0 + dx * s;
+        const z = z0 + dz * s;
+        out.covered.add(key(x, z));
+        // (Where the world's band round the picture has it already: a road's first tiles out.)
+        if (x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && kinds[z * MAP_W + x] === k) continue;
+        let list = byTex.get(tex);
+        if (!list) byTex.set(tex, (list = []));
+        list.push(x, z);
+        if (o.deco[i0] === DECO.RAIL) out.rails.push([x, z, dx !== 0]);
+        else if (o.deco[i0] === DECO.GRAVEL) out.gravel.push([x, z]);
+      }
+    }
+    // (Laid as the floors are: a tile of the same texture each, a faint shade; over the band's grass, and on past the edge over the fields.)
+    const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    const color = new THREE.Color();
+    for (const [tex, cells] of byTex) {
+      const mat = new THREE.MeshStandardMaterial({ map: TEX[tex](), roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+      const mesh = new THREE.InstancedMesh(geo, mat, cells.length / 2);
+      for (let k = 0; k < cells.length / 2; k++) {
+        const x = cells[k * 2];
+        const z = cells[k * 2 + 1];
+        mesh.setMatrixAt(k, this.m.makeTranslation(x + 0.5, 0.001, z + 0.5));
+        mesh.setColorAt(k, color.setScalar(0.95 + ((((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000) / 1000 * 0.07));
+      }
+      mesh.receiveShadow = true;
+      this.group.add(mesh);
+    }
+    return out;
+  }
+
+  /** The woods round past the world's edge (the prison's view leaves the manhunt's to this one): a seeded scatter, clear of the roads and rivers running out. */
+  private woods(theme: string, ...keepOff: ReadonlyArray<ReadonlySet<number>>) {
+    if (theme === 'island') return;
+    let s = 12345;
+    const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const spots: Array<[number, number, number]> = [];
+    const clear = (x: number, z: number) => {
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (keepOff.some((k) => k.has(key(Math.floor(x) + dx, Math.floor(z) + dz)))) return false;
+      return true;
+    };
+    for (let k = 0; k < 1500 && spots.length < 280; k++) {
+      const x = -24 + rand() * (MAP_W + 48);
+      const z = -24 + rand() * (MAP_H + 48);
+      if (x > -2 && x < MAP_W + 2 && z > -2 && z < MAP_H + 2) continue;
+      if (!clear(x, z) || spots.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < 2.2)) continue;
+      spots.push([x, z, 0.8 + rand() * 0.9]);
+    }
+    if (!spots.length) return;
+    const trees = new THREE.InstancedMesh(sceneryTree(theme), kitMaterial, spots.length);
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const v = new THREE.Vector3();
+    const sc = new THREE.Vector3();
+    spots.forEach(([x, z, k], i) => trees.setMatrixAt(i, this.m.compose(v.set(x, 0, z), q.setFromAxisAngle(up, rand() * Math.PI), sc.set(k, k * (0.9 + rand() * 0.3), k))));
+    trees.castShadow = true;
+    this.group.add(trees);
   }
 
   // ---------------------------------------------------------------- built once
-  private scenery(o: OutsideWorld, theme: string) {
+  private scenery(o: OutsideWorld, theme: string, run: RunOff) {
     const tall = seeThrough(kitMaterial.clone(), 0.3);
     const low = kitMaterial;
     const at: Record<number, number[]> = {};
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const d = o.deco[i];
       if (!d) continue;
-      // The woods past the map's edge: a tree on most tiles, not all (fewer to draw).
-      if (d === DECO.WOODS && hash(i, 7) < 0.45) continue;
+      // The woods past the map's edge: a tree on most tiles, not all (fewer to draw); none on a road running on out.
+      if (d === DECO.WOODS && (hash(i, 7) < 0.45 || run.covered.has(key(i % MAP_W, Math.floor(i / MAP_W))))) continue;
       (at[d] ??= []).push(i);
     }
     const instanced = (geo: THREE.BufferGeometry, tiles: number[] | undefined, mat: THREE.Material, place: (i: number, k: number, m: THREE.Matrix4) => void, shadow = true) => {
@@ -182,14 +286,28 @@ export class HuntView {
       q.setFromAxisAngle(up, alongX ? 0 : Math.PI / 2);
       m.compose(v.set((t % MAP_W) + 0.5, 0.005, Math.floor(t / MAP_W) + 0.5), q, sc.set(1, 1, 1));
     }, false);
+    // (And on off the picture's edge, along the line's run.)
+    const railsOut = run.rails.map(([x, z]) => z * MAP_W + x);
+    if (railsOut.length) instanced(rails.clone(), railsOut, low, (_t, k, m) => {
+      const [x, z, alongX] = run.rails[k];
+      q.setFromAxisAngle(up, alongX ? 0 : Math.PI / 2);
+      m.compose(v.set(x + 0.5, 0.005, z + 0.5), q, sc.set(1, 1, 1));
+    }, false);
     // Gravel: a scatter of grey stones over the tile.
     const stones: Part[] = [];
     for (let k = 0; k < 7; k++) stones.push(paint(new THREE.DodecahedronGeometry(0.05 + hash(k, 11) * 0.04, 0).translate(hash(k, 12) - 0.5, 0.02, hash(k, 13) - 0.5), 0x8c8a84));
-    instanced(merge(stones, false), at[DECO.GRAVEL], low, (t, _k, m) => put(m, t, 0, 1, hash(t, 5) * Math.PI * 2), false);
+    const pebbles = merge(stones, false);
+    instanced(pebbles, at[DECO.GRAVEL], low, (t, _k, m) => put(m, t, 0, 1, hash(t, 5) * Math.PI * 2), false);
+    if (run.gravel.length) instanced(pebbles.clone(), run.gravel.map(([x, z]) => z * MAP_W + x), low, (_t, k, m) => {
+      const [x, z] = run.gravel[k];
+      q.setFromAxisAngle(up, hash(key(x, z), 5) * Math.PI * 2);
+      m.compose(v.set(x + 0.5, 0, z + 0.5), q, sc.set(1, 1, 1));
+    }, false);
   }
 
-  /** Rivers and fords (an island's sea is the Island view's): water where the floor isn't drawn, shallows a little paler; a river running off the world's edge carries on out of sight. */
-  private water(o: OutsideWorld, theme: string) {
+  /** Rivers and fords (an island's sea is the Island view's): water where the floor isn't drawn, shallows a little paler; a river running off the world's edge carries on out of sight. The tiles it carries on over, past the edge (keyed). */
+  private water(o: OutsideWorld, theme: string): Set<number> {
+    const wet = new Set<number>();
     const deep: Array<[number, number]> = [];
     const ford: Array<[number, number]> = [];
     for (let i = 0; i < MAP_W * MAP_H; i++) {
@@ -201,7 +319,10 @@ export class HuntView {
         deep.push([x, z]);
         // (At the world's edge: on out, never ending square.)
         const [dx, dz] = x === 0 ? [-1, 0] : x === MAP_W - 1 ? [1, 0] : z === 0 ? [0, -1] : z === MAP_H - 1 ? [0, 1] : [0, 0];
-        if (dx || dz) for (let k = 1; k <= 40; k++) deep.push([x + dx * k, z + dz * k]);
+        if (dx || dz) for (let k = 1; k <= RUN_OFF; k++) {
+          deep.push([x + dx * k, z + dz * k]);
+          wet.add(key(x + dx * k, z + dz * k));
+        }
       }
     }
     const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
@@ -218,6 +339,7 @@ export class HuntView {
     lay(deep, theme === 'alpine' ? 0x35607e : 0x3e7090, -0.008, 1);
     // A ford: the stream bed showing through.
     lay(ford, theme === 'alpine' ? 0x7fa8bf : 0x7aa4b4, 0.004, 0.85);
+    return wet;
   }
 
   /** A washing line: two posts, the line between them, clothes pegged on it (gone once taken). */
@@ -345,6 +467,18 @@ export class HuntView {
     this.glow.position.set(f.me.x, 0.05, f.me.z);
     this.glowMat!.opacity = 0.16 * night;
     this.glow.visible = night > 0;
+    // The same round each searcher (their navy against the dark woods), the same material.
+    if (!this.glows) {
+      this.glows = new THREE.InstancedMesh(this.glow.geometry, this.glowMat!, GLOWS);
+      this.glows.count = 0;
+      this.glows.renderOrder = 5;
+      this.glows.frustumCulled = false;
+      this.group.add(this.glows);
+    }
+    const others = night > 0 ? (f.searchers ?? []) : [];
+    this.glows.count = Math.min(GLOWS, others.length);
+    for (let k = 0; k < this.glows.count; k++) this.glows.setMatrixAt(k, this.m.makeTranslation(others[k].x, 0.05, others[k].z));
+    this.glows.instanceMatrix.needsUpdate = true;
     // The helicopter: in from the edge as it comes up, the rotor turning, its light on the ground (brighter after dark, white on the player when it holds them).
     const h = f.heli;
     this.heliShown += ((h.on ? 1 : 0) - this.heliShown) * Math.min(1, dt * 1.5);
