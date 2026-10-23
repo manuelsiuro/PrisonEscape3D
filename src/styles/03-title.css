@@ -277,6 +277,16 @@
   padding: 4px 11px 4px 9px;
   border-radius: 999px;
   font: 700 12.5px var(--font-ui);
-  color: white;
-  background: linear-gradient(180deg, var(--orange), var(--orange-2));
+  /* Quiet beside Play: glass, the orange only in the icon. */
+  color: var(--dlg-text, #eef3fa);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.share-toggle .ic {
+  color: #ff9a4d;
+}
+
+.share-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
