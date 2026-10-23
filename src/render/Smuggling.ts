@@ -15,8 +15,8 @@ export interface SmuggleFrame {
   drops: Array<{ x: number; z: number }>;
   /** Visiting hours (P21): the arches at the visiting room's ways out (tiles, and whether each faces along x). */
   arches: Array<{ tile: number; alongX: boolean }>;
-  /** The visitors, sat at the tables: where, the way they face (radians, 0 = +z), a look number, on a chair (a little higher), how far they've come in (0–1). */
-  visitors: Array<{ x: number; z: number; facing: number; look: number; chair: boolean; arrive: number }>;
+  /** The visitors, sat at the tables: where, the way they face (radians, 0 = +z), a look number, on a chair (a little higher), how far they've come in (0–1); (P39: the parole board's members among them, in their `suit`s.) */
+  visitors: Array<{ x: number; z: number; facing: number; look: number; chair: boolean; arrive: number; suit?: number }>;
 }
 
 /** Seconds the drone takes to fly in to its drop, and out again. */
@@ -28,7 +28,8 @@ const FALL = 0.6;
 const CRUISE = 7;
 const HOVER = 3.4;
 const MAX_DROPS = 4;
-const MAX_VISITORS = 6;
+// (P39: the parole board's three besides.)
+const MAX_VISITORS = 9;
 const MAX_ARCHES = 12;
 
 const NO_DROPS: SmuggleFrame['drops'] = [];
@@ -255,7 +256,7 @@ export class SmuggleView {
       this.clothes.setMatrixAt(k, this.m);
       this.skin.setMatrixAt(k, this.m);
       this.hair.setMatrixAt(k, this.m);
-      this.clothes.setColorAt(k, this.c.set(CLOTHES[pick(p.look, 1, CLOTHES.length)]));
+      this.clothes.setColorAt(k, this.c.set(p.suit ?? CLOTHES[pick(p.look, 1, CLOTHES.length)]));
       this.skin.setColorAt(k, this.c.set(SKINS[pick(p.look, 2, SKINS.length)]));
       this.hair.setColorAt(k, this.c.set(HAIRS[pick(p.look, 3, HAIRS.length)]));
     }

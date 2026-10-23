@@ -75,8 +75,12 @@ export function wakeUp(sim: SimContext) {
   const places = placesOf(sim.world);
   const it = s.items;
   let taken = 0;
+  // (P39: cutters or a shovel among them: caught plotting, for the parole board.)
+  let plot = false;
   for (let k = 0; k <= SLOT.WEAPON; k++) {
     if (it.inv[k] && itemDef(itemOf(it.inv[k])).contraband) {
+      const kind = itemDef(itemOf(it.inv[k])).tool?.kind;
+      if (kind === 'dig' || kind === 'cut') plot = true;
       it.inv[k] = 0;
       taken++;
     }
@@ -100,11 +104,11 @@ export function wakeUp(sim: SimContext) {
     s.solitary = retained(s) ? SOLITARY_STEPS / 2 : SOLITARY_STEPS;
     s.peeled = 0;
     place(sim, places.solitary);
-    sim.events.push({ type: 'solitary', on: true, taken });
+    sim.events.push(plot ? { type: 'solitary', on: true, taken, plot } : { type: 'solitary', on: true, taken });
   } else {
     // The infirmary (at night, straight back to the cell).
     place(sim, lightsOut || places.infirmary < 0 ? places.bedside[1] : places.infirmary);
-    sim.events.push({ type: 'infirmary', taken });
+    sim.events.push(plot ? { type: 'infirmary', taken, plot } : { type: 'infirmary', taken });
   }
   s.wake = WAKE.NONE;
 }
