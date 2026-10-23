@@ -23,6 +23,7 @@ import { wireCrewPanel } from './play/crew';
 import { wirePhone } from './play/smuggle';
 import { wireGames } from './play/games';
 import { wirePastimes } from './play/pastimes';
+import { wireOddJobs } from './play/oddjobs';
 import { runHunt } from './play/hunt';
 import { pause, startGame } from './play/session';
 import { itemNumber } from './content/items';
@@ -60,6 +61,7 @@ wireCrewPanel();
 wirePhone();
 wireGames();
 wirePastimes();
+wireOddJobs();
 listenKeys();
 
 // The title shows the first prison drifting by.

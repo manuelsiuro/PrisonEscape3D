@@ -16,9 +16,10 @@ import { bodyAt, type Body } from './movement';
  * What someone is doing where they stand (the view poses it): inmates, guards (searching), the
  * player (knocked out). Append only. (P22's WRESTLE, PICK and DICE are the view's alone: an
  * arm-wrestle, a lock being picked, dice thrown; the sim never sets them.) P23: BRAWL, two inmates
- * scrapping (the sim's); LOOKOUT, a lookout on watch (the view's).
+ * scrapping (the sim's); LOOKOUT, a lookout on watch (the view's). P40: DIG, an inmate digging under his
+ * bed while the player keeps a lookout for him (the sim's: an odd job).
  */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32, DIG: 35 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;

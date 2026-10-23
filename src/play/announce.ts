@@ -44,6 +44,7 @@ import { dayTime, vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
 import { FEAST_ENERGY } from '../content/days';
 import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
+import { announceOddJob } from './oddjobs';
 
 /** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
@@ -579,6 +580,8 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'gift':
       sound.pickup();
+      // (A delivery done by it: the job's own banner says it, once.)
+      if (sim.events.some((o) => o.type === 'oddjob' && o.what === 'done')) break;
       itemsUI.toast(e.item ? t('toast.gaveItem', { item: lower(itemName(e.item)), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
       break;
     case 'favor':
@@ -594,6 +597,8 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'recruit':
       if (e.on) {
         sound.levelUp();
+        // (One who owed the player from an odd job: its own toast says it, once.)
+        if (sim.events.some((o) => o.type === 'oddjob' && o.what === 'owedJoin' && o.who === e.who)) break;
         banner.toast(t('toast.recruited', { name: inmateName(sim, e.who) }), 'good', 4500);
       } else banner.toast(t('toast.leftYou', { name: inmateName(sim, e.who) }), 'info');
       break;
@@ -783,6 +788,10 @@ export function announce(e: SimEvent, sim: Sim) {
     // The pay phone (P34): the queue, calls, Lou and his jobs, a secret overheard.
     case 'kiosk':
       announceKiosk(e);
+      break;
+    // The odd jobs board (P40): a job taken, done, handed in, failed; a story's cards.
+    case 'oddjob':
+      announceOddJob(sim, e);
       break;
     case 'phone':
       announcePhone(sim, e);

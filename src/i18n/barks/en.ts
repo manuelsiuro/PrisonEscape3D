@@ -312,6 +312,40 @@ export const enBarks = {
     "Hello? Hello? Mum, you're breaking up…",
     { t: "Back in my day a call was a dime. A DIME.", v: ['oldTimer'] },
   ],
+  // P40: digging under his bed while the player keeps watch (an odd job).
+  'in.dig': [
+    'Shh. Eyes on the corridor, not on me.',
+    'Another inch. Just one more inch.',
+    'Spoon, spoon, spoon. Who needs a shovel?',
+    "If anyone asks, I'm looking for my sock.",
+    "Whistle if you see a uniform. Loud.",
+    "Dirt in my bed again. Worth it.",
+    'Keep your eyes peeled. I mean it.',
+  ],
+  're.jobPaid.in': [
+    'Job done. Here, as promised.',
+    'Nice and clean. I like that.',
+    "You're good at this. Come back tomorrow.",
+    'Pleasure doing business, {you}.',
+    'Not a word to anyone, right?',
+    "That's what I call reliable.",
+  ],
+  're.jobFailed.in': [
+    'You let me down, {you}.',
+    'I trusted you with that.',
+    "Next time I'll ask someone else.",
+    "Great. Now what am I supposed to do?",
+    "Don't come near my board again.",
+    'Some help you turned out to be.',
+  ],
+  're.jobTaken.in': [
+    'Keep it quiet and keep it quick.',
+    "You didn't get this from me.",
+    "Do it right and there's more where that came from.",
+    'Smart choice. Off you go.',
+    "No questions. That's the deal.",
+    "Don't make me regret this.",
+  ],
   'in.queue': [
     "Some of us have families too, you know.",
     "How long can one man talk about the weather?",
@@ -2201,6 +2235,11 @@ export const enBarks = {
     "Dig under a cabbage and no guard looks twice.",
     "A planted bed hides a hole. Guards don't check the veg.",
     "Want a tunnel nobody sees? Start it in the garden.",
+  ],
+  "go.boardJob": [
+    "{inmate} pinned a job on the board today. Go and look.",
+    "Need cash? {inmate} put a card up on the board.",
+    "{inmate}'s got work going. It's on the cork board.",
   ],
   "go.phoneCall": [
     "{inmate} rings his mum around {t1}. Talks loud, too.",

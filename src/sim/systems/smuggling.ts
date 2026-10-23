@@ -18,6 +18,7 @@
  * says is what happens, and the gossip can tell it.
  */
 import { cakeAtVisit } from './phone';
+import { birthdayAtVisit } from './oddjobs';
 import { sightFor } from './football';
 import { itemDef, itemNumber } from '../../content/items';
 import type { Rect, SmugglingDef } from '../../content/prisons/types';
@@ -439,6 +440,8 @@ function visit(sim: SimContext) {
   if (kept) sim.events.push({ type: 'smuggle', what: 'noRoom', item: kept });
   // P34: Lou's cake, if one's coming.
   cakeAtVisit(sim);
+  // (P40: an odd job's birthday cake.)
+  birthdayAtVisit(sim);
 }
 
 /** The player's desk (a container index; -1 none). */

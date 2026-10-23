@@ -378,6 +378,7 @@ const frame: Frame = {
   release: { called: false, freed: false },
   inked: [],
   getaway: { shift: false, waved: false, glide: null },
+  oddjobs: { pins: [false, false, false], chain: false, mine: false },
 };
 const tapAt = { x: 0, z: 0 };
 const scent: Array<[number, number]> = [];

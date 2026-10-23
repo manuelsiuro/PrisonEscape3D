@@ -8,8 +8,8 @@
 export type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 export type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
-/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented; P35's 'kiosk': ordered off the internet kiosk's shop; P36's 'release': handed back at the gate on the morning out). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk' | 'release';
+/** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented; P35's 'kiosk': ordered off the internet kiosk's shop; P36's 'release': handed back at the gate on the morning out; P40's 'oddjob': handed over for an odd job, or planted for one). */
+export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk' | 'release' | 'oddjob';
 
 export interface ItemDef {
   id: string;
@@ -258,6 +258,15 @@ export const ITEMS: readonly ItemDef[] = [
   { ...gear('release_form', 55, 'formBlank', 0xf4efe0, 0x9aa2ad), from: ['guard'] },
   gear('forged_release', 40, 'form', 0xf4efe0, 0x1e3a5f),
   outfit('own_clothes', 0, false, 0xe2ddd0, 0x4a6a96, ['release']),
+  // P40 (the odd jobs board): a parcel to drop or deliver, a stash to frame someone with, a note for the rat to carry; what a Lift it job lifts (a guard's
+  // whistle, the head cook's mug, a chain's keepsake: an old pocket watch); the birthday cake smuggled in at a visit.
+  m('parcel', false, 5, 'pack', 0xb08a5a, ['oddjob'], 0xd8c39a),
+  m('stash', true, 20, 'pouch', 0x5a4632, ['oddjob'], 0xd8c39a),
+  m('note', false, 2, 'letter', 0xf6efd2, ['oddjob'], 0x2b3a55),
+  m('whistle', false, 6, 'lighter', 0xc0c8d2, ['oddjob'], 0x2b3038),
+  m('mug', false, 4, 'cup', 0xf4f1ea, ['oddjob'], 0x2f6fd1),
+  m('birthday_cake', false, 15, 'cake', 0xfbe3ec, ['oddjob'], 0x3fb8a8),
+  m('pocket_watch', false, 30, 'clock', 0xd8b04a, ['oddjob'], 0x2b3038),
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */
@@ -269,6 +278,7 @@ for (const d of ITEMS) if (HARD.includes(d.id) || METAL.includes(d.id)) d.thud =
 const SMALL = [
   'plastic_comb', 'toothbrush', 'lighter', 'toilet_paper', 'glue', 'duct_tape', 'metal_file', 'sock', 'soap', 'battery', 'wire', 'razor_blade', 'ink', 'foil', 'talcum', 'toothpaste', 'putty', 'molten_plastic',
   'chocolate', 'plastic_spoon', 'plastic_fork', 'plastic_knife', 'nail_file', 'comb_shiv', 'toothbrush_shiv', 'comb_blade', 'pouch', 'firecracker', 'jerky', 'pepper', 'sleeping_pills', 'sleepy_jerky', 'burner_phone', 'lockpick', 'blank_id', 'fake_id', 'release_form', 'forged_release',
+  'stash', 'note', 'whistle', 'pocket_watch',
   ...KEY_ITEM_COLORS.flatMap(([c]) => [`key_${c}`, `mold_${c}`, `plastic_key_${c}`]),
 ];
 for (const d of ITEMS) if (SMALL.includes(d.id)) d.small = true;

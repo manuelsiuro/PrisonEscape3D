@@ -1,4 +1,4 @@
-data: 53 small items; every prison has a kitchen or canteen for traps
+data: 57 small items; every prison has a kitchen or canteen for traps
 odds: canteen 59%, tunnel 88% over 400 nights
 traps: 4 of 5 caught at day 2 04:01
 taming: two meals (potato before chocolate before jerky), one pet

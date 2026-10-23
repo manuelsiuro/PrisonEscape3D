@@ -61,6 +61,7 @@ import {
   payphoneCard,
   kioskCard,
   paroleCard,
+  oddjobsCard,
   vignette,
   view,
   workChips,
@@ -104,6 +105,7 @@ import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
 import { kioskNow } from './kiosk';
 import { paroleChip, paroleNow } from './parole';
+import { jobHud, oddjobsNow } from './oddjobs';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -317,6 +319,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   kioskCard.update(kioskV);
   document.body.classList.toggle('kiosking', !!kioskV);
   document.body.dataset.kiosk = kioskV?.phase === 'on' && kioskV.course !== 'offer' ? 'course' : kioskV?.phase === 'on' ? 'on' : '';
+  // The odd jobs board (P40): its card at the board, the job's own card from its chip (not over another's).
+  const jobsV = busy || otherGame || stageV || quizV || phoneV || kioskV ? null : oddjobsNow(sim);
+  oddjobsCard.update(jobsV);
+  document.body.classList.toggle('jobbing', !!jobsV);
   document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
   // The parole board (P39): its card at the release desk, before the board, the verdict a moment (not over another's).
   const paroleV = busy || otherGame || stageV || quizV || phoneV || kioskV ? null : paroleNow(sim);
@@ -324,7 +330,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   document.body.classList.toggle('paroling', !!paroleV);
   // (Before the board the answers are the controls; the verdict's card a moment, the action button off it too.)
   document.body.dataset.parole = paroleV && (paroleV.phase === 'ask' || paroleV.phase === 'weigh' || paroleV.phase === 'sat') ? 'on' : paroleV?.phase === 'verdict' ? 'verdict' : '';
-  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV ? null : raceNow(sim, a);
+  // (P40: the odd jobs' card docked left takes the place of the race's while it's open.)
+  const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV || jobsV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);
   document.body.classList.toggle('gaming', !!bout || !!pick || !!cheat || !!boardV || !!inkV);
   document.body.classList.toggle('courting', !!court);
@@ -374,6 +381,7 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   hudState.rat = ratHud(sim);
   hudState.order = orderHud(sim);
   hudState.crew = crewPill(sim);
+  hudState.oddjob = jobHud(sim);
   vignette.classList.toggle('on', st.lockdown);
   sound.siren(st.lockdown && !g.paused);
   const zone = sim.playerZone;

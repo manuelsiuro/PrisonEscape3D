@@ -50,6 +50,7 @@ import { GroundsView } from './Grounds';
 import { NightsView, type NightsFrame } from './Nights';
 import { PhoneView, type PhoneFrame } from './Phone';
 import { KioskView, type KioskFrame } from './Kiosk';
+import { OddJobsView, type OddJobsFrame } from './OddJobs';
 import { ReleaseView, type ReleaseFrame } from './Release';
 import { handlersOf } from '../sim/systems/k9';
 
@@ -149,6 +150,8 @@ export interface Frame {
   phone: PhoneFrame;
   /** The internet kiosk (P35): logged in or not, the family's drawings over the player's bed. */
   kiosk: KioskFrame;
+  /** The odd jobs board (P40): the cards still pinned up today, the player's job tag. */
+  oddjobs: OddJobsFrame;
   /** The release desk (P36): the name called, the way out open. */
   release: ReleaseFrame;
   /** P29: the designs inked on the player's arms. */
@@ -375,6 +378,8 @@ export class View {
   private readonly phoneView = new PhoneView();
   /** P35: the internet kiosk on the library wall, the family's drawings over the player's bed. */
   private readonly kioskView = new KioskView();
+  /** P40: the odd jobs board on the canteen wall. */
+  private readonly oddJobsView = new OddJobsView();
   /** P36: the release desk's sign, tray and lamp. */
   private readonly releaseView = new ReleaseView();
   /** How far the tipsy sway is in (0–1, eased). */
@@ -503,7 +508,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.releaseView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -649,6 +654,7 @@ export class View {
     this.getaway.setWorld(world);
     this.phoneView.setWorld(world, later);
     this.kioskView.setWorld(world, later);
+    this.oddJobsView.setWorld(world, later);
     this.releaseView.setWorld(world, later);
     this.dogs.setDogs(
       handlersOf(world).map((h) => {
@@ -1379,6 +1385,8 @@ export class View {
     this.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.night, f.layer !== LAYER.UNDER);
     // The internet kiosk (P35): its screen, its glow after dark; the drawings over the bed (not from the tunnels).
     this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.night, this.security?.group.visible ? this.security.powerLevel : 1, f.layer !== LAYER.UNDER);
+    // The odd jobs board (P40): the cards still up today, the job tag (not from the tunnels).
+    this.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
     this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
@@ -1513,6 +1521,7 @@ export class View {
     this.nightsView.update(null, 0, false, false);
     this.phoneView.update(null, dt, 0, 0, false, 0, false);
     this.kioskView.update(null, 0, false, 0, 1, false);
+    this.oddJobsView.update(null, false);
     this.releaseView.update(null, 0, false);
     // (The trees whole again; no match's framing.)
     this.decor?.shelter(this.people, 0, dt, false);
@@ -1599,8 +1608,8 @@ export class View {
     this.placeSun(600);
     const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.guide.group].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
-    // The pay phone and the kiosk hang on their walls in game, but the title screen behind the shot hides their groups.
-    const shown = [this.phoneView.group, this.kioskView.group, this.releaseView.group].filter((o) => !o.visible);
+    // The pay phone, the kiosk and the odd jobs board hang on their walls in game, but the title screen behind the shot hides their groups.
+    const shown = [this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.releaseView.group].filter((o) => !o.visible);
     for (const o of shown) o.visible = true;
     this.renderer.setPixelRatio(ss);
     this.renderer.setSize(w, h, false);
