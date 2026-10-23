@@ -3634,7 +3634,7 @@ export const fr: Partial<Strings> = {
   "help.day.hook": "Les événements du jour et la météo",
   "help.work.hook": "Emplois, quotas et paie",
   "help.train.hook": "Force, Vitesse et Intellect",
-  "help.grounds.hook": "Le terrain de sport et le potager",
+  "help.grounds.hook": "Tours de piste, musculation et légumes frais",
   "help.games.hook": "Dés et bras de fer",
   "help.cheat.hook": "Un jeu de cartes et de bluff",
   "help.hoops.hook": "Tirer depuis les cinq marques",

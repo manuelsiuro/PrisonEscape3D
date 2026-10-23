@@ -3636,7 +3636,7 @@ export const en = {
   "help.day.hook": "The day’s events and the weather",
   "help.work.hook": "Jobs, quotas and pay",
   "help.train.hook": "Strength, Speed and Intellect",
-  "help.grounds.hook": "The sports field and the garden",
+  "help.grounds.hook": "Laps, weights and fresh vegetables",
   "help.games.hook": "Dice and arm-wrestling",
   "help.cheat.hook": "A card game of bluff",
   "help.hoops.hook": "Shoot from the five spots",
