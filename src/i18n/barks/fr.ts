@@ -2268,5 +2268,34 @@ export const frBarks: Barks = {
     "Les {team} ont gagné ! Demande. Dans la limite du raisonnable.",
     "Chut. J’attends le score des {team}. Quoi ?",
     "Les {team}, en tête du championnat. Bon, quoi ?",
+  ],  "go.paroleBoard": [
+    "La commission siège {n} jours après ta demande. À {t1} pile.",
+    "Demande déposée ? {n} jours de sainteté, puis {t1}.",
+    "Commission à {t1}. Ils ont lu ton dossier avant que tu t’assoies.",
   ],
+  "re.parole.in": [
+    "La conditionnelle ? Toi ? Bonne chance.",
+    "On se range, alors ?",
+    "La commission va te dévorer.",
+    "La conditionnelle. Rien que ça.",
+    "Détenu modèle, maintenant ?",
+    "Oublie pas tes vieux potes.",
+  ],
+  "re.paroleVoid.gu": [
+    "La conditionnelle ? Pas après ça.",
+    "Ta demande, direction la poubelle.",
+    "Adieu, la bonne conduite.",
+    "La commission n’entendra pas parler de toi.",
+    "La conditionnelle, hein ? Oublie.",
+    "Je vais faire un rapport pour la commission.",
+  ],
+  "re.paroleGranted.in": [
+    "Accordée ! Sacré veinard.",
+    "Nous oublie pas, dehors.",
+    "Accordée ? T’as payé qui ?",
+    "Par la grande porte. Frimeur.",
+    "Envoie-nous une carte postale.",
+    "Ça alors. La conditionnelle.",
+  ],
+
 };

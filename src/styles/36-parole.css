@@ -1,0 +1,292 @@
+/* ------------------------------------------------------------ the parole board (P39) */
+
+/* The card: at the release desk (how it stands, the record, Apply), before the board (the members, the question, the file, three answers), the verdict. */
+.parole-card .train-ic {
+  background: #8a6bd1;
+}
+.parole-card .train-head b {
+  min-width: 0;
+}
+.parole-status {
+  margin: 8px 0 0;
+  font: 700 13px/1.3 var(--font-ui);
+  color: rgba(255, 255, 255, 0.85);
+}
+.parole-status.ok {
+  color: #9fe6b9;
+}
+.parole-status.bad {
+  color: #ffb3b5;
+}
+.parole-status.job {
+  color: #d9c8ff;
+}
+
+/* The record's lines, for and against, with their points. */
+.parole-lines,
+.parole-weighed {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.parole-lines li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font: 600 12px/1.25 var(--font-ui);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.05);
+}
+.parole-lines li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.parole-lines li b {
+  flex: none;
+  font: 800 12.5px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+.parole-lines li.good b {
+  color: #9fe6b9;
+}
+.parole-lines li.bad {
+  color: #ffd0d1;
+  background: rgba(229, 72, 77, 0.16);
+}
+.parole-lines li.bad b {
+  color: #ff9a9d;
+}
+.parole-lines li.quiet b {
+  color: rgba(255, 255, 255, 0.45);
+}
+.parole-weighed li {
+  position: relative;
+  padding: 3px 8px 3px 18px;
+  font: 600 12.5px/1.3 var(--font-ui);
+  color: rgba(255, 255, 255, 0.9);
+}
+.parole-weighed li::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 0.75em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d9c8ff;
+}
+
+/* The board: three faces, the one asking lit, and their name. */
+.parole-board {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.parole-board li i {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: white;
+  background: color-mix(in srgb, var(--member) 45%, transparent);
+  opacity: 0.55;
+}
+.parole-board li.on i {
+  background: var(--member);
+  opacity: 1;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+}
+.parole-board li.who {
+  margin-left: 4px;
+  font: 700 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.8);
+}
+.parole-q {
+  margin: 8px 0 0;
+  font: 700 15px/1.3 var(--font-ui);
+}
+.parole-file {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin: 4px 0 0;
+  font: 600 11.5px/1.3 var(--font-ui);
+  color: #d9c8ff;
+}
+.parole-file .ic {
+  flex: none;
+  margin-top: 1px;
+}
+.parole-answers {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+.parole-answer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 6px 9px;
+  border-radius: 12px;
+  text-align: left;
+  font: 700 12.5px/1.25 var(--font-ui);
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+}
+.parole-answer kbd {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font: 800 11px var(--font-ui);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.85);
+}
+.touch .parole-answer kbd {
+  display: none;
+}
+.parole-answer span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.parole-answer:disabled {
+  cursor: default;
+}
+.parole-answer:disabled:not(.mine) {
+  opacity: 0.5;
+}
+.parole-answer.mine {
+  box-shadow: inset 0 0 0 2px #d9c8ff;
+}
+.parole-answer.good {
+  background: rgba(63, 199, 154, 0.5);
+}
+.parole-answer.bad {
+  background: rgba(229, 72, 77, 0.45);
+}
+.parole-react {
+  margin: 6px 0 0;
+  font: italic 700 13px/1.3 var(--font-ui);
+}
+.parole-react.good {
+  color: #9fe6b9;
+}
+.parole-react.bad {
+  color: #ffb3b5;
+}
+.parole-verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font: 800 16px var(--font-ui);
+}
+.parole-verdict.good {
+  background: rgba(63, 199, 154, 0.35);
+}
+.parole-verdict.bad {
+  background: rgba(229, 72, 77, 0.3);
+}
+.parole-bar.hidden,
+.parole-apply.hidden {
+  display: none;
+}
+.parole-bar {
+  margin-top: 8px;
+}
+.parole-bar > i {
+  background: linear-gradient(90deg, #8a6bd1, #d9c8ff);
+}
+.parole-apply {
+  margin-top: 8px;
+}
+.parole-card .train-note {
+  margin-top: 8px;
+}
+
+/* Phones upright: above the hotbar. */
+@media (max-width: 899px) and (min-height: 521px) {
+  .parole-card {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+}
+
+/* Landscape phones: docked to the left, as tall as it fits; the hotbar steps aside before the board. */
+@media (max-height: 520px) {
+  .parole-card {
+    animation: card-fade 0.25s ease-out;
+    left: max(14px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    width: min(340px, calc(50vw - 40px));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 8px 12px;
+  }
+  .parole-q {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+  .parole-answer {
+    min-height: 36px;
+  }
+  .parole-card[data-phase='ask'] .train-note {
+    display: none;
+  }
+  body[data-parole='on'] .hotbar,
+  body[data-parole='on'] .energy {
+    display: none;
+  }
+  /* (A lesson's card steps up to the top, clear of the board's.) */
+  body.paroling .coach.lesson-coach {
+    top: 0;
+    right: 184px;
+    left: auto;
+    max-width: min(400px, calc(100vw - 600px));
+  }
+}
+
+/* Wide screens: docked left. */
+@media (min-width: 900px) and (min-height: 521px) {
+  .parole-card {
+    left: max(24px, env(safe-area-inset-left));
+    right: auto;
+    margin: 0;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
+}
+
+body.reduced-motion .parole-card {
+  animation: none !important;
+  transition: none !important;
+}
+/* Before the board, the tool, action, dig-up and lock-on buttons step aside (the answers are the controls). */
+body[data-parole='on'] .tool-btn,
+body[data-parole='on'] .tool-prompt,
+body[data-parole='on'] .act-btn,
+body[data-parole='on'] .act-prompt,
+body[data-parole='on'] .up-btn,
+body[data-parole='on'] .lock-btn {
+  display: none;
+}

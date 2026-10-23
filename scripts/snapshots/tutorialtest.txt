@@ -42,6 +42,7 @@ bluff: 3 steps done by day 1 19:50
 glider: 2 steps done by day 1 23:21
 forgery: 3 steps done by day 1 22:01
 release: 3 steps done by day 2 10:06
+parole: 3 steps done by day 10 10:15
 payphone: 4 steps done by day 1 12:00
 cousin: 3 steps done by day 1 10:02
 kiosk: 6 steps done by day 1 12:00
@@ -53,6 +54,7 @@ lockpick, worn out: ended at step 2 (lesson.lockpick.broke)
 stowaway, missed: ended at step 1 (lesson.stowaway.missed) by day 1 14:25
 bluff, late: ended at step 1 (lesson.bluff.late) by day 1 20:10
 forgery, late: lesson.forgery.late; found: lesson.forgery.found; release, missed: lesson.release.late
+parole, walked out: lesson.parole.walked; silent: lesson.parole.denied; late: lesson.parole.late
 glider, inside: ended at step 2 (lesson.glider.inside)
 bluff, gates shut: ended at step 3 (lesson.bluff.shut) by day 1 20:50
 glider, waiting on the roof: day 2 02:20, no lockdown
@@ -71,6 +73,6 @@ crew, called off: ended at step 3 (lesson.crew.off)
 smuggle, by visitor: ended at step 1 (lesson.smuggle.wrong)
 heat, out the east fence: ended at step 1 (lesson.outEarly)
 tunnel, down a stray hole: on at step 4 (null)
-4 chapters: basics 10, getby 7, life 22, ways 6
+4 chapters: basics 10, getby 7, life 22, ways 7
 training: its guard out cold, no takeover
 every lesson goal is open floor

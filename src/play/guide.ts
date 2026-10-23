@@ -14,6 +14,7 @@ import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { lockList } from './buttons';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
+import { hearingDue, hearingOf } from '../sim/systems/parole';
 import { banner, hint, sound, view } from './context';
 import { play, sendOp, type Game } from './game';
 import { firstDay, markTip } from './tips';
@@ -102,6 +103,13 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
     const tiles = desk.map((q) => q.z * MAP_W + q.x);
     return (i) => tiles.includes(i);
   }
+  // The parole hearing called (P39): the seat before the board, till the player is in the room (sat, nothing more to show).
+  const board = hearingOf(sim);
+  if (board && hearingDue(s) && !s.lockdown) {
+    const seat = board.seat.z * MAP_W + board.seat.x;
+    return (i) => i === seat;
+  }
+  if (s.hearing) return null;
   const r = ROUTINE[s.routine];
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
