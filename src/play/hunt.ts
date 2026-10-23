@@ -165,7 +165,7 @@ export function runHunt(g: Game, carry: Carry, opts: HuntOptions & { lookout?: {
 /** A lesson played in the manhunt (P41): straight outside, as the lesson sets it (a run in the jumpsuit, nothing in the pockets). */
 export function lessonHunt(g: Game, spec: { kind: Carry['kind']; searchers: readonly number[]; headStart: number; minute: number; lou: boolean }) {
   const carry: Carry = { prison: CENTER_PERKS.id, via: 'fence', kind: spec.kind, spd: 40, outfit: INMATE_OUTFIT, kit: [], crew: 0, lou: spec.lou, headStart: spec.headStart, minute: spec.minute, salt: 41 };
-  void runHunt(g, carry, { searchers: spec.searchers, heli: false, roadblocks: false, lesson: true });
+  void runHunt(g, carry, { searchers: spec.searchers, heli: false, roadblocks: false, ramp: false, lesson: true });
 }
 
 /** The hunt comes down (its end, the title, a lesson left): its HUD, its pieces, its barks. A hunt still under way resolves as left. */
@@ -423,8 +423,8 @@ function frameOf(run: HuntRun, a: number, paused: boolean): Frame {
     o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
     o.moving = m.body.moving && !paused && !!q && (q.x !== m.body.x || q.z !== m.body.z);
     o.doing = DOING.NOTHING;
-    o.alert = off ? ALERT.NONE : m.mode === SEEK.CHASE ? ALERT.HOSTILE : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.notice > 0 ? ALERT.SUSPICIOUS : ALERT.CALM;
-    o.pace = m.mode === SEEK.CHASE ? HUNT.chase / WALK_SPEED : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW ? HUNT.hurry / WALK_SPEED : HUNT.walk / WALK_SPEED;
+    o.alert = off ? ALERT.NONE : m.mode === SEEK.CHASE ? ALERT.HOSTILE : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.mode === SEEK.SWEEP || m.notice > 0 ? ALERT.SUSPICIOUS : ALERT.CALM;
+    o.pace = ((m.mode === SEEK.CHASE ? HUNT.chase : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.mode === SEEK.SWEEP ? HUNT.hurry : HUNT.walk) * HUNT.pace) / 100 / WALK_SPEED;
     o.held = m.mode === SEEK.CHASE ? BATON : 0;
     o.hasKey = false;
     o.range = h.sight;
@@ -508,6 +508,10 @@ function huntEvent(e: HuntEvent, run: HuntRun) {
     case 'heli':
       sound.rotor();
       banner.toast(t('manhunt.heli'), 'bad', 3500);
+      break;
+    case 'widen':
+      // (Once: the search widening, dogs through the hedges.)
+      if (e.heat === 1) banner.toast(t('manhunt.widen'), 'bad', 3500);
       break;
     case 'spotted':
       sound.whistle();

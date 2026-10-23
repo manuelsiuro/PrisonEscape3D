@@ -42,6 +42,8 @@ export const SEEK = {
   CHASE: 3,
   /** Following its dog on the trail. */
   FOLLOW: 4,
+  /** The search widened (HUNT.rampEvery): off the beat, working through the cover nearest where the player was last known to be. */
+  SWEEP: 5,
 } as const;
 
 /** What a hunt dog is up to. Never renumber. */
@@ -98,6 +100,8 @@ export interface Heli {
   hold: number;
   /** Its light on the player now. */
   lit: boolean;
+  /** The search widened: the place it's searching (a tile; -1 none: its sweep). */
+  aim?: number;
 }
 
 /** The hunt's counts (the run's ledger for the manhunt; the lifetime stats add them up). Append only. */
@@ -150,4 +154,11 @@ export interface HuntState {
   feats: number[];
   /** The fewest walking tiles to safety yet (how close they got). */
   best: number;
+  /** Where the player was last known to be (a tile: seen, lit, heard, found by a dog; at first where they came out), and the step they were. */
+  known: number;
+  knownAt: number;
+  /** How far the search has widened (0 not yet; HUNT.rampMax at most). */
+  heat: number;
+  /** The places swept since the search widened (tiles, HuntWorld's sweep points), cleared once all are. */
+  swept: number[];
 }

@@ -46,7 +46,7 @@ const KIND: Record<string, { ground: string; solid?: true; opaque?: true; deco?:
   g: { ground: 'd', noisy: true, deco: DECO.GRAVEL },
   r: { ground: 'd', noisy: true, deco: DECO.RAIL },
   T: { ground: '.', solid: true, opaque: true, deco: DECO.TREE },
-  k: { ground: '.', solid: true, deco: DECO.CACTUS },
+  k: { ground: '.', solid: true, opaque: true, deco: DECO.CACTUS },
   o: { ground: '.', solid: true, opaque: true, deco: DECO.ROCK },
   c: { ground: 'a', solid: true, opaque: true, deco: DECO.CRATES },
   h: { ground: '.', cover: true, deco: DECO.HEDGE },
@@ -150,7 +150,7 @@ export function outsideWorld(def: OutsideDef, prison: PrisonDef): OutsideWorld {
     escapes: [],
   };
   const world = new World(synthetic);
-  // Trees, cacti, rocks and crates stand in the way (as the delivery's vehicle would); trees, rocks, crates and cover stop sight.
+  // Trees, cacti, rocks and crates stand in the way (as the delivery's vehicle would) and stop sight; so does cover (the veil: sight only).
   world.parked.set(solid);
   world.veil.set(veil);
   world.refreshBlock();

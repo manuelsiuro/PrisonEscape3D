@@ -585,6 +585,13 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
     const color = GUARD_COLORS[k % GUARD_COLORS.length];
     route(g, sr.beat.map((q) => ({ ...at(q), face: q.face })), color, sr.at < 0, '');
     const s0 = at(sr.beat[0]);
+    // (Where it comes on, when that isn't its first stop: a dotted line in to the beat.)
+    if (sr.from) {
+      const f = at(sr.from);
+      g.add(`<line x1="${cx(f.x)}" y1="${cz(f.z)}" x2="${cx(s0.x)}" y2="${cz(s0.z)}" stroke="${color}" stroke-width="3" stroke-dasharray="2 5" marker-end="url(#tip)"/>`);
+      g.add(`<circle cx="${cx(f.x)}" cy="${cz(f.z)}" r="9" fill="#fff" stroke="${color}" stroke-width="3"/>`);
+      g.text(cx(f.x), cz(f.z) + 4, 'in', `font-size="9" font-weight="700" fill="${color}" text-anchor="middle"`);
+    }
     g.pill(cx(s0.x), cz(s0.z) - 20, `${sr.name}${sr.dog ? ` + ${sr.dog.name}` : ''} · ${sr.at < 0 ? 'patrol' : `+${sr.at}s`}`, 11, color);
   });
   // The helicopter's sweep.
@@ -634,15 +641,17 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
   const y0 = TITLE_H + MAP_H * S + 2 * M + 10;
   g.rect(0, y0 - 10, W, LEGEND_H + 10, 'fill="#f5f3ee"');
   const items: Array<[string, string]> = [
-    ['#2f6b35', 'tree (T): solid, hides'], ['#5fae4a', 'hedge (h): cover'], ['#2b2f36', 'culvert (u): cover'], ['#7d7a74', 'rock (o)'], ['#6b8f3a', 'cactus (k)'], ['#9c5a2e', 'crates (c)'],
+    ['#2f6b35', 'tree (T): solid, hides'], ['#5fae4a', 'hedge (h): cover'], ['#2b2f36', 'culvert (u): cover'], ['#7d7a74', 'rock (o): solid, hides'], ['#6b8f3a', 'cactus (k): solid, hides'], ['#9c5a2e', 'crates (c): solid, hides'],
     ['#a39b8b', 'gravel (g): loud'], ['#6a5240', 'railway (r): loud'], ['#8cc4e8', 'ford (f): no trail'], ['#3b7dd8', 'water (~)'], ['url(#fence)', 'wire (F): cutters'], ['#3a3d45', 'prison wall (@)'],
   ];
   items.forEach(([f, l], k) => swatch(g, M + (k % 6) * 230, y0 + Math.floor(k / 6) * 30, f, l));
   [
     'Yellow stars: where each kind of way out leaves the player (wall: fence, tunnel, roof; gate: takeover, gate, bluff; glider; van: stowaway; sea: raft; air: helicopter, Irongate\'s stowaway).',
     'Green box: the safe point (a clean getaway). Red car: Lou\'s, when a call set it up. Blue W: washing lines (other clothes). Orange L: where a crew member out too keeps watch.',
-    'Coloured loops: searchers\' beats, out the seconds after the alarm shown (dashed: patrols out before any alarm), stop numbers in order. Red dashed boxes: roadblocks, their officer\'s post beside (white square), up the seconds shown.',
-    'Purple dashed loop: the helicopter\'s sweep and its searchlight, up the seconds shown. Past the map: woods (green) or the sea (blue), solid. Every number in seconds after the alarm.',
+    'Coloured loops: searchers\' beats, out the seconds after the alarm shown (dashed: patrols out before any alarm, starting at a stop of their own each run), stop numbers in order; "in" and a dotted arrow: where one comes on, when not at its first stop.',
+    'Each run shuffles the times among those out after the alarm and moves them (roadblocks, the helicopter too) up to 4 s either way; nobody comes on within 5 tiles of the player or in their sight. Red dashed boxes: roadblocks, their officer\'s post beside (white square).',
+    'Purple dashed loop: the helicopter\'s sweep and its searchlight. From the alarm those out after it (not the patrols, nor the roadblocks\' officers) sweep the cover where the player is reckoned to be; once all are out the search widens every few seconds: eyes see further, the helicopter over that cover.',
+    'Past the map: woods (green) or the sea (blue), solid. Every number in seconds after the alarm.',
   ].forEach((n, k) => g.text(M, y0 + 82 + k * 22, n, 'font-size="14" fill="#222"'));
   return g.done();
 }
@@ -771,6 +780,7 @@ function tileData(def: PrisonDef, n: number) {
     omark(od.lookout, 'the lookout (a crew member out too)');
     od.roadblocks.forEach((r, k) => omark(r.post, `roadblock ${k + 1}'s officer, up ${r.at}s after the alarm`));
     od.searchers.forEach((sr) => sr.beat.forEach((q, k) => omark(q, `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''}: stop ${k + 1} (${sr.at < 0 ? 'patrol' : `out ${sr.at}s after the alarm`})`)));
+    od.searchers.forEach((sr) => sr.from && omark(sr.from, `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''} comes on here`));
     od.heli.route.forEach((q, k) => omark(q, `helicopter sweep, stop ${k + 1}`));
     for (let i = 0; i < MAP_W * MAP_H; i++) if (o.safe[i]) om.push([i % MAP_W, Math.floor(i / MAP_W), 'safe point']);
     outside = { tiles: Array.from(o.world.ground.kind), deco: Array.from(o.deco).map((d) => DECO_NAME[d] ?? ''), inside: Array.from(o.inside), marks: om };
