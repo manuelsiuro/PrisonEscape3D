@@ -1,7 +1,7 @@
 {
   "name": "prison-escape-3d",
   "private": true,
-  "version": "2.14.1",
+  "version": "2.15.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 5310 --strictPort",
