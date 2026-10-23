@@ -24,6 +24,7 @@ import { wireCrewPanel } from './play/crew';
 import { wirePhone } from './play/smuggle';
 import { wireGames } from './play/games';
 import { wirePastimes } from './play/pastimes';
+import { wireOddJobs } from './play/oddjobs';
 
 /**
  * Wiring: storage first, then the long-lived objects (play/context.ts, made as it's imported),
@@ -57,6 +58,7 @@ wireCrewPanel();
 wirePhone();
 wireGames();
 wirePastimes();
+wireOddJobs();
 listenKeys();
 
 // The title shows the first prison drifting by.

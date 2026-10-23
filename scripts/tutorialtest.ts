@@ -43,6 +43,8 @@ import { phrasesOf } from '../src/sim/systems/phone';
 import { KIOSK, SHOP } from '../src/content/kiosk';
 import { courseQuestion } from '../src/sim/systems/kiosk';
 import { Bot, DIR, n } from './bots';
+import { dealsOf, jobOf } from '../src/sim/systems/oddjobs';
+import { BOARD, J, KIND, STAGE } from '../src/content/oddjobs';
 import { check } from './assert';
 
 const tile = (x: number, z: number) => z * MAP_W + x;
@@ -773,6 +775,24 @@ play('kiosk', (bot) => {
   }
   check(bot.sim.state.items.int > 40, 'kiosk: the course passed');
   bot.until(() => bot.st.post[3] === 0, 20 * 60 * 120);
+});
+
+play('oddjob', (bot) => {
+  // The odd jobs board (P40): the board read, the Delivery taken, the parcel given, the job handed in.
+  const b = CENTER_PERKS.board!;
+  check(bot.walkTo(tile(b.x, b.z)), 'oddjob: at the board');
+  const pin = dealsOf(bot.sim).findIndex((d) => d.kind === KIND.DELIVER);
+  check(pin >= 0, 'oddjob: a Delivery pinned up');
+  bot.op(OP.EXT, EXT.BOARD, BOARD.TAKE, pin);
+  const job = jobOf(bot.st)!;
+  check(!!job && job[J.KIND] === KIND.DELIVER, 'oddjob: the Delivery taken');
+  check(talkTo(bot, bot.st.inmates[job[J.TARGET]].body), 'oddjob: talking to whoever it\'s for');
+  bot.op(OP.TALK, TALK.GIFT, bot.slotOf('parcel'));
+  bot.op(OP.CLOSE);
+  check(jobOf(bot.st)?.[J.STAGE] === STAGE.DONE, 'oddjob: delivered');
+  check(talkTo(bot, bot.st.inmates[job[J.GIVER]].body), 'oddjob: talking to whoever asked');
+  bot.op(OP.TALK, TALK.JOB_IN);
+  check(!jobOf(bot.st), 'oddjob: handed in');
 });
 
 const carriesLockpick = (bot: Bot) => bot.slotOf('lockpick') >= 0;

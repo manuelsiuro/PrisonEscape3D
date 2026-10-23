@@ -1,0 +1,21 @@
+center-perks: board 49,7; story for cell 5: deliver, lift, checkers
+stalag-flucht: board 5,30; story for cell 2: errand, lookout, frame
+shankton: board 38,14; story for cell 11: cheat, deliver, tip
+san-pancho: board 17,32; story for cell 7: errand, cake, wrestle
+irongate: board 29,28; story for cell 3: lift, drop, checkers
+center-perks: lift 32, drop 24, frame 27, wrestle 34, cheat 30, checkers 25, rat 33, cake 7, lookout 53, deliver 32, tip 36, errand 27; fixer 120
+stalag-flucht: lift 21, drop 26, frame 29, wrestle 35, cheat 26, checkers 35, rat 37, cake 9, lookout 44, deliver 37, tip 33, errand 28; fixer 120
+shankton: lift 30, drop 37, frame 39, wrestle 20, cheat 25, checkers 17, rat 32, cake 10, lookout 47, deliver 33, tip 34, errand 36; fixer 120
+san-pancho: lift 27, drop 23, frame 35, wrestle 36, cheat 30, checkers 26, rat 38, cake 11, lookout 42, deliver 31, tip 34, errand 27; fixer 120
+irongate: lift 27, drop 34, frame 35, wrestle 29, cheat 31, checkers 29, rat 28, cake 13, lookout 47, deliver 34, tip 30, errand 23; fixer 120
+center-perks: done lift/0 lift/1 drop frame wrestle/0 wrestle/1 cheat/0 cheat/1 checkers/0 checkers/1 rat cake lookout deliver tip errand
+stalag-flucht: done lift/0 lift/1 drop frame wrestle/0 wrestle/1 cheat/0 cheat/1 checkers/0 checkers/1 rat cake lookout deliver tip errand
+shankton: done lift/0 lift/1 drop frame wrestle/0 wrestle/1 cheat/0 cheat/1 checkers/0 checkers/1 rat cake lookout deliver tip errand
+san-pancho: done lift/0 lift/1 drop frame wrestle/0 wrestle/1 cheat/0 cheat/1 checkers/0 checkers/1 rat cake lookout deliver tip errand
+irongate: done lift/0 lift/1 drop frame wrestle/0 wrestle/1 cheat/0 cheat/1 checkers/0 checkers/1 rat cake lookout deliver tip errand
+center-perks story: deliver $20, lift $40, checkers $30; ended day 4
+stalag-flucht story: errand $20, lookout $35, frame $40; ended day 4
+shankton story: cheat $25, deliver $20, tip $40; ended day 4
+san-pancho story: errand $15, cake $35, wrestle $30; ended day 5
+irongate story: lift $30, drop $35, checkers $30; ended day 4
+fixer's job: tip; tool: screwdriver

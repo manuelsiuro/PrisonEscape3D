@@ -92,6 +92,9 @@ export const COSMETICS: readonly Cosmetic[] = [
   c('rust', 'trim', 0xa63f12, 1, true),
   c('cream', 'trim', 0xfff0d0, 1, true),
   c('tangerine', 'trim', 0xff9a3c, 1, true),
+  // P40: the odd jobs board's stories.
+  c('copper', 'trim', 0xc4622d, 1, true),
+  c('saffron', 'trim', 0xf4a300, 1, true),
 ];
 
 export const cosmetic = (id: string): Cosmetic | undefined => COSMETICS.find((x) => x.id === id);

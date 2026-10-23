@@ -60,6 +60,7 @@ import {
   quizCard,
   payphoneCard,
   kioskCard,
+  oddjobsCard,
   vignette,
   view,
   workChips,
@@ -100,6 +101,7 @@ import { inkNow, matchNow, teamSounds } from './team';
 import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
 import { kioskNow } from './kiosk';
+import { jobHud, oddjobsNow } from './oddjobs';
 import { TIPSY_STEPS } from '../content/long';
 
 /**
@@ -313,6 +315,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   kioskCard.update(kioskV);
   document.body.classList.toggle('kiosking', !!kioskV);
   document.body.dataset.kiosk = kioskV?.phase === 'on' && kioskV.course !== 'offer' ? 'course' : kioskV?.phase === 'on' ? 'on' : '';
+  // The odd jobs board (P40): its card at the board, the job's own card from its chip (not over another's).
+  const jobsV = busy || otherGame || stageV || quizV || phoneV || kioskV ? null : oddjobsNow(sim);
+  oddjobsCard.update(jobsV);
+  document.body.classList.toggle('jobbing', !!jobsV);
   document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
   const race = busy || panel || cheat || boardV || court || bout || pick || match || inkV || stageV || quizV ? null : raceNow(sim, a);
   const raceShown = raceCard.update(race);
@@ -364,6 +370,7 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   hudState.rat = ratHud(sim);
   hudState.order = orderHud(sim);
   hudState.crew = crewPill(sim);
+  hudState.oddjob = jobHud(sim);
   vignette.classList.toggle('on', st.lockdown);
   sound.siren(st.lockdown && !g.paused);
   const zone = sim.playerZone;

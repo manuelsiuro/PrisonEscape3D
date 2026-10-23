@@ -17,6 +17,7 @@ import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { banner, hint, sound, view } from './context';
 import { play, sendOp, type Game } from './game';
 import { firstDay, markTip } from './tips';
+import { jobGoal } from './oddjobs';
 
 const LETTER = itemNumber('letter');
 const MOP = itemNumber('mop');
@@ -121,6 +122,11 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   }
   const zones = sim.dutyZones;
   if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
+  // Nowhere the routine wants the player: the odd job's step (P40), where it has a place.
+  if (!zones.length || s.attended) {
+    const job = jobGoal(sim);
+    if (job) return job;
+  }
   // Nowhere the routine wants the player: the first day's guide may point to the job board.
   if ((!zones.length || s.attended) && firstDay.step === 'board') {
     const b = w.props.find((q) => q.kind === 'jobBoard');

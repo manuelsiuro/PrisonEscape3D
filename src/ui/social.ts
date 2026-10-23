@@ -35,6 +35,18 @@ export function inmateName(sim: Sim, who: number): string {
   return sim.prison.names[m.cell - 2] ?? t('combat.inmate', { n: m.cell });
 }
 
+/**
+ * What odd jobs bring to a talk (P40, play/oddjobs.ts): the job held handed in to him (its words,
+ * the pay, why not yet), the fixer's own job (what, the pay, why not), a debt he owes the player
+ * ('' when it can be called in; null: he owes nothing).
+ */
+export interface OddJobTalkView {
+  handIn: { text: string; pay: string; why: string } | null;
+  offer: { text: string; pay: string; why: string } | null;
+  owed: string | null;
+  key: string;
+}
+
 /** What an inmate thinks of the player, in three bands (GDD §10.3). */
 export const moodOf = (opinion: number) => (opinion <= OPINION_LOW ? 'low' : opinion >= OPINION_HIGH ? 'high' : 'neutral');
 
@@ -93,6 +105,8 @@ export class TalkPanel {
   games: (sim: Sim) => GamesView | null = () => null;
   /** The crew's orders for a follower (P23, play/crew.ts). */
   crew: (sim: Sim, who: number) => CrewTalkView | null = () => null;
+  /** Odd jobs (P40, play/oddjobs.ts): the job handed in, the fixer's own, a debt. */
+  oddJob: (sim: Sim, who: number) => OddJobTalkView | null = () => null;
   /** The dice chosen to throw again (bit per die), and the dice game they were chosen in. */
   private diceMask = 0;
   private diceGame = -1;
@@ -173,7 +187,8 @@ export class TalkPanel {
     const mine = s.line.indexOf(-1);
     const his = s.line.indexOf(who);
     const ahead = mine > 0 && his >= 0 && his < mine;
-    const key = [crewKey, gamesKey, who, m.opinion, fixer, hasPhone, ahead, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    const oj = this.oddJob(sim, who);
+    const key = [oj?.key ?? '', crewKey, gamesKey, who, m.opinion, fixer, hasPhone, ahead, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -251,6 +266,15 @@ export class TalkPanel {
       phoneHtml = `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.fixerTitle')}</span></div>
         <div class="bribe-row"><span class="bribe-text"><b>${t('item.burner_phone')}</b><small>${esc(note)}</small></span><button class="big-btn ${ok && s.cash >= PHONE_PRICE ? 'primary' : 'ghost'} small" data-act="${TALK.PHONE}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('phone.confirmBuy', { n: PHONE_PRICE }))}" aria-label="${esc(t('talk.buy', { item: t('item.burner_phone'), price: PHONE_PRICE }))}"><img class="btn-item" src="${itemIcons()[PHONE]}" alt="" draggable="false"><span>$${PHONE_PRICE}</span></button></div></section>`;
     }
+    // Odd jobs (P40): the job handed in to the one who asked, the fixer's own, a debt called in.
+    let ojHtml = '';
+    if (oj) {
+      const rows: string[] = [];
+      if (oj.handIn) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.handIn.text)}</b><small>${esc(oj.handIn.why || oj.handIn.pay)}</small></span><button class="big-btn ${oj.handIn.why ? 'ghost' : 'primary'} small" data-act="${TALK.JOB_IN}" ${oj.handIn.why ? 'disabled' : ''}>${icon('coin', 16)}<span>${t('oddjob.handIn')}</span></button></div>`);
+      if (oj.offer) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${esc(oj.offer.text)}</b><small>${esc(oj.offer.why || oj.offer.pay)}</small></span><button class="big-btn ${oj.offer.why ? 'ghost' : 'primary'} small" data-act="${TALK.ODD_JOB}" ${oj.offer.why ? 'disabled' : ''}>${icon('check', 16)}<span>${t('oddjob.take')}</span></button></div>`);
+      if (oj.owed !== null) rows.push(`<div class="bribe-row"><span class="bribe-text"><b>${t('oddjob.owes')}</b><small>${esc(oj.owed || t('oddjob.owesNote'))}</small></span><button class="big-btn primary small" data-act="${TALK.CALL_IN}" data-confirm="${esc(t('oddjob.callInSure'))}">${icon('wrench', 16)}<span>${t('oddjob.callIn')}</span></button></div>`);
+      ojHtml = `<section class="talk-phone talk-oddjob"><div class="box-label">${icon('pin', 14)}<span>${t(oj.offer ? 'oddjob.fixerTitle' : 'oddjob.talkTitle')}</span></div>${rows.join('')}</section>`;
+    }
     // The pay phone's queue (P34): the place of an inmate ahead, bought.
     const swapHtml = ahead
       ? `<section class="talk-phone"><div class="box-label">${icon('phone', 14)}<span>${t('phone.title')}</span></div>
@@ -283,8 +307,10 @@ export class TalkPanel {
       const full = s.followers.length >= MAX_FOLLOWERS;
       // (P26: a Lone Wolf Daily, nobody signs up.)
       const lone = twist(s, 'loneWolf');
-      const ok = m.opinion >= OPINION_HIGH && !full && !lone;
-      foot = `<button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-act="${TALK.RECRUIT}" ${ok ? '' : 'disabled'}>${icon('users', 16)}<span>${t('talk.recruit')}</span></button><span class="talk-note">${lone ? t('refused.loneWolf') : ok ? t('talk.recruitNote') : full ? t('talk.recruitFull', { n: MAX_FOLLOWERS }) : t('talk.recruitNeed', { n: OPINION_HIGH })}</span>`;
+      // (P40: one who owes the player from an odd job signs up whatever he thinks of them.)
+      const owed = oj?.owed !== null && oj?.owed !== undefined && m.opinion < OPINION_HIGH;
+      const ok = (m.opinion >= OPINION_HIGH || owed) && !full && !lone;
+      foot = `<button class="big-btn ${ok ? 'primary' : 'ghost'} small" data-act="${TALK.RECRUIT}" ${ok ? '' : 'disabled'}>${icon('users', 16)}<span>${t('talk.recruit')}</span></button><span class="talk-note">${lone ? t('refused.loneWolf') : ok ? t(owed ? 'oddjob.recruitOwed' : 'talk.recruitNote') : full ? t('talk.recruitFull', { n: MAX_FOLLOWERS }) : t('talk.recruitNeed', { n: OPINION_HIGH })}</span>`;
     }
     // (A redraw keeps the keyboard's place: the die or button that had the focus has it again.)
     const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
@@ -294,7 +320,7 @@ export class TalkPanel {
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (rearm) {
       const b = this.el.querySelector<HTMLElement>(rearm);
       if (b && !(b as HTMLButtonElement).disabled) confirmed(b);

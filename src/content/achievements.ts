@@ -215,6 +215,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'seasoned', group: 'career', icon: 'route', ...counted('escapes', 10) },
   { id: 'marathon', group: 'career', icon: 'walk', ...counted('walked', 10000) },
   { id: 'graduate', group: 'career', icon: 'bulb', career: (c) => c.lessons >= c.lessonsOf, progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf] },
+  // P40: the odd jobs board (jobs handed in, a story told to its end, all five, a rival framed, the fixer's regular, a debt called in).
+  { id: 'oddJobber', group: 'life', icon: 'pin', ...counted('oddJobs', 5) },
+  { id: 'storyTime', group: 'life', icon: 'book', gives: 'copper', run: (r) => f(r, 'stories') >= 1 },
+  { id: 'wholeStory', group: 'career', icon: 'book', gives: 'saffron', ...counted('stories', 5) },
+  { id: 'framedUp', group: 'skills', icon: 'clipboard', run: (r) => f(r, 'framed') >= 1 },
+  { id: 'fixersFriend', group: 'life', icon: 'briefcase', ...counted('fixerJobs', 3) },
+  { id: 'calledIn', group: 'life', icon: 'hand', run: (r) => f(r, 'debtsCalled') >= 1 },
 ];
 
 export const achievement = (id: string) => ACHIEVEMENTS.find((a) => a.id === id);
