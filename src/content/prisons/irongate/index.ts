@@ -429,7 +429,7 @@ export const IRONGATE: PrisonDef = {
     { x: 32, z: 46 },
   ],
   // (P24: waved out through the ferry gate at the shift change, the drawbridge lowered.)
-  escapes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff', 'paperwork'],
+  escapes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff', 'paperwork', 'parole'],
   // The checkpoint (P24): the gatekeeper's booth on the rock outside the ferry gate, beside the
   // drawbridge; papers are shown from the walkway, and waved through, the gate opens and the
   // drawbridge comes down.
