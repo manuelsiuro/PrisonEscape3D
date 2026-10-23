@@ -75,12 +75,12 @@ export function wakeUp(sim: SimContext) {
   const places = placesOf(sim.world);
   const it = s.items;
   let taken = 0;
-  // (P39: cutters or a shovel among them: caught plotting, for the parole board.)
+  // (P39: cutters, a shovel or the multitool (it digs) among them: caught plotting, for the parole board.)
   let plot = false;
   for (let k = 0; k <= SLOT.WEAPON; k++) {
     if (it.inv[k] && itemDef(itemOf(it.inv[k])).contraband) {
       const kind = itemDef(itemOf(it.inv[k])).tool?.kind;
-      if (kind === 'dig' || kind === 'cut') plot = true;
+      if (kind === 'dig' || kind === 'cut' || kind === 'multi') plot = true;
       it.inv[k] = 0;
       taken++;
     }

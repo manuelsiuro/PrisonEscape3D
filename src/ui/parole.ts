@@ -29,12 +29,14 @@ export interface ParoleView {
   canApply: boolean;
   why: string;
   apply: string;
-  /** The member asking (name, place 0–2), the question (its place), its words, what the file says on it, the three answers, the answer said (-1 none, -2 silence). */
+  /** The member asking (name, place 0–2), the question (its place), its words, what the file says on it (and whether a claim holds), the three answers, the answer said (-1 none, -2 silence). */
   member: string;
   memberK: number;
   q: number;
   question: string;
   file: string;
+  /** Whether a claim would hold on what the file says (its mark). */
+  fileOk: boolean;
   answers: string[];
   said: number;
   /** The member's word on the answer, and whether it went down well. */
@@ -164,6 +166,6 @@ export class ParoleCard {
       })
       .join('');
     const react = v.phase === 'weigh' && v.react ? `<p class="parole-react ${v.reactGood ? 'good' : 'bad'}">${esc(v.react)}</p>` : '';
-    return `${board}<p class="parole-q" role="status">${esc(v.question)}</p><p class="parole-file">${icon('clipboard', 12)}<span>${esc(v.file)}</span></p><div class="parole-answers">${answers}</div>${react}`;
+    return `${board}<p class="parole-q" role="status">${esc(v.question)}</p><p class="parole-file ${v.fileOk ? 'good' : 'bad'}">${icon(v.fileOk ? 'check' : 'close', 12)}<span>${esc(v.file)}</span></p><div class="parole-answers">${answers}</div>${react}`;
   }
 }

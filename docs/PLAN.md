@@ -1274,6 +1274,16 @@ five prisons. It walks out through the front door like paperwork (P36), using th
   gold reading glasses `paroleSpecs`), Counsel (granted on the lawyer's filing), Caught Out and Back to Square One
   (hidden); the rumour `paroleBoard`; bubbles on applying, a grant and a void; a replay highlight; the HUD chip and the
   day's card (the hearing's chip and its hour).
+- **Built (rules review):** a denial's score below zero is kept by saves and snapshots (bounded by `SCORE_MIN`/`SCORE_MAX`);
+  a hearing loads only with an application whose hearing is today. "Contraband found" counts only what is taken off the
+  player at a capture or out of their desk in a search (a sighting is not a find). Fights are the days the player started
+  one (DAY.STARTED: not self-defence, not a food fight), from the step of applying; knockouts only the player's own in
+  them (`kosDealt`), never a follower's. A claim on a line against holds only at nothing at all (9% of heat is not
+  "nothing on me"); favours need 1; under each question the card marks whether a claim holds (and the need for work).
+  A denial names no line worth 0 points. The hearing comes before a fire drill's muster, which excuses the player. Once
+  cleared at the desk nothing voids the grant (route stays `parole`); a grant lost at the desk waits 3 days as a no does;
+  the lawyer's $60 comes back when the filing is refused at the call's end; knocked out at the hearing puts it off a
+  day; the multitool counts as a plotting tool; Counsel needs the grant on the lawyer's filing (`lawyerGranted`).
 
 ### P40 The odd jobs board (v2.19)
 Small missions with a bit of story: the next step beyond the four favours (`FAVOR`). They are built only from things
