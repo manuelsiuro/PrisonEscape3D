@@ -384,5 +384,7 @@ export const CENTER_PERKS: PrisonDef = {
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported by the visiting room's doors, then out through them and the south gate.)
   comms: comms([41, 21, 13], [[40, 21], [39, 21], [38, 21], [37, 21]], [30, 60], [34, 63, 1], [19, 30, 13], { at: [[30, 44], [31, 44]], gates: [[30, 45], [31, 45], [30, 61], [31, 61]] }),
+  // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
+  board: { x: 49, z: 7, face: 13 },
   map: 1,
 };

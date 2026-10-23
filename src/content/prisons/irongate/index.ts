@@ -495,5 +495,7 @@ export const IRONGATE: PrisonDef = {
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported at the corridor's south doors, then out through the ferry gate, the drawbridge lowered.)
   comms: comms([40, 39, 13], [[39, 39], [38, 39], [37, 39], [36, 39]], [30, 54], [32, 60, 9], [48, 34, 13], { at: [[30, 40], [31, 40]], gates: [[30, 41], [31, 41], [30, 51], [31, 51], [30, 55], [31, 55]], bridge: true }),
+  // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
+  board: { x: 29, z: 28, face: 13 },
   map: 1,
 };

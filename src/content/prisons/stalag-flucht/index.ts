@@ -380,5 +380,7 @@ export const STALAG_FLUCHT: PrisonDef = {
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported in the yard at the front gate.)
   comms: comms([13, 51, 13], [[14, 51], [15, 51], [16, 51], [17, 51]], [20, 60], [24, 63, 1], [17, 54, 13], { at: [[20, 60], [21, 60]], gates: [[20, 61], [21, 61]] }),
+  // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
+  board: { x: 5, z: 30, face: 13 },
   map: 1,
 };

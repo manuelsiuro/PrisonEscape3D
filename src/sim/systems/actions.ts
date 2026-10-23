@@ -5,6 +5,7 @@
  */
 import { CAKE, eatCake, lineOp, say, startCall } from './phone';
 import { bookMove, hiddenIn, kioskOp, openBook } from './kiosk';
+import { boardOp, whistle } from './oddjobs';
 import { atRelease, atTray, fileForm, report } from './paperwork';
 import { playNote, quitShow, STAGE_QUIT, startShow } from './talent';
 import { answerQuiz, endQuiz, joinQuiz } from './quiz';
@@ -250,6 +251,8 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.SAY) say(sim, argB(cmd));
       else if (a === EXT.LINE && s.solitary <= 0) lineOp(sim, argB(cmd));
       else if (a === EXT.KIOSK && s.solitary <= 0) kioskOp(sim, argB(cmd), argC(cmd));
+      else if (a === EXT.BOARD && s.solitary <= 0) boardOp(sim, argB(cmd), argC(cmd));
+      else if (a === EXT.WHISTLE && s.solitary <= 0) whistle(sim);
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));
