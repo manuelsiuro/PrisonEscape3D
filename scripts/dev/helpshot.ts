@@ -46,7 +46,7 @@ quiet.on = true;
 const W = 1040;
 const H = 480;
 
-interface Shot {
+export interface Shot {
   /** An escape bot's run (scripts/escapes.ts): its prison and route. */
   prison?: string;
   route?: Route;
@@ -493,7 +493,7 @@ const frames = (n: number) => new Promise<void>((done) => {
 
 /** A route played through once (kept: the moments are picked from it again and again). */
 const runs = new Map<string, Bot>();
-function run(s: Shot): Bot {
+export function run(s: Shot): Bot {
   if (s.lesson) {
     const k = LESSONS.findIndex((l) => l.id === s.lesson);
     const lesson = LESSONS[k];
@@ -558,7 +558,7 @@ export async function stage(id: string, over: Partial<Shot> = {}) {
 
 /** Every frame drawn at this hour (undefined: its own). */
 let drawn: View['draw'] | null = null;
-function daylight(minute: number | undefined) {
+export function daylight(minute: number | undefined) {
   const v = view();
   if (drawn) v.draw = drawn;
   drawn = null;
@@ -574,7 +574,7 @@ function daylight(minute: number | undefined) {
  * outright in the tunnels (the view's own target, so what it works out from the camera, the
  * see-through cut, still fits).
  */
-function offset(dx: number, dz: number) {
+export function offset(dx: number, dz: number) {
   const target = (view() as unknown as { target: THREE.Vector3 }).target;
   delete (target as Partial<THREE.Vector3>).lerp;
   delete (target as Partial<THREE.Vector3>).set;
@@ -585,7 +585,7 @@ function offset(dx: number, dz: number) {
   target.set = (x, y, z = 0) => THREE.Vector3.prototype.set.call(target, x + dx, y, z + dz);
 }
 
-function hideUi(on: boolean) {
+export function hideUi(on: boolean) {
   let st = document.getElementById('helpshot-style');
   if (!st) {
     st = document.createElement('style');
