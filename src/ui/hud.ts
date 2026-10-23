@@ -195,7 +195,8 @@ export class Hud {
     this.crew = q('.hud-crew');
     this.crew.addEventListener('click', () => this.onCrew());
     this.job = q('.hud-job');
-    this.job.addEventListener('click', () => this.onJob());
+    // (Pressed from the keyboard — Enter or Space, a click with no pointer — or tapped.)
+    this.job.addEventListener('click', (e) => this.onJob(e.detail === 0));
     // The clock: the day's card (its routine block by block, what's on).
     this.clockPill = q('.hud-clock');
     this.clockPill.addEventListener('click', () => this.onDay());
@@ -243,7 +244,7 @@ export class Hud {
   /** The odd job's pill (P40): tapped, the job's card (on watch at a dig: the whistle). */
   private readonly job: HTMLElement;
   private jobIcon = '';
-  onJob: () => void = () => {};
+  onJob: (keys: boolean) => void = () => {};
   /** The crew's pill tapped (P23): their panel. */
   onCrew: () => void = () => {};
   private readonly order: HTMLElement;

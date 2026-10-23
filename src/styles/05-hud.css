@@ -293,7 +293,8 @@
 /* ------------------------------------------------------------ banners and toasts */
 .banner {
   position: fixed;
-  top: calc(max(12px, env(safe-area-inset-top)) + 118px);
+  /* (Under the HUD's chips — a job's, the parole hearing's — however many rows they take: pa.ts measures them.) */
+  top: max(calc(max(12px, env(safe-area-inset-top)) + 118px), calc(var(--hud-chips, 0px) + 10px));
   left: 50%;
   z-index: 32;
   display: flex;

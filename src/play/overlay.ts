@@ -330,7 +330,8 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // The odd jobs board (P40): its card at the board, the job's own card from its chip — one card docked at a time:
   // any other game's or place's card (the parole board's at the desk, the hearing, the verdict) comes first, and the
   // job's own card, asked for from its chip, is closed for it (not left to come back later on its own).
-  const docked = !!(otherGame || court || st.train >= 0 || stageV || quizV || phoneV || kioskV || paroleV);
+  // (The warden's morning card too: it covers a card docked left in landscape, its Close button with it.)
+  const docked = !!(otherGame || court || st.train >= 0 || stageV || quizV || phoneV || kioskV || paroleV || paBoard.cardUp);
   if (docked) closeJobCard();
   const jobsV = busy || docked ? null : oddjobsNow(sim);
   oddjobsCard.update(jobsV);

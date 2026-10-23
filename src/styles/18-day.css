@@ -265,9 +265,10 @@
     bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px);
   }
 
-  /* The toasts rise above the warden's board while it's up. */
+  /* The toasts rise above the warden's board while it's up — never as far as the HUD's chips (a tall morning
+     card, or one stepped behind a banner: a toast would sit on the job's chip). */
   body.pa-up .toasts {
-    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 78px + var(--pa-h, 0px));
+    bottom: min(calc(max(10px, env(safe-area-inset-bottom)) + 78px + var(--pa-h, 0px)), calc(100vh - var(--hud-chips, 0px) - 52px));
   }
 }
 
@@ -453,7 +454,21 @@ body.reduced-motion .hud-alert.low b {
   animation: none;
 }
 
-/* The morning card up: a first-time hint already showing steps back until it's read (it would cover its rows). */
-body.pa-card-up .hint {
+/* A first-time hint ("Drag anywhere to walk", "Tap the action button…") waits while a card is up where it
+   would sit on it: the warden's morning card, or a card docked at the side or the bottom (the odd job's, a
+   story's, the parole board's, the phone's, the kiosk's, the stage's, the quiz's, the track's, a game's). It
+   stays until its action is done, so it comes back once the card goes. */
+body.pa-card-up .hint,
+body.jobbing .hint,
+body.story-up .hint,
+body.paroling .hint,
+body.phoning .hint,
+body.kiosking .hint,
+body.staging .hint,
+body.quizzing .hint,
+body.racing .hint,
+body.courting .hint,
+body.matching .hint,
+body.inking .hint {
   visibility: hidden;
 }
