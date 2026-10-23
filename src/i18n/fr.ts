@@ -3862,7 +3862,7 @@ export const fr: Partial<Strings> = {
   "manhunt.caughtSub": "{n} % du chemin. L’évasion compte quand même",
   "manhunt.caughtCard": "{n} % du chemin vers {goal}. L’évasion compte quand même",
   "manhunt.offer": "Ils vont te traquer",
-  "manhunt.offerSub": "Continue à courir jusqu’à {goal} pour filer pour de bon, ou passe : l’évasion compte dans les deux cas",
+  "manhunt.offerSub": "Continue à courir et rejoins {goal} pour filer pour de bon, ou passe : l’évasion compte dans les deux cas",
   "manhunt.offerLou": "La voiture du cousin Lou attend dehors. Continue à courir pour filer pour de bon, ou passe : l’évasion compte dans les deux cas",
   "manhunt.keepRunning": "Continuer à courir",
   "manhunt.skip": "Passer",
