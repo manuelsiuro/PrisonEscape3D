@@ -494,7 +494,7 @@ export class Hunt {
 
   // ---------------------------------------------------------------- noise
   /** A noise: every searcher out within `reach` walking tiles of it goes to look (not one already after the player, nor an officer at his roadblock). */
-  private noise(tile: number, reach: number, kind: 'crunch' | 'stone' | 'cut' | 'bark') {
+  private noise(tile: number, reach: number, kind: 'crunch' | 'stone' | 'cut' | 'bark', by = -1) {
     const s = this.state;
     s.noises.push([tile, s.step, reach]);
     this.events.push({ type: 'noise', tile, reach, kind });
@@ -515,7 +515,8 @@ export class Hunt {
         if (ok && d[j] < 0 && (!this.grid[j] || this.out.cover[j])) (d[j] = d[t] + 1), queue.push(j);
     }
     s.searchers.forEach((m, k) => {
-      if (m.mode === SEEK.OFF || m.mode === SEEK.CHASE || this.isPost(k)) return;
+      // (A bark: not its own handler, who goes to his dog anyway.)
+      if (m.mode === SEEK.OFF || m.mode === SEEK.CHASE || m.mode === SEEK.FOLLOW || this.isPost(k) || k === by) return;
       if (d[tileAt(m.body.x, m.body.z)] < 0) return;
       this.lookAt(k, tile);
       this.events.push({ type: 'heard', who: k, tile });
@@ -625,6 +626,13 @@ export class Hunt {
         return;
       }
       case SEEK.LOOK: {
+        // (Its dog on the trail or pointing: after it.)
+        if (m.dog >= 0 && (s.dogs[m.dog].mode === HOUND.TRACK || s.dogs[m.dog].mode === HOUND.POINT)) {
+          m.mode = SEEK.FOLLOW;
+          m.path = [];
+          m.goal = -1;
+          return;
+        }
         if (m.goal >= 0 && !this.arrived(m)) {
           this.follow(m, HUNT.hurry);
           return;
@@ -638,7 +646,8 @@ export class Hunt {
       case SEEK.FOLLOW: {
         const d = s.dogs[m.dog];
         if (!d || (d.mode !== HOUND.TRACK && d.mode !== HOUND.POINT)) return this.backToBeat(k);
-        const target = tileAt(d.body.x, d.body.z);
+        // (Its dog pointing: to what it points at, the player, hidden or not.)
+        const target = d.mode === HOUND.POINT ? this.tile : tileAt(d.body.x, d.body.z);
         if (cheb(target, tileAt(m.body.x, m.body.z)) <= 1) {
           m.body.moving = false;
           m.body.facing = nearestDir(d.body.x - m.body.x, d.body.z - m.body.z) || m.body.facing;
@@ -745,7 +754,7 @@ export class Hunt {
         case HOUND.POINT: {
           d.body.moving = false;
           d.body.facing = nearestDir(s.player.x - d.body.x, s.player.z - d.body.z) || d.body.facing;
-          if ((s.step - d.until + POINT_HOLD) % BARK_EVERY === 0) this.noise(tileAt(d.body.x, d.body.z), HUNT.bark, 'bark');
+          if ((s.step - d.until + POINT_HOLD) % BARK_EVERY === 0) this.noise(tileAt(d.body.x, d.body.z), HUNT.bark, 'bark', d.handler);
           if (s.step < d.until) return;
           if (within(d.body, s.player, HUNT.point)) d.until = s.step + POINT_HOLD;
           else this.nextScent(d, k);
@@ -805,7 +814,7 @@ export class Hunt {
     d.until = s.step + POINT_HOLD;
     d.path = [];
     this.events.push({ type: 'point', dog: k });
-    this.noise(tileAt(d.body.x, d.body.z), HUNT.bark, 'bark');
+    this.noise(tileAt(d.body.x, d.body.z), HUNT.bark, 'bark', d.handler);
     const h = s.searchers[d.handler];
     if (h.mode !== SEEK.CHASE) {
       h.mode = SEEK.FOLLOW;

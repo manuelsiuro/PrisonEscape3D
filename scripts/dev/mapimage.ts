@@ -3,7 +3,8 @@
 // The viewer's "In game" pictures are taken in the browser instead: scripts/dev/mapshot.ts.
 // Three pictures each: the layout (tiles, zones, doors, cells, props, decor), the people and
 // places (guards' rounds and posts, cameras, searchlights, free time, smuggling, delivery,
-// checkpoint), and the vents and the ground under (where the prison has them). Drawn as SVG,
+// checkpoint), and the vents and the ground under (where the prison has them); and (P41) the
+// outside past the wall, where the manhunt is run. Drawn as SVG,
 // turned into PNG by rsvg-convert (brew install librsvg).
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -18,6 +19,8 @@ import { en } from '../../src/i18n/en';
 import { LAYER, MAP_H, MAP_W, World } from '../../src/sim/world/World';
 import { TILE, TILE_INFO } from '../../src/sim/world/tiles';
 import pkg from '../../package.json';
+import { outsideOf } from '../../src/content/outside';
+import { DECO, outsideWorld, type OutsideWorld } from '../../src/sim/hunt/world';
 
 const S = 40; // pixels a tile
 const M = 34; // margin for the rulers
@@ -519,6 +522,118 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
   }
 }
 
+/** P41: the outside past the wall (the manhunt): its ground, what stands on it, where each way out leaves the player, the safe point, Lou's car, washing lines, roadblocks, the searchers' beats, the helicopter's sweep, the lookout. */
+const DECO_FILL: Record<number, string> = {
+  [DECO.TREE]: '#2f6b35',
+  [DECO.WOODS]: '#3f6f45',
+  [DECO.CACTUS]: '#6b8f3a',
+  [DECO.ROCK]: '#7d7a74',
+  [DECO.CRATES]: '#9c5a2e',
+  [DECO.HEDGE]: '#5fae4a',
+  [DECO.CULVERT]: '#2b2f36',
+  [DECO.RAIL]: '#6a5240',
+  [DECO.GRAVEL]: '#a39b8b',
+  [DECO.FORD]: '#8cc4e8',
+};
+const DECO_NAME = ['', 'tree', 'cactus', 'rock', 'crates', 'hedge (cover)', 'culvert (cover)', 'railway (loud)', 'gravel (loud)', 'ford (washes the trail)', 'woods (past the map)'];
+
+function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
+  const w = o.world;
+  const g = new Svg();
+  g.rect(0, 0, W, H, 'fill="#ffffff"');
+  g.text(M, 30, `${tr(`prison.${def.id}`, def.id)} — the outside (P41, the manhunt): starts, the safe point, cover, searchers, roadblocks, the helicopter`, 'font-size="24" font-weight="700" fill="#111"');
+  g.text(W - M, 30, `v${pkg.version} · ${def.theme ?? 'suburban'} · picture ${o.w}×${o.h} at ${o.ox},${o.oz}`, 'font-size="15" fill="#555" text-anchor="end"');
+  drawTiles(g, w, false);
+  for (let i = 0; i < MAP_W * MAP_H; i++) {
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    const d = o.deco[i];
+    if (!o.inside[i]) {
+      g.rect(px(x), pz(z), S, S, `fill="${d === DECO.WOODS ? '#3f6f45' : w.ground.kind[i] === TILE.WATER ? '#1f5e8c' : '#3a3d45'}" fill-opacity="0.55"`);
+      continue;
+    }
+    if (!d) continue;
+    const f = DECO_FILL[d];
+    if (d === DECO.TREE || d === DECO.CACTUS || d === DECO.ROCK) g.add(`<circle cx="${cx(x)}" cy="${cz(z)}" r="${S * 0.42}" fill="${f}"/>`);
+    else if (d === DECO.HEDGE) g.rect(px(x) + 3, pz(z) + 3, S - 6, S - 6, `rx="10" fill="${f}" stroke="#2f6b35" stroke-width="2"`);
+    else if (d === DECO.CULVERT) g.add(`<circle cx="${cx(x)}" cy="${cz(z)}" r="${S * 0.3}" fill="${f}" stroke="#bbb" stroke-width="3"/>`);
+    else if (d === DECO.RAIL) g.add(`<line x1="${px(x)}" y1="${cz(z) - 7}" x2="${px(x) + S}" y2="${cz(z) - 7}" stroke="${f}" stroke-width="3"/><line x1="${px(x)}" y1="${cz(z) + 7}" x2="${px(x) + S}" y2="${cz(z) + 7}" stroke="${f}" stroke-width="3"/>`);
+    else if (d === DECO.GRAVEL) g.add(`<circle cx="${cx(x) - 8}" cy="${cz(z) - 6}" r="3" fill="${f}"/><circle cx="${cx(x) + 7}" cy="${cz(z) + 5}" r="3" fill="${f}"/><circle cx="${cx(x) + 2}" cy="${cz(z) - 9}" r="2" fill="${f}"/>`);
+    else g.rect(px(x) + 2, pz(z) + 2, S - 4, S - 4, `fill="${f}"`);
+  }
+  // Wire a pair of cutters goes through.
+  for (let i = 0; i < MAP_W * MAP_H; i++) if (o.wire[i]) g.text(cx(i % MAP_W), cz(Math.floor(i / MAP_W)) + 4, '✂', 'font-size="12" fill="#333" text-anchor="middle"');
+  drawGrid(g);
+  g.add('<defs><marker id="tip" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>');
+  const at = (q: { x: number; z: number }) => ({ x: q.x + o.ox, z: q.z + o.oz });
+  const od = o.def;
+  // The searchers' beats (patrols out before any alarm drawn dashed), their dogs.
+  od.searchers.forEach((sr, k) => {
+    const color = GUARD_COLORS[k % GUARD_COLORS.length];
+    route(g, sr.beat.map((q) => ({ ...at(q), face: q.face })), color, sr.at < 0, '');
+    const s0 = at(sr.beat[0]);
+    g.pill(cx(s0.x), cz(s0.z) - 20, `${sr.name}${sr.dog ? ` + ${sr.dog.name}` : ''} · ${sr.at < 0 ? 'patrol' : `+${sr.at}s`}`, 11, color);
+  });
+  // The helicopter's sweep.
+  const hr = od.heli.route.map(at);
+  g.add(`<polyline points="${[...hr, hr[0]].map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="#7b2cbf" stroke-width="3" stroke-dasharray="12 6" stroke-opacity="0.8"/>`);
+  g.pill(cx(hr[0].x), cz(hr[0].z) + 22, `helicopter +${od.heli.at}s`, 12, '#7b2cbf');
+  // Roadblocks.
+  od.roadblocks.forEach((r, k) => {
+    const [x0, z0, x1, z1] = r.area;
+    const a0 = at({ x: x0, z: z0 });
+    g.rect(px(a0.x), pz(a0.z), (x1 - x0 + 1) * S, (z1 - z0 + 1) * S, 'fill="none" stroke="#d40000" stroke-width="4" stroke-dasharray="6 4"');
+    const post = at(r.post);
+    g.add(`<rect x="${px(post.x) + 8}" y="${pz(post.z) + 8}" width="${S - 16}" height="${S - 16}" fill="#fff" stroke="#d40000" stroke-width="3"/>`);
+    arrow(g, post.x, post.z, r.post.face, '#d40000');
+    g.pill(cx(a0.x), pz(a0.z) - 10, `roadblock ${k + 1} +${r.at}s`, 11, '#d40000');
+  });
+  // Washing lines, Lou's car, the lookout.
+  od.lines.forEach((l, k) => {
+    const q = at(l);
+    g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="11" fill="#1e88e5" stroke="#fff" stroke-width="2"/>`);
+    g.text(cx(q.x), cz(q.z) + 4, `W${k + 1}`, 'font-size="10" font-weight="700" fill="#fff" text-anchor="middle"');
+  });
+  const lou = at(od.lou);
+  g.add(`<rect x="${px(lou.x) + 4}" y="${pz(lou.z) + 8}" width="${S - 8}" height="${S - 16}" rx="5" fill="#a63746" stroke="#000" stroke-width="1.5"/>`);
+  g.pill(cx(lou.x), pz(lou.z) - 8, "Lou's car", 11, '#a63746');
+  const lk = at(od.lookout);
+  g.add(`<circle cx="${cx(lk.x)}" cy="${cz(lk.z)}" r="11" fill="#ff9f1c" stroke="#000" stroke-width="1.5"/>`);
+  g.text(cx(lk.x), cz(lk.z) + 4, 'L', 'font-size="12" font-weight="700" fill="#000" text-anchor="middle"');
+  // The safe point.
+  const [sx0, sz0, sx1, sz1] = od.safe;
+  const s0 = at({ x: sx0, z: sz0 });
+  g.rect(px(s0.x), pz(s0.z), (sx1 - sx0 + 1) * S, (sz1 - sz0 + 1) * S, 'fill="rgba(67,209,142,0.35)" stroke="#1f9d63" stroke-width="5"');
+  const sa = at(od.safeAt);
+  g.pill(cx(sa.x), cz(sa.z), `SAFE: ${od.safeKind}`, 14, '#0d5c37');
+  // Where each way out leaves the player.
+  for (const [kind, q] of Object.entries(od.starts)) {
+    const t = at(q!);
+    const star = Array.from({ length: 10 }, (_, k) => {
+      const a = (k * Math.PI) / 5 - Math.PI / 2;
+      const r = k % 2 ? 6 : 14;
+      return `${(cx(t.x) + r * Math.cos(a)).toFixed(1)},${(cz(t.z) + r * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+    g.add(`<polygon points="${star}" fill="#ffd400" stroke="#000" stroke-width="1.5"/>`);
+    g.pill(cx(t.x), cz(t.z) + 22, `start: ${kind}`, 11, '#000');
+  }
+  // The legend.
+  const y0 = TITLE_H + MAP_H * S + 2 * M + 10;
+  g.rect(0, y0 - 10, W, LEGEND_H + 10, 'fill="#f5f3ee"');
+  const items: Array<[string, string]> = [
+    ['#2f6b35', 'tree (T): solid, hides'], ['#5fae4a', 'hedge (h): cover'], ['#2b2f36', 'culvert (u): cover'], ['#7d7a74', 'rock (o)'], ['#6b8f3a', 'cactus (k)'], ['#9c5a2e', 'crates (c)'],
+    ['#a39b8b', 'gravel (g): loud'], ['#6a5240', 'railway (r): loud'], ['#8cc4e8', 'ford (f): no trail'], ['#3b7dd8', 'water (~)'], ['url(#fence)', 'wire (F): cutters'], ['#3a3d45', 'prison wall (@)'],
+  ];
+  items.forEach(([f, l], k) => swatch(g, M + (k % 6) * 230, y0 + Math.floor(k / 6) * 30, f, l));
+  [
+    'Yellow stars: where each kind of way out leaves the player (wall: fence, tunnel, roof; gate: takeover, gate, bluff; glider; van: stowaway; sea: raft; air: helicopter, Irongate\'s stowaway).',
+    'Green box: the safe point (a clean getaway). Red car: Lou\'s, when a call set it up. Blue W: washing lines (other clothes). Orange L: where a crew member out too keeps watch.',
+    'Coloured loops: searchers\' beats, out the seconds after the alarm shown (dashed: patrols out before any alarm), stop numbers in order. Red dashed boxes: roadblocks, their officer\'s post beside (white square), up the seconds shown.',
+    'Purple dashed loop: the helicopter\'s sweep and its searchlight, up the seconds shown. Past the map: woods (green) or the sea (blue), solid. Every number in seconds after the alarm.',
+  ].forEach((n, k) => g.text(M, y0 + 82 + k * 22, n, 'font-size="14" fill="#222"'));
+  return g.done();
+}
+
 function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
   const w = new World(def);
   const g = new Svg();
@@ -562,6 +677,15 @@ all.forEach((def, n) => {
     execFileSync('rsvg-convert', ['-o', png, svg]);
     console.log(png);
   }
+  // P41: the outside past the wall.
+  const od = outsideOf(def.id);
+  if (od) {
+    const svg = join(tmp, `${def.id}-outside.svg`);
+    writeFileSync(svg, outsidePicture(def, outsideWorld(od, def)));
+    const png = join(OUT, `${n}-${def.id}-outside.png`);
+    execFileSync('rsvg-convert', ['-o', png, svg]);
+    console.log(png);
+  }
 });
 rmSync(tmp, { recursive: true, force: true });
 
@@ -569,7 +693,7 @@ rmSync(tmp, { recursive: true, force: true });
 function tileData(def: PrisonDef, n: number) {
   const w = new World(def);
   const L = w.ground;
-  const views: Array<'layout' | 'people' | 'vents'> = ['layout', 'people'];
+  const views: Array<'layout' | 'people' | 'vents' | 'outside'> = ['layout', 'people'];
   if (def.vents || def.under) views.push('vents');
   // The in-game picture (scripts/dev/mapshot.ts, taken in the browser), where one was taken: its frame's numbers beside it.
   const shot = join(OUT, `${n}-${def.id}-game.json`);
@@ -614,6 +738,25 @@ function tileData(def: PrisonDef, n: number) {
     const what = V[i] === TILE.DUCT ? 'duct' : V[i] === TILE.GRATE ? 'vent grate' : V[i] === TILE.LADDER ? 'roof ladder' : U[i] === TILE.BOULDER ? 'boulder underground' : '';
     if (what) above.push([i % MAP_W, Math.floor(i / MAP_W), what]);
   }
+  // P41: the outside past the wall, its own tiles and marks (the viewer's Outside view).
+  const od = outsideOf(def.id);
+  let outside = null;
+  if (od) {
+    const o = outsideWorld(od, def);
+    const om: Array<[number, number, string]> = [];
+    const omark = (q: { x: number; z: number }, s: string) => om.push([q.x + o.ox, q.z + o.oz, s]);
+    for (const [kind, q] of Object.entries(od.starts)) omark(q!, `start: ${kind}`);
+    omark(od.safeAt, `safe point: ${od.safeKind}`);
+    omark(od.lou, "Lou's car (when a call set it up)");
+    od.lines.forEach((q, k) => omark(q, `washing line W${k + 1}`));
+    omark(od.lookout, 'the lookout (a crew member out too)');
+    od.roadblocks.forEach((r, k) => omark(r.post, `roadblock ${k + 1}'s officer, up ${r.at}s after the alarm`));
+    od.searchers.forEach((sr) => sr.beat.forEach((q, k) => omark(q, `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''}: stop ${k + 1} (${sr.at < 0 ? 'patrol' : `out ${sr.at}s after the alarm`})`)));
+    od.heli.route.forEach((q, k) => omark(q, `helicopter sweep, stop ${k + 1}`));
+    for (let i = 0; i < MAP_W * MAP_H; i++) if (o.safe[i]) om.push([i % MAP_W, Math.floor(i / MAP_W), 'safe point']);
+    outside = { tiles: Array.from(o.world.ground.kind), deco: Array.from(o.deco).map((d) => DECO_NAME[d] ?? ''), inside: Array.from(o.inside), marks: om };
+    views.push('outside');
+  }
   const doors: Array<[number, number, string, number, number]> = [];
   for (let i = 0; i < L.kind.length; i++) if (L.kind[i] === TILE.DOOR) doors.push([i % MAP_W, Math.floor(i / MAP_W), KEY_NAME[L.key[i]], w.doorCell[i], w.gate[i]]);
   return {
@@ -633,6 +776,7 @@ function tileData(def: PrisonDef, n: number) {
     doors,
     marks,
     above,
+    outside,
     guards: def.guards.map((gu, k) => ({
       name: gu.name ?? `guard ${k + 1}`,
       color: GUARD_COLORS[k % GUARD_COLORS.length],
