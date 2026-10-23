@@ -13,9 +13,9 @@ costume night: 1 laughed, inmate 0's opinion 50 → 55
 christmas: a present given, the inmate's opinion 50 → 65
 new year's eve: a noise of 10 tiles carries 10 before midnight, 2 under the fireworks
 holiday talk: summer at center-perks: day 2 in.hol.summer; day 5 none; christmas at stalag-flucht: day 2 in.hol.christmas,in.hol.snow; day 5 in.hol.snow
-the decor (on nothing, clear of doors, parasols apart, garlands round what hangs on the wall):
-  center-perks: easter garland 2 basket 6; summer garland 2 parasol 3 barbecue 1 hose 2; halloween garland 2 lantern 10; christmas garland 2 tree 1 snowman 1
+the decor (on nothing, clear of doors and openings, a tile off fences, none hidden behind a wall, parasols apart and off the ways in, hoses over nothing, garlands on north or side walls round what hangs there and the parole board):
+  center-perks: easter garland 2 basket 8; summer garland 2 parasol 2 barbecue 1 hose 2; halloween garland 2 lantern 12; christmas garland 2 tree 1 snowman 1
   stalag-flucht: easter garland 2 basket 4; summer garland 2 parasol 2 barbecue 1 hose 2; halloween garland 2 lantern 8; christmas garland 2 tree 1 snowman 1
   shankton: easter garland 1 basket 4; summer garland 1 parasol 2 barbecue 1 hose 2; halloween garland 1 lantern 8; christmas garland 1 tree 1 snowman 1
-  san-pancho: easter garland 2 basket 4; summer garland 2 parasol 2 barbecue 1 hose 2; halloween garland 2 lantern 8; christmas garland 2 tree 1 snowman 1
-  irongate: easter garland 1 basket 4; summer garland 1 parasol 3 barbecue 1 hose 2; halloween garland 1 lantern 8; christmas garland 1 tree 1 snowman 1
+  san-pancho: easter garland 2 basket 4; summer garland 2 parasol 1 barbecue 1 hose 2; halloween garland 2 lantern 7; christmas garland 2 tree 1 snowman 1
+  irongate: easter garland 3 basket 4; summer garland 3 parasol 2 barbecue 1 hose 2; halloween garland 3 lantern 8; christmas garland 3 tree 1 snowman 1

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PROPS } from '../content/props';
 import { ROUTINE } from '../content/routine';
 import { KEY, TILE } from '../sim/world/tiles';
@@ -28,10 +29,17 @@ export function buildGround(world: World, pitch: Pitch | null = world.def.leisur
     cached = { key, paint: paintLayer(world, pitch), ao: contactShadows(world) };
   }
   const group = new THREE.Group();
+  const shade = () => new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.MultiplyBlending, premultipliedAlpha: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   group.add(
     overlay(cached.paint, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), 0.002, 0.1),
-    overlay(cached.ao, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.MultiplyBlending, premultipliedAlpha: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), 0.004, 0.2),
+    overlay(cached.ao, shade(), 0.004, 0.2),
   );
+  // (Past the edge: round the sea, and round the manhunt's outside, whose ground runs on out; a prison's own fields stay as they're tinted.)
+  if (world.def.theme === 'island' || world.def.id.startsWith('outside-')) {
+    const outer = shade();
+    outer.vertexColors = true;
+    group.add(outerShade(world, outer));
+  }
   return group;
 }
 
@@ -42,6 +50,49 @@ let cached: { key: string; paint: THREE.CanvasTexture; ao: THREE.CanvasTexture }
 export function groundTextures(): readonly THREE.Texture[] {
   return cached ? [cached.paint, cached.ao] : [];
 }
+
+/**
+ * The contact shadows' layer carries on past the map's edge (P41 review: the manhunt's map, and
+ * Irongate's sea, showed a hard rectangle where it stopped): the same multiplied layer, so the
+ * same tone (the renderer's tone curve takes a little off even its white), and on open ground the
+ * same average shade as its patches (sea and rivers none, as on the map). Four strips round the
+ * map, a vertex at each tile's corner, its shade in the vertex colours (no canvas to keep).
+ */
+function outerShade(world: World, material: THREE.MeshBasicMaterial): THREE.Mesh {
+  const island = world.def.theme === 'island';
+  const open = new THREE.Color().setRGB(OUTER_OPEN, OUTER_OPEN, Math.min(1, OUTER_OPEN + 6 / 255), THREE.SRGBColorSpace);
+  const white = new THREE.Color(1, 1, 1);
+  const strips: THREE.BufferGeometry[] = [];
+  const strip = (x0: number, z0: number, x1: number, z1: number, across: boolean) => {
+    const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0, x1 - x0, z1 - z0).rotateX(-Math.PI / 2).translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
+    const pos = g.attributes.position;
+    const colors = new Float32Array(pos.count * 3);
+    for (let k = 0; k < pos.count; k++) {
+      const x = Math.round(pos.getX(k));
+      const z = Math.round(pos.getZ(k));
+      // (Straight out from an edge tile, north or south (`across`), west or east: its kind, a river carrying on; off a corner: the fields.)
+      const corner = across ? x < 0 || x > MAP_W : z < 0 || z > MAP_H;
+      const edge = corner ? TILE.GRASS : world.ground.kind[Math.min(MAP_H - 1, Math.max(0, z)) * MAP_W + Math.min(MAP_W - 1, Math.max(0, x))];
+      (island || edge === TILE.WATER ? white : open).toArray(colors, k * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    strips.push(g);
+  };
+  strip(-OUTER, -OUTER, MAP_W + OUTER, 0, true);
+  strip(-OUTER, MAP_H, MAP_W + OUTER, MAP_H + OUTER, true);
+  strip(-OUTER, 0, 0, MAP_H, false);
+  strip(MAP_W, 0, MAP_W + OUTER, MAP_H, false);
+  const mesh = new THREE.Mesh(mergeGeometries(strips), material);
+  for (const g of strips) g.dispose();
+  mesh.position.y = 0.004;
+  mesh.renderOrder = 0.2;
+  return mesh;
+}
+
+/** How far past the map's edge the outer shade reaches (tiles), each way. */
+const OUTER = MAP_W;
+/** Open ground's patches' average shade on the map (contactShadows: 1 − 0.2 × a tone about ½ on average). */
+const OUTER_OPEN = 0.9;
 
 /** What the canvases show depends on: the prison, its ground floor's tiles and keys (a save's dug walls), the furniture (and the pitch in use: buildGround). */
 function fingerprint(world: World): string {

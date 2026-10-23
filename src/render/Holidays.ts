@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { HOLIDAY } from '../content/holidays';
 import { floorOf } from '../sim/ai/places';
 import { DECOR } from '../content/decor';
+import { HEARINGS } from '../content/parole';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { now, type Later } from './batch';
@@ -23,6 +24,7 @@ const BRIGHT = [0xe5484d, 0xffd23f, 0x2fb6c8, 0x3fb950, 0xff7714];
 const SPOOKY = [0xff7714, 0x6b3fa0, 0x1d1a22];
 const LIGHTS = [0xff4d4d, 0xffd23f, 0x4dd2ff, 0x5aff8a, 0xff8ae0];
 const FIRE = [0xff5f6d, 0xffd23f, 0x5fb3ff, 0x7ed957, 0xff9ec7, 0xffffff];
+const WHITE = new THREE.Color(0xffffff);
 
 /** A little hash for where decor goes (render only: never the sim's dice). */
 const hash = (a: number, b = 0) => {
@@ -34,9 +36,14 @@ const hash = (a: number, b = 0) => {
 
 const FIREWORK_BURSTS = 6;
 const SPARKS = 28;
+/** A burst's flash at its heart, and each spark's trail: this many fading copies behind it. */
+const TRAIL = 2;
 const DROPS = 96;
 /** A hose's splash where its jets land: this many of its drops. */
 const SPLASH = 12;
+/** A parasol's canopy faded under someone: so many shared steps from opaque down to CANOPY_SEE (one material each, one shader for all). */
+const CANOPY_STEPS = 8;
+const CANOPY_SEE = 0.22;
 
 /**
  * Holidays in the picture (P42), drawn once per prison and holiday from the map, render only (nothing
@@ -51,10 +58,26 @@ export class HolidaysView {
   private world: World | null = null;
   private kind = -1;
   private readonly glowMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
-  private readonly sparkMat = new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, depthWrite: false });
+  private readonly sparkMat = new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   private readonly dropMat = new THREE.MeshStandardMaterial({ color: 0x9fd8ff, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.85 });
   private readonly sparks: THREE.InstancedMesh;
+  private readonly flashes: THREE.InstancedMesh;
   private readonly drops: THREE.InstancedMesh;
+  /**
+   * Summer's parasols' canopies, seen from under too (both sides): one material for them all while
+   * nobody's under one, and CANOPY_STEPS faded ones, shared (a material each, cloned, used to
+   * compile a shader and its shadow afresh the first time they drew: a hitch). Warmed with the day.
+   */
+  private readonly canopyMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05, side: THREE.DoubleSide });
+  private readonly canopyFades = Array.from({ length: CANOPY_STEPS }, (_, k) => {
+    const m = this.canopyMat.clone();
+    m.transparent = true;
+    m.depthWrite = false;
+    m.opacity = 1 - ((k + 1) / CANOPY_STEPS) * (1 - CANOPY_SEE);
+    return m;
+  });
+  /** A speck drawn with each shared material, shown only while the renderer compiles (warm). */
+  private readonly warmers: THREE.Mesh[];
   private readonly bursts = Array.from({ length: FIREWORK_BURSTS }, () => ({ t: 99, life: 1.6, x: 0, y: 0, z: 0, color: 0 }));
   private burstClock = 0;
   /** The sports ground's hoses: where each jet comes from and lands (HOSE_REACH tiles on). */
@@ -66,18 +89,38 @@ export class HolidaysView {
   private readonly s = new THREE.Vector3();
   private dressed: THREE.Object3D[] = [];
   /** Summer's parasols' canopies, each its own mesh: faded while someone stands under one (the camera looks down). */
-  private canopies: Array<{ mat: THREE.Material; x: number; z: number; fade: number }> = [];
+  private canopies: Array<{ mesh: THREE.Mesh; x: number; z: number; fade: number }> = [];
 
   constructor() {
-    this.sparks = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.07, 0), this.sparkMat, FIREWORK_BURSTS * SPARKS);
-    this.sparks.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(FIREWORK_BURSTS * SPARKS * 3), 3);
+    // (Each spark with TRAIL fading copies behind it, a little smaller: the bursts read as bursts from the game's camera.)
+    this.sparks = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.13, 0), this.sparkMat, FIREWORK_BURSTS * SPARKS * (1 + TRAIL));
+    this.sparks.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(FIREWORK_BURSTS * SPARKS * (1 + TRAIL) * 3), 3);
     this.sparks.count = 0;
     this.sparks.frustumCulled = false;
+    // (A burst's flash at its heart, for its first moment.)
+    this.flashes = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.5, 1), this.sparkMat, FIREWORK_BURSTS);
+    this.flashes.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(FIREWORK_BURSTS * 3), 3);
+    this.flashes.count = 0;
+    this.flashes.frustumCulled = false;
     this.drops = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.06, 0), this.dropMat, DROPS);
     this.drops.count = 0;
     this.drops.frustumCulled = false;
     this.drops.castShadow = false;
-    this.group.add(this.sparks, this.drops);
+    // (Specks deep under the ground, always drawn, the canopy's casting a shadow: the shaders, faded too, and the two-sided shadow's compile with the prison, not the first time a parasol comes into view.)
+    const speck = new THREE.PlaneGeometry(0.01, 0.01);
+    this.warmers = [this.canopyMat, this.canopyFades[0], this.glowMat].map((m, k) => {
+      const o = new THREE.Mesh(speck, m);
+      o.castShadow = k === 0;
+      o.frustumCulled = false;
+      o.position.y = -50;
+      return o;
+    });
+    this.group.add(this.sparks, this.flashes, this.drops, ...this.warmers);
+  }
+
+  /** How many meshes the view keeps whatever the holiday (the sprays, the sparks, the warmers). */
+  get baseMeshes(): number {
+    return 3 + this.warmers.length;
   }
 
   /** A prison: its decor is built afresh for the holiday next shown. The last one's freed `later`. */
@@ -97,11 +140,14 @@ export class HolidaysView {
     const glow: Part[] = [];
     const colors = kind === HOLIDAY.EASTER ? PASTEL : kind === HOLIDAY.SUMMER ? BRIGHT : kind === HOLIDAY.HALLOWEEN ? SPOOKY : LIGHTS;
     for (const d of holidayDecor(this.world, kind)) {
-      if (d.what === 'garland') garland(kind === HOLIDAY.CHRISTMAS ? glow : parts, d.x, d.x1!, d.z, colors, kind === HOLIDAY.CHRISTMAS, !!d.south);
+      if (d.what === 'garland') garland(kind === HOLIDAY.CHRISTMAS ? glow : parts, d, colors, kind === HOLIDAY.CHRISTMAS);
       else if (d.what === 'basket') basket(parts, d.x, d.z);
       else if (d.what === 'parasol') this.parasol(parts, d.x, d.z, d.turn);
       else if (d.what === 'barbecue') barbecue(parts, glow, d.x, d.z);
-      else if (d.what === 'hose') this.hoses.push({ x0: d.x, z0: d.z, x1: d.x1!, z1: d.z1! });
+      else if (d.what === 'hose') {
+        this.hoses.push({ x0: d.x, z0: d.z, x1: d.x1!, z1: d.z1! });
+        hoseReel(parts, d.x, d.z, Math.sign(d.x1! - d.x), Math.sign(d.z1! - d.z));
+      }
       else if (d.what === 'lantern') lantern(parts, glow, d.x, d.y ?? 0, d.z, d.y ? 0.8 : 1.2);
       else if (d.what === 'tree') tree(parts, glow, d.x, d.z);
       else if (d.what === 'snowman') snowman(parts, d.x, d.z, this.world.def.theme === 'desert');
@@ -135,25 +181,21 @@ export class HolidaysView {
       const g = new THREE.ConeGeometry(0.8, 0.28, 6, 1, true, (k * Math.PI) / 3, Math.PI / 3);
       canopy.push(paint(g.translate(x, 1.42, z), k % 2 ? 0xffffff : 0xe5484d));
     }
-    const mat = kitMaterial.clone();
-    mat.side = THREE.DoubleSide;
-    const mesh = new THREE.Mesh(merge(canopy, false), mat);
+    const mesh = new THREE.Mesh(merge(canopy, false), this.canopyMat);
     mesh.castShadow = true;
     this.group.add(mesh);
     this.dressed.push(mesh);
-    this.canopies.push({ mat, x, z, fade: 1 });
+    this.canopies.push({ mesh, x, z, fade: 1 });
   }
 
   private undress(later: Later) {
     const old = this.dressed;
-    const mats = this.canopies.map((c) => c.mat);
     this.dressed = [];
     this.canopies = [];
     this.hoses = [];
     for (const o of old) this.group.remove(o);
     later(() => {
       for (const o of old) (o as THREE.Mesh).geometry.dispose();
-      for (const m of mats) m.dispose();
     });
   }
 
@@ -168,15 +210,11 @@ export class HolidaysView {
     // A parasol's canopy fades while the player or anyone else stands under it, as the walls cut away.
     for (const c of this.canopies) {
       const under = (px: number, pz: number) => Math.abs(px - c.x) < 1.1 && Math.abs(pz - c.z) < 1.1;
-      const goal = under(x, z) || guards.some((o) => under(o.x, o.z)) || inmates.some((o) => under(o.x, o.z)) ? 0.22 : 1;
+      const goal = under(x, z) || guards.some((o) => under(o.x, o.z)) || inmates.some((o) => under(o.x, o.z)) ? CANOPY_SEE : 1;
       c.fade += (goal - c.fade) * Math.min(1, dt * 8);
-      const see = c.fade < 0.98;
-      if (c.mat.transparent !== see) {
-        c.mat.transparent = see;
-        c.mat.depthWrite = !see;
-        c.mat.needsUpdate = true;
-      }
-      c.mat.opacity = see ? c.fade : 1;
+      // (The shared step nearest its fade: none while it's all but opaque.)
+      const step = Math.round(((1 - c.fade) / (1 - CANOPY_SEE)) * CANOPY_STEPS);
+      c.mesh.material = step <= 0 ? this.canopyMat : this.canopyFades[Math.min(CANOPY_STEPS, step) - 1];
     }
     // The water fight's hoses: each a short fan of jets from the nozzle (three streams, swaying), and a splash where they land.
     let n = 0;
@@ -186,12 +224,12 @@ export class HolidaysView {
       this.hoses.forEach((hz, k) => {
         const dx = hz.x1 - hz.x0;
         const dz = hz.z1 - hz.z0;
-        const sway = Math.sin(time * 1.3 + k) * 0.25;
+        const sway = Math.sin(time * 1.3 + k) * HOSE_SWAY;
         for (let i = 0; i < jets; i++) {
           const jet = (i % 3) - 1;
           const u = (time * 1.4 + i / jets + k * 0.37) % 1;
           // (Fanned out a little either side of the jet's line, and swaying.)
-          const a = jet * 0.28 + sway;
+          const a = jet * HOSE_FAN + sway;
           const ca = Math.cos(a);
           const sa = Math.sin(a);
           const ex = dx * ca - dz * sa;
@@ -221,31 +259,51 @@ export class HolidaysView {
         Object.assign(b, { t: 0, life: 1.4 + Math.random() * 0.6, x: x + (Math.random() - 0.5) * 6, y: 3.6 + Math.random() * 1.8, z: z - 1 - Math.random() * 3, color: FIRE[Math.floor(Math.random() * FIRE.length)] });
       }
     }
+    // (Each spark with its trail, dimmer and smaller the further behind; a flash at the burst's heart as it goes off. Added light: they fade to nothing. None with reduced motion.)
+    let fl = 0;
     for (const b of this.bursts) {
       b.t += dt;
-      if (b.t >= b.life) continue;
-      const k = b.t / b.life;
-      const r = 2.2 * Math.sqrt(k);
-      this.c.setHex(b.color).multiplyScalar(1.6 * (1 - k) + 0.2);
-      for (let i = 0; i < SPARKS; i++) {
-        const a = (i / SPARKS) * Math.PI * 2;
-        const up = Math.sin(i * 2.399) * 0.9;
-        this.p.set(b.x + Math.cos(a) * r * Math.sqrt(1 - up * up), b.y + up * r - k * k * 1.2, b.z + Math.sin(a) * r * Math.sqrt(1 - up * up) * 0.6);
-        this.s.setScalar(1 - k * 0.6);
+      if (b.t >= b.life || !motion) continue;
+      for (let j = 0; j <= TRAIL; j++) {
+        const k = Math.max(0, b.t - j * 0.07) / b.life;
+        const r = 2.4 * Math.sqrt(k);
+        this.c.setHex(b.color).multiplyScalar((1.8 * (1 - k) + 0.15) * (1 - j * 0.32));
+        this.s.setScalar((1 - k * 0.55) * (1 - j * 0.25));
+        for (let i = 0; i < SPARKS; i++) {
+          const a = (i / SPARKS) * Math.PI * 2;
+          const up = Math.sin(i * 2.399) * 0.9;
+          this.p.set(b.x + Math.cos(a) * r * Math.sqrt(1 - up * up), b.y + up * r - k * k * 1.2, b.z + Math.sin(a) * r * Math.sqrt(1 - up * up) * 0.6);
+          this.m.compose(this.p, this.q, this.s);
+          this.sparks.setMatrixAt(s, this.m);
+          this.sparks.setColorAt(s++, this.c);
+        }
+      }
+      const f0 = b.t / 0.3;
+      if (f0 < 1) {
+        this.p.set(b.x, b.y, b.z);
+        this.s.setScalar(0.6 + f0 * 1.2);
         this.m.compose(this.p, this.q, this.s);
-        this.sparks.setMatrixAt(s, this.m);
-        this.sparks.setColorAt(s++, this.c);
+        this.c.setHex(b.color).lerp(WHITE, 0.6).multiplyScalar(1.4 * (1 - f0) * (1 - f0));
+        this.flashes.setMatrixAt(fl, this.m);
+        this.flashes.setColorAt(fl++, this.c);
       }
     }
     this.sparks.count = s;
     this.sparks.instanceMatrix.needsUpdate = true;
     if (this.sparks.instanceColor) this.sparks.instanceColor.needsUpdate = true;
+    this.flashes.count = fl;
+    this.flashes.instanceMatrix.needsUpdate = true;
+    if (this.flashes.instanceColor) this.flashes.instanceColor.needsUpdate = true;
   }
 
   dispose() {
     this.undress(now);
     this.sparks.geometry.dispose();
+    this.flashes.geometry.dispose();
     this.drops.geometry.dispose();
+    this.warmers[0].geometry.dispose();
+    this.canopyMat.dispose();
+    for (const m of this.canopyFades) m.dispose();
     this.glowMat.dispose();
     this.sparkMat.dispose();
     this.dropMat.dispose();
@@ -260,34 +318,43 @@ export interface HolidayPiece {
   y?: number;
   x1?: number;
   z1?: number;
-  /** A garland on the south wall of its row (else the north). */
-  south?: boolean;
+  /**
+   * A garland on a side wall (the west one -1, the east one 1), down column `x` from row `z` to `z1`;
+   * else along the north wall of row `z`, from `x` to `x1`. Never on a south wall: the camera sees
+   * only its back, and the garland would float across the see-through cut.
+   */
+  side?: -1 | 1;
   /** A parasol's deckchairs: the way they sit either side of it (radians; none without room). */
   turn?: number;
 }
 
 /**
  * Where a holiday's decor goes in a prison (pure, from the map; holidaytest checks every piece in
- * every prison): garlands along the canteen's north wall, broken round what hangs there (the menu
- * board, the clock, posters); Easter's baskets and Halloween's lanterns on its tables; summer's
+ * every prison): garlands along the canteen's north wall (its side walls where the north has no
+ * room), broken round what hangs there (the menu board, the clock, posters) and where the parole
+ * board sits in front of it; Easter's baskets and Halloween's lanterns on its tables; summer's
  * parasols, barbecue and hoses on the sports ground, where the exercise hour and the water fight
  * are; Halloween's lanterns along the yard's walls; Christmas's tree in a corner of the canteen and
  * the snowman out in the yard (where the yard is only a strip, the sports ground too). Nothing
  * stands on furniture, on the prison's own floor decor, on a pastime's ground (the pitch, the
- * track, the hoop's court, the garden, the rat track, the stage) or by a door; parasols keep
- * PARASOL_GAP tiles apart.
+ * track, the hoop's court, the garden, the rat track, the stage), by a doorway or an opening
+ * between rooms, in a passage a tile wide or by a fence's wire; nothing by a wall stands just north
+ * of a wall (it'd hide it from the camera); parasols keep PARASOL_GAP tiles apart and
+ * PARASOL_CLEAR from a doorway, and a hose's jets clear of anything standing.
  */
 export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   const out: HolidayPiece[] = [];
   if (!kind) return out;
   const { things, grounds, edges } = holidayTaken(w);
-  const free = (t: number) => !things.has(t) && !grounds.has(t) && !edges.has(t) && !nearDoor(w, t, 1);
+  // (Out on the floor: on nothing, off the pastimes' ground, clear of the doorways and openings and out of line with them, out of the one-wide passages, off the fences' wire.)
+  const ways = lanesOf(w, 0);
+  const floorOk = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 1) && !ways.has(t) && !narrowAt(w, things, t) && !nearFence(w, t);
+  const free = (t: number) => floorOk(t) && !edges.has(t);
   const canteen = canteenOf(w, things, grounds);
-  const tables = w.props.filter((p) => p.kind === 'table' && w.zoneAt(p.x, p.z) === 'canteen').slice(0, 6);
+  const tables = w.props.filter((p) => p.kind === 'table' && w.zoneAt(p.x, p.z) === 'canteen');
   // (Out in the yard; where it has no room, Shankton's strip, the sports ground too.)
   const own = floorOf(w, ['yard']);
   const sports = floorOf(w, ['sports']);
-  const xz = (t: number) => [t % MAP_W, Math.floor(t / MAP_W)] as const;
   const near = [-1, 0, 1].flatMap((dz) => [-1, 0, 1].map((dx) => dz * MAP_W + dx)).filter((d) => d !== 0);
   // (Each piece out on the ground keeps the tiles round it to itself.)
   const used = new Set<number>();
@@ -300,11 +367,8 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
     const on = new Set(ground);
     return ground.filter((t) => free(t) && !used.has(t) && near.every((d) => on.has(t + d) && !things.has(t + d)));
   };
-  const byWallOf = (ground: readonly number[]) =>
-    ground.filter((t) => {
-      const [x, z] = xz(t);
-      return free(t) && (solidAt(w, x + 1, z) || solidAt(w, x - 1, z) || solidAt(w, x, z - 1) || solidAt(w, x, z + 1));
-    });
+  /** Free tiles of a ground by its edge: against a wall, or a tile in from a fence (edgeAt). */
+  const byWallOf = (ground: readonly number[]) => ground.filter((t) => free(t) && edgeAt(w, t));
   const pick = (list: readonly number[], n: number, salt: number) => {
     const got: number[] = [];
     for (const t of [...list].sort((a, b) => hash(a, salt) - hash(b, salt) || a - b)) {
@@ -313,13 +377,26 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
     }
     return got;
   };
+  /** `n` tiles of a list one at a time, each keeping the tiles round it before the next is picked (never two side by side). */
+  const pickPlace = (list: readonly number[], n: number, salt: number) => {
+    const got: number[] = [];
+    while (got.length < n) {
+      const t = pick(list, 1, salt)[0];
+      if (t === undefined) break;
+      got.push(t);
+      place(t);
+    }
+    return got;
+  };
   const yard = roomOf(own).length ? own : floorOf(w, ['yard', 'sports']);
   const at = (t: number) => ({ x: (t % MAP_W) + 0.5, z: Math.floor(t / MAP_W) + 0.5 });
-  if (canteen) for (const [x0, x1, z, south] of canteen.walls) out.push({ what: 'garland', x: x0, x1, z, ...(south ? { south } : {}) });
+  if (canteen) out.push(...canteen.walls);
   if (kind === HOLIDAY.EASTER) for (const p of tables) out.push({ what: 'basket', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
   else if (kind === HOLIDAY.SUMMER) {
-    // (Where the sports ground has no room left by its pitch, track and court, Center Perks', out in the yard by it.)
-    const room = roomOf(sports).length ? roomOf(sports) : roomOf(own);
+    // (Where the sports ground has no room left by its pitch, track and court, Center Perks', out in the yard by it; well in from a doorway, off the way in.)
+    const lanes = lanesOf(w);
+    const roomy = (ground: readonly number[]) => roomOf(ground).filter((t) => !nearDoor(w, t, PARASOL_CLEAR) && !lanes.has(t));
+    const room = roomy(sports).length ? roomy(sports) : roomy(own);
     const spots: number[] = [];
     for (const t of pick(room, room.length, 11)) {
       if (spots.length >= 3) break;
@@ -332,38 +409,34 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
       place(t);
     }
     const byWall = byWallOf(sports);
-    const bbq = pick(byWall, 1, 12)[0];
+    // (A barbecue by the wall, or, where the running track's margin takes the whole wall, Center Perks', at the track's edge.)
+    const hoseAt = sports.filter((t) => floorOk(t) && edgeAt(w, t));
+    const bbq = pick(byWall, 1, 12)[0] ?? pick(hoseAt, 1, 12)[0];
     if (bbq !== undefined) {
       out.push({ what: 'barbecue', ...at(bbq) });
       place(bbq);
     }
-    // (Each hose sprays a short jet, HOSE_REACH tiles out from its wall onto the sports ground.)
+    // (Each hose sprays a short jet, up to HOSE_REACH tiles out from its wall onto the sports ground, its fan clear of anything standing.)
     const onGround = new Set(sports);
-    // (A hose by the wall may stand at a pastime's edge, never on it: its jet points away from the wall.)
-    const hoseAt = sports.filter((t) => {
-      const [x, z] = xz(t);
-      return !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 1) && (solidAt(w, x + 1, z) || solidAt(w, x - 1, z) || solidAt(w, x, z - 1) || solidAt(w, x, z + 1));
-    });
+    // (A hose by the wall may stand at a pastime's edge too, never on it: its jet points away from the wall.)
+    // (Its jets clear of anything standing, and of the parasols, the barbecue and the other hose and the tiles round them.)
+    const blocked = (k: number) => things.has(k) || used.has(k);
+    const aimed = (list: readonly number[]) => list.filter((t) => hoseAim(w, blocked, onGround, t));
     // (One at a time: the second keeps clear of the first.)
     for (let k = 0; k < 2; k++) {
-      const t = pick(byWall, 1, 13 + k)[0] ?? pick(hoseAt, 1, 13 + k)[0];
+      const t = pick(aimed(byWall), 1, 13 + k)[0] ?? pick(aimed(hoseAt), 1, 13 + k)[0];
       if (t === undefined) break;
-      const [x, z] = xz(t);
-      const [dx, dz] = solidAt(w, x + 1, z) ? [-1, 0] : solidAt(w, x - 1, z) ? [1, 0] : solidAt(w, x, z - 1) ? [0, 1] : [0, -1];
-      let reach = HOSE_REACH;
-      while (reach > 1 && !onGround.has(t + (dz * MAP_W + dx) * reach)) reach--;
+      const { dx, dz, reach } = hoseAim(w, blocked, onGround, t)!;
       const from = at(t);
       out.push({ what: 'hose', ...from, x1: from.x + dx * reach, z1: from.z + dz * reach });
       place(t);
     }
   } else if (kind === HOLIDAY.HALLOWEEN) {
     for (const p of tables) out.push({ what: 'lantern', x: p.x + p.w / 2, z: p.z + p.d / 2, y: TABLE_TOP });
-    // (Along the yard's walls; where it has hardly any free, San Pancho's, the sports ground's too.)
-    const walls = byWallOf(yard);
-    for (const t of pick(walls.length >= 4 ? walls : byWallOf(floorOf(w, ['yard', 'sports'])), 4, 14)) {
-      out.push({ what: 'lantern', ...at(t) });
-      place(t);
-    }
+    // (Along the yard's walls; where it has too few free, San Pancho's, the sports ground's too.)
+    const got = pickPlace(byWallOf(yard), 4, 14);
+    got.push(...pickPlace(byWallOf(floorOf(w, ['yard', 'sports'])), 4 - got.length, 14));
+    for (const t of got) out.push({ what: 'lantern', ...at(t) });
   } else if (kind === HOLIDAY.CHRISTMAS) {
     if (canteen?.corner) out.push({ what: 'tree', x: canteen.corner[0], z: canteen.corner[1] });
     else {
@@ -382,8 +455,46 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
   return out;
 }
 
+/**
+ * Where a hose by the wall at tile `t` sprays ([dx, dz] away from the wall, `reach` tiles): the
+ * longest jet, 2 to HOSE_REACH tiles, whose whole fan (HOSE_FAN either side, HOSE_SWAY more) passes
+ * over open floor with nothing standing on it (`blocked`: furniture, the other summer pieces) and
+ * lands on the sports ground; null if none does.
+ */
+export function hoseAim(w: World, blocked: (t: number) => boolean, ground: ReadonlySet<number>, t: number): { dx: number; dz: number; reach: number } | null {
+  const x = t % MAP_W;
+  const z = Math.floor(t / MAP_W);
+  const edge = edgeAt(w, t);
+  if (!edge) return null;
+  const [dx, dz] = edge;
+  const wide = HOSE_FAN + HOSE_SWAY;
+  for (let reach = HOSE_REACH; reach >= 2; reach--) {
+    if (!ground.has(t + (dz * MAP_W + dx) * reach)) continue;
+    let clear = true;
+    for (const a of [-wide, 0, wide]) {
+      const ex = (dx * Math.cos(a) - dz * Math.sin(a)) * reach;
+      const ez = (dx * Math.sin(a) + dz * Math.cos(a)) * reach;
+      for (let u = 0.15; u <= 1.001 && clear; u += 0.05) {
+        const tx = Math.floor(x + 0.5 + ex * u);
+        const tz = Math.floor(z + 0.5 + ez * u);
+        const k = tz * MAP_W + tx;
+        if (k !== t && (solidAt(w, tx, tz) || blocked(k))) clear = false;
+      }
+    }
+    if (clear) return { dx, dz, reach };
+  }
+  return null;
+}
+
 /** How far a hose's jet reaches from its wall (tiles). */
 export const HOSE_REACH = 3;
+/** A hose's three jets fan out this far either side (radians), and the fan sways this much more. */
+export const HOSE_FAN = 0.2;
+export const HOSE_SWAY = 0.15;
+/** A parasol stands more than this many tiles from a doorway or an opening (its canopy and deckchairs off the way in), and off its lane (lanesOf). */
+export const PARASOL_CLEAR = 2;
+/** The way in through a doorway: this many tiles straight on from it, a tile either side (lanesOf). */
+export const LANE = 4;
 
 /** Parasols stand this many tiles apart at least (their canopies and deckchairs clear of each other). */
 export const PARASOL_GAP = 3;
@@ -444,65 +555,210 @@ export function courtRect(c: { x: number; z: number; face: number }): [number, n
   return [x0, z0, Math.ceil(Math.max(...xs) - 0.01) - x0, Math.ceil(Math.max(...zs) - 0.01) - z0];
 }
 
-/** A doorway (a door or a detector arch) within this many tiles: kept clear for whoever comes through. */
+/** A doorway (a door, a detector arch, or an opening between two rooms with no door: openingsOf) within this many tiles: kept clear for whoever comes through. */
 export function nearDoor(w: World, t: number, r: number): boolean {
+  const open = openingsOf(w);
   const x0 = t % MAP_W;
   const z0 = Math.floor(t / MAP_W);
   for (let z = z0 - r; z <= z0 + r; z++) {
     for (let x = x0 - r; x <= x0 + r; x++) {
       if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
       const k = w.ground.kind[z * MAP_W + x];
-      if (k === TILE.DOOR || k === TILE.DETECTOR) return true;
+      if (k === TILE.DOOR || k === TILE.DETECTOR || open.has(z * MAP_W + x)) return true;
     }
   }
   return false;
 }
+
+const OPENINGS = new WeakMap<World, Set<number>>();
+
+/**
+ * The openings between rooms with no door in them (the gaps in a wall's line, up to OPENING_WIDE
+ * tiles across, where the floor on one side is another zone's: Irongate's canteen's south opening,
+ * Center Perks' yard's ways in): each tile of the gap. A doorway to the decor, like a door.
+ */
+export function openingsOf(w: World): ReadonlySet<number> {
+  const had = OPENINGS.get(w);
+  if (had) return had;
+  const got = new Set<number>();
+  const floor = (x: number, z: number) => x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && !TILE_INFO[w.ground.kind[z * MAP_W + x]].solid;
+  // (Across the gap: floor both sides, and a zone changing on the way through.)
+  const through = (x: number, z: number, ax: number, az: number) => {
+    if (!floor(x, z) || !floor(x - ax, z - az) || !floor(x + ax, z + az)) return false;
+    const here = w.zoneAt(x, z);
+    return w.zoneAt(x - ax, z - az) !== here || w.zoneAt(x + ax, z + az) !== here;
+  };
+  for (let z = 0; z < MAP_H; z++) {
+    for (let x = 0; x < MAP_W; x++) {
+      for (const [ax, az] of [[0, 1], [1, 0]]) {
+        if (!through(x, z, ax, az)) continue;
+        // (Along the wall's line, both ways, to the wall each side.)
+        const [px, pz] = [az, ax];
+        let a = 0;
+        while (a <= OPENING_WIDE && through(x - px * (a + 1), z - pz * (a + 1), ax, az)) a++;
+        let b = 0;
+        while (b <= OPENING_WIDE && through(x + px * (b + 1), z + pz * (b + 1), ax, az)) b++;
+        if (a + b + 1 > OPENING_WIDE) continue;
+        if (solidAt(w, x - px * (a + 1), z - pz * (a + 1)) && solidAt(w, x + px * (b + 1), z + pz * (b + 1))) got.add(z * MAP_W + x);
+      }
+    }
+  }
+  OPENINGS.set(w, got);
+  return got;
+}
+
+/**
+ * The ways in: from each doorway (a door, a detector arch, an opening) straight on into the room
+ * either side, LANE tiles deep (and `wide` tiles either side of it), where people walk in and out
+ * and the guide's path runs: nothing stands in line with a doorway, nothing big beside that line.
+ */
+export function lanesOf(w: World, wide: 0 | 1 = 1): ReadonlySet<number> {
+  const open = openingsOf(w);
+  const got = new Set<number>();
+  const floor = (x: number, z: number) => x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && !TILE_INFO[w.ground.kind[z * MAP_W + x]].solid;
+  for (let t = 0; t < w.ground.kind.length; t++) {
+    const k = w.ground.kind[t];
+    if (k !== TILE.DOOR && k !== TILE.DETECTOR && !open.has(t)) continue;
+    const x = t % MAP_W;
+    const z = Math.floor(t / MAP_W);
+    for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (!floor(x + ax, z + az) || !floor(x - ax, z - az)) continue;
+      for (let d = 1; d <= LANE; d++) for (let j = -wide; j <= wide; j++) {
+        const xx = x + ax * d + az * j;
+        const zz = z + az * d + ax * j;
+        if (floor(xx, zz)) got.add(zz * MAP_W + xx);
+      }
+    }
+  }
+  return got;
+}
+
+/** An opening this many tiles across at most is a way through a wall (wider, two spaces open to each other). */
+export const OPENING_WIDE = 4;
+
+/** A passage a tile wide (walls, or something standing, either side): nothing set down in it. */
+export function narrowAt(w: World, things: ReadonlySet<number>, t: number): boolean {
+  const x = t % MAP_W;
+  const z = Math.floor(t / MAP_W);
+  const shut = (xx: number, zz: number) => solidAt(w, xx, zz) || things.has(zz * MAP_W + xx);
+  return (shut(x - 1, z) && shut(x + 1, z)) || (shut(x, z - 1) && shut(x, z + 1));
+}
+
+/** A fence (its wire, its razor coil) on any tile round this one: decor keeps a tile off. */
+export function nearFence(w: World, t: number): boolean {
+  const x0 = t % MAP_W;
+  const z0 = Math.floor(t / MAP_W);
+  for (let z = z0 - 1; z <= z0 + 1; z++) {
+    for (let x = x0 - 1; x <= x0 + 1; x++) {
+      if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
+      if (FENCES.has(w.ground.kind[z * MAP_W + x])) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * A tile by the edge of a ground, and the way out from it ([dx, dz], away from the edge): against a
+ * wall (brick, reinforced: what stands tall) west, east or north of it, or a tile in from a fence
+ * (nothing touches the wire); null if neither, or if a wall stands just south of it (from the
+ * camera, a wall south of a thing hides it; a fence is seen through).
+ */
+export function edgeAt(w: World, t: number): [number, number] | null {
+  const x = t % MAP_W;
+  const z = Math.floor(t / MAP_W);
+  if (wallAt(w, x, z + 1)) return null;
+  if (wallAt(w, x + 1, z)) return [-1, 0];
+  if (wallAt(w, x - 1, z)) return [1, 0];
+  if (wallAt(w, x, z - 1)) return [0, 1];
+  const fence = (xx: number, zz: number) => xx >= 0 && zz >= 0 && xx < MAP_W && zz < MAP_H && FENCES.has(w.ground.kind[zz * MAP_W + xx]);
+  if (fence(x + 2, z) && !solidAt(w, x + 1, z)) return [-1, 0];
+  if (fence(x - 2, z) && !solidAt(w, x - 1, z)) return [1, 0];
+  if (fence(x, z - 2) && !solidAt(w, x, z - 1)) return [0, 1];
+  if (fence(x, z + 2) && !solidAt(w, x, z + 1)) return [0, -1];
+  return null;
+}
+
+const FENCES: ReadonlySet<number> = new Set([TILE.FENCE, TILE.ELECTRIC, TILE.FENCE_CUT, TILE.FENCE_FAKE]);
 
 function solidAt(w: World, x: number, z: number): boolean {
   if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return false;
   return TILE_INFO[w.ground.kind[z * MAP_W + x]].solid;
 }
 
+/** A wall that stands tall and hides what's behind it (brick, reinforced, a tower; a fence is seen through). */
+export function wallAt(w: World, x: number, z: number): boolean {
+  if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return false;
+  const i = TILE_INFO[w.ground.kind[z * MAP_W + x]];
+  return i.solid && i.opaque;
+}
+
 /**
- * The canteen: runs of its north wall ([x0, x1, z] with the wall behind row z), broken where
- * something hangs on that wall (a garland never crosses the menu board, the clock, a poster or the
- * odd jobs board);
- * and a tile for the tree: free floor with nothing standing on any tile round it (a plant, the
- * water cooler, a table, the counter), against a wall (a corner first) or else free in the room
- * (clear of the counter's queue), no doorway within two tiles.
+ * The canteen: its garlands, runs of its north wall (or, where what hangs there leaves no room,
+ * Irongate's with the odd jobs board, of its side walls), broken where something hangs on that
+ * wall (a garland never crosses the menu board, the clock, a poster or the odd jobs board) and
+ * where the parole board sits in front of it (their heads would cover it); and a tile for the
+ * tree: free floor with nothing standing on any tile round it (a plant, the water cooler, a table,
+ * the counter), against a wall (a corner first; never just north of one, which would hide it) or
+ * else free in the room (clear of the counter's queue), no doorway or opening within two tiles.
  */
-function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<number>): { walls: Array<[number, number, number, boolean]>; corner: [number, number] | null } | null {
+function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<number>): { walls: HolidayPiece[]; corner: [number, number] | null } | null {
   const tiles: number[] = [];
   for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (w.zoneAt(x, z) === 'canteen' && !solidAt(w, x, z)) tiles.push(z * MAP_W + x);
   if (!tiles.length) return null;
-  // (What hangs on a north wall, and on a south one: the floor tiles in front of it.)
+  // (What hangs on the north wall, the west and the east: the floor tiles in front of it.)
   const hung = new Set<number>();
-  const hungSouth = new Set<number>();
+  const hungWest = new Set<number>();
+  const hungEast = new Set<number>();
   for (const d of w.def.decor ?? []) {
+    if (!DECOR[d.kind].wall) continue;
     const r = d.rot ?? 0;
-    if (!DECOR[d.kind].wall || (r !== 0 && r !== 2)) continue;
-    for (let x = d.x; x < d.x + (d.w ?? 1); x++) (r === 0 ? hung : hungSouth).add((r === 0 ? d.z : d.z + (d.d ?? 1) - 1) * MAP_W + x);
+    const [dw, dd] = [d.w ?? 1, d.d ?? 1];
+    if (r === 0) for (let x = d.x; x < d.x + dw; x++) hung.add(d.z * MAP_W + x);
+    if (r === 1) for (let z = d.z; z < d.z + dd; z++) hungWest.add(z * MAP_W + d.x);
+    if (r === 3) for (let z = d.z; z < d.z + dd; z++) hungEast.add(z * MAP_W + d.x + dw - 1);
   }
-  // (P40's cork board, on the north wall when its reader faces north, the south one when south.)
+  // (P40's cork board, on the wall its reader faces.)
   const board = w.def.board;
-  if (board && board.face === 13) hung.add(board.z * MAP_W + board.x);
-  if (board && board.face === 5) hungSouth.add(board.z * MAP_W + board.x);
-  const runs = (south: boolean) => {
-    const out: Array<[number, number, number, boolean]> = [];
-    for (const t of tiles) {
-      const x = t % MAP_W;
-      const z = Math.floor(t / MAP_W);
-      if (!solidAt(w, x, south ? z + 1 : z - 1) || (south ? hungSouth : hung).has(t)) continue;
-      const last = out.at(-1);
-      if (last && last[2] === z && last[1] === x) last[1] = x + 1;
-      else out.push([x, x + 1, z, south]);
+  if (board) ({ 13: hung, 9: hungWest, 1: hungEast } as Record<number, Set<number>>)[board.face]?.add(board.z * MAP_W + board.x);
+  // (P39's parole board, seated in the canteen at its hearing: their heads in front of the wall a garland hangs on.)
+  const hearing = HEARINGS[w.def.id];
+  const heads = new Set(hearing?.zone === 'canteen' ? hearing.board.map((b) => b.z * MAP_W + b.x) : []);
+  // (Nor along an opening in the room's walls: no wall there to hang it on, only the way through.)
+  const gaps = openingsOf(w);
+  const north: HolidayPiece[] = [];
+  for (const t of tiles) {
+    const [x, z] = [t % MAP_W, Math.floor(t / MAP_W)];
+    if (!wallAt(w, x, z - 1) || hung.has(t) || gaps.has(t)) continue;
+    const last = north.at(-1);
+    if (last && last.z === z && last.x1 === x) last.x1 = x + 1;
+    else north.push({ what: 'garland', x, x1: x + 1, z });
+  }
+  // (The side walls, down each column; never at a corner under what hangs on the north wall.)
+  const sides: HolidayPiece[] = [];
+  for (const side of [-1, 1] as const) {
+    for (const t of [...tiles].sort((a, b) => (a % MAP_W) - (b % MAP_W) || a - b)) {
+      const [x, z] = [t % MAP_W, Math.floor(t / MAP_W)];
+      if (!wallAt(w, x + side, z) || (side < 0 ? hungWest : hungEast).has(t) || hung.has(t) || gaps.has(t)) continue;
+      const last = sides.at(-1);
+      if (last && last.side === side && last.x === x && last.z1 === z) last.z1 = z + 1;
+      else sides.push({ what: 'garland', x, z, z1: z + 1, side });
     }
-    // (A single tile, between a doorway and the board say: left bare.)
-    return out.filter(([a, b]) => b - a >= 2);
-  };
-  // (The north wall, facing the camera; where what hangs there leaves no room, Irongate's with the odd jobs board, the south wall.)
-  const north = runs(false);
-  const walls = north.length ? north : runs(true);
+  }
+  // (A single tile, between a doorway and the board say: left bare. Then broken where the parole board's heads would cover it, what's left either side kept.)
+  const long = (g: HolidayPiece) => (g.side ? g.z1! - g.z : g.x1! - g.x) >= 2;
+  const walls = (north.filter(long).length ? north.filter(long) : sides.filter(long)).flatMap((g) => {
+    const out: HolidayPiece[] = [];
+    const [s0, s1] = g.side ? [g.z, g.z1!] : [g.x, g.x1!];
+    for (let s = s0; s < s1; s++) {
+      if (heads.has(g.side ? s * MAP_W + g.x : g.z * MAP_W + s)) continue;
+      const last = out.at(-1);
+      if (last && (g.side ? last.z1 : last.x1) === s) {
+        if (g.side) last.z1 = s + 1;
+        else last.x1 = s + 1;
+      } else out.push(g.side ? { ...g, z: s, z1: s + 1 } : { ...g, x: s, x1: s + 1 });
+    }
+    return out;
+  });
   const walled = (t: number) => {
     const [x, z] = [t % MAP_W, Math.floor(t / MAP_W)];
     return [solidAt(w, x - 1, z), solidAt(w, x + 1, z), solidAt(w, x, z - 1), solidAt(w, x, z + 1)].filter(Boolean).length;
@@ -516,11 +772,14 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
     const r = d.rot ?? 0;
     for (let z = d.z; z < d.z + (d.d ?? 1); z++) for (let x = d.x; x < d.x + (d.w ?? 1); x++) (r === 0 || r === 2 ? alongRow : alongColumn).add(z * MAP_W + x);
   }
-  if (board) alongRow.add(board.z * MAP_W + board.x);
+  if (board) (board.face === 1 || board.face === 9 ? alongColumn : alongRow).add(board.z * MAP_W + board.x);
   const byBoard = (t: number) => [-1, 0, 1].some((k) => alongRow.has(t + k) || alongColumn.has(t + k * MAP_W));
   // (Nor under a garland: its boughs stand taller than the string hangs.)
-  const underGarland = (t: number) => walls.some(([a, b, z]) => z === Math.floor(t / MAP_W) && t % MAP_W >= a - 1 && t % MAP_W <= b);
-  const bare = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 2) && !byBoard(t) && !underGarland(t);
+  const underGarland = (t: number) => {
+    const [x, z] = [t % MAP_W, Math.floor(t / MAP_W)];
+    return walls.some((g) => (g.side ? g.x === x && z >= g.z - 1 && z <= g.z1! : g.z === z && x >= g.x - 1 && x <= g.x1!));
+  };
+  const bare = (t: number) => !things.has(t) && !grounds.has(t) && !nearDoor(w, t, 2) && !byBoard(t) && !underGarland(t) && !wallAt(w, t % MAP_W, Math.floor(t / MAP_W) + 1);
   // (Nothing standing on any tile round it: its boughs and presents, 0.6 or so out, never touch a table, the counter or a plant.)
   const roomy = (t: number) => [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => !things.has(t + dz * MAP_W + dx)));
   // (Out in the room: canteen floor all round, off the pastimes' ground, and out of the way of the queue at a serving counter.)
@@ -531,42 +790,66 @@ function canteenOf(w: World, things: ReadonlySet<number>, grounds: ReadonlySet<n
     for (let z = p.z - 1; z < p.z + p.d + 1; z++) for (let x = p.x - 1; x < p.x + p.w + 1; x++) queue.add(z * MAP_W + x);
   }
   const doors: number[] = [];
-  for (let t = 0; t < w.ground.kind.length; t++) if ((w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR) && [1, -1, MAP_W, -MAP_W].some((d) => inside.has(t + d))) doors.push(t);
+  for (let t = 0; t < w.ground.kind.length; t++) if ((w.ground.kind[t] === TILE.DOOR || w.ground.kind[t] === TILE.DETECTOR || gaps.has(t)) && (inside.has(t) || [1, -1, MAP_W, -MAP_W].some((d) => inside.has(t + d)))) doors.push(t);
   const fromDoors = (t: number) => Math.min(99, ...doors.map((d) => Math.abs((d % MAP_W) - (t % MAP_W)) + Math.abs(Math.floor(d / MAP_W) - Math.floor(t / MAP_W))));
-  const open = (t: number) => !queue.has(t) && [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => inside.has(t + dz * MAP_W + dx) && !grounds.has(t + dz * MAP_W + dx)));
+  const middle = (t: number) => !queue.has(t) && [-1, 0, 1].every((dz) => [-1, 0, 1].every((dx) => inside.has(t + dz * MAP_W + dx) && !grounds.has(t + dz * MAP_W + dx)));
   // (A corner with room round it first, then anywhere along a wall; else standing free in the room, nearest the north wall.)
   const c =
     tiles.find((t) => walled(t) >= 2 && bare(t) && roomy(t)) ??
     tiles.find((t) => walled(t) >= 1 && bare(t) && roomy(t)) ??
     tiles
-      .filter((t) => walled(t) === 0 && bare(t) && roomy(t) && open(t))
+      .filter((t) => walled(t) === 0 && bare(t) && roomy(t) && middle(t))
       // (Nearest the north wall's lights; then as far from a doorway, the way people come and go, as can be.)
       .sort((a, b) => Math.floor(a / MAP_W) - Math.floor(b / MAP_W) || fromDoors(b) - fromDoors(a) || a - b)[0];
   return { walls, corner: c === undefined ? null : [(c % MAP_W) + 0.5, Math.floor(c / MAP_W) + 0.5] };
 }
 
-/** A garland along a north wall's face (or a south one's): little flags (or bulbs that glow), dipping between pins. */
-function garland(out: Part[], x0: number, x1: number, z: number, colors: readonly number[], bulbs: boolean, south = false) {
+/** A garland along a north wall's face (or a side wall's: `side`): little flags (or bulbs that glow), dipping between pins. */
+function garland(out: Part[], g: HolidayPiece, colors: readonly number[], bulbs: boolean) {
   const y = WALL_H - 0.18;
-  const zf = south ? z + 1 - 0.06 : z + 0.06;
-  for (let x = x0 + 0.25, k = 0; x < x1 - 0.1; x += 0.5, k++) {
-    const dip = Math.sin(((x - x0) / 1.5) * Math.PI) * 0.06;
+  const side = g.side;
+  const [s0, s1] = side ? [g.z, g.z1!] : [g.x, g.x1!];
+  // (Its face: a little off the wall, into the room.)
+  const face = side ? (side < 0 ? g.x + 0.06 : g.x + 1 - 0.06) : g.z + 0.06;
+  const put = (geo: THREE.BufferGeometry, s: number, yy: number) => (side ? geo.rotateY(-Math.PI / 2).translate(face, yy, s) : geo.translate(s, yy, face));
+  for (let s = s0 + 0.25, k = 0; s < s1 - 0.1; s += 0.5, k++) {
+    const dip = Math.sin(((s - s0) / 1.5) * Math.PI) * 0.06;
     const c = colors[k % colors.length];
-    if (bulbs) out.push(paint(new THREE.SphereGeometry(0.05, 6, 4).translate(x, y - 0.06 - Math.abs(dip), zf), c));
-    else out.push(paint(new THREE.ConeGeometry(0.11, 0.2, 3).rotateX(Math.PI).translate(x, y - 0.12 - Math.abs(dip), zf), c));
+    if (bulbs) out.push(paint(put(new THREE.SphereGeometry(0.05, 6, 4), s, y - 0.06 - Math.abs(dip)), c));
+    else out.push(paint(put(new THREE.ConeGeometry(0.11, 0.2, 3).rotateX(Math.PI), s, y - 0.12 - Math.abs(dip)), c));
   }
   // (The string itself, a thin dark line; the Christmas lights' wire drooping from bulb to bulb.)
-  if (!bulbs) out.push(box(x1 - x0 - 0.2, 0.015, 0.015, 0x3a3a3a, (x0 + x1) / 2, y - 0.02, zf));
+  if (!bulbs) out.push(paint(put(new THREE.BoxGeometry(s1 - s0 - 0.2, 0.015, 0.015), (s0 + s1) / 2, y - 0.02 + 0.0075), 0x3a3a3a));
   else {
-    const at = (x: number) => y - 0.03 - Math.abs(Math.sin(((x - x0) / 1.5) * Math.PI) * 0.06) - Math.sin(((x - x0) / 0.5) * Math.PI) ** 2 * 0.04;
-    for (let x = x0 + 0.1; x < x1 - 0.1; x += 0.125) {
-      const xb = Math.min(x + 0.125, x1 - 0.1);
-      const ya = at(x);
-      const yb = at(xb);
-      const len = Math.hypot(xb - x, yb - ya);
-      out.push(paint(new THREE.BoxGeometry(len, 0.012, 0.012).rotateZ(Math.atan2(yb - ya, xb - x)).translate((x + xb) / 2, (ya + yb) / 2, zf), 0x2a3a2a));
+    const at = (s: number) => y - 0.03 - Math.abs(Math.sin(((s - s0) / 1.5) * Math.PI) * 0.06) - Math.sin(((s - s0) / 0.5) * Math.PI) ** 2 * 0.04;
+    for (let s = s0 + 0.1; s < s1 - 0.1; s += 0.125) {
+      const sb = Math.min(s + 0.125, s1 - 0.1);
+      const ya = at(s);
+      const yb = at(sb);
+      const len = Math.hypot(sb - s, yb - ya);
+      out.push(paint(put(new THREE.BoxGeometry(len, 0.012, 0.012).rotateZ(Math.atan2(yb - ya, sb - s)), (s + sb) / 2, (ya + yb) / 2), 0x2a3a2a));
     }
   }
+}
+
+/** Summer: the hose's tap and reel by the wall, the hose run out to its nozzle on a stake, aimed along its jet ([dx, dz]). */
+function hoseReel(out: Part[], x: number, z: number, dx: number, dz: number) {
+  // (The tap on a standpipe at the wall behind, the reel on its frame beside it, the green hose looping to the nozzle.)
+  const bx = x - dx * 0.36;
+  const bz = z - dz * 0.36;
+  const [sx, sz] = [-dz, dx];
+  out.push(cyl(0.035, 0.7, 0x8a9096, bx, 0, bz, 8), box(0.1, 0.06, 0.1, 0xc0c4c8, bx, 0.62, bz), box(0.04, 0.04, 0.12, 0xd23f36, bx, 0.7, bz));
+  const rx = bx + sx * 0.28;
+  const rz = bz + sz * 0.28;
+  // (Its drum facing out from the wall, its axle along the jet.)
+  const reel = new THREE.CylinderGeometry(0.2, 0.2, 0.12, 14).rotateZ(Math.PI / 2).rotateY(Math.atan2(-dz, dx)).translate(rx, 0.28, rz);
+  out.push(paint(reel, 0x3fb950), box(0.04, 0.3, 0.04, 0x2b3038, rx - dx * 0.08, 0, rz - dz * 0.08));
+  // (The hose, low along the ground from the reel to the stake, then up it.)
+  const len = Math.hypot(x - rx, z - rz);
+  out.push(paint(new THREE.BoxGeometry(0.05, 0.05, len).rotateY(Math.atan2(x - rx, z - rz)).translate((x + rx) / 2, 0.04, (z + rz) / 2), 0x2f8a3a));
+  out.push(cyl(0.02, 0.85, 0x6e4a2b, x, 0, z, 6), cyl(0.028, 0.8, 0x2f8a3a, x + dx * 0.04, 0.04, z + dz * 0.04, 6));
+  // (The nozzle, pointing along the jet.)
+  out.push(paint(new THREE.CylinderGeometry(0.025, 0.04, 0.16, 8).rotateX(Math.PI / 2).rotateY(Math.atan2(dx, dz)).translate(x + dx * 0.1, 0.85, z + dz * 0.1), 0xffd23f));
 }
 
 /** Easter: a basket of painted eggs on a table. */

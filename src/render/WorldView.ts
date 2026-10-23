@@ -537,13 +537,16 @@ export class WorldView {
     this.ownMaps.add(tex);
     const theme = this.world.def.theme ?? 'suburban';
     const alpine = theme === 'alpine';
+    // (The manhunt's outside, P41 review: its ground runs on out as the map's own grass, the same shade as its floors, no seam at the edge; its woods and roads past the edge are the HuntView's, clear of each other.)
+    const outside = this.world.def.id.startsWith('outside-');
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2),
-      new THREE.MeshStandardMaterial({ map: tex, color: alpine ? 0xe6edf5 : theme === 'industrial' ? 0xa7a298 : theme === 'desert' ? 0xe8d2ae : 0xa9bd98, roughness: 1 }),
+      new THREE.MeshStandardMaterial({ map: tex, color: outside ? new THREE.Color().setScalar(0.985) : alpine ? 0xe6edf5 : theme === 'industrial' ? 0xa7a298 : theme === 'desert' ? 0xe8d2ae : 0xa9bd98, roughness: outside ? 0.95 : 1 }),
     );
     ground.position.set(MAP_W / 2, -0.02, MAP_H / 2);
     ground.receiveShadow = true;
     this.group.add(ground);
+    if (outside) return;
 
     // Trees in a ring outside the road: a seeded scatter, one draw call.
     let s = 12345;
