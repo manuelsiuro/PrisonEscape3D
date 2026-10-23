@@ -85,7 +85,7 @@ function phoneParts(): { body: Part[]; handset: Part[]; out: Part[] } {
  * down to the trunk), and its glass and lamps as their own parts (the cabin glows faintly after
  * dark; the lamps glow).
  */
-function carParts(): { body: Part[]; glass: Part[]; lamps: Part[] } {
+export function carParts(): { body: Part[]; glass: Part[]; lamps: Part[] } {
   const PAINT = 0xa63746;
   const HOOD = 0xb03e4d;
   const ROOF = 0xe6dcc6;

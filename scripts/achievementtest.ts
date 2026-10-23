@@ -39,7 +39,7 @@ check(new Set(ids).size === ids.length, 'achievement ids are unique');
 for (const a of ACHIEVEMENTS) {
   check(ACHIEVEMENT_GROUPS.includes(a.group), `${a.id}: a known group`);
   check(hasIcon(a.icon), `${a.id}: a known icon (${a.icon})`);
-  check([a.run, a.escape, a.career].filter(Boolean).length === 1, `${a.id}: earned one way (run, escape or career)`);
+  check([a.run, a.escape, a.career, a.hunt].filter(Boolean).length === 1, `${a.id}: earned one way (run, escape, career or, P41, a manhunt)`);
   check(!!enT[`ach.${a.id}`] && !!enT[`ach.${a.id}.d`] && !!frT[`ach.${a.id}`] && !!frT[`ach.${a.id}.d`], `${a.id}: named and described in English and French`);
   check(!a.hidden || a.group === 'mishaps', `${a.id}: only mishaps are hidden`);
   if (a.gives) check(!!COSMETICS.find((c) => c.id === a.gives && c.locked), `${a.id}: gives a locked cosmetic (${a.gives})`);

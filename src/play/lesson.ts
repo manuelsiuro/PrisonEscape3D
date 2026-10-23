@@ -57,6 +57,8 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   if (!run) return;
   ctx.sim = g.rec.sim;
   ctx.craftOpen = itemsUI.craftIsOpen;
+  // (P41: a lesson in the manhunt reads the hunt.)
+  ctx.hunt = g.hunt?.hunt ?? null;
   if (!run.ended && !g.paused) {
     // A step with something to read in it shows a few seconds before it can tick (it may be done the moment it comes up).
     const now = run.progress.step;

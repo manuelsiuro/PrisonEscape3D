@@ -1,0 +1,214 @@
+/* ------------------------------------------------------------ the manhunt (P41) */
+
+/* The way to safety: its name and distance, an arrow pointing the way (turned by the play layer). */
+.hunt-goal {
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+.hunt-goal .hg-ic,
+.hunt-alarm .ha-ic {
+  display: inline-grid;
+  color: var(--ok);
+}
+
+.hunt-goal.lou .hg-ic {
+  color: #ff8a9a;
+}
+
+.hg-text,
+.ha-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.hg-text b,
+.ha-text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hg-text small,
+.ha-text small {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+.hg-arrow {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #12233a;
+  background: var(--ok);
+  transition: transform 0.15s linear;
+}
+
+/* The alarm: counting down in white, then up in red with what has come out since. */
+.ha-text b {
+  font-variant-numeric: tabular-nums;
+}
+
+.hunt-alarm.up .ha-ic,
+.hunt-alarm.up .ha-text b {
+  color: #ff6b5a;
+}
+
+.ha-tiers {
+  display: inline-flex;
+  gap: 3px;
+  color: #ffb38a;
+}
+
+.ha-tiers:empty {
+  display: none;
+}
+
+/* How the player stands. */
+.hunt-state {
+  gap: 6px;
+  color: white;
+  font-weight: 700;
+  background: rgba(18, 24, 36, 0.78);
+}
+
+.hunt-state.st-lit {
+  color: #2b2100;
+  background: #ffe27a;
+}
+
+.hunt-state.st-chased {
+  background: rgba(214, 48, 39, 0.92);
+}
+
+.hunt-state.st-cover {
+  background: rgba(46, 104, 64, 0.88);
+}
+
+.hud .pill.hunt-state.st-hidden {
+  background: rgba(31, 157, 99, 0.9);
+}
+
+.hunt-crew {
+  gap: 6px;
+  color: #5a3208;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffe2c2, #ffc98a);
+}
+
+/* A cut at the wire: the action button fills as it goes. */
+.hunt-act.cutting .act-round {
+  background: conic-gradient(var(--ok) calc(var(--cut, 0) * 360deg), var(--orange-2) 0);
+}
+
+/* The stone coming back: its button greys and fills again. */
+.hunt-stone.cooling .tool-round {
+  opacity: 0.55;
+}
+
+/* A lesson in the manhunt: the inside HUD keeps only the lesson's card, under the hunt's rows. */
+body.hunting .hud:not(.hunt-hud) > .hud-row {
+  display: none;
+}
+
+body.hunting .hud:not(.hunt-hud) {
+  top: calc(max(12px, env(safe-area-inset-top)) + 96px);
+}
+
+/* The escape card (P41): the offer to keep running, a clean getaway, recaptured. */
+.v-hunt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  text-align: left;
+  font: 600 13px/1.3 var(--font-ui);
+}
+
+.v-hunt span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.v-hunt b {
+  font: 800 15px/1.2 var(--font-ui);
+}
+
+.v-hunt .ic {
+  flex: none;
+}
+
+.v-hunt.offer {
+  color: #4a1d06;
+  background: linear-gradient(135deg, #ffd8bf, #ffb079);
+}
+
+.v-hunt.safe {
+  color: #0d3b24;
+  background: linear-gradient(135deg, #c9f7dc, #8de8b4);
+}
+
+.v-hunt.safe .v-star {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: white;
+  background: radial-gradient(circle at 40% 30%, #6ff0a8, var(--ok-2));
+  box-shadow: 0 6px 14px -6px rgba(31, 157, 99, 0.9);
+}
+
+.v-hunt.caught {
+  color: #4a0d0d;
+  background: linear-gradient(135deg, #ffd3cf, #ffaaa1);
+}
+
+/* The medal shelf: a clean getaway's star beside the route's medal. */
+.mr-clean {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: white;
+  background: radial-gradient(circle at 40% 30%, #6ff0a8, var(--ok-2));
+}
+
+@media (max-height: 520px) {
+  .v-hunt {
+    margin: 0 0 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .v-hunt b {
+    font-size: 13.5px;
+  }
+
+  body.hunting .hud:not(.hunt-hud) {
+    top: calc(max(8px, env(safe-area-inset-top)) + 84px);
+  }
+}
+
+/* Phones held upright: the goal pill gives way first. */
+@media (max-width: 600px) {
+  .hunt-goal .hg-text small {
+    display: none;
+  }
+
+  .ha-tiers {
+    display: none;
+  }
+}

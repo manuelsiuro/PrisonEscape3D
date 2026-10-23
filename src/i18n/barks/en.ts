@@ -2271,6 +2271,57 @@ export const enBarks = {
     "Shh. Listening for the {team} score. What?",
     "The {team}, top of the league. Right, what?",
   ],
+  // ---------------------------------------------------------------- P41, the manhunt: searchers out after the player
+  "gu.hunt.out": [
+    "Fan out! They can't have got far.",
+    "Right, lads. Every hedge, every ditch.",
+    "Out of my warm bed for this. Thanks a lot.",
+    "Torches on. Look for footprints.",
+    "Check the culverts. They always try the culverts.",
+    "Radio in every ten minutes. Move!",
+    "Somebody put the kettle on. We'll be a while.",
+  ],
+  "gu.hunt.spotted": [
+    "There! Over there!",
+    "Got eyes on them! Stop right there!",
+    "Stop! Police!",
+    "You! Hands where I can see them!",
+    "Contact! They're heading for the road!",
+    "Don't make me run. I will run.",
+    "Over here! I've got one!",
+  ],
+  "gu.hunt.lost": [
+    "Where'd they go?",
+    "Lost them. Keep looking.",
+    "They were right here a second ago.",
+    "Nothing. They've gone to ground.",
+    "Check the hedges. Slowly.",
+    "Gone. Somebody's buying me a coffee.",
+  ],
+  "gu.hunt.heard": [
+    "What was that?",
+    "Hear that? Over by there.",
+    "Something moved. Going to look.",
+    "Probably a fox. Probably.",
+    "Hello? Anyone there?",
+    "I'll check it. Cover me.",
+  ],
+  "gu.hunt.dog": [
+    "Good dog! What've you got?",
+    "Easy, easy. Show me.",
+    "The dog's got something! Over here!",
+    "Sit. Stay. Now, what's in the bushes?",
+    "That's a find bark. Come out, whoever you are.",
+    "Nose never lies. Come on out.",
+  ],
+  "gu.hunt.caught": [
+    "Got you. Nice try.",
+    "And back we go.",
+    "End of the line, sunshine.",
+    "Gotcha! Steady now.",
+    "That's enough running for one night.",
+    "Back inside. The warden's waiting.",
+  ],
 } satisfies Record<string, readonly Line[]>;
 
 export type BankId = keyof typeof enBarks;
