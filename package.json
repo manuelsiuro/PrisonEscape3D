@@ -10,6 +10,7 @@
     "test": "tsx scripts/test.ts",
     "check": "tsc --noEmit && tsx scripts/test.ts",
     "maps": "tsx scripts/dev/mapimage.ts",
+    "released": "sh scripts/dev/released.sh",
     "icons": "rsvg-convert -w 512 public/icon.svg -o public/icon-512.png && rsvg-convert -w 192 public/icon.svg -o public/icon-192.png && rsvg-convert -w 512 public/icon-maskable.svg -o public/icon-maskable-512.png && rsvg-convert -w 180 public/icon.svg -o public/apple-touch-icon.png"
   },
   "dependencies": {

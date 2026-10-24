@@ -37,5 +37,5 @@ Rules that matter every time:
   thing appears: a group the title screen hides needs showing in `View.mapShot`. Then run
   `npm run maps` again, and commit the pictures with the phase.
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
-  `npm version patch|minor` → `git push --follow-tags origin main` → poll the live JS bundle
-  for the new version.
+  `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
+  background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).
