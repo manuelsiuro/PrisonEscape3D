@@ -37,6 +37,7 @@ import { endCheat } from '../src/sim/systems/cards';
 import { elderOf } from '../src/sim/systems/checkers';
 import { HOTBAR, itemOf, pocketOf, slot } from '../src/sim/systems/items';
 import { boardOf, boardNow, boardRefusal, bringsOf, cakeComes, canWhistle, chainDeal, dealsOf, deskOf, type Deal, digFace, digOf, endsFor, fixerDeal, freezerOf, gameGate, handInRefusal, jobOf, oddjobs, owes, whistleNow } from '../src/sim/systems/oddjobs';
+import { FEAT } from '../src/sim/systems/ledger';
 import { stapleSlot } from '../src/sim/systems/pantry';
 import { fixerOf, smugglingOf, visitPairs } from '../src/sim/systems/smuggling';
 import { newRat } from '../src/sim/systems/rats';
@@ -706,6 +707,7 @@ function handIn(g: Game, deal: Deal) {
     g.talkTo(who);
     g.talk(TALK.RECRUIT);
     check(s.followers.includes(who) && !owes(s, who) && jobNews(g.seen, 'owedJoin').length === 1, 'one who owes the player joins the crew on it');
+    check(s.feats[FEAT.debtsCalled] === 1, 'a debt that recruits is a debt called in (Called In)');
     const other = (fx + 2) % s.inmates.length;
     s.oddjobs[R.OWED] |= 1 << other;
     g.talkTo(other);

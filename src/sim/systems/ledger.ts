@@ -476,7 +476,7 @@ export function ledger(sim: Sim, x: number, z: number) {
         else if (e.what === 'chain') {
           f[FEAT.storySteps]++;
           if (!e.more) f[FEAT.stories]++;
-        } else if (e.what === 'calledIn') f[FEAT.debtsCalled]++;
+        } else if (e.what === 'calledIn' || e.what === 'owedJoin') f[FEAT.debtsCalled]++; // (A debt called in: a tool, or he joins the crew on it.)
         break;
       case 'paper':
         if (e.what === 'filed') f[FEAT.formsFiled]++;
