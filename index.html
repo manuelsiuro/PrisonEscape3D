@@ -10,12 +10,18 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Escape 3D" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <script>
+      // The browser's install dialog (Chrome, Edge) can be offered before the game has loaded:
+      // kept for the title screen's Install button (src/app/install.ts).
+      addEventListener('beforeinstallprompt', function (e) {
+        window.__pe3dInstall = e;
+      });
       // Boot guard: if the game hasn't started after a while (a broken offline copy, a
       // missing file), forget the offline copy and load once more from the server.
       // main.ts sets window.__pe3dBooted.

@@ -1,6 +1,8 @@
 import { h } from '../dom';
 import { icon } from '../icons';
 import { t } from '../../i18n';
+import { installWay, onInstallChange } from '../../app/install';
+import { showInstall } from './install';
 import { showShare } from './share';
 
 export type TitleChoice = 'continue' | 'play' | 'load' | 'tutorial' | 'trophies' | 'help' | 'settings' | 'daily';
@@ -32,8 +34,8 @@ export interface TitleInfo {
 /**
  * Title screen over the drifting prison; resolves with the player's choice. A hero card for
  * the main action (Continue the game in progress, else Play), New game and Load under it,
- * Trophies (P16), How to play and Settings side by side, a sound switch and Share (the game's link as a QR code) in the footer, the
- * version in the corner.
+ * Trophies (P16), How to play and Settings side by side, a sound switch, Share (the game's link as a QR code) and Install
+ * (until the game runs installed) in the footer, the version in the corner.
  */
 export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoice> {
   const sound = (muted: boolean) => `${icon(muted ? 'mute' : 'sound', 16)}<span>${t(muted ? 'title.soundOff' : 'title.soundOn')}</span>`;
@@ -94,7 +96,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
           </button>
         </div>
       </div>
-      <div class="title-foot"><button class="sound-toggle ${info.muted ? 'off' : ''}" data-sound>${sound(info.muted)}</button><button class="share-toggle" data-share>${icon('share', 15)}<span>${t('title.share')}</span></button></div>
+      <div class="title-foot"><button class="sound-toggle ${info.muted ? 'off' : ''}" data-sound>${sound(info.muted)}</button><button class="share-toggle" data-share>${icon('share', 15)}<span>${t('title.share')}</span></button><button class="share-toggle install-toggle" data-install hidden>${icon('install', 15)}<span>${t('title.install')}</span></button></div>
     </div>
     <span class="title-version">v${__APP_VERSION__}</span>`,
   );
@@ -120,6 +122,16 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         });
         return;
       }
+      const installBtn = target.closest<HTMLElement>('[data-install]');
+      if (installBtn) {
+        click();
+        el.inert = true;
+        void showInstall(click).then(() => {
+          el.inert = false;
+          if (!installBtn.hidden) installBtn.focus({ preventScroll: true });
+        });
+        return;
+      }
       const btn = target.closest<HTMLElement>('[data-c]');
       const c = btn?.dataset.c as TitleChoice | undefined;
       if (!c) return;
@@ -132,10 +144,16 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         return;
       }
       click();
+      offInstall();
       el.remove();
       resolve(c);
     };
     el.querySelector('.daily-btn small')!.textContent = info.daily.line;
+    // Install shows until the game runs installed (the browser's own dialog can arrive later, or be used up).
+    const installBtn = el.querySelector<HTMLElement>('[data-install]')!;
+    const showInstallBtn = () => (installBtn.hidden = installWay() === null);
+    const offInstall = onInstallChange(showInstallBtn);
+    showInstallBtn();
     document.body.append(el);
     if (info.focus) el.querySelector<HTMLElement>(`[data-c="${info.focus}"]`)?.focus({ preventScroll: true });
   });
