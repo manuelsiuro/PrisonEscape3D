@@ -79,7 +79,7 @@ export class OddJobsCard {
     this.el = h(
       'div',
       'train-card oddjobs-card hidden',
-      `<div class="train-head"><i class="train-ic">${icon('pin', 18)}</i><b id="oddjobs-title"></b><button class="icon-btn small oddjobs-close hidden" data-close>${icon('close', 16)}</button></div>
+      `<div class="train-head"><i class="train-ic">${icon('pin', 18)}</i><b id="oddjobs-title"></b><button class="icon-btn small oddjobs-close" data-close>${icon('close', 16)}</button></div>
       <p class="train-note oddjobs-note"></p>
       <div class="oddjobs-body"></div>`,
     );
@@ -159,8 +159,7 @@ export class OddJobsCard {
     this.drawn = key;
     this.el.dataset.mode = v.mode;
     setText(this.title, t(v.mode === 'board' ? 'oddjob.title' : 'oddjob.yourJob'));
-    // (The job's own card closes with its button, Escape or its chip; the board's, by walking away.)
-    this.closeBtn.classList.toggle('hidden', v.mode !== 'job');
+    // (Both close with the button or Escape; the job's own with its chip too, the board's by walking away too.)
     this.closeBtn.setAttribute('aria-label', t('common.close'));
     this.closeBtn.title = TOUCH ? '' : `${t('common.close')} (Esc)`;
     setText(this.note, v.note);

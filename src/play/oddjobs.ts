@@ -1,5 +1,6 @@
 import { buzz } from '../app/haptics';
 import { CHAIN_PIN, CHAINS, DIG_STEPS, FIXER_JOB_OPINION, FRAME_MINUTE, FROM, J, KIND, KIND_DEFS, KINDS, LIFT, LIFTS, PERK, STAGE } from '../content/oddjobs';
+import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { t, type Key } from '../i18n';
 import { itemNumber } from '../content/items';
 import { placesOf } from '../sim/ai/places';
@@ -30,13 +31,16 @@ import { coachOnce } from './tips';
 
 /** The job's own card asked for (its chip or B), away from the board. */
 let jobCard = false;
+/** The board's card closed (its Close button, Escape): it stays shut until the player steps off the board's tile. */
+let boardShut = false;
 
 export function resetOddJobs() {
   jobCard = false;
+  boardShut = false;
   storyCard.hide();
 }
 
-const why = (k: string | null) => (k ? t(`refused.${k}` as Key) : '');
+const why = (k: string | null) => (k ? t(`refused.${k}` as Key, { n: k === 'gameOpinion' ? GAME_OPINION : k === 'elderOpinion' ? ELDER_OPINION : k === 'played' ? GAMES_A_DAY : 0 }) : '');
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 /** The icon of each kind. */
@@ -208,9 +212,10 @@ export function oddjobsNow(sim: Sim): OddJobsView | null {
   const onTile = atBoard(sim as never) && Math.floor(s.player.x / UNIT) === b.x && Math.floor(s.player.z / UNIT) === b.z;
   const held = heldView(sim);
   if (!held) jobCard = false;
+  if (!onTile) boardShut = false;
   // (A story's card up: the board's steps aside for it.)
   if (storyCard.open) return null;
-  if (!onTile) return jobCard && held ? { mode: 'job', note: '', pins: [], job: held } : null;
+  if (!onTile || boardShut) return jobCard && held ? { mode: 'job', note: '', pins: [], job: held } : null;
   // At the board: the day's pins and the story's card, each with why not.
   const now = boardNow(sim as never);
   pins.length = 0;
@@ -260,8 +265,17 @@ export function closeJobCard(): boolean {
   return true;
 }
 
-/** The job's own card is what shows (not the board's, which closes by walking away). */
-export const jobCardShown = () => jobCard && oddjobsCard.open && oddjobsCard.mode === 'job';
+/** The card shown closed (its Close button, Escape): the job's own, or the board's until the player steps off its tile. */
+export function closeOddJobsCard() {
+  if (oddjobsCard.open && oddjobsCard.mode === 'board') {
+    boardShut = true;
+    jobCard = false;
+    oddjobsCard.returnFocus();
+  } else closeJobCard();
+}
+
+/** The card is up: the job's own (asked for) or the board's. */
+export const jobCardShown = () => oddjobsCard.open && (oddjobsCard.mode === 'board' || jobCard);
 
 /** B: the job's card (or the whistle). Taken: true. */
 export function oddjobKey(code: string): boolean {
@@ -436,7 +450,7 @@ export function wireOddJobs() {
   };
   // (The card's own Close button.)
   oddjobsCard.onClose = () => {
-    closeJobCard();
+    closeOddJobsCard();
   };
   talk.oddJob = oddjobTalk;
 }

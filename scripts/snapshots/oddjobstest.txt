@@ -20,6 +20,8 @@ san-pancho story: errand $15, cake $35, wrestle $30; ended day 5
 irongate story: lift $30, drop $35, checkers $30; ended day 4
 fixer's job: tip; tool: screwdriver
 rules review: the rat's plant, leftovers, the hidden compartment, late jobs, the freezer, the deadline, the cake, a bribed guard: checked
+full review: fixed games wait for an opponent who'll play (san-pancho: 1 pins waited)
+full review: a held story step, items taken back, the cake after the parcel, a second debt: checked
 center-perks: 7 dig spots face open floor
 stalag-flucht: 9 dig spots face open floor
 shankton: 11 dig spots face open floor
