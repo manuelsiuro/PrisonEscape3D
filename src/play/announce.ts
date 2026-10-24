@@ -524,7 +524,8 @@ export function announce(e: SimEvent, sim: Sim) {
         sound.sit();
         play.game?.pilot.stop();
         if (e.use === 'rest') coachOnce('rest', 'hint.rest');
-        else coachOnce('sit', 'hint.sit');
+        // (P39: sat before the parole board, no "move to get up" over its question: the tip waits for an ordinary seat.)
+        else if (!sim.state.hearing) coachOnce('sit', 'hint.sit');
       }
       break;
     case 'meal':

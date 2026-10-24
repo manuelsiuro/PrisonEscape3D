@@ -14,6 +14,8 @@ import { announcePa, dayTime } from './day';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { releaseChip } from './paperwork';
+import { boardLooks } from './smuggle';
+import { sitterPortraitOf } from '../render/portrait';
 import { TOUCH } from '../ui/dom';
 import { LESSONS } from '../tutorial/lessons';
 
@@ -58,7 +60,11 @@ function weighedText(code: number, counts: readonly number[], topics?: readonly 
   return `${lineText(r.id, counts[code])} (${signed(pts)})`;
 }
 
-const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, q: 0, question: '', file: '', fileOk: true, answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
+/** The board's three faces (the room's figures, photographed once the first hearing sits). */
+let faces: string[] = [];
+const boardFaces = () => (faces.length ? faces : (faces = boardLooks.map((m) => sitterPortraitOf(m.look, m.suit))));
+
+const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, faces: [], q: 0, question: '', file: '', fileOk: true, answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
 
 /** The record's lines as the card lists them: every line with something on it, its points when they aren't 0 (and the lines for at nothing, while applying, together on one line). */
 function recordLines(sim: Sim, all: boolean): ParoleView['lines'] {
@@ -88,6 +94,7 @@ export function paroleNow(sim: Sim): ParoleView | null {
     v.score = '';
     v.status = t('parole.board');
     v.statusTone = 'quiet';
+    v.faces = boardFaces();
     if (o.q < 0) {
       v.phase = 'sat';
       v.note = t('parole.sitting');
@@ -124,7 +131,8 @@ export function paroleNow(sim: Sim): ParoleView | null {
     v.verdictGood = good;
     v.score = t('parole.scoreOf', { n: signed(verdict.score), of: PASS });
     v.weighed = verdict.lines.filter((c) => c >= 0).map((c) => weighedText(c, verdict!.record, verdict!.topics));
-    v.status = good ? t('parole.weighedFor') : t('parole.weighedAgainst');
+    // (A thin record, nothing against it: no list under the header, the reason in words.)
+    v.status = good ? t('parole.weighedFor') : v.weighed.length ? t('parole.weighedAgainst') : t('parole.weighedThin');
     v.note = good ? t('parole.grantedNote', { time: dayTime(HEARING_FROM) }) : t('parole.againNote', { n: s.parole[P.AGAIN] });
     v.lines = [];
     return v;
@@ -152,6 +160,12 @@ export function paroleNow(sim: Sim): ParoleView | null {
   } else if (p[P.RELEASE]) {
     v.status = t('parole.grantedStatus', { time: dayTime(HEARING_FROM) });
     v.statusTone = 'ok';
+  } else if (p[P.OUTCOME] === OUTCOME.GRANTED && p[P.AGAIN] > day) {
+    // (A grant that fell through at the desk: not there by 10:30, turned away, or a lockdown. Said so, with the wait.)
+    v.status = t('parole.status.lost', { n: p[P.AGAIN] });
+    v.statusTone = 'bad';
+    v.note = t('parole.offer', { n: HEARING_AFTER, m: HEARING_AFTER - LAWYER_SOONER, time: dayTime(HEARING_FROM), d: APPLY_DAY });
+    if (why === 'paroleWait') v.why = '';
   } else if (p[P.OUTCOME] === OUTCOME.DENIED || p[P.OUTCOME] === OUTCOME.MISSED || p[P.OUTCOME] === OUTCOME.VOIDED) {
     const out = p[P.OUTCOME] === OUTCOME.DENIED ? 'denied' : p[P.OUTCOME] === OUTCOME.MISSED ? 'missed' : 'voided';
     v.status = t(`parole.status.${out}` as Key, { n: p[P.AGAIN] });

@@ -835,4 +835,121 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
   check(counts[k('missed')] >= 1, 'record bot: the breakfast missed is on the card');
   console.log(`record bot: ${lines.map(([id, n]) => `${id} ${n}`).join(', ')}: the card's lines as the ledger has them (${recordScore(counts)} so far)`);
 }
+
+// ------------------------------------------------------------------ the P39 review (v2.21.3)
+{
+  const byId = (id: string) => PRISONS.find((p) => p.id === id)!;
+  // Out at night: filmed or lit up, then caught (a lockdown says nothing more is "spotted"): void all the same.
+  const night: Array<[string, number, number]> = [['shankton', 32, 22], ['irongate', 8, 14], ['shankton', 53, 6], ['irongate', 42, 5]];
+  for (const [id, x, z] of night) {
+    const g = game(byId(id));
+    const s = g.sim.state;
+    g.jump(3, 10, 5);
+    g.toDesk();
+    g.step(APPLY);
+    g.jump(4, 1, 0);
+    g.setCalm(false);
+    const n0 = g.seen.length;
+    put(s.player, x, z);
+    for (let k = 0; k < 3 * 60 * STEPS_PER_MINUTE && !of(g.seen.slice(n0), 'caught').length; k++) g.step();
+    const ev = g.seen.slice(n0);
+    check(news(ev, 'voided').some((e) => e.why === 'night') && !s.parole[P.HEARING], `${id}: out at ${x},${z} at night (${[...new Set(of(ev, 'spotted').map((e) => e.reason))]}), caught: void`);
+  }
+  // Out of the cell at night in a lockdown (nothing more is "spotted" then): void, by the bed check or the capture.
+  {
+    const g = game();
+    const s = g.sim.state;
+    g.jump(3, 10, 5);
+    g.toDesk();
+    g.step(APPLY);
+    g.jump(4, 0, 29);
+    g.setCalm(false);
+    s.lockdown = true;
+    put(s.player, 30, 36);
+    for (let k = 0; k < 90 * STEPS_PER_MINUTE && !news(g.seen, 'voided').length; k++) {
+      s.lockdown = true;
+      g.step();
+    }
+    check(news(g.seen, 'voided').some((e) => e.why === 'night'), `out of the cell at night in a lockdown (the bed check, or caught out there): void`);
+  }
+  // The lawyer's filing cut off by the phone shutting (a lockdown): the fee back; hung up by the player: not.
+  {
+    const g = game();
+    const s = g.sim.state;
+    const c = CENTER_PERKS.comms!.phone;
+    g.jump(3, 10, 5);
+    put(s.player, c.x, c.z);
+    s.player.facing = c.face;
+    s.cash = PAROLE_FEE + 5;
+    g.step(command(0, OP.EXT, EXT.CALL, CALLEE.LAWYER * 16 + LAWYER.PAROLE));
+    check(!!s.call && s.cash === 5, 'the lawyer called, the fee paid');
+    g.setCalm(false);
+    s.lockdown = true;
+    for (let k = 0; k < 6 * STEPS_PER_MINUTE && s.call; k++) g.step();
+    check(!s.call && s.cash === PAROLE_FEE + 5 && !news(g.seen, 'applied').length, `cut off by a lockdown: the fee back ($${s.cash})`);
+  }
+  // Applied at 03:00 (the calendar a day ahead of the prison day): a fight started at 01:00, under an earlier application, stays off.
+  {
+    const g = game();
+    const s = g.sim.state;
+    g.jump(4, 1, 0);
+    s.parole[P.USED] = 1;
+    while (s.days.length < 5) s.days.push(0);
+    s.days[4] |= DAY.FIGHT | DAY.STARTED;
+    g.jump(4, 3, 0);
+    g.toDesk();
+    g.step(APPLY);
+    check(news(g.seen, 'applied').length === 1 && recordCounts(s)[RECORD.findIndex((r) => r.id === 'fights')] === 0, 'applied after midnight: the night\'s earlier fight off the record');
+  }
+  // Before the board: no talk, so no side game.
+  {
+    const g = game(byId('shankton'));
+    const s = g.sim.state;
+    g.jump(3, 10, 5);
+    g.toDesk();
+    g.step(APPLY);
+    g.jump(10, 9, 59);
+    g.to(10, 10, 0);
+    g.toRoom();
+    g.step();
+    const m = s.inmates[0];
+    m.body.x = s.player.x + 400;
+    m.body.z = s.player.z;
+    m.angry = 0;
+    // (Up off the seat first, still in the room: the hearing goes on; then a word with him.)
+    s.player.facing = 1;
+    g.step(command(0, OP.INTERACT));
+    g.step(command(0, OP.INTERACT));
+    check(!!s.hearing && s.talk < 0 && refusals(g.seen).includes('atHearing'), 'at the hearing: no talk with an inmate (no side game)');
+  }
+  // The board's chairs and the seat across kept clear of inmates while the hearing sits.
+  for (const p of PRISONS) {
+    const g = game(p, 7);
+    g.sim.state.calendar = [];
+    const s = g.sim.state;
+    const h = HEARINGS[p.id];
+    g.jump(3, 10, 5);
+    g.toDesk();
+    g.step(APPLY);
+    g.jump(10, 8, 30);
+    g.to(10, 9, 59);
+    g.toRoom();
+    g.to(10, 10, 1);
+    const tiles = [h.seat, ...h.board].map((q) => q.z * MAP_W + q.x);
+    let headed = 0;
+    for (let k = 0; k < 4000 && s.hearing; k++) {
+      g.step();
+      headed += s.inmates.filter((m) => tiles.includes(m.goal)).length;
+    }
+    check(headed === 0, `${p.id}: no inmate heads for the board's chairs or the seat during the hearing (${headed})`);
+  }
+  // A save's days past what can be (applied, or again from): nothing applied for.
+  {
+    const g = game();
+    const saved = JSON.parse(JSON.stringify(g.sim.state));
+    saved.parole = [0, 0, 0, 9999, 2, 0, -1, -1, 1, 0];
+    check(loadState(g.sim.world, CENTER_PERKS, saved).parole[3] === 0, 'a save waiting till day 9999: nothing applied for');
+  }
+  console.log('P39 review: out at night (camera, searchlight, in a lockdown), the lawyer\'s fee back, applied after midnight, no talk at the hearing, the board kept clear, a save\'s days: checked');
+}
 console.log('parole ok');

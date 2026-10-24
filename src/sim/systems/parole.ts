@@ -26,14 +26,16 @@ import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { Refusal, SimState } from '../state';
 import { CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../tuning';
-import { LAYER } from '../world/World';
+import { LAYER, MAP_W } from '../world/World';
 import { dayMinute, prisonDay } from './calendar';
+import { clockAt } from './clock';
 import { DAY, FEAT } from './ledger';
 import { atDesk, freedNow, releaseOf } from './paperwork';
 import { endTalk, refuse } from './social';
 import { REACH } from './items';
 import { atProp, seatSpot } from './rest';
 import { stopTraining } from './training';
+import { afterHours } from './watch';
 
 /** What EXT.PAROLE asks (b): apply at the desk, an answer to the board (c: ANSWER). Never renumber. */
 export const PAROLE = { APPLY: 0, ANSWER: 1 } as const;
@@ -231,8 +233,9 @@ export function applyParole(sim: SimContext, lawyer = false): boolean {
   p[P.USED] = 1;
   p[P.RELEASE] = 0;
   s.paroleBase = rawCounts(s);
-  // (Fights count from now: one started earlier today, under an older application, stays off.)
-  if (s.days[day - 1]) s.days[day - 1] &= ~DAY.STARTED;
+  // (Fights count from now: one started earlier today, under an older application, stays off. The ledger's days are
+  // the calendar's, a day ahead of the prison day before 08:00: both cleared.)
+  for (const d of [day - 1, clockAt(s.step).day - 1]) if (s.days[d]) s.days[d] &= ~DAY.STARTED;
   sim.events.push({ type: 'parole', what: 'applied', n: p[P.HEARING], lawyer });
   return true;
 }
@@ -265,6 +268,17 @@ export function hearingZones(sim: SimContext): readonly string[] | null {
   return z;
 }
 const zoneLists = new Map<string, readonly string[]>();
+
+/** The board's chairs and the player's seat across from them (ground tiles) into `out`, while the hearing is due or sitting (else none): kept clear of inmates. */
+export function boardKeptClear(sim: SimContext, out: number[]) {
+  out.length = 0;
+  const s = sim.state;
+  if (!s.hearing && !(hearingDue(s) && !s.lockdown)) return;
+  const h = hearingOf(sim);
+  if (!h) return;
+  for (const b of h.board) out.push(b.z * MAP_W + b.x);
+  out.push(h.seat.z * MAP_W + h.seat.x);
+}
 
 /** The question being asked (its member, its topic), null between questions or none. */
 export function questionNow(s: Pick<SimState, 'hearing'>): { member: number; topic: number } | null {
@@ -381,10 +395,15 @@ function voidIt(sim: SimContext, why: VoidWhy) {
 
 /** Plotting seen this step (null: none). */
 function plotting(sim: SimContext): VoidWhy | null {
+  // (Out of the cell after Lights Out: seen by a guard, filmed, lit up, or caught out there in a lockdown, when nothing more is "spotted".)
+  const outLate = afterHours(sim.state) && sim.playerZone !== 'playerCell';
   for (const e of sim.events) {
     if (e.type === 'found') return 'dig';
     if ((e.type === 'solitary' && e.on) || e.type === 'infirmary') if (e.plot) return 'tools';
     if (e.type === 'spotted' && (e.reason === 'night' || e.reason === 'bedCheck')) return 'night';
+    if (outLate && ((e.type === 'spotted' && (e.reason === 'camera' || e.reason === 'searchlight')) || e.type === 'caught')) return 'night';
+    // (A bed check failed in a lockdown says so only in its own news.)
+    if (e.type === 'bedCheck' && e.result === 'fail') return 'night';
   }
   return null;
 }

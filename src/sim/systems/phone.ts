@@ -445,12 +445,19 @@ export function say(sim: SimContext, b: number) {
   call.ends = s.step + LINE_STEPS;
   if (call.at === 3) louHears(sim);
 }
-/** The call hung up (EXT.SAY 3, walked away, the phone shut): nothing comes of it. */
-function hangUp(sim: SimContext) {
+/** The call hung up (EXT.SAY 3, walked away, the phone shut): nothing comes of it. `shut`: the phone shut on it (a lockdown, a drill, its hours over). */
+function hangUp(sim: SimContext, shut = false) {
   const s = sim.state;
-  if (!s.call) return;
-  sim.events.push({ type: 'phone', what: 'hungUp', to: s.call.to });
+  const call = s.call;
+  if (!call) return;
+  sim.events.push({ type: 'phone', what: 'hungUp', to: call.to });
   s.call = null;
+  // (P39: the lawyer's parole filing cut off by the phone, not by the player: the fee back, as a refusal at the call's end gives it.)
+  if (shut && call.to === CALLEE.LAWYER && call.sub === LAWYER.PAROLE) {
+    const fee = callCost(CALLEE.LAWYER, LAWYER.PAROLE);
+    s.cash += fee;
+    sim.events.push({ type: 'cash', n: fee, why: 'phone' });
+  }
 }
 
 /** Lou has heard all three lines: understood or not, caught or not; the job booked. */
@@ -524,7 +531,7 @@ function callDone(sim: SimContext, call: Call) {
       s.eventFlags |= TODAY.APPEALED;
       sim.events.push({ type: 'phone', what: 'appeal', n });
     } else if (call.sub === LAWYER.PAROLE) {
-      // (Refused by the call's end, wanted or in a lockdown meanwhile: the fee back.)
+      // (Refused by the call's end, wanted meanwhile: the fee back. Cut off by the phone shutting: hangUp gives it back.)
       if (!applyParole(sim, true)) {
         const fee = callCost(CALLEE.LAWYER, LAWYER.PAROLE);
         s.cash += fee;
@@ -580,7 +587,7 @@ function keepCall(sim: SimContext) {
   const s = sim.state;
   const call = s.call;
   if (!call) return;
-  if (!phoneOpen(sim) || !atPhone(sim)) return hangUp(sim);
+  if (!phoneOpen(sim) || !atPhone(sim)) return hangUp(sim, !phoneOpen(sim));
   if (s.step < call.ends) return;
   if (call.to === CALLEE.COUSIN) {
     s.call = null;
@@ -715,7 +722,7 @@ export function phone(sim: SimContext) {
       s.booth = [-1, 0, 0, 0];
       s.turn = 0;
     }
-    if (s.call) hangUp(sim);
+    if (s.call) hangUp(sim, true);
     return;
   }
   keepCall(sim);

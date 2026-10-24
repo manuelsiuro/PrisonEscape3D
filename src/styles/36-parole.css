@@ -97,12 +97,21 @@
 .parole-board li i {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
+  overflow: hidden;
   color: white;
   background: color-mix(in srgb, var(--member) 45%, transparent);
-  opacity: 0.55;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--member) 70%, transparent);
+  opacity: 0.6;
+}
+/* Their faces, as the room shows them (head and shoulders, cut by the circle). */
+.parole-board li i img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .parole-board li.on i {
   background: var(--member);
