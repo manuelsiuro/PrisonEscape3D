@@ -158,6 +158,8 @@ export function outsideWorld(def: OutsideDef, prison: PrisonDef): OutsideWorld {
   for (let i = 0; i < n; i++) base[i] = world.block[i] && !ford[i] ? 1 : 0;
   const safe = new Uint8Array(n);
   fillArea(safe, def.safe, ox, oz);
+  // (Only open ground is safe ground: a border strip's trees are no place to stand.)
+  for (let i = 0; i < n; i++) if (base[i]) safe[i] = 0;
   return { def, prison, world, w, h, ox, oz, cover, noisy, ford, wire, inside, deco, base, safe };
 }
 

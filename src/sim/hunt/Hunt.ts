@@ -122,6 +122,8 @@ export class Hunt {
   readonly npcGrid = new Uint8Array(N);
   /** Walking tiles from every tile to the nearest way out (the safe point, Lou's car when he's there); -1 none. Not state. */
   readonly toGoal: Int32Array;
+  /** The same for the player as they are: wire passable only with cutters (the HUD's distance, how close they got). */
+  readonly toSafe: Int32Array;
   /** Where the player came out (a tile). */
   readonly start: number;
   /** The places the search sweeps (tiles: open ground beside cover, every cover tile within a dog's nose of one; and a place every few tiles across the open). Not state. */
@@ -225,8 +227,9 @@ export class Hunt {
       sniffed: [],
     };
     this.refreshGrid();
-    this.toGoal = this.distances();
-    this.state.best = this.toGoal[this.start];
+    this.toGoal = this.distances(true);
+    this.toSafe = this.state.cutters ? this.toGoal : this.distances(false);
+    this.state.best = this.walkTo(this.start);
     this.sweepPts = this.sweepPoints();
   }
 
@@ -257,12 +260,13 @@ export class Hunt {
     // (In the helicopter's light nothing fools them; a guard's uniform only till the search has widened HUNT.uniformHeat times: by then the radio says one's gone missing.)
     if (s.heli.lit) return this.sight;
     const c = s.clothes;
-    return c === 1 && s.heat < HUNT.uniformHeat ? HUNT.uniform : c === 2 ? HUNT.disguised : this.sight;
+    // (Clothes off a line, the same: once the search has widened a time more, they have a description of them too.)
+    return c === 1 && s.heat < HUNT.uniformHeat ? HUNT.uniform : c === 2 && s.heat <= HUNT.uniformHeat ? HUNT.disguised : this.sight;
   }
 
   /** How close they got: the share of the way to safety walked (0–1). */
   get progress(): number {
-    const from = this.toGoal[this.start];
+    const from = this.walkTo(this.start);
     return from > 0 ? Math.max(0, Math.min(1, 1 - this.state.best / from)) : 1;
   }
 
@@ -316,6 +320,14 @@ export class Hunt {
       const pz = Math.floor(t / MAP_W) - this.out.oz;
       if (px >= x0 && px <= x1 && pz >= z0 && pz <= z1) return;
       if (px >= x0 - 1 && px <= x1 + 1 && pz >= z0 - 1 && pz <= z1 + 1 && age < this.blockAt[k] + HUNT.blockWait) return;
+      // (Nor on a searcher or a dog on its tiles: it waits for them to be by.)
+      const on = (b: { x: number; z: number }) => {
+        const bt = tileAt(b.x, b.z);
+        const bx = (bt % MAP_W) - this.out.ox;
+        const bz = Math.floor(bt / MAP_W) - this.out.oz;
+        return bx >= x0 && bx <= x1 && bz >= z0 && bz <= z1;
+      };
+      if (s.searchers.some((m) => m.mode !== SEEK.OFF && on(m.body)) || s.dogs.some((d) => s.searchers[d.handler].mode !== SEEK.OFF && on(d.body))) return;
       s.blocks |= 1 << k;
       this.refreshGrid();
       this.events.push({ type: 'roadblock', k });
@@ -405,8 +417,14 @@ export class Hunt {
     for (let i = 0; i < N; i++) this.npcGrid[i] = this.chaseGrid[i] || o.cover[i] ? 1 : 0;
   }
 
-  /** Walking tiles to the nearest way to safety from every tile (the map as built). */
-  private distances(): Int32Array {
+  /** Walking tiles to safety from a tile for the player (through wire only with cutters; where that's no way at all, as the search reckons it). */
+  walkTo(t: number): number {
+    const d = this.toSafe[t];
+    return d >= 0 ? d : this.toGoal[t];
+  }
+
+  /** Walking tiles to the nearest way to safety from every tile (the map as built; `wire`: through the wire too). */
+  private distances(wire: boolean): Int32Array {
     const d = new Int32Array(N).fill(-1);
     const queue: number[] = [];
     const o = this.out;
@@ -415,8 +433,8 @@ export class Hunt {
       const t = spotTile(this.def.lou, o.ox, o.oz);
       if (d[t] !== 0) (d[t] = 0), queue.push(t);
     }
-    // (Wire counts as passable: cutters make it so; a way round it is shorter anyway where there is one.)
-    const open = (i: number) => !this.grid[i] || o.wire[i] === 1;
+    // (The search reckons wire passable: cutters make it so; a way round it is shorter anyway where there is one.)
+    const open = (i: number) => !this.grid[i] || (wire && o.wire[i] === 1);
     flood(d, queue, open);
     return d;
   }
@@ -437,7 +455,8 @@ export class Hunt {
       // The open tile beside it that reaches the most cover not yet covered (nearest first).
       let best = -1;
       let bestN = 0;
-      for (let r = 1; r <= 2 && best < 0; r++)
+      // (Out to 4 tiles where nothing stands closer: a strip of cover against the map's edge, a thicket in the woods; the dog team casts about from there.)
+      for (let r = 1; r <= 4 && best < 0; r++)
         for (let z = cz - r; z <= cz + r; z++)
           for (let x = cx - r; x <= cx + r; x++) {
             if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
@@ -473,6 +492,8 @@ export class Hunt {
             }
         if (best >= 0 && !pts.some((t) => cheb(t, best) <= 3)) pts.push(best);
       }
+    // And every pocket the grid missed (behind a building, along the picture's edge): any open ground still 5 tiles from every place.
+    for (let i = 0; i < N; i++) if (stand(i) && o.inside[i] && !o.cover[i] && !pts.some((t) => cheb(t, i) <= 5)) pts.push(i);
     return pts;
   }
 
@@ -515,8 +536,8 @@ export class Hunt {
       // Gravel and ballast underfoot.
       if (o.noisy[t] && !s.noises.some(([, at, r]) => r === HUNT.crunch && s.step - at < CRUNCH_EVERY)) {
         s.feats[HFEAT.crunches]++;
-        this.noise(t, HUNT.crunch, 'crunch');
-        this.know(t);
+        // (Only a crunch someone heard tells the search where they are.)
+        if (this.noise(t, HUNT.crunch, 'crunch')) this.know(t);
       }
     }
     while (s.trail.length && s.step - s.trail[0][1] > HUNT.trailSteps) s.trail.shift();
@@ -565,8 +586,7 @@ export class Hunt {
     if (wire >= 0) {
       if (!s.cutters) return void this.events.push({ type: 'refused', why: 'noCutters' });
       s.cutting = [wire, 0];
-      this.noise(wire, HUNT.cutNoise, 'cut');
-      this.know(this.tile);
+      if (this.noise(wire, HUNT.cutNoise, 'cut')) this.know(this.tile);
       this.events.push({ type: 'cut', tile: wire, done: false });
       return;
     }
@@ -626,7 +646,7 @@ export class Hunt {
   private stone(tile: number) {
     const s = this.state;
     if (s.step - s.stoneAt < HUNT.stoneEvery) return void this.events.push({ type: 'refused', why: 'stoneSoon' });
-    if (tile < 0 || tile >= N || this.grid[tile] || cheb(tile, this.tile) > HUNT.stoneRange || !lineOfSight(this.world, s.player.x, s.player.z, centerX(tile), centerZ(tile))) {
+    if (tile < 0 || tile >= N || !this.out.inside[tile] || this.grid[tile] || cheb(tile, this.tile) > HUNT.stoneRange || !lineOfSight(this.world, s.player.x, s.player.z, centerX(tile), centerZ(tile))) {
       return void this.events.push({ type: 'refused', why: 'stoneFar' });
     }
     s.stoneAt = s.step;
@@ -654,7 +674,8 @@ export class Hunt {
     const s = this.state;
     const d = s.dogs[k];
     if (!d || what < 0 || what > 2 || s.treats[what] <= 0) return void this.events.push({ type: 'refused', why: 'noTreat' });
-    if (d.mode === HOUND.ASLEEP || !within(d.body, s.player, HUNT.treatRange) || !lineOfSight(this.world, s.player.x, s.player.z, d.body.x, d.body.z)) return void this.events.push({ type: 'refused', why: 'dogFar' });
+    // (Not a dog whose handler isn't out yet: it's nowhere to be seen.)
+    if (d.mode === HOUND.ASLEEP || s.searchers[d.handler].mode === SEEK.OFF || !within(d.body, s.player, HUNT.treatRange) || !lineOfSight(this.world, s.player.x, s.player.z, d.body.x, d.body.z)) return void this.events.push({ type: 'refused', why: 'dogFar' });
     s.treats[what]--;
     s.feats[HFEAT.treats]++;
     d.path = [];
@@ -672,8 +693,9 @@ export class Hunt {
   }
 
   // ---------------------------------------------------------------- noise
-  /** A noise: every searcher out within `reach` walking tiles of it goes to look (not one already after the player, nor an officer at his roadblock). */
-  private noise(tile: number, reach: number, kind: 'crunch' | 'stone' | 'cut' | 'bark', by = -1) {
+  /** A noise: every searcher out within `reach` walking tiles of it goes to look (not one already after the player, nor an officer at his roadblock). Whether anyone heard it. */
+  private noise(tile: number, reach: number, kind: 'crunch' | 'stone' | 'cut' | 'bark', by = -1): boolean {
+    let heard = false;
     const s = this.state;
     s.noises.push([tile, s.step, reach]);
     this.events.push({ type: 'noise', tile, reach, kind });
@@ -699,7 +721,9 @@ export class Hunt {
       if (d[tileAt(m.body.x, m.body.z)] < 0) return;
       this.lookAt(k, tile);
       this.events.push({ type: 'heard', who: k, tile });
+      heard = true;
     });
+    return heard;
   }
 
   private isPost(k: number) {
@@ -738,6 +762,8 @@ export class Hunt {
     if (!chasing) s.feats[HFEAT.spotted]++;
     this.events.push({ type: 'spotted', who: k });
     this.radio(k);
+    // (A patrol that spots them before any alarm radios it in: the alarm is up now, the head start over.)
+    if (s.step < s.alarmAt) s.alarmAt = s.step + 1;
   }
 
   /** The others within HUNT.radio tiles hear where the player is (none already after them, no officer leaves his roadblock). */
@@ -1040,8 +1066,9 @@ export class Hunt {
           return;
         }
         default: {
-          // At the heel: the player under its nose, it points; a fresh trail close by puts it on it.
+          // At the heel: the player under its nose, it points; a fresh trail close by puts it on it. At a place swept, it casts about round its handler for anyone hidden in the cover there.
           if (within(d.body, s.player, HUNT.nose)) return this.point(d, k);
+          if (s.hidden && h.mode === SEEK.SWEEP && h.goal >= 0 && this.arrived(h) && within(h.body, s.player, HUNT.nose + HUNT.cast)) return this.point(d, k);
           if (s.step >= d.rest) {
             for (let j = s.trail.length - 1; j >= 0; j--) {
               const [t, at] = s.trail[j];
@@ -1195,6 +1222,16 @@ export class Hunt {
   }
 
   // ---------------------------------------------------------------- the lookout, the end
+  /** Where a crew member out too keeps watch (units). */
+  private watch: { x: number; z: number } | null = null;
+  private get lookoutAt(): { x: number; z: number } {
+    if (!this.watch) {
+      const t = spotTile(this.def.lookout, this.out.ox, this.out.oz);
+      this.watch = { x: centerX(t), z: centerZ(t) };
+    }
+    return this.watch;
+  }
+
   private lookout() {
     const s = this.state;
     if (this.carry.crew <= 0) return;
@@ -1206,6 +1243,8 @@ export class Hunt {
         return;
       }
       if (s.hidden || m.mode === SEEK.CHASE || !within(m.body, s.player, HUNT.lookoutWarn)) return;
+      // (Only one the lookout sees from their rise: within sight of it, nothing in the way.)
+      if (!within(m.body, this.lookoutAt, HUNT.lookoutSight) || !lineOfSight(this.world, this.lookoutAt.x, this.lookoutAt.z, m.body.x, m.body.z)) return;
       s.warned |= bit;
       s.feats[HFEAT.whistles]++;
       this.events.push({ type: 'whistle', who: k });
@@ -1215,7 +1254,7 @@ export class Hunt {
   private outcome() {
     const s = this.state;
     const t = this.tile;
-    const d = this.toGoal[t];
+    const d = this.walkTo(t);
     if (d >= 0 && d < s.best) s.best = d;
     const o = this.out;
     const lou = this.carry.lou && within(s.player, { x: (this.def.lou.x + o.ox) * UNIT + UNIT / 2, z: (this.def.lou.z + o.oz) * UNIT + UNIT / 2 }, HUNT.car);

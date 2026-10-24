@@ -31,7 +31,9 @@ Rules that matter every time:
   changes a map or adds something placed on it (props, decor, guards, a new `PrisonDef` field
   such as `comms`), draw the new data in `scripts/dev/mapimage.ts` (picture, legend and the
   tile info in `tileData`), then run `npm run maps`. If the change shows in 3D, also retake
-  the "In game" photos with `scripts/dev/mapshot.ts` in the dev build. Check that the new
+  the "In game" photos with `scripts/dev/mapshot.ts` in the dev build (`send()` writes them to
+  `assets/maps/` through `scripts/dev/shotsink.ts`; a change to the manhunt's outside: `send(true)`,
+  its "Outside 3D" photos). Check that the new
   thing appears: a group the title screen hides needs showing in `View.mapShot`. Then run
   `npm run maps` again, and commit the pictures with the phase.
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →

@@ -662,11 +662,11 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
   items.forEach(([f, l], k) => swatch(g, M + (k % 6) * 230, y0 + Math.floor(k / 6) * 30, f, l));
   [
     'Yellow stars: where each kind of way out leaves the player (wall: fence, tunnel, roof; gate: takeover, gate, bluff; glider; van: stowaway; sea: raft; air: helicopter, Irongate\'s stowaway).',
-    'Green box: the safe point (a clean getaway). Red car: Lou\'s, when a call set it up. Blue W: washing lines (other clothes). Orange L: where a crew member out too keeps watch.',
+    'Green box: the safe point (a clean getaway). Red car: Lou\'s, when a call set it up. Blue W: washing lines (other clothes). Orange L: where a crew member out too keeps watch (a whistle for a searcher near the player that they can see, within 16 tiles).',
     'Coloured loops: searchers\' beats, out the seconds after the alarm shown (dashed: patrols out before any alarm, starting at a stop of their own each run), stop numbers in order; "in" and a dotted arrow: where one comes on, when not at its first stop.',
     'Each run shuffles the times among those out after the alarm and moves them (roadblocks, the helicopter too) up to 4 s either way; nobody comes on within 5 tiles of the player or in their sight. Red dashed boxes: roadblocks, their officer\'s post beside (white square).',
     'Purple dashed loop: the helicopter\'s sweep and its searchlight. From the alarm those out after it (not the patrols, nor the roadblocks\' officers) sweep the cover where the player is reckoned to be; once all are out the search widens every few seconds: eyes see further, the helicopter over that cover.',
-    'Past the map: woods (green) or the sea (blue), solid. Every number in seconds after the alarm.',
+    'Past the map: woods (green) or the sea (blue), solid. In 3D the prison itself stands past the wall (bottom), turned so its front gate meets the opening (Irongate: its island across the water); the # blocks are houses, sheds and barns. Every number in seconds after the alarm.',
   ].forEach((n, k) => g.text(M, y0 + 82 + k * 22, n, 'font-size="14" fill="#222"'));
   return g.done();
 }
@@ -737,6 +737,9 @@ function tileData(def: PrisonDef, n: number) {
   // The in-game picture (scripts/dev/mapshot.ts, taken in the browser), where one was taken: its frame's numbers beside it.
   const shot = join(OUT, `${n}-${def.id}-game.json`);
   const game = existsSync(shot) ? JSON.parse(readFileSync(shot, 'utf8')) : null;
+  // (P41 review: the outside as the manhunt draws it, taken the same way: mapshot.ts shootOutside.)
+  const outShot = join(OUT, `${n}-${def.id}-outside-game.json`);
+  const outsideGame = existsSync(outShot) ? JSON.parse(readFileSync(outShot, 'utf8')) : null;
   const marks: Array<[number, number, string]> = [];
   const mark = (x: number, z: number, s: string) => marks.push([x, z, s]);
   def.guards.forEach((gu, k) => {
@@ -814,7 +817,7 @@ function tileData(def: PrisonDef, n: number) {
     difficulty: def.difficulty,
     theme: def.theme ?? 'suburban',
     map: def.map ?? 0,
-    views: [...(game ? [{ kind: 'game', ...game }] : []), ...views.map((v) => ({ kind: v, file: `${n}-${def.id}-${v}.png` }))],
+    views: [...(game ? [{ kind: 'game', ...game }] : []), ...views.map((v) => ({ kind: v, file: `${n}-${def.id}-${v}.png` })), ...(outsideGame && outside ? [{ kind: 'outsideGame', ...outsideGame }] : [])],
     tiles: Array.from(L.kind),
     zones: Array.from(L.zone),
     cells: def.cells.map((c, k) => [...c, k === 0 ? 'the player' : (def.names[k - 1] ?? '?')]),

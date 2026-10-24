@@ -72,6 +72,8 @@ export const HUNT = {
   dogTrack: 220,
   sniff: 4,
   nose: 2.5,
+  /** At a place swept, a dog casts about this much further round its handler (tiles): cover a few tiles off the open ground is sniffed too. */
+  cast: 2,
   /** The trail: this many tiles at most, each fresh this long (steps; inside it lasts 90 s). */
   trailTiles: 60,
   trailSteps: 60 * S,
@@ -129,6 +131,8 @@ export const HUNT = {
   /** A crew member keeping watch whistles when a searcher comes this close (tiles), again once it has gone past `lookoutClear`. */
   lookoutWarn: 7,
   lookoutClear: 10,
+  /** How far the lookout sees from their rise (tiles; nothing in the way): a searcher out of their sight goes unwarned. */
+  lookoutSight: 16,
   /** Lou's car: this close to it (tiles) and you're in. */
   car: 1.2,
 } as const;

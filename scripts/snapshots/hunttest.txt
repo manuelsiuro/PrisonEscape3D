@@ -1,62 +1,59 @@
 the careful bot (12-tile view), 3 salts; caught per start, then by night/day × head start/seen going × jumpsuit/uniform:
-  center-perks wall     caught  0/24   0% [0 0 0 0 0 0 0 0]  away in 57 s (52–68)
-  center-perks gate     caught  7/24  29% [1 1 0 0 0 0 3 2]  away in 47 s (40–60)
-  center-perks glider   caught  2/24   8% [1 1 0 0 0 0 0 0]  away in 50 s (46–63)
+  center-perks wall     caught  0/24   0% [0 0 0 0 0 0 0 0]  away in 56 s (52–71)
+  center-perks gate     caught  5/24  21% [0 0 0 0 0 0 3 2]  away in 48 s (40–59)
+  center-perks glider   caught  2/24   8% [0 0 0 0 1 1 0 0]  away in 49 s (46–68)
   center-perks van      caught  0/24   0% [0 0 0 0 0 0 0 0]  away in 50 s (47–54)
-  stalag-flucht wall    caught  0/24   0% [0 0 0 0 0 0 0 0]  away in 60 s (50–78)
+  stalag-flucht wall    caught  4/24  17% [1 1 0 0 1 1 0 0]  away in 56 s (50–67)
   stalag-flucht gate    caught  0/24   0% [0 0 0 0 0 0 0 0]  away in 66 s (63–68)
   stalag-flucht glider  caught 16/24  67% [2 2 2 2 1 1 3 3]  away in 74 s (46–87)
-  stalag-flucht van     caught 12/24  50% [3 3 0 0 2 2 1 1]  away in 65 s (59–79)
-  shankton wall         caught 14/24  58% [0 0 3 3 1 1 3 3]  away in 61 s (61–63)
+  stalag-flucht van     caught 10/24  42% [3 3 0 0 2 2 0 0]  away in 62 s (57–81)
+  shankton wall         caught 11/24  46% [0 0 3 3 0 0 3 2]  away in 62 s (61–63)
   shankton gate         caught 16/24  67% [1 1 3 3 1 1 3 3]  away in 47 s (46–47)
-  shankton glider       caught  1/24   4% [0 0 0 0 0 0 1 0]  away in 39 s (25–123)
+  shankton glider       caught  0/24   0% [0 0 0 0 0 0 0 0]  away in 31 s (22–44)
   san-pancho wall       caught  0/24   0% [0 0 0 0 0 0 0 0]  away in 51 s (51–55)
   san-pancho gate       caught 18/24  75% [2 2 2 2 2 2 3 3]  away in 48 s (45–50)
-  san-pancho van        caught  5/24  21% [2 1 1 1 0 0 0 0]  away in 54 s (43–76)
-  irongate gate         caught 14/24  58% [2 2 1 1 3 3 1 1]  away in 44 s (34–53)
+  san-pancho van        caught  9/24  38% [2 1 1 1 0 0 2 2]  away in 49 s (43–59)
+  irongate gate         caught 12/24  50% [2 2 0 0 3 3 1 1]  away in 45 s (34–52)
   irongate sea          caught  4/24  17% [0 0 1 1 0 0 1 1]  away in 53 s (41–77)
   irongate air          caught  4/24  17% [0 0 0 0 1 1 1 1]  away in 34 s (29–43)
-all: caught 113/408 (28%), away in 52 s on average (25–123); nobody came on in sight (0 did)
-the expert bot (it sees everything): away from 136/136, 36 of them not with the first salt:
-  center-perks wall night head start jumpsuit: away with salt 3
-  center-perks wall night head start uniform: away with salt 3
+all: caught 111/408 (27%), away in 51 s on average (22–87); nobody came on in sight (0 did)
+the expert bot (it sees everything): away from 136/136, 33 of them not with the first salt:
+  center-perks gate night seen going jumpsuit: away with salt 2
+  center-perks gate night seen going uniform: away with salt 2
   center-perks gate day head start jumpsuit: away with salt 2
   center-perks gate day head start uniform: away with salt 2
-  center-perks glider night head start jumpsuit: away with salt 2
-  center-perks glider night head start uniform: away with salt 2
+  center-perks glider day head start jumpsuit: away with salt 2
+  center-perks glider day head start uniform: away with salt 2
   stalag-flucht wall night head start jumpsuit: away with salt 3
   stalag-flucht wall night head start uniform: away with salt 3
   stalag-flucht wall night seen going jumpsuit: away with salt 2
   stalag-flucht wall night seen going uniform: away with salt 2
-  stalag-flucht wall day head start jumpsuit: away with salt 3
-  stalag-flucht wall day head start uniform: away with salt 3
+  stalag-flucht wall day head start jumpsuit: away with salt 2
+  stalag-flucht wall day head start uniform: away with salt 2
   stalag-flucht wall day seen going jumpsuit: away with salt 2
   stalag-flucht wall day seen going uniform: away with salt 2
-  stalag-flucht gate day head start jumpsuit: away with salt 4
-  stalag-flucht gate day head start uniform: away with salt 4
-  shankton wall night head start jumpsuit: away with salt 2
-  shankton wall night head start uniform: away with salt 2
+  stalag-flucht gate day head start jumpsuit: away with salt 3
+  stalag-flucht gate day head start uniform: away with salt 3
+  shankton wall night head start jumpsuit: away with salt 3
+  shankton wall night head start uniform: away with salt 3
   shankton wall night seen going jumpsuit: away with salt 3
+  shankton wall day head start jumpsuit: away with salt 3
+  shankton wall day head start uniform: away with salt 3
   shankton gate night seen going jumpsuit: away with salt 3
   shankton gate night seen going uniform: away with salt 3
-  shankton gate day seen going jumpsuit: away with salt 2
-  shankton gate day seen going uniform: away with salt 2
-  san-pancho wall night head start jumpsuit: away with salt 5
-  san-pancho wall night head start uniform: away with salt 5
-  san-pancho wall day head start jumpsuit: away with salt 4
-  san-pancho wall day head start uniform: away with salt 4
+  san-pancho wall night seen going jumpsuit: away with salt 2
+  san-pancho wall night seen going uniform: away with salt 2
   san-pancho gate night seen going jumpsuit: away with salt 4
   san-pancho gate night seen going uniform: away with salt 4
-  san-pancho gate day seen going jumpsuit: away with salt 4
-  san-pancho gate day seen going uniform: away with salt 4
-  irongate gate day head start uniform: away with salt 2
-  irongate sea night seen going jumpsuit: away with salt 2
-  irongate sea night seen going uniform: away with salt 2
+  san-pancho gate day seen going jumpsuit: away with salt 5
+  san-pancho gate day seen going uniform: away with salt 5
+  irongate sea night seen going jumpsuit: away with salt 4
+  irongate sea night seen going uniform: away with salt 4
   irongate air night head start jumpsuit: away with salt 2
   irongate air night head start uniform: away with salt 2
-by condition: night, head start, jumpsuit 27%; night, head start, uniform 25%; night, seen going, jumpsuit 25%; night, seen going, uniform 25%; day, head start, jumpsuit 22%; day, head start, uniform 22%; day, seen going, jumpsuit 39%; day, seen going, uniform 35%
-keeping still, center-perks: day: in cover 7 tiles from safety caught at 189 s, in the open at the start 40 s (in a guard's uniform 42 s); night: in cover 7 tiles from safety caught at 189 s, in the open at the start 42 s (in a guard's uniform 42 s)
+by condition: night, head start, jumpsuit 25%; night, head start, uniform 24%; night, seen going, jumpsuit 24%; night, seen going, uniform 24%; day, head start, jumpsuit 24%; day, head start, uniform 24%; day, seen going, jumpsuit 39%; day, seen going, uniform 35%
+keeping still, center-perks: day: in cover 7 tiles from safety caught at 190 s, in the open at the start 40 s (in a guard's uniform 42 s); night: in cover 7 tiles from safety caught at 190 s, in the open at the start 42 s (in a guard's uniform 42 s)
 keeping still, stalag-flucht: day: in cover 7 tiles from safety caught at 125 s, in the open at the start 128 s (in a guard's uniform 128 s); night: in cover 7 tiles from safety caught at 125 s, in the open at the start 128 s (in a guard's uniform 128 s)
-keeping still, shankton: day: in cover 19 tiles from safety caught at 360 s, in the open at the start 79 s (in a guard's uniform 79 s); night: in cover 19 tiles from safety caught at 360 s, in the open at the start 79 s (in a guard's uniform 79 s)
-keeping still, san-pancho: day: in cover 9 tiles from safety caught at 124 s, in the open at the start 181 s (in a guard's uniform 181 s); night: in cover 9 tiles from safety caught at 124 s, in the open at the start 181 s (in a guard's uniform 181 s)
+keeping still, shankton: day: in cover 19 tiles from safety caught at 480 s, in the open at the start 79 s (in a guard's uniform 79 s); night: in cover 19 tiles from safety caught at 480 s, in the open at the start 79 s (in a guard's uniform 79 s)
+keeping still, san-pancho: day: in cover 9 tiles from safety caught at 124 s, in the open at the start 212 s (in a guard's uniform 212 s); night: in cover 9 tiles from safety caught at 124 s, in the open at the start 212 s (in a guard's uniform 212 s)
 keeping still, irongate: day: in cover 10 tiles from safety caught at 69 s, in the open at the start 131 s (in a guard's uniform 131 s); night: in cover 10 tiles from safety caught at 69 s, in the open at the start 131 s (in a guard's uniform 131 s)

@@ -197,12 +197,12 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
   background: var(--text); color: var(--panel);
 }
 .seg {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
   padding: 3px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line);
 }
 .seg button {
   border: 0; border-radius: 7px; padding: 7px 4px; background: transparent; cursor: pointer;
-  font-size: 12.5px; font-weight: 600; color: var(--muted);
+  font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap;
 }
 .seg button[aria-pressed="true"] { background: var(--raise); color: var(--text); box-shadow: var(--shadow); }
 .seg button:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -463,13 +463,14 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       <div class="prisons" id="prisons"></div>
     </div>
     <div>
-      <div class="section-title">View <span><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>O</kbd></span></div>
+      <div class="section-title">View <span><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>O</kbd> <kbd>U</kbd></span></div>
       <div class="seg" id="views" role="group" aria-label="View">
         <button data-view="game" title="The 3D prison as the game draws it, from its own camera (G)">In game</button>
         <button data-view="layout" title="Tiles, zones, doors, cells, props, decor (L)">Layout</button>
         <button data-view="people" title="Guards, cameras, free time, smuggling, delivery, checkpoint (P)">People</button>
         <button data-view="vents" title="Vents and boulders (V)">Vents</button>
         <button data-view="outside" title="The outside past the wall, where the manhunt is run (O)">Outside</button>
+        <button data-view="outsideGame" title="The outside as the manhunt draws it: its houses, the prison behind its wall (U)">Outside 3D</button>
       </div>
     </div>
     <p class="about" id="about"></p>
@@ -536,8 +537,8 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     <table>
       <tr><td><kbd>1</kbd> – <kbd>6</kbd></td><td>Training Block, Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate</td></tr>
       <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Previous / next prison</td></tr>
-      <tr><td><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd></td><td>In game · Layout · People &amp; places · Vents</td></tr>
-      <tr><td><kbd>Space</kbd> held</td><td>Peek at the same spot: the layout from any other view, in game from the layout</td></tr>
+      <tr><td><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>O</kbd> <kbd>U</kbd></td><td>In game · Layout · People &amp; places · Vents · Outside · Outside 3D</td></tr>
+      <tr><td><kbd>Space</kbd> held</td><td>Peek at the same spot: the layout from any other view, in game from the layout, the outside's map and its 3D picture from each other</td></tr>
       <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> <kbd>F</kbd></td><td>Zoom in, out, actual size, fit</td></tr>
       <tr><td>Arrow keys</td><td>Pan</td></tr>
       <tr><td>Click a tile</td><td>Inspect it and write a note (<kbd>Enter</kbd> to write, <kbd>⌘/Ctrl</kbd>+<kbd>Enter</kbd> to save)</td></tr>
@@ -561,7 +562,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     return;
   }
   const G = D.geometry;
-  const VIEW_NAMES = { game: 'In game', layout: 'Layout', people: 'People & places', vents: 'Vents', outside: 'Outside' };
+  const VIEW_NAMES = { game: 'In game', layout: 'Layout', people: 'People & places', vents: 'Vents', outside: 'Outside', outsideGame: 'Outside 3D' };
   const TILE_COLORS = {
     empty: '#1b1b1b', grass: '#8fbf5a', road: '#5f6166', concrete: '#d6d1c4', tiled: '#bcd6df', wood: '#cf9f66',
     asphalt: '#868990', dirt: '#c29361', brick: '#8a3b2e', reinforced: '#3a3d45', fence: '#a7a9ad', electric: '#f0cf2a',
@@ -587,7 +588,8 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   const prison = () => D.prisons[st.p];
   const hasView = (p, v) => p.views.some((x) => x.kind === v);
   /** What a held Space shows instead: the layout from any other view; from the layout, the game's picture (or the people). */
-  const peekOf = (v) => (v !== 'layout' ? 'layout' : hasView(prison(), 'game') ? 'game' : 'people');
+  // (The outside's two pictures peek at each other: the drawn map under the 3D one and back.)
+  const peekOf = (v) => (v === 'outsideGame' ? 'outside' : v === 'outside' ? (hasView(prison(), 'outsideGame') ? 'outsideGame' : 'layout') : v !== 'layout' ? 'layout' : hasView(prison(), 'game') ? 'game' : 'people');
   const shownView = () => (st.peek ? peekOf(st.view) : st.view);
   /**
    * Where the floor's tiles are in a view's picture: the drawn maps are square tiles under a title
@@ -628,7 +630,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   function describe(pi, x, z) {
     const p = D.prisons[pi];
     const i = z * G.mapW + x;
-    if (shownView() === 'outside' && p.outside) {
+    if ((shownView() === 'outside' || shownView() === 'outsideGame') && p.outside) {
       const o = p.outside;
       const tile = D.tileNames[o.tiles[i]] || '?';
       const what = [words(tile), o.deco[i]].filter(Boolean).join(' · ');
@@ -1046,6 +1048,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     else if (k === 'p' || k === 'P') goView('people');
     else if (k === 'v' || k === 'V') goView('vents');
     else if (k === 'o' || k === 'O') goView('outside');
+    else if (k === 'u' || k === 'U') goView('outsideGame');
     else if (k === 'f' || k === 'F') fit();
     else if (k === '+' || k === '=') zoomCenter(1.4);
     else if (k === '-' || k === '_') zoomCenter(1 / 1.4);

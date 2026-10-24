@@ -51,7 +51,7 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   glider     100 words on the page,  52 folded; 4 steps, 4 chips, 2 recipes, 1 lessons
   paperwork  157 words on the page,  45 folded; 5 steps, 0 chips, timeline, 1 recipes, 2 lessons
   parole     210 words on the page,  75 folded; 5 steps, 3 chips, timeline, 1 lessons
-  manhunt    235 words on the page,  88 folded; 4 steps, 3 chips, timeline, 1 lessons
+  manhunt    235 words on the page,  98 folded; 4 steps, 3 chips, timeline, 1 lessons
   smuggling  199 words on the page, 117 folded; 3 steps, 2 chips, 1 lessons
   rat        211 words on the page, 101 folded; 5 steps, 3 chips, 1 recipes, 1 lessons
   weather     54 words on the page,   0 folded; 0 steps, 0 chips

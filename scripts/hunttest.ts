@@ -24,7 +24,7 @@ import { HuntBot } from './huntbot';
 const VIEW = 12;
 const SALTS = [1, 2, 3];
 /** The expert tries these in turn (the proof needs one run's draws where a careful line gets through). */
-const EXPERT_SALTS = [1, 2, 3, 4, 5, 6];
+const EXPERT_SALTS = [1, 2, 3, 4, 5, 6, 7, 8];
 const CONDS = [
   ['night', 'head start', 23 * 60 + 40, HUNT.headStartMax],
   ['night', 'seen going', 23 * 60 + 40, 0],

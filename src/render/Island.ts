@@ -123,7 +123,11 @@ export class Island {
   private leaving: { kind: 'raft' | 'helicopter'; t: number; x: number; z: number } | null = null;
   private raft: THREE.Mesh | null = null;
 
-  constructor(world: World) {
+  constructor(
+    world: World,
+    /** Seen from the town across the water (P41 review: the island behind the manhunt's quays): its shore, no ocean of its own, no sea stacks or boats out toward the town. */
+    backdrop = false,
+  ) {
     const g = world.ground.base;
     const sea = (x: number, z: number) => !world.inside(x, z) || isSea(g[z * MAP_W + x]);
     // The ocean, far past the map's edges.
@@ -132,7 +136,7 @@ export class Island {
     const ocean = new THREE.Mesh(new THREE.PlaneGeometry(320, 320).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: this.waves, color: 0x9fc4d8, roughness: 0.32, metalness: 0.12 }));
     ocean.position.set(MAP_W / 2, SEA_Y, MAP_H / 2);
     ocean.receiveShadow = true;
-    this.group.add(ocean);
+    if (!backdrop) this.group.add(ocean);
 
     // The island's rocky skirt: every land tile on the shore goes down into the water as rock.
     const skirt: Part[] = [];
@@ -161,7 +165,7 @@ export class Island {
     // Sea stacks and rocks off the island, beyond the map's edge too.
     let s = 7741;
     const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
-    for (let k = 0, made = 0; k < 600 && made < 46; k++) {
+    for (let k = 0, made = 0; k < 600 && made < (backdrop ? 0 : 46); k++) {
       const x = -30 + rand() * (MAP_W + 60);
       const z = -30 + rand() * (MAP_H + 60);
       const xi = Math.floor(x);
@@ -201,7 +205,7 @@ export class Island {
       return model;
     };
     // (Not round the manhunt's outside, P41: they're moored at the prison, not the town.)
-    if (!world.def.id.startsWith('outside-')) {
+    if (!world.def.id.startsWith('outside-') && !backdrop) {
       const boats = new THREE.Mesh(merge([boat(31, 62.7, 7, 2, 0x2b4a6b, 0xeef1f4, true), boat(62.2, 32.4, 3, 1.1, 0x3b4048, 0xc8ccd2, false)]), kitMaterial);
       boats.castShadow = true;
       this.group.add(boats);

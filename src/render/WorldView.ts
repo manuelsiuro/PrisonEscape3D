@@ -67,7 +67,7 @@ interface DoorMesh {
  * A wall block whose faces are ordered sides first, then top and bottom: two material groups
  * (sides, top) instead of BoxGeometry's six, so a wall kind is two draw calls, not six.
  */
-function wallBlock(): THREE.BufferGeometry {
+export function wallBlock(): THREE.BufferGeometry {
   const g = new THREE.BoxGeometry(1, WALL_H, 1);
   const idx = Array.from(g.index!.array);
   // (BoxGeometry's faces, 6 indices each: +x, -x, +y, -y, +z, -z.)
@@ -127,6 +127,8 @@ export class WorldView {
     readonly world: World,
     /** The football pitch in use (its lines kept clean of the roll call's paint: ground.ts). */
     pitch: Pitch | null = world.def.leisure?.pitch ?? null,
+    /** Seen from outside (P41 review: the prison behind the manhunt's wall): no baked ground (its cache is the scene's own prison's) and no fields round it. */
+    backdrop = false,
   ) {
     this.buildFloors();
     this.buildWalls();
@@ -136,10 +138,10 @@ export class WorldView {
     this.buildTowers();
     this.buildProps();
     // (The ground's canvases are its cache's: kept for the same prison staged again.)
-    this.group.add(buildGround(world, pitch));
+    if (!backdrop) this.group.add(buildGround(world, pitch));
     this.lights = new Lights(world);
     this.group.add(this.lights.group);
-    this.buildSurroundings();
+    if (!backdrop) this.buildSurroundings();
     this.refreshTiles();
   }
 
@@ -227,7 +229,8 @@ export class WorldView {
       [TILE.BRICK, TEX.brick(), 0.9],
       [TILE.REINFORCED, TEX.reinforced(), 0.95],
     ] as const) {
-      const cells = this.cells((k) => k === kind);
+      // (The manhunt's outside: its buildings are houses, HuntView's own; only its prison wall is drawn here.)
+      const cells = kind === TILE.BRICK && this.world.def.id.startsWith('outside-') ? [] : this.cells((k) => k === kind);
       if (!cells.length) continue;
       // The side faces' v runs 0..1 up the wall: repeat the texture so courses keep their size.
       const map = tex.clone();
