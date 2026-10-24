@@ -1,11 +1,17 @@
 {
+  "id": "./",
   "name": "Prison Escape 3D",
   "short_name": "Escape 3D",
+  "description": "An escape game in 3D: learn the routine, make the tools, find your way out of five prisons.",
   "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
   "orientation": "any",
   "background_color": "#1b2230",
   "theme_color": "#1b2230",
+  "categories": [
+    "games"
+  ],
   "icons": [
     {
       "src": "icon-192.png",
@@ -27,6 +33,29 @@
       "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/narrow-canteen.webp",
+      "sizes": "600x1333",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Supper in the canteen, on a phone"
+    },
+    {
+      "src": "screenshots/wide-canteen.webp",
+      "sizes": "1440x900",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Supper in the canteen"
+    },
+    {
+      "src": "screenshots/wide-prisons.webp",
+      "sizes": "1440x900",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Five prisons to escape"
     }
   ]
 }
