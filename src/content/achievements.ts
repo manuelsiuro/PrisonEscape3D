@@ -247,7 +247,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'calledIn', group: 'life', icon: 'hand', run: (r) => f(r, 'debtsCalled') >= 1 },
   // v2.20 (P41, the manhunt): a clean getaway, one never seen, in clothes off a line, out of the helicopter's light, in Lou's car; recaptured, and within sight of safety; clean away from every prison.
   { id: 'cleanGetaway', group: 'out', icon: 'route', gives: 'mhBeanie', hunt: (h) => h.safe },
-  { id: 'withoutTrace', group: 'skills', icon: 'eyeOff', hunt: (h) => h.safe && h.spotted === 0 },
+  { id: 'withoutTrace', group: 'skills', icon: 'eyeOff', hunt: (h) => h.safe && h.spotted === 0 && h.lit === 0 },
   { id: 'changeOfClothes', group: 'skills', icon: 'shirt', hunt: (h) => h.safe && h.swapped },
   { id: 'outOfTheLight', group: 'skills', icon: 'heli', hunt: (h) => h.safe && h.lit > 0 },
   { id: 'getawayDriver', group: 'out', icon: 'truck', hunt: (h) => h.safe && h.lou },

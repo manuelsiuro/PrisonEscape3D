@@ -48,6 +48,7 @@ import { atTrack, cardUp } from '../sim/systems/races';
 import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
 import type { StartKind } from '../content/outside/types';
 import { OVER, SEEK, type Hunt } from '../sim/hunt/Hunt';
+import { spotTile } from '../sim/hunt/world';
 
 /**
  * The tutorial (P8+): short lessons on the Training Block, each a scene set up on a fresh game
@@ -72,6 +73,8 @@ export interface LessonStep {
   /** Where the floor arrows lead meanwhile (a tile), if anywhere, and on which layer (the ground floor unless it says). */
   goal?: (sim: Sim) => number | null;
   layer?: number;
+  /** P41: in a lesson's manhunt, where the floor arrows lead (the tiles that will do), if anywhere. */
+  huntGoal?: (h: Hunt) => ((i: number) => boolean) | null;
   /** The game runs faster while this step waits (time to pass, nothing to do). */
   speed?: number;
   /** Seconds it shows at least before it can tick (something to read in it; the lesson's card only, not tutorialtest). */
@@ -1253,9 +1256,12 @@ export const LESSONS: readonly Lesson[] = [
     setup: () => {},
     steps: [
       { text: 'lesson.manhunt.run', done: (c) => !!c.hunt && huntWalked(c.hunt) >= 5, fail: huntCaught },
-      { text: 'lesson.manhunt.hide', done: (c) => !!c.hunt && goneBy(c.hunt), fail: huntCaught },
-      { text: 'lesson.manhunt.clothes', done: (c) => c.hunt?.state.clothes === 2, fail: huntCaught },
-      { text: 'lesson.manhunt.lou', done: (c) => !!c.hunt && (c.hunt.state.over === OVER.LOU || c.hunt.state.over === OVER.SAFE), fail: huntCaught },
+      { text: 'lesson.manhunt.hide', done: (c) => !!c.hunt && goneBy(c.hunt), fail: huntCaught, huntGoal: (h) => (i) => h.out.cover[i] === 1 },
+      { text: 'lesson.manhunt.clothes', done: (c) => c.hunt?.state.clothes === 2, fail: huntCaught, huntGoal: lineGoal },
+      { text: 'lesson.manhunt.lou', done: (c) => !!c.hunt && (c.hunt.state.over === OVER.LOU || c.hunt.state.over === OVER.SAFE), fail: huntCaught, huntGoal: (h) => {
+        const lou = spotTile(h.def.lou, h.out.ox, h.out.oz);
+        return (i) => i === lou;
+      } },
     ],
   },
 ];
@@ -1287,6 +1293,11 @@ const passing = new WeakMap<Hunt, boolean>();
 function goneBy(h: Hunt): boolean {
   if (h.state.hidden && searcherWithin(h, 6)) passing.set(h, true);
   return !!passing.get(h) && h.out.cover[h.tile] === 1 && !searcherWithin(h, 9);
+}
+/** The washing lines not yet used, as tiles beside them (within reach of the clothes). */
+function lineGoal(h: Hunt): ((i: number) => boolean) | null {
+  const at = h.def.lines.filter((_, k) => !(h.state.lines & (1 << k))).map((l) => spotTile(l, h.out.ox, h.out.oz));
+  return at.length ? (i) => at.includes(i) : null;
 }
 /** Recaptured: the lesson is tried again. */
 function huntCaught(c: LessonCtx): Key | null {

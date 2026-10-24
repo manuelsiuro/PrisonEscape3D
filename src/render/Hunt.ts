@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { HUNT } from '../content/manhunt';
-import type { SafeKind, Spot } from '../content/outside/types';
+import type { SafeKind, Spot, StartKind } from '../content/outside/types';
 import { DIR_X, DIR_Z } from '../sim/command';
 import { DECO, spotTile, type OutsideWorld } from '../sim/hunt/world';
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { disposeTree } from './batch';
+import { wingGeometry } from './Getaway';
+import { PrisonBehind } from './huntPrison';
+import { buildHouses } from './huntTown';
 import { box, cyl, kitMaterial, merge, paint, rod, type Part } from './kit';
 import { seeThrough } from './occlusion';
 import { carParts } from './Phone';
@@ -83,24 +86,136 @@ export class HuntView {
   private glows: THREE.InstancedMesh | null = null;
   private ringMat: THREE.MeshBasicMaterial | null = null;
   private readonly m = new THREE.Matrix4();
+  /** The prison behind the wall, and the houses' windows (lit after dark). */
+  private prison: PrisonBehind | null = null;
+  private glass: THREE.MeshStandardMaterial | null = null;
+  /** Under the prison behind the wall (world tiles, past the edge too): no woods, roads or rivers of the outside's drawn there. */
+  private readonly under = (x: number, z: number) => !!this.prison?.covers(x, z);
 
-  /** The outside of a hunt (`lou`: his car waits there). */
-  set(o: OutsideWorld, lou: boolean) {
+  /** How the player got there (P41 review: the van, glider, raft and helicopter starts began on foot, nothing to show for it): the van driving on, the glider left lying, the raft beached, the helicopter lifting away. */
+  private arrival: { g: THREE.Group; kind: StartKind; t: number; dx: number; dz: number; x: number; z: number; rotor: THREE.Group | null } | null = null;
+
+  /** The outside of a hunt (`lou`: his car waits there; `kind`: how the player got out). */
+  set(o: OutsideWorld, lou: boolean, kind?: StartKind) {
     this.clear();
     const theme = o.prison.theme ?? 'suburban';
+    // The prison behind its wall, and nothing of the outside's drawn over it.
+    this.prison = new PrisonBehind(o);
+    this.group.add(this.prison.group);
     const run = this.runOff(o, theme);
     this.scenery(o, theme, run);
     const wet = this.water(o, theme);
     this.woods(theme, run.covered, wet);
+    const town = buildHouses(o, theme);
+    this.group.add(town.group);
+    this.glass = town.glass;
     o.def.lines.forEach((l, k) => this.line(o, l, k));
     o.def.roadblocks.forEach((r) => this.roadblock(o, r.area));
     this.safePoint(o);
     if (lou) this.louCar(o, o.def.lou);
     this.helicopter();
+    if (kind) this.arrive(o, kind);
+  }
+
+  /** The way out's vehicle where the player got off it (render only; nobody else sees it). */
+  private arrive(o: OutsideWorld, kind: StartKind) {
+    const at = o.def.starts[kind];
+    if (!at || kind === 'wall' || kind === 'gate') return;
+    const t = spotTile(at, o.ox, o.oz);
+    const a = faceAngle(at.face);
+    const dx = Math.sin(a);
+    const dz = Math.cos(a);
+    let x = (t % MAP_W) + 0.5;
+    let z = Math.floor(t / MAP_W) + 0.5;
+    // Somewhere clear beside the player, `r` tiles off or a little further (behind first, then either side, then ahead): open ground all round it (`wide` tiles), no cover, no tree.
+    const clear = (r: number, wide: number): [number, number] => {
+      for (const rr of [r, r + 1, r + 2])
+        for (const [ax, az] of [[-dx, -dz], [-dz, dx], [dz, -dx], [dx, dz]]) {
+          const cx = x + ax * rr;
+          const cz = z + az * rr;
+          let ok = true;
+          for (let ez = -wide; ez <= wide && ok; ez++)
+            for (let ex = -wide; ex <= wide && ok; ex++) {
+              const i = Math.floor(cz + ez) * MAP_W + Math.floor(cx + ex);
+              if (i < 0 || i >= o.base.length || o.base[i] || o.cover[i] || !o.inside[i]) ok = false;
+            }
+          if (ok) return [cx, cz];
+        }
+      return [x - dx * r, z - dz * r];
+    };
+    const g = new THREE.Group();
+    let rotor: THREE.Group | null = null;
+    if (kind === 'van') {
+      // On the road beside where they dropped off (the middle of its width), facing on along it.
+      const kinds = o.world.ground.kind;
+      const road = (i: number) => kinds[i] === TILE.ROAD || kinds[i] === TILE.ASPHALT;
+      const px = Math.round(-dz);
+      const pz = Math.round(dx);
+      const run: number[] = [];
+      for (let k = -3; k <= 3; k++) {
+        const i = t + k * px + k * pz * MAP_W;
+        if (i >= 0 && i < kinds.length && road(i)) run.push(k);
+        else if (run.length && k > 0) break;
+      }
+      if (run.length) {
+        const mid = (Math.min(...run) + Math.max(...run)) / 2;
+        x += mid * px;
+        z += mid * pz;
+      }
+      x += dx * 1.6;
+      z += dz * 1.6;
+      g.add(new THREE.Mesh(vanGeometry(), kitMaterial));
+    } else if (kind === 'glider') {
+      // Down in a heap beside them: one wing on the ground, the other up.
+      const wing = new THREE.Mesh(wingGeometry(), kitMaterial);
+      wing.scale.setScalar(1.3);
+      wing.rotation.set(0.12, 0, 0.3);
+      wing.position.y = 0.35;
+      g.add(wing);
+      [x, z] = clear(1.4, 1);
+    } else if (kind === 'sea') {
+      // Beached at the water's edge behind them.
+      const parts: Part[] = [];
+      for (let k = 0; k < 5; k++) parts.push(paint(new THREE.CylinderGeometry(0.1, 0.1, 1.3, 7).rotateX(Math.PI / 2).translate(-0.4 + k * 0.2, 0, 0), k % 2 ? 0xd8c08a : 0xe8d2a0));
+      parts.push(box(0.04, 1.1, 0.04, 0x6e4a2b, 0, 0, 0), paint(new THREE.PlaneGeometry(0.7, 0.8).translate(0.37, 0.65, 0), 0xeef1f4));
+      g.add(new THREE.Mesh(merge(parts), kitMaterial));
+      g.rotation.z = 0.08;
+      // (At the water's edge behind them, where they came ashore: the first water that way, a little in.)
+      let r = 1.2;
+      for (let k = 1; k <= 8; k++) {
+        const i = Math.floor(z - dz * k) * MAP_W + Math.floor(x - dx * k);
+        if (i >= 0 && i < o.world.ground.kind.length && o.world.ground.kind[i] === TILE.WATER) {
+          r = k + 0.2;
+          break;
+        }
+      }
+      x -= dx * r;
+      z -= dz * r;
+    } else {
+      // The helicopter that brought them, set down beside them, about to lift away.
+      const built = heliModel(0x2f4a3a);
+      g.add(built.body, built.rotor, built.tail);
+      rotor = built.rotor;
+      [x, z] = clear(2.4, 1);
+    }
+    g.traverse((m) => (m.castShadow = (m as THREE.Mesh).isMesh));
+    g.position.set(x, 0, z);
+    g.rotation.order = 'YXZ';
+    g.rotation.y = a;
+    this.group.add(g);
+    this.arrival = { g, kind, t: 0, dx, dz, x, z, rotor };
   }
 
   /** Everything let go (back to the title, a new hunt). */
   clear() {
+    // (The prison's view frees its own, its map clones with it.)
+    if (this.prison) {
+      this.group.remove(this.prison.group);
+      this.prison.dispose();
+      this.prison = null;
+    }
+    this.glass = null;
+    this.arrival = null;
     disposeTree(this.group, (t) => this.owned.has(t), new Set([kitMaterial]));
     this.group.clear();
     this.owned.clear();
@@ -146,6 +261,7 @@ export class HuntView {
       for (let s = 1; s <= RUN_OFF; s++) {
         const x = x0 + dx * s;
         const z = z0 + dz * s;
+        if (this.under(x, z)) break;
         out.covered.add(key(x, z));
         // (Where the world's band round the picture has it already: a road's first tiles out.)
         if (x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && kinds[z * MAP_W + x] === k) continue;
@@ -188,6 +304,7 @@ export class HuntView {
       const x = -24 + rand() * (MAP_W + 48);
       const z = -24 + rand() * (MAP_H + 48);
       if (x > -2 && x < MAP_W + 2 && z > -2 && z < MAP_H + 2) continue;
+      if (this.under(Math.floor(x), Math.floor(z)) || this.under(Math.floor(x + 0.9), Math.floor(z + 0.9)) || this.under(Math.floor(x - 0.9), Math.floor(z - 0.9))) continue;
       if (!clear(x, z) || spots.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < 2.2)) continue;
       spots.push([x, z, 0.8 + rand() * 0.9]);
     }
@@ -211,7 +328,7 @@ export class HuntView {
       const d = o.deco[i];
       if (!d) continue;
       // The woods past the map's edge: a tree on most tiles, not all (fewer to draw); none on a road running on out.
-      if (d === DECO.WOODS && (hash(i, 7) < 0.45 || run.covered.has(key(i % MAP_W, Math.floor(i / MAP_W))))) continue;
+      if (d === DECO.WOODS && (hash(i, 7) < 0.45 || run.covered.has(key(i % MAP_W, Math.floor(i / MAP_W))) || this.under(i % MAP_W, Math.floor(i / MAP_W)))) continue;
       (at[d] ??= []).push(i);
     }
     const instanced = (geo: THREE.BufferGeometry, tiles: number[] | undefined, mat: THREE.Material, place: (i: number, k: number, m: THREE.Matrix4) => void, shadow = true) => {
@@ -319,7 +436,7 @@ export class HuntView {
         deep.push([x, z]);
         // (At the world's edge: on out, never ending square.)
         const [dx, dz] = x === 0 ? [-1, 0] : x === MAP_W - 1 ? [1, 0] : z === 0 ? [0, -1] : z === MAP_H - 1 ? [0, 1] : [0, 0];
-        if (dx || dz) for (let k = 1; k <= RUN_OFF; k++) {
+        if (dx || dz) for (let k = 1; k <= RUN_OFF && !this.under(x + dx * k, z + dz * k); k++) {
           deep.push([x + dx * k, z + dz * k]);
           wet.add(key(x + dx * k, z + dz * k));
         }
@@ -455,6 +572,40 @@ export class HuntView {
     this.group.add(this.beam, this.poolMesh);
   }
 
+  /** The van drives on along the road, the helicopter lifts and flies off (both gone out of sight); the raft bobs; the glider lies where it came down. */
+  private arriving(dt: number, time: number, motion: boolean) {
+    const r = this.arrival;
+    if (!r) return;
+    // (The frame after the outside is built can be long: the moment plays out from its start all the same.)
+    r.t += Math.min(dt, 0.1);
+    const g = r.g;
+    if (r.kind === 'van') {
+      // A moment for the player to get clear, then off, faster and faster.
+      const go = Math.max(0, r.t - 1.2);
+      const d = motion ? 0.9 * go * go + 1.2 * go : go > 2 ? 99 : 0;
+      g.position.set(r.x + r.dx * d, 0, r.z + r.dz * d);
+      if (d > 22) this.leave(r);
+    } else if (r.kind === 'air') {
+      if (r.rotor) r.rotor.rotation.y += dt * 22;
+      const go = Math.max(0, r.t - 1.5);
+      const up = motion ? Math.min(9, go * go * 1.2) : go > 2 ? 99 : 0;
+      const away = motion ? Math.max(0, go - 1.2) ** 2 * 1.6 : 0;
+      // (Nose down on its way, over the player's head and on.)
+      g.position.set(r.x + r.dx * away, up, r.z + r.dz * away);
+      g.rotation.x = motion ? Math.min(0.25, Math.max(0, go - 1) * 0.15) : 0;
+      if ((up >= 9 && away > 30) || (!motion && up > 9)) this.leave(r);
+    } else if (r.kind === 'sea') {
+      g.position.y = -0.05 + (motion ? Math.sin(time * 2.2) * 0.04 : 0);
+    }
+  }
+
+  /** The arrival's vehicle gone for good. */
+  private leave(r: NonNullable<HuntView['arrival']>) {
+    this.group.remove(r.g);
+    r.g.traverse((m) => (m as THREE.Mesh).geometry?.dispose());
+    this.arrival = null;
+  }
+
   // ---------------------------------------------------------------- every frame
   update(f: HuntFrame, dt: number, time: number, night: number, motion: boolean) {
     // A faint glow at the player's feet after dark (their outline reads against the ground, in any clothes).
@@ -466,6 +617,9 @@ export class HuntView {
     }
     this.glow.position.set(f.me.x, 0.05, f.me.z);
     this.glowMat!.opacity = 0.16 * night;
+    this.prison?.update(dt, night);
+    if (this.glass) this.glass.emissiveIntensity = night * 0.9;
+    this.arriving(dt, time, motion);
     this.glow.visible = night > 0;
     // The same round each searcher (their navy against the dark woods), the same material.
     if (!this.glows) {
@@ -544,6 +698,45 @@ export class HuntView {
 }
 
 /** The safe point's vehicle or post (nose toward +z, centered): a bus, a border barrier with its sign, a boxcar, a rig, a coach. */
+/** A helicopter: its body, the rotor (turned about y) and the tail rotor, nose along +z. */
+function heliModel(paintC: number): { body: THREE.Mesh; rotor: THREE.Group; tail: THREE.Group } {
+  const body = new THREE.Mesh(
+    merge([
+      box(1.0, 0.8, 2.2, paintC, 0, 0.3),
+      box(0.9, 0.5, 0.7, 0x9fc4d8, 0, 0.6, 0.9),
+      box(0.18, 0.18, 2.2, paintC, 0, 0.75, -2.1),
+      box(0.06, 0.6, 0.4, 0xe8b828, 0, 0.8, -3.1),
+      box(1.3, 0.05, 0.08, 0x2a2f36, 0, 0.05, 0.5),
+      box(1.3, 0.05, 0.08, 0x2a2f36, 0, 0.05, -0.5),
+      box(0.05, 0.25, 1.3, 0x2a2f36, 0.55, 0.05, 0),
+      box(0.05, 0.25, 1.3, 0x2a2f36, -0.55, 0.05, 0),
+    ]),
+    kitMaterial,
+  );
+  const rotor = new THREE.Group();
+  rotor.add(new THREE.Mesh(merge([box(4.2, 0.03, 0.18, 0x22262c, 0, 0), box(0.18, 0.03, 4.2, 0x22262c, 0, 0)]), kitMaterial));
+  rotor.position.y = 1.25;
+  const tail = new THREE.Group();
+  tail.add(new THREE.Mesh(merge([box(0.03, 0.8, 0.1, 0x22262c, 0, -0.4)]), kitMaterial));
+  tail.position.set(0.08, 0.85, -3.1);
+  return { body, rotor, tail };
+}
+
+/** The delivery's van (the stowaway's ride): white, a cab ahead, nose along +z. */
+function vanGeometry(): THREE.BufferGeometry {
+  const w = 1.2;
+  const wheels = [1.0, -1.1].flatMap((z) => [-1, 1].map((sx) => rod(0.24, 0.2, 0x15171b, sx * (w / 2 - 0.08), 0.24, z, 10)));
+  return merge([
+    box(w, 1.3, 2.5, 0xeef0ee, 0, 0.3, -0.35),
+    box(w, 0.95, 0.9, 0xeef0ee, 0, 0.3, 1.3),
+    box(w - 0.1, 0.36, 0.05, 0x1c2a38, 0, 0.82, 1.76),
+    box(w + 0.02, 0.12, 2.5, 0x2f6fa8, 0, 0.75, -0.35),
+    box(0.3, 0.12, 0.04, 0xffe7a0, -0.4, 0.55, 1.76),
+    box(0.3, 0.12, 0.04, 0xffe7a0, 0.4, 0.55, 1.76),
+    ...wheels,
+  ]);
+}
+
 function vehicleGeometry(kind: SafeKind): THREE.BufferGeometry {
   const wheels = (w: number, zs: number[], r = 0.26) => zs.flatMap((z) => [-1, 1].map((s) => rod(r, 0.2, 0x15171b, s * (w / 2 - 0.08), r, z, 10)));
   switch (kind) {

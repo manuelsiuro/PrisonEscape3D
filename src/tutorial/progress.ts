@@ -1,3 +1,4 @@
+import { OVER } from '../sim/hunt/state';
 import type { Sim, SimEvent } from '../sim/Sim';
 import type { Key } from '../i18n';
 import type { Lesson, LessonCtx } from './lessons';
@@ -51,6 +52,9 @@ export class LessonProgress {
     if (why) return why;
     // (Won only if every step left holds now: getting out was the goal, and nothing it teaches was skipped.)
     if (c.sim.state.escaped > 0) return this.lesson.steps.slice(this.k).every((s) => s.done?.(c)) ? 'won' : 'lesson.outEarly';
+    // (P41: away in the manhunt, Lou's car or safety, before the lesson's other steps: the same, tried again.)
+    const over = c.hunt?.state.over;
+    if ((over === OVER.LOU || over === OVER.SAFE) && !this.lesson.steps.slice(this.k).every((s) => s.done?.(c))) return 'lesson.outEarly';
     return null;
   }
 

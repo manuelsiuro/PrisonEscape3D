@@ -12,7 +12,7 @@ import { frBarks } from '../i18n/barks/fr';
 import { HuntView, type HuntFrame } from '../render/Hunt';
 import type { Frame } from '../render/View';
 import { Autopilot } from '../sim/ai/autopilot';
-import { centerX, centerZ, tileAt } from '../sim/ai/path';
+import { centerX, centerZ, findPath, smooth, tileAt } from '../sim/ai/path';
 import { command, DIR_X, DIR_Z, EXT, OP, tossArgs } from '../sim/command';
 import { HFEAT, HOUND, Hunt, OVER, SEEK, type Carry, type HuntEvent, type HuntOptions } from '../sim/hunt/Hunt';
 import { floorAt, spotTile } from '../sim/hunt/world';
@@ -27,7 +27,7 @@ import { HuntHud, type HuntHudState } from '../ui/hunt';
 import { buzz } from '../app/haptics';
 import { banner, click, combatUI, controls, hint, hooks, hud, itemsUI, settings, sound, tools, view, vignette } from './context';
 import { play, playLater, tickPlayClock, type Game } from './game';
-import { updateLesson } from './lesson';
+import { lessonHuntGoal, updateLesson } from './lesson';
 
 /**
  * The manhunt in play (P41): its own simulation (sim/hunt/) stepped at the inside's pace from
@@ -60,6 +60,8 @@ export interface HuntRun {
   pilot: Autopilot;
   ops: Array<[number, number, number, number]>;
   ended: boolean;
+  /** Its result, from the moment it ended (the last moment plays out on screen before it's handed back; left in that moment, it's handed back as it was). */
+  result?: HuntResult;
   resolve: (r: HuntResult) => void;
   /** The crew member keeping watch (their name, and their cell for their looks), if one got out too. */
   lookout: { name: string; cell: number } | null;
@@ -126,6 +128,8 @@ export function runHunt(g: Game, carry: Carry, opts: HuntOptions & { lookout?: {
       sirenUntil: 0,
     };
     g.hunt = run;
+    huntPath = null;
+    guideFrom = -1;
     // The outside on screen: its world, the player as they look, the searchers cast as guards, the lookout.
     view.setWorld(hunt.world, null);
     view.setPrisoner(readPrisoner());
@@ -133,7 +137,7 @@ export function runHunt(g: Game, carry: Carry, opts: HuntOptions & { lookout?: {
     view.zoomTo(1.1);
     view.setCast(run.lookout ? [{ cell: run.lookout.cell, gait: 1 }] : 0);
     view.setGuards(s.searchers.map(() => undefined), []);
-    huntView.set(hunt.out, carry.lou);
+    huntView.set(hunt.out, carry.lou, carry.kind);
     // The inside's HUD and buttons down, the hunt's up (a lesson's card stays: it lives in the HUD, whose rows the stylesheet hides).
     if (!run.lesson) hud.show(false);
     itemsUI.show(false);
@@ -182,6 +186,11 @@ export function stopHunt(g: Game | null) {
   if (!run.ended) {
     run.ended = true;
     run.resolve('quit');
+  } else if (run.result) {
+    // (Left while its last moment played: safe or caught all the same.)
+    const r = run.result;
+    run.result = undefined;
+    run.resolve(r);
   }
 }
 
@@ -191,7 +200,11 @@ export function huntAct() {
   const run = play.game?.hunt;
   if (!run || run.ended || play.game!.paused) return;
   const a = actionOf(run.hunt);
-  if (!a) return;
+  if (!a) {
+    // (At the wire with nothing to cut it: say so, rather than nothing.)
+    if (run.hunt.wireAhead() >= 0) banner.toast(t('manhunt.no.noCutters'), 'info', 2400);
+    return;
+  }
   run.pilot.stop();
   if (a.kind === 'treat') run.ops.push([OP.EXT, EXT.HUNT_TREAT, a.dog, a.what]);
   else run.ops.push([OP.INTERACT, 0, 0, 0]);
@@ -297,15 +310,35 @@ export function huntFrame(g: Game, dt: number, now: number) {
   }
   const a = g.paused ? 1 : play.acc * STEPS_PER_SECOND;
   const night = h.night ? 1 : 0;
-  huntView.update(huntFrameOf(run, a), dt, now / 1000, night, !settings.reducedMotion);
+  // (Paused, the outside's moments hold still too: a vehicle pulling away, the arrival's.)
+  huntView.update(huntFrameOf(run, a), g.paused ? 0 : dt, now / 1000, night, !settings.reducedMotion);
   view.draw(frameOf(run, a, g.paused), dt, now / 1000);
   huntHud.update(hudOf(run));
   // (Nothing of the inside's tips out here.)
   if (hint.visible) hint.hide();
   barks(run, g.paused || g.speed > 1);
-  // (A lesson in the manhunt: its steps follow the hunt.)
-  if (g.lesson) updateLesson(g, dt, false);
+  // (A lesson in the manhunt: its steps follow the hunt, and the floor arrows lead where a step wants the player.)
+  if (g.lesson) {
+    updateLesson(g, dt, false);
+    huntGuide(g, run, dt);
+  }
   if (s.over && !run.ended) endHunt(g, run);
+}
+
+/** A lesson's floor arrows outside (P41): the way to what its step wants (the thicket, the line, Lou's car), worked out again every so often. */
+let guideAge = 0;
+let guideFrom = -1;
+let huntPath: Array<{ x: number; z: number }> | null = null;
+function huntGuide(g: Game, run: HuntRun, dt: number) {
+  const h = run.hunt;
+  const from = h.tile;
+  guideAge += dt;
+  if (guideAge < 0.35 && from === guideFrom) return;
+  guideAge = 0;
+  guideFrom = from;
+  const goal = run.ended ? null : lessonHuntGoal(g);
+  const path = goal && findPath(h.world, from, goal, -1, 4000, undefined, h.grid);
+  huntPath = path && path.length ? smooth(h.world, path, h.state.player.x, h.state.player.z, undefined, h.grid).map((i) => ({ x: (i % MAP_W) + 0.5, z: Math.floor(i / MAP_W) + 0.5 })) : null;
 }
 
 const searchersPool: Array<{ x: number; z: number }> = [];
@@ -415,6 +448,7 @@ function frameOf(run: HuntRun, a: number, paused: boolean): Frame {
   f.minuteOfDay = (run.carry.minute + s.step / STEPS_PER_SECOND) % 1440;
   f.surface = floorAt(h.out, h.tile);
   f.tilesRev = h.tilesRev;
+  f.guide = run.lesson ? huntPath : null;
   f.outfit = s.clothes === 2 ? OWN_CLOTHES : s.clothes === 1 ? GUARD_OUTFIT : run.carry.outfit || INMATE_OUTFIT;
   // Hidden: crouched in the cover; at the wire: at work on it.
   f.doing = s.cutting.length ? DOING.PICK : s.hidden ? DOING.DICE : DOING.NOTHING;
@@ -484,19 +518,32 @@ function frameOf(run: HuntRun, a: number, paused: boolean): Frame {
 
 const hudState: HuntHudState = { goal: 'bus', dist: 0, angle: 0, alarm: 0, dogs: false, roadblocks: false, heli: false, state: '', lookout: '', act: null, cut: 0, stone: -1 };
 
+/** A hunt's safe tiles (open ground), listed once. */
+const safeTiles = new WeakMap<Hunt, number[]>();
+function safeTilesOf(h: Hunt): number[] {
+  let list = safeTiles.get(h);
+  if (!list) {
+    list = [];
+    for (let i = 0; i < h.out.safe.length; i++) if (h.out.safe[i] && !h.grid[i]) list.push(i);
+    safeTiles.set(h, list);
+  }
+  return list;
+}
+
 function hudOf(run: HuntRun): HuntHudState {
   const h = run.hunt;
   const s = h.state;
   const o = h.out;
   const st = hudState;
-  // The nearest way out: Lou's car where he waits and it's nearer, else the safe point (the arrow points at it, as the crow flies).
+  // The nearest way out: Lou's car where he waits and it's nearer, else the nearest of the safe point's tiles (the arrow points at it, as the crow flies: the border's nearest stretch, not its post).
   const here = h.tile;
-  const safe = o.def.safeKind === 'border' ? spotTile(o.def.safeAt, o.ox, o.oz) : spotTile({ x: Math.floor((o.def.safe[0] + o.def.safe[2]) / 2), z: Math.floor((o.def.safe[1] + o.def.safe[3]) / 2) }, o.ox, o.oz);
-  const lou = run.carry.lou ? spotTile(o.def.lou, o.ox, o.oz) : -1;
   const d2 = (t: number) => ((t % MAP_W) - (here % MAP_W)) ** 2 + (Math.floor(t / MAP_W) - Math.floor(here / MAP_W)) ** 2;
+  let safe = -1;
+  for (const t of safeTilesOf(h)) if (safe < 0 || d2(t) < d2(safe)) safe = t;
+  const lou = run.carry.lou ? spotTile(o.def.lou, o.ox, o.oz) : -1;
   const toward = lou >= 0 && d2(lou) < d2(safe) ? lou : safe;
   st.goal = toward === lou ? 'lou' : o.def.safeKind;
-  st.dist = Math.max(0, h.toGoal[here]);
+  st.dist = Math.max(0, h.walkTo(here));
   st.angle = Math.atan2(centerX(toward) - s.player.x, -(centerZ(toward) - s.player.z));
   st.alarm = -h.alarmAge;
   const age = h.alarmAge;
@@ -534,6 +581,7 @@ function huntEvent(e: HuntEvent, run: HuntRun) {
       if (e.heat === 1) banner.toast(t('manhunt.widen'), 'bad', 3500);
       // (And when the uniform stops fooling them.)
       if (e.heat === HUNT.uniformHeat && h.state.clothes === 1) banner.toast(t('manhunt.uniformKnown'), 'bad', 3500);
+      else if (e.heat === HUNT.uniformHeat + 1 && h.state.clothes === 2) banner.toast(t('manhunt.clothesKnown'), 'bad', 3500);
       break;
     case 'spotted':
       sound.whistle();
@@ -637,8 +685,10 @@ function endHunt(g: Game, run: HuntRun) {
   const result: HuntResult = { over: s.over, progress: h.progress, secs: Math.round(s.step / STEPS_PER_SECOND), feats: [...s.feats], goal: s.over === OVER.LOU ? 'lou' : h.def.safeKind };
   // (A lesson ends as its steps say: the hunt stays on screen under its card.)
   if (run.lesson) return run.resolve(result);
+  run.result = result;
   playLater(safe ? 2600 : 2000, () => {
-    if (g.hunt !== run) return;
+    if (g.hunt !== run || !run.result) return;
+    run.result = undefined;
     huntHud.show(false);
     huntBubbles.hide();
     // (The outside stays on screen, still, under the card.)

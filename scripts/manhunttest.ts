@@ -13,7 +13,7 @@ import { OUTSIDES, outsideOf } from '../src/content/outside';
 import { START_KINDS, type StartKind } from '../src/content/outside/types';
 import { escapesOf, PRISONS } from '../src/content/prisons';
 import { Hunt, OVER, type Carry } from '../src/sim/hunt/Hunt';
-import { fillArea, outsideWorld, spotTile } from '../src/sim/hunt/world';
+import { fillArea, outsideWorld, pictureRows, spotTile } from '../src/sim/hunt/world';
 import { MAP_H, MAP_W } from '../src/sim/world/World';
 import { HuntBot } from './huntbot';
 import { Sim } from '../src/sim/Sim';
@@ -23,9 +23,11 @@ import { slot } from '../src/sim/systems/items';
 import { command, DIR_X, DIR_Z, EXT, OP, tossArgs } from '../src/sim/command';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { tileAt } from '../src/sim/ai/path';
+import { lineOfSight } from '../src/sim/ai/sight';
 import { LESSONS, type LessonCtx } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
 import { check } from './assert';
+import { TILE } from '../src/sim/world/tiles';
 
 const N = MAP_W * MAP_H;
 const cheb = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
@@ -64,6 +66,35 @@ for (const def of OUTSIDES) {
   const T = (s: { x: number; z: number }) => spotTile(s, ox, oz);
   // The roads out of the map and the edges: nobody walks off it.
   for (let i = 0; i < N; i++) if (!o.inside[i]) check(o.base[i] === 1, `${def.prison}: past the picture is solid`);
+  // Roads and tracks run unbroken (v2.21.4 review: hedges drawn across tracks, tracks stopping a tile short of the road):
+  // nothing standing or growing across one between two of its tiles, and no track (one or two wide) ending a tile or two before a road it runs at.
+  {
+    const rows = pictureRows(def);
+    const at = (x: number, z: number) => rows[z]?.[x] ?? '';
+    const way = (c: string) => c === ',' || c === 'a' || c === 'd';
+    for (let z = 0; z < rows.length; z++)
+      for (let x = 0; x < rows[0].length; x++) {
+        const c = at(x, z);
+        // (Crates stand in the yards' asphalt and wagons on the rails: those are no road.)
+        if ('hTko'.includes(c))
+          for (const [dx, dz] of [[1, 0], [0, 1]]) {
+            const p = at(x - dx, z - dz);
+            check(!(way(p) && p === at(x + dx, z + dz) && (way(at(x - 2 * dx, z - 2 * dz)) || way(at(x + 2 * dx, z + 2 * dz)))), `${def.prison}: '${c}' across a road or track at (${x},${z})`);
+          }
+        if (c !== 'd') continue;
+        for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          // (A track: running this way, at most two wide across it.)
+          if (at(x - dx, z - dz) !== 'd' || way(at(x + dx, z + dz))) continue;
+          const wide = [1, 2, 3].filter((k) => at(x + dz * k, z + dx * k) === 'd' || at(x - dz * k, z - dx * k) === 'd').length;
+          if (wide > 1) continue;
+          for (const k of [2, 3]) {
+            const t = at(x + dx * k, z + dz * k);
+            if (t === ',' || t === 'a' || t === 'u') check(false, `${def.prison}: the track at (${x},${z}) stops ${k - 1} short of the road`);
+            if (t !== '.' ) break;
+          }
+        }
+      }
+  }
   // Every roadblock up.
   const shut = o.base.slice();
   for (const r of def.roadblocks) fillArea(shut, r.area, ox, oz);
@@ -89,6 +120,9 @@ for (const def of OUTSIDES) {
     const fz = Math.round(DIR_Z[def.lou.face ?? 5] / 1024);
     const foot = [-1, 0, 1].map((k) => T({ x: def.lou.x + k * fx, z: def.lou.z + k * fz }));
     check(foot.every((i) => !o.base[i] && o.inside[i] && !o.cover[i]), `${def.prison}: Lou's car stands on open ground`);
+    // (On a road or a track, along it: a car parked out on the sand or the verge read wrong.)
+    const k = o.world.ground.kind;
+    check(foot.every((i) => k[i] === TILE.ROAD || k[i] === TILE.ASPHALT || k[i] === TILE.DIRT), `${def.prison}: Lou's car stands on a road or track`);
   }
   const anyStart = T(Object.values(def.starts)[0]!);
   const all = flood(anyStart, (i) => !o.base[i]);
@@ -337,15 +371,28 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
   h2.state.heli.z = h2.state.player.z;
   steps(h2, HUNT.settle + 2);
   check(lit.includes('lit') && h2.state.hidden && !h2.state.heli.lit, 'the helicopter: lit in the open, not in cover');
-  const h3 = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0, crew: 1 }), { searchers: [3], heli: false, roadblocks: false });
-  put(h3, 30, 52);
-  steps(h3, 1);
-  const m = h3.state.searchers[3];
-  m.mode = SEEK.BEAT;
-  m.body.x = h3.state.player.x + 6 * 1024;
-  m.body.z = h3.state.player.z + 2 * 1024;
-  const w = steps(h3, 1);
-  check(w.includes('whistle'), 'the lookout whistles at a searcher coming close');
+  // The lookout whistles at a searcher coming close that they see from their rise; one out of their sight goes unwarned.
+  const watch = (seen: boolean, px: number, pz: number) => {
+    for (let dz = -6; dz <= 6; dz++)
+      for (let dx = -6; dx <= 6; dx++) {
+        const h3 = new Hunt(CPO, CP, testCarry('center-perks', 'wall', { headStart: 0, crew: 1 }), { searchers: [3], heli: false, roadblocks: false });
+        put(h3, px, pz);
+        steps(h3, 1);
+        const at = spotTile({ x: px + dx, z: pz + dz }, h3.out.ox, h3.out.oz);
+        const look = spotTile(CPO.lookout, h3.out.ox, h3.out.oz);
+        if (h3.grid[at] || h3.out.cover[at] || Math.hypot(dx, dz) > HUNT.lookoutWarn - 1 || Math.hypot(dx, dz) < 3) continue;
+        const sees = cheb(at, look) <= HUNT.lookoutSight - 2 && lineOfSight(h3.world, (look % MAP_W) * 1024 + 512, Math.floor(look / MAP_W) * 1024 + 512, (at % MAP_W) * 1024 + 512, Math.floor(at / MAP_W) * 1024 + 512);
+        if (sees !== seen) continue;
+        const m = h3.state.searchers[3];
+        m.mode = SEEK.BEAT;
+        m.body.x = (at % MAP_W) * 1024 + 512;
+        m.body.z = Math.floor(at / MAP_W) * 1024 + 512;
+        return steps(h3, 1).includes('whistle');
+      }
+    return null;
+  };
+  check(watch(true, 28, 47) === true, 'the lookout whistles at a searcher coming close that they see');
+  check(watch(false, 8, 50) === false, "a searcher out of the lookout's sight goes unwarned");
   console.log(`roadblocks: ${CPO.roadblocks.map((b) => `${b.at} s`).join(', ')} after the alarm; the helicopter's light: on in the open, off in cover; the lookout whistles at ${HUNT.lookoutWarn} tiles`);
 }
 
@@ -532,4 +579,72 @@ console.log(`starts: ${PRISONS.map((p) => `${p.id} ${escapesOf(p).map((r) => `${
   progress.update(ctx);
   check(progress.done && !progress.verdict(ctx), `the manhunt lesson: every step done (stuck at ${progress.k}: ${progress.step?.text}, over ${h.state.over})`);
   console.log(`lesson manhunt: ${lesson.steps.length} steps done in ${Math.round(h.state.step / 20)} s`);
+}
+
+// Review of v2.21.3: straight to Lou's car, the lesson's other steps skipped: tried again (it sat on its second step for ever).
+{
+  const index = LESSONS.findIndex((l) => l.id === 'manhunt');
+  const lesson = LESSONS[index];
+  const spec = lesson.hunt!;
+  const sim = new Sim(lesson.prison ?? CP, lesson.seed ?? 7 + index);
+  lesson.setup(sim);
+  const h = new Hunt(CPO, CP, { ...testCarry('center-perks', spec.kind, { headStart: spec.headStart, minute: spec.minute, lou: spec.lou }), salt: 41 }, { searchers: spec.searchers, heli: false, roadblocks: false });
+  const progress = new LessonProgress(lesson);
+  const ctx: LessonCtx = { sim, craftOpen: false, hunt: h };
+  const pilot = new Autopilot(h.world, () => h.grid);
+  pilot.goTo(spotTile(CPO.lou, h.out.ox, h.out.oz));
+  for (let k = 0; k < 20 * 120 && pilot.active && !h.state.over; k++) {
+    h.step(command(pilot.dir(h.state.player)));
+    progress.update(ctx);
+  }
+  // (The thicket step's floor arrows lead into cover; the line's to a line.)
+  const hide = lesson.steps.find((s) => s.text === 'lesson.manhunt.hide')!;
+  const cover = hide.huntGoal!(h)!;
+  check(h.state.over === OVER.LOU && progress.verdict(ctx) === 'lesson.outEarly', `straight to Lou's car: the lesson is tried again (over ${h.state.over}, verdict ${progress.verdict(ctx)})`);
+  check(Array.from({ length: N }, (_, i) => i).some((i) => h.out.cover[i] && cover(i)), 'the thicket step leads to cover');
+  console.log(`lesson manhunt, straight to Lou: ${progress.verdict(ctx)}`);
+}
+
+// Review of v2.21.3: a crunch nobody hears tells the search nothing; clothes off a line fool them till the search has widened once more than a uniform does.
+{
+  const def = outsideOf('shankton')!;
+  const pr = PRISONS.find((p) => p.id === 'shankton')!;
+  const h = new Hunt(def, pr, testCarry('shankton', 'gate', { headStart: 0 }));
+  // Far from every searcher, onto the rail yard's gravel.
+  const far = (i: number) => h.state.searchers.every((m) => m.mode === SEEK.OFF || cheb(tileAt(m.body.x, m.body.z), i) > HUNT.crunch + 6);
+  let at = -1;
+  for (let i = 0; i < N && at < 0; i++) if (h.out.noisy[i] && !h.grid[i] && far(i) && !h.grid[i + 1] && !h.out.noisy[i + 1] && far(i + 1)) at = i + 1;
+  check(at >= 0, 'a quiet tile beside gravel far from everyone');
+  const p = h.state.player;
+  p.x = (at % MAP_W) * 1024 + 512;
+  p.z = Math.floor(at / MAP_W) * 1024 + 512;
+  h.state.at = at;
+  const known = h.state.known;
+  for (let k = 0; k < 12; k++) h.step(command(9));
+  check(h.state.known === known || h.state.searchers.some((m) => m.mode === SEEK.LOOK), `gravel heard by nobody: the search still doesn't know where they are (known ${h.state.known})`);
+  h.state.clothes = 2;
+  h.state.heat = HUNT.uniformHeat;
+  check(h.knownAt === HUNT.disguised, 'clothes off a line still fool them when a uniform no longer does');
+  h.state.heat = HUNT.uniformHeat + 1;
+  check(h.knownAt === h.sight, 'a widening later, clothes off a line fool nobody either');
+  console.log('gravel unheard tells nothing; line clothes known a widening after a uniform');
+}
+
+// Review of v2.21.3: cover with no open ground right beside it (Shankton's hedge along the map's edge) is swept too: a dog team casts about from the nearest place; keeping still there fails in the end.
+{
+  const def = outsideOf('shankton')!;
+  const pr = PRISONS.find((p) => p.id === 'shankton')!;
+  for (const salt of [1, 2]) {
+    const h = new Hunt(def, pr, testCarry('shankton', 'wall', { headStart: 0, salt }));
+    const at = spotTile({ x: 59, z: 44 }, h.out.ox, h.out.oz);
+    check(h.out.cover[at] === 1, 'Shankton (59,44) is cover');
+    const p = h.state.player;
+    p.x = (at % MAP_W) * 1024 + 512;
+    p.z = Math.floor(at / MAP_W) * 1024 + 512;
+    h.state.at = at;
+    h.state.trail = [];
+    for (let k = 0; k < 20 * 1200 && !h.state.over; k++) h.step(0);
+    check(h.state.over === OVER.CAUGHT, `hidden in Shankton's edge hedge (salt ${salt}): found in the end (over ${h.state.over})`);
+    console.log(`Shankton's edge hedge, salt ${salt}: found after ${Math.round(h.state.overAt / 20)} s`);
+  }
 }

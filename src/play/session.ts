@@ -418,8 +418,10 @@ export async function escaped() {
       const r = await runHunt(g, carryFrom(sim), { lookout });
       // (Left from the pause card: given up, so a recapture in the stats.)
       if (r === 'quit') huntLeft(sim);
-      if (play.game !== g || r === 'quit') return;
+      if (r === 'quit') return;
+      // (Left from the pause card while its last moment played: it counts as it ended.)
       const got = huntOver(sim, via, r);
+      if (play.game !== g) return;
       victory.hunt = { ...victory.hunt, state: r.over === 3 ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };
       // (The hunt's own first: they're what this card is about now, never behind the "+N".)
       victory.earned = [...got, ...(victory.earned ?? []).filter((a) => !got.includes(a))];

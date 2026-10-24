@@ -52,6 +52,13 @@ export function lessonGoal(g: Game): number | null {
   return step.goal(g.rec.sim);
 }
 
+/** P41: in a lesson's manhunt, the tiles the floor arrows lead to now, if any. */
+export function lessonHuntGoal(g: Game): ((i: number) => boolean) | null {
+  const run = g.lesson;
+  if (!run || run.ended || !g.hunt) return null;
+  return run.progress.step?.huntGoal?.(g.hunt.hunt) ?? null;
+}
+
 /** Every frame: steps ticked off, the card, the game's pace, the end. */
 export function updateLesson(g: Game, dt: number, hidden: boolean) {
   const run = g.lesson;
