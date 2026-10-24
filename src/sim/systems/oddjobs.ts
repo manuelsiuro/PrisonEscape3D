@@ -20,6 +20,7 @@
  * are pure, and only a lookout's digger walks anywhere he wouldn't. Never the state's RNG.
  */
 import { BOARD, CAUGHT_TILES, J, JOB_LEN, R, STAGE, CHAIN_DAY, CHAIN_PIN, CHAINS, DEBT_ODDS, DEBT_TOOLS, DIG_STEPS, FAIL_OPINION, FALSE_STEPS, FIXER_JOB_OPINION, FIXER_PAY, FRAME_HEAT, FRAME_MINUTE, FROM, HIDE_STEPS, KIND, KIND_DEFS, KINDS, LATE_MINUTE, LIFT, LIFTS, PAID_OPINION, PERK, PERK_ODDS, PINS, RARE_ITEMS, WARN_TILES, WATCH_TILES } from '../../content/oddjobs';
+import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../../content/games';
 import { itemNumber } from '../../content/items';
 import { LOOT } from '../../content/loot';
 import { ROUTINE } from '../../content/routine';
@@ -35,6 +36,7 @@ import { LAYER, MAP_W } from '../world/World';
 import { dayMinute, planOf, prisonDay, TODAY, today } from './calendar';
 import { DAY_STEPS } from './clock';
 import { elderOf } from './checkers';
+import { playedToday } from './games';
 import { assign, awake, GUARD } from './guards';
 import { DOING } from './inmates';
 import { HOTBAR, itemOf, pocketOf, slot } from './items';
@@ -257,7 +259,8 @@ export function fixerDeal(sim: SimContext, day = prisonDay(sim.state.step)): Dea
 export function chainDeal(sim: SimContext, day = prisonDay(sim.state.step)): Deal | null {
   const s = sim.state;
   const chain = CHAINS[sim.prison.id];
-  if (!boardOf(sim) || !chain || day < CHAIN_DAY) return null;
+  // (Its step held already, from an earlier day: not pinned up a second time.)
+  if (!boardOf(sim) || !chain || day < CHAIN_DAY || jobOf(s)?.[J.FROM] === FROM.CHAIN) return null;
   const k = s.oddjobs[R.CHAIN];
   const st = chain.steps[k];
   if (!st || s.oddjobs[R.CHAIN_DAY] >= day) return null;
@@ -318,7 +321,23 @@ export function boardRefusal(sim: SimContext, pin: number): Refusal | null {
   if (!deal) return 'noDeal';
   if (givesOf(deal.kind) && s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';
   if (deal.kind === KIND.LIFT && !liftSpot(sim, deal.variant, deal.target)) return 'liftFull';
-  return null;
+  return gameGate(sim, deal);
+}
+
+/**
+ * A fixed game's opponent who won't play the player in its time (null: he will, or it's no game):
+ * thinks too little of them (the old-timer: less), or has had his games today with a job ending tomorrow.
+ * The deal itself stays as dealt (pure); the pin waits until he thinks better of the player.
+ */
+export function gameGate(sim: SimContext, d: Deal): Refusal | null {
+  const s = sim.state;
+  const m = s.inmates[d.target];
+  if (!m) return null;
+  if (d.kind === KIND.CHECKERS) return m.opinion < ELDER_OPINION ? 'elderOpinion' : null;
+  if (d.kind !== KIND.WRESTLE && d.kind !== KIND.CHEAT) return null;
+  if (m.opinion < GAME_OPINION) return 'gameOpinion';
+  const today = prisonDay(s.step);
+  return prisonDay(endsFor(s.step, d.days) - 1) === today && playedToday(s, d.target) >= GAMES_A_DAY ? 'played' : null;
 }
 
 /** Why the fixer's job can't be taken from him now (null: it can; `who`: the inmate talked to). */
@@ -387,6 +406,26 @@ function unplant(sim: SimContext, job: readonly number[]) {
   sim.state.items.rev++;
 }
 
+/**
+ * A job gone: one of what it handed over (the parcel, the stash, the note) taken back if it's still
+ * the player's: in the hotbar, else in their own desk (not where it was meant to go: that's the job's).
+ */
+function takeBack(sim: SimContext, job: readonly number[]) {
+  const s = sim.state;
+  const gives = givesOf(job[J.KIND]);
+  if (!gives) return;
+  const k = carrying(s, gives);
+  if (k >= 0) s.items.inv[k] = 0;
+  else {
+    const { desk } = ownDesk(sim);
+    const box = desk >= 0 ? s.items.containers[desk] : null;
+    const j = box ? box.findIndex((v) => itemOf(v) === gives) : -1;
+    if (j < 0) return;
+    box![j] = 0;
+  }
+  s.items.rev++;
+}
+
 /** How many of an item a container holds (from slot `from` on). */
 const countIn = (sim: Pick<SimContext, 'state'>, box: number, item: number, from = 0) => (box >= 0 ? sim.state.items.containers[box]?.slice(from).filter((v) => itemOf(v) === item).length ?? 0 : 0);
 /** A frame-up's stash in a desk where a search finds it: its standard drawers (the hidden compartment is never searched). */
@@ -417,6 +456,8 @@ function take(sim: SimContext, d: Deal, from: number) {
   if (d.kind === KIND.LIFT) plant(sim, d.variant, d.target);
   // (A drop or a frame-up: what the desk holds of it already, left there by an earlier job; only one more counts.)
   if (d.kind === KIND.DROP || d.kind === KIND.FRAME) s.oddjob[J.WARN] = deskCount(sim, s.oddjob);
+  // (The cake: the step it's taken, so the Red Cross parcel already in today doesn't bring it.)
+  if (d.kind === KIND.CAKE) s.oddjob[J.WARN] = s.step;
   sim.events.push({ type: 'oddjob', what: 'taken', kind: d.kind, who: d.giver, from, n: d.days });
 }
 
@@ -430,14 +471,19 @@ export function boardOp(sim: SimContext, b: number, c: number) {
   if (b !== BOARD.TAKE) return;
   const why = boardRefusal(sim, c);
   if (why) return refuse(sim, why);
-  const day = prisonDay(s.step);
   const deal = c === CHAIN_PIN ? chainDeal(sim)! : dealsOf(sim)[c];
+  markPin(s, c);
+  take(sim, deal, c === CHAIN_PIN ? FROM.CHAIN : c);
+}
+
+/** A pin marked taken today (the record starts the day afresh). */
+function markPin(s: SimState, pin: number) {
+  const day = prisonDay(s.step);
   if (s.oddjobs[R.DAY] !== day) {
     s.oddjobs[R.DAY] = day;
     s.oddjobs[R.PINS] = 0;
   }
-  s.oddjobs[R.PINS] |= 1 << c;
-  take(sim, deal, c === CHAIN_PIN ? FROM.CHAIN : c);
+  s.oddjobs[R.PINS] |= 1 << pin;
 }
 
 /** Talking about odd jobs (TALK.ODD_JOB: the fixer's own taken; JOB_IN: the job handed in; CALL_IN: a debt called in). */
@@ -454,7 +500,7 @@ export function talkJob(sim: SimContext, who: number, a: 'take' | 'in' | 'call')
     if (!owes(s, who)) return refuse(sim, 'notOwed');
     const free = s.items.inv.slice(0, HOTBAR).indexOf(0);
     if (free < 0) return refuse(sim, 'room');
-    const item = itemNumber(DEBT_TOOLS[rollInt(s.salt, SALT.ODDJOB_PERK, prisonDay(s.step), who, DEBT_TOOLS.length)]);
+    const item = debtTool(s, who);
     s.items.inv[free] = slot(item);
     s.items.rev++;
     s.oddjobs[R.OWED] &= ~(1 << who);
@@ -478,9 +524,16 @@ export function handInRefusal(sim: SimContext, who: number): Refusal | null {
   } else if (job[J.STAGE] !== STAGE.DONE) return 'notDone';
   // (The parcel taken back out of the desk: not delivered.)
   else if (job[J.KIND] === KIND.DROP && deskCount(sim, job) <= job[J.WARN]) return 'notDone';
-  if (job[J.PERK] === PERK.ITEM && job[J.ITEM] && s.items.inv.slice(0, HOTBAR).filter((v) => !v).length + (brings ? 1 : 0) < 1) return 'room';
+  if ((paysItem(job) || owedAgain(s, job)) && s.items.inv.slice(0, HOTBAR).filter((v) => !v).length + (brings ? 1 : 0) < 1) return 'room';
   return null;
 }
+
+/** A job that ends with a rare item. */
+const paysItem = (job: readonly number[]) => job[J.PERK] === PERK.ITEM && !!job[J.ITEM];
+/** A debt from one who owes the player one already: he hands over a tool there and then (one owed at a time). */
+const owedAgain = (s: SimState, job: readonly number[]) => job[J.PERK] === PERK.DEBT && owes(s, job[J.GIVER]);
+/** The tool an inmate hands over for a debt (called in, or a second one paid at once): drawn by roll() (`n`: his number, past 32 for a second). */
+const debtTool = (s: SimState, n: number) => itemNumber(DEBT_TOOLS[rollInt(s.salt, SALT.ODDJOB_PERK, prisonDay(s.step), n, DEBT_TOOLS.length)]);
 
 /** The job handed in to the one who asked: what's brought taken, the pay, the perk; the story told on. */
 function handIn(sim: SimContext, who: number) {
@@ -495,13 +548,15 @@ function handIn(sim: SimContext, who: number) {
   s.tally[3] += pay;
   sim.events.push({ type: 'cash', n: pay, why: 'oddjob' });
   changeOpinion(sim, who, PAID_OPINION);
-  if (job[J.PERK] === PERK.ITEM && job[J.ITEM]) {
-    s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(job[J.ITEM]);
-  } else if (job[J.PERK] === PERK.DEBT && who < 30) s.oddjobs[R.OWED] |= 1 << who;
+  // (He owes the player one already: this one's paid at once, a tool, as calling it in would; the first stays owed.)
+  const again = owedAgain(s, job);
+  const item = again ? debtTool(s, who + 32) : paysItem(job) ? job[J.ITEM] : 0;
+  if (item) s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(item);
+  else if (job[J.PERK] === PERK.DEBT && who < 30) s.oddjobs[R.OWED] |= 1 << who;
   s.items.rev++;
   s.eventFlags |= TODAY.ODD_JOB;
   const from = job[J.FROM];
-  sim.events.push({ type: 'oddjob', what: 'paid', kind: job[J.KIND], who, n: pay, item: job[J.PERK] === PERK.ITEM ? job[J.ITEM] : 0, perk: job[J.PERK], from });
+  sim.events.push({ type: 'oddjob', what: 'paid', kind: job[J.KIND], who, n: pay, item, perk: again ? PERK.ITEM : job[J.PERK], from });
   s.oddjob = [];
   if (from === FROM.CHAIN) {
     const step = s.oddjobs[R.CHAIN];
@@ -519,6 +574,11 @@ export function fail(sim: SimContext, why: OddJobFail) {
   if (!job) return;
   s.oddjob = [];
   if (job[J.KIND] === KIND.LIFT) unplant(sim, job);
+  // (What it handed over and wasn't used: taken back, so a job given up never pays in parcels or stashes.)
+  else takeBack(sim, job);
+  // (A story's step given up or failed, though taken on an earlier day: its card stays down for the rest of
+  // today, as a pin's would. Run out at 08:00, it's a new day's: pinned up again.)
+  if (job[J.FROM] === FROM.CHAIN && why !== 'time') markPin(s, CHAIN_PIN);
   changeOpinion(sim, job[J.GIVER], FAIL_OPINION);
   if (why === 'caught' && job[J.KIND] === KIND.FRAME) addHeat(sim, FRAME_HEAT);
   sim.events.push({ type: 'oddjob', what: 'failed', why, kind: job[J.KIND], who: job[J.GIVER], from: job[J.FROM] });
@@ -715,10 +775,13 @@ export function birthdayAtVisit(sim: SimContext) {
   cakeIn(sim, job, false);
 }
 
-/** Stalag Flucht's: in the Red Cross parcel on delivery day (from PARCEL_MINUTE). */
+/** Stalag Flucht's: in the Red Cross parcel on delivery day (from PARCEL_MINUTE), the first delivery after it's taken. */
 function birthdayParcel(sim: SimContext, job: number[]) {
   const d = smugglingOf(sim);
-  if (job[J.PROG] || !d?.parcel || dayMinute(sim.state.step) < PARCEL_MINUTE || today(sim).event !== 'delivery') return;
+  const s = sim.state;
+  if (job[J.PROG] || !d?.parcel || dayMinute(s.step) < PARCEL_MINUTE || today(sim).event !== 'delivery') return;
+  // (Taken once today's parcel was in: it comes with the next one.)
+  if (prisonDay(job[J.WARN]) === prisonDay(s.step) && dayMinute(job[J.WARN]) >= PARCEL_MINUTE) return;
   cakeIn(sim, job, true);
 }
 

@@ -165,7 +165,7 @@ export const CHAINS: Record<string, ChainDef> = {
  * The job held (`state.oddjob`), field by field. PROG: a dig's steps, a frame-up's stash in place,
  * the cake come in, what's to be lifted out of where it was left. AUX: a whistle's hiding, the day of
  * a frame-up's tip, the day the cake found no room. WARN: the guards coming at a dig, a bit each; a
- * drop's or a frame-up's: the fewest of it the desk has held since the job was taken.
+ * drop's or a frame-up's: the fewest of it the desk has held since the job was taken; the cake's: the step it was taken.
  */
 export const J = { KIND: 0, VAR: 1, GIVER: 2, TARGET: 3, ENDS: 4, FROM: 5, STAGE: 6, PROG: 7, AUX: 8, PAY: 9, PERK: 10, ITEM: 11, WARN: 12 } as const;
 export const JOB_LEN = 13;

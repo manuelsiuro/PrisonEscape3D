@@ -36,7 +36,7 @@ import { planOf, prisonDay, TODAY } from '../src/sim/systems/calendar';
 import { endCheat } from '../src/sim/systems/cards';
 import { elderOf } from '../src/sim/systems/checkers';
 import { HOTBAR, itemOf, pocketOf, slot } from '../src/sim/systems/items';
-import { boardOf, boardNow, boardRefusal, bringsOf, cakeComes, canWhistle, chainDeal, dealsOf, deskOf, type Deal, digFace, digOf, endsFor, fixerDeal, freezerOf, handInRefusal, jobOf, oddjobs, owes, whistleNow } from '../src/sim/systems/oddjobs';
+import { boardOf, boardNow, boardRefusal, bringsOf, cakeComes, canWhistle, chainDeal, dealsOf, deskOf, type Deal, digFace, digOf, endsFor, fixerDeal, freezerOf, gameGate, handInRefusal, jobOf, oddjobs, owes, whistleNow } from '../src/sim/systems/oddjobs';
 import { stapleSlot } from '../src/sim/systems/pantry';
 import { fixerOf, smugglingOf, visitPairs } from '../src/sim/systems/smuggling';
 import { newRat } from '../src/sim/systems/rats';
@@ -1011,6 +1011,117 @@ function handIn(g: Game, deal: Deal) {
   }
   // 11. A rat's job says it needs a pet rat (the card: play/oddjobs.ts metaOf, `oddjob.needsRat`).
   lines.push('rules review: the rat\'s plant, leftovers, the hidden compartment, late jobs, the freezer, the deadline, the cake, a bribed guard: checked');
+  console.log(lines.join('\n'));
+}
+
+// ------------------------------------------------------------------ the full review (P40, v2.21.2)
+{
+  const lines: string[] = [];
+  // 1. A fixed game's pin waits while its opponent won't play the player: thinks too little of them, or has had his games today.
+  {
+    const { g, pin, deal } = dealt(CENTER_PERKS, KIND.WRESTLE)!;
+    const s = g.sim.state;
+    const m = s.inmates[deal.target];
+    g.toBoard();
+    m.opinion = 30;
+    check(boardRefusal(g.sim as never, pin) === 'gameOpinion', 'a wrestle whose opponent thinks too little of the player: refused');
+    m.opinion = 50;
+    while (s.played.length <= deal.target) s.played.push(0);
+    s.played[deal.target] = prisonDay(s.step) * 4 + 3;
+    check(boardRefusal(g.sim as never, pin) === 'played', 'his games had today, the job ending tomorrow: refused');
+    g.jump(prisonDay(s.step), 18, 30);
+    g.toBoard();
+    check(boardRefusal(g.sim as never, pin) === null, 'taken from 18:00 (its day is tomorrow): fine');
+    const c = dealt(CENTER_PERKS, KIND.CHECKERS)!;
+    c.g.toBoard();
+    c.g.sim.state.inmates[c.deal.target].opinion = 10;
+    check(boardRefusal(c.g.sim as never, c.pin) === 'elderOpinion', 'checkers with an old-timer who won\'t sit down: refused');
+    // (San Pancho's hostile cells start under the games' opinion: their pins wait, never an impossible job.)
+    let waited = 0;
+    for (let day = 2; day < 40; day++) {
+      const sim = new Sim(SAN_PANCHO, 1);
+      sim.state.step = at(day, 10, 5);
+      dealsOf(sim, day).forEach((d) => {
+        if ((d.kind === KIND.WRESTLE || d.kind === KIND.CHEAT) && sim.state.inmates[d.target].opinion < 40) {
+          check(gameGate(sim as never, d) === 'gameOpinion', `san-pancho day ${day}: a fix against a hostile inmate waits`);
+          waited++;
+        }
+      });
+    }
+    lines.push(`full review: fixed games wait for an opponent who'll play (san-pancho: ${waited} pins waited)`);
+  }
+  // 2. A story's step held into the next day isn't pinned up again; given up, it can't be taken again that day.
+  {
+    const g = game(STALAG_FLUCHT, 5);
+    const s = g.sim.state;
+    g.jump(2, 10, 5);
+    takeAt(g, CHAIN_PIN);
+    check(jobOf(s)?.[J.FROM] === FROM.CHAIN, 'the story\'s step taken');
+    g.jump(3, 10, 5);
+    check(!!jobOf(s) && boardNow(g.sim).chain === null, 'held into the next day: its card not pinned up again');
+    g.ext(EXT.BOARD, BOARD.QUIT);
+    takeAt(g, CHAIN_PIN);
+    check(!jobOf(s) && refusals(g.seen).at(-1) === 'pinTaken', `given up: not taken again that day (${refusals(g.seen).at(-1)})`);
+    g.jump(4, 10, 5);
+    check(boardNow(g.sim).chain !== null, 'the next day: the step pinned up again');
+  }
+  // 3. A job given up takes back what it handed over: from the hotbar, or the player's own desk.
+  for (const kind of [KIND.DROP, KIND.FRAME, KIND.RAT, KIND.DELIVER]) {
+    const { g, pin } = dealt(CENTER_PERKS, kind)!;
+    const s = g.sim.state;
+    const gives = n(KIND_DEFS[KINDS[kind]].gives!);
+    takeAt(g, pin);
+    check(inHand(g.sim, gives) >= 0, `${KINDS[kind]}: handed over`);
+    g.ext(EXT.BOARD, BOARD.QUIT);
+    check(inHand(g.sim, gives) < 0, `${KINDS[kind]} given up: taken back`);
+  }
+  {
+    const { g, pin } = dealt(CENTER_PERKS, KIND.FRAME)!;
+    const s = g.sim.state;
+    takeAt(g, pin);
+    const own = containersOf(g.sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
+    const box = s.items.containers[own];
+    const k = inHand(g.sim, n('stash'));
+    box[box.indexOf(0, containersOf(g.sim.world)[own].hidden)] = s.items.inv[k];
+    s.items.inv[k] = 0;
+    g.ext(EXT.BOARD, BOARD.QUIT);
+    check(!box.some((v) => itemOf(v) === n('stash')), 'a stash put away in the player\'s desk, then given up: taken back');
+  }
+  // 4. Stalag Flucht's cake, taken on a delivery day after the parcel came in: with the next delivery, not today's.
+  {
+    let checked = false;
+    for (let day = 2; day < 60 && !checked; day++) {
+      const cal: Array<[number, number, number]> = [[0, 0, 0], [day, DELIVERY, -1], [day + 1, DELIVERY, -1]];
+      const probe = new Sim(STALAG_FLUCHT, 5);
+      probe.state.calendar = cal;
+      const pin = dealsOf(probe, day).findIndex((d) => d.kind === KIND.CAKE);
+      if (pin < 0) continue;
+      const g = game(STALAG_FLUCHT, 5, cal);
+      g.jump(day, 16, 0);
+      takeAt(g, pin);
+      g.to(day + 1, 10, 0);
+      check(!jobNews(g.seen, 'cake').length, 'taken after today\'s parcel: no cake today');
+      g.to(day + 1, 16, 0);
+      check(jobNews(g.seen, 'cake').length === 1, 'it comes with the next day\'s parcel');
+      checked = true;
+    }
+    check(checked, 'a cake dealt on a delivery day');
+  }
+  // 5. A debt from one who owes the player one already: a tool there and then, the first still owed.
+  {
+    const { g, pin, deal } = dealt(CENTER_PERKS, KIND.DELIVER)!;
+    const s = g.sim.state;
+    takeAt(g, pin);
+    const job = jobOf(s)!;
+    job[J.STAGE] = STAGE.DONE;
+    job[J.PERK] = PERK.DEBT;
+    s.oddjobs[R.OWED] |= 1 << deal.giver;
+    const k = inHand(g.sim, n('parcel'));
+    s.items.inv[k] = 0;
+    const paid = handIn(g, deal);
+    check(!!paid && paid.perk === PERK.ITEM && !!paid.item && inHand(g.sim, paid.item) >= 0 && owes(s, deal.giver), `a second debt: paid at once (${paid?.item ? itemDef(paid.item).id : '-'}), the first still owed`);
+  }
+  lines.push('full review: a held story step, items taken back, the cake after the parcel, a second debt: checked');
   console.log(lines.join('\n'));
 }
 
