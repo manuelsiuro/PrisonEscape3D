@@ -33,6 +33,8 @@ export interface ParoleView {
   /** The member asking (name, place 0–2), the question (its place), its words, what the file says on it (and whether a claim holds), the three answers, the answer said (-1 none, -2 silence). */
   member: string;
   memberK: number;
+  /** The board's three faces, by place (picture URLs; '' none: the plain icon). */
+  faces: readonly string[];
   q: number;
   question: string;
   file: string;
@@ -140,7 +142,7 @@ export class ParoleCard {
       return false;
     }
     if (v.phase !== 'ask') this.picked = -1;
-    const key = [v.phase, v.status, v.lines.map((l) => l.text + l.pts).join(), v.score, v.canApply, v.why, v.q, v.question, v.file, v.said, v.react, v.verdict, v.weighed.join(), this.picked, currentLang(), TOUCH].join('|');
+    const key = [v.phase, v.status, v.lines.map((l) => l.text + l.pts).join(), v.score, v.canApply, v.why, v.q, v.question, v.file, v.said, v.react, v.verdict, v.weighed.join(), v.faces.length, this.picked, currentLang(), TOUCH].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       this.el.dataset.phase = v.phase;
@@ -189,7 +191,8 @@ export class ParoleCard {
       .map((k) => {
         const on = k === v.memberK && v.phase !== 'sat';
         const name = MEMBERS[k] ? t(`parole.member.${MEMBERS[k].id}` as Key) : '';
-        return `<li class="${on ? 'on' : ''}" style="--member:${MEMBER_COLOR[k]}"${on ? ' aria-current="true"' : ''}><i role="img" aria-label="${esc(name)}">${icon('person', 14)}</i></li>`;
+        const face = v.faces[k] ? `<img src="${v.faces[k]}" alt="">` : icon('person', 14);
+        return `<li class="${on ? 'on' : ''}" style="--member:${MEMBER_COLOR[k]}"${on ? ' aria-current="true"' : ''}><i role="img" aria-label="${esc(name)}">${face}</i></li>`;
       })
       .join('')}${v.phase !== 'sat' ? `<li class="who" aria-hidden="true">${esc(v.member)}</li>` : ''}</ol>`;
     if (v.phase === 'sat') return `${status}${board}`;

@@ -4,6 +4,7 @@
  */
 import { phoneTargets, swapPlace } from './phone';
 import { delivering, oddjobTargets, owes, R, talkJob } from './oddjobs';
+import { boardKeptClear } from './parole';
 import { twist } from './twists';
 import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
@@ -66,6 +67,8 @@ export function approach(sim: SimContext, who: number) {
     quotaUp(sim);
     return;
   }
+  // (P39: before the parole board, no chat and no side games: the board is the talk.)
+  if (s.hearing) return refuse(sim, 'atHearing');
   stopTraining(sim);
   stopPick(sim);
   closeBox(sim);
@@ -425,6 +428,8 @@ export function socialNow(sim: SimContext): Social {
   stageTargets(sim, so);
   // The odd jobs board (P40): a lookout job's digger at his bed in the free times (only once the player has taken one).
   oddjobTargets(sim, so);
+  // The parole board (P39): its chairs and the seat across from it kept clear while the hearing is due or sitting.
+  boardKeptClear(sim, so.off);
   if (!about) return so;
   // A shootout's partner (P27) keeps near the player at the court.
   const partner = hoopsPartner(s);

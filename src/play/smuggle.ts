@@ -350,6 +350,8 @@ const AMBIENT = 3;
 const pool: Array<SmuggleFrame['visitors'][number]> = Array.from({ length: AMBIENT + 1 }, () => ({ x: 0, z: 0, facing: 0, look: 0, chair: false, arrive: 1 }));
 /** The parole board's three (P39): suits, never the guards' navy nor the inmates' orange. */
 const members: Array<SmuggleFrame['visitors'][number]> = [0x34363c, 0x5a4636, 0x55595f].map((suit, k) => ({ x: 0, z: 0, facing: 0, look: 101 + k * 17, chair: false, arrive: 1, suit }));
+/** The board's three as the room draws them, by place (their faces on the parole card: play/parole.ts). */
+export const boardLooks: ReadonlyArray<{ look: number; suit?: number }> = members;
 const NO_TILES: number[] = [];
 /** Where the player's visitor sat today (a guest tile, -1 none): they stay there until visiting hours are over. */
 let metAt = -1;

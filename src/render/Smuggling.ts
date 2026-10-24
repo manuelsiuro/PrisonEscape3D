@@ -44,6 +44,15 @@ const pick = (look: number, j: number, n: number) => Math.floor((Math.abs(Math.s
 const CLOTHES = [0x3f6fb5, 0x8e3b5c, 0x4f8a5b, 0xc9a227, 0x6b4c9a, 0xd9653b, 0x2f8f8a, 0xb84a62];
 const SKINS = [0xf1c6a0, 0xe2ad84, 0xc98d62, 0xa86e48, 0x7d4f33, 0x5b3a26];
 const HAIRS = [0x1d1612, 0x3a2a1e, 0x6b4a2b, 0xb08850, 0x8a8a8a, 0xd9d4cc];
+/** A visitor's colours by its look number (a suit, when given, for the clothes): as drawn at the tables, and on the parole board's card. */
+export function visitorColors(look: number, suit?: number, out = { clothes: 0, skin: 0, hair: 0 }): { clothes: number; skin: number; hair: number } {
+  out.clothes = suit ?? CLOTHES[pick(look, 1, CLOTHES.length)];
+  out.skin = SKINS[pick(look, 2, SKINS.length)];
+  out.hair = HAIRS[pick(look, 3, HAIRS.length)];
+  return out;
+}
+/** The colours drawn this frame, reused. */
+const tint = { clothes: 0, skin: 0, hair: 0 };
 
 /** Its navigation lights, apart from the body (they alone glow and blink): red to port (+x, the nose along +z), green to starboard. */
 function lightsGeometry(): THREE.BufferGeometry {
@@ -78,8 +87,8 @@ function parcelGeometry(): THREE.BufferGeometry {
   return merge([box(0.24, 0.18, 0.24, 0xb88a52, 0, -0.18, 0), box(0.25, 0.03, 0.06, 0xd9c79a, 0, -0.06, 0), box(0.02, 0.24, 0.02, 0x2b3038, 0, -0.02, 0)], false);
 }
 
-/** A visitor sat at a table, facing +z, feet on y = 0, in three parts tinted per visitor: clothes, skin, hair. */
-function visitorParts(): { clothes: THREE.BufferGeometry; skin: THREE.BufferGeometry; hair: THREE.BufferGeometry } {
+/** A visitor sat at a table, facing +z, feet on y = 0, in three parts tinted per visitor: clothes, skin, hair. (Also the parole board's faces on its card: portrait.ts.) */
+export function visitorParts(): { clothes: THREE.BufferGeometry; skin: THREE.BufferGeometry; hair: THREE.BufferGeometry } {
   const W = 0xffffff;
   const clothes = merge(
     [
@@ -256,9 +265,10 @@ export class SmuggleView {
       this.clothes.setMatrixAt(k, this.m);
       this.skin.setMatrixAt(k, this.m);
       this.hair.setMatrixAt(k, this.m);
-      this.clothes.setColorAt(k, this.c.set(p.suit ?? CLOTHES[pick(p.look, 1, CLOTHES.length)]));
-      this.skin.setColorAt(k, this.c.set(SKINS[pick(p.look, 2, SKINS.length)]));
-      this.hair.setColorAt(k, this.c.set(HAIRS[pick(p.look, 3, HAIRS.length)]));
+      const col = visitorColors(p.look, p.suit, tint);
+      this.clothes.setColorAt(k, this.c.set(col.clothes));
+      this.skin.setColorAt(k, this.c.set(col.skin));
+      this.hair.setColorAt(k, this.c.set(col.hair));
     }
     for (const im of this.people) {
       im.instanceMatrix.needsUpdate = true;
