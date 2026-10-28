@@ -4,7 +4,7 @@
 
 A 3D prison escape game in the spirit of *The Escapists*, for phones and desktops, right in the browser.
 Keep your head down through roll calls and work shifts while you secretly craft tools, dig, bribe, bluff and
-plot your way out of five prisons, each harder than the last.
+plot your way out of five prisons, each harder than the last. And once you're over the wall, keep running.
 
 <p align="center">
   <a href="https://manuelsiuro.github.io/PrisonEscape3D/"><img src="docs/screenshots/play-button.png" alt="▶ Play it now" width="380"></a>
@@ -47,23 +47,30 @@ job, train, learn recipes, and quietly build what you need. Then one night, you 
 - **A living prison.** Inmates follow the routine, chat, gossip and hold grudges. The rumours you overhear are
   true, if you know how to read them. Every guard has a name and a temperament: some are lazy and doze off,
   some are strict and search cells, and a few can be bribed.
-- **Make your own tools.** 133 items to find, buy, steal or craft: from a toothbrush shiv and a wire
+- **Make your own tools.** 146 items to find, buy, steal or craft: from a toothbrush shiv and a wire
   lockpick to a bed dummy, a sheet rope, a grapnel and a glider. Intelligence opens harder recipes.
 - **Work and money.** Seven jobs, merchants among the inmates, favors to do for cash, a black market with a
-  fixer, a burner phone, drone drops and visitors.
+  fixer, a burner phone, drone drops and visitors. A cork board in the canteen has odd jobs every day, and
+  a story to follow in each prison.
 - **Free time.** Card games of Cheat, checkers, dice, arm-wrestling, hoops, football matches, rat
   racing, a prison garden, tattoos, talent nights, quiz nights, a pay phone and an internet kiosk.
 - **Friends and a crew.** Win people over, recruit them, and post a lookout who whistles when a guard comes.
   Tame a rat to fetch things for you. Make friends with the guard dog.
 - **Days that differ.** Fire drills, inspections, delivery and visiting days, sports days, movie nights and
-  food fights; fog, rain, storms, snow, blizzards and heatwaves.
+  food fights; fog, rain, storms, snow, blizzards and heatwaves. On the real date the prisons keep Easter,
+  summer, Halloween, Christmas and New Year: an egg hunt, a water fight, costume night, fireworks.
 
-### 33 ways out
+### 38 ways out
 
 Cut the fence, tunnel under the wall, cross the roofs, knock out nearly every guard at once so the gates open, hide in the
 delivery truck, put on a guard's uniform and bluff your way through the gate, glide off a roof on the wind,
-forge your release papers, or take a raft or a helicopter off the island. Each prison allows its own set of
-these, and each way out you find is recorded, with a gold, silver or bronze medal for how fast you made it.
+forge your release papers, talk your way past the parole board, or take a raft or a helicopter off the
+island. Each prison allows its own set of these, and each way out you find is recorded, with a gold, silver
+or bronze medal for how fast you made it.
+
+Over the wall, the manhunt begins: searchers, dogs, roadblocks and a helicopter in the country outside each
+prison. Hide in hedges, wash your trail at a ford, steal clothes off a line, and reach safety for a clean
+getaway star by the medal.
 
 ### Five prisons
 
@@ -89,11 +96,11 @@ Escape one to open the next.
     <td width="28%"><img src="docs/screenshots/help.webp" alt="How to play: the glider topic, with a picture, key numbers, steps and recipes"></td>
     <td width="72%">
       <ul>
-        <li><b>A tutorial of 45 short lessons</b> in four chapters (First steps, Getting by, Prison life, Ways out), each played in a real prison scene.</li>
-        <li><b>How to play</b>: 54 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
+        <li><b>A tutorial of 48 short lessons</b> in four chapters (First steps, Getting by, Prison life, Ways out), each played in a real prison scene.</li>
+        <li><b>How to play</b>: 58 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
         <li><b>The Daily Escape</b>: one prison a day, with twists, the same for everyone, and a streak to keep.</li>
         <li><b>Replays</b> of your escapes.</li>
-        <li><b>119 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
+        <li><b>142 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
         <li><b>Your own prisoner</b>: name, face, hair, beard, build, hat, glasses and tattoos.</li>
         <li>Three save slots plus the game in progress.</li>
       </ul>
@@ -139,10 +146,10 @@ Escape one to open the next.
 |---|---|---|
 | Walk | W A S D or the arrow keys; click a spot to walk there | Drag anywhere (a stick appears under your thumb), or tap a spot |
 | Act | E: search, pick up, open, talk, sit, sleep | The action button |
-| Use the tool in hand, hit | Space | The use button |
+| Use the tool in hand, hit | Space; U digs up out of a tunnel; R locks on to someone | The use button, the dig-up button, tap someone |
 | Items | 1–6 to hold one, Q to drop it, C to craft | Tap the hotbar, then the hammer to craft |
 | Throw | Hold the right mouse button to aim; F throws straight ahead | The throw button |
-| Panels | I your file, T the rat, P the phone, G the crew, H how to play | Their buttons on the HUD |
+| Panels | I your file, J the day's card, T the rat, P the phone, G the crew, H how to play | Their buttons on the HUD (the clock for the day's card) |
 | Zoom, pause | Mouse wheel, Esc | Pinch, the pause button |
 
 On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows their real labels.
@@ -152,22 +159,24 @@ On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows
 ## Technical notes
 
 Vite + TypeScript + Three.js, with **no models, textures or sound files**: the prisons, characters and
-items are built in code, and the music and sound effects are synthesized. About 80,000 lines of TypeScript
-in 280 files.
+items are built in code, and the music and sound effects are synthesized. About 92,000 lines of TypeScript
+in 317 files, and 28,000 more in the tests and tools.
 
 ### Running it
 
 ```sh
 npm ci
 npm run dev       # dev server on port 5310 (also on your network, to test on a phone)
-npm test          # 47 headless tests (npm test -- -u accepts new snapshots)
+npm test          # 54 headless tests (npm test -- -u accepts new snapshots)
 npm run build     # type-check and build to dist/
 npm run check     # type-check and test
 npm run maps      # redraw the map viewer (assets/maps/index.html)
+npm run released  # after a push: wait for CI on HEAD, then for the live game to carry the version
 ```
 
 Pushing to `main` runs CI (build and tests) and publishes the game on GitHub Pages. A release:
-build and tests pass → commit → `npm version minor` (or `patch`) → `git push --follow-tags origin main`.
+build and tests pass → commit → `npm version minor` (or `patch`) → `git push --follow-tags origin main` →
+`npm run released`.
 
 ### How it's built
 
@@ -187,7 +196,7 @@ build and tests pass → commit → `npm version minor` (or `patch`) → `git pu
   frames run slow.
 - **The UI** (`src/ui/`, `src/styles/`). Plain DOM screens, each a function returning a Promise, styled
   with design tokens and checked at desktop size, 412×915 and 915×412. All text goes through `t()` in
-  `src/i18n/` (about 3,750 keys in English and French).
+  `src/i18n/` (about 4,400 keys in English and French).
 - **Storage** goes only through `src/game/storage.ts`: versioned, never throws, with migrations.
 - **An installable app**: a service worker that stores the whole game for offline play and offers updates.
 
@@ -195,27 +204,28 @@ build and tests pass → commit → `npm version minor` (or `patch`) → `git pu
 
 | Path | What |
 |---|---|
-| `src/sim/` | The simulation: `Sim`, commands, the recorder; the world, AI (paths, autopilot) and systems (routine, guards, heat, combat, economy, security, games…) |
-| `src/content/` | The prisons (`prisons/<id>/`), items, recipes, routine, achievements, the Daily Escape's twists |
+| `src/sim/` | The simulation: `Sim`, commands, the recorder; the world, AI (paths, autopilot) and systems (routine, guards, heat, combat, economy, security, games…); `hunt/`, the manhunt's own sim |
+| `src/content/` | The prisons (`prisons/<id>/`), the manhunt's outside maps (`outside/`), items, recipes, routine, achievements, holidays, odd jobs, the Daily Escape's twists |
 | `src/render/` | The Three.js view: tiles, props, characters, guards' cones, security, weather, the island, the sports grounds |
 | `src/play/` | A game in progress: the loop, input to commands, the HUD's live parts, lessons, mini-games |
 | `src/flows/` | The title, intake, tutorial and Daily Escape flows |
 | `src/ui/` | The HUD, panels and screens (title, prisons, how to play, trophies, settings…) |
 | `src/talk/` | Speech bubbles: who says what, when, and gossip that is always true |
-| `src/tutorial/` | The 45 lessons and their chapters |
+| `src/tutorial/` | The 48 lessons and their chapters |
 | `src/game/` | Saves, settings, records, trophies, stats, replays and storage |
 | `src/replay/` | Watching an escape again |
-| `src/audio/`, `src/app/` | Synthesized sound; haptics, graphics quality, the service worker |
+| `src/audio/`, `src/app/` | Synthesized sound; haptics, graphics quality, the service worker, installing |
 | `src/i18n/` | English and French text, the inmates' and guards' lines (`barks/`), keyboard labels |
 | `src/styles/` | CSS, one file per part of the game |
-| `scripts/` | Tests (`*test*.ts`), escape bots (`escapes.ts`), and dev tools in `scripts/dev/` (map viewer, How to play pictures, map photos) |
+| `scripts/` | Tests (`*test*.ts`), escape bots (`escapes.ts`), and dev tools in `scripts/dev/` (map viewer, How to play pictures, map photos, the release check, trailer tools) |
 | `assets/maps/` | The map viewer: every prison drawn from its data, with in-game photos |
 | `public/help/` | How to play's in-game pictures |
-| `docs/` | The game design document, tech plan, the project plan with every phase's history, these screenshots |
+| `docs/` | The game design document, tech plan, the project plan, the release history, these screenshots |
 
 ### Documents
 
 - [`docs/the_escapists_3d_complete_game_design_document.md`](docs/the_escapists_3d_complete_game_design_document.md): the game design document, the source of truth.
-- [`docs/PLAN.md`](docs/PLAN.md): decisions, conflicts resolved, the phases (P0 to P38) and the history of every release.
+- [`docs/PLAN.md`](docs/PLAN.md): decisions, conflicts resolved, the architecture, the phases (P0 to P42) and the rules of every feature beyond the design document.
+- [`docs/HISTORY.md`](docs/HISTORY.md): every release, what its reviews found and what was accepted.
 - [`docs/tech_plan.md`](docs/tech_plan.md): engineering details the design document leaves open.
 - [`CLAUDE.md`](CLAUDE.md): the rules for working on the code.
