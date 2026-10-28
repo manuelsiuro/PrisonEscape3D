@@ -6,6 +6,8 @@ web-game-starter with the **web-game-playbook** and **web-sim-game-playbook** sk
 - **The plan**: `docs/PLAN.md` (phases, decisions, conflicts resolved). The design source of
   truth is `docs/the_escapists_3d_complete_game_design_document.md` (GDD); `docs/tech_plan.md`
   fills engineering gaps only. A new conflict goes into PLAN.md §2 in the same commit.
+  `docs/HISTORY.md` holds every release (what changed, what reviews found, what was accepted);
+  PLAN.md §8 has the status.
 - **Vertical slices**: every phase ships sim + render + phone/desktop UI + i18n + tests, then
   a release.
 
@@ -13,7 +15,11 @@ Rules that matter every time:
 - **The simulation is deterministic** (`src/sim/`): fixed 20 Hz steps, integer positions
   (`UNIT` per tile), PRNG in the state, no `Math.random`/`Date`/DOM/Three.js. Every input is a
   packed command (`src/sim/command.ts`) — keyboard, touch and bots alike. New state fields go
-  at the end and load as optional. Systems run in the order written in `Sim.step`.
+  at the end and load as optional. Systems run in the order written in `Sim.advance`.
+- **Old runs replay as they were**: a rule change that would alter a logged run goes behind a
+  `Sim` flag that `runlog.ts` sets for older logs (`rules250`, `rules215`, `noQueue`). A new
+  feature is opt-in or starts after day 1, so the escape bots stay byte-identical; a change in
+  `escapetest`'s snapshot is a regression until proven otherwise.
 - **Content is data** (`src/content/`): prisons are ASCII maps (`L0.map.ts`, legend in
   `src/sim/world/tiles.ts`) plus zones, cells and props. `maptest` validates every map
   (reachability, containment, props on floor, zones on every floor tile).
@@ -36,6 +42,14 @@ Rules that matter every time:
   its "Outside 3D" photos). Check that the new
   thing appears: a group the title screen hides needs showing in `View.mapShot`. Then run
   `npm run maps` again, and commit the pictures with the phase.
+- **How to play**: a new feature gets a topic in `src/ui/screens/helpTopics.ts` with its
+  `help.<id>.*` parts (`helptest` checks the French has as many lines, the icons and pictures).
+  Its picture is a `SHOTS` entry in `scripts/dev/helpshot.ts` (a bot's run or a lesson replayed
+  in the dev build, posted to `public/help/` through the shot sink); a topic seen from the start
+  is pictured at Center Perks. Retake a picture when what it shows changes.
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
   background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).
+  Then add the release to the end of `docs/HISTORY.md`.
+- **Bots pass what people fail**: lessons and minigames are also played by hand in the browser
+  at the three sizes before a release.
