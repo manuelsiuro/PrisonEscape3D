@@ -1,5 +1,5 @@
 /** Training (GDD §3.2): Strength, Speed and Intellect, the equipment and the library, a set's bar. */
-import { nearestDir as faceTo } from '../ai/path';
+import { nearestDir } from '../ai/path';
 import type { SimContext } from '../context';
 import { type Attr, ATTRS } from '../events';
 import { ATTR_MAX, GYM_ENERGY, REP_DRAIN_STEPS, REP_GAIN, STUDY_ENERGY, STUDY_TIP_EVERY, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
@@ -49,7 +49,7 @@ export function startTraining(sim: SimContext, prop: number, use: FixtureUse | '
   closeBox(sim);
   const p = sim.world.props[prop];
   s.player.moving = false;
-  s.player.facing = faceTo((p.x + p.w / 2) * UNIT - s.player.x, (p.z + p.d / 2) * UNIT - s.player.z) || s.player.facing;
+  s.player.facing = nearestDir((p.x + p.w / 2) * UNIT - s.player.x, (p.z + p.d / 2) * UNIT - s.player.z) || s.player.facing;
   s.train = prop;
   s.reps = 0;
   s.repSide = 0;

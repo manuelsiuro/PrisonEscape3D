@@ -8,7 +8,7 @@ import { itemDef } from '../../content/items';
 import { WORK_ITEMS } from '../../content/jobs';
 import { BLOCK, ROUTINE } from '../../content/routine';
 import { zoneIndex } from '../../content/zones';
-import { nearestDir as faceTo } from '../ai/path';
+import { nearestDir } from '../ai/path';
 import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
@@ -55,7 +55,7 @@ export function work(sim: SimContext, st: Station) {
   };
   stopTraining(sim);
   const prop = sim.world.props[st.prop];
-  if (prop) s.player.facing = faceTo((prop.x + prop.w / 2) * UNIT - s.player.x, (prop.z + prop.d / 2) * UNIT - s.player.z) || s.player.facing;
+  if (prop) s.player.facing = nearestDir((prop.x + prop.w / 2) * UNIT - s.player.x, (prop.z + prop.d / 2) * UNIT - s.player.z) || s.player.facing;
   switch (st.act) {
     case 'full':
       sim.events.push({ type: 'full' });

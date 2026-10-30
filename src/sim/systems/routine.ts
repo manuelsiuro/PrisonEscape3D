@@ -4,7 +4,6 @@ import { BLOCK, ROUTINE, routineAt } from '../../content/routine';
 import type { SimContext } from '../context';
 import { MISSED_ROUTINE_HEAT } from '../tuning';
 import type { Clock } from './clock';
-import { reissueKit } from './fights';
 import { cancelTasks, GUARD } from './guards';
 import { restock } from './items';
 import { newDay, settleWork, startWork } from './jobs';
@@ -14,6 +13,7 @@ import { addHeat } from './watch';
 import { treats } from './k9';
 import { ferment } from './pruno';
 import { growGarden } from './garden';
+import { reissueKit } from './keys';
 
 /** A new block settles the last one: a missed block costs heat, the Work Period pays or fires, 08:00 starts a new day. */
 export function nextBlock(sim: SimContext, clock: Clock) {
