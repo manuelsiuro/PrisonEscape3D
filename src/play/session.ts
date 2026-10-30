@@ -60,7 +60,6 @@ import { isLegal } from '../content/manhunt';
 import { outsideOf } from '../content/outside';
 import { carryFrom } from '../sim/hunt/carry';
 
-export { escapeScene };
 
 /**
  * A game from start to end: into it (new or loaded), the saves along the way, pausing, and

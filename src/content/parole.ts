@@ -72,7 +72,6 @@ export const RECORD: readonly RecordLine[] = [
   { id: 'missed', side: -1, w: 2, each: 1, cap: 14 },
   { id: 'dogs', side: -1, w: 3, each: 1, cap: 9 },
 ];
-export type RecordId = (typeof RECORD)[number]['id'];
 
 /**
  * What the board asks about: the record's lines a claim rests on. A claim ("I've worked every day

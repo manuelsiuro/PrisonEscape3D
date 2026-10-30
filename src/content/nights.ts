@@ -15,7 +15,6 @@ export const quizAt = (face: 1 | 5 | 9 | 13, ...spots: Array<[number, number]>):
 // ------------------------------------------------------------------ talent night
 
 /** The instruments: bucket drums (always on the stage) and a homemade guitar (crafted, in the hotbar). */
-export const INSTRUMENTS = ['drums', 'guitar'] as const;
 export const INSTRUMENT = { DRUMS: 0, GUITAR: 1 } as const;
 
 /**

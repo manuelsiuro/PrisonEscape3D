@@ -571,7 +571,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The side games (P22): the bout, the dice between the two, the pick's taps, sports day.
   f.games = gamesFrameOf(sim, f.x, f.z, rival >= 0 ? f.inmates[rival] ?? null : null);
   // Card sharks (P27): the court, the ball, the cards between the two, the board.
-  f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner, partner);
+  f.pastimes = pastimesFrameOf(sim, f.x, f.z, partner);
   // Long games (P28): the garden's beds, the track and its racers, the pet's laps, tipsy.
   f.long = longFrameOf(sim, a);
   // Team & ink (P29): the pitch, the ball.

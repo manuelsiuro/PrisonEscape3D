@@ -34,7 +34,6 @@ export const comms = (
 
 /** Who the player calls (EXT.CALL's b, divided by 16; the rest is SUB). Never renumber: logs store them. */
 export const CALLEE = { HOME: 0, LAWYER: 1, COUSIN: 2, TIP: 3 } as const;
-export const CALLEES = ['home', 'lawyer', 'cousin', 'tip'] as const;
 /** What the lawyer is asked for (EXT.CALL's b mod 16; P39: filing for parole). */
 export const LAWYER = { APPEAL: 0, RETAINER: 1, PAROLE: 2 } as const;
 /** Lou's jobs (EXT.CALL's b mod 16). */

@@ -261,5 +261,3 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'secretSanta', group: 'holidays', icon: 'gift', gives: 'holSanta', run: (r) => f(r, 'giftsGiven') >= 1 },
   { id: 'withABang', group: 'holidays', icon: 'sparkle', run: (r) => f(r, 'fireworkWork') >= 5 },
 ];
-
-export const achievement = (id: string) => ACHIEVEMENTS.find((a) => a.id === id);

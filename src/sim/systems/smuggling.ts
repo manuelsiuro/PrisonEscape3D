@@ -483,8 +483,5 @@ function parcel(sim: SimContext, m: number) {
   sim.events.push({ type: 'smuggle', what: 'parcel', item });
 }
 
-/** The visiting room's rectangle here (null none): for the view and the help. */
-export const visitRoom = (sim: Pick<SimContext, 'world'>): Rect | null => smugglingOf(sim)?.visits ?? null;
-
 /** A ground tile is inside a rectangle. */
 export { inRect };

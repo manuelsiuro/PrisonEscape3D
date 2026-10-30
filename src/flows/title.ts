@@ -30,8 +30,6 @@ import { careerOf, earnedTrophies, markTrophiesSeen, syncCareer, unseenTrophies 
 import { showTrophies } from '../ui/screens/trophies';
 import { watchReplay } from '../play/replay';
 import { newRunHoliday } from '../play/holidays';
-import { runHoliday } from '../game/holidays';
-import { DAY_BOOKS } from '../content/days';
 
 // ------------------------------------------------------------------ flows
 /** The title, and from it into a game (new, continued or loaded) and back, for good. */
@@ -44,7 +42,7 @@ export async function titleFlow() {
     sound.music('title');
     showUpdate();
     // (P42: the prison behind the title dressed for the holiday, the date's as Settings have it.)
-    view.setHoliday(DAY_BOOKS[backdrop.id] ? runHoliday(settings) : 0);
+    view.setHoliday(newRunHoliday(backdrop));
     const again = takePlayAgain();
     const open = openPrisons();
     // Progress reset (settings): the prison behind the title may be locked again.

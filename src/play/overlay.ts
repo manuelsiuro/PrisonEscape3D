@@ -12,8 +12,7 @@ import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
 import { guardSubject } from '../ui/social';
 import { baking, energyCost, exposed } from '../sim/systems/weather';
 import { dayHud, stowCard, vehicleThe } from './day';
-import { atTail, searchMinute } from '../sim/systems/delivery';
-import { dayMinute, today } from '../sim/systems/calendar';
+import { atTail } from '../sim/systems/delivery';
 import { containersOf } from '../sim/world/containers';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
@@ -200,7 +199,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   }
   if (st.seat >= 0) GET_UP.verb = t('act.getUp');
   // (At the vehicle's tail, the tailgate open: climbing in comes before anything else there.)
-  const tail = !st.stowed && atTail(sim) && dayMinute(st.step) < searchMinute(today(sim));
+  const tail = atTail(sim);
   if (st.stowed) CLIMB_OUT.verb = t('act.climbOut');
   if (tail) {
     STOW.verb = t('act.stow');

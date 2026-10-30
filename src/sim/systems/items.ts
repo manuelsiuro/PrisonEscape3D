@@ -1,4 +1,4 @@
-import { itemDef, itemNumber, ITEMS } from '../../content/items';
+import { itemDef, itemNumber } from '../../content/items';
 import { LOOT, POCKET_SLOTS } from '../../content/loot';
 import { choices, RECIPES } from '../../content/recipes';
 import { DIR_X, DIR_Z, SLOT } from '../command';
@@ -493,9 +493,6 @@ export function craft(s: ItemState, mask: number, events: ItemEvent[], expected 
   if (first) s.known.push(recipe);
   events.push({ type: 'crafted', item: result, recipe, first });
 }
-
-/** Every item number, for tests and tools. */
-export const ALL_ITEMS = ITEMS.map((_, i) => i + 1);
 
 /**
  * The recipe a set of items makes (in any order), -1 for none: the workbench preview. Each

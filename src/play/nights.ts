@@ -1,6 +1,5 @@
 import { buzz } from '../app/haptics';
 import { CHARTS, countIn, INSTRUMENT, QUIZ_PRIZE, SONGS } from '../content/nights';
-import { KEY_ITEM_COLORS } from '../content/items';
 import { listOf, t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -410,6 +409,3 @@ export function nightsFrameOf(sim: Sim): NightsFrame {
   frame.lights = lights;
   return frame;
 }
-
-/** The key colours' names (quiz questions), for the i18n test. */
-export const COLOURS = KEY_ITEM_COLORS.map(([c]) => c);

@@ -29,15 +29,11 @@ import { HOTBAR, itemOf, slot } from './items';
 import { searcher } from './phone';
 import { addHeat } from './watch';
 
-export const RELEASE_FORM = itemNumber('release_form');
 const FORGED = itemNumber('forged_release');
 const OWN_CLOTHES = itemNumber('own_clothes');
 
 /** The prison's release desk (none at the Training Block). */
 export const releaseOf = (sim: Pick<SimContext, 'world'>): CommsDef['release'] | null => (sim.world.def.rules?.relaxed ? null : (sim.world.def.comms?.release ?? null));
-
-/** The prison day the name is listed for (0 none). */
-export const listedFor = (s: Pick<SimState, 'release'>) => s.release[0];
 
 /** Cleared for release: the way out open for the player alone. */
 export const freedNow = (s: Pick<SimState, 'release'>) => s.release[1] > 0;

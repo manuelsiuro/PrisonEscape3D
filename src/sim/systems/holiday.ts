@@ -215,6 +215,3 @@ export function carve(sim: SimContext) {
   it.rev++;
   sim.events.push({ type: 'holiday', what: 'carved', item: JACK_LANTERN });
 }
-
-/** Where a pumpkin can be carved: the kitchen's floor. */
-export const carveHere = (zone: string) => zone === 'kitchen';

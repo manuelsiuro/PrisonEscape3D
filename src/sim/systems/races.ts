@@ -28,7 +28,7 @@ import { STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { LAYER, MAP_W, type World } from '../world/World';
 import { clockAt, prisonDay } from './clock';
 import { eyesOn } from './games';
-import { HOTBAR, itemOf } from './items';
+import { itemOf } from './items';
 import { makeNoise } from './noise';
 import { baitSlot, petOf, RAT } from './rats';
 import { refuse } from './social';
@@ -206,11 +206,6 @@ export function raceOp(sim: SimContext, b: number, c: number) {
   sim.events.push({ type: 'race', what: 'bet', lane: b, stake, odds }, { type: 'cash', n: -stake, why: 'bet' });
 }
 
-/** The pet at the race: running in it (the 3D puts it on the track, off the player's shoulder). */
-export function petRacing(s: SimState): boolean {
-  return s.race[RACE.ON] === 1 && s.race[RACE.ENTERED] === 1;
-}
-
 /** Each step: the off at RACE_MINUTE (the cheering heard; a lockdown calls it off), a guard seeing the player at it, the finish. */
 export function races(sim: SimContext) {
   const s = sim.state;
@@ -336,6 +331,3 @@ export function trainRat(sim: SimContext) {
   pet.lap = s.step + TRACK_STEPS;
   sim.events.push({ type: 'track', what: 'trained', speed: pet.speed, gain, item: food });
 }
-
-/** Whether the hotbar holds bait (the UI's hint). */
-export const hasBait = (inv: readonly number[]) => baitSlot(inv.slice(0, HOTBAR)) >= 0;

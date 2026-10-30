@@ -18,7 +18,8 @@ import { watchReplay } from './replay';
 import { prisonName } from '../ui/screens/prisons';
 import { banner, click, controls, itemsUI, sound, tools, trophyToast } from './context';
 import { play, type DailyRun, type Game } from './game';
-import { endGame, escapeScene } from './session';
+import { endGame } from './session';
+import { escapeScene } from './stage';
 
 /**
  * A Daily Escape's run in play (P26): its twists said as it begins, its escape kept in the

@@ -454,6 +454,3 @@ export function wireOddJobs() {
   };
   talk.oddJob = oddjobTalk;
 }
-
-/** Shown: the board's card, the job's own card. */
-export const oddjobsOpen = () => oddjobsCard.open;

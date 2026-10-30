@@ -878,6 +878,3 @@ export function oddjobs(sim: SimContext) {
       return lookout(sim, job);
   }
 }
-
-/** The step a job runs out (for the card: 08:00 after its last day). */
-export const endsOf = (job: readonly number[]) => job[J.ENDS];
