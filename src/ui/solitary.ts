@@ -2,6 +2,7 @@ import { t } from '../i18n';
 import { POTATO_PRESSES } from '../sim/tuning';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
+import { spanText } from '../sim/systems/clock';
 
 /**
  * Solitary confinement (GDD §5.6): a card above the hotbar with the time left and the
@@ -44,7 +45,7 @@ export class SolitaryPanel {
     }
     if (!on) return;
     setText(this.title, t('solitary.title'));
-    setText(this.time, `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`);
+    setText(this.time, spanText(minutes));
     setText(this.how, TOUCH ? t('solitary.hintTouch') : t('solitary.hintKeys'));
     if (peeled === this.peeled) return;
     // A stroke on the potato; back to no strokes: one more potato in the pot.

@@ -4,6 +4,7 @@ import { icon } from '../icons';
 import { listOf, t, type Key } from '../../i18n';
 import type { Achievement } from '../../content/achievements';
 import type { Medal } from '../../content/medals';
+import { spanText } from '../../sim/systems/clock';
 
 /** What the victory screen shows (GDD §13.2). */
 export interface Victory {
@@ -53,9 +54,8 @@ export type VictoryChoice = 'again' | 'next' | 'title' | 'watch' | 'run' | 'skip
 function huntRow(v: Victory): string {
   const hu = v.hunt;
   if (!hu || hu.state === 'skipped') return '';
-  const time = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
   if (hu.state === 'offer') return `<div class="v-hunt offer">${icon('run', 20)}<span><b>${t('manhunt.offer')}</b><small>${t(hu.lou ? 'manhunt.offerLou' : 'manhunt.offerSub', { goal: t(`manhunt.goal.${hu.goal}` as Key) })}</small></span></div>`;
-  if (hu.state === 'safe') return `<div class="v-hunt safe" role="status"><span class="v-star">${icon('star', 20)}</span><span><b>${t('manhunt.clean')}</b><small>${t(`manhunt.awaySub.${hu.reached === 'lou' ? 'lou' : hu.goal}` as Key)} · ${time(hu.secs ?? 0)}</small></span></div>`;
+  if (hu.state === 'safe') return `<div class="v-hunt safe" role="status"><span class="v-star">${icon('star', 20)}</span><span><b>${t('manhunt.clean')}</b><small>${t(`manhunt.awaySub.${hu.reached === 'lou' ? 'lou' : hu.goal}` as Key)} · ${spanText(hu.secs ?? 0)}</small></span></div>`;
   return `<div class="v-hunt caught" role="status">${icon('siren', 20)}<span><b>${t('manhunt.caught')}</b><small>${t('manhunt.caughtCard', { n: Math.round((hu.progress ?? 0) * 100), goal: t(`manhunt.goal.${hu.goal}` as Key) })}</small></span></div>`;
 }
 

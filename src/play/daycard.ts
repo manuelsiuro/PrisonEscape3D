@@ -2,7 +2,7 @@ import { BETS, RACE_MINUTE, RACE_STEPS } from '../content/long';
 import { BLOCK, ROUTINE, routineAt, routineEnd } from '../content/routine';
 import { DRILL_HEAT } from '../content/days';
 import { t, type Key } from '../i18n';
-import { dayMinute, formatTime, prisonDay } from '../sim/systems/clock';
+import { dayMinute, formatTime, hhmm, pad2, prisonDay, spanText } from '../sim/systems/clock';
 import { planOf, TODAY, today } from '../sim/systems/calendar';
 import { jobRooms } from '../sim/systems/economy';
 import { cardMinute, RACE, raceNight, trackOf } from '../sim/systems/races';
@@ -44,9 +44,8 @@ const BLOCK_ICON: Record<string, string> = {
   lightsOut: 'moon',
 };
 
-const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 /** "27 min left", "3 h 05 left". */
-const leftOf = (n: number) => (n < 60 ? t('dayCard.left', { n }) : t('dayCard.leftH', { h: Math.floor(n / 60), m: String(n % 60).padStart(2, '0') }));
+const leftOf = (n: number) => (n < 60 ? t('dayCard.left', { n }) : t('dayCard.leftH', { h: Math.floor(n / 60), m: pad2(n % 60) }));
 
 /** The block a minute into the prison day falls in. */
 const blockOf = (dayMin: number) => routineAt((dayMin + 8 * 60) % 1440);
@@ -176,7 +175,7 @@ function dayView(g: Game): DayView {
   if (st.lockdown) alert = { icon: 'siren', title: t('routine.lockdown'), sub: `${t('routine.hunted')}. ${t('dayCard.held')}` };
   else if (st.solitary > 0) {
     const left = Math.ceil(st.solitary / STEPS_PER_MINUTE);
-    alert = { icon: 'lock', title: t('routine.solitary'), sub: t('routine.solitaryLeft', { time: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` }) };
+    alert = { icon: 'lock', title: t('routine.solitary'), sub: t('routine.solitaryLeft', { time: spanText(left) }) };
   }
   return {
     // (After midnight the prison day runs on to 08:00: its number, as the timeline is its.)

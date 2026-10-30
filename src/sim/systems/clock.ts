@@ -17,7 +17,13 @@ export function clockAt(step: number): Clock {
 }
 
 /** "08:05". */
-export const formatTime = (c: Clock) => `${String(c.hour).padStart(2, '0')}:${String(c.minute).padStart(2, '0')}`;
+/** Two digits ("07"). */
+export const pad2 = (n: number) => String(n).padStart(2, '0');
+export const formatTime = (c: Clock) => `${pad2(c.hour)}:${pad2(c.minute)}`;
+/** A minute of the day as "hh:mm" (no wrap: a block ending at midnight says 24:00). */
+export const hhmm = (minute: number) => `${pad2(Math.floor(minute / 60))}:${pad2(minute % 60)}`;
+/** A span as "m:ss" from seconds, or "h:mm" from minutes: the larger unit, then two digits. */
+export const spanText = (n: number) => `${Math.floor(n / 60)}:${pad2(n % 60)}`;
 
 /** True on the first step of each game hour (not at the very start). */
 export const hourStarts = (step: number) => step > 0 && step % (STEPS_PER_MINUTE * 60) === 0;

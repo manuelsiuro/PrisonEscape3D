@@ -1,6 +1,7 @@
 import { currentLang, t, type Key } from '../i18n';
 import { h, setText } from './dom';
 import { icon } from './icons';
+import { spanText } from '../sim/systems/clock';
 
 /** What the manhunt's HUD shows (P41), worked out by the play layer each frame. */
 export interface HuntHudState {
@@ -132,7 +133,7 @@ export class HuntHud {
     // The alarm: counting down, then how long it's been up.
     const up = s.alarm <= 0;
     const secs = Math.abs(Math.ceil(s.alarm));
-    setText(this.alarmTime, `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
+    setText(this.alarmTime, spanText(secs));
     setText(this.alarmLabel, t(up ? 'manhunt.alarmUp' : 'manhunt.alarmIn'));
     this.alarmPill.classList.toggle('up', up);
     const tiers = `${s.dogs ? 'd' : ''}${s.roadblocks ? 'r' : ''}${s.heli ? 'h' : ''}`;

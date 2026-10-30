@@ -3,6 +3,7 @@ import { OP, TALK } from '../sim/command';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { DESIGNS } from '../content/team';
+import { pad2 } from '../sim/systems/clock';
 
 type Send = (op: number, a?: number, b?: number) => void;
 
@@ -254,7 +255,7 @@ export class WrestleCard {
       this.sides[0].setAttribute('aria-label', t('train.left'));
       this.sides[1].setAttribute('aria-label', t('train.right'));
     }
-    setText(this.clock, `0:${String(v.left).padStart(2, '0')}`);
+    setText(this.clock, `0:${pad2(v.left)}`);
     this.knot.style.left = `${(v.bar * 100).toFixed(1)}%`;
     const bar = this.el.querySelector('.tug-bar')!;
     bar.setAttribute('aria-valuenow', String(Math.round(v.bar * 100)));

@@ -2,14 +2,14 @@ import { ALL_SLOTS, HAND_SLOTS, deleteSave, readSave, rebuiltSince, type SaveFil
 import { currentLang, t, type Key } from '../../i18n';
 import { h } from '../dom';
 import { icon } from '../icons';
+import { hhmm } from '../../sim/systems/clock';
 
-const pad = (n: number) => String(n).padStart(2, '0');
 
 /** "Stalag Flucht · Day 3 · 14:20 · Laundry": which prison, when and where a save was made. */
 export function saveWhen(f: SaveFile): string {
   // (P31: its prison rebuilt since, said before it's picked: the run starts over.)
   if (rebuiltSince(f)) return `${t(`prison.${f.prison}` as Key)} · ${t('title.rebuilt')}`;
-  return `${t(`prison.${f.prison}` as Key)} · ${t('hud.day', { n: f.day })} · ${pad(Math.floor(f.minute / 60))}:${pad(f.minute % 60)} · ${t(`zone.${f.zone}` as Key)}`;
+  return `${t(`prison.${f.prison}` as Key)} · ${t('hud.day', { n: f.day })} · ${hhmm(f.minute)} · ${t(`zone.${f.zone}` as Key)}`;
 }
 
 /** "5 minutes ago", in the game's language. */
