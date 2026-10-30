@@ -29,7 +29,6 @@ import { checkpointOf, shiftChange } from '../src/sim/systems/getaway';
 import { WAY } from '../src/content/smuggling';
 import { containersOf } from '../src/sim/world/containers';
 import { GUARD } from '../src/sim/systems/guards';
-import { aimToss } from '../src/sim/systems/noise';
 import { ROUTINE } from '../src/content/routine';
 import { placesOf } from '../src/sim/ai/places';
 import { UNIT } from '../src/sim/tuning';
@@ -48,6 +47,7 @@ import { answerWorth, recordCounts } from '../src/sim/systems/parole';
 import { dealsOf, jobOf } from '../src/sim/systems/oddjobs';
 import { BOARD, J, KIND, STAGE } from '../src/content/oddjobs';
 import { check } from './assert';
+import { aimToss } from '../src/sim/systems/throwing';
 
 const tile = (x: number, z: number) => z * MAP_W + x;
 

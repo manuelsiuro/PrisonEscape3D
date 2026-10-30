@@ -35,13 +35,13 @@ import { planOf, TODAY } from '../src/sim/systems/calendar';
 import { dayMinute, DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
 import { HOTBAR, itemOf, slot } from '../src/sim/systems/items';
 import { FEAT } from '../src/sim/systems/ledger';
-import { landable } from '../src/sim/systems/noise';
 import { seatSpot } from '../src/sim/systems/rest';
 import { arrival, catalogueItem, droneMinute, dropTile, fixerOf, guestSpot, inRect, orderPrice, PHONE, smugglingOf, visitExits } from '../src/sim/systems/smuggling';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
+import { landable } from '../src/sim/systems/throwing';
 
 const n = (id: string) => itemNumber(id);
 const putTile = (b: { x: number; z: number }, t: number) => {

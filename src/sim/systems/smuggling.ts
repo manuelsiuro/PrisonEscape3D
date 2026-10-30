@@ -35,13 +35,14 @@ import { eventOn, planOf, today, TODAY } from './calendar';
 import { dayMinute, prisonDay } from './clock';
 import { awake } from './guards';
 import { freeHotbar, itemOf, slot } from './items';
-import { landable, makeNoise, pileRoom } from './noise';
+import { makeNoise } from './noise';
 import { hearingDue } from './parole';
 import { frisk } from './power';
 import { facingAt, seatSpot } from './rest';
 import { lookingAway } from './ways';
 import { centerX, centerZ } from '../world/grid';
 import { inmateInCell } from './inmates';
+import { landable, pileRoom } from './throwing';
 
 export const PHONE = itemNumber('burner_phone');
 
