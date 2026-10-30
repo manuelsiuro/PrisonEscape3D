@@ -78,6 +78,9 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
 }
 
 /** A fighter's starting numbers: full health, up and about. */
+/** The inmate in a cell (an index; -1 none). */
+export const inmateInCell = (s: { inmates: readonly Inmate[] }, cell: number) => s.inmates.findIndex((m) => m.cell === cell);
+
 export const fighter = (str: number) => ({ hp: maxHealth(str), ko: 0, str, swing: -1000 });
 
 /** The player's seat (its tile, -1 standing): nobody picks it while they sit there. */

@@ -41,6 +41,7 @@ import { frisk } from './power';
 import { facingAt, seatSpot } from './rest';
 import { lookingAway } from './ways';
 import { centerX, centerZ } from '../world/grid';
+import { inmateInCell } from './inmates';
 
 export const PHONE = itemNumber('burner_phone');
 
@@ -50,7 +51,7 @@ export const smugglingOf = (sim: Pick<SimContext, 'world'>): SmugglingDef | unde
 /** The fixer (Cast id), -1 where there's none. */
 export function fixerOf(sim: Pick<SimContext, 'world' | 'state'>): number {
   const d = smugglingOf(sim);
-  return d ? sim.state.inmates.findIndex((m) => m.cell === d.fixer) : -1;
+  return d ? inmateInCell(sim.state, d.fixer) : -1;
 }
 
 /** An entry of the catalogue: its item number. */

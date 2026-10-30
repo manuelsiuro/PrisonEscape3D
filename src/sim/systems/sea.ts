@@ -4,18 +4,13 @@
  * launched off the end of the pier, and the supply helicopter on its pad takes a guard away
  * at night once the helipad's guards are down.
  */
-import { itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
-import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import { HURT_BY } from '../state';
 import { isTunnel, TILE } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_H, MAP_W, tileOfKey } from '../world/World';
 import { hurt } from './fights';
-import { itemOf } from './items';
-import { setTile } from './watch';
-
-const GUARD_OUTFIT = itemNumber('guard_outfit');
+import { inDisguise, setTile } from './watch';
 
 /**
  * The tunnel the player just dug into the sea floods: every tunnel tile joined to it fills
@@ -70,9 +65,8 @@ function helipadClear(sim: SimContext): boolean {
  * the helipad's guards out cold, and only in a guard's uniform (the pilot flies staff).
  */
 export function board(sim: SimContext) {
-  const s = sim.state;
   if (!helicopterIn(sim)) sim.events.push({ type: 'refused', why: 'noHelicopter' });
   else if (!helipadClear(sim)) sim.events.push({ type: 'refused', why: 'helipadGuards' });
-  else if (itemOf(s.items.inv[SLOT.OUTFIT]) !== GUARD_OUTFIT) sim.events.push({ type: 'refused', why: 'notUniform' });
+  else if (!inDisguise(sim)) sim.events.push({ type: 'refused', why: 'notUniform' });
   else sim.boarded = 'helicopter';
 }

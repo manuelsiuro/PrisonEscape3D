@@ -41,6 +41,7 @@ import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { CHAT_ITEMS, PUBLIC_PLACES } from '../i18n/barks/grammar';
 import { boardNow } from '../sim/systems/oddjobs';
+import { inmateInCell } from '../sim/systems/inmates';
 
 /**
  * Gossip (P13): what inmates tell a friend, always true ("warnings proven never wrong").
@@ -196,7 +197,7 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   // A merchant's stock (items people know how to say), if the merchant would sell to the player.
   // (P26: none on a Closed Shop Daily.)
   if (!twist(s, 'closedShop')) sim.prison.merchants.forEach((cell, k) => {
-    const who = s.inmates.findIndex((m) => m.cell === cell);
+    const who = inmateInCell(s, cell);
     if (who < 0 || who === speaker || s.inmates[who].opinion <= OPINION_LOW) return;
     for (const v of s.shops[k] ?? []) {
       const id = v ? itemDef(itemOf(v)).id : '';
@@ -235,7 +236,7 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   for (const cell of shakedownCells(sim.world, s.salt, day, planOf(sim, day).event === 'inspection', twist(s, 'crackdown'))) {
     if (cell === 1) out.push({ kind: 'shakedownYou', key: `shakedown:${day}:1`, n: day });
     else {
-      const who = s.inmates.findIndex((m) => m.cell === cell);
+      const who = inmateInCell(s, cell);
       if (who >= 0 && who !== speaker) out.push({ kind: 'shakedown', key: `shakedown:${day}:${cell}`, inmate: who, n: day });
     }
   }
@@ -267,7 +268,7 @@ export function facts(sim: Sim, speaker = -1): Fact[] {
   const desk = pillsDesk(sim);
   if (desk >= 0 && s.items.containers[desk].some((v) => itemOf(v) === PILLS)) {
     const prop = containersOf(sim.world)[desk].prop;
-    const who = s.inmates.findIndex((m) => m.cell === sim.world.cellOf[prop.z * MAP_W + prop.x]);
+    const who = inmateInCell(s, sim.world.cellOf[prop.z * MAP_W + prop.x]);
     if (who >= 0 && who !== speaker) out.push({ kind: 'pills', key: `pills:${plan.day}:${who}`, inmate: who });
   }
   // Delivery day (P18): before the search, how thorough today's will be (drawn for the day: true; a catch changes only the days after).

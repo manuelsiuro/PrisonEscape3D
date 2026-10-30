@@ -17,6 +17,7 @@ import { play, sendOp } from './game';
 import { thingName } from './labels';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
+import { inmateInCell } from '../sim/systems/inmates';
 
 /**
  * The pet rat on screen (P20): its name, the panel's places and buttons, the HUD's pill, and
@@ -53,7 +54,7 @@ function furnitureName(sim: Sim, container: number): string {
   const cap = name.charAt(0).toUpperCase() + name.slice(1);
   const c = containersOf(sim.world)[container];
   const cell = sim.world.cellOf[c.prop.z * MAP_W + c.prop.x];
-  const owner = cell > 1 ? sim.state.inmates.findIndex((m) => m.cell === cell) : -1;
+  const owner = cell > 1 ? inmateInCell(sim.state, cell) : -1;
   const base = owner >= 0 ? t('rat.whose', { thing: cap, name: inmateName(sim, owner) }) : t('rat.where', { thing: cap, place: t(`zone.${sim.world.zoneAt(c.prop.x, c.prop.z)}` as Key) });
   // (Several of a kind in one room, a row of showers: numbered once and for all, by their order in the prison.)
   const twins = twinsOf(sim, container);
