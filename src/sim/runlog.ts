@@ -335,5 +335,9 @@ export function replayLog(log: RunLog, prison: PrisonDef): Replayed | null {
     }
   // Whole only if it got to where the log ends and every checksum on the way was met (none skipped).
   const end = log.from + log.steps;
-  return { sim, ok: sim.state.step === end && checked === log.sums.filter(([k]) => k > log.from && k <= end).length && sums.has(end), verified };
+  return { sim, ok: sim.state.step === end && allChecked(log, sums, checked, end), verified };
 }
+
+/** Every one of a log's checksums up to `end` was met on the way (`checked` of them, none skipped), the last at `end` itself. */
+export const allChecked = (log: RunLog, sums: ReadonlyMap<number, string>, checked: number, end: number) =>
+  checked === log.sums.filter(([k]) => k > log.from && k <= end).length && sums.has(end);

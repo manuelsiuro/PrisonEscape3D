@@ -23,7 +23,7 @@ import { noteCarried } from './systems/recipes';
 import { stockSlots } from './systems/items';
 import { clockIn, spreadCoins, station } from './systems/jobs';
 import { bedCheck, outOfReach, release, report, wakeUp } from './systems/justice';
-import { tileOfBody, walk, type Body } from './systems/movement';
+import { overlapsTile, tileOfBody, walk, type Body } from './systems/movement';
 import { devices, powered, scan, takeoverCheck } from './systems/power';
 import { attendance, nextBlock } from './systems/routine';
 import { endTalk, grudges, guardTalking, keepTalk, offerFavors, socialNow } from './systems/social';
@@ -50,7 +50,7 @@ import { tipsy, tipsyNow } from './systems/pruno';
 import { races } from './systems/races';
 import { TIPSY_PACE } from '../content/long';
 import { coolEvery, dayOneTwists, LAST_DAY, OWL_CHECKS, twist } from './systems/twists';
-import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
+import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPEED, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 import { tileAt } from './world/grid';
@@ -529,7 +529,7 @@ export class Sim {
         const b = occupant(c);
         const door = w.cellDoor[c];
         if (!b || cellOfBody(b) !== c || door < 0) continue;
-        if (bodies.some((o) => o !== b && cellOfBody(o) === c) || bodies.some((o) => overlaps(o, door))) continue;
+        if (bodies.some((o) => o !== b && cellOfBody(o) === c) || bodies.some((o) => overlapsTile(o, door))) continue;
         mask |= 1n << BigInt(c);
       }
     }
@@ -601,9 +601,3 @@ const MUSTER: readonly string[] = ['rollCall'];
 /** What a player hidden in the delivery's vehicle can do (P18): climb out, and sort the pockets. */
 const STOWED_OPS: readonly number[] = [OP.INTERACT, OP.CLOSE, OP.MOVE, OP.EQUIP, OP.SELECT];
 
-/** Whether a body's footprint touches a tile. */
-function overlaps(b: Body, tile: number): boolean {
-  const tx = (tile % MAP_W) * UNIT;
-  const tz = Math.floor(tile / MAP_W) * UNIT;
-  return b.x + BODY_HALF > tx && b.x - BODY_HALF < tx + UNIT && b.z + BODY_HALF > tz && b.z - BODY_HALF < tz + UNIT;
-}

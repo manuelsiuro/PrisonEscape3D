@@ -5,12 +5,13 @@ import { DAMAGE_SHOWS, KEY, LEGEND, TILE, TILE_INFO, UNDER_LEGEND, VENT_LEGEND }
 import { doorOpen } from './doors';
 import { JOBS } from '../../content/jobs';
 import { OPEN_HOURS } from '../../content/routine';
+import { MAP_H, MAP_W, neighbours4 } from './grid';
 
 /** Zones behind doors that open by the hour: where jobs are done (for the Work Period), the sports ground and the garden (P31: OPEN_HOURS). */
 const WORK_ZONES = new Set<string>([...Object.values(JOBS).map((j) => j.zone), ...Object.keys(OPEN_HOURS)]);
 
-export const MAP_W = 64;
-export const MAP_H = 64;
+/** The map's size in tiles (every layer, every prison); defined with the tile arithmetic in grid.ts. */
+export { MAP_H, MAP_W } from './grid';
 
 /** Layers bottom to top (GDD §1.2). Index into World.layers. */
 export const LAYER = { UNDER: 0, GROUND: 1, VENTS: 2, ROOF: 3 } as const;
@@ -302,23 +303,16 @@ export class World {
   private beyondWay(way: Uint8Array, home: ReadonlyArray<{ x: number; z: number }>): Uint8Array {
     const g = this.ground;
     const walk = (j: number) => (g.kind[j] === TILE.DOOR || !TILE_INFO[g.kind[j]].solid) && !this.propSolid[j] && !way[j];
-    const near = (t: number, x = t % MAP_W) =>
-      [
-        [t - 1, x > 0],
-        [t + 1, x < MAP_W - 1],
-        [t - MAP_W, t >= MAP_W],
-        [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-      ] as const;
     // From home, with the way out shut.
     const reach = new Uint8Array(MAP_W * MAP_H);
     const queue = home.map((q) => q.z * MAP_W + q.x);
     for (const t of queue) reach[t] = 1;
-    for (let k = 0; k < queue.length; k++) for (const [j, ok] of near(queue[k])) if (ok && !reach[j] && walk(j)) (reach[j] = 1), queue.push(j);
+    for (let k = 0; k < queue.length; k++) for (const [j, ok] of neighbours4(queue[k])) if (ok && !reach[j] && walk(j)) (reach[j] = 1), queue.push(j);
     // What the way out touches that home doesn't reach (short of the road).
     const out = new Uint8Array(MAP_W * MAP_H);
     const more: number[] = [];
-    for (let i = 0; i < MAP_W * MAP_H; i++) if (way[i]) for (const [j, ok] of near(i)) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
-    for (let k = 0; k < more.length; k++) for (const [j, ok] of near(more[k])) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
+    for (let i = 0; i < MAP_W * MAP_H; i++) if (way[i]) for (const [j, ok] of neighbours4(i)) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
+    for (let k = 0; k < more.length; k++) for (const [j, ok] of neighbours4(more[k])) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
     return out;
   }
 
@@ -341,13 +335,7 @@ export class World {
       for (let i = 0; i < MAP_W * MAP_H; i++) if ((this.cellOf[i] === 1 || ZONES[g.zone[i]] === 'outside') && walk(i)) (seen[i] = 1), queue.push(i);
       for (let k = 0; k < queue.length; k++) {
         const t = queue[k];
-        const x = t % MAP_W;
-        for (const [j, ok] of [
-          [t - 1, x > 0],
-          [t + 1, x < MAP_W - 1],
-          [t - MAP_W, t >= MAP_W],
-          [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-        ] as const)
+        for (const [j, ok] of neighbours4(t))
           if (ok && !seen[j] && walk(j)) (seen[j] = 1), queue.push(j);
       }
       this.afootTiles = seen;
@@ -369,13 +357,7 @@ export class World {
       seen[start] = 1;
       for (let k = 0; k < queue.length; k++) {
         const t = queue[k];
-        const x = t % MAP_W;
-        for (const [j, ok] of [
-          [t - 1, x > 0],
-          [t + 1, x < MAP_W - 1],
-          [t - MAP_W, t >= MAP_W],
-          [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-        ] as const) {
+        for (const [j, ok] of neighbours4(t)) {
           if (!ok || seen[j]) continue;
           const kind = g.kind[j];
           if (kind === TILE.DOOR || TILE_INFO[kind].solid || this.propSolid[j]) continue;

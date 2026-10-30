@@ -3,7 +3,7 @@ import { itemDef, itemNumber } from '../../content/items';
 import type { OutsideDef, Spot } from '../../content/outside/types';
 import type { PrisonDef } from '../../content/prisons/types';
 import { findPath, nearestDir } from '../ai/path';
-import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
+import { blockedIn, centerX, centerZ, chebTiles, neighbours4, tileAt } from '../world/grid';
 import { canSee, lineOfSight } from '../ai/sight';
 import { argA, argB, argC, DIR_X, DIR_Z, dirOf, EXT, OP, opOf, sideX, sideZ, tossTile } from '../command';
 import { fnv1a, rollInt, SALT } from '../rng';
@@ -130,8 +130,8 @@ export class Hunt {
   readonly sweepPts: number[];
   /** Bumps when a tile changes (wire cut): the view redraws the fences. Not state. */
   tilesRev = 0;
-  private readonly feet = { blocked: (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || this.grid[z * MAP_W + x] === 1 };
-  private readonly npcFeet = { blocked: (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || this.chaseGrid[z * MAP_W + x] === 1 };
+  private readonly feet = { blocked: blockedIn(this.grid) };
+  private readonly npcFeet = { blocked: blockedIn(this.chaseGrid) };
   private readonly heard = new Int32Array(N);
   /** The searchers' and roadblocks' timings in steps after the alarm (Infinity: never, a lesson's; -Infinity: a patrol, out at once). */
   private readonly outAt: number[];
@@ -705,13 +705,7 @@ export class Hunt {
     for (let q = 0; q < queue.length; q++) {
       const t = queue[q];
       if (d[t] >= reach) continue;
-      const x = t % MAP_W;
-      for (const [j, ok] of [
-        [t - 1, x > 0],
-        [t + 1, x < MAP_W - 1],
-        [t - MAP_W, t >= MAP_W],
-        [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-      ] as const)
+      for (const [j, ok] of neighbours4(t))
         if (ok && d[j] < 0 && (!this.grid[j] || this.out.cover[j])) (d[j] = d[t] + 1), queue.push(j);
     }
     s.searchers.forEach((m, k) => {
@@ -1279,13 +1273,7 @@ function fresh(body: Body, dog: number): Searcher {
 function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
   for (let q = 0; q < queue.length; q++) {
     const t = queue[q];
-    const x = t % MAP_W;
-    for (const [j, ok] of [
-      [t - 1, x > 0],
-      [t + 1, x < MAP_W - 1],
-      [t - MAP_W, t >= MAP_W],
-      [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-    ] as const)
+    for (const [j, ok] of neighbours4(t))
       if (ok && d[j] < 0 && open(j)) (d[j] = d[t] + 1), queue.push(j);
   }
 }

@@ -29,7 +29,7 @@ import type { Body } from './movement';
 import { endTalk } from './social';
 import { stopTraining } from './training';
 import { lookingAway } from './ways';
-import { centerX, centerZ, tileAt } from '../world/grid';
+import { centerX, centerZ, neighbours4, tileAt } from '../world/grid';
 
 /** How near the tail the player stands to climb in (units from its middle, either way). */
 const TAIL_REACH = Math.round(UNIT * 0.75);
@@ -210,13 +210,7 @@ function nearestFree(parked: Uint8Array, grid: Uint8Array, from: number): number
   for (let k = 0; k < queue.length && k < 400; k++) {
     const t = queue[k];
     if (!parked[t] && !grid[t]) return t;
-    const x = t % MAP_W;
-    for (const [j, ok] of [
-      [t - 1, x > 0],
-      [t + 1, x < MAP_W - 1],
-      [t - MAP_W, t >= MAP_W],
-      [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-    ] as const) {
+    for (const [j, ok] of neighbours4(t)) {
       // (Out through the bay and onto open floor, never through a wall.)
       if (!ok || seen.has(j) || (!parked[j] && grid[j])) continue;
       seen.add(j);

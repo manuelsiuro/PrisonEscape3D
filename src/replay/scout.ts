@@ -1,5 +1,5 @@
 import type { PrisonDef } from '../content/prisons/types';
-import { prepareReplay, sumOf, type RunLog } from '../sim/runlog';
+import { allChecked, prepareReplay, sumOf, type RunLog } from '../sim/runlog';
 import { ESCAPES, type Snapshot } from '../sim/Sim';
 import type { SimEvent } from '../sim/state';
 import { STEPS_PER_MINUTE } from '../sim/tuning';
@@ -180,7 +180,7 @@ export function* scout(log: RunLog, prison: PrisonDef, chunk = 4000): Generator<
     }
   closeQuiet(st().step);
   const reached = st().step;
-  const ok = !bad && reached === last && checked === log.sums.filter(([k]) => k > log.from && k <= last).length && sums.has(last);
+  const ok = !bad && reached === last && allChecked(log, sums, checked, last);
   // A checksum missed: what came after the last hour that matched can't be trusted.
   const end = bad ? verified : reached;
   const trim = <T extends { step: number }>(list: T[]) => list.filter((x) => x.step <= end);
