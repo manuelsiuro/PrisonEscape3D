@@ -1,4 +1,4 @@
-import { BRIBE_REPORT_HEAT, CHOCOLATE_ENERGY, FRESH_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { CHOCOLATE_ENERGY, FRESH_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import { hostile } from '../sim/systems/social';
@@ -13,12 +13,10 @@ import { announcePhone } from './payphone';
 import { announceKiosk } from './kiosk';
 import { announcePaper } from './paperwork';
 import { announceParole } from './parole';
-import { APPLY_DAY } from '../content/parole';
 import { announceHoliday } from './holidays';
 import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
-import { NIGHT_OPINION } from '../content/crew';
 import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
 import { listOf, t, type Key } from '../i18n';
@@ -36,14 +34,14 @@ import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
-import { dogName, NEED } from './labels';
+import { dogName, NEED, refusedText } from './labels';
 import { dogDef, outOfBounds } from '../sim/systems/k9';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
 import { dayTime, vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
 import { FEAST_ENERGY } from '../content/days';
-import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { announceOddJob } from './oddjobs';
+import { floatAt } from './floats';
 
 /** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
@@ -634,10 +632,8 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 600) break;
       lastCant = now;
       sound.sting();
-      // (P22's games say their own numbers: the opinion they need, the games a day.)
-      // (P23's crew: the opinion a night out needs.)
-      // (P39's parole: the day to apply from, the day to apply again.)
-      itemsUI.toast(t(`refused.${e.why}` as Key, { n: e.why === 'gameOpinion' ? GAME_OPINION : e.why === 'played' ? GAMES_A_DAY : e.why === 'nightOpinion' ? NIGHT_OPINION : e.why === 'paroleEarly' ? APPLY_DAY : e.why === 'paroleWait' ? sim.state.parole[3] : BRIBE_REPORT_HEAT }));
+      // (Each with its number: the opinion a game or a night out needs, the games a day, parole's days…)
+      itemsUI.toast(refusedText(sim, e.why));
       break;
     }
     // Noise and distractions (P14): a throw flies, lands with its clatter; a noise sends out its
@@ -854,13 +850,6 @@ export function tickTock(sim: Sim, speed: number) {
 /** When a cup was last thrown (real ms), and how long it's in the air (View's flight). */
 let thrownAt = -1e9;
 const THROW_FLIGHT_MS = 320;
-
-/** A number (or word) floating up from someone (Cast id, -1 the player). */
-const floatPoint = { x: 0, y: 0 };
-function floatAt(id: number, text: string, kind: 'dealt' | 'taken' | 'ko' | 'cash' | 'gain' | 'ally') {
-  const at = view.screenOf(id, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
-}
 
 /** When each dog's "on your trail" was last said (real ms), and whether it was (its "lost" follows only then). */
 const trackSaid: number[] = [];

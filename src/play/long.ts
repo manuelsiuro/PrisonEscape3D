@@ -15,11 +15,12 @@ import type { LongFrame } from '../render/Long';
 import type { RaceLane, RaceView } from '../ui/long';
 import { itemName } from '../ui/items';
 import { inmateName } from '../ui/social';
-import { banner, combatUI, itemsUI, sound, view } from './context';
+import { banner, itemsUI, sound } from './context';
 import { play } from './game';
 import { ratName } from './rat';
 import { coachOnce } from './tips';
 import { treatOffers } from './holidays';
+import { floatUp } from './floats';
 
 /**
  * Long games (P28) on screen: what can be taken from the open furniture, the race card, the
@@ -27,12 +28,6 @@ import { treatOffers } from './holidays';
  * grow, the rats down the track, the pet's laps at home, the player tipsy). All of it from the
  * sim's own rules (pantry.ts, garden.ts, pruno.ts, races.ts).
  */
-
-const floatPoint = { x: 0, y: 0 };
-function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
-  const at = view.screenOf(-1, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
-}
 
 // ------------------------------------------------------------------ the open furniture
 

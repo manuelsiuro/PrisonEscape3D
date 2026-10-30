@@ -1,6 +1,5 @@
 import { buzz } from '../app/haptics';
 import { CHAIN_PIN, CHAINS, DIG_STEPS, FIXER_JOB_OPINION, FRAME_MINUTE, FROM, J, KIND, KIND_DEFS, KINDS, LIFT, LIFTS, PERK, STAGE } from '../content/oddjobs';
-import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { t, type Key } from '../i18n';
 import { itemNumber } from '../content/items';
 import { placesOf } from '../sim/ai/places';
@@ -22,6 +21,7 @@ import { banner, hud, itemsUI, oddjobsCard, sound, storyCard, talk } from './con
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { tileAt } from '../sim/world/grid';
+import { refusedText } from './labels';
 
 /**
  * The odd jobs board on screen (P40): its card at the board (and the job's own card, from its
@@ -41,7 +41,7 @@ export function resetOddJobs() {
   storyCard.hide();
 }
 
-const why = (k: string | null) => (k ? t(`refused.${k}` as Key, { n: k === 'gameOpinion' ? GAME_OPINION : k === 'elderOpinion' ? ELDER_OPINION : k === 'played' ? GAMES_A_DAY : 0 }) : '');
+const why = (sim: Sim, k: string | null) => (k ? refusedText(sim, k) : '');
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 /** The icon of each kind. */
@@ -222,7 +222,7 @@ export function oddjobsNow(sim: Sim): OddJobsView | null {
   // (One job at a time: said once in the note, not on every pin.)
   const pinWhy = (pin: number) => {
     const r = boardRefusal(sim as never, pin);
-    return { off: !!r, why: r === 'haveJob' ? '' : why(r) };
+    return { off: !!r, why: r === 'haveJob' ? '' : why(sim, r) };
   };
   const pinOf = (pin: number, d: Deal, ask: string, story: string): PinView => {
     const kind = t(`oddjob.kind.${KINDS[d.kind]}` as Key);
@@ -341,12 +341,12 @@ export const jobKey = (sim: Sim) => {
 function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
   const s = sim.state;
   const job = jobOf(s);
-  const out: OddJobTalkView = { handIn: null, offer: null, owed: owes(s, who) ? why(null) : null, give: null, key: '' };
+  const out: OddJobTalkView = { handIn: null, offer: null, owed: owes(s, who) ? why(sim, null) : null, give: null, key: '' };
   if (job && job[J.GIVER] === who) {
     const r = handInRefusal(sim as never, who);
     // (Ready: the job's done, and its pay; not yet: what it asks, and why not.)
     const kind = t(`oddjob.kind.${KINDS[job[J.KIND]]}` as Key);
-    out.handIn = { text: r ? `${kind}: ${askOf(sim, { kind: job[J.KIND], variant: job[J.VAR], giver: who, target: job[J.TARGET] })}` : t('oddjob.jobDone', { kind }), pay: t('oddjob.pay', { n: job[J.PAY] }), why: r === 'notDone' || r === 'missing' ? t(r === 'missing' ? 'oddjob.bringFirst' : 'oddjob.notYet') : why(r) };
+    out.handIn = { text: r ? `${kind}: ${askOf(sim, { kind: job[J.KIND], variant: job[J.VAR], giver: who, target: job[J.TARGET] })}` : t('oddjob.jobDone', { kind }), pay: t('oddjob.pay', { n: job[J.PAY] }), why: r === 'notDone' || r === 'missing' ? t(r === 'missing' ? 'oddjob.bringFirst' : 'oddjob.notYet') : why(sim, r) };
   }
   // A delivery: the parcel handed over to the one it's for, from here.
   if (job && job[J.KIND] === KIND.DELIVER && job[J.STAGE] === STAGE.ON && job[J.TARGET] === who) {
@@ -358,7 +358,7 @@ function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
     if (d) {
       const r = fixerJobRefusal(sim as never, who);
       const m = metaOf(sim, d);
-      out.offer = { text: `${t(`oddjob.kind.${KINDS[d.kind]}` as Key)}: ${askOf(sim, d)}`, pay: `${m.meta}${m.perk ? ` · ${m.perk}` : ''}`, why: r === 'opinion' ? t('oddjob.fixerOpinion', { n: FIXER_JOB_OPINION }) : r === 'closed' ? t('phone.closed') : why(r) };
+      out.offer = { text: `${t(`oddjob.kind.${KINDS[d.kind]}` as Key)}: ${askOf(sim, d)}`, pay: `${m.meta}${m.perk ? ` · ${m.perk}` : ''}`, why: r === 'opinion' ? t('oddjob.fixerOpinion', { n: FIXER_JOB_OPINION }) : r === 'closed' ? t('phone.closed') : why(sim, r) };
     }
   }
   if (!out.handIn && !out.offer && out.owed === null && !out.give) return null;

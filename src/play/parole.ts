@@ -9,7 +9,7 @@ import { answerLeft, ANSWERED, applyRefusal, claimTrue, hearingDue, hearingOf, t
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import type { ParoleView } from '../ui/parole';
-import { banner, combatUI, paBoard, paroleCard, sound, view } from './context';
+import { banner, paBoard, paroleCard, sound } from './context';
 import { announcePa, dayTime } from './day';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
@@ -18,6 +18,8 @@ import { boardLooks } from './smuggle';
 import { sitterPortraitOf } from '../render/portrait';
 import { TOUCH } from '../ui/dom';
 import { LESSONS } from '../tutorial/lessons';
+import { floatUp } from './floats';
+import { refusedText } from './labels';
 
 /**
  * The parole board on screen (P39): the card at the release desk (how the application stands,
@@ -147,7 +149,7 @@ export function paroleNow(sim: Sim): ParoleView | null {
   const day = prisonDay(s.step);
   const why = applyRefusal(sim);
   v.canApply = !why;
-  v.why = why && why !== 'paroleOn' ? t(`refused.${why}` as Key, { n: why === 'paroleEarly' ? APPLY_DAY : p[P.AGAIN] }) : '';
+  v.why = why && why !== 'paroleOn' ? refusedText(sim, why) : '';
   v.apply = t('parole.apply');
   v.score = '';
   v.lines = [];
@@ -208,12 +210,6 @@ export function paroleKey(code: string): boolean {
     sendOp(OP.EXT, EXT.PAROLE, 1, Number(d[1]) - 1);
   }
   return /^(?:Digit|Numpad)[1-6]$/.test(code) || /^(?:KeyE|Space|KeyF|KeyQ|KeyU|KeyR)$/.test(code);
-}
-
-const floatPoint = { x: 0, y: 0 };
-function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
-  const at = view.screenOf(-1, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
 }
 
 /** What the parole board does on screen. */

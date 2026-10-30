@@ -10,8 +10,9 @@ import { fireworksOn, holidayDays, holidayOf, treatCheck } from '../sim/systems/
 import { HOLIDAY_TAKE, itemName } from '../ui/items';
 import type { PaRow } from '../ui/pa';
 import { inmateName } from '../ui/social';
-import { banner, combatUI, itemsUI, settings, sound, view } from './context';
+import { banner, itemsUI, settings, sound } from './context';
 import { announcePa, dayTime } from './day';
+import { floatAt } from './floats';
 
 /**
  * Holidays on screen (P42): which holiday the picture dresses for (the run's own; a Daily's by the
@@ -81,12 +82,6 @@ export function treatOffers(sim: Sim, table: string): ReadonlyArray<{ what: numb
     offers.push({ what: TREAT_OFFSET + what, label: t(TREAT_LABEL[what]), why: why === 'takenToday' ? t('holiday.take.today') : why === 'room' ? t('refused.room') : '' });
   });
   return offers;
-}
-
-const floatPoint = { x: 0, y: 0 };
-function floatAt(id: number, text: string, kind: 'gain' | 'cash') {
-  const at = view.screenOf(id, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
 }
 
 /** The warden's line (day.ts: not with the announcements off; never in your sleep). */

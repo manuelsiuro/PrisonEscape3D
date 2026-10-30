@@ -14,10 +14,11 @@ import { TILE } from '../sim/world/tiles';
 import type { NightsFrame } from '../render/Nights';
 import type { QuizView, StageView } from '../ui/nights';
 import { inmateName } from '../ui/social';
-import { banner, combatUI, itemsUI, sound, view } from './context';
+import { banner, itemsUI, sound } from './context';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
+import { floatUp } from './floats';
 
 /**
  * Stage nights (P30) on screen: talent night's card and quiz night's, filled from the sim; the
@@ -32,12 +33,6 @@ const formatTime = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2,
 /** A guard by name ("Officer Pratt"), an item by its id. */
 const guardLabel = (sim: Sim, k: number) => t('guard.title', { name: sim.prison.guards[k]?.name ?? '' });
 const itemName = (id: string) => t(`item.${id}` as Key);
-
-const floatPoint = { x: 0, y: 0 };
-function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
-  const at = view.screenOf(-1, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
-}
 
 /** The last act's verdict and the last quiz's end, held a moment for the cards (ms of play time: a pause doesn't eat them); the last judgement's flash; notes in a row. Not state. */
 let stageResult: { at: number; mark: number; place: number; prize: number; crowd: number; heat: number; song: number; inst: number } | null = null;

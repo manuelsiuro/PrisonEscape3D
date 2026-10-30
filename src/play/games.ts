@@ -16,12 +16,13 @@ import { LAYER } from '../sim/world/World';
 import type { GamesFrame } from '../render/Games';
 import type { DiceShow, GamesView, PickView, WrestleView } from '../ui/games';
 import { inmateName } from '../ui/social';
-import { banner, combatUI, itemsUI, pickCard, sound, talk, view } from './context';
+import { banner, itemsUI, pickCard, sound, talk } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { crewTalk } from './crew';
 import { atCourt, courtOf } from '../sim/systems/hoops';
 import { elderOffer } from './pastimes';
+import { floatUp } from './floats';
 
 /**
  * The side games on screen (P22): the talk panel's games (what's on offer, the dice in play and
@@ -65,13 +66,6 @@ function diceShown(now = performance.now()): DiceShow | null {
 }
 
 const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
-
-/** A number (or word) floating up from the player. */
-const floatPoint = { x: 0, y: 0 };
-function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
-  const at = view.screenOf(-1, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
-}
 
 /** What the games' events say: sounds, toasts, the dice's timeline. */
 export function announceGames(sim: Sim, e: SimEvent) {

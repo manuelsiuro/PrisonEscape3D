@@ -14,13 +14,14 @@ import { LAYER } from '../sim/world/World';
 import type { PastimesFrame } from '../render/Pastimes';
 import type { BoardView, CheatView, CourtView } from '../ui/pastimes';
 import { inmateName } from '../ui/social';
-import { banner, cheatCard, combatUI, courtCard, itemsUI, matchCard, sound, stageCard, view } from './context';
+import { banner, cheatCard, courtCard, itemsUI, matchCard, sound, stageCard } from './context';
 import { lanePress, setLaneFlash } from './nights';
 import { kickKey } from './team';
 import { play, playLater, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { director } from './chatter';
 import { TOUCH } from '../ui/dom';
+import { floatUp } from './floats';
 
 /**
  * Card sharks (P27) on screen: Cheat's card, the court's card and the old-timer's board, filled
@@ -30,13 +31,6 @@ import { TOUCH } from '../ui/dom';
  */
 
 const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
-
-/** A number (or word) floating up from the player. */
-const floatPoint = { x: 0, y: 0 };
-function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
-  const at = view.screenOf(-1, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
-}
 
 // ------------------------------------------------------------------ what's shown between steps
 
