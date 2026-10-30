@@ -3,6 +3,7 @@ import { CALLEE, JOB, LAWYER } from '../content/phone';
 import { EXT, LINE, OP } from '../sim/command';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
+import { pad2 } from '../sim/systems/clock';
 
 type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
@@ -221,7 +222,7 @@ export class PayphoneCard {
       case 'lawyer':
         return `${back}${rows(['appeal', 'retainer', 'parole'])}`;
       case 'cousin': {
-        const hour = `<div class="phone-pick"><button data-hour="-1" aria-label="${esc(t('phone.earlier'))}">${icon('chevronLeft', 14)}</button><span>${esc(t('phone.at', { hour: `${String(this.pick.hour).padStart(2, '0')}:00` }))}</span><button data-hour="1" aria-label="${esc(t('phone.later'))}">${icon('chevronRight', 14)}</button></div>`;
+        const hour = `<div class="phone-pick"><button data-hour="-1" aria-label="${esc(t('phone.earlier'))}">${icon('chevronLeft', 14)}</button><span>${esc(t('phone.at', { hour: `${pad2(this.pick.hour)}:00` }))}</span><button data-hour="1" aria-label="${esc(t('phone.later'))}">${icon('chevronRight', 14)}</button></div>`;
         return `${back}${hour}${rows(['diversion'])}${rows(['cake', 'car'])}`;
       }
       case 'tip': {

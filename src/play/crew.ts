@@ -15,6 +15,7 @@ import { banner, closeSocial, crewPanel, hud, itemsUI, profile, sound } from './
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { badgeOf } from './frame';
+import { spanText } from '../sim/systems/clock';
 
 /**
  * The crew on screen (P23): the orders in the talk panel (each greyed by the sim's own
@@ -43,7 +44,7 @@ const lowItem = (n: number) => {
 
 const secs = (steps: number) => {
   const s = Math.max(0, Math.ceil(steps / STEPS_PER_SECOND));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  return spanText(s);
 };
 
 /** What one of the crew is at, in a few words. */

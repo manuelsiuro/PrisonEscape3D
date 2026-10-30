@@ -26,6 +26,7 @@ import { holidayMorning, holidayRows } from './holidays';
 import { holidayDays } from '../sim/systems/holiday';
 import { HEARING_FROM, HEARING_TO } from '../content/parole';
 import { P } from '../sim/systems/parole';
+import { hhmm } from '../sim/systems/clock';
 
 /** How many of today's holiday days are over by this minute (P42: the file redraws as one ends). */
 const holidaysOver = (sim: Sim, m: number) => holidayDays(sim).filter((id) => m >= HOLIDAY_DAY[id].at + HOLIDAY_DAY[id].length).length;
@@ -67,7 +68,7 @@ const QUIPS = 3;
 /** "10:00" for a minute into the prison day. */
 export function dayTime(dayMin: number): string {
   const m = (dayMin + 8 * 60) % 1440;
-  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  return hhmm(m);
 }
 
 const cold = (sim: Sim) => freezing(sim);

@@ -2,7 +2,7 @@ import { buzz } from '../app/haptics';
 import { BETS, CROP, GROWN, LEGS, RACE_MINUTE, RACE_STEPS, TAKE, TIPSY_HEAT, WATER_MAX } from '../content/long';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
+import { clockAt, formatTime, hhmm, prisonDay } from '../sim/systems/clock';
 import { BED, bedCount, bedOf, bedTile, ripe, wilted } from '../sim/systems/garden';
 import { takeCheck } from '../sim/systems/pantry';
 import { atTrack, cardMinute, cardUp, oddsOf, petLane, RACE, raceCard, raceCheck, runRace, trackOf, trackTiles, type Entrant } from '../sim/systems/races';
@@ -191,7 +191,7 @@ export function raceStep(sim: Sim) {
   if (clockAt(s.step).minuteOfDay !== cardMinute(sim) || !cardUp(sim) || s.solitary > 0 || sim.away || s.stowed) return;
   const pet = petOf(s);
   sound.chime();
-  const time = `${String(Math.floor(RACE_MINUTE / 60)).padStart(2, '0')}:${String(RACE_MINUTE % 60).padStart(2, '0')}`;
+  const time = hhmm(RACE_MINUTE);
   banner.toast(pet && pet.mode === RAT.SHOULDER ? t('toast.raceNightPet', { name: ratName(sim), time }) : t('toast.raceNight', { time }), 'info', 5200);
 }
 

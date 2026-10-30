@@ -3,6 +3,7 @@ import { currentLang, t } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
+import { pad2 } from '../sim/systems/clock';
 
 type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
@@ -113,7 +114,7 @@ export class MatchCard {
       this.teams.innerHTML = `<span class="ours">${esc([t('games.you'), ...v.mates].join(', '))}</span><em>${t('football.vs')}</em><span>${esc(v.rivals.join(', '))}</span>`;
       const m = Math.floor(v.left / 60);
       const s = v.left % 60;
-      this.clock.setAttribute('aria-label', t('football.left', { time: `${m}:${String(s).padStart(2, '0')}` }));
+      this.clock.setAttribute('aria-label', t('football.left', { time: `${m}:${pad2(s)}` }));
       const note =
         v.phase === 'gather'
           ? t('football.gather')

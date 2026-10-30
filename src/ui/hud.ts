@@ -1,7 +1,7 @@
 import { WAVED_STEPS } from '../content/getaways';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { ROUTINE, routineEnd, zonesOf } from '../content/routine';
-import { formatTime, type Clock } from '../sim/systems/clock';
+import { type Clock, formatTime, hhmm, pad2, spanText } from '../sim/systems/clock';
 import type { ZoneId } from '../content/zones';
 import { currentLang, t, type Key } from '../i18n';
 import { keyLabel } from '../i18n/keys';
@@ -265,7 +265,7 @@ export class Hud {
     if (left === null) return;
     setText(el.querySelector('span')!, t(label));
     const secs = Math.max(0, Math.ceil(left));
-    setText(el.querySelector('b')!, `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
+    setText(el.querySelector('b')!, spanText(secs));
     (el.querySelector('.hud-alert-bar i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, left / total)) * 100}%`;
     el.classList.toggle('low', left <= 10);
   }
@@ -318,7 +318,7 @@ export class Hud {
     el.classList.toggle('busy', r.busy);
     (el as HTMLButtonElement).disabled = !r.usable;
     setText(el.querySelector('span')!, r.name);
-    setText(el.querySelector('b')!, r.left === null ? r.status : `${r.status} 0:${String(Math.ceil(r.left)).padStart(2, '0')}`);
+    setText(el.querySelector('b')!, r.left === null ? r.status : `${r.status} 0:${pad2(Math.ceil(r.left))}`);
     const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
     bar.style.display = r.left === null ? 'none' : '';
     if (r.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, r.left / r.of)) * 100}%`;
@@ -398,7 +398,7 @@ export class Hud {
     setText(el.querySelector('span')!, d.text);
     // The screen reader hears the whole phrase, once (never the countdown's seconds).
     setText(el.querySelector('.sr-only')!, d.sr);
-    setText(el.querySelector('b')!, d.left === null ? d.time : `${Math.floor(d.left / 60)}:${String(Math.max(0, Math.ceil(d.left % 60))).padStart(2, '0')}`);
+    setText(el.querySelector('b')!, d.left === null ? d.time : `${Math.floor(d.left / 60)}:${pad2(Math.max(0, Math.ceil(d.left % 60)))}`);
     const bar = el.querySelector<HTMLElement>('.hud-alert-bar')!;
     bar.style.display = d.left === null ? 'none' : '';
     if (d.left !== null) (bar.firstElementChild as HTMLElement).style.width = `${Math.max(0, Math.min(1, d.left / d.of)) * 100}%`;
@@ -572,7 +572,7 @@ export class Hud {
       const m = s.solitaryMinutes;
       this.routineIcon.innerHTML = icon('lock', 16);
       setText(this.routineName, t('routine.solitary'));
-      setText(this.routinePlace, t('routine.solitaryLeft', { time: `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}` }));
+      setText(this.routinePlace, t('routine.solitaryLeft', { time: spanText(m) }));
       setText(this.routineUntil, '');
       this.badge.className = 'hud-badge hidden';
       return;
@@ -593,7 +593,7 @@ export class Hud {
     this.routineIcon.innerHTML = icon('bell', 16);
     setText(this.routineName, routineName(s.routine));
     const end = routineEnd(s.routine);
-    const until = t('routine.until', { time: `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}` });
+    const until = t('routine.until', { time: hhmm(end) });
     // Narrow phones: "Canteen · until 10:00" on the second line (the name keeps the first).
     const place = w ? w.place : routinePlace(s.routine);
     const pending = w ? !w.paid : !s.attended;

@@ -12,6 +12,7 @@ import { TOUCH, h } from '../dom';
 import { icon } from '../icons';
 import { HELP, POCKET_SAMPLE, topicById, type HelpTab, type HelpTopic } from './helpTopics';
 import { medalDisc } from './trophies';
+import { pad2 } from '../../sim/systems/clock';
 
 /**
  * How to play (GDD §13; laid out again in P37): each tab a grid of tiles in groups, a search
@@ -143,7 +144,6 @@ function tile(tp: HelpTopic) {
   return `<button class="help-tile" data-topic="${tp.id}" style="${tone(tp)}">${badge(tp, 20)}<span class="ht-text"><b>${title(tp.id)}</b>${hook ? `<small>${hook}</small>` : ''}</span></button>`;
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
 
 /** The day, block by block: when, what, where, and what missing it costs. */
 function schedule() {
@@ -158,7 +158,7 @@ function schedule() {
             : r.id === 'lightsOut'
               ? `<em class="must lock">${t('help.mustCell')}</em>`
               : '';
-    return `<li><time>${pad(r.start / 60)}:00</time><span>${t(`routine.${r.id}` as Key)}</span>${miss}</li>`;
+    return `<li><time>${pad2(r.start / 60)}:00</time><span>${t(`routine.${r.id}` as Key)}</span>${miss}</li>`;
   }).join('');
   return `<h4 class="hd-h">${icon('clock', 15)}${t('help.schedule')}</h4><ol class="help-day">${rows}</ol>`;
 }

@@ -3,7 +3,7 @@ import type { ZoneId } from '../content/zones';
 import { t, type Key, type Lang } from '../i18n';
 import { CHAT_ITEMS, EVENTS, guardFull, itemPhrase, MEALS, NICKS, placePhrase, PUBLIC_PLACES, WEEKDAYS, type DayEvent, type Nick } from '../i18n/barks/grammar';
 import type { Sim } from '../sim/Sim';
-import { formatTime } from '../sim/systems/clock';
+import { formatTime, hhmm } from '../sim/systems/clock';
 import { tileOfBody } from '../sim/systems/movement';
 import { MAP_W } from '../sim/world/World';
 import { handlersOf } from '../sim/systems/k9';
@@ -57,7 +57,6 @@ export function slotsOf(text: string): string[] {
 /** The slots the director can fill (chattertest checks every line's against it). */
 export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'dinner', 'event', 'n', 'm', 't1', 't2', 'key', 'dog', 'nick', 'home', 'team']);
 
-const hhmm = (minute: number) => `${String(Math.floor(minute / 60) % 24).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** French typography: a narrow no-break space before ! ? : ; and inside « ». */
@@ -214,7 +213,7 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
       break;
     case 't1':
     case 't2':
-      v = fact?.[name] !== undefined ? hhmm(fact[name]!) : null;
+      v = fact?.[name] !== undefined ? hhmm(fact[name]! % 1440) : null;
       break;
     case 'key':
       v = fact?.color ? t(`keyColor.${fact.color}` as Key) : null;

@@ -3,7 +3,7 @@ import { CHARTS, countIn, INSTRUMENT, QUIZ_PRIZE, SONGS } from '../content/night
 import { listOf, t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { dayMinute } from '../sim/systems/clock';
+import { dayMinute, hhmm } from '../sim/systems/clock';
 import { today } from '../sim/systems/calendar';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import { actNow, boardsOf, GUITAR, markOf, noShow, prizeOf, stageFreeFrom, stageOf, stageRefusal, talentOn, tonight } from '../sim/systems/talent';
@@ -29,7 +29,7 @@ import { floatUp } from './floats';
 
 const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
 /** A clock time ("19:34") from minutes of the day. */
-const formatTime = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const formatTime = (m: number) => hhmm(m % 1440);
 /** A guard by name ("Officer Pratt"), an item by its id. */
 const guardLabel = (sim: Sim, k: number) => t('guard.title', { name: sim.prison.guards[k]?.name ?? '' });
 const itemName = (id: string) => t(`item.${id}` as Key);

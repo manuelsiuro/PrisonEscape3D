@@ -14,6 +14,7 @@ import { director } from './chatter';
 import { play, playNow } from './game';
 import { coachOnce } from './tips';
 import { refusedText } from './labels';
+import { hhmm } from '../sim/systems/clock';
 
 /**
  * The pay phone on screen (P34): its card (the dial, the queue, a call, Lou's line), filled from
@@ -37,7 +38,7 @@ const blank: PayphoneView = { ...view0, waiting: [], rows: [], phrases: [], know
 const why = (sim: Sim, k: string | null) => (k ? refusedText(sim, k) : '');
 
 /** "14:00" for an hour. */
-const hourText = (h: number) => `${String(h).padStart(2, '0')}:00`;
+const hourText = (h: number) => hhmm(h * 60);
 
 /** The card's view now (null: not at the phone, not in its line, no call). */
 export function payphoneNow(sim: Sim): PayphoneView | null {
