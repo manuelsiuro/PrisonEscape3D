@@ -21,7 +21,7 @@ import { dist2, type Fighter, personOf } from './combat';
 import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, jobRooms, priceOf } from './economy';
 import { awake, GUARD } from './guards';
 import { DOING, type Inmate, inmateZone, type Social, STAND_OFF } from './inmates';
-import { HOTBAR, itemOf, pocketOf, slot, usesOf } from './items';
+import { freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, usesOf } from './items';
 import { HOLLOW_BOOK } from './structure';
 import { quotaUp } from './jobs';
 import { seatSpot } from './rest';
@@ -140,7 +140,7 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
     return;
   }
   const m = s.inmates[who];
-  const free = it.inv.slice(0, HOTBAR).indexOf(0);
+  const free = freeHotbar(it.inv);
   it.rev++;
   switch (a) {
     // P40: the fixer's own odd job, the job handed in, a debt called in.
@@ -215,7 +215,7 @@ export function talkOp(sim: SimContext, a: number, b: number, c = 0) {
       const f = s.favors.find((x) => x.by === who && x.state !== FAVOR_STATE.OFFERED);
       if (!f) return;
       if (f.kind === FAVOR.SCAVENGE || f.kind === FAVOR.RETRIEVE) {
-        const k = it.inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === f.item);
+        const k = hotbarSlotOf(it.inv, f.item);
         if (k < 0) return refuse(sim, 'missing');
         it.inv[k] = 0;
       } else if (f.state !== FAVOR_STATE.DONE) return refuse(sim, 'notDone');

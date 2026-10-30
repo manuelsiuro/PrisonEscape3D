@@ -38,7 +38,7 @@ import { elderOf } from './checkers';
 import { playedToday } from './games';
 import { assign, awake, GUARD } from './guards';
 import { DOING } from './inmates';
-import { HOTBAR, itemOf, pocketOf, slot } from './items';
+import { freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { commsOf, searcher } from './phone';
 import { changeOpinion, refuse } from './social';
@@ -299,7 +299,7 @@ export function bringsOf(job: readonly number[]): number {
 }
 
 /** Whether the hotbar holds an item (its slot; -1 not). */
-const carrying = (s: SimState, item: number) => s.items.inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === item);
+const carrying = (s: SimState, item: number) => hotbarSlotOf(s.items.inv, item);
 /** A job whose item is to be brought, with it in hand (lifted for this job, the cake come in for it). */
 const inHand = (s: SimState, job: readonly number[]) => {
   const brings = bringsOf(job);
@@ -318,7 +318,7 @@ export function boardRefusal(sim: SimContext, pin: number): Refusal | null {
   if (pinTaken(s, pin)) return 'pinTaken';
   const deal = pin === CHAIN_PIN ? chainDeal(sim) : dealsOf(sim)[pin];
   if (!deal) return 'noDeal';
-  if (givesOf(deal.kind) && s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';
+  if (givesOf(deal.kind) && freeHotbar(s.items.inv) < 0) return 'room';
   if (deal.kind === KIND.LIFT && !liftSpot(sim, deal.variant, deal.target)) return 'liftFull';
   return gameGate(sim, deal);
 }
@@ -348,7 +348,7 @@ export function fixerJobRefusal(sim: SimContext, who: number): Refusal | null {
   if (s.inmates[who].opinion < FIXER_JOB_OPINION) return 'opinion';
   if (s.eventFlags & TODAY.FIXER_JOB) return 'fixerToday';
   const deal = fixerDeal(sim)!;
-  if (givesOf(deal.kind) && s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';
+  if (givesOf(deal.kind) && freeHotbar(s.items.inv) < 0) return 'room';
   if (deal.kind === KIND.LIFT && !liftSpot(sim, deal.variant, deal.target)) return 'liftFull';
   return null;
 }
@@ -447,7 +447,7 @@ function take(sim: SimContext, d: Deal, from: number) {
   s.oddjob = [d.kind, d.variant, d.giver, d.target, endsFor(s.step, d.days), from, STAGE.ON, 0, 0, d.pay, d.perk, d.item, 0];
   const gives = givesOf(d.kind);
   if (gives) {
-    const free = s.items.inv.slice(0, HOTBAR).indexOf(0);
+    const free = freeHotbar(s.items.inv);
     s.items.inv[free] = slot(gives);
     s.items.rev++;
   }
@@ -497,7 +497,7 @@ export function talkJob(sim: SimContext, who: number, a: 'take' | 'in' | 'call')
   }
   if (a === 'call') {
     if (!owes(s, who)) return refuse(sim, 'notOwed');
-    const free = s.items.inv.slice(0, HOTBAR).indexOf(0);
+    const free = freeHotbar(s.items.inv);
     if (free < 0) return refuse(sim, 'room');
     const item = debtTool(s, who);
     s.items.inv[free] = slot(item);
@@ -550,7 +550,7 @@ function handIn(sim: SimContext, who: number) {
   // (He owes the player one already: this one's paid at once, a tool, as calling it in would; the first stays owed.)
   const again = owedAgain(s, job);
   const item = again ? debtTool(s, who + 32) : paysItem(job) ? job[J.ITEM] : 0;
-  if (item) s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(item);
+  if (item) s.items.inv[freeHotbar(s.items.inv)] = slot(item);
   else if (job[J.PERK] === PERK.DEBT && who < 30) s.oddjobs[R.OWED] |= 1 << who;
   s.items.rev++;
   s.eventFlags |= TODAY.ODD_JOB;
@@ -746,7 +746,7 @@ function ownDesk(sim: SimContext): { desk: number; free: number } {
  */
 function cakeIn(sim: SimContext, job: number[], parcel: boolean) {
   const s = sim.state;
-  const hot = s.items.inv.slice(0, HOTBAR).indexOf(0);
+  const hot = freeHotbar(s.items.inv);
   const own = ownDesk(sim);
   const toDesk = own.free >= 0 && (parcel || hot < 0);
   if (!toDesk && hot < 0) {

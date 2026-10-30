@@ -34,7 +34,7 @@ import { containersOf } from '../world/containers';
 import { eventOn, planOf, today, TODAY } from './calendar';
 import { dayMinute, prisonDay } from './clock';
 import { awake } from './guards';
-import { HOTBAR, itemOf, slot } from './items';
+import { freeHotbar, itemOf, slot } from './items';
 import { landable, makeNoise, pileRoom } from './noise';
 import { hearingDue } from './parole';
 import { frisk } from './power';
@@ -429,7 +429,7 @@ function visit(sim: SimContext) {
   const o = s.order;
   if (o.length === 3 && o[1] === WAY.VISITOR && o[2] <= day) {
     const n = catalogueItem(o[0]);
-    const free = it.inv.slice(0, HOTBAR).indexOf(0);
+    const free = freeHotbar(it.inv);
     if (free >= 0) {
       it.inv[free] = slot(n);
       it.rev++;

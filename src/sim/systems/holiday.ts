@@ -23,7 +23,7 @@ import { TODAY } from './calendar';
 import { dayMinute, prisonDay } from './clock';
 import type { Guard } from './guards';
 import { DOING } from './inmates';
-import { HOTBAR, itemOf, slot, usesOf } from './items';
+import { freeHotbar, HOTBAR, itemOf, slot, usesOf } from './items';
 import { changeOpinion, refuse } from './social';
 
 const CHOC_EGG = itemNumber('choc_egg');
@@ -189,7 +189,7 @@ export function treatCheck(sim: HolidaySim, what: number): 'notHere' | 'takenTod
   if (!treat || !c || c.table !== treat.table || !treatHours(sim, what)) return 'notHere';
   const day = prisonDay(s.step);
   if (s.hol[0] === day && s.hol[1] & (1 << what)) return 'takenToday';
-  if (s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';
+  if (freeHotbar(s.items.inv) < 0) return 'room';
   return null;
 }
 
@@ -202,7 +202,7 @@ export function takeTreat(sim: SimContext, what: number) {
   const day = prisonDay(s.step);
   s.hol = [day, (s.hol[0] === day ? s.hol[1] : 0) | (1 << what)];
   const item = itemNumber(TREATS[what].item);
-  s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(item);
+  s.items.inv[freeHotbar(s.items.inv)] = slot(item);
   s.items.rev++;
   sim.events.push({ type: 'holiday', what: 'took', day: TREATS[what].day, item });
 }

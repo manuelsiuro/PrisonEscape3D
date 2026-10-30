@@ -18,7 +18,7 @@ import { BODY_HALF, CHASE_HEAT, UNIT } from '../tuning';
 import { LAYER, MAP_H, MAP_W } from '../world/World';
 import { today } from './calendar';
 import { clockAt } from './clock';
-import { HOTBAR, itemOf } from './items';
+import { hotbarSlotOf } from './items';
 import { glideFrom, type Air } from './structure';
 import type { World } from '../world/World';
 import { TILE } from '../world/tiles';
@@ -37,7 +37,7 @@ export function shiftChange(step: number): boolean {
 }
 
 /** A fake ID somewhere in the hotbar. */
-const hasPapers = (sim: Pick<SimContext, 'state'>) => sim.state.items.inv.some((v, k) => k < HOTBAR && itemOf(v) === FAKE_ID);
+const hasPapers = (sim: Pick<SimContext, 'state'>) => hotbarSlotOf(sim.state.items.inv, FAKE_ID) >= 0;
 
 /**
  * The player stands at the checkpoint's window with a fake ID in the hotbar (Interact shows

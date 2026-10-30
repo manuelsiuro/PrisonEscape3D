@@ -31,7 +31,7 @@ import { LAYER, layerOfKey, MAP_H, MAP_W, tileOfKey, type World } from '../world
 import { clockAt, prisonDay } from './clock';
 import { awake, type Guard } from './guards';
 import { DOING, type Inmate } from './inmates';
-import { giveSlot, guardKit, HOTBAR, itemOf, ownerOf, pocketOf, slot, usesOf } from './items';
+import { freeHotbar, giveSlot, guardKit, HOTBAR, itemOf, ownerOf, pocketOf, slot, usesOf } from './items';
 import { makeNoise } from './noise';
 import { RAT_START_SPEED } from '../../content/long';
 
@@ -535,7 +535,7 @@ function home(sim: SimContext, r: Rat) {
   const s = sim.state;
   const item = itemOf(r.carry);
   // (A full hotbar: at their feet, and the toast says so.)
-  const floor = !!r.carry && s.items.inv.slice(0, HOTBAR).indexOf(0) < 0;
+  const floor = !!r.carry && freeHotbar(s.items.inv) < 0;
   if (r.carry) {
     // (A full pile at their feet too: it drops it there all the same.)
     if (!giveSlot(s.items, r.carry, s.player, s.layer)) s.items.ground.push([tileAt(s.player.x, s.player.z), r.carry]);

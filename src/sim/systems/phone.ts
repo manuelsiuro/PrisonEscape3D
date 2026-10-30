@@ -37,7 +37,7 @@ import { containersOf } from '../world/containers';
 import { crowdPlan, dayMinute, drillOn, prisonDay, TODAY, today } from './calendar';
 import { assign, awake, GUARD, traitOf } from './guards';
 import { DOING } from './inmates';
-import { HOTBAR, slot } from './items';
+import { freeHotbar, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { summon } from './power';
 import { hostile, changeOpinion, refuse, endTalk } from './social';
@@ -652,7 +652,7 @@ export function cakeAtVisit(sim: SimContext) {
     sim.events.push({ type: 'phone', what: 'cakeSeized' });
     return;
   }
-  const free = s.items.inv.slice(0, HOTBAR).indexOf(0);
+  const free = freeHotbar(s.items.inv);
   if (free < 0) return void sim.events.push({ type: 'phone', what: 'cakeKept' });
   s.items.inv[free] = slot(CAKE);
   s.items.rev++;

@@ -338,10 +338,13 @@ export function stillInReach(w: World, s: ItemState, b: Body, people: readonly L
 }
 
 /** The first free hotbar slot, -1 when full. */
-const freeHotbar = (s: ItemState) => s.inv.slice(0, HOTBAR).indexOf(0);
+/** The first empty hotbar slot, -1 when it's full. */
+export const freeHotbar = (inv: readonly number[]) => inv.slice(0, HOTBAR).indexOf(0);
+/** The first hotbar slot holding the item, -1 for none. */
+export const hotbarSlotOf = (inv: readonly number[], item: number) => inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === item);
 
 export function pickUp(s: ItemState, index: number, events: ItemEvent[]) {
-  const k = freeHotbar(s);
+  const k = freeHotbar(s.inv);
   if (k < 0) {
     events.push({ type: 'full' });
     return;
@@ -407,7 +410,7 @@ export function give(s: ItemState, item: number, b: Body, layer: number): boolea
 
 /** give() for a slot as it is (its wear kept: what the rat brings back, P20). */
 export function giveSlot(s: ItemState, v: number, b: Body, layer: number): boolean {
-  const k = freeHotbar(s);
+  const k = freeHotbar(s.inv);
   if (k >= 0) {
     s.inv[k] = v;
     return true;
@@ -487,7 +490,7 @@ export function craft(s: ItemState, mask: number, events: ItemEvent[], expected 
   const made = slot(result);
   const freed = used.filter((k) => !s.inv[k]);
   // Every recipe frees a slot the result fits (itemtest proves it), so this always finds one.
-  const target = freed.find((k) => (k === SLOT.OUTFIT || k === SLOT.WEAPON) && fits(k, made)) ?? freed.find((k) => k < HOTBAR) ?? freed.find((k) => fits(k, made)) ?? freeHotbar(s);
+  const target = freed.find((k) => (k === SLOT.OUTFIT || k === SLOT.WEAPON) && fits(k, made)) ?? freed.find((k) => k < HOTBAR) ?? freed.find((k) => fits(k, made)) ?? freeHotbar(s.inv);
   if (target < 0) return;
   s.inv[target] = made;
   const first = !s.known.includes(recipe);

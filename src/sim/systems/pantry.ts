@@ -14,7 +14,7 @@ import { OPINION_LOW } from '../tuning';
 import { containersOf } from '../world/containers';
 import { prisonDay } from './clock';
 import { priceOf } from './economy';
-import { HOTBAR, itemOf, slot } from './items';
+import { freeHotbar, HOTBAR, itemOf, slot } from './items';
 import { refuse } from './social';
 
 const STAPLE_ITEMS = STAPLES.map(itemNumber);
@@ -44,7 +44,7 @@ export function takeCheck(sim: SimContext, what: number): 'notMeal' | 'takenToda
     if (!meal) return 'notMeal';
     if (s.pantry[MEAL] === meal) return 'takenToday';
   } else if (s.pantry[what === TAKE.SUGAR ? SUGAR_DAY : SEED_DAY] === day) return 'takenToday';
-  if (s.items.inv.slice(0, HOTBAR).indexOf(0) < 0) return 'room';
+  if (freeHotbar(s.items.inv) < 0) return 'room';
   return null;
 }
 
@@ -58,7 +58,7 @@ export function take(sim: SimContext, what: number) {
   const pantry = s.pantry;
   if (what === TAKE.FRUIT) pantry[MEAL] = mealNow(sim);
   else pantry[what === TAKE.SUGAR ? SUGAR_DAY : SEED_DAY] = prisonDay(s.step);
-  s.items.inv[s.items.inv.slice(0, HOTBAR).indexOf(0)] = slot(item);
+  s.items.inv[freeHotbar(s.items.inv)] = slot(item);
   s.items.rev++;
   sim.events.push({ type: 'pickup', item });
 }
@@ -73,7 +73,7 @@ export function buyStaple(sim: SimContext, who: number, k: number) {
   if (m.opinion <= OPINION_LOW) return refuse(sim, 'grudge');
   const price = priceOf(itemDef(item).value, m.opinion);
   if (s.cash < price) return refuse(sim, 'cash');
-  const free = s.items.inv.slice(0, HOTBAR).indexOf(0);
+  const free = freeHotbar(s.items.inv);
   if (free < 0) return refuse(sim, 'room');
   s.items.inv[free] = slot(item);
   s.cash -= price;

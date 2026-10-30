@@ -32,7 +32,7 @@ import { containersOf } from '../world/containers';
 import { dayMinute, prisonDay } from './calendar';
 import { clockAt } from './clock';
 import { routineEnd } from '../../content/routine';
-import { HOTBAR, itemOf, slot, usesOf } from './items';
+import { freeHotbar, itemOf, slot, usesOf } from './items';
 import { askMoney, commsOf, phoneOpen } from './phone';
 import { questionsOf, type Question } from './quiz';
 import { endTalk, refuse } from './social';
@@ -281,7 +281,7 @@ export function openBook(sim: SimContext) {
   const v = it.inv[it.hand];
   const inside = hiddenIn(v);
   if (!inside) return;
-  const k = it.inv.slice(0, HOTBAR).indexOf(0);
+  const k = freeHotbar(it.inv);
   if (k < 0) return void sim.events.push({ type: 'full' });
   it.inv[k] = inside;
   it.inv[it.hand] = slot(HOLLOW_BOOK);
