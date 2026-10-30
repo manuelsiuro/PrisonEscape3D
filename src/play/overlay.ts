@@ -1,112 +1,53 @@
 import { itemDef, itemNumber } from '../content/items';
-import { ROUTINE } from '../content/routine';
-import { t, type Key } from '../i18n';
+import { t } from '../i18n';
 import { maxHealth } from '../sim/systems/combat';
-import { jobRooms, nearestProp, STATION_REACH } from '../sim/systems/economy';
-import { GUARD } from '../sim/systems/guards';
+import { nearestProp, STATION_REACH } from '../sim/systems/economy';
 import type { ItemState } from '../sim/systems/items';
-import { COLD_STEPS, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
-import { lookingAway } from '../sim/systems/ways';
+import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { lineOfSight } from '../sim/ai/sight';
-import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
-import { guardSubject } from '../ui/social';
-import { baking, energyCost, exposed } from '../sim/systems/weather';
-import { dayHud, stowCard, vehicleThe } from './day';
+import { prisonDay } from '../sim/systems/clock';
+import { energyCost } from '../sim/systems/weather';
+import { stowCard, vehicleThe } from './day';
 import { atTail } from '../sim/systems/delivery';
 import { containersOf } from '../sim/world/containers';
-import { TILE, TILE_INFO } from '../sim/world/tiles';
+import { TILE } from '../sim/world/tiles';
 import { usableHere } from '../sim/systems/recipes';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
 import { TOUCH } from '../ui/dom';
-import type { HudState } from '../ui/hud';
-import { LESSONS } from '../tutorial/lessons';
 import type { ItemsView } from '../ui/items';
 import type { UpView } from '../ui/tool';
 import { disarmDrink, press, targets } from './buttons';
-import {
-  aimUI,
-  board,
-  combatUI,
-  darkCell,
-  hint,
-  hud,
-  itemsUI,
-  paBoard,
-  profile,
-  ratPanel,
-  phonePanel,
-  crewPanel,
-  crewChips,
-  settings,
-  sleepVeil,
-  socialOpen,
-  solitaryPanel,
-  sound,
-  stowPanel,
-  talk,
-  tools,
-  trainCard,
-  pickCard,
-  wrestleCard,
-  cheatCard,
-  courtCard,
-  boardCard,
-  raceCard,
-  matchCard,
-  inkCard,
-  stageCard,
-  quizCard,
-  payphoneCard,
-  kioskCard,
-  paroleCard,
-  oddjobsCard,
-  storyCard,
-  vignette,
-  view,
-  workChips,
-  fileAway,
-} from './context';
-import { play, playNow, type Game } from './game';
-import { portraitOf } from '../render/portrait';
+import { aimUI, board, combatUI, darkCell, hint, itemsUI, paBoard, profile, ratPanel, phonePanel, crewPanel, crewChips, settings, sleepVeil, socialOpen, solitaryPanel, stowPanel, talk, tools, trainCard, pickCard, wrestleCard, cheatCard, courtCard, boardCard, raceCard, matchCard, inkCard, stageCard, quizCard, payphoneCard, kioskCard, paroleCard, oddjobsCard, storyCard, view, workChips, fileAway } from './context';
+import { play, type Game } from './game';
 import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, describeTreat, describeCall, dogName, targetInfo } from './labels';
-import { DOG, dogWarning, FOR_DOGS, treatTarget } from '../sim/systems/k9';
+import { DOG, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
-import { coachOnce, markTip, seenTip } from './tips';
+import { coachOnce, seenTip } from './tips';
 import { FIRECRACKER, GLIDER } from '../sim/systems/structure';
-import { wavedLeft, windowAction } from './getaway';
-import { deskAction, freedLeft, releaseChip } from './paperwork';
-import { calledNow } from '../sim/systems/paperwork';
-/** The release's chip (P36), refilled. */
-const releaseHud = { icon: 'clipboard', color: '#d8b04a', text: '', time: '', soon: false, left: null, of: 1, sr: '' };
-/** The parole hearing's chip (P39), refilled. */
-const paroleHud = { icon: 'scale', color: '#8a6bd1', text: '', time: '', soon: false, left: null, of: 1, sr: '' };
+import { windowAction } from './getaway';
+import { deskAction } from './paperwork';
 const PEPPER = itemNumber('pepper');
 /** The Dig up button's face, refilled in place. */
 const upView: UpView = { fits: true, progress: 0, heard: false };
 const JERKY = itemNumber('jerky');
-/** When the paw last lit for a dog's nose (real ms), and how long it stays lit after. */
-let pawAt = -1e9;
-const PAW_HOLD_MS = 1500;
 const PILLS = itemNumber('sleeping_pills');
 import { chatterFrame } from './chatter';
-import { ratHud, ratView } from './rat';
-import { orderHud, phoneView, smuggleHints } from './smuggle';
+import { ratView } from './rat';
+import { phoneView, smuggleHints } from './smuggle';
 import { PHONE, smugglingOf } from '../sim/systems/smuggling';
 import { CAUGHT_RAT, RAT_TRAP } from '../sim/systems/rats';
 import { boardNow, cheatNow, courtNow } from './pastimes';
-import { cashShown, pickNow, wrestleNow } from './games';
-import { crewChipList, crewPill, crewRows } from './crew';
-import { tipsyNow } from '../sim/systems/pruno';
+import { pickNow, wrestleNow } from './games';
+import { crewChipList, crewRows } from './crew';
 import { NO_TAKE, raceNow, takeOffers } from './long';
 import { inkNow, matchNow, teamSounds } from './team';
 import { nightsSounds, quizNow, stageNow } from './nights';
 import { payphoneNow } from './payphone';
 import { kioskNow } from './kiosk';
-import { paroleChip, paroleNow } from './parole';
-import { closeJobCard, jobHud, oddjobsNow } from './oddjobs';
-import { TIPSY_STEPS } from '../content/long';
-import { type Look } from '../render/look';
+import { paroleNow } from './parole';
+import { closeJobCard, oddjobsNow } from './oddjobs';
+import { hudFrame, hudState, setSongOn } from './hudframe';
 
 /**
  * Everything over the picture, brought up to date after each draw: the item bar and action
@@ -120,14 +61,6 @@ const GET_UP = { verb: '', what: '' };
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
 const PEEL_ACTION = { verb: '', what: '' };
-const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, wavedLeft: null, wavedKey: 'hud.waved', cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null, tipsy: null };
-/** Tipsy (P28): the HUD's pill, refilled in place. */
-const tipsyHud = { until: '', left: 0, of: TIPSY_STEPS / STEPS_PER_MINUTE };
-const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
-const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
-const workHud = { place: '', quota: 0, of: 0, paid: false };
-/** The music's tension cue is on (see updateOverlay). */
-let tense = false;
 
 const projectAt = (x: number, y: number, z: number, out: { x: number; y: number }) => view.screenAt(x, y, z, out);
 /** Over someone's head (P23: the crew's chips). */
@@ -148,8 +81,6 @@ function unitPx(x: number, z: number): number {
  * middle of the space left free. Measured a few times a second, not every frame.
  */
 let shiftCheck = 0;
-/** A song on the stage is heard (P30): the score steps back for it. */
-let songOn = false;
 
 export function keepPlayerClear(open: boolean) {
   if (!open) {
@@ -305,7 +236,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const quizV = busy || otherGame || stageV ? null : quizNow(sim);
   stageCard.update(stageV);
   quizCard.update(quizV);
-  songOn = nightsSounds(sim, a, g.paused || g.over);
+  setSongOn(nightsSounds(sim, a, g.paused || g.over));
   document.body.classList.toggle('performing', stageV?.phase === 'play');
   document.body.classList.toggle('staging', !!stageV);
   document.body.classList.toggle('quizzing', !!quizV);
@@ -377,170 +308,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   aimUI.frame(headAt, busy || st.layer !== LAYER.GROUND);
 }
 
-/**
- * The HUD for the moment shown (in play, and in a replay, P25): the clock, the routine, the
- * heat and every pill, the lockdown's red and siren, the music and the ambience.
- */
-export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, busy: boolean) {
-  const sim = g.rec.sim;
-  const st = sim.state;
-  const clock = sim.clock;
-  hudState.rat = ratHud(sim);
-  hudState.order = orderHud(sim);
-  hudState.crew = crewPill(sim);
-  hudState.oddjob = jobHud(sim);
-  vignette.classList.toggle('on', st.lockdown);
-  sound.siren(st.lockdown && !g.paused);
-  const zone = sim.playerZone;
-  hudState.routine = st.routine;
-  // At Lights Out the badge says whether the player is in the cell right now.
-  hudState.attended = ROUTINE[st.routine].id === 'lightsOut' ? zone === 'playerCell' : st.attended;
-  // (P24's glider lesson, on the roof after Lights Out: the routine pill asks nothing of the player.)
-  hudState.quietRoutine = !!g.lesson && LESSONS[g.lesson.index].routine === false;
-  hudState.heat = st.heat;
-  hudState.lockdown = st.lockdown;
-  hudState.seen = st.seen;
-  // (The paw held a moment: a dog pacing at the edge of its reach doesn't make it flicker.)
-  const dog = dogWarning(sim);
-  if (dog === 'nose') pawAt = performance.now();
-  hudState.dog = dog ?? (hudState.dog === 'nose' && performance.now() - pawAt < PAW_HOLD_MS && !busy ? 'nose' : null);
-  hudState.solitaryMinutes = st.solitary > 0 ? Math.ceil(st.solitary / STEPS_PER_MINUTE) : null;
-  // (P22: the dice's winnings show as the dice come down.)
-  hudState.cash = cashShown(st);
-  // During the Work Period with a job that counts today: the quota on the badge (GDD §11).
-  const job = sim.jobActive();
-  if (ROUTINE[st.routine].id === 'work' && job >= 0) {
-    const d = jobRooms(sim.world)[job].def;
-    workHud.place = t(`zone.${d.zone}` as Key);
-    workHud.quota = st.quota;
-    workHud.of = d.quota;
-    workHud.paid = st.paid;
-    hudState.work = workHud;
-  } else hudState.work = null;
-  // Irongate's two generators (P12): the pill says which half is dead (both: the power).
-  const off = Math.max(st.powerOff, st.powerOff2);
-  hudState.powerLeft = off > 0 ? (off - a) / STEPS_PER_SECOND : null;
-  hudState.powerKey = !sim.world.def.grid || (st.powerOff > 0 && st.powerOff2 > 0) ? 'hud.powerOut' : st.powerOff > 0 ? 'hud.powerOutCams' : 'hud.powerOutFence';
-  let wakes = Infinity;
-  for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
-  hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
-  // Waved through (P24): the checkpoint's gates open for the player, how long for.
-  hudState.wavedLeft = wavedLeft(sim, a) ?? freedLeft(sim, a);
-  // (P36: or cleared for release, the release's way out: the same chip, its own words.)
-  hudState.wavedKey = st.waved ? 'hud.waved' : 'hud.freed';
-  // The cold (P9): shown while it has built up at all, the energy pill frosted once it bites.
-  coldHud.built = st.cold / COLD_STEPS;
-  coldHud.left = (COLD_STEPS - st.cold) / STEPS_PER_SECOND;
-  coldHud.bit = st.frozen;
-  coldHud.warming = !exposed(sim);
-  // (P17: a heatwave's sun, in the same chip.)
-  coldHud.hot = baking(sim);
-  hudState.cold = st.cold > 0 ? coldHud : null;
-  // A guard looking the other way (P15): the one whose look away ends first.
-  let away = -1;
-  st.guards.forEach((x, k) => {
-    if (lookingAway(x, st.step) && (away < 0 || x.bribed < st.guards[away].bribed)) away = k;
-  });
-  if (away >= 0) {
-    bribeHud.name = guardSubject(sim, away);
-    bribeHud.left = Math.ceil((st.guards[away].bribed - st.step) / STEPS_PER_MINUTE);
-    bribeHud.until = formatTime(clockAt(st.guards[away].bribed));
-  }
-  hudState.bribe = away >= 0 ? bribeHud : null;
-  if (tipsyNow(st)) {
-    tipsyHud.left = Math.ceil((st.tipsy[0] - st.step) / STEPS_PER_MINUTE);
-    tipsyHud.until = formatTime(clockAt(st.tipsy[0]));
-    hudState.tipsy = tipsyHud;
-  } else hudState.tipsy = null;
-  document.body.classList.toggle('tipsy', tipsyNow(st));
-  document.body.classList.toggle('chilled', coldHud.bit && !coldHud.hot);
-  document.body.classList.toggle('baked', coldHud.bit && coldHud.hot);
-  // The day (P17): the weather by the clock, the event's chip, the drill.
-  dayHud(sim, hudState, a);
-  // (P36: the name on tomorrow's release list, or called this morning: its chip in the day's place.)
-  const rel = releaseChip(sim);
-  if (rel) {
-    releaseHud.text = rel;
-    releaseHud.sr = rel;
-    releaseHud.soon = calledNow(st);
-    hudState.today = releaseHud;
-  } else {
-    // (P39: a parole hearing to come, or called this morning: its chip there too.)
-    const hearing = paroleChip(sim);
-    if (hearing) {
-      paroleHud.text = hearing.text;
-      paroleHud.sr = hearing.text;
-      paroleHud.soon = hearing.soon;
-      hudState.today = paroleHud;
-    }
-  }
-  hud.update(clock, zone, hudState);
-  fileButton(g);
-  paBoard.reducedMotion = settings.reducedMotion;
-  // (The warden's clock is play time: paused or over, nothing runs out and nothing new is said.)
-  paBoard.frame(g.paused || g.over);
-  // The music follows the danger and the hour; the ambience, where the player is.
-  // Tense from 80% heat (or a chase, a lockdown) until it's back under 70%: no flapping at the line.
-  const hunted = st.lockdown || st.guards.some((x) => x.mode === GUARD.CHASE);
-  tense = hunted || st.heat >= 80 || (tense && st.heat >= 70);
-  const chased = tense;
-  const night = ROUTINE[st.routine].id === 'lightsOut' || st.sleeping;
-  // Paused or reading a card, the music steps back.
-  // (P30: and under a song on the stage.)
-  sound.duck((g.paused && !g.over) || songOn);
-  // Out on the road: the title theme plays over the victory screen.
-  if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
-  const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
-  sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
-}
-
 const headAt = (id: number, out: { x: number; y: number }) => view.screenOf(id, out, 1.95);
 
 /** Real seconds since the last overlay (the arm-wrestle's bar eases with it). */
 let lastOverlay = performance.now();
-/** The look last photographed for the file's button (render/portrait.ts: a new WebGL context and shader, so in an idle moment if one comes within 2 s). */
-let faceLook: Look | null = null;
-/** The game the button was last drawn for (a new one: the label may be due again, the face taken at once). */
-let fileGame: Game | null = null;
-/** The first run's "Your file" label under the button: from (play time, ms) and until. */
-let fileTipAt = -1;
-const FILE_TIP_WAIT = 1500;
-const FILE_TIP_MS = 6000;
-
-/**
- * The HUD's file button: your prisoner's face (taken again when the look changes: the
- * Intake's, a disguise, a tattoo inked; at once in a new game, so the last prisoner's face
- * never shows, in an idle moment otherwise), also at the file's head; a dot while the file
- * holds news; on the first run, its "Your file" label for a few seconds of play (gone once the
- * file is opened).
- */
-function fileButton(g: Game) {
-  const look = view.playerLook;
-  const fresh = g !== fileGame;
-  if (fresh) {
-    fileGame = g;
-    fileTipAt = -1;
-  }
-  if (look !== faceLook) {
-    faceLook = look;
-    const take = () => {
-      if (view.playerLook !== look) return;
-      const url = portraitOf(look);
-      hud.setFace(url);
-      profile.face = url;
-    };
-    if (fresh) take();
-    else ('requestIdleCallback' in window ? requestIdleCallback(take, { timeout: 2000 }) : setTimeout(take, 16));
-  }
-  hud.setNews(!g.replay && profile.newsFor(g.rec.sim));
-  const now = playNow();
-  if (fileTipAt < 0 && !g.paused && !seenTip('fileButton')) fileTipAt = now + FILE_TIP_WAIT;
-  if (fileTipAt > 0 && profile.isOpen) fileTipAt = 0;
-  const tip = fileTipAt > 0 && !g.paused && now >= fileTipAt && now < fileTipAt + FILE_TIP_MS;
-  // (Spent once it shows: a game left before then shows it next time.)
-  if (tip && !seenTip('fileButton')) markTip('fileButton');
-  hud.fileTip(tip);
-}
 
 /** The solitary or stow card up: the toasts keep above it (its height follows its text). */
 let cardClear = -1;
