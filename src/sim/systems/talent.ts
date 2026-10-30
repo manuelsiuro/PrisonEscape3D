@@ -31,7 +31,7 @@ import { LAYER, MAP_W, type World } from '../world/World';
 import { bodyAt, type Body } from './movement';
 import { dayMinute, eventOn, prisonDay, today } from './calendar';
 import { gameOn } from './games';
-import { HOTBAR, itemOf } from './items';
+import { hotbarSlotOf } from './items';
 import { DOING, inmateZone } from './inmates';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
@@ -195,7 +195,7 @@ function actComing(sim: SimContext): number {
 }
 
 /** The hotbar slot holding the guitar (-1 none). */
-const guitarSlot = (s: Pick<SimState, 'items'>) => s.items.inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === GUITAR);
+const guitarSlot = (s: Pick<SimState, 'items'>) => hotbarSlotOf(s.items.inv, GUITAR);
 
 /** Why the player can't take the stage now (null: they can). */
 export function stageRefusal(sim: SimContext, inst: number): Refusal | null {

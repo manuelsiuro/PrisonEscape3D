@@ -4,6 +4,7 @@ import { zoneIndex } from '../../content/zones';
 import { DIR_X, DIR_Z } from '../command';
 import { MAX_DISCOUNT, OPINION_START, UNIT } from '../tuning';
 import { MAP_W, type Prop, type World } from '../world/World';
+import { freeHotbar, hotbarSlotOf, itemOf } from './items';
 import type { Body } from './movement';
 
 /**
@@ -142,7 +143,7 @@ export interface WorkState {
  */
 export const qualifies = (w: World, int: number, j: number) => int >= jobRooms(w)[j].def.int || w.def.jobs[j]?.cell === 1;
 
-const hotbarHas = (s: WorkState, item: number) => s.inv.slice(0, 6).some((v) => (v & 255) === item);
+const hotbarHas = (s: WorkState, item: number) => hotbarSlotOf(s.inv, item) >= 0;
 
 /** The job station in reach and what it would do now, or null (the action button falls back to the usual). */
 export function stationTarget(w: World, s: WorkState, b: Body): Station | null {
@@ -152,8 +153,8 @@ export function stationTarget(w: World, s: WorkState, b: Body): Station | null {
   const def = room.def;
   const raw = def.raw ? itemNumber(def.raw) : 0;
   const done = def.done ? itemNumber(def.done) : 0;
-  const free = s.inv.slice(0, 6).includes(0);
-  const held = s.inv[s.hand] & 255;
+  const free = freeHotbar(s.inv) >= 0;
+  const held = itemOf(s.inv[s.hand]);
   // Mopping: a puddle underfoot or just ahead, mop in hand.
   if (def.flow === 'mop' && held === raw) {
     const t = puddleAt(s.puddles, b);

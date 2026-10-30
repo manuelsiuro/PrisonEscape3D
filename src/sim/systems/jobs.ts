@@ -18,7 +18,7 @@ import { containersOf } from '../world/containers';
 import { MAP_W } from '../world/World';
 import { clockAt } from './clock';
 import { HOLDER, jobRooms, nearestProp, qualifies, type Station, STATION_REACH, stationTarget } from './economy';
-import { HOTBAR, itemOf, pocketOf, slot, stockSlots, usesOf } from './items';
+import { freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, stockSlots, usesOf } from './items';
 import { tileOfBody } from './movement';
 import { offerFavors, refuse } from './social';
 import { attr, setAttr, stopTraining } from './training';
@@ -46,10 +46,10 @@ export function work(sim: SimContext, st: Station) {
   const it = s.items;
   const room = jobRooms(sim.world)[sim.jobActive()];
   const def = room.def;
-  const free = () => it.inv.slice(0, HOTBAR).indexOf(0);
+  const free = () => freeHotbar(it.inv);
   /** One of an item off the hotbar (the one in hand first). */
   const takeOne = (item: number) => {
-    const k = itemOf(it.inv[it.hand]) === item ? it.hand : it.inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === item);
+    const k = itemOf(it.inv[it.hand]) === item ? it.hand : hotbarSlotOf(it.inv, item);
     if (k >= 0) it.inv[k] = 0;
     return k >= 0;
   };

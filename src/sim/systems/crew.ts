@@ -35,7 +35,7 @@ import { jobRooms } from './economy';
 import { clockAt, prisonDay } from './clock';
 import { awake, GUARD, sendToLook } from './guards';
 import { DOING } from './inmates';
-import { HOTBAR, itemOf, pocketOf, slot } from './items';
+import { freeHotbar, itemOf, pocketOf, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { dismiss, guardTalking, refuse } from './social';
 import { besideOnGround } from './structure';
@@ -473,7 +473,7 @@ function fetch(sim: SimContext, e: CrewEntry) {
   // Back with it: into the player's hotbar once he's at their side and there's room.
   if (m.ko > 0 || s.layer !== LAYER.GROUND || sim.away || s.stowed || cheb(m.body, s.player) > TALK_REACH + UNIT / 4) return;
   const inv = s.items.inv;
-  const free = inv.slice(0, HOTBAR).indexOf(0);
+  const free = freeHotbar(inv);
   if (free < 0) return;
   inv[free] = slot(e[AUX]);
   s.items.rev++;

@@ -29,7 +29,7 @@ import { lockCandidates, maxHealth, nextLock } from './combat';
 import { attack, hurt } from './fights';
 import type { Guard } from './guards';
 import type { Inmate } from './inmates';
-import { craft, dropItem, equip, give, HOTBAR, interactTarget, type ItemEvent, itemOf, type ItemState, moveItem, pickUp, REACH, slot, stillInReach, usesOf } from './items';
+import { craft, dropItem, equip, freeHotbar, give, HOTBAR, hotbarSlotOf, interactTarget, type ItemEvent, itemOf, type ItemState, moveItem, pickUp, REACH, slot, stillInReach, usesOf } from './items';
 import { jobOp, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
@@ -589,7 +589,7 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
         break;
       }
       // Hooked over the fence, the sheet rope takes the player down the far side (both stay there).
-      const rope = it.inv.findIndex((v, k) => k < HOTBAR && itemOf(v) === SHEET_ROPE);
+      const rope = hotbarSlotOf(it.inv, SHEET_ROPE);
       if (rope >= 0) it.inv[rope] = 0;
       moveTo(sim, LAYER.GROUND, t, 'grapnel');
       break;
@@ -802,7 +802,4 @@ export function underShower(sim: SimContext): boolean {
 const POSTER_ITEM = itemNumber('poster');
 
 /** A free hotbar slot. */
-function hasRoom(it: ItemState): boolean {
-  for (let k = 0; k < HOTBAR; k++) if (!it.inv[k]) return true;
-  return false;
-}
+const hasRoom = (it: ItemState) => freeHotbar(it.inv) >= 0;
