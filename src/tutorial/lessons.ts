@@ -49,7 +49,7 @@ import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
 import type { StartKind } from '../content/outside/types';
 import { OVER, SEEK, type Hunt } from '../sim/hunt/Hunt';
 import { spotTile } from '../sim/hunt/world';
-import { tileAt } from '../sim/world/grid';
+import { centerX, centerZ, tileAt } from '../sim/world/grid';
 
 /**
  * The tutorial (P8+): short lessons on the Training Block, each a scene set up on a fresh game
@@ -1536,7 +1536,7 @@ function gamesFail(c: LessonCtx): Key | null {
 }
 
 /** A tile's middle (units), to measure from. */
-const centre = (t: number) => ({ x: (t % MAP_W) * UNIT + UNIT / 2, z: Math.floor(t / MAP_W) * UNIT + UNIT / 2 });
+const centre = (t: number) => ({ x: centerX(t), z: centerZ(t) });
 /** The drone's order gone wrong: turned back for tomorrow night (a guard watching where it would land), or seized where it fell. */
 function smuggleFail(sim: Sim): Key | null {
   const s = sim.state;

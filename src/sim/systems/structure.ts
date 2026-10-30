@@ -1,6 +1,6 @@
 import { itemDef, itemNumber, type ItemDef } from '../../content/items';
 import { handlersOf } from './k9';
-import { DIR_X, DIR_Z } from '../command';
+import { sideX, sideZ } from '../command';
 import { BODY_HALF, CAMERA_REACH, ELECTRIC_HP, FENCE_HP, FLOOR_HP, GRAPNEL_REACH, GRATE_HP, SHARPEN_STROKES, SOIL_HP, UNBRACED_RUN, UNIT, WALL_HP } from '../tuning';
 import { isGrate, isSea, isTunnel, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
@@ -145,10 +145,8 @@ const DIGGABLE = new Set<number>([TILE.GRASS, TILE.ROAD, TILE.CONCRETE, TILE.TIL
 
 /** The tile straight ahead of a body (its heading snapped to the nearest of the four sides), -1 off the map. */
 function aheadOf(b: Body): number {
-  const fx = DIR_X[b.facing] ?? 0;
-  const fz = DIR_Z[b.facing] ?? 0;
-  const x = Math.floor(b.x / UNIT) + (Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0);
-  const z = Math.floor(b.z / UNIT) + (Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz));
+  const x = Math.floor(b.x / UNIT) + sideX(b.facing);
+  const z = Math.floor(b.z / UNIT) + sideZ(b.facing);
   return x < 0 || z < 0 || x >= MAP_W || z >= MAP_H ? -1 : z * MAP_W + x;
 }
 
@@ -323,8 +321,8 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   if (held === GLIDER && layer === LAYER.ROOF && air) {
     const glide = glideFrom(w, b, air, bodies);
     if (glide) {
-      const sx = stepX(b);
-      const sz = stepZ(b);
+      const sx = sideX(b.facing);
+      const sz = sideZ(b.facing);
       const land = glide.dist ? here + (sz * MAP_W + sx) * glide.dist : -1;
       return { action: 'glide', layer: LAYER.GROUND, tile: land, over: here, hp: 0, fits: glide.why === null, glide };
     }
@@ -413,10 +411,8 @@ function placeTarget(w: World, layer: number, here: number, ahead: number, held:
  * rope then gets the player down its far side). Returns the tile hooked and the landing, or null.
  */
 export function grapnelSwing(w: World, b: Body): { fence: number; land: number; roof: boolean } | null {
-  const fx = DIR_X[b.facing] ?? 0;
-  const fz = DIR_Z[b.facing] ?? 0;
-  const sx = Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;
-  const sz = Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz);
+  const sx = sideX(b.facing);
+  const sz = sideZ(b.facing);
   let x = Math.floor(b.x / UNIT);
   let z = Math.floor(b.z / UNIT);
   const roof = w.layers[LAYER.ROOF].kind;
@@ -445,16 +441,6 @@ export function grapnelSwing(w: World, b: Body): { fence: number; land: number; 
 }
 
 /** A body's heading snapped to one of the four sides, as steps along x and z. */
-const stepX = (b: Body) => {
-  const fx = DIR_X[b.facing] ?? 0;
-  const fz = DIR_Z[b.facing] ?? 0;
-  return Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;
-};
-const stepZ = (b: Body) => {
-  const fx = DIR_X[b.facing] ?? 0;
-  const fz = DIR_Z[b.facing] ?? 0;
-  return Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz);
-};
 
 /**
  * How far the wind carries a glide heading one way (P24; eighths, 0 north, 2 east, 4 south, 6
@@ -478,8 +464,8 @@ export function glideReach(air: Air, heading: number): number {
  * ring and the sim agree.
  */
 export function glideFrom(w: World, b: Body, air: Air, bodies: readonly Body[] = []): Glide | null {
-  const sx = stepX(b);
-  const sz = stepZ(b);
+  const sx = sideX(b.facing);
+  const sz = sideZ(b.facing);
   const x = Math.floor(b.x / UNIT);
   const z = Math.floor(b.z / UNIT);
   const roof = w.layers[LAYER.ROOF].kind;
@@ -547,10 +533,8 @@ function cameraInReach(w: World, b: Body): number {
 
 /** Whether the tile behind a body (opposite its heading, snapped to a side) is undug earth or the map's edge. */
 function behindIsEarth(w: World, b: Body): boolean {
-  const fx = DIR_X[b.facing] ?? 0;
-  const fz = DIR_Z[b.facing] ?? 0;
-  const x = Math.floor(b.x / UNIT) - (Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0);
-  const z = Math.floor(b.z / UNIT) - (Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz));
+  const x = Math.floor(b.x / UNIT) - sideX(b.facing);
+  const z = Math.floor(b.z / UNIT) - sideZ(b.facing);
   const k = w.inside(x, z) ? w.layers[LAYER.UNDER].kind[z * MAP_W + x] : TILE.SOIL;
   return k === TILE.SOIL || k === TILE.BOULDER;
 }

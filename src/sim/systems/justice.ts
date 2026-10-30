@@ -16,7 +16,7 @@ import { randomInt, rollInt, SALT } from '../rng';
 import { WAKE } from '../state';
 import { today } from './calendar';
 import { INSPECTION_CELLS } from '../../content/days';
-import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SHAKEDOWN_CELLS, SOLITARY_HEAT, SOLITARY_STEPS, STRICT_CELLS, UNIT } from '../tuning';
+import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SHAKEDOWN_CELLS, SOLITARY_HEAT, SOLITARY_STEPS, STRICT_CELLS } from '../tuning';
 import { containersOf } from '../world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { clockAt } from './clock';
@@ -27,6 +27,7 @@ import { itemOf, slot } from './items';
 import { dismissAll, endTalk } from './social';
 import { stopTraining } from './training';
 import { addHeat, repair } from './watch';
+import { centerX, centerZ } from '../world/grid';
 
 /** Knocked down by a guard: the lockdown is over, everyone back to work, the player out cold. */
 export function caught(sim: SimContext) {
@@ -166,8 +167,8 @@ function place(sim: SimContext, tile: number) {
   sim.state.layer = LAYER.GROUND;
   sim.state.deskAside = false;
   const p = sim.state.player;
-  p.x = (tile % MAP_W) * UNIT + UNIT / 2;
-  p.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  p.x = centerX(tile);
+  p.z = centerZ(tile);
   p.moving = false;
   p.facing = 5;
 }

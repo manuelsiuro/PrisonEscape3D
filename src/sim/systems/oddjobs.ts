@@ -45,7 +45,7 @@ import { changeOpinion, refuse } from './social';
 import { fixerOf, smugglingOf } from './smuggling';
 import { addHeat } from './watch';
 import { lookingAway } from './ways';
-import { tilesFrom, tileX, tileZ } from '../world/grid';
+import { centerX, centerZ, tilesFrom, tileX, tileZ } from '../world/grid';
 
 export { R } from '../../content/oddjobs';
 
@@ -684,8 +684,8 @@ function lookout(sim: SimContext, job: number[]) {
   }
   // At it: a guard close enough to see in finds him; else the dig goes on.
   const m = s.inmates[d.who];
-  const cx = (d.tile % MAP_W) * UNIT + UNIT / 2;
-  const cz = Math.floor(d.tile / MAP_W) * UNIT + UNIT / 2;
+  const cx = centerX(d.tile);
+  const cz = centerZ(d.tile);
   const there = offTile(d.tile, m.body) <= 0;
   if (there) {
     for (const g of s.guards) {
@@ -704,8 +704,8 @@ export function oddjobTargets(sim: SimContext, so: { follow: Array<Body | null>;
   if (!d || !sim.fixerOpen || !diggerFree(sim)) return;
   const m = sim.state.inmates[d.who];
   m.wait = 0;
-  mark.x = (d.tile % MAP_W) * UNIT + UNIT / 2;
-  mark.z = Math.floor(d.tile / MAP_W) * UNIT + UNIT / 2;
+  mark.x = centerX(d.tile);
+  mark.z = centerZ(d.tile);
   so.follow[d.who] = mark;
   so.gap[d.who] = 0;
   so.doing[d.who] = digging(sim) ? DOING.DIG : DOING.NOTHING;

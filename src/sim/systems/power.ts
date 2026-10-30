@@ -9,7 +9,7 @@ import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import type { PowerUse } from '../../content/prisons/types';
 import { HURT_BY, type SimState } from '../state';
-import { DETECTOR_HEAT, POWER_OFF_STEPS, SNIPER_AIM, SNIPER_DAMAGE, SNIPER_PACE, SOLITARY_HEAT, TAKEOVER_SHARE, UNIT } from '../tuning';
+import { DETECTOR_HEAT, POWER_OFF_STEPS, SNIPER_AIM, SNIPER_DAMAGE, SNIPER_PACE, SOLITARY_HEAT, TAKEOVER_SHARE } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_W, type World } from '../world/World';
 import { hurt } from './fights';
@@ -21,6 +21,7 @@ import { besideOnGround } from './structure';
 import { addHeat } from './watch';
 import { snipersBlind } from './calendar';
 import { visitArch } from './smuggling';
+import { centerX, centerZ } from '../world/grid';
 
 /** Time passing on the devices: the power comes back on (the maintenance guard has the generator running again, GDD §5.5), a camera's tape comes off. */
 export function devices(sim: SimContext) {
@@ -133,8 +134,8 @@ function maintenanceDone(sim: SimContext, gen: number) {
 /** The nearest guards up and about (and not chasing) go and look at a tile. */
 export function summon(sim: SimContext, tile: number, n: number, look?: number) {
   const s = sim.state;
-  const tx = (tile % MAP_W) * UNIT + UNIT / 2;
-  const tz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  const tx = centerX(tile);
+  const tz = centerZ(tile);
   const free = s.guards.filter((g) => awake(g) && g.mode !== GUARD.CHASE);
   free.sort((a, b) => (a.body.x - tx) ** 2 + (a.body.z - tz) ** 2 - ((b.body.x - tx) ** 2 + (b.body.z - tz) ** 2));
   for (const g of free.slice(0, n)) sendToLook(g, tile, look);

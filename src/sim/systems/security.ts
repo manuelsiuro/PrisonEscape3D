@@ -1,4 +1,4 @@
-import { DIRS } from '../command';
+import { turnDir } from '../command';
 import { BEAM_RADIUS, BEAM_SPEED, CAMERA_RANGE, CAMERA_TURN_STEPS, SNIPER_RANGE, UNIT } from '../tuning';
 import { canSee } from '../ai/sight';
 import { TILE, TILE_INFO } from '../world/tiles';
@@ -15,12 +15,10 @@ import { tileAt } from '../world/grid';
 /** A camera's sweep: a sixteenth of a turn at a time, out to ±45° and back. */
 const SWEEP = [0, 1, 2, 1, 0, -1, -2, -1];
 
-/** Turns a direction (1–16) by n sixteenths. */
-const turn = (d: number, n: number) => ((((d - 1 + n) % DIRS) + DIRS) % DIRS) + 1;
 
 /** Where camera k looks at a step (1–16); cameras are out of step with each other. */
 export function cameraFacing(face: number, k: number, step: number): number {
-  return turn(face, SWEEP[Math.floor((step + k * 97) / CAMERA_TURN_STEPS) % SWEEP.length]);
+  return turnDir(face, SWEEP[Math.floor((step + k * 97) / CAMERA_TURN_STEPS) % SWEEP.length]);
 }
 
 /**

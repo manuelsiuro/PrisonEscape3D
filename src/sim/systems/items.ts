@@ -5,11 +5,11 @@ import { DIR_X, DIR_Z, SLOT } from '../command';
 import { randomInt } from '../rng';
 import { TALK_REACH, UNIT } from '../tuning';
 import { containersOf, type ContainerInfo } from '../world/containers';
-import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
+import { LAYER, layerOfKey, placeKey, tileOfKey, type World } from '../world/World';
 import type { Body } from './movement';
 import { seatSpot } from './rest';
 import { lineOfSight } from '../ai/sight';
-import { tileAt } from '../world/grid';
+import { centerX, centerZ, tileAt } from '../world/grid';
 
 /**
  * Items in the simulation (GDD §6, §8). A slot is one number: the item (ITEMS order + 1)
@@ -244,8 +244,8 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
   s.ground.forEach(([key, v], index) => {
     if (layerOfKey(key) !== layer) return;
     const tile = tileOfKey(key);
-    const tx = (tile % MAP_W) * UNIT + UNIT / 2;
-    const tz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+    const tx = centerX(tile);
+    const tz = centerZ(tile);
     const d = Math.max(Math.abs(tx - b.x), Math.abs(tz - b.z));
     if (d > PICKUP_REACH) return;
     const sc = score(d, tx, tz) - UNIT;

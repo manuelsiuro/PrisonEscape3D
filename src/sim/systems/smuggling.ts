@@ -40,6 +40,7 @@ import { hearingDue } from './parole';
 import { frisk } from './power';
 import { facingAt, seatSpot } from './rest';
 import { lookingAway } from './ways';
+import { centerX, centerZ } from '../world/grid';
 
 export const PHONE = itemNumber('burner_phone');
 
@@ -408,8 +409,8 @@ function watching(sim: SimContext, tile: number): number {
   const s = sim.state;
   if (tile < 0) return -1;
   const point = sim.scratch.point;
-  point.x = (tile % MAP_W) * UNIT + UNIT / 2;
-  point.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  point.x = centerX(tile);
+  point.z = centerZ(tile);
   return s.guards.findIndex((g) => awake(g) && !lookingAway(g, s.step) && canSee(sim.world, g.body, point, sightFor(sim, g, point.x, point.z)));
 }
 

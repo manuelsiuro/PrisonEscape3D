@@ -158,6 +158,20 @@ for (let d = 1; d <= DIRS; d++) {
   DIR_Z[d] = Math.round(Math.sin(a) * 1024);
 }
 
+/** A direction snapped to the nearest of the four sides (east–west first on a diagonal): its step across (-1, 0, 1)… */
+export const sideX = (d: number) => {
+  const fx = DIR_X[d] ?? 0;
+  return Math.abs(fx) >= Math.abs(DIR_Z[d] ?? 0) ? Math.sign(fx) : 0;
+};
+/** …and its step down. */
+export const sideZ = (d: number) => {
+  const fz = DIR_Z[d] ?? 0;
+  return Math.abs(DIR_X[d] ?? 0) >= Math.abs(fz) ? 0 : Math.sign(fz);
+};
+
+/** A direction (1–16) turned by n sixteenths. */
+export const turnDir = (d: number, n: number) => ((((d - 1 + n) % DIRS) + DIRS) % DIRS) + 1;
+
 /** The direction closest to a vector (screen or world, x right and z down); 0 when it's (0, 0). */
 export function dirFromVector(x: number, z: number): number {
   if (x === 0 && z === 0) return 0;

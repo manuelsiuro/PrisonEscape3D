@@ -6,7 +6,7 @@ import { centerX, centerZ, tileAt } from '../world/grid';
 import { lineOfSight, SIGHT_RANGE } from '../ai/sight';
 import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
-import { DIRS } from '../command';
+import { turnDir } from '../command';
 import { rollInt, SALT } from '../rng';
 import { GUARD_STR, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, RIOT_STR, STEPS_PER_SECOND, STIR_RANGE, STIR_STEPS, UNIT } from '../tuning';
 import { clockAt } from './clock';
@@ -177,13 +177,11 @@ function head(c: Crowd, g: Guard, tile: number) {
   route(c, g);
 }
 
-/** Turns a direction (1–16) by n sixteenths. */
-const turn = (d: number, n: number) => ((((d - 1 + n) % DIRS) + DIRS) % DIRS) + 1;
 
 /** Standing somewhere: glance left, ahead, right, ahead… */
 function glance(g: Guard, step: number, wide: number) {
   const k = Math.floor(step / GLANCE) % 4;
-  g.body.facing = k === 1 ? turn(g.face, -wide) : k === 3 ? turn(g.face, wide) : g.face;
+  g.body.facing = k === 1 ? turnDir(g.face, -wide) : k === 3 ? turnDir(g.face, wide) : g.face;
 }
 
 /** Whether a guard stands at its goal. */
@@ -303,7 +301,7 @@ export function stepGuards(
         else {
           // There (or as close as it got): a good look around, then back to duty.
           g.body.moving = false;
-          g.body.facing = turn(g.body.facing, step % 12 === 0 ? 2 : 0);
+          g.body.facing = turnDir(g.body.facing, step % 12 === 0 ? 2 : 0);
           g.timer -= lookDrain(traitOf(def), step);
           if (g.timer <= 0) backToDuty(g);
         }
