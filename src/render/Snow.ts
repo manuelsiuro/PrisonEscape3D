@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { seeded } from './rand';
+import { canvasTexture } from './canvas';
 
 const FLAKES = 700;
 /** The box of air around the player that the flakes fill (tiles), and how high they start. */
@@ -84,7 +85,6 @@ function flake(): THREE.Texture {
   grad.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 16, 16);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }

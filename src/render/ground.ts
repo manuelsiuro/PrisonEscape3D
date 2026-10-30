@@ -8,6 +8,7 @@ import type { Pitch, PrisonDef } from '../content/prisons/types';
 import type { SimContext } from '../sim/context';
 import { drillOn } from '../sim/systems/calendar';
 import { seeded } from './rand';
+import { canvasTexture } from './canvas';
 
 /**
  * Two baked layers over the floors, drawn once per prison on canvases:
@@ -118,18 +119,6 @@ function overlay(tex: THREE.Texture, material: THREE.MeshBasicMaterial, y: numbe
   return mesh;
 }
 
-/** A canvas as a texture (`mipmaps` off for a blurred one: never shrunk enough on screen to need them). */
-function canvasTexture(canvas: HTMLCanvasElement, mipmaps: boolean): THREE.CanvasTexture {
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  if (mipmaps) tex.anisotropy = 4;
-  else {
-    tex.generateMipmaps = false;
-    tex.minFilter = THREE.LinearFilter;
-  }
-  return tex;
-}
-
 // ------------------------------------------------------------------ paint
 const PAINT_RES = 16;
 
@@ -176,7 +165,7 @@ function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
       c.restore();
     }
   }
-  return canvasTexture(canvas, true);
+  return canvasTexture(canvas, 'sharp');
 }
 
 // ------------------------------------------------------------------ roll call over the pitch
@@ -248,9 +237,7 @@ export function rollCallLayer(world: World, pitch: Pitch | null = world.def.leis
   canvas.width = w * PAINT_RES;
   canvas.height = d * PAINT_RES;
   drawRollCall(canvas.getContext('2d')!, world.def, b.x0, b.z0);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  const tex = canvasTexture(canvas, 'sharp');
   const material = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), material);
   mesh.position.set(b.x0 + w / 2, 0.012, b.z0 + d / 2);
@@ -339,5 +326,5 @@ function contactShadows(world: World): THREE.CanvasTexture {
     img.data[i * 4 + 3] = 255;
   }
   c.putImageData(img, 0, 0);
-  return canvasTexture(canvas, false);
+  return canvasTexture(canvas, 'live');
 }

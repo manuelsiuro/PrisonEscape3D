@@ -6,6 +6,7 @@ import { LAYER, MAP_H, MAP_W } from '../sim/world/World';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { now, type Later } from './batch';
 import { onTrack } from '../content/grounds';
+import { canvasTexture } from './canvas';
 
 /** What the side games show this frame (P22). */
 export interface GamesFrame {
@@ -75,10 +76,7 @@ function diceTexture(): THREE.CanvasTexture {
       g.fill();
     }
   }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
+  return canvasTexture(c, 'sharp');
 }
 
 /** The faces of the box (+x, −x, +y, −y, +z, −z) show these numbers (opposite faces add up to 7). */
