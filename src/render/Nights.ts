@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { QuizPlace, Stage } from '../content/prisons/types';
 import { box, cyl, kitMaterial, merge, rod } from './kit';
+import { disposeTree } from './batch';
 
 /**
  * What stage nights (P30) show: talent night's stage in the canteen (boards, a mic stand,
@@ -50,14 +51,7 @@ export class NightsView {
 
   /** Lets go of what was built for the last map. */
   private clear() {
-    for (const g of [this.stage, this.quiz])
-      g.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (!m.isMesh) return;
-        m.geometry.dispose();
-        if ((m as THREE.InstancedMesh).isInstancedMesh) (m as THREE.InstancedMesh).dispose();
-        if (m.material !== kitMaterial) (m.material as THREE.Material).dispose();
-      });
+    for (const g of [this.stage, this.quiz]) disposeTree(g, () => false, new Set([kitMaterial]));
     this.stage.clear();
     this.quiz.clear();
     this.bulbs = null;

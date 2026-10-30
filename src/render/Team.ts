@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Pitch } from '../content/prisons/types';
 import { BALL_R, GOAL_HALF } from '../content/team';
 import { UNIT } from '../sim/tuning';
-import { now, type Later } from './batch';
+import { disposeTree, type Later, now } from './batch';
 import { box, cyl, merge, paint } from './kit';
 
 /**
@@ -120,13 +120,7 @@ export class TeamView {
     const old = [...this.lines.children];
     this.lines.clear();
     this.later(() => {
-      for (const o of old)
-        o.traverse((c) => {
-          const m = c as THREE.Mesh;
-          if (!m.isMesh) return;
-          m.geometry.dispose();
-          (m.material as THREE.Material).dispose();
-        });
+      for (const o of old) disposeTree(o, () => false);
     });
   }
 
