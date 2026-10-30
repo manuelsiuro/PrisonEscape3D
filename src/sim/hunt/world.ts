@@ -2,6 +2,7 @@ import type { GuardDef, PrisonDef } from '../../content/prisons/types';
 import { OUTSIDE_LEGEND, type Area, type OutsideDef, type Spot } from '../../content/outside/types';
 import { TILE } from '../world/tiles';
 import { MAP_H, MAP_W, World } from '../world/World';
+import { chebTiles, neighbours4 } from '../world/grid';
 
 /**
  * The outside (P41) as the hunt and the view see it: the picture placed in the middle of a
@@ -186,3 +187,83 @@ function searcherDefs(def: OutsideDef, ox: number, oz: number): GuardDef[] {
 
 /** The world's floor kind at a tile (for the view's footsteps). */
 export const floorAt = (o: OutsideWorld, i: number) => (o.ford[i] ? TILE.WATER : o.world.ground.kind[i]);
+
+const N = MAP_W * MAP_H;
+
+/** Walking tiles outward from the tiles already queued (their distances set), over open ground. */
+function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
+  for (let q = 0; q < queue.length; q++) {
+    const t = queue[q];
+    for (const [j, ok] of neighbours4(t))
+      if (ok && d[j] < 0 && open(j)) (d[j] = d[t] + 1), queue.push(j);
+  }
+}
+
+/** Walking tiles to the nearest way to safety from every tile (`lou`: Lou's car's tile, -1 none; `wire`: through the wire too). */
+export function goalDistances(o: OutsideWorld, grid: Uint8Array, lou: number, wire: boolean): Int32Array {
+  const d = new Int32Array(N).fill(-1);
+  const queue: number[] = [];
+  for (let i = 0; i < N; i++) if (o.safe[i]) (d[i] = 0), queue.push(i);
+  if (lou >= 0 && d[lou] !== 0) (d[lou] = 0), queue.push(lou);
+  // (The search reckons wire passable: cutters make it so; a way round it is shorter anyway where there is one.)
+  const open = (i: number) => !grid[i] || (wire && o.wire[i] === 1);
+  flood(d, queue, open);
+  return d;
+}
+
+/** Open ground beside cover a searcher can walk to, so that every cover tile is within a tile or two of one, and a place every few tiles across the open (in the map's order: the same every run). */
+export function sweepPoints(o: OutsideWorld, npcGrid: Uint8Array, start: number): number[] {
+  const reach = new Int32Array(N).fill(-1);
+  reach[start] = 0;
+  flood(reach, [start], (i) => !npcGrid[i]);
+  const stand = (i: number) => reach[i] >= 0 && !npcGrid[i];
+  const done = new Uint8Array(N);
+  const pts: number[] = [];
+  for (let c = 0; c < N; c++) {
+    if (!o.cover[c] || done[c]) continue;
+    const cx = c % MAP_W;
+    const cz = Math.floor(c / MAP_W);
+    // The open tile beside it that reaches the most cover not yet covered (nearest first).
+    let best = -1;
+    let bestN = 0;
+    // (Out to 4 tiles where nothing stands closer: a strip of cover against the map's edge, a thicket in the woods; the dog team casts about from there.)
+    for (let r = 1; r <= 4 && best < 0; r++)
+      for (let z = cz - r; z <= cz + r; z++)
+        for (let x = cx - r; x <= cx + r; x++) {
+          if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
+          const i = z * MAP_W + x;
+          if (!stand(i)) continue;
+          let n = 0;
+          for (let dz = -2; dz <= 2; dz++)
+            for (let dx = -2; dx <= 2; dx++) {
+              const j = i + dz * MAP_W + dx;
+              if (dx * dx + dz * dz <= 5 && j >= 0 && j < N && o.cover[j] && !done[j]) n++;
+            }
+          if (n > bestN) (best = i), (bestN = n);
+        }
+    done[c] = 1;
+    if (best < 0) continue;
+    pts.push(best);
+    for (let dz = -2; dz <= 2; dz++)
+      for (let dx = -2; dx <= 2; dx++) {
+        const j = best + dz * MAP_W + dx;
+        if (dx * dx + dz * dz <= 5 && j >= 0 && j < N && o.cover[j]) done[j] = 1;
+      }
+  }
+  // And the open ground: a place every few tiles across the map (the nearest standing to each).
+  const step = 8;
+  for (let z = o.oz + step / 2; z < o.oz + o.h; z += step)
+    for (let x = o.ox + step / 2; x < o.ox + o.w; x += step) {
+      let best = -1;
+      for (let r = 0; r <= 3 && best < 0; r++)
+        for (let dz = -r; dz <= r && best < 0; dz++)
+          for (let dx = -r; dx <= r && best < 0; dx++) {
+            const i = (z + dz) * MAP_W + x + dx;
+            if (stand(i)) best = i;
+          }
+      if (best >= 0 && !pts.some((t) => chebTiles(t, best) <= 3)) pts.push(best);
+    }
+  // And every pocket the grid missed (behind a building, along the picture's edge): any open ground still 5 tiles from every place.
+  for (let i = 0; i < N; i++) if (stand(i) && o.inside[i] && !o.cover[i] && !pts.some((t) => chebTiles(t, i) <= 5)) pts.push(i);
+  return pts;
+}

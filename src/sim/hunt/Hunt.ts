@@ -11,45 +11,10 @@ import { bodyAt, walk, type Body } from '../systems/movement';
 import { STEPS_PER_SECOND, UNIT, walkSpeed } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
-import { HFEAT, HOUND, HUNT_FEATS, OVER, SEEK, type Carry, type HuntDog, type HuntState, type Searcher } from './state';
-import { fillArea, outsideWorld, spotTile, type OutsideWorld } from './world';
+import { HFEAT, HOUND, HUNT_FEATS, OVER, SEEK, type Carry, type HuntDog, type HuntEvent, type HuntOptions, type HuntState, type Searcher } from './state';
+import { fillArea, goalDistances, outsideWorld, spotTile, sweepPoints, type OutsideWorld } from './world';
 
 export * from './state';
-
-/** Why an action did nothing (a toast says it). */
-type HuntRefusal = 'nothing' | 'noCutters' | 'stoneSoon' | 'stoneFar' | 'noTreat' | 'dogFar';
-
-/** What happened during a hunt's step (the play layer's sounds, toasts and bubbles read them; the hunt never calls them). */
-export type HuntEvent =
-  | { type: 'alarm' }
-  | { type: 'out'; who: number }
-  | { type: 'roadblock'; k: number }
-  | { type: 'heli' }
-  | { type: 'spotted'; who: number }
-  | { type: 'lost'; who: number }
-  | { type: 'heard'; who: number; tile: number }
-  | { type: 'noise'; tile: number; reach: number; kind: 'crunch' | 'stone' | 'cut' | 'bark' }
-  | { type: 'track'; dog: number }
-  | { type: 'point'; dog: number }
-  | { type: 'lit'; on: boolean }
-  | { type: 'hidden'; on: boolean }
-  | { type: 'swap'; uniform: boolean }
-  | { type: 'cut'; tile: number; done: boolean }
-  | { type: 'treat'; dog: number; what: number }
-  | { type: 'stone'; tile: number }
-  | { type: 'whistle'; who: number }
-  | { type: 'refused'; why: HuntRefusal }
-  | { type: 'safe'; lou: boolean }
-  | { type: 'caught'; by: number }
-  | { type: 'widen'; heat: number };
-
-/** Options for a lesson's hunt (P41's lesson): only some searchers, no helicopter, no roadblocks, the search never widening. A lesson's hunt keeps the map's own times and beats (no shuffle by the salt). */
-export interface HuntOptions {
-  searchers?: readonly number[];
-  heli?: boolean;
-  roadblocks?: boolean;
-  ramp?: boolean;
-}
 
 const S = STEPS_PER_SECOND;
 const N = MAP_W * MAP_H;
@@ -84,7 +49,6 @@ const DRAW = { ORDER: -1, TIME: -2, STOP: -3, BLOCK: -4, HELI: -5, AIM: -6 } as 
 
 const dist2 = (a: { x: number; z: number }, b: { x: number; z: number }) => (a.x - b.x) ** 2 + (a.z - b.z) ** 2;
 const within = (a: { x: number; z: number }, b: { x: number; z: number }, tiles: number) => dist2(a, b) <= (tiles * UNIT) ** 2;
-/** Chebyshev distance between two tiles. */
 /** The whole square root of a whole number (the same on every device). */
 function isqrt(n: number): number {
   let r = Math.floor(Math.sqrt(n));
@@ -227,10 +191,11 @@ export class Hunt {
       sniffed: [],
     };
     this.refreshGrid();
-    this.toGoal = this.distances(true);
-    this.toSafe = this.state.cutters ? this.toGoal : this.distances(false);
+    const lou = this.carry.lou ? spotTile(this.def.lou, this.out.ox, this.out.oz) : -1;
+    this.toGoal = goalDistances(this.out, this.grid, lou, true);
+    this.toSafe = this.state.cutters ? this.toGoal : goalDistances(this.out, this.grid, lou, false);
     this.state.best = this.walkTo(this.start);
-    this.sweepPts = this.sweepPoints();
+    this.sweepPts = sweepPoints(this.out, this.npcGrid, this.start);
   }
 
   /** The minute of the day now (the light, how far eyes see). */
@@ -421,80 +386,6 @@ export class Hunt {
   walkTo(t: number): number {
     const d = this.toSafe[t];
     return d >= 0 ? d : this.toGoal[t];
-  }
-
-  /** Walking tiles to the nearest way to safety from every tile (the map as built; `wire`: through the wire too). */
-  private distances(wire: boolean): Int32Array {
-    const d = new Int32Array(N).fill(-1);
-    const queue: number[] = [];
-    const o = this.out;
-    for (let i = 0; i < N; i++) if (o.safe[i]) (d[i] = 0), queue.push(i);
-    if (this.carry.lou) {
-      const t = spotTile(this.def.lou, o.ox, o.oz);
-      if (d[t] !== 0) (d[t] = 0), queue.push(t);
-    }
-    // (The search reckons wire passable: cutters make it so; a way round it is shorter anyway where there is one.)
-    const open = (i: number) => !this.grid[i] || (wire && o.wire[i] === 1);
-    flood(d, queue, open);
-    return d;
-  }
-
-  /** Open ground beside cover a searcher can walk to, so that every cover tile is within a tile or two of one, and a place every few tiles across the open (in the map's order: the same every run). */
-  private sweepPoints(): number[] {
-    const o = this.out;
-    const reach = new Int32Array(N).fill(-1);
-    reach[this.start] = 0;
-    flood(reach, [this.start], (i) => !this.npcGrid[i]);
-    const stand = (i: number) => reach[i] >= 0 && !this.npcGrid[i];
-    const done = new Uint8Array(N);
-    const pts: number[] = [];
-    for (let c = 0; c < N; c++) {
-      if (!o.cover[c] || done[c]) continue;
-      const cx = c % MAP_W;
-      const cz = Math.floor(c / MAP_W);
-      // The open tile beside it that reaches the most cover not yet covered (nearest first).
-      let best = -1;
-      let bestN = 0;
-      // (Out to 4 tiles where nothing stands closer: a strip of cover against the map's edge, a thicket in the woods; the dog team casts about from there.)
-      for (let r = 1; r <= 4 && best < 0; r++)
-        for (let z = cz - r; z <= cz + r; z++)
-          for (let x = cx - r; x <= cx + r; x++) {
-            if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
-            const i = z * MAP_W + x;
-            if (!stand(i)) continue;
-            let n = 0;
-            for (let dz = -2; dz <= 2; dz++)
-              for (let dx = -2; dx <= 2; dx++) {
-                const j = i + dz * MAP_W + dx;
-                if (dx * dx + dz * dz <= 5 && j >= 0 && j < N && o.cover[j] && !done[j]) n++;
-              }
-            if (n > bestN) (best = i), (bestN = n);
-          }
-      done[c] = 1;
-      if (best < 0) continue;
-      pts.push(best);
-      for (let dz = -2; dz <= 2; dz++)
-        for (let dx = -2; dx <= 2; dx++) {
-          const j = best + dz * MAP_W + dx;
-          if (dx * dx + dz * dz <= 5 && j >= 0 && j < N && o.cover[j]) done[j] = 1;
-        }
-    }
-    // And the open ground: a place every few tiles across the map (the nearest standing to each).
-    const step = 8;
-    for (let z = o.oz + step / 2; z < o.oz + o.h; z += step)
-      for (let x = o.ox + step / 2; x < o.ox + o.w; x += step) {
-        let best = -1;
-        for (let r = 0; r <= 3 && best < 0; r++)
-          for (let dz = -r; dz <= r && best < 0; dz++)
-            for (let dx = -r; dx <= r && best < 0; dx++) {
-              const i = (z + dz) * MAP_W + x + dx;
-              if (stand(i)) best = i;
-            }
-        if (best >= 0 && !pts.some((t) => chebTiles(t, best) <= 3)) pts.push(best);
-      }
-    // And every pocket the grid missed (behind a building, along the picture's edge): any open ground still 5 tiles from every place.
-    for (let i = 0; i < N; i++) if (stand(i) && o.inside[i] && !o.cover[i] && !pts.some((t) => chebTiles(t, i) <= 5)) pts.push(i);
-    return pts;
   }
 
   // ---------------------------------------------------------------- the player
@@ -1269,11 +1160,3 @@ function fresh(body: Body, dog: number): Searcher {
   return { body, mode: SEEK.OFF, k: 0, wait: 0, goal: -1, path: [], best: FOREVER, stuck: 0, notice: 0, unseen: 0, last: -1, sees: false, dog };
 }
 
-/** Walking tiles outward from the tiles already queued (their distances set), over open ground. */
-function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
-  for (let q = 0; q < queue.length; q++) {
-    const t = queue[q];
-    for (const [j, ok] of neighbours4(t))
-      if (ok && d[j] < 0 && open(j)) (d[j] = d[t] + 1), queue.push(j);
-  }
-}

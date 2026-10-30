@@ -164,3 +164,38 @@ export interface HuntState {
   /** The places the dog teams have sniffed (their own round of the same places). */
   sniffed?: number[];
 }
+
+/** Why an action did nothing (a toast says it). */
+type HuntRefusal = 'nothing' | 'noCutters' | 'stoneSoon' | 'stoneFar' | 'noTreat' | 'dogFar';
+
+/** What happened during a hunt's step (the play layer's sounds, toasts and bubbles read them; the hunt never calls them). */
+export type HuntEvent =
+  | { type: 'alarm' }
+  | { type: 'out'; who: number }
+  | { type: 'roadblock'; k: number }
+  | { type: 'heli' }
+  | { type: 'spotted'; who: number }
+  | { type: 'lost'; who: number }
+  | { type: 'heard'; who: number; tile: number }
+  | { type: 'noise'; tile: number; reach: number; kind: 'crunch' | 'stone' | 'cut' | 'bark' }
+  | { type: 'track'; dog: number }
+  | { type: 'point'; dog: number }
+  | { type: 'lit'; on: boolean }
+  | { type: 'hidden'; on: boolean }
+  | { type: 'swap'; uniform: boolean }
+  | { type: 'cut'; tile: number; done: boolean }
+  | { type: 'treat'; dog: number; what: number }
+  | { type: 'stone'; tile: number }
+  | { type: 'whistle'; who: number }
+  | { type: 'refused'; why: HuntRefusal }
+  | { type: 'safe'; lou: boolean }
+  | { type: 'caught'; by: number }
+  | { type: 'widen'; heat: number };
+
+/** Options for a lesson's hunt (P41's lesson): only some searchers, no helicopter, no roadblocks, the search never widening. A lesson's hunt keeps the map's own times and beats (no shuffle by the salt). */
+export interface HuntOptions {
+  searchers?: readonly number[];
+  heli?: boolean;
+  roadblocks?: boolean;
+  ramp?: boolean;
+}
