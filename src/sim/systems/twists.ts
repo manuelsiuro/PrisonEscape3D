@@ -6,13 +6,14 @@ import type { TwistId } from '../../content/twists';
 import { itemNumber } from '../../content/items';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import { HEAT_DECAY_STEPS, HOSTILE_GRUDGE, HOSTILE_OPINION, UNIT } from '../tuning';
-import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from '../world/World';
+import { HEAT_DECAY_STEPS, HOSTILE_GRUDGE, HOSTILE_OPINION } from '../tuning';
+import { LAYER, layerOfKey, placeKey, tileOfKey } from '../world/World';
 import { damageShows, setTile } from './watch';
 import { underMyDesk } from './structure';
 import { containersOf } from '../world/containers';
 import { slot } from './items';
 import { treats } from './k9';
+import { tileAt } from '../world/grid';
 
 /** Whether a twist is on for this run. */
 export const twist = (s: { readonly mods: readonly string[] }, id: TwistId): boolean => s.mods.length > 0 && s.mods.includes(id);
@@ -69,7 +70,7 @@ export function dayOneTwists(sim: SimContext) {
 export function quickFix(sim: SimContext) {
   const s = sim.state;
   if (!twist(s, 'quickFix') || s.layer !== LAYER.GROUND) return;
-  const here = placeKey(LAYER.GROUND, Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT));
+  const here = placeKey(LAYER.GROUND, tileAt(s.player.x, s.player.z));
   let n = 0;
   for (const k of Object.keys(s.tiles)) {
     const key = Number(k);

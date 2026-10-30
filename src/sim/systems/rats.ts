@@ -19,7 +19,8 @@
  */
 import { itemDef, itemNumber } from '../../content/items';
 import { zoneIndex, type ZoneId } from '../../content/zones';
-import { centerX, centerZ, nearestDir, tileAt } from '../ai/path';
+import { nearestDir } from '../ai/path';
+import { centerX, centerZ, tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';

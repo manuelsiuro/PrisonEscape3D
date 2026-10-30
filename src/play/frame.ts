@@ -45,6 +45,7 @@ import { boardNow, boardOf } from '../sim/systems/oddjobs';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { fireworksOn, holidayNow } from '../sim/systems/holiday';
 import { decorHoliday } from './holidays';
+import { tileAt } from '../sim/world/grid';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -355,7 +356,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.x = lerp(glide ? q!.x : r.x, r.x);
     o.z = lerp(glide ? q!.z : r.z, r.z);
     o.facing = Math.atan2(DIR_X[r.facing], DIR_Z[r.facing]);
-    const t = Math.floor(r.z / UNIT) * MAP_W + Math.floor(r.x / UNIT);
+    const t = tileAt(r.x, r.z);
     o.mode = r.mode === RAT.SHOULDER ? 'shoulder' : r.mode === RAT.WAIT || inDuct(sim.world, t) ? 'hidden' : r.mode === RAT.LOOSE ? 'loose' : 'run';
     // (P28: the pet away on the track, racing or running its laps: drawn there, not on the shoulder.)
     if (!r.wild && r.mode === RAT.SHOULDER && petOnTrack(sim)) o.mode = 'hidden';

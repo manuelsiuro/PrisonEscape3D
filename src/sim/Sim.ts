@@ -53,6 +53,7 @@ import { coolEvery, dayOneTwists, LAST_DAY, OWL_CHECKS, twist } from './systems/
 import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPEED, UNIT, walkSpeed } from './tuning';
 import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
+import { tileAt } from './world/grid';
 
 // The state, its events and snapshots live in state.ts; importers have always found them here.
 export * from './state';
@@ -178,7 +179,7 @@ export class Sim {
     this.movedBy = null;
     // Where the player is as the step starts (P19: a dog's nose works on a player already about; a trail marks where they left the floor).
     this.aboutBefore = s.layer === LAYER.GROUND && !s.stowed && !this.away;
-    this.groundFrom = this.aboutBefore ? Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT) : -1;
+    this.groundFrom = this.aboutBefore ? tileAt(s.player.x, s.player.z) : -1;
     this.boarded = null;
     // Noise first (P14): a firecracker going off, alarm clocks ticking and ringing; guards sent to look move this step.
     noisemakers(this);
@@ -332,7 +333,7 @@ export class Sim {
     if (s.shot.length && dirOf(cmd) !== 0) s.shot = [];
     // A step gets the player up off a seat or a bed.
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
-    const from = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
+    const from = tileAt(s.player.x, s.player.z);
     // (P29: tattooing, the moves steer the needle; being inked, the player keeps still.)
     // (P30: on the stage, the player keeps still too: the keys play the lanes.)
     const inking = !!s.ink || !!s.show;
@@ -504,11 +505,11 @@ export class Sim {
       }
     // Someone in a job room, or anywhere in its doorway (a foot still in it is enough: a door never shuts on anyone), keeps its door open.
     const zoneBit = (b: Body) => {
-      const i = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
+      const i = tileAt(b.x, b.z);
       let bits = 1n << BigInt(w.doorRoom[i] || w.ground.zone[i]);
       for (const x of [b.x - BODY_HALF, b.x + BODY_HALF - 1])
         for (const z of [b.z - BODY_HALF, b.z + BODY_HALF - 1]) {
-          const j = Math.floor(z / UNIT) * MAP_W + Math.floor(x / UNIT);
+          const j = tileAt(x, z);
           if (w.doorRoom[j]) bits |= 1n << BigInt(w.doorRoom[j]);
         }
       return bits;

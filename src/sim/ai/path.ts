@@ -1,6 +1,7 @@
 import { DIR_X, DIR_Z } from '../command';
 import { BODY_HALF, UNIT } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
+import { centerX, centerZ } from '../world/grid';
 
 /**
  * A* on the ground floor: eight-way steps (diagonals only where both sides are open, so
@@ -125,10 +126,6 @@ export function findPath(w: World, start: number, isGoal: (i: number) => boolean
 /** The path to one tile (keeping off `avoid` tiles, such as people standing in the way). */
 export const pathTo = (w: World, start: number, goal: number, avoid?: Uint8Array, grid: Uint8Array = w.block) => findPath(w, start, (i) => i === goal, goal, N, avoid, grid);
 
-/** Tile index ↔ the middle of the tile, in units. */
-export const centerX = (i: number) => (i % MAP_W) * UNIT + UNIT / 2;
-export const centerZ = (i: number) => Math.floor(i / MAP_W) * UNIT + UNIT / 2;
-export const tileAt = (ux: number, uz: number) => Math.floor(uz / UNIT) * MAP_W + Math.floor(ux / UNIT);
 
 /**
  * Whether a body can walk straight from one point to another (units) without touching

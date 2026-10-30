@@ -13,7 +13,8 @@ import { answerQuiz, endQuiz, joinQuiz } from './quiz';
 import { digHelp, recall } from './crew';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
-import { nearestDir, tileAt } from '../ai/path';
+import { nearestDir } from '../ai/path';
+import { tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import { argA, argB, argC, EXT, OP, opOf, tossTile } from '../command';
 import type { SimContext } from '../context';
@@ -795,7 +796,7 @@ export function shower(sim: SimContext) {
 export function underShower(sim: SimContext): boolean {
   const s = sim.state;
   if (s.player.moving || sim.away || s.lockdown || s.layer !== LAYER.GROUND || ROUTINE[s.routine].id !== 'showers') return false;
-  return sim.showerTiles.has(Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT));
+  return sim.showerTiles.has(tileAt(s.player.x, s.player.z));
 }
 
 const POSTER_ITEM = itemNumber('poster');

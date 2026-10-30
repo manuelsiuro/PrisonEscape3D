@@ -49,6 +49,7 @@ import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
 import type { StartKind } from '../content/outside/types';
 import { OVER, SEEK, type Hunt } from '../sim/hunt/Hunt';
 import { spotTile } from '../sim/hunt/world';
+import { tileAt } from '../sim/world/grid';
 
 /**
  * The tutorial (P8+): short lessons on the Training Block, each a scene set up on a fresh game
@@ -123,7 +124,7 @@ const onBoard = (sim: Sim) => {
 function jobTile(sim: Sim, field: number): number | null {
   const job = jobOf(sim.state);
   const m = job ? sim.state.inmates[job[field]] : null;
-  return m ? Math.floor(m.body.z / UNIT) * MAP_W + Math.floor(m.body.x / UNIT) : null;
+  return m ? tileAt(m.body.x, m.body.z) : null;
 }
 const n = (id: string) => itemNumber(id);
 /** The minute of day 1 as a step (the game starts at 08:00). */
@@ -182,7 +183,6 @@ function near(sim: Sim, x: number, z: number): [number, number] {
   return [x, z];
 }
 /** Someone's tile (a body in units). */
-const tileOfBody = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
 /** Tiles between two bodies, as the crow flies. */
 const apart = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 /** An inmate stood still somewhere, waiting for the player (the fight lesson's sparring partner). */
@@ -409,11 +409,11 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.favors = [{ by: 0, kind: FAVOR.SCAVENGE, item: n('magazine'), target: -1, reward: 25, state: FAVOR_STATE.OFFERED }];
     },
     steps: [
-      { text: 'lesson.talk.talk', touch: 'lesson.talk.talkTouch', done: (c) => c.sim.state.talk === 0, goal: (sim) => tileOfBody(sim.state.inmates[0].body) },
+      { text: 'lesson.talk.talk', touch: 'lesson.talk.talkTouch', done: (c) => c.sim.state.talk === 0, goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z) },
       { text: 'lesson.talk.gift', touch: 'lesson.talk.giftTouch', on: (e) => e.type === 'gift' },
       // (Taken on before the gift, or handed in already: the state says, whatever order it was done in.)
       { text: 'lesson.talk.favor', done: (c) => favorPaid(c.sim) || (magazineFavor(c.sim)?.state ?? FAVOR_STATE.OFFERED) !== FAVOR_STATE.OFFERED, fail: talkFail },
-      { text: 'lesson.talk.handIn', done: (c) => favorPaid(c.sim), fail: talkFail, goal: (sim) => (carries(sim, 'magazine') ? tileOfBody(sim.state.inmates[0].body) : deskStand(sim)) },
+      { text: 'lesson.talk.handIn', done: (c) => favorPaid(c.sim), fail: talkFail, goal: (sim) => (carries(sim, 'magazine') ? tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z) : deskStand(sim)) },
     ],
   },
   {
@@ -430,7 +430,7 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.cash = 60;
     },
     steps: [
-      { text: 'lesson.trade.talk', touch: 'lesson.trade.talkTouch', done: (c) => c.sim.state.talk === merchantAt(c.sim), goal: (sim) => tileOfBody(sim.state.inmates[merchantAt(sim)].body), fail: tradeFail },
+      { text: 'lesson.trade.talk', touch: 'lesson.trade.talkTouch', done: (c) => c.sim.state.talk === merchantAt(c.sim), goal: (sim) => { const b = sim.state.inmates[merchantAt(sim)].body; return tileAt(b.x, b.z); }, fail: tradeFail },
       { text: 'lesson.trade.buy', on: (e) => e.type === 'bought', fail: tradeFail },
     ],
   },
@@ -547,7 +547,7 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.cash = 45;
     },
     steps: [
-      { text: 'lesson.guards.talk', touch: 'lesson.guards.talkTouch', done: (c) => guardTalking(c.sim.state) === PRATT, goal: (sim) => tileOfBody(sim.state.guards[PRATT].body), fail: guardsFail },
+      { text: 'lesson.guards.talk', touch: 'lesson.guards.talkTouch', done: (c) => guardTalking(c.sim.state) === PRATT, goal: (sim) => tileAt(sim.state.guards[PRATT].body.x, sim.state.guards[PRATT].body.z), fail: guardsFail },
       { text: 'lesson.guards.pay', on: (e) => e.type === 'bribe' && e.kind === 'paper', fail: guardsFail },
     ],
   },
@@ -583,10 +583,10 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       // (A treat thrown first: he trusts the player already and never sniffs. On to the last step.)
-      { text: 'lesson.dogs.sniff', done: (c) => c.sim.state.dogs[0].sniffed > 0 || c.sim.state.dogs[0].trust >= TRUST_IGNORE, goal: (sim) => tileOfBody(sim.state.dogs[0].body) },
+      { text: 'lesson.dogs.sniff', done: (c) => c.sim.state.dogs[0].sniffed > 0 || c.sim.state.dogs[0].trust >= TRUST_IGNORE, goal: (sim) => tileAt(sim.state.dogs[0].body.x, sim.state.dogs[0].body.z) },
       // (A throw that misses leaves the jerky lying where it fell, to pick up and throw again: no dead end.)
       { text: 'lesson.dogs.treat', touch: 'lesson.dogs.treatTouch', done: (c) => c.sim.state.dogs[0].trust >= TRUST_IGNORE },
-      { text: 'lesson.dogs.pass', least: 4, done: (c) => c.sim.state.dogs[0].trust >= TRUST_IGNORE && smellsOfContraband(c.sim) && apart(c.sim.state.player, c.sim.state.dogs[0].body) < 1.4, goal: (sim) => tileOfBody(sim.state.dogs[0].body) },
+      { text: 'lesson.dogs.pass', least: 4, done: (c) => c.sim.state.dogs[0].trust >= TRUST_IGNORE && smellsOfContraband(c.sim) && apart(c.sim.state.player, c.sim.state.dogs[0].body) < 1.4, goal: (sim) => tileAt(sim.state.dogs[0].body.x, sim.state.dogs[0].body.z) },
     ],
   },
   {
@@ -841,7 +841,7 @@ export const LESSONS: readonly Lesson[] = [
       });
     },
     steps: [
-      { text: 'lesson.football.talk', touch: 'lesson.football.talkTouch', on: (e) => e.type === 'football' && e.what === 'start', goal: (sim) => tileOfBody(sim.state.inmates[0].body), fail: gamesFail },
+      { text: 'lesson.football.talk', touch: 'lesson.football.talkTouch', on: (e) => e.type === 'football' && e.what === 'start', goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z), fail: gamesFail },
       {
         text: 'lesson.football.kick',
         touch: 'lesson.football.kickTouch',
@@ -866,9 +866,9 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.tattoo.craft', touch: 'lesson.tattoo.craftTouch', done: (c) => carries(c.sim, 'tattoo_gun'), fail: inkFail },
-      { text: 'lesson.tattoo.offer', touch: 'lesson.tattoo.offerTouch', on: (e) => e.type === 'tattoo' && e.what === 'start' && !e.mine, goal: (sim) => tileOfBody(sim.state.inmates[0].body), fail: (c) => gamesFail(c) ?? inkFail(c) },
+      { text: 'lesson.tattoo.offer', touch: 'lesson.tattoo.offerTouch', on: (e) => e.type === 'tattoo' && e.what === 'start' && !e.mine, goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z), fail: (c) => gamesFail(c) ?? inkFail(c) },
       { text: 'lesson.tattoo.trace', touch: 'lesson.tattoo.traceTouch', on: (e) => e.type === 'tattoo' && e.what === 'done', failOn: inkOff },
-      { text: 'lesson.tattoo.mine', touch: 'lesson.tattoo.mineTouch', on: (e) => e.type === 'tattoo' && e.what === 'inked', goal: (sim) => tileOfBody(sim.state.inmates[0].body), fail: (c) => (c.sim.state.ink ? null : (gamesFail(c) ?? inkFail(c))), failOn: inkOff },
+      { text: 'lesson.tattoo.mine', touch: 'lesson.tattoo.mineTouch', on: (e) => e.type === 'tattoo' && e.what === 'inked', goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z), fail: (c) => (c.sim.state.ink ? null : (gamesFail(c) ?? inkFail(c))), failOn: inkOff },
       { text: 'lesson.tattoo.over', done: () => true, least: 6 },
     ],
   },

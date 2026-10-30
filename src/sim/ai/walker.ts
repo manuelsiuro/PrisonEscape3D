@@ -2,7 +2,8 @@ import { DIR_X, DIR_Z } from '../command';
 import type { Body } from '../systems/movement';
 import { STEPS_PER_SECOND } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
-import { centerX, centerZ, clearLine, nearestDir, pathTo, smooth, tileAt } from './path';
+import { clearLine, nearestDir, pathTo, smooth } from './path';
+import { centerX, centerZ, tileAt } from '../world/grid';
 
 /** Someone who walks A* paths on their own (inmates, guards). Plain data in the sim state. */
 export interface Walker {

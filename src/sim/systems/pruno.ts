@@ -19,6 +19,7 @@ import { MAP_W } from '../world/World';
 import { itemOf, slot, usesOf } from './items';
 import type { Body } from './movement';
 import { makeNoise } from './noise';
+import { tileAt } from '../world/grid';
 
 const PRUNO_BAG = itemNumber('pruno_bag');
 const PRUNO = itemNumber('pruno');
@@ -102,7 +103,7 @@ export function tipsy(sim: SimContext) {
     return;
   }
   if (!tipsyNow(s) || !s.player.moving || sim.away || (s.tipsy[0] - s.step) % STUMBLE_STEPS !== 0) return;
-  const tile = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
+  const tile = tileAt(s.player.x, s.player.z);
   sim.events.push({ type: 'pruno', what: 'stumble' });
   makeNoise(sim, 'stumble', s.layer, tile, STUMBLE_NOISE);
 }

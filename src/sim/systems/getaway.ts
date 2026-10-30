@@ -23,6 +23,7 @@ import { glideFrom, type Air } from './structure';
 import type { World } from '../world/World';
 import { TILE } from '../world/tiles';
 import { inDisguise } from './watch';
+import { tileAt } from '../world/grid';
 
 const FAKE_ID = itemNumber('fake_id');
 
@@ -109,9 +110,9 @@ function inTheWay(sim: SimContext): boolean {
   if (s.layer !== LAYER.GROUND) return false;
   const w = sim.world;
   const b = s.player;
-  if (w.pastCheckpoint(Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT))) return true;
+  if (w.pastCheckpoint(tileAt(b.x, b.z))) return true;
   for (const x of [b.x - BODY_HALF, b.x + BODY_HALF - 1])
-    for (const z of [b.z - BODY_HALF, b.z + BODY_HALF - 1]) if (w.checkpoint[Math.floor(z / UNIT) * MAP_W + Math.floor(x / UNIT)]) return true;
+    for (const z of [b.z - BODY_HALF, b.z + BODY_HALF - 1]) if (w.checkpoint[tileAt(x, z)]) return true;
   return false;
 }
 

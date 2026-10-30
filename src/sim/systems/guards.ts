@@ -1,7 +1,8 @@
 import type { GuardDef, GuardTrait, Waypoint } from '../../content/prisons/types';
 import { twist } from './twists';
 import { ROUTINE } from '../../content/routine';
-import { centerX, centerZ, clearLine, nearestDir, tileAt } from '../ai/path';
+import { clearLine, nearestDir } from '../ai/path';
+import { centerX, centerZ, tileAt } from '../world/grid';
 import { lineOfSight, SIGHT_RANGE } from '../ai/sight';
 import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';

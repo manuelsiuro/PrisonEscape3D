@@ -34,6 +34,7 @@ import { DOING } from './inmates';
 import { ATTRS } from '../state';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
+import { tilesFrom } from '../world/grid';
 
 /** A quiz under way (P30): plain data in the state. */
 export interface Quiz {
@@ -200,7 +201,7 @@ function buzzOf(s: Pick<SimState, 'salt' | 'inmates'>, day: number, q: number, w
 const placeAt = (pl: QuizPlace, k: number) => bodyAt(pl.spots[k].x, pl.spots[k].z);
 
 /** How far a point is from a place (tiles, the larger way). */
-const offBy = (pl: QuizPlace, k: number, x: number, z: number) => Math.max(Math.abs(Math.floor(x / UNIT) - pl.spots[k].x), Math.abs(Math.floor(z / UNIT) - pl.spots[k].z));
+const offBy = (pl: QuizPlace, k: number, x: number, z: number) => tilesFrom(pl.spots[k].x, pl.spots[k].z, x, z);
 
 /** The place nearest the player (within QUIZ_RANGE; -1 none). */
 export function nearestPlace(sim: SimContext): number {

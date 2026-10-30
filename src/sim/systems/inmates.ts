@@ -1,7 +1,8 @@
 import { cornersOf } from '../../content/grounds';
 import { OPEN_HOURS, ROUTINE } from '../../content/routine';
 import { zoneIndex, type ZoneId } from '../../content/zones';
-import { clearLine, nearestDir, tileAt } from '../ai/path';
+import { clearLine, nearestDir } from '../ai/path';
+import { tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';

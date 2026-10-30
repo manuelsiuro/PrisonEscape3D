@@ -1,6 +1,7 @@
 import type { Body } from '../systems/movement';
 import type { World } from '../world/World';
-import { centerX, centerZ, findPath, nearestDir, smooth, tileAt } from './path';
+import { findPath, nearestDir, smooth } from './path';
+import { centerX, centerZ, tileAt } from '../world/grid';
 
 /** Close enough to a waypoint to aim at the next one (units). */
 const REACHED = 200;

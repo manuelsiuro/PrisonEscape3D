@@ -9,6 +9,7 @@ import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey, type World } from '../wo
 import type { Body } from './movement';
 import { seatSpot } from './rest';
 import { lineOfSight } from '../ai/sight';
+import { tileAt } from '../world/grid';
 
 /**
  * Items in the simulation (GDD §6, §8). A slot is one number: the item (ITEMS order + 1)
@@ -385,7 +386,7 @@ export function moveItem(s: ItemState, from: number, to: number) {
 export function dropItem(s: ItemState, from: number, b: Body, events: ItemEvent[], layer: number = LAYER.GROUND) {
   const a = cell(s, from);
   if (!a || !a.get()) return;
-  const key = placeKey(layer, Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT));
+  const key = placeKey(layer, tileAt(b.x, b.z));
   if (s.ground.filter(([t]) => t === key).length >= PILE) {
     events.push({ type: 'noRoom' });
     return;
@@ -411,7 +412,7 @@ export function giveSlot(s: ItemState, v: number, b: Body, layer: number): boole
     s.inv[k] = v;
     return true;
   }
-  const key = placeKey(layer, Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT));
+  const key = placeKey(layer, tileAt(b.x, b.z));
   if (s.ground.filter(([t]) => t === key).length >= PILE) return false;
   s.ground.push([key, v]);
   return true;

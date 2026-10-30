@@ -23,7 +23,7 @@
 import { ROUTINE } from '../../content/routine';
 import { BACK_HELP, BACK_REACH, BRAWL_GAP, BRAWL_GUARDS, BRAWL_RANGE, BRAWL_STEPS, CREW_ESCAPE_REACH, DIG_HELP, DIG_REACH, FETCH_REACH, FETCH_STEPS, NIGHT_OPINION, NIGHT_UNTIL, SHAFT_HELP, SHAFT_REACH, WATCH_RANGE, type Speciality } from '../../content/crew';
 import { lineOfSight } from '../ai/sight';
-import { centerX, centerZ, tileAt } from '../ai/path';
+import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import { ORDER } from '../command';
 import type { SimContext } from '../context';
@@ -232,7 +232,7 @@ function giveBack(sim: SimContext, e: CrewEntry) {
 export function postable(w: World, tile: number, old = false): boolean {
   if (tile < 0 || w.ground.kind[tile] === TILE.DOOR || w.doorRoom[tile]) return false;
   const door = w.cellDoor[1];
-  if (!old && door >= 0 && Math.max(Math.abs((tile % MAP_W) - (door % MAP_W)), Math.abs(Math.floor(tile / MAP_W) - Math.floor(door / MAP_W))) <= 1) return false;
+  if (!old && door >= 0 && chebTiles(tile, door) <= 1) return false;
   const zone = w.ground.zone[tile];
   // (P31: nor in a place behind a gate open by the hour, the sports ground or the garden: he'd hold its gate open all night.)
   if (!old && w.doorRoom.includes(zone)) return false;
