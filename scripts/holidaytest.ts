@@ -29,13 +29,14 @@ import { LAYER, MAP_W, placeKey } from '../src/sim/world/World';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { RunRecorder, replayLog } from '../src/sim/runlog';
-import { courtRect, HolidaysView, holidayDecor, HOSE_FAN, HOSE_SWAY, LANE, PARASOL_GAP } from '../src/render/Holidays';
+import { HolidaysView } from '../src/render/Holidays';
 import { HEARINGS } from '../src/content/parole';
 import { DECOR } from '../src/content/decor';
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
 import { facts } from '../src/talk/gossip';
 import { inmateMood } from '../src/talk/mood';
 import { dateHoliday } from '../src/game/holidays';
+import { courtRect, holidayDecor, HOSE_FAN, HOSE_SWAY, LANE, PARASOL_GAP } from '../src/render/holidayDecor';
 
 // ------------------------------------------------------------------ the date
 const EASTERS = ['2026-04-05', '2027-03-28', '2028-04-16', '2029-04-01', '2030-04-21', '2031-04-13', '2032-03-28', '2033-04-17', '2034-04-09', '2035-03-25'];

@@ -30,7 +30,6 @@ import { penAt } from '../../src/sim/systems/tattoo';
 import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
 import { HEARINGS } from '../../src/content/parole';
 import { HOLIDAY } from '../../src/content/holidays';
-import { holidayDecor } from '../../src/render/Holidays';
 import { prisonDay } from '../../src/sim/systems/calendar';
 import { dropTile } from '../../src/sim/systems/smuggling';
 import { containersOf } from '../../src/sim/world/containers';
@@ -42,6 +41,7 @@ import type { View } from '../../src/render/View';
 import { Sim } from '../../src/sim/Sim';
 import { LAYER, MAP_W } from '../../src/sim/world/World';
 import { UNIT } from '../../src/sim/tuning';
+import { holidayDecor } from '../../src/render/holidayDecor';
 
 quiet.on = true;
 
