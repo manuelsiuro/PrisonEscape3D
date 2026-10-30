@@ -22,6 +22,7 @@ import { markTip, updateFirstDay } from './tips';
 import { lessonEvent, lessonHidden, updateLesson } from './lesson';
 import { replayFrame } from './replay';
 import { huntFrame } from './hunt';
+import { needleOp } from './team';
 
 const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
 const USE_OP: [number, number, number, number] = [OP.USE, 0, 0, 0];
@@ -78,6 +79,8 @@ function stepSim(g: Game, dt: number) {
     if (controls.steering || sim.state.ko > 0) g.pilot.stop();
     // Holding the tool button: a strike is asked for every step (the sim paces them).
     let op = g.ops.shift();
+    // (2.22: a finger or the mouse down on the tattoo's design draws the needle after it.)
+    op ??= needleOp(sim) ?? undefined;
     // A press waiting for the last strike's swing to finish (things that aren't strikes go at once).
     // (A blow waits for the fighter's own pace, a strike for the tool's.)
     const toolNow = press.toolNow;

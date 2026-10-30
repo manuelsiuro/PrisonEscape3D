@@ -160,6 +160,8 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   for (const r of s.rats) if (!r.wild) Object.assign(r, { speed: Number.isInteger(r.speed) ? Math.max(0, Math.min(100, r.speed!)) : RAT_START_SPEED, fed: Number.isInteger(r.fed) ? r.fed : 0, lap: Number.isInteger(r.lap) ? r.lap : 0 });
   // P29: a match or a sitting as they can be (else over), the designs on the player's arms.
   if (!matchOk(s.match, n, s.step)) s.match = null;
+  // (2.22: a sitting saved before the line was traced by hand: nothing traced yet.)
+  if (s.ink && typeof s.ink === 'object') Object.assign(s.ink, { at: Number.isInteger(s.ink.at) && s.ink.at >= 0 ? s.ink.at : 0, n: Number.isInteger(s.ink.n) && s.ink.n >= 0 ? s.ink.n : 0 });
   if (!inkOk(s.ink, n)) s.ink = null;
   if (!Array.isArray(s.inkDays) || s.inkDays.length > n || !s.inkDays.every((d) => Number.isInteger(d) && d >= 0)) s.inkDays = [];
   if (!(Array.isArray(s.inked) && s.inked.length <= 3 && s.inked.every((d, k, all) => Number.isInteger(d) && d >= 0 && d < DESIGNS.length && all.indexOf(d) === k))) s.inked = [];

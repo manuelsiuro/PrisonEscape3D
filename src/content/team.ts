@@ -123,13 +123,31 @@ export const INK_OPINION = 30;
 /** Tattoos for inmates: one a prison day for each, INKS_A_DAY in all (a day's work for one gun). */
 export const INKS_A_DAY = 3;
 export const FRIEND_INK = 70;
-/** Tracing: the pen runs along the design at PEN_SPEED (box units a step) after a LEAD_IN still at its start; the needle moves at NEEDLE_SPEED the way the stick or keys point. */
+/** Tracing as it was before 2.22 (Sim.rules221, old logs): the pen ran along the design at PEN_SPEED (box units a step) after a LEAD_IN still at its start; the needle moved at NEEDLE_SPEED the way the stick or keys pointed; the line's quality came from the needle's mean distance from the pen: within INK_SLACK perfect (100), INK_SLACK + INK_POOR or more nothing (0). */
 export const PEN_SPEED = 16;
 export const LEAD_IN = 30;
 export const NEEDLE_SPEED = 22;
-/** The line's quality from the needle's mean distance from the pen: within INK_SLACK it's perfect (100), INK_SLACK + INK_POOR or more it's nothing (0). */
 export const INK_SLACK = 12;
 export const INK_POOR = 140;
+/**
+ * Tracing (2.22): the needle draws where the finger or the mouse takes it (NEEDLE_REACH at most a
+ * step), or the way the stick or keys point (NEEDLE_KEYS a step); each step it moves it's pulled
+ * INK_PULL% of the way onto the line. The line counts as traced as far as the needle has followed
+ * it (within ON_LINE of it, no more than LINE_AHEAD past what's traced): the ring waits there, RING_AHEAD on.
+ * The line's quality is the needle's mean distance from the design while it inks: within
+ * LINE_SLACK perfect (100), LINE_SLACK + LINE_POOR or more nothing (0). Traced to within
+ * LINE_END of its end, it's done; at INK_TIME it stops where it is, its quality cut to the share traced.
+ */
+export const NEEDLE_REACH = 70;
+export const NEEDLE_KEYS = 14;
+export const INK_PULL = 20;
+export const ON_LINE = 60;
+export const LINE_AHEAD = 90;
+export const RING_AHEAD = 60;
+export const LINE_SLACK = 10;
+export const LINE_POOR = 60;
+export const LINE_END = 30;
+export const INK_TIME = 40 * STEPS_PER_SECOND;
 /** What it pays: the price at 50% for the poorest line, 150% for a perfect one; opinion INK_GAIN_BASE + up to INK_GAIN more. */
 export const PAY_MIN = 50;
 export const PAY_SPAN = 100;

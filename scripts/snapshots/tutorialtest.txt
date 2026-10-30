@@ -29,7 +29,7 @@ pruno: 5 steps done by day 2 08:01
 garden: 5 steps done by day 1 10:32
 ratRace: 7 steps done by day 1 21:12
 football: 4 steps done by day 1 11:35
-tattoo: 5 steps done by day 1 10:19
+tattoo: 5 steps done by day 1 10:14
 talent: 4 steps done by day 1 20:04
 quiz: 4 steps done by day 1 19:55
 crew: 3 steps done by day 1 10:33

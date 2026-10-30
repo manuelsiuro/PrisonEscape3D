@@ -141,6 +141,8 @@ export class Sim {
    * up at 20:00, the pet scratched away from the track). Not state.
    */
   rules215 = false;
+  /** Replaying a run logged under 2.21 or before (runlog.ts): the tattoo traced as it was then (a pen running on a clock, the needle scored by its distance from the pen, steered by the stick or keys alone). Not state. */
+  rules221 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -342,7 +344,7 @@ export class Sim {
     // (P29: tattooing, the moves steer the needle; being inked, the player keeps still.)
     // (P30: on the stage, the player keeps still too: the keys play the lanes.)
     const inking = !!s.ink || !!s.show;
-    if (s.ink) steerNeedle(s, dirOf(cmd));
+    if (s.ink) steerNeedle(this, dirOf(cmd));
     // (P28: tipsy, at TIPSY_PACE of the pace.)
     const pace = s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd);
     walk(w, s.player, s.sleeping || inking ? 0 : dirOf(cmd), tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);

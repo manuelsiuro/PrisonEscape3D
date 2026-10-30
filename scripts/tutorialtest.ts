@@ -10,7 +10,7 @@ import { standing, tonight, turnFrom } from '../src/sim/systems/talent';
 import { questionNow } from '../src/sim/systems/quiz';
 import { dayMinute } from '../src/sim/systems/clock';
 import { TRAINING } from '../src/content/prisons/training';
-import { BRIBE, command, dirFromVector, EXT, LINE, OP, ORDER, SLOT, TALK, tossArgs } from '../src/sim/command';
+import { BRIBE, command, dirFromVector, EXT, LINE, needleArgs, OP, ORDER, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { drillOn, prisonDay } from '../src/sim/systems/calendar';
 import { dropTile } from '../src/sim/systems/smuggling';
 import { markerAt, sweetSpot } from '../src/sim/systems/games';
@@ -19,7 +19,7 @@ import { courtOf, powerAt, shotWindow } from '../src/sim/systems/hoops';
 import { squareAt } from '../src/sim/systems/checkers';
 import { cardUp, RACE_ENTER, raceCard } from '../src/sim/systems/races';
 import { fieldOf, pitchOf } from '../src/sim/systems/football';
-import { penAt } from '../src/sim/systems/tattoo';
+import { pointAt } from '../src/sim/systems/tattoo';
 import { nearestDir } from '../src/sim/ai/path';
 import { thorough } from '../src/sim/systems/delivery';
 import { jobRooms, priceOf } from '../src/sim/systems/economy';
@@ -549,7 +549,7 @@ play('football', (bot) => {
 });
 
 play('tattoo', (bot, ctx) => {
-  // The gun crafted; a heart traced for Sparky, following the pen; a skull of his on the player's arm.
+  // The gun crafted; a heart drawn for Sparky, a finger after the ring; a skull of his on the player's arm.
   ctx.craftOpen = true;
   bot.op(OP.CRAFT, (1 << 0) | (1 << 1) | (1 << 2));
   ctx.craftOpen = false;
@@ -557,12 +557,16 @@ play('tattoo', (bot, ctx) => {
   check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Sparky');
   bot.op(OP.TALK, TALK.TATTOO, 0);
   check(!!bot.st.ink, 'tattoo: a sitting');
-  const pen: [number, number] = [0, 0];
+  const to: [number, number] = [0, 0];
+  let down = true;
   bot.until(() => !bot.st.ink, 600, () => {
     const o = bot.st.ink;
     if (!o) return 0;
-    penAt(o.design, o.k + 1, pen);
-    return Math.hypot(pen[0] - o.nx, pen[1] - o.nz) < 8 ? 0 : command(nearestDir(pen[0] - o.nx, pen[1] - o.nz));
+    // (Set down on the needle, then drawn on after a point a little ahead on the line.)
+    pointAt(o.design, down ? 0 : o.at + 40, to);
+    const cmd = command(0, OP.EXT, down ? EXT.NEEDLE_DOWN : EXT.NEEDLE, ...needleArgs(to[0], to[1]));
+    down = false;
+    return cmd;
   });
   check(talkTo(bot, bot.st.inmates[0].body), 'tattoo: talking to Sparky again');
   bot.op(OP.TALK, TALK.INK_ME, 1);
