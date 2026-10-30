@@ -10,7 +10,8 @@
  * the same run.
  */
 import { HUNT } from '../src/content/manhunt';
-import { centerX, centerZ, findPath, nearestDir, tileAt } from '../src/sim/ai/path';
+import { findPath, nearestDir } from '../src/sim/ai/path';
+import { centerX, centerZ, tileAt } from '../src/sim/world/grid';
 import { canSee, lineOfSight } from '../src/sim/ai/sight';
 import { command, EXT, OP, tossArgs } from '../src/sim/command';
 import { HOUND, Hunt, OVER, SEEK, type HuntEvent } from '../src/sim/hunt/Hunt';

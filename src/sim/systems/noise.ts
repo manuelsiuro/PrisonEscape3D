@@ -12,7 +12,8 @@
  */
 import { twist } from './twists';
 import { itemDef } from '../../content/items';
-import { centerX, centerZ, nearestDir, tileAt } from '../ai/path';
+import { nearestDir } from '../ai/path';
+import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
 import type { NoiseKind, TossRefusal } from '../state';
@@ -207,10 +208,8 @@ export function makeNoise(sim: SimContext, kind: NoiseKind, layer: number, tile:
   });
   const heard = listeners(guards, [], n);
   const sent: number[] = [];
-  const x0 = tile % MAP_W;
-  const z0 = Math.floor(tile / MAP_W);
   // A guard already looking close by is enough for a strike, a thud or a ring (a bang brings them all the same).
-  const looking = !bang && guards.some((g) => g.mode === GUARD.INVESTIGATE && g.target >= 0 && Math.max(Math.abs((g.target % MAP_W) - x0), Math.abs(Math.floor(g.target / MAP_W) - z0)) <= LOOK_NEAR);
+  const looking = !bang && guards.some((g) => g.mode === GUARD.INVESTIGATE && g.target >= 0 && chebTiles(g.target, tile) <= LOOK_NEAR);
   if (!looking) {
     for (const k of heard) {
       if (sent.length >= (send || (bang ? BANG_GUARDS : NOISE_GUARDS))) break;

@@ -21,6 +21,7 @@ import { guardSubject, inmateName, type OddJobTalkView } from '../ui/social';
 import { banner, hud, itemsUI, oddjobsCard, sound, storyCard, talk } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
+import { tileAt } from '../sim/world/grid';
 
 /**
  * The odd jobs board on screen (P40): its card at the board (and the job's own card, from its
@@ -78,7 +79,6 @@ function storyTitle(sim: Sim, step: number) {
 }
 
 /** The tile the player stands on to reach someone (where they are now). */
-const tileOfBody = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
 
 /** A step of the job held: its words, done or not, and where it's done (null: nowhere to point). */
 interface Step {
@@ -100,7 +100,7 @@ function jobSteps(sim: Sim): Step[] {
   const carrying = brings ? s.items.inv.slice(0, HOTBAR).some((v) => itemOf(v) === brings) : false;
   const giverName = inmateName(sim, giver);
   const name = target >= 0 && kind !== KIND.LIFT ? inmateName(sim, target) : '';
-  const at = (who: number) => (s.inmates[who] ? [tileOfBody(s.inmates[who].body)] : null);
+  const at = (who: number) => (s.inmates[who] ? [tileAt(s.inmates[who].body.x, s.inmates[who].body.z)] : null);
   const desk = (who: number) => {
     const m = s.inmates[who];
     const t0 = m ? placesOf(sim.world).deskside[m.cell] : -1;
@@ -117,7 +117,7 @@ function jobSteps(sim: Sim): Step[] {
         steps.push({ text: t('oddjob.step.mug'), done: carrying && job[J.PROG] > 0, goal: near });
       } else {
         const g = s.guards[target];
-        steps.push({ text: t('oddjob.step.lift', { item: lower(itemName(brings)), guard: guardName(sim, target) }), done: carrying && job[J.PROG] > 0, goal: g ? [tileOfBody(g.body)] : null });
+        steps.push({ text: t('oddjob.step.lift', { item: lower(itemName(brings)), guard: guardName(sim, target) }), done: carrying && job[J.PROG] > 0, goal: g ? [tileAt(g.body.x, g.body.z)] : null });
       }
       break;
     }
@@ -170,7 +170,7 @@ export function jobGoal(sim: Sim): ((i: number) => boolean) | null {
   const k = nowOf(steps);
   const goal = k >= 0 ? steps[k].goal : null;
   // (Already there: the arrows step aside.)
-  if (!goal || goal.includes(tileOfBody(sim.state.player))) return null;
+  if (!goal || goal.includes(tileAt(sim.state.player.x, sim.state.player.z))) return null;
   return (i) => goal.includes(i);
 }
 

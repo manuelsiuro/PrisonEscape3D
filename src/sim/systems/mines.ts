@@ -6,11 +6,12 @@
  */
 import type { SimContext } from '../context';
 import { HURT_BY } from '../state';
-import { MINE_DAMAGE, UNIT } from '../tuning';
+import { MINE_DAMAGE } from '../tuning';
 import { TILE } from '../world/tiles';
-import { LAYER, MAP_W } from '../world/World';
+import { LAYER } from '../world/World';
 import { hurt } from './fights';
 import { addHeat } from './watch';
+import { tileAt } from '../world/grid';
 
 /** A ground tile with a mine still under it. */
 export const liveMine = (sim: SimContext, i: number) => sim.world.ground.kind[i] === TILE.MINE && !sim.state.craters.includes(i);
@@ -19,7 +20,7 @@ export const liveMine = (sim: SimContext, i: number) => sim.world.ground.kind[i]
 export function mines(sim: SimContext) {
   const s = sim.state;
   if (s.layer !== LAYER.GROUND || s.ko > 0 || sim.away) return;
-  const i = Math.floor(s.player.z / UNIT) * MAP_W + Math.floor(s.player.x / UNIT);
+  const i = tileAt(s.player.x, s.player.z);
   if (liveMine(sim, i)) blast(sim, i);
 }
 

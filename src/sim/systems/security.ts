@@ -4,6 +4,7 @@ import { canSee } from '../ai/sight';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import type { Body } from './movement';
+import { tileAt } from '../world/grid';
 
 /**
  * Security (GDD §5.4–5.6): cameras sweeping their corners, searchlights sweeping the yards
@@ -92,7 +93,7 @@ const beam = { x: 0, z: 0 };
 /** Whether a body on the ground floor stands in a searchlight's pool (outdoors only: roofs and rooms are never swept). */
 export function inBeam(w: World, b: Body, step: number): number {
   const lights = w.def.searchlights ?? [];
-  const t = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
+  const t = tileAt(b.x, b.z);
   if (!TILE_INFO[w.ground.kind[t]].outdoor) return -1;
   for (let k = 0; k < lights.length; k++) {
     beamAt(lights[k], step, beam);
@@ -129,7 +130,7 @@ export function towers(w: World): ReadonlyArray<{ x: number; z: number }> {
  */
 export function sniperOn(w: World, b: Body, layer: number): number {
   if (layer === LAYER.GROUND) {
-    const t = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
+    const t = tileAt(b.x, b.z);
     if (!TILE_INFO[w.ground.kind[t]].outdoor || w.ground.kind[t] === TILE.ROAD) return -1;
   } else if (layer !== LAYER.ROOF) return -1;
   const list = towers(w);

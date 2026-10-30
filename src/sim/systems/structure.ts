@@ -12,6 +12,7 @@ import { PINS } from '../../content/games';
 import type { Weather } from '../../content/days';
 import { GLIDE_BASE, GLIDE_MAX, GLIDE_MIN, GLIDE_RAIN, GLIDE_TAIL, RUN_UP } from '../../content/getaways';
 import { bedTarget } from './garden';
+import { tileAt, tileX, tileZ } from '../world/grid';
 
 /**
  * Layers and destruction (GDD §9): what a tool would strike, what the action button would
@@ -141,9 +142,6 @@ export const SHIVS: ReadonlyMap<number, number> = new Map([
 /** The floors a tunnel can be started through (GDD §9.2: dirt, grass or any non-reinforced floor). */
 const DIGGABLE = new Set<number>([TILE.GRASS, TILE.ROAD, TILE.CONCRETE, TILE.TILED, TILE.WOOD, TILE.ASPHALT, TILE.DIRT]);
 
-const tileX = (i: number) => i % MAP_W;
-const tileZ = (i: number) => Math.floor(i / MAP_W);
-const bodyTile = (b: Body) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
 
 /** The tile straight ahead of a body (its heading snapped to the nearest of the four sides), -1 off the map. */
 function aheadOf(b: Body): number {
@@ -302,8 +300,8 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   if (held === SOAP && handlersOf(w).length) return { action: 'wash', layer, tile: -1, fits: true, hp: 0 };
   // A caught rat (P20): fed the first bait in the hotbar. A rat trap: set down where the player stands (`tile`).
   if (held === CAUGHT_RAT) return { action: 'feed', layer, tile: -1, fits: pockets.some((v, k) => k < 6 && BAIT.includes(v & 255)), hp: 0 };
-  if (held === RAT_TRAP) return { action: 'setTrap', layer, tile: bodyTile(b), fits: true, hp: 0 };
-  const here = bodyTile(b);
+  if (held === RAT_TRAP) return { action: 'setTrap', layer, tile: tileAt(b.x, b.z), fits: true, hp: 0 };
+  const here = tileAt(b.x, b.z);
   const ahead = aheadOf(b);
   // A comb or toothbrush against a wall: rubbed into a shiv (hp: the strokes it takes).
   if (SHIVS.has(held) && layer === LAYER.GROUND && ahead >= 0) {
@@ -377,7 +375,7 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
  */
 export function digUpTarget(w: World, layer: number, b: Body, held: number, bodies: readonly Body[]): ToolTarget | null {
   if (layer !== LAYER.UNDER) return null;
-  const here = bodyTile(b);
+  const here = tileAt(b.x, b.z);
   if (!isTunnel(w.layers[LAYER.UNDER].kind[here]) || !canDigFloor(w, here, bodies, true) || underMyDesk(w, here)) return null;
   return { action: 'digUp', layer: LAYER.GROUND, tile: here, hp: FLOOR_HP, fits: !!held && toolFits(itemDef(held), 'dig') };
 }
@@ -603,7 +601,7 @@ export const touchesMyCell = (w: World, i: number) => [i - 1, i + 1, i - MAP_W, 
  * placeTarget.) `ladderFoot` is where the ladder's floor end is (-1 if the prison has none).
  */
 export function climbTarget(w: World, layer: number, b: Body, ladderFoot: number, bodies: readonly Body[]): ClimbTarget | null {
-  const here = bodyTile(b);
+  const here = tileAt(b.x, b.z);
   const ahead = aheadOf(b);
   const spots = ahead >= 0 && ahead !== here ? [here, ahead] : [here];
   const vents = w.layers[LAYER.VENTS].kind;

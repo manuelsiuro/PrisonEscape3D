@@ -21,7 +21,8 @@ import { itemDef, itemNumber } from '../../content/items';
 import { LOOT } from '../../content/loot';
 import type { DogDef } from '../../content/prisons/types';
 import { RESTRICTED } from '../../content/zones';
-import { centerX, centerZ, nearestDir, tileAt } from '../ai/path';
+import { nearestDir } from '../ai/path';
+import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import type { SimContext } from '../context';
@@ -446,7 +447,7 @@ function trailNear(scent: ReadonlyArray<readonly [number, number, number?]>, her
   return best;
 }
 
-const cheb = (a: number, b: number) => (a < 0 || b < 0 ? Infinity : Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W))));
+const cheb = (a: number, b: number) => (a < 0 || b < 0 ? Infinity : chebTiles(a, b));
 
 /** A way through on the ground floor the player could walk and a dog can't: a hole in a wall (covered or not), a fence cut (or patched). */
 function passage(w: World, t: number): boolean {

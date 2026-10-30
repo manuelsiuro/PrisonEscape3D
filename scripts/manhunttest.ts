@@ -22,7 +22,7 @@ import { HOUND, SEEK } from '../src/sim/hunt/Hunt';
 import { slot } from '../src/sim/systems/items';
 import { command, DIR_X, DIR_Z, EXT, OP, tossArgs } from '../src/sim/command';
 import { Autopilot } from '../src/sim/ai/autopilot';
-import { tileAt } from '../src/sim/ai/path';
+import { tileAt } from '../src/sim/world/grid';
 import { lineOfSight } from '../src/sim/ai/sight';
 import { LESSONS, type LessonCtx } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';

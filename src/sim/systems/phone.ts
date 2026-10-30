@@ -44,6 +44,7 @@ import { hostile, changeOpinion, refuse, endTalk } from './social';
 import { smugglingOf } from './smuggling';
 import { lookingAway } from './ways';
 import { addHeat } from './watch';
+import { tilesFrom } from '../world/grid';
 
 export const CAKE = itemNumber('cake');
 const FILE = itemNumber('metal_file');
@@ -57,7 +58,7 @@ export const commsOf = (sim: Pick<SimContext, 'world'>): CommsDef | null => (sim
 export const phoneOpen = (sim: SimContext) => !!commsOf(sim) && sim.fixerOpen && !drillOn(sim);
 
 /** How far a point (units) is from a tile (tiles, the larger way). */
-const offBy = (t: { x: number; z: number }, x: number, z: number) => Math.max(Math.abs(Math.floor(x / UNIT) - t.x), Math.abs(Math.floor(z / UNIT) - t.z));
+const offBy = (t: { x: number; z: number }, x: number, z: number) => tilesFrom(t.x, t.z, x, z);
 
 /** Where the player is, as the phone sees it: at it (a tile from where the caller stands), within the queue's reach. */
 function playerAbout(sim: SimContext) {

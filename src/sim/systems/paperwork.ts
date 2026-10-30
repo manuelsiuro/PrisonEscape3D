@@ -22,12 +22,13 @@ import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import type { Refusal, SimState } from '../state';
 import { BODY_HALF, CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../tuning';
-import { LAYER, MAP_W } from '../world/World';
+import { LAYER } from '../world/World';
 import { dayMinute, prisonDay } from './calendar';
 import { assign, GUARD } from './guards';
 import { HOTBAR, itemOf, slot } from './items';
 import { searcher } from './phone';
 import { addHeat } from './watch';
+import { tileAt } from '../world/grid';
 
 const FORGED = itemNumber('forged_release');
 const OWN_CLOTHES = itemNumber('own_clothes');
@@ -145,7 +146,7 @@ function inTheWay(sim: SimContext): boolean {
   const w = sim.world;
   const b = s.player;
   for (const x of [b.x - BODY_HALF, b.x + BODY_HALF - 1])
-    for (const z of [b.z - BODY_HALF, b.z + BODY_HALF - 1]) if (w.release[Math.floor(z / UNIT) * MAP_W + Math.floor(x / UNIT)]) return true;
+    for (const z of [b.z - BODY_HALF, b.z + BODY_HALF - 1]) if (w.release[tileAt(x, z)]) return true;
   return false;
 }
 

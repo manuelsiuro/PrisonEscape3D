@@ -29,6 +29,7 @@ import type { Body } from './movement';
 import { endTalk } from './social';
 import { stopTraining } from './training';
 import { lookingAway } from './ways';
+import { tileAt } from '../world/grid';
 
 /** How near the tail the player stands to climb in (units from its middle, either way). */
 const TAIL_REACH = Math.round(UNIT * 0.75);
@@ -166,7 +167,7 @@ export function clearBay(sim: SimContext) {
   const s = sim.state;
   const move = (b: Body, grid: Uint8Array) => {
     if (!overBay(w.parked, b)) return;
-    const to = nearestFree(w.parked, grid, Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT));
+    const to = nearestFree(w.parked, grid, tileAt(b.x, b.z));
     if (to < 0) return;
     b.x = (to % MAP_W) * UNIT + UNIT / 2;
     b.z = Math.floor(to / MAP_W) * UNIT + UNIT / 2;

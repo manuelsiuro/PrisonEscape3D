@@ -45,6 +45,7 @@ import { changeOpinion, refuse } from './social';
 import { fixerOf, smugglingOf } from './smuggling';
 import { addHeat } from './watch';
 import { lookingAway } from './ways';
+import { tilesFrom, tileX, tileZ } from '../world/grid';
 
 export { R } from '../../content/oddjobs';
 
@@ -608,7 +609,7 @@ export function digOf(sim: Pick<SimContext, 'world' | 'state'>): { who: number; 
 
 
 /** Tiles from a tile to a body (the larger way). */
-const offTile = (tile: number, b: { x: number; z: number }) => Math.max(Math.abs(Math.floor(b.x / UNIT) - (tile % MAP_W)), Math.abs(Math.floor(b.z / UNIT) - Math.floor(tile / MAP_W)));
+const offTile = (tile: number, b: { x: number; z: number }) => tilesFrom(tileX(tile), tileZ(tile), b.x, b.z);
 
 /** The player keeps watch: up and about on the ground floor, within WATCH_TILES of the digger's door. */
 function onWatch(sim: SimContext): boolean {

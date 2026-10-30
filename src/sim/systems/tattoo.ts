@@ -31,7 +31,7 @@ import { UNIT } from '../tuning';
 const INK_APART = 3 * UNIT;
 const INK_GATHER = 60;
 import { crowdPlan } from './calendar';
-import { tileAt } from '../ai/path';
+import { tileAt } from '../world/grid';
 
 export const TATTOO_GUN = itemNumber('tattoo_gun');
 const INK = itemNumber('ink');

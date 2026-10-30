@@ -24,7 +24,7 @@ import type { Track } from '../../content/prisons/types';
 import { rollInt, SALT } from '../rng';
 import type { SimContext } from '../context';
 import type { SimState } from '../state';
-import { STEPS_PER_MINUTE, UNIT } from '../tuning';
+import { STEPS_PER_MINUTE } from '../tuning';
 import { LAYER, MAP_W, type World } from '../world/World';
 import { clockAt, prisonDay } from './clock';
 import { eyesOn } from './games';
@@ -33,6 +33,7 @@ import { makeNoise } from './noise';
 import { baitSlot, petOf, RAT } from './rats';
 import { refuse } from './social';
 import { addHeat } from './watch';
+import { tilesFrom, tileX, tileZ } from '../world/grid';
 
 /** A rat on a night's card: whose (an inmate's index; -1 the player's pet), its name (`ratName.<n>`; -1 the pet's own), speed and whether it ate today. */
 export interface Entrant {
@@ -143,9 +144,7 @@ export function atTrack(sim: SimContext, range = BET_RANGE): boolean {
   const s = sim.state;
   const t = trackOf(sim.world);
   if (!t || s.layer !== LAYER.GROUND || sim.away || s.stowed) return false;
-  const px = Math.floor(s.player.x / UNIT);
-  const pz = Math.floor(s.player.z / UNIT);
-  return trackTiles(t).some((i) => Math.max(Math.abs((i % MAP_W) - px), Math.abs(Math.floor(i / MAP_W) - pz)) <= range);
+  return trackTiles(t).some((i) => tilesFrom(tileX(i), tileZ(i), s.player.x, s.player.z) <= range);
 }
 
 /** When the card goes up (minutes of the day): 19:00, 20:00 before 2.16. */

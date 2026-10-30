@@ -2,7 +2,8 @@ import { HUNT } from '../../content/manhunt';
 import { itemDef, itemNumber } from '../../content/items';
 import type { OutsideDef, Spot } from '../../content/outside/types';
 import type { PrisonDef } from '../../content/prisons/types';
-import { centerX, centerZ, findPath, nearestDir, tileAt } from '../ai/path';
+import { findPath, nearestDir } from '../ai/path';
+import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { canSee, lineOfSight } from '../ai/sight';
 import { argA, argB, argC, DIR_X, DIR_Z, dirOf, EXT, OP, opOf, tossTile } from '../command';
 import { fnv1a, rollInt, SALT } from '../rng';
@@ -84,7 +85,6 @@ const DRAW = { ORDER: -1, TIME: -2, STOP: -3, BLOCK: -4, HELI: -5, AIM: -6 } as 
 const dist2 = (a: { x: number; z: number }, b: { x: number; z: number }) => (a.x - b.x) ** 2 + (a.z - b.z) ** 2;
 const within = (a: { x: number; z: number }, b: { x: number; z: number }, tiles: number) => dist2(a, b) <= (tiles * UNIT) ** 2;
 /** Chebyshev distance between two tiles. */
-const cheb = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
 /** The whole square root of a whole number (the same on every device). */
 function isqrt(n: number): number {
   let r = Math.floor(Math.sqrt(n));
@@ -490,10 +490,10 @@ export class Hunt {
               const i = (z + dz) * MAP_W + x + dx;
               if (stand(i)) best = i;
             }
-        if (best >= 0 && !pts.some((t) => cheb(t, best) <= 3)) pts.push(best);
+        if (best >= 0 && !pts.some((t) => chebTiles(t, best) <= 3)) pts.push(best);
       }
     // And every pocket the grid missed (behind a building, along the picture's edge): any open ground still 5 tiles from every place.
-    for (let i = 0; i < N; i++) if (stand(i) && o.inside[i] && !o.cover[i] && !pts.some((t) => cheb(t, i) <= 5)) pts.push(i);
+    for (let i = 0; i < N; i++) if (stand(i) && o.inside[i] && !o.cover[i] && !pts.some((t) => chebTiles(t, i) <= 5)) pts.push(i);
     return pts;
   }
 
@@ -646,7 +646,7 @@ export class Hunt {
   private stone(tile: number) {
     const s = this.state;
     if (s.step - s.stoneAt < HUNT.stoneEvery) return void this.events.push({ type: 'refused', why: 'stoneSoon' });
-    if (tile < 0 || tile >= N || !this.out.inside[tile] || this.grid[tile] || cheb(tile, this.tile) > HUNT.stoneRange || !lineOfSight(this.world, s.player.x, s.player.z, centerX(tile), centerZ(tile))) {
+    if (tile < 0 || tile >= N || !this.out.inside[tile] || this.grid[tile] || chebTiles(tile, this.tile) > HUNT.stoneRange || !lineOfSight(this.world, s.player.x, s.player.z, centerX(tile), centerZ(tile))) {
       return void this.events.push({ type: 'refused', why: 'stoneFar' });
     }
     s.stoneAt = s.step;
@@ -885,7 +885,7 @@ export class Hunt {
         // (Its dog pointing: to what it points at, the player, into cover if that's where they are.)
         const pointing = d.mode === HOUND.POINT;
         const target = pointing ? this.tile : tileAt(d.body.x, d.body.z);
-        if (cheb(target, tileAt(m.body.x, m.body.z)) <= (pointing ? 0 : 1)) {
+        if (chebTiles(target, tileAt(m.body.x, m.body.z)) <= (pointing ? 0 : 1)) {
           m.body.moving = false;
           m.body.facing = nearestDir(d.body.x - m.body.x, d.body.z - m.body.z) || m.body.facing;
           return;
@@ -971,7 +971,7 @@ export class Hunt {
     let bestD = Infinity;
     for (const t of pts) {
       if (done.includes(t)) continue;
-      const d = 2 * cheb(t, aim) + cheb(t, here);
+      const d = 2 * chebTiles(t, aim) + chebTiles(t, here);
       if (d < bestD) (best = t), (bestD = d);
     }
     if (best < 0) return;
@@ -985,7 +985,7 @@ export class Hunt {
     if (m.goal < 0) return true;
     const here = tileAt(m.body.x, m.body.z);
     if (here === m.goal) return Math.abs(m.body.x - centerX(m.goal)) + Math.abs(m.body.z - centerZ(m.goal)) < REACHED * 2 || !m.path.length;
-    return !m.path.length && cheb(here, m.goal) <= 1;
+    return !m.path.length && chebTiles(here, m.goal) <= 1;
   }
 
   /** The way to a tile over a grid (next to it, if it's somewhere that grid won't stand on); from somewhere the grid shuts in (a searcher left in cover), through cover. */
@@ -994,7 +994,7 @@ export class Hunt {
     w.best = FOREVER;
     w.stuck = 0;
     const from = tileAt(w.body.x, w.body.z);
-    const find = (g: Uint8Array) => findPath(this.world, from, !g[goal] ? (i) => i === goal : (i) => cheb(i, goal) <= 1, goal, N, undefined, g);
+    const find = (g: Uint8Array) => findPath(this.world, from, !g[goal] ? (i) => i === goal : (i) => chebTiles(i, goal) <= 1, goal, N, undefined, g);
     w.path = find(grid) ?? (grid !== this.chaseGrid ? find(this.chaseGrid) : null) ?? [];
   }
 
@@ -1214,7 +1214,7 @@ export class Hunt {
     const aim = this.guess();
     const near = this.sweepPts
       .filter((t) => !s.swept.includes(t))
-      .map((t) => [cheb(t, aim), t] as const)
+      .map((t) => [chebTiles(t, aim), t] as const)
       .sort((a, b) => a[0] - b[0] || a[1] - b[1])
       .slice(0, HELI_PICK);
     if (!near.length) return this.sweepPts[rollInt(s.salt, SALT.HUNT, DRAW.AIM, s.step, this.sweepPts.length)];

@@ -19,7 +19,7 @@ import { give, itemOf } from './items';
 import type { Body } from './movement';
 import { planOf } from './calendar';
 import { DIR_X, DIR_Z } from '../command';
-import { UNIT } from '../tuning';
+import { tileAt } from '../world/grid';
 
 const VEG_SEEDS = itemNumber('veg_seeds');
 const FRUIT_SEEDS = itemNumber('fruit_seeds');
@@ -83,7 +83,7 @@ export interface BedTarget {
  */
 export function bedTarget(w: World, layer: number, b: Body, held: number, plots: readonly number[][]): BedTarget | null {
   if (layer !== LAYER.GROUND || !plotOf(w)) return null;
-  const here = Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
+  const here = tileAt(b.x, b.z);
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   const sx = Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;

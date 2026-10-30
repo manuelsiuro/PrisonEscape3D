@@ -35,6 +35,7 @@ import { HOTBAR, itemOf } from './items';
 import { DOING, inmateZone } from './inmates';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
+import { tileAt } from '../world/grid';
 
 export const GUITAR = itemNumber('guitar');
 
@@ -80,7 +81,7 @@ export function boardsOf(st: Stage): number[] {
 
 /** Whether a point (units) is on the stage's boards. */
 function onStage(st: Stage, x: number, z: number): boolean {
-  return boardsOf(st).includes(Math.floor(z / UNIT) * MAP_W + Math.floor(x / UNIT));
+  return boardsOf(st).includes(tileAt(x, z));
 }
 
 const TALENT_AT = EVENT_TIMES.talent.at as number;
