@@ -8,7 +8,7 @@ import { tileOfBody } from '../sim/systems/movement';
 import { MAP_W } from '../sim/world/World';
 import { handlersOf } from '../sim/systems/k9';
 import type { Fact } from './gossip';
-import { hashStr } from './voice';
+import { hash32 } from '../sim/rng';
 
 /**
  * Fills a line's {slots} (P13). A slot that can't be filled (no event today, a place the
@@ -94,7 +94,7 @@ function mealOf(lang: Lang, sim: Sim, tonight = false): string {
   const c = sim.clock;
   const kind = !tonight && c.minuteOfDay < 10 * 60 ? 'breakfast' : 'dinner';
   const list = MEALS[lang][kind];
-  return list[hashStr(`${sim.prison.id}:${c.day}:${kind}`) % list.length];
+  return list[hash32(`${sim.prison.id}:${c.day}:${kind}`) % list.length];
 }
 
 /** A pick from a list, avoiding what this slot said lately (null when the list is empty). */

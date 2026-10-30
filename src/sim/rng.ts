@@ -13,15 +13,24 @@ function nextRandom(s: { rng: number }): number {
 /** An integer in [0, n). */
 export const randomInt = (s: { rng: number }, n: number) => Math.floor(nextRandom(s) * n);
 
-/** FNV-1a over a string: a short, stable fingerprint for snapshots and tests. */
-export function fnv1a(text: string): string {
+/** The same generator outside the simulation (the chatter's director): numbers in [0, 1) from a seed of its own. */
+export function randomFrom(seed: number): () => number {
+  const s = { rng: seed | 0 };
+  return () => nextRandom(s);
+}
+
+/** FNV-1a over a string, as a 32-bit number: the same on every device (voices, menus, seeds). */
+export function hash32(text: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
-  return (h >>> 0).toString(16).padStart(8, '0');
+  return h >>> 0;
 }
+
+/** FNV-1a over a string: a short, stable fingerprint for snapshots and tests. */
+export const fnv1a = (text: string) => hash32(text).toString(16).padStart(8, '0');
 
 /**
  * A 32-bit mix (murmur3's fmix32): the same bits on every device. `state.salt` is the seed

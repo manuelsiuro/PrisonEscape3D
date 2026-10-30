@@ -1,15 +1,7 @@
 import type { PrisonDef } from '../content/prisons/types';
+import { hash32 } from '../sim/rng';
 import { INMATE_VOICES, type GuardVoice, type InmateVoice, type Voice } from './types';
 
-/** FNV-1a: a small hash that is the same on every device (voices, menus, seeds). */
-export function hashStr(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
 
 /** How often a voice speaks up, against the others (1: average). */
 export const CHATTY: Record<Voice, number> = {
@@ -77,7 +69,7 @@ const ORDINARY = INMATE_VOICES.filter((v) => v !== 'hustler');
  */
 export function inmateVoice(prison: PrisonDef, cell: number): InmateVoice {
   if (prison.merchants.includes(cell)) return 'hustler';
-  const order = [...ORDINARY].sort((a, b) => hashStr(`${prison.id}:${a}`) - hashStr(`${prison.id}:${b}`));
+  const order = [...ORDINARY].sort((a, b) => hash32(`${prison.id}:${a}`) - hash32(`${prison.id}:${b}`));
   return order[(cell - 2 + order.length) % order.length];
 }
 
@@ -87,7 +79,7 @@ export function guardVoice(prison: PrisonDef, k: number): GuardVoice {
   if (trait === 'lazy') return 'slacker';
   if (trait === 'strict') return 'stickler';
   if (trait === 'corrupt') return 'crook';
-  return STEADY_VOICES[hashStr(`${prison.id}#${k}`) % STEADY_VOICES.length];
+  return STEADY_VOICES[hash32(`${prison.id}#${k}`) % STEADY_VOICES.length];
 }
 
 const STEADY_VOICES: readonly GuardVoice[] = ['rookie', 'veteran'];

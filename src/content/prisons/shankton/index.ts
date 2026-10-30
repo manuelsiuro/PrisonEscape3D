@@ -4,6 +4,7 @@ import { pitch } from '../../team';
 import { quizAt, stage } from '../../nights';
 import type { PropPlacement } from '../../props';
 import type { GuardDef, PrisonDef, Rect } from '../types';
+import { sideCell } from '../build';
 import { L0 } from './L0.map';
 import { L1 } from './L1.map';
 import { SHANKTON_DECOR } from './decor';
@@ -15,24 +16,7 @@ import { SHANKTON_DECOR } from './decor';
  */
 const cells: Rect[] = [];
 const props: PropPlacement[] = [];
-const cell = (x0: number, z0: number, west: boolean) => {
-  cells.push([x0, z0, x0 + 3, z0 + 3]);
-  props.push(
-    ...(west
-      ? [
-          { kind: 'bed', x: x0, z: z0, d: 2 },
-          { kind: 'desk', x: x0 + 3, z: z0, rot: 3 },
-          { kind: 'toilet', x: x0 + 3, z: z0 + 3, rot: 3 },
-          { kind: 'chair', x: x0 + 2, z: z0, rot: 1 },
-        ]
-      : [
-          { kind: 'bed', x: x0 + 3, z: z0, d: 2 },
-          { kind: 'desk', x: x0, z: z0, rot: 1 },
-          { kind: 'toilet', x: x0, z: z0 + 3, rot: 1 },
-          { kind: 'chair', x: x0 + 1, z: z0, rot: 3 },
-        ]) as PropPlacement[],
-  );
-};
+const cell = (x0: number, z0: number, west: boolean) => sideCell(cells, props, x0, z0, west);
 for (const wing of [9, 41]) {
   for (const x0 of [9, 19]) for (const k of [0, 1, 2]) cell(x0, wing + k * 5, x0 === 9);
 }

@@ -21,7 +21,8 @@ import { fill, nameOf, type FillContext } from './fill';
 import { facts, LASTING, type Fact } from './gossip';
 import { guardMood, inmateMood, outdoors, type Incident, type Mood, type Recent } from './mood';
 import type { Line, LineDef, Style, Tag, Voice } from './types';
-import { CHATTY, guardVoice, hashStr, inmateVoice, PAUSE, PITCH } from './voice';
+import { CHATTY, guardVoice, inmateVoice, PAUSE, PITCH } from './voice';
+import { hash32, randomFrom } from '../sim/rng';
 import { FROM } from '../content/oddjobs';
 
 /**
@@ -109,16 +110,6 @@ interface Pending {
 const lineDef = (l: Line): LineDef => (typeof l === 'string' ? { t: l } : l);
 const NO_TAGS: ReadonlySet<Tag> = new Set();
 
-function mulberry(seed: number) {
-  let a = seed | 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let r = Math.imul(a ^ (a >>> 15), 1 | a);
-    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** The banks of a language with lines tied to moments (`when`). */
@@ -137,7 +128,7 @@ export class Director {
   readonly stats = { said: 0, repeats: 0, relaxed: 0, distinct: new Set<number>(), silent: 0 };
 
   private lang: Lang = 'en';
-  private random = mulberry(1);
+  private random = randomFrom(1);
   private counts = new Map<number, number>();
   private ring = new Int32Array(GLOBAL_MEMORY).fill(-1);
   private ringAt = 0;
@@ -195,7 +186,7 @@ export class Director {
     this.dayEvent = null;
     this.dogAbout = -1;
     this.prisonId = sim.prison.id;
-    this.random = mulberry(hashStr(sim.prison.id) ^ (seed + sim.clock.day * 7919));
+    this.random = randomFrom(hash32(sim.prison.id) ^ (seed + sim.clock.day * 7919));
     const s = sim.state;
     this.voices = [...s.inmates.map((m) => inmateVoice(sim.prison, m.cell) as Voice), ...s.guards.map((_, k) => guardVoice(sim.prison, k) as Voice)];
   }
