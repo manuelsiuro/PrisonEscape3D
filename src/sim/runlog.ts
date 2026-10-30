@@ -158,7 +158,8 @@ export class RunRecorder {
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
       // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm; nor one from before visiting day, P21: the week's cards changed.)
       // (Nor one from before sports day, P22: the week's cards changed again; nor stage nights, P30; nor the P23–P30 fixes of 2.5.1; nor the easier games of 2.16.)
-      const stale = beforeEasier(log?.game ?? '') || beforeDays(log?.game ?? '') || (beforeDogs(log?.game ?? '') && sim.state.dogs.length > 0) || beforeRats(log?.game ?? '') || beforeVisits(log?.game ?? '') || beforeSports(log?.game ?? '') || beforeStage(log?.game ?? '') || beforeFixes(log?.game ?? '');
+      // (Every one of those versions comes before 2.16, the latest gate: one test covers them all.)
+      const stale = beforeEasier(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -230,77 +231,35 @@ export interface Replayed {
   verified: number;
 }
 
-/** Whether a game version came before the pay phone (2.10.0): nobody queued for it then. */
-function beforePhone(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 2 || (a === 2 && b < 10);
-}
-
-/** Whether a game version came before the day's events (1.11.0): its days were all quiet. */
-function beforeDays(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 1 || (a === 1 && b < 11);
-}
-
-/** Whether a game version came before the guard dogs (1.13.0). */
-function beforeDogs(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 1 || (a === 1 && b < 13);
-}
-
-/** Whether a game version came before the pet rat (1.14.0): a guard who woke without his key raised nothing then. */
-function beforeRats(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 1 || (a === 1 && b < 14);
-}
-
-/** Whether a game version came before visiting day (1.15.0): the card it took the place of was dealt then. */
-function beforeVisits(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 1 || (a === 1 && b < 15);
-}
-
-/** Whether a game version came before sports day (1.16.0): the card it took the place of was dealt then. */
-function beforeSports(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 1 || (a === 1 && b < 16);
-}
-
-/** Whether a game version came before stage nights (2.5.0): the cards they took the places of were dealt then. */
-export function beforeStage(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 2 || (a === 2 && b < 5);
-}
-
-/** Whether a game version came before the P23–P30 fixes (2.5.1): Sim.rules250 plays it as it was. */
-export function beforeFixes(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\.(\d+)/.exec(game);
+/**
+ * Whether a game version ("2.15.3") came before major.minor(.patch); false for one that isn't a
+ * version at all. The gates below keep old logs playing under the rules they were recorded with.
+ */
+function versionBefore(game: string, major: number, minor: number, patch?: number): boolean {
+  const m = (patch === undefined ? /^(\d+)\.(\d+)\./ : /^(\d+)\.(\d+)\.(\d+)/).exec(game);
   if (!m) return false;
   const [a, b, c] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  return a < 2 || (a === 2 && (b < 5 || (b === 5 && c < 1)));
+  return a < major || (a === major && (b < minor || (patch !== undefined && b === minor && c < patch)));
 }
 
-/** Whether a game version came before the easier quiz, football and race nights (2.16.0): Sim.rules215 plays it as it was. */
-function beforeEasier(game: string): boolean {
-  const m = /^(\d+)\.(\d+)\./.exec(game);
-  if (!m) return false;
-  const [a, b] = [Number(m[1]), Number(m[2])];
-  return a < 2 || (a === 2 && b < 16);
-}
+/** Before the pay phone (2.10.0): nobody queued for it then. */
+const beforePhone = (game: string) => versionBefore(game, 2, 10);
+/** Before the day's events (1.11.0): its days were all quiet. */
+const beforeDays = (game: string) => versionBefore(game, 1, 11);
+/** Before the guard dogs (1.13.0). */
+const beforeDogs = (game: string) => versionBefore(game, 1, 13);
+/** Before the pet rat (1.14.0): a guard who woke without his key raised nothing then. */
+const beforeRats = (game: string) => versionBefore(game, 1, 14);
+/** Before visiting day (1.15.0): the card it took the place of was dealt then. */
+const beforeVisits = (game: string) => versionBefore(game, 1, 15);
+/** Before sports day (1.16.0): the card it took the place of was dealt then. */
+const beforeSports = (game: string) => versionBefore(game, 1, 16);
+/** Before stage nights (2.5.0): the cards they took the places of were dealt then. */
+export const beforeStage = (game: string) => versionBefore(game, 2, 5);
+/** Before the P23–P30 fixes (2.5.1): Sim.rules250 plays it as it was. */
+export const beforeFixes = (game: string) => versionBefore(game, 2, 5, 1);
+/** Before the easier quiz, football and race nights (2.16.0): Sim.rules215 plays it as it was. */
+const beforeEasier = (game: string) => versionBefore(game, 2, 16);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;

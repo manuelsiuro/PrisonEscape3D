@@ -23,7 +23,6 @@ import { BOARD, CAUGHT_TILES, J, JOB_LEN, R, STAGE, CHAIN_DAY, CHAIN_PIN, CHAINS
 import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../../content/games';
 import { itemNumber } from '../../content/items';
 import { LOOT } from '../../content/loot';
-import { ROUTINE } from '../../content/routine';
 import { PARCEL_MINUTE } from '../../content/smuggling';
 import { lineOfSight } from '../ai/sight';
 import { isFloor, placesOf } from '../ai/places';
@@ -607,8 +606,6 @@ export function digOf(sim: Pick<SimContext, 'world' | 'state'>): { who: number; 
   return tile >= 0 && door >= 0 ? { who: job[J.GIVER], tile, door } : null;
 }
 
-/** The free times (the digger digs in them), outside a lockdown. */
-const digHours = (sim: SimContext) => !sim.state.lockdown && (ROUTINE[sim.state.routine].id === 'freeTime' || ROUTINE[sim.state.routine].id === 'eveningFreeTime');
 
 /** Tiles from a tile to a body (the larger way). */
 const offTile = (tile: number, b: { x: number; z: number }) => Math.max(Math.abs(Math.floor(b.x / UNIT) - (tile % MAP_W)), Math.abs(Math.floor(b.z / UNIT) - Math.floor(tile / MAP_W)));
@@ -623,7 +620,7 @@ function onWatch(sim: SimContext): boolean {
 /** The digger at it now: in the free time, the player on watch, not hiding from a whistle. */
 function digging(sim: SimContext): boolean {
   const job = jobOf(sim.state);
-  return !!job && digHours(sim) && onWatch(sim) && sim.state.step >= job[J.AUX] && diggerFree(sim);
+  return !!job && sim.fixerOpen && onWatch(sim) && sim.state.step >= job[J.AUX] && diggerFree(sim);
 }
 
 /** The digger is up and calm. */
@@ -644,7 +641,7 @@ function coming(sim: SimContext, tile: number): number {
 
 /** The whistle can be blown: on watch in the dig's hours, the digger up and at it (or hiding from a whistle). */
 export function canWhistle(sim: SimContext): boolean {
-  return onWatch(sim) && digHours(sim) && diggerFree(sim);
+  return onWatch(sim) && sim.fixerOpen && diggerFree(sim);
 }
 
 /** B or the job's chip whistle now (a guard coming at the dig); otherwise they open the job's card. */
@@ -671,7 +668,7 @@ function lookout(sim: SimContext, job: number[]) {
   const s = sim.state;
   const d = digOf(sim);
   // (Nobody digging, or the player off watch: no guard is "coming" for them to whistle at.)
-  if (!d || !digHours(sim) || !diggerFree(sim) || !onWatch(sim)) {
+  if (!d || !sim.fixerOpen || !diggerFree(sim) || !onWatch(sim)) {
     job[J.WARN] = 0;
     return;
   }
@@ -703,7 +700,7 @@ function lookout(sim: SimContext, job: number[]) {
 /** The digger where the dig wants him (socialNow): at his bed in the free times, digging (DOING.DIG) unless hiding. */
 export function oddjobTargets(sim: SimContext, so: { follow: Array<Body | null>; gap: number[]; doing: number[]; face: number[] }) {
   const d = digOf(sim);
-  if (!d || !digHours(sim) || !diggerFree(sim)) return;
+  if (!d || !sim.fixerOpen || !diggerFree(sim)) return;
   const m = sim.state.inmates[d.who];
   m.wait = 0;
   mark.x = (d.tile % MAP_W) * UNIT + UNIT / 2;

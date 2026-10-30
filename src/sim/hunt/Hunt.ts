@@ -7,7 +7,7 @@ import { canSee, lineOfSight } from '../ai/sight';
 import { argA, argB, argC, DIR_X, DIR_Z, dirOf, EXT, OP, opOf, tossTile } from '../command';
 import { fnv1a, rollInt, SALT } from '../rng';
 import { bodyAt, walk, type Body } from '../systems/movement';
-import { UNIT, walkSpeed } from '../tuning';
+import { STEPS_PER_SECOND, UNIT, walkSpeed } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { HFEAT, HOUND, HUNT_FEATS, OVER, SEEK, type Carry, type HuntDog, type HuntState, type Searcher } from './state';
@@ -50,7 +50,7 @@ export interface HuntOptions {
   ramp?: boolean;
 }
 
-const S = 20;
+const S = STEPS_PER_SECOND;
 const N = MAP_W * MAP_H;
 const GUARD_OUTFIT = itemNumber('guard_outfit');
 const OWN_CLOTHES = itemNumber('own_clothes');

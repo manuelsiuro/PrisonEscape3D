@@ -13,7 +13,7 @@ import { answerQuiz, endQuiz, joinQuiz } from './quiz';
 import { digHelp, recall } from './crew';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
-import { nearestDir, nearestDir as faceTo, tileAt } from '../ai/path';
+import { nearestDir, tileAt } from '../ai/path';
 import { placesOf } from '../ai/places';
 import { argA, argB, argC, EXT, OP, opOf, tossTile } from '../command';
 import type { SimContext } from '../context';
@@ -536,7 +536,7 @@ function sharpen(sim: SimContext, target: ToolTarget, held: number) {
   p.moving = false;
   const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
   const dz = Math.floor(target.tile / MAP_W) * UNIT + UNIT / 2 - p.z;
-  if (dx || dz) p.facing = faceTo(dx, dz);
+  if (dx || dz) p.facing = nearestDir(dx, dz);
   const strokes = usesOf(v) + 1;
   it.rev++;
   if (strokes < SHARPEN_STROKES) {

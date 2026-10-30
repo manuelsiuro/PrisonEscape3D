@@ -10,8 +10,6 @@ import { PRISONS } from '../src/content/prisons';
 import { PITCH_LEAVE } from '../src/content/team';
 import { PITCH_PULL, pitchFraming, screenTiles } from '../src/render/pitchFrame';
 
-const ZOOM_MIN = 0.6;
-const ZOOM_MAX = 1.9;
 /** The player's own zoom (the default). */
 const GOAL = 1.25;
 const SCREENS: Array<[string, number, number]> = [
@@ -29,7 +27,7 @@ function settle(p: { x: number; z: number; w: number; d: number }, px: number, p
   let maxPull = 0;
   const dt = 1 / 60;
   for (let k = 0; k < 300; k++) {
-    const aim = pitchFraming(p, px, pz, ahead, zoom, aspect, ZOOM_MIN, ZOOM_MAX);
+    const aim = pitchFraming(p, px, pz, ahead, zoom, aspect);
     ahead.x += (aim.x - ahead.x) * Math.min(1, dt * 4);
     ahead.z += (aim.z - ahead.z) * Math.min(1, dt * 4);
     maxPull = Math.max(maxPull, Math.abs(ahead.x) + Math.abs(ahead.z));

@@ -71,9 +71,8 @@ export function pictureRows(def: OutsideDef): string[] {
   return rows;
 }
 
-/** Where the picture sits in the world. */
-function offsetOf(def: OutsideDef): { w: number; h: number; ox: number; oz: number } {
-  const rows = pictureRows(def);
+/** Where the picture (its rows) sits in the world. */
+function offsetOf(rows: readonly string[]): { w: number; h: number; ox: number; oz: number } {
   const w = rows[0].length;
   const h = rows.length;
   return { w, h, ox: Math.floor((MAP_W - w) / 2), oz: Math.floor((MAP_H - h) / 2) };
@@ -81,7 +80,7 @@ function offsetOf(def: OutsideDef): { w: number; h: number; ox: number; oz: numb
 
 export function outsideWorld(def: OutsideDef, prison: PrisonDef): OutsideWorld {
   const rows = pictureRows(def);
-  const { w, h, ox, oz } = offsetOf(def);
+  const { w, h, ox, oz } = offsetOf(rows);
   const n = MAP_W * MAP_H;
   const cover = new Uint8Array(n);
   const noisy = new Uint8Array(n);

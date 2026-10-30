@@ -95,48 +95,47 @@ export interface ClimbTarget {
   item?: number;
 }
 
-const ITEM_ID = (id: string) => itemNumber(id);
-export const DIRT = ITEM_ID('dirt');
-export const WALL_CHUNK = ITEM_ID('wall_chunk');
-const POSTER = ITEM_ID('poster');
-const FAKE_WALL = ITEM_ID('fake_wall');
-const FAKE_FENCE = ITEM_ID('fake_fence');
-const FAKE_VENT = ITEM_ID('fake_vent');
-const BRACE = ITEM_ID('timber_brace');
-export const SHEET_ROPE = ITEM_ID('sheet_rope');
-const CHOCOLATE = ITEM_ID('chocolate');
+export const DIRT = itemNumber('dirt');
+export const WALL_CHUNK = itemNumber('wall_chunk');
+const POSTER = itemNumber('poster');
+const FAKE_WALL = itemNumber('fake_wall');
+const FAKE_FENCE = itemNumber('fake_fence');
+const FAKE_VENT = itemNumber('fake_vent');
+const BRACE = itemNumber('timber_brace');
+export const SHEET_ROPE = itemNumber('sheet_rope');
+const CHOCOLATE = itemNumber('chocolate');
 /** P34: Lou's cake (a file inside). */
-const CAKE = ITEM_ID('cake');
+const CAKE = itemNumber('cake');
 /** P35: the hollow book (one small item hidden inside). */
-export const HOLLOW_BOOK = ITEM_ID('hollow_book');
+export const HOLLOW_BOOK = itemNumber('hollow_book');
 /** P42: a chocolate egg and an ice lolly (eaten as chocolate is), a pumpkin (carved in the kitchen). */
-export const CHOC_EGG = ITEM_ID('choc_egg');
-export const ICE_LOLLY = ITEM_ID('ice_lolly');
-const PUMPKIN = ITEM_ID('pumpkin');
-const GRAPNEL = ITEM_ID('grapnel');
-const RAFT = ITEM_ID('raft');
+export const CHOC_EGG = itemNumber('choc_egg');
+export const ICE_LOLLY = itemNumber('ice_lolly');
+const PUMPKIN = itemNumber('pumpkin');
+const GRAPNEL = itemNumber('grapnel');
+const RAFT = itemNumber('raft');
 /** P14: the alarm clock (wound with the use button) and the firecracker (thrown). */
-export const ALARM_CLOCK = ITEM_ID('alarm_clock');
-export const FIRECRACKER = ITEM_ID('firecracker');
-const SOAP = ITEM_ID('soap');
+export const ALARM_CLOCK = itemNumber('alarm_clock');
+export const FIRECRACKER = itemNumber('firecracker');
+const SOAP = itemNumber('soap');
 /** P20: a rat trap (set down), a caught rat (fed: potato, chocolate or jerky). */
-const RAT_TRAP = ITEM_ID('rat_trap');
-const CAUGHT_RAT = ITEM_ID('caught_rat');
+const RAT_TRAP = itemNumber('rat_trap');
+const CAUGHT_RAT = itemNumber('caught_rat');
 /** P28: ripe pruno (drunk), the rat's track. */
-const PRUNO = ITEM_ID('pruno');
-const RAT_TRACK = ITEM_ID('rat_track');
+const PRUNO = itemNumber('pruno');
+const RAT_TRACK = itemNumber('rat_track');
 /** P22: the lockpick (a keyed door ahead). */
-const LOCKPICK = ITEM_ID('lockpick');
+const LOCKPICK = itemNumber('lockpick');
 /** P24: the glider (off a roof's edge). */
-export const GLIDER = ITEM_ID('glider');
-const BAIT = ['potato', 'chocolate', 'jerky'].map(ITEM_ID);
+export const GLIDER = itemNumber('glider');
+const BAIT = ['potato', 'chocolate', 'jerky'].map((id) => itemNumber(id));
 /** What blinds a camera (GDD §5.6). */
-const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
-const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
+const LENS_COVERS: ReadonlySet<number> = new Set([itemNumber('duct_tape'), itemNumber('toothpaste')]);
+const PLASTIC_KNIFE = itemNumber('plastic_knife');
 /** What rubbing on a wall makes of a comb and a toothbrush (GDD §7.3: shivs). */
 export const SHIVS: ReadonlyMap<number, number> = new Map([
-  [ITEM_ID('plastic_comb'), ITEM_ID('comb_shiv')],
-  [ITEM_ID('toothbrush'), ITEM_ID('toothbrush_shiv')],
+  [itemNumber('plastic_comb'), itemNumber('comb_shiv')],
+  [itemNumber('toothbrush'), itemNumber('toothbrush_shiv')],
 ]);
 
 /** The floors a tunnel can be started through (GDD §9.2: dirt, grass or any non-reinforced floor). */

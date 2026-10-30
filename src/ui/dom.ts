@@ -20,8 +20,8 @@ export const MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh
 export const TOUCH = MOBILE || matchMedia('(pointer: coarse)').matches;
 document.body.classList.toggle('touch', TOUCH);
 
-/** Fades a screen out, then removes it. */
-export function closeOverlay(el: HTMLElement, ms = 250) {
+/** Fades an element out (its `.leaving` style), then removes it. */
+export function fadeOut(el: HTMLElement, ms: number) {
   el.classList.add('leaving');
   setTimeout(() => el.remove(), ms);
 }

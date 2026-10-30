@@ -71,13 +71,6 @@ export class Snowfall {
     }
     (this.points.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
   }
-
-  dispose() {
-    this.points.geometry.dispose();
-    const m = this.points.material as THREE.PointsMaterial;
-    m.map?.dispose();
-    m.dispose();
-  }
 }
 
 /** A soft round flake (a radial gradient on a small canvas). */

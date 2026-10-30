@@ -4,7 +4,7 @@ import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { TILE_INFO } from '../sim/world/tiles';
 import { Character, type Look } from './Character';
-import type { Later } from './batch';
+import { now, type Later } from './batch';
 import { itemGeometry } from './itemModels';
 import { WALL_H } from './WorldView';
 
@@ -76,7 +76,7 @@ export class DayEvents {
   }
 
   /** A prison: where its canteen is (the screen goes up over its north wall). The last one's parts are freed `later`. */
-  setWorld(world: World, later?: Later) {
+  setWorld(world: World, later: Later = now) {
     this.clear(later);
     this.world = world;
     // The inspectors made now, hidden (not in the middle of a day the first time they're needed).
@@ -159,7 +159,7 @@ export class DayEvents {
    * `ground`: the player is on the ground floor (at px, pz); `about`: anywhere above the tunnels
    * (the ground floor's people are drawn from the vents and the roofs too); `power`: the lights' level (a cut dims the film).
    */
-  update(f: EventsFrame, dt: number, time: number, guards: ReadonlyArray<{ x: number; z: number; awake: boolean }>, inmates: ReadonlyArray<{ x: number; z: number }>, ground: boolean, motion: boolean, splat: boolean, px = 0, pz = 0, about = ground, power = 1): Character[] {
+  update(f: EventsFrame, dt: number, time: number, guards: ReadonlyArray<{ x: number; z: number; awake: boolean }>, inmates: ReadonlyArray<{ x: number; z: number }>, ground: boolean, motion: boolean, px = 0, pz = 0, about = ground, power = 1): Character[] {
     // Movie night: the screen stands over the wall only while the player is in or by the canteen (elsewhere it would hide the rooms north of it).
     const box = this.canteen;
     const near = !!box && px >= box.x0 - 3 && px <= box.x1 + 4 && pz >= box.z0 - 2 && pz <= box.z1 + 4;
@@ -175,7 +175,7 @@ export class DayEvents {
     }
     if (movie) this.roll(dt, motion);
     // The food fight.
-    this.food(f.foodFight && ground && motion, dt, inmates, splat);
+    this.food(f.foodFight && ground && motion, dt, inmates, motion);
     // The inspectors, a few steps behind a guard on its round.
     const shown = this.shown;
     shown.length = 0;
@@ -405,7 +405,7 @@ export class DayEvents {
   }
 
   /** A new prison (or none): the screen and the inspectors go. */
-  private clear(later: Later = (dispose) => dispose()) {
+  private clear(later: Later) {
     const screen = this.screen;
     if (screen) {
       this.group.remove(screen);
@@ -439,12 +439,6 @@ export class DayEvents {
     for (const b of this.flying) b.on = false;
     this.blobs.count = 0;
     this.canteen = null;
-  }
-
-  dispose() {
-    this.clear();
-    this.blobs.geometry.dispose();
-    (this.blobs.material as THREE.Material).dispose();
   }
 }
 

@@ -287,7 +287,6 @@ let theme: Theme = 'suburban';
 export function setTheme(t: Theme) {
   theme = t;
 }
-export const currentTheme = () => theme;
 
 /** Snow: blue-white with a cold sparkle; the trodden paths, the road, log walls, snowy tops. */
 const ALPINE: Partial<typeof BASE> = {

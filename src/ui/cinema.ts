@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { h, TOUCH } from './dom';
+import { fadeOut, h, TOUCH } from './dom';
 
 /**
  * The escape camera's dressing (P16): letterbox bars slide in, ESCAPED is stamped across the
@@ -25,6 +25,5 @@ export async function showCinema(played: Promise<void>, skip: () => void, reduce
   await played;
   document.body.classList.remove('cinema-on');
   removeEventListener('keydown', key, true);
-  el.classList.add('leaving');
-  setTimeout(() => el.remove(), 450);
+  fadeOut(el, 450);
 }

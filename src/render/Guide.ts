@@ -171,9 +171,4 @@ export class Guide {
     const tx = Math.floor(x);
     return blocks(tx, Math.floor(z)) || blocks(tx, Math.floor(z + 0.8));
   }
-
-  dispose() {
-    for (const m of [this.arrows, this.goal, this.tap]) m.geometry.dispose();
-    for (const m of [this.arrowMat, this.goalMat, this.tapMat]) m.dispose();
-  }
 }

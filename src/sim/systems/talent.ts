@@ -197,7 +197,7 @@ function actComing(sim: SimContext): number {
 const guitarSlot = (s: Pick<SimState, 'items'>) => s.items.inv.slice(0, HOTBAR).findIndex((v) => itemOf(v) === GUITAR);
 
 /** Why the player can't take the stage now (null: they can). */
-export function stageRefusal(sim: SimContext, inst: number = INSTRUMENT.DRUMS): Refusal | null {
+export function stageRefusal(sim: SimContext, inst: number): Refusal | null {
   const s = sim.state;
   const st = stageOf(sim.world);
   if (!st || !talentOn(sim)) return 'stageClosed';
