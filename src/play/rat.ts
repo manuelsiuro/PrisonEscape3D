@@ -11,13 +11,13 @@ import { LAYER, MAP_W } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
 import { itemName } from '../ui/items';
 import type { RatRow, RatView } from '../ui/rat';
-import { inmateName } from '../ui/social';
 import { banner, closeSocial, hud, itemsUI, ratPanel, sound } from './context';
 import { play, sendOp } from './game';
 import { ratName, thingName } from './labels';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 import { inmateInCell } from '../sim/systems/inmates';
+import { inmateName } from '../ui/names';
 
 /**
  * The pet rat on screen (P20): its name, the panel's places and buttons, the HUD's pill, and

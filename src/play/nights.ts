@@ -13,12 +13,12 @@ import { LAYER, MAP_W } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
 import type { NightsFrame } from '../render/Nights';
 import type { QuizView, StageView } from '../ui/nights';
-import { inmateName } from '../ui/social';
 import { banner, itemsUI, sound } from './context';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 import { floatUp } from './floats';
+import { inmateName } from '../ui/names';
 
 /**
  * Stage nights (P30) on screen: talent night's card and quiz night's, filled from the sim; the

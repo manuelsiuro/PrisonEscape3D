@@ -13,13 +13,13 @@ import { routineEnd } from '../content/routine';
 import { LAYER } from '../sim/world/World';
 import type { InkView, MatchView } from '../ui/team';
 import type { TeamFrame } from '../render/Team';
-import { inmateName } from '../ui/social';
 import { banner, itemsUI, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 import { floatUp } from './floats';
 import { refusedText } from './refusals';
+import { inmateName } from '../ui/names';
 
 /**
  * Team & ink (P29) on screen: the match's card and the tattoo's, filled from the sim; the talk

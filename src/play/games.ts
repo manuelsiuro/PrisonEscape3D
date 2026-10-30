@@ -15,7 +15,6 @@ import { STEPS_PER_SECOND, TIRED } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { GamesFrame } from '../render/Games';
 import type { DiceShow, GamesView, PickView, WrestleView } from '../ui/games';
-import { inmateName } from '../ui/social';
 import { banner, itemsUI, pickCard, sound, talk } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
@@ -23,6 +22,7 @@ import { crewTalk } from './crew';
 import { atCourt, courtOf } from '../sim/systems/hoops';
 import { elderOffer } from './pastimes';
 import { floatUp } from './floats';
+import { inmateName } from '../ui/names';
 
 /**
  * The side games on screen (P22): the talk panel's games (what's on offer, the dice in play and

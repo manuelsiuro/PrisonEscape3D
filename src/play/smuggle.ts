@@ -17,7 +17,6 @@ import type { ZoneId } from '../content/zones';
 import type { HudState } from '../ui/hud';
 import { itemName } from '../ui/items';
 import type { PhoneView, PhoneWay } from '../ui/phone';
-import { guardSubject } from '../ui/social';
 import { banner, closeSocial, hud, itemsUI, phonePanel, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce, markTip, seenTip } from './tips';
@@ -26,6 +25,7 @@ import { BOARD_LOOKS, HEARINGS } from '../content/parole';
 import { boardShown } from './parole';
 import { centerX, centerZ } from '../sim/world/grid';
 import { dayTime } from './warden';
+import { guardSubject } from '../ui/names';
 
 /**
  * Smuggling on screen (P21): the phone's panel (what an order costs each way, and when and

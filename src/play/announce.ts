@@ -30,7 +30,6 @@ import { LAYER } from '../sim/world/World';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
-import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
@@ -46,6 +45,7 @@ import { refusedText } from './refusals';
 import { dayTime } from './warden';
 import { announceDog } from './dogs';
 import { gainAt, tilesTo } from './loudness';
+import { guardSubject, inmateName, jobName } from '../ui/names';
 
 /** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
