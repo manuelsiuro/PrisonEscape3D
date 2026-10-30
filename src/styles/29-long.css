@@ -34,11 +34,6 @@
   color: var(--good, #2e9e55);
 }
 
-/* The tipsy pill's icon, amber. */
-.hud-tipsy .ic {
-  color: #e8b85a;
-}
-
 /* ------------------------------------------------------------ the race card */
 .race-card .train-ic {
   background: #b0602e;
