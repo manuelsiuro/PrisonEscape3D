@@ -19,7 +19,7 @@ import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
 import { floatUp } from './floats';
-import { refusedText } from './labels';
+import { refusedText } from './refusals';
 
 /**
  * Team & ink (P29) on screen: the match's card and the tattoo's, filled from the sim; the talk

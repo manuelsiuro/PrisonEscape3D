@@ -7,8 +7,8 @@ import { atRelease, atTray, calledNow, freedNow, releaseRefusal, trayRefusal } f
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import { banner, itemsUI, sound } from './context';
-import { announcePa, dayTime } from './day';
 import { coachOnce } from './tips';
+import { announcePa, dayTime } from './warden';
 
 /**
  * The paperwork escape on screen (P36): what the action button says at the release desk (slip a

@@ -19,13 +19,13 @@ import { itemName } from '../ui/items';
 import type { PhoneView, PhoneWay } from '../ui/phone';
 import { guardSubject } from '../ui/social';
 import { banner, closeSocial, hud, itemsUI, phonePanel, sound } from './context';
-import { dayTime } from './day';
 import { play, sendOp } from './game';
 import { coachOnce, markTip, seenTip } from './tips';
 import { TOUCH } from '../ui/dom';
-import { HEARINGS } from '../content/parole';
+import { BOARD_LOOKS, HEARINGS } from '../content/parole';
 import { boardShown } from './parole';
 import { centerX, centerZ } from '../sim/world/grid';
+import { dayTime } from './warden';
 
 /**
  * Smuggling on screen (P21): the phone's panel (what an order costs each way, and when and
@@ -346,9 +346,7 @@ const AMBIENT = 3;
 /** The visitors drawn this frame, reused. */
 const pool: Array<SmuggleFrame['visitors'][number]> = Array.from({ length: AMBIENT + 1 }, () => ({ x: 0, z: 0, facing: 0, look: 0, chair: false, arrive: 1 }));
 /** The parole board's three (P39): suits, never the guards' navy nor the inmates' orange. */
-const members: Array<SmuggleFrame['visitors'][number]> = [0x34363c, 0x5a4636, 0x55595f].map((suit, k) => ({ x: 0, z: 0, facing: 0, look: 101 + k * 17, chair: false, arrive: 1, suit }));
-/** The board's three as the room draws them, by place (their faces on the parole card: play/parole.ts). */
-export const boardLooks: ReadonlyArray<{ look: number; suit?: number }> = members;
+const members: Array<SmuggleFrame['visitors'][number]> = BOARD_LOOKS.map(({ look, suit }) => ({ x: 0, z: 0, facing: 0, look, chair: false, arrive: 1, suit }));
 const NO_TILES: number[] = [];
 /** Where the player's visitor sat today (a guest tile, -1 none): they stay there until visiting hours are over. */
 let metAt = -1;

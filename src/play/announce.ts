@@ -34,14 +34,16 @@ import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
-import { dogName, NEED, refusedText } from './labels';
+import { dogName, NEED } from './labels';
 import { dogDef, outOfBounds } from '../sim/systems/k9';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
-import { dayTime, vehicleThe } from './day';
+import { vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
 import { FEAST_ENERGY } from '../content/days';
 import { announceOddJob } from './oddjobs';
 import { floatAt } from './floats';
+import { refusedText } from './refusals';
+import { dayTime } from './warden';
 
 /** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
