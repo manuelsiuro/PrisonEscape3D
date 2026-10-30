@@ -1,5 +1,5 @@
 /** What the view is handed each frame (play/frame.ts and play/hunt.ts fill it), and its quality settings. */
-import type { BadgeKind, BedPose } from './Character';
+import type { BedPose } from './Character';
 import type { SecurityFrame } from './Security';
 import type { Focus, GroundItem } from './Pickups';
 import type { WeatherFrame } from './Weather';
@@ -19,6 +19,7 @@ import type { PhoneFrame } from './Phone';
 import type { KioskFrame } from './Kiosk';
 import type { OddJobsFrame } from './OddJobs';
 import type { ReleaseFrame } from './Release';
+import { type BadgeKind } from './characterSprites';
 
 /** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
 export interface Frame {

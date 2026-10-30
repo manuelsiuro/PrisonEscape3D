@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { Character, type Look } from './Character';
+import { Character } from './Character';
 import { visitorColors, visitorParts } from './Smuggling';
+import { type Look } from './look';
 
 const SIZE = 112;
 /** The last few faces kept (a disguise put on and off again isn't photographed twice). */

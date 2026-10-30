@@ -69,7 +69,6 @@ import {
 } from './context';
 import { play, playNow, type Game } from './game';
 import { portraitOf } from '../render/portrait';
-import type { Look } from '../render/Character';
 import { ACTION_IDS, boxTitle, describeAttack, describeTarget, describeTool, describeToss, describeTreat, describeCall, dogName, targetInfo } from './labels';
 import { DOG, dogWarning, FOR_DOGS, treatTarget } from '../sim/systems/k9';
 import { updateAim } from './aim';
@@ -107,6 +106,7 @@ import { kioskNow } from './kiosk';
 import { paroleChip, paroleNow } from './parole';
 import { closeJobCard, jobHud, oddjobsNow } from './oddjobs';
 import { TIPSY_STEPS } from '../content/long';
+import { type Look } from '../render/look';
 
 /**
  * Everything over the picture, brought up to date after each draw: the item bar and action
