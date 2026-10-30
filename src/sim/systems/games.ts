@@ -18,9 +18,9 @@ import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { ATTRS, type Refusal, type SimState } from '../state';
-import { ATTR_MAX, BODY_HALF, TIRED, UNIT } from '../tuning';
+import { ATTR_MAX, TIRED, UNIT } from '../tuning';
 import { TILE } from '../world/tiles';
-import { LAYER, MAP_W, type World } from '../world/World';
+import { LAYER, type World } from '../world/World';
 import { closeBox } from './actions';
 import { eventOn, prisonDay, TODAY } from './calendar';
 import { DOING } from './inmates';
@@ -37,6 +37,7 @@ import { keepCheckers } from './checkers';
 import { keepMatch } from './football';
 import { keepInk } from './tattoo';
 import { centerX, centerZ } from '../world/grid';
+import { overlapsTile } from './movement';
 
 export const LOCKPICK = itemNumber('lockpick');
 
@@ -410,12 +411,7 @@ function keepPicked(sim: SimContext) {
 }
 
 /** The player's body overlaps a ground tile (a doorway they stand in). */
-function inDoor(s: SimState, tile: number): boolean {
-  const p = s.player;
-  const tx = (tile % MAP_W) * UNIT;
-  const tz = Math.floor(tile / MAP_W) * UNIT;
-  return s.layer === LAYER.GROUND && p.x + BODY_HALF > tx && p.x - BODY_HALF < tx + UNIT && p.z + BODY_HALF > tz && p.z - BODY_HALF < tz + UNIT;
-}
+const inDoor = (s: SimState, tile: number) => s.layer === LAYER.GROUND && overlapsTile(s.player, tile);
 
 /**
  * The games' step (after training): the games' hours over (the dice stand, a bout is broken off),

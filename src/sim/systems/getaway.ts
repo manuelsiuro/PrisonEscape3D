@@ -23,7 +23,7 @@ import { glideFrom, type Air } from './structure';
 import type { World } from '../world/World';
 import { TILE } from '../world/tiles';
 import { inDisguise } from './watch';
-import { centerX, centerZ, tileAt } from '../world/grid';
+import { centerX, centerZ, neighbours4, tileAt } from '../world/grid';
 
 const FAKE_ID = itemNumber('fake_id');
 
@@ -139,13 +139,7 @@ export function launchSpots(w: World): ReadonlyArray<readonly [number, number]> 
   for (let i = 0; i < MAP_W * MAP_H; i++) if (roof[i] === TILE.LADDER) (seen[i] = 1), queue.push(i);
   for (let k = 0; k < queue.length; k++) {
     const t = queue[k];
-    const x = t % MAP_W;
-    for (const [j, ok] of [
-      [t - 1, x > 0],
-      [t + 1, x < MAP_W - 1],
-      [t - MAP_W, t >= MAP_W],
-      [t + MAP_W, t < MAP_W * (MAP_H - 1)],
-    ] as const)
+    for (const [j, ok] of neighbours4(t))
       if (ok && !seen[j] && walk(j)) (seen[j] = 1), queue.push(j);
   }
   const out: Array<readonly [number, number]> = [];

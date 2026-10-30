@@ -1,6 +1,6 @@
 import { DIR_X, DIR_Z } from '../command';
 import { BODY_HALF, CORNER_ASSIST, UNIT, WALK_SPEED } from '../tuning';
-import { LAYER, type World } from '../world/World';
+import { LAYER, MAP_W, type World } from '../world/World';
 
 /** A walker's position (integer units, the middle of its square footprint) and heading. */
 export interface Body {
@@ -59,6 +59,13 @@ export function walk(w: Pick<World, 'blocked'>, b: Body, dir: number, speed = WA
 
 /** The tile a body stands on. */
 export const tileOfBody = (b: Body) => ({ x: tile(b.x), z: tile(b.z) });
+
+/** Whether a body's footprint touches a tile (ground index). */
+export function overlapsTile(b: { x: number; z: number }, tile: number): boolean {
+  const tx = (tile % MAP_W) * UNIT;
+  const tz = Math.floor(tile / MAP_W) * UNIT;
+  return b.x + BODY_HALF > tx && b.x - BODY_HALF < tx + UNIT && b.z + BODY_HALF > tz && b.z - BODY_HALF < tz + UNIT;
+}
 
 /** A body standing in the middle of a tile. */
 export const bodyAt = (x: number, z: number, facing = 5): Body => ({ x: x * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2, facing, moving: false });

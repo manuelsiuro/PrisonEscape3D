@@ -6,7 +6,7 @@ import { isGrate, isSea, isTunnel, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { placesOf } from '../ai/places';
 import { lineOfSight } from '../ai/sight';
-import type { Body } from './movement';
+import { overlapsTile, type Body } from './movement';
 import { lockAt } from './games';
 import { PINS } from '../../content/games';
 import type { Weather } from '../../content/days';
@@ -175,11 +175,7 @@ export function underMyDesk(w: World, i: number): boolean {
 }
 
 /** Someone's footprint covers the tile (no digging under people). */
-function occupied(i: number, bodies: readonly Body[]): boolean {
-  const x0 = tileX(i) * UNIT;
-  const z0 = tileZ(i) * UNIT;
-  return bodies.some((b) => b.x + BODY_HALF > x0 && b.x - BODY_HALF < x0 + UNIT && b.z + BODY_HALF > z0 && b.z - BODY_HALF < z0 + UNIT);
-}
+const occupied = (i: number, bodies: readonly Body[]) => bodies.some((b) => overlapsTile(b, i));
 
 /**
  * Tiles nobody may dig a hole in: where people must be able to stand (beside each bed and

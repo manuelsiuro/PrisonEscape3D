@@ -1,7 +1,7 @@
 import { DIR_X, DIR_Z } from '../command';
 import { BODY_HALF, UNIT } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
-import { centerX, centerZ } from '../world/grid';
+import { blockedIn, centerX, centerZ } from '../world/grid';
 
 /**
  * A* on the ground floor: eight-way steps (diagonals only where both sides are open, so
@@ -80,7 +80,7 @@ function octile(ax: number, az: number, bx: number, bz: number) {
  */
 export function findPath(w: World, start: number, isGoal: (i: number) => boolean, target = -1, limit = N, avoid?: Uint8Array, grid: Uint8Array = w.block): number[] | null {
   if (isGoal(start)) return [];
-  const blocked = (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || grid[z * MAP_W + x] === 1;
+  const blocked = blockedIn(grid);
   search++;
   heapSize = 0;
   pushes = 0;
@@ -132,7 +132,7 @@ export const pathTo = (w: World, start: number, goal: number, avoid?: Uint8Array
  * anything blocked. `grid` says what blocks (World.block for inmates, guardBlock for guards).
  */
 export function clearLine(w: World, ax: number, az: number, bx: number, bz: number, avoid?: Uint8Array, grid: Uint8Array = w.block): boolean {
-  const blocked = (x: number, z: number) => x < 0 || z < 0 || x >= MAP_W || z >= MAP_H || grid[z * MAP_W + x] === 1;
+  const blocked = blockedIn(grid);
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(bz - az)) / (UNIT / 4)));
   const r = BODY_HALF + 40;
   for (let k = 0; k <= n; k++) {
