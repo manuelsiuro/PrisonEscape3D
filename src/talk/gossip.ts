@@ -57,6 +57,23 @@ export type GossipKind = (typeof GOSSIP)[number];
 /** Facts that hold for as long as the game is played (the rest are about now). */
 export const LASTING: ReadonlySet<GossipKind> = new Set(['bedChecks', 'dummy', 'fenceOff', 'brace', 'takeover', 'takeoverAll', 'keyColor', 'grate', 'toilets', 'camera', 'pouch', 'shell', 'craters', 'flood', 'heli', 'solitary', 'koTime', 'steady', 'lazy', 'strict', 'corrupt', 'dogShift', 'dogNight', 'dogTreat', 'dogWash', 'dogPepper', 'ratTrap', 'ratTunnel', 'ratKey', 'ratDogs', 'droneDrop', 'visitArches', 'gambling', 'lockpick', 'lookout', 'digger', 'muscle', 'smuggler', 'shiftChange', 'fakeId', 'pruno', 'gardenHole', 'raceNight', 'guardNick', 'guardHome', 'guardTeam', 'releaseForms', 'recordsCheck', 'paroleBoard']);
 
+/** A gossip fact the player heard, and when (the step): the prisoner's file lists them. */
+export interface Rumor {
+  fact: Fact;
+  step: number;
+  /** Who told it (Cast id; older saves have none). */
+  by?: number;
+}
+
+/**
+ * The rumors kept, newest first: every lasting one (a rule, a guard's ways: the talk panel
+ * relies on them, P15), and the 12 newest about the moment (a shakedown, a stock, a grudge).
+ */
+export function keepRumors(list: readonly Rumor[]): Rumor[] {
+  let news = 0;
+  return list.filter((r) => LASTING.has(r.fact.kind) || ++news <= 12);
+}
+
 /** One true thing to tell: its kind, what it's about, its numbers (minutes of the day for times). */
 export interface Fact {
   kind: GossipKind;

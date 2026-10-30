@@ -35,9 +35,9 @@ import { hearers, makeNoise } from '../src/sim/systems/noise';
 import { canChat, lookAwayPrice, paperPrice } from '../src/sim/systems/ways';
 import { BANG_NOISE, BRIBE_REPORT_HEAT, CHASE_HEAT, CONTRABAND_HEAT, LOOK_AWAY_STEPS, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, NOISE_LOOK, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, STIR_STEPS, UNIT } from '../src/sim/tuning';
 import { LAYER, MAP_W } from '../src/sim/world/World';
-import { keepRumors } from '../src/talk/director';
 import { check } from './assert';
 import { Bot, n } from './bots';
+import { keepRumors } from '../src/talk/gossip';
 
 const hhmm = (step: number) => {
   const m = (8 * 60 + Math.floor(step / STEPS_PER_MINUTE)) % 1440;

@@ -18,7 +18,7 @@ import { DIR_X, DIR_Z, ORDER } from '../sim/command';
 import { OPINION_HIGH, OPINION_LOW, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { fill, nameOf, type FillContext } from './fill';
-import { facts, LASTING, type Fact } from './gossip';
+import { facts, keepRumors, LASTING, type Fact, type Rumor } from './gossip';
 import { guardMood, inmateMood, outdoors, type Incident, type Mood, type Recent } from './mood';
 import type { Line, LineDef, Style, Tag, Voice } from './types';
 import { CHATTY, guardVoice, inmateVoice, PAUSE, PITCH } from './voice';
@@ -84,14 +84,6 @@ export interface Stage {
   sees(id: number): boolean;
   /** Who the player is talking to (the talk panel shows their line instead). */
   partner: number;
-}
-
-/** A gossip fact the player heard, and when (the step): the prisoner's file lists them. */
-export interface Rumor {
-  fact: Fact;
-  step: number;
-  /** Who told it (Cast id; older saves have none). */
-  by?: number;
 }
 
 interface Pending {
@@ -1029,13 +1021,4 @@ export class Director {
   get prison() {
     return this.prisonId;
   }
-}
-
-/**
- * The rumors kept, newest first: every lasting one (a rule, a guard's ways: the talk panel
- * relies on them, P15), and the 12 newest about the moment (a shakedown, a stock, a grudge).
- */
-export function keepRumors(list: readonly Rumor[]): Rumor[] {
-  let news = 0;
-  return list.filter((r) => LASTING.has(r.fact.kind) || ++news <= 12);
 }

@@ -42,7 +42,6 @@ import { announce } from './announce';
 import { chatterStart, chatterStop, director } from './chatter';
 import { dayStart, dayStop } from './day';
 import { cancelThrow } from './aim';
-import type { Rumor } from '../talk/director';
 import { resetButtons } from './buttons';
 import { banner, board, click, combatUI, controls, darkCell, hint, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, crewChips, savedMark, settings, sleepVeil, solitaryPanel, sound, stowPanel, talk, tools, trainCard, trophyToast, view, vignette, workChips } from './context';
 import { clearPlayTimers, play, type DailyRun, type Game } from './game';
@@ -59,6 +58,7 @@ import { outsideOf } from '../content/outside';
 import { carryFrom } from '../sim/hunt/carry';
 import { OVER } from '../sim/hunt/state';
 import { inmateName } from '../ui/names';
+import { type Rumor } from '../talk/gossip';
 
 
 /**
