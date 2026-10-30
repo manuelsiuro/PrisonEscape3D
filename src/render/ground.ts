@@ -9,6 +9,7 @@ import type { SimContext } from '../sim/context';
 import { drillOn } from '../sim/systems/calendar';
 import { seeded } from './rand';
 import { canvasTexture } from './canvas';
+import { isOutside } from '../sim/hunt/world';
 
 /**
  * Two baked layers over the floors, drawn once per prison on canvases:
@@ -37,7 +38,7 @@ export function buildGround(world: World, pitch: Pitch | null = world.def.leisur
     overlay(cached.ao, shade(), 0.004, 0.2),
   );
   // (Past the edge: round the sea, and round the manhunt's outside, whose ground runs on out; a prison's own fields stay as they're tinted.)
-  if (world.def.theme === 'island' || world.def.id.startsWith('outside-')) {
+  if (world.def.theme === 'island' || isOutside(world.def)) {
     const outer = shade();
     outer.vertexColors = true;
     group.add(outerShade(world, outer));
@@ -132,7 +133,7 @@ function paintLayer(world: World, pitch: Pitch | null): THREE.CanvasTexture {
 
   // Road: a dashed yellow center line along the ring (an island has no road round it, nor the manhunt's outside, P41).
   c.fillStyle = 'rgba(242, 194, 48, 0.85)';
-  for (let i = 2; i < MAP_W - 2 && world.def.theme !== 'island' && !world.def.id.startsWith('outside-'); i += 2) {
+  for (let i = 2; i < MAP_W - 2 && world.def.theme !== 'island' && !isOutside(world.def); i += 2) {
     c.fillRect(i * R + 2, 1 * R - 1, R - 4, 2);
     c.fillRect(i * R + 2, (MAP_H - 1) * R - 1, R - 4, 2);
     c.fillRect(1 * R - 1, i * R + 2, 2, R - 4);

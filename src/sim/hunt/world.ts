@@ -79,6 +79,9 @@ function offsetOf(rows: readonly string[]): { w: number; h: number; ox: number; 
   return { w, h, ox: Math.floor((MAP_W - w) / 2), oz: Math.floor((MAP_H - h) / 2) };
 }
 
+/** The world built for an outside (its PrisonDef's id says so): the view draws it as open country. */
+export const isOutside = (def: Pick<PrisonDef, 'id'>) => def.id.startsWith('outside-');
+
 export function outsideWorld(def: OutsideDef, prison: PrisonDef): OutsideWorld {
   const rows = pictureRows(def);
   const { w, h, ox, oz } = offsetOf(rows);
