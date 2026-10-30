@@ -19,8 +19,8 @@ import { banner, click, combatUI, controls, crewChips, darkCell, hint, hud, item
 import { press, targets } from './buttons';
 import { buildFrame } from './frame';
 import { play, tickPlayClock, type Game } from './game';
-import { hudFrame } from './overlay';
 import { escapeScene, stageWorld } from './stage';
+import { hudFrame } from './hudframe';
 
 /**
  * The replay viewer (P25): a stored escape played again on screen, from its commands. The
