@@ -26,7 +26,7 @@ import { Sim, type SimEvent } from '../src/sim/Sim';
 import { GUARD, type Guard } from '../src/sim/systems/guards';
 import { DOING } from '../src/sim/systems/inmates';
 import { itemOf, PILE, slot, usesOf } from '../src/sim/systems/items';
-import { aimToss, earshot, hearers, makeNoise, strikeNoise, throwItem, wouldHear } from '../src/sim/systems/noise';
+import { earshot, hearers, makeNoise, strikeNoise, wouldHear } from '../src/sim/systems/noise';
 import { ALARM_CLOCK, toolTarget } from '../src/sim/systems/structure';
 import { BANG_LOOK, FUSE_STEPS, NOISE_LOOK, STEPS_PER_SECOND, UNIT, WIND_MAX } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
@@ -34,6 +34,7 @@ import { TILE_INFO } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
 import { n, tileOf } from './bots';
+import { aimToss, throwItem } from '../src/sim/systems/throwing';
 
 const EAST = 1;
 const SOUTH = 5;

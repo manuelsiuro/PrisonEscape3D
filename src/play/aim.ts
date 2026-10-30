@@ -3,7 +3,7 @@ import { t, type Key } from '../i18n';
 import type { AimView } from '../render/Noise';
 import { DIR_X, DIR_Z, EXT, OP, tossArgs } from '../sim/command';
 import { itemOf } from '../sim/systems/items';
-import { aimToss, earshot, hearers, tossRange, type NoiseAt, type TossAim } from '../sim/systems/noise';
+import { earshot, hearers, type NoiseAt } from '../sim/systems/noise';
 import { FIRECRACKER } from '../sim/systems/structure';
 import type { TossRefusal } from '../sim/events';
 import { BANG_NOISE, THUD_NOISE, UNIT } from '../sim/tuning';
@@ -11,6 +11,7 @@ import { LAYER, MAP_W } from '../sim/world/World';
 import { TOUCH } from '../ui/dom';
 import { aimUI, controls, itemsUI, sound, view } from './context';
 import { play, sendOp } from './game';
+import { aimToss, type TossAim, tossRange } from '../sim/systems/throwing';
 
 /**
  * Throwing (P14). On a mouse, hold the right button over the picture to aim and let go to

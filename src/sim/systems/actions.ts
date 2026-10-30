@@ -32,7 +32,7 @@ import { jobOp, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
 import { blast, liveMine } from './mines';
-import { makeNoise, strikeNoise, throwItem, wind } from './noise';
+import { makeNoise, strikeNoise, wind } from './noise';
 import { board, flood, launch } from './sea';
 import { powered, snipersOnDuty, switchPower } from './power';
 import { carve, takeTreat } from './holiday';
@@ -57,6 +57,7 @@ import { take } from './pantry';
 import { holdKick, releaseKick } from './football';
 import { endInk } from './tattoo';
 import { sitDown, sleep, standUp } from './upkeep';
+import { throwItem } from './throwing';
 
 /** The player's one-step operation (OP), and the open container closing out of reach. */
 export function useItems(sim: SimContext, cmd: number) {

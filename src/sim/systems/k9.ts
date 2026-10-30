@@ -68,12 +68,13 @@ import { clockAt, prisonDay } from './clock';
 import { awake, GUARD, sendToLook, type Guard } from './guards';
 import { HOTBAR, itemOf, slot, usesOf } from './items';
 import { bodyAt, type Body } from './movement';
-import { aimToss, makeNoise, type TossAim } from './noise';
+import { makeNoise } from './noise';
 import { chaseOff, ratOut, type Rat } from './rats';
 import { addHeat, afterHours } from './watch';
 import { brewNear, seizeBrew } from './pruno';
 import { playerAbout } from './presence';
 import { underShower } from './upkeep';
+import { aimToss, type TossAim } from './throwing';
 
 /** What a dog is up to. Never renumber: saves store them. */
 export const DOG = {
