@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { DESIGNS, FRIEND_INK, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, INK_OPINION, KICK_HOLD, KICK_REACH, LEAD_IN, TEAM_CROWD_OPINION } from '../content/team';
+import { DESIGNS, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, KICK_HOLD, KICK_REACH, LEAD_IN, TEAM_CROWD_OPINION } from '../content/team';
 import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
@@ -14,10 +14,12 @@ import { LAYER } from '../sim/world/World';
 import type { InkView, MatchView } from '../ui/team';
 import type { TeamFrame } from '../render/Team';
 import { inmateName } from '../ui/social';
-import { banner, combatUI, itemsUI, sound, view } from './context';
+import { banner, itemsUI, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
+import { floatUp } from './floats';
+import { refusedText } from './labels';
 
 /**
  * Team & ink (P29) on screen: the match's card and the tattoo's, filled from the sim; the talk
@@ -26,12 +28,6 @@ import { TOUCH } from '../ui/dom';
  */
 
 const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
-
-const floatPoint = { x: 0, y: 0 };
-function floatUp(text: string, kind: 'cash' | 'gain' | 'taken') {
-  const at = view.screenOf(-1, floatPoint);
-  if (at) combatUI.float(text, at.x, at.y, kind);
-}
 
 /** The line the needle has inked (its points, the sitting's steps it was taken at): the card draws it. Not state. */
 const trail: Array<[number, number]> = [];
@@ -59,7 +55,7 @@ export function footballOffer(sim: Sim, who: number): { open: boolean; why: stri
   const why = matchRefusal(sim, who);
   // (Away from the pitch, no row at all: it's only for when one could play.)
   if (why === 'noPitch') return null;
-  return { open: !why, why: why ? refusalText(why) : t('football.note') };
+  return { open: !why, why: why ? refusalText(sim, why) : t('football.note') };
 }
 
 /** The tattoo rows with the inmate talked to (null without a gun in the hotbar): the designs for him (their prices), one from him on the player's arm. */
@@ -69,11 +65,11 @@ export function inkOffer(sim: Sim, who: number): { why: string; designs: Array<{
   const why = inkRefusal(sim, who, false);
   // (The player's own: the first design they haven't got decides the note; each button checks its own.)
   const mineWhy = inkRefusal(sim, who, true, DESIGNS.findIndex((_, k) => !s.inked.includes(k)));
-  return { why: why ? refusalText(why) : '', designs: DESIGNS.map((d, k) => ({ k, price: d.price })), mineWhy: mineWhy ? refusalText(mineWhy) : '', inked: s.inked };
+  return { why: why ? refusalText(sim, why) : '', designs: DESIGNS.map((d, k) => ({ k, price: d.price })), mineWhy: mineWhy ? refusalText(sim, mineWhy) : '', inked: s.inked };
 }
 
 /** Why not, in words (the talk panel's notes). */
-function refusalText(why: string): string {
+function refusalText(sim: Sim, why: string): string {
   switch (why) {
     case 'gamesClosed':
       return t('games.closed');
@@ -85,12 +81,8 @@ function refusalText(why: string): string {
       return t('games.playedOut', { n: GAMES_A_DAY });
     case 'seated':
       return t('refused.seated');
-    case 'inkOpinion':
-      return t('refused.inkOpinion', { n: INK_OPINION });
-    case 'inkFriend':
-      return t('refused.inkFriend', { n: FRIEND_INK });
     default:
-      return t(`refused.${why}` as Key);
+      return refusedText(sim, why);
   }
 }
 

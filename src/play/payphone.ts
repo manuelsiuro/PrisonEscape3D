@@ -1,7 +1,7 @@
 import { buzz } from '../app/haptics';
 import { APPEAL_HEAT, CALL_STEPS, CALLEE, COINS, codeBit, HOME_ENERGY, JOB, JOB_FEES, JOBS, LAWYER_FEES, LINE_STEPS, LINES, RETAINER_DAYS, TAP_HEAT, TIER, TIERS, TURN_STEPS } from '../content/phone';
 import { t, type Key } from '../i18n';
-import { APPLY_DAY, HEARING_AFTER, LAWYER_SOONER } from '../content/parole';
+import { HEARING_AFTER, LAWYER_SOONER } from '../content/parole';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { traitOf } from '../sim/systems/guards';
 import { atPhone, byPhone, callRefusal, commsOf, mailWaiting, nextMoneyDay, phoneBusy, phoneOpen, phrasesOf, placeInLine, PLAYER_IN_LINE } from '../sim/systems/phone';
@@ -13,6 +13,7 @@ import { banner, itemsUI, payphoneCard, sound, talk, view } from './context';
 import { director } from './chatter';
 import { play, playNow } from './game';
 import { coachOnce } from './tips';
+import { refusedText } from './labels';
 
 /**
  * The pay phone on screen (P34): its card (the dial, the queue, a call, Lou's line), filled from
@@ -33,8 +34,7 @@ const view0: PayphoneView = { phase: 'dial', cash: 0, on: '', walking: false, wa
 const blank: PayphoneView = { ...view0, waiting: [], rows: [], phrases: [], known: [] };
 
 /** Why not, in words. */
-/** (P39: the parole refusals say their day: from day 3, again from day n.) */
-const why = (k: string | null, again = 0) => (k ? t(`refused.${k}` as Key, { n: k === 'paroleEarly' ? APPLY_DAY : again }) : '');
+const why = (sim: Sim, k: string | null) => (k ? refusedText(sim, k) : '');
 
 /** "14:00" for an hour. */
 const hourText = (h: number) => `${String(h).padStart(2, '0')}:00`;
@@ -98,7 +98,7 @@ export function payphoneNow(sim: Sim): PayphoneView | null {
   const parcel = !!smugglingOf(sim)?.parcel;
   const row = (id: DialRow['id'], c: number, price: string, note: string): DialRow => {
     const b = DIAL_B[id];
-    return { id, b, c, price, why: why(callRefusal(sim, b >> 4, b & 15, c), s.parole[3]), note };
+    return { id, b, c, price, why: why(sim, callRefusal(sim, b >> 4, b & 15, c)), note };
   };
   v.rows = [
     row('home', 0, t('phone.price', { n: COINS }), t('phone.home.d', { n: HOME_ENERGY })),

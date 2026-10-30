@@ -30,6 +30,12 @@ import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
 import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
 import { planOf } from '../sim/systems/calendar';
 import { ratName } from './rat';
+import { ELDER_OPINION, GAME_OPINION, GAMES_A_DAY } from '../content/games';
+import { NIGHT_OPINION } from '../content/crew';
+import { APPLY_DAY } from '../content/parole';
+import { FRIEND_INK, INK_OPINION } from '../content/team';
+import { BRIBE_REPORT_HEAT } from '../sim/tuning';
+import { P } from '../sim/systems/parole';
 
 /**
  * The words on the buttons and cards: who someone is, what a container is called, what the
@@ -450,3 +456,19 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   if (yields && sim.state.layer === LAYER.GROUND && d?.tool && worn + d.tool.damage >= tt.hp && !sim.state.items.inv.slice(0, 6).includes(0)) v.fits = false;
   return v;
 }
+
+/** The number a refusal's line names ({n}): the opinion a game, a night out, the old-timer or a tattoo needs, the games a day, parole's first day and the day to apply again, a reported bribe's heat. */
+const REFUSAL_N: Record<string, (sim: Sim) => number> = {
+  reported: () => BRIBE_REPORT_HEAT,
+  gameOpinion: () => GAME_OPINION,
+  played: () => GAMES_A_DAY,
+  nightOpinion: () => NIGHT_OPINION,
+  elderOpinion: () => ELDER_OPINION,
+  inkOpinion: () => INK_OPINION,
+  inkFriend: () => FRIEND_INK,
+  paroleEarly: () => APPLY_DAY,
+  paroleWait: (sim) => sim.state.parole[P.AGAIN],
+};
+
+/** Why the sim said no, in words (`refused.<why>`, with its number where the line has one). */
+export const refusedText = (sim: Sim, why: string) => t(`refused.${why}` as Key, { n: REFUSAL_N[why]?.(sim) ?? 0 });
