@@ -21,7 +21,7 @@ import { banner, hud, itemsUI, oddjobsCard, sound, storyCard, talk } from './con
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { tileAt } from '../sim/world/grid';
-import { refusedText } from './labels';
+import { refusedText } from './refusals';
 
 /**
  * The odd jobs board on screen (P40): its card at the board (and the job's own card, from its

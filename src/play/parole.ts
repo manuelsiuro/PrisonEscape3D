@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { ANSWER_STEPS, APPLY_DAY, HEARING_AFTER, HEARING_FROM, HEARING_TO, LAWYER_SOONER, MEMBERS, PASS, RECORD, TOPICS } from '../content/parole';
+import { ANSWER_STEPS, APPLY_DAY, BOARD_LOOKS, HEARING_AFTER, HEARING_FROM, HEARING_TO, LAWYER_SOONER, MEMBERS, PASS, RECORD, TOPICS } from '../content/parole';
 import { t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -10,16 +10,15 @@ import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import type { ParoleView } from '../ui/parole';
 import { banner, paBoard, paroleCard, sound } from './context';
-import { announcePa, dayTime } from './day';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
 import { releaseChip } from './paperwork';
-import { boardLooks } from './smuggle';
 import { sitterPortraitOf } from '../render/portrait';
 import { TOUCH } from '../ui/dom';
 import { LESSONS } from '../tutorial/lessons';
 import { floatUp } from './floats';
-import { refusedText } from './labels';
+import { refusedText } from './refusals';
+import { announcePa, dayTime } from './warden';
 
 /**
  * The parole board on screen (P39): the card at the release desk (how the application stands,
@@ -64,7 +63,7 @@ function weighedText(code: number, counts: readonly number[], topics?: readonly 
 
 /** The board's three faces (the room's figures, photographed once the first hearing sits). */
 let faces: string[] = [];
-const boardFaces = () => (faces.length ? faces : (faces = boardLooks.map((m) => sitterPortraitOf(m.look, m.suit))));
+const boardFaces = () => (faces.length ? faces : (faces = BOARD_LOOKS.map((m) => sitterPortraitOf(m.look, m.suit))));
 
 const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, faces: [], q: 0, question: '', file: '', fileOk: true, answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
 

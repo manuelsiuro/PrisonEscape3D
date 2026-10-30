@@ -17,10 +17,10 @@ import { itemName } from '../ui/items';
 import { inmateName } from '../ui/social';
 import { banner, itemsUI, sound } from './context';
 import { play } from './game';
-import { ratName } from './rat';
 import { coachOnce } from './tips';
 import { treatOffers } from './holidays';
 import { floatUp } from './floats';
+import { ratName } from './labels';
 
 /**
  * Long games (P28) on screen: what can be taken from the open furniture, the race card, the

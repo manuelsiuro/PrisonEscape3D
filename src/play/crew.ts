@@ -14,8 +14,8 @@ import { guardTitle, inmateName } from '../ui/social';
 import { banner, closeSocial, crewPanel, hud, itemsUI, profile, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
-import { badgeOf } from './frame';
 import { spanText } from '../sim/systems/clock';
+import { badgeOf } from './badges';
 
 /**
  * The crew on screen (P23): the orders in the talk panel (each greyed by the sim's own

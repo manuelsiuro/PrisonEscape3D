@@ -12,9 +12,8 @@ import { routineName, routinePlace } from '../ui/hud';
 import { prisonName } from '../ui/screens/prisons';
 import { showDay, type DayBlock, type DayChip, type DayPin, type DayView } from '../ui/screens/day';
 import { click, controls, tools } from './context';
-import { dayRows, dayTime, EVENT_COLOR, eventIcon, FORECAST_AT, hasDays, whenOf } from './day';
+import { dayRows, EVENT_COLOR, eventIcon, FORECAST_AT, hasDays, whenOf } from './day';
 import { play, type Game } from './game';
-import { ratName } from './rat';
 import { shootKey } from './pastimes';
 import { kickKey } from './team';
 import { HEARING_FROM, HEARING_TO } from '../content/parole';
@@ -22,6 +21,8 @@ import { P } from '../sim/systems/parole';
 import { roomOf } from './parole';
 import { HOLIDAY_DAY } from '../content/holidays';
 import { holidayDays } from '../sim/systems/holiday';
+import { ratName } from './labels';
+import { dayTime } from './warden';
 
 /** The parole board's colour (P39: its help topic's). */
 const PAROLE_COLOR = '#8a6bd1';

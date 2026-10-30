@@ -13,8 +13,8 @@ import { banner, itemsUI, payphoneCard, sound, talk, view } from './context';
 import { director } from './chatter';
 import { play, playNow } from './game';
 import { coachOnce } from './tips';
-import { refusedText } from './labels';
 import { hhmm } from '../sim/systems/clock';
+import { refusedText } from './refusals';
 
 /**
  * The pay phone on screen (P34): its card (the dial, the queue, a call, Lou's line), filled from

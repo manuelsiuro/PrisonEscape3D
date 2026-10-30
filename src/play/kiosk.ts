@@ -13,10 +13,11 @@ import { DAY, FEAT } from '../sim/systems/ledger';
 import type { KioskView } from '../ui/kiosk';
 import { itemName } from '../ui/items';
 import { banner, itemsUI, kioskCard, sound } from './context';
-import { dayTime, vehicleName, weatherName } from './day';
+import { vehicleName, weatherName } from './day';
 import { play, playNow } from './game';
 import { questionText } from './nights';
 import { coachOnce } from './tips';
+import { dayTime } from './warden';
 
 /**
  * The internet kiosk on screen (P35): its card (logged out: Log in; logged in: the clock, the

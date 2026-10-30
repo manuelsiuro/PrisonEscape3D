@@ -27,6 +27,13 @@ export const SIT_STEPS = 3 * STEPS_PER_SECOND;
 /** The board grants parole from this score (the record and the three answers together). */
 export const PASS = 16;
 
+/** How the board's three look, by place (a visitor's look number and a suit): the hearing room draws them, the parole card shows their faces. */
+export const BOARD_LOOKS: ReadonlyArray<{ look: number; suit: number }> = [
+  { look: 101, suit: 0x34363c },
+  { look: 118, suit: 0x5a4636 },
+  { look: 135, suit: 0x55595f },
+];
+
 /**
  * The board: three members, each asking one question. What an answer is worth to each: a claim
  * the record bears out, one it doesn't (a lie caught), owning up, and fine words (this many points

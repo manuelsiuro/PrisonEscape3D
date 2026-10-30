@@ -9,10 +9,10 @@ import { rollCallShows } from '../render/ground';
 import { DIR_X, DIR_Z, headingAngle, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
-import { FAVOR_STATE, type Station } from '../sim/systems/economy';
+import { type Station } from '../sim/systems/economy';
 import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
-import { itemOf, ownerOf, usesOf, type ItemState, type Target } from '../sim/systems/items';
+import { itemOf, ownerOf, type ItemState, type Target } from '../sim/systems/items';
 import { seatSpot } from '../sim/systems/rest';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from '../sim/systems/security';
 import type { ClimbTarget } from '../sim/systems/structure';
@@ -43,7 +43,7 @@ import { fireworksOn, holidayNow } from '../sim/systems/holiday';
 import { decorHoliday } from './holidays';
 import { tileAt } from '../sim/world/grid';
 import { emptyFrame, type Frame } from '../render/viewFrame';
-import { type BadgeKind } from '../render/characterSprites';
+import { badgeOf } from './badges';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what
@@ -53,7 +53,6 @@ import { type BadgeKind } from '../render/characterSprites';
 
 const BATON = itemNumber('baton');
 const POUCH = itemNumber('pouch');
-const LETTER = itemNumber('letter');
 const MAGAZINE = itemNumber('magazine');
 
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
@@ -161,34 +160,6 @@ function trainReps(reps: number): number {
   if (reps > repLast) repCount++;
   repLast = reps;
   return repCount;
-}
-
-/**
- * The badge over an inmate (GDD §13.2): the letter the player carries for them, a favor done
- * (hand it in) or on offer, a merchant open for business.
- */
-const badgeMemo = { step: -1, rev: -1, kinds: [] as BadgeKind[] };
-export function badgeOf(sim: Sim, who: number): BadgeKind {
-  const s = sim.state;
-  // Worked out once a step (or when the items change), not every frame.
-  if (badgeMemo.step !== s.step || badgeMemo.rev !== s.items.rev) {
-    badgeMemo.step = s.step;
-    badgeMemo.rev = s.items.rev;
-    for (let k = 0; k < s.inmates.length; k++) badgeMemo.kinds[k] = badgeNow(sim, k);
-  }
-  return badgeMemo.kinds[who] ?? '';
-}
-function badgeNow(sim: Sim, who: number): BadgeKind {
-  const s = sim.state;
-  const m = s.inmates[who];
-  if (m.ko > 0 || m.angry > 0) return '';
-  if (sim.onDuty && s.mail.includes(who) && s.items.inv.slice(0, 6).some((v) => itemOf(v) === LETTER && usesOf(v) - 1 === who)) return 'mail';
-  const f = s.favors.find((x) => x.by === who);
-  if (f && (f.state === FAVOR_STATE.DONE || ((f.kind === 0 || f.kind === 1) && f.state === FAVOR_STATE.TAKEN && s.items.inv.slice(0, 6).some((v) => itemOf(v) === f.item)))) return 'done';
-  if (f?.state === FAVOR_STATE.OFFERED) return 'favor';
-  if (sim.shopsOpen && sim.merchantOf(who) >= 0 && s.shops[sim.merchantOf(who)].some((v) => v)) return 'shop';
-  // (A follower's badge is the crew's chip now, P23: their line of work, ui/crew.ts.)
-  return '';
 }
 
 /**

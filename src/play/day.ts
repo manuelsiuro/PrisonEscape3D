@@ -26,7 +26,7 @@ import { holidayMorning, holidayRows } from './holidays';
 import { holidayDays } from '../sim/systems/holiday';
 import { HEARING_FROM, HEARING_TO } from '../content/parole';
 import { P } from '../sim/systems/parole';
-import { hhmm } from '../sim/systems/clock';
+import { dayTime, announcePa, wardenOf } from './warden';
 
 /** How many of today's holiday days are over by this minute (P42: the file redraws as one ends). */
 const holidaysOver = (sim: Sim, m: number) => holidayDays(sim).filter((id) => m >= HOLIDAY_DAY[id].at + HOLIDAY_DAY[id].length).length;
@@ -65,12 +65,6 @@ export const FORECAST_AT = 14 * 60;
 const QUIP_AT = 6 * 60 + 30;
 const QUIPS = 3;
 
-/** "10:00" for a minute into the prison day. */
-export function dayTime(dayMin: number): string {
-  const m = (dayMin + 8 * 60) % 1440;
-  return hhmm(m);
-}
-
 const cold = (sim: Sim) => freezing(sim);
 /** How the weather is named in this prison. */
 export function weatherName(sim: Sim, w: Weather): WeatherName {
@@ -80,8 +74,6 @@ export function weatherName(sim: Sim, w: Weather): WeatherName {
 
 /** Whether a prison has days at all (the Training Block doesn't), and the game isn't a lesson (but one about the day). */
 export const hasDays = (g: Game | null): g is Game => !!g && (!g.lesson || !!LESSONS[g.lesson.index].days) && !!DAY_BOOKS[g.rec.sim.prison.id];
-
-const wardenOf = (sim: Sim) => t(`warden.${sim.prison.id}` as Key);
 
 /** When an event happens, as the card and the file say it. */
 export function whenOf(p: DayPlan): string {
@@ -148,13 +140,6 @@ function hearingRow(sim: Sim, day: number): PaRow | null {
 
 // ------------------------------------------------------------------ the warden's speakers
 
-/** A line over the speakers (not with the announcements off; never in your sleep). */
-function say(sim: Sim, text: string) {
-  if (settings.pa === 'off' || sim.state.sleeping) return;
-  paBoard.say(wardenOf(sim), text);
-}
-/** (P36: the release's call, said by the hacking's announcements.) */
-export const announcePa = say;
 
 /** The morning card (or its short line): the day's greeting, what's on, the weather. */
 function morning(sim: Sim, first: boolean) {
@@ -193,18 +178,18 @@ export function dayStep(sim: Sim) {
   if (!hasDays(g) || st.step % STEPS_PER_MINUTE !== 0 || st.sleeping || g.over) return;
   const m = dayMinute(st.step);
   const p = today(sim);
-  if (WARNED.has(p.event) && m === p.at - WARN_AHEAD) say(sim, t(`pa.warn.${p.event}` as Key, { vehicle: vehicleThe(sim) }));
+  if (WARNED.has(p.event) && m === p.at - WARN_AHEAD) announcePa(sim, t(`pa.warn.${p.event}` as Key, { vehicle: vehicleThe(sim) }));
   // The dogs' first shift (P19): the warden introduces them.
   if (p.day === dogsFrom(st) && m === DOG_DAY_FROM - ROUTINE[0].start && st.dogs.length && !sim.noDogs) {
     const names = handlersOf(sim.world).map((h) => sim.prison.guards[h].dog!.name);
-    say(sim, t(names.length === 1 ? 'pa.dog1' : 'pa.dogs', { names: listOf(names) }));
+    announcePa(sim, t(names.length === 1 ? 'pa.dog1' : 'pa.dogs', { names: listOf(names) }));
   }
   if (m === FORECAST_AT) {
     const next = planOf(sim, p.day + 1);
     const sky = t(`weather.${weatherName(sim, next.weather)}` as Key).toLocaleLowerCase();
-    say(sim, t('pa.forecast', { weather: sky, event: next.event === 'none' ? t('pa.forecastNone') : t(`pa.forecastEvent.${next.event}` as Key) }));
+    announcePa(sim, t('pa.forecast', { weather: sky, event: next.event === 'none' ? t('pa.forecastNone') : t(`pa.forecastEvent.${next.event}` as Key) }));
   }
-  if (m === QUIP_AT && p.day > 1 && (p.event === 'none' || p.event === 'feast')) say(sim, t(`pa.quip.${sim.prison.id}.${Math.floor(dayRoll(st.salt, p.day, 7) * QUIPS)}` as Key));
+  if (m === QUIP_AT && p.day > 1 && (p.event === 'none' || p.event === 'feast')) announcePa(sim, t(`pa.quip.${sim.prison.id}.${Math.floor(dayRoll(st.salt, p.day, 7) * QUIPS)}` as Key));
 }
 
 
@@ -227,22 +212,22 @@ export function dayEvent(e: SimEvent, sim: Sim) {
           sound.crowd();
           buzz('giveWay');
           banner.show(t('banner.foodFight'), t('banner.foodFightSub'), 'routine', 3800);
-          say(sim, t('pa.start.foodFight'));
-        } else say(sim, t(`pa.start.${e.event}` as Key, { time: dayTime(p.until), vehicle: vehicleThe(sim) }));
+          announcePa(sim, t('pa.start.foodFight'));
+        } else announcePa(sim, t(`pa.start.${e.event}` as Key, { time: dayTime(p.until), vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'end') {
-        if (e.event !== 'feast' && !sim.state.escaped) say(sim, t(`pa.end.${e.event}` as Key, { vehicle: vehicleThe(sim) }));
+        if (e.event !== 'feast' && !sim.state.escaped) announcePa(sim, t(`pa.end.${e.event}` as Key, { vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'signOff') {
-        say(sim, t('pa.signOff', { vehicle: vehicleThe(sim), search: dayTime(searchMinute(p)), time: dayTime(p.until) }));
+        announcePa(sim, t('pa.signOff', { vehicle: vehicleThe(sim), search: dayTime(searchMinute(p)), time: dayTime(p.until) }));
         // Waiting in the dark: the last minutes play out at their own pace.
         if (sim.state.stowed && g.waiting) g.waiting = false;
       } else if (e.phase === 'search') {
         // Hidden in it, a quick look is the sweetest sound: the tailgate slamming shut.
         if (sim.state.stowed && !e.thorough) banner.toast(t('toast.quickLook', { guard: supervisorOf(sim) }), 'good', 4200);
         // (A stowaway found has the warden's own line.)
-        if (!sim.events.some((x) => x.type === 'stow' && x.found)) say(sim, t(e.thorough ? 'pa.searchClose' : 'pa.searchQuick', { vehicle: vehicleThe(sim) }));
+        if (!sim.events.some((x) => x.type === 'stow' && x.found)) announcePa(sim, t(e.thorough ? 'pa.searchClose' : 'pa.searchQuick', { vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'waved') {
         if (sim.state.stowed) banner.toast(t('toast.waved'), 'good', 4200);
-        say(sim, t('pa.waved', { vehicle: vehicleThe(sim) }));
+        announcePa(sim, t('pa.waved', { vehicle: vehicleThe(sim) }));
       } else if (e.phase === 'muster') {
         sound.chime();
         buzz('attended');
@@ -251,14 +236,14 @@ export function dayEvent(e: SimEvent, sim: Sim) {
         sound.sting();
         buzz('missed');
         banner.toast(t('toast.drillMissed', { n: DRILL_HEAT }), 'bad', 4500);
-        say(sim, t('pa.drillMissed'));
+        announcePa(sim, t('pa.drillMissed'));
       } else if (e.phase === 'prize') {
         // Sports day's champion (P22): the warden says who (the banner is the games').
-        say(sim, PLAYER.name ? t('pa.champion', { name: PLAYER.name }) : t('pa.championAnon'));
+        announcePa(sim, PLAYER.name ? t('pa.champion', { name: PLAYER.name }) : t('pa.championAnon'));
       } else if (e.phase === 'commend') {
         buzz('attended');
         banner.toast(t('toast.commend', { n: COMMENDATION }), 'good', 4500);
-        say(sim, t('pa.commend', { name: PLAYER.name || t('pa.someone') }));
+        announcePa(sim, t('pa.commend', { name: PLAYER.name || t('pa.someone') }));
       }
       break;
     }
@@ -270,7 +255,7 @@ export function dayEvent(e: SimEvent, sim: Sim) {
         banner.toast(t('toast.stowed', { vehicle: vehicleThe(sim), time: dayTime(today(sim).until) }), 'good', 4200);
       } else if (e.found) {
         // (The capture's banner says it: announce.ts.)
-        say(sim, t('pa.found', { vehicle: vehicleThe(sim) }));
+        announcePa(sim, t('pa.found', { vehicle: vehicleThe(sim) }));
       } else {
         sound.stow(false);
         banner.toast(t('toast.unstowed', { vehicle: vehicleThe(sim) }));
@@ -281,7 +266,7 @@ export function dayEvent(e: SimEvent, sim: Sim) {
       if (!e.on && e.by === 'storm' && e.gen !== 1) {
         // Lightning (a blizzard just takes the power: no bolt in the snow); none seen asleep or underground.
         if (!cold(sim) && !sim.state.sleeping && sim.state.layer !== LAYER.UNDER) strike(1);
-        say(sim, t(cold(sim) ? 'pa.outageCold' : 'pa.outage'));
+        announcePa(sim, t(cold(sim) ? 'pa.outageCold' : 'pa.outage'));
       }
       break;
   }
