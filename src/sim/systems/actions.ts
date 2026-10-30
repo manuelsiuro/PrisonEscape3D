@@ -55,7 +55,7 @@ import { raceOp, trainRat } from './races';
 import { bedTarget, tend } from './garden';
 import { take } from './pantry';
 import { holdKick, releaseKick } from './football';
-import { endInk } from './tattoo';
+import { drawNeedle, endInk } from './tattoo';
 import { sitDown, sleep, standUp } from './upkeep';
 import { throwItem } from './throwing';
 
@@ -229,6 +229,8 @@ export function useItems(sim: SimContext, cmd: number) {
         if (argB(cmd) === 0) holdKick(sim);
         else releaseKick(sim);
       } else if (a === EXT.INK) endInk(sim, 'quit');
+      // (2.22: the tattoo drawn by hand, the needle drawn or set down.)
+      else if (a === EXT.NEEDLE || a === EXT.NEEDLE_DOWN) drawNeedle(sim, argB(cmd), argC(cmd), a === EXT.NEEDLE_DOWN);
       // Stage nights (P30): the player's act and its notes; the quiz joined or given up, an answer.
       else if (a === EXT.STAGE && argB(cmd) === STAGE_QUIT) quitShow(sim);
       else if (a === EXT.STAGE && s.solitary <= 0) startShow(sim, argB(cmd), argC(cmd));

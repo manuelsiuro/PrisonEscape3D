@@ -96,6 +96,12 @@ export const EXT = {
   HUNT_TREAT: 28,
   /** v2.21 (P42, holidays): the holiday's treat taken from the open furniture (b = content/holidays.ts TREAT). */
   HOLIDAY: 32,
+  /**
+   * v2.22 (the tattoo drawn by hand): the needle drawn toward a point of the design (b and c: the
+   * point, see needleArgs), or set down there with nothing inked on the way (a fresh touch).
+   */
+  NEEDLE: 33,
+  NEEDLE_DOWN: 34,
 } as const;
 
 /** What EXT.LINE asks (P34): a place at the end of the queue, out of it, cut in at the front. Never renumber. */
@@ -145,6 +151,16 @@ export const argC = (cmd: number) => (cmd >>> 25) & 63;
  */
 export const tossArgs = (tile: number): [number, number] => [tile & 255, tile >>> 8];
 export const tossTile = (b: number, c: number) => b | (c << 8);
+
+/** A point of a tattoo's design (0–1000 each way) in the two arguments, to NEEDLE_GRID steps: x in b's low 7 bits, y's low bit in its top one, the rest of y in c. */
+const NEEDLE_GRID = 127;
+export function needleArgs(x: number, y: number): [number, number] {
+  const gx = Math.max(0, Math.min(NEEDLE_GRID, Math.round((x * NEEDLE_GRID) / 1000)));
+  const gy = Math.max(0, Math.min(NEEDLE_GRID, Math.round((y * NEEDLE_GRID) / 1000)));
+  return [gx | ((gy & 1) << 7), gy >> 1];
+}
+/** …and back (box units). */
+export const needlePoint = (b: number, c: number): [number, number] => [Math.round(((b & 127) * 1000) / NEEDLE_GRID), Math.round((((c << 1) | (b >> 7)) * 1000) / NEEDLE_GRID)];
 
 /**
  * Unit vectors for the 16 directions, scaled to 1024 and rounded, so every platform gets

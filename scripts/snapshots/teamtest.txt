@@ -16,4 +16,8 @@ eagle: 202 steps, pays $20–$60
 heart: followed 100 ($22, +12), left still 0 ($7, +2)
 skull: followed 100 ($37, +12), left still 0 ($12, +2)
 eagle: followed 100 ($60, +12), left still 0 ($20, +2)
+heart drawn: by hand 100 ($22, +12, 56 steps), shaky 87 ($20), keys 100 (164 steps), left still 0 ($7), scribbled 0
+skull drawn: by hand 100 ($37, +12, 64 steps), shaky 83 ($33), keys 100 (163 steps), left still 0 ($12), scribbled 0
+eagle drawn: by hand 100 ($60, +12, 70 steps), shaky 84 ($53), keys 100 (185 steps), left still 0 ($20), scribbled 0
+hopping ahead along the heart: 799 steps (400 dabs of 10), line 49
 saves: mid-match round trip ok (score 1–1)

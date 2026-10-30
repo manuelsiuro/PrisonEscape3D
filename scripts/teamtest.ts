@@ -6,8 +6,10 @@
  * - a match: the teams picked, the walk on and the whistle, the inmates' play (measured against a
  *   simple bot), goals, full time and its rewards; off and fouls (a brawl, guards drawn);
  * - the cover: guards watching a match see off the pitch at half range; a goal turns them to it;
- * - tattoos: the gun crafted, a job's refusals, the tracing's quality from fixed command sequences,
- *   the pay and opinion, the heat when seen, a friend's tattoo on the player's arm;
+ * - tattoos: the gun crafted, a job's refusals, the tracing's quality from fixed command sequences
+ *   (2.22: drawn by hand or steered, idle, scribbled, hopping ahead; and before 2.22, Sim.rules221,
+ *   the pen on its clock as it was), the pay and opinion, the heat when seen, a friend's tattoo on
+ *   the player's arm;
  * - saves mid-match and mid-sitting; nothing happens without the player.
  */
 import { PRISONS } from '../src/content/prisons';
@@ -15,8 +17,8 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
 import { itemNumber } from '../src/content/items';
 import { RECIPES } from '../src/content/recipes';
-import { AIM_IN, DESIGNS, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, INK_HEAT, INK_ME_STEPS, KICK_GRACE, KICK_MAX, KICK_MIN, KICK_TAP, MATCH_STEPS, MATCH_STEPS_215, TEAM_WIN_OPINION } from '../src/content/team';
-import { command, EXT, OP, TALK } from '../src/sim/command';
+import { AIM_IN, DESIGNS, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, INK_HEAT, INK_ME_STEPS, INK_TIME, KICK_GRACE, KICK_MAX, KICK_MIN, KICK_TAP, MATCH_STEPS, MATCH_STEPS_215, RING_AHEAD, TEAM_WIN_OPINION } from '../src/content/team';
+import { command, EXT, needleArgs, needlePoint, OP, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { loadState } from '../src/sim/load';
 import { DAY_STEPS } from '../src/sim/systems/clock';
@@ -25,7 +27,7 @@ import { GUARD } from '../src/sim/systems/guards';
 import { DOING } from '../src/sim/systems/inmates';
 import { slot } from '../src/sim/systems/items';
 import { nearestDir } from '../src/sim/ai/path';
-import { inksToday, penAt, payOf, qualityOf, traceSteps } from '../src/sim/systems/tattoo';
+import { inksToday, pathLength, penAt, payOf, pointAt, qualityOf, ringAt, traceSteps } from '../src/sim/systems/tattoo';
 import { sightOf } from '../src/sim/systems/calendar';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { MAP_W } from '../src/sim/world/World';
@@ -686,33 +688,112 @@ function newcomer(sim: Sim, seen: Array<[number, number]>, st: { held: number })
     k.talk(TALK.INK_ME, 1);
     check(!k.sim.state.ink && refusals(k.seen).includes('inkFriend'), 'only a friend inks the player');
   }
-  /** A tracing steered by `steer` (the step's direction from the needle and the pen); its 'done' event. */
-  const trace = (design: number, steer: (o: { nx: number; nz: number }, pen: [number, number]) => number, seeGuard = false) => {
+  /** A tracing played by `play` (each step's command, from the sitting), under the rules before 2.22 (`old`: Sim.rules221) or now; its 'done' event and how long it took (the steps after the one it began in). */
+  type Sitting = { nx: number; nz: number; k: number; at: number; design: number };
+  const trace = (design: number, play: (o: Sitting) => number, old = false) => {
     const g = sitting(50);
-    if (!seeGuard) g.sim.state.guards.forEach((q) => (q.body.x = 2 * UNIT));
-    else g.setCalm(false);
-    const heat0 = g.sim.state.heat;
+    g.sim.rules221 = old;
+    g.sim.state.guards.forEach((q) => (q.body.x = 2 * UNIT));
     g.talk(TALK.TATTOO, design);
     const s = g.sim.state;
     check(!!s.ink && !s.items.inv.slice(0, 6).some((v) => (v & 255) === n('ink')), 'a sitting: the ink goes into the gun');
     const x0 = s.player.x;
-    const pen: [number, number] = [0, 0];
+    let steps = 0;
     while (s.ink) {
-      penAt(design, s.ink.k + 1, pen);
-      g.step(command(steer(s.ink, pen)));
+      g.step(play(s.ink));
+      steps++;
     }
     check(s.player.x === x0, 'the player keeps still meanwhile (the moves steer the needle)');
-    return { done: of(g.seen, 'tattoo').find((e) => e.what === 'done')!, g, heat: s.heat - heat0 };
+    return { done: of(g.seen, 'tattoo').find((e) => e.what === 'done')!, steps };
   };
-  const follow = (o: { nx: number; nz: number }, pen: [number, number]) => (Math.hypot(pen[0] - o.nx, pen[1] - o.nz) < 8 ? 0 : nearestDir(pen[0] - o.nx, pen[1] - o.nz));
+  // Before 2.22 (Sim.rules221): the pen on its clock, the needle after it with the keys.
+  const pen: [number, number] = [0, 0];
+  const follow = (o: Sitting) => {
+    penAt(o.design, o.k + 1, pen);
+    return command(Math.hypot(pen[0] - o.nx, pen[1] - o.nz) < 8 ? 0 : nearestDir(pen[0] - o.nx, pen[1] - o.nz));
+  };
   for (let d = 0; d < DESIGNS.length; d++) {
-    const good = trace(d, follow);
-    const idle = trace(d, () => 0);
+    const good = trace(d, follow, true);
+    const idle = trace(d, () => 0, true);
     check(good.done.quality! >= 85, `${DESIGNS[d].id}: following the pen, a clean line (${good.done.quality})`);
     check(idle.done.quality! <= 20, `${DESIGNS[d].id}: the needle left still, a poor one (${idle.done.quality})`);
     check(good.done.pay! > idle.done.pay! && good.done.gain! > idle.done.gain!, 'a cleaner line pays more and wins more respect');
     lines.length = 0;
     console.log(`${DESIGNS[d].id}: followed ${good.done.quality} ($${good.done.pay}, +${good.done.gain}), left still ${idle.done.quality} ($${idle.done.pay}, +${idle.done.gain})`);
+  }
+  // 2.22: the needle's point in a command, to within half a step of its grid.
+  {
+    let worst = 0;
+    for (let x = 0; x <= 1000; x += 37) for (let y = 0; y <= 1000; y += 41) {
+      const [px, py] = needlePoint(...needleArgs(x, y));
+      worst = Math.max(worst, Math.abs(px - x), Math.abs(py - y));
+    }
+    check(worst <= 4, `the needle's point sent to within ${worst} of where it was`);
+  }
+  // 2.22: drawn by hand (the finger set down at the start, then drawn after a point a little ahead on the line); steered by the keys after the ring; left still; scribbled beside the line.
+  const ring: [number, number] = [0, 0];
+  const at: [number, number] = [0, 0];
+  const draw = (lead: number, wobble: number) => {
+    let down = true;
+    return (o: Sitting) => {
+      // (Set down on the needle at the start, then drawn on after a point `lead` ahead on the line, `wobble` off it.)
+      pointAt(o.design, down ? 0 : o.at + lead, at);
+      const w = down ? 0 : wobble * Math.sin(o.k * 0.9);
+      const cmd = command(0, OP.EXT, down ? EXT.NEEDLE_DOWN : EXT.NEEDLE, ...needleArgs(at[0] + w, at[1] - w));
+      down = false;
+      return cmd;
+    };
+  };
+  const keys = (o: Sitting) => {
+    ringAt(o, RING_AHEAD, ring);
+    return command(Math.hypot(ring[0] - o.nx, ring[1] - o.nz) < 8 ? 0 : nearestDir(ring[0] - o.nx, ring[1] - o.nz));
+  };
+  const beside = (o: Sitting) => {
+    pointAt(o.design, o.k * 12, at);
+    return command(0, OP.EXT, EXT.NEEDLE, ...needleArgs(at[0] + 140, at[1] + 140));
+  };
+  for (let d = 0; d < DESIGNS.length; d++) {
+    const hand = trace(d, draw(40, 0));
+    const shaky = trace(d, draw(40, 45));
+    const steered = trace(d, keys);
+    const idle = trace(d, () => 0);
+    const scribbled = trace(d, beside);
+    check(hand.done.quality! >= 95 && hand.steps < INK_TIME, `${DESIGNS[d].id}: drawn along the line, a clean one (${hand.done.quality}, ${hand.steps} steps)`);
+    check(shaky.done.quality! < hand.done.quality! && shaky.done.quality! >= 40, `${DESIGNS[d].id}: a shaky hand, a poorer line (${shaky.done.quality})`);
+    check(steered.done.quality! >= 85 && steered.steps < INK_TIME, `${DESIGNS[d].id}: steered after the ring with the keys, a clean line (${steered.done.quality}, ${steered.steps} steps)`);
+    check(idle.done.quality === 0 && idle.steps === INK_TIME - 1, `${DESIGNS[d].id}: the needle left still, nothing traced by the end of the time (${idle.done.quality}, ${idle.steps} steps)`);
+    check(scribbled.done.quality! <= 10, `${DESIGNS[d].id}: scribbled beside the line, nothing traced (${scribbled.done.quality})`);
+    check(hand.done.pay! > shaky.done.pay! && shaky.done.pay! > idle.done.pay! && hand.done.gain! > idle.done.gain!, 'a line closer to the design pays more and wins more respect');
+    console.log(`${DESIGNS[d].id} drawn: by hand ${hand.done.quality} ($${hand.done.pay}, +${hand.done.gain}, ${hand.steps} steps), shaky ${shaky.done.quality} ($${shaky.done.pay}), keys ${steered.done.quality} (${steered.steps} steps), left still ${idle.done.quality} ($${idle.done.pay}), scribbled ${scribbled.done.quality}`);
+  }
+  // 2.22: no skipping: the needle set down on the line ahead, a dab of ink on from there, set down further on… gets no further than the ink it lays.
+  {
+    let dabs = 0;
+    const hop = (o: Sitting) => {
+      pointAt(o.design, o.at + (o.k % 2 ? 95 : 85), at);
+      if (o.k % 2) dabs++;
+      return command(0, OP.EXT, o.k % 2 ? EXT.NEEDLE : EXT.NEEDLE_DOWN, ...needleArgs(at[0], at[1]));
+    };
+    const hopped = trace(0, hop);
+    const line = `hopping ahead along the heart: ${hopped.steps} steps (${dabs} dabs of 10), line ${hopped.done.quality}`;
+    check(hopped.steps > 2 * Math.floor(pathLength(0) / (2 * 10 + 10)) && hopped.done.quality! < 100, line);
+    console.log(line);
+  }
+  // A sitting saved before 2.22 (no line traced by hand in it): it loads with nothing traced yet, and goes on.
+  {
+    const g = sitting(50);
+    g.talk(TALK.TATTOO, 0);
+    for (let k = 0; k < 10; k++) g.step(command(1));
+    const old = JSON.parse(JSON.stringify(g.sim.state));
+    delete old.ink.at;
+    delete old.ink.n;
+    const back = loadState(g.sim.world, TRAINING, old);
+    check(!!back.ink && back.ink.at === 0 && back.ink.n === 0 && back.ink.nx === g.sim.state.ink!.nx && back.ink.k === g.sim.state.ink!.k, 'a sitting saved before 2.22 loads, nothing traced by hand yet');
+  }
+  // Before 2.22 the hand's commands did nothing: the needle stays put, the pen runs on.
+  {
+    const ignored = trace(0, draw(40, 0), true);
+    check(ignored.done.quality! <= 20 && ignored.steps === traceSteps(0) - 1, `under the old rules, the needle drawn by hand stays put (${ignored.done.quality})`);
   }
   // Seen at it: heat once.
   {

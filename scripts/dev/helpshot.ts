@@ -14,7 +14,7 @@ import { Bot, DIR } from '../bots';
 import { TRAINING } from '../../src/content/prisons/training';
 import { WAY } from '../../src/content/smuggling';
 import { CHARTS, countIn, LATE, songSteps } from '../../src/content/nights';
-import { command, dirFromVector, EXT, LINE, OP, ORDER, TALK, tossArgs } from '../../src/sim/command';
+import { command, dirFromVector, EXT, LINE, needleArgs, OP, ORDER, TALK, tossArgs } from '../../src/sim/command';
 import { nearestDir } from '../../src/sim/ai/path';
 import { isTrue } from '../../src/sim/systems/cards';
 import { drillOn } from '../../src/sim/systems/calendar';
@@ -26,7 +26,7 @@ import { courtOf, powerAt, shotWindow } from '../../src/sim/systems/hoops';
 import { questionNow } from '../../src/sim/systems/quiz';
 import { cardUp, RACE_ENTER, raceCard } from '../../src/sim/systems/races';
 import { tonight, turnFrom } from '../../src/sim/systems/talent';
-import { penAt } from '../../src/sim/systems/tattoo';
+import { pointAt } from '../../src/sim/systems/tattoo';
 import { CENTER_PERKS } from '../../src/content/prisons/center-perks';
 import { HEARINGS } from '../../src/content/parole';
 import { HOLIDAY } from '../../src/content/holidays';
@@ -391,16 +391,20 @@ export const SHOTS: Record<string, Shot> = {
       bot.op(OP.CRAFT, (1 << 0) | (1 << 1) | (1 << 2));
       sparky(bot);
       bot.op(OP.TALK, TALK.TATTOO, 0);
-      const pen: [number, number] = [0, 0];
+      // (As tutorialtest's bot: set down on the needle, then drawn on after a point a little ahead on the line.)
+      const to: [number, number] = [0, 0];
+      let down = true;
       bot.until(() => !bot.st.ink, 600, () => {
         const o = bot.st.ink;
         if (!o) return 0;
-        penAt(o.design, o.k + 1, pen);
-        return Math.hypot(pen[0] - o.nx, pen[1] - o.nz) < 8 ? 0 : command(nearestDir(pen[0] - o.nx, pen[1] - o.nz));
+        pointAt(o.design, down ? 0 : o.at + 40, to);
+        const cmd = command(0, OP.EXT, down ? EXT.NEEDLE_DOWN : EXT.NEEDLE, ...needleArgs(to[0], to[1]));
+        down = false;
+        return cmd;
       });
     },
     when: (s) => !!s.state.ink,
-    after: 100,
+    after: 30,
     zoom: 3.6,
   },
   crew: {

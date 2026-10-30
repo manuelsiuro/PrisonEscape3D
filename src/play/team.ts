@@ -1,19 +1,19 @@
 import { buzz } from '../app/haptics';
-import { DESIGNS, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, KICK_HOLD, KICK_REACH, LEAD_IN, TEAM_CROWD_OPINION } from '../content/team';
+import { DESIGNS, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, INK_TIME, KICK_HOLD, KICK_REACH, LEAD_IN, RING_AHEAD, TEAM_CROWD_OPINION } from '../content/team';
 import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { t, type Key } from '../i18n';
-import { EXT, OP } from '../sim/command';
+import { EXT, needleArgs, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { eyesOn } from '../sim/systems/games';
 import { kickPower, matchRefusal, matchSteps, pitchOf, sideOf, TEAM } from '../sim/systems/football';
-import { inkRefusal, payOf, qualityOf, TATTOO_GUN, traceSteps, penAt } from '../sim/systems/tattoo';
+import { inkRefusal, lineQuality, payOf, penAt, pointAt, qualityOf, ringAt, TATTOO_GUN, tracedShare, traceSteps } from '../sim/systems/tattoo';
 import { HOTBAR, itemOf } from '../sim/systems/items';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { routineEnd } from '../content/routine';
 import { LAYER } from '../sim/world/World';
 import type { InkView, MatchView } from '../ui/team';
 import type { TeamFrame } from '../render/Team';
-import { banner, itemsUI, sound } from './context';
+import { banner, inkCard, itemsUI, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { TOUCH } from '../ui/dom';
@@ -28,9 +28,10 @@ import { inmateName } from '../ui/names';
  */
 
 
-/** The line the needle has inked (its points, the sitting's steps it was taken at): the card draws it. Not state. */
-const trail: Array<[number, number]> = [];
+/** The line the needle has inked (its points, each inked on from the last or the needle set down there; the sitting's step and inked steps it was taken at): the card draws it. Not state. */
+const trail: Array<[number, number, boolean]> = [];
 let trailStep = -1;
+let trailInked = 0;
 /** The last goal, as the card says it a moment. */
 let lastGoal = { ours: false, by: '', own: false };
 /** When the ball was last at the player's feet (ms): the card's word on it held half a second, never flickering. */
@@ -40,6 +41,7 @@ let feetAt = -1e9;
 export function resetTeam() {
   trail.length = 0;
   trailStep = -1;
+  trailInked = 0;
   kicking = false;
   pressed = false;
   lastGoal = { ours: false, by: '', own: false };
@@ -120,10 +122,15 @@ export function matchNow(sim: Sim, a: number): MatchView | null {
 
 // ------------------------------------------------------------------ the tattoo's card
 
-const inkView: InkView = { name: '', design: 0, mine: false, pen: [0, 0], needle: [0, 0], trail, progress: 0, lead: true, quality: 100, pays: 0, seen: false };
+const inkView: InkView = { name: '', design: 0, mine: false, pen: [0, 0], needle: [0, 0], next: [], trail, progress: 0, lead: true, left: 0, quality: 100, pays: 0, seen: false };
+/** The design's stretch ahead of what's traced, as far as NEXT_SPAN (box units): the card draws it bold. */
+const NEXT_SPAN = 260;
+const nextPoints: Array<[number, number]> = [];
+/** The needle as the last two steps left it (the card draws it between them). Not state. */
+const needleSteps = { k: -1, x0: 0, y0: 0, x1: 0, y1: 0 };
 
-/** The sitting under way (null: none). */
-export function inkNow(sim: Sim): InkView | null {
+/** The sitting under way (null: none), between steps (`a`). */
+export function inkNow(sim: Sim, a: number): InkView | null {
   const s = sim.state;
   const o = s.ink;
   if (!o) return null;
@@ -136,20 +143,57 @@ export function inkNow(sim: Sim): InkView | null {
     v.progress = Math.min(1, o.k / INK_ME_STEPS);
     return v;
   }
-  // (Each step's needle point onto the line, once the pen's off.)
+  // (Each step's needle point onto the line: inked on, or set down; before 2.22, every step once the pen's off.)
   if (o.k !== trailStep) {
-    if (o.k < trailStep || o.k <= 1) trail.length = 0;
+    if (o.k < trailStep || o.k <= 1) {
+      trail.length = 0;
+      trailInked = 0;
+    }
     trailStep = o.k;
-    if (o.k > LEAD_IN) trail.push([o.nx, o.nz]);
+    const last = trail[trail.length - 1];
+    if (sim.rules221) {
+      if (o.k > LEAD_IN) trail.push([o.nx, o.nz, true]);
+    } else if (!last || last[0] !== o.nx || last[1] !== o.nz) trail.push([o.nx, o.nz, o.n > trailInked]);
+    trailInked = o.n;
   }
-  penAt(o.design, o.k + 1, v.pen);
-  v.needle[0] = o.nx;
-  v.needle[1] = o.nz;
-  v.lead = o.k < LEAD_IN;
-  v.progress = Math.max(0, Math.min(1, (o.k - LEAD_IN) / (traceSteps(o.design) - LEAD_IN)));
-  v.quality = qualityOf(o.err, Math.max(1, o.k - LEAD_IN));
+  const st = needleSteps;
+  if (o.k !== st.k) {
+    const after = o.k === st.k + 1;
+    Object.assign(st, { k: o.k, x0: after ? st.x1 : o.nx, y0: after ? st.y1 : o.nz, x1: o.nx, y1: o.nz });
+  }
+  v.needle[0] = Math.round(st.x0 + (st.x1 - st.x0) * a);
+  v.needle[1] = Math.round(st.y0 + (st.y1 - st.y0) * a);
+  nextPoints.length = 0;
+  v.next = nextPoints;
+  if (sim.rules221) {
+    penAt(o.design, o.k + 1, v.pen);
+    v.lead = o.k < LEAD_IN;
+    v.progress = Math.max(0, Math.min(1, (o.k - LEAD_IN) / (traceSteps(o.design) - LEAD_IN)));
+    v.quality = qualityOf(o.err, Math.max(1, o.k - LEAD_IN));
+    v.left = 0;
+  } else {
+    ringAt(o, RING_AHEAD, v.pen);
+    for (let d = 0; d <= NEXT_SPAN; d += 20) nextPoints.push(pointAt(o.design, o.at + d));
+    v.lead = false;
+    v.progress = tracedShare(o);
+    // (The line so far: a needle not yet at work, a clean one.)
+    v.quality = o.n ? lineQuality(o.err, o.n) : 100;
+    const left = Math.ceil((INK_TIME - o.k) / STEPS_PER_SECOND);
+    v.left = left <= 10 ? Math.max(0, left) : 0;
+  }
   v.pays = payOf(o.design, v.quality);
   return v;
+}
+
+/** The needle's op this step (2.22): with the finger or the mouse down on the design, the needle set down where it first touched, then drawn after it. Null otherwise. */
+export function needleOp(sim: Sim): [number, number, number, number] | null {
+  const o = sim.state.ink;
+  const p = inkCard.touch;
+  if (!o || o.mine || !p.down || sim.rules221) return null;
+  const [b, c] = needleArgs(p.x, p.y);
+  const fresh = p.fresh;
+  p.fresh = false;
+  return [OP.EXT, fresh ? EXT.NEEDLE_DOWN : EXT.NEEDLE, b, c];
 }
 
 // ------------------------------------------------------------------ Space and the Kick pad
@@ -242,6 +286,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
       if (e.what === 'start') {
         trail.length = 0;
         trailStep = -1;
+        trailInked = 0;
         coachOnce(e.mine ? 'inkMe' : 'tattoo', e.mine ? 'hint.inkMe' : TOUCH ? 'hint.tattooTouch' : 'hint.tattoo');
         sound.needle();
       } else if (e.what === 'done') {

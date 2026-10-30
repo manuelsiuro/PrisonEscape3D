@@ -107,26 +107,41 @@ body.matching .tool-prompt {
 .ink-art.hidden {
   display: none;
 }
+/* (2.22: the design is drawn on, as big as the screen allows; a drag on it never scrolls or zooms the page.) */
 .ink-art svg {
-  width: min(210px, calc(100vh - 330px), calc(100vw - 96px));
-  min-width: 120px;
+  width: min(340px, calc(100vh - 380px), calc(100vw - 60px));
+  min-width: 160px;
   height: auto;
   aspect-ratio: 1;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+.ink-card.mine .ink-art svg {
+  cursor: default;
 }
 .ink-skin {
   fill: #e9c4a0;
 }
 .ink-guide {
   fill: none;
-  stroke: rgba(70, 40, 20, 0.35);
+  stroke: rgba(70, 40, 20, 0.4);
   stroke-width: 1.4;
   stroke-dasharray: 2.4 2;
   stroke-linejoin: round;
 }
+/* The stretch ahead of what's traced: where the line goes next. */
+.ink-next {
+  fill: none;
+  stroke: rgba(70, 40, 20, 0.55);
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
 .ink-line {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 2.2;
+  stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
@@ -148,6 +163,13 @@ body.matching .tool-prompt {
   fill: #1d2a5a;
   stroke: white;
   stroke-width: 0.8;
+  pointer-events: none;
+}
+.ink-tip.hidden {
+  display: none;
+}
+.train-note.ink-hurry {
+  color: #ffd27a;
 }
 .ink-quit {
   margin-top: 8px;
@@ -229,7 +251,7 @@ body.matching .tool-prompt {
   }
   .ink-card {
     display: grid;
-    grid-template-columns: auto minmax(130px, 1fr);
+    grid-template-columns: auto minmax(130px, 180px);
     grid-template-areas:
       'art head'
       'art bar'
@@ -237,7 +259,8 @@ body.matching .tool-prompt {
       'art quit';
     column-gap: 12px;
     width: auto;
-    max-width: min(520px, calc(100vw - 210px));
+    max-width: min(560px, calc(100vw - 210px));
+    max-height: calc(100vh - 20px);
     bottom: max(10px, env(safe-area-inset-bottom));
   }
   .ink-card .train-head {
@@ -248,7 +271,8 @@ body.matching .tool-prompt {
     margin: 0;
   }
   .ink-card .ink-art svg {
-    width: min(150px, calc(100vh - 90px));
+    width: min(320px, calc(100vh - 44px));
+    min-width: 0;
   }
   .ink-card .ink-bar {
     grid-area: bar;
@@ -264,13 +288,20 @@ body.matching .tool-prompt {
   body.inking .energy {
     display: none;
   }
-  /* (A lesson's card steps up to the top, clear of the pitch and of the tattoo's card.) */
-  body.matching .coach.lesson-coach,
-  body.inking .coach.lesson-coach {
+  /* (A lesson's card steps up to the top, clear of the pitch; down to the bottom right, where the hotbar was, clear of the tattoo's card.) */
+  body.matching .coach.lesson-coach {
     top: 0;
     right: 184px;
     left: auto;
     max-width: min(400px, calc(100vw - 600px));
+  }
+  body.inking .coach.lesson-coach {
+    /* (It sits in the HUD, fixed 12px from the top: down to the screen's bottom, lifted by its own height.) */
+    top: calc(100vh - 12px - max(10px, env(safe-area-inset-bottom)));
+    translate: 0 -100%;
+    right: max(2px, calc(env(safe-area-inset-right) - 12px));
+    left: auto;
+    max-width: min(400px, calc(100vw - 590px));
   }
 }
 
@@ -282,6 +313,14 @@ body.matching .tool-prompt {
     right: auto;
     margin: 0;
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 96px);
+  }
+  /* (The tattoo's card wider for a bigger design, down to the bottom: the hotbar is in the middle, clear of it.) */
+  .ink-card {
+    width: 420px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .ink-art svg {
+    width: min(390px, calc(100vh - 300px));
   }
 }
 
@@ -298,7 +337,7 @@ body.reduced-motion .ink-card.lead .ink-pen {
   color: #ffa0a0;
 }
 
-/* Touch: a drag on the tattoo's card (on its design above all) steers the needle as a drag on the picture would: only Give up takes the touch. */
+/* Touch: a drag on the tattoo's card steers the needle as a drag on the picture would; the design itself (2.22: drawn on) and Give up take the touch. */
 .ink-card {
   pointer-events: none;
 }

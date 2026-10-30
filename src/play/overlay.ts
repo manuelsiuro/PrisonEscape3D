@@ -263,7 +263,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   // Long games (P28): the race card at the track (not over another game's card).
   // Team & ink (P29): the match's card, the tattoo's (the needle's buzz meanwhile).
   const match = busy ? null : matchNow(sim, a);
-  const inkV = busy ? null : inkNow(sim);
+  const inkV = busy ? null : inkNow(sim, a);
   matchCard.update(match);
   inkCard.update(inkV);
   teamSounds(sim, g.paused || g.over);

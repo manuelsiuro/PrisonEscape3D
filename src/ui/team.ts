@@ -147,13 +147,17 @@ export interface InkView {
   design: number;
   /** The friend at work on the player's arm (nothing to trace). */
   mine: boolean;
-  /** The pen and the needle (the design's box, 0–1000); the line inked so far (needle points). */
+  /** The ring to follow and the needle (the design's box, 0–1000); the stretch of the design ahead of what's traced. */
   pen: [number, number];
   needle: [number, number];
-  trail: ReadonlyArray<readonly [number, number]>;
-  /** How far along (0–1); 'lead' while the pen waits at the start. */
+  next: ReadonlyArray<readonly [number, number]>;
+  /** The line inked so far: the needle's points step by step, each inked on from the last or (false) the needle set down there; the last one's the needle's, drawn up to `needle`. */
+  trail: ReadonlyArray<readonly [number, number, boolean]>;
+  /** How far along (0–1); 'lead' while the pen waits at the start (before 2.22). */
   progress: number;
   lead: boolean;
+  /** Seconds left, near the end of the time (0: plenty). */
+  left: number;
   /** The line so far (0–100), and what it pays at that. */
   quality: number;
   pays: number;
@@ -163,28 +167,44 @@ export interface InkView {
 
 /** The design's path as an SVG polyline's points, in a 0–100 box. */
 const pointsOf = (path: ReadonlyArray<readonly [number, number]>) => path.map(([x, y]) => `${(x / 10).toFixed(1)},${(y / 10).toFixed(1)}`).join(' ');
+/** The line inked as an SVG path, its strokes broken where the needle was set down. */
+const strokesOf = (trail: ReadonlyArray<readonly [number, number, boolean]>, n: number) =>
+  trail
+    .slice(0, n)
+    .map(([x, y, inked], k) => `${k && inked ? 'L' : 'M'}${(x / 10).toFixed(1)} ${(y / 10).toFixed(1)}`)
+    .join('');
 
-/** The tattoo's card (P29): the design faint, the pen's ring to follow, the needle's dot and the line it has inked; the line's quality and the pay; Give up. */
+/**
+ * The tattoo's card (P29): the design faint, its next stretch bold, the ring to follow, the
+ * needle's dot and the line it has inked; the line's quality and the pay; Give up. Since 2.22
+ * the design is drawn on: a finger or the mouse button down on it is `touch`, which the game
+ * sends as the needle's way each step.
+ */
 export class InkCard {
   private readonly el: HTMLElement;
   private readonly title: HTMLElement;
   private readonly value: HTMLElement;
   private readonly guide: SVGPolylineElement;
-  private readonly line: SVGPolylineElement;
+  private readonly line: SVGPathElement;
   private readonly pen: SVGCircleElement;
   private readonly needle: SVGCircleElement;
   private readonly bar: HTMLElement;
   private readonly note: HTMLElement;
   private readonly quit: HTMLButtonElement;
+  private readonly next: SVGPolylineElement;
+  private readonly tip: SVGLineElement;
   private drawn = '';
   private trailN = -1;
+  private nextAt = '';
+  /** The finger or the mouse on the design (box units) while it's down; `fresh` until its first point is sent (the needle set down there). */
+  readonly touch = { down: false, fresh: false, x: 0, y: 0, id: -1 };
 
   constructor(private readonly send: Send, private readonly click: () => void) {
     this.el = h(
       'div',
       'train-card ink-card hidden',
       `<div class="train-head"><i class="train-ic">${icon('needle', 18)}</i><b></b><span class="train-value"></span></div>
-      <div class="ink-art" aria-hidden="true"><svg viewBox="-4 -4 108 108"><rect class="ink-skin" x="-4" y="-4" width="108" height="108" rx="10"/><polyline class="ink-guide"/><polyline class="ink-line"/><circle class="ink-pen" r="4.2"/><circle class="ink-needle" r="2.6"/></svg></div>
+      <div class="ink-art" aria-hidden="true"><svg viewBox="-4 -4 108 108"><rect class="ink-skin" x="-4" y="-4" width="108" height="108" rx="10"/><polyline class="ink-guide"/><polyline class="ink-next"/><path class="ink-line"/><line class="ink-line ink-tip"/><circle class="ink-pen" r="4.2"/><circle class="ink-needle" r="2.2"/></svg></div>
       <i class="match-clock ink-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></i>
       <p class="train-note" role="status"></p>
       <button class="big-btn ghost small ink-quit">${icon('close', 16)}<span></span></button>`,
@@ -195,6 +215,8 @@ export class InkCard {
     this.line = this.el.querySelector('.ink-line')!;
     this.pen = this.el.querySelector('.ink-pen')!;
     this.needle = this.el.querySelector('.ink-needle')!;
+    this.next = this.el.querySelector('.ink-next')!;
+    this.tip = this.el.querySelector('.ink-tip')!;
     this.bar = this.el.querySelector('.ink-bar')!;
     this.note = this.el.querySelector('.train-note')!;
     this.quit = this.el.querySelector('.ink-quit')!;
@@ -203,7 +225,38 @@ export class InkCard {
       this.send(OP.EXT, EXT.INK, 0);
     });
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
+    // (The design drawn on: a finger, or the mouse's main button, held down on it.)
+    const art = this.el.querySelector<SVGSVGElement>('.ink-art svg')!;
+    const at = (e: PointerEvent) => {
+      const r = art.getBoundingClientRect();
+      this.touch.x = Math.max(0, Math.min(1000, (((e.clientX - r.left) / r.width) * 108 - 4) * 10));
+      this.touch.y = Math.max(0, Math.min(1000, (((e.clientY - r.top) / r.height) * 108 - 4) * 10));
+    };
+    art.addEventListener('pointerdown', (e) => {
+      if (this.touch.down || e.button !== 0 || this.el.classList.contains('mine')) return;
+      e.preventDefault();
+      try {
+        art.setPointerCapture(e.pointerId);
+      } catch {
+        /* not capturable (synthetic events) */
+      }
+      Object.assign(this.touch, { down: true, fresh: true, id: e.pointerId });
+      at(e);
+    });
+    art.addEventListener('pointermove', (e) => {
+      if (this.touch.down && e.pointerId === this.touch.id) at(e);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const)
+      art.addEventListener(ev, (e) => {
+        if (e.pointerId === this.touch.id) this.lift();
+      });
     document.body.append(this.el);
+  }
+
+  /** The finger or the mouse off the design. */
+  lift() {
+    this.touch.down = false;
+    this.touch.id = -1;
   }
 
   get open() {
@@ -215,10 +268,12 @@ export class InkCard {
     if (!v) {
       this.drawn = '';
       this.trailN = -1;
+      this.nextAt = '';
+      this.lift();
       return;
     }
     const d = DESIGNS[v.design];
-    const key = [v.name, v.design, v.mine, v.lead, v.seen, v.mine ? '' : v.pays, currentLang(), TOUCH].join('|');
+    const key = [v.name, v.design, v.mine, v.lead, v.seen, v.left, v.mine ? '' : v.pays, currentLang(), TOUCH].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       const design = t(`design.${d.id}` as 'design.heart');
@@ -229,16 +284,33 @@ export class InkCard {
       this.guide.setAttribute('points', pointsOf(d.path));
       this.el.style.setProperty('--ink', `#${d.color.toString(16).padStart(6, '0')}`);
       const seen = v.seen ? ` · ${t('ink.seen')}` : '';
-      setText(this.note, v.mine ? `${t('ink.mineNote', { name: v.name })}${seen}` : `${v.lead ? t(TOUCH ? 'ink.leadTouch' : 'ink.leadKeys') : t(TOUCH ? 'ink.traceTouch' : 'ink.traceKeys')}${seen}`);
+      const left = v.left ? ` · ${t('ink.left', { n: v.left })}` : '';
+      setText(this.note, v.mine ? `${t('ink.mineNote', { name: v.name })}${seen}` : `${t(TOUCH ? 'ink.traceTouch' : 'ink.traceDraw')}${left}${seen}`);
+      this.note.classList.toggle('ink-hurry', !!v.left);
       setText(this.quit.querySelector('span')!, t('ink.quit'));
       this.quit.classList.toggle('hidden', v.mine);
       this.el.classList.toggle('mine', v.mine);
     }
     if (!v.mine) {
-      // (The line inked: redrawn as it grows.)
-      if (v.trail.length !== this.trailN) {
-        this.trailN = v.trail.length;
-        this.line.setAttribute('points', pointsOf(v.trail));
+      // (The line inked: redrawn as it grows, up to the step before; from there to the needle, as it goes.)
+      const n = v.trail.length;
+      if (n !== this.trailN) {
+        this.trailN = n;
+        this.line.setAttribute('d', strokesOf(v.trail, n - 1));
+      }
+      const from = v.trail[n - 2];
+      const inking = n >= 2 && v.trail[n - 1][2];
+      this.tip.classList.toggle('hidden', !inking);
+      if (inking) {
+        this.tip.setAttribute('x1', (from[0] / 10).toFixed(1));
+        this.tip.setAttribute('y1', (from[1] / 10).toFixed(1));
+        this.tip.setAttribute('x2', (v.needle[0] / 10).toFixed(1));
+        this.tip.setAttribute('y2', (v.needle[1] / 10).toFixed(1));
+      }
+      const next = pointsOf(v.next);
+      if (next !== this.nextAt) {
+        this.nextAt = next;
+        this.next.setAttribute('points', next);
       }
       this.pen.setAttribute('cx', (v.pen[0] / 10).toFixed(1));
       this.pen.setAttribute('cy', (v.pen[1] / 10).toFixed(1));
