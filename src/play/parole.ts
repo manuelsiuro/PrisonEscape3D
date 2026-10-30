@@ -9,7 +9,7 @@ import { answerLeft, ANSWERED, applyRefusal, claimTrue, hearingDue, hearingOf, t
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import type { ParoleView } from '../ui/parole';
-import { banner, combatUI, itemsUI, paBoard, paroleCard, sound, view } from './context';
+import { banner, combatUI, paBoard, paroleCard, sound, view } from './context';
 import { announcePa, dayTime } from './day';
 import { play, playNow, sendOp } from './game';
 import { coachOnce } from './tips';
@@ -298,4 +298,3 @@ export function boardShown(sim: Sim): boolean {
 /** The hearing under way (the other actions wait; the answer keys are the board's). */
 export const paroleBusy = (s: { hearing: unknown }) => !!s.hearing;
 
-void itemsUI;

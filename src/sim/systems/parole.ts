@@ -75,12 +75,6 @@ export interface Hearing {
 /** The prison's hearing room and board (none at the Training Block, nor where there's no release desk). */
 export const hearingOf = (sim: Pick<SimContext, 'world'>): HearingPlace | null => (releaseOf(sim) ? (HEARINGS[sim.world.def.id] ?? null) : null);
 
-/** The player has applied at least once this run (from then on the record's own counters run). */
-export const paroleUsed = (s: Pick<SimState, 'parole'>) => s.parole[P.USED] > 0;
-
-/** The prison day of the hearing set (0 none). */
-export const hearingDay = (s: Pick<SimState, 'parole'>) => s.parole[P.HEARING];
-
 /** The name on the release list by the board's grant (P36's release then takes it as route `parole`). */
 export const paroled = (s: Pick<SimState, 'parole' | 'release'>) => s.parole[P.RELEASE] > 0 && s.release[0] === s.parole[P.RELEASE];
 
@@ -278,13 +272,6 @@ export function boardKeptClear(sim: SimContext, out: number[]) {
   if (!h) return;
   for (const b of h.board) out.push(b.z * MAP_W + b.x);
   out.push(h.seat.z * MAP_W + h.seat.x);
-}
-
-/** The question being asked (its member, its topic), null between questions or none. */
-export function questionNow(s: Pick<SimState, 'hearing'>): { member: number; topic: number } | null {
-  const o = s.hearing;
-  if (!o || o.q < 0) return null;
-  return { member: o.q, topic: o.topics[o.q] };
 }
 
 /** The player's answer (EXT.PAROLE ANSWER, c: ANSWER) while a question is put and not yet answered. */

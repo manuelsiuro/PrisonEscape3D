@@ -29,7 +29,7 @@ import { nearestDir, tileAt } from '../ai/path';
 import { DIR_X, DIR_Z } from '../command';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import { ATTRS, type SimState } from '../state';
+import { ATTRS } from '../state';
 import { ANGRY_STEPS, ATTR_MAX, UNIT, walkSpeed } from '../tuning';
 import { TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';
@@ -424,9 +424,6 @@ export function matchTargets(sim: SimContext, so: { follow: Array<Body | null>; 
     so.pace[id] = pace;
   });
 }
-
-/** The players a match keeps (inmate indexes), for socialNow and the view. */
-export const matchPlayers = (s: Pick<SimState, 'match'>): readonly number[] => s.match?.team ?? [];
 
 /**
  * Each step of a match (with the side games): the kick held too long goes; off when it can't go on

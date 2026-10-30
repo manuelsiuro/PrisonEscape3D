@@ -10,7 +10,7 @@ import { courtOf, powerAt, rimOf, shotWindow, spotAt, spotOf, windAlong, type Sh
 import { DOING } from '../sim/systems/inmates';
 import { today } from '../sim/systems/calendar';
 import { UNIT } from '../sim/tuning';
-import { LAYER, MAP_W } from '../sim/world/World';
+import { LAYER } from '../sim/world/World';
 import type { PastimesFrame } from '../render/Pastimes';
 import type { BoardView, CheatView, CourtView } from '../ui/pastimes';
 import { inmateName } from '../ui/social';
@@ -386,7 +386,7 @@ const boardFrame = { x: 0, z: 0, angle: 0, sq: [] as number[], last: [] as numbe
  * The games in the frame: the lit spot, the ball (up in the hands, in flight, rolling off), the
  * cards on the ground between the two, the old-timer's board between him and the player.
  */
-export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: number; z: number } | null, elder: { x: number; z: number } | null): PastimesFrame {
+export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: number; z: number } | null): PastimesFrame {
   const s = sim.state;
   const f = frame;
   const o = s.shootout;
@@ -421,9 +421,9 @@ export function pastimesFrameOf(sim: Sim, px: number, pz: number, partner: { x: 
     f.cards = cardsFrame;
   } else f.cards = null;
   const b = s.board;
-  if (b?.seated && elder && s.layer === LAYER.GROUND) {
-    besideLine(px, pz, elder.x, elder.z, 0.22, boardFrame);
-    boardFrame.angle = Math.atan2(elder.x - px, elder.z - pz);
+  if (b?.seated && partner && s.layer === LAYER.GROUND) {
+    besideLine(px, pz, partner.x, partner.z, 0.22, boardFrame);
+    boardFrame.angle = Math.atan2(partner.x - px, partner.z - pz);
     boardFrame.sq = b.sq;
     boardFrame.last = b.last;
     f.board = boardFrame;
@@ -477,9 +477,3 @@ export function pastimesPartner(sim: Sim): { who: number; doing: number } | null
   if (s.board?.seated) return { who: elderOf(sim), doing: DOING.BOARD };
   return null;
 }
-
-/** The court's spots and the shot's need as tiles, for the lesson's arrows and tests. */
-export const spotTile = (sim: Sim, k: number) => {
-  const c = courtOf(sim);
-  return c ? c.spots[k].z * MAP_W + c.spots[k].x : -1;
-};

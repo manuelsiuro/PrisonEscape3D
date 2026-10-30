@@ -26,7 +26,7 @@ import { itemNumber } from '../../content/items';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { Refusal, SimState } from '../state';
-import { STEPS_PER_MINUTE, UNIT } from '../tuning';
+import { UNIT } from '../tuning';
 import { LAYER, MAP_W, type World } from '../world/World';
 import { bodyAt, type Body } from './movement';
 import { dayMinute, eventOn, prisonDay, today } from './calendar';
@@ -385,6 +385,3 @@ export function stageTargets(sim: SimContext, so: { follow: Array<Body | null>; 
 }
 const spot: Body = bodyAt(0, 0);
 const wingsAt: Body[] = [0, 1, 2, 3].map(() => bodyAt(0, 0));
-
-/** Minutes a step (for the play layer's countdowns). */
-export const ACT_STEPS = ACT_MINUTES * STEPS_PER_MINUTE;

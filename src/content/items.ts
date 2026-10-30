@@ -5,6 +5,8 @@
  * drawn (render/itemModels.ts); `from` says where it comes from besides crafting, so the
  * tests can prove every item can be had.
  */
+import { BREW_DAYS } from './long';
+
 type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' | 'gear';
 type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
@@ -236,7 +238,7 @@ export const ITEMS: readonly ItemDef[] = [
   // a bag of pruno fermenting (its uses: the prison days left), ripe pruno; what a bed in the garden gives; a track for the rat.
   m('fruit', false, 4, 'fruit', 0xe0573a, ['meal', 'garden'], 0x4f8a2e),
   m('sugar', false, 6, 'sack', 0xf4f0e6, ['freezer', 'staple'], 0x3a6fd8),
-  { ...m('pruno_bag', true, 10, 'brew', 0xd9c27a, [], 0x9aa2ad), uses: 2 },
+  { ...m('pruno_bag', true, 10, 'brew', 0xd9c27a, [], 0x9aa2ad), uses: BREW_DAYS },
   m('pruno', true, 40, 'brew', 0xc98a2e, ['brew'], 0x6a3f22),
   m('veg_seeds', false, 5, 'packet', 0x5aa846, ['library', 'staple'], 0xf2d23c),
   m('fruit_seeds', false, 5, 'packet', 0xd23f6a, ['library', 'staple'], 0xf2d23c),

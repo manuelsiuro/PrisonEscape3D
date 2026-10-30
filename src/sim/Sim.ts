@@ -22,7 +22,7 @@ import { noisemakers } from './systems/noise';
 import { noteCarried } from './systems/recipes';
 import { stockSlots } from './systems/items';
 import { clockIn, spreadCoins, station } from './systems/jobs';
-import { bedCheck, dummyInBed, outOfReach, release, report, wakeUp } from './systems/justice';
+import { bedCheck, outOfReach, release, report, wakeUp } from './systems/justice';
 import { tileOfBody, walk, type Body } from './systems/movement';
 import { devices, powered, scan, takeoverCheck } from './systems/power';
 import { attendance, nextBlock } from './systems/routine';
@@ -414,11 +414,6 @@ export class Sim {
   /** Whether something has power now (Irongate's two generators each power their half, GDD §4.5). */
   powered(use: PowerUse): boolean {
     return powered(this.world, this.state, use);
-  }
-
-  /** Whether the player's bed holds a bed dummy. */
-  dummyInBed(): boolean {
-    return dummyInBed(this);
   }
 
   // ---------------------------------------------------------------- jobs (GDD §11)

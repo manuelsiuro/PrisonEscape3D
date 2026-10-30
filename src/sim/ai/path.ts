@@ -126,7 +126,6 @@ export function findPath(w: World, start: number, isGoal: (i: number) => boolean
 export const pathTo = (w: World, start: number, goal: number, avoid?: Uint8Array, grid: Uint8Array = w.block) => findPath(w, start, (i) => i === goal, goal, N, avoid, grid);
 
 /** Tile index ↔ the middle of the tile, in units. */
-export const tileIndex = (x: number, z: number) => z * MAP_W + x;
 export const centerX = (i: number) => (i % MAP_W) * UNIT + UNIT / 2;
 export const centerZ = (i: number) => Math.floor(i / MAP_W) * UNIT + UNIT / 2;
 export const tileAt = (ux: number, uz: number) => Math.floor(uz / UNIT) * MAP_W + Math.floor(ux / UNIT);

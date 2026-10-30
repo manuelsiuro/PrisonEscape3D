@@ -5,11 +5,11 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
 import { BED, bedCount, bedOf, bedTile, ripe, wilted } from '../sim/systems/garden';
 import { takeCheck } from '../sim/systems/pantry';
-import { atTrack, cardMinute, cardUp, oddsOf, petLane, RACE, raceCard, raceCheck, raceNight, runRace, trackOf, trackTiles, type Entrant } from '../sim/systems/races';
+import { atTrack, cardMinute, cardUp, oddsOf, petLane, RACE, raceCard, raceCheck, runRace, trackOf, trackTiles, type Entrant } from '../sim/systems/races';
 import { petOf, RAT } from '../sim/systems/rats';
 import { tipsyNow } from '../sim/systems/pruno';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
-import { LAYER, MAP_W } from '../sim/world/World';
+import { LAYER } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
 import { BETS } from '../content/long';
 import type { LongFrame } from '../render/Long';
@@ -394,15 +394,3 @@ function tilesOf(t: NonNullable<ReturnType<typeof trackOf>>): number[] {
   if (!v) tilesCache.set(t, (v = trackTiles(t)));
   return v;
 }
-
-/** The race nights (for the help and the lessons): tonight's a race night. */
-export const raceTonight = (sim: Sim) => raceNight(prisonDay(sim.state.step)) && !!trackOf(sim.world);
-
-/** A garden bed's tile (the lessons' arrows). */
-export const bedTileOf = (sim: Sim, k: number) => bedTile(sim.world, k);
-/** The track's start (the lessons' arrows). */
-export const trackStart = (sim: Sim) => {
-  const t0 = trackOf(sim.world);
-  return t0 ? trackTiles(t0)[0] : -1;
-};
-void MAP_W;

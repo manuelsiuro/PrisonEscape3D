@@ -1,4 +1,5 @@
 import { PRISONS } from '../content/prisons';
+import { PICKABLE } from './holidays';
 import { KEYS, PROGRESS_KEYS, readJSON, removeKey, replayBestKey, writeJSON } from './storage';
 
 /** Player preferences, saved on this device. New fields get their default automatically. */
@@ -60,7 +61,7 @@ export function loadSettings(): Settings {
   if (!['lots', 'some', 'off'].includes(out.chatter)) out.chatter = 'lots';
   if (!['full', 'short', 'off'].includes(out.pa)) out.pa = 'full';
   if (!['calendar', 'pick', 'off'].includes(out.holidays)) out.holidays = 'calendar';
-  if (!['easter', 'summer', 'halloween', 'christmas'].includes(out.holidayPick)) out.holidayPick = 'christmas';
+  if (!PICKABLE.includes(out.holidayPick)) out.holidayPick = 'christmas';
   out.sfxVolume = Math.min(1, Math.max(0, Number.isFinite(out.sfxVolume) ? out.sfxVolume : DEFAULT_SETTINGS.sfxVolume));
   out.musicVolume = Math.min(1, Math.max(0, Number.isFinite(out.musicVolume) ? out.musicVolume : DEFAULT_SETTINGS.musicVolume));
   return out;
