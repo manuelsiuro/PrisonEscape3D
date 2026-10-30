@@ -8,7 +8,7 @@ import { en } from '../../i18n/en';
 import { t, type Key } from '../../i18n';
 import { withKeys } from '../../i18n/keys';
 import { itemIcons } from '../../render/itemIcons';
-import { TOUCH, h } from '../dom';
+import { esc, h, TOUCH } from '../dom';
 import { icon } from '../icons';
 import { HELP, POCKET_SAMPLE, topicById, type HelpTab, type HelpTopic } from './helpTopics';
 import { medalDisc } from './trophies';
@@ -107,7 +107,6 @@ const pairs = (s: string) => lines(s).map((l) => l.split('|') as [string, string
 /** In the new shape (a summary and its parts), or still one paragraph. */
 const shaped = (id: string) => has(`help.${id}.sum`);
 const title = (id: string) => t(`help.${id}.t` as Key);
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Shown here: a prison's own rules once that prison is open. */
 const open = (tp: HelpTopic) => !tp.prison || openPrisons().some((p) => p.id === tp.prison);

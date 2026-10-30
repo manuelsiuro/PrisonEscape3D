@@ -1,10 +1,8 @@
 import { currentLang, t, type Key } from '../i18n';
 import { OP, TALK } from '../sim/command';
-import { confirmed } from './social';
-import { h, setText, TOUCH } from './dom';
+import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
 /**
  * Card sharks (P27) on screen: the card for a hand of Cheat, the court's card (the power meter,
@@ -13,7 +11,6 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
  * rules judge. Every button is an OP.TALK (or the shot's EXT.SHOOT), redrawn from the sim.
  */
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** A card's letter and name key (CARD: 1 King, 2 Queen, 3 Ace, 4 Joker). */
 const RANK = ['', 'K', 'Q', 'A', '★'];

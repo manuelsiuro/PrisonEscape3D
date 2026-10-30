@@ -1,10 +1,9 @@
 import { currentLang, t } from '../i18n';
 import { BOARD } from '../content/oddjobs';
 import { EXT, OP } from '../sim/command';
-import { h, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
 /**
  * The odd jobs board (P40) on screen: its card at the board (the day's three pins and the story's
@@ -14,7 +13,6 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
  * fills from the sim (play/oddjobs.ts): the sim's own functions decide everything shown.
  */
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** A job as a pin shows it. */
 export interface PinView {

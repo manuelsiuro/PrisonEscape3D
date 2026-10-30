@@ -8,13 +8,12 @@ import { ATTR_MAX, ATTR_MIN, ATTR_START, TRUST_FRIEND } from '../sim/tuning';
 import { FAVOR, FAVOR_STATE, jobRooms } from '../sim/systems/economy';
 import { ATTRS, type Sim } from '../sim/Sim';
 import { currentLang, t, type Key } from '../i18n';
-import { h } from './dom';
+import { esc, h } from './dom';
 import { icon } from './icons';
 import { favorText, inmateName } from './social';
 import { PLAYER } from '../talk/fill';
 import type { PaRow } from './pa';
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const ATTR_ICONS = { str: 'dumbbell', spd: 'run', int: 'brain' } as const;
 
 /**

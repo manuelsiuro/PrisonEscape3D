@@ -1,13 +1,12 @@
 import type { Speciality } from '../content/crew';
 import { currentLang, t } from '../i18n';
 import { ORDER, TALK } from '../sim/command';
-import { h, setText, TOUCH } from './dom';
+import { esc, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
 /** Each line of work's icon (P23): the talk panel, the crew's pill and panel, the chips over their heads, the prisoner's file. */
 export const SPEC_ICON: Readonly<Record<Speciality, string>> = { lookout: 'eye', digger: 'shovel', muscle: 'fist', smuggler: 'box' };
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** One order in the talk panel (P23): what it says, the line under it (what it does, or why not now), whether it can be given, whether it's the one in force. */
 export interface CrewOrderView {

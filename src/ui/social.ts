@@ -18,7 +18,7 @@ import { BRIBE_REPORT_HEAT, LOOK_AWAY_STEPS, MAX_FOLLOWERS, OPINION_HIGH, OPINIO
 import { clockAt, formatTime } from '../sim/systems/clock';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, type Key, lowerFirst, t } from '../i18n';
-import { h, setText, TOUCH } from './dom';
+import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { itemName } from './items';
 import { fixerOf, PHONE } from '../sim/systems/smuggling';
@@ -26,7 +26,6 @@ import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
 import { gamesSection, type GamesView } from './games';
 import { twist } from '../sim/systems/twists';
 
-type Send = (op: number, a?: number, b?: number) => void;
 
 /** An inmate's nickname (the same in every language), else "Inmate · cell n". */
 export function inmateName(sim: Sim, who: number): string {
@@ -59,33 +58,6 @@ export function favorText(sim: Sim, f: { kind: number; item: number; target: num
   const item = f.item ? itemName(f.item) : '';
   return t(`favor.${kind}` as Key, { item: lowerFirst(item), name: f.target >= 0 ? inmateName(sim, f.target) : '' });
 }
-
-/**
- * Costly taps ask twice (a gift, quitting a job, swapping one): the first arms the button
- * (it shows its question), the second within a few seconds does it. Returns whether to go ahead.
- */
-export function confirmed(b: HTMLElement): boolean {
-  if (!b.dataset.confirm || b.classList.contains('armed')) return true;
-  b.closest('.item-panel')?.querySelectorAll<HTMLElement>('.armed').forEach(disarm);
-  b.classList.add('armed');
-  // (A screen reader hears the question too, on the button itself, until it disarms.)
-  if (b.hasAttribute('aria-label')) b.dataset.label = b.getAttribute('aria-label')!;
-  b.setAttribute('aria-label', b.dataset.confirm);
-  setTimeout(() => disarm(b), 2800);
-  return false;
-}
-
-/** A costly tap's question put away: the button says what it does again. */
-function disarm(b: HTMLElement) {
-  if (!b.classList.contains('armed')) return;
-  b.classList.remove('armed');
-  if (b.dataset.label !== undefined) {
-    b.setAttribute('aria-label', b.dataset.label);
-    delete b.dataset.label;
-  } else b.removeAttribute('aria-label');
-}
-
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /**
  * Talking to an inmate (GDD §10.3–10.4): what they think of the player, their favor (take it

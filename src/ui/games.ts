@@ -1,11 +1,10 @@
 import { currentLang, t, type Key } from '../i18n';
 import { OP, TALK } from '../sim/command';
-import { h, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { DESIGNS } from '../content/team';
 import { pad2 } from '../sim/systems/clock';
 
-type Send = (op: number, a?: number, b?: number) => void;
 
 /** The last dice game as it's shown (P22; presentation only: the sim settled it already). */
 export interface DiceShow {
@@ -77,7 +76,6 @@ function dieFace(n: number, size = 34): string {
   return `<svg class="die-face" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/>${pips}</svg>`;
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /**
  * The talk panel's games section (P22): dice for a stake and an arm-wrestle, with what they

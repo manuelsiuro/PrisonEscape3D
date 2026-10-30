@@ -1,10 +1,9 @@
 import { currentLang, t, type Key } from '../i18n';
 import { MEMBERS } from '../content/parole';
 import { EXT, OP } from '../sim/command';
-import { h, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
 /**
  * The parole board's card (P39): at the release desk, how the application stands, the record's
@@ -14,7 +13,6 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
  * (play/parole.ts).
  */
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 export interface ParoleView {
   /** 'desk' at the release desk, 'sat' sitting down before the board, 'ask' a question put, 'weigh' its answer weighed, 'verdict' the board's word a moment. */

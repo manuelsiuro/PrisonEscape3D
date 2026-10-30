@@ -3,10 +3,9 @@ import { currentLang, t, type Key } from '../i18n';
 import { withKeys } from '../i18n/keys';
 import { EXT, OP } from '../sim/command';
 import { STAGE_QUIT } from '../sim/systems/talent';
-import { arrowStep, h, setText, TOUCH } from './dom';
+import { arrowStep, esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
 /**
  * Stage nights (P30) on screen: talent night's card (the night's acts; the song and the
@@ -16,7 +15,6 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
  * layer fills from the sim (play/nights.ts): the sim's own functions decide everything shown.
  */
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** One of the night's acts, as the card lists it. */
 interface ActRow {
