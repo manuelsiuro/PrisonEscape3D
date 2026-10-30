@@ -7,6 +7,7 @@ import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { TEX } from './textures';
 import { hash01, seeded } from './rand';
 import { canvasTexture } from './canvas';
+import { isOutside } from '../sim/hunt/world';
 
 /** A tile's own small number (stable between loads). */
 
@@ -197,7 +198,7 @@ export class Island {
       return model;
     };
     // (Not round the manhunt's outside, P41: they're moored at the prison, not the town.)
-    if (!world.def.id.startsWith('outside-') && !backdrop) {
+    if (!isOutside(world.def) && !backdrop) {
       const boats = new THREE.Mesh(merge([boat(31, 62.7, 7, 2, 0x2b4a6b, 0xeef1f4, true), boat(62.2, 32.4, 3, 1.1, 0x3b4048, 0xc8ccd2, false)]), kitMaterial);
       boats.castShadow = true;
       this.group.add(boats);

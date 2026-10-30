@@ -3,7 +3,6 @@ import type { Pitch } from '../content/prisons/types';
 import { KEY, TILE, TILE_INFO } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { buildGround } from './ground';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { batched, disposeTree, type Piece } from './batch';
 import { box, cyl, kitMaterial, merge, paint } from './kit';
 import { Lights } from './lights';
@@ -11,6 +10,7 @@ import { seeThrough } from './occlusion';
 import { propGeometry } from './props';
 import { TEX } from './textures';
 import { seeded } from './rand';
+import { isOutside } from '../sim/hunt/world';
 
 /** A cone standing on y (a pine's tier): radius, height, color. */
 const cone = (r: number, h: number, color: number, x: number, y: number) => paint(new THREE.ConeGeometry(r, h, 8).translate(x, y + h / 2, 0), color);
@@ -79,13 +79,6 @@ export function wallBlock(): THREE.BufferGeometry {
   g.clearGroups();
   g.addGroup(0, sides.length, 0);
   g.addGroup(sides.length, caps.length, 1);
-  return g;
-}
-
-/** Joins plain (unpainted) geometries into one, freeing the parts. */
-function join(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
-  const g = mergeGeometries(parts.map((p) => (p.index ? p.toNonIndexed() : p)));
-  for (const p of parts) p.dispose();
   return g;
 }
 
@@ -231,7 +224,7 @@ export class WorldView {
       [TILE.REINFORCED, TEX.reinforced(), 0.95],
     ] as const) {
       // (The manhunt's outside: its buildings are houses, HuntView's own; only its prison wall is drawn here.)
-      const cells = kind === TILE.BRICK && this.world.def.id.startsWith('outside-') ? [] : this.cells((k) => k === kind);
+      const cells = kind === TILE.BRICK && isOutside(this.world.def) ? [] : this.cells((k) => k === kind);
       if (!cells.length) continue;
       // The side faces' v runs 0..1 up the wall: repeat the texture so courses keep their size.
       const map = tex.clone();
@@ -454,9 +447,9 @@ export class WorldView {
       }
     }
     if (!frames.length) return;
-    const arch = new THREE.Mesh(join(frames), seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 })));
+    const arch = new THREE.Mesh(merge(frames, false), seeThrough(new THREE.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.35, metalness: 0.65 })));
     arch.castShadow = true;
-    this.group.add(arch, new THREE.Mesh(join(lamps), this.archLight));
+    this.group.add(arch, new THREE.Mesh(merge(lamps, false), this.archLight));
   }
 
   /** The watchtowers, every one in four meshes (legs and decks, cabins, windows, roofs). */
@@ -498,7 +491,7 @@ export class WorldView {
       [roofs, new THREE.MeshStandardMaterial({ color: 0x6e3328, roughness: 0.8 }), true],
     ];
     for (const [list, mat, shadow] of parts) {
-      const mesh = new THREE.Mesh(join(list), mat);
+      const mesh = new THREE.Mesh(merge(list, false), mat);
       mesh.castShadow = shadow;
       this.group.add(mesh);
     }
@@ -542,7 +535,7 @@ export class WorldView {
     const theme = this.world.def.theme ?? 'suburban';
     const alpine = theme === 'alpine';
     // (The manhunt's outside, P41 review: its ground runs on out as the map's own grass, the same shade as its floors, no seam at the edge; its woods and roads past the edge are the HuntView's, clear of each other.)
-    const outside = this.world.def.id.startsWith('outside-');
+    const outside = isOutside(this.world.def);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2),
       new THREE.MeshStandardMaterial({ map: tex, color: outside ? new THREE.Color().setScalar(0.985) : alpine ? 0xe6edf5 : theme === 'industrial' ? 0xa7a298 : theme === 'desert' ? 0xe8d2ae : 0xa9bd98, roughness: outside ? 0.95 : 1 }),
