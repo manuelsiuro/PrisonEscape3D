@@ -21,7 +21,7 @@ import { ROUTINE } from '../src/content/routine';
 import { ZONES } from '../src/content/zones';
 import { findPath } from '../src/sim/ai/path';
 import { command } from '../src/sim/command';
-import { WAKE } from '../src/sim/state';
+import { WAKE } from '../src/sim/events';
 import { maxHealth } from '../src/sim/systems/combat';
 import { snipersOnDuty } from '../src/sim/systems/power';
 import { cameraSees } from '../src/sim/systems/security';

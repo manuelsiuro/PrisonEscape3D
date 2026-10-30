@@ -8,7 +8,9 @@ const OPEN_PLACES = Object.entries(OPEN_HOURS);
 import { dirOf, OP, opOf } from './command';
 import { newScratch } from './context';
 import { fnv1a } from './rng';
-import { ESCAPES, freshState, loadState, type Attr, type LayerMove, type SimEvent, type SimState, type Snapshot } from './state';
+import { freshState, type LayerMove, type SimState, type Snapshot } from './state';
+import { ESCAPES, type Attr, type SimEvent } from './events';
+import { loadState } from './load';
 import { closeBox, keepSeat, regenerate, shower, standUp, underShower, useItems } from './systems/actions';
 import { chill } from './systems/weather';
 import { crowdPlan, dayMinute, dayWatch, drillOn, theDay, today } from './systems/calendar';
@@ -57,6 +59,7 @@ import { tileAt } from './world/grid';
 
 // The state, its events and snapshots live in state.ts; importers have always found them here.
 export * from './state';
+export * from './events';
 
 /**
  * The game's rules: `step(cmd)` advances one fixed step (1/20 s). The state depends only

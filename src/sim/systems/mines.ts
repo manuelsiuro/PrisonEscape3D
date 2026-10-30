@@ -5,7 +5,7 @@
  * open for the snipers. Its crater is safe ground until the guards lay a new mine at 08:00.
  */
 import type { SimContext } from '../context';
-import { HURT_BY } from '../state';
+import { HURT_BY } from '../events';
 import { MINE_DAMAGE } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER } from '../world/World';

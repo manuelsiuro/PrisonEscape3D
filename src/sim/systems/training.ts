@@ -1,7 +1,7 @@
 /** Training (GDD §3.2): Strength, Speed and Intellect, the equipment and the library, a set's bar. */
 import { nearestDir as faceTo } from '../ai/path';
 import type { SimContext } from '../context';
-import { type Attr, ATTRS } from '../state';
+import { type Attr, ATTRS } from '../events';
 import { ATTR_MAX, GYM_ENERGY, REP_DRAIN_STEPS, REP_GAIN, STUDY_ENERGY, STUDY_TIP_EVERY, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
 import { LAYER } from '../world/World';

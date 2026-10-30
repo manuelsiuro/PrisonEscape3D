@@ -5,7 +5,7 @@ import { DIR_X, DIR_Z, EXT, OP, tossArgs } from '../sim/command';
 import { itemOf } from '../sim/systems/items';
 import { aimToss, earshot, hearers, tossRange, type NoiseAt, type TossAim } from '../sim/systems/noise';
 import { FIRECRACKER } from '../sim/systems/structure';
-import type { TossRefusal } from '../sim/state';
+import type { TossRefusal } from '../sim/events';
 import { BANG_NOISE, THUD_NOISE, UNIT } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { TOUCH } from '../ui/dom';

@@ -19,7 +19,7 @@
 import { IRONGATE } from '../src/content/prisons/irongate';
 import { ZONES } from '../src/content/zones';
 import { OP, SLOT } from '../src/sim/command';
-import { ESCAPES, WAKE } from '../src/sim/state';
+import { ESCAPES, WAKE } from '../src/sim/events';
 import { damage, GUARD_DEFENSE, guardDefense, maxHealth } from '../src/sim/systems/combat';
 import { cameraSeesPlayer, genFor, generatorsOf, powered } from '../src/sim/systems/power';
 import { helicopterIn } from '../src/sim/systems/sea';

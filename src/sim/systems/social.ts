@@ -13,7 +13,7 @@ import { lineOfSight } from '../ai/sight';
 import { ORDER, TALK } from '../command';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
-import type { Refusal } from '../state';
+import type { Refusal } from '../events';
 import { AMBUSH_ODDS, AMBUSH_RANGE, ANGRY_STEPS, BUY_OPINION, CHASE_HEAT, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { closeBox } from './actions';

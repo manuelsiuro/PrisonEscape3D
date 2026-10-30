@@ -8,7 +8,7 @@ import { brawlWith, cantOrder, carryingOf, crewEntry, nightOf, orderOf, ORDERS_O
 import { HOTBAR } from '../sim/systems/items';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
-import { type CrewChip, type CrewHud, type CrewOrderView, type CrewRow, type CrewTalkView } from '../ui/crew';
+import type { CrewChip, CrewHud, CrewOrderView, CrewRow, CrewTalkView } from '../ui/crew';
 import { itemName } from '../ui/items';
 import { guardTitle, inmateName } from '../ui/social';
 import { banner, closeSocial, crewPanel, hud, itemsUI, profile, sound } from './context';

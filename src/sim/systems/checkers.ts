@@ -14,7 +14,7 @@
 import { DRAW_PLIES, ELDER_DEPTH, ELDER_OPINION, ELDER_SLIP, ELDER_THINK, ELDER_THINK_MORE, ELDER_WIN_OPINION, PLAY_OPINION } from '../../content/games';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import { ATTRS, type Refusal } from '../state';
+import { ATTRS, type Refusal } from '../events';
 import { ATTR_MAX } from '../tuning';
 import { gameOn, gamesOpen } from './games';
 import { prisonDay } from './clock';

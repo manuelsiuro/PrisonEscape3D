@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { NoiseKind } from '../sim/state';
+import type { NoiseKind } from '../sim/events';
 import { itemDef } from '../content/items';
 import { MAP_W } from '../sim/world/World';
 import { itemGeometry } from './itemModels';

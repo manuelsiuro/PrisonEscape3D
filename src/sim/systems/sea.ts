@@ -6,7 +6,7 @@
  */
 import { ROUTINE } from '../../content/routine';
 import type { SimContext } from '../context';
-import { HURT_BY } from '../state';
+import { HURT_BY } from '../events';
 import { isTunnel, TILE } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_H, MAP_W, tileOfKey } from '../world/World';
 import { hurt } from './fights';

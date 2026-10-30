@@ -24,7 +24,8 @@
 import { ANSWER, ANSWER_STEPS, APPLY_AGAIN, APPLY_DAY, HEARING_AFTER, HEARING_FROM, HEARING_TO, HEARINGS, LAWYER_SOONER, MEMBERS, PASS, RECORD, SILENT, SIT_STEPS, TOPICS, WEIGH_STEPS, type HearingPlace } from '../../content/parole';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import type { Refusal, SimState } from '../state';
+import type { SimState } from '../state';
+import type { Refusal } from '../events';
 import { CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { dayMinute, prisonDay } from './calendar';

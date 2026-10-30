@@ -16,7 +16,7 @@ import { nearestDir } from '../ai/path';
 import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
-import type { NoiseKind, TossRefusal } from '../state';
+import type { NoiseKind, TossRefusal } from '../events';
 import { BANG_GUARDS, BANG_LOOK, BANG_NOISE, DOOR_NOISE, FUSE_STEPS, LOOK_NEAR, NAP_WAKE, NOISE_GUARDS, NOISE_LOOK, RING_NOISE, RING_SECONDS, STEPS_PER_SECOND, STRIKE_NOISE, THUD_NOISE, TOSS_OPINION, TOSS_RANGE, TOSS_RANGE_STRONG, TOSS_STRONG, WIND_MAX, WIND_SECONDS } from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE, TILE_INFO } from '../world/tiles';

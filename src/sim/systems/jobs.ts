@@ -12,7 +12,7 @@ import { nearestDir as faceTo } from '../ai/path';
 import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
-import { type Attr, ATTRS } from '../state';
+import { type Attr, ATTRS } from '../events';
 import { ATTR_START, STEPS_PER_SECOND, UNIT, VACANCY_DAYS } from '../tuning';
 import { containersOf } from '../world/containers';
 import { MAP_W } from '../world/World';
