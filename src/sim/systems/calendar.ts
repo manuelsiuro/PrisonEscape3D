@@ -169,6 +169,19 @@ export function dayPlan(prison: string, salt: number, day: number, calendar: rea
   return { day, event: id, weather: w, wind: forcedWind >= 0 ? forcedWind : wind, windForce, mood, at, until, outages };
 }
 
+/**
+ * A save or a log from before a newer day card (delivery, visiting, sports, stage nights): on
+ * each of `days` that would deal one of `was`'s cards now, the card it took the place of is
+ * kept instead, so the run goes on as it was played. `plan` deals a day as the caller does
+ * (it reads the calendar afresh, the cards kept so far included).
+ */
+export function keepOldCards(s: Pick<SimState, 'calendar'>, days: Iterable<number>, plan: (day: number) => DayEvent, was: Partial<Record<DayEvent, DayEvent>>) {
+  for (const day of days) {
+    const old = was[plan(day)];
+    if (old !== undefined) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(old), -1]];
+  }
+}
+
 /** A sim's plan for a day (today by default). */
 export function planOf(sim: Pick<SimContext, 'prison' | 'state'>, day = prisonDay(sim.state.step)): DayPlan {
   const s = sim.state;

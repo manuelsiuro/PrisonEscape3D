@@ -18,8 +18,8 @@ import { ORDER } from './command';
 import { FEATS, freshFeats, partialLedger } from './systems/ledger';
 import { spawnDogs, type Dog } from './systems/k9';
 import type { Rat, RatRefusal } from './systems/rats';
-import { dayPlan, type ForcedDay } from './systems/calendar';
-import { DAY_BOOKS, DAY_EVENTS, EVENT_TIMES, type DayEvent } from '../content/days';
+import { dayPlan, type ForcedDay, keepOldCards } from './systems/calendar';
+import { DAY_BOOKS, EVENT_TIMES, type DayEvent } from '../content/days';
 import { CATALOGUE } from '../content/smuggling';
 import { BAR, CHIPS, CLAIM_MAX, HAND, STAKES } from '../content/games';
 import type { Cheat, CheatNews } from './systems/cards';
@@ -954,10 +954,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!days(st.calendar)) s.calendar = [[prisonDay(st.step), 0, 0]];
   if (!Number.isInteger(s.eventFlags)) s.eventFlags = 0;
   // A save from before delivery day (P18): the day it was made on, and tomorrow (the forecast, the gossip may have named it), keep the card the delivery took the place of.
-  if (st.stowed === undefined) {
-    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.before ?? 'none');
-    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) if (dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event === 'delivery') s.calendar = [...s.calendar, [day, before, -1]];
-  }
+  const loadDays = [prisonDay(st.step), prisonDay(st.step) + 1];
+  const loadPlan = (day: number) => dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event;
+  const book = DAY_BOOKS[prison.id];
+  if (st.stowed === undefined) keepOldCards(s, loadDays, loadPlan, { delivery: book?.before ?? 'none' });
   if (typeof s.stowed !== 'boolean') s.stowed = false;
   if (!Number.isInteger(s.stowCaught)) s.stowCaught = 0;
   // The dogs (P19): a save from before them (or for a prison whose dogs changed) has them in their kennels; a trail that isn't one is gone.
@@ -969,10 +969,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // (RAT.OUT is 1, RAT.WAIT 4: an errand to nowhere waits instead.)
   for (const r of s.rats) if (r.target >= s.items.containers.length || (r.mode === 1 && r.target < 0)) Object.assign(r, { target: -1, mode: 4, path: [], at: 0 });
   // Smuggling (P21): a save from before it keeps the card visiting day took the place of, on the day it's loaded and the next (as delivery day did, P18).
-  if (st.order === undefined) {
-    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeVisits ?? 'none');
-    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) if (dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
-  }
+  if (st.order === undefined) keepOldCards(s, loadDays, loadPlan, { visiting: book?.beforeVisits ?? 'none' });
   // (A damaged one: an order for nothing in the catalogue, a way that doesn't exist, a drop of no item.)
   if (!(Array.isArray(s.order) && (s.order.length === 0 || (ints(s.order, 3) && s.order[0] >= 0 && s.order[0] < CATALOGUE.length && (s.order[1] === 0 || s.order[1] === 1))))) s.order = [];
   if (!Array.isArray(s.drops) || !s.drops.every((d) => ints(d, 3) && d[1] >= 1 && d[1] <= ITEMS.length)) s.drops = [];
@@ -980,10 +977,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.drops = s.drops.filter(([key, item]) => s.items.ground.some(([k, v]) => k === key && (v & 255) === item));
   if (!Number.isInteger(s.visit)) s.visit = 0;
   // Side games (P22): a save from before them keeps the card sports day took the place of, on the day it's loaded and the next.
-  if (st.played === undefined) {
-    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeSports ?? 'none');
-    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) if (dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event === 'sports') s.calendar = [...s.calendar, [day, before, -1]];
-  }
+  if (st.played === undefined) keepOldCards(s, loadDays, loadPlan, { sports: book?.beforeSports ?? 'none' });
   // (A damaged one: games with nobody, dice that aren't dice, a lock where there's no door.)
   const n = s.inmates.length;
   if (!Array.isArray(s.played) || !s.played.every((x) => Number.isInteger(x) && x >= 0)) s.played = [];
@@ -1088,13 +1082,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     for (let k = 0; k < 4; k++) if (m >= (EVENT_TIMES.talent.at as number) + k * ACT_GAP) bits |= 1 << k;
     s.acted = bits ? [prisonDay(s.step), bits] : [];
   }
-  if (st.stageDay === undefined) {
-    const was = DAY_BOOKS[prison.id]?.beforeStage;
-    for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) {
-      const e = dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event;
-      if (was && (e === 'talent' || e === 'quiz')) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(was[e]), -1]];
-    }
-  }
+  if (st.stageDay === undefined && book?.beforeStage) keepOldCards(s, loadDays, loadPlan, book.beforeStage);
   // (A damaged save or a replay file's start: a heading that isn't one of the 16 faces south, a
   // place that isn't whole units on the map is where that body started; nobody sees all round
   // or kicks the ball into NaN.)
