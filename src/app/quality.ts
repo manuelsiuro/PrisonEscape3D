@@ -1,6 +1,7 @@
 import type { Settings } from '../game/settings';
-import type { Quality, View } from '../render/View';
+import type { View } from '../render/View';
 import { MOBILE } from '../ui/dom';
+import { type Quality } from '../render/viewFrame';
 
 // ------------------------------------------------------------------ graphics quality
 /** Tiers from best to lightest; "auto" starts by device and steps down while frames run slow. */
