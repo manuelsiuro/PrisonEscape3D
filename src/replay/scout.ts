@@ -1,7 +1,7 @@
 import type { PrisonDef } from '../content/prisons/types';
 import { allChecked, prepareReplay, sumOf, type RunLog } from '../sim/runlog';
 import { ESCAPES, type Snapshot } from '../sim/Sim';
-import type { SimEvent } from '../sim/state';
+import type { SimEvent } from '../sim/events';
 import { STEPS_PER_MINUTE } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 

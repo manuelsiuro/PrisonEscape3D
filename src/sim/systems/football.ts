@@ -30,7 +30,7 @@ import { tileAt } from '../world/grid';
 import { DIR_X, DIR_Z } from '../command';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import { ATTRS } from '../state';
+import { ATTRS } from '../events';
 import { ANGRY_STEPS, ATTR_MAX, UNIT, walkSpeed } from '../tuning';
 import { TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';

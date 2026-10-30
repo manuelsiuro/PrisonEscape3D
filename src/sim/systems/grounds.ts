@@ -4,7 +4,7 @@
  */
 import { cornersOf, onTrack } from '../../content/grounds';
 import type { SimContext } from '../context';
-import { ATTRS } from '../state';
+import { ATTRS } from '../events';
 import { ATTR_MAX, FRESH_FOR, GYM_ENERGY, TIRED, TRAIN_GAIN } from '../tuning';
 import { LAYER } from '../world/World';
 import { tileOfBody } from './movement';

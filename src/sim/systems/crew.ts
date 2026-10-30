@@ -27,7 +27,7 @@ import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import { ORDER } from '../command';
 import type { SimContext } from '../context';
-import type { EscapeRoute, Refusal } from '../state';
+import type { EscapeRoute, Refusal } from '../events';
 import { STEPS_PER_MINUTE, TALK_REACH, UNIT } from '../tuning';
 import { LAYER, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
 import { TILE, TILE_INFO } from '../world/tiles';

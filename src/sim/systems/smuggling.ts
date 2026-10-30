@@ -26,7 +26,7 @@ import { CATALOGUE, DRONE_GUARDS, DRONE_HOURS, DRONE_NOISE, FEES, GIFT_MAX, GIFT
 import { canSee } from '../ai/sight';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import type { Refusal } from '../state';
+import type { Refusal } from '../events';
 import { STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';

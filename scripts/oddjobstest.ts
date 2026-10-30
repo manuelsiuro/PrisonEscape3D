@@ -30,7 +30,7 @@ import { ROUTINE } from '../src/content/routine';
 import { isFloor, placesOf } from '../src/sim/ai/places';
 import { command, EXT, OP, SLOT, TALK, tossArgs } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
-import { loadState } from '../src/sim/state';
+import { loadState } from '../src/sim/load';
 import { DAY_STEPS } from '../src/sim/systems/clock';
 import { planOf, prisonDay, TODAY } from '../src/sim/systems/calendar';
 import { endCheat } from '../src/sim/systems/cards';

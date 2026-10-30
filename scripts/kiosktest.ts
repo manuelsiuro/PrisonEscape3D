@@ -28,7 +28,7 @@ import { CALLEE } from '../src/content/phone';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
 import { SALT } from '../src/sim/rng';
 import { Sim, type SimEvent } from '../src/sim/Sim';
-import { loadState } from '../src/sim/state';
+import { loadState } from '../src/sim/load';
 import { DAY_STEPS } from '../src/sim/systems/clock';
 import { planOf, today } from '../src/sim/systems/calendar';
 import { priceOf } from '../src/sim/systems/economy';

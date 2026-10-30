@@ -18,7 +18,7 @@ import { RECIPES } from '../src/content/recipes';
 import { AIM_IN, DESIGNS, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, INK_HEAT, INK_ME_STEPS, KICK_GRACE, KICK_MAX, KICK_MIN, KICK_TAP, MATCH_STEPS, MATCH_STEPS_215, TEAM_WIN_OPINION } from '../src/content/team';
 import { command, EXT, OP, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
-import { loadState } from '../src/sim/state';
+import { loadState } from '../src/sim/load';
 import { DAY_STEPS } from '../src/sim/systems/clock';
 import { centreOf, fieldOf, kickPower, matchSteps, onPitch, pitchOf, sightFor, TEAM, teamsFor, watchingMatch } from '../src/sim/systems/football';
 import { GUARD } from '../src/sim/systems/guards';

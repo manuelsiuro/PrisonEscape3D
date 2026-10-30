@@ -24,7 +24,7 @@ import { en } from '../src/i18n/en';
 import { fr } from '../src/i18n/fr';
 import { command, EXT } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
-import { loadState } from '../src/sim/state';
+import { loadState } from '../src/sim/load';
 import { DAY_STEPS } from '../src/sim/systems/clock';
 import { dayPlan, muffled } from '../src/sim/systems/calendar';
 import { DOING } from '../src/sim/systems/inmates';

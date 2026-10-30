@@ -20,7 +20,8 @@ import { FREED_STEPS, RECORDS_HEAT, RECORDS_MINUTE, RELEASE_FAIL_HEAT, RELEASE_F
 import type { CommsDef } from '../../content/prisons/types';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
-import type { Refusal, SimState } from '../state';
+import type { SimState } from '../state';
+import type { Refusal } from '../events';
 import { BODY_HALF, CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { LAYER } from '../world/World';
 import { dayMinute, prisonDay } from './calendar';

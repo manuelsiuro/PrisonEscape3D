@@ -22,7 +22,7 @@ import { RECIPES } from '../src/content/recipes';
 import { FORGE_INT, FREED_STEPS, RECORDS_HEAT, RELEASE_FAIL_HEAT } from '../src/content/paperwork';
 import { command, OP, SLOT } from '../src/sim/command';
 import { ESCAPES, Sim, type SimEvent } from '../src/sim/Sim';
-import { loadState } from '../src/sim/state';
+import { loadState } from '../src/sim/load';
 import { DAY_STEPS } from '../src/sim/systems/clock';
 import { GUARD } from '../src/sim/systems/guards';
 import { itemOf, pocketOf, slot } from '../src/sim/systems/items';

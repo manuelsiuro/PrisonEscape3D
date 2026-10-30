@@ -13,7 +13,7 @@ import { tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
-import { SPOT, WAKE } from '../state';
+import { SPOT, WAKE } from '../events';
 import { ANGRY_STEPS, CHASE_HEAT, GRUDGE_SETTLED, GUARD_SWING_STEPS, HIT_OPINION, INMATE_SWING_STEPS, KO_OPINION, KO_STEPS, LOCK_KEEP, MELEE_REACH, THROW_RANGE } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_W } from '../world/World';

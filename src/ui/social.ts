@@ -3,7 +3,7 @@ import { wageOf } from '../sim/systems/jobs';
 import { crewSection, SPEC_ICON, type CrewTalkView } from './crew';
 import { nightOf, specialityOf } from '../sim/systems/crew';
 import { itemDef, itemNumber } from '../content/items';
-import { type JobId } from '../content/jobs';
+import type { JobId } from '../content/jobs';
 import { ROUTINE } from '../content/routine';
 import { BRIBE, OP, TALK } from '../sim/command';
 import { traitOf } from '../sim/systems/guards';

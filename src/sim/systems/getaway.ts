@@ -13,7 +13,7 @@ import { BLUFF_HEAT, SHIFT_FROM, SHIFT_TO, WAVED_STEPS } from '../../content/get
 import { itemNumber } from '../../content/items';
 import type { CheckpointDef } from '../../content/prisons/types';
 import type { SimContext } from '../context';
-import type { Refusal } from '../state';
+import type { Refusal } from '../events';
 import { BODY_HALF, CHASE_HEAT, UNIT } from '../tuning';
 import { LAYER, MAP_H, MAP_W } from '../world/World';
 import { today } from './calendar';

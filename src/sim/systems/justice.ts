@@ -13,7 +13,7 @@ import { placesOf } from '../ai/places';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import { randomInt, rollInt, SALT } from '../rng';
-import { WAKE } from '../state';
+import { WAKE } from '../events';
 import { today } from './calendar';
 import { INSPECTION_CELLS } from '../../content/days';
 import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SHAKEDOWN_CELLS, SOLITARY_HEAT, SOLITARY_STEPS, STRICT_CELLS } from '../tuning';

@@ -35,7 +35,7 @@ import { DayEvents, type EventsFrame } from './DayEvents';
 import { HolidaysView, NO_HOLIDAY, type HolidayFrame } from './Holidays';
 import { WALL_H } from './WorldView';
 import { pitchFraming, SCREEN_COLS, SCREEN_ROWS, ZOOM_MAX, ZOOM_MIN } from './pitchFrame';
-import type { NoiseKind } from '../sim/state';
+import type { NoiseKind } from '../sim/events';
 import { Dogs, type DogFrame } from './Dog';
 import { Rats, type RatFrame } from './Rat';
 import { GetawayView, type GetawayFrame } from './Getaway';
