@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { World } from '../sim/world/World';
 import type { Court, Pitch } from '../content/prisons/types';
+import { canvasTexture } from './canvas';
 
 /**
  * What card sharks (P27) show this frame: the court's lit spot, the ball (up in the hands, in
@@ -66,9 +67,7 @@ function ballTexture(): THREE.CanvasTexture {
   g.moveTo(96, 0);
   g.lineTo(96, 64);
   g.stroke();
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return canvasTexture(c);
 }
 
 /** The cards' atlas: a back, then a King, a Queen, an Ace and a Joker (5 across). */
@@ -94,9 +93,7 @@ function cardTexture(): THREE.CanvasTexture {
     g.textBaseline = 'middle';
     g.fillText(marks[k], x0 + 32, 50);
   }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return canvasTexture(c);
 }
 
 /** A card's quad, its UVs on a cell of the atlas. */
@@ -121,9 +118,7 @@ function boardTexture(): THREE.CanvasTexture {
       g.fillStyle = (r + k) % 2 ? '#2f4a2c' : '#e9dcb8';
       g.fillRect(4 + k * 16, 4 + r * 16, 16, 16);
     }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return canvasTexture(c);
 }
 
 /**

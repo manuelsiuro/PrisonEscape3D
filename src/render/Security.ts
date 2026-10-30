@@ -7,6 +7,7 @@ import { MAP_W, type World } from '../sim/world/World';
 import { Cones, type ConeFrame } from './Cones';
 import { ALERT } from '../sim/systems/guards';
 import { WALL_H } from './WorldView';
+import { canvasTexture } from './canvas';
 
 /** What the view needs of security each frame (filled by the game, reused). */
 export interface SecurityFrame {
@@ -45,8 +46,7 @@ export function pool(): THREE.CanvasTexture {
   grad.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 128, 128);
-  poolTex = new THREE.CanvasTexture(c);
-  poolTex.colorSpace = THREE.SRGBColorSpace;
+  poolTex = canvasTexture(c);
   return poolTex;
 }
 

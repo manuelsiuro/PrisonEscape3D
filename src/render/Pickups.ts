@@ -3,6 +3,7 @@ import { itemDef } from '../content/items';
 import { itemGeometry } from './itemModels';
 import { kitMaterial } from './kit';
 import { MAP_W } from '../sim/world/World';
+import { canvasTexture } from './canvas';
 
 /** A soft warm glow, drawn once and shared, so items on the floor catch the eye. */
 let glowTexture: THREE.CanvasTexture | null = null;
@@ -17,8 +18,7 @@ function glow(): THREE.CanvasTexture {
   grad.addColorStop(1, 'rgba(255, 200, 90, 0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 64, 64);
-  glowTexture = new THREE.CanvasTexture(c);
-  glowTexture.colorSpace = THREE.SRGBColorSpace;
+  glowTexture = canvasTexture(c);
   return glowTexture;
 }
 

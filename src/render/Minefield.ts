@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { hash01 } from './rand';
+import { canvasTexture } from './canvas';
 
 /** A tile's own small numbers (stable between loads): where its mine sits, how it's turned. */
 
@@ -24,9 +25,7 @@ function scorchTexture(): THREE.CanvasTexture {
     const r = n * (0.3 + hash01(k, 9) * 0.18);
     c.fillRect(Math.round(n / 2 + Math.cos(a) * r), Math.round(n / 2 + Math.sin(a) * r), 2, 2);
   }
-  const t = new THREE.CanvasTexture(canvas);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+  return canvasTexture(canvas);
 }
 
 const MAX_CRATERS = 24;

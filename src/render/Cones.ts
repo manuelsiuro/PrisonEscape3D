@@ -3,6 +3,7 @@ import { SIGHT_HALF_ANGLE, SIGHT_RANGE, sightReach } from '../sim/ai/sight';
 import { ALERT } from '../sim/systems/guards';
 import { UNIT } from '../sim/tuning';
 import type { World } from '../sim/world/World';
+import { canvasTexture } from './canvas';
 
 /** Rays per cone: enough for walls to cut clean edges. */
 const RAYS = 28;
@@ -24,8 +25,7 @@ function fade(): THREE.CanvasTexture {
   grad.addColorStop(1, 'rgba(255,255,255,0.08)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 4, 64);
-  fadeTexture = new THREE.CanvasTexture(c);
-  fadeTexture.colorSpace = THREE.SRGBColorSpace;
+  fadeTexture = canvasTexture(c);
   return fadeTexture;
 }
 

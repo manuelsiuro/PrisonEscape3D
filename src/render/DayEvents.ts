@@ -7,6 +7,7 @@ import { Character, type Look } from './Character';
 import { now, type Later } from './batch';
 import { itemGeometry } from './itemModels';
 import { WALL_H } from './WorldView';
+import { canvasTexture } from './canvas';
 
 /** What the day's events look like this frame (P17). */
 export interface EventsFrame {
@@ -111,11 +112,8 @@ export class DayEvents {
     const canvas = document.createElement('canvas');
     canvas.width = 192;
     canvas.height = 108;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
     // Redrawn 12 times a second: no mipmaps to rebuild each time.
-    tex.generateMipmaps = false;
-    tex.minFilter = THREE.LinearFilter;
+    const tex = canvasTexture(canvas, 'live');
     this.film = { canvas, tex, t: 0, frame: -1 };
     // (Drawn after the fog too, like the film: the veil never cuts across the frame.)
     const frame = new THREE.Mesh(new THREE.PlaneGeometry(width + 0.16, height + 0.16), new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.8, transparent: true }));

@@ -9,6 +9,7 @@ import { box, cyl, disc, kitMaterial, merge, type Part } from './kit';
 import { glowTexture } from './lights';
 import { seeThrough } from './occlusion';
 import { seeded } from './rand';
+import { canvasTexture } from './canvas';
 
 /** What the internet kiosk (P35) shows this frame. */
 export interface KioskFrame {
@@ -220,10 +221,7 @@ function drawingTexture(k: number): THREE.CanvasTexture {
   canvas.width = DRAW_W;
   canvas.height = DRAW_H;
   crayon(canvas.getContext('2d')!, PHOTOS[k] ?? 'sun', k);
-  t = new THREE.CanvasTexture(canvas);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return (drawings[k] = t);
+  return (drawings[k] = canvasTexture(canvas, 'sharp'));
 }
 
 /**
@@ -625,11 +623,8 @@ export class KioskView {
     this.canvas.width = PX_W;
     this.canvas.height = PX_H;
     this.ctx = this.canvas.getContext('2d')!;
-    const tex = (this.screenTex = new THREE.CanvasTexture(this.canvas));
-    tex.colorSpace = THREE.SRGBColorSpace;
     // Redrawn a few times a second while logged in: no mipmaps to rebuild each time.
-    tex.generateMipmaps = false;
-    tex.minFilter = THREE.LinearFilter;
+    const tex = (this.screenTex = canvasTexture(this.canvas, 'live'));
     this.screenMat = seeThrough(new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), 0.6, -0.4);
     // The drawings: three sheets, each a pin (or a strip of tape) at its top; the sheets' material a plain lit paper, cut with the wall it's on.
     const pinMat = seeThrough(kitMaterial.clone());

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { DOING } from '../sim/systems/inmates';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
+import { canvasTexture } from './canvas';
 
 export interface Look {
   outfit: number;
@@ -123,8 +124,7 @@ function sleepTexture(): THREE.CanvasTexture {
     g.fillText('Z', 32, 34);
   };
   draw();
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  const tex = canvasTexture(c);
   zTexture = tex;
   // Made before the web font arrives (the player is built at startup): drawn again once it has.
   document.fonts?.load('900 52px Fredoka').then(() => {
@@ -153,8 +153,7 @@ function koTexture(): THREE.CanvasTexture {
   g.stroke();
   g.fillStyle = '#ffd84a';
   g.fill();
-  starTexture = new THREE.CanvasTexture(c);
-  starTexture.colorSpace = THREE.SRGBColorSpace;
+  starTexture = canvasTexture(c);
   return starTexture;
 }
 
@@ -178,8 +177,7 @@ function markTexture(ch: string): THREE.CanvasTexture {
   g.textBaseline = 'middle';
   g.fillStyle = '#fff';
   g.fillText(ch, 48, 50);
-  t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  t = canvasTexture(c);
   markTextures.set(ch, t);
   return t;
 }
@@ -246,8 +244,7 @@ function badgeTexture(kind: Exclude<BadgeKind, ''>): THREE.CanvasTexture {
     g.closePath();
     g.fill();
   }
-  t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  t = canvasTexture(c);
   badgeTextures.set(kind, t);
   return t;
 }

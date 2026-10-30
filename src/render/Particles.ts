@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { canvasTexture } from './canvas';
 
 const SPARKS = 64;
 
@@ -104,8 +105,7 @@ export class Snores {
     g.strokeText('Z', 32, 34);
     g.fillStyle = '#e8f1ff';
     g.fillText('Z', 32, 34);
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
+    const tex = canvasTexture(c);
     for (let i = 0; i < ZS; i++) {
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
       s.visible = false;

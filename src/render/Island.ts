@@ -6,6 +6,7 @@ import { disposeTree } from './batch';
 import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { TEX } from './textures';
 import { hash01, seeded } from './rand';
+import { canvasTexture } from './canvas';
 
 /** A tile's own small number (stable between loads). */
 
@@ -50,10 +51,8 @@ function waveTexture(): THREE.CanvasTexture {
     c.fillStyle = `rgba(232,244,250,${0.35 + hash01(k, 7) * 0.35})`;
     c.fillRect(x, y, 2 + Math.floor(hash01(k, 9) * 3), 1);
   }
-  const t = new THREE.CanvasTexture(canvas);
+  const t = canvasTexture(canvas, 'sharp');
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.anisotropy = 4;
-  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -79,9 +78,8 @@ function foamTexture(): THREE.CanvasTexture {
     c.fillStyle = `rgba(245,250,253,${0.25 + hash01(k, 17) * 0.3})`;
     c.fillRect(Math.floor(hash01(k, 19) * n), Math.floor(hash01(k, 23) * n), 2 + Math.floor(hash01(k, 29) * 3), 1);
   }
-  const t = new THREE.CanvasTexture(canvas);
+  const t = canvasTexture(canvas);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -239,8 +237,7 @@ export class Island {
     const sf = soft.getContext('2d')!;
     sf.filter = 'blur(3px)';
     sf.drawImage(sc, 0, 0);
-    const shallowTex = new THREE.CanvasTexture(soft);
-    shallowTex.colorSpace = THREE.SRGBColorSpace;
+    const shallowTex = canvasTexture(soft);
     const shallowMesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W + M * 2, MAP_H + M * 2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shallowTex, transparent: true, depthWrite: false }));
     shallowMesh.position.set(MAP_W / 2, SEA_Y + 0.02, MAP_H / 2);
     shallowMesh.renderOrder = 0.12;

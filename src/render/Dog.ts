@@ -3,6 +3,7 @@ import type { DogCoat } from '../content/prisons/types';
 import { headingAngle } from '../sim/command';
 import { MAP_W } from '../sim/world/World';
 import { box, cyl, kitMaterial, merge, paint } from './kit';
+import { canvasTexture } from './canvas';
 
 /** What the view needs of a dog (P19), interpolated like everyone else. */
 export interface DogFrame {
@@ -536,7 +537,5 @@ function barkTexture(): THREE.CanvasTexture {
     g.arc(32, 40, r, -Math.PI * 0.8, -Math.PI * 0.2);
     g.stroke();
   }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return canvasTexture(c);
 }
