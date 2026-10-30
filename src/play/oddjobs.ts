@@ -16,12 +16,13 @@ import { TOUCH } from '../ui/dom';
 import { itemName } from '../ui/items';
 import type { HeldView, OddJobsView, PinView } from '../ui/oddjobs';
 import type { PaRow } from '../ui/pa';
-import { guardSubject, inmateName, type OddJobTalkView } from '../ui/social';
+import { type OddJobTalkView } from '../ui/social';
 import { banner, hud, itemsUI, oddjobsCard, sound, storyCard, talk } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { tileAt } from '../sim/world/grid';
 import { refusedText } from './refusals';
+import { guardSubject, inmateName } from '../ui/names';
 
 /**
  * The odd jobs board on screen (P40): its card at the board (and the job's own card, from its

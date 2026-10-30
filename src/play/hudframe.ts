@@ -6,7 +6,6 @@ import { GUARD } from '../sim/systems/guards';
 import { COLD_STEPS, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND } from '../sim/tuning';
 import { lookingAway } from '../sim/systems/ways';
 import { clockAt, formatTime } from '../sim/systems/clock';
-import { guardSubject } from '../ui/social';
 import { baking, exposed } from '../sim/systems/weather';
 import { dayHud } from './day';
 import { TILE_INFO } from '../sim/world/tiles';
@@ -30,6 +29,7 @@ import { paroleChip } from './parole';
 import { jobHud } from './oddjobs';
 import { TIPSY_STEPS } from '../content/long';
 import { type Look } from '../render/look';
+import { guardSubject } from '../ui/names';
 
 /** The release's chip (P36), refilled. */
 const releaseHud = { icon: 'clipboard', color: '#d8b04a', text: '', time: '', soon: false, left: null, of: 1, sr: '' };

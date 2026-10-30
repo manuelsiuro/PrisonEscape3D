@@ -13,7 +13,6 @@ import { UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { PastimesFrame } from '../render/Pastimes';
 import type { BoardView, CheatView, CourtView } from '../ui/pastimes';
-import { inmateName } from '../ui/social';
 import { banner, cheatCard, courtCard, itemsUI, matchCard, sound, stageCard } from './context';
 import { lanePress, setLaneFlash } from './nights';
 import { kickKey } from './team';
@@ -22,6 +21,7 @@ import { coachOnce } from './tips';
 import { director } from './chatter';
 import { TOUCH } from '../ui/dom';
 import { floatUp } from './floats';
+import { inmateName } from '../ui/names';
 
 /**
  * Card sharks (P27) on screen: Cheat's card, the court's card and the old-timer's board, filled

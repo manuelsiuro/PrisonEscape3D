@@ -30,13 +30,14 @@ import { PickCard, WrestleCard } from '../ui/games';
 import { BoardCard, CheatCard, CourtCard } from '../ui/pastimes';
 import { RaceCard } from '../ui/long';
 import { InkCard, MatchCard } from '../ui/team';
-import { BoardPanel, TalkPanel, TrainCard, WorkChips } from '../ui/social';
+import { TalkPanel } from '../ui/social';
 import { ToolControls } from '../ui/tool';
 import { AimUI } from '../ui/aim';
 import { TrophyToast } from '../ui/trophyToast';
 import { PaBoard } from '../ui/pa';
 import { trophyHooks } from '../game/trophies';
 import { play, sendOp } from './game';
+import { BoardPanel, TrainCard, WorkChips } from '../ui/work';
 
 /**
  * The long-lived objects every play module shares: storage first, then settings, sound, the

@@ -10,12 +10,12 @@ import { STEPS_PER_SECOND } from '../sim/tuning';
 import { LAYER, MAP_W } from '../sim/world/World';
 import type { CrewChip, CrewHud, CrewOrderView, CrewRow, CrewTalkView } from '../ui/crew';
 import { itemName } from '../ui/items';
-import { guardTitle, inmateName } from '../ui/social';
 import { banner, closeSocial, crewPanel, hud, itemsUI, profile, sound } from './context';
 import { play, sendOp } from './game';
 import { coachOnce } from './tips';
 import { spanText } from '../sim/systems/clock';
 import { badgeOf } from './badges';
+import { guardTitle, inmateName } from '../ui/names';
 
 /**
  * The crew on screen (P23): the orders in the talk panel (each greyed by the sim's own

@@ -10,9 +10,9 @@ import { ATTRS, type Sim } from '../sim/Sim';
 import { currentLang, t, type Key } from '../i18n';
 import { esc, h } from './dom';
 import { icon } from './icons';
-import { favorText, inmateName } from './social';
 import { PLAYER } from '../talk/fill';
 import type { PaRow } from './pa';
+import { favorText, inmateName } from './names';
 
 const ATTR_ICONS = { str: 'dumbbell', spd: 'run', int: 'brain' } as const;
 

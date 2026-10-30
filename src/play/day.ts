@@ -2,7 +2,6 @@ import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import { COMMENDATION, DAY_BOOKS, DRILL_HEAT, FEAST_ENERGY, MUSTER_MINUTES, SIGN_OFF_MINUTES, WEATHER_SIGHT, type DayEvent, type Weather } from '../content/days';
 import type { StowView } from '../ui/stow';
-import { guardSubject } from '../ui/social';
 import { listOf, t, type Key } from '../i18n';
 import { ROUTINE } from '../content/routine';
 import { handlersOf, dogsFrom } from '../sim/systems/k9';
@@ -27,6 +26,7 @@ import { holidayDays } from '../sim/systems/holiday';
 import { HEARING_FROM, HEARING_TO } from '../content/parole';
 import { P } from '../sim/systems/parole';
 import { dayTime, announcePa, wardenOf } from './warden';
+import { guardSubject } from '../ui/names';
 
 /** How many of today's holiday days are over by this minute (P42: the file redraws as one ends). */
 const holidaysOver = (sim: Sim, m: number) => holidayDays(sim).filter((id) => m >= HOLIDAY_DAY[id].at + HOLIDAY_DAY[id].length).length;

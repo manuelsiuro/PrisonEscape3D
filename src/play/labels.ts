@@ -22,13 +22,13 @@ import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
 import { hiddenIn } from '../sim/systems/kiosk';
-import { inmateName } from '../ui/social';
 import type { ToolView } from '../ui/tool';
 import { drinkArmed, press } from './buttons';
 import { trackCheck } from '../sim/systems/races';
 import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
 import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
 import { planOf } from '../sim/systems/calendar';
+import { inmateName } from '../ui/names';
 
 /**
  * The words on the buttons and cards: who someone is, what a container is called, what the

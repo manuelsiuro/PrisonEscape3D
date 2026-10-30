@@ -12,7 +12,6 @@ import { resetParole } from './parole';
 import { resetKiosk } from './kiosk';
 import { resetOddJobs } from './oddjobs';
 import { resetCrew } from './crew';
-import { inmateName } from '../ui/social';
 import { itemNumber } from '../content/items';
 import { escapesOf, PRISONS } from '../content/prisons';
 import { recordEscape } from '../game/records';
@@ -59,6 +58,7 @@ import { isLegal } from '../content/manhunt';
 import { outsideOf } from '../content/outside';
 import { carryFrom } from '../sim/hunt/carry';
 import { OVER } from '../sim/hunt/state';
+import { inmateName } from '../ui/names';
 
 
 /**

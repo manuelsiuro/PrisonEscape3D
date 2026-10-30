@@ -9,10 +9,10 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { fireworksOn, holidayDays, holidayOf, treatCheck } from '../sim/systems/holiday';
 import { HOLIDAY_TAKE, itemName } from '../ui/items';
 import type { PaRow } from '../ui/pa';
-import { inmateName } from '../ui/social';
 import { banner, itemsUI, settings, sound } from './context';
 import { floatAt } from './floats';
 import { announcePa, dayTime } from './warden';
+import { inmateName } from '../ui/names';
 
 /**
  * Holidays on screen (P42): which holiday the picture dresses for (the run's own; a Daily's by the
