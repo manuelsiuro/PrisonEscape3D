@@ -1,9 +1,9 @@
 import { prisonById } from '../content/prisons';
 import { Sim, type Snapshot } from '../sim/Sim';
-import type { Rumor } from '../talk/director';
 import type { RunLog } from '../sim/runlog';
 import { deleteLog, dropAllLogs, LOG_MAX, writeLog } from './logs';
 import { KEYS, readJSON, removeKey, writeJSON, type StorageKey } from './storage';
+import { type Rumor } from '../talk/gossip';
 
 /**
  * Saved games (GDD §2: sleeping saves progress). A save is the simulation's snapshot (about
