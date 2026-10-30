@@ -1,5 +1,5 @@
 import { fitPrisoner, type Prisoner } from '../content/prisoner';
-import { PRISONS } from '../content/prisons';
+import { prisonById, PRISONS } from '../content/prisons';
 import { TWIST_IDS } from '../content/twists';
 import { decodeRuns, fitLog, fromBase64, prepareReplay, type RunLog } from '../sim/runlog';
 import { clockAt, DAY_STEPS } from '../sim/systems/clock';
@@ -70,7 +70,7 @@ export function readReplayFile(text: string): Replay | ReplayFileError {
   const runs = decodeRuns(fromBase64(log.data) ?? new Uint8Array());
   if (!runs || log.steps <= 0 || log.from + log.steps > FILE_DAYS * DAY_STEPS || runs.reduce((n, [, k]) => n + k, 0) !== log.steps) return 'notReplay';
   try {
-    const prison = PRISONS.find((p) => p.id === log.prison)!;
+    const prison = prisonById(log.prison)!;
     const set = prepareReplay(log, prison);
     if (!set) return 'notReplay';
     // (A crafted start that sets up but can't be played: caught at its first step.)

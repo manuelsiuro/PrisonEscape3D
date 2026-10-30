@@ -1,5 +1,4 @@
-import { PRISONS } from '../content/prisons';
-import type { PrisonDef } from '../content/prisons/types';
+import { prisonById } from '../content/prisons';
 import { Sim, type Snapshot } from '../sim/Sim';
 import type { Rumor } from '../talk/director';
 import type { RunLog } from '../sim/runlog';
@@ -91,7 +90,7 @@ export function readSave(slot: SlotId): SaveFile | null {
     typeof snap.state === 'object' &&
     snap.state !== null &&
     typeof snap.state.step === 'number' &&
-    !!prisonOf(f.prison);
+    !!prisonById(f.prison);
   if (!ok) return null;
   // Rumors from an older or damaged save: dropped, not trusted.
   if (f.rumors !== undefined && !(Array.isArray(f.rumors) && f.rumors.every((r) => r && typeof r.step === 'number' && typeof r.fact?.kind === 'string' && typeof r.fact.key === 'string'))) delete f.rumors;
@@ -111,16 +110,12 @@ export function deleteSave(slot: SlotId) {
  * again in that prison instead.
  */
 export function rebuiltSince(f: SaveFile): boolean {
-  return (f.map ?? 0) < (prisonOf(f.prison)?.map ?? 0);
-}
-
-export function prisonOf(id: unknown): PrisonDef | undefined {
-  return PRISONS.find((p) => p.id === id);
+  return (f.map ?? 0) < (prisonById(f.prison)?.map ?? 0);
 }
 
 /** The game a save holds, ready to play (null if it can't be loaded). */
 export function loadSave(f: SaveFile): Sim | null {
-  const prison = prisonOf(f.prison);
+  const prison = prisonById(f.prison);
   if (!prison || rebuiltSince(f)) return null;
   try {
     const sim = new Sim(prison, 1);

@@ -1,4 +1,4 @@
-import { PRISONS } from '../content/prisons';
+import { prisonById } from '../content/prisons';
 import { fitLog } from '../sim/runlog';
 import { scout } from './scout';
 
@@ -11,7 +11,7 @@ const ctx = self as unknown as { onmessage: ((e: MessageEvent) => void) | null; 
 ctx.onmessage = (e) => {
   try {
     const log = fitLog(e.data);
-    const prison = log && PRISONS.find((p) => p.id === log.prison);
+    const prison = log && prisonById(log.prison);
     if (!log || !prison) return ctx.postMessage({ type: 'error' });
     const it = scout(log, prison);
     for (;;) {

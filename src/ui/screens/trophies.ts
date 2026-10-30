@@ -1,7 +1,7 @@
 import { ACHIEVEMENT_GROUPS, ACHIEVEMENTS, type Achievement, type Career } from '../../content/achievements';
 import { MEDAL_DAYS, MEDALS, type Medal } from '../../content/medals';
 import type { Prisoner } from '../../content/prisoner';
-import { escapesOf, PRISONS } from '../../content/prisons';
+import { escapesOf, prisonById, PRISONS } from '../../content/prisons';
 import { isOpen } from '../../game/campaign';
 import { recordOf } from '../../game/records';
 import { readPrisoner } from '../../game/prisoner';
@@ -24,7 +24,7 @@ const TABS: Tab[] = ['trophies', 'medals', 'stats'];
 /** Each way out's icon (as on the victory card). */
 const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel', roof: 'hook', takeover: 'users', gate: 'key', raft: 'boat', helicopter: 'heli', stowaway: 'truck', bluff: 'idCard', glider: 'glider', paperwork: 'clipboard', parole: 'scale' };
 /** A way out's icon in a prison (P18: Irongate's stowaway rides the helicopter). */
-export const routeIcon = (route: string, prison: string) => (route === 'stowaway' && PRISONS.find((p) => p.id === prison)?.delivery?.vehicle === 'helicopter' ? 'heli' : (ROUTE_ICON[route] ?? 'route'));
+export const routeIcon = (route: string, prison: string) => (route === 'stowaway' && prisonById(prison)?.delivery?.vehicle === 'helicopter' ? 'heli' : (ROUTE_ICON[route] ?? 'route'));
 
 /** The stats shown, in order: the stat, its icon, and how it's written. */
 const STATS: Array<[string, string, ((n: number) => string)?]> = [
