@@ -1,10 +1,9 @@
 import { h } from '../dom';
-import { routeIcon } from './trophies';
+import { medalDisc, routeIcon } from './trophies';
 import { icon } from '../icons';
 import { listOf, t, type Key } from '../../i18n';
 import type { Achievement } from '../../content/achievements';
 import type { Medal } from '../../content/medals';
-import { medalDisc } from './trophies';
 
 /** What the victory screen shows (GDD §13.2). */
 export interface Victory {

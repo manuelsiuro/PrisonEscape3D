@@ -1,4 +1,4 @@
-import { setZonesHere } from '../ui/hud';
+import { routineName, setZonesHere } from '../ui/hud';
 import { buzz } from '../app/haptics';
 import { resetRat } from './rat';
 import { resetSmuggle } from './smuggle';
@@ -33,7 +33,6 @@ import { formatTime } from '../sim/systems/clock';
 import { ladderFootOf } from '../sim/systems/structure';
 import { STEPS_PER_MINUTE } from '../sim/tuning';
 import { TOUCH, h } from '../ui/dom';
-import { routineName } from '../ui/hud';
 import { showVictory, type Victory, type VictoryChoice } from '../ui/screens/escaped';
 import { watchReplay } from './replay';
 import { showHelp } from '../ui/screens/help';

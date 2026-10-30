@@ -22,7 +22,7 @@
  * crowd's, a point of Speed, a win towards sports day.
  */
 import { BRAWL_GUARDS } from '../../content/crew';
-import { CROWD_RANGE } from '../../content/games';
+import { CROWD_RANGE, SPORTS_WINS } from '../../content/games';
 import { AIM_HELP, AIM_IN, AIM_WIDE, KICK_GRACE, KICK_LIFT, KICK_TAP, KICKOFF_STEPS, MATCH_STEPS_215, TACKLE_COOL, BALL_KEEP, KEEPER_COOL, KEEPER_REACH, SHOOT_RANGE, BALL_R, BALL_STOP, BEHIND, BOUNCE_KEEP, CALL_RANGE, DRIBBLE_PUSH, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, GOAL_PAUSE, KEEPER_RUSH, KICK_COOL, KICK_HOLD, KICK_INMATE, KICK_MAX, KICK_MIN, KICK_NOISE, KICK_REACH, KICK_SPREAD, MATCH_STEPS, PASS_ODDS, PITCH_LEAVE, PITCH_RANGE, TEAM_CROWD_OPINION, TEAM_PLAY_OPINION, TEAM_WIN_OPINION, TOUCH, YARD_EYES } from '../../content/team';
 import type { Pitch } from '../../content/prisons/types';
 import { nearestDir } from '../ai/path';
@@ -43,7 +43,6 @@ import { bodyAt, type Body } from './movement';
 import { makeNoise } from './noise';
 import { changeOpinion, endTalk, refuse } from './social';
 import { stopTraining } from './training';
-import { SPORTS_WINS } from '../../content/games';
 import { lineOfSight } from '../ai/sight';
 
 /** A match under way (P29): plain data in the state. */

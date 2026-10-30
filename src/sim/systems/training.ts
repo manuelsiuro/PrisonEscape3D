@@ -5,11 +5,11 @@ import { type Attr, ATTRS } from '../events';
 import { ATTR_MAX, GYM_ENERGY, REP_DRAIN_STEPS, REP_GAIN, STUDY_ENERGY, STUDY_TIP_EVERY, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
 import { containersOf } from '../world/containers';
 import { LAYER } from '../world/World';
-import { closeBox } from './actions';
 import type { FixtureUse } from './items';
 import { revealTip } from './recipes';
 import { endTalk } from './social';
 import { energyCost } from './weather';
+import { closeBox } from './items';
 
 export function attr(sim: SimContext, a: Attr): number {
   const s = sim.state;

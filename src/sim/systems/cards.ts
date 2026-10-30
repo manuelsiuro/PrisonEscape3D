@@ -18,11 +18,11 @@ import { CALL_DOUBT, CALL_FLOOR, CALL_MAX, CALL_STUCK, CARD, CHIPS, CLAIM_MAX, D
 import { ROUTINE } from '../../content/routine';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import { closeBox } from './actions';
 import { countGame, eyesOn, gameOn, gameRefusal } from './games';
 import { changeOpinion, refuse } from './social';
 import { stopTraining } from './training';
 import { addHeat } from './watch';
+import { closeBox } from './items';
 
 /** A game of Cheat under way (P27): plain data in the state. */
 export interface Cheat {

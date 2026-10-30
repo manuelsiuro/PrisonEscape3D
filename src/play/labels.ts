@@ -15,7 +15,7 @@ import { CHOC_EGG, DIRT, ICE_LOLLY, STRIKES, underSea, WALL_CHUNK, type ClimbTar
 import { energyCost } from '../sim/systems/weather';
 import { dogDef } from '../sim/systems/k9';
 import { petOf, trapChance } from '../sim/systems/rats';
-import { RAT_MEALS, STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
+import { RAT_MEALS, STEPS_PER_MINUTE, STEPS_PER_SECOND, THROW_RANGE } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
@@ -29,7 +29,6 @@ import { trackCheck } from '../sim/systems/races';
 import { BED, bedAt, bedOf, wilted } from '../sim/systems/garden';
 import { CROP, GROWN, HEATWAVE_WATER, TIPSY_STEPS } from '../content/long';
 import { planOf } from '../sim/systems/calendar';
-import { STEPS_PER_MINUTE } from '../sim/tuning';
 import { ratName } from './rat';
 
 /**

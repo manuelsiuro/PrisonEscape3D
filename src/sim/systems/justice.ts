@@ -20,10 +20,9 @@ import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SHAKE
 import { containersOf } from '../world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { clockAt } from './clock';
-import { closeBox } from './actions';
 import { maxHealth } from './combat';
 import { assign, backToDuty, type Guard, GUARD, type GuardReport } from './guards';
-import { itemOf, slot } from './items';
+import { closeBox, itemOf, slot } from './items';
 import { dismissAll, endTalk } from './social';
 import { stopTraining } from './training';
 import { addHeat, repair } from './watch';

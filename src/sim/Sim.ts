@@ -11,7 +11,7 @@ import { fnv1a } from './rng';
 import { freshState, type LayerMove, type SimState, type Snapshot } from './state';
 import { ESCAPES, type Attr, type SimEvent } from './events';
 import { loadState } from './load';
-import { closeBox, keepSeat, regenerate, shower, standUp, underShower, useItems } from './systems/actions';
+import { useItems } from './systems/actions';
 import { chill } from './systems/weather';
 import { crowdPlan, dayMinute, dayWatch, drillOn, theDay, today } from './systems/calendar';
 import { clockAt, DAY_STEPS, hourStarts, type Clock } from './systems/clock';
@@ -22,7 +22,7 @@ import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
 import { mines } from './systems/mines';
 import { noisemakers } from './systems/noise';
 import { noteCarried } from './systems/recipes';
-import { stockSlots } from './systems/items';
+import { closeBox, stockSlots } from './systems/items';
 import { clockIn, spreadCoins, station } from './systems/jobs';
 import { bedCheck, outOfReach, release, report, wakeUp } from './systems/justice';
 import { overlapsTile, tileOfBody, walk, type Body } from './systems/movement';
@@ -56,6 +56,7 @@ import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPE
 import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 import { tileAt } from './world/grid';
+import { keepSeat, regenerate, shower, standUp, underShower } from './systems/upkeep';
 
 // The state, its events and snapshots live in state.ts; importers have always found them here.
 export * from './state';

@@ -1,11 +1,10 @@
 import { footballOffer, inkHeatNow, inkOffer } from './team';
 import { buzz } from '../app/haptics';
-import { BAR, BOUT_STEPS, CROWD_OPINION, DICE_HEAT, GAME_OPINION, GAMES_A_DAY, PICK_MISS_NOISE, PICK_SPEED, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES } from '../content/games';
+import { BAR, BOUT_ENERGY, BOUT_STEPS, CROWD_OPINION, DICE_HEAT, GAME_OPINION, GAMES_A_DAY, PICK_MISS_NOISE, PICK_SPEED, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES } from '../content/games';
 import { KEY_ITEM_COLORS } from '../content/items';
 import { t } from '../i18n';
 import { OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
-import { BOUT_ENERGY } from '../content/games';
 import { DOING } from '../sim/systems/inmates';
 import { eyesOn, gameRefusal, LOCKPICK, pinsOf, playedToday, sportsOn, sportsWins, surging, sweetSpot } from '../sim/systems/games';
 import { itemOf, usesOf } from '../sim/systems/items';

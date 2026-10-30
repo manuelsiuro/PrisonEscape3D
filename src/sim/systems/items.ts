@@ -6,6 +6,7 @@ import { randomInt } from '../rng';
 import { TALK_REACH, UNIT } from '../tuning';
 import { containersOf, type ContainerInfo } from '../world/containers';
 import { LAYER, layerOfKey, placeKey, tileOfKey, type World } from '../world/World';
+import type { SimContext } from '../context';
 import type { Body } from './movement';
 import { propReach, seatSpot } from './rest';
 import { lineOfSight } from '../ai/sight';
@@ -328,6 +329,15 @@ export function stillInReach(w: World, s: ItemState, b: Body, people: readonly L
 }
 
 /** The first free hotbar slot, -1 when full. */
+/** The open container's panel closes (caught, knocked out, climbing, asleep…). */
+export function closeBox(sim: SimContext) {
+  const it = sim.state.items;
+  if (it.open < 0) return;
+  it.open = -1;
+  it.rev++;
+  sim.events.push({ type: 'close' });
+}
+
 /** The first empty hotbar slot, -1 when it's full. */
 export const freeHotbar = (inv: readonly number[]) => inv.slice(0, HOTBAR).indexOf(0);
 /** The first hotbar slot holding the item, -1 for none. */
