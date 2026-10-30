@@ -7,8 +7,8 @@
  * A save carries its log next to it (copied on save, so a game loaded and played two ways
  * makes two logs, each whole).
  */
-import { planOf, prisonDay, quietCalendar } from './systems/calendar';
-import { DAY_BOOKS, DAY_EVENTS } from '../content/days';
+import { keepOldCards, planOf, prisonDay, quietCalendar } from './systems/calendar';
+import { DAY_BOOKS } from '../content/days';
 import { fnv1a } from './rng';
 import { ESCAPES, Sim, type Snapshot } from './Sim';
 import { STEPS_PER_MINUTE } from './tuning';
@@ -286,26 +286,15 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   // Played before the rats (P20): a guard waking without his key went unnoticed.
   if (beforeRats(log.game)) sim.noRats = true;
   // Played before visiting day (P21): every day it would deal now dealt the card it took the place of.
-  if (beforeVisits(log.game) && !beforeDays(log.game)) {
-    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeVisits ?? 'none');
-    const s = sim.state;
-    for (let day = prisonDay(log.from); day <= lastDay(log); day++) if (planOf(sim, day).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
-  }
+  const book = DAY_BOOKS[prison.id];
+  const logDays: number[] = [];
+  for (let day = prisonDay(log.from); day <= lastDay(log); day++) logDays.push(day);
+  const logPlan = (day: number) => planOf(sim, day).event;
+  if (beforeVisits(log.game) && !beforeDays(log.game)) keepOldCards(sim.state, logDays, logPlan, { visiting: book?.beforeVisits ?? 'none' });
   // Played before sports day (P22): likewise.
-  if (beforeSports(log.game) && !beforeDays(log.game)) {
-    const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeSports ?? 'none');
-    const s = sim.state;
-    for (let day = prisonDay(log.from); day <= lastDay(log); day++) if (planOf(sim, day).event === 'sports') s.calendar = [...s.calendar, [day, before, -1]];
-  }
+  if (beforeSports(log.game) && !beforeDays(log.game)) keepOldCards(sim.state, logDays, logPlan, { sports: book?.beforeSports ?? 'none' });
   // Played before stage nights (P30): likewise, for both.
-  if (beforeStage(log.game) && !beforeDays(log.game)) {
-    const was = DAY_BOOKS[prison.id]?.beforeStage;
-    const s = sim.state;
-    for (let day = prisonDay(log.from); day <= lastDay(log); day++) {
-      const e = planOf(sim, day).event;
-      if (was && (e === 'talent' || e === 'quiz')) s.calendar = [...s.calendar, [day, DAY_EVENTS.indexOf(was[e]), -1]];
-    }
-  }
+  if (beforeStage(log.game) && !beforeDays(log.game) && book?.beforeStage) keepOldCards(sim.state, logDays, logPlan, book.beforeStage);
   // Played before the P23–P30 fixes (2.5.1): those rules as they were.
   if (beforeFixes(log.game)) sim.rules250 = true;
   // Played before the pay phone (P34): nobody queued for it.
