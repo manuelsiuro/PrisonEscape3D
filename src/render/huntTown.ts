@@ -4,6 +4,7 @@ import { TILE } from '../sim/world/tiles';
 import { MAP_W } from '../sim/world/World';
 import { box, kitMaterial, merge, paint, type Part } from './kit';
 import { seeThrough } from './occlusion';
+import { hash01 } from './rand';
 
 /**
  * The outside's buildings as buildings (P41 review: they were the prisons' brick blocks, flat grey
@@ -25,12 +26,6 @@ interface Block {
 
 const WALL = 1.45;
 /** A tile's own small number (stable between loads). */
-const hash = (i: number, k: number) => {
-  let h = Math.imul(i ^ (k * 0x9e3779b1), 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
 
 /**
  * The picture's building tiles cut into rectangles: houses first (from each free tile in turn, the
@@ -169,7 +164,7 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
       let at = 0;
       let k = 0;
       while (at < len) {
-        let size = 2 + Math.floor(hash(seed, 20 + k) * 2);
+        let size = 2 + Math.floor(hash01(seed, 20 + k) * 2);
         if (len - at - size === 1) size++;
         if (len - at < size) size = len - at;
         units.push([at, size]);
@@ -186,10 +181,10 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
       const ud = alongX ? d : size;
       const cx = ux0 + uw / 2;
       const cz = uz0 + ud / 2;
-      const pick = (list: readonly number[], salt: number) => list[Math.floor(hash(seed + k * 7, salt) * list.length)];
+      const pick = (list: readonly number[], salt: number) => list[Math.floor(hash01(seed + k * 7, salt) * list.length)];
       const wallColor = barn ? 0x9b3b2e : pick(st.walls, 1);
       const roofColor = barn ? 0x4e5258 : pick(st.roof, 2);
-      const h = WALL + (st.terrace ? (hash(seed + k, 3) - 0.5) * 0.3 : 0) + (st.shed ? 0.25 : 0);
+      const h = WALL + (st.terrace ? (hash01(seed + k, 3) - 0.5) * 0.3 : 0) + (st.shed ? 0.25 : 0);
       // The walls, a little in from the tile's edge, and a plinth.
       parts.push(box(uw - 0.08, h, ud - 0.08, wallColor, cx, 0, cz), box(uw - 0.02, 0.12, ud - 0.02, theme === 'alpine' ? 0x8f9196 : 0x8a847a, cx, 0, cz));
       if (st.shed) {
@@ -223,8 +218,8 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
         parts.push(alongX ? box(long + 0.02, 0.07, 0.14, 0x3a3634, cx, h + rise - 0.05, cz) : box(0.14, 0.07, long + 0.02, 0x3a3634, cx, h + rise - 0.05, cz));
         if (st.snow) parts.push(gable(span + 0.32, rise * 0.45, (alongX ? uw : ud) + 0.26, 0xf2f6fb, cx, h + rise * 0.56, cz, alongX));
         // A chimney on most houses (not sheds or barns).
-        if (!st.shed && !barn && hash(seed + k, 4) < 0.75) {
-          const off = (hash(seed + k, 5) - 0.5) * (alongX ? uw : ud) * 0.6;
+        if (!st.shed && !barn && hash01(seed + k, 4) < 0.75) {
+          const off = (hash01(seed + k, 5) - 0.5) * (alongX ? uw : ud) * 0.6;
           parts.push(box(0.26, rise + 0.35, 0.26, theme === 'alpine' ? 0x6a6a6e : 0x8a5040, alongX ? cx + off : cx + span * 0.18, h + 0.05, alongX ? cz - span * 0.18 : cz + off));
         }
       } else {
@@ -253,7 +248,7 @@ export function buildHouses(o: OutsideWorld, theme: string): { group: THREE.Grou
         if (st.terrace && units.length > 1 && ((alongX && face >= 2 && ((face === 2 && k < units.length - 1) || (face === 3 && k > 0))) || (!alongX && face < 2 && ((face === 0 && k < units.length - 1) || (face === 1 && k > 0))))) continue;
         const n = to - from;
         const door = face === doorSide;
-        const doorAt = from + n / 2 + (units.length > 1 ? 0 : (hash(seed, 6) - 0.5) * Math.max(0, n - 2) * 0.5);
+        const doorAt = from + n / 2 + (units.length > 1 ? 0 : (hash01(seed, 6) - 0.5) * Math.max(0, n - 2) * 0.5);
         const out = face === 0 || face === 2 ? 0.03 : -0.03;
         for (let s = from + 0.5; s < to; s += 1) {
           if (door && Math.abs(s - doorAt) < (barn || st.shed ? 1 : 0.6)) continue;

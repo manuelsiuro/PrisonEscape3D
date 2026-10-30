@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PHOTOS, PHOTO_WALL } from '../content/kiosk';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { headingAngle } from '../sim/command';
 import { kioskOf } from '../sim/systems/kiosk';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { TILE_INFO } from '../sim/world/tiles';
@@ -8,6 +8,7 @@ import { now, type Later } from './batch';
 import { box, cyl, disc, kitMaterial, merge, type Part } from './kit';
 import { glowTexture } from './lights';
 import { seeThrough } from './occlusion';
+import { seeded } from './rand';
 
 /** What the internet kiosk (P35) shows this frame. */
 export interface KioskFrame {
@@ -18,7 +19,6 @@ export interface KioskFrame {
 }
 
 /** A face (1 east, 5 south, 9 west, 13 north) as the turn that points +z that way. */
-const faceAngle = (face: number) => Math.atan2(DIR_X[face] ?? 0, DIR_Z[face] ?? 1);
 
 /**
  * On a side wall (facing east or west) the screen would show edge-on to the camera (which looks
@@ -231,8 +231,7 @@ function drawingTexture(k: number): THREE.CanvasTexture {
  * that stray over the lines. Each id its own picture (a fixed wobble: the same drawing every time).
  */
 function crayon(c: CanvasRenderingContext2D, id: (typeof PHOTOS)[number], seed: number) {
-  let s = 1013904223 ^ (seed * 2654435761);
-  const rnd = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
+  const rnd = seeded(1013904223 ^ (seed * 2654435761));
   const j = (n: number) => (rnd() - 0.5) * n;
   c.fillStyle = '#fbf7ec';
   c.fillRect(0, 0, DRAW_W, DRAW_H);
@@ -683,7 +682,7 @@ export class KioskView {
     body.receiveShadow = true;
     // The head: swung toward the camera about its south edge on a side wall, tipped back about its middle
     // (its top edge into the wall, out of sight: the screen's foot comes out less than about the top).
-    const a = faceAngle(k.face);
+    const a = headingAngle(k.face);
     const side = k.face === 9 ? -1 : k.face === 1 ? 1 : 0;
     const swing = new THREE.Group();
     swing.position.set((side * HEAD_W) / 2, HEAD_Y0, 0);

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { CommsDef } from '../content/prisons/types';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { DIR_X, DIR_Z, headingAngle } from '../sim/command';
 import { commsOf } from '../sim/systems/phone';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
@@ -18,7 +18,6 @@ export interface PhoneFrame {
 }
 
 /** A face (1 east, 5 south, 9 west, 13 north) as the turn that points +z that way. */
-const faceAngle = (face: number) => Math.atan2(DIR_X[face] ?? 0, DIR_Z[face] ?? 1);
 
 /** The diversion's beacon flashes this many game minutes (200 steps), held through a pause (it counts the clock, not the screen's seconds). */
 const ALARM_MINUTES = 10;
@@ -228,12 +227,12 @@ export class PhoneView {
     this.cord.visible = false;
     g.add(body, this.handset, this.cord);
     // On the wall the caller faces: half a tile from their tile's middle that way, its front turned back to them.
-    const a = faceAngle(c.phone.face);
+    const a = headingAngle(c.phone.face);
     g.position.set(c.phone.x + 0.5 + Math.sin(a) * 0.5, 0, c.phone.z + 0.5 + Math.cos(a) * 0.5);
     g.rotation.y = a + Math.PI;
     this.phone = g;
     this.group.add(g);
-    this.carAt = { x: c.car.x + 0.5, z: c.car.z + 0.5, angle: faceAngle(c.car.face) };
+    this.carAt = { x: c.car.x + 0.5, z: c.car.z + 0.5, angle: headingAngle(c.car.face) };
     // Pulling away: never off the road's end (Irongate's ferry landing is only a few tiles of it): no
     // harder than brings the nose (CAR_NOSE ahead of the middle) to the last road tile's edge as it fades out.
     const dx = Math.sign(DIR_X[c.car.face] ?? 0);

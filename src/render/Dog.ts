@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { DogCoat } from '../content/prisons/types';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { headingAngle } from '../sim/command';
 import { MAP_W } from '../sim/world/World';
 import { box, cyl, kitMaterial, merge, paint } from './kit';
 
@@ -249,7 +249,7 @@ export class Dogs {
       });
       const at = kennelSpot(s, LIE_OUT);
       root.position.set(at.x, 0, at.z);
-      this.rigs.push({ root, body, head, tail, legs, bodyShape, headShape, tailShape, yaw: faceAngle(s.face), gait: 0, sit: 0, lie: 1, still: 0, bark: 0, wag: this.rigs.length * 2.3, sneeze: 0, hx: 0, lift: 0.55, px: at.x, pz: at.z });
+      this.rigs.push({ root, body, head, tail, legs, bodyShape, headShape, tailShape, yaw: headingAngle(s.face), gait: 0, sit: 0, lie: 1, still: 0, bark: 0, wag: this.rigs.length * 2.3, sneeze: 0, hx: 0, lift: 0.55, px: at.x, pz: at.z });
     }
     // A ring left up by the last prison's dogs goes.
     for (const ring of this.rings) ring.visible = false;
@@ -269,7 +269,7 @@ export class Dogs {
     this.kennels.count = n;
     spots.forEach((s, k) => {
       const at = kennelSpot(s, -0.16);
-      this.q.setFromAxisAngle(UP, faceAngle(s.face));
+      this.q.setFromAxisAngle(UP, headingAngle(s.face));
       this.kennels.setMatrixAt(k, this.m.compose(this.v.set(at.x, 0, at.z), this.q, this.s.set(1, 1, 1)));
     });
     this.kennels.instanceMatrix.needsUpdate = true;
@@ -279,7 +279,7 @@ export class Dogs {
     // Lying by their kennels until the first frame says otherwise (the title's backdrop shows them so).
     const none: number[] = [];
     this.dt = 1;
-    spots.forEach((s, k) => this.pose(k, { x: s.x + 0.5, z: s.z + 0.5, facing: faceAngle(s.face), moving: false, pace: 1, pose: 'kennel', friend: false }, -99, -99, 1, 0, false, none));
+    spots.forEach((s, k) => this.pose(k, { x: s.x + 0.5, z: s.z + 0.5, facing: headingAngle(s.face), moving: false, pace: 1, pose: 'kennel', friend: false }, -99, -99, 1, 0, false, none));
     for (const m of this.pieces) m.instanceMatrix.needsUpdate = true;
     this.group.visible = n > 0;
   }
@@ -326,7 +326,7 @@ export class Dogs {
       tz += (spot.z - tz) * r.lie;
     }
     {
-      const a = faceAngle(kennel.face);
+      const a = headingAngle(kennel.face);
       const sa = Math.sin(a);
       const ca = Math.cos(a);
       const dx = tx - kennel.x - 0.5;
@@ -343,7 +343,7 @@ export class Dogs {
     }
     r.root.position.set(tx, 0, tz);
     // Turning: the short way round, smoothly.
-    const want = atKennel ? faceAngle(kennel.face) : d.facing;
+    const want = atKennel ? headingAngle(kennel.face) : d.facing;
     let turn = want - r.yaw;
     turn = Math.atan2(Math.sin(turn), Math.cos(turn));
     r.yaw += motion ? turn * Math.min(1, dt * 9) : turn;
@@ -506,11 +506,10 @@ export class Dogs {
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** A kennel door's facing as an angle (0 = +z). */
-const faceAngle = (face: number) => Math.atan2(DIR_X[face] ?? 0, DIR_Z[face] ?? 1);
 
 /** A point on a kennel's tile, `off` tiles out from its middle the way its door faces. */
 function kennelSpot(s: KennelSpot, off: number, out = { x: 0, z: 0 }): { x: number; z: number } {
-  const a = faceAngle(s.face);
+  const a = headingAngle(s.face);
   out.x = s.x + 0.5 + Math.sin(a) * off;
   out.z = s.z + 0.5 + Math.cos(a) * off;
   return out;

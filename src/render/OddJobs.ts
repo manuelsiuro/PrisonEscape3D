@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { headingAngle } from '../sim/command';
 import { boardOf } from '../sim/systems/oddjobs';
 import type { World } from '../sim/world/World';
 import { now, type Later } from './batch';
@@ -17,7 +17,6 @@ export interface OddJobsFrame {
 }
 
 /** A face (1 east, 5 south, 9 west, 13 north) as the turn that points +z that way. */
-const faceAngle = (face: number) => Math.atan2(DIR_X[face] ?? 0, DIR_Z[face] ?? 1);
 
 const WOOD_DARK = 0x5e3d22;
 const CORK = 0xb98a55;
@@ -115,7 +114,7 @@ export class OddJobsView {
     this.tag.visible = false;
     g.add(this.tag);
     // On the wall the player faces: half a tile from their tile's middle that way, its front turned back to them.
-    const a = faceAngle(b.face);
+    const a = headingAngle(b.face);
     // (In a room's corner, a little away from the wall beside it: clear of its face and top.)
     const along = world.blocked(b.x - 1, b.z) ? 0.08 : world.blocked(b.x + 1, b.z) ? -0.08 : 0;
     g.position.set(b.x + 0.5 + Math.sin(a) * 0.5 + along, 0, b.z + 0.5 + Math.cos(a) * 0.5);

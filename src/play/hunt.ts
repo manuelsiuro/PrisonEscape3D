@@ -14,7 +14,7 @@ import type { Frame } from '../render/View';
 import { Autopilot } from '../sim/ai/autopilot';
 import { findPath, smooth } from '../sim/ai/path';
 import { centerX, centerZ, tileAt } from '../sim/world/grid';
-import { command, DIR_X, DIR_Z, EXT, OP, tossArgs } from '../sim/command';
+import { command, EXT, headingAngle, OP, tossArgs } from '../sim/command';
 import { HOUND, Hunt, OVER, SEEK, type Carry, type HuntEvent, type HuntOptions } from '../sim/hunt/Hunt';
 import { floorAt, spotTile } from '../sim/hunt/world';
 import { ALERT, GUARD_SPEED } from '../sim/systems/guards';
@@ -444,7 +444,7 @@ function frameOf(run: HuntRun, a: number, paused: boolean): Frame {
   const p = s.player;
   f.x = lerp(run.prev.x, p.x);
   f.z = lerp(run.prev.z, p.z);
-  f.facing = Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]);
+  f.facing = headingAngle(p.facing);
   f.moving = p.moving && !paused;
   f.minuteOfDay = (run.carry.minute + s.step / STEPS_PER_SECOND) % 1440;
   f.surface = floorAt(h.out, h.tile);
@@ -462,7 +462,7 @@ function frameOf(run: HuntRun, a: number, paused: boolean): Frame {
     const o = (f.inmates[0] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '' });
     o.x = (lt % MAP_W) + 0.5;
     o.z = Math.floor(lt / MAP_W) + 0.5;
-    o.facing = Math.atan2(DIR_X[h.def.lookout.face ?? 13], DIR_Z[h.def.lookout.face ?? 13]);
+    o.facing = headingAngle(h.def.lookout.face ?? 13);
     o.doing = DOING.LOOKOUT;
     o.cell = run.lookout.cell;
     f.inmates.length = 1;
@@ -475,7 +475,7 @@ function frameOf(run: HuntRun, a: number, paused: boolean): Frame {
     const q = run.prevS[k];
     o.x = off ? AWAY : lerp(q?.x ?? m.body.x, m.body.x);
     o.z = off ? AWAY : lerp(q?.z ?? m.body.z, m.body.z);
-    o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
+    o.facing = headingAngle(m.body.facing);
     o.moving = m.body.moving && !paused && !!q && (q.x !== m.body.x || q.z !== m.body.z);
     o.doing = DOING.NOTHING;
     o.alert = off ? ALERT.NONE : m.mode === SEEK.CHASE ? ALERT.HOSTILE : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.mode === SEEK.SWEEP || m.notice > 0 ? ALERT.SUSPICIOUS : ALERT.CALM;
@@ -492,7 +492,7 @@ function frameOf(run: HuntRun, a: number, paused: boolean): Frame {
     const q = run.prevD[k];
     o.x = off ? AWAY : lerp(q?.x ?? d.body.x, d.body.x);
     o.z = off ? AWAY : lerp(q?.z ?? d.body.z, d.body.z);
-    o.facing = Math.atan2(DIR_X[d.body.facing], DIR_Z[d.body.facing]);
+    o.facing = headingAngle(d.body.facing);
     o.moving = d.body.moving && !paused;
     o.pose = d.mode === HOUND.TRACK ? 'track' : d.mode === HOUND.POINT ? 'point' : d.mode === HOUND.ASLEEP ? 'asleep' : d.mode === HOUND.DAZED || d.mode === HOUND.CALM ? 'dazed' : 'heel';
     o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / GUARD_SPEED : 1;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
+import { seeded } from './rand';
 
 /** Rain drops in the box of air round the player (a storm uses them all). */
 const DROPS = 900;
@@ -76,8 +77,7 @@ export class Weather {
   private rand: () => number;
 
   constructor() {
-    let s = 9137;
-    this.rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    this.rand = seeded(9137);
     this.pos = new Float32Array(DROPS * 3);
     this.seed = new Float32Array(DROPS);
     for (let i = 0; i < DROPS; i++) {
@@ -326,8 +326,7 @@ function cloudTexture(): THREE.Texture {
   const c = canvas.getContext('2d')!;
   c.fillStyle = '#000';
   c.fillRect(0, 0, n, n);
-  let s = 77;
-  const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+  const rand = seeded(77);
   for (let k = 0; k < 26; k++) {
     const x = rand() * n;
     const z = rand() * n;

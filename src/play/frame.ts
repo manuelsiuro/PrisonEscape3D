@@ -8,7 +8,7 @@ import type { BadgeKind } from '../render/Character';
 import type { Frame } from '../render/View';
 import { ROOF_Y } from '../render/Structure';
 import { rollCallShows } from '../render/ground';
-import { DIR_X, DIR_Z, SLOT } from '../sim/command';
+import { DIR_X, DIR_Z, headingAngle, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
 import { FAVOR_STATE, type Station } from '../sim/systems/economy';
@@ -263,7 +263,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   const f = frameData;
   f.x = lerp(g.prev.x, p.x);
   f.z = lerp(g.prev.z, p.z);
-  f.facing = Math.atan2(DIR_X[p.facing], DIR_Z[p.facing]);
+  f.facing = headingAngle(p.facing);
   f.moving = p.moving && !g.paused;
   f.minuteOfDay = clock.minuteOfDay + ((st.step % STEPS_PER_MINUTE) + a) / STEPS_PER_MINUTE;
   f.rollCall = rollCallShows(sim, clock.minuteOfDay);
@@ -280,7 +280,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
-    o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
+    o.facing = headingAngle(m.body.facing);
     // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
     o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
     // (Jogging the track, P31: running as it goes.)
@@ -314,7 +314,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const q = g.prevGuards[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
-    o.facing = Math.atan2(DIR_X[m.body.facing], DIR_Z[m.body.facing]);
+    o.facing = headingAngle(m.body.facing);
     // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
     o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
     o.doing = m.doing;
@@ -339,7 +339,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const q = g.prevDogs[k];
     o.x = lerp(q?.x ?? d.body.x, d.body.x);
     o.z = lerp(q?.z ?? d.body.z, d.body.z);
-    o.facing = Math.atan2(DIR_X[d.body.facing], DIR_Z[d.body.facing]);
+    o.facing = headingAngle(d.body.facing);
     o.moving = d.body.moving && !g.paused;
     o.pose = dogAsleep(d, st.step) ? 'asleep' : dogDazed(d, st.step) ? 'dazed' : d.mode === DOG.POINT ? 'point' : d.mode === DOG.TRACK || d.mode === DOG.RAT ? 'track' : d.mode === DOG.KENNEL ? 'kennel' : 'heel';
     o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / WALK_SPEED_GUARD : 1;
@@ -353,7 +353,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const glide = !!q && q.mode !== RAT.SHOULDER && r.mode !== RAT.SHOULDER && Math.abs(q.x - r.x) + Math.abs(q.z - r.z) < UNIT;
     o.x = lerp(glide ? q!.x : r.x, r.x);
     o.z = lerp(glide ? q!.z : r.z, r.z);
-    o.facing = Math.atan2(DIR_X[r.facing], DIR_Z[r.facing]);
+    o.facing = headingAngle(r.facing);
     const t = tileAt(r.x, r.z);
     o.mode = r.mode === RAT.SHOULDER ? 'shoulder' : r.mode === RAT.WAIT || inDuct(sim.world, t) ? 'hidden' : r.mode === RAT.LOOSE ? 'loose' : 'run';
     // (P28: the pet away on the track, racing or running its laps: drawn there, not on the shoulder.)
@@ -430,7 +430,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
       seatAt.x = spot.x + 0.5;
       seatAt.z = spot.z + 0.5;
       seatAt.y = seated.kind === 'chair' ? 0.1 : 0;
-      seatAt.facing = Math.atan2(DIR_X[spot.facing], DIR_Z[spot.facing]);
+      seatAt.facing = headingAngle(spot.facing);
     }
     const meal = ROUTINE[st.routine].id === 'breakfast' || ROUTINE[st.routine].id === 'dinner';
     f.doing = seated.kind === 'seat' && meal && st.eaten < MEAL_STEPS && sim.playerZone === 'canteen' ? DOING.EAT : DOING.SIT;

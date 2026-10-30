@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { seeded } from './rand';
 
 const FLAKES = 700;
 /** The box of air around the player that the flakes fill (tiles), and how high they start. */
@@ -21,8 +22,7 @@ export class Snowfall {
   constructor() {
     this.pos = new Float32Array(FLAKES * 3);
     // A fixed seed: the same snow every time.
-    let s = 4242;
-    const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const rand = seeded(4242);
     for (let i = 0; i < FLAKES; i++) {
       this.pos[i * 3] = rand() * SPAN;
       this.pos[i * 3 + 1] = rand() * HIGH;

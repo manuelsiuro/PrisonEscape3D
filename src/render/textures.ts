@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { seeded } from './rand';
 
 /**
  * Pixel-art textures drawn on small canvases (no image files): one tile each, nearest-pixel
@@ -6,14 +7,6 @@ import * as THREE from 'three';
  * changes between loads.
  */
 type Painter = (c: CanvasRenderingContext2D, n: number, rand: () => number) => void;
-
-function seeded(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
 
 const cache = new Map<string, THREE.CanvasTexture>();
 

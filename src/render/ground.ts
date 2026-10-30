@@ -7,6 +7,7 @@ import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import type { Pitch, PrisonDef } from '../content/prisons/types';
 import type { SimContext } from '../sim/context';
 import { drillOn } from '../sim/systems/calendar';
+import { seeded } from './rand';
 
 /**
  * Two baked layers over the floors, drawn once per prison on canvases:
@@ -309,8 +310,7 @@ function contactShadows(world: World): THREE.CanvasTexture {
   // Broad, soft patches over the open ground (lusher and drier grass, worn sand, patched
   // asphalt), so the one-tile texture never reads as a grid. A fixed seed: the same every load.
   const tone = new Float32Array(W * H);
-  let seed = 0x9e3779b9;
-  const rand = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+  const rand = seeded(0x9e3779b9);
   for (let i = 0; i < W * H; i++) tone[i] = rand();
   blur(tone, W, H, 10, 3);
   let mean = 0;
