@@ -177,17 +177,22 @@ src/
   sim/                the rules: deterministic, no DOM, clock, Math.random or Three.js
     Sim.ts            step(cmd) in a fixed system order (below), events, snapshot/load
     state.ts          freshState, the state layout (new fields appended), snapshots
+    events.ts         SimEvent (what a step reports) and the names shared with the state
+    load.ts           loadState: a snapshot loaded, old fields filled in, damage put right
     command.ts        the packed command (dir, op, a/b/c): keys, touch and bots alike
     rng.ts            the PRNG; roll()/state.salt for draws that mustn't shift other streams
     Recorder.ts       a keyframe every game hour, seek(step)
     runlog.ts         a run as start + commands (saves, replays, the Daily's checks)
     tuning.ts         gameplay numbers
-    world/            World (tile layers, routeBlock), tiles.ts (the map legend), doors,
-                      containers, reach
+    world/            World (tile layers, routeBlock), grid.ts (MAP_W, tile index and centre
+                      maths, four-way neighbours), tiles.ts (the map legend), doors,
+                      containers (the player's desk too), reach
     ai/               paths (A*), sight, walkers, places, the autopilot used by bots and taps
     systems/          one module per system (routine, guards, watch, combat, economy, jobs,
                       security, power, structure, ways, k9, rats, smuggling, phone, kiosk,
-                      paperwork, parole, oddjobs, holiday, twists, the free-time games…)
+                      paperwork, parole, oddjobs, holiday, twists, the free-time games…;
+                      shared pieces: presence (where the player is), upkeep (bed, seats,
+                      showers), throwing, keys (the guards' keys and kit))
     hunt/             the manhunt: its own deterministic sim on an outside map (P41)
   content/            data: items, recipes, routine, jobs, zones, decor, days, twists,
                       achievements, medals, holidays, oddjobs, …
@@ -205,7 +210,8 @@ src/
   ui/                 HUD, panels and cards; screens/ (title, prisons, help, settings,
                       trophies, install, share…), each a function returning a Promise
   talk/               speech bubbles: the director, moods, voices, gossip (always true)
-  tutorial/           the lessons (CHAPTERS) and their progress rules
+  tutorial/           the lessons as data (lessons.ts, CHAPTERS), their kit (kit.ts: step
+                      types, scene setup, goal and failure checks) and progress rules
   game/               storage (the only localStorage), saves, settings, records, trophies,
                       stats, replays, the campaign
   replay/             the scout worker and the replay runner
@@ -298,6 +304,7 @@ A phase that changes a map or places something new on it also brings the map vie
 | **P41 The manhunt** | 2.20 | `src/sim/hunt/` (its own sim), `content/outside/` (60×56 per prison), `render/Hunt.ts`, `huntTown.ts`, `huntPrison.ts`: searchers, dogs, roadblocks, the helicopter, cover, fords, Lou's car; the clean getaway star; legal releases have no hunt | `manhunttest`, `hunttest` (the balance gauge), lesson `manhunt`, the map viewer's Outside 3D |
 | **P42 Holidays** | 2.21 | `systems/holiday.ts`, `content/holidays.ts`, `render/Holidays.ts`: Easter, summer, Halloween, Christmas and New Year by the real date (kept in the state; a setting); decor, 6 items, 5 achievements | `holidaytest`, `holidaybotstest` (every escape bot under each holiday), `holidayruntest` |
 | **Reviews and Install** | 2.21.1–2.21.5 | Full review of P39–P42, then each of P39–P41 played through; the title's Install button (`app/install.ts`, `ui/screens/install.ts`); `npm run released` | every suite, browser passes at the three sizes |
+| **Code review** | 2.21.6 | Dead code, duplicates and structure across the code: shared helpers (tile maths, clock text, the view's random numbers and canvas textures, refusal texts, `esc`), the big files split, four import cycles in play broken; no rule changed | every suite byte-identical; computed styles diffed against 2.21.5 at the three sizes |
 
 ## 5. Mapping the GDD to phases
 
@@ -321,7 +328,7 @@ A phase that changes a map or places something new on it also brings the map vie
 
 ## 6. Tests
 
-All tests are `scripts/*test*.ts` (54 at v2.21.5), run in parallel by `scripts/test.ts`, each
+All tests are `scripts/*test*.ts` (54 at v2.21.6), run in parallel by `scripts/test.ts`, each
 compared line by line with its golden output in `scripts/snapshots/` (see the base playbook §5
 and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accepts new outputs.
 - **Determinism and saves** (`simtest`, `storagetest`, `replaytest`): same seed and same log
@@ -358,12 +365,12 @@ feel) and the known limits. A phase that touches a map also brings the map viewe
 
 ## 8. Progress
 
-**Status (2026-10-28): v2.21.5.** Every planned phase is built and released: the five-prison
+**Status (2026-10-30): v2.21.6.** Every planned phase is built and released: the five-prison
 campaign (P0–P12), Prison Life (P13–P26), Free time (P27–P30), the sports grounds (P31–P33),
 the phone and kiosk (P34–P36), How to play (P37–P38) and After hours (P39–P42), each followed by
-its reviews, plus the Install button (v2.21.5). In numbers: 5 prisons and the Training Block,
+its reviews, plus the Install button (v2.21.5) and a full code review (v2.21.6). In numbers: 5 prisons and the Training Block,
 38 ways out, 146 items, 60 recipes, 142 achievements, 48 lessons in 4 chapters, 58 help topics,
-4,439 text keys in English and French, 54 test scripts.
+4,431 text keys in English and French, 54 test scripts.
 
 Parked ideas, none planned: gangs and turf, the riot, photo mode and postcards, a custom
 escape (twist sandbox), the escape planner corkboard, a story through the prisons.
