@@ -15,7 +15,7 @@ import { LAYER, MAP_W } from '../world/World';
 import { itemOf } from './items';
 import { tileOfBody } from './movement';
 import { sunBites, today } from './calendar';
-import { underShower } from './actions';
+import { underShower } from './upkeep';
 
 /** Outfits that keep the cold out (GDD §6.4: the cushioned one is made for it; plates are as good). */
 const WARM = new Set([itemNumber('cushioned_outfit'), itemNumber('plated_outfit')]);

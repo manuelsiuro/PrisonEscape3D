@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { CROP, GROWN, LEGS, RACE_MINUTE, RACE_STEPS, TAKE, TIPSY_HEAT, WATER_MAX } from '../content/long';
+import { BETS, CROP, GROWN, LEGS, RACE_MINUTE, RACE_STEPS, TAKE, TIPSY_HEAT, WATER_MAX } from '../content/long';
 import { t, type Key } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt, formatTime, prisonDay } from '../sim/systems/clock';
@@ -11,7 +11,6 @@ import { tipsyNow } from '../sim/systems/pruno';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
-import { BETS } from '../content/long';
 import type { LongFrame } from '../render/Long';
 import type { RaceLane, RaceView } from '../ui/long';
 import { itemName } from '../ui/items';

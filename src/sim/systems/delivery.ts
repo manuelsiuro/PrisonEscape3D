@@ -20,7 +20,6 @@ import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { CHASE_HEAT, KO_STEPS, SOLITARY_HEAT, UNIT } from '../tuning';
 import { LAYER, MAP_H, MAP_W } from '../world/World';
-import { closeBox, standUp } from './actions';
 import { eventOn, today, TODAY, type DayPlan } from './calendar';
 import { dayMinute, prisonDay } from './clock';
 import { awake, GUARD, traitOf } from './guards';
@@ -30,6 +29,8 @@ import { endTalk } from './social';
 import { stopTraining } from './training';
 import { lookingAway } from './ways';
 import { centerX, centerZ, neighbours4, tileAt } from '../world/grid';
+import { closeBox } from './items';
+import { standUp } from './upkeep';
 
 /** How near the tail the player stands to climb in (units from its middle, either way). */
 const TAIL_REACH = Math.round(UNIT * 0.75);
