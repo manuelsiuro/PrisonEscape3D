@@ -19,7 +19,7 @@ import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
 import { RECIPES } from '../content/recipes';
 import { ROUTINE } from '../content/routine';
-import { listOf, t, type Key } from '../i18n';
+import { type Key, listOf, lowerFirst, t } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
 import { itemOf, ownerOf } from '../sim/systems/items';
@@ -580,7 +580,7 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.pickup();
       // (A delivery done by it: the job's own banner says it, once.)
       if (sim.events.some((o) => o.type === 'oddjob' && o.what === 'done')) break;
-      itemsUI.toast(e.item ? t('toast.gaveItem', { item: lower(itemName(e.item)), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
+      itemsUI.toast(e.item ? t('toast.gaveItem', { item: lowerFirst(itemName(e.item)), name: inmateName(sim, e.who) }) : t('toast.gaveCash', { n: e.cash, name: inmateName(sim, e.who) }));
       break;
     case 'favor':
       if (e.state === 'taken') {
@@ -828,7 +828,6 @@ export function announce(e: SimEvent, sim: Sim) {
   if (e.type === 'pickup' && (e.item === DIRT || e.item === WALL_CHUNK)) coachOnce('evidence', 'hint.evidence');
 }
 
-const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 /** How long the last thing thrown is in the air (s): its thud's wave waits for it to land. */
 let lastFlight = 0;

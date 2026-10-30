@@ -17,7 +17,7 @@ import { nextTip } from '../sim/systems/recipes';
 import { BRIBE_REPORT_HEAT, LOOK_AWAY_STEPS, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, PAPER_HEAT, STEPS_PER_MINUTE, TIP_OPINION } from '../sim/tuning';
 import { clockAt, formatTime } from '../sim/systems/clock';
 import { itemIcons } from '../render/itemIcons';
-import { currentLang, t, type Key } from '../i18n';
+import { currentLang, type Key, lowerFirst, t } from '../i18n';
 import { h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { itemName } from './items';
@@ -57,7 +57,7 @@ export function favorText(sim: Sim, f: { kind: number; item: number; target: num
   const kind = FAVOR_KINDS[f.kind];
   // Mid-sentence, the item's name in lower case ("stole my magazine").
   const item = f.item ? itemName(f.item) : '';
-  return t(`favor.${kind}` as Key, { item: item.charAt(0).toLowerCase() + item.slice(1), name: f.target >= 0 ? inmateName(sim, f.target) : '' });
+  return t(`favor.${kind}` as Key, { item: lowerFirst(item), name: f.target >= 0 ? inmateName(sim, f.target) : '' });
 }
 
 /**

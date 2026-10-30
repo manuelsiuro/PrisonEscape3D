@@ -1,6 +1,6 @@
 import { buzz } from '../app/haptics';
 import { CHAIN_PIN, CHAINS, DIG_STEPS, FIXER_JOB_OPINION, FRAME_MINUTE, FROM, J, KIND, KIND_DEFS, KINDS, LIFT, LIFTS, PERK, STAGE } from '../content/oddjobs';
-import { t, type Key } from '../i18n';
+import { type Key, lowerFirst, t } from '../i18n';
 import { itemNumber } from '../content/items';
 import { placesOf } from '../sim/ai/places';
 import { EXT, OP } from '../sim/command';
@@ -42,7 +42,6 @@ export function resetOddJobs() {
 }
 
 const why = (sim: Sim, k: string | null) => (k ? refusedText(sim, k) : '');
-const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 /** The icon of each kind. */
 const KIND_ICON: readonly string[] = ['hand', 'box', 'search', 'arm', 'cards', 'checkers', 'rat', 'cookie', 'eye', 'gift', 'phone', 'cart'];
@@ -69,7 +68,7 @@ function untilOf(sim: Sim, days: number): string {
 /** When a job runs out and what it pays (a rat's job: that it needs one), and what comes with it. */
 function metaOf(sim: Sim, d: Deal): { meta: string; perk: string } {
   const rat = d.kind === KIND.RAT ? ` · ${t('oddjob.needsRat')}` : '';
-  return { meta: `${untilOf(sim, d.days)} · ${t('oddjob.pay', { n: d.pay })}${rat}`, perk: d.perk === PERK.ITEM && d.item ? t('oddjob.perkItem', { item: lower(itemName(d.item)) }) : d.perk === PERK.DEBT ? t('oddjob.perkDebt') : '' };
+  return { meta: `${untilOf(sim, d.days)} · ${t('oddjob.pay', { n: d.pay })}${rat}`, perk: d.perk === PERK.ITEM && d.item ? t('oddjob.perkItem', { item: lowerFirst(itemName(d.item)) }) : d.perk === PERK.DEBT ? t('oddjob.perkDebt') : '' };
 }
 
 /** A story's title and step ("Doc’s watch · 2/3"). */
@@ -106,7 +105,7 @@ function jobSteps(sim: Sim): Step[] {
     const t0 = m ? placesOf(sim.world).deskside[m.cell] : -1;
     return t0 >= 0 ? [t0] : null;
   };
-  const back: Step = { text: t(brings ? 'oddjob.step.bring' : 'oddjob.step.back', { name: giverName, item: brings ? lower(itemName(brings)) : '' }), done: false, goal: at(giver) };
+  const back: Step = { text: t(brings ? 'oddjob.step.bring' : 'oddjob.step.back', { name: giverName, item: brings ? lowerFirst(itemName(brings)) : '' }), done: false, goal: at(giver) };
   const steps: Step[] = [];
   switch (kind) {
     case KIND.LIFT: {
@@ -117,7 +116,7 @@ function jobSteps(sim: Sim): Step[] {
         steps.push({ text: t('oddjob.step.mug'), done: carrying && job[J.PROG] > 0, goal: near });
       } else {
         const g = s.guards[target];
-        steps.push({ text: t('oddjob.step.lift', { item: lower(itemName(brings)), guard: guardName(sim, target) }), done: carrying && job[J.PROG] > 0, goal: g ? [tileAt(g.body.x, g.body.z)] : null });
+        steps.push({ text: t('oddjob.step.lift', { item: lowerFirst(itemName(brings)), guard: guardName(sim, target) }), done: carrying && job[J.PROG] > 0, goal: g ? [tileAt(g.body.x, g.body.z)] : null });
       }
       break;
     }
@@ -387,7 +386,7 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
       if (e.from === FROM.CHAIN) {
         const step = sim.state.oddjobs[2];
         storyCard.show(name, storyTitle(sim, step), t(`oddjob.chain.${sim.prison.id}.${step}` as Key));
-      } else itemsUI.toast(t('toast.oddjob.taken', { kind: lower(t(`oddjob.kind.${KINDS[e.kind ?? 0]}` as Key)), name }));
+      } else itemsUI.toast(t('toast.oddjob.taken', { kind: lowerFirst(t(`oddjob.kind.${KINDS[e.kind ?? 0]}` as Key)), name }));
       return;
     }
     case 'done':
@@ -396,7 +395,7 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
       return banner.toast(t('toast.oddjob.done', { name }), 'good', 4500);
     case 'paid': {
       sound.coin();
-      const extra = e.perk === PERK.ITEM && e.item ? t('toast.oddjob.paidItem', { item: lower(itemName(e.item)) }) : e.perk === PERK.DEBT ? t('toast.oddjob.paidDebt', { name }) : '';
+      const extra = e.perk === PERK.ITEM && e.item ? t('toast.oddjob.paidItem', { item: lowerFirst(itemName(e.item)) }) : e.perk === PERK.DEBT ? t('toast.oddjob.paidDebt', { name }) : '';
       return banner.toast(`${t('toast.oddjob.paid', { name, n: e.n ?? 0 })}${extra ? ` ${extra}` : ''}`, 'good', 4500);
     }
     case 'chain': {
@@ -436,7 +435,7 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
       return itemsUI.toast(t('toast.oddjob.falseAlarm', { name }));
     case 'calledIn':
       sound.pickup();
-      return banner.toast(t('toast.oddjob.calledIn', { name, item: lower(itemName(e.item ?? 0)) }), 'good', 4000);
+      return banner.toast(t('toast.oddjob.calledIn', { name, item: lowerFirst(itemName(e.item ?? 0)) }), 'good', 4000);
     case 'owedJoin':
       return itemsUI.toast(t('toast.oddjob.owedJoin', { name }));
   }

@@ -1,7 +1,7 @@
 import { buzz } from '../app/haptics';
 import { ROUTINE } from '../content/routine';
 import { BACK_REACH, BRAWL_GUARDS, BRAWL_RANGE, NIGHT_OPINION, WATCH_RANGE } from '../content/crew';
-import { currentLang, t, type Key } from '../i18n';
+import { currentLang, type Key, lowerFirst, t } from '../i18n';
 import { EXT, OP, ORDER } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { brawlWith, cantOrder, carryingOf, crewEntry, nightOf, orderOf, ORDERS_OF, shaftOf, specialityOf } from '../sim/systems/crew';
@@ -37,10 +37,7 @@ const ORDER_ICON: Record<number, string> = { [ORDER.FOLLOW]: 'walk', [ORDER.WATC
 const ORDER_KEY: Record<number, string> = { [ORDER.FOLLOW]: 'follow', [ORDER.WATCH]: 'watch', [ORDER.DIG]: 'dig', [ORDER.BACK]: 'back', [ORDER.BRAWL]: 'brawl', [ORDER.FETCH]: 'fetch', [ORDER.NIGHT]: 'night' };
 
 /** An item's name mid-sentence ("Bringing you a tube of glue": lower case, as the favors say it). */
-const lowItem = (n: number) => {
-  const name = itemName(n);
-  return name.charAt(0).toLowerCase() + name.slice(1);
-};
+const lowItem = (n: number) => lowerFirst(itemName(n));
 
 const secs = (steps: number) => {
   const s = Math.max(0, Math.ceil(steps / STEPS_PER_SECOND));

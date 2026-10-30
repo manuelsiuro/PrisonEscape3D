@@ -30,7 +30,6 @@ import { floatUp } from './floats';
  * sim's own functions (cards.ts, hoops.ts, checkers.ts) decide everything shown.
  */
 
-const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
 
 // ------------------------------------------------------------------ what's shown between steps
 
@@ -71,7 +70,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
   const g = play.game;
   switch (e.type) {
     case 'cheat': {
-      const name = nameOf(sim, e.who);
+      const name = inmateName(sim, e.who);
       if (e.what === 'dealt') {
         deals++;
         sound.cardDeal();
@@ -132,13 +131,13 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
         if (e.by < 0) {
           floatUp(t(e.result === 'swish' ? 'toast.swish' : e.result === 'in' ? 'toast.basket' : e.result === 'rim' ? 'toast.rimOut' : 'toast.airball'), e.result === 'swish' || e.result === 'in' ? 'gain' : 'taken');
           if (e.result === 'swish' || e.result === 'in') buzz('attended');
-        } else itemsUI.toast(t(e.result === 'swish' || e.result === 'in' ? 'toast.theyScore' : 'toast.theyMiss', { name: nameOf(sim, e.by) }));
+        } else itemsUI.toast(t(e.result === 'swish' || e.result === 'in' ? 'toast.theyScore' : 'toast.theyMiss', { name: inmateName(sim, e.by) }));
       });
       playLater(land + 420, () => play.game === g && e.result !== 'air' && sound.bounce(0.6));
       break;
     }
     case 'hoops': {
-      const name = e.who >= 0 ? nameOf(sim, e.who) : '';
+      const name = e.who >= 0 ? inmateName(sim, e.who) : '';
       const m = e.mine ?? 0;
       const n = e.theirs ?? 0;
       // (After the last ball has come down.)
@@ -171,7 +170,7 @@ export function announcePastimes(sim: Sim, e: SimEvent) {
       break;
     }
     case 'checkers': {
-      const name = nameOf(sim, e.who);
+      const name = inmateName(sim, e.who);
       if (e.what === 'sat') coachOnce('checkers', TOUCH ? 'hint.checkersTouch' : 'hint.checkers');
       else if (e.what === 'moved') sound.checker((e.path?.length ?? 0) > 2 || Math.abs((e.path?.[1] ?? 0) - (e.path?.[0] ?? 0)) > 5);
       else if (e.what === 'won') {
@@ -208,7 +207,7 @@ export function cheatNow(sim: Sim): CheatView | null {
   endView = null;
   const v = cheatView;
   const m = s.inmates[c.who];
-  v.name = nameOf(sim, c.who);
+  v.name = inmateName(sim, c.who);
   v.stake = STAKES[c.stake];
   v.chips = [c.chips[0], c.chips[1]];
   v.of = CHIPS;
@@ -248,7 +247,7 @@ export function courtNow(sim: Sim, a: number): CourtView | null {
   if (!o && at < 0) return null;
   const v = courtView;
   const spot = o ? spotOf(o.k) : at;
-  v.name = o ? nameOf(sim, o.who) : '';
+  v.name = o ? inmateName(sim, o.who) : '';
   v.spot = spot + 1;
   v.onSpot = at === spot;
   v.holding = s.shot.length > 0;
@@ -288,7 +287,7 @@ export function boardNow(sim: Sim): BoardView | null {
   const b = s.board;
   if (!b || !b.seated) return null;
   const v = boardView;
-  v.name = nameOf(sim, elderOf(sim));
+  v.name = inmateName(sim, elderOf(sim));
   v.sq = b.sq;
   v.steps = b.turn === 0 && !b.over ? stepsOf(b.sq, 0, b.chain, steps).map((x) => ({ from: x.from, to: x.to })) : [];
   v.chain = b.chain;

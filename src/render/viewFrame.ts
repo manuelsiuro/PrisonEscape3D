@@ -1,3 +1,4 @@
+import { LAYER } from '../sim/world/World';
 /** What the view is handed each frame (play/frame.ts and play/hunt.ts fill it), and its quality settings. */
 import type { BedPose } from './Character';
 import type { SecurityFrame } from './Security';
@@ -170,4 +171,67 @@ export interface Quality {
   /** Shadow edge softness in shadow-map texels (PCF filter radius). */
   softness: number;
   pixelRatio: number;
+}
+
+/** A frame with nothing in it yet (the inside's and the hunt's each start from one and fill it in every frame). */
+export function emptyFrame(): Frame {
+  return {
+    x: 0,
+    z: 0,
+    facing: 0,
+    moving: false,
+    minuteOfDay: 0,
+    rollCall: false,
+    surface: 0,
+    inmates: [],
+    guide: null,
+    tap: null,
+    alarm: false,
+    ground: [],
+    groundRev: -1,
+    focus: null,
+    held: 0,
+    outfit: 0,
+    sleeping: false,
+    knockedOut: false,
+    guards: [],
+    layer: LAYER.GROUND,
+    tilesRev: -1,
+    wearRev: -1,
+    deskAside: false,
+    wear: {},
+    lock: -1,
+    lockHostile: false,
+    lockFar: false,
+    doing: 0,
+    trainAt: null,
+    restBed: null,
+    reps: 0,
+    puddles: [],
+    planters: new Map(),
+    puddlesRev: 0,
+    craters: [],
+    security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
+    takeover: false,
+    fuses: [],
+    weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false },
+    events: { movie: false, foodFight: false, inspection: false },
+    holiday: { kind: 0, water: false, fireworks: false },
+    delivery: { t: -1, at: 0, search: 0, until: 0, stowed: false },
+    dogs: [],
+    scent: [],
+    rats: [],
+    smuggle: null,
+    games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
+    pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
+    long: null,
+    team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },
+    nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
+    phone: { offHook: false, car: false },
+    kiosk: { on: false, photos: [] },
+    oddjobs: { pins: [false, false, false], chain: false, mine: false },
+    release: { called: false, freed: false },
+    inked: [],
+    getaway: { shift: false, waved: false, glide: null },
+  };
 }
