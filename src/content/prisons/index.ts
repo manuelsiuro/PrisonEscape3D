@@ -8,5 +8,8 @@ import type { EscapeRoute, PrisonDef } from './types';
 /** The campaign in order (GDD §4). The tutorial's Training Block is apart (content/prisons/training). */
 export const PRISONS: readonly PrisonDef[] = [CENTER_PERKS, STALAG_FLUCHT, SHANKTON, SAN_PANCHO, IRONGATE];
 
+/** A campaign prison by its id (undefined for none, the Training Block included). */
+export const prisonById = (id: unknown): PrisonDef | undefined => PRISONS.find((p) => p.id === id);
+
 /** The ways out of a prison (GDD §12), in the victory screen's order. */
 export const escapesOf = (def: PrisonDef): readonly EscapeRoute[] => def.escapes ?? ['fence', 'tunnel', 'roof', 'takeover'];

@@ -1,4 +1,4 @@
-import { PRISONS } from '../content/prisons';
+import { prisonById } from '../content/prisons';
 import type { RunLog } from '../sim/runlog';
 import { scout, type ScoutProgress, type Scouted } from './scout';
 
@@ -46,7 +46,7 @@ export function runScout(log: RunLog, onProgress: (p: ScoutProgress) => void): {
 
 /** The scout on the main thread: slices of about 6 ms, the frame given back between them. */
 function mainThread(log: RunLog, onProgress: (p: ScoutProgress) => void, stopped: () => boolean): Promise<Scouted | null> {
-  const prison = PRISONS.find((p) => p.id === log.prison);
+  const prison = prisonById(log.prison);
   if (!prison) return Promise.resolve(null);
   let it: ReturnType<typeof scout>;
   try {

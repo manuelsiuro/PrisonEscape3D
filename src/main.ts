@@ -1,6 +1,6 @@
 import './styles/index.css';
 import { registerServiceWorker } from './app/pwa';
-import { PRISONS } from './content/prisons';
+import { prisonById, PRISONS } from './content/prisons';
 import { openPrisons } from './game/campaign';
 import { offerUpdate, titleFlow } from './flows/title';
 import { warmIcons } from './render/itemIcons';
@@ -92,7 +92,7 @@ if (import.meta.env.DEV)
     __offerUpdate: () => offerUpdate('9.9.9', () => location.reload()),
     // The manhunt (P41) straight away, from the title: __manhunt('stalag-flucht', 'wall', { minute: 1410, lou: true, crew: 1 }).
     __manhunt: (prison = 'center-perks', kind: Carry['kind'] = 'wall', more: Partial<Carry> = {}) => {
-      const def = PRISONS.find((p) => p.id === prison) ?? PRISONS[0];
+      const def = prisonById(prison) ?? PRISONS[0];
       document.querySelector('.title-screen')?.remove();
       startGame(new Sim(def, 5));
       const g = play.game!;

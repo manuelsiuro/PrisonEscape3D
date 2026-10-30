@@ -1,5 +1,5 @@
 import { itemNumber } from '../content/items';
-import { PRISONS } from '../content/prisons';
+import { prisonById } from '../content/prisons';
 import { readPrisoner } from '../game/prisoner';
 import type { Replay } from '../game/replays';
 import { t, type Key } from '../i18n';
@@ -322,7 +322,7 @@ export function pauseReplay() {
  * card), put back on screen after.
  */
 export function watchReplay(rp: Replay, back: Game | null): Promise<void> {
-  const prison = PRISONS.find((p) => p.id === rp.log.prison);
+  const prison = prisonById(rp.log.prison);
   let set: ReturnType<typeof prepareReplay> = null;
   try {
     set = prison ? prepareReplay(rp.log, prison) : null;

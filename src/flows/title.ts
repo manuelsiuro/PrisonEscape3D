@@ -1,6 +1,6 @@
-import { escapesOf, PRISONS } from '../content/prisons';
+import { escapesOf, prisonById, PRISONS } from '../content/prisons';
 import { recordOf } from '../game/records';
-import { ALL_SLOTS, deleteSave, loadSave, prisonOf, readSave, rebuiltSince, type SaveFile, type SlotId } from '../game/saves';
+import { ALL_SLOTS, deleteSave, loadSave, readSave, rebuiltSince, type SaveFile, type SlotId } from '../game/saves';
 import { readLog } from '../game/logs';
 import { t } from '../i18n';
 import { Sim } from '../sim/Sim';
@@ -154,7 +154,7 @@ export async function titleFlow() {
       const f = readSave(slot);
       // (P31: its prison rebuilt since: the run starts again there, the stale save let go.)
       if (f && rebuiltSince(f)) {
-        const prison = prisonOf(f.prison)!;
+        const prison = prisonById(f.prison)!;
         deleteSave(slot);
         banner.toast(t('toast.rebuilt', { prison: prisonName(prison) }), 'info', 6000);
         seed = Date.now() & 0x7fffffff;

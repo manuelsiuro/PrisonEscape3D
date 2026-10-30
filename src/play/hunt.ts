@@ -2,7 +2,7 @@ import type { Line } from '../talk/types';
 import { HUNT } from '../content/manhunt';
 import { itemNumber } from '../content/items';
 import { outsideOf } from '../content/outside';
-import { PRISONS } from '../content/prisons';
+import { prisonById } from '../content/prisons';
 import { CENTER_PERKS } from '../content/prisons/center-perks';
 import type { PrisonDef } from '../content/prisons/types';
 import { readPrisoner } from '../game/prisoner';
@@ -98,7 +98,7 @@ const TREAT_ITEMS = [itemNumber('jerky'), itemNumber('pepper'), itemNumber('slee
 const AWAY = -30;
 
 /** Where a prison is, by id (the Training Block has no outside: its lessons are Center Perks'). */
-const prisonOf = (id: string): PrisonDef => PRISONS.find((p) => p.id === id) ?? CENTER_PERKS;
+const prisonOf = (id: string): PrisonDef => prisonById(id) ?? CENTER_PERKS;
 
 /** Whether a prison has an outside to run in. */
 export const hasOutside = (prison: string) => !!outsideOf(prison);
