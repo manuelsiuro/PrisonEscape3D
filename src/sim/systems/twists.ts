@@ -10,7 +10,7 @@ import { HEAT_DECAY_STEPS, HOSTILE_GRUDGE, HOSTILE_OPINION } from '../tuning';
 import { LAYER, layerOfKey, placeKey, tileOfKey } from '../world/World';
 import { damageShows, setTile } from './watch';
 import { underMyDesk } from './structure';
-import { containersOf } from '../world/containers';
+import { playerDesk } from '../world/containers';
 import { slot } from './items';
 import { treats } from './k9';
 import { tileAt } from '../world/grid';
@@ -48,7 +48,7 @@ export function dayOneTwists(sim: SimContext) {
   const s = sim.state;
   if (twist(s, 'badBlood')) for (const m of s.inmates) m.opinion = m.cell % 4 === 0 ? HOSTILE_GRUDGE : HOSTILE_OPINION;
   if (twist(s, 'carePackage')) {
-    const desk = containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
+    const desk = playerDesk(sim.world);
     const box = s.items.containers[desk];
     const pool = [...CARE_ITEMS];
     for (let k = 0; k < 3 && box; k++) {

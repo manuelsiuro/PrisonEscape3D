@@ -7,7 +7,7 @@ import { TALK_REACH, UNIT } from '../tuning';
 import { containersOf, type ContainerInfo } from '../world/containers';
 import { LAYER, layerOfKey, placeKey, tileOfKey, type World } from '../world/World';
 import type { Body } from './movement';
-import { seatSpot } from './rest';
+import { propReach, seatSpot } from './rest';
 import { lineOfSight } from '../ai/sight';
 import { centerX, centerZ, tileAt } from '../world/grid';
 
@@ -152,14 +152,6 @@ export function restock(w: World, s: ItemState, rng: { rng: number }) {
   s.rev++;
 }
 
-/** Distance (units) from a point to a prop's footprint. */
-function reachTo(c: ContainerInfo, x: number, z: number): number {
-  const p = c.prop;
-  const dx = Math.max(p.x * UNIT - x, 0, x - (p.x + p.w) * UNIT);
-  const dz = Math.max(p.z * UNIT - z, 0, z - (p.z + p.d) * UNIT);
-  return Math.max(dx, dz);
-}
-
 /** What the player would use by interacting now ('pockets': a knocked-out person's, by container index and Cast id). */
 export type Target =
   | { kind: 'ground'; index: number; item: number }
@@ -291,9 +283,7 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
   w.props.forEach((p, index) => {
     const use = fixtureUse(w, p);
     if (!use) return;
-    const dx = Math.max(p.x * UNIT - b.x, 0, b.x - (p.x + p.w) * UNIT);
-    const dz = Math.max(p.z * UNIT - b.z, 0, b.z - (p.z + p.d) * UNIT);
-    const d = Math.max(dx, dz);
+    const d = propReach(p, b.x, b.z);
     if (d > REACH) return;
     // Seats and beds give way to anything else in reach (a chair stands where the desk is
     // searched from), unless the seat is the tile straight ahead: the player sits by facing it.
@@ -314,7 +304,7 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     }
   });
   containersOf(w).forEach((c, index) => {
-    const d = reachTo(c, b.x, b.z);
+    const d = propReach(c.prop, b.x, b.z);
     if (d > REACH) return;
     const p = c.prop;
     const sc = score(d, (p.x + p.w / 2) * UNIT, (p.z + p.d / 2) * UNIT);
@@ -334,7 +324,7 @@ export function stillInReach(w: World, s: ItemState, b: Body, people: readonly L
     return !!o && o.ko > 0 && Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z)) <= POCKET_REACH + UNIT / 4;
   }
   const c = containersOf(w)[s.open];
-  return !!c && reachTo(c, b.x, b.z) <= REACH + UNIT / 4;
+  return !!c && propReach(c.prop, b.x, b.z) <= REACH + UNIT / 4;
 }
 
 /** The first free hotbar slot, -1 when full. */

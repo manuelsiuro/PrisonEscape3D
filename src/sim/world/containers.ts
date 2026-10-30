@@ -31,3 +31,19 @@ export function containersOf(w: World): ContainerInfo[] {
   cache.set(w, list);
   return list;
 }
+
+const desks = new WeakMap<World, number>();
+
+/** The player's own desk (a container index; -1 none). */
+export function playerDesk(w: World): number {
+  let k = desks.get(w);
+  if (k === undefined) desks.set(w, (k = containersOf(w).findIndex((c) => c.mine && c.prop.kind === 'desk')));
+  return k;
+}
+
+/** The player's desk (-1 none) and its first open drawer past the hidden ones (-1 full): where something is put for them. */
+export function deskRoom(w: World, containers: readonly (readonly number[])[]): { desk: number; free: number } {
+  const desk = playerDesk(w);
+  const box = desk >= 0 ? containers[desk] : null;
+  return { desk, free: box ? box.indexOf(0, containersOf(w)[desk].hidden) : -1 };
+}

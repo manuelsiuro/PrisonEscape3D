@@ -73,6 +73,7 @@ import { underShower } from './actions';
 import { chaseOff, ratOut, type Rat } from './rats';
 import { addHeat, afterHours } from './watch';
 import { brewNear, seizeBrew } from './pruno';
+import { playerAbout } from './presence';
 
 /** What a dog is up to. Never renumber: saves store them. */
 export const DOG = {
@@ -170,7 +171,6 @@ export function smellsOfContraband(sim: SimContext): boolean {
 }
 
 /** The player up and about on the ground floor (not hidden in a vehicle, out cold, in solitary). */
-const playerAbout = (sim: SimContext) => sim.state.layer === LAYER.GROUND && !sim.state.stowed && !sim.away;
 
 /** Where the player leaves a trail: out of bounds (after hours out of the cell, somewhere staff only), wanted, or in a lockdown. */
 export function outOfBounds(sim: SimContext): boolean {

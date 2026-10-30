@@ -1,5 +1,5 @@
 import { UNIT } from '../tuning';
-import { MAP_W, type World } from '../world/World';
+import { MAP_W, type Prop, type World } from '../world/World';
 import type { Body } from './movement';
 
 /** Directions (as in `command.ts`): east, south, west, north. */
@@ -39,10 +39,12 @@ export function facingAt(w: World, p: World['props'][number], x: number, z: numb
 /** What a seat can face. */
 const SERVED = new Set(['table', 'desk', 'counter', 'controlDesk', 'sortingDesk']);
 
-/** Whether someone is still at a prop (sitting, resting): within reach of its footprint. */
-export function atProp(w: World, index: number, b: Body, reach: number): boolean {
-  const p = w.props[index];
-  const dx = Math.max(p.x * UNIT - b.x, 0, b.x - (p.x + p.w) * UNIT);
-  const dz = Math.max(p.z * UNIT - b.z, 0, b.z - (p.z + p.d) * UNIT);
-  return Math.max(dx, dz) <= reach;
+/** Distance (units) from a point to a prop's footprint, along the larger axis (0 on it). */
+export function propReach(p: Prop, x: number, z: number): number {
+  const dx = Math.max(p.x * UNIT - x, 0, x - (p.x + p.w) * UNIT);
+  const dz = Math.max(p.z * UNIT - z, 0, z - (p.z + p.d) * UNIT);
+  return Math.max(dx, dz);
 }
+
+/** Whether someone is still at a prop (sitting, resting): within reach of its footprint. */
+export const atProp = (w: World, index: number, b: Body, reach: number) => propReach(w.props[index], b.x, b.z) <= reach;
