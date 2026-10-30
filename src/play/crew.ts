@@ -47,7 +47,7 @@ const secs = (steps: number) => {
 };
 
 /** What one of the crew is at, in a few words. */
-export function crewStatus(sim: Sim, who: number): string {
+function crewStatus(sim: Sim, who: number): string {
   const s = sim.state;
   const m = s.inmates[who];
   if (!m) return '';

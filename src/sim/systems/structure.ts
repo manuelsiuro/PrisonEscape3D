@@ -98,27 +98,27 @@ export interface ClimbTarget {
 const ITEM_ID = (id: string) => itemNumber(id);
 export const DIRT = ITEM_ID('dirt');
 export const WALL_CHUNK = ITEM_ID('wall_chunk');
-export const POSTER = ITEM_ID('poster');
-export const FAKE_WALL = ITEM_ID('fake_wall');
-export const FAKE_FENCE = ITEM_ID('fake_fence');
-export const FAKE_VENT = ITEM_ID('fake_vent');
-export const BRACE = ITEM_ID('timber_brace');
+const POSTER = ITEM_ID('poster');
+const FAKE_WALL = ITEM_ID('fake_wall');
+const FAKE_FENCE = ITEM_ID('fake_fence');
+const FAKE_VENT = ITEM_ID('fake_vent');
+const BRACE = ITEM_ID('timber_brace');
 export const SHEET_ROPE = ITEM_ID('sheet_rope');
-export const CHOCOLATE = ITEM_ID('chocolate');
+const CHOCOLATE = ITEM_ID('chocolate');
 /** P34: Lou's cake (a file inside). */
-export const CAKE = ITEM_ID('cake');
+const CAKE = ITEM_ID('cake');
 /** P35: the hollow book (one small item hidden inside). */
 export const HOLLOW_BOOK = ITEM_ID('hollow_book');
 /** P42: a chocolate egg and an ice lolly (eaten as chocolate is), a pumpkin (carved in the kitchen). */
 export const CHOC_EGG = ITEM_ID('choc_egg');
 export const ICE_LOLLY = ITEM_ID('ice_lolly');
-export const PUMPKIN = ITEM_ID('pumpkin');
-export const GRAPNEL = ITEM_ID('grapnel');
-export const RAFT = ITEM_ID('raft');
+const PUMPKIN = ITEM_ID('pumpkin');
+const GRAPNEL = ITEM_ID('grapnel');
+const RAFT = ITEM_ID('raft');
 /** P14: the alarm clock (wound with the use button) and the firecracker (thrown). */
 export const ALARM_CLOCK = ITEM_ID('alarm_clock');
 export const FIRECRACKER = ITEM_ID('firecracker');
-export const SOAP = ITEM_ID('soap');
+const SOAP = ITEM_ID('soap');
 /** P20: a rat trap (set down), a caught rat (fed: potato, chocolate or jerky). */
 const RAT_TRAP = ITEM_ID('rat_trap');
 const CAUGHT_RAT = ITEM_ID('caught_rat');
@@ -131,7 +131,7 @@ const LOCKPICK = ITEM_ID('lockpick');
 export const GLIDER = ITEM_ID('glider');
 const BAIT = ['potato', 'chocolate', 'jerky'].map(ITEM_ID);
 /** What blinds a camera (GDD §5.6). */
-export const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
+const LENS_COVERS: ReadonlySet<number> = new Set([ITEM_ID('duct_tape'), ITEM_ID('toothpaste')]);
 const PLASTIC_KNIFE = ITEM_ID('plastic_knife');
 /** What rubbing on a wall makes of a comb and a toothbrush (GDD §7.3: shivs). */
 export const SHIVS: ReadonlyMap<number, number> = new Map([
@@ -147,7 +147,7 @@ const tileZ = (i: number) => Math.floor(i / MAP_W);
 const bodyTile = (b: Body) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
 
 /** The tile straight ahead of a body (its heading snapped to the nearest of the four sides), -1 off the map. */
-export function aheadOf(b: Body): number {
+function aheadOf(b: Body): number {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   const x = Math.floor(b.x / UNIT) + (Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0);
@@ -156,7 +156,7 @@ export function aheadOf(b: Body): number {
 }
 
 /** Whether a tool does a job: picks chip, shovels dig, the multitool does both, cutters cut, files and screwdrivers (and the plastic knife) unscrew. */
-export function toolFits(def: ItemDef | null, action: ToolAction): boolean {
+function toolFits(def: ItemDef | null, action: ToolAction): boolean {
   const kind = def?.tool?.kind;
   if (!kind) return false;
   switch (action) {
@@ -531,13 +531,13 @@ export function glideFrom(w: World, b: Body, air: Air, bodies: readonly Body[] =
 }
 
 /** A roof the prison names as a grapnel's landing across a chasm (PrisonDef.landings). */
-export const onLanding = (w: World, x: number, z: number) => !!w.def.landings?.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
+const onLanding = (w: World, x: number, z: number) => !!w.def.landings?.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
 
 /** A tunnel tile under the sea (P12): digging it floods the tunnel (GDD §4.5). */
 export const underSea = (w: World, i: number) => i >= 0 && isSea(w.ground.base[i]);
 
 /** The camera the player stands under or beside (-1: none). */
-export function cameraInReach(w: World, b: Body): number {
+function cameraInReach(w: World, b: Body): number {
   const cams = w.def.cameras ?? [];
   for (let k = 0; k < cams.length; k++) {
     const dx = Math.abs(cams[k].x * UNIT + UNIT / 2 - b.x);
@@ -656,7 +656,7 @@ export function ladderFootOf(w: World): number {
  * Whether a tunnel tile is held up: within a brace's 3×3 (GDD §9.2), or right under a
  * tunnel entrance (its frame).
  */
-export function supported(w: World, i: number): boolean {
+function supported(w: World, i: number): boolean {
   if (w.ground.kind[i] === TILE.SHAFT) return true;
   const under = w.layers[LAYER.UNDER].kind;
   const x = tileX(i);

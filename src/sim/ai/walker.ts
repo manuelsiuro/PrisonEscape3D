@@ -35,7 +35,7 @@ export interface Crowd {
 /** Someone this close ahead (units, centre to centre) makes a walker wait. */
 const PERSONAL_SPACE = 760;
 /** How long a walker waits for someone in the way before squeezing past, and for how long it squeezes. */
-export const YIELD_STEPS = 30;
+const YIELD_STEPS = 30;
 const SQUEEZE_STEPS = 40;
 
 /** Plans the walk to the goal (smoothed); without a way there, waits and tries again. */

@@ -24,7 +24,7 @@ import type { World } from '../world/World';
 import { TILE } from '../world/tiles';
 import { inDisguise } from './watch';
 
-export const FAKE_ID = itemNumber('fake_id');
+const FAKE_ID = itemNumber('fake_id');
 
 /** The prison's checkpoint (none in a relaxed prison). */
 export const checkpointOf = (sim: Pick<SimContext, 'world'>): CheckpointDef | undefined => (sim.world.def.rules?.relaxed ? undefined : sim.world.def.checkpoint);
@@ -36,7 +36,7 @@ export function shiftChange(step: number): boolean {
 }
 
 /** A fake ID somewhere in the hotbar. */
-export const hasPapers = (sim: Pick<SimContext, 'state'>) => sim.state.items.inv.some((v, k) => k < HOTBAR && itemOf(v) === FAKE_ID);
+const hasPapers = (sim: Pick<SimContext, 'state'>) => sim.state.items.inv.some((v, k) => k < HOTBAR && itemOf(v) === FAKE_ID);
 
 /**
  * The player stands at the checkpoint's window with a fake ID in the hotbar (Interact shows

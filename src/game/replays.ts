@@ -12,10 +12,10 @@ import { readReplay } from './logs';
  */
 
 /** A file's kind, and its biggest size (characters): the longest log kept is well under it. */
-export const FILE_KIND = 'pe3d-replay';
+const FILE_KIND = 'pe3d-replay';
 export const FILE_MAX = 2_000_000;
 /** The longest run a file may hold: 60 prison days (the longest log kept is a few weeks). */
-export const FILE_DAYS = 60;
+const FILE_DAYS = 60;
 
 export interface Replay {
   log: RunLog;

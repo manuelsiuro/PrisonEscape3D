@@ -301,8 +301,8 @@ function instruments() {
  * PHONE_ARM, the fist just over the ear): it lies along the side of the head, its ear cup by the fist
  * and the ear, the mouthpiece down and forward by the mouth; on the head's side of the arm.
  */
-export const HANDSET_EAR = new THREE.Vector3(0.09, -0.37, 0.07);
-export const HANDSET_MOUTH = new THREE.Vector3(0.09, -0.17, -0.2);
+const HANDSET_EAR = new THREE.Vector3(0.09, -0.37, 0.07);
+const HANDSET_MOUTH = new THREE.Vector3(0.09, -0.17, -0.2);
 function handsetGeometry(): THREE.BufferGeometry {
   const E = HANDSET_EAR;
   const M = HANDSET_MOUTH;

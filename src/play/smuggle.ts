@@ -140,7 +140,7 @@ export function orderHud(sim: Sim): HudState['order'] {
 }
 
 /** Whether the phone's panel has anything to show: a phone carried, an order on its way, a drop lying. */
-export function phoneMatters(sim: Sim): boolean {
+function phoneMatters(sim: Sim): boolean {
   const s = sim.state;
   return !!smugglingOf(sim) && (s.items.inv.some((v) => itemOf(v) === PHONE) || s.order.length > 0 || s.drops.length > 0);
 }

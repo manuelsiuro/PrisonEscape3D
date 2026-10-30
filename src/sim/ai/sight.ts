@@ -9,10 +9,10 @@ export const SIGHT_RANGE = 7 * UNIT;
 /** The cone's half angle: 30° each side of the heading, a 60° cone (GDD §5.1). */
 export const SIGHT_HALF_ANGLE = Math.PI / 6;
 /** Closer than this (units) a guard notices you whichever way it faces: you're touching it. */
-export const SIGHT_TOUCH = Math.round(UNIT * 0.9);
+const SIGHT_TOUCH = Math.round(UNIT * 0.9);
 
 /** Whether a tile stops sight: walls, doors while shut (open doors are see-through; a key in the player's pocket opens nothing to the eye), the delivery's vehicle (P18). */
-export function sightBlocked(w: World, x: number, z: number): boolean {
+function sightBlocked(w: World, x: number, z: number): boolean {
   if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return true;
   const i = z * MAP_W + x;
   // (P41: and outside, what hides from the eye: a hedge, a culvert, a tree.)

@@ -69,7 +69,7 @@ export function courseQuestion(sim: Pick<SimContext, 'prison' | 'state'>): Quest
 }
 
 /** The drawing a letter written on a day brings back: one not on the wall yet if there is one, by roll(). */
-export function replyDrawing(s: Pick<SimState, 'salt' | 'photos'>, day: number): number {
+function replyDrawing(s: Pick<SimState, 'salt' | 'photos'>, day: number): number {
   const fresh = PHOTOS.map((_, k) => k).filter((k) => !s.photos.includes(k));
   const pool = fresh.length ? fresh : PHOTOS.map((_, k) => k);
   return pool[rollInt(s.salt, SALT.KIOSK, day, 0, pool.length)];

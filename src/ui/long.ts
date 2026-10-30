@@ -56,11 +56,11 @@ export interface RaceView {
 }
 
 /** Lane colours, in lane order (the 3D's rats wear the same); the player's own rat is gold. */
-export const LANE_COLORS = ['#e0574a', '#3a8ed8', '#9a5ad8', '#5aa846'];
+const LANE_COLORS = ['#e0574a', '#3a8ed8', '#9a5ad8', '#5aa846'];
 const PET_COLOR = '#ffd34a';
 
 /** Odds (tenths) as the language writes them: ×2,5 in French, ×2 for a whole number. */
-export const oddsText = (odds: number) => `×${new Intl.NumberFormat(currentLang(), { maximumFractionDigits: 1 }).format(odds / 10)}`;
+const oddsText = (odds: number) => `×${new Intl.NumberFormat(currentLang(), { maximumFractionDigits: 1 }).format(odds / 10)}`;
 /** What a winning bet pays back at odds (tenths), stake included: the sim's own rule (races.ts payout). */
 const pays = (stake: number, odds: number) => Math.floor((stake * odds) / 10);
 

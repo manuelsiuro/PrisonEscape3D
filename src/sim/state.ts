@@ -48,7 +48,7 @@ import { LAYER, MAP_H, MAP_W, type World } from './world/World';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
 export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing'] as const;
-export type SpotReason = (typeof SPOT)[number];
+type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
 export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider', 'paperwork', 'parole'] as const;
 export type EscapeRoute = (typeof ESCAPES)[number];
@@ -354,49 +354,49 @@ export type SimEvent =
   | ItemEvent;
 
 /** What the odd jobs board did (P40, the 'oddjob' event). */
-export type OddJobNews = 'taken' | 'done' | 'paid' | 'failed' | 'planted' | 'tipped' | 'cake' | 'cakeKept' | 'digging' | 'coming' | 'whistled' | 'falseAlarm' | 'calledIn' | 'owedJoin' | 'chain';
+type OddJobNews = 'taken' | 'done' | 'paid' | 'failed' | 'planted' | 'tipped' | 'cake' | 'cakeKept' | 'digging' | 'coming' | 'whistled' | 'falseAlarm' | 'calledIn' | 'owedJoin' | 'chain';
 /** Why an odd job failed: its time up, given up, seen dropping it, caught planting the stash, the game's result the wrong way, the dig found. */
 export type OddJobFail = 'time' | 'quit' | 'seen' | 'caught' | 'fixed' | 'found';
 
 /** What a holiday did (P42, the 'holiday' event). */
-export type HolidayNews = 'start' | 'end' | 'hidden' | 'egg' | 'splash' | 'took' | 'carved' | 'laugh';
+type HolidayNews = 'start' | 'end' | 'hidden' | 'egg' | 'splash' | 'took' | 'carved' | 'laugh';
 
 /** What the pay phone did (P34, the 'phone' event). */
-export type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
+type PhoneNews = 'joined' | 'left' | 'turn' | 'lostTurn' | 'swapped' | 'cut' | 'swing' | 'inmateCall' | 'call' | 'hungUp' | 'home' | 'moneyOrder' | 'mail' | 'appeal' | 'retainer' | 'tip' | 'tipFound' | 'tipEmpty' | 'snitch' | 'said' | 'silence' | 'lou' | 'diversion' | 'ignored' | 'cake' | 'cakeKept' | 'cakeSeized' | 'wheels' | 'overheard';
 /** What the parole board did (P39, the 'parole' event). */
-export type ParoleNews = 'applied' | 'called' | 'sat' | 'question' | 'answer' | 'silent' | 'granted' | 'denied' | 'postponed' | 'missed' | 'walkedOut' | 'voided';
+type ParoleNews = 'applied' | 'called' | 'sat' | 'question' | 'answer' | 'silent' | 'granted' | 'denied' | 'postponed' | 'missed' | 'walkedOut' | 'voided';
 /** What the paperwork did (P36, the 'paper' event). */
-export type PaperNews = 'filed' | 'passed' | 'found' | 'called' | 'turnedAway' | 'cleared' | 'missed' | 'shut';
+type PaperNews = 'filed' | 'passed' | 'found' | 'called' | 'turnedAway' | 'cleared' | 'missed' | 'shut';
 /** What the internet kiosk did (P35, the 'kiosk' event). */
-export type KioskNews = 'login' | 'paid' | 'logout' | 'wrote' | 'ordered' | 'goods' | 'goodsWait' | 'photo' | 'course' | 'question' | 'answer' | 'timeUp' | 'passed' | 'failed' | 'quit' | 'hidden' | 'unhidden';
+type KioskNews = 'login' | 'paid' | 'logout' | 'wrote' | 'ordered' | 'goods' | 'goodsWait' | 'photo' | 'course' | 'question' | 'answer' | 'timeUp' | 'passed' | 'failed' | 'quit' | 'hidden' | 'unhidden';
 /** What pruno did (P28, the 'pruno' event). */
-export type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
+type PrunoNews = 'ripe' | 'seized' | 'drunk' | 'stumble' | 'sober';
 /** What a garden bed did (P28, the 'garden' event). */
-export type GardenNews = 'planted' | 'watered' | 'grew' | 'ripe' | 'wilted' | 'died' | 'harvested' | 'refused';
+type GardenNews = 'planted' | 'watered' | 'grew' | 'ripe' | 'wilted' | 'died' | 'harvested' | 'refused';
 /** A race night (P28, the 'race' event). */
-export type RaceNews = 'bet' | 'entered' | 'scratched' | 'start' | 'result' | 'off';
+type RaceNews = 'bet' | 'entered' | 'scratched' | 'start' | 'result' | 'off';
 
 /** What the crew did (P23, the 'crew' event). */
-export type CrewNews = 'order' | 'whistle' | 'recalled' | 'brawl' | 'brawlOver' | 'fetched' | 'handed' | 'fetchFailed' | 'stopped' | 'dirt' | 'nightOver' | 'nightOff' | 'nightOut';
+type CrewNews = 'order' | 'whistle' | 'recalled' | 'brawl' | 'brawlOver' | 'fetched' | 'handed' | 'fetchFailed' | 'stopped' | 'dirt' | 'nightOver' | 'nightOff' | 'nightOut';
 
 /** A dice game (P22, the 'dice' event). */
-export type DiceNews = 'rolled' | 'rerolled' | 'won' | 'lost' | 'push';
+type DiceNews = 'rolled' | 'rerolled' | 'won' | 'lost' | 'push';
 /** An arm-wrestle (P22, the 'bout' event). */
-export type BoutNews = 'start' | 'won' | 'lost' | 'draw' | 'gaveUp' | 'off';
+type BoutNews = 'start' | 'won' | 'lost' | 'draw' | 'gaveUp' | 'off';
 /** The lockpick at work (P22, the 'pick' event). */
-export type PickNews = 'start' | 'set' | 'slip' | 'open' | 'stop';
+type PickNews = 'start' | 'set' | 'slip' | 'open' | 'stop';
 
 /** What smuggling did (P21, the 'smuggle' event). */
-export type SmuggleNews = 'ordered' | 'turnedBack' | 'dropped' | 'seized' | 'collected' | 'visit' | 'noRoom' | 'parcel' | 'parcelSeized' | 'deskFull';
+type SmuggleNews = 'ordered' | 'turnedBack' | 'dropped' | 'seized' | 'collected' | 'visit' | 'noRoom' | 'parcel' | 'parcelSeized' | 'deskFull';
 
 /** What a rat did (P20, the 'rat' event). */
-export type RatNews = 'caught' | 'fed' | 'tamed' | 'hungry' | 'haveOne' | 'sent' | 'took' | 'left' | 'empty' | 'full' | 'woke' | 'home' | 'chased' | 'loose' | 'calm' | 'gone' | 'refused';
+type RatNews = 'caught' | 'fed' | 'tamed' | 'hungry' | 'haveOne' | 'sent' | 'took' | 'left' | 'empty' | 'full' | 'woke' | 'home' | 'chased' | 'loose' | 'calm' | 'gone' | 'refused';
 
 /** What a dog did (P19, the 'dog' event). */
-export type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew';
+type DogNews = 'sniff' | 'track' | 'lost' | 'point' | 'dug' | 'dazed' | 'fed' | 'friend' | 'full' | 'asleep' | 'woke' | 'rat' | 'brew';
 
 /** What a bribe buys (P15): looking the other way, the paperwork lost; 'over' when the look away ends. */
-export type BribeKind = 'look' | 'paper' | 'over';
+type BribeKind = 'look' | 'paper' | 'over';
 
 /** What made a noise (P14). */
 export type NoiseKind = 'strike' | 'thud' | 'bang' | 'ring' | 'bark' | 'squeak' | 'buzz' | 'stumble' | 'cheer';

@@ -72,7 +72,7 @@ export function pictureRows(def: OutsideDef): string[] {
 }
 
 /** Where the picture sits in the world. */
-export function offsetOf(def: OutsideDef): { w: number; h: number; ox: number; oz: number } {
+function offsetOf(def: OutsideDef): { w: number; h: number; ox: number; oz: number } {
   const rows = pictureRows(def);
   const w = rows[0].length;
   const h = rows.length;

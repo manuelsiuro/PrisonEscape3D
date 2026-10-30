@@ -71,7 +71,7 @@ const PIPS: Record<number, ReadonlyArray<readonly [number, number]>> = {
 };
 
 /** A die's face as a little picture (n: 1–6; 0 a blank, not thrown yet). */
-export function dieFace(n: number, size = 34): string {
+function dieFace(n: number, size = 34): string {
   const pips = (PIPS[n] ?? []).map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${n === 1 ? 2.6 : 2}"${n === 1 ? ' class="ace"' : ''}/>`).join('');
   return `<svg class="die-face" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/>${pips}</svg>`;
 }

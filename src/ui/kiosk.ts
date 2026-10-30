@@ -20,7 +20,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 export type App = (typeof APPS)[number];
 
 /** A day the news forecasts. */
-export interface NewsDay {
+interface NewsDay {
   name: string;
   event: string;
   weather: string;

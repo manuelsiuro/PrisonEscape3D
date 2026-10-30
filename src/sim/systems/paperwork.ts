@@ -30,8 +30,8 @@ import { searcher } from './phone';
 import { addHeat } from './watch';
 
 export const RELEASE_FORM = itemNumber('release_form');
-export const FORGED = itemNumber('forged_release');
-export const OWN_CLOTHES = itemNumber('own_clothes');
+const FORGED = itemNumber('forged_release');
+const OWN_CLOTHES = itemNumber('own_clothes');
 
 /** The prison's release desk (none at the Training Block). */
 export const releaseOf = (sim: Pick<SimContext, 'world'>): CommsDef['release'] | null => (sim.world.def.rules?.relaxed ? null : (sim.world.def.comms?.release ?? null));
@@ -109,7 +109,7 @@ function records(sim: SimContext) {
 // ------------------------------------------------------------------ the release
 
 /** Something contraband on the player (the hotbar, the weapon and the outfit slots: a hollow book's inside isn't looked into). */
-export function carryingContraband(s: Pick<SimState, 'items'>): boolean {
+function carryingContraband(s: Pick<SimState, 'items'>): boolean {
   for (let k = 0; k <= SLOT.OUTFIT; k++) {
     if (k >= HOTBAR && k !== SLOT.WEAPON && k !== SLOT.OUTFIT) continue;
     const v = itemOf(s.items.inv[k]);

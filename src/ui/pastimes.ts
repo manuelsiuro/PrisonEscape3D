@@ -18,10 +18,10 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 /** A card's letter and name key (CARD: 1 King, 2 Queen, 3 Ace, 4 Joker). */
 const RANK = ['', 'K', 'Q', 'A', '★'];
 const CARD_KEY = ['', 'king', 'queen', 'ace', 'joker'] as const;
-export const cardName = (card: number, many = false) => t(`cheat.${CARD_KEY[card]}${many ? 's' : ''}` as Key);
+const cardName = (card: number, many = false) => t(`cheat.${CARD_KEY[card]}${many ? 's' : ''}` as Key);
 
 /** A playing card as a little face (0: face down). */
-export function cardFace(card: number, cls = ''): string {
+function cardFace(card: number, cls = ''): string {
   if (!card) return `<span class="pcard back ${cls}" aria-hidden="true"><i></i></span>`;
   return `<span class="pcard ${cls}" data-card="${card}" aria-hidden="true"><b>${RANK[card]}</b><i>${RANK[card]}</i></span>`;
 }

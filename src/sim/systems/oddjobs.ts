@@ -47,13 +47,12 @@ import { fixerOf, smugglingOf } from './smuggling';
 import { addHeat } from './watch';
 import { lookingAway } from './ways';
 
-export { J, JOB_LEN, R, STAGE } from '../../content/oddjobs';
+export { R } from '../../content/oddjobs';
 
 const PARCEL = itemNumber('parcel');
 const STASH = itemNumber('stash');
 const NOTE = itemNumber('note');
 const BIRTHDAY_CAKE = itemNumber('birthday_cake');
-const SUGAR = itemNumber('sugar');
 
 /** A job as dealt: who asks, who it's about (an inmate; a guard for a lift off one; -1 nobody), what it pays and ends with. */
 export interface Deal {
@@ -110,7 +109,7 @@ export const freezerOf = (sim: Pick<SimContext, 'world'>) => containersOf(sim.wo
  * The guards a whistle (or a keepsake) is lifted from: those without the shakedown duty (that one's
  * pockets are full: P36's blank forms), all of them in a prison where every guard has it.
  */
-export function liftGuards(sim: Pick<SimContext, 'world'>): number[] {
+function liftGuards(sim: Pick<SimContext, 'world'>): number[] {
   const defs = sim.world.def.guards;
   const pool = defs.map((d, k) => (d.duties?.includes('shakedown') ? -1 : k)).filter((k) => k >= 0);
   return pool.length ? pool : defs.map((_, k) => k);
@@ -287,7 +286,7 @@ export function boardNow(sim: SimContext): { pins: Array<Deal | null>; chain: De
 }
 
 /** What a job hands over as it's taken (0: nothing). */
-export const givesOf = (kind: number) => {
+const givesOf = (kind: number) => {
   const id = KIND_DEFS[KINDS[kind]]?.gives;
   return id ? itemNumber(id) : 0;
 };
@@ -370,7 +369,7 @@ const LIFTED = LIFTS.map((id) => itemNumber(id));
  * earlier job left there, else over the container's own stock (the freezer's food; never what the
  * player hid there, nor a guard's key and baton).
  */
-export function liftSpot(sim: Pick<SimContext, 'world' | 'state'>, variant: number, target: number): { box: number; k: number; item: number } | null {
+function liftSpot(sim: Pick<SimContext, 'world' | 'state'>, variant: number, target: number): { box: number; k: number; item: number } | null {
   const { box, item } = liftBox(sim, variant, target);
   const slots = box >= 0 ? sim.state.items.containers[box] : null;
   if (!slots) return null;
@@ -568,7 +567,7 @@ function handIn(sim: SimContext, who: number) {
 }
 
 /** The job held fails (the time up, given up, seen, the wrong result, caught): gone, and what the one who asked thinks of it. */
-export function fail(sim: SimContext, why: OddJobFail) {
+function fail(sim: SimContext, why: OddJobFail) {
   const s = sim.state;
   const job = jobOf(s);
   if (!job) return;
@@ -615,14 +614,14 @@ const digHours = (sim: SimContext) => !sim.state.lockdown && (ROUTINE[sim.state.
 const offTile = (tile: number, b: { x: number; z: number }) => Math.max(Math.abs(Math.floor(b.x / UNIT) - (tile % MAP_W)), Math.abs(Math.floor(b.z / UNIT) - Math.floor(tile / MAP_W)));
 
 /** The player keeps watch: up and about on the ground floor, within WATCH_TILES of the digger's door. */
-export function onWatch(sim: SimContext): boolean {
+function onWatch(sim: SimContext): boolean {
   const d = digOf(sim);
   const s = sim.state;
   return !!d && s.layer === LAYER.GROUND && !sim.away && !s.stowed && !s.sleeping && s.ko <= 0 && offTile(d.door, s.player) <= WATCH_TILES;
 }
 
 /** The digger at it now: in the free time, the player on watch, not hiding from a whistle. */
-export function digging(sim: SimContext): boolean {
+function digging(sim: SimContext): boolean {
   const job = jobOf(sim.state);
   return !!job && digHours(sim) && onWatch(sim) && sim.state.step >= job[J.AUX] && diggerFree(sim);
 }
@@ -882,5 +881,3 @@ export function oddjobs(sim: SimContext) {
 
 /** The step a job runs out (for the card: 08:00 after its last day). */
 export const endsOf = (job: readonly number[]) => job[J.ENDS];
-/** The errand's sugar (for the card's "bring" line). */
-export { SUGAR };

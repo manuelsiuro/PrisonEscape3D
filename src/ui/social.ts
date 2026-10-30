@@ -3,7 +3,7 @@ import { wageOf } from '../sim/systems/jobs';
 import { crewSection, SPEC_ICON, type CrewTalkView } from './crew';
 import { nightOf, specialityOf } from '../sim/systems/crew';
 import { itemDef, itemNumber } from '../content/items';
-import { JOBS, type JobId } from '../content/jobs';
+import { type JobId } from '../content/jobs';
 import { ROUTINE } from '../content/routine';
 import { BRIBE, OP, TALK } from '../sim/command';
 import { traitOf } from '../sim/systems/guards';
@@ -50,7 +50,7 @@ export interface OddJobTalkView {
 }
 
 /** What an inmate thinks of the player, in three bands (GDD §10.3). */
-export const moodOf = (opinion: number) => (opinion <= OPINION_LOW ? 'low' : opinion >= OPINION_HIGH ? 'high' : 'neutral');
+const moodOf = (opinion: number) => (opinion <= OPINION_LOW ? 'low' : opinion >= OPINION_HIGH ? 'high' : 'neutral');
 
 /** A favor told in the asker's words. */
 export function favorText(sim: Sim, f: { kind: number; item: number; target: number }): string {
@@ -622,4 +622,3 @@ export class WorkChips {
 
 /** The job names in the board's order for this prison (for toasts). */
 export const jobName = (sim: Sim, job: number) => t(`job.${sim.prison.jobs[job]?.id ?? 'laundry'}` as Key);
-export { JOBS };

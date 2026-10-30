@@ -53,7 +53,7 @@ const leftOf = (n: number) => (n < 60 ? t('dayCard.left', { n }) : t('dayCard.le
 const blockOf = (dayMin: number) => routineAt((dayMin + 8 * 60) % 1440);
 
 /** The day as the card shows it: what's on, the routine block by block, how it has gone so far. */
-export function dayView(g: Game): DayView {
+function dayView(g: Game): DayView {
   const sim = g.rec.sim;
   const st = sim.state;
   const days = hasDays(g);

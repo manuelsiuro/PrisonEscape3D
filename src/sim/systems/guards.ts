@@ -533,6 +533,3 @@ function nearest(b: Body, round: readonly Waypoint[]): number {
   });
   return best;
 }
-
-/** Whether any guard is chasing (the view runs, the music would swell). */
-export const chasing = (guards: readonly Guard[]) => guards.some((g) => g.mode === GUARD.CHASE);

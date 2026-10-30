@@ -169,7 +169,7 @@ export interface SmugglingDef {
  * what they need here rather than in code: San Pancho's snipers by night too, the tutorial's
  * forgiving routine.
  */
-export interface PrisonRules {
+interface PrisonRules {
   /** The towers' snipers on duty: by day (default; searchlights at night), or always. */
   snipers?: 'day' | 'always';
   /** The tutorial: missed blocks cost nothing; no shakedowns, no bed checks, nobody sent to the generator. */
@@ -191,7 +191,7 @@ export interface PrisonRules {
  * see court()).
  * The old-timer: the inmate (by cell) who plays checkers.
  */
-export interface LeisureDef {
+interface LeisureDef {
   hoop: Court;
   oldTimer: number;
   /** P28: the garden plot (a rectangle of beds, a tile each, on open yard soil) and the rat track (its start tile, the way it runs: 1 east, 5 south, 9 west, 13 north, its length in tiles). */

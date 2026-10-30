@@ -27,11 +27,11 @@ const CUP = itemNumber('plastic_cup');
 const VEGETABLE = itemNumber('vegetable');
 const FRUIT = itemNumber('fruit');
 /** What a packet plants, and what a bed of each crop gives. */
-export const SEEDS: ReadonlyMap<number, number> = new Map([
+const SEEDS: ReadonlyMap<number, number> = new Map([
   [VEG_SEEDS, CROP.VEG],
   [FRUIT_SEEDS, CROP.FRUIT],
 ]);
-export const YIELD: readonly number[] = [0, VEGETABLE, FRUIT];
+const YIELD: readonly number[] = [0, VEGETABLE, FRUIT];
 
 /** A bed as the state keeps it: [crop (CROP), stages grown, dry days in a row, cupfuls today]. */
 export const BED = { CROP: 0, GROWN: 1, DRY: 2, WATER: 3 } as const;

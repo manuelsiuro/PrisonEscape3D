@@ -63,7 +63,7 @@ export interface LessonCtx {
   hunt?: Hunt | null;
 }
 
-export interface LessonStep {
+interface LessonStep {
   /** The prompt (a touch variant where the controls differ). */
   text: Key;
   touch?: Key;

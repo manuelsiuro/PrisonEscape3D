@@ -50,8 +50,8 @@ export type CheckersNews = 'sat' | 'up' | 'moved' | 'won' | 'lost' | 'drawn';
 // ------------------------------------------------------------------ the board's geometry
 
 /** A square's row (0 his back row … 7 the player's) and column (0–7). */
-export const rowOf = (i: number) => i >> 2;
-export const colOf = (i: number) => ((i >> 2) % 2 === 0 ? 2 * (i & 3) + 1 : 2 * (i & 3));
+const rowOf = (i: number) => i >> 2;
+const colOf = (i: number) => ((i >> 2) % 2 === 0 ? 2 * (i & 3) + 1 : 2 * (i & 3));
 /** The square at a row and column (-1 off the board or a light square). */
 export function squareAt(r: number, c: number): number {
   if (r < 0 || r > 7 || c < 0 || c > 7 || (r + c) % 2 === 0) return -1;
@@ -73,7 +73,7 @@ for (let i = 0; i < 32; i++) {
 }
 
 /** Whose a piece is: 0 the player's, 1 his, -1 an empty square. */
-export const sideOf = (p: number) => (p === PIECE.MAN || p === PIECE.KING ? 0 : p === PIECE.HIS_MAN || p === PIECE.HIS_KING ? 1 : -1);
+const sideOf = (p: number) => (p === PIECE.MAN || p === PIECE.KING ? 0 : p === PIECE.HIS_MAN || p === PIECE.HIS_KING ? 1 : -1);
 /** The diagonals a piece moves along. */
 const dirsOf = (p: number): readonly number[] => (p === PIECE.MAN ? [0, 1] : p === PIECE.HIS_MAN ? [2, 3] : [0, 1, 2, 3]);
 /** A man on its far row is crowned. */
@@ -181,7 +181,7 @@ function unmakeMove(sq: number[], undo: number[]) {
 }
 
 /** How good a board is for a side (integers): men 100 and further up the board better, kings 160, the middle and the back row held a little. */
-export function evaluate(sq: readonly number[], side: number): number {
+function evaluate(sq: readonly number[], side: number): number {
   let v = 0;
   for (let i = 0; i < 32; i++) {
     const p = sq[i];
@@ -275,7 +275,7 @@ function atBoard(sim: SimContext): boolean {
 /** The games played with him so far: won, lost, drawn, and the prison day a game last taught the player a point. */
 const ELDER = { WON: 0, LOST: 1, DRAWN: 2, TAUGHT: 3 } as const;
 /** How well he plays now: the games the player has won off him. */
-export const elderLevel = (s: { elder: number[] }) => s.elder[ELDER.WON] ?? 0;
+const elderLevel = (s: { elder: number[] }) => s.elder[ELDER.WON] ?? 0;
 
 /** To the board (TALK.CHECKERS 1: a new game if there's none, or the last is over), up from it (0), or resigning (2). */
 export function checkersOp(sim: SimContext, b: number) {

@@ -39,7 +39,7 @@ export function cameraSweep(k: number, step: number): number {
 
 /** The eye of camera k (reused body), looking its way at this step. */
 const eye: Body = { x: 0, z: 0, facing: 1, moving: false };
-export function cameraEye(cam: { x: number; z: number; face: number }, k: number, step: number): Body {
+function cameraEye(cam: { x: number; z: number; face: number }, k: number, step: number): Body {
   eye.x = cam.x * UNIT + UNIT / 2;
   eye.z = cam.z * UNIT + UNIT / 2;
   eye.facing = cameraFacing(cam.face, k, step);

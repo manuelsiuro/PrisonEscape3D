@@ -6,7 +6,7 @@
 import type { Pitch } from '../content/prisons/types';
 
 /** How much ground a screen's height holds over its own height (the camera looks down at about 58°). */
-export const PITCH_DEPTH = 1.18;
+const PITCH_DEPTH = 1.18;
 /** The look-ahead's longest pull in a match (tiles, both ways summed): short of the 10 that cut the camera back to the player. */
 export const PITCH_PULL = 9;
 

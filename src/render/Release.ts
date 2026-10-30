@@ -60,7 +60,7 @@ function deskParts() {
  * east, else north), clear of its doors; a little toward the point, and back against a wall
  * south of it where there is one (out of the walking lane: a corridor's people pass north of it).
  */
-export function deskSpot(world: World): { x: number; z: number } | null {
+function deskSpot(world: World): { x: number; z: number } | null {
   const r = world.def.comms?.release;
   if (!r || world.def.rules?.relaxed) return null;
   const at = (x: number, z: number) => r.at.some((q) => q.x === x && q.z === z);

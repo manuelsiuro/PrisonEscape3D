@@ -56,7 +56,7 @@ export const press: { toolNow: ToolView | null; toolKey: number; heldOn: number;
 };
 
 /** P28: how long a first press on Drink stays armed, waiting for the second (real time: it's the player's hand, not the prison's clock). */
-export const DRINK_CONFIRM_MS = 2500;
+const DRINK_CONFIRM_MS = 2500;
 /** When the armed Drink lapses (performance.now()), 0: not armed. */
 let drinkUntil = 0;
 

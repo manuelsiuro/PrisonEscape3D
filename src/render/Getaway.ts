@@ -39,7 +39,7 @@ function spar(from: THREE.Vector3, to: THREE.Vector3, r: number, color: number):
 const NOSE = new THREE.Vector3(0, 0.05, 0.75);
 const TAIL = new THREE.Vector3(0, 0, -0.25);
 /** Where the pilot's hands hold the bar, from the wing's origin (the arms up and forward, the sail over the cap). */
-export const BAR = new THREE.Vector3(0, -0.52, 0.34);
+const BAR = new THREE.Vector3(0, -0.52, 0.34);
 export function wingGeometry(): THREE.BufferGeometry {
   const sheet = new THREE.BufferGeometry();
   // A delta wing: nose forward, the trailing edge behind, a little dihedral.

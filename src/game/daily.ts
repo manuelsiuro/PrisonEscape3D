@@ -39,7 +39,7 @@ function fitBest(v: unknown): DailyBest | undefined {
   return { day: b.day!, minutes: b.minutes!, via: b.via, medal: b.medal && MEDALS.includes(b.medal) ? b.medal : null, strip, code: b.code, tries: Number.isInteger(b.tries) && b.tries! > 0 ? b.tries! : 1 };
 }
 
-export function readDailies(): History {
+function readDailies(): History {
   const raw = readJSON<Record<string, unknown>>(KEYS.daily, {});
   const out: History = {};
   for (const [k, v] of Object.entries(raw)) {

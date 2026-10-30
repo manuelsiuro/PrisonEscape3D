@@ -73,7 +73,7 @@ export function jobRooms(w: World): JobRoom[] {
 }
 
 /** Distance (units) from a body to a prop's footprint, along the larger axis. */
-export function reachOfProp(p: Prop, b: Body): number {
+function reachOfProp(p: Prop, b: Body): number {
   const dx = Math.max(p.x * UNIT - b.x, 0, b.x - (p.x + p.w) * UNIT);
   const dz = Math.max(p.z * UNIT - b.z, 0, b.z - (p.z + p.d) * UNIT);
   return Math.max(dx, dz);
@@ -191,7 +191,7 @@ export function stationTarget(w: World, s: WorkState, b: Body): Station | null {
 const PUDDLE_AHEAD = Math.round(UNIT * 0.6);
 
 /** A puddle under the player or a step ahead of them (-1 for none). */
-export function puddleAt(puddles: readonly number[], b: Body): number {
+function puddleAt(puddles: readonly number[], b: Body): number {
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   for (const reach of [0, PUDDLE_AHEAD]) {

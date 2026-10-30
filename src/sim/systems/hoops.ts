@@ -47,7 +47,7 @@ export interface Shootout {
 
 /** How a shot went: nothing but net, in off the rim, off the rim and out, nowhere near. */
 export type ShotResult = 'swish' | 'in' | 'rim' | 'air';
-export const made = (r: ShotResult) => r === 'swish' || r === 'in';
+const made = (r: ShotResult) => r === 'swish' || r === 'in';
 
 /** The prison's court (null: no hoop). */
 export const courtOf = (sim: Pick<SimContext, 'world'>): Court | null => sim.world.def.leisure?.hoop ?? null;
@@ -127,7 +127,7 @@ const RANK: Record<ShotResult, number> = { swish: 3, in: 2, rim: 1, air: 0 };
 const win: [number, number] = [0, 0];
 
 /** An inmate's eye for a basket (out of 100), drawn once for the run, by cell. */
-export const skillOf = (salt: number, cell: number) => SKILL_BASE + rollInt(salt, SALT.HOOPS, cell, 0, SKILL_SPREAD + 1);
+const skillOf = (salt: number, cell: number) => SKILL_BASE + rollInt(salt, SALT.HOOPS, cell, 0, SKILL_SPREAD + 1);
 
 /** Whether a shootout may start with an inmate now: both at the court. */
 export function atCourt(sim: SimContext, who: number): boolean {
@@ -229,14 +229,14 @@ function inmateShot(sim: SimContext, o: Shootout) {
 }
 
 /** Baskets made, from a shootout's bits. */
-export function baskets(bits: number): number {
+function baskets(bits: number): number {
   let n = 0;
   for (let b = bits; b; b &= b - 1) n++;
   return n;
 }
 
 /** How a shootout ended: won, lost, drawn, or off (the sirens, someone gone from the court). */
-export function endShootout(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off') {
+function endShootout(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off') {
   const s = sim.state;
   const o = s.shootout;
   if (!o) return;

@@ -85,7 +85,7 @@ const FR_PLACES: Partial<Record<ZoneId, PlaceWords>> = {
 export const PUBLIC_PLACES: readonly ZoneId[] = ['canteen', 'yard', 'gym', 'showers', 'library', 'laundry', 'kitchen', 'woodshop', 'metalshop', 'mailroom', 'infirmary', 'rollCall', 'corridor', 'cellBlock', 'sports', 'garden'];
 
 /** An item as people say it: English "a" or "an"; French gender (feminine) and elision (vowel first). */
-export interface ItemWords {
+interface ItemWords {
   name: string;
   an?: boolean;
   f?: boolean;

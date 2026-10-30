@@ -2,7 +2,7 @@ import { STEPS_PER_MINUTE } from './tuning';
 import type { Sim, Snapshot } from './Sim';
 
 /** A keyframe every game hour. */
-export const KEYFRAME_STEPS = STEPS_PER_MINUTE * 60;
+const KEYFRAME_STEPS = STEPS_PER_MINUTE * 60;
 
 /**
  * Records a game as its commands (only when they change) plus a snapshot every game hour,

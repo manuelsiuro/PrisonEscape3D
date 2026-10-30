@@ -61,7 +61,7 @@ export function cashShown(s: { cash: number }, now = performance.now()): number 
 }
 
 /** The dice game shown now (null when nothing is: it's over and gone). */
-export function diceShown(now = performance.now()): DiceShow | null {
+function diceShown(now = performance.now()): DiceShow | null {
   return show.who >= 0 && now < show.until ? show : null;
 }
 
@@ -204,7 +204,7 @@ export function announceGames(sim: Sim, e: SimEvent) {
 const gamesView: GamesView = { id: 0, open: true, why: '', left: 0, stakes: [], seen: false, heat: DICE_HEAT, dice: null, show: null, arm: 'even', tired: false, energy: BOUT_ENERGY, sports: null, name: '', hasCourt: false, court: false, elder: null, football: null, ink: null, inkHeat: 0 };
 
 /** The games on offer with the inmate the player is talking to (null for a guard, or nobody). */
-export function gamesOffer(sim: Sim): GamesView | null {
+function gamesOffer(sim: Sim): GamesView | null {
   const s = sim.state;
   const who = s.talk;
   if (who < 0 || who >= s.inmates.length) return null;

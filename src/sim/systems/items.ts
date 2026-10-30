@@ -453,7 +453,7 @@ export function canCraft(s: ItemState, recipe: number): CraftCheck {
 
 /** A set of carried slots as a bit mask (bit k = slot k, 0–7), and back. */
 export const maskOf = (slots: readonly number[]) => slots.reduce((m, k) => m | (1 << k), 0);
-export const slotsOf = (mask: number) => [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => (mask >> k) & 1);
+const slotsOf = (mask: number) => [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => (mask >> k) & 1);
 
 /** What the slots on the workbench would make: the recipe (or -1) and whether it can be made now. */
 export function benchCheck(s: ItemState, mask: number): { recipe: number; check: CraftCheck } {
@@ -501,7 +501,7 @@ export const ALL_ITEMS = ITEMS.map((_, i) => i + 1);
  * The recipe a set of items makes (in any order), -1 for none: the workbench preview. Each
  * ingredient must be matched by a different item, and nothing may be left over.
  */
-export function recipeFor(items: readonly number[]): number {
+function recipeFor(items: readonly number[]): number {
   return RECIPES.findIndex((r) => {
     if (r.ingredients.length !== items.length) return false;
     const left = [...items];

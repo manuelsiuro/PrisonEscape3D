@@ -37,7 +37,7 @@ const hash = (i: number, k: number) => {
  * biggest rectangle at least 2 × 2 that starts there), then what's left as walls (runs along x, then
  * down), so a garden wall's end never takes a house's side with it.
  */
-export function blocksOf(o: OutsideWorld): Block[] {
+function blocksOf(o: OutsideWorld): Block[] {
   const kind = o.world.ground.base;
   const taken = new Uint8Array(kind.length);
   const free = (x: number, z: number) => x >= o.ox && z >= o.oz && x < o.ox + o.w && z < o.oz + o.h && kind[z * MAP_W + x] === TILE.BRICK && !taken[z * MAP_W + x];

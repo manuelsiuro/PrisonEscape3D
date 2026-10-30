@@ -18,7 +18,7 @@ const cone = (r: number, h: number, color: number, x: number, y: number) => pain
 export const WALL_H = 1.4;
 
 /** Door colors by key (GDD §4.0). */
-export const KEY_COLORS: Record<number, number> = {
+const KEY_COLORS: Record<number, number> = {
   [KEY.YELLOW]: 0xe8b828,
   [KEY.CYAN]: 0x2fb6c8,
   [KEY.PURPLE]: 0x8e4fc4,

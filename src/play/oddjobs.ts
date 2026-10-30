@@ -44,7 +44,7 @@ const why = (k: string | null) => (k ? t(`refused.${k}` as Key, { n: k === 'game
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 /** The icon of each kind. */
-export const KIND_ICON: readonly string[] = ['hand', 'box', 'search', 'arm', 'cards', 'checkers', 'rat', 'cookie', 'eye', 'gift', 'phone', 'cart'];
+const KIND_ICON: readonly string[] = ['hand', 'box', 'search', 'arm', 'cards', 'checkers', 'rat', 'cookie', 'eye', 'gift', 'phone', 'cart'];
 
 /** A guard's name for a job's words (his name alone; one without: "the guard"). */
 const guardName = (sim: Sim, k: number) => sim.prison.guards[k]?.name ?? t('oddjob.someGuard');
@@ -88,7 +88,7 @@ interface Step {
 }
 
 /** The job held's steps, in order; the last is always back to the one who asked. */
-export function jobSteps(sim: Sim): Step[] {
+function jobSteps(sim: Sim): Step[] {
   const s = sim.state;
   const job = jobOf(s);
   if (!job) return [];
@@ -241,7 +241,7 @@ export function oddjobsNow(sim: Sim): OddJobsView | null {
 }
 
 /** The job's own card, opened or closed (its chip, B): on watch at a dig, B whistles instead. */
-export function toggleJob(keys = true) {
+function toggleJob(keys = true) {
   const g = play.game;
   if (!g || g.replay) return;
   const sim = g.rec.sim;
@@ -338,7 +338,7 @@ export const jobKey = (sim: Sim) => {
 // ------------------------------------------------------------------ the talk panel
 
 /** What odd jobs bring to a talk with an inmate: the job handed in, the fixer's own, a debt (null: nothing). */
-export function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
+function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
   const s = sim.state;
   const job = jobOf(s);
   const out: OddJobTalkView = { handIn: null, offer: null, owed: owes(s, who) ? why(null) : null, give: null, key: '' };

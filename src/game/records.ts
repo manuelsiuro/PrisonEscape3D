@@ -2,7 +2,7 @@ import { betterMedal, medalFor, MEDALS, type Medal } from '../content/medals';
 import { KEYS, readJSON, writeJSON } from './storage';
 
 /** A way out's quickest escape (day and game minute), and the best medal it has won (P16: never taken away). */
-export interface RouteBest {
+interface RouteBest {
   day: number;
   minute: number;
   medal?: Medal;

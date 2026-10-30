@@ -40,7 +40,7 @@ export function wavedLeft(sim: Sim, a: number): number | null {
 }
 
 /** The gates' chip runs this long when full. */
-export const WAVED_SECS = WAVED_STEPS / STEPS_PER_SECOND;
+const WAVED_SECS = WAVED_STEPS / STEPS_PER_SECOND;
 
 /** What the bluff and a glide sound and say. */
 export function announceGetaway(sim: Sim, e: Extract<SimEvent, { type: 'bluff' } | { type: 'glide' }>) {

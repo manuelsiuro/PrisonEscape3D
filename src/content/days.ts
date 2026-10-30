@@ -14,7 +14,7 @@ export type DayEvent = (typeof DAY_EVENTS)[number];
 export const WEATHERS = ['clear', 'fog', 'rain', 'storm', 'heatwave'] as const;
 export type Weather = (typeof WEATHERS)[number];
 
-export interface Climate {
+interface Climate {
   /** Each weather's weight (WEATHERS order) on a day that doesn't keep yesterday's. */
   weights: readonly number[];
   /** Out of 100: the chance a day keeps yesterday's weather (a storm or a heatwave keeps it half as often). */

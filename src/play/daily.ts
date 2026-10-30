@@ -27,7 +27,7 @@ import { endGame, escapeScene } from './session';
  */
 
 /** "Daily #12". */
-export const dailyName = (n: number) => t('daily.name', { n: n + 1 });
+const dailyName = (n: number) => t('daily.name', { n: n + 1 });
 
 /** Where a Daily's run is (the pause card): "Daily #12 · Shankton · Day 2". */
 export const dailyPlace = (sim: Sim, d: DailyRun) => `${dailyName(d.n)} · ${prisonName(sim.prison)} · ${t('hud.day', { n: sim.clock.day })}`;
