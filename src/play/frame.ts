@@ -5,7 +5,6 @@ import { lookingAway } from '../sim/systems/ways';
 import { itemDef, itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import type { BadgeKind } from '../render/Character';
-import type { Frame } from '../render/View';
 import { ROOF_Y } from '../render/Structure';
 import { rollCallShows } from '../render/ground';
 import { DIR_X, DIR_Z, headingAngle, SLOT } from '../sim/command';
@@ -44,6 +43,7 @@ import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { fireworksOn, holidayNow } from '../sim/systems/holiday';
 import { decorHoliday } from './holidays';
 import { tileAt } from '../sim/world/grid';
+import { type Frame } from '../render/viewFrame';
 
 /**
  * The frame record the view draws: everyone where they are between the last two steps, what

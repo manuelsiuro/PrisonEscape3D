@@ -10,7 +10,6 @@ import { currentLang, t, type Key } from '../i18n';
 import { enBarks, type BankId } from '../i18n/barks/en';
 import { frBarks } from '../i18n/barks/fr';
 import { HuntView, type HuntFrame } from '../render/Hunt';
-import type { Frame } from '../render/View';
 import { Autopilot } from '../sim/ai/autopilot';
 import { findPath, smooth } from '../sim/ai/path';
 import { centerX, centerZ, tileAt } from '../sim/world/grid';
@@ -29,6 +28,7 @@ import { buzz } from '../app/haptics';
 import { banner, click, combatUI, controls, hint, hooks, hud, itemsUI, settings, sound, tools, view, vignette } from './context';
 import { play, playLater, tickPlayClock, type Game } from './game';
 import { lessonHuntGoal, updateLesson } from './lesson';
+import { type Frame } from '../render/viewFrame';
 
 /**
  * The manhunt in play (P41): its own simulation (sim/hunt/) stepped at the inside's pace from

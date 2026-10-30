@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import type { Pitch } from '../content/prisons/types';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
-import { Character, guardLook, INMATE_LOOK, inmateLook, type BadgeKind, type BedPose, type Look } from './Character';
+import { Character, guardLook, INMATE_LOOK, inmateLook, type BedPose, type Look } from './Character';
 import { Cones } from './Cones';
-import { Security, type SecurityFrame } from './Security';
+import { Security } from './Security';
 import { ALERT } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { Dust } from './Dust';
@@ -18,7 +18,7 @@ import { itemDef, itemNumber } from '../content/items';
 import type { Prisoner } from '../content/prisoner';
 import { lookFor } from './prisonerLook';
 import { itemGeometry } from './itemModels';
-import { Pickups, type Focus, type GroundItem } from './Pickups';
+import { Pickups } from './Pickups';
 import { updateOcclusion } from './occlusion';
 import { WALL_H, WorldView } from './WorldView';
 import { LAYER_Y, ROOF_Y as ROOF_HEIGHT, Structure } from './Structure';
@@ -30,134 +30,30 @@ import { skipEmpty } from './batch';
 import { Blobs } from './Blobs';
 import { Snowfall } from './Snow';
 import { Weather, type WeatherFrame, type WeatherView } from './Weather';
-import { Delivery, type DeliveryFrame } from './Delivery';
+import { Delivery } from './Delivery';
 import { DayEvents, type EventsFrame } from './DayEvents';
-import { HolidaysView, NO_HOLIDAY, type HolidayFrame } from './Holidays';
+import { HolidaysView, NO_HOLIDAY } from './Holidays';
 import { pitchFraming, SCREEN_COLS, SCREEN_ROWS, ZOOM_MAX, ZOOM_MIN } from './pitchFrame';
 import type { NoiseKind } from '../sim/events';
-import { Dogs, type DogFrame } from './Dog';
-import { Rats, type RatFrame } from './Rat';
-import { GetawayView, type GetawayFrame } from './Getaway';
-import { SmuggleView, type SmuggleFrame } from './Smuggling';
-import { GamesView, type GamesFrame } from './Games';
-import { PastimesView, type PastimesFrame } from './Pastimes';
-import { LongView, type LongFrame } from './Long';
-import { TeamView, type TeamFrame } from './Team';
+import { Dogs } from './Dog';
+import { Rats } from './Rat';
+import { GetawayView } from './Getaway';
+import { SmuggleView } from './Smuggling';
+import { GamesView } from './Games';
+import { PastimesView } from './Pastimes';
+import { LongView } from './Long';
+import { TeamView } from './Team';
 import { GroundsView } from './Grounds';
-import { NightsView, type NightsFrame } from './Nights';
-import { PhoneView, type PhoneFrame } from './Phone';
-import { KioskView, type KioskFrame } from './Kiosk';
-import { OddJobsView, type OddJobsFrame } from './OddJobs';
-import { ReleaseView, type ReleaseFrame } from './Release';
+import { NightsView } from './Nights';
+import { PhoneView } from './Phone';
+import { KioskView } from './Kiosk';
+import { OddJobsView } from './OddJobs';
+import { ReleaseView } from './Release';
 import { handlersOf } from '../sim/systems/k9';
+import type { Frame, Quality } from './viewFrame';
 
 /** The old-timer's hair (P27): white with age. */
 const ELDER_HAIR = 0xd8d3c8;
-
-/** What the view needs from the simulation each frame (positions in tiles, already interpolated). */
-export interface Frame {
-  x: number;
-  z: number;
-  /** Radians, 0 = facing +z (south). */
-  facing: number;
-  moving: boolean;
-  /** Game time of day in minutes, fractional (lighting). */
-  minuteOfDay: number;
-  /** Roll call is on or minutes off, or a fire drill musters there (P29: its paint over a football pitch shows only then). */
-  rollCall: boolean;
-  /** The tile kind under the player (footstep dust and sound). */
-  surface: number;
-  /** The other inmates, interpolated like the player. */
-  inmates: InmateFrame[];
-  /** Where the floor arrows lead (tile centers), or null for none. */
-  guide: Array<{ x: number; z: number }> | null;
-  /** The tap-to-walk target, or null. */
-  tap: { x: number; z: number } | null;
-  /** A lockdown: red lights pulse. */
-  alarm: boolean;
-  /** Items on the floor, and a number that changes whenever they do. */
-  ground: readonly GroundItem[];
-  groundRev: number;
-  /** What the action button would use, framed on the floor. */
-  focus: Focus | null;
-  /** The item in the player's hand and the outfit they wear (item numbers, 0 for none). */
-  held: number;
-  outfit: number;
-  /** Asleep in bed. */
-  sleeping: boolean;
-  /** Knocked out on the floor. */
-  knockedOut: boolean;
-  /** The guards, interpolated like everyone else. */
-  guards: GuardFrame[];
-  /** The layer the player is on (World LAYER). */
-  layer: number;
-  /** Changes whenever tiles or their wear do (damage is redrawn then), and the wear itself. */
-  tilesRev: number;
-  wearRev: number;
-  /** The desk over the player's tunnel is pushed aside (they went down through it). */
-  deskAside: boolean;
-  wear: Readonly<Record<number, number>>;
-  /** Who the player is locked on to (Cast id: inmates, then guards; -1 none), and whether that's a guard after them. */
-  lock: number;
-  /** The target is after the player (the ring turns red), or out of reach (it dims). */
-  lockHostile: boolean;
-  lockFar: boolean;
-  /** Training (GDD §3.2): the player's pose (DOING.LIFT, RUN, READ; NOTHING otherwise), where they stand for it (on the treadmill's belt), and a count of reps so far (each one pumps the arms). */
-  doing: number;
-  trainAt: { x: number; z: number; facing: number; y: number } | null;
-  /** Resting on an infirmary bed: where it lies (the player lies on it as in their own bed). */
-  restBed: BedPose | null;
-  reps: number;
-  /** Puddles to mop (tiles), and a number that changes whenever they do. */
-  puddles: readonly number[];
-  /** P31: the gardener's planters at work (prop index → how far the seedlings have grown, 0–1); the rest grown. */
-  planters: ReadonlyMap<number, number>;
-  puddlesRev: number;
-  /** Mines set off today (P11): their ground tiles. */
-  craters: readonly number[];
-  /** Security (GDD §5.4–5.6): the power, cameras, searchlights, a sniper's aim. */
-  security: SecurityFrame;
-  /** A takeover (GDD §12): every door stands open. */
-  takeover: boolean;
-  /** Firecrackers burning on the floor (P14): their ground tiles. */
-  fuses: readonly number[];
-  /** The day (P17): the weather over the prison, and the event on (the movie, the food fight, the inspectors). */
-  weather: WeatherFrame;
-  events: EventsFrame;
-  /** Delivery day (P18): where its vehicle is in its day, and the player hidden in it. */
-  delivery: DeliveryFrame;
-  /** Guard dogs (P19), interpolated; the player's trail ([ground tile, freshness 1 → 0], oldest first). */
-  dogs: DogFrame[];
-  scent: ReadonlyArray<readonly [number, number]>;
-  /** The rats (P20): the pet and any thrown loose, interpolated. */
-  rats: RatFrame[];
-  /** Smuggling (P21): the drone, what it dropped, visiting day's arches and visitors (null where there's none). */
-  smuggle: SmuggleFrame | null;
-  /** Side games (P22): an arm-wrestle, dice on the ground, the lockpick's taps, sports day's bunting. */
-  games: GamesFrame;
-  /** Card sharks (P27): the court's lit spot, the ball, cards on the ground, the old-timer's board. */
-  pastimes: PastimesFrame;
-  /** Long games (P28): the garden, the rat track and its racers, the pet's laps, tipsy (null: none yet). */
-  long: LongFrame | null;
-  /** Team & ink (P29): the pitch and the ball. */
-  team: TeamFrame;
-  /** Stage nights (P30): the stage set up, the quiz's buzzers. */
-  nights: NightsFrame;
-  /** The pay phone (P34): its handset off the hook, Lou's car waiting on the road. */
-  phone: PhoneFrame;
-  /** The internet kiosk (P35): logged in or not, the family's drawings over the player's bed. */
-  kiosk: KioskFrame;
-  /** The odd jobs board (P40): the cards still pinned up today, the player's job tag. */
-  oddjobs: OddJobsFrame;
-  /** The release desk (P36): the name called, the way out open. */
-  release: ReleaseFrame;
-  /** P29: the designs inked on the player's arms. */
-  inked: readonly number[];
-  /** Bluff & glider (P24): the checkpoint's shift change and the player waved through, a glide's preview. */
-  getaway: GetawayFrame;
-  /** v2.21 (P42): the holiday dressed for, the water fight, New Year's fireworks. */
-  holiday: HolidayFrame;
-}
 
 const NO_FUSES: readonly number[] = [];
 /** How far apart two arm-wrestlers stand, centre to centre (tiles): their right hands, each reaching about half of it, meet between them. */
@@ -170,52 +66,6 @@ const BOUT_LEAN = 0.09;
 const PICK_STAND = 0.7;
 const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false };
 const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
-
-interface GuardFrame {
-  x: number;
-  z: number;
-  facing: number;
-  moving: boolean;
-  doing: number;
-  /** ALERT: the cone's color, none while asleep. */
-  alert: number;
-  /** Leg pace against the player's walk (they run when chasing). */
-  pace: number;
-  /** What it holds (a baton while chasing), 0 for nothing. */
-  held: number;
-  /** Its key still on its belt. */
-  hasKey: boolean;
-  /** Bribed to look the other way (P15): its cone in the looking-away tint, and steps left. */
-  away: boolean;
-  awayLeft: number;
-  /** Dozing and stirring (0–1): the player at its elbow is about to wake it. */
-  stir: number;
-  /** How far it sees now (tiles; P17: the weather, the inspectors): its cone is drawn that long. */
-  range: number;
-}
-
-interface InmateFrame {
-  x: number;
-  z: number;
-  facing: number;
-  moving: boolean;
-  /** DOING (sim/systems/inmates.ts). */
-  doing: number;
-  /** Their cell number (their bed is in it). */
-  cell: number;
-  /** Fighting the player back. */
-  angry: boolean;
-  /** The badge over their head: a favor, a shop, the player's letter for them, a follower. */
-  badge: BadgeKind;
-}
-
-export interface Quality {
-  /** Shadow map size; 0 = no shadows. */
-  shadows: number;
-  /** Shadow edge softness in shadow-map texels (PCF filter radius). */
-  softness: number;
-  pixelRatio: number;
-}
 
 /** From the target, up and to the south: the classic angled top-down view (tech plan §6.1). */
 const CAMERA_OFFSET = new THREE.Vector3(0, 38, 24).normalize().multiplyScalar(60);
