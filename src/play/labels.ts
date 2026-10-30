@@ -85,7 +85,7 @@ export const dogName = (sim: Sim, k: number) => dogDef(sim.world, k).name;
 const toolView: ToolView = { verb: '', what: '', icon: '', fits: true, progress: null, repeat: true };
 
 /** Who someone is (Cast id): "Rusty · cell 3", "Officer Keller · purple key". */
-export function personName(sim: Sim, id: number): string {
+function personName(sim: Sim, id: number): string {
   const s = sim.state;
   if (!isGuard(s, id)) return t('combat.inmateNamed', { name: inmateName(sim, id), n: s.inmates[id]?.cell ?? 0 });
   const d = sim.prison.guards[id - s.inmates.length];

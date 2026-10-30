@@ -9,7 +9,7 @@ import { WALL_H, type WorldView } from './WorldView';
 import { FLOOR_HP, WALL_HP } from '../sim/tuning';
 
 /** The vents run on top of the walls; the roofs sit over the vents. */
-export const DUCT_Y = WALL_H;
+const DUCT_Y = WALL_H;
 const DUCT_H = 0.42;
 /** A duct is this wide (tiles): room to crawl, narrow enough to read as a duct. */
 const DUCT_W = 0.6;

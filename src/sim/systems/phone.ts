@@ -89,7 +89,7 @@ export const placeInLine = (s: Pick<SimState, 'line'>) => s.line.indexOf(PLAYER_
 export const retained = (s: Pick<SimState, 'phoned' | 'step'>) => s.phoned[2] > 0 && prisonDay(s.step) < s.phoned[2];
 
 /** What a call costs up front: coins (Lou's fee is paid once he understands), the lawyer's fee. */
-export const callCost = (to: number, sub: number): number => (to === CALLEE.LAWYER ? LAWYER_FEES[sub] ?? LAWYER_FEES[0] : COINS);
+const callCost = (to: number, sub: number): number => (to === CALLEE.LAWYER ? LAWYER_FEES[sub] ?? LAWYER_FEES[0] : COINS);
 
 /** The step a diversion called for at an hour goes off: that hour's next stroke at least DIVERT_AHEAD on (-1 no such hour). */
 export function divertStep(step: number, hour: number): number {

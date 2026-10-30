@@ -20,12 +20,12 @@ import { itemOf, slot, usesOf } from './items';
 import type { Body } from './movement';
 import { makeNoise } from './noise';
 
-export const PRUNO_BAG = itemNumber('pruno_bag');
-export const PRUNO = itemNumber('pruno');
+const PRUNO_BAG = itemNumber('pruno_bag');
+const PRUNO = itemNumber('pruno');
 /** A bag fermenting or ripe pruno: what a dog smells. */
-export const isBrew = (n: number) => n === PRUNO_BAG || n === PRUNO;
+const isBrew = (n: number) => n === PRUNO_BAG || n === PRUNO;
 /** How far a dog smells a brew in furniture (units from its footprint): through bars and walls. */
-export const BREW_SNIFF = 2 * UNIT;
+const BREW_SNIFF = 2 * UNIT;
 /** The furniture a bag ferments in: a desk's drawers, a toilet's tank. */
 const BREWERY: ReadonlySet<string> = new Set(['desk', 'toilet']);
 

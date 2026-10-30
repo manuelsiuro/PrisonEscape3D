@@ -72,7 +72,7 @@ export const quizOf = (w: World): QuizPlace | null => w.def.leisure?.quiz ?? nul
 export const quizOn = (sim: SimContext) => !!quizOf(sim.world) && !sim.world.def.rules?.relaxed && eventOn(sim, 'quiz');
 
 /** An inmate's wits (its Intellect for the quiz): the same all run, by its cell. */
-export const witsOf = (salt: number, cell: number) => WITS_MIN + rollInt(salt, SALT.QUIZ, 0, cell, WITS_SPAN);
+const witsOf = (salt: number, cell: number) => WITS_MIN + rollInt(salt, SALT.QUIZ, 0, cell, WITS_SPAN);
 
 // ------------------------------------------------------------------ the questions
 
@@ -185,7 +185,7 @@ export const readOf = (sim: Pick<SimContext, 'rules215'>, q: Pick<Question, 'id'
 export const questionSteps = (sim: Pick<SimContext, 'rules215'>) => (sim.rules215 ? QUESTION_STEPS_215 : QUESTION_STEPS);
 
 /** A contestant's buzz on a question: when (steps after it's put: `read` steps of reading first, -1 as before 2.16), and whether right; the wrong choice it gives otherwise. */
-export function buzzOf(s: Pick<SimState, 'salt' | 'inmates'>, day: number, q: number, who: number, answer: number, read: number): { at: number; right: boolean; says: number } {
+function buzzOf(s: Pick<SimState, 'salt' | 'inmates'>, day: number, q: number, who: number, answer: number, read: number): { at: number; right: boolean; says: number } {
   const salt = s.salt;
   const wits = witsOf(salt, s.inmates[who]?.cell ?? 0);
   const at = read < 0 ? BUZZ_MIN_215 + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN_215) : read + BUZZ_MIN + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN);
@@ -222,7 +222,7 @@ export function nearestPlace(sim: SimContext): number {
 const BUSY: ReadonlySet<number> = new Set([DOING.SLEEP, DOING.BOARD, DOING.CARDS, DOING.DICE, DOING.WRESTLE, DOING.LOOKOUT, DOING.BRAWL, DOING.DRUMS, DOING.GUITAR]);
 
 /** The three contestants: the nearest inmates up and about to the places, not busy with the player or the crew (ties: the lower index); null if fewer. */
-export function contestantsFor(sim: SimContext): number[] | null {
+function contestantsFor(sim: SimContext): number[] | null {
   const s = sim.state;
   const pl = quizOf(sim.world);
   if (!pl) return null;

@@ -87,7 +87,7 @@ export const stapleSlot = (k: number) => SHOP_SLOTS + k;
 /** What a merchant pays for an item (its value), 0 for what it doesn't buy. */
 export const saleOf = (item: number): number => (WANTED_ITEMS.includes(item) ? Math.floor((itemDef(item).value * SALE_SHARE) / 100) : 0);
 /** Things sold today (state.pantry's last: prison day × 16 + sales). */
-export const salesToday = (s: { step: number; pantry: readonly number[] }) => (Math.floor((s.pantry[3] ?? 0) / 16) === prisonDay(s.step) ? (s.pantry[3] ?? 0) % 16 : 0);
+const salesToday = (s: { step: number; pantry: readonly number[] }) => (Math.floor((s.pantry[3] ?? 0) / 16) === prisonDay(s.step) ? (s.pantry[3] ?? 0) % 16 : 0);
 
 /** TALK.SELL (b: the hotbar slot): ripe pruno or a vegetable sold to a merchant, at its value. */
 export function sell(sim: SimContext, who: number, b: number) {

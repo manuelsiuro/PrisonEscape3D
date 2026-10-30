@@ -175,7 +175,7 @@ const PICK_STAND = 0.7;
 const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false };
 const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
 
-export interface GuardFrame {
+interface GuardFrame {
   x: number;
   z: number;
   facing: number;
@@ -198,7 +198,7 @@ export interface GuardFrame {
   range: number;
 }
 
-export interface InmateFrame {
+interface InmateFrame {
   x: number;
   z: number;
   facing: number;
@@ -235,8 +235,8 @@ const CINEMA_PULL = 0.3;
 const PREVIEW_ZOOM = 4.2;
 /** The Intake's camera: lower than play's, nearly face on (a mugshot, not a map). */
 const PREVIEW_OFFSET = new THREE.Vector3(0, 16, 24).normalize().multiplyScalar(60);
-export const ZOOM_MIN = 0.6;
-export const ZOOM_MAX = 1.9;
+const ZOOM_MIN = 0.6;
+const ZOOM_MAX = 1.9;
 
 /** Light by time of day: [minute, sun intensity, sun color, ambient intensity, sky color]. */
 const DAYLIGHT: Array<[number, number, number, number, number]> = [

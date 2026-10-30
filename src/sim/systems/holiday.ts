@@ -173,7 +173,7 @@ function laughs(sim: SimContext) {
 }
 
 /** Whether a treat is on offer now: on its holiday day, from 08:00 until that day's over (the ice lollies until the water fight's end, the costume and the pumpkin until costume night's, the present until Christmas Day's 22:00). */
-export function treatHours(sim: HolidaySim, what: number): boolean {
+function treatHours(sim: HolidaySim, what: number): boolean {
   const treat = TREATS[what];
   if (!treat || !holidayDays(sim).includes(treat.day)) return false;
   const d = HOLIDAY_DAY[treat.day];

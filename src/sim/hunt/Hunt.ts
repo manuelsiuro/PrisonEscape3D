@@ -11,12 +11,12 @@ import { UNIT, walkSpeed } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { HFEAT, HOUND, HUNT_FEATS, OVER, SEEK, type Carry, type HuntDog, type HuntState, type Searcher } from './state';
-import { DECO, fillArea, outsideWorld, spotTile, type OutsideWorld } from './world';
+import { fillArea, outsideWorld, spotTile, type OutsideWorld } from './world';
 
 export * from './state';
 
 /** Why an action did nothing (a toast says it). */
-export type HuntRefusal = 'nothing' | 'noCutters' | 'stoneSoon' | 'stoneFar' | 'noTreat' | 'dogFar';
+type HuntRefusal = 'nothing' | 'noCutters' | 'stoneSoon' | 'stoneFar' | 'noTreat' | 'dogFar';
 
 /** What happened during a hunt's step (the play layer's sounds, toasts and bubbles read them; the hunt never calls them). */
 export type HuntEvent =
@@ -1290,6 +1290,3 @@ function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
       if (ok && d[j] < 0 && open(j)) (d[j] = d[t] + 1), queue.push(j);
   }
 }
-
-/** What a tile is, for the frame's footsteps and the view (re-exported for the play layer). */
-export { DECO };

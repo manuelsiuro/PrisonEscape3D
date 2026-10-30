@@ -80,7 +80,7 @@ export interface Rat {
 export const RAT_TRAP = itemNumber('rat_trap');
 export const CAUGHT_RAT = itemNumber('caught_rat');
 /** What a caught rat eats (the first found in the hotbar, in this order) and a trap is baited with. */
-export const BAIT: readonly number[] = ['potato', 'chocolate', 'jerky'].map(itemNumber);
+const BAIT: readonly number[] = ['potato', 'chocolate', 'jerky'].map(itemNumber);
 /** Where rats come to a trap on the ground floor (TRAP_KITCHEN). */
 export const RAT_ROOMS: readonly ZoneId[] = ['kitchen', 'canteen', 'storeroom'];
 const ROOMS = new Set(RAT_ROOMS.map(zoneIndex));
@@ -96,7 +96,7 @@ export function trapChance(w: World, layer: number, tile: number): number {
 }
 
 /** Where a rat can run on the ground floor: any floor, under any door, over a wall or fence where a duct runs above it; never outside the walls. */
-export function ratWay(w: World, t: number): boolean {
+function ratWay(w: World, t: number): boolean {
   if (w.ground.zone[t] === OUTSIDE) return false;
   const k = w.ground.kind[t];
   if (k === TILE.DOOR || !TILE_INFO[k].solid) return k !== TILE.WATER;
@@ -161,7 +161,7 @@ export interface RatTarget {
 }
 
 /** Asleep (in bed, dozing at a nap stop) or out cold: someone whose pockets a rat can go through. */
-export function sleeper(s: { inmates: readonly Inmate[]; guards: readonly Guard[] }, who: number): boolean {
+function sleeper(s: { inmates: readonly Inmate[]; guards: readonly Guard[] }, who: number): boolean {
   const n = s.inmates.length;
   if (who < n) {
     const m = s.inmates[who];

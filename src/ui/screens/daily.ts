@@ -17,10 +17,10 @@ import { prisonName, securityOf } from './prisons';
  */
 
 /** "Monday 2 November" in the player's language (the Daily's own date, wherever they are). */
-export const dailyDay = (n: number) => new Intl.DateTimeFormat(currentLang(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(dailyDate(n));
+const dailyDay = (n: number) => new Intl.DateTimeFormat(currentLang(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(dailyDate(n));
 
 /** The share text: the Daily, the medal and the day, the tries, the strip, the streak and the check code (nothing of how). */
-export function shareText(n: number, best: { medal: Medal | null; day: number; tries: number; strip: readonly number[]; code: string }, streak: number): string {
+function shareText(n: number, best: { medal: Medal | null; day: number; tries: number; strip: readonly number[]; code: string }, streak: number): string {
   return [
     `Prison Escape 3D · ${t('daily.name', { n: n + 1 })}`,
     `${best.medal ? `${t(`medal.${best.medal}` as Key)} · ` : ''}${t('hud.day', { n: best.day })} · ${t(best.tries === 1 ? 'daily.tries1' : 'daily.tries', { n: best.tries })}`,
@@ -31,7 +31,7 @@ export function shareText(n: number, best: { medal: Medal | null; day: number; t
 }
 
 /** Shares through the phone's share sheet (Web Share), or copies to the clipboard (a desktop's sheet is no handier than a paste); what happened, for a word on the button. */
-export async function share(text: string): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
+async function share(text: string): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
   try {
     if (TOUCH && navigator.share) {
       await navigator.share({ text });

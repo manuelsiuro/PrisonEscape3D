@@ -196,7 +196,7 @@ export function stopHunt(g: Game | null) {
 
 // ------------------------------------------------------------------ the player's input
 /** The action button / E: clothes off a washing line, a cut at the wire, a treat for a dog in reach. */
-export function huntAct() {
+function huntAct() {
   const run = play.game?.hunt;
   if (!run || run.ended || play.game!.paused) return;
   const a = actionOf(run.hunt);
@@ -211,7 +211,7 @@ export function huntAct() {
 }
 
 /** The stone button / Space: thrown ahead to draw them off. */
-export function huntStone() {
+function huntStone() {
   const run = play.game?.hunt;
   if (!run || run.ended || play.game!.paused) return;
   const h = run.hunt;

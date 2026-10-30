@@ -22,7 +22,7 @@ const MERGE_STEPS = 60 * STEPS_PER_MINUTE;
 /** Quiet stretches shorter than this aren't worth a skip. */
 const QUIET_MIN = 2 * STEPS_PER_MINUTE;
 
-export const HIGHLIGHTS = ['caught', 'lockdown', 'ko', 'mishap', 'through', 'tunnel', 'vents', 'roof', 'power', 'takeover', 'stow', 'bluff', 'glide', 'release', 'escape', 'parole'] as const;
+const HIGHLIGHTS = ['caught', 'lockdown', 'ko', 'mishap', 'through', 'tunnel', 'vents', 'roof', 'power', 'takeover', 'stow', 'bluff', 'glide', 'release', 'escape', 'parole'] as const;
 export type HighlightKind = (typeof HIGHLIGHTS)[number];
 
 /** Each highlight's icon on the scrubber. */

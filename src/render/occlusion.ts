@@ -11,7 +11,7 @@ import * as THREE from 'three';
  * A screen-space ordered dither (4×4 Bayer) instead of transparency: no sorting, no
  * double-blended walls, and it holds up on phones.
  */
-export const occlusionUniforms = {
+const occlusionUniforms = {
   /** The player's mid-body on screen, in drawing-buffer pixels (gl_FragCoord space). */
   uOccFocus: { value: new THREE.Vector2(-1e5, -1e5) },
   /** The player's world z: only geometry south of it (toward the camera) is cut. */

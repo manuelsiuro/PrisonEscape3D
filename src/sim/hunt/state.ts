@@ -89,7 +89,7 @@ export interface HuntDog {
   stuck: number;
 }
 
-export interface Heli {
+interface Heli {
   /** Up (it comes with the alarm's age). */
   on: boolean;
   x: number;

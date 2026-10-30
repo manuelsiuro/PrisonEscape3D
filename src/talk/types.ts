@@ -13,7 +13,7 @@ export type GuardVoice = (typeof GUARD_VOICES)[number];
 export type Voice = InmateVoice | GuardVoice;
 
 /** When a line fits: every tag it lists must hold now. */
-export const TAGS = ['night', 'morning', 'evening', 'day1', 'newbie', 'freeTime', 'veteran', 'suburban', 'alpine', 'industrial', 'desert', 'island', 'rich', 'broke', 'heatHigh', 'hostile', 'outdoors', 'indoors'] as const;
+const TAGS = ['night', 'morning', 'evening', 'day1', 'newbie', 'freeTime', 'veteran', 'suburban', 'alpine', 'industrial', 'desert', 'island', 'rich', 'broke', 'heatHigh', 'hostile', 'outdoors', 'indoors'] as const;
 export type Tag = (typeof TAGS)[number];
 
 /**

@@ -1,6 +1,6 @@
 import { itemDef, itemNumber, type ItemDef } from '../../content/items';
 import { lineOfSight } from '../ai/sight';
-import { GUARD_SWING_STEPS, INMATE_SWING_STEPS, LOCK_RANGE, MELEE_REACH, RIOT_DEFENSE, UNIT } from '../tuning';
+import { LOCK_RANGE, MELEE_REACH, RIOT_DEFENSE, UNIT } from '../tuning';
 import type { World } from '../world/World';
 import type { Body } from './movement';
 
@@ -46,14 +46,13 @@ export const reachOf = (weapon: ItemDef | null) => (weapon?.reach ? Math.round(w
 
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
 const GUARD_OUTFIT = itemNumber('guard_outfit');
-export const BATON = itemNumber('baton');
+const BATON = itemNumber('baton');
 /** Inmates wear the orange outfit, guards their uniform. */
 export const INMATE_DEFENSE = itemDef(INMATE_OUTFIT).defense ?? 0;
 export const GUARD_DEFENSE = itemDef(GUARD_OUTFIT).defense ?? 0;
 export const BATON_ATTACK = itemDef(BATON).attack ?? 0;
 /** A guard's defense: its uniform's, or a riot guard's plates (P12). */
 export const guardDefense = (w: World, k: number) => (w.def.guards[k]?.riot ? RIOT_DEFENSE : GUARD_DEFENSE);
-export { GUARD_SWING_STEPS, INMATE_SWING_STEPS };
 
 /**
  * People, as the combat sees them: the inmates first, then the guards. A person's id is its
@@ -65,7 +64,7 @@ export interface Cast {
 }
 export const personOf = (c: Cast, id: number): Fighter | undefined => (id < 0 ? undefined : id < c.inmates.length ? c.inmates[id] : c.guards[id - c.inmates.length]);
 export const isGuard = (c: Cast, id: number) => id >= c.inmates.length;
-export const peopleCount = (c: Cast) => c.inmates.length + c.guards.length;
+const peopleCount = (c: Cast) => c.inmates.length + c.guards.length;
 
 /** Squared distance between two bodies (units²). */
 export const dist2 = (a: Body, b: Body) => (a.x - b.x) ** 2 + (a.z - b.z) ** 2;

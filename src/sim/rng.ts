@@ -3,7 +3,7 @@
  * save or a keyframe carries it and replays draw the same numbers. Never use Math.random in
  * the simulation.
  */
-export function nextRandom(s: { rng: number }): number {
+function nextRandom(s: { rng: number }): number {
   let t = (s.rng = (s.rng + 0x6d2b79f5) | 0);
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);

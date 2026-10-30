@@ -60,7 +60,7 @@ export function launch(sim: SimContext) {
 export const helicopterIn = (sim: SimContext) => ROUTINE[sim.state.routine].id === 'lightsOut';
 
 /** Whether every guard of the helipad is out cold (GDD §4.5: knock out the helipad guards). */
-export function helipadClear(sim: SimContext): boolean {
+function helipadClear(sim: SimContext): boolean {
   const defs = sim.world.def.guards;
   return sim.state.guards.every((g, k) => !defs[k]?.helipad || g.ko > 0);
 }

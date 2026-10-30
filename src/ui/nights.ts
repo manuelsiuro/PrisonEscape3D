@@ -19,7 +19,7 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** One of the night's acts, as the card lists it. */
-export interface ActRow {
+interface ActRow {
   name: string;
   inst: number;
   song: number;

@@ -46,7 +46,7 @@ export function freedLeft(sim: Sim, a: number): number | null {
   if (!freedNow(s)) return null;
   return Math.max(0, (s.release[1] - s.step - a) / STEPS_PER_SECOND);
 }
-export const FREED_SECS = FREED_STEPS / STEPS_PER_SECOND;
+const FREED_SECS = FREED_STEPS / STEPS_PER_SECOND;
 
 /** The name on today's list still to report: the chip's words; on tomorrow's: the night ahead's ('' nothing). */
 export function releaseChip(sim: Sim): string {

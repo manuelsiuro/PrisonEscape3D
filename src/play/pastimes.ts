@@ -49,7 +49,7 @@ let endUntil = 0;
 let deals = 0;
 
 /** The last shot at the hoop as it's shown: who (−1 the player, else the inmate), from where, how it went, when it left the hand. */
-export interface BallShow {
+interface BallShow {
   by: number;
   fromX: number;
   fromZ: number;
@@ -60,8 +60,8 @@ export interface BallShow {
 }
 let ball: BallShow | null = null;
 /** How long a shot is in the air (s), and how long a miss rolls about after (s). */
-export const FLIGHT_S = 0.9;
-export const AFTER_S = 1.2;
+const FLIGHT_S = 0.9;
+const AFTER_S = 1.2;
 
 /** A new game (or a load): nothing to show. */
 export function resetPastimes() {

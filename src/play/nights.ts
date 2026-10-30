@@ -1,5 +1,5 @@
 import { buzz } from '../app/haptics';
-import { CHARTS, countIn, INSTRUMENT, QUIZ_PRIZE, QUIZ_RANGE, SONGS } from '../content/nights';
+import { CHARTS, countIn, INSTRUMENT, QUIZ_PRIZE, SONGS } from '../content/nights';
 import { KEY_ITEM_COLORS } from '../content/items';
 import { listOf, t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
@@ -236,7 +236,7 @@ export function lanePress(lane: number) {
   onLane(lane);
 }
 /** The card's pad lit, set by the overlay. */
-export let onLane: (lane: number) => void = () => {};
+let onLane: (lane: number) => void = () => {};
 export const setLaneFlash = (f: (lane: number) => void) => (onLane = f);
 
 // ------------------------------------------------------------------ the events
@@ -413,4 +413,3 @@ export function nightsFrameOf(sim: Sim): NightsFrame {
 
 /** The key colours' names (quiz questions), for the i18n test. */
 export const COLOURS = KEY_ITEM_COLORS.map(([c]) => c);
-export { QUIZ_RANGE };

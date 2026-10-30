@@ -249,7 +249,7 @@ export function hearingDue(s: Pick<SimState, 'parole' | 'step' | 'hearing'>): bo
 }
 
 /** In the hearing room, up and about on the ground floor. */
-export function inHearingRoom(sim: SimContext): boolean {
+function inHearingRoom(sim: SimContext): boolean {
   const h = hearingOf(sim);
   const s = sim.state;
   if (!h || s.layer !== LAYER.GROUND || sim.away || s.stowed || s.sleeping) return false;
@@ -288,7 +288,7 @@ export function questionNow(s: Pick<SimState, 'hearing'>): { member: number; top
 }
 
 /** The player's answer (EXT.PAROLE ANSWER, c: ANSWER) while a question is put and not yet answered. */
-export function answerBoard(sim: SimContext, choice: number) {
+function answerBoard(sim: SimContext, choice: number) {
   const s = sim.state;
   const o = s.hearing;
   if (!o || o.q < 0 || o.until || o.said[o.q] !== -1 || choice < 0 || choice > 2) return;

@@ -20,7 +20,7 @@ export const twist = (s: { readonly mods: readonly string[] }, id: TwistId): boo
 /** Eagle Eyes: how many tiles further guards see (the weather still caps them out in the open). */
 export const EAGLE_SIGHT = 2;
 /** Short Fuse: what a guard watching adds, ×3/2 (rounded up); heat cools at half the pace. */
-export const FUSE_DECAY = 2;
+const FUSE_DECAY = 2;
 /** How often heat cools a point while nobody looks (steps). */
 export const coolEvery = (s: { readonly mods: readonly string[] }) => (twist(s, 'shortFuse') ? HEAT_DECAY_STEPS * FUSE_DECAY : HEAT_DECAY_STEPS);
 /** What a guard's eye adds to the heat as it trickles in (a step's worth: under 100). */

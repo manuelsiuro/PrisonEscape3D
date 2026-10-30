@@ -45,7 +45,7 @@ export const HOLIDAY_DAY: Record<HolidayDay, HolidayDayDef> = {
 };
 
 /** A holiday's days come round again this many prison days later (a run that lasts weeks keeps its holiday). */
-export const HOLIDAY_WEEK = 7;
+const HOLIDAY_WEEK = 7;
 
 /** The holiday days falling on a prison day for a run's holiday (none on day 1, the escape bots' day). */
 export function holidayDaysOn(holiday: number, day: number): HolidayDay[] {

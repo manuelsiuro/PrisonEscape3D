@@ -231,7 +231,7 @@ export interface Replayed {
 }
 
 /** Whether a game version came before the pay phone (2.10.0): nobody queued for it then. */
-export function beforePhone(game: string): boolean {
+function beforePhone(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
@@ -239,7 +239,7 @@ export function beforePhone(game: string): boolean {
 }
 
 /** Whether a game version came before the day's events (1.11.0): its days were all quiet. */
-export function beforeDays(game: string): boolean {
+function beforeDays(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
@@ -247,7 +247,7 @@ export function beforeDays(game: string): boolean {
 }
 
 /** Whether a game version came before the guard dogs (1.13.0). */
-export function beforeDogs(game: string): boolean {
+function beforeDogs(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
@@ -255,7 +255,7 @@ export function beforeDogs(game: string): boolean {
 }
 
 /** Whether a game version came before the pet rat (1.14.0): a guard who woke without his key raised nothing then. */
-export function beforeRats(game: string): boolean {
+function beforeRats(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
@@ -263,7 +263,7 @@ export function beforeRats(game: string): boolean {
 }
 
 /** Whether a game version came before visiting day (1.15.0): the card it took the place of was dealt then. */
-export function beforeVisits(game: string): boolean {
+function beforeVisits(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
@@ -271,7 +271,7 @@ export function beforeVisits(game: string): boolean {
 }
 
 /** Whether a game version came before sports day (1.16.0): the card it took the place of was dealt then. */
-export function beforeSports(game: string): boolean {
+function beforeSports(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
@@ -295,7 +295,7 @@ export function beforeFixes(game: string): boolean {
 }
 
 /** Whether a game version came before the easier quiz, football and race nights (2.16.0): Sim.rules215 plays it as it was. */
-export function beforeEasier(game: string): boolean {
+function beforeEasier(game: string): boolean {
   const m = /^(\d+)\.(\d+)\./.exec(game);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];

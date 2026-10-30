@@ -64,7 +64,7 @@ export function wayOpen(d: SmugglingDef | undefined, way: number): boolean {
 }
 
 /** The drone's hours here (minutes into the prison day). */
-export const droneHours = (d: SmugglingDef) => d.droneHours ?? DRONE_HOURS;
+const droneHours = (d: SmugglingDef) => d.droneHours ?? DRONE_HOURS;
 
 /** The minute the drone comes on a night (minutes into the prison day): drawn in its hours. */
 export function droneMinute(sim: Pick<SimContext, 'world' | 'state'>, day: number): number {
@@ -73,7 +73,7 @@ export function droneMinute(sim: Pick<SimContext, 'world' | 'state'>, day: numbe
 }
 
 /** Whether the drone flies on a day's night: never in a storm (a blizzard at Stalag Flucht). */
-export const droneFlies = (sim: Pick<SimContext, 'prison' | 'state'>, day: number) => planOf(sim, day).weather !== 'storm';
+const droneFlies = (sim: Pick<SimContext, 'prison' | 'state'>, day: number) => planOf(sim, day).weather !== 'storm';
 
 /** The first prison day an order placed now may come: a drone tonight with notice enough (else tomorrow night), a visitor from tomorrow. */
 export function firstDay(sim: Pick<SimContext, 'world' | 'state'>, way: number): number {
@@ -488,6 +488,3 @@ export const visitRoom = (sim: Pick<SimContext, 'world'>): Rect | null => smuggl
 
 /** A ground tile is inside a rectangle. */
 export { inRect };
-
-/** How long the visitor takes to come (steps), for the card on screen. */
-export { VISIT_STEPS };

@@ -261,7 +261,7 @@ function choose(n: number, k: number): number {
  * can't see (all but its hand and what it laid itself this round) hold the true ones it doesn't;
  * the player's hand as it was held at least as many as were laid. Exact, in integers.
  */
-export function claimOdds(c: Cheat): number {
+function claimOdds(c: Cheat): number {
   const n = c.last.length;
   const total = DECK[c.table - 1] + DECK[CARD.JOKER - 1];
   const laid = c.laid;

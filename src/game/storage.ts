@@ -49,7 +49,7 @@ export type StorageKey = (typeof KEYS)[keyof typeof KEYS] | ReturnType<typeof re
 /** The keys "Reset progress" wipes (and every prison's best replay: resetProgress). */
 export const PROGRESS_KEYS: StorageKey[] = [KEYS.escapes, KEYS.saveAuto, KEYS.save1, KEYS.save2, KEYS.save3, KEYS.lessons, KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log1, KEYS.log2, KEYS.log3, KEYS.replayLast, KEYS.daily, KEYS.saveDaily, KEYS.logDaily];
 
-export function readText(key: StorageKey): string | null {
+function readText(key: StorageKey): string | null {
   try {
     return localStorage.getItem(key);
   } catch {
@@ -57,7 +57,7 @@ export function readText(key: StorageKey): string | null {
   }
 }
 
-export function writeText(key: StorageKey, value: string): boolean {
+function writeText(key: StorageKey, value: string): boolean {
   try {
     localStorage.setItem(key, value);
     return true;

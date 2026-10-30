@@ -51,7 +51,7 @@ const AUX = 3;
 const NIGHT = 4;
 
 /** The line of work each order needs (FOLLOW and NIGHT: anyone's). */
-export const LINE_OF: Readonly<Partial<Record<number, Speciality>>> = {
+const LINE_OF: Readonly<Partial<Record<number, Speciality>>> = {
   [ORDER.WATCH]: 'lookout',
   [ORDER.DIG]: 'digger',
   [ORDER.BACK]: 'muscle',
@@ -544,7 +544,7 @@ export function backedBy(sim: SimContext): number {
 export const allyDamage = (s: { crew: number[][] }, who: number, dmg: number) => (orderOf(s, who) === ORDER.BACK ? Math.floor((dmg * BACK_HELP) / 2) : dmg);
 
 /** The ways out the crew can come along on (never through a hole, down a rope, or hidden in a vehicle). */
-export const CREW_ROUTES: ReadonlySet<EscapeRoute> = new Set(['fence', 'gate', 'takeover', 'raft', 'helicopter']);
+const CREW_ROUTES: ReadonlySet<EscapeRoute> = new Set(['fence', 'gate', 'takeover', 'raft', 'helicopter']);
 
 /** Who slips out with the player (inmate indexes): the crew up and about within CREW_ESCAPE_REACH of them, on a way out they can take. */
 export function crewEscape(sim: SimContext, via: EscapeRoute): number[] {
@@ -568,7 +568,7 @@ const depth: number[] = [];
  * across the sea, a wall or a shaft). Doors count as open, a cut fence as a way through; props
  * are stepped round. The point's own tile always counts as reached (the player on a raft).
  */
-export function onFoot(w: World, from: { x: number; z: number }, to: { x: number; z: number }, steps: number): boolean {
+function onFoot(w: World, from: { x: number; z: number }, to: { x: number; z: number }, steps: number): boolean {
   const start = tileAt(from.x, from.z);
   const goal = tileAt(to.x, to.z);
   if (start === goal) return true;

@@ -26,52 +26,6 @@ export function closeOverlay(el: HTMLElement, ms = 250) {
   setTimeout(() => el.remove(), ms);
 }
 
-/**
- * Makes a sideways row of cards easy to scroll with a mouse: arrow buttons over its ends
- * (hidden at either end, and on touch screens) and the vertical wheel scrolling it sideways.
- * Wraps the row in a `.carousel` element.
- */
-export function carousel(row: HTMLElement, arrow: (dir: 'left' | 'right') => string) {
-  const wrap = document.createElement('div');
-  wrap.className = 'carousel';
-  row.replaceWith(wrap);
-  const prev = document.createElement('button');
-  prev.className = 'carousel-arrow prev';
-  prev.setAttribute('aria-label', 'Scroll left');
-  prev.innerHTML = arrow('left');
-  const next = document.createElement('button');
-  next.className = 'carousel-arrow next';
-  next.setAttribute('aria-label', 'Scroll right');
-  next.innerHTML = arrow('right');
-  wrap.append(prev, row, next);
-  const update = () => {
-    prev.disabled = row.scrollLeft <= 4;
-    next.disabled = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
-  };
-  const page = (dir: number) => row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' });
-  prev.onclick = (e) => {
-    e.stopPropagation();
-    page(-1);
-  };
-  next.onclick = (e) => {
-    e.stopPropagation();
-    page(1);
-  };
-  row.addEventListener('scroll', update, { passive: true });
-  row.addEventListener(
-    'wheel',
-    (e) => {
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || row.scrollWidth <= row.clientWidth) return;
-      e.preventDefault();
-      row.scrollLeft += e.deltaY;
-    },
-    { passive: false },
-  );
-  addEventListener('resize', update);
-  requestAnimationFrame(update);
-  return update;
-}
-
 /** An arrow key in a radio group: +1 (right, down), -1 (left, up), else 0. Taken from the page's keys (they'd walk the player). */
 export function arrowStep(e: KeyboardEvent): number {
   const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;

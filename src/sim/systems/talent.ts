@@ -67,7 +67,7 @@ export interface Act {
 export const stageOf = (w: World): Stage | null => w.def.leisure?.stage ?? null;
 
 /** The way a face points, as tile steps (1 east, 5 south, 9 west, 13 north). */
-export const faceStep = (face: number): [number, number] => (face === 1 ? [1, 0] : face === 5 ? [0, 1] : face === 9 ? [-1, 0] : [0, -1]);
+const faceStep = (face: number): [number, number] => (face === 1 ? [1, 0] : face === 5 ? [0, 1] : face === 9 ? [-1, 0] : [0, -1]);
 
 /** The stage's boards (tiles): the performer's and one either side across it, then the row in front. */
 export function boardsOf(st: Stage): number[] {
@@ -79,7 +79,7 @@ export function boardsOf(st: Stage): number[] {
 }
 
 /** Whether a point (units) is on the stage's boards. */
-export function onStage(st: Stage, x: number, z: number): boolean {
+function onStage(st: Stage, x: number, z: number): boolean {
   return boardsOf(st).includes(Math.floor(z / UNIT) * MAP_W + Math.floor(x / UNIT));
 }
 
@@ -229,7 +229,7 @@ export function startShow(sim: SimContext, song: number, inst: number) {
 }
 
 /** Steps into the song (after the count-in): negative while it's counted in. */
-export const songTime = (s: Pick<SimState, 'step'>, o: Show) => s.step - o.from - countIn(o.song);
+const songTime = (s: Pick<SimState, 'step'>, o: Show) => s.step - o.from - countIn(o.song);
 
 /** A press in a lane (EXT.NOTE): the nearest note not yet played in that lane, within the window, or a stray. */
 export function playNote(sim: SimContext, lane: number) {

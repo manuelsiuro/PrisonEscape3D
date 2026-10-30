@@ -18,7 +18,7 @@ export interface PhoneWay {
 }
 
 /** An entry of the catalogue. */
-export interface PhoneRow {
+interface PhoneRow {
   k: number;
   item: number;
   name: string;

@@ -14,7 +14,7 @@ export type Key = keyof Strings;
 const TABLES: Record<Lang, Partial<Strings>> = { en, fr };
 let lang: Lang = 'en';
 
-export const detectLang = (): Lang => (navigator.language?.toLowerCase().startsWith('fr') ? 'fr' : 'en');
+const detectLang = (): Lang => (navigator.language?.toLowerCase().startsWith('fr') ? 'fr' : 'en');
 
 export function setLang(l: Lang | 'auto') {
   // An unknown stored value falls back to the browser's language.

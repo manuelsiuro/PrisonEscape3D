@@ -70,7 +70,7 @@ export function typo(lang: Lang, s: string): string {
 export const PLAYER = { name: '' };
 
 /** What the prison calls the player: the fish for two days, then a name earned (or "kid"). */
-export function nickOf(sim: Sim): Nick {
+function nickOf(sim: Sim): Nick {
   const s = sim.state;
   if (sim.clock.day <= 2) return 'fish';
   if (s.tally[1] >= 8) return 'mole';
@@ -90,7 +90,7 @@ export function nameOf(sim: Sim, id: number): string | null {
 }
 
 /** Today's dish for the meal at hand (breakfast until free time, then the evening meal), or tonight's. */
-export function mealOf(lang: Lang, sim: Sim, tonight = false): string {
+function mealOf(lang: Lang, sim: Sim, tonight = false): string {
   const c = sim.clock;
   const kind = !tonight && c.minuteOfDay < 10 * 60 ? 'breakfast' : 'dinner';
   const list = MEALS[lang][kind];

@@ -126,7 +126,7 @@ export const CHAIN_DAY = 2;
  * A step of a story chain: its kind and variant, who it's about (a cell; 0: the guard drawn for
  * it, or nobody), and what it ends with. The one who asks is the chain's own (`ChainDef.who`).
  */
-export interface ChainStep {
+interface ChainStep {
   kind: number;
   variant: number;
   target: number;

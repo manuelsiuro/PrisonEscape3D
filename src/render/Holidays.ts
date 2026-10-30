@@ -461,7 +461,7 @@ export function holidayDecor(w: World, kind: number): HolidayPiece[] {
  * over open floor with nothing standing on it (`blocked`: furniture, the other summer pieces) and
  * lands on the sports ground; null if none does.
  */
-export function hoseAim(w: World, blocked: (t: number) => boolean, ground: ReadonlySet<number>, t: number): { dx: number; dz: number; reach: number } | null {
+function hoseAim(w: World, blocked: (t: number) => boolean, ground: ReadonlySet<number>, t: number): { dx: number; dz: number; reach: number } | null {
   const x = t % MAP_W;
   const z = Math.floor(t / MAP_W);
   const edge = edgeAt(w, t);
@@ -487,12 +487,12 @@ export function hoseAim(w: World, blocked: (t: number) => boolean, ground: Reado
 }
 
 /** How far a hose's jet reaches from its wall (tiles). */
-export const HOSE_REACH = 3;
+const HOSE_REACH = 3;
 /** A hose's three jets fan out this far either side (radians), and the fan sways this much more. */
 export const HOSE_FAN = 0.2;
 export const HOSE_SWAY = 0.15;
 /** A parasol stands more than this many tiles from a doorway or an opening (its canopy and deckchairs off the way in), and off its lane (lanesOf). */
-export const PARASOL_CLEAR = 2;
+const PARASOL_CLEAR = 2;
 /** The way in through a doorway: this many tiles straight on from it, a tile either side (lanesOf). */
 export const LANE = 4;
 
@@ -509,7 +509,7 @@ const chebyshev = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b %
  * places). Nothing goes on either; what spreads over its neighbours (a canopy, a tree's boughs)
  * may reach over a pitch's paint, never a thing.
  */
-export function holidayTaken(w: World): { things: Set<number>; grounds: Set<number>; edges: Set<number> } {
+function holidayTaken(w: World): { things: Set<number>; grounds: Set<number>; edges: Set<number> } {
   const things = new Set<number>();
   const grounds = new Set<number>();
   const edges = new Set<number>();
@@ -556,7 +556,7 @@ export function courtRect(c: { x: number; z: number; face: number }): [number, n
 }
 
 /** A doorway (a door, a detector arch, or an opening between two rooms with no door: openingsOf) within this many tiles: kept clear for whoever comes through. */
-export function nearDoor(w: World, t: number, r: number): boolean {
+function nearDoor(w: World, t: number, r: number): boolean {
   const open = openingsOf(w);
   const x0 = t % MAP_W;
   const z0 = Math.floor(t / MAP_W);
@@ -577,7 +577,7 @@ const OPENINGS = new WeakMap<World, Set<number>>();
  * tiles across, where the floor on one side is another zone's: Irongate's canteen's south opening,
  * Center Perks' yard's ways in): each tile of the gap. A doorway to the decor, like a door.
  */
-export function openingsOf(w: World): ReadonlySet<number> {
+function openingsOf(w: World): ReadonlySet<number> {
   const had = OPENINGS.get(w);
   if (had) return had;
   const got = new Set<number>();
@@ -612,7 +612,7 @@ export function openingsOf(w: World): ReadonlySet<number> {
  * either side, LANE tiles deep (and `wide` tiles either side of it), where people walk in and out
  * and the guide's path runs: nothing stands in line with a doorway, nothing big beside that line.
  */
-export function lanesOf(w: World, wide: 0 | 1 = 1): ReadonlySet<number> {
+function lanesOf(w: World, wide: 0 | 1 = 1): ReadonlySet<number> {
   const open = openingsOf(w);
   const got = new Set<number>();
   const floor = (x: number, z: number) => x >= 0 && z >= 0 && x < MAP_W && z < MAP_H && !TILE_INFO[w.ground.kind[z * MAP_W + x]].solid;
@@ -634,10 +634,10 @@ export function lanesOf(w: World, wide: 0 | 1 = 1): ReadonlySet<number> {
 }
 
 /** An opening this many tiles across at most is a way through a wall (wider, two spaces open to each other). */
-export const OPENING_WIDE = 4;
+const OPENING_WIDE = 4;
 
 /** A passage a tile wide (walls, or something standing, either side): nothing set down in it. */
-export function narrowAt(w: World, things: ReadonlySet<number>, t: number): boolean {
+function narrowAt(w: World, things: ReadonlySet<number>, t: number): boolean {
   const x = t % MAP_W;
   const z = Math.floor(t / MAP_W);
   const shut = (xx: number, zz: number) => solidAt(w, xx, zz) || things.has(zz * MAP_W + xx);
@@ -645,7 +645,7 @@ export function narrowAt(w: World, things: ReadonlySet<number>, t: number): bool
 }
 
 /** A fence (its wire, its razor coil) on any tile round this one: decor keeps a tile off. */
-export function nearFence(w: World, t: number): boolean {
+function nearFence(w: World, t: number): boolean {
   const x0 = t % MAP_W;
   const z0 = Math.floor(t / MAP_W);
   for (let z = z0 - 1; z <= z0 + 1; z++) {
@@ -663,7 +663,7 @@ export function nearFence(w: World, t: number): boolean {
  * (nothing touches the wire); null if neither, or if a wall stands just south of it (from the
  * camera, a wall south of a thing hides it; a fence is seen through).
  */
-export function edgeAt(w: World, t: number): [number, number] | null {
+function edgeAt(w: World, t: number): [number, number] | null {
   const x = t % MAP_W;
   const z = Math.floor(t / MAP_W);
   if (wallAt(w, x, z + 1)) return null;
@@ -686,7 +686,7 @@ function solidAt(w: World, x: number, z: number): boolean {
 }
 
 /** A wall that stands tall and hides what's behind it (brick, reinforced, a tower; a fence is seen through). */
-export function wallAt(w: World, x: number, z: number): boolean {
+function wallAt(w: World, x: number, z: number): boolean {
   if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) return false;
   const i = TILE_INFO[w.ground.kind[z * MAP_W + x]];
   return i.solid && i.opaque;

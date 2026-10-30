@@ -20,14 +20,14 @@ import { announcePa, dayTime } from './day';
  * floats). Nothing here touches the simulation: the holiday came into the run when it began.
  */
 
-export const HOLIDAY_ICON: Record<HolidayDay, string> = { eggHunt: 'egg', waterFight: 'splash', costumeNight: 'pumpkin', christmasDay: 'tree', newYearsEve: 'sparkle' };
-export const HOLIDAY_COLOR: Record<HolidayDay, string> = { eggHunt: '#f7a8c8', waterFight: '#5fc8ff', costumeNight: '#ff8a2a', christmasDay: '#4fbf6a', newYearsEve: '#ffd23f' };
+const HOLIDAY_ICON: Record<HolidayDay, string> = { eggHunt: 'egg', waterFight: 'splash', costumeNight: 'pumpkin', christmasDay: 'tree', newYearsEve: 'sparkle' };
+const HOLIDAY_COLOR: Record<HolidayDay, string> = { eggHunt: '#f7a8c8', waterFight: '#5fc8ff', costumeNight: '#ff8a2a', christmasDay: '#4fbf6a', newYearsEve: '#ffd23f' };
 
 /** The holiday a new run in this prison begins under: Settings and the date (none in the Training Block). */
 export const newRunHoliday = (prison: PrisonDef): number => (DAY_BOOKS[prison.id] ? runHoliday(settings) : 0);
 
 /** The holiday's name ("Halloween"). */
-export const holidayName = (kind: number) => t(`holiday.name.${HOLIDAYS[kind] ?? 'none'}` as Key);
+const holidayName = (kind: number) => t(`holiday.name.${HOLIDAYS[kind] ?? 'none'}` as Key);
 
 /** The holiday the picture dresses for: the run's own, else (a Daily: it plays without one) the date's (never a holiday picked in Settings; none with holidays off). */
 const dailyDecor = new WeakMap<Sim, number>();
@@ -68,7 +68,7 @@ export function holidayMorning(sim: Sim, day: number): string {
 }
 
 /** The treats on offer at the open furniture (its table), as take buttons: their `what` past 100 (play/long.ts sends EXT.HOLIDAY for those). */
-export const TREAT_OFFSET = HOLIDAY_TAKE;
+const TREAT_OFFSET = HOLIDAY_TAKE;
 const offers: Array<{ what: number; label: string; why: string }> = [];
 const TREAT_LABEL: readonly Key[] = ['holiday.take.lolly', 'holiday.take.costume', 'holiday.take.pumpkin', 'holiday.take.gift'];
 export function treatOffers(sim: Sim, table: string): ReadonlyArray<{ what: number; label: string; why: string }> {

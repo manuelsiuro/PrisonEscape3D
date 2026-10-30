@@ -392,7 +392,7 @@ function shove(w: World, grid: Uint8Array, b: Body, dir: number, speed: number):
  * Goes for someone: straight at them when close with nothing between, else along a path
  * re-planned now and then. Stops at arm's length, facing them.
  */
-export function closeIn(c: Crowd, m: Walker, k: number, foe: Body, speed: number, gap = STAND_OFF) {
+function closeIn(c: Crowd, m: Walker, k: number, foe: Body, speed: number, gap = STAND_OFF) {
   const b = m.body;
   const dx = foe.x - b.x;
   const dz = foe.z - b.z;

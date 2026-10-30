@@ -40,7 +40,7 @@ addEventListener('appinstalled', () => {
 });
 
 /** Running as the installed app (or just installed from this page). */
-export function isInstalled(): boolean {
+function isInstalled(): boolean {
   return (
     justInstalled ||
     (navigator as { standalone?: boolean }).standalone === true ||

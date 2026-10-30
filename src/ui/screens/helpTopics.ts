@@ -14,7 +14,7 @@
  */
 export type HelpTab = 'basics' | 'life' | 'escape' | 'controls';
 
-export type Diagram = 'schedule' | 'meter' | 'timeline' | 'bars' | 'pockets' | 'pins' | 'medals';
+type Diagram = 'schedule' | 'meter' | 'timeline' | 'bars' | 'pockets' | 'pins' | 'medals';
 
 export interface HelpTopic {
   id: string;

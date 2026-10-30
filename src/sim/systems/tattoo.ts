@@ -34,7 +34,7 @@ import { crowdPlan } from './calendar';
 import { tileAt } from '../ai/path';
 
 export const TATTOO_GUN = itemNumber('tattoo_gun');
-export const INK = itemNumber('ink');
+const INK = itemNumber('ink');
 
 /** A sitting under way (P29): plain data in the state. */
 export interface Ink {
@@ -65,7 +65,7 @@ const lengths: number[][] = DESIGNS.map((d) => {
   }
   return at;
 });
-export const pathLength = (design: number) => lengths[design][lengths[design].length - 1];
+const pathLength = (design: number) => lengths[design][lengths[design].length - 1];
 
 /** How long a tracing takes (steps): the lead-in, then the pen along the whole path. */
 export const traceSteps = (design: number) => LEAD_IN + Math.ceil(pathLength(design) / PEN_SPEED);
@@ -94,7 +94,7 @@ export function qualityOf(err: number, steps: number): number {
 /** What a design traced at a quality pays (dollars). */
 export const payOf = (design: number, quality: number) => Math.floor((DESIGNS[design].price * (PAY_MIN + Math.floor((PAY_SPAN * quality) / 100))) / 100);
 /** What it does for the client's opinion. */
-export const gainOf = (quality: number) => INK_GAIN_BASE + Math.floor((INK_GAIN * quality) / 100);
+const gainOf = (quality: number) => INK_GAIN_BASE + Math.floor((INK_GAIN * quality) / 100);
 
 /** Tattoos given to inmates today. */
 export const inksToday = (s: Pick<SimState, 'inkDays' | 'step'>) => s.inkDays.filter((d) => d === prisonDay(s.step)).length;
@@ -228,4 +228,3 @@ export function endInk(sim: SimContext, how: 'done' | 'quit' | 'off') {
 
 /** The client (or the friend) stays by the player meanwhile (socialNow). */
 export const inkPartner = (s: Pick<SimState, 'ink'>) => s.ink?.who ?? -1;
-export { INK_OPINION, FRIEND_INK };

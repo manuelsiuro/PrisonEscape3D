@@ -56,13 +56,13 @@ const CANOPY_CUT = 0.82;
  * (which looks north): it is turned this far toward the camera (radians) about the rim, which
  * stays where the court has it (render/Pastimes.ts RIM_Y and the court's tile).
  */
-export const HOOP_TURN = 0.6;
+const HOOP_TURN = 0.6;
 /** The rim's middle in the hoop's model (tiles, from the tile's middle; facing +z). */
 export const HOOP_RIM = { y: 2.32, z: -0.02 };
 /** The backboard: its width, thickness and middle (z, behind the rim). */
 export const HOOP_BOARD = { w: 0.9, d: 0.04, z: -0.24 };
 /** The extra turn a decor piece gets toward the camera (radians about y; 0 for most). */
-export const cameraTurn = (kind: DecorKind, rot: number): number => (kind !== 'hoop' ? 0 : rot === 1 ? -HOOP_TURN : rot === 3 ? HOOP_TURN : 0);
+const cameraTurn = (kind: DecorKind, rot: number): number => (kind !== 'hoop' ? 0 : rot === 1 ? -HOOP_TURN : rot === 3 ? HOOP_TURN : 0);
 /** The base turn of a decor piece by its `rot` (0 south, 1 east, 2 north, 3 west). */
 export const ROT_ANGLE = [0, Math.PI / 2, Math.PI, -Math.PI / 2] as const;
 

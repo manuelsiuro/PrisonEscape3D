@@ -629,7 +629,7 @@ function goal(sim: SimContext, o: Match, f: Field, end: number, l: number) {
 const fullTime = (sim: SimContext, o: Match) => endMatch(sim, o.goals[0] > o.goals[1] ? 'won' : o.goals[0] < o.goals[1] ? 'lost' : 'draw');
 
 /** How a match ended: won, lost, drawn, off (the sirens, someone gone), or a foul (a brawl). */
-export function endMatch(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off' | 'foul') {
+function endMatch(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off' | 'foul') {
   const s = sim.state;
   const o = s.match;
   if (!o) return;

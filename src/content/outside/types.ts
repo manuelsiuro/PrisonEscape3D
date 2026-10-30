@@ -35,7 +35,7 @@ export type SafeKind = 'bus' | 'border' | 'train' | 'truck' | 'coach';
  * alarm and moves each a few seconds by the run's salt, starts each beat at a stop of its own,
  * and never brings anyone on within HUNT.clear tiles of the player or in their sight.
  */
-export interface SearcherDef {
+interface SearcherDef {
   /** Its surname (the same in every language). */
   name: string;
   /** Where it comes on (an edge of the map, a gate); its beat's first stop if none. A patrol out before any alarm is already on its beat, at one of its stops. */
@@ -48,7 +48,7 @@ export interface SearcherDef {
 }
 
 /** A roadblock: the tiles its barrier closes, the officer's post beside it, and when it goes up (seconds after the alarm). */
-export interface RoadblockDef {
+interface RoadblockDef {
   area: Area;
   post: Spot;
   at: number;
