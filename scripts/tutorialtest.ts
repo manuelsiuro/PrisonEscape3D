@@ -35,7 +35,7 @@ import { UNIT } from '../src/sim/tuning';
 
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
 import { LAYER, MAP_W, tileOfKey } from '../src/sim/world/World';
-import { CHAPTERS, LESSONS, myDesk, type LessonCtx } from '../src/tutorial/lessons';
+import { CHAPTERS, LESSONS } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
 import { CALLEE, JOB, TIER } from '../src/content/phone';
 import { phrasesOf } from '../src/sim/systems/phone';
@@ -48,6 +48,7 @@ import { dealsOf, jobOf } from '../src/sim/systems/oddjobs';
 import { BOARD, J, KIND, STAGE } from '../src/content/oddjobs';
 import { check } from './assert';
 import { aimToss } from '../src/sim/systems/throwing';
+import { type LessonCtx, myDesk } from '../src/tutorial/kit';
 
 const tile = (x: number, z: number) => z * MAP_W + x;
 

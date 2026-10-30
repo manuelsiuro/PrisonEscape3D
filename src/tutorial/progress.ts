@@ -1,7 +1,7 @@
 import { OVER } from '../sim/hunt/state';
 import type { Sim, SimEvent } from '../sim/Sim';
 import type { Key } from '../i18n';
-import type { Lesson, LessonCtx } from './lessons';
+import { type Lesson, type LessonCtx } from './kit';
 
 /** What ends any lesson, whatever its step (it's tried again): caught, knocked out, shocked by a live fence (each wakes the player with their kit taken). */
 const ENDS: Partial<Record<SimEvent['type'], Key>> = { caught: 'lesson.failed', floored: 'lesson.knocked', shocked: 'lesson.shocked' };

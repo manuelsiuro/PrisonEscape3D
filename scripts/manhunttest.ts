@@ -24,10 +24,11 @@ import { command, DIR_X, DIR_Z, EXT, OP, tossArgs } from '../src/sim/command';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { tileAt } from '../src/sim/world/grid';
 import { lineOfSight } from '../src/sim/ai/sight';
-import { LESSONS, type LessonCtx } from '../src/tutorial/lessons';
+import { LESSONS } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
 import { check } from './assert';
 import { TILE } from '../src/sim/world/tiles';
+import { type LessonCtx } from '../src/tutorial/kit';
 
 const N = MAP_W * MAP_H;
 const cheb = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));

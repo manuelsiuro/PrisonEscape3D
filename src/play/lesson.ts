@@ -4,12 +4,13 @@ import { LAYER } from '../sim/world/World';
 import { t, type Key } from '../i18n';
 import { en } from '../i18n/en';
 import type { SimEvent } from '../sim/Sim';
-import { chapterOf, LESSONS, type LessonCtx } from '../tutorial/lessons';
+import { chapterOf, LESSONS } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
 import { LessonCard, showLessonResult, type LessonResult } from '../ui/lessonCard';
 import { showObjectives, type Objectives } from '../ui/screens/objectives';
 import { board, click, controls, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, talk, tools, view } from './context';
 import { play, type Game } from './game';
+import { type LessonCtx } from '../tutorial/kit';
 
 /**
  * A tutorial lesson under way (P8+): its steps ticked off as the game shows them done, the

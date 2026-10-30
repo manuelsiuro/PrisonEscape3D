@@ -1,7 +1,8 @@
 import { t, type Key } from '../../i18n';
-import { CHAPTERS, type Lesson } from '../../tutorial/lessons';
+import { CHAPTERS } from '../../tutorial/lessons';
 import { h } from '../dom';
 import { icon } from '../icons';
+import { type Lesson } from '../../tutorial/kit';
 
 /**
  * The tutorial (P8+): the lessons in order by chapter (each chapter a heading with how many of
