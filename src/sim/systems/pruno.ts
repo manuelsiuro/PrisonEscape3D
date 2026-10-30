@@ -20,6 +20,7 @@ import { itemOf, slot, usesOf } from './items';
 import type { Body } from './movement';
 import { makeNoise } from './noise';
 import { tileAt } from '../world/grid';
+import { propReach } from './rest';
 
 const PRUNO_BAG = itemNumber('pruno_bag');
 const PRUNO = itemNumber('pruno');
@@ -60,10 +61,7 @@ export function brewNear(sim: SimContext, b: Body): number {
   const list = containersOf(sim.world);
   for (let i = 0; i < list.length; i++) {
     if (!s.items.containers[i].some((v) => isBrew(itemOf(v)))) continue;
-    const p = list[i].prop;
-    const dx = Math.max(p.x * UNIT - b.x, 0, b.x - (p.x + p.w) * UNIT);
-    const dz = Math.max(p.z * UNIT - b.z, 0, b.z - (p.z + p.d) * UNIT);
-    if (Math.max(dx, dz) <= BREW_SNIFF) return i;
+    if (propReach(list[i].prop, b.x, b.z) <= BREW_SNIFF) return i;
   }
   return -1;
 }

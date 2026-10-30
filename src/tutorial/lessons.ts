@@ -19,7 +19,7 @@ import { clockAt } from '../sim/systems/clock';
 import { GUARD } from '../sim/systems/guards';
 import { itemOf, slot, usesOf } from '../sim/systems/items';
 import { NOISE_LOOK, STEPS_PER_MINUTE, TRUST_IGNORE, UNIT } from '../sim/tuning';
-import { containersOf } from '../sim/world/containers';
+import { containersOf, playerDesk } from '../sim/world/containers';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { CENTER_PERKS } from '../content/prisons/center-perks';
@@ -151,9 +151,7 @@ function pockets(sim: Sim, ...ids: string[]) {
   for (let k = 0; k < 6; k++) inv[k] = ids[k] ? slot(n(ids[k])) : 0;
 }
 /** The player's desk (container index). */
-export function myDesk(sim: Sim): number {
-  return containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'desk');
-}
+export const myDesk = (sim: Sim) => playerDesk(sim.world);
 /** Empties a container, then puts items in from its first slot (hidden ones first). */
 function fill(sim: Sim, box: number, ...ids: string[]) {
   const c = sim.state.items.containers[box];

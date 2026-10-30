@@ -5,6 +5,7 @@ import { DIR_X, DIR_Z } from '../command';
 import { MAX_DISCOUNT, OPINION_START, UNIT } from '../tuning';
 import { MAP_W, type Prop, type World } from '../world/World';
 import { freeHotbar, hotbarSlotOf, itemOf } from './items';
+import { propReach } from './rest';
 import type { Body } from './movement';
 
 /**
@@ -73,13 +74,6 @@ export function jobRooms(w: World): JobRoom[] {
   return list;
 }
 
-/** Distance (units) from a body to a prop's footprint, along the larger axis. */
-function reachOfProp(p: Prop, b: Body): number {
-  const dx = Math.max(p.x * UNIT - b.x, 0, b.x - (p.x + p.w) * UNIT);
-  const dz = Math.max(p.z * UNIT - b.z, 0, b.z - (p.z + p.d) * UNIT);
-  return Math.max(dx, dz);
-}
-
 /** How close to a job station, the job board or gym equipment the player must stand (units). */
 export const STATION_REACH = Math.round(UNIT * 0.85);
 
@@ -96,7 +90,7 @@ export function nearestProp(w: World, b: Body, ok: (p: Prop, i: number) => boole
   let bestScore = Infinity;
   w.props.forEach((p, i) => {
     if (!ok(p, i)) return;
-    const d = reachOfProp(p, b);
+    const d = propReach(p, b.x, b.z);
     if (d > reach) return;
     const sc = d - (faces(p, b) ? UNIT / 3 : 0);
     if (sc < bestScore) {

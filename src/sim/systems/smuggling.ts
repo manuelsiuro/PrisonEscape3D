@@ -30,7 +30,7 @@ import type { Refusal } from '../state';
 import { STEPS_PER_MINUTE, UNIT } from '../tuning';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, placeKey, tileOfKey, type World } from '../world/World';
-import { containersOf } from '../world/containers';
+import { containersOf, playerDesk } from '../world/containers';
 import { eventOn, planOf, today, TODAY } from './calendar';
 import { dayMinute, prisonDay } from './clock';
 import { awake } from './guards';
@@ -450,14 +450,6 @@ function visit(sim: SimContext) {
   birthdayAtVisit(sim);
 }
 
-/** The player's desk (a container index; -1 none). */
-const desks = new WeakMap<World, number>();
-function myDesk(w: World): number {
-  let k = desks.get(w);
-  if (k === undefined) desks.set(w, (k = containersOf(w).findIndex((c) => c.mine && c.prop.kind === 'desk')));
-  return k;
-}
-
 /**
  * The Red Cross parcel (Stalag Flucht), from 14:45 on delivery day: seized if the day's search
  * was thorough and it's contraband, else into the player's desk (full: it waits for room until the day is out).
@@ -470,7 +462,7 @@ function parcel(sim: SimContext, m: number) {
     sim.events.push({ type: 'smuggle', what: 'parcelSeized', item });
     return;
   }
-  const desk = myDesk(sim.world);
+  const desk = playerDesk(sim.world);
   const box = desk >= 0 ? s.items.containers[desk] : null;
   // (In the desk's open slots: never put away in its hidden compartment for the player.)
   const free = box ? box.indexOf(0, containersOf(sim.world)[desk].hidden) : -1;

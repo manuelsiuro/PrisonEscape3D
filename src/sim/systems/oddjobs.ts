@@ -29,9 +29,9 @@ import { isFloor, placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { OddJobFail, Refusal, SimState } from '../state';
-import { STEPS_PER_MINUTE, UNIT } from '../tuning';
-import { containersOf } from '../world/containers';
-import { LAYER, MAP_W } from '../world/World';
+import { STEPS_PER_MINUTE } from '../tuning';
+import { containersOf, deskRoom } from '../world/containers';
+import { MAP_W } from '../world/World';
 import { dayMinute, planOf, prisonDay, TODAY, today } from './calendar';
 import { DAY_STEPS } from './clock';
 import { elderOf } from './checkers';
@@ -46,6 +46,7 @@ import { fixerOf, smugglingOf } from './smuggling';
 import { addHeat } from './watch';
 import { lookingAway } from './ways';
 import { centerX, centerZ, tilesFrom, tileX, tileZ } from '../world/grid';
+import { atFixture, playerUp } from './presence';
 
 export { R } from '../../content/oddjobs';
 
@@ -73,11 +74,7 @@ export const boardOf = (sim: Pick<SimContext, 'world'>) => (sim.world.def.rules?
 /** At the board: on its tile or one beside it, in its room, up and about on the ground floor. */
 export function atBoard(sim: SimContext): boolean {
   const b = boardOf(sim);
-  const s = sim.state;
-  if (!b || s.layer !== LAYER.GROUND || sim.away || s.stowed || s.sleeping || s.ko > 0) return false;
-  const x = Math.floor(s.player.x / UNIT);
-  const z = Math.floor(s.player.z / UNIT);
-  return Math.max(Math.abs(x - b.x), Math.abs(z - b.z)) <= 1 && sim.world.zoneAt(x, z) === sim.world.zoneAt(b.x, b.z);
+  return !!b && atFixture(sim, b);
 }
 
 /** The job held (null: none). */
@@ -416,7 +413,7 @@ function takeBack(sim: SimContext, job: readonly number[]) {
   const k = carrying(s, gives);
   if (k >= 0) s.items.inv[k] = 0;
   else {
-    const { desk } = ownDesk(sim);
+    const { desk } = deskRoom(sim.world, sim.state.items.containers);
     const box = desk >= 0 ? s.items.containers[desk] : null;
     const j = box ? box.findIndex((v) => itemOf(v) === gives) : -1;
     if (j < 0) return;
@@ -614,8 +611,7 @@ const offTile = (tile: number, b: { x: number; z: number }) => tilesFrom(tileX(t
 /** The player keeps watch: up and about on the ground floor, within WATCH_TILES of the digger's door. */
 function onWatch(sim: SimContext): boolean {
   const d = digOf(sim);
-  const s = sim.state;
-  return !!d && s.layer === LAYER.GROUND && !sim.away && !s.stowed && !s.sleeping && s.ko <= 0 && offTile(d.door, s.player) <= WATCH_TILES;
+  return !!d && playerUp(sim) && offTile(d.door, sim.state.player) <= WATCH_TILES;
 }
 
 /** The digger at it now: in the free time, the player on watch, not hiding from a whistle. */
@@ -732,14 +728,6 @@ const mark: Body = bodyAt(0, 0);
 
 // ------------------------------------------------------------------ the birthday cake
 
-/** The player's own desk (-1 none) and its first open drawer past the hidden compartment (-1 full). */
-function ownDesk(sim: SimContext): { desk: number; free: number } {
-  const list = containersOf(sim.world);
-  const desk = list.findIndex((c) => c.mine && c.prop.kind === 'desk');
-  const box = desk >= 0 ? sim.state.items.containers[desk] : null;
-  return { desk, free: box ? box.indexOf(0, list[desk].hidden) : -1 };
-}
-
 /**
  * The birthday cake comes in: at a visit into the hotbar, else (no room) the desk; in the Red Cross
  * parcel (`parcel`) into the desk, else the hotbar. Neither has room: it waits (once a day told why).
@@ -747,7 +735,7 @@ function ownDesk(sim: SimContext): { desk: number; free: number } {
 function cakeIn(sim: SimContext, job: number[], parcel: boolean) {
   const s = sim.state;
   const hot = freeHotbar(s.items.inv);
-  const own = ownDesk(sim);
+  const own = deskRoom(sim.world, sim.state.items.containers);
   const toDesk = own.free >= 0 && (parcel || hot < 0);
   if (!toDesk && hot < 0) {
     const day = prisonDay(s.step);

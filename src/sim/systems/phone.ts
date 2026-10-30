@@ -32,8 +32,8 @@ import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import type { Call, Refusal, SimState } from '../state';
 import { ANGRY_STEPS, CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../tuning';
-import { LAYER, MAP_W } from '../world/World';
-import { containersOf } from '../world/containers';
+import { MAP_W } from '../world/World';
+import { deskRoom } from '../world/containers';
 import { crowdPlan, dayMinute, drillOn, prisonDay, TODAY, today } from './calendar';
 import { assign, awake, GUARD, traitOf } from './guards';
 import { DOING } from './inmates';
@@ -45,6 +45,7 @@ import { smugglingOf } from './smuggling';
 import { lookingAway } from './ways';
 import { addHeat } from './watch';
 import { tilesFrom } from '../world/grid';
+import { playerUp } from './presence';
 
 export const CAKE = itemNumber('cake');
 const FILE = itemNumber('metal_file');
@@ -61,17 +62,13 @@ export const phoneOpen = (sim: SimContext) => !!commsOf(sim) && sim.fixerOpen &&
 const offBy = (t: { x: number; z: number }, x: number, z: number) => tilesFrom(t.x, t.z, x, z);
 
 /** Where the player is, as the phone sees it: at it (a tile from where the caller stands), within the queue's reach. */
-function playerAbout(sim: SimContext) {
-  const s = sim.state;
-  return s.layer === LAYER.GROUND && !sim.away && !s.stowed && !s.sleeping && s.ko <= 0;
-}
 export function atPhone(sim: SimContext): boolean {
   const c = commsOf(sim);
-  return !!c && playerAbout(sim) && offBy(c.phone, sim.state.player.x, sim.state.player.z) <= 1;
+  return !!c && playerUp(sim) && offBy(c.phone, sim.state.player.x, sim.state.player.z) <= 1;
 }
 export function byPhone(sim: SimContext): boolean {
   const c = commsOf(sim);
-  if (!c || !playerAbout(sim) || offBy(c.phone, sim.state.player.x, sim.state.player.z) > LINE_REACH) return false;
+  if (!c || !playerUp(sim) || offBy(c.phone, sim.state.player.x, sim.state.player.z) > LINE_REACH) return false;
   // (In the phone's own room: not behind a wall beside it.)
   const p = sim.state.player;
   return sim.world.zoneAt(Math.floor(p.x / UNIT), Math.floor(p.z / UNIT)) === sim.world.zoneAt(c.phone.x, c.phone.z);
@@ -210,7 +207,7 @@ function booth(sim: SimContext, c: CommsDef) {
   }
   if (s.step >= s.booth[1]) return void (s.booth = [-1, 0, 0, 0]);
   // Listening in: close by, on the ground, not on a call of their own.
-  if (playerAbout(sim) && !s.call && Math.max(Math.abs(s.player.x - m.body.x), Math.abs(s.player.z - m.body.z)) <= OVERHEAR_RANGE * UNIT + UNIT / 2) {
+  if (playerUp(sim) && !s.call && Math.max(Math.abs(s.player.x - m.body.x), Math.abs(s.player.z - m.body.z)) <= OVERHEAR_RANGE * UNIT + UNIT / 2) {
     const day = prisonDay(s.step);
     if (s.phoned[5] !== day) {
       s.phoned[4] = 0;
@@ -670,10 +667,8 @@ function cakeParcel(sim: SimContext) {
     sim.events.push({ type: 'phone', what: 'cakeSeized' });
     return;
   }
-  const w = sim.world;
-  const desk = containersOf(w).findIndex((c) => c.mine && c.prop.kind === 'desk');
+  const { desk, free } = deskRoom(sim.world, s.items.containers);
   const box = desk >= 0 ? s.items.containers[desk] : null;
-  const free = box ? box.indexOf(0, containersOf(w)[desk].hidden) : -1;
   if (!box || free < 0) return;
   box[free] = slot(CAKE);
   s.items.rev++;

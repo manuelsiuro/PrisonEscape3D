@@ -27,8 +27,8 @@ import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { ATTRS, type Refusal, type SimState } from '../state';
-import { ATTR_MAX, STEPS_PER_MINUTE, UNIT } from '../tuning';
-import { containersOf } from '../world/containers';
+import { ATTR_MAX, STEPS_PER_MINUTE } from '../tuning';
+import { deskRoom } from '../world/containers';
 import { dayMinute, prisonDay } from './calendar';
 import { clockAt } from './clock';
 import { routineEnd } from '../../content/routine';
@@ -39,7 +39,7 @@ import { endTalk, refuse } from './social';
 import { HOLLOW_BOOK } from './structure';
 import { stopTraining } from './training';
 import { powered } from './power';
-import { LAYER } from '../world/World';
+import { atFixture } from './presence';
 
 
 /** The prison's kiosk: where the player stands to use it (none at the Training Block). */
@@ -51,11 +51,7 @@ export const kioskOpen = (sim: SimContext) => !!kioskOf(sim) && phoneOpen(sim) &
 /** At the kiosk: on its tile or one beside it, in the library (not through its wall). */
 export function atKiosk(sim: SimContext): boolean {
   const k = kioskOf(sim);
-  const s = sim.state;
-  if (!k || s.layer !== LAYER.GROUND || sim.away || s.stowed || s.sleeping || s.ko > 0) return false;
-  const x = Math.floor(s.player.x / UNIT);
-  const z = Math.floor(s.player.z / UNIT);
-  return Math.max(Math.abs(x - k.x), Math.abs(z - k.z)) <= 1 && sim.world.zoneAt(x, z) === sim.world.zoneAt(k.x, k.z);
+  return !!k && atFixture(sim, k);
 }
 
 /** Logged in (time paid for): the step it runs out at, 0 when logged out. */
@@ -242,11 +238,9 @@ function mailCall(sim: SimContext) {
   }
   const item = s.post[3];
   if (!item) return;
-  const list = containersOf(sim.world);
-  const desk = list.findIndex((c) => c.mine && c.prop.kind === 'desk');
-  const box = desk >= 0 ? s.items.containers[desk] : null;
   // (The open drawers only: never into the hidden ones, the first `hidden` slots, kept for what's hidden.)
-  const free = box ? box.indexOf(0, list[desk].hidden) : -1;
+  const { desk, free } = deskRoom(sim.world, s.items.containers);
+  const box = desk >= 0 ? s.items.containers[desk] : null;
   if (!box || free < 0) return void sim.events.push({ type: 'kiosk', what: 'goodsWait', item });
   box[free] = slot(item);
   s.items.rev++;

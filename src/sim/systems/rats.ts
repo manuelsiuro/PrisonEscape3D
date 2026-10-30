@@ -34,6 +34,7 @@ import { DOING, type Inmate } from './inmates';
 import { freeHotbar, giveSlot, guardKit, HOTBAR, itemOf, ownerOf, pocketOf, slot, usesOf } from './items';
 import { makeNoise } from './noise';
 import { RAT_START_SPEED } from '../../content/long';
+import { playerAbout } from './presence';
 
 /** What a rat is up to. Never renumber: saves store them. */
 export const RAT = {
@@ -173,7 +174,6 @@ function sleeper(s: { inmates: readonly Inmate[]; guards: readonly Guard[] }, wh
 }
 
 /** The player up and about on the ground floor (not hidden, out cold, in solitary). */
-const about = (sim: SimContext) => sim.state.layer === LAYER.GROUND && !sim.state.stowed && !sim.away;
 
 /** Where the player stands (a ground tile). */
 const playerTile = (sim: SimContext) => tileAt(sim.state.player.x, sim.state.player.z);
@@ -188,7 +188,7 @@ export function ratTargets(sim: SimContext, out: RatTarget[] = []): RatTarget[] 
   out.length = 0;
   const s = sim.state;
   const pet = petOf(s);
-  if (!pet || pet.mode !== RAT.SHOULDER || !about(sim) || s.sleeping) return out;
+  if (!pet || pet.mode !== RAT.SHOULDER || !playerAbout(sim) || s.sleeping) return out;
   const w = sim.world;
   search(w, playerTile(sim), RAT_REACH);
   containersOf(w).forEach((c, i) => {
@@ -226,7 +226,7 @@ export function sendRat(sim: SimContext, container: number, leave: boolean) {
   const s = sim.state;
   const it = s.items;
   const pet = petOf(s);
-  if (!pet || pet.mode !== RAT.SHOULDER || !about(sim) || s.sleeping) return;
+  if (!pet || pet.mode !== RAT.SHOULDER || !playerAbout(sim) || s.sleeping) return;
   const held = it.inv[it.hand];
   if (leave && (it.hand >= HOTBAR || !held || !itemDef(itemOf(held)).small)) return refuse(sim, 'big');
   const to = ratTargets(sim, targetScratch).find((x) => x.container === container);
@@ -283,7 +283,7 @@ export function looseCheck(sim: SimContext): { why: RatRefusal | null; n: number
 export function looseRat(sim: SimContext) {
   const s = sim.state;
   const pet = petOf(s);
-  if (!pet || pet.mode !== RAT.SHOULDER || !about(sim) || s.sleeping) return;
+  if (!pet || pet.mode !== RAT.SHOULDER || !playerAbout(sim) || s.sleeping) return;
   const { why, n } = looseCheck(sim);
   if (why) return refuse(sim, why, n);
   pet.looseDay = prisonDay(s.step);
@@ -405,7 +405,7 @@ function stepRat(sim: SimContext, r: Rat): boolean {
       if (run(r, RAT_SPEED)) errand(sim, r);
       return false;
     case RAT.BACK: {
-      if (!about(sim)) {
+      if (!playerAbout(sim)) {
         r.mode = RAT.WAIT;
         return false;
       }
@@ -420,7 +420,7 @@ function stepRat(sim: SimContext, r: Rat): boolean {
       return false;
     }
     case RAT.WAIT:
-      if (s.step % 20 === 0 && about(sim)) headHome(sim, r);
+      if (s.step % 20 === 0 && playerAbout(sim)) headHome(sim, r);
       return false;
     case RAT.LOOSE:
       if (s.step >= r.until) {
@@ -514,7 +514,7 @@ function errand(sim: SimContext, r: Rat) {
 
 /** Back to the player along its way (RAT_HOME tiles at most), or waiting where it is for them. */
 function headHome(sim: SimContext, r: Rat) {
-  if (!about(sim)) {
+  if (!playerAbout(sim)) {
     r.mode = RAT.WAIT;
     return;
   }
