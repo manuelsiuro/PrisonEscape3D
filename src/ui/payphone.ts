@@ -1,11 +1,10 @@
 import { currentLang, t } from '../i18n';
 import { CALLEE, JOB, LAWYER } from '../content/phone';
 import { EXT, LINE, OP } from '../sim/command';
-import { h, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { pad2 } from '../sim/systems/clock';
 
-type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
 /**
  * The pay phone (P34) on screen: its card at the phone. The dial (home, the lawyer, cousin Lou,
@@ -15,7 +14,6 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
  * fills from the sim (play/payphone.ts): the sim's own functions decide everything shown.
  */
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** What can be called, as the dial lists it: `id` names its text, `b` and `c` what's sent. */
 export interface DialRow {

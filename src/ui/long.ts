@@ -2,10 +2,9 @@ import { BETS } from '../content/long';
 import { currentLang, t } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { RACE_ENTER } from '../sim/systems/races';
-import { arrowStep, h, setText } from './dom';
+import { arrowStep, esc, h, type Send, setText } from './dom';
 import { icon } from './icons';
 
-type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
 /**
  * Long games (P28) on screen: the race card at the track on a race night (the rats, their form
@@ -14,7 +13,6 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
  * race are the sim's own pure functions. Every button is an OP.EXT RACE.
  */
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** A lane on the card. */
 export interface RaceLane {

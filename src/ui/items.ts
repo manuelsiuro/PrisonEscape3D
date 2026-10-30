@@ -7,7 +7,7 @@ import { ALARM_CLOCK, HOLLOW_BOOK } from '../sim/systems/structure';
 import { clockRinging, clockSecs } from '../sim/systems/noise';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, t, type Key } from '../i18n';
-import { h, setText, TOUCH } from './dom';
+import { h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
 /** What the item UI shows each frame. */
@@ -34,7 +34,6 @@ export interface ItemsView {
   take: ReadonlyArray<{ what: number; label: string; why: string }>;
 }
 
-type Send = (op: number, a?: number, b?: number) => void;
 
 /** P42: take buttons past this `what` are a holiday's treats (play/holidays.ts TREAT_OFFSET), each with its icon. */
 export const HOLIDAY_TAKE = 100;

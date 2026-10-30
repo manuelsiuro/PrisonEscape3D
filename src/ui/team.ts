@@ -1,11 +1,10 @@
 import { DESIGNS } from '../content/team';
 import { currentLang, t } from '../i18n';
 import { EXT, OP } from '../sim/command';
-import { h, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { pad2 } from '../sim/systems/clock';
 
-type Send = (op: number, a?: number, b?: number, c?: number) => void;
 
 /**
  * Team & ink (P29) on screen: the match's card (the score, the clock, what to do, the Kick pad
@@ -14,7 +13,6 @@ type Send = (op: number, a?: number, b?: number, c?: number) => void;
  * sim (play/team.ts): the sim's own functions decide everything shown.
  */
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** A match as its card shows it. */
 export interface MatchView {

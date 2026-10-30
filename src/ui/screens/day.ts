@@ -1,5 +1,5 @@
 import { t } from '../../i18n';
-import { TOUCH, h } from '../dom';
+import { esc, h, TOUCH } from '../dom';
 import { icon } from '../icons';
 
 /** A chip at the card's head: today's event, the weather (or tomorrow's). */
@@ -60,7 +60,6 @@ export interface DayView {
   tomorrow: { label: string; chips: DayChip[] } | null;
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 const chip = (c: DayChip) =>
   `<span class="dc-chip" style="--c:${c.color}"><span class="dc-chip-ic">${icon(c.icon, 14)}</span><b>${esc(c.text)}</b>${c.when ? `<em>${esc(c.when)}</em>` : ''}</span>`;

@@ -1,5 +1,5 @@
 import { currentLang, t } from '../i18n';
-import { h, setText, TOUCH } from './dom';
+import { esc, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
 /** One place the rat can be sent (P20). */
@@ -33,7 +33,6 @@ export interface RatView {
   looseNote: string;
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /**
  * The pet rat's panel (P20): its name and what it's up to (a polite live region, written in

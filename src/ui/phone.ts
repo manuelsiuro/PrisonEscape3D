@@ -1,8 +1,7 @@
 import { currentLang, t } from '../i18n';
 import { itemIcons } from '../render/itemIcons';
-import { h, setText, TOUCH } from './dom';
+import { confirmed, esc, h, setText, TOUCH } from './dom';
 import { icon } from './icons';
-import { confirmed } from './social';
 
 /** A way an order can come (P21): by drone, with a visitor or in a Red Cross parcel. */
 export interface PhoneWay {
@@ -40,7 +39,6 @@ export interface PhoneView {
   cash: number;
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /**
  * The burner phone's panel (P21): the order on its way (a polite live region, written in

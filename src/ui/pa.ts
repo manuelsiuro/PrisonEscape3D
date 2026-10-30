@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { fadeOut, h, TOUCH } from './dom';
+import { esc, fadeOut, h, TOUCH } from './dom';
 import { icon } from './icons';
 
 /** A row of the morning card: what's on, the weather. */
@@ -290,4 +290,3 @@ export class PaBoard {
   }
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
