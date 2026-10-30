@@ -3,11 +3,12 @@ import { itemDef, itemNumber } from '../content/items';
 import type { World } from '../sim/world/World';
 import { MAP_H, MAP_W } from '../sim/world/World';
 import { TILE_INFO } from '../sim/world/tiles';
-import { Character, type Look } from './Character';
+import { Character } from './Character';
 import { now, type Later } from './batch';
 import { itemGeometry } from './itemModels';
 import { WALL_H } from './WorldView';
 import { canvasTexture } from './canvas';
+import { type Look } from './look';
 
 /** What the day's events look like this frame (P17). */
 export interface EventsFrame {

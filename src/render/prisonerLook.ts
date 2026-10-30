@@ -1,6 +1,6 @@
 import { cosmetic, DEFAULT_PRISONER, type LookPart, type Prisoner } from '../content/prisoner';
-import { INMATE_LOOK, type Look } from './Character';
 import { DESIGNS } from '../content/team';
+import { INMATE_LOOK, type Look } from './look';
 
 /** The guards' uniform colours (Character.guardLook): worn in disguise, the cap comes with them. */
 const GUARD_TROUSERS = 0x1f2c44;

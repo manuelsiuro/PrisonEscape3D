@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Pitch } from '../content/prisons/types';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
-import { Character, guardLook, INMATE_LOOK, inmateLook, type BedPose, type Look } from './Character';
+import { Character, type BedPose } from './Character';
 import { Cones } from './Cones';
 import { Security } from './Security';
 import { ALERT } from '../sim/systems/guards';
@@ -51,6 +51,7 @@ import { OddJobsView } from './OddJobs';
 import { ReleaseView } from './Release';
 import { handlersOf } from '../sim/systems/k9';
 import type { Frame, Quality } from './viewFrame';
+import { guardLook, INMATE_LOOK, inmateLook, type Look } from './look';
 
 /** The old-timer's hair (P27): white with age. */
 const ELDER_HAIR = 0xd8d3c8;

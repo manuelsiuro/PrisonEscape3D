@@ -15,7 +15,7 @@ const mem = new Map<string, string>();
 
 const { COSMETICS, DEFAULT_PRISONER, LOOK_PARTS, NAME_MAX, cleanName, cosmeticsOf, fitPrisoner } = await import('../src/content/prisoner');
 const { lookFor } = await import('../src/render/prisonerLook');
-const { INMATE_LOOK } = await import('../src/render/Character');
+const { INMATE_LOOK } = await import('../src/render/look');
 const { itemDef, itemNumber } = await import('../src/content/items');
 const { en } = await import('../src/i18n/en');
 const { fr } = await import('../src/i18n/fr');
