@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { sideX, sideZ } from '../sim/command';
 import { towers } from '../sim/systems/security';
 import { BEAM_RADIUS, CAMERA_RANGE, UNIT } from '../sim/tuning';
 import { TILE } from '../sim/world/tiles';
@@ -116,11 +116,9 @@ export class Security {
     const darkMat = new THREE.MeshStandardMaterial({ color: 0x2b3038, roughness: 0.4, metalness: 0.5 });
     const tapeMat = new THREE.MeshStandardMaterial({ color: 0x9aa2ad, roughness: 0.9 });
     (world.def.cameras ?? []).forEach((c) => {
-      const fx = DIR_X[c.face] / 1024;
-      const fz = DIR_Z[c.face] / 1024;
       // Against the wall behind it (snapped to the nearer side).
-      const bx = Math.abs(fx) >= Math.abs(fz) ? -Math.sign(fx) : 0;
-      const bz = Math.abs(fx) >= Math.abs(fz) ? 0 : -Math.sign(fz);
+      const bx = -sideX(c.face);
+      const bz = -sideZ(c.face);
       const x = c.x + 0.5 + bx * 0.42;
       const z = c.z + 0.5 + bz * 0.42;
       const y = WALL_H - 0.18;

@@ -36,6 +36,7 @@ import { keepHoops } from './hoops';
 import { keepCheckers } from './checkers';
 import { keepMatch } from './football';
 import { keepInk } from './tattoo';
+import { centerX, centerZ } from '../world/grid';
 
 export const LOCKPICK = itemNumber('lockpick');
 
@@ -332,8 +333,8 @@ export function pickLock(sim: SimContext, tile: number) {
   stopTraining(sim);
   const p = s.player;
   p.moving = false;
-  const dx = (tile % MAP_W) * UNIT + UNIT / 2 - p.x;
-  const dz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2 - p.z;
+  const dx = centerX(tile) - p.x;
+  const dz = centerZ(tile) - p.z;
   if (dx || dz) p.facing = nearestDir(dx, dz);
   s.pick = [tile, 0, s.step];
   sim.events.push({ type: 'pick', what: 'start', tile, pin: 0, of: pinsOf(sim.world, tile) });

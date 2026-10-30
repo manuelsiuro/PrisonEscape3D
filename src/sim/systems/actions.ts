@@ -14,14 +14,14 @@ import { digHelp, recall } from './crew';
 import { itemDef, itemNumber } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
 import { nearestDir } from '../ai/path';
-import { tileAt } from '../world/grid';
+import { centerX, centerZ, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import { argA, argB, argC, EXT, OP, opOf, tossTile } from '../command';
 import type { SimContext } from '../context';
 import { SPOT, WAKE, type LayerMove } from '../state';
 import { freshMeals } from './grounds';
 import { FRESH_ENERGY, FRESH_HEALTH } from '../tuning';
-import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, ENERGY_REGEN_STEPS, HEALTH_REGEN_STEPS, KO_STEPS, MEAL_ENERGY, MEAL_STEPS, SHARPEN_STROKES, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS, UNIT } from '../tuning';
+import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, ENERGY_REGEN_STEPS, HEALTH_REGEN_STEPS, KO_STEPS, MEAL_ENERGY, MEAL_STEPS, SHARPEN_STROKES, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS } from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_W, placeKey } from '../world/World';
@@ -414,8 +414,8 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   it.rev++;
   // Face what is struck (the grate overhead keeps the heading).
   if (target.tile >= 0 && target.action !== 'digUp' && target.action !== 'unscrew') {
-    const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
-    const dz = Math.floor(target.tile / MAP_W) * UNIT + UNIT / 2 - p.z;
+    const dx = centerX(target.tile) - p.x;
+    const dz = centerZ(target.tile) - p.z;
     if (dx || dz) p.facing = nearestDir(dx, dz);
   }
   p.moving = false;
@@ -535,8 +535,8 @@ function sharpen(sim: SimContext, target: ToolTarget, held: number) {
   const noise = strikeNoise(s.layer, target, held);
   if (noise) makeNoise(sim, 'strike', noise.layer, noise.tile, noise.reach);
   p.moving = false;
-  const dx = (target.tile % MAP_W) * UNIT + UNIT / 2 - p.x;
-  const dz = Math.floor(target.tile / MAP_W) * UNIT + UNIT / 2 - p.z;
+  const dx = centerX(target.tile) - p.x;
+  const dz = centerZ(target.tile) - p.z;
   if (dx || dz) p.facing = nearestDir(dx, dz);
   const strokes = usesOf(v) + 1;
   it.rev++;
@@ -674,8 +674,8 @@ function moveTo(sim: SimContext, layer: number, tile: number, how: LayerMove) {
   s.layer = layer;
   // Back on the ground floor, the desk is slid back over its hole.
   if (layer === LAYER.GROUND) s.deskAside = false;
-  s.player.x = (tile % MAP_W) * UNIT + UNIT / 2;
-  s.player.z = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  s.player.x = centerX(tile);
+  s.player.z = centerZ(tile);
   s.player.moving = false;
   sim.events.push({ type: 'layer', layer, from, how });
 }
@@ -706,8 +706,8 @@ function sleep(sim: SimContext) {
   const s = sim.state;
   const t = placesOf(sim.world).bedside[1];
   if (t < 0) return;
-  s.player.x = (t % MAP_W) * UNIT + UNIT / 2;
-  s.player.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
+  s.player.x = centerX(t);
+  s.player.z = centerZ(t);
   s.player.moving = false;
   s.sleeping = true;
   closeBox(sim);

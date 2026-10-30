@@ -5,7 +5,7 @@ import type { PrisonDef } from '../../content/prisons/types';
 import { findPath, nearestDir } from '../ai/path';
 import { centerX, centerZ, chebTiles, tileAt } from '../world/grid';
 import { canSee, lineOfSight } from '../ai/sight';
-import { argA, argB, argC, DIR_X, DIR_Z, dirOf, EXT, OP, opOf, tossTile } from '../command';
+import { argA, argB, argC, DIR_X, DIR_Z, dirOf, EXT, OP, opOf, sideX, sideZ, tossTile } from '../command';
 import { fnv1a, rollInt, SALT } from '../rng';
 import { bodyAt, walk, type Body } from '../systems/movement';
 import { STEPS_PER_SECOND, UNIT, walkSpeed } from '../tuning';
@@ -604,10 +604,9 @@ export class Hunt {
   wireAhead(): number {
     const s = this.state;
     const p = s.player;
-    const fx = DIR_X[p.facing] ?? 0;
-    const fz = DIR_Z[p.facing] ?? 0;
     // The nearest of the four ways round the way they face.
-    const [dx, dz] = Math.abs(fx) >= Math.abs(fz) ? [Math.sign(fx), 0] : [0, Math.sign(fz)];
+    const dx = sideX(p.facing);
+    const dz = sideZ(p.facing);
     const t = this.tile;
     const x = (t % MAP_W) + dx;
     const z = Math.floor(t / MAP_W) + dz;

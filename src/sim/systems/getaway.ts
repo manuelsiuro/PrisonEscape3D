@@ -23,7 +23,7 @@ import { glideFrom, type Air } from './structure';
 import type { World } from '../world/World';
 import { TILE } from '../world/tiles';
 import { inDisguise } from './watch';
-import { tileAt } from '../world/grid';
+import { centerX, centerZ, tileAt } from '../world/grid';
 
 const FAKE_ID = itemNumber('fake_id');
 
@@ -153,8 +153,8 @@ export function launchSpots(w: World): ReadonlyArray<readonly [number, number]> 
   const still: Air = { wind: 0, force: 0, weather: 'clear' };
   for (const t of queue)
     for (const facing of [1, 5, 9, 13]) {
-      b.x = (t % MAP_W) * UNIT + UNIT / 2;
-      b.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
+      b.x = centerX(t);
+      b.z = centerZ(t);
       b.facing = facing;
       const g = glideFrom(w, b, still);
       if (g && g.why !== 'runUp') out.push([t, facing]);
@@ -169,8 +169,8 @@ export function glideOutToday(sim: SimContext): boolean {
   if (a.weather === 'storm') return false;
   const b = { x: 0, z: 0, facing: 1, moving: false };
   for (const [t, facing] of launchSpots(sim.world)) {
-    b.x = (t % MAP_W) * UNIT + UNIT / 2;
-    b.z = Math.floor(t / MAP_W) * UNIT + UNIT / 2;
+    b.x = centerX(t);
+    b.z = centerZ(t);
     b.facing = facing;
     const g = glideFrom(sim.world, b, a);
     if (g && !g.why && g.out) return true;

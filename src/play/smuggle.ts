@@ -29,6 +29,7 @@ import { coachOnce, markTip, seenTip } from './tips';
 import { TOUCH } from '../ui/dom';
 import { HEARINGS } from '../content/parole';
 import { boardShown } from './parole';
+import { centerX, centerZ } from '../sim/world/grid';
 
 /**
  * Smuggling on screen (P21): the phone's panel (what an order costs each way, and when and
@@ -481,8 +482,8 @@ function seatTile(sim: Sim): number {
 
 /** An inmate standing or sitting still on a ground tile (one walking by doesn't count). */
 function occupied(sim: Sim, tile: number): boolean {
-  const cx = (tile % MAP_W) * UNIT + UNIT / 2;
-  const cz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+  const cx = centerX(tile);
+  const cz = centerZ(tile);
   for (const m of sim.state.inmates) if (!m.body.moving && Math.abs(m.body.x - cx) < OCCUPIED && Math.abs(m.body.z - cz) < OCCUPIED) return true;
   return false;
 }

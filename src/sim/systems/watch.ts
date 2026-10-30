@@ -28,6 +28,7 @@ import { tipsyNow } from './pruno';
 import { underPlant } from './garden';
 import { sightFor } from './football';
 import { TIPSY_HEAT } from '../../content/long';
+import { centerX, centerZ } from '../world/grid';
 
 /** A tipsy player seen again within this long (steps) is the same sighting: no more heat for it. */
 const TIPSY_SEEN_GAP = 5 * 20;
@@ -176,8 +177,8 @@ function noticeDamage(sim: SimContext): boolean {
   const point = sim.scratch.point;
   // The middle of the tile, or any of its four faces (a hole in a wall is seen from an angle by its face).
   const seenAt = (tile: number) => {
-    const cx = (tile % MAP_W) * UNIT + UNIT / 2;
-    const cz = Math.floor(tile / MAP_W) * UNIT + UNIT / 2;
+    const cx = centerX(tile);
+    const cz = centerZ(tile);
     for (const [fx, fz] of FACES) {
       point.x = cx + fx;
       point.z = cz + fz;

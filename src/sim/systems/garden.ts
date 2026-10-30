@@ -18,7 +18,7 @@ import { prisonDay } from './clock';
 import { give, itemOf } from './items';
 import type { Body } from './movement';
 import { planOf } from './calendar';
-import { DIR_X, DIR_Z } from '../command';
+import { sideX, sideZ } from '../command';
 import { tileAt } from '../world/grid';
 
 const VEG_SEEDS = itemNumber('veg_seeds');
@@ -84,11 +84,7 @@ export interface BedTarget {
 export function bedTarget(w: World, layer: number, b: Body, held: number, plots: readonly number[][]): BedTarget | null {
   if (layer !== LAYER.GROUND || !plotOf(w)) return null;
   const here = tileAt(b.x, b.z);
-  const fx = DIR_X[b.facing] ?? 0;
-  const fz = DIR_Z[b.facing] ?? 0;
-  const sx = Math.abs(fx) >= Math.abs(fz) ? Math.sign(fx) : 0;
-  const sz = Math.abs(fx) >= Math.abs(fz) ? 0 : Math.sign(fz);
-  const ahead = here + sz * MAP_W + sx;
+  const ahead = here + sideZ(b.facing) * MAP_W + sideX(b.facing);
   const tool = held > 0 && !!itemDef(held).tool;
   for (const tile of [ahead, here]) {
     const bed = bedAt(w, tile);
