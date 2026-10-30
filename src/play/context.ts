@@ -1,4 +1,3 @@
-import { QuizCard, StageCard } from '../ui/nights';
 import { PayphoneCard } from '../ui/payphone';
 import { KioskCard } from '../ui/kiosk';
 import { ParoleCard } from '../ui/parole';
@@ -38,6 +37,8 @@ import { PaBoard } from '../ui/pa';
 import { trophyHooks } from '../game/trophies';
 import { play, sendOp } from './game';
 import { BoardPanel, TrainCard, WorkChips } from '../ui/work';
+import { StageCard } from '../ui/stage';
+import { QuizCard } from '../ui/quiz';
 
 /**
  * The long-lived objects every play module shares: storage first, then settings, sound, the
