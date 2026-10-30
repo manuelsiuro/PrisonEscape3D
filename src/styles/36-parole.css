@@ -255,7 +255,7 @@
 /* Landscape phones: docked to the left, as tall as it fits; the hotbar steps aside before the board. */
 @media (max-height: 520px) {
   .parole-card {
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;

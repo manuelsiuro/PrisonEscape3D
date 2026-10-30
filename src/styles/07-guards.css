@@ -220,10 +220,6 @@
 
 /* Narrow phones: the heat meter gives the routine pill room (the eye stays). */
 @media (max-width: 440px) {
-  .hud .hud-heat {
-    gap: 4px;
-  }
-
   .hud-heat-bar {
     width: 34px;
   }

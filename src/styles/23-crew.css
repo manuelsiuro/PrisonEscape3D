@@ -229,10 +229,11 @@
   margin-bottom: 18px;
 }
 
-/* A chip over each of the crew's heads: their line's icon, lit while on an order, ringing as a lookout whistles. */
+/* A chip over each of the crew's heads: their line's icon, lit while on an order, ringing as a lookout whistles.
+   (Under the speech bubbles, which say more.) */
 .crew-chip {
   position: fixed;
-  z-index: 18;
+  z-index: 16;
   left: 0;
   top: 0;
   display: grid;
@@ -247,10 +248,6 @@
     inset 0 0 0 1.5px rgba(255, 169, 77, 0.45),
     0 4px 10px -4px rgba(0, 0, 0, 0.6);
   pointer-events: none;
-}
-/* (Under the speech bubbles, which say more.) */
-.crew-chip {
-  z-index: 16;
 }
 .crew-chip.busy {
   color: #2a1a08;

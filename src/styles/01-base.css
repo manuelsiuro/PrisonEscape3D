@@ -21,7 +21,6 @@
   --energy-low: #ff6b4a;
   /* Health (GDD §3.1): a warm red heart. */
   --health: #ff5f6d;
-  --glass-strong: rgba(255, 255, 255, 0.9);
   --shadow: 0 10px 30px -8px rgba(20, 50, 90, 0.28), 0 2px 6px rgba(20, 50, 90, 0.08);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);

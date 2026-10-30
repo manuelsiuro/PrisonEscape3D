@@ -178,8 +178,6 @@
 .help-card {
   display: flex;
   flex-direction: column;
-  width: min(560px, 100%);
-  max-height: min(760px, calc(100dvh - 24px));
   padding: 20px 20px 12px;
   text-align: left;
 }
@@ -911,9 +909,3 @@ body.touch .coach-skip {
   }
 }
 
-/* A container or the workbench open: the item toast shows light, so it reads over the dark panel. */
-.items-open .item-toast {
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.6);
-}

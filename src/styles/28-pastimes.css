@@ -405,7 +405,7 @@ body.courting .tool-prompt {
   .cheat-card,
   .court-card,
   .board-card {
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;
@@ -438,7 +438,7 @@ body.courting .tool-prompt {
       'board acts';
     column-gap: 12px;
     width: auto;
-    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 66px);
+    bottom: max(10px, env(safe-area-inset-bottom));
     padding: 10px 12px;
   }
   .board-card .train-head {
@@ -450,7 +450,7 @@ body.courting .tool-prompt {
   }
   .board-card .checkers {
     grid-area: board;
-    --side: min(230px, calc(100vh - 196px));
+    --side: min(250px, calc(100vh - 130px));
     margin: 2px;
   }
   .board-card .checkers-status {
@@ -474,12 +474,6 @@ body.courting .tool-prompt {
     bottom: max(10px, env(safe-area-inset-bottom));
     max-height: calc(100vh - 116px);
     padding: 8px 12px;
-  }
-  .board-card {
-    bottom: max(10px, env(safe-area-inset-bottom));
-  }
-  .board-card .checkers {
-    --side: min(250px, calc(100vh - 130px));
   }
   .cheat-card .cheat-table small {
     display: none;

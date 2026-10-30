@@ -447,7 +447,7 @@ body.gaming .up-prompt {
   .wrestle-card,
   .pick-card {
     /* (Faded in, not slid: the pads fixed inside must stay under the thumbs.) */
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;
@@ -536,12 +536,6 @@ body.reduced-motion .wrestle-card.surge .wrestle-surge {
   }
   .wrestle-card .train-pad.next {
     background: rgb(150, 72, 26);
-  }
-}
-
-@keyframes card-fade {
-  from {
-    opacity: 0;
   }
 }
 

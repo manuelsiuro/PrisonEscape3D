@@ -1,6 +1,6 @@
 import { buzz } from '../app/haptics';
 import { DESIGNS, FRIEND_INK, GOAL_PAUSE, INK_HEAT, INK_ME_STEPS, INK_OPINION, KICK_HOLD, KICK_REACH, LEAD_IN, TEAM_CROWD_OPINION } from '../content/team';
-import { GAMES_A_DAY } from '../content/games';
+import { GAME_OPINION, GAMES_A_DAY } from '../content/games';
 import { t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
@@ -80,7 +80,7 @@ function refusalText(why: string): string {
     case 'gamesLockdown':
       return t('refused.gamesLockdown');
     case 'gameOpinion':
-      return t('games.needOpinion', { n: 40 });
+      return t('games.needOpinion', { n: GAME_OPINION });
     case 'played':
       return t('games.playedOut', { n: GAMES_A_DAY });
     case 'seated':
