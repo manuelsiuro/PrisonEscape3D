@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { HUNT } from '../content/manhunt';
 import type { SafeKind, Spot, StartKind } from '../content/outside/types';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { headingAngle } from '../sim/command';
 import { DECO, spotTile, type OutsideWorld } from '../sim/hunt/world';
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W } from '../sim/world/World';
@@ -15,6 +15,7 @@ import { carParts } from './Phone';
 import { pool } from './Security';
 import { TEX } from './textures';
 import { sceneryTree } from './WorldView';
+import { hash01, seeded } from './rand';
 
 /** What the outside's own pieces need each frame (P41): the helicopter (tiles), roadblocks up and washing lines used (a bit each), whether Lou waits, how it ended. */
 export interface HuntFrame {
@@ -30,14 +31,8 @@ export interface HuntFrame {
   searchers?: ReadonlyArray<{ x: number; z: number }>;
 }
 
-const faceAngle = (face: number | undefined) => Math.atan2(DIR_X[face ?? 5] ?? 0, DIR_Z[face ?? 5] ?? 1);
+const faceAngle = (face: number | undefined) => headingAngle(face ?? 5);
 /** A tile's own small number (stable between loads). */
-const hash = (i: number, k: number) => {
-  let h = Math.imul(i ^ (k * 0x9e3779b1), 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
 const HELI_Y = 6.5;
 const ROADBLOCK_RISE = 0.5;
 /** How far the picture's roads, tracks and railway lines run on past its edge (tiles), and how far the woods go round past the world's. */
@@ -293,8 +288,7 @@ export class HuntView {
   /** The woods round past the world's edge (the prison's view leaves the manhunt's to this one): a seeded scatter, clear of the roads and rivers running out. */
   private woods(theme: string, ...keepOff: ReadonlyArray<ReadonlySet<number>>) {
     if (theme === 'island') return;
-    let s = 12345;
-    const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const rand = seeded(12345);
     const spots: Array<[number, number, number]> = [];
     const clear = (x: number, z: number) => {
       for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (keepOff.some((k) => k.has(key(Math.floor(x) + dx, Math.floor(z) + dz)))) return false;
@@ -328,7 +322,7 @@ export class HuntView {
       const d = o.deco[i];
       if (!d) continue;
       // The woods past the map's edge: a tree on most tiles, not all (fewer to draw); none on a road running on out.
-      if (d === DECO.WOODS && (hash(i, 7) < 0.45 || run.covered.has(key(i % MAP_W, Math.floor(i / MAP_W))) || this.under(i % MAP_W, Math.floor(i / MAP_W)))) continue;
+      if (d === DECO.WOODS && (hash01(i, 7) < 0.45 || run.covered.has(key(i % MAP_W, Math.floor(i / MAP_W))) || this.under(i % MAP_W, Math.floor(i / MAP_W)))) continue;
       (at[d] ??= []).push(i);
     }
     const instanced = (geo: THREE.BufferGeometry, tiles: number[] | undefined, mat: THREE.Material, place: (i: number, k: number, m: THREE.Matrix4) => void, shadow = true) => {
@@ -348,16 +342,16 @@ export class HuntView {
     const v = new THREE.Vector3();
     const sc = new THREE.Vector3();
     const put = (m: THREE.Matrix4, t: number, jitter: number, scale: number, turn: number) => {
-      const x = (t % MAP_W) + 0.5 + (hash(t, 1) - 0.5) * jitter;
-      const z = Math.floor(t / MAP_W) + 0.5 + (hash(t, 2) - 0.5) * jitter;
+      const x = (t % MAP_W) + 0.5 + (hash01(t, 1) - 0.5) * jitter;
+      const z = Math.floor(t / MAP_W) + 0.5 + (hash01(t, 2) - 0.5) * jitter;
       q.setFromAxisAngle(up, turn);
-      m.compose(v.set(x, 0, z), q, sc.set(scale, scale * (0.9 + hash(t, 4) * 0.25), scale));
+      m.compose(v.set(x, 0, z), q, sc.set(scale, scale * (0.9 + hash01(t, 4) * 0.25), scale));
     };
     // Trees (an island town's are the suburbs' leafy ones), the woods past the edge bigger and looser.
     const tree = sceneryTree(theme === 'island' ? 'suburban' : theme);
     const trees = [...(at[DECO.TREE] ?? []), ...(at[DECO.WOODS] ?? [])];
-    instanced(tree, trees, tall, (t, _k, m) => put(m, t, o.inside[t] ? 0.25 : 0.7, (o.inside[t] ? 0.82 : 1.05) + hash(t, 3) * 0.3, hash(t, 5) * Math.PI * 2));
-    instanced(sceneryTree('desert'), at[DECO.CACTUS], tall, (t, _k, m) => put(m, t, 0.2, 0.8 + hash(t, 3) * 0.3, hash(t, 5) * Math.PI * 2));
+    instanced(tree, trees, tall, (t, _k, m) => put(m, t, o.inside[t] ? 0.25 : 0.7, (o.inside[t] ? 0.82 : 1.05) + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2));
+    instanced(sceneryTree('desert'), at[DECO.CACTUS], tall, (t, _k, m) => put(m, t, 0.2, 0.8 + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2));
     // Rocks: a boulder or two, grey (sandstone in the desert, snow-capped in the Alps).
     const rockColor = theme === 'desert' ? 0xb48a62 : theme === 'industrial' ? 0x7c7a72 : 0x8d9096;
     const rock = merge([
@@ -365,18 +359,18 @@ export class HuntView {
       paint(new THREE.DodecahedronGeometry(0.24, 0).translate(0.3, 0.16, 0.18), rockColor),
       ...(theme === 'alpine' ? [paint(new THREE.DodecahedronGeometry(0.3, 0).scale(1.1, 0.35, 1).translate(0, 0.55, 0), 0xf2f6fb)] : []),
     ]);
-    instanced(rock, at[DECO.ROCK], tall, (t, _k, m) => put(m, t, 0.2, 0.9 + hash(t, 3) * 0.3, hash(t, 5) * Math.PI * 2));
+    instanced(rock, at[DECO.ROCK], tall, (t, _k, m) => put(m, t, 0.2, 0.9 + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2));
     // Crates and containers stacked in the yards (a rusty wreck or a wagon reads the same from up here).
     const crate = merge([box(0.92, 0.9, 0.92, 0x8a6a42), box(0.94, 0.06, 0.94, 0x6a5232, 0, 0.45), box(0.7, 0.62, 0.7, 0x9a7a4e, 0.05, 0.9, 0.04)]);
     const container = merge([box(0.96, 1.1, 0.96, 0x9c3b2e), ...[-0.3, 0, 0.3].map((x) => box(0.04, 1.0, 0.98, 0x7e2f25, x, 0.05))]);
     const crates = at[DECO.CRATES] ?? [];
-    instanced(crate, crates.filter((t) => hash(t, 9) < 0.5), tall, (t, _k, m) => put(m, t, 0.06, 1, Math.floor(hash(t, 5) * 4) * (Math.PI / 2)));
-    instanced(container, crates.filter((t) => hash(t, 9) >= 0.5), tall, (t, _k, m) => put(m, t, 0, 1, 0));
+    instanced(crate, crates.filter((t) => hash01(t, 9) < 0.5), tall, (t, _k, m) => put(m, t, 0.06, 1, Math.floor(hash01(t, 5) * 4) * (Math.PI / 2)));
+    instanced(container, crates.filter((t) => hash01(t, 9) >= 0.5), tall, (t, _k, m) => put(m, t, 0, 1, 0));
     // Hedges and thickets (cover): dense low bushes filling the tile.
     const leaf = theme === 'alpine' ? 0x3d6650 : theme === 'desert' ? 0x8a8a4e : theme === 'industrial' ? 0x5f6b45 : 0x3f7a3a;
     const leaf2 = theme === 'alpine' ? 0xe8eef4 : theme === 'desert' ? 0x9c9a5a : theme === 'industrial' ? 0x6e7a50 : 0x4f8f45;
     const hedge = merge([cyl(0.5, 0.62, leaf, 0, 0, 0, 7), cyl(0.36, 0.3, leaf2, 0.1, 0.55, -0.05, 7), cyl(0.3, 0.25, leaf, -0.18, 0.52, 0.16, 6)]);
-    instanced(hedge, at[DECO.HEDGE], tall, (t, _k, m) => put(m, t, 0.1, 0.95 + hash(t, 3) * 0.15, hash(t, 5) * Math.PI * 2));
+    instanced(hedge, at[DECO.HEDGE], tall, (t, _k, m) => put(m, t, 0.1, 0.95 + hash01(t, 3) * 0.15, hash01(t, 5) * Math.PI * 2));
     // Culverts: under the road, a concrete headwall and the pipe's dark mouth at each edge of it.
     const mouth = merge([box(0.96, 0.3, 0.14, 0x9a9890, 0, -0.04, 0), paint(new THREE.CircleGeometry(0.26, 12, 0, Math.PI).translate(0, -0.02, 0.075), 0x14171c), box(0.62, 0.05, 0.16, 0x7e7c75, 0, 0.26, 0)]);
     const mouths: number[] = [];
@@ -412,12 +406,12 @@ export class HuntView {
     }, false);
     // Gravel: a scatter of grey stones over the tile.
     const stones: Part[] = [];
-    for (let k = 0; k < 7; k++) stones.push(paint(new THREE.DodecahedronGeometry(0.05 + hash(k, 11) * 0.04, 0).translate(hash(k, 12) - 0.5, 0.02, hash(k, 13) - 0.5), 0x8c8a84));
+    for (let k = 0; k < 7; k++) stones.push(paint(new THREE.DodecahedronGeometry(0.05 + hash01(k, 11) * 0.04, 0).translate(hash01(k, 12) - 0.5, 0.02, hash01(k, 13) - 0.5), 0x8c8a84));
     const pebbles = merge(stones, false);
-    instanced(pebbles, at[DECO.GRAVEL], low, (t, _k, m) => put(m, t, 0, 1, hash(t, 5) * Math.PI * 2), false);
+    instanced(pebbles, at[DECO.GRAVEL], low, (t, _k, m) => put(m, t, 0, 1, hash01(t, 5) * Math.PI * 2), false);
     if (run.gravel.length) instanced(pebbles.clone(), run.gravel.map(([x, z]) => z * MAP_W + x), low, (_t, k, m) => {
       const [x, z] = run.gravel[k];
-      q.setFromAxisAngle(up, hash(key(x, z), 5) * Math.PI * 2);
+      q.setFromAxisAngle(up, hash01(key(x, z), 5) * Math.PI * 2);
       m.compose(v.set(x + 0.5, 0, z + 0.5), q, sc.set(1, 1, 1));
     }, false);
   }

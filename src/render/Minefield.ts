@@ -1,14 +1,9 @@
 import * as THREE from 'three';
 import { TILE } from '../sim/world/tiles';
 import { MAP_H, MAP_W, type World } from '../sim/world/World';
+import { hash01 } from './rand';
 
 /** A tile's own small numbers (stable between loads): where its mine sits, how it's turned. */
-const hash = (i: number, k: number) => {
-  let h = Math.imul(i ^ (k * 0x9e3779b1), 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
 
 /** A scorch: dark in the middle, fading out, a few flecks thrown round it. */
 function scorchTexture(): THREE.CanvasTexture {
@@ -25,8 +20,8 @@ function scorchTexture(): THREE.CanvasTexture {
   c.fillRect(0, 0, n, n);
   c.fillStyle = 'rgba(30,20,12,0.7)';
   for (let k = 0; k < 14; k++) {
-    const a = hash(k, 7) * Math.PI * 2;
-    const r = n * (0.3 + hash(k, 9) * 0.18);
+    const a = hash01(k, 7) * Math.PI * 2;
+    const r = n * (0.3 + hash01(k, 9) * 0.18);
     c.fillRect(Math.round(n / 2 + Math.cos(a) * r), Math.round(n / 2 + Math.sin(a) * r), 2, 2);
   }
   const t = new THREE.CanvasTexture(canvas);
@@ -60,7 +55,7 @@ export class Minefield {
   constructor(world: World) {
     const tiles: number[] = [];
     for (let i = 0; i < MAP_W * MAP_H; i++) if (world.ground.kind[i] === TILE.MINE) tiles.push(i);
-    const lidTiles = tiles.filter((i) => hash(i, 1) < 0.42);
+    const lidTiles = tiles.filter((i) => hash01(i, 1) < 0.42);
     if (tiles.length) {
       this.mounds = new THREE.InstancedMesh(
         new THREE.SphereGeometry(0.15, 9, 4, 0, Math.PI * 2, 0, Math.PI / 2),
@@ -69,11 +64,11 @@ export class Minefield {
       );
       tiles.forEach((i, k) => {
         this.moundOf.set(i, k);
-        const s = 0.85 + hash(i, 2) * 0.35;
+        const s = 0.85 + hash01(i, 2) * 0.35;
         this.m4
-          .makeRotationY(hash(i, 3) * Math.PI)
+          .makeRotationY(hash01(i, 3) * Math.PI)
           .scale(new THREE.Vector3(s * 1.1, 0.3, s))
-          .setPosition((i % MAP_W) + 0.3 + hash(i, 4) * 0.4, 0, Math.floor(i / MAP_W) + 0.3 + hash(i, 5) * 0.4);
+          .setPosition((i % MAP_W) + 0.3 + hash01(i, 4) * 0.4, 0, Math.floor(i / MAP_W) + 0.3 + hash01(i, 5) * 0.4);
         this.mounds!.setMatrixAt(k, this.m4);
       });
       this.mounds.receiveShadow = true;
@@ -88,7 +83,7 @@ export class Minefield {
         const at = this.m4.identity();
         this.mounds!.getMatrixAt(this.moundOf.get(i)!, at);
         const p = new THREE.Vector3().setFromMatrixPosition(at);
-        this.m4.makeRotationZ((hash(i, 6) - 0.5) * 0.25).setPosition(p.x, 0.045, p.z);
+        this.m4.makeRotationZ((hash01(i, 6) - 0.5) * 0.25).setPosition(p.x, 0.045, p.z);
         this.lids!.setMatrixAt(k, this.m4);
       });
       this.lids.castShadow = true;
@@ -119,7 +114,7 @@ export class Minefield {
     this.craters.count = Math.min(craters.length, MAX_CRATERS);
     for (let k = 0; k < this.craters.count; k++) {
       const i = craters[craters.length - 1 - k];
-      this.m4.makeRotationY(hash(i, 8) * Math.PI * 2).setPosition((i % MAP_W) + 0.5, 0.025, Math.floor(i / MAP_W) + 0.5);
+      this.m4.makeRotationY(hash01(i, 8) * Math.PI * 2).setPosition((i % MAP_W) + 0.5, 0.025, Math.floor(i / MAP_W) + 0.5);
       this.craters.setMatrixAt(k, this.m4);
     }
     this.craters.instanceMatrix.needsUpdate = true;

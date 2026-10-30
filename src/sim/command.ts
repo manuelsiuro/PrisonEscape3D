@@ -169,6 +169,9 @@ export const sideZ = (d: number) => {
   return Math.abs(DIR_X[d] ?? 0) >= Math.abs(fz) ? 0 : Math.sign(fz);
 };
 
+/** A direction's angle for the view (a turn about the vertical, 0 facing +z, as Three.js turns a model). */
+export const headingAngle = (d: number) => Math.atan2(DIR_X[d] ?? 0, DIR_Z[d] ?? 1);
+
 /** A direction (1–16) turned by n sixteenths. */
 export const turnDir = (d: number, n: number) => ((((d - 1 + n) % DIRS) + DIRS) % DIRS) + 1;
 

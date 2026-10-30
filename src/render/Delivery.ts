@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { DeliveryDef } from '../content/prisons/types';
-import { DIR_X, DIR_Z } from '../sim/command';
+import { headingAngle } from '../sim/command';
 import { MAP_W, type World } from '../sim/world/World';
 import { TILE } from '../sim/world/tiles';
 import { disposeTree, now, type Later } from './batch';
@@ -233,7 +233,7 @@ export class Delivery {
     const pos = this.along(s, this.at2);
     holder.position.set(pos.x, 0, pos.y);
     // The nose points where it faces at the bay (it backs in along its road, and drives out nose first).
-    holder.rotation.y = Math.atan2(DIR_X[d.face], DIR_Z[d.face]);
+    holder.rotation.y = headingAngle(d.face);
     // Moving: the wheels turn, the lamps say which way.
     const ds = this.lastS >= 0 ? s - this.lastS : 0;
     this.lastS = s;

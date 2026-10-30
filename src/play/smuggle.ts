@@ -2,7 +2,7 @@ import { itemDef } from '../content/items';
 import { CATALOGUE, FEES, PARCEL_MINUTE, VISIT_STEPS, WAY } from '../content/smuggling';
 import { currentLang, t, type Key } from '../i18n';
 import { placePhrase } from '../i18n/barks/grammar';
-import { DIR_X, DIR_Z, EXT, OP } from '../sim/command';
+import { EXT, headingAngle, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { planOf, TODAY } from '../sim/systems/calendar';
 import { DAY_STEPS, dayMinute, prisonDay } from '../sim/systems/clock';
@@ -336,7 +336,7 @@ function guestsOf(sim: Sim): Guest[] {
     const z = Math.floor(p.guest / MAP_W);
     // (Turned round from the seat across: facing the table.)
     const back = ((p.facing - 1 + 8) % 16) + 1;
-    list.push({ tile: p.guest, facing: Math.atan2(DIR_X[back], DIR_Z[back]), chair: sim.world.props.some((q) => q.kind === 'chair' && q.x === x && q.z === z) });
+    list.push({ tile: p.guest, facing: headingAngle(back), chair: sim.world.props.some((q) => q.kind === 'chair' && q.x === x && q.z === z) });
   }
   guestCache.set(sim.world, list);
   return list;
@@ -420,7 +420,7 @@ export function smuggleFrame(sim: Sim, a: number): SmuggleFrame | null {
   // The parole board (P39): its three at their places while the hearing is called, sits and gives its word.
   const board = boardShown(sim) ? HEARINGS[sim.prison.id] : null;
   if (board) {
-    const facing = Math.atan2(DIR_X[board.face], DIR_Z[board.face]);
+    const facing = headingAngle(board.face);
     board.board.forEach((q, k) => {
       const tile = q.z * MAP_W + q.x;
       if (occupied(sim, tile)) return;

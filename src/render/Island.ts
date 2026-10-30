@@ -5,14 +5,9 @@ import { MAP_H, MAP_W, type World } from '../sim/world/World';
 import { disposeTree } from './batch';
 import { box, cyl, kitMaterial, merge, paint, type Part } from './kit';
 import { TEX } from './textures';
+import { hash01, seeded } from './rand';
 
 /** A tile's own small number (stable between loads). */
-const hash = (i: number, k: number) => {
-  let h = Math.imul(i ^ (k * 0x9e3779b1), 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
 
 /**
  * The sea's surface: deep water rolling into lighter swells at three scales, smooth (no hard
@@ -47,13 +42,13 @@ function waveTexture(): THREE.CanvasTexture {
   c.putImageData(img, 0, 0);
   // White flecks, only on the crests.
   for (let k = 0; k < 90; k++) {
-    const x = Math.floor(hash(k, 3) * n);
-    const y = Math.floor(hash(k, 5) * n);
+    const x = Math.floor(hash01(k, 3) * n);
+    const y = Math.floor(hash01(k, 5) * n);
     const u = x / n;
     const w = y / n;
     if (Math.sin(T * (2 * u + w) + 1.4 * Math.sin(T * w)) < 0.55) continue;
-    c.fillStyle = `rgba(232,244,250,${0.35 + hash(k, 7) * 0.35})`;
-    c.fillRect(x, y, 2 + Math.floor(hash(k, 9) * 3), 1);
+    c.fillStyle = `rgba(232,244,250,${0.35 + hash01(k, 7) * 0.35})`;
+    c.fillRect(x, y, 2 + Math.floor(hash01(k, 9) * 3), 1);
   }
   const t = new THREE.CanvasTexture(canvas);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -71,18 +66,18 @@ function foamTexture(): THREE.CanvasTexture {
   c.clearRect(0, 0, n, n);
   // Soft clumps of froth, then a few bright streaks: surf, not static.
   for (let k = 0; k < 16; k++) {
-    const x = hash(k, 7) * n;
-    const y = hash(k, 9) * n;
-    const r = 2 + hash(k, 13) * 4;
+    const x = hash01(k, 7) * n;
+    const y = hash01(k, 9) * n;
+    const r = 2 + hash01(k, 13) * 4;
     const g = c.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(240,248,252,${0.35 + hash(k, 11) * 0.3})`);
+    g.addColorStop(0, `rgba(240,248,252,${0.35 + hash01(k, 11) * 0.3})`);
     g.addColorStop(1, 'rgba(240,248,252,0)');
     c.fillStyle = g;
     c.fillRect(x - r, y - r, r * 2, r * 2);
   }
   for (let k = 0; k < 8; k++) {
-    c.fillStyle = `rgba(245,250,253,${0.25 + hash(k, 17) * 0.3})`;
-    c.fillRect(Math.floor(hash(k, 19) * n), Math.floor(hash(k, 23) * n), 2 + Math.floor(hash(k, 29) * 3), 1);
+    c.fillStyle = `rgba(245,250,253,${0.25 + hash01(k, 17) * 0.3})`;
+    c.fillRect(Math.floor(hash01(k, 19) * n), Math.floor(hash01(k, 23) * n), 2 + Math.floor(hash01(k, 29) * 3), 1);
   }
   const t = new THREE.CanvasTexture(canvas);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -149,12 +144,12 @@ export class Island {
         let near = false;
         for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if ((dx || dz) && sea(x + dx, z + dz) !== !land) near = true;
         if (land && near) {
-          const h = hash(i, 1);
+          const h = hash01(i, 1);
           const shade = [0x5b6168, 0x666c73, 0x50565c][Math.floor(h * 3)];
           skirt.push(box(1.0, 0.88, 1.0, shade, x + 0.5, SEA_Y - 0.5, z + 0.5));
           // Rocks tumbled into the water at its foot.
           if (h < 0.5) for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) if (sea(x + dx, z + dz) && g[i] !== TILE.PIER) {
-            const r = 0.28 + hash(i, 2 + dx * 3 + dz) * 0.3;
+            const r = 0.28 + hash01(i, 2 + dx * 3 + dz) * 0.3;
             skirt.push(paint(new THREE.DodecahedronGeometry(r, 0).scale(1, 0.7, 1).rotateY(h * 6).translate(x + 0.5 + dx * 0.62, SEA_Y + 0.05, z + 0.5 + dz * 0.62), 0x5f656c));
             break;
           }
@@ -163,8 +158,7 @@ export class Island {
       }
     }
     // Sea stacks and rocks off the island, beyond the map's edge too.
-    let s = 7741;
-    const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const rand = seeded(7741);
     for (let k = 0, made = 0; k < 600 && made < (backdrop ? 0 : 46); k++) {
       const x = -30 + rand() * (MAP_W + 60);
       const z = -30 + rand() * (MAP_H + 60);
@@ -254,7 +248,7 @@ export class Island {
     const m = new THREE.Matrix4();
     this.foamMat = new THREE.MeshBasicMaterial({ map: foamTexture(), transparent: true, opacity: 0.8, depthWrite: false });
     const foamMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.15, 1.15).rotateX(-Math.PI / 2), this.foamMat, Math.max(1, foam.length / 2));
-    for (let k = 0; k < foam.length / 2; k++) foamMesh.setMatrixAt(k, m.makeRotationY(hash(k, 4) * 6).setPosition(foam[k * 2] + 0.5, SEA_Y + 0.04, foam[k * 2 + 1] + 0.5));
+    for (let k = 0; k < foam.length / 2; k++) foamMesh.setMatrixAt(k, m.makeRotationY(hash01(k, 4) * 6).setPosition(foam[k * 2] + 0.5, SEA_Y + 0.04, foam[k * 2 + 1] + 0.5));
     foamMesh.count = foam.length / 2;
     foamMesh.renderOrder = 0.22;
     this.group.add(foamMesh);

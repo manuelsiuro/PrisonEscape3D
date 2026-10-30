@@ -10,6 +10,7 @@ import { Lights } from './lights';
 import { seeThrough } from './occlusion';
 import { propGeometry } from './props';
 import { TEX } from './textures';
+import { seeded } from './rand';
 
 /** A cone standing on y (a pine's tier): radius, height, color. */
 const cone = (r: number, h: number, color: number, x: number, y: number) => paint(new THREE.ConeGeometry(r, h, 8).translate(x, y + h / 2, 0), color);
@@ -552,8 +553,7 @@ export class WorldView {
     if (outside) return;
 
     // Trees in a ring outside the road: a seeded scatter, one draw call.
-    let s = 12345;
-    const rand = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const rand = seeded(12345);
     const tree = sceneryTree(theme);
     const spots: Array<[number, number, number]> = [];
     for (let k = 0; k < 1500 && spots.length < 280; k++) {
