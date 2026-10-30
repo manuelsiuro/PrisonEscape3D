@@ -161,7 +161,7 @@
 /* Landscape phones: docked to the left, below the clock; the hotbar steps aside. */
 @media (max-height: 520px) {
   .kiosk-card {
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;

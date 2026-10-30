@@ -34,8 +34,8 @@
   color: var(--good, #2e9e55);
 }
 
-/* The tipsy pill. */
-.hud-tipsy .icon {
+/* The tipsy pill's icon, amber. */
+.hud-tipsy .ic {
   color: #e8b85a;
 }
 
@@ -167,7 +167,7 @@
     display: none;
   }
   .race-card {
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;

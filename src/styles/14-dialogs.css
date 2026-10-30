@@ -689,21 +689,6 @@
     inset 0 0 0 1px rgba(255, 170, 90, 0.35);
 }
 
-/* Carousel arrows (the tutorial, how to play): dark glass discs. */
-.carousel-arrow {
-  color: var(--dlg-text);
-  background: rgba(22, 32, 48, 0.88);
-  box-shadow:
-    0 10px 22px -8px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-
-.carousel-arrow:hover:not([disabled]) {
-  background: rgba(34, 48, 71, 0.95);
-}
-
 /* The round action button's verb: two short lines rather than cut off ("Fouiller les…"). */
 .act-round span {
   display: -webkit-box;

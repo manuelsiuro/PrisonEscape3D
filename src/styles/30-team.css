@@ -206,7 +206,7 @@ body.matching .tool-prompt {
 @media (max-height: 520px) {
   .match-card,
   .ink-card {
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;
@@ -237,7 +237,7 @@ body.matching .tool-prompt {
       'art quit';
     column-gap: 12px;
     width: auto;
-    max-width: calc(100vw - 210px);
+    max-width: min(520px, calc(100vw - 210px));
     bottom: max(10px, env(safe-area-inset-bottom));
   }
   .ink-card .train-head {
@@ -248,7 +248,7 @@ body.matching .tool-prompt {
     margin: 0;
   }
   .ink-card .ink-art svg {
-    width: min(190px, calc(100vh - 60px));
+    width: min(150px, calc(100vh - 90px));
   }
   .ink-card .ink-bar {
     grid-area: bar;
@@ -270,7 +270,7 @@ body.matching .tool-prompt {
     top: 0;
     right: 184px;
     left: auto;
-    max-width: min(400px, calc(100vw - 560px));
+    max-width: min(400px, calc(100vw - 600px));
   }
 }
 
@@ -335,18 +335,6 @@ body.reduced-motion .ink-card.lead .ink-pen {
 .ink-quit {
   width: auto;
   align-self: start;
-}
-@media (max-height: 520px) {
-  .ink-card .ink-art svg {
-    width: min(150px, calc(100vh - 90px));
-  }
-  .ink-card {
-    max-width: min(520px, calc(100vw - 210px));
-  }
-  body.matching .coach.lesson-coach,
-  body.inking .coach.lesson-coach {
-    max-width: min(400px, calc(100vw - 600px));
-  }
 }
 .bribe-row.ink-row .cash-btn.design span {
   white-space: normal;

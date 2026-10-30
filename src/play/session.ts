@@ -59,6 +59,7 @@ import { huntLeft, huntOver } from './huntEnd';
 import { isLegal } from '../content/manhunt';
 import { outsideOf } from '../content/outside';
 import { carryFrom } from '../sim/hunt/carry';
+import { OVER } from '../sim/hunt/state';
 
 
 /**
@@ -416,16 +417,18 @@ export async function escaped() {
       const lookout = st.crewOut.length ? { name: inmateName(sim, st.crewOut[0]), cell: sim.state.inmates[st.crewOut[0]]?.cell ?? 2 } : null;
       const r = await runHunt(g, carryFrom(sim), { lookout });
       // (Left from the pause card: given up, so a recapture in the stats.)
-      if (r === 'quit') huntLeft(sim);
-      if (r === 'quit') return;
+      if (r === 'quit') {
+        huntLeft(sim);
+        return;
+      }
       // (Left from the pause card while its last moment played: it counts as it ended.)
       const got = huntOver(sim, via, r);
       if (play.game !== g) return;
-      victory.hunt = { ...victory.hunt, state: r.over === 3 ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };
+      victory.hunt = { ...victory.hunt, state: r.over === OVER.CAUGHT ? 'caught' : 'safe', progress: r.progress, secs: r.secs, reached: r.goal };
       // (The hunt's own first: they're what this card is about now, never behind the "+N".)
       victory.earned = [...got, ...(victory.earned ?? []).filter((a) => !got.includes(a))];
       // (A clean getaway: the confetti again.)
-      back = r.over === 3;
+      back = r.over === OVER.CAUGHT;
       choice = await showVictory(victory, click, back);
       if (play.game !== g) return;
       if (choice !== 'watch') break;

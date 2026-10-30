@@ -259,7 +259,7 @@ body.touch .oddjobs-card .oddjobs-close {
 /* Landscape phones: docked to the left, below the clock; the hotbar steps aside. */
 @media (max-height: 520px) {
   .oddjobs-card {
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     margin: 0;
@@ -270,7 +270,7 @@ body.touch .oddjobs-card .oddjobs-close {
     padding: 8px 12px;
   }
   .story-card {
-    animation: card-fade 0.25s ease-out;
+    animation: fade 0.25s ease-out;
     left: max(14px, env(safe-area-inset-left));
     right: auto;
     top: auto;

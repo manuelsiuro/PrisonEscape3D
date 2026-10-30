@@ -81,7 +81,7 @@
 .daily-tab {
   display: flex;
   flex: 1;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
   gap: 6px;
   min-height: 36px;
@@ -390,10 +390,6 @@
   .daily-card .v-medal small {
     display: block;
   }
-}
-
-.daily-tab {
-  align-items: center;
 }
 
 /* A Three Days run's time up: the calendar in a dusk disc. */

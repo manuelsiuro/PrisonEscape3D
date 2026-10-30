@@ -329,10 +329,6 @@ body.reduced-motion .hud-alert.hud-today.soon .ic {
   color: var(--wx, #cfe2ff);
 }
 
-.hud-wx:empty {
-  display: none;
-}
-
 /* The fire drill holds the routine pill: an amber alert, roll call the place. */
 .hud-routine.drill {
   background: linear-gradient(180deg, rgba(196, 110, 12, 0.92), rgba(140, 70, 6, 0.92)) !important;
