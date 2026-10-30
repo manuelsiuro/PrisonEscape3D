@@ -1,3 +1,4 @@
+import { STEPS_PER_SECOND } from '../sim/tuning';
 import type { PrisonDef } from './prisons/types';
 import type { StartKind } from './outside/types';
 
@@ -36,7 +37,7 @@ export function startKindOf(via: string, prison: PrisonDef): StartKind {
 }
 
 /** Steps a second (the hunt runs at the inside's pace: 1 s a game minute). */
-const S = 20;
+const S = STEPS_PER_SECOND;
 
 export const HUNT = {
   /** How far a searcher sees (tiles), by day and after dark (torches). */

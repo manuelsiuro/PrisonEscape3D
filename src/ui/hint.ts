@@ -1,4 +1,4 @@
-import { h } from './dom';
+import { fadeOut, h } from './dom';
 import { icon } from './icons';
 
 /**
@@ -31,7 +31,6 @@ export class Hint {
     if (!el) return;
     this.el = null;
     document.body.style.removeProperty('--hint-clear');
-    el.classList.add('leaving');
-    setTimeout(() => el.remove(), 350);
+    fadeOut(el, 350);
   }
 }

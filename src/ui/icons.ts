@@ -91,7 +91,6 @@ const P: Record<string, string> = {
   /** A throw (P14): an arc up and over, its arrowhead. */
   toss: '<path d="M4 19c1.5-7 7-11.5 14-11"/><path d="m14.5 5 3.7 3-3.2 3.6"/><circle cx="4" cy="19.5" r="1.4"/>',
   /** The day (P17): weather, the warden's speakers, the events. */
-  cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.8 3.8 0 0 1 17.5 18Z"/>',
   rain: '<path d="M7 14a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.8 3.8 0 0 1 17.5 14Z"/><path d="m8 17-1 3M12 17l-1 3M16 17l-1 3"/>',
   storm: '<path d="M7 14a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6A3.8 3.8 0 0 1 17.5 14H16"/><path d="m12.5 11-3 5h4l-3 5"/>',
   fog: '<path d="M7 11a4.5 4.5 0 0 1 .4-6 6 6 0 0 1 10 2.4A3.6 3.6 0 0 1 18.5 11"/><path d="M3 14h18M5 17.5h14M8 21h8"/>',
@@ -120,7 +119,6 @@ const P: Record<string, string> = {
   cards: '<rect x="3.5" y="5.5" width="10" height="14" rx="1.6" transform="rotate(-12 8.5 12.5)"/><rect x="10" y="4" width="10" height="14" rx="1.6" transform="rotate(10 15 11)"/><path d="m15.4 8.6-1.8 2.8 1.8 2.8 1.8-2.8Z"/>',
   ball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/><path d="M5.6 5.6a12 12 0 0 1 0 12.8M18.4 5.6a12 12 0 0 0 0 12.8"/>',
   checkers: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="6" cy="6" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="18" r="1.4"/>',
-  hoop: '<path d="M5 4h14v7H5Z"/><path d="M9 11h6"/><path d="m9 11 1 8M15 11l-1 8M10 15h4"/><circle cx="17.5" cy="17.5" r="2.5"/>',
   flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
   // P28: a bag of pruno bubbling, a seedling, fruit, a watering cup, a race track's lanes, a ticket (a bet).
   brew: '<path d="M9 3h6l-1 3.5c3 1.2 4.5 4 4.5 7A6.5 6.5 0 0 1 12 20a6.5 6.5 0 0 1-6.5-6.5c0-3 1.5-5.8 4.5-7Z"/><circle cx="10" cy="14" r="1"/><circle cx="13.8" cy="15.6" r="1.3"/><circle cx="12.6" cy="11.4" r=".8"/>',

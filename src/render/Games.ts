@@ -399,19 +399,4 @@ export class GamesView {
     this.poles.visible = on && this.poles.count > 0;
     if (this.strings) this.strings.visible = on;
   }
-
-  dispose() {
-    this.dice.geometry.dispose();
-    const dm = this.dice.material as THREE.MeshStandardMaterial;
-    dm.map?.dispose();
-    dm.dispose();
-    this.flags.geometry.dispose();
-    (this.flags.material as THREE.Material).dispose();
-    this.poles.geometry.dispose();
-    (this.poles.material as THREE.Material).dispose();
-    if (this.strings) {
-      this.strings.geometry.dispose();
-      (this.strings.material as THREE.Material).dispose();
-    }
-  }
 }

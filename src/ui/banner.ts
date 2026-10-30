@@ -1,4 +1,4 @@
-import { h } from './dom';
+import { fadeOut, h } from './dom';
 import { icon } from './icons';
 
 /**
@@ -34,8 +34,7 @@ export class Banner {
     if (!el) return;
     this.el = null;
     document.body.classList.remove('banner-up');
-    el.classList.add('leaving');
-    setTimeout(() => el.remove(), 400);
+    fadeOut(el, 400);
   }
 
   toast(text: string, kind: 'bad' | 'good' | 'info' = 'info', ms = 3200) {
@@ -55,10 +54,7 @@ export class Banner {
   private readonly leaving = new WeakMap<HTMLElement, number>();
 
   private leave(el: HTMLElement, ms: number): number {
-    return window.setTimeout(() => {
-      el.classList.add('leaving');
-      setTimeout(() => el.remove(), 350);
-    }, ms);
+    return window.setTimeout(() => fadeOut(el, 350), ms);
   }
 
   /** Clears everything (leaving the game). */

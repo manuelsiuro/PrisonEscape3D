@@ -909,6 +909,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
   };
 }
 
+/** An array of n whole numbers (a save's field checked before it's trusted). */
+const ints = (v: unknown, n: number) => Array.isArray(v) && v.length === n && v.every((x) => Number.isInteger(x));
+
 /**
  * A state loaded from a snapshot (a copy the caller owns). Fields added after the snapshot
  * was taken load with their starting values, in field order, so the state hashes the same
@@ -970,7 +973,6 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
     const before = DAY_EVENTS.indexOf(DAY_BOOKS[prison.id]?.beforeVisits ?? 'none');
     for (const day of [prisonDay(st.step), prisonDay(st.step) + 1]) if (dayPlan(prison.id, s.salt, day, s.calendar, s.mods).event === 'visiting') s.calendar = [...s.calendar, [day, before, -1]];
   }
-  const ints = (v: unknown, n: number) => Array.isArray(v) && v.length === n && v.every((x) => Number.isInteger(x));
   // (A damaged one: an order for nothing in the catalogue, a way that doesn't exist, a drop of no item.)
   if (!(Array.isArray(s.order) && (s.order.length === 0 || (ints(s.order, 3) && s.order[0] >= 0 && s.order[0] < CATALOGUE.length && (s.order[1] === 0 || s.order[1] === 1))))) s.order = [];
   if (!Array.isArray(s.drops) || !s.drops.every((d) => ints(d, 3) && d[1] >= 1 && d[1] <= ITEMS.length)) s.drops = [];
@@ -1126,7 +1128,6 @@ function matchOk(o: Match | null, n: number, step: number): boolean {
   if (o === null) return true;
   if (!o || typeof o !== 'object') return false;
   const int = (x: unknown) => Number.isInteger(x);
-  const ints = (v: unknown, k: number) => Array.isArray(v) && v.length === k && v.every(int);
   return (
     int(o.who) &&
     ints(o.team, 5) &&
@@ -1151,7 +1152,7 @@ function showOk(o: Show | null, step: number): boolean {
   if (o === null) return true;
   if (!o || typeof o !== 'object') return false;
   // (Begun no later than now, and not yet over: never a song that keeps the player still for ever.)
-  return [o.song, o.inst, o.from, o.stray].every((x) => Number.isInteger(x)) && o.song >= 0 && o.song < SONGS.length && o.from <= step && step - o.from <= countIn(o.song) + songSteps(o.song) && o.song >= 0 && o.song < SONGS.length && (o.inst === 0 || o.inst === 1) && o.stray >= 0 && Array.isArray(o.hits) && o.hits.length === CHARTS[o.song].length && o.hits.every((h) => Number.isInteger(h) && h >= 0 && h <= 3);
+  return [o.song, o.inst, o.from, o.stray].every((x) => Number.isInteger(x)) && o.song >= 0 && o.song < SONGS.length && o.from <= step && step - o.from <= countIn(o.song) + songSteps(o.song) && (o.inst === 0 || o.inst === 1) && o.stray >= 0 && Array.isArray(o.hits) && o.hits.length === CHARTS[o.song].length && o.hits.every((h) => Number.isInteger(h) && h >= 0 && h <= 3);
 }
 
 /** The player's call as a save holds it (P34): to someone the phone calls, its numbers whole, Lou's lines as they can be. */
@@ -1181,7 +1182,6 @@ function callOk(c: Call | null, step: number, guards: number): boolean {
 function quizOk(o: Quiz | null, n: number, step: number): boolean {
   if (o === null) return true;
   if (!o || typeof o !== 'object') return false;
-  const ints = (v: unknown, k: number) => Array.isArray(v) && v.length === k && v.every((x) => Number.isInteger(x));
   return (
     ints(o.who, 3) &&
     o.who.every((k, i, all) => k >= 0 && k < n && all.indexOf(k) === i) &&

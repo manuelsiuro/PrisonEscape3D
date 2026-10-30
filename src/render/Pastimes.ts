@@ -409,16 +409,4 @@ export class PastimesView {
     }
     this.ring.visible = on;
   }
-
-  dispose() {
-    this.group.traverse((o) => {
-      const m = o as THREE.Mesh;
-      m.geometry?.dispose();
-      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats as THREE.MeshStandardMaterial[]) {
-        mat.map?.dispose();
-        mat.dispose();
-      }
-    });
-  }
 }

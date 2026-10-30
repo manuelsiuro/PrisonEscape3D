@@ -316,17 +316,6 @@ export class Weather {
     this.rippleAge.fill(1);
     this.ripples.count = 0;
   }
-
-  dispose() {
-    this.streaks.geometry.dispose();
-    (this.streaks.material as THREE.Material).dispose();
-    this.ripples.geometry.dispose();
-    (this.ripples.material as THREE.Material).dispose();
-    this.fog.geometry.dispose();
-    (this.fogMat.uniforms.cloud.value as THREE.Texture).dispose();
-    (this.fogMat.uniforms.outdoor.value as THREE.Texture | null)?.dispose();
-    this.fogMat.dispose();
-  }
 }
 
 /** Soft cloud: a few blurred blobs on a small tileable canvas (drawn wrapped). */

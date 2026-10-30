@@ -175,8 +175,6 @@ function statsTab(s: Shelf): string {
   return `<ul class="stat-grid">${cards}</ul><p class="help-foot">${t('trophy.statsNote')}</p>`;
 }
 
-export type ShelfTab = Tab;
-
 /** `start`: the tab shown; `focus`: back from the Intake or a replay, the button that opened it (a selector). */
 export function showTrophies(shelf: Shelf, click: () => void, start: Tab = 'trophies', focus: string | null = null): Promise<ShelfResult> {
   let tab = start;

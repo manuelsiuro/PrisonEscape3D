@@ -143,11 +143,4 @@ export class Pickups {
       halo.scale.setScalar(1);
     });
   }
-
-  dispose() {
-    this.frameMat.dispose();
-    this.glowMat.dispose();
-    this.glowGeometry.dispose();
-    (this.frame.children[0].children[0] as THREE.Mesh).geometry.dispose();
-  }
 }

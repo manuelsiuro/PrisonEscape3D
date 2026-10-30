@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import type { Pitch } from '../content/prisons/types';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
-import type { World } from '../sim/world/World';
-import { MAP_H, MAP_W } from '../sim/world/World';
+import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
 import { Character, guardLook, INMATE_LOOK, inmateLook, type BadgeKind, type BedPose, type Look } from './Character';
 import { Cones } from './Cones';
 import { Security, type SecurityFrame } from './Security';
@@ -22,7 +21,7 @@ import { itemGeometry } from './itemModels';
 import { Pickups, type Focus, type GroundItem } from './Pickups';
 import { updateOcclusion } from './occlusion';
 import { WorldView } from './WorldView';
-import { LAYER_Y, Structure } from './Structure';
+import { LAYER_Y, ROOF_Y as ROOF_HEIGHT, Structure } from './Structure';
 import { NoiseFx, type AimView } from './Noise';
 import { FIRECRACKER } from '../sim/systems/structure';
 import { Underground } from './Underground';
@@ -34,10 +33,8 @@ import { Weather, type WeatherFrame, type WeatherView } from './Weather';
 import { Delivery, type DeliveryFrame } from './Delivery';
 import { DayEvents, type EventsFrame } from './DayEvents';
 import { HolidaysView, NO_HOLIDAY, type HolidayFrame } from './Holidays';
-import { ROOF_Y as ROOF_HEIGHT } from './Structure';
 import { WALL_H } from './WorldView';
-import { LAYER } from '../sim/world/World';
-import { pitchFraming } from './pitchFrame';
+import { pitchFraming, SCREEN_COLS, SCREEN_ROWS, ZOOM_MAX, ZOOM_MIN } from './pitchFrame';
 import type { NoiseKind } from '../sim/state';
 import { Dogs, type DogFrame } from './Dog';
 import { Rats, type RatFrame } from './Rat';
@@ -235,8 +232,6 @@ const CINEMA_PULL = 0.3;
 const PREVIEW_ZOOM = 4.2;
 /** The Intake's camera: lower than play's, nearly face on (a mugshot, not a map). */
 const PREVIEW_OFFSET = new THREE.Vector3(0, 16, 24).normalize().multiplyScalar(60);
-const ZOOM_MIN = 0.6;
-const ZOOM_MAX = 1.9;
 
 /** Light by time of day: [minute, sun intensity, sun color, ambient intensity, sky color]. */
 const DAYLIGHT: Array<[number, number, number, number, number]> = [
@@ -656,7 +651,7 @@ export class View {
     this.guide.world = world;
     this.cones.world = world;
     // (Their last prison's parts freed after the next frame, as the rest.)
-    const later = (dispose: () => void) => void this.retired.push(dispose);
+    const later = this.later;
     this.events.setWorld(world, later);
     this.delivery.setWorld(world, later);
     this.gamesView.setWorld(world, later);
@@ -864,6 +859,11 @@ export class View {
     if (mesh.visible) (mesh.material as THREE.MeshStandardMaterial).opacity = 0.74 + (this.reducedMotion ? 0 : Math.sin(time * 2.2) * 0.06);
   }
 
+  /** The lights' level (a power cut dims them); full where there's no security to cut. */
+  private get powerLevel(): number {
+    return this.security?.group.visible ? this.security.powerLevel : 1;
+  }
+
   /** A point of the world (tiles) on screen (CSS pixels); null off screen. */
   screenAt(x: number, y: number, z: number, out: { x: number; y: number }): { x: number; y: number } | null {
     this.v.set(x, y, z).project(this.camera);
@@ -876,12 +876,7 @@ export class View {
   /** Where someone's head is on screen (CSS pixels), for floating numbers; null off screen. */
   screenOf(id: number, out: { x: number; y: number }, height = 1.7): { x: number; y: number } | null {
     const c = this.who(id);
-    if (!c) return null;
-    this.v.copy(c.root.position).setY(c.root.position.y + height).project(this.camera);
-    if (this.v.z > 1 || Math.abs(this.v.x) > 1.1 || Math.abs(this.v.y) > 1.1) return null;
-    out.x = ((this.v.x + 1) / 2) * innerWidth;
-    out.y = ((1 - this.v.y) / 2) * innerHeight;
-    return out;
+    return c ? this.screenAt(c.root.position.x, c.root.position.y + height, c.root.position.z, out) : null;
   }
 
   /** The floor point under a screen point (tiles), for tap-to-walk. */
@@ -940,7 +935,7 @@ export class View {
       this.fitZoom = 0;
       return;
     }
-    const aim = pitchFraming(p, f.x, f.z, this.ahead, this.zoom, innerWidth / Math.max(1, innerHeight), ZOOM_MIN, ZOOM_MAX);
+    const aim = pitchFraming(p, f.x, f.z, this.ahead, this.zoom, innerWidth / Math.max(1, innerHeight));
     this.fitZoom = aim.fit;
     this.ahead.lerp(this.v.set(aim.x, 0, aim.z), this.reducedMotion ? 1 : Math.min(1, dt * 4));
   }
@@ -950,10 +945,10 @@ export class View {
     this.zoomGoal = THREE.MathUtils.clamp(this.zoomGoal * f, ZOOM_MIN, ZOOM_MAX);
   }
 
-  /** About 15 tiles tall, never under 11 wide (phones in portrait see more rows instead). */
+  /** About SCREEN_ROWS tiles tall, never under SCREEN_COLS wide (phones in portrait see more rows instead). */
   private applyZoom() {
     const aspect = innerWidth / Math.max(1, innerHeight);
-    const half = Math.max(15, 11 / aspect) / 2 / this.zoom;
+    const half = Math.max(SCREEN_ROWS, SCREEN_COLS / aspect) / 2 / this.zoom;
     // The picture slides by the shift (CSS px): the frustum moves the other way.
     const sx = (-this.shift.x / Math.max(1, innerWidth)) * 2 * half * aspect;
     const sy = (this.shift.y / Math.max(1, innerHeight)) * 2 * half;
@@ -1326,7 +1321,7 @@ export class View {
       o.z = g.z;
       o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
     }
-    this.inspecting = this.events.update(f.events, dt, time, spots, f.inmates, f.layer === LAYER.GROUND, !this.reducedMotion, !this.reducedMotion, f.x, f.z, f.layer !== LAYER.UNDER, this.security?.powerLevel ?? 1);
+    this.inspecting = this.events.update(f.events, dt, time, spots, f.inmates, f.layer === LAYER.GROUND, !this.reducedMotion, f.x, f.z, f.layer !== LAYER.UNDER, this.security?.powerLevel ?? 1);
     // The holiday (P42): its decor, the water fight's sprays, New Year's fireworks (from anywhere but a tunnel).
     this.holidaysView.dress(f.holiday.kind, this.later);
     this.holidaysView.group.visible = f.layer !== LAYER.UNDER;
@@ -1404,7 +1399,7 @@ export class View {
     // The pay phone (P34): the handset, Lou's car, the diversion's beacon (not from the tunnels).
     this.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.night, f.layer !== LAYER.UNDER);
     // The internet kiosk (P35): its screen, its glow after dark; the drawings over the bed (not from the tunnels).
-    this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.night, this.security?.group.visible ? this.security.powerLevel : 1, f.layer !== LAYER.UNDER);
+    this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.night, this.powerLevel, f.layer !== LAYER.UNDER);
     // The odd jobs board (P40): the cards still up today, the job tag (not from the tunnels).
     this.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
     this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
@@ -1582,7 +1577,7 @@ export class View {
     this.snow.update(dt, time, this.target.x, this.target.z, !this.reducedMotion && this.world?.def.theme === 'alpine', this.openSky);
     this.wxLight = null;
     this.weather.update(NO_WEATHER, dt, time, this.target.x, this.target.z, 0, WALL_H + 0.45, 0, !this.reducedMotion, false, this.rainBelow, this.puddly);
-    this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false, false);
+    this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false);
     this.holidaysView.dress(this.titleHoliday, this.later);
     this.holidaysView.group.visible = true;
     this.holidaysView.update(NO_HOLIDAY, dt, time, this.target.x, this.target.z, !this.reducedMotion);
@@ -1670,8 +1665,7 @@ export class View {
     this.weatherLight(dt);
     if (this.alarm > 0.001) {
       // Lockdown: the light swings red in slow pulses, like a rotating beacon.
-      const pulse = this.reducedMotion ? 0.5 : (Math.sin(time * 5) + 1) / 2;
-      const a = this.alarm * (0.25 + pulse * 0.45);
+      const a = this.alarmPulse(time);
       this.ambient.color.set(SKY_LIGHT).lerp(this.red, a);
       this.sky.lerp(this.red, a * 0.35);
       this.sun.intensity *= 1 - 0.35 * this.alarm;
@@ -1686,10 +1680,10 @@ export class View {
       this.ambient.intensity = 0.85;
       this.sky.set(0x120c08);
     }
-    this.decor?.update(this.security?.group.visible ? this.security.powerLevel : 1, time, this.layer === LAYER.VENTS ? 0.3 : 1, this.reducedMotion);
+    this.decor?.update(this.powerLevel, time, this.layer === LAYER.VENTS ? 0.3 : 1, this.reducedMotion);
     // Decor belongs to the ground floor (out of the picture from the tunnels).
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
-    this.worldView?.update(dt, night, this.doorsOpen, this.security?.group.visible ? this.security.powerLevel : 1, this.riot, this.security?.group.visible ? this.security.arches : 1);
+    this.worldView?.update(dt, night, this.doorsOpen, this.powerLevel, this.riot, this.security?.group.visible ? this.security.arches : 1);
     this.dust.update(dt);
     const c = this.cine;
     this.cineOffset.copy(CAMERA_OFFSET);
@@ -1735,8 +1729,7 @@ export class View {
   private weatherView(layer: number, time: number): WeatherView {
     const v = this.wxView;
     v.span = Math.max(this.camera.right - this.camera.left, (this.camera.top - this.camera.bottom) * 1.6) + 6;
-    const pulse = this.reducedMotion ? 0.5 : (Math.sin(time * 5) + 1) / 2;
-    v.alarm = this.alarm * (0.25 + pulse * 0.45);
+    v.alarm = this.alarmPulse(time);
     v.vents = layer === LAYER.VENTS;
     v.roof = layer === LAYER.ROOF;
     const o = this.cineOffset;
@@ -1747,19 +1740,18 @@ export class View {
     return v;
   }
 
+  /** Lockdown: the red light's share now, swinging in slow pulses like a rotating beacon (steady with reduced motion). */
+  private alarmPulse(time: number): number {
+    const pulse = this.reducedMotion ? 0.5 : (Math.sin(time * 5) + 1) / 2;
+    return this.alarm * (0.25 + pulse * 0.45);
+  }
+
   /** The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the middle of a food fight. */
   private warmDay() {
-    this.weather.warm(true);
-    this.events.warm(true);
-    this.delivery.warm(true);
-    this.gamesView.warm(true);
-    this.pastimesView.warm(true);
+    const views = [this.weather, this.events, this.delivery, this.gamesView, this.pastimesView];
+    for (const v of views) v.warm(true);
     this.renderer.compile(this.scene, this.camera);
-    this.weather.warm(false);
-    this.events.warm(false);
-    this.delivery.warm(false);
-    this.gamesView.warm(false);
-    this.pastimesView.warm(false);
+    for (const v of views) v.warm(false);
   }
 
   /** Who the day's events put on stage this frame (the inspectors), for the contact shadows. */

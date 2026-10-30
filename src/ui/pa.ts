@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { h, TOUCH } from './dom';
+import { fadeOut, h, TOUCH } from './dom';
 import { icon } from './icons';
 
 /** A row of the morning card: what's on, the weather. */
@@ -247,8 +247,7 @@ export class PaBoard {
     const s = this.strip;
     if (!s) return;
     this.strip = null;
-    s.el.classList.add('leaving');
-    window.setTimeout(() => s.el.remove(), 320);
+    fadeOut(s.el, 320);
     this.place();
   }
 
@@ -258,8 +257,7 @@ export class PaBoard {
     this.card = null;
     document.body.classList.remove('pa-card-up');
     this.place();
-    c.el.classList.add('leaving');
-    window.setTimeout(() => c.el.remove(), 320);
+    fadeOut(c.el, 320);
   }
 
   /** A line no longer worth saying (overtaken by events): off the queue, and put away if it's being said. */

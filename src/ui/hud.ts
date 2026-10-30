@@ -125,7 +125,7 @@ export class Hud {
   private news = false;
   private lang = currentLang();
 
-  constructor(onPause: () => void, onProfile: () => void = () => {}) {
+  constructor(onPause: () => void, onProfile: () => void) {
     this.el = h(
       'div',
       'hud hidden',
