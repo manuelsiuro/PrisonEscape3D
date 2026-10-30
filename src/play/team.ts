@@ -27,7 +27,6 @@ import { refusedText } from './labels';
  * events; what the picture shows of the ball. The sim's own functions decide everything shown.
  */
 
-const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
 
 /** The line the needle has inked (its points, the sitting's steps it was taken at): the card draws it. Not state. */
 const trail: Array<[number, number]> = [];
@@ -96,7 +95,7 @@ export function matchNow(sim: Sim, a: number): MatchView | null {
   const o = s.match;
   if (!o || s.layer !== LAYER.GROUND) return null;
   const v = matchView;
-  v.name = nameOf(sim, o.who);
+  v.name = inmateName(sim, o.who);
   v.phase = !o.at ? 'gather' : o.pause ? 'goal' : 'play';
   // (Full time, or the bell for the next block if it comes first: the match ends there, so the clock does too.)
   const from = o.at || s.step;
@@ -114,8 +113,8 @@ export function matchNow(sim: Sim, a: number): MatchView | null {
   const now = performance.now();
   if (o.at && !o.pause && o.kick !== 1 && (bx - s.player.x) ** 2 + (bz - s.player.z) ** 2 <= KICK_REACH * KICK_REACH) feetAt = now;
   v.atFeet = !!o.at && !o.pause && now - feetAt < 500;
-  v.mates = [o.team[TEAM.KEEPER], o.team[TEAM.MATE]].map((k) => nameOf(sim, k));
-  v.rivals = [o.team[TEAM.CAPTAIN], o.team[TEAM.RIVAL], o.team[TEAM.RIVAL_KEEPER]].map((k) => nameOf(sim, k));
+  v.mates = [o.team[TEAM.KEEPER], o.team[TEAM.MATE]].map((k) => inmateName(sim, k));
+  v.rivals = [o.team[TEAM.CAPTAIN], o.team[TEAM.RIVAL], o.team[TEAM.RIVAL_KEEPER]].map((k) => inmateName(sim, k));
   return v;
 }
 
@@ -129,7 +128,7 @@ export function inkNow(sim: Sim): InkView | null {
   const o = s.ink;
   if (!o) return null;
   const v = inkView;
-  v.name = nameOf(sim, o.who);
+  v.name = inmateName(sim, o.who);
   v.design = o.design;
   v.mine = !!o.mine;
   v.seen = !!o.seen;
@@ -187,7 +186,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
   const g = play.game;
   switch (e.type) {
     case 'football': {
-      const name = e.who !== undefined && e.who >= 0 ? nameOf(sim, e.who) : '';
+      const name = e.who !== undefined && e.who >= 0 ? inmateName(sim, e.who) : '';
       const sc = e.score ?? [0, 0];
       if (e.what === 'start') {
         coachOnce('football', TOUCH ? 'hint.footballTouch' : 'hint.football');
@@ -205,7 +204,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
         // (Whose side the scorer is on against the net it went in: an own goal said so.)
         const place = e.by === undefined || e.by < 0 ? -1 : (sim.state.match?.team.indexOf(e.by) ?? -1);
         const side = place < 0 ? 0 : sideOf(place);
-        lastGoal = { ours: !!e.mine, by: e.by === undefined || e.by < 0 ? '' : nameOf(sim, e.by), own: (side === 0) !== !!e.mine };
+        lastGoal = { ours: !!e.mine, by: e.by === undefined || e.by < 0 ? '' : inmateName(sim, e.by), own: (side === 0) !== !!e.mine };
         sound.swish();
         sound.cheer();
         if (e.mine) {
@@ -237,7 +236,7 @@ export function announceTeam(sim: Sim, e: SimEvent) {
       break;
     }
     case 'tattoo': {
-      const name = nameOf(sim, e.who);
+      const name = inmateName(sim, e.who);
       const design = t(`design.${DESIGNS[e.design]?.id ?? 'heart'}` as Key);
       const designA = t(`designA.${DESIGNS[e.design]?.id ?? 'heart'}` as Key);
       if (e.what === 'start') {

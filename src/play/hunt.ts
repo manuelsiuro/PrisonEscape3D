@@ -19,7 +19,7 @@ import { floorAt, spotTile } from '../sim/hunt/world';
 import { ALERT, GUARD_SPEED } from '../sim/systems/guards';
 import { DOING } from '../sim/systems/inmates';
 import { STEPS_PER_SECOND, UNIT, WALK_SPEED } from '../sim/tuning';
-import { LAYER, MAP_W } from '../sim/world/World';
+import { MAP_W } from '../sim/world/World';
 import type { Bubble } from '../talk/director';
 import { typo } from '../talk/fill';
 import { Bubbles } from '../ui/bubbles';
@@ -28,7 +28,7 @@ import { buzz } from '../app/haptics';
 import { banner, click, combatUI, controls, hint, hooks, hud, itemsUI, settings, sound, tools, view, vignette } from './context';
 import { play, playLater, tickPlayClock, type Game } from './game';
 import { lessonHuntGoal, updateLesson } from './lesson';
-import { type Frame } from '../render/viewFrame';
+import { emptyFrame, type Frame } from '../render/viewFrame';
 
 /**
  * The manhunt in play (P41): its own simulation (sim/hunt/) stepped at the inside's pace from
@@ -373,66 +373,8 @@ function huntFrameOf(run: HuntRun, a: number): HuntFrame {
 }
 
 /** The view's frame for the outside: everything the inside has, none of it there but the player, the searchers (as guards), their dogs, the trail, the lookout. */
-const frame: Frame = {
-  x: 0,
-  z: 0,
-  facing: 0,
-  moving: false,
-  minuteOfDay: 0,
-  rollCall: false,
-  surface: 0,
-  inmates: [],
-  guide: null,
-  tap: null,
-  alarm: false,
-  ground: [],
-  groundRev: -1,
-  focus: null,
-  held: 0,
-  outfit: 0,
-  sleeping: false,
-  knockedOut: false,
-  guards: [],
-  layer: LAYER.GROUND,
-  tilesRev: -1,
-  wearRev: 0,
-  deskAside: false,
-  wear: {},
-  lock: -1,
-  lockHostile: false,
-  lockFar: false,
-  doing: 0,
-  trainAt: null,
-  restBed: null,
-  reps: 0,
-  puddles: [],
-  planters: new Map(),
-  puddlesRev: 0,
-  craters: [],
-  security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
-  takeover: false,
-  fuses: [],
-  weather: { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false },
-  events: { movie: false, foodFight: false, inspection: false },
-  delivery: { t: -1, at: 0, search: 0, until: 0, stowed: false },
-  dogs: [],
-  scent: [],
-  rats: [],
-  smuggle: null,
-  games: { bout: null, dice: null, taps: 0, sports: false, lock: null },
-  pastimes: { spot: -1, ball: null, holding: null, cards: null, board: null },
-  long: null,
-  team: { pitch: null, theme: '', ball: null, mates: [], rivals: [] },
-  nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
-  phone: { offHook: false, car: false },
-  kiosk: { on: false, photos: [] },
-  release: { called: false, freed: false },
-  inked: [],
-  getaway: { shift: false, waved: false, glide: null },
-  oddjobs: { pins: [false, false, false], chain: false, mine: false },
-  // (P42: no holiday out there: the outside's world is never dressed for one.)
-  holiday: { kind: 0, water: false, fireworks: false },
-};
+// (Never dressed for a holiday: the outside's world has none.)
+const frame: Frame = { ...emptyFrame(), wearRev: 0 };
 const tapAt = { x: 0, z: 0 };
 const scent: Array<[number, number]> = [];
 

@@ -32,6 +32,9 @@ export function t(key: Key, vars: Record<string, string | number> = {}): string 
   return withKeys(s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`)));
 }
 
+/** A text mid-sentence: its first letter in lower case ("Bringing you a tube of glue"). */
+export const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
 /** A list in a sentence: "6, 8 and 4" ("6, 8 et 4"). */
 export function listOf(items: readonly string[]): string {
   if (items.length <= 1) return items[0] ?? '';

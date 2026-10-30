@@ -1,6 +1,6 @@
 import { buzz } from '../app/haptics';
 import { BETS, CROP, GROWN, LEGS, RACE_MINUTE, RACE_STEPS, TAKE, TIPSY_HEAT, WATER_MAX } from '../content/long';
-import { t, type Key } from '../i18n';
+import { type Key, lowerFirst, t } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt, formatTime, hhmm, prisonDay } from '../sim/systems/clock';
 import { BED, bedCount, bedOf, bedTile, ripe, wilted } from '../sim/systems/garden';
@@ -110,7 +110,7 @@ export function announceLong(sim: Sim, e: SimEvent) {
         sound.squeak(1);
         window.setTimeout(() => play.game === g && sound.patter(0.8), 300);
         floatUp(`+${e.gain} ${t('race.speedShort')}`, 'gain');
-        itemsUI.toast(t('toast.ratTrained', { name: ratName(sim), item: lower(itemName(e.item ?? 0)), n: e.speed ?? 0 }));
+        itemsUI.toast(t('toast.ratTrained', { name: ratName(sim), item: lowerFirst(itemName(e.item ?? 0)), n: e.speed ?? 0 }));
       } else {
         sound.sting();
         itemsUI.toast(t(`track.${e.why}` as Key, { name: ratName(sim) }));
@@ -167,7 +167,6 @@ export function announceLong(sim: Sim, e: SimEvent) {
 /** The garden's morning news told (kind and step): once a kind a morning. */
 const gardenSaid = new Set<string>();
 
-const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 /** The card a race was run on: the rivals, and the pet after them if the order has a lane for it. */
 function cardOf(sim: Sim, day: number, lanes: number): Entrant[] {

@@ -27,7 +27,6 @@ import { floatUp } from './floats';
  * shows (the stage set up, the buzzers lit). The sim's own functions decide everything shown.
  */
 
-const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
 /** A clock time ("19:34") from minutes of the day. */
 const formatTime = (m: number) => hhmm(m % 1440);
 /** A guard by name ("Officer Pratt"), an item by its id. */
@@ -86,7 +85,7 @@ export function stageNow(sim: Sim, a: number): StageView | null {
   const m = dayMinute(s.step);
   const on = actNow(sim);
   // (A no-show: no mark, -2, and out of the running.)
-  v.acts = acts.map((x, k) => ({ name: nameOf(sim, x.who), inst: x.inst, song: x.song, mark: noShow(sim, k) ? -2 : m >= x.until ? x.mark : -1, on: k === on, at: formatTime(x.at + 480) }));
+  v.acts = acts.map((x, k) => ({ name: inmateName(sim, x.who), inst: x.inst, song: x.song, mark: noShow(sim, k) ? -2 : m >= x.until ? x.mark : -1, on: k === on, at: formatTime(x.at + 480) }));
   v.of = acts.filter((_, k) => !noShow(sim, k)).length + 1;
   if (o) {
     v.phase = 'play';
@@ -157,7 +156,7 @@ export function quizNow(sim: Sim): QuizView | null {
   if (!o && !held && !(quizOn(sim) && nearestPlace(sim) >= 0)) return null;
   const v = quizView;
   if (o) {
-    v.names = [t('games.you'), ...o.who.map((k) => nameOf(sim, k))];
+    v.names = [t('games.you'), ...o.who.map((k) => inmateName(sim, k))];
     v.pts = o.pts;
     v.said = o.said;
     v.got = o.got;
@@ -273,7 +272,7 @@ export function announceNights(sim: Sim, e: SimEvent) {
         if (e.by === 0) floatUp('+1', 'gain');
       } else if (e.what === 'wrong') sound.buzzer();
       else if (e.what === 'won' || e.what === 'tie' || e.what === 'lost') {
-        const o = { names: [t('games.you'), ...(e.who ?? []).map((k) => nameOf(sim, k))] };
+        const o = { names: [t('games.you'), ...(e.who ?? []).map((k) => inmateName(sim, k))] };
         quizResult = { at: playNow(), what: e.what, pts: e.pts ?? [0, 0, 0, 0], prize: e.prize ?? 0, int: e.int ?? 0, names: o.names };
         if (e.what === 'won') {
           sound.levelUp();

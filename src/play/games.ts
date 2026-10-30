@@ -65,7 +65,6 @@ function diceShown(now = performance.now()): DiceShow | null {
   return show.who >= 0 && now < show.until ? show : null;
 }
 
-const nameOf = (sim: Sim, who: number) => inmateName(sim, who);
 
 /** What the games' events say: sounds, toasts, the dice's timeline. */
 export function announceGames(sim: Sim, e: SimEvent) {
@@ -115,7 +114,7 @@ export function announceGames(sim: Sim, e: SimEvent) {
         window.setTimeout(() => play.game === g && show.id === id && sound.diceLand(), throwAt - now + LAND_MS - 80);
         window.setTimeout(() => {
           if (play.game !== g || show.id !== id) return;
-          const name = nameOf(sim, who);
+          const name = inmateName(sim, who);
           if (what === 'won') {
             sound.coin(stake >= 20);
             buzz('attended');
@@ -134,7 +133,7 @@ export function announceGames(sim: Sim, e: SimEvent) {
       }
       break;
     case 'bout': {
-      const name = nameOf(sim, e.who);
+      const name = inmateName(sim, e.who);
       if (e.what === 'start') {
         sound.grunt();
         buzz('strike');
@@ -204,7 +203,7 @@ function gamesOffer(sim: Sim): GamesView | null {
   const v = gamesView;
   const m = s.inmates[who];
   const why = gameRefusal(sim, who);
-  v.name = nameOf(sim, who);
+  v.name = inmateName(sim, who);
   v.open = why === null;
   v.why = why === 'gamesClosed' ? t('games.closed') : why === 'gamesLockdown' ? t('refused.gamesLockdown') : why === 'seated' ? t('refused.seated') : why === 'gameOpinion' ? t('games.needOpinion', { n: GAME_OPINION }) : why === 'played' ? t('games.playedOut', { n: GAMES_A_DAY }) : '';
   v.left = GAMES_A_DAY - playedToday(s, who);
@@ -242,7 +241,7 @@ export function wrestleNow(sim: Sim, dt: number): WrestleView | null {
   if (!s.bout.length) return null;
   const [who, bar, side, from] = s.bout;
   const v = wrestleView;
-  v.name = nameOf(sim, who);
+  v.name = inmateName(sim, who);
   // Eased toward the step's bar (the sim moves it in 20 steps a second).
   barSeen += (bar / BAR - barSeen) * Math.min(1, dt * 14);
   v.bar = barSeen;
