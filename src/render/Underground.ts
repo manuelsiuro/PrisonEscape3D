@@ -4,6 +4,7 @@ import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
 import { box, kitMaterial, merge, paint, type Part } from './kit';
 import { seeThrough } from './occlusion';
 import { TEX } from './textures';
+import { disposeTree } from './batch';
 
 /** How tall the earth stands around a tunnel (low enough to see down into it). */
 const EARTH_H = 0.8;
@@ -154,11 +155,6 @@ export class Underground {
   }
 
   dispose() {
-    this.group.traverse((o) => {
-      const m = o as THREE.Mesh;
-      m.geometry?.dispose();
-      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) if (mat !== kitMaterial) mat.dispose();
-    });
+    disposeTree(this.group, () => false, new Set([kitMaterial]));
   }
 }

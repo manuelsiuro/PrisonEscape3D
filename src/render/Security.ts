@@ -8,6 +8,7 @@ import { Cones, type ConeFrame } from './Cones';
 import { ALERT } from '../sim/systems/guards';
 import { WALL_H } from './WorldView';
 import { canvasTexture } from './canvas';
+import { disposeTree } from './batch';
 
 /** What the view needs of security each frame (filled by the game, reused). */
 export interface SecurityFrame {
@@ -334,11 +335,6 @@ export class Security {
 
   dispose() {
     this.cones.dispose();
-    this.group.traverse((o) => {
-      const m = o as THREE.Mesh;
-      m.geometry?.dispose();
-      const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) mat.dispose();
-    });
+    disposeTree(this.group, () => false);
   }
 }

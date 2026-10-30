@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { cornersOf } from '../content/grounds';
 import type { Court, Ring } from '../content/prisons/types';
 import type { World } from '../sim/world/World';
-import { now, type Later } from './batch';
+import { disposeTree, type Later, now } from './batch';
 import { box, merge, paint, type Part } from './kit';
 
 /** The running track's rubber, its lane lines and the court's paint (P31). */
@@ -31,10 +31,7 @@ export class GroundsView {
     const old = [...this.group.children] as THREE.Mesh[];
     this.group.clear();
     later(() => {
-      for (const m of old) {
-        m.geometry.dispose();
-        (m.material as THREE.Material).dispose();
-      }
+      for (const m of old) disposeTree(m, () => false);
     });
     const leisure = world.def.leisure;
     const sports = world.def.zones.some(([z]) => z === 'sports');
