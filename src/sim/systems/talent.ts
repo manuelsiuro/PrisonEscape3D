@@ -111,6 +111,8 @@ export function actsOf(s: Pick<SimState, 'salt' | 'inmates'>, day: number): Act[
 /** When the player's turn comes (minutes into the prison day): after the last act. */
 export const turnFrom = (acts: readonly Act[]) => (acts.length ? acts[acts.length - 1].until : TALENT_AT);
 
+/** Today is a talent night here (a stage, not the Training Block), whatever the hour. */
+const talentToday = (sim: SimContext) => !!stageOf(sim.world) && !sim.world.def.rules?.relaxed && today(sim).event === 'talent';
 /** Talent night is on now (a day card's evening, in a prison with a stage). */
 export const talentOn = (sim: SimContext) => !!stageOf(sim.world) && !sim.world.def.rules?.relaxed && eventOn(sim, 'talent');
 
@@ -145,7 +147,7 @@ export function actNow(sim: SimContext): number {
  * (stageTargets), every performer whose act isn't over and hasn't been left empty (a no-show).
  */
 export function performersTonight(sim: SimContext): number[] {
-  if (!stageOf(sim.world) || sim.world.def.rules?.relaxed || today(sim).event !== 'talent') return [];
+  if (!talentToday(sim)) return [];
   const acts = tonight(sim);
   const m = dayMinute(sim.state.step);
   if (!acts.length || m < acts[0].at - ACT_CALL) return [];
@@ -188,7 +190,7 @@ export function keepActs(sim: SimContext) {
 
 /** The next act's performer, walking over to the wings before its slot (-1 none; from ACT_WALK before 19:00 too). */
 function actComing(sim: SimContext): number {
-  if (!stageOf(sim.world) || sim.world.def.rules?.relaxed || today(sim).event !== 'talent') return -1;
+  if (!talentToday(sim)) return -1;
   const m = dayMinute(sim.state.step);
   const walk = sim.rules250 ? ACT_WALK : ACT_CALL;
   return tonight(sim).findIndex((a) => m >= a.at - walk && m < a.at);

@@ -50,6 +50,7 @@ import type { StartKind } from '../content/outside/types';
 import { OVER, SEEK, type Hunt } from '../sim/hunt/Hunt';
 import { spotTile } from '../sim/hunt/world';
 import { centerX, centerZ, tileAt } from '../sim/world/grid';
+import { inmateInCell } from '../sim/systems/inmates';
 
 /**
  * The tutorial (P8+): short lessons on the Training Block, each a scene set up on a fresh game
@@ -1341,7 +1342,7 @@ function seesRound(sim: Sim, post: number, guard: number): boolean {
 
 /** A Center Perks merchant (the first in its list: an inmate whose stall opens in free time). */
 function merchantAt(sim: Sim): number {
-  return sim.state.inmates.findIndex((m) => m.cell === sim.prison.merchants[0]);
+  return inmateInCell(sim.state, sim.prison.merchants[0]);
 }
 /** The talk lesson's dead end: the magazine for the favor gone (given away, dropped) with none left in the desk. */
 function talkFail(c: LessonCtx): Key | null {

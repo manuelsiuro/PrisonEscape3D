@@ -36,7 +36,7 @@ import { MAP_W } from '../world/World';
 import { deskRoom } from '../world/containers';
 import { crowdPlan, dayMinute, drillOn, prisonDay, TODAY, today } from './calendar';
 import { assign, awake, GUARD, traitOf } from './guards';
-import { DOING } from './inmates';
+import { DOING, inmateInCell } from './inmates';
 import { freeHotbar, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { summon } from './power';
@@ -548,7 +548,7 @@ function callDone(sim: SimContext, call: Call) {
     else s.phoned[3] = 0;
     sim.events.push({ type: 'phone', what: 'tip', cell: call.arg, who: k });
     // Word may get round to the inmate named.
-    const named = s.inmates.findIndex((m) => m.cell === call.arg);
+    const named = inmateInCell(s, call.arg);
     if (named >= 0 && rollInt(s.salt, SALT.CALLS, day, 4000 + call.arg, 100) < SNITCH_ODDS) {
       changeOpinion(sim, named, SNITCH_OPINION);
       sim.events.push({ type: 'phone', what: 'snitch', who: named });

@@ -37,7 +37,7 @@ import { DAY_STEPS } from './clock';
 import { elderOf } from './checkers';
 import { playedToday } from './games';
 import { assign, awake, GUARD } from './guards';
-import { DOING } from './inmates';
+import { DOING, inmateInCell } from './inmates';
 import { freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot } from './items';
 import { bodyAt, type Body } from './movement';
 import { commsOf, searcher } from './phone';
@@ -87,9 +87,6 @@ export function delivering(s: Pick<SimState, 'oddjob'>, who: number, item: numbe
 
 /** An inmate owes the player one (a debt from a job). */
 export const owes = (s: Pick<SimState, 'oddjobs'>, who: number) => who >= 0 && who < 30 && !!(s.oddjobs[R.OWED] & (1 << who));
-
-/** The inmate in a cell (-1 none). */
-const inCell = (s: SimState, cell: number) => s.inmates.findIndex((m) => m.cell === cell);
 
 /** An inmate's desk (its index among the containers; -1 none). */
 export function deskOf(sim: Pick<SimContext, 'world' | 'state'>, who: number): number {
@@ -154,7 +151,7 @@ function targetsFor(sim: SimContext, kind: number, giver: number): number[] {
   if (kind === KIND.CAKE || kind === KIND.LOOKOUT) return [-1];
   if (kind === KIND.ERRAND) {
     for (const cell of sim.world.def.merchants) {
-      const k = inCell(s, cell);
+      const k = inmateInCell(s, cell);
       if (k >= 0 && k !== giver) out.push(k);
     }
     return out;
@@ -260,9 +257,9 @@ export function chainDeal(sim: SimContext, day = prisonDay(sim.state.step)): Dea
   const k = s.oddjobs[R.CHAIN];
   const st = chain.steps[k];
   if (!st || s.oddjobs[R.CHAIN_DAY] >= day) return null;
-  const giver = inCell(s, chain.who);
+  const giver = inmateInCell(s, chain.who);
   if (giver < 0) return null;
-  let target = st.target ? inCell(s, st.target) : -1;
+  let target = st.target ? inmateInCell(s, st.target) : -1;
   if (st.kind === KIND.CHECKERS) target = elderOf(sim);
   if (st.kind === KIND.LIFT && st.variant !== LIFT.MUG) {
     const pool = liftGuards(sim);

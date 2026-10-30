@@ -19,6 +19,7 @@ import { ATTR_MAX } from '../tuning';
 import { gameOn, gamesOpen } from './games';
 import { prisonDay } from './clock';
 import { changeOpinion, refuse } from './social';
+import { inmateInCell } from './inmates';
 
 /** The pieces: the player's man and king, his man and king. */
 export const PIECE = { EMPTY: 0, MAN: 1, KING: 2, HIS_MAN: 3, HIS_KING: 4 } as const;
@@ -250,7 +251,7 @@ export function elderMove(sq: readonly number[], salt: number, game: number, ply
 /** The old-timer (inmate index), -1 in a prison without one. */
 export function elderOf(sim: Pick<SimContext, 'world' | 'state'>): number {
   const cell = sim.world.def.leisure?.oldTimer ?? -1;
-  return sim.state.inmates.findIndex((m) => m.cell === cell);
+  return inmateInCell(sim.state, cell);
 }
 
 /** Why the old-timer won't play now (null: he will). */
