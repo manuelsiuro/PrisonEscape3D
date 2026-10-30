@@ -34,8 +34,8 @@ import { guardSubject, inmateName, jobName } from '../ui/social';
 import { press } from './buttons';
 import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
-import { dogName, NEED } from './labels';
-import { dogDef, outOfBounds } from '../sim/systems/k9';
+import { NEED } from './labels';
+import { outOfBounds } from '../sim/systems/k9';
 import { coachOnce, markTip, seenInteract, seenTip } from './tips';
 import { vehicleThe } from './day';
 import { today } from '../sim/systems/calendar';
@@ -44,6 +44,8 @@ import { announceOddJob } from './oddjobs';
 import { floatAt } from './floats';
 import { refusedText } from './refusals';
 import { dayTime } from './warden';
+import { announceDog } from './dogs';
+import { gainAt, tilesTo } from './loudness';
 
 /** Games whose player has been told about the cold already (and the heat, P17). */
 const coldTold = new WeakSet<object>();
@@ -674,75 +676,9 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'ringing':
       sound.ring(gainAt(sim, e.tile));
       break;
-    case 'dog': {
-      // Guard dogs (P19): heard as loud as they are close; told by name.
-      const d = sim.state.dogs[e.dog];
-      const gain = d ? gainAt(sim, Math.floor(d.body.z / UNIT) * 64 + Math.floor(d.body.x / UNIT)) : 0.5;
-      const dog = dogName(sim, e.dog);
-      const pitch = dogDef(sim.world, e.dog).coat === 'mastiff' ? 0.75 : dogDef(sim.world, e.dog).coat === 'collie' ? 1.15 : 1;
-      switch (e.what) {
-        case 'sniff':
-          sound.bark(gain, pitch);
-          buzz('missed');
-          coachOnce('sniffed', 'hint.sniffed');
-          break;
-        case 'track': {
-          sound.bark(gain * 0.8, pitch);
-          // (Once in a while per dog: in a lockdown a dog may lose the trail and pick up fresher scent again and again.)
-          const now = performance.now();
-          if (now - (trackSaid[e.dog] ?? -1e9) < 10000) break;
-          trackSaid[e.dog] = now;
-          trackShown[e.dog] = true;
-          banner.toast(t('toast.dogTrack', { dog }), 'bad');
-          coachOnce('scent', 'hint.scent');
-          break;
-        }
-        case 'point':
-          sound.bark(gain, pitch);
-          trackShown[e.dog] = false;
-          // (Found somewhere the player may be, it's only a dog's hello.)
-          if (outOfBounds(sim)) banner.toast(t('toast.dogPoint', { dog }), 'bad');
-          else itemsUI.toast(t('toast.dogHello', { dog }));
-          break;
-        case 'dug':
-          sound.bark(gain, pitch);
-          buzz('missed');
-          trackShown[e.dog] = false;
-          // (Out of a lockdown the alarm's banner says it; in one, this does.)
-          if (sim.state.lockdown && !sim.events.some((m) => m.type === 'lockdown')) banner.toast(t('toast.dogDug', { dog }), 'bad');
-          break;
-        case 'lost':
-          // (Said only of a trail the player was told about.)
-          if (trackShown[e.dog]) itemsUI.toast(t('toast.dogLost', { dog }));
-          trackShown[e.dog] = false;
-          break;
-        case 'dazed':
-          sound.sneeze(gain);
-          itemsUI.toast(t(e.trail ? 'toast.dogDazed' : 'toast.dogSneeze', { dog }));
-          trackShown[e.dog] = false;
-          break;
-        case 'fed':
-          sound.munch(false);
-          if (!sim.events.some((m) => m.type === 'dog' && m.what === 'friend')) itemsUI.toast(t('toast.dogFed', { dog, n: e.trust ?? 0 }));
-          coachOnce('treat', 'hint.treat');
-          break;
-        case 'friend':
-          sound.munch(true);
-          banner.toast(t('toast.dogFriend', { dog }), 'good');
-          break;
-        case 'full':
-          itemsUI.toast(t('toast.dogFull', { dog }));
-          break;
-        case 'asleep':
-          sound.yawn(gain);
-          itemsUI.toast(t('toast.dogAsleep', { dog }));
-          break;
-        case 'woke':
-          if (gain > 0.4) itemsUI.toast(t('toast.dogWoke', { dog }));
-          break;
-      }
+    case 'dog':
+      announceDog(sim, e);
       break;
-    }
     case 'rat':
       announceRat(sim, e);
       break;
@@ -833,13 +769,6 @@ export function announce(e: SimEvent, sim: Sim) {
 
 /** How long the last thing thrown is in the air (s): its thud's wave waits for it to land. */
 let lastFlight = 0;
-/** How far a tile is from the player (tiles). */
-function tilesTo(sim: Sim, tile: number): number {
-  const p = sim.state.player;
-  return Math.hypot((tile % 64) + 0.5 - p.x / UNIT, Math.floor(tile / 64) + 0.5 - p.z / UNIT);
-}
-/** How loud something at a tile sounds to the player: full close by, a whisper across the prison. */
-const gainAt = (sim: Sim, tile: number) => Math.max(0.12, Math.min(1, 1.15 - tilesTo(sim, tile) / 16));
 
 /** Once a second while it counts down: a wound alarm clock in the pockets ticks (never while time runs fast: asleep, out cold, fast-forward). */
 export function tickTock(sim: Sim, speed: number) {
@@ -852,9 +781,6 @@ export function tickTock(sim: Sim, speed: number) {
 let thrownAt = -1e9;
 const THROW_FLIGHT_MS = 320;
 
-/** When each dog's "on your trail" was last said (real ms), and whether it was (its "lost" follows only then). */
-const trackSaid: number[] = [];
-const trackShown: boolean[] = [];
 
 /** When a refusal was last said, and the sniper's aim (real ms): repeats keep quiet for a while. */
 let lastCant = 0;
