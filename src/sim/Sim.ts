@@ -16,7 +16,7 @@ import { chill } from './systems/weather';
 import { crowdPlan, dayMinute, dayWatch, drillOn, theDay, today } from './systems/calendar';
 import { clockAt, DAY_STEPS, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
-import { fight, keysCarried, raiseKeyAlarm, recover, sleepingGuards, wearKeys, wokeKeyless } from './systems/fights';
+import { fight, recover } from './systems/fights';
 import { dutyDue, stepGuards, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
 import { mines } from './systems/mines';
@@ -57,6 +57,7 @@ import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 import { tileAt } from './world/grid';
 import { keepSeat, regenerate, shower, standUp, underShower } from './systems/upkeep';
+import { keysCarried, raiseKeyAlarm, sleepingGuards, wearKeys, wokeKeyless } from './systems/keys';
 
 // The state, its events and snapshots live in state.ts; importers have always found them here.
 export * from './state';

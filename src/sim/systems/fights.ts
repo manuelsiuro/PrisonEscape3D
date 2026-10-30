@@ -1,86 +1,32 @@
 /**
- * Fights as the Sim runs them (GDD §7.3, §10): keys carried and worn, the player's blows and
- * throws, knockouts and coming round (a guard's missing key raises the alarm), blows on the
- * player and what happens at 0 health. The numbers (damage, reach, pace) are in combat.ts.
+ * Fights as the Sim runs them (GDD §7.3, §10): the player's blows and throws, knockouts and
+ * coming round (a guard's missing key raises the alarm, keys.ts), blows on the player and what
+ * happens at 0 health. The numbers (damage, reach, pace) are in combat.ts.
  */
 import { twist } from './twists';
 import { allyDamage } from './crew';
 import { byCanteen, inFoodFight } from './calendar';
 import { itemDef } from '../../content/items';
 import { ROUTINE } from '../../content/routine';
-import { nearestDir as faceTo } from '../ai/path';
-import { tileAt } from '../world/grid';
+import { nearestDir } from '../ai/path';
 import { lineOfSight } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
-import { SPOT, WAKE } from '../events';
+import { WAKE } from '../events';
 import { ANGRY_STEPS, CHASE_HEAT, GRUDGE_SETTLED, GUARD_SWING_STEPS, HIT_OPINION, INMATE_SWING_STEPS, KO_OPINION, KO_STEPS, LOCK_KEEP, MELEE_REACH, THROW_RANGE } from '../tuning';
-import { TILE } from '../world/tiles';
-import { LAYER, MAP_W } from '../world/World';
+import { LAYER } from '../world/World';
 import { BATON_ATTACK, damage, dist2, type Fighter, guardDefense, INMATE_DEFENSE, isGuard, maxHealth, personOf, reachOf, swingSteps } from './combat';
 import { FAVOR, FAVOR_STATE } from './economy';
 import { awake, backToDuty, type Guard, GUARD, rouse } from './guards';
 import { DOING, type Inmate } from './inmates';
-import { closeBox, guardKit, HOTBAR, itemOf, pocketOf, slot, usesOf } from './items';
+import { closeBox, guardKit, itemOf, pocketOf, slot } from './items';
 import { caught } from './justice';
 import { type Body, tileOfBody } from './movement';
 import { changeOpinion, dismiss, dismissAll, endTalk, favorDone } from './social';
 import { stopTraining } from './training';
-import { addHeat } from './watch';
 import { tipsyNow } from './pruno';
 import { TIPSY_BLOW } from '../../content/long';
-
-/** Bit k: the player carries a key (real or plastic) for door color k (keys work from the hotbar). */
-export function keysCarried(sim: SimContext): number {
-  const it = sim.state.items;
-  let mask = 0;
-  for (let k = 0; k < HOTBAR; k++) {
-    const v = it.inv[k];
-    const d = v ? itemDef(itemOf(v)) : null;
-    if (d?.cat === 'key' && d.key) mask |= 1 << d.key;
-  }
-  return mask;
-}
-
-/**
- * A plastic key wears a little at each door it opens (GDD §7.3: 15 uses); a real key never
- * does. Counted once a door, as the player steps out of it (the door stays open to them
- * while they're in it, so the last use still gets them through). A two-wide door is one door.
- */
-export function wearKeys(sim: SimContext) {
-  const s = sim.state;
-  const w = sim.world;
-  const t = tileOfBody(s.player);
-  const i = t.z * MAP_W + t.x;
-  const inDoor = s.layer === LAYER.GROUND && w.ground.kind[i] === TILE.DOOR && w.doorShut[i] === 1;
-  const was = s.doorAt;
-  if (inDoor) {
-    s.doorAt = i;
-    return;
-  }
-  if (was < 0) return;
-  s.doorAt = -1;
-  wearKey(sim, w.ground.key[was]);
-}
-
-/** One use off a plastic key of a color (none if the player holds the real one). */
-function wearKey(sim: SimContext, color: number) {
-  const it = sim.state.items;
-  let plastic = -1;
-  for (let k = 0; k < HOTBAR; k++) {
-    const v = it.inv[k];
-    const d = v ? itemDef(itemOf(v)) : null;
-    if (d?.cat !== 'key' || d.key !== color) continue;
-    if (!d.uses) return;
-    if (plastic < 0) plastic = k;
-  }
-  if (plastic < 0) return;
-  const item = itemOf(it.inv[plastic]);
-  const left = usesOf(it.inv[plastic]) - 1;
-  it.inv[plastic] = left > 0 ? slot(item, left) : 0;
-  it.rev++;
-  if (left <= 0) sim.events.push({ type: 'broke', item });
-}
+import { raiseKeyAlarm, roomFor } from './keys';
 
 /** The weapon the player fights with: one in hand, else the one in the weapon slot (0: fists). */
 function weapon(sim: SimContext): { item: number; slot: number } {
@@ -119,7 +65,7 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
       sim.events.push({ type: 'cantHit', why: 'far' });
       return true;
     }
-    if (d2 > 0) p.facing = faceTo(f.body.x - p.x, f.body.z - p.z);
+    if (d2 > 0) p.facing = nearestDir(f.body.x - p.x, f.body.z - p.z);
     it.inv[from] = 0;
     it.rev++;
     s.swingAt = s.step;
@@ -137,7 +83,7 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     if (fresh) sim.events.push({ type: 'cantHit', why: 'far' });
     return true;
   }
-  if (d2 > 0) p.facing = faceTo(f.body.x - p.x, f.body.z - p.z);
+  if (d2 > 0) p.facing = nearestDir(f.body.x - p.x, f.body.z - p.z);
   s.swingAt = s.step;
   const who = s.lock;
   const guard = isGuard(s, who);
@@ -148,7 +94,7 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
   f.hp = Math.max(0, f.hp - dmg);
   const ko = f.hp === 0;
   // They know who hit them.
-  if (d2 > 0) f.body.facing = faceTo(p.x - f.body.x, p.z - f.body.z);
+  if (d2 > 0) f.body.facing = nearestDir(p.x - f.body.x, p.z - f.body.z);
   if (guard) {
     const g = f as Guard;
     if (g.doing === DOING.SLEEP) g.doing = DOING.NOTHING;
@@ -197,7 +143,7 @@ function knockOut(sim: SimContext, who: number, by: Body = sim.state.player) {
   }
   // Down facing whoever did it: they fall back, away from them.
   const p = by;
-  if (f.body.x !== p.x || f.body.z !== p.z) f.body.facing = faceTo(p.x - f.body.x, p.z - f.body.z);
+  if (f.body.x !== p.x || f.body.z !== p.z) f.body.facing = nearestDir(p.x - f.body.x, p.z - f.body.z);
   f.path = [];
   f.goal = -1;
   f.wait = 0;
@@ -250,65 +196,6 @@ export function recover(sim: SimContext) {
   raiseKeyAlarm(sim);
 }
 
-/** The guards asleep (in bed, or dozing at a nap stop) and not out cold, a bit each (P20: those who wake without their key). */
-export function sleepingGuards(s: { guards: readonly Guard[] }): number {
-  let mask = 0;
-  s.guards.forEach((g, k) => {
-    if (g.ko <= 0 && (g.doing === DOING.SLEEP || g.doze > 0)) mask |= 1 << k;
-  });
-  return mask;
-}
-
-/**
- * Guards asleep as the step began (`was`) and awake now (P20): one whose key is gone (a rat
- * took it from his pockets) radios it in, as one coming round does: a spare key, and the alarm.
- */
-export function wokeKeyless(sim: SimContext, was: number) {
-  if (!was || sim.noRats) return;
-  const s = sim.state;
-  const w = sim.world;
-  s.guards.forEach((g, k) => {
-    if (!(was & (1 << k)) || g.ko > 0 || g.doing === DOING.SLEEP || g.doze > 0) return;
-    const pockets = s.items.containers[pocketOf(w, s.inmates.length + k)];
-    const key = guardKit(w, k)[0];
-    if (pockets.some((v) => itemOf(v) === key)) return;
-    // (Pockets stuffed full: the last thing that isn't his kit goes on the floor for the spare, so he misses his key once, not every morning.)
-    const free = roomFor(sim, k, pockets, g.body);
-    if (free >= 0) pockets[free] = slot(key);
-    s.items.rev++;
-    s.keyAlarm = true;
-    sim.events.push({ type: 'keyless', guard: k });
-  });
-  raiseKeyAlarm(sim);
-}
-
-/** A free slot in a guard's pockets for a spare key: an empty one, else the last that isn't his kit, its item dropped at his feet (-1: all kit). */
-function roomFor(sim: SimContext, k: number, pockets: number[], b: Body): number {
-  const free = pockets.indexOf(0);
-  if (free >= 0) return free;
-  const kit = guardKit(sim.world, k);
-  for (let j = pockets.length - 1; j >= 0; j--)
-    if (!kit.includes(itemOf(pockets[j]))) {
-      sim.state.items.ground.push([tileAt(b.x, b.z), pockets[j]]);
-      pockets[j] = 0;
-      return j;
-    }
-  return -1;
-}
-
-/**
- * A missing key raises the alarm (GDD §10.2) as soon as it can: not during a lockdown
- * (already on), nor while the player is out cold or in solitary (it waits for them).
- */
-export function raiseKeyAlarm(sim: SimContext) {
-  const s = sim.state;
-  if (!s.keyAlarm || s.lockdown || sim.away) return;
-  s.keyAlarm = false;
-  sim.events.push({ type: 'spotted', reason: 'keyMissing' });
-  s.spotted = SPOT.indexOf('keyMissing');
-  addHeat(sim, 100);
-}
-
 /**
  * A guard back on its feet (or just put down): a chase or a search is over, a round starts
  * afresh, but a bed check or shakedown under way is taken up again.
@@ -318,20 +205,6 @@ function resumeAfterKo(g: Guard) {
   g.goal = -1;
   g.wait = 0;
   if (g.mode !== GUARD.BED_CHECK && g.mode !== GUARD.SHAKEDOWN) backToDuty(g);
-}
-
-/** 08:00: guards draw a new baton or uniform from the quarters if theirs were taken (never more than one each). */
-export function reissueKit(sim: SimContext) {
-  const s = sim.state;
-  const w = sim.world;
-  s.guards.forEach((_, k) => {
-    const pockets = s.items.containers[pocketOf(w, s.inmates.length + k)];
-    for (const n of guardKit(w, k).slice(1)) {
-      if (pockets.some((v) => itemOf(v) === n)) continue;
-      const free = pockets.indexOf(0);
-      if (free >= 0) pockets[free] = slot(n);
-    }
-  });
 }
 
 /**
@@ -365,7 +238,7 @@ export function fight(sim: SimContext) {
     if (!m || !f || m.ko > 0 || f.ko > 0 || s.step - m.swing < INMATE_SWING_STEPS || dist2(m.body, f.body) > MELEE_REACH * MELEE_REACH) continue;
     if (!lineOfSight(sim.world, m.body.x, m.body.z, f.body.x, f.body.z)) continue;
     m.swing = s.step;
-    if (m.body.x !== f.body.x || m.body.z !== f.body.z) m.body.facing = faceTo(f.body.x - m.body.x, f.body.z - m.body.z);
+    if (m.body.x !== f.body.x || m.body.z !== f.body.z) m.body.facing = nearestDir(f.body.x - m.body.x, f.body.z - m.body.z);
     const guard = isGuard(s, foe);
     // (P23: a muscle watching the player's back hits half as hard again.)
     const dmg = allyDamage(s, id, damage(m.str, 0, guard ? guardDefense(sim.world, foe - s.inmates.length) : INMATE_DEFENSE));
@@ -384,7 +257,7 @@ function blow(sim: SimContext, f: Fighter, id: number, pace: number, attack: num
   if (f.ko > 0 || s.step - f.swing < pace || dist2(f.body, p) > MELEE_REACH * MELEE_REACH) return;
   if (!lineOfSight(sim.world, f.body.x, f.body.z, p.x, p.z)) return;
   f.swing = s.step;
-  if (f.body.x !== p.x || f.body.z !== p.z) f.body.facing = faceTo(p.x - f.body.x, p.z - f.body.z);
+  if (f.body.x !== p.x || f.body.z !== p.z) f.body.facing = nearestDir(p.x - f.body.x, p.z - f.body.z);
   hurt(sim, damage(f.str, attack, defense), id);
 }
 
