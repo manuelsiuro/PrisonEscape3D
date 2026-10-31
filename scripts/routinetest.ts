@@ -233,6 +233,58 @@ console.log('== night owl');
 for (const l of owl.log.filter((l) => l.includes('day 1 2') || l.includes('cells'))) console.log(l);
 check(!owl.log.some((l) => l.includes('LOCKDOWN')), 'home within the grace: no trouble');
 
+// 2.23: checking in takes a block's `stay` in its zones. The drop-in steps into each block's zone and
+// turns for home at once: roll call and breakfast are missed, but having shown up, roll call costs
+// the meals' heat and no lockdown. Before 2.23 (Sim.rules222), on arrival, the same walk made both.
+{
+  const dropIn = (old: boolean) => (sim: Sim): Bot => {
+    sim.rules222 = old;
+    const pilot = new Autopilot(sim.world);
+    const places = placesOf(sim.world);
+    const good = modelPrisoner(sim);
+    let left = -1;
+    return (s) => {
+      const st = s.state;
+      if (left !== st.routine && (st.present > 0 || st.attended)) {
+        left = st.routine;
+        pilot.goTo(places.bedside[1]);
+      }
+      return left === st.routine ? command(pilot.dir(st.player)) : good(s);
+    };
+  };
+  const steps = 2 * 60 * STEPS_PER_MINUTE;
+  const now = run(dropIn(false), steps);
+  const then = run(dropIn(true), steps);
+  console.log('== drop-in, 08:00–10:00');
+  for (const l of now.log) console.log(l);
+  console.log(`(before 2.23: ${then.log.filter((l) => l.includes('attended') || l.includes('missed')).join('; ')})`);
+  check(now.log.includes('day 1 09:00 missed rollCall +25% heat') && !now.log.some((l) => l.includes('LOCKDOWN')), 'roll call left before being counted: +25%, no lockdown');
+  check(now.log.includes('day 1 10:00 missed breakfast +25% heat'), 'breakfast left at once: missed');
+  check(now.sim.state.heat > 25, `the drop-in ends the morning hotter than one miss, cooling between (${now.sim.state.heat}%)`);
+  check(then.log.filter((l) => l.includes('attended')).length === 2 && !then.log.some((l) => l.includes('missed')) && then.sim.state.heat === 0, 'before 2.23 the same walk checked in to both');
+  // The stay: the model prisoner checked in its minutes after it got there (they add up).
+  const stays = ROUTINE.filter((r) => r.stay).map((r) => `${r.id} ${r.stay}`);
+  console.log(`stays (minutes): ${stays.join(', ')}`);
+  check(ROUTINE.every((r) => !r.stay || (r.miss && r.stay < 60)), 'only blocks that cost something take a stay, each shorter than the hour');
+}
+
+// A save from before 2.23 loads with no time at the block yet, and no search under way.
+{
+  const sim = new Sim(CENTER_PERKS, 3);
+  const play = modelPrisoner(sim);
+  for (let i = 0; i < 15 * STEPS_PER_MINUTE; i++) sim.step(play(sim));
+  const snap = JSON.parse(JSON.stringify(sim.snapshot()));
+  check(sim.state.present > 0, `a save mid-roll call holds the time there (${sim.state.present} steps)`);
+  const back = new Sim(CENTER_PERKS, 1);
+  back.restore(JSON.parse(JSON.stringify(snap)));
+  check(back.state.present === sim.state.present && back.hash() === sim.hash(), 'and loads it back');
+  delete snap.state.present;
+  delete snap.state.snoop;
+  const old = new Sim(CENTER_PERKS, 1);
+  old.restore(snap);
+  check(old.state.present === 0 && old.state.snoop.length === 0, 'a save from before 2.23: none yet');
+}
+
 // The visitor: in someone else's cell when a lockdown starts, never locked in; the guards come for it there.
 {
   const sim = new Sim(CENTER_PERKS, 3);

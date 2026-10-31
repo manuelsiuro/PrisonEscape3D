@@ -51,7 +51,7 @@ The history of every release (what changed, what the reviews found, what was acc
 | Lockdown without guards | — | Until P3 a lockdown lifted after **60 game minutes in the cell**. **Since P3 (v0.4.0)** it ends only when a guard catches the player: every guard hunts them, wherever they are |
 | Cell doors at Lights Out | — | They lock once their occupant is inside; a door **waits open for an occupant still out** and never shuts on anyone standing in it. Guards (P3) punish being out |
 | Blocks spent in a lockdown | — | **Excused**: missing them adds no heat |
-| When a missed roll call counts | — | GDD §2.2 says "immediate" lockdown but also gives every block a grace window: it fires **when the block ends** (09:00, 23:00) if the player never stepped into the yard |
+| When a missed roll call counts | — | GDD §2.2 says "immediate" lockdown but also gives every block a grace window: it fires **when the block ends** (09:00, 23:00) if the player never stepped into the yard (since v2.23: there, but gone before counted, the meals' +25% instead; see "Attendance and other inmates' cells") |
 | Cells and visitors | — | A cell never locks while anyone but its occupant is inside it |
 | Energy and HP bars | P2 in §5 map | Nothing spends Energy or HP before tools (P4) and combat (P5), so both bars arrive **with what uses them**; meals, showers and chocolate restore Energy from then on |
 | Shivs | "Sharpen on a wall" | Sharpening is a wall action, so comb and toothbrush shivs come with P5 combat |
@@ -106,7 +106,7 @@ The history of every release (what changed, what the reviews found, what was acc
 | Takeover (P7) | KO 85% of guards; gates open | With **⌈85%⌉ of the guards out cold at once** (L1: all 5) every door and the perimeter gates open for the player; it lasts until the first comes round (the doors wait for the player to step out of one). Out of the gates in a takeover is the takeover escape |
 | Rooftop grapnel (P7) | "Hooks across to the perimeter wall, sheet rope down" | A grapnel in hand at a **roof's edge**, the perimeter fence within **6 tiles** straight ahead over open ground with free road past it: the use button swings the player over and down to the road, **a sheet rope in the hotbar** required (both stay behind). Over a live electric fence: the shock |
 | Fighting back (since v0.7.1) | "Guards punish fights" | Seen hitting an inmate **who is already after the player** (an ambush, a fight it started): a **scuffle, +10% heat a blow**. Seen hitting someone calm: 100%, as since P5 |
-| Meals (P8+, v1.1.0) | §2: "grab a food tray (+35%)"; until v1.1 +35 on stepping into the canteen | Attendance still counts on arrival; the **+35 comes from eating**: seated at a canteen table during breakfast or dinner, the tray takes **3 s** (the view shows it), once a meal |
+| Meals (P8+, v1.1.0) | §2: "grab a food tray (+35%)"; until v1.1 +35 on stepping into the canteen | Attendance still counts on arrival (since v2.23, 20 minutes there: see "Attendance and other inmates' cells"); the **+35 comes from eating**: seated at a canteen table during breakfast or dinner, the tray takes **3 s** (the view shows it), once a meal |
 | Showers and sitting (P8+, v1.1.0) | §3.1: "+2%/s standing under a running shower", "chair +1.5/s"; until v1.1 +20 on arrival | Standing still under a shower in the showers block: **+1 energy every 10 steps**. **Sitting** on a canteen seat, yard bench or chair (the action button, facing it; a move or the button gets up): **+1 every 13 steps**; an **infirmary bed** to lie on: the same, and health at the sleeping pace. Seats give way to anything else in reach unless straight ahead (a chair stands where its desk is searched from). Yard benches are stepped over like canteen seats |
 | Learning recipes (P8+, v1.1.7) | §8: a recipe is recorded in the handbook once crafted; nothing says how a player finds one | Crafting by trial still records recipes. The **handbook also lists every recipe within the player's Intellect as a mystery**: result hidden, each ingredient shown once the player has carried it (pockets, weapon, outfit), the nearest to known first, and how many more need more Intellect. **Tips** tell a recipe outright (the simplest unknown within Intellect): **studying** each time Intellect reaches a new multiple of 5 (a mark lost overnight and won back pays nothing), and **an inmate at opinion 60+**, once a day each ("Any tips?" in the talk). **Only what the prison can make** is told or shown (its furniture, pockets, merchants, jobs, guards' keys, and what those craft). **Copying a guard key is never told**: molds and plastic keys are learnt with the key in hand. Someone the player could talk to on the seat ahead is a talk, not the seat |
 | Stalag Flucht's map (P9, v1.2.0) | §4.2 ASCII plan: one row of buildings, the infirmary and solitary in the guards' compound, the ladder `[L]` in the generator hut, detectors `[D]` on the canteen, gym and both workshops | Kept: two compounds split by an **electrified inner fence** with a **purple inner gate**, the **whole perimeter electric**, 3 towers, 10 inmates in two log cabins, 6 guards, the generator hut, barracks and solitary in the east. Changed: the **infirmary is in the prisoners' compound** (a patched-up player wakes there and must be able to walk back to the camp); the workshops sit in **two service blocks either side of the path to the main gate** (one long block cut the yard off from the gate); **detectors on the canteen and gym only** (a job room needs a door that locks outside work); a locked **storeroom** in cabin A (zone `storeroom`) |
@@ -166,11 +166,12 @@ The history of every release (what changed, what the reviews found, what was acc
 | Phone, kiosk and the paperwork escape (P34–P36) | Not in the GDD | From P34 (2026-10-21, user's request) every campaign prison gets a **pay phone** (calls home, a lawyer, a cousin outside on a tapped line, anonymous tips; inmates queue; eavesdropping) and an **internet kiosk** in the library (mail, a legal shop, the news, courses). An 11th way out, **paperwork**: a forged release form puts your name on tomorrow's release list, out through the front door in your own clothes. The GDD's routes are all physical escapes; this one is earned with a stolen form and a forger's hand, checked by the records at 22:00 and again at the release desk. (Built as forged paperwork, 2026-10-22, the user's choice: the planned kiosk hacking was dropped.) See §11 |
 | Parole, odd jobs, the manhunt and holidays (P39–P42) | Not in the GDD | From P39 (2026-10-23, user's request) the GDD's all-escape game gains a **second, slower win**: parole, a 12th way out (`parole`) earned with a good record and a hearing, voided by plotting. **Odd jobs** grow the GDD's four favour types into small missions with story chains. The GDD ends a run at the wall; the **manhunt** adds a last act outside (a clean getaway), and the escape still counts at the wall. **Holidays** (Easter, summer, Halloween, Christmas and New Year) follow the real date, read once when a run starts and kept in the state. See §13 |
 | Conduct achievements and legal releases (full review after v2.21.0) | Not in the GDD (§13.2's achievements are for escapes) | A parole run earned Pacifist, Ghost, Clean Record, Model Prisoner and Calm Waters (and often Gold Standard) without trying: the board asks for exactly that conduct. **The five conduct achievements now need an escape** (a way out not in `LEGAL_ROUTES`: paperwork and parole earn none), as their descriptions always said ("Escape without…"); this also changes them for a forged release form, which used to earn them. Gold Standard and the other speed ones stay for every way out (parole's medal days are already the longest). |
+| Attendance and other inmates' cells (v2.23, user's request 2026-10-31) | §2.2: "simply needs to step foot inside the designated room at least once"; §5.2 has no rule for searching other cells | Players popped in for a step and left. **Checking in takes time**: each block with a penalty has a `stay` in `ROUTINE` (roll calls 30 minutes, meals 20, exercise 25, showers 15; the minutes add up in and out, `state.present`), the HUD badge filling as they do ("12/30 min"); blocks without one (Lights Out, the job's room, the parole board, the drill's muster) check in on arrival as before. **Left before counted**: the meals' +25%, even at a roll call (no lockdown; not there at all is still a lockdown; `BLOCK.LEFT` on the day card). **Skipping seen**: from 20 minutes into such a block (the walk across the biggest map), a guard who sees the player outside its zones before they've checked in: +2% a second (SPOT `skipping`; not excused, a lockdown, a relaxed prison, a guard's uniform). **Snooping** (`snoop.ts`): furniture open in another inmate's cell in a guard's sight (not one looking away; a guard's uniform passes for a shakedown): +20% at the sight (again after 5 s unseen), then +4% a second (SPOT `snooping`); its owner, up within 6 tiles with a clear line, thinks 15 less of the player once a search, and with a grudge left (25 or less) fights. The odd jobs keep their own "seen" rules on top. Runs logged before 2.23 replay all this as it was (`Sim.rules222`); escape times and heat peaks unchanged (the takeovers, leaving roll call at 08:20 for the fight, are now seen skipping). |
 Any further conflict found during the build is added to this table in the same commit.
 
 ## 3. Architecture
 
-Starter layout (base playbook §2), as it stands at v2.21:
+Starter layout (base playbook §2), as it stands at v2.23:
 
 ```
 src/
@@ -190,7 +191,8 @@ src/
     ai/               paths (A*), sight, walkers, places, the autopilot used by bots and taps
     systems/          one module per system (routine, guards, watch, combat, economy, jobs,
                       security, power, structure, ways, k9, rats, smuggling, phone, kiosk,
-                      paperwork, parole, oddjobs, holiday, twists, the free-time games…;
+                      paperwork, parole, oddjobs, holiday, twists, snoop (another inmate's
+                      cell searched), the free-time games…;
                       shared pieces: presence (where the player is), upkeep (bed, seats,
                       showers), throwing, keys (the guards' keys and kit))
     hunt/             the manhunt: its own deterministic sim on an outside map (P41)
@@ -238,9 +240,9 @@ noise makers → clock and devices → routine block → the day's event → the
 bed checks → the knocked out come round → inmates, then guards, move → the player moves and
 acts (an escape ends the step there) → combat → takeover → talk, grudges, training → laps,
 side games, the crew → seats, carried notes, health, the cold, tipsy, showers → solitary →
-`watch` (who sees the player) → dogs → rats → smuggling → phone → kiosk → paperwork →
+`watch` (who sees the player, and what they make of it: since v2.23 a block skipped, another inmate's cell searched and its owner seeing) → dogs → rats → smuggling → phone → kiosk → paperwork →
 parole → odd jobs → races → bribes, checkpoint gates, the key alarm, out of reach →
-attendance and the day's watch → heat cools → a guard woken without his key → doors.
+attendance (v2.23: the minutes at the block counted) and the day's watch → heat cools → a guard woken without his key → doors.
 After the rules, `ledger` counts what happened for achievements and stats (it never
 changes the state the rules read).
 
@@ -305,6 +307,8 @@ A phase that changes a map or places something new on it also brings the map vie
 | **P42 Holidays** | 2.21 | `systems/holiday.ts`, `content/holidays.ts`, `render/Holidays.ts`: Easter, summer, Halloween, Christmas and New Year by the real date (kept in the state; a setting); decor, 6 items, 5 achievements | `holidaytest`, `holidaybotstest` (every escape bot under each holiday), `holidayruntest` |
 | **Reviews and Install** | 2.21.1–2.21.5 | Full review of P39–P42, then each of P39–P41 played through; the title's Install button (`app/install.ts`, `ui/screens/install.ts`); `npm run released` | every suite, browser passes at the three sizes |
 | **Code review** | 2.21.6 | Dead code, duplicates and structure across the code: shared helpers (tile maths, clock text, the view's random numbers and canvas textures, refusal texts, `esc`), the big files split, four import cycles in play broken; no rule changed | every suite byte-identical; computed styles diffed against 2.21.5 at the three sizes |
+| **The tattoo drawn by hand** | 2.22 | `EXT.NEEDLE`/`NEEDLE_DOWN`, the ring waiting, the line scored by its distance from the design (§9 P29); `Sim.rules221` | teamtest, tutorialtest; played by hand at the three sizes |
+| **The guards keep watch** | 2.23 | Checking in takes a block's `stay` (`state.present`, the HUD badge's minutes), a roll call left before counted +25%, a block skipped in a guard's sight +2%/s, another inmate's cell searched in sight +20% then +4%/s and its owner minding (`systems/snoop.ts`, `state.snoop`, SPOT `skipping`/`snooping`, `BLOCK.LEFT`); the container panel's warning, the first-day guide's order; `Sim.rules222` (§2) | routinetest (the drop-in, old saves), guardtest (skipping, snooping, the owner), escapetest (bots wait to be counted); played at the three sizes |
 
 ## 5. Mapping the GDD to phases
 
@@ -337,7 +341,7 @@ and the sim playbook §4). `npm test -- <part of a name>` runs some; `-u` accept
 - **Maps and data** (`maptest`, `itemtest`, `i18ntest`, `achievementtest`, `prisonertest`,
   `helptest`): every floor reachable, the prison closed, props on floor, zones everywhere;
   ids unique, the recipe graph closed, French covers every key, every help page complete.
-- **Mechanics**, one test per system or phase: routine, guards, traits, combat, layers,
+- **Mechanics**, one test per system or phase: routine (since v2.23 the stay, a drop-in who leaves at once, old saves), guards (a block skipped and another inmate's cell searched in sight, the owner), traits, combat, layers,
   security, economy, living furniture, noise, calendar, delivery, k9, rats, smuggling, games,
   crew, getaway, cards, long games, team, stage, grounds, phone, kiosk, paperwork, parole,
   odd jobs, holidays, the manhunt, and one per prison (`stalagtest` … `irongatetest`).
@@ -365,12 +369,12 @@ feel) and the known limits. A phase that touches a map also brings the map viewe
 
 ## 8. Progress
 
-**Status (2026-10-30): v2.22.0.** Every planned phase is built and released: the five-prison
+**Status (2026-10-31): v2.22.0 released; v2.23 (the guards keep watch: §2, §4) built on `feature/guard-watch`.** Every planned phase is built and released: the five-prison
 campaign (P0–P12), Prison Life (P13–P26), Free time (P27–P30), the sports grounds (P31–P33),
 the phone and kiosk (P34–P36), How to play (P37–P38) and After hours (P39–P42), each followed by
 its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6) and the tattoo drawn by hand (v2.22.0). In numbers: 5 prisons and the Training Block,
 38 ways out, 146 items, 60 recipes, 142 achievements, 48 lessons in 4 chapters, 58 help topics,
-4,430 text keys in English and French, 54 test scripts.
+4,439 text keys in English and French (v2.23), 54 test scripts.
 
 Parked ideas, none planned: gangs and turf, the riot, photo mode and postcards, a custom
 escape (twist sandbox), the escape planner corkboard, a story through the prisons.

@@ -430,3 +430,102 @@ function morning(seed: number): Sim {
   }
   check(a.hash() === b.hash() && a.state.solitary > 0, 'and it plays on the same (into solitary)');
 }
+
+// ------------------------------------------------------------------ 2.23: a block skipped, another inmate's cell searched
+{
+  /** A guard planted 3 tiles from the player, looking at them (the first spot round them it sees from). */
+  const watcher = (sim: Sim, g: Guard) => {
+    const p = sim.state.player;
+    const px = Math.floor(p.x / UNIT);
+    const pz = Math.floor(p.z / UNIT);
+    const ways: Array<[number, number, number]> = [[-3, 0, 1], [3, 0, 9], [0, -3, 5], [0, 3, 13], [-2, 0, 1], [2, 0, 9], [0, -2, 5], [0, 2, 13]];
+    for (const [dx, dz, f] of ways) {
+      if (sim.world.blocked(px + dx, pz + dz)) continue;
+      plant(g, px + dx, pz + dz, f);
+      if (canSee(sim.world, g.body, p)) return true;
+    }
+    return false;
+  };
+  const spotted = (sim: Sim, reason: string) => sim.events.some((e) => e.type === 'spotted' && e.reason === reason);
+
+  // Skipping: the exercise hour spent in the canteen in a guard's sight. Nothing for the walk there (its first 20 minutes); then +2% a second; nothing once checked in.
+  {
+    const sim = morning(4);
+    run(sim, idle, (s) => minute(s) >= 15 * 60 + 1, DAY);
+    check(sim.playerZone === 'canteen' && !sim.dutyZones.includes(sim.playerZone), `exercise, and the player still in the ${sim.playerZone}`);
+    check(watcher(sim, sim.state.guards[0]), 'a guard looking at the player');
+    const h0 = sim.state.heat;
+    const log = run(sim, idle, (s) => clockAt(s.state.step + 1).minuteOfDay >= 15 * 60 + 20, DAY);
+    check(sim.state.seen && sim.state.heat === h0 && !log.some((l) => l.endsWith('skipping')), `seen on the way, the first 20 minutes: nothing (${h0}% → ${sim.state.heat}%)`);
+    const log2 = run(sim, idle, () => false, 10 * 20);
+    check(!!log2[0]?.endsWith('15:20 spotted: skipping') && sim.state.heat === h0 + 20, `then a guard minds: +2% a second (${log2[0]}; ${h0}% → ${sim.state.heat}%)`);
+    sim.state.attended = true;
+    const h1 = sim.state.heat;
+    run(sim, idle, () => false, 10 * 20);
+    check(sim.state.heat === h1 && sim.state.spotted === 0, 'checked in, the player may be anywhere');
+    console.log(`skipping exercise in a guard's sight: from 15:20, +20% in 10 s`);
+  }
+
+  // Snooping: an inmate's desk open in their cell (its owner away), in a guard's sight: +20% at once, then +4% a second. Not the player's own desk, not in a guard's uniform, not before 2.23.
+  {
+    const deskOfCell = (sim: Sim, cell: number) => containersOf(sim.world).findIndex((c) => c.prop.kind === 'desk' && sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
+    const search = (sim: Sim, cell: number) => {
+      const t = placesOf(sim.world).deskside[cell];
+      put(sim.state.player, t % MAP_W, Math.floor(t / MAP_W));
+      // (Its owner far off: only the guard sees.)
+      const owner = sim.state.inmates.find((m) => m.cell === cell);
+      if (owner) put(owner.body, 40, 50);
+      sim.state.items.open = deskOfCell(sim, cell);
+      return watcher(sim, sim.state.guards[0]);
+    };
+    const snoop = (setup: (sim: Sim) => void, cell = 2) => {
+      const sim = morning(4);
+      setup(sim);
+      check(search(sim, cell), `cell ${cell}: a guard looking at the player at the desk`);
+      const h0 = sim.state.heat;
+      sim.step(0);
+      const first = sim.state.heat - h0;
+      const seen = spotted(sim, 'snooping');
+      for (let k = 0; k < 100; k++) sim.step(0);
+      return { first, then: sim.state.heat - h0 - first, seen, open: sim.state.items.open >= 0 };
+    };
+    const theirs = snoop(() => {});
+    check(theirs.open && theirs.seen && theirs.first === 20 && theirs.then === 20, `another inmate's desk in sight: +${theirs.first}% at once, +${theirs.then}% in 5 s`);
+    const mine = snoop(() => {}, 1);
+    check(mine.open && !mine.seen && mine.first === 0 && mine.then === 0, "the player's own desk: nothing");
+    const uniform = snoop((sim) => (sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'))));
+    check(!uniform.seen && uniform.first === 0 && uniform.then === 0, "in a guard's uniform: a shakedown, as far as the guard can tell");
+    const old = snoop((sim) => (sim.rules222 = true));
+    check(!old.seen && old.first === 0 && old.then === 0, 'before 2.23: overlooked');
+    console.log(`snooping in a guard's sight: +${theirs.first}% at once, +${theirs.then}% more in 5 s; own desk, a guard's uniform, before 2.23: nothing`);
+  }
+
+  // The owner: at hand in their cell, they see the player at their desk: 15 less opinion, once a search; a grudge left, they fight.
+  {
+    const sim = morning(4);
+    const cell = 2;
+    const who = sim.state.inmates.findIndex((m) => m.cell === cell);
+    const m = sim.state.inmates[who];
+    const t = placesOf(sim.world).deskside[cell];
+    const desk = containersOf(sim.world).findIndex((c) => c.prop.kind === 'desk' && sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
+    const open = () => {
+      put(sim.state.player, t % MAP_W, Math.floor(t / MAP_W));
+      put(m.body, t % MAP_W, Math.floor(t / MAP_W));
+      m.body.x += UNIT / 2;
+      sim.state.items.open = desk;
+    };
+    m.opinion = 50;
+    open();
+    sim.step(0);
+    const said = sim.events.find((e) => e.type === 'snooped');
+    for (let k = 0; k < 40; k++) sim.step(0);
+    check(said?.type === 'snooped' && !said.fights && m.opinion === 35 && m.angry === 0, `the owner sees: opinion 50 → ${m.opinion}, once a search (${JSON.stringify(said)})`);
+    sim.state.items.open = -1;
+    sim.step(0);
+    open();
+    sim.step(0);
+    const again = sim.events.find((e) => e.type === 'snooped');
+    check(again?.type === 'snooped' && again.fights && m.opinion === 20 && m.angry > 0, `caught at it again with a grudge: opinion ${m.opinion}, and they fight`);
+    console.log(`the owner: opinion 50 → 35 on seeing, 20 (a grudge) and a fight the next time`);
+  }
+}

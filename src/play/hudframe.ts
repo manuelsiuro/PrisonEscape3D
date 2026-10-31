@@ -1,5 +1,6 @@
 /** The HUD each frame (play's and a replay's): the clock, the routine, heat and every pill and chip, the file's button, the lockdown's red, the music and the ambience. */
 import { ROUTINE } from '../content/routine';
+import { presenceNeeded } from '../sim/systems/routine';
 import { t, type Key } from '../i18n';
 import { jobRooms } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
@@ -70,6 +71,11 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   hudState.routine = st.routine;
   // At Lights Out the badge says whether the player is in the cell right now.
   hudState.attended = ROUTINE[st.routine].id === 'lightsOut' ? zone === 'playerCell' : st.attended;
+  // (2.23: a block checked in to by staying: the minutes there so far, of how many.)
+  const need = presenceNeeded(sim);
+  const present = Math.floor(st.present / STEPS_PER_MINUTE);
+  if (!need || st.attended) hudState.presence = null;
+  else if (hudState.presence?.[0] !== present || hudState.presence[1] !== need / STEPS_PER_MINUTE) hudState.presence = [present, need / STEPS_PER_MINUTE];
   // (P24's glider lesson, on the roof after Lights Out: the routine pill asks nothing of the player.)
   hudState.quietRoutine = !!g.lesson && LESSONS[g.lesson.index].routine === false;
   hudState.heat = st.heat;

@@ -18,7 +18,7 @@ import { announceCrew } from './crew';
 import { announceGetaway } from './getaway';
 import { itemDef, itemNumber } from '../content/items';
 import { RECIPES } from '../content/recipes';
-import { ROUTINE } from '../content/routine';
+import { ROUTINE, type RoutineId } from '../content/routine';
 import { type Key, listOf, lowerFirst, t } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
@@ -75,20 +75,26 @@ export function announce(e: SimEvent, sim: Sim) {
       banner.show(routineName(e.routine), sub);
       break;
     }
+    case 'arrived': {
+      // (2.23: checking in takes a while: told once, the first time; then the meal's and the showers' own.)
+      const r = ROUTINE[e.routine];
+      if (!seenTip('stay')) coachOnce('stay', 'hint.stay', { n: r.stay ?? 0 });
+      else arrivedAt(r.id);
+      break;
+    }
     case 'attended': {
       const id = ROUTINE[e.routine].id;
       if (id === 'lightsOut') break;
       sound.chime();
       buzz('attended');
-      // The first meal and the first showers: how they pick the player up (GDD §2, §3.1).
-      if (id === 'breakfast' || id === 'dinner') coachOnce('meal', 'hint.meal', { n: MEAL_ENERGY });
-      if (id === 'showers') coachOnce('shower', 'hint.shower');
+      // (Before 2.23, checked in on arrival: the hints as the player gets there.)
+      if (sim.rules222) arrivedAt(id);
       break;
     }
     case 'missed':
       sound.sting();
       buzz('missed');
-      if (e.heat < 100) banner.toast(t('toast.missed', { routine: routineName(e.routine), n: e.heat }), 'bad');
+      if (e.heat < 100) banner.toast(t(e.early ? 'toast.leftEarly' : 'toast.missed', { routine: routineName(e.routine), n: e.heat }), 'bad');
       break;
     case 'lockdown':
       // The siren and the red glow follow the state every frame (see frame()).
@@ -604,6 +610,12 @@ export function announce(e: SimEvent, sim: Sim) {
         banner.toast(t('toast.recruited', { name: inmateName(sim, e.who) }), 'good', 4500);
       } else banner.toast(t('toast.leftYou', { name: inmateName(sim, e.who) }), 'info');
       break;
+    case 'snooped':
+      // (2.23: an inmate's things gone through before their eyes; a fight's whistle as they come at the player.)
+      if (e.fights) sound.whistle();
+      buzz('missed');
+      banner.toast(t(e.fights ? 'toast.snoopedFight' : 'toast.snooped', { name: inmateName(sim, e.who) }), 'bad', 4500);
+      break;
     case 'ambush':
       sound.whistle();
       buzz('missed');
@@ -771,6 +783,12 @@ export function announce(e: SimEvent, sim: Sim) {
 let lastFlight = 0;
 
 /** Once a second while it counts down: a wound alarm clock in the pockets ticks (never while time runs fast: asleep, out cold, fast-forward). */
+/** At a meal or the showers: how they pick the player up, told the first time (GDD §2, §3.1). */
+function arrivedAt(id: RoutineId) {
+  if (id === 'breakfast' || id === 'dinner') coachOnce('meal', 'hint.meal', { n: MEAL_ENERGY });
+  if (id === 'showers') coachOnce('shower', 'hint.shower');
+}
+
 export function tickTock(sim: Sim, speed: number) {
   const s = sim.state;
   if (speed !== 1 || s.step % STEPS_PER_SECOND !== 0) return;

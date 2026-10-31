@@ -24,11 +24,11 @@ In full quality (1080p) [on YouTube](https://youtu.be/P9cyX4B0F-8).
 ## The game
 
 You arrive at Center Perks, a quiet minimum-security prison, with an orange jumpsuit and empty pockets. The
-day runs on a strict timetable: roll call, meals, work, exercise, showers, lights out. Miss it and the
-guards notice. Your **heat** rises, guards follow you, and too much of it ends in a chase, a beating and a
+day runs on a strict timetable: roll call, meals, work, exercise, showers, lights out. Miss it, or slip away
+before you're counted, and the guards notice. Your **heat** rises, guards follow you, and too much of it ends in a chase, a beating and a
 spell in solitary peeling potatoes.
 
-But the routine is also your cover. Between roll calls you search desks, trade with other inmates, take a
+But the routine is also your cover. Between roll calls you search desks (yours openly, other inmates' out of a guard's sight), trade with other inmates, take a
 job, train, learn recipes, and quietly build what you need. Then one night, you go.
 
 <table>

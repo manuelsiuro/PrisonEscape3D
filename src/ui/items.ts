@@ -18,6 +18,8 @@ export interface ItemsView {
   boxHidden: number;
   /** The open container is the player's own (their desk: the hidden compartment comes first). */
   boxMine: boolean;
+  /** 2.23: the open container is in another inmate's cell (a guard who sees the player at it minds). */
+  boxTheirs: boolean;
   /** Items the player has carried, and recipes they were told (the handbook's mysteries and tips). */
   carried: readonly number[];
   tips: readonly number[];
@@ -136,6 +138,7 @@ export class ItemsUI {
       `<div class="panel-head"><b></b><button class="icon-btn small" data-close data-t-label="box.close">${icon('close', 18)}</button></div>
       <div class="box-tunnel hidden"><span data-t="box.tunnel"></span><button class="big-btn primary small" data-climb>${icon('down', 18)}<span data-t="box.climbDown"></span></button></div>
       <div class="box-tunnel box-study hidden"><span><b data-t="box.study"></b><small data-t="box.studyNote"></small></span><button class="big-btn primary small" data-study>${icon('book', 18)}<span data-t="train.study"></span></button></div>
+      <div class="box-warn hidden">${icon('eye', 14)}<span data-t="box.theirs"></span></div>
       <div class="box-take hidden"></div>
       <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span data-t="box.hidden"></span><em data-t="box.hiddenNote"></em></div><div class="slot-grid box-hidden"></div></div>
       <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>`,
@@ -404,7 +407,7 @@ export class ItemsUI {
     this.updateAction(v);
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.
-    const drawn = `${v.boxTitle}|${v.deskTunnel}|${v.study}|${v.take.map((x) => `${x.what}:${x.label}:${x.why}`).join(',')}`;
+    const drawn = `${v.boxTitle}|${v.boxTheirs}|${v.deskTunnel}|${v.study}|${v.take.map((x) => `${x.what}:${x.label}:${x.why}`).join(',')}`;
     if (it.rev === this.simRev && this.uiRev === this.drawnUi && drawn === this.drawn) {
       this.tickClocks(it);
       return;
@@ -444,6 +447,7 @@ export class ItemsUI {
       this.box.classList.toggle('plain', v.boxHidden === 0);
       this.box.querySelector('.box-tunnel:not(.box-study)')!.classList.toggle('hidden', !v.deskTunnel);
       this.box.querySelector('.box-study')!.classList.toggle('hidden', !v.study);
+      this.box.querySelector('.box-warn')!.classList.toggle('hidden', !v.boxTheirs);
       // (P28: fruit, sugar, a seed packet, taken on request.)
       const take = this.box.querySelector<HTMLElement>('.box-take')!;
       take.classList.toggle('hidden', !v.take.length);

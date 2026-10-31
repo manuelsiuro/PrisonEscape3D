@@ -25,7 +25,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
 {
   const bot = new Bot(CENTER_PERKS, 3);
   check(bot.routineUntil(1, 9 * 60 + 25), 'breakfast');
-  check(ROUTINE[bot.st.routine].id === 'breakfast' && bot.st.attended, 'in the canteen for breakfast');
+  check(ROUTINE[bot.st.routine].id === 'breakfast' && bot.sim.playerZone === 'canteen', 'in the canteen for breakfast');
   // A seat nobody is heading for, the player on it facing the table.
   const places = placesOf(bot.sim.world);
   const spot = places.seats.find((s) => !bot.st.inmates.some((m) => m.goal === s.tile))!;

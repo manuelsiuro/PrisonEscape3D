@@ -178,6 +178,10 @@ export class Bot {
     this.pilot.stop();
     return until();
   }
+  /** Until the block running has counted the player (2.23: its minutes in its zones), keeping the routine. */
+  counted(limit = 60 * STEPS_PER_MINUTE) {
+    return this.keepRoutine(() => this.st.attended, limit);
+  }
   /** Until a minute of a day (keeping the routine meanwhile). */
   routineUntil(day: number, minute: number) {
     const target = ((day - 1) * 1440 + minute - 8 * 60) * STEPS_PER_MINUTE;

@@ -71,8 +71,8 @@ function report(name: string, bot: Bot) {
 /** The evening: roll call attended, the kit from the desk, the dummy in bed, Lights Out and the cell locked. */
 function nightfall(bot: Bot, kitSize: number) {
   const places = placesOf(bot.sim.world);
-  // Roll call is attended on arrival; then home.
-  check(bot.routineUntil(1, 22 * 60 + 15), 'the day kept');
+  // Roll call, until counted; then home.
+  check(bot.routineUntil(1, 22 * 60) && bot.counted(), 'the day kept');
   check(bot.walkTo(places.deskside[1]), 'beside the desk');
   bot.face(DIR.EAST);
   check(bot.open(bot.desk), 'the desk opens');
@@ -477,7 +477,7 @@ function takeover(p: Plan) {
   // Two friends: the first two inmates, or the two strongest (GDD §12: allies that can fight).
   const friends = p.strongest ? st.inmates.map((m, i) => ({ i, str: m.str })).sort((a, b) => b.str - a.str || a.i - b.i).slice(0, 2).map((f) => f.i) : [0, 1];
   for (const id of friends) st.inmates[id].opinion = 90;
-  // Roll call first (attended on arrival), then the friends, recruited where they stand.
+  // Roll call first, then the friends, recruited where they stand (2.23: before it's counted the player; the fight's lockdown lets them off the rest).
   check(bot.routineUntil(1, 8 * 60 + 20), 'roll call kept');
   for (const id of friends) {
     const m = st.inmates[id];
@@ -608,7 +608,7 @@ function gate(p: Plan, seed: number) {
 function nightfallBig(bot: Bot, kit: string[]) {
   const places = placesOf(bot.sim.world);
   bot.stash('guard_outfit', 'bed_dummy', ...kit);
-  check(bot.routineUntil(1, 22 * 60 + 15), 'the day kept');
+  check(bot.routineUntil(1, 22 * 60) && bot.counted(), 'the day kept');
   check(bot.walkTo(places.deskside[1]), 'beside the desk');
   bot.face(DIR.EAST);
   check(bot.open(bot.desk), 'the desk opens');
@@ -900,7 +900,7 @@ function paperwork(p: Plan, seed: number) {
   bot.act();
   check(st.release[0] === 2, 'the name on tomorrow\'s list');
   bot.op(OP.SELECT, st.items.inv.slice(0, 6).indexOf(0));
-  check(bot.routineUntil(1, 22 * 60 + 15), 'roll call');
+  check(bot.routineUntil(1, 22 * 60) && bot.counted(), 'roll call');
   check(bot.walkTo(places.deskside[1], 6000), 'back beside the desk');
   bot.face(DIR.EAST);
   check(bot.open(bot.desk), 'the desk opens');

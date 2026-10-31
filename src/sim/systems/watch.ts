@@ -12,7 +12,7 @@ import { SLOT } from '../command';
 import type { SimContext } from '../context';
 import type { SimState } from '../state';
 import { SPOT } from '../events';
-import { CHASE_HEAT, CONTRABAND_HEAT, LIGHTS_OUT_GRACE, RECOGNIZE_RANGE, RECOGNIZE_STEPS, SEARCHLIGHT_HEAT, SELF_DEFENSE_HEAT, STEPS_PER_MINUTE, STRIKE_SEEN_STEPS, UNIT } from '../tuning';
+import { CHASE_HEAT, CONTRABAND_HEAT, LIGHTS_OUT_GRACE, RECOGNIZE_RANGE, RECOGNIZE_STEPS, SEARCHLIGHT_HEAT, SELF_DEFENSE_HEAT, SKIP_EVERY, SKIP_GRACE, STEPS_PER_MINUTE, STRIKE_SEEN_STEPS, UNIT } from '../tuning';
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from '../world/World';
 import { clockAt } from './clock';
@@ -30,6 +30,7 @@ import { underPlant } from './garden';
 import { sightFor } from './football';
 import { TIPSY_HEAT } from '../../content/long';
 import { centerX, centerZ } from '../world/grid';
+import { snooping } from './snoop';
 
 /** A tipsy player seen again within this long (steps) is the same sighting: no more heat for it. */
 const TIPSY_SEEN_GAP = 5 * 20;
@@ -118,6 +119,11 @@ export function watch(sim: SimContext) {
     s.tipsy[1] = s.step;
     [reason, heat] = [SPOT.indexOf('tipsy'), fresh ? TIPSY_HEAT : 0];
   }
+  // 2.23: going through the things in another inmate's cell, in a guard's sight (a guard's uniform: a shakedown, as far as they can tell).
+  const snooped = snooping(sim, eyes && !disguised);
+  if (!reason && snooped >= 0) [reason, heat] = [SPOT.indexOf('snooping'), snooped];
+  // 2.23: away from a block's zones before checking in, past the walk there: +2% a second.
+  if (!reason && eyes && !cleared && skipping(sim, zone)) [reason, heat] = [SPOT.indexOf('skipping'), s.step % SKIP_EVERY === 0 ? 1 : 0];
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.
   const close = disguised && s.guards.some((g) => g.sees && !lookingAway(g, s.step) && (g.body.x - p.x) ** 2 + (g.body.z - p.z) ** 2 <= RECOGNIZE_RANGE ** 2);
   s.near = close ? s.near + 1 : 0;
@@ -139,6 +145,18 @@ export function watch(sim: SimContext) {
   if (filmed) s.seen = true;
   // Snipers by day.
   snipe(sim);
+}
+
+/**
+ * 2.23: a block the player should be at (one missing costs something) and hasn't checked in to,
+ * past the walk there, with the player away from its zones: neither let off (a lockdown, out cold)
+ * nor in a prison where the routine is relaxed.
+ */
+function skipping(sim: SimContext, zone: string): boolean {
+  const s = sim.state;
+  const r = ROUTINE[s.routine];
+  if (sim.rules222 || !r.miss || s.attended || s.excused || s.lockdown || sim.world.def.rules?.relaxed) return false;
+  return clockAt(s.step).minuteOfDay - r.start >= SKIP_GRACE && !sim.dutyZones.includes(zone);
 }
 
 /** Lights Out, past the walk home: out of the cell now is out late. */

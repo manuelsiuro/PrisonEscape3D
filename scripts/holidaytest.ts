@@ -11,7 +11,7 @@ import { check } from './assert';
 import { easterSunday, HOLIDAY, HOLIDAY_DAY, HOLIDAY_DAYS, holidayDaysOn, holidayOn, HOLIDAYS, TREAT, TREATS, WET_SIGHT, FIREWORK_NOISE, EGG_DESKS, EGG_YARD } from '../src/content/holidays';
 import { runHoliday } from '../src/game/holidays';
 import { DAY_BOOKS } from '../src/content/days';
-import { BLOCK, ROUTINE } from '../src/content/routine';
+import { ROUTINE } from '../src/content/routine';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { itemNumber } from '../src/content/items';
@@ -282,7 +282,8 @@ for (const p of PRISONS) {
   sim.step(0);
   const exercise = ROUTINE.findIndex((r) => r.id === 'exercise');
   check(events(sim, 'splash').length === 1 && sim.state.feats[FEAT.waterFights] === 1, 'the player out on the sports ground joins the water fight');
-  check(sim.state.routine === exercise && sim.state.blocks[exercise] === BLOCK.ATTENDED, `and is present for Exercise (block ${sim.state.blocks[exercise]})`);
+  // (2.23: the time there counting toward Exercise.)
+  check(sim.state.routine === exercise && sim.state.present > 0, `and is present for Exercise (${sim.state.present} steps)`);
   sim.step(0);
   check(sim.state.feats[FEAT.waterFights] === 1, '(once)');
   runTo(sim, 2, 9 * 60 + 30);
@@ -381,7 +382,7 @@ for (const p of PRISONS) {
 // The holiday kept: a save, a run log.
 {
   const sim = game(HOLIDAY.HALLOWEEN);
-  const rec = new RunRecorder(sim, { seed: 7, game: '2.21.0' });
+  const rec = new RunRecorder(sim, { seed: 7, game: '2.23.0' });
   for (let k = 0; k < DAY_STEPS + 12 * 60 * STEPS_PER_MINUTE; k++) rec.step(k % 300 < 150 ? 1 : 0);
   const log = rec.toLog();
   check(log.holiday === HOLIDAY.HALLOWEEN, "a run log keeps the run's holiday");
@@ -390,7 +391,7 @@ for (const p of PRISONS) {
   const loaded = new Sim(CENTER_PERKS, 1);
   loaded.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   check(loaded.state.holiday === HOLIDAY.HALLOWEEN && loaded.hash() === sim.hash(), 'a game saved and loaded keeps its holiday');
-  const none = new RunRecorder(game(0), { seed: 7, game: '2.21.0' });
+  const none = new RunRecorder(game(0), { seed: 7, game: '2.23.0' });
   none.step(0);
   check(none.toLog().holiday === undefined, '(a run without one says nothing of it)');
   const old = new Sim(CENTER_PERKS, 1);

@@ -16,6 +16,8 @@ export interface CoachState {
   boardOpen: boolean;
   /** This meal's tray eaten (sat at a canteen table long enough). */
   ate: boolean;
+  /** 2.23: a block wants the player and hasn't counted them yet (a guard would mind them elsewhere). */
+  due: boolean;
 }
 
 interface Step {
@@ -25,26 +27,29 @@ interface Step {
   done: (s: CoachState) => boolean;
   /** Its moment has passed (the block is over): the guide moves on without it. */
   gone?: (s: CoachState) => boolean;
+  /** 2.23: done in the player's own time: the card waits (hidden) while a block is due. */
+  own?: boolean;
 }
 
 const STEPS: Step[] = [
   { id: 'rollCall', ic: 'pin', text: () => t('coach.rollCall'), done: (s) => s.routine === 'rollCall' && s.attended, gone: (s) => s.routine !== 'rollCall' },
-  { id: 'desk', ic: 'briefcase', text: () => t(TOUCH ? 'coach.desk' : 'coach.deskKeys'), done: (s) => s.openMine },
+  // (2.23: breakfast before the desk, eaten and counted: a guard minds a block skipped.)
   {
     id: 'meal',
     ic: 'cookie',
     text: () => t('coach.meal'),
-    done: (s) => s.routine === 'breakfast' && s.ate,
+    done: (s) => s.routine === 'breakfast' && s.ate && s.attended,
     gone: (s) => s.routine !== 'breakfast' && s.routine !== 'rollCall',
   },
-  { id: 'loot', ic: 'hand', text: () => t('coach.loot'), done: (s) => s.openOther || s.pickedUp },
-  { id: 'craft', ic: 'hammer', text: () => t(TOUCH ? 'coach.craft' : 'coach.craftKeys'), done: (s) => s.craftOpen },
-  { id: 'board', ic: 'board', text: () => t('coach.board'), done: (s) => s.boardOpen },
+  { id: 'desk', ic: 'briefcase', text: () => t(TOUCH ? 'coach.desk' : 'coach.deskKeys'), done: (s) => s.openMine, own: true },
+  { id: 'loot', ic: 'hand', text: () => t('coach.loot'), done: (s) => s.openOther || s.pickedUp, own: true },
+  { id: 'craft', ic: 'hammer', text: () => t(TOUCH ? 'coach.craft' : 'coach.craftKeys'), done: (s) => s.craftOpen, own: true },
+  { id: 'board', ic: 'board', text: () => t('coach.board'), done: (s) => s.boardOpen, own: true },
 ];
 
 /**
  * The first day's guide (the tutorial coach): one small objective card at a time under the
- * HUD (line up for roll call, search your desk, breakfast, search other desks, crafting, the
+ * HUD (line up for roll call, breakfast, search your desk, search other desks, crafting, the
  * job board), each ticked off when the player does it, then a closing line. Shown on the
  * first game only (and again once the tips are reset); the cross skips it.
  */
@@ -118,6 +123,8 @@ export class FirstDay {
         this.hold = 6;
       } else if (step.done(s)) this.hold = 1.1;
     }
+    // (A step for the player's own time, a block due: out of the way till they're counted, unless just ticked off.)
+    if (!this.finishing && this.hold <= 0 && STEPS[this.k]?.own && s.due) hidden = true;
     this.el.classList.toggle('hidden', hidden);
     const doneNow = this.hold > 0 && !this.finishing;
     // (The language changed meanwhile, in the settings: drawn again in it.)

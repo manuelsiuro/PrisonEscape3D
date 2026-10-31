@@ -143,6 +143,8 @@ export class Sim {
   rules215 = false;
   /** Replaying a run logged under 2.21 or before (runlog.ts): the tattoo traced as it was then (a pen running on a clock, the needle scored by its distance from the pen, steered by the stick or keys alone). Not state. */
   rules221 = false;
+  /** Replaying a run logged under 2.22 or before (runlog.ts): the routine checked in on arrival, nobody minding a block skipped until it was over, a search of another inmate's cell overlooked. Not state. */
+  rules222 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;

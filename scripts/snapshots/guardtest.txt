@@ -39,3 +39,6 @@ day 2 08:28 cell 8 searched (0 taken)
 day 2 08:42 cell 6 searched (0 taken)
 day 2 08:55 cell 1 searched (1 taken)
 rounds over 3 days: 363, 288, 275, 488, 207 stops; 6 bed checks, the longest 35 game minutes
+skipping exercise in a guard's sight: from 15:20, +20% in 10 s
+snooping in a guard's sight: +20% at once, +20% more in 5 s; own desk, a guard's uniform, before 2.23: nothing
+the owner: opinion 50 → 35 on seeing, 20 (a grudge) and a fight the next time

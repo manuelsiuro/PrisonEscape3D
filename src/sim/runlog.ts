@@ -262,6 +262,8 @@ export const beforeFixes = (game: string) => versionBefore(game, 2, 5, 1);
 const beforeEasier = (game: string) => versionBefore(game, 2, 16);
 /** Before the tattoo traced by hand (2.22.0): Sim.rules221 plays it as it was. */
 const beforeDrawnInk = (game: string) => versionBefore(game, 2, 22);
+/** Before the guards kept watch over the routine and the cells (2.23.0): Sim.rules222 plays them as they were. */
+const beforeWatch = (game: string) => versionBefore(game, 2, 23);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -305,6 +307,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeEasier(log.game)) sim.rules215 = true;
   // Played before the tattoo was traced by hand (2.22): the pen on its clock, as it was.
   if (beforeDrawnInk(log.game)) sim.rules221 = true;
+  // Played before the guards kept watch (2.23): checked in on arrival, a block skipped and a cell searched unminded.
+  if (beforeWatch(log.game)) sim.rules222 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

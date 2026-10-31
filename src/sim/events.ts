@@ -17,7 +17,7 @@ import type { HolidayDay } from '../content/holidays';
 import type { LayerMove } from './state';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing', 'skipping', 'snooping'] as const;
 type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
 export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider', 'paperwork', 'parole'] as const;
@@ -32,10 +32,12 @@ export type SimEvent =
   | { type: 'hour'; hour: number }
   /** A new routine block began (index into ROUTINE). */
   | { type: 'routine'; routine: number }
+  /** 2.23: the player first in the block's zones, its time to check in starting. */
+  | { type: 'arrived'; routine: number }
   /** The player checked in to the block. */
   | { type: 'attended'; routine: number }
-  /** The block ended without the player: what it cost. */
-  | { type: 'missed'; routine: number; heat: number }
+  /** The block ended without the player: what it cost (2.23: `early`, there a while but not long enough). */
+  | { type: 'missed'; routine: number; heat: number; early?: boolean }
   | { type: 'lockdown'; on: boolean }
   /** The player's cell door locked or unlocked (Lights Out, a lockdown, 08:00). */
   | { type: 'cells'; locked: boolean }
@@ -145,6 +147,8 @@ export type SimEvent =
   | { type: 'delivered'; who: number }
   /** An inmate with a grudge jumps the player (GDD §10.3); a follower lands a blow on someone. */
   | { type: 'ambush'; who: number }
+  /** 2.23: an inmate saw the player going through the things in their cell (snoop.ts): thinks less of them, and with a grudge left, fights. */
+  | { type: 'snooped'; who: number; fights: boolean }
   | { type: 'allyHit'; by: number; who: number; dmg: number; ko: boolean }
   /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
   | { type: 'refused'; why: Refusal }

@@ -161,6 +161,8 @@ const out: string[] = [];
   }
   check(wetChecked > 0 && wetSeen === 0, `summer: every guard out on the sports ground soaked, seeing ${WET_SIGHT} tiles (${wetChecked} looks)`);
   const exercise = ROUTINE.findIndex((r) => r.id === 'exercise');
+  // (2.23: there till counted.)
+  bot.until(() => st.attended || st.routine !== exercise, 30 * STEPS_PER_MINUTE);
   check(st.blocks[exercise] === BLOCK.ATTENDED && !bot.log.some((l) => l.includes('missed')), `summer: at the water fight, present for Exercise (block ${st.blocks[exercise]})`);
   const struck = strikes.filter((s) => s.step > fightFrom);
   const caught = spotted.filter((s) => s.step > fightFrom);
