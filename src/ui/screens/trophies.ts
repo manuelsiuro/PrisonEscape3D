@@ -7,6 +7,8 @@ import { recordOf } from '../../game/records';
 import { readPrisoner } from '../../game/prisoner';
 import { FILE_MAX, readReplayFile, replayDay, replayFile, replayFileName, replaysKept, type Replay } from '../../game/replays';
 import type { RunLog } from '../../sim/runlog';
+import { clockAt, formatTime } from '../../sim/systems/clock';
+import { STEPS_PER_MINUTE } from '../../sim/tuning';
 import { currentLang, t, type Key } from '../../i18n';
 import { h } from '../dom';
 import { icon } from '../icons';
@@ -26,38 +28,16 @@ const ROUTE_ICON: Record<string, string> = { fence: 'cutters', tunnel: 'shovel',
 /** A way out's icon in a prison (P18: Irongate's stowaway rides the helicopter). */
 export const routeIcon = (route: string, prison: string) => (route === 'stowaway' && prisonById(prison)?.delivery?.vehicle === 'helicopter' ? 'heli' : (ROUTE_ICON[route] ?? 'route'));
 
-/** The stats shown, in order: the stat, its icon, and how it's written. */
-const STATS: Array<[string, string, ((n: number) => string)?]> = [
-  ['games', 'play'],
-  ['escapes', 'run'],
+/** A stat shown: the stat, its icon, and how it's written. */
+type StatDef = [string, string, ((n: number) => string)?];
+/** The stats by group, in order, each an even count (no card alone on a row); the escapes, days served and the records lead, as the headline. */
+const STAT_GROUPS: Array<[string, string, StatDef[]]> = [
   // P41: the manhunts run, the clean getaways, the recaptures.
-  ['hunts', 'map'],
-  ['getaways', 'star'],
-  ['recaptured', 'lock'],
-  ['days', 'sun'],
-  ['walked', 'walk'],
-  ['crafted', 'hammer'],
-  ['walls', 'pick'],
-  ['dug', 'shovel'],
-  ['cash', 'coin', (n) => `$${n}`],
-  ['wages', 'briefcase'],
-  ['favors', 'gift'],
-  ['bought', 'cart'],
-  ['blows', 'fist'],
-  ['koGuards', 'shield'],
-  ['koInmates', 'users'],
-  ['caught', 'siren'],
-  ['solitary', 'potato'],
-  ['lockdowns', 'bell'],
-  ['spotted', 'eye'],
-  ['maxHeat', 'flame', (n) => `${n}%`],
-  ['rumors', 'ear'],
-  ['thrown', 'toss'],
-  ['bribes', 'hand'],
-  ['chocolate', 'cookie'],
-  ['meals', 'clock'],
-  ['dailies', 'calendar'],
-  ['dailyStreak', 'flame'],
+  ['escapes', 'run', [['games', 'play'], ['hunts', 'map'], ['getaways', 'star'], ['recaptured', 'lock'], ['dailies', 'calendar'], ['dailyStreak', 'flame']]],
+  ['inside', 'sun', [['walked', 'walk'], ['meals', 'utensils'], ['chocolate', 'cookie'], ['rumors', 'ear'], ['favors', 'gift']]],
+  ['money', 'coin', [['cash', 'coin', (n) => `$${fmt(n)}`], ['wages', 'briefcase'], ['bought', 'cart'], ['bribes', 'hand']]],
+  ['tools', 'hammer', [['crafted', 'hammer'], ['walls', 'pick'], ['dug', 'shovel'], ['thrown', 'toss']]],
+  ['trouble', 'siren', [['blows', 'fist'], ['koGuards', 'shield'], ['koInmates', 'users'], ['caught', 'siren'], ['spotted', 'eye'], ['solitary', 'potato'], ['lockdowns', 'bell'], ['maxHeat', 'flame', (n) => `${n}%`]]],
 ];
 
 /** A medal as a little disc (none: an empty ring). */
@@ -169,10 +149,47 @@ function medalsTab(): string {
 
 export type ShelfResult = { to: 'intake'; tab: Tab } | { to: 'watch'; replay: Replay; tab: Tab; from: string } | null;
 
+/** The quickest escape of all (an escape timed before minutes were kept counts at its day's end). */
+function quickest(): { prison: string; route: string; day: number; minute: number } | null {
+  let best: { prison: string; route: string; day: number; minute: number } | null = null;
+  const at = (b: { day: number; minute: number }) => b.minute || b.day * 1440;
+  for (const p of PRISONS) for (const [route, b] of Object.entries(recordOf(p.id).byRoute)) if (!best || at(b) < at(best)) best = { prison: p.id, route, day: b.day, minute: b.minute };
+  return best;
+}
+
+/** One stat's card: its icon and number side by side, then what it counts (dimmed at zero); `more`: a line under it. */
+function statCard(ic: string, value: number, shown: string, label: string, more = ''): string {
+  return `<li class="stat${value ? '' : ' zero'}"><span class="stat-top"><span class="stat-ic">${icon(ic, 18)}</span><b>${shown}</b></span><small>${label}</small>${more}</li>`;
+}
+
+const share = (n: number, of: number) => `${fmt(n)}<span class="stat-of">/${fmt(of)}</span>`;
+
+/** The lifetime stats: the headline (escapes, days, prisons escaped, the quickest), then each group. */
 function statsTab(s: Shelf): string {
   const st = s.career.stats;
-  const cards = STATS.map(([k, ic, write]) => `<li class="stat"><span class="stat-ic">${icon(ic, 18)}</span><b>${write ? write(st[k] ?? 0) : fmt(st[k] ?? 0)}</b><small>${t(`stat.${k}` as Key)}</small></li>`).join('');
-  return `<ul class="stat-grid">${cards}</ul><p class="help-foot">${t('trophy.statsNote')}</p>`;
+  const ps = s.career.prisons;
+  const out = ps.filter((p) => p.routes.length).length;
+  const fast = quickest();
+  const where = fast ? `<em>${icon(routeIcon(fast.route, fast.prison), 13)}<span>${[t(`prison.${fast.prison}` as Key), fast.minute ? formatTime(clockAt(fast.minute * STEPS_PER_MINUTE)) : ''].filter(Boolean).join(' · ')}</span><span class="sr-only">, ${t(`route.${fast.route}` as Key)}</span></em>` : '';
+  const hero = [
+    statCard('run', st.escapes ?? 0, fmt(st.escapes ?? 0), t('stat.escapes')),
+    statCard('sun', st.days ?? 0, fmt(st.days ?? 0), t('stat.days')),
+    statCard('home', out, share(out, ps.length), t('stat.prisons')),
+    statCard('clock', fast ? 1 : 0, fast ? `<span class="stat-day">${t('hud.day', { n: `<span>${fmt(fast.day)}</span>` })}</span>` : '—', t('stat.quickest'), where),
+  ].join('');
+  const medals = ps.flatMap((p) => p.medals);
+  const routes = ps.reduce((n, p) => n + p.routes.length, 0);
+  const extra: Record<string, string> = {
+    escapes:
+      statCard('route', routes, share(routes, ps.reduce((n, p) => n + p.of, 0)), t('stat.routes')) +
+      statCard('trophy', medals.length, fmt(medals.length), t('stat.medals'), `<em class="stat-medals">${MEDALS.map((m) => `${medalDisc(m, 14)}<span>${medals.filter((x) => x === m).length}</span>`).join('')}</em>`),
+    inside: statCard('book', s.career.lessons, share(s.career.lessons, s.career.lessonsOf), t('stat.lessons')),
+  };
+  const groups = STAT_GROUPS.map(([g, gic, list]) => {
+    const cards = list.map(([k, ic, write]) => statCard(ic, st[k] ?? 0, write ? write(st[k] ?? 0) : fmt(st[k] ?? 0), t(`stat.${k}` as Key))).join('');
+    return `<h3 class="shelf-sub">${icon(gic, 14)}${t(`statGroup.${g}` as Key)}</h3><ul class="stat-grid">${cards}${extra[g] ?? ''}</ul>`;
+  }).join('');
+  return `<ul class="stat-grid stat-hero">${hero}</ul>${groups}<p class="help-foot">${t('trophy.statsNote')}</p>`;
 }
 
 /** `start`: the tab shown; `focus`: back from the Intake or a replay, the button that opened it (a selector). */

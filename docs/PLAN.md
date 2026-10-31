@@ -309,6 +309,7 @@ A phase that changes a map or places something new on it also brings the map vie
 | **Code review** | 2.21.6 | Dead code, duplicates and structure across the code: shared helpers (tile maths, clock text, the view's random numbers and canvas textures, refusal texts, `esc`), the big files split, four import cycles in play broken; no rule changed | every suite byte-identical; computed styles diffed against 2.21.5 at the three sizes |
 | **The tattoo drawn by hand** | 2.22 | `EXT.NEEDLE`/`NEEDLE_DOWN`, the ring waiting, the line scored by its distance from the design (§9 P29); `Sim.rules221` | teamtest, tutorialtest; played by hand at the three sizes |
 | **The guards keep watch** | 2.23 | Checking in takes a block's `stay` (`state.present`, the HUD badge's minutes), a roll call left before counted +25%, a block skipped in a guard's sight +2%/s, another inmate's cell searched in sight +20% then +4%/s and its owner minding (`systems/snoop.ts`, `state.snoop`, SPOT `skipping`/`snooping`, `BLOCK.LEFT`); the container panel's warning, the first-day guide's order; `Sim.rules222` (§2) | routinetest (the drop-in, old saves), guardtest (skipping, snooping, the owner), escapetest (bots wait to be counted); played at the three sizes |
+| **The stats laid out** | 2.24 | The trophy shelf's Stats tab: a headline (escapes, days served, prisons escaped of all, the quickest escape with its prison and time), then the counts in five titled groups of even size (escapes, life inside, work and money, making and breaking, fights and trouble), plus ways out found, medals won and lessons done from the records; a stat still at zero dimmed; each card its icon and number side by side, the quickest's "Day" small beside its number | i18ntest; checked at the three sizes, in English and French, new and seasoned careers |
 
 ## 5. Mapping the GDD to phases
 
@@ -374,7 +375,7 @@ campaign (P0–P12), Prison Life (P13–P26), Free time (P27–P30), the sports 
 the phone and kiosk (P34–P36), How to play (P37–P38) and After hours (P39–P42), each followed by
 its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6), the tattoo drawn by hand (v2.22.0) and the guards keeping watch over the routine and the cells (v2.23.0). In numbers: 5 prisons and the Training Block,
 38 ways out, 146 items, 60 recipes, 142 achievements, 48 lessons in 4 chapters, 58 help topics,
-4,439 text keys in English and French, 54 test scripts.
+4,449 text keys in English and French, 54 test scripts.
 
 Parked ideas, none planned: gangs and turf, the riot, photo mode and postcards, a custom
 escape (twist sandbox), the escape planner corkboard, a story through the prisons.

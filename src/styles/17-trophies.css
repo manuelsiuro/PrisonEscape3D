@@ -573,29 +573,42 @@
   color: var(--dlg-soft);
 }
 
-/* Lifetime stats: a grid of small cards. */
+/* Lifetime stats: the headline row, then each group's grid of small cards, icon and number side by side (a stat still at zero dimmed). */
 .stat-grid {
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
   gap: 8px;
-  margin-top: 4px;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   padding: 10px 12px;
   border-radius: 14px;
   background: var(--dlg-surface);
   box-shadow: inset 0 0 0 1px var(--dlg-line);
 }
 
+.stat-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 2px;
+}
+
 .stat .stat-ic {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
   color: #8fb6e0;
 }
 
 .stat b {
   font: 600 22px/1.1 var(--font-display);
+  white-space: nowrap;
   color: #fff;
 }
 
@@ -603,6 +616,79 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--dlg-soft);
+}
+
+.stat em {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--dlg-faint);
+}
+
+.stat em svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.stat em.stat-medals {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* The small part of a number: the share's "/5", the quickest's "Day". */
+.stat-of,
+.stat-day {
+  font-size: 0.65em;
+  color: var(--dlg-soft);
+}
+
+.stat-day span {
+  font-size: 1.54em;
+  color: #fff;
+}
+
+.stat-medals > span:not(.medal) {
+  margin-right: 4px;
+  color: var(--dlg-soft);
+}
+
+.stat.zero .stat-ic,
+.stat.zero b {
+  opacity: 0.4;
+}
+
+.stat.zero small {
+  color: var(--dlg-faint);
+}
+
+/* The headline: the bigger numbers, warmed by the accent. */
+.stat-hero {
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  margin-top: 4px;
+}
+
+.stat-hero .stat {
+  padding: 12px;
+  background: linear-gradient(150deg, rgba(242, 107, 29, 0.2), rgba(242, 107, 29, 0.04) 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 162, 92, 0.28);
+}
+
+.stat-hero .stat-ic {
+  color: var(--accent-2);
+  background: rgba(242, 107, 29, 0.18);
+}
+
+.stat-hero b {
+  font-size: 28px;
+}
+
+.stat-hero .stat.zero {
+  background: var(--dlg-surface);
+  box-shadow: inset 0 0 0 1px var(--dlg-line);
 }
 
 /* ------------------------------------------------------------ the victory card's medal and achievements */
