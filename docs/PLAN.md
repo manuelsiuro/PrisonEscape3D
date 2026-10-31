@@ -369,12 +369,12 @@ feel) and the known limits. A phase that touches a map also brings the map viewe
 
 ## 8. Progress
 
-**Status (2026-10-31): v2.22.0 released; v2.23 (the guards keep watch: §2, §4) built on `feature/guard-watch`.** Every planned phase is built and released: the five-prison
+**Status (2026-10-31): v2.23.0.** Every planned phase is built and released: the five-prison
 campaign (P0–P12), Prison Life (P13–P26), Free time (P27–P30), the sports grounds (P31–P33),
 the phone and kiosk (P34–P36), How to play (P37–P38) and After hours (P39–P42), each followed by
-its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6) and the tattoo drawn by hand (v2.22.0). In numbers: 5 prisons and the Training Block,
+its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6), the tattoo drawn by hand (v2.22.0) and the guards keeping watch over the routine and the cells (v2.23.0). In numbers: 5 prisons and the Training Block,
 38 ways out, 146 items, 60 recipes, 142 achievements, 48 lessons in 4 chapters, 58 help topics,
-4,439 text keys in English and French (v2.23), 54 test scripts.
+4,439 text keys in English and French, 54 test scripts.
 
 Parked ideas, none planned: gangs and turf, the riot, photo mode and postcards, a custom
 escape (twist sandbox), the escape planner corkboard, a story through the prisons.
