@@ -1,5 +1,6 @@
 import { BETS, RACE_MINUTE, RACE_STEPS } from '../content/long';
 import { BLOCK, ROUTINE, routineAt, routineEnd } from '../content/routine';
+import { presenceNeeded } from '../sim/systems/routine';
 import { DRILL_HEAT } from '../content/days';
 import { t, type Key } from '../i18n';
 import { dayMinute, formatTime, hhmm, pad2, prisonDay, spanText } from '../sim/systems/clock';
@@ -158,8 +159,14 @@ function dayView(g: Game): DayView {
       if (at === 'past') {
         if (b === BLOCK.ATTENDED) tag = { text: t('routine.attended'), tone: 'ok', icon: 'check' };
         else if (b === BLOCK.MISSED) tag = { text: lock ? t('dayCard.missedLock') : t('dayCard.missedHeat', { n: MISSED_ROUTINE_HEAT }), tone: 'bad' };
+        else if (b === BLOCK.LEFT) tag = { text: t('dayCard.leftEarly', { n: MISSED_ROUTINE_HEAT }), tone: 'bad' };
         else if (b === BLOCK.EXCUSED) tag = { text: t('dayCard.excused'), tone: 'quiet' };
-      } else if (at === 'now') tag = st.attended ? { text: t('routine.attended'), tone: 'ok', icon: 'check' } : st.excused ? { text: t('dayCard.excused'), tone: 'quiet' } : { text: t('routine.pending'), tone: 'warn' };
+      } else if (at === 'now') {
+        // (2.23: being counted, the minutes so far.)
+        const need = presenceNeeded(sim) / STEPS_PER_MINUTE;
+        const so = Math.floor(st.present / STEPS_PER_MINUTE);
+        tag = st.attended ? { text: t('routine.attended'), tone: 'ok', icon: 'check' } : st.excused ? { text: t('dayCard.excused'), tone: 'quiet' } : need && so ? { text: t('routine.present', { n: so, of: need }), tone: 'warn' } : { text: t('routine.pending'), tone: 'warn' };
+      }
       // (In a lockdown the blocks ahead are let off as they come: nothing said of missing them.)
       else if (stakes && !st.lockdown) tag = { text: lock ? t('dayCard.missLock') : t('dayCard.missHeat', { n: MISSED_ROUTINE_HEAT }), tone: lock ? 'bad' : 'warn' };
     }

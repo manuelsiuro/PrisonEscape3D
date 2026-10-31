@@ -94,7 +94,7 @@ import { hudFrame, hudState, setSongOn } from './hudframe';
  * music and ambience that follow the game.
  */
 
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false, take: [] };
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, boxTheirs: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false, take: [] };
 const GET_UP = { verb: '', what: '' };
 /** Delivery day (P18): into the vehicle at its tail, out of it while hidden. */
 const STOW = { verb: '', what: '' };
@@ -161,6 +161,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   v.boxTitle = it.open >= 0 ? boxTitle(sim, it.open) : '';
   v.boxHidden = box?.hidden ?? 0;
   v.boxMine = !!box?.mine;
+  v.boxTheirs = !!box && !sim.rules222 && sim.world.cellOf[box.prop.z * MAP_W + box.prop.x] > 1;
   v.carried = st.carried;
   v.tips = st.tips;
   if (st.solitary > 0) {

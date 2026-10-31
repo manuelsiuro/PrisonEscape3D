@@ -3,9 +3,9 @@ import type { ZoneId } from './zones';
 /**
  * The daily schedule (GDD §2.1). Each block starts at `start` (minute of the day) and runs
  * until the next one; Lights Out wraps past midnight to 08:00. A block with zones is
- * mandatory: the player checks in by stepping into one of them at least once during it
- * (GDD §2.2). Missing it costs heat or starts a lockdown. Names go through t() as
- * `routine.<id>`.
+ * mandatory: the player checks in by stepping into one of them during it (GDD §2.2; 2.23: and
+ * staying `stay` minutes in all, PLAN §2). Missing it costs heat or starts a lockdown. Names go
+ * through t() as `routine.<id>`.
  */
 export interface RoutineDef {
   id: RoutineId;
@@ -14,6 +14,8 @@ export interface RoutineDef {
   zones: readonly ZoneId[];
   /** What missing it costs: +25% heat, a lockdown, or nothing (Lights Out: guards enforce it, P3). */
   miss: 'heat' | 'lockdown' | null;
+  /** 2.23: the minutes in its zones it takes to check in (they add up, in and out); none: on arrival. */
+  stay?: number;
 }
 
 export type RoutineId =
@@ -29,21 +31,21 @@ export type RoutineId =
   | 'lightsOut';
 
 export const ROUTINE: readonly RoutineDef[] = [
-  { id: 'rollCall', start: 8 * 60, zones: ['rollCall'], miss: 'lockdown' },
-  { id: 'breakfast', start: 9 * 60, zones: ['canteen'], miss: 'heat' },
+  { id: 'rollCall', start: 8 * 60, zones: ['rollCall'], miss: 'lockdown', stay: 30 },
+  { id: 'breakfast', start: 9 * 60, zones: ['canteen'], miss: 'heat', stay: 20 },
   { id: 'freeTime', start: 10 * 60, zones: [], miss: null },
   // Mandatory only with a job (P6); until then, more free time.
   { id: 'work', start: 12 * 60, zones: [], miss: null },
-  { id: 'exercise', start: 15 * 60, zones: ['gym', 'yard', 'sports'], miss: 'heat' },
-  { id: 'showers', start: 16 * 60, zones: ['showers'], miss: 'heat' },
-  { id: 'dinner', start: 17 * 60, zones: ['canteen'], miss: 'heat' },
+  { id: 'exercise', start: 15 * 60, zones: ['gym', 'yard', 'sports'], miss: 'heat', stay: 25 },
+  { id: 'showers', start: 16 * 60, zones: ['showers'], miss: 'heat', stay: 15 },
+  { id: 'dinner', start: 17 * 60, zones: ['canteen'], miss: 'heat', stay: 20 },
   { id: 'eveningFreeTime', start: 18 * 60, zones: [], miss: null },
-  { id: 'eveningRollCall', start: 22 * 60, zones: ['rollCall'], miss: 'lockdown' },
+  { id: 'eveningRollCall', start: 22 * 60, zones: ['rollCall'], miss: 'lockdown', stay: 30 },
   { id: 'lightsOut', start: 23 * 60, zones: ['playerCell'], miss: null },
 ];
 
-/** How a block went today (`state.blocks`): checked in, missed (heat or a lockdown), let off (a lockdown, solitary, out cold, away). */
-export const BLOCK = { ATTENDED: 1, MISSED: 2, EXCUSED: 3 } as const;
+/** How a block went today (`state.blocks`): checked in, missed (heat or a lockdown), let off (a lockdown, solitary, out cold, away), 2.23: left before being counted (the meals' heat, even for a roll call). */
+export const BLOCK = { ATTENDED: 1, MISSED: 2, EXCUSED: 3, LEFT: 4 } as const;
 
 /**
  * P31: the places outdoors whose gates open by the routine (the sports ground, the garden):

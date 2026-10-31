@@ -192,8 +192,9 @@ console.log('replay ok');
   const seed = 7;
   const old = new Sim(CENTER_PERKS, seed);
   old.state.calendar = quietCalendar();
-  // (Nobody queued for the pay phone then, P34.)
+  // (Nobody queued for the pay phone then, P34; checked in on arrival, a block skipped unminded, 2.23.)
   old.noQueue = true;
+  old.rules222 = true;
   const r = new RunRecorder(old, { seed, game: '1.10.1' });
   for (let k = 0; k < 2 * 1440 * STEPS_PER_MINUTE + 600; k++) r.step(0);
   const log = r.toLog();
@@ -219,7 +220,7 @@ console.log('replay ok');
   const tbot = runRoute(plan, 'tunnel')!;
   const tsim = new Sim(CENTER_PERKS, 1);
   tsim.restore(tbot.start!);
-  const trec = new RunRecorder(tsim, { log: null, game: '2.0.0' });
+  const trec = new RunRecorder(tsim, { log: null, game: '2.23.0' });
   for (const c of tbot.cmds) trec.step(c);
   const esc = { ...trec.toLog(), via: 'tunnel' };
   const end = esc.from + esc.steps;
@@ -290,7 +291,7 @@ console.log('replay ok');
     const ns = new Sim(CENTER_PERKS, 1);
     ns.restore(nb.sim.snapshot());
     ns.state.sleeping = true;
-    const nr = new RunRecorder(ns, { log: null, game: '2.0.0' });
+    const nr = new RunRecorder(ns, { log: null, game: '2.23.0' });
     for (let k = 0; k < 10 * SUM_STEPS; k++) nr.step(0);
     const nl = nr.toLog();
     const q = scoutAll(JSON.parse(JSON.stringify(nl)), CENTER_PERKS)!;
@@ -327,7 +328,7 @@ console.log('replay ok');
   {
     const mods = ['carePackage', 'badBlood'];
     const dsim = new Sim(CENTER_PERKS, 99, mods);
-    const drec = new RunRecorder(dsim, { seed: 99, game: '2.0.0' });
+    const drec = new RunRecorder(dsim, { seed: 99, game: '2.23.0' });
     for (let k = 0; k < 3 * SUM_STEPS; k++) drec.step(k % 300 < 150 ? 5 : 0);
     const dl = { ...drec.toLog(), daily: 3 };
     check(dl.mods?.join() === mods.join() && scoutAll(dl, CENTER_PERKS)!.ok, 'a Daily\'s log keeps its twists and scouts whole');

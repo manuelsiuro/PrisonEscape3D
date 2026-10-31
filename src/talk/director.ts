@@ -404,7 +404,7 @@ export class Director {
       case 'spotted': {
         if (e.reason === 'none') break;
         const seeing = s.guards.map((g, k) => ({ id: n + k, g })).filter((o) => o.g.sees && o.g.ko <= 0).sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player)).map((o) => o.id);
-        const own = ['night', 'restricted', 'contraband', 'recognized', 'wanted', 'damage', 'tampering', 'fight', 'gambling'] as const;
+        const own = ['night', 'restricted', 'contraband', 'recognized', 'wanted', 'damage', 'tampering', 'fight', 'gambling', 'skipping', 'snooping'] as const;
         const bank = ((own as readonly string[]).includes(e.reason) ? `re.spotted.${e.reason}` : 're.spotted.other') as BankId;
         this.queueUp(now, bank, seeing, 5, `spotted:${e.reason}`, 'shout');
         break;
@@ -459,6 +459,9 @@ export class Director {
         break;
       case 'ambush':
         this.queueUp(now, 're.ambush.in', [e.who], 5, 'ambush', 'shout');
+        break;
+      case 'snooped':
+        this.queueUp(now, 're.snooped.in', [e.who], 5, 'snooped', 'shout');
         break;
       case 'thrown': {
         const p = at(e.who);

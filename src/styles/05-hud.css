@@ -191,6 +191,12 @@
   background: var(--gold);
 }
 
+/* (2.23: being counted: the badge fills with green as the minutes add up.) */
+.hud-badge.counting {
+  background: linear-gradient(90deg, #7fd49a var(--fill, 0%), var(--gold) var(--fill, 0%));
+  font-variant-numeric: tabular-nums;
+}
+
 .hud-badge.done {
   color: white;
   background: #2f9e55;

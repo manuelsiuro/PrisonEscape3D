@@ -16,6 +16,8 @@ export interface HudState {
   /** The routine block (index into ROUTINE). */
   routine: number;
   attended: boolean;
+  /** 2.23: a block checked in to by staying (not yet checked in): game minutes there so far, of how many (null: on arrival, or checked in). */
+  presence?: readonly [number, number] | null;
   /** Guard heat, 0–100. */
   heat: number;
   lockdown: boolean;
@@ -553,7 +555,7 @@ export class Hud {
   private updateRoutine(s: HudState) {
     const w = s.work;
     const mandatory = ROUTINE[s.routine].zones.length > 0 || !!w;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}`;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}|${s.presence?.join(':') ?? ''}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
@@ -599,12 +601,16 @@ export class Hud {
     const pending = w ? !w.paid : !s.attended;
     // (A lesson about something else, P24's glider: "Lights out · until 08:00", nothing asked of the player.)
     const quiet = !!s.quietRoutine && !w;
-    setText(this.routinePlace, quiet ? (NARROW.matches ? until : '') : NARROW.matches && mandatory && pending ? `${place} · ${until}` : place);
+    // (2.23: being counted there, narrow: the time alone, the badge's minutes beside it.)
+    const counting = !w && !s.attended && !!s.presence && s.presence[0] > 0;
+    setText(this.routinePlace, quiet || (counting && NARROW.matches) ? (NARROW.matches ? until : '') : NARROW.matches && mandatory && pending ? `${place} · ${until}` : place);
     setText(this.routineUntil, until);
     // At work the badge counts the quota (GDD §11), and says PAID once it's done.
     const done = w ? w.paid : s.attended;
-    this.badge.className = `hud-badge${mandatory && !quiet ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}`;
-    this.badge.innerHTML = w ? (w.paid ? `${icon('check', 12)}${t('routine.paid')}` : `${w.quota}/${w.of}`) : s.attended ? `${icon('check', 12)}${t('routine.attended')}` : t('routine.pending');
+    // (2.23: being counted, the minutes there so far, the badge filling up as they add up.)
+    this.badge.className = `hud-badge${mandatory && !quiet ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}${counting ? ' counting' : ''}`;
+    this.badge.style.setProperty('--fill', counting ? `${Math.round((100 * s.presence![0]) / s.presence![1])}%` : '0%');
+    this.badge.innerHTML = w ? (w.paid ? `${icon('check', 12)}${t('routine.paid')}` : `${w.quota}/${w.of}`) : s.attended ? `${icon('check', 12)}${t('routine.attended')}` : counting ? t('routine.present', { n: s.presence![0], of: s.presence![1] }) : t('routine.pending');
     // Checked in (or a load done): the badge pops. A new block: the whole pill does.
     const [wasRoutine, wasAttended] = was.split('|');
     const wasWork = was.split('|')[5] ?? '';

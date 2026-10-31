@@ -1,57 +1,57 @@
 places: 48 seats, 6 shower heads, 8 roll call spots
 == model prisoner, 3 days
-day 1 08:06 attended rollCall
+day 1 08:36 attended rollCall
 day 1 09:00 routine breakfast
-day 1 09:05 attended breakfast
+day 1 09:25 attended breakfast
 day 1 10:00 routine freeTime
 day 1 12:00 routine work
 day 1 15:00 routine exercise
-day 1 15:10 attended exercise
+day 1 15:35 attended exercise
 day 1 16:00 routine showers
-day 1 16:03 attended showers
+day 1 16:18 attended showers
 day 1 17:00 routine dinner
-day 1 17:07 attended dinner
+day 1 17:27 attended dinner
 day 1 18:00 routine eveningFreeTime
 day 1 22:00 routine eveningRollCall
-day 1 22:03 attended eveningRollCall
+day 1 22:33 attended eveningRollCall
 day 1 23:00 routine lightsOut
 day 1 23:06 attended lightsOut
 day 1 23:06 cells locked
 day 2 08:00 routine rollCall
 day 2 08:00 cells unlocked
-day 2 08:06 attended rollCall
+day 2 08:36 attended rollCall
 day 2 09:00 routine breakfast
-day 2 09:05 attended breakfast
+day 2 09:25 attended breakfast
 day 2 10:00 routine freeTime
 day 2 12:00 routine work
 day 2 15:00 routine exercise
-day 2 15:10 attended exercise
+day 2 15:35 attended exercise
 day 2 16:00 routine showers
-day 2 16:03 attended showers
+day 2 16:18 attended showers
 day 2 17:00 routine dinner
-day 2 17:07 attended dinner
+day 2 17:27 attended dinner
 day 2 18:00 routine eveningFreeTime
 day 2 22:00 routine eveningRollCall
-day 2 22:03 attended eveningRollCall
+day 2 22:32 attended eveningRollCall
 day 2 23:00 routine lightsOut
 day 2 23:06 attended lightsOut
 day 2 23:06 cells locked
 day 3 08:00 routine rollCall
 day 3 08:00 cells unlocked
-day 3 08:06 attended rollCall
+day 3 08:36 attended rollCall
 day 3 09:00 routine breakfast
-day 3 09:05 attended breakfast
+day 3 09:25 attended breakfast
 day 3 10:00 routine freeTime
 day 3 12:00 routine work
 day 3 15:00 routine exercise
-day 3 15:10 attended exercise
+day 3 15:35 attended exercise
 day 3 16:00 routine showers
-day 3 16:03 attended showers
+day 3 16:18 attended showers
 day 3 17:00 routine dinner
-day 3 17:07 attended dinner
+day 3 17:27 attended dinner
 day 3 18:00 routine eveningFreeTime
 day 3 22:00 routine eveningRollCall
-day 3 22:03 attended eveningRollCall
+day 3 22:32 attended eveningRollCall
 day 3 23:00 routine lightsOut
 day 3 23:06 attended lightsOut
 day 3 23:06 cells locked
@@ -73,30 +73,44 @@ day 1 12:00 routine work
 day 1 15:00 routine exercise
 day 1 16:00 missed exercise +25% heat
 day 1 16:00 routine showers
+day 1 16:45 spotted: skipping
+day 1 16:57 spotted: skipping
 day 1 17:00 missed showers +25% heat
 day 1 17:00 routine dinner
+day 1 17:26 spotted: skipping
+day 1 17:38 spotted: skipping
 day 1 18:00 missed dinner +25% heat
 day 1 18:00 routine eveningFreeTime
+day 1 18:08 spotted: wanted
+day 1 18:11 caught (infirmary)
 day 1 22:00 routine eveningRollCall
 day 1 23:00 missed eveningRollCall +100% heat
 day 1 23:00 LOCKDOWN
 day 1 23:00 routine lightsOut
-day 1 23:02 caught (solitary)
-day 1 23:02 lockdown lifted
-day 1 23:32 into solitary
-day 2 01:32 out of solitary
-day 2 01:32 attended lightsOut
-day 2 01:32 cells locked
+day 1 23:04 caught (solitary)
+day 1 23:04 lockdown lifted
+day 1 23:34 into solitary
+day 2 01:34 out of solitary
+day 2 01:34 attended lightsOut
+day 2 01:34 cells locked
 day 2 08:00 routine rollCall
 day 2 08:00 cells unlocked
 truant heat at the end of day 1: 0%
 blocks at 07:59 (o made, x missed or fired, e excused): model oo.xooo.oo, truant xe.xxxx.xo
 == night owl
 day 1 22:00 routine eveningRollCall
-day 1 22:03 attended eveningRollCall
+day 1 22:33 attended eveningRollCall
 day 1 23:00 routine lightsOut
 day 1 23:08 attended lightsOut
 day 1 23:08 cells locked
 day 2 08:00 cells unlocked
+== drop-in, 08:00–10:00
+day 1 09:00 missed rollCall +25% heat
+day 1 09:00 routine breakfast
+day 1 09:25 spotted: skipping
+day 1 10:00 missed breakfast +25% heat
+day 1 10:00 routine freeTime
+(before 2.23: day 1 08:06 attended rollCall; day 1 09:12 attended breakfast)
+stays (minutes): rollCall 30, breakfast 20, exercise 25, showers 15, dinner 20, eveningRollCall 30
 == visitor: caught at day 1 09:20
 == saves: 29 snapshots restored into fresh simulations, all identical

@@ -20,6 +20,20 @@ export const CORNER_ASSIST = 96;
 export const HEAT_DECAY_STEPS = 4 * STEPS_PER_MINUTE;
 /** Missing a meal, exercise or showers (GDD §2.2). */
 export const MISSED_ROUTINE_HEAT = 25;
+/** 2.23: this far into a block (minutes: the walk there, across the biggest map), a guard who sees the player away from it before they've checked in minds: 1% every SKIP_EVERY steps (+2% a second). */
+export const SKIP_GRACE = 20;
+export const SKIP_EVERY = 10;
+/**
+ * 2.23: going through the furniture in another inmate's cell, seen by a guard: +20% at the sight
+ * (again once no guard has seen it for SNOOP_GAP steps), then 1% every SNOOP_EVERY steps
+ * (+4% a second). The cell's owner who sees it from SNOOP_SIGHT tiles thinks SNOOP_OPINION less
+ * of the player (once a search); a grudge left (OPINION_LOW or less) and they fight.
+ */
+export const SNOOP_HEAT = 20;
+export const SNOOP_EVERY = 5;
+export const SNOOP_GAP = 5 * STEPS_PER_SECOND;
+export const SNOOP_SIGHT = 6;
+export const SNOOP_OPINION = 15;
 /** From this much heat a guard who sees the player gives chase; caught from this much, it's solitary (GDD §3.1). */
 export const CHASE_HEAT = 80;
 export const SOLITARY_HEAT = 90;

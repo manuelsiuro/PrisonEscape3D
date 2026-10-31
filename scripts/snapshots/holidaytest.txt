@@ -5,7 +5,7 @@ summer: waterFight 2, waterFight 9, waterFight 16
 halloween: costumeNight 2, costumeNight 9, costumeNight 16
 christmas: christmasDay 2, newYearsEve 3, christmasDay 9, newYearsEve 10, christmasDay 16, newYearsEve 17
 easter at center-perks: 08:00 hidden eggHunt 12, 08:00 start eggHunt; 6 eggs in inmates' desks, 6 about the yard
-easter over 8 weeks: the inmates' desks' loot as without a holiday (1187 items in 57 mornings), no egg left in a desk after 22:00
+easter over 8 weeks: the inmates' desks' loot as without a holiday (1212 items in 57 mornings), no egg left in a desk after 22:00
 the treats on offer: ice_lolly until 15:30; costume and pumpkin until 21:00; gift until 22:00
 summer's water fight: a guard on the sports ground sees 2 tiles (7 without it; 7 in the courtyard, where there's none)
 heatwave days in 60 (center-perks, stalag-flucht, shankton, san-pancho, irongate): 3, 0, 0, 21, 0; in summer 11, 0, 0, 29, 0

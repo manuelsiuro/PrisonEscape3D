@@ -1128,9 +1128,9 @@ function follow(id: string) {
   check(progress.done, 'dogs: and it ends done');
 }
 {
-  // Pratt never paid: the heat cools off by itself and the lesson says so.
+  // Pratt never paid: the heat cools off by itself (the routine kept: 2.23, a guard minds a block skipped) and the lesson says so.
   const { bot, progress, why } = follow('guards');
-  bot.until(() => !!why(), 8 * 60 * 20);
+  bot.keepRoutine(() => !!why(), 8 * 60 * 20);
   check(why() === 'lesson.guards.cooled', `guards: heat cooled off before paying ends the lesson (${why()})`);
   console.log(`guards, never paid: ended at step ${progress.k + 1} (${why()}) by ${bot.time}`);
 }

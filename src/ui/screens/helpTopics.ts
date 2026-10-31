@@ -52,7 +52,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       topics: [
         T('goal', 'route', '#ff7714', { pic: true, lessons: ['escape'], see: ['ways', 'delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
         T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['routine'] }),
-        T('heat', 'flame', '#e5484d', { diagram: 'meter', lessons: ['heat'], listIcons: ['clock', 'eye', 'lock'] }),
+        T('heat', 'flame', '#e5484d', { diagram: 'meter', lessons: ['heat'], listIcons: ['clock', 'eye', 'lock', 'briefcase'] }),
         T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),
       ],
     },

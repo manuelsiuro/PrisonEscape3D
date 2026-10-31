@@ -1,3 +1,4 @@
+import { presenceNeeded } from '../sim/systems/routine';
 import { itemDef, itemNumber } from '../content/items';
 import { MEAL_STEPS } from '../sim/tuning';
 import { ROUTINE } from '../content/routine';
@@ -86,7 +87,7 @@ export function settingsChanged() {
   tipsSeen.clear();
 }
 
-const coachState = { routine: '', attended: false, openMine: false, openOther: false, pickedUp: false, craftOpen: false, boardOpen: false, ate: false };
+const coachState = { routine: '', attended: false, openMine: false, openOther: false, pickedUp: false, craftOpen: false, boardOpen: false, ate: false, due: false };
 
 /** The first day's guide: what the player has done, read from the game (every frame). */
 export function updateFirstDay(g: Game, pickedUp: boolean, dt: number) {
@@ -102,5 +103,6 @@ export function updateFirstDay(g: Game, pickedUp: boolean, dt: number) {
   coachState.craftOpen = itemsUI.craftIsOpen;
   coachState.boardOpen = board.isOpen;
   coachState.ate = st.eaten >= MEAL_STEPS;
+  coachState.due = !st.attended && !st.excused && !st.lockdown && presenceNeeded(sim) > 0;
   firstDay.update(coachState, dt, g.paused || st.sleeping || st.ko > 0 || st.solitary > 0 || itemsUI.panelOpen || socialOpen());
 }

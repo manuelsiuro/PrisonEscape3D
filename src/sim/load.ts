@@ -191,7 +191,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // P36: the release as it can be (else no name listed, the way out shut).
   if (!(ints(s.release, 3) && s.release[0] >= 0 && s.release[0] <= prisonDay(s.step) + 1 && s.release[1] >= 0 && s.release[1] <= s.step + FREED_STEPS && s.release[2] >= 0 && s.release[2] <= prisonDay(s.step))) s.release = [0, 0, 0];
   // Today's blocks as they went (a save from before them: nothing said of the day so far).
-  if (!(ints(s.blocks, ROUTINE.length) && s.blocks.every((b) => b >= 0 && b <= BLOCK.EXCUSED))) {
+  if (!(ints(s.blocks, ROUTINE.length) && s.blocks.every((b) => b >= 0 && b <= BLOCK.LEFT))) {
     s.blocks = ROUTINE.map(() => 0);
     // (The block under way keeps its check-in.)
     if (s.attended && ROUTINE[s.routine]?.miss) s.blocks[s.routine] = BLOCK.ATTENDED;
@@ -207,6 +207,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!Number.isInteger(s.holiday) || s.holiday < 0 || s.holiday >= HOLIDAYS.length) s.holiday = 0;
   if (!(ints(s.hol, 2) && s.hol.every((x) => x >= 0))) s.hol = [0, 0];
   if (!(Array.isArray(s.laughed) && s.laughed.length <= n + 1 && s.laughed.every((x, k) => Number.isInteger(x) && x >= 0 && (k === 0 || x < n)))) s.laughed = [];
+  // 2.23: the time at the block so far (a save from before it: none, a check-in made stands), a search as it can be (else none).
+  if (!Number.isInteger(s.present) || s.present < 0) s.present = 0;
+  if (!(Array.isArray(s.snoop) && (s.snoop.length === 0 || (ints(s.snoop, 3) && s.snoop[0] >= 0 && s.snoop[0] < containersOf(world).length && s.snoop[1] >= 0 && s.snoop[1] <= s.step && (s.snoop[2] === 0 || s.snoop[2] === 1))))) s.snoop = [];
   // (A save from before no-shows, 2.5.1: the acts whose slots had begun when it was made stand as they did then; those still to come are judged as ever.)
   if (st.acted === undefined) {
     const m = dayMinute(s.step);

@@ -26,6 +26,7 @@ export type SimContext = Pick<
   | 'noQueue'
   | 'rules215'
   | 'rules221'
+  | 'rules222'
   | 'aboutBefore'
   | 'groundFrom'
   | 'ladderFoot'

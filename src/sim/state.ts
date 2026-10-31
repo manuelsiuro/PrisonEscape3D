@@ -318,7 +318,7 @@ export interface SimState {
   release: number[];
   /**
    * Today's blocks as they went (a ROUTINE index each, cleared at 08:00): 0 nothing to say (not
-   * yet, or nothing asked), BLOCK.ATTENDED, BLOCK.MISSED (it cost heat or a lockdown), BLOCK.EXCUSED.
+   * yet, or nothing asked), BLOCK.ATTENDED, BLOCK.MISSED (it cost heat or a lockdown), BLOCK.EXCUSED, BLOCK.LEFT (2.23: there, but not long enough).
    */
   blocks: number[];
   /**
@@ -351,6 +351,15 @@ export interface SimState {
   holiday: number;
   hol: number[];
   laughed: number[];
+
+  /**
+   * v2.23 (the guards keep watch, PLAN §2): the steps the player has spent in the block's zones
+   * so far (checking in takes ROUTINE's `stay`; cleared as a block begins); a search of another
+   * inmate's cell (snoop.ts: [] none; else [the container open, the step a guard last saw it at
+   * it (0 none yet), 1 once its owner has seen]).
+   */
+  present: number;
+  snoop: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -529,5 +538,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     holiday: holiday > 0 && holiday < HOLIDAYS.length ? holiday : 0,
     hol: [0, 0],
     laughed: [],
+    present: 0,
+    snoop: [],
   };
 }
