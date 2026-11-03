@@ -224,6 +224,7 @@ build and tests pass → commit → `npm version minor` (or `patch`) → `git pu
 
 ### Documents
 
+- [`docs/FEATURES.md`](docs/FEATURES.md): every feature at a high level, what the code offers as a toolkit, its limits and the ways to extend it.
 - [`docs/the_escapists_3d_complete_game_design_document.md`](docs/the_escapists_3d_complete_game_design_document.md): the game design document, the source of truth.
 - [`docs/PLAN.md`](docs/PLAN.md): decisions, conflicts resolved, the architecture, the phases (P0 to P42) and the rules of every feature beyond the design document.
 - [`docs/HISTORY.md`](docs/HISTORY.md): every release, what its reviews found and what was accepted.
