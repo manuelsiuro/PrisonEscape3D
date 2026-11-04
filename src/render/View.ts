@@ -20,6 +20,7 @@ import { lookFor } from './prisonerLook';
 import { itemGeometry } from './itemModels';
 import { Pickups } from './Pickups';
 import { updateOcclusion } from './occlusion';
+import { ShowerWater } from './ShowerWater';
 import { WALL_H, WorldView } from './WorldView';
 import { LAYER_Y, ROOF_Y as ROOF_HEIGHT, Structure } from './Structure';
 import { NoiseFx, type AimView } from './Noise';
@@ -94,6 +95,9 @@ const DAYLIGHT: Array<[number, number, number, number, number]> = [
   [1260, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
   [1440, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
 ];
+
+/** How long the player keeps the towel round their neck after washing (s). */
+const PLAYER_DRY = 2.5;
 
 /** Dust colors by ground (only soft ground and dirt puffs); in the snow, powder. */
 const DUST: Record<number, number> = {
@@ -194,6 +198,12 @@ export class View {
   private readonly showers = new Uint8Array(MAP_W * MAP_H);
   private readonly guide = new Guide();
   private readonly dust = new Dust();
+  private readonly showerWater = new ShowerWater();
+  /** The tiles of the heads someone's washing under, this frame. */
+  private readonly running = new Set<number>();
+  private wasWashing = false;
+  /** Seconds left with the towel, after stepping out from under the water. */
+  private dryingFor = 0;
   private readonly blobs = new Blobs();
   /** Everyone on stage, for the contact shadows (refilled per frame). */
   private readonly onStage: Character[] = [];
@@ -366,7 +376,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -530,6 +540,10 @@ export class View {
     this.outfit = -1;
     this.showers.fill(0);
     for (const p of world.props) if (p.kind === 'shower') this.showers[p.z * MAP_W + p.x] = 1;
+    this.showerWater.setWorld(world.props, MAP_W);
+    this.running.clear();
+    this.wasWashing = false;
+    this.dryingFor = 0;
     this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
     this.setCast(0);
     this.setGuards([]);
@@ -947,7 +961,7 @@ export class View {
     }
     this.player.root.visible = true;
     // (A tray takes both hands: what's in hand is out of sight while it does.)
-    this.player.hold(f.sleeping || f.knockedOut || f.trayAt ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
+    this.player.hold(f.sleeping || f.knockedOut || f.trayAt || f.doing === DOING.SHOWER ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
     this.player.trayPose(f.trayAt, f.trayLeft);
     // (P24: hanging from a glider's bar in flight, both hands up.)
     const doing = this.getaway.flying ? DOING.LIFT : f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : f.doing;
@@ -1014,8 +1028,15 @@ export class View {
       this.taps = f.games.taps;
     }
     this.player.baseY = LAYER_Y[f.layer] + this.trainPos.y * tb;
-    // Under a shower in the showers block: wet like the inmates.
-    this.player.wet = f.doing === DOING.SHOWER;
+    // (2.26: in shorts, and a moment after with a towel round the neck on the way off.)
+    const washing = f.doing === DOING.SHOWER;
+    if (this.wasWashing && !washing && !f.knockedOut && !f.sleeping) this.dryingFor = PLAYER_DRY;
+    this.wasWashing = washing;
+    this.dryingFor = washing || f.knockedOut || f.sleeping ? 0 : Math.max(0, this.dryingFor - dt);
+    this.player.undressed = washing || this.dryingFor > 0;
+    this.player.towel = this.dryingFor > 0 ? 1 : 0;
+    this.running.clear();
+    if (washing) this.running.add(Math.floor(f.z) * MAP_W + Math.floor(f.x));
     // Off an infirmary bed: the body eases up from that bed (not the cell's) until it stands.
     if (f.restBed) this.lastRest = f.restBed;
     else if (this.player.lying === 0) this.lastRest = null;
@@ -1054,7 +1075,11 @@ export class View {
       if (!c) return;
       // In the tunnels the ground floor and everyone on it are out of the picture.
       c.root.visible = f.layer !== LAYER.UNDER;
-      c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
+      // (2.26: the water's the head's own; a turn at the showers in shorts, a towel while waiting and after.)
+      const tile = Math.floor(m.z) * MAP_W + Math.floor(m.x);
+      if (m.doing === DOING.SHOWER && this.showers[tile] === 1) this.running.add(tile);
+      c.undressed = m.bare;
+      c.towel = m.towel;
       c.trayPose(m.trayAt, m.trayLeft);
       // On a chair, a little higher than on a canteen bench.
       const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;
@@ -1479,7 +1504,7 @@ export class View {
     if (this.sun.castShadow) resize(4096);
     this.placeSun(600);
     // (P42: nor a holiday's decor: the map viewer's pictures never depend on the date.)
-    const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.guide.group, this.holidaysView.group].filter((o) => o.visible);
+    const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.showerWater.group, this.guide.group, this.holidaysView.group].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
     // The pay phone, the kiosk and the odd jobs board hang on their walls in game, but the title screen behind the shot hides their groups.
     const shown = [this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.releaseView.group].filter((o) => !o.visible);
@@ -1599,6 +1624,9 @@ export class View {
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
     this.worldView?.update(dt, night, this.doorsOpen, this.powerLevel, this.riot, this.security?.group.visible ? this.security.arches : 1);
     this.dust.update(dt);
+    // (The running heads as the last frame found them; off the ground floor's picture from the tunnels.)
+    this.showerWater.update(dt, time, !this.reducedMotion, this.running, this.camera);
+    if (this.layer === LAYER.UNDER) this.showerWater.group.visible = false;
     const c = this.cine;
     this.cineOffset.copy(CAMERA_OFFSET);
     if (this.previewBlend > 0.002) this.cineOffset.lerp(PREVIEW_OFFSET, this.previewBlend).setLength(60);

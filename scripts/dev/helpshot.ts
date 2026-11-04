@@ -493,6 +493,23 @@ export const SHOTS: Record<string, Shot> = {
     dz: -1.4,
   },
 
+  // 2.26: a shower turned on at Center Perks, the crowd arriving at the other heads.
+  showers: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 3);
+      bot.routineUntil(1, 16 * 60 + 2);
+      bot.walkTo(placesOf(bot.sim.world).showers[1].tile);
+      bot.act();
+      // (Until the crowd's under the other heads.)
+      for (let k = 0; k < 380; k++) bot.step();
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 3,
+    dx: 1,
+    dz: 1,
+  },
+
   // P42: Christmas Day in Center Perks' canteen, free time on day 2 (a run begun under Christmas): the tree standing free with its
   // presents (50.5,11.5), the player two tiles east of it facing it (beside, not in front: the camera looks from the south), the
   // lights along the north wall up and to the left (x 40–47, row 7). The camera aimed between the two, a little wider than play's.

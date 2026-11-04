@@ -37,6 +37,7 @@ import { command, DIR_X, DIR_Z, EXT, OP, SLOT } from '../src/sim/command';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { clockAt } from '../src/sim/systems/clock';
 import { GUARD } from '../src/sim/systems/guards';
+import { startWash } from '../src/sim/systems/showers';
 import { itemOf, slot } from '../src/sim/systems/items';
 import { DOG, dogDef, dogWarning, handlersOf, noseFor, onShift, outOfBounds, pillsDesk, smellsOfContraband } from '../src/sim/systems/k9';
 import { FEAT } from '../src/sim/systems/ledger';
@@ -381,6 +382,7 @@ function byDog(def: PrisonDef, items: Array<[number, number]>, seed = 5) {
     putTile(g.sim.state.player, head);
     g.sim.state.scent = [[head - 1, g.sim.state.step - 5]];
     g.seen.length = 0;
+    startWash(g.sim, head);
     g.step();
     check(g.sim.state.scent.length === 0 && g.seen.some((e) => e.type === 'washed'), 'a shower: the trail washed off');
   }

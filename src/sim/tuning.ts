@@ -95,6 +95,13 @@ export const INMATE_EAT_STEPS = 10 * STEPS_PER_SECOND;
 export const EAT_SPREAD = 6 * STEPS_PER_SECOND;
 /** Standing under a shower in the showers block (GDD §3.1): a point every 10 steps (2 a second). */
 export const SHOWER_ENERGY_STEPS = 10;
+/** 2.26 (GDD §2: showers "reduce minor Heat"): a point of heat off every 2 s under the water, only below this much. */
+export const SHOWER_HEAT_STEPS = 40;
+export const SHOWER_HEAT_BELOW = 25;
+/** 2.26: an inmate's turn under a head, 8 to 11 s by its cell, and the towel after it (the block is 60 s, and the walk there takes up to half of it). */
+export const INMATE_WASH_STEPS = 160;
+export const WASH_SPREAD = 60;
+export const INMATE_DRY_STEPS = 80;
 /** Sitting (a chair, a bench, a canteen seat) or lying on an infirmary bed: a point every 13 steps (about 1.5 a second, GDD §3.1). */
 export const SIT_ENERGY_STEPS = 13;
 export const CHOCOLATE_ENERGY = 25;
@@ -178,6 +185,8 @@ export const KO_OPINION = 15;
 export const BUY_OPINION = 2;
 /** A grudge: each step in the same canteen or shower block, nearby, 1 chance in this many of an ambush. */
 export const AMBUSH_ODDS = 400;
+/** 2.26: the moment an ambusher stands squaring up, the warning before it comes for the player (1.5 s). */
+export const AMBUSH_WINDUP_STEPS = 30;
 export const AMBUSH_RANGE = 4 * UNIT;
 /** At most 2 followers (GDD §10.3); they keep this far behind, and go for whoever comes for the player within this range. */
 export const MAX_FOLLOWERS = 2;

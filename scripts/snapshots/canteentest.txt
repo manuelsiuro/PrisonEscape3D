@@ -20,7 +20,7 @@ shankton #42: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 47 
 shankton #43: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 46 minutes; 0 steps two at one place, 18 pressed together
 san-pancho #41: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 50 minutes; 0 steps two at one place, 65 pressed together
 san-pancho #42: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 46 minutes; 0 steps two at one place, 149 pressed together
-san-pancho #43: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 52 minutes; 0 steps two at one place, 54 pressed together
+san-pancho #43: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 50 minutes; 0 steps two at one place, 71 pressed together
 irongate #41: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 47 minutes; 0 steps two at one place, 84 pressed together
 irongate #42: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 44 minutes; 0 steps two at one place, 59 pressed together
 irongate #43: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 43 minutes; 0 steps two at one place, 131 pressed together
