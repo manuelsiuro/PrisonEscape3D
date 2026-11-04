@@ -11,6 +11,10 @@ web-game-starter with the **web-game-playbook** and **web-sim-game-playbook** sk
 - **Vertical slices**: every phase ships sim + render + phone/desktop UI + i18n + tests, then
   a release.
 
+Reworking, polishing or reviewing any part of the gameplay: use the `polish-gameplay` skill. It starts
+from `docs/POLISH.md`, the record of what's been done, the user's choices and the known limits, and ends by
+updating it.
+
 Rules that matter every time:
 - **The simulation is deterministic** (`src/sim/`): fixed 20 Hz steps, integer positions
   (`UNIT` per tile), PRNG in the state, no `Math.random`/`Date`/DOM/Three.js. Every input is a
@@ -31,7 +35,8 @@ Rules that matter every time:
 - **UI**: screens are functions returning a Promise; tokens in `src/styles/01-base.css`;
   check desktop, phone portrait (412×915) and phone landscape (915×412).
 - **Browser tests in an isolated browser context** (chrome-devtools `isolatedContext`).
-  Dev builds expose `window.__game()` and `window.__view`.
+  Dev builds expose `window.__game()` and `window.__view`; `scripts/dev/playat.ts` puts the game at any
+  prison and moment and drives it by real keys.
 - **Dev server**: `npm run dev` on port 5310. In dev builds `]` fast-forwards the clock ×30.
 - **Map viewer** (`assets/maps/index.html`): keep it in step with the prisons. When a phase
   changes a map or adds something placed on it (props, decor, guards, a new `PrisonDef` field
