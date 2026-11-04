@@ -4,6 +4,7 @@
  * and the lesson end done. The lessons are data (src/tutorial/lessons.ts); this proves none
  * can get stuck.
  */
+import { TRAY } from '../src/sim/systems/inmates';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
 import { standing, tonight, turnFrom } from '../src/sim/systems/talent';
@@ -635,6 +636,29 @@ play('crew', (bot) => {
   check(progress.k === 2 && progress.step?.fail?.(ctx) === 'lesson.crew.far', 'crew: posted out of sight of the round ends the lesson, to try again');
   console.log(`crew, posted far: ended at step ${progress.k + 1} (${progress.step?.fail?.(ctx)})`);
 }
+
+play('meals', (bot) => {
+  // (Through the room at breakfast: the tray from the counter, a free seat, eaten, back to the counter.)
+  const places = placesOf(bot.sim.world);
+  check(bot.sim.playerZone === 'canteen', 'meals: it starts on the canteen floor');
+  const counter = places.counters[2];
+  check(bot.walkTo(counter.tile), 'meals: at the counter');
+  bot.face(counter.face);
+  bot.act();
+  check(bot.st.tray === TRAY.FULL, 'meals: a tray taken');
+  const seat = places.seats.find((q) => !bot.st.inmates.some((m) => m.goal === q.tile || m.seat === q.tile))!;
+  check(bot.walkTo(seat.tile), 'meals: at a seat');
+  bot.face(seat.face);
+  bot.act();
+  check(bot.st.seat >= 0, 'meals: sat down');
+  bot.until(() => bot.st.tray === TRAY.EMPTY, 140);
+  check(bot.st.tray === TRAY.EMPTY, 'meals: eaten');
+  bot.act();
+  check(bot.walkTo(counter.tile), 'meals: back at the counter');
+  bot.face(counter.face);
+  bot.act();
+  check(bot.st.tray === TRAY.NONE, 'meals: put back');
+});
 
 play('laps', (bot) => {
   // (P31: through the gate onto the sports ground, a lap along the lanes from the nearest corner, then the pull-up bar.

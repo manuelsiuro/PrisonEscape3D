@@ -9,6 +9,7 @@ import { SHIFT_FROM, SHIFT_TO } from '../../src/content/getaways';
 import { HEARINGS } from '../../src/content/parole';
 import { JOBS } from '../../src/content/jobs';
 import { LOOT } from '../../src/content/loot';
+import { placesOf } from '../../src/sim/ai/places';
 import { OPEN_HOURS, ROUTINE, zonesOf, type RoutineId } from '../../src/content/routine';
 import { RESTRICTED, ZONES, zoneIndex, type ZoneId } from '../../src/content/zones';
 import { escapesOf } from '../../src/content/prisons';
@@ -21,7 +22,7 @@ import { trapChance } from '../../src/sim/systems/rats';
 import { sniperOn, towers } from '../../src/sim/systems/security';
 import { visitExits } from '../../src/sim/systems/smuggling';
 import { grapnelSwing } from '../../src/sim/systems/structure';
-import { GRAPNEL_REACH, SNIPER_RANGE, SOLITARY_HEAT, TAKEOVER_SHARE, UNBRACED_RUN, UNIT } from '../../src/sim/tuning';
+import { GRAPNEL_REACH, TRAY_HEAT, MEAL_ENERGY, SNIPER_RANGE, SOLITARY_HEAT, TAKEOVER_SHARE, UNBRACED_RUN, UNIT } from '../../src/sim/tuning';
 import { containersOf } from '../../src/sim/world/containers';
 import { centerX, centerZ } from '../../src/sim/world/grid';
 import { TILE, TILE_INFO } from '../../src/sim/world/tiles';
@@ -374,6 +375,14 @@ export function layersOf(w: World): MapLayer[] {
   }
   add({ id: 'loot', group: 'Work & loot', name: 'Containers', color: '#ca8a04', about: 'Furniture that holds items, and what it holds.', tip: 'A container.', tiles: Object.keys(lootTips).map(Number), tips: lootTips });
 
+  // Meals (2.25): the counter's places, and the tables. (With no counter, the tables serve.)
+  const places = placesOf(w);
+  const fetched = places.counters.length > 0;
+  const mealTips: Record<number, string> = {};
+  for (const q of places.counters) mealTips[q.tile] = 'At the serving counter: take a tray here at breakfast and dinner, and bring it back here empty.';
+  for (const q of places.seats) mealTips[q.tile] = fetched ? `At a table: sit here with a tray to eat it, 6 seconds, +${MEAL_ENERGY} energy, once a meal.` : `At a table: sit here at breakfast or dinner to eat, +${MEAL_ENERGY} energy, once a meal.`;
+  add({ id: 'meals', group: 'Work & loot', name: 'Meals', color: '#0d9488', about: fetched ? 'Where a tray is taken and given back, and the seats it is eaten at.' : 'The seats meals are eaten at: this prison has no serving counter.', tip: 'A place for meals.', tiles: Object.keys(mealTips).map(Number), tips: mealTips });
+
   const under = trapChance(w, LAYER.UNDER, 0);
   const trap = every((i) => !TILE_INFO[kind[i]].solid && trapChance(w, LAYER.GROUND, i) > 0);
   const chance = trap.length ? trapChance(w, LAYER.GROUND, trap[0]) : 0;
@@ -394,7 +403,9 @@ export function routineOf(def: PrisonDef, w: World): RoutineBlock[] {
     // (The tutorial's routine costs nothing: routine.ts skips it.)
     const miss = def.rules?.relaxed ? 'missing it costs nothing here' : r.miss === 'lockdown' ? 'missing it starts a lockdown' : r.miss === 'heat' ? 'missing it raises heat' : '';
     const note = r.id === 'work' ? (rooms.length ? 'Only with a job: its own room.' : 'No jobs here: anywhere legal.') : !wants.length ? 'Nowhere expected: anywhere legal.' : `${r.stay ? `${r.stay} minutes there to be counted` : 'Be here'}${miss ? `; ${miss}` : ''}.`;
-    return { id: r.id, label: `${clock(r.start)} ${tr(`routine.${r.id}`, r.id)}`, note, zones: wants, doors: doorsOf(open) };
+    // (Where a meal is had, 2.25: a prison with no counter serves at its tables.)
+    const tray = (r.id === 'breakfast' || r.id === 'dinner') && placesOf(w).counters.length ? ` Eat: a tray from the serving counter, to a table and back (+${MEAL_ENERGY} energy, once a meal; eaten and not brought back, +${TRAY_HEAT}% heat).` : '';
+    return { id: r.id, label: `${clock(r.start)} ${tr(`routine.${r.id}`, r.id)}`, note: note + tray, zones: wants, doors: doorsOf(open) };
   });
 }
 

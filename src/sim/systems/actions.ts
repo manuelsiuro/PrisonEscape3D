@@ -3,6 +3,7 @@
  * on the structure, covers, braces and ropes, climbing between layers, toilets, bed, seats,
  * showers, and energy and health coming back.
  */
+import { counterTray, handsUsed, serveTray, trayOffer } from './canteen';
 import { CAKE, eatCake, lineOp, say, startCall } from './phone';
 import { bookMove, hiddenIn, kioskOp, openBook } from './kiosk';
 import { boardOp, whistle } from './oddjobs';
@@ -120,6 +121,12 @@ export function useItems(sim: SimContext, cmd: number) {
         work(sim, job);
         break;
       }
+      // A meal (2.25): the serving counter's tray taken or given back, ahead of anyone standing by; searched at the next press.
+      const offer = counterTray(sim) ?? (target?.kind === 'container' ? trayOffer(sim, target.index) : null);
+      if (offer) {
+        serveTray(sim, offer);
+        break;
+      }
       if (!target) break;
       if (target.kind === 'ground') pickUp(it, target.index, ev);
       else if (target.kind === 'sleep') sleep(sim);
@@ -186,7 +193,12 @@ export function useItems(sim: SimContext, cmd: number) {
       // (P22: not mid arm-wrestle: both hands are busy.)
       if (s.solitary > 0 || s.bout.length) break;
       standUp(sim);
-      if (!attack(sim, a === 1)) strike(sim, a === 1);
+      {
+        // (Both hands on a tray, 2.25: whatever the press does with them lets it fall.)
+        const from = ev.length;
+        if (!attack(sim, a === 1)) strike(sim, a === 1);
+        handsUsed(sim, from);
+      }
       break;
     case OP.LOCK: {
       if (s.solitary > 0) break;
@@ -207,7 +219,11 @@ export function useItems(sim: SimContext, cmd: number) {
       if (a < HOTBAR) it.hand = a;
       break;
     case OP.EXT:
-      if (a === EXT.THROW) throwItem(sim, tossTile(argB(cmd), argC(cmd)));
+      if (a === EXT.THROW) {
+        const from = ev.length;
+        throwItem(sim, tossTile(argB(cmd), argC(cmd)));
+        handsUsed(sim, from);
+      }
       // The pet rat (P20): sent on an errand (the container in b and c), let loose.
       else if (a === EXT.RAT_FETCH || a === EXT.RAT_LEAVE) sendRat(sim, tossTile(argB(cmd), argC(cmd)), a === EXT.RAT_LEAVE);
       else if (a === EXT.RAT_LOOSE) looseRat(sim);

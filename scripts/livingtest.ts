@@ -8,7 +8,7 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { ROUTINE } from '../src/content/routine';
 import { placesOf } from '../src/sim/ai/places';
 import { Sim, type Snapshot } from '../src/sim/Sim';
-import { DOING } from '../src/sim/systems/inmates';
+import { DOING, TRAY } from '../src/sim/systems/inmates';
 import { MEAL_ENERGY, MEAL_STEPS, UNIT } from '../src/sim/tuning';
 import { MAP_W } from '../src/sim/world/World';
 import { Bot, DIR } from './bots';
@@ -28,9 +28,11 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   check(ROUTINE[bot.st.routine].id === 'breakfast' && bot.sim.playerZone === 'canteen', 'in the canteen for breakfast');
   // A seat nobody is heading for, the player on it facing the table.
   const places = placesOf(bot.sim.world);
-  const spot = places.seats.find((s) => !bot.st.inmates.some((m) => m.goal === s.tile))!;
+  const spot = places.seats.find((s) => !bot.st.inmates.some((m) => m.goal === s.tile || m.seat === s.tile))!;
   at(bot, spot.tile, spot.face);
   bot.st.energy = 40;
+  // (Fetched from the counter in canteentest.)
+  bot.st.tray = TRAY.FULL;
   bot.act();
   const seat = bot.st.seat;
   check(seat >= 0 && bot.sim.world.props[seat].kind === 'seat', 'sat down on the canteen bench');
@@ -39,7 +41,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   bot.until(() => bot.st.eaten >= MEAL_STEPS, MEAL_STEPS + 2);
   const meal = bot.st.energy - before;
   // The tray, plus what sitting (and the usual slow regain) gives meanwhile.
-  check(meal >= MEAL_ENERGY + 4 && meal <= MEAL_ENERGY + 7, `the tray eaten: +${meal} energy`);
+  check(meal >= MEAL_ENERGY + 9 && meal <= MEAL_ENERGY + 14, `the tray eaten: +${meal} energy`);
   const fed = bot.st.energy;
   bot.until(() => false, 130);
   const rest = bot.st.energy - fed;
@@ -64,7 +66,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   bot.act();
   check(bot.st.seat >= 0, 'sat down in free time');
   bot.until(() => false, MEAL_STEPS + 5);
-  check(bot.st.eaten === 0 && bot.st.energy < 40 + 10, 'no tray outside a meal');
+  check(bot.st.eaten === 0 && bot.st.energy < 40 + 15, 'no tray outside a meal');
   bot.act();
   check(bot.st.seat === -1, 'the action button gets the player up');
 }

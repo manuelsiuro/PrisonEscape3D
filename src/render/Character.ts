@@ -32,6 +32,19 @@ const PHONE_ARM = -2.75;
 /** At the internet kiosk (P35): drawn this far back from where they stand (tiles), so the screen shows over their head and the hands come down on the keyboard. */
 const KIOSK_BACK = 0.22;
 
+/** Where a meal's tray is (2.25): nowhere, in both hands, on the table in front. */
+export const TRAY_AT = { NONE: 0, HANDS: 1, TABLE: 2 } as const;
+const TRAY_TABLE = new THREE.Vector3(0, 0.545, 0.74);
+const TRAY_HANDS = new THREE.Vector3(0, 0.68, 0.44);
+/** Where a tray comes from and goes back to: the counter's top ahead. */
+const TRAY_COUNTER = new THREE.Vector3(0, 0.6, 0.86);
+/** The food on a tray: size, colour, place on it. */
+const TRAY_FOOD: ReadonlyArray<readonly [number, number, number, number, number, number, number]> = [
+  [0.12, 0.05, 0.1, 0xe8d9a8, -0.08, 0.035, 0.02],
+  [0.1, 0.04, 0.1, 0x8a5a3a, 0.09, 0.03, 0.05],
+  [0.1, 0.03, 0.08, 0x6aa84f, 0.05, 0.025, -0.06],
+];
+
 /** Mattress height and how far the sleeper's feet sit from the bed's middle. */
 const BED_TOP = 0.6;
 const BED_FEET = 0.55;
@@ -189,7 +202,15 @@ export class Character {
   gait: number;
   /** Props that come and go with what the character does. */
   private readonly blanket: THREE.Mesh;
-  private readonly tray: THREE.Mesh;
+  private readonly tray = new THREE.Group();
+  /** Where the tray is, before a walk's bob. */
+  private readonly trayBase = new THREE.Vector3();
+  private readonly food: THREE.Mesh[] = [];
+  private readonly spoon: THREE.Mesh;
+  private trayAt: number = TRAY_AT.NONE;
+  private trayLeft = 1;
+  /** How far the arms are out holding a tray (0–1). */
+  private carry = 0;
   /** P30: talent night's instruments: two upturned buckets and the sticks in the hands, or a guitar slung in front. */
   private readonly buckets: THREE.Mesh;
   private readonly sticks: THREE.Mesh[] = [];
@@ -414,18 +435,24 @@ export class Character {
     this.badgeSprite.visible = false;
     this.badgeSprite.renderOrder = 29;
     this.root.add(this.badgeSprite);
-    // At a meal: a tray on the table in front.
-    this.tray = new THREE.Mesh(
-      merge([
-        part(0.38, 0.03, 0.28, 0x9aa3ad, 0, 0.545, 0.74),
-        part(0.12, 0.05, 0.1, 0xe8d9a8, -0.08, 0.57, 0.72),
-        part(0.1, 0.04, 0.1, 0x8a5a3a, 0.09, 0.565, 0.76),
-        part(0.1, 0.03, 0.08, 0x6aa84f, 0.05, 0.565, 0.66),
-      ], false),
-      kitMaterial,
-    );
+    // A meal's tray (2.25): carried in both hands, or on the table in front; its food goes bite by bite.
+    // (Of the body's own material: the player's silhouette mustn't read it as a wall in front of them.)
+    const trayBoard = new THREE.Mesh(merge([part(0.38, 0.03, 0.28, 0x9aa3ad, 0, 0, 0), part(0.2, 0.012, 0.17, 0xe6e8ea, -0.06, 0.02, 0.01)], false), this.material);
+    trayBoard.castShadow = true;
+    this.tray.add(trayBoard);
+    for (const [w, h, d, color, x, y, z] of TRAY_FOOD) {
+      const food = new THREE.Mesh(merge([part(w, h, d, color, 0, 0, 0)], false), this.material);
+      food.position.set(x, y, z);
+      this.food.push(food);
+      this.tray.add(food);
+    }
     this.tray.visible = false;
     this.root.add(this.tray);
+    // A spoon in the right fist over the tray.
+    this.spoon = new THREE.Mesh(merge([part(0.022, 0.018, 0.2, 0xc9ced4, 0, 0, 0.08), part(0.05, 0.022, 0.06, 0xc9ced4, 0, 0, 0.2)], false), this.material);
+    this.spoon.position.set(0, -0.44, 0.04);
+    this.spoon.visible = false;
+    this.armR.add(this.spoon);
     // On the stage (P30): bucket drums before the knees, sticks in the fists; a guitar across the front.
     this.buckets = new THREE.Mesh(instruments().buckets, kitMaterial);
     this.buckets.visible = false;
@@ -457,6 +484,17 @@ export class Character {
     this.water.add(spray);
     this.water.visible = false;
     this.root.add(this.water);
+  }
+
+  /** Where this meal's tray is (TRAY_AT), and how much food is left on it (0–1): set before `pose`. */
+  trayPose(at: number, left: number) {
+    this.trayAt = at;
+    if (left === this.trayLeft) return;
+    this.trayLeft = left;
+    for (const f of this.food) {
+      f.visible = left > 0.02;
+      f.scale.setScalar(Math.max(0.02, left));
+    }
   }
 
   /**
@@ -689,11 +727,15 @@ export class Character {
     legL -= sit * 1.45;
     legR -= sit * 1.45;
     bob -= sit * 0.06;
+    let bend = 0;
     if (doing === DOING.EAT) {
-      // Spoon to mouth, now and then.
+      // Spoon to mouth, bite by bite, the head down to meet it; the other hand on the tray.
       const lift = Math.max(0, Math.sin(t * 2.6)) ** 2;
-      armRx += (-0.6 - lift * 1.3) * a;
-      armLx += -0.5 * a;
+      armRx += (-0.75 - lift * 1.55) * a;
+      armRz += -0.22 * a;
+      armLx += -0.75 * a;
+      armLz += 0.18 * a;
+      bend = (0.05 + lift * 0.07) * a;
     } else if (doing === DOING.EXERCISE) {
       // Jumping jacks.
       const j = (Math.sin(t * 6) + 1) / 2;
@@ -940,6 +982,7 @@ export class Character {
     }
     // The activity's own lean (bent to a desk, a lock, the dice, a scrap).
     let lean =
+      bend +
       (doing === DOING.SEARCH ? 0.35 * this.act : 0) +
       (doing === DOING.READ ? 0.12 * this.act : 0) +
       (doing === DOING.WRESTLE ? (0.12 + this.strainNow * 0.1) * this.act : 0) +
@@ -972,6 +1015,15 @@ export class Character {
       armLx = Math.min(armLx, -0.5 * h);
     }
     // A punch: the right arm drawn back, then thrown straight out; the left guards the face.
+    // Both hands on the tray, or reaching over the counter for one (2.25): the walk's swing gives way.
+    this.carry += ((this.trayAt === TRAY_AT.HANDS ? 1 : 0) - this.carry) * k(10);
+    const reach = Math.max(this.carry, doing === DOING.SERVE ? this.act : 0);
+    if (reach > 0.01 && !ko) {
+      armLx += (-1.2 - armLx) * reach;
+      armRx += (-1.2 - armRx) * reach;
+      armLz += (0.26 - armLz) * reach;
+      armRz += (-0.26 - armRz) * reach;
+    }
     if (this.jab > 0) {
       const j = this.jab;
       // Out at the blow (the event fires as it lands), held a moment, then eased home.
@@ -1042,7 +1094,20 @@ export class Character {
       const a2 = (motion ? time * 3.2 : 0) + (i * Math.PI) / 2;
       st.position.set(Math.cos(a2) * 0.32, 0.55 + Math.sin(a2 * 2) * 0.04, -0.95 + Math.sin(a2) * 0.32);
     });
-    this.tray.visible = doing === DOING.EAT && this.act > 0.3;
+    // The tray: lifted off the counter into the hands, eased onto the table and back, and handed over the counter again.
+    const handsTray = this.trayAt === TRAY_AT.HANDS;
+    if (this.trayAt !== TRAY_AT.NONE) {
+      if (this.tray.visible) this.trayBase.lerp(handsTray ? TRAY_HANDS : TRAY_TABLE, motion ? k(10) : 1);
+      else if (handsTray) this.trayBase.copy(motion ? TRAY_COUNTER : TRAY_HANDS);
+      else this.trayBase.copy(TRAY_TABLE);
+      this.tray.visible = handsTray || this.tray.visible || this.act > 0.3;
+    } else if (this.tray.visible) {
+      this.trayBase.lerp(TRAY_COUNTER, motion ? k(14) : 1);
+      if (this.trayBase.distanceToSquared(TRAY_COUNTER) < 0.004) this.tray.visible = false;
+    }
+    this.tray.position.copy(this.trayBase);
+    if (handsTray) this.tray.position.y += bob * 0.5;
+    this.spoon.visible = doing === DOING.EAT && this.act > 0.3;
     const drums = doing === DOING.DRUMS && this.act > 0.3;
     this.buckets.visible = drums;
     for (const st of this.sticks) st.visible = drums;

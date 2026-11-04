@@ -1988,6 +1988,14 @@ export const enBarks = {
     "Step away from there!",
     "Whose cell is that, inmate?",
   ],
+  "re.tray.gu": [
+    "Hey! Trays go back on the counter!",
+    "You. Your tray. Back on the counter, next time.",
+    "Who do you think clears up here, your mother?",
+    "That tray doesn't walk back by itself.",
+    "I'm counting trays. I'm one short. I saw you.",
+    "Your tray, inmate. It goes back. Every meal.",
+  ],
   "re.snooped.in": [
     "Hey! That's my stuff!",
     "Get out of my cell!",

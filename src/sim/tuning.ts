@@ -80,9 +80,19 @@ export const TOILET_LOADS = 3;
 export const TOILET_CLOG_STEPS = 60 * STEPS_PER_MINUTE;
 /** Energy (0–100): back to full after a night's sleep, a little back every couple of minutes, more from meals, showers and chocolate. */
 export const ENERGY_REGEN_STEPS = 2 * STEPS_PER_MINUTE;
-/** A meal (GDD §2): seated at a canteen table during breakfast or dinner, the tray takes this long to eat, then +35, once a meal. */
+/** A meal (GDD §2): the tray from the counter, seated at a canteen table during breakfast or dinner, takes this long to eat, then +35, once a meal. */
 export const MEAL_ENERGY = 35;
-export const MEAL_STEPS = 3 * STEPS_PER_SECOND;
+export const MEAL_STEPS = 6 * STEPS_PER_SECOND;
+/** A tray eaten and not brought back (2.25): taken out of the canteen, or still in hand when the meal ends. The heat, never enough by itself to start a chase; and how long before the end a tray eaten is let off, with no time to walk it back. */
+export const TRAY_HEAT = 10;
+export const TRAY_GRACE_STEPS = 5 * STEPS_PER_MINUTE;
+/** How long it took before 2.25 (Sim.rules224). */
+export const MEAL_STEPS_224 = 3 * STEPS_PER_SECOND;
+/** An inmate at the serving counter: picking up its tray or putting it back. */
+export const SERVE_STEPS = 30;
+/** An inmate over its tray: this long, and up to EAT_SPREAD more by its cell, in a meal an hour of steps long. */
+export const INMATE_EAT_STEPS = 10 * STEPS_PER_SECOND;
+export const EAT_SPREAD = 6 * STEPS_PER_SECOND;
 /** Standing under a shower in the showers block (GDD §3.1): a point every 10 steps (2 a second). */
 export const SHOWER_ENERGY_STEPS = 10;
 /** Sitting (a chair, a bench, a canteen seat) or lying on an infirmary bed: a point every 13 steps (about 1.5 a second, GDD §3.1). */

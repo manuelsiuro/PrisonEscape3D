@@ -1,5 +1,5 @@
 import { JOBS } from '../content/jobs';
-import { MEAL_STEPS, SCENT_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
+import { SCENT_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TRUST_IGNORE, UNIT, WALK_SPEED } from '../sim/tuning';
 import { checkpointOf, shiftChange } from '../sim/systems/getaway';
 import { lookingAway } from '../sim/systems/ways';
 import { itemDef, itemNumber } from '../content/items';
@@ -11,7 +11,9 @@ import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
 import { type Station } from '../sim/systems/economy';
 import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
-import { DOING } from '../sim/systems/inmates';
+import { eatingNow, mealOn, mealSteps, servingCounter, TRAY, traysHere } from '../sim/systems/canteen';
+import { DOING, inmateEatSteps } from '../sim/systems/inmates';
+import { TRAY_AT } from '../render/Character';
 import { itemOf, ownerOf, type ItemState, type Target } from '../sim/systems/items';
 import { seatSpot } from '../sim/systems/rest';
 import { beamAt, cameraSees, cameraSweep, sniperOn } from '../sim/systems/security';
@@ -188,8 +190,10 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // Footsteps: earth in the tunnels, steel in the vents, the floor's own sound elsewhere.
   f.surface = st.layer === LAYER.UNDER ? TILE.DIRT : st.layer === LAYER.GROUND ? sim.world.ground.kind[tile.z * MAP_W + tile.x] : TILE.CONCRETE;
   f.inmates.length = st.inmates.length;
+  // (Sat in the canteen on dinner's plan with no meal on: a film, the acts. No tray, no spoon.)
+  const watching = traysHere(sim) && !mealOn(sim);
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '' });
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1 });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -197,10 +201,15 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     // (Walking only if it got anywhere this step: a stall at arm's length, a fraction of a unit short, stands still.)
     o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
     // (Jogging the track, P31: running as it goes.)
-    o.doing = o.moving && m.then === DOING.JOG ? DOING.RUN : m.doing;
+    o.doing = o.moving && m.then === DOING.JOG ? DOING.RUN : watching && m.doing === DOING.EAT ? DOING.SIT : m.doing;
     o.cell = m.cell;
     o.angry = m.angry > 0;
     o.badge = badgeOf(sim, k);
+    // Its tray: in front of it at the table, eaten as its time runs out; else in its hands.
+    // (Replaying an older run, or a prison with no counter: there at the table, no more.)
+    const atTable = o.doing === DOING.EAT;
+    o.trayAt = atTable ? TRAY_AT.TABLE : m.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
+    o.trayLeft = m.tray === TRAY.EMPTY ? 0 : atTable && m.tray === TRAY.FULL ? Math.min(1, m.wait / inmateEatSteps(m)) : 1;
   });
   // The side games (P22): the dice partner crouches over the dice with the player (the arm-wrestle's pose is the view's, from the bout).
   const rival = diceRival(sim);
@@ -315,6 +324,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   const target = memo.target;
   // The frame stays on an open container (what the panel shows), else on what is in reach.
   const openWho = ownerOf(sim.world, it.open);
+  // (The counter the player faces, offering a tray: what the action button means, whoever stands by.)
+  const serving = servingCounter(sim);
   f.focus =
     it.open >= 0
       ? focusOf(sim, openWho >= 0 ? { kind: 'pockets', index: it.open, who: openWho } : { kind: 'container', index: it.open })
@@ -322,9 +333,12 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
         ? focusOf(sim, { kind: 'person', who: st.talk })
         : st.train >= 0 || st.seat >= 0
           ? null
-          : focusOf(sim, target, climb, memo.station);
+          : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : target, climb, memo.station);
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
+  // The tray: in both hands, unless it's set down on a table (below).
+  f.trayAt = st.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
+  f.trayLeft = st.tray === TRAY.EMPTY ? 0 : 1 - Math.min(1, st.eaten / mealSteps(sim));
   f.doing = trainKind === 'weights' || trainKind === 'pullup' ? DOING.LIFT : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : DOING.NOTHING;
   f.restBed = null;
   // Seated (GDD §3.1): on the seat's tile facing the table, eating while the meal lasts; resting on an infirmary bed: lying on it.
@@ -345,8 +359,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
       seatAt.y = seated.kind === 'chair' ? 0.1 : 0;
       seatAt.facing = headingAngle(spot.facing);
     }
-    const meal = ROUTINE[st.routine].id === 'breakfast' || ROUTINE[st.routine].id === 'dinner';
-    f.doing = seated.kind === 'seat' && meal && st.eaten < MEAL_STEPS && sim.playerZone === 'canteen' ? DOING.EAT : DOING.SIT;
+    f.doing = eatingNow(sim) ? DOING.EAT : DOING.SIT;
+    if (f.doing === DOING.EAT || (st.tray !== TRAY.NONE && seated.kind === 'seat')) f.trayAt = TRAY_AT.TABLE;
     f.trainAt = seatAt;
   } else if (sim.showering) f.doing = DOING.SHOWER;
   // The side games (P22): at a lock, in an arm-wrestle, over the dice.

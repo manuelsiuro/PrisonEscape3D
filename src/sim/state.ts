@@ -360,6 +360,10 @@ export interface SimState {
    */
   present: number;
   snoop: number[];
+  /** 2.25: the player's tray at this meal (TRAY, canteen.ts): in both hands, or on the table in front of them seated. */
+  tray: number;
+  /** The step this meal's tray was finished (the end of a meal lets off one just eaten). */
+  trayDone: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -540,5 +544,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     laughed: [],
     present: 0,
     snoop: [],
+    tray: 0,
+    trayDone: 0,
   };
 }

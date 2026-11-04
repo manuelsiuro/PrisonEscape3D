@@ -1,3 +1,9 @@
+import { placesOf } from '../sim/ai/places';
+import { mealOn } from '../sim/systems/canteen';
+import type { SimEvent } from '../sim/events';
+import type { Key } from '../i18n';
+import type { LessonCtx } from './kit';
+import type { Sim } from '../sim/Sim';
 import { ROUTINE } from '../content/routine';
 import { FORGE_INT } from '../content/paperwork';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
@@ -126,6 +132,19 @@ import {
  * and a few steps, each ticked off when the game shows it done. The same definitions drive the
  * player's lessons and the bots in `tutorialtest`, which prove every lesson can be finished.
  */
+
+/** A meal's lesson: the meal over, or the tray gone. */
+const mealFail = (c: LessonCtx): Key | null => (mealOn(c.sim) ? null : 'lesson.meals.lost');
+const trayLost = (e: SimEvent): Key | null => (e.type === 'tray' && e.what !== 'take' && e.what !== 'return' ? 'lesson.meals.lost' : null);
+/** The nearest seat nobody's using or keeping. */
+function freeSeat(sim: Sim): number | null {
+  const s = sim.state;
+  const x = Math.floor(s.player.x / UNIT);
+  const z = Math.floor(s.player.z / UNIT);
+  const apart = (t: number) => Math.abs(t % MAP_W - x) + Math.abs(Math.floor(t / MAP_W) - z);
+  const free = placesOf(sim.world).seats.filter((q) => !s.inmates.some((m) => m.goal === q.tile || m.seat === q.tile));
+  return free.length ? free.reduce((a, b) => (apart(b.tile) < apart(a.tile) ? b : a)).tile : null;
+}
 
 export const LESSONS: readonly Lesson[] = [
   {
@@ -885,6 +904,24 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Meals (2.25): a breakfast at Center Perks, the tray from the counter to a table and back.
+    id: 'meals',
+    icon: 'utensils',
+    prison: CENTER_PERKS,
+    seed: 58,
+    setup: (sim) => {
+      clockTo(sim, at(9, 2));
+      place(sim, 50, 12, 13);
+      sim.state.energy = 40;
+    },
+    steps: [
+      { text: 'lesson.meals.take', touch: 'lesson.meals.takeTouch', on: (e) => e.type === 'tray' && e.what === 'take', goal: (sim) => placesOf(sim.world).counters[2].tile, fail: mealFail },
+      { text: 'lesson.meals.sit', touch: 'lesson.meals.sitTouch', done: (c) => c.sim.state.seat >= 0, goal: freeSeat, fail: mealFail, failOn: trayLost },
+      { text: 'lesson.meals.eat', on: (e) => e.type === 'meal', fail: mealFail, failOn: trayLost },
+      { text: 'lesson.meals.back', touch: 'lesson.meals.backTouch', on: (e) => e.type === 'tray' && e.what === 'return', goal: (sim) => placesOf(sim.world).counters[2].tile, fail: mealFail, failOn: trayLost },
+    ],
+  },
+  {
     // The gardener (P31): the Work Period in the vegetable garden, seedlings into a planter, a crate of produce for the kitchen.
     id: 'gardener',
     icon: 'sprout',
@@ -1192,7 +1229,7 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 
