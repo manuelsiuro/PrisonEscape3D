@@ -1080,6 +1080,7 @@ export class View {
       if (m.doing === DOING.SHOWER && this.showers[tile] === 1) this.running.add(tile);
       c.undressed = m.bare;
       c.towel = m.towel;
+      c.attention = m.attention;
       c.trayPose(m.trayAt, m.trayLeft);
       // On a chair, a little higher than on a canteen bench.
       const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;

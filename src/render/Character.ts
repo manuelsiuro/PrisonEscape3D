@@ -243,6 +243,10 @@ export class Character {
   undressed = false;
   /** A towel (2.26): 0 none, 1 round the neck, 2 over the head, being rubbed dry. */
   towel = 0;
+  /** Standing straight for the warden, at roll call (2.27). */
+  attention = false;
+  private straight = 0;
+  private clipboard: THREE.Mesh | null = null;
   /** The item in the right hand (its model), and which item it is. */
   private held: THREE.Mesh | null = null;
   private heldItem = 0;
@@ -504,6 +508,15 @@ export class Character {
     this.body.add(this.towelNeck);
     this.towelHead = new THREE.Mesh(merge([part(0.56, 0.13, 0.54, TOWEL, 0, 0.5, -0.01), part(0.56, 0.24, 0.1, TOWEL, 0, 0.32, -0.25), part(0.07, 0.24, 0.4, TOWEL, -0.27, 0.34, -0.03), part(0.07, 0.24, 0.4, TOWEL, 0.27, 0.34, -0.03)], false), this.material);
     this.towelHead.castShadow = true;
+    // A guard's clipboard, for the count (2.27).
+    if (guard) {
+      this.clipboard = new THREE.Mesh(merge([part(0.24, 0.3, 0.025, 0x8a5a2b, 0, 0, 0), part(0.2, 0.25, 0.012, 0xf2f2ee, 0, -0.01, 0.018), part(0.08, 0.03, 0.03, 0x3a3f47, 0, 0.14, 0.018)], false), this.material);
+      this.clipboard.position.set(-0.08, 0.66, 0.26);
+      this.clipboard.rotation.x = -0.5;
+      this.clipboard.castShadow = true;
+      this.clipboard.visible = false;
+      this.body.add(this.clipboard);
+    }
     this.towelHead.visible = false;
     this.head.add(this.towelHead);
   }
@@ -827,6 +840,32 @@ export class Character {
       armRx += (-1.25 - this.pumped * 0.25) * a;
       armLz -= 0.25 * a;
       armRz += 0.25 * a;
+    } else if (doing === DOING.COUNT) {
+      // The warden, clipboard in one hand, the pen in the other. (Held still with reduced motion: it says what they're doing.)
+      const wa = this.act;
+      const tick = motion ? Math.sin(t * 6) * 0.07 : 0;
+      armLx -= 1.25 * wa;
+      armLz += 0.45 * wa;
+      armRx += (-1.15 + tick) * wa;
+      armRz -= 0.5 * wa;
+    } else if (doing === DOING.LINE_UP) {
+      // In line, bored: shifting about, a yawn, a scratch; straight as the warden comes to them.
+      this.straight += ((this.attention ? 1 : 0) - this.straight) * k(6);
+      const loose = motion ? this.act * (1 - this.straight) : 0;
+      const beat = motion ? (t * 0.14 + this.washSeed) % 4 : 3;
+      const stage = Math.floor(beat);
+      const on = Math.sin(Math.min(1, (beat - stage) * 1.6) * Math.PI);
+      // (A yawn: a hand up to the mouth, the head back. A scratch at the back of the head.)
+      const yawn = stage === 0 ? on * loose : 0;
+      const scratch = stage === 1 ? on * loose : 0;
+      armRx -= 2.1 * yawn;
+      armRz -= 0.55 * yawn;
+      this.headBack = 0.8 * yawn;
+      armLx -= 2.5 * scratch;
+      armLz -= 0.4 * scratch;
+      // Shoulders back.
+      armLz -= 0.06 * this.straight * this.act;
+      armRz += 0.06 * this.straight * this.act;
     } else if (doing === DOING.SHOWER) {
       // Hair, then soap, then a rinse, round and round, each one easing into the next.
       // (With reduced motion, held scrubbing the hair: the pose says what they're doing.)
@@ -1166,6 +1205,7 @@ export class Character {
     if (this.washBody) this.washBody.visible = shorts;
     this.towelNeck.visible = this.towel === 1;
     this.towelHead.visible = this.towel === 2;
+    if (this.clipboard) this.clipboard.visible = doing === DOING.COUNT && !moving && this.act > 0.2;
 
     // Blink every few seconds; eyes shut in bed.
     this.blinkAt -= dt;
@@ -1190,7 +1230,7 @@ export class Character {
     const sink = n < 0.85 ? n / 0.85 : 1 - (n - 0.85) / 0.15;
     const nod = motion ? 0.3 + 0.35 * sink * sink * (3 - 2 * sink) : 0.55;
     this.head.rotation.x =
-      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : doing === DOING.SHOWER ? -0.4 * this.headBack : doing === DOING.TOWEL ? 0.25 * this.act : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;
+      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : doing === DOING.SHOWER || doing === DOING.LINE_UP ? -0.4 * this.headBack : doing === DOING.TOWEL ? 0.25 * this.act : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;
     return stepped;
   }
 

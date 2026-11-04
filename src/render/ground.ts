@@ -181,13 +181,20 @@ function drawRollCall(c: CanvasRenderingContext2D, def: PrisonDef, ox: number, o
     c.lineWidth = 2;
     c.strokeRect((x0 - ox) * R + 6, (z0 - oz) * R + 6, (x1 - x0 + 1) * R - 12, (z1 - z0 + 1) * R - 12);
   }
-  c.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-  c.lineWidth = 2;
-  for (const s of def.rollCall) {
+  // (The first is the player's, cell 1's, 2.27: its own colour, and filled in faintly.)
+  def.rollCall.forEach((s, k) => {
+    const own = k === 0;
+    const line = own ? 'rgba(255, 138, 30, 0.95)' : 'rgba(255, 255, 255, 0.85)';
+    if (own) {
+      c.fillStyle = 'rgba(255, 138, 30, 0.28)';
+      c.fillRect((s.x - ox) * R + 3, (s.z - oz) * R + 3, R - 6, R - 6);
+    }
+    c.strokeStyle = line;
+    c.lineWidth = own ? 3 : 2;
     c.strokeRect((s.x - ox) * R + 3, (s.z - oz) * R + 3, R - 6, R - 6);
-    c.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    c.fillStyle = line;
     c.fillRect((s.x - ox) * R + R / 2 - 1, (s.z - oz) * R + R / 2 - 1, 2, 2);
-  }
+  });
 }
 
 /** The tiles the roll call's paint covers (its zone and its standing spots), null for none. */

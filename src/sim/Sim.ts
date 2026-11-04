@@ -59,6 +59,7 @@ import { tileAt } from './world/grid';
 import { keepTray } from './systems/canteen';
 import { keepSeat, regenerate, shower, standUp } from './systems/upkeep';
 import { keepWashing, stopWash, underShower } from './systems/showers';
+import { rollCall } from './systems/rollcall';
 import { keysCarried, raiseKeyAlarm, sleepingGuards, wearKeys, wokeKeyless } from './systems/keys';
 
 // The state, its events and snapshots live in state.ts; importers have always found them here.
@@ -151,6 +152,8 @@ export class Sim {
   rules224 = false;
   /** Replaying a run logged under 2.25 or before (runlog.ts): showers as they were (standing still under a head; inmates at a head for the whole block, the rest scrubbing on dry floor), and ambushes with no moment's warning. Not state. */
   rules225 = false;
+  /** Replaying a run logged under 2.26 or before (runlog.ts): roll call as it was (anywhere in the yard counts, the warden at the post). Not state. */
+  rules226 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -266,6 +269,7 @@ export class Sim {
     raiseKeyAlarm(this);
     outOfReach(this);
     attendance(this);
+    rollCall(this);
     dayWatch(this);
     // Heat cools while no guard is looking.
     // (P26: Short Fuse, at half the pace.)

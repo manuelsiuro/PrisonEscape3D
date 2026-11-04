@@ -1,8 +1,8 @@
 codec: 5 runs in 21 bytes
-two days: 57600 steps, 48 checksums, 1713 bytes of commands (857 a day), 3291 characters stored
+two days: 57600 steps, 48 checksums, 1733 bytes of commands (867 a day), 3319 characters stored
 two branches from a save at day 2: both replay (32400 and 32400 steps)
 a run of commands changed from step 31453 (hour 26): verified to hour 26
-a save: 7121 characters (its log apart)
+a save: 7191 characters (its log apart)
 replay ok
 a 1.10 log: replays whole; carried on in 1.11 as a new log
 tunnel escape at Center Perks: 18388 steps, 31 keyframes, highlights through@911m tunnel@913m escape@919m

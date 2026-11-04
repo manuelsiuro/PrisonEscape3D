@@ -57,6 +57,7 @@ import { bedTarget, tend } from './garden';
 import { take } from './pantry';
 import { holdKick, releaseKick } from './football';
 import { drawNeedle, endInk } from './tattoo';
+import { answerCount, canAnswer } from './rollcall';
 import { showerOffer, startWash, stopWash } from './showers';
 import { sitDown, sleep, standUp } from './upkeep';
 import { throwItem } from './throwing';
@@ -78,6 +79,11 @@ export function useItems(sim: SimContext, cmd: number) {
       // From the open desk panel: down the tunnel under the player's desk.
       if (a === 1) {
         underDesk(sim);
+        break;
+      }
+      // Called at roll call (2.27): before anything else, nothing is stopped to do it.
+      if (canAnswer(sim)) {
+        answerCount(sim);
         break;
       }
       // Seated (or resting): the action button gets the player up.
