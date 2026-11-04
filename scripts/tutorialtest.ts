@@ -660,6 +660,29 @@ play('meals', (bot) => {
   check(bot.st.tray === TRAY.NONE, 'meals: put back');
 });
 
+play('rollcall', (bot) => {
+  const square = placesOf(bot.sim.world).rollCall[0];
+  check(bot.sim.playerZone === 'rollCall', 'rollcall: it starts in the yard');
+  check(bot.walkTo(square.tile), 'rollcall: on the square');
+  bot.until(() => bot.events.some((e) => e.type === 'count' && e.what === 'you'), 400);
+  bot.step();
+  check(bot.events.some((e) => e.type === 'count' && e.what === 'answered') && !bot.st.attended, 'rollcall: called and answered before the badge is full');
+  bot.until(() => bot.st.attended, 40 * 20);
+  check(bot.st.attended && bot.st.heat === 0, 'rollcall: answered and counted');
+});
+
+// (Slow to the square: called on the way, stepped on in time. A review found this left the lesson waiting for a call already made.)
+play('rollcall', (bot) => {
+  const square = placesOf(bot.sim.world).rollCall[0];
+  bot.until(() => bot.st.calling > 0, 500);
+  check(bot.st.calling > 0, 'rollcall, slowly: called off the square');
+  check(bot.walkTo(square.tile), 'rollcall, slowly: on the square in time');
+  bot.step();
+  check(bot.st.calling === 0 && bot.st.heat === 0, 'rollcall, slowly: answered');
+  bot.until(() => bot.st.attended, 40 * 20);
+  check(bot.st.attended, 'rollcall, slowly: counted');
+});
+
 play('showers', (bot) => {
   const free = placesOf(bot.sim.world).showers[3];
   check(bot.sim.playerZone === 'showers', 'showers: it starts in the room');

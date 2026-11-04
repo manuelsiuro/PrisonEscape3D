@@ -329,7 +329,7 @@ function drawBoard(g: Svg, def: PrisonDef) {
 }
 
 function drawMarks(g: Svg, def: PrisonDef) {
-  for (const q of def.rollCall) g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="6" fill="#fff" stroke="#c2410c" stroke-width="2.5"/>`);
+  def.rollCall.forEach((q, k) => g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="6" fill="${k === 0 ? '#ff8a1e' : '#fff'}" stroke="#c2410c" stroke-width="2.5"/>`));
   const s = def.spawn;
   const star = Array.from({ length: 10 }, (_, k) => {
     const a = (k * Math.PI) / 5 - Math.PI / 2;
@@ -798,7 +798,7 @@ function tileData(def: PrisonDef, n: number) {
     if (gu.dog) mark(gu.dog.kennel.x, gu.dog.kennel.z, `kennel of ${gu.dog.name} (${who}'s dog)`);
   });
   for (const c of def.cameras ?? []) mark(c.x, c.z, `camera, facing ${c.face}`);
-  def.rollCall.forEach((q, k) => mark(q.x, q.z, `roll-call spot ${k + 1}`));
+  def.rollCall.forEach((q, k) => mark(q.x, q.z, k === 0 ? 'roll-call spot 1, the player\'s own' : `roll-call spot ${k + 1}`));
   mark(def.spawn.x, def.spawn.z, 'player start');
   const ls = def.leisure;
   if (ls) {

@@ -20,20 +20,21 @@
   saved and loaded at day 1 15:47 (gym) resumes, day 1 22:01 (cellBlock) resumes, day 1 23:16 (vents) resumes, day 1 23:30 (vents) resumes
   ledger: nothing; walked 417 tiles; days escaped
   → out day 1 23:35 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
-  takeover: health 24/140, guards down 5/5, xxxxx
+  takeover: health 23/140, guards down 5/5, xxxxx
 == takeover
-  day 1 08:36 spotted: fight
-  day 1 08:36 LOCKDOWN
-  day 1 08:37 knocked out #7
-  day 1 08:41 knocked out #10
-  day 1 08:42 knocked out #9
-  day 1 08:43 knocked out #8
-  day 1 08:45 knocked out #11
-  day 1 08:45 TAKEOVER: the gates are open
-  day 1 08:54 ESCAPED (takeover)
-  saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:48 (visitation) resumes, day 1 08:53 (perimeter) resumes, day 1 08:53 (perimeter) resumes
-  ledger: blows 15, koGuards 5, lockdowns 1, spotted 1, maxHeat 100, recruits 2, crew 2; walked 159 tiles; days spotted+wanted+lockdown+fight+escaped
-  → out day 1 08:54 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 5, cash $0
+  day 1 09:00 missed rollCall +25%
+  day 1 09:00 spotted: fight
+  day 1 09:00 LOCKDOWN
+  day 1 09:00 knocked out #7
+  day 1 09:03 knocked out #9
+  day 1 09:04 knocked out #8
+  day 1 09:06 knocked out #10
+  day 1 09:08 knocked out #11
+  day 1 09:08 TAKEOVER: the gates are open
+  day 1 09:17 ESCAPED (takeover)
+  saved and loaded at day 1 08:38 (rollCall) resumes, day 1 09:09 (yard) resumes, day 1 09:16 (perimeter) resumes, day 1 09:17 (perimeter) resumes
+  ledger: blows 14, koGuards 5, lockdowns 1, missed 1, spotted 1, maxHeat 100, recruits 2, crew 2; walked 155 tiles; days spotted+wanted+lockdown+fight+escaped
+  → out day 1 09:17 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 5, cash $0
 == stowaway
   day 1 12:30 the delivery is in
   day 1 12:47 into the vehicle
@@ -96,22 +97,21 @@
   → out day 1 23:30 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 8/150, guards down 6/6, xxxxxx
 == stalag-flucht: takeover
-  day 1 08:37 spotted: skipping
-  day 1 08:39 spotted: skipping
+  day 1 08:38 spotted: skipping
   day 1 08:40 spotted: skipping
   day 1 08:40 spotted: fight
   day 1 08:40 LOCKDOWN
   day 1 08:41 knocked out #12
+  day 1 08:42 knocked out #9
   day 1 08:43 knocked out #11
-  day 1 08:43 knocked out #9
-  day 1 08:45 knocked out #10
+  day 1 08:44 knocked out #10
   day 1 08:47 knocked out #14
   day 1 08:48 knocked out #13
   day 1 08:48 TAKEOVER: the gates are open
   day 1 08:53 sniper warning shot
   day 1 08:55 ESCAPED (takeover)
   saved and loaded at day 1 08:27 (cellBlock) resumes, day 1 08:49 (yard) resumes, day 1 08:54 (yard) resumes, day 1 08:55 (yard) resumes
-  ledger: blows 13, koGuards 6, lockdowns 1, spotted 4, maxHeat 100, recruits 2, crew 2; walked 166 tiles; days spotted+wanted+lockdown+fight+escaped
+  ledger: blows 14, koGuards 6, lockdowns 1, spotted 3, maxHeat 100, recruits 2, crew 2; walked 168 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 08:55 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 6, cash $0
 == stalag-flucht: stowaway
   day 1 12:30 the delivery is in
@@ -241,7 +241,6 @@
   takeover: health 68/150, guards down 7/8, xxCxxxxx
 == san-pancho: takeover
   day 1 08:23 spotted: skipping
-  day 1 08:35 spotted: skipping
   day 1 08:37 spotted: fight
   day 1 08:37 LOCKDOWN
   day 1 08:37 knocked out #13
@@ -254,7 +253,7 @@
   day 1 08:55 TAKEOVER: the gates are open
   day 1 09:03 ESCAPED (takeover)
   saved and loaded at day 1 08:31 (corridor) resumes, day 1 08:56 (library) resumes, day 1 09:01 (walkway) resumes, day 1 09:02 (walkway) resumes
-  ledger: blows 7, koGuards 7, lockdowns 1, spotted 3, maxHeat 100, recruits 2, flung 4, crew 2; walked 177 tiles; days spotted+wanted+lockdown+fight+escaped
+  ledger: blows 9, koGuards 7, lockdowns 1, spotted 2, maxHeat 100, recruits 2, flung 4, crew 2; walked 177 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:03 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 7, cash $0
 == san-pancho: stowaway
   day 1 12:30 the delivery is in
@@ -302,6 +301,7 @@
   → out day 1 23:51 by helicopter; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 2, cash $0
   takeover: health 13/150, guards down 10/10, xxxxxxxxxx
 == irongate: takeover
+  day 1 08:23 spotted: skipping
   day 1 08:38 detector: shielded (19 passes left)
   day 1 08:38 spotted: skipping
   day 1 09:01 detector: shielded (18 passes left)
@@ -326,7 +326,7 @@
   day 1 09:33 knocked out #19
   day 1 09:37 ESCAPED (takeover)
   saved and loaded at day 1 08:48 (rollCall) resumes, day 1 09:27 (cellBlock) resumes, day 1 09:35 (walkway) resumes, day 1 09:37 (perimeter) resumes
-  ledger: blows 11, koGuards 10, lockdowns 1, spotted 3, maxHeat 100, recruits 2, flung 5, crew 2; walked 189 tiles; days spotted+wanted+lockdown+fight+escaped
+  ledger: blows 11, koGuards 10, lockdowns 1, spotted 4, maxHeat 100, recruits 2, flung 5, crew 2; walked 189 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:37 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 10, cash $0
 == irongate: stowaway
   day 1 12:30 the delivery is in

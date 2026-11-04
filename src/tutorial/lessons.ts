@@ -41,6 +41,7 @@ import { atTrack, cardUp } from '../sim/systems/races';
 import { newBoard, PIECE, squareAt } from '../sim/systems/checkers';
 import { OVER } from '../sim/hunt/Hunt';
 import { spotTile } from '../sim/hunt/world';
+import { onOwnSquare } from '../sim/systems/rollcall';
 import { tileAt } from '../sim/world/grid';
 import {
   apart,
@@ -137,6 +138,9 @@ import {
 const mealFail = (c: LessonCtx): Key | null => (mealOn(c.sim) ? null : 'lesson.meals.lost');
 const trayLost = (e: SimEvent): Key | null => (e.type === 'tray' && e.what !== 'take' && e.what !== 'return' ? 'lesson.meals.lost' : null);
 /** The nearest seat nobody's using or keeping. */
+const rollCallFail = (c: LessonCtx): Key | null => (ROUTINE[c.sim.state.routine].id === 'rollCall' ? null : 'lesson.rollcall.lost');
+/** The warden came to their square and they weren't in the yard. */
+const uncalled = (e: SimEvent): Key | null => (e.type === 'count' && ((e.what === 'called' && e.who < 0) || e.what === 'missed') ? 'lesson.rollcall.lost' : null);
 const showerFail = (c: LessonCtx): Key | null => (ROUTINE[c.sim.state.routine].id === 'showers' ? null : 'lesson.showers.lost');
 
 /** A shower head nobody's under, and if there's one, nobody's heading for: whoever gets there first has it. */
@@ -950,6 +954,27 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Roll call (2.27): the morning's at Center Perks, the square, the warden's call, the badge.
+    id: 'rollcall',
+    icon: 'bell',
+    prison: CENTER_PERKS,
+    seed: 60,
+    setup: (sim) => {
+      clockTo(sim, at(8, 2));
+      place(sim, 31, 11, 9);
+      // (Still to be counted, unlike a lesson about something else; a third of the badge already there, so as not to wait the whole half hour.)
+      sim.state.attended = false;
+      sim.state.blocks[sim.state.routine] = 0;
+      sim.state.present = 10 * STEPS_PER_MINUTE;
+    },
+    steps: [
+      { text: 'lesson.rollcall.square', done: (c) => onOwnSquare(c.sim), goal: (sim) => placesOf(sim.world).rollCall[0].tile, fail: rollCallFail, failOn: uncalled },
+      { text: 'lesson.rollcall.wait', done: (c) => c.sim.state.calling > 0, goal: (sim) => placesOf(sim.world).rollCall[0].tile, fail: rollCallFail, failOn: uncalled },
+      { text: 'lesson.rollcall.answer', touch: 'lesson.rollcall.answerTouch', on: (e) => e.type === 'count' && e.what === 'answered', fail: rollCallFail, failOn: uncalled },
+      { text: 'lesson.rollcall.stay', done: (c) => c.sim.state.attended, goal: (sim) => placesOf(sim.world).rollCall[0].tile, fail: rollCallFail },
+    ],
+  },
+  {
     // The gardener (P31): the Work Period in the vegetable garden, seedlings into a planter, a crate of produce for the kitchen.
     id: 'gardener',
     icon: 'sprout',
@@ -1257,7 +1282,7 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 

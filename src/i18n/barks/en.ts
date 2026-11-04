@@ -1988,6 +1988,11 @@ export const enBarks = {
     "Step away from there!",
     "Whose cell is that, inmate?",
   ],
+  "re.count.gu": ["Next.", "You. Name and number.", "Stand up straight.", "Eyes front.", "Present?", "Number?", "Count's not done till I say.", "Next one."],
+  "re.count.in": ["Here.", "Present.", "Yes, boss.", "Still here.", "Where else?", "Here. Unfortunately.", "Present, boss.", "Here, here."],
+  "re.countYou.gu": ["You. New one. Speak up!", "You on the orange. Answer me!", "Number one! Well?", "You! Are you here or not?", "Cell one! I'm waiting.", "You there. Sound off!"],
+  "re.countMiss.gu": ["Deaf, are you? I'll remember that.", "No answer. Noted.", "Answer when you're called next time.", "Fine. I've got your number.", "Too good to answer me? We'll see.", "Silence goes in the book."],
+  "re.shakedown.gu": ["Shakedown this morning! Stay where you are!", "Cells named for a search! Nobody moves!", "Search this morning. Eyes front!", "Shakedown! If it's yours, I'll find it.", "We're going through some cells today. Stand still!", "Morning, gentlemen. Search day."],
   "re.tray.gu": [
     "Hey! Trays go back on the counter!",
     "You. Your tray. Back on the counter, next time.",

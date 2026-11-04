@@ -170,6 +170,8 @@ export interface InmateFrame {
   /** A turn at the showers (2.26): in shorts; a towel (0 none, 1 round the neck, 2 over the hair). */
   bare: boolean;
   towel: number;
+  /** The warden's at its square, at roll call (2.27): it stands straight. */
+  attention: boolean;
   /** The badge over their head: a favor, a shop, the player's letter for them, a follower. */
   badge: BadgeKind;
 }

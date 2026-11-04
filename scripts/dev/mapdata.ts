@@ -22,7 +22,7 @@ import { trapChance } from '../../src/sim/systems/rats';
 import { sniperOn, towers } from '../../src/sim/systems/security';
 import { visitExits } from '../../src/sim/systems/smuggling';
 import { grapnelSwing } from '../../src/sim/systems/structure';
-import { GRAPNEL_REACH, TRAY_HEAT, MEAL_ENERGY, SNIPER_RANGE, SOLITARY_HEAT, TAKEOVER_SHARE, UNBRACED_RUN, UNIT } from '../../src/sim/tuning';
+import { GRAPNEL_REACH, COUNT_HEAT, TRAY_HEAT, MEAL_ENERGY, SNIPER_RANGE, SOLITARY_HEAT, TAKEOVER_SHARE, UNBRACED_RUN, UNIT } from '../../src/sim/tuning';
 import { containersOf } from '../../src/sim/world/containers';
 import { centerX, centerZ } from '../../src/sim/world/grid';
 import { TILE, TILE_INFO } from '../../src/sim/world/tiles';
@@ -410,8 +410,9 @@ export function routineOf(def: PrisonDef, w: World): RoutineBlock[] {
     const note = r.id === 'work' ? (rooms.length ? 'Only with a job: its own room.' : 'No jobs here: anywhere legal.') : !wants.length ? 'Nowhere expected: anywhere legal.' : `${r.stay ? `${r.stay} minutes there to be counted` : 'Be here'}${miss ? `; ${miss}` : ''}.`;
     // (Where a meal is had, 2.25: a prison with no counter serves at its tables.)
     const tray = (r.id === 'breakfast' || r.id === 'dinner') && placesOf(w).counters.length ? ` Eat: a tray from the serving counter, to a table and back (+${MEAL_ENERGY} energy, once a meal; eaten and not brought back, +${TRAY_HEAT}% heat).` : '';
+    const count = (r.id === 'rollCall' || r.id === 'eveningRollCall') && !def.rules?.relaxed ? ` Counted only on the player's own square (spot 1, orange). The guard taking it walks the line, the player first: the action button answers "Here!" (unanswered, +${COUNT_HEAT}% heat). In the yard but not counted by the end: heat, no lockdown.` : '';
     const wash = r.id === 'showers' && placesOf(w).showers.length ? ' Wash: the action button turns a shower on (+2 energy a second, minor heat falling faster); optional, being in the room is what counts.' : '';
-    return { id: r.id, label: `${clock(r.start)} ${tr(`routine.${r.id}`, r.id)}`, note: note + tray + wash, zones: wants, doors: doorsOf(open) };
+    return { id: r.id, label: `${clock(r.start)} ${tr(`routine.${r.id}`, r.id)}`, note: note + tray + wash + count, zones: wants, doors: doorsOf(open) };
   });
 }
 

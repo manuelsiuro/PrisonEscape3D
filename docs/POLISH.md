@@ -10,6 +10,7 @@ and tested when it shipped, but no polish pass, so nothing is known either way.
 
 | Area | Version | State | The user's choices | Known limits |
 |---|---|---|---|---|
+| Roll call | 2.27.0 | Done | Counted on your own orange square only (off it to the end: +25% heat, no lockdown; out of the yard: a lockdown, as ever); the warden walks the line and calls you first, the button says "Here!" and you press it. Claude's picks: +5% heat for a call unanswered in 5 s, short of a chase; the 2.23 half hour stays; the shakedown stays at 08:00, shouted and kept on the pill through roll call. On screen it's "a guard" and their name, since the game's Warden is someone else | Not played by hand on a real phone; sounds not heard; French not read by a native speaker |
 | Showers | 2.26.0 | Done | The action button turns a shower on and walking away turns it off; inmates take turns, wait aside and dry off (maps unchanged); shorts and a towel while washing and drying, looks only; an ambush warns first, everywhere (1.5 s, the length was Claude's pick). Claude's picks too, no objection: heat under 25% falls a point faster every 2 s while washing; being in the room still counts | In San Pancho the warning saves few: on day 1 a bot is knocked out in 7 to 11 of 12 blocks however it reacts (the grudge rule is unchanged). Not played by hand on a real phone; sounds not heard; French not read by a native speaker |
 | Canteen and meals | 2.25.0 | Done | Tray from the counter, held in both hands with no slot, carried back, 6 s to eat; inmates stop at the counter with no formal queue; a tray eaten and not brought back costs +10% heat (the amount was Claude's pick) | The row of trays doesn't shrink; inmates brush past each other in the busiest prisons; not yet played by hand on a real phone |
 | Stats tab | 2.24.0 | Done | A headline and even groups, zeros dimmed, icons beside numbers | |
@@ -20,7 +21,6 @@ and tested when it shipped, but no polish pass, so nothing is known either way.
 | Parole | 2.21.3 | Done | Played through in the browser, from the desk to the hearing | |
 | Odd jobs | 2.21.2 | Done | Played through in the browser | |
 | How to play | 2.14.0 | Done | Every topic a page with icons and pictures | Pictures retaken only when what they show changes |
-| Roll call | | Not reviewed | | |
 | Exercise and training | | Not reviewed | | |
 | Jobs and the Work Period | | Not reviewed | | |
 | Free time | | Not reviewed | | |

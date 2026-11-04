@@ -29,11 +29,12 @@ import { clockSecs } from '../sim/systems/noise';
 import { tossFlight } from '../render/Noise';
 import { LAYER } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
+import { squareNeeded, wardenOf } from '../sim/systems/rollcall';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
 import { press } from './buttons';
-import { aimUI, banner, board, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
+import { aimUI, banner, board, closeSocial, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
 import { play } from './game';
 import { NEED } from './labels';
 import { outOfBounds } from '../sim/systems/k9';
@@ -66,6 +67,7 @@ function noTrayAtTable(sim: Sim): boolean {
 export function announce(e: SimEvent, sim: Sim) {
   switch (e.type) {
     case 'routine': {
+      if (squareNeeded(sim)) coachOnce('rollCallSquare', 'hint.rollCall');
       if (sim.state.lockdown) break;
       sound.bell();
       buzz('bell');
@@ -102,7 +104,7 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'missed':
       sound.sting();
       buzz('missed');
-      if (e.heat < 100) banner.toast(t(e.early ? 'toast.leftEarly' : 'toast.missed', { routine: routineName(e.routine), n: e.heat }), 'bad');
+      if (e.heat < 100) banner.toast(t(e.offSquare ? 'toast.offSquare' : e.early ? 'toast.leftEarly' : 'toast.missed', { routine: routineName(e.routine), n: e.heat }), 'bad');
       break;
     case 'lockdown':
       // The siren and the red glow follow the state every frame (see frame()).
@@ -530,6 +532,21 @@ export function announce(e: SimEvent, sim: Sim) {
         sound.click();
         play.game?.pilot.stop();
         coachOnce('train', TOUCH ? 'hint.trainTouch' : 'hint.trainKeys');
+      }
+      break;
+    case 'count':
+      if (e.what === 'you') {
+        // (Nothing in the way of the button.)
+        itemsUI.closePanels();
+        itemsUI.closeCraft();
+        closeSocial();
+        sound.whistle();
+        buzz('missed');
+        banner.toast(t('toast.countCall', { name: t('guard.title', { name: sim.prison.guards[wardenOf(sim)]?.name ?? '' }) }), 'bad', 5000);
+      } else if (e.what === 'answered') sound.pickup();
+      else if (e.what === 'missed') {
+        sound.sting();
+        banner.toast(t('toast.countMissed', { n: e.heat ?? 0 }), 'bad', 4500);
       }
       break;
     case 'wash':
