@@ -78,6 +78,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   // Every head may be someone's: the player squeezes in under the first.
   const head = placesOf(bot.sim.world).showers[0];
   at(bot, head.tile, head.face);
+  bot.act();
   bot.st.energy = 30;
   bot.until(() => false, 100);
   const gain = bot.st.energy - 30;
@@ -187,6 +188,7 @@ const propAt = (sim: Sim, kind: string, test: (p: { x: number; z: number }) => b
   check(bot.routineUntil(1, 16 * 60 + 5), 'the showers block again');
   const head = placesOf(bot.sim.world).showers[0];
   at(bot, head.tile, head.face);
+  bot.act();
   bot.st.energy = 30;
   bot.st.ko = 400;
   bot.until(() => false, 100);

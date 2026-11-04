@@ -84,7 +84,8 @@ for (const [area, ver, state, choices] of rows) {
     check(!ver && !choices, `POLISH: ${area} isn't reviewed, yet has a version or choices`);
     continue;
   }
-  check(/^\d+\.\d+\.\d+$/.test(ver) && num(ver) <= num(release), `POLISH: ${area}'s version (${ver}, the game's at ${release})`);
+  // (Ahead of the game only while the work waits for its release, HISTORY.md saying so: tests go green before the version is bumped.)
+  check(/^\d+\.\d+\.\d+$/.test(ver) && (num(ver) <= num(release) || history.includes(`v${ver}, not released yet`)), `POLISH: ${area}'s version (${ver}, the game's at ${release})`);
   check(history.includes(`v${ver}`), `POLISH: ${area}'s v${ver} is in HISTORY.md`);
   check(!!choices, `POLISH: ${area} says what the user chose`);
 }

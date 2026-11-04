@@ -15,7 +15,7 @@ import { ORDER, TALK } from '../command';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import type { Refusal } from '../events';
-import { AMBUSH_ODDS, AMBUSH_RANGE, ANGRY_STEPS, BUY_OPINION, CHASE_HEAT, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
+import { AMBUSH_ODDS, AMBUSH_RANGE, AMBUSH_WINDUP_STEPS, ANGRY_STEPS, BUY_OPINION, CHASE_HEAT, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { dist2, type Fighter, personOf } from './combat';
 import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, jobRooms, priceOf } from './economy';
@@ -391,6 +391,8 @@ export function grudges(sim: SimContext) {
     m.angry = ANGRY_STEPS;
     m.doing = DOING.NOTHING;
     m.wait = 0;
+    // (2.26: it stands squaring up for a moment first, the "!" over its head, for the player to fight or run.)
+    if (!sim.rules225) m.windup = AMBUSH_WINDUP_STEPS;
     if (s.talk === who) endTalk(sim);
     sim.events.push({ type: 'ambush', who });
   });
@@ -404,6 +406,7 @@ export function socialNow(sim: SimContext): Social {
   // (A real meal: the crowd also sits down in the canteen for a film or the acts, on dinner's plan.)
   so.serve = traysHere(sim) && mealOn(sim);
   so.reroute = !sim.rules224;
+  so.turns = !sim.rules225;
   so.pace.fill(0);
   so.face.fill(0);
   so.follow.fill(null);

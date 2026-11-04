@@ -137,6 +137,15 @@ import {
 const mealFail = (c: LessonCtx): Key | null => (mealOn(c.sim) ? null : 'lesson.meals.lost');
 const trayLost = (e: SimEvent): Key | null => (e.type === 'tray' && e.what !== 'take' && e.what !== 'return' ? 'lesson.meals.lost' : null);
 /** The nearest seat nobody's using or keeping. */
+const showerFail = (c: LessonCtx): Key | null => (ROUTINE[c.sim.state.routine].id === 'showers' ? null : 'lesson.showers.lost');
+
+/** A shower head nobody's under, and if there's one, nobody's heading for: whoever gets there first has it. */
+function freeShower(sim: Sim): number | null {
+  const under = (t: number) => sim.state.inmates.some((m) => !m.body.moving && tileAt(m.body.x, m.body.z) === t);
+  const heads = placesOf(sim.world).showers.filter((h) => !under(h.tile));
+  return (heads.find((h) => !sim.state.inmates.some((m) => m.goal === h.tile)) ?? heads[0])?.tile ?? null;
+}
+
 function freeSeat(sim: Sim): number | null {
   const s = sim.state;
   const x = Math.floor(s.player.x / UNIT);
@@ -922,6 +931,25 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Showers (2.26): the block at Center Perks, the water turned on, energy and heat, walked away from.
+    id: 'showers',
+    icon: 'water',
+    prison: CENTER_PERKS,
+    seed: 59,
+    setup: (sim) => {
+      clockTo(sim, at(16, 2));
+      place(sim, 19, 27, 13);
+      sim.state.energy = 40;
+      sim.state.heat = 18;
+    },
+    steps: [
+      { text: 'lesson.showers.on', touch: 'lesson.showers.onTouch', on: (e) => e.type === 'wash' && e.on, goal: freeShower, fail: showerFail },
+      // (+25: too far for the slow climb on its own to skip this, 10 s under the water.)
+      { text: 'lesson.showers.wash', done: (c) => c.sim.state.energy >= 65 || !c.sim.state.washing, fail: showerFail },
+      { text: 'lesson.showers.off', on: (e) => e.type === 'wash' && !e.on },
+    ],
+  },
+  {
     // The gardener (P31): the Work Period in the vegetable garden, seedlings into a planter, a crate of produce for the kitchen.
     id: 'gardener',
     icon: 'sprout',
@@ -1229,7 +1257,7 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 

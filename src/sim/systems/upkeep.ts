@@ -2,12 +2,11 @@
  * The player's upkeep: bed and seats (lying down, sitting, keeping the seat, getting up),
  * health and energy coming back, and the showers.
  */
-import { ROUTINE } from '../../content/routine';
 import { centerX, centerZ, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { freshMeals } from './grounds';
-import { ENERGY_REGEN_STEPS, FRESH_ENERGY, FRESH_HEALTH, HEALTH_REGEN_STEPS, MEAL_ENERGY, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE } from '../tuning';
+import { ENERGY_REGEN_STEPS, FRESH_ENERGY, FRESH_HEALTH, HEALTH_REGEN_STEPS, MEAL_ENERGY, SHOWER_ENERGY_STEPS, SHOWER_HEAT_BELOW, SHOWER_HEAT_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { maxHealth } from './combat';
 import { closeBox, REACH } from './items';
@@ -18,6 +17,7 @@ import { atProp, seatSpot } from './rest';
 import { endTalk } from './social';
 import { stopTraining } from './training';
 import { washScent } from './k9';
+import { underShower } from './showers';
 
 /** Into bed: the player lies down beside it (the view puts them in it). */
 export function sleep(sim: SimContext) {
@@ -104,17 +104,11 @@ export function regenerate(sim: SimContext) {
   if (s.ko === 0 && s.health < maxHealth(s.str) && (s.step % HEALTH_REGEN_STEPS === 0 || (resting && s.step % (HEALTH_REGEN_STEPS / 2) === 0))) s.health++;
 }
 
-/** Under a running shower in the showers block, standing still (GDD §3.1): energy back, 2 a second. */
+/** Under a running shower (GDD §2, §3.1): energy back, 2 a second; 2.26: minor heat washed off too. */
 export function shower(sim: SimContext) {
   const s = sim.state;
   if (s.energy < 100 && s.step % SHOWER_ENERGY_STEPS === 0 && underShower(sim)) s.energy++;
+  if (!sim.rules225 && s.heat > 0 && s.heat < SHOWER_HEAT_BELOW && s.step % SHOWER_HEAT_STEPS === 0 && underShower(sim)) s.heat--;
   // (P19: and the scent washes off.)
   if (s.scent.length && underShower(sim)) washScent(sim);
-}
-
-/** Standing still under a running shower in the showers block (not out cold, carried off or in a lockdown). */
-export function underShower(sim: SimContext): boolean {
-  const s = sim.state;
-  if (s.player.moving || sim.away || s.lockdown || s.layer !== LAYER.GROUND || ROUTINE[s.routine].id !== 'showers') return false;
-  return sim.showerTiles.has(tileAt(s.player.x, s.player.z));
 }

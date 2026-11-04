@@ -169,6 +169,7 @@ export function dayStart(sim: Sim, fresh: boolean) {
 export function dayStop() {
   paBoard.clear();
   sound.setWeather(0, 0);
+  sound.setWater(0);
 }
 
 /** After each step: the clock's own announcements (warnings, the forecast, a quip), on the minute. */
@@ -332,6 +333,8 @@ export function dayFrame(g: Game, dt: number, quiet: boolean) {
   const sim = g.rec.sim;
   // Announcements switched off: whatever the warden was saying stops.
   if (settings.pa === 'off' && paBoard.busy) paBoard.clear();
+  // (A lesson's showers run on, tickTock having set them this frame; a stopped game's don't.)
+  if (g.over || g.paused) sound.setWater(0);
   if (!hasDays(g)) {
     sound.setWeather(0, 0);
     return;
@@ -349,6 +352,7 @@ export function dayFrame(g: Game, dt: number, quiet: boolean) {
   const rain = cold(sim) ? 0 : storm ? 1 : now === 'rain' ? 0.6 : 0;
   const wind = storm ? (cold(sim) ? 1 : 0.75) : now === 'fog' ? 0 : p.windForce / 4;
   sound.setWeather(live ? rain : 0, live ? wind : 0);
+  if (!live) sound.setWater(0);
 }
 
 /** Delivery day's vehicle (P18): its beeps backing in, its tailgate, its engine pulling away, quieter the further off. */

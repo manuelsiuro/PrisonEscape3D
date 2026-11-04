@@ -7,7 +7,7 @@ import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { BODY_HALF, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { BODY_HALF, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_DRY_STEPS, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_WASH_STEPS, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT, WASH_SPREAD } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
 import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
@@ -21,7 +21,7 @@ import { bodyAt, type Body } from './movement';
  * bed while the player keeps a lookout for him (the sim's: an odd job). 2.25: SERVE, at the serving
  * counter, a tray picked up or put back.
  */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32, DIG: 35, SERVE: 36 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32, DIG: 35, SERVE: 36, SHOWER_WAIT: 37, TOWEL: 38 } as const;
 
 /** A meal's tray (2.25, canteen.ts), the player's or an inmate's: none, with its food, eaten. */
 export const TRAY = { NONE: 0, FULL: 1, EMPTY: 2 } as const;
@@ -52,6 +52,8 @@ export interface Inmate extends Walker, Fighter {
   /** The seat kept for this meal while it goes to the counter and back (its tile, -1 none), and the way it faces there. */
   seat: number;
   seatFace: number;
+  /** 2.26: steps left squaring up before an ambush (angry, standing, no blows yet). */
+  windup: number;
 }
 
 /** Where inmates like to spend free time (their own cell is added). */
@@ -82,6 +84,7 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       opinion: !w.def.rules?.hostile ? OPINION_START : cell % 4 === 0 ? HOSTILE_GRUDGE : HOSTILE_OPINION,
       shift: 0,
       tray: TRAY.NONE,
+      windup: 0,
       seat: -1,
       seatFace: 0,
     });
@@ -101,6 +104,8 @@ let playerSeat = -1;
 let offTiles: readonly number[] = [];
 /** A meal on, fetched from the serving counter (Social.serve). */
 let serving = false;
+/** The showers taken in turns (Social.turns). */
+let turns = false;
 
 /** The delivery's bay while its vehicle is in (P18): nobody picks a spot under it. */
 let bay: Uint8Array | null = null;
@@ -174,6 +179,61 @@ function dropMeal(m: Inmate) {
   if (m.tray !== TRAY.NONE || m.seat >= 0) m.wait = 0;
   m.tray = TRAY.NONE;
   m.seat = -1;
+}
+
+/** A shower head nobody stands under or is heading for, by the inmate's cell (no draw: the block's walk leaves the RNG as it was). */
+function freeHead(c: Crowd, all: Inmate[], m: Inmate): Spot | null {
+  const heads = placesOf(c.w).showers;
+  const start = (m.cell * 3) % heads.length;
+  for (let k = 0; k < heads.length; k++) {
+    const h = heads[(start + k) % heads.length];
+    if (!taken(all, h.tile) && !standsOn(c, all, m, h.tile)) return { tile: h.tile, face: h.wall };
+  }
+  return null;
+}
+
+/** Someone else stopped on that tile, inmate, player or guard. */
+const standsOn = (c: Crowd, all: Inmate[], m: Inmate, tile: number) => all.some((o) => o !== m && !o.body.moving && tileAt(o.body.x, o.body.z) === tile) || c.others.some((o) => tileAt(o.x, o.z) === tile);
+
+/**
+ * Where an inmate waits for a head, or dries off: a free tile of the room, clear of the heads and, while
+ * there's room, of the tiles in front of them, so that the way to a head stays open. By its cell, no draw.
+ */
+function asideSpot(c: Crowd, all: Inmate[], m: Inmate): Spot {
+  const heads = placesOf(c.w).showers;
+  const isHead = (t: number) => heads.some((h) => h.tile === t);
+  // (A head's front: the tile the opposite way from its wall.)
+  const before = (t: number) => heads.some((h) => t === h.tile - Math.round(DIR_X[h.wall] / 1024) - Math.round(DIR_Z[h.wall] / 1024) * MAP_W);
+  const floor = floorOf(c.w, ['showers']).filter((t) => !isHead(t));
+  const start = (m.cell * 5) % floor.length;
+  const turned = floor.map((_, k) => floor[(start + k) % floor.length]);
+  const face = heads[0].wall;
+  const tile = turned.find((t) => !before(t) && !taken(all, t)) ?? turned.find((t) => !taken(all, t)) ?? turned[0];
+  return { tile, face };
+}
+
+/**
+ * The next step of a turn at the showers, once what it was doing is done: a head that's come free, off
+ * to dry after its time under one, dressed and done after the towel. True when that took up the step.
+ */
+function nextWash(c: Crowd, all: Inmate[], m: Inmate): boolean {
+  if (m.path.length || tileAt(m.body.x, m.body.z) !== m.goal) return false;
+  if (m.doing === DOING.SHOWER) {
+    setOff(c, m, asideSpot(c, all, m), DOING.TOWEL);
+    return true;
+  }
+  if (m.doing === DOING.SHOWER_WAIT) {
+    const head = freeHead(c, all, m);
+    if (head) setOff(c, m, head, DOING.SHOWER);
+    else m.wait = TURN_STEPS;
+    return true;
+  }
+  if (m.doing === DOING.TOWEL) {
+    m.doing = DOING.NOTHING;
+    m.then = DOING.NOTHING;
+    return true;
+  }
+  return false;
 }
 
 /** Off to a spot: goal, what it does there, and the walk planned. */
@@ -253,6 +313,12 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       break;
     }
     case 'showers': {
+      if (turns && places.showers.length) {
+        const head = freeHead(c, all, m);
+        spot = head ?? asideSpot(c, all, m);
+        then = head ? DOING.SHOWER : DOING.SHOWER_WAIT;
+        break;
+      }
       const free = places.showers.filter((s) => !taken(all, s.tile));
       spot = free.length ? pickSpot(all, free, rng) : pickSpot(all, tiles(floorOf(w, ['showers']), 1 + randomInt(rng, 16)), rng);
       then = DOING.SHOWER;
@@ -312,8 +378,11 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
   playerSeat = social.seat;
   offTiles = social.off ?? [];
   serving = !!social.serve;
+  turns = !!social.turns;
   bay = w.delivering ? w.parked : null;
   all.forEach((m, k) => {
+    // (Calmed off by anything else, a knockout, an arrest: its moment of warning goes too.)
+    if (m.angry <= 0) m.windup = 0;
     // Out cold: lies where it fell (Sim counts the time and wakes it).
     if (m.ko > 0) {
       m.body.moving = false;
@@ -346,11 +415,19 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       dropMeal(m);
       if (foe && m.angry > 0) {
         m.doing = DOING.NOTHING;
+        // (2.26: an ambush begins with a moment squaring up, facing them.)
+        if (m.windup > 0) {
+          m.windup--;
+          m.body.moving = false;
+          if (foe.x !== m.body.x || foe.z !== m.body.z) m.body.facing = nearestDir(foe.x - m.body.x, foe.z - m.body.z);
+          return;
+        }
         closeIn(c, m, k, foe, m.speed + 24);
         return;
       }
       // Calm again: back to the routine, planned afresh.
       m.angry = 0;
+      m.windup = 0;
       m.plan = -1;
     }
     if (m.plan !== plan) {
@@ -403,6 +480,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       return;
     }
     if (nextLeg(c, all, m)) return;
+    if (turns && plan !== LOCKDOWN_PLAN && ROUTINE[plan].id === 'showers' && nextWash(c, all, m)) return;
     if (m.goal < 0) {
       choose(c, m, all, rng, social.work[k] ?? -1);
       if (m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) arrive(m, plan, rng);
@@ -410,6 +488,11 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     }
     if (m.path.length) {
       if (serving && m.then === DOING.SERVE && waitsItsTurn(c, all, m)) return;
+      // (2.26: the head it was heading for has someone under it now, the player perhaps: back to waiting.)
+      if (turns && m.then === DOING.SHOWER && standsOn(c, all, m, m.goal) && Math.abs(centerX(m.goal) - m.body.x) + Math.abs(centerZ(m.goal) - m.body.z) <= COUNTER_SIGHT) {
+        setOff(c, m, asideSpot(c, all, m), DOING.SHOWER_WAIT);
+        return;
+      }
       // (Jogging the track, P31: a jog's pace, not a walk's.)
       if (walkPath(c, m, k, m.then === DOING.JOG ? m.speed + JOG_EXTRA : m.speed)) arrive(m, plan, rng);
       return;
@@ -451,6 +534,8 @@ export interface Social {
   face?: readonly number[];
   /** Tiles nobody heads for (P39: the parole board's chairs and the player's seat across, while the hearing is due or sitting). */
   off?: readonly number[];
+  /** 2.26: the showers taken in turns (false: replaying an older run). */
+  turns?: boolean;
   /** 2.25: an inmate at work with no way to its spot picks another (false: replaying an older run). */
   reroute?: boolean;
   /** 2.25: a meal on, fetched from the serving counter (false: none on, no counter here, or replaying an older run). */
@@ -555,6 +640,9 @@ function settle(m: Inmate) {
   m.doing = m.then;
   if (m.then === DOING.SERVE) m.wait = SERVE_STEPS;
   else if (m.then === DOING.EAT && m.tray === TRAY.FULL) m.wait = inmateEatSteps(m);
+  // (2.26: a turn at the showers. Replaying an older run, it stays under the head for the block.)
+  else if (turns && m.then === DOING.SHOWER) m.wait = INMATE_WASH_STEPS + (m.cell * 37) % WASH_SPREAD;
+  else if (m.then === DOING.TOWEL) m.wait = INMATE_DRY_STEPS;
 }
 
 /** At the goal: stop, face the right way, start doing what the spot is for. */

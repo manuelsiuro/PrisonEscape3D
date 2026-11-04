@@ -5,6 +5,7 @@ import { lineOfSight } from '../sim/ai/sight';
 import { SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { counterTray, trayOffer } from '../sim/systems/canteen';
+import { showerOffer } from '../sim/systems/showers';
 import { isGuard, maxHealth, personOf, reachOf, swingSteps } from '../sim/systems/combat';
 import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
@@ -158,6 +159,15 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     if (key !== actionKey) {
       actionKey = key;
       Object.assign(actionLabel, { verb: t(offer === 'take' ? 'act.takeTray' : 'act.returnTray'), what: '' });
+    }
+    return actionLabel;
+  }
+  // Under a shower at shower time (2.26): the water first, a search at the next press.
+  if (showerOffer(sim, target) >= 0) {
+    const key = `shower:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t('act.shower'), what: '' });
     }
     return actionLabel;
   }

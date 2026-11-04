@@ -134,6 +134,8 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
     case DOING.RUN:
       return mood('in.exercising', 0.5, 'say', some('in.idle', weather, friend));
     case DOING.SHOWER:
+    case DOING.TOWEL:
+    case DOING.SHOWER_WAIT:
       return mood('in.showering', 0.5, 'say', some('in.idle', 'in.bored'));
     case DOING.READ:
     case DOING.SIT_READ:

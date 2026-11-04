@@ -364,6 +364,8 @@ export interface SimState {
   tray: number;
   /** The step this meal's tray was finished (the end of a meal lets off one just eaten). */
   trayDone: number;
+  /** 2.26: the player has turned on the shower they stand under (showers.ts). */
+  washing: boolean;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -546,5 +548,6 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     snoop: [],
     tray: 0,
     trayDone: 0,
+    washing: false,
   };
 }

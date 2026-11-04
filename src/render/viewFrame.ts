@@ -167,6 +167,9 @@ export interface InmateFrame {
   /** Its meal's tray (TRAY_AT, Character.ts), and how much food is left on it (0–1). */
   trayAt: number;
   trayLeft: number;
+  /** A turn at the showers (2.26): in shorts; a towel (0 none, 1 round the neck, 2 over the hair). */
+  bare: boolean;
+  towel: number;
   /** The badge over their head: a favor, a shop, the player's letter for them, a follower. */
   badge: BadgeKind;
 }

@@ -49,12 +49,10 @@ const TRAY_FOOD: ReadonlyArray<readonly [number, number, number, number, number,
 const BED_TOP = 0.6;
 const BED_FEET = 0.55;
 
-const dropMaterial = new THREE.MeshBasicMaterial({ color: 0xc8ecff, transparent: true, opacity: 0.8, depthWrite: false });
-const dropGeometry = new THREE.BoxGeometry(0.035, 0.24, 0.035);
-/** The spray under a shower head: a faint cone of water. */
-const sprayMaterial = new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
-const sprayGeometry = new THREE.CylinderGeometry(0.09, 0.3, 1.55, 14, 1, true).translate(0, 0.8, -0.05);
-const DROPS = 10;
+/** What people wash in (2.26), and their towels. */
+const SHORTS = 0x46566c;
+const TOWEL = 0xf0f1ec;
+const TOWEL_EDGE = 0xc9d4de;
 
 const bodyMaterial = kitMaterial.clone();
 /** Their shadow-pass material, likewise kept apart from the unskinned meshes'. */
@@ -217,7 +215,14 @@ export class Character {
   private readonly guitar: THREE.Mesh;
   /** On the pay phone (P34): the handset at the ear, in the left hand. */
   private readonly handset: THREE.Mesh;
-  private readonly water = new THREE.Group();
+  /** The same bones in shorts (2.26): the body drawn in place of the dressed one. Guards never wash. */
+  private dressed!: THREE.SkinnedMesh;
+  private washBody: THREE.SkinnedMesh | null = null;
+  private washSkeleton: THREE.Skeleton | null = null;
+  private readonly towelNeck: THREE.Mesh;
+  private readonly towelHead: THREE.Mesh;
+  /** Where this one is in hair, soap and rinse. */
+  private readonly washSeed = Math.random() * 3;
   private readonly zs: THREE.Sprite[] = [];
   private readonly stars: THREE.Sprite[] = [];
   /** The "!" or "?" over the head, its character, and how long it has shown. */
@@ -230,10 +235,14 @@ export class Character {
   private badgeAge = 0;
   /** A training rep: the arms pump (1, easing to 0). */
   private pumped = 0;
+  /** Face up to the water, at the rinse. */
+  private headBack = 0;
   /** The silhouette material (the player only). */
   private ghost: THREE.MeshBasicMaterial | null = null;
-  /** Standing under a shower head (water falls only there). */
-  wet = false;
+  /** Down to shorts, for the showers (2.26; only how they look: the outfit they wear doesn't change). */
+  undressed = false;
+  /** A towel (2.26): 0 none, 1 round the neck, 2 over the head, being rubbed dry. */
+  towel = 0;
   /** The item in the right hand (its model), and which item it is. */
   private held: THREE.Mesh | null = null;
   private heldItem = 0;
@@ -256,6 +265,8 @@ export class Character {
     // Each limb's parts, in its pivot's frame: skinned to that pivot (bone) below.
     const limbs: Array<[Part[], THREE.Bone]> = [];
     const mesh = (parts: Part[], bone: THREE.Bone) => void limbs.push([parts, bone]);
+    // The same limbs in shorts (2.26).
+    const bare: Array<[Part[], THREE.Bone]> = [];
 
     // Legs: pivots at the hips.
     for (const [pivot, x] of [
@@ -264,6 +275,7 @@ export class Character {
     ] as const) {
       pivot.position.set(x, 0.4, 0);
       mesh([part(0.19, 0.34, 0.2, trousers, 0, -0.17, 0), part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03), ...(trim !== undefined ? [part(0.196, 0.035, 0.206, trim, 0, -0.29, 0)] : [])], pivot);
+      bare.push([[part(0.19, 0.17, 0.2, SHORTS, 0, -0.085, 0), part(0.17, 0.17, 0.18, skin, 0, -0.255, 0), part(0.19, 0.06, 0.25, skin, 0, -0.37, 0.03)], pivot]);
     }
 
     // Torso: the jumpsuit, a white collar, the number patch (a guard: a belt, a tie, a badge).
@@ -289,6 +301,8 @@ export class Character {
           ],
       this.body,
     );
+
+    bare.push([[part(0.52, 0.36, 0.3, skin, 0, 0.63, 0), part(0.53, 0.09, 0.31, SHORTS, 0, 0.42, 0)], this.body]);
 
     // A riot guard's plates: a chest plate, a back plate, shoulder guards.
     if (look.riot) {
@@ -323,6 +337,7 @@ export class Character {
         ],
         pivot,
       );
+      bare.push([[part(0.15, 0.2, 0.16, skin, 0, -0.1, 0), part(0.13, 0.15, 0.14, skin, 0, -0.27, 0), part(0.14, 0.09, 0.15, skin, 0, -0.38, 0), ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f, skin) : []), ...inkedParts(look.inked ?? [], x < 0, skin)], pivot]);
     }
 
     // Head: a big block with brows, a nose, a mouth and a haircut; the eyes blink on their own.
@@ -394,9 +409,19 @@ export class Character {
     }
     this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
     this.root.add(this.body);
+    // (Before the first skinned(): merging a list spends the geometry it's given only as far as the GPU, and nothing's been drawn.)
+    const washes = !guard || look.silhouette !== undefined;
+    if (washes) bare.push([face, this.head], [[part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], this.eyes]);
     const whole = skinned(limbs, this.root, this.material);
     this.skeleton = whole.skeleton;
+    this.dressed = whole;
     this.root.add(whole);
+    if (washes) {
+      this.washBody = skinned(bare, this.root, this.material);
+      this.washSkeleton = this.washBody.skeleton;
+      this.washBody.visible = false;
+      this.root.add(this.washBody);
+    }
     this.root.scale.setScalar(look.size ?? 1);
     this.gait = look.gait ?? 1;
     // The silhouette covers the body only, not the props below.
@@ -472,18 +497,15 @@ export class Character {
     this.handset = new THREE.Mesh(instruments().handset, kitMaterial);
     this.handset.visible = false;
     this.armL.add(this.handset);
-    // Under a shower head: falling water.
-    for (let k = 0; k < DROPS; k++) {
-      const d = new THREE.Mesh(dropGeometry, dropMaterial);
-      d.userData.phase = Math.random();
-      d.position.set((Math.random() - 0.5) * 0.4, 0, -0.05 + (Math.random() - 0.5) * 0.35);
-      this.water.add(d);
-    }
-    const spray = new THREE.Mesh(sprayGeometry, sprayMaterial);
-    spray.userData.spray = true;
-    this.water.add(spray);
-    this.water.visible = false;
-    this.root.add(this.water);
+    // A towel (2.26), in the body's own material like the tray: round the neck with its ends down the front, or over the hair.
+    this.towelNeck = new THREE.Mesh(merge([part(0.56, 0.07, 0.34, TOWEL, 0, 0.82, 0), part(0.11, 0.3, 0.03, TOWEL, -0.14, 0.66, 0.165), part(0.11, 0.3, 0.03, TOWEL, 0.14, 0.66, 0.165), part(0.11, 0.03, 0.035, TOWEL_EDGE, -0.14, 0.53, 0.165), part(0.11, 0.03, 0.035, TOWEL_EDGE, 0.14, 0.53, 0.165)], false), this.material);
+    this.towelNeck.castShadow = true;
+    this.towelNeck.visible = false;
+    this.body.add(this.towelNeck);
+    this.towelHead = new THREE.Mesh(merge([part(0.56, 0.13, 0.54, TOWEL, 0, 0.5, -0.01), part(0.56, 0.24, 0.1, TOWEL, 0, 0.32, -0.25), part(0.07, 0.24, 0.4, TOWEL, -0.27, 0.34, -0.03), part(0.07, 0.24, 0.4, TOWEL, 0.27, 0.34, -0.03)], false), this.material);
+    this.towelHead.castShadow = true;
+    this.towelHead.visible = false;
+    this.head.add(this.towelHead);
   }
 
   /** Where this meal's tray is (TRAY_AT), and how much food is left on it (0–1): set before `pose`. */
@@ -806,11 +828,37 @@ export class Character {
       armLz -= 0.25 * a;
       armRz += 0.25 * a;
     } else if (doing === DOING.SHOWER) {
-      // Scrubbing the hair.
-      armLx += (-2.7 + Math.sin(t * 9) * 0.15) * a;
-      armRx += (-2.7 + Math.cos(t * 9) * 0.15) * a;
-      armLz -= 0.35 * a;
-      armRz += 0.35 * a;
+      // Hair, then soap, then a rinse, round and round, each one easing into the next.
+      // (With reduced motion, held scrubbing the hair: the pose says what they're doing.)
+      const wa = this.act;
+      const beat = motion ? (t * 0.42 + this.washSeed) % 3 : 0;
+      const stage = Math.floor(beat);
+      const mix = Math.max(0, (beat - stage - 0.8) / 0.2);
+      const hair = stage === 0 ? 1 - mix : stage === 2 ? mix : 0;
+      const soap = stage === 1 ? 1 - mix : stage === 0 ? mix : 0;
+      const rinse = stage === 2 ? 1 - mix : stage === 1 ? mix : 0;
+      const rub = motion ? Math.sin(t * 9) : 0;
+      const rub2 = motion ? Math.cos(t * 9) : 0;
+      armLx += (hair * (-2.7 + rub * 0.15) + soap * (-1.3 + rub * 0.22) - rinse * 0.2) * wa;
+      armRx += (hair * (-2.7 + rub2 * 0.15) + soap * (-1.3 + rub2 * 0.22) - rinse * 0.2) * wa;
+      armLz += (-hair * 0.35 + soap * 0.6 - rinse * 0.16) * wa;
+      armRz += (hair * 0.35 - soap * 0.6 + rinse * 0.16) * wa;
+      this.headBack = rinse * wa;
+    } else if (doing === DOING.TOWEL) {
+      // Rubbing the hair dry.
+      const wa = this.act;
+      const rub = motion ? Math.sin(t * 7) : 0;
+      armLx += (-2.45 + rub * 0.22) * wa;
+      armRx += (-2.45 - rub * 0.22) * wa;
+      armLz -= 0.22 * wa;
+      armRz += 0.22 * wa;
+    } else if (doing === DOING.SHOWER_WAIT) {
+      // Arms folded, waiting for a head.
+      const wa = this.act;
+      armLx -= 1.2 * wa;
+      armRx -= 1.2 * wa;
+      armLz += 0.62 * wa;
+      armRz -= 0.62 * wa;
     } else if (doing === DOING.WRESTLE) {
       // An arm-wrestle (P22): right hands locked between the two at chest height, the left
       // braced on the hip; winning, the arm drives forward and the body leans into it; losing,
@@ -1113,14 +1161,11 @@ export class Character {
     for (const st of this.sticks) st.visible = drums;
     this.guitar.visible = doing === DOING.GUITAR && this.act > 0.3;
     this.handset.visible = doing === DOING.PHONE && this.act > 0.3;
-    this.water.visible = this.wet && doing === DOING.SHOWER && this.act > 0.2;
-    if (this.water.visible) {
-      for (const d of this.water.children) {
-        if (d.userData.spray) continue;
-        const c = motion ? (time * 2.6 + d.userData.phase) % 1 : d.userData.phase;
-        d.position.y = 1.55 - c * 1.35;
-      }
-    }
+    const shorts = this.undressed && this.washBody !== null;
+    this.dressed.visible = !shorts;
+    if (this.washBody) this.washBody.visible = shorts;
+    this.towelNeck.visible = this.towel === 1;
+    this.towelHead.visible = this.towel === 2;
 
     // Blink every few seconds; eyes shut in bed.
     this.blinkAt -= dt;
@@ -1145,7 +1190,7 @@ export class Character {
     const sink = n < 0.85 ? n / 0.85 : 1 - (n - 0.85) / 0.15;
     const nod = motion ? 0.3 + 0.35 * sink * sink * (3 - 2 * sink) : 0.55;
     this.head.rotation.x =
-      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;
+      this.recoil > 0 ? -0.35 * Math.sin(this.recoil * Math.PI) : doing === DOING.READ ? 0.3 * this.act : doing === DOING.SHOWER ? -0.4 * this.headBack : doing === DOING.TOWEL ? 0.25 * this.act : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;
     return stepped;
   }
 
@@ -1159,12 +1204,13 @@ export class Character {
         return;
       }
       // (P30's instruments too: one set for everyone.)
-      const shared = m.geometry === dropGeometry || m.geometry === sprayGeometry || instrumentGeometry(m.geometry);
+      const shared = instrumentGeometry(m.geometry);
       if (o !== this.held && !shared) m.geometry?.dispose();
       const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
-      for (const mat of mats) if (mat !== kitMaterial && mat !== bodyMaterial && mat !== dropMaterial && mat !== sprayMaterial) mat.dispose();
+      for (const mat of mats) if (mat !== kitMaterial && mat !== bodyMaterial) mat.dispose();
     });
     // (The bones' matrices live in a small texture per character.)
     this.skeleton.dispose();
+    this.washSkeleton?.dispose();
   }
 }

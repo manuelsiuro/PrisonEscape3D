@@ -660,6 +660,19 @@ play('meals', (bot) => {
   check(bot.st.tray === TRAY.NONE, 'meals: put back');
 });
 
+play('showers', (bot) => {
+  const free = placesOf(bot.sim.world).showers[3];
+  check(bot.sim.playerZone === 'showers', 'showers: it starts in the room');
+  check(bot.walkTo(free.tile), 'showers: under a head');
+  bot.act();
+  check(bot.st.washing, 'showers: turned on');
+  const heat = bot.st.heat;
+  bot.until(() => bot.st.energy >= 65, 300);
+  check(bot.st.energy >= 65 && bot.st.heat < heat, 'showers: energy up, heat down');
+  bot.step(command(5));
+  check(!bot.st.washing, 'showers: walked away from');
+});
+
 play('laps', (bot) => {
   // (P31: through the gate onto the sports ground, a lap along the lanes from the nearest corner, then the pull-up bar.
   // A step first: the gate opens for free time as the step ends.)

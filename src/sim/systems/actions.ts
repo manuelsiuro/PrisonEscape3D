@@ -57,6 +57,7 @@ import { bedTarget, tend } from './garden';
 import { take } from './pantry';
 import { holdKick, releaseKick } from './football';
 import { drawNeedle, endInk } from './tattoo';
+import { showerOffer, startWash, stopWash } from './showers';
 import { sitDown, sleep, standUp } from './upkeep';
 import { throwItem } from './throwing';
 
@@ -127,6 +128,12 @@ export function useItems(sim: SimContext, cmd: number) {
         serveTray(sim, offer);
         break;
       }
+      // The showers (2.26): the water turned on, ahead of anyone standing by; searched at the next press.
+      const head = showerOffer(sim, target);
+      if (head >= 0) {
+        startWash(sim, head);
+        break;
+      }
       if (!target) break;
       if (target.kind === 'ground') pickUp(it, target.index, ev);
       else if (target.kind === 'sleep') sleep(sim);
@@ -193,6 +200,7 @@ export function useItems(sim: SimContext, cmd: number) {
       // (P22: not mid arm-wrestle: both hands are busy.)
       if (s.solitary > 0 || s.bout.length) break;
       standUp(sim);
+      stopWash(sim);
       {
         // (Both hands on a tray, 2.25: whatever the press does with them lets it fall.)
         const from = ev.length;
@@ -268,6 +276,7 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.HOLIDAY && s.solitary <= 0) takeTreat(sim, argB(cmd));
       else if (a === EXT.DIG_UP && s.solitary <= 0 && !s.bout.length) {
         standUp(sim);
+        stopWash(sim);
         strike(sim, true, digUpTarget(sim.world, s.layer, s.player, itemOf(it.inv[it.hand]), bodiesAbout(sim)));
       }
       break;

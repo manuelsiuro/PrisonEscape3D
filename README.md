@@ -96,8 +96,8 @@ Escape one to open the next.
     <td width="28%"><img src="docs/screenshots/help.webp" alt="How to play: the glider topic, with a picture, key numbers, steps and recipes"></td>
     <td width="72%">
       <ul>
-        <li><b>A tutorial of 48 short lessons</b> in four chapters (First steps, Getting by, Prison life, Ways out), each played in a real prison scene.</li>
-        <li><b>How to play</b>: 59 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
+        <li><b>A tutorial of 50 short lessons</b> in four chapters (First steps, Getting by, Prison life, Ways out), each played in a real prison scene.</li>
+        <li><b>How to play</b>: 60 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
         <li><b>The Daily Escape</b>: one prison a day, with twists, the same for everyone, and a streak to keep.</li>
         <li><b>Replays</b> of your escapes.</li>
         <li><b>142 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
@@ -211,7 +211,7 @@ build and tests pass → commit → `npm version minor` (or `patch`) → `git pu
 | `src/flows/` | The title, intake, tutorial and Daily Escape flows |
 | `src/ui/` | The HUD, panels and screens (title, prisons, how to play, trophies, settings…) |
 | `src/talk/` | Speech bubbles: who says what, when, and gossip that is always true |
-| `src/tutorial/` | The 49 lessons and their chapters |
+| `src/tutorial/` | The 50 lessons and their chapters |
 | `src/game/` | Saves, settings, records, trophies, stats, replays and storage |
 | `src/replay/` | Watching an escape again |
 | `src/audio/`, `src/app/` | Synthesized sound; haptics, graphics quality, the service worker, installing |

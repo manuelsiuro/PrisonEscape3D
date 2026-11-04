@@ -21,8 +21,8 @@ export interface Places {
   seats: Spot[];
   /** The canteen's floor along its serving counters, facing them: where a tray is fetched and given back. */
   counters: Spot[];
-  /** Tiles under a shower head, facing the wall. */
-  showers: Spot[];
+  /** Tiles under a shower head: `face` as inmates have always faced (north or south), `wall` the way its pipe really is (2.26). */
+  showers: Array<Spot & { wall: number }>;
   /** Somewhere to sit in free time (P8+): every chair and yard bench tile, facing its table or the way it's turned. */
   rests: Spot[];
   /** Roll call spots in order (spot k for cell k + 1), facing north. */
@@ -42,6 +42,8 @@ export interface Places {
 
 const S = 5;
 const N = 13;
+/** The way the pipe stands from a shower's tile, by the prop's rotation: north, west, south, east. */
+const WALL = [13, 9, 5, 1];
 const E = 1;
 const W = 9;
 const cache = new WeakMap<World, Places>();
@@ -69,7 +71,7 @@ function build(w: World): Places {
   }
   const canteen = zoneIndex('canteen');
   const seats: Spot[] = [];
-  const showers: Spot[] = [];
+  const showers: Places['showers'] = [];
   const rests: Spot[] = [];
   for (const p of w.props) {
     if (p.kind === 'chair' || p.kind === 'bench' || p.kind === 'bleachers')
@@ -80,7 +82,7 @@ function build(w: World): Places {
         if (isFloor(w, x, p.z + p.d)) seats.push({ tile: (p.z + p.d) * MAP_W + x, face: N });
       }
     }
-    if (p.kind === 'shower') showers.push({ tile: p.z * MAP_W + p.x, face: p.rot === 2 ? N : S });
+    if (p.kind === 'shower') showers.push({ tile: p.z * MAP_W + p.x, face: p.rot === 2 ? N : S, wall: WALL[p.rot ?? 0] });
   }
   const seated = new Set(seats.map((q) => q.tile));
   const counters: Spot[] = [];

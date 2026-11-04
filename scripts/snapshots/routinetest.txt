@@ -13,7 +13,7 @@ day 1 17:00 routine dinner
 day 1 17:27 attended dinner
 day 1 18:00 routine eveningFreeTime
 day 1 22:00 routine eveningRollCall
-day 1 22:33 attended eveningRollCall
+day 1 22:32 attended eveningRollCall
 day 1 23:00 routine lightsOut
 day 1 23:06 attended lightsOut
 day 1 23:06 cells locked
@@ -32,7 +32,7 @@ day 2 17:00 routine dinner
 day 2 17:27 attended dinner
 day 2 18:00 routine eveningFreeTime
 day 2 22:00 routine eveningRollCall
-day 2 22:33 attended eveningRollCall
+day 2 22:32 attended eveningRollCall
 day 2 23:00 routine lightsOut
 day 2 23:06 attended lightsOut
 day 2 23:06 cells locked
@@ -99,7 +99,7 @@ truant heat at the end of day 1: 0%
 blocks at 07:59 (o made, x missed or fired, e excused): model oo.xooo.oo, truant xe.xxxx.xo
 == night owl
 day 1 22:00 routine eveningRollCall
-day 1 22:33 attended eveningRollCall
+day 1 22:32 attended eveningRollCall
 day 1 23:00 routine lightsOut
 day 1 23:08 attended lightsOut
 day 1 23:08 cells locked

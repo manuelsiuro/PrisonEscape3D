@@ -43,6 +43,7 @@ line is something that was missed or broke at some point.
   The highlight (`focusOf`) must agree with both.
 - Keyboard and touch; the floor arrows (`guide.ts`); hints, toasts and floats (`announce.ts`); barks; the HUD and the day card.
 - Who gets in the way: a crowd changes what the button targets and who stands where.
+- A hint whose advice changes needs a new `coachOnce` id: anyone who has played has already seen the old one and won't be told.
 
 **What teaches it**
 - A How to play topic with its picture (`helpTopics.ts`, `SHOTS` in `scripts/dev/helpshot.ts`), and other
@@ -121,6 +122,8 @@ What will trip you up:
 - `p.put` refuses bad tiles because a bad one wastes the run: inside a wall nothing moves, outside the fence the game counts an escape.
 - A switched language shows on what's drawn next, not on the screen already up.
 - Time-limited messages expire before a screenshot. Read them in the same call as the action.
+- Freezing stops the sim, not the view: its own timers (a towel for 2.5 s) run out before the screenshot. Read them in the same call too.
+- Reduced motion is the game's setting (`view.reducedMotion`), not the browser's: emulating the media query doesn't test it.
 - Screenshots may land in a temp folder at high device scale: crop them with `sips` to read detail.
 
 Say plainly what you moved by script, and what nobody has played by hand. Touch in the browser is simulated.
