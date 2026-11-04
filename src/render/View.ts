@@ -946,7 +946,9 @@ export class View {
       this.structure?.refreshWear(f.wear);
     }
     this.player.root.visible = true;
-    this.player.hold(f.sleeping || f.knockedOut ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
+    // (A tray takes both hands: what's in hand is out of sight while it does.)
+    this.player.hold(f.sleeping || f.knockedOut || f.trayAt ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
+    this.player.trayPose(f.trayAt, f.trayLeft);
     // (P24: hanging from a glider's bar in flight, both hands up.)
     const doing = this.getaway.flying ? DOING.LIFT : f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : f.doing;
     // Onto the treadmill's belt and off it again, eased; a rep pumps the arms.
@@ -1053,6 +1055,7 @@ export class View {
       // In the tunnels the ground floor and everyone on it are out of the picture.
       c.root.visible = f.layer !== LAYER.UNDER;
       c.wet = this.showers[Math.floor(m.z) * MAP_W + Math.floor(m.x)] === 1;
+      c.trayPose(m.trayAt, m.trayLeft);
       // On a chair, a little higher than on a canteen bench.
       const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;
       c.baseY += (lift - c.baseY) * Math.min(1, dt * 8);

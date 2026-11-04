@@ -32,7 +32,7 @@ day 2 17:00 routine dinner
 day 2 17:27 attended dinner
 day 2 18:00 routine eveningFreeTime
 day 2 22:00 routine eveningRollCall
-day 2 22:32 attended eveningRollCall
+day 2 22:33 attended eveningRollCall
 day 2 23:00 routine lightsOut
 day 2 23:06 attended lightsOut
 day 2 23:06 cells locked
@@ -51,7 +51,7 @@ day 3 17:00 routine dinner
 day 3 17:27 attended dinner
 day 3 18:00 routine eveningFreeTime
 day 3 22:00 routine eveningRollCall
-day 3 22:32 attended eveningRollCall
+day 3 22:33 attended eveningRollCall
 day 3 23:00 routine lightsOut
 day 3 23:06 attended lightsOut
 day 3 23:06 cells locked

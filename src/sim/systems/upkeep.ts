@@ -7,11 +7,12 @@ import { centerX, centerZ, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { freshMeals } from './grounds';
-import { ENERGY_REGEN_STEPS, FRESH_ENERGY, FRESH_HEALTH, HEALTH_REGEN_STEPS, MEAL_ENERGY, MEAL_STEPS, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE } from '../tuning';
+import { ENERGY_REGEN_STEPS, FRESH_ENERGY, FRESH_HEALTH, HEALTH_REGEN_STEPS, MEAL_ENERGY, SHOWER_ENERGY_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { maxHealth } from './combat';
 import { closeBox, REACH } from './items';
 import { feastNow, TODAY } from './calendar';
+import { eatingNow, mealSteps, TRAY } from './canteen';
 import { FEAST_ENERGY } from '../../content/days';
 import { atProp, seatSpot } from './rest';
 import { endTalk } from './social';
@@ -41,7 +42,7 @@ export function sitDown(sim: SimContext, prop: number, use: 'sit' | 'rest') {
   // Someone sitting there already, or on the way to (on their routine, not following or fighting): the player stays up.
   const spot = seatSpot(sim.world, prop, s.player);
   const at = spot.z * MAP_W + spot.x;
-  if (s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === at || tileAt(m.body.x, m.body.z) === at))) {
+  if (s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === at || m.seat === at || tileAt(m.body.x, m.body.z) === at))) {
     sim.events.push({ type: 'refused', why: 'seatTaken' });
     return;
   }
@@ -64,7 +65,7 @@ export function standUp(sim: SimContext) {
 /**
  * Each step seated: up when carried off, knocked out, asleep or out of reach of the seat;
  * else energy back a point every SIT_ENERGY_STEPS, and at a canteen table during a meal the
- * tray is eaten (GDD §2: +35, once a meal).
+ * tray in front of them is eaten (GDD §2: +35, once a meal; canteen.ts).
  */
 export function keepSeat(sim: SimContext) {
   const s = sim.state;
@@ -74,10 +75,12 @@ export function keepSeat(sim: SimContext) {
     return;
   }
   if (s.energy < 100 && s.step % SIT_ENERGY_STEPS === 0) s.energy++;
-  const p = sim.world.props[s.seat];
-  const id = ROUTINE[s.routine].id;
-  if (p.kind === 'seat' && (id === 'breakfast' || id === 'dinner') && !s.lockdown && s.eaten < MEAL_STEPS && sim.world.zoneAt(p.x, p.z) === 'canteen') {
-    if (++s.eaten === MEAL_STEPS) {
+  if (eatingNow(sim)) {
+    if (++s.eaten >= mealSteps(sim)) {
+      if (s.tray === TRAY.FULL) {
+        s.tray = TRAY.EMPTY;
+        s.trayDone = s.step;
+      }
       // A feast (P17): a tray piled high, and health back to full.
       const feast = feastNow(sim);
       // (P31: fresh from the garden, a little more.)

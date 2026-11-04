@@ -1,4 +1,4 @@
-import { CHOCOLATE_ENERGY, FRESH_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { TRAY_HEAT, CHOCOLATE_ENERGY, FRESH_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import { hostile } from '../sim/systems/social';
@@ -22,6 +22,7 @@ import { ROUTINE, type RoutineId } from '../content/routine';
 import { type Key, listOf, lowerFirst, t } from '../i18n';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { jobRooms } from '../sim/systems/economy';
+import { eatingNow, mealOn, mealSteps, TRAY, traysHere } from '../sim/systems/canteen';
 import { itemOf, ownerOf } from '../sim/systems/items';
 import { ALARM_CLOCK, DIRT, FIRECRACKER, underMyDesk, WALL_CHUNK } from '../sim/systems/structure';
 import { clockSecs } from '../sim/systems/noise';
@@ -55,6 +56,12 @@ const hotTold = new WeakSet<object>();
 const lastSpotted = { reason: '', at: 0 };
 
 /** Sound, vibration, banners and toasts for what the simulation reports. */
+/** Sitting at a canteen table at a meal with nothing to eat, and the counter serving. */
+function noTrayAtTable(sim: Sim): boolean {
+  const s = sim.state;
+  return s.seat >= 0 && traysHere(sim) && mealOn(sim) && s.tray === TRAY.NONE && s.eaten < mealSteps(sim) && sim.world.props[s.seat].kind === 'seat' && sim.playerZone === 'canteen';
+}
+
 export function announce(e: SimEvent, sim: Sim) {
   switch (e.type) {
     case 'routine': {
@@ -79,7 +86,7 @@ export function announce(e: SimEvent, sim: Sim) {
       // (2.23: checking in takes a while: told once, the first time; then the meal's and the showers' own.)
       const r = ROUTINE[e.routine];
       if (!seenTip('stay')) coachOnce('stay', 'hint.stay', { n: r.stay ?? 0 });
-      else arrivedAt(r.id);
+      else arrivedAt(sim, r.id);
       break;
     }
     case 'attended': {
@@ -88,7 +95,7 @@ export function announce(e: SimEvent, sim: Sim) {
       sound.chime();
       buzz('attended');
       // (Before 2.23, checked in on arrival: the hints as the player gets there.)
-      if (sim.rules222) arrivedAt(id);
+      if (sim.rules222) arrivedAt(sim, id);
       break;
     }
     case 'missed':
@@ -532,12 +539,29 @@ export function announce(e: SimEvent, sim: Sim) {
         if (e.use === 'rest') coachOnce('rest', 'hint.rest');
         // (P39: sat before the parole board, no "move to get up" over its question: the tip waits for an ordinary seat.)
         else if (!sim.state.hearing) coachOnce('sit', 'hint.sit');
+        // (Sat at a table for a meal, no tray in front of them: where it's had.)
+        if (e.use === 'sit' && noTrayAtTable(sim)) banner.toast(t('toast.noTray'), 'info', 3500);
+      }
+      break;
+    case 'tray':
+      if (e.what === 'take') {
+        sound.tray();
+        coachOnce('tray', 'hint.tray');
+      } else if (e.what === 'return') sound.tray();
+      else if (e.heat) {
+        sound.trayDown();
+        banner.toast(t('toast.trayHeat', { n: e.heat }), 'bad', 4000);
+      }
+      else {
+        sound.trayDown();
+        floatAt(-1, t(e.what === 'dropped' ? 'float.trayDropped' : e.what === 'left' ? 'float.trayLeft' : 'float.trayOver'), 'taken');
       }
       break;
     case 'meal':
       sound.eat();
       buzz('attended');
       floatAt(-1, t('float.meal', { n: (e.feast ? FEAST_ENERGY : MEAL_ENERGY) + (e.fresh ? FRESH_ENERGY : 0) }), 'gain');
+      if (sim.state.tray === TRAY.EMPTY) coachOnce('trayBack', 'hint.trayBack', { n: TRAY_HEAT });
       // A feast (P17): and health back to full.
       if (e.feast) banner.toast(t('toast.feast', { n: FEAST_ENERGY }), 'good', 4500);
       // (P31: the gardener's produce on the tray.)
@@ -782,16 +806,17 @@ export function announce(e: SimEvent, sim: Sim) {
 /** How long the last thing thrown is in the air (s): its thud's wave waits for it to land. */
 let lastFlight = 0;
 
-/** Once a second while it counts down: a wound alarm clock in the pockets ticks (never while time runs fast: asleep, out cold, fast-forward). */
+/** Once a second: a mouthful while eating; while it counts down, a wound alarm clock in the pockets ticks (never while time runs fast: asleep, out cold, fast-forward). */
 /** At a meal or the showers: how they pick the player up, told the first time (GDD §2, §3.1). */
-function arrivedAt(id: RoutineId) {
-  if (id === 'breakfast' || id === 'dinner') coachOnce('meal', 'hint.meal', { n: MEAL_ENERGY });
+function arrivedAt(sim: Sim, id: RoutineId) {
+  if (id === 'breakfast' || id === 'dinner') coachOnce('meal', traysHere(sim) ? 'hint.meal' : 'hint.mealTable', { n: MEAL_ENERGY });
   if (id === 'showers') coachOnce('shower', 'hint.shower');
 }
 
 export function tickTock(sim: Sim, speed: number) {
   const s = sim.state;
   if (speed !== 1 || s.step % STEPS_PER_SECOND !== 0) return;
+  if (eatingNow(sim)) sound.bite();
   if (s.items.inv.some((v) => itemOf(v) === ALARM_CLOCK && clockSecs(v) > 0)) sound.clockTick();
 }
 

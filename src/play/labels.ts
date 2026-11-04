@@ -4,6 +4,7 @@ import { currentLang, t, type Key } from '../i18n';
 import { lineOfSight } from '../sim/ai/sight';
 import { SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
+import { counterTray, trayOffer } from '../sim/systems/canteen';
 import { isGuard, maxHealth, personOf, reachOf, swingSteps } from '../sim/systems/combat';
 import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
@@ -147,6 +148,16 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
         uncover: climb.item ? itemName(climb.item) : '',
       };
       Object.assign(actionLabel, { verb: t(`act.${climb.action}` as Key), what: what[climb.action] });
+    }
+    return actionLabel;
+  }
+  // At the serving counter during a meal (2.25): the tray first, a search at the next press.
+  const offer = counterTray(sim) ?? (target?.kind === 'container' ? trayOffer(sim, target.index) : null);
+  if (offer) {
+    const key = `tray:${offer}:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t(offer === 'take' ? 'act.takeTray' : 'act.returnTray'), what: '' });
     }
     return actionLabel;
   }

@@ -1,0 +1,26 @@
+a meal: no tray no meal; 6 s at the table, +35 energy; a tray at the first press, the search at the next; back to the counter empty
+lost: a press that does something, leaving the canteen, a knockout, a lockdown, the end of the meal; kept by a press that does nothing
+not brought back: +10% heat for walking out with it eaten or holding it at the end; let off when full, dropped, finished in the last 5 minutes or in a lockdown; never past 79%
+saves: the tray kept; a save from before loads with none
+as they were: runs logged before 2.25; Training has no counter
+a film or the acts: the crowd sits down with no tray
+center-perks: 7 places at the counter, 48 seats; the meal walked in 18 of its 60 minutes
+stalag-flucht: 5 places at the counter, 24 seats; the meal walked in 11 of its 60 minutes
+shankton: 5 places at the counter, 24 seats; the meal walked in 13 of its 60 minutes
+san-pancho: 5 places at the counter, 16 seats; the meal walked in 12 of its 60 minutes
+irongate: 5 places at the counter, 16 seats; the meal walked in 12 of its 60 minutes
+center-perks #41: of 7 inmates 7 fetched, 7 ate, 7 took it back, the last at 58 minutes; 0 steps two at one place, 5 pressed together
+center-perks #42: of 7 inmates 7 fetched, 7 ate, 7 took it back, the last at 53 minutes; 0 steps two at one place, 26 pressed together
+center-perks #43: of 7 inmates 7 fetched, 7 ate, 7 took it back, the last at 53 minutes; 0 steps two at one place, 3 pressed together
+stalag-flucht #41: of 9 inmates 9 fetched, 9 ate, 9 took it back, the last at 47 minutes; 0 steps two at one place, 33 pressed together
+stalag-flucht #42: of 9 inmates 9 fetched, 9 ate, 9 took it back, the last at 46 minutes; 0 steps two at one place, 5 pressed together
+stalag-flucht #43: of 9 inmates 9 fetched, 9 ate, 9 took it back, the last at 55 minutes; 0 steps two at one place, 28 pressed together
+shankton #41: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 49 minutes; 0 steps two at one place, 10 pressed together
+shankton #42: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 47 minutes; 0 steps two at one place, 29 pressed together
+shankton #43: of 11 inmates 11 fetched, 11 ate, 11 took it back, the last at 46 minutes; 0 steps two at one place, 18 pressed together
+san-pancho #41: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 50 minutes; 0 steps two at one place, 65 pressed together
+san-pancho #42: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 46 minutes; 0 steps two at one place, 149 pressed together
+san-pancho #43: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 52 minutes; 0 steps two at one place, 54 pressed together
+irongate #41: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 47 minutes; 0 steps two at one place, 84 pressed together
+irongate #42: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 44 minutes; 0 steps two at one place, 59 pressed together
+irongate #43: of 13 inmates 13 fetched, 13 ate, 13 took it back, the last at 43 minutes; 0 steps two at one place, 131 pressed together

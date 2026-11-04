@@ -2,6 +2,7 @@
  * Inmates and the player (GDD §10.3–10.4): talking, opinion, trades and gifts, favors,
  * followers and the foes they go after, and grudges that turn into ambushes.
  */
+import { mealOn, traysHere } from './canteen';
 import { phoneTargets, swapPlace } from './phone';
 import { delivering, oddjobTargets, owes, R, talkJob } from './oddjobs';
 import { boardKeptClear } from './parole';
@@ -400,6 +401,9 @@ export function socialNow(sim: SimContext): Social {
   const so = sim.scratch.social;
   const n = s.inmates.length;
   so.follow.length = so.gap.length = so.work.length = so.doing.length = so.pace.length = so.face.length = sim.scratch.allyFoe.length = n;
+  // (A real meal: the crowd also sits down in the canteen for a film or the acts, on dinner's plan.)
+  so.serve = traysHere(sim) && mealOn(sim);
+  so.reroute = !sim.rules224;
   so.pace.fill(0);
   so.face.fill(0);
   so.follow.fill(null);
