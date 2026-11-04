@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Prison Map Viewer</title>
-<meta name="description" content="Every Prison Escape 3D prison drawn from its data: pan, zoom, inspect any tile and leave notes.">
+<meta name="description" content="Every Prison Escape 3D prison drawn from its data: pan, zoom, inspect any tile, read its ways out and rules, turn on overlays and leave notes.">
 <style>
 :root {
   color-scheme: light;
@@ -90,7 +90,8 @@ kbd {
 .app {
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr) 320px;
-  grid-template-rows: 56px 1fr;
+  /* (minmax: a panel's long content scrolls inside it, never stretches the page.) */
+  grid-template-rows: 56px minmax(0, 1fr);
   grid-template-areas: "top top top" "side stage notes";
   height: 100vh;
   height: 100dvh;
@@ -197,11 +198,11 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
   background: var(--text); color: var(--panel);
 }
 .seg {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+  display: flex; flex-wrap: wrap; gap: 3px;
   padding: 3px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line);
 }
 .seg button {
-  border: 0; border-radius: 7px; padding: 7px 4px; background: transparent; cursor: pointer;
+  flex: 1 1 auto; border: 0; border-radius: 7px; padding: 7px 6px; background: transparent; cursor: pointer;
   font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap;
 }
 .seg button[aria-pressed="true"] { background: var(--raise); color: var(--text); box-shadow: var(--shadow); }
@@ -235,9 +236,31 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
   border-radius: 4px;
   -webkit-user-drag: none;
   pointer-events: none;
-  will-change: transform;
 }
+/* (Only on the move: left on, the browser draws the picture soft at rest under the overlays' canvas.) */
+.stage.panning img.map, .stage.panning canvas.tint { will-change: transform; }
 .overlay { position: absolute; inset: 0; pointer-events: none; }
+.stage canvas.tint {
+  position: absolute; left: 0; top: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.layers-wrap { position: absolute; left: 12px; top: 12px; z-index: 2; max-width: calc(100% - 24px); cursor: default; }
+.layers-pop {
+  margin-top: 6px; width: 290px; max-width: 100%; max-height: min(68vh, 560px); overflow-y: auto;
+  padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); box-shadow: var(--shadow); font-size: 12.5px;
+}
+.layers-pop[hidden] { display: none; }
+.layers-group { margin: 10px 0 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.layers-group:first-child { margin-top: 0; }
+.layer-row { display: grid; grid-template-columns: 16px 14px 1fr; gap: 7px; align-items: start; padding: 4px 0; cursor: pointer; }
+.layer-row input { margin: 2px 0 0; accent-color: var(--accent); }
+.layer-row i { width: 14px; height: 14px; border-radius: 3px; margin-top: 2px; }
+.layer-row small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+.layers-pop select { width: 100%; font: inherit; color: inherit; background: var(--raise); border: 1px solid var(--line-strong); border-radius: 7px; padding: 5px 6px; }
+.routine-note { margin: 5px 0 0; font-size: 11.5px; color: var(--muted); }
+.layers-off { margin: 0; font-size: 12px; color: var(--muted); }
 .hl, .sel {
   position: absolute; pointer-events: none; border-radius: 3px;
 }
@@ -326,11 +349,27 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   border-left: 1px solid var(--line);
   display: flex; flex-direction: column; min-width: 0;
 }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 10px 12px 0; padding: 3px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); flex: none; }
+.tabs button { border: 0; border-radius: 7px; padding: 6px 4px; background: transparent; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tabs button[aria-selected="true"] { background: var(--raise); color: var(--text); box-shadow: var(--shadow); }
+.pane { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.pane[hidden], .badge[hidden] { display: none; }
+.sheet-pane { overflow-y: auto; padding: 12px 14px 18px; }
+.sheet-pane h3 { margin: 16px 0 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.sheet-pane h3:first-child { margin-top: 0; }
+.sheet-row { display: block; width: calc(100% + 16px); padding: 5px 8px; margin: 0 -8px; border: 0; border-radius: 7px; background: transparent; text-align: left; font-size: 12.5px; line-height: 1.4; }
+.sheet-row b { display: block; font-weight: 650; }
+.sheet-row span { color: var(--muted); }
+button.sheet-row { cursor: pointer; font-family: inherit; color: inherit; }
+button.sheet-row:hover { background: var(--panel-2); }
+button.sheet-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+button.sheet-row b::after { content: " ↗"; color: var(--muted); font-weight: 400; }
 .notes-head { padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
 .notes-head h2 { margin: 0 0 2px; font-size: 15px; }
 .notes-head p { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
 .notes-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .scope { display: flex; gap: 6px; margin-top: 10px; font-size: 12px; }
+.scope input { accent-color: var(--accent); }
 .scope label { display: flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; }
 .note-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .note {
@@ -406,7 +445,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   .app.notes-open .notes { top: 52px; width: 100%; }
 }
 @media (max-height: 560px) and (min-width: 761px) {
-  .app, .app.notes-hidden { grid-template-rows: 48px 1fr; grid-template-columns: 200px minmax(0, 1fr) 0; }
+  .app, .app.notes-hidden { grid-template-rows: 48px minmax(0, 1fr); grid-template-columns: 200px minmax(0, 1fr) 0; }
   .brand-sub, #btnHelp { display: none; }
   .brand-mark { width: 28px; height: 28px; }
   .side { padding: 8px 8px 12px; gap: 10px; }
@@ -415,13 +454,17 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   .prison { padding: 4px 8px; gap: 8px; grid-template-columns: 24px 1fr auto; }
   .prison-num { width: 24px; height: 24px; }
   .prison-meta { display: none; }
-  .seg button { padding: 5px 2px; font-size: 12px; }
+  .seg button { padding: 5px 4px; font-size: 12px; }
   .card { width: 270px; padding: 9px 11px 10px; font-size: 12.5px; }
   .coord { font-size: 15px; }
   .rows { font-size: 12.5px; gap: 3px 8px; }
   .editor { margin-top: 8px; padding-top: 8px; }
   textarea { min-height: 46px; }
-  .app.notes-open .notes { top: 48px; }
+  .app .notes { display: none; }
+  .app.notes-open .notes {
+    display: flex; position: fixed; right: 0; top: 48px; bottom: 0; width: min(340px, 100%);
+    z-index: 10; box-shadow: var(--shadow);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
@@ -450,9 +493,13 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       <button class="btn icon" id="btnTheme" title="Light / dark">
         <svg class="i" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
-      <button class="btn" id="btnNotes" title="Notes (N)" aria-pressed="true">
+      <button class="btn" id="btnSheet" title="Prison sheet (S)" aria-pressed="true">
+        <svg class="i" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+        <span class="hide-narrow">Sheet</span>
+      </button>
+      <button class="btn" id="btnNotes" title="Notes (N)" aria-pressed="false">
         <svg class="i" viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg>
-        <span class="hide-narrow">Notes</span> <span class="badge" id="noteTotal">0</span>
+        <span class="hide-narrow">Notes</span> <span class="badge note-count" hidden></span>
       </button>
     </div>
   </header>
@@ -463,12 +510,13 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       <div class="prisons" id="prisons"></div>
     </div>
     <div>
-      <div class="section-title">View <span><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>O</kbd> <kbd>U</kbd></span></div>
+      <div class="section-title">View <span><kbd>?</kbd></span></div>
       <div class="seg" id="views" role="group" aria-label="View">
         <button data-view="game" title="The 3D prison as the game draws it, from its own camera (G)">In game</button>
         <button data-view="layout" title="Tiles, zones, doors, cells, props, decor (L)">Layout</button>
         <button data-view="people" title="Guards, cameras, free time, smuggling, delivery, checkpoint (P)">People</button>
         <button data-view="vents" title="Vents and boulders (V)">Vents</button>
+        <button data-view="roof" title="Roofs: the ladder, sniper range, grapnel throws, glider launches, landings (R)">Roof</button>
         <button data-view="outside" title="The outside past the wall, where the manhunt is run (O)">Outside</button>
         <button data-view="outsideGame" title="The outside as the manhunt draws it: its houses, the prison behind its wall (U)">Outside 3D</button>
       </div>
@@ -486,12 +534,15 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
         <span>Click a tile</span><span>inspect it, write a note</span>
         <span><kbd>Space</kbd> held</span><span>peek at another view</span>
         <span><kbd>F</kbd></span><span>fit the map</span>
+        <span><kbd>Y</kbd></span><span>overlays</span>
+        <span><kbd>S</kbd> <kbd>N</kbd></span><span>prison sheet, notes</span>
       </div>
     </div>
   </aside>
 
   <main class="stage" id="stage" aria-label="Map">
     <img class="map" id="map" alt="" draggable="false">
+    <canvas class="tint" id="tint" aria-hidden="true"></canvas>
     <div class="overlay" id="overlay">
       <div class="hl" id="hl" hidden></div>
       <div class="sel" id="sel" hidden></div>
@@ -505,9 +556,22 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       <button class="btn icon" id="btnFit" title="Fit (F)"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     </div>
     <section class="card" id="card" hidden></section>
+    <div class="layers-wrap" id="layersWrap">
+      <button class="btn" id="btnLayers" title="Overlays over the prison's maps (Y)" aria-expanded="false">
+        <svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
+        Overlays <span class="badge" id="layerCount">0</span>
+      </button>
+      <div class="layers-pop" id="layersPop" hidden></div>
+    </div>
   </main>
 
   <aside class="notes" id="notes">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabSheet" data-tab="sheet" aria-selected="true">Prison sheet</button>
+      <button role="tab" id="tabNotes" data-tab="notes" aria-selected="false">Notes <span class="badge note-count" hidden></span></button>
+    </div>
+    <div class="pane sheet-pane" id="sheetPane"></div>
+    <div class="pane" id="notesPane" hidden>
     <div class="notes-head">
       <h2>Notes</h2>
       <p>What's wrong, what to change. Saved in this browser.</p>
@@ -528,6 +592,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       </div>
     </div>
     <div class="note-list" id="noteList"></div>
+    </div>
   </aside>
 </div>
 
@@ -537,15 +602,16 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     <table>
       <tr><td><kbd>1</kbd> – <kbd>6</kbd></td><td>Training Block, Center Perks, Stalag Flucht, Shankton, San Pancho, Irongate</td></tr>
       <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Previous / next prison</td></tr>
-      <tr><td><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>O</kbd> <kbd>U</kbd></td><td>In game · Layout · People &amp; places · Vents · Outside · Outside 3D</td></tr>
+      <tr><td><kbd>G</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>V</kbd> <kbd>R</kbd> <kbd>O</kbd> <kbd>U</kbd></td><td>In game · Layout · People &amp; places · Vents · Roof · Outside · Outside 3D</td></tr>
+      <tr><td><kbd>Y</kbd></td><td>Overlays: exit line, restricted zones, sniper range, where to be at each hour, job stations, containers, rat traps</td></tr>
       <tr><td><kbd>Space</kbd> held</td><td>Peek at the same spot: the layout from any other view, in game from the layout, the outside's map and its 3D picture from each other</td></tr>
       <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> <kbd>F</kbd></td><td>Zoom in, out, actual size, fit</td></tr>
       <tr><td>Arrow keys</td><td>Pan</td></tr>
       <tr><td>Click a tile</td><td>Inspect it and write a note (<kbd>Enter</kbd> to write, <kbd>⌘/Ctrl</kbd>+<kbd>Enter</kbd> to save)</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Let go of the tile</td></tr>
-      <tr><td><kbd>N</kbd></td><td>Show or hide the notes</td></tr>
+      <tr><td><kbd>S</kbd> <kbd>N</kbd></td><td>Show or hide the prison sheet, the notes</td></tr>
     </table>
-    <p>Regenerate the pictures and this page's data with <code>npm run maps</code>. Notes stay in this browser; use “Copy all” to send them on.</p>
+    <p>Regenerate the pictures and this page's data with <code>npm run maps</code>. The version beside the title is the game's when that last ran. Notes stay in this browser; use “Copy all” to send them on.</p>
     <div style="text-align:right"><button class="btn primary" id="helpClose">Got it</button></div>
   </div>
 </div>
@@ -562,7 +628,10 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     return;
   }
   const G = D.geometry;
-  const VIEW_NAMES = { game: 'In game', layout: 'Layout', people: 'People & places', vents: 'Vents', outside: 'Outside', outsideGame: 'Outside 3D' };
+  const VIEW_NAMES = { game: 'In game', layout: 'Layout', people: 'People & places', vents: 'Vents', roof: 'Roof', outside: 'Outside', outsideGame: 'Outside 3D' };
+  /** The two maps a prison's views show: a tile's coordinates mean nothing across them. */
+  const worldOf = (v) => (v === 'outside' || v === 'outsideGame' ? 'outside' : 'prison');
+  const noteWorld = (n) => worldOf(n.view);
   const TILE_COLORS = {
     empty: '#1b1b1b', grass: '#8fbf5a', road: '#5f6166', concrete: '#d6d1c4', tiled: '#bcd6df', wood: '#cf9f66',
     asphalt: '#868990', dirt: '#c29361', brick: '#8a3b2e', reinforced: '#3a3d45', fence: '#a7a9ad', electric: '#f0cf2a',
@@ -583,14 +652,17 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   const saveNotes = () => store.set(NOTES_KEY, notes);
 
   // ---------- State ----------
-  const app = $('app'), stage = $('stage'), img = $('map'), overlay = $('overlay');
-  const st = { p: 0, view: 'game', s: 1, tx: 0, ty: 0, touched: false, hover: null, sel: null, peek: false, scope: 'prison' };
+  const app = $('app'), stage = $('stage'), img = $('map'), overlay = $('overlay'), tint = $('tint');
+  const st = { p: 0, view: 'game', s: 1, tx: 0, ty: 0, touched: false, hover: null, sel: null, peek: false, scope: 'prison', layers: new Set(store.get('pe3d-mapviewer.layers', [])), block: -1 };
   const prison = () => D.prisons[st.p];
   const hasView = (p, v) => p.views.some((x) => x.kind === v);
   /** What a held Space shows instead: the layout from any other view; from the layout, the game's picture (or the people). */
   // (The outside's two pictures peek at each other: the drawn map under the 3D one and back.)
   const peekOf = (v) => (v === 'outsideGame' ? 'outside' : v === 'outside' ? (hasView(prison(), 'outsideGame') ? 'outsideGame' : 'layout') : v !== 'layout' ? 'layout' : hasView(prison(), 'game') ? 'game' : 'people');
   const shownView = () => (st.peek ? peekOf(st.view) : st.view);
+  const inThisWorld = (n) => noteWorld(n) === worldOf(shownView());
+  /** The note on a tile of the map on screen. */
+  const noteAt = (t) => notes.find((n) => n.prison === prison().id && n.x === t.x && n.z === t.z && inThisWorld(n));
   /**
    * Where the floor's tiles are in a view's picture: the drawn maps are square tiles under a title
    * and rulers; the game's picture has its own numbers (its rows shallower, the tilt of its camera).
@@ -605,7 +677,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
 
   // Per-prison lookups, built once.
   const index = D.prisons.map((p) => {
-    const at = Array.from({ length: G.mapW * G.mapH }, () => ({ props: [], decor: [], marks: [], above: [] }));
+    const at = Array.from({ length: G.mapW * G.mapH }, () => ({ props: [], decor: [], marks: [], above: [], roofs: [] }));
     const cover = (list, key) => list.forEach(([kind, x, z, w, d]) => {
       for (let j = z; j < z + d; j++) for (let i = x; i < x + w; i++) if (i >= 0 && j >= 0 && i < G.mapW && j < G.mapH) at[j * G.mapW + i][key].push(kind);
     });
@@ -613,6 +685,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     cover(p.decor, 'decor');
     p.marks.forEach(([x, z, s]) => at[z * G.mapW + x].marks.push(s));
     p.above.forEach(([x, z, s]) => at[z * G.mapW + x].above.push(s));
+    p.roofs.forEach(([x, z, s]) => at[z * G.mapW + x].roofs.push(s));
     p.doors.forEach(([x, z, key, cell, gate]) => { at[z * G.mapW + x].door = { key, cell, gate }; });
     p.cells.forEach(([x0, z0, x1, z1, who], k) => {
       for (let j = z0; j <= z1; j++) for (let i = x0; i <= x1; i++) at[j * G.mapW + i].cell = { n: k + 1, who };
@@ -630,7 +703,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   function describe(pi, x, z) {
     const p = D.prisons[pi];
     const i = z * G.mapW + x;
-    if ((shownView() === 'outside' || shownView() === 'outsideGame') && p.outside) {
+    if (worldOf(shownView()) === 'outside' && p.outside) {
       const o = p.outside;
       const tile = D.tileNames[o.tiles[i]] || '?';
       const what = [words(tile), o.deco[i]].filter(Boolean).join(' · ');
@@ -657,7 +730,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
         </span>
         ${counts[k] ? `<span class="badge" title="${counts[k]} notes">${counts[k]}</span>` : '<span></span>'}
       </button>`).join('');
-    $('noteTotal').textContent = notes.length;
+    document.querySelectorAll('.note-count').forEach((e) => { e.textContent = notes.length; e.hidden = !notes.length; });
   }
   function renderSide() {
     const p = prison();
@@ -695,13 +768,16 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     img.src = g.file;
     img.width = g.w;
     img.height = g.h;
+    drawTint();
     if (img.complete && img.naturalWidth) $('loading').classList.remove('on');
     if (st.touched) render(); else fit();
   }
 
   // ---------- Pan & zoom ----------
   const rect = () => stage.getBoundingClientRect();
-  const fitScale = () => { const r = rect(); const g = geo(); return Math.min((r.width - 24) / g.w, (r.height - 24) / g.h); };
+  /** Kept clear above a fitted map, for the Overlays button: it never hides the picture's title. */
+  const FIT_TOP = 44;
+  const fitScale = () => { const r = rect(); const g = geo(); return Math.min((r.width - 24) / g.w, (r.height - 24 - FIT_TOP) / g.h); };
   const minS = () => Math.min(fitScale() * 0.6, 0.15);
   const MAX_S = 4;
   function fit() {
@@ -709,7 +785,8 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     st.s = fitScale();
     const g = geo();
     st.tx = (r.width - g.w * st.s) / 2;
-    st.ty = (r.height - g.h * st.s) / 2;
+    // (On a phone, up under the buttons: the card comes up over the lower half.)
+    st.ty = FIT_TOP + (matchMedia('(max-width: 760px)').matches ? 8 : (r.height - FIT_TOP - g.h * st.s) / 2);
     render();
   }
   function zoomAt(sx, sy, f) {
@@ -751,6 +828,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   }
   function render() {
     img.style.transform = `translate(${st.tx}px, ${st.ty}px) scale(${st.s})`;
+    tint.style.transform = img.style.transform;
     $('btnOne').textContent = `${Math.round(st.s * 100)}%`;
     placeBox($('hl'), st.hover && !(st.sel && st.hover.x === st.sel.x && st.hover.z === st.sel.z) ? st.hover : null);
     placeBox($('sel'), st.sel);
@@ -762,6 +840,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   function renderPins() {
     overlay.querySelectorAll('.pin').forEach((e) => e.remove());
     prisonNotes().forEach((n, k) => {
+      if (!inThisWorld(n)) return;
       const [ix, iy] = tileCenter(n.x, n.z);
       const el = document.createElement('div');
       el.className = 'pin' + (st.sel && st.sel.x === n.x && st.sel.z === n.z ? ' active' : '');
@@ -776,10 +855,11 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   }
 
   // ---------- Inspector ----------
+  let cardKey = '';
   function renderCard() {
     const card = $('card');
     const t = st.sel || st.hover;
-    if (!t) { card.hidden = true; return; }
+    if (!t) { card.hidden = true; cardKey = ''; return; }
     card.hidden = false;
     const d = describe(st.p, t.x, t.z);
     const { info } = d;
@@ -792,8 +872,15 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     if (info.props.length) rows.push(['Props', `<span class="tagline">${info.props.map((k) => `<span class="tag">${esc(k)}</span>`).join('')}</span>`]);
     if (info.decor.length) rows.push(['Decor', `<span class="tagline">${info.decor.map((k) => `<span class="tag decor">${esc(k)}</span>`).join('')}</span>`]);
     if (info.above.length) rows.push(['Layers', esc(info.above.join(', '))]);
+    if (shownView() === 'roof' && info.roofs?.length) rows.push(['Roof', `<ul class="marks">${info.roofs.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`]);
     if (info.marks.length) rows.push(['Here', `<ul class="marks">${info.marks.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`]);
-    const note = st.sel && notes.find((n) => n.prison === prison().id && n.x === st.sel.x && n.z === st.sel.z);
+    const tinted = overlayWords(t);
+    if (tinted.length) rows.push(['Overlay', `<ul class="marks">${tinted.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`]);
+    const note = st.sel && noteAt(st.sel);
+    // (A note being written stays when the card is redrawn for the same tile of the same map.)
+    const key = st.sel ? `${st.p}/${worldOf(shownView())}/${t.x}/${t.z}` : '';
+    const draft = key && key === cardKey ? $('noteText')?.value : undefined;
+    cardKey = key;
     card.innerHTML = `
       <div class="card-head">
         <div class="coord">(${t.x}, ${t.z}) <small>x, z</small></div>
@@ -813,6 +900,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
         </div>` : '<div class="hint">Click the tile to select it and write a note.</div>'}`;
     if (!st.sel) return;
     const ta = $('noteText');
+    if (draft !== undefined) ta.value = draft;
     ta.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveNote(); }
       if (e.key === 'Escape') { e.preventDefault(); ta.blur(); }
@@ -827,15 +915,15 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     const t = st.sel;
     if (!t) return;
     const p = prison();
-    const old = notes.find((n) => n.prison === p.id && n.x === t.x && n.z === t.z);
+    const old = noteAt(t);
     if (!text) {
       if (old) { notes = notes.filter((n) => n !== old); saveNotes(); toast('Note deleted'); }
       refreshNotes();
       return;
     }
     const ctx = shortCtx(describe(st.p, t.x, t.z));
-    if (old) Object.assign(old, { text, ctx, view: st.view, t: Date.now() });
-    else notes.push({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, prison: p.id, view: st.view, x: t.x, z: t.z, text, ctx, t: Date.now() });
+    if (old) Object.assign(old, { text, ctx, view: shownView(), t: Date.now() });
+    else notes.push({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, prison: p.id, view: shownView(), x: t.x, z: t.z, text, ctx, t: Date.now() });
     notes.sort((a, b) => D.prisons.findIndex((p2) => p2.id === a.prison) - D.prisons.findIndex((p2) => p2.id === b.prison) || a.z - b.z || a.x - b.x);
     saveNotes();
     toast(old ? 'Note updated' : 'Note saved');
@@ -847,7 +935,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     renderCard();
     renderNoteList();
   }
-  function refreshNotes() { renderPrisons(); render(); renderCard(); renderNoteList(); }
+  function refreshNotes() { cardKey = ''; renderPrisons(); render(); renderCard(); renderNoteList(); }
 
   // ---------- Notes panel ----------
   function renderNoteList() {
@@ -863,9 +951,9 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       const mine = shown.filter((n) => n.prison === p.id);
       mine.forEach((n, k) => {
         if (st.scope === 'all' && last !== p.id) { html += `<div class="note-prison">${esc(p.name)}</div>`; last = p.id; }
-        const active = n.prison === prison().id && st.sel && st.sel.x === n.x && st.sel.z === n.z;
+        const active = n.prison === prison().id && inThisWorld(n) && st.sel && st.sel.x === n.x && st.sel.z === n.z;
         html += `<div class="note${active ? ' active' : ''}" data-id="${esc(n.id)}">
-          <div class="note-top"><span class="note-num">${k + 1}</span><span class="note-where">(${n.x}, ${n.z})</span><span class="note-ctx">${esc(n.ctx || '')}</span></div>
+          <div class="note-top"><span class="note-num">${k + 1}</span><span class="note-where">(${n.x}, ${n.z})${noteWorld(n) === 'outside' ? ' outside' : ''}</span><span class="note-ctx">${esc(n.ctx || '')}</span></div>
           <div class="note-text">${esc(n.text)}</div></div>`;
       });
     }
@@ -878,9 +966,11 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     if (!n) return;
     const k = D.prisons.findIndex((p) => p.id === n.prison);
     if (k !== st.p) goPrison(k, false);
+    // (A note belongs to its map: shown on it, whichever view it was left on.)
+    if (noteWorld(n) !== worldOf(st.view) && hasView(prison(), n.view)) goView(n.view);
     focusTile(n.x, n.z, 1);
     select({ x: n.x, z: n.z });
-    if (matchMedia('(max-width: 1100px)').matches) app.classList.remove('notes-open');
+    if (narrow()) setPanel(false);
   });
   document.querySelectorAll('input[name=scope]').forEach((r) => r.addEventListener('change', () => { st.scope = r.value; renderNoteList(); }));
 
@@ -890,7 +980,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
       const mine = notes.filter((n) => n.prison === p.id);
       if (!mine.length) continue;
       lines.push(`## ${p.name}`, '');
-      mine.forEach((n) => lines.push(`- **(${n.x}, ${n.z})** ${n.ctx ? `_${n.ctx}_ ` : ''}— ${n.text.replace(/\n+/g, ' / ')}`));
+      mine.forEach((n) => lines.push(`- **(${n.x}, ${n.z})${noteWorld(n) === 'outside' ? ' outside' : ''}** ${n.ctx ? `_${n.ctx}_ ` : ''}— ${n.text.replace(/\n+/g, ' / ')}`));
       lines.push('');
     }
     return lines.join('\n');
@@ -941,12 +1031,13 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     if (!hasView(prison(), st.view)) st.view = hasView(prison(), 'game') ? 'game' : 'layout';
     if (!keepSel) { st.sel = null; }
     preload(prison());
-    renderSide(); showImage(); render(); renderCard(); renderNoteList(); writeHash();
+    renderSide(); renderSheet(); renderLayers(); showImage(); render(); renderCard(); renderNoteList(); writeHash();
   }
   function goView(v) {
     if (!hasView(prison(), v)) return toast(`${prison().name} has no ${VIEW_NAMES[v].toLowerCase()} picture`);
+    if (worldOf(v) !== worldOf(st.view)) st.sel = null;
     st.view = v;
-    renderSide(); showImage(); writeHash();
+    renderSide(); renderLayers(); showImage(); render(); renderCard(); renderNoteList(); writeHash();
   }
   function writeHash() {
     try { history.replaceState(null, '', `#${prison().id}/${st.view}`); } catch { /* file:// in some browsers */ }
@@ -962,10 +1053,12 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
 
   // ---------- Pointer input ----------
   const pts = new Map();
+  const HUD = '.card, .hud-zoom, .layers-wrap';
   let gesture = null;
   const local = (e) => { const r = rect(); return [e.clientX - r.left, e.clientY - r.top]; };
   stage.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.card, .hud-zoom')) return;
+    if (e.target.closest(HUD)) return;
+    if (narrow() && !$('layersPop').hidden) toggleLayers();
     try { stage.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
     const [x, y] = local(e);
     pts.set(e.pointerId, { x, y });
@@ -975,7 +1068,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   stage.addEventListener('pointermove', (e) => {
     const [x, y] = local(e);
     if (!pts.has(e.pointerId)) {
-      if (e.pointerType === 'mouse' && !e.target.closest('.card, .hud-zoom')) {
+      if (e.pointerType === 'mouse' && !e.target.closest(HUD)) {
         const t = tileAt(x, y);
         if (t?.x !== st.hover?.x || t?.z !== st.hover?.z) { st.hover = t; render(); if (!st.sel) renderCard(); }
       }
@@ -1021,13 +1114,13 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     if (e.pointerType === 'mouse' && st.hover) { st.hover = null; render(); if (!st.sel) renderCard(); }
   });
   stage.addEventListener('wheel', (e) => {
-    if (e.target.closest('.card')) return;
+    if (e.target.closest('.card, .layers-pop')) return;
     e.preventDefault();
     const [x, y] = local(e);
     const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     zoomAt(x, y, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0018)));
   }, { passive: false });
-  stage.addEventListener('dblclick', (e) => { if (!e.target.closest('.card, .hud-zoom')) { const [x, y] = local(e); zoomAt(x, y, 2); } });
+  stage.addEventListener('dblclick', (e) => { if (!e.target.closest(HUD)) { const [x, y] = local(e); zoomAt(x, y, 2); } });
 
   $('btnIn').onclick = () => zoomCenter(1.4);
   $('btnOut').onclick = () => zoomCenter(1 / 1.4);
@@ -1035,7 +1128,8 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
   $('btnFit').onclick = fit;
 
   // ---------- Keyboard ----------
-  const typing = (e) => e.target instanceof Element && e.target.closest('textarea, input');
+  // (A tick box takes Space and the arrows for itself, and leaves the letters to the shortcuts.)
+  const typing = (e) => e.target instanceof Element && (e.target.closest('textarea, select') || (e.target.closest('input') && (e.key === ' ' || e.key.startsWith('Arrow') || !/checkbox|radio/.test(e.target.type))));
   document.addEventListener('keydown', (e) => {
     if (!$('help').hidden) { if (e.key === 'Escape' || e.key === '?') closeHelp(); return; }
     if (typing(e) || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1047,16 +1141,19 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
     else if (k === 'l' || k === 'L') goView('layout');
     else if (k === 'p' || k === 'P') goView('people');
     else if (k === 'v' || k === 'V') goView('vents');
+    else if (k === 'r' || k === 'R') goView('roof');
+    else if (k === 'y' || k === 'Y') toggleLayers();
+    else if (k === 's' || k === 'S') togglePanel('sheet');
     else if (k === 'o' || k === 'O') goView('outside');
     else if (k === 'u' || k === 'U') goView('outsideGame');
     else if (k === 'f' || k === 'F') fit();
     else if (k === '+' || k === '=') zoomCenter(1.4);
     else if (k === '-' || k === '_') zoomCenter(1 / 1.4);
     else if (k === '0') setScale(1);
-    else if (k === 'n' || k === 'N') toggleNotes();
+    else if (k === 'n' || k === 'N') togglePanel('notes');
     else if (k === '?') openHelp();
-    else if (k === 'Escape') select(null);
-    else if (k === 'Enter' && st.sel) { e.preventDefault(); $('noteText')?.focus(); }
+    else if (k === 'Escape') { if (!$('layersPop').hidden) toggleLayers(); else select(null); }
+    else if (k === 'Enter' && st.sel && !e.target.closest('button')) { e.preventDefault(); $('noteText')?.focus(); }
     else if (k.startsWith('Arrow')) {
       const step = 80;
       if (k === 'ArrowLeft') st.tx += step;
@@ -1071,25 +1168,172 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
         st.peek = true;
         $('peek').textContent = `Peeking: ${VIEW_NAMES[peekOf(st.view)]}`;
         $('peek').classList.add('on');
-        showImage();
+        peekMoved();
       }
     } else return;
   });
   document.addEventListener('keyup', (e) => {
-    if (e.key === ' ' && st.peek) { st.peek = false; $('peek').classList.remove('on'); showImage(); }
+    if (e.key === ' ' && st.peek) { st.peek = false; $('peek').classList.remove('on'); peekMoved(); }
   });
-  window.addEventListener('blur', () => { if (st.peek) { st.peek = false; $('peek').classList.remove('on'); showImage(); } });
+  window.addEventListener('blur', () => { if (st.peek) { st.peek = false; $('peek').classList.remove('on'); peekMoved(); } });
+  /** The picture on screen changed under a held Space: all that describes it follows. */
+  function peekMoved() { showImage(); renderLayers(); render(); renderCard(); renderNoteList(); }
 
   // ---------- Chrome ----------
-  function toggleNotes() {
-    if (matchMedia('(max-width: 1100px)').matches) app.classList.toggle('notes-open');
-    else app.classList.toggle('notes-hidden');
-    const open = matchMedia('(max-width: 1100px)').matches ? app.classList.contains('notes-open') : !app.classList.contains('notes-hidden');
-    $('btnNotes').setAttribute('aria-pressed', String(open));
-    store.set('pe3d-mapviewer.notesHidden', !open);
+  const NARROW = matchMedia('(max-width: 1100px), (max-height: 560px)');
+  const narrow = () => NARROW.matches;
+  const panelOpen = () => (narrow() ? app.classList.contains('notes-open') : !app.classList.contains('notes-hidden'));
+  let tab = store.get('pe3d-mapviewer.tab', 'sheet') === 'notes' ? 'notes' : 'sheet';
+  function showPanel() {
+    const open = panelOpen();
+    $('sheetPane').hidden = tab !== 'sheet';
+    $('notesPane').hidden = tab !== 'notes';
+    $('tabSheet').setAttribute('aria-selected', String(tab === 'sheet'));
+    $('tabNotes').setAttribute('aria-selected', String(tab === 'notes'));
+    $('btnSheet').setAttribute('aria-pressed', String(open && tab === 'sheet'));
+    $('btnNotes').setAttribute('aria-pressed', String(open && tab === 'notes'));
+  }
+  function setPanel(open) {
+    if (narrow()) app.classList.toggle('notes-open', open);
+    else app.classList.toggle('notes-hidden', !open);
+    // (Remembered for a wide window only: on a narrow one, a panel closes every time it's been used.)
+    if (!narrow()) store.set('pe3d-mapviewer.notesHidden', !open);
+    showPanel();
     requestAnimationFrame(() => { if (!st.touched) fit(); else render(); });
   }
-  $('btnNotes').onclick = toggleNotes;
+  /** The toolbar's buttons and S, N: a tab, or the panel closed when it's already showing. */
+  function togglePanel(which) {
+    if (panelOpen() && tab === which) return setPanel(false);
+    tab = which;
+    store.set('pe3d-mapviewer.tab', tab);
+    if (panelOpen()) showPanel(); else setPanel(true);
+  }
+  NARROW.addEventListener('change', showPanel);
+  $('btnNotes').onclick = () => togglePanel('notes');
+  $('btnSheet').onclick = () => togglePanel('sheet');
+  document.querySelectorAll('.tabs button').forEach((b) => {
+    b.onclick = () => { tab = b.dataset.tab; store.set('pe3d-mapviewer.tab', tab); showPanel(); };
+  });
+
+  // ---------- The prison sheet ----------
+  function renderSheet() {
+    $('sheetPane').innerHTML = prison().sheet.map((sec) => `
+      <h3>${esc(sec.title)}</h3>
+      ${sec.rows.map((r) => {
+        const inner = `<b>${esc(r.label)}</b><span>${esc(r.text)}</span>`;
+        return r.at ? `<button class="sheet-row" data-x="${r.at[0]}" data-z="${r.at[1]}" title="Show it on the map">${inner}</button>` : `<div class="sheet-row">${inner}</div>`;
+      }).join('')}`).join('');
+  }
+  $('sheetPane').addEventListener('click', (e) => {
+    const b = e.target.closest('button.sheet-row');
+    if (!b) return;
+    if (worldOf(st.view) === 'outside') goView('layout');
+    const t = { x: +b.dataset.x, z: +b.dataset.z };
+    focusTile(t.x, t.z, 1);
+    select(t);
+    if (narrow()) setPanel(false);
+  });
+
+  // ---------- Overlays ----------
+  const activeLayers = () => prison().layers.filter((l) => st.layers.has(l.id));
+  const block = () => prison().routine[st.block] || null;
+  /** Each prison's overlays by tile, for the words on the card. */
+  const layerSets = new Map();
+  function layerSet(l) {
+    const key = `${prison().id}/${l.id}`;
+    if (!layerSets.has(key)) layerSets.set(key, new Set(l.tiles));
+    return layerSets.get(key);
+  }
+  function overlayWords(t) {
+    if (worldOf(shownView()) !== 'prison') return [];
+    const i = t.z * G.mapW + t.x;
+    const out = [];
+    for (const l of activeLayers()) if (layerSet(l).has(i)) out.push((l.tips && l.tips[i]) || l.tip);
+    const b = block();
+    if (b) {
+      if (b.zones.includes(prison().zones[i])) out.push(`${b.label}: expected here. ${b.note}`);
+      if (b.doors.includes(i)) out.push(`${b.label}: this door stands open.`);
+    }
+    return out;
+  }
+  /** The tiles tinted over the picture on screen, in its own frame (the game's photos have shallower rows). */
+  function drawTint() {
+    const g = geo();
+    if (tint.width !== g.w || tint.height !== g.h) { tint.width = g.w; tint.height = g.h; }
+    const c = tint.getContext('2d');
+    c.clearRect(0, 0, g.w, g.h);
+    if (worldOf(shownView()) !== 'prison') return;
+    const paint = (tiles, color, alpha) => {
+      const has = new Set(tiles);
+      c.fillStyle = color;
+      c.globalAlpha = alpha;
+      for (const i of tiles) c.fillRect(g.ox + (i % G.mapW) * g.tw, g.oy + Math.floor(i / G.mapW) * g.th, g.tw, g.th);
+      // A firm edge round each patch: it still reads over a busy floor.
+      c.globalAlpha = 0.95;
+      for (const i of tiles) {
+        const x = i % G.mapW, z = Math.floor(i / G.mapW);
+        const px = g.ox + x * g.tw, py = g.oy + z * g.th;
+        if (x === 0 || !has.has(i - 1)) c.fillRect(px, py, 2.5, g.th);
+        if (x === G.mapW - 1 || !has.has(i + 1)) c.fillRect(px + g.tw - 2.5, py, 2.5, g.th);
+        if (!has.has(i - G.mapW)) c.fillRect(px, py, g.tw, 2.5);
+        if (!has.has(i + G.mapW)) c.fillRect(px, py + g.th - 2.5, g.tw, 2.5);
+      }
+      c.globalAlpha = 1;
+    };
+    for (const l of activeLayers()) paint(l.tiles, l.color, 0.34);
+    const b = block();
+    if (b) {
+      const zones = new Set(b.zones);
+      const tiles = [];
+      prison().zones.forEach((z, i) => { if (zones.has(z)) tiles.push(i); });
+      paint(tiles, '#d97706', 0.4);
+      paint(b.doors, '#0d9488', 0.6);
+    }
+  }
+  function renderLayers() {
+    const p = prison();
+    const pop = $('layersPop');
+    if (worldOf(shownView()) !== 'prison') {
+      showBlockNote();
+      pop.innerHTML = '<p class="layers-off">Overlays belong to the prison\'s own maps, not the outside.</p>';
+      return;
+    }
+    const groups = [...new Set(p.layers.map((l) => l.group))];
+    pop.innerHTML = groups.map((g) => `
+      <div class="layers-group">${esc(g)}</div>
+      ${p.layers.filter((l) => l.group === g).map((l) => `
+        <label class="layer-row">
+          <input type="checkbox" data-layer="${esc(l.id)}"${st.layers.has(l.id) ? ' checked' : ''}>
+          <i style="background:${l.color}"></i>
+          <span>${esc(l.name)}<small>${esc(l.about)}</small></span>
+        </label>`).join('')}`).join('') + `
+      <div class="layers-group">Where to be</div>
+      <select id="blockSel" aria-label="Routine block">
+        <option value="-1">Off</option>
+        ${p.routine.map((r, k) => `<option value="${k}"${k === st.block ? ' selected' : ''}>${esc(r.label)}</option>`).join('')}
+      </select>
+      <p class="routine-note" id="blockNote"></p>`;
+    showBlockNote();
+  }
+  function showBlockNote() {
+    const b = block();
+    $('layerCount').textContent = activeLayers().length + (b ? 1 : 0);
+    const note = $('blockNote');
+    if (note) note.textContent = b ? `${b.note} Amber: where. Teal: doors that open for this block.` : 'Pick a time of day to see where the player should be.';
+  }
+  $('layersPop').addEventListener('change', (e) => {
+    if (e.target.dataset.layer) {
+      if (e.target.checked) st.layers.add(e.target.dataset.layer); else st.layers.delete(e.target.dataset.layer);
+      store.set('pe3d-mapviewer.layers', [...st.layers]);
+    } else if (e.target.id === 'blockSel') st.block = +e.target.value;
+    showBlockNote(); drawTint(); renderCard();
+  });
+  function toggleLayers() {
+    const pop = $('layersPop');
+    pop.hidden = !pop.hidden;
+    $('btnLayers').setAttribute('aria-expanded', String(!pop.hidden));
+  }
+  $('btnLayers').onclick = toggleLayers;
   function openHelp() { $('help').hidden = false; $('helpClose').focus(); }
   function closeHelp() { $('help').hidden = true; }
   $('btnHelp').onclick = openHelp;
@@ -1115,14 +1359,11 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-col
 
   // ---------- Start ----------
   $('version').textContent = `v${D.version}`;
-  if (store.get('pe3d-mapviewer.notesHidden', false) && !matchMedia('(max-width: 1100px)').matches) {
-    app.classList.add('notes-hidden');
-    $('btnNotes').setAttribute('aria-pressed', 'false');
-  }
-  if (matchMedia('(max-width: 1100px)').matches) $('btnNotes').setAttribute('aria-pressed', 'false');
+  if (store.get('pe3d-mapviewer.notesHidden', false) && !narrow()) app.classList.add('notes-hidden');
+  showPanel();
   readHash();
   window.addEventListener('hashchange', () => { const [p0, v0] = [st.p, st.view]; readHash(); if (st.p !== p0 || st.view !== v0) goPrison(st.p, false); });
-  D.prisons.forEach(preload);
+  // (Only this prison's pictures come ahead: all of them weigh some 70 MB. goPrison fetches the next's.)
   goPrison(st.p, false);
   fit();
 })();
