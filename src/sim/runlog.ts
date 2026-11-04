@@ -159,8 +159,9 @@ export class RunRecorder {
       // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm; nor one from before visiting day, P21: the week's cards changed.)
       // (Nor one from before sports day, P22: the week's cards changed again; nor stage nights, P30; nor the P23–P30 fixes of 2.5.1; nor the easier games of 2.16.)
       // (Nor one from before meals at the serving counter, 2.25: played on under them, it would no longer replay.)
-      // (Every one of those versions comes before 2.25, the latest gate: one test covers them all.)
-      const stale = beforeTrays(log?.game ?? '');
+      // (Nor one from before the showers were turned on, 2.26: the same.)
+      // (Every one of those versions comes before 2.26, the latest gate: one test covers them all.)
+      const stale = beforeShowers(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -267,6 +268,8 @@ const beforeDrawnInk = (game: string) => versionBefore(game, 2, 22);
 const beforeWatch = (game: string) => versionBefore(game, 2, 23);
 /** Before meals were fetched from the counter (2.25.0): Sim.rules224 plays them as they were. */
 const beforeTrays = (game: string) => versionBefore(game, 2, 25);
+/** Before the showers were turned on and taken in turns, and ambushes gave a moment's warning (2.26.0): Sim.rules225 plays them as they were. */
+const beforeShowers = (game: string) => versionBefore(game, 2, 26);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -314,6 +317,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeWatch(log.game)) sim.rules222 = true;
   // Played before the serving counter: sat down and the tray was there.
   if (beforeTrays(log.game)) sim.rules224 = true;
+  // Played before the showers were turned on: stood still under a head, and the crowd never took turns.
+  if (beforeShowers(log.game)) sim.rules225 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

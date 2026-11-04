@@ -12,6 +12,7 @@ import { personOf } from '../sim/systems/combat';
 import { type Station } from '../sim/systems/economy';
 import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
 import { eatingNow, mealOn, mealSteps, servingCounter, TRAY, traysHere } from '../sim/systems/canteen';
+import { showerOffer } from '../sim/systems/showers';
 import { DOING, inmateEatSteps } from '../sim/systems/inmates';
 import { TRAY_AT } from '../render/Character';
 import { itemOf, ownerOf, type ItemState, type Target } from '../sim/systems/items';
@@ -58,6 +59,14 @@ const POUCH = itemNumber('pouch');
 const MAGAZINE = itemNumber('magazine');
 
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
+/** The shower the action button would turn on (2.26), as something to highlight. */
+function showerHead(sim: Sim, target: Target): Target | null {
+  const head = showerOffer(sim, target);
+  if (head < 0) return null;
+  const index = containersOf(sim.world).findIndex((c) => c.prop.kind === 'shower' && c.prop.z * MAP_W + c.prop.x === head);
+  return index < 0 ? null : { kind: 'container', index };
+}
+
 function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, station: Station | null = null) {
   if (station && !climb) {
     if (station.prop < 0) {
@@ -193,7 +202,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // (Sat in the canteen on dinner's plan with no meal on: a film, the acts. No tray, no spoon.)
   const watching = traysHere(sim) && !mealOn(sim);
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1 });
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, bare: false, towel: 0 });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -210,6 +219,11 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const atTable = o.doing === DOING.EAT;
     o.trayAt = atTable ? TRAY_AT.TABLE : m.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
     o.trayLeft = m.tray === TRAY.EMPTY ? 0 : atTable && m.tray === TRAY.FULL ? Math.min(1, m.wait / inmateEatSteps(m)) : 1;
+    // A turn at the showers (2.26), the walks between its steps included: a towel round the neck while waiting and on the way to a head,
+    // in shorts under the water, still in them walking off to dry, the towel over the hair; dressed again after.
+    const washTurn = !o.moving ? 0 : m.then === DOING.TOWEL ? 1 : m.then === DOING.SHOWER && sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'showers' ? 2 : 0;
+    o.bare = o.doing === DOING.SHOWER || o.doing === DOING.TOWEL || washTurn === 1;
+    o.towel = o.doing === DOING.TOWEL ? 2 : o.doing === DOING.SHOWER_WAIT || washTurn > 0 ? 1 : 0;
   });
   // The side games (P22): the dice partner crouches over the dice with the player (the arm-wrestle's pose is the view's, from the bout).
   const rival = diceRival(sim);
@@ -333,7 +347,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
         ? focusOf(sim, { kind: 'person', who: st.talk })
         : st.train >= 0 || st.seat >= 0
           ? null
-          : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : target, climb, memo.station);
+          : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : showerHead(sim, target) ?? target, climb, memo.station);
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
   // The tray: in both hands, unless it's set down on a table (below).

@@ -28,6 +28,7 @@ import { ALARM_CLOCK, DIRT, FIRECRACKER, underMyDesk, WALL_CHUNK } from '../sim/
 import { clockSecs } from '../sim/systems/noise';
 import { tossFlight } from '../render/Noise';
 import { LAYER } from '../sim/world/World';
+import { DOING } from '../sim/systems/inmates';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
@@ -531,6 +532,9 @@ export function announce(e: SimEvent, sim: Sim) {
         coachOnce('train', TOUCH ? 'hint.trainTouch' : 'hint.trainKeys');
       }
       break;
+    case 'wash':
+      if (e.on) sound.scrub();
+      break;
     case 'sit':
       seenInteract();
       if (e.on) {
@@ -803,6 +807,9 @@ export function announce(e: SimEvent, sim: Sim) {
 }
 
 
+/** How far off the showers can be heard (tiles). */
+const SHOWER_EARSHOT = 12;
+
 /** How long the last thing thrown is in the air (s): its thud's wave waits for it to land. */
 let lastFlight = 0;
 
@@ -810,10 +817,30 @@ let lastFlight = 0;
 /** At a meal or the showers: how they pick the player up, told the first time (GDD §2, §3.1). */
 function arrivedAt(sim: Sim, id: RoutineId) {
   if (id === 'breakfast' || id === 'dinner') coachOnce('meal', traysHere(sim) ? 'hint.meal' : 'hint.mealTable', { n: MEAL_ENERGY });
-  if (id === 'showers') coachOnce('shower', 'hint.shower');
+  // (2.26: told afresh to those who knew the old way, standing still.)
+  if (id === 'showers') coachOnce(sim.rules225 ? 'shower' : 'showerOn', !sim.rules225 && hostile(sim) ? 'hint.showerHostile' : 'hint.shower');
+}
+
+/** Ten times a second: the sound of the showers, by how near the nearest one running is (off while time runs fast). */
+function showerSound(sim: Sim, speed: number) {
+  const s = sim.state;
+  if (s.step % 2 !== 0) return;
+  let near = Infinity;
+  if (speed === 1 && ROUTINE[s.routine].id === 'showers' && s.layer !== LAYER.UNDER) {
+    const px = s.player.x / UNIT;
+    const pz = s.player.z / UNIT;
+    if (sim.showering) near = 0;
+    else
+      for (const m of s.inmates) {
+        if (m.doing !== DOING.SHOWER) continue;
+        near = Math.min(near, Math.hypot(m.body.x / UNIT - px, m.body.z / UNIT - pz));
+      }
+  }
+  sound.setWater(near === Infinity ? 0 : Math.round(Math.max(0, 1 - near / SHOWER_EARSHOT) * 20) / 20);
 }
 
 export function tickTock(sim: Sim, speed: number) {
+  showerSound(sim, speed);
   const s = sim.state;
   if (speed !== 1 || s.step % STEPS_PER_SECOND !== 0) return;
   if (eatingNow(sim)) sound.bite();

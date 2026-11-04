@@ -57,7 +57,8 @@ import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 import { tileAt } from './world/grid';
 import { keepTray } from './systems/canteen';
-import { keepSeat, regenerate, shower, standUp, underShower } from './systems/upkeep';
+import { keepSeat, regenerate, shower, standUp } from './systems/upkeep';
+import { keepWashing, stopWash, underShower } from './systems/showers';
 import { keysCarried, raiseKeyAlarm, sleepingGuards, wearKeys, wokeKeyless } from './systems/keys';
 
 // The state, its events and snapshots live in state.ts; importers have always found them here.
@@ -148,6 +149,8 @@ export class Sim {
   rules222 = false;
   /** Replaying a run logged under 2.24 or before (runlog.ts): meals as they were then (sat at a table and the tray was there, eaten in 3 s; inmates straight to their seats). Not state. */
   rules224 = false;
+  /** Replaying a run logged under 2.25 or before (runlog.ts): showers as they were (standing still under a head; inmates at a head for the whole block, the rest scrubbing on dry floor), and ambushes with no moment's warning. Not state. */
+  rules225 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -233,6 +236,7 @@ export class Sim {
     chill(this);
     // Tipsy (P28): a stumble now and then, sober again.
     tipsy(this);
+    keepWashing(this);
     shower(this);
     // Solitary: time served (and potatoes peeled) sets the player free.
     if (s.solitary > 0 && --s.solitary === 0) release(this);
@@ -346,6 +350,8 @@ export class Sim {
     if (s.shot.length && dirOf(cmd) !== 0) s.shot = [];
     // A step gets the player up off a seat or a bed.
     if (s.seat >= 0 && dirOf(cmd) !== 0) standUp(this);
+    // (2.26: and out from under the water.)
+    if (dirOf(cmd) !== 0) stopWash(this);
     const from = tileAt(s.player.x, s.player.z);
     // (P29: tattooing, the moves steer the needle; being inked, the player keeps still.)
     // (P30: on the stage, the player keeps still too: the keys play the lanes.)

@@ -447,6 +447,36 @@ export class Sound {
     this.applyWeather();
   }
 
+  /** The showers running (2.26): 0–1 by how near they are, through the ambience's gain like the weather. */
+  private water: { gain: GainNode; source: AudioScheduledSourceNode } | null = null;
+  private waterWant = 0;
+  setWater(level: number) {
+    if (level === this.waterWant) return;
+    this.waterWant = level;
+    this.applyWater();
+  }
+
+  private applyWater() {
+    const c = this.ctx;
+    if (!c || !this.out || !this.noise || !this.ambienceGain) return;
+    if (!this.water) {
+      if (this.waterWant <= 0) return;
+      const source = c.createBufferSource();
+      source.buffer = this.noise;
+      source.loop = true;
+      const band = c.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.value = 2100;
+      band.Q.value = 0.55;
+      const gain = c.createGain();
+      gain.gain.value = 0;
+      source.connect(band).connect(gain).connect(this.ambienceGain);
+      source.start();
+      this.water = { gain, source };
+    }
+    this.water.gain.gain.setTargetAtTime(0.13 * this.waterWant, c.currentTime, 0.25);
+  }
+
   private applyWeather() {
     const c = this.ctx;
     if (!c || !this.out || !this.noise || !this.ambienceGain) return;
@@ -1407,6 +1437,7 @@ export class Sound {
     };
     this.clankTimer = window.setTimeout(clank, 3000);
     this.applyWeather();
+    this.applyWater();
   }
 
   private stopAmbience() {
@@ -1422,6 +1453,9 @@ export class Sound {
     const wx = this.wx;
     this.wx = null;
     if (wx) setTimeout(() => wx.sources.forEach((x) => x.stop()), 800);
+    const water = this.water;
+    this.water = null;
+    if (water) setTimeout(() => water.source.stop(), 800);
     const sources = this.ambienceSources;
     this.ambienceSources = [];
     setTimeout(() => {

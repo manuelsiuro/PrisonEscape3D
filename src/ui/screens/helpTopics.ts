@@ -51,8 +51,9 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       id: 'start',
       topics: [
         T('goal', 'route', '#ff7714', { pic: true, lessons: ['escape'], see: ['ways', 'delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
-        T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['walk', 'routine'], see: ['meals'] }),
+        T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['walk', 'routine'], see: ['meals', 'showers'] }),
         T('meals', 'utensils', '#d9822b', { pic: true, lessons: ['meals'], stepIcons: ['hand', 'route', 'utensils', 'check'], see: ['energy', 'routine'] }),
+        T('showers', 'water', '#3f9bd6', { pic: true, lessons: ['showers'], stepIcons: ['hand', 'water', 'route'], see: ['energy', 'routine', 'heat'] }),
         T('heat', 'flame', '#e5484d', { diagram: 'meter', lessons: ['heat'], listIcons: ['clock', 'eye', 'lock', 'briefcase'] }),
         T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),
       ],
@@ -61,7 +62,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       id: 'getting',
       topics: [
         T('craft', 'hammer', '#6f93b8', { recipes: ['sheet_rope', 'poster', 'flimsy_shovel'], lessons: ['craft'] }),
-        T('energy', 'heart', '#e0507a', { lessons: ['gym'], listIcons: ['pause', 'utensils', 'water', 'item:chocolate', 'moon'], see: ['meals'] }),
+        T('energy', 'heart', '#e0507a', { lessons: ['gym'], listIcons: ['pause', 'utensils', 'water', 'item:chocolate', 'moon'], see: ['meals', 'showers'] }),
       ],
     },
     {

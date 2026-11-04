@@ -383,6 +383,11 @@ export function layersOf(w: World): MapLayer[] {
   for (const q of places.seats) mealTips[q.tile] = fetched ? `At a table: sit here with a tray to eat it, 6 seconds, +${MEAL_ENERGY} energy, once a meal.` : `At a table: sit here at breakfast or dinner to eat, +${MEAL_ENERGY} energy, once a meal.`;
   add({ id: 'meals', group: 'Work & loot', name: 'Meals', color: '#0d9488', about: fetched ? 'Where a tray is taken and given back, and the seats it is eaten at.' : 'The seats meals are eaten at: this prison has no serving counter.', tip: 'A place for meals.', tiles: Object.keys(mealTips).map(Number), tips: mealTips });
 
+  // The showers (2.26): the heads, what they give. (Nothing to overlay where there are none.)
+  const showerTips: Record<number, string> = {};
+  for (const q of places.showers) showerTips[q.tile] = 'A shower: at 16:00–17:00 the action button turns it on. +2 energy a second while it runs, heat under 25% falls faster, a dog\'s trail washes off.';
+  if (places.showers.length) add({ id: 'showers', group: 'Work & loot', name: 'Showers', color: '#3f9bd6', about: 'The heads: one at a time, inmates taking turns through the block.', tip: 'A shower head.', tiles: Object.keys(showerTips).map(Number), tips: showerTips });
+
   const under = trapChance(w, LAYER.UNDER, 0);
   const trap = every((i) => !TILE_INFO[kind[i]].solid && trapChance(w, LAYER.GROUND, i) > 0);
   const chance = trap.length ? trapChance(w, LAYER.GROUND, trap[0]) : 0;
@@ -405,7 +410,8 @@ export function routineOf(def: PrisonDef, w: World): RoutineBlock[] {
     const note = r.id === 'work' ? (rooms.length ? 'Only with a job: its own room.' : 'No jobs here: anywhere legal.') : !wants.length ? 'Nowhere expected: anywhere legal.' : `${r.stay ? `${r.stay} minutes there to be counted` : 'Be here'}${miss ? `; ${miss}` : ''}.`;
     // (Where a meal is had, 2.25: a prison with no counter serves at its tables.)
     const tray = (r.id === 'breakfast' || r.id === 'dinner') && placesOf(w).counters.length ? ` Eat: a tray from the serving counter, to a table and back (+${MEAL_ENERGY} energy, once a meal; eaten and not brought back, +${TRAY_HEAT}% heat).` : '';
-    return { id: r.id, label: `${clock(r.start)} ${tr(`routine.${r.id}`, r.id)}`, note: note + tray, zones: wants, doors: doorsOf(open) };
+    const wash = r.id === 'showers' && placesOf(w).showers.length ? ' Wash: the action button turns a shower on (+2 energy a second, minor heat falling faster); optional, being in the room is what counts.' : '';
+    return { id: r.id, label: `${clock(r.start)} ${tr(`routine.${r.id}`, r.id)}`, note: note + tray + wash, zones: wants, doors: doorsOf(open) };
   });
 }
 

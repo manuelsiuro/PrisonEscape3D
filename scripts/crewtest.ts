@@ -434,6 +434,10 @@ function chipSpot(sim: Sim): number {
   check(seen.findIndex((e) => e.type === 'crew' && e.what === 'brawlOver') >= 0 && sim.state.step - t0 >= BRAWL_STEPS && heat === sim.state.heat, 'no heat for the player');
   check(cantOrder(sim, CP.muscle, ORDER.BRAWL) === 'brawlToday', 'once a day');
   g.to(2, 9, 5);
+  // (A day stood idle in the yard: whether the guards have caught up with them by now is luck. On their feet for this.)
+  sim.state.ko = 0;
+  sim.state.heat = 0;
+  sim.state.health = 100;
   if (!sim.state.followers.includes(CP.muscle)) g.recruit(CP.muscle, 85, y);
   put(o.body, tileOf(sim.state.inmates[CP.muscle].body) + 2);
   check(cantOrder(sim, CP.muscle, ORDER.BRAWL) === null, 'again the next day');
