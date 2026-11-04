@@ -15,7 +15,7 @@ import { en } from '../../src/i18n/en';
 import type { View } from '../../src/render/View';
 import { Sim } from '../../src/sim/Sim';
 import { play } from '../../src/play/game';
-import { MAP_H, MAP_W } from '../../src/sim/world/World';
+import { MAP_W } from '../../src/sim/world/World';
 import pkg from '../../package.json';
 
 /** The same frame as mapimage.ts: pixels a tile, the rulers' margin, the title's band. */
@@ -36,7 +36,7 @@ export async function shoot(k: number) {
   // A few frames behind the title first: the new prison's meshes built, its shaders warm.
   await frames(30);
   const name = def.id === 'training' ? 'Training Block' : ((en as Record<string, string>)[`prison.${def.id}`] ?? def.id);
-  return framed(view.mapShot(S, 2), `${k}-${def.id}-game.png`, `${name} — in game: the 3D view from the game's camera, nobody in it, 10:00`, `v${pkg.version} · map rev ${def.map ?? 0} · rulers: the floor's tiles (walls stand up over the rows north of them)`);
+  return framed(view.mapShot(S, 2, true), `${k}-${def.id}-game.png`, `${name} — in game: the 3D view from the game's camera, nobody in it, 10:00 (searchlights faint: they light at night)`, `v${pkg.version} · map rev ${def.map ?? 0} · rulers: the floor's tiles (walls stand up over the rows north of them)`);
 }
 
 /**

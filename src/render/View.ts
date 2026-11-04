@@ -41,7 +41,7 @@ import { GetawayView } from './Getaway';
 import { SmuggleView } from './Smuggling';
 import { GamesView } from './Games';
 import { PastimesView } from './Pastimes';
-import { LongView } from './Long';
+import { LongView, type LongFrame } from './Long';
 import { TeamView } from './Team';
 import { GroundsView } from './Grounds';
 import { NightsView } from './Nights';
@@ -1440,9 +1440,10 @@ export class View {
    * the classic angle in one frame, as drawn behind the title (nobody in it, at 10:00). The
    * camera is orthographic, so the floor stays a regular grid: a tile `px` wide and `px * rows`
    * deep, the floor's north edge `top` pixels down. Drawn `ss` times over and scaled down; the
-   * camera, the shadow box and the drawing size are put back after.
+   * camera, the shadow box and the drawing size are put back after. `dress`: a prison's photo for
+   * the map viewer, with what stands there every day though the title screen hides it.
    */
-  mapShot(px = 40, ss = 2): { canvas: HTMLCanvasElement; top: number; rows: number } {
+  mapShot(px = 40, ss = 2, dress = false): { canvas: HTMLCanvasElement; top: number; rows: number } {
     const off = CAMERA_OFFSET.clone().normalize();
     const rows = off.y; // a floor tile's depth on screen, in tiles (the view's tilt)
     const lift = Math.hypot(off.x, off.z); // a unit of height on screen, in tiles
@@ -1480,6 +1481,7 @@ export class View {
     // The pay phone, the kiosk and the odd jobs board hang on their walls in game, but the title screen behind the shot hides their groups.
     const shown = [this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.releaseView.group].filter((o) => !o.visible);
     for (const o of shown) o.visible = true;
+    const undress = dress ? this.dressForMap() : null;
     this.renderer.setPixelRatio(ss);
     this.renderer.setSize(w, h, false);
     skipEmpty(this.scene);
@@ -1495,11 +1497,70 @@ export class View {
     g.drawImage(el, 0, 0, el.width, el.height, 0, 0, w, h);
     for (const o of hidden) o.visible = true;
     for (const o of shown) o.visible = false;
+    undress?.();
     if (this.sun.castShadow) resize(kept.shadow);
     this.renderer.setPixelRatio(kept.ratio);
     this.target.copy(kept.target);
     this.resize();
     return { canvas, top: Math.round(pad * px), rows };
+  }
+
+  /**
+   * What the title screen takes away and a prison has every day: the cameras and searchlights, the
+   * pitch's lines and goals, the garden's beds, the rat track; Irongate's drawbridge up. Nothing
+   * that comes only with an event. Returns how to take them away again (the drawbridge stays up: it
+   * is, in play).
+   */
+  private dressForMap(): () => void {
+    const w = this.world;
+    const def = w?.def;
+    if (!w || !def) return () => {};
+    const tile = (x: number, z: number) => z * MAP_W + x;
+    const sec = this.security;
+    if (sec) {
+      sec.group.visible = true;
+      sec.update(
+        {
+          power: true,
+          fence: true,
+          arches: true,
+          gens: [true, true],
+          // (As the frame turns them, at the middle of their sweep; off, so that no cone hides the floor.)
+          cams: (def.cameras ?? []).map((c) => ({ facing: Math.PI / 2 - ((c.face - 1) * Math.PI * 2) / 16, on: false, sees: false, taped: false })),
+          // (Each lamp's pool halfway along its sweep.)
+          beams: (def.searchlights ?? []).map((line) => {
+            const q = line[Math.floor(line.length / 2)];
+            return { x: q.x + 0.5, z: q.z + 0.5 };
+          }),
+          aim: -1,
+          px: 0,
+          pz: 0,
+          hook: null,
+        },
+        // (A short step eases the searchlights only part of the way on: a faint pool by day, not a glare over the floor.)
+        0.12,
+        0,
+        0,
+        false,
+      );
+    }
+    const ls = def.leisure;
+    if (this.pitch) this.teamView.update({ pitch: this.pitch, theme: def.theme ?? 'suburban', ball: null, mates: [], rivals: [] }, [], 0, true);
+    if (ls) {
+      const beds: LongFrame['beds'] = [];
+      for (let z = ls.garden.z; z < ls.garden.z + ls.garden.d; z++)
+        for (let x = ls.garden.x; x < ls.garden.x + ls.garden.w; x++) beds.push({ tile: tile(x, z), crop: 0, grown: 0, wilted: false, watered: false, ripe: false, hole: false });
+      const a = ((ls.race.dir - 1) * Math.PI) / 8;
+      const track = Array.from({ length: ls.race.len }, (_, k) => tile(ls.race.x + Math.round(Math.cos(a)) * k, ls.race.z + Math.round(Math.sin(a)) * k));
+      this.longView.update({ beds, track, rats: [], laps: null, tipsy: false }, 0, false, true);
+    }
+    // (Its one piece never otherwise moved behind the title: up, as in a day's play; the helicopter away at 10:00.)
+    this.island?.update(100, 0, 600, false, false);
+    return () => {
+      if (sec) sec.group.visible = false;
+      this.teamView.update(null, [], 0, false);
+      this.longView.update(null, 0, false, false);
+    };
   }
 
   private render(minute: number, dt: number, focus: THREE.Vector3 | null, time: number) {

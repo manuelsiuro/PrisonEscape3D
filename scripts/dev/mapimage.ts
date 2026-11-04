@@ -1,13 +1,15 @@
 // Dev tool: every prison drawn from its data, as PNGs in assets/maps/ (npm run maps), with
 // data.js beside them for the viewer there (index.html: what's on each tile, under the cursor).
 // The viewer's "In game" pictures are taken in the browser instead: scripts/dev/mapshot.ts.
-// Three pictures each: the layout (tiles, zones, doors, cells, props, decor), the people and
-// places (guards' rounds and posts, cameras, searchlights, free time, smuggling, delivery,
-// checkpoint), and the vents and the ground under (where the prison has them); and (P41) the
-// outside past the wall, where the manhunt is run. Drawn as SVG,
-// turned into PNG by rsvg-convert (brew install librsvg).
+// The pictures: the layout (tiles, zones, doors, cells, props, decor), the people and places
+// (guards' rounds and posts, cameras, searchlights, free time, smuggling, delivery, checkpoint),
+// the vents and the ground under, the roofs (where a ladder goes up), and (P41) the outside past
+// the wall, where the manhunt is run. Drawn as SVG, turned into PNG by rsvg-convert (brew install
+// librsvg). data.js also holds each prison's sheet and overlays (mapdata.ts); mapviewertest.ts
+// fails when it no longer matches the game.
 import { HEARINGS } from '../../src/content/parole';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,6 +24,8 @@ import { TILE, TILE_INFO } from '../../src/sim/world/tiles';
 import pkg from '../../package.json';
 import { outsideOf } from '../../src/content/outside';
 import { DECO, outsideWorld, type OutsideWorld } from '../../src/sim/hunt/world';
+import { SOLITARY_HEAT } from '../../src/sim/tuning';
+import { cellLine, grapnelSpots, inSights, launchTiles, layersOf, rectTiles, reachableRoof, routineOf, sheetOf, SNIPER_TILES } from './mapdata';
 
 const S = 40; // pixels a tile
 const M = 34; // margin for the rulers
@@ -61,7 +65,6 @@ const TILE_FILL: Record<number, string> = {
 const KEY_FILL = ['#ffffff', '#f4c20d', '#14b8c8', '#8e44ad', '#e2372b', '#27a249'];
 const KEY_NAME = ['', 'yellow', 'cyan', 'purple', 'red', 'green'];
 const GUARD_COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#008080', '#f032e6', '#9a6324', '#800000', '#000075', '#808000', '#e6a800'];
-const ZONE_TINT = ['#ff6b6b', '#4ecdc4', '#ffd93d', '#6c5ce7', '#a3e635', '#fb923c', '#38bdf8', '#f472b6', '#94a3b8', '#facc15'];
 
 function face(f: number | undefined): [number, number] {
   const a = (((f ?? 5) - 1) * 22.5 * Math.PI) / 180;
@@ -301,7 +304,7 @@ function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   const red = '#be123c';
   g.add(`<circle cx="${cx(c.gate.x)}" cy="${cz(c.gate.z)}" r="11" fill="rgba(190,18,60,0.2)" stroke="${red}" stroke-width="2.5" stroke-dasharray="4 3"/>`);
   g.pill(cx(c.gate.x), cz(c.gate.z) - 18, 'CAR ALARM', 9, red);
-  const [ax, az] = face(c.car.face);
+  const [ax] = face(c.car.face);
   const long = Math.round(ax) !== 0;
   const cw = long ? S * 1.6 : S * 0.8;
   const cd = long ? S * 0.8 : S * 1.6;
@@ -353,6 +356,14 @@ function route(g: Svg, pts: readonly Waypoint[], color: string, dashed: boolean,
     g.text(cx(q.x), cz(q.z) + 3.5, `${tag}${k + 1}`, `font-size="9" font-weight="700" fill="${dashed ? color : '#fff'}" text-anchor="middle"`);
     if (q.wait || q.nap) g.text(cx(q.x) + 11, cz(q.z) - 9, `${q.wait ? `${q.wait}s` : ''}${q.nap ? ' nap' : ''}`, `font-size="9" fill="${color}" font-weight="700"`);
   });
+}
+
+/** The roofs a grapnel swings across onto from another roof. */
+function drawLandings(g: Svg, def: PrisonDef) {
+  for (const r of def.landings ?? []) {
+    g.rect(px(r[0]), pz(r[1]), (r[2] - r[0] + 1) * S, (r[3] - r[1] + 1) * S, 'fill="none" stroke="#0f172a" stroke-width="3" stroke-dasharray="2 3"');
+    g.pill((px(r[0]) + px(r[2] + 1)) / 2, pz(r[1]) + 12, 'ROOF LANDING', 9, '#0f172a');
+  }
 }
 
 /** Guards' rounds, posts, night rounds and dogs; cameras, searchlights; free time; smuggling; delivery; checkpoint. */
@@ -431,7 +442,7 @@ function drawPeople(g: Svg, def: PrisonDef) {
     g.pill(cx(ck.booth.x), cz(ck.booth.z) - 18, 'CHECKPOINT BOOTH', 9, '#047857');
     g.pill(cx(ck.window[0].x), cz(ck.window[0].z) + 18, 'ID WINDOW', 9, '#047857');
   }
-  for (const r of def.landings ?? []) g.rect(px(r[0]), pz(r[1]), (r[2] - r[0] + 1) * S, (r[3] - r[1] + 1) * S, 'fill="none" stroke="#0f172a" stroke-width="3" stroke-dasharray="2 3"');
+  drawLandings(g, def);
   if (def.drawbridge) {
     const r = def.drawbridge;
     g.rect(px(r[0]), pz(r[1]), (r[2] - r[0] + 1) * S, (r[3] - r[1] + 1) * S, 'fill="rgba(139,106,62,0.6)" stroke="#000" stroke-width="2"');
@@ -486,12 +497,43 @@ function drawVents(g: Svg, w: World) {
   }
 }
 
+const ROOF_COLOR = '#94a3b8';
+const ROOF_EXPOSED = '#f59e0b';
+const ROOF_OUT_OF_REACH = '#475569';
+
+/** The roofs over the faded ground: those the ladder reaches, the ladder, what a sniper covers, where a glider runs off and a grapnel flies from, the landings. */
+function drawRoofs(g: Svg, def: PrisonDef, w: World) {
+  const roof = w.layers[LAYER.ROOF].kind;
+  const reach = reachableRoof(w);
+  for (let i = 0; i < roof.length; i++) {
+    if (roof[i] === TILE.EMPTY) continue;
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    if (!reach.has(i)) {
+      g.rect(px(x), pz(z), S, S, `fill="${ROOF_OUT_OF_REACH}" fill-opacity="0.55"`);
+      continue;
+    }
+    g.rect(px(x), pz(z), S, S, `fill="${inSights(w, i, LAYER.ROOF) ? ROOF_EXPOSED : ROOF_COLOR}" fill-opacity="0.85"`);
+  }
+  // Where a grapnel flies from: a ring on the tile (the card says where it lands).
+  for (const t of grapnelSpots(w).keys()) g.add(`<circle cx="${cx(t % MAP_W)}" cy="${cz(Math.floor(t / MAP_W))}" r="7" fill="#fff" stroke="#be123c" stroke-width="2.5"/>`);
+  for (const [t, faces] of launchTiles(w)) for (const f of faces) arrow(g, t % MAP_W, Math.floor(t / MAP_W), f, '#0369a1', 15);
+  for (let i = 0; i < roof.length; i++) {
+    if (roof[i] !== TILE.LADDER) continue;
+    const x = i % MAP_W;
+    const z = Math.floor(i / MAP_W);
+    g.rect(px(x) + 4, pz(z) + 4, S - 8, S - 8, 'fill="#16a34a" stroke="#14532d" stroke-width="2"');
+    g.text(cx(x), cz(z) + 4, 'L', 'font-size="12" font-weight="700" fill="#fff" text-anchor="middle"');
+  }
+  drawLandings(g, def);
+}
+
 function swatch(g: Svg, x: number, y: number, fill: string, label: string, extra = '') {
   g.rect(x, y, 22, 22, `fill="${fill}" stroke="#000" stroke-width="1" ${extra}`);
   g.text(x + 28, y + 16, label, 'font-size="13" fill="#111"');
 }
 
-function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
+function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
   const y0 = TITLE_H + MAP_H * S + 2 * M + 10;
   g.rect(0, y0 - 10, W, LEGEND_H + 10, 'fill="#f5f3ee"');
   let x = M;
@@ -507,17 +549,19 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
       [KEY_FILL[1], 'yellow door (y)'], [KEY_FILL[2], 'cyan door (c)'], [KEY_FILL[3], 'purple door (p)'], [KEY_FILL[4], 'red door (r)'], [KEY_FILL[5], 'green door (g)'],
     );
   }
+  if (kind === 'roof') items.push([ROOF_COLOR, 'roof, ladder reaches'], [ROOF_EXPOSED, 'in a sniper\'s sights'], [ROOF_OUT_OF_REACH, 'no ladder to it'], ['#16a34a', 'ladder (L)']);
   items.forEach(([f, l], k) => {
     swatch(g, x + (k % 7) * col, y + Math.floor(k / 7) * 30, f, l);
   });
-  y += kind === 'layout' ? 100 : 0;
+  y += kind === 'layout' ? 100 : kind === 'roof' ? 40 : 0;
   const notes: string[] =
     kind === 'layout'
       ? [
           'Red dashed lines: zone borders (between two named zones; walls are "none"). Red pills: zone names, once per patch.',
           'Dark boxes: solid props (named; yellow dot = the side it faces). Light dashed boxes: props walked over (benches, seats, chairs, showers, bleachers).',
           'Pink: decor (pink bar = a wall piece, on the wall it hangs on; pink outline = a floor piece). Doors: c<n> = cell n\'s door, GATE = perimeter gate (no key opens it).',
-          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net); gold: the release desk (rel) and its doors out r1…; purple: the parole board b1–b3 and the player\'s seat before it (you); brown: the odd jobs board (bar = its wall, job = the reader\'s tile).',
+          'Orange rings: roll-call spots. Yellow star: where the player starts. Blue frames: cells (gold = the player\'s cell 1). Teal: the pay phone (bar = its wall, tel = the caller\'s tile) and its queue 1…; blue: the internet kiosk (net).',
+          'Gold: the release desk (rel) and its doors out r1…; purple: the parole board b1–b3 and the player\'s seat before it (you); brown: the odd jobs board (bar = its wall, job = the reader\'s tile).',
         ]
       : kind === 'people'
         ? [
@@ -525,9 +569,18 @@ function legend(g: Svg, kind: 'layout' | 'people' | 'vents', def: PrisonDef) {
             'White squares = posts (where a guard stands during a block: rollCa(ll), breakf(ast), exerci(se), showers, dinner…). Lines are straight between stops, not the walked path.',
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
-            'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order; the parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you); the odd jobs board (brown, job). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
+            'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order.',
+            'The parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you); the odd jobs board (brown, job). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
+            ...(def.landings ? ['Black dotted boxes: roof landings, the roofs a grapnel swings across onto from another roof.'] : []),
+            ...(def.drawbridge ? ['Brown box: the drawbridge, down in a takeover or for a player waved through.'] : []),
           ]
-        : [
+        : kind === 'roof'
+          ? [
+              `Roofs over the faded ground floor. A sniper covers a roof from a tower ${SNIPER_TILES} tiles away or less, and fires at ${SOLITARY_HEAT}% heat or more. The roof is a restricted zone: seen up here without a guard's uniform, instant 100% heat.`,
+              'White rings with a red edge: a grapnel can be thrown from here (click the tile: where it lands). Blue arrows: a glider can run off here that way, given 2 tiles of run-up and no storm; where it lands depends on the day\'s wind.',
+              ...(def.landings ? ['Black dotted boxes: roof landings, the roofs a grapnel swings across onto.'] : []),
+            ]
+          : [
             'Layer +1 over the faded ground floor: grey = ducts, blue V = ceiling grates (down into the room below), green L = the ladder up to the roof.',
             'Grey discs: granite boulders under the ground (layer -1) that no tunnel can dig through. Without them, the earth is soft all through.',
           ];
@@ -671,12 +724,12 @@ function outsidePicture(def: PrisonDef, o: OutsideWorld): string {
   return g.done();
 }
 
-function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
+function picture(def: PrisonDef, kind: PictureKind): string {
   const w = new World(def);
   const g = new Svg();
   g.rect(0, 0, W, H, 'fill="#ffffff"');
   const name = def.id === 'training' ? 'Training Block' : tr(`prison.${def.id}`, def.id);
-  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board, odd jobs board' : 'vents (layer +1) and boulders under the ground (layer -1)';
+  const what = kind === 'layout' ? 'layout: tiles, zones, doors, cells, props, decor, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'people' ? 'people & places: guards, cameras, free time, smuggling, delivery, checkpoint, pay phone, kiosk, release desk, parole board, odd jobs board' : kind === 'roof' ? 'roofs: the ladder, sniper range, grapnel throws, glider launches, landings' : 'vents (layer +1) and boulders under the ground (layer -1)';
   g.text(M, 30, `${name} — ${what}`, 'font-size="24" font-weight="700" fill="#111"');
   g.text(W - M, 30, `v${pkg.version} · map rev ${def.map ?? 0} · ${def.theme ?? 'suburban'} · x → east, z ↓ south`, 'font-size="15" fill="#555" text-anchor="end"');
   drawTiles(g, w, kind !== 'layout');
@@ -696,6 +749,8 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
     drawComms(g, def, true);
     drawBoard(g, def);
     drawZones(g, w, true);
+  } else if (kind === 'roof') {
+    drawRoofs(g, def, w);
   } else {
     drawVents(g, w);
   }
@@ -703,37 +758,27 @@ function picture(def: PrisonDef, kind: 'layout' | 'people' | 'vents'): string {
   return g.done();
 }
 
-const tmp = mkdtempSync(join(tmpdir(), 'pe3d-maps-'));
-mkdirSync(OUT, { recursive: true });
-const all = [TRAINING, ...PRISONS];
-all.forEach((def, n) => {
-  const kinds: Array<'layout' | 'people' | 'vents'> = ['layout', 'people'];
+type PictureKind = 'layout' | 'people' | 'vents' | 'roof';
+
+/** The drawn pictures a prison has (the outside's besides). */
+function kindsOf(def: PrisonDef): PictureKind[] {
+  const kinds: PictureKind[] = ['layout', 'people'];
   if (def.vents || def.under) kinds.push('vents');
-  for (const kind of kinds) {
-    const svg = join(tmp, `${def.id}-${kind}.svg`);
-    writeFileSync(svg, picture(def, kind));
-    const png = join(OUT, `${n}-${def.id}-${kind}.png`);
-    execFileSync('rsvg-convert', ['-o', png, svg]);
-    console.log(png);
-  }
-  // P41: the outside past the wall.
-  const od = outsideOf(def.id);
-  if (od) {
-    const svg = join(tmp, `${def.id}-outside.svg`);
-    writeFileSync(svg, outsidePicture(def, outsideWorld(od, def)));
-    const png = join(OUT, `${n}-${def.id}-outside.png`);
-    execFileSync('rsvg-convert', ['-o', png, svg]);
-    console.log(png);
-  }
-});
-rmSync(tmp, { recursive: true, force: true });
+  if (new World(def).layers[LAYER.ROOF].kind.includes(TILE.LADDER)) kinds.push('roof');
+  return kinds;
+}
+
+const all = [TRAINING, ...PRISONS];
+
+/** A picture's words without the version in its title: unchanged from one release to the next. */
+const hashOf = (svg: string) => createHash('sha1').update(svg.split(`v${pkg.version}`).join('')).digest('hex').slice(0, 16);
 
 /** What the viewer shows under the cursor: each tile's kind and zone, and what stands or stops on it. */
 function tileData(def: PrisonDef, n: number) {
   const w = new World(def);
   const L = w.ground;
-  const views: Array<'layout' | 'people' | 'vents' | 'outside'> = ['layout', 'people'];
-  if (def.vents || def.under) views.push('vents');
+  const views: Array<PictureKind | 'outside'> = kindsOf(def);
+  const drawn: Record<string, string> = Object.fromEntries(kindsOf(def).map((k) => [k, hashOf(picture(def, k))]));
   // The in-game picture (scripts/dev/mapshot.ts, taken in the browser), where one was taken: its frame's numbers beside it.
   const shot = join(OUT, `${n}-${def.id}-game.json`);
   const game = existsSync(shot) ? JSON.parse(readFileSync(shot, 'utf8')) : null;
@@ -741,7 +786,10 @@ function tileData(def: PrisonDef, n: number) {
   const outShot = join(OUT, `${n}-${def.id}-outside-game.json`);
   const outsideGame = existsSync(outShot) ? JSON.parse(readFileSync(outShot, 'utf8')) : null;
   const marks: Array<[number, number, string]> = [];
-  const mark = (x: number, z: number, s: string) => marks.push([x, z, s]);
+  // (On the map only: the delivery's road starts off it.)
+  const mark = (x: number, z: number, s: string) => {
+    if (w.inside(x, z)) marks.push([x, z, s]);
+  };
   def.guards.forEach((gu, k) => {
     const who = gu.name ?? `guard ${k + 1}`;
     gu.beat.forEach((q, j) => mark(q.x, q.z, `${who}: day stop ${j + 1}${q.wait ? `, waits ${q.wait}s` : ''}`));
@@ -780,12 +828,56 @@ function tileData(def: PrisonDef, n: number) {
     mark(hp.seat.x, hp.seat.z, `the seat before the parole board (the hearing is held anywhere in the ${hp.zone})`);
   }
   if (def.board) mark(def.board.x, def.board.z, `odd jobs board (its reader stands here, facing ${def.board.face})`);
+  // Everything else the pictures draw, so that no mark on them goes without words.
+  const area = (r: readonly [number, number, number, number], s: string) => rectTiles(r).forEach(([x, z]) => mark(x, z, s));
+  if (ls) {
+    const box = (q: { x: number; z: number; w: number; d: number }) => [q.x, q.z, q.x + q.w - 1, q.z + q.d - 1] as const;
+    area(box(ls.pitch), 'football pitch');
+    area(box(ls.garden), 'garden bed (grows over days; a hole under a planted bed does not show)');
+    if (ls.track) {
+      const t = ls.track;
+      rectTiles(box(t)).filter(([x, z]) => x === t.x || z === t.z || x === t.x + t.w - 1 || z === t.z + t.d - 1).forEach(([x, z]) => mark(x, z, 'running track (laps)'));
+    }
+    const [rx, rz] = face(ls.race.dir);
+    for (let k = 1; k < ls.race.len; k++) mark(ls.race.x + Math.round(rx) * k, ls.race.z + Math.round(rz) * k, 'rat race track');
+  }
+  if (def.smuggling) {
+    area(def.smuggling.drop, 'drone drop zone');
+    if (def.smuggling.visits) area(def.smuggling.visits, 'visiting room');
+  }
+  if (def.delivery) {
+    const dl = def.delivery;
+    area(dl.bay, `delivery bay (${dl.vehicle}: solid and blocks sight while it's in, 12:30–14:31)`);
+    dl.road.forEach((q) => mark(q.x, q.z, 'the way the delivery drives in and out'));
+    (dl.open ?? []).forEach((q) => mark(q.x, q.z, 'door open while the delivery is in'));
+    dl.round.forEach((q, k) => mark(q.x, q.z, `${def.guards[dl.supervisor]?.name ?? 'the supervisor'}: delivery round stop d${k + 1}`));
+  }
+  def.checkpoint?.gates.forEach((q, k) => mark(q.x, q.z, `checkpoint gate g${k + 1} (opens for a player waved through)`));
+  (def.searchlights ?? []).forEach((line, k) => line.forEach((q) => mark(q.x, q.z, `searchlight ${k + 1}'s sweep (at night)`)));
+  if (def.drawbridge) area(def.drawbridge, 'drawbridge (water until a takeover or a clearance lowers it)');
+  (def.landings ?? []).forEach((r) => area(r, 'roof landing (a grapnel swings across onto it)'));
   const V = w.layers[LAYER.VENTS].kind;
   const U = w.layers[LAYER.UNDER].kind;
+  const roofLayer = w.layers[LAYER.ROOF].kind;
+  const reach = reachableRoof(w);
+  const grapnels = grapnelSpots(w);
+  const launches = launchTiles(w);
+  const roofWords = (i: number): string[] => {
+    if (roofLayer[i] === TILE.EMPTY) return [];
+    if (roofLayer[i] === TILE.LADDER) return ['ladder up to the roof'];
+    if (!reach.has(i)) return ['roof (the ladder does not reach it)'];
+    const out = [inSights(w, i, LAYER.ROOF) ? 'roof, in a sniper\'s sights' : 'roof'];
+    out.push(...(grapnels.get(i) ?? []));
+    if (launches.has(i)) out.push('glider launch');
+    return out;
+  };
   const above: Array<[number, number, string]> = [];
+  // (Apart from `above`: every indoor tile has a roof, of interest on the Roof view alone.)
+  const roofs: Array<[number, number, string]> = [];
   for (let i = 0; i < V.length; i++) {
     const what = V[i] === TILE.DUCT ? 'duct' : V[i] === TILE.GRATE ? 'vent grate' : V[i] === TILE.LADDER ? 'roof ladder' : U[i] === TILE.BOULDER ? 'boulder underground' : '';
     if (what) above.push([i % MAP_W, Math.floor(i / MAP_W), what]);
+    for (const s of roofWords(i)) roofs.push([i % MAP_W, Math.floor(i / MAP_W), s]);
   }
   // P41: the outside past the wall, its own tiles and marks (the viewer's Outside view).
   const od = outsideOf(def.id);
@@ -803,6 +895,7 @@ function tileData(def: PrisonDef, n: number) {
     od.searchers.forEach((sr) => sr.beat.forEach((q, k) => omark(q, `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''}: stop ${k + 1} (${sr.at < 0 ? 'patrol' : `out ${sr.at}s after the alarm`})`)));
     od.searchers.forEach((sr) => sr.from && omark(sr.from, `${sr.name}${sr.dog ? ` with ${sr.dog.name}` : ''} comes on here`));
     od.heli.route.forEach((q, k) => omark(q, `helicopter sweep, stop ${k + 1}`));
+    od.roadblocks.forEach((r, k) => rectTiles(r.area).forEach(([x, z]) => omark({ x, z }, `roadblock ${k + 1}: closed ${r.at}s after the alarm`)));
     for (let i = 0; i < MAP_W * MAP_H; i++) if (o.safe[i]) om.push([i % MAP_W, Math.floor(i / MAP_W), 'safe point']);
     outside = { tiles: Array.from(o.world.ground.kind), deco: Array.from(o.deco).map((d) => DECO_NAME[d] ?? ''), inside: Array.from(o.inside), marks: om };
     views.push('outside');
@@ -820,29 +913,72 @@ function tileData(def: PrisonDef, n: number) {
     views: [...(game ? [{ kind: 'game', ...game }] : []), ...views.map((v) => ({ kind: v, file: `${n}-${def.id}-${v}.png` })), ...(outsideGame && outside ? [{ kind: 'outsideGame', ...outsideGame }] : [])],
     tiles: Array.from(L.kind),
     zones: Array.from(L.zone),
-    cells: def.cells.map((c, k) => [...c, k === 0 ? 'the player' : (def.names[k - 1] ?? '?')]),
+    cells: def.cells.map((c, k) => [...c, cellLine(def, k + 1)]),
     props: def.props.map((p) => [p.kind, p.x, p.z, p.w ?? 1, p.d ?? 1]),
     decor: (def.decor ?? []).map((p) => [p.kind, p.x, p.z, p.w ?? 1, p.d ?? 1]),
     doors,
     marks,
     above,
+    roofs,
     outside,
+    sheet: sheetOf(def, w),
+    layers: layersOf(w),
+    routine: routineOf(def, w),
+    drawn: { ...drawn, ...(od ? { outside: hashOf(outsidePicture(def, outsideWorld(od, def))) } : {}) },
     guards: def.guards.map((gu, k) => ({
       name: gu.name ?? `guard ${k + 1}`,
       color: GUARD_COLORS[k % GUARD_COLORS.length],
       key: gu.key,
       trait: gu.trait ?? 'steady',
-      tags: [gu.riot && 'riot', gu.helipad && 'helipad', gu.dog && `dog ${gu.dog.name}`, !gu.night && 'sleeps at night'].filter(Boolean),
+      tags: [
+        gu.riot && 'riot',
+        gu.helipad && 'helipad',
+        gu.dog && `dog ${gu.dog.name}${gu.dog.night ? ' (nights too)' : ''}`,
+        !gu.night && 'sleeps at night',
+        gu.duties?.includes('bedCheck') && 'bed checks',
+        gu.duties?.includes('shakedown') && 'shakedowns',
+        def.delivery?.supervisor === k && 'delivery',
+      ].filter(Boolean),
     })),
   };
 }
 
-const data = {
-  version: pkg.version,
-  geometry: { tile: S, margin: M, title: TITLE_H, mapW: MAP_W, mapH: MAP_H, width: W, height: H },
-  tileNames: Object.fromEntries(Object.entries(TILE_INFO).map(([k, v]) => [k, v.name])),
-  zoneNames: ZONES.map((id) => tr(`zone.${id}`, id)),
-  prisons: all.map(tileData),
-};
-writeFileSync(join(OUT, 'data.js'), `// Written by scripts/dev/mapimage.ts (npm run maps): what the viewer shows under the cursor.\nwindow.MAP_DATA = ${JSON.stringify(data)};\n`);
-console.log(join(OUT, 'data.js'));
+/** Everything data.js holds, worked out afresh (mapviewertest.ts compares the two). */
+export function viewerData() {
+  return {
+    version: pkg.version,
+    geometry: { tile: S, margin: M, title: TITLE_H, mapW: MAP_W, mapH: MAP_H, width: W, height: H },
+    tileNames: Object.fromEntries(Object.entries(TILE_INFO).map(([k, v]) => [k, v.name])),
+    zoneNames: ZONES.map((id) => tr(`zone.${id}`, id)),
+    prisons: all.map(tileData),
+  };
+}
+
+function main() {
+  const tmp = mkdtempSync(join(tmpdir(), 'pe3d-maps-'));
+  mkdirSync(OUT, { recursive: true });
+  all.forEach((def, n) => {
+    for (const kind of kindsOf(def)) {
+      const svg = join(tmp, `${def.id}-${kind}.svg`);
+      writeFileSync(svg, picture(def, kind));
+      const png = join(OUT, `${n}-${def.id}-${kind}.png`);
+      execFileSync('rsvg-convert', ['-o', png, svg]);
+      console.log(png);
+    }
+    // P41: the outside past the wall.
+    const od = outsideOf(def.id);
+    if (od) {
+      const svg = join(tmp, `${def.id}-outside.svg`);
+      writeFileSync(svg, outsidePicture(def, outsideWorld(od, def)));
+      const png = join(OUT, `${n}-${def.id}-outside.png`);
+      execFileSync('rsvg-convert', ['-o', png, svg]);
+      console.log(png);
+    }
+  });
+  rmSync(tmp, { recursive: true, force: true });
+  writeFileSync(join(OUT, 'data.js'), `// Written by scripts/dev/mapimage.ts (npm run maps): what the viewer shows under the cursor.\nwindow.MAP_DATA = ${JSON.stringify(viewerData())};\n`);
+  console.log(join(OUT, 'data.js'));
+}
+
+// (Run as a script only: the test imports viewerData.)
+if (process.argv[1]?.endsWith('mapimage.ts')) main();
