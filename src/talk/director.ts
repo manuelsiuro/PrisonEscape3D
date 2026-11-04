@@ -1,3 +1,4 @@
+import { wardenOf } from '../sim/systems/rollcall';
 import { RAT } from '../sim/systems/rats';
 import { itemDef } from '../content/items';
 import { ROUTINE } from '../content/routine';
@@ -483,8 +484,19 @@ export class Director {
           this.queueUp(now, 're.lockdown.in', this.inmatesNear(sim, px, pz, 40), 3, 'lockdownIn', undefined, 1.6);
         } else this.queueUp(now, 're.lockdownOff.in', this.inmatesNear(sim, px, pz, 40), 2, 'lockdownOff', undefined, 1);
         break;
+      case 'count': {
+        // The warden's call, and the answer from the line.
+        const warden = sim.state.inmates.length + wardenOf(sim);
+        // (Each its own trigger: a shared one's wait would swallow all but the first.)
+        if (e.what === 'called') this.queueUp(now, 're.count.gu', [warden], 3, 'count', 'shout');
+        else if (e.what === 'you') this.queueUp(now, 're.countYou.gu', [warden], 5, 'countYou', 'shout');
+        else if (e.what === 'missed') this.queueUp(now, 're.countMiss.gu', [warden], 5, 'countMiss', 'shout');
+        if (e.what === 'called' && e.who >= 0) this.queueUp(now, 're.count.in', [e.who], 3, 'countIn', undefined, 0.5);
+        break;
+      }
       case 'shakedown':
         this.noteDay('shakedown');
+        if (wardenOf(sim) >= 0) this.queueUp(now, 're.shakedown.gu', [sim.state.inmates.length + wardenOf(sim)], 4, 'shakedownGu', 'shout');
         this.queueUp(now, 're.shakedown.in', this.inmatesNear(sim, px, pz, 30), 2, 'shakedown', undefined, 1.5, 6);
         break;
       case 'searched': {

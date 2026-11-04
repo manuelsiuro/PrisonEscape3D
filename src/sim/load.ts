@@ -249,6 +249,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
   if (s.tray !== 0 && s.tray !== 1 && s.tray !== 2) s.tray = 0;
   if (s.washing !== true) s.washing = false;
+  if (!Number.isInteger(s.calling) || s.calling < 0) s.calling = 0;
+  if (s.countDone !== true) s.countDone = false;
+  if (s.yardSeen !== true) s.yardSeen = false;
+  if (!Number.isInteger(s.countAt) || s.countAt < 0) s.countAt = 0;
   // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)
   if (st.tray === undefined && s.eaten >= MEAL_STEPS_224) s.eaten = MEAL_STEPS;
   return s;

@@ -3,6 +3,7 @@
  * peeling potatoes, the morning shakedown, the night bed check and cell searches.
  */
 import { retained } from './phone';
+import { reachedSquare } from './rollcall';
 import { CRACKDOWN_CELLS, twist } from './twists';
 import { washScent } from './k9';
 import { itemDef, itemNumber } from '../../content/items';
@@ -234,6 +235,10 @@ export function bedCheck(sim: SimContext) {
 /** A guard looked into a cell or searched one. */
 export function report(sim: SimContext, r: GuardReport) {
   const s = sim.state;
+  if (r.kind === 'count') {
+    reachedSquare(sim, r.index, s.guards[r.guard]);
+    return;
+  }
   if (r.kind === 'nap') {
     sim.events.push({ type: 'nap', guard: r.guard, on: r.on });
     return;

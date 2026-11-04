@@ -61,6 +61,8 @@ export interface HudState {
   oddjob?: { icon: string; text: string; tail: string; sr: string; left: number; urgent: boolean; done: boolean; watch: boolean } | null;
   /** A lesson that isn't about the routine (the glider's, on the roof after Lights Out): the block's name and end alone, no place, no badge. */
   quietRoutine?: boolean;
+  /** At roll call (2.27): the pill's second line, your square, or the shakedown's cells. */
+  square?: string | null;
 }
 
 /** "Canteen", "Gym or Courtyard": where a block wants the player. */
@@ -555,7 +557,7 @@ export class Hud {
   private updateRoutine(s: HudState) {
     const w = s.work;
     const mandatory = ROUTINE[s.routine].zones.length > 0 || !!w;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}|${s.presence?.join(':') ?? ''}`;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}|${s.presence?.join(':') ?? ''}|${s.square ?? ''}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
@@ -597,13 +599,14 @@ export class Hud {
     const end = routineEnd(s.routine);
     const until = t('routine.until', { time: hhmm(end) });
     // Narrow phones: "Canteen · until 10:00" on the second line (the name keeps the first).
-    const place = w ? w.place : routinePlace(s.routine);
+    const place = w ? w.place : (s.square ?? routinePlace(s.routine));
     const pending = w ? !w.paid : !s.attended;
     // (A lesson about something else, P24's glider: "Lights out · until 08:00", nothing asked of the player.)
     const quiet = !!s.quietRoutine && !w;
     // (2.23: being counted there, narrow: the time alone, the badge's minutes beside it.)
     const counting = !w && !s.attended && !!s.presence && s.presence[0] > 0;
-    setText(this.routinePlace, quiet || (counting && NARROW.matches) ? (NARROW.matches ? until : '') : NARROW.matches && mandatory && pending ? `${place} · ${until}` : place);
+    // (2.27: what roll call has to say shows on a phone too, in place of the time it would give while counting.)
+    setText(this.routinePlace, quiet || (counting && NARROW.matches && !s.square) ? (NARROW.matches ? until : '') : NARROW.matches && mandatory && pending && !s.square ? `${place} · ${until}` : place);
     setText(this.routineUntil, until);
     // At work the badge counts the quota (GDD §11), and says PAID once it's done.
     const done = w ? w.paid : s.attended;

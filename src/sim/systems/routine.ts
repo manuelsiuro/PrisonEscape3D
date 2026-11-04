@@ -8,6 +8,7 @@ import { cancelTasks, GUARD } from './guards';
 import { restock } from './items';
 import { newDay, settleWork, startWork } from './jobs';
 import { shakedown } from './justice';
+import { onOwnSquare, squareNeeded } from './rollcall';
 import { dismissForNight } from './social';
 import { addHeat } from './watch';
 import { treats } from './k9';
@@ -27,9 +28,12 @@ export function nextBlock(sim: SimContext, clock: Clock) {
   if (now === s.routine) return;
   const past = ROUTINE[s.routine];
   if (past.miss && !s.attended && !s.excused && !sim.world.def.rules?.relaxed) {
-    const early = !sim.rules222 && s.present > 0;
+    // (2.27: in the yard but never on their square: they came, so it's the same.)
+    const early = (!sim.rules222 && s.present > 0) || s.yardSeen;
     const heat = past.miss === 'lockdown' && !early ? 100 : MISSED_ROUTINE_HEAT;
-    sim.events.push(early ? { type: 'missed', routine: s.routine, heat, early } : { type: 'missed', routine: s.routine, heat });
+    // (2.27: stood in the yard all along, never on their square: they're told that, not that they left.)
+    const offSquare = s.yardSeen && s.present === 0;
+    sim.events.push(early ? { type: 'missed', routine: s.routine, heat, early, ...(offSquare ? { offSquare } : {}) } : { type: 'missed', routine: s.routine, heat });
     addHeat(sim, heat);
     s.blocks[s.routine] = early ? BLOCK.LEFT : BLOCK.MISSED;
   } else if (past.miss && !s.attended && s.excused) s.blocks[s.routine] = BLOCK.EXCUSED;
@@ -40,11 +44,16 @@ export function nextBlock(sim: SimContext, clock: Clock) {
   s.attended = false;
   if (!sim.rules222) s.present = 0;
   s.eaten = 0;
+  s.calling = 0;
+  s.countDone = false;
+  s.yardSeen = false;
+  s.countAt = 0;
   // Night jobs end with the night, the morning's with Lights Out (a long chase may have held them up).
   const night = ROUTINE[now].id === 'lightsOut';
   s.guards.forEach((g, i) => {
     const duties = w.def.guards[i].duties ?? [];
     if (!night && duties.includes('bedCheck')) cancelTasks(g, GUARD.BED_CHECK);
+    cancelTasks(g, GUARD.COUNT);
     if (night && duties.includes('shakedown')) cancelTasks(g, GUARD.SHAKEDOWN);
   });
   s.excused = s.lockdown || sim.away;
@@ -81,6 +90,11 @@ export function attendance(sim: SimContext) {
   const zone = sim.playerZone;
   // (Hidden in the delivery's vehicle, P18, the player is nowhere a block wants them.)
   if (!s.attended && !s.stowed && sim.dutyZones.includes(zone)) {
+    // (2.27: at roll call, on their own square; elsewhere in the yard they've come, but aren't counted.)
+    if (squareNeeded(sim)) {
+      s.yardSeen = true;
+      if (!onOwnSquare(sim)) return;
+    }
     if (!sim.rules222 && ++s.present < presenceNeeded(sim)) {
       if (s.present === 1) sim.events.push({ type: 'arrived', routine: s.routine });
       return;

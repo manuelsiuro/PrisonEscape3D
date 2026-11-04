@@ -1986,6 +1986,11 @@ export const frBarks: Barks = {
     "Écarte-toi de là !",
     "C’est la cellule de qui, ça, détenu ?",
   ],
+  "re.count.gu": ["Suivant.", "Toi. Nom et numéro.", "Tiens-toi droit.", "Regard devant.", "Présent ?", "Numéro ?", "L’appel est fini quand je le dis.", "Au suivant."],
+  "re.count.in": ["Présent.", "Ici.", "Oui, chef.", "Toujours là.", "Où voulez-vous que j’aille ?", "Présent. Hélas.", "Présent, chef.", "Ici, ici."],
+  "re.countYou.gu": ["Toi. Le nouveau. Réponds !", "Toi, sur l’orange. Réponds-moi !", "Numéro un ! Alors ?", "Toi ! Tu es là ou pas ?", "Cellule un ! J’attends.", "Toi, là-bas. Réponds à l’appel !"],
+  "re.countMiss.gu": ["T’es sourd ? Je m’en souviendrai.", "Pas de réponse. C’est noté.", "La prochaine fois, réponds quand on t’appelle.", "Très bien. J’ai ton numéro.", "Trop bien pour me répondre ? On verra.", "Le silence, ça se note aussi."],
+  "re.shakedown.gu": ["Fouille ce matin ! Personne ne bouge !", "Des cellules à fouiller ! On reste en place !", "Fouille ce matin. Regard devant !", "Fouille ! Si c’est à toi, je le trouverai.", "On passe quelques cellules en revue. Ne bougez pas !", "Bonjour, messieurs. Jour de fouille."],
   "re.tray.gu": [
     "Hé ! Les plateaux, ça se rapporte au comptoir !",
     "Toi. Ton plateau. Au comptoir, la prochaine fois.",

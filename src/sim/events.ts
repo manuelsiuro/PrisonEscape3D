@@ -37,7 +37,7 @@ export type SimEvent =
   /** The player checked in to the block. */
   | { type: 'attended'; routine: number }
   /** The block ended without the player: what it cost (2.23: `early`, there a while but not long enough). */
-  | { type: 'missed'; routine: number; heat: number; early?: boolean }
+  | { type: 'missed'; routine: number; heat: number; early?: boolean; offSquare?: boolean }
   | { type: 'lockdown'; on: boolean }
   /** The player's cell door locked or unlocked (Lights Out, a lockdown, 08:00). */
   | { type: 'cells'; locked: boolean }
@@ -123,6 +123,7 @@ export type SimEvent =
   /** Sat down or got up (a seat, bench or chair), lay down on or got off an infirmary bed. */
   | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
   | { type: 'wash'; on: boolean }
+  | { type: 'count'; what: 'called' | 'you' | 'answered' | 'missed'; who: number; heat?: number }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
   | { type: 'meal'; feast?: boolean; fresh?: boolean }
   /** 2.25: a tray taken from the serving counter or given back, dropped, left behind on leaving the canteen, gone with the meal's end; `heat`: what not bringing it back cost. */

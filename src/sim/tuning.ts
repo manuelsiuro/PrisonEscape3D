@@ -95,6 +95,16 @@ export const INMATE_EAT_STEPS = 10 * STEPS_PER_SECOND;
 export const EAT_SPREAD = 6 * STEPS_PER_SECOND;
 /** Standing under a shower in the showers block (GDD §3.1): a point every 10 steps (2 a second). */
 export const SHOWER_ENERGY_STEPS = 10;
+/**
+ * 2.27, roll call: the warden sets off this many minutes into the block (the line has about formed), no later than COUNT_LAST;
+ * a stop at each square, and the player's own held for the answer, a nod after it; a call unanswered costs this much heat.
+ */
+export const COUNT_START = 14;
+export const COUNT_LAST = 40;
+export const COUNT_STOP_STEPS = 24;
+export const COUNT_ANSWER_STEPS = 100;
+export const COUNT_NOD_STEPS = 12;
+export const COUNT_HEAT = 5;
 /** 2.26 (GDD §2: showers "reduce minor Heat"): a point of heat off every 2 s under the water, only below this much. */
 export const SHOWER_HEAT_STEPS = 40;
 export const SHOWER_HEAT_BELOW = 25;

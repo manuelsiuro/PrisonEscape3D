@@ -5,6 +5,7 @@ import { lineOfSight } from '../sim/ai/sight';
 import { SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { counterTray, trayOffer } from '../sim/systems/canteen';
+import { canAnswer } from '../sim/systems/rollcall';
 import { showerOffer } from '../sim/systems/showers';
 import { isGuard, maxHealth, personOf, reachOf, swingSteps } from '../sim/systems/combat';
 import type { Station } from '../sim/systems/economy';
@@ -124,6 +125,15 @@ export function boxTitle(sim: Sim, index: number) {
 const actionLabel = { verb: '', what: '' };
 let actionKey = '';
 export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | null, held: number, station: Station | null = null): { verb: string; what: string } | null {
+  // Called by the warden at roll call (2.27): nothing comes before answering.
+  if (canAnswer(sim)) {
+    const key = `here:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t('act.here'), what: '' });
+    }
+    return actionLabel;
+  }
   if (station && !climb) {
     // On the job: the station's step ("Load the washer", "Take out: clean laundry").
     const key = `station:${station.act}:${station.prop}:${station.item}:${currentLang()}`;

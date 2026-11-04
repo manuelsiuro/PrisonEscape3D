@@ -164,6 +164,8 @@ export const PLANS: Plan[] = [
   {
     def: CENTER_PERKS,
     seed: 11,
+    // (2.27: once the warden's walk along the line is over. In the middle of it the fight is lost: 1 seed in 24, against 24 of 24 from here.)
+    startAt: 8 * 60 + 50,
     name: (r) => r,
     routes: ['cutout', 'tunnel', 'rooftop', 'takeover', 'stowaway', 'bluff', 'glider', 'paperwork'],
     keys: ['plastic_key_yellow', 'plastic_key_purple', 'plastic_key_green'],

@@ -45,8 +45,8 @@ irongate woodshop: day 1 12:22 +$50 (wage)
 irongate kitchen: day 1 12:24 +$40 (wage)
 irongate laundry: day 1 12:16 +$30 (wage)
 irongate metalshop: day 1 12:26 +$65 (wage)
-irongate janitor: day 1 12:20 +$35 (wage)
-irongate mailman: day 1 13:00 +$55 (wage)
+irongate janitor: day 1 12:17 +$35 (wage)
+irongate mailman: day 1 12:31 +$55 (wage)
 irongate gardener: day 1 12:26 +$35 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry

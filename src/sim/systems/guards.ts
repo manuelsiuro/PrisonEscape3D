@@ -8,7 +8,7 @@ import { placesOf } from '../ai/places';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { turnDir } from '../command';
 import { rollInt, SALT } from '../rng';
-import { GUARD_STR, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, RIOT_STR, STEPS_PER_SECOND, STIR_RANGE, STIR_STEPS, UNIT } from '../tuning';
+import { COUNT_STOP_STEPS, GUARD_STR, NAP_FROM, NAP_MAX, NAP_MIN, NAP_TO, RIOT_STR, STEPS_PER_SECOND, STIR_RANGE, STIR_STEPS, UNIT } from '../tuning';
 import { clockAt } from './clock';
 import { MAP_W, type World } from '../world/World';
 import type { Fighter } from './combat';
@@ -28,6 +28,8 @@ export const GUARD = {
   BED_CHECK: 3,
   /** Morning shakedown: searching cell desks. */
   SHAKEDOWN: 4,
+  /** 2.27: the warden's walk along the roll call line, square by square (`tasks`: their indexes). */
+  COUNT: 5,
 } as const;
 
 /** Cone colors (GDD §5.1): none (asleep), yellow, orange, red. */
@@ -65,6 +67,8 @@ export interface Guard extends Walker, Fighter {
   bribed: number;
   /** The day it last lost the player's paperwork (once a day). */
   paperDay: number;
+  /** 2.27, on the count: 1 until the square it's come to has been called. */
+  toCall?: number;
 }
 
 /** Guards stroll on their rounds and run when chasing (the player walks at 184). */
@@ -188,7 +192,7 @@ function glance(g: Guard, step: number, wide: number) {
 const there = (g: Guard) => g.goal >= 0 && !g.path.length && tileAt(g.body.x, g.body.z) === g.goal;
 
 /** What a guard reports from a stop on its bed check or shakedown, and dozing off or waking up (Sim applies it). */
-export type GuardReport = { kind: 'bedCheck'; cell: number } | { kind: 'search'; cell: number } | { kind: 'nap'; guard: number; on: boolean };
+export type GuardReport = { kind: 'count'; index: number; guard: number } | { kind: 'bedCheck'; cell: number } | { kind: 'search'; cell: number } | { kind: 'nap'; guard: number; on: boolean };
 
 /**
  * One step of guard life. Each guard follows its duty for the routine block (a round of
@@ -306,6 +310,43 @@ export function stepGuards(
           if (g.timer <= 0) backToDuty(g);
         }
         break;
+      case GUARD.COUNT: {
+        const index = g.tasks[0];
+        const stop = places.countStops[index];
+        if (!stop) {
+          backToDuty(g);
+          break;
+        }
+        if (g.goal !== stop.tile) {
+          head(crowd, g, stop.tile);
+          g.timer = COUNT_STOP_STEPS;
+          g.doing = DOING.COUNT;
+          g.toCall = 1;
+        }
+        if (g.wait > 0) g.wait--;
+        else if (g.path.length) walkPath(crowd, g, k);
+        else if (!there(g)) {
+          head(crowd, g, stop.tile);
+          // (A hole dug in the way: on to the next one, rather than held here till the bell.)
+          if (!g.path.length) {
+            g.tasks.shift();
+            g.goal = -1;
+          }
+        } else {
+          g.body.moving = false;
+          g.body.facing = stop.face;
+          g.doing = DOING.COUNT;
+          if (g.toCall) {
+            g.toCall = 0;
+            report({ kind: 'count', index, guard: k });
+          }
+          if (--g.timer <= 0) {
+            g.tasks.shift();
+            g.goal = -1;
+          }
+        }
+        break;
+      }
       case GUARD.BED_CHECK:
       case GUARD.SHAKEDOWN: {
         const cell = g.tasks[0];
@@ -355,7 +396,7 @@ export function stepGuards(
 /** After the player. A bed check or shakedown under way is kept, to take up afterwards. */
 export function startChase(g: Guard) {
   rouse(g);
-  if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
+  if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN || g.mode === GUARD.COUNT) g.resume = g.mode;
   g.mode = GUARD.CHASE;
   g.timer = CHASE_GRACE;
   g.doing = DOING.NOTHING;
@@ -372,7 +413,7 @@ export function startChase(g: Guard) {
 export function sendToLook(g: Guard, tile: number, look = LOOK_AROUND) {
   if (g.mode === GUARD.CHASE) return;
   rouse(g);
-  if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN) g.resume = g.mode;
+  if (g.mode === GUARD.BED_CHECK || g.mode === GUARD.SHAKEDOWN || g.mode === GUARD.COUNT) g.resume = g.mode;
   g.mode = GUARD.INVESTIGATE;
   g.target = tile;
   g.timer = look;

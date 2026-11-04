@@ -205,7 +205,7 @@ function resumeAfterKo(g: Guard) {
   g.path = [];
   g.goal = -1;
   g.wait = 0;
-  if (g.mode !== GUARD.BED_CHECK && g.mode !== GUARD.SHAKEDOWN) backToDuty(g);
+  if (g.mode !== GUARD.BED_CHECK && g.mode !== GUARD.SHAKEDOWN && g.mode !== GUARD.COUNT) backToDuty(g);
 }
 
 /**
