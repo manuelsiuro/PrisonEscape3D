@@ -57,11 +57,11 @@
   day 1 23:45 off the roof on a glider: 5 tiles
   day 1 23:45 ESCAPED (glider)
   saved and loaded at day 1 15:52 (gym) resumes, day 1 22:10 (rollCall) resumes, day 1 23:26 (vents) resumes, day 1 23:40 (roof) resumes
-  ledger: glides 1, glideFar 5; walked 454 tiles; days escaped
+  ledger: glides 1, glideFar 5; walked 453 tiles; days escaped
   → out day 1 23:45 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the west, strength 1: 5 tiles
 == paperwork
-  day 1 18:29 form filed: on the release list for day 2
+  day 1 18:28 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
   day 2 01:04 bed check: pass
   day 2 04:28 bed check: pass
@@ -69,7 +69,7 @@
   day 2 10:09 cleared at the desk
   day 2 10:14 ESCAPED (paperwork)
   saved and loaded at day 1 21:07 (playerCell) resumes, day 2 07:37 (playerCell) resumes, day 2 09:43 (canteen) resumes, day 2 10:06 (yard) resumes
-  ledger: formsFiled 1, released 1; walked 592 tiles; days quiet / escaped
+  ledger: formsFiled 1, released 1; walked 591 tiles; days quiet / escaped
   → out day 2 10:14 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == stalag-flucht
   cutout: the fence cut 5.3 s after the power went off
@@ -92,7 +92,7 @@
   day 1 23:30 grapnel → layer 1
   day 1 23:30 ESCAPED (roof)
   saved and loaded at day 1 15:45 (gym) resumes, day 1 21:57 (playerCell) resumes, day 1 23:11 (cellBlock) resumes, day 1 23:25 (perimeter) resumes
-  ledger: powerCuts 1; walked 355 tiles; days escaped
+  ledger: powerCuts 1; walked 354 tiles; days escaped
   → out day 1 23:30 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 8/150, guards down 6/6, xxxxxx
 == stalag-flucht: takeover
@@ -129,7 +129,7 @@
   day 1 23:30 off the roof on a glider: 5 tiles
   day 1 23:30 ESCAPED (glider)
   saved and loaded at day 1 15:45 (gym) resumes, day 1 21:57 (playerCell) resumes, day 1 23:11 (cellBlock) resumes, day 1 23:25 (perimeter) resumes
-  ledger: glides 1, glideFar 5; walked 354 tiles; days escaped
+  ledger: glides 1, glideFar 5; walked 355 tiles; days escaped
   → out day 1 23:30 by glider; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   the wind from the west, strength 1: 5 tiles
 == stalag-flucht: paperwork
@@ -147,12 +147,13 @@
   cutout: the fence cut 6.9 s after the power went off
 == shankton: perimeter cutout
   day 1 23:17 detector: shielded (19 passes left)
+  day 1 23:18 spotted: recognized
   day 1 23:19 detector: shielded (18 passes left)
   day 1 23:26 power OFF (player)
   day 1 23:33 ESCAPED (fence)
   saved and loaded at day 1 15:46 (sports) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (corridor) resumes, day 1 23:29 (perimeter) resumes
-  ledger: powerCuts 1; walked 426 tiles; days escaped
-  → out day 1 23:33 by fence; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  ledger: spotted 1, maxHeat 30, powerCuts 1; walked 427 tiles; days spotted+escaped
+  → out day 1 23:33 by fence; heat peak 30%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == shankton: tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:21 digUp → layer 1
@@ -167,7 +168,7 @@
   day 1 23:48 rope → layer 1
   day 1 23:48 ESCAPED (roof)
   saved and loaded at day 1 15:54 (sports) resumes, day 1 22:13 (rollCall) resumes, day 1 23:29 (vents) resumes, day 1 23:43 (roof) resumes
-  ledger: nothing; walked 442 tiles; days escaped
+  ledger: nothing; walked 441 tiles; days escaped
   → out day 1 23:48 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 47/140, guards down 8/8, xxxxxxxx
 == shankton: takeover
@@ -213,7 +214,7 @@
   the wind from the north, strength 2: 7 tiles
 == shankton: paperwork
   day 1 18:16 detector: shielded (19 passes left)
-  day 1 18:18 detector: shielded (18 passes left)
+  day 1 18:19 detector: shielded (18 passes left)
   day 1 18:26 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
   day 2 00:41 bed check: pass
@@ -222,7 +223,7 @@
   day 2 10:08 cleared at the desk
   day 2 10:15 ESCAPED (paperwork)
   saved and loaded at day 1 21:07 (playerCell) resumes, day 2 07:37 (playerCell) resumes, day 2 09:43 (canteen) resumes, day 2 10:07 (corridor) resumes
-  ledger: formsFiled 1, released 1; walked 586 tiles; days quiet / escaped
+  ledger: formsFiled 1, released 1; walked 587 tiles; days quiet / escaped
   → out day 2 10:15 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == san-pancho
 == san-pancho: tunnel
@@ -230,13 +231,13 @@
   day 1 23:24 digUp → layer 1
   day 1 23:24 ESCAPED (tunnel)
   saved and loaded at day 1 15:42 (sports) resumes, day 1 21:51 (playerCell) resumes, day 1 23:05 (playerCell) resumes, day 1 23:19 (tunnels) resumes
-  ledger: nothing; walked 297 tiles; days escaped
+  ledger: nothing; walked 299 tiles; days escaped
   → out day 1 23:24 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
 == san-pancho: supply road gate
-  day 1 23:32 ESCAPED (gate)
+  day 1 23:33 ESCAPED (gate)
   saved and loaded at day 1 15:46 (sports) resumes, day 1 21:59 (playerCell) resumes, day 1 23:14 (corridor) resumes, day 1 23:28 (generator) resumes
   ledger: nothing; walked 359 tiles; days escaped
-  → out day 1 23:32 by gate; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  → out day 1 23:33 by gate; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 68/150, guards down 7/8, xxCxxxxx
 == san-pancho: takeover
   day 1 08:23 spotted: skipping
@@ -261,21 +262,21 @@
   day 1 14:30 the vehicle searched (a quick look)
   day 1 14:31 the delivery leaves
   day 1 14:31 ESCAPED (stowaway)
-  saved and loaded at day 1 11:15 (playerCell) resumes, day 1 13:51 (walkway) resumes, day 1 14:23 (walkway) resumes, day 1 14:29 (walkway) resumes
-  ledger: stowed 1; walked 293 tiles; days escaped
+  saved and loaded at day 1 11:15 (infirmary) resumes, day 1 13:51 (walkway) resumes, day 1 14:23 (walkway) resumes, day 1 14:29 (walkway) resumes
+  ledger: stowed 1; walked 234 tiles; days escaped
   → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   seed 49: the search a quick look
 == san-pancho: paperwork
-  day 1 18:25 form filed: on the release list for day 2
+  day 1 18:23 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
   day 2 01:29 bed check: pass
   day 2 05:04 bed check: pass
   day 2 10:00 the name called
-  day 2 10:01 cleared at the desk
-  day 2 10:08 ESCAPED (paperwork)
-  saved and loaded at day 1 21:04 (playerCell) resumes, day 2 07:31 (playerCell) resumes, day 2 09:37 (canteen) resumes, day 2 10:00 (library) resumes
-  ledger: formsFiled 1, released 1; walked 516 tiles; days quiet / escaped
-  → out day 2 10:08 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  day 2 10:10 cleared at the desk
+  day 2 10:17 ESCAPED (paperwork)
+  saved and loaded at day 1 21:08 (playerCell) resumes, day 2 07:39 (playerCell) resumes, day 2 09:45 (canteen) resumes, day 2 10:09 (library) resumes
+  ledger: formsFiled 1, released 1; walked 535 tiles; days quiet / escaped
+  → out day 2 10:17 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == irongate
   raft: the dock fence cut 25.9 s after GEN-2 went off
 == irongate: raft
@@ -354,11 +355,11 @@
   day 1 18:20 detector: shielded (18 passes left)
   day 1 18:25 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
-  day 2 01:18 bed check: pass
+  day 2 01:17 bed check: pass
   day 2 05:01 bed check: pass
   day 2 10:00 the name called
   day 2 10:04 cleared at the desk
   day 2 10:09 ESCAPED (paperwork)
-  saved and loaded at day 1 21:04 (playerCell) resumes, day 2 07:32 (playerCell) resumes, day 2 09:38 (canteen) resumes, day 2 10:01 (canteen) resumes
+  saved and loaded at day 1 21:04 (playerCell) resumes, day 2 07:32 (playerCell) resumes, day 2 09:38 (canteen) resumes, day 2 10:02 (canteen) resumes
   ledger: formsFiled 1, released 1; walked 527 tiles; days quiet / escaped
   → out day 2 10:09 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0

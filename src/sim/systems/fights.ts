@@ -106,6 +106,7 @@ export function attack(sim: SimContext, fresh: boolean): boolean {
     // Hitting back at someone already after the player: self-defense (GDD §10.3 ambushes). In a food fight (P17) everyone's at it.
     s.selfDefense = freeBlow(sim, m);
     m.angry = ANGRY_STEPS;
+    m.windup = 0;
     m.doing = DOING.NOTHING;
     m.wait = 0;
     // Its first punch comes back quickly.
@@ -254,6 +255,8 @@ export function fight(sim: SimContext) {
 function blow(sim: SimContext, f: Fighter, id: number, pace: number, attack: number, defense: number) {
   const s = sim.state;
   const p = s.player;
+  // (2.26: an ambusher still squaring up.)
+  if ((f as Partial<Inmate>).windup) return;
   if (f.ko > 0 || s.step - f.swing < pace || dist2(f.body, p) > MELEE_REACH * MELEE_REACH) return;
   if (!lineOfSight(sim.world, f.body.x, f.body.z, p.x, p.z)) return;
   f.swing = s.step;

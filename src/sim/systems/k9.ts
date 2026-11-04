@@ -73,7 +73,7 @@ import { chaseOff, ratOut, type Rat } from './rats';
 import { addHeat, afterHours } from './watch';
 import { brewNear, seizeBrew } from './pruno';
 import { playerAbout } from './presence';
-import { underShower } from './upkeep';
+import { underShower } from './showers';
 import { aimToss, type TossAim } from './throwing';
 
 /** What a dog is up to. Never renumber: saves store them. */

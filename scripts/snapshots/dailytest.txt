@@ -58,7 +58,7 @@ the escape bots, every twist of their prison at once (but those closing their wa
   san-pancho gate: out day 1 23:33 under 20 twists (all there are)
   san-pancho takeover: out day 1 09:03 under 18 twists (all but bareHands, loneWolf)
   san-pancho stowaway: out day 1 14:31 under 17 twists (all but threeDays, customs, truckStrike)
-  san-pancho paperwork: out day 2 10:08 under 20 twists (all there are)
+  san-pancho paperwork: out day 2 10:17 under 20 twists (all there are)
   irongate raft: out day 2 00:11 under 20 twists (all but closedShop)
   irongate helicopter: out day 1 23:51 under 19 twists (all but closedShop, bareHands)
   irongate takeover: out day 1 09:36 under 19 twists (all but bareHands, loneWolf)
