@@ -56,6 +56,7 @@ import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPE
 import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 import { tileAt } from './world/grid';
+import { keepTray } from './systems/canteen';
 import { keepSeat, regenerate, shower, standUp, underShower } from './systems/upkeep';
 import { keysCarried, raiseKeyAlarm, sleepingGuards, wearKeys, wokeKeyless } from './systems/keys';
 
@@ -145,6 +146,8 @@ export class Sim {
   rules221 = false;
   /** Replaying a run logged under 2.22 or before (runlog.ts): the routine checked in on arrival, nobody minding a block skipped until it was over, a search of another inmate's cell overlooked. Not state. */
   rules222 = false;
+  /** Replaying a run logged under 2.24 or before (runlog.ts): meals as they were then (sat at a table and the tray was there, eaten in 3 s; inmates straight to their seats). Not state. */
+  rules224 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -224,6 +227,7 @@ export class Sim {
     // The crew (P23): lookouts' whistles, a brawl's course, the drop fetched, the night's company.
     crew(this);
     keepSeat(this);
+    keepTray(this);
     noteCarried(this);
     regenerate(this);
     chill(this);

@@ -1,7 +1,8 @@
 import type { DecorPlacement } from '../../decor';
 
-/** Table tops (props.ts), for things standing on them. */
+/** Table and counter tops (props.ts), for things standing on them. */
 const TABLE = 0.52;
+const COUNTER = 0.56;
 
 /** The cells: a poster on the outer wall by the bunk's foot (the wall away from the door). */
 const cells: DecorPlacement[] = [
@@ -47,13 +48,12 @@ export const SAN_PANCHO_DECOR: readonly DecorPlacement[] = [
   { kind: 'clock', x: 45, z: 12 },
   { kind: 'speaker', x: 46, z: 20, rot: 3 },
   { kind: 'extinguisher', x: 43, z: 25, rot: 1 },
-  // Canteen: the menu, a plant, the water cooler, a vending machine, trays left on the tables.
+  // Canteen: the menu, a plant, the water cooler, a vending machine, trays on the serving counter.
   { kind: 'menuBoard', x: 20, z: 32, w: 2 },
+  { kind: 'trays', x: 17, z: 36, d: 3, rot: 1, y: COUNTER },
   { kind: 'plant', x: 17, z: 33 },
   { kind: 'waterCooler', x: 18, z: 32 },
   { kind: 'vending', x: 24, z: 39, rot: 3 },
-  { kind: 'trays', x: 20, z: 33, y: TABLE },
-  { kind: 'trays', x: 23, z: 37, y: TABLE },
   // Kitchen: pans on the wall, the sink, a sack of potatoes.
   { kind: 'panRack', x: 14, z: 32, w: 2 },
   { kind: 'sink', x: 12, z: 36, rot: 1 },

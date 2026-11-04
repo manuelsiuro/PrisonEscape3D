@@ -463,6 +463,12 @@ export class Director {
       case 'snooped':
         this.queueUp(now, 're.snooped.in', [e.who], 5, 'snooped', 'shout');
         break;
+      case 'tray': {
+        // (Not brought back: the nearest guard says so.)
+        if (!e.heat) break;
+        this.queueUp(now, 're.tray.gu', this.guardsNear(sim, px, pz, 12), 4, 'tray', 'shout');
+        break;
+      }
       case 'thrown': {
         const p = at(e.who);
         this.incident('fight', p.x, p.z, now);

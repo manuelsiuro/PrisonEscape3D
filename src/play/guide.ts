@@ -9,6 +9,7 @@ import { tileAt } from '../sim/world/grid';
 import { isFloor, placesOf } from '../sim/ai/places';
 import { OP } from '../sim/command';
 import type { Sim } from '../sim/Sim';
+import { mealOn, mealSteps, TRAY, traysHere } from '../sim/systems/canteen';
 import { lockCandidates } from '../sim/systems/combat';
 import { jobRooms } from '../sim/systems/economy';
 import { itemOf, usesOf } from '../sim/systems/items';
@@ -132,6 +133,9 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
       }
     }
   }
+  // A meal fetched from the counter (2.25): to it for a tray, to a free seat with it, back with it empty.
+  const tray = trayGoal(sim);
+  if (tray) return tray;
   const zones = sim.dutyZones;
   if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
   // Nowhere the routine wants the player: the odd job's step (P40), where it has a place.
@@ -153,6 +157,22 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
     return (i) => i === spot;
   }
   return (i) => zones.includes(ZONES[w.ground.zone[i]]) && isFloor(w, i % MAP_W, Math.floor(i / MAP_W));
+}
+
+/** Where the meal wants the player next, once they're in the canteen (null: nothing, or not there yet). */
+function trayGoal(sim: Sim): ((i: number) => boolean) | null {
+  const s = sim.state;
+  if (s.seat >= 0 || !traysHere(sim) || !mealOn(sim) || sim.playerZone !== 'canteen') return null;
+  const places = placesOf(sim.world);
+  if (s.tray === TRAY.FULL) {
+    const held = new Set(s.inmates.flatMap((m) => [m.goal, m.seat, tileAt(m.body.x, m.body.z)]));
+    const free = new Set(places.seats.map((q) => q.tile).filter((t) => !held.has(t)));
+    return (i) => free.has(i);
+  }
+  // (No tray yet: until the player's counted. Whoever stays on without one means to.)
+  if (s.tray === TRAY.NONE && (s.attended || s.eaten >= mealSteps(sim))) return null;
+  const counter = new Set(places.counters.map((q) => q.tile));
+  return (i) => counter.has(i);
 }
 
 export function updateGuide(g: Game, dt: number) {

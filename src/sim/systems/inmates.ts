@@ -2,12 +2,12 @@ import { cornersOf } from '../../content/grounds';
 import { OPEN_HOURS, ROUTINE } from '../../content/routine';
 import { zoneIndex, type ZoneId } from '../../content/zones';
 import { clearLine, nearestDir } from '../ai/path';
-import { tileAt } from '../world/grid';
+import { centerX, centerZ, tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { BODY_HALF, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, STEPS_PER_SECOND, UNIT } from '../tuning';
+import { BODY_HALF, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
 import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
@@ -18,9 +18,13 @@ import { bodyAt, type Body } from './movement';
  * player (knocked out). Append only. (P22's WRESTLE, PICK and DICE are the view's alone: an
  * arm-wrestle, a lock being picked, dice thrown; the sim never sets them.) P23: BRAWL, two inmates
  * scrapping (the sim's); LOOKOUT, a lookout on watch (the view's). P40: DIG, an inmate digging under his
- * bed while the player keeps a lookout for him (the sim's: an odd job).
+ * bed while the player keeps a lookout for him (the sim's: an odd job). 2.25: SERVE, at the serving
+ * counter, a tray picked up or put back.
  */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32, DIG: 35 } as const;
+export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32, DIG: 35, SERVE: 36 } as const;
+
+/** A meal's tray (2.25, canteen.ts), the player's or an inmate's: none, with its food, eaten. */
+export const TRAY = { NONE: 0, FULL: 1, EMPTY: 2 } as const;
 
 /** The plan an inmate follows: a routine block's index, or this during a lockdown. */
 export const LOCKDOWN_PLAN = -2;
@@ -43,6 +47,11 @@ export interface Inmate extends Walker, Fighter {
   opinion: number;
   /** Today's Work Period (GDD §11): 0 not at work yet, 1 turned up, 2 knocked out on the job (it loses the job at 15:00). */
   shift: number;
+  /** This meal's tray (TRAY), in hand or on the table in front of it. */
+  tray: number;
+  /** The seat kept for this meal while it goes to the counter and back (its tile, -1 none), and the way it faces there. */
+  seat: number;
+  seatFace: number;
 }
 
 /** Where inmates like to spend free time (their own cell is added). */
@@ -72,6 +81,9 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       angry: 0,
       opinion: !w.def.rules?.hostile ? OPINION_START : cell % 4 === 0 ? HOSTILE_GRUDGE : HOSTILE_OPINION,
       shift: 0,
+      tray: TRAY.NONE,
+      seat: -1,
+      seatFace: 0,
     });
   }
   return out;
@@ -87,13 +99,15 @@ export const fighter = (str: number) => ({ hp: maxHealth(str), ko: 0, str, swing
 let playerSeat = -1;
 /** The tiles kept clear this step (Social.off). */
 let offTiles: readonly number[] = [];
+/** A meal on, fetched from the serving counter (Social.serve). */
+let serving = false;
 
 /** The delivery's bay while its vehicle is in (P18): nobody picks a spot under it. */
 let bay: Uint8Array | null = null;
 
 /** Goals other inmates already hold, or the player's seat (so two never pick the same tile); under the delivery's vehicle. */
 function taken(all: Inmate[], tile: number) {
-  return tile === playerSeat || offTiles.includes(tile) || (bay !== null && bay[tile] === 1) || all.some((m) => m.goal === tile);
+  return tile === playerSeat || offTiles.includes(tile) || (bay !== null && bay[tile] === 1) || all.some((m) => m.goal === tile || m.seat === tile);
 }
 
 /** A random spot from a list that nobody else is heading for (or any, if all are taken). */
@@ -108,6 +122,89 @@ function pickSpot(all: Inmate[], spots: Spot[], rng: { rng: number }): Spot | nu
 }
 
 const tiles = (list: number[], face: number): Spot[] => list.map((tile) => ({ tile, face }));
+
+/** The place at the serving counter fewest others are heading for, by the inmate's cell (no draw: a meal's walk leaves the RNG as it was). */
+function counterSpot(all: Inmate[], spots: Spot[], m: Inmate): Spot {
+  const start = (m.cell * 3) % spots.length;
+  let best = spots[start];
+  let fewest = Infinity;
+  for (let k = 0; k < spots.length; k++) {
+    const s = spots[(start + k) % spots.length];
+    const n = all.reduce((sum, o) => sum + (o !== m && o.goal === s.tile ? 1 : 0), 0);
+    if (n < fewest) {
+      fewest = n;
+      best = s;
+    }
+  }
+  return best;
+}
+
+/** Close enough to the counter to see its place is taken. */
+const COUNTER_SIGHT = (UNIT * 3) / 2;
+/** Steps before looking again. */
+const TURN_STEPS = 8;
+
+/**
+ * Coming up to a place at the counter with someone standing at it: another one, if there's one
+ * free; else it waits there a step back for its turn. True when it isn't walking on this step.
+ */
+function waitsItsTurn(c: Crowd, all: Inmate[], m: Inmate): boolean {
+  const stoodAt = (tile: number) => all.some((o) => o !== m && !o.body.moving && tileAt(o.body.x, o.body.z) === tile) || c.others.some((o) => tileAt(o.x, o.z) === tile);
+  const g = m.goal;
+  if (!stoodAt(g) || Math.abs(centerX(g) - m.body.x) + Math.abs(centerZ(g) - m.body.z) > COUNTER_SIGHT) return false;
+  const free = placesOf(c.w).counters.find((s) => !stoodAt(s.tile) && !all.some((o) => o !== m && o.goal === s.tile));
+  m.stall = 0;
+  if (free) {
+    m.goal = free.tile;
+    m.face = free.face;
+    route(c, m);
+    return true;
+  }
+  m.body.moving = false;
+  m.wait = TURN_STEPS;
+  return true;
+}
+
+/** How long an inmate's tray lasts it. */
+export const inmateEatSteps = (m: Pick<Inmate, 'cell'>) => INMATE_EAT_STEPS + (m.cell * 53) % EAT_SPREAD;
+
+/** A meal given up: no tray, its seat free for anyone. */
+function dropMeal(m: Inmate) {
+  // (Whatever called it away, it goes now: not after the time its tray had left.)
+  if (m.tray !== TRAY.NONE || m.seat >= 0) m.wait = 0;
+  m.tray = TRAY.NONE;
+  m.seat = -1;
+}
+
+/** Off to a spot: goal, what it does there, and the walk planned. */
+function setOff(c: Crowd, m: Inmate, spot: Spot, then: number) {
+  m.goal = spot.tile;
+  m.face = spot.face;
+  m.then = then;
+  m.doing = DOING.NOTHING;
+  route(c, m);
+}
+
+/**
+ * The next leg of a meal, once what it was doing is done: from the counter to its seat (with its
+ * tray) or back to it (having put the tray down), from a finished tray to the counter. True when
+ * it set off.
+ */
+function nextLeg(c: Crowd, all: Inmate[], m: Inmate): boolean {
+  if (m.seat < 0 || m.path.length || tileAt(m.body.x, m.body.z) !== m.goal) return false;
+  if (m.doing === DOING.SERVE) {
+    const backAgain = m.tray === TRAY.EMPTY;
+    m.tray = backAgain ? TRAY.NONE : TRAY.FULL;
+    setOff(c, m, { tile: m.seat, face: m.seatFace }, backAgain ? DOING.SIT : DOING.EAT);
+    return true;
+  }
+  if (m.doing === DOING.EAT && m.tray === TRAY.FULL) {
+    m.tray = TRAY.EMPTY;
+    setOff(c, m, counterSpot(all, placesOf(c.w).counters, m), DOING.SERVE);
+    return true;
+  }
+  return false;
+}
 
 /** Chooses where an inmate goes next for its plan, and what it does there (`work`: its job's zone index, -1 without one). */
 function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: number) {
@@ -127,6 +224,13 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
     case 'dinner':
       spot = pickSpot(all, places.seats, rng);
       then = DOING.EAT;
+      // (2.25: its seat kept, the tray fetched from the serving counter first.)
+      if (serving && spot) {
+        m.seat = spot.tile;
+        m.seatFace = spot.face;
+        spot = counterSpot(all, places.counters, m);
+        then = DOING.SERVE;
+      }
       break;
     case 'exercise': {
       // (P31: with a sports ground, out there: a third of them jog the track.)
@@ -207,12 +311,14 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
   const c: Crowd = { w, grid: w.npcBlock, all, others, step };
   playerSeat = social.seat;
   offTiles = social.off ?? [];
+  serving = !!social.serve;
   bay = w.delivering ? w.parked : null;
   all.forEach((m, k) => {
     // Out cold: lies where it fell (Sim counts the time and wakes it).
     if (m.ko > 0) {
       m.body.moving = false;
       m.doing = DOING.KNOCKED_OUT;
+      dropMeal(m);
       return;
     }
     // A follower (GDD §10.3): after whoever comes for the player, else at the player's heels.
@@ -220,6 +326,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     if (lead && m.angry <= 0) {
       m.doing = social.doing[k] ?? DOING.NOTHING;
       m.plan = -1;
+      dropMeal(m);
       closeIn(c, m, k, lead, social.pace?.[k] || m.speed + 30, social.gap[k]);
       // (A lookout at his post, P23: facing south, as the camera sees him.)
       if (m.doing === DOING.LOOKOUT && !m.body.moving) m.body.facing = 5;
@@ -236,6 +343,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     // Hit by the player: it goes for them (Sim lands the punches) until it calms down or loses them.
     if (m.angry > 0) {
       m.angry--;
+      dropMeal(m);
       if (foe && m.angry > 0) {
         m.doing = DOING.NOTHING;
         closeIn(c, m, k, foe, m.speed + 24);
@@ -252,14 +360,22 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       m.doing = DOING.NOTHING;
       m.body.moving = false;
       m.stall = 0;
+      dropMeal(m);
       m.wait = randomInt(rng, INMATE_REACTION);
+    }
+    // A meal broken off and its seat given up (a fight, led away, out cold), the routine taken up again: fetched afresh.
+    if (serving && m.seat < 0 && (m.then === DOING.SERVE || m.then === DOING.EAT)) {
+      m.goal = -1;
+      m.path = [];
+      m.doing = DOING.NOTHING;
+      m.then = DOING.NOTHING;
     }
     // A rat running loose close by, in sight (P20): away from it as fast as legs go, then watching it
     // from a safe distance (its goal kept: its spot stays its own); once it's over, back to it.
     if (social.scare.length && m.doing !== DOING.SLEEP && flee(c, m, social.scare)) return;
     // Back on its spot after fleeing (P20): what it was doing there, taken up again as it was (nothing drawn).
     if (m.doing === DOING.NOTHING && m.then !== DOING.NOTHING && m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) {
-      m.doing = m.then;
+      settle(m);
       m.body.facing = m.face;
       m.body.moving = false;
     }
@@ -268,6 +384,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       m.goal = -1;
       m.path = [];
       m.doing = DOING.NOTHING;
+      m.seat = -1;
     }
     if (m.wait > 0) {
       m.wait--;
@@ -285,12 +402,14 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       route(c, m);
       return;
     }
+    if (nextLeg(c, all, m)) return;
     if (m.goal < 0) {
       choose(c, m, all, rng, social.work[k] ?? -1);
       if (m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) arrive(m, plan, rng);
       return;
     }
     if (m.path.length) {
+      if (serving && m.then === DOING.SERVE && waitsItsTurn(c, all, m)) return;
       // (Jogging the track, P31: a jog's pace, not a walk's.)
       if (walkPath(c, m, k, m.then === DOING.JOG ? m.speed + JOG_EXTRA : m.speed)) arrive(m, plan, rng);
       return;
@@ -298,6 +417,8 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     if (tileAt(m.body.x, m.body.z) !== m.goal) {
       // Not there and no path (none was found earlier): try again.
       route(c, m);
+      // (2.25: at work, a spot behind furniture no door will ever open on, Irongate's planters: another next time.)
+      if (social.reroute && !m.path.length && plan !== LOCKDOWN_PLAN && ROUTINE[plan].id === 'work') m.goal = -1;
       return;
     }
     // Free time: done lingering, somewhere new next step. Routines keep them where they are.
@@ -330,6 +451,10 @@ export interface Social {
   face?: readonly number[];
   /** Tiles nobody heads for (P39: the parole board's chairs and the player's seat across, while the hearing is due or sitting). */
   off?: readonly number[];
+  /** 2.25: an inmate at work with no way to its spot picks another (false: replaying an older run). */
+  reroute?: boolean;
+  /** 2.25: a meal on, fetched from the serving counter (false: none on, no counter here, or replaying an older run). */
+  serve?: boolean;
 }
 const NO_SOCIAL: Social = { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], pace: [], face: [] };
 
@@ -425,12 +550,19 @@ function closeIn(c: Crowd, m: Walker, k: number, foe: Body, speed: number, gap =
   walkPath(c, m, k, speed);
 }
 
+/** Starts on what its spot is for; at a meal (2.25) that takes time: a moment at the counter, a tray's worth at the table. */
+function settle(m: Inmate) {
+  m.doing = m.then;
+  if (m.then === DOING.SERVE) m.wait = SERVE_STEPS;
+  else if (m.then === DOING.EAT && m.tray === TRAY.FULL) m.wait = inmateEatSteps(m);
+}
+
 /** At the goal: stop, face the right way, start doing what the spot is for. */
 function arrive(m: Inmate, plan: number, rng: { rng: number }) {
   m.body.moving = false;
   m.stall = 0;
   m.body.facing = m.face;
-  m.doing = m.then;
+  settle(m);
   // Free time: linger 15–45 s before moving on.
   if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) m.wait = STEPS_PER_SECOND * (15 + randomInt(rng, 31));
 }

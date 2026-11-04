@@ -126,7 +126,7 @@ night checks.
 - **Three attributes:** Strength, Speed and Intellect. They are trained at weights and pull-up bars,
   treadmills and laps, and books, and slip back when neglected.
 - **Energy and health:** tools and training cost energy. Sitting, meals, showers, chocolate and sleep
-  restore it.
+  restore it. A meal is a tray taken at the serving counter, eaten at a table and carried back (eaten and not brought back, it costs heat).
 - **Pockets:** 6 hotbar slots, a weapon slot and an outfit slot. Desks have a hidden compartment that
   morning searches never find.
 

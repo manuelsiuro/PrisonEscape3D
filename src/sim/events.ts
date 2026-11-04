@@ -124,6 +124,8 @@ export type SimEvent =
   | { type: 'sit'; on: boolean; use: 'sit' | 'rest' }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
   | { type: 'meal'; feast?: boolean; fresh?: boolean }
+  /** 2.25: a tray taken from the serving counter or given back, dropped, left behind on leaving the canteen, gone with the meal's end; `heat`: what not bringing it back cost. */
+  | { type: 'tray'; what: 'take' | 'return' | 'dropped' | 'left' | 'over'; heat?: number }
   /** P31: a lap of the running track run. */
   | { type: 'lap' }
   /** A recipe told to the player: by studying (who -1) or by an inmate. */

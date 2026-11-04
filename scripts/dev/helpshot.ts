@@ -11,6 +11,7 @@
 // trophies land in that profile's storage.
 import { PLANS, quiet, runRoute, type Route } from '../escapes';
 import { Bot, DIR } from '../bots';
+import { placesOf } from '../../src/sim/ai/places';
 import { TRAINING } from '../../src/content/prisons/training';
 import { WAY } from '../../src/content/smuggling';
 import { CHARTS, countIn, LATE, songSteps } from '../../src/content/nights';
@@ -470,6 +471,26 @@ export const SHOTS: Record<string, Shot> = {
     when: at(0.99),
     zoom: 2.4,
     dz: -1,
+  },
+
+  // 2.25: a meal at Center Perks, the room at work: the player a few tiles south of the serving counter with
+  // their tray, turned to the camera, inmates fetching theirs and carrying them to the tables.
+  meals: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 3);
+      bot.routineUntil(1, 9 * 60 + 2);
+      const spot = placesOf(bot.sim.world).counters[3];
+      bot.walkTo(spot.tile);
+      bot.face(spot.face);
+      bot.act();
+      bot.walkTo(spot.tile + 2 * 64);
+      bot.face(DIR.SOUTH);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.9,
+    dx: -1,
+    dz: -1.4,
   },
 
   // P42: Christmas Day in Center Perks' canteen, free time on day 2 (a run begun under Christmas): the tree standing free with its

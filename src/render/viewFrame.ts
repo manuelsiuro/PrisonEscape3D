@@ -72,6 +72,9 @@ export interface Frame {
   lockFar: boolean;
   /** Training (GDD §3.2): the player's pose (DOING.LIFT, RUN, READ; NOTHING otherwise), where they stand for it (on the treadmill's belt), and a count of reps so far (each one pumps the arms). */
   doing: number;
+  /** The player's meal tray (TRAY_AT, Character.ts), and how much food is left on it (0–1). */
+  trayAt: number;
+  trayLeft: number;
   trainAt: { x: number; z: number; facing: number; y: number } | null;
   /** Resting on an infirmary bed: where it lies (the player lies on it as in their own bed). */
   restBed: BedPose | null;
@@ -161,6 +164,9 @@ export interface InmateFrame {
   cell: number;
   /** Fighting the player back. */
   angry: boolean;
+  /** Its meal's tray (TRAY_AT, Character.ts), and how much food is left on it (0–1). */
+  trayAt: number;
+  trayLeft: number;
   /** The badge over their head: a favor, a shop, the player's letter for them, a follower. */
   badge: BadgeKind;
 }
@@ -204,6 +210,8 @@ export function emptyFrame(): Frame {
     lockHostile: false,
     lockFar: false,
     doing: 0,
+    trayAt: 0,
+    trayLeft: 1,
     trainAt: null,
     restBed: null,
     reps: 0,

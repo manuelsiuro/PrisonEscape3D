@@ -11,6 +11,7 @@
  */
 import { DAY_BOOKS, DAY_EVENTS, DRILL_HEAT, COMMENDATION, FEAST_ENERGY, MUSTER_MINUTES, WEATHERS, type DayEvent, type Weather } from '../src/content/days';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
+import { TRAY } from '../src/sim/systems/inmates';
 import { PRISONS } from '../src/content/prisons';
 import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
@@ -227,8 +228,9 @@ function resumesSame(bot: Bot, steps: number): boolean {
   check(coming === sim.state.inmates.length, 'the drill empties the buildings: everyone out at roll call or on the way there');
   check(mustered && !seen.some((e) => e.type === 'today' && e.phase === 'missed') && bot.st.heat === 0, 'mustered in time: no heat');
   check(bot.st.feats[FEAT.mustered] === 1, 'the ledger counts the muster (Present and Correct)');
-  until(2, (at + 8 * 60 + 18) % 1440);
-  check(atRollCall() === sim.state.inmates.length, 'everyone out at roll call a few minutes on');
+  // (The whole drill: whoever wandered furthest in free time gets there just before it's over.)
+  until(2, (at + 8 * 60 + 20) % 1440);
+  check(atRollCall() === sim.state.inmates.length, 'everyone out at roll call by the end');
   until(2, (at + 8 * 60 + 21) % 1440);
   check(seen.some((e) => e.type === 'today' && e.event === 'drill' && e.phase === 'end') && !sim.dutyZones.includes('rollCall'), 'the drill over: back to the routine');
   // Staying put in the cell: +40 heat when the muster closes.
@@ -253,11 +255,12 @@ function resumesSame(bot: Bot, steps: number): boolean {
   until(2, 17 * 60 + 20);
   const sim = bot.sim;
   const places = placesOf(sim.world);
-  const spot = places.seats.find((s) => !bot.st.inmates.some((m) => m.goal === s.tile))!;
+  const spot = places.seats.find((s) => !bot.st.inmates.some((m) => m.goal === s.tile || m.seat === s.tile))!;
   put(sim, spot.tile);
   bot.st.player.facing = spot.face;
   bot.st.energy = 20;
   bot.st.health = 30;
+  bot.st.tray = TRAY.FULL;
   bot.act();
   const e0 = bot.st.energy;
   bot.until(() => bot.st.eaten >= MEAL_STEPS, MEAL_STEPS + 2);

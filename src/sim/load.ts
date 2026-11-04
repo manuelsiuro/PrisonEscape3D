@@ -34,7 +34,7 @@ import { FREED_STEPS } from '../content/paperwork';
 import { APPLY_AGAIN, HEARING_AFTER, RECORD } from '../content/parole';
 import { freshParole, hearingOk, SCORE_MAX, SCORE_MIN } from './systems/parole';
 import { HOLIDAYS } from '../content/holidays';
-import { GUARD_STR, OPINION_START, START_STR, UNIT } from './tuning';
+import { GUARD_STR, OPINION_START, START_STR, UNIT, MEAL_STEPS, MEAL_STEPS_224 } from './tuning';
 import { containersOf } from './world/containers';
 import { MAP_H, MAP_W, type World } from './world/World';
 import { freshState, type Call, type SimState } from './state';
@@ -59,7 +59,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.inmates =
     st.inmates?.map((m0) => {
       const m = m0.hp === undefined ? { ...m0, ...fighter(45), angry: 0 } : m0;
-      return m.opinion === undefined ? { ...m, opinion: OPINION_START, shift: 0 } : m;
+      const n = m.opinion === undefined ? { ...m, opinion: OPINION_START, shift: 0 } : m;
+      // (2.25: a save from before meals at the counter, with no tray or seat held.)
+      return n.tray === undefined ? { ...n, tray: 0, seat: -1, seatFace: 0 } : n;
     }) ?? spawnInmates(world, { rng: st.rng });
   s.items = fitItems(world, st.items, st.rng) ?? startItems(world, { rng: st.rng });
   // Guard fields added later (P15's ways) load at the end, in field order.
@@ -243,6 +245,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   // A seat that isn't one any more (the props changed): standing.
   const seat = world.props[s.seat];
   if (s.seat >= 0 && !(seat && fixtureUse(world, seat))) s.seat = -1;
+  if (s.tray !== 0 && s.tray !== 1 && s.tray !== 2) s.tray = 0;
+  // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)
+  if (st.tray === undefined && s.eaten >= MEAL_STEPS_224) s.eaten = MEAL_STEPS;
   return s;
 }
 
