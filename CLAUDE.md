@@ -40,8 +40,11 @@ Rules that matter every time:
   the "In game" photos with `scripts/dev/mapshot.ts` in the dev build (`send()` writes them to
   `assets/maps/` through `scripts/dev/shotsink.ts`; a change to the manhunt's outside: `send(true)`,
   its "Outside 3D" photos). Check that the new
-  thing appears: a group the title screen hides needs showing in `View.mapShot`. Then run
-  `npm run maps` again, and commit the pictures with the phase.
+  thing appears: a group the title screen hides needs showing in `View.mapShot` (its `dress`, for
+  what stands there every day). Then run `npm run maps` again, and commit the pictures with the
+  phase. Rules and non-places go in `scripts/dev/mapdata.ts` (the prison sheet, the overlays).
+  `mapviewertest` fails when `data.js` or a drawn picture no longer matches the game, or when a
+  prison gets a field the viewer doesn't know yet; it can't see the 3D photos go stale.
 - **How to play**: a new feature gets a topic in `src/ui/screens/helpTopics.ts` with its
   `help.<id>.*` parts (`helptest` checks the French has as many lines, the icons and pictures).
   Its picture is a `SHOTS` entry in `scripts/dev/helpshot.ts` (a bot's run or a lesson replayed
