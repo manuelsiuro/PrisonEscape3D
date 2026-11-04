@@ -493,6 +493,21 @@ export const SHOTS: Record<string, Shot> = {
     dz: -1.4,
   },
 
+  // 2.27: roll call at Center Perks, the warden at the player's orange square, the line behind.
+  rollcall: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 3);
+      bot.silent = true;
+      bot.routineUntil(2, 8 * 60 + 15);
+      bot.until(() => bot.st.calling > 0, 400);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.2,
+    dx: 2,
+    dz: 1,
+  },
+
   // 2.26: a shower turned on at Center Perks, the crowd arriving at the other heads.
   showers: {
     make: () => {

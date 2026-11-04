@@ -1,4 +1,6 @@
 /** The HUD each frame (play's and a replay's): the clock, the routine, heat and every pill and chip, the file's button, the lockdown's red, the music and the ambience. */
+import { onOwnSquare, squareNeeded } from '../sim/systems/rollcall';
+import type { Sim } from '../sim/Sim';
 import { ROUTINE } from '../content/routine';
 import { presenceNeeded } from '../sim/systems/routine';
 import { t, type Key } from '../i18n';
@@ -78,6 +80,8 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   else if (hudState.presence?.[0] !== present || hudState.presence[1] !== need / STEPS_PER_MINUTE) hudState.presence = [present, need / STEPS_PER_MINUTE];
   // (P24's glider lesson, on the roof after Lights Out: the routine pill asks nothing of the player.)
   hudState.quietRoutine = !!g.lesson && LESSONS[g.lesson.index].routine === false;
+  // At roll call (2.27): where to stand till counted; on it, the morning's shakedown, until it's over.
+  hudState.square = squareNeeded(sim) && !st.attended && !onOwnSquare(sim) ? t('routine.yourSquare') : shakedownLine(sim);
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;
@@ -217,4 +221,13 @@ function fileButton(g: Game) {
   // (Spent once it shows: a game left before then shows it next time.)
   if (tip && !seenTip('fileButton')) markTip('fileButton');
   hud.fileTip(tip);
+}
+
+/** The shakedown's cells while it's on and the morning roll call lasts (2.27), for the routine pill; null else. */
+function shakedownLine(sim: Sim): string | null {
+  const st = sim.state;
+  if (ROUTINE[st.routine].id !== 'rollCall') return null;
+  const g = st.guards.find((o) => o.mode === GUARD.SHAKEDOWN || o.resume === GUARD.SHAKEDOWN);
+  if (!g || !g.tasks.length) return null;
+  return g.tasks.includes(1) ? t('routine.shakedownYou') : t('routine.shakedown', { cells: g.tasks.join(', ') });
 }

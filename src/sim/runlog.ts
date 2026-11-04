@@ -160,8 +160,9 @@ export class RunRecorder {
       // (Nor one from before sports day, P22: the week's cards changed again; nor stage nights, P30; nor the P23–P30 fixes of 2.5.1; nor the easier games of 2.16.)
       // (Nor one from before meals at the serving counter, 2.25: played on under them, it would no longer replay.)
       // (Nor one from before the showers were turned on, 2.26: the same.)
-      // (Every one of those versions comes before 2.26, the latest gate: one test covers them all.)
-      const stale = beforeShowers(log?.game ?? '');
+      // (Nor one from before the warden's count, 2.27: the same.)
+      // (Every one of those versions comes before 2.27, the latest gate: one test covers them all.)
+      const stale = beforeCount(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -270,6 +271,8 @@ const beforeWatch = (game: string) => versionBefore(game, 2, 23);
 const beforeTrays = (game: string) => versionBefore(game, 2, 25);
 /** Before the showers were turned on and taken in turns, and ambushes gave a moment's warning (2.26.0): Sim.rules225 plays them as they were. */
 const beforeShowers = (game: string) => versionBefore(game, 2, 26);
+/** Before roll call counted the player on their square and the warden walked the line (2.27.0): Sim.rules226 plays it as it was. */
+const beforeCount = (game: string) => versionBefore(game, 2, 27);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -319,6 +322,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeTrays(log.game)) sim.rules224 = true;
   // Played before the showers were turned on: stood still under a head, and the crowd never took turns.
   if (beforeShowers(log.game)) sim.rules225 = true;
+  // Played before the warden's count: anywhere in the yard, nobody called.
+  if (beforeCount(log.game)) sim.rules226 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

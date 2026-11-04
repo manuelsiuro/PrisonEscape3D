@@ -12,6 +12,7 @@ import { personOf } from '../sim/systems/combat';
 import { type Station } from '../sim/systems/economy';
 import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
 import { eatingNow, mealOn, mealSteps, servingCounter, TRAY, traysHere } from '../sim/systems/canteen';
+import { canAnswer, wardenOf } from '../sim/systems/rollcall';
 import { showerOffer } from '../sim/systems/showers';
 import { DOING, inmateEatSteps } from '../sim/systems/inmates';
 import { TRAY_AT } from '../render/Character';
@@ -201,8 +202,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.inmates.length = st.inmates.length;
   // (Sat in the canteen on dinner's plan with no meal on: a film, the acts. No tray, no spoon.)
   const watching = traysHere(sim) && !mealOn(sim);
+  const warden = st.guards[wardenOf(sim)];
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, bare: false, towel: 0 });
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, bare: false, towel: 0, attention: false });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -224,6 +226,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const washTurn = !o.moving ? 0 : m.then === DOING.TOWEL ? 1 : m.then === DOING.SHOWER && sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'showers' ? 2 : 0;
     o.bare = o.doing === DOING.SHOWER || o.doing === DOING.TOWEL || washTurn === 1;
     o.towel = o.doing === DOING.TOWEL ? 2 : o.doing === DOING.SHOWER_WAIT || washTurn > 0 ? 1 : 0;
+    // The warden's come to its square (2.27): it stands straight.
+    o.attention = !!warden && warden.mode === GUARD.COUNT && warden.tasks[0] === m.cell - 1;
   });
   // The side games (P22): the dice partner crouches over the dice with the player (the arm-wrestle's pose is the view's, from the bout).
   const rival = diceRival(sim);
@@ -347,7 +351,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
         ? focusOf(sim, { kind: 'person', who: st.talk })
         : st.train >= 0 || st.seat >= 0
           ? null
-          : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : showerHead(sim, target) ?? target, climb, memo.station);
+          : canAnswer(sim)
+            ? null
+            : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : showerHead(sim, target) ?? target, climb, memo.station);
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
   // The tray: in both hands, unless it's set down on a table (below).

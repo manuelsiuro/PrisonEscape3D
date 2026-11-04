@@ -27,6 +27,8 @@ export interface Places {
   rests: Spot[];
   /** Roll call spots in order (spot k for cell k + 1), facing north. */
   rollCall: Spot[];
+  /** Where the warden stands to call each square (2.27), and the way it faces from there. */
+  countStops: Spot[];
   /** Per cell number: the free tile beside its bed (index 0 unused). */
   bedside: number[];
   /** Per cell number: the tile beside its desk (a guard stands there to search it). */
@@ -103,6 +105,12 @@ function build(w: World): Places {
     }
   }
   const rollCall = w.def.rollCall.map((r) => ({ tile: r.z * MAP_W + r.x, face: N }));
+  // (North of the square first: the line faces that way. Nothing else's square, nothing solid.)
+  const squares = new Set(rollCall.map((r) => r.tile));
+  const countStops = rollCall.map((r) => {
+    const free = [[-MAP_W, S], [-1, E], [1, W], [MAP_W, N]].find(([d]) => !squares.has(r.tile + d) && !w.guardBlock[r.tile + d]);
+    return free ? { tile: r.tile + free[0], face: free[1] } : { tile: r.tile, face: S };
+  });
   const bedside = [-1];
   const deskside = [-1];
   const doorstep = [-1];
@@ -131,6 +139,7 @@ function build(w: World): Places {
     showers,
     rests,
     rollCall,
+    countStops,
     bedside,
     deskside,
     doorstep,

@@ -11,6 +11,7 @@ import { ZONES } from '../src/content/zones';
 import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
 import { command, OP, SLOT } from '../src/sim/command';
+import { canAnswer } from '../src/sim/systems/rollcall';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { itemOf, slot } from '../src/sim/systems/items';
@@ -24,6 +25,8 @@ export const tileOf = (x: number, z: number) => z * MAP_W + x;
 
 export class Bot {
   readonly sim: Sim;
+  /** Leaves the warden's call at roll call unanswered. */
+  silent = false;
   readonly pilot: Autopilot;
   /** Highest heat seen, and the notable events with their times. */
   heatPeak = 0;
@@ -60,6 +63,8 @@ export class Bot {
 
   /** One step; notable events go in the log. */
   step(cmd = 0) {
+    // (Called at roll call and standing there: "Here!", as anyone would. Not for a test of what happens otherwise.)
+    if (cmd === 0 && !this.silent && canAnswer(this.sim)) cmd = command(0, OP.INTERACT);
     this.start ??= this.sim.snapshot();
     this.cmds.push(cmd);
     this.sim.step(cmd);

@@ -366,6 +366,12 @@ export interface SimState {
   trayDone: number;
   /** 2.26: the player has turned on the shower they stand under (showers.ts). */
   washing: boolean;
+  /** 2.27: steps left to answer the warden's call at roll call (0: not called), whether this block's count has been set off, and whether the player has been in the yard this block (off their square, they still came). */
+  calling: number;
+  countDone: boolean;
+  yardSeen: boolean;
+  /** 2.27: how many squares the warden has called this block. */
+  countAt: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -549,5 +555,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     tray: 0,
     trayDone: 0,
     washing: false,
+    calling: 0,
+    countDone: false,
+    yardSeen: false,
+    countAt: 0,
   };
 }
