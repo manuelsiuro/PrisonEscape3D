@@ -1,7 +1,7 @@
 59 topics in 14 groups: 59 laid out as pages (6358 words before the fine print), 0 still a paragraph (0 words); 41 pictures
 every part in French with as many lines; every item, recipe, icon, lesson, prison and picture there
   goal        78 words on the page,  45 folded; 4 steps, 1 chips, 1 lessons
-  routine    116 words on the page,   0 folded; 4 steps, 0 chips, schedule, 1 lessons
+  routine    116 words on the page,   0 folded; 4 steps, 0 chips, schedule, 2 lessons
   meals      103 words on the page,  35 folded; 4 steps, 0 chips, 1 lessons
   heat        31 words on the page,   0 folded; 0 steps, 0 chips, meter, 1 lessons
   items       86 words on the page,   0 folded; 4 steps, 0 chips, pockets, 2 lessons
@@ -10,7 +10,7 @@ every part in French with as many lines; every item, recipe, icon, lesson, priso
   trophies    77 words on the page,  18 folded; 0 steps, 0 chips, medals
   daily       74 words on the page,  52 folded; 0 steps, 0 chips
   replay      91 words on the page,  35 folded; 0 steps, 4 chips
-  guards      32 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
+  guards      32 words on the page,   0 folded; 0 steps, 0 chips, 2 lessons
   guardWays  148 words on the page,  41 folded; 0 steps, 3 chips, 1 lessons
   caught      32 words on the page,   0 folded; 0 steps, 2 chips
   searches    48 words on the page,   0 folded; 0 steps, 0 chips, 1 recipes, 1 lessons
