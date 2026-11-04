@@ -34,6 +34,7 @@ talent: 4 steps done by day 1 20:04
 quiz: 4 steps done by day 1 19:55
 crew: 3 steps done by day 1 10:33
 crew, posted far: ended at step 3 (lesson.crew.far)
+meals: 4 steps done by day 1 09:16
 laps: 3 steps done by day 1 10:51
 gardener: 4 steps done by day 1 12:18
 lockpick: 3 steps done by day 1 10:35
@@ -74,6 +75,6 @@ crew, called off: ended at step 3 (lesson.crew.off)
 smuggle, by visitor: ended at step 1 (lesson.smuggle.wrong)
 heat, out the east fence: ended at step 1 (lesson.outEarly)
 tunnel, down a stray hole: on at step 4 (null)
-4 chapters: basics 10, getby 7, life 23, ways 8
+4 chapters: basics 10, getby 7, life 24, ways 8
 training: its guard out cold, no takeover
 every lesson goal is open floor

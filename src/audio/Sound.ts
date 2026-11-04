@@ -298,6 +298,25 @@ export class Sound {
     this.hiss(0.08, 'lowpass', 900, 0.8, 0.05);
   }
 
+  /** A tray lifted from or set on the counter: a light clink of metal. */
+  tray() {
+    this.tone(1650, 1500, 0.05, 'triangle', 0.09);
+    this.tone(2350, 2200, 0.04, 'sine', 0.04, 0.03);
+  }
+
+  /** A tray on the floor: a clatter. */
+  trayDown() {
+    this.hiss(0.14, 'highpass', 2200, 0.8, 0.09);
+    this.tone(980, 620, 0.09, 'square', 0.05);
+    this.tone(760, 520, 0.08, 'square', 0.04, 0.07);
+  }
+
+  /** A mouthful, spoon on the plate. */
+  bite() {
+    this.tone(2200, 2100, 0.03, 'sine', 0.025);
+    this.hiss(0.05, 'lowpass', 700, 0.8, 0.03, undefined, 0.05);
+  }
+
   /** A meal eaten: two quick spoon clinks and a pleased hum. */
   eat() {
     this.tone(2400, 2300, 0.05, 'sine', 0.06);

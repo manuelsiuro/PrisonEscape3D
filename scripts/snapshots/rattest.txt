@@ -6,6 +6,6 @@ errands: furniture within reach, the best small thing and the change back, a sma
 keys: a guard who wakes without his key raises the alarm (day 4 08:02)
 the heist: key fetched, molded, put back; 08:00 no alarm (day 2 08:01)
 woken: the rat comes back empty
-panics: 7 people at breakfast; the squeak, the inmates fleeing, 20 s, once a day; a caught rat thrown
+panics: 6 people at breakfast; the squeak, the inmates fleeing, 20 s, once a day; a caught rat thrown
 dogs: after a rat they see, the rat home without its errand
 saves: mid-errand the same; off the floor it waits; old saves have no rat

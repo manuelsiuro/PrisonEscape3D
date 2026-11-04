@@ -1,7 +1,8 @@
 import type { DecorPlacement } from '../../decor';
 
-/** Table tops (props.ts), for things standing on them. */
+/** Table and counter tops (props.ts), for things standing on them. */
 const TABLE = 0.52;
+const COUNTER = 0.56;
 
 /** Cabin cells: a poster or a shelf over the bunk's end, by turns (top row on the north wall, bottom row on the south). */
 const cells: DecorPlacement[] = [5, 10, 15, 24, 29, 34].flatMap((x0, k) => [{ kind: k % 2 ? 'wallShelf' : 'posterB', x: x0 + 1, z: 7 } as const]);
@@ -29,8 +30,9 @@ export const STALAG_FLUCHT_DECOR: readonly DecorPlacement[] = [
   { kind: 'sacks', x: 18, z: 19 },
   { kind: 'drum', x: 18, z: 17 },
   { kind: 'timber', x: 17, z: 16 },
-  // Canteen: the menu, a water cooler, plants.
+  // Canteen: the menu, a water cooler, plants, trays on the serving counter.
   { kind: 'menuBoard', x: 16, z: 30, w: 2 },
+  { kind: 'trays', x: 18, z: 31, d: 3, rot: 3, y: COUNTER },
   { kind: 'waterCooler', x: 17, z: 35 },
   { kind: 'plant', x: 5, z: 35 },
   // Kitchen: pans on the wall, the sink, a sack of potatoes.

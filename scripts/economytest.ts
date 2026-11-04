@@ -879,4 +879,14 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
     lines.push(`${def.id} ${held.length}`);
   }
   console.log(`inmates at work at 14:59 on day 1: ${lines.join(', ')}`);
+  // (2.25: Irongate's garden floor behind its planters is walled in: the gardener never stays stuck picking it.)
+  const irongate = PRISONS.find((p) => p.id === 'irongate')!;
+  const gardener = irongate.jobs.findIndex((j) => j.id === 'gardener');
+  for (let seed = 1; seed <= 12; seed++) {
+    const bot = new Bot(irongate, seed);
+    const at = (14 * 60 + 59 - 8 * 60) * STEPS_PER_MINUTE;
+    bot.keepRoutine(() => bot.st.step >= at, at + 1);
+    const h = bot.st.jobs[gardener];
+    check(h < 0 || bot.st.inmates[h].shift === 1, `irongate #${seed}: the gardener got to work`);
+  }
 }

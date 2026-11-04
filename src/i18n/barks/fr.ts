@@ -1986,6 +1986,14 @@ export const frBarks: Barks = {
     "Écarte-toi de là !",
     "C’est la cellule de qui, ça, détenu ?",
   ],
+  "re.tray.gu": [
+    "Hé ! Les plateaux, ça se rapporte au comptoir !",
+    "Toi. Ton plateau. Au comptoir, la prochaine fois.",
+    "Tu crois que c’est ta mère qui débarrasse ici ?",
+    "Ce plateau ne rentre pas tout seul.",
+    "Je compte les plateaux. Il en manque un. Je t’ai vu.",
+    "Ton plateau, détenu. On le rapporte. À chaque repas.",
+  ],
   "re.snooped.in": [
     "Hé ! C’est à moi, ça !",
     "Sors de ma cellule !",

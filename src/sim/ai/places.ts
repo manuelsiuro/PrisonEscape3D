@@ -19,6 +19,8 @@ export interface Places {
   floor: number[][];
   /** Canteen seats, facing their table. */
   seats: Spot[];
+  /** The canteen's floor along its serving counters, facing them: where a tray is fetched and given back. */
+  counters: Spot[];
   /** Tiles under a shower head, facing the wall. */
   showers: Spot[];
   /** Somewhere to sit in free time (P8+): every chair and yard bench tile, facing its table or the way it's turned. */
@@ -40,6 +42,8 @@ export interface Places {
 
 const S = 5;
 const N = 13;
+const E = 1;
+const W = 9;
 const cache = new WeakMap<World, Places>();
 
 export function placesOf(w: World): Places {
@@ -78,6 +82,24 @@ function build(w: World): Places {
     }
     if (p.kind === 'shower') showers.push({ tile: p.z * MAP_W + p.x, face: p.rot === 2 ? N : S });
   }
+  const seated = new Set(seats.map((q) => q.tile));
+  const counters: Spot[] = [];
+  const along = (x: number, z: number, face: number) => {
+    const t = z * MAP_W + x;
+    if (isFloor(w, x, z) && g.zone[t] === canteen && !seated.has(t)) counters.push({ tile: t, face });
+  };
+  for (const p of w.props) {
+    if (p.kind !== 'counter' || g.zone[p.z * MAP_W + p.x] !== canteen) continue;
+    // (Its front and ends: the side behind it, by its turn, is the staff's.)
+    for (let x = p.x; x < p.x + p.w; x++) {
+      if (p.rot !== 0) along(x, p.z - 1, S);
+      if (p.rot !== 2) along(x, p.z + p.d, N);
+    }
+    for (let z = p.z; z < p.z + p.d; z++) {
+      if (p.rot !== 1) along(p.x - 1, z, E);
+      if (p.rot !== 3) along(p.x + p.w, z, W);
+    }
+  }
   const rollCall = w.def.rollCall.map((r) => ({ tile: r.z * MAP_W + r.x, face: N }));
   const bedside = [-1];
   const deskside = [-1];
@@ -103,6 +125,7 @@ function build(w: World): Places {
   return {
     floor,
     seats,
+    counters,
     showers,
     rests,
     rollCall,

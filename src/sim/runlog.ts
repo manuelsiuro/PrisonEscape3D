@@ -158,8 +158,9 @@ export class RunRecorder {
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
       // (Nor one from before the rats, P20: a guard waking without his key now raises the alarm; nor one from before visiting day, P21: the week's cards changed.)
       // (Nor one from before sports day, P22: the week's cards changed again; nor stage nights, P30; nor the P23–P30 fixes of 2.5.1; nor the easier games of 2.16.)
-      // (Every one of those versions comes before 2.16, the latest gate: one test covers them all.)
-      const stale = beforeEasier(log?.game ?? '');
+      // (Nor one from before meals at the serving counter, 2.25: played on under them, it would no longer replay.)
+      // (Every one of those versions comes before 2.25, the latest gate: one test covers them all.)
+      const stale = beforeTrays(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -264,6 +265,8 @@ const beforeEasier = (game: string) => versionBefore(game, 2, 16);
 const beforeDrawnInk = (game: string) => versionBefore(game, 2, 22);
 /** Before the guards kept watch over the routine and the cells (2.23.0): Sim.rules222 plays them as they were. */
 const beforeWatch = (game: string) => versionBefore(game, 2, 23);
+/** Before meals were fetched from the counter (2.25.0): Sim.rules224 plays them as they were. */
+const beforeTrays = (game: string) => versionBefore(game, 2, 25);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -309,6 +312,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeDrawnInk(log.game)) sim.rules221 = true;
   // Played before the guards kept watch (2.23): checked in on arrival, a block skipped and a cell searched unminded.
   if (beforeWatch(log.game)) sim.rules222 = true;
+  // Played before the serving counter: sat down and the tray was there.
+  if (beforeTrays(log.game)) sim.rules224 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }
