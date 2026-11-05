@@ -35,6 +35,8 @@ import { rats } from './systems/rats';
 import { smuggle } from './systems/smuggling';
 import { phone, wheels } from './systems/phone';
 import { kiosk } from './systems/kiosk';
+import { vending } from './systems/vending';
+import { forgetPlaces } from './ai/places';
 import { freedNow, paperwork } from './systems/paperwork';
 import { hearingZones, parole, paroled } from './systems/parole';
 import { oddjobs } from './systems/oddjobs';
@@ -172,6 +174,14 @@ export class Sim {
   set rules230(on: boolean) {
     this.world.plainBooks = on;
   }
+  /** Replaying a run from before 2.32: the vending machine as it was (decoration, walked through), nobody at it. */
+  get rules231() {
+    return this.world.plainVending;
+  }
+  set rules231(on: boolean) {
+    this.world.plainVending = on;
+    forgetPlaces(this.world);
+  }
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -274,6 +284,8 @@ export class Sim {
     phone(this);
     // The internet kiosk (P35): mail call's goods and drawings, the time paid for, a course.
     kiosk(this);
+    // The vending machine (2.32): the day's stock, the queue, what's dropping.
+    vending(this);
     // The paperwork escape (P36): the records at 22:00, the release at 10:00, its way out.
     paperwork(this);
     // The parole board (P39): plotting found out, the hearing at 10:00, its questions and verdict.

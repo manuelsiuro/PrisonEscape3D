@@ -71,6 +71,17 @@ export class World {
   plainGear = false;
   /** Replaying a run from before 2.31: the library's added chairs are only decoration (Sim.rules230). */
   plainBooks = false;
+  /** Replaying a run from before 2.32: the vending machine is only decoration, to be walked through as it was (Sim.rules231). */
+  private vendingDecor = false;
+  get plainVending() {
+    return this.vendingDecor;
+  }
+  set plainVending(on: boolean) {
+    if (on === this.vendingDecor) return;
+    this.vendingDecor = on;
+    for (const p of this.props) if (p.kind === 'vending') this.propSolid[p.z * MAP_W + p.x] = on ? 0 : 1;
+    this.refreshBlock();
+  }
   /** Tiles covered by solid props on the ground floor. */
   readonly propSolid = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 where the player can't walk on the ground floor right now (the ground layer's block). */

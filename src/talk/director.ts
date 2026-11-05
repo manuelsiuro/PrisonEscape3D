@@ -106,6 +106,8 @@ const NO_TAGS: ReadonlySet<Tag> = new Set();
 
 /** How near the librarian has to be to say anything about a book (tiles). */
 const LIBRARIAN_EARSHOT = 8;
+/** How near the vending machine the player has to be to catch what's said at it (tiles). */
+const VEND_EARSHOT = 10;
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** The banks of a language with lines tied to moments (`when`). */
@@ -429,6 +431,19 @@ export class Director {
         const said = e.type === 'book' ? (e.on ? 're.library.book' : null) : e.why === 'full' ? 're.library.full' : null;
         const who = librarianOf(sim);
         if (said && who >= 0 && !sim.rules230 && s.inmates[who].ko <= 0 && dist(s.inmates[who].body, s.player) <= LIBRARIAN_EARSHOT) this.queueUp(now, said, [who], 3, said);
+        break;
+      }
+      case 'vend': {
+        // (2.32: at the machine, within earshot: a curse at a jam, what was bought, someone pushed past.)
+        const vm = sim.world.def.vending;
+        if (!vm || Math.hypot(px - vm.x, pz - vm.z) > VEND_EARSHOT) break;
+        if (e.what === 'toldOff') this.queueUp(now, 're.vend.guard', this.guardsNear(sim, px, pz, 10), 5, 'vendGuard');
+        else if (e.what === 'cut' && e.who !== undefined) this.queueUp(now, 're.vend.cut', [e.who], 5, 'vendCut');
+        else if (e.who === undefined) break;
+        else if (e.what === 'inmateJam' || e.what === 'inmateThump') this.queueUp(now, 're.vend.jam', [e.who], 3, 'vendJam');
+        else if (e.what === 'gaveUp') this.queueUp(now, 're.vend.gaveUp', [e.who], 3, 'vendGaveUp');
+        else if (e.what === 'empty') this.queueUp(now, 're.vend.empty', [e.who], 3, 'vendEmpty');
+        else if (e.what === 'inmateGot' && e.who % 3 === 0) this.queueUp(now, 're.vend.got', [e.who], 1, 'vendGot');
         break;
       }
       case 'askTurn':

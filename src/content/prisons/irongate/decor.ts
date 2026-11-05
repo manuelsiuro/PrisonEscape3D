@@ -38,11 +38,10 @@ export const IRONGATE_DECOR: readonly DecorPlacement[] = [
   { kind: 'speaker', x: 16, z: 40, rot: 2 },
   { kind: 'speaker', x: 40, z: 40, rot: 2 },
   { kind: 'extinguisher', x: 36, z: 39 },
-  // Canteen: the menu, the water cooler, a vending machine, trays on the serving counter.
+  // Canteen: the menu, the water cooler, trays on the serving counter.
   { kind: 'menuBoard', x: 33, z: 28, w: 2 },
   { kind: 'trays', x: 28, z: 33, d: 3, rot: 1, y: COUNTER },
   { kind: 'waterCooler', x: 34, z: 36 },
-  { kind: 'vending', x: 28, z: 37, rot: 1 },
   // Kitchen: pans on the wall, the sink, a sack of potatoes.
   { kind: 'panRack', x: 24, z: 28, w: 2 },
   { kind: 'sink', x: 23, z: 34, rot: 1 },

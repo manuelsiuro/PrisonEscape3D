@@ -5,6 +5,8 @@
  * can get stuck.
  */
 import { TRAY } from '../src/sim/systems/inmates';
+import { VEND } from '../src/content/vending';
+import { peopleAhead, VEND_NOBODY } from '../src/sim/systems/vending';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
 import { standing, tonight, turnFrom } from '../src/sim/systems/talent';
@@ -902,6 +904,29 @@ play('library', (bot) => {
   check(bot.st.train >= 0, 'library: reading');
   bot.set();
   check(bot.st.items.int === 42, 'library: a set read');
+  bot.until(() => false, 200);
+});
+
+play('vending', (bot) => {
+  // Up to the machine: a soda bought and drunk, then something that sticks, thumped free.
+  bot.act();
+  check(bot.st.vendOpen, 'vending: the card opens');
+  bot.until(() => peopleAhead(bot.sim) === 0 && bot.st.vend.who === VEND_NOBODY, 400);
+  bot.op(OP.EXT, EXT.VEND, VEND.BUY, 1);
+  bot.until(() => bot.slotOf('soda') >= 0, 80);
+  bot.op(OP.EXT, EXT.VEND, VEND.CLOSE);
+  bot.use();
+  check(bot.slotOf('soda') < 0, 'vending: drunk');
+  bot.op(OP.EXT, EXT.VEND, VEND.OPEN);
+  bot.until(() => peopleAhead(bot.sim) === 0 && bot.st.vend.who === VEND_NOBODY, 400);
+  bot.op(OP.EXT, EXT.VEND, VEND.BUY, 0);
+  bot.until(() => bot.st.vend.jam > 0, 80);
+  check(bot.st.vend.jam === 1, 'vending: it sticks');
+  bot.until(() => {
+    bot.op(OP.EXT, EXT.VEND, VEND.THUMP);
+    return !bot.st.vend.jam;
+  }, 200);
+  check(bot.slotOf('chocolate') >= 0, 'vending: thumped free');
   bot.until(() => false, 200);
 });
 

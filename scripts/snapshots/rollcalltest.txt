@@ -5,14 +5,14 @@ san-pancho: 14 squares, a stop beside each, the warden Varga
 irongate: 14 squares, a stop beside each, the warden Blackwood
 center-perks morning: called at minute 16, counted at 37, the walk over at 35 of 60
 center-perks evening: called at minute 16, counted at 37, the walk over at 35 of 60
-stalag-flucht morning: called at minute 17, counted at 38, the walk over at 45 of 60
+stalag-flucht morning: called at minute 17, counted at 37, the walk over at 45 of 60
 stalag-flucht evening: called at minute 17, counted at 38, the walk over at 45 of 60
 shankton morning: called at minute 16, counted at 40, the walk over at 45 of 60
 shankton evening: called at minute 15, counted at 40, the walk over at 43 of 60
 san-pancho morning: called at minute 15, counted at 37, the walk over at 41 of 60
-san-pancho evening: called at minute 15, counted at 37, the walk over at 40 of 60
+san-pancho evening: called at minute 15, counted at 38, the walk over at 40 of 60
 irongate morning: called at minute 17, counted at 39, the walk over at 39 of 60
-irongate evening: called at minute 17, counted at 39, the walk over at 39 of 60
+irongate evening: called at minute 17, counted at 39, the walk over at 40 of 60
 the square: the badge fills only there; off it to the end +25% heat, no lockdown; not in the yard, a lockdown
 Here!: answered, no heat; unanswered +5%, once, short of a chase; 5 s to step on; not there, not called on; panels closed; nothing charged out cold, gone or in a lockdown
 the warden: out cold, no count and nothing charged; called away, back to the line with nobody called twice; a stop out of reach passed over; off with the bell, the slate clean

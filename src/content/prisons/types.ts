@@ -325,6 +325,8 @@ export interface PrisonDef {
   checkpoint?: CheckpointDef;
   /** Free time (P27): the hoop and its court, the old-timer; without it, neither. */
   leisure?: LeisureDef;
+  /** 2.32: the vending machine: its tile (a `vending` prop, fronting south), and where it's used from then queued for, in order, the first in front of it. */
+  vending?: { x: number; z: number; line: ReadonlyArray<{ x: number; z: number }> };
   /** The pay phone (P34): where it hangs, its queue, the front gate; without it, none. */
   comms?: CommsDef;
   /**
