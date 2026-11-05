@@ -30,6 +30,7 @@ import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
 import { newVend, vendOk } from './systems/vendState';
+import { coolerOk, menuOk, newCooler, newMenu } from './systems/menuState';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FROM, J, JOB_LEN, KINDS, PERK, STAGE } from '../content/oddjobs';
 import { FREED_STEPS } from '../content/paperwork';
@@ -272,6 +273,11 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   s.vend = vendOk(s.vend, s.inmates.length) ? s.vend : newVend();
   s.vendOpen = s.vendOpen === true;
   if (!Number.isInteger(s.vendBought) || s.vendBought < 0) s.vendBought = 0;
+  // 2.33: the menu board clean (else as it was), the cooler with nobody at it, a cup as long ago as it was.
+  s.menuOpen = s.menuOpen === true;
+  s.menu = menuOk(s.menu) ? s.menu : newMenu();
+  if (!Number.isInteger(s.drank) || s.drank < 0) s.drank = 0;
+  s.cooler = coolerOk(s.cooler, s.inmates.length, 2) ? s.cooler : newCooler();
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]]) s.askTurn = [];
   // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)

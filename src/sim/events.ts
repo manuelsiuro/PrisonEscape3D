@@ -78,6 +78,10 @@ export type SimEvent =
   | { type: 'braced' }
   | { type: 'ate'; item: number }
   | { type: 'vend'; what: VendNews; item?: number; row?: number; who?: number; n?: number }
+  /** 2.33: at the menu board (who: the inmate who laughed). */
+  | { type: 'menu'; what: MenuNews; who?: number; /** caught: the heat it really cost. */ n?: number }
+  /** 2.33: at the water cooler (n: energy back; cooled: a heatwave's heat gone; who: the inmate). */
+  | { type: 'cooler'; what: CoolerNews; n?: number; cooled?: boolean; who?: number }
   /** Dirt down a toilet; a toilet that takes no more for now. */
   | { type: 'flushed'; item: number }
   | { type: 'clogged' }
@@ -128,7 +132,7 @@ export type SimEvent =
   | { type: 'wash'; on: boolean }
   | { type: 'count'; what: 'called' | 'you' | 'answered' | 'missed'; who: number; heat?: number }
   /** A meal eaten at the canteen table (GDD §2: +35 energy). */
-  | { type: 'meal'; feast?: boolean; fresh?: boolean }
+  | { type: 'meal'; feast?: boolean; fresh?: boolean; /** 2.33: what the tray gave (energy, health), and its dish. */ n?: number; hp?: number; dish?: string }
   /** 2.25: a tray taken from the serving counter or given back, dropped, left behind on leaving the canteen, gone with the meal's end; `heat`: what not bringing it back cost. */
   | { type: 'tray'; what: 'take' | 'return' | 'dropped' | 'left' | 'over'; heat?: number }
   /** P31: a lap of the running track run. */
@@ -388,6 +392,10 @@ type BribeKind = 'look' | 'paper' | 'over';
 /** What made a noise (P14). */
 /** What happened at the vending machine (2.32). */
 export type VendNews = 'open' | 'closed' | 'paid' | 'got' | 'floor' | 'jam' | 'thump' | 'freed' | 'toldOff' | 'waiting' | 'turn' | 'lostTurn' | 'left' | 'cut' | 'swing' | 'inmatePaid' | 'inmateGot' | 'inmateJam' | 'inmateThump' | 'gaveUp' | 'empty' | 'refilled' | 'shut';
+/** What happened at the menu board (2.33). */
+export type MenuNews = 'open' | 'closed' | 'left' | 'scribbling' | 'stopped' | 'scribbled' | 'caught' | 'laugh' | 'wiped';
+/** What happened at the water cooler (2.33). */
+export type CoolerNews = 'drank' | 'inmateDrank';
 export type NoiseKind = 'thump' | 'strike' | 'thud' | 'bang' | 'ring' | 'bark' | 'squeak' | 'buzz' | 'stumble' | 'cheer';
 /** Why a throw didn't go (i18n `toss.<why>`): nothing in hand, not now, too far, something in the way, nowhere to land. */
 export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
@@ -396,4 +404,4 @@ export type TossRefusal = 'nothing' | 'busy' | 'far' | 'line' | 'there';
 export type Attr = 'str' | 'spd' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'spd', 'int'];
 /** Why something social or economic didn't happen (i18n `refused.<why>`). */
-export type Refusal = 'vendTray' | 'vendShut' | 'vendDark' | 'vendSoldOut' | 'vendStuck' | 'vendBusy' | 'vendPockets' | 'vendFar' | 'vendNoJam' | 'vendFirst' | 'headTaken' | 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate' | 'noParole' | 'paroleOn' | 'atHearing' | 'paroleEarly' | 'paroleWait' | 'notAtDesk' | 'noBoard' | 'notAtBoard' | 'haveJob' | 'noJob' | 'pinTaken' | 'noDeal' | 'fixerToday' | 'notOwed' | 'notHisJob' | 'notLookout' | 'liftFull';
+export type Refusal = 'menuFar' | 'menuScribbled' | 'notThirsty' | 'coolerTray' | 'vendTray' | 'vendShut' | 'vendDark' | 'vendSoldOut' | 'vendStuck' | 'vendBusy' | 'vendPockets' | 'vendFar' | 'vendNoJam' | 'vendFirst' | 'headTaken' | 'closed' | 'cash' | 'room' | 'grudge' | 'opinion' | 'followers' | 'int' | 'taken' | 'favors' | 'missing' | 'worthless' | 'notDone' | 'seatTaken' | 'tipOpinion' | 'tipToday' | 'noTips' | 'noHelicopter' | 'helipadGuards' | 'notUniform' | 'honest' | 'reported' | 'tooHot' | 'lookingAway' | 'clean' | 'paperToday' | 'watched' | 'hunted' | 'ordered' | 'havePhone' | 'noWay' | 'gamesClosed' | 'gameOpinion' | 'played' | 'tired' | 'gamesLockdown' | 'seated' | 'notHisLine' | 'brawlToday' | 'noBrawl' | 'noDrop' | 'nightOpinion' | 'crewLockdown' | 'crewBusy' | 'badPost' | 'crewNight' | 'notShift' | 'notGuard' | 'papersHot' | 'loneWolf' | 'noCourt' | 'elderOpinion' | 'notMeal' | 'takenToday' | 'notWanted' | 'raceClosed' | 'raceFar' | 'betPlaced' | 'noRat' | 'enterFirst' | 'soldEnough' | 'noPitch' | 'fewPlayers' | 'inkOpinion' | 'inkFriend' | 'noGun' | 'noInk' | 'armsFull' | 'haveIt' | 'inkedToday' | 'inkedEnough' | 'stageClosed' | 'performed' | 'actsOn' | 'offStage' | 'noGuitar' | 'quizClosed' | 'quizzed' | 'notAtQuiz' | 'fewQuiz' | 'quizLate' | 'noPhone' | 'phoneClosed' | 'notAtPhone' | 'phoneBusy' | 'phoneLine' | 'onPhone' | 'calledHome' | 'appealed' | 'retained' | 'tipped' | 'badCell' | 'divertBooked' | 'badHour' | 'cakeComing' | 'carBooked' | 'inLine' | 'notInLine' | 'notAhead' | 'lineFirst' | 'phoneDay' | 'noKiosk' | 'kioskClosed' | 'notAtKiosk' | 'loggedOut' | 'loggedIn' | 'wrote' | 'shopToday' | 'orderComing' | 'coursed' | 'inCourse' | 'kioskDark' | 'courseLate' | 'bookFull' | 'onList' | 'trayLate' | 'noParole' | 'paroleOn' | 'atHearing' | 'paroleEarly' | 'paroleWait' | 'notAtDesk' | 'noBoard' | 'notAtBoard' | 'haveJob' | 'noJob' | 'pinTaken' | 'noDeal' | 'fixerToday' | 'notOwed' | 'notHisJob' | 'notLookout' | 'liftFull';

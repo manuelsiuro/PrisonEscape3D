@@ -44,6 +44,8 @@ import { Sim } from '../../src/sim/Sim';
 import { LAYER, MAP_W } from '../../src/sim/world/World';
 import { VEND } from '../../src/content/vending';
 import { VEND_NOBODY } from '../../src/sim/systems/vending';
+import { MENU } from '../../src/content/menu';
+import { twoAtCooler } from '../../src/sim/systems/cooler';
 import { UNIT } from '../../src/sim/tuning';
 import { holidayDecor } from '../../src/render/holidayDecor';
 
@@ -240,6 +242,28 @@ export const SHOTS: Record<string, Shot> = {
     },
     when: (_s, k, n) => k >= n - 1,
     zoom: 2.2,
+    dz: -1,
+  },
+  // 2.33: Center Perks' menu board just scribbled on, two inmates having a word at the water cooler beside it.
+  menu: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 41);
+      bot.routineUntil(2, 19 * 60 + 20);
+      const m = CENTER_PERKS.menu!;
+      bot.walkTo(m.z * MAP_W + m.x + 3);
+      bot.face(13);
+      bot.op(OP.EXT, EXT.MENU, MENU.SCRIBBLE);
+      bot.until(() => bot.st.menu.until === 0, 60);
+      bot.op(OP.EXT, EXT.MENU, MENU.CLOSE);
+      // (Off to the side, clear of the board: the see-through cut round the player would hide it.)
+      bot.walkTo((m.z + 1) * MAP_W + m.x - 2);
+      bot.face(1);
+      bot.until(() => twoAtCooler(bot.sim) && bot.st.cooler.there.every((t) => t > 0 && bot.st.step - t > 40), 1200);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.2,
+    dx: 4,
     dz: -1,
   },
   // 2.29: a set under way at Center Perks' gym, the crowd on the other machines.

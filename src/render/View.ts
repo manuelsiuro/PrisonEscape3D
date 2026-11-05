@@ -52,6 +52,7 @@ import { NightsView } from './Nights';
 import { PhoneView } from './Phone';
 import { KioskView } from './Kiosk';
 import { VendingView } from './Vending';
+import { CoolerView, MenuBoardView } from './MenuBoard';
 import { OddJobsView } from './OddJobs';
 import { ReleaseView } from './Release';
 import { handlersOf } from '../sim/systems/k9';
@@ -246,6 +247,9 @@ export class View {
   private readonly kioskView = new KioskView();
   /** 2.32: the vending machine's front. */
   private readonly vendingView = new VendingView();
+  /** 2.33: the menu board's face, the water cooler's bubbles. */
+  private readonly menuView = new MenuBoardView();
+  private readonly coolerView = new CoolerView();
   /** P40: the odd jobs board on the canteen wall. */
   private readonly oddJobsView = new OddJobsView();
   /** P36: the release desk's sign, tray and lamp. */
@@ -395,7 +399,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.gear.group, this.workGear.group, this.vendingView.group, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.gear.group, this.workGear.group, this.vendingView.group, this.menuView.group, this.coolerView.group, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -542,6 +546,8 @@ export class View {
     this.phoneView.setWorld(world, later);
     this.kioskView.setWorld(world, later);
     this.vendingView.setWorld(world, later);
+    this.menuView.setWorld(world);
+    this.coolerView.setWorld(world);
     this.oddJobsView.setWorld(world, later);
     this.releaseView.setWorld(world, later);
     this.holidaysView.setWorld(world, later);
@@ -1330,6 +1336,9 @@ export class View {
     this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.night, this.powerLevel, f.layer !== LAYER.UNDER);
     // The vending machine (2.32): its front, what's left in it, what's dropping (not from the tunnels).
     this.vendingView.update(f.vending, dt, time, !this.reducedMotion, this.night, f.layer !== LAYER.UNDER);
+    // The menu board's dishes and the water cooler's bubbles (2.33).
+    this.menuView.update(f.menu);
+    this.coolerView.update(f.cooler, dt, !this.reducedMotion);
     // The odd jobs board (P40): the cards still up today, the job tag (not from the tunnels).
     this.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
     // (2.28: a dummy in the player's bed shows, but not under them, nor from the tunnels.)

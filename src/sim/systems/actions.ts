@@ -46,6 +46,10 @@ import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, digUpTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
 import { foodUse, vendOffer, vendOp } from './vending';
 import { VEND } from '../../content/vending';
+import { MENU } from '../../content/menu';
+import { COOLER } from '../../content/cooler';
+import { menuOffer, menuOp } from './menu';
+import { coolerOffer, coolerOp } from './cooler';
 import { chairForBook, onReadChair, readOn, readSeated, reading, rep, stopTraining, study, useMachine } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
@@ -160,6 +164,15 @@ export function useItems(sim: SimContext, cmd: number) {
         vendOp(sim, VEND.OPEN, 0);
         break;
       }
+      // The water cooler and the menu board (2.33), faced: ahead of whoever's drinking or reading beside the player.
+      if (coolerOffer(sim)) {
+        coolerOp(sim, COOLER.DRINK);
+        break;
+      }
+      if (menuOffer(sim)) {
+        menuOp(sim, MENU.OPEN);
+        break;
+      }
       if (!target) break;
       if (target.kind === 'ground') pickUp(it, target.index, ev);
       else if (target.kind === 'sleep') {
@@ -175,6 +188,7 @@ export function useItems(sim: SimContext, cmd: number) {
         else if (target.use === 'generator') switchPower(sim, target.index);
         else if (target.use === 'helicopter') board(sim);
         else if (target.use === 'vending') vendOp(sim, VEND.OPEN, 0);
+        else if (target.use === 'cooler') coolerOp(sim, COOLER.DRINK);
         else if (target.use === 'sit' || target.use === 'rest') {
           sitDown(sim, target.index, target.use);
           // (2.31: a book in hand, on a library chair: straight into it, or told why not.)
@@ -306,6 +320,8 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.LINE && s.solitary <= 0) lineOp(sim, argB(cmd));
       else if (a === EXT.KIOSK && s.solitary <= 0) kioskOp(sim, argB(cmd), argC(cmd));
       else if (a === EXT.VEND && s.solitary <= 0) vendOp(sim, argB(cmd), argC(cmd));
+      else if (a === EXT.MENU && s.solitary <= 0) menuOp(sim, argB(cmd));
+      else if (a === EXT.COOLER && s.solitary <= 0) coolerOp(sim, argB(cmd));
       // The parole board (P39): applying at the release desk, an answer at the hearing.
       else if (a === EXT.PAROLE && s.solitary <= 0) paroleOp(sim, argB(cmd), argC(cmd));
       else if (a === EXT.BOARD && s.solitary <= 0) boardOp(sim, argB(cmd), argC(cmd));

@@ -335,6 +335,16 @@ export interface PrisonDef {
    */
   board?: { x: number; z: number; face: number };
   /**
+   * 2.33: the canteen's menu board, hung on the wall north of the floor tiles it covers (x to x+w-1 at z): read
+   * standing on or beside them, facing it. Drawn from this, not the decor (its dishes change). Without it, none.
+   */
+  menu?: { x: number; z: number; w: number };
+  /**
+   * 2.33: the canteen's water cooler: its tile (a `cooler` prop), and the tiles beside it where inmates stand to
+   * drink, in order. Without it, none.
+   */
+  cooler?: { x: number; z: number; spots: ReadonlyArray<{ x: number; z: number }> };
+  /**
    * The map's revision (P31: raised when the prison is rebuilt; none: 0). A save from an older
    * one starts the run again there (saves.ts rebuiltSince).
    */

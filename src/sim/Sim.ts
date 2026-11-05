@@ -36,6 +36,8 @@ import { smuggle } from './systems/smuggling';
 import { phone, wheels } from './systems/phone';
 import { kiosk } from './systems/kiosk';
 import { vending } from './systems/vending';
+import { menu } from './systems/menu';
+import { cooler } from './systems/cooler';
 import { forgetPlaces } from './ai/places';
 import { freedNow, paperwork } from './systems/paperwork';
 import { hearingZones, parole, paroled } from './systems/parole';
@@ -43,7 +45,7 @@ import { oddjobs } from './systems/oddjobs';
 import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { holidays } from './systems/holiday';
-import { ladderFootOf, reserved } from './systems/structure';
+import { forgetReserved, ladderFootOf, reserved } from './systems/structure';
 import { attr, keepTraining, keepTurn, setCost, stopTraining, trainsOn } from './systems/training';
 import { laps } from './systems/grounds';
 import { endBout, games, stopPick } from './systems/games';
@@ -181,6 +183,19 @@ export class Sim {
   set rules231(on: boolean) {
     this.world.plainVending = on;
     forgetPlaces(this.world);
+    // (And where nobody may dig, as the map stood then: a solid machine made chokepoints that weren't there. 2.33's fix.)
+    forgetReserved(this.world);
+    reserved(this.world);
+  }
+  /** Replaying a run from before 2.33: the canteen as it was (every tray +35, the menu board and the water cooler decoration, nobody at the cooler). */
+  get rules232() {
+    return this.world.plainCooler;
+  }
+  set rules232(on: boolean) {
+    this.world.plainCooler = on;
+    forgetPlaces(this.world);
+    forgetReserved(this.world);
+    reserved(this.world);
   }
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
@@ -286,6 +301,9 @@ export class Sim {
     kiosk(this);
     // The vending machine (2.32): the day's stock, the queue, what's dropping.
     vending(this);
+    // The menu board and the water cooler (2.33): the scribble, its laughs; who's drinking.
+    menu(this);
+    cooler(this);
     // The paperwork escape (P36): the records at 22:00, the release at 10:00, its way out.
     paperwork(this);
     // The parole board (P39): plotting found out, the hearing at 10:00, its questions and verdict.

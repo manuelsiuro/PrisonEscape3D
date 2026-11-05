@@ -173,8 +173,8 @@ export type Target =
  * (Speed), the generator (the power, GDD §5.5); seats, benches and chairs to sit on, the
  * infirmary's beds to rest on (GDD §3.1); Irongate's helipad, to board the helicopter (P12).
  */
-export type FixtureUse = 'vending' | 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { vending: 'vending', jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', readChair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
+export type FixtureUse = 'vending' | 'cooler' | 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
+const FIXTURES: Partial<Record<string, FixtureUse>> = { vending: 'vending', cooler: 'cooler', jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', readChair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
 
 const GEAR_USES: readonly FixtureUse[] = ['weights', 'treadmill', 'pullup', 'mat', 'punchingBag'];
 
@@ -183,6 +183,7 @@ export function fixtureUse(w: World, p: { kind: string; x: number; z: number }):
   if (w.plainGear && (p.kind === 'mat' || p.kind === 'punchingBag')) return undefined;
   if (w.plainBooks && p.kind === 'readChair') return undefined;
   if (w.plainVending && p.kind === 'vending') return undefined;
+  if (w.plainCooler && p.kind === 'cooler') return undefined;
   return FIXTURES[p.kind] ?? (p.kind === 'bed' && w.zoneAt(p.x, p.z) === 'infirmary' ? 'rest' : undefined);
 }
 

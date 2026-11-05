@@ -6,6 +6,7 @@
  */
 import { TRAY } from '../src/sim/systems/inmates';
 import { VEND } from '../src/content/vending';
+import { MENU } from '../src/content/menu';
 import { peopleAhead, VEND_NOBODY } from '../src/sim/systems/vending';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { CHARTS, countIn, LATE, songSteps } from '../src/content/nights';
@@ -927,6 +928,24 @@ play('vending', (bot) => {
     return !bot.st.vend.jam;
   }, 200);
   check(bot.slotOf('chocolate') >= 0, 'vending: thumped free');
+  bot.until(() => false, 200);
+});
+
+play('menu', (bot) => {
+  // The board read, scribbled on when no guard looks, a cup at the cooler.
+  bot.act();
+  check(bot.st.menuOpen, 'menu: the card opens');
+  bot.until(() => false, 8 * 20);
+  bot.until(() => {
+    if (!bot.st.menu.until) bot.op(OP.EXT, EXT.MENU, MENU.SCRIBBLE);
+    return bot.st.menu.scribbled > 0;
+  }, 2000);
+  check(bot.st.menu.scribbled > 0, 'menu: scribbled on');
+  const c = CENTER_PERKS.cooler!;
+  bot.walkTo(tile(c.spots[1].x, c.spots[1].z));
+  bot.face(DIR.NORTH);
+  bot.act();
+  check(bot.st.drank > 0, 'menu: a cup drunk');
   bot.until(() => false, 200);
 });
 

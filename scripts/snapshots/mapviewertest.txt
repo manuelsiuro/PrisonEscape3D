@@ -1,19 +1,19 @@
 training: game, layout, people
-  sheet: Ways out (1) (1); Rules (2); Power (1); Inmates (1)
+  sheet: Ways out (1) (1); Rules (2); Power (1); Inmates (3)
   overlays: exit 1036, restricted 20, loot 8, meals 6, rats 100; 10 routine blocks
 center-perks: game, layout, people, vents, roof, outside, outsideGame
-  sheet: Ways out (9) (9); Rules (1); Power (1); Jobs (7); Inmates (9); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Doc asks (3); Holidays (4)
+  sheet: Ways out (9) (9); Rules (1); Power (1); Jobs (7); Inmates (11); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Doc asks (3); Holidays (4)
   overlays: exit 496, restricted 132, snipers 747, launch 254, arches 6, jobs 51, loot 56, meals 55, showers 6, rats 210; 10 routine blocks
 stalag-flucht: game, layout, people, vents, roof, outside, outsideGame
-  sheet: Ways out (8) (8); Rules (3); Power (1); Jobs (7); Inmates (11); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Ferret asks (3); Holidays (4)
+  sheet: Ways out (8) (8); Rules (3); Power (1); Jobs (7); Inmates (13); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Ferret asks (3); Holidays (4)
   overlays: exit 496, restricted 150, snipers 1133, launch 34, jobs 41, loot 64, meals 29, showers 6, rats 142; 10 routine blocks
 shankton: game, layout, people, vents, roof, outside, outsideGame
-  sheet: Ways out (8) (8); Rules (1); Power (1); Jobs (8); Inmates (13); Getting things in (2); Day events (the week's cards) (6); Odd jobs story: Preacher asks (3); Holidays (4)
+  sheet: Ways out (8) (8); Rules (1); Power (1); Jobs (8); Inmates (15); Getting things in (2); Day events (the week's cards) (6); Odd jobs story: Preacher asks (3); Holidays (4)
   overlays: exit 488, restricted 189, snipers 921, launch 235, arches 3, jobs 43, loot 74, meals 29, showers 8, rats 170; 10 routine blocks
 san-pancho: game, layout, people, outside, outsideGame
-  sheet: Ways out (6) (6); Rules (2); Power (1); Jobs (8); Inmates (15); Getting things in (3); Day events (the week's cards) (6); Odd jobs story: Toro asks (3); Holidays (4)
+  sheet: Ways out (6) (6); Rules (2); Power (1); Jobs (8); Inmates (17); Getting things in (3); Day events (the week's cards) (6); Odd jobs story: Toro asks (3); Holidays (4)
   overlays: exit 496, restricted 1488, snipers 1261, arches 2, jobs 44, loot 75, meals 21, showers 4, rats 108; 10 routine blocks
 irongate: game, layout, people, vents, roof, outside, outsideGame
-  sheet: Ways out (7) (7); Rules (1); Power (2); Jobs (8); Inmates (15); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Gull asks (3); Holidays (4)
+  sheet: Ways out (7) (7); Rules (1); Power (2); Jobs (8); Inmates (17); Getting things in (3); Day events (the week's cards) (7); Odd jobs story: Gull asks (3); Holidays (4)
   overlays: exit 18, restricted 858, snipers 1210, arches 3, jobs 44, loot 75, meals 21, showers 5, rats 114; 10 routine blocks
 map viewer in step with the game

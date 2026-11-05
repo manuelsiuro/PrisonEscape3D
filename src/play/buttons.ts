@@ -8,6 +8,9 @@ import { GUARD } from '../sim/systems/guards';
 import { interactTarget, type Target } from '../sim/systems/items';
 import { chairForBook } from '../sim/systems/training';
 import { vendOffer, vendProp } from '../sim/systems/vending';
+import { coolerOffer, coolerProp } from '../sim/systems/cooler';
+import { counterTray, trayOffer } from '../sim/systems/canteen';
+import { menuOffer } from '../sim/systems/menu';
 import { letterDue } from '../sim/systems/jobs';
 import type { Body } from '../sim/systems/movement';
 import { climbTarget, digUpTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
@@ -185,7 +188,13 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     const bookSeat = busy ? -1 : chairForBook(sim);
     // (2.32: the vending machine, faced: that, ahead of whoever's queueing beside the player.)
     const vend = !busy && vendOffer(sim) ? sim.world.props.indexOf(vendProp(sim)!) : -1;
-    const near: Target | null = busy ? null : vend >= 0 ? { kind: 'fixture', index: vend, use: 'vending' } : bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : letterDue(sim) >= 0 ? { kind: 'person', who: letterDue(sim) } : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim), sim.bedtime && !sim.rules227);
+    // (2.33: the water cooler, then the menu board (no prop: the button's own), faced, ahead of whoever's beside them;
+    // a meal's tray at the counter in reach comes first, as actions.ts has it: the counter behind them at a meal.)
+    const plain = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim), sim.bedtime && !sim.rules227);
+    const tray = !busy && (counterTray(sim) ?? (plain?.kind === 'container' ? trayOffer(sim, plain.index) : null));
+    const cooler = !busy && !tray && vend < 0 && coolerOffer(sim) ? sim.world.props.indexOf(coolerProp(sim)!) : -1;
+    const board = !busy && !tray && vend < 0 && cooler < 0 && menuOffer(sim);
+    const near: Target | null = busy || board ? null : vend >= 0 ? { kind: 'fixture', index: vend, use: 'vending' } : cooler >= 0 ? { kind: 'fixture', index: cooler, use: 'cooler' } : bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : letterDue(sim) >= 0 ? { kind: 'person', who: letterDue(sim) } : plain;
     // (P29: in a match, the players running by aren't offered for a talk: the action button never pops up under the thumb for them.)
     const reach = near?.kind === 'person' && st.match?.team.includes(near.who) ? null : near;
     memo.station = busy || st.layer !== LAYER.GROUND ? null : sim.station();

@@ -82,6 +82,17 @@ export class World {
     for (const p of this.props) if (p.kind === 'vending') this.propSolid[p.z * MAP_W + p.x] = on ? 0 : 1;
     this.refreshBlock();
   }
+  /** Replaying a run from before 2.33: the water cooler is only decoration, to be walked through as it was (Sim.rules232). */
+  private coolerDecor = false;
+  get plainCooler() {
+    return this.coolerDecor;
+  }
+  set plainCooler(on: boolean) {
+    if (on === this.coolerDecor) return;
+    this.coolerDecor = on;
+    for (const p of this.props) if (p.kind === 'cooler') this.propSolid[p.z * MAP_W + p.x] = on ? 0 : 1;
+    this.refreshBlock();
+  }
   /** Tiles covered by solid props on the ground floor. */
   readonly propSolid = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 where the player can't walk on the ground floor right now (the ground layer's block). */

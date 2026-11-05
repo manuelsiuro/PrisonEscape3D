@@ -35,6 +35,10 @@ const PHONE_ARM = -2.75;
 /** At the internet kiosk (P35): drawn this far back from where they stand (tiles), so the screen shows over their head and the hands come down on the keyboard. */
 const KIOSK_BACK = 0.22;
 
+/** Scratch for a held cup kept upright (2.33). */
+const UPRIGHT = new THREE.Quaternion();
+const TIP = new THREE.Quaternion();
+const TIP_E = new THREE.Euler();
 /** Where a meal's tray is (2.25): nowhere, in both hands, on the table in front. */
 export const TRAY_AT = { NONE: 0, HANDS: 1, TABLE: 2 } as const;
 const TRAY_TABLE = new THREE.Vector3(0, 0.545, 0.74);
@@ -257,6 +261,8 @@ export class Character {
   /** The item in the right hand (its model), and which item it is. */
   private held: THREE.Mesh | null = null;
   private heldItem = 0;
+  /** 2.33: how far into a sip at the water cooler (0–1): the cup's tip toward the lips. */
+  private sip = 0;
   private readonly at = new THREE.Vector3();
   private readonly bedAt = new THREE.Vector3();
 
@@ -1097,9 +1103,24 @@ export class Character {
     } else if (doing === DOING.SNACK) {
       // Something from the machine: a hand up to the mouth now and then, the other at the side.
       const ga = this.act;
+      // (2.33: in toward the middle of the face, as at the water cooler, not out to the side.)
       const up = motion ? (Math.sin(t * 1.5) > 0.2 ? 1 : 0.55) : 0.8;
-      armRx += -2.05 * up * ga;
-      armRz += 0.22 * up * ga;
+      armRx += -1.8 * up * ga;
+      armRz -= 0.4 * up * ga;
+    } else if (doing === DOING.DRINK) {
+      // At the water cooler (2.33): the paper cup held in front of the mouth, the hand in toward the middle of the face,
+      // lifted a little for each sip as the cup tips toward the lips (the cup's own tilt: below); the other hand at the side.
+      const ga = this.act;
+      this.sip = motion ? Math.max(0, Math.sin(t * 2.2)) : 0.5;
+      armRx += (-1.86 - 0.14 * this.sip) * ga;
+      armRz -= 0.42 * ga;
+    } else if (doing === DOING.SCRIBBLE) {
+      // At the menu board (2.33): the right arm up at it, the hand scrawling small loops; the other hand on the hip.
+      const ga = this.act;
+      const loop = motion ? Math.sin(t * 11) * 0.12 : 0;
+      armRx += (-2.55 + loop) * ga;
+      armRz -= (0.18 + (motion ? Math.cos(t * 11) * 0.1 : 0)) * ga;
+      armLz += 0.35 * ga;
     } else if (doing === DOING.QUEUE) {
       // Waiting in line for the phone (P34): arms crossed, the weight shifting slowly from foot to foot (below).
       const ga = this.act;
@@ -1196,6 +1217,19 @@ export class Character {
     this.legR.rotation.set(legR, 0, legZ);
     this.armL.rotation.set(armLx, 0, armLz);
     this.armR.rotation.set(armRx, 0, armRz);
+    // (2.33: a cup or a can at the mouth, or a snack, stays upright in the fist whatever the arm does, tipped toward the
+    // lips for a sip; anything else points forward out of the fist as the arm carries it.)
+    if (this.held) {
+      if (doing === DOING.DRINK || doing === DOING.SNACK) {
+        UPRIGHT.copy(this.armR.quaternion).invert();
+        TIP.setFromEuler(TIP_E.set(doing === DOING.DRINK ? -0.25 - 0.55 * this.sip : -0.2, -Math.PI / 2, 0));
+        this.held.quaternion.copy(UPRIGHT).multiply(TIP);
+        this.held.position.set(0, -0.46, 0.03);
+      } else {
+        this.held.rotation.set(0, -Math.PI / 2, 0);
+        this.held.position.set(0, -0.44, 0.16);
+      }
+    }
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
     this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI) + this.prone * (0.08 + this.pumped * 0.14);
     // (In line for the phone, P34: a slow shift of the weight from foot to foot.)

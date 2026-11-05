@@ -51,7 +51,7 @@ job, train, learn recipes, and quietly build what you need. Then one night, you 
   lockpick to a bed dummy, a sheet rope, a grapnel and a glider. Intelligence opens harder recipes.
 - **Work and money.** Seven jobs, merchants among the inmates, favors to do for cash, a black market with a
   fixer, a burner phone, drone drops and visitors. A cork board in the canteen has odd jobs every day, and
-  a story to follow in each prison, and a vending machine sells snacks that sometimes need a thump.
+  a story to follow in each prison, a vending machine sells snacks that sometimes need a thump, the menu board changes every day, and the water cooler is where the gossip is.
 - **Free time.** Card games of Cheat, checkers, dice, arm-wrestling, hoops, football matches, rat
   racing, a prison garden, tattoos, talent nights, quiz nights, a pay phone and an internet kiosk.
 - **Friends and a crew.** Win people over, recruit them, and post a lookout who whistles when a guard comes.
@@ -96,8 +96,8 @@ Escape one to open the next.
     <td width="28%"><img src="docs/screenshots/help.webp" alt="How to play: the glider topic, with a picture, key numbers, steps and recipes"></td>
     <td width="72%">
       <ul>
-        <li><b>A tutorial of 54 short lessons</b> in four chapters (First steps, Getting by, Prison life, Ways out), each played in a real prison scene.</li>
-        <li><b>How to play</b>: 64 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
+        <li><b>A tutorial of 55 short lessons</b> in four chapters (First steps, Getting by, Prison life, Ways out), each played in a real prison scene.</li>
+        <li><b>How to play</b>: 65 topics, each on one page, with an in-game picture, the numbers that matter, step-by-step instructions, recipes and a button to play its lesson.</li>
         <li><b>The Daily Escape</b>: one prison a day, with twists, the same for everyone, and a streak to keep.</li>
         <li><b>Replays</b> of your escapes.</li>
         <li><b>142 achievements</b> and medals. Many of them unlock clothes and looks for your prisoner.</li>
@@ -211,7 +211,7 @@ build and tests pass → commit → `npm version minor` (or `patch`) → `git pu
 | `src/flows/` | The title, intake, tutorial and Daily Escape flows |
 | `src/ui/` | The HUD, panels and screens (title, prisons, how to play, trophies, settings…) |
 | `src/talk/` | Speech bubbles: who says what, when, and gossip that is always true |
-| `src/tutorial/` | The 54 lessons and their chapters |
+| `src/tutorial/` | The 55 lessons and their chapters |
 | `src/game/` | Saves, settings, records, trophies, stats, replays and storage |
 | `src/replay/` | Watching an escape again |
 | `src/audio/`, `src/app/` | Synthesized sound; haptics, graphics quality, the service worker, installing |

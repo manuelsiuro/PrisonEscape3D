@@ -35,6 +35,7 @@ export type SimContext = Pick<
   | 'rules229'
   | 'rules230'
   | 'rules231'
+  | 'rules232'
   | 'aboutBefore'
   | 'groundFrom'
   | 'ladderFoot'

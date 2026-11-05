@@ -25,12 +25,11 @@ export const SHANKTON_DECOR: readonly DecorPlacement[] = [
   { kind: 'clock', x: 16, z: 54, rot: 2 },
   { kind: 'extinguisher', x: 17, z: 44, rot: 3 },
   { kind: 'speaker', x: 14, z: 50, rot: 1 },
-  // Canteen: the menu, plants in the corners, a water cooler, trays on the serving counter.
+  // Canteen: the menu (its dishes drawn from the def's `menu`, 2.33), plants in the corners, trays on the serving counter (the water cooler a prop since 2.33).
   { kind: 'menuBoard', x: 35, z: 14, w: 2 },
   { kind: 'trays', x: 39, z: 17, d: 3, rot: 3, y: COUNTER },
   { kind: 'plant', x: 24, z: 14 },
   { kind: 'plant', x: 36, z: 22 },
-  { kind: 'waterCooler', x: 24, z: 21 },
   // Kitchen (behind the canteen since P32): pans on the wall, the sink, potatoes.
   { kind: 'panRack', x: 26, z: 9, w: 2 },
   { kind: 'sink', x: 29, z: 10, rot: 3 },

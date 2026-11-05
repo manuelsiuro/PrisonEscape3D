@@ -360,6 +360,18 @@ export class Sound {
     this.tone(1400, 900, 0.1, 'sine', 0.025, 0.04);
   }
 
+  /** The water cooler (2.33): a cup filled, and the bottle's big bubble going up. */
+  glug() {
+    this.hiss(0.35, 'bandpass', 1800, 2.5, 0.05);
+    this.tone(260, 520, 0.12, 'sine', 0.12, 0.28);
+    this.tone(320, 640, 0.1, 'sine', 0.09, 0.42);
+  }
+
+  /** Chalk on the menu board (2.33): a few short scratchy strokes, as long as a scribble. */
+  chalk() {
+    for (let k = 0; k < 6; k++) this.hiss(0.16, 'highpass', 3200 + (k % 3) * 600, 1.2, 0.05 + 0.04 * (k % 2), undefined, k * 0.3);
+  }
+
   /** A footstep: a muffled brush on grass and dirt, a crisp tap on hard floors. */
   step(surface: number) {
     if (SOFT.has(surface)) this.hiss(0.09, 'lowpass', 700 + Math.random() * 300, 0.7, 0.07);
