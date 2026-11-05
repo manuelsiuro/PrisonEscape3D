@@ -14,6 +14,8 @@ import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps
 import { eatingNow, mealOn, mealSteps, servingCounter, TRAY, traysHere } from '../sim/systems/canteen';
 import { canAnswer, wardenOf } from '../sim/systems/rollcall';
 import { showerOffer } from '../sim/systems/showers';
+import { dummyInBed } from '../sim/systems/justice';
+import { afterHours } from '../sim/systems/watch';
 import { DOING, inmateEatSteps } from '../sim/systems/inmates';
 import { TRAY_AT } from '../render/Character';
 import { itemOf, ownerOf, type ItemState, type Target } from '../sim/systems/items';
@@ -60,6 +62,8 @@ const POUCH = itemNumber('pouch');
 const MAGAZINE = itemNumber('magazine');
 
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
+/** Whether the player's bed holds a dummy: read again when the items change, never every frame. */
+const dummyMemo: { sim: Sim | null; rev: number; there: boolean } = { sim: null, rev: -1, there: false };
 /** The shower the action button would turn on (2.26), as something to highlight. */
 function showerHead(sim: Sim, target: Target): Target | null {
   const head = showerOffer(sim, target);
@@ -456,6 +460,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;
+  if (dummyMemo.sim !== sim || dummyMemo.rev !== it.rev) Object.assign(dummyMemo, { sim, rev: it.rev, there: dummyInBed(sim) });
+  f.bedDummy = dummyMemo.there;
+  f.blockDark = !st.lockdown && afterHours(sim);
   // Security (GDD §5.4–5.6) as the sim has it: cameras on their sweep, the searchlights at night, a sniper's aim.
   const sec = f.security;
   // What has power (Irongate's two generators each run their half, P12).

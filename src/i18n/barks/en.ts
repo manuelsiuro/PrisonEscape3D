@@ -786,6 +786,14 @@ export const enBarks = {
     'There goes another one.',
     'Rough day, {you}.',
   ],
+  're.bedAwake.gu': [
+    'Get some sleep.',
+    'Lights out means bed.',
+    'Up at this hour? Go to bed.',
+    'I see you. Go to sleep.',
+    "Still awake? Tomorrow's a long day.",
+    "It's late. Bed.",
+  ],
   're.bedFail.gu': [
     "Empty bed! We've got a runner!",
     "Where's the inmate from this bunk?!",

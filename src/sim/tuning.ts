@@ -40,7 +40,11 @@ export const SOLITARY_HEAT = 90;
 /** The night bed checks (GDD §5.3), as minutes of the day: 00:30 and 04:00. */
 export const BED_CHECK_MINUTES: readonly number[] = [30, 240];
 /** Out of the cell this long after Lights Out begins before it counts (the walk home). */
-export const LIGHTS_OUT_GRACE = 15 * STEPS_PER_MINUTE;
+/** 22:50: the warning (2.28) that Lights Out is near, by the toast and the floor arrows. */
+export const NIGHT_WARNING = 22 * 60 + 50;
+export const LIGHTS_OUT_GRACE = 25 * STEPS_PER_MINUTE;
+/** What it was before 2.28 (Sim.rules227): shorter than the walk home from the far rooms. */
+export const LIGHTS_OUT_GRACE_227 = 15 * STEPS_PER_MINUTE;
 /** A contraband tool or weapon in hand in sight: +40% a second (GDD §5.2), so +2 a step. */
 export const CONTRABAND_HEAT = 2;
 /** In a guard outfit, a guard this close (units) for this long recognizes the player: +50% a second after that. */
@@ -80,6 +84,8 @@ export const TOILET_LOADS = 3;
 export const TOILET_CLOG_STEPS = 60 * STEPS_PER_MINUTE;
 /** Energy (0–100): back to full after a night's sleep, a little back every couple of minutes, more from meals, showers and chocolate. */
 export const ENERGY_REGEN_STEPS = 2 * STEPS_PER_MINUTE;
+/** Up at Lights Out (2.28), energy comes back no further than this: tools stop below 10, and nobody is stranded down a tunnel until morning. */
+export const NIGHT_ENERGY_FLOOR = 20;
 /** A meal (GDD §2): the tray from the counter, seated at a canteen table during breakfast or dinner, takes this long to eat, then +35, once a meal. */
 export const MEAL_ENERGY = 35;
 export const MEAL_STEPS = 6 * STEPS_PER_SECOND;

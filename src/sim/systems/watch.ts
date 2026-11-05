@@ -10,9 +10,8 @@ import { RESTRICTED } from '../../content/zones';
 import { canSee } from '../ai/sight';
 import { SLOT } from '../command';
 import type { SimContext } from '../context';
-import type { SimState } from '../state';
 import { SPOT } from '../events';
-import { CHASE_HEAT, CONTRABAND_HEAT, LIGHTS_OUT_GRACE, RECOGNIZE_RANGE, RECOGNIZE_STEPS, SEARCHLIGHT_HEAT, SELF_DEFENSE_HEAT, SKIP_EVERY, SKIP_GRACE, STEPS_PER_MINUTE, STRIKE_SEEN_STEPS, UNIT } from '../tuning';
+import { CHASE_HEAT, CONTRABAND_HEAT, LIGHTS_OUT_GRACE, LIGHTS_OUT_GRACE_227, RECOGNIZE_RANGE, RECOGNIZE_STEPS, SEARCHLIGHT_HEAT, SELF_DEFENSE_HEAT, SKIP_EVERY, SKIP_GRACE, STEPS_PER_MINUTE, STRIKE_SEEN_STEPS, UNIT } from '../tuning';
 import { DAMAGE_SHOWS, TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from '../world/World';
 import { clockAt } from './clock';
@@ -82,7 +81,7 @@ export function watch(sim: SimContext) {
   let reason = 0;
   let heat = 0;
   // Out of the cell after Lights Out (past the walk home), or somewhere staff only: 100%.
-  const late = afterHours(s);
+  const late = afterHours(sim);
   // Seen attacking someone (GDD §5.2), at work on a wall, a fence, a grate or the floor, damage found: 100% (§9.3).
   // Fighting back at an inmate who jumped the player: a scuffle, some heat a blow (not the alarm).
   // A scuffle (hitting back, or P17's food fight) never hides tools at work or damage found; a food fight's blows at inmates in the canteen are noticed not at all.
@@ -104,7 +103,8 @@ export function watch(sim: SimContext) {
     if (fighting || working || (!cleared && ((late && zone !== 'playerCell') || RESTRICTED.includes(zone)))) [reason, heat] = [SPOT.indexOf('camera'), 100];
   }
   // A searchlight's beam at night (GDD §5.2): +35% a second in it, the alarm (guards sent) as it finds the player.
-  const lit = !cleared && powered(sim.world, s, 'searchlights') && ROUTINE[s.routine].id === 'lightsOut' && s.layer === LAYER.GROUND && inBeam(sim.world, p, s.step) >= 0;
+  // (2.28: not on the walk home the bell has just asked for.)
+  const lit = !cleared && powered(sim.world, s, 'searchlights') && ROUTINE[s.routine].id === 'lightsOut' && (sim.rules227 || late) && s.layer === LAYER.GROUND && inBeam(sim.world, p, s.step) >= 0;
   if (lit && !s.lit) summon(sim, here, 2);
   s.lit = lit;
   if (!reason && lit) [reason, heat] = [SPOT.indexOf('searchlight'), s.step % 4 === 0 ? SEARCHLIGHT_HEAT : 0];
@@ -160,9 +160,10 @@ function skipping(sim: SimContext, zone: string): boolean {
 }
 
 /** Lights Out, past the walk home: out of the cell now is out late. */
-export function afterHours(s: SimState): boolean {
+export function afterHours(sim: Pick<SimContext, 'state' | 'rules227'>): boolean {
+  const s = sim.state;
   const sinceLightsOut = (clockAt(s.step).minuteOfDay - ROUTINE[ROUTINE.length - 1].start + 1440) % 1440;
-  return ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= LIGHTS_OUT_GRACE;
+  return ROUTINE[s.routine].id === 'lightsOut' && sinceLightsOut * STEPS_PER_MINUTE >= (sim.rules227 ? LIGHTS_OUT_GRACE_227 : LIGHTS_OUT_GRACE);
 }
 
 /**

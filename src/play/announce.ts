@@ -1,4 +1,5 @@
-import { TRAY_HEAT, CHOCOLATE_ENERGY, FRESH_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
+import { hhmm, pad2 } from '../sim/systems/clock';
+import { LIGHTS_OUT_GRACE, LIGHTS_OUT_GRACE_227, TRAY_HEAT, CHOCOLATE_ENERGY, FRESH_ENERGY, KO_STEPS, LOOK_AWAY_STEPS, MEAL_ENERGY, PAPER_HEAT, STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { freezing } from '../sim/systems/weather';
 import { buzz } from '../app/haptics';
 import { hostile } from '../sim/systems/social';
@@ -64,10 +65,30 @@ function noTrayAtTable(sim: Sim): boolean {
   return s.seat >= 0 && traysHere(sim) && mealOn(sim) && s.tray === TRAY.NONE && s.eaten < mealSteps(sim) && sim.world.props[s.seat].kind === 'seat' && sim.playerZone === 'canteen';
 }
 
+/** Below this the morning after a night awake (2.28), they're told why, once. */
+const NO_SLEEP_HINT = 40;
+/** When the player fell asleep (minute of the day, -1 none), and whether they have since Lights Out (null: not known, a game loaded at night). */
+let sleptSince = -1;
+let sleptTonight: boolean | null = null;
+/** Too tired at night (2.28): sitting down won't help now. */
+const nightTired = (sim: Sim) => !sim.rules227 && !sim.world.def.rules?.relaxed && ROUTINE[sim.state.routine].id === 'lightsOut';
+
 export function announce(e: SimEvent, sim: Sim) {
+  // (A night taken out of their hands isn't one they chose to stay up.)
+  if (e.type === 'solitary' || e.type === 'infirmary' || (e.type === 'lockdown' && e.on)) sleptTonight = null;
   switch (e.type) {
     case 'routine': {
       if (squareNeeded(sim)) coachOnce('rollCallSquare', 'hint.rollCall');
+      // (2.28: the night's rules told once; and the morning after one with no sleep, once, when it shows.)
+      if (ROUTINE[e.routine].id === 'lightsOut') {
+        // (Not forced to be up: told what they can do about it, or not told at all.)
+        const free = !sim.state.lockdown && sim.state.solitary <= 0 && sim.state.ko <= 0;
+        sleptTonight = free ? false : null;
+        if (free && !sim.world.def.rules?.relaxed) coachOnce('night', 'hint.night');
+      } else if (ROUTINE[e.routine].id === 'rollCall') {
+        if (sleptTonight === false && !sim.state.lockdown && sim.state.solitary <= 0 && sim.state.ko <= 0 && sim.state.energy < NO_SLEEP_HINT) coachOnce('noSleep', 'hint.noSleep', { n: sim.state.energy });
+        sleptTonight = null;
+      }
       if (sim.state.lockdown) break;
       sound.bell();
       buzz('bell');
@@ -76,7 +97,7 @@ export function announce(e: SimEvent, sim: Sim) {
       const job = r.id === 'work' ? sim.jobActive() : -1;
       const sub =
         r.id === 'lightsOut'
-          ? t('banner.lightsOut')
+          ? t('banner.lightsOut', { time: hhmm(r.start + (sim.rules227 ? LIGHTS_OUT_GRACE_227 : LIGHTS_OUT_GRACE) / STEPS_PER_MINUTE) })
           : job >= 0
             ? t('banner.toWork', { place: t(`zone.${jobRooms(sim.world)[job].def.zone}` as Key), n: jobRooms(sim.world)[job].def.quota })
             : r.zones.length
@@ -237,7 +258,20 @@ export function announce(e: SimEvent, sim: Sim) {
     }
     case 'sleep':
       sound.click();
-      if (e.on) sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
+      if (e.on) {
+        sleepVeil.querySelector('span')!.textContent = t('sleep.asleep');
+        sleptSince = sim.clock.minuteOfDay;
+        sleptTonight = true;
+      } else if (sleptSince >= 0 && !sim.state.lockdown && sim.state.ko <= 0) {
+        // What the night did for them (2.28), for anything over a nap.
+        const slept = (sim.clock.minuteOfDay - sleptSince + 1440) % 1440;
+        if (slept >= 60) banner.toast(t('toast.slept', { h: Math.floor(slept / 60), m: pad2(slept % 60), n: sim.state.energy }), 'good', 4500);
+        sleptSince = -1;
+      }
+      break;
+    case 'bedDummy':
+      sound.pickup();
+      banner.toast(e.swapped ? t('toast.dummySwapped', { item: itemName(e.swapped) }) : t(e.in ? 'toast.dummyIn' : 'toast.dummyOut'), 'info', 4500);
       break;
     case 'cells':
       if (e.locked) sound.lockClank();
@@ -262,7 +296,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? 'toast.tired' : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'storm' ? 'toast.glideStorm' : e.why === 'runUp' ? 'toast.glideRunUp' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
+      const why = e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tired') : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'storm' ? 'toast.glideStorm' : e.why === 'runUp' ? 'toast.glideRunUp' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -559,7 +593,7 @@ export function announce(e: SimEvent, sim: Sim) {
         play.game?.pilot.stop();
         if (e.use === 'rest') coachOnce('rest', 'hint.rest');
         // (P39: sat before the parole board, no "move to get up" over its question: the tip waits for an ordinary seat.)
-        else if (!sim.state.hearing) coachOnce('sit', 'hint.sit');
+        else if (!sim.state.hearing && !nightTired(sim)) coachOnce('sit', 'hint.sit');
         // (Sat at a table for a meal, no tray in front of them: where it's had.)
         if (e.use === 'sit' && noTrayAtTable(sim)) banner.toast(t('toast.noTray'), 'info', 3500);
       }
@@ -604,7 +638,7 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'cantTrain':
       sound.sting();
-      itemsUI.toast(t(e.why === 'tired' ? 'toast.tooTiredTrain' : 'toast.maxed'));
+      itemsUI.toast(t(e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tooTiredTrain') : 'toast.maxed'));
       break;
     case 'decay':
       banner.toast(t('toast.decay', { attrs: e.attrs.map((a) => t(`attr.${a}Short` as Key)).join(', ') }), 'bad', 5000);

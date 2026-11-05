@@ -42,6 +42,8 @@ export type SimEvent =
   /** The player's cell door locked or unlocked (Lights Out, a lockdown, 08:00). */
   | { type: 'cells'; locked: boolean }
   | { type: 'sleep'; on: boolean }
+  /** 2.28: the dummy tucked into the bed at night, or taken out. */
+  | { type: 'bedDummy'; in: boolean; swapped?: number }
   /** A guard noticed something (the first step of it): a heat jump or a chase. */
   | { type: 'spotted'; reason: SpotReason }
   /** A chasing guard caught the player: knocked out, then solitary or the infirmary. */
@@ -55,7 +57,7 @@ export type SimEvent =
   | { type: 'shakedown'; cells: number[] }
   | { type: 'searched'; cell: number; taken: number }
   /** The night bed check begins, and how it went at the player's cell. */
-  | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean }
+  | { type: 'bedCheck'; result: 'start' | 'pass' | 'fail'; dummy?: boolean; awake?: boolean }
   /** A tool strike landed (`broke`: the tile gave way), or why it couldn't. */
   | { type: 'strike'; action: ToolAction; layer: number; tile: number; broke: boolean }
   | { type: 'cantStrike'; why: 'tool' | 'reinforced' | 'boulder' | 'tired' | 'poster' | 'full' | 'noLanding' | 'noRope' | 'noScent' | 'gate' | 'storm' | 'runUp'; action: ToolAction }
