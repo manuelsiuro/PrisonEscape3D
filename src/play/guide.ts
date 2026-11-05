@@ -18,6 +18,7 @@ import { itemOf, usesOf } from '../sim/systems/items';
 import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { lockList } from './buttons';
+import { nextWork } from '../sim/systems/jobs';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { hearingDue, hearingOf } from '../sim/systems/parole';
 import { banner, hint, sound, view } from './context';
@@ -135,6 +136,19 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
         const tiles = to.map((id) => tileAt(s.inmates[id].body.x, s.inmates[id].body.z));
         return (i) => tiles.includes(i);
       }
+    }
+  }
+  // (2.30: in the job's room, on to its next station.)
+  if (r.id === 'work' && sim.onDuty && sim.dutyZones.includes(sim.playerZone)) {
+    const next = nextWork(sim);
+    const p = next && next.act !== 'wait' && next.prop >= 0 ? w.props[next.prop] : null;
+    if (p) {
+      const touching = (i: number) => {
+        const x = i % MAP_W;
+        const z = Math.floor(i / MAP_W);
+        return x >= p.x - 1 && x <= p.x + p.w && z >= p.z - 1 && z <= p.z + p.d && !(x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d) && (x >= p.x && x < p.x + p.w || (z >= p.z && z < p.z + p.d)) && isFloor(w, x, z);
+      };
+      return touching;
     }
   }
   // A meal fetched from the counter (2.25): to it for a tray, to a free seat with it, back with it empty.

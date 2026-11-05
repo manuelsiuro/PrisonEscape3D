@@ -410,6 +410,10 @@ export function socialNow(sim: SimContext): Social {
   so.turns = !sim.rules225;
   // (Not at the Training Block: its lessons ask for a machine or an inmate by name, and shouldn't find one taking up the other.)
   so.machines = !sim.rules228 && !sim.world.def.rules?.relaxed;
+  // (Nor there either, for the same reason, working its stations.)
+  const jobOf = (so.jobOf ??= []);
+  jobOf.length = sim.rules229 || sim.world.def.rules?.relaxed ? 0 : n;
+  jobOf.fill(-1);
   so.pace.fill(0);
   so.face.fill(0);
   so.follow.fill(null);
@@ -423,7 +427,9 @@ export function socialNow(sim: SimContext): Social {
   so.seat = sp ? sp.z * MAP_W + sp.x : -1;
   const rooms = jobRooms(sim.world);
   s.jobs.forEach((who, j) => {
-    if (who >= 0 && who < n) so.work[who] = rooms[j].zone;
+    if (who < 0 || who >= n) return;
+    so.work[who] = rooms[j].zone;
+    if (jobOf.length) jobOf[who] = j;
   });
   // Rats running loose (P20): the inmates near one flee it.
   so.scare.length = 0;

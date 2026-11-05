@@ -873,6 +873,8 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
     const held = def.jobs.map((j, k) => ({ j, h: st.jobs[k] })).filter(({ h }) => h >= 0);
     const off = held.filter(({ j, h }) => {
       const m = st.inmates[h];
+      // (2.30: the janitor and the mailman out on their rounds, clocked in at their rooms first.)
+      if (JOBS[j.id].flow !== 'machine') return m.shift !== 1;
       return m.shift !== 1 || ZONES[bot.sim.world.ground.zone[Math.floor(m.body.z / UNIT) * MAP_W + Math.floor(m.body.x / UNIT)]] !== JOBS[j.id].zone;
     });
     check(held.length > 0 && off.length === 0, `${def.id}: every inmate holding a job at work at 14:59 (${off.map(({ j }) => j.id).join(', ')})`);

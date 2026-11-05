@@ -157,6 +157,7 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
       return mood('in.queue', 0.55, 'say', some('in.idle', 'in.bored', friend));
     case DOING.LINE_UP:
       return mood('in.lineup', 0.5, 'say', some('in.idle', 'in.bored', block === 'rollCall' ? 'in.hungry' : 'in.sleepy', weather, friend));
+    case DOING.MOP:
     case DOING.WORK: {
       const job = s.jobs.indexOf(id);
       const jobId = job >= 0 ? sim.prison.jobs[job]?.id : undefined;

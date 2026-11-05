@@ -6,6 +6,7 @@ import type { JobId } from '../content/jobs';
 import { ROUTINE } from '../content/routine';
 import { OP } from '../sim/command';
 import { HOLDER, jobRooms, qualifies } from '../sim/systems/economy';
+import { nextWork } from '../sim/systems/jobs';
 import type { Sim } from '../sim/Sim';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, type Key, t } from '../i18n';
@@ -251,11 +252,27 @@ export class WorkChips {
         el.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
         const ready = left <= 0;
         el.classList.toggle('ready', ready);
+        el.classList.remove('next');
         el.style.setProperty('--p', `${Math.round((1 - Math.max(0, left) / cycle) * 100)}%`);
         const item = room?.def.done ? itemIcons()[itemNumber(room.def.done)] : '';
         const img = el.querySelector('img')!;
         if (img.getAttribute('src') !== item) img.setAttribute('src', item);
       }
+    }
+    // (2.30: and over the next station, what's to do there, unless a chip already stands on it.)
+    const next = !busy ? nextWork(sim) : null;
+    // (Not once it's in reach: the frame and the button say it, and the marker would sit on the player's head.)
+    const at = next && next.prop >= 0 && s.machines[next.prop] === undefined && sim.dutyZones.includes(sim.playerZone) && sim.station()?.prop !== next.prop ? sim.world.props[next.prop] : null;
+    const spot = at && project(at.x + at.w / 2, 1.35, at.z + at.d / 2, this.at);
+    if (next && spot) {
+      const el = (this.pool[n] ??= this.make());
+      n++;
+      el.style.transform = `translate(${Math.round(spot.x)}px, ${Math.round(spot.y)}px)`;
+      el.classList.remove('ready');
+      el.classList.add('next');
+      const item = itemIcons()[next.item];
+      const img = el.querySelector('img')!;
+      if (img.getAttribute('src') !== item) img.setAttribute('src', item);
     }
     for (let k = 0; k < this.pool.length; k++) this.pool[k].classList.toggle('hidden', k >= n);
   }

@@ -128,6 +128,8 @@ export interface WorkState {
   mail: readonly number[];
   /** Pieces still owed today (the quota less those handed in). */
   owed: number;
+  /** 2.30: the mop mops from the pockets too (false: replaying an older run, in hand only). */
+  pockets: boolean;
 }
 
 /**
@@ -150,7 +152,7 @@ export function stationTarget(w: World, s: WorkState, b: Body): Station | null {
   const free = freeHotbar(s.inv) >= 0;
   const held = itemOf(s.inv[s.hand]);
   // Mopping: a puddle underfoot or just ahead, mop in hand.
-  if (def.flow === 'mop' && held === raw) {
+  if (def.flow === 'mop' && (held === raw || (s.pockets && hotbarHas(s, raw)))) {
     const t = puddleAt(s.puddles, b);
     if (t >= 0) return { prop: -1, tile: t, act: 'mop', item: raw };
   }

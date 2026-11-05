@@ -9,14 +9,14 @@ import { rollCallShows } from '../render/ground';
 import { DIR_X, DIR_Z, headingAngle, SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
 import { personOf } from '../sim/systems/combat';
-import { type Station } from '../sim/systems/economy';
+import { jobRooms, type Station } from '../sim/systems/economy';
 import { alertOf, CHASE_SPEED, GUARD, GUARD_SPEED as WALK_SPEED_GUARD, stirSteps } from '../sim/systems/guards';
 import { eatingNow, mealOn, mealSteps, servingCounter, TRAY, traysHere } from '../sim/systems/canteen';
 import { canAnswer, wardenOf } from '../sim/systems/rollcall';
 import { showerOffer } from '../sim/systems/showers';
 import { dummyInBed } from '../sim/systems/justice';
 import { afterHours } from '../sim/systems/watch';
-import { DOING, inmateEatSteps } from '../sim/systems/inmates';
+import { DOING, dutyCarry, dutyMachine, inmateEatSteps } from '../sim/systems/inmates';
 import { ON_MACHINE } from '../sim/ai/doing';
 import { placesOf } from '../sim/ai/places';
 import type { Prop, World } from '../sim/world/World';
@@ -76,6 +76,9 @@ function showerHead(sim: Sim, target: Target): Target | null {
   const index = containersOf(sim.world).findIndex((c) => c.prop.kind === 'shower' && c.prop.z * MAP_W + c.prop.x === head);
   return index < 0 ? null : { kind: 'container', index };
 }
+
+/** 2.30: the player's hands on a station for a moment after a press (real time: the view's alone, nothing of the sim's). */
+export const workPose = { until: 0, doing: 0 };
 
 function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, station: Station | null = null) {
   if (station && !climb) {
@@ -231,8 +234,14 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // (Sat in the canteen on dinner's plan with no meal on: a film, the acts. No tray, no spoon.)
   const watching = traysHere(sim) && !mealOn(sim);
   const warden = st.guards[wardenOf(sim)];
+  // (2.30: the job machines running, the inmates' as they come, the player's after; the gardener's planters growing.)
+  const running = f.running as Map<number, number>;
+  running.clear();
+  const grow = f.planters as Map<number, number>;
+  grow.clear();
+  const atWork = !sim.rules229 && !sim.world.def.rules?.relaxed && !st.lockdown && ROUTINE[st.routine].id === 'work';
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, bare: false, towel: 0, attention: false, prop: -1, at: { x: 0, z: 0, facing: 0, y: 0 }, bench: { x: 0, z: 0, angle: 0 } });
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, held: 0, bare: false, towel: 0, attention: false, prop: -1, at: { x: 0, z: 0, facing: 0, y: 0 }, bench: { x: 0, z: 0, angle: 0 } });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -260,6 +269,19 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const atTable = o.doing === DOING.EAT;
     o.trayAt = atTable ? TRAY_AT.TABLE : m.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
     o.trayLeft = m.tray === TRAY.EMPTY ? 0 : atTable && m.tray === TRAY.FULL ? Math.min(1, m.wait / inmateEatSteps(m)) : 1;
+    // (2.30: at work, what's in its hands, and the machine it's running.)
+    o.held = 0;
+    // (On its way at work, not out cold, in a fight or off with the player: it's put down then.)
+    const job = atWork && m.ko <= 0 && m.angry <= 0 && m.plan === st.routine ? st.jobs.indexOf(k) : -1;
+    if (job >= 0) {
+      const carry = dutyCarry(sim.world, m, job);
+      if (carry) o.held = itemNumber(carry);
+      const on = dutyMachine(sim.world, m, job);
+      if (on) {
+        running.set(on.prop, on.done);
+        if (sim.world.props[on.prop]?.kind === 'planter') grow.set(on.prop, on.done);
+      }
+    }
     // A turn at the showers (2.26), the walks between its steps included: a towel round the neck while waiting and on the way to a head,
     // in shorts under the water, still in them walking off to dry, the towel over the hair; dressed again after.
     const washTurn = !o.moving ? 0 : m.then === DOING.TOWEL ? 1 : m.then === DOING.SHOWER && sim.world.zoneAt(Math.floor(m.body.x / UNIT), Math.floor(m.body.z / UNIT)) === 'showers' ? 2 : 0;
@@ -448,6 +470,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const qf = sim.world.def.leisure?.quiz?.face ?? 5;
     if (!p.moving) f.facing = qf === 1 ? Math.PI / 2 : qf === 9 ? -Math.PI / 2 : qf === 13 ? Math.PI : 0;
   }
+  // (2.30: a press at a job's station.)
+  if (!seated && !f.moving && f.doing === DOING.NOTHING && performance.now() < workPose.until) f.doing = workPose.doing;
   // (P34: on the pay phone, the handset at the ear, facing the phone on its wall.)
   const comms = st.call !== null && !seated ? commsOf(sim) : null;
   if (comms) {
@@ -476,10 +500,12 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.reps = trainReps(st.reps, st.train >= 0);
   f.puddles = st.puddles;
   // (P31: the gardener's planters growing what was planted in them.)
-  const grow = f.planters as Map<number, number>;
-  grow.clear();
+  const cycleOf = sim.jobActive() >= 0 ? (jobRooms(sim.world)[sim.jobActive()]?.def.cycle ?? 3) : 3;
   for (const k in st.machines) {
     const i = Number(k);
+    const done = Math.max(0, Math.min(1, 1 - (st.machines[i] - st.step) / (cycleOf * STEPS_PER_SECOND)));
+    // (A load that's finished stands waiting, no longer running.)
+    if (st.machines[i] > st.step) running.set(i, done);
     if (sim.world.props[i]?.kind !== 'planter') continue;
     grow.set(i, Math.max(0, Math.min(1, 1 - (st.machines[i] - st.step) / (JOBS.gardener.cycle! * STEPS_PER_SECOND))));
   }
