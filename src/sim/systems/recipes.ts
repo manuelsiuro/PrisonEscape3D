@@ -6,6 +6,8 @@
  */
 import { ITEMS, itemNumber, type Source } from '../../content/items';
 import { LOOT } from '../../content/loot';
+import { SUBJECTS, subjectOf } from '../../content/books';
+import { JOBS } from '../../content/jobs';
 import { RECIPES } from '../../content/recipes';
 import type { SimContext } from '../context';
 import { containersOf } from '../world/containers';
@@ -84,24 +86,59 @@ export const usableHere = (w: World, recipe: number) => obtainable(w).has(itemNu
 const NEVER_TOLD = new Set(RECIPES.flatMap((r, k) => (r.keep || r.ingredients.some((ing) => ing.startsWith('mold_')) ? [k] : [])));
 
 /** The recipe a tip teaches next: the simplest the player has the Intellect for and doesn't know yet (-1 none). */
-export function nextTip(sim: SimContext): number {
+export function nextTip(sim: SimContext, subject = -1): number {
   const s = sim.state;
   let best = -1;
   RECIPES.forEach((r, k) => {
     if (r.int > s.items.int || s.items.known.includes(k) || s.tips.includes(k) || NEVER_TOLD.has(k) || !usableHere(sim.world, k)) return;
+    if (subject >= 0 && subjectOf(r.result) !== subject) return;
     if (best < 0 || r.int < RECIPES[best].int) best = k;
   });
   return best;
 }
 
 /** A recipe told to the player (by studying, or by an inmate: `who`); whether there was one to tell. */
-export function revealTip(sim: SimContext, who = -1): boolean {
-  const recipe = nextTip(sim);
+export function revealTip(sim: SimContext, who = -1, subject = -1): boolean {
+  // (2.31: from the subject being read; with nothing left in it for now, the simplest of any, so that no mark goes for nothing.)
+  const inIt = subject >= 0 ? nextTip(sim, subject) : -1;
+  const recipe = inIt >= 0 ? inIt : nextTip(sim);
   if (recipe < 0) return false;
   sim.state.tips.push(recipe);
   sim.state.items.rev++;
   sim.events.push({ type: 'tip', recipe, who });
   return true;
+}
+
+/** How many recipes a subject can tell the player now: within their Intellect, not known or told, of use here (2.31). */
+export function toLearn(sim: SimContext, subject: number): number {
+  const s = sim.state;
+  return RECIPES.filter((r, k) => subjectOf(r.result) === subject && r.int <= s.items.int && !s.items.known.includes(k) && !s.tips.includes(k) && !NEVER_TOLD.has(k) && usableHere(sim.world, k)).length;
+}
+
+/** The subject with the most to tell the player now (the first of them), -1 none: the librarian's suggestion. */
+export function suggestSubject(sim: SimContext): number {
+  let best = -1;
+  let most = 0;
+  SUBJECTS.forEach((_, k) => {
+    const n = toLearn(sim, k);
+    if (n > most) {
+      most = n;
+      best = k;
+    }
+  });
+  return best;
+}
+
+/** What the next Intellect to aim for opens here: the lowest mark above theirs with a job or a recipe they can't have yet (2.31), null none. */
+export function nextUnlock(sim: Pick<SimContext, 'state' | 'world'>): { at: number; jobs: string[]; wage: number; recipes: number } | null {
+  const have = sim.state.items.int;
+  const jobs = sim.world.def.jobs.map((j) => JOBS[j.id]).filter((d) => !!d);
+  const recipes = RECIPES.flatMap((r, k) => (r.int > have && !NEVER_TOLD.has(k) && usableHere(sim.world, k) ? [r.int] : []));
+  const marks = [...recipes, ...jobs.filter((d) => d.int > have).map((d) => d.int)];
+  if (!marks.length) return null;
+  const at = Math.min(...marks);
+  const here = jobs.filter((d) => d.int === at);
+  return { at, jobs: here.map((d) => d.id), wage: Math.max(0, ...here.map((d) => d.wage)), recipes: recipes.filter((n) => n === at).length };
 }
 
 /** Whether an inmate has told the player a recipe today already. */

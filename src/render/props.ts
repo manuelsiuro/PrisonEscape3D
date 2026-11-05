@@ -140,6 +140,9 @@ const BUILDERS: Record<PropKind, Builder> = {
     box(0.04, 0.3, 0.04, DARK, -0.2, 0.45, -0.19),
     box(0.04, 0.3, 0.04, DARK, 0.2, 0.45, -0.19),
   ],
+  /** 2.31: a library's added chairs, the librarian's at the desk: the same chair. */
+  readChair: (w, d) => BUILDERS.chair(w, d),
+  deskChair: (w, d) => BUILDERS.chair(w, d),
   /** A hydraulic press: a bed on a base, two columns, the crown and the ram between them, a red guard rail. */
   press: (w, d) => [
     box(w - 0.1, 0.35, d - 0.15, 0x3d4652),

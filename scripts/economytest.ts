@@ -42,6 +42,7 @@ import { HOTBAR, itemOf, pocketOf, slot, usesOf } from '../src/sim/systems/items
 import { STEPS_PER_MINUTE, UNIT, walkSpeed } from '../src/sim/tuning';
 import { reachableFrom } from '../src/sim/world/reach';
 import { MAP_W } from '../src/sim/world/World';
+import { freeReadSeat } from '../src/sim/systems/training';
 import { check } from './assert';
 import { Bot, beatPress } from './bots';
 
@@ -305,6 +306,15 @@ function plant(g: Guard, x: number, z: number, facing: number) {
   g.doing = 0;
 }
 /** Guards in the guard quarters facing the wall, inmates in their cells; the clock moved to a time. */
+/** 2.31: with the shelf's panel open, a book, and on a free chair with it. */
+function readNow(a: ReturnType<typeof arena>) {
+  a.op(OP.TRAIN, 0);
+  if (a.st.train >= 0 || !a.st.book) return;
+  const seat = freeReadSeat(a.sim);
+  put(a.st.player, seat % MAP_W, Math.floor(seat / MAP_W));
+  a.op(OP.INTERACT);
+}
+
 function arena(step = 0, seed = 5) {
   const sim = new Sim(CENTER_PERKS, seed);
   const st = sim.state;
@@ -442,7 +452,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   put(st.player, 17, 31);
   st.player.facing = 13;
   a.op(OP.INTERACT);
-  a.op(OP.TRAIN, 0);
+  readNow(a);
   check(st.train >= 0 && sim.trainsOn(st.train) === 'int', 'a book from the library shelf: studying');
   for (let k = 0; k < 300 && st.items.int === 40; k++) a.step(beatPress(sim));
   check(st.items.int === 42 && st.energy === 90, `a set of study: +2 Intellect, 10 energy (INT ${st.items.int}, energy ${st.energy})`);
@@ -799,12 +809,12 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   st.items.int = 44;
   st.energy = 100;
   a.op(OP.INTERACT);
-  a.op(OP.TRAIN, 0);
+  readNow(a);
   for (let k = 0; k < 300 && st.items.int === 44; k++) a.step(beatPress(sim));
   const first = st.tips[0];
   check(st.items.int === 46 && st.tips.length === 1 && RECIPES[first].int <= 46 && a.has('tip', (e) => e.type === 'tip' && e.who === -1), `studying past 45 tells a recipe (${RECIPES[first]?.result})`);
   check(!RECIPES.some((r, k) => r.int < RECIPES[first].int && !st.items.known.includes(k)), 'the simplest one first');
-  a.op(OP.TRAIN, 3);
+  a.op(OP.CLOSE);
   // An inmate who likes the player: a recipe once a day.
   const who = 0;
   st.inmates[who].opinion = 50;
@@ -838,7 +848,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   st.items.int = 44;
   st.energy = 100;
   a.op(OP.INTERACT);
-  a.op(OP.TRAIN, 0);
+  readNow(a);
   const set = () => {
     const was = st.items.int;
     for (let k = 0; k < 300 && st.items.int === was; k++) a.step(beatPress(a.sim));

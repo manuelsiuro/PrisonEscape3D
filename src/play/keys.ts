@@ -18,6 +18,7 @@ import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
 import { paroleBusy, paroleKey } from './parole';
+import { reading } from '../sim/systems/training';
 import { closeOddJobsCard, jobCardShown, oddjobKey } from './oddjobs';
 import { huntKey } from './hunt';
 
@@ -28,6 +29,11 @@ export function act() {
   // (P39: nor before the parole board.)
   if (nightsBusy(play.game.rec.sim.state) || paroleBusy(play.game.rec.sim.state)) return;
   play.game.pilot.stop();
+  // (2.31: reading, the action button underlines.)
+  if (reading(play.game.rec.sim)) {
+    sendOp(OP.TRAIN, 1);
+    return;
+  }
   itemsUI.closeCraft();
   profile.close();
   ratPanel.close();
@@ -88,7 +94,9 @@ function onKeyDown(e: KeyboardEvent) {
   if (e.code === 'KeyE') {
     // E again closes what it opened (a container, a talk, the board) and steps off the equipment.
     const st = g.rec.sim.state;
-    if (st.items.open >= 0 || st.talk >= 0 || st.train >= 0 || st.pick.length) sendOp(OP.CLOSE);
+    // (2.31: not while reading: it underlines; X or a step closes the book.)
+    if (reading(g.rec.sim)) sendOp(OP.TRAIN, 1);
+    else if (st.items.open >= 0 || st.talk >= 0 || st.train >= 0 || st.pick.length) sendOp(OP.CLOSE);
     else if (board.isOpen) board.close();
     else act();
   }
@@ -180,6 +188,11 @@ function onKeyDown(e: KeyboardEvent) {
     if ((document.activeElement as HTMLElement | null)?.closest('.talk-panel, .train-card')) return;
     e.preventDefault();
     if (itemsUI.panelOpen || socialOpen()) return;
+    // (2.31: reading, Space underlines too.)
+    if (reading(g.rec.sim)) {
+      sendOp(OP.TRAIN, 1);
+      return;
+    }
     // (P27: on a spot at the hoop, Space raises the ball for a shot; let go, it goes.)
     // (P29: in a match, Space held is a kick, let go it goes; before the hoop's shot, whose spots lie on some pitches.)
     if (kickKey(true)) return;

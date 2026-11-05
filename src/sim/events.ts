@@ -136,11 +136,13 @@ export type SimEvent =
   | { type: 'tip'; recipe: number; who: number }
   /** Chilled to the bone in the snow, or (`hot`, P17) baked by a heatwave's sun: energy costs double while it lasts. */
   | { type: 'cold'; on: boolean; hot?: boolean }
-  | { type: 'rep'; hit?: boolean }
+  | { type: 'rep'; hit?: boolean; key?: number }
+  /** 2.31: a book taken from a shelf (`subject`; `seat`: a chair's free to read it on) or put back. */
+  | { type: 'book'; on: boolean; subject: number; seat: boolean }
   | { type: 'trained'; attr: Attr; value: number }
   /** 2.29: someone on a machine asked for a turn. */
   | { type: 'askTurn'; who: number }
-  | { type: 'cantTrain'; why: 'tired' | 'max' }
+  | { type: 'cantTrain'; why: 'tired' | 'max' | 'full' }
   /** 08:00: attributes left untrained yesterday slipped a point. */
   | { type: 'decay'; attrs: Attr[] }
   /** Talking to an inmate (-1: the talk is over). */

@@ -182,9 +182,11 @@ export class TrainCard {
   update(sim: Sim, busy: boolean) {
     const s = sim.state;
     const a = s.train >= 0 ? sim.trainsOn(s.train) : null;
-    const on = !!a && !busy;
+    // (2.31: a book has its own card, reading.ts.)
+    const on = !!a && !busy && (sim.rules230 || sim.world.props[s.train].kind !== 'shelf');
     this.el.classList.toggle('hidden', !on);
-    document.body.classList.toggle('training', on);
+    // (A book's card is a training card too, to what's around it.)
+    document.body.classList.toggle('training', !!a && !busy);
     if (!on || !a) {
       this.shown = '';
       return;

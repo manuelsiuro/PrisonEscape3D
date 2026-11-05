@@ -199,7 +199,7 @@ function drawCells(g: Svg, def: PrisonDef) {
 
 /** Props: their footprint, named. Solid ones dark, the ones walked over light. */
 function drawProps(g: Svg, def: PrisonDef) {
-  const walked = new Set(['bench', 'seat', 'chair', 'shower', 'bleachers']);
+  const walked = new Set(['bench', 'seat', 'chair', 'readChair', 'deskChair', 'shower', 'bleachers']);
   for (const p of def.props) {
     const w = p.w ?? 1;
     const d = p.d ?? 1;
@@ -405,6 +405,11 @@ function drawPeople(g: Svg, def: PrisonDef) {
       }
       arrow(g, st.x, st.z, st.face, '#db2777', 20);
       g.pill(cx(st.x), cz(st.z), 'STAGE', 9, '#db2777');
+    }
+    // 2.31: the librarian at the end of a table.
+    if (ls.librarian) {
+      arrow(g, ls.librarian.x, ls.librarian.z, ls.librarian.face, '#5e74c9', 16);
+      g.pill(cx(ls.librarian.x), cz(ls.librarian.z), 'LIB', 9, '#5e74c9');
     }
     if (ls.quiz) ls.quiz.spots.forEach((q, k) => {
       g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="10" fill="#0891b2"/>`);
@@ -805,6 +810,7 @@ function tileData(def: PrisonDef, n: number) {
     mark(ls.hoop.x, ls.hoop.z, 'hoop (under the rim)');
     ls.hoop.spots.forEach((q, k) => mark(q.x, q.z, `hoop shooting spot S${k + 1}`));
     ls.quiz?.spots.forEach((q, k) => mark(q.x, q.z, `quiz seat Q${k + 1}`));
+    if (ls.librarian) mark(ls.librarian.x, ls.librarian.z, 'the librarian, in free time');
     if (ls.stage) mark(ls.stage.x, ls.stage.z, 'talent stage (performer)');
     mark(ls.race.x, ls.race.z, 'rat race start');
   }

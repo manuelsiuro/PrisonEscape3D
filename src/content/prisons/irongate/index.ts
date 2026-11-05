@@ -325,6 +325,14 @@ const GEAR: PropPlacement[] = [
   { kind: 'mat', x: 39, z: 32, w: 2 },
 ];
 
+/** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
+const READING: PropPlacement[] = [
+  { kind: 'deskChair', x: 48, z: 36, rot: 1 },
+  { kind: 'readChair', x: 49, z: 37, rot: 2 },
+  { kind: 'readChair', x: 50, z: 37, rot: 2 },
+  { kind: 'readChair', x: 51, z: 36, rot: 3 },
+];
+
 export const IRONGATE: PrisonDef = {
   id: 'irongate',
   difficulty: 5,
@@ -374,7 +382,7 @@ export const IRONGATE: PrisonDef = {
     ['garden', 44, 22, 51, 26],
   ],
   cells,
-  props: [...props, ...GEAR],
+  props: [...props, ...GEAR, ...READING],
   rollCall,
   spawn: { x: 10, z: 11 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],
@@ -496,6 +504,7 @@ export const IRONGATE: PrisonDef = {
     track: { x: 8, z: 28, w: 14, d: 8 },
     stage: stage(30, 37, 13),
     quiz: quizAt(5, [48, 35], [49, 35], [50, 35], [51, 35]),
+    librarian: { cell: 8, x: 48, z: 36, face: 1 },
   },
   // Rebuilt in 2.9 (P33): the sports ground in the yard's west third, the garden at its east end.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.

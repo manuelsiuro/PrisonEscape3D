@@ -36,7 +36,7 @@ import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
 import { press } from './buttons';
-import { aimUI, banner, board, closeSocial, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, trainCard, view } from './context';
+import { aimUI, banner, board, closeSocial, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, readCard, settings, sleepVeil, sound, tools, trainCard, view } from './context';
 import { play } from './game';
 import { NEED } from './labels';
 import { outOfBounds } from '../sim/systems/k9';
@@ -580,7 +580,8 @@ export function announce(e: SimEvent, sim: Sim) {
         seenInteract();
         sound.click();
         play.game?.pilot.stop();
-        coachOnce('trainBeat', TOUCH ? 'hint.trainBeatTouch' : 'hint.trainBeatKeys');
+        if (sim.rules230 || e.use !== 'study') coachOnce('trainBeat', TOUCH ? 'hint.trainBeatTouch' : 'hint.trainBeatKeys');
+        else coachOnce('readKeys', TOUCH ? 'hint.readTouch' : 'hint.readKeys');
       }
       break;
     case 'count':
@@ -608,7 +609,8 @@ export function announce(e: SimEvent, sim: Sim) {
         play.game?.pilot.stop();
         if (e.use === 'rest') coachOnce('rest', 'hint.rest');
         // (P39: sat before the parole board, no "move to get up" over its question: the tip waits for an ordinary seat.)
-        else if (!sim.state.hearing && !nightTired(sim)) coachOnce('sit', 'hint.sit');
+        // (2.31: nor sat down to read: the book's own tip.)
+        else if (!sim.state.hearing && !nightTired(sim) && !sim.state.book) coachOnce('sit', 'hint.sit');
         // (Sat at a table for a meal, no tray in front of them: where it's had.)
         if (e.use === 'sit' && noTrayAtTable(sim)) banner.toast(t('toast.noTray'), 'info', 3500);
       }
@@ -646,7 +648,8 @@ export function announce(e: SimEvent, sim: Sim) {
       if (e.hit) sound.repHit();
       else sound.rep();
       buzz('strike');
-      if (e.hit !== undefined) trainCard.flash(e.hit);
+      if (e.key !== undefined) readCard.mark(e.key, !!e.hit);
+      else if (e.hit !== undefined) trainCard.flash(e.hit);
       break;
     case 'askTurn':
       seenInteract();
@@ -662,7 +665,15 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'cantTrain':
       sound.sting();
-      itemsUI.toast(t(e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tooTiredTrain') : 'toast.maxed'));
+      itemsUI.toast(t(e.why === 'full' ? 'toast.headFull' : e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tooTiredTrain') : 'toast.maxed'));
+      break;
+    case 'book':
+      // (2.31: taken from the shelf, to a chair with it.)
+      if (e.on) {
+        seenInteract();
+        sound.click();
+        if (e.seat) coachOnce('readSit', 'hint.readSit');
+      }
       break;
     case 'decay':
       banner.toast(t('toast.decay', { attrs: e.attrs.map((a) => t(`attr.${a}Short` as Key)).join(', ') }), 'bad', 5000);

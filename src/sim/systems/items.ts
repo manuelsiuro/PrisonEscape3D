@@ -174,13 +174,14 @@ export type Target =
  * infirmary's beds to rest on (GDD §3.1); Irongate's helipad, to board the helicopter (P12).
  */
 export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
+const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', readChair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
 
 const GEAR_USES: readonly FixtureUse[] = ['weights', 'treadmill', 'pullup', 'mat', 'punchingBag'];
 
 /** What a prop is used for by standing at it (an infirmary bed is for resting; a cell bed is a container). */
 export function fixtureUse(w: World, p: { kind: string; x: number; z: number }): FixtureUse | undefined {
   if (w.plainGear && (p.kind === 'mat' || p.kind === 'punchingBag')) return undefined;
+  if (w.plainBooks && p.kind === 'readChair') return undefined;
   return FIXTURES[p.kind] ?? (p.kind === 'bed' && w.zoneAt(p.x, p.z) === 'infirmary' ? 'rest' : undefined);
 }
 

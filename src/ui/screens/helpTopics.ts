@@ -101,6 +101,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('day', 'calendar', '#d9930a', { lessons: ['day'], listIcons: ['eye', 'bell', 'star'], list2Icons: ['fog', 'rain', 'storm', 'heat'], see: ['holidays'] }),
         T('work', 'coin', '#c99a12', { pic: true, lessons: ['job', 'gardener'], listIcons: ['cart', 'gift'] }),
         T('train', 'dumbbell', '#8e4fc4', { pic: true, lessons: ['gym', 'laps'], listIcons: ['dumbbell', 'run', 'book'], see: ['grounds'] }),
+        T('library', 'book', '#5e74c9', { pic: true, lessons: ['library'], listIcons: ['book', 'monitor', 'checkers', 'brain'], see: ['train', 'craft', 'kiosk', 'checkers'] }),
         T('grounds', 'run', '#b0553f', { pic: true, lessons: ['laps', 'gardener'], see: ['garden', 'hoops', 'football'] }),
         // v2.21 (P42): the holidays (its picture: public/help/holidays.webp).
         T('holidays', 'tree', '#4fbf6a', { pic: true, picAt: '50% 0%', listIcons: ['egg', 'splash', 'pumpkin', 'tree'], list2Icons: ['calendar', 'star', 'close'], see: ['day'] }),

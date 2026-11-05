@@ -541,18 +541,19 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   const was228 = new Sim(CENTER_PERKS, 24);
   was228.rules228 = true;
   was228.rules229 = true;
+  was228.rules230 = true;
   check(was228.world.plainGear, 'the old rules: the bag and the mat for show');
   const prev = new RunRecorder(was228, { seed: 24, game: '2.28.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) prev.step(0);
   check(!prev.sim.state.inmates.some((m) => ON_MACHINE.includes(m.doing)), 'the old rules: nobody on the machines');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules228 === true, 'a 2.28 log through the hour replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.30.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.30.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.30.0' });
+  check(!replayLog({ ...prev.toLog(), game: '2.31.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.31.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.31.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.30.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.31.1' }).toLog().seed === 24, 'and is carried on');
   // The old set: fast presses, a bar that drains, the bag no use at all.
   const o = new Bot(CENTER_PERKS, 3);
   o.sim.rules228 = true;

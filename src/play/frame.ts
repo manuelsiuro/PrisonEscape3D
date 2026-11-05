@@ -65,6 +65,7 @@ import { badgeOf } from './badges';
 const BATON = itemNumber('baton');
 const POUCH = itemNumber('pouch');
 const MAGAZINE = itemNumber('magazine');
+const BOOK = itemNumber('thick_book');
 
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
 /** Whether the player's bed holds a dummy: read again when the items change, never every frame. */
@@ -273,6 +274,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.held = 0;
     // (On its way at work, not out cold, in a fight or off with the player: it's put down then.)
     const job = atWork && m.ko <= 0 && m.angry <= 0 && m.plan === st.routine ? st.jobs.indexOf(k) : -1;
+    // (2.31: a book, chosen at a shelf and carried to a chair.)
+    if (!sim.rules230 && m.ko <= 0 && m.angry <= 0 && (m.book === 2 || (m.book === 1 && o.doing === DOING.READ))) o.held = BOOK;
     if (job >= 0) {
       const carry = dutyCarry(sim.world, m, job);
       if (carry) o.held = itemNumber(carry);
@@ -443,10 +446,10 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
       Object.assign(seatMemo, { seat: st.seat, x: p.x, z: p.z });
       seatAt.x = spot.x + 0.5;
       seatAt.z = spot.z + 0.5;
-      seatAt.y = seated.kind === 'chair' ? 0.1 : 0;
+      seatAt.y = seated.kind === 'chair' || seated.kind === 'readChair' ? 0.1 : 0;
       seatAt.facing = headingAngle(spot.facing);
     }
-    f.doing = eatingNow(sim) ? DOING.EAT : DOING.SIT;
+    f.doing = eatingNow(sim) ? DOING.EAT : trainKind === 'shelf' ? DOING.SIT_READ : DOING.SIT;
     if (f.doing === DOING.EAT || (st.tray !== TRAY.NONE && seated.kind === 'seat')) f.trayAt = TRAY_AT.TABLE;
     f.trainAt = seatAt;
   } else if (sim.showering) f.doing = DOING.SHOWER;
@@ -512,7 +515,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.craters = st.craters;
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
   // (P30: on the stage, at the quiz's table, empty-handed: the instrument, the buzzer.)
-  f.held = st.show || st.quiz ? 0 : trainKind === 'shelf' ? MAGAZINE : held;
+  // (2.31: the book, read or carried to a chair.)
+  f.held = st.show || st.quiz ? 0 : st.book > 0 ? BOOK : trainKind === 'shelf' ? MAGAZINE : held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;
