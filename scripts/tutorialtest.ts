@@ -26,6 +26,7 @@ import { thorough } from '../src/sim/systems/delivery';
 import { jobRooms, priceOf } from '../src/sim/systems/economy';
 import { itemDef } from '../src/content/items';
 import { itemOf } from '../src/sim/systems/items';
+import { dummyInBed } from '../src/sim/systems/justice';
 import { checkpointOf, shiftChange } from '../src/sim/systems/getaway';
 import { WAY } from '../src/content/smuggling';
 import { containersOf } from '../src/sim/world/containers';
@@ -659,6 +660,55 @@ play('meals', (bot) => {
   bot.act();
   check(bot.st.tray === TRAY.NONE, 'meals: put back');
 });
+
+play('night', (bot) => {
+  const pl = placesOf(bot.sim.world);
+  check(bot.st.items.inv.some((v) => itemOf(v) === n('bed_dummy')), 'night: the dummy in their pockets');
+  check(bot.walkTo(pl.bedside[1]), 'night: home');
+  check(bot.until(() => ROUTINE[bot.st.routine].id === 'lightsOut', 400), 'night: the bell');
+  bot.hold('bed_dummy');
+  bot.act();
+  check(dummyInBed(bot.sim), 'night: tucked in');
+  bot.act();
+  check(!dummyInBed(bot.sim), 'night: taken out');
+  bot.act();
+  check(bot.st.sleeping, 'night: asleep');
+  check(bot.until(() => !bot.st.sleeping, 12000), 'night: morning');
+  check(bot.st.energy === 100, `night: rested (${bot.st.energy})`);
+});
+
+// (Slowly, all the way there, past the grace: a guard on the way, or the arrows still home.)
+play('night', (bot) => {
+  const pl = placesOf(bot.sim.world);
+  bot.until(() => ROUTINE[bot.st.routine].id === 'lightsOut', 400);
+  check(bot.sim.playerZone !== 'playerCell', 'night, slowly: still out at the bell');
+  check(bot.walkTo(pl.bedside[1]), 'night, slowly: home');
+  bot.hold('bed_dummy');
+  bot.act();
+  check(dummyInBed(bot.sim), 'night, slowly: tucked in');
+  bot.act();
+  bot.act();
+  check(bot.st.sleeping, 'night, slowly: asleep');
+  bot.step(command(5));
+  check(!bot.st.sleeping, 'night, slowly: woken by a move');
+});
+
+// (Asleep before the dummy, and on till morning: told so, not left on a step that can't be done.)
+{
+  const index = LESSONS.findIndex((l) => l.id === 'night');
+  const bot = new Bot(LESSONS[index].prison ?? TRAINING, LESSONS[index].seed ?? 0);
+  LESSONS[index].setup(bot.sim);
+  const progress = new LessonProgress(LESSONS[index]);
+  const ctx: LessonCtx = { sim: bot.sim, craftOpen: false };
+  check(bot.walkTo(placesOf(bot.sim.world).bedside[1]), 'night, overslept: home');
+  progress.update(ctx);
+  bot.until(() => ROUTINE[bot.st.routine].id === 'lightsOut', 400);
+  progress.update(ctx);
+  bot.silent = true;
+  bot.until(() => ROUTINE[bot.st.routine].id !== 'lightsOut', 12000);
+  progress.update(ctx);
+  check(progress.verdict(ctx) === 'lesson.night.morning', `night, overslept: the lesson says so (${progress.verdict(ctx)})`);
+}
 
 play('rollcall', (bot) => {
   const square = placesOf(bot.sim.world).rollCall[0];

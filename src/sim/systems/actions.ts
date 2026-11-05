@@ -59,7 +59,7 @@ import { holdKick, releaseKick } from './football';
 import { drawNeedle, endInk } from './tattoo';
 import { answerCount, canAnswer } from './rollcall';
 import { showerOffer, startWash, stopWash } from './showers';
-import { sitDown, sleep, standUp } from './upkeep';
+import { bedOffer, sitDown, sleep, standUp, takeOutDummy, tuckDummy } from './upkeep';
 import { throwItem } from './throwing';
 
 /** The player's one-step operation (OP), and the open container closing out of reach. */
@@ -101,7 +101,7 @@ export function useItems(sim: SimContext, cmd: number) {
         break;
       }
       const held = itemOf(it.inv[it.hand]);
-      const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k));
+      const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k), sim.bedtime && !sim.rules227);
       const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
       const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
       // The release desk (P36): reporting there while the name is called, or a forged form slipped into its tray, comes first.
@@ -142,7 +142,13 @@ export function useItems(sim: SimContext, cmd: number) {
       }
       if (!target) break;
       if (target.kind === 'ground') pickUp(it, target.index, ev);
-      else if (target.kind === 'sleep') sleep(sim);
+      else if (target.kind === 'sleep') {
+        // (2.28: the dummy in or out first; the next press lies down.)
+        const bed = bedOffer(sim, target.index);
+        if (bed === 'tuck') tuckDummy(sim, target.index);
+        else if (bed === 'takeOut') takeOutDummy(sim, target.index);
+        else sleep(sim);
+      }
       else if (target.kind === 'person') approach(sim, target.who);
       else if (target.kind === 'fixture') {
         if (target.use === 'board') sim.events.push({ type: 'board' });

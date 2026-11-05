@@ -99,7 +99,7 @@ Write `scripts/<area>test.ts` with its snapshot:
 changed bot snapshot is a regression until proven otherwise. Separate a real FAIL from a moved number, and
 never explain a failure away unmeasured: run old and new code over many seeds with a git worktree of
 `HEAD` (symlink `node_modules`, run one probe script against both). That showed Irongate's takeover bot wins
-about half the time on either, and that the gardener's bug was older than the change. Remove the worktree
+about half the time on either, and that the gardener's bug was older than the change. Check a long probe has really started (a `.ts` with top-level await dies at once under `tsx`; use `.mts`). Remove the worktree
 afterwards, and list every accepted change in `PLAN.md`.
 
 ## 6. Play it
@@ -125,13 +125,15 @@ What will trip you up:
 - Freezing stops the sim, not the view: its own timers (a towel for 2.5 s) run out before the screenshot. Read them in the same call too.
 - Reduced motion is the game's setting (`view.reducedMotion`), not the browser's: emulating the media query doesn't test it.
 - Screenshots may land in a temp folder at high device scale: crop them with `sips` to read detail.
+- A module imported by hand can be a second copy of the game's, once it has been edited in this dev session (the game's has `?t=…`): a spy or a language switch on it does nothing, and a count of 0 proves nothing. Take the real URL from `performance.getEntriesByType('resource')`.
+- `p.to` walks straight lines: through a door or round a corner it just pushes against the wall while the clock runs. Use `p.put` for the trip.
 
 Say plainly what you moved by script, and what nobody has played by hand. Touch in the browser is simulated.
 
 ## 7. Get an independent review
 
 Spawn one reviewer with the diff and the project's rules, not your conclusions, asking for verified findings
-with a scenario for each. It reads what you stopped seeing. Confirm each finding before fixing it, and re-run
+with a scenario for each (and its own folder for probes: one shared scratchpad let its results overwrite a long measurement's). It reads what you stopped seeing. Confirm each finding before fixing it, and re-run
 the checks after: fixes introduce bugs too.
 
 ## 8. Finish with evidence

@@ -1,6 +1,8 @@
 import { huntTap } from './hunt';
 import { itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
+import { clockAt } from '../sim/systems/clock';
+import { NIGHT_WARNING } from '../sim/tuning';
 import { t } from '../i18n';
 import { lessonGoal } from './lesson';
 import { ZONES } from '../content/zones';
@@ -117,6 +119,8 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   }
   if (s.hearing) return null;
   const r = ROUTINE[s.routine];
+  // (2.28: counted at the evening's roll call, and the warning's gone: home.)
+  if (r.id === 'eveningRollCall' && s.attended && !sim.rules227 && clockAt(s.step).minuteOfDay >= NIGHT_WARNING && sim.playerZone !== 'playerCell') return (i) => i === home;
   // Lights Out is about being in the cell, not having been there.
   if (r.id === 'lightsOut') return sim.playerZone === 'playerCell' ? null : (i) => i === home;
   // The Work Period with a job: the janitor's next puddle (mop in the hotbar), the addressee of

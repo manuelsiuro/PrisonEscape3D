@@ -1,21 +1,22 @@
-61 topics in 14 groups: 61 laid out as pages (6602 words before the fine print), 0 still a paragraph (0 words); 43 pictures
+62 topics in 14 groups: 62 laid out as pages (6747 words before the fine print), 0 still a paragraph (0 words); 44 pictures
 every part in French with as many lines; every item, recipe, icon, lesson, prison and picture there
   goal        78 words on the page,  45 folded; 4 steps, 1 chips, 1 lessons
   routine    120 words on the page,   0 folded; 4 steps, 0 chips, schedule, 2 lessons
+  night      126 words on the page,  58 folded; 3 steps, 0 chips, 2 lessons
   rollcall   119 words on the page,  44 folded; 3 steps, 0 chips, 1 lessons
   meals      103 words on the page,  35 folded; 4 steps, 0 chips, 1 lessons
   showers    117 words on the page,  30 folded; 3 steps, 0 chips, 1 lessons
   heat        31 words on the page,   0 folded; 0 steps, 0 chips, meter, 1 lessons
   items       86 words on the page,   0 folded; 4 steps, 0 chips, pockets, 2 lessons
   craft       68 words on the page,   0 folded; 3 steps, 0 chips, 3 recipes, 1 lessons
-  energy      63 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
+  energy      75 words on the page,   0 folded; 0 steps, 0 chips, 1 lessons
   trophies    77 words on the page,  18 folded; 0 steps, 0 chips, medals
   daily       74 words on the page,  52 folded; 0 steps, 0 chips
   replay      91 words on the page,  35 folded; 0 steps, 4 chips
   guards      32 words on the page,   0 folded; 0 steps, 0 chips, 2 lessons
   guardWays  148 words on the page,  41 folded; 0 steps, 3 chips, 1 lessons
   caught      32 words on the page,   0 folded; 0 steps, 2 chips
-  searches    48 words on the page,   0 folded; 0 steps, 0 chips, 1 recipes, 1 lessons
+  searches    55 words on the page,   0 folded; 0 steps, 0 chips, 1 recipes, 2 lessons
   inmates     32 words on the page,   0 folded; 0 steps, 0 chips, 2 lessons
   crew       176 words on the page, 121 folded; 3 steps, 2 chips, 1 lessons
   chatter     47 words on the page,   0 folded; 0 steps, 0 chips

@@ -419,6 +419,10 @@ export class Director {
         if (e.result === 'start') {
           const k = s.guards.findIndex((_, i) => sim.prison.guards[i].duties?.includes('bedCheck'));
           if (k >= 0) this.queueUp(now, 'gu.bedCheck', [n + k], 2, 'bedCheck', undefined, 0, 12);
+        } else if (e.awake) {
+          // (2.28: up in their cell as the guard looks in: there all the same, and told so.)
+          const k = s.guards.findIndex((_, i) => sim.prison.guards[i].duties?.includes('bedCheck'));
+          if (k >= 0) this.queueUp(now, 're.bedAwake.gu', [n + k], 4, 'bedAwake');
         } else if (e.result === 'fail') this.queueUp(now, 're.bedFail.gu', this.guardsNear(sim, px, pz, 30), 5, 'bedFail', 'shout');
         break;
       case 'scanned':

@@ -162,7 +162,7 @@ export class RunRecorder {
       // (Nor one from before the showers were turned on, 2.26: the same.)
       // (Nor one from before the warden's count, 2.27: the same.)
       // (Every one of those versions comes before 2.27, the latest gate: one test covers them all.)
-      const stale = beforeCount(log?.game ?? '');
+      const stale = beforeNight(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -273,6 +273,8 @@ const beforeTrays = (game: string) => versionBefore(game, 2, 25);
 const beforeShowers = (game: string) => versionBefore(game, 2, 26);
 /** Before roll call counted the player on their square and the warden walked the line (2.27.0): Sim.rules226 plays it as it was. */
 const beforeCount = (game: string) => versionBefore(game, 2, 27);
+/** Before the night's rules (2.28.0): longer to get home, energy back at night only asleep, the dummy handled at the bed. Sim.rules227 plays it as it was. */
+const beforeNight = (game: string) => versionBefore(game, 2, 28);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -324,6 +326,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeShowers(log.game)) sim.rules225 = true;
   // Played before the warden's count: anywhere in the yard, nobody called.
   if (beforeCount(log.game)) sim.rules226 = true;
+  // Played before the night's rules: as they were.
+  if (beforeNight(log.game)) sim.rules227 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

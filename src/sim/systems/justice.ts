@@ -253,7 +253,9 @@ export function report(sim: SimContext, r: GuardReport) {
   const there = sim.playerZone === 'playerCell' || s.sleeping || s.solitary > 0 || s.ko > 0;
   const ok = there || dummyInBed(sim);
   // (The dummy did it: P16's ledger counts that.)
-  sim.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail', ...(ok && !there ? { dummy: true } : {}) });
+  // (2.28: up in the cell they're there all the same; the guard says so.)
+  const awake = !sim.rules227 && sim.playerZone === 'playerCell' && !s.sleeping && s.solitary <= 0 && s.ko <= 0;
+  sim.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail', ...(ok && !there ? { dummy: true } : {}), ...(awake ? { awake } : {}) });
   if (!ok && !s.lockdown) {
     sim.events.push({ type: 'spotted', reason: 'bedCheck' });
     addHeat(sim, 100);
