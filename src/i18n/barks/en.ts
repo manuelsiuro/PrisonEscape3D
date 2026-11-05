@@ -2034,6 +2034,14 @@ export const enBarks = {
     "Move it! You're expected elsewhere.",
     "Did you hear the bell? I did.",
   ],
+  "re.spotted.stranger": [
+    "This isn't your shift!",
+    "You don't work in here!",
+    "Out of this room, inmate!",
+    "Lost, are we? Back out!",
+    "Workers only in here!",
+    "Whose job is this? Not yours!",
+  ],
   "re.spotted.snooping": [
     "That's not your cell!",
     "Out of that desk!",

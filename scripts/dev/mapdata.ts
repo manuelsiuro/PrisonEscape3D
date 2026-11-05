@@ -246,6 +246,8 @@ export function sheetOf(def: PrisonDef, w: World): SheetSection[] {
         return { label: tr(`job.${id}`, id), text: `${holder}. Intellect ${job.int}, $${job.wage} a day, quota ${job.quota}.`, at: first ? ([first.x, first.z] as const) : undefined };
       }),
     });
+    // (2.30: a rule of the rooms rather than a place.)
+    out[out.length - 1].rows.push({ label: 'Work rooms', text: 'Off limits to others in the Work Period (12:00–15:00), the garden apart: a guard tells you to go, and staying costs heat up to 30%. A janitor or mailman goes anywhere. Holders work their stations; a janitor mops the corridors, a mailman walks to people.' });
   }
 
   const people: SheetRow[] = [];

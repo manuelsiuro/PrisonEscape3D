@@ -4,24 +4,27 @@
  */
 import { gardenDelivered } from './grounds';
 import { twist } from './twists';
-import { itemDef } from '../../content/items';
-import { WORK_ITEMS } from '../../content/jobs';
+import { itemDef, itemNumber } from '../../content/items';
+import { type JobDef, WORK_ITEMS } from '../../content/jobs';
 import { BLOCK, ROUTINE } from '../../content/routine';
-import { zoneIndex } from '../../content/zones';
+import { zoneIndex, type ZoneId } from '../../content/zones';
 import { nearestDir } from '../ai/path';
 import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import { type Attr, ATTRS } from '../events';
-import { ATTR_START, STEPS_PER_SECOND, UNIT, VACANCY_DAYS } from '../tuning';
+import { ATTR_START, CHASE_HEAT, MAIL_WARNING, STEPS_PER_SECOND, STRANGER_CAP, STRANGER_EVERY, STRANGER_GAP, STRANGER_GRACE, STRANGER_HEAT, UNIT, VACANCY_DAYS, WORK_WARNING } from '../tuning';
 import { containersOf } from '../world/containers';
 import { MAP_W } from '../world/World';
 import { clockAt } from './clock';
 import { HOLDER, jobRooms, nearestProp, qualifies, type Station, STATION_REACH, stationTarget } from './economy';
 import { freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, stockSlots, usesOf } from './items';
 import { tileOfBody } from './movement';
+import { liftingMug } from './oddjobs';
 import { offerFavors, refuse } from './social';
 import { attr, setAttr, stopTraining } from './training';
+
+const PUMPKIN = itemNumber('pumpkin');
 
 /** What the player's job lets the action button do here (null: the usual). */
 export function station(sim: SimContext): Station | null {
@@ -37,7 +40,51 @@ export function station(sim: SimContext): Station | null {
   ws.mail = s.mail;
   const def = ws.job >= 0 ? jobRooms(sim.world)[ws.job]?.def : undefined;
   ws.owed = def ? def.quota - s.quota : 0;
+  ws.pockets = !sim.rules229;
   return stationTarget(sim.world, ws, s.player);
+}
+
+/** 2.30: the minute of the day a job's first warning comes, while its quota isn't done. */
+export const workWarningAt = (def: JobDef) => (def.flow === 'mail' ? MAIL_WARNING : WORK_WARNING);
+
+/** 2.30: what the job wants next, on the clock (null: off it): the step, and its station (a prop, -1: wherever the puddles or the addressee are). */
+export interface NextWork {
+  act: 'take' | 'load' | 'unload' | 'put' | 'sort' | 'mop' | 'deliver' | 'wait';
+  prop: number;
+  /** The item it's about. */
+  item: number;
+  /** A letter's addressee (Cast id), -1 otherwise. */
+  who: number;
+}
+
+/** 2.30: the job's next step for the arrows, the HUD and the chip. Reads only. */
+export function nextWork(sim: SimContext): NextWork | null {
+  if (!sim.onDuty) return null;
+  const s = sim.state;
+  const room = jobRooms(sim.world)[sim.jobActive()];
+  if (!room) return null;
+  const def = room.def;
+  const raw = def.raw ? itemNumber(def.raw) : 0;
+  const done = def.done ? itemNumber(def.done) : 0;
+  const carried = s.items.inv.slice(0, HOTBAR);
+  const has = (item: number) => !!item && carried.some((v) => itemOf(v) === item);
+  if (def.flow === 'mop') return has(raw) ? { act: 'mop', prop: -1, item: raw, who: -1 } : { act: 'take', prop: room.take, item: raw, who: -1 };
+  const running = room.machines.filter((i) => s.machines[i] !== undefined);
+  const ready = running.find((i) => s.machines[i] <= s.step);
+  if (def.flow === 'mail') {
+    const letter = carried.find((v) => itemOf(v) === done && s.mail.includes(usesOf(v) - 1));
+    if (ready !== undefined) return { act: 'unload', prop: ready, item: done, who: -1 };
+    if (letter) return { act: 'deliver', prop: -1, item: done, who: usesOf(letter) - 1 };
+    if (running.length) return { act: 'wait', prop: running[0], item: done, who: -1 };
+    return { act: 'sort', prop: room.machines[0], item: done, who: -1 };
+  }
+  if (ready !== undefined) return { act: 'unload', prop: ready, item: done, who: -1 };
+  if (has(done)) return { act: 'put', prop: room.put, item: done, who: -1 };
+  const free = room.machines.find((i) => s.machines[i] === undefined);
+  if (has(raw)) return free !== undefined ? { act: 'load', prop: free, item: raw, who: -1 } : { act: 'wait', prop: running[0], item: done, who: -1 };
+  // (As many on the go as it still owes: no fresh one, as the bin wouldn't give it.)
+  if (running.length >= def.quota - s.quota) return running.length ? { act: 'wait', prop: running[0], item: done, who: -1 } : null;
+  return { act: 'take', prop: room.take, item: raw, who: -1 };
 }
 
 /** A step of the job at a station: take, load, unload, put, sort, mop. */
@@ -62,9 +109,13 @@ export function work(sim: SimContext, st: Station) {
       return;
     case 'running':
       break;
-    case 'take':
-      it.inv[free()] = slot(st.item);
+    case 'take': {
+      const k = free();
+      it.inv[k] = slot(st.item);
+      // (2.30: and carried in the hand, where it's seen.)
+      if (!sim.rules229) it.hand = k;
       break;
+    }
     case 'load':
       if (!takeOne(st.item)) return;
       s.machines[st.prop] = s.step + (def.cycle ?? 3) * STEPS_PER_SECOND;
@@ -82,7 +133,9 @@ export function work(sim: SimContext, st: Station) {
         v = slot(st.item, to + 1);
       }
       delete s.machines[st.prop];
-      it.inv[free()] = v;
+      const k = free();
+      it.inv[k] = v;
+      if (!sim.rules229) it.hand = k;
       break;
     }
     case 'put':
@@ -90,6 +143,8 @@ export function work(sim: SimContext, st: Station) {
       quotaUp(sim);
       break;
     case 'mop':
+      // (2.30: from the pockets into the hand.)
+      if (!sim.rules229 && itemOf(it.inv[it.hand]) !== st.item) it.hand = hotbarSlotOf(it.inv, st.item);
       s.puddles.splice(s.puddles.indexOf(st.tile), 1);
       quotaUp(sim);
       break;
@@ -177,6 +232,48 @@ function vacate(sim: SimContext, job: number, who: number, change: 'fired' | 'qu
     s.mail = [];
   }
   sim.events.push({ type: 'job', job, who, change });
+}
+
+/**
+ * 2.30: the heat for being in a work room that isn't the player's, as a guard watches (`seen`), or -1 when it
+ * isn't that. Their own room's their cover, whatever the hour they were hired. The janitor and the mailman have
+ * business everywhere. The garden is open ground with the player's own beds in it, so it isn't one.
+ * Told first, with time to walk out; a little heat after that, and never enough of it to start a chase.
+ */
+export function stranger(sim: SimContext, zone: ZoneId, seen: boolean): number {
+  const s = sim.state;
+  const clear = () => {
+    if (s.strayed.length) s.strayed = [];
+    return -1;
+  };
+  // (Wanted already: that's what a guard reacts to, and it says so.)
+  if (sim.rules229 || sim.world.def.rules?.relaxed || s.lockdown || ROUTINE[s.routine].id !== 'work' || s.heat >= CHASE_HEAT) return clear();
+  const rooms = jobRooms(sim.world);
+  const mine = sim.playerJob >= 0 ? rooms[sim.playerJob]?.def : undefined;
+  const at = zone === 'garden' ? undefined : rooms.find((r) => r.def.zone === zone);
+  if (!at || mine?.zone === zone || mine?.flow === 'mop' || mine?.flow === 'mail' || errandIn(sim, zone)) return clear();
+  if (!seen) return -1;
+  if (!s.strayed.length || s.step - s.strayed[1] > STRANGER_GAP) {
+    s.strayed = [s.step, s.step];
+    // Told, not caught at anything: no more than that if they go.
+    sim.events.push({ type: 'toldOff' });
+    return -1;
+  }
+  s.strayed[1] = s.step;
+  // (A word with whoever works there: the clock waits till it's over.)
+  if (s.talk >= 0) s.strayed[0] = s.step;
+  const on = s.step - s.strayed[0];
+  if (on < STRANGER_GRACE) return -1;
+  if (s.heat >= STRANGER_CAP) return 0;
+  if (on === STRANGER_GRACE) return Math.min(STRANGER_HEAT, STRANGER_CAP - s.heat);
+  return on % STRANGER_EVERY === 0 ? 1 : 0;
+}
+
+/** Something that's sent the player to this room for its own sake: a pumpkin to carve in the kitchen, the fixer's mug in its freezer. */
+function errandIn(sim: SimContext, zone: ZoneId): boolean {
+  if (zone !== 'kitchen') return false;
+  if (sim.state.items.inv.slice(0, HOTBAR).some((v) => itemOf(v) === PUMPKIN)) return true;
+  return liftingMug(sim);
 }
 
 /** During the Work Period, inmates with a job check in on reaching its room. */

@@ -2032,6 +2032,14 @@ export const frBarks: Barks = {
     "Bouge ! On t’attend ailleurs.",
     "Tu as entendu la cloche ? Moi, oui.",
   ],
+  "re.spotted.stranger": [
+    "Ce n’est pas ton poste !",
+    "Tu ne travailles pas ici !",
+    "Sors de cette salle, détenu !",
+    "On s’est perdu ? Dehors !",
+    "Réservé à ceux qui bossent ici !",
+    "C’est le boulot de qui, ça ? Pas le tien !",
+  ],
   "re.spotted.snooping": [
     "Ce n’est pas ta cellule !",
     "Sors de ce bureau !",

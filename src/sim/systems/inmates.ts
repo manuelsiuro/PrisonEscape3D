@@ -1,4 +1,5 @@
 import { cornersOf } from '../../content/grounds';
+import { JOBS } from '../../content/jobs';
 import { OPEN_HOURS, ROUTINE } from '../../content/routine';
 import { zoneIndex, type ZoneId } from '../../content/zones';
 import { DOING, ON_MACHINE } from '../ai/doing';
@@ -8,7 +9,7 @@ import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { BODY_HALF, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_DRY_STEPS, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_WASH_STEPS, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT, WASH_SPREAD } from '../tuning';
+import { BODY_HALF, DUTY_HAND_STEPS, DUTY_MOP_STEPS, DUTY_REST_STEPS, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_DRY_STEPS, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_WASH_STEPS, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT, WASH_SPREAD } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
 import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
@@ -55,6 +56,8 @@ export interface Inmate extends Walker, Fighter {
   seatFace: number;
   /** 2.26: steps left squaring up before an ambush (angry, standing, no blows yet). */
   windup: number;
+  /** 2.30: how far through the day's work: its legs from station to station, counted up from 0 at the bell. */
+  duty: number;
 }
 
 /** Where inmates like to spend free time (their own cell is added). */
@@ -88,6 +91,7 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       windup: 0,
       seat: -1,
       seatFace: 0,
+      duty: 0,
     });
   }
   return out;
@@ -109,6 +113,9 @@ let serving = false;
 let turns = false;
 /** The gym's machines in use (Social.machines). */
 let machines = false;
+
+/** 2.30: inmates work their stations (Social.jobOf: each one's job, -1 none; empty: replaying an older run). */
+let jobOf: readonly number[] = [];
 
 /** The delivery's bay while its vehicle is in (P18): nobody picks a spot under it. */
 let bay: Uint8Array | null = null;
@@ -256,6 +263,90 @@ function nextWash(c: Crowd, all: Inmate[], m: Inmate): boolean {
   return false;
 }
 
+/** Whether a job has what it takes for its holder to work it: a machine job its three stations, the mail its desk, the janitor a round. */
+function dutyHere(w: World, job: number): boolean {
+  const d = placesOf(w).duties[job];
+  if (!d) return false;
+  const flow = JOBS[w.def.jobs[job].id].flow;
+  return flow === 'machine' ? !!d.take && !!d.put && d.machines.length > 0 : flow === 'mail' ? d.machines.length > 0 : d.round.length > 0;
+}
+
+/** Where its work takes an inmate next, by how far through it is (no draw: the same legs every day). */
+function dutyStop(c: Crowd, all: Inmate[], m: Inmate, job: number): { spot: Spot; then: number } | null {
+  const d = placesOf(c.w).duties[job];
+  const n = m.duty;
+  const flow = JOBS[c.w.def.jobs[job].id].flow;
+  if (flow === 'mop') {
+    // The closet first, for the mop; then along its round.
+    if (n === 0 && d.take) return { spot: d.take, then: DOING.WORK };
+    return { spot: { tile: d.round[(n + m.cell * 3) % d.round.length], face: 5 }, then: DOING.MOP };
+  }
+  if (flow === 'mail') {
+    if (n % 2 === 0) return { spot: d.machines[(n / 2) % d.machines.length], then: DOING.WORK };
+    // A letter for someone, wherever they are now, handed over from the tile beside them.
+    const others = all.filter((o) => o !== m && o.ko === 0);
+    if (!others.length) return { spot: d.machines[0], then: DOING.WORK };
+    const to = others[((n - 1) / 2 + m.cell) % others.length].body;
+    const t = tileAt(to.x, to.z);
+    const beside = [t + MAP_W, t - 1, t + 1, t - MAP_W].find((q) => q >= 0 && q < c.w.ground.zone.length && !c.w.npcBlock[q] && !taken(all, q)) ?? t;
+    return { spot: { tile: beside, face: nearestDir(to.x - centerX(beside), to.z - centerZ(beside)) || 5 }, then: DOING.WORK };
+  }
+  const piece = Math.floor(n / 3);
+  const stop = n % 3 === 0 ? d.take : n % 3 === 1 ? d.machines[(piece + m.cell) % d.machines.length] : d.put;
+  return stop && { spot: stop, then: DOING.WORK };
+}
+
+/** How long it stays at the stop it has just reached. */
+function dutyWait(w: World, m: Inmate, job: number): number {
+  const def = JOBS[w.def.jobs[job].id];
+  const rest = DUTY_REST_STEPS + (m.cell * 17) % DUTY_REST_STEPS;
+  const cycle = (def.cycle ?? 3) * STEPS_PER_SECOND;
+  if (def.flow === 'mop') return m.duty === 0 ? DUTY_HAND_STEPS : DUTY_MOP_STEPS;
+  if (def.flow === 'mail') return m.duty % 2 === 0 ? cycle : DUTY_HAND_STEPS + rest;
+  return m.duty % 3 === 1 ? cycle : m.duty % 3 === 2 ? DUTY_HAND_STEPS + rest : DUTY_HAND_STEPS;
+}
+
+/** The stop done and the wait over: on to the next. True when that took up the step. */
+function nextDuty(c: Crowd, all: Inmate[], m: Inmate, job: number): boolean {
+  if (m.goal < 0 || m.path.length || tileAt(m.body.x, m.body.z) !== m.goal) return false;
+  m.duty++;
+  const next = dutyStop(c, all, m, job);
+  if (!next) return false;
+  setOff(c, m, next.spot, next.then);
+  if (!m.path.length && tileAt(m.body.x, m.body.z) === m.goal) {
+    // (The next stop is the tile it's on.)
+    m.doing = m.then;
+    m.body.facing = m.face;
+    m.wait = dutyWait(c.w, m, job);
+  }
+  return true;
+}
+
+/** What an inmate has in its hands at work (an item id), by how far through it is: 2.30. */
+export function dutyCarry(w: World, m: Inmate, job: number): string | null {
+  const def = JOBS[w.def.jobs[job]?.id];
+  if (!def || !dutyHere(w, job)) return null;
+  if (def.flow === 'mop') return m.duty > 0 || m.doing === DOING.WORK ? 'mop' : null;
+  if (def.flow === 'mail') return m.duty % 2 === 1 ? 'letter' : null;
+  const leg = m.duty % 3;
+  // (Into the machine as it gets there; out of it on the way to the bin.)
+  if (leg === 1) return m.doing === DOING.WORK ? null : (def.raw ?? null);
+  if (leg === 2) return def.done ?? null;
+  return m.doing === DOING.WORK ? (def.raw ?? null) : null;
+}
+
+/** The machine an inmate is running, and how far through (0–1), or null: 2.30. */
+export function dutyMachine(w: World, m: Inmate, job: number): { prop: number; done: number } | null {
+  const def = JOBS[w.def.jobs[job]?.id];
+  if (!def || !dutyHere(w, job) || m.doing !== DOING.WORK) return null;
+  const at = def.flow === 'machine' && m.duty % 3 === 1 ? placesOf(w).duties[job].machines : def.flow === 'mail' && m.duty % 2 === 0 ? placesOf(w).duties[job].machines : null;
+  const tile = tileAt(m.body.x, m.body.z);
+  const q = at?.find((s) => s.tile === tile);
+  if (!q) return null;
+  const cycle = (def.cycle ?? 3) * STEPS_PER_SECOND;
+  return { prop: q.prop, done: Math.max(0, Math.min(1, 1 - m.wait / cycle)) };
+}
+
 /** Off to a spot: goal, what it does there, and the walk planned. */
 function setOff(c: Crowd, m: Inmate, spot: Spot, then: number) {
   m.goal = spot.tile;
@@ -287,7 +378,7 @@ function nextLeg(c: Crowd, all: Inmate[], m: Inmate): boolean {
 }
 
 /** Chooses where an inmate goes next for its plan, and what it does there (`work`: its job's zone index, -1 without one). */
-function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: number) {
+function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: number, job: number) {
   const w = c.w;
   const places = placesOf(w);
   const own = () => floorOf(w, ['inmateCell']).filter((i) => w.cellOf[i] === m.cell);
@@ -366,6 +457,9 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       if (id === 'work' && work >= 0) {
         spot = pickSpot(all, tiles(placesOf(w).floor[work] ?? [], 1 + randomInt(rng, 16)), rng);
         then = DOING.WORK;
+        // (2.30: the draws above as they were, then its stations rather than a spot on the floor.)
+        const stop = job >= 0 ? dutyStop(c, all, m, job) : null;
+        if (stop) ({ spot, then } = stop);
         break;
       }
       // Free time: now and then a seat (reading at a library table, a yard bench, the chair in
@@ -415,6 +509,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
   serving = !!social.serve;
   turns = !!social.turns;
   machines = !!social.machines;
+  jobOf = social.jobOf ?? [];
   bay = w.delivering ? w.parked : null;
   all.forEach((m, k) => {
     // (Calmed off by anything else, a knockout, an arrest: its moment of warning goes too.)
@@ -474,8 +569,11 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       m.body.moving = false;
       m.stall = 0;
       dropMeal(m);
+      m.duty = 0;
       m.wait = randomInt(rng, INMATE_REACTION);
     }
+    // (2.30: its job, in the Work Period, where the job can be worked.)
+    const job = plan !== LOCKDOWN_PLAN && ROUTINE[plan].id === 'work' && (jobOf[k] ?? -1) >= 0 && dutyHere(w, jobOf[k]) ? jobOf[k] : -1;
     // A meal broken off and its seat given up (a fight, led away, out cold), the routine taken up again: fetched afresh.
     if (serving && m.seat < 0 && (m.then === DOING.SERVE || m.then === DOING.EAT)) {
       m.goal = -1;
@@ -517,11 +615,12 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       route(c, m);
       return;
     }
+    if (job >= 0 && nextDuty(c, all, m, job)) return;
     if (nextLeg(c, all, m)) return;
     if (turns && plan !== LOCKDOWN_PLAN && ROUTINE[plan].id === 'showers' && nextWash(c, all, m)) return;
     if (m.goal < 0) {
-      choose(c, m, all, rng, social.work[k] ?? -1);
-      if (m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) arrive(m, plan, rng);
+      choose(c, m, all, rng, social.work[k] ?? -1, job);
+      if (m.goal >= 0 && !m.path.length && tileAt(m.body.x, m.body.z) === m.goal) arrive(c, m, plan, rng, job);
       return;
     }
     if (m.path.length) {
@@ -532,12 +631,19 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
         return;
       }
       // (Jogging the track, P31: a jog's pace, not a walk's.)
-      if (walkPath(c, m, k, m.then === DOING.JOG ? m.speed + JOG_EXTRA : m.speed)) arrive(m, plan, rng);
+      if (walkPath(c, m, k, m.then === DOING.JOG ? m.speed + JOG_EXTRA : m.speed)) arrive(c, m, plan, rng, job);
       return;
     }
     if (tileAt(m.body.x, m.body.z) !== m.goal) {
       // Not there and no path (none was found earlier): try again.
       route(c, m);
+      // (2.30: at work, no way to this stop for now: the next one, in a moment.)
+      if (job >= 0 && !m.path.length) {
+        m.duty++;
+        m.goal = -1;
+        m.wait = TURN_STEPS;
+        return;
+      }
       // (2.25: at work, a spot behind furniture no door will ever open on, Irongate's planters: another next time.)
       if (social.reroute && !m.path.length && plan !== LOCKDOWN_PLAN && ROUTINE[plan].id === 'work') m.goal = -1;
       return;
@@ -585,6 +691,8 @@ export interface Social {
   reroute?: boolean;
   /** 2.29: inmates use the gym's machines (false: replaying an older run). */
   machines?: boolean;
+  /** 2.30: each inmate's job (the prison's job index, -1 none), for working its stations (empty: replaying an older run; not at the Training Block). */
+  jobOf?: number[];
   /** 2.25: a meal on, fetched from the serving counter (false: none on, no counter here, or replaying an older run). */
   serve?: boolean;
 }
@@ -693,11 +801,16 @@ function settle(m: Inmate) {
 }
 
 /** At the goal: stop, face the right way, start doing what the spot is for. */
-function arrive(m: Inmate, plan: number, rng: { rng: number }) {
+function arrive(c: Crowd, m: Inmate, plan: number, rng: { rng: number }, job: number) {
   m.body.moving = false;
   m.stall = 0;
   m.body.facing = m.face;
   settle(m);
+  // (2.30: at a station for as long as the work takes, with nothing drawn.)
+  if (job >= 0) {
+    m.wait = dutyWait(c.w, m, job);
+    return;
+  }
   // Free time: linger 15–45 s before moving on.
   if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) m.wait = STEPS_PER_SECOND * (15 + randomInt(rng, 31));
 }

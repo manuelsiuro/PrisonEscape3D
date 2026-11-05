@@ -17,7 +17,7 @@ import type { HolidayDay } from '../content/holidays';
 import type { LayerMove } from './state';
 
 /** Why guards took notice of the player (GDD §5.2). Stored as numbers: never renumber. */
-export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing', 'skipping', 'snooping'] as const;
+export const SPOT = ['none', 'night', 'restricted', 'contraband', 'recognized', 'wanted', 'bedCheck', 'damage', 'tampering', 'fight', 'keyMissing', 'brawl', 'detector', 'camera', 'searchlight', 'sniper', 'sniffed', 'dogFound', 'gambling', 'tipsy', 'tattooing', 'skipping', 'snooping', 'stranger'] as const;
 type SpotReason = (typeof SPOT)[number];
 /** How the player got out (GDD §12), for the victory screen. Stored as numbers: never renumber. */
 export const ESCAPES = ['none', 'fence', 'tunnel', 'roof', 'takeover', 'gate', 'raft', 'helicopter', 'stowaway', 'bluff', 'glider', 'paperwork', 'parole'] as const;
@@ -157,6 +157,8 @@ export type SimEvent =
   | { type: 'ambush'; who: number }
   /** 2.23: an inmate saw the player going through the things in their cell (snoop.ts): thinks less of them, and with a grudge left, fights. */
   | { type: 'snooped'; who: number; fights: boolean }
+  /** 2.30: a guard tells the player to get out of a work room not theirs. Not being spotted at anything, yet. */
+  | { type: 'toldOff' }
   | { type: 'allyHit'; by: number; who: number; dmg: number; ko: boolean }
   /** Why a trade, a gift, a favor, a recruit or a job application didn't go through. */
   | { type: 'refused'; why: Refusal }

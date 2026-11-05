@@ -163,8 +163,9 @@ export class RunRecorder {
       // (Nor one from before the warden's count, 2.27: the same.)
       // (Nor one from before the night's rules, 2.28: the same.)
       // (Nor one from before sets in time and inmates on the machines, 2.29: the same.)
-      // (Every one of those versions comes before 2.29, the latest gate: one test covers them all.)
-      const stale = beforeGym(log?.game ?? '');
+      // (Nor one from before inmates at work and guards minding work rooms, 2.30: the same.)
+      // (Every one of those versions comes before 2.30, the latest gate: one test covers them all.)
+      const stale = beforeJobs(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -279,6 +280,8 @@ const beforeCount = (game: string) => versionBefore(game, 2, 27);
 const beforeNight = (game: string) => versionBefore(game, 2, 28);
 /** Before sets in time (2.29.0): fast presses, a bar that drains, machines nobody else used, the bag and mat for show. Sim.rules228 plays it as it was. */
 const beforeGym = (game: string) => versionBefore(game, 2, 29);
+/** Before inmates worked their stations (2.30.0): the mop from the hand only, nobody minding work rooms. Sim.rules229 plays it as it was. */
+const beforeJobs = (game: string) => versionBefore(game, 2, 30);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -334,6 +337,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeNight(log.game)) sim.rules227 = true;
   // Played before sets in time: as they were.
   if (beforeGym(log.game)) sim.rules228 = true;
+  // Played before inmates worked their stations: as it was.
+  if (beforeJobs(log.game)) sim.rules229 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

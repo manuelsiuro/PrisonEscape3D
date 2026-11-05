@@ -30,6 +30,7 @@ import { clockSecs } from '../sim/systems/noise';
 import { tossFlight } from '../render/Noise';
 import { LAYER } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
+import { workPose } from './frame';
 import { squareNeeded, wardenOf } from '../sim/systems/rollcall';
 import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
@@ -142,6 +143,15 @@ export function announce(e: SimEvent, sim: Sim) {
         banner.show(t('banner.lockdown'), why, 'alarm', 5000);
       }
       break;
+    case 'toldOff': {
+      // (The heat a few seconds on, if they stay, says nothing more: it's been said.)
+      lastSpotted.reason = 'stranger';
+      lastSpotted.at = performance.now();
+      sound.whistle();
+      banner.toast(t('spotted.stranger'), 'info');
+      coachOnce('workRoom', 'hint.workRoom');
+      break;
+    }
     case 'spotted': {
       // The same thing noticed again within a few seconds (a guard glancing away and back): say it once.
       const now = performance.now();
@@ -520,8 +530,13 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'work':
       seenInteract();
       sound.work(e.act);
+      // (2.30: hands on it for a moment, the mop swept.)
+      if (e.act !== 'running' && e.act !== 'full') {
+        workPose.until = performance.now() + (e.act === 'mop' ? 900 : 450);
+        workPose.doing = e.act === 'mop' ? DOING.MOP : DOING.WORK;
+      }
       if (e.act === 'running') itemsUI.toast(t('toast.machineBusy'));
-      if (e.act === 'take' || e.act === 'unload') coachOnce('work', 'hint.work');
+      if (e.act === 'take' || e.act === 'unload') coachOnce('workArrows', 'hint.work');
       break;
     case 'quota': {
       const done = e.n >= e.of;

@@ -163,6 +163,8 @@ export class Sim {
   set rules228(on: boolean) {
     this.world.plainGear = on;
   }
+  /** Replaying a run from before 2.30: work as it was (the mop only from the hand, what's taken not put in it, inmates standing about their rooms, nobody minding who's in one). Not state. */
+  rules229 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;

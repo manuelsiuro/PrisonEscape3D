@@ -249,19 +249,22 @@ for (const def of PRISONS) {
 function someoneOn(def = CENTER_PERKS, seed = 41) {
   const bot = hour(seed, def, HOUR);
   check(bot.until(() => bot.sim.world.props.some((_, i) => GEAR.includes(bot.sim.world.props[i].kind) && onMachine(bot.sim, i) >= 0), 45 * STEPS_PER_MINUTE), `${def.id}: someone on a machine`);
-  const prop = gearOf(bot).find((i) => onMachine(bot.sim, i) >= 0)!;
+  // (Beside it, not on its tile: someone's on that. Some stand in a corner with no room but that: another then.)
+  const roomBeside = (prop: number) => {
+    const spot = spotOf(bot, prop);
+    const p = bot.sim.world.props[prop];
+    return [13, 5, 1, 9]
+      .map((f) => {
+        const x = Math.round(p.x + (p.w - 1) / 2) - Math.round(DIR_X[f] / 1024);
+        const z = Math.round(p.z + (p.d - 1) / 2) - Math.round(DIR_Z[f] / 1024);
+        return { t: z * MAP_W + x, f };
+      })
+      .find((q) => q.t !== spot.tile && !bot.sim.world.npcBlock[q.t]);
+  };
+  check(bot.until(() => gearOf(bot).some((i) => onMachine(bot.sim, i) >= 0 && !!roomBeside(i)), 45 * STEPS_PER_MINUTE), `${def.id}: room beside it`);
+  const prop = gearOf(bot).find((i) => onMachine(bot.sim, i) >= 0 && !!roomBeside(i))!;
   const who = onMachine(bot.sim, prop);
-  // (Beside it, not on its tile: someone's on that.)
-  const spot = spotOf(bot, prop);
-  const p = bot.sim.world.props[prop];
-  const open = [13, 5, 1, 9]
-    .map((f) => {
-      const x = Math.round(p.x + (p.w - 1) / 2) - Math.round(DIR_X[f] / 1024);
-      const z = Math.round(p.z + (p.d - 1) / 2) - Math.round(DIR_Z[f] / 1024);
-      return { t: z * MAP_W + x, f };
-    })
-    .find((q) => q.t !== spot.tile && !bot.sim.world.npcBlock[q.t]);
-  check(!!open, `${def.id}: room beside it`);
+  const open = roomBeside(prop);
   put(bot, open!.t, open!.f);
   return { bot, prop, who };
 }
@@ -537,18 +540,19 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   // A log from before.
   const was228 = new Sim(CENTER_PERKS, 24);
   was228.rules228 = true;
+  was228.rules229 = true;
   check(was228.world.plainGear, 'the old rules: the bag and the mat for show');
   const prev = new RunRecorder(was228, { seed: 24, game: '2.28.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) prev.step(0);
   check(!prev.sim.state.inmates.some((m) => ON_MACHINE.includes(m.doing)), 'the old rules: nobody on the machines');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules228 === true, 'a 2.28 log through the hour replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.29.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.29.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.29.0' });
+  check(!replayLog({ ...prev.toLog(), game: '2.30.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.30.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.30.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.29.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.30.1' }).toLog().seed === 24, 'and is carried on');
   // The old set: fast presses, a bar that drains, the bag no use at all.
   const o = new Bot(CENTER_PERKS, 3);
   o.sim.rules228 = true;

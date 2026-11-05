@@ -28,6 +28,7 @@ import { snipersOnDuty } from '../src/sim/systems/power';
 import { MEAL_STEPS, STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { TILE_INFO } from '../src/sim/world/tiles';
 import { LAYER, MAP_W } from '../src/sim/world/World';
+import { tileAt } from '../src/sim/world/grid';
 import { check } from './assert';
 import { FEAT } from '../src/sim/systems/ledger';
 import { ACHIEVEMENTS } from '../src/content/achievements';
@@ -414,7 +415,8 @@ function resumesSame(bot: Bot, steps: number): boolean {
   check(baked && bot.st.frozen, 'a heatwave: a minute out in the sun bakes the player (energy costs double)');
   check(bot.st.feats[FEAT.baked] === 1, 'the ledger counts it (Sunstroke)');
   until(2, 16 * 60 + 5);
-  const head = placesOf(sim.world).showers[0];
+  // (A head nobody's under.)
+  const head = placesOf(sim.world).showers.find((h) => !sim.state.inmates.some((m) => tileAt(m.body.x, m.body.z) === h.tile)) ?? placesOf(sim.world).showers[0];
   put(sim, head.tile);
   bot.act();
   for (let k = 0; k < 5; k++) bot.step(0);

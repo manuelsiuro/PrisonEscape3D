@@ -32,6 +32,7 @@ export type SimContext = Pick<
   | 'rules226'
   | 'rules227'
   | 'rules228'
+  | 'rules229'
   | 'aboutBefore'
   | 'groundFrom'
   | 'ladderFoot'
@@ -73,7 +74,7 @@ export function newScratch(): Scratch {
     point: { x: 0, z: 0 },
     about: [],
     cast: [],
-    workState: { job: -1, onDuty: false, machines: {}, puddles: [], step: 0, inv: [], hand: 0, mail: [], owed: 0 },
+    workState: { job: -1, onDuty: false, machines: {}, puddles: [], step: 0, inv: [], hand: 0, mail: [], owed: 0, pockets: true },
     social: { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], pace: [], face: [], off: [] },
     allyFoe: [],
   };

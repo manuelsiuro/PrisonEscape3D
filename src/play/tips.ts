@@ -104,6 +104,7 @@ export function updateFirstDay(g: Game, pickedUp: boolean, dt: number) {
   coachState.boardOpen = board.isOpen;
   coachState.ate = st.eaten >= mealSteps(sim);
   coachState.tray = st.tray !== TRAY.NONE;
-  coachState.due = !st.attended && !st.excused && !st.lockdown && presenceNeeded(sim) > 0;
+  // (2.30: nor at work with the quota to do.)
+  coachState.due = (!st.attended && !st.excused && !st.lockdown && presenceNeeded(sim) > 0) || sim.onDuty;
   firstDay.update(coachState, dt, g.paused || st.sleeping || st.ko > 0 || st.solitary > 0 || itemsUI.panelOpen || socialOpen());
 }
