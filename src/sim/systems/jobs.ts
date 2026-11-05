@@ -18,7 +18,7 @@ import { containersOf } from '../world/containers';
 import { MAP_W } from '../world/World';
 import { clockAt } from './clock';
 import { HOLDER, jobRooms, nearestProp, qualifies, type Station, STATION_REACH, stationTarget } from './economy';
-import { freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, stockSlots, usesOf } from './items';
+import { canTalkTo, freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, stockSlots, usesOf } from './items';
 import { tileOfBody } from './movement';
 import { liftingMug } from './oddjobs';
 import { offerFavors, refuse } from './social';
@@ -232,6 +232,22 @@ function vacate(sim: SimContext, job: number, who: number, change: 'fired' | 'qu
     s.mail = [];
   }
   sim.events.push({ type: 'job', job, who, change });
+}
+
+/**
+ * 2.32: on the mail round, someone in reach with a letter in the pockets for them (their index; -1 none). They take
+ * the button from whoever else stands by, or a bystander's chat is opened instead of the letter being handed over.
+ */
+export function letterDue(sim: SimContext): number {
+  const s = sim.state;
+  if (sim.rules231 || !s.mail.length || !sim.onDuty) return -1;
+  const letter = itemNumber('letter');
+  for (const v of s.items.inv.slice(0, HOTBAR)) {
+    if (itemOf(v) !== letter) continue;
+    const who = usesOf(v) - 1;
+    if (s.mail.includes(who) && s.inmates[who] && canTalkTo(sim.world, s.player, s.inmates[who])) return who;
+  }
+  return -1;
 }
 
 /**

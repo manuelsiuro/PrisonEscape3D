@@ -29,6 +29,7 @@ import { ACT_GAP, CHARTS, countIn, QUIZ_QUESTIONS, REVEAL_STEPS, SONGS, songStep
 import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
 import { ITEMS } from '../content/items';
+import { newVend, vendOk } from './systems/vendState';
 import { COURSE_QUESTIONS, KIOSK_BLOCK, PHOTO_WALL, PHOTOS } from '../content/kiosk';
 import { FROM, J, JOB_LEN, KINDS, PERK, STAGE } from '../content/oddjobs';
 import { FREED_STEPS } from '../content/paperwork';
@@ -68,7 +69,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
       // (2.30: how far through its work.)
       const d = q.duty === undefined ? { ...q, duty: 0 } : q;
       // (2.31: with a book, or not.)
-      return d.book === undefined ? { ...d, book: 0 } : d;
+      const b = d.book === undefined ? { ...d, book: 0 } : d;
+      // (2.32: nothing from the machine.)
+      return b.snack === undefined ? { ...b, snack: 0, snackEnd: 0 } : b;
     }) ?? spawnInmates(world, { rng: st.rng });
   s.items = fitItems(world, st.items, st.rng) ?? startItems(world, { rng: st.rng });
   // Guard fields added later (P15's ways) load at the end, in field order.
@@ -265,6 +268,10 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!Number.isInteger(s.readFrom) || s.readFrom < 0) s.readFrom = 0;
   if (!Number.isInteger(s.readToday) || s.readToday < 0) s.readToday = 0;
   if (!Number.isInteger(s.ambushDay) || s.ambushDay < 0) s.ambushDay = 0;
+  // 2.32: the machine as it can be (else as it is first thing in the morning), nobody at it.
+  s.vend = vendOk(s.vend, s.inmates.length) ? s.vend : newVend();
+  s.vendOpen = s.vendOpen === true;
+  if (!Number.isInteger(s.vendBought) || s.vendBought < 0) s.vendBought = 0;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]]) s.askTurn = [];
   // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)

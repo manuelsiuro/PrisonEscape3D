@@ -11,7 +11,7 @@ type ItemCategory = 'material' | 'tool' | 'weapon' | 'outfit' | 'key' | 'mold' |
 type ToolKind = 'dig' | 'chip' | 'cut' | 'unscrew' | 'multi';
 
 /** Sources other than crafting. Later phases bring most of them (merchants P6, guards P5…; P19's 'treats': a dog prison's canteen counter, and one desk, every morning; P20's 'trap': a rat trap left out overnight; P21's 'fixer': the inmate who sells burner phones; P24's 'phone': only ever ordered on one; P28's goods taken on request, never stocked: 'meal' at a canteen counter, 'freezer' in a kitchen, 'library' off its shelf, 'staple' from any merchant; 'garden' a bed's harvest, 'brew' a bag fermented; P35's 'kiosk': ordered off the internet kiosk's shop; P36's 'release': handed back at the gate on the morning out; P40's 'oddjob': handed over for an odd job, or planted for one; P42's 'holiday': a holiday's eggs and treats, only in a run that has the holiday). */
-export type Source = 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk' | 'release' | 'oddjob' | 'holiday';
+export type Source = 'vending' | 'desk' | 'bed' | 'toilet' | 'shelf' | 'canteen' | 'shower' | 'woodshop' | 'laundry' | 'janitor' | 'kitchen' | 'metalshop' | 'merchant' | 'guard' | 'sharpen' | 'dig' | 'chip' | 'solitary' | 'start' | 'job' | 'treats' | 'trap' | 'fixer' | 'phone' | 'meal' | 'freezer' | 'library' | 'staple' | 'garden' | 'brew' | 'kiosk' | 'release' | 'oddjob' | 'holiday';
 
 export interface ItemDef {
   id: string;
@@ -40,6 +40,8 @@ export interface ItemDef {
   thud?: number;
   /** Small enough for a rat to carry (P20). */
   small?: boolean;
+  /** 2.32: eaten or drunk from the hand (the tool button), what it gives back. */
+  food?: { energy?: number; health?: number; drink?: boolean };
   /** Plain to see in hand (P21, the burner phone): a guard who sees it there reacts as to a contraband tool or weapon. */
   obvious?: boolean;
 }
@@ -278,6 +280,10 @@ export const ITEMS: readonly ItemDef[] = [
   m('pumpkin', false, 6, 'pumpkin', 0xf28c28, ['holiday'], 0x4f8a2e),
   m('jack_lantern', false, 14, 'lantern', 0xf28c28, ['holiday'], 0xffd23f),
   m('gift', false, 30, 'gift', 0xd23f36, ['holiday'], 0xf4c542),
+  // 2.32 (the vending machine, content/vending.ts): eaten or drunk from the hand, or given away.
+  { ...m('soda', false, 4, 'can', 0xd8342c, ['vending'], 0xe8e8ea), food: { energy: 12, drink: true } },
+  { ...m('coffee', false, 5, 'cup', 0xf1e6d2, ['vending'], 0x4a2c17), food: { energy: 18, drink: true } },
+  { ...m('crisps', false, 3, 'bag', 0xe8b52c, ['vending'], 0xc0392b), food: { health: 10 } },
 ];
 
 /** What lands with a clatter when thrown (P14): hard things, and metal ones loudest; the rest land soft. */

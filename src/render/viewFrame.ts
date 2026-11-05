@@ -18,6 +18,7 @@ import type { TeamFrame } from './Team';
 import type { NightsFrame } from './Nights';
 import type { PhoneFrame } from './Phone';
 import type { KioskFrame } from './Kiosk';
+import type { VendFrame } from './Vending';
 import type { OddJobsFrame } from './OddJobs';
 import type { ReleaseFrame } from './Release';
 import { type BadgeKind } from './characterSprites';
@@ -126,6 +127,8 @@ export interface Frame {
   phone: PhoneFrame;
   /** The internet kiosk (P35): logged in or not, the family's drawings over the player's bed. */
   kiosk: KioskFrame;
+  /** 2.32: the vending machine. */
+  vending: VendFrame;
   /** The odd jobs board (P40): the cards still pinned up today, the player's job tag. */
   oddjobs: OddJobsFrame;
   /** The release desk (P36): the name called, the way out open. */
@@ -260,6 +263,7 @@ export function emptyFrame(): Frame {
     nights: { stage: null, quiz: null, backed: false, stageUp: false, quizUp: false, lights: [0, 0, 0, 0] },
     phone: { offHook: false, car: false },
     kiosk: { on: false, photos: [] },
+    vending: { on: true, left: [], coil: -1, turn: 0, jam: -1, thumps: 0 },
     oddjobs: { pins: [false, false, false], chain: false, mine: false },
     release: { called: false, freed: false },
     inked: [],

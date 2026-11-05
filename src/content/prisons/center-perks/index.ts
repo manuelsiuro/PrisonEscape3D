@@ -296,7 +296,9 @@ export const CENTER_PERKS: PrisonDef = {
     ['garden', 36, 46, 56, 55],
   ],
   cells,
-  props: [...props, ...GEAR, ...READING],
+  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 45, z: 7 }],
+  // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
+  vending: { x: 45, z: 7, line: [{ x: 45, z: 8 }, { x: 45, z: 9 }, { x: 45, z: 10 }, { x: 45, z: 11 }] },
   rollCall,
   spawn: { x: 9, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation', 'sports', 'garden'],

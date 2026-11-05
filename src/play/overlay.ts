@@ -17,6 +17,7 @@ import { DOING } from '../sim/systems/inmates';
 import { TOUCH } from '../ui/dom';
 import { SUBJECTS } from '../content/books';
 import { shelfBooks } from '../ui/reading';
+import { vendAction, vendingNow } from './vending';
 import { readSeated } from '../sim/systems/training';
 import type { ItemsView } from '../ui/items';
 import type { UpView } from '../ui/tool';
@@ -55,6 +56,7 @@ import {
   quizCard,
   payphoneCard,
   kioskCard,
+  vendCard,
   paroleCard,
   oddjobsCard,
   storyCard,
@@ -188,7 +190,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   }
   // (P24: at the checkpoint's window with papers: showing them comes first there, as the sim has it.)
   const papers = tail || st.stowed ? null : (deskAction(sim) ?? windowAction(sim, !!target || !!climb));
-  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && st.train >= 0 && !sim.rules230 ? null : st.seat >= 0 && it.open < 0 && st.talk < 0 ? (readSeated(sim) ? READ_ON : GET_UP) : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
+  v.action = st.ko > 0 || g.over ? null : st.vendOpen ? vendAction(sim) : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && st.train >= 0 && !sim.rules230 ? null : st.seat >= 0 && it.open < 0 && st.talk < 0 ? (readSeated(sim) ? READ_ON : GET_UP) : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
@@ -302,6 +304,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   const kioskV = busy || otherGame || stageV || quizV || phoneV ? null : kioskNow(sim);
   kioskCard.update(kioskV);
   document.body.classList.toggle('kiosking', !!kioskV);
+  // The vending machine (2.32): its card at it (not over another's).
+  const vendV = busy || otherGame || stageV || quizV || phoneV || kioskV ? null : vendingNow(sim);
+  vendCard.update(vendV);
+  document.body.classList.toggle('vending', !!vendV);
   document.body.dataset.kiosk = kioskV?.phase === 'on' && kioskV.course !== 'offer' ? 'course' : kioskV?.phase === 'on' ? 'on' : '';
   document.body.dataset.quiz = quizV && quizV.phase !== 'offer' && quizV.phase !== 'result' ? 'on' : '';
   // The parole board (P39): its card at the release desk, before the board, the verdict a moment (not over another's).

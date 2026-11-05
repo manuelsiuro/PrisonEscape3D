@@ -316,7 +316,9 @@ export const SHANKTON: PrisonDef = {
     ['perimeter', 48, 58, 55, 62],
   ],
   cells,
-  props: [...props, ...GEAR, ...READING],
+  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 39, z: 21 }],
+  // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
+  vending: { x: 39, z: 21, line: [{ x: 39, z: 22 }, { x: 38, z: 22 }, { x: 37, z: 22 }, { x: 37, z: 21 }] },
   rollCall,
   spawn: { x: 10, z: 10 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],

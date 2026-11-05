@@ -337,6 +337,8 @@ const reader = (seed = 3) => {
   check(tired.st.book === 0, 'too tired: no book');
   // No free chair: read at the shelf, standing.
   const full = reader();
+  // (Nobody off to the vending machine, who'd leave their chair free.)
+  full.st.vend.line = [];
   placesOf(full.sim.world).readSeats.forEach((q, k) => {
     const m = full.st.inmates[k];
     m.goal = q.tile;
@@ -389,6 +391,7 @@ const reader = (seed = 3) => {
   // Old rules: the set at the shelf as it was, no book, no limit, the added chairs for show.
   const old = new Bot(CENTER_PERKS, 3);
   old.sim.rules230 = true;
+  old.sim.rules231 = true;
   old.routineUntil(1, 10 * 60 + 1);
   check(old.sim.world.plainBooks, 'the old rules');
   old.walkTo(placesOf(old.sim.world).shelves[0].tile);
@@ -405,6 +408,7 @@ const reader = (seed = 3) => {
   const def = PRISONS.find((p) => p.id === 'irongate')!;
   const iron = new Bot(def, 3);
   iron.sim.rules230 = true;
+  iron.sim.rules231 = true;
   const chair = iron.sim.world.props.findIndex((p) => p.kind === 'readChair');
   iron.st.player.x = iron.sim.world.props[chair].x * UNIT + UNIT / 2;
   iron.st.player.z = iron.sim.world.props[chair].z * UNIT + UNIT / 2;
@@ -414,6 +418,7 @@ const reader = (seed = 3) => {
   for (const p of PRISONS) {
     const was = new Sim(p, 3);
     was.rules230 = true;
+    was.rules231 = true;
     const bare = new Sim({ ...p, props: p.props.filter((q) => q.kind !== 'readChair' && q.kind !== 'deskChair') }, 3);
     for (const q of p.props) {
       if (q.kind !== 'readChair' && q.kind !== 'deskChair') continue;
@@ -424,15 +429,16 @@ const reader = (seed = 3) => {
   // A log from 2.30 replays under its own rules, and isn't carried on; today's is.
   const was230 = new Sim(CENTER_PERKS, 24);
   was230.rules230 = true;
+  was230.rules231 = true;
   const prev = new RunRecorder(was230, { seed: 24, game: '2.30.0' });
   for (let k = 0; k < 4800; k++) prev.step(0);
   check(!!replayLog(prev.toLog(), CENTER_PERKS)?.ok, 'a 2.30 log replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.31.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can tell');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.31.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.31.0' });
+  check(!replayLog({ ...prev.toLog(), game: '2.32.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can tell');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.32.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.32.0' });
   for (let k = 0; k < 4800; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.31.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.32.1' }).toLog().seed === 24, 'and is carried on');
   // A save with a book in hand comes back with it; a mid-page one too.
   const s = reader();
   s.read(0);

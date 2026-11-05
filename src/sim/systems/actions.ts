@@ -23,13 +23,14 @@ import { SPOT, WAKE } from '../events';
 import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, KO_STEPS, SHARPEN_STROKES, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS } from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE } from '../world/tiles';
+import { maxHealth } from './combat';
 import { LAYER, MAP_W, placeKey } from '../world/World';
 import { lockCandidates, nextLock } from './combat';
 import { attack, hurt } from './fights';
 import type { Guard } from './guards';
 import type { Inmate } from './inmates';
 import { closeBox, craft, dropItem, equip, freeHotbar, give, HOTBAR, hotbarSlotOf, interactTarget, type Target, type ItemEvent, itemOf, type ItemState, moveItem, pickUp, slot, stillInReach, usesOf } from './items';
-import { jobOp, station, takeCoins, work } from './jobs';
+import { jobOp, letterDue, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
 import { blast, liveMine } from './mines';
@@ -43,6 +44,8 @@ import { atTail, climbOut, stow } from './delivery';
 import { airOf, atWindow, showId, windowFirst } from './getaway';
 import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, digUpTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
+import { foodUse, vendOffer, vendOp } from './vending';
+import { VEND } from '../../content/vending';
 import { chairForBook, onReadChair, readOn, readSeated, reading, rep, stopTraining, study, useMachine } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
@@ -112,7 +115,8 @@ export function useItems(sim: SimContext, cmd: number) {
       const held = itemOf(it.inv[it.hand]);
       // (2.31: a book in hand, at a free library chair: that, before anyone about.)
       const bookSeat = chairForBook(sim);
-      const target: Target | null = bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k), sim.bedtime && !sim.rules227);
+      const due = letterDue(sim);
+      const target: Target | null = bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : due >= 0 ? { kind: 'person', who: due } : interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k), sim.bedtime && !sim.rules227);
       const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
       const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
       // The release desk (P36): reporting there while the name is called, or a forged form slipped into its tray, comes first.
@@ -151,6 +155,11 @@ export function useItems(sim: SimContext, cmd: number) {
         startWash(sim, head);
         break;
       }
+      // The vending machine (2.32), faced: ahead of whoever's queueing for it beside the player.
+      if (vendOffer(sim)) {
+        vendOp(sim, VEND.OPEN, 0);
+        break;
+      }
       if (!target) break;
       if (target.kind === 'ground') pickUp(it, target.index, ev);
       else if (target.kind === 'sleep') {
@@ -165,6 +174,7 @@ export function useItems(sim: SimContext, cmd: number) {
         if (target.use === 'board') sim.events.push({ type: 'board' });
         else if (target.use === 'generator') switchPower(sim, target.index);
         else if (target.use === 'helicopter') board(sim);
+        else if (target.use === 'vending') vendOp(sim, VEND.OPEN, 0);
         else if (target.use === 'sit' || target.use === 'rest') {
           sitDown(sim, target.index, target.use);
           // (2.31: a book in hand, on a library chair: straight into it, or told why not.)
@@ -295,6 +305,7 @@ export function useItems(sim: SimContext, cmd: number) {
       else if (a === EXT.SAY) say(sim, argB(cmd));
       else if (a === EXT.LINE && s.solitary <= 0) lineOp(sim, argB(cmd));
       else if (a === EXT.KIOSK && s.solitary <= 0) kioskOp(sim, argB(cmd), argC(cmd));
+      else if (a === EXT.VEND && s.solitary <= 0) vendOp(sim, argB(cmd), argC(cmd));
       // The parole board (P39): applying at the release desk, an answer at the hearing.
       else if (a === EXT.PAROLE && s.solitary <= 0) paroleOp(sim, argB(cmd), argC(cmd));
       else if (a === EXT.BOARD && s.solitary <= 0) boardOp(sim, argB(cmd), argC(cmd));
@@ -370,14 +381,18 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
     return;
   }
   if (target.action === 'eat') {
-    // Full of energy: the bar keeps for later.
-    if (s.energy >= 100) {
+    const food = itemDef(held).food;
+    // Full of energy: the bar keeps for later. (2.32: crisps, at full health, too.)
+    if (food ? !foodUse(held, s.energy, s.health, maxHealth(s.str)) : s.energy >= 100) {
       sim.events.push({ type: 'cantStrike', why: 'full', action: 'eat' });
       return;
     }
     it.inv[it.hand] = 0;
     it.rev++;
-    s.energy = Math.min(100, s.energy + CHOCOLATE_ENERGY);
+    if (food) {
+      s.energy = Math.min(100, s.energy + (food.energy ?? 0));
+      s.health = Math.min(maxHealth(s.str), s.health + (food.health ?? 0));
+    } else s.energy = Math.min(100, s.energy + CHOCOLATE_ENERGY);
     sim.events.push({ type: 'ate', item: held });
     return;
   }

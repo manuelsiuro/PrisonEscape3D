@@ -42,6 +42,8 @@ import * as THREE from 'three';
 import type { View } from '../../src/render/View';
 import { Sim } from '../../src/sim/Sim';
 import { LAYER, MAP_W } from '../../src/sim/world/World';
+import { VEND } from '../../src/content/vending';
+import { VEND_NOBODY } from '../../src/sim/systems/vending';
 import { UNIT } from '../../src/sim/tuning';
 import { holidayDecor } from '../../src/render/holidayDecor';
 
@@ -215,6 +217,25 @@ export const SHOTS: Record<string, Shot> = {
       bot.open(shelf);
       bot.read(1);
       bot.set(() => bot.st.reps >= 60);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.2,
+    dz: -1,
+  },
+  // 2.32: something just bought from Center Perks' vending machine, seen from the front.
+  vending: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 41);
+      bot.routineUntil(2, 10 * 60 + 25);
+      bot.st.cash = 40;
+      const m = CENTER_PERKS.vending!;
+      bot.walkTo(m.line[0].z * MAP_W + m.line[0].x);
+      bot.face(13);
+      bot.act();
+      bot.until(() => bot.st.vend.who === VEND_NOBODY, 200);
+      bot.op(OP.EXT, EXT.VEND, VEND.BUY, 1);
+      bot.until(() => bot.st.step > 0 && (bot.st.vend.until - bot.st.step) < 12, 60);
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,

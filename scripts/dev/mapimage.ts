@@ -246,6 +246,19 @@ function drawDecor(g: Svg, def: PrisonDef) {
   }
 }
 
+/** The vending machine (2.32): its queue's tiles, the first where it's used from. */
+function drawVending(g: Svg, def: PrisonDef) {
+  const m = def.vending;
+  if (!m) return;
+  const red = '#b8352f';
+  g.add(`<polyline points="${[m, ...m.line].map((q) => `${cx(q.x)},${cz(q.z)}`).join(' ')}" fill="none" stroke="${red}" stroke-width="2" stroke-dasharray="3 3"/>`);
+  m.line.forEach((q, k) => {
+    g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="8" fill="#fff" stroke="${red}" stroke-width="2"/>`);
+    g.text(cx(q.x), cz(q.z) + 3.5, `${k + 1}`, `font-size="9" font-weight="700" fill="${red}" text-anchor="middle"`);
+  });
+  g.pill(cx(m.x), cz(m.z) - S * 0.62, 'VENDING', 9, red);
+}
+
 /** The pay phone (P34): a bar on the wall it hangs on (the caller faces it), the queue's tiles 1… nearest first; with `lou`, the car alarm by the front gate and Lou's getaway car on the road. The internet kiosk (P35) the same way, in the library. */
 function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   const c = def.comms;
@@ -574,6 +587,7 @@ function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
             'White squares = posts (where a guard stands during a block: rollCa(ll), breakf(ast), exerci(se), showers, dinner…). Lines are straight between stops, not the walked path.',
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
+            ...(def.vending ? ['The vending machine (red, VENDING): where it\'s used from and its queue, 1…'] : []),
             'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order.',
             'The parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you); the odd jobs board (brown, job). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
             ...(def.landings ? ['Black dotted boxes: roof landings, the roofs a grapnel swings across onto from another roof.'] : []),
@@ -744,6 +758,7 @@ function picture(def: PrisonDef, kind: PictureKind): string {
     drawProps(g, def);
     drawDecor(g, def);
     drawComms(g, def, false);
+    drawVending(g, def);
     drawBoard(g, def);
     drawCells(g, def);
     drawMarks(g, def);
@@ -811,6 +826,7 @@ function tileData(def: PrisonDef, n: number) {
     ls.hoop.spots.forEach((q, k) => mark(q.x, q.z, `hoop shooting spot S${k + 1}`));
     ls.quiz?.spots.forEach((q, k) => mark(q.x, q.z, `quiz seat Q${k + 1}`));
     if (ls.librarian) mark(ls.librarian.x, ls.librarian.z, 'the librarian, in free time');
+    if (def.vending) def.vending.line.forEach((q, k) => mark(q.x, q.z, k ? `the vending machine's queue, place ${k + 1}` : 'in front of the vending machine'));
     if (ls.stage) mark(ls.stage.x, ls.stage.z, 'talent stage (performer)');
     mark(ls.race.x, ls.race.z, 'rat race start');
   }

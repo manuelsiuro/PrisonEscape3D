@@ -306,7 +306,12 @@ export const STALAG_FLUCHT: PrisonDef = {
     ['garden', 23, 3, 38, 5],
   ],
   cells,
-  props: [...props, ...GEAR, ...READING],
+  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 9, z: 30 }],
+  // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue. Every
+  // other place along the north wall is taken (the odd jobs board's reader at 5, the stage at 10, the door, the counter)
+  // or worse: at 13, beside the door, the crowd at meals pressed together half as much again. Here it takes the end of
+  // the west bench (sat at from its ends only), so a meal runs a minute or two longer.
+  vending: { x: 9, z: 30, line: [{ x: 9, z: 31 }, { x: 9, z: 32 }, { x: 9, z: 33 }, { x: 9, z: 34 }] },
   rollCall,
   spawn: { x: 6, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],

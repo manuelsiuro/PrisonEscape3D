@@ -48,6 +48,9 @@ import { INSTRUMENT } from '../content/nights';
 import { sightFor } from '../sim/systems/football';
 import { carWaiting, commsOf } from '../sim/systems/phone';
 import { kioskOf, loggedIn } from '../sim/systems/kiosk';
+import { atVending, VEND_NOBODY, VEND_PLAYER, vendProp } from '../sim/systems/vending';
+import { COIL_STEPS, INMATE_COIL_STEPS, THUMP_STEPS } from '../content/vending';
+import { powered } from '../sim/systems/power';
 import { boardNow, boardOf } from '../sim/systems/oddjobs';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { fireworksOn, holidayNow } from '../sim/systems/holiday';
@@ -276,6 +279,11 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const job = atWork && m.ko <= 0 && m.angry <= 0 && m.plan === st.routine ? st.jobs.indexOf(k) : -1;
     // (2.31: a book, chosen at a shelf and carried to a chair.)
     if (!sim.rules230 && m.ko <= 0 && m.angry <= 0 && (m.book === 2 || (m.book === 1 && o.doing === DOING.READ))) o.held = BOOK;
+    // (2.32: what it's bought from the machine, in hand while it lasts; stood still, at its mouth.)
+    if (m.snack && st.step < m.snackEnd && m.ko <= 0 && m.angry <= 0) {
+      o.held = m.snack;
+      if (o.doing === DOING.NOTHING && !m.body.moving) o.doing = DOING.SNACK;
+    }
     if (job >= 0) {
       const carry = dutyCarry(sim.world, m, job);
       if (carry) o.held = itemNumber(carry);
@@ -489,6 +497,14 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     f.doing = DOING.KIOSK;
     f.facing = Math.atan2(kiosk.x + 0.5 + DIR_X[kiosk.face] / 2048 - f.x, kiosk.z + 0.5 + DIR_Z[kiosk.face] / 2048 - f.z);
   }
+  // (2.32: up at the vending machine: pressing its keys, or thumping it a moment.)
+  if (st.vendOpen && !seated && !p.moving && atVending(sim)) {
+    const vp = vendProp(sim);
+    if (vp) {
+      f.doing = st.step - st.vend.hit < THUMP_STEPS + 4 && st.vend.hit > 0 ? DOING.THUMP : DOING.VEND;
+      f.facing = Math.atan2(vp.x + 0.5 - f.x, vp.z + 0.5 - f.z);
+    }
+  }
   if (!seated && st.ink) {
     f.doing = DOING.TATTOO;
     const m = st.inmates[st.ink.who];
@@ -596,6 +612,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.phone.car = carWaiting(st);
   // The internet kiosk (P35): the screen awake while the player's logged in; the drawings pinned over the bed.
   f.kiosk.on = loggedIn(st);
+  // The vending machine (2.32): lit, what's left, what's dropping.
+  f.vending.on = powered(sim.world, st, 'lights');
+  f.vending.left = st.vend.left;
+  f.vending.jam = st.vend.jam - 1;
+  f.vending.coil = st.vend.who !== VEND_NOBODY && !st.vend.thumping ? st.vend.row : -1;
+  f.vending.turn = f.vending.coil >= 0 ? Math.min(1, Math.max(0, 1 - (st.vend.until - st.step) / (st.vend.who === VEND_PLAYER ? COIL_STEPS : INMATE_COIL_STEPS))) : 0;
+  f.vending.thumps = st.vend.hit;
   f.kiosk.photos = st.photos;
   // The odd jobs board (P40): the cards still up today, a tag while a job is held.
   oddJobsFrame(sim, f);
