@@ -40,14 +40,45 @@ export interface Places {
   infirmary: number;
   /** Beds in the guard quarters: where off-duty guards sleep (the tile beside each, and its bed). */
   guardBeds: Array<{ tile: number; bed: number }>;
+  /** 2.29: the gym's machines: the prop, the tile an inmate uses it from (each its own) and the way it faces there. */
+  machines: Array<Spot & { prop: number }>;
 }
 
 const S = 5;
 const N = 13;
-/** The way the pipe stands from a shower's tile, by the prop's rotation: north, west, south, east. */
-const WALL = [13, 9, 5, 1];
 const E = 1;
 const W = 9;
+
+const MACHINES: readonly string[] = ['weights', 'pullup', 'treadmill', 'mat', 'punchingBag'];
+
+/**
+ * Where a machine is used from: on a mat, the mat; else the first free tile round it (from the south, the camera's
+ * side, where the model's made to be used from, then its sides, then behind), in its own zone, not another's.
+ */
+function machineSpots(w: World, free: (t: number) => boolean): Array<Spot & { prop: number }> {
+  const out: Array<Spot & { prop: number }> = [];
+  w.props.forEach((p, prop) => {
+    if (!MACHINES.includes(p.kind)) return;
+    const own = p.z * MAP_W + p.x;
+    const zone = w.ground.zone[own];
+    const open = (t: number) => free(t) && w.ground.zone[t] === zone && !out.some((q) => q.tile === t);
+    if (p.kind === 'mat') {
+      const t = [...Array(p.w).keys()].map((k) => own + k).find(open);
+      if (t !== undefined) out.push({ prop, tile: t, face: E });
+      return;
+    }
+    const round: Spot[] = [];
+    for (let x = p.x; x < p.x + p.w; x++) round.push({ tile: (p.z + p.d) * MAP_W + x, face: N });
+    for (let z = p.z + p.d - 1; z >= p.z; z--) round.push({ tile: z * MAP_W + p.x - 1, face: E }, { tile: z * MAP_W + p.x + p.w, face: W });
+    for (let x = p.x; x < p.x + p.w; x++) round.push({ tile: (p.z - 1) * MAP_W + x, face: S });
+    const spot = round.find((q) => open(q.tile));
+    if (spot) out.push({ ...spot, prop });
+  });
+  return out;
+}
+
+/** The way the pipe stands from a shower's tile, by the prop's rotation: north, west, south, east. */
+const WALL = [13, 9, 5, 1];
 const cache = new WeakMap<World, Places>();
 
 export function placesOf(w: World): Places {
@@ -146,6 +177,7 @@ function build(w: World): Places {
     solitary: roomy(w, beside(w, solitaryBed?.p, inZone('solitary')), inZone('solitary')),
     infirmary: roomy(w, beside(w, infirmaryBed?.p, inZone('infirmary')), inZone('infirmary')),
     guardBeds,
+    machines: machineSpots(w, (t) => isFloor(w, t % MAP_W, Math.floor(t / MAP_W))),
   };
 }
 

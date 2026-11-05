@@ -122,6 +122,7 @@ export const talk = new TalkPanel(sendOp, click);
 export const board = new BoardPanel(sendOp, click);
 export const profile = new ProfilePanel(click);
 export const trainCard = new TrainCard(sendOp);
+trainCard.onBeat = () => sound.setBeat();
 export const workChips = new WorkChips();
 /** Throwing and noise over the picture (P14): the aim's hint and labels, guards who heard. */
 export const aimUI = new AimUI();

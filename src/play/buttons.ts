@@ -45,7 +45,9 @@ export const lockList: number[] = [];
  * or a cave-in, the hold ends) and of what it was pressed on; a fresh press waiting for the next
  * step; the steps between the player's blows now (the press waits for it, as the sim does).
  */
-export const press: { toolNow: ToolView | null; toolKey: number; heldOn: number; pressQueued: boolean; attackPace: number; upQueued: boolean; upKey: number } = {
+export const press: { toolNow: ToolView | null; toolKey: number; heldOn: number; pressQueued: boolean; attackPace: number; upQueued: boolean; upKey: number; onGear: boolean; gearHeld: boolean } = {
+  onGear: false,
+  gearHeld: false,
   toolNow: null,
   toolKey: 0,
   heldOn: 0,

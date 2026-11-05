@@ -161,8 +161,10 @@ export class RunRecorder {
       // (Nor one from before meals at the serving counter, 2.25: played on under them, it would no longer replay.)
       // (Nor one from before the showers were turned on, 2.26: the same.)
       // (Nor one from before the warden's count, 2.27: the same.)
-      // (Every one of those versions comes before 2.27, the latest gate: one test covers them all.)
-      const stale = beforeNight(log?.game ?? '');
+      // (Nor one from before the night's rules, 2.28: the same.)
+      // (Nor one from before sets in time and inmates on the machines, 2.29: the same.)
+      // (Every one of those versions comes before 2.29, the latest gate: one test covers them all.)
+      const stale = beforeGym(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -275,6 +277,8 @@ const beforeShowers = (game: string) => versionBefore(game, 2, 26);
 const beforeCount = (game: string) => versionBefore(game, 2, 27);
 /** Before the night's rules (2.28.0): longer to get home, energy back at night only asleep, the dummy handled at the bed. Sim.rules227 plays it as it was. */
 const beforeNight = (game: string) => versionBefore(game, 2, 28);
+/** Before sets in time (2.29.0): fast presses, a bar that drains, machines nobody else used, the bag and mat for show. Sim.rules228 plays it as it was. */
+const beforeGym = (game: string) => versionBefore(game, 2, 29);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -328,6 +332,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeCount(log.game)) sim.rules226 = true;
   // Played before the night's rules: as they were.
   if (beforeNight(log.game)) sim.rules227 = true;
+  // Played before sets in time: as they were.
+  if (beforeGym(log.game)) sim.rules228 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

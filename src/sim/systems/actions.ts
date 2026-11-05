@@ -43,7 +43,7 @@ import { atTail, climbOut, stow } from './delivery';
 import { airOf, atWindow, showId, windowFirst } from './getaway';
 import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, digUpTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
-import { rep, startTraining, stopTraining, study } from './training';
+import { rep, stopTraining, study, useMachine } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
@@ -155,7 +155,7 @@ export function useItems(sim: SimContext, cmd: number) {
         else if (target.use === 'generator') switchPower(sim, target.index);
         else if (target.use === 'helicopter') board(sim);
         else if (target.use === 'sit' || target.use === 'rest') sitDown(sim, target.index, target.use);
-        else startTraining(sim, target.index, target.use);
+        else useMachine(sim, target.index, target.use);
       } else if (target.kind === 'pockets') {
         // Going through someone's pockets while they're out cold (GDD §10.2).
         if (it.open !== target.index) {

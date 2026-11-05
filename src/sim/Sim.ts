@@ -42,7 +42,7 @@ import { clearBay, deliveryDuty, vehicleIn } from './systems/delivery';
 import { ledger } from './systems/ledger';
 import { holidays } from './systems/holiday';
 import { ladderFootOf, reserved } from './systems/structure';
-import { attr, keepTraining, stopTraining, trainsOn } from './systems/training';
+import { attr, keepTraining, keepTurn, setCost, stopTraining, trainsOn } from './systems/training';
 import { laps } from './systems/grounds';
 import { endBout, games, stopPick } from './systems/games';
 import { crew, crewEscape } from './systems/crew';
@@ -156,6 +156,13 @@ export class Sim {
   rules226 = false;
   /** Replaying a run logged under 2.27 or before (runlog.ts): the night as it was (15 minutes' grace, energy back awake or asleep, the bed only for sleep). Not state. */
   rules227 = false;
+  /** Replaying a run from before 2.29: sets as they were (fast presses, a bar that drains), nobody on the machines, the gym's bag and mat only decoration (the last is the world's to know). */
+  get rules228() {
+    return this.world.plainGear;
+  }
+  set rules228(on: boolean) {
+    this.world.plainGear = on;
+  }
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -228,6 +235,7 @@ export class Sim {
     keepTalk(this);
     grudges(this);
     keepTraining(this);
+    keepTurn(this);
     // The running track (P31): a lap round it.
     laps(this);
     // Side games (P22): a bout's push and shove, a lock being picked, a door picked open.
@@ -348,7 +356,7 @@ export class Sim {
     // Keys in the pockets open their doors for the player (GDD §7.3).
     w.setPlayerKeys(keysCarried(this));
     // A step off the equipment ends the training.
-    if (s.train >= 0 && dirOf(cmd) !== 0) stopTraining(this);
+    if ((s.train >= 0 || s.askTurn.length) && dirOf(cmd) !== 0) stopTraining(this);
     // (P22: a step out of a bout gives it up; a step away from a lock stops the picking.)
     if (s.bout.length && dirOf(cmd) !== 0) endBout(this, 'gaveUp');
     if (s.pick.length && dirOf(cmd) !== 0) stopPick(this);
@@ -478,6 +486,10 @@ export class Sim {
   }
 
   /** What a prop trains: the weights Strength, the treadmill Speed, a library shelf Intellect. */
+  /** What a set costs now (2.29: on the card, chilled or not). */
+  setCost(a: Attr): number {
+    return setCost(this, a);
+  }
   trainsOn(prop: number): Attr | null {
     return trainsOn(this, prop);
   }

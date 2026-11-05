@@ -257,6 +257,13 @@ const guards: GuardDef[] = [
 ];
 
 /** Level 2: medium security, an alpine POW camp (GDD §4.2). */
+/** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
+const GEAR: PropPlacement[] = [
+  { kind: 'punchingBag', x: 30, z: 32 },
+  { kind: 'mat', x: 28, z: 33, w: 2 },
+  { kind: 'mat', x: 45, z: 48 },
+];
+
 export const STALAG_FLUCHT: PrisonDef = {
   id: 'stalag-flucht',
   difficulty: 2,
@@ -294,7 +301,7 @@ export const STALAG_FLUCHT: PrisonDef = {
     ['garden', 23, 3, 38, 5],
   ],
   cells,
-  props,
+  props: [...props, ...GEAR],
   rollCall,
   spawn: { x: 6, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],

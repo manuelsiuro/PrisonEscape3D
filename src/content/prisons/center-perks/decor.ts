@@ -68,8 +68,6 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   // Gym: a dumbbell rack, a mirror, a bag, a mat.
   { kind: 'dumbbells', x: 7, z: 25, w: 2 },
   { kind: 'mirror', x: 11, z: 25, w: 2 },
-  { kind: 'punchingBag', x: 14, z: 27 },
-  { kind: 'mat', x: 10, z: 28, w: 2 },
   { kind: 'posterB', x: 9, z: 25 },
   // Showers: drains, towels on the west wall.
   { kind: 'drain', x: 17, z: 27 },
@@ -155,7 +153,6 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   // The sports ground (P31): the hoop on its post, a mat and dumbbells by the weights.
   { kind: 'hoop', x: 8, z: 46 },
   { kind: 'dumbbells', x: 9, z: 55, w: 2 },
-  { kind: 'mat', x: 6, z: 53 },
   // The garden (P31): the water butt by the shed, sacks of compost, bushes in its corners.
   { kind: 'waterButt', x: 55, z: 47 },
   { kind: 'sacks', x: 56, z: 49 },

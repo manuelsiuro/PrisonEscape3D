@@ -60,10 +60,10 @@ const BUILDERS: Record<PropKind, Builder> = {
     box(w * 0.3, 0.32, d * 0.8, 0x2e3440, 0, 0, 0),
     box(0.04, 0.6, 0.04, METAL, -0.3, 0, -0.25),
     box(0.04, 0.6, 0.04, METAL, 0.3, 0, -0.25),
-    rod(0.025, 0.9, METAL, 0, 0.62, -0.25),
-    cyl(0.12, 0.05, DARK, -0.4, 0.5, -0.25),
-    cyl(0.12, 0.05, DARK, 0.4, 0.5, -0.25),
   ],
+  // (2.29: the bag and the mat were decor until they could be used. The bag's hanging part and the bench's bar are the view's: render/GymGear.ts.)
+  punchingBag: () => [box(0.06, 0.06, 0.6, DARK, 0, 1.5, -0.25), box(0.02, 0.35, 0.02, METAL, 0, 1.15, 0)],
+  mat: (w, d) => [box(w - 0.15, 0.03, d - 0.25, 0x2f6fd0, 0, 0, 0), box(w - 0.3, 0.005, 0.04, 0x5f95e8, 0, 0.03, 0)],
   treadmill: (w, d) => [
     box(w - 0.3, 0.12, d - 0.2, DARK, 0, 0, 0.05),
     box(w - 0.36, 0.02, d - 0.35, 0x1d2026, 0, 0.12, 0.1),

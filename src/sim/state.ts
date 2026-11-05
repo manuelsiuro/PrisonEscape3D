@@ -372,6 +372,9 @@ export interface SimState {
   yardSeen: boolean;
   /** 2.27: how many squares the warden has called this block. */
   countAt: number;
+  /** 2.29: the beat of the set's last press that counted (-1 none yet); the machine the player has asked for a turn on, and the steps left to wait ([] none). */
+  repBeat: number;
+  askTurn: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -559,5 +562,7 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     countDone: false,
     yardSeen: false,
     countAt: 0,
+    repBeat: -1,
+    askTurn: [],
   };
 }
