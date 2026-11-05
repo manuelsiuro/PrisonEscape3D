@@ -30,6 +30,7 @@ import { sightFor } from './football';
 import { TIPSY_HEAT } from '../../content/long';
 import { centerX, centerZ } from '../world/grid';
 import { snooping } from './snoop';
+import { stranger } from './jobs';
 
 /** A tipsy player seen again within this long (steps) is the same sighting: no more heat for it. */
 const TIPSY_SEEN_GAP = 5 * 20;
@@ -122,6 +123,9 @@ export function watch(sim: SimContext) {
   // 2.23: going through the things in another inmate's cell, in a guard's sight (a guard's uniform: a shakedown, as far as they can tell).
   const snooped = snooping(sim, eyes && !disguised);
   if (!reason && snooped >= 0) [reason, heat] = [SPOT.indexOf('snooping'), snooped];
+  // 2.30: in someone else's work room in the Work Period, in a guard's sight: told to leave, then a little heat.
+  const strayed = stranger(sim, zone, eyes && !cleared);
+  if (!reason && strayed >= 0) [reason, heat] = [SPOT.indexOf('stranger'), strayed];
   // 2.23: away from a block's zones before checking in, past the walk there: +2% a second.
   if (!reason && eyes && !cleared && skipping(sim, zone)) [reason, heat] = [SPOT.indexOf('skipping'), s.step % SKIP_EVERY === 0 ? 1 : 0];
   // In a guard's uniform, but too close to a real one (who sees the player) for too long: +50% a second.

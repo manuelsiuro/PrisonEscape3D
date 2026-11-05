@@ -90,6 +90,8 @@ export interface Frame {
   /** P31: the gardener's planters at work (prop index → how far the seedlings have grown, 0–1); the rest grown. */
   planters: ReadonlyMap<number, number>;
   puddlesRev: number;
+  /** 2.30: the job machines running now (prop → how far through, 0–1), the player's and the inmates'. */
+  running: ReadonlyMap<number, number>;
   /** Mines set off today (P11): their ground tiles. */
   craters: readonly number[];
   /** Security (GDD §5.4–5.6): the power, cameras, searchlights, a sniper's aim. */
@@ -173,6 +175,8 @@ export interface InmateFrame {
   /** Its meal's tray (TRAY_AT, Character.ts), and how much food is left on it (0–1). */
   trayAt: number;
   trayLeft: number;
+  /** 2.30: what it's carrying at work (an item number, 0 none). */
+  held: number;
   /** A turn at the showers (2.26): in shorts; a towel (0 none, 1 round the neck, 2 over the hair). */
   bare: boolean;
   towel: number;
@@ -236,6 +240,7 @@ export function emptyFrame(): Frame {
     puddles: [],
     planters: new Map(),
     puddlesRev: 0,
+    running: new Map<number, number>(),
     craters: [],
     security: { power: true, fence: true, arches: true, gens: [true, true], cams: [], beams: null, aim: -1, px: 0, pz: 0, hook: null },
     takeover: false,

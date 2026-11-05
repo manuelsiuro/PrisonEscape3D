@@ -167,6 +167,12 @@
 }
 
 /* The quota on the routine badge during work: steel blue until it's paid. */
+/* 2.30: warned, with time short. */
+.hud-badge.quota.late {
+  background: #d23f36;
+  color: #fff;
+}
+
 .hud-badge.quota {
   color: white;
   background: var(--steel-2);
@@ -1192,6 +1198,24 @@ body.training .up-prompt {
   background: rgba(18, 24, 36, 0.82);
   box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.6);
   pointer-events: none;
+}
+
+/* 2.30: over the station to go to next: no ring to fill, a gentle bob. */
+.work-chip.next {
+  background: rgba(255, 119, 20, 0.92);
+  animation: work-next 1.1s ease-in-out infinite;
+}
+.work-chip.next .work-ring,
+.work-chip.next .work-tick {
+  display: none;
+}
+@keyframes work-next {
+  50% {
+    translate: 0 -5px;
+  }
+}
+body.reduced-motion .work-chip.next {
+  animation: none;
 }
 
 .work-ring {

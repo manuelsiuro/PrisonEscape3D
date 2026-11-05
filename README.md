@@ -167,7 +167,7 @@ in 349 files, and 28,000 more in the tests and tools.
 ```sh
 npm ci
 npm run dev       # dev server on port 5310 (also on your network, to test on a phone)
-npm test          # 61 headless tests (npm test -- -u accepts new snapshots)
+npm test          # 62 headless tests (npm test -- -u accepts new snapshots)
 npm run build     # type-check and build to dist/
 npm run check     # type-check and test
 npm run maps      # redraw the map viewer (assets/maps/index.html)

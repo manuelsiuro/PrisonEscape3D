@@ -101,8 +101,9 @@ function game(prison: PrisonDef, seed = 5, calendar: Array<[number, number, numb
     const m = sim.state.inmates[who];
     const [a, b] = canteenPair(sim);
     if (sim.state.talk >= 0 && sim.state.talk !== who) step(command(0, OP.CLOSE));
-    // (Whoever stood there steps aside: to where this one was.)
-    for (const o of sim.state.inmates) if (o !== m && [a, b].includes(Math.floor(o.body.z / UNIT) * MAP_W + Math.floor(o.body.x / UNIT))) {
+    // (Whoever stood there or is passing close by steps aside: to where this one was. The button takes the nearest.)
+    const near = (o: { body: { x: number; z: number } }, t: number) => Math.max(Math.abs(o.body.x - ((t % MAP_W) + 0.5) * UNIT), Math.abs(o.body.z - (Math.floor(t / MAP_W) + 0.5) * UNIT)) < 2 * UNIT;
+    for (const o of sim.state.inmates) if (o !== m && (near(o, a) || near(o, b))) {
       o.body.x = m.body.x;
       o.body.z = m.body.z;
       o.path = [];

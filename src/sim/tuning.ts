@@ -191,6 +191,29 @@ export const SET_BEATS = {
 } as const;
 /** How long an inmate takes to finish up and step off a machine the player asked for (2.29). */
 export const GIVE_WAY_STEPS = 40;
+
+/**
+ * 2.30: the Work Period. The warnings that the quota isn't done (minute of the day). The first comes while
+ * the whole job can still be done from nothing, from wherever the player is (measured in jobstest: up to
+ * 68 minutes, the mail round up to 104, so 13:45 and 13:00); the second at 14:30, as a last call.
+ */
+export const WORK_WARNING = 13 * 60 + 45;
+export const MAIL_WARNING = 13 * 60;
+export const LAST_WARNING = 14 * 60 + 30;
+/** An inmate at work: steps at a bin, resting after a piece (plus a little by its cell), mopping a patch of floor. */
+export const DUTY_HAND_STEPS = 30;
+export const DUTY_REST_STEPS = 60;
+export const DUTY_MOP_STEPS = 80;
+/**
+ * 2.30: in a work room that isn't yours in the Work Period, in a guard's sight: told to leave, STRANGER_GRACE steps to
+ * do it (walking through costs nothing), then +STRANGER_HEAT and 1% every STRANGER_EVERY steps, never past
+ * STRANGER_CAP on its own. Seen again after STRANGER_GAP steps out of sight: told afresh.
+ */
+export const STRANGER_GRACE = 5 * STEPS_PER_SECOND;
+export const STRANGER_HEAT = 5;
+export const STRANGER_EVERY = STEPS_PER_SECOND;
+export const STRANGER_CAP = 30;
+export const STRANGER_GAP = 5 * STEPS_PER_SECOND;
 /** P31: fresh meals from the garden (the gardener's quota filled): this much more energy and health at each, for a day after. */
 export const FRESH_ENERGY = 10;
 export const FRESH_HEALTH = 10;

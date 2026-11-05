@@ -4,6 +4,7 @@ import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
 import { bedDummyMesh, placeInBed } from './BedDummy';
 import { GymGear, type GearUse } from './GymGear';
+import { WorkGear } from './WorkGear';
 import { Character, type BedPose } from './Character';
 import { Cones } from './Cones';
 import { Security } from './Security';
@@ -323,6 +324,7 @@ export class View {
   private readonly dummy = bedDummyMesh();
   /** 2.29: the bars and the bags; for each inmate, how far onto its machine it's drawn, where that was, the bench it's getting up from, the rep it's at. */
   private readonly gear = new GymGear();
+  private readonly workGear = new WorkGear();
   private readonly gearUses: GearUse[] = [];
   private readonly machineBlend: number[] = [];
   private readonly machineAt: Array<{ x: number; z: number; y: number }> = [];
@@ -390,7 +392,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.gear.group, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.gear.group, this.workGear.group, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -562,6 +564,7 @@ export class View {
     if (this.beds[1]) placeInBed(this.dummy, this.beds[1]);
     this.dummy.visible = false;
     this.gear.build(world);
+    this.workGear.build(world);
     this.blockDark = this.blockDarkGoal = 0;
     this.setCast(0);
     this.setGuards([]);
@@ -593,6 +596,7 @@ export class View {
     const under = layer === LAYER.UNDER;
     if (this.worldView) this.worldView.group.visible = !under;
     this.gear.group.visible = !under;
+    this.workGear.group.visible = !under;
     if (this.structure) {
       this.structure.group.visible = !under;
       this.structure.setMode(layer);
@@ -1104,6 +1108,8 @@ export class View {
       c.towel = m.towel;
       c.attention = m.attention;
       c.trayPose(m.trayAt, m.trayLeft);
+      // (2.30: what it's carrying at work.)
+      c.hold(m.held, m.held ? itemGeometry(itemDef(m.held)) : null);
       // On a chair, a little higher than on a canteen bench.
       // (2.29: on a machine, drawn on it, and at it: an arm or a body going of its own accord, slower than anyone is asked to keep time.)
       const onGear = m.prop >= 0 && m.doing !== DOING.BENCH;
@@ -1324,6 +1330,7 @@ export class View {
     // (2.29: the bars: the player's, and those the inmates have up, gathered above.)
     if (f.doing === DOING.BENCH) this.gearUses.push({ prop: f.trainProp, up: this.player.pressed });
     this.gear.update(dt, this.gearUses, !this.reducedMotion);
+    this.workGear.update(time, f.running, !this.reducedMotion);
     this.gearUses.length = 0;
     this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;

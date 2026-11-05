@@ -375,6 +375,8 @@ export interface SimState {
   /** 2.29: the beat of the set's last press that counted (-1 none yet); the machine the player has asked for a turn on, and the steps left to wait ([] none). */
   repBeat: number;
   askTurn: number[];
+  /** 2.30: in a work room not theirs, seen by a guard: the steps they were first told and last seen; empty otherwise. */
+  strayed: number[];
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -564,5 +566,6 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     countAt: 0,
     repBeat: -1,
     askTurn: [],
+    strayed: [],
   };
 }

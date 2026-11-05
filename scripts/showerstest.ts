@@ -230,10 +230,12 @@ for (const def of PRISONS) {
     bot.act();
     let tries = 0;
     // A head in use: on to the next.
-    while (!bot.st.washing && tries++ < heads(bot).length) {
-      const other = heads(bot)[tries - 1];
+    // (All taken just then: round again, as anyone would, for what's left of the block.)
+    while (!bot.st.washing && tries++ < heads(bot).length * 6) {
+      const other = heads(bot)[(tries - 1) % heads(bot).length];
       bot.walkTo(other.tile, 10 * STEPS_PER_MINUTE);
       bot.act();
+      if (!bot.st.washing) for (let k = 0; k < 20; k++) bot.step(0);
     }
     check(reached || bot.st.washing, `${def.id}: walked to a head`);
     check(bot.st.washing, `${def.id}, ${late} minutes late: washing after ${(bot.st.step - start) / 20} s`);
@@ -344,14 +346,15 @@ for (const def of PRISONS) {
   was225.rules226 = true;
   was225.rules227 = true;
   was225.rules228 = true;
+  was225.rules229 = true;
   const prev = new RunRecorder(was225, { seed: 24, game: '2.25.0' });
   for (let k = 0; k < (BLOCK + 40 - 8 * 60) * STEPS_PER_MINUTE; k++) prev.step(0);
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.29.0' }).toLog().seed === -1, 'a log from 2.25 is not carried on');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.30.0' }).toLog().seed === -1, 'a log from 2.25 is not carried on');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules225 === true, 'and replays whole under the old rules');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.29.0' });
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.30.0' });
   for (let k = 0; k < 40; k++) now.step(0);
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.29.1' }).toLog().seed === 25, 'a log from today is');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.30.1' }).toLog().seed === 25, 'a log from today is');
   check(replayLog(now.toLog(), CENTER_PERKS)?.sim.rules225 === false, 'and replays under today\'s');
 
   // Training has no showers: its crowd's day isn't troubled, through the block.

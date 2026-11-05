@@ -97,6 +97,12 @@ export function deskOf(sim: Pick<SimContext, 'world' | 'state'>, who: number): n
   return containersOf(w).findIndex((c) => c.prop.kind === 'desk' && w.cellOf[c.prop.z * MAP_W + c.prop.x] === m.cell);
 }
 
+/** 2.30: on the job of lifting the head cook's mug out of the kitchen's freezer. */
+export const liftingMug = (sim: Pick<SimContext, 'state'>) => {
+  const job = jobOf(sim.state);
+  return !!job && job[J.KIND] === KIND.LIFT && job[J.VAR] === LIFT.MUG;
+};
+
 /** The kitchen freezer the head cook's mug is left in (-1 none). */
 export const freezerOf = (sim: Pick<SimContext, 'world'>) => containersOf(sim.world).findIndex((c) => !c.mine && c.prop.kind === 'freezer');
 

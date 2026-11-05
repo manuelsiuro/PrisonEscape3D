@@ -96,7 +96,7 @@ export function frameOf(run: HuntRun, a: number, paused: boolean, guide: Array<{
   // The lookout, on their rise, looking out over the map.
   if (run.lookout) {
     const lt = spotTile(h.def.lookout, h.out.ox, h.out.oz);
-    const o = (f.inmates[0] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, bare: false, towel: 0, attention: false, prop: -1, at: { x: 0, z: 0, facing: 0, y: 0 }, bench: { x: 0, z: 0, angle: 0 } });
+    const o = (f.inmates[0] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, held: 0, bare: false, towel: 0, attention: false, prop: -1, at: { x: 0, z: 0, facing: 0, y: 0 }, bench: { x: 0, z: 0, angle: 0 } });
     o.x = (lt % MAP_W) + 0.5;
     o.z = Math.floor(lt / MAP_W) + 0.5;
     o.facing = headingAngle(h.def.lookout.face ?? 13);

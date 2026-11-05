@@ -804,8 +804,13 @@ function bluff(p: Plan, seed: number) {
   check(bot.routineUntil(1, 19 * 60 + 5), 'the day kept');
   const places = placesOf(bot.sim.world);
   check(bot.walkTo(places.deskside[1]), 'beside the desk');
-  bot.face(DIR.EAST);
-  check(bot.open(bot.desk), 'the desk opens');
+  // (Stopped nearer the chair than the desk, the press sits down: up, closer, and again, as anyone reading the button would.)
+  let opened = false;
+  for (let t = 0; t < 4 && !opened; t++) {
+    bot.face(DIR.EAST);
+    opened = bot.open(bot.desk);
+  }
+  check(opened, 'the desk opens');
   bot.takeAll(kit.length);
   bot.close();
   bot.op(OP.EQUIP, bot.slotOf('guard_outfit'));

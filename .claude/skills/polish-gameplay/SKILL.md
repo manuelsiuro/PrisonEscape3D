@@ -43,7 +43,11 @@ line is something that was missed or broke at some point.
 - The action button: `labels.ts` must say exactly what `actions.ts` does, in the same order of priority.
   The highlight (`focusOf`) must agree with both.
 - Keyboard and touch; the floor arrows (`guide.ts`); hints, toasts and floats (`announce.ts`); barks; the HUD and the day card.
-- Who gets in the way: a crowd changes what the button targets and who stands where. An inmate given a new pose keeps it until something clears it: check free time, when they walk off, as well as the block it was built for.
+- Who gets in the way: a crowd changes what the button targets and who stands where.
+- A warning promises time: measure the whole job from nothing, from where people really are, against it. 30 s looked generous for a job a bot does in 18 s, and a third of the jobs couldn't finish.
+- A new reason a guard reacts may count as being spotted (`FEAT.spotted`, the Ghost medal, a commendation lost). A telling-off that isn't a fault needs its own event.
+- A rule about a room: grep what sends people there on purpose (odd jobs, holiday treats, side errands).
+- A model with a door or window: check which way each prison turned it. From this camera a front turned to the wall is never seen. An inmate given a new pose keeps it until something clears it: check free time, when they walk off, as well as the block it was built for.
 - A hint whose advice changes needs a new `coachOnce` id: anyone who has played has already seen the old one and won't be told.
 
 **What teaches it**
