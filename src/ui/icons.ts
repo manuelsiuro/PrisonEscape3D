@@ -149,6 +149,8 @@ const P: Record<string, string> = {
   pumpkin: '<path d="M12 7c-5-1-9 2-9 7s3 7 6 7c1 0 2-.5 3-.5s2 .5 3 .5c3 0 6-2 6-7s-4-8-9-7Z"/><path d="M12 7c-1.5 2-1.5 11 0 13.5M12 7c1.5 2 1.5 11 0 13.5M12 7c0-2 1-3.5 2.5-4"/>',
   sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
   tree: '<path d="M12 2.5 6.5 9h3L5 15h4l-3.5 4.5h13L15 15h4l-4.5-6h3Z"/><path d="M12 19.5V22"/>',
+  /** 2.33: a stick of chalk and its scrawl (the menu board scribbled on). */
+  chalk: '<rect x="11" y="2.5" width="4.5" height="12" rx="1.2" transform="rotate(40 13.25 8.5)"/><path d="M3 20c2-2 3 1 5-1s3 1 5-1 3 1 5-1"/>',
 };
 
 /** Whether an icon exists (tests check every icon content names). */

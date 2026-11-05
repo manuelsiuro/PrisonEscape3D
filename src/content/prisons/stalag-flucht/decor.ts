@@ -30,10 +30,9 @@ export const STALAG_FLUCHT_DECOR: readonly DecorPlacement[] = [
   { kind: 'sacks', x: 18, z: 19 },
   { kind: 'drum', x: 18, z: 17 },
   { kind: 'timber', x: 17, z: 16 },
-  // Canteen: the menu, a water cooler, plants, trays on the serving counter.
+  // Canteen: the menu (its dishes drawn from the def's `menu`, 2.33), plants, trays on the serving counter (the water cooler a prop since 2.33).
   { kind: 'menuBoard', x: 16, z: 30, w: 2 },
   { kind: 'trays', x: 18, z: 31, d: 3, rot: 3, y: COUNTER },
-  { kind: 'waterCooler', x: 17, z: 35 },
   { kind: 'plant', x: 5, z: 35 },
   // Kitchen: pans on the wall, the sink, a sack of potatoes.
   { kind: 'panRack', x: 14, z: 37, w: 2 },

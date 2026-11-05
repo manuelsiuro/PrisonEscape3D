@@ -56,6 +56,8 @@ export const PROPS = {
   mat: { solid: false },
   /** 2.32: the canteen's vending machine (solid only for runs from then on: World.plainVending). */
   vending: { solid: true },
+  /** 2.33: the canteen's water cooler (decoration before; solid only for runs from then on: World.plainCooler). */
+  cooler: { solid: true },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

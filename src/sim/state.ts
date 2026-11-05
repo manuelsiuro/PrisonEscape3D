@@ -5,6 +5,7 @@
 import type { PrisonDef } from '../content/prisons/types';
 import { SHOP_SLOTS } from '../content/loot';
 import { newVend, type VendState } from './systems/vendState';
+import { newCooler, newMenu, type CoolerState, type MenuState } from './systems/menuState';
 import { ROUTINE, routineAt } from '../content/routine';
 import { HOLDER, type Favor } from './systems/economy';
 import { maxHealth } from './systems/combat';
@@ -389,6 +390,12 @@ export interface SimState {
   /** Its card open at it (the player up to it), and how many things they've bought this run. */
   vendOpen: boolean;
   vendBought: number;
+  /** 2.33, the menu board (systems/menu.ts): its card open (the player up to it); the scribble on it, or one under way. */
+  menuOpen: boolean;
+  menu: MenuState;
+  /** 2.33, the water cooler (systems/cooler.ts): the step of the player's last cup (0: none yet); who's drinking at it. */
+  drank: number;
+  cooler: CoolerState;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -586,5 +593,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     vend: newVend(),
     vendOpen: false,
     vendBought: 0,
+    menuOpen: false,
+    menu: newMenu(),
+    drank: 0,
+    cooler: newCooler(),
   };
 }

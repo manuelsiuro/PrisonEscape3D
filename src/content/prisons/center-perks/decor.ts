@@ -33,10 +33,9 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   // Roll call yard: the flag and the PA.
   { kind: 'flagpole', x: 37, z: 9 },
   { kind: 'speaker', x: 32, z: 7 },
-  // Canteen: the menu over the serving counter, trays ready on it, a water cooler, bins.
+  // Canteen: the menu over the serving counter (its dishes drawn from the def's `menu`, 2.33), trays ready on it, bins (the water cooler a prop since 2.33).
   { kind: 'menuBoard', x: 51, z: 7, w: 5 },
   { kind: 'trays', x: 51, z: 9, w: 5, y: COUNTER },
-  { kind: 'waterCooler', x: 56, z: 7 },
   { kind: 'clock', x: 44, z: 7 },
   { kind: 'posterC', x: 47, z: 7 },
   { kind: 'plant', x: 40, z: 7 },

@@ -29,6 +29,7 @@ import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
 import { hiddenIn } from '../sim/systems/kiosk';
 import { foodUse } from '../sim/systems/vending';
+import { menuOffer } from '../sim/systems/menu';
 import type { ToolView } from '../ui/tool';
 import { drinkArmed, press } from './buttons';
 import { trackCheck } from '../sim/systems/races';
@@ -192,6 +193,23 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     if (key !== actionKey) {
       actionKey = key;
       Object.assign(actionLabel, { verb: t('act.vending'), what: t('thing.vending') });
+    }
+    return actionLabel;
+  }
+  // The water cooler and the menu board (2.33), ahead of whoever's beside them, as actions.ts has it.
+  if (target?.kind === 'fixture' && target.use === 'cooler') {
+    const key = `cooler:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t('act.drinkAt'), what: t('thing.cooler') });
+    }
+    return actionLabel;
+  }
+  if (menuOffer(sim)) {
+    const key = `menu:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t('act.readMenu'), what: t('thing.menu') });
     }
     return actionLabel;
   }

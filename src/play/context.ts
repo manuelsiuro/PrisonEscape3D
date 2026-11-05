@@ -1,6 +1,7 @@
 import { PayphoneCard } from '../ui/payphone';
 import { KioskCard } from '../ui/kiosk';
 import { VendCard } from '../ui/vending';
+import { MenuCard } from '../ui/menuBoard';
 import { ParoleCard } from '../ui/parole';
 import { OddJobsCard, StoryCard } from '../ui/oddjobs';
 import * as THREE from 'three';
@@ -155,6 +156,8 @@ export const payphoneCard = new PayphoneCard(sendOp, click);
 export const kioskCard = new KioskCard(sendOp, click);
 /** The vending machine's card (2.32). */
 export const vendCard = new VendCard(sendOp, click);
+/** The menu board's card (2.33). */
+export const menuCard = new MenuCard(sendOp, click);
 /** The parole board's card (P39): at the release desk, and before the board. */
 export const paroleCard = new ParoleCard(sendOp, click);
 /** The odd jobs board's card, and a story's short cards (P40). */

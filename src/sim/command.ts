@@ -104,6 +104,9 @@ export const EXT = {
   NEEDLE_DOWN: 34,
   /** 2.32, the vending machine: b = what's asked (content/vending.ts VEND), c its argument (a row). */
   VEND: 35,
+  /** 2.33: the menu board (b = content/menu.ts MENU), the water cooler (b = content/cooler.ts COOLER). */
+  MENU: 36,
+  COOLER: 37,
 } as const;
 
 /** What EXT.LINE asks (P34): a place at the end of the queue, out of it, cut in at the front. Never renumber. */

@@ -593,3 +593,274 @@ body.vending .up-prompt {
     display: none;
   }
 }
+
+/* ------------------------------------------------------------ the menu board (2.33) */
+
+/* The chalkboard up close, in its wooden frame: the day's two meals, tomorrow's, the scribble button. */
+.menu-card {
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 132px);
+  width: min(460px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #8a5a32, #6d4424);
+  box-shadow: 0 20px 50px -14px rgba(0, 0, 0, 0.7), inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+.menu-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.menu-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 800 19px var(--font-display);
+  letter-spacing: 0.06em;
+  color: #fff6d8;
+  text-transform: uppercase;
+}
+.menu-day {
+  margin-left: auto;
+  color: rgba(255, 246, 216, 0.85);
+  font: 700 14px var(--font-display);
+}
+.menu-close {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+/* A small mark with a thumb's reach around it. */
+.menu-close::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+}
+.menu-board {
+  position: relative;
+  padding: 8px 10px 6px;
+  border-radius: 8px;
+  background: radial-gradient(120% 90% at 30% 20%, #2f3d37, #1f2a26);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35), inset 0 0 24px rgba(0, 0, 0, 0.4);
+  color: #f3efe2;
+  overflow: hidden;
+}
+.menu-meals {
+  display: grid;
+  gap: 6px;
+}
+.menu-meal {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(243, 239, 226, 0.18);
+}
+.menu-meal:last-child {
+  border-bottom: 0;
+}
+.menu-meal.done {
+  opacity: 0.55;
+}
+.menu-when {
+  display: grid;
+  line-height: 1.15;
+}
+.menu-when b {
+  font: 700 13px var(--font-display);
+  color: rgba(243, 239, 226, 0.85);
+}
+.menu-when i {
+  font-style: normal;
+  font-size: 12px;
+  color: rgba(243, 239, 226, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.menu-dish {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: 700 17px var(--font-display);
+}
+.menu-meal.feast .menu-dish {
+  color: var(--gold);
+}
+.menu-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font: 700 11px var(--font-display);
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.menu-tag.now {
+  background: #3fb950;
+  color: #0d2312;
+}
+.menu-tag.eaten {
+  background: rgba(243, 239, 226, 0.2);
+  color: #f3efe2;
+}
+.menu-gives {
+  color: #f2c94c;
+  font: 700 13px var(--font-display);
+  text-align: right;
+  white-space: nowrap;
+}
+.menu-tomorrow {
+  margin-top: 6px;
+  color: rgba(243, 239, 226, 0.75);
+  font-size: 13px;
+}
+.menu-tomorrow b {
+  color: rgba(243, 239, 226, 0.95);
+}
+.menu-extra {
+  margin-top: 4px;
+  color: #9fe0a8;
+  font-size: 13px;
+}
+.menu-extra:empty {
+  display: none;
+}
+/* The scribble: pink chalk at a slant under the dinner it crosses out. */
+.menu-joke {
+  display: none;
+  margin: 2px 0 0;
+  color: #ff9cc8;
+  font: 700 19px 'Comic Sans MS', 'Chalkboard SE', cursive, var(--font-display);
+  text-align: center;
+  transform: rotate(-3deg);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+.menu-card.scribbled .menu-joke {
+  display: block;
+}
+.menu-card.scribbled .menu-meal:last-child .menu-dish {
+  text-decoration: line-through rgba(255, 156, 200, 0.85) 2px;
+}
+.menu-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.menu-scribble {
+  position: relative;
+  overflow: hidden;
+  height: 44px;
+  padding: 0 16px;
+  font-size: 16px;
+}
+.menu-scribble:disabled {
+  opacity: 0.6;
+}
+.menu-scribble > .ic,
+.menu-scribble > span {
+  position: relative;
+}
+.menu-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 156, 200, 0.45);
+  transition: width 0.1s linear;
+}
+.menu-seen {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ffd2a0;
+  font: 700 13px var(--font-display);
+}
+.menu-note {
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: center;
+}
+body.menu-reading .toasts {
+  bottom: auto;
+  top: 66px;
+}
+body.menu-reading .tool-prompt,
+body.menu-reading .tool-btn,
+body.menu-reading .up-btn,
+body.menu-reading .up-prompt {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-fill {
+    transition: none;
+  }
+}
+/* A phone held upright and narrow: the time under the meal's name. */
+@media (max-width: 420px) {
+  .menu-meal {
+    grid-template-columns: 74px minmax(0, 1fr);
+  }
+  .menu-gives {
+    grid-column: 2;
+    text-align: left;
+  }
+  .menu-dish {
+    font-size: 16px;
+  }
+}
+/* A phone on its side: the height's what's short. */
+@media (max-height: 500px) {
+  .menu-card {
+    bottom: calc(max(6px, env(safe-area-inset-bottom)) + 96px);
+    width: min(520px, calc(100vw - 230px));
+    padding: 5px 7px;
+  }
+  .menu-head {
+    margin-bottom: 3px;
+  }
+  .menu-brand {
+    font-size: 15px;
+  }
+  .menu-close {
+    width: 28px;
+    height: 28px;
+  }
+  .menu-close::after {
+    inset: -8px;
+  }
+  .menu-board {
+    padding: 4px 8px;
+  }
+  .menu-meals {
+    gap: 2px;
+  }
+  .menu-meal {
+    padding: 2px 0;
+  }
+  .menu-dish {
+    font-size: 15px;
+  }
+  .menu-tomorrow,
+  .menu-extra {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+  .menu-actions {
+    margin-top: 4px;
+  }
+  .menu-scribble {
+    height: 36px;
+  }
+  .menu-note {
+    display: none;
+  }
+}
