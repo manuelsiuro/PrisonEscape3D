@@ -183,6 +183,10 @@ const occupied = (i: number, bodies: readonly Body[]) => bodies.some((b) => over
  * strand a guard's bed check or a sleeper, or the player climbing down.
  */
 const reservedCache = new WeakMap<World, Set<number>>();
+/** Forgets where nobody may dig, to be worked out again: a replay's flags turned a solid prop back into decoration (2.32's machine, 2.33's cooler), which changes the chokepoints. */
+export function forgetReserved(w: World) {
+  reservedCache.delete(w);
+}
 export function reserved(w: World): Set<number> {
   let r = reservedCache.get(w);
   if (r) return r;
@@ -266,8 +270,8 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = f
   if (!(DIGGABLE.has(k) || (up && k === TILE.MINE)) || reserved(w).has(i) || w.layers[LAYER.UNDER].kind[i] === TILE.BOULDER) return false;
   if (w.propSolid[i] && !underMyDesk(w, i)) return false;
   // (The gym's bag and mat, decor until 2.29, were never in the way of a spade.)
-  // (Nor, in a run from before 2.31, the library's added chairs; before 2.32, the vending machine.)
-  if (w.props.some((p) => p.kind !== 'mat' && p.kind !== 'punchingBag' && !(w.plainBooks && (p.kind === 'readChair' || p.kind === 'deskChair')) && !(w.plainVending && p.kind === 'vending') && !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
+  // (Nor, in a run from before 2.31, the library's added chairs; before 2.32, the vending machine; before 2.33, the water cooler.)
+  if (w.props.some((p) => p.kind !== 'mat' && p.kind !== 'punchingBag' && !(w.plainBooks && (p.kind === 'readChair' || p.kind === 'deskChair')) && !(w.plainVending && p.kind === 'vending') && !(w.plainCooler && p.kind === 'cooler') && !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
   return !occupied(i, bodies);
 }
 

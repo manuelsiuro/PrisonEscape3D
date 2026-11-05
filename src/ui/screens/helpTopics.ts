@@ -54,7 +54,9 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['walk', 'routine'], see: ['rollcall', 'meals', 'showers', 'night'] }),
         T('night', 'moon', '#5a6fd0', { pic: true, lessons: ['routine', 'night'], stepIcons: ['pin', 'moon', 'sun'], see: ['routine', 'energy', 'searches'] }),
         T('rollcall', 'bell', '#ff8a1e', { pic: true, lessons: ['rollcall'], stepIcons: ['pin', 'hand', 'check'], see: ['routine', 'heat', 'items'] }),
-        T('meals', 'utensils', '#d9822b', { pic: true, lessons: ['meals'], stepIcons: ['hand', 'route', 'utensils', 'check'], see: ['energy', 'routine'] }),
+        T('meals', 'utensils', '#d9822b', { pic: true, lessons: ['meals'], stepIcons: ['hand', 'route', 'utensils', 'check'], see: ['menu', 'energy', 'routine'] }),
+        // 2.33: the menu board's dishes, its scribble, the water cooler.
+        T('menu', 'chalk', '#2f7a5c', { pic: true, lessons: ['menu'], stepIcons: ['utensils', 'water', 'ear'], listIcons: ['utensils', 'bolt', 'heart', 'close', 'star'], see: ['meals', 'energy', 'chatter'] }),
         T('showers', 'water', '#3f9bd6', { pic: true, lessons: ['showers'], stepIcons: ['hand', 'water', 'route'], see: ['energy', 'routine', 'heat'] }),
         T('heat', 'flame', '#e5484d', { diagram: 'meter', lessons: ['heat'], listIcons: ['clock', 'eye', 'lock', 'briefcase'] }),
         T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),

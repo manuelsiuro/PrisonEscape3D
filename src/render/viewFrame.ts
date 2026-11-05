@@ -19,6 +19,7 @@ import type { NightsFrame } from './Nights';
 import type { PhoneFrame } from './Phone';
 import type { KioskFrame } from './Kiosk';
 import type { VendFrame } from './Vending';
+import type { CoolerFrame, MenuFrame } from './MenuBoard';
 import type { OddJobsFrame } from './OddJobs';
 import type { ReleaseFrame } from './Release';
 import { type BadgeKind } from './characterSprites';
@@ -129,6 +130,9 @@ export interface Frame {
   kiosk: KioskFrame;
   /** 2.32: the vending machine. */
   vending: VendFrame;
+  /** 2.33: the menu board's dishes and scribble, the water cooler's bubbles. */
+  menu: MenuFrame;
+  cooler: CoolerFrame;
   /** The odd jobs board (P40): the cards still pinned up today, the player's job tag. */
   oddjobs: OddJobsFrame;
   /** The release desk (P36): the name called, the way out open. */
@@ -264,6 +268,8 @@ export function emptyFrame(): Frame {
     phone: { offHook: false, car: false },
     kiosk: { on: false, photos: [] },
     vending: { on: true, left: [], coil: -1, turn: 0, jam: -1, thumps: 0 },
+    menu: { on: false, lit: true, title: '', dishes: [], gives: [], joke: '' },
+    cooler: { sips: 0 },
     oddjobs: { pins: [false, false, false], chain: false, mine: false },
     release: { called: false, freed: false },
     inked: [],

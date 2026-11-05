@@ -1073,6 +1073,30 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // The menu board and the water cooler (2.33): the day's dishes read, a scribble on the board, a cup at the cooler.
+    id: 'menu',
+    icon: 'utensils',
+    prison: CENTER_PERKS,
+    seed: 148,
+    setup: (sim) => {
+      clockTo(sim, at(10, 2));
+      const m = sim.world.def.menu!;
+      place(sim, m.x + 2, m.z + 1, 13);
+      const s = sim.state;
+      s.energy = 50;
+      // (The cooler theirs while they read: nobody comes for a drink in the lesson's morning.)
+      s.cooler.day = prisonDay(s.step);
+      s.cooler.asked = [~0, ~0];
+    },
+    steps: [
+      { text: 'lesson.menu.read', touch: 'lesson.menu.readTouch', done: (c) => c.sim.state.menuOpen },
+      { text: 'lesson.menu.dishes', done: () => true, least: 7 },
+      { text: 'lesson.menu.scribble', touch: 'lesson.menu.scribbleTouch', done: (c) => c.sim.state.menu.scribbled > 0 },
+      { text: 'lesson.menu.cooler', touch: 'lesson.menu.coolerTouch', on: (e) => e.type === 'cooler' && e.what === 'drank', goal: (sim) => sim.world.def.cooler!.spots[1].z * 64 + sim.world.def.cooler!.spots[1].x },
+      { text: 'lesson.menu.over', done: () => true, least: 8 },
+    ],
+  },
+  {
     // The pay phone (P34): someone on it, a place in line, a secret overheard while waiting, a call home, the money at mail call.
     id: 'payphone',
     icon: 'phone',
@@ -1361,7 +1385,7 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'library', 'vending', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'library', 'vending', 'menu', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 

@@ -13,6 +13,7 @@ import { announceNights } from './nights';
 import { announcePhone } from './payphone';
 import { announceKiosk } from './kiosk';
 import { announceVending, foodWords } from './vending';
+import { announceCooler, announceMeal, announceMenu } from './menuBoard';
 import { announcePaper } from './paperwork';
 import { announceParole } from './parole';
 import { announceHoliday } from './holidays';
@@ -633,7 +634,8 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'meal':
       sound.eat();
       buzz('attended');
-      floatAt(-1, t('float.meal', { n: (e.feast ? FEAST_ENERGY : MEAL_ENERGY) + (e.fresh ? FRESH_ENERGY : 0) }), 'gain');
+      // (2.33: what the day's dish gave, and its name; before, every tray the same.)
+      announceMeal(e, (e.feast ? FEAST_ENERGY : MEAL_ENERGY) + (e.fresh ? FRESH_ENERGY : 0));
       if (sim.state.tray === TRAY.EMPTY) coachOnce('trayBack', 'hint.trayBack', { n: TRAY_HEAT });
       // A feast (P17): and health back to full.
       if (e.feast) banner.toast(t('toast.feast', { n: FEAST_ENERGY }), 'good', 4500);
@@ -853,6 +855,13 @@ export function announce(e: SimEvent, sim: Sim) {
     case 'vend':
       announceVending(sim, e);
       break;
+    // The menu board and the water cooler (2.33).
+    case 'menu':
+      announceMenu(e);
+      break;
+    case 'cooler':
+      announceCooler(e);
+      break;
     // The odd jobs board (P40): a job taken, done, handed in, failed; a story's cards.
     case 'oddjob':
       announceOddJob(sim, e);
@@ -906,7 +915,9 @@ let lastFlight = 0;
 /** Once a second: a mouthful while eating; while it counts down, a wound alarm clock in the pockets ticks (never while time runs fast: asleep, out cold, fast-forward). */
 /** At a meal or the showers: how they pick the player up, told the first time (GDD §2, §3.1). */
 function arrivedAt(sim: Sim, id: RoutineId) {
-  if (id === 'breakfast' || id === 'dinner') coachOnce('meal', traysHere(sim) ? 'hint.meal' : 'hint.mealTable', { n: MEAL_ENERGY });
+  // (2.33: told afresh, now that what a tray gives depends on the day's dish.)
+  if ((id === 'breakfast' || id === 'dinner') && sim.rules232) coachOnce('meal', traysHere(sim) ? 'hint.meal' : 'hint.mealTable', { n: MEAL_ENERGY });
+  else if (id === 'breakfast' || id === 'dinner') coachOnce('mealMenu', traysHere(sim) ? 'hint.mealMenu' : 'hint.mealTableMenu');
   // (2.26: told afresh to those who knew the old way, standing still.)
   if (id === 'showers') coachOnce(sim.rules225 ? 'shower' : 'showerOn', !sim.rules225 && hostile(sim) ? 'hint.showerHostile' : 'hint.shower');
 }

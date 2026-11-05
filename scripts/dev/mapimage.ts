@@ -259,6 +259,24 @@ function drawVending(g: Svg, def: PrisonDef) {
   g.pill(cx(m.x), cz(m.z) - S * 0.62, 'VENDING', 9, red);
 }
 
+/** The menu board and the water cooler (2.33): the board's tiles along its wall, the places beside the cooler where inmates drink, d1 and d2. */
+function drawCanteen(g: Svg, def: PrisonDef) {
+  const m = def.menu;
+  const c = def.cooler;
+  const green = '#2f7a5c';
+  if (m) {
+    g.add(`<rect x="${cx(m.x) - S / 2 + 2}" y="${cz(m.z) - S / 2 + 1}" width="${m.w * S - 4}" height="5" rx="2" fill="${green}"/>`);
+    g.pill(cx(m.x) + ((m.w - 1) * S) / 2, cz(m.z) + 4, 'MENU', 9, green);
+  }
+  if (c) {
+    const blue = '#2f6fd0';
+    c.spots.forEach((q, k) => {
+      g.add(`<circle cx="${cx(q.x)}" cy="${cz(q.z)}" r="7" fill="#fff" stroke="${blue}" stroke-width="2"/>`);
+      g.text(cx(q.x), cz(q.z) + 3, `d${k + 1}`, `font-size="8" font-weight="700" fill="${blue}" text-anchor="middle"`);
+    });
+  }
+}
+
 /** The pay phone (P34): a bar on the wall it hangs on (the caller faces it), the queue's tiles 1… nearest first; with `lou`, the car alarm by the front gate and Lou's getaway car on the road. The internet kiosk (P35) the same way, in the library. */
 function drawComms(g: Svg, def: PrisonDef, lou: boolean) {
   const c = def.comms;
@@ -588,6 +606,7 @@ function legend(g: Svg, kind: PictureKind, def: PrisonDef) {
             'Red wedges: cameras (±45°, 3 tiles drawn). Yellow lines: searchlight sweeps. Free time: pitch (white), track (brown ring), garden beds (green), hoop + shooting spots S1–S5 (orange), rat race (purple arrow), stage (pink), quiz Q1–Q4 (teal).',
             'Smuggling: drone drop (purple dashed) and visits room (teal dashed). Delivery: bay, tail, road and supervisor round d1… (brown). Checkpoint: ID window, gates g1…, booth (green).',
             ...(def.vending ? ['The vending machine (red, VENDING): where it\'s used from and its queue, 1…'] : []),
+            ...(def.menu ? ['The menu board (green, MENU) along its wall, read from the tiles in front; the water cooler (cooler) and where inmates stand at it to drink, d1 and d2 (blue).'] : []),
             'Pay phone: the phone and its queue 1… (teal); the internet kiosk (blue, net); the release desk (gold, rel: the forged form filed, the player reporting at 10:00) and the doors that open out for the player, r1… in order.',
             'The parole board (purple, b1–b3, its hearing at 10:00) and the player\'s seat (you); the odd jobs board (brown, job). Cousin Lou: the car alarm inside the front gate (red ring) and his getaway car on the road, arrow = the way it drives off (red).',
             ...(def.landings ? ['Black dotted boxes: roof landings, the roofs a grapnel swings across onto from another roof.'] : []),
@@ -759,6 +778,7 @@ function picture(def: PrisonDef, kind: PictureKind): string {
     drawDecor(g, def);
     drawComms(g, def, false);
     drawVending(g, def);
+    drawCanteen(g, def);
     drawBoard(g, def);
     drawCells(g, def);
     drawMarks(g, def);
@@ -830,6 +850,9 @@ function tileData(def: PrisonDef, n: number) {
     if (ls.stage) mark(ls.stage.x, ls.stage.z, 'talent stage (performer)');
     mark(ls.race.x, ls.race.z, 'rat race start');
   }
+  // (2.33: in every prison with a canteen, the Training Block's common room too.)
+  if (def.menu) for (let x = def.menu.x; x < def.menu.x + def.menu.w; x++) mark(x, def.menu.z, 'in front of the menu board (read it here)');
+  def.cooler?.spots.forEach((q, k) => mark(q.x, q.z, `where an inmate drinks at the water cooler (d${k + 1})`));
   if (def.delivery) mark(def.delivery.tail.x, def.delivery.tail.z, 'delivery tail (stowaway climbs in)');
   for (const q of def.checkpoint?.window ?? []) mark(q.x, q.z, 'checkpoint ID window');
   if (def.checkpoint) mark(def.checkpoint.booth.x, def.checkpoint.booth.z, 'checkpoint booth');

@@ -26,6 +26,9 @@ import type { Line, LineDef, Style, Tag, Voice } from './types';
 import { CHATTY, guardVoice, inmateVoice, PAUSE, PITCH } from './voice';
 import { hash32, randomFrom } from '../sim/rng';
 import { FROM } from '../content/oddjobs';
+import { twoAtCooler } from '../sim/systems/cooler';
+import { dishNow } from '../sim/systems/menu';
+import { feastNow } from '../sim/systems/calendar';
 
 /**
  * The speech bubbles' director (P13): who says what, and when. Presentation only: it reads
@@ -108,6 +111,13 @@ const NO_TAGS: ReadonlySet<Tag> = new Set();
 const LIBRARIAN_EARSHOT = 8;
 /** How near the vending machine the player has to be to catch what's said at it (tiles). */
 const VEND_EARSHOT = 10;
+/** 2.33: how near the water cooler the player has to stand to overhear what's said at it, how far to walk off before another visit; how much a day. */
+const COOLER_EARSHOT = 3;
+const COOLER_LEAVE = 6;
+const COOLER_TALES = 3;
+/** 2.33: a dish worth a word at the counter: this much energy or more (good), this much or less (bad). */
+const DISH_GOOD = 45;
+const DISH_BAD = 20;
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** The banks of a language with lines tied to moments (`when`). */
@@ -139,6 +149,10 @@ export class Director {
   private nextAmbient = 0;
   private nextTick = 0;
   private gossipNext = 0;
+  /** 2.33: the water cooler's talk: ready for the player's next visit, how much was overheard today; ever (the hint's). */
+  private coolerArmed = true;
+  private coolerToday = 0;
+  overheard = 0;
   private told = new Set<string>();
   private catchDay = new Map<number, number>();
   private incidents: Incident[] = [];
@@ -180,6 +194,8 @@ export class Director {
     this.greeted.clear();
     this.caughtAt = this.powerOutAt = -1e9;
     this.nextAmbient = this.nextTick = this.gossipNext = 0;
+    this.coolerArmed = true;
+    this.coolerToday = 0;
     this.day = sim.clock.day;
     this.dayEvent = null;
     this.dogAbout = -1;
@@ -433,6 +449,14 @@ export class Director {
         if (said && who >= 0 && !sim.rules230 && s.inmates[who].ko <= 0 && dist(s.inmates[who].body, s.player) <= LIBRARIAN_EARSHOT) this.queueUp(now, said, [who], 3, said);
         break;
       }
+      case 'menu': {
+        // (2.33: at the menu board, within earshot: a guard who caught the player at it, those laughing at what's on it.)
+        const mb = sim.world.def.menu;
+        if (!mb || Math.hypot(px - mb.x, pz - mb.z) > VEND_EARSHOT) break;
+        if (e.what === 'caught') this.queueUp(now, 're.menu.guard', this.guardsNear(sim, px, pz, 12), 5, 'menuGuard', 'shout');
+        else if (e.what === 'laugh' && e.who !== undefined) this.queueUp(now, 're.menu.laugh', [e.who], 3, 'menuLaugh', undefined, 0.3);
+        break;
+      }
       case 'vend': {
         // (2.32: at the machine, within earshot: a curse at a jam, what was bought, someone pushed past.)
         const vm = sim.world.def.vending;
@@ -504,6 +528,9 @@ export class Director {
         this.queueUp(now, 're.snooped.in', [e.who], 5, 'snooped', 'shout');
         break;
       case 'tray': {
+        // (2.33: a tray taken of a dish worth a word, good or bad: someone near says so.)
+        const dish = e.what === 'take' && !feastNow(sim) ? dishNow(sim) : null;
+        if (dish && (dish.energy >= DISH_GOOD || dish.energy <= DISH_BAD)) this.queueUp(now, dish.energy >= DISH_GOOD ? 're.menu.good' : 're.menu.bad', this.inmatesNear(sim, px, pz, 5), 2, 'menuDish', undefined, 1.5);
         // (Not brought back: the nearest guard says so.)
         if (!e.heat) break;
         this.queueUp(now, 're.tray.gu', this.guardsNear(sim, px, pz, 12), 4, 'tray', 'shout');
@@ -764,6 +791,7 @@ export class Director {
       this.searched.clear();
       this.dayEvent = null;
       this.told.clear();
+      this.coolerToday = 0;
     }
     this.incidents = this.incidents.filter((i) => now - i.at < 10);
     // Only on the ground floor (from the vents and tunnels nobody is seen talking).
@@ -773,10 +801,32 @@ export class Director {
     }
     this.bumps(sim, now);
     this.reactions(sim, stage);
+    this.coolerTalk(sim, stage);
     if (now >= this.nextAmbient && this.active.length < stage.max) {
       this.nextAmbient = now + stage.gap * (0.7 + 0.6 * this.random());
       this.ambient(sim, stage);
     }
+  }
+
+  /**
+   * 2.33: two inmates having a drink at the water cooler, the player standing by: one tells the other something true,
+   * and it's overheard (into the file, as a friend's gossip). Once a visit (walk off and come back for another), a few
+   * times a day.
+   */
+  private coolerTalk(sim: Sim, stage: Stage) {
+    const c = sim.world.def.cooler;
+    if (!c || sim.rules232) return;
+    const s = sim.state;
+    const d = Math.hypot(s.player.x / UNIT - (c.x + 0.5), s.player.z / UNIT - (c.z + 0.5));
+    if (d > COOLER_LEAVE) this.coolerArmed = true;
+    if (!this.coolerArmed || d > COOLER_EARSHOT || this.coolerToday >= COOLER_TALES || !twoAtCooler(sim)) return;
+    const pair = s.cooler.who.filter((k) => k >= 0 && stage.sees(k) && !this.speaking(k) && this.canSpeak(sim, k, stage.now));
+    if (pair.length < 2 || this.active.length >= stage.max) return;
+    const id = pair[Math.floor(this.random() * pair.length)];
+    if (!this.gossip(sim, stage, id)) return;
+    this.coolerArmed = false;
+    this.coolerToday++;
+    this.overheard++;
   }
 
   /** The player walking into someone: they say so (once in a while each). */

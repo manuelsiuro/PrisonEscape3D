@@ -32,10 +32,9 @@ export const TRAINING_DECOR: readonly DecorPlacement[] = [
   { kind: 'extinguisher', x: 40, z: 22 },
   { kind: 'plant', x: 19, z: 24 },
   { kind: 'plant', x: 44, z: 24 },
-  // Common room (eaten in as a canteen): the menu, a water cooler, a tray, a bin, a plant.
+  // Common room (eaten in as a canteen): the menu (its dishes drawn from the def's `menu`, 2.33), a tray, a bin, a plant (the water cooler a prop since 2.33).
   { kind: 'menuBoard', x: 26, z: 26, w: 3 },
   { kind: 'clock', x: 20, z: 26 },
-  { kind: 'waterCooler', x: 30, z: 26 },
   { kind: 'trays', x: 23, z: 29, y: TABLE },
   { kind: 'smallBin', x: 19, z: 33 },
   { kind: 'plant', x: 30, z: 33 },

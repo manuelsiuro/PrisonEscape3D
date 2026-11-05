@@ -71,7 +71,8 @@ for (const def of MACHINES) {
   const w = sim.world;
   const p = vendProp(sim);
   check(!!p && w.zoneAt(m.x, m.z) === 'canteen', `${def.id}: a machine in the canteen`);
-  check(sim.world.props.indexOf(p!) === sim.world.props.length - 1, `${def.id}: its prop comes last, so that no index moves`);
+  // (2.33's water cooler after it: added later, last again.)
+  check(sim.world.props.indexOf(p!) === sim.world.props.length - 1 - sim.world.props.filter((q) => q.kind === 'cooler').length, `${def.id}: its prop comes last, so that no index moves`);
   check(w.propSolid[m.z * MAP_W + m.x] === 1, `${def.id}: solid`);
   const front = m.line[0];
   check(front.x === m.x && front.z === m.z + 1, `${def.id}: used from the south, the way it fronts and the camera looks`);
@@ -372,9 +373,11 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
           if (e.what === 'inmateJam') jams++;
           if (e.what === 'gaveUp' && e.row === undefined) stalled++;
         }
-        // Standing where they are in the queue, not piled on one tile.
+        // Standing where they are in the queue, not piled on one tile. (In the queue, at the machine: two on their way
+        // brushing past each other in a doorway stop for a step, as anyone does.)
         if (k % 40 === 0) {
-          const stood = v.line.filter((q) => q >= 0 && !sim.state.inmates[q].body.moving).map((q) => Math.floor(sim.state.inmates[q].body.x / UNIT) + Math.floor(sim.state.inmates[q].body.z / UNIT) * MAP_W);
+          const near = (q: number) => Math.max(Math.abs(sim.state.inmates[q].body.x / UNIT - def.vending!.x), Math.abs(sim.state.inmates[q].body.z / UNIT - def.vending!.z)) <= 4;
+          const stood = v.line.filter((q) => q >= 0 && !sim.state.inmates[q].body.moving && near(q)).map((q) => Math.floor(sim.state.inmates[q].body.x / UNIT) + Math.floor(sim.state.inmates[q].body.z / UNIT) * MAP_W);
           check(new Set(stood).size === stood.length, `${def.id} seed ${seed}: two in the queue on one tile at step ${k}`);
         }
         if (sim.state.step % DAY_STEPS === 14 * 60 * 20) {
@@ -660,11 +663,12 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   for (const p of PRISONS) {
     const was = new Sim(p, 3);
     was.rules231 = true;
+    was.rules232 = true;
     const m = p.vending!;
     const t = m.z * MAP_W + m.x;
     check(was.world.propSolid[t] === 0 && !was.world.blocked(m.x, m.z), `${p.id}: old rules, walked through as decoration`);
     check(fixtureUse(was.world, was.world.props[was.world.props.length - 1]) === undefined, `${p.id}: old rules, nothing to use`);
-    const bare = new Sim({ ...p, props: p.props.filter((q) => q.kind !== 'vending') }, 3);
+    const bare = new Sim({ ...p, props: p.props.filter((q) => q.kind !== 'vending' && q.kind !== 'cooler') }, 3);
     check(canDigFloor(was.world, t, []) === canDigFloor(bare.world, t, []), `${p.id}: digging there as it was`);
     const a = placesOf(was.world).floor.flat().join();
     const c = placesOf(bare.world).floor.flat().join();
@@ -673,11 +677,12 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   // A log from 2.31 replays under its own rules, and isn't carried on; today's is.
   const was = new Sim(CENTER_PERKS, 24);
   was.rules231 = true;
+  was.rules232 = true;
   const prev = new RunRecorder(was, { seed: 24, game: '2.31.0' });
   for (let k = 0; k < 4800; k++) prev.step(0);
   check(!!replayLog(prev.toLog(), CENTER_PERKS)?.ok, 'a 2.31 log replays whole under the old rules');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.32.0' }).toLog().seed === -1, 'and is not carried on');
-  const today = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.32.0' });
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.33.0' }).toLog().seed === -1, 'and is not carried on');
+  const today = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.33.0' });
   for (let k = 0; k < 4800; k++) today.step(0);
   check(!!replayLog(today.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
   // A save mid-turn; one from before the machine.

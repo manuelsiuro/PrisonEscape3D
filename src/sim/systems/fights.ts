@@ -29,6 +29,7 @@ import { tipsyNow } from './pruno';
 import { TIPSY_BLOW } from '../../content/long';
 import { raiseKeyAlarm, roomFor } from './keys';
 import { closeCard } from './vendState';
+import { closeMenu } from './menuState';
 
 /** The weapon the player fights with: one in hand, else the one in the weapon slot (0: fists). */
 function weapon(sim: SimContext): { item: number; slot: number } {
@@ -281,6 +282,8 @@ export function hurt(sim: SimContext, dmg: number, by: number) {
   }
   // (2.32: and the vending machine's card, whose keys and hidden buttons would leave no way to answer it.)
   if (s.vendOpen) closeCard(sim);
+  // (2.33: and the menu board's.)
+  if (s.menuOpen || s.menu.until) closeMenu(sim);
   sim.events.push({ type: 'hurt', by, dmg });
   if (s.health > 0) return;
   // Put down by a guard: caught (solitary or the infirmary). By anyone else: the infirmary.
