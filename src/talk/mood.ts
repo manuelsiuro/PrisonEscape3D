@@ -129,9 +129,16 @@ export function inmateMood(sim: Sim, id: number, r: Recent): Mood | null {
       if (eventOn(sim, 'movie')) return mood('in.day.movie', 0.5, 'say', some('in.idle', friend));
       if (feastNow(sim)) return mood('in.day.feast', 0.65, 'say', some('in.eating', friend));
       return mood('in.eating', 0.6, 'say', some('in.idle', friend, evening && 'in.homesick'));
+    case DOING.BENCH:
+    case DOING.PULLUP:
+    case DOING.PUSHUP:
+      return mood('in.lifting', 0.5, 'say', some('in.exercising', 'in.idle', weather, friend));
+    case DOING.RUN:
+      return mood('in.treadmill', 0.5, 'say', some('in.exercising', 'in.idle', weather, friend));
+    case DOING.BAG:
+      return mood('in.punching', 0.5, 'say', some('in.exercising', 'in.idle', weather, friend));
     case DOING.EXERCISE:
     case DOING.LIFT:
-    case DOING.RUN:
       return mood('in.exercising', 0.5, 'say', some('in.idle', weather, friend));
     case DOING.SHOWER:
     case DOING.TOWEL:
@@ -235,6 +242,6 @@ export function guardMood(sim: Sim, id: number, r: Recent): Mood | null {
   const zone = sim.world.zoneAt(t.x, t.z);
   if (block === 'rollCall') return mood('gu.morning', 0.4, 'say', some(usual, weather));
   if ((block === 'breakfast' || block === 'dinner') && zone === 'canteen') return mood('gu.meal', 0.4, 'say', some(usual, other));
-  if (block === 'exercise' && (zone === 'yard' || zone === 'gym')) return mood('gu.yard', 0.4, 'say', some(usual, weather));
+  if (block === 'exercise' && (zone === 'yard' || zone === 'gym' || zone === 'sports')) return mood('gu.yard', 0.4, 'say', some(usual, weather));
   return mood(usual, g.body.moving ? 0.3 : 0.4, 'say', some(other, weather));
 }

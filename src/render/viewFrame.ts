@@ -80,6 +80,8 @@ export interface Frame {
   trayAt: number;
   trayLeft: number;
   trainAt: { x: number; z: number; facing: number; y: number } | null;
+  /** 2.29: the prop the player's training on (-1 none): its bar lifted, its bag hit. */
+  trainProp: number;
   /** Resting on an infirmary bed: where it lies (the player lies on it as in their own bed). */
   restBed: BedPose | null;
   reps: number;
@@ -175,6 +177,10 @@ export interface InmateFrame {
   bare: boolean;
   towel: number;
   /** The warden's at its square, at roll call (2.27): it stands straight. */
+  /** 2.29: the machine it's using (-1 none), and where that puts it: drawn there, or (a bench) lying there. */
+  prop: number;
+  at: { x: number; z: number; facing: number; y: number };
+  bench: BedPose;
   attention: boolean;
   /** The badge over their head: a favor, a shop, the player's letter for them, a follower. */
   badge: BadgeKind;
@@ -224,6 +230,7 @@ export function emptyFrame(): Frame {
     trayAt: 0,
     trayLeft: 1,
     trainAt: null,
+    trainProp: -1,
     restBed: null,
     reps: 0,
     puddles: [],

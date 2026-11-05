@@ -590,6 +590,16 @@ export class Sound {
     this.tone(520 + Math.random() * 40, 480, 0.05, 'triangle', 0.07);
   }
 
+  /** A press on the beat (2.29): brighter, a little longer. */
+  repHit() {
+    this.tone(760, 980, 0.09, 'triangle', 0.1);
+  }
+
+  /** The beat of a set (2.29): barely there, to keep time by. */
+  setBeat() {
+    this.tone(1400, 1300, 0.018, 'sine', 0.025);
+  }
+
   /** A set done (+2), or someone joins the player: a rising arpeggio. */
   levelUp() {
     [523, 659, 784, 1047].forEach((f, k) => this.tone(f, f, 0.22, 'triangle', 0.1, k * 0.07));

@@ -11,6 +11,9 @@ export interface BedPose {
   x: number;
   z: number;
   angle: number;
+  /** A bed's unless given (2.29: a bench is lower): the height lain at, and how far the feet are from its middle. */
+  top?: number;
+  feet?: number;
 }
 
 /** The player's pixels mark the stencil, so the silhouette is drawn only where they're hidden. */
@@ -235,6 +238,10 @@ export class Character {
   private badgeAge = 0;
   /** A training rep: the arms pump (1, easing to 0). */
   private pumped = 0;
+  private pumps = 0;
+  /** 2.29: 0 standing … 1 on hands and toes on a mat; on a bench, not in bed (no blanket, eyes open). */
+  private prone = 0;
+  private benching = false;
   /** Face up to the water, at the rinse. */
   private headBack = 0;
   /** The silhouette material (the player only). */
@@ -611,9 +618,15 @@ export class Character {
     this.badgeSprite.position.y = 1.9 + (motion ? Math.sin(t * 3 + this.offset) * 0.05 : 0);
   }
 
-  /** A training rep: the arms pump once. */
+  /** A training rep: the arms pump once (2.29: at the bag, the other fist each time). */
   pump() {
     this.pumped = 1;
+    this.pumps++;
+  }
+
+  /** How far through a rep the arms are, 1 at its height (2.29: the bar goes with them). */
+  get pressed(): number {
+    return this.pumped;
   }
 
   /** A flat copy of every part, drawn only where something stands in front of the character. */
@@ -670,7 +683,11 @@ export class Character {
     // Into bed and out of it: a short ease between standing beside it and lying in it.
     // Knocked out: down on the floor where they stand, quicker.
     const ko = doing === DOING.KNOCKED_OUT;
-    this.lie += (((doing === DOING.SLEEP && bed) || ko ? 1 : 0) - this.lie) * k(ko ? 9 : 5);
+    this.lie += (((doing === DOING.SLEEP && bed) || (doing === DOING.BENCH && bed) || ko ? 1 : 0) - this.lie) * k(ko ? 9 : 5);
+    // (2.29: on a mat, on hands and toes.)
+    this.prone += ((doing === DOING.PUSHUP ? 1 : 0) - this.prone) * k(8);
+    if (this.prone < 0.002) this.prone = 0;
+    this.benching = doing === DOING.BENCH;
     if (this.lie < 0.002) this.lie = 0;
     this.crawl += ((doing === DOING.CRAWL ? 1 : 0) - this.crawl) * k(8);
     if (this.crawl < 0.002) this.crawl = 0;
@@ -695,7 +712,8 @@ export class Character {
       this.at.lerp(this.bedAt, this.lie);
     } else if (bed && this.lie > 0) {
       turn = bed.angle;
-      this.bedAt.set(bed.x + Math.sin(bed.angle) * BED_FEET, BED_TOP, bed.z + Math.cos(bed.angle) * BED_FEET);
+      const feet = bed.feet ?? BED_FEET;
+      this.bedAt.set(bed.x + Math.sin(bed.angle) * feet, bed.top ?? BED_TOP, bed.z + Math.cos(bed.angle) * feet);
       this.at.lerp(this.bedAt, this.lie);
     }
     this.root.position.copy(this.at);
@@ -822,6 +840,33 @@ export class Character {
       armLz -= (0.5 - up * 0.3) * a;
       armRz += (0.5 - up * 0.3) * a;
       bob -= (1 - up) * 0.03 * a;
+    } else if (doing === DOING.BENCH) {
+      // On their back on the bench (2.29), the bar over the chest: straight up on each rep, slowly back.
+      const up = this.pumped;
+      armLx += (-1.95 + up * 0.45) * a;
+      armRx += (-1.95 + up * 0.45) * a;
+      armLz -= 0.12 * a;
+      armRz += 0.12 * a;
+    } else if (doing === DOING.PULLUP) {
+      // Hanging from the bar, hands up on it; up to it on each rep, slowly down.
+      const up = this.pumped;
+      armLx += -3.0 * a;
+      armRx += -3.0 * a;
+      armLz -= 0.15 * a;
+      armRz += 0.15 * a;
+      bob += up * 0.22 * a;
+    } else if (doing === DOING.PUSHUP) {
+      // Hands under the shoulders, straight arms; the body lifted on each rep (below).
+      armLx += -1.5 * a;
+      armRx += -1.5 * a;
+    } else if (doing === DOING.BAG) {
+      // Fists up, one thrown at each rep, in turn.
+      const up = this.pumped;
+      const left = this.pumps % 2 === 0;
+      armLx += (-1.35 - (left ? up * 0.45 : 0)) * a;
+      armRx += (-1.35 - (left ? 0 : up * 0.45)) * a;
+      armLz += 0.35 * a;
+      armRz -= 0.35 * a;
     } else if (doing === DOING.RUN) {
       // Running in place on the belt: quicker with each rep.
       const r = Math.sin(t * (9 + this.pumped * 5)) * 0.8 * a;
@@ -1124,7 +1169,7 @@ export class Character {
     this.armL.rotation.set(armLx, 0, armLz);
     this.armR.rotation.set(armRx, 0, armRz);
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
-    this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI);
+    this.body.position.y = bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI) + this.prone * (0.08 + this.pumped * 0.14);
     // (In line for the phone, P34: a slow shift of the weight from foot to foot.)
     const shift = doing === DOING.QUEUE && motion ? Math.sin(t * 0.55) * 0.04 * this.act : 0;
     this.body.rotation.z = (motion ? Math.sin(t * 0.7) * 0.06 * dz : 0) + shift;
@@ -1133,6 +1178,7 @@ export class Character {
       (Math.PI / 2) * this.lie +
       lean +
       (Math.PI / 2) * 0.92 * this.crawl +
+      (Math.PI / 2) * 0.86 * this.prone +
       0.06 * dz +
       (this.hit > 0 ? 0.18 * Math.sin(this.hit * Math.PI) : 0) +
       (this.jab > 0 ? 0.14 * Math.sin(this.jab * Math.PI) : 0) -
@@ -1148,11 +1194,11 @@ export class Character {
     // (P35: at the kiosk, the far hand under its screen on a side wall would show through it as an arm in the monitor.)
     if (this.ghost) this.ghost.visible = this.lie < 0.3 && doing !== DOING.KIOSK;
     // What goes with the activity: the blanket and Zs, the tray, the water.
-    this.blanket.visible = this.lie > 0.6 && !ko;
+    this.blanket.visible = this.lie > 0.6 && !ko && !this.benching;
     this.blanket.scale.z = THREE.MathUtils.smoothstep(this.lie, 0.6, 1);
     const nap = !ko && this.lie < 0.1 && this.doze > 0.3;
     this.zs.forEach((z, i) => {
-      z.visible = (this.lie > 0.9 && !ko) || nap;
+      z.visible = (this.lie > 0.9 && !ko && !this.benching) || nap;
       if (!z.visible) return;
       const c = motion ? (time * 0.45 + i / 3 + this.offset) % 1 : i / 3;
       if (nap) {
@@ -1211,7 +1257,7 @@ export class Character {
     this.blinkAt -= dt;
     // Dozing: shut, fluttering as it stirs; wide for a moment on waking with a start.
     const flutter = this.stir > 0.4 && (t * 12) % 1 < 0.3;
-    const closed = this.blinkAt < 0.12 || (this.lie > 0.5 && !ko) || (this.doze > 0.6 && !flutter);
+    const closed = this.blinkAt < 0.12 || (this.lie > 0.5 && !ko && !this.benching) || (this.doze > 0.6 && !flutter);
     if (this.blinkAt < 0) this.blinkAt = 2 + Math.random() * 3.5;
     this.eyes.scale.y = closed ? 0.15 : 1 + 0.5 * this.startle;
 

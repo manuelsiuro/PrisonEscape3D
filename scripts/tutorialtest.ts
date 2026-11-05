@@ -245,7 +245,7 @@ play('job', (bot) => {
 play('gym', (bot) => {
   bot.act();
   check(bot.st.train >= 0, 'gym: on the weights');
-  for (let k = 0; k < 3000 && !bot.sim.events.some((e) => e.type === 'trained'); k++) bot.op(OP.TRAIN, 1 + (k % 2));
+  bot.set();
 });
 
 play('disguise', (bot) => {
@@ -762,8 +762,10 @@ play('laps', (bot) => {
   check(bot.st.lap.length === 4 && bot.st.spd > 40, `laps: a lap run, Speed up (${bot.st.spd})`);
   const bar = bot.sim.world.props.findIndex((q) => q.kind === 'pullup');
   useProp(bot, bar);
+  // (2.29: someone on it gives way in a moment.)
+  bot.until(() => bot.st.train === bar, 60);
   check(bot.st.train === bar, 'laps: on the pull-up bar');
-  for (let k = 0; k < 3000 && !bot.sim.events.some((e) => e.type === 'trained'); k++) bot.op(OP.TRAIN, 1 + (k % 2));
+  bot.set();
 });
 
 play('gardener', (bot) => {

@@ -17,6 +17,11 @@ import { showerOffer } from '../sim/systems/showers';
 import { dummyInBed } from '../sim/systems/justice';
 import { afterHours } from '../sim/systems/watch';
 import { DOING, inmateEatSteps } from '../sim/systems/inmates';
+import { ON_MACHINE } from '../sim/ai/doing';
+import { placesOf } from '../sim/ai/places';
+import type { Prop, World } from '../sim/world/World';
+import { benchBack } from '../render/GymGear';
+import type { BedPose } from '../render/Character';
 import { TRAY_AT } from '../render/Character';
 import { itemOf, ownerOf, type ItemState, type Target } from '../sim/systems/items';
 import { seatSpot } from '../sim/systems/rest';
@@ -166,14 +171,33 @@ const trainAt = { x: 0, z: 0, facing: 0, y: 0 };
 /** Where the player sits (refilled when the seat or the body changes), and an infirmary bed's pose. */
 const seatAt = { x: 0, z: 0, facing: 0, y: 0 };
 const seatMemo = { seat: -1, x: 0, z: 0 };
-const restBed = { x: 0, z: 0, angle: 0 };
+const restBed: BedPose = { x: 0, z: 0, angle: 0 };
+
+/** Where someone on a machine is drawn (2.29), the player or an inmate: on the belt, hanging from the bar, along the mat, squared up to the bag. */
+function machinePose(p: Prop, out: { x: number; z: number; facing: number; y: number }) {
+  // (On a mat, feet to the west of its middle: the body along it, not the feet on it and the head off its end.)
+  out.x = p.x + p.w / 2 - (p.kind === 'mat' ? 0.42 : 0);
+  out.z = p.z + p.d / 2 + (p.kind === 'treadmill' ? 0.1 : p.kind === 'pullup' ? 0.55 : p.kind === 'punchingBag' ? 0.62 : 0);
+  out.y = p.kind === 'treadmill' ? 0.14 : p.kind === 'pullup' ? 0.2 : 0;
+  out.facing = p.kind === 'mat' ? Math.PI / 2 : Math.PI;
+}
+
+/** On a bench: lying along it, head under the bar, lower than a bed, feet off its end. */
+function benchPose(w: World, p: Prop, out: BedPose) {
+  out.x = p.x + p.w / 2;
+  out.z = p.z + p.d / 2;
+  out.angle = 0;
+  out.top = 0.32;
+  out.feet = 0.62 - benchBack(w, p);
+}
 const tapAt = { x: 0, z: 0 };
 
 /** Reps so far, counted across sets (the view pumps the arms on each). */
 let repCount = 0;
 let repLast = 0;
-function trainReps(reps: number): number {
-  if (reps > repLast) repCount++;
+function trainReps(reps: number, on: boolean): number {
+  // (2.29: the press that fills the bar empties it in the same step: it pumps too. Not stepping off with a bar half full.)
+  if (reps > repLast || (on && reps === 0 && repLast > 0)) repCount++;
   repLast = reps;
   return repCount;
 }
@@ -208,7 +232,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   const watching = traysHere(sim) && !mealOn(sim);
   const warden = st.guards[wardenOf(sim)];
   st.inmates.forEach((m, k) => {
-    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, bare: false, towel: 0, attention: false });
+    const o = (f.inmates[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, bare: false, towel: 0, attention: false, prop: -1, at: { x: 0, z: 0, facing: 0, y: 0 }, bench: { x: 0, z: 0, angle: 0 } });
     const q = g.prevInmates[k];
     o.x = lerp(q?.x ?? m.body.x, m.body.x);
     o.z = lerp(q?.z ?? m.body.z, m.body.z);
@@ -217,6 +241,17 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     o.moving = m.body.moving && !g.paused && (!q || q.x !== m.body.x || q.z !== m.body.z);
     // (Jogging the track, P31: running as it goes.)
     o.doing = o.moving && m.then === DOING.JOG ? DOING.RUN : watching && m.doing === DOING.EAT ? DOING.SIT : m.doing;
+    // (2.29: on a machine: drawn on it, not on the tile it stands on.)
+    o.prop = -1;
+    if (ON_MACHINE.includes(m.doing) && !o.moving) {
+      const spot = placesOf(sim.world).machines.find((q) => q.tile === m.goal);
+      if (spot) {
+        o.prop = spot.prop;
+        const gear = sim.world.props[spot.prop];
+        if (m.doing === DOING.BENCH) benchPose(sim.world, gear, o.bench);
+        else machinePose(gear, o.at);
+      }
+    }
     o.cell = m.cell;
     o.angry = m.angry > 0;
     o.badge = badgeOf(sim, k);
@@ -363,14 +398,20 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   // The tray: in both hands, unless it's set down on a table (below).
   f.trayAt = st.tray !== TRAY.NONE ? TRAY_AT.HANDS : TRAY_AT.NONE;
   f.trayLeft = st.tray === TRAY.EMPTY ? 0 : 1 - Math.min(1, st.eaten / mealSteps(sim));
-  f.doing = trainKind === 'weights' || trainKind === 'pullup' ? DOING.LIFT : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : DOING.NOTHING;
+  f.doing = trainKind === 'weights' ? DOING.BENCH : trainKind === 'pullup' ? DOING.PULLUP : trainKind === 'treadmill' ? DOING.RUN : trainKind === 'shelf' ? DOING.READ : trainKind === 'mat' ? DOING.PUSHUP : trainKind === 'punchingBag' ? DOING.BAG : DOING.NOTHING;
+  f.trainProp = st.train;
   f.restBed = null;
+  if (trainKind === 'weights') {
+    benchPose(sim.world, sim.world.props[st.train], restBed);
+    f.restBed = restBed;
+  }
   // Seated (GDD §3.1): on the seat's tile facing the table, eating while the meal lasts; resting on an infirmary bed: lying on it.
   const seated = st.seat >= 0 ? sim.world.props[st.seat] : null;
   if (seated?.kind === 'bed') {
     restBed.x = seated.x + seated.w / 2;
     restBed.z = seated.z + seated.d / 2;
     restBed.angle = (seated.rot * Math.PI) / 2;
+    restBed.top = restBed.feet = undefined;
     f.restBed = restBed;
     f.doing = DOING.SLEEP;
     f.trainAt = null;
@@ -426,24 +467,13 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
     const m = st.inmates[st.ink.who];
     if (m && (m.body.x !== p.x || m.body.z !== p.z)) f.facing = Math.atan2(m.body.x - p.x, m.body.z - p.z);
   }
-  if (!seated && trainKind === 'treadmill') {
-    const tp = sim.world.props[st.train];
-    trainAt.x = tp.x + tp.w / 2;
-    trainAt.z = tp.z + tp.d / 2 + 0.1;
-    trainAt.y = 0.14;
-    trainAt.facing = Math.PI;
-    f.trainAt = trainAt;
-  } else if (!seated && trainKind === 'pullup') {
-    // (P31: at the pull-up bar, just in front of it facing it, hands up on it, lifted a little off the grass:
-    // a step back from it, or the see-through cut round the player would take the bar away.)
-    const tp = sim.world.props[st.train];
-    trainAt.x = tp.x + tp.w / 2;
-    trainAt.z = tp.z + tp.d / 2 + 0.55;
-    trainAt.y = 0.2;
-    trainAt.facing = Math.PI;
+  // (P31: at the pull-up bar, just in front of it facing it, hands up on it, lifted a little off the grass:
+  // a step back from it, or the see-through cut round the player would take the bar away.)
+  if (!seated && (trainKind === 'treadmill' || trainKind === 'pullup' || trainKind === 'mat' || trainKind === 'punchingBag')) {
+    machinePose(sim.world.props[st.train], trainAt);
     f.trainAt = trainAt;
   } else if (!seated || seated.kind === 'bed') f.trainAt = null;
-  f.reps = trainReps(st.reps);
+  f.reps = trainReps(st.reps, st.train >= 0);
   f.puddles = st.puddles;
   // (P31: the gardener's planters growing what was planted in them.)
   const grow = f.planters as Map<number, number>;

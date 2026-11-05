@@ -319,6 +319,12 @@ const guards: GuardDef[] = [
 ];
 
 /** Level 5: supermax, an island fortress (GDD §4.5). */
+/** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
+const GEAR: PropPlacement[] = [
+  { kind: 'punchingBag', x: 39, z: 28 },
+  { kind: 'mat', x: 39, z: 32, w: 2 },
+];
+
 export const IRONGATE: PrisonDef = {
   id: 'irongate',
   difficulty: 5,
@@ -368,7 +374,7 @@ export const IRONGATE: PrisonDef = {
     ['garden', 44, 22, 51, 26],
   ],
   cells,
-  props,
+  props: [...props, ...GEAR],
   rollCall,
   spawn: { x: 10, z: 11 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],

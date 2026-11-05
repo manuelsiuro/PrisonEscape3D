@@ -157,7 +157,8 @@ function onKeyDown(e: KeyboardEvent) {
     toggleCrew(true);
   }
   // Training (GDD §3.2): left and right in turn fill the bar (P22: and push in an arm-wrestle).
-  if ((g.rec.sim.state.train >= 0 || g.rec.sim.state.bout.length) && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
+  // (2.29: waiting for a turn too: off to a start is no way to lose it. A press now counts for nothing.)
+  if ((g.rec.sim.state.train >= 0 || g.rec.sim.state.askTurn.length || g.rec.sim.state.bout.length) && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
     return;
   }

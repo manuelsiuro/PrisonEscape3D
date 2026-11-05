@@ -4,6 +4,7 @@ import { currentLang, t, type Key } from '../i18n';
 import { lineOfSight } from '../sim/ai/sight';
 import { SLOT } from '../sim/command';
 import type { Sim } from '../sim/Sim';
+import { machineOffer, onMachine } from '../sim/systems/training';
 import { counterTray, trayOffer } from '../sim/systems/canteen';
 import { canAnswer } from '../sim/systems/rollcall';
 import { showerOffer } from '../sim/systems/showers';
@@ -219,10 +220,13 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     const gen = target.use === 'generator' ? genOf(sim.world, target.index) : 0;
     const power = target.use === 'generator' ? offFor(sim.state, gen) === 0 : target.use === 'helicopter' ? helicopterIn(sim) : true;
     const kind = sim.world.props[target.index].kind;
-    const key = `fixture:${target.use}:${kind}:${power}:${gen}:${currentLang()}`;
+    // (2.29: someone on the machine: they're asked for it, or with no use for it talked to. As actions.ts does.)
+    const offer = machineOffer(sim, target.index);
+    const on = offer === 'talk' ? onMachine(sim, target.index) : -1;
+    const key = `fixture:${target.use}:${kind}:${power}:${gen}:${offer}:${on}:${currentLang()}`;
     if (key !== actionKey) {
       actionKey = key;
-      const verb = target.use === 'generator' ? (power ? 'act.powerOff' : 'act.powerOn') : target.use === 'helicopter' && !power ? 'act.helipad' : `act.${target.use}`;
+      const verb = offer === 'ask' ? 'act.askTurn' : offer === 'talk' ? 'act.talk' : target.use === 'generator' ? (power ? 'act.powerOff' : 'act.powerOn') : target.use === 'helicopter' && !power ? 'act.helipad' : `act.${target.use}`;
       // A seat, bench or chair by its own name; an infirmary bed; GEN-1 and GEN-2 by what they run.
       const thing =
         target.use === 'board'
@@ -236,7 +240,7 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
                 : target.use === 'helicopter' && !power
                   ? 'helipad'
                   : target.use;
-      Object.assign(actionLabel, { verb: t(verb as Key), what: t(`thing.${thing}` as Key) });
+      Object.assign(actionLabel, { verb: t(verb as Key), what: on >= 0 ? inmateName(sim, on) : t(`thing.${thing}` as Key) });
     }
     return actionLabel;
   }

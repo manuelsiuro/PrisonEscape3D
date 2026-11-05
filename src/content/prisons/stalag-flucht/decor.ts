@@ -40,9 +40,7 @@ export const STALAG_FLUCHT_DECOR: readonly DecorPlacement[] = [
   { kind: 'sink', x: 17, z: 37 },
   { kind: 'potatoes', x: 12, z: 38 },
   // Gym: a punching bag, dumbbells, a mat, a mirror.
-  { kind: 'punchingBag', x: 30, z: 32 },
   { kind: 'dumbbells', x: 32, z: 34 },
-  { kind: 'mat', x: 28, z: 33, w: 2 },
   { kind: 'mirror', x: 26, z: 34, rot: 2 },
   // Showers: towel hooks, the drain.
   { kind: 'towelHooks', x: 28, z: 36, w: 2 },
@@ -93,7 +91,6 @@ export const STALAG_FLUCHT_DECOR: readonly DecorPlacement[] = [
   // The sports ground (P32): the hoop on its post (its court), a mat and dumbbells by the weights.
   { kind: 'hoop', x: 56, z: 45 },
   { kind: 'dumbbells', x: 51, z: 45, w: 2 },
-  { kind: 'mat', x: 45, z: 48 },
   // The garden (P32): the water butt by the shed.
   { kind: 'waterButt', x: 36, z: 3 },
 ];

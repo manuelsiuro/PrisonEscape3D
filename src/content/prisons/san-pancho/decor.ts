@@ -85,7 +85,6 @@ export const SAN_PANCHO_DECOR: readonly DecorPlacement[] = [
   { kind: 'cactus', x: 48, z: 34 },
   { kind: 'cactus', x: 51, z: 36 },
   // Gym and showers: a mat and dumbbells; towel hooks, a mirror, the drain.
-  { kind: 'mat', x: 42, z: 37 },
   { kind: 'dumbbells', x: 41, z: 36 },
   { kind: 'towelHooks', x: 44, z: 37, rot: 3 },
   { kind: 'mirror', x: 41, z: 38, rot: 1 },

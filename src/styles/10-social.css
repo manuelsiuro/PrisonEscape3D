@@ -1035,6 +1035,67 @@
   box-shadow: none;
 }
 
+.train-beat {
+  position: relative;
+  height: 18px;
+  margin: 2px 0 8px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.train-beat i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: block;
+}
+
+.train-zone {
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.train-line {
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  opacity: 0.85;
+}
+
+.train-dot {
+  width: 12px;
+  height: 12px;
+  top: 3px !important;
+  bottom: auto !important;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: var(--amber, #f5b942);
+  box-shadow: 0 0 6px rgba(245, 185, 66, 0.7);
+}
+
+.train-beat.hit .train-zone {
+  animation: beat-hit 0.28s ease-out;
+}
+
+.train-beat.miss .train-line {
+  animation: beat-miss 0.28s ease-out;
+}
+
+@keyframes beat-hit {
+  0% {
+    background: #58d68d;
+  }
+}
+
+@keyframes beat-miss {
+  0% {
+    opacity: 0.2;
+  }
+}
+
 .train-bar {
   display: block;
   height: 14px;
@@ -1059,6 +1120,12 @@
 
 .train-card[data-attr='int'] .train-bar i {
   background: linear-gradient(90deg, #8a55c9, #d4b2ff);
+}
+
+.train-cost {
+  display: none;
+  font: 700 12px var(--font-ui);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .train-note {
@@ -1207,6 +1274,26 @@ body.reduced-motion .hud-cash .hud-news {
 
   .train-bar {
     margin: 6px 0 4px;
+  }
+
+  /* (2.29: the pads say what to do; the card stays low, clear of the player, with the cost in its head instead.) */
+  .touch .gym-card .train-note {
+    display: none;
+  }
+
+  .touch .gym-card .train-cost {
+    display: inline;
+  }
+
+  .gym-card .train-beat {
+    margin: 2px 0 4px;
+  }
+
+  /* (In a lesson, beside its card, not over its words.) */
+  .lesson-on .gym-card {
+    left: min(350px, calc(100vw - 500px));
+    right: auto;
+    margin: 0;
   }
 
   .touch .train-pads {

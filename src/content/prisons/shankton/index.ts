@@ -267,6 +267,12 @@ const guards: GuardDef[] = [
 ];
 
 /** Level 3: high security, an industrial megaprison (GDD §4.3). */
+/** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
+const GEAR: PropPlacement[] = [
+  { kind: 'punchingBag', x: 18, z: 33 },
+  { kind: 'mat', x: 14, z: 34, w: 2 },
+];
+
 export const SHANKTON: PrisonDef = {
   id: 'shankton',
   difficulty: 3,
@@ -305,7 +311,7 @@ export const SHANKTON: PrisonDef = {
     ['perimeter', 48, 58, 55, 62],
   ],
   cells,
-  props,
+  props: [...props, ...GEAR],
   rollCall,
   spawn: { x: 10, z: 10 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],

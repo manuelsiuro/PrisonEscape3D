@@ -176,6 +176,21 @@ export const GYM_ENERGY = 12;
 export const STUDY_ENERGY = 10;
 /** Below this much energy: no tools, no training (GDD §3.1). */
 export const TIRED = 10;
+/**
+ * A set in time (2.29), by what it's done on: a press every `beat` steps, within `window` steps of the beat for
+ * `hit` of the bar, anywhere else `miss`; one press counts per beat. On the beat, about 4.5 s a set, whatever the
+ * machine; off it, about four times that, and nothing drains: nobody is kept from finishing by how fast they tap.
+ */
+export const SET_BEATS = {
+  weights: { beat: 16, window: 3, hit: 17, miss: 4 },
+  pullup: { beat: 20, window: 3, hit: 20, miss: 5 },
+  mat: { beat: 14, window: 3, hit: 15, miss: 4 },
+  treadmill: { beat: 10, window: 2, hit: 12, miss: 3 },
+  punchingBag: { beat: 8, window: 2, hit: 10, miss: 3 },
+  shelf: { beat: 24, window: 4, hit: 25, miss: 6 },
+} as const;
+/** How long an inmate takes to finish up and step off a machine the player asked for (2.29). */
+export const GIVE_WAY_STEPS = 40;
 /** P31: fresh meals from the garden (the gardener's quota filled): this much more energy and health at each, for a day after. */
 export const FRESH_ENERGY = 10;
 export const FRESH_HEALTH = 10;

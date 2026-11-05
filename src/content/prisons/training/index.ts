@@ -47,6 +47,12 @@ const props: PropPlacement[] = [
  * his dog, no jobs, no merchants, no cameras or towers. What it hasn't got (merchants, the
  * day's events, smuggling, the delivery, the checkpoint) is taught at Center Perks.
  */
+/** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
+const GEAR: PropPlacement[] = [
+  { kind: 'punchingBag', x: 42, z: 29 },
+  { kind: 'mat', x: 38, z: 31, w: 2 },
+];
+
 export const TRAINING: PrisonDef = {
   id: 'training',
   difficulty: 0,
@@ -69,7 +75,7 @@ export const TRAINING: PrisonDef = {
     [19, 17, 22, 20],
     [24, 17, 27, 20],
   ],
-  props,
+  props: [...props, ...GEAR],
   decor: TRAINING_DECOR,
   rollCall: [
     { x: 22, z: 40 },

@@ -45,8 +45,10 @@ export function laps(sim: SimContext) {
   }
   s.lap = [k, k, turn, 0];
   sim.events.push({ type: 'lap' });
-  if (s.energy < TIRED || s.spd >= ATTR_MAX) {
-    sim.events.push({ type: 'cantTrain', why: s.energy < TIRED ? 'tired' : 'max' });
+  // (As fast as it gets: nothing to say, lap after lap, to someone only out for a run.)
+  if (s.spd >= ATTR_MAX) return;
+  if (s.energy < TIRED) {
+    sim.events.push({ type: 'cantTrain', why: 'tired' });
     return;
   }
   s.spd = Math.min(ATTR_MAX, s.spd + TRAIN_GAIN);
