@@ -382,9 +382,15 @@ export const IRONGATE: PrisonDef = {
     ['garden', 44, 22, 51, 26],
   ],
   cells,
-  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 28, z: 28 }],
+  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 28, z: 28 }, { kind: 'cooler', x: 34, z: 36 }],
   // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
   vending: { x: 28, z: 28, line: [{ x: 28, z: 29 }, { x: 28, z: 30 }, { x: 28, z: 31 }, { x: 29, z: 31 }] },
+  // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
+  // last, so that no other prop's number moves) with the tiles beside it where inmates stand to drink.
+  menu: { x: 33, z: 28, w: 2 },
+  // (Where its decor stood, by the south door. The far corner was tried: over 60 seeds the bluff won 57 there against 58
+  // here and in 2.32, the takeover 42 in all three.)
+  cooler: { x: 34, z: 36, spots: [{ x: 33, z: 36 }, { x: 34, z: 37 }] },
   rollCall,
   spawn: { x: 10, z: 11 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],

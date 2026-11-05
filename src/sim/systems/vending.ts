@@ -271,7 +271,7 @@ function dropFor(sim: SimContext, row: number) {
 }
 
 /** The free time block now (0 the morning's, 1 the evening's; -1 neither). */
-function blockNow(sim: SimContext): number {
+export function blockNow(sim: SimContext): number {
   const id = ROUTINE[sim.state.routine].id;
   return id === 'freeTime' ? 0 : id === 'eveningFreeTime' ? 1 : -1;
 }
@@ -288,18 +288,20 @@ export function wantsSnack(salt: number, day: number, b: number, k: number): num
 }
 
 /** An inmate free to go to the machine (as the phone's queue asks), and none of those people come looking for. */
-function freeToGo(sim: SimContext, k: number, waiting = false): boolean {
+export function freeToGo(sim: SimContext, k: number, waiting = false): boolean {
   const s = sim.state;
   const m = s.inmates[k];
   if (!m || m.ko > 0 || m.angry > 0 || (s.talk === k && !waiting) || s.followers.includes(k)) return false;
   if (m.doing === DOING.SLEEP || m.doing === DOING.BRAWL) return false;
   if (s.line.includes(k) || s.booth[0] === k) return false;
+  // (2.33: having a drink at the water cooler: done with that first.)
+  if (!waiting && s.cooler.who.includes(k)) return false;
   if (s.match?.team.includes(k) || s.ink?.who === k || s.cheat?.who === k || s.shootout?.who === k || s.dice[0] === k || s.bout[0] === k || s.quiz?.who.includes(k)) return false;
   return true;
 }
 
 /** Those people come looking for stay where they're looked for: a merchant, the fixer, the librarian. */
-function staysPut(sim: SimContext, k: number): boolean {
+export function staysPut(sim: SimContext, k: number): boolean {
   const def = sim.world.def;
   const cell = sim.state.inmates[k].cell;
   return def.merchants.includes(cell) || def.smuggling?.fixer === cell || def.leisure?.librarian?.cell === cell;

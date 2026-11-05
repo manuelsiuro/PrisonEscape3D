@@ -382,7 +382,7 @@ for (const p of PRISONS) {
 // The holiday kept: a save, a run log.
 {
   const sim = game(HOLIDAY.HALLOWEEN);
-  const rec = new RunRecorder(sim, { seed: 7, game: '2.32.0' });
+  const rec = new RunRecorder(sim, { seed: 7, game: '2.33.0' });
   for (let k = 0; k < DAY_STEPS + 12 * 60 * STEPS_PER_MINUTE; k++) rec.step(k % 300 < 150 ? 1 : 0);
   const log = rec.toLog();
   check(log.holiday === HOLIDAY.HALLOWEEN, "a run log keeps the run's holiday");
@@ -391,7 +391,7 @@ for (const p of PRISONS) {
   const loaded = new Sim(CENTER_PERKS, 1);
   loaded.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   check(loaded.state.holiday === HOLIDAY.HALLOWEEN && loaded.hash() === sim.hash(), 'a game saved and loaded keeps its holiday');
-  const none = new RunRecorder(game(0), { seed: 7, game: '2.32.0' });
+  const none = new RunRecorder(game(0), { seed: 7, game: '2.33.0' });
   none.step(0);
   check(none.toLog().holiday === undefined, '(a run without one says nothing of it)');
   const old = new Sim(CENTER_PERKS, 1);

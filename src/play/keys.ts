@@ -18,6 +18,7 @@ import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
 import { vendAct, vendKey } from './vending';
+import { menuAct, menuKey } from './menuBoard';
 import { VEND } from '../content/vending';
 import { paroleBusy, paroleKey } from './parole';
 import { reading } from '../sim/systems/training';
@@ -39,6 +40,11 @@ export function act() {
   // (2.32: at the vending machine's card, a thump at what's stuck, else away from it.)
   if (play.game.rec.sim.state.vendOpen) {
     vendAct(play.game.rec.sim);
+    return;
+  }
+  // (2.33: at the menu board's card, away from it.)
+  if (play.game.rec.sim.state.menuOpen) {
+    menuAct();
     return;
   }
   itemsUI.closeCraft();
@@ -71,6 +77,8 @@ function onKeyDown(e: KeyboardEvent) {
     else if (game.rec.sim.state.train >= 0) sendOp(OP.TRAIN, 3);
     // (2.32: away from the vending machine's card.)
     else if (game.rec.sim.state.vendOpen) sendOp(OP.EXT, EXT.VEND, VEND.CLOSE);
+    // (2.33: away from the menu board's card.)
+    else if (game.rec.sim.state.menuOpen) menuAct();
     // (P22: out of an arm-wrestle, away from a lock.)
     else if (game.rec.sim.state.bout.length) sendOp(OP.TRAIN, 3);
     else if (game.rec.sim.state.pick.length) sendOp(OP.CLOSE);
@@ -144,6 +152,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // The vending machine (2.32): at its card, 1–7 choose a row.
   if (vendKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // The menu board (2.33): at its card, X scribbles.
+  if (menuKey(e.code)) {
     e.preventDefault();
     return;
   }

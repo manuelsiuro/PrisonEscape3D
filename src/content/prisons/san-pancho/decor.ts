@@ -48,11 +48,10 @@ export const SAN_PANCHO_DECOR: readonly DecorPlacement[] = [
   { kind: 'clock', x: 45, z: 12 },
   { kind: 'speaker', x: 46, z: 20, rot: 3 },
   { kind: 'extinguisher', x: 43, z: 25, rot: 1 },
-  // Canteen: the menu, a plant, the water cooler, trays on the serving counter.
+  // Canteen: the menu (its dishes drawn from the def's `menu`, 2.33), a plant, trays on the serving counter (the water cooler a prop since 2.33).
   { kind: 'menuBoard', x: 20, z: 32, w: 2 },
   { kind: 'trays', x: 17, z: 36, d: 3, rot: 1, y: COUNTER },
   { kind: 'plant', x: 17, z: 33 },
-  { kind: 'waterCooler', x: 18, z: 32 },
   // Kitchen: pans on the wall, the sink, a sack of potatoes.
   { kind: 'panRack', x: 14, z: 32, w: 2 },
   { kind: 'sink', x: 12, z: 36, rot: 1 },

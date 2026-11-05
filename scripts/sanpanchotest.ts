@@ -274,6 +274,7 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   const was = new Bot(SAN_PANCHO, 3);
   was.sim.rules230 = true;
   was.sim.rules231 = true;
+  was.sim.rules232 = true;
   was.st.calendar = quietCalendar();
   let early = 0;
   const stepWas = was.step.bind(was);

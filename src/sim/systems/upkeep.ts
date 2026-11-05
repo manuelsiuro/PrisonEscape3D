@@ -11,6 +11,7 @@ import { LAYER, MAP_W } from '../world/World';
 import { maxHealth } from './combat';
 import { closeBox, REACH } from './items';
 import { feastNow, TODAY } from './calendar';
+import { dishNow } from './menu';
 import { eatingNow, mealSteps, TRAY } from './canteen';
 import { FEAST_ENERGY } from '../../content/days';
 import { atProp, seatSpot } from './rest';
@@ -149,13 +150,18 @@ export function keepSeat(sim: SimContext) {
       const feast = feastNow(sim);
       // (P31: fresh from the garden, a little more.)
       const fresh = freshMeals(sim);
-      s.energy = Math.min(100, s.energy + (feast ? FEAST_ENERGY : MEAL_ENERGY) + (fresh ? FRESH_ENERGY : 0));
-      if (fresh) s.health = Math.min(maxHealth(s.str), s.health + FRESH_HEALTH);
+      // (2.33: the day's dish, as the menu board has it; before, every tray the same.)
+      const dish = feast ? null : dishNow(sim);
+      const n = (feast ? FEAST_ENERGY : dish ? dish.energy : MEAL_ENERGY) + (fresh ? FRESH_ENERGY : 0);
+      const hp = (dish?.health ?? 0) + (fresh ? FRESH_HEALTH : 0);
+      s.energy = Math.min(100, s.energy + n);
+      if (hp) s.health = Math.min(maxHealth(s.str), s.health + hp);
       if (feast) {
         s.health = Math.max(s.health, maxHealth(s.str));
         s.eventFlags |= TODAY.FEASTED;
       }
-      sim.events.push(feast ? { type: 'meal', feast, ...(fresh ? { fresh } : {}) } : fresh ? { type: 'meal', fresh } : { type: 'meal' });
+      const what = sim.rules232 ? {} : { n, ...(hp ? { hp } : {}), ...(dish ? { dish: dish.id } : {}) };
+      sim.events.push(feast ? { type: 'meal', feast, ...(fresh ? { fresh } : {}), ...what } : fresh ? { type: 'meal', fresh, ...what } : { type: 'meal', ...what });
     }
   }
 }

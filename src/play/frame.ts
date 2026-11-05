@@ -49,6 +49,10 @@ import { sightFor } from '../sim/systems/football';
 import { carWaiting, commsOf } from '../sim/systems/phone';
 import { kioskOf, loggedIn } from '../sim/systems/kiosk';
 import { atVending, VEND_NOBODY, VEND_PLAYER, vendProp } from '../sim/systems/vending';
+import { coolerProp } from '../sim/systems/cooler';
+import { atMenu, menuOffer } from '../sim/systems/menu';
+import { SIP_STEPS } from '../content/cooler';
+import { menuFrame } from './menuBoard';
 import { COIL_STEPS, INMATE_COIL_STEPS, THUMP_STEPS } from '../content/vending';
 import { powered } from '../sim/systems/power';
 import { boardNow, boardOf } from '../sim/systems/oddjobs';
@@ -69,6 +73,8 @@ const BATON = itemNumber('baton');
 const POUCH = itemNumber('pouch');
 const MAGAZINE = itemNumber('magazine');
 const BOOK = itemNumber('thick_book');
+/** 2.33: the water cooler's paper cup (the plastic cup's look). */
+const CUP = itemNumber('plastic_cup');
 
 const focusAt = { x0: 0, z0: 0, x1: 0, z1: 0 };
 /** Whether the player's bed holds a dummy: read again when the items change, never every frame. */
@@ -83,6 +89,16 @@ function showerHead(sim: Sim, target: Target): Target | null {
 
 /** 2.30: the player's hands on a station for a moment after a press (real time: the view's alone, nothing of the sim's). */
 export const workPose = { until: 0, doing: 0 };
+
+/** 2.33: the menu board, the action button's (no prop): a strip along the wall it hangs on. */
+function menuFocus(sim: Sim) {
+  const m = sim.world.def.menu!;
+  focusAt.x0 = m.x + 0.1;
+  focusAt.x1 = m.x + m.w - 0.1;
+  focusAt.z0 = m.z + 0.04;
+  focusAt.z1 = m.z + 0.42;
+  return focusAt;
+}
 
 function focusOf(sim: Sim, target: Target, climb: ClimbTarget | null = null, station: Station | null = null) {
   if (station && !climb) {
@@ -284,6 +300,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
       o.held = m.snack;
       if (o.doing === DOING.NOTHING && !m.body.moving) o.doing = DOING.SNACK;
     }
+    // (2.33: a paper cup at the water cooler.)
+    if (o.doing === DOING.DRINK) o.held = CUP;
     if (job >= 0) {
       const carry = dutyCarry(sim.world, m, job);
       if (carry) o.held = itemNumber(carry);
@@ -425,7 +443,9 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
           ? null
           : canAnswer(sim)
             ? null
-            : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : showerHead(sim, target) ?? target, climb, memo.station);
+            : !target && !climb && !memo.station && serving < 0 && menuOffer(sim)
+              ? menuFocus(sim)
+              : focusOf(sim, serving >= 0 ? { kind: 'container', index: serving } : showerHead(sim, target) ?? target, climb, memo.station);
   // Training (GDD §3.2): the pose, onto the treadmill's belt, a book in hand at the shelf.
   const trainKind = st.train >= 0 ? sim.world.props[st.train].kind : '';
   // The tray: in both hands, unless it's set down on a table (below).
@@ -505,6 +525,17 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
       f.facing = Math.atan2(vp.x + 0.5 - f.x, vp.z + 0.5 - f.z);
     }
   }
+  // (2.33: a cup at the water cooler for a moment, facing it; at the menu board, facing it, a scribble up on it.)
+  const sipping = st.drank > 0 && st.step - st.drank < SIP_STEPS && !seated && !p.moving;
+  const cp = sipping ? coolerProp(sim) : null;
+  if (cp) {
+    f.doing = DOING.DRINK;
+    f.facing = Math.atan2(cp.x + 0.5 - f.x, cp.z + 0.5 - f.z);
+  }
+  if ((st.menuOpen || st.menu.until) && !seated && !p.moving && atMenu(sim)) {
+    f.facing = Math.PI;
+    if (st.menu.until) f.doing = DOING.SCRIBBLE;
+  }
   if (!seated && st.ink) {
     f.doing = DOING.TATTOO;
     const m = st.inmates[st.ink.who];
@@ -532,7 +563,7 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.puddlesRev = st.puddles.length * 4096 + (st.puddles[0] ?? 0);
   // (P30: on the stage, at the quiz's table, empty-handed: the instrument, the buzzer.)
   // (2.31: the book, read or carried to a chair.)
-  f.held = st.show || st.quiz ? 0 : st.book > 0 ? BOOK : trainKind === 'shelf' ? MAGAZINE : held;
+  f.held = st.show || st.quiz ? 0 : st.book > 0 ? BOOK : trainKind === 'shelf' ? MAGAZINE : f.doing === DOING.DRINK ? CUP : held;
   f.outfit = itemOf(it.inv[SLOT.OUTFIT]);
   coachItems(f.held, f.outfit);
   f.sleeping = st.sleeping;
@@ -620,6 +651,8 @@ export function buildFrame(g: Game, a: number, tile: { x: number; z: number }, b
   f.vending.turn = f.vending.coil >= 0 ? Math.min(1, Math.max(0, 1 - (st.vend.until - st.step) / (st.vend.who === VEND_PLAYER ? COIL_STEPS : INMATE_COIL_STEPS))) : 0;
   f.vending.thumps = st.vend.hit;
   f.kiosk.photos = st.photos;
+  // The menu board and the water cooler (2.33): today's dishes on it, a scribble; a cup being drunk at the cooler.
+  menuFrame(sim, f);
   // The odd jobs board (P40): the cards still up today, a tag while a job is held.
   oddJobsFrame(sim, f);
   // The release desk (P36): its lamp while the name is called, and while the way out is open.

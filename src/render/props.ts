@@ -145,6 +145,21 @@ const BUILDERS: Record<PropKind, Builder> = {
   // (Its cabinet only: the lit front, the goods and the moving parts are render/Vending.ts.)
   vending: () => [box(0.86, 1.62, 0.66, 0xb8352f, 0, 0, -0.05), box(0.9, 0.06, 0.7, 0x6d1f1c, 0, 0, -0.05), box(0.9, 0.06, 0.7, 0x6d1f1c, 0, 1.6, -0.05)],
   deskChair: (w, d) => BUILDERS.chair(w, d),
+  /**
+   * 2.33: the water cooler (decor before, the same look): its white stand, the blue and red taps on the front, the drip
+   * tray, the paper cups' tube on its side, the bottle upside down on top (its bubbles are render/Cooler.ts).
+   */
+  cooler: () => [
+    box(0.36, 0.85, 0.36, WHITE, 0, 0, 0),
+    box(0.06, 0.06, 0.04, 0x2f6fd0, -0.08, 0.6, 0.19),
+    box(0.06, 0.06, 0.04, 0xd8342c, 0.08, 0.6, 0.19),
+    box(0.24, 0.03, 0.08, 0xb9c0c8, 0, 0.42, 0.2),
+    cyl(0.045, 0.3, 0xf4f4ef, 0.22, 0.38, 0.06, 8),
+    cyl(0.05, 0.02, 0xb9c0c8, 0.22, 0.68, 0.06, 8),
+    cyl(0.07, 0.05, 0x7fc4f0, 0, 0.85, 0, 10),
+    cyl(0.15, 0.36, 0x9fd8ff, 0, 0.9, 0, 12),
+    cyl(0.12, 0.04, 0x7fc4f0, 0, 1.26, 0, 12),
+  ],
   /** A hydraulic press: a bed on a base, two columns, the crown and the ram between them, a red guard rail. */
   press: (w, d) => [
     box(w - 0.1, 0.35, d - 0.15, 0x3d4652),

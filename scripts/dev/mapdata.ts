@@ -256,6 +256,9 @@ export function sheetOf(def: PrisonDef, w: World): SheetSection[] {
     const c = def.cells[k + 1];
     people.push({ label: `${name}, cell ${cell}`, text: rolesOf(def, cell).join(', '), at: c ? [c[0], c[1]] : undefined });
   });
+  // 2.33: the menu board and the water cooler.
+  if (def.menu) people.push({ label: 'The menu board', text: 'The day\'s breakfast and dinner, a dish each that changes every day (plain on the first), each tray giving its own energy and some health. Scribbled on once a day for a laugh; a guard who sees it: +10% heat.', at: [def.menu.x, def.menu.z] });
+  if (def.cooler) people.push({ label: 'The water cooler', text: `A cup: +5 energy every half hour, cools a heatwave's heat. ${def.rules?.relaxed ? 'Nobody else drinks at it here.' : 'Inmates drink at it in the free times from day 2, two at a time; standing by, the player overhears their gossip.'}`, at: [def.cooler.x, def.cooler.z] });
   // 2.32: the vending machine and who's at it.
   if (def.vending) people.push({ label: 'The vending machine', text: 'Food, drink and toiletries for cash, its rows filled every morning. Inmates queue for it in the free times; off in a lockdown or a drill, dark in a power cut.', at: [def.vending.x, def.vending.z] });
   // 2.31: who sits at the library's table, and the day's reading.
@@ -387,7 +390,7 @@ export function layersOf(w: World): MapLayer[] {
   const fetched = places.counters.length > 0;
   const mealTips: Record<number, string> = {};
   for (const q of places.counters) mealTips[q.tile] = 'At the serving counter: take a tray here at breakfast and dinner, and bring it back here empty.';
-  for (const q of places.seats) mealTips[q.tile] = fetched ? `At a table: sit here with a tray to eat it, 6 seconds, +${MEAL_ENERGY} energy, once a meal.` : `At a table: sit here at breakfast or dinner to eat, +${MEAL_ENERGY} energy, once a meal.`;
+  for (const q of places.seats) mealTips[q.tile] = fetched ? `At a table: sit here with a tray to eat it, 6 seconds, once a meal: what the day's dish gives (+${MEAL_ENERGY} energy on the first day, the menu board says after).` : `At a table: sit here at breakfast or dinner to eat, once a meal: what the day's dish gives (+${MEAL_ENERGY} energy on the first day, the menu board says after).`;
   add({ id: 'meals', group: 'Work & loot', name: 'Meals', color: '#0d9488', about: fetched ? 'Where a tray is taken and given back, and the seats it is eaten at.' : 'The seats meals are eaten at: this prison has no serving counter.', tip: 'A place for meals.', tiles: Object.keys(mealTips).map(Number), tips: mealTips });
 
   // The showers (2.26): the heads, what they give. (Nothing to overlay where there are none.)
@@ -416,7 +419,7 @@ export function routineOf(def: PrisonDef, w: World): RoutineBlock[] {
     const miss = def.rules?.relaxed ? 'missing it costs nothing here' : r.miss === 'lockdown' ? 'missing it starts a lockdown' : r.miss === 'heat' ? 'missing it raises heat' : '';
     const note = r.id === 'work' ? (rooms.length ? 'Only with a job: its own room.' : 'No jobs here: anywhere legal.') : !wants.length ? 'Nowhere expected: anywhere legal.' : `${r.stay ? `${r.stay} minutes there to be counted` : 'Be here'}${miss ? `; ${miss}` : ''}.`;
     // (Where a meal is had, 2.25: a prison with no counter serves at its tables.)
-    const tray = (r.id === 'breakfast' || r.id === 'dinner') && placesOf(w).counters.length ? ` Eat: a tray from the serving counter, to a table and back (+${MEAL_ENERGY} energy, once a meal; eaten and not brought back, +${TRAY_HEAT}% heat).` : '';
+    const tray = (r.id === 'breakfast' || r.id === 'dinner') && placesOf(w).counters.length ? ` Eat: a tray from the serving counter, to a table and back (the day's dish, +${MEAL_ENERGY} energy on the first day, once a meal; eaten and not brought back, +${TRAY_HEAT}% heat).` : '';
     const count = (r.id === 'rollCall' || r.id === 'eveningRollCall') && !def.rules?.relaxed ? ` Counted only on the player's own square (spot 1, orange). The guard taking it walks the line, the player first: the action button answers "Here!" (unanswered, +${COUNT_HEAT}% heat). In the yard but not counted by the end: heat, no lockdown.` : '';
     const wash = r.id === 'showers' && placesOf(w).showers.length ? ' Wash: the action button turns a shower on (+2 energy a second, minor heat falling faster); optional, being in the room is what counts.' : '';
     return { id: r.id, label: `${clock(r.start)} ${tr(`routine.${r.id}`, r.id)}`, note: note + tray + wash + count, zones: wants, doors: doorsOf(open) };
