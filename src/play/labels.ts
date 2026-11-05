@@ -7,6 +7,7 @@ import type { Sim } from '../sim/Sim';
 import { counterTray, trayOffer } from '../sim/systems/canteen';
 import { canAnswer } from '../sim/systems/rollcall';
 import { showerOffer } from '../sim/systems/showers';
+import { bedOffer } from '../sim/systems/upkeep';
 import { isGuard, maxHealth, personOf, reachOf, swingSteps } from '../sim/systems/combat';
 import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
@@ -40,6 +41,7 @@ import { inmateName } from '../ui/names';
  */
 
 const LETTER = itemNumber('letter');
+const BED_DUMMY = itemNumber('bed_dummy');
 
 /** Why a strike can't land, by what it needs. */
 export const NEED: Record<string, string> = {
@@ -182,6 +184,18 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     return actionLabel;
   }
   if (!target) return null;
+  // The bed at night (2.28): the dummy in or out first; the next press lies down.
+  if (target.kind === 'sleep') {
+    const bed = bedOffer(sim, target.index);
+    if (bed) {
+      const key = `bed:${bed}:${currentLang()}`;
+      if (key !== actionKey) {
+        actionKey = key;
+        Object.assign(actionLabel, { verb: t(bed === 'tuck' ? 'act.tuckIn' : 'act.takeOut'), what: itemName(BED_DUMMY) });
+      }
+      return actionLabel;
+    }
+  }
   // Dirt in hand at a toilet: down it goes.
   const flush = target.kind === 'container' && (held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet';
   if (target.kind === 'person') {

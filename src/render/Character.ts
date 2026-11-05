@@ -46,8 +46,8 @@ const TRAY_FOOD: ReadonlyArray<readonly [number, number, number, number, number,
 ];
 
 /** Mattress height and how far the sleeper's feet sit from the bed's middle. */
-const BED_TOP = 0.6;
-const BED_FEET = 0.55;
+export const BED_TOP = 0.6;
+export const BED_FEET = 0.55;
 
 /** What people wash in (2.26), and their towels. */
 const SHORTS = 0x46566c;

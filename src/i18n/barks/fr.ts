@@ -784,6 +784,14 @@ export const frBarks: Barks = {
     'Encore un de moins.',
     'Sale journée, {you}.',
   ],
+  're.bedAwake.gu': [
+    'Va dormir.',
+    'Extinction des feux, ça veut dire au lit.',
+    'Debout à cette heure ? Au lit.',
+    'Je te vois. Dors.',
+    'Encore réveillé ? Demain sera long.',
+    'Il est tard. Au lit.',
+  ],
   're.bedFail.gu': [
     'Lit vide ! On a un fugitif !',
     'Où est le détenu de cette couchette ?!',

@@ -27,6 +27,8 @@ export const HOTBAR = 6;
 export const START_INT = 40;
 /** How close the player must be to use something (units from the body's middle to its footprint). */
 export const REACH = Math.round(UNIT * 0.85);
+/** The player's own bed at night (2.28): from anywhere on the tile beside it, the one the arrows lead to. */
+const BED_REACH = Math.round(UNIT * 1.05);
 const PICKUP_REACH = Math.round(UNIT * 0.95);
 /** How close to someone lying knocked out to go through their pockets (units, either axis). */
 const POCKET_REACH = Math.round(UNIT * 1.2);
@@ -227,7 +229,9 @@ interface Faced {
   d2: number;
 }
 
-export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0, chat?: (guard: number) => boolean): Target {
+export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0, chat?: (guard: number) => boolean, bedFirst = false): Target {
+  // (2.28: at night, in reach of their own bed, its button says Sleep: a chair beside it gives way, up or sitting brings no energy now.)
+  const bedNear = bedFirst && containersOf(w).some((c) => c.mine && c.prop.kind === 'bed' && propReach(c.prop, b.x, b.z) <= BED_REACH);
   const fx = DIR_X[b.facing] ?? 0;
   const fz = DIR_Z[b.facing] ?? 0;
   // Facing it is worth a third of a tile.
@@ -285,7 +289,7 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     const use = fixtureUse(w, p);
     if (!use) return;
     const d = propReach(p, b.x, b.z);
-    if (d > REACH) return;
+    if (d > REACH || (bedNear && use === 'sit')) return;
     // Seats and beds give way to anything else in reach (a chair stands where the desk is
     // searched from), unless the seat is the tile straight ahead: the player sits by facing it.
     let sc = score(d, (p.x + p.w / 2) * UNIT, (p.z + p.d / 2) * UNIT);
@@ -306,7 +310,7 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
   });
   containersOf(w).forEach((c, index) => {
     const d = propReach(c.prop, b.x, b.z);
-    if (d > REACH) return;
+    if (d > (bedFirst && c.mine && c.prop.kind === 'bed' ? BED_REACH : REACH)) return;
     const p = c.prop;
     const sc = score(d, (p.x + p.w / 2) * UNIT, (p.z + p.d / 2) * UNIT);
     if (sc < bestScore) {

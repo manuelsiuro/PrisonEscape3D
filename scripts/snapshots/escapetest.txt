@@ -228,11 +228,11 @@
 == san-pancho
 == san-pancho: tunnel
   day 1 23:12 climbDown → layer 0
-  day 1 23:24 digUp → layer 1
-  day 1 23:24 ESCAPED (tunnel)
-  saved and loaded at day 1 15:42 (sports) resumes, day 1 21:51 (playerCell) resumes, day 1 23:05 (playerCell) resumes, day 1 23:19 (tunnels) resumes
-  ledger: nothing; walked 299 tiles; days escaped
-  → out day 1 23:24 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
+  day 2 00:04 digUp → layer 1
+  day 2 00:04 ESCAPED (tunnel)
+  saved and loaded at day 1 16:02 (cellBlock) resumes, day 1 22:27 (rollCall) resumes, day 1 23:44 (tunnels) resumes, day 1 23:59 (tunnels) resumes
+  ledger: nothing; walked 299 tiles; days quiet / escaped
+  → out day 2 00:04 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
 == san-pancho: supply road gate
   day 1 23:33 ESCAPED (gate)
   saved and loaded at day 1 15:46 (sports) resumes, day 1 21:59 (playerCell) resumes, day 1 23:14 (corridor) resumes, day 1 23:28 (generator) resumes

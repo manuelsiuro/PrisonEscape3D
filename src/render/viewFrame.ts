@@ -53,6 +53,10 @@ export interface Frame {
   outfit: number;
   /** Asleep in bed. */
   sleeping: boolean;
+  /** 2.28: a bed dummy in the player's bed. */
+  bedDummy: boolean;
+  /** 2.28: Lights Out past the walk home, and no lockdown: the cell block's lights are off. */
+  blockDark: boolean;
   /** Knocked out on the floor. */
   knockedOut: boolean;
   /** The guards, interpolated like everyone else. */
@@ -204,6 +208,8 @@ export function emptyFrame(): Frame {
     held: 0,
     outfit: 0,
     sleeping: false,
+    bedDummy: false,
+    blockDark: false,
     knockedOut: false,
     guards: [],
     layer: LAYER.GROUND,

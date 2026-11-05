@@ -508,6 +508,21 @@ export const SHOTS: Record<string, Shot> = {
     dz: 1,
   },
 
+  // 2.28: asleep at Center Perks, the blanket up, the block's lights out and the night running.
+  night: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 3);
+      bot.routineUntil(1, 23 * 60 + 20);
+      bot.act();
+      bot.until(() => bot.sim.clock.minuteOfDay === 26, 40000);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.2,
+    dx: 1,
+    dz: 1,
+  },
+
   // 2.26: a shower turned on at Center Perks, the crowd arriving at the other heads.
   showers: {
     make: () => {

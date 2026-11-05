@@ -1,0 +1,22 @@
+center-perks: the longest walk home 23.8 s (garden), of 25; from 20 rooms, none from: outside, perimeter, generator, solitary, guardQuarters, controlRoom
+stalag-flucht: the longest walk home 24.7 s (sports), of 25; from 19 rooms, none from: outside, perimeter, guardQuarters, storeroom, generator, solitary
+shankton: the longest walk home 22.3 s (inmateCell), of 25; from 19 rooms, none from: outside, perimeter, none, guardQuarters, generator, solitary, controlRoom
+san-pancho: the longest walk home 18.3 s (infirmary), of 25; from 19 rooms, none from: outside, walkway, none, solitary, controlRoom, generator, guardQuarters
+irongate: the longest walk home 22.6 s (woodshop), of 25; from 18 rooms, none from: perimeter, walkway, solitary, none, generator, garden, dock, controlRoom, helipad, guardQuarters, outside
+center-perks: beside the bed (7,7): Sleep in 144 of 144 positions and facings, a chair in none
+stalag-flucht: beside the bed (5,7): Sleep in 144 of 144 positions and facings, a chair in none
+shankton: beside the bed (9,9): Sleep in 144 of 144 positions and facings, a chair in none
+san-pancho: beside the bed (12,12): Sleep in 144 of 144 positions and facings, a chair in none
+irongate: beside the bed (8,9): Sleep in 144 of 144 positions and facings, a chair in none
+searchlights: the walk home at the bell is left alone
+the grace: to 23:25; the old rules 23:15
+energy: up at night none, past 20; asleep 30 an hour; forced awake as by day; old rules as they were
+the bed: Tuck in, Take out, then Sleep in all five; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever
+bed checks: up in the cell passes with a word; asleep passes; a dummy tucked in at night fools them
+center-perks: every inmate in bed by 13, 14, 14, 13 s; the player woken at 07:55
+stalag-flucht: every inmate in bed by 14, 15, 16, 16 s; the player woken at 07:55
+shankton: every inmate in bed by 19, 20, 19, 21 s; the player woken at 07:55
+san-pancho: every inmate in bed by 15, 16, 18, 16 s; the player woken at 07:55
+irongate: every inmate in bed by 16, 16, 17, 17 s; the player woken at 07:55
+older runs: a 2.27 log replays as it was and is not carried on; a new one is
+the words: in both languages

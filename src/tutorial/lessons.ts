@@ -141,6 +141,10 @@ const trayLost = (e: SimEvent): Key | null => (e.type === 'tray' && e.what !== '
 const rollCallFail = (c: LessonCtx): Key | null => (ROUTINE[c.sim.state.routine].id === 'rollCall' ? null : 'lesson.rollcall.lost');
 /** The warden came to their square and they weren't in the yard. */
 const uncalled = (e: SimEvent): Key | null => (e.type === 'count' && ((e.what === 'called' && e.who < 0) || e.what === 'missed') ? 'lesson.rollcall.lost' : null);
+/** Lights Out's walk home: caught out late. */
+const nightFail = (c: LessonCtx): Key | null => (c.sim.state.lockdown || c.sim.state.solitary > 0 ? 'lesson.night.late' : null);
+/** The bed's night offers are over at 08:00: asleep past the tuck, or simply waited out. */
+const morningFail = (c: LessonCtx): Key | null => (ROUTINE[c.sim.state.routine].id === 'lightsOut' ? null : 'lesson.night.morning');
 const showerFail = (c: LessonCtx): Key | null => (ROUTINE[c.sim.state.routine].id === 'showers' ? null : 'lesson.showers.lost');
 
 /** A shower head nobody's under, and if there's one, nobody's heading for: whoever gets there first has it. */
@@ -975,6 +979,27 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // Lights Out (2.28): home by the end of the grace, the dummy in and out of the bed at night, and to sleep.
+    id: 'night',
+    icon: 'moon',
+    prison: CENTER_PERKS,
+    seed: 64,
+    setup: (sim) => {
+      clockTo(sim, at(22, 50));
+      place(sim, 31, 11, 9);
+      pockets(sim, 'bed_dummy');
+      sim.state.energy = 40;
+    },
+    steps: [
+      { text: 'lesson.night.home', done: (c) => c.sim.playerZone === 'playerCell', goal: (sim) => placesOf(sim.world).bedside[1], fail: nightFail },
+      { text: 'lesson.night.bell', done: (c) => ROUTINE[c.sim.state.routine].id === 'lightsOut', speed: 3 },
+      { text: 'lesson.night.tuck', touch: 'lesson.night.tuckTouch', on: (e) => e.type === 'bedDummy' && e.in, goal: (sim) => placesOf(sim.world).bedside[1], fail: morningFail },
+      { text: 'lesson.night.out', touch: 'lesson.night.outTouch', on: (e) => e.type === 'bedDummy' && !e.in, fail: morningFail },
+      { text: 'lesson.night.sleep', touch: 'lesson.night.sleepTouch', done: (c) => c.sim.state.sleeping, fail: morningFail },
+      { text: 'lesson.night.wake', done: (c) => !c.sim.state.sleeping },
+    ],
+  },
+  {
     // The gardener (P31): the Work Period in the vegetable garden, seedlings into a planter, a crate of produce for the kitchen.
     id: 'gardener',
     icon: 'sprout',
@@ -1282,7 +1307,7 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 
