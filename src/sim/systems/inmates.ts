@@ -1,6 +1,7 @@
 import { cornersOf } from '../../content/grounds';
 import { OPEN_HOURS, ROUTINE } from '../../content/routine';
 import { zoneIndex, type ZoneId } from '../../content/zones';
+import { DOING, ON_MACHINE } from '../ai/doing';
 import { clearLine, nearestDir } from '../ai/path';
 import { centerX, centerZ, tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
@@ -21,7 +22,7 @@ import { bodyAt, type Body } from './movement';
  * bed while the player keeps a lookout for him (the sim's: an odd job). 2.25: SERVE, at the serving
  * counter, a tray picked up or put back.
  */
-export const DOING = { NOTHING: 0, SLEEP: 1, EAT: 2, EXERCISE: 3, SHOWER: 4, LINE_UP: 5, SEARCH: 6, KNOCKED_OUT: 7, CRAWL: 8, WORK: 9, LIFT: 10, RUN: 11, READ: 12, SIT: 13, SIT_READ: 14, DOZE: 15, WRESTLE: 16, PICK: 17, DICE: 18, BRAWL: 19, LOOKOUT: 20, CARDS: 21, SHOOT: 22, BOARD: 23, FOOTBALL: 24, TATTOO: 25, DRUMS: 26, GUITAR: 27, QUIZ: 28, JOG: 29, PHONE: 30, QUEUE: 31, KIOSK: 32, DIG: 35, SERVE: 36, SHOWER_WAIT: 37, TOWEL: 38, COUNT: 39 } as const;
+export { DOING };
 
 /** A meal's tray (2.25, canteen.ts), the player's or an inmate's: none, with its food, eaten. */
 export const TRAY = { NONE: 0, FULL: 1, EMPTY: 2 } as const;
@@ -106,6 +107,8 @@ let offTiles: readonly number[] = [];
 let serving = false;
 /** The showers taken in turns (Social.turns). */
 let turns = false;
+/** The gym's machines in use (Social.machines). */
+let machines = false;
 
 /** The delivery's bay while its vehicle is in (P18): nobody picks a spot under it. */
 let bay: Uint8Array | null = null;
@@ -113,6 +116,23 @@ let bay: Uint8Array | null = null;
 /** Goals other inmates already hold, or the player's seat (so two never pick the same tile); under the delivery's vehicle. */
 function taken(all: Inmate[], tile: number) {
   return tile === playerSeat || offTiles.includes(tile) || (bay !== null && bay[tile] === 1) || all.some((m) => m.goal === tile || m.seat === tile);
+}
+
+/** What each machine has someone doing on it (2.29). */
+const USED_AS: Partial<Record<string, number>> = { weights: DOING.BENCH, pullup: DOING.PULLUP, treadmill: DOING.RUN, mat: DOING.PUSHUP, punchingBag: DOING.BAG };
+
+/**
+ * A free machine in a zone for an inmate who uses them (2.29: two in three, by its cell, so no draw; the
+ * rest do what they always did), or null. Nobody is on one the player is using or has asked for: `off`.
+ */
+function machineFor(c: Crowd, all: Inmate[], m: Inmate, zone: ZoneId): { spot: Spot; then: number } | null {
+  // (Not those people come looking for, who shouldn't be hard to get a word with: a merchant, the fixer.)
+  if (!machines || m.cell % 3 === 0 || c.w.def.merchants.includes(m.cell) || c.w.def.smuggling?.fixer === m.cell) return null;
+  const at = zoneIndex(zone);
+  const free = placesOf(c.w).machines.filter((q) => c.w.ground.zone[q.tile] === at && !taken(all, q.tile));
+  if (!free.length) return null;
+  const q = free[m.cell % free.length];
+  return { spot: { tile: q.tile, face: q.face }, then: USED_AS[c.w.props[q.prop].kind] ?? DOING.NOTHING };
 }
 
 /** A random spot from a list that nobody else is heading for (or any, if all are taken). */
@@ -296,8 +316,13 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       // (P31: with a sports ground, out there: a third of them jog the track.)
       const ring = w.def.leisure?.track;
       if (!ring || !floorOf(w, ['sports']).length) {
-        spot = pickSpot(all, tiles(floorOf(w, randomInt(rng, 3) ? ['yard'] : ['gym']), 1 + randomInt(rng, 16)), rng);
+        const out = randomInt(rng, 3);
+        spot = pickSpot(all, tiles(floorOf(w, out ? ['yard'] : ['gym']), 1 + randomInt(rng, 16)), rng);
         then = DOING.EXERCISE;
+        if (!out) {
+          const on = machineFor(c, all, m, 'gym');
+          if (on) ({ spot, then } = on);
+        }
         break;
       }
       const r = randomInt(rng, 3);
@@ -308,8 +333,13 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       }
       // (Jumping jacks on the ground, never up on the bleachers.)
       const seats = new Set(places.rests.map((q) => q.tile));
-      spot = pickSpot(all, tiles(floorOf(w, r ? ['sports'] : ['gym']).filter((t) => !seats.has(t)), 1 + randomInt(rng, 16)), rng);
+      // (2.29: nor on the tile a machine is used from.)
+      const mounts = machines ? new Set(places.machines.map((q) => q.tile)) : null;
+      spot = pickSpot(all, tiles(floorOf(w, r ? ['sports'] : ['gym']).filter((t) => !seats.has(t) && !mounts?.has(t)), 1 + randomInt(rng, 16)), rng);
       then = DOING.EXERCISE;
+      // (2.29: on a machine, if it uses them and one's free.)
+      const on = machineFor(c, all, m, r ? 'sports' : 'gym');
+      if (on) ({ spot, then } = on);
       break;
     }
     case 'showers': {
@@ -357,6 +387,11 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       const r = randomInt(rng, hangouts.length + 1);
       const list = r === hangouts.length ? own() : floorOf(w, [hangouts[r]]);
       spot = pickSpot(all, tiles(list, 1 + randomInt(rng, 16)), rng);
+      // (2.29: at the gym or the sports ground, a machine if one's free, for as long as it lingers.)
+      if (r < hangouts.length && (hangouts[r] === 'gym' || hangouts[r] === 'sports')) {
+        const on = machineFor(c, all, m, hangouts[r]);
+        if (on) ({ spot, then } = on);
+      }
     }
   }
   if (!spot) return;
@@ -379,6 +414,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
   offTiles = social.off ?? [];
   serving = !!social.serve;
   turns = !!social.turns;
+  machines = !!social.machines;
   bay = w.delivering ? w.parked : null;
   all.forEach((m, k) => {
     // (Calmed off by anything else, a knockout, an arrest: its moment of warning goes too.)
@@ -458,6 +494,8 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     }
     // (P39: headed for, or sitting on, a tile kept clear: somewhere else.)
     if (offTiles.length && m.goal >= 0 && offTiles.includes(m.goal)) {
+      // (2.29: off a machine the player's now on: at once, not after what's left of a free time's linger.)
+      if (machines && ON_MACHINE.includes(m.then)) m.wait = 0;
       m.goal = -1;
       m.path = [];
       m.doing = DOING.NOTHING;
@@ -505,7 +543,14 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       return;
     }
     // Free time: done lingering, somewhere new next step. Routines keep them where they are.
-    if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) m.goal = -1;
+    if (plan !== LOCKDOWN_PLAN && ROUTINE[plan].zones.length === 0) {
+      m.goal = -1;
+      // (2.29: off the machine, and not walking away still lifting.)
+      if (ON_MACHINE.includes(m.doing)) {
+        m.doing = DOING.NOTHING;
+        m.then = DOING.NOTHING;
+      }
+    }
   });
 }
 
@@ -538,6 +583,8 @@ export interface Social {
   turns?: boolean;
   /** 2.25: an inmate at work with no way to its spot picks another (false: replaying an older run). */
   reroute?: boolean;
+  /** 2.29: inmates use the gym's machines (false: replaying an older run). */
+  machines?: boolean;
   /** 2.25: a meal on, fetched from the serving counter (false: none on, no counter here, or replaying an older run). */
   serve?: boolean;
 }

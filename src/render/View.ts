@@ -3,6 +3,7 @@ import type { Pitch } from '../content/prisons/types';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
 import { bedDummyMesh, placeInBed } from './BedDummy';
+import { GymGear, type GearUse } from './GymGear';
 import { Character, type BedPose } from './Character';
 import { Cones } from './Cones';
 import { Security } from './Security';
@@ -320,6 +321,13 @@ export class View {
   private blockDarkGoal = 0;
   /** The bed dummy in the player's bed (2.28). */
   private readonly dummy = bedDummyMesh();
+  /** 2.29: the bars and the bags; for each inmate, how far onto its machine it's drawn, where that was, the bench it's getting up from, the rep it's at. */
+  private readonly gear = new GymGear();
+  private readonly gearUses: GearUse[] = [];
+  private readonly machineBlend: number[] = [];
+  private readonly machineAt: Array<{ x: number; z: number; y: number }> = [];
+  private readonly machineRest: Array<BedPose | null> = [];
+  private readonly machineRep: number[] = [];
   /** 0 by day … 1 at night (the last frame's light). */
   private night = 0;
   private readonly target = new THREE.Vector3(MAP_W / 2, 0, MAP_H / 2);
@@ -382,7 +390,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.gear.group, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -553,6 +561,7 @@ export class View {
     this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
     if (this.beds[1]) placeInBed(this.dummy, this.beds[1]);
     this.dummy.visible = false;
+    this.gear.build(world);
     this.blockDark = this.blockDarkGoal = 0;
     this.setCast(0);
     this.setGuards([]);
@@ -583,6 +592,7 @@ export class View {
     this.layer = layer;
     const under = layer === LAYER.UNDER;
     if (this.worldView) this.worldView.group.visible = !under;
+    this.gear.group.visible = !under;
     if (this.structure) {
       this.structure.group.visible = !under;
       this.structure.setMode(layer);
@@ -970,7 +980,7 @@ export class View {
     }
     this.player.root.visible = true;
     // (A tray takes both hands: what's in hand is out of sight while it does.)
-    this.player.hold(f.sleeping || f.knockedOut || f.trayAt || f.doing === DOING.SHOWER ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
+    this.player.hold(f.sleeping || f.knockedOut || f.trayAt || f.doing === DOING.SHOWER || f.doing === DOING.BENCH || f.doing === DOING.PULLUP || f.doing === DOING.PUSHUP || f.doing === DOING.BAG ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
     this.player.trayPose(f.trayAt, f.trayLeft);
     // (P24: hanging from a glider's bar in flight, both hands up.)
     const doing = this.getaway.flying ? DOING.LIFT : f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : f.doing;
@@ -979,7 +989,10 @@ export class View {
     if (f.trainAt) this.trainPos.set(f.trainAt.x, f.trainAt.y, f.trainAt.z);
     const tb = this.trainBlend > 0.001 ? this.trainBlend : 0;
     if (f.reps !== this.reps) {
-      if (f.reps > this.reps) this.player.pump();
+      if (f.reps > this.reps) {
+        this.player.pump();
+        if (f.doing === DOING.BAG) this.gear.hit(f.trainProp, !this.reducedMotion);
+      }
       this.reps = f.reps;
     }
     let px = f.x + (this.trainPos.x - f.x) * tb;
@@ -1092,7 +1105,23 @@ export class View {
       c.attention = m.attention;
       c.trayPose(m.trayAt, m.trayLeft);
       // On a chair, a little higher than on a canteen bench.
-      const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : 0;
+      // (2.29: on a machine, drawn on it, and at it: an arm or a body going of its own accord, slower than anyone is asked to keep time.)
+      const onGear = m.prop >= 0 && m.doing !== DOING.BENCH;
+      const blend = (this.machineBlend[k] = (this.machineBlend[k] ?? 0) + ((onGear ? 1 : 0) - (this.machineBlend[k] ?? 0)) * Math.min(1, dt * 8));
+      const gearAt = (this.machineAt[k] ??= { x: m.x, z: m.z, y: 0 });
+      if (onGear) Object.assign(gearAt, { x: m.at.x, z: m.at.z, y: m.at.y });
+      if (m.doing === DOING.BENCH) this.machineRest[k] = m.bench;
+      else if (c.lying === 0) this.machineRest[k] = null;
+      if (m.prop >= 0 && !this.reducedMotion) {
+        const rep = Math.floor((time + k * 0.37) / (m.doing === DOING.BAG ? 0.6 : 1.2));
+        if (rep !== this.machineRep[k]) {
+          this.machineRep[k] = rep;
+          c.pump();
+          if (m.doing === DOING.BAG) this.gear.hit(m.prop, true);
+        }
+      }
+      if (m.doing === DOING.BENCH && m.prop >= 0) this.gearUses.push({ prop: m.prop, up: c.pressed });
+      const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : blend > 0.001 ? gearAt.y * blend : 0;
       c.baseY += (lift - c.baseY) * Math.min(1, dt * 8);
       // The one arm-wrestling the player (P22): square on to them in its stance, straining the other way (eased back to its spot after).
       if (bout && bout.who === k) {
@@ -1107,7 +1136,8 @@ export class View {
         c.diceShake = !threw;
         c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
       } else if (this.rivalWho === k) c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
-      else c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      else if (blend > 0.001) c.pose(m.x + (gearAt.x - m.x) * blend, m.z + (gearAt.z - m.z) * blend, onGear ? m.at.facing : m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      else c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.machineRest[k] ?? this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
       c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);
     });
@@ -1291,6 +1321,10 @@ export class View {
     // The odd jobs board (P40): the cards still up today, the job tag (not from the tunnels).
     this.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
     // (2.28: a dummy in the player's bed shows, but not under them, nor from the tunnels.)
+    // (2.29: the bars: the player's, and those the inmates have up, gathered above.)
+    if (f.doing === DOING.BENCH) this.gearUses.push({ prop: f.trainProp, up: this.player.pressed });
+    this.gear.update(dt, this.gearUses, !this.reducedMotion);
+    this.gearUses.length = 0;
     this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;
     this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);

@@ -46,6 +46,11 @@ export const PROPS = {
   toolShed: { solid: true },
   /** The produce crate by the garden gate: the gardener's crates go in it, for the kitchen. */
   crate: { solid: true },
+  // 2.29 (the gym's bag and mat, decoration until then; not solid, so that older runs still walk the map they had).
+  /** A punching bag on its bracket: trains Speed. */
+  punchingBag: { solid: false },
+  /** An exercise mat: push-ups, for Strength. */
+  mat: { solid: false },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

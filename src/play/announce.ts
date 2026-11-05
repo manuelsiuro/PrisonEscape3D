@@ -35,7 +35,7 @@ import { TOUCH, h } from '../ui/dom';
 import { routineName, routinePlace } from '../ui/hud';
 import { itemName } from '../ui/items';
 import { press } from './buttons';
-import { aimUI, banner, board, closeSocial, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, view } from './context';
+import { aimUI, banner, board, closeSocial, combatUI, itemsUI, profile, ratPanel, phonePanel, crewPanel, settings, sleepVeil, sound, tools, trainCard, view } from './context';
 import { play } from './game';
 import { NEED } from './labels';
 import { outOfBounds } from '../sim/systems/k9';
@@ -565,7 +565,7 @@ export function announce(e: SimEvent, sim: Sim) {
         seenInteract();
         sound.click();
         play.game?.pilot.stop();
-        coachOnce('train', TOUCH ? 'hint.trainTouch' : 'hint.trainKeys');
+        coachOnce('trainBeat', TOUCH ? 'hint.trainBeatTouch' : 'hint.trainBeatKeys');
       }
       break;
     case 'count':
@@ -628,8 +628,17 @@ export function announce(e: SimEvent, sim: Sim) {
       floatAt(-1, t('float.lap'), 'gain');
       break;
     case 'rep':
-      sound.rep();
+      if (e.hit) sound.repHit();
+      else sound.rep();
       buzz('strike');
+      if (e.hit !== undefined) trainCard.flash(e.hit);
+      break;
+    case 'askTurn':
+      seenInteract();
+      sound.click();
+      play.game?.pilot.stop();
+      // (Said here as well as aloud: a lesson has no barks, and the wait needs an answer.)
+      itemsUI.toast(t('toast.turnAsked', { name: inmateName(sim, e.who) }));
       break;
     case 'trained':
       sound.levelUp();

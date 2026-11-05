@@ -48,7 +48,6 @@ export const IRONGATE_DECOR: readonly DecorPlacement[] = [
   { kind: 'sink', x: 23, z: 34, rot: 1 },
   { kind: 'potatoes', x: 23, z: 35 },
   // Gym: the punching bag, dumbbells.
-  { kind: 'punchingBag', x: 39, z: 28 },
   { kind: 'dumbbells', x: 40, z: 31 },
   // Showers: towel hooks, a mirror, the drains.
   { kind: 'towelHooks', x: 36, z: 35, rot: 1 },

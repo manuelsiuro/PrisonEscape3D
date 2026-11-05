@@ -15,6 +15,7 @@ import { canAnswer } from '../src/sim/systems/rollcall';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { itemOf, slot } from '../src/sim/systems/items';
+import { beatAt, beatOf } from '../src/sim/systems/training';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
@@ -22,6 +23,14 @@ import { MAP_W } from '../src/sim/world/World';
 export const n = (id: string) => itemNumber(id);
 export const DIR = { EAST: 1, SOUTH: 5, WEST: 9, NORTH: 13 } as const;
 export const tileOf = (x: number, z: number) => z * MAP_W + x;
+
+/** The command for this step of a set, keeping time (2.29): a press on the other side, right on the beat, or nothing. (A step's press lands as it runs, one on from `step` now.) */
+export function beatPress(sim: Sim): number {
+  const s = sim.state;
+  const prop = sim.world.props[s.train];
+  if (!prop || beatAt(s.step + 1, beatOf(prop.kind).beat).off !== 0) return 0;
+  return command(0, OP.TRAIN, s.repSide === 1 ? 2 : 1);
+}
 
 export class Bot {
   readonly sim: Sim;
@@ -98,6 +107,13 @@ export class Bot {
   /** Interact (the action button). */
   act(a = 0) {
     this.op(OP.INTERACT, a);
+  }
+  /** On a machine or at a shelf (2.29): presses left and right on the beat, as someone keeping time does, until a test passes (by default a set done). */
+  set(done?: () => boolean, limit = 800): boolean {
+    const trained = this.st.str + this.st.spd + this.st.items.int;
+    const test = done ?? (() => this.st.train < 0 || this.st.str + this.st.spd + this.st.items.int !== trained);
+    for (let k = 0; k < limit && !test(); k++) this.step(beatPress(this.sim));
+    return test();
   }
   /** Holds hotbar slot k. */
   hold(item: string) {

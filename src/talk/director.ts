@@ -415,6 +415,10 @@ export class Director {
         this.queueUp(now, 're.caught.gu', this.guardsNear(sim, px, pz, 4), 5, 'caught');
         this.queueUp(now, 're.caught.in', this.inmatesNear(sim, px, pz, 9), 3, 'caughtIn', undefined, 1.2);
         break;
+      case 'askTurn':
+        // (2.29: asked for the machine: they finish up, and say so.)
+        this.queueUp(now, 're.giveWay.in', [e.who], 4, 'giveWay');
+        break;
       case 'bedCheck':
         if (e.result === 'start') {
           const k = s.guards.findIndex((_, i) => sim.prison.guards[i].duties?.includes('bedCheck'));
