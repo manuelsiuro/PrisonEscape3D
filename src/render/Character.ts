@@ -832,6 +832,14 @@ export class Character {
       armLx += (-0.9 + Math.sin(t * 5) * 0.3) * a;
       armRx += (-0.9 + Math.cos(t * 5) * 0.3) * a;
       bob -= 0.015 * a;
+    } else if (doing === DOING.MOP) {
+      // Mopping (2.30): the handle in both hands, swept from side to side, the body going with it.
+      const sweep = motion ? Math.sin(t * 3.2) : 0;
+      armLx += (-1.05 + sweep * 0.12) * a;
+      armRx += (-1.05 - sweep * 0.12) * a;
+      armLz -= sweep * 0.22 * a;
+      armRz -= sweep * 0.22 * a;
+      bob -= 0.02 * a;
     } else if (doing === DOING.LIFT) {
       // Pressing a weight overhead: up on each rep, slowly down between.
       const up = this.pumped;

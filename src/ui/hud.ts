@@ -28,7 +28,7 @@ export interface HudState {
   /** Dollars (GDD §13.2: CASH in the top bar). */
   cash: number;
   /** During the Work Period with a job (GDD §11): where, and the quota so far (the badge shows it instead of PENDING). */
-  work: { place: string; quota: number; of: number; paid: boolean } | null;
+  work: { place: string; quota: number; of: number; paid: boolean; late: boolean } | null;
   /** Security (GDD §5.5, §12): seconds until the power comes back (null: on), and until the first guard comes round in a takeover (null: none). */
   powerLeft: number | null;
   /** What the power pill says (Irongate's generators each kill their half, P12). */
@@ -557,7 +557,7 @@ export class Hud {
   private updateRoutine(s: HudState) {
     const w = s.work;
     const mandatory = ROUTINE[s.routine].zones.length > 0 || !!w;
-    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}|${s.presence?.join(':') ?? ''}|${s.square ?? ''}`;
+    const key = `${s.routine}|${s.attended}|${s.lockdown}|${s.solitaryMinutes}|${NARROW.matches}|${w ? `${w.place}:${w.quota}:${w.of}:${w.paid}:${w.late}` : ''}|${s.drill ? (s.drill.missed ? 'missed' : s.drill.mustered) : ''}|${!!s.quietRoutine}|${s.presence?.join(':') ?? ''}|${s.square ?? ''}`;
     if (key === this.shownKey) return;
     const was = this.shownKey;
     this.shownKey = key;
@@ -611,7 +611,7 @@ export class Hud {
     // At work the badge counts the quota (GDD §11), and says PAID once it's done.
     const done = w ? w.paid : s.attended;
     // (2.23: being counted, the minutes there so far, the badge filling up as they add up.)
-    this.badge.className = `hud-badge${mandatory && !quiet ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}${counting ? ' counting' : ''}`;
+    this.badge.className = `hud-badge${mandatory && !quiet ? '' : ' hidden'}${done ? ' done' : ''}${w && !w.paid ? ' quota' : ''}${w?.late ? ' late' : ''}${counting ? ' counting' : ''}`;
     this.badge.style.setProperty('--fill', counting ? `${Math.round((100 * s.presence![0]) / s.presence![1])}%` : '0%');
     this.badge.innerHTML = w ? (w.paid ? `${icon('check', 12)}${t('routine.paid')}` : `${w.quota}/${w.of}`) : s.attended ? `${icon('check', 12)}${t('routine.attended')}` : counting ? t('routine.present', { n: s.presence![0], of: s.presence![1] }) : t('routine.pending');
     // Checked in (or a load done): the badge pops. A new block: the whole pill does.

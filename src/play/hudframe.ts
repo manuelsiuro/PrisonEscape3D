@@ -5,8 +5,11 @@ import { ROUTINE } from '../content/routine';
 import { presenceNeeded } from '../sim/systems/routine';
 import { t, type Key } from '../i18n';
 import { jobRooms } from '../sim/systems/economy';
+import { type NextWork, nextWork, workWarningAt } from '../sim/systems/jobs';
+import { itemName } from '../ui/items';
+import { inmateName } from '../ui/names';
 import { GUARD } from '../sim/systems/guards';
-import { COLD_STEPS, LIGHTS_OUT_GRACE, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND } from '../sim/tuning';
+import { COLD_STEPS, LAST_WARNING, LIGHTS_OUT_GRACE, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND } from '../sim/tuning';
 import { afterHours } from '../sim/systems/watch';
 import { lookingAway } from '../sim/systems/ways';
 import { clockAt, formatTime, hhmm } from '../sim/systems/clock';
@@ -47,7 +50,16 @@ export const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdo
 const tipsyHud = { until: '', left: 0, of: TIPSY_STEPS / STEPS_PER_MINUTE };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
 const bribeHud = { name: '', until: '', left: 0, of: LOOK_AWAY_STEPS / STEPS_PER_MINUTE };
-const workHud = { place: '', quota: 0, of: 0, paid: false };
+/** The job's next step in words, as the action button will put it. */
+function nextLabel(sim: Sim, n: NextWork): string {
+  if (n.act === 'wait') return t('work.wait');
+  if (n.act === 'sort') return t('work.sort');
+  if (n.act === 'mop') return t('work.next', { verb: t('work.mop'), what: t('thing.puddle') });
+  if (n.act === 'deliver') return `${t('act.deliver')} ${inmateName(sim, n.who)}`;
+  return t('work.next', { verb: t(`work.${n.act}` as Key), what: itemName(n.item) });
+}
+
+const workHud = { place: '', quota: 0, of: 0, paid: false, late: false };
 /** The music's tension cue is on (see updateOverlay). */
 let tense = false;
 /** A song on the stage is heard (P30): the score steps back for it. */
@@ -97,7 +109,11 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   const job = sim.jobActive();
   if (ROUTINE[st.routine].id === 'work' && job >= 0) {
     const d = jobRooms(sim.world)[job].def;
-    workHud.place = t(`zone.${d.zone}` as Key);
+    // (2.30: on the clock, in its room or on its round, the next step; else the room to go to.)
+    const next = nextWork(sim);
+    workHud.place = next && (sim.dutyZones.includes(sim.playerZone) || d.flow !== 'machine') ? nextLabel(sim, next) : t(`zone.${d.zone}` as Key);
+    const now = sim.clock.minuteOfDay;
+    workHud.late = !st.paid && !st.lockdown && !st.excused && (now >= LAST_WARNING || (now >= workWarningAt(d) && (d.flow !== 'mail' || st.quota === 0)));
     workHud.quota = st.quota;
     workHud.of = d.quota;
     workHud.paid = st.paid;

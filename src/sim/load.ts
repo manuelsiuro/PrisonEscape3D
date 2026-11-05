@@ -63,7 +63,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
       // (2.25: a save from before meals at the counter, with no tray or seat held.)
       const o = n.tray === undefined ? { ...n, tray: 0, seat: -1, seatFace: 0 } : n;
       // (2.26: an ambusher's moment of warning.)
-      return o.windup === undefined ? { ...o, windup: 0 } : o;
+      const q = o.windup === undefined ? { ...o, windup: 0 } : o;
+      // (2.30: how far through its work.)
+      return q.duty === undefined ? { ...q, duty: 0 } : q;
     }) ?? spawnInmates(world, { rng: st.rng });
   s.items = fitItems(world, st.items, st.rng) ?? startItems(world, { rng: st.rng });
   // Guard fields added later (P15's ways) load at the end, in field order.
@@ -254,6 +256,7 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (s.yardSeen !== true) s.yardSeen = false;
   if (!Number.isInteger(s.countAt) || s.countAt < 0) s.countAt = 0;
   // (2.29: a press's beat; a turn asked for, on a machine this prison has.)
+  if (!Array.isArray(s.strayed) || !s.strayed.every(Number.isInteger)) s.strayed = [];
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]]) s.askTurn = [];
   // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)

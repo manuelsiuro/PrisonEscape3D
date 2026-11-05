@@ -1,3 +1,4 @@
+import { JOBS } from '../../content/jobs';
 import { zoneIndex, type ZoneId } from '../../content/zones';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { MAP_H, MAP_W, type Prop, type World } from '../world/World';
@@ -42,6 +43,17 @@ export interface Places {
   guardBeds: Array<{ tile: number; bed: number }>;
   /** 2.29: the gym's machines: the prop, the tile an inmate uses it from (each its own) and the way it faces there. */
   machines: Array<Spot & { prop: number }>;
+  /** 2.30: each job's stations, where whoever holds it works them from, by the prison's job order. */
+  duties: Duty[];
+}
+
+/** 2.30: a job's stations, as an inmate works them (null or empty where the room lacks one). */
+export interface Duty {
+  take: (Spot & { prop: number }) | null;
+  machines: Array<Spot & { prop: number }>;
+  put: (Spot & { prop: number }) | null;
+  /** A janitor's round: corridor tiles, spread out. */
+  round: number[];
 }
 
 const S = 5;
@@ -75,6 +87,60 @@ function machineSpots(w: World, free: (t: number) => boolean): Array<Spot & { pr
     if (spot) out.push({ ...spot, prop });
   });
   return out;
+}
+
+/** The tiles round a prop to work it from: from the south, the camera's side, then its sides, then behind. */
+function roundProp(p: Prop): Spot[] {
+  const round: Spot[] = [];
+  for (let x = p.x; x < p.x + p.w; x++) round.push({ tile: (p.z + p.d) * MAP_W + x, face: N });
+  for (let z = p.z + p.d - 1; z >= p.z; z--) round.push({ tile: z * MAP_W + p.x - 1, face: E }, { tile: z * MAP_W + p.x + p.w, face: W });
+  for (let x = p.x; x < p.x + p.w; x++) round.push({ tile: (p.z - 1) * MAP_W + x, face: S });
+  return round;
+}
+
+/** The floor of a zone that hangs together with most of it: furniture can shut off a tile no one could ever reach. */
+function mainFloor(w: World, zone: number, free: (t: number) => boolean): Set<number> {
+  const seen = new Set<number>();
+  let best = new Set<number>();
+  for (let t = 0; t < w.ground.zone.length; t++) {
+    if (w.ground.zone[t] !== zone || seen.has(t) || !free(t)) continue;
+    const part = new Set<number>([t]);
+    const open = [t];
+    while (open.length) {
+      const q = open.pop()!;
+      for (const n of [q - 1, q + 1, q - MAP_W, q + MAP_W]) {
+        if (n < 0 || n >= w.ground.zone.length || part.has(n) || w.ground.zone[n] !== zone || !free(n)) continue;
+        part.add(n);
+        open.push(n);
+      }
+    }
+    part.forEach((x) => seen.add(x));
+    if (part.size > best.size) best = part;
+  }
+  return best;
+}
+
+/** 2.30: each job's stations and where to work them from, chosen as `jobRooms` chooses them (the first to take from, the last to put on). */
+function dutyStops(w: World, free: (t: number) => boolean): Duty[] {
+  return w.def.jobs.map(({ id }) => {
+    const def = JOBS[id];
+    const zone = zoneIndex(def.zone);
+    const main = mainFloor(w, zone, free);
+    const inRoom = (kind: string | undefined) => w.props.map((p, prop) => ({ p, prop })).filter(({ p }) => p.kind === kind && w.ground.zone[p.z * MAP_W + p.x] === zone);
+    const stop = (e: { p: Prop; prop: number } | undefined) => {
+      if (!e) return null;
+      const spot = roundProp(e.p).find((q) => main.has(q.tile));
+      return spot ? { ...spot, prop: e.prop } : null;
+    };
+    const takes = inRoom(def.take);
+    const puts = inRoom(def.put);
+    const corridor = zoneIndex('corridor');
+    const halls: number[] = [];
+    if (def.flow === 'mop') for (let t = 0; t < w.ground.zone.length; t++) if (w.ground.zone[t] === corridor && free(t)) halls.push(t);
+    // (Every seventh tile, wherever that falls: spread along the corridors, the same every day.)
+    const round = halls.filter((_, k) => k % 7 === 0);
+    return { take: stop(takes[0]), machines: inRoom(def.machine).map(stop).filter((q) => !!q), put: stop(puts[puts.length - 1]), round };
+  });
 }
 
 /** The way the pipe stands from a shower's tile, by the prop's rotation: north, west, south, east. */
@@ -178,6 +244,7 @@ function build(w: World): Places {
     infirmary: roomy(w, beside(w, infirmaryBed?.p, inZone('infirmary')), inZone('infirmary')),
     guardBeds,
     machines: machineSpots(w, (t) => isFloor(w, t % MAP_W, Math.floor(t / MAP_W))),
+    duties: dutyStops(w, (t) => isFloor(w, t % MAP_W, Math.floor(t / MAP_W))),
   };
 }
 

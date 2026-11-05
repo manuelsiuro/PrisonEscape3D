@@ -9,7 +9,7 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, dayRoll, eventOn, planOf, TODAY, today, weatherNow, type DayPlan } from '../sim/systems/calendar';
 import { hhmm } from '../sim/systems/clock';
 import { searchMinute } from '../sim/systems/delivery';
-import { DOG_DAY_FROM, LIGHTS_OUT_GRACE, NIGHT_WARNING, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
+import { DOG_DAY_FROM, LAST_WARNING, LIGHTS_OUT_GRACE, NIGHT_WARNING, STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import type { HudState } from '../ui/hud';
 import type { PaRow } from '../ui/pa';
@@ -21,6 +21,8 @@ import { visitPlaceAt } from './smuggle';
 import { SPORTS_PRIZE, SPORTS_WINS } from '../content/games';
 import { LESSONS } from '../tutorial/lessons';
 import { jobKey, jobRow } from './oddjobs';
+import { jobRooms } from '../sim/systems/economy';
+import { workWarningAt } from '../sim/systems/jobs';
 import { HOLIDAY_DAY } from '../content/holidays';
 import { holidayMorning, holidayRows } from './holidays';
 import { holidayDays } from '../sim/systems/holiday';
@@ -179,6 +181,16 @@ export function dayStep(sim: Sim) {
   const st = sim.state;
   // (2.28: ten minutes before the bell, for anyone already counted and not yet home.)
   if (g && !g.over && st.step % STEPS_PER_MINUTE === 0 && !sim.rules227 && sim.clock.minuteOfDay === NIGHT_WARNING && st.attended && !st.lockdown && st.solitary <= 0 && st.ko <= 0 && !sim.away && sim.playerZone !== 'playerCell' && !sim.world.def.rules?.relaxed) banner.toast(t('toast.nightWarning', { time: hhmm(ROUTINE[ROUTINE.length - 1].start + LIGHTS_OUT_GRACE / STEPS_PER_MINUTE) }), 'info', 6000);
+  // (2.30: the quota not done, with time left to do it.)
+  // (Not once a knockout or a lockdown has let them off: it can't cost the job today.)
+  if (g && !g.over && st.step % STEPS_PER_MINUTE === 0 && sim.onDuty && !st.excused) {
+    const def = jobRooms(sim.world)[sim.jobActive()].def;
+    // (The mail's first comes early, for a round not begun: no nagging someone already out on it.)
+    if ((sim.clock.minuteOfDay === workWarningAt(def) && (def.flow !== 'mail' || st.quota === 0)) || sim.clock.minuteOfDay === LAST_WARNING) {
+      banner.toast(t('toast.workWarning', { left: ROUTINE[st.routine + 1].start - sim.clock.minuteOfDay, n: st.quota, of: def.quota }), 'bad', 7000);
+      sound.whistle();
+    }
+  }
   if (!hasDays(g) || st.step % STEPS_PER_MINUTE !== 0 || st.sleeping || g.over) return;
   const m = dayMinute(st.step);
   const p = today(sim);
