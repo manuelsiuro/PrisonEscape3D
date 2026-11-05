@@ -46,6 +46,11 @@ export function calledNow(s: Pick<SimState, 'release' | 'step'>): boolean {
   return s.release[0] === prisonDay(s.step) && m >= RELEASE_FROM && m < RELEASE_TO;
 }
 
+/** Cleared, or on today's list with the call still to answer (2.31: nobody jumps the player on their way out). */
+export function releaseToday(s: Pick<SimState, 'release' | 'step'>): boolean {
+  return freedNow(s) || (s.release[0] === prisonDay(s.step) && dayMinute(s.step) < RELEASE_TO);
+}
+
 /** On the release desk's tiles: on the ground floor, up and about, not hidden, not in a takeover. */
 export function atDesk(sim: SimContext): boolean {
   const r = releaseOf(sim);

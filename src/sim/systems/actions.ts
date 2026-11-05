@@ -28,7 +28,7 @@ import { lockCandidates, nextLock } from './combat';
 import { attack, hurt } from './fights';
 import type { Guard } from './guards';
 import type { Inmate } from './inmates';
-import { closeBox, craft, dropItem, equip, freeHotbar, give, HOTBAR, hotbarSlotOf, interactTarget, type ItemEvent, itemOf, type ItemState, moveItem, pickUp, slot, stillInReach, usesOf } from './items';
+import { closeBox, craft, dropItem, equip, freeHotbar, give, HOTBAR, hotbarSlotOf, interactTarget, type Target, type ItemEvent, itemOf, type ItemState, moveItem, pickUp, slot, stillInReach, usesOf } from './items';
 import { jobOp, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
@@ -43,7 +43,7 @@ import { atTail, climbOut, stow } from './delivery';
 import { airOf, atWindow, showId, windowFirst } from './getaway';
 import { approach, dismissAll, endTalk, talkOp } from './social';
 import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, digUpTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
-import { rep, stopTraining, study, useMachine } from './training';
+import { chairForBook, onReadChair, readOn, readSeated, reading, rep, stopTraining, study, useMachine } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
@@ -86,6 +86,15 @@ export function useItems(sim: SimContext, cmd: number) {
         answerCount(sim);
         break;
       }
+      // (2.31: reading, the action button underlines; with a book on a library chair, it opens it.)
+      if (reading(sim)) {
+        rep(sim, 1);
+        break;
+      }
+      if (readSeated(sim)) {
+        readOn(sim);
+        break;
+      }
       // Seated (or resting): the action button gets the player up.
       if (s.seat >= 0) {
         standUp(sim);
@@ -101,7 +110,9 @@ export function useItems(sim: SimContext, cmd: number) {
         break;
       }
       const held = itemOf(it.inv[it.hand]);
-      const target = interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k), sim.bedtime && !sim.rules227);
+      // (2.31: a book in hand, at a free library chair: that, before anyone about.)
+      const bookSeat = chairForBook(sim);
+      const target: Target | null = bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k), sim.bedtime && !sim.rules227);
       const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
       const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
       // The release desk (P36): reporting there while the name is called, or a forged form slipped into its tray, comes first.
@@ -154,7 +165,11 @@ export function useItems(sim: SimContext, cmd: number) {
         if (target.use === 'board') sim.events.push({ type: 'board' });
         else if (target.use === 'generator') switchPower(sim, target.index);
         else if (target.use === 'helicopter') board(sim);
-        else if (target.use === 'sit' || target.use === 'rest') sitDown(sim, target.index, target.use);
+        else if (target.use === 'sit' || target.use === 'rest') {
+          sitDown(sim, target.index, target.use);
+          // (2.31: a book in hand, on a library chair: straight into it, or told why not.)
+          if (onReadChair(sim)) readOn(sim);
+        }
         else useMachine(sim, target.index, target.use);
       } else if (target.kind === 'pockets') {
         // Going through someone's pockets while they're out cold (GDD §10.2).
@@ -195,7 +210,7 @@ export function useItems(sim: SimContext, cmd: number) {
       if (s.bout.length) {
         if (a === 3) endBout(sim, 'gaveUp');
         else if (a === 1 || a === 2) push(sim, a);
-      } else if (a === 0) study(sim);
+      } else if (a === 0) study(sim, argB(cmd));
       else if (a === 3) {
         if (s.train >= 0) stopTraining(sim);
       } else rep(sim, a);

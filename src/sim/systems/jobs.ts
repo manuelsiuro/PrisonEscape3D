@@ -298,6 +298,7 @@ export function newDay(sim: SimContext) {
   const s = sim.state;
   s.quota = 0;
   s.paid = false;
+  s.readToday = 0;
   const slipped: Attr[] = [];
   ATTRS.forEach((a, k) => {
     if ((s.trained >> k) & 1 || attr(sim, a) <= ATTR_START) return;

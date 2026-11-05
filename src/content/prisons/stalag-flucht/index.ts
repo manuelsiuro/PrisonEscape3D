@@ -264,6 +264,11 @@ const GEAR: PropPlacement[] = [
   { kind: 'mat', x: 45, z: 48 },
 ];
 
+/** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
+const READING: PropPlacement[] = [
+  { kind: 'deskChair', x: 8, z: 56, rot: 3 },
+];
+
 export const STALAG_FLUCHT: PrisonDef = {
   id: 'stalag-flucht',
   difficulty: 2,
@@ -301,7 +306,7 @@ export const STALAG_FLUCHT: PrisonDef = {
     ['garden', 23, 3, 38, 5],
   ],
   cells,
-  props: [...props, ...GEAR],
+  props: [...props, ...GEAR, ...READING],
   rollCall,
   spawn: { x: 6, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],
@@ -382,6 +387,7 @@ export const STALAG_FLUCHT: PrisonDef = {
     pitchWas: pitch(13, 22, 13, 5),
     stage: stage(11, 30, 5),
     quiz: quizAt(13, [9, 56], [10, 56], [11, 56], [12, 56]),
+    librarian: { cell: 6, x: 8, z: 56, face: 9 },
   },
   // Rebuilt in 2.8 (P32): the sports ground in the guards' compound, the garden along the north wire.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.

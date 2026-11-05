@@ -343,6 +343,7 @@ for (const def of PRISONS) {
   played.sim.rules227 = true;
   played.sim.rules228 = true;
   played.sim.rules229 = true;
+  played.sim.rules230 = true;
   played.routineUntil(1, NIGHT + 20);
   check(played.st.heat > 0, 'the old rules: the searchlight on the walk home');
   const logOf = (game: string, rules227: boolean) => {
@@ -350,6 +351,7 @@ for (const def of PRISONS) {
     sim.rules227 = rules227;
     sim.rules228 = rules227;
     sim.rules229 = rules227;
+    sim.rules230 = rules227;
     const rec = new RunRecorder(sim, { seed: 3, game });
     for (const c of played.cmds) rec.step(c);
     return rec;
@@ -357,12 +359,12 @@ for (const def of PRISONS) {
   const prev = logOf('2.27.0', true);
   const replayed = replayLog(prev.toLog(), stalag);
   check(!!replayed?.ok && replayed.sim.rules227 === true && replayed.sim.state.heat > 0, 'a 2.27 log through the night replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.30.0' }, stalag)?.ok, 'and would not under the new ones: the test can tell');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.30.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = logOf('2.30.0', false);
+  check(!replayLog({ ...prev.toLog(), game: '2.31.0' }, stalag)?.ok, 'and would not under the new ones: the test can tell');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.31.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = logOf('2.31.0', false);
   const again = replayLog(now.toLog(), stalag);
   check(!!again?.ok && again.sim.rules227 === false, "a log of today's replays under today's rules");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.30.1' }).toLog().seed === 3, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.31.1' }).toLog().seed === 3, 'and is carried on');
   console.log('older runs: a 2.27 log replays as it was and is not carried on; a new one is');
 }
 

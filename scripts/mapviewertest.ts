@@ -66,7 +66,7 @@ const KNOWN_PRISON = new Set([
   'reachable',
 ]);
 const KNOWN_GUARD = new Set(['name', 'beat', 'posts', 'night', 'duties', 'key', 'riot', 'helipad', 'trait', 'dog', 'about']);
-const KNOWN_LEISURE = new Set(['hoop', 'oldTimer', 'garden', 'race', 'pitch', 'pitchWas', 'stage', 'quiz', 'track']);
+const KNOWN_LEISURE = new Set(['hoop', 'oldTimer', 'garden', 'race', 'pitch', 'pitchWas', 'stage', 'quiz', 'track', 'librarian']);
 const unknown = (where: string, o: object, known: ReadonlySet<string>) => {
   for (const key of Object.keys(o)) if (!known.has(key)) fail(`${where}: the viewer doesn't know "${key}" (draw it in scripts/dev/mapimage.ts or mapdata.ts, then list it here)`);
 };

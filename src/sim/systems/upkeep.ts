@@ -136,7 +136,9 @@ export function keepSeat(sim: SimContext) {
     standUp(sim);
     return;
   }
-  if (s.energy < 100 && s.step % SIT_ENERGY_STEPS === 0 && !awakeAtNight(sim)) s.energy++;
+  // (2.31: not over a book: a set costs what the card says, on a chair as at the shelf.)
+  const readingHere = !sim.rules230 && s.train >= 0 && sim.world.props[s.train].kind === 'shelf';
+  if (s.energy < 100 && s.step % SIT_ENERGY_STEPS === 0 && !awakeAtNight(sim) && !readingHere) s.energy++;
   if (eatingNow(sim)) {
     if (++s.eaten >= mealSteps(sim)) {
       if (s.tray === TRAY.FULL) {

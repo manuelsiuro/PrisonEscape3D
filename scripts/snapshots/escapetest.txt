@@ -10,7 +10,7 @@
   day 1 23:19 digUp → layer 1
   day 1 23:19 ESCAPED (tunnel)
   saved and loaded at day 1 15:39 (gym) resumes, day 1 21:47 (playerCell) resumes, day 1 23:01 (playerCell) resumes, day 1 23:14 (tunnels) resumes
-  ledger: nothing; walked 376 tiles; days escaped
+  ledger: nothing; walked 375 tiles; days escaped
   → out day 1 23:19 by tunnel; heat peak 0%; walls 0, tunnel tiles 8, guards out cold 0, cash $0
 == rooftop grapnel
   day 1 23:11 climbVent → layer 2
@@ -49,7 +49,7 @@
   day 1 19:50 waved through the checkpoint
   day 1 19:50 ESCAPED (bluff)
   saved and loaded at day 1 13:55 (laundry) resumes, day 1 18:39 (playerCell) resumes, day 1 19:36 (perimeter) resumes, day 1 19:46 (perimeter) resumes
-  ledger: waved 1; walked 383 tiles; days escaped
+  ledger: waved 1; walked 384 tiles; days escaped
   → out day 1 19:50 by bluff; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == glider
   day 1 23:11 climbVent → layer 2
@@ -84,8 +84,8 @@
   day 1 23:12 climbDown → layer 0
   day 1 23:21 digUp → layer 1
   day 1 23:21 ESCAPED (tunnel)
-  saved and loaded at day 1 15:40 (gym) resumes, day 1 21:49 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
-  ledger: nothing; walked 287 tiles; days escaped
+  saved and loaded at day 1 15:40 (gym) resumes, day 1 21:48 (playerCell) resumes, day 1 23:02 (playerCell) resumes, day 1 23:16 (tunnels) resumes
+  ledger: nothing; walked 286 tiles; days escaped
   → out day 1 23:21 by tunnel; heat peak 0%; walls 0, tunnel tiles 10, guards out cold 0, cash $0
 == stalag-flucht: rooftop grapnel
   day 1 23:28 power OFF (player)
@@ -93,7 +93,7 @@
   day 1 23:30 grapnel → layer 1
   day 1 23:30 ESCAPED (roof)
   saved and loaded at day 1 15:45 (gym) resumes, day 1 21:57 (playerCell) resumes, day 1 23:11 (cellBlock) resumes, day 1 23:25 (perimeter) resumes
-  ledger: powerCuts 1; walked 353 tiles; days escaped
+  ledger: powerCuts 1; walked 354 tiles; days escaped
   → out day 1 23:30 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 8/150, guards down 6/6, xxxxxx
 == stalag-flucht: takeover
@@ -152,8 +152,8 @@
   day 1 23:26 power OFF (player)
   day 1 23:33 ESCAPED (fence)
   saved and loaded at day 1 15:46 (sports) resumes, day 1 22:00 (playerCell) resumes, day 1 23:15 (corridor) resumes, day 1 23:29 (perimeter) resumes
-  ledger: spotted 1, maxHeat 20, powerCuts 1; walked 428 tiles; days spotted+escaped
-  → out day 1 23:33 by fence; heat peak 20%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  ledger: spotted 1, maxHeat 35, powerCuts 1; walked 428 tiles; days spotted+escaped
+  → out day 1 23:33 by fence; heat peak 35%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == shankton: tunnel
   day 1 23:12 climbDown → layer 0
   day 1 23:21 digUp → layer 1
@@ -168,7 +168,7 @@
   day 1 23:48 rope → layer 1
   day 1 23:48 ESCAPED (roof)
   saved and loaded at day 1 15:54 (sports) resumes, day 1 22:13 (rollCall) resumes, day 1 23:29 (vents) resumes, day 1 23:43 (roof) resumes
-  ledger: nothing; walked 442 tiles; days escaped
+  ledger: nothing; walked 443 tiles; days escaped
   → out day 1 23:48 by roof; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 47/140, guards down 8/8, xxxxxxxx
 == shankton: takeover
@@ -195,12 +195,12 @@
   ledger: blows 11, koGuards 8, lockdowns 1, spotted 5, maxHeat 100, recruits 2, flung 4, crew 2; walked 187 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 09:09 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 8, cash $0
 == shankton: bluff
-  day 1 19:13 detector: shielded (19 passes left)
+  day 1 19:12 detector: shielded (19 passes left)
   day 1 19:15 detector: shielded (18 passes left)
   day 1 19:50 waved through the checkpoint
   day 1 19:52 ESCAPED (bluff)
   saved and loaded at day 1 13:56 (metalshop) resumes, day 1 18:41 (playerCell) resumes, day 1 19:38 (controlRoom) resumes, day 1 19:48 (controlRoom) resumes
-  ledger: waved 1; walked 356 tiles; days escaped
+  ledger: waved 1; walked 357 tiles; days escaped
   → out day 1 19:52 by bluff; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == shankton: glider
   day 1 23:11 climbVent → layer 2
@@ -217,8 +217,8 @@
   day 1 18:18 detector: shielded (18 passes left)
   day 1 18:26 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
-  day 2 00:43 bed check: pass
-  day 2 04:28 bed check: pass
+  day 2 00:42 bed check: pass
+  day 2 04:29 bed check: pass
   day 2 10:00 the name called
   day 2 10:08 cleared at the desk
   day 2 10:15 ESCAPED (paperwork)
@@ -231,12 +231,12 @@
   day 2 00:04 digUp → layer 1
   day 2 00:04 ESCAPED (tunnel)
   saved and loaded at day 1 16:02 (cellBlock) resumes, day 1 22:27 (rollCall) resumes, day 1 23:44 (tunnels) resumes, day 1 23:59 (tunnels) resumes
-  ledger: nothing; walked 299 tiles; days quiet / escaped
+  ledger: nothing; walked 298 tiles; days quiet / escaped
   → out day 2 00:04 by tunnel; heat peak 0%; walls 0, tunnel tiles 13, guards out cold 0, cash $0
 == san-pancho: supply road gate
   day 1 23:33 ESCAPED (gate)
   saved and loaded at day 1 15:46 (sports) resumes, day 1 21:59 (playerCell) resumes, day 1 23:14 (corridor) resumes, day 1 23:28 (generator) resumes
-  ledger: nothing; walked 405 tiles; days escaped
+  ledger: nothing; walked 370 tiles; days escaped
   → out day 1 23:33 by gate; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   takeover: health 68/150, guards down 7/8, xxCxxxxx
 == san-pancho: takeover
@@ -261,23 +261,23 @@
   day 1 14:30 the vehicle searched (a quick look)
   day 1 14:31 the delivery leaves
   day 1 14:31 ESCAPED (stowaway)
-  saved and loaded at day 1 11:15 (infirmary) resumes, day 1 13:51 (walkway) resumes, day 1 14:23 (walkway) resumes, day 1 14:29 (walkway) resumes
-  ledger: stowed 1; walked 235 tiles; days escaped
+  saved and loaded at day 1 11:15 (playerCell) resumes, day 1 13:51 (walkway) resumes, day 1 14:23 (walkway) resumes, day 1 14:29 (walkway) resumes
+  ledger: stowed 1; walked 239 tiles; days escaped
   → out day 1 14:31 by stowaway; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
   seed 49: the search a quick look
 == san-pancho: paperwork
   day 1 18:23 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
-  day 2 01:29 bed check: pass
+  day 2 01:28 bed check: pass
   day 2 05:04 bed check: pass
   day 2 10:00 the name called
-  day 2 10:01 cleared at the desk
-  day 2 10:08 ESCAPED (paperwork)
-  saved and loaded at day 1 21:04 (playerCell) resumes, day 2 07:31 (playerCell) resumes, day 2 09:37 (canteen) resumes, day 2 10:00 (library) resumes
-  ledger: formsFiled 1, released 1; walked 516 tiles; days quiet / escaped
-  → out day 2 10:08 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
+  day 2 10:10 cleared at the desk
+  day 2 10:17 ESCAPED (paperwork)
+  saved and loaded at day 1 21:08 (playerCell) resumes, day 2 07:39 (playerCell) resumes, day 2 09:45 (canteen) resumes, day 2 10:09 (library) resumes
+  ledger: formsFiled 1, released 1; walked 513 tiles; days quiet / escaped
+  → out day 2 10:17 by paperwork; heat peak 0%; walls 0, tunnel tiles 0, guards out cold 0, cash $0
 == irongate
-  raft: the dock fence cut 25.9 s after GEN-2 went off
+  raft: the dock fence cut 25.8 s after GEN-2 went off
 == irongate: raft
   day 1 23:23 detector: shielded (19 passes left)
   day 1 23:25 detector: shielded (18 passes left)
@@ -297,7 +297,7 @@
   day 1 23:50 knocked out #22
   day 1 23:51 ESCAPED (helicopter)
   saved and loaded at day 1 15:55 (gym) resumes, day 1 22:16 (rollCall) resumes, day 1 23:32 (vents) resumes, day 1 23:46 (roof) resumes
-  ledger: koGuards 2, lockdowns 1, spotted 1, maxHeat 100, flung 2; walked 434 tiles; days spotted+wanted+lockdown+fight+escaped
+  ledger: koGuards 2, lockdowns 1, spotted 1, maxHeat 100, flung 2; walked 435 tiles; days spotted+wanted+lockdown+fight+escaped
   → out day 1 23:51 by helicopter; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 2, cash $0
   takeover: health 13/150, guards down 10/10, xxxxxxxxxx
 == irongate: takeover
@@ -330,8 +330,8 @@
   → out day 1 09:37 by takeover; heat peak 100%; walls 0, tunnel tiles 0, guards out cold 10, cash $0
 == irongate: stowaway
   day 1 12:30 the delivery is in
-  day 1 13:03 detector: shielded (19 passes left)
-  day 1 13:05 detector: shielded (18 passes left)
+  day 1 13:04 detector: shielded (19 passes left)
+  day 1 13:06 detector: shielded (18 passes left)
   day 1 13:13 into the vehicle
   day 1 14:21 out of the vehicle
   day 1 14:21 into the vehicle
@@ -353,10 +353,10 @@
 == irongate: paperwork
   day 1 18:18 detector: shielded (19 passes left)
   day 1 18:20 detector: shielded (18 passes left)
-  day 1 18:27 form filed: on the release list for day 2
+  day 1 18:24 form filed: on the release list for day 2
   day 1 22:00 the records: the form passes
   day 2 01:18 bed check: pass
-  day 2 05:01 bed check: pass
+  day 2 05:00 bed check: pass
   day 2 10:00 the name called
   day 2 10:04 cleared at the desk
   day 2 10:09 ESCAPED (paperwork)

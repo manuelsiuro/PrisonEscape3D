@@ -51,8 +51,9 @@ release: 3 steps done by day 2 10:06
 parole: 4 steps done by day 10 10:15
 payphone: 4 steps done by day 1 12:00
 cousin: 3 steps done by day 1 10:02
+library: 4 steps done by day 1 10:18
 kiosk: 6 steps done by day 1 12:00
-oddjob: 5 steps done by day 1 10:21
+oddjob: 5 steps done by day 1 10:52
 day, missed: ended at step 2 (lesson.day.missed) by day 1 10:59
 smuggle, left lying: ended at step 4 (lesson.smuggle.seized) by day 1 21:29
 cousin, not understood: ended at step 2; silent: lesson.cousin.hungUp
@@ -69,7 +70,7 @@ trade, never bought: ended at step 1 (lesson.trade.closed) by day 1 12:00
 job, idle: ended at step 1 (lesson.job.late) by day 1 15:00
 talk, magazine given away: ended at step 4 (lesson.talk.lost)
 tunnel, up in the yard: ended at step 4 (lesson.tunnel.early)
-guards, never paid: ended at step 1 (lesson.guards.cooled) by day 1 14:36
+guards, never paid: ended at step 1 (lesson.guards.cooled) by day 1 14:32
 cards, folded: ended at step 2; hoops, court left: ended at step 4; checkers, up past free time and resigned: said
 ratRace, late: ended at step 2; ratRace, scratched: ended at step 6
 games, never played: ended at step 1 (lesson.games.closed) by day 1 22:00
@@ -80,6 +81,6 @@ crew, called off: ended at step 3 (lesson.crew.off)
 smuggle, by visitor: ended at step 1 (lesson.smuggle.wrong)
 heat, out the east fence: ended at step 1 (lesson.outEarly)
 tunnel, down a stray hole: on at step 4 (null)
-4 chapters: basics 10, getby 7, life 27, ways 8
+4 chapters: basics 10, getby 7, life 28, ways 8
 training: its guard out cold, no takeover
 every lesson goal is open floor

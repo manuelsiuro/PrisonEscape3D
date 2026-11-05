@@ -1,5 +1,5 @@
 import { itemDef, itemNumber } from '../content/items';
-import { t } from '../i18n';
+import { type Key, t } from '../i18n';
 import { maxHealth } from '../sim/systems/combat';
 import { nearestProp, STATION_REACH } from '../sim/systems/economy';
 import type { ItemState } from '../sim/systems/items';
@@ -15,6 +15,9 @@ import { usableHere } from '../sim/systems/recipes';
 import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import { DOING } from '../sim/systems/inmates';
 import { TOUCH } from '../ui/dom';
+import { SUBJECTS } from '../content/books';
+import { shelfBooks } from '../ui/reading';
+import { readSeated } from '../sim/systems/training';
 import type { ItemsView } from '../ui/items';
 import type { UpView } from '../ui/tool';
 import { disarmDrink, press, targets } from './buttons';
@@ -39,6 +42,7 @@ import {
   talk,
   tools,
   trainCard,
+  readCard,
   pickCard,
   wrestleCard,
   cheatCard,
@@ -94,8 +98,10 @@ import { hudFrame, hudState, setSongOn } from './hudframe';
  * music and ambience that follow the game.
  */
 
-const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, boxTheirs: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false, take: [] };
+const itemsView: ItemsView = { items: null as unknown as ItemState, boxTitle: '', boxHidden: 0, boxMine: false, boxTheirs: false, carried: [], tips: [], usable: (k) => !play.game || usableHere(play.game.rec.sim.world, k), action: null, sleeping: false, deskTunnel: false, study: false, books: null, take: [] };
 const GET_UP = { verb: '', what: '' };
+/** 2.31: on a library chair with a book. */
+const READ_ON = { verb: '', what: '' };
 /** Delivery day (P18): into the vehicle at its tail, out of it while hidden. */
 const STOW = { verb: '', what: '' };
 const CLIMB_OUT = { verb: '', what: '' };
@@ -169,6 +175,10 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
     PEEL_ACTION.what = t('act.potato');
   }
   if (st.seat >= 0) GET_UP.verb = t('act.getUp');
+  if (st.book > 0) {
+    READ_ON.verb = t('act.read');
+    READ_ON.what = t(`book.${SUBJECTS[st.book - 1]}.title` as Key);
+  }
   // (At the vehicle's tail, the tailgate open: climbing in comes before anything else there.)
   const tail = atTail(sim);
   if (st.stowed) CLIMB_OUT.verb = t('act.climbOut');
@@ -178,10 +188,12 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   }
   // (P24: at the checkpoint's window with papers: showing them comes first there, as the sim has it.)
   const papers = tail || st.stowed ? null : (deskAction(sim) ?? windowAction(sim, !!target || !!climb));
-  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && st.train >= 0 && !sim.rules230 ? null : st.seat >= 0 && it.open < 0 && st.talk < 0 ? (readSeated(sim) ? READ_ON : GET_UP) : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
+  // (2.31: the books by subject, and what the next mark opens.)
+  v.books = v.study && !sim.rules230 ? shelfBooks(sim) : null;
   v.take = box ? takeOffers(sim, box.table) : NO_TAKE;
   itemsUI.update(v);
   // The tool button: a blow at the locked-on target, else what a strike would hit.
@@ -249,6 +261,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   profile.update(sim, busy && !st.sleeping);
   clearOfCards();
   trainCard.update(sim, busy);
+  readCard.update(sim, busy);
   // The side games (P22): the arm-wrestle's card, the lockpick's (the tool controls step aside for them).
   const bout = busy ? null : wrestleNow(sim, frameDt(g));
   const pick = busy ? null : pickNow(sim, a);

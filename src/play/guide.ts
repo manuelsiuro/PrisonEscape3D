@@ -19,6 +19,7 @@ import { TILE } from '../sim/world/tiles';
 import { LAYER, MAP_W } from '../sim/world/World';
 import { lockList } from './buttons';
 import { nextWork } from '../sim/systems/jobs';
+import { freeReadSeat } from '../sim/systems/training';
 import { calledNow, freedNow } from '../sim/systems/paperwork';
 import { hearingDue, hearingOf } from '../sim/systems/parole';
 import { banner, hint, sound, view } from './context';
@@ -155,6 +156,11 @@ function guideTarget(sim: Sim): ((i: number) => boolean) | null {
   const tray = trayGoal(sim);
   if (tray) return tray;
   const zones = sim.dutyZones;
+  // (2.31: a book in hand, with nowhere the routine wants the player: to a free library chair.)
+  if (!sim.rules230 && s.book > 0 && s.train < 0 && s.seat < 0 && (!zones.length || s.attended)) {
+    const seat = freeReadSeat(sim);
+    if (seat >= 0) return (i) => i === seat;
+  }
   if (r.id === 'work' && (s.paid || zones.includes(sim.playerZone))) return null;
   // Nowhere the routine wants the player: the odd job's step (P40), where it has a place.
   if (!zones.length || s.attended) {

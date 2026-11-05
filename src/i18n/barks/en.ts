@@ -824,6 +824,22 @@ export const enBarks = {
     'There goes another one.',
     'Rough day, {you}.',
   ],
+  're.library.book': [
+    'Good choice.',
+    'Mind the spine.',
+    'That one reads well.',
+    'Back on the shelf when you\'re done.',
+    'Page forty\'s the good bit.',
+    'Don\'t dog-ear it.',
+  ],
+  're.library.full': [
+    'That\'s enough for today.',
+    'Your head\'s full. Come back tomorrow.',
+    'Sleep on it. It\'ll keep.',
+    'No more today. It won\'t go in.',
+    'Rest your eyes. The books aren\'t going anywhere.',
+    'Tomorrow. They all say that, but tomorrow.',
+  ],
   're.giveWay.in': [
     'All yours in a second.',
     'One more rep.',

@@ -23,7 +23,8 @@ import { closeBox, guardKit, itemOf, pocketOf, slot } from './items';
 import { caught } from './justice';
 import { type Body, tileOfBody } from './movement';
 import { changeOpinion, dismiss, dismissAll, endTalk, favorDone } from './social';
-import { stopTraining } from './training';
+import { reading, stopTraining } from './training';
+import { standUp } from './upkeep';
 import { tipsyNow } from './pruno';
 import { TIPSY_BLOW } from '../../content/long';
 import { raiseKeyAlarm, roomFor } from './keys';
@@ -271,6 +272,11 @@ export function hurt(sim: SimContext, dmg: number, by: number) {
   if (s.sleeping) {
     s.sleeping = false;
     sim.events.push({ type: 'sleep', on: false });
+  }
+  // (2.31: a blow ends the reading: up off the chair, hands free to answer it.)
+  if (reading(sim)) {
+    stopTraining(sim);
+    standUp(sim);
   }
   sim.events.push({ type: 'hurt', by, dmg });
   if (s.health > 0) return;

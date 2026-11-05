@@ -204,6 +204,8 @@ interface LeisureDef {
   /** P30: talent night's stage in the canteen, and quiz night's four places in the library (a prison without day cards has neither). */
   stage?: Stage;
   quiz?: QuizPlace;
+  /** 2.31: the librarian: the inmate (by cell) at the end of a library table in free time, on a chair of its own. */
+  librarian?: { cell: number; x: number; z: number; face: number };
   /** P31: the sports ground's running track, round its pitch (its lanes: the edge tiles of this rectangle, open sports floor). */
   track?: Ring;
 }
