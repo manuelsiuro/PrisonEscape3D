@@ -1,4 +1,5 @@
 import { placesOf } from '../sim/ai/places';
+import { jamsAt, VEND_PLAYER } from '../sim/systems/vending';
 import { mealOn } from '../sim/systems/canteen';
 import type { SimEvent } from '../sim/events';
 import type { Key } from '../i18n';
@@ -135,6 +136,12 @@ import {
  */
 
 /** A meal's lesson: the meal over, or the tray gone. */
+/** The vending lesson's count of buys to start from: the next comes out, the one after sticks. */
+const vendLessonBuys = (salt: number) => {
+  let n = 1;
+  while (jamsAt(salt, n + 1) || !jamsAt(salt, n + 2)) n++;
+  return n;
+};
 const mealFail = (c: LessonCtx): Key | null => (mealOn(c.sim) ? null : 'lesson.meals.lost');
 const trayLost = (e: SimEvent): Key | null => (e.type === 'tray' && e.what !== 'take' && e.what !== 'return' ? 'lesson.meals.lost' : null);
 /** The nearest seat nobody's using or keeping. */
@@ -1037,6 +1044,35 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // The vending machine (2.32): a soda bought and drunk, then something that sticks and is thumped free.
+    id: 'vending',
+    icon: 'cart',
+    prison: CENTER_PERKS,
+    seed: 147,
+    setup: (sim) => {
+      clockTo(sim, at(10, 2));
+      const m = sim.world.def.vending!;
+      place(sim, m.line[0].x, m.line[0].z, 13);
+      const s = sim.state;
+      s.cash = 40;
+      s.energy = 50;
+      // (This seed's first buy comes out and its next sticks, wherever the rolls fall.)
+      s.vendBought = vendLessonBuys(s.salt);
+      // (The machine to themselves: nobody coming to take the turn or thump what's stuck while they read.)
+      s.vend.day = prisonDay(s.step);
+      s.vend.asked = [~0, ~0];
+    },
+    steps: [
+      { text: 'lesson.vending.open', touch: 'lesson.vending.openTouch', done: (c) => c.sim.state.vendOpen },
+      { text: 'lesson.vending.buy', touch: 'lesson.vending.buyTouch', on: (e) => e.type === 'vend' && e.what === 'got' && !!e.item && !!itemDef(e.item).food },
+      { text: 'lesson.vending.drink', touch: 'lesson.vending.drinkTouch', on: (e) => e.type === 'ate' },
+      // (By the state, not an event: a second thing bought before drinking the first has already stuck, and been freed.)
+      { text: 'lesson.vending.again', done: (c) => c.sim.state.vendBought >= vendLessonBuys(c.sim.state.salt) + 2 && c.sim.state.vend.who !== VEND_PLAYER },
+      { text: 'lesson.vending.thump', done: (c) => !c.sim.state.vend.jam },
+      { text: 'lesson.vending.over', done: () => true, least: 8 },
+    ],
+  },
+  {
     // The pay phone (P34): someone on it, a place in line, a secret overheard while waiting, a call home, the money at mail call.
     id: 'payphone',
     icon: 'phone',
@@ -1325,7 +1361,7 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'library', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'library', 'vending', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 

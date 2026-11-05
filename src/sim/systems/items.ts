@@ -30,7 +30,7 @@ export const START_INT = 40;
 export const REACH = Math.round(UNIT * 0.85);
 /** The player's own bed at night (2.28): from anywhere on the tile beside it, the one the arrows lead to. */
 const BED_REACH = Math.round(UNIT * 1.05);
-const PICKUP_REACH = Math.round(UNIT * 0.95);
+export const PICKUP_REACH = Math.round(UNIT * 0.95);
 /** How close to someone lying knocked out to go through their pockets (units, either axis). */
 const POCKET_REACH = Math.round(UNIT * 1.2);
 /** At most this many items lie on one tile (a pile); dropping more there is refused. */
@@ -173,8 +173,8 @@ export type Target =
  * (Speed), the generator (the power, GDD §5.5); seats, benches and chairs to sit on, the
  * infirmary's beds to rest on (GDD §3.1); Irongate's helipad, to board the helicopter (P12).
  */
-export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', readChair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
+export type FixtureUse = 'vending' | 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
+const FIXTURES: Partial<Record<string, FixtureUse>> = { vending: 'vending', jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', readChair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
 
 const GEAR_USES: readonly FixtureUse[] = ['weights', 'treadmill', 'pullup', 'mat', 'punchingBag'];
 
@@ -182,6 +182,7 @@ const GEAR_USES: readonly FixtureUse[] = ['weights', 'treadmill', 'pullup', 'mat
 export function fixtureUse(w: World, p: { kind: string; x: number; z: number }): FixtureUse | undefined {
   if (w.plainGear && (p.kind === 'mat' || p.kind === 'punchingBag')) return undefined;
   if (w.plainBooks && p.kind === 'readChair') return undefined;
+  if (w.plainVending && p.kind === 'vending') return undefined;
   return FIXTURES[p.kind] ?? (p.kind === 'bed' && w.zoneAt(p.x, p.z) === 'infirmary' ? 'rest' : undefined);
 }
 
@@ -201,7 +202,7 @@ export interface Lootable {
  * cell means sleep at Lights Out.
  */
 /** Someone the player can talk to from here: up, not fighting, within reach and in sight. */
-function canTalkTo(w: World, b: Body, o: Lootable): boolean {
+export function canTalkTo(w: World, b: Body, o: Lootable): boolean {
   if (o.ko > 0 || (o.angry ?? 0) > 0 || (o.doing !== undefined && ON_MACHINE.includes(o.doing))) return false;
   const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));
   return d <= TALK_REACH && lineOfSight(w, b.x, b.z, o.body.x, o.body.z);

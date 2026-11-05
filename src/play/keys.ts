@@ -17,6 +17,8 @@ import { kickKey } from './team';
 import { nightsBusy, nightsKey } from './nights';
 import { payphoneKey } from './payphone';
 import { kioskKey } from './kiosk';
+import { vendAct, vendKey } from './vending';
+import { VEND } from '../content/vending';
 import { paroleBusy, paroleKey } from './parole';
 import { reading } from '../sim/systems/training';
 import { closeOddJobsCard, jobCardShown, oddjobKey } from './oddjobs';
@@ -32,6 +34,11 @@ export function act() {
   // (2.31: reading, the action button underlines.)
   if (reading(play.game.rec.sim)) {
     sendOp(OP.TRAIN, 1);
+    return;
+  }
+  // (2.32: at the vending machine's card, a thump at what's stuck, else away from it.)
+  if (play.game.rec.sim.state.vendOpen) {
+    vendAct(play.game.rec.sim);
     return;
   }
   itemsUI.closeCraft();
@@ -62,6 +69,8 @@ function onKeyDown(e: KeyboardEvent) {
     else if (itemsUI.panelOpen) itemsUI.closePanels();
     else if (socialOpen()) closeSocial();
     else if (game.rec.sim.state.train >= 0) sendOp(OP.TRAIN, 3);
+    // (2.32: away from the vending machine's card.)
+    else if (game.rec.sim.state.vendOpen) sendOp(OP.EXT, EXT.VEND, VEND.CLOSE);
     // (P22: out of an arm-wrestle, away from a lock.)
     else if (game.rec.sim.state.bout.length) sendOp(OP.TRAIN, 3);
     else if (game.rec.sim.state.pick.length) sendOp(OP.CLOSE);
@@ -130,6 +139,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // The kiosk (P35): in a course, 1–4 answer.
   if (kioskKey(e.code)) {
+    e.preventDefault();
+    return;
+  }
+  // The vending machine (2.32): at its card, 1–7 choose a row.
+  if (vendKey(e.code)) {
     e.preventDefault();
     return;
   }

@@ -3,54 +3,54 @@ worker bot (laundry, 3 days):
   day 1 12:13 quota 1/4
   day 1 12:13 quota 2/4
   day 1 12:13 quota 3/4
-  day 1 12:16 quota 4/4
-  day 1 12:16 +$30 (wage)
+  day 1 12:18 quota 4/4
+  day 1 12:18 +$30 (wage)
   day 2 12:13 quota 1/4
   day 2 12:13 quota 2/4
   day 2 12:13 quota 3/4
   day 2 12:16 quota 4/4
   day 2 12:16 +$30 (wage)
-  day 3 08:00 inmate 0 hired: woodshop
+  day 3 08:00 inmate 5 hired: woodshop
   day 3 12:12 quota 1/4
   day 3 12:13 quota 2/4
   day 3 12:13 quota 3/4
   day 3 12:16 quota 4/4
   day 3 12:16 +$30 (wage)
-janitor: day 1 12:50 +$35 (wage)
+janitor: day 1 12:31 +$35 (wage)
 kitchen: day 1 12:22 +$40 (wage)
 woodshop: day 1 12:13 +$50 (wage)
-mailman: day 1 12:59 +$55 (wage)
+mailman: day 1 12:48 +$55 (wage)
 gardener: day 1 12:46 +$35 (wage)
 stalag-flucht kitchen: day 1 12:22 +$40 (wage)
 stalag-flucht laundry: day 1 12:40 +$30 (wage)
 stalag-flucht woodshop: day 1 12:25 +$50 (wage)
 stalag-flucht metalshop: day 1 12:46 +$65 (wage)
-stalag-flucht janitor: day 1 12:22 +$35 (wage)
+stalag-flucht janitor: day 1 12:23 +$35 (wage)
 stalag-flucht gardener: day 1 12:33 +$35 (wage)
 shankton metalshop: day 1 12:23 +$65 (wage)
 shankton kitchen: day 1 12:30 +$40 (wage)
 shankton laundry: day 1 12:30 +$30 (wage)
 shankton woodshop: day 1 12:15 +$50 (wage)
-shankton janitor: day 1 12:24 +$35 (wage)
-shankton mailman: day 1 12:43 +$55 (wage)
+shankton janitor: day 1 12:27 +$35 (wage)
+shankton mailman: day 1 12:50 +$55 (wage)
 shankton gardener: day 1 12:32 +$35 (wage)
-san-pancho janitor: day 1 12:31 +$35 (wage)
+san-pancho janitor: day 1 12:25 +$35 (wage)
 san-pancho kitchen: day 1 12:29 +$40 (wage)
 san-pancho laundry: day 1 12:35 +$30 (wage)
 san-pancho woodshop: day 1 12:17 +$50 (wage)
-san-pancho metalshop: day 1 12:21 +$65 (wage)
-san-pancho mailman: day 1 12:48 +$55 (wage)
+san-pancho metalshop: day 1 12:22 +$65 (wage)
+san-pancho mailman: day 1 12:45 +$55 (wage)
 san-pancho gardener: day 1 12:24 +$35 (wage)
 irongate woodshop: day 1 12:22 +$50 (wage)
 irongate kitchen: day 1 12:24 +$40 (wage)
 irongate laundry: day 1 12:16 +$30 (wage)
 irongate metalshop: day 1 12:26 +$65 (wage)
-irongate janitor: day 1 12:23 +$35 (wage)
-irongate mailman: day 1 12:41 +$55 (wage)
-irongate gardener: day 1 12:25 +$35 (wage)
+irongate janitor: day 1 12:20 +$35 (wage)
+irongate mailman: day 1 12:38 +$55 (wage)
+irongate gardener: day 1 12:26 +$35 (wage)
 idle worker (never works):
   day 1 15:00 player fired: laundry
-  day 3 08:00 inmate 0 hired: laundry
+  day 3 08:00 inmate 4 hired: laundry
 sabotage: the kitchen hand fired at 15:00, the player hired for day 2
 training: 3 sets of weights → STR 46, energy 100 → 69
 speed: 3.59 tiles a second at SPD 40, 4.30 at 100

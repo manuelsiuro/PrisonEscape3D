@@ -36,7 +36,6 @@ export const DECOR = {
   plant: { wall: false },
   smallBin: { wall: false },
   waterCooler: { wall: false },
-  vending: { wall: false },
   lockers: { wall: false },
   tv: { wall: false },
   drum: { wall: false },

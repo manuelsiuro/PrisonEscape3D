@@ -4,6 +4,7 @@
  */
 import type { PrisonDef } from '../content/prisons/types';
 import { SHOP_SLOTS } from '../content/loot';
+import { newVend, type VendState } from './systems/vendState';
 import { ROUTINE, routineAt } from '../content/routine';
 import { HOLDER, type Favor } from './systems/economy';
 import { maxHealth } from './systems/combat';
@@ -383,6 +384,11 @@ export interface SimState {
   readToday: number;
   /** 2.31: the prison day of the last ambush a lawless prison dealt the player (0 none yet). */
   ambushDay: number;
+  /** 2.32, the vending machine (systems/vending.ts): its rows, what's stuck, the queue, who's at it. */
+  vend: VendState;
+  /** Its card open at it (the player up to it), and how many things they've bought this run. */
+  vendOpen: boolean;
+  vendBought: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -577,5 +583,8 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     readFrom: 0,
     readToday: 0,
     ambushDay: 0,
+    vend: newVend(),
+    vendOpen: false,
+    vendBought: 0,
   };
 }

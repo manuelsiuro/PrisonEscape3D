@@ -12,6 +12,7 @@ import { announceTeam } from './team';
 import { announceNights } from './nights';
 import { announcePhone } from './payphone';
 import { announceKiosk } from './kiosk';
+import { announceVending, foodWords } from './vending';
 import { announcePaper } from './paperwork';
 import { announceParole } from './parole';
 import { announceHoliday } from './holidays';
@@ -306,7 +307,7 @@ export function announce(e: SimEvent, sim: Sim) {
       if (now - lastCant < 1800) break;
       lastCant = now;
       sound.sting();
-      const why = e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tired') : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'storm' ? 'toast.glideStorm' : e.why === 'runUp' ? 'toast.glideRunUp' : e.why === 'full' ? (e.action === 'eat' ? 'toast.notHungry' : 'toast.pocketsFull') : NEED[e.action];
+      const why = e.why === 'tired' ? (nightTired(sim) ? 'toast.tiredNight' : 'toast.tired') : e.why === 'reinforced' ? 'toast.reinforced' : e.why === 'boulder' ? 'toast.boulder' : e.why === 'poster' ? 'toast.posterCell' : e.why === 'noRope' ? 'toast.noRope' : e.why === 'noScent' ? 'toast.noScent' : e.why === 'storm' ? 'toast.glideStorm' : e.why === 'runUp' ? 'toast.glideRunUp' : e.why === 'full' ? (e.action === 'eat' ? (itemDef(itemOf(sim.state.items.inv[sim.state.items.hand])).food?.health ? 'toast.notHurt' : 'toast.notHungry') : 'toast.pocketsFull') : NEED[e.action];
       itemsUI.toast(t(why as Key));
       break;
     }
@@ -372,7 +373,7 @@ export function announce(e: SimEvent, sim: Sim) {
       break;
     case 'ate':
       sound.pickup();
-      itemsUI.toast(t('toast.ate', { n: CHOCOLATE_ENERGY }));
+      itemsUI.toast(itemDef(e.item).food ? foodWords(e.item) : t('toast.ate', { n: CHOCOLATE_ENERGY }));
       break;
     case 'flushed':
       sound.flush();
@@ -848,6 +849,9 @@ export function announce(e: SimEvent, sim: Sim) {
     // The pay phone (P34): the queue, calls, Lou and his jobs, a secret overheard.
     case 'kiosk':
       announceKiosk(e);
+      break;
+    case 'vend':
+      announceVending(sim, e);
       break;
     // The odd jobs board (P40): a job taken, done, handed in, failed; a story's cards.
     case 'oddjob':

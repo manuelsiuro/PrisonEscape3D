@@ -295,12 +295,17 @@ for (const def of PRISONS) {
   // In free time, not after what's left of its linger.
   let bot: Bot | null = null;
   let prop = -1;
-  for (const seed of [9, 7, 11, 13, 17, 19]) {
+  for (const seed of [9, 7, 11, 13, 17, 19, 21, 23, 27, 31]) {
     const b = new Bot(def, seed);
     check(b.routineUntil(1, 18 * 60 + 5), 'free time');
     b.until(() => gearOf(b).some((i) => onMachine(b.sim, i) >= 0), 90 * STEPS_PER_MINUTE);
     prop = gearOf(b).find((i) => onMachine(b.sim, i) >= 0) ?? -1;
+    // (Not with someone else right there, whom the button would talk to instead: this is about the one on the machine.)
     if (prop >= 0) {
+      const on = onMachine(b.sim, prop);
+      const t = spotOf(b, prop).tile;
+      const near = b.st.inmates.some((o, k) => k !== on && Math.max(Math.abs(o.body.x - ((t % MAP_W) * UNIT + UNIT / 2)), Math.abs(o.body.z - (Math.floor(t / MAP_W) * UNIT + UNIT / 2))) < 3 * UNIT);
+      if (near) continue;
       bot = b;
       break;
     }
@@ -542,18 +547,19 @@ for (const lang of [en, fr] as Array<Record<string, string>>) {
   was228.rules228 = true;
   was228.rules229 = true;
   was228.rules230 = true;
+  was228.rules231 = true;
   check(was228.world.plainGear, 'the old rules: the bag and the mat for show');
   const prev = new RunRecorder(was228, { seed: 24, game: '2.28.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) prev.step(0);
   check(!prev.sim.state.inmates.some((m) => ON_MACHINE.includes(m.doing)), 'the old rules: nobody on the machines');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules228 === true, 'a 2.28 log through the hour replays whole under the old rules');
-  check(!replayLog({ ...prev.toLog(), game: '2.31.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.31.0' }).toLog().seed === -1, 'and is not carried on');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.31.0' });
+  check(!replayLog({ ...prev.toLog(), game: '2.32.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.32.0' }).toLog().seed === -1, 'and is not carried on');
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 24), { seed: 24, game: '2.32.0' });
   for (let k = 0; k < (HOUR - 8 * 60 + 40) * STEPS_PER_MINUTE; k++) now.step(0);
   check(!!replayLog(now.toLog(), CENTER_PERKS)?.ok, "a log of today's replays");
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.31.1' }).toLog().seed === 24, 'and is carried on');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.32.1' }).toLog().seed === 24, 'and is carried on');
   // The old set: fast presses, a bar that drains, the bag no use at all.
   const o = new Bot(CENTER_PERKS, 3);
   o.sim.rules228 = true;

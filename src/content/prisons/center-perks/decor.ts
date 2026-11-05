@@ -128,8 +128,7 @@ export const CENTER_PERKS_DECOR: readonly DecorPlacement[] = [
   // Solitary: the potatoes to peel.
   { kind: 'potatoes', x: 18, z: 42 },
   { kind: 'potatoes', x: 20, z: 42 },
-  // Visitation: a vending machine, phones on the counters, plants, a clock.
-  { kind: 'vending', x: 27, z: 39 },
+  // Visitation: phones on the counters, plants, a clock.
   { kind: 'phone', x: 27, z: 41, y: COUNTER },
   { kind: 'phone', x: 34, z: 41, y: COUNTER },
   { kind: 'plant', x: 37, z: 39 },

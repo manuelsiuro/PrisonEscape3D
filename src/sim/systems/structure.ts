@@ -266,8 +266,8 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = f
   if (!(DIGGABLE.has(k) || (up && k === TILE.MINE)) || reserved(w).has(i) || w.layers[LAYER.UNDER].kind[i] === TILE.BOULDER) return false;
   if (w.propSolid[i] && !underMyDesk(w, i)) return false;
   // (The gym's bag and mat, decor until 2.29, were never in the way of a spade.)
-  // (Nor, in a run from before 2.31, the library's added chairs.)
-  if (w.props.some((p) => p.kind !== 'mat' && p.kind !== 'punchingBag' && !(w.plainBooks && (p.kind === 'readChair' || p.kind === 'deskChair')) && !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
+  // (Nor, in a run from before 2.31, the library's added chairs; before 2.32, the vending machine.)
+  if (w.props.some((p) => p.kind !== 'mat' && p.kind !== 'punchingBag' && !(w.plainBooks && (p.kind === 'readChair' || p.kind === 'deskChair')) && !(w.plainVending && p.kind === 'vending') && !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
   return !occupied(i, bodies);
 }
 
@@ -286,7 +286,7 @@ export function toolTarget(w: World, layer: number, b: Body, held: number, bodie
   // Ripe pruno drunk; the rat's track (P28).
   if (held === PRUNO) return { action: 'drink', layer, tile: -1, fits: true, hp: 0 };
   if (held === RAT_TRACK) return { action: 'track', layer, tile: -1, fits: true, hp: 0 };
-  if (held === CHOCOLATE || held === CAKE || held === CHOC_EGG || held === ICE_LOLLY) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
+  if (held === CHOCOLATE || held === CAKE || held === CHOC_EGG || held === ICE_LOLLY || def?.food) return { action: 'eat', layer, tile: -1, fits: true, hp: 0 };
   // P42: a pumpkin carved into a lantern, in the kitchen only.
   if (held === PUMPKIN) return { action: 'carve', layer, tile: -1, fits: layer === LAYER.GROUND && w.zoneAt(Math.floor(b.x / UNIT), Math.floor(b.z / UNIT)) === 'kitchen', hp: 0 };
   // P35: the hollow book opened, what it hides (`inside`: the slot in its upper bits) taken out.

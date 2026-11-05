@@ -1,6 +1,6 @@
 data: 59 small items; every prison has a kitchen or canteen for traps
 odds: canteen 59%, tunnel 88% over 400 nights
-traps: 4 of 5 caught at day 2 04:01
+traps: 3 of 5 caught at day 2 04:01
 taming: two meals (potato before chocolate before jerky), one pet
 errands: furniture within reach, the best small thing and the change back, a small thing left
 keys: a guard who wakes without his key raises the alarm (day 4 08:02)

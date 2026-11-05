@@ -246,6 +246,8 @@ const SHAPES: Record<string, Shape> = {
   /** P42: a chocolate egg in foil, a band of gold round its middle. */
   egg: (c, a) => [paint(new THREE.SphereGeometry(0.1, 14, 10).scale(1, 1.3, 1).translate(0, 0.13, 0), c), cyl(0.102, 0.03, a, 0, 0.12, 0, 14)],
   /** P42: an ice lolly on its stick, a bite out of its corner. */
+  can: (c, a) => [cyl(0.075, 0.2, c, 0, 0, 0, 14), cyl(0.06, 0.015, a ?? c, 0, 0.2, 0, 14), box(0.15, 0.05, 0.002, a ?? c, 0, 0.09, 0.075)],
+  bag: (c, a) => [box(0.22, 0.28, 0.09, c), box(0.23, 0.03, 0.05, a ?? c, 0, 0.27, 0), box(0.23, 0.03, 0.05, a ?? c, 0, -0.01, 0), box(0.12, 0.1, 0.092, a ?? c, 0, 0.09, 0)],
   lolly: (c, a) => [box(0.2, 0.05, 0.12, c, -0.05, 0.025, 0), box(0.05, 0.051, 0.05, 0xf4e1c8, -0.13, 0.025, 0.04), box(0.16, 0.02, 0.03, a, 0.12, 0.02, 0)],
   /** P42: a pumpkin, its ribs, its stalk. */
   pumpkin: (c, a) => [paint(new THREE.SphereGeometry(0.15, 14, 10).scale(1, 0.75, 1).translate(0, 0.11, 0), c), ...[0, 1, 2].map((k) => turn(box(0.31, 0.2, 0.02, c, 0, 0.11, 0), (k * Math.PI) / 3)), cyl(0.02, 0.07, a, 0, 0.23, 0, 6)],

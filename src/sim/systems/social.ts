@@ -4,6 +4,7 @@
  */
 import { mealOn, traysHere } from './canteen';
 import { phoneTargets, swapPlace } from './phone';
+import { vendTargets } from './vending';
 import { delivering, oddjobTargets, owes, R, talkJob } from './oddjobs';
 import { boardKeptClear, hearingToday } from './parole';
 import { releaseToday } from './paperwork';
@@ -457,6 +458,8 @@ export function socialNow(sim: SimContext): Social {
   const about = s.layer === LAYER.GROUND && !sim.away;
   // The pay phone (P34): the caller and the queue (the stage, the crew and the games come first: set after).
   phoneTargets(sim, so);
+  // The vending machine (2.32): its queue, once the others have had their say.
+  vendTargets(sim, so);
   // Talent night (P30): the act on the stage (wherever the player is).
   stageTargets(sim, so);
   // The odd jobs board (P40): a lookout job's digger at his bed in the free times (only once the player has taken one).

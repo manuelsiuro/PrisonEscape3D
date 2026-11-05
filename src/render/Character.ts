@@ -1081,6 +1081,25 @@ export class Character {
       armRx += (-1.38 - tap) * ga;
       armLz += 0.22 * ga;
       armRz -= 0.22 * ga;
+    } else if (doing === DOING.VEND) {
+      // At the vending machine (2.32): the right hand out at its keys, pressing, the other at the side. Held still with reduced motion.
+      const ga = this.act;
+      const tap = motion ? Math.max(0, Math.sin(t * 7)) * 0.09 : 0;
+      armRx += (-1.35 + tap) * ga;
+      armRz -= 0.12 * ga;
+    } else if (doing === DOING.THUMP) {
+      // Thumping it: the fist back and into its side, the shoulders with it; with reduced motion, the fist up against it.
+      const ga = this.act;
+      const hit = motion ? Math.sin(t * 16) * 0.42 : 0;
+      armRx += (-1.3 + hit) * ga;
+      armLx += (-0.5 - hit * 0.3) * ga;
+      armRz -= 0.1 * ga;
+    } else if (doing === DOING.SNACK) {
+      // Something from the machine: a hand up to the mouth now and then, the other at the side.
+      const ga = this.act;
+      const up = motion ? (Math.sin(t * 1.5) > 0.2 ? 1 : 0.55) : 0.8;
+      armRx += -2.05 * up * ga;
+      armRz += 0.22 * up * ga;
     } else if (doing === DOING.QUEUE) {
       // Waiting in line for the phone (P34): arms crossed, the weight shifting slowly from foot to foot (below).
       const ga = this.act;

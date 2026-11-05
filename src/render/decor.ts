@@ -200,10 +200,6 @@ const BUILDERS: Record<DecorKind, Builder> = {
     parts: [box(0.36, 0.85, 0.36, WHITE, 0, 0, 0), box(0.06, 0.06, 0.04, 0x2f6fd0, -0.08, 0.6, 0.19), box(0.06, 0.06, 0.04, RED, 0.08, 0.6, 0.19)],
     glow: [cyl(0.15, 0.4, 0x9fd8ff, 0, 0.85, 0, 10)],
   }),
-  vending: (_w, d) => ({
-    parts: [box(0.8, 1.4, d - 0.25, 0xc0392b, 0, 0, -0.05), box(0.2, 0.5, 0.02, DARK, 0.25, 0.5, d / 2 - 0.17)],
-    glow: [box(0.42, 0.9, 0.02, 0xfff3c4, -0.12, 0.35, d / 2 - 0.17), box(0.6, 0.12, 0.02, 0xffffff, 0, 1.18, d / 2 - 0.17)],
-  }),
   lockers: (w, d) => {
     const parts: Part[] = [];
     const n = Math.round(w * 2);

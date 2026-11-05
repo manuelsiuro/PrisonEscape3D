@@ -58,6 +58,7 @@ fresh.prisons.forEach((p, k) => {
 
 /** A prison's fields, by where the viewer has them. */
 const KNOWN_PRISON = new Set([
+  'vending',
   // Drawn on the pictures, or under the cursor.
   'ground', 'vents', 'under', 'zones', 'cells', 'props', 'rollCall', 'spawn', 'guards', 'names', 'cameras', 'searchlights', 'decor', 'gates', 'landings', 'drawbridge', 'delivery', 'smuggling', 'checkpoint', 'leisure', 'comms', 'board',
   // On the sheet or the sidebar.
