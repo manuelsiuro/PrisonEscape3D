@@ -7,31 +7,31 @@ washing, 5 s: +13 energy, heat down 4 where standing dry it falls 1
 traps: come for the soap, the next press searches; a head in use refused; off by a step, a blow, a lockdown, a knockout or the bell; standing still is nothing
 center-perks #41: 7/7 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 center-perks #42: 7/7 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
-center-perks #43: 7/7 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
+center-perks #43: 7/7 washed, 0 dry, 0 steps shared, a head free by minute 28, still waiting at the end 0
 stalag-flucht #41: 9/9 washed, 0 dry, 0 steps shared, a head free by minute 27, still waiting at the end 0
-stalag-flucht #42: 9/9 washed, 0 dry, 0 steps shared, a head free by minute 27, still waiting at the end 0
-stalag-flucht #43: 9/9 washed, 0 dry, 0 steps shared, a head free by minute 27, still waiting at the end 0
+stalag-flucht #42: 9/9 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
+stalag-flucht #43: 9/9 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 shankton #41: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 shankton #42: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 shankton #43: 11/11 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
-san-pancho #41: 13/13 washed, 0 dry, 8 steps shared, a head free by minute 26, still waiting at the end 0
-san-pancho #42: 13/13 washed, 0 dry, 8 steps shared, a head free by minute 25, still waiting at the end 0
+san-pancho #41: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
+san-pancho #42: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 san-pancho #43: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
-irongate #41: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
-irongate #42: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 26, still waiting at the end 0
+irongate #41: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 26, still waiting at the end 0
+irongate #42: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 irongate #43: 13/13 washed, 0 dry, 0 steps shared, a head free by minute 25, still waiting at the end 0
 center-perks, 0 minutes in: washing after 4.4 s of a 60 s block, 0 heads taken
 center-perks, 35 minutes in: washing after 1.0 s of a 60 s block, 0 heads taken
 stalag-flucht, 0 minutes in: washing after 3.6 s of a 60 s block, 0 heads taken
-stalag-flucht, 35 minutes in: washing after 1.4 s of a 60 s block, 0 heads taken
-shankton, 0 minutes in: washing after 12.9 s of a 60 s block, 0 heads taken
-shankton, 35 minutes in: washing after 1.3 s of a 60 s block, 0 heads taken
-san-pancho, 0 minutes in: washing after 5.8 s of a 60 s block, 0 heads taken
-san-pancho, 35 minutes in: washing after 19.7 s of a 60 s block, 2 heads taken
+stalag-flucht, 35 minutes in: washing after 1.9 s of a 60 s block, 0 heads taken
+shankton, 0 minutes in: washing after 12.8 s of a 60 s block, 0 heads taken
+shankton, 35 minutes in: washing after 1.6 s of a 60 s block, 0 heads taken
+san-pancho, 0 minutes in: washing after 5.9 s of a 60 s block, 0 heads taken
+san-pancho, 35 minutes in: washing after 1.1 s of a 60 s block, 0 heads taken
 irongate, 0 minutes in: washing after 3.3 s of a 60 s block, 0 heads taken
-irongate, 35 minutes in: washing after 4.4 s of a 60 s block, 3 heads taken
+irongate, 35 minutes in: washing after 5.8 s of a 60 s block, 4 heads taken
 ambush: 1.5 s squaring up before it moves or lands a blow
-san-pancho, day 1, a player who stands there: knocked out in 11 of 12 blocks, 19 ambushes
-san-pancho, day 1, a player who hits back: knocked out in 12 of 12 blocks, 17 ambushes
-san-pancho, day 1, a player who leaves the room when warned: knocked out in 6 of 12 blocks, 12 ambushes
+san-pancho, day 1, a player who stands there: knocked out in 10 of 12 blocks, 10 ambushes
+san-pancho, day 1, a player who hits back: knocked out in 4 of 12 blocks, 10 ambushes
+san-pancho, day 1, a player who leaves the room when warned: knocked out in 6 of 12 blocks, 10 ambushes
 saves and older runs: the water kept; a save from before loads with none; a 2.25 log replays as it was and is not carried on; Training has none

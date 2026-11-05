@@ -7,8 +7,8 @@ training: pitch 13×8 at 35,42, field 11×8 along x
 the ball: rolled 56 steps across and stopped
 the kick: aimed at the mouth 683 from its middle (the way faced: 3696)
 walk on: the whistle after 20 steps
-a simple bot over 30 matches: won 27, lost 0, drawn 3, off 0; goals 101–19; kicks 280
-a newcomer over 30 matches: before 2.16 won 1, lost 12, drawn 17, their goals 2, own goals 0; now won 10, lost 11, drawn 9, their goals 14, own goals 0
+a simple bot over 30 matches: won 26, lost 0, drawn 4, off 0; goals 97–19; kicks 279
+a newcomer over 30 matches: before 2.16 won 1, lost 12, drawn 17, their goals 2, own goals 0; now won 10, lost 12, drawn 8, their goals 14, own goals 0
 the cover: sight 7 tiles on the pitch, 3.5 off it; a goal holds a guard's eyes 100 steps
 heart: 168 steps, pays $7–$22
 skull: 184 steps, pays $12–$37

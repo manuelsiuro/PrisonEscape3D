@@ -6,6 +6,7 @@ import { lockCandidates } from '../sim/systems/combat';
 import type { Station } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
 import { interactTarget, type Target } from '../sim/systems/items';
+import { chairForBook } from '../sim/systems/training';
 import type { Body } from '../sim/systems/movement';
 import { climbTarget, digUpTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
 import { strikeNoise, wouldHear } from '../sim/systems/noise';
@@ -178,7 +179,9 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     memo.busy = busy;
     memo.panel = panel;
     memo.rev = it.rev;
-    const near = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim), sim.bedtime && !sim.rules227);
+    // (2.31: a book in hand, at a free library chair: that, as actions.ts has it.)
+    const bookSeat = busy ? -1 : chairForBook(sim);
+    const near: Target | null = busy ? null : bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim), sim.bedtime && !sim.rules227);
     // (P29: in a match, the players running by aren't offered for a talk: the action button never pops up under the thumb for them.)
     const reach = near?.kind === 'person' && st.match?.team.includes(near.who) ? null : near;
     memo.station = busy || st.layer !== LAYER.GROUND ? null : sim.station();

@@ -491,7 +491,7 @@ export class View {
     this.world = world;
     this.pitch = pitch;
     this.chairs.clear();
-    for (const p of world.props) if (p.kind === 'chair') this.chairs.add(p.z * MAP_W + p.x);
+    for (const p of world.props) if (p.kind === 'chair' || p.kind === 'readChair' || p.kind === 'deskChair') this.chairs.add(p.z * MAP_W + p.x);
     this.security = new Security(world);
     if (!same) {
       this.decor = new DecorView(world.def.decor ?? []);

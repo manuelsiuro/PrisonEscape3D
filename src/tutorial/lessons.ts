@@ -1019,6 +1019,24 @@ export const LESSONS: readonly Lesson[] = [
     ],
   },
   {
+    // The library (2.31): a book off the shelf, read on a chair, a set done.
+    id: 'library',
+    icon: 'book',
+    prison: CENTER_PERKS,
+    seed: 146,
+    setup: (sim) => {
+      clockTo(sim, at(10, 2));
+      place(sim, 17, 31, 13);
+      sim.state.energy = 100;
+    },
+    steps: [
+      { text: 'lesson.library.take', touch: 'lesson.library.takeTouch', on: (e) => e.type === 'book' && e.on },
+      { text: 'lesson.library.sit', touch: 'lesson.library.sitTouch', done: (c) => c.sim.state.train >= 0, fail: (c) => (c.sim.state.book ? null : 'lesson.library.left') },
+      { text: 'lesson.library.read', touch: 'lesson.library.readTouch', on: (e) => e.type === 'trained', fail: (c) => (c.sim.state.book ? null : 'lesson.library.left') },
+      { text: 'lesson.library.over', done: () => true, least: 8 },
+    ],
+  },
+  {
     // The pay phone (P34): someone on it, a place in line, a secret overheard while waiting, a call home, the money at mail call.
     id: 'payphone',
     icon: 'phone',
@@ -1307,7 +1325,7 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'library', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 

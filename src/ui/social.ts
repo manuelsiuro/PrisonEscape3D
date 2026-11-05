@@ -19,6 +19,8 @@ import { confirmed, esc, h, type Send } from './dom';
 import { icon } from './icons';
 import { itemName } from './items';
 import { fixerOf, PHONE } from '../sim/systems/smuggling';
+import { librarianOf } from '../sim/systems/training';
+import { librarianLine } from './reading';
 import { PHONE_OPINION, PHONE_PRICE } from '../content/smuggling';
 import { gamesSection, type GamesView } from './games';
 import { twist } from '../sim/systems/twists';
@@ -122,6 +124,8 @@ export class TalkPanel {
     const inv = s.items.inv.slice(0, HOTBAR);
     // The fixer (P21): a burner phone, to a friend.
     const fixer = fixerOf(sim) === who;
+    // (2.31: the librarian's advice, from what the shelves can tell the player now.)
+    const librarian = !sim.rules230 && librarianOf(sim) === who ? librarianLine(sim) : '';
     const hasPhone = inv.some((v) => itemOf(v) === PHONE);
     // The games (P22): the dice tapped belong to one game on the table.
     const gv = this.games(sim);
@@ -145,7 +149,7 @@ export class TalkPanel {
     const his = s.line.indexOf(who);
     const ahead = mine > 0 && his >= 0 && his < mine;
     const oj = this.oddJob(sim, who);
-    const key = [oj?.key ?? '', crewKey, gamesKey, who, m.opinion, fixer, hasPhone, ahead, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
+    const key = [oj?.key ?? '', crewKey, gamesKey, who, m.opinion, fixer, librarian, hasPhone, ahead, favor ? `${favor.kind}:${favor.state}:${favor.item}:${favor.target}:${favor.reward}` : '', shop?.join(',') ?? '', sim.shopsOpen, sim.fixerOpen, s.cash, inv.join(','), s.followers.join(','), s.jobs.join(','), s.tipDay[who] ?? 0, s.tips.length, s.items.known.length, s.items.int, sim.clock.day, currentLang(), this.greeting].join('|');
     if (key === this.drawn) return;
     this.drawn = key;
     const first = this.who !== who;
@@ -158,6 +162,7 @@ export class TalkPanel {
     const chips = [
       merchant >= 0 ? `<span class="chip shop">${icon('cart', 13)}${t('role.merchant')}</span>` : '',
       fixer ? `<span class="chip fixer">${icon('phone', 13)}${t('role.fixer')}</span>` : '',
+      librarian ? `<span class="chip">${icon('book', 13)}${t('role.librarian')}</span>` : '',
       job >= 0 ? `<span class="chip">${icon('briefcase', 13)}${esc(t(`job.${sim.prison.jobs[job].id}` as Key))}</span>` : '',
       following ? `<span class="chip ally">${icon('star', 13)}${t('role.follower')}</span>` : '',
       `<span class="chip spec" data-spec="${spec}">${icon(SPEC_ICON[spec], 13)}${t(`spec.${spec}`)}</span>`,
@@ -280,7 +285,7 @@ export class TalkPanel {
     const rearm = armed ? `[data-act="${armed.dataset.act}"][data-arg="${armed.dataset.arg ?? ''}"]` : '';
     this.el.innerHTML = `<div class="panel-head"><span class="talk-face" data-cell="${m.cell}">${esc(inmateName(sim, who).charAt(0))}</span><span class="talk-who"><b>${esc(inmateName(sim, who))}</b><small>${t('talk.cell', { n: m.cell })}</small></span><button class="icon-btn small" data-act="close" aria-label="${t('box.close')}">${icon('close', 18)}</button></div>
       ${this.greeting ? `<p class="talk-greet">${esc(this.greeting)}</p>` : ''}<div class="talk-opinion" data-mood="${mood}"><span class="talk-mood">${t(`mood.${mood}` as Key)}</span><i class="talk-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.opinion}" aria-label="${t('talk.opinion')}"><i class="fill" style="width:${m.opinion}%"></i><i class="tick low"></i><i class="tick high"></i></i><b>${m.opinion}</b>${delta ? `<em class="talk-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta}</em>` : ''}</div>
-      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
+      ${chips ? `<div class="talk-chips">${chips}</div>` : ''}${librarian ? `<p class="talk-note librarian">${icon('book', 13)}<span>${esc(librarian)}</span></p>` : ''}${cv ? crewSection(cv) : ''}${favorHtml}${ojHtml}${swapHtml}${phoneHtml}${shopHtml}${gamesHtml}${giftHtml}<div class="talk-acts">${tipHtml}${foot}</div>`;
     if (rearm) {
       const b = this.el.querySelector<HTMLElement>(rearm);
       if (b && !(b as HTMLButtonElement).disabled) confirmed(b);

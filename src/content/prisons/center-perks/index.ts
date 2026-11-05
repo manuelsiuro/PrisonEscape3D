@@ -253,6 +253,11 @@ const GEAR: PropPlacement[] = [
   { kind: 'mat', x: 10, z: 53 },
 ];
 
+/** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
+const READING: PropPlacement[] = [
+  { kind: 'deskChair', x: 18, z: 32, rot: 3 },
+];
+
 export const CENTER_PERKS: PrisonDef = {
   id: 'center-perks',
   difficulty: 1,
@@ -291,7 +296,7 @@ export const CENTER_PERKS: PrisonDef = {
     ['garden', 36, 46, 56, 55],
   ],
   cells,
-  props: [...props, ...GEAR],
+  props: [...props, ...GEAR, ...READING],
   rollCall,
   spawn: { x: 9, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation', 'sports', 'garden'],
@@ -386,6 +391,7 @@ export const CENTER_PERKS: PrisonDef = {
     track: { x: 11, z: 47, w: 16, d: 9 },
     stage: stage(56, 11, 9),
     quiz: quizAt(13, [17, 34], [18, 34], [20, 34], [21, 34]),
+    librarian: { cell: 4, x: 18, z: 32, face: 9 },
   },
   // Rebuilt in 2.7 (P31): the sports ground and the garden in the south grounds.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.

@@ -37,7 +37,7 @@ line is something that was missed or broke at some point.
 - Saves (`load.ts`: fields at the end, optional, checked) and values whose meaning changed. Old logs
   (`Sim.rulesNNN`, `prepareReplay`, the `stale` gate in `RunRecorder`).
 - A prison that lacks the thing (Training has no serving counter).
-- Decor turned into a working prop: everything iterating `world.props` sees it, in old runs too (digging, the button's target). Add it last, not solid, and compare the old world with the new one on those tiles.
+- Decor turned into a working prop: everything iterating `world.props` sees it, in old runs too (digging, the button's target). Add it last, not solid, and compare the old world with the new one on those tiles (`canDigFloor` refuses any prop's tile: an added chair would have broken old logs that dug there).
 
 **What the player meets**
 - The action button: `labels.ts` must say exactly what `actions.ts` does, in the same order of priority.
@@ -48,6 +48,9 @@ line is something that was missed or broke at some point.
 - A new reason a guard reacts may count as being spotted (`FEAT.spotted`, the Ghost medal, a commendation lost). A telling-off that isn't a fault needs its own event.
 - A rule about a room: grep what sends people there on purpose (odd jobs, holiday treats, side errands).
 - A model with a door or window: check which way each prison turned it. From this camera a front turned to the wall is never seen. An inmate given a new pose keeps it until something clears it: check free time, when they walk off, as well as the block it was built for.
+- Arrows that lead somewhere promise the button there does that thing. Stand on the arrows' last tile with someone in reach: a nearby guard took the button from the chair the book's arrows led to. And check what the arrows do when a bell rings mid-errand: the routine comes first.
+- A card that takes over the keys (Space, the tool button hidden): make sure a blow ends it, or the player is beaten with no way to answer.
+- A printed cost: measure it in every place the thing can be done. A chair's energy kept coming during a set, so "−10" was a gain of 29.
 - A hint whose advice changes needs a new `coachOnce` id: anyone who has played has already seen the old one and won't be told.
 
 **What teaches it**

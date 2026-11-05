@@ -266,7 +266,8 @@ export function canDigFloor(w: World, i: number, bodies: readonly Body[], up = f
   if (!(DIGGABLE.has(k) || (up && k === TILE.MINE)) || reserved(w).has(i) || w.layers[LAYER.UNDER].kind[i] === TILE.BOULDER) return false;
   if (w.propSolid[i] && !underMyDesk(w, i)) return false;
   // (The gym's bag and mat, decor until 2.29, were never in the way of a spade.)
-  if (w.props.some((p) => p.kind !== 'mat' && p.kind !== 'punchingBag' && !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
+  // (Nor, in a run from before 2.31, the library's added chairs.)
+  if (w.props.some((p) => p.kind !== 'mat' && p.kind !== 'punchingBag' && !(w.plainBooks && (p.kind === 'readChair' || p.kind === 'deskChair')) && !w.propSolid[i] && tileX(i) >= p.x && tileX(i) < p.x + p.w && tileZ(i) >= p.z && tileZ(i) < p.z + p.d)) return false;
   return !occupied(i, bodies);
 }
 

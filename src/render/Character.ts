@@ -891,8 +891,9 @@ export class Character {
       // A book held up in both hands; a page turns on each rep.
       armLx += -1.25 * a;
       armRx += (-1.25 - this.pumped * 0.25) * a;
-      armLz -= 0.25 * a;
-      armRz += 0.25 * a;
+      // (2.31: hands together, in front of the chest, as a book's held: they stood out to the sides before.)
+      armLz += 0.42 * a;
+      armRz -= 0.42 * a;
     } else if (doing === DOING.COUNT) {
       // The warden, clipboard in one hand, the pen in the other. (Held still with reduced motion: it says what they're doing.)
       const wa = this.act;

@@ -2,17 +2,19 @@
 import { nearestDir } from '../ai/path';
 import type { SimContext } from '../context';
 import { type Attr, ATTRS } from '../events';
-import { ATTR_MAX, GIVE_WAY_STEPS, GYM_ENERGY, REP_DRAIN_STEPS, REP_GAIN, SET_BEATS, STUDY_ENERGY, STUDY_TIP_EVERY, TALK_REACH, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
+import { ATTR_MAX, GIVE_WAY_STEPS, GYM_ENERGY, READ_FILL_EVERY, READ_HIT, READ_SETS_A_DAY, READ_WINDOW, REP_DRAIN_STEPS, REP_GAIN, SET_BEATS, STUDY_ENERGY, STUDY_TIP_EVERY, TALK_REACH, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
+import { keyAt, keyFrom, SUBJECTS } from '../../content/books';
 import { containersOf } from '../world/containers';
-import { LAYER } from '../world/World';
+import { LAYER, MAP_W } from '../world/World';
 import type { FixtureUse } from './items';
 import { revealTip } from './recipes';
 import { approach, endTalk } from './social';
 import { energyCost } from './weather';
 import { closeBox, fixtureUse, REACH } from './items';
-import { atProp } from './rest';
+import { atProp, propReach } from './rest';
 import { ON_MACHINE } from '../ai/doing';
 import { placesOf } from '../ai/places';
+import { inmateInCell } from './inmates';
 import { tileAt } from '../world/grid';
 
 export function attr(sim: SimContext, a: Attr): number {
@@ -56,8 +58,69 @@ export function onMachine(sim: Pick<SimContext, 'state' | 'world'>, prop: number
 }
 
 /** Whether a set can't be begun: why (shown), or null. */
-function refused(sim: SimContext, a: Attr): 'tired' | 'max' | null {
+function refused(sim: SimContext, a: Attr): 'tired' | 'max' | 'full' | null {
+  if (a === 'int' && headFull(sim) && attr(sim, a) < ATTR_MAX) return 'full';
   return sim.state.energy < TIRED ? 'tired' : attr(sim, a) >= ATTR_MAX ? 'max' : null;
+}
+
+/** The librarian (2.31), by index, -1 none. */
+export const librarianOf = (sim: Pick<SimContext, 'state' | 'world'>) => inmateInCell(sim.state, sim.world.def.leisure?.librarian?.cell ?? -1);
+
+/** The day's reading done (2.31): no more till tomorrow. */
+export const headFull = (sim: Pick<SimContext, 'state' | 'rules230'>) => !sim.rules230 && sim.state.readToday >= READ_SETS_A_DAY;
+
+/** Why a book can't be read now (shown on the shelf's panel), or null. */
+export const cantRead = (sim: SimContext) => refused(sim, 'int');
+
+/** Reading a book now (2.31), rather than the old set at the shelf. */
+export const reading = (sim: SimContext) => !sim.rules230 && sim.state.train >= 0 && sim.world.props[sim.state.train].kind === 'shelf';
+
+/** A library shelf, for a set read on a chair (`train` names the shelf). */
+const shelfIndex = (sim: SimContext) => sim.world.props.findIndex((p) => p.kind === 'shelf' && sim.world.zoneAt(p.x, p.z) === 'library');
+
+/** With a book, on a library chair, not reading. */
+export function onReadChair(sim: SimContext): boolean {
+  const s = sim.state;
+  if (sim.rules230 || !s.book || s.seat < 0 || s.train >= 0) return false;
+  const p = sim.world.props[s.seat];
+  return (p.kind === 'chair' || p.kind === 'readChair') && sim.world.zoneAt(p.x, p.z) === 'library';
+}
+
+/** And able to read: the action button opens the book (spent, or at 100, it gets them up, as anywhere). */
+export const readSeated = (sim: SimContext) => onReadChair(sim) && !refused(sim, 'int');
+
+/** Into the book in hand, from the chair the player's on. */
+export function readOn(sim: SimContext) {
+  const shelf = shelfIndex(sim);
+  if (shelf >= 0) startTraining(sim, shelf, 'study');
+}
+
+/**
+ * With a book in hand: the nearest free library chair in reach, -1 none. It comes before anyone about to talk to:
+ * the arrows lead to it, and the button there is for reading (both the action and its label ask).
+ */
+export function chairForBook(sim: SimContext): number {
+  const s = sim.state;
+  if (sim.rules230 || !s.book || s.seat >= 0 || s.train >= 0 || s.layer !== LAYER.GROUND) return -1;
+  const busy = (t: number) => s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === t || m.seat === t || tileAt(m.body.x, m.body.z) === t));
+  let best = -1;
+  let near = Infinity;
+  sim.world.props.forEach((p, k) => {
+    if ((p.kind !== 'chair' && p.kind !== 'readChair') || sim.world.zoneAt(p.x, p.z) !== 'library' || busy(p.z * MAP_W + p.x)) return;
+    const d = propReach(p, s.player.x, s.player.z);
+    if (d <= REACH && d < near) {
+      near = d;
+      best = k;
+    }
+  });
+  return best;
+}
+
+/** A library chair the player could sit on now, as sitDown has it (2.31). */
+export function freeReadSeat(sim: SimContext): number {
+  const s = sim.state;
+  const busy = (t: number) => s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === t || m.seat === t || tileAt(m.body.x, m.body.z) === t));
+  return placesOf(sim.world).readSeats.find((q) => !busy(q.tile))?.tile ?? -1;
 }
 
 /**
@@ -127,21 +190,49 @@ export function startTraining(sim: SimContext, prop: number, use: FixtureUse | '
   closeBox(sim);
   const p = sim.world.props[prop];
   s.player.moving = false;
-  s.player.facing = nearestDir((p.x + p.w / 2) * UNIT - s.player.x, (p.z + p.d / 2) * UNIT - s.player.z) || s.player.facing;
+  // (2.31: on a chair, reading, they face its table.)
+  if (s.seat < 0 || sim.rules230) s.player.facing = nearestDir((p.x + p.w / 2) * UNIT - s.player.x, (p.z + p.d / 2) * UNIT - s.player.z) || s.player.facing;
   s.train = prop;
+  s.readFrom = s.step;
   s.reps = 0;
   s.repSide = 0;
-  s.repBeat = -1;
+  s.repBeat = sim.rules230 || p.kind !== 'shelf' ? -1 : 0;
   s.askTurn = [];
   sim.events.push({ type: 'train', on: true, use });
 }
 
-/** Studying at the library shelf whose panel is open. */
-export function study(sim: SimContext) {
+/**
+ * At the library shelf whose panel is open. 2.31: a book of the subject is taken, to a free chair with it; with
+ * none free it's read there at the shelf. (Before, the set began there.)
+ */
+export function study(sim: SimContext, subject = 0) {
   const s = sim.state;
   const box = containersOf(sim.world)[s.items.open];
   if (!box || box.prop.kind !== 'shelf' || sim.world.zoneAt(box.prop.x, box.prop.z) !== 'library') return;
-  startTraining(sim, sim.world.props.indexOf(box.prop), 'study');
+  const shelf = sim.world.props.indexOf(box.prop);
+  if (sim.rules230) return startTraining(sim, shelf, 'study');
+  const why = refused(sim, 'int');
+  if (why) return void sim.events.push({ type: 'cantTrain', why });
+  if (subject < 0 || subject >= SUBJECTS.length) return;
+  s.book = subject + 1;
+  const seat = freeReadSeat(sim) >= 0;
+  sim.events.push({ type: 'book', on: true, subject, seat });
+  closeBox(sim);
+  if (!seat) startTraining(sim, shelf, 'study');
+}
+
+/** A key word underlined, as the marker reaches it (2.31). A stray press spends the next one, so that tapping away gains nothing. */
+function underline(sim: SimContext) {
+  const s = sim.state;
+  const pos = s.step - s.readFrom;
+  const k = keyFrom(pos, READ_WINDOW);
+  // (Gone already, underlined or spent: the press does no more harm.)
+  if (k < s.repBeat) return;
+  const hit = keyAt(k) <= pos + READ_WINDOW;
+  s.repBeat = k + 1;
+  if (hit) s.reps = Math.min(100, s.reps + READ_HIT);
+  sim.events.push({ type: 'rep', hit, key: k });
+  if (s.reps >= 100) setDone(sim);
 }
 
 /**
@@ -150,7 +241,9 @@ export function study(sim: SimContext) {
  */
 export function rep(sim: SimContext, side: number) {
   const s = sim.state;
-  if (s.train < 0 || side === s.repSide) return;
+  if (s.train < 0) return;
+  if (reading(sim)) return underline(sim);
+  if (side === s.repSide) return;
   if (sim.rules228) {
     s.repSide = side;
     s.reps = Math.min(100, s.reps + REP_GAIN);
@@ -165,8 +258,14 @@ export function rep(sim: SimContext, side: number) {
     s.reps = Math.min(100, s.reps + (hit ? set.hit : set.miss));
     sim.events.push({ type: 'rep', hit });
   }
-  if (s.reps < 100) return;
+  if (s.reps >= 100) setDone(sim);
+}
+
+/** A full bar: a set done. */
+function setDone(sim: SimContext) {
+  const s = sim.state;
   const a = trainsOn(sim, s.train)!;
+  const read = reading(sim);
   s.reps = 0;
   setAttr(sim, a, Math.min(ATTR_MAX, attr(sim, a) + TRAIN_GAIN));
   s.trained |= 1 << ATTRS.indexOf(a);
@@ -176,7 +275,18 @@ export function rep(sim: SimContext, side: number) {
   const mark = Math.floor(attr(sim, a) / STUDY_TIP_EVERY);
   if (a === 'int' && mark > s.studied) {
     s.studied = mark;
-    revealTip(sim);
+    // (2.31: from the book's subject.)
+    revealTip(sim, -1, read ? s.book - 1 : -1);
+  }
+  // (2.31: the day's reading done: the book goes back.)
+  if (read) {
+    s.readToday++;
+    if (headFull(sim) && attr(sim, a) < ATTR_MAX) {
+      sim.events.push({ type: 'cantTrain', why: 'full' });
+      stopTraining(sim);
+      putBack(sim);
+      return;
+    }
   }
   // Spent, or as good as it gets: off the equipment.
   if (s.energy < TIRED || attr(sim, a) >= ATTR_MAX) {
@@ -185,10 +295,45 @@ export function rep(sim: SimContext, side: number) {
   }
 }
 
+/** The book back on the shelf (2.31). */
+function putBack(sim: SimContext) {
+  const s = sim.state;
+  if (!s.book) return;
+  const subject = s.book - 1;
+  s.book = 0;
+  sim.events.push({ type: 'book', on: false, subject, seat: false });
+}
+
+/** Each step with a book: only the library's, only while up and about; each step reading, the bar fills by itself. */
+function keepBook(sim: SimContext) {
+  const s = sim.state;
+  const p = s.player;
+  // (In the library, or at one of its shelves from the far side of a doorway.)
+  const here = sim.world.zoneAt(Math.floor(p.x / UNIT), Math.floor(p.z / UNIT)) === 'library' || sim.world.props.some((q, k) => q.kind === 'shelf' && sim.world.zoneAt(q.x, q.z) === 'library' && atProp(sim.world, k, p, REACH + UNIT / 4));
+  if (!here || sim.away || s.lockdown || s.sleeping || s.ko > 0 || s.solitary > 0 || s.layer !== LAYER.GROUND) {
+    stopTraining(sim);
+    putBack(sim);
+    return;
+  }
+  if (s.train < 0 || !reading(sim)) return;
+  // (Up off the chair, by whatever got them up, or away from the shelf.)
+  if (s.seat < 0 && !atProp(sim.world, s.train, p, REACH + UNIT / 4)) {
+    stopTraining(sim);
+    return;
+  }
+  if ((s.step - s.readFrom) % READ_FILL_EVERY === 0 && ++s.reps >= 100) setDone(sim);
+}
+
 /** Each step on the equipment: a lockdown, a knockout or a blow ends it; before 2.29, the bar drains. */
 export function keepTraining(sim: SimContext) {
   const s = sim.state;
+  if (s.book) keepBook(sim);
   if (s.train < 0) return;
+  // (A save from before 2.31 in a set at a shelf: no book to read it in.)
+  if (!s.book && reading(sim)) {
+    stopTraining(sim);
+    return;
+  }
   if (sim.away || s.lockdown || s.sleeping || s.layer !== LAYER.GROUND) {
     stopTraining(sim);
     return;

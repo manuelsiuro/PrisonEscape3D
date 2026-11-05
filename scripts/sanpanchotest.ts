@@ -193,8 +193,11 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   /** Free time on day 1, the player by a grudge-bearer in the yard: steps until the ambush (-1 never). */
   const ambush = (b: Bot) => {
     const s = b.st;
-    b.routineUntil(1, 10 * 60 + 5);
-    const m = s.inmates.find((x) => x.opinion <= 25)!;
+    b.routineUntil(2, 10 * 60 + 5);
+    b.st.ko = 0;
+    // (Today's ambush not had yet, whatever the morning brought.)
+    b.st.ambushDay = 0;
+    const m = s.inmates.find((x) => x.opinion <= 25) ?? s.inmates[2];
     m.opinion = 20;
     for (let k = 0; k < 4000; k++) {
       // Keep beside them wherever they go (in the yard), in their sight.
@@ -213,6 +216,72 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   const there = ambush(cpBot);
   check(there < 0, 'at Center Perks, never in free time');
   console.log(`lawless: three grudges from day 1; a free-time ambush after ${(here / 20).toFixed(0)} s (never at Center Perks)`);
+  // 2.31: the first morning is the new arrival's own, and one ambush a day: a fight that can be fought. Over 12 seeds, standing there.
+  let morning = 0;
+  const perDay: number[] = [];
+  let floored1 = 0;
+  let floors = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const b = new Bot(SAN_PANCHO, seed);
+    b.st.calendar = quietCalendar();
+    const days = new Map<number, number>();
+    const step = b.step.bind(b);
+    let kos = 0;
+    b.step = (c = 0) => {
+      step(c);
+      for (const e of b.sim.events) {
+        if (e.type === 'floored') {
+          kos++;
+          if (b.sim.clock.day === 1) floored1++;
+        }
+        if (e.type !== 'ambush') continue;
+        const day = Math.floor(b.st.step / (24 * 60 * STEPS_PER_MINUTE)) + 1;
+        days.set(day, (days.get(day) ?? 0) + 1);
+        if (b.sim.clock.day === 1 && b.sim.clock.minuteOfDay < 12 * 60) morning++;
+      }
+    };
+    b.routineUntil(4, 8 * 60);
+    perDay.push(Math.max(...days.values()));
+    floors += kos;
+  }
+  check(morning === 0, `no ambush in the first morning (${morning})`);
+  check(perDay.every((n) => n === 1), `at most one ambush a prison day (${perDay.join(',')})`);
+  console.log(`12 seeds, three days, standing there: floored ${floors} times, ${floored1} on day 1; no ambush before 12:00 on day 1, one a day at most`);
+  // On the morning of a release or a hearing, with a grudge alongside: nobody jumps them, and one already after them lets it go.
+  for (const what of ['release', 'hearing'] as const) {
+    const b = new Bot(SAN_PANCHO, 3);
+    b.st.calendar = quietCalendar();
+    b.routineUntil(2, 9 * 60 + 5);
+    b.st.ko = 0;
+    const day = Math.floor(b.st.step / (24 * 60 * STEPS_PER_MINUTE)) + 1;
+    if (what === 'release') b.st.release[0] = day;
+    else b.st.parole[0] = day;
+    const foe = b.st.inmates.find((x) => x.opinion <= 25) ?? b.st.inmates[2];
+    foe.opinion = 20;
+    foe.angry = 300;
+    b.st.ambushDay = 0;
+    let jumped = 0;
+    for (let k = 0; k < 600; k++) {
+      b.st.player.x = foe.body.x + UNIT;
+      b.st.player.z = foe.body.z;
+      b.st.heat = 0;
+      b.step(0);
+      jumped += b.sim.events.filter((e) => e.type === 'ambush').length;
+    }
+    check(jumped === 0 && foe.angry === 0, `the morning of a ${what}: nobody jumps them (${jumped}, still angry ${foe.angry})`);
+  }
+  // Old rules: as they were.
+  const was = new Bot(SAN_PANCHO, 3);
+  was.sim.rules230 = true;
+  was.st.calendar = quietCalendar();
+  let early = 0;
+  const stepWas = was.step.bind(was);
+  was.step = (c = 0) => {
+    stepWas(c);
+    if (was.sim.events.some((e) => e.type === 'ambush')) early++;
+  };
+  was.routineUntil(1, 10 * 60 + 5);
+  check(early > 0, 'the old rules: ambushed the first morning, as before');
 }
 
 // ------------------------------------------------------------------ a score settled

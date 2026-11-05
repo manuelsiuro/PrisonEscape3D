@@ -377,6 +377,12 @@ export interface SimState {
   askTurn: number[];
   /** 2.30: in a work room not theirs, seen by a guard: the steps they were first told and last seen; empty otherwise. */
   strayed: number[];
+  /** 2.31: the book in hand (its subject + 1, 0 none); the step reading began; sets read today. */
+  book: number;
+  readFrom: number;
+  readToday: number;
+  /** 2.31: the prison day of the last ambush a lawless prison dealt the player (0 none yet). */
+  ambushDay: number;
 }
 
 /** The player's call on the pay phone (P34): plain data in the state. */
@@ -567,5 +573,9 @@ export function freshState(world: World, prison: PrisonDef, seed: number, mods: 
     repBeat: -1,
     askTurn: [],
     strayed: [],
+    book: 0,
+    readFrom: 0,
+    readToday: 0,
+    ambushDay: 0,
   };
 }

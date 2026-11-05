@@ -276,6 +276,11 @@ const GEAR: PropPlacement[] = [
   { kind: 'mat', x: 42, z: 36, w: 2 },
 ];
 
+/** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
+const READING: PropPlacement[] = [
+  { kind: 'deskChair', x: 41, z: 44, rot: 1 },
+];
+
 export const SAN_PANCHO: PrisonDef = {
   id: 'san-pancho',
   difficulty: 4,
@@ -321,7 +326,7 @@ export const SAN_PANCHO: PrisonDef = {
     ['garden', 46, 32, 51, 40],
   ],
   cells,
-  props: [...props, ...GEAR],
+  props: [...props, ...GEAR, ...READING],
   rollCall,
   spawn: { x: 13, z: 13 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],
@@ -414,6 +419,7 @@ export const SAN_PANCHO: PrisonDef = {
     track: { x: 26, z: 37, w: 14, d: 8 },
     stage: stage(21, 40, 13),
     quiz: quizAt(5, [41, 43], [42, 43], [43, 43], [44, 43]),
+    librarian: { cell: 7, x: 41, z: 44, face: 1 },
   },
   // Rebuilt in 2.9 (P33): the sports ground in the plaza's south half, the garden in the showers' old place.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.

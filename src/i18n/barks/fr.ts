@@ -822,6 +822,22 @@ export const frBarks: Barks = {
     'Encore un de moins.',
     'Sale journée, {you}.',
   ],
+  're.library.book': [
+    'Bon choix.',
+    'Fais attention au dos.',
+    'Celui-là se lit bien.',
+    'Tu le remets en place après.',
+    'Page quarante, c’est le meilleur.',
+    'Ne corne pas les pages.',
+  ],
+  're.library.full': [
+    'Ça suffit pour aujourd’hui.',
+    'Tête pleine. Reviens demain.',
+    'La nuit porte conseil.',
+    'Plus rien ne rentrera aujourd’hui.',
+    'Repose tes yeux. Les livres ne bougent pas.',
+    'Demain. Ils disent tous ça, mais demain.',
+  ],
   're.giveWay.in': [
     'C’est à toi dans une seconde.',
     'Encore une répétition.',

@@ -256,6 +256,9 @@ export function sheetOf(def: PrisonDef, w: World): SheetSection[] {
     const c = def.cells[k + 1];
     people.push({ label: `${name}, cell ${cell}`, text: rolesOf(def, cell).join(', '), at: c ? [c[0], c[1]] : undefined });
   });
+  // 2.31: who sits at the library's table, and the day's reading.
+  const lib = def.leisure?.librarian;
+  if (lib) people.push({ label: 'The library', text: `Readers at the shelves and chairs in free time; the librarian (cell ${lib.cell}) at the end of a table. Six sets of reading a day, four subjects.`, at: [lib.x, lib.z] });
   if (people.length) out.push({ title: 'Inmates', rows: people });
 
   const book = DAY_BOOKS[def.id];

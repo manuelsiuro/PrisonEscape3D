@@ -1471,3 +1471,194 @@ body.reduced-motion .item-panel .armed::after {
     margin-top: 8px;
   }
 }
+
+/* 2.31: a library shelf's books, by subject. */
+.box-books {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(124, 92, 255, 0.18);
+}
+
+.books-head {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.books-head small {
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.books-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.book-btn {
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 6px 10px;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.book-btn span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.15;
+}
+
+.book-btn small {
+  opacity: 0.85;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.book-btn[disabled] {
+  opacity: 0.5;
+}
+
+.books-next {
+  margin: 8px 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* 2.31: a book open: the page, the marker on a word, the key words to underline. */
+.read-card {
+  width: min(460px, calc(100vw - 24px));
+}
+
+.read-page {
+  margin: 10px 0 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #2a2418;
+  background: #efe6cf;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  line-height: 1.45;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.read-page span {
+  border-radius: 3px;
+}
+
+.read-page span.at {
+  background: rgba(60, 50, 30, 0.14);
+}
+
+.read-page span.key {
+  font-weight: 700;
+  color: #6b3fb5;
+}
+
+.read-page span.key.near {
+  color: white;
+  background: #7c5cff;
+  box-shadow: 0 0 0 2px #7c5cff;
+}
+
+.read-page span.key.hit {
+  color: #2a2418;
+  background: none;
+  box-shadow: none;
+  text-decoration: underline 3px #e8a020;
+  text-underline-offset: 3px;
+}
+
+.read-page span.key.gone {
+  color: #8b8373;
+  font-weight: 400;
+}
+
+.read-page.stray {
+  animation: read-stray 0.25s;
+}
+
+@keyframes read-stray {
+  30% {
+    background: #e2d3c2;
+  }
+}
+
+.read-next {
+  margin-top: 2px;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.read-btn {
+  display: none;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.touch .read-btn {
+  display: block;
+}
+
+.read-card .train-pads {
+  display: none;
+}
+
+/* Portrait phones: above the hotbar, as the training card. Landscape: a slim card, the button at the edge. */
+@media (max-height: 520px) {
+  .read-card {
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 72px);
+    width: min(520px, calc(100vw - 180px));
+    padding: 8px 12px;
+  }
+
+  .read-page {
+    margin: 6px 0 4px;
+    padding: 6px 10px;
+    font-size: 13.5px;
+    line-height: 1.35;
+  }
+
+  .read-card .read-next {
+    display: none;
+  }
+
+  .touch .read-btn {
+    position: fixed;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 8px);
+    width: 76px;
+    height: 76px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 11px;
+  }
+}
+
+/* 2.31: reading's tips above the book, not under it (the gym's wait until the set's over). */
+body.reading .hint {
+  opacity: 1;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 350px);
+}
+
+@media (max-height: 620px) {
+  body.reading .hint {
+    opacity: 0;
+  }
+}
+
+/* 2.31: the librarian's word, its book beside it. */
+.talk-note.librarian {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}

@@ -6,11 +6,11 @@ irongate: 14 squares, a stop beside each, the warden Blackwood
 center-perks morning: called at minute 16, counted at 37, the walk over at 35 of 60
 center-perks evening: called at minute 16, counted at 37, the walk over at 35 of 60
 stalag-flucht morning: called at minute 17, counted at 38, the walk over at 45 of 60
-stalag-flucht evening: called at minute 17, counted at 37, the walk over at 45 of 60
+stalag-flucht evening: called at minute 17, counted at 38, the walk over at 45 of 60
 shankton morning: called at minute 16, counted at 40, the walk over at 45 of 60
-shankton evening: called at minute 15, counted at 40, the walk over at 44 of 60
+shankton evening: called at minute 15, counted at 40, the walk over at 43 of 60
 san-pancho morning: called at minute 15, counted at 37, the walk over at 41 of 60
-san-pancho evening: called at minute 17, counted at 38, the walk over at 42 of 60
+san-pancho evening: called at minute 15, counted at 37, the walk over at 40 of 60
 irongate morning: called at minute 17, counted at 39, the walk over at 39 of 60
 irongate evening: called at minute 17, counted at 39, the walk over at 39 of 60
 the square: the badge fills only there; off it to the end +25% heat, no lockdown; not in the yard, a lockdown

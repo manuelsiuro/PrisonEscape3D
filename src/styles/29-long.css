@@ -15,7 +15,8 @@
 .box-take .big-btn span {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  font-size: 13.5px;
+  line-height: 1.15;
 }
 .box-take .big-btn small {
   font: 500 11.5px var(--font-ui);

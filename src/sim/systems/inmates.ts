@@ -9,7 +9,7 @@ import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { BODY_HALF, DUTY_HAND_STEPS, DUTY_MOP_STEPS, DUTY_REST_STEPS, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_DRY_STEPS, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_WASH_STEPS, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT, WASH_SPREAD } from '../tuning';
+import { BODY_HALF, BROWSE_STEPS, DUTY_HAND_STEPS, DUTY_MOP_STEPS, DUTY_REST_STEPS, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_DRY_STEPS, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_WASH_STEPS, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT, WASH_SPREAD } from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
 import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
@@ -58,12 +58,17 @@ export interface Inmate extends Walker, Fighter {
   windup: number;
   /** 2.30: how far through the day's work: its legs from station to station, counted up from 0 at the bell. */
   duty: number;
+  /** 2.31: at a library shelf choosing a book (1), a book in hand (2), neither (0). */
+  book: number;
 }
 
 /** Where inmates like to spend free time (their own cell is added). */
 const HANGOUTS: readonly ZoneId[] = ['yard', 'yard', 'library', 'gym', 'cellBlock', 'rollCall', 'corridor', 'canteen'];
+/** 2.31: the library's a place people go. */
+const HANGOUTS_READ: readonly ZoneId[] = [...HANGOUTS, 'library', 'library'];
 /** P31: where they go with a sports ground and a garden open (the courtyard is the quiet yard now). */
 const HANGOUTS_GROUNDS: readonly ZoneId[] = ['yard', 'sports', 'sports', 'garden', 'library', 'gym', 'cellBlock', 'rollCall', 'corridor', 'canteen'];
+const HANGOUTS_GROUNDS_READ: readonly ZoneId[] = [...HANGOUTS_GROUNDS, 'library', 'library'];
 
 /** One inmate per cell after the player's, starting in bed-side position (in a hostile prison, cooler towards the player). */
 export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
@@ -92,6 +97,7 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       seat: -1,
       seatFace: 0,
       duty: 0,
+      book: 0,
     });
   }
   return out;
@@ -113,6 +119,7 @@ let serving = false;
 let turns = false;
 /** The gym's machines in use (Social.machines). */
 let machines = false;
+let reads = false;
 
 /** 2.30: inmates work their stations (Social.jobOf: each one's job, -1 none; empty: replaying an older run). */
 let jobOf: readonly number[] = [];
@@ -154,6 +161,18 @@ function pickSpot(all: Inmate[], spots: Spot[], rng: { rng: number }): Spot | nu
 }
 
 const tiles = (list: number[], face: number): Spot[] => list.map((tile) => ({ tile, face }));
+
+/** A shelf to choose a book at, by the inmate's cell (no draw), null none free (2.31). */
+function shelfFor(w: World, all: Inmate[], m: Inmate): Spot | null {
+  const free = placesOf(w).shelves.filter((q) => !taken(all, q.tile));
+  return free.length ? free[m.cell % free.length] : null;
+}
+
+/** A library chair to read at, by the inmate's cell (no draw), null none free (2.31). */
+function readSeatFor(w: World, all: Inmate[], m: Inmate): Spot | null {
+  const free = placesOf(w).readSeats.filter((q) => !taken(all, q.tile));
+  return free.length ? free[m.cell % free.length] : null;
+}
 
 /** The place at the serving counter fewest others are heading for, by the inmate's cell (no draw: a meal's walk leaves the RNG as it was). */
 function counterSpot(all: Inmate[], spots: Spot[], m: Inmate): Spot {
@@ -462,6 +481,24 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
         if (stop) ({ spot, then } = stop);
         break;
       }
+      // (2.31: the librarian at the desk, a book open; anyone with a book chosen, to a chair with it, or on their feet.)
+      if (reads) {
+        const desk = w.def.leisure?.librarian;
+        if (desk && desk.cell === m.cell) {
+          spot = { tile: desk.z * MAP_W + desk.x, face: desk.face };
+          then = DOING.SIT_READ;
+          m.book = 2;
+          break;
+        }
+        if (m.book === 1) {
+          m.book = 2;
+          const seat = readSeatFor(w, all, m);
+          spot = seat ?? pickSpot(all, tiles(floorOf(w, ['library']), 1 + randomInt(rng, 16)), rng);
+          then = seat ? DOING.SIT_READ : DOING.READ;
+          break;
+        }
+        m.book = 0;
+      }
       // Free time: now and then a seat (reading at a library table, a yard bench, the chair in
       // its own cell), else somewhere to hang about for a while, then somewhere else.
       if (randomInt(rng, 3) === 0) {
@@ -473,14 +510,33 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
         if (free.length) {
           spot = free[randomInt(rng, free.length)];
           then = w.ground.zone[spot.tile] === lib ? DOING.SIT_READ : DOING.SIT;
+          // (2.31: to a library chair by way of the shelves, for a book.)
+          if (reads && then === DOING.SIT_READ) {
+            const shelf = shelfFor(w, all, m);
+            if (shelf) {
+              spot = shelf;
+              then = DOING.READ;
+              m.book = 1;
+            } else m.book = 2;
+          }
           break;
         }
       }
       // (P31: the sports ground and the garden while they're open.)
-      const hangouts = OPEN_HOURS.sports!.includes(id) && w.def.leisure?.track ? HANGOUTS_GROUNDS : HANGOUTS;
+      const grounds = OPEN_HOURS.sports!.includes(id) && w.def.leisure?.track;
+      const hangouts = reads ? (grounds ? HANGOUTS_GROUNDS_READ : HANGOUTS_READ) : grounds ? HANGOUTS_GROUNDS : HANGOUTS;
       const r = randomInt(rng, hangouts.length + 1);
       const list = r === hangouts.length ? own() : floorOf(w, [hangouts[r]]);
       spot = pickSpot(all, tiles(list, 1 + randomInt(rng, 16)), rng);
+      // (2.31: in the library, at the shelves, for a book.)
+      if (reads && r < hangouts.length && hangouts[r] === 'library') {
+        const shelf = shelfFor(w, all, m);
+        if (shelf) {
+          spot = shelf;
+          then = DOING.READ;
+          m.book = 1;
+        }
+      }
       // (2.29: at the gym or the sports ground, a machine if one's free, for as long as it lingers.)
       if (r < hangouts.length && (hangouts[r] === 'gym' || hangouts[r] === 'sports')) {
         const on = machineFor(c, all, m, hangouts[r]);
@@ -509,6 +565,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
   serving = !!social.serve;
   turns = !!social.turns;
   machines = !!social.machines;
+  reads = !!social.reads;
   jobOf = social.jobOf ?? [];
   bay = w.delivering ? w.parked : null;
   all.forEach((m, k) => {
@@ -570,6 +627,7 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
       m.stall = 0;
       dropMeal(m);
       m.duty = 0;
+      m.book = 0;
       m.wait = randomInt(rng, INMATE_REACTION);
     }
     // (2.30: its job, in the Work Period, where the job can be worked.)
@@ -691,6 +749,8 @@ export interface Social {
   reroute?: boolean;
   /** 2.29: inmates use the gym's machines (false: replaying an older run). */
   machines?: boolean;
+  /** 2.31: inmates choose books and read them; the librarian's at the desk. */
+  reads?: boolean;
   /** 2.30: each inmate's job (the prison's job index, -1 none), for working its stations (empty: replaying an older run; not at the Training Block). */
   jobOf?: number[];
   /** 2.25: a meal on, fetched from the serving counter (false: none on, no counter here, or replaying an older run). */
@@ -809,6 +869,11 @@ function arrive(c: Crowd, m: Inmate, plan: number, rng: { rng: number }, job: nu
   // (2.30: at a station for as long as the work takes, with nothing drawn.)
   if (job >= 0) {
     m.wait = dutyWait(c.w, m, job);
+    return;
+  }
+  // (2.31: at the shelf for a moment, by its cell, with no draw.)
+  if (reads && m.book === 1) {
+    m.wait = BROWSE_STEPS + (m.cell % 4) * STEPS_PER_SECOND;
     return;
   }
   // Free time: linger 15–45 s before moving on.

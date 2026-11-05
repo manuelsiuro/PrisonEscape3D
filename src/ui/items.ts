@@ -7,7 +7,7 @@ import { ALARM_CLOCK, HOLLOW_BOOK } from '../sim/systems/structure';
 import { clockRinging, clockSecs } from '../sim/systems/noise';
 import { itemIcons } from '../render/itemIcons';
 import { currentLang, t, type Key } from '../i18n';
-import { h, type Send, setText, TOUCH } from './dom';
+import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
 /** What the item UI shows each frame. */
@@ -32,10 +32,25 @@ export interface ItemsView {
   deskTunnel: boolean;
   /** The open container is a library shelf (GDD §3.2): offer a book to study. */
   study: boolean;
+  /** 2.31: the books on it, by subject, for reading: null before then. */
+  books: ShelfBooks | null;
   /** P28: what can be taken on request from the open furniture (fruit at a meal, sugar, seed packets): TAKE, its label, why not ('' it can be). */
   take: ReadonlyArray<{ what: number; label: string; why: string }>;
 }
 
+
+/** A library shelf's books (2.31): a subject's name and how much it can tell the player now; the note; what's next; the day's reading done. */
+export interface ShelfBooks {
+  subjects: ReadonlyArray<{ id: number; name: string; icon: string; learn: string; some: boolean }>;
+  note: string;
+  next: string;
+  full: string;
+}
+
+const booksHtml = (b: ShelfBooks) =>
+  `<div class="books-head"><b>${t('box.read')}</b><small>${esc(b.note)}</small></div><div class="books-list">${b.subjects
+    .map((s) => `<button class="big-btn small book-btn${s.some ? ' primary' : ' ghost'}" data-book="${s.id}"${b.full ? ' disabled' : ''}>${icon(s.icon, 16)}<span>${esc(s.name)}<small>${esc(s.learn)}</small></span></button>`)
+    .join('')}</div><p class="books-next">${esc(b.full || b.next)}</p>`;
 
 /** P42: take buttons past this `what` are a holiday's treats (play/holidays.ts TREAT_OFFSET), each with its icon. */
 export const HOLIDAY_TAKE = 100;
@@ -139,6 +154,7 @@ export class ItemsUI {
       <div class="box-tunnel hidden"><span data-t="box.tunnel"></span><button class="big-btn primary small" data-climb>${icon('down', 18)}<span data-t="box.climbDown"></span></button></div>
       <div class="box-tunnel box-study hidden"><span><b data-t="box.study"></b><small data-t="box.studyNote"></small></span><button class="big-btn primary small" data-study>${icon('book', 18)}<span data-t="train.study"></span></button></div>
       <div class="box-warn hidden">${icon('eye', 14)}<span data-t="box.theirs"></span></div>
+      <div class="box-books hidden"></div>
       <div class="box-take hidden"></div>
       <div class="box-section box-hidden-wrap"><div class="box-label">${icon('lock', 14)}<span data-t="box.hidden"></span><em data-t="box.hiddenNote"></em></div><div class="slot-grid box-hidden"></div></div>
       <div class="box-section"><div class="box-label"><span data-t="box.drawers"></span></div><div class="slot-grid box-drawers"></div></div>`,
@@ -154,6 +170,12 @@ export class ItemsUI {
       if ((e.target as HTMLElement).closest('[data-climb]')) {
         this.click();
         this.send(OP.INTERACT, 1);
+        return;
+      }
+      const book = (e.target as HTMLElement).closest<HTMLElement>('[data-book]');
+      if (book) {
+        this.click();
+        this.send(OP.TRAIN, 0, Number(book.dataset.book));
         return;
       }
       if ((e.target as HTMLElement).closest('[data-study]')) {
@@ -407,7 +429,7 @@ export class ItemsUI {
     this.updateAction(v);
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.
-    const drawn = `${v.boxTitle}|${v.boxTheirs}|${v.deskTunnel}|${v.study}|${v.take.map((x) => `${x.what}:${x.label}:${x.why}`).join(',')}`;
+    const drawn = `${v.boxTitle}|${v.boxTheirs}|${v.deskTunnel}|${v.study}|${v.books ? JSON.stringify(v.books) : ''}|${v.take.map((x) => `${x.what}:${x.label}:${x.why}`).join(',')}`;
     if (it.rev === this.simRev && this.uiRev === this.drawnUi && drawn === this.drawn) {
       this.tickClocks(it);
       return;
@@ -446,7 +468,11 @@ export class ItemsUI {
       this.box.querySelector('.box-hidden-wrap')!.classList.toggle('hidden', v.boxHidden === 0);
       this.box.classList.toggle('plain', v.boxHidden === 0);
       this.box.querySelector('.box-tunnel:not(.box-study)')!.classList.toggle('hidden', !v.deskTunnel);
-      this.box.querySelector('.box-study')!.classList.toggle('hidden', !v.study);
+      this.box.querySelector('.box-study')!.classList.toggle('hidden', !v.study || !!v.books);
+      // (2.31: the subjects, the day's count, what's next.)
+      const books = this.box.querySelector<HTMLElement>('.box-books')!;
+      books.classList.toggle('hidden', !v.books);
+      if (v.books) books.innerHTML = booksHtml(v.books);
       this.box.querySelector('.box-warn')!.classList.toggle('hidden', !v.boxTheirs);
       // (P28: fruit, sugar, a seed packet, taken on request.)
       const take = this.box.querySelector<HTMLElement>('.box-take')!;
