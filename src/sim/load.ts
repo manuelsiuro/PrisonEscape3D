@@ -253,6 +253,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (s.countDone !== true) s.countDone = false;
   if (s.yardSeen !== true) s.yardSeen = false;
   if (!Number.isInteger(s.countAt) || s.countAt < 0) s.countAt = 0;
+  // (2.29: a press's beat; a turn asked for, on a machine this prison has.)
+  if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
+  if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]]) s.askTurn = [];
   // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)
   if (st.tray === undefined && s.eaten >= MEAL_STEPS_224) s.eaten = MEAL_STEPS;
   return s;

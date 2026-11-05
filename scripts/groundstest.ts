@@ -25,7 +25,7 @@ import { FRESH_ENERGY, FRESH_FOR, GYM_ENERGY, MEAL_ENERGY, STEPS_PER_MINUTE, TRA
 import { MAP_W } from '../src/sim/world/World';
 import { TILE } from '../src/sim/world/tiles';
 import { slot } from '../src/sim/systems/items';
-import { n } from './bots';
+import { n, beatPress } from './bots';
 import { postable } from '../src/sim/systems/crew';
 import { check } from './assert';
 
@@ -180,7 +180,7 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   a.step(command(0, OP.INTERACT));
   check(a.st.train >= 0 && a.sim.world.props[a.st.train].kind === 'pullup', 'the action button at the pull-up bar starts a set');
   const str = a.st.str;
-  for (let k = 0; k < 200 && a.st.str === str; k++) a.step(command(0, OP.TRAIN, 1 + (k % 2)));
+  for (let k = 0; k < 400 && a.st.str === str; k++) a.step(beatPress(a.sim));
   check(a.st.str === str + TRAIN_GAIN, `a set of pull-ups: +${TRAIN_GAIN} Strength`);
 }
 

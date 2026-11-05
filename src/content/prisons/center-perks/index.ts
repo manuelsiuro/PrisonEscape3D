@@ -246,6 +246,13 @@ const guards: GuardDef[] = [
 ];
 
 /** Level 1: minimum security, suburban (GDD §4.1). */
+/** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
+const GEAR: PropPlacement[] = [
+  { kind: 'punchingBag', x: 14, z: 27 },
+  { kind: 'mat', x: 10, z: 28, w: 2 },
+  { kind: 'mat', x: 10, z: 53 },
+];
+
 export const CENTER_PERKS: PrisonDef = {
   id: 'center-perks',
   difficulty: 1,
@@ -284,7 +291,7 @@ export const CENTER_PERKS: PrisonDef = {
     ['garden', 36, 46, 56, 55],
   ],
   cells,
-  props,
+  props: [...props, ...GEAR],
   rollCall,
   spawn: { x: 9, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'canteen', 'corridor', 'gym', 'showers', 'library', 'infirmary', 'yard', 'woodshop', 'visitation', 'sports', 'garden'],

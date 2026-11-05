@@ -14,9 +14,9 @@ energy: up at night none, past 20; asleep 30 an hour; forced awake as by day; ol
 the bed: Tuck in, Take out, then Sleep in all five; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever
 bed checks: up in the cell passes with a word; asleep passes; a dummy tucked in at night fools them
 center-perks: every inmate in bed by 13, 14, 14, 13 s; the player woken at 07:55
-stalag-flucht: every inmate in bed by 14, 15, 16, 16 s; the player woken at 07:55
-shankton: every inmate in bed by 19, 20, 19, 21 s; the player woken at 07:55
-san-pancho: every inmate in bed by 15, 16, 18, 16 s; the player woken at 07:55
-irongate: every inmate in bed by 16, 16, 17, 17 s; the player woken at 07:55
+stalag-flucht: every inmate in bed by 15, 15, 16, 15 s; the player woken at 07:55
+shankton: every inmate in bed by 19, 20, 20, 20 s; the player woken at 07:55
+san-pancho: every inmate in bed by 17, 15, 15, 16 s; the player woken at 07:55
+irongate: every inmate in bed by 19, 18, 18, 19 s; the player woken at 07:55
 older runs: a 2.27 log replays as it was and is not carried on; a new one is
 the words: in both languages

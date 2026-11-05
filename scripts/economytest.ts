@@ -43,7 +43,7 @@ import { STEPS_PER_MINUTE, UNIT, walkSpeed } from '../src/sim/tuning';
 import { reachableFrom } from '../src/sim/world/reach';
 import { MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
-import { Bot } from './bots';
+import { Bot, beatPress } from './bots';
 
 const n = (id: string) => itemNumber(id);
 const DAY = 1440 * STEPS_PER_MINUTE;
@@ -417,16 +417,16 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   a.op(OP.INTERACT);
   check(st.train >= 0 && sim.world.props[st.train].kind === 'weights' && a.has('train'), 'the action button at the weights starts training');
   // Pressing one side over and over fills nothing.
-  for (let k = 0; k < 10; k++) a.op(OP.TRAIN, 1);
-  check(st.reps <= 6, `the same side again doesn't count (bar ${st.reps})`);
+  for (let k = 0; k < 40; k++) a.op(OP.TRAIN, 1);
+  check(st.reps <= 17, `the same side again doesn't count (bar ${st.reps})`);
   const e0 = st.energy;
   let sets = 0;
-  for (let k = 0; k < 400 && sets < 3; k++) {
-    a.op(OP.TRAIN, 1 + (k % 2));
+  for (let k = 0; k < 1000 && sets < 3; k++) {
+    a.step(beatPress(sim));
     if (sim.events.some((e) => e.type === 'trained')) sets++;
   }
   console.log(`training: 3 sets of weights → STR ${st.str}, energy ${e0} → ${st.energy}`);
-  check(st.str === 46 && st.energy <= e0 - 34 && st.energy >= e0 - 36, 'three sets: +6 Strength, 36 energy (less a point or two back while training)');
+  check(st.str === 46 && st.energy <= e0 - 26 && st.energy >= e0 - 36, `three sets: +6 Strength, 36 energy (less what comes back while training: ${e0 - st.energy})`);
   check((st.trained & 1) === 1, 'Strength trained today');
   // Too tired: off the equipment, nothing more.
   st.energy = 9;
@@ -444,7 +444,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   a.op(OP.INTERACT);
   a.op(OP.TRAIN, 0);
   check(st.train >= 0 && sim.trainsOn(st.train) === 'int', 'a book from the library shelf: studying');
-  for (let k = 0; k < 60 && st.items.int === 40; k++) a.op(OP.TRAIN, 1 + (k % 2));
+  for (let k = 0; k < 300 && st.items.int === 40; k++) a.step(beatPress(sim));
   check(st.items.int === 42 && st.energy === 90, `a set of study: +2 Intellect, 10 energy (INT ${st.items.int}, energy ${st.energy})`);
   // The next morning: untrained Speed stays at 40 (the floor), trained ones keep; Strength trained yesterday.
   st.spd = 47;
@@ -800,7 +800,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   st.energy = 100;
   a.op(OP.INTERACT);
   a.op(OP.TRAIN, 0);
-  for (let k = 0; k < 60 && st.items.int === 44; k++) a.op(OP.TRAIN, 1 + (k % 2));
+  for (let k = 0; k < 300 && st.items.int === 44; k++) a.step(beatPress(sim));
   const first = st.tips[0];
   check(st.items.int === 46 && st.tips.length === 1 && RECIPES[first].int <= 46 && a.has('tip', (e) => e.type === 'tip' && e.who === -1), `studying past 45 tells a recipe (${RECIPES[first]?.result})`);
   check(!RECIPES.some((r, k) => r.int < RECIPES[first].int && !st.items.known.includes(k)), 'the simplest one first');
@@ -841,7 +841,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   a.op(OP.TRAIN, 0);
   const set = () => {
     const was = st.items.int;
-    for (let k = 0; k < 60 && st.items.int === was; k++) a.op(OP.TRAIN, 1 + (k % 2));
+    for (let k = 0; k < 300 && st.items.int === was; k++) a.step(beatPress(a.sim));
   };
   set();
   check(st.tips.length === 1, 'studying to 46: a tip');

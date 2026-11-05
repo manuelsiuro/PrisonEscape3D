@@ -37,12 +37,13 @@ line is something that was missed or broke at some point.
 - Saves (`load.ts`: fields at the end, optional, checked) and values whose meaning changed. Old logs
   (`Sim.rulesNNN`, `prepareReplay`, the `stale` gate in `RunRecorder`).
 - A prison that lacks the thing (Training has no serving counter).
+- Decor turned into a working prop: everything iterating `world.props` sees it, in old runs too (digging, the button's target). Add it last, not solid, and compare the old world with the new one on those tiles.
 
 **What the player meets**
 - The action button: `labels.ts` must say exactly what `actions.ts` does, in the same order of priority.
   The highlight (`focusOf`) must agree with both.
 - Keyboard and touch; the floor arrows (`guide.ts`); hints, toasts and floats (`announce.ts`); barks; the HUD and the day card.
-- Who gets in the way: a crowd changes what the button targets and who stands where.
+- Who gets in the way: a crowd changes what the button targets and who stands where. An inmate given a new pose keeps it until something clears it: check free time, when they walk off, as well as the block it was built for.
 - A hint whose advice changes needs a new `coachOnce` id: anyone who has played has already seen the old one and won't be told.
 
 **What teaches it**

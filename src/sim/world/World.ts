@@ -67,6 +67,8 @@ export function parseRows(picture: string, legend: Record<string, unknown> = LEG
 export class World {
   readonly layers = [new Layer(), new Layer(), new Layer(), new Layer()];
   readonly props: Prop[];
+  /** Replaying a run from before 2.29: the gym's bag and mat are only decoration (Sim.rules228). */
+  plainGear = false;
   /** Tiles covered by solid props on the ground floor. */
   readonly propSolid = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 where the player can't walk on the ground floor right now (the ground layer's block). */

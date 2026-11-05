@@ -1,5 +1,6 @@
 /** Work on screen: the job board, the training card (the gym, the library, a lap of the yard) and the work chips over the HUD. */
 import { wageOf } from '../sim/systems/jobs';
+import { beatAt, beatOf } from '../sim/systems/training';
 import { itemNumber } from '../content/items';
 import type { JobId } from '../content/jobs';
 import { ROUTINE } from '../content/routine';
@@ -102,12 +103,22 @@ export class TrainCard {
   private readonly sides: HTMLButtonElement[];
   private shown = '';
   private lastSide = -1;
+  private readonly beat: HTMLElement;
+  private readonly dot: HTMLElement;
+  private readonly zone: HTMLElement;
+  /** The step last seen and when, for the marker to move between steps; the beat last sounded. */
+  private seenStep = -1;
+  private seenAt = 0;
+  private lastBeat = -1;
+  /** The beat, as the marker reaches the line. */
+  onBeat: () => void = () => {};
 
   constructor(private readonly send: Send) {
     this.el = h(
       'div',
-      'train-card hidden',
-      `<div class="train-head"><i class="train-ic"></i><b></b><span class="train-value"></span><button class="icon-btn small train-stop">${icon('close', 16)}</button></div>
+      'train-card gym-card hidden',
+      `<div class="train-head"><i class="train-ic"></i><b></b><span class="train-cost"></span><span class="train-value"></span><button class="icon-btn small train-stop">${icon('close', 16)}</button></div>
+      <div class="train-beat"><i class="train-zone"></i><i class="train-line"></i><i class="train-dot"></i></div>
       <i class="train-bar"><i></i></i><p class="train-note"></p>
       <div class="train-pads"><button class="train-pad left" data-side="1">${icon('chevronLeft', 30)}</button><button class="train-pad right" data-side="2">${icon('chevronRight', 30)}</button></div>`,
     );
@@ -115,6 +126,9 @@ export class TrainCard {
     this.title = this.el.querySelector('.train-head b')!;
     this.value = this.el.querySelector('.train-value')!;
     this.note = this.el.querySelector('.train-note')!;
+    this.beat = this.el.querySelector('.train-beat')!;
+    this.dot = this.el.querySelector('.train-dot')!;
+    this.zone = this.el.querySelector('.train-zone')!;
     this.sides = [...this.el.querySelectorAll<HTMLButtonElement>('.train-pad')];
     for (const b of this.sides) {
       b.addEventListener('pointerdown', (e) => {
@@ -137,6 +151,33 @@ export class TrainCard {
     this.shown = '';
   }
 
+  /** A press that counted (2.29): the line lights up for one on the beat, dims for one off it. */
+  flash(hit: boolean) {
+    this.beat.classList.remove('hit', 'miss');
+    void this.beat.offsetWidth;
+    this.beat.classList.add(hit ? 'hit' : 'miss');
+  }
+
+  /** The marker crosses the track each beat, on the line on the beat; between steps it carries on, so it moves smoothly. */
+  private keepTime(sim: Sim, kind: string) {
+    const step = sim.state.step;
+    const now = performance.now();
+    if (step !== this.seenStep) {
+      this.seenStep = step;
+      this.seenAt = now;
+    }
+    const set = beatOf(kind);
+    const at = step + Math.min(1, (now - this.seenAt) / 50);
+    const { n, off } = beatAt(at, set.beat);
+    this.dot.style.left = `${50 + (off / set.beat) * 100}%`;
+    this.zone.style.width = `${((2 * set.window + 1) / set.beat) * 100}%`;
+    // (The beat you can hear, just as it reaches the line.)
+    if (n !== this.lastBeat && off >= 0) {
+      this.lastBeat = n;
+      this.onBeat();
+    }
+  }
+
   update(sim: Sim, busy: boolean) {
     const s = sim.state;
     const a = s.train >= 0 ? sim.trainsOn(s.train) : null;
@@ -148,7 +189,11 @@ export class TrainCard {
       return;
     }
     const value = sim.attr(a);
-    const key = `${s.train}|${value}|${currentLang()}`;
+    const beats = !sim.rules228;
+    if (beats) this.keepTime(sim, sim.world.props[s.train].kind);
+    this.beat.classList.toggle('hidden', !beats);
+    const cost = sim.setCost(a);
+    const key = `${s.train}|${value}|${cost}|${currentLang()}`;
     if (key !== this.shown) {
       const was = this.shown;
       this.shown = key;
@@ -157,7 +202,8 @@ export class TrainCard {
       this.el.querySelector('.train-ic')!.innerHTML = icon(a === 'str' ? 'dumbbell' : a === 'spd' ? 'run' : 'book', 18);
       setText(this.title, t(`train.${kind === 'shelf' ? 'study' : kind}` as Key));
       setText(this.value, `${t(`attr.${a}` as Key)} ${value}`);
-      setText(this.note, `${TOUCH ? t('train.touch') : t('train.keys')} · ${t('train.cost', { n: a === 'int' ? 10 : 12 })}`);
+      setText(this.el.querySelector<HTMLElement>('.train-cost')!, `−${cost}`);
+      setText(this.note, `${TOUCH ? t('train.touch') : t('train.keys')} · ${t('train.cost', { n: cost })} · ${t(`train.gives.${a}` as Key)}`);
       this.el.querySelector('.train-stop')!.setAttribute('aria-label', t('train.stop'));
       this.sides[0].setAttribute('aria-label', t('train.left'));
       this.sides[1].setAttribute('aria-label', t('train.right'));

@@ -6,6 +6,7 @@ import { mealOn, traysHere } from './canteen';
 import { phoneTargets, swapPlace } from './phone';
 import { delivering, oddjobTargets, owes, R, talkJob } from './oddjobs';
 import { boardKeptClear } from './parole';
+import { placesOf } from '../ai/places';
 import { twist } from './twists';
 import { RAT } from './rats';
 import { itemDef, itemNumber } from '../../content/items';
@@ -407,6 +408,8 @@ export function socialNow(sim: SimContext): Social {
   so.serve = traysHere(sim) && mealOn(sim);
   so.reroute = !sim.rules224;
   so.turns = !sim.rules225;
+  // (Not at the Training Block: its lessons ask for a machine or an inmate by name, and shouldn't find one taking up the other.)
+  so.machines = !sim.rules228 && !sim.world.def.rules?.relaxed;
   so.pace.fill(0);
   so.face.fill(0);
   so.follow.fill(null);
@@ -436,6 +439,11 @@ export function socialNow(sim: SimContext): Social {
   oddjobTargets(sim, so);
   // The parole board (P39): its chairs and the seat across from it kept clear while the hearing is due or sitting.
   boardKeptClear(sim, so.off);
+  // (2.29: the machine the player's on, whoever was on it or on the way to it gets off and goes elsewhere.)
+  if (s.train >= 0 && !sim.rules228) {
+    const on = placesOf(sim.world).machines.find((q) => q.prop === s.train);
+    if (on) so.off.push(on.tile);
+  }
   if (!about) return so;
   // A shootout's partner (P27) keeps near the player at the court.
   const partner = hoopsPartner(s);

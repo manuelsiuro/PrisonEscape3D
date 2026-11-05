@@ -53,9 +53,7 @@ export const SHANKTON_DECOR: readonly DecorPlacement[] = [
   { kind: 'noticeBoard', x: 43, z: 39, w: 2, rot: 2 },
   { kind: 'pipes', x: 50, z: 37 },
   // Gym: a punching bag, dumbbells, a mat, a mirror. Showers: towel hooks, the drain.
-  { kind: 'punchingBag', x: 18, z: 33 },
   { kind: 'dumbbells', x: 16, z: 33 },
-  { kind: 'mat', x: 14, z: 34, w: 2 },
   { kind: 'mirror', x: 16, z: 28 },
   { kind: 'towelHooks', x: 12, z: 30, rot: 3 },
   { kind: 'drain', x: 10, z: 31 },

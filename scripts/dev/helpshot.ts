@@ -18,6 +18,7 @@ import { CHARTS, countIn, LATE, songSteps } from '../../src/content/nights';
 import { command, dirFromVector, EXT, LINE, needleArgs, OP, ORDER, TALK, tossArgs } from '../../src/sim/command';
 import { nearestDir } from '../../src/sim/ai/path';
 import { isTrue } from '../../src/sim/systems/cards';
+import { onMachine } from '../../src/sim/systems/training';
 import { drillOn } from '../../src/sim/systems/calendar';
 import { squareAt } from '../../src/sim/systems/checkers';
 import { dayMinute } from '../../src/sim/systems/clock';
@@ -203,15 +204,24 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 2.2,
     dx: 1,
   },
+  // 2.29: a set under way at Center Perks' gym, the crowd on the other machines.
   train: {
-    lesson: 'gym',
-    moves: (bot) => {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 41);
+      bot.routineUntil(1, 15 * 60 + 30);
+      const w = bot.sim.world;
+      const prop = w.props.findIndex((p) => p.kind === 'weights' && w.zoneAt(p.x, p.z) === 'gym' && onMachine(bot.sim, w.props.indexOf(p)) < 0);
+      bot.walkTo(placesOf(w).machines.find((q) => q.prop === prop)!.tile);
+      bot.face(13);
       bot.act();
-      for (let k = 0; k < 200; k++) bot.op(OP.TRAIN, 1 + (k % 2));
+      bot.until(() => bot.st.train === prop, 60);
+      bot.set(() => bot.st.reps >= 60);
+      return bot;
     },
-    when: at(0.5),
-    zoom: 2.4,
-    dz: -1.5,
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.2,
+    dx: 1.5,
+    dz: -1,
   },
   grounds: {
     lesson: 'laps',

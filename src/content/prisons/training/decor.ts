@@ -43,8 +43,6 @@ export const TRAINING_DECOR: readonly DecorPlacement[] = [
   { kind: 'mirror', x: 34, z: 26, w: 2 },
   { kind: 'dumbbells', x: 40, z: 26, w: 2 },
   { kind: 'posterC', x: 43, z: 26 },
-  { kind: 'punchingBag', x: 42, z: 29 },
-  { kind: 'mat', x: 38, z: 31, w: 2 },
   // Outside: the flag by roll call, trees and bushes off the paths.
   { kind: 'flagpole', x: 31, z: 40 },
   { kind: 'tree', x: 16, z: 40 },

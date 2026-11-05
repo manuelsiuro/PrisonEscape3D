@@ -12,7 +12,7 @@ escape: 4 steps done by day 1 10:49
 talk: 4 steps done by day 1 10:35
 trade: 2 steps done by day 1 10:30
 job: 4 steps done by day 1 12:22
-gym: 2 steps done by day 1 10:31
+gym: 2 steps done by day 1 10:34
 disguise: 3 steps done by day 1 23:33
 tunnel: 5 steps done by day 1 10:39
 vents: 4 steps done by day 1 23:37
@@ -40,7 +40,7 @@ night: 6 steps done by day 1 23:08
 rollcall: 4 steps done by day 1 08:22
 rollcall: 4 steps done by day 1 08:36
 showers: 3 steps done by day 1 16:12
-laps: 3 steps done by day 1 10:51
+laps: 3 steps done by day 1 10:55
 gardener: 4 steps done by day 1 12:18
 lockpick: 3 steps done by day 1 10:35
 stowaway: 3 steps done by day 1 14:31
@@ -69,7 +69,7 @@ trade, never bought: ended at step 1 (lesson.trade.closed) by day 1 12:00
 job, idle: ended at step 1 (lesson.job.late) by day 1 15:00
 talk, magazine given away: ended at step 4 (lesson.talk.lost)
 tunnel, up in the yard: ended at step 4 (lesson.tunnel.early)
-guards, never paid: ended at step 1 (lesson.guards.cooled) by day 1 14:32
+guards, never paid: ended at step 1 (lesson.guards.cooled) by day 1 14:36
 cards, folded: ended at step 2; hoops, court left: ended at step 4; checkers, up past free time and resigned: said
 ratRace, late: ended at step 2; ratRace, scratched: ended at step 6
 games, never played: ended at step 1 (lesson.games.closed) by day 1 22:00

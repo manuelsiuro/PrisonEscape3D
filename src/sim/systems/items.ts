@@ -11,6 +11,7 @@ import type { Body } from './movement';
 import { propReach, seatSpot } from './rest';
 import { lineOfSight } from '../ai/sight';
 import { centerX, centerZ, tileAt } from '../world/grid';
+import { ON_MACHINE } from '../ai/doing';
 
 /**
  * Items in the simulation (GDD §6, §8). A slot is one number: the item (ITEMS order + 1)
@@ -172,11 +173,14 @@ export type Target =
  * (Speed), the generator (the power, GDD §5.5); seats, benches and chairs to sit on, the
  * infirmary's beds to rest on (GDD §3.1); Irongate's helipad, to board the helicopter (P12).
  */
-export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit' };
+export type FixtureUse = 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
+const FIXTURES: Partial<Record<string, FixtureUse>> = { jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
+
+const GEAR_USES: readonly FixtureUse[] = ['weights', 'treadmill', 'pullup', 'mat', 'punchingBag'];
 
 /** What a prop is used for by standing at it (an infirmary bed is for resting; a cell bed is a container). */
 export function fixtureUse(w: World, p: { kind: string; x: number; z: number }): FixtureUse | undefined {
+  if (w.plainGear && (p.kind === 'mat' || p.kind === 'punchingBag')) return undefined;
   return FIXTURES[p.kind] ?? (p.kind === 'bed' && w.zoneAt(p.x, p.z) === 'infirmary' ? 'rest' : undefined);
 }
 
@@ -186,6 +190,8 @@ export interface Lootable {
   ko: number;
   /** Fighting the player (inmates): no talking now. */
   angry?: number;
+  /** DOING (inmates): on a machine they're asked for a turn, not talked to (2.29). */
+  doing?: number;
 }
 
 /**
@@ -195,7 +201,7 @@ export interface Lootable {
  */
 /** Someone the player can talk to from here: up, not fighting, within reach and in sight. */
 function canTalkTo(w: World, b: Body, o: Lootable): boolean {
-  if (o.ko > 0 || (o.angry ?? 0) > 0) return false;
+  if (o.ko > 0 || (o.angry ?? 0) > 0 || (o.doing !== undefined && ON_MACHINE.includes(o.doing))) return false;
   const d = Math.max(Math.abs(o.body.x - b.x), Math.abs(o.body.z - b.z));
   return d <= TALK_REACH && lineOfSight(w, b.x, b.z, o.body.x, o.body.z);
 }
@@ -293,11 +299,17 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     // Seats and beds give way to anything else in reach (a chair stands where the desk is
     // searched from), unless the seat is the tile straight ahead: the player sits by facing it.
     let sc = score(d, (p.x + p.w / 2) * UNIT, (p.z + p.d / 2) * UNIT);
+    // (Directions are scaled to a tile: three quarters of one ahead.)
+    const ax = Math.floor((b.x + (fx * UNIT * 0.75) / 1024) / UNIT);
+    const az = Math.floor((b.z + (fz * UNIT * 0.75) / 1024) / UNIT);
+    const ahead = ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d;
+    // (2.29: someone on a mat or by a bag they could talk to, on the tile ahead: they're who the player faces, as at a seat.)
+    if (!w.plainGear && ahead && (use === 'mat' || use === 'punchingBag') && people.some((o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
+    // (2.29: in a small gym, the machine they face, not the one at their elbow, nor the mat underfoot.)
+    if (!w.plainGear && ahead && GEAR_USES.includes(use)) sc -= UNIT / 2;
+    // (The bag and the mat stand nowhere in particular, and can be walked over: only by facing them do they beat what's about.)
+    if (!w.plainGear && !ahead && (use === 'mat' || use === 'punchingBag')) sc += UNIT / 3;
     if (use === 'sit' || use === 'rest') {
-      // (Directions are scaled to a tile: three quarters of one ahead.)
-      const ax = Math.floor((b.x + (fx * UNIT * 0.75) / 1024) / UNIT);
-      const az = Math.floor((b.z + (fz * UNIT * 0.75) / 1024) / UNIT);
-      const ahead = ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d;
       // Someone on the tile ahead the player could talk to: they're who the player faces, not the seat.
       if (ahead && people.some((o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
       if (seatGivesWay(w, index, b, fx, fz, people, talkers, faced)) return;

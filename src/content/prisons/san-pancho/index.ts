@@ -270,6 +270,12 @@ const guards: GuardDef[] = [
 ];
 
 /** Level 4: maximum security, a desert cartel compound (GDD §4.4). */
+/** The gym's bag and mat (2.29; decor before): last, so that no other prop's number moves. Not solid. */
+const GEAR: PropPlacement[] = [
+  { kind: 'punchingBag', x: 42, z: 33 },
+  { kind: 'mat', x: 42, z: 36, w: 2 },
+];
+
 export const SAN_PANCHO: PrisonDef = {
   id: 'san-pancho',
   difficulty: 4,
@@ -315,7 +321,7 @@ export const SAN_PANCHO: PrisonDef = {
     ['garden', 46, 32, 51, 40],
   ],
   cells,
-  props,
+  props: [...props, ...GEAR],
   rollCall,
   spawn: { x: 13, z: 13 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],

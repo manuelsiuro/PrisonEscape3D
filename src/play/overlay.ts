@@ -178,7 +178,7 @@ export function updateOverlay(g: Game, a: number, tile: { x: number; z: number }
   }
   // (P24: at the checkpoint's window with papers: showing them comes first there, as the sim has it.)
   const papers = tail || st.stowed ? null : (deskAction(sim) ?? windowAction(sim, !!target || !!climb));
-  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
+  v.action = st.ko > 0 || g.over ? null : st.solitary > 0 ? PEEL_ACTION : st.stowed ? CLIMB_OUT : st.seat >= 0 && it.open < 0 && st.talk < 0 ? GET_UP : it.open >= 0 || st.talk >= 0 || st.train >= 0 || st.askTurn.length || socialOpen() ? null : tail ? STOW : (papers ?? describeTarget(sim, target, climb, held, memo.station));
   v.sleeping = st.sleeping;
   v.deskTunnel = !!box?.mine && box.prop.kind === 'desk' && sim.world.ground.kind[box.prop.z * MAP_W + box.prop.x] === TILE.SHAFT;
   v.study = box?.prop.kind === 'shelf' && box.table === 'libraryShelf';
@@ -353,10 +353,10 @@ const headAt = (id: number, out: { x: number; y: number }) => view.screenOf(id, 
 /** Real seconds since the last overlay (the arm-wrestle's bar eases with it). */
 let lastOverlay = performance.now();
 
-/** The solitary or stow card up: the toasts keep above it (its height follows its text). */
+/** The solitary or stow card up, or (2.29) a set's, whose beat mustn't be covered: the toasts keep above it (its height follows its text). */
 let cardClear = -1;
 function clearOfCards() {
-  const card = document.querySelector<HTMLElement>('.solitary-panel:not(.hidden), .stow-panel:not(.hidden)');
+  const card = document.querySelector<HTMLElement>('.solitary-panel:not(.hidden), .stow-panel:not(.hidden), .gym-card:not(.hidden)');
   const clear = card ? Math.round(innerHeight - card.getBoundingClientRect().top + 8) : 0;
   if (clear === cardClear) return;
   cardClear = clear;

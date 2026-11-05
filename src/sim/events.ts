@@ -136,8 +136,10 @@ export type SimEvent =
   | { type: 'tip'; recipe: number; who: number }
   /** Chilled to the bone in the snow, or (`hot`, P17) baked by a heatwave's sun: energy costs double while it lasts. */
   | { type: 'cold'; on: boolean; hot?: boolean }
-  | { type: 'rep' }
+  | { type: 'rep'; hit?: boolean }
   | { type: 'trained'; attr: Attr; value: number }
+  /** 2.29: someone on a machine asked for a turn. */
+  | { type: 'askTurn'; who: number }
   | { type: 'cantTrain'; why: 'tired' | 'max' }
   /** 08:00: attributes left untrained yesterday slipped a point. */
   | { type: 'decay'; attrs: Attr[] }
