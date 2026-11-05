@@ -382,7 +382,9 @@ export const IRONGATE: PrisonDef = {
     ['garden', 44, 22, 51, 26],
   ],
   cells,
-  props: [...props, ...GEAR, ...READING],
+  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 28, z: 28 }],
+  // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
+  vending: { x: 28, z: 28, line: [{ x: 28, z: 29 }, { x: 28, z: 30 }, { x: 28, z: 31 }, { x: 29, z: 31 }] },
   rollCall,
   spawn: { x: 10, z: 11 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],

@@ -326,7 +326,9 @@ export const SAN_PANCHO: PrisonDef = {
     ['garden', 46, 32, 51, 40],
   ],
   cells,
-  props: [...props, ...GEAR, ...READING],
+  props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 24, z: 38 }],
+  // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
+  vending: { x: 24, z: 38, line: [{ x: 24, z: 39 }, { x: 23, z: 39 }, { x: 22, z: 39 }, { x: 21, z: 39 }] },
   rollCall,
   spawn: { x: 13, z: 13 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],

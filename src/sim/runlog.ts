@@ -165,8 +165,8 @@ export class RunRecorder {
       // (Nor one from before sets in time and inmates on the machines, 2.29: the same.)
       // (Nor one from before inmates at work and guards minding work rooms, 2.30: the same.)
       // (Nor one from before the library's reading and its limit, 2.31: the same.)
-      // (Every one of those versions comes before 2.31, the latest gate: one test covers them all.)
-      const stale = beforeBooks(log?.game ?? '');
+      // (Every one of those versions comes before 2.32, the latest gate: one test covers them all.)
+      const stale = beforeVending(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -285,6 +285,8 @@ const beforeGym = (game: string) => versionBefore(game, 2, 29);
 const beforeJobs = (game: string) => versionBefore(game, 2, 30);
 /** Before the library's reading, its daily limit, subjects and librarian (2.31.0). Sim.rules230 plays it as it was. */
 const beforeBooks = (game: string) => versionBefore(game, 2, 31);
+/** Before the vending machine worked (2.32.0). Sim.rules231 plays it as it was. */
+const beforeVending = (game: string) => versionBefore(game, 2, 32);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -344,6 +346,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeJobs(log.game)) sim.rules229 = true;
   // Played before the library's reading: as it was.
   if (beforeBooks(log.game)) sim.rules230 = true;
+  // Played before the vending machine worked: as it was.
+  if (beforeVending(log.game)) sim.rules231 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

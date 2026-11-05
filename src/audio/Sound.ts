@@ -328,6 +328,38 @@ export class Sound {
     this.tone(900, 600, 0.05, 'triangle', 0.15);
   }
 
+  /** The vending machine (2.32): a coin going down its slot. */
+  vendCoin() {
+    this.tone(1900, 1500, 0.05, 'square', 0.05);
+    this.tone(2500, 2100, 0.06, 'square', 0.05, 0.07);
+    this.tone(1400, 1100, 0.06, 'square', 0.04, 0.17);
+  }
+
+  /** Its coil turning: a low motor, as long as the turn. */
+  vendCoil() {
+    this.tone(120, 150, 1.2, 'sawtooth', 0.045, 0.2);
+    this.tone(240, 300, 1.2, 'triangle', 0.03, 0.2);
+  }
+
+  /** What's bought hitting the flap. */
+  vendDrop() {
+    this.tone(180, 70, 0.14, 'triangle', 0.22);
+    this.tone(90, 50, 0.1, 'square', 0.06, 0.02);
+  }
+
+  /** Stuck: a sour double buzz. */
+  vendBuzz() {
+    this.tone(160, 150, 0.14, 'sawtooth', 0.1);
+    this.tone(120, 110, 0.22, 'sawtooth', 0.1, 0.18);
+  }
+
+  /** A thump on its side. */
+  vendThump() {
+    this.tone(110, 40, 0.2, 'triangle', 0.32);
+    this.tone(300, 160, 0.06, 'square', 0.08);
+    this.tone(1400, 900, 0.1, 'sine', 0.025, 0.04);
+  }
+
   /** A footstep: a muffled brush on grass and dirt, a crisp tap on hard floors. */
   step(surface: number) {
     if (SOFT.has(surface)) this.hiss(0.09, 'lowpass', 700 + Math.random() * 300, 0.7, 0.07);

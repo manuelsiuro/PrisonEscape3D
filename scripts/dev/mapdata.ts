@@ -256,6 +256,8 @@ export function sheetOf(def: PrisonDef, w: World): SheetSection[] {
     const c = def.cells[k + 1];
     people.push({ label: `${name}, cell ${cell}`, text: rolesOf(def, cell).join(', '), at: c ? [c[0], c[1]] : undefined });
   });
+  // 2.32: the vending machine and who's at it.
+  if (def.vending) people.push({ label: 'The vending machine', text: 'Food, drink and toiletries for cash, its rows filled every morning. Inmates queue for it in the free times; off in a lockdown or a drill, dark in a power cut.', at: [def.vending.x, def.vending.z] });
   // 2.31: who sits at the library's table, and the day's reading.
   const lib = def.leisure?.librarian;
   if (lib) people.push({ label: 'The library', text: `Readers at the shelves and chairs in free time; the librarian (cell ${lib.cell}) at the end of a table. Six sets of reading a day, four subjects.`, at: [lib.x, lib.z] });

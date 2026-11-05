@@ -1,5 +1,5 @@
-52 lessons start on open floor
-53 lessons, each linked from How to play
-45 pictures, each with its recipe
+53 lessons start on open floor
+54 lessons, each linked from How to play
+46 pictures, each with its recipe
 rule flags: rules250, rules215, rules221, rules222, rules224, rules225, rules226, rules227, rules229; each gated and written down
-docs/POLISH.md: 27 areas, 14 Done, 1 Partly, 12 Not reviewed
+docs/POLISH.md: 28 areas, 15 Done, 1 Partly, 12 Not reviewed

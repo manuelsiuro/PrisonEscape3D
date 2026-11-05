@@ -172,6 +172,9 @@ function dutyStops(w: World, free: (t: number) => boolean): Duty[] {
 const WALL = [13, 9, 5, 1];
 const cache = new WeakMap<World, Places>();
 
+/** What changes what's solid (Sim.rules231, as a replay sets it up) has them worked out again. */
+export const forgetPlaces = (w: World) => void cache.delete(w);
+
 export function placesOf(w: World): Places {
   let p = cache.get(w);
   if (!p) cache.set(w, (p = build(w)));

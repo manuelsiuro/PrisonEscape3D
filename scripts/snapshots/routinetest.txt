@@ -73,26 +73,27 @@ day 1 12:00 routine work
 day 1 15:00 routine exercise
 day 1 16:00 missed exercise +25% heat
 day 1 16:00 routine showers
-day 1 16:45 spotted: skipping
-day 1 16:57 spotted: skipping
+day 1 16:46 spotted: skipping
+day 1 16:58 spotted: skipping
 day 1 17:00 missed showers +25% heat
 day 1 17:00 routine dinner
-day 1 17:26 spotted: skipping
-day 1 17:38 spotted: skipping
+day 1 17:27 spotted: skipping
+day 1 17:39 spotted: skipping
 day 1 18:00 missed dinner +25% heat
 day 1 18:00 routine eveningFreeTime
-day 1 18:08 spotted: wanted
-day 1 18:11 caught (infirmary)
 day 1 22:00 routine eveningRollCall
+day 1 22:20 spotted: skipping
+day 1 22:30 spotted: skipping
+day 1 22:59 spotted: skipping
 day 1 23:00 missed eveningRollCall +100% heat
 day 1 23:00 LOCKDOWN
 day 1 23:00 routine lightsOut
-day 1 23:03 caught (solitary)
-day 1 23:03 lockdown lifted
-day 1 23:33 into solitary
-day 2 01:33 out of solitary
-day 2 01:33 attended lightsOut
-day 2 01:33 cells locked
+day 1 23:02 caught (solitary)
+day 1 23:02 lockdown lifted
+day 1 23:32 into solitary
+day 2 01:32 out of solitary
+day 2 01:32 attended lightsOut
+day 2 01:32 cells locked
 day 2 08:00 routine rollCall
 day 2 08:00 cells unlocked
 truant heat at the end of day 1: 0%

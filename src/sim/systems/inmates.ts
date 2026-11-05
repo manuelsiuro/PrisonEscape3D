@@ -60,6 +60,9 @@ export interface Inmate extends Walker, Fighter {
   duty: number;
   /** 2.31: at a library shelf choosing a book (1), a book in hand (2), neither (0). */
   book: number;
+  /** 2.32: what it's bought from the machine and is still eating or drinking (an item, 0 none), until this step. */
+  snack: number;
+  snackEnd: number;
 }
 
 /** Where inmates like to spend free time (their own cell is added). */
@@ -98,6 +101,8 @@ export function spawnInmates(w: World, rng: { rng: number }): Inmate[] {
       seatFace: 0,
       duty: 0,
       book: 0,
+      snack: 0,
+      snackEnd: 0,
     });
   }
   return out;

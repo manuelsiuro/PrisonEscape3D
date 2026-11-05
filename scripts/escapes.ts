@@ -284,7 +284,7 @@ export const PLANS: Plan[] = [
   // lowered drawbridge.
   {
     def: IRONGATE,
-    seed: 51,
+    seed: 52,
     name: (r) => `${IRONGATE.id}: ${r}`,
     routes: ['raft', 'helicopter', 'takeover', 'stowaway', 'bluff', 'paperwork'],
     paperKit: ['pouch'],

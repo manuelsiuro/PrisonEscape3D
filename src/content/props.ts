@@ -54,6 +54,8 @@ export const PROPS = {
   punchingBag: { solid: false },
   /** An exercise mat: push-ups, for Strength. */
   mat: { solid: false },
+  /** 2.32: the canteen's vending machine (solid only for runs from then on: World.plainVending). */
+  vending: { solid: true },
 } as const;
 
 export type PropKind = keyof typeof PROPS;

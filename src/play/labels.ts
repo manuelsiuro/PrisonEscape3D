@@ -28,6 +28,7 @@ import { LAYER, MAP_W, placeKey } from '../sim/world/World';
 import type { TargetInfo } from '../ui/combat';
 import { itemName } from '../ui/items';
 import { hiddenIn } from '../sim/systems/kiosk';
+import { foodUse } from '../sim/systems/vending';
 import type { ToolView } from '../ui/tool';
 import { drinkArmed, press } from './buttons';
 import { trackCheck } from '../sim/systems/races';
@@ -185,6 +186,15 @@ export function describeTarget(sim: Sim, target: Target, climb: ClimbTarget | nu
     }
     return actionLabel;
   }
+  // The vending machine (2.32), ahead of whoever's beside it, as actions.ts has it.
+  if (target?.kind === 'fixture' && target.use === 'vending') {
+    const key = `vending:${currentLang()}`;
+    if (key !== actionKey) {
+      actionKey = key;
+      Object.assign(actionLabel, { verb: t('act.vending'), what: t('thing.vending') });
+    }
+    return actionLabel;
+  }
   if (!target) return null;
   // The bed at night (2.28): the dummy in or out first; the next press lies down.
   if (target.kind === 'sleep') {
@@ -327,7 +337,8 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   v.caption = false;
   v.confirm = false;
   v.armed = false;
-  v.verb = t(`act.${tt.action}` as Key);
+  // (2.32: a can or a cup's drunk, not eaten.)
+  v.verb = t(tt.action === 'eat' && itemDef(held).food?.drink ? 'act.drink' : (`act.${tt.action}` as Key));
   v.icon = TOOL_ICON[tt.action];
   // An alarm clock (P14): wound, or stopped while it rings.
   if (tt.action === 'wind') {
@@ -450,11 +461,11 @@ export function describeTool(sim: Sim, tt: ToolTarget | null, held: number): Too
   v.fits = tt.fits && (!strike || (tt.hp !== 0 && sim.state.energy >= energyCost(sim, d?.tool?.energy ?? 0)));
   // Digging up takes a press per strike (a hold never surfaces the player).
   v.repeat = strike && tt.action !== 'digUp';
-  if (tt.action === 'eat') v.fits = sim.state.energy < 100;
+  if (tt.action === 'eat') v.fits = itemDef(held).food ? foodUse(held, sim.state.energy, sim.state.health, maxHealth(sim.state.str)) : sim.state.energy < 100;
   if (!strike) {
     v.what =
       tt.action === 'eat'
-        ? held === CHOC_EGG || held === ICE_LOLLY
+        ? held === CHOC_EGG || held === ICE_LOLLY || itemDef(held).food
           ? itemName(held)
           : t('thing.chocolate')
         : tt.action === 'cover'
