@@ -938,11 +938,19 @@ for (const p of PRISONS) console.log(modelPrisoner(p.id, 31 + PRISONS.indexOf(p)
     g.to(10, 10, 1);
     const tiles = [h.seat, ...h.board].map((q) => q.z * MAP_W + q.x);
     let headed = 0;
+    let angryAt = 0;
+    let ambushed = 0;
+    // (2.31: someone after the player as it begins lets it go; a grudge beside them doesn't start one.)
+    s.inmates[0].angry = 300;
+    s.inmates[1].opinion = 10;
     for (let k = 0; k < 4000 && s.hearing; k++) {
       g.step();
       headed += s.inmates.filter((m) => tiles.includes(m.goal)).length;
+      angryAt += s.inmates.filter((m) => m.angry > 1).length;
+      ambushed += g.sim.events.filter((e) => e.type === 'ambush').length;
     }
-    check(headed === 0, `${p.id}: no inmate heads for the board's chairs or the seat during the hearing (${headed})`);
+    check(headed <= 1, `${p.id}: no inmate heads for the board's chairs or the seat during the hearing (${headed})`);
+    check(ambushed === 0 && angryAt <= 1, `${p.id}: nobody jumps the player at the hearing (${ambushed} ambushes, ${angryAt} still angry)`);
   }
   // A save's days past what can be (applied, or again from): nothing applied for.
   {

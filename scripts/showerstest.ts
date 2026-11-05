@@ -223,6 +223,8 @@ for (const def of PRISONS) {
 for (const def of PRISONS) {
   for (const late of [0, 35]) {
     const bot = new Bot(def, 11);
+    // (The block's walk and wash, not a fight: no grudge to settle on the way.)
+    for (const m of bot.st.inmates) if (m.opinion <= 25) m.opinion = 40;
     check(bot.routineUntil(1, BLOCK + late), 'the block');
     const start = bot.st.step;
     const h = freeHead(bot) ?? heads(bot)[0];
@@ -276,8 +278,10 @@ for (const def of PRISONS) {
   const ways: Array<[string, (b: Bot) => void]> = [
     ['stands there', (b) => b.step(0)],
     ['hits back', (b) => {
-      if (b.st.inmates.some((m) => m.angry > 0 && m.windup === 0) && b.st.lock < 0) b.op(OP.LOCK);
-      else if (b.st.lock >= 0) b.op(OP.USE, 1);
+      // (Locked on to the one after them, not whoever's nearest.)
+      const foe = b.st.inmates.findIndex((m) => m.angry > 0);
+      if (foe >= 0 && b.st.lock !== foe) b.op(OP.LOCK);
+      else if (foe >= 0) b.op(OP.USE, 1);
       else b.step(0);
     }],
     ['leaves the room when warned', (b) => {
@@ -347,14 +351,15 @@ for (const def of PRISONS) {
   was225.rules227 = true;
   was225.rules228 = true;
   was225.rules229 = true;
+  was225.rules230 = true;
   const prev = new RunRecorder(was225, { seed: 24, game: '2.25.0' });
   for (let k = 0; k < (BLOCK + 40 - 8 * 60) * STEPS_PER_MINUTE; k++) prev.step(0);
-  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.30.0' }).toLog().seed === -1, 'a log from 2.25 is not carried on');
+  check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.31.0' }).toLog().seed === -1, 'a log from 2.25 is not carried on');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules225 === true, 'and replays whole under the old rules');
-  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.30.0' });
+  const now = new RunRecorder(new Sim(CENTER_PERKS, 25), { seed: 25, game: '2.31.0' });
   for (let k = 0; k < 40; k++) now.step(0);
-  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.30.1' }).toLog().seed === 25, 'a log from today is');
+  check(new RunRecorder(now.sim, { log: now.toLog(), game: '2.31.1' }).toLog().seed === 25, 'a log from today is');
   check(replayLog(now.toLog(), CENTER_PERKS)?.sim.rules225 === false, 'and replays under today\'s');
 
   // Training has no showers: its crowd's day isn't troubled, through the block.

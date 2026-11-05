@@ -24,6 +24,7 @@ import type { Match } from './systems/football';
 import type { Ink } from './systems/tattoo';
 import type { Show } from './systems/talent';
 import type { Quiz } from './systems/quiz';
+import { SUBJECTS } from '../content/books';
 import { ACT_GAP, CHARTS, countIn, QUIZ_QUESTIONS, REVEAL_STEPS, SONGS, songSteps } from '../content/nights';
 import { DESIGNS } from '../content/team';
 import { TILE } from './world/tiles';
@@ -65,7 +66,9 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
       // (2.26: an ambusher's moment of warning.)
       const q = o.windup === undefined ? { ...o, windup: 0 } : o;
       // (2.30: how far through its work.)
-      return q.duty === undefined ? { ...q, duty: 0 } : q;
+      const d = q.duty === undefined ? { ...q, duty: 0 } : q;
+      // (2.31: with a book, or not.)
+      return d.book === undefined ? { ...d, book: 0 } : d;
     }) ?? spawnInmates(world, { rng: st.rng });
   s.items = fitItems(world, st.items, st.rng) ?? startItems(world, { rng: st.rng });
   // Guard fields added later (P15's ways) load at the end, in field order.
@@ -257,6 +260,11 @@ export function loadState(world: World, prison: PrisonDef, st: Partial<SimState>
   if (!Number.isInteger(s.countAt) || s.countAt < 0) s.countAt = 0;
   // (2.29: a press's beat; a turn asked for, on a machine this prison has.)
   if (!Array.isArray(s.strayed) || !s.strayed.every(Number.isInteger)) s.strayed = [];
+  // (2.31: a book in hand, a place in it, the day's reading.)
+  if (!Number.isInteger(s.book) || s.book < 0 || s.book > SUBJECTS.length) s.book = 0;
+  if (!Number.isInteger(s.readFrom) || s.readFrom < 0) s.readFrom = 0;
+  if (!Number.isInteger(s.readToday) || s.readToday < 0) s.readToday = 0;
+  if (!Number.isInteger(s.ambushDay) || s.ambushDay < 0) s.ambushDay = 0;
   if (!Number.isInteger(s.repBeat)) s.repBeat = -1;
   if (!Array.isArray(s.askTurn) || s.askTurn.length !== 2 || !s.askTurn.every(Number.isInteger) || !world.props[s.askTurn[0]]) s.askTurn = [];
   // (A save from before 2.25 with this meal eaten, in the 3 s it took then: still eaten.)

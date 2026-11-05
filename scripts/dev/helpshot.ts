@@ -204,6 +204,23 @@ export const SHOTS: Record<string, Shot> = {
     zoom: 2.2,
     dx: 1,
   },
+  // 2.31: on a library chair at Center Perks with a book, a page half read, the readers and the librarian about.
+  library: {
+    make: () => {
+      const bot = new Bot(CENTER_PERKS, 41);
+      bot.routineUntil(2, 10 * 60 + 25);
+      const shelf = containersOf(bot.sim.world).findIndex((b) => b.prop.kind === 'shelf' && bot.sim.world.zoneAt(b.prop.x, b.prop.z) === 'library');
+      bot.walkTo(placesOf(bot.sim.world).shelves[0].tile);
+      bot.face(13);
+      bot.open(shelf);
+      bot.read(1);
+      bot.set(() => bot.st.reps >= 60);
+      return bot;
+    },
+    when: (_s, k, n) => k >= n - 1,
+    zoom: 2.2,
+    dz: -1,
+  },
   // 2.29: a set under way at Center Perks' gym, the crowd on the other machines.
   train: {
     make: () => {

@@ -5,6 +5,7 @@ a mine at Strength 70: 20 health left, a sniper taking aim
 digging up under the minefield sets the mine off
 supply road: red through the generator room, the control room and the inner wall, green through the gate; 51 tiles from the yard to the road, none of them mined
 snipers: on duty day and night
-lawless: three grudges from day 1; a free-time ambush after 15 s (never at Center Perks)
+lawless: three grudges from day 1; a free-time ambush after 41 s (never at Center Perks)
+12 seeds, three days, standing there: floored 35 times, 12 on day 1; no ambush before 12:00 on day 1, one a day at most
 grudges settled: 3 ambushes, 3 knockouts in three days, each by a different inmate, never twice
 walkway cameras: 25% of the walkway watched over a sweep

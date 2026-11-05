@@ -164,8 +164,9 @@ export class RunRecorder {
       // (Nor one from before the night's rules, 2.28: the same.)
       // (Nor one from before sets in time and inmates on the machines, 2.29: the same.)
       // (Nor one from before inmates at work and guards minding work rooms, 2.30: the same.)
-      // (Every one of those versions comes before 2.30, the latest gate: one test covers them all.)
-      const stale = beforeJobs(log?.game ?? '');
+      // (Nor one from before the library's reading and its limit, 2.31: the same.)
+      // (Every one of those versions comes before 2.31, the latest gate: one test covers them all.)
+      const stale = beforeBooks(log?.game ?? '');
       const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
       if (log && runs) {
         this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
@@ -282,6 +283,8 @@ const beforeNight = (game: string) => versionBefore(game, 2, 28);
 const beforeGym = (game: string) => versionBefore(game, 2, 29);
 /** Before inmates worked their stations (2.30.0): the mop from the hand only, nobody minding work rooms. Sim.rules229 plays it as it was. */
 const beforeJobs = (game: string) => versionBefore(game, 2, 30);
+/** Before the library's reading, its daily limit, subjects and librarian (2.31.0). Sim.rules230 plays it as it was. */
+const beforeBooks = (game: string) => versionBefore(game, 2, 31);
 
 /** The last prison day a log's old cards are dealt for: its own last, or at most LEGACY_DAYS on (a log that runs on and on past its end). */
 const LEGACY_DAYS = 1000;
@@ -339,6 +342,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   if (beforeGym(log.game)) sim.rules228 = true;
   // Played before inmates worked their stations: as it was.
   if (beforeJobs(log.game)) sim.rules229 = true;
+  // Played before the library's reading: as it was.
+  if (beforeBooks(log.game)) sim.rules230 = true;
   if (sim.state.step !== log.from) return null;
   return { sim, runs };
 }

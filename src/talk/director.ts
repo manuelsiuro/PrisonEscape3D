@@ -1,4 +1,5 @@
 import { wardenOf } from '../sim/systems/rollcall';
+import { librarianOf } from '../sim/systems/training';
 import { RAT } from '../sim/systems/rats';
 import { itemDef } from '../content/items';
 import { ROUTINE } from '../content/routine';
@@ -103,6 +104,8 @@ interface Pending {
 const lineDef = (l: Line): LineDef => (typeof l === 'string' ? { t: l } : l);
 const NO_TAGS: ReadonlySet<Tag> = new Set();
 
+/** How near the librarian has to be to say anything about a book (tiles). */
+const LIBRARIAN_EARSHOT = 8;
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** The banks of a language with lines tied to moments (`when`). */
@@ -420,6 +423,14 @@ export class Director {
         this.queueUp(now, 're.caught.gu', this.guardsNear(sim, px, pz, 4), 5, 'caught');
         this.queueUp(now, 're.caught.in', this.inmatesNear(sim, px, pz, 9), 3, 'caughtIn', undefined, 1.2);
         break;
+      case 'cantTrain':
+      case 'book': {
+        // (2.31: the librarian, in earshot: a nod for a book taken, a word when the head is full.)
+        const said = e.type === 'book' ? (e.on ? 're.library.book' : null) : e.why === 'full' ? 're.library.full' : null;
+        const who = librarianOf(sim);
+        if (said && who >= 0 && !sim.rules230 && s.inmates[who].ko <= 0 && dist(s.inmates[who].body, s.player) <= LIBRARIAN_EARSHOT) this.queueUp(now, said, [who], 3, said);
+        break;
+      }
       case 'askTurn':
         // (2.29: asked for the machine: they finish up, and say so.)
         this.queueUp(now, 're.giveWay.in', [e.who], 4, 'giveWay');

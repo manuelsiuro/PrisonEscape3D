@@ -243,6 +243,11 @@ export function hearingDue(s: Pick<SimState, 'parole' | 'step' | 'hearing'>): bo
   return s.parole[P.HEARING] > 0 && s.parole[P.HEARING] === prisonDay(s.step) && m >= HEARING_FROM && m < HEARING_TO && !s.hearing;
 }
 
+/** A hearing sitting, or still to come this morning (2.31: nobody jumps the player on their way to it). */
+export function hearingToday(s: Pick<SimState, 'parole' | 'step' | 'hearing'>): boolean {
+  return !!s.hearing || (s.parole[P.HEARING] > 0 && s.parole[P.HEARING] === prisonDay(s.step) && dayMinute(s.step) < HEARING_TO);
+}
+
 /** In the hearing room, up and about on the ground floor. */
 function inHearingRoom(sim: SimContext): boolean {
   const h = hearingOf(sim);

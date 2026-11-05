@@ -1,0 +1,12 @@
+recipes by subject: tools 19, locks 23, weapons 9, everyday 9
+center-perks: shelf to a set done 6.5 s, 4 chairs, 6 shelf tiles, librarian in cell 4
+stalag-flucht: shelf to a set done 5.7 s, 4 chairs, 6 shelf tiles, librarian in cell 6
+shankton: shelf to a set done 6.0 s, 4 chairs, 6 shelf tiles, librarian in cell 4
+san-pancho: shelf to a set done 6.0 s, 2 chairs, 3 shelf tiles, librarian in cell 7
+irongate: shelf to a set done 6.2 s, 3 chairs, 2 shelf tiles, librarian in cell 8
+a set: 19.8 s untouched, 4.7 s kept up with, a hit worth 20%
+a press every 0.5 s, not looking: 19.8 s a set
+a set on a chair, energy lost: 8 kept up with
+a set on a chair, energy lost: 1 untouched
+free time: center-perks 2.1 in the library (most 4), 1.8 reading, librarian at the desk 94%; stalag-flucht 2.5 in the library (most 4), 2.2 reading, librarian at the desk 94%; shankton 3.1 in the library (most 6), 2.6 reading, librarian at the desk 100%; san-pancho 3.5 in the library (most 6), 2.8 reading, librarian at the desk 94%; irongate 2.7 in the library (most 6), 2.1 reading, librarian at the desk 99%
+library ok

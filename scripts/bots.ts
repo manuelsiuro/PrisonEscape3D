@@ -12,6 +12,8 @@ import { Autopilot } from '../src/sim/ai/autopilot';
 import { placesOf } from '../src/sim/ai/places';
 import { command, OP, SLOT } from '../src/sim/command';
 import { canAnswer } from '../src/sim/systems/rollcall';
+import { keyAt, keyFrom } from '../src/content/books';
+import { freeReadSeat } from '../src/sim/systems/training';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { formatTime } from '../src/sim/systems/clock';
 import { itemOf, slot } from '../src/sim/systems/items';
@@ -28,6 +30,11 @@ export const tileOf = (x: number, z: number) => z * MAP_W + x;
 export function beatPress(sim: Sim): number {
   const s = sim.state;
   const prop = sim.world.props[s.train];
+  // (2.31: a book: on each key word as the marker reaches it.)
+  if (prop?.kind === 'shelf' && !sim.rules230) {
+    const pos = s.step + 1 - s.readFrom;
+    return keyAt(keyFrom(pos)) === pos ? command(0, OP.TRAIN, 1) : 0;
+  }
   if (!prop || beatAt(s.step + 1, beatOf(prop.kind).beat).off !== 0) return 0;
   return command(0, OP.TRAIN, s.repSide === 1 ? 2 : 1);
 }
@@ -114,6 +121,13 @@ export class Bot {
     const test = done ?? (() => this.st.train < 0 || this.st.str + this.st.spd + this.st.items.int !== trained);
     for (let k = 0; k < limit && !test(); k++) this.step(beatPress(this.sim));
     return test();
+  }
+  /** At a library shelf with its panel open (2.31): a book of the subject, and on to a free chair with it, reading there. */
+  read(subject = 0) {
+    this.op(OP.TRAIN, 0, subject);
+    if (this.st.train >= 0 || !this.st.book) return;
+    const seat = freeReadSeat(this.sim);
+    if (seat >= 0 && this.walkTo(seat)) this.act();
   }
   /** Holds hotbar slot k. */
   hold(item: string) {

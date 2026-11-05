@@ -273,6 +273,11 @@ const GEAR: PropPlacement[] = [
   { kind: 'mat', x: 14, z: 34, w: 2 },
 ];
 
+/** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
+const READING: PropPlacement[] = [
+  { kind: 'deskChair', x: 27, z: 44, rot: 3 },
+];
+
 export const SHANKTON: PrisonDef = {
   id: 'shankton',
   difficulty: 3,
@@ -311,7 +316,7 @@ export const SHANKTON: PrisonDef = {
     ['perimeter', 48, 58, 55, 62],
   ],
   cells,
-  props: [...props, ...GEAR],
+  props: [...props, ...GEAR, ...READING],
   rollCall,
   spawn: { x: 10, z: 10 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],
@@ -395,6 +400,7 @@ export const SHANKTON: PrisonDef = {
     track: { x: 41, z: 14, w: 14, d: 8 },
     stage: stage(31, 14, 5),
     quiz: quizAt(5, [25, 42], [26, 42], [28, 42], [29, 42]),
+    librarian: { cell: 4, x: 27, z: 44, face: 9 },
   },
   // Rebuilt in 2.8 (P32): the rec ground in the kitchen's old block, the garden plot in the courtyard.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.

@@ -43,6 +43,9 @@ export interface Places {
   guardBeds: Array<{ tile: number; bed: number }>;
   /** 2.29: the gym's machines: the prop, the tile an inmate uses it from (each its own) and the way it faces there. */
   machines: Array<Spot & { prop: number }>;
+  /** 2.31: the library's: where to stand choosing a book, and its public chairs (with the added ones, which `rests` leaves out). */
+  shelves: Spot[];
+  readSeats: Spot[];
   /** 2.30: each job's stations, where whoever holds it works them from, by the prison's job order. */
   duties: Duty[];
 }
@@ -67,6 +70,28 @@ const MACHINES: readonly string[] = ['weights', 'pullup', 'treadmill', 'mat', 'p
  * Where a machine is used from: on a mat, the mat; else the first free tile round it (from the south, the camera's
  * side, where the model's made to be used from, then its sides, then behind), in its own zone, not another's.
  */
+/** The tiles to read a library's shelves from (the kiosk's left to its users), 2.31. */
+function shelfSpots(w: World): Spot[] {
+  const lib = zoneIndex('library');
+  const kiosk = w.def.comms?.kiosk;
+  const out: Spot[] = [];
+  for (const p of w.props) {
+    if (p.kind !== 'shelf' || w.ground.zone[p.z * MAP_W + p.x] !== lib) continue;
+    for (let x = p.x; x < p.x + p.w; x++)
+      for (const [z, face] of [[p.z + p.d, N], [p.z - 1, S]] as const) {
+        const t = z * MAP_W + x;
+        if (isFloor(w, x, z) && w.ground.zone[t] === lib && !(kiosk && kiosk.x === x && kiosk.z === z)) out.push({ tile: t, face });
+      }
+  }
+  return out;
+}
+
+/** The library's chairs, for anyone to read on (not the librarian's), 2.31. */
+function readSeats(w: World): Spot[] {
+  const lib = zoneIndex('library');
+  return w.props.flatMap((p) => ((p.kind === 'chair' || p.kind === 'readChair') && w.ground.zone[p.z * MAP_W + p.x] === lib ? [{ tile: p.z * MAP_W + p.x, face: facingAt(w, p, p.x, p.z) }] : []));
+}
+
 function machineSpots(w: World, free: (t: number) => boolean): Array<Spot & { prop: number }> {
   const out: Array<Spot & { prop: number }> = [];
   w.props.forEach((p, prop) => {
@@ -244,6 +269,8 @@ function build(w: World): Places {
     infirmary: roomy(w, beside(w, infirmaryBed?.p, inZone('infirmary')), inZone('infirmary')),
     guardBeds,
     machines: machineSpots(w, (t) => isFloor(w, t % MAP_W, Math.floor(t / MAP_W))),
+    shelves: shelfSpots(w),
+    readSeats: readSeats(w),
     duties: dutyStops(w, (t) => isFloor(w, t % MAP_W, Math.floor(t / MAP_W))),
   };
 }

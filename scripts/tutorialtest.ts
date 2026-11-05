@@ -895,6 +895,16 @@ play('cousin', (bot) => {
   }
 });
 
+play('library', (bot) => {
+  // A book of the first subject, on a free chair, a set kept up with.
+  bot.open(containersOf(bot.sim.world).findIndex((b) => b.prop.kind === 'shelf' && bot.sim.world.zoneAt(b.prop.x, b.prop.z) === 'library'));
+  bot.read(0);
+  check(bot.st.train >= 0, 'library: reading');
+  bot.set();
+  check(bot.st.items.int === 42, 'library: a set read');
+  bot.until(() => false, 200);
+});
+
 play('kiosk', (bot) => {
   // Logged in at the library's terminal: a letter home, the thick book ordered, a course answered right, the book at mail call.
   const k = CENTER_PERKS.comms!.kiosk;

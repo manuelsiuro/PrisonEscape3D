@@ -31,6 +31,9 @@ export const PROPS = {
   ladder: { solid: true },
   /** A chair or stool: sat on (P8+); low, stepped round. */
   chair: { solid: false },
+  /** 2.31: a library's added chairs, as `chair` but only for runs from then on (World.plainBooks); the librarian's own, never the player's. */
+  readChair: { solid: false },
+  deskChair: { solid: false },
   /** The metalshop's hydraulic press (P9): sheet metal in, a license plate out. */
   press: { solid: true },
   /** HMP Irongate's helipad (P12): kept clear (nobody walks onto it, the helicopter sets down on it at night); boarded from beside it. */

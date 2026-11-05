@@ -189,6 +189,17 @@ export const SET_BEATS = {
   punchingBag: { beat: 8, window: 2, hit: 10, miss: 3 },
   shelf: { beat: 24, window: 4, hit: 25, miss: 6 },
 } as const;
+/**
+ * A set of reading (2.31): the bar fills by itself, a point every READ_FILL_EVERY steps (about 20 s), and each key word
+ * underlined as the marker reaches it, within READ_WINDOW steps, adds READ_HIT: about 5 s kept up with. At most
+ * READ_SETS_A_DAY sets a day; what the kiosk, checkers and quiz night teach comes on top.
+ */
+export const READ_FILL_EVERY = 4;
+export const READ_WINDOW = 4;
+export const READ_HIT = 20;
+export const READ_SETS_A_DAY = 6;
+/** An inmate looking along a shelf before it sits down with a book (2.31). */
+export const BROWSE_STEPS = 60;
 /** How long an inmate takes to finish up and step off a machine the player asked for (2.29). */
 export const GIVE_WAY_STEPS = 40;
 
@@ -242,6 +253,8 @@ export const AMBUSH_ODDS = 400;
 /** 2.26: the moment an ambusher stands squaring up, the warning before it comes for the player (1.5 s). */
 export const AMBUSH_WINDUP_STEPS = 30;
 export const AMBUSH_RANGE = 4 * UNIT;
+/** 2.31: in a lawless prison, the new arrival's first morning is their own: no ambush before this minute of day 1. */
+export const LAWLESS_FROM = 12 * 60;
 /** At most 2 followers (GDD §10.3); they keep this far behind, and go for whoever comes for the player within this range. */
 export const MAX_FOLLOWERS = 2;
 export const FOLLOW_GAP = Math.round(1.6 * UNIT);

@@ -5,7 +5,8 @@
 import { mealOn, traysHere } from './canteen';
 import { phoneTargets, swapPlace } from './phone';
 import { delivering, oddjobTargets, owes, R, talkJob } from './oddjobs';
-import { boardKeptClear } from './parole';
+import { boardKeptClear, hearingToday } from './parole';
+import { releaseToday } from './paperwork';
 import { placesOf } from '../ai/places';
 import { twist } from './twists';
 import { RAT } from './rats';
@@ -16,7 +17,7 @@ import { ORDER, TALK } from '../command';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import type { Refusal } from '../events';
-import { AMBUSH_ODDS, AMBUSH_RANGE, AMBUSH_WINDUP_STEPS, ANGRY_STEPS, BUY_OPINION, CHASE_HEAT, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
+import { AMBUSH_ODDS, AMBUSH_RANGE, AMBUSH_WINDUP_STEPS, ANGRY_STEPS, LAWLESS_FROM, BUY_OPINION, CHASE_HEAT, FAVOR_OFFERS, FAVOR_OPINION, FAVORS_TAKEN, FOLLOW_GAP, GUARD_RANGE, MAX_FOLLOWERS, OPINION_HIGH, OPINION_LOW, TALK_REACH, TIP_OPINION, UNIT } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { dist2, type Fighter, personOf } from './combat';
 import { CASH_GIFTS, cashOpinion, type Favor, FAVOR, FAVOR_ITEMS, FAVOR_STATE, giftOpinion, jobRooms, priceOf } from './economy';
@@ -26,7 +27,7 @@ import { closeBox, freeHotbar, HOTBAR, hotbarSlotOf, itemOf, pocketOf, slot, use
 import { HOLLOW_BOOK } from './structure';
 import { quotaUp } from './jobs';
 import { seatSpot } from './rest';
-import { clockAt } from './clock';
+import { clockAt, prisonDay } from './clock';
 import { revealTip, tippedToday } from './recipes';
 import { stopTraining } from './training';
 import { bribe, canChat } from './ways';
@@ -365,6 +366,14 @@ export function favorDone(sim: SimContext, f: Favor) {
   sim.events.push({ type: 'favor', who: f.by, kind: f.kind, state: 'done' });
 }
 
+/** In a lawless prison (not a Bad Blood Daily, a challenge taken up): the first morning clear, and one ambush a prison day (2.31). */
+function lawlessHoldsOff(sim: SimContext): boolean {
+  const s = sim.state;
+  if (sim.rules230 || !sim.world.def.rules?.hostile) return false;
+  const c = clockAt(s.step);
+  return (c.day === 1 && c.minuteOfDay < LAWLESS_FROM) || s.ambushDay === prisonDay(s.step);
+}
+
 /** Where grudges are settled: at meals and in the showers; in a hostile prison, free time and the yard too. */
 const GRUDGE_BLOCKS: readonly string[] = ['breakfast', 'dinner', 'showers'];
 const HOSTILE_BLOCKS: readonly string[] = [...GRUDGE_BLOCKS, 'freeTime', 'exercise', 'eveningFreeTime'];
@@ -377,6 +386,11 @@ const HOSTILE_BLOCKS: readonly string[] = [...GRUDGE_BLOCKS, 'freeTime', 'exerci
 export function grudges(sim: SimContext) {
   const s = sim.state;
   const id = ROUTINE[s.routine].id;
+  // (2.31: nobody jumps the player on the morning of their hearing or release, and whoever was after them lets it go: an earned way out isn't lost to a breakfast grudge.)
+  if (!sim.rules230 && (hearingToday(s) || releaseToday(s))) {
+    for (const m of s.inmates) if (m.angry > 1) m.angry = 1;
+    return;
+  }
   if (!(hostile(sim) ? HOSTILE_BLOCKS : GRUDGE_BLOCKS).includes(id) || sim.away || s.layer !== LAYER.GROUND || s.lockdown || s.stowed) return;
   const p = s.player;
   const zone = sim.playerZone;
@@ -387,6 +401,8 @@ export function grudges(sim: SimContext) {
     if (m.opinion > OPINION_LOW || m.angry > 0 || m.ko > 0 || s.followers.includes(who)) return;
     if (dist2(m.body, p) > AMBUSH_RANGE * AMBUSH_RANGE || inmateZone(sim.world, m) !== zone) return;
     if (!lineOfSight(sim.world, m.body.x, m.body.z, p.x, p.z) || randomInt(s, AMBUSH_ODDS) !== 0) return;
+    // (2.31: a lawless prison hands the new arrival one fight a day that can be fought: never in their first morning, nor a second on top of the first.)
+    if (lawlessHoldsOff(sim)) return;
     // (P23: a muscle watching the player's back close by: they think better of it.)
     if (stopAmbush(sim, who)) return;
     m.angry = ANGRY_STEPS;
@@ -395,6 +411,7 @@ export function grudges(sim: SimContext) {
     // (2.26: it stands squaring up for a moment first, the "!" over its head, for the player to fight or run.)
     if (!sim.rules225) m.windup = AMBUSH_WINDUP_STEPS;
     if (s.talk === who) endTalk(sim);
+    if (!sim.rules230) s.ambushDay = prisonDay(s.step);
     sim.events.push({ type: 'ambush', who });
   });
 }
@@ -410,6 +427,7 @@ export function socialNow(sim: SimContext): Social {
   so.turns = !sim.rules225;
   // (Not at the Training Block: its lessons ask for a machine or an inmate by name, and shouldn't find one taking up the other.)
   so.machines = !sim.rules228 && !sim.world.def.rules?.relaxed;
+  so.reads = !sim.rules230 && !sim.world.def.rules?.relaxed;
   // (Nor there either, for the same reason, working its stations.)
   const jobOf = (so.jobOf ??= []);
   jobOf.length = sim.rules229 || sim.world.def.rules?.relaxed ? 0 : n;

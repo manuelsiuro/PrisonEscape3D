@@ -39,6 +39,7 @@ import { play, sendOp } from './game';
 import { BoardPanel, TrainCard, WorkChips } from '../ui/work';
 import { StageCard } from '../ui/stage';
 import { QuizCard } from '../ui/quiz';
+import { ReadCard } from '../ui/reading';
 
 /**
  * The long-lived objects every play module shares: storage first, then settings, sound, the
@@ -123,6 +124,8 @@ export const board = new BoardPanel(sendOp, click);
 export const profile = new ProfilePanel(click);
 export const trainCard = new TrainCard(sendOp);
 trainCard.onBeat = () => sound.setBeat();
+export const readCard = new ReadCard(sendOp);
+readCard.onPage = () => sound.click();
 export const workChips = new WorkChips();
 /** Throwing and noise over the picture (P14): the aim's hint and labels, guards who heard. */
 export const aimUI = new AimUI();
