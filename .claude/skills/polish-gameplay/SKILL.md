@@ -37,11 +37,16 @@ line is something that was missed or broke at some point.
 - Saves (`load.ts`: fields at the end, optional, checked) and values whose meaning changed. Old logs
   (`Sim.rulesNNN`, `prepareReplay`, the `stale` gate in `RunRecorder`).
 - A prison that lacks the thing (Training has no serving counter).
-- Decor turned into a working prop: everything iterating `world.props` sees it, in old runs too (digging, the button's target). Add it last, not solid, and compare the old world with the new one on those tiles (`canDigFloor` refuses any prop's tile: an added chair would have broken old logs that dug there).
+- Decor turned into a working prop: everything iterating `world.props` sees it, in old runs too (digging, the button's target). Add it last, not solid, and compare the old world with the new one on those tiles (`canDigFloor` refuses any prop's tile: an added chair would have broken old logs that dug there). Made solid
+  behind a flag, its setter must also forget and recompute everything worked out from solidity (`forgetPlaces`,
+  `forgetReserved`): the `Sim` is built before a replay sets its flags, and a stale no-dig list let 2.33's cooler
+  (and, latent since 2.32, the vending machine) refuse holes old logs had dug.
 
 **What the player meets**
 - The action button: `labels.ts` must say exactly what `actions.ts` does, in the same order of priority.
-  The highlight (`focusOf`) must agree with both.
+  The highlight (`focusOf`) must agree with both. `buttons.ts` can replace the target before the label sees it: an
+  offer put ahead of it (a machine, a board faced) must still give way to whatever `actions.ts` checks first, even
+  behind the player (a meal's tray at the counter at their back took the press while the button said "Read").
 - Keyboard and touch; the floor arrows (`guide.ts`); hints, toasts and floats (`announce.ts`); barks; the HUD and the day card.
 - Who gets in the way: a crowd changes what the button targets and who stands where.
 - A warning promises time: measure the whole job from nothing, from where people really are, against it. 30 s looked generous for a job a bot does in 18 s, and a third of the jobs couldn't finish.
@@ -59,7 +64,8 @@ line is something that was missed or broke at some point.
 - A lesson in `CHAPTERS`. A lesson without its own `seed` uses `7 + its place`, so inserting one moves
   every unseeded lesson after it: add it after the last unseeded one, with a seed.
 - The first-day guide (`src/ui/coach.ts`).
-- Every line in `src/i18n/en.ts` and `fr.ts` that describes the old behaviour.
+- Every line in `src/i18n/en.ts` and `fr.ts` that describes the old behaviour. New French follows `fr.ts`: a narrow
+  no-break space (U+202F) before `:` `;` `!` `?` and `%`, and inside « ».
 
 **The world**
 - Props and decor in all five prisons: is what the rule assumes actually there, and the same everywhere?
@@ -68,7 +74,11 @@ line is something that was missed or broke at some point.
   every photo: `git checkout` the ones nothing changed in.
 
 **3D**
-- Every state of the animation, in hands and set down, from both sides, with the camera's real angle.
+- Every state of the animation, in hands and set down, from both sides, with the camera's real angle. A held item
+  is fixed to the hand and turns with the arm: a pose that raises it (a cup to the lips) must keep the item upright
+  itself, or it's held out sideways and tipped over.
+- Text on a wall (a board, a sign) is a thin strip from this steep camera: hang it from its top edge with its foot out
+  so it faces up (tipped the other way it faces the floor and its back is culled). The card stays the readable version.
 - The player's see-through silhouette treats anything not drawn in the body's material as a wall.
 - Per-frame values must not accumulate; reduced motion must snap rather than vanish.
 
@@ -107,7 +117,11 @@ Write `scripts/<area>test.ts` with its snapshot:
 changed bot snapshot is a regression until proven otherwise. Separate a real FAIL from a moved number, and
 never explain a failure away unmeasured: run old and new code over many seeds with a git worktree of
 `HEAD` (symlink `node_modules`, run one probe script against both). That showed Irongate's takeover bot wins
-about half the time on either, and that the gardener's bug was older than the change. Check a long probe has really started (a `.ts` with top-level await dies at once under `tsx`; use `.mts`). Remove the worktree
+about half the time on either, and that the gardener's bug was older than the change. To name a moved snapshot's
+cause, change one thing at a time in the same build (2.33: inmates at the cooler from day 2, then the cooler made
+walk-through: the escape bots' drift went to zero, so the cooler being solid was all of it). A route lost on 24 seeds
+may be luck: measure it on 60 on the old code and on each candidate fix before moving anything (Irongate's bluff: 58,
+58 and 57; the cooler stayed where it was). Check a long probe has really started (a `.ts` with top-level await dies at once under `tsx`; use `.mts`). Remove the worktree
 afterwards, and list every accepted change in `PLAN.md`.
 
 ## 6. Play it
