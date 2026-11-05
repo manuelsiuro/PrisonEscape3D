@@ -384,7 +384,7 @@ function voidIt(sim: SimContext, why: VoidWhy) {
 /** Plotting seen this step (null: none). */
 function plotting(sim: SimContext): VoidWhy | null {
   // (Out of the cell after Lights Out: seen by a guard, filmed, lit up, or caught out there in a lockdown, when nothing more is "spotted".)
-  const outLate = afterHours(sim.state) && sim.playerZone !== 'playerCell';
+  const outLate = afterHours(sim) && sim.playerZone !== 'playerCell';
   for (const e of sim.events) {
     if (e.type === 'found') return 'dig';
     if ((e.type === 'solitary' && e.on) || e.type === 'infirmary') if (e.plot) return 'tools';

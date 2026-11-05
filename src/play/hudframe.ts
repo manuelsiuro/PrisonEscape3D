@@ -6,9 +6,10 @@ import { presenceNeeded } from '../sim/systems/routine';
 import { t, type Key } from '../i18n';
 import { jobRooms } from '../sim/systems/economy';
 import { GUARD } from '../sim/systems/guards';
-import { COLD_STEPS, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND } from '../sim/tuning';
+import { COLD_STEPS, LIGHTS_OUT_GRACE, LOOK_AWAY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND } from '../sim/tuning';
+import { afterHours } from '../sim/systems/watch';
 import { lookingAway } from '../sim/systems/ways';
-import { clockAt, formatTime } from '../sim/systems/clock';
+import { clockAt, formatTime, hhmm } from '../sim/systems/clock';
 import { baking, exposed } from '../sim/systems/weather';
 import { dayHud } from './day';
 import { TILE_INFO } from '../sim/world/tiles';
@@ -81,7 +82,7 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   // (P24's glider lesson, on the roof after Lights Out: the routine pill asks nothing of the player.)
   hudState.quietRoutine = !!g.lesson && LESSONS[g.lesson.index].routine === false;
   // At roll call (2.27): where to stand till counted; on it, the morning's shakedown, until it's over.
-  hudState.square = squareNeeded(sim) && !st.attended && !onOwnSquare(sim) ? t('routine.yourSquare') : shakedownLine(sim);
+  hudState.square = squareNeeded(sim) && !st.attended && !onOwnSquare(sim) ? t('routine.yourSquare') : (shakedownLine(sim) ?? homeLine(sim, g));
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;
@@ -170,6 +171,11 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   tense = hunted || st.heat >= 80 || (tense && st.heat >= 70);
   const chased = tense;
   const night = ROUTINE[st.routine].id === 'lightsOut' || st.sleeping;
+  // (2.28: the block's lights going out, heard; the sim's own moment, so nothing to save.)
+  const dark = !st.lockdown && afterHours(sim);
+  if (dark && !wasDark && darkSim === sim && !st.sleeping && !g.paused && !g.replay) sound.powerDown();
+  wasDark = dark;
+  darkSim = sim;
   // Paused or reading a card, the music steps back.
   // (P30: and under a song on the stage.)
   sound.duck((g.paused && !g.over) || songOn);
@@ -221,6 +227,17 @@ function fileButton(g: Game) {
   // (Spent once it shows: a game left before then shows it next time.)
   if (tip && !seenTip('fileButton')) markTip('fileButton');
   hud.fileTip(tip);
+}
+
+let wasDark = false;
+/** Whose: a game started or loaded after dark doesn't hear them go out on its first frame. */
+let darkSim: Sim | null = null;
+/** The walk home, while the bell's grace lasts (2.28), for the routine pill; null else. */
+function homeLine(sim: Sim, g: Game): string | null {
+  const st = sim.state;
+  // (A lesson about something else, set up at night, has its own place to send them.)
+  if ((g.lesson && LESSONS[g.lesson.index].id !== 'night') || sim.rules227 || st.lockdown || ROUTINE[st.routine].id !== 'lightsOut' || afterHours(sim) || sim.playerZone === 'playerCell' || sim.world.def.rules?.relaxed) return null;
+  return t('routine.homeBy', { time: hhmm(ROUTINE[st.routine].start + LIGHTS_OUT_GRACE / STEPS_PER_MINUTE) });
 }
 
 /** The shakedown's cells while it's on and the morning roll call lasts (2.27), for the routine pill; null else. */

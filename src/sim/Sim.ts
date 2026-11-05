@@ -154,6 +154,8 @@ export class Sim {
   rules225 = false;
   /** Replaying a run logged under 2.26 or before (runlog.ts): roll call as it was (anywhere in the yard counts, the warden at the post). Not state. */
   rules226 = false;
+  /** Replaying a run logged under 2.27 or before (runlog.ts): the night as it was (15 minutes' grace, energy back awake or asleep, the bed only for sleep). Not state. */
+  rules227 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;

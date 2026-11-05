@@ -51,7 +51,8 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       id: 'start',
       topics: [
         T('goal', 'route', '#ff7714', { pic: true, lessons: ['escape'], see: ['ways', 'delivery', 'bluff', 'glider', 'paperwork', 'parole'] }),
-        T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['walk', 'routine'], see: ['rollcall', 'meals', 'showers'] }),
+        T('routine', 'clock', '#3d7fd0', { diagram: 'schedule', lessons: ['walk', 'routine'], see: ['rollcall', 'meals', 'showers', 'night'] }),
+        T('night', 'moon', '#5a6fd0', { pic: true, lessons: ['routine', 'night'], stepIcons: ['pin', 'moon', 'sun'], see: ['routine', 'energy', 'searches'] }),
         T('rollcall', 'bell', '#ff8a1e', { pic: true, lessons: ['rollcall'], stepIcons: ['pin', 'hand', 'check'], see: ['routine', 'heat', 'items'] }),
         T('meals', 'utensils', '#d9822b', { pic: true, lessons: ['meals'], stepIcons: ['hand', 'route', 'utensils', 'check'], see: ['energy', 'routine'] }),
         T('showers', 'water', '#3f9bd6', { pic: true, lessons: ['showers'], stepIcons: ['hand', 'water', 'route'], see: ['energy', 'routine', 'heat'] }),
@@ -63,7 +64,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
       id: 'getting',
       topics: [
         T('craft', 'hammer', '#6f93b8', { recipes: ['sheet_rope', 'poster', 'flimsy_shovel'], lessons: ['craft'] }),
-        T('energy', 'heart', '#e0507a', { lessons: ['gym'], listIcons: ['pause', 'utensils', 'water', 'item:chocolate', 'moon'], see: ['meals', 'showers'] }),
+        T('energy', 'heart', '#e0507a', { lessons: ['gym'], listIcons: ['pause', 'utensils', 'water', 'item:chocolate', 'moon'], see: ['meals', 'showers', 'night'] }),
       ],
     },
     {
@@ -82,7 +83,7 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
         T('guards', 'eye', '#1e3a5f', { pic: true, lessons: ['guards', 'disguise'], listIcons: ['dot:#f5c542', 'dot:#ff8c2a', 'dot:#e5484d'], see: ['guardWays', 'caught'] }),
         T('guardWays', 'shield', '#5b6fa8', { lessons: ['guards'], listIcons: ['book', 'moon', 'eye', 'coin'] }),
         T('caught', 'siren', '#e5484d', { listIcons: ['hammer'], see: ['heat'] }),
-        T('searches', 'bell', '#d9930a', { recipes: ['bed_dummy'], lessons: ['stash'], listIcons: ['sun', 'moon'], see: ['items'] }),
+        T('searches', 'bell', '#d9930a', { recipes: ['bed_dummy'], lessons: ['stash', 'night'], listIcons: ['sun', 'moon'], see: ['items', 'night'] }),
       ],
     },
     {

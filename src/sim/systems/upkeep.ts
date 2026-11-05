@@ -6,7 +6,7 @@ import { centerX, centerZ, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { freshMeals } from './grounds';
-import { ENERGY_REGEN_STEPS, FRESH_ENERGY, FRESH_HEALTH, HEALTH_REGEN_STEPS, MEAL_ENERGY, SHOWER_ENERGY_STEPS, SHOWER_HEAT_BELOW, SHOWER_HEAT_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE } from '../tuning';
+import { ENERGY_REGEN_STEPS, FRESH_ENERGY, FRESH_HEALTH, HEALTH_REGEN_STEPS, MEAL_ENERGY, NIGHT_ENERGY_FLOOR, SHOWER_ENERGY_STEPS, SHOWER_HEAT_BELOW, SHOWER_HEAT_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE } from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { maxHealth } from './combat';
 import { closeBox, REACH } from './items';
@@ -18,6 +18,10 @@ import { endTalk } from './social';
 import { stopTraining } from './training';
 import { washScent } from './k9';
 import { underShower } from './showers';
+import { ROUTINE } from '../../content/routine';
+import { freeHotbar, HOTBAR, itemOf } from './items';
+import { containersOf } from '../world/containers';
+import { itemNumber } from '../../content/items';
 
 /** Into bed: the player lies down beside it (the view puts them in it). */
 export function sleep(sim: SimContext) {
@@ -32,6 +36,64 @@ export function sleep(sim: SimContext) {
   endTalk(sim);
   stopTraining(sim);
   sim.events.push({ type: 'sleep', on: true });
+}
+
+type NightReader = Pick<SimContext, 'state' | 'world' | 'rules227'>;
+const BED_DUMMY = itemNumber('bed_dummy');
+
+/**
+ * What the action button does at the player's own bed at night (2.28), before sleep: a dummy in the
+ * bed comes out (the morning's search would find it, and they can't lie on it), a dummy in hand goes in.
+ * Null: they lie down. Tucked in, taken out and tucked in again: nothing is lost by a wrong press.
+ */
+export function bedOffer(sim: NightReader, index: number): 'tuck' | 'takeOut' | null {
+  if (sim.rules227) return null;
+  const it = sim.state.items;
+  if (it.containers[index].some((v) => itemOf(v) === BED_DUMMY)) return 'takeOut';
+  return itemOf(it.inv[it.hand]) === BED_DUMMY ? 'tuck' : null;
+}
+
+/** The dummy from the hand into the bed: its first free slot, or (a bed has two, its pillow and sheet) in place of what's first there, which comes into the hand. */
+export function tuckDummy(sim: SimContext, index: number) {
+  const it = sim.state.items;
+  const box = it.containers[index];
+  const from = containersOf(sim.world)[index].hidden;
+  const free = box.indexOf(0, from);
+  const k = free < 0 ? from : free;
+  const was = box[k];
+  box[k] = it.inv[it.hand];
+  it.inv[it.hand] = was;
+  it.rev++;
+  sim.events.push({ type: 'bedDummy', in: true });
+}
+
+/**
+ * The dummy out of the bed into the pockets: a slot other than the hand if there is one, so that the next
+ * press is Sleep and not the dummy going back in. Pockets full: it changes places with what's in hand (a bed
+ * starts full, so tucking in brings its pillow to the hand; nobody is ever kept from lying down by this).
+ */
+export function takeOutDummy(sim: SimContext, index: number) {
+  const it = sim.state.items;
+  const box = it.containers[index];
+  const from = box.findIndex((v) => itemOf(v) === BED_DUMMY);
+  let to = it.inv.slice(0, HOTBAR).findIndex((v, k) => !v && k !== it.hand);
+  if (to < 0) to = freeHotbar(it.inv);
+  const swapped = to < 0 ? itemOf(it.inv[it.hand]) : 0;
+  if (to < 0) to = it.hand;
+  const was = it.inv[to];
+  it.inv[to] = box[from];
+  box[from] = was;
+  it.rev++;
+  sim.events.push(swapped ? { type: 'bedDummy', in: false, swapped } : { type: 'bedDummy', in: false });
+}
+
+/**
+ * Up at Lights Out (2.28): energy comes back at night only asleep (GDD §2: sleep, or the dummy and a night's
+ * work). Not when it isn't their choice: out cold, in solitary, in a lockdown. Not at Training, which has no nights.
+ */
+export function awakeAtNight(sim: Pick<SimContext, 'state' | 'world' | 'rules227'>): boolean {
+  const s = sim.state;
+  return !sim.rules227 && ROUTINE[s.routine].id === 'lightsOut' && !s.sleeping && s.ko === 0 && s.solitary <= 0 && !s.lockdown && !sim.world.def.rules?.relaxed;
 }
 
 /** Sits down on a seat, bench or chair, or lies down on an infirmary bed: facing the table, the body still. */
@@ -74,7 +136,7 @@ export function keepSeat(sim: SimContext) {
     standUp(sim);
     return;
   }
-  if (s.energy < 100 && s.step % SIT_ENERGY_STEPS === 0) s.energy++;
+  if (s.energy < 100 && s.step % SIT_ENERGY_STEPS === 0 && !awakeAtNight(sim)) s.energy++;
   if (eatingNow(sim)) {
     if (++s.eaten >= mealSteps(sim)) {
       if (s.tray === TRAY.FULL) {
@@ -96,11 +158,14 @@ export function keepSeat(sim: SimContext) {
   }
 }
 
-/** Energy: a point back every couple of minutes, one a minute asleep. Health: a point a minute, two asleep (or resting). */
+/** Energy: a point back every couple of minutes (2.28: at night only asleep; before, one more a minute asleep). Health: a point a minute, two asleep (or resting). */
 export function regenerate(sim: SimContext) {
   const s = sim.state;
   const resting = s.sleeping || (s.seat >= 0 && sim.world.props[s.seat].kind === 'bed');
-  if (s.energy < 100 && (s.step % ENERGY_REGEN_STEPS === 0 || (s.sleeping && s.step % STEPS_PER_MINUTE === 0))) s.energy++;
+  // (2.28: up at night, only as far as a little to go on with, so nobody is stranded down a tunnel. Asleep, the same rate; Training's nights as they were.)
+  const heldBack = awakeAtNight(sim) && s.energy >= NIGHT_ENERGY_FLOOR;
+  const oldSleep = (sim.rules227 || sim.world.def.rules?.relaxed) && s.sleeping && s.step % STEPS_PER_MINUTE === 0;
+  if (s.energy < 100 && !heldBack && (s.step % ENERGY_REGEN_STEPS === 0 || oldSleep)) s.energy++;
   if (s.ko === 0 && s.health < maxHealth(s.str) && (s.step % HEALTH_REGEN_STEPS === 0 || (resting && s.step % (HEALTH_REGEN_STEPS / 2) === 0))) s.health++;
 }
 

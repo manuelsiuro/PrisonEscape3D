@@ -180,7 +180,7 @@ export function outOfBounds(sim: SimContext): boolean {
   // (P36: cleared for release, walked out through staff rooms: no trail.)
   if (s.release[1] > 0) return false;
   const zone = sim.playerZone;
-  return (afterHours(s) && zone !== 'playerCell') || RESTRICTED.includes(zone);
+  return (afterHours(sim) && zone !== 'playerCell') || RESTRICTED.includes(zone);
 }
 
 /** Whether a dog (by its index) would smell contraband on the player now, by its nose alone (the HUD's paw). */

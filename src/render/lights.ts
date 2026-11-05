@@ -5,6 +5,9 @@ import { LAMP_ARM, LAMP_BULB_Y } from './props';
 
 /** Zones lit by daylight only (open sky); every other zone gets ceiling lights at night. */
 const OPEN_AIR = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none', 'sports', 'garden']);
+/** Where the lights go out at Lights Out (2.28), and how far: enough left to see by on a phone. */
+const CELL_BLOCK = new Set(['cellBlock', 'playerCell', 'inmateCell']);
+const NIGHT_LIGHT = 0.8;
 
 /** A soft round glow, white in the middle and fading out: one for every prison (made once, never freed with a view). */
 let glow: THREE.CanvasTexture | null = null;
@@ -36,6 +39,8 @@ export class Lights {
   private readonly bulbs: THREE.MeshBasicMaterial;
   private readonly warm: THREE.MeshBasicMaterial | null;
   private readonly cool: THREE.MeshBasicMaterial | null;
+  /** The cells and the cell block's corridors (2.28): theirs go out at Lights Out, past the walk home. */
+  private readonly block: THREE.MeshBasicMaterial | null;
 
   constructor(world: World) {
     const tex = glowTexture();
@@ -57,8 +62,10 @@ export class Lights {
 
     // Cool pools in every room, about one per 5×5 tiles, only on walkable indoor floor.
     const spots: Array<[number, number, number]> = [];
+    const block: Array<[number, number, number]> = [];
     for (const [id, x0, z0, x1, z1] of world.def.zones) {
       if (OPEN_AIR.has(id)) continue;
+      const to = CELL_BLOCK.has(id) ? block : spots;
       const nx = Math.max(1, Math.round((x1 - x0 + 1) / 5));
       const nz = Math.max(1, Math.round((z1 - z0 + 1) / 5));
       for (let a = 0; a < nx; a++) {
@@ -66,12 +73,13 @@ export class Lights {
           const x = x0 + ((a + 0.5) * (x1 - x0 + 1)) / nx;
           const z = z0 + ((b + 0.5) * (z1 - z0 + 1)) / nz;
           if (TILE_INFO[world.ground.kind[Math.floor(z) * MAP_W + Math.floor(x)]].solid) continue;
-          spots.push([x, z, Math.min(6, Math.max(3.5, Math.min(x1 - x0 + 1, z1 - z0 + 1) * 1.1))]);
+          to.push([x, z, Math.min(6, Math.max(3.5, Math.min(x1 - x0 + 1, z1 - z0 + 1) * 1.1))]);
         }
       }
     }
-    for (const [x0, z0, x1, z1] of world.def.cells) spots.push([(x0 + x1 + 1) / 2, (z0 + z1 + 1) / 2, 3.6]);
+    for (const [x0, z0, x1, z1] of world.def.cells) block.push([(x0 + x1 + 1) / 2, (z0 + z1 + 1) / 2, 3.6]);
     this.cool = this.addPools(spots, 0xcfe6ff, tex);
+    this.block = this.addPools(block, 0xcfe6ff, tex);
   }
 
   private addPools(spots: Array<[number, number, number]>, color: number, map: THREE.Texture): THREE.MeshBasicMaterial | null {
@@ -86,14 +94,15 @@ export class Lights {
     return mat;
   }
 
-  /** 0 in daylight, 1 at night; `power` 0–1 (the generator off: every lamp and room light goes dark, GDD §5.5). */
-  setNight(night: number, power = 1) {
+  /** 0 in daylight, 1 at night; `power` 0–1 (the generator off: every lamp and room light goes dark, GDD §5.5); `dark` 0–1: the cell block's lights out, but for a night light. */
+  setNight(night: number, power = 1, dark = 0) {
     const lit = night * power;
     this.bulbs.color.setRGB(0.33 + lit * 0.67, 0.33 + lit * 0.55, 0.33 + lit * 0.2);
     night = lit;
     for (const [mat, peak] of [
       [this.warm, 0.42],
       [this.cool, 0.3],
+      [this.block, 0.3 * (1 - dark * NIGHT_LIGHT)],
     ] as const) {
       if (!mat) continue;
       mat.opacity = night * peak;

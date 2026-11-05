@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Pitch } from '../content/prisons/types';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../sim/world/World';
+import { bedDummyMesh, placeInBed } from './BedDummy';
 import { Character, type BedPose } from './Character';
 import { Cones } from './Cones';
 import { Security } from './Security';
@@ -314,6 +315,11 @@ export class View {
   private readonly ndc = new THREE.Vector2();
   private readonly red = new THREE.Color(0xff2a1a);
   private alarm = 0;
+  /** The cell block's lights out (2.28): 0 on … 1 out, and where it's heading. */
+  private blockDark = 0;
+  private blockDarkGoal = 0;
+  /** The bed dummy in the player's bed (2.28). */
+  private readonly dummy = bedDummyMesh();
   /** 0 by day … 1 at night (the last frame's light). */
   private night = 0;
   private readonly target = new THREE.Vector3(MAP_W / 2, 0, MAP_H / 2);
@@ -376,7 +382,7 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -545,6 +551,9 @@ export class View {
     this.wasWashing = false;
     this.dryingFor = 0;
     this.beds = world.cellBed.map((b) => b && { x: b.x + b.w / 2, z: b.z + b.d / 2, angle: (b.rot * Math.PI) / 2 });
+    if (this.beds[1]) placeInBed(this.dummy, this.beds[1]);
+    this.dummy.visible = false;
+    this.blockDark = this.blockDarkGoal = 0;
     this.setCast(0);
     this.setGuards([]);
   }
@@ -1281,6 +1290,9 @@ export class View {
     this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.night, this.powerLevel, f.layer !== LAYER.UNDER);
     // The odd jobs board (P40): the cards still up today, the job tag (not from the tunnels).
     this.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
+    // (2.28: a dummy in the player's bed shows, but not under them, nor from the tunnels.)
+    this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.beds[1];
+    this.blockDarkGoal = f.blockDark ? 1 : 0;
     this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
@@ -1623,7 +1635,9 @@ export class View {
     this.decor?.update(this.powerLevel, time, this.layer === LAYER.VENTS ? 0.3 : 1, this.reducedMotion);
     // Decor belongs to the ground floor (out of the picture from the tunnels).
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
-    this.worldView?.update(dt, night, this.doorsOpen, this.powerLevel, this.riot, this.security?.group.visible ? this.security.arches : 1);
+    // (2.28: the cell block's lights go out, past the walk home; a lockdown has them back on.)
+    this.blockDark = this.reducedMotion ? this.blockDarkGoal : this.blockDark + (this.blockDarkGoal - this.blockDark) * Math.min(1, dt * 3);
+    this.worldView?.update(dt, night, this.doorsOpen, this.powerLevel, this.riot, this.security?.group.visible ? this.security.arches : 1, this.blockDark);
     this.dust.update(dt);
     // (The running heads as the last frame found them; off the ground floor's picture from the tunnels.)
     this.showerWater.update(dt, time, !this.reducedMotion, this.running, this.camera);
