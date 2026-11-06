@@ -3,11 +3,11 @@
  * on the structure, covers, braces and ropes, climbing between layers, toilets, bed, seats,
  * showers, and energy and health coming back.
  */
-import { counterTray, handsUsed, serveTray, trayOffer } from './canteen';
+import { handsUsed, serveTray } from './canteen';
 import { CAKE, eatCake, lineOp, say, startCall } from './phone';
 import { bookMove, hiddenIn, kioskOp, openBook } from './kiosk';
 import { boardOp, whistle } from './oddjobs';
-import { atRelease, atTray, fileForm, report } from './paperwork';
+import { fileForm, report } from './paperwork';
 import { paroleOp } from './parole';
 import { playNote, quitShow, STAGE_QUIT, startShow } from './talent';
 import { answerQuiz, endQuiz, joinQuiz } from './quiz';
@@ -36,8 +36,6 @@ import { maxHealth } from './combat';
 import { LAYER, MAP_W, placeKey } from '../world/World';
 import { lockCandidates, nextLock } from './combat';
 import { attack, hurt } from './fights';
-import type { Guard } from './guards';
-import type { Inmate } from './inmates';
 import {
   closeBox,
   craft,
@@ -47,8 +45,6 @@ import {
   give,
   HOTBAR,
   hotbarSlotOf,
-  interactTarget,
-  type Target,
   type ItemEvent,
   itemOf,
   type ItemState,
@@ -58,27 +54,22 @@ import {
   stillInReach,
   usesOf,
 } from './items';
-import { jobOp, letterDue, station, takeCoins, work } from './jobs';
+import { jobOp, takeCoins, work } from './jobs';
 import { peel } from './justice';
-import type { Body } from './movement';
 import { blast, liveMine } from './mines';
 import { makeNoise, strikeNoise, wind } from './noise';
 import { board, flood, launch } from './sea';
 import { powered, snipersOnDuty, switchPower } from './power';
 import { carve, takeTreat } from './holiday';
 import { sniperOn } from './security';
-import { canChat } from './ways';
-import { atTail, climbOut, stow } from './delivery';
-import { airOf, atWindow, showId, windowFirst } from './getaway';
+import { climbOut, stow } from './delivery';
+import { airOf, showId } from './getaway';
 import { approach, dismissAll, endTalk, talkOp } from './social';
 import {
   besideOnGround,
   cavesIn,
-  climbTarget,
   type ClimbTarget,
   DIRT,
-  facesProp,
-  preferClimb,
   SHEET_ROPE,
   SHIVS,
   STRIKES,
@@ -88,13 +79,13 @@ import {
   underSea,
   WALL_CHUNK,
 } from './structure';
-import { foodUse, vendOffer, vendOp } from './vending';
+import { foodUse, vendOp } from './vending';
 import { VEND } from '../../content/vending';
 import { MENU } from '../../content/menu';
 import { COOLER } from '../../content/cooler';
-import { menuOffer, menuOp } from './menu';
-import { coolerOffer, coolerOp } from './cooler';
-import { chairForBook, onReadChair, readOn, readSeated, reading, rep, stopTraining, study, useMachine } from './training';
+import { menuOp } from './menu';
+import { coolerOp } from './cooler';
+import { onReadChair, readOn, rep, stopTraining, study, useMachine } from './training';
 import { addHeat, setTile } from './watch';
 import { washScent } from './k9';
 import { feedRat, looseRat, sendRat } from './rats';
@@ -108,10 +99,12 @@ import { bedTarget, tend } from './garden';
 import { take } from './pantry';
 import { holdKick, releaseKick } from './football';
 import { drawNeedle, endInk } from './tattoo';
-import { answerCount, canAnswer } from './rollcall';
-import { showerOffer, startWash, stopWash } from './showers';
-import { bedOffer, sitDown, sleep, standUp, takeOutDummy, tuckDummy } from './upkeep';
+import { answerCount } from './rollcall';
+import { startWash, stopWash } from './showers';
+import { sitDown, sleep, standUp, takeOutDummy, tuckDummy } from './upkeep';
 import { throwItem } from './throwing';
+
+import { bodiesAbout, interactPlan, people, type Plan } from './interact';
 
 /** The player's one-step operation (OP), and the open container closing out of reach. */
 export function useItems(sim: SimContext, cmd: number) {
@@ -123,150 +116,14 @@ export function useItems(sim: SimContext, cmd: number) {
   if (opOf(cmd) !== OP.NONE && opOf(cmd) !== OP.USE) it.rev++;
   switch (opOf(cmd)) {
     case OP.INTERACT: {
-      if (s.solitary > 0) {
-        peel(sim);
-        break;
-      }
-      // From the open desk panel: down the tunnel under the player's desk.
-      if (a === 1) {
+      // From the open desk panel: down the tunnel under the player's desk (in solitary: a potato, as the plan has it).
+      if (a === 1 && s.solitary <= 0) {
         underDesk(sim);
         break;
       }
-      // Called at roll call (2.27): before anything else, nothing is stopped to do it.
-      if (canAnswer(sim)) {
-        answerCount(sim);
-        break;
-      }
-      // (2.31: reading, the action button underlines; with a book on a library chair, it opens it.)
-      if (reading(sim)) {
-        rep(sim, 1);
-        break;
-      }
-      if (readSeated(sim)) {
-        readOn(sim);
-        break;
-      }
-      // Seated (or resting): the action button gets the player up.
-      if (s.seat >= 0) {
-        standUp(sim);
-        break;
-      }
-      // Delivery day (P18): out of the vehicle again; into it at its tail.
-      if (s.stowed) {
-        climbOut(sim);
-        break;
-      }
-      if (atTail(sim)) {
-        stow(sim);
-        break;
-      }
-      const held = itemOf(it.inv[it.hand]);
-      // (2.31: a book in hand, at a free library chair: that, before anyone about.)
-      const bookSeat = chairForBook(sim);
-      const due = letterDue(sim);
-      const target: Target | null =
-        bookSeat >= 0
-          ? { kind: 'fixture', index: bookSeat, use: 'sit' }
-          : due >= 0
-            ? { kind: 'person', who: due }
-            : interactTarget(
-                sim.world,
-                it,
-                s.player,
-                sim.bedtime,
-                s.layer,
-                people(sim),
-                s.inmates.length,
-                (k) => canChat(sim, k),
-                sim.bedtime && !sim.rules227,
-              );
-      const faced =
-        target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
-      const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
-      // The release desk (P36): reporting there while the name is called, or a forged form slipped into its tray, comes first.
-      if (atRelease(sim)) {
-        report(sim);
-        break;
-      }
-      if (atTray(sim)) {
-        fileForm(sim);
-        break;
-      }
-      // The checkpoint (P24): a fake ID shown at its window, first at the shift change (else when there's nothing else to do here).
-      if (atWindow(sim) && windowFirst(sim, !!target || !!up)) {
-        showId(sim);
-        break;
-      }
-      if (up) {
-        climb(sim, up);
-        break;
-      }
-      // On the job (GDD §11): the station's step comes first.
-      const job = s.layer === LAYER.GROUND ? station(sim) : null;
-      if (job) {
-        work(sim, job);
-        break;
-      }
-      // A meal (2.25): the serving counter's tray taken or given back, ahead of anyone standing by; searched at the next press.
-      const offer = counterTray(sim) ?? (target?.kind === 'container' ? trayOffer(sim, target.index) : null);
-      if (offer) {
-        serveTray(sim, offer);
-        break;
-      }
-      // The showers (2.26): the water turned on, ahead of anyone standing by; searched at the next press.
-      const head = showerOffer(sim, target);
-      if (head >= 0) {
-        startWash(sim, head);
-        break;
-      }
-      // The vending machine (2.32), faced: ahead of whoever's queueing for it beside the player.
-      if (vendOffer(sim)) {
-        vendOp(sim, VEND.OPEN, 0);
-        break;
-      }
-      // The water cooler and the menu board (2.33), faced: ahead of whoever's drinking or reading beside the player.
-      if (coolerOffer(sim)) {
-        coolerOp(sim, COOLER.DRINK);
-        break;
-      }
-      if (menuOffer(sim)) {
-        menuOp(sim, MENU.OPEN);
-        break;
-      }
-      if (!target) break;
-      if (target.kind === 'ground') pickUp(it, target.index, ev);
-      else if (target.kind === 'sleep') {
-        // (2.28: the dummy in or out first; the next press lies down.)
-        const bed = bedOffer(sim, target.index);
-        if (bed === 'tuck') tuckDummy(sim, target.index);
-        else if (bed === 'takeOut') takeOutDummy(sim, target.index);
-        else sleep(sim);
-      } else if (target.kind === 'person') approach(sim, target.who);
-      else if (target.kind === 'fixture') {
-        if (target.use === 'board') sim.events.push({ type: 'board' });
-        else if (target.use === 'generator') switchPower(sim, target.index);
-        else if (target.use === 'helicopter') board(sim);
-        else if (target.use === 'vending') vendOp(sim, VEND.OPEN, 0);
-        else if (target.use === 'cooler') coolerOp(sim, COOLER.DRINK);
-        else if (target.use === 'sit' || target.use === 'rest') {
-          sitDown(sim, target.index, target.use);
-          // (2.31: a book in hand, on a library chair: straight into it, or told why not.)
-          if (onReadChair(sim)) readOn(sim);
-        } else useMachine(sim, target.index, target.use);
-      } else if (target.kind === 'pockets') {
-        // Going through someone's pockets while they're out cold (GDD §10.2).
-        if (it.open !== target.index) {
-          it.open = target.index;
-          ev.push({ type: 'open', container: target.index });
-          takeCoins(sim, target.index);
-        }
-      } else if ((held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet')
-        flush(sim, target.index);
-      else if (it.open !== target.index) {
-        it.open = target.index;
-        ev.push({ type: 'open', container: target.index });
-        takeCoins(sim, target.index);
-      }
+      // The action button: what interact.ts says it does now (the label, the highlight and a tap read the same plan).
+      const plan = interactPlan(sim);
+      if (plan) doPlan(sim, plan);
       break;
     }
     case OP.CLOSE:
@@ -407,22 +264,101 @@ export function useItems(sim: SimContext, cmd: number) {
   }
 }
 
-/** Everyone about on the ground floor (nobody digs under people); one array, refilled. */
-function bodiesAbout(sim: SimContext): Body[] {
-  const list = sim.scratch.about;
-  list.length = 0;
-  for (const m of sim.state.inmates) list.push(m.body);
-  for (const g of sim.state.guards) list.push(g.body);
-  return list;
-}
-
-/** Everyone who can be fought or looted, by Cast id (inmates, then guards); one array, refilled. */
-function people(sim: SimContext): ReadonlyArray<Inmate | Guard> {
-  const list = sim.scratch.cast;
-  list.length = 0;
-  for (const m of sim.state.inmates) list.push(m);
-  for (const g of sim.state.guards) list.push(g);
-  return list;
+/** Does what the action button's plan says (`interactPlan`). */
+function doPlan(sim: SimContext, plan: Plan) {
+  const it = sim.state.items;
+  const ev = sim.events as ItemEvent[];
+  switch (plan.do) {
+    case 'peel':
+      peel(sim);
+      break;
+    case 'answer':
+      answerCount(sim);
+      break;
+    case 'underline':
+      rep(sim, 1);
+      break;
+    case 'readOn':
+      readOn(sim);
+      break;
+    case 'getUp':
+      standUp(sim);
+      break;
+    case 'climbOut':
+      climbOut(sim);
+      break;
+    case 'stow':
+      stow(sim);
+      break;
+    case 'report':
+      report(sim);
+      break;
+    case 'fileForm':
+      fileForm(sim);
+      break;
+    case 'showId':
+      showId(sim);
+      break;
+    case 'climb':
+      climb(sim, plan.climb);
+      break;
+    case 'work':
+      work(sim, plan.station);
+      break;
+    case 'tray':
+      serveTray(sim, plan.offer);
+      break;
+    case 'shower':
+      startWash(sim, plan.head);
+      break;
+    case 'vend':
+      vendOp(sim, VEND.OPEN, 0);
+      break;
+    case 'cooler':
+      coolerOp(sim, COOLER.DRINK);
+      break;
+    case 'menu':
+      menuOp(sim, MENU.OPEN);
+      break;
+    case 'pickUp':
+      pickUp(it, plan.target.index, ev);
+      break;
+    case 'bed':
+      if (plan.bed === 'tuck') tuckDummy(sim, plan.target.index);
+      else takeOutDummy(sim, plan.target.index);
+      break;
+    case 'sleep':
+      sleep(sim);
+      break;
+    case 'talk':
+      approach(sim, plan.target.who);
+      break;
+    case 'fixture': {
+      const target = plan.target;
+      if (target.use === 'board') sim.events.push({ type: 'board' });
+      else if (target.use === 'generator') switchPower(sim, target.index);
+      else if (target.use === 'helicopter') board(sim);
+      else if (target.use === 'vending') vendOp(sim, VEND.OPEN, 0);
+      else if (target.use === 'cooler') coolerOp(sim, COOLER.DRINK);
+      else if (target.use === 'sit' || target.use === 'rest') {
+        sitDown(sim, target.index, target.use);
+        // (2.31: a book in hand, on a library chair: straight into it, or told why not.)
+        if (onReadChair(sim)) readOn(sim);
+      } else useMachine(sim, target.index, target.use);
+      break;
+    }
+    case 'flush':
+      flush(sim, plan.target.index);
+      break;
+    case 'pockets':
+    case 'search':
+      if (it.open !== plan.target.index) {
+        it.open = plan.target.index;
+        ev.push({ type: 'open', container: plan.target.index });
+        takeCoins(sim, plan.target.index);
+      }
+      break;
+  }
 }
 
 /**
