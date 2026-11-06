@@ -159,23 +159,25 @@ On an AZERTY keyboard the game reads the keys where they are (Z Q S D) and shows
 ## Technical notes
 
 Vite + TypeScript + Three.js, with **no models, textures or sound files**: the prisons, characters and
-items are built in code, and the music and sound effects are synthesized. About 92,000 lines of TypeScript
-in 349 files, and 28,000 more in the tests and tools.
+items are built in code, and the music and sound effects are synthesized. About 112,000 lines of TypeScript
+in 374 files (formatted by Prettier), and 41,000 more in the tests and tools.
 
 ### Running it
 
 ```sh
 npm ci
 npm run dev       # dev server on port 5310 (also on your network, to test on a phone)
-npm test          # 62 headless tests (npm test -- -u accepts new snapshots)
+npm test          # 67 headless tests (npm test -- -u accepts new snapshots)
 npm run build     # type-check and build to dist/
-npm run check     # type-check and test
+npm run lint      # oxlint, with type-aware rules
+npm run format    # Prettier (npm run format:check only checks)
+npm run check     # type-check the game and the tests, lint, check the layout, test
 npm run maps      # redraw the map viewer (assets/maps/index.html)
 npm run released  # after a push: wait for CI on HEAD, then for the live game to carry the version
 ```
 
-Pushing to `main` runs CI (build and tests) and publishes the game on GitHub Pages. A release:
-build and tests pass → commit → `npm version minor` (or `patch`) → `git push --follow-tags origin main` →
+Pushing to `main` runs CI (build, types, lint, layout and tests) and publishes the game on GitHub
+Pages. A release: build and `npm run check` pass → commit → `npm version minor` (or `patch`) → `git push --follow-tags origin main` →
 `npm run released`.
 
 ### How it's built
