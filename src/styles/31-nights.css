@@ -1,11 +1,27 @@
 /* ------------------------------------------------------------ stage nights (P30) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --nights-grey-25: #222222;
+  --nights-grey-18: #111111;
+  --nights-pink-85: #ffb3d6;
+  --nights-pink-78: #ff8cc3;
+  --nights-pink-62: #d9488f;
+  --nights-pink-62-rgb: 217, 72, 143;
+  --nights-pink-22: #281228;
+  --nights-pink-22-rgb: 40, 18, 40;
+  --nights-blue-89: #bfe0ff;
+  --nights-blue-81: #8fc8ff;
+  --nights-blue-75: #5fb3ff;
+  --nights-blue-75-rgb: 95, 179, 255;
+  --nights-blue-59: #3d7fd0;
+}
 
 /* Talent night's card: the acts, the pick, the lanes and their pads. */
 .stage-card .train-ic {
-  background: #d9488f;
+  background: var(--nights-pink-62);
 }
 .quiz-card .train-ic {
-  background: #3d7fd0;
+  background: var(--nights-blue-59);
 }
 .stage-card .train-head b,
 .quiz-card .train-head b {
@@ -26,12 +42,12 @@
   padding: 4px 8px;
   border-radius: 9px;
   font: 600 12px var(--font-ui);
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.06);
+  color: rgba(var(--white-rgb), 0.75);
+  background: rgba(var(--white-rgb), 0.06);
 }
 .stage-acts li.on {
-  color: white;
-  background: rgba(217, 72, 143, 0.35);
+  color: var(--white);
+  background: rgba(var(--nights-pink-62-rgb), 0.35);
 }
 .stage-acts .ic {
   flex: none;
@@ -47,7 +63,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--white-rgb), 0.5);
 }
 .stage-acts b,
 .stage-acts em,
@@ -60,16 +76,16 @@
   color: var(--gold);
 }
 .stage-acts em {
-  color: #ffb3d6;
+  color: var(--nights-pink-85);
 }
 .stage-acts li.noshow {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(var(--white-rgb), 0.45);
 }
 .stage-acts li.noshow .stage-who {
   text-decoration: line-through;
 }
 .stage-acts li.noshow em {
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(var(--white-rgb), 0.55);
 }
 .stage-pick {
   display: grid;
@@ -88,9 +104,9 @@
   padding: 7px 6px;
   border-radius: 12px;
   text-align: center;
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.08);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--white-rgb), 0.12);
 }
 .stage-song-btn b {
   font: 700 12px/1.15 var(--font-ui);
@@ -101,11 +117,11 @@
   white-space: nowrap;
 }
 .stage-song-btn.on {
-  background: rgba(217, 72, 143, 0.4);
-  box-shadow: inset 0 0 0 2px #ff8cc3;
+  background: rgba(var(--nights-pink-62-rgb), 0.4);
+  box-shadow: inset 0 0 0 2px var(--nights-pink-78);
 }
 .stage-insts {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--white-rgb), 0.08);
 }
 .stage-insts button {
   flex: 1 1 0;
@@ -113,7 +129,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--white-rgb), 0.7);
 }
 .stage-insts button.on {
   color: var(--ink);
@@ -154,7 +170,7 @@
   width: 100%;
   height: 190px;
   border-radius: 12px;
-  background: linear-gradient(rgba(10, 14, 24, 0.6), rgba(40, 18, 40, 0.75));
+  background: linear-gradient(rgba(var(--slate-14-rgb), 0.6), rgba(var(--nights-pink-22-rgb), 0.75));
 }
 .stage-judge {
   position: absolute;
@@ -163,8 +179,8 @@
   top: 38%;
   text-align: center;
   font: 800 22px var(--font-display);
-  color: white;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  color: var(--white);
+  text-shadow: 0 2px 8px rgba(var(--black-rgb), 0.7);
   pointer-events: none;
   opacity: 0;
 }
@@ -173,13 +189,13 @@
   font-size: 34px;
 }
 .stage-judge[data-grade='3'] {
-  color: #ffe066;
+  color: var(--yellow-91);
 }
 .stage-judge[data-grade='2'] {
-  color: #9fe6b9;
+  color: var(--green-87);
 }
 .stage-judge[data-grade='1'] {
-  color: #ff9a9a;
+  color: var(--red-79);
 }
 .stage-judge.pop {
   animation: judge-pop 0.5s ease-out;
@@ -207,8 +223,11 @@
   gap: 2px;
   height: 56px;
   margin: 0;
-  background: linear-gradient(color-mix(in srgb, var(--lane) 70%, #222), color-mix(in srgb, var(--lane) 45%, #111));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(
+    color-mix(in srgb, var(--lane) 70%, var(--nights-grey-25)),
+    color-mix(in srgb, var(--lane) 45%, var(--nights-grey-18))
+  );
+  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.3);
 }
 .touch .stage-pad {
   height: 76px;
@@ -216,18 +235,18 @@
 .stage-pad.lit {
   transform: scale(0.95);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.3),
     0 0 0 3px var(--lane);
 }
 .stage-pad kbd {
   font: 700 11px var(--font-ui);
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(var(--white-rgb), 0.85);
 }
 .lane-shape {
   display: block;
   width: 18px;
   height: 18px;
-  background: white;
+  background: var(--white);
 }
 .lane-shape.s0 {
   border-radius: 50%;
@@ -247,7 +266,7 @@
   margin-top: 6px;
 }
 .stage-card[data-phase='result'] .train-note {
-  color: white;
+  color: var(--white);
   font-size: 13px;
 }
 
@@ -270,20 +289,20 @@
   padding: 3px 8px;
   border-radius: 999px;
   font: 600 11.5px var(--font-ui);
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.08);
+  color: rgba(var(--white-rgb), 0.75);
+  background: rgba(var(--white-rgb), 0.08);
 }
 .quiz-board li b {
   font: 800 13px var(--font-ui);
-  color: white;
+  color: var(--white);
   font-variant-numeric: tabular-nums;
 }
 .quiz-board li.me {
-  color: #bfe0ff;
-  box-shadow: inset 0 0 0 1.5px rgba(95, 179, 255, 0.6);
+  color: var(--nights-blue-89);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--nights-blue-75-rgb), 0.6);
 }
 .quiz-board li.got {
-  background: rgba(63, 199, 154, 0.45);
+  background: rgba(var(--green-75-rgb), 0.45);
 }
 .quiz-board li.out {
   opacity: 0.45;
@@ -315,9 +334,9 @@
   border-radius: 12px;
   text-align: left;
   font: 700 12.5px/1.2 var(--font-ui);
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12);
+  color: var(--white);
+  background: rgba(var(--white-rgb), 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--white-rgb), 0.12);
 }
 .quiz-choice kbd {
   flex: none;
@@ -328,7 +347,7 @@
   border-radius: 6px;
   font: 800 11px var(--font-ui);
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(var(--white-rgb), 0.85);
 }
 .touch .quiz-choice kbd {
   display: none;
@@ -344,18 +363,18 @@
   cursor: default;
 }
 .quiz-choice.mine {
-  box-shadow: inset 0 0 0 2px #5fb3ff;
+  box-shadow: inset 0 0 0 2px var(--nights-blue-75);
 }
 .quiz-choice.wrong {
-  background: rgba(229, 72, 77, 0.45);
+  background: rgba(var(--red-63-rgb), 0.45);
 }
 .quiz-choice.struck span {
   text-decoration: line-through;
   opacity: 0.6;
 }
 .quiz-choice.right {
-  background: rgba(63, 199, 154, 0.55);
-  box-shadow: inset 0 0 0 2px #9fe6b9;
+  background: rgba(var(--green-75-rgb), 0.55);
+  box-shadow: inset 0 0 0 2px var(--green-87);
 }
 .quiz-bar.hidden,
 .quiz-join.hidden,
@@ -363,11 +382,11 @@
   display: none;
 }
 .quiz-bar > i {
-  background: linear-gradient(90deg, #3d7fd0, #8fc8ff);
+  background: linear-gradient(90deg, var(--nights-blue-59), var(--nights-blue-81));
 }
 /* (While the question is read: the player's head start, in gold.) */
 .quiz-bar.reading > i {
-  background: linear-gradient(90deg, #e0a21b, #ffd66b);
+  background: linear-gradient(90deg, var(--gold-75), var(--gold-89));
 }
 .quiz-join,
 .quiz-quit {

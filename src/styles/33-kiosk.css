@@ -1,8 +1,42 @@
 /* ------------------------------------------------------------ the internet kiosk (P35) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --kiosk-grey-19: #10141a;
+  --kiosk-slate-71: #9aa2ac;
+  --kiosk-slate-55: #6b7280;
+  --kiosk-slate-44: #4b5560;
+  --kiosk-stone-97: #fff6d8;
+  --kiosk-stone-97-rgb: 255, 246, 216;
+  --kiosk-stone-95: #f3efe2;
+  --kiosk-stone-95-rgb: 243, 239, 226;
+  --kiosk-stone-35: #2f3d37;
+  --kiosk-stone-27: #1f2a26;
+  --kiosk-stone-23: #0d2312;
+  --kiosk-pink-81: #ff9cc8;
+  --kiosk-pink-81-rgb: 255, 156, 200;
+  --kiosk-red-91: #ffd8d0;
+  --kiosk-red-72: #ff6f61;
+  --kiosk-red-46: #a11f18;
+  --kiosk-red-43: #8f241f;
+  --kiosk-orange-51: #8a5a32;
+  --kiosk-orange-43: #6d4424;
+  --kiosk-gold-86: #ffc857;
+  --kiosk-gold-85: #f2c94c;
+  --kiosk-gold-43: #6a4a10;
+  --kiosk-yellow-97: #fff6d0;
+  --kiosk-yellow-91: #efe0a8;
+  --kiosk-green-85: #9fe0a8;
+  --kiosk-green-80: #38e07a;
+  --kiosk-green-58: #2e8f58;
+  --kiosk-blue-81: #9cc4ff;
+  --kiosk-blue-81-rgb: 156, 196, 255;
+  --kiosk-blue-59: #3a7bd5;
+  --kiosk-blue-59-rgb: 58, 123, 213;
+}
 
 /* Its card at the terminal: the bill and its clock, the apps' tabs, the app. */
 .kiosk-card .train-ic {
-  background: #3a7bd5;
+  background: var(--kiosk-blue-59);
 }
 .kiosk-card .train-head b {
   min-width: 0;
@@ -10,7 +44,7 @@
 .kiosk-bill {
   margin: 6px 0 0;
   font: 600 12px var(--font-ui);
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(var(--white-rgb), 0.72);
 }
 .kiosk-bill:empty {
   display: none;
@@ -19,7 +53,7 @@
   display: none;
 }
 .kiosk-bar > i {
-  background: linear-gradient(90deg, #3a7bd5, #9cc4ff);
+  background: linear-gradient(90deg, var(--kiosk-blue-59), var(--kiosk-blue-81));
 }
 .kiosk-tabs {
   display: grid;
@@ -40,8 +74,8 @@
   padding: 5px 2px;
   border-radius: 10px;
   font: 700 11px/1.1 var(--font-ui);
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.06);
+  color: rgba(var(--white-rgb), 0.75);
+  background: rgba(var(--white-rgb), 0.06);
 }
 .kiosk-tab span {
   max-width: 100%;
@@ -50,9 +84,9 @@
   white-space: nowrap;
 }
 .kiosk-tab.on {
-  color: white;
-  background: rgba(58, 123, 213, 0.5);
-  box-shadow: inset 0 0 0 1.5px rgba(156, 196, 255, 0.6);
+  color: var(--white);
+  background: rgba(var(--kiosk-blue-59-rgb), 0.5);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--kiosk-blue-81-rgb), 0.6);
 }
 .kiosk-body {
   display: grid;
@@ -66,7 +100,7 @@
 .kiosk-sub {
   margin: 2px 0;
   font: 600 12px/1.35 var(--font-ui);
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(var(--white-rgb), 0.78);
 }
 .kiosk-list {
   display: grid;
@@ -75,7 +109,7 @@
   padding: 0;
   list-style: none;
   font: 600 12px/1.3 var(--font-ui);
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(var(--white-rgb), 0.85);
 }
 .kiosk-list li {
   display: flex;
@@ -116,7 +150,7 @@
   padding: 5px 8px;
   border-radius: 10px;
   font: 600 12px/1.3 var(--font-ui);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(var(--white-rgb), 0.06);
 }
 .kiosk-days b {
   grid-row: span 2;
@@ -124,7 +158,7 @@
   min-width: 64px;
 }
 .kiosk-days small {
-  color: rgba(255, 255, 255, 0.66);
+  color: rgba(var(--white-rgb), 0.66);
 }
 .kiosk-heads {
   margin-top: 4px;
@@ -235,10 +269,10 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   width: min(560px, calc(100vw - 16px));
   padding: 8px 10px 8px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #b8352f, #8f241f);
+  background: linear-gradient(180deg, var(--red-53), var(--kiosk-red-43));
   box-shadow:
-    0 20px 50px -14px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+    0 20px 50px -14px rgba(var(--black-rgb), 0.7),
+    inset 0 0 0 2px rgba(var(--white-rgb), 0.12);
 }
 .vend-card.thumped {
   animation: vend-shake 0.28s linear;
@@ -267,15 +301,15 @@ body.kiosking[data-kiosk='course'] .act-prompt {
 .vend-brand {
   font: 900 20px var(--font-display);
   letter-spacing: 0.08em;
-  color: #fff6d8;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  color: var(--kiosk-stone-97);
+  text-shadow: 0 2px 0 rgba(var(--black-rgb), 0.3);
 }
 .vend-led {
   margin-left: auto;
   padding: 2px 10px;
   border-radius: 6px;
-  background: #10141a;
-  color: #38e07a;
+  background: var(--kiosk-grey-19);
+  color: var(--kiosk-green-80);
   font:
     800 16px ui-monospace,
     SFMono-Regular,
@@ -294,10 +328,10 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   gap: 4px;
   padding: 6px;
   border-radius: 8px;
-  background: linear-gradient(180deg, #fff6d0, #efe0a8);
+  background: linear-gradient(180deg, var(--kiosk-yellow-97), var(--kiosk-yellow-91));
   box-shadow:
-    inset 0 0 0 2px rgba(0, 0, 0, 0.3),
-    inset 0 8px 16px rgba(255, 255, 255, 0.4);
+    inset 0 0 0 2px rgba(var(--black-rgb), 0.3),
+    inset 0 8px 16px rgba(var(--white-rgb), 0.4);
 }
 .vend-row {
   position: relative;
@@ -309,16 +343,16 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   min-height: 44px;
   padding: 3px 3px 4px;
   border: 0;
-  border-bottom: 3px solid #9aa2ac;
+  border-bottom: 3px solid var(--kiosk-slate-71);
   border-radius: 6px 6px 2px 2px;
-  background: rgba(255, 255, 255, 0.55);
-  color: #20252c;
+  background: rgba(var(--white-rgb), 0.55);
+  color: var(--grey-27);
   cursor: pointer;
   font: 600 10px var(--font-ui);
 }
 @media (hover: hover) {
   .vend-row:hover {
-    background: #fff;
+    background: var(--white);
   }
 }
 .vend-row:active {
@@ -334,11 +368,11 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   filter: grayscale(1);
 }
 .vend-row.stuck {
-  background: #ffd8d0;
-  box-shadow: inset 0 0 0 2px #d8342c;
+  background: var(--kiosk-red-91);
+  box-shadow: inset 0 0 0 2px var(--red-58);
 }
 .vend-row.turning {
-  background: #fff;
+  background: var(--white);
 }
 .vend-row.turning .vend-item img {
   animation: vend-coil 1.5s ease-in forwards;
@@ -366,7 +400,7 @@ body.kiosking[data-kiosk='course'] .act-prompt {
     800 10px ui-monospace,
     Menlo,
     monospace;
-  color: #6a4a10;
+  color: var(--kiosk-gold-43);
 }
 .vend-item {
   height: 34px;
@@ -385,7 +419,7 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   font-weight: 700;
 }
 .vend-gives {
-  color: #4b5560;
+  color: var(--kiosk-slate-44);
   font-size: 9.5px;
   white-space: nowrap;
 }
@@ -399,7 +433,7 @@ body.kiosking[data-kiosk='course'] .act-prompt {
 }
 .vend-foot b {
   font: 800 12px var(--font-ui);
-  color: #a11f18;
+  color: var(--kiosk-red-46);
 }
 .vend-pips {
   display: flex;
@@ -409,12 +443,12 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #2e8f58;
+  background: var(--kiosk-green-58);
 }
 .vend-pips em {
   font: 800 9px var(--font-ui);
   font-style: normal;
-  color: #a11f18;
+  color: var(--kiosk-red-46);
   text-transform: uppercase;
 }
 .vend-side {
@@ -424,15 +458,15 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   min-width: 0;
   padding: 6px;
   border-radius: 8px;
-  background: #23272e;
+  background: var(--grey-27);
 }
 .vend-window {
   min-height: 52px;
   margin: 0;
   padding: 6px;
   border-radius: 5px;
-  background: #0b0d10;
-  color: #38e07a;
+  background: var(--grey-14);
+  color: var(--kiosk-green-80);
   font:
     700 12px ui-monospace,
     Menlo,
@@ -440,13 +474,13 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   line-height: 1.25;
 }
 .vend-window[data-tone='jam'] {
-  color: #ff6f61;
+  color: var(--kiosk-red-72);
 }
 .vend-window[data-tone='wait'] {
-  color: #ffc857;
+  color: var(--kiosk-gold-86);
 }
 .vend-window[data-tone='off'] {
-  color: #6b7280;
+  color: var(--kiosk-slate-55);
 }
 .vend-actions {
   display: flex;
@@ -474,8 +508,8 @@ body.kiosking[data-kiosk='course'] .act-prompt {
   margin-top: auto;
   overflow: hidden;
   border-radius: 4px;
-  background: linear-gradient(180deg, #05070a, #1b1e24);
-  box-shadow: inset 0 0 0 2px #5b6470;
+  background: linear-gradient(180deg, var(--grey-14), var(--grey-24));
+  box-shadow: inset 0 0 0 2px var(--slate-50);
 }
 .vend-flap i {
   position: absolute;
@@ -517,7 +551,7 @@ body.kiosking[data-kiosk='course'] .act-prompt {
 }
 .vend-note {
   margin-top: 5px;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(var(--white-rgb), 0.82);
   text-align: center;
 }
 /* What it says goes up top, clear of its card. */
@@ -538,8 +572,8 @@ body.vending .up-prompt {
   height: 34px;
   border: 0;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
+  background: rgba(var(--black-rgb), 0.3);
+  color: var(--white);
 }
 /* A small mark with a thumb's reach around it. */
 .vend-close::after {
@@ -616,10 +650,10 @@ body.vending .up-prompt {
   width: min(460px, calc(100vw - 16px));
   padding: 8px 10px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #8a5a32, #6d4424);
+  background: linear-gradient(180deg, var(--kiosk-orange-51), var(--kiosk-orange-43));
   box-shadow:
-    0 20px 50px -14px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+    0 20px 50px -14px rgba(var(--black-rgb), 0.7),
+    inset 0 0 0 2px rgba(var(--white-rgb), 0.1);
 }
 .menu-head {
   display: flex;
@@ -633,12 +667,12 @@ body.vending .up-prompt {
   gap: 6px;
   font: 800 19px var(--font-display);
   letter-spacing: 0.06em;
-  color: #fff6d8;
+  color: var(--kiosk-stone-97);
   text-transform: uppercase;
 }
 .menu-day {
   margin-left: auto;
-  color: rgba(255, 246, 216, 0.85);
+  color: rgba(var(--kiosk-stone-97-rgb), 0.85);
   font: 700 14px var(--font-display);
 }
 .menu-close {
@@ -647,8 +681,8 @@ body.vending .up-prompt {
   height: 34px;
   border: 0;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
+  background: rgba(var(--black-rgb), 0.3);
+  color: var(--white);
 }
 /* A small mark with a thumb's reach around it. */
 .menu-close::after {
@@ -660,11 +694,11 @@ body.vending .up-prompt {
   position: relative;
   padding: 8px 10px 6px;
   border-radius: 8px;
-  background: radial-gradient(120% 90% at 30% 20%, #2f3d37, #1f2a26);
+  background: radial-gradient(120% 90% at 30% 20%, var(--kiosk-stone-35), var(--kiosk-stone-27));
   box-shadow:
-    inset 0 0 0 2px rgba(0, 0, 0, 0.35),
-    inset 0 0 24px rgba(0, 0, 0, 0.4);
-  color: #f3efe2;
+    inset 0 0 0 2px rgba(var(--black-rgb), 0.35),
+    inset 0 0 24px rgba(var(--black-rgb), 0.4);
+  color: var(--kiosk-stone-95);
   overflow: hidden;
 }
 .menu-meals {
@@ -677,7 +711,7 @@ body.vending .up-prompt {
   align-items: center;
   gap: 8px;
   padding: 4px 0;
-  border-bottom: 1px dashed rgba(243, 239, 226, 0.18);
+  border-bottom: 1px dashed rgba(var(--kiosk-stone-95-rgb), 0.18);
 }
 .menu-meal:last-child {
   border-bottom: 0;
@@ -691,12 +725,12 @@ body.vending .up-prompt {
 }
 .menu-when b {
   font: 700 13px var(--font-display);
-  color: rgba(243, 239, 226, 0.85);
+  color: rgba(var(--kiosk-stone-95-rgb), 0.85);
 }
 .menu-when i {
   font-style: normal;
   font-size: 12px;
-  color: rgba(243, 239, 226, 0.6);
+  color: rgba(var(--kiosk-stone-95-rgb), 0.6);
   font-variant-numeric: tabular-nums;
 }
 .menu-dish {
@@ -722,30 +756,30 @@ body.vending .up-prompt {
   letter-spacing: 0.04em;
 }
 .menu-tag.now {
-  background: #3fb950;
-  color: #0d2312;
+  background: var(--green-70);
+  color: var(--kiosk-stone-23);
 }
 .menu-tag.eaten {
-  background: rgba(243, 239, 226, 0.2);
-  color: #f3efe2;
+  background: rgba(var(--kiosk-stone-95-rgb), 0.2);
+  color: var(--kiosk-stone-95);
 }
 .menu-gives {
-  color: #f2c94c;
+  color: var(--kiosk-gold-85);
   font: 700 13px var(--font-display);
   text-align: right;
   white-space: nowrap;
 }
 .menu-tomorrow {
   margin-top: 6px;
-  color: rgba(243, 239, 226, 0.75);
+  color: rgba(var(--kiosk-stone-95-rgb), 0.75);
   font-size: 13px;
 }
 .menu-tomorrow b {
-  color: rgba(243, 239, 226, 0.95);
+  color: rgba(var(--kiosk-stone-95-rgb), 0.95);
 }
 .menu-extra {
   margin-top: 4px;
-  color: #9fe0a8;
+  color: var(--kiosk-green-85);
   font-size: 13px;
 }
 .menu-extra:empty {
@@ -755,7 +789,7 @@ body.vending .up-prompt {
 .menu-joke {
   display: none;
   margin: 2px 0 0;
-  color: #ff9cc8;
+  color: var(--kiosk-pink-81);
   font:
     700 19px 'Comic Sans MS',
     'Chalkboard SE',
@@ -763,13 +797,13 @@ body.vending .up-prompt {
     var(--font-display);
   text-align: center;
   transform: rotate(-3deg);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 0 rgba(var(--black-rgb), 0.5);
 }
 .menu-card.scribbled .menu-joke {
   display: block;
 }
 .menu-card.scribbled .menu-meal:last-child .menu-dish {
-  text-decoration: line-through rgba(255, 156, 200, 0.85) 2px;
+  text-decoration: line-through rgba(var(--kiosk-pink-81-rgb), 0.85) 2px;
 }
 .menu-actions {
   display: flex;
@@ -796,19 +830,19 @@ body.vending .up-prompt {
   left: 0;
   top: 0;
   bottom: 0;
-  background: rgba(255, 156, 200, 0.45);
+  background: rgba(var(--kiosk-pink-81-rgb), 0.45);
   transition: width 0.1s linear;
 }
 .menu-seen {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #ffd2a0;
+  color: var(--bronze-1);
   font: 700 13px var(--font-display);
 }
 .menu-note {
   margin-top: 5px;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(var(--white-rgb), 0.82);
   text-align: center;
 }
 body.menu-reading .toasts {

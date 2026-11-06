@@ -9,7 +9,7 @@
   place-content: center;
   justify-items: center;
   gap: 16px;
-  background: #1b2230;
+  background: var(--slate-25);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
@@ -27,7 +27,7 @@
   width: 160px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--white-rgb), 0.12);
 }
 
 .loading-veil i::after {
@@ -44,7 +44,7 @@
 .loading-veil p {
   margin: 0;
   font: 600 15px / 1.3 var(--font-ui);
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(var(--white-rgb), 0.78);
 }
 
 @keyframes loading-bar {
