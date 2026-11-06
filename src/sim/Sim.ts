@@ -16,7 +16,7 @@ import { chill } from './systems/weather';
 import { crowdPlan, dayMinute, dayWatch, drillOn, theDay, today } from './systems/calendar';
 import { clockAt, DAY_STEPS, hourStarts, type Clock } from './systems/clock';
 import { HOLDER, jobRooms, type Station } from './systems/economy';
-import { fight, recover } from './systems/fights';
+import { blocking, fight, recover } from './systems/fights';
 import { dutyDue, stepGuards, type GuardReport } from './systems/guards';
 import { LOCKDOWN_PLAN, stepInmates } from './systems/inmates';
 import { mines } from './systems/mines';
@@ -56,7 +56,8 @@ import { tipsy, tipsyNow } from './systems/pruno';
 import { races } from './systems/races';
 import { TIPSY_PACE } from '../content/long';
 import { coolEvery, dayOneTwists, LAST_DAY, OWL_CHECKS, twist } from './systems/twists';
-import { BED_CHECK_MINUTES, BODY_HALF, CRAWL_SPEED, STEPS_PER_MINUTE, TUNNEL_SPEED, walkSpeed } from './tuning';
+import { BED_CHECK_MINUTES, BLOCK_WALK, BODY_HALF, CRAWL_SPEED, LOW_COOL, STEPS_PER_MINUTE, TUNNEL_SPEED, walkSpeed } from './tuning';
+import { lyingLow } from './systems/stealth';
 import { TILE } from './world/tiles';
 import { LAYER, layerOfKey, MAP_W, tileOfKey, World } from './world/World';
 import { tileAt } from './world/grid';
@@ -209,6 +210,8 @@ export class Sim {
   }
   /** Replaying a run from before 2.34: reading as it was (the marker at full speed, never stopping, a press counted within READ_WINDOW of a key word). Not state. */
   rules233 = false;
+  /** Replaying a run from before 2.35: fights, stealth and heat as they were (seen meant sure at once, the dark hid nothing, heat cooled alike everywhere, nobody locked on by a blow, no block). Not state. */
+  rules234 = false;
   /** As the step began (P19), from the state then: the player up and about on the ground floor, and their tile there (-1 off it). Not state. */
   aboutBefore = false;
   groundFrom = -1;
@@ -339,7 +342,10 @@ export class Sim {
     dayWatch(this);
     // Heat cools while no guard is looking.
     // (P26: Short Fuse, at half the pace.)
-    if (!s.seen && !s.lockdown && s.heat > 0 && s.step % coolEvery(s) === 0) s.heat--;
+    // (2.35: lying low, where the routine wants the player, LOW_COOL times as fast, a guard looking or not.)
+    const low = lyingLow(this);
+    const cool = low ? Math.max(1, Math.floor(coolEvery(s) / LOW_COOL)) : coolEvery(s);
+    if ((!s.seen || low) && !s.lockdown && s.heat > 0 && s.step % cool === 0) s.heat--;
     // Doors last: they follow where everyone ended up, so the state at the end of a step
     // (a save, a keyframe) says everything about them.
     // A guard awake again without his key (P20: a rat had it): after everything that wakes guards, before the doors (an alarm locks them).
@@ -451,7 +457,9 @@ export class Sim {
     const inking = !!s.ink || !!s.show;
     if (s.ink) steerNeedle(this, dirOf(cmd));
     // (P28: tipsy, at TIPSY_PACE of the pace.)
-    const pace = s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd);
+    const pace0 = s.layer === LAYER.VENTS ? CRAWL_SPEED : s.layer === LAYER.UNDER ? TUNNEL_SPEED : walkSpeed(s.spd);
+    // (2.35: blocking, at BLOCK_WALK of it.)
+    const pace = blocking(this) ? Math.floor((pace0 * BLOCK_WALK) / 100) : pace0;
     walk(w, s.player, s.sleeping || inking ? 0 : dirOf(cmd), tipsyNow(s) ? Math.floor((pace * TIPSY_PACE) / 100) : pace, s.layer);
     // Onto a buried mine (P11).
     mines(this);

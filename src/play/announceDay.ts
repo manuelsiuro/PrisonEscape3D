@@ -17,6 +17,8 @@ import { coachOnce, seenInteract, seenTip } from './tips';
 import { vehicleThe } from './labels';
 
 /** The last thing guards noticed, and when (real time): repeats are quiet for a moment. */
+/** 2.35: when a guard last started noticing (its sound isn't repeated in a crowd of them). */
+let lastNoticing = 0;
 const lastSpotted = { reason: '', at: 0 };
 
 /** Below this the morning after a night awake (2.28), they're told why, once. */
@@ -140,6 +142,14 @@ export function announceDay(e: SimEvent, sim: Sim) {
       // A lockdown in the same step says it in its banner.
       if (!sim.events.some((m) => m.type === 'lockdown')) banner.toast(t(`spotted.${e.reason}` as Key), 'bad');
       if (e.reason === 'searchlight') coachOnce('searchlight', 'hint.searchlight');
+      break;
+    }
+    // 2.35: a guard making sure of what it saw (its "?" filling): a "hm?", not more than every couple of seconds.
+    case 'noticing': {
+      const now = performance.now();
+      if (now - lastNoticing > 2000) sound.huh();
+      lastNoticing = now;
+      coachOnce('noticing', 'hint.noticing');
       break;
     }
     case 'caught':

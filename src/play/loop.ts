@@ -29,6 +29,7 @@ const NO_OP: [number, number, number, number] = [0, 0, 0, 0];
 const USE_OP: [number, number, number, number] = [OP.USE, 0, 0, 0];
 const PRESS_OP: [number, number, number, number] = [OP.USE, 1, 0, 0];
 const UP_OP: [number, number, number, number] = [OP.EXT, EXT.DIG_UP, 0, 0];
+const BLOCK_OP: [number, number, number, number] = [OP.EXT, EXT.BLOCK, 0, 0];
 const SLEEP_SPEED = 40;
 /** Hidden in the delivery's vehicle with Wait pressed (P18): the afternoon passes eight times as fast. */
 const WAIT_SPEED = 8;
@@ -100,6 +101,8 @@ function stepSim(g: Game, dt: number) {
       op = UP_OP;
       press.upQueued = false;
     }
+    // (2.35: the block held, sent every step; a press of anything else goes first.)
+    if (!op && tools.blockHeld) op = BLOCK_OP;
     op ??= tools.held && toolNow?.repeat && !upBehind ? USE_OP : NO_OP;
     // (P29: at a tattoo the moves steer the needle: the stick or the keys, never a tap's walk.)
     let dir = controls.steering ? controls.dir() : sim.state.ink || sim.state.show ? 0 : g.pilot.dir(p);

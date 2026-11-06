@@ -417,3 +417,25 @@ export const FLEE_SPEED = 60;
 /** A dog on shift sees a rat this close (units, in sight) and goes after it this long. */
 export const DOG_RAT_RANGE = 5 * UNIT;
 export const DOG_RAT_STEPS = 5 * STEPS_PER_SECOND;
+
+// Fights, stealth and heat (2.35; Sim.rules234 for older logs).
+/**
+ * Noticing: a guard who sees the player at something it would sound the alarm for (a blow at someone calm,
+ * tools at work, out after hours, somewhere staff only) takes a moment to be sure: NOTICE_NEAR steps within
+ * NOTICE_CLOSE tiles, growing to NOTICE_FAR at the edge of its sight. Out of its view first, it comes to look.
+ */
+export const NOTICE_NEAR = 6;
+export const NOTICE_FAR = 30;
+export const NOTICE_CLOSE = 1.5;
+/** A blow or a strike stays something to notice this long (steps): a single punch seen from far off isn't enough. */
+export const NOTICE_HOLD = 20;
+/** The dark: at night (NIGHT_FROM to NIGHT_TO, the hours drawn dark) a guard sees the player only this far (tiles) off a lit tile. */
+export const DARK_SIGHT = 4;
+export const NIGHT_FROM = 21 * 60;
+export const NIGHT_TO = 5 * 60;
+/** A street lamp lights this far round its pool's middle (hundredths of a tile; the pool drawn fades out at 3.5). */
+export const LAMP_LIT = 250;
+/** Lying low (where the routine wants the player): heat cools this many times as fast, even in a guard's sight. */
+export const LOW_COOL = 2;
+/** Blocking: a blow on the player does this share (halves, rounded up) and the player walks at this share (percent). */
+export const BLOCK_WALK = 50;

@@ -177,6 +177,7 @@ export class Crowd {
               : '',
         dt,
         !reduced,
+        g.notice,
       );
       c.stir = g.stir;
       c.showKey(g.hasKey);

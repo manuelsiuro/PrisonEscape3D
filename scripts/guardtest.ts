@@ -152,13 +152,13 @@ function morning(seed: number): Sim {
   check(quiet.state.heat === 0, 'behind the guard: no heat');
   console.log(`contraband in hand (${ITEMS[TOOL - 1].id}): lockdown after ${sim.state.step - from} steps in sight`);
 
-  // Seen in the guard quarters: 100% at once; in a guard outfit: nothing.
+  // Seen in the guard quarters: 100% once the guard is sure (2.35: a moment, 5 tiles off about a second); in a guard outfit: nothing.
   for (const disguised of [false, true]) {
     const s2 = morning(2);
     plant(s2.state.guards[4], 40, 41, 1);
     put(s2.state.player, 45, 41);
     if (disguised) s2.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
-    const l2 = run(s2, idle, () => false, 10);
+    const l2 = run(s2, idle, () => false, 40);
     if (!disguised)
       check(l2[0]?.endsWith('spotted: restricted') && l2[1]?.endsWith('LOCKDOWN'), 'seen in the guard quarters: 100% heat, a lockdown');
     else check(s2.state.heat === 0, 'in a guard outfit the guard quarters raise nothing');

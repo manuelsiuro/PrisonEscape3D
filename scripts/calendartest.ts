@@ -689,7 +689,8 @@ function resumesSame(bot: Bot, steps: number): boolean {
   const g = st.guards.find((x) => x.ko <= 0)!;
   put(f.bot.sim, Math.floor(g.body.z / UNIT) * MAP_W + Math.floor(g.body.x / UNIT));
   const h0 = st.heat;
-  f.bot.step(0);
+  // (2.35: the guard sure of it a moment after, the scuffle's +10 at once.)
+  for (let k = 0; k < 10 && !st.lockdown; k++) f.bot.step(0);
   check(
     g.sees && (st.heat - h0 >= 100 || st.lockdown),
     `a scuffle never hides tools at work from a guard who sees them (+${st.heat - h0})`,

@@ -85,6 +85,8 @@ export type SimEvent =
   | { type: 'bedDummy'; in: boolean; swapped?: number }
   /** A guard noticed something (the first step of it): a heat jump or a chase. */
   | { type: 'spotted'; reason: SpotReason }
+  /** 2.35: a guard starts to notice the player at something (its "?" filling). */
+  | { type: 'noticing'; guard: number }
   /** A chasing guard caught the player: knocked out, then solitary or the infirmary. */
   | { type: 'caught'; solitary: boolean }
   /** Into solitary (with how many contraband items were taken) and out again. */
@@ -150,7 +152,7 @@ export type SimEvent =
   | { type: 'hit'; who: number; dmg: number; ko: boolean; weapon: number; free?: boolean }
   | { type: 'thrown'; who: number; free?: boolean }
   | { type: 'cantHit'; why: 'far' }
-  | { type: 'hurt'; by: number; dmg: number }
+  | { type: 'hurt'; by: number; dmg: number; blocked?: boolean }
   /** Someone the player knocked out, and someone coming round (a guard missing its key raises the alarm). */
   | { type: 'koed'; who: number }
   | { type: 'cameTo'; who: number; keyMissing: boolean }

@@ -865,6 +865,8 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   g2.body.facing = g2.face = 13;
   b.op(OP.LOCK, 2);
   b.op(OP.USE, 1);
+  // (2.35: once the guard is sure, 3 tiles off a little over half a second.)
+  for (let k = 0; k < 20 && !b.st.lockdown; k++) b.step();
   check(!b.st.selfDefense && b.st.lockdown, 'attacking a calm inmate in sight: lockdown');
   void sim;
 }

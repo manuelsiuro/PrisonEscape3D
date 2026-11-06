@@ -1,4 +1,5 @@
 /** The HUD each frame (play's and a replay's): the clock, the routine, heat and every pill and chip, the file's button, the lockdown's red, the music and the ambience. */
+import { lyingLow } from '../sim/systems/stealth';
 import { onOwnSquare, squareNeeded } from '../sim/systems/rollcall';
 import type { Sim } from '../sim/Sim';
 import { ROUTINE } from '../content/routine';
@@ -123,6 +124,7 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;
+  hudState.lyingLow = lyingLow(sim);
   // (The paw held a moment: a dog pacing at the edge of its reach doesn't make it flicker.)
   const dog = dogWarning(sim);
   if (dog === 'nose') pawAt = performance.now();

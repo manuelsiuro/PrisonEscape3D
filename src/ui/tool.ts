@@ -72,6 +72,9 @@ export class ToolControls {
   upHeld = false;
   /** Called on a Dig up press. */
   onUpPress: () => void = () => {};
+  /** 2.35: the block (touch, in a fight; V on a keyboard), held. */
+  private readonly blockBtn: HTMLButtonElement;
+  blockHeld = false;
 
   constructor() {
     this.btn = h('button', 'tool-btn hidden');
@@ -111,7 +114,21 @@ export class ToolControls {
     });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) this.upBtn.addEventListener(ev, () => this.releaseUp());
     this.upBtn.addEventListener('contextmenu', (e) => e.preventDefault());
-    document.body.append(this.btn, this.upBtn, this.prompt, this.upPrompt, this.energy);
+    this.blockBtn = h('button', 'block-btn hidden', `<i class="block-round">${icon('shield', 22)}<span></span></i>`);
+    this.blockBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!this.blockBtn.classList.contains('hidden')) this.holdBlock(true);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) this.blockBtn.addEventListener(ev, () => this.holdBlock(false));
+    this.blockBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.body.append(this.btn, this.upBtn, this.prompt, this.upPrompt, this.energy, this.blockBtn);
+  }
+
+  /** The block held or let go (the button, V). */
+  holdBlock(on: boolean) {
+    this.blockHeld = on;
+    this.blockBtn.classList.toggle('down', on);
+    document.body.classList.toggle('blocking', on);
   }
 
   /** Lets go of the buttons (the target changed under the hold, the window lost focus). */
@@ -137,6 +154,8 @@ export class ToolControls {
       this.shownHealth = -1;
       this.held = false;
       this.upHeld = false;
+      this.blockBtn.classList.add('hidden');
+      this.holdBlock(false);
     }
   }
 
@@ -211,6 +230,15 @@ export class ToolControls {
       const p = Math.round((v.progress ?? 0) * 100);
       if (this.ring) this.ring.style.setProperty('--p', `${p}%`);
       if (this.bar) this.bar.style.width = `${p}%`;
+    }
+    // The block (2.35): its button on touch while a fight is on (V on a keyboard, any time).
+    const block = TOUCH && fighting && !blocked;
+    this.blockBtn.classList.toggle('hidden', !block);
+    if (!block && TOUCH && this.blockHeld) this.holdBlock(false);
+    if (block && this.blockBtn.dataset.stamp !== textStamp()) {
+      this.blockBtn.dataset.stamp = textStamp();
+      this.blockBtn.querySelector('span')!.textContent = t('combat.block');
+      this.blockBtn.setAttribute('aria-label', t('combat.block'));
     }
     // Energy: while a tool is in hand, or while it's down. Health: in a fight, or while it's down.
     const e = Math.round(energy);

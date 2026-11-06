@@ -139,6 +139,7 @@ export function frameOf(run: HuntRun, a: number, paused: boolean, guide: Array<{
       awayLeft: 0,
       stir: 0,
       range: 7,
+      notice: 0,
     });
     const off = m.mode === SEEK.OFF;
     const q = run.prevS[k];

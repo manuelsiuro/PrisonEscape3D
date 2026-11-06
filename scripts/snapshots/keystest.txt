@@ -1,3 +1,3 @@
-19 actions with a key of their own (4 to walk)
+20 actions with a key of their own (4 to walk)
 keys in the texts: every one the player's (over 100), the same in English and French
 interface sizes 100%, 115%, 130%, never laid out under 300 across

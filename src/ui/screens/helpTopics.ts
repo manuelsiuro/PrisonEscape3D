@@ -97,7 +97,12 @@ export const HELP: Record<Exclude<HelpTab, 'controls'>, readonly HelpGroup[]> = 
           stepIcons: ['hand', 'water', 'route'],
           see: ['energy', 'routine', 'heat'],
         }),
-        T('heat', 'flame', '#e5484d', { diagram: 'meter', lessons: ['heat'], listIcons: ['clock', 'eye', 'lock', 'briefcase'] }),
+        T('heat', 'flame', '#e5484d', {
+          diagram: 'meter',
+          lessons: ['heat'],
+          listIcons: ['clock', 'eye', 'lock', 'briefcase'],
+          list2Icons: ['eye', 'moon', 'down'],
+        }),
         T('items', 'briefcase', '#8e5a2b', { diagram: 'pockets', lessons: ['search', 'stash'] }),
       ],
     },

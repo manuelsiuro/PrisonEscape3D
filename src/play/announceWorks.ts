@@ -287,7 +287,8 @@ export function announceWorks(e: SimEvent, sim: Sim) {
     case 'lock':
       // The lock letting go of someone just knocked out: the knockout says it.
       if (e.who >= 0 || !sim.events.some((x) => x.type === 'koed')) sound.lockOn(e.who >= 0);
-      if (e.who >= 0) coachOnce('fight', TOUCH ? 'hint.fightTouch' : 'hint.fightKeys');
+      // (2.35: told again, with the block: a new id, those who've played have seen the old hint.)
+      if (e.who >= 0) coachOnce('fight235', TOUCH ? 'hint.fightTouch' : 'hint.fightKeys');
       break;
   }
 }
