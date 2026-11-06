@@ -37,7 +37,6 @@ import { Weather, type WeatherFrame, type WeatherView } from './Weather';
 import { Delivery } from './Delivery';
 import { DayEvents, type EventsFrame } from './DayEvents';
 import { HolidaysView, NO_HOLIDAY } from './Holidays';
-import { pitchFraming, SCREEN_COLS, SCREEN_ROWS, ZOOM_MAX, ZOOM_MIN } from './pitchFrame';
 import type { NoiseKind } from '../sim/events';
 import { Dogs } from './Dog';
 import { Rats } from './Rat';
@@ -57,6 +56,8 @@ import { OddJobsView } from './OddJobs';
 import { ReleaseView } from './Release';
 import { handlersOf } from '../sim/systems/k9';
 import type { Frame, Quality } from './viewFrame';
+import { CameraRig, CAMERA_OFFSET } from './viewCamera';
+import { Lighting } from './viewLight';
 import { guardLook, INMATE_LOOK, inmateLook, type Look } from './look';
 
 /** The old-timer's hair (P27): white with age. */
@@ -74,32 +75,13 @@ const PICK_STAND = 0.7;
 const NO_WEATHER: WeatherFrame = { rain: 0, fog: 0, heat: false, windAngle: 0, windForce: 0, snow: false };
 const NO_EVENTS: EventsFrame = { movie: false, foodFight: false, inspection: false };
 
-/** From the target, up and to the south: the classic angled top-down view (tech plan §6.1). */
-const CAMERA_OFFSET = new THREE.Vector3(0, 38, 24).normalize().multiplyScalar(60);
 const GUARD_OUTFIT = itemNumber('guard_outfit');
 const INMATE_OUTFIT = itemNumber('inmate_outfit');
 const COSTUME = itemNumber('costume');
 const OWN_CLOTHES = itemNumber('own_clothes');
 const OWN_JEANS = 0x4a6a96;
-/** The escape camera (P16): how far it turns round the player (radians) and pulls back (a share of the zoom). */
-const CINEMA_TURN = (25 * Math.PI) / 180;
-const CINEMA_PULL = 0.3;
 /** The Intake preview's zoom (P16): close on your prisoner in their cell. */
 const PREVIEW_ZOOM = 4.2;
-/** The Intake's camera: lower than play's, nearly face on (a mugshot, not a map). */
-const PREVIEW_OFFSET = new THREE.Vector3(0, 16, 24).normalize().multiplyScalar(60);
-
-/** Light by time of day: [minute, sun intensity, sun color, ambient intensity, sky color]. */
-const DAYLIGHT: Array<[number, number, number, number, number]> = [
-  [0, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
-  [300, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
-  [390, 1.4, 0xffc58a, 0.85, 0x6b8fb8],
-  [480, 2.3, 0xfff1dc, 1.05, 0x9cc3e6],
-  [1080, 2.3, 0xfff1dc, 1.05, 0x9cc3e6],
-  [1170, 1.3, 0xff9a5c, 0.8, 0x5f6f9a],
-  [1260, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
-  [1440, 0.3, 0x8aa2ff, 0.5, 0x0b1322],
-];
 
 /** How long the player keeps the towel round their neck after washing (s). */
 const PLAYER_DRY = 2.5;
@@ -126,12 +108,8 @@ const SNOW_DUST: Record<number, number> = {
   [TILE.ASPHALT]: 0x9a9da3,
 };
 
-/** The ambient light's sky color. */
-const SKY_LIGHT = 0xdfe8ff;
-const ORIGIN = new THREE.Vector3(0, 0, 0);
 /** The tunnel lantern's strength while the player is below. */
 const LANTERN = 2.6;
-const UP = new THREE.Vector3(0, 1, 0);
 
 /** The lock-on ring under the target: a bright band with four ticks, drawn over the floor. */
 function lockRing(): THREE.Mesh {
@@ -175,9 +153,13 @@ function lockRing(): THREE.Mesh {
  */
 export class View {
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 200);
-  private readonly sun = new THREE.DirectionalLight(0xffffff, 2);
-  private readonly ambient = new THREE.HemisphereLight(SKY_LIGHT, 0x4a5a3a, 1);
+  /** The camera, its zoom, its jolts, the escape camera (viewCamera.ts). */
+  private readonly cam = new CameraRig();
+  get camera(): THREE.OrthographicCamera {
+    return this.cam.camera;
+  }
+  /** The sun, the sky, the weather's light (viewLight.ts). */
+  private readonly lighting = new Lighting();
   private worldView: WorldView | null = null;
   private world: World | null = null;
   /** The football pitch in use with it (setWorld). */
@@ -198,10 +180,6 @@ export class View {
   private previewBlend = 0;
   /** The raft or the helicopter carries the player off (the camera follows it). */
   private carrying = false;
-  /** The escape camera (P16): time in, length, turn (signed), the zoom it starts from; resolved once played (or skipped). */
-  private cine: { t: number; dur: number; turn: number; zoom0: number; still: boolean; done: (() => void) | null; held: boolean } | null =
-    null;
-  private readonly cineOffset = new THREE.Vector3();
   private readonly pickups = new Pickups();
   private cast: Character[] = [];
   private guardCast: Character[] = [];
@@ -278,12 +256,6 @@ export class View {
   onDrone: (x: number, z: number) => void = () => {};
   private readonly shoulderAt = new THREE.Vector3();
   private readonly noSleepers: number[] = [];
-  /** The weather's light this frame (the title has none), and a lightning flash easing away. */
-  private wxLight: WeatherFrame | null = null;
-  /** The weather's light as drawn: eased toward the frame's (P17). */
-  private readonly wxEased = { grey: 0, storm: 0, fog: 0, heat: 0 };
-  private wxFresh = true;
-  private flash = 0;
   private readonly guardSpots: Array<{ x: number; z: number; awake: boolean }> = [];
   /** Whether a tile has open sky over it (no roof): where snow falls. */
   private readonly openSky = (x: number, z: number) =>
@@ -333,13 +305,6 @@ export class View {
   private wearRev = -1;
   /** Whether the damage was last drawn with the player below (the desk over a tunnel is pushed aside then). */
   private drawnBelow = false;
-  /** A strike's jolt (0–1), easing away. */
-  private shake = 0;
-  private readonly raycaster = new THREE.Raycaster();
-  private readonly floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  private readonly ndc = new THREE.Vector2();
-  private readonly red = new THREE.Color(0xff2a1a);
-  private alarm = 0;
   /** The cell block's lights out (2.28): 0 on … 1 out, and where it's heading. */
   private blockDark = 0;
   private blockDarkGoal = 0;
@@ -353,24 +318,9 @@ export class View {
   private readonly machineAt: Array<{ x: number; z: number; y: number }> = [];
   private readonly machineRest: Array<BedPose | null> = [];
   private readonly machineRep: number[] = [];
-  /** 0 by day … 1 at night (the last frame's light). */
-  private night = 0;
-  private readonly target = new THREE.Vector3(MAP_W / 2, 0, MAP_H / 2);
-  private readonly ahead = new THREE.Vector3();
   private readonly feet = new THREE.Vector3();
-  private readonly c1 = new THREE.Color();
-  private readonly c2 = new THREE.Color();
-  private readonly sky = new THREE.Color();
   private readonly v = new THREE.Vector3();
   private readonly carried = new THREE.Vector3();
-  private readonly p = new THREE.Vector3();
-  private readonly lightBasis = new THREE.Matrix4();
-  private readonly lightInverse = new THREE.Matrix4();
-  private zoom = 1;
-  private zoomGoal = 1;
-  /** P29, a match: the zoom that fits the whole pitch on screen (0: none), never closer than the player's own zoom. */
-  private fitZoom = 0;
-  private shadowHalf = 20;
   /** The lock-on ring, and the cup of molten chocolate in flight (from, to, 0–1 along the way). */
   private readonly ring = lockRing();
   private readonly cup = new THREE.Mesh(
@@ -425,13 +375,11 @@ export class View {
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
-    this.sun.shadow.bias = -0.0006;
-    this.sun.shadow.normalBias = 0.03;
-    this.scene.background = this.sky;
+    this.scene.background = this.lighting.sky;
     this.scene.add(
-      this.sun,
-      this.sun.target,
-      this.ambient,
+      this.lighting.sun,
+      this.lighting.sun.target,
+      this.lighting.ambient,
       this.player.root,
       this.dummy,
       this.gear.group,
@@ -471,6 +419,7 @@ export class View {
       this.releaseView.group,
       this.getaway.group,
     );
+    this.cam.shadow = this.lighting.sun.shadow.camera;
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -490,12 +439,12 @@ export class View {
     this.renderer.setPixelRatio(q.pixelRatio);
     const on = q.shadows > 0;
     this.renderer.shadowMap.enabled = on;
-    this.sun.castShadow = on;
-    this.sun.shadow.radius = q.softness;
-    if (on && this.sun.shadow.mapSize.x !== q.shadows) {
-      this.sun.shadow.mapSize.set(q.shadows, q.shadows);
-      this.sun.shadow.map?.dispose();
-      this.sun.shadow.map = null;
+    this.lighting.sun.castShadow = on;
+    this.lighting.sun.shadow.radius = q.softness;
+    if (on && this.lighting.sun.shadow.mapSize.x !== q.shadows) {
+      this.lighting.sun.shadow.mapSize.set(q.shadows, q.shadows);
+      this.lighting.sun.shadow.map?.dispose();
+      this.lighting.sun.shadow.map = null;
     }
     // Materials compiled with or without shadows must recompile.
     this.scene.traverse((o) => {
@@ -518,7 +467,7 @@ export class View {
   setWorld(world: World, pitch: Pitch | null = world.def.leisure?.pitch ?? null) {
     this.snores.clear();
     // The escape camera ends with the game (the title's picture is the classic angle again).
-    this.endCinema();
+    this.cam.endCinema();
     this.carrying = false;
     const same = world === this.world && pitch === this.pitch && !!this.worldView && !!this.structure && !!this.decor;
     const retire = (objects: THREE.Object3D[], dispose: () => void) => {
@@ -631,9 +580,7 @@ export class View {
     );
     this.weather.setWorld(world);
     this.warmDay();
-    this.flash = 0;
-    // (The first frame takes the weather as it is: a save loaded in fog isn't clear for its first seconds.)
-    this.wxFresh = true;
+    this.lighting.newWorld();
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
     this.outfit = -1;
     this.showers.fill(0);
@@ -695,7 +642,7 @@ export class View {
     this.cones.group.visible = !under;
     // The floor arrows and the tap ring at the player's level (off the ground floor only the ring shows).
     this.guide.group.position.y = LAYER_Y[layer];
-    this.floor.constant = -LAYER_Y[layer];
+    this.cam.setFloor(LAYER_Y[layer]);
     this.pickups.group.position.y = LAYER_Y[layer];
     this.noiseFx.group.position.y = LAYER_Y[layer];
   }
@@ -735,7 +682,7 @@ export class View {
       // Steel on steel: sparks off the fence or the grate.
       if (action === 'cut' || action === 'unscrew') this.sparks.burst(fx, y, fz, broke ? 16 : 6, 0xffc45a, broke ? 3.4 : 2.4);
       if (broke && action === 'chip') this.dust.puff(fx, fz, 0x8f8a80, 8, y);
-      this.shake = Math.max(this.shake, broke ? 1 : 0.35);
+      this.cam.jolt(broke ? 1 : 0.35);
     }
   }
 
@@ -759,7 +706,7 @@ export class View {
     const x = (a.root.position.x + b.root.position.x * 2) / 3;
     const z = (a.root.position.z + b.root.position.z * 2) / 3;
     this.dust.puff(x, z, 0xfff2c8, ko ? 12 : 6, 0.9);
-    if (by < 0) this.shake = Math.max(this.shake, ko ? 0.8 : 0.3);
+    if (by < 0) this.cam.jolt(ko ? 0.8 : 0.3);
   }
 
   /** The throw being aimed (P14), or null: the reach, the arc, the landing ring, where its thud would carry. */
@@ -792,7 +739,7 @@ export class View {
 
   /** A replay's jump in time (P25): the weather shown as it is at once, not eased in from the moment before. */
   jumped() {
-    this.wxFresh = true;
+    this.lighting.jumped();
   }
 
   /** Resolves once a glide in the air is down (P24: the escape camera waits for it). */
@@ -808,7 +755,7 @@ export class View {
     this.sparks.burst(x, 0.3, z, 22, 0xffd27a, 4);
     this.sparks.burst(x, 0.4, z, 10, 0xff5a3a, 3);
     this.dust.puff(x, z, 0xd8d2c8, 14, 0.5);
-    this.shake = Math.max(this.shake, 0.9);
+    this.cam.jolt(0.9);
   }
 
   /** A cup of molten chocolate thrown at someone (Cast id): it arcs over, then splashes. */
@@ -852,11 +799,7 @@ export class View {
 
   /** A point of the world (tiles) on screen (CSS pixels); null off screen. */
   screenAt(x: number, y: number, z: number, out: { x: number; y: number }): { x: number; y: number } | null {
-    this.v.set(x, y, z).project(this.camera);
-    if (this.v.z > 1 || Math.abs(this.v.x) > 1.1 || Math.abs(this.v.y) > 1.1) return null;
-    out.x = ((this.v.x + 1) / 2) * innerWidth;
-    out.y = ((1 - this.v.y) / 2) * innerHeight;
-    return out;
+    return this.cam.screenAt(x, y, z, out);
   }
 
   /** Where someone's head is on screen (CSS pixels), for floating numbers; null off screen. */
@@ -867,115 +810,30 @@ export class View {
 
   /** The floor point under a screen point (tiles), for tap-to-walk. */
   groundAt(clientX: number, clientY: number): { x: number; z: number } | null {
-    this.ndc.set((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1);
-    this.raycaster.setFromCamera(this.ndc, this.camera);
-    const hit = this.raycaster.ray.intersectPlane(this.floor, this.v);
-    return hit ? { x: hit.x, z: hit.z } : null;
+    return this.cam.groundAt(clientX, clientY);
   }
 
   resize() {
     this.renderer.setSize(innerWidth, innerHeight);
-    this.applyZoom();
+    this.cam.applyZoom();
   }
-
-  /** Where the picture is slid to (CSS px), and where it's going: the player kept clear of an open panel. */
-  private readonly shift = { x: 0, y: 0 };
-  private readonly shiftGoal = { x: 0, y: 0 };
 
   /**
    * Slides the picture so the player shows in the part of the screen a panel leaves free (a
    * side panel in landscape, a bottom sheet in portrait); 0, 0 puts it back. Eased.
    */
   setShift(x: number, y: number) {
-    this.shiftGoal.x = x;
-    this.shiftGoal.y = y;
-  }
-
-  private easeShift(dt: number) {
-    const k = this.reducedMotion ? 1 : Math.min(1, dt * 7);
-    const dx = this.shiftGoal.x - this.shift.x;
-    const dy = this.shiftGoal.y - this.shift.y;
-    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
-      if (dx || dy) {
-        this.shift.x = this.shiftGoal.x;
-        this.shift.y = this.shiftGoal.y;
-        this.applyZoom();
-      }
-      return;
-    }
-    this.shift.x += dx * k;
-    this.shift.y += dy * k;
-    this.applyZoom();
-  }
-
-  /**
-   * A match on (P29): both goals stay in the picture. The zoom eases out until the pitch (a tile
-   * round it) fits across the screen, as on a phone held upright, and the look-ahead is bent so
-   * the camera stays between the goals (following the player as far as the pitch allows). The
-   * player is kept in the box too: off the pitch (up to PITCH_LEAVE tiles while the match is on),
-   * the picture widens to hold both, and where it can't, the player stays on screen.
-   */
-  private framePitch(f: Frame, dt: number) {
-    const p = f.team.pitch;
-    if (!p || !f.team.ball || f.layer !== LAYER.GROUND) {
-      this.fitZoom = 0;
-      return;
-    }
-    const aim = pitchFraming(p, f.x, f.z, this.ahead, this.zoom, innerWidth / Math.max(1, innerHeight));
-    this.fitZoom = aim.fit;
-    this.ahead.lerp(this.v.set(aim.x, 0, aim.z), this.reducedMotion ? 1 : Math.min(1, dt * 4));
+    this.cam.setShift(x, y);
   }
 
   /** Multiplies the zoom (wheel, pinch), within limits; the camera eases to it. */
   zoomBy(f: number) {
-    this.zoomGoal = THREE.MathUtils.clamp(this.zoomGoal * f, ZOOM_MIN, ZOOM_MAX);
-  }
-
-  /** About SCREEN_ROWS tiles tall, never under SCREEN_COLS wide (phones in portrait see more rows instead). */
-  private applyZoom() {
-    const aspect = innerWidth / Math.max(1, innerHeight);
-    const half = Math.max(SCREEN_ROWS, SCREEN_COLS / aspect) / 2 / this.zoom;
-    // The picture slides by the shift (CSS px): the frustum moves the other way.
-    const sx = (-this.shift.x / Math.max(1, innerWidth)) * 2 * half * aspect;
-    const sy = (this.shift.y / Math.max(1, innerHeight)) * 2 * half;
-    this.camera.left = -half * aspect + sx;
-    this.camera.right = half * aspect + sx;
-    this.camera.top = half + sy;
-    this.camera.bottom = -half + sy;
-    this.camera.updateProjectionMatrix();
-    // The shadow box covers what the camera sees (the view is stretched along the ground by the tilt).
-    // (Turned by the escape camera, the view's corners swing out: the box covers its diagonal.)
-    const reach = this.cine ? Math.hypot(half * aspect, half * 1.25) : Math.max(half * aspect, half * 1.25);
-    this.shadowHalf = Math.min(34, reach + 3 + Math.max(Math.abs(sx), Math.abs(sy) * 1.25));
-    const s = this.sun.shadow.camera;
-    s.left = s.bottom = -this.shadowHalf;
-    s.right = s.top = this.shadowHalf;
-    s.near = 1;
-    s.far = 140;
-    s.updateProjectionMatrix();
-  }
-
-  /** Sets the lights for a time of day; returns 0 in full daylight, 1 at night. */
-  private light(minute: number): number {
-    let k = 1;
-    while (k < DAYLIGHT.length - 1 && DAYLIGHT[k][0] < minute) k++;
-    const a = DAYLIGHT[k - 1];
-    const b = DAYLIGHT[k];
-    const f = THREE.MathUtils.clamp((minute - a[0]) / Math.max(1, b[0] - a[0]), 0, 1);
-    this.sun.intensity = THREE.MathUtils.lerp(a[1], b[1], f);
-    this.sun.color.copy(this.c1.set(a[2]).lerp(this.c2.set(b[2]), f));
-    this.ambient.intensity = THREE.MathUtils.lerp(a[3], b[3], f);
-    this.sky.copy(this.c1.set(a[4]).lerp(this.c2.set(b[4]), f));
-    return THREE.MathUtils.clamp(1 - (this.sun.intensity - 0.3) / (2.3 - 0.3), 0, 1);
+    this.cam.zoomBy(f);
   }
 
   /** Puts the camera on a point at once (a new game starts on the player, not mid-pan). */
-  snapTo(x: number, z: number, zoom = this.zoomGoal) {
-    this.endCinema();
-    this.target.set(x, 0, z);
-    this.ahead.set(0, 0, 0);
-    this.zoom = zoom;
-    this.applyZoom();
+  snapTo(x: number, z: number, zoom?: number) {
+    this.cam.snapTo(x, z, zoom);
   }
 
   /** Your prisoner (P16): the player is dressed again as them at the next frame. */
@@ -992,14 +850,14 @@ export class View {
     if (this.model) {
       this.retireCharacter(this.model);
       this.model = null;
-    } else if (p) this.titleZoom = this.zoomGoal;
+    } else if (p) this.titleZoom = this.cam.zoomGoal;
     if (!p) {
-      this.zoomGoal = this.titleZoom;
+      this.cam.zoomGoal = this.titleZoom;
       return;
     }
     this.model = new Character(lookFor(p, INMATE_LOOK.outfit, false));
     this.scene.add(this.model.root);
-    this.zoomGoal = PREVIEW_ZOOM;
+    this.cam.zoomGoal = PREVIEW_ZOOM;
   }
 
   /**
@@ -1007,41 +865,17 @@ export class View {
    * a hold; resolves when it's played (or skipped). With reduced motion: a still hold, 0.9 s.
    */
   cinema(long: boolean, still = this.reducedMotion): Promise<void> {
-    this.cine?.done?.();
-    return new Promise((resolve) => {
-      this.cine = {
-        t: 0,
-        dur: still ? 0.9 : long ? 3.4 : 2.6,
-        turn: (Math.random() < 0.5 ? -1 : 1) * CINEMA_TURN,
-        zoom0: this.zoom,
-        still,
-        done: resolve,
-        held: false,
-      };
-    });
+    return this.cam.cinema(long, still);
   }
 
   /** Cuts the escape camera short (a tap): it resolves now and holds where it got to. */
   skipCinema() {
-    const c = this.cine;
-    if (!c?.done) return;
-    c.held = true;
-    c.done();
-    c.done = null;
-  }
-
-  /** The escape camera over (a new game, the title): the classic angle, and the zoom it started from. */
-  private endCinema() {
-    const c = this.cine;
-    if (!c) return;
-    c.done?.();
-    this.cine = null;
-    this.zoomGoal = c.zoom0;
+    this.cam.skipCinema();
   }
 
   /** Sets the zoom to ease to (a new game's), within limits. */
   zoomTo(z: number) {
-    this.zoomGoal = THREE.MathUtils.clamp(z, ZOOM_MIN, ZOOM_MAX);
+    this.cam.zoomTo(z);
   }
 
   /** Dresses the player: your prisoner in the outfit (a white vest with none on; the guard cap with the guard's uniform). */
@@ -1212,20 +1046,21 @@ export class View {
     }
     // Look-ahead: up to a tile and a half in the walking direction, eased.
     const lead = f.moving && !this.reducedMotion ? 1.4 : 0;
-    this.ahead.lerp(this.v.set(Math.sin(f.facing) * lead, 0, Math.cos(f.facing) * lead * 0.8), Math.min(1, dt * 2.2));
+    this.cam.ahead.lerp(this.v.set(Math.sin(f.facing) * lead, 0, Math.cos(f.facing) * lead * 0.8), Math.min(1, dt * 2.2));
     // (P24: a glide's ring in view, the camera halfway out to it.)
     const gp = f.getaway.glide;
-    if (gp) this.ahead.lerp(this.v.set((gp.toX - f.x) / 2, 0, (gp.toZ - f.z) / 2), Math.min(1, dt * 3));
+    if (gp) this.cam.ahead.lerp(this.v.set((gp.toX - f.x) / 2, 0, (gp.toZ - f.z) / 2), Math.min(1, dt * 3));
     // (P29: in a match, both goals kept in the picture: see framePitch.)
-    this.framePitch(f, dt);
+    this.cam.framePitch(f, dt, this.reducedMotion);
     // Carried somewhere far (solitary, the infirmary): cut there instead of panning across the map.
     // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
     const y = LAYER_Y[f.layer];
     // (Aboard the raft or the helicopter, the camera follows them instead: below.)
     if (this.carrying || this.getaway.flying) {
       /* followed below */
-    } else if (Math.abs(this.target.x - f.x) + Math.abs(this.target.z - f.z) > 10 || f.layer === LAYER.UNDER) this.target.set(f.x, y, f.z);
-    else this.target.lerp(this.v.set(f.x, y, f.z).add(this.ahead), Math.min(1, dt * 7));
+    } else if (Math.abs(this.cam.target.x - f.x) + Math.abs(this.cam.target.z - f.z) > 10 || f.layer === LAYER.UNDER)
+      this.cam.target.set(f.x, y, f.z);
+    else this.cam.target.lerp(this.v.set(f.x, y, f.z).add(this.cam.ahead), Math.min(1, dt * 7));
     this.underground?.follow(f.x, f.z);
     this.feet.set(f.x, 0, f.z);
     // The see-through cut: on the ground floor and in the tunnels (nothing stands over the vents or the roof).
@@ -1419,7 +1254,7 @@ export class View {
       wx.windAngle,
     );
     // The weather (P17): no rain in the snow (a storm there is a blizzard of it, above).
-    this.wxLight = wx;
+    this.lighting.weather = wx;
     let wxNow = wx;
     if (snowing && wx.rain) {
       Object.assign(this.wxSnow, wx);
@@ -1434,7 +1269,7 @@ export class View {
       f.z,
       LAYER_Y[f.layer],
       f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45,
-      this.night,
+      this.lighting.night,
       !this.reducedMotion,
       f.layer === LAYER.UNDER,
       f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow,
@@ -1470,11 +1305,11 @@ export class View {
     this.holidaysView.update(f.holiday, dt, time, f.x, f.z, !this.reducedMotion, this.security?.powerLevel ?? 1, f.guards, f.inmates);
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
-    this.cones.update(f.guards, dt, this.night, !this.reducedMotion);
+    this.cones.update(f.guards, dt, this.lighting.night, !this.reducedMotion);
     // Cameras, searchlights and snipers belong to the ground floor (from below or in the ducts, out of the picture).
     if (this.security) {
       this.security.group.visible = f.layer !== LAYER.UNDER;
-      this.security.update(f.security, dt, time, this.night, !this.reducedMotion);
+      this.security.update(f.security, dt, time, this.lighting.night, !this.reducedMotion);
     }
     this.riot = f.takeover;
     this.carrying = false;
@@ -1494,7 +1329,7 @@ export class View {
       if (on) {
         this.player.root.position.copy(on);
         // The camera goes with them (the helicopter climbs out of a fixed shot).
-        this.target.lerp(this.v.set(on.x, on.y * 0.6, on.z), Math.min(1, dt * 3));
+        this.cam.target.lerp(this.v.set(on.x, on.y * 0.6, on.z), Math.min(1, dt * 3));
       }
       this.player.root.visible = !this.island.aboard && this.player.root.visible;
     }
@@ -1503,13 +1338,13 @@ export class View {
     if (ride) {
       this.carrying = true;
       this.player.root.visible = false;
-      this.target.lerp(this.v.set(ride.x, 0, ride.z), Math.min(1, dt * 3));
+      this.cam.target.lerp(this.v.set(ride.x, 0, ride.z), Math.min(1, dt * 3));
     }
     // Off a roof on a glider (P24): carried along its fall, the camera going with them.
     this.getaway.group.visible = f.layer !== LAYER.UNDER;
-    if (this.getaway.update(f.getaway, dt, time, !this.reducedMotion, this.night, this.flyAt)) {
+    if (this.getaway.update(f.getaway, dt, time, !this.reducedMotion, this.lighting.night, this.flyAt)) {
       this.player.root.position.copy(this.flyAt);
-      this.target.lerp(this.v.set(this.flyAt.x, 0, this.flyAt.z), Math.min(1, dt * 5));
+      this.cam.target.lerp(this.v.set(this.flyAt.x, 0, this.flyAt.z), Math.min(1, dt * 5));
     }
     // The rats (P20), after the player has gone wherever they go (a raft, the helicopter, a truck): on the floor seen from anywhere but a tunnel;
     // on the shoulder of a player up and about (not lying, not crawling, not in a tunnel), turning with them.
@@ -1556,11 +1391,11 @@ export class View {
     // Stage nights (P30): the stage, the buzzers (the ground floor, and from the vents and roofs over it).
     this.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // The pay phone (P34): the handset, Lou's car, the diversion's beacon (not from the tunnels).
-    this.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.night, f.layer !== LAYER.UNDER);
+    this.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.lighting.night, f.layer !== LAYER.UNDER);
     // The internet kiosk (P35): its screen, its glow after dark; the drawings over the bed (not from the tunnels).
-    this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.night, this.powerLevel, f.layer !== LAYER.UNDER);
+    this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.lighting.night, this.powerLevel, f.layer !== LAYER.UNDER);
     // The vending machine (2.32): its front, what's left in it, what's dropping (not from the tunnels).
-    this.vendingView.update(f.vending, dt, time, !this.reducedMotion, this.night, f.layer !== LAYER.UNDER);
+    this.vendingView.update(f.vending, dt, time, !this.reducedMotion, this.lighting.night, f.layer !== LAYER.UNDER);
     // The menu board's dishes and the water cooler's bubbles (2.33).
     this.menuView.update(f.menu);
     this.coolerView.update(f.cooler, dt, !this.reducedMotion);
@@ -1591,7 +1426,7 @@ export class View {
     this.guide.setPath(f.guide);
     this.guide.setTap(f.tap);
     this.guide.update(dt, time, f, !this.reducedMotion);
-    this.alarm += ((f.alarm ? 1 : 0) - this.alarm) * Math.min(1, dt * 3);
+    this.lighting.alarm += ((f.alarm ? 1 : 0) - this.lighting.alarm) * Math.min(1, dt * 3);
     this.render(f.minuteOfDay, dt, cut ? this.feet : null, time);
   }
 
@@ -1604,7 +1439,7 @@ export class View {
   shot(tower: number, x: number, z: number, hit: boolean) {
     this.security?.shot(tower, x, z, hit);
     if (this.reducedMotion) return;
-    if (hit) this.shake = Math.max(this.shake, 0.8);
+    if (hit) this.cam.jolt(0.8);
     else {
       this.dust.puff(x + 0.9, z + 0.6, 0x9a8a6a, 10, 0.8);
       this.sparks.burst(x + 0.9, 0.05, z + 0.6, 7, 0xffe2a0, 2.6);
@@ -1639,7 +1474,7 @@ export class View {
   blast(tile: number) {
     const x = (tile % MAP_W) + 0.5;
     const z = Math.floor(tile / MAP_W) + 0.5;
-    this.shake = Math.max(this.shake, 1.8);
+    this.cam.jolt(1.8);
     if (this.reducedMotion) return;
     this.sparks.burst(x, 0.3, z, 40, 0xffa53a, 6.5);
     this.sparks.burst(x, 0.5, z, 18, 0xfff0c0, 4.5);
@@ -1650,7 +1485,7 @@ export class View {
   /** The electric fence bites (GDD §5.5): a shower of blue-white sparks off the player and a hard jolt. */
   shock() {
     const p = this.player.root.position;
-    this.shake = Math.max(this.shake, 1);
+    this.cam.jolt(1);
     if (this.reducedMotion) return;
     this.sparks.burst(p.x, 0.9, p.z, 22, 0x9fd8ff, 4);
     this.sparks.burst(p.x, 1.2, p.z, 10, 0xffffff, 3);
@@ -1688,7 +1523,7 @@ export class View {
         if (!this.reducedMotion) {
           this.dust.puff(this.cupTo.x, this.cupTo.z, 0x6b3d22, 16, 1);
           this.dust.puff(this.cupTo.x, this.cupTo.z, 0xd9a066, 8, 1.2);
-          this.shake = Math.max(this.shake, 0.6);
+          this.cam.jolt(0.6);
         }
       }
     }
@@ -1713,7 +1548,7 @@ export class View {
     this.releaseView.update(null, 0, false);
     // (The trees whole again; no match's framing.)
     this.decor?.shelter(this.people, 0, dt, false);
-    this.fitZoom = 0;
+    this.cam.fitZoom = 0;
     if (this.rollCallPaint) this.rollCallPaint.visible = false;
     this.rollCallShown = 0;
     this.player.root.visible = false;
@@ -1722,13 +1557,13 @@ export class View {
     this.cupT = 1;
     this.doorsOpen.clear();
     this.cones.update([], dt, 0, false);
-    this.alarm = 0;
+    this.lighting.alarm = 0;
     this.riot = false;
     if (this.security) this.security.group.visible = false;
     this.pickups.update([], -1, null, dt, time, false);
     this.guide.setPath(null);
     this.guide.setTap(null);
-    this.guide.update(dt, time, this.target, false);
+    this.guide.update(dt, time, this.cam.target, false);
     // The Intake (P16): your prisoner in their cell, the camera close (the walls in front cut away).
     // In and out of it eased (the angle, the target), at once with reduced motion.
     const model = this.model;
@@ -1738,23 +1573,30 @@ export class View {
       const sp = this.world.def.spawn;
       const sway = this.reducedMotion ? 0 : Math.sin(time * 0.6) * 0.35;
       model.pose(sp.x + 0.5, sp.z + 0.5, this.previewTurn + sway, false, dt, time, !this.reducedMotion, DOING.NOTHING);
-      this.target.lerp(this.v.set(sp.x + 0.5, 0.75, sp.z + 0.5), this.reducedMotion ? 1 : Math.min(1, dt * 6));
+      this.cam.target.lerp(this.v.set(sp.x + 0.5, 0.75, sp.z + 0.5), this.reducedMotion ? 1 : Math.min(1, dt * 6));
       this.feet.set(sp.x + 0.5, 0, sp.z + 0.5);
     } else {
       const a = this.reducedMotion ? 1.2 : time * 0.05;
       this.v.set(MAP_W / 2 + Math.cos(a) * 14, 0, MAP_H / 2 - 4 + Math.sin(a * 1.3) * 10);
-      if (this.previewBlend > 0.002) this.target.lerp(this.v, k);
-      else this.target.copy(this.v);
+      if (this.previewBlend > 0.002) this.cam.target.lerp(this.v, k);
+      else this.cam.target.copy(this.v);
     }
     // Snow falling over an alpine prison behind the title too (no day's weather there).
-    this.snow.update(dt, time, this.target.x, this.target.z, !this.reducedMotion && this.world?.def.theme === 'alpine', this.openSky);
-    this.wxLight = null;
+    this.snow.update(
+      dt,
+      time,
+      this.cam.target.x,
+      this.cam.target.z,
+      !this.reducedMotion && this.world?.def.theme === 'alpine',
+      this.openSky,
+    );
+    this.lighting.weather = null;
     this.weather.update(
       NO_WEATHER,
       dt,
       time,
-      this.target.x,
-      this.target.z,
+      this.cam.target.x,
+      this.cam.target.z,
       0,
       WALL_H + 0.45,
       0,
@@ -1766,7 +1608,7 @@ export class View {
     this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false);
     this.holidaysView.dress(this.titleHoliday, this.later);
     this.holidaysView.group.visible = true;
-    this.holidaysView.update(NO_HOLIDAY, dt, time, this.target.x, this.target.z, !this.reducedMotion);
+    this.holidaysView.update(NO_HOLIDAY, dt, time, this.cam.target.x, this.cam.target.z, !this.reducedMotion);
     this.delivery.update(null, dt, time, false, false);
     this.render(600, dt, model ? this.feet : null, time);
   }
@@ -1788,8 +1630,8 @@ export class View {
     const w = MAP_W * px;
     const h = Math.ceil((half * 2 + pad + 0.5) * px);
     const target = new THREE.Vector3(MAP_W / 2, 0, MAP_H / 2);
-    const kept = { target: this.target.clone(), shadow: this.sun.shadow.mapSize.x, ratio: this.renderer.getPixelRatio() };
-    const cam = this.camera;
+    const kept = { target: this.cam.target.clone(), shadow: this.lighting.sun.shadow.mapSize.x, ratio: this.renderer.getPixelRatio() };
+    const cam = this.cam.camera;
     cam.left = -MAP_W / 2;
     cam.right = MAP_W / 2;
     cam.top = half + pad;
@@ -1798,19 +1640,19 @@ export class View {
     cam.position.copy(target).add(CAMERA_OFFSET);
     cam.lookAt(target);
     // The shadows over the whole map, finer.
-    this.target.copy(target);
-    this.shadowHalf = 50;
-    const s = this.sun.shadow.camera;
-    s.left = s.bottom = -this.shadowHalf;
-    s.right = s.top = this.shadowHalf;
+    this.cam.target.copy(target);
+    this.cam.shadowHalf = 50;
+    const s = this.lighting.sun.shadow.camera;
+    s.left = s.bottom = -this.cam.shadowHalf;
+    s.right = s.top = this.cam.shadowHalf;
     s.updateProjectionMatrix();
     const resize = (n: number) => {
-      this.sun.shadow.mapSize.set(n, n);
-      this.sun.shadow.map?.dispose();
-      this.sun.shadow.map = null;
+      this.lighting.sun.shadow.mapSize.set(n, n);
+      this.lighting.sun.shadow.map?.dispose();
+      this.lighting.sun.shadow.map = null;
     };
-    if (this.sun.castShadow) resize(4096);
-    this.placeSun(600);
+    if (this.lighting.sun.castShadow) resize(4096);
+    this.lighting.placeSun(600, this.cam.target, this.cam.shadowHalf);
     // (P42: nor a holiday's decor: the map viewer's pictures never depend on the date.)
     const hidden = [
       this.snow.points,
@@ -1841,9 +1683,9 @@ export class View {
     for (const o of hidden) o.visible = true;
     for (const o of shown) o.visible = false;
     undress?.();
-    if (this.sun.castShadow) resize(kept.shadow);
+    if (this.lighting.sun.castShadow) resize(kept.shadow);
     this.renderer.setPixelRatio(kept.ratio);
-    this.target.copy(kept.target);
+    this.cam.target.copy(kept.target);
     this.resize();
     return { canvas, top: Math.round(pad * px), rows };
   }
@@ -1916,33 +1758,8 @@ export class View {
   }
 
   private render(minute: number, dt: number, focus: THREE.Vector3 | null, time: number) {
-    this.easeShift(dt);
-    // (P29: in a match, out as far as the pitch needs; the player's zoom comes back after.)
-    const zoomTo = this.fitZoom ? Math.min(this.zoomGoal, this.fitZoom) : this.zoomGoal;
-    if (Math.abs(this.zoom - zoomTo) > 1e-4) {
-      this.zoom += (zoomTo - this.zoom) * Math.min(1, dt * (this.fitZoom ? 3 : 10));
-      this.applyZoom();
-    }
-    const night = (this.night = this.light(minute));
-    // The weather first: a lockdown's red pulses through a storm's grey (not washed out by it).
-    this.weatherLight(dt);
-    if (this.alarm > 0.001) {
-      // Lockdown: the light swings red in slow pulses, like a rotating beacon.
-      const a = this.alarmPulse(time);
-      this.ambient.color.set(SKY_LIGHT).lerp(this.red, a);
-      this.sky.lerp(this.red, a * 0.35);
-      this.sun.intensity *= 1 - 0.35 * this.alarm;
-    } else this.ambient.color.set(SKY_LIGHT);
-    // Off the ground floor: the vents dim the rooms below; the tunnels are dark but for the lantern.
-    if (this.layer === LAYER.VENTS) {
-      this.sun.intensity *= 0.22;
-      this.ambient.intensity *= 0.32;
-    } else if (this.layer === LAYER.UNDER) {
-      // Dim, but the map above (tinted on the earth) still reads; the lantern warms the trench.
-      this.sun.intensity = 0.55;
-      this.ambient.intensity = 0.85;
-      this.sky.set(0x120c08);
-    }
+    this.cam.ease(dt, this.reducedMotion);
+    const night = this.lighting.update(minute, dt, time, this.layer, this.reducedMotion);
     this.decor?.update(this.powerLevel, time, this.layer === LAYER.VENTS ? 0.3 : 1, this.reducedMotion);
     // Decor belongs to the ground floor (out of the picture from the tunnels).
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
@@ -1959,43 +1776,18 @@ export class View {
     );
     this.dust.update(dt);
     // (The running heads as the last frame found them; off the ground floor's picture from the tunnels.)
-    this.showerWater.update(dt, time, !this.reducedMotion, this.running, this.camera);
+    this.showerWater.update(dt, time, !this.reducedMotion, this.running, this.cam.camera);
     if (this.layer === LAYER.UNDER) this.showerWater.group.visible = false;
-    const c = this.cine;
-    this.cineOffset.copy(CAMERA_OFFSET);
-    if (this.previewBlend > 0.002) this.cineOffset.lerp(PREVIEW_OFFSET, this.previewBlend).setLength(60);
-    if (c) {
-      // Skipped: it holds where it got to.
-      if (!c.held) c.t = Math.min(c.dur, c.t + dt);
-      const e = c.still ? 0 : THREE.MathUtils.smootherstep(c.t / c.dur, 0, 1);
-      this.cineOffset.applyAxisAngle(UP, c.turn * e);
-      if (!c.still) {
-        this.zoom = this.zoomGoal = Math.max(ZOOM_MIN, c.zoom0 * (1 - CINEMA_PULL * e));
-        this.applyZoom();
-      }
-      if (c.t >= c.dur && c.done) {
-        c.done();
-        c.done = null;
-      }
-    }
-    this.camera.position.copy(this.target).add(this.cineOffset);
-    this.camera.lookAt(this.target);
-    if (this.shake > 0.001) {
-      // A short jolt on a strike, eased away (none with the setting off or reduced motion).
-      const a = this.shakeOn && !this.reducedMotion ? this.shake * 0.06 : 0;
-      this.camera.position.x += Math.sin(time * 91) * a;
-      this.camera.position.y += Math.cos(time * 77) * a;
-      this.shake = Math.max(0, this.shake - dt * 5);
-    }
-    this.placeSun(minute);
+    this.cam.place(dt, time, this.previewBlend, this.shakeOn && !this.reducedMotion);
+    this.lighting.placeSun(minute, this.cam.target, this.cam.shadowHalf);
     const stage = this.onStage;
     stage.length = 0;
     stage.push(this.player, ...this.cast, ...this.guardCast, ...this.inspecting);
     if (this.model) stage.push(this.model);
     this.blobs.update(stage);
-    updateOcclusion(this.renderer, this.camera, focus, dt);
+    updateOcclusion(this.renderer, this.cam.camera, focus, dt);
     skipEmpty(this.scene);
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.cam.camera);
     // The last prison's meshes, now that the new one's shaders are in use (setWorld).
     if (this.retired.length) for (const dispose of this.retired.splice(0)) dispose();
   }
@@ -2004,11 +1796,11 @@ export class View {
   private readonly wxView: WeatherView = { span: 40, alarm: 0, vents: false, roof: false, lx: 0, lz: 24 / 38 };
   private weatherView(layer: number, time: number): WeatherView {
     const v = this.wxView;
-    v.span = Math.max(this.camera.right - this.camera.left, (this.camera.top - this.camera.bottom) * 1.6) + 6;
-    v.alarm = this.alarmPulse(time);
+    v.span = Math.max(this.cam.camera.right - this.cam.camera.left, (this.cam.camera.top - this.cam.camera.bottom) * 1.6) + 6;
+    v.alarm = this.lighting.alarmPulse(time, this.reducedMotion);
     v.vents = layer === LAYER.VENTS;
     v.roof = layer === LAYER.ROOF;
-    const o = this.cineOffset;
+    const o = this.cam.offset;
     if (o.y > 1) {
       v.lx = o.x / o.y;
       v.lz = o.z / o.y;
@@ -2016,83 +1808,19 @@ export class View {
     return v;
   }
 
-  /** Lockdown: the red light's share now, swinging in slow pulses like a rotating beacon (steady with reduced motion). */
-  private alarmPulse(time: number): number {
-    const pulse = this.reducedMotion ? 0.5 : (Math.sin(time * 5) + 1) / 2;
-    return this.alarm * (0.25 + pulse * 0.45);
-  }
-
   /** The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the middle of a food fight. */
   private warmDay() {
     const views = [this.weather, this.events, this.delivery, this.gamesView, this.pastimesView];
     for (const v of views) v.warm(true);
-    this.renderer.compile(this.scene, this.camera);
+    this.renderer.compile(this.scene, this.cam.camera);
     for (const v of views) v.warm(false);
   }
 
   /** Who the day's events put on stage this frame (the inspectors), for the contact shadows. */
   private inspecting: Character[] = [];
 
-  /**
-   * The weather's light (P17): rain and storms dim and grey the day, fog softens it, a
-   * heatwave warms it to a haze; lightning flashes it white for an instant.
-   */
-  private weatherLight(dt: number) {
-    const w = this.wxLight;
-    // Each part eases in and out (the fog lifting, a storm rolling in at 08:00), at once with reduced motion.
-    const k = this.reducedMotion || (this.wxFresh && w) ? 1 : Math.min(1, dt * 0.8);
-    if (w) this.wxFresh = false;
-    const g = this.wxEased;
-    g.grey += ((w ? (w.rain >= 2 ? 0.65 : w.rain ? 0.45 : 0) : 0) - g.grey) * k;
-    g.storm += ((w && w.rain >= 2 ? 1 : 0) - g.storm) * k;
-    g.fog += ((w ? w.fog : 0) - g.fog) * k;
-    // (The heat's haze goes with the daylight.)
-    g.heat += ((w?.heat ? 1 - this.night : 0) - g.heat) * k;
-    if (g.grey > 0.002) {
-      const rain = g.grey / 0.45;
-      const sun = 1 - Math.min(1, rain) * 0.4 - g.storm * 0.22;
-      this.sun.intensity *= sun;
-      this.ambient.intensity *= 1 - Math.min(1, rain) * 0.14 - g.storm * 0.14;
-      this.sky.lerp(this.c1.set(0x4a5462), g.grey);
-      this.sun.color.lerp(this.c1.set(0xc6d2e2), g.grey * 0.6);
-    }
-    if (g.fog > 0.002) {
-      this.sun.intensity *= 1 - 0.25 * g.fog;
-      this.sky.lerp(this.c1.set(0x9aa6b2), 0.6 * g.fog * (1 - this.night));
-    }
-    if (g.heat > 0.002) {
-      this.sun.intensity *= 1 + 0.08 * g.heat;
-      this.sun.color.lerp(this.c1.set(0xffc27a), 0.4 * g.heat);
-      this.sky.lerp(this.c1.set(0xe8c79a), 0.35 * g.heat);
-    }
-    if (this.flash > 0.001) {
-      this.ambient.intensity += this.flash * 2.6;
-      this.sky.lerp(this.c1.set(0xe8f0ff), this.flash * 0.7);
-      this.flash = Math.max(0, this.flash - dt * 5);
-    }
-  }
-
   /** A bolt of lightning (P17): the scene flashes white (not with reduced motion). */
   lightning() {
-    if (!this.reducedMotion) this.flash = 1;
-  }
-
-  /**
-   * The sun swings east to west over the day; its shadow box follows the camera, snapped to
-   * whole shadow-map texels so shadow edges don't shimmer as the camera glides.
-   */
-  private placeSun(minute: number) {
-    const angle = ((minute - 720) / 720) * Math.PI * 0.6;
-    // Never straight overhead: a western bias keeps shadows on the floor the camera sees.
-    const offset = this.v.set(-Math.sin(angle) * 26 - 9, 40, 9);
-    this.lightBasis.lookAt(offset, ORIGIN, UP);
-    this.lightInverse.copy(this.lightBasis).invert();
-    const texel = (this.shadowHalf * 2) / Math.max(1, this.sun.shadow.mapSize.x);
-    const p = this.p.copy(this.target).applyMatrix4(this.lightInverse);
-    p.x = Math.round(p.x / texel) * texel;
-    p.y = Math.round(p.y / texel) * texel;
-    p.applyMatrix4(this.lightBasis);
-    this.sun.target.position.copy(p);
-    this.sun.position.copy(p).add(offset);
+    if (!this.reducedMotion) this.lighting.lightning();
   }
 }
