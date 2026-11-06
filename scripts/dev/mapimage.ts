@@ -215,7 +215,13 @@ function drawProps(g: Svg, def: PrisonDef) {
     ][r];
     const mx = px(p.x) + (w * S) / 2;
     const mz = pz(p.z) + (d * S) / 2;
-    g.add(`<circle cx="${mx + (fx * (w * S - 10)) / 2}" cy="${mz + (fz * (d * S - 10)) / 2}" r="2.5" fill="${walk ? '#000' : '#ffd54a'}"/>`);
+    if (p.kind === 'lamp') {
+      // (A lamp: a notch under each head, its arm's way in eighths, 2.34.1.)
+      for (const a of p.heads === 2 ? [p.aim ?? r * 2, (p.aim ?? r * 2) + 4] : [p.aim ?? r * 2]) {
+        const t = (a * Math.PI) / 4;
+        g.add(`<circle cx="${(mx + Math.sin(t) * (S / 2 - 5)).toFixed(1)}" cy="${(mz + Math.cos(t) * (S / 2 - 5)).toFixed(1)}" r="2.5" fill="#ffd54a"/>`);
+      }
+    } else g.add(`<circle cx="${mx + (fx * (w * S - 10)) / 2}" cy="${mz + (fz * (d * S - 10)) / 2}" r="2.5" fill="${walk ? '#000' : '#ffd54a'}"/>`);
     const size = Math.max(6, Math.min(11, ((w * S - 6) * 1.7) / p.kind.length));
     g.text(mx, mz + size * 0.35, p.kind, `font-size="${size.toFixed(1)}" fill="${walk ? '#000' : '#fff'}" text-anchor="middle"`);
   }
@@ -838,6 +844,9 @@ function tileData(def: PrisonDef, n: number) {
     if (gu.dog) mark(gu.dog.kennel.x, gu.dog.kennel.z, `kennel of ${gu.dog.name} (${who}'s dog)`);
   });
   for (const c of def.cameras ?? []) mark(c.x, c.z, `camera, facing ${c.face}`);
+  // (2.34.1: the way each lamp leans, over what it lights.)
+  const WAYS = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'];
+  for (const p of def.props) if (p.kind === 'lamp') mark(p.x, p.z, p.heads === 2 ? `lamp, two heads: ${WAYS[p.aim ?? (p.rot ?? 0) * 2]} and ${WAYS[((p.aim ?? (p.rot ?? 0) * 2) + 4) % 8]}` : `lamp, its head to the ${WAYS[p.aim ?? (p.rot ?? 0) * 2]}`);
   def.rollCall.forEach((q, k) => mark(q.x, q.z, k === 0 ? 'roll-call spot 1, the player\'s own' : `roll-call spot ${k + 1}`));
   mark(def.spawn.x, def.spawn.z, 'player start');
   const ls = def.leisure;

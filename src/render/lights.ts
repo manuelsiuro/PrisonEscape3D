@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { TILE_INFO } from '../sim/world/tiles';
 import { MAP_W, type World } from '../sim/world/World';
-import { LAMP_ARM, LAMP_BULB_Y } from './props';
+import { LAMP_BULB_Y, lampHeads } from './props';
 
 /** Zones lit by daylight only (open sky); every other zone gets ceiling lights at night. */
 const OPEN_AIR = new Set(['outside', 'perimeter', 'rollCall', 'yard', 'none', 'sports', 'garden']);
@@ -47,15 +47,20 @@ export class Lights {
     const lamps = world.props.filter((p) => p.kind === 'lamp');
     // Bulbs.
     this.bulbs = new THREE.MeshBasicMaterial({ color: 0x555555 });
-    const bulbs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.05, 0.22), this.bulbs, Math.max(1, lamps.length));
+    // (One under each head, turned with its arm: 2.34.1.)
+    const heads = lamps.flatMap((p) => lampHeads(p.aim, p.heads).map((h) => ({ x: p.x + 0.5 + h.dx, z: p.z + 0.5 + h.dz, angle: h.angle })));
+    const bulbs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.05, 0.22), this.bulbs, Math.max(1, heads.length));
     const m = new THREE.Matrix4();
-    lamps.forEach((p, i) => bulbs.setMatrixAt(i, m.makeTranslation(p.x + 0.5, LAMP_BULB_Y - 0.03, p.z + 0.5 + LAMP_ARM)));
-    bulbs.count = lamps.length;
+    heads.forEach((h, i) => bulbs.setMatrixAt(i, m.makeRotationY(h.angle).setPosition(h.x, LAMP_BULB_Y - 0.03, h.z)));
+    bulbs.count = heads.length;
     this.group.add(bulbs);
 
-    // Warm pools under the lamps.
+    // Warm pools under the lamps: one under the head, or round the pole of a lamp with two.
     this.warm = this.addPools(
-      lamps.map((p) => [p.x + 0.5, p.z + 0.5 + LAMP_ARM, 7]),
+      lamps.map((p) => {
+        const [h] = lampHeads(p.aim, 1);
+        return p.heads === 2 ? [p.x + 0.5, p.z + 0.5, 7.5] : [p.x + 0.5 + h.dx, p.z + 0.5 + h.dz, 7];
+      }),
       0xffb35c,
       tex,
     );
