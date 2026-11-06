@@ -15,7 +15,24 @@ import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { prisonName } from '../ui/screens/prisons';
 import { ReplayBar, SPEEDS, whenOf } from '../ui/replayBar';
-import { banner, click, combatUI, controls, crewChips, darkCell, hint, hud, itemsUI, sleepVeil, solitaryPanel, sound, tools, vignette, view, workChips } from './context';
+import {
+  banner,
+  click,
+  combatUI,
+  controls,
+  crewChips,
+  darkCell,
+  hint,
+  hud,
+  itemsUI,
+  sleepVeil,
+  solitaryPanel,
+  sound,
+  tools,
+  vignette,
+  view,
+  workChips,
+} from './context';
 import { press, targets } from './buttons';
 import { buildFrame } from './frame';
 import { play, tickPlayClock, type Game } from './game';
@@ -308,7 +325,16 @@ export function replayFrame(g: Game, dt: number, now: number) {
   sleepVeil.classList.toggle('ko', st.ko > 0);
   sleepVeil.classList.toggle('on', st.sleeping || st.ko > 0);
   darkCell.classList.toggle('on', st.solitary > 0);
-  r.bar.update({ at: st.step, reach: r.end ?? r.reach, playing: r.playing && !r.ended, ended: r.ended && !r.cinema, speed: r.speed, pace: r.pace, quiet: r.quietSkip, checking: r.checking });
+  r.bar.update({
+    at: st.step,
+    reach: r.end ?? r.reach,
+    playing: r.playing && !r.ended,
+    ended: r.ended && !r.cinema,
+    speed: r.speed,
+    pace: r.pace,
+    quiet: r.quietSkip,
+    checking: r.checking,
+  });
 }
 
 /** Paused (the tab hidden, a phone's call): the replay waits. */
@@ -337,7 +363,13 @@ export function watchReplay(rp: Replay, back: Game | null): Promise<void> {
   const log = rp.log;
   stageWorld(sim, rp.guest ? rp.by : readPrisoner());
   const title = log.daily !== undefined ? `${t('daily.name', { n: log.daily + 1 })} · ${prisonName(prison)}` : prisonName(prison);
-  const sub = rp.guest ? (rp.by?.name ? t('replay.by', { name: rp.by.name }) : t('replay.guest')) : log.via ? t(`route.${log.via}` as Key) : '';
+  const sub = rp.guest
+    ? rp.by?.name
+      ? t('replay.by', { name: rp.by.name })
+      : t('replay.guest')
+    : log.via
+      ? t(`route.${log.via}` as Key)
+      : '';
   const last = log.from + log.steps;
   const bar = new ReplayBar(title, sub, log.from, last);
   const tape = new Tape(runs);

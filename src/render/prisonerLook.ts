@@ -12,7 +12,13 @@ const GUARD_CAP = 0x1b2638;
  * the trim comes off (a disguise looks the part); trims show on the jumpsuit only (`jumpsuit`:
  * the inmate outfit itself, not the padded or plated ones of the same orange).
  */
-export function lookFor(p: Prisoner | null, outfit: number | null, disguise: boolean, jumpsuit = outfit === INMATE_LOOK.outfit, inked: readonly number[] = []): Look {
+export function lookFor(
+  p: Prisoner | null,
+  outfit: number | null,
+  disguise: boolean,
+  jumpsuit = outfit === INMATE_LOOK.outfit,
+  inked: readonly number[] = [],
+): Look {
   const pr = p ?? DEFAULT_PRISONER;
   const get = (part: LookPart) => cosmetic(pr.look[part]) ?? cosmetic(DEFAULT_PRISONER.look[part])!;
   const hat = get('hat');

@@ -11,7 +11,11 @@ export interface PastimesFrame {
   /** The spot lit on the court (its place in the list, -1 none). */
   spot: number;
   /** A shot shown: who threw it, from where (tiles), how it went, short or long; seconds since it left the hand. */
-  ball: { show: { by: number; fromX: number; fromZ: number; result: 'swish' | 'in' | 'rim' | 'air'; short: boolean; at: number }; t: number; fromY: number } | null;
+  ball: {
+    show: { by: number; fromX: number; fromZ: number; result: 'swish' | 'in' | 'rim' | 'air'; short: boolean; at: number };
+    t: number;
+    fromY: number;
+  } | null;
   /** The ball held up for a shot (the marker 0–1: the arms dip and rise with it), the way to the rim (a unit vector: it's held a little that way). */
   holding: { who: number; power: number; dx: number; dz: number } | null;
   /** Cards between the player and the inmate: the middle, the way from the player to them, face-down cards on the pile, a call's cards face up. */
@@ -161,10 +165,16 @@ export class PastimesView {
       s.renderOrder = 0.25;
     }
     this.pitchSpots.visible = false;
-    this.ring = new THREE.Mesh(new THREE.RingGeometry(SPOT_R * 0.9, SPOT_R * 1.25, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffc23d, transparent: true, opacity: 0.85, depthWrite: false }));
+    this.ring = new THREE.Mesh(
+      new THREE.RingGeometry(SPOT_R * 0.9, SPOT_R * 1.25, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xffc23d, transparent: true, opacity: 0.85, depthWrite: false }),
+    );
     this.ring.renderOrder = 2;
     this.ring.visible = false;
-    this.ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 16, 12), new THREE.MeshStandardMaterial({ map: ballTexture(), roughness: 0.7 }));
+    this.ball = new THREE.Mesh(
+      new THREE.SphereGeometry(BALL_R, 16, 12),
+      new THREE.MeshStandardMaterial({ map: ballTexture(), roughness: 0.7 }),
+    );
     this.ball.castShadow = true;
     this.ball.visible = false;
     const cards = new THREE.MeshStandardMaterial({ map: cardTexture(), roughness: 0.8 });
@@ -248,7 +258,15 @@ export class PastimesView {
     const vDown = (2 * (endY - ctrl)) / FLIGHT;
     // Then what it meets: the net (through, slowed), the rim (up and back out), the board (back off it), nothing (on its way).
     const [vx, vz, vy] =
-      result === 'swish' ? [ux * 0.1, uz * 0.1, vDown * 0.35] : result === 'in' ? [ux * 0.6, uz * 0.6, vDown * 0.3] : result === 'rim' ? [-ux * 0.9 + uz * 0.35, -uz * 0.9 - ux * 0.35, 1.2] : long ? [-ux * vAlong * 0.35, -uz * vAlong * 0.35, 0.4] : [ux * vAlong * 0.5, uz * vAlong * 0.5, vDown * 0.6];
+      result === 'swish'
+        ? [ux * 0.1, uz * 0.1, vDown * 0.35]
+        : result === 'in'
+          ? [ux * 0.6, uz * 0.6, vDown * 0.3]
+          : result === 'rim'
+            ? [-ux * 0.9 + uz * 0.35, -uz * 0.9 - ux * 0.35, 1.2]
+            : long
+              ? [-ux * vAlong * 0.35, -uz * vAlong * 0.35, 0.4]
+              : [ux * vAlong * 0.5, uz * vAlong * 0.5, vDown * 0.6];
     this.fall(ex, endY, ez, vx, vy, vz, t - FLIGHT, out);
   }
 
@@ -275,7 +293,8 @@ export class PastimesView {
     this.spots.visible = ground && this.spots.count > 0;
     const c = this.court;
     // The spots on the pitch: chalked in walking up to the court (or in a game of hoops), never in a match.
-    const near = on && !match && !!c && (f.spot >= 0 || !!f.ball || !!f.holding || Math.hypot(px - c.x - 0.5, pz - c.z - 0.5) <= COURT_NEAR);
+    const near =
+      on && !match && !!c && (f.spot >= 0 || !!f.ball || !!f.holding || Math.hypot(px - c.x - 0.5, pz - c.z - 0.5) <= COURT_NEAR);
     const k = motion ? Math.min(1, dt * 3) : 1;
     this.pitchChalk += ((near ? 1 : 0) - this.pitchChalk) * k;
     if (this.pitchChalk < 0.01 && !near) this.pitchChalk = 0;

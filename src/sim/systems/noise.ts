@@ -15,7 +15,22 @@ import { itemDef } from '../../content/items';
 import { chebTiles, tileAt } from '../world/grid';
 import type { SimContext } from '../context';
 import type { NoiseKind } from '../events';
-import { BANG_GUARDS, BANG_LOOK, BANG_NOISE, DOOR_NOISE, LOOK_NEAR, NAP_WAKE, NOISE_GUARDS, NOISE_LOOK, RING_NOISE, RING_SECONDS, STEPS_PER_SECOND, STRIKE_NOISE, WIND_MAX, WIND_SECONDS } from '../tuning';
+import {
+  BANG_GUARDS,
+  BANG_LOOK,
+  BANG_NOISE,
+  DOOR_NOISE,
+  LOOK_NEAR,
+  NAP_WAKE,
+  NOISE_GUARDS,
+  NOISE_LOOK,
+  RING_NOISE,
+  RING_SECONDS,
+  STEPS_PER_SECOND,
+  STRIKE_NOISE,
+  WIND_MAX,
+  WIND_SECONDS,
+} from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_H, MAP_W, tileOfKey, type World } from '../world/World';
@@ -113,7 +128,8 @@ const tileOfGuard = (g: Guard) => tileAt(g.body.x, g.body.z);
  * Whether a guard dozing at its nap stop (P15) wakes to the last noise worked out: a bang
  * anywhere in earshot, anything else NAP_WAKE tiles short of its reach.
  */
-const stirs = (g: Guard, n: number, bang: boolean) => g.doze > 0 && g.ko <= 0 && cost[tileOfGuard(g)] >= 0 && (bang || cost[tileOfGuard(g)] <= n - spare);
+const stirs = (g: Guard, n: number, bang: boolean) =>
+  g.doze > 0 && g.ko <= 0 && cost[tileOfGuard(g)] >= 0 && (bang || cost[tileOfGuard(g)] <= n - spare);
 
 /** The tiles to spare a noise needs to wake a dozing guard: NAP_WAKE, none on a Light Sleepers Daily (P26). Set from the state as each noise is worked out. */
 let spare = NAP_WAKE;
@@ -275,7 +291,7 @@ const ticking = (v: number) => itemOf(v) === ALARM_CLOCK && usesOf(v) > 0;
  */
 export function noisemakers(sim: SimContext) {
   const s = sim.state;
-  for (let k = 0; k < s.fuses.length; ) {
+  for (let k = 0; k < s.fuses.length;) {
     const [key, at] = s.fuses[k];
     if (s.step < at) {
       k++;

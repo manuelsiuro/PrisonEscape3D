@@ -22,7 +22,22 @@ import { TRAINING } from '../src/content/prisons/training';
 import { SAN_PANCHO } from '../src/content/prisons/san-pancho';
 import { itemNumber } from '../src/content/items';
 import { SALES_A_DAY } from '../src/content/long';
-import { BETS, CROP, DRY_DEATH, GROWN, HARVEST, PURSE, RACE_MINUTE, RACE_STEPS, RAT_START_SPEED, STAPLES, START_RANGE, TAKE, TIPSY_HEAT, TIPSY_STEPS } from '../src/content/long';
+import {
+  BETS,
+  CROP,
+  DRY_DEATH,
+  GROWN,
+  HARVEST,
+  PURSE,
+  RACE_MINUTE,
+  RACE_STEPS,
+  RAT_START_SPEED,
+  STAPLES,
+  START_RANGE,
+  TAKE,
+  TIPSY_HEAT,
+  TIPSY_STEPS,
+} from '../src/content/long';
 import { SHOP_SLOTS } from '../src/content/loot';
 import { WEATHERS } from '../src/content/days';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
@@ -31,7 +46,19 @@ import { DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
 import { BED, bedAt, bedCount, bedTile, plotOf } from '../src/sim/systems/garden';
 import { itemOf, slot, usesOf } from '../src/sim/systems/items';
 import { canDigFloor, reserved } from '../src/sim/systems/structure';
-import { cardUp, oddsOf, payout, RACE, raceCard, rivals, runRace, trackOf, trackTiles, trackGain, type Entrant } from '../src/sim/systems/races';
+import {
+  cardUp,
+  oddsOf,
+  payout,
+  RACE,
+  raceCard,
+  rivals,
+  runRace,
+  trackOf,
+  trackTiles,
+  trackGain,
+  type Entrant,
+} from '../src/sim/systems/races';
 import { RAT } from '../src/sim/systems/rats';
 import { containersOf } from '../src/sim/world/containers';
 import { TILE } from '../src/sim/world/tiles';
@@ -49,7 +76,8 @@ const put = (b: { x: number; z: number }, t: number) => {
 };
 const n = itemNumber;
 const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
-const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
+const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
+  seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet and clear unless forced. */
 function game(prison = CENTER_PERKS, seed = 5, calendar: ForcedDay[] = [[0, 0, 0]]) {
@@ -96,7 +124,15 @@ function game(prison = CENTER_PERKS, seed = 5, calendar: ForcedDay[] = [[0, 0, 0
     for (let i = MAP_W; i < MAP_W * 63 && tile < 0; i++) {
       const x = i % MAP_W;
       const z = Math.floor(i / MAP_W);
-      if (w.zoneAt(x, z) === 'yard' && w.zoneAt(x + 1, z) === 'yard' && !w.blocked(x, z) && !w.blocked(x + 1, z) && bedAt(w, i) < 0 && bedAt(w, i + 1) < 0) tile = i;
+      if (
+        w.zoneAt(x, z) === 'yard' &&
+        w.zoneAt(x + 1, z) === 'yard' &&
+        !w.blocked(x, z) &&
+        !w.blocked(x + 1, z) &&
+        bedAt(w, i) < 0 &&
+        bedAt(w, i + 1) < 0
+      )
+        tile = i;
     }
     const m = sim.state.inmates[who];
     put(m.body, tile);
@@ -126,7 +162,8 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
     const plot = plotOf(w)!;
     check(!!plot && plot.w * plot.d >= 4, `${p.id}: a garden of at least 4 beds`);
     const spots = new Set((p.leisure?.hoop.spots ?? []).map((s) => s.z * MAP_W + s.x));
-    const decor = (x: number, z: number) => (p.decor ?? []).some((d) => x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
+    const decor = (x: number, z: number) =>
+      (p.decor ?? []).some((d) => x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
     const props = (x: number, z: number) => w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d);
     for (let k = 0; k < bedCount(w); k++) {
       const t = bedTile(w, k);
@@ -138,7 +175,10 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
       check(!props(x, z) && !decor(x, z) && !spots.has(t), `${p.id}: bed ${k} clear of furniture, decor and the court`);
       // Clear of the court: no bed within 2 tiles of a shooting spot or the rim.
       const c = p.leisure!.hoop;
-      check([...c.spots, c].every((s) => Math.max(Math.abs(s.x - x), Math.abs(s.z - z)) > 2), `${p.id}: bed ${k} well off the court`);
+      check(
+        [...c.spots, c].every((s) => Math.max(Math.abs(s.x - x), Math.abs(s.z - z)) > 2),
+        `${p.id}: bed ${k} well off the court`,
+      );
     }
     const track = trackOf(w)!;
     const tiles = trackTiles(track);
@@ -149,7 +189,9 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
       check(!w.blocked(x, z) && !props(x, z) && w.ground.kind[t] !== TILE.DOOR, `${p.id}: the track's tile ${x},${z} open floor`);
       check(['cellBlock', 'corridor'].includes(w.zoneAt(x, z)), `${p.id}: the track's tile ${x},${z} in the cell block`);
     }
-    lines.push(`${p.id} ${plot.w}×${plot.d} beds at ${plot.x},${plot.z}, track ${track.len} tiles from ${track.x},${track.z} in the ${w.zoneAt(track.x, track.z)}`);
+    lines.push(
+      `${p.id} ${plot.w}×${plot.d} beds at ${plot.x},${plot.z}, track ${track.len} tiles from ${track.x},${track.z} in the ${w.zoneAt(track.x, track.z)}`,
+    );
   }
   console.log(`data: ${lines.join('; ')}`);
 }
@@ -187,18 +229,27 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   s.items.open = shelf;
   const before = seen.length;
   g.ext(EXT.TAKE, TAKE.FRUIT);
-  check(seen.slice(before).every((e) => e.type !== 'pickup' && e.type !== 'refused'), 'no fruit off a shelf');
+  check(
+    seen.slice(before).every((e) => e.type !== 'pickup' && e.type !== 'refused'),
+    'no fruit off a shelf',
+  );
   // Sugar and seeds, once a day each.
   s.items.open = freezer;
   g.ext(EXT.TAKE, TAKE.SUGAR);
   s.items.open = freezer;
   g.ext(EXT.TAKE, TAKE.SUGAR);
-  check(itemOf(s.items.inv[2]) === n('sugar') && !s.items.inv[3] && refusals(seen).at(-1) === 'takenToday', 'sugar from the freezer, once a day');
+  check(
+    itemOf(s.items.inv[2]) === n('sugar') && !s.items.inv[3] && refusals(seen).at(-1) === 'takenToday',
+    'sugar from the freezer, once a day',
+  );
   s.items.open = shelf;
   g.ext(EXT.TAKE, TAKE.VEG_SEEDS);
   s.items.open = shelf;
   g.ext(EXT.TAKE, TAKE.FRUIT_SEEDS);
-  check(itemOf(s.items.inv[3]) === n('veg_seeds') && !s.items.inv[4] && refusals(seen).at(-1) === 'takenToday', 'one seed packet a day off the shelf');
+  check(
+    itemOf(s.items.inv[3]) === n('veg_seeds') && !s.items.inv[4] && refusals(seen).at(-1) === 'takenToday',
+    'one seed packet a day off the shelf',
+  );
   g.jump(2, 10, 30);
   s.items.open = shelf;
   g.ext(EXT.TAKE, TAKE.FRUIT_SEEDS);
@@ -209,8 +260,13 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   g.ext(EXT.TAKE, TAKE.SUGAR);
   check(refusals(seen).at(-1) === 'room', 'no room, nothing taken');
   // Taken, never stocked: the furniture's own slots as they were.
-  check(JSON.stringify(s.items.containers[counter]) === JSON.stringify(JSON.parse(stock)[counter]) || prisonDay(s.step) > 1, 'the counter’s slots untouched');
-  console.log(`pantry: fruit at breakfast and dinner, sugar and seed packets once a day; refused ${[...new Set(refusals(seen))].join(', ')}`);
+  check(
+    JSON.stringify(s.items.containers[counter]) === JSON.stringify(JSON.parse(stock)[counter]) || prisonDay(s.step) > 1,
+    'the counter’s slots untouched',
+  );
+  console.log(
+    `pantry: fruit at breakfast and dinner, sugar and seed packets once a day; refused ${[...new Set(refusals(seen))].join(', ')}`,
+  );
 }
 
 // ------------------------------------------------------------------ the merchants' staples, and what they buy
@@ -227,7 +283,10 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   s.items.inv = [0, 0, 0, 0, 0, 0, 0, s.items.inv[SLOT.OUTFIT]];
   STAPLES.forEach((_, k) => g.step(command(0, OP.TALK, TALK.BUY, SHOP_SLOTS + k)));
   const bought = of(seen, 'bought').map((e) => e.item);
-  check(STAPLES.every((id) => bought.includes(n(id))) && JSON.stringify(s.shops) === stock, 'the staples bought, the shop’s stock untouched');
+  check(
+    STAPLES.every((id) => bought.includes(n(id))) && JSON.stringify(s.shops) === stock,
+    'the staples bought, the shop’s stock untouched',
+  );
   const paid = 100 - s.cash;
   s.items.inv[3] = slot(n('pruno'));
   s.items.inv[4] = slot(n('vegetable'));
@@ -236,7 +295,14 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   g.step(command(0, OP.TALK, TALK.SELL, 4));
   g.step(command(0, OP.TALK, TALK.SELL, 5));
   const sold = of(seen, 'sold');
-  check(sold.length === 2 && sold[0].price === 30 && sold[1].price === 6 && refusals(seen).at(-1) === 'notWanted' && itemOf(s.items.inv[5]) === n('sock'), 'pruno sold for $30, a vegetable for $6 (three quarters of their value), a sock not wanted');
+  check(
+    sold.length === 2 &&
+      sold[0].price === 30 &&
+      sold[1].price === 6 &&
+      refusals(seen).at(-1) === 'notWanted' &&
+      itemOf(s.items.inv[5]) === n('sock'),
+    'pruno sold for $30, a vegetable for $6 (three quarters of their value), a sock not wanted',
+  );
   check(s.inmates[who].opinion === opinionBefore, 'staples bring no opinion');
   // At most SALES_A_DAY sales a day.
   for (let k = 0; k < SALES_A_DAY; k++) {
@@ -269,12 +335,22 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   s.items.containers[other][0] = slot(n('pruno_bag'));
   g.morning(2);
   const left = (v: number) => (itemOf(v) === n('pruno') ? 'ripe' : `${usesOf(v)} left`);
-  check(usesOf(s.items.containers[desk][0]) === 1 && usesOf(s.items.inv[bag]) === 2, 'the first morning: a day left in the desk; carried, it waits');
+  check(
+    usesOf(s.items.containers[desk][0]) === 1 && usesOf(s.items.inv[bag]) === 2,
+    'the first morning: a day left in the desk; carried, it waits',
+  );
   g.morning(3);
   const ripe = of(seen, 'pruno').filter((e) => e.what === 'ripe');
-  check(itemOf(s.items.containers[desk][0]) === n('pruno') && itemOf(s.items.containers[toilet][0]) === n('pruno') && itemOf(s.items.containers[other][0]) === n('pruno'), 'the second: ripe in the drawers, the tank and another desk');
+  check(
+    itemOf(s.items.containers[desk][0]) === n('pruno') &&
+      itemOf(s.items.containers[toilet][0]) === n('pruno') &&
+      itemOf(s.items.containers[other][0]) === n('pruno'),
+    'the second: ripe in the drawers, the tank and another desk',
+  );
   check(ripe.length === 4 && ripe.filter((e) => e.mine).length === 3, 'four ripe, three of them the player’s');
-  console.log(`pruno: desk ${left(s.items.containers[desk][0])}, tank ${left(s.items.containers[toilet][0])}, carried ${left(s.items.inv[bag])} after two mornings`);
+  console.log(
+    `pruno: desk ${left(s.items.containers[desk][0])}, tank ${left(s.items.containers[toilet][0])}, carried ${left(s.items.inv[bag])} after two mornings`,
+  );
 }
 
 // ------------------------------------------------------------------ pruno: a dog's nose, the shakedown
@@ -325,8 +401,16 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   s.items.containers[desk][hidden] = slot(n('pruno'));
   s.items.containers[toilet][0] = slot(n('pruno'));
   g.to(day, 11, 0);
-  check(of(seen, 'searched').some((e) => e.cell === 1), 'the player’s cell searched');
-  check(itemOf(s.items.containers[desk][0]) === n('pruno') && !s.items.containers[desk][hidden] && itemOf(s.items.containers[toilet][0]) === n('pruno'), 'pruno in the standard drawers taken; the hidden drawer and the tank kept');
+  check(
+    of(seen, 'searched').some((e) => e.cell === 1),
+    'the player’s cell searched',
+  );
+  check(
+    itemOf(s.items.containers[desk][0]) === n('pruno') &&
+      !s.items.containers[desk][hidden] &&
+      itemOf(s.items.containers[toilet][0]) === n('pruno'),
+    'pruno in the standard drawers taken; the hidden drawer and the tank kept',
+  );
   console.log(`shakedown (day ${day}): the standard drawer's pruno taken, the hidden drawer's and the tank's kept`);
 }
 
@@ -348,9 +432,15 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   const sober = pace();
   g.hold(0, n('pruno'));
   g.use();
-  check(of(seen, 'pruno').some((e) => e.what === 'drunk') && !s.items.inv[0] && s.tipsy[0] === s.step + TIPSY_STEPS, 'pruno drunk: tipsy for 3 hours');
+  check(
+    of(seen, 'pruno').some((e) => e.what === 'drunk') && !s.items.inv[0] && s.tipsy[0] === s.step + TIPSY_STEPS,
+    'pruno drunk: tipsy for 3 hours',
+  );
   const drunk = pace();
-  check(sober === walkSpeed(s.spd) * 10 && drunk === Math.floor((walkSpeed(s.spd) * 80) / 100) * 10, `slower tipsy (${sober} → ${drunk} units)`);
+  check(
+    sober === walkSpeed(s.spd) * 10 && drunk === Math.floor((walkSpeed(s.spd) * 80) / 100) * 10,
+    `slower tipsy (${sober} → ${drunk} units)`,
+  );
   // Stumbles on the move: a small noise now and then.
   for (let k = 0; k < 400; k++) g.step(k % 80 < 40 ? 1 : 9);
   const stumbles = of(seen, 'noise').filter((e) => e.kind === 'stumble').length;
@@ -370,7 +460,10 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   }
   const first = s.heat;
   check(first >= TIPSY_HEAT - 1 && first <= TIPSY_HEAT, `seen tipsy: +${TIPSY_HEAT}% once while in sight (${first}% after the cooling)`);
-  check(of(seen, 'spotted').some((e) => e.reason === 'tipsy'), 'spotted: tipsy');
+  check(
+    of(seen, 'spotted').some((e) => e.reason === 'tipsy'),
+    'spotted: tipsy',
+  );
   // Harder blows: a punch at an inmate, sober and tipsy.
   g.setCalm(true);
   const punch = (tipsy: boolean) => {
@@ -394,7 +487,10 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   s.tipsy[0] = s.step + 2;
   g.step();
   g.step();
-  check(of(seen, 'pruno').some((e) => e.what === 'sober'), 'sober again');
+  check(
+    of(seen, 'pruno').some((e) => e.what === 'sober'),
+    'sober again',
+  );
   console.log(`tipsy: ${sober} → ${drunk} units in 10 steps, ${stumbles} stumbles in 20 s, +${first}% once seen, a punch ${a} → ${b}`);
 }
 
@@ -403,7 +499,11 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   const RAIN = WEATHERS.indexOf('rain');
   const HEAT = WEATHERS.indexOf('heatwave');
   // Day 2 rains, day 4 is a heatwave; the rest clear.
-  const g = game(CENTER_PERKS, 5, [[0, 0, 0], [2, 0, RAIN], [4, 0, HEAT]]);
+  const g = game(CENTER_PERKS, 5, [
+    [0, 0, 0],
+    [2, 0, RAIN],
+    [4, 0, HEAT],
+  ]);
   const { sim, seen } = g;
   const s = sim.state;
   const w = sim.world;
@@ -423,7 +523,13 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   face(2);
   g.hold(0, n('veg_seeds'));
   g.use();
-  check(s.plots.length === bedCount(w) && s.plots[0][BED.CROP] === CROP.VEG && s.plots[1][BED.CROP] === CROP.FRUIT && s.plots[2][BED.CROP] === CROP.VEG, 'three beds planted');
+  check(
+    s.plots.length === bedCount(w) &&
+      s.plots[0][BED.CROP] === CROP.VEG &&
+      s.plots[1][BED.CROP] === CROP.FRUIT &&
+      s.plots[2][BED.CROP] === CROP.VEG,
+    'three beds planted',
+  );
   const water = (bed: number, times = 1) => {
     face(bed);
     g.hold(0, n('plastic_cup'));
@@ -446,7 +552,10 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   water(1);
   water(2, 2);
   g.morning(5);
-  check(s.plots[1][BED.CROP] === CROP.NONE && of(seen, 'garden').some((e) => e.what === 'died' && e.bed === 1), `a heatwave's one cupful isn't enough: bed 1 dead after ${DRY_DEATH} dry days`);
+  check(
+    s.plots[1][BED.CROP] === CROP.NONE && of(seen, 'garden').some((e) => e.what === 'died' && e.bed === 1),
+    `a heatwave's one cupful isn't enough: bed 1 dead after ${DRY_DEATH} dry days`,
+  );
   check(s.plots[2][BED.GROWN] === 2 && s.plots[2][BED.DRY] === 0, 'two cupfuls carried bed 2 through the heatwave');
   // The harvest, whatever is in hand.
   face(0);
@@ -456,7 +565,9 @@ const box = (sim: Sim, ok: (c: ReturnType<typeof containersOf>[number]) => boole
   g.use();
   const got = s.items.inv.slice(0, 6).filter((v) => itemOf(v) === n('vegetable')).length;
   check(got === HARVEST && s.plots[0][BED.CROP] === CROP.NONE, `bed 0 harvested: ${HARVEST} vegetables`);
-  console.log(`garden: grown in ${GROWN} watered days (rain counts, a heatwave takes two cupfuls), dead after ${DRY_DEATH} dry days, ${got} vegetables picked`);
+  console.log(
+    `garden: grown in ${GROWN} watered days (rain counts, a heatwave takes two cupfuls), dead after ${DRY_DEATH} dry days, ${got} vegetables picked`,
+  );
 }
 function ripeBed(b: number[]) {
   return b[BED.CROP] !== CROP.NONE && b[BED.GROWN] >= GROWN;
@@ -482,7 +593,10 @@ function ripeBed(b: number[]) {
     g.step(command(0, OP.USE, k % 20 === 0 ? 1 : 0));
     s.energy = 100;
   }
-  check(w.ground.kind[t] === TILE.SHAFT && s.plots[4][BED.CROP] === CROP.VEG, 'a shaft dug down through the planted bed, the plant still there');
+  check(
+    w.ground.kind[t] === TILE.SHAFT && s.plots[4][BED.CROP] === CROP.VEG,
+    'a shaft dug down through the planted bed, the plant still there',
+  );
   // A guard looking straight at it: nothing found.
   g.setCalm(false);
   s.heat = 0;
@@ -512,7 +626,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   g.hold(0, n('caught_rat'), 1);
   s.items.inv[1] = slot(n('potato'));
   g.use();
-  check(s.rats.length === 1 && s.rats[0].mode === RAT.SHOULDER && s.rats[0].speed === RAT_START_SPEED, 'a rat tamed, at its starting speed');
+  check(
+    s.rats.length === 1 && s.rats[0].mode === RAT.SHOULDER && s.rats[0].speed === RAT_START_SPEED,
+    'a rat tamed, at its starting speed',
+  );
   return g;
 }
 {
@@ -530,7 +647,11 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
       }
     return -1;
   };
-  const refused = () => of(seen, 'track').filter((e) => e.what === 'refused').map((e) => e.why).at(-1);
+  const refused = () =>
+    of(seen, 'track')
+      .filter((e) => e.what === 'refused')
+      .map((e) => e.why)
+      .at(-1);
   g.jump(1, 10, 30);
   put(s.player, 33 * MAP_W + 25);
   g.hold(0, n('rat_track'));
@@ -548,7 +669,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   s.items.inv[1] = slot(n('jerky'));
   g.use();
   const trained = of(seen, 'track').find((e) => e.what === 'trained');
-  check(!!trained && pet.speed === RAT_START_SPEED + trackGain(RAT_START_SPEED) && pet.fed === 1 && !s.items.inv[1], `trained: ${RAT_START_SPEED} → ${pet.speed}, fed today, the bait eaten`);
+  check(
+    !!trained && pet.speed === RAT_START_SPEED + trackGain(RAT_START_SPEED) && pet.fed === 1 && !s.items.inv[1],
+    `trained: ${RAT_START_SPEED} → ${pet.speed}, fed today, the bait eaten`,
+  );
   s.items.inv[1] = slot(n('potato'));
   g.use();
   check(refused() === 'today', 'once a day');
@@ -556,13 +680,16 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   s.rats[0].fed = 0;
   s.race = [1, -1, -1, 0, 1, 0, 0, 0];
   g.use();
-  check(refused() === 'entered', 'not while entered in tonight\'s race');
+  check(refused() === 'entered', "not while entered in tonight's race");
   s.race = [];
   s.rats[0].fed = 1;
   // The gains grow smaller.
   const gains: number[] = [];
   for (let sp = RAT_START_SPEED; sp < 100; sp += trackGain(sp)) gains.push(trackGain(sp));
-  check(gains.every((x, k) => k === 0 || x <= gains[k - 1]) && gains.length >= 8, `smaller gains as it gets faster (${gains.length} sessions to 100)`);
+  check(
+    gains.every((x, k) => k === 0 || x <= gains[k - 1]) && gains.length >= 8,
+    `smaller gains as it gets faster (${gains.length} sessions to 100)`,
+  );
   console.log(`track: ${gains.slice(0, 8).join(', ')}… (${gains.length} sessions from ${RAT_START_SPEED} to 100)`);
 }
 
@@ -585,16 +712,39 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
       }
     }
   check(shared === 0, `no card with two rats of one name (${shared})`);
-  for (const [lang, d] of [['en', en], ['fr', { ...en, ...fr }]] as const) {
+  for (const [lang, d] of [
+    ['en', en],
+    ['fr', { ...en, ...fr }],
+  ] as const) {
     const pets = new Set(d['rat.names'].split('|'));
-    check(d['race.names'].split('|').every((n) => !pets.has(n)), `${lang}: the pet's names and the rivals' apart`);
+    check(
+      d['race.names'].split('|').every((n) => !pets.has(n)),
+      `${lang}: the pet's names and the rivals' apart`,
+    );
   }
   const odds = oddsOf(sim.state.salt, 1, card);
-  check(card.every((e, i) => card.every((f, j) => e.speed <= f.speed || odds[i] <= odds[j])), `odds by speed: the fastest pays least (${card.map((e, i) => `${e.speed} ×${odds[i] / 10}`).join(', ')})`);
-  check(JSON.stringify(odds) === JSON.stringify(oddsOf(sim.state.salt, 1, card.map((e) => ({ ...e, fed: !e.fed })))), 'the bookie can’t know who ate');
+  check(
+    card.every((e, i) => card.every((f, j) => e.speed <= f.speed || odds[i] <= odds[j])),
+    `odds by speed: the fastest pays least (${card.map((e, i) => `${e.speed} ×${odds[i] / 10}`).join(', ')})`,
+  );
+  check(
+    JSON.stringify(odds) ===
+      JSON.stringify(
+        oddsOf(
+          sim.state.salt,
+          1,
+          card.map((e) => ({ ...e, fed: !e.fed })),
+        ),
+      ),
+    'the bookie can’t know who ate',
+  );
   // The race: pure, the order by the distance run.
   const run = runRace(sim.state.salt, 1, card);
-  check(JSON.stringify(run) === JSON.stringify(runRace(sim.state.salt, 1, card)) && run.order.every((l, k) => k === 0 || run.legs[run.order[k - 1]][9] >= run.legs[l][9]), 'the race is pure, the furthest first');
+  check(
+    JSON.stringify(run) === JSON.stringify(runRace(sim.state.salt, 1, card)) &&
+      run.order.every((l, k) => k === 0 || run.legs[run.order[k - 1]][9] >= run.legs[l][9]),
+    'the race is pure, the furthest first',
+  );
 
   // Measured over many nights and seeds: blind bets lose; betting only on rats that ate wins; feeding the pet matters.
   let blind = 0;
@@ -631,8 +781,13 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   const infEv = informed / informedBets;
   check(blindEv < 0.9 && favEv < 0.9, `blind bets lose (any lane ×${blindEv.toFixed(2)}, the favourite ×${favEv.toFixed(2)} a dollar)`);
   check(infEv > 1.05, `betting only on rats that ate wins (×${infEv.toFixed(2)} a dollar)`);
-  check(fedWins / nights > 0.5 && fedWins / nights < 0.8 && hungryWins / nights < 0.3, `a pet at speed 80 wins ${Math.round((fedWins * 100) / nights)}% of nights fed, ${Math.round((hungryWins * 100) / nights)}% hungry`);
-  console.log(`race: blind ×${blindEv.toFixed(2)}, the favourite ×${favEv.toFixed(2)}, on rats that ate ×${infEv.toFixed(2)} a dollar; a pet at 80 wins ${Math.round((fedWins * 100) / nights)}% fed, ${Math.round((hungryWins * 100) / nights)}% hungry (${nights} nights)`);
+  check(
+    fedWins / nights > 0.5 && fedWins / nights < 0.8 && hungryWins / nights < 0.3,
+    `a pet at speed 80 wins ${Math.round((fedWins * 100) / nights)}% of nights fed, ${Math.round((hungryWins * 100) / nights)}% hungry`,
+  );
+  console.log(
+    `race: blind ×${blindEv.toFixed(2)}, the favourite ×${favEv.toFixed(2)}, on rats that ate ×${infEv.toFixed(2)} a dollar; a pet at 80 wins ${Math.round((fedWins * 100) / nights)}% fed, ${Math.round((hungryWins * 100) / nights)}% hungry (${nights} nights)`,
+  );
 }
 {
   // A night at the track: a bet, the pet entered, the off, the finish.
@@ -672,7 +827,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   g.blind();
   g.to(1, 21, 0);
   g.step();
-  check(of(seen, 'race').some((e) => e.what === 'start') && of(seen, 'noise').some((e) => e.kind === 'cheer'), 'the off at 21:00, the cheering heard');
+  check(
+    of(seen, 'race').some((e) => e.what === 'start') && of(seen, 'noise').some((e) => e.kind === 'cheer'),
+    'the off at 21:00, the cheering heard',
+  );
   for (let k = 0; k < RACE_STEPS + 2; k++) {
     g.blind();
     g.step();
@@ -680,7 +838,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   const result = of(seen, 'race').find((e) => e.what === 'result')!;
   const won = result.order![0] === lane;
   check(!!result && s.race.length === 0, 'the result, the night over');
-  check(won ? s.cash === 50 - BETS[2] + payout(BETS[2], odds) + PURSE : s.cash === 50 - BETS[2], won ? `the pet won: $${payout(BETS[2], odds)} and the $${PURSE} purse` : 'the pet lost: the stake gone');
+  check(
+    won ? s.cash === 50 - BETS[2] + payout(BETS[2], odds) + PURSE : s.cash === 50 - BETS[2],
+    won ? `the pet won: $${payout(BETS[2], odds)} and the $${PURSE} purse` : 'the pet lost: the stake gone',
+  );
   console.log(`night: the pet (95, fed) at ×${odds / 10} ${won ? 'won' : 'lost'}; order ${result.order!.join(' ')}; cash $${s.cash}`);
 }
 {
@@ -697,7 +858,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   g.to(1, 20, 59);
   s.lockdown = true;
   g.to(1, 21, 1);
-  check(of(seen, 'race').some((e) => e.what === 'off') && s.cash === 50 && !s.race.length, 'a lockdown at the off: called off, the stake back');
+  check(
+    of(seen, 'race').some((e) => e.what === 'off') && s.cash === 50 && !s.race.length,
+    'a lockdown at the off: called off, the stake back',
+  );
   s.lockdown = false;
   s.heat = 0;
   // Night 3: a bet first, then entering: refused (the odds are quoted on the field as it runs).
@@ -714,7 +878,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   // (Let loose somewhere in its panic: not on the shoulder at the off.)
   Object.assign(s.rats[0], { mode: RAT.LOOSE, until: s.step + 5000, tile: near, path: [], at: 0 });
   g.to(3, 21, 1);
-  check(of(seen, 'race').some((e) => e.what === 'scratched' && e.stake === BETS[0]) && s.cash === 50 && !s.race.length, 'the pet away at the off: scratched, the bet on a rival void too, the stake back');
+  check(
+    of(seen, 'race').some((e) => e.what === 'scratched' && e.stake === BETS[0]) && s.cash === 50 && !s.race.length,
+    'the pet away at the off: scratched, the bet on a rival void too, the stake back',
+  );
   s.rats[0].mode = RAT.SHOULDER;
   // Night 5: a bet, a guard watching the race.
   g.jump(5, 20, 10);
@@ -730,7 +897,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
     put(s.player, near);
     g.step();
   }
-  check(of(seen, 'spotted').some((e) => e.reason === 'gambling') && s.heat >= 10 && s.heat < 20, `seen at the race with a bet on: gambling heat, once (${s.heat}%)`);
+  check(
+    of(seen, 'spotted').some((e) => e.reason === 'gambling') && s.heat >= 10 && s.heat < 20,
+    `seen at the race with a bet on: gambling heat, once (${s.heat}%)`,
+  );
   const heat = s.heat;
   // Entered, then off down the corridor at the off: within START_RANGE it still runs; further, scratched (before 2.16, BET_RANGE).
   const offAt = (night: number, tiles: number, before216 = false) => {
@@ -760,7 +930,10 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   const g = game();
   g.jump(1, 20, 55);
   g.to(1, 21, 30);
-  check(!g.seen.some((e) => e.type === 'race' || (e.type === 'noise' && e.kind === 'cheer')) && !g.sim.state.race.length, 'no bet, no pet: no race in the simulation');
+  check(
+    !g.seen.some((e) => e.type === 'race' || (e.type === 'noise' && e.kind === 'cheer')) && !g.sim.state.race.length,
+    'no bet, no pet: no race in the simulation',
+  );
 }
 {
   // Saved and loaded mid-brew, mid-growth and mid-race: the same game.
@@ -797,7 +970,13 @@ function withRat(prison = CENTER_PERKS, seed = 5) {
   for (const r of old.state.rats) for (const k of ['speed', 'fed', 'lap']) delete r[k];
   const back = new Sim(CENTER_PERKS, 1);
   back.restore(old);
-  check(back.state.plots.length === 0 && back.state.race.length === 0 && back.state.pantry.join() === '0,0,0,0' && back.state.rats[0].speed === RAT_START_SPEED, 'a save from before: no beds, no race, the pet at its starting speed');
+  check(
+    back.state.plots.length === 0 &&
+      back.state.race.length === 0 &&
+      back.state.pantry.join() === '0,0,0,0' &&
+      back.state.rats[0].speed === RAT_START_SPEED,
+    'a save from before: no beds, no race, the pet at its starting speed',
+  );
   console.log(`saves: mid-race, mid-brew and mid-growth load the same; an older save loads clean (day ${prisonDay(s.step)})`);
 }
 void RACE_MINUTE;

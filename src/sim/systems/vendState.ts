@@ -34,7 +34,23 @@ export interface VendState {
   up: boolean;
 }
 
-export const newVend = (): VendState => ({ day: 0, left: GOODS.map((g) => g.stock), jam: 0, hits: 0, told: false, line: [], who: VEND_NOBODY, row: 0, until: 0, thumping: false, hit: 0, turn: 0, head: 0, asked: [0, 0], up: false });
+export const newVend = (): VendState => ({
+  day: 0,
+  left: GOODS.map((g) => g.stock),
+  jam: 0,
+  hits: 0,
+  told: false,
+  line: [],
+  who: VEND_NOBODY,
+  row: 0,
+  until: 0,
+  thumping: false,
+  hit: 0,
+  turn: 0,
+  head: 0,
+  asked: [0, 0],
+  up: false,
+});
 
 /** Off the card and out of the queue (walked away, asked to, or hit). */
 export function closeCard(sim: Pick<SimContext, 'state' | 'events'>, left = false) {

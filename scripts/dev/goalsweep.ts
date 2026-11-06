@@ -23,12 +23,17 @@ for (let seed = 1; seed <= 20; seed++) {
   const c = centreOf(p);
   sim.state.inmates.forEach((m, k) => {
     m.opinion = 60 + k;
-    m.goal = -1; m.path = []; m.doing = 0;
-    m.body.x = (27 + k) * UNIT + 512; m.body.z = 33 * UNIT + 512;
+    m.goal = -1;
+    m.path = [];
+    m.doing = 0;
+    m.body.x = (27 + k) * UNIT + 512;
+    m.body.z = 33 * UNIT + 512;
   });
-  sim.state.player.x = c.x; sim.state.player.z = c.z;
+  sim.state.player.x = c.x;
+  sim.state.player.z = c.z;
   const who = (seed * 3) % 7;
-  sim.state.inmates[who].body.x = c.x - UNIT; sim.state.inmates[who].body.z = c.z;
+  sim.state.inmates[who].body.x = c.x - UNIT;
+  sim.state.inmates[who].body.z = c.z;
   sim.state.player.facing = 9;
   sim.step(command(0, OP.INTERACT));
   sim.step(command(0, OP.TALK, TALK.FOOTBALL));
@@ -40,14 +45,22 @@ for (let seed = 1; seed <= 20; seed++) {
   for (let k = 0; k < GATHER_STEPS + MATCH_STEPS + 50 && sim.state.match; k++) {
     const o: Match = sim.state.match;
     const [bx, bz] = o.ball;
-    const gx = f.a1 + UNIT, gz = f.mid;
+    const gx = f.a1 + UNIT,
+      gz = f.mid;
     const pl = sim.state.player;
     const d = Math.hypot(gx - bx, gz - bz) || 1;
-    const sx = bx - ((gx - bx) * 450) / d, sz = bz - ((gz - bz) * 450) / d;
+    const sx = bx - ((gx - bx) * 450) / d,
+      sz = bz - ((gz - bz) * 450) / d;
     let cmd: number;
-    if (held) { held++; cmd = held > 12 ? command(nearestDir(gx - pl.x, gz - pl.z), OP.EXT, EXT.KICK, 1) : command(nearestDir(gx - pl.x, gz - pl.z)); if (held > 12) held = 0; }
-    else if (Math.hypot(bx - pl.x, bz - pl.z) < 650 && d < 5 * UNIT && o.at && !o.pause) { held = 1; cmd = command(nearestDir(gx - pl.x, gz - pl.z), OP.EXT, EXT.KICK, 0); }
-    else if (Math.hypot(sx - pl.x, sz - pl.z) < 300 || (Math.hypot(bx - pl.x, bz - pl.z) < 600 && (bx - pl.x) * (gx - bx) > 0)) cmd = command(nearestDir(gx - pl.x, gz - pl.z));
+    if (held) {
+      held++;
+      cmd = held > 12 ? command(nearestDir(gx - pl.x, gz - pl.z), OP.EXT, EXT.KICK, 1) : command(nearestDir(gx - pl.x, gz - pl.z));
+      if (held > 12) held = 0;
+    } else if (Math.hypot(bx - pl.x, bz - pl.z) < 650 && d < 5 * UNIT && o.at && !o.pause) {
+      held = 1;
+      cmd = command(nearestDir(gx - pl.x, gz - pl.z), OP.EXT, EXT.KICK, 0);
+    } else if (Math.hypot(sx - pl.x, sz - pl.z) < 300 || (Math.hypot(bx - pl.x, bz - pl.z) < 600 && (bx - pl.x) * (gx - bx) > 0))
+      cmd = command(nearestDir(gx - pl.x, gz - pl.z));
     else cmd = command(nearestDir(sx - pl.x, sz - pl.z));
     const last: number = o.last;
     sim.step(cmd);
@@ -55,22 +68,29 @@ for (let seed = 1; seed <= 20; seed++) {
       if (e.type === 'football' && e.what === 'restart') restart = sim.state.step;
       if (e.type === 'football' && e.what === 'kickoff') restart = sim.state.step;
       if (e.type === 'football' && e.what === 'goal') {
-        const key = `${e.mine ? 'for' : 'against'} by ${last === -1 ? 'player' : ['keeper', 'mate', 'captain', 'rival', 'rkeeper'][last] ?? last}`;
+        const key = `${e.mine ? 'for' : 'against'} by ${last === -1 ? 'player' : (['keeper', 'mate', 'captain', 'rival', 'rkeeper'][last] ?? last)}`;
         by[key] = (by[key] ?? 0) + 1;
         dist.push(Math.round(Math.abs((e.mine ? f.a1 : f.a0) - lastKick[0]) / UNIT));
         since.push(sim.state.step - restart);
         if (seed === 1) {
           const t = o.team;
-          const pos = (id: number) => `${(sim.state.inmates[id].body.x / UNIT).toFixed(1)},${(sim.state.inmates[id].body.z / UNIT).toFixed(1)}`;
-          console.log(`goal ${e.mine ? 'for' : 'against'} at +${sim.state.step - restart}: ball was ${(bx / UNIT).toFixed(1)},${(bz / UNIT).toFixed(1)} v ${o.ball[2]},${o.ball[3]}; keeper ${pos(t[0])} rkeeper ${pos(t[4])}; player ${(pl.x / UNIT).toFixed(1)},${(pl.z / UNIT).toFixed(1)}; cool ${o.cool.map((c: number) => c - sim.state.step)}`);
+          const pos = (id: number) =>
+            `${(sim.state.inmates[id].body.x / UNIT).toFixed(1)},${(sim.state.inmates[id].body.z / UNIT).toFixed(1)}`;
+          console.log(
+            `goal ${e.mine ? 'for' : 'against'} at +${sim.state.step - restart}: ball was ${(bx / UNIT).toFixed(1)},${(bz / UNIT).toFixed(1)} v ${o.ball[2]},${o.ball[3]}; keeper ${pos(t[0])} rkeeper ${pos(t[4])}; player ${(pl.x / UNIT).toFixed(1)},${(pl.z / UNIT).toFixed(1)}; cool ${o.cool.map((c: number) => c - sim.state.step)}`,
+          );
         }
       }
     }
     const o2 = sim.state.match;
-    if (o2 && (o2.last !== last || (o2.ball[2] !== o.ball[2]))) if (o2.last !== -2 && o2.last !== last) lastKick = [o.ball[0], o.ball[1]];
+    if (o2 && (o2.last !== last || o2.ball[2] !== o.ball[2])) if (o2.last !== -2 && o2.last !== last) lastKick = [o.ball[0], o.ball[1]];
   }
 }
-const hist = (a: number[]) => { const h: Record<number, number> = {}; for (const x of a) h[x] = (h[x] ?? 0) + 1; return JSON.stringify(h); };
+const hist = (a: number[]) => {
+  const h: Record<number, number> = {};
+  for (const x of a) h[x] = (h[x] ?? 0) + 1;
+  return JSON.stringify(h);
+};
 console.log(`${matches} matches, ${dist.length} goals (${(dist.length / matches).toFixed(1)} a match)`, by);
 console.log('tiles out the last touch was', hist(dist));
 console.log('steps after the restart', hist(since.map((x) => Math.floor(x / 40) * 40)));

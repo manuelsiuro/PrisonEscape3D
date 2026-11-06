@@ -20,7 +20,6 @@ import { icon } from './icons';
  * layer fills from the sim (play/nights.ts): the sim's own functions decide everything shown.
  */
 
-
 /** One of the night's acts, as the card lists it. */
 interface ActRow {
   name: string;
@@ -171,7 +170,9 @@ export class StageCard {
     this.insts.addEventListener('keydown', (e) => {
       const d = arrowStep(e);
       if (!d) return;
-      const on = [...this.insts.querySelectorAll<HTMLButtonElement>('[data-inst]')].filter((b) => !b.disabled).map((b) => Number(b.dataset.inst));
+      const on = [...this.insts.querySelectorAll<HTMLButtonElement>('[data-inst]')]
+        .filter((b) => !b.disabled)
+        .map((b) => Number(b.dataset.inst));
       const k = on.indexOf(this.inst);
       if (on.length > 1) this.click();
       this.inst = on[(k + d + on.length) % on.length] ?? this.inst;
@@ -198,7 +199,20 @@ export class StageCard {
       return false;
     }
     const lang = currentLang();
-    const key = [v.phase, v.why, v.turnAt, v.acts.map((a) => `${a.name}${a.mark}${a.on}`).join(), v.song, v.inst, v.place, v.prize, v.crowd, v.heat, lang, TOUCH].join('|');
+    const key = [
+      v.phase,
+      v.why,
+      v.turnAt,
+      v.acts.map((a) => `${a.name}${a.mark}${a.on}`).join(),
+      v.song,
+      v.inst,
+      v.place,
+      v.prize,
+      v.crowd,
+      v.heat,
+      lang,
+      TOUCH,
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       this.pickDrawn = '';
@@ -207,12 +221,22 @@ export class StageCard {
       setText(this.title, t('stage.title'));
       this.acts.innerHTML = v.acts
         .map((a) => {
-          const state = a.mark >= 0 ? `<b>${a.mark}%</b>` : a.mark === -2 ? `<em>${t('stage.noShow')}</em>` : a.on ? `<em>${t('stage.onNow')}</em>` : `<span>${a.at}</span>`;
+          const state =
+            a.mark >= 0
+              ? `<b>${a.mark}%</b>`
+              : a.mark === -2
+                ? `<em>${t('stage.noShow')}</em>`
+                : a.on
+                  ? `<em>${t('stage.onNow')}</em>`
+                  : `<span>${a.at}</span>`;
           return `<li class="${a.on ? 'on' : a.mark === -2 ? 'noshow' : ''}">${icon(a.inst === INSTRUMENT.GUITAR ? 'guitar' : 'drum', 14)}<span class="stage-who">${esc(a.name)}</span><span class="stage-song">${t(`song.${SONGS[a.song].id}` as Key)}</span>${state}</li>`;
         })
         .join('');
-      for (const b of this.pads.querySelectorAll('kbd')) b.textContent = TOUCH ? '' : withKeys(['← %KeyA%', '↓ %KeyS%', '→ %KeyD%'][Number((b.parentElement as HTMLElement).dataset.lane)]);
-      this.pads.querySelectorAll<HTMLElement>('[data-lane]').forEach((p, k) => p.setAttribute('aria-label', t('stage.laneAria', { n: k + 1 })));
+      for (const b of this.pads.querySelectorAll('kbd'))
+        b.textContent = TOUCH ? '' : withKeys(['← %KeyA%', '↓ %KeyS%', '→ %KeyD%'][Number((b.parentElement as HTMLElement).dataset.lane)]);
+      this.pads
+        .querySelectorAll<HTMLElement>('[data-lane]')
+        .forEach((p, k) => p.setAttribute('aria-label', t('stage.laneAria', { n: k + 1 })));
       if (v.phase === 'offer') setText(this.note, v.why || t('stage.pickNote'));
       else if (v.phase === 'play') setText(this.note, t(TOUCH ? 'stage.playTouch' : 'stage.playKeys'));
       else setText(this.note, this.verdict(v));
@@ -234,7 +258,10 @@ export class StageCard {
             `<button role="radio" data-song="${k}" class="stage-song-btn${k === this.song ? ' on' : ''}" aria-checked="${k === this.song}" tabindex="${k === this.song ? 0 : -1}"><b>${t(`song.${s.id}` as Key)}</b><span>${'★'.repeat(s.level)}${'☆'.repeat(3 - s.level)} · ${t('stage.firstPrize', { n: v.prizes[k] })}</span></button>`,
         ).join('');
         this.insts.innerHTML = [INSTRUMENT.DRUMS, INSTRUMENT.GUITAR]
-          .map((k) => `<button role="radio" data-inst="${k}" class="${k === this.inst ? 'on' : ''}" aria-checked="${k === this.inst}" tabindex="${k === this.inst ? 0 : -1}" ${k === INSTRUMENT.GUITAR && !v.hasGuitar ? 'disabled' : ''}>${icon(k === INSTRUMENT.GUITAR ? 'guitar' : 'drum', 15)}${t(k === INSTRUMENT.GUITAR ? 'stage.guitar' : 'stage.drums')}</button>`)
+          .map(
+            (k) =>
+              `<button role="radio" data-inst="${k}" class="${k === this.inst ? 'on' : ''}" aria-checked="${k === this.inst}" tabindex="${k === this.inst ? 0 : -1}" ${k === INSTRUMENT.GUITAR && !v.hasGuitar ? 'disabled' : ''}>${icon(k === INSTRUMENT.GUITAR ? 'guitar' : 'drum', 15)}${t(k === INSTRUMENT.GUITAR ? 'stage.guitar' : 'stage.drums')}</button>`,
+          )
           .join('');
         this.songs.setAttribute('aria-label', t('stage.songsAria'));
         this.insts.setAttribute('aria-label', t('stage.instsAria'));

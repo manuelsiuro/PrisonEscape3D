@@ -138,7 +138,10 @@ function lockRing(): THREE.Mesh {
   const g = new THREE.RingGeometry(0.46, 0.56, 40).rotateX(-Math.PI / 2);
   const ticks: THREE.BufferGeometry[] = [];
   for (let k = 0; k < 4; k++) {
-    const t = new THREE.PlaneGeometry(0.08, 0.2).rotateX(-Math.PI / 2).translate(0, 0, -0.68).rotateY((k * Math.PI) / 2);
+    const t = new THREE.PlaneGeometry(0.08, 0.2)
+      .rotateX(-Math.PI / 2)
+      .translate(0, 0, -0.68)
+      .rotateY((k * Math.PI) / 2);
     ticks.push(t);
   }
   const all = [g, ...ticks].map((x) => x.toNonIndexed());
@@ -148,7 +151,18 @@ function lockRing(): THREE.Mesh {
   merged.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   for (const x of [g, ...ticks, ...all]) x.dispose();
   // Depth-tested (walls and the target's own legs stand in front of it), nudged toward the camera over the floor.
-  const m = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+  const m = new THREE.Mesh(
+    merged,
+    new THREE.MeshBasicMaterial({
+      color: 0xffb02e,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      polygonOffsetUnits: -4,
+    }),
+  );
   m.renderOrder = 8;
   m.visible = false;
   return m;
@@ -185,7 +199,8 @@ export class View {
   /** The raft or the helicopter carries the player off (the camera follows it). */
   private carrying = false;
   /** The escape camera (P16): time in, length, turn (signed), the zoom it starts from; resolved once played (or skipped). */
-  private cine: { t: number; dur: number; turn: number; zoom0: number; still: boolean; done: (() => void) | null; held: boolean } | null = null;
+  private cine: { t: number; dur: number; turn: number; zoom0: number; still: boolean; done: (() => void) | null; held: boolean } | null =
+    null;
   private readonly cineOffset = new THREE.Vector3();
   private readonly pickups = new Pickups();
   private cast: Character[] = [];
@@ -271,7 +286,8 @@ export class View {
   private flash = 0;
   private readonly guardSpots: Array<{ x: number; z: number; awake: boolean }> = [];
   /** Whether a tile has open sky over it (no roof): where snow falls. */
-  private readonly openSky = (x: number, z: number) => !this.world || !this.world.inside(x, z) || this.world.layers[LAYER.ROOF].kind[z * MAP_W + x] === TILE.EMPTY;
+  private readonly openSky = (x: number, z: number) =>
+    !this.world || !this.world.inside(x, z) || this.world.layers[LAYER.ROOF].kind[z * MAP_W + x] === TILE.EMPTY;
   /** Where rain lands on a tile (P17): seen from the ground floor or below a roof, the open ground; from the roofs, the roof or the ground. -1: none. */
   private readonly rainBelow = (x: number, z: number) => (this.openSky(x, z) ? 0 : -1);
   private readonly rainOnRoofs = (x: number, z: number) => (this.openSky(x, z) ? 0 : ROOF_HEIGHT);
@@ -357,7 +373,10 @@ export class View {
   private shadowHalf = 20;
   /** The lock-on ring, and the cup of molten chocolate in flight (from, to, 0–1 along the way). */
   private readonly ring = lockRing();
-  private readonly cup = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshStandardMaterial({ color: 0x5a3018, roughness: 0.35, emissive: 0x2a1006 }));
+  private readonly cup = new THREE.Mesh(
+    new THREE.SphereGeometry(0.12, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0x5a3018, roughness: 0.35, emissive: 0x2a1006 }),
+  );
   private readonly cupFrom = new THREE.Vector3();
   private readonly cupTo = new THREE.Vector3();
   private cupT = 1;
@@ -365,7 +384,17 @@ export class View {
   /** Puddles for the janitor to mop (GDD §11): flat glossy pools, one instance each. */
   private readonly puddles = new THREE.InstancedMesh(
     new THREE.CircleGeometry(0.46, 20).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: 0x7cc4f5, emissive: 0x2a6a96, roughness: 0.2, metalness: 0, transparent: true, opacity: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+    new THREE.MeshStandardMaterial({
+      color: 0x7cc4f5,
+      emissive: 0x2a6a96,
+      roughness: 0.2,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.8,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+    }),
     16,
   );
   private puddlesRev = -1;
@@ -399,7 +428,49 @@ export class View {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.background = this.sky;
-    this.scene.add(this.sun, this.sun.target, this.ambient, this.player.root, this.dummy, this.gear.group, this.workGear.group, this.vendingView.group, this.menuView.group, this.coolerView.group, this.blobs.mesh, this.dust.mesh, this.showerWater.group, this.snow.points, this.sparks.mesh, this.snores.group, this.guide.group, this.pickups.group, this.noiseFx.group, this.cones.group, this.ring, this.cup, this.puddles, this.weather.group, this.events.group, this.delivery.group, this.dogs.group, this.rats.group, this.smuggling.group, this.gamesView.group, this.pastimesView.group, this.longView.group, this.teamView.group, this.groundsView.group, this.nightsView.group, this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.holidaysView.group, this.releaseView.group, this.getaway.group);
+    this.scene.add(
+      this.sun,
+      this.sun.target,
+      this.ambient,
+      this.player.root,
+      this.dummy,
+      this.gear.group,
+      this.workGear.group,
+      this.vendingView.group,
+      this.menuView.group,
+      this.coolerView.group,
+      this.blobs.mesh,
+      this.dust.mesh,
+      this.showerWater.group,
+      this.snow.points,
+      this.sparks.mesh,
+      this.snores.group,
+      this.guide.group,
+      this.pickups.group,
+      this.noiseFx.group,
+      this.cones.group,
+      this.ring,
+      this.cup,
+      this.puddles,
+      this.weather.group,
+      this.events.group,
+      this.delivery.group,
+      this.dogs.group,
+      this.rats.group,
+      this.smuggling.group,
+      this.gamesView.group,
+      this.pastimesView.group,
+      this.longView.group,
+      this.teamView.group,
+      this.groundsView.group,
+      this.nightsView.group,
+      this.phoneView.group,
+      this.kioskView.group,
+      this.oddJobsView.group,
+      this.holidaysView.group,
+      this.releaseView.group,
+      this.getaway.group,
+    );
     this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
     this.events.onSplat = (x, z, color) => {
@@ -498,7 +569,8 @@ export class View {
     this.world = world;
     this.pitch = pitch;
     this.chairs.clear();
-    for (const p of world.props) if (p.kind === 'chair' || p.kind === 'readChair' || p.kind === 'deskChair') this.chairs.add(p.z * MAP_W + p.x);
+    for (const p of world.props)
+      if (p.kind === 'chair' || p.kind === 'readChair' || p.kind === 'deskChair') this.chairs.add(p.z * MAP_W + p.x);
     this.security = new Security(world);
     if (!same) {
       this.decor = new DecorView(world.def.decor ?? []);
@@ -592,7 +664,11 @@ export class View {
   /** The other inmates: one character each, looks varied by cell, legs paced by walking speed (P27: the old-timer's hair gone white). */
   setCast(cast: Array<{ cell: number; gait: number; elder?: boolean }> | 0) {
     for (const c of this.cast) this.retireCharacter(c);
-    this.cast = cast ? cast.map((c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 1, beard: 3 } : {}), gait: c.gait })) : [];
+    this.cast = cast
+      ? cast.map(
+          (c) => new Character({ ...inmateLook(c.cell), ...(c.elder ? { hair: ELDER_HAIR, hairStyle: 1, beard: 3 } : {}), gait: c.gait }),
+        )
+      : [];
     for (const c of this.cast) this.scene.add(c.root);
   }
 
@@ -637,8 +713,18 @@ export class View {
     const pz = this.player.root.position.z;
     const fx = action === 'unscrew' || action === 'digUp' ? px : x + (px - x) * 0.45;
     const fz = action === 'unscrew' || action === 'digUp' ? pz : z + (pz - z) * 0.45;
-    const y = action === 'unscrew' ? (layer === LAYER.VENTS ? LAYER_Y[LAYER.VENTS] : 1.3) : action === 'chip' ? 0.6 : action === 'cut' || action === 'sharpen' ? 0.8 : LAYER_Y[this.layer];
-    const color = action === 'chip' ? 0xa0533e : action === 'cut' || action === 'unscrew' ? 0xffd27a : action === 'sharpen' ? 0xd8cfc0 : 0x8a6644;
+    const y =
+      action === 'unscrew'
+        ? layer === LAYER.VENTS
+          ? LAYER_Y[LAYER.VENTS]
+          : 1.3
+        : action === 'chip'
+          ? 0.6
+          : action === 'cut' || action === 'sharpen'
+            ? 0.8
+            : LAYER_Y[this.layer];
+    const color =
+      action === 'chip' ? 0xa0533e : action === 'cut' || action === 'unscrew' ? 0xffd27a : action === 'sharpen' ? 0xd8cfc0 : 0x8a6644;
     // Sharpening is a scrape, not a blow: a little grit, no jolt.
     if (action === 'sharpen') {
       if (!this.reducedMotion) this.dust.puff(fx, fz, color, broke ? 6 : 2, y);
@@ -748,7 +834,10 @@ export class View {
         // Each its own shape: stretched and turned by where it lies.
         const sx = 0.85 + ((t * 7) % 5) * 0.08;
         const sz = 0.7 + ((t * 3) % 4) * 0.08;
-        this.m4.makeRotationY((t % 7) * 0.45).scale(this.v.set(sx, 1, sz)).setPosition((t % MAP_W) + 0.5, 0.02, Math.floor(t / MAP_W) + 0.5);
+        this.m4
+          .makeRotationY((t % 7) * 0.45)
+          .scale(this.v.set(sx, 1, sz))
+          .setPosition((t % MAP_W) + 0.5, 0.02, Math.floor(t / MAP_W) + 0.5);
         mesh.setMatrixAt(k, this.m4);
       }
       mesh.instanceMatrix.needsUpdate = true;
@@ -920,7 +1009,15 @@ export class View {
   cinema(long: boolean, still = this.reducedMotion): Promise<void> {
     this.cine?.done?.();
     return new Promise((resolve) => {
-      this.cine = { t: 0, dur: still ? 0.9 : long ? 3.4 : 2.6, turn: (Math.random() < 0.5 ? -1 : 1) * CINEMA_TURN, zoom0: this.zoom, still, done: resolve, held: false };
+      this.cine = {
+        t: 0,
+        dur: still ? 0.9 : long ? 3.4 : 2.6,
+        turn: (Math.random() < 0.5 ? -1 : 1) * CINEMA_TURN,
+        zoom0: this.zoom,
+        still,
+        done: resolve,
+        held: false,
+      };
     });
   }
 
@@ -955,7 +1052,13 @@ export class View {
     this.outfit = outfit;
     this.inkedShown = inked.slice();
     const old = this.player;
-    this.playerLook = lookFor(this.prisoner, outfit ? itemDef(outfit).color : null, outfit === GUARD_OUTFIT, outfit === INMATE_OUTFIT, inked);
+    this.playerLook = lookFor(
+      this.prisoner,
+      outfit ? itemDef(outfit).color : null,
+      outfit === GUARD_OUTFIT,
+      outfit === INMATE_OUTFIT,
+      inked,
+    );
     // (P36: their own clothes on release: an off-white tee over jeans, nothing like a guard's navy.)
     if (outfit === OWN_CLOTHES) this.playerLook = { ...this.playerLook, trousers: OWN_JEANS };
     // (P42: the costume on costume night: a witch's robe and hat. It fools nobody.)
@@ -994,10 +1097,30 @@ export class View {
     }
     this.player.root.visible = true;
     // (A tray takes both hands: what's in hand is out of sight while it does.)
-    this.player.hold(f.sleeping || f.knockedOut || f.trayAt || f.doing === DOING.SHOWER || f.doing === DOING.BENCH || f.doing === DOING.PULLUP || f.doing === DOING.PUSHUP || f.doing === DOING.BAG ? 0 : f.held, f.held ? itemGeometry(itemDef(f.held)) : null);
+    this.player.hold(
+      f.sleeping ||
+        f.knockedOut ||
+        f.trayAt ||
+        f.doing === DOING.SHOWER ||
+        f.doing === DOING.BENCH ||
+        f.doing === DOING.PULLUP ||
+        f.doing === DOING.PUSHUP ||
+        f.doing === DOING.BAG
+        ? 0
+        : f.held,
+      f.held ? itemGeometry(itemDef(f.held)) : null,
+    );
     this.player.trayPose(f.trayAt, f.trayLeft);
     // (P24: hanging from a glider's bar in flight, both hands up.)
-    const doing = this.getaway.flying ? DOING.LIFT : f.knockedOut ? DOING.KNOCKED_OUT : f.sleeping ? DOING.SLEEP : f.layer === LAYER.VENTS ? DOING.CRAWL : f.doing;
+    const doing = this.getaway.flying
+      ? DOING.LIFT
+      : f.knockedOut
+        ? DOING.KNOCKED_OUT
+        : f.sleeping
+          ? DOING.SLEEP
+          : f.layer === LAYER.VENTS
+            ? DOING.CRAWL
+            : f.doing;
     // Onto the treadmill's belt and off it again, eased; a rep pumps the arms.
     this.trainBlend += ((f.trainAt ? 1 : 0) - this.trainBlend) * Math.min(1, dt * 8);
     if (f.trainAt) this.trainPos.set(f.trainAt.x, f.trainAt.y, f.trainAt.z);
@@ -1083,7 +1206,8 @@ export class View {
     if (this.player.pose(px, pz, facing, f.moving, dt, time, !this.reducedMotion, doing, f.restBed ?? this.lastRest ?? this.beds[1])) {
       const theme = f.layer === LAYER.GROUND ? this.world?.def.theme : undefined;
       const dust = theme === 'alpine' ? SNOW_DUST : theme === 'desert' ? SAND_DUST : DUST;
-      if (dust[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER)) this.dust.puff(f.x, f.z, dust[f.surface], 2);
+      if (dust[f.surface] !== undefined && !this.reducedMotion && (f.layer === LAYER.GROUND || f.layer === LAYER.UNDER))
+        this.dust.puff(f.x, f.z, dust[f.surface], 2);
       this.onStep(f.surface);
     }
     // Look-ahead: up to a tile and a half in the walking direction, eased.
@@ -1123,7 +1247,8 @@ export class View {
       // On a chair, a little higher than on a canteen bench.
       // (2.29: on a machine, drawn on it, and at it: an arm or a body going of its own accord, slower than anyone is asked to keep time.)
       const onGear = m.prop >= 0 && m.doing !== DOING.BENCH;
-      const blend = (this.machineBlend[k] = (this.machineBlend[k] ?? 0) + ((onGear ? 1 : 0) - (this.machineBlend[k] ?? 0)) * Math.min(1, dt * 8));
+      const blend = (this.machineBlend[k] =
+        (this.machineBlend[k] ?? 0) + ((onGear ? 1 : 0) - (this.machineBlend[k] ?? 0)) * Math.min(1, dt * 8));
       const gearAt = (this.machineAt[k] ??= { x: m.x, z: m.z, y: 0 });
       if (onGear) Object.assign(gearAt, { x: m.at.x, z: m.at.z, y: m.at.y });
       if (m.doing === DOING.BENCH) this.machineRest[k] = m.bench;
@@ -1137,13 +1262,28 @@ export class View {
         }
       }
       if (m.doing === DOING.BENCH && m.prop >= 0) this.gearUses.push({ prop: m.prop, up: c.pressed });
-      const lift = (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x)) ? 0.1 : blend > 0.001 ? gearAt.y * blend : 0;
+      const lift =
+        (m.doing === DOING.SIT || m.doing === DOING.SIT_READ) && this.chairs.has(Math.floor(m.z) * MAP_W + Math.floor(m.x))
+          ? 0.1
+          : blend > 0.001
+            ? gearAt.y * blend
+            : 0;
       c.baseY += (lift - c.baseY) * Math.min(1, dt * 8);
       // The one arm-wrestling the player (P22): square on to them in its stance, straining the other way (eased back to its spot after).
       if (bout && bout.who === k) {
         c.strain = -bout.strain;
         c.shudder = bout.surge;
-        c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, Math.atan2(f.x - m.x, f.z - m.z), false, dt, time, !this.reducedMotion, DOING.WRESTLE, this.beds[m.cell]);
+        c.pose(
+          m.x + this.rivalOff.x,
+          m.z + this.rivalOff.z,
+          Math.atan2(f.x - m.x, f.z - m.z),
+          false,
+          dt,
+          time,
+          !this.reducedMotion,
+          DOING.WRESTLE,
+          this.beds[m.cell],
+        );
       } else if (f.games.dice && f.games.dice.who === k) {
         // The dice partner (P22): shaking its dice until it throws, a fling as it does.
         const threw = f.games.dice.t[2] >= 0;
@@ -1151,8 +1291,20 @@ export class View {
         this.rivalThrew = threw;
         c.diceShake = !threw;
         c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
-      } else if (this.rivalWho === k) c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
-      else if (blend > 0.001) c.pose(m.x + (gearAt.x - m.x) * blend, m.z + (gearAt.z - m.z) * blend, onGear ? m.at.facing : m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      } else if (this.rivalWho === k)
+        c.pose(m.x + this.rivalOff.x, m.z + this.rivalOff.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.beds[m.cell]);
+      else if (blend > 0.001)
+        c.pose(
+          m.x + (gearAt.x - m.x) * blend,
+          m.z + (gearAt.z - m.z) * blend,
+          onGear ? m.at.facing : m.facing,
+          m.moving,
+          dt,
+          time,
+          !this.reducedMotion,
+          m.doing,
+          this.beds[m.cell],
+        );
       else c.pose(m.x, m.z, m.facing, m.moving, dt, time, !this.reducedMotion, m.doing, this.machineRest[k] ?? this.beds[m.cell]);
       c.mark(m.angry ? '!' : '', dt, !this.reducedMotion);
       c.badge(f.layer === LAYER.GROUND ? m.badge : '', dt, !this.reducedMotion);
@@ -1172,7 +1324,17 @@ export class View {
       c.pose(g.x, g.z, g.facing, g.moving, dt, time, !this.reducedMotion, g.doing, this.guardBeds[k]);
       // "$" pops over a guard as it takes the money (and again once it's calm, still paid).
       // (Not over one floored while looking into something: a "$" already up stays, small.)
-      c.mark(g.alert === ALERT.HOSTILE ? '!' : g.alert === ALERT.SUSPICIOUS ? '?' : g.away && (g.alert === ALERT.CALM || c.markChar === '$') ? '$' : '', dt, !this.reducedMotion);
+      c.mark(
+        g.alert === ALERT.HOSTILE
+          ? '!'
+          : g.alert === ALERT.SUSPICIOUS
+            ? '?'
+            : g.away && (g.alert === ALERT.CALM || c.markChar === '$')
+              ? '$'
+              : '',
+        dt,
+        !this.reducedMotion,
+      );
       c.stir = g.stir;
       c.showKey(g.hasKey);
       // A guard's key opens the door it walks through (and the one just ahead).
@@ -1212,7 +1374,8 @@ export class View {
     // Delivery day (P18): the vehicle in or on its road (the gates it passes open for it); the player hidden in it out of sight.
     const dv = f.delivery;
     this.delivery.group.visible = f.layer !== LAYER.UNDER;
-    const near = !!this.world?.def.delivery && Math.hypot(f.x - this.world.def.delivery.tail.x - 0.5, f.z - this.world.def.delivery.tail.z - 0.5) < 4;
+    const near =
+      !!this.world?.def.delivery && Math.hypot(f.x - this.world.def.delivery.tail.x - 0.5, f.z - this.world.def.delivery.tail.z - 0.5) < 4;
     this.delivery.update(dv, dt, time, !this.reducedMotion, near, f.layer === LAYER.GROUND);
     for (const t of this.delivery.opening) this.doorsOpen.add(t);
     // Waved through the checkpoint (P24): its gates stand open all the way out.
@@ -1229,13 +1392,32 @@ export class View {
     }
     // The dogs (P19): out of the picture below ground; asleep, Z's over them too.
     this.dogs.group.visible = f.layer !== LAYER.UNDER;
-    this.dogs.update(f.dogs, f.scent, f.x, f.z, dt, time, !this.reducedMotion, f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers, f.layer === LAYER.GROUND);
+    this.dogs.update(
+      f.dogs,
+      f.scent,
+      f.x,
+      f.z,
+      dt,
+      time,
+      !this.reducedMotion,
+      f.layer === LAYER.GROUND ? this.sleepers : this.noSleepers,
+      f.layer === LAYER.GROUND,
+    );
     this.noSleepers.length = 0;
     this.snores.update(dt, this.sleepers, this.sleepers.length / 3, !this.reducedMotion);
     // Snow over an alpine prison, or on a Big Freeze Daily anywhere (P26), out in the open (ground floor and roofs).
     const wx = f.weather;
     const snowing = this.world?.def.theme === 'alpine' || wx.snow;
-    this.snow.update(dt, time, f.x, f.z, !this.reducedMotion && snowing && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF), f.layer === LAYER.ROOF ? undefined : this.openSky, wx.rain >= 2 ? 3 : wx.windForce, wx.windAngle);
+    this.snow.update(
+      dt,
+      time,
+      f.x,
+      f.z,
+      !this.reducedMotion && snowing && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF),
+      f.layer === LAYER.ROOF ? undefined : this.openSky,
+      wx.rain >= 2 ? 3 : wx.windForce,
+      wx.windAngle,
+    );
     // The weather (P17): no rain in the snow (a storm there is a blizzard of it, above).
     this.wxLight = wx;
     let wxNow = wx;
@@ -1244,7 +1426,21 @@ export class View {
       this.wxSnow.rain = 0;
       wxNow = this.wxSnow;
     }
-    this.weather.update(wxNow, dt, time, f.x, f.z, LAYER_Y[f.layer], f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45, this.night, !this.reducedMotion, f.layer === LAYER.UNDER, f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow, f.layer === LAYER.ROOF ? this.wetRoofs : this.puddly, this.weatherView(f.layer, time));
+    this.weather.update(
+      wxNow,
+      dt,
+      time,
+      f.x,
+      f.z,
+      LAYER_Y[f.layer],
+      f.layer === LAYER.ROOF ? ROOF_HEIGHT + 0.7 : WALL_H + 0.45,
+      this.night,
+      !this.reducedMotion,
+      f.layer === LAYER.UNDER,
+      f.layer === LAYER.ROOF ? this.rainOnRoofs : this.rainBelow,
+      f.layer === LAYER.ROOF ? this.wetRoofs : this.puddly,
+      this.weatherView(f.layer, time),
+    );
     // The day's events: the film, the food, the inspectors trailing a guard.
     const spots = this.guardSpots;
     spots.length = f.guards.length;
@@ -1255,7 +1451,19 @@ export class View {
       o.z = g.z;
       o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
     }
-    this.inspecting = this.events.update(f.events, dt, time, spots, f.inmates, f.layer === LAYER.GROUND, !this.reducedMotion, f.x, f.z, f.layer !== LAYER.UNDER, this.security?.powerLevel ?? 1);
+    this.inspecting = this.events.update(
+      f.events,
+      dt,
+      time,
+      spots,
+      f.inmates,
+      f.layer === LAYER.GROUND,
+      !this.reducedMotion,
+      f.x,
+      f.z,
+      f.layer !== LAYER.UNDER,
+      this.security?.powerLevel ?? 1,
+    );
     // The holiday (P42): its decor, the water fight's sprays, New Year's fireworks (from anywhere but a tunnel).
     this.holidaysView.dress(f.holiday.kind, this.later);
     this.holidaysView.group.visible = f.layer !== LAYER.UNDER;
@@ -1272,7 +1480,14 @@ export class View {
     this.carrying = false;
     if (this.island) {
       this.island.group.visible = f.layer !== LAYER.UNDER;
-      this.island.update(dt, time, f.minuteOfDay, f.takeover || (f.getaway.waved && !!this.world?.def.checkpoint?.bridge), !this.reducedMotion, f.delivery);
+      this.island.update(
+        dt,
+        time,
+        f.minuteOfDay,
+        f.takeover || (f.getaway.waved && !!this.world?.def.checkpoint?.bridge),
+        !this.reducedMotion,
+        f.delivery,
+      );
       // Leaving: on the raft as it drifts out, or aboard the helicopter (out of sight).
       const on = this.island.carry(this.carried);
       this.carrying = !!on;
@@ -1300,7 +1515,17 @@ export class View {
     // on the shoulder of a player up and about (not lying, not crawling, not in a tunnel), turning with them.
     this.rats.group.visible = true;
     // (Hands busy, it ducks into a pocket a moment: never an arm through it.)
-    const perch = this.player.perched && this.player.root.visible && !f.sleeping && !f.knockedOut && (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.player.armsBusy ? this.player.shoulder(this.shoulderAt) : null;
+    const perch =
+      this.player.perched &&
+      this.player.root.visible &&
+      !f.sleeping &&
+      !f.knockedOut &&
+      (f.layer === LAYER.GROUND || f.layer === LAYER.ROOF) &&
+      this.player.lying < 0.2 &&
+      this.player.crawling < 0.1 &&
+      !this.player.armsBusy
+        ? this.player.shoulder(this.shoulderAt)
+        : null;
     this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Smuggling (P21): the drone, the drops, visiting day's arches and visitors.
     // (From the vents and the roof the ground floor shows too, its visitors and arches with it.)
@@ -1351,7 +1576,8 @@ export class View {
     this.blockDarkGoal = f.blockDark ? 1 : 0;
     this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
-    const upright = !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
+    const upright =
+      !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
     this.player.root.rotation.z = this.tipsySway > 0.001 ? Math.sin(time * 2.3) * 0.07 * this.tipsySway : 0;
     // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
@@ -1523,7 +1749,20 @@ export class View {
     // Snow falling over an alpine prison behind the title too (no day's weather there).
     this.snow.update(dt, time, this.target.x, this.target.z, !this.reducedMotion && this.world?.def.theme === 'alpine', this.openSky);
     this.wxLight = null;
-    this.weather.update(NO_WEATHER, dt, time, this.target.x, this.target.z, 0, WALL_H + 0.45, 0, !this.reducedMotion, false, this.rainBelow, this.puddly);
+    this.weather.update(
+      NO_WEATHER,
+      dt,
+      time,
+      this.target.x,
+      this.target.z,
+      0,
+      WALL_H + 0.45,
+      0,
+      !this.reducedMotion,
+      false,
+      this.rainBelow,
+      this.puddly,
+    );
     this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false);
     this.holidaysView.dress(this.titleHoliday, this.later);
     this.holidaysView.group.visible = true;
@@ -1573,7 +1812,14 @@ export class View {
     if (this.sun.castShadow) resize(4096);
     this.placeSun(600);
     // (P42: nor a holiday's decor: the map viewer's pictures never depend on the date.)
-    const hidden = [this.snow.points, this.weather.group, this.dust.mesh, this.showerWater.group, this.guide.group, this.holidaysView.group].filter((o) => o.visible);
+    const hidden = [
+      this.snow.points,
+      this.weather.group,
+      this.dust.mesh,
+      this.showerWater.group,
+      this.guide.group,
+      this.holidaysView.group,
+    ].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
     // The pay phone, the kiosk and the odd jobs board hang on their walls in game, but the title screen behind the shot hides their groups.
     const shown = [this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.releaseView.group].filter((o) => !o.visible);
@@ -1623,7 +1869,12 @@ export class View {
           arches: true,
           gens: [true, true],
           // (As the frame turns them, at the middle of their sweep; off, so that no cone hides the floor.)
-          cams: (def.cameras ?? []).map((c) => ({ facing: Math.PI / 2 - ((c.face - 1) * Math.PI * 2) / 16, on: false, sees: false, taped: false })),
+          cams: (def.cameras ?? []).map((c) => ({
+            facing: Math.PI / 2 - ((c.face - 1) * Math.PI * 2) / 16,
+            on: false,
+            sees: false,
+            taped: false,
+          })),
           // (Each lamp's pool halfway along its sweep.)
           beams: (def.searchlights ?? []).map((line) => {
             const q = line[Math.floor(line.length / 2)];
@@ -1642,13 +1893,17 @@ export class View {
       );
     }
     const ls = def.leisure;
-    if (this.pitch) this.teamView.update({ pitch: this.pitch, theme: def.theme ?? 'suburban', ball: null, mates: [], rivals: [] }, [], 0, true);
+    if (this.pitch)
+      this.teamView.update({ pitch: this.pitch, theme: def.theme ?? 'suburban', ball: null, mates: [], rivals: [] }, [], 0, true);
     if (ls) {
       const beds: LongFrame['beds'] = [];
       for (let z = ls.garden.z; z < ls.garden.z + ls.garden.d; z++)
-        for (let x = ls.garden.x; x < ls.garden.x + ls.garden.w; x++) beds.push({ tile: tile(x, z), crop: 0, grown: 0, wilted: false, watered: false, ripe: false, hole: false });
+        for (let x = ls.garden.x; x < ls.garden.x + ls.garden.w; x++)
+          beds.push({ tile: tile(x, z), crop: 0, grown: 0, wilted: false, watered: false, ripe: false, hole: false });
       const a = ((ls.race.dir - 1) * Math.PI) / 8;
-      const track = Array.from({ length: ls.race.len }, (_, k) => tile(ls.race.x + Math.round(Math.cos(a)) * k, ls.race.z + Math.round(Math.sin(a)) * k));
+      const track = Array.from({ length: ls.race.len }, (_, k) =>
+        tile(ls.race.x + Math.round(Math.cos(a)) * k, ls.race.z + Math.round(Math.sin(a)) * k),
+      );
       this.longView.update({ beds, track, rats: [], laps: null, tipsy: false }, 0, false, true);
     }
     // (Its one piece never otherwise moved behind the title: up, as in a day's play; the helicopter away at 10:00.)
@@ -1693,7 +1948,15 @@ export class View {
     if (this.decor) this.decor.group.visible = this.layer !== LAYER.UNDER;
     // (2.28: the cell block's lights go out, past the walk home; a lockdown has them back on.)
     this.blockDark = this.reducedMotion ? this.blockDarkGoal : this.blockDark + (this.blockDarkGoal - this.blockDark) * Math.min(1, dt * 3);
-    this.worldView?.update(dt, night, this.doorsOpen, this.powerLevel, this.riot, this.security?.group.visible ? this.security.arches : 1, this.blockDark);
+    this.worldView?.update(
+      dt,
+      night,
+      this.doorsOpen,
+      this.powerLevel,
+      this.riot,
+      this.security?.group.visible ? this.security.arches : 1,
+      this.blockDark,
+    );
     this.dust.update(dt);
     // (The running heads as the last frame found them; off the ground floor's picture from the tunnels.)
     this.showerWater.update(dt, time, !this.reducedMotion, this.running, this.camera);

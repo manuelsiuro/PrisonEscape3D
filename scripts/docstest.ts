@@ -52,7 +52,12 @@ const ranges = mdIn('docs/history');
 for (const f of ranges) check(index.includes(`(${f.slice(5)})`), `${f} is listed in HISTORY.md`);
 
 // ------------------------------------------------------------------ the history and its index
-const entries = ranges.flatMap((f) => read(f).split('\n').filter((l) => l.startsWith('- ')).map((l) => ({ f, l })));
+const entries = ranges.flatMap((f) =>
+  read(f)
+    .split('\n')
+    .filter((l) => l.startsWith('- '))
+    .map((l) => ({ f, l })),
+);
 const lines = index.split('\n').filter((l) => l.startsWith('- '));
 check(entries.length === lines.length, `HISTORY.md: a line for each of the ${entries.length} entries (${lines.length})`);
 const titleOf = (l: string) => l.match(/^- \*\*(.+?)\*\*/)?.[1] ?? l.slice(2);
@@ -101,10 +106,15 @@ for (const f of ranges) {
     if (num(current) >= SINCE) check(l.length <= 300, `${f}: a line of v${current} is ${l.length} characters (wrap at 300)`);
   }
 }
-for (const l of read('docs/POLISH.md').split('\n').filter((r) => r.startsWith('| ') && !r.startsWith('| Area'))) {
+for (const l of read('docs/POLISH.md')
+  .split('\n')
+  .filter((r) => r.startsWith('| ') && !r.startsWith('| Area'))) {
   const cells = l.split('|').map((c) => c.trim());
   if (/^\d+\.\d+\.\d+$/.test(cells[2]) && num(cells[2]) >= SINCE) {
-    check(l.length <= 1500, `POLISH.md: ${cells[1]}'s row is ${l.length} characters (1,500 at most: choices and limits, the rest in the history)`);
+    check(
+      l.length <= 1500,
+      `POLISH.md: ${cells[1]}'s row is ${l.length} characters (1,500 at most: choices and limits, the rest in the history)`,
+    );
   }
 }
 console.log('every file within its size; entries from 2.35 on wrapped');
@@ -150,7 +160,7 @@ for (const [f, re, what] of WRITTEN) {
   check(!!m, `${f} gives the number of ${what}`);
   if (m) check(Number(m[1].replace(/,/g, '')) === COUNT[what], `${f}: ${m[1]} ${what}, the game has ${COUNT[what]}`);
 }
-console.log('the counts in PLAN.md, FEATURES.md and the README are the game\'s');
+console.log("the counts in PLAN.md, FEATURES.md and the README are the game's");
 
 // ------------------------------------------------------------------ the backlog
 // Its first table is POLISH.md's areas not done (Not reviewed, Partly): one list, kept in step.

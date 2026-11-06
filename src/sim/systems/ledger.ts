@@ -246,7 +246,13 @@ export function partialLedger(step: number): { feats: number[]; days: number[] }
 
 const CHOCOLATE = itemNumber('chocolate');
 /** P39: what the record counts as kept (ROUTINE ids). */
-const KEPT: Partial<Record<string, Feat>> = { rollCall: 'rollCallsKept', eveningRollCall: 'rollCallsKept', breakfast: 'mealsKept', dinner: 'mealsKept', showers: 'showersKept' };
+const KEPT: Partial<Record<string, Feat>> = {
+  rollCall: 'rollCallsKept',
+  eveningRollCall: 'rollCallsKept',
+  breakfast: 'mealsKept',
+  dinner: 'mealsKept',
+  showers: 'showersKept',
+};
 /** P39: the minute of the prison day the evening's heat goes on the record (22:00, as the records are looked over). */
 const EVENING = 14 * 60;
 /** P42: the present from under the tree. */
@@ -267,7 +273,8 @@ export function ledger(sim: Sim, x: number, z: number) {
   if (s.followers.length > f[FEAT.crew]) f[FEAT.crew] = s.followers.length;
   // (P39: the record's own counts, once the player has applied for parole in the run.)
   const record = (s.parole?.[8] ?? 0) > 0;
-  if (record && s.step % STEPS_PER_MINUTE === 0 && Math.floor((s.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE) === EVENING) f[FEAT.eveningHeat] += s.heat;
+  if (record && s.step % STEPS_PER_MINUTE === 0 && Math.floor((s.step % (1440 * STEPS_PER_MINUTE)) / STEPS_PER_MINUTE) === EVENING)
+    f[FEAT.eveningHeat] += s.heat;
   for (const e of sim.events) {
     switch (e.type) {
       case 'hit':

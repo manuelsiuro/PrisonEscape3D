@@ -36,7 +36,8 @@ import { standUp } from './upkeep';
 const TAIL_REACH = Math.round(UNIT * 0.75);
 
 /** The prison's delivery (none in a relaxed prison: the Training Block has no vehicle anyway). */
-const deliveryOf = (sim: Pick<SimContext, 'world'>): DeliveryDef | undefined => (sim.world.def.rules?.relaxed ? undefined : sim.world.def.delivery);
+const deliveryOf = (sim: Pick<SimContext, 'world'>): DeliveryDef | undefined =>
+  sim.world.def.rules?.relaxed ? undefined : sim.world.def.delivery;
 
 /** The vehicle is in now: 12:30–14:31 on a delivery day. */
 export const vehicleIn = (sim: Pick<SimContext, 'world' | 'prison' | 'state'>) => !!deliveryOf(sim) && eventOn(sim, 'delivery');
@@ -134,7 +135,12 @@ export function deliveryMinute(sim: SimContext, p: DayPlan, m: number) {
 function search(sim: SimContext, d: DeliveryDef, day: number) {
   const s = sim.state;
   const g = s.guards[d.supervisor];
-  const there = !!g && awake(g) && g.mode === GUARD.DUTY && !lookingAway(g, s.step) && Math.max(Math.abs(g.body.x - tailX(d)), Math.abs(g.body.z - tailZ(d))) <= SEARCH_REACH * UNIT;
+  const there =
+    !!g &&
+    awake(g) &&
+    g.mode === GUARD.DUTY &&
+    !lookingAway(g, s.step) &&
+    Math.max(Math.abs(g.body.x - tailX(d)), Math.abs(g.body.z - tailZ(d))) <= SEARCH_REACH * UNIT;
   const close = thorough(sim, day) || s.lockdown;
   if (!there && !s.lockdown) {
     s.eventFlags |= TODAY.WAVED;

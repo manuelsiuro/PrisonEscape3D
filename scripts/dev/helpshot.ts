@@ -96,16 +96,22 @@ function onLayerFor(layer: number, steps: number) {
 }
 
 /** The moment a dog is this close to the player (tiles), in the open. */
-const dogNear = (tiles: number, from = 0) => (sim: Sim) =>
-  sim.state.layer === LAYER.GROUND &&
-  sim.state.dogs.some((d) => {
-    const r = Math.hypot(d.body.x - sim.state.player.x, d.body.z - sim.state.player.z) / UNIT;
-    return r > from && r < tiles;
-  });
+const dogNear =
+  (tiles: number, from = 0) =>
+  (sim: Sim) =>
+    sim.state.layer === LAYER.GROUND &&
+    sim.state.dogs.some((d) => {
+      const r = Math.hypot(d.body.x - sim.state.player.x, d.body.z - sim.state.player.z) / UNIT;
+      return r > from && r < tiles;
+    });
 
 /** The moment the player is within this many tiles of a tile, on the ground. */
-const nearTile = (x: number, z: number, tiles: number, also: (sim: Sim) => boolean = () => true) => (sim: Sim) =>
-  sim.state.layer === LAYER.GROUND && Math.hypot(sim.state.player.x / UNIT - x - 0.5, sim.state.player.z / UNIT - z - 0.5) < tiles && also(sim);
+const nearTile =
+  (x: number, z: number, tiles: number, also: (sim: Sim) => boolean = () => true) =>
+  (sim: Sim) =>
+    sim.state.layer === LAYER.GROUND &&
+    Math.hypot(sim.state.player.x / UNIT - x - 0.5, sim.state.player.z / UNIT - z - 0.5) < tiles &&
+    also(sim);
 
 /** The moment an event of this type happens. */
 const on = (type: string) => (sim: Sim) => sim.events.some((e) => e.type === type);
@@ -145,7 +151,11 @@ function useProp(bot: Bot, prop: number) {
     const side = (x === p.x - 1 || x === p.x + p.w) !== (z === p.z - 1 || z === p.z + p.d);
     return side && x >= p.x - 1 && x <= p.x + p.w && z >= p.z - 1 && z <= p.z + p.d && !w.blocked(x, z);
   });
-  bot.until(() => !bot.pilot.active, 3000, () => command(bot.pilot.dir(bot.st.player)));
+  bot.until(
+    () => !bot.pilot.active,
+    3000,
+    () => command(bot.pilot.dir(bot.st.player)),
+  );
   bot.face(dirFromVector((p.x + p.w / 2) * UNIT - bot.st.player.x, (p.z + p.d / 2) * UNIT - bot.st.player.z));
   bot.act();
 }
@@ -220,7 +230,9 @@ export const SHOTS: Record<string, Shot> = {
     make: () => {
       const bot = new Bot(CENTER_PERKS, 41);
       bot.routineUntil(2, 10 * 60 + 25);
-      const shelf = containersOf(bot.sim.world).findIndex((b) => b.prop.kind === 'shelf' && bot.sim.world.zoneAt(b.prop.x, b.prop.z) === 'library');
+      const shelf = containersOf(bot.sim.world).findIndex(
+        (b) => b.prop.kind === 'shelf' && bot.sim.world.zoneAt(b.prop.x, b.prop.z) === 'library',
+      );
       bot.walkTo(placesOf(bot.sim.world).shelves[0].tile);
       bot.face(13);
       bot.open(shelf);
@@ -244,7 +256,7 @@ export const SHOTS: Record<string, Shot> = {
       bot.act();
       bot.until(() => bot.st.vend.who === VEND_NOBODY, 200);
       bot.op(OP.EXT, EXT.VEND, VEND.BUY, 1);
-      bot.until(() => bot.st.step > 0 && (bot.st.vend.until - bot.st.step) < 12, 60);
+      bot.until(() => bot.st.step > 0 && bot.st.vend.until - bot.st.step < 12, 60);
       return bot;
     },
     when: (_s, k, n) => k >= n - 1,
@@ -279,7 +291,9 @@ export const SHOTS: Record<string, Shot> = {
       const bot = new Bot(CENTER_PERKS, 41);
       bot.routineUntil(1, 15 * 60 + 30);
       const w = bot.sim.world;
-      const prop = w.props.findIndex((p) => p.kind === 'weights' && w.zoneAt(p.x, p.z) === 'gym' && onMachine(bot.sim, w.props.indexOf(p)) < 0);
+      const prop = w.props.findIndex(
+        (p) => p.kind === 'weights' && w.zoneAt(p.x, p.z) === 'gym' && onMachine(bot.sim, w.props.indexOf(p)) < 0,
+      );
       bot.walkTo(placesOf(w).machines.find((q) => q.prop === prop)!.tile);
       bot.face(13);
       bot.act();
@@ -330,8 +344,15 @@ export const SHOTS: Record<string, Shot> = {
         }
         if (c.by === 1 && (c.tell || !c.theirs.length || !c.mine.length)) bot.op(OP.TALK, TALK.LIAR);
         else {
-          const ks = c.mine.map((card, j) => (isTrue(card, c.table) ? j : -1)).filter((j) => j >= 0).slice(0, 3);
-          bot.op(OP.TALK, TALK.PLAY, (ks.length ? ks : [0]).reduce((m, j) => m | (1 << j), 0));
+          const ks = c.mine
+            .map((card, j) => (isTrue(card, c.table) ? j : -1))
+            .filter((j) => j >= 0)
+            .slice(0, 3);
+          bot.op(
+            OP.TALK,
+            TALK.PLAY,
+            (ks.length ? ks : [0]).reduce((m, j) => m | (1 << j), 0),
+          );
         }
       }
     },
@@ -372,22 +393,26 @@ export const SHOTS: Record<string, Shot> = {
       bot.op(OP.TALK, TALK.FOOTBALL);
       const f = fieldOf(pitchOf(bot.sim)!);
       let held = 0;
-      bot.until(() => !bot.st.match, 4000, () => {
-        const o = bot.st.match;
-        if (!o) return 0;
-        const [bx, bz] = o.ball;
-        const gx = f.along ? f.a1 + UNIT : f.mid;
-        const gz = f.along ? f.mid : f.a1 + UNIT;
-        const pl = bot.st.player;
-        const toGoal = nearestDir(gx - pl.x, gz - pl.z);
-        if (held) return ++held > 10 ? ((held = 0), command(toGoal, OP.EXT, EXT.KICK, 1)) : command(toGoal);
-        if (o.at && !o.pause && Math.hypot(bx - pl.x, bz - pl.z) < 600) {
-          held = 1;
-          return command(toGoal, OP.EXT, EXT.KICK, 0);
-        }
-        const d = Math.hypot(gx - bx, gz - bz) || 1;
-        return command(nearestDir(bx - ((gx - bx) * 450) / d - pl.x, bz - ((gz - bz) * 450) / d - pl.z));
-      });
+      bot.until(
+        () => !bot.st.match,
+        4000,
+        () => {
+          const o = bot.st.match;
+          if (!o) return 0;
+          const [bx, bz] = o.ball;
+          const gx = f.along ? f.a1 + UNIT : f.mid;
+          const gz = f.along ? f.mid : f.a1 + UNIT;
+          const pl = bot.st.player;
+          const toGoal = nearestDir(gx - pl.x, gz - pl.z);
+          if (held) return ++held > 10 ? ((held = 0), command(toGoal, OP.EXT, EXT.KICK, 1)) : command(toGoal);
+          if (o.at && !o.pause && Math.hypot(bx - pl.x, bz - pl.z) < 600) {
+            held = 1;
+            return command(toGoal, OP.EXT, EXT.KICK, 0);
+          }
+          const d = Math.hypot(gx - bx, gz - bz) || 1;
+          return command(nearestDir(bx - ((gx - bx) * 450) / d - pl.x, bz - ((gz - bz) * 450) / d - pl.z));
+        },
+      );
     },
     when: (s) => !!s.state.match,
     after: 300,
@@ -420,10 +445,14 @@ export const SHOTS: Record<string, Shot> = {
       bot.op(OP.EXT, EXT.STAGE, 0, 0);
       const o = bot.st.show!;
       const due = new Map(CHARTS[0].map(([t, lane]) => [o.from + countIn(o.song) + LATE + t - 1, lane] as const));
-      bot.until(() => !bot.st.show, countIn(0) + songSteps(0) + 40, () => {
-        const lane = due.get(bot.st.step);
-        return lane === undefined ? 0 : command(0, OP.EXT, EXT.NOTE, lane);
-      });
+      bot.until(
+        () => !bot.st.show,
+        countIn(0) + songSteps(0) + 40,
+        () => {
+          const lane = due.get(bot.st.step);
+          return lane === undefined ? 0 : command(0, OP.EXT, EXT.NOTE, lane);
+        },
+      );
     },
     when: (s) => !!s.state.show,
     after: 200,
@@ -436,16 +465,20 @@ export const SHOTS: Record<string, Shot> = {
       bot.op(OP.EXT, EXT.QUIZ, 0);
       let asked = -1;
       let put = 0;
-      bot.until(() => !bot.st.quiz, 4000, () => {
-        const o = bot.st.quiz;
-        const q = questionNow(bot.sim);
-        if (!o || !q) return 0;
-        if (o.q !== asked) {
-          asked = o.q;
-          put = bot.st.step;
-        }
-        return !o.until && o.said[0] < 0 && bot.st.step - put >= 60 ? command(0, OP.EXT, EXT.ANSWER, q.answer) : 0;
-      });
+      bot.until(
+        () => !bot.st.quiz,
+        4000,
+        () => {
+          const o = bot.st.quiz;
+          const q = questionNow(bot.sim);
+          if (!o || !q) return 0;
+          if (o.q !== asked) {
+            asked = o.q;
+            put = bot.st.step;
+          }
+          return !o.until && o.said[0] < 0 && bot.st.step - put >= 60 ? command(0, OP.EXT, EXT.ANSWER, q.answer) : 0;
+        },
+      );
     },
     when: at(0.4),
     zoom: 2.4,
@@ -474,14 +507,18 @@ export const SHOTS: Record<string, Shot> = {
       // (As tutorialtest's bot: set down on the needle, then drawn on after a point a little ahead on the line.)
       const to: [number, number] = [0, 0];
       let down = true;
-      bot.until(() => !bot.st.ink, 600, () => {
-        const o = bot.st.ink;
-        if (!o) return 0;
-        pointAt(o.design, down ? 0 : o.at + 40, to);
-        const cmd = command(0, OP.EXT, down ? EXT.NEEDLE_DOWN : EXT.NEEDLE, ...needleArgs(to[0], to[1]));
-        down = false;
-        return cmd;
-      });
+      bot.until(
+        () => !bot.st.ink,
+        600,
+        () => {
+          const o = bot.st.ink;
+          if (!o) return 0;
+          pointAt(o.design, down ? 0 : o.at + 40, to);
+          const cmd = command(0, OP.EXT, down ? EXT.NEEDLE_DOWN : EXT.NEEDLE, ...needleArgs(to[0], to[1]));
+          down = false;
+          return cmd;
+        },
+      );
     },
     when: (s) => !!s.state.ink,
     after: 30,
@@ -691,10 +728,11 @@ export const SHOTS: Record<string, Shot> = {
 };
 
 const view = () => (window as unknown as { __view: View }).__view;
-const frames = (n: number) => new Promise<void>((done) => {
-  const step = (k: number) => (k ? requestAnimationFrame(() => step(k - 1)) : done());
-  step(n);
-});
+const frames = (n: number) =>
+  new Promise<void>((done) => {
+    const step = (k: number) => (k ? requestAnimationFrame(() => step(k - 1)) : done());
+    step(n);
+  });
 
 /** A route played through once (kept: the moments are picked from it again and again). */
 const runs = new Map<string, Bot>();

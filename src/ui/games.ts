@@ -5,7 +5,6 @@ import { icon } from './icons';
 import { DESIGNS } from '../content/team';
 import { pad2 } from '../sim/systems/clock';
 
-
 /** The last dice game as it's shown (P22; presentation only: the sim settled it already). */
 export interface DiceShow {
   /** Bumps with each game (and each load): what's drawn knows it's another one. */
@@ -63,19 +62,45 @@ export interface GamesView {
 
 const PIPS: Record<number, ReadonlyArray<readonly [number, number]>> = {
   1: [[12, 12]],
-  2: [[7.5, 7.5], [16.5, 16.5]],
-  3: [[7, 7], [12, 12], [17, 17]],
-  4: [[7.5, 7.5], [16.5, 7.5], [7.5, 16.5], [16.5, 16.5]],
-  5: [[7, 7], [17, 7], [12, 12], [7, 17], [17, 17]],
-  6: [[7.5, 6.5], [16.5, 6.5], [7.5, 12], [16.5, 12], [7.5, 17.5], [16.5, 17.5]],
+  2: [
+    [7.5, 7.5],
+    [16.5, 16.5],
+  ],
+  3: [
+    [7, 7],
+    [12, 12],
+    [17, 17],
+  ],
+  4: [
+    [7.5, 7.5],
+    [16.5, 7.5],
+    [7.5, 16.5],
+    [16.5, 16.5],
+  ],
+  5: [
+    [7, 7],
+    [17, 7],
+    [12, 12],
+    [7, 17],
+    [17, 17],
+  ],
+  6: [
+    [7.5, 6.5],
+    [16.5, 6.5],
+    [7.5, 12],
+    [16.5, 12],
+    [7.5, 17.5],
+    [16.5, 17.5],
+  ],
 };
 
 /** A die's face as a little picture (n: 1–6; 0 a blank, not thrown yet). */
 function dieFace(n: number, size = 34): string {
-  const pips = (PIPS[n] ?? []).map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${n === 1 ? 2.6 : 2}"${n === 1 ? ' class="ace"' : ''}/>`).join('');
+  const pips = (PIPS[n] ?? [])
+    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${n === 1 ? 2.6 : 2}"${n === 1 ? ' class="ace"' : ''}/>`)
+    .join('');
   return `<svg class="die-face" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/>${pips}</svg>`;
 }
-
 
 /**
  * The talk panel's games section (P22): dice for a stake and an arm-wrestle, with what they
@@ -90,7 +115,8 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
   // The dice on the table: the player's to throw again (the dice tapped) or stand on.
   if (v.dice) {
     const [a, b] = v.dice.mine;
-    const die = (k: number, n: number) => `<button class="die${(mask >> k) & 1 ? ' on' : ''}${fresh(v.show, k, now) ? ' fresh' : ''}" data-die="${k}" aria-pressed="${(mask >> k) & 1 ? 'true' : 'false'}" aria-label="${esc(t('games.dieAria', { n }))}">${dieFace(n)}</button>`;
+    const die = (k: number, n: number) =>
+      `<button class="die${(mask >> k) & 1 ? ' on' : ''}${fresh(v.show, k, now) ? ' fresh' : ''}" data-die="${k}" aria-pressed="${(mask >> k) & 1 ? 'true' : 'false'}" aria-label="${esc(t('games.dieAria', { n }))}">${dieFace(n)}</button>`;
     // (One die at most: choosing one lets go of the other.)
     const again = mask & 1 ? 1 : mask & 2 ? 2 : 0;
     return `<section class="talk-games playing">${label}<div class="dice-play">
@@ -107,7 +133,13 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
     const down = now >= s.shownAt;
     const [a, b] = s.mine;
     const [c, d] = s.theirs;
-    const verdict = !down ? t('games.theyThrow', { name: esc(v.name) }) : s.what === 'won' ? t('games.won', { n: s.stake, m: s.stake * 2 }) : s.what === 'lost' ? t('games.lost', { n: s.stake }) : t('games.push', { n: s.stake });
+    const verdict = !down
+      ? t('games.theyThrow', { name: esc(v.name) })
+      : s.what === 'won'
+        ? t('games.won', { n: s.stake, m: s.stake * 2 })
+        : s.what === 'lost'
+          ? t('games.lost', { n: s.stake })
+          : t('games.push', { n: s.stake });
     result = `<div class="dice-result" data-what="${down ? s.what : 'wait'}">
       <div class="dice-row"><span class="dice-who">${t('games.you')}</span>${dieFace(a, 28)}${dieFace(b, 28)}<b class="dice-sum">= ${a + b}</b></div>
       <div class="dice-row theirs"><span class="dice-who">${esc(v.name)}</span>${down ? `${dieFace(c, 28)}${dieFace(d, 28)}<b class="dice-sum">= ${c + d}</b>` : `<span class="dice-wait">${dieFace(0, 28)}${dieFace(0, 28)}</span>`}</div>
@@ -120,7 +152,8 @@ export function gamesSection(v: GamesView, mask: number, now: number): string {
       return `<button class="cash-btn stake" data-act="${TALK.DICE}" data-arg="${s.k}" ${ok ? '' : 'disabled'} data-confirm="${esc(t('games.confirm', { n: s.n }))}" aria-label="${esc(t('games.stakeAria', { n: s.n }))}">$${s.n}</button>`;
     })
     .join('');
-  const warn = v.open && v.seen ? `<p class="talk-note games-warn">${icon('eye', 13)}<span>${t('games.seen', { n: v.heat })}</span></p>` : '';
+  const warn =
+    v.open && v.seen ? `<p class="talk-note games-warn">${icon('eye', 13)}<span>${t('games.seen', { n: v.heat })}</span></p>` : '';
   const armOk = v.open && !v.tired;
   const armNote = v.tired ? t('games.tired') : t(`games.arm.${v.arm}` as Key, { n: v.energy });
   // P27: Cheat for the same stakes, a shootout at the hoop, the old-timer's checkers.
@@ -257,7 +290,10 @@ export class WrestleCard {
     this.knot.style.left = `${(v.bar * 100).toFixed(1)}%`;
     const bar = this.el.querySelector('.tug-bar')!;
     bar.setAttribute('aria-valuenow', String(Math.round(v.bar * 100)));
-    bar.setAttribute('aria-valuetext', v.bar > 0.52 ? t('wrestle.ahead') : v.bar < 0.48 ? t('wrestle.behind', { name: v.name }) : t('wrestle.even'));
+    bar.setAttribute(
+      'aria-valuetext',
+      v.bar > 0.52 ? t('wrestle.ahead') : v.bar < 0.48 ? t('wrestle.behind', { name: v.name }) : t('wrestle.even'),
+    );
     this.el.classList.toggle('surge', v.surge);
     this.el.classList.toggle('winning', v.bar > 0.75);
     this.el.classList.toggle('losing', v.bar < 0.25);
@@ -381,7 +417,10 @@ export class PickCard {
       const slipped = this.usesShown > v.uses && v.pins === this.pinsShown;
       const set = this.pinsShown >= 0 && v.pins > this.pinsShown;
       if (slipped) this.slips++;
-      this.pins.innerHTML = Array.from({ length: v.of }, (_, k) => `<i class="${k < v.pins ? 'set' : k === v.pins ? 'now' : ''}"></i>`).join('');
+      this.pins.innerHTML = Array.from(
+        { length: v.of },
+        (_, k) => `<i class="${k < v.pins ? 'set' : k === v.pins ? 'now' : ''}"></i>`,
+      ).join('');
       setText(this.count, t('pick.count', { n: v.pins, of: v.of }));
       setText(this.note, `${TOUCH ? t('pick.touch') : t('pick.keys')} · ${v.uses === 1 ? t('pick.uses1') : t('pick.uses', { n: v.uses })}`);
       this.pinsShown = v.pins;
@@ -398,7 +437,14 @@ export class PickCard {
     this.mark.classList.toggle('in', v.marker >= v.from && v.marker <= v.to);
     this.ear.classList.toggle('hidden', !v.heard);
     this.eye.classList.toggle('hidden', !v.watched);
-    const said = [this.slips ? t('pick.slipped', { n: this.slips }) : '', t('pick.sr', { n: v.pins, of: v.of }), v.watched ? t('pick.watched') : '', v.heard ? t('pick.heard') : ''].filter(Boolean).join('. ');
+    const said = [
+      this.slips ? t('pick.slipped', { n: this.slips }) : '',
+      t('pick.sr', { n: v.pins, of: v.of }),
+      v.watched ? t('pick.watched') : '',
+      v.heard ? t('pick.heard') : '',
+    ]
+      .filter(Boolean)
+      .join('. ');
     if (said !== this.said) {
       this.said = said;
       setText(this.say, said);

@@ -22,7 +22,8 @@ import { MAP_H, MAP_W } from '../src/sim/world/World';
 const N = MAP_W * MAP_H;
 /** A dog on the trail: a line or a ford this many tiles off is worth the detour. */
 const WASH_NEAR = 20;
-const cheb = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
+const cheb = (a: number, b: number) =>
+  Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
 
 export interface BotRun {
   over: number;
@@ -76,7 +77,8 @@ export class HuntBot {
     near.fill(0);
     const range = Math.ceil(h.sight) + 1;
     const box = (cx: number, cz: number, r: number, a: Uint8Array) => {
-      for (let z = cz - r; z <= cz + r; z++) for (let x = cx - r; x <= cx + r; x++) if (x >= 0 && z >= 0 && x < MAP_W && z < MAP_H) a[z * MAP_W + x] = 1;
+      for (let z = cz - r; z <= cz + r; z++)
+        for (let x = cx - r; x <= cx + r; x++) if (x >= 0 && z >= 0 && x < MAP_W && z < MAP_H) a[z * MAP_W + x] = 1;
     };
     // (Where those still to come out will come on, an edge or a gate: kept clear of, they'll be looking.)
     h.def.searchers.forEach((sd, k) => {
@@ -100,7 +102,12 @@ export class HuntBot {
           if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
           const t = z * MAP_W + x;
           const c = { x: centerX(t), z: centerZ(t) };
-          if (round ? (x - mx) ** 2 + (z - mz) ** 2 <= range * range && lineOfSight(h.world, m.body.x, m.body.z, c.x, c.z, t) : canSee(h.world, m.body, c, range * UNIT, true, t)) d[t] = 1;
+          if (
+            round
+              ? (x - mx) ** 2 + (z - mz) ** 2 <= range * range && lineOfSight(h.world, m.body.x, m.body.z, c.x, c.z, t)
+              : canSee(h.world, m.body, c, range * UNIT, true, t)
+          )
+            d[t] = 1;
         }
     }
     if (s.heli.on && this.sees(s.heli.x, s.heli.z)) {
@@ -110,7 +117,14 @@ export class HuntBot {
     const dogs = this.danger;
     dogs.fill(0);
     for (const g of s.dogs) {
-      if (s.searchers[g.handler].mode === SEEK.OFF || g.mode === HOUND.ASLEEP || g.mode === HOUND.CALM || g.mode === HOUND.DAZED || !this.sees(g.body.x, g.body.z)) continue;
+      if (
+        s.searchers[g.handler].mode === SEEK.OFF ||
+        g.mode === HOUND.ASLEEP ||
+        g.mode === HOUND.CALM ||
+        g.mode === HOUND.DAZED ||
+        !this.sees(g.body.x, g.body.z)
+      )
+        continue;
       const r = Math.ceil(HUNT.nose) + 1;
       box(Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT), r, dogs);
       box(Math.floor(g.body.x / UNIT), Math.floor(g.body.z / UNIT), r, near);
@@ -148,14 +162,16 @@ export class HuntBot {
         for (let x = mx - range; x <= mx + range; x++) {
           if (x < 0 || z < 0 || x >= MAP_W || z >= MAP_H) continue;
           const t = z * MAP_W + x;
-          if (Math.max(Math.abs(x - mx), Math.abs(z - mz)) <= 2 || canSee(h.world, m.body, { x: centerX(t), z: centerZ(t) }, range * UNIT)) d[t] = 1;
+          if (Math.max(Math.abs(x - mx), Math.abs(z - mz)) <= 2 || canSee(h.world, m.body, { x: centerX(t), z: centerZ(t) }, range * UNIT))
+            d[t] = 1;
         }
     }
     if (s.heli.on && this.sees(s.heli.x, s.heli.z)) {
       const r = Math.ceil(HUNT.heliLight) + 2;
       const hx = Math.floor(s.heli.x / UNIT);
       const hz = Math.floor(s.heli.z / UNIT);
-      for (let z = hz - r; z <= hz + r; z++) for (let x = hx - r; x <= hx + r; x++) if (x >= 0 && z >= 0 && x < MAP_W && z < MAP_H) d[z * MAP_W + x] = 1;
+      for (let z = hz - r; z <= hz + r; z++)
+        for (let x = hx - r; x <= hx + r; x++) if (x >= 0 && z >= 0 && x < MAP_W && z < MAP_H) d[z * MAP_W + x] = 1;
     }
     for (let i = 0; i < N; i++) if (h.out.cover[i]) d[i] = 0;
     const tracked = s.dogs.some((g) => (g.mode === HOUND.TRACK || g.mode === HOUND.POINT) && this.sees(g.body.x, g.body.z));
@@ -197,7 +213,9 @@ export class HuntBot {
           [];
       } else if (!exposed) {
         // Nobody sees it yet: into cover close by to wait, else wait here.
-        this.path = h.out.cover[here] ? [] : (findPath(h.world, here, (i) => h.out.cover[i] === 1 && !this.danger[i], -1, 120, this.danger, h.grid) ?? []);
+        this.path = h.out.cover[here]
+          ? []
+          : (findPath(h.world, here, (i) => h.out.cover[i] === 1 && !this.danger[i], -1, 120, this.danger, h.grid) ?? []);
       } else {
         // Seen or about to be: out of sight first (cover first), then wait there.
         this.path =
@@ -207,7 +225,12 @@ export class HuntBot {
       }
     }
     // Beside a washing line: other clothes (a new scent; out of a guard's uniform only with a dog on the trail).
-    if (!this.plain && h.lineNear() >= 0 && (s.clothes === 0 || (s.clothes === 1 && s.dogs.some((d) => d.mode === HOUND.TRACK || d.mode === HOUND.POINT)))) return command(0, OP.INTERACT);
+    if (
+      !this.plain &&
+      h.lineNear() >= 0 &&
+      (s.clothes === 0 || (s.clothes === 1 && s.dogs.some((d) => d.mode === HOUND.TRACK || d.mode === HOUND.POINT)))
+    )
+      return command(0, OP.INTERACT);
     // A stone over the head of whoever stands in the way, now and then.
     if (this.stones && !this.path.length && s.step - s.stoneAt >= HUNT.stoneEvery) {
       const t = h.stoneTarget();

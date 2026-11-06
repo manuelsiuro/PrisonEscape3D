@@ -25,7 +25,15 @@ export function seatSpot(w: World, index: number, b: Body): { x: number; z: numb
 export function facingAt(w: World, p: World['props'][number], x: number, z: number): number {
   const at = (dx: number, dz: number) => {
     const i = (z + dz) * MAP_W + x + dx;
-    const q = w.props.find((o) => o !== p && SERVED.has(o.kind) && o.x <= i % MAP_W && i % MAP_W < o.x + o.w && o.z <= Math.floor(i / MAP_W) && Math.floor(i / MAP_W) < o.z + o.d);
+    const q = w.props.find(
+      (o) =>
+        o !== p &&
+        SERVED.has(o.kind) &&
+        o.x <= i % MAP_W &&
+        i % MAP_W < o.x + o.w &&
+        o.z <= Math.floor(i / MAP_W) &&
+        Math.floor(i / MAP_W) < o.z + o.d,
+    );
     return !!q;
   };
   if (at(0, -1)) return NORTH;

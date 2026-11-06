@@ -14,12 +14,38 @@ const PLATE = 0xf2d23c;
 
 /** What lies in a job's bin, by the item it holds: on top of the bin's rim (0.5 up), so that one bin's told from the other. */
 const PILES: Partial<Record<string, () => THREE.BufferGeometry[]>> = {
-  dirty_laundry: () => [box(0.42, 0.14, 0.34, ORANGE, -0.06, 0.5, -0.04), box(0.3, 0.14, 0.3, GREY, 0.1, 0.56, 0.08), box(0.2, 0.1, 0.22, 0xc9c2a6, -0.1, 0.64, 0.02)],
-  clean_laundry: () => [box(0.42, 0.06, 0.36, WHITE, 0, 0.5, 0), box(0.42, 0.06, 0.36, 0xdfe4e8, 0, 0.56, 0), box(0.42, 0.06, 0.36, ORANGE, 0, 0.62, 0)],
-  timber: () => [box(0.5, 0.06, 0.12, WOOD, 0, 0.5, -0.12), box(0.5, 0.06, 0.12, WOOD_DARK, 0, 0.5, 0.12), box(0.5, 0.06, 0.12, WOOD, 0, 0.56, 0)],
-  furniture: () => [box(0.3, 0.05, 0.3, WOOD, 0, 0.72, 0), box(0.05, 0.22, 0.05, WOOD_DARK, -0.1, 0.5, -0.1), box(0.05, 0.22, 0.05, WOOD_DARK, 0.1, 0.5, -0.1), box(0.05, 0.22, 0.05, WOOD_DARK, -0.1, 0.5, 0.1), box(0.05, 0.22, 0.05, WOOD_DARK, 0.1, 0.5, 0.1)],
-  sheet_metal: () => [box(0.5, 0.03, 0.4, METAL, 0, 0.5, 0), box(0.5, 0.03, 0.4, 0xc4cbd3, 0.02, 0.53, 0.02), box(0.5, 0.03, 0.4, METAL, -0.02, 0.56, -0.02)],
-  license_plate: () => [box(0.36, 0.03, 0.2, PLATE, 0, 0.5, -0.08), box(0.36, 0.03, 0.2, PLATE, 0.02, 0.53, 0.08), box(0.36, 0.03, 0.2, 0xe8c52e, -0.02, 0.56, 0)],
+  dirty_laundry: () => [
+    box(0.42, 0.14, 0.34, ORANGE, -0.06, 0.5, -0.04),
+    box(0.3, 0.14, 0.3, GREY, 0.1, 0.56, 0.08),
+    box(0.2, 0.1, 0.22, 0xc9c2a6, -0.1, 0.64, 0.02),
+  ],
+  clean_laundry: () => [
+    box(0.42, 0.06, 0.36, WHITE, 0, 0.5, 0),
+    box(0.42, 0.06, 0.36, 0xdfe4e8, 0, 0.56, 0),
+    box(0.42, 0.06, 0.36, ORANGE, 0, 0.62, 0),
+  ],
+  timber: () => [
+    box(0.5, 0.06, 0.12, WOOD, 0, 0.5, -0.12),
+    box(0.5, 0.06, 0.12, WOOD_DARK, 0, 0.5, 0.12),
+    box(0.5, 0.06, 0.12, WOOD, 0, 0.56, 0),
+  ],
+  furniture: () => [
+    box(0.3, 0.05, 0.3, WOOD, 0, 0.72, 0),
+    box(0.05, 0.22, 0.05, WOOD_DARK, -0.1, 0.5, -0.1),
+    box(0.05, 0.22, 0.05, WOOD_DARK, 0.1, 0.5, -0.1),
+    box(0.05, 0.22, 0.05, WOOD_DARK, -0.1, 0.5, 0.1),
+    box(0.05, 0.22, 0.05, WOOD_DARK, 0.1, 0.5, 0.1),
+  ],
+  sheet_metal: () => [
+    box(0.5, 0.03, 0.4, METAL, 0, 0.5, 0),
+    box(0.5, 0.03, 0.4, 0xc4cbd3, 0.02, 0.53, 0.02),
+    box(0.5, 0.03, 0.4, METAL, -0.02, 0.56, -0.02),
+  ],
+  license_plate: () => [
+    box(0.36, 0.03, 0.2, PLATE, 0, 0.5, -0.08),
+    box(0.36, 0.03, 0.2, PLATE, 0.02, 0.53, 0.08),
+    box(0.36, 0.03, 0.2, 0xe8c52e, -0.02, 0.56, 0),
+  ],
 };
 
 /** One machine's moving part. */
@@ -84,7 +110,11 @@ export class WorkGear {
     switch (p.kind) {
       case 'washer': {
         // A drum seen through the door, a load going round in it.
-        const drum = this.mesh([disc(0.2, 0.02, 0x59636f, 0, 0, 0), box(0.14, 0.09, 0.02, ORANGE, -0.05, -0.1, 0.012), box(0.11, 0.08, 0.02, WHITE, 0.07, 0.02, 0.012)]);
+        const drum = this.mesh([
+          disc(0.2, 0.02, 0x59636f, 0, 0, 0),
+          box(0.14, 0.09, 0.02, ORANGE, -0.05, -0.1, 0.012),
+          box(0.11, 0.08, 0.02, WHITE, 0.07, 0.02, 0.012),
+        ]);
         drum.position.set(0, 0.42, 0.35);
         root.add(drum);
         // (Some stand with their door to the wall, away from the camera: a dial on top turning too, seen from anywhere.)
@@ -95,7 +125,10 @@ export class WorkGear {
       }
       case 'oven': {
         // The window lit from inside.
-        const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.26), new THREE.MeshBasicMaterial({ color: 0xff9a2e, transparent: true, opacity: 0.85 }));
+        const glow = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.56, 0.26),
+          new THREE.MeshBasicMaterial({ color: 0xff9a2e, transparent: true, opacity: 0.85 }),
+        );
         this.owned.push(glow.geometry);
         this.lit.push(glow.material);
         glow.position.set(0, 0.45, 0.375);
@@ -151,7 +184,9 @@ export class WorkGear {
           m.node.parent!.children[1].rotation.y = motion ? -time * 5 : 0;
           break;
         case 'oven':
-          (m.node as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = motion ? 0.72 + Math.sin(time * 7 + i) * 0.13 : 0.85;
+          (m.node as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = motion
+            ? 0.72 + Math.sin(time * 7 + i) * 0.13
+            : 0.85;
           break;
         case 'press':
           // Down fast, back up slowly, once a second and a bit.

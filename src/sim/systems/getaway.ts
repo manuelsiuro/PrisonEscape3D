@@ -28,7 +28,8 @@ import { centerX, centerZ, neighbours4, tileAt } from '../world/grid';
 const FAKE_ID = itemNumber('fake_id');
 
 /** The prison's checkpoint (none in a relaxed prison). */
-export const checkpointOf = (sim: Pick<SimContext, 'world'>): CheckpointDef | undefined => (sim.world.def.rules?.relaxed ? undefined : sim.world.def.checkpoint);
+export const checkpointOf = (sim: Pick<SimContext, 'world'>): CheckpointDef | undefined =>
+  sim.world.def.rules?.relaxed ? undefined : sim.world.def.checkpoint;
 
 /** The checkpoint's shift change is on at this step: 19:50–20:10. */
 export function shiftChange(step: number): boolean {
@@ -136,11 +137,18 @@ export function launchSpots(w: World): ReadonlyArray<readonly [number, number]> 
   const walk = (i: number) => roof[i] === TILE.ROOF || roof[i] === TILE.LADDER;
   const seen = new Uint8Array(MAP_W * MAP_H);
   const queue: number[] = [];
-  for (let i = 0; i < MAP_W * MAP_H; i++) if (roof[i] === TILE.LADDER) { seen[i] = 1; queue.push(i); }
+  for (let i = 0; i < MAP_W * MAP_H; i++)
+    if (roof[i] === TILE.LADDER) {
+      seen[i] = 1;
+      queue.push(i);
+    }
   for (let k = 0; k < queue.length; k++) {
     const t = queue[k];
     for (const [j, ok] of neighbours4(t))
-      if (ok && !seen[j] && walk(j)) { seen[j] = 1; queue.push(j); }
+      if (ok && !seen[j] && walk(j)) {
+        seen[j] = 1;
+        queue.push(j);
+      }
   }
   const out: Array<readonly [number, number]> = [];
   const b = { x: 0, z: 0, facing: 1, moving: false };

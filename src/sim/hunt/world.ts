@@ -12,7 +12,19 @@ import { chebTiles, neighbours4 } from '../world/grid';
  */
 
 /** What stands on a tile (drawn by the view; solid ones and cover are the hunt's rules). Never renumber. */
-export const DECO = { NONE: 0, TREE: 1, CACTUS: 2, ROCK: 3, CRATES: 4, HEDGE: 5, CULVERT: 6, RAIL: 7, GRAVEL: 8, FORD: 9, WOODS: 10 } as const;
+export const DECO = {
+  NONE: 0,
+  TREE: 1,
+  CACTUS: 2,
+  ROCK: 3,
+  CRATES: 4,
+  HEDGE: 5,
+  CULVERT: 6,
+  RAIL: 7,
+  GRAVEL: 8,
+  FORD: 9,
+  WOODS: 10,
+} as const;
 
 export interface OutsideWorld {
   def: OutsideDef;
@@ -39,7 +51,10 @@ export interface OutsideWorld {
 }
 
 /** What each picture character becomes: the prison legend's floor or wall, and the hunt's own. */
-const KIND: Record<string, { ground: string; solid?: true; opaque?: true; deco?: number; cover?: true; noisy?: true; ford?: true; wire?: true }> = {
+const KIND: Record<
+  string,
+  { ground: string; solid?: true; opaque?: true; deco?: number; cover?: true; noisy?: true; ford?: true; wire?: true }
+> = {
   '.': { ground: '.' },
   ',': { ground: ',' },
   a: { ground: 'a' },
@@ -67,7 +82,8 @@ export function pictureRows(def: OutsideDef): string[] {
   if (!w || rows.length > MAP_H || w > MAP_W) throw new Error(`${def.prison} outside: ${w}×${rows.length}, at most ${MAP_W}×${MAP_H}`);
   rows.forEach((r, z) => {
     if (r.length !== w) throw new Error(`${def.prison} outside: row ${z} is ${r.length} wide, expected ${w}`);
-    for (let x = 0; x < w; x++) if (!OUTSIDE_LEGEND.includes(r[x])) throw new Error(`${def.prison} outside: unknown character '${r[x]}' at ${x},${z}`);
+    for (let x = 0; x < w; x++)
+      if (!OUTSIDE_LEGEND.includes(r[x])) throw new Error(`${def.prison} outside: unknown character '${r[x]}' at ${x},${z}`);
   });
   return rows;
 }
@@ -184,7 +200,9 @@ function searcherDefs(def: OutsideDef, ox: number, oz: number): GuardDef[] {
       key: 'yellow',
       ...(s.dog ? { dog: { name: s.dog.name, kennel: { x: -40, z: -40, face: 5 }, coat: s.dog.coat } } : {}),
     });
-  def.roadblocks.forEach((r, k) => out.push({ name: `post${k}`, beat: [{ x: r.post.x + ox, z: r.post.z + oz, face: r.post.face }], key: 'yellow' }));
+  def.roadblocks.forEach((r, k) =>
+    out.push({ name: `post${k}`, beat: [{ x: r.post.x + ox, z: r.post.z + oz, face: r.post.face }], key: 'yellow' }),
+  );
   return out;
 }
 
@@ -198,7 +216,10 @@ function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
   for (let q = 0; q < queue.length; q++) {
     const t = queue[q];
     for (const [j, ok] of neighbours4(t))
-      if (ok && d[j] < 0 && open(j)) { d[j] = d[t] + 1; queue.push(j); }
+      if (ok && d[j] < 0 && open(j)) {
+        d[j] = d[t] + 1;
+        queue.push(j);
+      }
   }
 }
 
@@ -206,8 +227,15 @@ function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
 export function goalDistances(o: OutsideWorld, grid: Uint8Array, lou: number, wire: boolean): Int32Array {
   const d = new Int32Array(N).fill(-1);
   const queue: number[] = [];
-  for (let i = 0; i < N; i++) if (o.safe[i]) { d[i] = 0; queue.push(i); }
-  if (lou >= 0 && d[lou] !== 0) { d[lou] = 0; queue.push(lou); }
+  for (let i = 0; i < N; i++)
+    if (o.safe[i]) {
+      d[i] = 0;
+      queue.push(i);
+    }
+  if (lou >= 0 && d[lou] !== 0) {
+    d[lou] = 0;
+    queue.push(lou);
+  }
   // (The search reckons wire passable: cutters make it so; a way round it is shorter anyway where there is one.)
   const open = (i: number) => !grid[i] || (wire && o.wire[i] === 1);
   flood(d, queue, open);
@@ -242,7 +270,10 @@ export function sweepPoints(o: OutsideWorld, npcGrid: Uint8Array, start: number)
               const j = i + dz * MAP_W + dx;
               if (dx * dx + dz * dz <= 5 && j >= 0 && j < N && o.cover[j] && !done[j]) n++;
             }
-          if (n > bestN) { best = i; bestN = n; }
+          if (n > bestN) {
+            best = i;
+            bestN = n;
+          }
         }
     done[c] = 1;
     if (best < 0) continue;

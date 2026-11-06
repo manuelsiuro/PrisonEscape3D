@@ -20,7 +20,16 @@ import { argA, argB, argC, EXT, OP, opOf, tossTile } from '../command';
 import type { SimContext } from '../context';
 import type { LayerMove } from '../state';
 import { SPOT, WAKE } from '../events';
-import { CAMERA_BLIND_STEPS, CAVE_IN_DAMAGE, CHOCOLATE_ENERGY, KO_STEPS, SHARPEN_STROKES, STRIKE_STEPS, TOILET_CLOG_STEPS, TOILET_LOADS } from '../tuning';
+import {
+  CAMERA_BLIND_STEPS,
+  CAVE_IN_DAMAGE,
+  CHOCOLATE_ENERGY,
+  KO_STEPS,
+  SHARPEN_STROKES,
+  STRIKE_STEPS,
+  TOILET_CLOG_STEPS,
+  TOILET_LOADS,
+} from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE } from '../world/tiles';
 import { maxHealth } from './combat';
@@ -29,7 +38,26 @@ import { lockCandidates, nextLock } from './combat';
 import { attack, hurt } from './fights';
 import type { Guard } from './guards';
 import type { Inmate } from './inmates';
-import { closeBox, craft, dropItem, equip, freeHotbar, give, HOTBAR, hotbarSlotOf, interactTarget, type Target, type ItemEvent, itemOf, type ItemState, moveItem, pickUp, slot, stillInReach, usesOf } from './items';
+import {
+  closeBox,
+  craft,
+  dropItem,
+  equip,
+  freeHotbar,
+  give,
+  HOTBAR,
+  hotbarSlotOf,
+  interactTarget,
+  type Target,
+  type ItemEvent,
+  itemOf,
+  type ItemState,
+  moveItem,
+  pickUp,
+  slot,
+  stillInReach,
+  usesOf,
+} from './items';
 import { jobOp, letterDue, station, takeCoins, work } from './jobs';
 import { peel } from './justice';
 import type { Body } from './movement';
@@ -43,7 +71,23 @@ import { canChat } from './ways';
 import { atTail, climbOut, stow } from './delivery';
 import { airOf, atWindow, showId, windowFirst } from './getaway';
 import { approach, dismissAll, endTalk, talkOp } from './social';
-import { besideOnGround, cavesIn, climbTarget, type ClimbTarget, DIRT, facesProp, preferClimb, SHEET_ROPE, SHIVS, STRIKES, toolTarget, digUpTarget, type ToolTarget, underSea, WALL_CHUNK } from './structure';
+import {
+  besideOnGround,
+  cavesIn,
+  climbTarget,
+  type ClimbTarget,
+  DIRT,
+  facesProp,
+  preferClimb,
+  SHEET_ROPE,
+  SHIVS,
+  STRIKES,
+  toolTarget,
+  digUpTarget,
+  type ToolTarget,
+  underSea,
+  WALL_CHUNK,
+} from './structure';
 import { foodUse, vendOffer, vendOp } from './vending';
 import { VEND } from '../../content/vending';
 import { MENU } from '../../content/menu';
@@ -120,8 +164,24 @@ export function useItems(sim: SimContext, cmd: number) {
       // (2.31: a book in hand, at a free library chair: that, before anyone about.)
       const bookSeat = chairForBook(sim);
       const due = letterDue(sim);
-      const target: Target | null = bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : due >= 0 ? { kind: 'person', who: due } : interactTarget(sim.world, it, s.player, sim.bedtime, s.layer, people(sim), s.inmates.length, (k) => canChat(sim, k), sim.bedtime && !sim.rules227);
-      const faced = target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
+      const target: Target | null =
+        bookSeat >= 0
+          ? { kind: 'fixture', index: bookSeat, use: 'sit' }
+          : due >= 0
+            ? { kind: 'person', who: due }
+            : interactTarget(
+                sim.world,
+                it,
+                s.player,
+                sim.bedtime,
+                s.layer,
+                people(sim),
+                s.inmates.length,
+                (k) => canChat(sim, k),
+                sim.bedtime && !sim.rules227,
+              );
+      const faced =
+        target?.kind === 'container' || target?.kind === 'sleep' ? facesProp(s.player, containersOf(sim.world)[target.index].prop) : false;
       const up = preferClimb(climbTarget(sim.world, s.layer, s.player, sim.ladderFoot, bodiesAbout(sim)), faced);
       // The release desk (P36): reporting there while the name is called, or a forged form slipped into its tray, comes first.
       if (atRelease(sim)) {
@@ -181,8 +241,7 @@ export function useItems(sim: SimContext, cmd: number) {
         if (bed === 'tuck') tuckDummy(sim, target.index);
         else if (bed === 'takeOut') takeOutDummy(sim, target.index);
         else sleep(sim);
-      }
-      else if (target.kind === 'person') approach(sim, target.who);
+      } else if (target.kind === 'person') approach(sim, target.who);
       else if (target.kind === 'fixture') {
         if (target.use === 'board') sim.events.push({ type: 'board' });
         else if (target.use === 'generator') switchPower(sim, target.index);
@@ -193,8 +252,7 @@ export function useItems(sim: SimContext, cmd: number) {
           sitDown(sim, target.index, target.use);
           // (2.31: a book in hand, on a library chair: straight into it, or told why not.)
           if (onReadChair(sim)) readOn(sim);
-        }
-        else useMachine(sim, target.index, target.use);
+        } else useMachine(sim, target.index, target.use);
       } else if (target.kind === 'pockets') {
         // Going through someone's pockets while they're out cold (GDD §10.2).
         if (it.open !== target.index) {
@@ -202,8 +260,8 @@ export function useItems(sim: SimContext, cmd: number) {
           ev.push({ type: 'open', container: target.index });
           takeCoins(sim, target.index);
         }
-      }
-      else if ((held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet') flush(sim, target.index);
+      } else if ((held === DIRT || held === WALL_CHUNK) && containersOf(sim.world)[target.index].prop.kind === 'toilet')
+        flush(sim, target.index);
       else if (it.open !== target.index) {
         it.open = target.index;
         ev.push({ type: 'open', container: target.index });
@@ -264,7 +322,14 @@ export function useItems(sim: SimContext, cmd: number) {
       const was = s.lock;
       // a = 2 + id: that person (a tap on them), if they can be locked on to.
       const pick = a >= 2 ? a - 2 : -1;
-      s.lock = a === 1 || s.layer !== LAYER.GROUND ? -1 : pick >= 0 ? (lockCandidates(sim.world, s, s.player).includes(pick) ? pick : s.lock) : nextLock(sim.world, s, s.player, s.lock);
+      s.lock =
+        a === 1 || s.layer !== LAYER.GROUND
+          ? -1
+          : pick >= 0
+            ? lockCandidates(sim.world, s, s.player).includes(pick)
+              ? pick
+              : s.lock
+            : nextLock(sim.world, s, s.player, s.lock);
       if (s.lock !== was) sim.events.push({ type: 'lock', who: s.lock });
       break;
     }
@@ -385,7 +450,8 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   const p = s.player;
   const held = itemOf(it.inv[it.hand]);
   // (`up`: the Dig up button's own target, whichever way the player faces.)
-  const target = up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim), s.plots, hiddenIn(it.inv[it.hand]));
+  const target =
+    up !== undefined ? up : toolTarget(w, s.layer, p, held, bodiesAbout(sim), it.inv, airOf(sim), s.plots, hiddenIn(it.inv[it.hand]));
   if (!target) return;
   // Strikes come at their own pace (holding the button asks every step); the rest at a press.
   if (STRIKES.has(target.action) && s.step - s.struckAt < STRIKE_STEPS) return;
@@ -477,7 +543,18 @@ function strike(sim: SimContext, fresh: boolean, up?: ToolTarget | null) {
   const digger = helper[0];
   const full = yields && digger < 0 && s.layer === LAYER.GROUND && !!tool0 && (s.wear[key] ?? 0) + dmg >= target.hp && !hasRoom(it);
   const cost = tool0 ? energyCost(sim, tool0.energy) : 0;
-  const why = target.hp === 0 ? (target.layer === LAYER.UNDER ? 'boulder' : 'reinforced') : !target.fits || !tool0 ? 'tool' : s.energy < cost ? 'tired' : full ? 'full' : null;
+  const why =
+    target.hp === 0
+      ? target.layer === LAYER.UNDER
+        ? 'boulder'
+        : 'reinforced'
+      : !target.fits || !tool0
+        ? 'tool'
+        : s.energy < cost
+          ? 'tired'
+          : full
+            ? 'full'
+            : null;
   if (why) {
     sim.events.push({ type: 'cantStrike', why, action: target.action });
     return;
@@ -620,7 +697,10 @@ function sharpen(sim: SimContext, target: ToolTarget, held: number) {
   }
   const shiv = SHIVS.get(item)!;
   it.inv[it.hand] = slot(shiv);
-  sim.events.push({ type: 'strike', action: 'sharpen', layer: LAYER.GROUND, tile: target.tile, broke: true }, { type: 'sharpened', item: shiv });
+  sim.events.push(
+    { type: 'strike', action: 'sharpen', layer: LAYER.GROUND, tile: target.tile, broke: true },
+    { type: 'sharpened', item: shiv },
+  );
 }
 
 /**
@@ -632,7 +712,11 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
   const it = s.items;
   const t = target.tile;
   if (!target.fits) {
-    sim.events.push({ type: 'cantStrike', why: target.action === 'grapnel' ? 'noRope' : target.glide?.why ?? 'poster', action: target.action });
+    sim.events.push({
+      type: 'cantStrike',
+      why: target.action === 'grapnel' ? 'noRope' : (target.glide?.why ?? 'poster'),
+      action: target.action,
+    });
     return;
   }
   // A hook over a live fence: the shock comes down the rope.
@@ -679,7 +763,13 @@ function putInPlace(sim: SimContext, target: ToolTarget, held: number) {
     }
     case 'cover':
       if (target.layer === LAYER.VENTS) setTile(sim, LAYER.VENTS, t, TILE.GRATE_FAKE);
-      else setTile(sim, LAYER.GROUND, t, sim.world.ground.kind[t] === TILE.FENCE_CUT ? TILE.FENCE_FAKE : held === POSTER_ITEM ? TILE.HOLE_POSTER : TILE.HOLE_FAKE);
+      else
+        setTile(
+          sim,
+          LAYER.GROUND,
+          t,
+          sim.world.ground.kind[t] === TILE.FENCE_CUT ? TILE.FENCE_FAKE : held === POSTER_ITEM ? TILE.HOLE_POSTER : TILE.HOLE_FAKE,
+        );
       sim.events.push({ type: 'covered', item: held, on: true });
       break;
     case 'brace':

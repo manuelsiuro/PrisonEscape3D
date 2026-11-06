@@ -102,7 +102,17 @@ function accented(line: string): Part[] {
 }
 
 /** The game's escape stamp: a red-orange box and letters, tilted, slammed down from 2.4×. */
-function stamp(g: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, age: number, alpha: number, tilt = -8, maxW = W - 240) {
+function stamp(
+  g: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  age: number,
+  alpha: number,
+  tilt = -8,
+  maxW = W - 240,
+) {
   if (age < 0 || alpha <= 0) return;
   const a = clamp(age / 0.5);
   const scale = 2.4 + (1 - 2.4) * back(a, 1.7);
@@ -220,10 +230,16 @@ function logo(g: CanvasRenderingContext2D, t: number, t0: number) {
     g.translate(W / 2, 520);
     const s = 0.85 + 0.15 * back(ta);
     g.scale(s, s);
-    heavy(g, [
-      { text: 'Prison Escape ', color: '#ffffff' },
-      { text: '3D', color: ORANGE },
-    ], 0, 0, 170);
+    heavy(
+      g,
+      [
+        { text: 'Prison Escape ', color: '#ffffff' },
+        { text: '3D', color: ORANGE },
+      ],
+      0,
+      0,
+      170,
+    );
     g.restore();
   }
 }
@@ -295,12 +311,30 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
     if (a > 0) {
       g.save();
       g.globalAlpha = a;
-      heavy(g, ((x) => [{ text: `${x[0]} `, color: '#ffffff' }, { text: x[1], color: ORANGE }])(own.prisons.split(/(?<=\.)\s+/)), W / 2, 150 - (1 - smooth((t - t0) / 0.3)) * 30, 72);
+      heavy(
+        g,
+        ((x) => [
+          { text: `${x[0]} `, color: '#ffffff' },
+          { text: x[1], color: ORANGE },
+        ])(own.prisons.split(/(?<=\.)\s+/)),
+        W / 2,
+        150 - (1 - smooth((t - t0) / 0.3)) * 30,
+        72,
+      );
       g.restore();
     }
     PRISONS.forEach((id) => {
       const m = marks[id];
-      stamp(g, L[`prison.${id}` as keyof typeof L].toUpperCase(), W / 2, H / 2 + 60, 96, t - m.at - 0.12, env(t, m.at, m.end - 0.03, 0.01, 0.12), -6);
+      stamp(
+        g,
+        L[`prison.${id}` as keyof typeof L].toUpperCase(),
+        W / 2,
+        H / 2 + 60,
+        96,
+        t - m.at - 0.12,
+        env(t, m.at, m.end - 0.03, 0.01, 0.12),
+        -6,
+      );
     });
   }
 
@@ -381,7 +415,9 @@ function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Reco
   }
 
   // Flashes on the two big hits: the plan's first beat, the touchdown.
-  const flash = Math.max(1 - smooth((t - marks.vents.at) / 0.18), 0) * (t >= marks.vents.at ? 0.55 : 0) + (t >= touch ? 0.45 * (1 - smooth((t - touch) / 0.2)) : 0);
+  const flash =
+    Math.max(1 - smooth((t - marks.vents.at) / 0.18), 0) * (t >= marks.vents.at ? 0.55 : 0) +
+    (t >= touch ? 0.45 * (1 - smooth((t - touch) / 0.2)) : 0);
   if (flash > 0) {
     g.fillStyle = `rgba(255,250,240,${flash})`;
     g.fillRect(0, 0, W, H);
@@ -399,7 +435,11 @@ function marksOf() {
 }
 
 async function canvas() {
-  await Promise.all([`700 100px Fredoka`, `500 40px Fredoka`, `600 40px Inter`, `italic 600 40px Inter`, `700 40px Inter`].map((f) => document.fonts.load(f)));
+  await Promise.all(
+    [`700 100px Fredoka`, `500 40px Fredoka`, `600 40px Inter`, `italic 600 40px Inter`, `700 40px Inter`].map((f) =>
+      document.fonts.load(f),
+    ),
+  );
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;

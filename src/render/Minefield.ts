@@ -93,7 +93,13 @@ export class Minefield {
     }
     this.craters = new THREE.InstancedMesh(
       new THREE.CircleGeometry(0.62, 20).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ map: scorchTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+      new THREE.MeshBasicMaterial({
+        map: scorchTexture(),
+        transparent: true,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+      }),
       MAX_CRATERS,
     );
     this.craters.count = 0;

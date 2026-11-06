@@ -24,7 +24,10 @@ export class BoardPanel {
   private drawn = '';
   isOpen = false;
 
-  constructor(private readonly send: Send, private readonly click: () => void) {
+  constructor(
+    private readonly send: Send,
+    private readonly click: () => void,
+  ) {
     this.el = h('div', 'item-panel board-panel hidden');
     this.el.setAttribute('role', 'dialog');
     this.el.addEventListener('mousedown', (e) => e.preventDefault());
@@ -69,7 +72,10 @@ export class BoardPanel {
         const can = qualifies(sim.world, s.items.int, j);
         const who = you ? t('board.you') : open ? t('board.open') : inmateName(sim, holder);
         // Quitting, or applying while holding a job (it's left), asks twice.
-        const swap = mine >= 0 ? ` data-confirm="${esc(t('board.confirmSwap'))}" title="${esc(t('board.swapNote', { job: t(`job.${sim.prison.jobs[mine].id}` as Key) }))}"` : '';
+        const swap =
+          mine >= 0
+            ? ` data-confirm="${esc(t('board.confirmSwap'))}" title="${esc(t('board.swapNote', { job: t(`job.${sim.prison.jobs[mine].id}` as Key) }))}"`
+            : '';
         const action = you
           ? `<button class="big-btn ghost small" data-job="0" data-confirm="${esc(t('board.confirmQuit'))}">${t('board.quit')}</button>`
           : open
@@ -88,7 +94,15 @@ export class BoardPanel {
 }
 
 /** Every job's icon (typed by JobId: a new job can't be left without one). */
-const JOB_ICONS: Record<JobId, string> = { laundry: 'shirt', janitor: 'drop', kitchen: 'flame', woodshop: 'hammer', mailman: 'letter', metalshop: 'gear', gardener: 'sprout' };
+const JOB_ICONS: Record<JobId, string> = {
+  laundry: 'shirt',
+  janitor: 'drop',
+  kitchen: 'flame',
+  woodshop: 'hammer',
+  mailman: 'letter',
+  metalshop: 'gear',
+  gardener: 'sprout',
+};
 
 /**
  * Training (GDD §3.2): the set's bar, filled by pressing left and right in turn (A and D, or
@@ -206,7 +220,10 @@ export class TrainCard {
       setText(this.title, t(`train.${kind === 'shelf' ? 'study' : kind}` as Key));
       setText(this.value, `${t(`attr.${a}` as Key)} ${value}`);
       setText(this.el.querySelector<HTMLElement>('.train-cost')!, `−${cost}`);
-      setText(this.note, `${TOUCH ? t('train.touch') : t('train.keys')} · ${t('train.cost', { n: cost })} · ${t(`train.gives.${a}` as Key)}`);
+      setText(
+        this.note,
+        `${TOUCH ? t('train.touch') : t('train.keys')} · ${t('train.cost', { n: cost })} · ${t(`train.gives.${a}` as Key)}`,
+      );
       this.el.querySelector('.train-stop')!.setAttribute('aria-label', t('train.stop'));
       this.sides[0].setAttribute('aria-label', t('train.left'));
       this.sides[1].setAttribute('aria-label', t('train.right'));
@@ -236,7 +253,11 @@ export class WorkChips {
   private readonly pool: HTMLElement[] = [];
   private readonly at = { x: 0, y: 0 };
 
-  update(sim: Sim, project: (x: number, y: number, z: number, out: { x: number; y: number }) => { x: number; y: number } | null, busy: boolean) {
+  update(
+    sim: Sim,
+    project: (x: number, y: number, z: number, out: { x: number; y: number }) => { x: number; y: number } | null,
+    busy: boolean,
+  ) {
     const s = sim.state;
     let n = 0;
     if (!busy && ROUTINE[s.routine].id === 'work') {
@@ -264,7 +285,14 @@ export class WorkChips {
     // (2.30: and over the next station, what's to do there, unless a chip already stands on it.)
     const next = !busy ? nextWork(sim) : null;
     // (Not once it's in reach: the frame and the button say it, and the marker would sit on the player's head.)
-    const at = next && next.prop >= 0 && s.machines[next.prop] === undefined && sim.dutyZones.includes(sim.playerZone) && sim.station()?.prop !== next.prop ? sim.world.props[next.prop] : null;
+    const at =
+      next &&
+      next.prop >= 0 &&
+      s.machines[next.prop] === undefined &&
+      sim.dutyZones.includes(sim.playerZone) &&
+      sim.station()?.prop !== next.prop
+        ? sim.world.props[next.prop]
+        : null;
     const spot = at && project(at.x + at.w / 2, 1.35, at.z + at.d / 2, this.at);
     if (next && spot) {
       const el = (this.pool[n] ??= this.make());
@@ -284,7 +312,11 @@ export class WorkChips {
   }
 
   private make(): HTMLElement {
-    const el = h('div', 'work-chip hidden', `<i class="work-ring"></i><img alt="" draggable="false"><i class="work-tick">${icon('check', 14)}</i>`);
+    const el = h(
+      'div',
+      'work-chip hidden',
+      `<i class="work-ring"></i><img alt="" draggable="false"><i class="work-tick">${icon('check', 14)}</i>`,
+    );
     el.setAttribute('aria-hidden', 'true');
     document.body.append(el);
     return el;

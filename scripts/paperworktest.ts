@@ -34,7 +34,8 @@ import { MAP_H, MAP_W, type World } from '../src/sim/world/World';
 import { check } from './assert';
 
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
-const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
+const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
+  seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 const news = (seen: SimEvent[], what: string) => of(seen, 'paper').filter((e) => e.what === what);
 const refusals = (seen: SimEvent[]) => of(seen, 'refused').map((e) => e.why);
 const n = itemNumber;
@@ -58,7 +59,10 @@ function reachFrom(w: World, from: number[]): Uint8Array {
       [t - MAP_W, t >= MAP_W],
       [t + MAP_W, t < MAP_W * (MAP_H - 1)],
     ] as const)
-      if (ok && !seen[j] && !w.ground.block[j]) { seen[j] = 1; queue.push(j); }
+      if (ok && !seen[j] && !w.ground.block[j]) {
+        seen[j] = 1;
+        queue.push(j);
+      }
   }
   return seen;
 }
@@ -109,12 +113,21 @@ function game(prison = CENTER_PERKS, seed = 5) {
     const sim = new Sim(p, 1);
     const w = sim.world;
     const all = p.guards.flatMap((g) => (g.about ? [g.about.nick, g.about.home, g.about.team] : []));
-    check(p.guards.every((g) => !!g.about), `${p.id}: every guard has a nickname, a home town and a team`);
-    check(all.every((x) => /^[A-Z]{5,7}$/.test(x)) && new Set(all).size === all.length, `${p.id}: each one word, A–Z, 5 to 7 letters, none twice`);
+    check(
+      p.guards.every((g) => !!g.about),
+      `${p.id}: every guard has a nickname, a home town and a team`,
+    );
+    check(
+      all.every((x) => /^[A-Z]{5,7}$/.test(x)) && new Set(all).size === all.length,
+      `${p.id}: each one word, A–Z, 5 to 7 letters, none twice`,
+    );
     // The form in the strict guard's pockets.
     const strict = p.guards.findIndex((g) => g.duties?.includes('shakedown'));
     const pockets = sim.state.items.containers[pocketOf(w, sim.state.inmates.length + strict)];
-    check(strict >= 0 && pockets.some((v) => itemOf(v) === n('release_form')), `${p.id}: ${p.guards[strict]?.name} carries a blank release form`);
+    check(
+      strict >= 0 && pockets.some((v) => itemOf(v) === n('release_form')),
+      `${p.id}: ${p.guards[strict]?.name} carries a blank release form`,
+    );
     // The desk: walked to at 10:00 with no key.
     const r = p.comms!.release;
     while (sim.clock.minuteOfDay !== 10 * 60 + 5) sim.step(0);
@@ -122,15 +135,26 @@ function game(prison = CENTER_PERKS, seed = 5) {
     w.setPlayerKeys(0);
     const c1 = p.cells[0];
     const home = reachFrom(w, [((c1[1] + c1[3]) >> 1) * MAP_W + ((c1[0] + c1[2]) >> 1)]);
-    check(r.at.length > 0 && r.at.every((q) => home[q.z * MAP_W + q.x] === 1), `${p.id}: the release desk is walked to at 10:00 with no key`);
-    check(r.gates.every((q) => w.ground.kind[q.z * MAP_W + q.x] === TILE.DOOR && !w.doorCell[q.z * MAP_W + q.x]), `${p.id}: the way out's doors are doors (no cell's)`);
+    check(
+      r.at.length > 0 && r.at.every((q) => home[q.z * MAP_W + q.x] === 1),
+      `${p.id}: the release desk is walked to at 10:00 with no key`,
+    );
+    check(
+      r.gates.every((q) => w.ground.kind[q.z * MAP_W + q.x] === TILE.DOOR && !w.doorCell[q.z * MAP_W + q.x]),
+      `${p.id}: the way out's doors are doors (no cell's)`,
+    );
     const from = r.at.map((q) => q.z * MAP_W + q.x);
     check(!roadIn(w, reachFrom(w, from)), `${p.id}: shut, the way out keeps the player in`);
     w.setFreed(true);
     check(roadIn(w, reachFrom(w, from)), `${p.id}: open, it leads out onto the road`);
-    check(r.gates.every((q) => w.npcBlock[q.z * MAP_W + q.x] === 1 || !w.doorShut[q.z * MAP_W + q.x]), `${p.id}: open for the player alone`);
+    check(
+      r.gates.every((q) => w.npcBlock[q.z * MAP_W + q.x] === 1 || !w.doorShut[q.z * MAP_W + q.x]),
+      `${p.id}: open for the player alone`,
+    );
     w.setFreed(false);
-    lines.push(`${p.id}: forms on ${p.guards[strict].name}; the desk at ${r.at.map((q) => `${q.x},${q.z}`).join(' ')}, out through ${r.gates.length} doors${r.bridge ? ' and the drawbridge' : ''}`);
+    lines.push(
+      `${p.id}: forms on ${p.guards[strict].name}; the desk at ${r.at.map((q) => `${q.x},${q.z}`).join(' ')}, out through ${r.gates.length} doors${r.bridge ? ' and the drawbridge' : ''}`,
+    );
   }
   console.log(lines.join('\n'));
 }
@@ -139,8 +163,11 @@ function game(prison = CENTER_PERKS, seed = 5) {
 {
   const r = RECIPES.find((x) => x.result === 'forged_release');
   check(!!r && r.int === FORGE_INT && r.ingredients.join() === 'release_form,ink', 'a forged form: a blank one and ink, Intellect 80');
-  check(itemDef(n('release_form')).contraband && itemDef(n('forged_release')).contraband && !!itemDef(n('forged_release')).small, 'both forms contraband (and small)');
-  check(!itemDef(n('own_clothes')).contraband && itemDef(n('own_clothes')).cat === 'outfit', 'the player\'s own clothes: an outfit, legal');
+  check(
+    itemDef(n('release_form')).contraband && itemDef(n('forged_release')).contraband && !!itemDef(n('forged_release')).small,
+    'both forms contraband (and small)',
+  );
+  check(!itemDef(n('own_clothes')).contraband && itemDef(n('own_clothes')).cat === 'outfit', "the player's own clothes: an outfit, legal");
   // Taken from him, a new one at 08:00.
   const g = game();
   const s = g.sim.state;
@@ -148,7 +175,10 @@ function game(prison = CENTER_PERKS, seed = 5) {
   const k = pockets.findIndex((v) => itemOf(v) === n('release_form'));
   pockets[k] = 0;
   g.to(2, 8, 1);
-  check(pockets.some((v) => itemOf(v) === n('release_form')), 'a blank form taken: Dunn has a new one at 08:00');
+  check(
+    pockets.some((v) => itemOf(v) === n('release_form')),
+    'a blank form taken: Dunn has a new one at 08:00',
+  );
   console.log(`form: off ${CENTER_PERKS.guards[2].name}, forged with ink at Intellect ${FORGE_INT}`);
 }
 
@@ -179,7 +209,10 @@ function game(prison = CENTER_PERKS, seed = 5) {
   s.heat = 0;
   g.step();
   g.step(INTERACT);
-  check(s.release[0] === 2 && news(seen, 'filed').at(-1)?.n === 2 && !itemOf(s.items.inv[0]), 'slipped in: the name on tomorrow\'s list, the form gone');
+  check(
+    s.release[0] === 2 && news(seen, 'filed').at(-1)?.n === 2 && !itemOf(s.items.inv[0]),
+    "slipped in: the name on tomorrow's list, the form gone",
+  );
   g.toDesk();
   g.step(INTERACT);
   check(refusals(seen).at(-1) === 'onList', 'one name on the list is enough');
@@ -222,8 +255,14 @@ function game(prison = CENTER_PERKS, seed = 5) {
     const g = filed(RECORDS_HEAT);
     g.to(1, 22, 1);
     const s = g.sim.state;
-    check(news(g.seen, 'found').length === 1 && s.release[0] === 0 && s.lockdown, `heat ${RECORDS_HEAT} at 22:00: the forgery found, the sirens`);
-    check(s.guards.some((x) => x.tasks.includes(1) || x.resume === GUARD.SHAKEDOWN), 'the player\'s cell to be searched');
+    check(
+      news(g.seen, 'found').length === 1 && s.release[0] === 0 && s.lockdown,
+      `heat ${RECORDS_HEAT} at 22:00: the forgery found, the sirens`,
+    );
+    check(
+      s.guards.some((x) => x.tasks.includes(1) || x.resume === GUARD.SHAKEDOWN),
+      "the player's cell to be searched",
+    );
   }
   {
     const g = filed(0);
@@ -260,7 +299,10 @@ function game(prison = CENTER_PERKS, seed = 5) {
     g.setCalm(false);
     const heat = s.heat;
     g.step(INTERACT);
-    check(news(seen, 'turnedAway').at(-1)?.why === 'contraband' && s.heat === heat + RELEASE_FAIL_HEAT && s.release[0] === 0 && !atRelease(sim), 'contraband on them: turned away, heat, the name struck');
+    check(
+      news(seen, 'turnedAway').at(-1)?.why === 'contraband' && s.heat === heat + RELEASE_FAIL_HEAT && s.release[0] === 0 && !atRelease(sim),
+      'contraband on them: turned away, heat, the name struck',
+    );
   }
   {
     const g = listed();
@@ -284,7 +326,13 @@ function game(prison = CENTER_PERKS, seed = 5) {
     g.jump(2, 10, 1);
     put(s.player, r.at[0].x, r.at[0].z);
     g.step(INTERACT);
-    check(news(seen, 'cleared').length === 1 && itemOf(s.items.inv[SLOT.OUTFIT]) === n('own_clothes') && sim.world.freed && s.release[1] > s.step, 'cleared: own clothes on, the doors open for the player');
+    check(
+      news(seen, 'cleared').length === 1 &&
+        itemOf(s.items.inv[SLOT.OUTFIT]) === n('own_clothes') &&
+        sim.world.freed &&
+        s.release[1] > s.step,
+      'cleared: own clothes on, the doors open for the player',
+    );
     put(s.player, 31, 50);
     g.setCalm(false);
     g.step();
@@ -295,7 +343,10 @@ function game(prison = CENTER_PERKS, seed = 5) {
     check(sim.world.freed, 'never shut on the player standing in a doorway');
     put(s.player, 30, 42);
     g.step();
-    check(!sim.world.freed && news(seen, 'shut').length === 1 && s.release[0] === 0 && news(seen, 'missed').length === 0, 'out of it: shut again, the release over');
+    check(
+      !sim.world.freed && news(seen, 'shut').length === 1 && s.release[0] === 0 && news(seen, 'missed').length === 0,
+      'out of it: shut again, the release over',
+    );
   }
   {
     const g = listed();

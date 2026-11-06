@@ -25,7 +25,9 @@
   font: 800 11px/1.1 var(--font-ui);
   font-style: normal;
   background: radial-gradient(circle at 40% 30%, var(--steel), var(--steel-2));
-  box-shadow: 0 10px 22px -8px rgba(20, 40, 70, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 10px 22px -8px rgba(20, 40, 70, 0.9),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
   transition: transform 0.08s;
 }
 
@@ -266,7 +268,9 @@ body:not(.touch) .act-prompt {
   font: 800 10px/1.1 var(--font-ui);
   font-style: normal;
   background: radial-gradient(circle at 40% 30%, #b48a5c, #6e4a26);
-  box-shadow: 0 10px 22px -8px rgba(60, 36, 12, 0.9), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 10px 22px -8px rgba(60, 36, 12, 0.9),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
   transition: transform 0.08s;
 }
 

@@ -68,12 +68,16 @@ let partner = -1;
 /** A guard's ways found out first-hand (P15): one that took the money is corrupt, one that reported the offer strict (`by` -1: the player). */
 function learn(e: SimEvent, sim: Sim) {
   const n = sim.state.inmates.length;
-  const k = e.type === 'bribe' && e.kind !== 'over' ? e.guard : e.type === 'refused' && e.why === 'reported' && partner >= n ? partner - n : -1;
+  const k =
+    e.type === 'bribe' && e.kind !== 'over' ? e.guard : e.type === 'refused' && e.why === 'reported' && partner >= n ? partner - n : -1;
   if (e.type === 'talk') partner = e.who;
   if (k < 0) return;
   const key = `trait:${k}`;
   if (director.rumors.some((r) => r.fact.key === key)) return;
-  director.rumors = keepRumors([{ fact: { kind: e.type === 'bribe' ? 'corrupt' : 'strict', key, guard: k }, step: sim.state.step, by: -1 }, ...director.rumors]);
+  director.rumors = keepRumors([
+    { fact: { kind: e.type === 'bribe' ? 'corrupt' : 'strict', key, guard: k }, step: sim.state.step, by: -1 },
+    ...director.rumors,
+  ]);
 }
 
 /** The prisoner's file lists the rumors: worked out again only when something may have changed. */
@@ -149,5 +153,12 @@ export function chatterFrame(g: Game, busy: boolean) {
 /** For the dev tools: what has been said so far. */
 export function chatterStats() {
   const s = director.stats;
-  return { said: s.said, distinct: s.distinct.size, repeats: s.repeats, relaxed: s.relaxed, silent: s.silent, rumors: director.rumors.length };
+  return {
+    said: s.said,
+    distinct: s.distinct.size,
+    repeats: s.repeats,
+    relaxed: s.relaxed,
+    silent: s.silent,
+    rumors: director.rumors.length,
+  };
 }

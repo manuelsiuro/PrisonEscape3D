@@ -74,13 +74,26 @@ for (const prison of PRISONS) {
     }
     // Off the pitch, as far as a match goes on: the player stays on screen.
     let pull = 0;
-    for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1]]) {
+    for (const [dx, dz] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+      [-1, -1],
+      [1, 1],
+    ]) {
       const px = dx < 0 ? p.x - PITCH_LEAVE : dx > 0 ? p.x + p.w + PITCH_LEAVE : p.x + p.w / 2;
       const pz = dz < 0 ? p.z - PITCH_LEAVE : dz > 0 ? p.z + p.d + PITCH_LEAVE : p.z + p.d / 2;
       const r = settle(p, px, pz, aspect);
       pull = Math.max(pull, r.maxPull);
-      check(r.sees(px - 0.5, pz - 0.5) && r.sees(px + 0.5, pz + 0.5), `${prison.id} ${name}: the player ${PITCH_LEAVE} tiles off the pitch (${px},${pz}) still on screen`);
-      check(r.maxPull <= PITCH_PULL + 1e-6, `${prison.id} ${name}: the look-ahead stays within ${PITCH_PULL} tiles (${r.maxPull.toFixed(2)})`);
+      check(
+        r.sees(px - 0.5, pz - 0.5) && r.sees(px + 0.5, pz + 0.5),
+        `${prison.id} ${name}: the player ${PITCH_LEAVE} tiles off the pitch (${px},${pz}) still on screen`,
+      );
+      check(
+        r.maxPull <= PITCH_PULL + 1e-6,
+        `${prison.id} ${name}: the look-ahead stays within ${PITCH_PULL} tiles (${r.maxPull.toFixed(2)})`,
+      );
     }
     row.push(`${name} ${zoomOn.toFixed(2)}`);
   }

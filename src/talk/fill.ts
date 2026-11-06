@@ -1,7 +1,19 @@
 import { ROUTINE } from '../content/routine';
 import type { ZoneId } from '../content/zones';
 import { t, type Key, type Lang } from '../i18n';
-import { CHAT_ITEMS, EVENTS, guardFull, itemPhrase, MEALS, NICKS, placePhrase, PUBLIC_PLACES, WEEKDAYS, type DayEvent, type Nick } from '../i18n/barks/grammar';
+import {
+  CHAT_ITEMS,
+  EVENTS,
+  guardFull,
+  itemPhrase,
+  MEALS,
+  NICKS,
+  placePhrase,
+  PUBLIC_PLACES,
+  WEEKDAYS,
+  type DayEvent,
+  type Nick,
+} from '../i18n/barks/grammar';
 import type { Sim } from '../sim/Sim';
 import { formatTime, hhmm } from '../sim/systems/clock';
 import { tileOfBody } from '../sim/systems/movement';
@@ -55,7 +67,38 @@ export function slotsOf(text: string): string[] {
 }
 
 /** The slots the director can fill (chattertest checks every line's against it). */
-export const SLOTS: ReadonlySet<string> = new Set(['you', 'me', 'inmate', 'guard', 'guard.full', 'here.at', 'here.the', 'place.at', 'place.the', 'item', 'item.a', 'item.the', 'item.my', 'time', 'block', 'next', 'day', 'weekday', 'meal', 'dinner', 'event', 'n', 'm', 't1', 't2', 'key', 'dog', 'nick', 'home', 'team']);
+export const SLOTS: ReadonlySet<string> = new Set([
+  'you',
+  'me',
+  'inmate',
+  'guard',
+  'guard.full',
+  'here.at',
+  'here.the',
+  'place.at',
+  'place.the',
+  'item',
+  'item.a',
+  'item.the',
+  'item.my',
+  'time',
+  'block',
+  'next',
+  'day',
+  'weekday',
+  'meal',
+  'dinner',
+  'event',
+  'n',
+  'm',
+  't1',
+  't2',
+  'key',
+  'dog',
+  'nick',
+  'home',
+  'team',
+]);
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -173,7 +216,13 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
     }
     case 'place': {
       const here = zoneOfSpeaker(sim, ctx.speaker);
-      const z = fact?.place ?? pick(ctx, 'place', placesHere(sim).filter((p) => p !== here));
+      const z =
+        fact?.place ??
+        pick(
+          ctx,
+          'place',
+          placesHere(sim).filter((p) => p !== here),
+        );
       const w = z && placePhrase(lang, z);
       v = w ? (form === 'the' ? w.the : w.at) : null;
       break;
@@ -231,7 +280,18 @@ function slotValue(ctx: FillContext, slot: string, line: Map<string, string>): s
     case 'dog': {
       const dogs = handlersOf(sim.world);
       const own = dogs.indexOf(ctx.speaker - s.inmates.length);
-      const k = fact?.dog ?? ctx.dog ?? (own >= 0 ? own : Number(pick(ctx, 'dog', dogs.map((_, i) => String(i))) ?? -1));
+      const k =
+        fact?.dog ??
+        ctx.dog ??
+        (own >= 0
+          ? own
+          : Number(
+              pick(
+                ctx,
+                'dog',
+                dogs.map((_, i) => String(i)),
+              ) ?? -1,
+            ));
       v = k >= 0 && k < dogs.length ? sim.prison.guards[dogs[k]].dog!.name : null;
       break;
     }

@@ -34,4 +34,6 @@ const title = readFileSync('docs/HISTORY.md', 'utf8')
 console.log(marked ? `v${version}: marked released in ${marked} file(s)` : `v${version}: no "not released yet" found (already marked?)`);
 console.log(`PLAN.md §8: Status (${today}): v${version}`);
 console.log(execSync('git status --short', { encoding: 'utf8' }).trim() || '(nothing changed)');
-console.log(`\nThen: git add docs assets/maps && git commit -m "Docs: ${version} released${title ? ` (${title.charAt(0).toLowerCase()}${title.slice(1)})` : ''}, the map viewer at this version" && git push`);
+console.log(
+  `\nThen: git add docs assets/maps && git commit -m "Docs: ${version} released${title ? ` (${title.charAt(0).toLowerCase()}${title.slice(1)})` : ''}, the map viewer at this version" && git push`,
+);

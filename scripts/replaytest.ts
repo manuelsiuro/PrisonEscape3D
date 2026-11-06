@@ -64,11 +64,16 @@ const log = rec.toLog();
 const days = bot.cmds.length / DAY;
 const perDay = Math.round(rec.size / days);
 const stored = JSON.stringify(log).length;
-console.log(`two days: ${bot.cmds.length} steps, ${log.sums.length} checksums, ${rec.size} bytes of commands (${perDay} a day), ${stored} characters stored`);
+console.log(
+  `two days: ${bot.cmds.length} steps, ${log.sums.length} checksums, ${rec.size} bytes of commands (${perDay} a day), ${stored} characters stored`,
+);
 check(log.sums.length === Math.floor(bot.cmds.length / SUM_STEPS), 'a checksum every game hour');
 check(perDay < 16000, 'a day of play takes under 16 KB');
 const back = replayLog(fitLog(JSON.parse(JSON.stringify(log)))!, CENTER_PERKS)!;
-check(back.ok && back.verified === log.sums.at(-1)![0] && back.sim.hash() === bot.sim.hash(), 'the log replays to the very same state, every checksum matching');
+check(
+  back.ok && back.verified === log.sums.at(-1)![0] && back.sim.hash() === bot.sim.hash(),
+  'the log replays to the very same state, every checksum matching',
+);
 check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own prison');
 {
   // A state field added by a later version (as every phase does) leaves the checksums as they were.
@@ -97,7 +102,9 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   const rb = replayLog(b.toLog(), CENTER_PERKS)!;
   check(ra.ok && ra.sim.hash() === a.sim.hash() && rb.ok && rb.sim.hash() === b.sim.hash(), 'each branch from one save replays whole');
   check(a.toLog().seed === seed && a.toLog().from === 0, 'a branch keeps the run from its start');
-  console.log(`two branches from a save at day ${a.toLog().from === 0 ? 2 : '?'}: both replay (${a.toLog().steps} and ${b.toLog().steps} steps)`);
+  console.log(
+    `two branches from a save at day ${a.toLog().from === 0 ? 2 : '?'}: both replay (${a.toLog().steps} and ${b.toLog().steps} steps)`,
+  );
 }
 
 // A log that doesn't match (a rules change, a damaged command): caught at the next checksum.
@@ -112,8 +119,13 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   // The run changed from its first step on: the hours before it still check out.
   const from = at - raw[k][1];
   const r = replayLog(bad, CENTER_PERKS)!;
-  check(!r.ok && r.verified === Math.floor(from / SUM_STEPS) * SUM_STEPS, `a changed log is caught, verified up to its last good hour (${r.verified / SUM_STEPS} h)`);
-  console.log(`a run of commands changed from step ${from} (hour ${Math.floor(from / SUM_STEPS)}): verified to hour ${r.verified / SUM_STEPS}`);
+  check(
+    !r.ok && r.verified === Math.floor(from / SUM_STEPS) * SUM_STEPS,
+    `a changed log is caught, verified up to its last good hour (${r.verified / SUM_STEPS} h)`,
+  );
+  console.log(
+    `a run of commands changed from step ${from} (hour ${Math.floor(from / SUM_STEPS)}): verified to hour ${r.verified / SUM_STEPS}`,
+  );
 }
 
 // The end of a run checked too (the escape is there, after the last hour): a change in the last minutes is caught.
@@ -155,14 +167,19 @@ check(replayLog(log, STALAG_FLUCHT) === null, 'a log only plays in its own priso
   deleteSave(3);
   check(readLog(3) === null, 'deleting a save deletes its log');
   keepReplay(log, true);
-  check(readReplay()?.steps === log.steps && readReplay('center-perks')?.steps === log.steps, 'an escape\'s log: the last, and the prison\'s quickest');
+  check(
+    readReplay()?.steps === log.steps && readReplay('center-perks')?.steps === log.steps,
+    "an escape's log: the last, and the prison's quickest",
+  );
   keepReplay({ ...log, steps: 5 }, false);
   check(readReplay()?.steps === 5 && readReplay('center-perks')?.steps === log.steps, 'a slower escape keeps the quickest');
   // Storage full: every log and replay gives way to a save.
   const { replayBestKey } = await import('../src/game/storage');
   writeSave(1, sim, 'test', [], saved);
   // As full as it gets: the save fits only once the logs are gone.
-  const logsSize = [...mem.entries()].filter(([k]) => k.startsWith('pe3d.log.') || k.startsWith('pe3d.replay.')).reduce((n, [, v]) => n + v.length, 0);
+  const logsSize = [...mem.entries()]
+    .filter(([k]) => k.startsWith('pe3d.log.') || k.startsWith('pe3d.replay.'))
+    .reduce((n, [, v]) => n + v.length, 0);
   const cap = [...mem.values()].reduce((n, v) => n + v.length, 0);
   const setItem = (globalThis as unknown as { localStorage: { setItem: (k: string, v: string) => void } }).localStorage.setItem;
   (globalThis as unknown as { localStorage: { setItem: (k: string, v: string) => void } }).localStorage.setItem = (k, v) => {
@@ -219,7 +236,8 @@ console.log('replay ok');
 
 // ------------------------------------------------------------------ the replay viewer (P25)
 {
-  const { scout, scoutAll, Tape, autoSpeed, highlightOf, KEY_STEPS, FINALE_STEPS, AUTO_MAX, AUTO_MIN, AUTO_QUIET } = await import('../src/replay/scout');
+  const { scout, scoutAll, Tape, autoSpeed, highlightOf, KEY_STEPS, FINALE_STEPS, AUTO_MAX, AUTO_MIN, AUTO_QUIET } =
+    await import('../src/replay/scout');
   const { prepareReplay, sumOf } = await import('../src/sim/runlog');
   const { PLANS, runRoute, quiet } = await import('./escapes');
   const { replayFile, replayFileName, readReplayFile, replaysKept, FILE_MAX } = await import('../src/game/replays');
@@ -239,12 +257,23 @@ console.log('replay ok');
   // The scout: whole, keyframes every half hour, the finale half an hour before the end, the escape its last highlight.
   const s = scoutAll(JSON.parse(JSON.stringify(esc)), CENTER_PERKS)!;
   check(s.ok && s.end === end && s.verified === end && s.via === 'tunnel', 'the scout checks an escape whole, to its end');
-  check(s.keys[0].step === esc.from && s.keys.slice(1).every((k) => k.step % KEY_STEPS === 0 && k.step <= end), 'a keyframe at the start, then every half game hour');
+  check(
+    s.keys[0].step === esc.from && s.keys.slice(1).every((k) => k.step % KEY_STEPS === 0 && k.step <= end),
+    'a keyframe at the start, then every half game hour',
+  );
   check(s.finale?.step === Math.max(esc.from, end - FINALE_STEPS), 'the finale half an hour before the escape');
   check(s.highlights.at(-1)?.kind === 'escape' && s.highlights.at(-1)?.step === end, 'the escape is the last highlight, at the end');
-  check(s.highlights.some((h) => h.kind === 'tunnel') && s.highlights.some((h) => h.kind === 'through'), 'the way down and the floor broken through are highlights');
-  check(s.highlights.every((h, k) => k === 0 || h.step >= s.highlights[k - 1].step), 'highlights in order');
-  console.log(`tunnel escape at Center Perks: ${esc.steps} steps, ${s.keys.length} keyframes, highlights ${s.highlights.map((h) => `${h.kind}@${Math.round(h.step / STEPS_PER_MINUTE)}m`).join(' ')}`);
+  check(
+    s.highlights.some((h) => h.kind === 'tunnel') && s.highlights.some((h) => h.kind === 'through'),
+    'the way down and the floor broken through are highlights',
+  );
+  check(
+    s.highlights.every((h, k) => k === 0 || h.step >= s.highlights[k - 1].step),
+    'highlights in order',
+  );
+  console.log(
+    `tunnel escape at Center Perks: ${esc.steps} steps, ${s.keys.length} keyframes, highlights ${s.highlights.map((h) => `${h.kind}@${Math.round(h.step / STEPS_PER_MINUTE)}m`).join(' ')}`,
+  );
 
   // Its progress as it goes adds up to what it found (the worker posts these).
   {
@@ -260,7 +289,7 @@ console.log('replay ok');
       marks += r.value.highlights.length;
     }
     // (What's left after the last word comes with the result: the worker sends the whole of it at the end.)
-    check(keys <= s.keys.length && marks <= s.highlights.length && keys > 1, 'the scout\'s progress is part of what it found');
+    check(keys <= s.keys.length && marks <= s.highlights.length && keys > 1, "the scout's progress is part of what it found");
   }
 
   // Seeking: from any keyframe, the tape steps to the next one exactly (the picture never drifts after a jump).
@@ -281,7 +310,10 @@ console.log('replay ok');
     set.sim.restore(s.finale!.snap);
     tape.seek(s.finale!.step - esc.from);
     for (let c = tape.next(); c >= 0; c = tape.next()) set.sim.step(c);
-    check(set.sim.state.step === end && set.sim.state.escaped > 0 && sumOf(set.sim) === sumOf(trec.sim), 'from the finale the escape plays out as it was');
+    check(
+      set.sim.state.step === end && set.sim.state.escaped > 0 && sumOf(set.sim) === sumOf(trec.sim),
+      'from the finale the escape plays out as it was',
+    );
     // The tape read from anywhere gives the commands a straight read gives.
     const straight: number[] = [];
     const t2 = new Tape(set.runs);
@@ -307,11 +339,17 @@ console.log('replay ok');
     const nl = nr.toLog();
     const q = scoutAll(JSON.parse(JSON.stringify(nl)), CENTER_PERKS)!;
     const night = q.quiet[0];
-    check(q.ok && !!night && night[0] <= nl.from + 1 && night[1] - night[0] > 6 * 60 * STEPS_PER_MINUTE, `the night asleep is a quiet time (${q.quiet.map(([a, b]) => `${Math.round((b - a) / STEPS_PER_MINUTE)} min`).join(', ')})`);
-    check(q.quiet.every(([a, b]) => b <= nl.from + nl.steps && !q.highlights.some((h) => h.step >= a && h.step < b)), 'no highlight inside a quiet time');
+    check(
+      q.ok && !!night && night[0] <= nl.from + 1 && night[1] - night[0] > 6 * 60 * STEPS_PER_MINUTE,
+      `the night asleep is a quiet time (${q.quiet.map(([a, b]) => `${Math.round((b - a) / STEPS_PER_MINUTE)} min`).join(', ')})`,
+    );
+    check(
+      q.quiet.every(([a, b]) => b <= nl.from + nl.steps && !q.highlights.some((h) => h.step >= a && h.step < b)),
+      'no highlight inside a quiet time',
+    );
     check(autoSpeed(night[0] + 100 * STEPS_PER_MINUTE, q.highlights, q.quiet) === AUTO_QUIET, 'Auto runs through it fastest');
     const m = scoutAll(log, CENTER_PERKS)!;
-    check(m.ok && m.highlights.length === 0 && m.via === null, 'the model prisoner\'s days: no highlights, no escape');
+    check(m.ok && m.highlights.length === 0 && m.via === null, "the model prisoner's days: no highlights, no escape");
   }
 
   // A rules change: the replay plays up to the last hour that checked, and nothing after it is kept.
@@ -320,8 +358,18 @@ console.log('replay ok');
     const at = bad.sums.findIndex(([k]) => k > esc.from + 2 * SUM_STEPS);
     bad.sums[at] = [bad.sums[at][0], 'deadbeef'];
     const b = scoutAll(bad, CENTER_PERKS)!;
-    check(!b.ok && b.end === b.verified && b.verified === bad.sums[at - 1][0], `a checksum missed: plays to the hour before (${b.end / SUM_STEPS} h)`);
-    check(b.keys.every((k) => k.step <= b.end) && b.highlights.every((h) => h.step <= b.end) && b.quiet.every(([, y]) => y <= b.end) && b.via === null && b.finale === null, 'nothing past it: no keyframes, highlights or escape');
+    check(
+      !b.ok && b.end === b.verified && b.verified === bad.sums[at - 1][0],
+      `a checksum missed: plays to the hour before (${b.end / SUM_STEPS} h)`,
+    );
+    check(
+      b.keys.every((k) => k.step <= b.end) &&
+        b.highlights.every((h) => h.step <= b.end) &&
+        b.quiet.every(([, y]) => y <= b.end) &&
+        b.via === null &&
+        b.finale === null,
+      'nothing past it: no keyframes, highlights or escape',
+    );
     check(scoutAll(esc, STALAG_FLUCHT) === null, 'a log only scouts in its own prison');
   }
 
@@ -329,10 +377,19 @@ console.log('replay ok');
   {
     const hs = [{ step: 10000, kind: 'tunnel' as const }];
     const qt: Array<[number, number]> = [[20000, 30000]];
-    check(autoSpeed(10000, hs, qt) === AUTO_MIN && autoSpeed(5000, hs, qt) === AUTO_MAX && autoSpeed(25000, hs, qt) === AUTO_QUIET, 'Auto: slow at a highlight, fast between, fastest asleep');
+    check(
+      autoSpeed(10000, hs, qt) === AUTO_MIN && autoSpeed(5000, hs, qt) === AUTO_MAX && autoSpeed(25000, hs, qt) === AUTO_QUIET,
+      'Auto: slow at a highlight, fast between, fastest asleep',
+    );
     const ramp = [9000, 9500, 9800, 9950].map((x) => autoSpeed(x, hs, qt));
-    check(ramp.every((v, k) => k === 0 || v <= ramp[k - 1]), `Auto eases down as a highlight comes (${ramp.map((v) => v.toFixed(1)).join(' ')})`);
-    check(highlightOf({ type: 'lockdown', on: false }) === null && highlightOf({ type: 'escaped', via: 'tunnel' }) === 'escape', 'only what matters is a highlight');
+    check(
+      ramp.every((v, k) => k === 0 || v <= ramp[k - 1]),
+      `Auto eases down as a highlight comes (${ramp.map((v) => v.toFixed(1)).join(' ')})`,
+    );
+    check(
+      highlightOf({ type: 'lockdown', on: false }) === null && highlightOf({ type: 'escaped', via: 'tunnel' }) === 'escape',
+      'only what matters is a highlight',
+    );
   }
 
   // A Daily's escape replays under its twists.
@@ -342,7 +399,7 @@ console.log('replay ok');
     const drec = new RunRecorder(dsim, { seed: 99, game: '2.34.0' });
     for (let k = 0; k < 3 * SUM_STEPS; k++) drec.step(k % 300 < 150 ? 5 : 0);
     const dl = { ...drec.toLog(), daily: 3 };
-    check(dl.mods?.join() === mods.join() && scoutAll(dl, CENTER_PERKS)!.ok, 'a Daily\'s log keeps its twists and scouts whole');
+    check(dl.mods?.join() === mods.join() && scoutAll(dl, CENTER_PERKS)!.ok, "a Daily's log keeps its twists and scouts whole");
     check(!scoutAll({ ...dl, mods: [] }, CENTER_PERKS)!.ok, 'without them it no longer checks');
   }
 
@@ -351,10 +408,25 @@ console.log('replay ok');
     const by = { ...DEFAULT_PRISONER, name: 'Rex' };
     const text = replayFile(esc, by);
     const back = readReplayFile(text);
-    check(typeof back !== 'string' && back.guest && back.by?.name === 'Rex' && JSON.stringify(back.log) === JSON.stringify(esc), 'a replay file reads back as a guest\'s, with who played it');
-    check(replayFileName(esc) === `prison-escape-center-perks-day${clockOf(end)}-tunnel.pe3d.json`, `a file name says what it is (${replayFileName(esc)})`);
-    check(readReplayFile('not json') === 'notReplay' && readReplayFile('{"kind":"other"}') === 'notReplay' && readReplayFile(JSON.stringify({ kind: 'pe3d-replay', log: { v: 1 } })) === 'notReplay', 'anything else is not a replay');
-    check(readReplayFile(replayFile({ ...log, prison: 'alcatraz' }, null)) === 'unknownPrison' && readReplayFile(replayFile({ ...esc, mods: ['moonGravity'] }, null)) === 'unknownPrison', 'a prison or twist this game lacks is refused');
+    check(
+      typeof back !== 'string' && back.guest && back.by?.name === 'Rex' && JSON.stringify(back.log) === JSON.stringify(esc),
+      "a replay file reads back as a guest's, with who played it",
+    );
+    check(
+      replayFileName(esc) === `prison-escape-center-perks-day${clockOf(end)}-tunnel.pe3d.json`,
+      `a file name says what it is (${replayFileName(esc)})`,
+    );
+    check(
+      readReplayFile('not json') === 'notReplay' &&
+        readReplayFile('{"kind":"other"}') === 'notReplay' &&
+        readReplayFile(JSON.stringify({ kind: 'pe3d-replay', log: { v: 1 } })) === 'notReplay',
+      'anything else is not a replay',
+    );
+    check(
+      readReplayFile(replayFile({ ...log, prison: 'alcatraz' }, null)) === 'unknownPrison' &&
+        readReplayFile(replayFile({ ...esc, mods: ['moonGravity'] }, null)) === 'unknownPrison',
+      'a prison or twist this game lacks is refused',
+    );
     check(readReplayFile('x'.repeat(FILE_MAX + 1)) === 'tooBig', 'a file too big is refused unread');
     const odd = readReplayFile(replayFile(esc, { name: 42 } as unknown as typeof by));
     check(typeof odd !== 'string' && odd.by?.name === '', 'a strange prisoner in a file is made safe');
@@ -362,25 +434,71 @@ console.log('replay ok');
     const wrap = (l: unknown) => JSON.stringify({ kind: 'pe3d-replay', v: 1, log: l });
     const raw = JSON.stringify({ kind: 'pe3d-replay', v: 1, log: esc }).replace(`"steps":${esc.steps}`, '"steps":1e400');
     check(readReplayFile(raw) === 'notReplay', 'endless steps (1e400) refused');
-    check([{ ...esc, steps: 1e12 }, { ...esc, steps: esc.steps + 1 }, { ...esc, from: -5 }, { ...esc, steps: 2.5 }, { ...esc, seed: Number.NaN }].every((l) => readReplayFile(wrap(l)) === 'notReplay'), 'impossible numbers and a length its commands lack refused');
-    check(readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'center-perks', state: null } })) === 'notReplay' && readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'center-perks', state: {} } })) === 'notReplay', 'a start that is no game refused (never thrown)');
-    check(readReplayFile(wrap({ ...esc, via: '../../etc' })) === 'notReplay' && readReplayFile(wrap({ ...esc, daily: -1 })) === 'notReplay', 'a way out or Daily that isn\'t one refused');
+    check(
+      [
+        { ...esc, steps: 1e12 },
+        { ...esc, steps: esc.steps + 1 },
+        { ...esc, from: -5 },
+        { ...esc, steps: 2.5 },
+        { ...esc, seed: Number.NaN },
+      ].every((l) => readReplayFile(wrap(l)) === 'notReplay'),
+      'impossible numbers and a length its commands lack refused',
+    );
+    check(
+      readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'center-perks', state: null } })) === 'notReplay' &&
+        readReplayFile(wrap({ ...esc, start: { v: 1, prison: 'center-perks', state: {} } })) === 'notReplay',
+      'a start that is no game refused (never thrown)',
+    );
+    check(
+      readReplayFile(wrap({ ...esc, via: '../../etc' })) === 'notReplay' && readReplayFile(wrap({ ...esc, daily: -1 })) === 'notReplay',
+      "a way out or Daily that isn't one refused",
+    );
   }
 
   // Kept on this device with its way out: the last escape, and the prison's quickest.
   {
     keepReplay(esc, true);
     const kept = replaysKept();
-    check(kept.last?.via === 'tunnel' && kept.best.some((b) => b.prison === 'center-perks' && b.log.via === 'tunnel'), 'kept escapes carry their way out');
+    check(
+      kept.last?.via === 'tunnel' && kept.best.some((b) => b.prison === 'center-perks' && b.log.via === 'tunnel'),
+      'kept escapes carry their way out',
+    );
     keepReplay({ ...esc, daily: 0 }, false);
-    check(replaysKept().last?.daily === 0 && replaysKept().best.find((b) => b.prison === 'center-perks')?.log.daily === undefined, 'a Daily\'s escape is the last one, never a prison\'s quickest');
+    check(
+      replaysKept().last?.daily === 0 && replaysKept().best.find((b) => b.prison === 'center-perks')?.log.daily === undefined,
+      "a Daily's escape is the last one, never a prison's quickest",
+    );
   }
 
   // Watching never grants anything: the viewer calls nothing that records, earns, counts or saves.
   {
     const { readFileSync } = await import('node:fs');
-    const grants = ['recordEscape', 'escapeRun', 'checkRun', 'startRun', 'syncRun', 'addStats', 'dailyEscape', 'dailyTry', 'writeSave', 'writeLog', 'keepReplay', 'writeJSON', 'markLesson', 'autosave', 'localStorage'];
-    const files = ['src/play/replay.ts', 'src/replay/scout.ts', 'src/replay/run.ts', 'src/replay/scout.worker.ts', 'src/ui/replayBar.ts', 'src/game/replays.ts', 'src/play/stage.ts'];
+    const grants = [
+      'recordEscape',
+      'escapeRun',
+      'checkRun',
+      'startRun',
+      'syncRun',
+      'addStats',
+      'dailyEscape',
+      'dailyTry',
+      'writeSave',
+      'writeLog',
+      'keepReplay',
+      'writeJSON',
+      'markLesson',
+      'autosave',
+      'localStorage',
+    ];
+    const files = [
+      'src/play/replay.ts',
+      'src/replay/scout.ts',
+      'src/replay/run.ts',
+      'src/replay/scout.worker.ts',
+      'src/ui/replayBar.ts',
+      'src/game/replays.ts',
+      'src/play/stage.ts',
+    ];
     const bad = files.flatMap((f) => grants.filter((g) => new RegExp(`\\b${g}\\b`).test(readFileSync(f, 'utf8'))).map((g) => `${f}: ${g}`));
     check(bad.length === 0, `the viewer calls nothing that grants or saves (${bad.join(', ') || 'none'})`);
   }
@@ -423,14 +541,39 @@ console.log('replay ok');
   twin.restore(snap);
   const s = twin.state;
   const bodies = [s.player, ...s.inmates.map((m) => m.body), ...s.guards.map((g) => g.body)];
-  check(bodies.every((b) => Number.isInteger(b.facing) && b.facing >= 1 && b.facing <= 16 && DIR_X[b.facing] !== undefined && Number.isSafeInteger(b.x) && Number.isSafeInteger(b.z)), 'damaged headings and places load as a heading south, the place it started');
-  check(s.inmates.every((m) => m.face >= 1 && m.face <= 16) && s.guards.every((x) => Number.isInteger(x.face) && x.face >= 1 && x.face <= 16), 'and the way an inmate or a guard faces on arrival');
+  check(
+    bodies.every(
+      (b) =>
+        Number.isInteger(b.facing) &&
+        b.facing >= 1 &&
+        b.facing <= 16 &&
+        DIR_X[b.facing] !== undefined &&
+        Number.isSafeInteger(b.x) &&
+        Number.isSafeInteger(b.z),
+    ),
+    'damaged headings and places load as a heading south, the place it started',
+  );
+  check(
+    s.inmates.every((m) => m.face >= 1 && m.face <= 16) && s.guards.every((x) => Number.isInteger(x.face) && x.face >= 1 && x.face <= 16),
+    'and the way an inmate or a guard faces on arrival',
+  );
   // (Should one slip through anyway: sight with no heading sees nothing past touching, never all round.)
   const g = s.guards[1].body;
-  const ring = [0, 4, 8, 12].map((d) => ({ x: g.x + Math.round(Math.cos((d * Math.PI) / 8) * 2 * UNIT), z: g.z + Math.round(Math.sin((d * Math.PI) / 8) * 2 * UNIT) }));
-  check(ring.every((p) => !canSee(twin.world, { ...g, facing: 99 }, p)), 'a heading that isn\'t one sees nothing past touching (never all round)');
+  const ring = [0, 4, 8, 12].map((d) => ({
+    x: g.x + Math.round(Math.cos((d * Math.PI) / 8) * 2 * UNIT),
+    z: g.z + Math.round(Math.sin((d * Math.PI) / 8) * 2 * UNIT),
+  }));
+  check(
+    ring.every((p) => !canSee(twin.world, { ...g, facing: 99 }, p)),
+    "a heading that isn't one sees nothing past touching (never all round)",
+  );
   for (let k = 0; k < 40; k++) twin.step(0);
-  check([twin.state.player, ...twin.state.inmates.map((m) => m.body), ...twin.state.guards.map((x) => x.body)].every((b) => Number.isFinite(b.x) && Number.isFinite(b.z)), 'and it plays on with every place a number');
+  check(
+    [twin.state.player, ...twin.state.inmates.map((m) => m.body), ...twin.state.guards.map((x) => x.body)].every(
+      (b) => Number.isFinite(b.x) && Number.isFinite(b.z),
+    ),
+    'and it plays on with every place a number',
+  );
   console.log('damaged headings: fixed on load');
 }
 

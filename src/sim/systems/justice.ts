@@ -17,7 +17,17 @@ import { randomInt, rollInt, SALT } from '../rng';
 import { WAKE } from '../events';
 import { today } from './calendar';
 import { INSPECTION_CELLS } from '../../content/days';
-import { HIDING_STEPS, KO_STEPS, PEEL_STEPS, POTATO_PRESSES, POTATO_STEPS, SHAKEDOWN_CELLS, SOLITARY_HEAT, SOLITARY_STEPS, STRICT_CELLS } from '../tuning';
+import {
+  HIDING_STEPS,
+  KO_STEPS,
+  PEEL_STEPS,
+  POTATO_PRESSES,
+  POTATO_STEPS,
+  SHAKEDOWN_CELLS,
+  SOLITARY_HEAT,
+  SOLITARY_STEPS,
+  STRICT_CELLS,
+} from '../tuning';
 import { containersOf } from '../world/containers';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import { clockAt } from './clock';
@@ -186,7 +196,11 @@ export function shakedownCells(w: World, salt: number, day: number, inspection =
   if (k < 0 || n < 2 || w.def.rules?.relaxed) return [];
   // An inspection morning (P17): more cells (the first ones the same as any other morning's).
   // (P26: a Crackdown, more again.)
-  const count = Math.min(n, (inspection ? INSPECTION_CELLS : w.def.guards[k].trait === 'strict' ? STRICT_CELLS : SHAKEDOWN_CELLS) + (crackdown ? CRACKDOWN_CELLS : 0));
+  const count = Math.min(
+    n,
+    (inspection ? INSPECTION_CELLS : w.def.guards[k].trait === 'strict' ? STRICT_CELLS : SHAKEDOWN_CELLS) +
+      (crackdown ? CRACKDOWN_CELLS : 0),
+  );
   const cells: number[] = [];
   for (let j = 0; cells.length < count; j++) {
     const c = 1 + rollInt(salt, SALT.SHAKEDOWN, day, j, n);
@@ -221,8 +235,9 @@ export function bedCheck(sim: SimContext) {
   const left = steps.map((_, c) => c).filter((c) => c > 0 && steps[c] >= 0);
   left.sort((a, b) => (steps[b] % MAP_W) - (steps[a] % MAP_W) || steps[a] - steps[b]);
   const cells: number[] = [];
-  const far = (a: number, b: number) => Math.abs((steps[a] % MAP_W) - (steps[b] % MAP_W)) + Math.abs(Math.floor(steps[a] / MAP_W) - Math.floor(steps[b] / MAP_W));
-  for (let at = left.shift(); at !== undefined; ) {
+  const far = (a: number, b: number) =>
+    Math.abs((steps[a] % MAP_W) - (steps[b] % MAP_W)) + Math.abs(Math.floor(steps[a] / MAP_W) - Math.floor(steps[b] / MAP_W));
+  for (let at = left.shift(); at !== undefined;) {
     cells.push(at);
     let best = -1;
     for (let j = 0; j < left.length; j++) if (best < 0 || far(at, left[j]) < far(at, left[best])) best = j;
@@ -255,7 +270,12 @@ export function report(sim: SimContext, r: GuardReport) {
   // (The dummy did it: P16's ledger counts that.)
   // (2.28: up in the cell they're there all the same; the guard says so.)
   const awake = !sim.rules227 && sim.playerZone === 'playerCell' && !s.sleeping && s.solitary <= 0 && s.ko <= 0;
-  sim.events.push({ type: 'bedCheck', result: ok ? 'pass' : 'fail', ...(ok && !there ? { dummy: true } : {}), ...(awake ? { awake } : {}) });
+  sim.events.push({
+    type: 'bedCheck',
+    result: ok ? 'pass' : 'fail',
+    ...(ok && !there ? { dummy: true } : {}),
+    ...(awake ? { awake } : {}),
+  });
   if (!ok && !s.lockdown) {
     sim.events.push({ type: 'spotted', reason: 'bedCheck' });
     addHeat(sim, 100);

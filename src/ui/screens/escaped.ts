@@ -45,7 +45,14 @@ export interface Victory {
    * how close it got, the seconds out there, where it ended: the safe point's kind or 'lou').
    * `goal` is the safe point's kind; `lou`: his car waits out there.
    */
-  hunt?: { state: 'offer' | 'skipped' | 'safe' | 'caught'; goal: string; lou?: boolean; progress?: number; secs?: number; reached?: string };
+  hunt?: {
+    state: 'offer' | 'skipped' | 'safe' | 'caught';
+    goal: string;
+    lou?: boolean;
+    progress?: number;
+    secs?: number;
+    reached?: string;
+  };
 }
 
 export type VictoryChoice = 'again' | 'next' | 'title' | 'watch' | 'run' | 'skip';
@@ -54,15 +61,20 @@ export type VictoryChoice = 'again' | 'next' | 'title' | 'watch' | 'run' | 'skip
 function huntRow(v: Victory): string {
   const hu = v.hunt;
   if (!hu || hu.state === 'skipped') return '';
-  if (hu.state === 'offer') return `<div class="v-hunt offer">${icon('run', 20)}<span><b>${t('manhunt.offer')}</b><small>${t(hu.lou ? 'manhunt.offerLou' : 'manhunt.offerSub', { goal: t(`manhunt.goal.${hu.goal}` as Key) })}</small></span></div>`;
-  if (hu.state === 'safe') return `<div class="v-hunt safe" role="status"><span class="v-star">${icon('star', 20)}</span><span><b>${t('manhunt.clean')}</b><small>${t(`manhunt.awaySub.${hu.reached === 'lou' ? 'lou' : hu.goal}` as Key)} · ${spanText(hu.secs ?? 0)}</small></span></div>`;
+  if (hu.state === 'offer')
+    return `<div class="v-hunt offer">${icon('run', 20)}<span><b>${t('manhunt.offer')}</b><small>${t(hu.lou ? 'manhunt.offerLou' : 'manhunt.offerSub', { goal: t(`manhunt.goal.${hu.goal}` as Key) })}</small></span></div>`;
+  if (hu.state === 'safe')
+    return `<div class="v-hunt safe" role="status"><span class="v-star">${icon('star', 20)}</span><span><b>${t('manhunt.clean')}</b><small>${t(`manhunt.awaySub.${hu.reached === 'lou' ? 'lou' : hu.goal}` as Key)} · ${spanText(hu.secs ?? 0)}</small></span></div>`;
   return `<div class="v-hunt caught" role="status">${icon('siren', 20)}<span><b>${t('manhunt.caught')}</b><small>${t('manhunt.caughtCard', { n: Math.round((hu.progress ?? 0) * 100), goal: t(`manhunt.goal.${hu.goal}` as Key) })}</small></span></div>`;
 }
 
 /** The medal won (P16), or how quick bronze needed to be. */
 function medalRow(v: Victory): string {
   if (v.medal === undefined) return '';
-  if (!v.medal) return v.bronzeBy ? `<div class="v-medal none">${medalDisc(null, 30)}<span><b>${t('victory.noMedal')}</b><small>${t('victory.bronzeBy', { n: v.bronzeBy })}</small></span></div>` : '';
+  if (!v.medal)
+    return v.bronzeBy
+      ? `<div class="v-medal none">${medalDisc(null, 30)}<span><b>${t('victory.noMedal')}</b><small>${t('victory.bronzeBy', { n: v.bronzeBy })}</small></span></div>`
+      : '';
   return `<div class="v-medal ${v.medal}">${medalDisc(v.medal, 34)}<span><b>${t(`medal.${v.medal}` as Key)}</b><small>${t(v.newMedal ? 'victory.medalNew' : 'victory.medalKept')}</small></span></div>`;
 }
 
@@ -81,7 +93,8 @@ export function earnedRow(list: readonly Achievement[]): string {
  * shown again after the replay, without its confetti).
  */
 export function showVictory(v: Victory, click: () => void, back = false): Promise<VictoryChoice> {
-  const stat = (ic: string, n: string | number, label: Key) => `<div class="v-stat">${icon(ic, 18)}<b>${n}</b><small>${t(label)}</small></div>`;
+  const stat = (ic: string, n: string | number, label: Key) =>
+    `<div class="v-stat">${icon(ic, 18)}<b>${n}</b><small>${t(label)}</small></div>`;
   const [walls, dug, guards, cash] = v.tally;
   const pips = v.routes
     .map((r) => {
@@ -156,6 +169,8 @@ export function showVictory(v: Victory, click: () => void, back = false): Promis
       resolve(c);
     };
     document.body.append(el);
-    el.querySelector<HTMLElement>(v.hunt?.state === 'offer' ? '[data-c="run"]' : back ? '[data-c="watch"]' : v.unlocked ? '[data-c="next"]' : '[data-c="again"]')?.focus();
+    el.querySelector<HTMLElement>(
+      v.hunt?.state === 'offer' ? '[data-c="run"]' : back ? '[data-c="watch"]' : v.unlocked ? '[data-c="next"]' : '[data-c="again"]',
+    )?.focus();
   });
 }

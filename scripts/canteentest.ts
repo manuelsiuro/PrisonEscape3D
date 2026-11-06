@@ -19,7 +19,16 @@ import { counterTray, eatingNow, handsBusy, mealOn, mealSteps, trayOffer, traysH
 import { DOING, stepInmates, TRAY } from '../src/sim/systems/inmates';
 import { socialNow } from '../src/sim/systems/social';
 import { itemOf, slot } from '../src/sim/systems/items';
-import { CHASE_HEAT, MEAL_ENERGY, MEAL_STEPS, MEAL_STEPS_224, STEPS_PER_MINUTE, TRAY_GRACE_STEPS, TRAY_HEAT, UNIT } from '../src/sim/tuning';
+import {
+  CHASE_HEAT,
+  MEAL_ENERGY,
+  MEAL_STEPS,
+  MEAL_STEPS_224,
+  STEPS_PER_MINUTE,
+  TRAY_GRACE_STEPS,
+  TRAY_HEAT,
+  UNIT,
+} from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { tileAt } from '../src/sim/world/grid';
 import { MAP_W } from '../src/sim/world/World';
@@ -41,7 +50,10 @@ function atBreakfast(seed = 3, prison = CENTER_PERKS) {
   return bot;
 }
 const counterOf = (bot: Bot) => containersOf(bot.sim.world).findIndex((c) => c.table === 'canteenCounter');
-const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st.inmates.some((m) => m.goal === s.tile || m.seat === s.tile || tileAt(m.body.x, m.body.z) === s.tile))!;
+const freeSeat = (bot: Bot) =>
+  placesOf(bot.sim.world).seats.find(
+    (s) => !bot.st.inmates.some((m) => m.goal === s.tile || m.seat === s.tile || tileAt(m.body.x, m.body.z) === s.tile),
+  )!;
 
 // ------------------------------------------------------------------ the whole meal
 {
@@ -98,7 +110,9 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   check(trayOffer(bot.sim, counter) === null, 'one tray a meal');
   bot.act();
   check(bot.st.items.open === counter, 'the counter searched as ever');
-  console.log(`a meal: no tray no meal; ${MEAL_STEPS / 20} s at the table, +${MEAL_ENERGY} energy; a tray at the first press, the search at the next; back to the counter empty`);
+  console.log(
+    `a meal: no tray no meal; ${MEAL_STEPS / 20} s at the table, +${MEAL_ENERGY} energy; a tray at the first press, the search at the next; back to the counter empty`,
+  );
 }
 
 // ------------------------------------------------------------------ what loses it
@@ -121,7 +135,10 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   full.hold('chocolate');
   full.st.energy = 100;
   full.op(OP.USE, 1);
-  check(full.st.tray === TRAY.FULL && itemOf(full.st.items.inv[0]) === n('chocolate'), 'a press refused keeps the tray (chocolate at full energy)');
+  check(
+    full.st.tray === TRAY.FULL && itemOf(full.st.items.inv[0]) === n('chocolate'),
+    'a press refused keeps the tray (chocolate at full energy)',
+  );
   // A chocolate eaten: the hands were busy.
   const busy = withTray(12);
   busy.st.items.inv[0] = slot(n('chocolate'));
@@ -147,7 +164,9 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   const over = withTray(16);
   over.until(() => ROUTINE[over.st.routine].id !== 'breakfast', 60 * STEPS_PER_MINUTE);
   check(ROUTINE[over.st.routine].id !== 'breakfast' && over.st.tray === TRAY.NONE, "the meal's end takes it");
-  console.log('lost: a press that does something, leaving the canteen, a knockout, a lockdown, the end of the meal; kept by a press that does nothing');
+  console.log(
+    'lost: a press that does something, leaving the canteen, a knockout, a lockdown, the end of the meal; kept by a press that does nothing',
+  );
 
   // A new meal starts clean: a tray again.
   const next = withTray(17);
@@ -180,7 +199,10 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   // Walked out with it, full or empty.
   const full = taken(91);
   leave(full);
-  check(full.st.tray === TRAY.NONE && full.st.heat === 0, `out with it full (it came with a search of the counter): nothing (${full.st.heat})`);
+  check(
+    full.st.tray === TRAY.NONE && full.st.heat === 0,
+    `out with it full (it came with a search of the counter): nothing (${full.st.heat})`,
+  );
   const empty = eaten(92);
   leave(empty);
   check(empty.st.heat === TRAY_HEAT, `out with it empty: +${TRAY_HEAT}% (${empty.st.heat})`);
@@ -204,7 +226,10 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   const late = taken(95);
   check(lastBell(late) === 0, "a full tray at the meal's end: nothing");
   const finished = eaten(96);
-  finished.until(() => ROUTINE[finished.st.routine].id === 'breakfast' && finished.sim.clock.minuteOfDay >= 9 * 60 + 58, 70 * STEPS_PER_MINUTE);
+  finished.until(
+    () => ROUTINE[finished.st.routine].id === 'breakfast' && finished.sim.clock.minuteOfDay >= 9 * 60 + 58,
+    70 * STEPS_PER_MINUTE,
+  );
   finished.st.trayDone = finished.st.step;
   finished.st.heat = 0;
   check(lastBell(finished) === 0, "eaten in the meal's last minutes: let off");
@@ -227,8 +252,11 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   over.st.heat = CHASE_HEAT + 5;
   leave(over);
   check(over.st.heat === CHASE_HEAT + 5, 'already past the line: nothing added');
-  for (const text of [en['help.meals.warn'], fr['help.meals.warn']]) check(new RegExp(`\\+${TRAY_HEAT}\\s?%`).test(text ?? ''), 'How to play says what it costs');
-  console.log(`not brought back: +${TRAY_HEAT}% heat for walking out with it eaten or holding it at the end; let off when full, dropped, finished in the last ${TRAY_GRACE_STEPS / STEPS_PER_MINUTE} minutes or in a lockdown; never past ${CHASE_HEAT - 1}%`);
+  for (const text of [en['help.meals.warn'], fr['help.meals.warn']])
+    check(new RegExp(`\\+${TRAY_HEAT}\\s?%`).test(text ?? ''), 'How to play says what it costs');
+  console.log(
+    `not brought back: +${TRAY_HEAT}% heat for walking out with it eaten or holding it at the end; let off when full, dropped, finished in the last ${TRAY_GRACE_STEPS / STEPS_PER_MINUTE} minutes or in a lockdown; never past ${CHASE_HEAT - 1}%`,
+  );
 }
 
 // ------------------------------------------------------------------ saves
@@ -253,7 +281,10 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   old.state.eaten = MEAL_STEPS_224;
   was.restore(old as unknown as Snapshot);
   check(was.state.eaten === MEAL_STEPS, 'a meal eaten before the save stays eaten');
-  check(was.state.tray === TRAY.NONE && was.state.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1), 'a save from before loads with none');
+  check(
+    was.state.tray === TRAY.NONE && was.state.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1),
+    'a save from before loads with none',
+  );
   for (let k = 0; k < 40; k++) was.step(0);
   console.log('saves: the tray kept; a save from before loads with none');
 }
@@ -264,8 +295,14 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   bot.sim.rules224 = true;
   check(bot.routineUntil(1, 9 * 60 + 25), 'breakfast');
   check(!traysHere(bot.sim) && mealSteps(bot.sim) === MEAL_STEPS_224, 'older runs: no trays, three seconds');
-  check(bot.st.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1), 'older runs: no inmate fetches one');
-  check(bot.st.inmates.some((m) => m.doing === DOING.EAT), 'older runs: straight to their seats');
+  check(
+    bot.st.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1),
+    'older runs: no inmate fetches one',
+  );
+  check(
+    bot.st.inmates.some((m) => m.doing === DOING.EAT),
+    'older runs: straight to their seats',
+  );
   at(bot, freeSeat(bot));
   bot.act();
   bot.until(() => bot.st.eaten >= MEAL_STEPS_224, MEAL_STEPS_224 + 2);
@@ -299,8 +336,23 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   // Whatever takes both hands.
   const st0 = withTray(51).st;
   check(!handsBusy(st0), 'hands free with a tray');
-  const busy = { dice: [0, 0, 1, 1], bout: [0, 50, 1, 0], pick: [1, 0, 0], shot: [0, 0], train: 3, cheat: {}, shootout: {}, board: { seated: true }, match: {}, ink: {}, show: {}, quiz: {}, call: {} };
-  for (const [field, value] of Object.entries(busy)) check(handsBusy({ ...st0, [field]: value } as typeof st0), `${field}: both hands busy`);
+  const busy = {
+    dice: [0, 0, 1, 1],
+    bout: [0, 50, 1, 0],
+    pick: [1, 0, 0],
+    shot: [0, 0],
+    train: 3,
+    cheat: {},
+    shootout: {},
+    board: { seated: true },
+    match: {},
+    ink: {},
+    show: {},
+    quiz: {},
+    call: {},
+  };
+  for (const [field, value] of Object.entries(busy))
+    check(handsBusy({ ...st0, [field]: value } as typeof st0), `${field}: both hands busy`);
   // Talking keeps it; so does the panel.
   const chat = withTray(53);
   chat.st.talk = 0;
@@ -340,7 +392,10 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   const social = { follow: [], gap: [], talk: -1, work: [], seat: -1, scare: [], doing: [], serve: socialNow(bot.sim).serve };
   check(!mealOn(bot.sim) && !social.serve, 'after dinner the counter is shut');
   for (let k = 0; k < 40 * STEPS_PER_MINUTE; k++) stepInmates(bot.sim.world, bot.st.inmates, dinner, bot.st, [], bot.st.step, null, social);
-  check(bot.st.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1), 'a film night fetches no trays');
+  check(
+    bot.st.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1),
+    'a film night fetches no trays',
+  );
   check(bot.st.inmates.filter((m) => m.doing === DOING.EAT).length >= bot.st.inmates.length - 1, 'they sit down all the same');
   console.log('a film or the acts: the crowd sits down with no tray');
 }
@@ -392,7 +447,13 @@ for (const prison of PRISONS) {
   check(bot.routineUntil(1, 9 * 60), `${prison.id}: walking to breakfast`);
   const w = bot.sim.world;
   const places = placesOf(w);
-  const near = (from: number, spots: readonly Spot[]) => [...spots].sort((a, b) => Math.abs((a.tile % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(a.tile / MAP_W) - Math.floor(from / MAP_W)) - (Math.abs((b.tile % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(b.tile / MAP_W) - Math.floor(from / MAP_W))));
+  const near = (from: number, spots: readonly Spot[]) =>
+    [...spots].sort(
+      (a, b) =>
+        Math.abs((a.tile % MAP_W) - (from % MAP_W)) +
+        Math.abs(Math.floor(a.tile / MAP_W) - Math.floor(from / MAP_W)) -
+        (Math.abs((b.tile % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(b.tile / MAP_W) - Math.floor(from / MAP_W))),
+    );
   const t0 = bot.st.step;
   const goTo = (spot: Spot, why: string) => {
     check(bot.walkTo(spot.tile), `${prison.id}: ${why}: walked to tile ${spot.tile}`);
@@ -402,7 +463,10 @@ for (const prison of PRISONS) {
   goTo(pick, 'to the counter');
   bot.act();
   check(bot.st.tray === TRAY.FULL, `${prison.id}: a tray taken in the crowd`);
-  const seatFree = () => near(bot.tile, places.seats).find((q) => !bot.st.inmates.some((m) => m.seat === q.tile || m.goal === q.tile || tileAt(m.body.x, m.body.z) === q.tile))!;
+  const seatFree = () =>
+    near(bot.tile, places.seats).find(
+      (q) => !bot.st.inmates.some((m) => m.seat === q.tile || m.goal === q.tile || tileAt(m.body.x, m.body.z) === q.tile),
+    )!;
   goTo(seatFree(), 'to a table');
   check(bot.st.tray === TRAY.FULL, `${prison.id}: the tray carried across the room`);
   bot.act();
@@ -421,53 +485,71 @@ for (const prison of PRISONS) {
   bot.act();
   check(bot.st.tray === TRAY.NONE, `${prison.id}: given back`);
   check(ROUTINE[bot.st.routine].id === 'breakfast', `${prison.id}: all within the hour`);
-  console.log(`${prison.id}: ${places.counters.length} places at the counter, ${places.seats.length} seats; the meal walked in ${Math.round((bot.st.step - t0) / STEPS_PER_MINUTE)} of its 60 minutes`);
+  console.log(
+    `${prison.id}: ${places.counters.length} places at the counter, ${places.seats.length} seats; the meal walked in ${Math.round((bot.st.step - t0) / STEPS_PER_MINUTE)} of its 60 minutes`,
+  );
 }
 
 // ------------------------------------------------------------------ the inmates' round
 const SEEDS = [41, 42, 43];
-for (const prison of PRISONS) for (const seed of SEEDS) {
-  const bot = new Bot(prison, seed);
-  const w = bot.sim.world;
-  const places = placesOf(w);
-  check(places.counters.length > 0, `${prison.id}: a serving counter to fetch from`);
-  // The food shows on it, the place along it can be walked to from the door.
-  const food = (prison.decor ?? []).filter((d) => d.kind === 'trays');
-  check(food.length === 1, `${prison.id}: its trays on one counter (${food.length})`);
-  check(food.every((d) => w.props.some((p) => p.kind === 'counter' && p.x === d.x && p.z === d.z && w.zoneAt(p.x, p.z) === 'canteen')), `${prison.id}: the food stands on the canteen's serving counter`);
-  const from = places.seats[0].tile;
-  for (const s of places.counters) check(pathTo(w, from, s.tile, undefined, w.npcBlock) !== null, `${prison.id}: tile ${s.tile} by the counter in reach`);
-  // Watched through a meal, from wherever the player is (they keep the routine).
-  check(bot.routineUntil(1, 9 * 60), `${prison.id}: to breakfast`);
-  const n = bot.st.inmates.length;
-  const fetched = new Set<number>();
-  const ate = new Set<number>();
-  const back = new Set<number>();
-  let overlapped = 0;
-  let pressed = 0;
-  let lastBack = 0;
-  const start = bot.st.step;
-  bot.keepRoutine(() => {
-    bot.st.inmates.forEach((m, k) => {
-      if (m.doing === DOING.SERVE && m.tray === TRAY.NONE) fetched.add(k);
-      if (m.doing === DOING.EAT && m.tray === TRAY.FULL) ate.add(k);
-      if (m.doing === DOING.SIT && m.tray === TRAY.NONE && ate.has(k) && !back.has(k)) {
-        back.add(k);
-        lastBack = bot.st.step;
-      }
-    });
-    const onSpot = bot.st.inmates.filter((m) => m.doing === DOING.SERVE).map((m) => tileAt(m.body.x, m.body.z));
-    if (new Set(onSpot).size < onSpot.length) overlapped++;
-    // People on their feet in each other's bodies.
-    const up = bot.st.inmates.filter((q) => q.doing !== DOING.EAT && q.doing !== DOING.SIT && bot.sim.world.zoneAt(Math.floor(q.body.x / UNIT), Math.floor(q.body.z / UNIT)) === 'canteen');
-    for (let i = 0; i < up.length; i++) for (let j = 0; j < i; j++) if (Math.abs(up[i].body.x - up[j].body.x) + Math.abs(up[i].body.z - up[j].body.z) < UNIT / 3) pressed++;
-    return ROUTINE[bot.st.routine].id !== 'breakfast';
-  }, 70 * STEPS_PER_MINUTE);
-  check(fetched.size === n, `${prison.id}: all fetched a tray (${fetched.size}/${n})`);
-  check(ate.size === n, `${prison.id}: all ate at a table (${ate.size}/${n})`);
-  check(back.size >= n - 1, `${prison.id}: and took it back (${back.size}/${n})`);
-  check(overlapped <= 10, `${prison.id}: the crowd keeps its places at the counter (${overlapped} steps two at one)`);
-  bot.until(() => false, 200);
-  check(bot.st.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1), `${prison.id}: no tray left after the meal`);
-  console.log(`${prison.id} #${seed}: of ${n} inmates ${fetched.size} fetched, ${ate.size} ate, ${back.size} took it back, the last at ${Math.round((lastBack - start) / STEPS_PER_MINUTE)} minutes; ${overlapped} steps two at one place, ${pressed} pressed together`);
-}
+for (const prison of PRISONS)
+  for (const seed of SEEDS) {
+    const bot = new Bot(prison, seed);
+    const w = bot.sim.world;
+    const places = placesOf(w);
+    check(places.counters.length > 0, `${prison.id}: a serving counter to fetch from`);
+    // The food shows on it, the place along it can be walked to from the door.
+    const food = (prison.decor ?? []).filter((d) => d.kind === 'trays');
+    check(food.length === 1, `${prison.id}: its trays on one counter (${food.length})`);
+    check(
+      food.every((d) => w.props.some((p) => p.kind === 'counter' && p.x === d.x && p.z === d.z && w.zoneAt(p.x, p.z) === 'canteen')),
+      `${prison.id}: the food stands on the canteen's serving counter`,
+    );
+    const from = places.seats[0].tile;
+    for (const s of places.counters)
+      check(pathTo(w, from, s.tile, undefined, w.npcBlock) !== null, `${prison.id}: tile ${s.tile} by the counter in reach`);
+    // Watched through a meal, from wherever the player is (they keep the routine).
+    check(bot.routineUntil(1, 9 * 60), `${prison.id}: to breakfast`);
+    const n = bot.st.inmates.length;
+    const fetched = new Set<number>();
+    const ate = new Set<number>();
+    const back = new Set<number>();
+    let overlapped = 0;
+    let pressed = 0;
+    let lastBack = 0;
+    const start = bot.st.step;
+    bot.keepRoutine(() => {
+      bot.st.inmates.forEach((m, k) => {
+        if (m.doing === DOING.SERVE && m.tray === TRAY.NONE) fetched.add(k);
+        if (m.doing === DOING.EAT && m.tray === TRAY.FULL) ate.add(k);
+        if (m.doing === DOING.SIT && m.tray === TRAY.NONE && ate.has(k) && !back.has(k)) {
+          back.add(k);
+          lastBack = bot.st.step;
+        }
+      });
+      const onSpot = bot.st.inmates.filter((m) => m.doing === DOING.SERVE).map((m) => tileAt(m.body.x, m.body.z));
+      if (new Set(onSpot).size < onSpot.length) overlapped++;
+      // People on their feet in each other's bodies.
+      const up = bot.st.inmates.filter(
+        (q) =>
+          q.doing !== DOING.EAT &&
+          q.doing !== DOING.SIT &&
+          bot.sim.world.zoneAt(Math.floor(q.body.x / UNIT), Math.floor(q.body.z / UNIT)) === 'canteen',
+      );
+      for (let i = 0; i < up.length; i++)
+        for (let j = 0; j < i; j++) if (Math.abs(up[i].body.x - up[j].body.x) + Math.abs(up[i].body.z - up[j].body.z) < UNIT / 3) pressed++;
+      return ROUTINE[bot.st.routine].id !== 'breakfast';
+    }, 70 * STEPS_PER_MINUTE);
+    check(fetched.size === n, `${prison.id}: all fetched a tray (${fetched.size}/${n})`);
+    check(ate.size === n, `${prison.id}: all ate at a table (${ate.size}/${n})`);
+    check(back.size >= n - 1, `${prison.id}: and took it back (${back.size}/${n})`);
+    check(overlapped <= 10, `${prison.id}: the crowd keeps its places at the counter (${overlapped} steps two at one)`);
+    bot.until(() => false, 200);
+    check(
+      bot.st.inmates.every((m) => m.tray === TRAY.NONE && m.seat === -1),
+      `${prison.id}: no tray left after the meal`,
+    );
+    console.log(
+      `${prison.id} #${seed}: of ${n} inmates ${fetched.size} fetched, ${ate.size} ate, ${back.size} took it back, the last at ${Math.round((lastBack - start) / STEPS_PER_MINUTE)} minutes; ${overlapped} steps two at one place, ${pressed} pressed together`,
+    );
+  }

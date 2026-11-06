@@ -89,7 +89,10 @@ export class Weather {
     this.drawn = new Float32Array(DROPS * 6);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(this.drawn, 3).setUsage(THREE.DynamicDrawUsage));
-    this.streaks = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xbfd4ea, transparent: true, opacity: 0.38, depthWrite: false }));
+    this.streaks = new THREE.LineSegments(
+      geo,
+      new THREE.LineBasicMaterial({ color: 0xbfd4ea, transparent: true, opacity: 0.38, depthWrite: false }),
+    );
     this.streaks.frustumCulled = false;
     this.streaks.visible = false;
     this.streaks.renderOrder = 6;
@@ -166,7 +169,21 @@ export class Weather {
    * roof seen from below), `wet` whether rain ripples on it (hard ground: grass soaks it up); `y` is the floor the player is on,
    * `fogY` the height the veil hangs at; `night` (0–1) darkens the fog; `under`: in the tunnels, none of it.
    */
-  update(f: WeatherFrame, dt: number, time: number, cx: number, cz: number, y: number, fogY: number, night: number, motion: boolean, under: boolean, ground: (x: number, z: number) => number, wet: (x: number, z: number) => boolean, v: WeatherView = DEFAULT_VIEW) {
+  update(
+    f: WeatherFrame,
+    dt: number,
+    time: number,
+    cx: number,
+    cz: number,
+    y: number,
+    fogY: number,
+    night: number,
+    motion: boolean,
+    under: boolean,
+    ground: (x: number, z: number) => number,
+    wet: (x: number, z: number) => boolean,
+    v: WeatherView = DEFAULT_VIEW,
+  ) {
     const raining = f.rain > 0 && !under;
     this.streaks.visible = raining && motion;
     this.span = Math.max(SPAN, Math.min(80, v.span));
@@ -194,7 +211,10 @@ export class Weather {
       const wind = 0.004 + 0.006 * f.windForce;
       if (motion) (u.drift.value as THREE.Vector2).set(Math.cos(f.windAngle) * time * wind, Math.sin(f.windAngle) * time * wind);
       // Darker at night, and red in a lockdown's pulse like everything else.
-      (u.color.value as THREE.Color).set(0xc9d2db).lerp(this.c.set(0x2a3340), night * 0.85).lerp(this.c.set(0xd23a2a), Math.min(0.6, v.alarm) * (1 - 0.6 * night));
+      (u.color.value as THREE.Color)
+        .set(0xc9d2db)
+        .lerp(this.c.set(0x2a3340), night * 0.85)
+        .lerp(this.c.set(0xd23a2a), Math.min(0.6, v.alarm) * (1 - 0.6 * night));
     }
   }
 
@@ -251,7 +271,12 @@ export class Weather {
       let top = at >= 0 ? at + p[k + 1] : -50;
       // Seen from the camera a drop high up stands over the ground further north: over a cut-away room there, it isn't drawn.
       // (Both ends of the streak.)
-      if (top > 0 && (ground(Math.floor(p[k] - (top + len) * this.lx), Math.floor(p[k + 2] - (top + len) * this.lz)) < 0 || ground(Math.floor(p[k] - top * this.lx), Math.floor(p[k + 2] - top * this.lz)) < 0)) top = -50;
+      if (
+        top > 0 &&
+        (ground(Math.floor(p[k] - (top + len) * this.lx), Math.floor(p[k + 2] - (top + len) * this.lz)) < 0 ||
+          ground(Math.floor(p[k] - top * this.lx), Math.floor(p[k + 2] - top * this.lz)) < 0)
+      )
+        top = -50;
       const j = i * 6;
       d[j] = p[k];
       d[j + 1] = top;
@@ -264,7 +289,14 @@ export class Weather {
   }
 
   /** Rings spreading on open ground round the player, a few more a second in a storm. */
-  private ripple(level: number, dt: number, cx: number, cz: number, ground: (x: number, z: number) => number, wet: (x: number, z: number) => boolean) {
+  private ripple(
+    level: number,
+    dt: number,
+    cx: number,
+    cz: number,
+    ground: (x: number, z: number) => number,
+    wet: (x: number, z: number) => boolean,
+  ) {
     if (level > 0) {
       // As many a square tile wherever the view reaches (a wider view, more of them).
       const w = this.span * 0.75;

@@ -84,7 +84,10 @@
   box-shadow: inset 0 0 0 1px var(--dlg-line);
   cursor: pointer;
   animation: card-in 0.3s var(--spring) both;
-  transition: background 0.15s, transform 0.15s var(--ease), box-shadow 0.15s;
+  transition:
+    background 0.15s,
+    transform 0.15s var(--ease),
+    box-shadow 0.15s;
 }
 
 .help-tile:hover,

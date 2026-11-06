@@ -96,7 +96,9 @@ for (const def of PRISONS) {
   check(!!c, `${def.id}: the player has a bed`);
   bot.act();
   check(bot.st.sleeping, `${def.id}: the button at the bed is Sleep`);
-  console.log(`${def.id}: the longest walk home ${worst.toFixed(1)} s (${worstZone}), of ${LIGHTS_OUT_GRACE / STEPS_PER_MINUTE}; from ${rooms} rooms, none from: ${shut.join(', ') || 'nowhere'}`);
+  console.log(
+    `${def.id}: the longest walk home ${worst.toFixed(1)} s (${worstZone}), of ${LIGHTS_OUT_GRACE / STEPS_PER_MINUTE}; from ${rooms} rooms, none from: ${shut.join(', ') || 'nowhere'}`,
+  );
 }
 
 // ------------------------------------------------------------------ the button at the bed: every tile in reach, every way they face
@@ -105,7 +107,8 @@ for (const def of PRISONS) {
   const w = bot.sim.world;
   const bed = containersOf(w)[bedIndex(bot)].prop;
   const here = placesOf(w).bedside[1];
-  const target = () => interactTarget(w, bot.st.items, bot.st.player, bot.sim.bedtime, bot.st.layer, [], bot.st.inmates.length, () => false, true);
+  const target = () =>
+    interactTarget(w, bot.st.items, bot.st.player, bot.sim.bedtime, bot.st.layer, [], bot.st.inmates.length, () => false, true);
   let sits = 0;
   let sleeps = 0;
   for (const dz of [-0.45, 0, 0.45]) {
@@ -128,9 +131,15 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ the walk through the yard: no searchlight during the grace
 {
-  const walk = new Bot(PRISONS.find((d) => d.id === 'stalag-flucht')!, 3);
+  const walk = new Bot(
+    PRISONS.find((d) => d.id === 'stalag-flucht')!,
+    3,
+  );
   check(walk.routineUntil(1, NIGHT + 20), 'stalag-flucht: the model prisoner goes home');
-  check(walk.st.heat === 0 && !walk.log.some((l) => l.includes('searchlight')), `stalag-flucht: no searchlight on the walk home (heat ${walk.st.heat})`);
+  check(
+    walk.st.heat === 0 && !walk.log.some((l) => l.includes('searchlight')),
+    `stalag-flucht: no searchlight on the walk home (heat ${walk.st.heat})`,
+  );
   console.log('searchlights: the walk home at the bell is left alone');
 }
 
@@ -169,7 +178,10 @@ for (const def of PRISONS) {
     check(seated.st.seat >= 0, 'a chair in the cell');
     put(seated, placesOf(seated.sim.world).deskside[1]);
     waitMinutes(seated, 10);
-    check(seated.st.energy === Math.max(from, Math.min(NIGHT_ENERGY_FLOOR, from + 5)), `a chair at night from ${from}: as standing (${seated.st.energy})`);
+    check(
+      seated.st.energy === Math.max(from, Math.min(NIGHT_ENERGY_FLOOR, from + 5)),
+      `a chair at night from ${from}: as standing (${seated.st.energy})`,
+    );
   }
   // Training's nights as they were.
   const training = new Bot(TRAINING, 3);
@@ -227,7 +239,10 @@ for (const def of PRISONS) {
   check(bedOffer(bot.sim, bed) === 'takeOut', `${def.id}: dummy in bed: Take out`);
   bot.act();
   check(!dummyInBed(bot.sim) && !bot.st.sleeping, `${def.id}: taken out, still up`);
-  check(bot.st.items.inv.slice(0, HOTBAR).some((v) => itemOf(v) === n('bed_dummy')), `${def.id}: in their pockets`);
+  check(
+    bot.st.items.inv.slice(0, HOTBAR).some((v) => itemOf(v) === n('bed_dummy')),
+    `${def.id}: in their pockets`,
+  );
   check(itemOf(bot.st.items.inv[bot.st.items.hand]) !== n('bed_dummy'), `${def.id}: not in their hand`);
   check(bedOffer(bot.sim, bed) === null, `${def.id}: then Sleep`);
   bot.act();
@@ -241,9 +256,18 @@ for (const def of PRISONS) {
   for (let k = 0; k < HOTBAR; k++) full.st.items.inv[k] = slot(n('soap'));
   full.events.length = 0;
   full.act();
-  check(!dummyInBed(full.sim) && !full.st.sleeping && itemOf(full.st.items.inv[full.st.items.hand]) === n('bed_dummy'), 'pockets full: the dummy in hand');
-  check(full.st.items.containers[bed].some((v) => itemOf(v) === n('soap')), 'and what was in hand in the bed');
-  check(full.events.some((e) => e.type === 'bedDummy' && e.swapped === n('soap')), 'and they are told');
+  check(
+    !dummyInBed(full.sim) && !full.st.sleeping && itemOf(full.st.items.inv[full.st.items.hand]) === n('bed_dummy'),
+    'pockets full: the dummy in hand',
+  );
+  check(
+    full.st.items.containers[bed].some((v) => itemOf(v) === n('soap')),
+    'and what was in hand in the bed',
+  );
+  check(
+    full.events.some((e) => e.type === 'bedDummy' && e.swapped === n('soap')),
+    'and they are told',
+  );
   check(bedOffer(full.sim, bed) === 'tuck', 'so Tuck in');
   full.st.items.hand = (full.st.items.hand + 1) % HOTBAR;
   check(bedOffer(full.sim, bed) === null, 'another slot held, and it is Sleep: never stuck');
@@ -258,7 +282,10 @@ for (const def of PRISONS) {
   tucked.act();
   check(dummyInBed(tucked.sim) && tucked.st.items.inv[0] === pillow, 'full pockets, a full bed: tucked in, the pillow in hand');
   tucked.act();
-  check(!dummyInBed(tucked.sim) && tucked.st.items.containers[b3][0] === pillow && itemOf(tucked.st.items.inv[0]) === n('bed_dummy'), 'taken out, the pillow back');
+  check(
+    !dummyInBed(tucked.sim) && tucked.st.items.containers[b3][0] === pillow && itemOf(tucked.st.items.inv[0]) === n('bed_dummy'),
+    'taken out, the pillow back',
+  );
   tucked.st.items.hand = 1;
   tucked.act();
   check(tucked.st.sleeping, 'and they sleep');
@@ -267,7 +294,10 @@ for (const def of PRISONS) {
   const packed = atBed();
   const b2 = bedIndex(packed);
   const first = packed.st.items.containers[b2][0];
-  check(packed.st.items.containers[b2].every((v) => v), 'a bed starts full');
+  check(
+    packed.st.items.containers[b2].every((v) => v),
+    'a bed starts full',
+  );
   inHand(packed, 'bed_dummy');
   packed.act();
   check(dummyInBed(packed.sim) && packed.st.items.inv[packed.st.items.hand] === first, 'a full bed: swapped, nothing lost');
@@ -284,17 +314,23 @@ for (const def of PRISONS) {
   old.sim.rules227 = true;
   inHand(old, 'bed_dummy');
   // (Facing the bed: by these rules a chair beside it takes the button otherwise.)
-  old.st.player.facing = [1, 5, 9, 13].find((f) => interactTarget(old.sim.world, old.st.items, { ...old.st.player, facing: f }, old.sim.bedtime, old.st.layer)?.kind === 'sleep') ?? old.st.player.facing;
+  old.st.player.facing =
+    [1, 5, 9, 13].find(
+      (f) => interactTarget(old.sim.world, old.st.items, { ...old.st.player, facing: f }, old.sim.bedtime, old.st.layer)?.kind === 'sleep',
+    ) ?? old.st.player.facing;
   old.act();
   check(old.st.sleeping && !dummyInBed(old.sim), 'the old rules: the bed only sleeps');
-  console.log('the bed: Tuck in, Take out, then Sleep in all five; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever');
+  console.log(
+    'the bed: Tuck in, Take out, then Sleep in all five; full pockets and a full bed swap, nothing lost and never stuck; by day and in old runs as ever',
+  );
 }
 
 // ------------------------------------------------------------------ bed checks
 {
   const check1 = (bot: Bot, minutes = 180) => {
     bot.silent = true;
-    for (let k = 0; k < minutes * STEPS_PER_MINUTE && !bot.events.some((e) => e.type === 'bedCheck' && e.result !== 'start'); k++) bot.step();
+    for (let k = 0; k < minutes * STEPS_PER_MINUTE && !bot.events.some((e) => e.type === 'bedCheck' && e.result !== 'start'); k++)
+      bot.step();
     return bot.events.find((e) => e.type === 'bedCheck' && e.result !== 'start');
   };
   const awake = atBed();
@@ -324,11 +360,17 @@ for (const def of PRISONS) {
     check(bot.routineUntil(1, NIGHT), `${def.id}: the bell`);
     const from = bot.st.step;
     check(bot.walkTo(placesOf(bot.sim.world).bedside[1]), `${def.id} seed ${seed}: home`);
-    check(bot.until(() => bot.st.inmates.every((m) => m.doing === DOING.SLEEP), 90 * STEPS_PER_MINUTE), `${def.id} seed ${seed}: everyone in bed`);
+    check(
+      bot.until(() => bot.st.inmates.every((m) => m.doing === DOING.SLEEP), 90 * STEPS_PER_MINUTE),
+      `${def.id} seed ${seed}: everyone in bed`,
+    );
     late.push((bot.st.step - from) / STEPS_PER_MINUTE);
     bot.act();
     check(bot.st.sleeping, `${def.id} seed ${seed}: the player asleep`);
-    check(bot.until(() => !bot.st.sleeping, 600 * STEPS_PER_MINUTE), `${def.id} seed ${seed}: wakes`);
+    check(
+      bot.until(() => !bot.st.sleeping, 600 * STEPS_PER_MINUTE),
+      `${def.id} seed ${seed}: wakes`,
+    );
     check(bot.sim.clock.minuteOfDay === 7 * 60 + 55, `${def.id} seed ${seed}: at 07:55 (${bot.time})`);
     check(bot.st.heat === 0 && !bot.st.lockdown, `${def.id} seed ${seed}: a quiet night`);
   }
@@ -366,7 +408,10 @@ for (const def of PRISONS) {
   };
   const prev = logOf('2.27.0', true);
   const replayed = replayLog(prev.toLog(), stalag);
-  check(!!replayed?.ok && replayed.sim.rules227 === true && replayed.sim.state.heat > 0, 'a 2.27 log through the night replays whole under the old rules');
+  check(
+    !!replayed?.ok && replayed.sim.rules227 === true && replayed.sim.state.heat > 0,
+    'a 2.27 log through the night replays whole under the old rules',
+  );
   check(!replayLog({ ...prev.toLog(), game: '2.34.0' }, stalag)?.ok, 'and would not under the new ones: the test can tell');
   check(new RunRecorder(prev.sim, { log: prev.toLog(), game: '2.34.0' }).toLog().seed === -1, 'and is not carried on');
   const now = logOf('2.34.0', false);
@@ -378,7 +423,18 @@ for (const def of PRISONS) {
 
 // ------------------------------------------------------------------ the words
 {
-  for (const k of ['act.tuckIn', 'act.takeOut', 'routine.homeBy', 'toast.slept', 'toast.dummyIn', 'toast.dummyOut', 'toast.tiredNight', 'toast.nightWarning', 'hint.night', 'hint.noSleep'] as const) {
+  for (const k of [
+    'act.tuckIn',
+    'act.takeOut',
+    'routine.homeBy',
+    'toast.slept',
+    'toast.dummyIn',
+    'toast.dummyOut',
+    'toast.tiredNight',
+    'toast.nightWarning',
+    'hint.night',
+    'hint.noSleep',
+  ] as const) {
     check(!!en[k] && !!fr[k] && (en[k] !== fr[k] || k === 'toast.slept'), `said in both languages: ${k}`);
   }
   check(barksEn['re.bedAwake.gu'].length === barksFr['re.bedAwake.gu'].length, 'the guard has as much to say in French');

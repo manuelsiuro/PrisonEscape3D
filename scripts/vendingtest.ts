@@ -15,7 +15,17 @@ import { DAY_STEPS, eventOn, planOf, prisonDay } from '../src/sim/systems/calend
 import { hurt } from '../src/sim/systems/fights';
 import { fixtureUse, HOTBAR, itemOf, slot } from '../src/sim/systems/items';
 import { canDigFloor } from '../src/sim/systems/structure';
-import { atVending, cutPast, jamsAt, peopleAhead, VEND_NOBODY, VEND_PLAYER, vendOffer, vendProp, vendRefusal } from '../src/sim/systems/vending';
+import {
+  atVending,
+  cutPast,
+  jamsAt,
+  peopleAhead,
+  VEND_NOBODY,
+  VEND_PLAYER,
+  vendOffer,
+  vendProp,
+  vendRefusal,
+} from '../src/sim/systems/vending';
 import { UNIT } from '../src/sim/tuning';
 import { LAYER, MAP_W, placeKey } from '../src/sim/world/World';
 import { LESSONS } from '../src/tutorial/lessons';
@@ -72,7 +82,10 @@ for (const def of MACHINES) {
   const p = vendProp(sim);
   check(!!p && w.zoneAt(m.x, m.z) === 'canteen', `${def.id}: a machine in the canteen`);
   // (2.33's water cooler after it: added later, last again.)
-  check(sim.world.props.indexOf(p!) === sim.world.props.length - 1 - sim.world.props.filter((q) => q.kind === 'cooler').length, `${def.id}: its prop comes last, so that no index moves`);
+  check(
+    sim.world.props.indexOf(p!) === sim.world.props.length - 1 - sim.world.props.filter((q) => q.kind === 'cooler').length,
+    `${def.id}: its prop comes last, so that no index moves`,
+  );
   check(w.propSolid[m.z * MAP_W + m.x] === 1, `${def.id}: solid`);
   const front = m.line[0];
   check(front.x === m.x && front.z === m.z + 1, `${def.id}: used from the south, the way it fronts and the camera looks`);
@@ -80,11 +93,20 @@ for (const def of MACHINES) {
   m.line.forEach((q, k) => {
     const tile = tileOf(q.x, q.z);
     check(isFloor(w, q.x, q.z) && w.zoneAt(q.x, q.z) === 'canteen', `${def.id}: queue tile ${k} on the canteen's floor`);
-    check(!w.props.some((o) => q.x >= o.x && q.x < o.x + o.w && q.z >= o.z && q.z < o.z + o.d), `${def.id}: nothing stands on queue tile ${k}`);
+    check(
+      !w.props.some((o) => q.x >= o.x && q.x < o.x + o.w && q.z >= o.z && q.z < o.z + o.d),
+      `${def.id}: nothing stands on queue tile ${k}`,
+    );
     check(!placesOf(w).counters.some((c) => c.tile === tile), `${def.id}: queue tile ${k} clear of where a tray is fetched`);
-    if (k) check(Math.abs(q.x - m.line[k - 1].x) + Math.abs(q.z - m.line[k - 1].z) === 1, `${def.id}: queue tile ${k} next to the one before`);
+    if (k)
+      check(Math.abs(q.x - m.line[k - 1].x) + Math.abs(q.z - m.line[k - 1].z) === 1, `${def.id}: queue tile ${k} next to the one before`);
   });
-  check(!placesOf(w).floor.flat().includes(m.z * MAP_W + m.x), `${def.id}: nobody picks its tile`);
+  check(
+    !placesOf(w)
+      .floor.flat()
+      .includes(m.z * MAP_W + m.x),
+    `${def.id}: nobody picks its tile`,
+  );
   check(!def.decor?.some((d) => (d.kind as string) === 'vending'), `${def.id}: no machine left as scenery`);
   check(canDigFloor(w, m.z * MAP_W + m.x, []) === false, `${def.id}: no digging under it`);
 }
@@ -140,7 +162,11 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     theirTurn(bot);
     bot.st.vendBought = 0; // (No jams here: those come below.)
     bot.st.vend.jam = 0;
-    ask(bot, VEND.BUY, GOODS.findIndex((g) => g.id === id));
+    ask(
+      bot,
+      VEND.BUY,
+      GOODS.findIndex((g) => g.id === id),
+    );
     coil(bot);
     check(bot.slotOf(id) >= 0, `${id}: bought`);
     ask(bot, VEND.CLOSE);
@@ -179,7 +205,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     ask(bot, VEND.BUY, row);
     const said = bot.sim.events.find((e) => e.type === 'refused');
     check(said?.type === 'refused' && said.why === why, `${what}: says ${why} (${JSON.stringify(said)})`);
-    check(bot.st.cash === cash && left.every((x, k) => x === bot.st.vend.left[k]) && bot.st.vendBought === n && bot.st.vend.who === VEND_NOBODY, `${what}: nothing taken`);
+    check(
+      bot.st.cash === cash && left.every((x, k) => x === bot.st.vend.left[k]) && bot.st.vendBought === n && bot.st.vend.who === VEND_NOBODY,
+      `${what}: nothing taken`,
+    );
   };
   tried('no money', 'cash', 0);
   bot.st.cash = 100;
@@ -294,7 +323,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   bot.walkTo(tileOf(m.x, m.z + 4), 40);
   bot.until(() => bot.st.vend.who === VEND_NOBODY, 60);
   const front = tileOf(m.line[0].x, m.line[0].z);
-  check(bot.st.items.ground.some(([k, v]) => k === front && v % 256 === itemNumber('chocolate')), 'walked off mid-turn: on the floor in front of it');
+  check(
+    bot.st.items.ground.some(([k, v]) => k === front && v % 256 === itemNumber('chocolate')),
+    'walked off mid-turn: on the floor in front of it',
+  );
   check(!bot.st.vendOpen, 'and the card shut behind them');
   // A lockdown: its card shuts, the line clears; nothing sells.
   const lock = atMachine();
@@ -320,7 +352,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   ask(ko, VEND.BUY, 0);
   ko.st.ko = 100;
   ko.until(() => ko.st.vend.who === VEND_NOBODY, 60);
-  check(!ko.st.vendOpen && ko.slotOf('chocolate') < 0 && ko.st.items.ground.some(([, v]) => v % 256 === itemNumber('chocolate')), 'knocked out mid-turn: on the floor');
+  check(
+    !ko.st.vendOpen && ko.slotOf('chocolate') < 0 && ko.st.items.ground.some(([, v]) => v % 256 === itemNumber('chocolate')),
+    'knocked out mid-turn: on the floor',
+  );
 }
 
 // ---------------------------------------------------------------- the rows through the days
@@ -376,8 +411,14 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
         // Standing where they are in the queue, not piled on one tile. (In the queue, at the machine: two on their way
         // brushing past each other in a doorway stop for a step, as anyone does.)
         if (k % 40 === 0) {
-          const near = (q: number) => Math.max(Math.abs(sim.state.inmates[q].body.x / UNIT - def.vending!.x), Math.abs(sim.state.inmates[q].body.z / UNIT - def.vending!.z)) <= 4;
-          const stood = v.line.filter((q) => q >= 0 && !sim.state.inmates[q].body.moving && near(q)).map((q) => Math.floor(sim.state.inmates[q].body.x / UNIT) + Math.floor(sim.state.inmates[q].body.z / UNIT) * MAP_W);
+          const near = (q: number) =>
+            Math.max(
+              Math.abs(sim.state.inmates[q].body.x / UNIT - def.vending!.x),
+              Math.abs(sim.state.inmates[q].body.z / UNIT - def.vending!.z),
+            ) <= 4;
+          const stood = v.line
+            .filter((q) => q >= 0 && !sim.state.inmates[q].body.moving && near(q))
+            .map((q) => Math.floor(sim.state.inmates[q].body.x / UNIT) + Math.floor(sim.state.inmates[q].body.z / UNIT) * MAP_W);
           check(new Set(stood).size === stood.length, `${def.id} seed ${seed}: two in the queue on one tile at step ${k}`);
         }
         if (sim.state.step % DAY_STEPS === 14 * 60 * 20) {
@@ -389,10 +430,15 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
       check(sim.state.vend.who === VEND_NOBODY || sim.state.vend.who >= -1, 'as it can be');
     }
     const days = 3 * SEEDS.length;
-    lines.push(`${def.id}: ${(bought / days).toFixed(1)} bought a day, ${most} at most in the line, ${(leftAtNight / days).toFixed(1)} of 14 left at 22:00, a food row empty by then on ${rowsOut} of ${days} days, ${stalled} gave up, ${jams} jams`);
+    lines.push(
+      `${def.id}: ${(bought / days).toFixed(1)} bought a day, ${most} at most in the line, ${(leftAtNight / days).toFixed(1)} of 14 left at 22:00, a food row empty by then on ${rowsOut} of ${days} days, ${stalled} gave up, ${jams} jams`,
+    );
     check(bought / days >= 2, `${def.id}: inmates do use it (${(bought / days).toFixed(1)} a day)`);
     check(stalled <= days, `${def.id}: few can't get to it (${stalled} in ${days} days)`);
-    check(rowsBought.slice(SNACK_ROWS).every((x) => x === 0), `${def.id}: inmates buy food and drink, not toiletries`);
+    check(
+      rowsBought.slice(SNACK_ROWS).every((x) => x === 0),
+      `${def.id}: inmates buy food and drink, not toiletries`,
+    );
   }
   console.log(`inmates: ${lines.join('; ')}`);
 }
@@ -421,7 +467,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   };
   const wait = crowded(3);
   check(wait.st.vendOpen && peopleAhead(wait.sim) >= 1, `someone there first: they come first (${peopleAhead(wait.sim)})`);
-  check(vendRefusal(wait.sim, 0) === 'vendBusy' || vendRefusal(wait.sim, 0) === 'vendFirst', `and nothing can be bought yet (${vendRefusal(wait.sim, 0)})`);
+  check(
+    vendRefusal(wait.sim, 0) === 'vendBusy' || vendRefusal(wait.sim, 0) === 'vendFirst',
+    `and nothing can be bought yet (${vendRefusal(wait.sim, 0)})`,
+  );
   ask(wait, VEND.WAIT);
   check(wait.st.vend.line[wait.st.vend.line.length - 1] === VEND_PLAYER, 'a place at the end of the line');
   const turned = wait.until(() => wait.st.vend.line[0] === VEND_PLAYER && wait.st.vend.who === VEND_NOBODY, 800);
@@ -518,14 +567,20 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     }
   };
   watch(late, COIL_STEPS + 2 + VEND_TURN_STEPS - 40);
-  check(seen.includes('jam') && !seen.includes('lostTurn') && !seen.includes('inmateThump'), `a jam late in a turn: time left to thump it (${seen.join(' ')})`);
+  check(
+    seen.includes('jam') && !seen.includes('lostTurn') && !seen.includes('inmateThump'),
+    `a jam late in a turn: time left to thump it (${seen.join(' ')})`,
+  );
   check(late.st.vend.jam > 0 && late.st.vend.line[0] === VEND_PLAYER, 'and it is still theirs');
   for (let k = 0; k < 4 && late.st.vend.jam; k++) {
     ask(late, VEND.THUMP);
     for (const e of late.sim.events) if (e.type === 'vend') seen.push(e.what);
     watch(late, THUMP_STEPS + 1);
   }
-  check(seen.includes('freed') && seen.includes('got') && late.st.items.inv.some((v) => v && itemOf(v) === itemNumber('soda')), `thumped free, it is in the pockets (${seen.join(' ')}; jam ${late.st.vend.jam}, hits ${late.st.vend.hits})`);
+  check(
+    seen.includes('freed') && seen.includes('got') && late.st.items.inv.some((v) => v && itemOf(v) === itemNumber('soda')),
+    `thumped free, it is in the pockets (${seen.join(' ')}; jam ${late.st.vend.jam}, hits ${late.st.vend.hits})`,
+  );
   // Alone at it a long while, someone setting out from far away: they aren't told they took too long.
   const alone = atMachine();
   alone.act();
@@ -546,8 +601,13 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     else if (there < 0) there = k;
     if (alone.sim.events.some((e) => e.type === 'vend' && e.what === 'lostTurn')) passed = k;
   }
-  check(passed < 0 || (there >= 0 && passed - there >= VEND_TURN_STEPS), `the clock starts when someone's there (arrived ${there}, passed ${passed})`);
-  console.log(`turn clock: alone ${VEND_TURN_STEPS + 60} steps, then someone next in line within reach from step ${there}, the turn passed at ${passed}`);
+  check(
+    passed < 0 || (there >= 0 && passed - there >= VEND_TURN_STEPS),
+    `the clock starts when someone's there (arrived ${there}, passed ${passed})`,
+  );
+  console.log(
+    `turn clock: alone ${VEND_TURN_STEPS + 60} steps, then someone next in line within reach from step ${there}, the turn passed at ${passed}`,
+  );
 
   // A blow ends the card: the fight's buttons come back.
   const hit = atMachine();
@@ -564,7 +624,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     floor.st.items.ground.push([placeKey(LAYER.GROUND, q.line[0].z * MAP_W + q.line[0].x), slot(itemNumber('soda'))]);
     check(!vendOffer(floor.sim), `${def.id}: something on the floor comes before the machine`);
     floor.act();
-    check(!floor.st.vendOpen && floor.st.items.ground.length === 0 && floor.st.items.inv.filter(Boolean).length === before + 1, `${def.id}: and is picked up`);
+    check(
+      !floor.st.vendOpen && floor.st.items.ground.length === 0 && floor.st.items.inv.filter(Boolean).length === before + 1,
+      `${def.id}: and is picked up`,
+    );
     check(vendOffer(floor.sim), `${def.id}: then the machine`);
     // Round the back of it, where there's floor there: not from there.
     const back = new Bot(def, 3);
@@ -575,13 +638,16 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     const tray = atMachine(def);
     tray.st.tray = 1;
     ask(tray, VEND.OPEN);
-    check(!tray.st.vendOpen && tray.sim.events.some((e) => e.type === 'refused' && e.why === 'vendTray'), `${def.id}: a tray in the hands is said to be the reason`);
+    check(
+      !tray.st.vendOpen && tray.sim.events.some((e) => e.type === 'refused' && e.why === 'vendTray'),
+      `${def.id}: a tray in the hands is said to be the reason`,
+    );
   }
   // Pockets full and something on the floor: the machine still opens (nothing could be picked up).
   const packed = atMachine();
   packed.st.items.ground.push([placeKey(LAYER.GROUND, m.line[0].z * MAP_W + m.line[0].x), slot(itemNumber('soda'))]);
   for (let k = 0; k < HOTBAR; k++) packed.st.items.inv[k] = slot(itemNumber('soap'));
-  check(vendOffer(packed.sim), 'pockets full: the machine, not a pick-up that can\'t be done');
+  check(vendOffer(packed.sim), "pockets full: the machine, not a pick-up that can't be done");
 
   // Push in with only the one using it ahead: no such thing, and said so.
   const using = atMachine();
@@ -591,7 +657,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   ask(using, VEND.OPEN);
   check(cutPast(using.sim).length === 0, 'nobody to push past');
   ask(using, VEND.CUT);
-  check(using.sim.events.some((e) => e.type === 'refused' && e.why === 'vendBusy') && using.st.vend.line[0] === 1, 'and pushing in is refused');
+  check(
+    using.sim.events.some((e) => e.type === 'refused' && e.why === 'vendBusy') && using.st.vend.line[0] === 1,
+    'and pushing in is refused',
+  );
   // The card up, no place taken: a step off it ends it.
   const step = atMachine();
   step.st.vend.line = [1];
@@ -613,7 +682,10 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
     sim.step(0);
     queued = Math.max(queued, sim.state.vend.line.length);
   }
-  check(queued === 0 && sim.state.vend.left.join() === left.join(), `the lesson's machine is theirs alone (${queued} queued, ${sim.state.vend.left})`);
+  check(
+    queued === 0 && sim.state.vend.left.join() === left.join(),
+    `the lesson's machine is theirs alone (${queued} queued, ${sim.state.vend.left})`,
+  );
   const again = lesson.steps.find((q) => q.text === 'lesson.vending.again')!;
   const thump = lesson.steps.find((q) => q.text === 'lesson.vending.thump')!;
   const ctx = { sim } as unknown as LessonCtx;
@@ -638,10 +710,16 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   v.until = film.st.step + 10_000;
   v.thumping = false;
   const left = v.left[1];
-  check(film.until(() => eventOn(film.sim, 'movie'), 3 * 60 * 20), 'the film starts');
+  check(
+    film.until(() => eventOn(film.sim, 'movie'), 3 * 60 * 20),
+    'the film starts',
+  );
   film.step(0);
   check(v.who === VEND_NOBODY && !v.line.includes(k), 'the machine let go at the film');
-  check(film.st.inmates[k].snack === itemNumber('soda') && v.left[1] === left, `and the soda went with them, not lost from the row (${film.st.inmates[k].snack}, ${v.left[1]} left)`);
+  check(
+    film.st.inmates[k].snack === itemNumber('soda') && v.left[1] === left,
+    `and the soda went with them, not lost from the row (${film.st.inmates[k].snack}, ${v.left[1]} left)`,
+  );
   // Something stuck stays stuck for whoever's next.
   const jam = new Bot(stalag, 3);
   jam.routineUntil(3, 18 * 60 + 59);
@@ -708,7 +786,13 @@ check(rowCode(0) === 'A1' && rowCode(6) === 'C1', 'rows named on the glass');
   for (const m of old.state.inmates) delete (m as Partial<typeof m>).snack;
   const b2 = new Sim(CENTER_PERKS, 3);
   b2.restore(old);
-  check(!b2.state.vendOpen && b2.state.vend.who === VEND_NOBODY && b2.state.vend.left.length === GOODS.length && b2.state.inmates[0].snack === 0, 'a save from before the machine');
+  check(
+    !b2.state.vendOpen &&
+      b2.state.vend.who === VEND_NOBODY &&
+      b2.state.vend.left.length === GOODS.length &&
+      b2.state.inmates[0].snack === 0,
+    'a save from before the machine',
+  );
 }
 
 console.log(failures ? `${failures} failures` : 'vending ok');

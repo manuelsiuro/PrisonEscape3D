@@ -104,9 +104,12 @@ paBoard.onSpeak = (chars, chime) => {
   if (chime) sound.paChime();
   // The voice after the chime (with the Voices setting; not if the game was paused or left meanwhile).
   const g = play.game;
-  window.setTimeout(() => {
-    if (settings.voices && play.game === g && !g?.paused) sound.paVoice(Math.min(9, 3 + Math.round(chars / 16)));
-  }, chime ? 950 : 0);
+  window.setTimeout(
+    () => {
+      if (settings.voices && play.game === g && !g?.paused) sound.paVoice(Math.min(9, 3 + Math.round(chars / 16)));
+    },
+    chime ? 950 : 0,
+  );
 };
 export const lightningVeil = h('div', 'lightning');
 document.body.append(lightningVeil);
@@ -177,7 +180,11 @@ export function closeSocial() {
   crewPanel.close();
 }
 /** In solitary, hidden in the delivery or knocked out, the file can't come up: what the button says then (null: it can). */
-export function fileAway(st: { solitary: number; stowed: unknown; ko: number }): 'hud.fileSolitary' | 'hud.fileStowed' | 'hud.fileKo' | null {
+export function fileAway(st: {
+  solitary: number;
+  stowed: unknown;
+  ko: number;
+}): 'hud.fileSolitary' | 'hud.fileStowed' | 'hud.fileKo' | null {
   return st.solitary > 0 ? 'hud.fileSolitary' : st.stowed ? 'hud.fileStowed' : st.ko > 0 ? 'hud.fileKo' : null;
 }
 

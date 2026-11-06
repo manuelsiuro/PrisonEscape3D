@@ -19,16 +19,7 @@ export interface RoutineDef {
 }
 
 export type RoutineId =
-  | 'rollCall'
-  | 'breakfast'
-  | 'freeTime'
-  | 'work'
-  | 'exercise'
-  | 'showers'
-  | 'dinner'
-  | 'eveningFreeTime'
-  | 'eveningRollCall'
-  | 'lightsOut';
+  'rollCall' | 'breakfast' | 'freeTime' | 'work' | 'exercise' | 'showers' | 'dinner' | 'eveningFreeTime' | 'eveningRollCall' | 'lightsOut';
 
 export const ROUTINE: readonly RoutineDef[] = [
   { id: 'rollCall', start: 8 * 60, zones: ['rollCall'], miss: 'lockdown', stay: 30 },

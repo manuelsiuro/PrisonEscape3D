@@ -60,7 +60,6 @@ export interface DayView {
   tomorrow: { label: string; chips: DayChip[] } | null;
 }
 
-
 const chip = (c: DayChip) =>
   `<span class="dc-chip" style="--c:${c.color}"><span class="dc-chip-ic">${icon(c.icon, 14)}</span><b>${esc(c.text)}</b>${c.when ? `<em>${esc(c.when)}</em>` : ''}</span>`;
 

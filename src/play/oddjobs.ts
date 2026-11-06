@@ -1,5 +1,20 @@
 import { buzz } from '../app/haptics';
-import { CHAIN_PIN, CHAINS, DIG_STEPS, FIXER_JOB_OPINION, FRAME_MINUTE, FROM, J, KIND, KIND_DEFS, KINDS, LIFT, LIFTS, PERK, STAGE } from '../content/oddjobs';
+import {
+  CHAIN_PIN,
+  CHAINS,
+  DIG_STEPS,
+  FIXER_JOB_OPINION,
+  FRAME_MINUTE,
+  FROM,
+  J,
+  KIND,
+  KIND_DEFS,
+  KINDS,
+  LIFT,
+  LIFTS,
+  PERK,
+  STAGE,
+} from '../content/oddjobs';
 import { type Key, lowerFirst, t } from '../i18n';
 import { itemNumber } from '../content/items';
 import { placesOf } from '../sim/ai/places';
@@ -7,7 +22,24 @@ import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { prisonDay } from '../sim/systems/calendar';
 import { HOTBAR, itemOf } from '../sim/systems/items';
-import { atBoard, boardOf, boardNow, boardRefusal, bringsOf, canWhistle, type Deal, digOf, endsFor, fixerDeal, fixerJobRefusal, freezerOf, handInRefusal, jobOf, owes, whistleNow } from '../sim/systems/oddjobs';
+import {
+  atBoard,
+  boardOf,
+  boardNow,
+  boardRefusal,
+  bringsOf,
+  canWhistle,
+  type Deal,
+  digOf,
+  endsFor,
+  fixerDeal,
+  fixerJobRefusal,
+  freezerOf,
+  handInRefusal,
+  jobOf,
+  owes,
+  whistleNow,
+} from '../sim/systems/oddjobs';
 import { fixerOf, smugglingOf } from '../sim/systems/smuggling';
 import { UNIT } from '../sim/tuning';
 import { containersOf } from '../sim/world/containers';
@@ -54,8 +86,10 @@ const guardName = (sim: Sim, k: number) => sim.prison.guards[k]?.name ?? t('oddj
 function askOf(sim: Sim, d: { kind: number; variant: number; giver: number; target: number }): string {
   const kind = KINDS[d.kind];
   const name = d.target >= 0 && d.kind !== KIND.LIFT ? inmateName(sim, d.target) : '';
-  if (d.kind === KIND.LIFT) return t(`oddjob.ask.lift.${LIFTS[d.variant] ?? 'whistle'}` as Key, { guard: d.target >= 0 ? guardName(sim, d.target) : '' });
-  if (d.kind === KIND.WRESTLE || d.kind === KIND.CHEAT || d.kind === KIND.CHECKERS) return t(`oddjob.ask.${kind}.${d.variant ? 'win' : 'lose'}` as Key, { name });
+  if (d.kind === KIND.LIFT)
+    return t(`oddjob.ask.lift.${LIFTS[d.variant] ?? 'whistle'}` as Key, { guard: d.target >= 0 ? guardName(sim, d.target) : '' });
+  if (d.kind === KIND.WRESTLE || d.kind === KIND.CHEAT || d.kind === KIND.CHECKERS)
+    return t(`oddjob.ask.${kind}.${d.variant ? 'win' : 'lose'}` as Key, { name });
   if (d.kind === KIND.CAKE) return t(smugglingOf(sim)?.visits ? 'oddjob.ask.cake' : 'oddjob.ask.cakeParcel');
   return t(`oddjob.ask.${kind}` as Key, { name });
 }
@@ -69,7 +103,15 @@ function untilOf(sim: Sim, days: number): string {
 /** When a job runs out and what it pays (a rat's job: that it needs one), and what comes with it. */
 function metaOf(sim: Sim, d: Deal): { meta: string; perk: string } {
   const rat = d.kind === KIND.RAT ? ` · ${t('oddjob.needsRat')}` : '';
-  return { meta: `${untilOf(sim, d.days)} · ${t('oddjob.pay', { n: d.pay })}${rat}`, perk: d.perk === PERK.ITEM && d.item ? t('oddjob.perkItem', { item: lowerFirst(itemName(d.item)) }) : d.perk === PERK.DEBT ? t('oddjob.perkDebt') : '' };
+  return {
+    meta: `${untilOf(sim, d.days)} · ${t('oddjob.pay', { n: d.pay })}${rat}`,
+    perk:
+      d.perk === PERK.ITEM && d.item
+        ? t('oddjob.perkItem', { item: lowerFirst(itemName(d.item)) })
+        : d.perk === PERK.DEBT
+          ? t('oddjob.perkDebt')
+          : '',
+  };
 }
 
 /** A story's title and step ("Doc’s watch · 2/3"). */
@@ -106,18 +148,30 @@ function jobSteps(sim: Sim): Step[] {
     const t0 = m ? placesOf(sim.world).deskside[m.cell] : -1;
     return t0 >= 0 ? [t0] : null;
   };
-  const back: Step = { text: t(brings ? 'oddjob.step.bring' : 'oddjob.step.back', { name: giverName, item: brings ? lowerFirst(itemName(brings)) : '' }), done: false, goal: at(giver) };
+  const back: Step = {
+    text: t(brings ? 'oddjob.step.bring' : 'oddjob.step.back', { name: giverName, item: brings ? lowerFirst(itemName(brings)) : '' }),
+    done: false,
+    goal: at(giver),
+  };
   const steps: Step[] = [];
   switch (kind) {
     case KIND.LIFT: {
       if (job[J.VAR] === LIFT.MUG) {
         const f = freezerOf(sim);
         const p = f >= 0 ? containersOf(sim.world)[f].prop : null;
-        const near = p ? [p.z * MAP_W + p.x - 1, p.z * MAP_W + p.x + 1, (p.z - 1) * MAP_W + p.x, (p.z + 1) * MAP_W + p.x].filter((i) => !sim.world.block[i]) : null;
+        const near = p
+          ? [p.z * MAP_W + p.x - 1, p.z * MAP_W + p.x + 1, (p.z - 1) * MAP_W + p.x, (p.z + 1) * MAP_W + p.x].filter(
+              (i) => !sim.world.block[i],
+            )
+          : null;
         steps.push({ text: t('oddjob.step.mug'), done: carrying && job[J.PROG] > 0, goal: near });
       } else {
         const g = s.guards[target];
-        steps.push({ text: t('oddjob.step.lift', { item: lowerFirst(itemName(brings)), guard: guardName(sim, target) }), done: carrying && job[J.PROG] > 0, goal: g ? [tileAt(g.body.x, g.body.z)] : null });
+        steps.push({
+          text: t('oddjob.step.lift', { item: lowerFirst(itemName(brings)), guard: guardName(sim, target) }),
+          done: carrying && job[J.PROG] > 0,
+          goal: g ? [tileAt(g.body.x, g.body.z)] : null,
+        });
       }
       break;
     }
@@ -142,7 +196,11 @@ function jobSteps(sim: Sim): Step[] {
     case KIND.LOOKOUT: {
       const d = digOf(sim);
       const pct = Math.min(100, Math.floor((job[J.PROG] * 100) / DIG_STEPS));
-      steps.push({ text: done ? t('oddjob.step.watched', { name: giverName }) : t('oddjob.step.watch', { name: giverName, n: pct }), done, goal: d ? [d.door] : null });
+      steps.push({
+        text: done ? t('oddjob.step.watched', { name: giverName }) : t('oddjob.step.watch', { name: giverName, n: pct }),
+        done,
+        goal: d ? [d.door] : null,
+      });
       break;
     }
     case KIND.DELIVER:
@@ -227,7 +285,17 @@ export function oddjobsNow(sim: Sim): OddJobsView | null {
   const pinOf = (pin: number, d: Deal, ask: string, story: string): PinView => {
     const kind = t(`oddjob.kind.${KINDS[d.kind]}` as Key);
     const who = inmateName(sim, d.giver);
-    return { pin, icon: KIND_ICON[d.kind], kind, who, ask, ...metaOf(sim, d), ...pinWhy(pin), story, label: t('oddjob.takeLabel', { kind, name: who }) };
+    return {
+      pin,
+      icon: KIND_ICON[d.kind],
+      kind,
+      who,
+      ask,
+      ...metaOf(sim, d),
+      ...pinWhy(pin),
+      story,
+      label: t('oddjob.takeLabel', { kind, name: who }),
+    };
   };
   now.pins.forEach((d, k) => {
     if (d) pins.push(pinOf(k, d, askOf(sim, d), ''));
@@ -303,7 +371,11 @@ export function jobHud(sim: Sim): typeof chip | null {
   const pct = Math.min(100, Math.floor((job[J.PROG] * 100) / DIG_STEPS));
   // (Off watch at a dig: where to stand, and the dig's progress apart, so a long name never cuts it off.)
   const toWatch = !chip.watch && job[J.KIND] === KIND.LOOKOUT && job[J.STAGE] === STAGE.ON;
-  chip.text = chip.watch ? t(chip.urgent ? 'oddjob.chip.coming' : 'oddjob.chip.watch', { n: pct }) : toWatch ? t('oddjob.chip.watchAt', { name: inmateName(sim, job[J.GIVER]) }) : steps[k]?.text ?? '';
+  chip.text = chip.watch
+    ? t(chip.urgent ? 'oddjob.chip.coming' : 'oddjob.chip.watch', { n: pct })
+    : toWatch
+      ? t('oddjob.chip.watchAt', { name: inmateName(sim, job[J.GIVER]) })
+      : (steps[k]?.text ?? '');
   chip.tail = toWatch ? `${pct}%` : '';
   const days = KIND_DEFS[KINDS[job[J.KIND]]].days;
   chip.left = chip.done ? 1 : Math.max(0, Math.min(1, (job[J.ENDS] - s.step) / (days * 1440 * 20)));
@@ -346,7 +418,13 @@ function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
     const r = handInRefusal(sim as never, who);
     // (Ready: the job's done, and its pay; not yet: what it asks, and why not.)
     const kind = t(`oddjob.kind.${KINDS[job[J.KIND]]}` as Key);
-    out.handIn = { text: r ? `${kind}: ${askOf(sim, { kind: job[J.KIND], variant: job[J.VAR], giver: who, target: job[J.TARGET] })}` : t('oddjob.jobDone', { kind }), pay: t('oddjob.pay', { n: job[J.PAY] }), why: r === 'notDone' || r === 'missing' ? t(r === 'missing' ? 'oddjob.bringFirst' : 'oddjob.notYet') : why(sim, r) };
+    out.handIn = {
+      text: r
+        ? `${kind}: ${askOf(sim, { kind: job[J.KIND], variant: job[J.VAR], giver: who, target: job[J.TARGET] })}`
+        : t('oddjob.jobDone', { kind }),
+      pay: t('oddjob.pay', { n: job[J.PAY] }),
+      why: r === 'notDone' || r === 'missing' ? t(r === 'missing' ? 'oddjob.bringFirst' : 'oddjob.notYet') : why(sim, r),
+    };
   }
   // A delivery: the parcel handed over to the one it's for, from here.
   if (job && job[J.KIND] === KIND.DELIVER && job[J.STAGE] === STAGE.ON && job[J.TARGET] === who) {
@@ -358,7 +436,11 @@ function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
     if (d) {
       const r = fixerJobRefusal(sim as never, who);
       const m = metaOf(sim, d);
-      out.offer = { text: `${t(`oddjob.kind.${KINDS[d.kind]}` as Key)}: ${askOf(sim, d)}`, pay: `${m.meta}${m.perk ? ` · ${m.perk}` : ''}`, why: r === 'opinion' ? t('oddjob.fixerOpinion', { n: FIXER_JOB_OPINION }) : r === 'closed' ? t('phone.closed') : why(sim, r) };
+      out.offer = {
+        text: `${t(`oddjob.kind.${KINDS[d.kind]}` as Key)}: ${askOf(sim, d)}`,
+        pay: `${m.meta}${m.perk ? ` · ${m.perk}` : ''}`,
+        why: r === 'opinion' ? t('oddjob.fixerOpinion', { n: FIXER_JOB_OPINION }) : r === 'closed' ? t('phone.closed') : why(sim, r),
+      };
     }
   }
   if (!out.handIn && !out.offer && out.owed === null && !out.give) return null;
@@ -372,7 +454,14 @@ function oddjobTalk(sim: Sim, who: number): OddJobTalkView | null {
 const bringsParcel = itemNumber('parcel');
 
 /** The words of a failure. */
-const FAIL_KEY: Record<string, Key> = { time: 'toast.oddjob.time', quit: 'toast.oddjob.quit', seen: 'toast.oddjob.seen', caught: 'toast.oddjob.caught', fixed: 'toast.oddjob.fixed', found: 'toast.oddjob.found' };
+const FAIL_KEY: Record<string, Key> = {
+  time: 'toast.oddjob.time',
+  quit: 'toast.oddjob.quit',
+  seen: 'toast.oddjob.seen',
+  caught: 'toast.oddjob.caught',
+  fixed: 'toast.oddjob.fixed',
+  found: 'toast.oddjob.found',
+};
 
 /** Where the birthday cake came in (the 'cake' news's n): the hotbar at a visit, the desk from the parcel, the desk from a visit, the hotbar from the parcel. */
 const CAKE_KEY: readonly Key[] = ['toast.oddjob.cake', 'toast.oddjob.cakeDesk', 'toast.oddjob.cakeVisitDesk', 'toast.oddjob.cakePocket'];
@@ -396,7 +485,12 @@ export function announceOddJob(sim: Sim, e: Extract<SimEvent, { type: 'oddjob' }
       return banner.toast(t('toast.oddjob.done', { name }), 'good', 4500);
     case 'paid': {
       sound.coin();
-      const extra = e.perk === PERK.ITEM && e.item ? t('toast.oddjob.paidItem', { item: lowerFirst(itemName(e.item)) }) : e.perk === PERK.DEBT ? t('toast.oddjob.paidDebt', { name }) : '';
+      const extra =
+        e.perk === PERK.ITEM && e.item
+          ? t('toast.oddjob.paidItem', { item: lowerFirst(itemName(e.item)) })
+          : e.perk === PERK.DEBT
+            ? t('toast.oddjob.paidDebt', { name })
+            : '';
       return banner.toast(`${t('toast.oddjob.paid', { name, n: e.n ?? 0 })}${extra ? ` ${extra}` : ''}`, 'good', 4500);
     }
     case 'chain': {

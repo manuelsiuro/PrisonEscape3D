@@ -13,7 +13,15 @@ export type PauseChoice = 'resume' | 'quit' | 'settings' | 'save' | 'help' | 're
 /** In a lesson (`lesson`): no saving, a restart, and the way out goes back to the lessons. */
 /** `place`: where the run is ("Stalag Flucht · Day 3"), above the title; none in a lesson. */
 /** In a Daily (`twists`, P26: its twists' chips): no saving to a slot, the twists under the title, and Try again. */
-export function showPause(click: () => void, saved: boolean, canSave = true, note = '', lesson = false, place = '', twists = ''): Promise<PauseChoice> {
+export function showPause(
+  click: () => void,
+  saved: boolean,
+  canSave = true,
+  note = '',
+  lesson = false,
+  place = '',
+  twists = '',
+): Promise<PauseChoice> {
   const el = h(
     'div',
     'modal',

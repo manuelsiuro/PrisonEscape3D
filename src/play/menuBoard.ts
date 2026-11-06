@@ -50,7 +50,12 @@ function mealOf(sim: Sim, day: number, meal: number, fresh: boolean) {
   const dish = dishOn(sim.state.salt, sim.prison.id, day, meal);
   const extra = fresh ? FRESH_ENERGY : 0;
   if (feast) return { name: dishName(feast), gives: trayWords(FEAST_ENERGY + extra, 0, true), feast: true, energy: FEAST_ENERGY };
-  return { name: dishName(dish), gives: trayWords(dish.energy + extra, (dish.health ?? 0) + (fresh ? FRESH_HEALTH : 0)), feast: false, energy: dish.energy };
+  return {
+    name: dishName(dish),
+    gives: trayWords(dish.energy + extra, (dish.health ?? 0) + (fresh ? FRESH_HEALTH : 0)),
+    feast: false,
+    energy: dish.energy,
+  };
 }
 
 /** The card now, or null with it shut. */

@@ -59,7 +59,10 @@ function calls(root: THREE.Object3D): number {
   const walk = (o: THREE.Object3D) => {
     if (!o.visible) return;
     const m = o as THREE.Mesh;
-    if ((m.isMesh || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite) && !((o as THREE.InstancedMesh).isInstancedMesh && (o as THREE.InstancedMesh).count === 0))
+    if (
+      (m.isMesh || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite) &&
+      !((o as THREE.InstancedMesh).isInstancedMesh && (o as THREE.InstancedMesh).count === 0)
+    )
       n += Array.isArray(m.material) ? Math.max(1, m.geometry.groups.length) : 1;
     for (const c of o.children) walk(c);
   };
@@ -105,12 +108,18 @@ for (const def of [...PRISONS, TRAINING]) {
   const before = lastGround;
   let a!: InstanceType<typeof WorldView>;
   const freedOld = freedBy(before, () => (a = new WorldView(world)));
-  check(before.every((t) => freedOld.has(t)), `${def.id}: the last prison's ground canvases are freed when its are drawn`);
+  check(
+    before.every((t) => freedOld.has(t)),
+    `${def.id}: the last prison's ground canvases are freed when its are drawn`,
+  );
   const ground = groundTextures();
   check(ground.length === 2, `${def.id}: the ground's two canvases are cached`);
   // The same prison again (Watch again, Play again): the same canvases, nothing redrawn.
   const b = new WorldView(new Sim(def).world);
-  check(groundTextures().every((t, k) => t === ground[k]), `${def.id}: the same prison staged again reuses its ground canvases`);
+  check(
+    groundTextures().every((t, k) => t === ground[k]),
+    `${def.id}: the same prison staged again reuses its ground canvases`,
+  );
 
   const ha = holdings(a.group);
   const hb = holdings(b.group);
@@ -118,11 +127,26 @@ for (const def of [...PRISONS, TRAINING]) {
   const own = [...ha.textures].filter((t) => !shared.has(t));
   const things = [...ha.geometries, ...ha.materials, ...ha.textures] as Array<THREE.EventDispatcher<{ dispose: object }>>;
   const freed = freedBy(things, () => a.dispose());
-  check([...ha.geometries].every((g) => freed.has(g)), `${def.id}: every geometry of a world is freed with it`);
-  check([...ha.materials].every((m) => freed.has(m) === (m !== kitMaterial)), `${def.id}: every material of a world is freed with it (the kit material stays)`);
-  check(own.every((t) => freed.has(t)), `${def.id}: every texture a world made is freed with it (${own.filter((t) => !freed.has(t)).length} kept)`);
-  check([...shared].every((t) => !freed.has(t)), `${def.id}: no shared texture is freed with a world (cached TEX, the ground's canvases)`);
-  check(ground.every((t) => shared.has(t) && !freed.has(t)), `${def.id}: the ground's canvases outlive the view (the cache's)`);
+  check(
+    [...ha.geometries].every((g) => freed.has(g)),
+    `${def.id}: every geometry of a world is freed with it`,
+  );
+  check(
+    [...ha.materials].every((m) => freed.has(m) === (m !== kitMaterial)),
+    `${def.id}: every material of a world is freed with it (the kit material stays)`,
+  );
+  check(
+    own.every((t) => freed.has(t)),
+    `${def.id}: every texture a world made is freed with it (${own.filter((t) => !freed.has(t)).length} kept)`,
+  );
+  check(
+    [...shared].every((t) => !freed.has(t)),
+    `${def.id}: no shared texture is freed with a world (cached TEX, the ground's canvases)`,
+  );
+  check(
+    ground.every((t) => shared.has(t) && !freed.has(t)),
+    `${def.id}: the ground's canvases outlive the view (the cache's)`,
+  );
 
   // The static world's draw calls.
   const decor = new DecorView(def.decor ?? []);
@@ -131,7 +155,9 @@ for (const def of [...PRISONS, TRAINING]) {
   check(wv <= 64, `${def.id}: the static world is at most 64 draw calls (${wv})`);
   const trees = (def.decor ?? []).some((p) => p.kind === 'tree');
   check(dc <= (trees ? 3 : 2), `${def.id}: the decor is at most two draw calls, three with trees (${dc})`);
-  console.log(`${def.id}: world ${wv} calls, decor ${dc}; freed ${freed.size} of ${things.length} (${own.length} own textures, ${shared.size} shared)`);
+  console.log(
+    `${def.id}: world ${wv} calls, decor ${dc}; freed ${freed.size} of ${things.length} (${own.length} own textures, ${shared.size} shared)`,
+  );
 
   // Watch again: the doors stand as the restored state has them, at once (no slide from the end's).
   const doors = (b as unknown as { doors: Array<{ index: number; open: number }> }).doors;
@@ -147,13 +173,52 @@ for (const def of [...PRISONS, TRAINING]) {
 
   // The rest of a prison's views: what each makes is freed with it, what they share is not.
   const parts: Array<[string, () => { roots: THREE.Object3D[]; dispose: () => void }]> = [
-    ['structure', () => { const s = new Structure(world, b); s.refresh(false); return { roots: [s.group, s.roofs], dispose: () => s.dispose() }; }],
-    ['security', () => { const s = new Security(world); return { roots: [s.group], dispose: () => s.dispose() }; }],
-    ['minefield', () => { const s = new Minefield(world); return { roots: [s.group], dispose: () => s.dispose() }; }],
-    ['underground', () => { const s = new Underground(world); s.refresh(); return { roots: [s.group], dispose: () => s.dispose() }; }],
-    ['decor', () => { const s = new DecorView(def.decor ?? []); return { roots: [s.group], dispose: () => s.dispose() }; }],
+    [
+      'structure',
+      () => {
+        const s = new Structure(world, b);
+        s.refresh(false);
+        return { roots: [s.group, s.roofs], dispose: () => s.dispose() };
+      },
+    ],
+    [
+      'security',
+      () => {
+        const s = new Security(world);
+        return { roots: [s.group], dispose: () => s.dispose() };
+      },
+    ],
+    [
+      'minefield',
+      () => {
+        const s = new Minefield(world);
+        return { roots: [s.group], dispose: () => s.dispose() };
+      },
+    ],
+    [
+      'underground',
+      () => {
+        const s = new Underground(world);
+        s.refresh();
+        return { roots: [s.group], dispose: () => s.dispose() };
+      },
+    ],
+    [
+      'decor',
+      () => {
+        const s = new DecorView(def.decor ?? []);
+        return { roots: [s.group], dispose: () => s.dispose() };
+      },
+    ],
   ];
-  if (def.theme === 'island') parts.push(['island', () => { const s = new Island(world); return { roots: [s.group], dispose: () => s.dispose() }; }]);
+  if (def.theme === 'island')
+    parts.push([
+      'island',
+      () => {
+        const s = new Island(world);
+        return { roots: [s.group], dispose: () => s.dispose() };
+      },
+    ]);
   const kept: string[] = [];
   for (const [name, make] of parts) {
     const k = leaks(make);
@@ -170,12 +235,20 @@ function leaks(make: () => { roots: THREE.Object3D[]; dispose: () => void }): st
   const b = make();
   const of = (roots: THREE.Object3D[]) => {
     const all = roots.map(holdings);
-    return { geometries: all.flatMap((h) => [...h.geometries]), materials: all.flatMap((h) => [...h.materials]), textures: all.flatMap((h) => [...h.textures]) };
+    return {
+      geometries: all.flatMap((h) => [...h.geometries]),
+      materials: all.flatMap((h) => [...h.materials]),
+      textures: all.flatMap((h) => [...h.textures]),
+    };
   };
   const ha = of(a.roots);
   const hb = of(b.roots);
   const theirs = new Set<unknown>([...hb.geometries, ...hb.materials, ...hb.textures]);
-  const mine = [...new Set<THREE.EventDispatcher<{ dispose: object }>>([...ha.geometries, ...ha.materials, ...ha.textures] as Array<THREE.EventDispatcher<{ dispose: object }>>)];
+  const mine = [
+    ...new Set<THREE.EventDispatcher<{ dispose: object }>>([...ha.geometries, ...ha.materials, ...ha.textures] as Array<
+      THREE.EventDispatcher<{ dispose: object }>
+    >),
+  ];
   const freed = freedBy(mine, () => a.dispose());
   b.dispose();
   const own = mine.filter((t) => !theirs.has(t));

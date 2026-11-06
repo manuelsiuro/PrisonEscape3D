@@ -33,7 +33,9 @@ const square = (bot: Bot) => placesOf(bot.sim.world).rollCall[0].tile;
 /** A tile of the yard that isn't anyone's square. */
 const offSquare = (bot: Bot) => {
   const squares = new Set(placesOf(bot.sim.world).rollCall.map((s) => s.tile));
-  return floorOf(bot.sim.world, ['rollCall']).find((t) => !squares.has(t) && !placesOf(bot.sim.world).countStops.some((s) => s.tile === t))!;
+  return floorOf(bot.sim.world, ['rollCall']).find(
+    (t) => !squares.has(t) && !placesOf(bot.sim.world).countStops.some((s) => s.tile === t),
+  )!;
 };
 /** A silent player at the morning's roll call on day 2, stood on their square as the block begins. */
 function atMorning(seed = 3, prison = CENTER_PERKS) {
@@ -59,17 +61,29 @@ for (const def of PRISONS) {
     check(!bot.sim.world.guardBlock[s.tile], `${def.id}: the warden can stand at stop ${k}`);
     check(!squares.has(s.tile), `${def.id}: stop ${k} isn't someone's square`);
     const q = places.rollCall[k].tile;
-    check(Math.abs((q % MAP_W) - (s.tile % MAP_W)) + Math.abs(Math.floor(q / MAP_W) - Math.floor(s.tile / MAP_W)) === 1, `${def.id}: stop ${k} is beside its square`);
+    check(
+      Math.abs((q % MAP_W) - (s.tile % MAP_W)) + Math.abs(Math.floor(q / MAP_W) - Math.floor(s.tile / MAP_W)) === 1,
+      `${def.id}: stop ${k} is beside its square`,
+    );
   });
   check(wardenOf(bot.sim) >= 0, `${def.id}: someone takes roll call`);
-  check(bot.sim.world.zoneAt(places.rollCall[0].tile % MAP_W, Math.floor(places.rollCall[0].tile / MAP_W)) === 'rollCall', `${def.id}: the player's square is in the yard`);
-  check(!bot.st.inmates.some((m) => places.rollCall[m.cell - 1]?.tile === places.rollCall[0].tile), `${def.id}: no inmate is sent to the player's square`);
+  check(
+    bot.sim.world.zoneAt(places.rollCall[0].tile % MAP_W, Math.floor(places.rollCall[0].tile / MAP_W)) === 'rollCall',
+    `${def.id}: the player's square is in the yard`,
+  );
+  check(
+    !bot.st.inmates.some((m) => places.rollCall[m.cell - 1]?.tile === places.rollCall[0].tile),
+    `${def.id}: no inmate is sent to the player's square`,
+  );
   console.log(`${def.id}: ${places.rollCall.length} squares, a stop beside each, the warden ${def.guards[wardenOf(bot.sim)].name}`);
 }
 
 // ------------------------------------------------------------------ the whole block by the model prisoner, morning and evening
 for (const def of PRISONS) {
-  for (const [name, day, start] of [['morning', 2, MORNING], ['evening', 1, EVENING]] as const) {
+  for (const [name, day, start] of [
+    ['morning', 2, MORNING],
+    ['evening', 1, EVENING],
+  ] as const) {
     for (const seed of [41, 42, 43]) {
       const bot = new Bot(def, seed);
       check(bot.routineUntil(day, start), `${def.id}: to ${name}`);
@@ -102,7 +116,10 @@ for (const def of PRISONS) {
       check(over > 0 && over < 58, `${def.id} ${name} #${seed}: the walk ends in time (${over})`);
       check(onOwnSquare(bot.sim) || bot.st.attended, `${def.id} ${name} #${seed}: on the square`);
       check(bot.st.attended && bot.st.heat === 0, `${def.id} ${name} #${seed}: counted, no heat`);
-      if (seed === 41) console.log(`${def.id} ${name}: called at minute ${Math.round(you)}, counted at ${Math.round(counted)}, the walk over at ${Math.round(over)} of 60`);
+      if (seed === 41)
+        console.log(
+          `${def.id} ${name}: called at minute ${Math.round(you)}, counted at ${Math.round(counted)}, the walk over at ${Math.round(over)} of 60`,
+        );
     }
   }
 }
@@ -128,15 +145,23 @@ for (const def of PRISONS) {
   put(off, offSquare(off));
   off.until(() => ROUTINE[off.st.routine].id !== 'rollCall', 62 * STEPS_PER_MINUTE);
   check(!off.st.lockdown, 'off the square to the end: no lockdown');
-  check(off.events.some((e) => e.type === 'missed' && e.heat === MISSED_ROUTINE_HEAT && !!e.early && !!e.offSquare), `and +${MISSED_ROUTINE_HEAT}% heat, told it's the square`);
+  check(
+    off.events.some((e) => e.type === 'missed' && e.heat === MISSED_ROUTINE_HEAT && !!e.early && !!e.offSquare),
+    `and +${MISSED_ROUTINE_HEAT}% heat, told it's the square`,
+  );
   check(off.st.blocks[0] === BLOCK.LEFT, 'put down as left before counted');
 
   // Nowhere near it: the lockdown as ever.
   const gone = atMorning(7);
   put(gone, placesOf(gone.sim.world).seats[0].tile);
   gone.until(() => ROUTINE[gone.st.routine].id !== 'rollCall', 62 * STEPS_PER_MINUTE);
-  check(gone.events.some((e) => e.type === 'missed' && e.heat === 100 && !e.early), 'not in the yard at all: 100% heat, a lockdown');
-  console.log(`the square: the badge fills only there; off it to the end +${MISSED_ROUTINE_HEAT}% heat, no lockdown; not in the yard, a lockdown`);
+  check(
+    gone.events.some((e) => e.type === 'missed' && e.heat === 100 && !e.early),
+    'not in the yard at all: 100% heat, a lockdown',
+  );
+  console.log(
+    `the square: the badge fills only there; off it to the end +${MISSED_ROUTINE_HEAT}% heat, no lockdown; not in the yard, a lockdown`,
+  );
 }
 
 // ------------------------------------------------------------------ "Here!"
@@ -160,7 +185,10 @@ for (const def of PRISONS) {
   check(untilCalled(quiet), 'called');
   quiet.until(() => quiet.st.calling === 0, 200);
   const misses = quiet.events.filter((e) => e.type === 'count' && e.what === 'missed');
-  check(misses.length === 1 && quiet.st.heat >= COUNT_HEAT - 2 && quiet.st.heat <= COUNT_HEAT, `no answer: +${COUNT_HEAT}% (${quiet.st.heat})`);
+  check(
+    misses.length === 1 && quiet.st.heat >= COUNT_HEAT - 2 && quiet.st.heat <= COUNT_HEAT,
+    `no answer: +${COUNT_HEAT}% (${quiet.st.heat})`,
+  );
   quiet.until(() => false, 200);
   check(quiet.events.filter((e) => e.type === 'count' && e.what === 'missed').length === 1, 'once a block');
 
@@ -180,7 +208,10 @@ for (const def of PRISONS) {
   away.st.heat = 0;
   const w2 = away.st.guards[wardenOf(away.sim)];
   away.until(() => w2.mode === GUARD.COUNT && w2.tasks[0] !== 0, 60 * STEPS_PER_MINUTE);
-  check(w2.tasks[0] !== 0 && away.st.calling === 0 && !away.events.some((e) => e.type === 'count' && (e.what === 'you' || e.what === 'missed')), 'not in the yard when reached: not called on');
+  check(
+    w2.tasks[0] !== 0 && away.st.calling === 0 && !away.events.some((e) => e.type === 'count' && (e.what === 'you' || e.what === 'missed')),
+    'not in the yard when reached: not called on',
+  );
 
   // Called, then gone from the yard: no charge for the call.
   const off = atMorning(12);
@@ -188,7 +219,10 @@ for (const def of PRISONS) {
   check(untilCalled(off), 'called');
   put(off, placesOf(off.sim.world).seats[0].tile);
   off.until(() => false, 120);
-  check(off.st.calling === 0 && !off.events.some((e) => e.type === 'count' && e.what === 'missed'), 'gone from the yard: no heat for the call');
+  check(
+    off.st.calling === 0 && !off.events.some((e) => e.type === 'count' && e.what === 'missed'),
+    'gone from the yard: no heat for the call',
+  );
 
   // Never tips into a chase.
   const hot = atMorning(13);
@@ -226,7 +260,9 @@ for (const def of PRISONS) {
   shut.st.lockdown = true;
   shut.until(() => false, 5);
   check(shut.st.calling === 0, 'a lockdown ends the call');
-  console.log(`Here!: answered, no heat; unanswered +${COUNT_HEAT}%, once, short of a chase; 5 s to step on; not there, not called on; panels closed; nothing charged out cold, gone or in a lockdown`);
+  console.log(
+    `Here!: answered, no heat; unanswered +${COUNT_HEAT}%, once, short of a chase; 5 s to step on; not there, not called on; panels closed; nothing charged out cold, gone or in a lockdown`,
+  );
 }
 
 // ------------------------------------------------------------------ the warden, interrupted
@@ -255,8 +291,18 @@ for (const def of PRISONS) {
   chased.until(() => ROUTINE[chased.st.routine].id !== 'rollCall', 62 * STEPS_PER_MINUTE);
   chased.until(() => false, 20);
   const calls = chased.events.filter((e) => e.type === 'count' && (e.what === 'called' || e.what === 'you'));
-  check(calls.length <= squares && new Set(calls.map((e) => (e.type === 'count' ? e.who : 0))).size === calls.length, `nobody called twice (${calls.length})`);
-  check(w.mode !== GUARD.COUNT && chased.st.countDone === false && chased.st.calling === 0 && chased.st.yardSeen === false && chased.st.countAt === 0, "the bell ends it: a new block's slate clean");
+  check(
+    calls.length <= squares && new Set(calls.map((e) => (e.type === 'count' ? e.who : 0))).size === calls.length,
+    `nobody called twice (${calls.length})`,
+  );
+  check(
+    w.mode !== GUARD.COUNT &&
+      chased.st.countDone === false &&
+      chased.st.calling === 0 &&
+      chased.st.yardSeen === false &&
+      chased.st.countAt === 0,
+    "the bell ends it: a new block's slate clean",
+  );
 
   // Called away while the player is being called: the call lapses, nothing charged, not called again.
   const lapse = atMorning(19);
@@ -265,7 +311,10 @@ for (const def of PRISONS) {
   const lw = lapse.st.guards[k];
   sendToLook(lw, tileAt(lw.body.x, lw.body.z));
   lapse.until(() => false, 300);
-  check(lapse.st.calling === 0 && !lapse.events.some((e) => e.type === 'count' && e.what === 'missed'), 'the warden called away: no charge');
+  check(
+    lapse.st.calling === 0 && !lapse.events.some((e) => e.type === 'count' && e.what === 'missed'),
+    'the warden called away: no charge',
+  );
   check(lapse.events.filter((e) => e.type === 'count' && e.what === 'you').length === 1, 'and no second call');
   // Knocked out while calling: the same.
   const kod = atMorning(20);
@@ -284,7 +333,10 @@ for (const def of PRISONS) {
   check(free.st.attended, 'counted, the warden still out');
   put(free, offSquare(free));
   free.until(() => free.st.calling > 0 || ROUTINE[free.st.routine].id !== 'rollCall', 30 * STEPS_PER_MINUTE);
-  check(free.st.calling === 0 && !free.events.some((e) => e.type === 'count' && (e.what === 'you' || e.what === 'missed')), 'counted: not called on');
+  check(
+    free.st.calling === 0 && !free.events.some((e) => e.type === 'count' && (e.what === 'you' || e.what === 'missed')),
+    'counted: not called on',
+  );
 
   // A hole dug at a stop: on to the next, not held there.
   const holed = atMorning(26);
@@ -292,9 +344,11 @@ for (const def of PRISONS) {
   holed.sim.world.guardBlock[stop] = 1;
   const hw = holed.st.guards[k];
   holed.until(() => holed.st.countDone && hw.mode !== GUARD.COUNT, 58 * STEPS_PER_MINUTE);
-  check(hw.mode !== GUARD.COUNT, 'a stop that can\'t be reached is passed over');
+  check(hw.mode !== GUARD.COUNT, "a stop that can't be reached is passed over");
   holed.sim.world.guardBlock[stop] = 0;
-  console.log('the warden: out cold, no count and nothing charged; called away, back to the line with nobody called twice; a stop out of reach passed over; off with the bell, the slate clean');
+  console.log(
+    'the warden: out cold, no count and nothing charged; called away, back to the line with nobody called twice; a stop out of reach passed over; off with the bell, the slate clean',
+  );
 }
 
 // ------------------------------------------------------------------ saves and older runs
@@ -305,7 +359,10 @@ for (const def of PRISONS) {
   const snap: Snapshot = bot.sim.snapshot();
   const back = new Sim(CENTER_PERKS, 1);
   back.restore(snap);
-  check(back.state.calling > 0 && back.state.countDone && back.state.guards[wardenOf(back)].mode === GUARD.COUNT, 'a save keeps the call and the walk');
+  check(
+    back.state.calling > 0 && back.state.countDone && back.state.guards[wardenOf(back)].mode === GUARD.COUNT,
+    'a save keeps the call and the walk',
+  );
   const old = JSON.parse(JSON.stringify(snap)) as Snapshot;
   for (const f of ['calling', 'countDone', 'yardSeen', 'countAt']) delete (old.state as unknown as Record<string, unknown>)[f];
   const was = new Sim(CENTER_PERKS, 1);
@@ -353,11 +410,25 @@ for (const def of PRISONS) {
   check(!squareNeeded(t.sim), 'Training needs no square');
   t.until(() => false, 60 * STEPS_PER_MINUTE);
   check(!t.events.some((e) => e.type === 'count'), 'Training has no count');
-  console.log('saves and older runs: the call kept; a save from before loads with none; a 2.26 log replays as it was and is not carried on; Training unchanged');
+  console.log(
+    'saves and older runs: the call kept; a save from before loads with none; a 2.26 log replays as it was and is not carried on; Training unchanged',
+  );
 }
 
 // ------------------------------------------------------------------ text
-for (const [name, k] of [['en', en], ['fr', fr]] as const) {
-  for (const key of ['act.here', 'routine.yourSquare', 'routine.shakedown', 'routine.shakedownYou', 'toast.countCall', 'toast.countMissed', 'hint.rollCall'] as const) check(!!k[key], `${name}: ${key}`);
+for (const [name, k] of [
+  ['en', en],
+  ['fr', fr],
+] as const) {
+  for (const key of [
+    'act.here',
+    'routine.yourSquare',
+    'routine.shakedown',
+    'routine.shakedownYou',
+    'toast.countCall',
+    'toast.countMissed',
+    'hint.rollCall',
+  ] as const)
+    check(!!k[key], `${name}: ${key}`);
   check((k['help.rollcall.steps'] ?? '').split('\n').length === 3, `${name}: three steps`);
 }

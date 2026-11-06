@@ -50,9 +50,22 @@ export class Pickups {
   private readonly pool: THREE.Mesh[] = [];
   private readonly glows: THREE.Mesh[] = [];
   private readonly glowGeometry = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-  private readonly glowMat = new THREE.MeshBasicMaterial({ map: glow(), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  private readonly glowMat = new THREE.MeshBasicMaterial({
+    map: glow(),
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+  });
   private readonly frame = new THREE.Group();
-  private readonly frameMat = new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
+  private readonly frameMat = new THREE.MeshBasicMaterial({
+    color: 0xffd36b,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    toneMapped: false,
+  });
   private shown = 0;
   private rev = -1;
   private count = 0;

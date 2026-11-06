@@ -68,7 +68,16 @@ export interface Scratch {
   cast: Array<Inmate | Guard>;
   workState: WorkState;
   /** Who each follower goes after this step (a foe of the player's, else the player), and every inmate's job room. */
-  social: Social & { follow: Array<Body | null>; gap: number[]; work: number[]; scare: Array<{ x: number; z: number }>; doing: number[]; pace: number[]; face: number[]; off: number[] };
+  social: Social & {
+    follow: Array<Body | null>;
+    gap: number[];
+    work: number[];
+    scare: Array<{ x: number; z: number }>;
+    doing: number[];
+    pace: number[];
+    face: number[];
+    off: number[];
+  };
   /** The foe each follower is after (Cast id, -1 none). */
   allyFoe: number[];
 }

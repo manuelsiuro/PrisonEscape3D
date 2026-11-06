@@ -31,7 +31,8 @@ export interface BarView {
 }
 
 /** "Day 2 · 14:05" for a step, in one piece (never broken across two lines). */
-export const whenOf = (step: number) => `${t('hud.day', { n: clockAt(step).day }).replace(/ /g, '\u00a0')}\u00a0·\u00a0${formatTime(clockAt(step))}`;
+export const whenOf = (step: number) =>
+  `${t('hud.day', { n: clockAt(step).day }).replace(/ /g, '\u00a0')}\u00a0·\u00a0${formatTime(clockAt(step))}`;
 
 export class ReplayBar {
   readonly el: HTMLElement;
@@ -49,7 +50,17 @@ export class ReplayBar {
   private readonly cap: HTMLElement;
   private readonly noteEl: HTMLElement;
   private capTimer = 0;
-  private shown = { at: -1, reach: -1, playing: null as boolean | null, ended: null as boolean | null, speed: -1, pace: -1, quiet: null as boolean | null, checking: -2 as number | null, lang: '' };
+  private shown = {
+    at: -1,
+    reach: -1,
+    playing: null as boolean | null,
+    ended: null as boolean | null,
+    speed: -1,
+    pace: -1,
+    quiet: null as boolean | null,
+    checking: -2 as number | null,
+    lang: '',
+  };
   private dragging = false;
 
   onClose: () => void = () => {};
@@ -138,7 +149,18 @@ export class ReplayBar {
     this.scrub.addEventListener('pointerup', up);
     this.scrub.addEventListener('pointercancel', up);
     this.scrub.addEventListener('keydown', (e) => {
-      const k = ({ ArrowLeft: 'back', ArrowDown: 'back', ArrowRight: 'fwd', ArrowUp: 'fwd', PageUp: 'prev', PageDown: 'next', Home: 'home', End: 'end' } as const)[e.code as 'ArrowLeft'];
+      const k = (
+        {
+          ArrowLeft: 'back',
+          ArrowDown: 'back',
+          ArrowRight: 'fwd',
+          ArrowUp: 'fwd',
+          PageUp: 'prev',
+          PageDown: 'next',
+          Home: 'home',
+          End: 'end',
+        } as const
+      )[e.code as 'ArrowLeft'];
       if (!k) return;
       e.preventDefault();
       e.stopPropagation();
@@ -160,7 +182,8 @@ export class ReplayBar {
     const box = this.el.querySelector<HTMLElement>('.rp-days')!;
     const startOf = (d: number) => ((d - 1) * 1440 - START_MINUTE) * STEPS_PER_MINUTE;
     let html = '';
-    for (let d = clockAt(this.from).day + 1; startOf(d) < this.to; d++) html += `<i style="left:${this.pct(startOf(d))}%"><span>${t('replay.dayShort', { n: d })}</span></i>`;
+    for (let d = clockAt(this.from).day + 1; startOf(d) < this.to; d++)
+      html += `<i style="left:${this.pct(startOf(d))}%"><span>${t('replay.dayShort', { n: d })}</span></i>`;
     box.innerHTML = html;
   }
 
@@ -239,7 +262,10 @@ export class ReplayBar {
       s.pace = pace;
       this.speedBtn.querySelector('b')!.textContent = v.speed === 0 ? t('replay.auto') : `${v.speed}×`;
       this.speedBtn.querySelector('small')!.textContent = v.speed === 0 ? `${pace}×` : '';
-      this.speedBtn.setAttribute('aria-label', t('replay.speed', { speed: v.speed === 0 ? `${t('replay.auto')} (${pace}×)` : `${v.speed}×` }));
+      this.speedBtn.setAttribute(
+        'aria-label',
+        t('replay.speed', { speed: v.speed === 0 ? `${t('replay.auto')} (${pace}×)` : `${v.speed}×` }),
+      );
     }
     if (v.quiet !== s.quiet) {
       s.quiet = v.quiet;

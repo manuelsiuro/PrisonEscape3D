@@ -33,7 +33,8 @@ interface Store {
 function readStore(): Store {
   const s = readJSON<Partial<Store>>(KEYS.trophies, {});
   const earned: Record<string, number> = {};
-  if (s.earned && typeof s.earned === 'object') for (const [k, v] of Object.entries(s.earned)) if (typeof v === 'number' && ACHIEVEMENTS.some((a) => a.id === k)) earned[k] = v;
+  if (s.earned && typeof s.earned === 'object')
+    for (const [k, v] of Object.entries(s.earned)) if (typeof v === 'number' && ACHIEVEMENTS.some((a) => a.id === k)) earned[k] = v;
   const unseen = Array.isArray(s.unseen) ? s.unseen.filter((k): k is string => typeof k === 'string' && k in earned) : [];
   const escaped = Array.isArray(s.escaped) ? s.escaped.filter((k): k is number => typeof k === 'number') : [];
   const hunted = Array.isArray(s.hunted) ? s.hunted.filter((k): k is number => typeof k === 'number') : [];
@@ -75,7 +76,14 @@ export function unlockedCosmetics(): Set<string> {
 /** The run followed now: its numbers already added to the stats. */
 let run: { sim: Sim; feats: number[]; tally: number[]; day: number } | null = null;
 
-const viewOf = (sim: Sim): RunView => ({ prison: sim.prison.id, feats: sim.state.feats, days: sim.state.days, str: sim.state.str, spd: sim.state.spd, int: sim.state.items.int });
+const viewOf = (sim: Sim): RunView => ({
+  prison: sim.prison.id,
+  feats: sim.state.feats,
+  days: sim.state.days,
+  str: sim.state.str,
+  spd: sim.state.spd,
+  int: sim.state.items.int,
+});
 
 /** A game begins (`fresh`: a new one, not loaded) and is followed from here. */
 export function startRun(sim: Sim, fresh: boolean) {
@@ -146,7 +154,15 @@ export function escapeRun(rec: Pick<EscapeRecord, 'medal'>, daily?: EscapeView['
     addStats({ escapes: 1 });
   }
   syncRun();
-  const e: EscapeView = { ...viewOf(sim), via: ESCAPES[sim.state.via], day: sim.clock.day, medal: rec.medal, weather: weatherNow(sim), crew: sim.state.crewOut.length, ...(daily ? { daily } : {}) };
+  const e: EscapeView = {
+    ...viewOf(sim),
+    via: ESCAPES[sim.state.via],
+    day: sim.clock.day,
+    medal: rec.medal,
+    weather: weatherNow(sim),
+    crew: sim.state.crewOut.length,
+    ...(daily ? { daily } : {}),
+  };
   const got = award(ACHIEVEMENTS.filter((a) => a.escape?.(e) || a.run?.(e)));
   return [...got, ...syncCareer(false)];
 }
@@ -189,7 +205,13 @@ export function careerOf(stats = readStats()): Career {
     stats,
     prisons: PRISONS.map((p) => {
       const r = recordOf(p.id);
-      return { id: p.id, routes: r.routes, of: escapesOf(p).length, medals: Object.values(r.byRoute).flatMap((b) => (b.medal ? [b.medal] : [])), clean: Object.values(r.byRoute).filter((b) => b.clean).length };
+      return {
+        id: p.id,
+        routes: r.routes,
+        of: escapesOf(p).length,
+        medals: Object.values(r.byRoute).flatMap((b) => (b.medal ? [b.medal] : [])),
+        clean: Object.values(r.byRoute).filter((b) => b.clean).length,
+      };
     }),
     lessons: lessonsDone().filter((id) => LESSONS.some((l) => l.id === id)).length,
     lessonsOf: LESSONS.length,

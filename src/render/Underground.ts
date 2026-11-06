@@ -32,7 +32,11 @@ export class Underground {
     const side = seeThrough(new THREE.MeshStandardMaterial({ map: TEX.earth(), roughness: 1, color: 0x8a7a6a }));
     this.earth = new THREE.InstancedMesh(new THREE.BoxGeometry(1, EARTH_H, 1), [side, side, top, top, side, side], MAP_W * MAP_H);
     // The trodden floor, warm and lighter than the earth's top: the trench reads at a glance.
-    this.floor = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: TEX.tunnel(), color: 0xffe0b8, emissive: 0x2a1a0c, roughness: 1 }), MAP_W * MAP_H);
+    this.floor = new THREE.InstancedMesh(
+      new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+      new THREE.MeshStandardMaterial({ map: TEX.tunnel(), color: 0xffe0b8, emissive: 0x2a1a0c, roughness: 1 }),
+      MAP_W * MAP_H,
+    );
     const c = new THREE.Color();
     const g = world.ground.base;
     for (let i = 0; i < MAP_W * MAP_H; i++) {
@@ -45,16 +49,16 @@ export class Underground {
         : k === TILE.MINE
           ? 0xc8735a
           : k === TILE.BRICK || k === TILE.REINFORCED
-          ? 0x6f6258
-          : k === TILE.FENCE || k === TILE.ELECTRIC
-            ? 0xa0684a
-            : k === TILE.ROAD
-              ? 0x8c8a86
-              : k === TILE.GRASS || k === TILE.DIRT
-                ? 0xb4a888
-                : TILE_INFO[k].outdoor
-                  ? 0xa89c88
-                  : 0xc8b8a0;
+            ? 0x6f6258
+            : k === TILE.FENCE || k === TILE.ELECTRIC
+              ? 0xa0684a
+              : k === TILE.ROAD
+                ? 0x8c8a86
+                : k === TILE.GRASS || k === TILE.DIRT
+                  ? 0xb4a888
+                  : TILE_INFO[k].outdoor
+                    ? 0xa89c88
+                    : 0xc8b8a0;
       this.earth.setColorAt(i, c.set(tint));
     }
     // Granite (GDD §4.2): grey rock in the earth, humped up out of it so a digger sees where
@@ -66,10 +70,22 @@ export class Underground {
       const x = i % MAP_W;
       const z = Math.floor(i / MAP_W);
       this.earth.setColorAt(i, c.set(0x7d848d));
-      const h = (((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000 / 1000;
+      const h = ((((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000) / 1000;
       rocks.push(
-        paint(new THREE.DodecahedronGeometry(0.5, 0).scale(1, 0.55, 0.95).rotateY(h * 6).translate(x + 0.5, EARTH_H + 0.05, z + 0.5), 0x8e959e),
-        paint(new THREE.DodecahedronGeometry(0.24, 0).scale(1, 0.7, 1).rotateY(h * 9).translate(x + 0.25 + h * 0.4, EARTH_H + 0.18, z + 0.3 + h * 0.3), 0xa3aab3),
+        paint(
+          new THREE.DodecahedronGeometry(0.5, 0)
+            .scale(1, 0.55, 0.95)
+            .rotateY(h * 6)
+            .translate(x + 0.5, EARTH_H + 0.05, z + 0.5),
+          0x8e959e,
+        ),
+        paint(
+          new THREE.DodecahedronGeometry(0.24, 0)
+            .scale(1, 0.7, 1)
+            .rotateY(h * 9)
+            .translate(x + 0.25 + h * 0.4, EARTH_H + 0.18, z + 0.3 + h * 0.3),
+          0xa3aab3,
+        ),
       );
     }
     if (rocks.length) {
@@ -93,7 +109,14 @@ export class Underground {
     this.earth.receiveShadow = true;
     this.floor.receiveShadow = true;
     // Additive and faint: a glow down the entrance, never a grey pillar over the player.
-    this.beam = new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    this.beam = new THREE.MeshBasicMaterial({
+      color: 0xffe2a0,
+      transparent: true,
+      opacity: 0.12,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
     // The lantern is added to the scene by the view (always there, dimmed to 0 above ground).
     this.group.add(this.earth, this.floor, this.extras);
     this.lantern.intensity = 0;
@@ -128,7 +151,10 @@ export class Underground {
         // A timber frame: two posts and a cap beam across the tunnel.
         const ns = isTunnel(under[i - MAP_W] ?? 0) || isTunnel(under[i + MAP_W] ?? 0);
         const [ox, oz] = ns ? [0.4, 0] : [0, 0.4];
-        parts.push(box(0.12, EARTH_H, 0.12, 0xb07a45, x + 0.5 - ox, 0, z + 0.5 - oz), box(0.12, EARTH_H, 0.12, 0xb07a45, x + 0.5 + ox, 0, z + 0.5 + oz));
+        parts.push(
+          box(0.12, EARTH_H, 0.12, 0xb07a45, x + 0.5 - ox, 0, z + 0.5 - oz),
+          box(0.12, EARTH_H, 0.12, 0xb07a45, x + 0.5 + ox, 0, z + 0.5 + oz),
+        );
         parts.push(box(ns ? 0.98 : 0.14, 0.12, ns ? 0.14 : 0.98, 0x8a5a2e, x + 0.5, EARTH_H - 0.06, z + 0.5));
       }
       if (this.world.ground.kind[i] === TILE.SHAFT && isTunnel(under[i])) {

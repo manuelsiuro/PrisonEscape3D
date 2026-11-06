@@ -67,7 +67,17 @@ export function wingGeometry(): THREE.BufferGeometry {
 
 /** The gatekeeper (seated behind his hatch, facing +z): shoulders, a head, a guard's cap. */
 function keeperGeometry(): THREE.BufferGeometry {
-  return merge([box(0.42, 0.34, 0.24, 0x3a5a8c, 0, 0, 0), box(0.26, 0.26, 0.24, 0xe2ad84, 0, 0.34, 0.01), box(0.3, 0.07, 0.3, 0x1f2c44, 0, 0.58, 0.02), box(0.3, 0.02, 0.12, 0x1f2c44, 0, 0.58, 0.17), box(0.05, 0.05, 0.02, 0x161616, -0.06, 0.45, 0.13), box(0.05, 0.05, 0.02, 0x161616, 0.06, 0.45, 0.13)], false);
+  return merge(
+    [
+      box(0.42, 0.34, 0.24, 0x3a5a8c, 0, 0, 0),
+      box(0.26, 0.26, 0.24, 0xe2ad84, 0, 0.34, 0.01),
+      box(0.3, 0.07, 0.3, 0x1f2c44, 0, 0.58, 0.02),
+      box(0.3, 0.02, 0.12, 0x1f2c44, 0, 0.58, 0.17),
+      box(0.05, 0.05, 0.02, 0x161616, -0.06, 0.45, 0.13),
+      box(0.05, 0.05, 0.02, 0x161616, 0.06, 0.45, 0.13),
+    ],
+    false,
+  );
 }
 
 /**
@@ -80,7 +90,15 @@ export class GetawayView {
   readonly group = new THREE.Group();
   private booth: THREE.Group | null = null;
   private readonly lampMat = new THREE.MeshStandardMaterial({ color: 0xfff2c8, emissive: 0xffe0a0, emissiveIntensity: 0.6 });
-  private readonly glassMat = new THREE.MeshStandardMaterial({ color: 0x2a3a4a, roughness: 0.15, metalness: 0.5, emissive: 0xffd9a0, emissiveIntensity: 0.25, transparent: true, opacity: 0.3 });
+  private readonly glassMat = new THREE.MeshStandardMaterial({
+    color: 0x2a3a4a,
+    roughness: 0.15,
+    metalness: 0.5,
+    emissive: 0xffd9a0,
+    emissiveIntensity: 0.25,
+    transparent: true,
+    opacity: 0.3,
+  });
   private relief: THREE.Mesh | null = null;
   /** The preview: its ring, the dots along the way. */
   private readonly ringMat = new THREE.MeshBasicMaterial({ color: OUT, transparent: true, opacity: 0.85, depthTest: false });
@@ -89,7 +107,17 @@ export class GetawayView {
   private readonly dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.085, 8, 6), this.dotMat, DOTS);
   /** The glider in flight (and left where it came down inside). */
   private readonly wing = new THREE.Mesh(wingGeometry(), kitMaterial);
-  private flight: { fromX: number; fromY: number; fromZ: number; toX: number; toZ: number; t: number; secs: number; angle: number; out: boolean } | null = null;
+  private flight: {
+    fromX: number;
+    fromY: number;
+    fromZ: number;
+    toX: number;
+    toZ: number;
+    t: number;
+    secs: number;
+    angle: number;
+    out: boolean;
+  } | null = null;
   private wreck = 0;
   /** The glide is still higher than the walls (the roofs stay drawn till it drops below them). */
   aloft = false;
@@ -133,7 +161,12 @@ export class GetawayView {
           // The roof: pale on top (seen from above), a navy fascia, hazard stripes along its edge.
           box(1.06, 0.12, 1.06, 0x2a4a7c, 0, H - 0.04, 0),
           box(1.0, 0.04, 1.0, 0xe4e8ec, 0, H + 0.08, 0),
-          ...[-0.42, -0.21, 0, 0.21, 0.42].flatMap((x) => [box(0.1, 0.05, 0.02, 0xffd23f, x, H, 0.535), box(0.1, 0.05, 0.02, 0xffd23f, x, H, -0.535), box(0.02, 0.05, 0.1, 0xffd23f, 0.535, H, x), box(0.02, 0.05, 0.1, 0xffd23f, -0.535, H, x)]),
+          ...[-0.42, -0.21, 0, 0.21, 0.42].flatMap((x) => [
+            box(0.1, 0.05, 0.02, 0xffd23f, x, H, 0.535),
+            box(0.1, 0.05, 0.02, 0xffd23f, x, H, -0.535),
+            box(0.02, 0.05, 0.1, 0xffd23f, 0.535, H, x),
+            box(0.02, 0.05, 0.1, 0xffd23f, -0.535, H, x),
+          ]),
           box(0.5, 0.04, 0.16, 0x8a939e, 0, 0.74, 0.47),
         ]),
         kitMaterial,
@@ -170,7 +203,17 @@ export class GetawayView {
       this.land(tx, tz, Math.atan2(tx - fx, tz - fz), out);
       return;
     }
-    this.flight = { fromX: fx, fromY: ROOF_Y, fromZ: fz, toX: tx, toZ: tz, t: 0, secs: glideSecs(dist), angle: Math.atan2(tx - fx, tz - fz), out };
+    this.flight = {
+      fromX: fx,
+      fromY: ROOF_Y,
+      fromZ: fz,
+      toX: tx,
+      toZ: tz,
+      t: 0,
+      secs: glideSecs(dist),
+      angle: Math.atan2(tx - fx, tz - fz),
+      out,
+    };
   }
 
   /** Calls back once the glide in the air is down (at once if none is). */

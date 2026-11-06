@@ -64,7 +64,9 @@
   border-radius: 20px;
   color: white;
   background: linear-gradient(180deg, rgba(58, 48, 96, 0.94), rgba(26, 22, 48, 0.94));
-  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 16px 36px -12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   transform: translateX(-50%);
   pointer-events: none;
   animation: banner-in 0.5s var(--spring) both;

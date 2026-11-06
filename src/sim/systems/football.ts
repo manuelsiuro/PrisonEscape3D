@@ -23,7 +23,49 @@
  */
 import { BRAWL_GUARDS } from '../../content/crew';
 import { CROWD_RANGE, SPORTS_WINS } from '../../content/games';
-import { AIM_HELP, AIM_IN, AIM_WIDE, KICK_GRACE, KICK_LIFT, KICK_TAP, KICKOFF_STEPS, MATCH_STEPS_215, TACKLE_COOL, BALL_KEEP, KEEPER_COOL, KEEPER_REACH, SHOOT_RANGE, BALL_R, BALL_STOP, BEHIND, BOUNCE_KEEP, CALL_RANGE, DRIBBLE_PUSH, GATHER_STEPS, GOAL_HALF, GOAL_LOOK, GOAL_PAUSE, KEEPER_RUSH, KICK_COOL, KICK_HOLD, KICK_INMATE, KICK_MAX, KICK_MIN, KICK_NOISE, KICK_REACH, KICK_SPREAD, MATCH_STEPS, PASS_ODDS, PITCH_LEAVE, PITCH_RANGE, TEAM_CROWD_OPINION, TEAM_PLAY_OPINION, TEAM_WIN_OPINION, TOUCH, YARD_EYES } from '../../content/team';
+import {
+  AIM_HELP,
+  AIM_IN,
+  AIM_WIDE,
+  KICK_GRACE,
+  KICK_LIFT,
+  KICK_TAP,
+  KICKOFF_STEPS,
+  MATCH_STEPS_215,
+  TACKLE_COOL,
+  BALL_KEEP,
+  KEEPER_COOL,
+  KEEPER_REACH,
+  SHOOT_RANGE,
+  BALL_R,
+  BALL_STOP,
+  BEHIND,
+  BOUNCE_KEEP,
+  CALL_RANGE,
+  DRIBBLE_PUSH,
+  GATHER_STEPS,
+  GOAL_HALF,
+  GOAL_LOOK,
+  GOAL_PAUSE,
+  KEEPER_RUSH,
+  KICK_COOL,
+  KICK_HOLD,
+  KICK_INMATE,
+  KICK_MAX,
+  KICK_MIN,
+  KICK_NOISE,
+  KICK_REACH,
+  KICK_SPREAD,
+  MATCH_STEPS,
+  PASS_ODDS,
+  PITCH_LEAVE,
+  PITCH_RANGE,
+  TEAM_CROWD_OPINION,
+  TEAM_PLAY_OPINION,
+  TEAM_WIN_OPINION,
+  TOUCH,
+  YARD_EYES,
+} from '../../content/team';
 import type { Pitch } from '../../content/prisons/types';
 import { nearestDir } from '../ai/path';
 import { tileAt } from '../world/grid';
@@ -90,7 +132,8 @@ export const sideOf = (k: number) => (k < TEAM.CAPTAIN ? 0 : 1);
 export type FootballNews = 'start' | 'kickoff' | 'goal' | 'restart' | 'kick' | 'whiff' | 'won' | 'lost' | 'draw' | 'off' | 'foul';
 
 /** The prison's pitch (null: none). */
-export const pitchOf = (sim: Pick<SimContext, 'world'> & { rules250?: boolean }): Pitch | null => (sim.rules250 ? sim.world.def.leisure?.pitchWas : null) ?? sim.world.def.leisure?.pitch ?? null;
+export const pitchOf = (sim: Pick<SimContext, 'world'> & { rules250?: boolean }): Pitch | null =>
+  (sim.rules250 ? sim.world.def.leisure?.pitchWas : null) ?? sim.world.def.leisure?.pitch ?? null;
 
 /**
  * The pitch in play terms: the long way (`along` x, else z) from the player's goal line a0 to the
@@ -106,8 +149,22 @@ export interface Field {
 }
 export function fieldOf(p: Pitch): Field {
   return p.w >= p.d
-    ? { along: true, a0: (p.x + 1) * UNIT, a1: (p.x + p.w - 1) * UNIT, l0: p.z * UNIT, l1: (p.z + p.d) * UNIT, mid: (p.z + Math.floor(p.d / 2)) * UNIT }
-    : { along: false, a0: (p.z + 1) * UNIT, a1: (p.z + p.d - 1) * UNIT, l0: p.x * UNIT, l1: (p.x + p.w) * UNIT, mid: (p.x + Math.floor(p.w / 2)) * UNIT };
+    ? {
+        along: true,
+        a0: (p.x + 1) * UNIT,
+        a1: (p.x + p.w - 1) * UNIT,
+        l0: p.z * UNIT,
+        l1: (p.z + p.d) * UNIT,
+        mid: (p.z + Math.floor(p.d / 2)) * UNIT,
+      }
+    : {
+        along: false,
+        a0: (p.z + 1) * UNIT,
+        a1: (p.z + p.d - 1) * UNIT,
+        l0: p.x * UNIT,
+        l1: (p.x + p.w) * UNIT,
+        mid: (p.x + Math.floor(p.w / 2)) * UNIT,
+      };
 }
 /** A point's place along the field and across it, and back. */
 const along = (f: Field, x: number, z: number) => (f.along ? x : z);
@@ -165,7 +222,16 @@ export function sightFor(sim: SimContext, g: Guard, x: number, z: number): numbe
 // ------------------------------------------------------------------ the teams
 
 /** What an inmate won't get up from for a match: sleep, a meal, a game with someone (before 2.16, a seat too: the benches by the pitch kept players off it). */
-const BUSY: ReadonlySet<number> = new Set([DOING.SLEEP, DOING.EAT, DOING.BOARD, DOING.CARDS, DOING.DICE, DOING.WRESTLE, DOING.LOOKOUT, DOING.BRAWL]);
+const BUSY: ReadonlySet<number> = new Set([
+  DOING.SLEEP,
+  DOING.EAT,
+  DOING.BOARD,
+  DOING.CARDS,
+  DOING.DICE,
+  DOING.WRESTLE,
+  DOING.LOOKOUT,
+  DOING.BRAWL,
+]);
 const BUSY_215: ReadonlySet<number> = new Set([...BUSY, DOING.SIT, DOING.SIT_READ]);
 
 /** How long a match is played (steps from the whistle). */
@@ -198,7 +264,10 @@ export function teamsFor(sim: SimContext, who: number): number[] | null {
   const mates = [...pool].sort((a, b) => s.inmates[b].opinion - s.inmates[a].opinion || a - b).slice(0, 2);
   const c = centreOf(p);
   const d2 = (k: number) => (s.inmates[k].body.x - c.x) ** 2 + (s.inmates[k].body.z - c.z) ** 2;
-  const rivals = pool.filter((k) => !mates.includes(k)).sort((a, b) => d2(a) - d2(b) || a - b).slice(0, 2);
+  const rivals = pool
+    .filter((k) => !mates.includes(k))
+    .sort((a, b) => d2(a) - d2(b) || a - b)
+    .slice(0, 2);
   // (The one who thinks most of the player keeps goal; the captain's nearer one plays up, the other keeps.)
   return [mates[0], mates[1], who, rivals[0], rivals[1]];
 }
@@ -211,7 +280,8 @@ export function matchRefusal(sim: SimContext, who: number): ReturnType<typeof ga
   if (!p || !m) return 'noPitch';
   const why = gameRefusal(sim, who);
   if (why) return why;
-  if (s.layer !== LAYER.GROUND || offBy(p, s.player.x, s.player.z) > PITCH_RANGE || offBy(p, m.body.x, m.body.z) > PITCH_RANGE) return 'noPitch';
+  if (s.layer !== LAYER.GROUND || offBy(p, s.player.x, s.player.z) > PITCH_RANGE || offBy(p, m.body.x, m.body.z) > PITCH_RANGE)
+    return 'noPitch';
   if (s.crew.some((e) => e[0] === who && e[1] !== 0)) return 'crewBusy';
   if (!teamsFor(sim, who)) return 'fewPlayers';
   return null;
@@ -235,7 +305,21 @@ export function startMatch(sim: SimContext, who: number) {
     m.path = [];
   }
   const c = centreOf(p);
-  s.match = { who, team, from: s.step, at: 0, goals: [0, 0], ball: [c.x, c.z, 0, 0], last: -2, pause: 0, cool: [0, 0, 0, 0, 0, 0], hold: 0, scored: 0, restart: 0, kick: 1 };
+  s.match = {
+    who,
+    team,
+    from: s.step,
+    at: 0,
+    goals: [0, 0],
+    ball: [c.x, c.z, 0, 0],
+    last: -2,
+    pause: 0,
+    cool: [0, 0, 0, 0, 0, 0],
+    hold: 0,
+    scored: 0,
+    restart: 0,
+    kick: 1,
+  };
   sim.events.push({ type: 'football', what: 'start', who, team: team.slice() });
 }
 
@@ -252,13 +336,20 @@ export function holdKick(sim: SimContext) {
 }
 
 /** How hard a kick held this many steps goes (units a step). */
-export const kickPower = (held: number) => KICK_MIN + Math.floor(((KICK_MAX - KICK_MIN) * Math.min(KICK_HOLD, Math.max(0, held))) / KICK_HOLD);
+export const kickPower = (held: number) =>
+  KICK_MIN + Math.floor(((KICK_MAX - KICK_MIN) * Math.min(KICK_HOLD, Math.max(0, held))) / KICK_HOLD);
 
 /** The ball is the player's to kick now: in play, not the other side's kick-off, their kick ready, at their feet. */
 function inReach(sim: SimContext, o: Match): boolean {
   const s = sim.state;
   const p = s.player;
-  return o.at > 0 && !o.pause && o.kick !== 1 && s.step >= o.cool[PLAYER_COOL] && (o.ball[0] - p.x) ** 2 + (o.ball[1] - p.z) ** 2 <= KICK_REACH * KICK_REACH;
+  return (
+    o.at > 0 &&
+    !o.pause &&
+    o.kick !== 1 &&
+    s.step >= o.cool[PLAYER_COOL] &&
+    (o.ball[0] - p.x) ** 2 + (o.ball[1] - p.z) ** 2 <= KICK_REACH * KICK_REACH
+  );
 }
 
 /**
@@ -445,7 +536,15 @@ export function keepMatch(sim: SimContext) {
   if (sim.events.some((e) => e.type === 'hit' && rivals.includes(e.who))) return endMatch(sim, 'foul');
   const pl = s.player;
   const far = s.layer !== LAYER.GROUND || offBy(p, pl.x, pl.z) > PITCH_LEAVE;
-  if (s.lockdown || sim.away || s.sleeping || s.stowed || far || o.team.some((id) => !s.inmates[id] || s.inmates[id].ko > 0 || s.inmates[id].angry > 0)) return endMatch(sim, 'off');
+  if (
+    s.lockdown ||
+    sim.away ||
+    s.sleeping ||
+    s.stowed ||
+    far ||
+    o.team.some((id) => !s.inmates[id] || s.inmates[id].ko > 0 || s.inmates[id].angry > 0)
+  )
+    return endMatch(sim, 'off');
   // The bell for the next block: full time there and then (a match begun never keeps anyone from where they should be).
   if (!gamesOpen(sim)) return o.at ? fullTime(sim, o) : endMatch(sim, 'off');
   const f = fieldOf(p);
@@ -499,12 +598,12 @@ export function keepMatch(sim: SimContext) {
     inmateKick(sim, o, f, k);
     o.kick = -1;
     // (A rival's tackle, never the keeper's save: the ball off the player's feet, theirs again only in a moment.)
-    if (!sim.rules215 && sideOf(k) === 1 && k !== TEAM.RIVAL_KEEPER && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 <= KICK_REACH * KICK_REACH) o.cool[PLAYER_COOL] = Math.max(o.cool[PLAYER_COOL], s.step + TACKLE_COOL);
+    if (!sim.rules215 && sideOf(k) === 1 && k !== TEAM.RIVAL_KEEPER && (b[0] - pl.x) ** 2 + (b[1] - pl.z) ** 2 <= KICK_REACH * KICK_REACH)
+      o.cool[PLAYER_COOL] = Math.max(o.cool[PLAYER_COOL], s.step + TACKLE_COOL);
     break;
   }
   roll(sim, o, f);
 }
-
 
 /** How near (squared, units) a body comes to the ball's way this step: from where it is to where its speed takes it. */
 function nearPath(b: readonly number[], at: { x: number; z: number }): number {

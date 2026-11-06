@@ -173,8 +173,25 @@ export type Target =
  * (Speed), the generator (the power, GDD §5.5); seats, benches and chairs to sit on, the
  * infirmary's beds to rest on (GDD §3.1); Irongate's helipad, to board the helicopter (P12).
  */
-export type FixtureUse = 'vending' | 'cooler' | 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
-const FIXTURES: Partial<Record<string, FixtureUse>> = { vending: 'vending', cooler: 'cooler', jobBoard: 'board', weights: 'weights', treadmill: 'treadmill', generator: 'generator', seat: 'sit', bench: 'sit', chair: 'sit', readChair: 'sit', helipad: 'helicopter', pullup: 'pullup', bleachers: 'sit', mat: 'mat', punchingBag: 'punchingBag' };
+export type FixtureUse =
+  'vending' | 'cooler' | 'board' | 'weights' | 'treadmill' | 'generator' | 'sit' | 'rest' | 'helicopter' | 'pullup' | 'mat' | 'punchingBag';
+const FIXTURES: Partial<Record<string, FixtureUse>> = {
+  vending: 'vending',
+  cooler: 'cooler',
+  jobBoard: 'board',
+  weights: 'weights',
+  treadmill: 'treadmill',
+  generator: 'generator',
+  seat: 'sit',
+  bench: 'sit',
+  chair: 'sit',
+  readChair: 'sit',
+  helipad: 'helicopter',
+  pullup: 'pullup',
+  bleachers: 'sit',
+  mat: 'mat',
+  punchingBag: 'punchingBag',
+};
 
 const GEAR_USES: readonly FixtureUse[] = ['weights', 'treadmill', 'pullup', 'mat', 'punchingBag'];
 
@@ -211,7 +228,9 @@ export function canTalkTo(w: World, b: Body, o: Lootable): boolean {
 
 /** Whether a tile is on a seat, bench, chair or infirmary bed (someone there is sitting or lying on it). */
 function onSeat(w: World, x: number, z: number): boolean {
-  return w.props.some((p) => x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d && (fixtureUse(w, p) === 'sit' || fixtureUse(w, p) === 'rest'));
+  return w.props.some(
+    (p) => x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d && (fixtureUse(w, p) === 'sit' || fixtureUse(w, p) === 'rest'),
+  );
 }
 
 /**
@@ -219,7 +238,16 @@ function onSeat(w: World, x: number, z: number): boolean {
  * would take (sitting there is refused anyway), or in front of the player (within 45°) more
  * squarely than that spot.
  */
-function seatGivesWay(w: World, index: number, b: Body, fx: number, fz: number, people: readonly Lootable[], talkers: number, faced: Faced | null): boolean {
+function seatGivesWay(
+  w: World,
+  index: number,
+  b: Body,
+  fx: number,
+  fz: number,
+  people: readonly Lootable[],
+  talkers: number,
+  faced: Faced | null,
+): boolean {
   const spot = seatSpot(w, index, b);
   for (let who = 0; who < talkers && who < people.length; who++) {
     const o = people[who];
@@ -238,7 +266,17 @@ interface Faced {
   d2: number;
 }
 
-export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boolean, layer: number = LAYER.GROUND, people: readonly Lootable[] = [], talkers = 0, chat?: (guard: number) => boolean, bedFirst = false): Target {
+export function interactTarget(
+  w: World,
+  s: ItemState,
+  b: Body,
+  lightsOut: boolean,
+  layer: number = LAYER.GROUND,
+  people: readonly Lootable[] = [],
+  talkers = 0,
+  chat?: (guard: number) => boolean,
+  bedFirst = false,
+): Target {
   // (2.28: at night, in reach of their own bed, its button says Sleep: a chair beside it gives way, up or sitting brings no energy now.)
   const bedNear = bedFirst && containersOf(w).some((c) => c.mine && c.prop.kind === 'bed' && propReach(c.prop, b.x, b.z) <= BED_REACH);
   const fx = DIR_X[b.facing] ?? 0;
@@ -288,7 +326,12 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     const sc = score(d, o.body.x, o.body.z) + UNIT / 4 - (straight ? UNIT : 0);
     const d2 = dx * dx + dz * dz;
     // Sitting, and looked at most squarely so far: seats give way to them (below).
-    if (straight && (!faced || ahead * ahead * faced.d2 > faced.ahead * faced.ahead * d2) && onSeat(w, Math.floor(o.body.x / UNIT), Math.floor(o.body.z / UNIT))) faced = { ahead, d2 };
+    if (
+      straight &&
+      (!faced || ahead * ahead * faced.d2 > faced.ahead * faced.ahead * d2) &&
+      onSeat(w, Math.floor(o.body.x / UNIT), Math.floor(o.body.z / UNIT))
+    )
+      faced = { ahead, d2 };
     if (sc < bestScore) {
       bestScore = sc;
       best = { kind: 'person', who };
@@ -307,14 +350,28 @@ export function interactTarget(w: World, s: ItemState, b: Body, lightsOut: boole
     const az = Math.floor((b.z + (fz * UNIT * 0.75) / 1024) / UNIT);
     const ahead = ax >= p.x && ax < p.x + p.w && az >= p.z && az < p.z + p.d;
     // (2.29: someone on a mat or by a bag they could talk to, on the tile ahead: they're who the player faces, as at a seat.)
-    if (!w.plainGear && ahead && (use === 'mat' || use === 'punchingBag') && people.some((o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
+    if (
+      !w.plainGear &&
+      ahead &&
+      (use === 'mat' || use === 'punchingBag') &&
+      people.some(
+        (o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az,
+      )
+    )
+      return;
     // (2.29: in a small gym, the machine they face, not the one at their elbow, nor the mat underfoot.)
     if (!w.plainGear && ahead && GEAR_USES.includes(use)) sc -= UNIT / 2;
     // (The bag and the mat stand nowhere in particular, and can be walked over: only by facing them do they beat what's about.)
     if (!w.plainGear && !ahead && (use === 'mat' || use === 'punchingBag')) sc += UNIT / 3;
     if (use === 'sit' || use === 'rest') {
       // Someone on the tile ahead the player could talk to: they're who the player faces, not the seat.
-      if (ahead && people.some((o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az)) return;
+      if (
+        ahead &&
+        people.some(
+          (o, who) => who < talkers && canTalkTo(w, b, o) && Math.floor(o.body.x / UNIT) === ax && Math.floor(o.body.z / UNIT) === az,
+        )
+      )
+        return;
       if (seatGivesWay(w, index, b, fx, fz, people, talkers, faced)) return;
       sc += ahead ? -UNIT / 2 : UNIT / 4;
     }
@@ -509,7 +566,11 @@ export function craft(s: ItemState, mask: number, events: ItemEvent[], expected 
   const made = slot(result);
   const freed = used.filter((k) => !s.inv[k]);
   // Every recipe frees a slot the result fits (itemtest proves it), so this always finds one.
-  const target = freed.find((k) => (k === SLOT.OUTFIT || k === SLOT.WEAPON) && fits(k, made)) ?? freed.find((k) => k < HOTBAR) ?? freed.find((k) => fits(k, made)) ?? freeHotbar(s.inv);
+  const target =
+    freed.find((k) => (k === SLOT.OUTFIT || k === SLOT.WEAPON) && fits(k, made)) ??
+    freed.find((k) => k < HOTBAR) ??
+    freed.find((k) => fits(k, made)) ??
+    freeHotbar(s.inv);
   if (target < 0) return;
   s.inv[target] = made;
   const first = !s.known.includes(recipe);

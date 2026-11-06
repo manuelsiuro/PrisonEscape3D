@@ -70,7 +70,9 @@ import { check } from './assert';
   bot.use();
   const spent = before - st.energy;
   check(chilled(sim) && spent === 2 * itemDef(n('sturdy_pickaxe')).tool!.energy, `a chilled strike costs double (${spent})`);
-  console.log(`cold: chilled after ${outSteps} more steps outdoors (${COLD_STEPS} in all), indoors ${left} wore off in ${warmIn} steps, a chilled strike cost ${spent}`);
+  console.log(
+    `cold: chilled after ${outSteps} more steps outdoors (${COLD_STEPS} in all), indoors ${left} wore off in ${warmIn} steps, a chilled strike cost ${spent}`,
+  );
 }
 {
   // Center Perks: no weather.
@@ -89,7 +91,10 @@ import { check } from './assert';
   const boulders = Array.from(under).filter((k) => k === TILE.BOULDER).length;
   check(under[tileOf(8, 5)] === TILE.BOULDER && under[tileOf(10, 5)] === TILE.SOIL, 'boulders where the picture has them');
   // No tunnel entrance over a boulder (the roll call square has one under it).
-  check(under[tileOf(14, 23)] === TILE.BOULDER && !canDigFloor(w, tileOf(14, 23), []) && canDigFloor(w, tileOf(13, 23), []), 'no entrance dug over a boulder');
+  check(
+    under[tileOf(14, 23)] === TILE.BOULDER && !canDigFloor(w, tileOf(14, 23), []) && canDigFloor(w, tileOf(13, 23), []),
+    'no entrance dug over a boulder',
+  );
   // Down under the desk, one tile north, and the boulder ahead.
   bot.stash('sturdy_shovel');
   const places = placesOf(w);
@@ -98,20 +103,32 @@ import { check } from './assert';
   bot.open(bot.desk);
   bot.takeAll(1);
   bot.close();
-  check(bot.strikeUntil('sturdy_shovel', () => w.ground.kind[tileOf(8, 7)] === TILE.SHAFT), 'the entrance under the desk');
+  check(
+    bot.strikeUntil('sturdy_shovel', () => w.ground.kind[tileOf(8, 7)] === TILE.SHAFT),
+    'the entrance under the desk',
+  );
   // Its dirt kept in the pockets (no need to hide it here).
   bot.open(bot.desk);
   bot.act(1);
   check(st.layer === LAYER.UNDER, 'down the tunnel');
   bot.face(DIR.NORTH);
-  check(bot.strikeUntil('sturdy_shovel', () => under[tileOf(8, 6)] !== TILE.SOIL), 'a tile north dug');
+  check(
+    bot.strikeUntil('sturdy_shovel', () => under[tileOf(8, 6)] !== TILE.SOIL),
+    'a tile north dug',
+  );
   check(bot.walkTo(tileOf(8, 6), 400), 'along it');
   bot.face(DIR.NORTH);
   const energy = st.energy;
   bot.hold('sturdy_shovel');
   bot.use();
   const refused = bot.sim.events.find((e) => e.type === 'cantStrike');
-  check(refused?.type === 'cantStrike' && refused.why === 'boulder', `the boulder refuses the shovel (${refused?.type === 'cantStrike' ? refused.why : 'no refusal'})`);
-  check(under[tileOf(8, 5)] === TILE.BOULDER && st.energy === energy && !st.wear[placeKey(LAYER.UNDER, tileOf(8, 5))], 'the rock stays, no energy spent');
+  check(
+    refused?.type === 'cantStrike' && refused.why === 'boulder',
+    `the boulder refuses the shovel (${refused?.type === 'cantStrike' ? refused.why : 'no refusal'})`,
+  );
+  check(
+    under[tileOf(8, 5)] === TILE.BOULDER && st.energy === energy && !st.wear[placeKey(LAYER.UNDER, tileOf(8, 5))],
+    'the rock stays, no energy spent',
+  );
   console.log(`boulders: ${boulders} under Stalag Flucht; the shovel stopped at 8,5`);
 }

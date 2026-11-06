@@ -33,8 +33,24 @@ export function resetCrew() {
   whistled.clear();
 }
 
-const ORDER_ICON: Record<number, string> = { [ORDER.FOLLOW]: 'walk', [ORDER.WATCH]: 'eye', [ORDER.DIG]: 'shovel', [ORDER.BACK]: 'shield', [ORDER.BRAWL]: 'fist', [ORDER.FETCH]: 'box', [ORDER.NIGHT]: 'moon' };
-const ORDER_KEY: Record<number, string> = { [ORDER.FOLLOW]: 'follow', [ORDER.WATCH]: 'watch', [ORDER.DIG]: 'dig', [ORDER.BACK]: 'back', [ORDER.BRAWL]: 'brawl', [ORDER.FETCH]: 'fetch', [ORDER.NIGHT]: 'night' };
+const ORDER_ICON: Record<number, string> = {
+  [ORDER.FOLLOW]: 'walk',
+  [ORDER.WATCH]: 'eye',
+  [ORDER.DIG]: 'shovel',
+  [ORDER.BACK]: 'shield',
+  [ORDER.BRAWL]: 'fist',
+  [ORDER.FETCH]: 'box',
+  [ORDER.NIGHT]: 'moon',
+};
+const ORDER_KEY: Record<number, string> = {
+  [ORDER.FOLLOW]: 'follow',
+  [ORDER.WATCH]: 'watch',
+  [ORDER.DIG]: 'dig',
+  [ORDER.BACK]: 'back',
+  [ORDER.BRAWL]: 'brawl',
+  [ORDER.FETCH]: 'fetch',
+  [ORDER.NIGHT]: 'night',
+};
 
 /** An item's name mid-sentence ("Bringing you a tube of glue": lower case, as the favors say it). */
 const lowItem = (n: number) => lowerFirst(itemName(n));
@@ -128,10 +144,20 @@ function crewTalkNow(sim: Sim, who: number): CrewTalkView | null {
     note: orderNote(sim, who, o),
     ok: !cantOrder(sim, who, o),
     on: o === now && o !== ORDER.FOLLOW,
-    confirm: o === ORDER.BRAWL ? t('crew.brawlConfirm', { name: brawlWith(sim, who) >= 0 ? inmateName(sim, brawlWith(sim, who)) : '' }) : undefined,
+    confirm:
+      o === ORDER.BRAWL
+        ? t('crew.brawlConfirm', { name: brawlWith(sim, who) >= 0 ? inmateName(sim, brawlWith(sim, who)) : '' })
+        : undefined,
   }));
   const night = nightOf(s, who);
-  orders.push({ order: ORDER.NIGHT, icon: 'moon', label: t('crew.night'), note: orderNote(sim, who, ORDER.NIGHT), ok: !cantOrder(sim, who, ORDER.NIGHT), on: night });
+  orders.push({
+    order: ORDER.NIGHT,
+    icon: 'moon',
+    label: t('crew.night'),
+    note: orderNote(sim, who, ORDER.NIGHT),
+    ok: !cantOrder(sim, who, ORDER.NIGHT),
+    on: night,
+  });
   return { spec, status: crewStatus(sim, who), orders };
 }
 
@@ -150,7 +176,14 @@ export function crewRows(sim: Sim): CrewRow[] {
 }
 function crewRowsNow(sim: Sim): CrewRow[] {
   const s = sim.state;
-  return s.followers.map((who) => ({ who, name: inmateName(sim, who), spec: specialityOf(sim.world, who, s.inmates[who].cell), status: crewStatus(sim, who), recall: recallable(sim, who), night: nightOf(s, who) }));
+  return s.followers.map((who) => ({
+    who,
+    name: inmateName(sim, who),
+    spec: specialityOf(sim.world, who, s.inmates[who].cell),
+    status: crewStatus(sim, who),
+    recall: recallable(sim, who),
+    night: nightOf(s, who),
+  }));
 }
 
 const crewHud: CrewHud = { icons: [], text: '', alert: false };
@@ -238,7 +271,11 @@ export function announceCrew(sim: Sim, e: Extract<SimEvent, { type: 'crew' }>) {
     case 'nightOff':
       sound.click();
       // (Called off once Lights Out has begun, he's gone to bed already.)
-      banner.toast(t(ROUTINE[sim.state.routine].id === 'lightsOut' ? 'toast.crew.nightOffNow' : 'toast.crew.nightOff', { name }), 'info', 3600);
+      banner.toast(
+        t(ROUTINE[sim.state.routine].id === 'lightsOut' ? 'toast.crew.nightOffNow' : 'toast.crew.nightOff', { name }),
+        'info',
+        3600,
+      );
       break;
     case 'recalled':
       sound.lookout();
@@ -246,7 +283,15 @@ export function announceCrew(sim: Sim, e: Extract<SimEvent, { type: 'crew' }>) {
       break;
     case 'brawl':
       sound.scuffle();
-      banner.toast(t(e.guards?.length ? (e.guards.length === 1 ? 'toast.brawl1' : 'toast.brawl') : 'toast.brawlNone', { name, other: inmateName(sim, e.other ?? 0), n: e.guards?.length ?? 0 }), 'good', 4500);
+      banner.toast(
+        t(e.guards?.length ? (e.guards.length === 1 ? 'toast.brawl1' : 'toast.brawl') : 'toast.brawlNone', {
+          name,
+          other: inmateName(sim, e.other ?? 0),
+          n: e.guards?.length ?? 0,
+        }),
+        'good',
+        4500,
+      );
       break;
     case 'brawlOver':
       banner.toast(t('toast.brawlOver', { name }), 'info');
@@ -274,4 +319,3 @@ export function announceCrew(sim: Sim, e: Extract<SimEvent, { type: 'crew' }>) {
       break;
   }
 }
-

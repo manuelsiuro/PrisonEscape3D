@@ -5,7 +5,20 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt, formatTime, hhmm, prisonDay } from '../sim/systems/clock';
 import { BED, bedCount, bedOf, bedTile, ripe, wilted } from '../sim/systems/garden';
 import { takeCheck } from '../sim/systems/pantry';
-import { atTrack, cardMinute, cardUp, oddsOf, petLane, RACE, raceCard, raceCheck, runRace, trackOf, trackTiles, type Entrant } from '../sim/systems/races';
+import {
+  atTrack,
+  cardMinute,
+  cardUp,
+  oddsOf,
+  petLane,
+  RACE,
+  raceCard,
+  raceCheck,
+  runRace,
+  trackOf,
+  trackTiles,
+  type Entrant,
+} from '../sim/systems/races';
 import { petOf, RAT } from '../sim/systems/rats';
 import { tipsyNow } from '../sim/systems/pruno';
 import { STEPS_PER_MINUTE, UNIT } from '../sim/tuning';
@@ -33,7 +46,11 @@ import { inmateName } from '../ui/names';
 
 export const NO_TAKE: ReadonlyArray<{ what: number; label: string; why: string }> = [];
 const offers: Array<{ what: number; label: string; why: string }> = [];
-const TAKES_OF: Record<string, readonly number[]> = { canteenCounter: [TAKE.FRUIT], kitchenFreezer: [TAKE.SUGAR], libraryShelf: [TAKE.VEG_SEEDS, TAKE.FRUIT_SEEDS] };
+const TAKES_OF: Record<string, readonly number[]> = {
+  canteenCounter: [TAKE.FRUIT],
+  kitchenFreezer: [TAKE.SUGAR],
+  libraryShelf: [TAKE.VEG_SEEDS, TAKE.FRUIT_SEEDS],
+};
 const TAKE_LABEL: readonly Key[] = ['take.fruit', 'take.sugar', 'take.vegSeeds', 'take.fruitSeeds'];
 
 /** What can be taken from the open furniture (by its table), and why not. */
@@ -45,7 +62,18 @@ export function takeOffers(sim: Sim, table: string): ReadonlyArray<{ what: numbe
   offers.push(...treatOffers(sim, table));
   for (const what of list) {
     const why = takeCheck(sim, what);
-    offers.push({ what, label: t(TAKE_LABEL[what]), why: why === 'notMeal' ? t('take.notMeal') : why === 'takenToday' ? t(what === TAKE.FRUIT ? 'take.meal' : 'take.today') : why === 'room' ? t('refused.room') : '' });
+    offers.push({
+      what,
+      label: t(TAKE_LABEL[what]),
+      why:
+        why === 'notMeal'
+          ? t('take.notMeal')
+          : why === 'takenToday'
+            ? t(what === TAKE.FRUIT ? 'take.meal' : 'take.today')
+            : why === 'room'
+              ? t('refused.room')
+              : '',
+    });
   }
   return offers;
 }
@@ -53,7 +81,18 @@ export function takeOffers(sim: Sim, table: string): ReadonlyArray<{ what: numbe
 // ------------------------------------------------------------------ the events
 
 /** The last race's result, held a moment for the card (real ms). */
-let result: { order: number[]; card: Entrant[]; final: number[]; at: number; lane: number; stake: number; odds: number; won: number; purse: number; day: number } | null = null;
+let result: {
+  order: number[];
+  card: Entrant[];
+  final: number[];
+  at: number;
+  lane: number;
+  stake: number;
+  odds: number;
+  won: number;
+  purse: number;
+  day: number;
+} | null = null;
 /** Where the pet runs its laps at home (tiles: a free floor tile beside the player as it set off), held for the session. */
 let lapAt: { x: number; z: number } | null = null;
 const RESULT_MS = 6000;
@@ -101,7 +140,11 @@ export function announceLong(sim: Sim, e: SimEvent) {
         if (gardenSaid.has(key)) break;
         gardenSaid.add(key);
         if (gardenSaid.size > 12) gardenSaid.clear();
-        banner.toast(t(e.what === 'ripe' ? 'toast.bedRipe' : e.what === 'wilted' ? 'toast.bedWilted' : 'toast.bedDied'), e.what === 'ripe' ? 'good' : 'bad', 4000);
+        banner.toast(
+          t(e.what === 'ripe' ? 'toast.bedRipe' : e.what === 'wilted' ? 'toast.bedWilted' : 'toast.bedDied'),
+          e.what === 'ripe' ? 'good' : 'bad',
+          4000,
+        );
       }
       break;
     case 'track':
@@ -132,9 +175,12 @@ export function announceLong(sim: Sim, e: SimEvent) {
       } else if (e.what === 'scratched') {
         // (A bet on it void: its stake back.)
         if (e.stake) floatUp(`+$${e.stake}`, 'cash');
-        banner.toast(e.stake ? t('toast.ratScratchedBack', { name: ratName(sim), n: e.stake }) : t('toast.ratScratched', { name: ratName(sim) }), 'bad', 4200);
-      }
-      else if (e.what === 'start') {
+        banner.toast(
+          e.stake ? t('toast.ratScratchedBack', { name: ratName(sim), n: e.stake }) : t('toast.ratScratched', { name: ratName(sim) }),
+          'bad',
+          4200,
+        );
+      } else if (e.what === 'start') {
         sound.whistle();
         sound.cheer();
         window.setTimeout(() => play.game === g && sound.patter(), 200);
@@ -144,7 +190,18 @@ export function announceLong(sim: Sim, e: SimEvent) {
         const raced = cardOf(sim, day, order.length);
         const fin: number[] = [];
         positions(runRace(sim.state.salt, day, raced).legs, 1, fin);
-        result = { order, card: raced, final: fin, at: performance.now(), lane: e.lane ?? -1, stake: e.stake ?? 0, odds: e.odds ?? 0, won: e.won ?? 0, purse: e.purse ?? 0, day };
+        result = {
+          order,
+          card: raced,
+          final: fin,
+          at: performance.now(),
+          lane: e.lane ?? -1,
+          stake: e.stake ?? 0,
+          odds: e.odds ?? 0,
+          won: e.won ?? 0,
+          purse: e.purse ?? 0,
+          day,
+        };
         sound.cheer();
         const winner = result.card[order[0]];
         const name = winner ? entrantName(sim, winner) : '';
@@ -152,9 +209,16 @@ export function announceLong(sim: Sim, e: SimEvent) {
           sound.coin(true);
           buzz('attended');
           if (e.won) floatUp(`+$${e.won}`, 'cash');
-          const parts = [e.won ? t('toast.betWon', { n: e.won }) : '', e.purse ? t('toast.purse', { n: e.purse }) : ''].filter(Boolean).join(' ');
+          const parts = [e.won ? t('toast.betWon', { n: e.won }) : '', e.purse ? t('toast.purse', { n: e.purse }) : '']
+            .filter(Boolean)
+            .join(' ');
           banner.toast(`${t('toast.raceWinner', { name })} ${parts}`, 'good', 5000);
-        } else banner.toast(e.lane !== undefined && e.lane >= 0 ? t('toast.betLost', { name }) : t('toast.raceWinner', { name }), e.lane !== undefined && e.lane >= 0 ? 'bad' : 'info', 4500);
+        } else
+          banner.toast(
+            e.lane !== undefined && e.lane >= 0 ? t('toast.betLost', { name }) : t('toast.raceWinner', { name }),
+            e.lane !== undefined && e.lane >= 0 ? 'bad' : 'info',
+            4500,
+          );
       } else if (e.what === 'off') {
         if (e.stake) floatUp(`+$${e.stake}`, 'cash');
         banner.toast(e.stake ? t('toast.raceOffBack', { n: e.stake }) : t('toast.raceOff'), 'bad', 4000);
@@ -166,7 +230,6 @@ export function announceLong(sim: Sim, e: SimEvent) {
 
 /** The garden's morning news told (kind and step): once a kind a morning. */
 const gardenSaid = new Set<string>();
-
 
 /** The card a race was run on: the rivals, and the pet after them if the order has a lane for it. */
 function cardOf(sim: Sim, day: number, lanes: number): Entrant[] {
@@ -191,7 +254,11 @@ export function raceStep(sim: Sim) {
   const pet = petOf(s);
   sound.chime();
   const time = hhmm(RACE_MINUTE);
-  banner.toast(pet && pet.mode === RAT.SHOULDER ? t('toast.raceNightPet', { name: ratName(sim), time }) : t('toast.raceNight', { time }), 'info', 5200);
+  banner.toast(
+    pet && pet.mode === RAT.SHOULDER ? t('toast.raceNightPet', { name: ratName(sim), time }) : t('toast.raceNight', { time }),
+    'info',
+    5200,
+  );
 }
 
 // ------------------------------------------------------------------ the race card
@@ -246,7 +313,12 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
     v.lanes.push(l);
   });
   const lane = s.race[RACE.DAY] === day ? s.race[RACE.LANE] : -1;
-  v.bet = lane >= 0 ? { lane, stake: BETS[s.race[RACE.STAKE]], odds: s.race[RACE.ODDS] } : showResult && result!.lane >= 0 ? { lane: result!.lane, stake: result!.stake, odds: result!.odds } : null;
+  v.bet =
+    lane >= 0
+      ? { lane, stake: BETS[s.race[RACE.STAKE]], odds: s.race[RACE.ODDS] }
+      : showResult && result!.lane >= 0
+        ? { lane: result!.lane, stake: result!.stake, odds: result!.odds }
+        : null;
   if (running) {
     v.phase = 'running';
     const run = runRace(s.salt, day, card);
@@ -266,7 +338,11 @@ export function raceNow(sim: Sim, a: number): RaceView | null {
       }
     });
     const w = card[result!.order[0]];
-    const said = w ? (result!.won ? t('race.resultWon', { name: entrantName(sim, w), n: result!.won }) : t('race.result', { name: entrantName(sim, w) })) : '';
+    const said = w
+      ? result!.won
+        ? t('race.resultWon', { name: entrantName(sim, w), n: result!.won })
+        : t('race.result', { name: entrantName(sim, w) })
+      : '';
     v.result = result!.purse ? `${said} ${t('toast.purse', { n: result!.purse })}` : said;
     v.enter = '';
     v.why = '';
@@ -372,7 +448,12 @@ function lapSpot(sim: Sim): { x: number; z: number } {
   const x0 = Math.floor(sim.state.player.x / UNIT);
   const z0 = Math.floor(sim.state.player.z / UNIT);
   const zone = w.zoneAt(x0, z0);
-  for (const [dx, dz] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+  for (const [dx, dz] of [
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1],
+  ]) {
     const x = x0 + dx;
     const z = z0 + dz;
     if (w.blocked(x, z) || w.zoneAt(x, z) !== zone || w.props.some((p) => x >= p.x && x < p.x + p.w && z >= p.z && z < p.z + p.d)) continue;

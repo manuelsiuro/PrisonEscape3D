@@ -28,7 +28,18 @@ export interface AimView {
 }
 
 type Kind = NoiseKind;
-const WAVE_COLOR: Record<Kind, number> = { thump: 0xffb347, strike: 0xffd27a, thud: 0xffb347, bang: 0xff7a2e, ring: 0xffe08a, bark: 0xffc04a, squeak: 0xf2c2d8, buzz: 0xa8e6ff, stumble: 0xd9c27a, cheer: 0xffe08a };
+const WAVE_COLOR: Record<Kind, number> = {
+  thump: 0xffb347,
+  strike: 0xffd27a,
+  thud: 0xffb347,
+  bang: 0xff7a2e,
+  ring: 0xffe08a,
+  bark: 0xffc04a,
+  squeak: 0xf2c2d8,
+  buzz: 0xa8e6ff,
+  stumble: 0xd9c27a,
+  cheer: 0xffe08a,
+};
 const AMBER = 0xffb347;
 const RED = 0xff4a3a;
 
@@ -51,7 +62,15 @@ export class NoiseFx {
   private flashT = 1;
   private readonly waves: Array<{ mesh: THREE.Mesh; t: number; delay: number; dur: number; size: number }> = [];
   private nextWave = 0;
-  private readonly flights: Array<{ mesh: THREE.Mesh; from: THREE.Vector3; to: THREE.Vector3; t: number; dur: number; height: number; spin: number }> = [];
+  private readonly flights: Array<{
+    mesh: THREE.Mesh;
+    from: THREE.Vector3;
+    to: THREE.Vector3;
+    t: number;
+    dur: number;
+    height: number;
+    spin: number;
+  }> = [];
   private nextFlight = 0;
   private readonly fuses: THREE.Mesh[] = [];
   private readonly m4 = new THREE.Matrix4();
@@ -62,7 +81,8 @@ export class NoiseFx {
   landing = -1;
 
   constructor() {
-    const ui = (color: number, opacity: number) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, toneMapped: false });
+    const ui = (color: number, opacity: number) =>
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, toneMapped: false });
     this.reach = new THREE.Mesh(flat(new THREE.RingGeometry(0.965, 1, 72)), ui(0xffffff, 0.3));
     this.reach.renderOrder = 4;
     // The arc: a string of dots from the hand to the landing ring, drifting towards it.
@@ -166,7 +186,14 @@ export class NoiseFx {
    * Each frame: the aim eased in or out, waves spreading and fading, things in flight, lit
    * fuses (their tiles) lying fizzing. `sparks(x, y, z)` throws a spark off a fuse.
    */
-  update(dt: number, time: number, fuses: readonly number[], fuseItem: number, motion: boolean, sparks: (x: number, y: number, z: number) => void) {
+  update(
+    dt: number,
+    time: number,
+    fuses: readonly number[],
+    fuseItem: number,
+    motion: boolean,
+    sparks: (x: number, y: number, z: number) => void,
+  ) {
     const a = this.aimView;
     this.aimOn += ((a ? 1 : 0) - this.aimOn) * Math.min(1, dt * (a ? 14 : 10));
     const on = this.aimOn > 0.02;
@@ -189,7 +216,13 @@ export class NoiseFx {
       for (let k = 0; k < DOTS; k++) {
         const t = (k + drift) / DOTS;
         const s = 1 - t * 0.35;
-        this.m4.makeScale(s, s, s).setPosition(a.fromX + (a.toX - a.fromX) * t, 1.1 * (1 - t) + 0.05 * t + Math.sin(t * Math.PI) * h, a.fromZ + (a.toZ - a.fromZ) * t);
+        this.m4
+          .makeScale(s, s, s)
+          .setPosition(
+            a.fromX + (a.toX - a.fromX) * t,
+            1.1 * (1 - t) + 0.05 * t + Math.sin(t * Math.PI) * h,
+            a.fromZ + (a.toZ - a.fromZ) * t,
+          );
         this.arc.setMatrixAt(k, this.m4);
       }
       this.arc.instanceMatrix.needsUpdate = true;

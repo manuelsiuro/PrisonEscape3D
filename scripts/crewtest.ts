@@ -19,7 +19,17 @@
  * - saves: every order carries on the same; damaged ones are dropped; dismissing, a blow from the
  *   player, a capture end them.
  */
-import { BRAWL_GUARDS, BRAWL_RANGE, BRAWL_STEPS, CREW_ESCAPE_REACH, DIG_HELP, NIGHT_OPINION, SHAFT_HELP, SPECIALITIES, WATCH_RANGE } from '../src/content/crew';
+import {
+  BRAWL_GUARDS,
+  BRAWL_RANGE,
+  BRAWL_STEPS,
+  CREW_ESCAPE_REACH,
+  DIG_HELP,
+  NIGHT_OPINION,
+  SHAFT_HELP,
+  SPECIALITIES,
+  WATCH_RANGE,
+} from '../src/content/crew';
 import { itemDef, itemNumber } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
@@ -29,7 +39,21 @@ import { lineOfSight } from '../src/sim/ai/sight';
 import { command, EXT, OP, ORDER, TALK } from '../src/sim/command';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
-import { allyDamage, backedBy, brawlWith, cantOrder, carryingOf, crewEscape, crewEntry, digHelp, orderOf, postable, postOf, shaftOf, specialityOf } from '../src/sim/systems/crew';
+import {
+  allyDamage,
+  backedBy,
+  brawlWith,
+  cantOrder,
+  carryingOf,
+  crewEscape,
+  crewEntry,
+  digHelp,
+  orderOf,
+  postable,
+  postOf,
+  shaftOf,
+  specialityOf,
+} from '../src/sim/systems/crew';
 import { IRONGATE } from '../src/content/prisons/irongate';
 import { DAY_EVENTS } from '../src/content/days';
 import { performersTonight, tonight } from '../src/sim/systems/talent';
@@ -55,7 +79,8 @@ const put = (b: { x: number; z: number }, t: number) => {
 const tileOf = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W + Math.floor(b.x / UNIT);
 const cheb = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z));
 const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
-const crewNews = (seen: SimEvent[], what: string) => seen.filter((e) => e.type === 'crew' && e.what === what) as Array<Extract<SimEvent, { type: 'crew' }>>;
+const crewNews = (seen: SimEvent[], what: string) =>
+  seen.filter((e) => e.type === 'crew' && e.what === what) as Array<Extract<SimEvent, { type: 'crew' }>>;
 
 /** Center Perks' inmates by line of work (inmate index): the first of each. */
 const CP = { digger: 0, muscle: 1, lookout: 2, smuggler: 4, digger2: 3, muscle2: 5, lookout2: 6 };
@@ -120,7 +145,8 @@ function yardSpot(sim: Sim, skip = 0): number {
     for (let x = 2; x < MAP_W - 3; x++) {
       if (w.zoneAt(x, z) !== 'yard') continue;
       let ok = true;
-      for (let dz = -1; dz <= 1 && ok; dz++) for (let dx = -1; dx <= 2 && ok; dx++) ok = !w.blocked(x + dx, z + dz) && w.zoneAt(x + dx, z + dz) === 'yard';
+      for (let dz = -1; dz <= 1 && ok; dz++)
+        for (let dx = -1; dx <= 2 && ok; dx++) ok = !w.blocked(x + dx, z + dz) && w.zoneAt(x + dx, z + dz) === 'yard';
       if (ok) yard.push(z * MAP_W + x);
     }
   return yard[(yard.length >> 1) + skip * 7];
@@ -145,9 +171,17 @@ function clearOut(sim: Sim, keep: number[] = []) {
     if (def.id !== 'training') for (const sp of SPECIALITIES) check(def.crew.includes(sp), `${def.id}: has a ${sp}`);
   }
   const sim = new Sim(CENTER_PERKS, 1);
-  check(sim.state.inmates.map((m, k) => specialityOf(sim.world, k, m.cell)).join(',') === CENTER_PERKS.crew.join(','), 'an inmate\'s line of work is its cell\'s');
-  check(BRAWL_STEPS === 60 * 20 && WATCH_RANGE === 6 && DIG_HELP === 6 && SHAFT_HELP === 5 && NIGHT_OPINION === 90 && CREW_ESCAPE_REACH === 4, 'the numbers the help says: a minute\'s brawl, 6 tiles, ×1.5 and ×1.25, 90, 4 tiles');
-  console.log(`data: ${PRISONS.map((d) => `${d.id} ${SPECIALITIES.map((sp) => d.crew.filter((c) => c === sp).length).join('/')}`).join('; ')}`);
+  check(
+    sim.state.inmates.map((m, k) => specialityOf(sim.world, k, m.cell)).join(',') === CENTER_PERKS.crew.join(','),
+    "an inmate's line of work is its cell's",
+  );
+  check(
+    BRAWL_STEPS === 60 * 20 && WATCH_RANGE === 6 && DIG_HELP === 6 && SHAFT_HELP === 5 && NIGHT_OPINION === 90 && CREW_ESCAPE_REACH === 4,
+    "the numbers the help says: a minute's brawl, 6 tiles, ×1.5 and ×1.25, 90, 4 tiles",
+  );
+  console.log(
+    `data: ${PRISONS.map((d) => `${d.id} ${SPECIALITIES.map((sp) => d.crew.filter((c) => c === sp).length).join('/')}`).join('; ')}`,
+  );
 }
 
 // ------------------------------------------------------------------ orders
@@ -162,7 +196,10 @@ function clearOut(sim: Sim, keep: number[] = []) {
   g.talk(TALK.CREW, ORDER.DIG);
   g.talk(TALK.CREW, ORDER.BACK);
   g.talk(TALK.CREW, ORDER.FETCH);
-  check(orderOf(sim.state, CP.lookout) === ORDER.FOLLOW && refusals(seen).filter((r) => r === 'notHisLine').length === 3, 'orders out of his line refused');
+  check(
+    orderOf(sim.state, CP.lookout) === ORDER.FOLLOW && refusals(seen).filter((r) => r === 'notHisLine').length === 3,
+    'orders out of his line refused',
+  );
   g.talk(TALK.CREW, ORDER.NIGHT);
   check(refusals(seen).at(-1) === 'nightOpinion' && !crewEntry(sim.state, CP.lookout), `tonight's the night needs ${NIGHT_OPINION}`);
   g.talk(TALK.CREW, ORDER.WATCH);
@@ -187,7 +224,10 @@ function clearOut(sim: Sim, keep: number[] = []) {
   put(sim.state.player, far);
   g.steps(200);
   const m = sim.state.inmates[CP.lookout];
-  check(tileOf(m.body) === post && m.doing === DOING.LOOKOUT && sim.state.followers.includes(CP.lookout), 'on watch at his post with the player away, looking out');
+  check(
+    tileOf(m.body) === post && m.doing === DOING.LOOKOUT && sim.state.followers.includes(CP.lookout),
+    'on watch at his post with the player away, looking out',
+  );
   // Every whistle, over a stretch of the guards' rounds, is a guard newly within range in his sight, and every such guard gets one.
   let whistles = 0;
   let missed = 0;
@@ -201,7 +241,8 @@ function clearOut(sim: Sim, keep: number[] = []) {
     sim.state.guards.forEach((gd, j) => {
       const dx = gd.body.x - m.body.x;
       const dz = gd.body.z - m.body.z;
-      if (awake(gd) && dx * dx + dz * dz <= (WATCH_RANGE * UNIT) ** 2 && lineOfSight(sim.world, m.body.x, m.body.z, gd.body.x, gd.body.z)) now |= 1 << j;
+      if (awake(gd) && dx * dx + dz * dz <= (WATCH_RANGE * UNIT) ** 2 && lineOfSight(sim.world, m.body.x, m.body.z, gd.body.x, gd.body.z))
+        now |= 1 << j;
     });
     const due = now & ~inRange;
     inRange = now;
@@ -209,12 +250,15 @@ function clearOut(sim: Sim, keep: number[] = []) {
     for (let j = 0; j < sim.state.guards.length; j++) if (due & (1 << j) && !fresh.some((e) => e.guard === j)) missed++;
     whistles += fresh.length;
   }
-  check(whistles > 0 && !wrong && !missed, `a whistle exactly when a guard comes within ${WATCH_RANGE} tiles in sight (${whistles} in 5 minutes)`);
+  check(
+    whistles > 0 && !wrong && !missed,
+    `a whistle exactly when a guard comes within ${WATCH_RANGE} tiles in sight (${whistles} in 5 minutes)`,
+  );
   check(sim.state.feats[FEAT.whistles] === whistles + (crewNews(seen, 'whistle').length - whistles), 'whistles counted');
   // A guard placed right by him, then behind a wall: a whistle, then none.
   const gd = sim.state.guards[0];
   const beside = post + 2;
-  if (!sim.world.blocked((beside % MAP_W), Math.floor(beside / MAP_W))) {
+  if (!sim.world.blocked(beside % MAP_W, Math.floor(beside / MAP_W))) {
     const was = crewNews(seen, 'whistle').length;
     for (const o of sim.state.guards) put(o.body, placesOf(sim.world).bedside[1]);
     g.step();
@@ -228,7 +272,7 @@ function clearOut(sim: Sim, keep: number[] = []) {
   }
   // Whistled back from far away.
   g.step(command(0, OP.EXT, EXT.RECALL, CP.lookout));
-  check(!crewEntry(sim.state, CP.lookout) && crewNews(seen, 'recalled').length === 1, 'whistled back: at the player\'s heels again');
+  check(!crewEntry(sim.state, CP.lookout) && crewNews(seen, 'recalled').length === 1, "whistled back: at the player's heels again");
   put(sim.state.player, yardSpot(sim, 2));
   g.steps(400);
   check(cheb(m.body, sim.state.player) <= 2 * UNIT, 'and back with the player');
@@ -241,7 +285,14 @@ function chipSpot(sim: Sim): number {
   const pick = n('sturdy_pickaxe');
   for (let i = MAP_W * 3; i < MAP_W * (MAP_H - 3); i++) {
     const x = i % MAP_W;
-    if (x < 3 || x > MAP_W - 4 || w.blocked(x, Math.floor(i / MAP_W)) || w.zoneAt(x, Math.floor(i / MAP_W)) !== 'corridor' || w.blocked(x - 1, Math.floor(i / MAP_W))) continue;
+    if (
+      x < 3 ||
+      x > MAP_W - 4 ||
+      w.blocked(x, Math.floor(i / MAP_W)) ||
+      w.zoneAt(x, Math.floor(i / MAP_W)) !== 'corridor' ||
+      w.blocked(x - 1, Math.floor(i / MAP_W))
+    )
+      continue;
     const b = { x: x * UNIT + UNIT / 2, z: Math.floor(i / MAP_W) * UNIT + UNIT / 2, facing: 1, moving: false };
     const t = toolTarget(w, LAYER.GROUND, b, pick, [], [slot(pick)]);
     if (t?.action === 'chip' && t.fits && t.hp > 0) return i;
@@ -273,12 +324,20 @@ function chipSpot(sim: Sim): number {
   strikeOnce();
   const key = placeKey(LAYER.GROUND, spot + 1);
   const dmg = itemDef(n('sturdy_pickaxe')).tool!.damage;
-  check(sim.state.wear[key] === Math.floor((dmg * DIG_HELP) / 4), `a chip with him at hand: ${Math.floor((dmg * DIG_HELP) / 4)} (not ${dmg})`);
+  check(
+    sim.state.wear[key] === Math.floor((dmg * DIG_HELP) / 4),
+    `a chip with him at hand: ${Math.floor((dmg * DIG_HELP) / 4)} (not ${dmg})`,
+  );
   for (let k = 0; k < 10 && sim.world.ground.kind[spot + 1] !== TILE.HOLE; k++) {
     put(m.body, spot - 1);
     strikeOnce();
   }
-  check(sim.world.ground.kind[spot + 1] === TILE.HOLE && !it.inv.some((v) => itemOf(v) === n('wall_chunk')) && crewNews(seen, 'dirt').at(-1)?.item === n('wall_chunk'), 'the wall through: the rubble his, not the player\'s');
+  check(
+    sim.world.ground.kind[spot + 1] === TILE.HOLE &&
+      !it.inv.some((v) => itemOf(v) === n('wall_chunk')) &&
+      crewNews(seen, 'dirt').at(-1)?.item === n('wall_chunk'),
+    "the wall through: the rubble his, not the player's",
+  );
   // Too far off: no help (a twin game, the digger left behind).
   const h = game(11);
   h.to(1, 9, 5);
@@ -305,29 +364,47 @@ function chipSpot(sim: Sim): number {
     put(m.body, y - 1);
     strikeOnce();
   }
-  check(sim.world.ground.kind[y + 1] === TILE.SHAFT && !it.inv.some((v) => itemOf(v) === n('dirt')), 'a shaft dug with his help: the dirt his');
+  check(
+    sim.world.ground.kind[y + 1] === TILE.SHAFT && !it.inv.some((v) => itemOf(v) === n('dirt')),
+    'a shaft dug with his help: the dirt his',
+  );
   g.step(command(0, OP.INTERACT));
   check(sim.state.layer === LAYER.UNDER && shaftOf(sim.state, CP.digger) === y + 1, 'down the hole: he knows where');
   g.steps(60);
-  check(cheb(m.body, { x: ((y + 1) % MAP_W) * UNIT + UNIT / 2, z: Math.floor((y + 1) / MAP_W) * UNIT + UNIT / 2 }) <= 1.5 * UNIT && sim.world.ground.kind[tileOf(m.body)] !== TILE.SHAFT, 'waiting beside the shaft (never in it)');
+  check(
+    cheb(m.body, { x: ((y + 1) % MAP_W) * UNIT + UNIT / 2, z: Math.floor((y + 1) / MAP_W) * UNIT + UNIT / 2 }) <= 1.5 * UNIT &&
+      sim.world.ground.kind[tileOf(m.body)] !== TILE.SHAFT,
+    'waiting beside the shaft (never in it)',
+  );
   sim.state.player.facing = 1;
   strikeOnce();
   const under = placeKey(LAYER.UNDER, y + 2);
   const sd = itemDef(n('sturdy_shovel')).tool!.damage;
   const soil = Math.floor((sd * SHAFT_HELP) / 4);
-  check((sim.state.wear[under] ?? 0) === soil || sim.world.layers[LAYER.UNDER].kind[y + 2] === TILE.TUNNEL, `tunnel digging with him up top: ${soil} a blow (not ${sd})`);
-  check(sim.world.layers[LAYER.UNDER].kind[y + 2] === TILE.TUNNEL && !it.inv.some((v) => itemOf(v) === n('dirt')), 'through in one blow, the dirt handed up');
+  check(
+    (sim.state.wear[under] ?? 0) === soil || sim.world.layers[LAYER.UNDER].kind[y + 2] === TILE.TUNNEL,
+    `tunnel digging with him up top: ${soil} a blow (not ${sd})`,
+  );
+  check(
+    sim.world.layers[LAYER.UNDER].kind[y + 2] === TILE.TUNNEL && !it.inv.some((v) => itemOf(v) === n('dirt')),
+    'through in one blow, the dirt handed up',
+  );
   // Back up: at the player's side again.
   sim.state.player.facing = 9;
   put(sim.state.player, y + 1);
   g.step(command(0, OP.INTERACT));
-  check(sim.state.layer === LAYER.GROUND && shaftOf(sim.state, CP.digger) === -1, 'back up: by the player\'s side again');
-  console.log(`dig: a sturdy pick ${dmg} → ${Math.floor((dmg * DIG_HELP) / 4)} with a digger, a sturdy shovel underground ${sd} → ${soil}; dirt taken ${sim.state.feats[FEAT.dirtTaken]}`);
+  check(sim.state.layer === LAYER.GROUND && shaftOf(sim.state, CP.digger) === -1, "back up: by the player's side again");
+  console.log(
+    `dig: a sturdy pick ${dmg} → ${Math.floor((dmg * DIG_HELP) / 4)} with a digger, a sturdy shovel underground ${sd} → ${soil}; dirt taken ${sim.state.feats[FEAT.dirtTaken]}`,
+  );
 }
 
 // ------------------------------------------------------------------ watch my back
 {
-  check(allyDamage({ crew: [[1, ORDER.BACK, -1, -1, 0]] }, 1, 21) === 31 && allyDamage({ crew: [] }, 1, 21) === 21, 'his blows ×1.5 (rounded down)');
+  check(
+    allyDamage({ crew: [[1, ORDER.BACK, -1, -1, 0]] }, 1, 21) === 31 && allyDamage({ crew: [] }, 1, 21) === 21,
+    'his blows ×1.5 (rounded down)',
+  );
   // A blow at someone coming for the player: the same fight, twice, with and without the order.
   const run = (back: boolean) => {
     const g = game(13);
@@ -351,7 +428,10 @@ function chipSpot(sim: Sim): number {
   const backed = run(true);
   const sim = new Sim(CENTER_PERKS, 13);
   const base = damage(sim.state.inmates[CP.muscle].str, 0, INMATE_DEFENSE);
-  check(plain === base && backed === Math.floor((base * 3) / 2), `a muscle watching the player's back hits ${backed} (a follower ${plain})`);
+  check(
+    plain === base && backed === Math.floor((base * 3) / 2),
+    `a muscle watching the player's back hits ${backed} (a follower ${plain})`,
+  );
   // An ambush drawn is stopped: the same draws either way, the grudge kept.
   const twin = (back: boolean) => {
     const g = game(17);
@@ -364,7 +444,14 @@ function chipSpot(sim: Sim): number {
   const a = twin(true);
   const b = twin(false);
   const canteen = (s: Sim) => {
-    for (let i = 0; i < MAP_W * MAP_H; i++) if (s.world.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'canteen' && !s.world.blocked(i % MAP_W, Math.floor(i / MAP_W)) && !s.world.blocked((i % MAP_W) + 1, Math.floor(i / MAP_W)) && !s.world.blocked((i % MAP_W) + 2, Math.floor(i / MAP_W))) return i;
+    for (let i = 0; i < MAP_W * MAP_H; i++)
+      if (
+        s.world.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'canteen' &&
+        !s.world.blocked(i % MAP_W, Math.floor(i / MAP_W)) &&
+        !s.world.blocked((i % MAP_W) + 1, Math.floor(i / MAP_W)) &&
+        !s.world.blocked((i % MAP_W) + 2, Math.floor(i / MAP_W))
+      )
+        return i;
     return -1;
   };
   const c = canteen(a.sim);
@@ -387,7 +474,10 @@ function chipSpot(sim: Sim): number {
     if (a.sim.events.some((e) => e.type === 'crew' && e.what === 'stopped')) stopped++;
     if (a.sim.state.rng !== b.sim.state.rng) same = false;
   }
-  check(b.sim.state.inmates[CP.digger].angry > 0 && a.sim.state.inmates[CP.digger].angry === 0 && stopped === 1 && same, 'the ambush drawn alike: jumped alone, stopped with him there');
+  check(
+    b.sim.state.inmates[CP.digger].angry > 0 && a.sim.state.inmates[CP.digger].angry === 0 && stopped === 1 && same,
+    'the ambush drawn alike: jumped alone, stopped with him there',
+  );
   for (let k = 0; k < 4000; k++) {
     a.sim.events = [];
     grudges(a.sim);
@@ -424,14 +514,30 @@ function chipSpot(sim: Sim): number {
   const t0 = sim.state.step;
   g.talk(TALK.CREW, ORDER.BRAWL);
   const b = crewNews(seen, 'brawl').at(-1);
-  check(!!b && b.other === other && b.guards!.join() === near.join() && near.every((k) => sim.state.guards[k].mode === GUARD.INVESTIGATE && sim.state.guards[k].target === tileOf(o.body)), `a brawl: the ${BRAWL_GUARDS} nearest guards sent to look (${near.join(', ')})`);
+  check(
+    !!b &&
+      b.other === other &&
+      b.guards!.join() === near.join() &&
+      near.every((k) => sim.state.guards[k].mode === GUARD.INVESTIGATE && sim.state.guards[k].target === tileOf(o.body)),
+    `a brawl: the ${BRAWL_GUARDS} nearest guards sent to look (${near.join(', ')})`,
+  );
   g.steps(80);
-  check(sim.state.inmates[CP.muscle].doing === DOING.BRAWL && o.doing === DOING.BRAWL && cheb(sim.state.inmates[CP.muscle].body, o.body) <= 1.2 * UNIT, 'the two at it, squared up');
+  check(
+    sim.state.inmates[CP.muscle].doing === DOING.BRAWL &&
+      o.doing === DOING.BRAWL &&
+      cheb(sim.state.inmates[CP.muscle].body, o.body) <= 1.2 * UNIT,
+    'the two at it, squared up',
+  );
   check(cantOrder(sim, CP.muscle, ORDER.FOLLOW) === 'crewBusy', 'no other order mid-brawl');
   g.to(1, 9, 5 + 62);
   const over = crewNews(seen, 'brawlOver');
   check(over.length === 1 && orderOf(sim.state, CP.muscle) === ORDER.FOLLOW, 'over after a minute');
-  check(seen.findIndex((e) => e.type === 'crew' && e.what === 'brawlOver') >= 0 && sim.state.step - t0 >= BRAWL_STEPS && heat === sim.state.heat, 'no heat for the player');
+  check(
+    seen.findIndex((e) => e.type === 'crew' && e.what === 'brawlOver') >= 0 &&
+      sim.state.step - t0 >= BRAWL_STEPS &&
+      heat === sim.state.heat,
+    'no heat for the player',
+  );
   check(cantOrder(sim, CP.muscle, ORDER.BRAWL) === 'brawlToday', 'once a day');
   g.to(2, 9, 5);
   // (A day stood idle in the yard: whether the guards have caught up with them by now is luck. On their feet for this.)
@@ -480,12 +586,21 @@ function chipSpot(sim: Sim): number {
     g.step();
     fetched = crewNews(seen, 'fetched').length > 0;
   }
-  check(fetched && !sim.state.drops.length && !sim.state.items.ground.some(([k]) => k === placeKey(LAYER.GROUND, dropAt)) && carryingOf(sim.state, CP.smuggler) === rope, 'picked up: off the ground, no longer a drop');
+  check(
+    fetched &&
+      !sim.state.drops.length &&
+      !sim.state.items.ground.some(([k]) => k === placeKey(LAYER.GROUND, dropAt)) &&
+      carryingOf(sim.state, CP.smuggler) === rope,
+    'picked up: off the ground, no longer a drop',
+  );
   g.steps(400);
   check(!crewNews(seen, 'handed').length && carryingOf(sim.state, CP.smuggler) === rope, 'pockets full: he holds on to it');
   inv[2] = 0;
   g.steps(20);
-  check(crewNews(seen, 'handed').length === 1 && itemOf(inv[2]) === rope && !crewEntry(sim.state, CP.smuggler), 'room made: into the player\'s pockets');
+  check(
+    crewNews(seen, 'handed').length === 1 && itemOf(inv[2]) === rope && !crewEntry(sim.state, CP.smuggler),
+    "room made: into the player's pockets",
+  );
   // Seized before he gets there: given up.
   lay(dropAt, rope);
   g.talkTo(CP.smuggler, y);
@@ -493,7 +608,10 @@ function chipSpot(sim: Sim): number {
   g.step(command(0, OP.CLOSE));
   sim.state.drops.length = 0;
   g.step();
-  check(crewNews(seen, 'fetchFailed').at(-1)?.why === 'gone' && orderOf(sim.state, CP.smuggler) === ORDER.FOLLOW, 'the drop gone before he gets there: given up');
+  check(
+    crewNews(seen, 'fetchFailed').at(-1)?.why === 'gone' && orderOf(sim.state, CP.smuggler) === ORDER.FOLLOW,
+    'the drop gone before he gets there: given up',
+  );
   check(sim.state.feats[FEAT.crewFetched] === 1, 'the fetch counted');
 }
 
@@ -508,14 +626,17 @@ function chipSpot(sim: Sim): number {
   g.talkTo(CP.lookout, y);
   g.talk(TALK.CREW, ORDER.NIGHT);
   g.step(command(0, OP.CLOSE));
-  check(crewNews(seen, 'order').at(-1)?.order === ORDER.NIGHT, 'tonight\'s the night: on');
+  check(crewNews(seen, 'order').at(-1)?.order === ORDER.NIGHT, "tonight's the night: on");
   // The player in their cell for Lights Out.
   put(sim.state.player, placesOf(sim.world).bedside[1]);
   g.to(1, 23, 1);
   check(sim.state.followers.join() === String(CP.lookout), 'Lights Out: to bed, but for the one staying the night');
   g.steps(400);
   const step1 = placesOf(sim.world).doorstep[1];
-  check(tileOf(sim.state.inmates[CP.lookout].body) === step1 && (sim.world.lockedCells & 2n) === 2n, 'outside the player\'s cell while they\'re in it: the door locks all the same');
+  check(
+    tileOf(sim.state.inmates[CP.lookout].body) === step1 && (sim.world.lockedCells & 2n) === 2n,
+    "outside the player's cell while they're in it: the door locks all the same",
+  );
   // Posted in the player's own cell and staying the night: at Lights Out he waits at the door, which locks.
   {
     const h = game(43);
@@ -528,11 +649,16 @@ function chipSpot(sim: Sim): number {
     put(h.sim.state.player, bed);
     h.order(CP.lookout, ORDER.WATCH);
     h.step(command(0, OP.CLOSE));
-    check(h.sim.world.cellOf[postOf(h.sim.state, CP.lookout)] === 1, 'a lookout posted in the player\'s cell, staying the night');
+    check(h.sim.world.cellOf[postOf(h.sim.state, CP.lookout)] === 1, "a lookout posted in the player's cell, staying the night");
     put(h.sim.state.player, bed);
     h.sim.state.sleeping = true;
     h.to(1, 23, 20);
-    check(h.sim.state.followers.includes(CP.lookout) && tileOf(h.sim.state.inmates[CP.lookout].body) === step1 && (h.sim.world.lockedCells & 2n) === 2n, 'cells locked: he waits at the door, and it locks');
+    check(
+      h.sim.state.followers.includes(CP.lookout) &&
+        tileOf(h.sim.state.inmates[CP.lookout].body) === step1 &&
+        (h.sim.world.lockedCells & 2n) === 2n,
+      'cells locked: he waits at the door, and it locks',
+    );
   }
   // Out of the cell (by whatever means): at the player's heels in the night.
   put(sim.state.player, yardSpot(sim, 2));
@@ -542,7 +668,10 @@ function chipSpot(sim: Sim): number {
   put(sim.state.player, placesOf(sim.world).bedside[1]);
   sim.state.sleeping = true;
   g.to(1, 5, 59);
-  check(sim.state.followers.includes(CP.lookout) && tileOf(sim.state.inmates[CP.lookout].body) === step1, 'still there at 05:59, outside the cell');
+  check(
+    sim.state.followers.includes(CP.lookout) && tileOf(sim.state.inmates[CP.lookout].body) === step1,
+    'still there at 05:59, outside the cell',
+  );
   g.to(1, 6, 1);
   check(!sim.state.followers.length && crewNews(seen, 'nightOver').length === 1, '06:00: back to bed');
   check(sim.state.feats[FEAT.nightsOut] === 1, 'the night counted');
@@ -557,13 +686,23 @@ function chipSpot(sim: Sim): number {
   g.recruit(CP.lookout, 85, y);
   g.recruit(CP.muscle, 85, y + 2);
   g.step(command(0, OP.CLOSE));
-  check(crewEscape(sim, 'tunnel').length === 0 && crewEscape(sim, 'roof').length === 0 && crewEscape(sim, 'stowaway').length === 0, 'never through a hole, down a rope or in a vehicle');
+  check(
+    crewEscape(sim, 'tunnel').length === 0 && crewEscape(sim, 'roof').length === 0 && crewEscape(sim, 'stowaway').length === 0,
+    'never through a hole, down a rope or in a vehicle',
+  );
   // Out on the road, one of them close by, the other far off.
   let road = -1;
   for (let i = 0; i < MAP_W * MAP_H && road < 0; i++) {
     const x = i % MAP_W;
     const z = Math.floor(i / MAP_W);
-    if (sim.world.zoneAt(x, z) === 'outside' && !sim.world.blocked(x, z) && !sim.world.blocked(x + 1, z) && sim.world.zoneAt(x + 1, z) === 'outside' && sim.world.zoneAt(x + 2, z) === 'outside') road = i;
+    if (
+      sim.world.zoneAt(x, z) === 'outside' &&
+      !sim.world.blocked(x, z) &&
+      !sim.world.blocked(x + 1, z) &&
+      sim.world.zoneAt(x + 1, z) === 'outside' &&
+      sim.world.zoneAt(x + 2, z) === 'outside'
+    )
+      road = i;
   }
   put(sim.state.player, road);
   put(sim.state.inmates[CP.lookout].body, road + 2);
@@ -571,7 +710,10 @@ function chipSpot(sim: Sim): number {
   check(crewEscape(sim, 'fence').join() === String(CP.lookout), `those within ${CREW_ESCAPE_REACH} tiles get out too`);
   g.step();
   const out = seen.find((e) => e.type === 'escaped') as Extract<SimEvent, { type: 'escaped' }> | undefined;
-  check(!!sim.state.escaped && out?.crew?.join() === String(CP.lookout) && sim.state.crewOut.join() === String(CP.lookout), 'out: the crew close by with the player');
+  check(
+    !!sim.state.escaped && out?.crew?.join() === String(CP.lookout) && sim.state.crewOut.join() === String(CP.lookout),
+    'out: the crew close by with the player',
+  );
 }
 
 // ------------------------------------------------------------------ the review's holes
@@ -585,9 +727,10 @@ function chipSpot(sim: Sim): number {
   const m = sim.state.inmates[CP.lookout];
   const door = w.cellDoor[1];
   put(m.body, door);
-  check(cantOrder(sim, CP.lookout, ORDER.WATCH) === 'badPost', 'no post in the player\'s cell door');
+  check(cantOrder(sim, CP.lookout, ORDER.WATCH) === 'badPost', "no post in the player's cell door");
   let room = -1;
-  for (let i = 0; i < MAP_W * MAP_H && room < 0; i++) if (w.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'kitchen' && !w.blocked(i % MAP_W, Math.floor(i / MAP_W))) room = i;
+  for (let i = 0; i < MAP_W * MAP_H && room < 0; i++)
+    if (w.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'kitchen' && !w.blocked(i % MAP_W, Math.floor(i / MAP_W))) room = i;
   if (room >= 0) {
     put(m.body, room);
     check(cantOrder(sim, CP.lookout, ORDER.WATCH) === 'badPost', 'no post in a work room (its door would stay open)');
@@ -598,7 +741,10 @@ function chipSpot(sim: Sim): number {
   g.talkTo(CP.lookout);
   g.talk(TALK.CREW, ORDER.NIGHT);
   g.talk(TALK.CREW, ORDER.NIGHT);
-  check(crewNews(seen, 'nightOff').length === 1 && !crewEntry(sim.state, CP.lookout) && sim.state.feats[FEAT.nightsOut] === 0, 'tonight called off: no night out counted');
+  check(
+    crewNews(seen, 'nightOff').length === 1 && !crewEntry(sim.state, CP.lookout) && sim.state.feats[FEAT.nightsOut] === 0,
+    'tonight called off: no night out counted',
+  );
   // A plain follower recruited at Lights Out stays (as followers always did).
   const h = game(53);
   h.to(1, 23, 30);
@@ -620,7 +766,10 @@ function chipSpot(sim: Sim): number {
   sm.path = [];
   f.sim.state.items.ground = f.sim.state.items.ground.filter(([k]) => k !== key);
   f.step();
-  check(crewNews(f.seen, 'fetchFailed').at(-1)?.why === 'gone' && !carryingOf(f.sim.state, CP.smuggler), 'picked up from under his nose: nothing doubled');
+  check(
+    crewNews(f.seen, 'fetchFailed').at(-1)?.why === 'gone' && !carryingOf(f.sim.state, CP.smuggler),
+    'picked up from under his nose: nothing doubled',
+  );
   f.sim.state.items.ground.push([key, slot(n('rope'))]);
   f.sim.state.drops.push([key, n('rope'), f.sim.state.step]);
   for (let k = 0; k < 6; k++) f.sim.state.items.inv[k] = slot(n('toilet_paper'));
@@ -631,7 +780,10 @@ function chipSpot(sim: Sim): number {
     for (const gd of f.sim.state.guards) put(gd.body, placesOf(f.sim.world).bedside[1]);
     f.step();
   }
-  check(carryingOf(f.sim.state, CP.smuggler) === n('rope') && cantOrder(f.sim, CP.smuggler, ORDER.FOLLOW) === 'crewBusy', 'bringing the drop: no other order till it\'s handed over');
+  check(
+    carryingOf(f.sim.state, CP.smuggler) === n('rope') && cantOrder(f.sim, CP.smuggler, ORDER.FOLLOW) === 'crewBusy',
+    "bringing the drop: no other order till it's handed over",
+  );
 }
 
 // ------------------------------------------------------------------ the second review's holes
@@ -648,15 +800,21 @@ function chipSpot(sim: Sim): number {
   g.to(1, 23, 5);
   g.talkTo(CP.lookout, bed);
   g.talk(TALK.CREW, ORDER.NIGHT);
-  check(!g.sim.state.followers.includes(CP.lookout) && crewNews(g.seen, 'nightOff').length === 1, 'the night called off after Lights Out: to bed at once');
+  check(
+    !g.sim.state.followers.includes(CP.lookout) && crewNews(g.seen, 'nightOff').length === 1,
+    'the night called off after Lights Out: to bed at once',
+  );
   // Other orders at night need tonight's the night first; "Follow me" to a plain follower changes nothing.
   const h = game(67);
   h.to(1, 23, 30);
   h.recruit(CP.muscle, 85);
-  check(cantOrder(h.sim, CP.muscle, ORDER.BACK) === 'crewNight', 'orders at night: tonight\'s the night first');
+  check(cantOrder(h.sim, CP.muscle, ORDER.BACK) === 'crewNight', "orders at night: tonight's the night first");
   h.talk(TALK.CREW, ORDER.FOLLOW);
   h.steps(5);
-  check(h.sim.state.followers.includes(CP.muscle) && !crewEntry(h.sim.state, CP.muscle), '"Follow me" to a plain follower: nothing changes');
+  check(
+    h.sim.state.followers.includes(CP.muscle) && !crewEntry(h.sim.state, CP.muscle),
+    '"Follow me" to a plain follower: nothing changes',
+  );
   // Staying the night with the player up in the vents: he holds where he is, not back to bed.
   const v = game(71);
   v.to(1, 22, 30);
@@ -668,7 +826,13 @@ function chipSpot(sim: Sim): number {
   const at = tileOf(v.sim.state.inmates[CP.lookout].body);
   v.sim.state.layer = LAYER.VENTS;
   v.steps(600);
-  check(v.sim.state.followers.includes(CP.lookout) && v.sim.state.inmates[CP.lookout].doing !== DOING.SLEEP && cheb(v.sim.state.inmates[CP.lookout].body, { x: (at % MAP_W) * UNIT + UNIT / 2, z: Math.floor(at / MAP_W) * UNIT + UNIT / 2 }) <= UNIT, 'the player in the vents: the night\'s company waits where he was');
+  check(
+    v.sim.state.followers.includes(CP.lookout) &&
+      v.sim.state.inmates[CP.lookout].doing !== DOING.SLEEP &&
+      cheb(v.sim.state.inmates[CP.lookout].body, { x: (at % MAP_W) * UNIT + UNIT / 2, z: Math.floor(at / MAP_W) * UNIT + UNIT / 2 }) <=
+        UNIT,
+    "the player in the vents: the night's company waits where he was",
+  );
   // A fresh post: the guards already in sight are no news (whistles can't be farmed by posting again).
   const f = game(73);
   f.to(1, 9, 5);
@@ -716,7 +880,7 @@ function chipSpot(sim: Sim): number {
     sim.step(0);
     twin.step(0);
   }
-  check(sim.hash() === twin.hash(), 'a post, a fetch, a night\'s company saved: they carry on the same');
+  check(sim.hash() === twin.hash(), "a post, a fetch, a night's company saved: they carry on the same");
   const bad = sim.snapshot();
   (bad.state as { crew: unknown }).crew = [[99, 1, 2, 3, 0], 'x'];
   (bad.state as { brawled: unknown }).brawled = 'x';
@@ -727,7 +891,10 @@ function chipSpot(sim: Sim): number {
   delete (old.state as Partial<typeof old.state>).brawled;
   delete (old.state as Partial<typeof old.state>).crewOut;
   twin.restore(old);
-  check(twin.state.crew.length === 0 && twin.state.followers.length === sim.state.followers.length, 'a save from before the crew: followers following');
+  check(
+    twin.state.crew.length === 0 && twin.state.followers.length === sim.state.followers.length,
+    'a save from before the crew: followers following',
+  );
 }
 
 // ------------------------------------------------------------------ a blow, a capture
@@ -755,7 +922,13 @@ function chipSpot(sim: Sim): number {
   const sim = new Sim(IRONGATE, 3);
   const s = sim.state;
   const tile = (x: number, z: number) => z * MAP_W + x;
-  check(sim.world.ground.kind[tile(7, 24)] === TILE.FENCE && !sim.world.blocked(6, 24) && !sim.world.blocked(8, 24) && !sim.world.blocked(9, 24), 'Irongate: a fence at 7,24 between open ground');
+  check(
+    sim.world.ground.kind[tile(7, 24)] === TILE.FENCE &&
+      !sim.world.blocked(6, 24) &&
+      !sim.world.blocked(8, 24) &&
+      !sim.world.blocked(9, 24),
+    'Irongate: a fence at 7,24 between open ground',
+  );
   const who = 2;
   s.followers = [who];
   s.crew = [[who, ORDER.DIG, -1, -1, 0]];
@@ -772,7 +945,10 @@ function chipSpot(sim: Sim): number {
   check(help()[0] === DIG_HELP && crewEscape(sim, 'fence').join() === String(who), 'a 2.5.0 replay: both as they were (through the fence)');
   sim.rules250 = false;
   put(digger, tile(9, 24));
-  check(help()[0] === DIG_HELP && help()[1] === who && crewEscape(sim, 'fence').join() === String(who), 'on the same side: the help and the way out as ever');
+  check(
+    help()[0] === DIG_HELP && help()[1] === who && crewEscape(sim, 'fence').join() === String(who),
+    'on the same side: the help and the way out as ever',
+  );
   // Through a cut in the fence, he can come round.
   sim.world.setKind(LAYER.GROUND, tile(7, 24), TILE.FENCE_CUT);
   put(digger, tile(6, 25));
@@ -784,9 +960,17 @@ function chipSpot(sim: Sim): number {
   const w = sim.world;
   const door = w.cellDoor[1];
   const [dx, dz] = [door % MAP_W, Math.floor(door / MAP_W)];
-  const near = [-1, 0, 1].flatMap((a) => [-1, 0, 1].map((b) => (dz + b) * MAP_W + dx + a)).filter((t) => t !== door && !w.blocked(t % MAP_W, Math.floor(t / MAP_W)));
-  check(near.length >= 2 && near.every((t) => !postable(w, t)), `no post beside the cell door (${near.map((t) => `${t % MAP_W},${Math.floor(t / MAP_W)}`).join(' ')})`);
-  check(near.some((t) => postable(w, t, true)), '(2.5.0 refused only the door itself)');
+  const near = [-1, 0, 1]
+    .flatMap((a) => [-1, 0, 1].map((b) => (dz + b) * MAP_W + dx + a))
+    .filter((t) => t !== door && !w.blocked(t % MAP_W, Math.floor(t / MAP_W)));
+  check(
+    near.length >= 2 && near.every((t) => !postable(w, t)),
+    `no post beside the cell door (${near.map((t) => `${t % MAP_W},${Math.floor(t / MAP_W)}`).join(' ')})`,
+  );
+  check(
+    near.some((t) => postable(w, t, true)),
+    '(2.5.0 refused only the door itself)',
+  );
   const step = placesOf(w).doorstep[1];
   const further = step + (step - door);
   check(postable(w, further) || w.blocked(further % MAP_W, Math.floor(further / MAP_W)), 'a step further out: a post again');
@@ -810,7 +994,10 @@ function chipSpot(sim: Sim): number {
   sim.state.shootout = null;
   // Talent night: not the act on the stage.
   const t = new Sim(CENTER_PERKS, 81);
-  t.state.calendar = [[0, 0, 0], [1, DAY_EVENTS.indexOf('talent'), 0]];
+  t.state.calendar = [
+    [0, 0, 0],
+    [1, DAY_EVENTS.indexOf('talent'), 0],
+  ];
   t.state.step = at(1, 19, 2);
   t.state.followers = [CP.muscle];
   const act = tonight(t)[0];

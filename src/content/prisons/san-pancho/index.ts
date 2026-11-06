@@ -277,9 +277,7 @@ const GEAR: PropPlacement[] = [
 ];
 
 /** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
-const READING: PropPlacement[] = [
-  { kind: 'deskChair', x: 41, z: 44, rot: 1 },
-];
+const READING: PropPlacement[] = [{ kind: 'deskChair', x: 41, z: 44, rot: 1 }];
 
 export const SAN_PANCHO: PrisonDef = {
   id: 'san-pancho',
@@ -328,18 +326,48 @@ export const SAN_PANCHO: PrisonDef = {
   cells,
   props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 24, z: 38 }, { kind: 'cooler', x: 18, z: 32 }],
   // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
-  vending: { x: 24, z: 38, line: [{ x: 24, z: 39 }, { x: 23, z: 39 }, { x: 22, z: 39 }, { x: 21, z: 39 }] },
+  vending: {
+    x: 24,
+    z: 38,
+    line: [
+      { x: 24, z: 39 },
+      { x: 23, z: 39 },
+      { x: 22, z: 39 },
+      { x: 21, z: 39 },
+    ],
+  },
   // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
   // last, so that no other prop's number moves) with the tiles beside it where inmates stand to drink.
   menu: { x: 20, z: 32, w: 2 },
-  cooler: { x: 18, z: 32, spots: [{ x: 17, z: 32 }, { x: 18, z: 33 }] },
+  cooler: {
+    x: 18,
+    z: 32,
+    spots: [
+      { x: 17, z: 32 },
+      { x: 18, z: 33 },
+    ],
+  },
   rollCall,
   spawn: { x: 13, z: 13 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],
   guards,
   names: ['Chuy', 'Flaco', 'Tigre', 'Lobo', 'Chato', 'Toro', 'Nacho', 'Primo', 'Rata', 'Diablo', 'Zorro', 'Paco', 'Gallo'],
   merchants: [3, 6, 9, 12],
-  crew: ['lookout', 'lookout', 'muscle', 'muscle', 'digger', 'muscle', 'smuggler', 'smuggler', 'digger', 'muscle', 'lookout', 'digger', 'lookout'],
+  crew: [
+    'lookout',
+    'lookout',
+    'muscle',
+    'muscle',
+    'digger',
+    'muscle',
+    'smuggler',
+    'smuggler',
+    'digger',
+    'muscle',
+    'lookout',
+    'digger',
+    'lookout',
+  ],
   // The player starts as the janitor (GDD §4.4); every job but the gym's is on offer, the woodshop open.
   jobs: [
     { id: 'janitor', cell: 1 },
@@ -430,7 +458,31 @@ export const SAN_PANCHO: PrisonDef = {
   // Rebuilt in 2.9 (P33): the sports ground in the plaza's south half, the garden in the showers' old place.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported at the library's back door, then through the generator room, the control room and down the supply road.)
-  comms: comms([19, 12, 13], [[20, 12], [20, 13], [20, 14], [20, 15]], [31, 51], [35, 63, 1], [44, 44, 1], { at: [[42, 46]], gates: [[42, 47], [37, 51], [31, 52], [32, 52], [31, 55], [32, 55], [31, 61], [32, 61]] }),
+  comms: comms(
+    [19, 12, 13],
+    [
+      [20, 12],
+      [20, 13],
+      [20, 14],
+      [20, 15],
+    ],
+    [31, 51],
+    [35, 63, 1],
+    [44, 44, 1],
+    {
+      at: [[42, 46]],
+      gates: [
+        [42, 47],
+        [37, 51],
+        [31, 52],
+        [32, 52],
+        [31, 55],
+        [32, 55],
+        [31, 61],
+        [32, 61],
+      ],
+    },
+  ),
   // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
   board: { x: 17, z: 32, face: 13 },
   map: 1,

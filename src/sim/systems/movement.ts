@@ -68,4 +68,9 @@ export function overlapsTile(b: { x: number; z: number }, tile: number): boolean
 }
 
 /** A body standing in the middle of a tile. */
-export const bodyAt = (x: number, z: number, facing = 5): Body => ({ x: x * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2, facing, moving: false });
+export const bodyAt = (x: number, z: number, facing = 5): Body => ({
+  x: x * UNIT + UNIT / 2,
+  z: z * UNIT + UNIT / 2,
+  facing,
+  moving: false,
+});

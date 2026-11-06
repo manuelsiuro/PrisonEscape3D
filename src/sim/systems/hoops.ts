@@ -13,7 +13,33 @@
  * respect and the crowd's (as an arm-wrestle), a point of Speed, a win towards sports day.
  * Shots on one's own count too: PRACTICE_MAKES baskets in a day are worth a point of Speed.
  */
-import { COURT_LEAVE, COURT_RANGE, CROWD_OPINION, HOLD_MAX, SHOT_CLOCK, INMATE_SHOT, NEED_BASE, NEED_PER_TILE, NEED_WIND, PLAY_OPINION, POWER_SPEED, PRACTICE_MAKES, RIM_NOISE, RIM_OUT, SHOOT_SPOTS, SKILL_BASE, SKILL_PER_TILE, SKILL_SPREAD, SPORTS_WINS, SUDDEN_DEATH, WIN_OPINION, WINDOW_BASE, WINDOW_MIN, WINDOW_PER_TILE, WINDOW_RAIN } from '../../content/games';
+import {
+  COURT_LEAVE,
+  COURT_RANGE,
+  CROWD_OPINION,
+  HOLD_MAX,
+  SHOT_CLOCK,
+  INMATE_SHOT,
+  NEED_BASE,
+  NEED_PER_TILE,
+  NEED_WIND,
+  PLAY_OPINION,
+  POWER_SPEED,
+  PRACTICE_MAKES,
+  RIM_NOISE,
+  RIM_OUT,
+  SHOOT_SPOTS,
+  SKILL_BASE,
+  SKILL_PER_TILE,
+  SKILL_SPREAD,
+  SPORTS_WINS,
+  SUDDEN_DEATH,
+  WIN_OPINION,
+  WINDOW_BASE,
+  WINDOW_MIN,
+  WINDOW_PER_TILE,
+  WINDOW_RAIN,
+} from '../../content/games';
 import type { Court } from '../../content/prisons/types';
 import { ROUTINE } from '../../content/routine';
 import type { SimContext } from '../context';
@@ -103,19 +129,29 @@ export function windAlong(sim: Pick<SimContext, 'prison' | 'state'>, c: Court, s
   const r = rimOf(c);
   const s = c.spots[spot];
   const heading = eighthOf(r.x - (s.x * UNIT + UNIT / 2), r.z - (s.z * UNIT + UNIT / 2));
-  const off = ((((p.wind + 4) % 8) - heading) % 8 + 8) % 8;
+  const off = (((((p.wind + 4) % 8) - heading) % 8) + 8) % 8;
   const f = p.windForce;
   return off === 0 ? f * 2 : off === 1 || off === 7 ? f : off === 4 ? -f * 2 : off === 3 || off === 5 ? -f : 0;
 }
 
 /** The window a shot from a spot must land its power in (out of 1000): [the power it needs, half the window]. */
-export function shotWindow(sim: Pick<SimContext, 'prison' | 'state' | 'world'>, spot: number, out: [number, number] = [0, 0]): [number, number] {
+export function shotWindow(
+  sim: Pick<SimContext, 'prison' | 'state' | 'world'>,
+  spot: number,
+  out: [number, number] = [0, 0],
+): [number, number] {
   const c = courtOf(sim)!;
   const d = spotDistance(c, spot);
   const wx = today(sim).weather;
   // (A half point of wind each way: wind along it ×2, so NEED_WIND / 2 a step of it.)
   out[0] = NEED_BASE + Math.round((NEED_PER_TILE * d) / 10) - Math.round((NEED_WIND * windAlong(sim, c, spot)) / 2);
-  out[1] = Math.max(WINDOW_MIN, WINDOW_BASE + Math.floor(sim.state.spd / 2) - Math.round((WINDOW_PER_TILE * Math.max(0, d - 20)) / 10) - (wx === 'rain' || wx === 'storm' ? WINDOW_RAIN : 0));
+  out[1] = Math.max(
+    WINDOW_MIN,
+    WINDOW_BASE +
+      Math.floor(sim.state.spd / 2) -
+      Math.round((WINDOW_PER_TILE * Math.max(0, d - 20)) / 10) -
+      (wx === 'rain' || wx === 'storm' ? WINDOW_RAIN : 0),
+  );
   return out;
 }
 
@@ -260,7 +296,17 @@ function endShootout(sim: SimContext, how: 'won' | 'lost' | 'draw' | 'off') {
     s.spd += spd;
     s.trained |= 1 << ATTRS.indexOf('spd');
     const wins = sportsWin(sim);
-    sim.events.push({ type: 'hoops', what: 'won', who, crowd: crowd.length, wins, spd, gain: (m?.opinion ?? 0) - was, mine: baskets(o.mine), theirs: baskets(o.theirs) });
+    sim.events.push({
+      type: 'hoops',
+      what: 'won',
+      who,
+      crowd: crowd.length,
+      wins,
+      spd,
+      gain: (m?.opinion ?? 0) - was,
+      mine: baskets(o.mine),
+      theirs: baskets(o.theirs),
+    });
     if (wins >= SPORTS_WINS) sportsPrizeIfDue(sim);
     return;
   }
@@ -283,7 +329,8 @@ export function keepHoops(sim: SimContext) {
   const r = c ? rimOf(c) : null;
   const far = !r || s.layer !== LAYER.GROUND || Math.max(Math.abs(s.player.x - r.x), Math.abs(s.player.z - r.z)) > COURT_LEAVE * UNIT;
   // (Begun, it plays out past the games' hours: the sirens break it off; 2.5.1: and roll call or Lights Out.)
-  if (!m || m.ko > 0 || m.angry > 0 || s.lockdown || sim.away || s.sleeping || s.stowed || far || (!sim.rules250 && gamesBell(s))) return endShootout(sim, 'off');
+  if (!m || m.ko > 0 || m.angry > 0 || s.lockdown || sim.away || s.sleeping || s.stowed || far || (!sim.rules250 && gamesBell(s)))
+    return endShootout(sim, 'off');
   if (o.turn === 1 && s.step >= o.at) inmateShot(sim, o);
   else if (o.turn === 0 && !sim.rules250 && !sim.world.def.rules?.relaxed) {
     // (2.5.1: the shot clock, from the player's turn coming; held up, the ball goes anyway at HOLD_MAX.)

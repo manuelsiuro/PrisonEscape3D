@@ -45,7 +45,11 @@ const CLOTHES = [0x3f6fb5, 0x8e3b5c, 0x4f8a5b, 0xc9a227, 0x6b4c9a, 0xd9653b, 0x2
 const SKINS = [0xf1c6a0, 0xe2ad84, 0xc98d62, 0xa86e48, 0x7d4f33, 0x5b3a26];
 const HAIRS = [0x1d1612, 0x3a2a1e, 0x6b4a2b, 0xb08850, 0x8a8a8a, 0xd9d4cc];
 /** A visitor's colours by its look number (a suit, when given, for the clothes): as drawn at the tables, and on the parole board's card. */
-export function visitorColors(look: number, suit?: number, out = { clothes: 0, skin: 0, hair: 0 }): { clothes: number; skin: number; hair: number } {
+export function visitorColors(
+  look: number,
+  suit?: number,
+  out = { clothes: 0, skin: 0, hair: 0 },
+): { clothes: number; skin: number; hair: number } {
   out.clothes = suit ?? CLOTHES[pick(look, 1, CLOTHES.length)];
   out.skin = SKINS[pick(look, 2, SKINS.length)];
   out.hair = HAIRS[pick(look, 3, HAIRS.length)];
@@ -56,12 +60,23 @@ const tint = { clothes: 0, skin: 0, hair: 0 };
 
 /** Its navigation lights, apart from the body (they alone glow and blink): red to port (+x, the nose along +z), green to starboard. */
 function lightsGeometry(): THREE.BufferGeometry {
-  return merge([box(0.06, 0.05, 0.06, 0xff3b30, 0.34, 0.12, 0.34), box(0.06, 0.05, 0.06, 0x34c759, -0.34, 0.12, 0.34), box(0.05, 0.04, 0.05, 0xffffff, 0, 0.07, -0.2)], false);
+  return merge(
+    [
+      box(0.06, 0.05, 0.06, 0xff3b30, 0.34, 0.12, 0.34),
+      box(0.06, 0.05, 0.06, 0x34c759, -0.34, 0.12, 0.34),
+      box(0.05, 0.04, 0.05, 0xffffff, 0, 0.07, -0.2),
+    ],
+    false,
+  );
 }
 
 /** The drone: a dark body, four arms, landing legs; rotors and lights are drawn apart. */
 function droneGeometry(): THREE.BufferGeometry {
-  const parts: Part[] = [box(0.34, 0.12, 0.34, 0x2b3038, 0, 0, 0), box(0.2, 0.05, 0.2, 0x3d434d, 0, 0.12, 0), box(0.1, 0.05, 0.06, 0x111418, 0, 0.02, 0.19)];
+  const parts: Part[] = [
+    box(0.34, 0.12, 0.34, 0x2b3038, 0, 0, 0),
+    box(0.2, 0.05, 0.2, 0x3d434d, 0, 0.12, 0),
+    box(0.1, 0.05, 0.06, 0x111418, 0, 0.02, 0.19),
+  ];
   for (const [sx, sz] of [
     [1, 1],
     [1, -1],
@@ -71,7 +86,11 @@ function droneGeometry(): THREE.BufferGeometry {
     const arm = new THREE.BoxGeometry(0.42, 0.04, 0.05);
     arm.rotateY(sx * sz > 0 ? -Math.PI / 4 : Math.PI / 4);
     arm.translate(sx * 0.2, 0.07, sz * 0.2);
-    parts.push(paint(arm, 0x3d434d), box(0.07, 0.07, 0.07, 0x1b1e24, sx * 0.34, 0.05, sz * 0.34), box(0.025, 0.12, 0.025, 0x1b1e24, sx * 0.12, -0.12, sz * 0.12));
+    parts.push(
+      paint(arm, 0x3d434d),
+      box(0.07, 0.07, 0.07, 0x1b1e24, sx * 0.34, 0.05, sz * 0.34),
+      box(0.025, 0.12, 0.025, 0x1b1e24, sx * 0.12, -0.12, sz * 0.12),
+    );
   }
   return merge(parts, false);
 }
@@ -84,7 +103,14 @@ function rotorGeometry(): THREE.BufferGeometry {
 
 /** The parcel it carries: a small taped box, and its sling. */
 function parcelGeometry(): THREE.BufferGeometry {
-  return merge([box(0.24, 0.18, 0.24, 0xb88a52, 0, -0.18, 0), box(0.25, 0.03, 0.06, 0xd9c79a, 0, -0.06, 0), box(0.02, 0.24, 0.02, 0x2b3038, 0, -0.02, 0)], false);
+  return merge(
+    [
+      box(0.24, 0.18, 0.24, 0xb88a52, 0, -0.18, 0),
+      box(0.25, 0.03, 0.06, 0xd9c79a, 0, -0.06, 0),
+      box(0.02, 0.24, 0.02, 0x2b3038, 0, -0.02, 0),
+    ],
+    false,
+  );
 }
 
 /** A visitor sat at a table, facing +z, feet on y = 0, in three parts tinted per visitor: clothes, skin, hair. (Also the parole board's faces on its card: portrait.ts.) */
@@ -123,13 +149,30 @@ export function visitorParts(): { clothes: THREE.BufferGeometry; skin: THREE.Buf
     ],
     false,
   );
-  const hair = merge([box(0.48, 0.1, 0.47, W, 0, 1.2, -0.025), box(0.48, 0.28, 0.08, W, 0, 0.94, -0.23), box(0.05, 0.16, 0.4, W, -0.235, 1.04, -0.04), box(0.05, 0.16, 0.4, W, 0.235, 1.04, -0.04)], false);
+  const hair = merge(
+    [
+      box(0.48, 0.1, 0.47, W, 0, 1.2, -0.025),
+      box(0.48, 0.28, 0.08, W, 0, 0.94, -0.23),
+      box(0.05, 0.16, 0.4, W, -0.235, 1.04, -0.04),
+      box(0.05, 0.16, 0.4, W, 0.235, 1.04, -0.04),
+    ],
+    false,
+  );
   return { clothes, skin, hair };
 }
 
 /** A portable detector arch (for a tile, along x): two posts, the beam, its lamp. */
 function archGeometry(): THREE.BufferGeometry {
-  return merge([box(0.12, 1.25, 0.24, 0xb4bcc6, -0.44, 0, 0), box(0.12, 1.25, 0.24, 0xb4bcc6, 0.44, 0, 0), box(1, 0.16, 0.26, 0xb4bcc6, 0, 1.22, 0), box(0.34, 0.04, 0.4, 0x6a737e, -0.44, 0, 0), box(0.34, 0.04, 0.4, 0x6a737e, 0.44, 0, 0)], false);
+  return merge(
+    [
+      box(0.12, 1.25, 0.24, 0xb4bcc6, -0.44, 0, 0),
+      box(0.12, 1.25, 0.24, 0xb4bcc6, 0.44, 0, 0),
+      box(1, 0.16, 0.26, 0xb4bcc6, 0, 1.22, 0),
+      box(0.34, 0.04, 0.4, 0x6a737e, -0.44, 0, 0),
+      box(0.34, 0.04, 0.4, 0x6a737e, 0.44, 0, 0),
+    ],
+    false,
+  );
 }
 
 /**
@@ -173,7 +216,11 @@ export class SmuggleView {
     body.castShadow = true;
     this.lightsMat = new THREE.MeshBasicMaterial({ vertexColors: true });
     const lights = new THREE.Mesh(lightsGeometry(), this.lightsMat);
-    this.rotors = new THREE.InstancedMesh(rotorGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, transparent: true, opacity: 0.55, depthWrite: false }), 4);
+    this.rotors = new THREE.InstancedMesh(
+      rotorGeometry(),
+      new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, transparent: true, opacity: 0.55, depthWrite: false }),
+      4,
+    );
     this.parcel = new THREE.Mesh(parcelGeometry(), kitMaterial);
     this.parcel.castShadow = true;
     this.drone.add(body, lights, this.rotors);
@@ -185,11 +232,19 @@ export class SmuggleView {
     this.beacons = new THREE.InstancedMesh(beacon, this.beaconMat, MAX_DROPS);
     this.beacons.count = 0;
     // (See-through like the fixed arches: never hiding the player behind one.)
-    this.arches = new THREE.InstancedMesh(archGeometry(), seeThrough(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.6 })), MAX_ARCHES);
+    this.arches = new THREE.InstancedMesh(
+      archGeometry(),
+      seeThrough(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.6 })),
+      MAX_ARCHES,
+    );
     this.arches.castShadow = true;
     this.arches.count = 0;
     // (Their lamps take the prison's arches' material once a world is set: green, dark without power, red on a trip.)
-    this.lamps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 0.06, 0.1), new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 }), MAX_ARCHES);
+    this.lamps = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.14, 0.06, 0.1),
+      new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x2a9a3a, emissiveIntensity: 1.5 }),
+      MAX_ARCHES,
+    );
     this.lamps.count = 0;
     const v = visitorParts();
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });

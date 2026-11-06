@@ -6,7 +6,19 @@ import { centerX, centerZ, tileAt } from '../world/grid';
 import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { freshMeals } from './grounds';
-import { ENERGY_REGEN_STEPS, FRESH_ENERGY, FRESH_HEALTH, HEALTH_REGEN_STEPS, MEAL_ENERGY, NIGHT_ENERGY_FLOOR, SHOWER_ENERGY_STEPS, SHOWER_HEAT_BELOW, SHOWER_HEAT_STEPS, SIT_ENERGY_STEPS, STEPS_PER_MINUTE } from '../tuning';
+import {
+  ENERGY_REGEN_STEPS,
+  FRESH_ENERGY,
+  FRESH_HEALTH,
+  HEALTH_REGEN_STEPS,
+  MEAL_ENERGY,
+  NIGHT_ENERGY_FLOOR,
+  SHOWER_ENERGY_STEPS,
+  SHOWER_HEAT_BELOW,
+  SHOWER_HEAT_STEPS,
+  SIT_ENERGY_STEPS,
+  STEPS_PER_MINUTE,
+} from '../tuning';
 import { LAYER, MAP_W } from '../world/World';
 import { maxHealth } from './combat';
 import { closeBox, REACH } from './items';
@@ -94,7 +106,15 @@ export function takeOutDummy(sim: SimContext, index: number) {
  */
 export function awakeAtNight(sim: Pick<SimContext, 'state' | 'world' | 'rules227'>): boolean {
   const s = sim.state;
-  return !sim.rules227 && ROUTINE[s.routine].id === 'lightsOut' && !s.sleeping && s.ko === 0 && s.solitary <= 0 && !s.lockdown && !sim.world.def.rules?.relaxed;
+  return (
+    !sim.rules227 &&
+    ROUTINE[s.routine].id === 'lightsOut' &&
+    !s.sleeping &&
+    s.ko === 0 &&
+    s.solitary <= 0 &&
+    !s.lockdown &&
+    !sim.world.def.rules?.relaxed
+  );
 }
 
 /** Sits down on a seat, bench or chair, or lies down on an infirmary bed: facing the table, the body still. */
@@ -105,7 +125,11 @@ export function sitDown(sim: SimContext, prop: number, use: 'sit' | 'rest') {
   // Someone sitting there already, or on the way to (on their routine, not following or fighting): the player stays up.
   const spot = seatSpot(sim.world, prop, s.player);
   const at = spot.z * MAP_W + spot.x;
-  if (s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === at || m.seat === at || tileAt(m.body.x, m.body.z) === at))) {
+  if (
+    s.inmates.some(
+      (m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === at || m.seat === at || tileAt(m.body.x, m.body.z) === at),
+    )
+  ) {
     sim.events.push({ type: 'refused', why: 'seatTaken' });
     return;
   }
@@ -161,7 +185,13 @@ export function keepSeat(sim: SimContext) {
         s.eventFlags |= TODAY.FEASTED;
       }
       const what = sim.rules232 ? {} : { n, ...(hp ? { hp } : {}), ...(dish ? { dish: dish.id } : {}) };
-      sim.events.push(feast ? { type: 'meal', feast, ...(fresh ? { fresh } : {}), ...what } : fresh ? { type: 'meal', fresh, ...what } : { type: 'meal', ...what });
+      sim.events.push(
+        feast
+          ? { type: 'meal', feast, ...(fresh ? { fresh } : {}), ...what }
+          : fresh
+            ? { type: 'meal', fresh, ...what }
+            : { type: 'meal', ...what },
+      );
     }
   }
 }
@@ -174,7 +204,12 @@ export function regenerate(sim: SimContext) {
   const heldBack = awakeAtNight(sim) && s.energy >= NIGHT_ENERGY_FLOOR;
   const oldSleep = (sim.rules227 || sim.world.def.rules?.relaxed) && s.sleeping && s.step % STEPS_PER_MINUTE === 0;
   if (s.energy < 100 && !heldBack && (s.step % ENERGY_REGEN_STEPS === 0 || oldSleep)) s.energy++;
-  if (s.ko === 0 && s.health < maxHealth(s.str) && (s.step % HEALTH_REGEN_STEPS === 0 || (resting && s.step % (HEALTH_REGEN_STEPS / 2) === 0))) s.health++;
+  if (
+    s.ko === 0 &&
+    s.health < maxHealth(s.str) &&
+    (s.step % HEALTH_REGEN_STEPS === 0 || (resting && s.step % (HEALTH_REGEN_STEPS / 2) === 0))
+  )
+    s.health++;
 }
 
 /** Under a running shower (GDD §2, §3.1): energy back, 2 a second; 2.26: minor heat washed off too. */

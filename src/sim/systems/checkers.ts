@@ -11,7 +11,16 @@
  * broken by roll(). A win teaches the player a point of Intellect (and he lets slip a secret: the
  * play layer's); any game finished, a point once a day.
  */
-import { DRAW_PLIES, ELDER_DEPTH, ELDER_OPINION, ELDER_SLIP, ELDER_THINK, ELDER_THINK_MORE, ELDER_WIN_OPINION, PLAY_OPINION } from '../../content/games';
+import {
+  DRAW_PLIES,
+  ELDER_DEPTH,
+  ELDER_OPINION,
+  ELDER_SLIP,
+  ELDER_THINK,
+  ELDER_THINK_MORE,
+  ELDER_WIN_OPINION,
+  PLAY_OPINION,
+} from '../../content/games';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
 import { ATTRS, type Refusal } from '../events';
@@ -367,7 +376,13 @@ function finish(sim: SimContext, over: number, resigned = false) {
     s.elder[ELDER.TAUGHT] = day;
     s.trained |= 1 << ATTRS.indexOf('int');
   }
-  sim.events.push({ type: 'checkers', what: over === 1 ? 'won' : over === 2 ? 'lost' : 'drawn', who, int: teach ? 1 : 0, gain: (m?.opinion ?? 0) - was });
+  sim.events.push({
+    type: 'checkers',
+    what: over === 1 ? 'won' : over === 2 ? 'lost' : 'drawn',
+    who,
+    int: teach ? 1 : 0,
+    gain: (m?.opinion ?? 0) - was,
+  });
 }
 
 /** Each step at the board: the player gone from it (up), his move when he's done thinking. */

@@ -12,7 +12,20 @@
  * A run from before 2.33 (Sim.rules232) has none of it: every tray +35, the board decoration.
  */
 import { HOLIDAY_DAY, type HolidayDay } from '../../content/holidays';
-import { BREAKFASTS, DINNERS, HOUSE_DINNER, MEAL, MENU, SCRIBBLE_HEAT, SCRIBBLE_OPINION, SCRIBBLE_REACH, SCRIBBLE_STEPS, SCRIBBLES, type Dish, type Feast } from '../../content/menu';
+import {
+  BREAKFASTS,
+  DINNERS,
+  HOUSE_DINNER,
+  MEAL,
+  MENU,
+  SCRIBBLE_HEAT,
+  SCRIBBLE_OPINION,
+  SCRIBBLE_REACH,
+  SCRIBBLE_STEPS,
+  SCRIBBLES,
+  type Dish,
+  type Feast,
+} from '../../content/menu';
 import { ROUTINE } from '../../content/routine';
 import { canSee, lineOfSight } from '../ai/sight';
 import { DIR_X, DIR_Z } from '../command';
@@ -175,7 +188,11 @@ function laughs(sim: SimContext, m: { x: number; z: number; w: number }) {
   s.inmates.forEach((im, k) => {
     if (im.ko > 0 || im.angry > 0 || im.doing === DOING.SLEEP || s.menu.laughed.includes(k)) return;
     if (Math.abs(im.body.x - cx) > reach || Math.abs(im.body.z - cz) > reach) return;
-    if (sim.world.zoneAt(Math.floor(im.body.x / UNIT), Math.floor(im.body.z / UNIT)) !== zone || !lineOfSight(sim.world, im.body.x, im.body.z, cx, cz)) return;
+    if (
+      sim.world.zoneAt(Math.floor(im.body.x / UNIT), Math.floor(im.body.z / UNIT)) !== zone ||
+      !lineOfSight(sim.world, im.body.x, im.body.z, cx, cz)
+    )
+      return;
     s.menu.laughed.push(k);
     changeOpinion(sim, k, SCRIBBLE_OPINION);
     sim.events.push({ type: 'menu', what: 'laugh', who: k });

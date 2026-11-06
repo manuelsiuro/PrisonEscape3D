@@ -18,7 +18,19 @@ export interface GamesFrame {
    * not thrown yet), seconds since each die left the hand (the player's two, then the inmate's;
    * negative: not yet).
    */
-  dice: { who: number; x: number; z: number; fromX: number; fromZ: number; oppX: number; oppZ: number; mine: [number, number]; theirs: [number, number]; t: [number, number, number, number]; seed: number } | null;
+  dice: {
+    who: number;
+    x: number;
+    z: number;
+    fromX: number;
+    fromZ: number;
+    oppX: number;
+    oppZ: number;
+    mine: [number, number];
+    theirs: [number, number];
+    t: [number, number, number, number];
+    seed: number;
+  } | null;
   /** Taps at a lock and throws of the dice so far (the arm twitches at each new one). */
   taps: number;
   /** Sports day: bunting strung over the yard. */
@@ -54,11 +66,36 @@ function diceTexture(): THREE.CanvasTexture {
   const g = c.getContext('2d')!;
   const pips: Record<number, Array<[number, number]>> = {
     1: [[0.5, 0.5]],
-    2: [[0.27, 0.27], [0.73, 0.73]],
-    3: [[0.27, 0.27], [0.5, 0.5], [0.73, 0.73]],
-    4: [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]],
-    5: [[0.27, 0.27], [0.73, 0.27], [0.5, 0.5], [0.27, 0.73], [0.73, 0.73]],
-    6: [[0.27, 0.25], [0.73, 0.25], [0.27, 0.5], [0.73, 0.5], [0.27, 0.75], [0.73, 0.75]],
+    2: [
+      [0.27, 0.27],
+      [0.73, 0.73],
+    ],
+    3: [
+      [0.27, 0.27],
+      [0.5, 0.5],
+      [0.73, 0.73],
+    ],
+    4: [
+      [0.27, 0.27],
+      [0.73, 0.27],
+      [0.27, 0.73],
+      [0.73, 0.73],
+    ],
+    5: [
+      [0.27, 0.27],
+      [0.73, 0.27],
+      [0.5, 0.5],
+      [0.27, 0.73],
+      [0.73, 0.73],
+    ],
+    6: [
+      [0.27, 0.25],
+      [0.73, 0.25],
+      [0.27, 0.5],
+      [0.73, 0.5],
+      [0.27, 0.75],
+      [0.73, 0.75],
+    ],
   };
   for (let n = 1; n <= 6; n++) {
     const x0 = ((n - 1) % 3) * 128;
@@ -104,11 +141,19 @@ const UP: THREE.Quaternion[] = (() => {
   const x = new THREE.Vector3(1, 0, 0);
   const z = new THREE.Vector3(0, 0, 1);
   const q = (axis: THREE.Vector3, a: number) => new THREE.Quaternion().setFromAxisAngle(axis, a);
-  return [new THREE.Quaternion(), new THREE.Quaternion(), q(x, -Math.PI / 2), q(z, Math.PI / 2), q(z, -Math.PI / 2), q(x, Math.PI / 2), q(x, Math.PI)];
+  return [
+    new THREE.Quaternion(),
+    new THREE.Quaternion(),
+    q(x, -Math.PI / 2),
+    q(z, Math.PI / 2),
+    q(z, -Math.PI / 2),
+    q(x, Math.PI / 2),
+    q(x, Math.PI),
+  ];
 })();
 
 /** A number in [0, 1) for a die's scatter (the same each frame). */
-const jit = (seed: number, k: number) => (Math.abs(Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453) % 1);
+const jit = (seed: number, k: number) => Math.abs(Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453) % 1;
 
 /**
  * The side games in the picture (P22): the dice thrown between the player and the inmate,
@@ -146,7 +191,11 @@ export class GamesView {
     this.flags.count = 0;
     this.flags.frustumCulled = false;
     this.flags.visible = false;
-    this.poles = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.04, 0.05, POLE_H, 6), new THREE.MeshStandardMaterial({ color: 0x6a5a48, roughness: 0.8 }), MAX_POLES);
+    this.poles = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.04, 0.05, POLE_H, 6),
+      new THREE.MeshStandardMaterial({ color: 0x6a5a48, roughness: 0.8 }),
+      MAX_POLES,
+    );
     this.poles.count = 0;
     this.poles.frustumCulled = false;
     this.poles.castShadow = true;
@@ -184,7 +233,9 @@ export class GamesView {
       if (TILE_INFO[world.ground.kind[i]].solid || world.propSolid[i] || roof[i] !== TILE.EMPTY) return false;
       return !decor.some((d) => {
         const r = d.kind === 'tree' || d.kind === 'flagpole' ? 1.4 : 1;
-        return x + 0.5 > d.x - r + 0.5 && x + 0.5 < d.x + (d.w ?? 1) + r - 0.5 && z + 0.5 > d.z - r + 0.5 && z + 0.5 < d.z + (d.d ?? 1) + r - 0.5;
+        return (
+          x + 0.5 > d.x - r + 0.5 && x + 0.5 < d.x + (d.w ?? 1) + r - 0.5 && z + 0.5 > d.z - r + 0.5 && z + 0.5 < d.z + (d.d ?? 1) + r - 0.5
+        );
       });
     };
     // (P32 review: a pole never on the pitch or the track's lanes, where the games are played, nor in a doorway's mouth.)
@@ -236,7 +287,9 @@ export class GamesView {
     const score = (r: (typeof runs)[number]) => {
       const mid = (r.a0 + r.a1) / 2;
       // (Strung along x it faces the camera; along z its pennants are seen edge on.)
-      return Math.min(r.a1 - r.a0, 20) + (r.along ? 3 : 0) - 0.6 * (r.along ? Math.hypot(mid - cx, r.c - cz) : Math.hypot(r.c - cx, mid - cz));
+      return (
+        Math.min(r.a1 - r.a0, 20) + (r.along ? 3 : 0) - 0.6 * (r.along ? Math.hypot(mid - cx, r.c - cz) : Math.hypot(r.c - cx, mid - cz))
+      );
     };
     runs.sort((p, q) => score(q) - score(p) || p.c - q.c);
     // (P33 review: over the sports ground strung along x only, where a line that long can run: along z,
@@ -262,7 +315,9 @@ export class GamesView {
       const stops = [a0];
       for (let k = 1; k < spans; k++) {
         const want = a0 + ((a1 - a0) * k) / spans;
-        const near = [0, 1, -1, 2, -2, 3, -3].map((d) => want + d).find((a) => a > stops[stops.length - 1] + 2 && a < a1 - 2 && poleAt(r.along, r.c, a));
+        const near = [0, 1, -1, 2, -2, 3, -3]
+          .map((d) => want + d)
+          .find((a) => a > stops[stops.length - 1] + 2 && a < a1 - 2 && poleAt(r.along, r.c, a));
         if (near !== undefined) stops.push(near);
       }
       stops.push(a1);
@@ -294,7 +349,17 @@ export class GamesView {
   }
 
   /** One line of bunting along x (or z), across at `c`, from pole `a0` to pole `a1`: its sag, its pennants, its poles. */
-  private string(along: boolean, c: number, a0: number, a1: number, l: number, at: number[], seg: number[], poles: number[], color: THREE.Color) {
+  private string(
+    along: boolean,
+    c: number,
+    a0: number,
+    a1: number,
+    l: number,
+    at: number[],
+    seg: number[],
+    poles: number[],
+    color: THREE.Color,
+  ) {
     const len = a1 - a0;
     const sag = Math.min(0.6, len * 0.05);
     const n = Math.max(2, Math.floor(len / 0.42));

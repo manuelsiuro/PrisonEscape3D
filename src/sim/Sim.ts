@@ -268,7 +268,12 @@ export class Sim {
     holidays(this);
     // 00:30 and 04:00: the night bed check (GDD §5.3).
     // (P26: a Night Owl warden's two more.)
-    if (s.step % STEPS_PER_MINUTE === 0 && (BED_CHECK_MINUTES.includes(clock.minuteOfDay) || (OWL_CHECKS.includes(clock.minuteOfDay) && twist(s, 'nightOwl'))) && !this.world.def.rules?.relaxed) bedCheck(this);
+    if (
+      s.step % STEPS_PER_MINUTE === 0 &&
+      (BED_CHECK_MINUTES.includes(clock.minuteOfDay) || (OWL_CHECKS.includes(clock.minuteOfDay) && twist(s, 'nightOwl'))) &&
+      !this.world.def.rules?.relaxed
+    )
+      bedCheck(this);
     // The knocked out come round (GDD §10.2): a guard missing its key raises the alarm.
     recover(this);
     this.everyoneMoves();
@@ -374,12 +379,35 @@ export class Sim {
     for (const g of s.guards) forInmates.push(g.body);
     inmateBodies.length = 0;
     for (const m of s.inmates) inmateBodies.push(m.body);
-    stepInmates(w, s.inmates, s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : crowdPlan(this, s.routine), s, forInmates, s.step, about && !this.away ? s.player : null, socialNow(this));
+    stepInmates(
+      w,
+      s.inmates,
+      s.lockdown && ROUTINE[s.routine].id !== 'lightsOut' ? LOCKDOWN_PLAN : crowdPlan(this, s.routine),
+      s,
+      forInmates,
+      s.step,
+      about && !this.away ? s.player : null,
+      socialNow(this),
+    );
     clockIn(this);
     // A guard talking with the player has somewhere else to be at a new block (P15): the talk ends.
     const k = guardTalking(s);
     if (k >= 0 && dutyDue(w.def.guards[k], s.guards[k], s.routine, k, delivery, s.mods)) endTalk(this);
-    stepGuards(w, s.guards, s.routine, s.lockdown, s.player, inmateBodies, s.step, this.onReport, about, guardTalking(s), s.salt, delivery, s.mods);
+    stepGuards(
+      w,
+      s.guards,
+      s.routine,
+      s.lockdown,
+      s.player,
+      inmateBodies,
+      s.step,
+      this.onReport,
+      about,
+      guardTalking(s),
+      s.salt,
+      delivery,
+      s.mods,
+    );
   }
 
   /** The player's turn: out cold, or awake to walk and act. Returns true once they're out on the road (the step ends there). */
@@ -452,13 +480,34 @@ export class Sim {
     const bluff = from >= 0 && s.waved > 0 && this.world.checkpoint[from] === 1;
     // (P36: cleared for release, out through its doors or its lowered drawbridge.)
     const paper = from >= 0 && freedNow(s) && this.world.release[from] === 1;
-    s.via = ESCAPES.indexOf(this.boarded ?? (this.movedBy === 'digUp' ? 'tunnel' : this.movedBy === 'grapnel' || this.movedBy === 'rope' ? 'roof' : this.movedBy === 'glide' ? 'glider' : s.takeover ? 'takeover' : paper ? (paroled(s) ? 'parole' : 'paperwork') : bluff ? 'bluff' : gate ? 'gate' : 'fence'));
+    s.via = ESCAPES.indexOf(
+      this.boarded ??
+        (this.movedBy === 'digUp'
+          ? 'tunnel'
+          : this.movedBy === 'grapnel' || this.movedBy === 'rope'
+            ? 'roof'
+            : this.movedBy === 'glide'
+              ? 'glider'
+              : s.takeover
+                ? 'takeover'
+                : paper
+                  ? paroled(s)
+                    ? 'parole'
+                    : 'paperwork'
+                  : bluff
+                    ? 'bluff'
+                    : gate
+                      ? 'gate'
+                      : 'fence'),
+    );
     closeBox(this);
     // The crew close by slip out too (P23), on a way out they can take.
     s.crewOut = crewEscape(this, ESCAPES[s.via]);
     // (P34: Lou's car waiting tonight on the road.)
     wheels(this, ESCAPES[s.via]);
-    this.events.push(s.crewOut.length ? { type: 'escaped', via: ESCAPES[s.via], crew: s.crewOut.slice() } : { type: 'escaped', via: ESCAPES[s.via] });
+    this.events.push(
+      s.crewOut.length ? { type: 'escaped', via: ESCAPES[s.via], crew: s.crewOut.slice() } : { type: 'escaped', via: ESCAPES[s.via] },
+    );
     return true;
   }
 
@@ -680,7 +729,11 @@ export class Sim {
   /** A fingerprint of the whole state (tests compare these). */
   hash(): string {
     const w = this.world;
-    return fnv1a(JSON.stringify(this.state) + w.layers.map((l) => fnv1a(String.fromCharCode(...l.kind))).join('') + fnv1a(String.fromCharCode(...w.block)));
+    return fnv1a(
+      JSON.stringify(this.state) +
+        w.layers.map((l) => fnv1a(String.fromCharCode(...l.kind))).join('') +
+        fnv1a(String.fromCharCode(...w.block)),
+    );
   }
 }
 
@@ -688,4 +741,3 @@ export class Sim {
 const MUSTER: readonly string[] = ['rollCall'];
 /** What a player hidden in the delivery's vehicle can do (P18): climb out, and sort the pockets. */
 const STOWED_OPS: readonly number[] = [OP.INTERACT, OP.CLOSE, OP.MOVE, OP.EQUIP, OP.SELECT];
-

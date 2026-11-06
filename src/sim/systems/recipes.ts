@@ -59,12 +59,13 @@ export function obtainable(w: World): ReadonlySet<number> {
   w.def.guards.forEach((_, k) => guardKit(w, k).forEach((n) => have.add(ITEMS[n - 1].id)));
   // (P19: a prison with dogs stocks their treats, and the pills.)
   const dogs = w.def.guards.some((g) => g.dog);
-  for (const d of ITEMS) if (d.from.some((f) => ANYWHERE.includes(f) || (f === 'job' && w.def.jobs.length > 0) || (f === 'treats' && dogs))) have.add(d.id);
+  for (const d of ITEMS)
+    if (d.from.some((f) => ANYWHERE.includes(f) || (f === 'job' && w.def.jobs.length > 0) || (f === 'treats' && dogs))) have.add(d.id);
   // (P28: taken on request, never stocked: fruit at a canteen counter, sugar from a kitchen freezer, seed packets off a library shelf; the
   // merchants' staples; a garden's harvest.)
   for (const [id, from] of PANTRY) if (from.some((t) => tables.has(t))) have.add(id);
   if (w.def.leisure?.garden && (have.has('veg_seeds') || have.has('fruit_seeds'))) for (const id of ['vegetable', 'fruit']) have.add(id);
-  for (let changed = true; changed; ) {
+  for (let changed = true; changed;) {
     changed = false;
     for (const r of RECIPES) {
       if (have.has(r.result) || !r.ingredients.every((ing) => ing.split('|').some((c) => have.has(c)))) continue;
@@ -112,7 +113,15 @@ export function revealTip(sim: SimContext, who = -1, subject = -1): boolean {
 /** How many recipes a subject can tell the player now: within their Intellect, not known or told, of use here (2.31). */
 export function toLearn(sim: SimContext, subject: number): number {
   const s = sim.state;
-  return RECIPES.filter((r, k) => subjectOf(r.result) === subject && r.int <= s.items.int && !s.items.known.includes(k) && !s.tips.includes(k) && !NEVER_TOLD.has(k) && usableHere(sim.world, k)).length;
+  return RECIPES.filter(
+    (r, k) =>
+      subjectOf(r.result) === subject &&
+      r.int <= s.items.int &&
+      !s.items.known.includes(k) &&
+      !s.tips.includes(k) &&
+      !NEVER_TOLD.has(k) &&
+      usableHere(sim.world, k),
+  ).length;
 }
 
 /** The subject with the most to tell the player now (the first of them), -1 none: the librarian's suggestion. */
@@ -138,7 +147,12 @@ export function nextUnlock(sim: Pick<SimContext, 'state' | 'world'>): { at: numb
   if (!marks.length) return null;
   const at = Math.min(...marks);
   const here = jobs.filter((d) => d.int === at);
-  return { at, jobs: here.map((d) => d.id), wage: Math.max(0, ...here.map((d) => d.wage)), recipes: recipes.filter((n) => n === at).length };
+  return {
+    at,
+    jobs: here.map((d) => d.id),
+    wage: Math.max(0, ...here.map((d) => d.wage)),
+    recipes: recipes.filter((n) => n === at).length,
+  };
 }
 
 /** Whether an inmate has told the player a recipe today already. */

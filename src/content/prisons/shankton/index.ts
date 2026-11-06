@@ -274,9 +274,7 @@ const GEAR: PropPlacement[] = [
 ];
 
 /** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
-const READING: PropPlacement[] = [
-  { kind: 'deskChair', x: 27, z: 44, rot: 3 },
-];
+const READING: PropPlacement[] = [{ kind: 'deskChair', x: 27, z: 44, rot: 3 }];
 
 export const SHANKTON: PrisonDef = {
   id: 'shankton',
@@ -318,11 +316,27 @@ export const SHANKTON: PrisonDef = {
   cells,
   props: [...props, ...GEAR, ...READING, { kind: 'vending', x: 39, z: 21 }, { kind: 'cooler', x: 24, z: 21, rot: 1 }],
   // 2.32: the canteen's vending machine, fronting south; the first tile is where it's used from, then the queue.
-  vending: { x: 39, z: 21, line: [{ x: 39, z: 22 }, { x: 38, z: 22 }, { x: 37, z: 22 }, { x: 37, z: 21 }] },
+  vending: {
+    x: 39,
+    z: 21,
+    line: [
+      { x: 39, z: 22 },
+      { x: 38, z: 22 },
+      { x: 37, z: 22 },
+      { x: 37, z: 21 },
+    ],
+  },
   // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
   // last, so that no other prop's number moves) with the tiles beside it where inmates stand to drink.
   menu: { x: 35, z: 14, w: 2 },
-  cooler: { x: 24, z: 21, spots: [{ x: 24, z: 22 }, { x: 24, z: 20 }] },
+  cooler: {
+    x: 24,
+    z: 21,
+    spots: [
+      { x: 24, z: 22 },
+      { x: 24, z: 20 },
+    ],
+  },
   rollCall,
   spawn: { x: 10, z: 10 },
   reachable: ['cellBlock', 'corridor', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'sports', 'garden'],
@@ -411,7 +425,31 @@ export const SHANKTON: PrisonDef = {
   // Rebuilt in 2.8 (P32): the rec ground in the kitchen's old block, the garden plot in the courtyard.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported at the staff door off the corridor, then through the quarters, the control room and the shell's gates.)
-  comms: comms([36, 24, 13], [[37, 24], [38, 24], [39, 24], [40, 24]], [51, 54], [55, 63, 9], [24, 43, 9], { at: [[47, 39]], gates: [[47, 40], [51, 47], [51, 55], [52, 55], [51, 58], [52, 58], [51, 62], [52, 62]] }),
+  comms: comms(
+    [36, 24, 13],
+    [
+      [37, 24],
+      [38, 24],
+      [39, 24],
+      [40, 24],
+    ],
+    [51, 54],
+    [55, 63, 9],
+    [24, 43, 9],
+    {
+      at: [[47, 39]],
+      gates: [
+        [47, 40],
+        [51, 47],
+        [51, 55],
+        [52, 55],
+        [51, 58],
+        [52, 58],
+        [51, 62],
+        [52, 62],
+      ],
+    },
+  ),
   // The odd jobs board (P40): on the canteen's north wall (brick behind it, not a door), clear of the stage and of the two rows a wall hides.
   board: { x: 25, z: 14, face: 13 },
   map: 1,

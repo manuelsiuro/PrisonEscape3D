@@ -83,7 +83,11 @@ export class TeamView {
     const ring = new THREE.RingGeometry(0.3, 0.4, 28);
     ring.rotateX(-Math.PI / 2);
     // (White, tinted per ring: the player's side, the other.)
-    this.rings = new THREE.InstancedMesh(ring, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false }), 6);
+    this.rings = new THREE.InstancedMesh(
+      ring,
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false }),
+      6,
+    );
     this.rings.renderOrder = 0.3;
     // (They follow the players over the pitch.)
     this.rings.frustumCulled = false;
@@ -93,7 +97,10 @@ export class TeamView {
     this.group.add(this.rings);
     const around = new THREE.RingGeometry(R * 1.7, R * 2.3, 24);
     around.rotateX(-Math.PI / 2);
-    this.ballRing = new THREE.Mesh(around, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }));
+    this.ballRing = new THREE.Mesh(
+      around,
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }),
+    );
     this.ballRing.renderOrder = 5;
     this.ballRing.visible = false;
     this.group.add(this.ballRing);
@@ -141,19 +148,37 @@ export class TeamView {
     const W = 0.06;
     const colour = theme === 'alpine' ? PAINT_SNOW : PAINT;
     /** A painted strip: centred at (a, l), da long and dl across. */
-    const strip = (a: number, l: number, da: number, dl: number) => (along ? box(da, 0.004, dl, colour, a, 0, l) : box(dl, 0.004, da, colour, l, 0, a));
-    const parts = [strip(ca, l0 + W / 2 + 0.04, len, W), strip(ca, l1 - W / 2 - 0.04, len, W), strip(a0 + W / 2, cl, W, wid - 0.08), strip(a1 - W / 2, cl, W, wid - 0.08), strip(ca, cl, W, wid - 0.08)];
+    const strip = (a: number, l: number, da: number, dl: number) =>
+      along ? box(da, 0.004, dl, colour, a, 0, l) : box(dl, 0.004, da, colour, l, 0, a);
+    const parts = [
+      strip(ca, l0 + W / 2 + 0.04, len, W),
+      strip(ca, l1 - W / 2 - 0.04, len, W),
+      strip(a0 + W / 2, cl, W, wid - 0.08),
+      strip(a1 - W / 2, cl, W, wid - 0.08),
+      strip(ca, cl, W, wid - 0.08),
+    ];
     // Boxes before the goals: a tile and a half deep, the mouth and a half-tile either side.
     const half = GOAL_HALF / UNIT + 0.5;
     const deep = 1.4;
-    for (const [end, dir] of [[a0, 1], [a1, -1]] as const) parts.push(strip(end + (dir * deep) / 2, mid - half, deep, W), strip(end + dir * deep, mid, W, half * 2 + W), strip(end + (dir * deep) / 2, mid + half, deep, W));
+    for (const [end, dir] of [
+      [a0, 1],
+      [a1, -1],
+    ] as const)
+      parts.push(
+        strip(end + (dir * deep) / 2, mid - half, deep, W),
+        strip(end + dir * deep, mid, W, half * 2 + W),
+        strip(end + (dir * deep) / 2, mid + half, deep, W),
+      );
     // The halfway circle.
     const r = Math.min(1.1, wid / 2 - 0.4);
     const ring = new THREE.RingGeometry(r, r + W, 40);
     ring.rotateX(-Math.PI / 2);
     ring.translate(along ? ca : cl, 0.004, along ? cl : ca);
     parts.push(paint(ring, colour));
-    const lines = new THREE.Mesh(merge(parts, false), new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.8, depthWrite: false }));
+    const lines = new THREE.Mesh(
+      merge(parts, false),
+      new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.8, depthWrite: false }),
+    );
     lines.position.y = 0.006;
     lines.renderOrder = 0.2;
     lines.receiveShadow = true;
@@ -172,7 +197,10 @@ export class TeamView {
         net.push(along ? a : l, y, along ? l : a);
       }
     };
-    for (const [end, dir] of [[a0, -1], [a1, 1]] as const) {
+    for (const [end, dir] of [
+      [a0, -1],
+      [a1, 1],
+    ] as const) {
       const back = end + dir * D;
       for (const sd of [-1, 1]) {
         const [x, z] = at(end, mid + sd * gh);
@@ -193,13 +221,22 @@ export class TeamView {
     ng.setAttribute('position', new THREE.Float32BufferAttribute(net, 3));
     ng.computeVertexNormals();
     // (Lit like everything else: dim at night, not a glowing panel.)
-    const nets = new THREE.Mesh(ng, new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }));
+    const nets = new THREE.Mesh(
+      ng,
+      new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }),
+    );
     nets.renderOrder = 1;
     this.lines.add(lines, goals, nets);
   }
 
   /** The frame: the pitch, the sides' rings (and the player's, at `me`), the ball. */
-  update(f: TeamFrame | null, inmates: ReadonlyArray<{ x: number; z: number }>, dt: number, shown: boolean, me: { x: number; z: number } | null = null) {
+  update(
+    f: TeamFrame | null,
+    inmates: ReadonlyArray<{ x: number; z: number }>,
+    dt: number,
+    shown: boolean,
+    me: { x: number; z: number } | null = null,
+  ) {
     const p = f?.pitch ?? null;
     const key = p ? `${p.x},${p.z},${p.w},${p.d},${f!.theme}` : '';
     if (key !== this.drawn) {

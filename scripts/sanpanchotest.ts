@@ -53,9 +53,16 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   };
   const outer = ring(2, 61);
   const inner = ring(8, 55);
-  check(outer.every((i) => [TILE.REINFORCED, TILE.TOWER, TILE.DOOR].includes(g.kind[i] as never)), 'the outer wall: reinforced concrete, the towers and its gate');
-  check(inner.every((i) => [TILE.REINFORCED, TILE.DOOR].includes(g.kind[i] as never)), 'the inner wall: reinforced concrete and its door');
-  const doors = (tiles: number[]) => tiles.filter((i) => g.kind[i] === TILE.DOOR).map((i) => `${i % MAP_W},${Math.floor(i / MAP_W)}:${g.key[i]}`);
+  check(
+    outer.every((i) => [TILE.REINFORCED, TILE.TOWER, TILE.DOOR].includes(g.kind[i] as never)),
+    'the outer wall: reinforced concrete, the towers and its gate',
+  );
+  check(
+    inner.every((i) => [TILE.REINFORCED, TILE.DOOR].includes(g.kind[i] as never)),
+    'the inner wall: reinforced concrete and its door',
+  );
+  const doors = (tiles: number[]) =>
+    tiles.filter((i) => g.kind[i] === TILE.DOOR).map((i) => `${i % MAP_W},${Math.floor(i / MAP_W)}:${g.key[i]}`);
   check(doors(outer).join() === `31,61:${KEY.GREEN},32,61:${KEY.GREEN}`, `the outer wall's one gate is green (${doors(outer).join(' ')})`);
   check(doors(inner).join() === `31,55:${KEY.RED},32,55:${KEY.RED}`, `the inner wall's one door is red (${doors(inner).join(' ')})`);
   let mines = 0;
@@ -71,8 +78,13 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
     }
   }
   check(other === 0 && paved === 20, `between the walls: mines, and the paved corridor (${mines} mines, ${paved} paved, ${other} other)`);
-  check(w.gate.every((v) => v === 0), 'no gate a key cannot open');
-  console.log(`walls: outer and inner reinforced, gates green (outer) and red (inner); ${mines} mines between them, a corridor of ${paved} paved tiles`);
+  check(
+    w.gate.every((v) => v === 0),
+    'no gate a key cannot open',
+  );
+  console.log(
+    `walls: outer and inner reinforced, gates green (outer) and red (inner); ${mines} mines between them, a corridor of ${paved} paved tiles`,
+  );
 }
 
 // ------------------------------------------------------------------ nobody else walks on mines
@@ -96,7 +108,9 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
     }
   }
   check(onMine === 0 && st.craters.length === 0, `a day of it: no inmate or guard ever on a mine (${onMine}), none set off`);
-  console.log(`mines kept off: ${st.inmates.length} inmates and ${st.guards.length} guards over a day, lockdown ${st.lockdown ? 'on' : 'off'}`);
+  console.log(
+    `mines kept off: ${st.inmates.length} inmates and ${st.guards.length} guards over a day, lockdown ${st.lockdown ? 'on' : 'off'}`,
+  );
 }
 
 // ------------------------------------------------------------------ a step onto a mine
@@ -105,10 +119,17 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   const st = bot.st;
   place(bot, 30, 58);
   const hp = st.health;
-  const blasted = bot.until(() => bot.sim.events.some((e) => e.type === 'blast'), 100, () => command(DIR.WEST));
+  const blasted = bot.until(
+    () => bot.sim.events.some((e) => e.type === 'blast'),
+    100,
+    () => command(DIR.WEST),
+  );
   const at = tileAt(bot);
   check(blasted && at === tileOf(29, 58), 'off the corridor, the first step onto the sand sets a mine off');
-  check(hp < MINE_DAMAGE && st.ko > 0 && st.wake === WAKE.SOLITARY, `${MINE_DAMAGE} health (of ${hp}): out cold, and solitary when they wake`);
+  check(
+    hp < MINE_DAMAGE && st.ko > 0 && st.wake === WAKE.SOLITARY,
+    `${MINE_DAMAGE} health (of ${hp}): out cold, and solitary when they wake`,
+  );
   check(st.craters.join() === String(tileOf(29, 58)), 'a crater where the mine was');
   bot.until(() => st.ko === 0 && st.solitary > 0, KO_STEPS + 40);
   check(bot.sim.playerZone === 'solitary', `woken in solitary (${bot.sim.playerZone})`);
@@ -131,8 +152,15 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   st.str = 70;
   st.health = maxHealth(st.str);
   place(bot, 7, 57);
-  bot.until(() => bot.sim.events.some((e) => e.type === 'blast'), 100, () => command(DIR.WEST));
-  check(st.ko === 0 && st.health === maxHealth(70) - MINE_DAMAGE && st.lockdown && st.heat === 100, `Strength 70: left standing on ${st.health} health, wanted, the lockdown on`);
+  bot.until(
+    () => bot.sim.events.some((e) => e.type === 'blast'),
+    100,
+    () => command(DIR.WEST),
+  );
+  check(
+    st.ko === 0 && st.health === maxHealth(70) - MINE_DAMAGE && st.lockdown && st.heat === 100,
+    `Strength 70: left standing on ${st.health} health, wanted, the lockdown on`,
+  );
   const aimed = bot.until(() => bot.sim.events.some((e) => e.type === 'aim'), 10 * 20);
   check(aimed, 'a sniper takes aim at once');
   console.log(`a mine at Strength 70: ${st.health} health left, a sniper taking aim`);
@@ -164,13 +192,24 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   const inner = (f: (x: number, z: number) => boolean) => f(42, 47) && f(37, 51) && f(31, 52) && f(31, 55);
   check(inner(shut) && shut(31, 61), 'no keys: the generator room, the control room, the inner wall and the outer gate are shut');
   w.setPlayerKeys(1 << KEY.RED);
-  check(inner((x, z) => !shut(x, z)) && shut(31, 61), 'red keys: through the generator room, the control room and the inner wall, the outer gate still shut');
+  check(
+    inner((x, z) => !shut(x, z)) && shut(31, 61),
+    'red keys: through the generator room, the control room and the inner wall, the outer gate still shut',
+  );
   w.setPlayerKeys((1 << KEY.RED) | (1 << KEY.GREEN));
   check(!shut(31, 61), 'red and green: the outer gate too');
   const path = findPath(w, tileOf(31, 26), (i) => i === tileOf(31, 62), tileOf(31, 62), MAP_W * MAP_H, undefined, w.routeBlock);
-  check(!!path && path.every((i) => w.ground.kind[i] !== TILE.MINE), `a way from the yard to the road that never touches a mine (${path?.length ?? 0} tiles)`);
-  check(findPath(w, tileOf(31, 58), (i) => i === tileOf(26, 58), tileOf(26, 58), MAP_W * MAP_H, undefined, w.routeBlock) === null, 'no route leads into the minefield');
-  console.log(`supply road: red through the generator room, the control room and the inner wall, green through the gate; ${path?.length} tiles from the yard to the road, none of them mined`);
+  check(
+    !!path && path.every((i) => w.ground.kind[i] !== TILE.MINE),
+    `a way from the yard to the road that never touches a mine (${path?.length ?? 0} tiles)`,
+  );
+  check(
+    findPath(w, tileOf(31, 58), (i) => i === tileOf(26, 58), tileOf(26, 58), MAP_W * MAP_H, undefined, w.routeBlock) === null,
+    'no route leads into the minefield',
+  );
+  console.log(
+    `supply road: red through the generator room, the control room and the inner wall, green through the gate; ${path?.length} tiles from the yard to the road, none of them mined`,
+  );
 }
 
 // ------------------------------------------------------------------ snipers round the clock
@@ -188,8 +227,14 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   const bot = new Bot(SAN_PANCHO, 8);
   const st = bot.st;
   const grudge = st.inmates.filter((m) => m.opinion <= 25).map((m) => m.cell);
-  check(grudge.join() === '4,8,12' && st.inmates.every((m) => m.opinion === 20 || m.opinion === 40), `day 1: three inmates bear a grudge (cells ${grudge.join(', ')}), the rest cool (40)`);
-  check(new Bot(CENTER_PERKS, 8).st.inmates.every((m) => m.opinion === 50), 'Center Perks: everyone starts at 50');
+  check(
+    grudge.join() === '4,8,12' && st.inmates.every((m) => m.opinion === 20 || m.opinion === 40),
+    `day 1: three inmates bear a grudge (cells ${grudge.join(', ')}), the rest cool (40)`,
+  );
+  check(
+    new Bot(CENTER_PERKS, 8).st.inmates.every((m) => m.opinion === 50),
+    'Center Perks: everyone starts at 50',
+  );
   /** Free time on day 1, the player by a grudge-bearer in the yard: steps until the ambush (-1 never). */
   const ambush = (b: Bot) => {
     const s = b.st;
@@ -245,8 +290,13 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
     floors += kos;
   }
   check(morning === 0, `no ambush in the first morning (${morning})`);
-  check(perDay.every((n) => n === 1), `at most one ambush a prison day (${perDay.join(',')})`);
-  console.log(`12 seeds, three days, standing there: floored ${floors} times, ${floored1} on day 1; no ambush before 12:00 on day 1, one a day at most`);
+  check(
+    perDay.every((n) => n === 1),
+    `at most one ambush a prison day (${perDay.join(',')})`,
+  );
+  console.log(
+    `12 seeds, three days, standing there: floored ${floors} times, ${floored1} on day 1; no ambush before 12:00 on day 1, one a day at most`,
+  );
   // On the morning of a release or a hearing, with a grudge alongside: nobody jumps them, and one already after them lets it go.
   for (const what of ['release', 'hearing'] as const) {
     const b = new Bot(SAN_PANCHO, 3);
@@ -304,7 +354,10 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
   bot.routineUntil(4, 8 * 60);
   const floored = bot.events.filter((e) => e.type === 'floored').length;
   const ambushes = bot.events.filter((e) => e.type === 'ambush').length;
-  check(floored >= 1 && floored <= 3 && by.size === floored && [...by].every((k) => st.inmates[k].opinion >= 35), `whoever put the player down has spent its grudge (${floored} times floored by ${[...by].map((k) => `#${k} now ${st.inmates[k].opinion}`).join(', ')})`);
+  check(
+    floored >= 1 && floored <= 3 && by.size === floored && [...by].every((k) => st.inmates[k].opinion >= 35),
+    `whoever put the player down has spent its grudge (${floored} times floored by ${[...by].map((k) => `#${k} now ${st.inmates[k].opinion}`).join(', ')})`,
+  );
   console.log(`grudges settled: ${ambushes} ambushes, ${floored} knockouts in three days, each by a different inmate, never twice`);
 }
 
@@ -320,11 +373,11 @@ const tileAt = (bot: Bot) => Math.floor(bot.st.player.z / UNIT) * MAP_W + Math.f
     all++;
     const at = { x: (i % MAP_W) * UNIT + UNIT / 2, z: Math.floor(i / MAP_W) * UNIT + UNIT / 2 };
     let hit = false;
-    for (let step = 0; step < 8 * CAMERA_TURN_STEPS && !hit; step += CAMERA_TURN_STEPS / 4) hit = cams.some((c, k) => cameraSees(w, c, k, step, at));
+    for (let step = 0; step < 8 * CAMERA_TURN_STEPS && !hit; step += CAMERA_TURN_STEPS / 4)
+      hit = cams.some((c, k) => cameraSees(w, c, k, step, at));
     if (hit) seen++;
   }
   const pct = Math.round((seen / all) * 100);
   check(pct >= 20, `the walkway's corner cameras watch its corners and a stretch of each side (${pct}%; the four guards walk the rest)`);
   console.log(`walkway cameras: ${pct}% of the walkway watched over a sweep`);
 }
-

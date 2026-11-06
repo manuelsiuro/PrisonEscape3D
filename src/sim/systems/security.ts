@@ -15,7 +15,6 @@ import { tileAt } from '../world/grid';
 /** A camera's sweep: a sixteenth of a turn at a time, out to ±45° and back. */
 const SWEEP = [0, 1, 2, 1, 0, -1, -2, -1];
 
-
 /** Where camera k looks at a step (1–16); cameras are out of step with each other. */
 export function cameraFacing(face: number, k: number, step: number): number {
   return turnDir(face, SWEEP[Math.floor((step + k * 97) / CAMERA_TURN_STEPS) % SWEEP.length]);
@@ -46,7 +45,13 @@ function cameraEye(cam: { x: number; z: number; face: number }, k: number, step:
 }
 
 /** Whether camera k sees a point on the ground floor (its cone, its range, walls and shut doors in the way). */
-export function cameraSees(w: World, cam: { x: number; z: number; face: number }, k: number, step: number, at: { x: number; z: number }): boolean {
+export function cameraSees(
+  w: World,
+  cam: { x: number; z: number; face: number },
+  k: number,
+  step: number,
+  at: { x: number; z: number },
+): boolean {
   return canSee(w, cameraEye(cam, k, step), at, CAMERA_RANGE);
 }
 
@@ -57,7 +62,8 @@ function legs(path: ReadonlyArray<{ x: number; z: number }>): number[] {
   if (!l) {
     l = [];
     // Math.sqrt is exactly rounded everywhere (Math.hypot need not be).
-    for (let k = 1; k < path.length; k++) l.push(Math.round(Math.sqrt((path[k].x - path[k - 1].x) ** 2 + (path[k].z - path[k - 1].z) ** 2) * UNIT));
+    for (let k = 1; k < path.length; k++)
+      l.push(Math.round(Math.sqrt((path[k].x - path[k - 1].x) ** 2 + (path[k].z - path[k - 1].z) ** 2) * UNIT));
     legsOf.set(path, l);
   }
   return l;
@@ -67,7 +73,11 @@ function legs(path: ReadonlyArray<{ x: number; z: number }>): number[] {
  * Where a searchlight's beam is at a step (units, the middle of its pool): it runs along its
  * path and back at BEAM_SPEED. Integer math, so the same on every platform. `out` is filled.
  */
-export function beamAt(path: ReadonlyArray<{ x: number; z: number }>, step: number, out: { x: number; z: number }): { x: number; z: number } {
+export function beamAt(
+  path: ReadonlyArray<{ x: number; z: number }>,
+  step: number,
+  out: { x: number; z: number },
+): { x: number; z: number } {
   const l = legs(path);
   const total = l.reduce((a, b) => a + b, 0);
   if (total <= 0) {

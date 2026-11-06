@@ -56,7 +56,9 @@ export function trayOffer(sim: Pick<SimContext, 'world' | 'state' | 'rules224'>,
 export function servingCounter(sim: Pick<SimContext, 'world' | 'state' | 'rules224'>): number {
   const s = sim.state;
   if (s.layer !== LAYER.GROUND) return -1;
-  const k = containersOf(sim.world).findIndex((c) => c.table === 'canteenCounter' && propReach(c.prop, s.player.x, s.player.z) <= REACH && facesProp(s.player, c.prop));
+  const k = containersOf(sim.world).findIndex(
+    (c) => c.table === 'canteenCounter' && propReach(c.prop, s.player.x, s.player.z) <= REACH && facesProp(s.player, c.prop),
+  );
   return k >= 0 && trayOffer(sim, k) ? k : -1;
 }
 
@@ -84,12 +86,30 @@ export function loseTray(sim: SimContext, what: 'dropped' | 'left' | 'over', owe
 
 /** The hands did something since event `from` (a blow, a tool, chocolate, a throw; not one refused): the tray falls. */
 export function handsUsed(sim: SimContext, from: number) {
-  if (sim.state.tray !== TRAY.NONE && sim.events.slice(from).some((e) => e.type !== 'cantStrike' && e.type !== 'cantHit' && e.type !== 'cantThrow' && e.type !== 'refused')) loseTray(sim, 'dropped');
+  if (
+    sim.state.tray !== TRAY.NONE &&
+    sim.events.slice(from).some((e) => e.type !== 'cantStrike' && e.type !== 'cantHit' && e.type !== 'cantThrow' && e.type !== 'refused')
+  )
+    loseTray(sim, 'dropped');
 }
 
 /** Both hands taken: a game on the table, a lock being picked, equipment, the pay phone, the ball up, the stage. */
 export function handsBusy(s: SimContext['state']): boolean {
-  return s.bout.length > 0 || s.dice.length > 0 || s.pick.length > 0 || s.shot.length > 0 || s.train >= 0 || !!s.cheat || !!s.shootout || !!s.board?.seated || !!s.match || !!s.ink || !!s.show || !!s.quiz || !!s.call;
+  return (
+    s.bout.length > 0 ||
+    s.dice.length > 0 ||
+    s.pick.length > 0 ||
+    s.shot.length > 0 ||
+    s.train >= 0 ||
+    !!s.cheat ||
+    !!s.shootout ||
+    !!s.board?.seated ||
+    !!s.match ||
+    !!s.ink ||
+    !!s.show ||
+    !!s.quiz ||
+    !!s.call
+  );
 }
 
 /** Each step with a tray: it stays with a player up and about in the canteen with their hands free, while the meal lasts. */

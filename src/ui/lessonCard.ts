@@ -22,7 +22,18 @@ export class LessonCard {
   }
 
   /** The lesson (its number in its chapter, of how many, the chapter's id, its id), the step showing (its prompt and its touch variant), the steps and how many are done; hidden while a panel covers it. */
-  update(n: number, of: number, chapter: string, id: string, text: Key, touch: Key | undefined, steps: number, done: number, tick: boolean, hidden: boolean) {
+  update(
+    n: number,
+    of: number,
+    chapter: string,
+    id: string,
+    text: Key,
+    touch: Key | undefined,
+    steps: number,
+    done: number,
+    tick: boolean,
+    hidden: boolean,
+  ) {
     this.el.classList.toggle('hidden', hidden);
     document.body.classList.toggle('lesson-on', !hidden);
     // Where it stands while shown (a panel is judged against it while it's hidden); the banner and the toasts keep clear of it.
@@ -65,7 +76,13 @@ export class LessonCard {
 export type LessonResult = 'next' | 'list' | 'again' | 'play';
 
 /** The end of a lesson: done (the next one, the next chapter after a chapter's last, or all lessons; after the very last, the real game), or failed (again, or all lessons). */
-export function showLessonResult(head: Key, next: 'lesson' | 'chapter' | null, title: string, click: () => void, sub: Key | null = null): Promise<LessonResult> {
+export function showLessonResult(
+  head: Key,
+  next: 'lesson' | 'chapter' | null,
+  title: string,
+  click: () => void,
+  sub: Key | null = null,
+): Promise<LessonResult> {
   const won = head === 'lesson.done';
   const el = h(
     'div',

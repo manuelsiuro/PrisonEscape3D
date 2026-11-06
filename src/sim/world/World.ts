@@ -201,7 +201,8 @@ export class World {
     for (const l of this.layers) l.base.set(l.kind);
     // Zones: road is outside, unlisted open ground is the perimeter, unlisted indoor tiles (doors,
     // walls) belong to none; then the rectangles, then the cells.
-    for (let i = 0; i < MAP_W * MAP_H; i++) g.zone[i] = zoneIndex(g.kind[i] === TILE.ROAD ? 'outside' : TILE_INFO[g.kind[i]].outdoor ? 'perimeter' : 'none');
+    for (let i = 0; i < MAP_W * MAP_H; i++)
+      g.zone[i] = zoneIndex(g.kind[i] === TILE.ROAD ? 'outside' : TILE_INFO[g.kind[i]].outdoor ? 'perimeter' : 'none');
     for (const [id, x0, z0, x1, z1] of def.zones) this.fill(g.zone, x0, z0, x1, z1, zoneIndex(id));
     def.cells.forEach(([x0, z0, x1, z1], k) => {
       this.fill(g.zone, x0, z0, x1, z1, zoneIndex(k === 0 ? 'playerCell' : 'inmateCell'));
@@ -212,7 +213,16 @@ export class World {
     if (def.checkpoint?.bridge && def.drawbridge) this.fill(this.checkpoint, ...def.drawbridge, 1);
     for (const q of def.comms?.release.gates ?? []) this.release[q.z * MAP_W + q.x] = 1;
     if (def.comms?.release.bridge && def.drawbridge) this.fill(this.release, ...def.drawbridge, 1);
-    this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0, aim: p.aim ?? (p.rot ?? 0) * 2, heads: p.heads ?? 1 }));
+    this.props = def.props.map((p) => ({
+      kind: p.kind,
+      x: p.x,
+      z: p.z,
+      w: p.w ?? 1,
+      d: p.d ?? 1,
+      rot: p.rot ?? 0,
+      aim: p.aim ?? (p.rot ?? 0) * 2,
+      heads: p.heads ?? 1,
+    }));
     for (const p of this.props) if (PROPS[p.kind].solid) this.fill(this.propSolid, p.x, p.z, p.x + p.w - 1, p.z + p.d - 1, 1);
     // The checkpoint's booth stands in the way (2.33.2; walked through before: plainBooth).
     if (def.checkpoint) this.propSolid[def.checkpoint.booth.z * MAP_W + def.checkpoint.booth.x] = 1;
@@ -229,7 +239,12 @@ export class World {
         this.doorCell[i] = c;
         if (c) this.cellDoor[c] = i;
         // Perimeter gates: as the prison lists them, else every door beside the road.
-        if (def.gates ? def.gates.some((q) => q.z * MAP_W + q.x === i) : [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => g.kind[j] === TILE.ROAD)) this.gate[i] = 1;
+        if (
+          def.gates
+            ? def.gates.some((q) => q.z * MAP_W + q.x === i)
+            : [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => g.kind[j] === TILE.ROAD)
+        )
+          this.gate[i] = 1;
         for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (WORK_ZONES.has(ZONES[g.zone[j]])) this.doorRoom[i] = g.zone[j];
       }
     }
@@ -350,12 +365,28 @@ export class World {
     const reach = new Uint8Array(MAP_W * MAP_H);
     const queue = home.map((q) => q.z * MAP_W + q.x);
     for (const t of queue) reach[t] = 1;
-    for (let k = 0; k < queue.length; k++) for (const [j, ok] of neighbours4(queue[k])) if (ok && !reach[j] && walk(j)) { reach[j] = 1; queue.push(j); }
+    for (let k = 0; k < queue.length; k++)
+      for (const [j, ok] of neighbours4(queue[k]))
+        if (ok && !reach[j] && walk(j)) {
+          reach[j] = 1;
+          queue.push(j);
+        }
     // What the way out touches that home doesn't reach (short of the road).
     const out = new Uint8Array(MAP_W * MAP_H);
     const more: number[] = [];
-    for (let i = 0; i < MAP_W * MAP_H; i++) if (way[i]) for (const [j, ok] of neighbours4(i)) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') { out[j] = 1; more.push(j); }
-    for (let k = 0; k < more.length; k++) for (const [j, ok] of neighbours4(more[k])) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') { out[j] = 1; more.push(j); }
+    for (let i = 0; i < MAP_W * MAP_H; i++)
+      if (way[i])
+        for (const [j, ok] of neighbours4(i))
+          if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') {
+            out[j] = 1;
+            more.push(j);
+          }
+    for (let k = 0; k < more.length; k++)
+      for (const [j, ok] of neighbours4(more[k]))
+        if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') {
+          out[j] = 1;
+          more.push(j);
+        }
     return out;
   }
 
@@ -375,11 +406,18 @@ export class World {
       seen.fill(0);
       const walk = (j: number) => g.kind[j] === TILE.DOOR || !TILE_INFO[g.kind[j]].solid;
       const queue: number[] = [];
-      for (let i = 0; i < MAP_W * MAP_H; i++) if ((this.cellOf[i] === 1 || ZONES[g.zone[i]] === 'outside') && walk(i)) { seen[i] = 1; queue.push(i); }
+      for (let i = 0; i < MAP_W * MAP_H; i++)
+        if ((this.cellOf[i] === 1 || ZONES[g.zone[i]] === 'outside') && walk(i)) {
+          seen[i] = 1;
+          queue.push(i);
+        }
       for (let k = 0; k < queue.length; k++) {
         const t = queue[k];
         for (const [j, ok] of neighbours4(t))
-          if (ok && !seen[j] && walk(j)) { seen[j] = 1; queue.push(j); }
+          if (ok && !seen[j] && walk(j)) {
+            seen[j] = 1;
+            queue.push(j);
+          }
       }
       this.afootTiles = seen;
       this.afootRev = this.rev;
@@ -419,7 +457,11 @@ export class World {
     for (let i = 0; i < MAP_W * MAP_H; i++) {
       const k = g.kind[i];
       const room = this.doorRoom[i];
-      const shut = k === TILE.DOOR && !this.propped[i] && !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) && !(room && ((this.openRooms >> BigInt(room)) & 1n) === 1n);
+      const shut =
+        k === TILE.DOOR &&
+        !this.propped[i] &&
+        !doorOpen(g.key[i], this.doorCell[i], this.lockedCells) &&
+        !(room && ((this.openRooms >> BigInt(room)) & 1n) === 1n);
       this.doorShut[i] = shut ? 1 : 0;
       // A key of the door's color opens it for the player (never a perimeter gate); in a takeover every door does.
       // (P22: and the door the player picked, as their own key would.)

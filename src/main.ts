@@ -98,7 +98,20 @@ if (import.meta.env.DEV)
       const g = play.game!;
       g.over = true;
       const n = itemNumber;
-      const carry: Carry = { prison: def.id, via: 'fence', kind, spd: 40, outfit: n('inmate_outfit'), kit: [n('light_cutters'), n('jerky'), n('pepper'), n('sleepy_jerky')], crew: 0, lou: false, headStart: 15, minute: 23 * 60 + 40, salt: 9, ...more };
+      const carry: Carry = {
+        prison: def.id,
+        via: 'fence',
+        kind,
+        spd: 40,
+        outfit: n('inmate_outfit'),
+        kit: [n('light_cutters'), n('jerky'), n('pepper'), n('sleepy_jerky')],
+        crew: 0,
+        lou: false,
+        headStart: 15,
+        minute: 23 * 60 + 40,
+        salt: 9,
+        ...more,
+      };
       return runHunt(g, carry, { lookout: carry.crew ? { name: def.names[1] ?? 'Rocco', cell: 3 } : null });
     },
   });

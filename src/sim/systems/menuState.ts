@@ -27,7 +27,13 @@ export interface CoolerState {
   day: number;
 }
 
-export const newCooler = (spots = 2): CoolerState => ({ who: Array(spots).fill(-1), sent: Array(spots).fill(0), there: Array(spots).fill(0), asked: [0, 0], day: 0 });
+export const newCooler = (spots = 2): CoolerState => ({
+  who: Array(spots).fill(-1),
+  sent: Array(spots).fill(0),
+  there: Array(spots).fill(0),
+  asked: [0, 0],
+  day: 0,
+});
 
 /** Off the menu's card (walked away, asked to, or hit): a scribble under way stops too. */
 export function closeMenu(sim: Pick<SimContext, 'state' | 'events'>, left = false) {
@@ -44,13 +50,19 @@ export function closeMenu(sim: Pick<SimContext, 'state' | 'events'>, left = fals
 /** The menu as a save holds it. */
 export function menuOk(o: MenuState | undefined): boolean {
   if (!o || typeof o !== 'object') return false;
-  return [o.scribbled, o.joke, o.until].every((x) => Number.isInteger(x) && x >= 0) && o.joke < SCRIBBLES && Array.isArray(o.laughed) && o.laughed.every((x) => Number.isInteger(x) && x >= 0);
+  return (
+    [o.scribbled, o.joke, o.until].every((x) => Number.isInteger(x) && x >= 0) &&
+    o.joke < SCRIBBLES &&
+    Array.isArray(o.laughed) &&
+    o.laughed.every((x) => Number.isInteger(x) && x >= 0)
+  );
 }
 
 /** The cooler as a save holds it. */
 export function coolerOk(o: CoolerState | undefined, inmates: number, spots: number): boolean {
   if (!o || typeof o !== 'object') return false;
-  const each = (a: unknown, ok: (x: number) => boolean) => Array.isArray(a) && a.length === spots && a.every((x) => Number.isInteger(x) && ok(x));
+  const each = (a: unknown, ok: (x: number) => boolean) =>
+    Array.isArray(a) && a.length === spots && a.every((x) => Number.isInteger(x) && ok(x));
   return (
     each(o.who, (k) => k >= -1 && k < inmates) &&
     each(o.sent, (x) => x >= 0) &&

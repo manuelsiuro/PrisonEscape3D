@@ -87,7 +87,18 @@ export function settingsChanged() {
   tipsSeen.clear();
 }
 
-const coachState = { routine: '', attended: false, openMine: false, openOther: false, pickedUp: false, craftOpen: false, boardOpen: false, ate: false, tray: false, due: false };
+const coachState = {
+  routine: '',
+  attended: false,
+  openMine: false,
+  openOther: false,
+  pickedUp: false,
+  craftOpen: false,
+  boardOpen: false,
+  ate: false,
+  tray: false,
+  due: false,
+};
 
 /** The first day's guide: what the player has done, read from the game (every frame). */
 export function updateFirstDay(g: Game, pickedUp: boolean, dt: number) {

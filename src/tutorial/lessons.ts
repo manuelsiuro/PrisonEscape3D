@@ -147,7 +147,8 @@ const trayLost = (e: SimEvent): Key | null => (e.type === 'tray' && e.what !== '
 /** The nearest seat nobody's using or keeping. */
 const rollCallFail = (c: LessonCtx): Key | null => (ROUTINE[c.sim.state.routine].id === 'rollCall' ? null : 'lesson.rollcall.lost');
 /** The warden came to their square and they weren't in the yard. */
-const uncalled = (e: SimEvent): Key | null => (e.type === 'count' && ((e.what === 'called' && e.who < 0) || e.what === 'missed') ? 'lesson.rollcall.lost' : null);
+const uncalled = (e: SimEvent): Key | null =>
+  e.type === 'count' && ((e.what === 'called' && e.who < 0) || e.what === 'missed') ? 'lesson.rollcall.lost' : null;
 /** Lights Out's walk home: caught out late. */
 const nightFail = (c: LessonCtx): Key | null => (c.sim.state.lockdown || c.sim.state.solitary > 0 ? 'lesson.night.late' : null);
 /** The bed's night offers are over at 08:00: asleep past the tuck, or simply waited out. */
@@ -165,7 +166,7 @@ function freeSeat(sim: Sim): number | null {
   const s = sim.state;
   const x = Math.floor(s.player.x / UNIT);
   const z = Math.floor(s.player.z / UNIT);
-  const apart = (t: number) => Math.abs(t % MAP_W - x) + Math.abs(Math.floor(t / MAP_W) - z);
+  const apart = (t: number) => Math.abs((t % MAP_W) - x) + Math.abs(Math.floor(t / MAP_W) - z);
   const free = placesOf(sim.world).seats.filter((q) => !s.inmates.some((m) => m.goal === q.tile || m.seat === q.tile));
   return free.length ? free.reduce((a, b) => (apart(b.tile) < apart(a.tile) ? b : a)).tile : null;
 }
@@ -250,7 +251,11 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.heat.show', touch: 'lesson.heat.showTouch', done: (c) => c.sim.state.heat >= 20 },
-      { text: 'lesson.heat.hide', touch: 'lesson.heat.hideTouch', done: (c) => !itemDef(itemOf(c.sim.state.items.inv[c.sim.state.items.hand]) || n('magazine')).contraband },
+      {
+        text: 'lesson.heat.hide',
+        touch: 'lesson.heat.hideTouch',
+        done: (c) => !itemDef(itemOf(c.sim.state.items.inv[c.sim.state.items.hand]) || n('magazine')).contraband,
+      },
     ],
   },
   {
@@ -287,7 +292,11 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       // (Any wall of the cell will do: the poster covers a hole in any of them.)
-      { text: 'lesson.dig.chip', touch: 'lesson.dig.chipTouch', done: (c) => cellHole(c.sim, TILE.HOLE) || cellHole(c.sim, TILE.HOLE_POSTER) },
+      {
+        text: 'lesson.dig.chip',
+        touch: 'lesson.dig.chipTouch',
+        done: (c) => cellHole(c.sim, TILE.HOLE) || cellHole(c.sim, TILE.HOLE_POSTER),
+      },
       { text: 'lesson.dig.cover', touch: 'lesson.dig.coverTouch', done: (c) => cellHole(c.sim, TILE.HOLE_POSTER) },
     ],
   },
@@ -333,7 +342,12 @@ export const LESSONS: readonly Lesson[] = [
         done: (c) => c.sim.state.guards[0].mode === GUARD.INVESTIGATE && c.sim.state.guards[0].timer > NOISE_LOOK,
         // Both gone off out of his earshot: nothing left to try with.
         // (One dropped at the player's feet can still be picked up.)
-        fail: (c) => (count(c.sim, 'firecracker') === 0 && !c.sim.state.fuses.length && !c.sim.state.items.ground.some(([, v]) => itemOf(v) === n('firecracker')) ? 'lesson.noise.missed' : null),
+        fail: (c) =>
+          count(c.sim, 'firecracker') === 0 &&
+          !c.sim.state.fuses.length &&
+          !c.sim.state.items.ground.some(([, v]) => itemOf(v) === n('firecracker'))
+            ? 'lesson.noise.missed'
+            : null,
       },
       { text: 'lesson.noise.look', done: (c) => c.sim.state.guards[0].mode !== GUARD.INVESTIGATE, speed: 2 },
     ],
@@ -354,7 +368,12 @@ export const LESSONS: readonly Lesson[] = [
     steps: [
       { text: 'lesson.escape.room', done: zone('generator'), goal: () => tile(43, 19) },
       { text: 'lesson.escape.power', touch: 'lesson.escape.powerTouch', done: (c) => !c.sim.power },
-      { text: 'lesson.escape.fence', touch: 'lesson.escape.fenceTouch', done: (c) => c.sim.world.ground.kind.some((k) => k === TILE.FENCE_CUT), goal: () => tile(29, 51) },
+      {
+        text: 'lesson.escape.fence',
+        touch: 'lesson.escape.fenceTouch',
+        done: (c) => c.sim.world.ground.kind.some((k) => k === TILE.FENCE_CUT),
+        goal: () => tile(29, 51),
+      },
       { text: 'lesson.escape.out', done: (c) => c.sim.state.escaped > 0, goal: () => tile(29, 54) },
     ],
   },
@@ -374,11 +393,25 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.favors = [{ by: 0, kind: FAVOR.SCAVENGE, item: n('magazine'), target: -1, reward: 25, state: FAVOR_STATE.OFFERED }];
     },
     steps: [
-      { text: 'lesson.talk.talk', touch: 'lesson.talk.talkTouch', done: (c) => c.sim.state.talk === 0, goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z) },
+      {
+        text: 'lesson.talk.talk',
+        touch: 'lesson.talk.talkTouch',
+        done: (c) => c.sim.state.talk === 0,
+        goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z),
+      },
       { text: 'lesson.talk.gift', touch: 'lesson.talk.giftTouch', on: (e) => e.type === 'gift' },
       // (Taken on before the gift, or handed in already: the state says, whatever order it was done in.)
-      { text: 'lesson.talk.favor', done: (c) => favorPaid(c.sim) || (magazineFavor(c.sim)?.state ?? FAVOR_STATE.OFFERED) !== FAVOR_STATE.OFFERED, fail: talkFail },
-      { text: 'lesson.talk.handIn', done: (c) => favorPaid(c.sim), fail: talkFail, goal: (sim) => (carries(sim, 'magazine') ? tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z) : deskStand(sim)) },
+      {
+        text: 'lesson.talk.favor',
+        done: (c) => favorPaid(c.sim) || (magazineFavor(c.sim)?.state ?? FAVOR_STATE.OFFERED) !== FAVOR_STATE.OFFERED,
+        fail: talkFail,
+      },
+      {
+        text: 'lesson.talk.handIn',
+        done: (c) => favorPaid(c.sim),
+        fail: talkFail,
+        goal: (sim) => (carries(sim, 'magazine') ? tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z) : deskStand(sim)),
+      },
     ],
   },
   {
@@ -395,7 +428,16 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.cash = 60;
     },
     steps: [
-      { text: 'lesson.trade.talk', touch: 'lesson.trade.talkTouch', done: (c) => c.sim.state.talk === merchantAt(c.sim), goal: (sim) => { const b = sim.state.inmates[merchantAt(sim)].body; return tileAt(b.x, b.z); }, fail: tradeFail },
+      {
+        text: 'lesson.trade.talk',
+        touch: 'lesson.trade.talkTouch',
+        done: (c) => c.sim.state.talk === merchantAt(c.sim),
+        goal: (sim) => {
+          const b = sim.state.inmates[merchantAt(sim)].body;
+          return tileAt(b.x, b.z);
+        },
+        fail: tradeFail,
+      },
       { text: 'lesson.trade.buy', on: (e) => e.type === 'bought', fail: tradeFail },
     ],
   },
@@ -413,10 +455,27 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.job.go', done: zone('laundry'), goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].take), fail: jobFail },
-      { text: 'lesson.job.take', touch: 'lesson.job.takeTouch', done: (c) => carries(c.sim, 'dirty_laundry') || machineOn(c.sim) || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].take), fail: jobFail },
-      { text: 'lesson.job.wash', touch: 'lesson.job.washTouch', done: (c) => machineOn(c.sim) || carries(c.sim, 'clean_laundry') || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].machines[0]), fail: jobFail },
+      {
+        text: 'lesson.job.take',
+        touch: 'lesson.job.takeTouch',
+        done: (c) => carries(c.sim, 'dirty_laundry') || machineOn(c.sim) || c.sim.state.quota > 0,
+        goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].take),
+        fail: jobFail,
+      },
+      {
+        text: 'lesson.job.wash',
+        touch: 'lesson.job.washTouch',
+        done: (c) => machineOn(c.sim) || carries(c.sim, 'clean_laundry') || c.sim.state.quota > 0,
+        goal: (sim) => besideProp(sim, jobRooms(sim.world)[LAUNDRY].machines[0]),
+        fail: jobFail,
+      },
       // (The machine's load: back to it once it's done, then to the clean basket.)
-      { text: 'lesson.job.deliver', done: (c) => c.sim.state.quota > 0, goal: (sim) => besideProp(sim, carries(sim, 'clean_laundry') ? jobRooms(sim.world)[LAUNDRY].put : loadedMachine(sim)), fail: jobFail },
+      {
+        text: 'lesson.job.deliver',
+        done: (c) => c.sim.state.quota > 0,
+        goal: (sim) => besideProp(sim, carries(sim, 'clean_laundry') ? jobRooms(sim.world)[LAUNDRY].put : loadedMachine(sim)),
+        fail: jobFail,
+      },
     ],
   },
   {
@@ -444,8 +503,17 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.items.hand = 1;
     },
     steps: [
-      { text: 'lesson.disguise.wear', touch: 'lesson.disguise.wearTouch', done: (c) => itemOf(c.sim.state.items.inv[SLOT.OUTFIT]) === n('guard_outfit') },
-      { text: 'lesson.disguise.walk', done: (c) => c.sim.playerZone === 'gym' && c.sim.state.guards[0].sees && itemOf(c.sim.state.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), goal: () => tile(38, 29) },
+      {
+        text: 'lesson.disguise.wear',
+        touch: 'lesson.disguise.wearTouch',
+        done: (c) => itemOf(c.sim.state.items.inv[SLOT.OUTFIT]) === n('guard_outfit'),
+      },
+      {
+        text: 'lesson.disguise.walk',
+        done: (c) =>
+          c.sim.playerZone === 'gym' && c.sim.state.guards[0].sees && itemOf(c.sim.state.items.inv[SLOT.OUTFIT]) === n('guard_outfit'),
+        goal: () => tile(38, 29),
+      },
       { text: 'lesson.disguise.close', least: 6, done: () => true },
     ],
   },
@@ -464,11 +532,31 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       // (Down some other hole, or up outside already: on with the steps that are left.)
-      { text: 'lesson.tunnel.shaft', touch: 'lesson.tunnel.shaftTouch', done: (c) => c.sim.world.ground.kind[deskTile(c.sim)] === TILE.SHAFT || c.sim.state.layer === LAYER.UNDER || outside(c.sim), goal: (sim) => deskStand(sim) },
-      { text: 'lesson.tunnel.dirt', touch: 'lesson.tunnel.dirtTouch', done: (c) => !carries(c.sim, 'dirt') || c.sim.state.layer === LAYER.UNDER || outside(c.sim), goal: () => tile(22, 19) },
-      { text: 'lesson.tunnel.down', touch: 'lesson.tunnel.downTouch', done: (c) => c.sim.state.layer === LAYER.UNDER || outside(c.sim), goal: (sim) => deskStand(sim) },
+      {
+        text: 'lesson.tunnel.shaft',
+        touch: 'lesson.tunnel.shaftTouch',
+        done: (c) => c.sim.world.ground.kind[deskTile(c.sim)] === TILE.SHAFT || c.sim.state.layer === LAYER.UNDER || outside(c.sim),
+        goal: (sim) => deskStand(sim),
+      },
+      {
+        text: 'lesson.tunnel.dirt',
+        touch: 'lesson.tunnel.dirtTouch',
+        done: (c) => !carries(c.sim, 'dirt') || c.sim.state.layer === LAYER.UNDER || outside(c.sim),
+        goal: () => tile(22, 19),
+      },
+      {
+        text: 'lesson.tunnel.down',
+        touch: 'lesson.tunnel.downTouch',
+        done: (c) => c.sim.state.layer === LAYER.UNDER || outside(c.sim),
+        goal: (sim) => deskStand(sim),
+      },
       // (Past the fence's line, z 12; up any sooner past it does too. Up inside it: try again.)
-      { text: 'lesson.tunnel.dig', touch: 'lesson.tunnel.digTouch', done: (c) => (c.sim.state.layer === LAYER.UNDER && Math.floor(c.sim.state.player.z / UNIT) <= 11) || outside(c.sim), failOn: upInside },
+      {
+        text: 'lesson.tunnel.dig',
+        touch: 'lesson.tunnel.digTouch',
+        done: (c) => (c.sim.state.layer === LAYER.UNDER && Math.floor(c.sim.state.player.z / UNIT) <= 11) || outside(c.sim),
+        failOn: upInside,
+      },
       { text: 'lesson.tunnel.up', touch: 'lesson.tunnel.upTouch', done: (c) => outside(c.sim), failOn: upInside },
     ],
   },
@@ -483,15 +571,36 @@ export const LESSONS: readonly Lesson[] = [
       clockTo(sim, at(23, 15));
       place(sim, 9, 9, 13);
       pockets(sim, 'screwdriver');
-      fill(sim, containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'), 'bed_dummy');
+      fill(
+        sim,
+        containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'),
+        'bed_dummy',
+      );
       sim.state.items.hand = 0;
       sim.state.energy = 100;
     },
     steps: [
-      { text: 'lesson.vents.grate', touch: 'lesson.vents.grateTouch', done: (c) => c.sim.world.layers[LAYER.VENTS].kind[tile(9, 9)] === TILE.GRATE_OPEN || c.sim.state.layer !== LAYER.GROUND, goal: () => tile(9, 9) },
+      {
+        text: 'lesson.vents.grate',
+        touch: 'lesson.vents.grateTouch',
+        done: (c) => c.sim.world.layers[LAYER.VENTS].kind[tile(9, 9)] === TILE.GRATE_OPEN || c.sim.state.layer !== LAYER.GROUND,
+        goal: () => tile(9, 9),
+      },
       { text: 'lesson.vents.up', touch: 'lesson.vents.upTouch', done: (c) => c.sim.state.layer !== LAYER.GROUND },
-      { text: 'lesson.vents.crawl', done: (c) => c.sim.state.layer === LAYER.ROOF || (c.sim.state.layer === LAYER.VENTS && apart(c.sim.state.player, centre(tile(13, 38))) < 1.2), goal: () => tile(13, 38), layer: LAYER.VENTS },
-      { text: 'lesson.vents.roof', touch: 'lesson.vents.roofTouch', done: (c) => c.sim.state.layer === LAYER.ROOF, goal: () => tile(13, 38), layer: LAYER.VENTS },
+      {
+        text: 'lesson.vents.crawl',
+        done: (c) =>
+          c.sim.state.layer === LAYER.ROOF || (c.sim.state.layer === LAYER.VENTS && apart(c.sim.state.player, centre(tile(13, 38))) < 1.2),
+        goal: () => tile(13, 38),
+        layer: LAYER.VENTS,
+      },
+      {
+        text: 'lesson.vents.roof',
+        touch: 'lesson.vents.roofTouch',
+        done: (c) => c.sim.state.layer === LAYER.ROOF,
+        goal: () => tile(13, 38),
+        layer: LAYER.VENTS,
+      },
     ],
   },
   // ---------------------------------------------------------------- Prison life
@@ -512,7 +621,13 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.cash = 45;
     },
     steps: [
-      { text: 'lesson.guards.talk', touch: 'lesson.guards.talkTouch', done: (c) => guardTalking(c.sim.state) === PRATT, goal: (sim) => tileAt(sim.state.guards[PRATT].body.x, sim.state.guards[PRATT].body.z), fail: guardsFail },
+      {
+        text: 'lesson.guards.talk',
+        touch: 'lesson.guards.talkTouch',
+        done: (c) => guardTalking(c.sim.state) === PRATT,
+        goal: (sim) => tileAt(sim.state.guards[PRATT].body.x, sim.state.guards[PRATT].body.z),
+        fail: guardsFail,
+      },
       { text: 'lesson.guards.pay', on: (e) => e.type === 'bribe' && e.kind === 'paper', fail: guardsFail },
     ],
   },
@@ -531,7 +646,12 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.day.board', on: (e) => e.type === 'today' && e.event === 'drill' && e.phase === 'start' },
-      { text: 'lesson.day.muster', done: (c) => !!(c.sim.state.eventFlags & TODAY.MUSTERED), goal: (sim) => sim.prison.rollCall[0].z * MAP_W + sim.prison.rollCall[0].x, fail: (c) => (c.sim.state.eventFlags & TODAY.MISSED_DRILL ? 'lesson.day.missed' : null) },
+      {
+        text: 'lesson.day.muster',
+        done: (c) => !!(c.sim.state.eventFlags & TODAY.MUSTERED),
+        goal: (sim) => sim.prison.rollCall[0].z * MAP_W + sim.prison.rollCall[0].x,
+        fail: (c) => (c.sim.state.eventFlags & TODAY.MISSED_DRILL ? 'lesson.day.missed' : null),
+      },
       { text: 'lesson.day.over', speed: 4, on: (e) => e.type === 'today' && e.event === 'drill' && e.phase === 'end' },
     ],
   },
@@ -548,10 +668,22 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       // (A treat thrown first: he trusts the player already and never sniffs. On to the last step.)
-      { text: 'lesson.dogs.sniff', done: (c) => c.sim.state.dogs[0].sniffed > 0 || c.sim.state.dogs[0].trust >= TRUST_IGNORE, goal: (sim) => tileAt(sim.state.dogs[0].body.x, sim.state.dogs[0].body.z) },
+      {
+        text: 'lesson.dogs.sniff',
+        done: (c) => c.sim.state.dogs[0].sniffed > 0 || c.sim.state.dogs[0].trust >= TRUST_IGNORE,
+        goal: (sim) => tileAt(sim.state.dogs[0].body.x, sim.state.dogs[0].body.z),
+      },
       // (A throw that misses leaves the jerky lying where it fell, to pick up and throw again: no dead end.)
       { text: 'lesson.dogs.treat', touch: 'lesson.dogs.treatTouch', done: (c) => c.sim.state.dogs[0].trust >= TRUST_IGNORE },
-      { text: 'lesson.dogs.pass', least: 4, done: (c) => c.sim.state.dogs[0].trust >= TRUST_IGNORE && smellsOfContraband(c.sim) && apart(c.sim.state.player, c.sim.state.dogs[0].body) < 1.4, goal: (sim) => tileAt(sim.state.dogs[0].body.x, sim.state.dogs[0].body.z) },
+      {
+        text: 'lesson.dogs.pass',
+        least: 4,
+        done: (c) =>
+          c.sim.state.dogs[0].trust >= TRUST_IGNORE &&
+          smellsOfContraband(c.sim) &&
+          apart(c.sim.state.player, c.sim.state.dogs[0].body) < 1.4,
+        goal: (sim) => tileAt(sim.state.dogs[0].body.x, sim.state.dogs[0].body.z),
+      },
     ],
   },
   {
@@ -565,10 +697,19 @@ export const LESSONS: readonly Lesson[] = [
       fill(sim, sparkyDesk(sim), '', '', '', '', '', '', 'lighter');
     },
     steps: [
-      { text: 'lesson.rat.feed', touch: 'lesson.rat.feedTouch', done: (c) => !!petOf(c.sim.state) || usesOf(c.sim.state.items.inv.find((v) => itemOf(v) === n('caught_rat')) ?? 0) > 0, fail: ratFail },
+      {
+        text: 'lesson.rat.feed',
+        touch: 'lesson.rat.feedTouch',
+        done: (c) => !!petOf(c.sim.state) || usesOf(c.sim.state.items.inv.find((v) => itemOf(v) === n('caught_rat')) ?? 0) > 0,
+        fail: ratFail,
+      },
       { text: 'lesson.rat.tame', touch: 'lesson.rat.tameTouch', done: (c) => !!petOf(c.sim.state), fail: ratFail },
       // (Sent somewhere else, it comes back with nothing of use: the step waits for the desk.)
-      { text: 'lesson.rat.send', touch: 'lesson.rat.sendTouch', on: (e, sim) => e.type === 'rat' && e.what === 'sent' && e.container === sparkyDesk(sim) },
+      {
+        text: 'lesson.rat.send',
+        touch: 'lesson.rat.sendTouch',
+        on: (e, sim) => e.type === 'rat' && e.what === 'sent' && e.container === sparkyDesk(sim),
+      },
       { text: 'lesson.rat.back', done: (c) => carries(c.sim, 'lighter') },
     ],
   },
@@ -590,7 +731,8 @@ export const LESSONS: readonly Lesson[] = [
       {
         text: 'lesson.smuggle.order',
         touch: 'lesson.smuggle.orderTouch',
-        on: (e, sim) => e.type === 'smuggle' && e.what === 'ordered' && e.item === n('battery') && sim.state.order[2] === prisonDay(sim.state.step),
+        on: (e, sim) =>
+          e.type === 'smuggle' && e.what === 'ordered' && e.item === n('battery') && sim.state.order[2] === prisonDay(sim.state.step),
         // Ordered too late for tonight's drone (it needs an hour's notice): tomorrow night's is too long to wait.
         // (Or something else, or by a visitor: not what the lesson waits for.)
         fail: (c) => {
@@ -600,10 +742,27 @@ export const LESSONS: readonly Lesson[] = [
           return o[2] > prisonDay(c.sim.state.step) ? 'lesson.smuggle.late' : null;
         },
       },
-      { text: 'lesson.smuggle.go', touch: 'lesson.smuggle.goTouch', done: (c) => carries(c.sim, 'battery') || apart(c.sim.state.player, centre(dropTile(c.sim, prisonDay(c.sim.state.step)))) < 0.8, goal: (sim) => dropTile(sim, prisonDay(sim.state.step)), fail: (c) => smuggleFail(c.sim) },
+      {
+        text: 'lesson.smuggle.go',
+        touch: 'lesson.smuggle.goTouch',
+        done: (c) => carries(c.sim, 'battery') || apart(c.sim.state.player, centre(dropTile(c.sim, prisonDay(c.sim.state.step)))) < 0.8,
+        goal: (sim) => dropTile(sim, prisonDay(sim.state.step)),
+        fail: (c) => smuggleFail(c.sim),
+      },
       // (Landed, or picked up already, whatever step showed then.)
-      { text: 'lesson.smuggle.wait', speed: 6, done: (c) => c.sim.state.drops.length > 0 || carries(c.sim, 'battery'), fail: (c) => smuggleFail(c.sim) },
-      { text: 'lesson.smuggle.grab', touch: 'lesson.smuggle.grabTouch', done: (c) => carries(c.sim, 'battery'), goal: (sim) => dropTile(sim, prisonDay(sim.state.step)), fail: (c) => smuggleFail(c.sim) },
+      {
+        text: 'lesson.smuggle.wait',
+        speed: 6,
+        done: (c) => c.sim.state.drops.length > 0 || carries(c.sim, 'battery'),
+        fail: (c) => smuggleFail(c.sim),
+      },
+      {
+        text: 'lesson.smuggle.grab',
+        touch: 'lesson.smuggle.grabTouch',
+        done: (c) => carries(c.sim, 'battery'),
+        goal: (sim) => dropTile(sim, prisonDay(sim.state.step)),
+        fail: (c) => smuggleFail(c.sim),
+      },
     ],
   },
   {
@@ -621,7 +780,11 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.games.dice', touch: 'lesson.games.diceTouch', on: (e) => e.type === 'dice' && e.what === 'rolled', fail: gamesFail },
-      { text: 'lesson.games.reroll', on: (e) => e.type === 'dice' && (e.what === 'won' || e.what === 'lost' || e.what === 'push'), fail: gamesFail },
+      {
+        text: 'lesson.games.reroll',
+        on: (e) => e.type === 'dice' && (e.what === 'won' || e.what === 'lost' || e.what === 'push'),
+        fail: gamesFail,
+      },
       {
         text: 'lesson.games.wrestle',
         touch: 'lesson.games.wrestleTouch',
@@ -642,9 +805,24 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.cash = 20;
     },
     steps: [
-      { text: 'lesson.cards.start', touch: 'lesson.cards.startTouch', on: (e) => e.type === 'cheat' && e.what === 'dealt' && e.round === 0, fail: gamesFail },
-      { text: 'lesson.cards.lay', touch: 'lesson.cards.layTouch', on: (e) => e.type === 'cheat' && e.what === 'played' && e.by === 0, failOn: cheatOff },
-      { text: 'lesson.cards.call', touch: 'lesson.cards.callTouch', on: (e) => e.type === 'cheat' && e.what === 'called', failOn: cheatOff },
+      {
+        text: 'lesson.cards.start',
+        touch: 'lesson.cards.startTouch',
+        on: (e) => e.type === 'cheat' && e.what === 'dealt' && e.round === 0,
+        fail: gamesFail,
+      },
+      {
+        text: 'lesson.cards.lay',
+        touch: 'lesson.cards.layTouch',
+        on: (e) => e.type === 'cheat' && e.what === 'played' && e.by === 0,
+        failOn: cheatOff,
+      },
+      {
+        text: 'lesson.cards.call',
+        touch: 'lesson.cards.callTouch',
+        on: (e) => e.type === 'cheat' && e.what === 'called',
+        failOn: cheatOff,
+      },
       { text: 'lesson.cards.end', on: (e) => e.type === 'cheat' && (e.what === 'won' || e.what === 'lost'), failOn: cheatOff },
       // (A moment with the game's result on screen before the lesson's done.)
       { text: 'lesson.cards.over', done: () => true, least: 5 },
@@ -662,9 +840,23 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.inmates[0].opinion = 50;
     },
     steps: [
-      { text: 'lesson.hoops.shoot', touch: 'lesson.hoops.shootTouch', on: (e) => e.type === 'hoopShot' && e.by < 0, goal: (sim) => spotOn(sim, 0) },
-      { text: 'lesson.hoops.basket', touch: 'lesson.hoops.basketTouch', on: (e) => e.type === 'hoopShot' && e.by < 0 && (e.result === 'swish' || e.result === 'in') },
-      { text: 'lesson.hoops.shootout', touch: 'lesson.hoops.shootoutTouch', on: (e) => e.type === 'hoops' && e.what === 'start', fail: gamesFail },
+      {
+        text: 'lesson.hoops.shoot',
+        touch: 'lesson.hoops.shootTouch',
+        on: (e) => e.type === 'hoopShot' && e.by < 0,
+        goal: (sim) => spotOn(sim, 0),
+      },
+      {
+        text: 'lesson.hoops.basket',
+        touch: 'lesson.hoops.basketTouch',
+        on: (e) => e.type === 'hoopShot' && e.by < 0 && (e.result === 'swish' || e.result === 'in'),
+      },
+      {
+        text: 'lesson.hoops.shootout',
+        touch: 'lesson.hoops.shootoutTouch',
+        on: (e) => e.type === 'hoops' && e.what === 'start',
+        fail: gamesFail,
+      },
       {
         text: 'lesson.hoops.finish',
         on: (e) => e.type === 'hoops' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw'),
@@ -699,7 +891,12 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.board = b;
     },
     steps: [
-      { text: 'lesson.checkers.sit', touch: 'lesson.checkers.sitTouch', on: (e) => e.type === 'checkers' && e.what === 'sat', fail: boardFail },
+      {
+        text: 'lesson.checkers.sit',
+        touch: 'lesson.checkers.sitTouch',
+        on: (e) => e.type === 'checkers' && e.what === 'sat',
+        fail: boardFail,
+      },
       {
         text: 'lesson.checkers.jump',
         touch: 'lesson.checkers.jumpTouch',
@@ -722,13 +919,32 @@ export const LESSONS: readonly Lesson[] = [
       fill(sim, myDesk(sim), '');
       sim.state.items.containers[myDesk(sim)][0] = slot(n('pruno_bag'), 1);
       // (The tank empty: room for the new bag.)
-      fill(sim, containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'toilet'), '');
+      fill(
+        sim,
+        containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'toilet'),
+        '',
+      );
     },
     steps: [
       { text: 'lesson.pruno.brew', touch: 'lesson.pruno.brewTouch', done: (c) => carries(c.sim, 'pruno_bag') || bagsHidden(c.sim) >= 2 },
-      { text: 'lesson.pruno.hide', touch: 'lesson.pruno.hideTouch', done: (c) => bagsHidden(c.sim) >= 2, goal: (sim) => tile(...near(sim, 21, 20)) },
-      { text: 'lesson.pruno.sleep', touch: 'lesson.pruno.sleepTouch', on: (e) => e.type === 'pruno' && e.what === 'ripe' && !!e.mine, goal: () => tile(20, 18) },
-      { text: 'lesson.pruno.drink', touch: 'lesson.pruno.drinkTouch', on: (e) => e.type === 'pruno' && e.what === 'drunk', goal: () => tile(21, 18) },
+      {
+        text: 'lesson.pruno.hide',
+        touch: 'lesson.pruno.hideTouch',
+        done: (c) => bagsHidden(c.sim) >= 2,
+        goal: (sim) => tile(...near(sim, 21, 20)),
+      },
+      {
+        text: 'lesson.pruno.sleep',
+        touch: 'lesson.pruno.sleepTouch',
+        on: (e) => e.type === 'pruno' && e.what === 'ripe' && !!e.mine,
+        goal: () => tile(20, 18),
+      },
+      {
+        text: 'lesson.pruno.drink',
+        touch: 'lesson.pruno.drinkTouch',
+        on: (e) => e.type === 'pruno' && e.what === 'drunk',
+        goal: () => tile(21, 18),
+      },
       { text: 'lesson.pruno.over', done: () => true, least: 6 },
     ],
   },
@@ -749,11 +965,30 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.plots[beds - 1] = [CROP.VEG, 1, 1, 0];
     },
     steps: [
-      { text: 'lesson.garden.plant', touch: 'lesson.garden.plantTouch', on: (e) => e.type === 'garden' && e.what === 'planted', goal: (sim) => gardenBed(sim, 0, 1) },
-      { text: 'lesson.garden.water', touch: 'lesson.garden.waterTouch', done: (c) => c.sim.state.plots.some((b, k) => k !== wiltedBed(c.sim) && b[0] !== CROP.NONE && b[3] > 0 && b[1] < GROWN) },
-      { text: 'lesson.garden.wilted', touch: 'lesson.garden.wiltedTouch', done: (c) => (c.sim.state.plots[wiltedBed(c.sim)]?.[3] ?? 0) > 0, goal: (sim) => gardenBed(sim, wiltedBed(sim), 1) },
+      {
+        text: 'lesson.garden.plant',
+        touch: 'lesson.garden.plantTouch',
+        on: (e) => e.type === 'garden' && e.what === 'planted',
+        goal: (sim) => gardenBed(sim, 0, 1),
+      },
+      {
+        text: 'lesson.garden.water',
+        touch: 'lesson.garden.waterTouch',
+        done: (c) => c.sim.state.plots.some((b, k) => k !== wiltedBed(c.sim) && b[0] !== CROP.NONE && b[3] > 0 && b[1] < GROWN),
+      },
+      {
+        text: 'lesson.garden.wilted',
+        touch: 'lesson.garden.wiltedTouch',
+        done: (c) => (c.sim.state.plots[wiltedBed(c.sim)]?.[3] ?? 0) > 0,
+        goal: (sim) => gardenBed(sim, wiltedBed(sim), 1),
+      },
       // (Picked already, whatever step showed then.)
-      { text: 'lesson.garden.pick', touch: 'lesson.garden.pickTouch', done: (c) => c.sim.state.plots[c.sim.prison.leisure!.garden.w - 1]?.[0] === CROP.NONE, goal: (sim) => tile(sim.prison.leisure!.garden.x + sim.prison.leisure!.garden.w, sim.prison.leisure!.garden.z) },
+      {
+        text: 'lesson.garden.pick',
+        touch: 'lesson.garden.pickTouch',
+        done: (c) => c.sim.state.plots[c.sim.prison.leisure!.garden.w - 1]?.[0] === CROP.NONE,
+        goal: (sim) => tile(sim.prison.leisure!.garden.x + sim.prison.leisure!.garden.w, sim.prison.leisure!.garden.z),
+      },
       { text: 'lesson.garden.secret', done: () => true, least: 6 },
     ],
   },
@@ -775,11 +1010,34 @@ export const LESSONS: readonly Lesson[] = [
     steps: [
       { text: 'lesson.ratRace.train', touch: 'lesson.ratRace.trainTouch', done: (c) => petOf(c.sim.state)?.fed === 1, fail: raceFail },
       { text: 'lesson.ratRace.go', done: (c) => atTrack(c.sim), goal: (sim) => trackStart(sim), fail: raceFail },
-      { text: 'lesson.ratRace.card', speed: 8, done: (c) => cardUp(c.sim) && atTrack(c.sim), goal: (sim) => trackStart(sim), fail: raceFail },
+      {
+        text: 'lesson.ratRace.card',
+        speed: 8,
+        done: (c) => cardUp(c.sim) && atTrack(c.sim),
+        goal: (sim) => trackStart(sim),
+        fail: raceFail,
+      },
       // (Entered and backed in either order: each step looks at the race as it stands.)
-      { text: 'lesson.ratRace.enter', touch: 'lesson.ratRace.enterTouch', done: (c) => raceState(c.sim, 4) === 1, goal: (sim) => trackStart(sim), fail: (c) => (raceState(c.sim, 4) !== 1 && pastOff(c.sim) ? 'lesson.ratRace.late' : null) },
-      { text: 'lesson.ratRace.bet', touch: 'lesson.ratRace.betTouch', done: (c) => raceState(c.sim, 1) >= 0, goal: (sim) => trackStart(sim), fail: raceFail },
-      { text: 'lesson.ratRace.watch', speed: 6, on: (e) => e.type === 'race' && e.what === 'result', failOn: (e) => (e.type === 'race' && (e.what === 'off' || e.what === 'scratched') ? 'lesson.ratRace.off' : null) },
+      {
+        text: 'lesson.ratRace.enter',
+        touch: 'lesson.ratRace.enterTouch',
+        done: (c) => raceState(c.sim, 4) === 1,
+        goal: (sim) => trackStart(sim),
+        fail: (c) => (raceState(c.sim, 4) !== 1 && pastOff(c.sim) ? 'lesson.ratRace.late' : null),
+      },
+      {
+        text: 'lesson.ratRace.bet',
+        touch: 'lesson.ratRace.betTouch',
+        done: (c) => raceState(c.sim, 1) >= 0,
+        goal: (sim) => trackStart(sim),
+        fail: raceFail,
+      },
+      {
+        text: 'lesson.ratRace.watch',
+        speed: 6,
+        on: (e) => e.type === 'race' && e.what === 'result',
+        failOn: (e) => (e.type === 'race' && (e.what === 'off' || e.what === 'scratched') ? 'lesson.ratRace.off' : null),
+      },
       { text: 'lesson.ratRace.over', done: () => true, least: 6 },
     ],
   },
@@ -806,15 +1064,27 @@ export const LESSONS: readonly Lesson[] = [
       });
     },
     steps: [
-      { text: 'lesson.football.talk', touch: 'lesson.football.talkTouch', on: (e) => e.type === 'football' && e.what === 'start', goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z), fail: gamesFail },
+      {
+        text: 'lesson.football.talk',
+        touch: 'lesson.football.talkTouch',
+        on: (e) => e.type === 'football' && e.what === 'start',
+        goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z),
+        fail: gamesFail,
+      },
       {
         text: 'lesson.football.kick',
         touch: 'lesson.football.kickTouch',
         on: (e) => e.type === 'football' && e.what === 'kick',
-        goal: (sim) => (sim.state.match ? tile(Math.floor(sim.state.match.ball[0] / UNIT), Math.floor(sim.state.match.ball[1] / UNIT)) : null),
+        goal: (sim) =>
+          sim.state.match ? tile(Math.floor(sim.state.match.ball[0] / UNIT), Math.floor(sim.state.match.ball[1] / UNIT)) : null,
         failOn: matchFail,
       },
-      { text: 'lesson.football.play', on: (e) => e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw'), goal: (sim) => farNet(sim), failOn: (e) => (e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw') ? null : matchFail(e)) },
+      {
+        text: 'lesson.football.play',
+        on: (e) => e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw'),
+        goal: (sim) => farNet(sim),
+        failOn: (e) => (e.type === 'football' && (e.what === 'won' || e.what === 'lost' || e.what === 'draw') ? null : matchFail(e)),
+      },
       { text: 'lesson.football.over', done: () => true, least: 7 },
     ],
   },
@@ -831,9 +1101,27 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.tattoo.craft', touch: 'lesson.tattoo.craftTouch', done: (c) => carries(c.sim, 'tattoo_gun'), fail: inkFail },
-      { text: 'lesson.tattoo.offer', touch: 'lesson.tattoo.offerTouch', on: (e) => e.type === 'tattoo' && e.what === 'start' && !e.mine, goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z), fail: (c) => gamesFail(c) ?? inkFail(c) },
-      { text: 'lesson.tattoo.trace', touch: 'lesson.tattoo.traceTouch', on: (e) => e.type === 'tattoo' && e.what === 'done', failOn: inkOff },
-      { text: 'lesson.tattoo.mine', touch: 'lesson.tattoo.mineTouch', on: (e) => e.type === 'tattoo' && e.what === 'inked', goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z), fail: (c) => (c.sim.state.ink ? null : (gamesFail(c) ?? inkFail(c))), failOn: inkOff },
+      {
+        text: 'lesson.tattoo.offer',
+        touch: 'lesson.tattoo.offerTouch',
+        on: (e) => e.type === 'tattoo' && e.what === 'start' && !e.mine,
+        goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z),
+        fail: (c) => gamesFail(c) ?? inkFail(c),
+      },
+      {
+        text: 'lesson.tattoo.trace',
+        touch: 'lesson.tattoo.traceTouch',
+        on: (e) => e.type === 'tattoo' && e.what === 'done',
+        failOn: inkOff,
+      },
+      {
+        text: 'lesson.tattoo.mine',
+        touch: 'lesson.tattoo.mineTouch',
+        on: (e) => e.type === 'tattoo' && e.what === 'inked',
+        goal: (sim) => tileAt(sim.state.inmates[0].body.x, sim.state.inmates[0].body.z),
+        fail: (c) => (c.sim.state.ink ? null : (gamesFail(c) ?? inkFail(c))),
+        failOn: inkOff,
+      },
       { text: 'lesson.tattoo.over', done: () => true, least: 6 },
     ],
   },
@@ -859,8 +1147,19 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.talent.watch', done: (c) => dayMinute(c.sim.state.step) >= turnFrom(tonight(c.sim)), least: 5 },
-      { text: 'lesson.talent.stage', touch: 'lesson.talent.stageTouch', on: (e) => e.type === 'stage' && e.what === 'start', goal: (sim) => stageTile(sim), fail: (c) => (talentOn(c.sim) ? null : 'lesson.talent.late') },
-      { text: 'lesson.talent.play', touch: 'lesson.talent.playTouch', on: (e) => e.type === 'stage' && e.what === 'done', failOn: (e) => (e.type === 'stage' && e.what === 'off' ? 'lesson.talent.off' : null) },
+      {
+        text: 'lesson.talent.stage',
+        touch: 'lesson.talent.stageTouch',
+        on: (e) => e.type === 'stage' && e.what === 'start',
+        goal: (sim) => stageTile(sim),
+        fail: (c) => (talentOn(c.sim) ? null : 'lesson.talent.late'),
+      },
+      {
+        text: 'lesson.talent.play',
+        touch: 'lesson.talent.playTouch',
+        on: (e) => e.type === 'stage' && e.what === 'done',
+        failOn: (e) => (e.type === 'stage' && e.what === 'off' ? 'lesson.talent.off' : null),
+      },
       { text: 'lesson.talent.over', done: () => true, least: 7 },
     ],
   },
@@ -878,10 +1177,28 @@ export const LESSONS: readonly Lesson[] = [
       place(sim, q.spots[0].x, q.spots[0].z + 0, q.face);
     },
     steps: [
-      { text: 'lesson.quiz.join', touch: 'lesson.quiz.joinTouch', on: (e) => e.type === 'quiz' && e.what === 'start', goal: (sim) => tile(sim.prison.leisure!.quiz!.spots[0].x, sim.prison.leisure!.quiz!.spots[0].z), fail: (c) => (quizOn(c.sim) ? null : 'lesson.quiz.late') },
+      {
+        text: 'lesson.quiz.join',
+        touch: 'lesson.quiz.joinTouch',
+        on: (e) => e.type === 'quiz' && e.what === 'start',
+        goal: (sim) => tile(sim.prison.leisure!.quiz!.spots[0].x, sim.prison.leisure!.quiz!.spots[0].z),
+        fail: (c) => (quizOn(c.sim) ? null : 'lesson.quiz.late'),
+      },
       // (Or the quiz played out without an answer of the player's: the others were quicker every time.)
-      { text: 'lesson.quiz.answer', touch: 'lesson.quiz.answerTouch', on: (e) => e.type === 'quiz' && (((e.what === 'right' || e.what === 'wrong') && e.by === 0) || e.what === 'won' || e.what === 'tie' || e.what === 'lost'), failOn: quizFail },
-      { text: 'lesson.quiz.play', on: (e) => e.type === 'quiz' && (e.what === 'won' || e.what === 'tie' || e.what === 'lost'), done: (c) => !c.sim.state.quiz && c.sim.state.quizDay > 0, failOn: quizFail },
+      {
+        text: 'lesson.quiz.answer',
+        touch: 'lesson.quiz.answerTouch',
+        on: (e) =>
+          e.type === 'quiz' &&
+          (((e.what === 'right' || e.what === 'wrong') && e.by === 0) || e.what === 'won' || e.what === 'tie' || e.what === 'lost'),
+        failOn: quizFail,
+      },
+      {
+        text: 'lesson.quiz.play',
+        on: (e) => e.type === 'quiz' && (e.what === 'won' || e.what === 'tie' || e.what === 'lost'),
+        done: (c) => !c.sim.state.quiz && c.sim.state.quizDay > 0,
+        failOn: quizFail,
+      },
       { text: 'lesson.quiz.over', done: () => true, least: 7 },
     ],
   },
@@ -924,7 +1241,17 @@ export const LESSONS: readonly Lesson[] = [
     steps: [
       { text: 'lesson.laps.go', done: zone('sports'), goal: () => tile(35, 39), fail: lapsFail },
       { text: 'lesson.laps.run', on: (e) => e.type === 'lap', goal: (sim) => nextCorner(sim), fail: lapsFail },
-      { text: 'lesson.laps.pullup', touch: 'lesson.laps.pullupTouch', on: (e) => e.type === 'trained' && e.attr === 'str', goal: (sim) => besideProp(sim, sim.world.props.findIndex((q) => q.kind === 'pullup')), fail: lapsFail },
+      {
+        text: 'lesson.laps.pullup',
+        touch: 'lesson.laps.pullupTouch',
+        on: (e) => e.type === 'trained' && e.attr === 'str',
+        goal: (sim) =>
+          besideProp(
+            sim,
+            sim.world.props.findIndex((q) => q.kind === 'pullup'),
+          ),
+        fail: lapsFail,
+      },
     ],
   },
   {
@@ -939,10 +1266,30 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.energy = 40;
     },
     steps: [
-      { text: 'lesson.meals.take', touch: 'lesson.meals.takeTouch', on: (e) => e.type === 'tray' && e.what === 'take', goal: (sim) => placesOf(sim.world).counters[2].tile, fail: mealFail },
-      { text: 'lesson.meals.sit', touch: 'lesson.meals.sitTouch', done: (c) => c.sim.state.seat >= 0, goal: freeSeat, fail: mealFail, failOn: trayLost },
+      {
+        text: 'lesson.meals.take',
+        touch: 'lesson.meals.takeTouch',
+        on: (e) => e.type === 'tray' && e.what === 'take',
+        goal: (sim) => placesOf(sim.world).counters[2].tile,
+        fail: mealFail,
+      },
+      {
+        text: 'lesson.meals.sit',
+        touch: 'lesson.meals.sitTouch',
+        done: (c) => c.sim.state.seat >= 0,
+        goal: freeSeat,
+        fail: mealFail,
+        failOn: trayLost,
+      },
       { text: 'lesson.meals.eat', on: (e) => e.type === 'meal', fail: mealFail, failOn: trayLost },
-      { text: 'lesson.meals.back', touch: 'lesson.meals.backTouch', on: (e) => e.type === 'tray' && e.what === 'return', goal: (sim) => placesOf(sim.world).counters[2].tile, fail: mealFail, failOn: trayLost },
+      {
+        text: 'lesson.meals.back',
+        touch: 'lesson.meals.backTouch',
+        on: (e) => e.type === 'tray' && e.what === 'return',
+        goal: (sim) => placesOf(sim.world).counters[2].tile,
+        fail: mealFail,
+        failOn: trayLost,
+      },
     ],
   },
   {
@@ -958,7 +1305,13 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.heat = 18;
     },
     steps: [
-      { text: 'lesson.showers.on', touch: 'lesson.showers.onTouch', on: (e) => e.type === 'wash' && e.on, goal: freeShower, fail: showerFail },
+      {
+        text: 'lesson.showers.on',
+        touch: 'lesson.showers.onTouch',
+        on: (e) => e.type === 'wash' && e.on,
+        goal: freeShower,
+        fail: showerFail,
+      },
       // (+25: too far for the slow climb on its own to skip this, 10 s under the water.)
       { text: 'lesson.showers.wash', done: (c) => c.sim.state.energy >= 65 || !c.sim.state.washing, fail: showerFail },
       { text: 'lesson.showers.off', on: (e) => e.type === 'wash' && !e.on },
@@ -979,10 +1332,33 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.present = 10 * STEPS_PER_MINUTE;
     },
     steps: [
-      { text: 'lesson.rollcall.square', done: (c) => onOwnSquare(c.sim), goal: (sim) => placesOf(sim.world).rollCall[0].tile, fail: rollCallFail, failOn: uncalled },
-      { text: 'lesson.rollcall.wait', done: (c) => c.sim.state.calling > 0, goal: (sim) => placesOf(sim.world).rollCall[0].tile, fail: rollCallFail, failOn: uncalled },
-      { text: 'lesson.rollcall.answer', touch: 'lesson.rollcall.answerTouch', on: (e) => e.type === 'count' && e.what === 'answered', fail: rollCallFail, failOn: uncalled },
-      { text: 'lesson.rollcall.stay', done: (c) => c.sim.state.attended, goal: (sim) => placesOf(sim.world).rollCall[0].tile, fail: rollCallFail },
+      {
+        text: 'lesson.rollcall.square',
+        done: (c) => onOwnSquare(c.sim),
+        goal: (sim) => placesOf(sim.world).rollCall[0].tile,
+        fail: rollCallFail,
+        failOn: uncalled,
+      },
+      {
+        text: 'lesson.rollcall.wait',
+        done: (c) => c.sim.state.calling > 0,
+        goal: (sim) => placesOf(sim.world).rollCall[0].tile,
+        fail: rollCallFail,
+        failOn: uncalled,
+      },
+      {
+        text: 'lesson.rollcall.answer',
+        touch: 'lesson.rollcall.answerTouch',
+        on: (e) => e.type === 'count' && e.what === 'answered',
+        fail: rollCallFail,
+        failOn: uncalled,
+      },
+      {
+        text: 'lesson.rollcall.stay',
+        done: (c) => c.sim.state.attended,
+        goal: (sim) => placesOf(sim.world).rollCall[0].tile,
+        fail: rollCallFail,
+      },
     ],
   },
   {
@@ -998,9 +1374,20 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.energy = 40;
     },
     steps: [
-      { text: 'lesson.night.home', done: (c) => c.sim.playerZone === 'playerCell', goal: (sim) => placesOf(sim.world).bedside[1], fail: nightFail },
+      {
+        text: 'lesson.night.home',
+        done: (c) => c.sim.playerZone === 'playerCell',
+        goal: (sim) => placesOf(sim.world).bedside[1],
+        fail: nightFail,
+      },
       { text: 'lesson.night.bell', done: (c) => ROUTINE[c.sim.state.routine].id === 'lightsOut', speed: 3 },
-      { text: 'lesson.night.tuck', touch: 'lesson.night.tuckTouch', on: (e) => e.type === 'bedDummy' && e.in, goal: (sim) => placesOf(sim.world).bedside[1], fail: morningFail },
+      {
+        text: 'lesson.night.tuck',
+        touch: 'lesson.night.tuckTouch',
+        on: (e) => e.type === 'bedDummy' && e.in,
+        goal: (sim) => placesOf(sim.world).bedside[1],
+        fail: morningFail,
+      },
       { text: 'lesson.night.out', touch: 'lesson.night.outTouch', on: (e) => e.type === 'bedDummy' && !e.in, fail: morningFail },
       { text: 'lesson.night.sleep', touch: 'lesson.night.sleepTouch', done: (c) => c.sim.state.sleeping, fail: morningFail },
       { text: 'lesson.night.wake', done: (c) => !c.sim.state.sleeping },
@@ -1019,10 +1406,32 @@ export const LESSONS: readonly Lesson[] = [
       place(sim, 47, 37, 5);
     },
     steps: [
-      { text: 'lesson.gardener.go', done: zone('garden'), goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take), fail: jobFail },
-      { text: 'lesson.gardener.take', touch: 'lesson.gardener.takeTouch', done: (c) => carries(c.sim, 'seedlings') || machineOn(c.sim, GARDENER) || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take), fail: jobFail },
-      { text: 'lesson.gardener.plant', touch: 'lesson.gardener.plantTouch', done: (c) => machineOn(c.sim, GARDENER) || carries(c.sim, 'produce') || c.sim.state.quota > 0, goal: (sim) => besideProp(sim, nearestMachine(sim, GARDENER)), fail: jobFail },
-      { text: 'lesson.gardener.crate', done: (c) => c.sim.state.quota > 0, goal: (sim) => besideProp(sim, carries(sim, 'produce') ? jobRooms(sim.world)[GARDENER].put : loadedMachine(sim, GARDENER)), fail: jobFail },
+      {
+        text: 'lesson.gardener.go',
+        done: zone('garden'),
+        goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take),
+        fail: jobFail,
+      },
+      {
+        text: 'lesson.gardener.take',
+        touch: 'lesson.gardener.takeTouch',
+        done: (c) => carries(c.sim, 'seedlings') || machineOn(c.sim, GARDENER) || c.sim.state.quota > 0,
+        goal: (sim) => besideProp(sim, jobRooms(sim.world)[GARDENER].take),
+        fail: jobFail,
+      },
+      {
+        text: 'lesson.gardener.plant',
+        touch: 'lesson.gardener.plantTouch',
+        done: (c) => machineOn(c.sim, GARDENER) || carries(c.sim, 'produce') || c.sim.state.quota > 0,
+        goal: (sim) => besideProp(sim, nearestMachine(sim, GARDENER)),
+        fail: jobFail,
+      },
+      {
+        text: 'lesson.gardener.crate',
+        done: (c) => c.sim.state.quota > 0,
+        goal: (sim) => besideProp(sim, carries(sim, 'produce') ? jobRooms(sim.world)[GARDENER].put : loadedMachine(sim, GARDENER)),
+        fail: jobFail,
+      },
     ],
   },
   {
@@ -1038,8 +1447,18 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.library.take', touch: 'lesson.library.takeTouch', on: (e) => e.type === 'book' && e.on },
-      { text: 'lesson.library.sit', touch: 'lesson.library.sitTouch', done: (c) => c.sim.state.train >= 0, fail: (c) => (c.sim.state.book ? null : 'lesson.library.left') },
-      { text: 'lesson.library.read', touch: 'lesson.library.readTouch', on: (e) => e.type === 'trained', fail: (c) => (c.sim.state.book ? null : 'lesson.library.left') },
+      {
+        text: 'lesson.library.sit',
+        touch: 'lesson.library.sitTouch',
+        done: (c) => c.sim.state.train >= 0,
+        fail: (c) => (c.sim.state.book ? null : 'lesson.library.left'),
+      },
+      {
+        text: 'lesson.library.read',
+        touch: 'lesson.library.readTouch',
+        on: (e) => e.type === 'trained',
+        fail: (c) => (c.sim.state.book ? null : 'lesson.library.left'),
+      },
       { text: 'lesson.library.over', done: () => true, least: 8 },
     ],
   },
@@ -1064,10 +1483,17 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.vending.open', touch: 'lesson.vending.openTouch', done: (c) => c.sim.state.vendOpen },
-      { text: 'lesson.vending.buy', touch: 'lesson.vending.buyTouch', on: (e) => e.type === 'vend' && e.what === 'got' && !!e.item && !!itemDef(e.item).food },
+      {
+        text: 'lesson.vending.buy',
+        touch: 'lesson.vending.buyTouch',
+        on: (e) => e.type === 'vend' && e.what === 'got' && !!e.item && !!itemDef(e.item).food,
+      },
       { text: 'lesson.vending.drink', touch: 'lesson.vending.drinkTouch', on: (e) => e.type === 'ate' },
       // (By the state, not an event: a second thing bought before drinking the first has already stuck, and been freed.)
-      { text: 'lesson.vending.again', done: (c) => c.sim.state.vendBought >= vendLessonBuys(c.sim.state.salt) + 2 && c.sim.state.vend.who !== VEND_PLAYER },
+      {
+        text: 'lesson.vending.again',
+        done: (c) => c.sim.state.vendBought >= vendLessonBuys(c.sim.state.salt) + 2 && c.sim.state.vend.who !== VEND_PLAYER,
+      },
       { text: 'lesson.vending.thump', done: (c) => !c.sim.state.vend.jam },
       { text: 'lesson.vending.over', done: () => true, least: 8 },
     ],
@@ -1092,7 +1518,12 @@ export const LESSONS: readonly Lesson[] = [
       { text: 'lesson.menu.read', touch: 'lesson.menu.readTouch', done: (c) => c.sim.state.menuOpen },
       { text: 'lesson.menu.dishes', done: () => true, least: 7 },
       { text: 'lesson.menu.scribble', touch: 'lesson.menu.scribbleTouch', done: (c) => c.sim.state.menu.scribbled > 0 },
-      { text: 'lesson.menu.cooler', touch: 'lesson.menu.coolerTouch', on: (e) => e.type === 'cooler' && e.what === 'drank', goal: (sim) => sim.world.def.cooler!.spots[1].z * 64 + sim.world.def.cooler!.spots[1].x },
+      {
+        text: 'lesson.menu.cooler',
+        touch: 'lesson.menu.coolerTouch',
+        on: (e) => e.type === 'cooler' && e.what === 'drank',
+        goal: (sim) => sim.world.def.cooler!.spots[1].z * 64 + sim.world.def.cooler!.spots[1].x,
+      },
       { text: 'lesson.menu.over', done: () => true, least: 8 },
     ],
   },
@@ -1118,9 +1549,25 @@ export const LESSONS: readonly Lesson[] = [
       place(sim, c.line[2].x, c.line[2].z + 1, 13);
     },
     steps: [
-      { text: 'lesson.payphone.join', touch: 'lesson.payphone.joinTouch', on: (e) => e.type === 'phone' && e.what === 'joined' && e.who === -1, goal: (sim) => tile(sim.prison.comms!.line[0].x, sim.prison.comms!.line[0].z), fail: (c) => (c.sim.state.booth[0] < 0 ? 'lesson.payphone.missed' : phoneFail(c)) },
-      { text: 'lesson.payphone.listen', on: (e) => e.type === 'phone' && e.what === 'overheard', goal: (sim) => tile(sim.prison.comms!.line[0].x, sim.prison.comms!.line[0].z), fail: (c) => (c.sim.state.booth[0] < 0 && !c.sim.state.phoned[4] ? 'lesson.payphone.missed' : phoneFail(c)) },
-      { text: 'lesson.payphone.call', on: (e) => e.type === 'phone' && e.what === 'home', goal: (sim) => tile(sim.prison.comms!.phone.x, sim.prison.comms!.phone.z), fail: (c) => (placeInLine(c.sim.state) < 0 && !c.sim.state.call && !atPhone(c.sim) ? 'lesson.payphone.left' : phoneFail(c)) },
+      {
+        text: 'lesson.payphone.join',
+        touch: 'lesson.payphone.joinTouch',
+        on: (e) => e.type === 'phone' && e.what === 'joined' && e.who === -1,
+        goal: (sim) => tile(sim.prison.comms!.line[0].x, sim.prison.comms!.line[0].z),
+        fail: (c) => (c.sim.state.booth[0] < 0 ? 'lesson.payphone.missed' : phoneFail(c)),
+      },
+      {
+        text: 'lesson.payphone.listen',
+        on: (e) => e.type === 'phone' && e.what === 'overheard',
+        goal: (sim) => tile(sim.prison.comms!.line[0].x, sim.prison.comms!.line[0].z),
+        fail: (c) => (c.sim.state.booth[0] < 0 && !c.sim.state.phoned[4] ? 'lesson.payphone.missed' : phoneFail(c)),
+      },
+      {
+        text: 'lesson.payphone.call',
+        on: (e) => e.type === 'phone' && e.what === 'home',
+        goal: (sim) => tile(sim.prison.comms!.phone.x, sim.prison.comms!.phone.z),
+        fail: (c) => (placeInLine(c.sim.state) < 0 && !c.sim.state.call && !atPhone(c.sim) ? 'lesson.payphone.left' : phoneFail(c)),
+      },
       { text: 'lesson.payphone.mail', on: (e) => e.type === 'phone' && e.what === 'mail', speed: 8 },
     ],
   },
@@ -1137,12 +1584,26 @@ export const LESSONS: readonly Lesson[] = [
       place(sim, c.phone.x, c.phone.z, c.phone.face);
     },
     steps: [
-      { text: 'lesson.cousin.dial', on: (e) => e.type === 'phone' && e.what === 'call' && e.to === CALLEE.COUSIN, goal: (sim) => tile(sim.prison.comms!.phone.x, sim.prison.comms!.phone.z), fail: phoneFail },
+      {
+        text: 'lesson.cousin.dial',
+        on: (e) => e.type === 'phone' && e.what === 'call' && e.to === CALLEE.COUSIN,
+        goal: (sim) => tile(sim.prison.comms!.phone.x, sim.prison.comms!.phone.z),
+        fail: phoneFail,
+      },
       {
         text: 'lesson.cousin.say',
         touch: 'lesson.cousin.sayTouch',
         on: (e) => e.type === 'phone' && e.what === 'lou' && !!e.ok && !e.blown,
-        failOn: (e) => (e.type === 'phone' ? (e.what === 'lou' && !e.ok ? 'lesson.cousin.lost' : e.what === 'lou' && e.blown ? 'lesson.cousin.blown' : e.what === 'silence' || e.what === 'hungUp' ? 'lesson.cousin.hungUp' : null) : null),
+        failOn: (e) =>
+          e.type === 'phone'
+            ? e.what === 'lou' && !e.ok
+              ? 'lesson.cousin.lost'
+              : e.what === 'lou' && e.blown
+                ? 'lesson.cousin.blown'
+                : e.what === 'silence' || e.what === 'hungUp'
+                  ? 'lesson.cousin.hungUp'
+                  : null
+            : null,
       },
       { text: 'lesson.cousin.over', done: () => true, least: 8 },
     ],
@@ -1161,16 +1622,36 @@ export const LESSONS: readonly Lesson[] = [
       place(sim, k.x, k.z + 3, 13);
     },
     steps: [
-      { text: 'lesson.kiosk.login', touch: 'lesson.kiosk.loginTouch', on: (e) => e.type === 'kiosk' && e.what === 'login', goal: (sim) => tile(sim.prison.comms!.kiosk.x, sim.prison.comms!.kiosk.z), fail: kioskFail },
+      {
+        text: 'lesson.kiosk.login',
+        touch: 'lesson.kiosk.loginTouch',
+        on: (e) => e.type === 'kiosk' && e.what === 'login',
+        goal: (sim) => tile(sim.prison.comms!.kiosk.x, sim.prison.comms!.kiosk.z),
+        fail: kioskFail,
+      },
       // (Done by what the day holds, not the moment: a letter, an order, a course done before their step still count.)
-      { text: 'lesson.kiosk.write', touch: 'lesson.kiosk.writeTouch', done: (c) => c.sim.state.post[0] === prisonDay(c.sim.state.step), fail: kioskLeft },
-      { text: 'lesson.kiosk.order', touch: 'lesson.kiosk.orderTouch', done: (c) => c.sim.state.post[4] === prisonDay(c.sim.state.step), fail: kioskLeft },
+      {
+        text: 'lesson.kiosk.write',
+        touch: 'lesson.kiosk.writeTouch',
+        done: (c) => c.sim.state.post[0] === prisonDay(c.sim.state.step),
+        fail: kioskLeft,
+      },
+      {
+        text: 'lesson.kiosk.order',
+        touch: 'lesson.kiosk.orderTouch',
+        done: (c) => c.sim.state.post[4] === prisonDay(c.sim.state.step),
+        fail: kioskLeft,
+      },
       {
         text: 'lesson.kiosk.course',
         touch: 'lesson.kiosk.courseTouch',
         done: (c) => c.sim.state.feats[FEAT.courses] > 0,
         // (Today's course begun and over without an end: given up, or cut short by logging out.)
-        fail: (c) => kioskLeft(c) ?? (c.sim.state.post[5] === prisonDay(c.sim.state.step) && !c.sim.state.course.length && !c.sim.state.feats[FEAT.courses] ? 'lesson.kiosk.quit' : null),
+        fail: (c) =>
+          kioskLeft(c) ??
+          (c.sim.state.post[5] === prisonDay(c.sim.state.step) && !c.sim.state.course.length && !c.sim.state.feats[FEAT.courses]
+            ? 'lesson.kiosk.quit'
+            : null),
       },
       { text: 'lesson.kiosk.mail', on: (e) => e.type === 'kiosk' && e.what === 'goods', speed: 8 },
       { text: 'lesson.kiosk.over', done: () => true, least: 8 },
@@ -1202,7 +1683,12 @@ export const LESSONS: readonly Lesson[] = [
         goal: (sim) => jobTile(sim, J.TARGET),
         fail: (c) => (jobOf(c.sim.state) ? null : 'lesson.oddjob.lost'),
       },
-      { text: 'lesson.oddjob.back', on: (e) => e.type === 'oddjob' && e.what === 'paid', goal: (sim) => jobTile(sim, J.GIVER), fail: (c) => (jobOf(c.sim.state) || c.sim.state.feats[FEAT.oddJobs] ? null : 'lesson.oddjob.lost') },
+      {
+        text: 'lesson.oddjob.back',
+        on: (e) => e.type === 'oddjob' && e.what === 'paid',
+        goal: (sim) => jobTile(sim, J.GIVER),
+        fail: (c) => (jobOf(c.sim.state) || c.sim.state.feats[FEAT.oddJobs] ? null : 'lesson.oddjob.lost'),
+      },
       { text: 'lesson.oddjob.over', done: () => true, least: 8 },
     ],
   },
@@ -1220,8 +1706,19 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.items.hand = 0;
     },
     steps: [
-      { text: 'lesson.lockpick.start', touch: 'lesson.lockpick.startTouch', on: (e) => e.type === 'pick' && e.what === 'start', goal: () => tile(42, 22), fail: pickFail },
-      { text: 'lesson.lockpick.pins', touch: 'lesson.lockpick.pinsTouch', done: (c) => c.sim.state.picked.length > 0 || zone('generator')(c), fail: pickFail },
+      {
+        text: 'lesson.lockpick.start',
+        touch: 'lesson.lockpick.startTouch',
+        on: (e) => e.type === 'pick' && e.what === 'start',
+        goal: () => tile(42, 22),
+        fail: pickFail,
+      },
+      {
+        text: 'lesson.lockpick.pins',
+        touch: 'lesson.lockpick.pinsTouch',
+        done: (c) => c.sim.state.picked.length > 0 || zone('generator')(c),
+        fail: pickFail,
+      },
       // (It shuts again before long: picked again, or the lockpick broken on it.)
       { text: 'lesson.lockpick.through', done: zone('generator'), goal: () => tile(43, 19), fail: pickFail },
     ],
@@ -1244,7 +1741,13 @@ export const LESSONS: readonly Lesson[] = [
     steps: [
       // (Close enough to climb in: the Hide in button is there.)
       { text: 'lesson.stowaway.tail', done: (c) => atTail(c.sim) || c.sim.state.stowed, goal: tailOf, fail: stowFail },
-      { text: 'lesson.stowaway.hide', touch: 'lesson.stowaway.hideTouch', done: (c) => c.sim.state.stowed || c.sim.state.escaped > 0, goal: tailOf, fail: stowFail },
+      {
+        text: 'lesson.stowaway.hide',
+        touch: 'lesson.stowaway.hideTouch',
+        done: (c) => c.sim.state.stowed || c.sim.state.escaped > 0,
+        goal: tailOf,
+        fail: stowFail,
+      },
       { text: 'lesson.stowaway.wait', touch: 'lesson.stowaway.waitTouch', done: (c) => c.sim.state.escaped > 0, fail: stowFail },
     ],
   },
@@ -1263,9 +1766,24 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
     },
     steps: [
-      { text: 'lesson.bluff.window', done: (c) => atWindow(c.sim) || c.sim.state.waved > 0, goal: (sim) => checkpointOf(sim)!.window[0].z * MAP_W + checkpointOf(sim)!.window[0].x, fail: bluffFail },
-      { text: 'lesson.bluff.show', touch: 'lesson.bluff.showTouch', done: (c) => c.sim.state.waved > 0 || c.sim.state.escaped > 0, fail: bluffFail },
-      { text: 'lesson.bluff.out', done: (c) => c.sim.state.escaped > 0, fail: (c) => (!c.sim.state.waved && !c.sim.state.escaped ? 'lesson.bluff.shut' : null), goal: (sim) => (checkpointOf(sim)!.gates[0].z + 1) * MAP_W + checkpointOf(sim)!.gates[0].x },
+      {
+        text: 'lesson.bluff.window',
+        done: (c) => atWindow(c.sim) || c.sim.state.waved > 0,
+        goal: (sim) => checkpointOf(sim)!.window[0].z * MAP_W + checkpointOf(sim)!.window[0].x,
+        fail: bluffFail,
+      },
+      {
+        text: 'lesson.bluff.show',
+        touch: 'lesson.bluff.showTouch',
+        done: (c) => c.sim.state.waved > 0 || c.sim.state.escaped > 0,
+        fail: bluffFail,
+      },
+      {
+        text: 'lesson.bluff.out',
+        done: (c) => c.sim.state.escaped > 0,
+        fail: (c) => (!c.sim.state.waved && !c.sim.state.escaped ? 'lesson.bluff.shut' : null),
+        goal: (sim) => (checkpointOf(sim)!.gates[0].z + 1) * MAP_W + checkpointOf(sim)!.gates[0].x,
+      },
     ],
   },
   {
@@ -1284,10 +1802,20 @@ export const LESSONS: readonly Lesson[] = [
       pockets(sim, 'glider');
       sim.state.items.hand = 0;
       // A dummy asleep in the player's bed for the night's bed checks.
-      fill(sim, containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'), 'bed_dummy');
+      fill(
+        sim,
+        containersOf(sim.world).findIndex((c) => c.mine && c.prop.kind === 'bed'),
+        'bed_dummy',
+      );
     },
     steps: [
-      { text: 'lesson.glider.edge', done: (c) => c.sim.state.escaped > 0 || apart(c.sim.state.player, centre(tile(57, 39))) < 0.7, goal: () => tile(57, 39), layer: LAYER.ROOF, fail: glideFail },
+      {
+        text: 'lesson.glider.edge',
+        done: (c) => c.sim.state.escaped > 0 || apart(c.sim.state.player, centre(tile(57, 39))) < 0.7,
+        goal: () => tile(57, 39),
+        layer: LAYER.ROOF,
+        fail: glideFail,
+      },
       { text: 'lesson.glider.fly', touch: 'lesson.glider.flyTouch', done: (c) => c.sim.state.escaped > 0, fail: glideFail },
     ],
   },
@@ -1306,9 +1834,25 @@ export const LESSONS: readonly Lesson[] = [
       sim.state.items.int = FORGE_INT;
     },
     steps: [
-      { text: 'lesson.forgery.forge', touch: 'lesson.forgery.forgeTouch', done: (c) => carries(c.sim, 'forged_release') || c.sim.state.release[0] > 0, fail: forgeryLate },
-      { text: 'lesson.forgery.file', touch: 'lesson.forgery.fileTouch', done: (c) => c.sim.state.release[0] > 0, goal: (sim) => releaseTile(sim), fail: forgeryLate },
-      { text: 'lesson.forgery.records', speed: 4, on: (e) => e.type === 'paper' && e.what === 'passed', failOn: (e) => (e.type === 'paper' && e.what === 'found' ? 'lesson.forgery.found' : null) },
+      {
+        text: 'lesson.forgery.forge',
+        touch: 'lesson.forgery.forgeTouch',
+        done: (c) => carries(c.sim, 'forged_release') || c.sim.state.release[0] > 0,
+        fail: forgeryLate,
+      },
+      {
+        text: 'lesson.forgery.file',
+        touch: 'lesson.forgery.fileTouch',
+        done: (c) => c.sim.state.release[0] > 0,
+        goal: (sim) => releaseTile(sim),
+        fail: forgeryLate,
+      },
+      {
+        text: 'lesson.forgery.records',
+        speed: 4,
+        on: (e) => e.type === 'paper' && e.what === 'passed',
+        failOn: (e) => (e.type === 'paper' && e.what === 'found' ? 'lesson.forgery.found' : null),
+      },
     ],
   },
   {
@@ -1325,7 +1869,13 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.release.wait', done: (c) => calledNow(c.sim.state) || freedNow(c.sim.state), goal: (sim) => releaseTile(sim) },
-      { text: 'lesson.release.report', touch: 'lesson.release.reportTouch', done: (c) => freedNow(c.sim.state) || c.sim.state.escaped > 0, goal: (sim) => releaseTile(sim), failOn: releaseTurned },
+      {
+        text: 'lesson.release.report',
+        touch: 'lesson.release.reportTouch',
+        done: (c) => freedNow(c.sim.state) || c.sim.state.escaped > 0,
+        goal: (sim) => releaseTile(sim),
+        failOn: releaseTurned,
+      },
       { text: 'lesson.release.out', done: (c) => c.sim.state.escaped > 0, goal: () => tile(30, 62), fail: releaseShut },
     ],
   },
@@ -1355,7 +1905,13 @@ export const LESSONS: readonly Lesson[] = [
     },
     steps: [
       { text: 'lesson.parole.go', done: (c) => !!c.sim.state.hearing, goal: (sim) => hearingSeat(sim), speed: 2, failOn: paroleLost },
-      { text: 'lesson.parole.read', touch: 'lesson.parole.readTouch', least: 4, on: (e) => e.type === 'parole' && (e.what === 'answer' || e.what === 'silent'), failOn: paroleLost },
+      {
+        text: 'lesson.parole.read',
+        touch: 'lesson.parole.readTouch',
+        least: 4,
+        on: (e) => e.type === 'parole' && (e.what === 'answer' || e.what === 'silent'),
+        failOn: paroleLost,
+      },
       { text: 'lesson.parole.rest', on: (e) => e.type === 'parole' && e.what === 'granted', failOn: paroleLost },
       // (The verdict's card a moment, to be read.)
       { text: 'lesson.parole.over', done: () => true, least: 6 },
@@ -1371,12 +1927,22 @@ export const LESSONS: readonly Lesson[] = [
     setup: () => {},
     steps: [
       { text: 'lesson.manhunt.run', done: (c) => !!c.hunt && huntWalked(c.hunt) >= 5, fail: huntCaught },
-      { text: 'lesson.manhunt.hide', done: (c) => !!c.hunt && goneBy(c.hunt), fail: huntCaught, huntGoal: (h) => (i) => h.out.cover[i] === 1 },
+      {
+        text: 'lesson.manhunt.hide',
+        done: (c) => !!c.hunt && goneBy(c.hunt),
+        fail: huntCaught,
+        huntGoal: (h) => (i) => h.out.cover[i] === 1,
+      },
       { text: 'lesson.manhunt.clothes', done: (c) => c.hunt?.state.clothes === 2, fail: huntCaught, huntGoal: lineGoal },
-      { text: 'lesson.manhunt.lou', done: (c) => !!c.hunt && (c.hunt.state.over === OVER.LOU || c.hunt.state.over === OVER.SAFE), fail: huntCaught, huntGoal: (h) => {
-        const lou = spotTile(h.def.lou, h.out.ox, h.out.oz);
-        return (i) => i === lou;
-      } },
+      {
+        text: 'lesson.manhunt.lou',
+        done: (c) => !!c.hunt && (c.hunt.state.over === OVER.LOU || c.hunt.state.over === OVER.SAFE),
+        fail: huntCaught,
+        huntGoal: (h) => {
+          const lou = spotTile(h.def.lou, h.out.ox, h.out.oz);
+          return (i) => i === lou;
+        },
+      },
     ],
   },
 ];
@@ -1385,7 +1951,42 @@ export const LESSONS: readonly Lesson[] = [
 export const CHAPTERS: ReadonlyArray<{ id: string; icon: string; lessons: readonly string[] }> = [
   { id: 'basics', icon: 'book', lessons: ['walk', 'search', 'craft', 'routine', 'heat', 'stash', 'dig', 'fight', 'noise', 'escape'] },
   { id: 'getby', icon: 'coin', lessons: ['talk', 'trade', 'job', 'gym', 'disguise', 'tunnel', 'vents'] },
-  { id: 'life', icon: 'chat', lessons: ['guards', 'day', 'dogs', 'rat', 'smuggle', 'games', 'cards', 'hoops', 'checkers', 'pruno', 'garden', 'ratRace', 'football', 'tattoo', 'talent', 'quiz', 'crew', 'laps', 'meals', 'showers', 'rollcall', 'night', 'gardener', 'library', 'vending', 'menu', 'payphone', 'cousin', 'kiosk', 'oddjob'] },
+  {
+    id: 'life',
+    icon: 'chat',
+    lessons: [
+      'guards',
+      'day',
+      'dogs',
+      'rat',
+      'smuggle',
+      'games',
+      'cards',
+      'hoops',
+      'checkers',
+      'pruno',
+      'garden',
+      'ratRace',
+      'football',
+      'tattoo',
+      'talent',
+      'quiz',
+      'crew',
+      'laps',
+      'meals',
+      'showers',
+      'rollcall',
+      'night',
+      'gardener',
+      'library',
+      'vending',
+      'menu',
+      'payphone',
+      'cousin',
+      'kiosk',
+      'oddjob',
+    ],
+  },
   { id: 'ways', icon: 'route', lessons: ['lockpick', 'stowaway', 'bluff', 'glider', 'forgery', 'release', 'parole', 'manhunt'] },
 ];
 

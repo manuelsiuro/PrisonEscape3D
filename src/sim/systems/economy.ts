@@ -59,7 +59,8 @@ export function jobRooms(w: World): JobRoom[] {
   list = w.def.jobs.map(({ id }) => {
     const def = JOBS[id];
     const zone = zoneIndex(def.zone);
-    const inRoom = (kind: string | undefined) => w.props.map((p, i) => ({ p, i })).filter(({ p }) => p.kind === kind && w.ground.zone[p.z * MAP_W + p.x] === zone);
+    const inRoom = (kind: string | undefined) =>
+      w.props.map((p, i) => ({ p, i })).filter(({ p }) => p.kind === kind && w.ground.zone[p.z * MAP_W + p.x] === zone);
     const take = inRoom(def.take);
     const put = inRoom(def.put);
     return {
@@ -181,7 +182,8 @@ export function stationTarget(w: World, s: WorkState, b: Body): Station | null {
   let going = 0;
   for (const k in s.machines) if (room.machines.includes(Number(k))) going++;
   for (let k = 0; k < 6; k++) if ((s.inv[k] & 255) === done) going++;
-  if (take >= 0 && raw && !hotbarHas(s, raw) && !(done && hotbarHas(s, done)) && (def.flow !== 'machine' || s.owed > going)) return { prop: take, tile: -1, act: free ? 'take' : 'full', item: raw };
+  if (take >= 0 && raw && !hotbarHas(s, raw) && !(done && hotbarHas(s, done)) && (def.flow !== 'machine' || s.owed > going))
+    return { prop: take, tile: -1, act: free ? 'take' : 'full', item: raw };
   return null;
 }
 

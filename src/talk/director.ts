@@ -202,7 +202,10 @@ export class Director {
     this.prisonId = sim.prison.id;
     this.random = randomFrom(hash32(sim.prison.id) ^ (seed + sim.clock.day * 7919));
     const s = sim.state;
-    this.voices = [...s.inmates.map((m) => inmateVoice(sim.prison, m.cell) as Voice), ...s.guards.map((_, k) => guardVoice(sim.prison, k) as Voice)];
+    this.voices = [
+      ...s.inmates.map((m) => inmateVoice(sim.prison, m.cell) as Voice),
+      ...s.guards.map((_, k) => guardVoice(sim.prison, k) as Voice),
+    ];
   }
 
   /** The language changed: the memory of lines said goes with the old lines. */
@@ -247,7 +250,15 @@ export class Director {
   }
 
   private recent(now: number): Recent {
-    return { now, incidents: this.incidents, searched: this.searched, caughtAt: this.caughtAt, cameTo: this.cameTo, bumped: this.bumped, powerOutAt: this.powerOutAt };
+    return {
+      now,
+      incidents: this.incidents,
+      searched: this.searched,
+      caughtAt: this.caughtAt,
+      cameTo: this.cameTo,
+      bumped: this.bumped,
+      powerOutAt: this.powerOutAt,
+    };
   }
 
   /** The moments a line may be tied to, for one speaker. */
@@ -274,21 +285,41 @@ export class Director {
   }
 
   private context(sim: Sim, speaker: number, fact?: Fact, items?: readonly string[]): FillContext {
-    return { lang: this.lang, sim, speaker, random: this.random, recent: this.recentSlots, fact, dayEvent: this.dayEvent, items, dog: this.dogAbout >= 0 ? this.dogAbout : undefined };
+    return {
+      lang: this.lang,
+      sim,
+      speaker,
+      random: this.random,
+      recent: this.recentSlots,
+      fact,
+      dayEvent: this.dayEvent,
+      items,
+      dog: this.dogAbout >= 0 ? this.dogAbout : undefined,
+    };
   }
 
   /** What a merchant has on sale (the items the banks can name): what its dealing lines may mention. */
   private stockOf(sim: Sim, speaker: number): string[] {
     const k = sim.merchantOf(speaker);
     const shop = k >= 0 ? sim.state.shops[k] : [];
-    return shop.filter((v) => v > 0).map((v) => itemDef(itemOf(v)).id).filter((id) => itemPhrase(this.lang, id, 'a') !== null);
+    return shop
+      .filter((v) => v > 0)
+      .map((v) => itemDef(itemOf(v)).id)
+      .filter((id) => itemPhrase(this.lang, id, 'a') !== null);
   }
 
   /**
    * A line from a bank for a speaker: fitting its voice and the moment, fresh (not among its
    * last lines nor the last heard), weighted to the rarely said. Null when none is left.
    */
-  private pickLine(sim: Sim, bank: BankId, speaker: number, fact?: Fact, relax = true, avoid?: readonly number[]): { line: number; text: string; def: LineDef; slots: Map<string, string> } | null {
+  private pickLine(
+    sim: Sim,
+    bank: BankId,
+    speaker: number,
+    fact?: Fact,
+    relax = true,
+    avoid?: readonly number[],
+  ): { line: number; text: string; def: LineDef; slots: Map<string, string> } | null {
     const lines = BANKS[this.lang][bank];
     if (!lines?.length) return null;
     const voice = this.voiceOf(speaker);
@@ -305,7 +336,7 @@ export class Director {
         if (def.once && this.once.has(id)) return;
         if ((avoid ?? mine).includes(id)) return;
         if (!relaxed && !avoid && this.ring.includes(id)) return;
-        const w = (def.w ?? 1) * (def.v ? 3 : 1) * (def.when ? 2 : 1) / (1 + (this.counts.get(id) ?? 0));
+        const w = ((def.w ?? 1) * (def.v ? 3 : 1) * (def.when ? 2 : 1)) / (1 + (this.counts.get(id) ?? 0));
         pool.push({ id, def, w });
       });
       // A merchant's dealing lines name what's actually on sale.
@@ -351,7 +382,19 @@ export class Director {
     const read = Math.max(2.4, 1.2 + chars / 14) * (style === 'gossip' ? 1.5 : 1) * (stage.phone ? 1.2 : 1);
     // Gossip says who tells it: the friend worth thanking.
     const name = style === 'gossip' ? (nameOf(sim, speaker) ?? undefined) : undefined;
-    const b: Bubble = { speaker, guard, text, style, start: stage.now, until: stage.now + read, pitch: PITCH[this.voiceOf(speaker)], line, bank, name, reaction };
+    const b: Bubble = {
+      speaker,
+      guard,
+      text,
+      style,
+      start: stage.now,
+      until: stage.now + read,
+      pitch: PITCH[this.voiceOf(speaker)],
+      line,
+      bank,
+      name,
+      reaction,
+    };
     this.active.push(b);
     this.remember(speaker, line);
     const pause = PAUSE[this.voiceOf(speaker)];
@@ -361,7 +404,16 @@ export class Director {
   }
 
   /** Says a line from a bank, if one is left: the bubble, or null (silence). */
-  private say(sim: Sim, stage: Stage, speaker: number, bank: BankId, style: Style, fact?: Fact, relax = true, reaction = false): Bubble | null {
+  private say(
+    sim: Sim,
+    stage: Stage,
+    speaker: number,
+    bank: BankId,
+    style: Style,
+    fact?: Fact,
+    relax = true,
+    reaction = false,
+  ): Bubble | null {
     const got = this.pickLine(sim, bank, speaker, fact, relax);
     if (!got) {
       this.stats.silent++;
@@ -424,14 +476,35 @@ export class Director {
     };
     switch (e.type) {
       case 'toldOff': {
-        const seeing = s.guards.map((g, k) => ({ id: n + k, g })).filter((o) => o.g.sees && o.g.ko <= 0).sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player)).map((o) => o.id);
+        const seeing = s.guards
+          .map((g, k) => ({ id: n + k, g }))
+          .filter((o) => o.g.sees && o.g.ko <= 0)
+          .sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player))
+          .map((o) => o.id);
         this.queueUp(now, 're.spotted.stranger', seeing, 5, 'spotted:stranger', 'shout');
         break;
       }
       case 'spotted': {
         if (e.reason === 'none') break;
-        const seeing = s.guards.map((g, k) => ({ id: n + k, g })).filter((o) => o.g.sees && o.g.ko <= 0).sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player)).map((o) => o.id);
-        const own = ['night', 'restricted', 'contraband', 'recognized', 'wanted', 'damage', 'tampering', 'fight', 'gambling', 'skipping', 'stranger', 'snooping'] as const;
+        const seeing = s.guards
+          .map((g, k) => ({ id: n + k, g }))
+          .filter((o) => o.g.sees && o.g.ko <= 0)
+          .sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player))
+          .map((o) => o.id);
+        const own = [
+          'night',
+          'restricted',
+          'contraband',
+          'recognized',
+          'wanted',
+          'damage',
+          'tampering',
+          'fight',
+          'gambling',
+          'skipping',
+          'stranger',
+          'snooping',
+        ] as const;
         const bank = ((own as readonly string[]).includes(e.reason) ? `re.spotted.${e.reason}` : 're.spotted.other') as BankId;
         this.queueUp(now, bank, seeing, 5, `spotted:${e.reason}`, 'shout');
         break;
@@ -446,7 +519,8 @@ export class Director {
         // (2.31: the librarian, in earshot: a nod for a book taken, a word when the head is full.)
         const said = e.type === 'book' ? (e.on ? 're.library.book' : null) : e.why === 'full' ? 're.library.full' : null;
         const who = librarianOf(sim);
-        if (said && who >= 0 && !sim.rules230 && s.inmates[who].ko <= 0 && dist(s.inmates[who].body, s.player) <= LIBRARIAN_EARSHOT) this.queueUp(now, said, [who], 3, said);
+        if (said && who >= 0 && !sim.rules230 && s.inmates[who].ko <= 0 && dist(s.inmates[who].body, s.player) <= LIBRARIAN_EARSHOT)
+          this.queueUp(now, said, [who], 3, said);
         break;
       }
       case 'menu': {
@@ -494,7 +568,8 @@ export class Director {
       // A lazy guard woken from its doze (P15): it insists it never slept.
       case 'nap':
         // (Not under the sirens or in a chase: "Night shift, right" would ring false.)
-        if (!e.on && !sim.state.lockdown && sim.state.guards[e.guard]?.mode !== GUARD.CHASE) this.queueUp(now, 're.napWoke.gu', [n + e.guard], 4, 'napWoke', undefined, 0.3);
+        if (!e.on && !sim.state.lockdown && sim.state.guards[e.guard]?.mode !== GUARD.CHASE)
+          this.queueUp(now, 're.napWoke.gu', [n + e.guard], 4, 'napWoke', undefined, 0.3);
         break;
       case 'cameTo':
         this.cameTo.set(e.who, now);
@@ -530,7 +605,16 @@ export class Director {
       case 'tray': {
         // (2.33: a tray taken of a dish worth a word, good or bad: someone near says so.)
         const dish = e.what === 'take' && !feastNow(sim) ? dishNow(sim) : null;
-        if (dish && (dish.energy >= DISH_GOOD || dish.energy <= DISH_BAD)) this.queueUp(now, dish.energy >= DISH_GOOD ? 're.menu.good' : 're.menu.bad', this.inmatesNear(sim, px, pz, 5), 2, 'menuDish', undefined, 1.5);
+        if (dish && (dish.energy >= DISH_GOOD || dish.energy <= DISH_BAD))
+          this.queueUp(
+            now,
+            dish.energy >= DISH_GOOD ? 're.menu.good' : 're.menu.bad',
+            this.inmatesNear(sim, px, pz, 5),
+            2,
+            'menuDish',
+            undefined,
+            1.5,
+          );
         // (Not brought back: the nearest guard says so.)
         if (!e.heat) break;
         this.queueUp(now, 're.tray.gu', this.guardsNear(sim, px, pz, 12), 4, 'tray', 'shout');
@@ -579,16 +663,21 @@ export class Director {
           // P17: lightning has its own cries; the generator's service was announced (inmates still notice the dark).
           const storm = e.by === 'storm' && sim.prison.theme !== 'alpine';
           this.queueUp(now, storm ? 're.storm.in' : 're.power.in', this.inmatesNear(sim, px, pz, 30), 3, 'power', undefined, 0.5);
-          if (e.by !== 'maintenance') this.queueUp(now, storm ? 're.storm.gu' : 're.power.gu', this.guardsNear(sim, px, pz, 30), 3, 'powerGu', 'shout', 1.4);
+          if (e.by !== 'maintenance')
+            this.queueUp(now, storm ? 're.storm.gu' : 're.power.gu', this.guardsNear(sim, px, pz, 30), 3, 'powerGu', 'shout', 1.4);
         }
         break;
       // The day (P17): the drill's bell, a food fight breaking out.
       case 'today':
-        if (e.phase === 'start' && e.event === 'drill') this.queueUp(now, 're.drill.in', this.inmatesNear(sim, px, pz, 30), 3, 'drill', undefined, 0.6);
-        if (e.phase === 'start' && e.event === 'foodFight') this.queueUp(now, 're.foodFight.in', this.inmatesNear(sim, px, pz, 20), 3, 'foodFight', 'shout', 0.2);
+        if (e.phase === 'start' && e.event === 'drill')
+          this.queueUp(now, 're.drill.in', this.inmatesNear(sim, px, pz, 30), 3, 'drill', undefined, 0.6);
+        if (e.phase === 'start' && e.event === 'foodFight')
+          this.queueUp(now, 're.foodFight.in', this.inmatesNear(sim, px, pz, 20), 3, 'foodFight', 'shout', 0.2);
         // Sports day (P22): everyone limbering up; the champion cheered.
-        if (e.phase === 'start' && e.event === 'sports') this.queueUp(now, 're.sports.in', this.inmatesNear(sim, px, pz, 24), 3, 'sports', undefined, 1.2);
-        if (e.phase === 'prize' && e.event === 'sports') this.queueUp(now, 're.champion.in', this.inmatesNear(sim, px, pz, 16), 3, 'champion', 'shout', 1.6);
+        if (e.phase === 'start' && e.event === 'sports')
+          this.queueUp(now, 're.sports.in', this.inmatesNear(sim, px, pz, 24), 3, 'sports', undefined, 1.2);
+        if (e.phase === 'prize' && e.event === 'sports')
+          this.queueUp(now, 're.champion.in', this.inmatesNear(sim, px, pz, 16), 3, 'champion', 'shout', 1.6);
         // Visiting day (P21): the inmates about the visiting room, looking forward to it.
         if (e.event === 'visiting' && e.phase === 'start' && sim.prison.smuggling?.visits) {
           const r = sim.prison.smuggling.visits;
@@ -599,7 +688,16 @@ export class Director {
           const tx = sim.prison.delivery.tail.x + 0.5;
           const tz = sim.prison.delivery.tail.z + 0.5;
           if (e.phase === 'start') this.queueUp(now, 're.delivery.in', this.inmatesNear(sim, tx, tz, 18), 2, 'delivery', undefined, 1.2);
-          if (e.phase === 'search') this.queueUp(now, e.thorough ? 're.searchClose.gu' : 're.searchQuick.gu', this.guardsNear(sim, tx, tz, SEARCH_REACH + 1), 4, 'search', undefined, 0.2);
+          if (e.phase === 'search')
+            this.queueUp(
+              now,
+              e.thorough ? 're.searchClose.gu' : 're.searchQuick.gu',
+              this.guardsNear(sim, tx, tz, SEARCH_REACH + 1),
+              4,
+              'search',
+              undefined,
+              0.2,
+            );
         }
         break;
       case 'stow':
@@ -607,15 +705,20 @@ export class Director {
         break;
       // The parole board (P39): inmates by the desk have a word for an application; a guard for one voided.
       case 'parole':
-        if (e.what === 'applied' && !e.lawyer) this.queueUp(now, 're.parole.in', this.inmatesNear(sim, px, pz, 6), 2, 'parole', undefined, 1);
-        else if (e.what === 'voided') this.queueUp(now, 're.paroleVoid.gu', this.guardsNear(sim, px, pz, 10), 4, 'paroleVoid', undefined, 0.6);
-        else if (e.what === 'granted') this.queueUp(now, 're.paroleGranted.in', this.inmatesNear(sim, px, pz, 8), 2, 'paroleGranted', undefined, 1.4);
+        if (e.what === 'applied' && !e.lawyer)
+          this.queueUp(now, 're.parole.in', this.inmatesNear(sim, px, pz, 6), 2, 'parole', undefined, 1);
+        else if (e.what === 'voided')
+          this.queueUp(now, 're.paroleVoid.gu', this.guardsNear(sim, px, pz, 10), 4, 'paroleVoid', undefined, 0.6);
+        else if (e.what === 'granted')
+          this.queueUp(now, 're.paroleGranted.in', this.inmatesNear(sim, px, pz, 8), 2, 'paroleGranted', undefined, 1.4);
         break;
       // Holidays (P42): a laugh at the costume, the water fight, the fireworks, the eggs hidden.
       case 'holiday':
         if (e.what === 'laugh' && e.who !== undefined) this.queueUp(now, 're.hol.laugh.in', [e.who], 4, 'holLaugh', 'shout', 0.1);
-        else if (e.what === 'start' && e.day === 'waterFight') this.queueUp(now, 're.hol.water.in', this.inmatesNear(sim, px, pz, 24), 3, 'holWater', 'shout', 0.4);
-        else if (e.what === 'start' && e.day === 'newYearsEve') this.queueUp(now, 're.hol.fireworks.in', this.inmatesNear(sim, px, pz, 30), 3, 'holFireworks', 'shout', 0.6);
+        else if (e.what === 'start' && e.day === 'waterFight')
+          this.queueUp(now, 're.hol.water.in', this.inmatesNear(sim, px, pz, 24), 3, 'holWater', 'shout', 0.4);
+        else if (e.what === 'start' && e.day === 'newYearsEve')
+          this.queueUp(now, 're.hol.fireworks.in', this.inmatesNear(sim, px, pz, 30), 3, 'holFireworks', 'shout', 0.6);
         else if (e.what === 'hidden') this.queueUp(now, 're.hol.eggs.in', this.inmatesNear(sim, px, pz, 30), 2, 'holEggs', undefined, 2, 5);
         break;
       // A glide (P24) that came down inside: whoever is near where the player landed has a word for it.
@@ -632,9 +735,28 @@ export class Director {
         if (!d || h === undefined) break;
         this.dogAbout = e.dog;
         const handler = s.guards[h] && awake(s.guards[h]) ? [n + h] : [];
-        const bank = ({ sniff: 're.dogSniff.gu', track: 're.dogTrack.gu', lost: 're.dogLost.gu', dug: 're.dogDug.gu', dazed: 're.dogDazed.gu', asleep: 're.dogAsleep.gu' } as Partial<Record<string, BankId>>)[e.what];
-        if (bank) this.queueUp(now, bank, handler, e.what === 'dug' || e.what === 'sniff' ? 5 : 4, `dog:${e.what}`, e.what === 'sniff' || e.what === 'dug' ? 'shout' : undefined, 0.3);
-        if (e.what === 'fed' || e.what === 'friend') this.queueUp(now, 're.dogFed.in', this.inmatesNear(sim, d.body.x / UNIT, d.body.z / UNIT, 8), 2, 'dogFed', undefined, 0.8);
+        const bank = (
+          {
+            sniff: 're.dogSniff.gu',
+            track: 're.dogTrack.gu',
+            lost: 're.dogLost.gu',
+            dug: 're.dogDug.gu',
+            dazed: 're.dogDazed.gu',
+            asleep: 're.dogAsleep.gu',
+          } as Partial<Record<string, BankId>>
+        )[e.what];
+        if (bank)
+          this.queueUp(
+            now,
+            bank,
+            handler,
+            e.what === 'dug' || e.what === 'sniff' ? 5 : 4,
+            `dog:${e.what}`,
+            e.what === 'sniff' || e.what === 'dug' ? 'shout' : undefined,
+            0.3,
+          );
+        if (e.what === 'fed' || e.what === 'friend')
+          this.queueUp(now, 're.dogFed.in', this.inmatesNear(sim, d.body.x / UNIT, d.body.z / UNIT, 8), 2, 'dogFed', undefined, 0.8);
         break;
       }
       // The pet rat (P20): a panic's shrieks and grumbles, a guard missing his key, a rat on the player's shoulder noticed.
@@ -644,7 +766,8 @@ export class Director {
           this.queueUp(now, 're.ratPanic.in', this.inmatesNear(sim, r.x / UNIT, r.z / UNIT, 7), 4, 'ratPanic', 'shout', 0.2);
           this.queueUp(now, 're.ratPanic.gu', this.guardsNear(sim, r.x / UNIT, r.z / UNIT, 9), 4, 'ratPanicGu', undefined, 1.1);
         }
-        if (e.what === 'tamed' || (e.what === 'home' && this.random() < 0.3)) this.queueUp(now, 're.ratShoulder.in', this.inmatesNear(sim, px, pz, 5), 2, 'ratShoulder', undefined, 0.9);
+        if (e.what === 'tamed' || (e.what === 'home' && this.random() < 0.3))
+          this.queueUp(now, 're.ratShoulder.in', this.inmatesNear(sim, px, pz, 5), 2, 'ratShoulder', undefined, 0.9);
         break;
       }
       case 'keyless':
@@ -658,18 +781,45 @@ export class Director {
           this.queueUp(now, 're.drone.gu', this.guardsNear(sim, x, z, 12), 2, 'drone', 'shout', 0.4);
           this.queueUp(now, 're.drone.in', this.inmatesNear(sim, x, z, 10), 2, 'droneIn', undefined, 0.9);
         }
-        if (e.what === 'seized' && e.guard !== undefined && s.guards[e.guard]) this.queueUp(now, 're.seized.gu', [n + e.guard], 5, 'seized', undefined, 0.3);
+        if (e.what === 'seized' && e.guard !== undefined && s.guards[e.guard])
+          this.queueUp(now, 're.seized.gu', [n + e.guard], 5, 'seized', undefined, 0.3);
         if (e.what === 'visit') this.queueUp(now, 're.visit.in', this.inmatesNear(sim, px, pz, 6), 2, 'visit', undefined, 1.4);
         break;
       }
       // Side games (P22): the dice partner when the dice are down (a sore loser, a gloating winner), the crowd at a bout, sports day.
       case 'dice':
-        if (e.what === 'won' || e.what === 'lost') this.queueUp(now, e.what === 'won' ? 're.diceWon.in' : 're.diceLost.in', [e.who], 4, `dice:${e.what}`, undefined, e.theirs && sim.events.some((x) => x.type === 'dice' && x.what === 'rerolled') ? 2.1 : 1.5);
+        if (e.what === 'won' || e.what === 'lost')
+          this.queueUp(
+            now,
+            e.what === 'won' ? 're.diceWon.in' : 're.diceLost.in',
+            [e.who],
+            4,
+            `dice:${e.what}`,
+            undefined,
+            e.theirs && sim.events.some((x) => x.type === 'dice' && x.what === 'rerolled') ? 2.1 : 1.5,
+          );
         break;
       case 'bout':
-        if (e.what === 'start') this.queueUp(now, 're.bout.in', this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who), 2, 'bout', 'shout', 0.6);
+        if (e.what === 'start')
+          this.queueUp(
+            now,
+            're.bout.in',
+            this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who),
+            2,
+            'bout',
+            'shout',
+            0.6,
+          );
         if (e.what === 'won') {
-          this.queueUp(now, 're.boutWon.in', this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who), 3, 'boutWon', 'shout', 0.3);
+          this.queueUp(
+            now,
+            're.boutWon.in',
+            this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who),
+            3,
+            'boutWon',
+            'shout',
+            0.3,
+          );
           this.queueUp(now, 're.boutLoser.in', [e.who], 3, 'boutLoser', undefined, 1.4);
         }
         if (e.what === 'lost') this.queueUp(now, 're.boutWinner.in', [e.who], 3, 'boutWinner', undefined, 0.5);
@@ -728,7 +878,15 @@ export class Director {
             const c = at(other);
             this.queueUp(now, 're.brawl.in', [e.who], 5, 'brawl', 'shout');
             if (other >= 0) this.queueUp(now, 're.brawled.in', [other], 5, 'brawled', 'shout', 1.3);
-            this.queueUp(now, 're.brawlCrowd.in', this.inmatesNear(sim, c.x, c.z, 8).filter((k) => k !== e.who && k !== other), 3, 'brawlCrowd', 'shout', 2.4);
+            this.queueUp(
+              now,
+              're.brawlCrowd.in',
+              this.inmatesNear(sim, c.x, c.z, 8).filter((k) => k !== e.who && k !== other),
+              3,
+              'brawlCrowd',
+              'shout',
+              2.4,
+            );
             break;
           }
           case 'handed':
@@ -753,7 +911,13 @@ export class Director {
           this.noteDay('firecracker');
           this.queueUp(now, 're.bang.gu', sent, 4, 'bangGu', 'shout', 0.3);
           this.queueUp(now, 're.bang.in', this.inmatesNear(sim, x, z, 10), 3, 'bang', 'shout', 0.6);
-          const woken = s.inmates.map((m, k) => (m.doing === DOING.SLEEP && m.ko <= 0 && e.tiles.includes(Math.floor(m.body.z / UNIT) * 64 + Math.floor(m.body.x / UNIT)) ? k : -1)).filter((k) => k >= 0);
+          const woken = s.inmates
+            .map((m, k) =>
+              m.doing === DOING.SLEEP && m.ko <= 0 && e.tiles.includes(Math.floor(m.body.z / UNIT) * 64 + Math.floor(m.body.x / UNIT))
+                ? k
+                : -1,
+            )
+            .filter((k) => k >= 0);
           this.queueUp(now, 're.woken.in', woken, 3, 'woken', undefined, 1.2);
         } else if (e.kind === 'ring') {
           this.noteDay('alarmClock');
@@ -761,7 +925,8 @@ export class Director {
           this.queueUp(now, 're.ring.in', this.inmatesNear(sim, x, z, 7), 2, 'ring', undefined, 0.8);
         } else {
           this.queueUp(now, 're.noise.gu', sent, 3, 'noiseGu', undefined, 0.3);
-          if (e.kind === 'thud' || sent.length) this.queueUp(now, 're.noise.in', this.inmatesNear(sim, x, z, 5), 1, 'noiseIn', undefined, 0.8);
+          if (e.kind === 'thud' || sent.length)
+            this.queueUp(now, 're.noise.in', this.inmatesNear(sim, x, z, 5), 1, 'noiseIn', undefined, 0.8);
         }
         break;
       }
@@ -857,7 +1022,13 @@ export class Director {
       // idle line: its speaker's own, or the oldest one on screen when the screen is full.
       const urgent = p.prio >= 4;
       const idle = (id: number) => this.active.find((b) => b.speaker === id && !b.reaction);
-      const who = p.speakers.find((id) => stage.sees(id) && (!this.speaking(id) || (urgent && !!idle(id))) && (!!p.text || now >= (this.triggerNext.get(`${p.trigger}:${id}`) ?? 0)) && this.canSpeak(sim, id, now));
+      const who = p.speakers.find(
+        (id) =>
+          stage.sees(id) &&
+          (!this.speaking(id) || (urgent && !!idle(id))) &&
+          (!!p.text || now >= (this.triggerNext.get(`${p.trigger}:${id}`) ?? 0)) &&
+          this.canSpeak(sim, id, now),
+      );
       if (who === undefined) continue;
       const own = idle(who);
       if (own) this.drop(own);
@@ -866,7 +1037,9 @@ export class Director {
         if (!oldest) continue;
         this.drop(oldest);
       }
-      const said = p.text ? this.show(sim, stage, who, p.bank, p.line ?? 0, p.text, p.style ?? 'say', true) : this.say(sim, stage, who, p.bank, p.style ?? 'say', undefined, true, true);
+      const said = p.text
+        ? this.show(sim, stage, who, p.bank, p.line ?? 0, p.text, p.style ?? 'say', true)
+        : this.say(sim, stage, who, p.bank, p.style ?? 'say', undefined, true, true);
       this.queue.splice(q--, 1);
       if (said && !p.text) {
         this.triggerNext.set(p.trigger, now + 6);
@@ -936,7 +1109,14 @@ export class Director {
     // Its own catchphrase, once a day.
     const name = nameOf(sim, id);
     const catchBank = `catch.${name}` as BankId;
-    if (calm && name && BANK_INDEX.has(catchBank) && this.catchDay.get(id) !== sim.clock.day && this.random() < 0.07 && this.say(sim, stage, id, catchBank, 'say')) {
+    if (
+      calm &&
+      name &&
+      BANK_INDEX.has(catchBank) &&
+      this.catchDay.get(id) !== sim.clock.day &&
+      this.random() < 0.07 &&
+      this.say(sim, stage, id, catchBank, 'say')
+    ) {
       this.catchDay.set(id, sim.clock.day);
       return;
     }
@@ -978,7 +1158,8 @@ export class Director {
   seen(b: Bubble, sim: Sim) {
     b.shown = true;
     const fact = b.fact;
-    if (fact) this.rumors = keepRumors([{ fact, step: sim.state.step, by: b.speaker }, ...this.rumors.filter((r) => r.fact.key !== fact.key)]);
+    if (fact)
+      this.rumors = keepRumors([{ fact, step: sim.state.step, by: b.speaker }, ...this.rumors.filter((r) => r.fact.key !== fact.key)]);
   }
 
   /** Two idle inmates side by side: a line, and the other's reply a moment later. */
@@ -987,11 +1168,26 @@ export class Director {
     const m = s.inmates[id];
     const idle = (k: number) => {
       const o = s.inmates[k];
-      return !!o && o.ko <= 0 && o.angry <= 0 && (o.doing === DOING.NOTHING || o.doing === DOING.SIT || o.doing === DOING.EAT || o.doing === DOING.LINE_UP);
+      return (
+        !!o &&
+        o.ko <= 0 &&
+        o.angry <= 0 &&
+        (o.doing === DOING.NOTHING || o.doing === DOING.SIT || o.doing === DOING.EAT || o.doing === DOING.LINE_UP)
+      );
     };
     // Room for both lines on screen (a phone held upright has room for two at most).
     if (!idle(id) || stage.max - this.active.length < 2) return false;
-    const other = s.inmates.findIndex((o, k) => k !== id && idle(k) && k !== stage.partner && dist(o.body, m.body) <= 1.5 && stage.sees(k) && !this.speaking(k) && stage.now >= (this.speakerNext.get(k) ?? 0) && !s.followers.includes(k));
+    const other = s.inmates.findIndex(
+      (o, k) =>
+        k !== id &&
+        idle(k) &&
+        k !== stage.partner &&
+        dist(o.body, m.body) <= 1.5 &&
+        stage.sees(k) &&
+        !this.speaking(k) &&
+        stage.now >= (this.speakerNext.get(k) ?? 0) &&
+        !s.followers.includes(k),
+    );
     if (other < 0) return false;
     const meal = m.doing === DOING.EAT || ROUTINE[s.routine].id === 'breakfast' || ROUTINE[s.routine].id === 'dinner';
     const topics: BankId[] = meal ? ['ex.food', 'ex.food', 'ex.life', 'ex.guards'] : ['ex.life', 'ex.guards', 'ex.escape', 'ex.food'];
@@ -1003,7 +1199,16 @@ export class Director {
     const reply = fill(got.def.r, this.context(sim, other), got.slots);
     if (reply === null) return false;
     this.show(sim, stage, id, bank, got.line, got.text, 'say');
-    this.queue.push({ bank, speakers: [other], prio: 6, at: stage.now + 1.2, expires: stage.now + 3, trigger: `reply:${other}`, text: reply, line: got.line + BANK_SPAN / 2 });
+    this.queue.push({
+      bank,
+      speakers: [other],
+      prio: 6,
+      at: stage.now + 1.2,
+      expires: stage.now + 3,
+      trigger: `reply:${other}`,
+      text: reply,
+      line: got.line + BANK_SPAN / 2,
+    });
     return true;
   }
 
@@ -1018,14 +1223,32 @@ export class Director {
         return e.state === 'paid' ? 're.favorDone.in' : null;
       // (P40: an odd job taken from him, handed in, failed.)
       case 'oddjob':
-        return e.what === 'paid' ? 're.jobPaid.in' : e.what === 'failed' ? 're.jobFailed.in' : e.what === 'taken' && e.from === FROM.FIXER ? 're.jobTaken.in' : null;
+        return e.what === 'paid'
+          ? 're.jobPaid.in'
+          : e.what === 'failed'
+            ? 're.jobFailed.in'
+            : e.what === 'taken' && e.from === FROM.FIXER
+              ? 're.jobTaken.in'
+              : null;
       case 'recruit':
         return e.on ? 're.recruit.in' : 're.dismiss.in';
       case 'tip':
         return e.who >= 0 ? 're.tip.in' : null;
       case 'crew':
         if (e.what !== 'order') return null;
-        return e.order === ORDER.WATCH ? 're.crewWatch.in' : e.order === ORDER.DIG ? 're.crewDig.in' : e.order === ORDER.BACK ? 're.crewBack.in' : e.order === ORDER.FETCH ? 're.crewFetch.in' : e.order === ORDER.NIGHT ? 're.crewNight.in' : e.order === ORDER.FOLLOW ? 're.crewFollow.in' : null;
+        return e.order === ORDER.WATCH
+          ? 're.crewWatch.in'
+          : e.order === ORDER.DIG
+            ? 're.crewDig.in'
+            : e.order === ORDER.BACK
+              ? 're.crewBack.in'
+              : e.order === ORDER.FETCH
+                ? 're.crewFetch.in'
+                : e.order === ORDER.NIGHT
+                  ? 're.crewNight.in'
+                  : e.order === ORDER.FOLLOW
+                    ? 're.crewFollow.in'
+                    : null;
       default:
         return null;
     }
@@ -1035,7 +1258,8 @@ export class Director {
   private guardAnswerBank(e: SimEvent, sim: Sim): BankId | null {
     const s = sim.state;
     if (s.talk < s.inmates.length) return null;
-    if (e.type === 'bribe') return s.talk !== s.inmates.length + e.guard ? null : e.kind === 'look' ? 're.bribe.gu' : e.kind === 'paper' ? 're.paper.gu' : null;
+    if (e.type === 'bribe')
+      return s.talk !== s.inmates.length + e.guard ? null : e.kind === 'look' ? 're.bribe.gu' : e.kind === 'paper' ? 're.paper.gu' : null;
     if (e.type !== 'refused') return null;
     return e.why === 'honest' ? 're.honest.gu' : e.why === 'reported' ? 're.reported.gu' : e.why === 'cash' ? 're.broke.gu' : null;
   }
@@ -1070,7 +1294,19 @@ export class Director {
       const slip = this.slip(sim, who);
       if (slip) return slip;
     }
-    const bank: BankId = !m ? (lookingAway(g, s.step) ? 'gu.bribed' : 'gr.gu') : m.opinion <= OPINION_LOW ? 'gr.in.low' : s.followers.includes(who) ? 'gr.in.follower' : sim.merchantOf(who) >= 0 && sim.shopsOpen ? 'gr.in.merchant' : m.opinion >= OPINION_HIGH ? 'gr.in.high' : 'gr.in.neutral';
+    const bank: BankId = !m
+      ? lookingAway(g, s.step)
+        ? 'gu.bribed'
+        : 'gr.gu'
+      : m.opinion <= OPINION_LOW
+        ? 'gr.in.low'
+        : s.followers.includes(who)
+          ? 'gr.in.follower'
+          : sim.merchantOf(who) >= 0 && sim.shopsOpen
+            ? 'gr.in.merchant'
+            : m.opinion >= OPINION_HIGH
+              ? 'gr.in.high'
+              : 'gr.in.neutral';
     // Greetings keep their own memory: the last three aren't said again (the bubbles' memory untouched).
     const last = this.greeted.get(who) ?? [];
     const got = this.pickLine(sim, bank, who, undefined, true, last) ?? this.pickLine(sim, bank, who, undefined, true, []);
@@ -1123,7 +1359,13 @@ export class Director {
       const text = fill(t(`rumor.${r.fact.kind}` as Key), this.context(sim, -1, r.fact)) ?? '';
       // Found out first-hand (P15: a bribe taken or reported) rather than told.
       const self = r.by === -1;
-      return { text, old: !LASTING.has(r.fact.kind) && !now.has(r.fact.key), day: clockAt(r.step).day, by: r.by !== undefined && !self ? nameOf(sim, r.by) : null, self };
+      return {
+        text,
+        old: !LASTING.has(r.fact.kind) && !now.has(r.fact.key),
+        day: clockAt(r.step).day,
+        by: r.by !== undefined && !self ? nameOf(sim, r.by) : null,
+        self,
+      };
     });
   }
 

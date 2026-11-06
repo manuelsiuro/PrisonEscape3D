@@ -1,7 +1,20 @@
 import { t } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import { targets, upPress, usePress } from './buttons';
-import { board, click, closeSocial, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, tools, toggleProfile } from './context';
+import {
+  board,
+  click,
+  closeSocial,
+  itemsUI,
+  profile,
+  ratPanel,
+  phonePanel,
+  crewPanel,
+  socialOpen,
+  sound,
+  tools,
+  toggleProfile,
+} from './context';
 import { toggleRat } from './rat';
 import { togglePhone } from './smuggle';
 import { play, sendOp } from './game';
@@ -193,7 +206,10 @@ function onKeyDown(e: KeyboardEvent) {
   }
   // Training (GDD §3.2): left and right in turn fill the bar (P22: and push in an arm-wrestle).
   // (2.29: waiting for a turn too: off to a start is no way to lose it. A press now counts for nothing.)
-  if ((g.rec.sim.state.train >= 0 || g.rec.sim.state.askTurn.length || g.rec.sim.state.bout.length) && (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')) {
+  if (
+    (g.rec.sim.state.train >= 0 || g.rec.sim.state.askTurn.length || g.rec.sim.state.bout.length) &&
+    (e.code === 'KeyA' || e.code === 'ArrowLeft' || e.code === 'KeyD' || e.code === 'ArrowRight')
+  ) {
     sendOp(OP.TRAIN, e.code === 'KeyA' || e.code === 'ArrowLeft' ? 1 : 2);
     return;
   }

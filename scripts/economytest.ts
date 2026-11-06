@@ -66,7 +66,10 @@ for (const prison of PRISONS) {
   for (const r of rooms) {
     const d = r.def;
     const need = d.flow === 'machine' ? [r.take, r.put, r.machines[0] ?? -1] : d.flow === 'mail' ? [r.machines[0] ?? -1] : [r.take];
-    check(need.every((i) => i >= 0), `${prison.id}: the ${d.id} room has its furniture`);
+    check(
+      need.every((i) => i >= 0),
+      `${prison.id}: the ${d.id} room has its furniture`,
+    );
     if (d.flow === 'machine') check(r.take !== r.put, `${prison.id}: the ${d.id} job takes and puts at different places`);
     check(d.int >= 20 && d.int <= 100 && d.wage > 0 && d.quota > 0, `${prison.id}: ${d.id} pays and asks something sensible`);
     check(!!d.raw === (d.flow !== 'mail') && !!d.done === (d.flow !== 'mop'), `${prison.id}: ${d.id} names what it works with`);
@@ -91,20 +94,38 @@ for (const prison of PRISONS) {
   }
   // Who's who: names, merchants, the first holders.
   check(prison.names.length === prison.cells.length - 1, `${prison.id}: every inmate has a name`);
-  check(prison.merchants.every((c) => c >= 2 && c <= prison.cells.length), `${prison.id}: merchants are inmates`);
+  check(
+    prison.merchants.every((c) => c >= 2 && c <= prison.cells.length),
+    `${prison.id}: merchants are inmates`,
+  );
   check(prison.jobs.filter((j) => j.cell === 1).length === 1, `${prison.id}: the player starts with one job`);
 }
 {
   // Merchants sell what items say merchants sell; prices against a day's pay.
   const table = LOOT.merchant.items.map(([id]) => id);
   const sellers = ITEMS.filter((d) => d.from.includes('merchant')).map((d) => d.id);
-  check(sellers.every((id) => table.includes(id)) && table.every((id) => sellers.includes(id)), 'the merchant table is exactly the items sold by merchants');
-  check(table.every((id) => itemDef(n(id)).value > 0), 'everything for sale has a price');
+  check(
+    sellers.every((id) => table.includes(id)) && table.every((id) => sellers.includes(id)),
+    'the merchant table is exactly the items sold by merchants',
+  );
+  check(
+    table.every((id) => itemDef(n(id)).value > 0),
+    'everything for sale has a price',
+  );
   const low = Math.min(...Object.values(JOBS).map((j) => j.wage));
   const priciest = Math.max(...table.map((id) => itemDef(n(id)).value));
-  console.log(`wages $${Object.values(JOBS).map((j) => `${j.id} ${j.wage}`).join(', $')}; merchant prices $${Math.min(...table.map((id) => itemDef(n(id)).value))}–${priciest} (at 100 opinion $${priceOf(priciest, 100)})`);
+  console.log(
+    `wages $${Object.values(JOBS)
+      .map((j) => `${j.id} ${j.wage}`)
+      .join(
+        ', $',
+      )}; merchant prices $${Math.min(...table.map((id) => itemDef(n(id)).value))}–${priciest} (at 100 opinion $${priceOf(priciest, 100)})`,
+  );
   check(priciest <= 2 * low, `the priciest item (${priciest}) takes at most two days of the lowest wage (${low})`);
-  check(priceOf(20, 50) === 20 && priceOf(20, 100) === 10 && priceOf(20, 0) === 20 && priceOf(1, 100) === 1, 'no discount at 50, half price at 100, never under $1');
+  check(
+    priceOf(20, 50) === 20 && priceOf(20, 100) === 10 && priceOf(20, 0) === 20 && priceOf(1, 100) === 1,
+    'no discount at 50, half price at 100, never under $1',
+  );
   check(discountOf(75) === 0.25, 'the discount grows with opinion');
 }
 
@@ -157,7 +178,8 @@ function worker(work: boolean): (sim: Sim) => Pilot {
           return command(pilot.dir(st.player));
         }
         // The mailman: a letter in the bag goes to its addressee (wherever they are now).
-        const letter = flow === 'mail' ? st.items.inv.slice(0, HOTBAR).find((v) => itemOf(v) === done && st.mail.includes(usesOf(v) - 1)) : undefined;
+        const letter =
+          flow === 'mail' ? st.items.inv.slice(0, HOTBAR).find((v) => itemOf(v) === done && st.mail.includes(usesOf(v) - 1)) : undefined;
         const ready = room.machines.find((i) => st.machines[i] !== undefined && st.machines[i] <= st.step);
         if (letter && ready === undefined) {
           const m = st.inmates[usesOf(letter) - 1];
@@ -176,7 +198,10 @@ function worker(work: boolean): (sim: Sim) => Pilot {
           return command(pilot.dir(st.player));
         }
         const free = room.machines.find((i) => st.machines[i] === undefined);
-        const prop = flow === 'mail' ? (ready ?? free ?? room.machines[0]) : (ready ?? (done && inv.includes(done) ? room.put : raw && inv.includes(raw) ? free : room.take));
+        const prop =
+          flow === 'mail'
+            ? (ready ?? free ?? room.machines[0])
+            : (ready ?? (done && inv.includes(done) ? room.put : raw && inv.includes(raw) ? free : room.take));
         const key = `prop${prop}`;
         if (prop === undefined || prop < 0) return 0;
         const p = s.world.props[prop];
@@ -254,7 +279,10 @@ function run(bot: (sim: Sim) => Pilot, steps: number, seed = 3, every?: (sim: Si
   check(st.cash >= 3 * wage, `the worker earned at least $${3 * wage} (has $${st.cash})`);
   check(sim.playerJob === 0, 'the worker still has the laundry job');
   check(st.heat === 0 && !log.some((l) => l.includes('LOCKDOWN')), 'the worker ends with no heat, no lockdown');
-  check(!st.items.inv.some((v) => ['dirty_laundry', 'clean_laundry'].includes(itemDef(itemOf(v))?.id ?? '')), 'work items are handed back at 15:00');
+  check(
+    !st.items.inv.some((v) => ['dirty_laundry', 'clean_laundry'].includes(itemDef(itemOf(v))?.id ?? '')),
+    'work items are handed back at 15:00',
+  );
 }
 
 // ------------------------------------------------------------------ every job can be done in a day
@@ -272,7 +300,10 @@ for (const prison of PRISONS.slice(1)) {
     const { sim, log } = run(worker(true), DAY, 3, undefined, job, prison);
     const paid = log.find((l) => l.includes('(wage)'));
     console.log(`${prison.id} ${id}: ${paid ?? 'not paid'}`);
-    check(!!paid && sim.playerJob === job && sim.state.cash >= JOBS[id].wage, `${prison.id}: the ${id} job can be done and paid in one work period`);
+    check(
+      !!paid && sim.playerJob === job && sim.state.cash >= JOBS[id].wage,
+      `${prison.id}: the ${id} job can be done and paid in one work period`,
+    );
     check(sim.state.heat < 100, `${prison.id}: doing the ${id} job raises no alarm`);
   });
 }
@@ -282,10 +313,16 @@ for (const prison of PRISONS.slice(1)) {
   const { sim, log } = run(worker(false), 3 * DAY);
   console.log('idle worker (never works):');
   for (const l of log.filter((x) => x.includes('player') || x.includes('laundry'))) console.log(`  ${l}`);
-  check(log.some((l) => l.startsWith('day 1 15:00') && l.includes('player fired: laundry')), 'missing the quota costs the job at 15:00');
+  check(
+    log.some((l) => l.startsWith('day 1 15:00') && l.includes('player fired: laundry')),
+    'missing the quota costs the job at 15:00',
+  );
   const holder = sim.state.jobs[0];
   check(holder >= 0, `an inmate took the laundry job two mornings later (holder ${holder})`);
-  check(log.some((l) => l.startsWith('day 3 08:00') && l.includes('hired: laundry')), 'the vacancy is filled on day 3 at 08:00');
+  check(
+    log.some((l) => l.startsWith('day 3 08:00') && l.includes('hired: laundry')),
+    'the vacancy is filled on day 3 at 08:00',
+  );
   check(sim.state.heat === 0, 'losing a job costs no heat');
 }
 
@@ -342,13 +379,14 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   for (let k = 0; k < 2400 && m.body.moving; k++) a.step();
   // A tile beside where it stands (it may have stopped between tiles, on its way to a seat): south if that's floor, else north, east or west.
   const w = a.sim.world;
-  const [dx, dz, face] =
-    ([
+  const [dx, dz, face] = (
+    [
       [0, 1, 13],
       [0, -1, 5],
       [1, 0, 9],
       [-1, 0, 1],
-    ] as const).find(([x, z]) => !w.blocked(Math.floor(m.body.x / UNIT) + x, Math.floor((m.body.z + z * UNIT) / UNIT))) ?? [0, 1, 13];
+    ] as const
+  ).find(([x, z]) => !w.blocked(Math.floor(m.body.x / UNIT) + x, Math.floor((m.body.z + z * UNIT) / UNIT))) ?? [0, 1, 13];
   a.st.player.x = m.body.x + dx * UNIT;
   a.st.player.z = m.body.z + dz * UNIT;
   a.st.player.facing = face;
@@ -377,7 +415,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   a.op(OP.USE, 1);
   check(m.ko > 0 && m.shift === 2, 'knocked out on the job');
   while (ROUTINE[st.routine].id === 'work') a.step();
-  check(a.has('job', (e) => e.type === 'job' && e.job === 2 && e.who === cook && e.change === 'fired'), 'knocked out at work: fired at 15:00');
+  check(
+    a.has('job', (e) => e.type === 'job' && e.job === 2 && e.who === cook && e.change === 'fired'),
+    'knocked out at work: fired at 15:00',
+  );
   check(st.jobs[2] === HOLDER.NOBODY, 'the kitchen job is open');
   // The board: only at the board, Intellect checked.
   a.op(OP.JOB, 3);
@@ -387,7 +428,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   a.op(OP.INTERACT);
   check(a.has('board'), 'the action button at the board opens it');
   a.op(OP.JOB, 5);
-  check(st.jobs[4] !== HOLDER.PLAYER && a.has('refused', (e) => e.type === 'refused' && e.why === 'taken'), 'a job someone holds is refused');
+  check(
+    st.jobs[4] !== HOLDER.PLAYER && a.has('refused', (e) => e.type === 'refused' && e.why === 'taken'),
+    'a job someone holds is refused',
+  );
   a.op(OP.JOB, 3);
   check(st.jobs[2] === HOLDER.PLAYER && st.jobs[0] === HOLDER.NOBODY, 'the player takes the kitchen job and leaves the laundry');
   check(st.jobDay === 2, 'taken after the work period began: it counts from tomorrow');
@@ -396,7 +440,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   a.op(OP.JOB, 4);
   check(st.jobs[3] === HOLDER.NOBODY && a.has('refused', (e) => e.type === 'refused' && e.why === 'int'), 'not enough Intellect: refused');
   // The player stood about instead of doing the laundry: fired too, at 15:00.
-  check(a.events.some((e) => e.type === 'job' && e.who === HOLDER.PLAYER && e.change === 'fired' && e.job === 0), 'the player, idle at work, lost the laundry job');
+  check(
+    a.events.some((e) => e.type === 'job' && e.who === HOLDER.PLAYER && e.change === 'fired' && e.job === 0),
+    'the player, idle at work, lost the laundry job',
+  );
   console.log(`sabotage: the kitchen hand fired at 15:00, the player hired for day ${st.jobDay}`);
 }
 
@@ -425,7 +472,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   put(st.player, 7, 29);
   st.player.facing = 13;
   a.op(OP.INTERACT);
-  check(st.train >= 0 && sim.world.props[st.train].kind === 'weights' && a.has('train'), 'the action button at the weights starts training');
+  check(
+    st.train >= 0 && sim.world.props[st.train].kind === 'weights' && a.has('train'),
+    'the action button at the weights starts training',
+  );
   // Pressing one side over and over fills nothing.
   for (let k = 0; k < 40; k++) a.op(OP.TRAIN, 1);
   check(st.reps <= 17, `the same side again doesn't count (bar ${st.reps})`);
@@ -436,7 +486,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
     if (sim.events.some((e) => e.type === 'trained')) sets++;
   }
   console.log(`training: 3 sets of weights → STR ${st.str}, energy ${e0} → ${st.energy}`);
-  check(st.str === 46 && st.energy <= e0 - 26 && st.energy >= e0 - 36, `three sets: +6 Strength, 36 energy (less what comes back while training: ${e0 - st.energy})`);
+  check(
+    st.str === 46 && st.energy <= e0 - 26 && st.energy >= e0 - 36,
+    `three sets: +6 Strength, 36 energy (less what comes back while training: ${e0 - st.energy})`,
+  );
   check((st.trained & 1) === 1, 'Strength trained today');
   // Too tired: off the equipment, nothing more.
   st.energy = 9;
@@ -461,7 +514,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   st.trained = 1;
   a.op(OP.TRAIN, 3);
   while (clockAt(st.step).day < 2 || ROUTINE[st.routine].id !== 'rollCall') a.step();
-  check(st.str === 46 && st.items.int === 41 && st.spd === 46, `the next morning: untrained INT and SPD slip a point, STR (trained) keeps (STR ${st.str} SPD ${st.spd} INT ${st.items.int})`);
+  check(
+    st.str === 46 && st.items.int === 41 && st.spd === 46,
+    `the next morning: untrained INT and SPD slip a point, STR (trained) keeps (STR ${st.str} SPD ${st.spd} INT ${st.items.int})`,
+  );
   // Speed walks faster.
   const pace = (spd: number) => {
     const b = new Sim(CENTER_PERKS, 1);
@@ -491,13 +547,19 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   st.inmates[who].opinion = 100;
   const cheap = priceOf(itemDef(item).value, 100);
   a.op(OP.TALK, TALK.BUY, k);
-  check(shop[k] === 0 && st.items.inv.some((v) => itemOf(v) === item) && st.cash === 100 - cheap, `bought at half price ($${cheap} instead of $${price})`);
+  check(
+    shop[k] === 0 && st.items.inv.some((v) => itemOf(v) === item) && st.cash === 100 - cheap,
+    `bought at half price ($${cheap} instead of $${price})`,
+  );
   // A grudge: no deals.
   st.inmates[who].opinion = 20;
   const k2 = shop.findIndex((v) => v);
   if (k2 >= 0) {
     a.op(OP.TALK, TALK.BUY, k2);
-    check(shop[k2] !== 0 && a.has('refused', (e) => e.type === 'refused' && e.why === 'grudge'), 'a merchant who despises the player won\'t sell');
+    check(
+      shop[k2] !== 0 && a.has('refused', (e) => e.type === 'refused' && e.why === 'grudge'),
+      "a merchant who despises the player won't sell",
+    );
   }
   // Gifts: an item worth $15 is +8, $10 cash +6.
   st.inmates[who].opinion = 50;
@@ -534,28 +596,43 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 {
   const a = arena(stepAt(1, 10, 30), 7);
   const { st } = a;
-  check(st.favors.length > 0 && st.favors.every((f) => f.state === FAVOR_STATE.OFFERED && f.reward >= 20 && f.reward <= 50), `day 1 brings favors on offer (${st.favors.length}), $20–50 each`);
+  check(
+    st.favors.length > 0 && st.favors.every((f) => f.state === FAVOR_STATE.OFFERED && f.reward >= 20 && f.reward <= 50),
+    `day 1 brings favors on offer (${st.favors.length}), $20–50 each`,
+  );
   // A scavenge favor, set up by hand: accept, bring the item, hand it in.
   st.favors = [{ by: 0, kind: FAVOR.SCAVENGE, item: n('magazine'), target: -1, reward: 30, state: FAVOR_STATE.OFFERED }];
   talkTo(a, 0);
   a.op(OP.TALK, TALK.ACCEPT);
   a.op(OP.TALK, TALK.HAND_IN);
-  check(st.favors[0].state === FAVOR_STATE.TAKEN && a.has('refused', (e) => e.type === 'refused' && e.why === 'missing'), 'handing in without the item: refused');
+  check(
+    st.favors[0].state === FAVOR_STATE.TAKEN && a.has('refused', (e) => e.type === 'refused' && e.why === 'missing'),
+    'handing in without the item: refused',
+  );
   st.items.inv[2] = slot(n('magazine'));
   const op0 = st.inmates[0].opinion;
   a.op(OP.TALK, TALK.HAND_IN);
-  check(st.favors.length === 0 && st.cash === 30 && st.inmates[0].opinion === op0 + 15 && !st.items.inv[2], 'scavenge favor: the item goes, $30 and +15 opinion');
+  check(
+    st.favors.length === 0 && st.cash === 30 && st.inmates[0].opinion === op0 + 15 && !st.items.inv[2],
+    'scavenge favor: the item goes, $30 and +15 opinion',
+  );
   // Retrieval: the stolen item turns up in the thief's pockets when it's taken on.
   st.favors = [{ by: 1, kind: FAVOR.RETRIEVE, item: n('soap'), target: 4, reward: 25, state: FAVOR_STATE.OFFERED }];
   talkTo(a, 1);
   a.op(OP.TALK, TALK.ACCEPT);
-  check(st.items.containers[pocketOf(a.sim.world, 4)].some((v) => itemOf(v) === n('soap')), 'retrieval favor: the thief has it');
+  check(
+    st.items.containers[pocketOf(a.sim.world, 4)].some((v) => itemOf(v) === n('soap')),
+    'retrieval favor: the thief has it',
+  );
   // Beatdown: done when the target is knocked out.
   st.favors = [{ by: 2, kind: FAVOR.BEATDOWN, item: 0, target: 5, reward: 40, state: FAVOR_STATE.OFFERED }];
   talkTo(a, 2);
   a.op(OP.TALK, TALK.ACCEPT);
   a.op(OP.TALK, TALK.HAND_IN);
-  check(a.has('refused', (e) => e.type === 'refused' && e.why === 'notDone'), 'beatdown not done yet: refused');
+  check(
+    a.has('refused', (e) => e.type === 'refused' && e.why === 'notDone'),
+    'beatdown not done yet: refused',
+  );
   a.op(OP.CLOSE);
   const t = st.inmates[5];
   t.hp = 1;
@@ -635,7 +712,9 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 {
   const a = arena(stepAt(1, 10, 30), 13);
   const { sim, st } = a;
-  const k = Object.keys(st.coins).map(Number).find((i) => i >= pocketOf(sim.world, 0));
+  const k = Object.keys(st.coins)
+    .map(Number)
+    .find((i) => i >= pocketOf(sim.world, 0));
   check(k !== undefined, 'some inmates carry change');
   if (k !== undefined) {
     const who = k - pocketOf(sim.world, 0);
@@ -667,14 +746,37 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   // An old save (before P6) loads with the starting economy.
   const old = sim.snapshot();
   const raw = old.state as unknown as Record<string, unknown>;
-  for (const key of ['cash', 'coins', 'jobs', 'jobOpen', 'jobDay', 'quota', 'paid', 'machines', 'puddles', 'mail', 'train', 'reps', 'repSide', 'trained', 'talk', 'followers', 'favors', 'shops']) delete raw[key];
+  for (const key of [
+    'cash',
+    'coins',
+    'jobs',
+    'jobOpen',
+    'jobDay',
+    'quota',
+    'paid',
+    'machines',
+    'puddles',
+    'mail',
+    'train',
+    'reps',
+    'repSide',
+    'trained',
+    'talk',
+    'followers',
+    'favors',
+    'shops',
+  ])
+    delete raw[key];
   for (const m of old.state.inmates as unknown as Array<Record<string, unknown>>) {
     delete m.opinion;
     delete m.shift;
   }
   const back = new Sim(CENTER_PERKS, 1);
   back.restore(old);
-  check(back.state.cash === 0 && back.playerJob === 0 && back.state.jobDay > back.today && back.state.inmates.every((m) => m.opinion === 50), 'a save from before P6 loads: no cash, the laundry from tomorrow, opinions at 50');
+  check(
+    back.state.cash === 0 && back.playerJob === 0 && back.state.jobDay > back.today && back.state.inmates.every((m) => m.opinion === 50),
+    'a save from before P6 loads: no cash, the laundry from tomorrow, opinions at 50',
+  );
   for (let k = 0; k < DAY / 2; k++) back.step(0);
   check(true, 'and plays on');
 }
@@ -689,7 +791,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   put(st.player, 21, 29);
   st.player.facing = 1;
   sim.step(command(0, OP.JOB, 6));
-  check(st.jobs[5] === HOLDER.NOBODY && sim.events.some((e) => e.type === 'refused' && e.why === 'int'), 'the mailman job at Intellect 40: refused');
+  check(
+    st.jobs[5] === HOLDER.NOBODY && sim.events.some((e) => e.type === 'refused' && e.why === 'int'),
+    'the mailman job at Intellect 40: refused',
+  );
   sim.step(command(0, OP.JOB, 1));
   check(st.items.int === 40 && st.jobs[0] === HOLDER.PLAYER, 'the metalshop, the player’s first job: theirs again at Intellect 40');
 }
@@ -697,7 +802,18 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 // Every station of every job is something the action button can do (the station logic is total).
 {
   const sim = new Sim(CENTER_PERKS);
-  const ws: WorkState = { job: 0, onDuty: true, machines: {}, puddles: [], step: 0, inv: [0, 0, 0, 0, 0, 0, 0, 0], hand: 0, mail: [], owed: 4, pockets: true };
+  const ws: WorkState = {
+    job: 0,
+    onDuty: true,
+    machines: {},
+    puddles: [],
+    step: 0,
+    inv: [0, 0, 0, 0, 0, 0, 0, 0],
+    hand: 0,
+    mail: [],
+    owed: 4,
+    pockets: true,
+  };
   const room = jobRooms(sim.world)[0];
   const p = sim.world.props[room.take];
   const b = { x: (p.x + 0.5) * UNIT, z: (p.z - 0.5) * UNIT, facing: 5, moving: false };
@@ -736,7 +852,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   g.body.facing = g.face = 13;
   a.op(OP.LOCK, 2);
   a.op(OP.USE, 1);
-  check(st.selfDefense && st.heat > 0 && st.heat <= 10 && !st.lockdown && a.has('spotted', (e) => e.type === 'spotted' && e.reason === 'brawl'), `hitting back, seen: a scuffle (${st.heat}% heat)`);
+  check(
+    st.selfDefense && st.heat > 0 && st.heat <= 10 && !st.lockdown && a.has('spotted', (e) => e.type === 'spotted' && e.reason === 'brawl'),
+    `hitting back, seen: a scuffle (${st.heat}% heat)`,
+  );
   // Hitting someone calm in sight: the alarm, as before.
   const b = arena(stepAt(1, 10, 30), 19);
   freeze(b.st.inmates[0], 30, 22);
@@ -768,9 +887,15 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   }
   check(sorted === 3 && Object.keys(st.machines).length === 0, `no more letters than addressees (${sorted})`);
   check(new Set(st.items.inv.filter((v) => itemOf(v) === n('letter')).map(usesOf)).size === 3, 'each letter for a different inmate');
-  a.op(OP.DROP, st.items.inv.findIndex((v) => itemOf(v) === n('letter')));
+  a.op(
+    OP.DROP,
+    st.items.inv.findIndex((v) => itemOf(v) === n('letter')),
+  );
   while (ROUTINE[st.routine].id === 'work') a.step();
-  check(!st.items.ground.some(([, v]) => itemOf(v) === n('letter')) && !st.items.inv.some((v) => itemOf(v) === n('letter')), 'letters go back at 15:00, dropped ones too');
+  check(
+    !st.items.ground.some(([, v]) => itemOf(v) === n('letter')) && !st.items.inv.some((v) => itemOf(v) === n('letter')),
+    'letters go back at 15:00, dropped ones too',
+  );
 }
 {
   // How long a step takes with the economy running (the worker bot, a day).
@@ -812,7 +937,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   readNow(a);
   for (let k = 0; k < 300 && st.items.int === 44; k++) a.step(beatPress(sim));
   const first = st.tips[0];
-  check(st.items.int === 46 && st.tips.length === 1 && RECIPES[first].int <= 46 && a.has('tip', (e) => e.type === 'tip' && e.who === -1), `studying past 45 tells a recipe (${RECIPES[first]?.result})`);
+  check(
+    st.items.int === 46 && st.tips.length === 1 && RECIPES[first].int <= 46 && a.has('tip', (e) => e.type === 'tip' && e.who === -1),
+    `studying past 45 tells a recipe (${RECIPES[first]?.result})`,
+  );
   check(!RECIPES.some((r, k) => r.int < RECIPES[first].int && !st.items.known.includes(k)), 'the simplest one first');
   a.op(OP.CLOSE);
   // An inmate who likes the player: a recipe once a day.
@@ -829,7 +957,10 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   // Saved and loaded: what was carried and told stays.
   const back = new Sim(CENTER_PERKS, 9);
   back.restore(JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot);
-  check(back.state.tips.join() === st.tips.join() && back.state.carried.join() === st.carried.join() && back.state.tipDay[who] === 1, 'tips survive a save');
+  check(
+    back.state.tips.join() === st.tips.join() && back.state.carried.join() === st.carried.join() && back.state.tipDay[who] === 1,
+    'tips survive a save',
+  );
   // A save from before (no such fields): empty lists.
   const old = JSON.parse(JSON.stringify(sim.snapshot())) as Snapshot;
   delete (old.state as Partial<typeof old.state>).carried;
@@ -864,11 +995,20 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   set();
   check(st.items.int === 50 && st.tips.length === 2, `on to 50: the next tip (INT ${st.items.int}, ${st.tips.length} tips)`);
   // Copying keys is never told; what a prison can't make is never told nor shown.
-  check(st.tips.every((k) => !RECIPES[k].keep && !RECIPES[k].ingredients.some((i) => i.startsWith('mold_'))), 'no key mold is ever told');
+  check(
+    st.tips.every((k) => !RECIPES[k].keep && !RECIPES[k].ingredients.some((i) => i.startsWith('mold_'))),
+    'no key mold is ever told',
+  );
   const training = new Sim(TRAINING, 3);
   const here = obtainable(training.world);
-  check(here.has(n('key_red')) && !here.has(n('key_yellow')) && here.has(n('mold_red')) && !here.has(n('mold_yellow')), 'the Training Block: only its guard\'s key and mold can be had');
-  check(['key_yellow', 'key_cyan', 'key_purple', 'key_green', 'key_red'].every((id) => obtainable(new Sim(CENTER_PERKS, 1).world).has(n(id))), 'Center Perks: every guard key can be had');
+  check(
+    here.has(n('key_red')) && !here.has(n('key_yellow')) && here.has(n('mold_red')) && !here.has(n('mold_yellow')),
+    "the Training Block: only its guard's key and mold can be had",
+  );
+  check(
+    ['key_yellow', 'key_cyan', 'key_purple', 'key_green', 'key_red'].every((id) => obtainable(new Sim(CENTER_PERKS, 1).world).has(n(id))),
+    'Center Perks: every guard key can be had',
+  );
 }
 
 // ------------------------------------------------------------------ the inmates' shifts in every campaign prison (P32 review)
@@ -878,16 +1018,22 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
   for (const def of PRISONS) {
     const bot = new Bot(def, 1);
     const st = bot.sim.state;
-    const at = ((14 * 60 + 59 - 8 * 60) * STEPS_PER_MINUTE);
+    const at = (14 * 60 + 59 - 8 * 60) * STEPS_PER_MINUTE;
     bot.keepRoutine(() => st.step >= at, at + 1);
     const held = def.jobs.map((j, k) => ({ j, h: st.jobs[k] })).filter(({ h }) => h >= 0);
     const off = held.filter(({ j, h }) => {
       const m = st.inmates[h];
       // (2.30: the janitor and the mailman out on their rounds, clocked in at their rooms first.)
       if (JOBS[j.id].flow !== 'machine') return m.shift !== 1;
-      return m.shift !== 1 || ZONES[bot.sim.world.ground.zone[Math.floor(m.body.z / UNIT) * MAP_W + Math.floor(m.body.x / UNIT)]] !== JOBS[j.id].zone;
+      return (
+        m.shift !== 1 ||
+        ZONES[bot.sim.world.ground.zone[Math.floor(m.body.z / UNIT) * MAP_W + Math.floor(m.body.x / UNIT)]] !== JOBS[j.id].zone
+      );
     });
-    check(held.length > 0 && off.length === 0, `${def.id}: every inmate holding a job at work at 14:59 (${off.map(({ j }) => j.id).join(', ')})`);
+    check(
+      held.length > 0 && off.length === 0,
+      `${def.id}: every inmate holding a job at work at 14:59 (${off.map(({ j }) => j.id).join(', ')})`,
+    );
     lines.push(`${def.id} ${held.length}`);
   }
   console.log(`inmates at work at 14:59 on day 1: ${lines.join(', ')}`);

@@ -137,7 +137,23 @@ export const dogDef = (w: World, k: number): DogDef => w.def.guards[handlersOf(w
 export function spawnDogs(w: World): Dog[] {
   return handlersOf(w).map((h) => {
     const at = w.def.guards[h].dog!.kennel;
-    return { body: bodyAt(at.x, at.z, at.face ?? 5), goal: -1, path: [], wait: 0, speed: DOG_HEEL_SPEED, stall: 0, mode: DOG.KENNEL, timer: 0, trust: 0, fed: 0, daze: 0, sleep: 0, sniffed: 0, trail: 0, rest: 0 };
+    return {
+      body: bodyAt(at.x, at.z, at.face ?? 5),
+      goal: -1,
+      path: [],
+      wait: 0,
+      speed: DOG_HEEL_SPEED,
+      stall: 0,
+      mode: DOG.KENNEL,
+      timer: 0,
+      trust: 0,
+      fed: 0,
+      daze: 0,
+      sleep: 0,
+      sniffed: 0,
+      trail: 0,
+      rest: 0,
+    };
   });
 }
 
@@ -188,7 +204,17 @@ export function noseFor(sim: SimContext, k: number): boolean {
   const s = sim.state;
   const d = s.dogs[k];
   const g = s.guards[handlersOf(sim.world)[k]];
-  return !!d && d.mode === DOG.HEEL && g.ko <= 0 && !dogAsleep(d, s.step) && !dogDazed(d, s.step) && d.trust < TRUST_IGNORE && !s.lockdown && playerAbout(sim) && onShift(sim, dogDef(sim.world, k));
+  return (
+    !!d &&
+    d.mode === DOG.HEEL &&
+    g.ko <= 0 &&
+    !dogAsleep(d, s.step) &&
+    !dogDazed(d, s.step) &&
+    d.trust < TRUST_IGNORE &&
+    !s.lockdown &&
+    playerAbout(sim) &&
+    onShift(sim, dogDef(sim.world, k))
+  );
 }
 
 /** How close (units) a dog that would smell contraband on the player lights the paw on the HUD. */
@@ -335,7 +361,8 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
   }
   if (d.mode === DOG.POINT) {
     b.moving = false;
-    if (playerAbout(sim) && (p.x !== b.x || p.z !== b.z) && dist(b, p.x, p.z) <= SNIFF_RANGE * 2) b.facing = nearestDir(p.x - b.x, p.z - b.z);
+    if (playerAbout(sim) && (p.x !== b.x || p.z !== b.z) && dist(b, p.x, p.z) <= SNIFF_RANGE * 2)
+      b.facing = nearestDir(p.x - b.x, p.z - b.z);
     if (--d.timer <= 0) {
       d.mode = DOG.HEEL;
       d.goal = -1;
@@ -366,7 +393,13 @@ function stepDog(sim: SimContext, c: Crowd, k: number, g: Guard, def: DogDef) {
       } else return trailEnd(sim, k, g, tile, tile, s.scent[at][2] === 1);
     }
     // The handler follows the dog.
-    if (s.step % STEPS_PER_SECOND === k % STEPS_PER_SECOND && awake(g) && g.mode !== GUARD.CHASE && (g.mode !== GUARD.INVESTIGATE || cheb(g.target, here) > 2)) sendToLook(g, here);
+    if (
+      s.step % STEPS_PER_SECOND === k % STEPS_PER_SECOND &&
+      awake(g) &&
+      g.mode !== GUARD.CHASE &&
+      (g.mode !== GUARD.INVESTIGATE || cheb(g.target, here) > 2)
+    )
+      sendToLook(g, here);
     return;
   }
   // At the heel: catching up when it's fallen behind, and standing by when it's close.
@@ -612,7 +645,7 @@ export function treatTarget(sim: SimContext): { dog: number; tile: number } | nu
   s.dogs.forEach((d, k) => {
     if (dogAsleep(d, s.step)) return;
     const t = tileAt(d.body.x, d.body.z);
-    const dd = (t % MAP_W - px) ** 2 + (Math.floor(t / MAP_W) - pz) ** 2;
+    const dd = ((t % MAP_W) - px) ** 2 + (Math.floor(t / MAP_W) - pz) ** 2;
     if (dd >= bestD) return;
     aimToss(sim, (t % MAP_W) - px, Math.floor(t / MAP_W) - pz, treatAim);
     if (treatAim.why || dist(d.body, centerX(treatAim.to), centerZ(treatAim.to)) > TREAT_RANGE) return;

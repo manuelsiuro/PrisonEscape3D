@@ -20,7 +20,17 @@ import { HOLDER, jobRooms } from '../src/sim/systems/economy';
 import { DOING, dutyCarry, dutyMachine } from '../src/sim/systems/inmates';
 import { itemOf } from '../src/sim/systems/items';
 import { nextWork, workWarningAt } from '../src/sim/systems/jobs';
-import { CHASE_HEAT, LAST_WARNING, MAIL_WARNING, STEPS_PER_MINUTE, STRANGER_CAP, STRANGER_GRACE, STRANGER_HEAT, UNIT, WORK_WARNING } from '../src/sim/tuning';
+import {
+  CHASE_HEAT,
+  LAST_WARNING,
+  MAIL_WARNING,
+  STEPS_PER_MINUTE,
+  STRANGER_CAP,
+  STRANGER_GRACE,
+  STRANGER_HEAT,
+  UNIT,
+  WORK_WARNING,
+} from '../src/sim/tuning';
 import { tileAt } from '../src/sim/world/grid';
 import { MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
@@ -71,7 +81,12 @@ function followWork(bot: Bot): number {
     }
     if (next.act === 'mop') {
       const from = tileOf(bot.st.player);
-      const near = [...bot.st.puddles].sort((a, b) => Math.abs((a % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(a / MAP_W) - Math.floor(from / MAP_W)) - (Math.abs((b % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(b / MAP_W) - Math.floor(from / MAP_W))))[0];
+      const near = [...bot.st.puddles].sort(
+        (a, b) =>
+          Math.abs((a % MAP_W) - (from % MAP_W)) +
+          Math.abs(Math.floor(a / MAP_W) - Math.floor(from / MAP_W)) -
+          (Math.abs((b % MAP_W) - (from % MAP_W)) + Math.abs(Math.floor(b / MAP_W) - Math.floor(from / MAP_W))),
+      )[0];
       if (near === undefined || !bot.walkTo(near)) return -1;
       bot.act();
       continue;
@@ -113,7 +128,8 @@ for (const def of PRISONS) {
     check(paid > 0, `${def.id} ${id}: done by following the next step alone`);
     times.push(`${def.id} ${id} ${paid - WORK}`);
     // (The mail round's first warning is for a round not begun, and comes earlier than the time it takes.)
-    if (jobRooms(bot.sim.world)[job].def.flow !== 'mail') check(paid < workWarningAt(jobRooms(bot.sim.world)[job].def), `${def.id} ${id}: done before the warning comes`);
+    if (jobRooms(bot.sim.world)[job].def.flow !== 'mail')
+      check(paid < workWarningAt(jobRooms(bot.sim.world)[job].def), `${def.id} ${id}: done before the warning comes`);
     check(!bot.st.heat, `${def.id} ${id}: at no cost in heat`);
   });
 }
@@ -138,7 +154,10 @@ for (const def of PRISONS) {
   });
 }
 console.log(`minutes to spare, starting at the warning (least of 3 seeds): ${left.join(', ')}`);
-check(LAST_WARNING === 14 * 60 + 30 && WORK_WARNING < LAST_WARNING && MAIL_WARNING < WORK_WARNING, 'the warnings: the first in time for the whole job, a last call at 14:30');
+check(
+  LAST_WARNING === 14 * 60 + 30 && WORK_WARNING < LAST_WARNING && MAIL_WARNING < WORK_WARNING,
+  'the warnings: the first in time for the whole job, a last call at 14:30',
+);
 
 // ------------------------------------------------------------------ the mop
 {
@@ -150,7 +169,10 @@ check(LAST_WARNING === 14 * 60 + 30 && WORK_WARNING < LAST_WARNING && MAIL_WARNI
   bot.st.items.inv[0] = itemNumber('soap');
   bot.st.items.hand = 0;
   const closet = jobRooms(bot.sim.world)[job].take;
-  check(beside(bot, closet).some((t) => bot.walkTo(t)), 'the mop: to the closet');
+  check(
+    beside(bot, closet).some((t) => bot.walkTo(t)),
+    'the mop: to the closet',
+  );
   const p = bot.sim.world.props[closet];
   const d = nearestDir((p.x + p.w / 2) * UNIT - bot.st.player.x, (p.z + p.d / 2) * UNIT - bot.st.player.z);
   if (d) bot.sim.step(command(d));
@@ -191,7 +213,10 @@ check(LAST_WARNING === 14 * 60 + 30 && WORK_WARNING < LAST_WARNING && MAIL_WARNI
   const room = jobRooms(bot.sim.world)[bot.st.jobs.indexOf(HOLDER.PLAYER)];
   bot.st.items.inv[0] = itemNumber('soap');
   bot.st.items.hand = 0;
-  check(beside(bot, room.take).some((t) => bot.walkTo(t)), 'to the dirty bin');
+  check(
+    beside(bot, room.take).some((t) => bot.walkTo(t)),
+    'to the dirty bin',
+  );
   const q = bot.sim.world.props[room.take];
   const d = nearestDir((q.x + q.w / 2) * UNIT - bot.st.player.x, (q.z + q.d / 2) * UNIT - bot.st.player.z);
   if (d) bot.sim.step(command(d));
@@ -216,8 +241,10 @@ for (const def of PRISONS) {
       check(d.machines.length > 0 && d.machines.every((m) => r.machines.includes(m.prop)), `${def.id} ${r.def.id}: and the same machines`);
     }
     if (r.def.flow === 'mail') check(d.machines.length > 0, `${def.id}: the mail desk`);
-    if (r.def.flow === 'mop') check(d.take?.prop === r.take && d.round.length >= 8, `${def.id}: the janitor's closet and round (${d.round.length})`);
-    for (const s of [d.take, d.put, ...d.machines]) if (s) check(!w.npcBlock[s.tile] && w.ground.zone[s.tile] === r.zone, `${def.id} ${r.def.id}: a stop on the room's floor`);
+    if (r.def.flow === 'mop')
+      check(d.take?.prop === r.take && d.round.length >= 8, `${def.id}: the janitor's closet and round (${d.round.length})`);
+    for (const s of [d.take, d.put, ...d.machines])
+      if (s) check(!w.npcBlock[s.tile] && w.ground.zone[s.tile] === r.zone, `${def.id} ${r.def.id}: a stop on the room's floor`);
   });
   for (const seed of [3, 11, 29, 47]) {
     const sim = new Sim(def, seed);
@@ -293,7 +320,10 @@ console.log(`legs in a Work Period (seed 3): ${work.join(', ')}`);
     t.step(0);
   }
   for (let k = 0; k < 40 * 20; k++) t.step(0);
-  check(t.state.inmates.every((m) => m.duty === 0), 'the Training Block: nobody on a round');
+  check(
+    t.state.inmates.every((m) => m.duty === 0),
+    'the Training Block: nobody on a round',
+  );
 }
 {
   // A lockdown stops work, out cold stops work, and its job goes as ever.
@@ -332,7 +362,9 @@ function watched(def: typeof CENTER_PERKS, zone: string, seed = 3, job = -1, rul
   const w = bot.sim.world;
   const floor = placesOf(w).floor[room.zone].filter((t) => !w.npcBlock[t]);
   const a = floor[Math.floor(floor.length / 2)];
-  const b = floor.find((t) => t !== a && Math.abs((t % MAP_W) - (a % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(a / MAP_W)) === 2) ?? floor[0];
+  const b =
+    floor.find((t) => t !== a && Math.abs((t % MAP_W) - (a % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(a / MAP_W)) === 2) ??
+    floor[0];
   put(bot, a);
   const g = bot.st.guards[0];
   g.body.x = (b % MAP_W) * UNIT + UNIT / 2;
@@ -415,7 +447,10 @@ for (const def of PRISONS) {
     late.hold();
     late.bot.sim.step(0);
   }
-  check(!late.bot.sim.events.some((e) => e.type === 'spotted' && e.reason === 'stranger') && late.bot.st.strayed.length === 0, 'after 15:00: not the same thing');
+  check(
+    !late.bot.sim.events.some((e) => e.type === 'spotted' && e.reason === 'stranger') && late.bot.st.strayed.length === 0,
+    'after 15:00: not the same thing',
+  );
   // Sent there: a pumpkin to carve, the fixer's mug in the freezer.
   const carving = watched(def, 'kitchen');
   carving.bot.st.items.inv[0] = itemNumber('pumpkin');
@@ -494,16 +529,25 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
     sim.step(0);
   }
   const snap = sim.snapshot();
-  check(snap.state.inmates.some((m) => m.duty > 0), 'a save at work holds how far through inmates are');
+  check(
+    snap.state.inmates.some((m) => m.duty > 0),
+    'a save at work holds how far through inmates are',
+  );
   const bare = structuredClone(snap);
   for (const m of bare.state.inmates) delete (m as { duty?: number }).duty;
   delete (bare.state as { strayed?: number[] }).strayed;
   const old = new Sim(CENTER_PERKS, 3);
   old.restore(bare);
-  check(old.state.inmates.every((m) => m.duty === 0), 'a save from before: nobody partway');
+  check(
+    old.state.inmates.every((m) => m.duty === 0),
+    'a save from before: nobody partway',
+  );
   check(Array.isArray(old.state.strayed) && old.state.strayed.length === 0, 'a save from before: nobody told');
   for (let k = 0; k < 40 * 20; k++) old.step(0);
-  check(old.state.inmates.some((m) => m.duty > 0), 'and on they work');
+  check(
+    old.state.inmates.some((m) => m.duty > 0),
+    'and on they work',
+  );
 }
 {
   // A 2.29 run through the Work Period replays as it was.
@@ -516,7 +560,10 @@ check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '')
   was.rules233 = true;
   const prev = new RunRecorder(was, { seed: 24, game: '2.29.0' });
   for (let k = 0; k < (WORK + 60 - 8 * 60) * STEPS_PER_MINUTE; k++) prev.step(0);
-  check(prev.sim.state.inmates.every((m) => m.duty === 0), 'the old rules: nobody on a round');
+  check(
+    prev.sim.state.inmates.every((m) => m.duty === 0),
+    'the old rules: nobody on a round',
+  );
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules229 === true, 'a 2.29 log through work replays whole under the old rules');
   check(!replayLog({ ...prev.toLog(), game: '2.34.0' }, CENTER_PERKS)?.ok, 'and would not under the new ones: the test can fail');

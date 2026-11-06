@@ -30,7 +30,10 @@ for (const part of LOOK_PARTS) {
   const list = cosmeticsOf(part);
   // Tattoos and trims are all earned (none to start with).
   check(list.filter((c) => !c.locked).length >= (part === 'tattoo' || part === 'trim' ? 1 : 2), `${part}: free choices to start with`);
-  check(list.some((c) => c.id === DEFAULT_PRISONER.look[part] && !c.locked), `${part}: a free default`);
+  check(
+    list.some((c) => c.id === DEFAULT_PRISONER.look[part] && !c.locked),
+    `${part}: a free default`,
+  );
   check(!!enT[`part.${part}`] && !!frT[`part.${part}`], `${part}: named`);
 }
 for (const c of COSMETICS) check(!!enT[`look.${c.id}`] && !!frT[`look.${c.id}`], `${c.id}: named in English and French`);
@@ -62,13 +65,39 @@ for (const c of cosmeticsOf('trim').filter((x) => x.shape)) {
   const hh = hue(c.color);
   check(hh >= 15 && hh <= 55 && Math.max(...rgb(c.color)) >= 150, `${c.id}: a trim in the orange family (hue ${Math.round(hh)}°)`);
 }
-check(cosmeticsOf('hat').every((c) => c.shape !== 0 || c.id === 'noHat'), 'hats are shapes of their own');
+check(
+  cosmeticsOf('hat').every((c) => c.shape !== 0 || c.id === 'noHat'),
+  'hats are shapes of their own',
+);
 
 // The look: everything on, in the jumpsuit, another outfit, the guard's uniform.
 const guardColor = itemDef(itemNumber('guard_outfit')).color;
-const all = fitPrisoner({ name: 'Ace', look: { skin: 'skin5', hair: 'ginger', style: 'mohawk', beard: 'fullBeard', build: 'broad', hat: 'crown', glasses: 'shades', tattoo: 'anchor', trim: 'gold' } });
+const all = fitPrisoner({
+  name: 'Ace',
+  look: {
+    skin: 'skin5',
+    hair: 'ginger',
+    style: 'mohawk',
+    beard: 'fullBeard',
+    build: 'broad',
+    hat: 'crown',
+    glasses: 'shades',
+    tattoo: 'anchor',
+    trim: 'gold',
+  },
+});
 const jump = lookFor(all, INMATE_LOOK.outfit, false);
-check(jump.hat === 6 && jump.glasses === 3 && jump.tattoo === 1 && jump.trim === 0xffd23f && jump.beard === 3 && jump.hairStyle === 4 && jump.size === 1.03 && jump.cap === undefined, 'in the jumpsuit: everything shows');
+check(
+  jump.hat === 6 &&
+    jump.glasses === 3 &&
+    jump.tattoo === 1 &&
+    jump.trim === 0xffd23f &&
+    jump.beard === 3 &&
+    jump.hairStyle === 4 &&
+    jump.size === 1.03 &&
+    jump.cap === undefined,
+  'in the jumpsuit: everything shows',
+);
 const vest = lookFor(all, null, false);
 check(vest.trim === undefined && vest.outfit === 0xe8e8e2 && vest.hat === 6, 'no outfit: a white vest, no trim');
 const other = lookFor(all, 0x7a8a99, false);
@@ -77,10 +106,19 @@ check(lookFor(all, INMATE_LOOK.outfit, false, false).trim === undefined, 'not on
 const disguisedHair = lookFor(fitPrisoner({ look: { style: 'tall' } }), guardColor, true);
 check(disguisedHair.cap !== undefined && disguisedHair.hairStyle === 3, 'in disguise: the cap (Character flattens tall hair under it)');
 const disguise = lookFor(all, guardColor, true);
-check(disguise.cap !== undefined && disguise.hat === undefined && disguise.trim === undefined && disguise.glasses === 3, 'in disguise: the guard cap instead of the hat, no trim');
-check(COSMETICS.every((c) => lookFor(fitPrisoner({ look: { [c.part]: c.id } }), INMATE_LOOK.outfit, false).cap === undefined), 'no cosmetic ever makes a guard cap');
+check(
+  disguise.cap !== undefined && disguise.hat === undefined && disguise.trim === undefined && disguise.glasses === 3,
+  'in disguise: the guard cap instead of the hat, no trim',
+);
+check(
+  COSMETICS.every((c) => lookFor(fitPrisoner({ look: { [c.part]: c.id } }), INMATE_LOOK.outfit, false).cap === undefined),
+  'no cosmetic ever makes a guard cap',
+);
 const plain = lookFor(null, INMATE_LOOK.outfit, false);
-check(plain.skin === INMATE_LOOK.skin && plain.hair === INMATE_LOOK.hair && plain.hat === undefined && plain.size === 1, 'no prisoner: the jumpsuit as it always was');
+check(
+  plain.skin === INMATE_LOOK.skin && plain.hair === INMATE_LOOK.hair && plain.hat === undefined && plain.size === 1,
+  'no prisoner: the jumpsuit as it always was',
+);
 
 // Names: tidied, capped, markup out.
 check(cleanName('  Big   Al  ') === 'Big Al', 'spaces tidied');
@@ -90,7 +128,10 @@ check([...cleanName('🦝🦝🦝🦝🦝🦝🦝🦝🦝🦝🦝🦝🦝🦝�
 check(cleanName('a\u0000b\nc') === 'ab c' || cleanName('a\u0000b\nc') === 'abc', 'no control characters');
 
 // Stored: garbage made safe; kept through Reset progress.
-check(fitPrisoner(null).look.hat === 'noHat' && fitPrisoner({ look: { hat: 'crown', skin: 'crown' } }).look.skin === DEFAULT_PRISONER.look.skin, 'a stored prisoner made safe (a part only takes its own)');
+check(
+  fitPrisoner(null).look.hat === 'noHat' && fitPrisoner({ look: { hat: 'crown', skin: 'crown' } }).look.skin === DEFAULT_PRISONER.look.skin,
+  'a stored prisoner made safe (a part only takes its own)',
+);
 check(readPrisoner() === null, 'no prisoner before the Intake');
 writePrisoner(all);
 check(readPrisoner()?.name === 'Ace' && readPrisoner()?.look.hat === 'crown', 'a prisoner stored and read back');

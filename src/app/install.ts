@@ -55,7 +55,11 @@ export function installWay(): InstallWay | null {
   const ua = navigator.userAgent;
   const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   // In-app browsers: Facebook, Instagram, TikTok, Snapchat, LINE, WeChat, X, the Google app, Android web views.
-  if (/FBAN|FBAV|FB_IAB|Instagram|musical_ly|BytedanceWebview|TikTok|Snapchat|Line\/|MicroMessenger|Twitter|GSA\//.test(ua) || /; wv\)/.test(ua)) return 'inApp';
+  if (
+    /FBAN|FBAV|FB_IAB|Instagram|musical_ly|BytedanceWebview|TikTok|Snapchat|Line\/|MicroMessenger|Twitter|GSA\//.test(ua) ||
+    /; wv\)/.test(ua)
+  )
+    return 'inApp';
   if (ios) return /CriOS|FxiOS|EdgiOS/.test(ua) ? 'iosOther' : 'ios';
   if (/Android/.test(ua)) return 'android';
   if (/Firefox\//.test(ua)) return 'firefox';

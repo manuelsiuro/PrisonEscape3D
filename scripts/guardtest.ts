@@ -159,7 +159,8 @@ function morning(seed: number): Sim {
     put(s2.state.player, 45, 41);
     if (disguised) s2.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'));
     const l2 = run(s2, idle, () => false, 10);
-    if (!disguised) check(l2[0]?.endsWith('spotted: restricted') && l2[1]?.endsWith('LOCKDOWN'), 'seen in the guard quarters: 100% heat, a lockdown');
+    if (!disguised)
+      check(l2[0]?.endsWith('spotted: restricted') && l2[1]?.endsWith('LOCKDOWN'), 'seen in the guard quarters: 100% heat, a lockdown');
     else check(s2.state.heat === 0, 'in a guard outfit the guard quarters raise nothing');
   }
   console.log('restricted rooms: 100% heat when seen, unless disguised');
@@ -191,17 +192,34 @@ function morning(seed: number): Sim {
   const log = run(sim, idle, (s) => s.state.solitary > 0, 2 * 60 * STEPS_PER_MINUTE);
   console.log('== out at night, no disguise');
   for (const l of log) console.log(l);
-  check(log.some((l) => l.endsWith('spotted: night')), 'out of the cell at night is spotted');
-  check(log.some((l) => l.endsWith('caught → solitary')), 'and ends in solitary');
+  check(
+    log.some((l) => l.endsWith('spotted: night')),
+    'out of the cell at night is spotted',
+  );
+  check(
+    log.some((l) => l.endsWith('caught → solitary')),
+    'and ends in solitary',
+  );
   check(itemOf(inv[0]) === 0 && itemOf(inv[1]) === n('toothpaste'), 'carried contraband is taken, legal items kept');
   check(itemOf(inv[SLOT.OUTFIT]) === n('inmate_outfit'), 'the outfit is swapped for an inmate outfit');
-  check(itemOf(box[0]) === n('metal_file') && itemOf(box[6]) === 0 && itemOf(box[7]) === n('toothpaste'), 'the desk: hidden kept, standard contraband taken, legal kept');
+  check(
+    itemOf(box[0]) === n('metal_file') && itemOf(box[6]) === 0 && itemOf(box[7]) === n('toothpaste'),
+    'the desk: hidden kept, standard contraband taken, legal kept',
+  );
   check(sim.state.heat === 0, 'heat is settled at 0');
   // Potato peeling: 5 presses a potato, 10 minutes each.
   const left = sim.state.solitary;
   let presses = 0;
-  run(sim, () => (presses++, command(0, OP.INTERACT)), (s) => s.state.solitary === 0, 400);
-  check(sim.state.solitary === 0 && presses <= 4 * 60 + 4, `peeling 12 potatoes buys release (${presses} presses, ${Math.round(left / STEPS_PER_MINUTE)} minutes were left)`);
+  run(
+    sim,
+    () => (presses++, command(0, OP.INTERACT)),
+    (s) => s.state.solitary === 0,
+    400,
+  );
+  check(
+    sim.state.solitary === 0 && presses <= 4 * 60 + 4,
+    `peeling 12 potatoes buys release (${presses} presses, ${Math.round(left / STEPS_PER_MINUTE)} minutes were left)`,
+  );
   check(presses >= 200, `mashing faster than a stroke every 4 steps gains nothing (${presses} presses)`);
   check(sim.playerZone === 'playerCell', 'released at night: back in the cell');
   console.log(`solitary: ${presses} presses to get out, back in the cell at ${at(sim)}`);
@@ -218,7 +236,10 @@ function morning(seed: number): Sim {
   const l2 = run(d, idle, () => false, 39);
   check(d.state.heat === 0 && !l2.length, 'up close, under 2 seconds: still nothing');
   const l3 = run(d, idle, () => false, 21);
-  check(l3[0]?.endsWith('spotted: recognized') && d.state.heat >= 40, `up close past 2 seconds: recognized (+50%/s, heat ${d.state.heat}%)`);
+  check(
+    l3[0]?.endsWith('spotted: recognized') && d.state.heat >= 40,
+    `up close past 2 seconds: recognized (+50%/s, heat ${d.state.heat}%)`,
+  );
 }
 
 // ------------------------------------------------------------------ review fixes (P3 polish)
@@ -242,7 +263,10 @@ function morning(seed: number): Sim {
   warden.resume = GUARD.BED_CHECK;
   const log = run(b, play, () => false, 2, []);
   run(b, play, (s) => s.events.some((e) => e.type === 'bedCheck' && e.result !== 'start'), 90 * STEPS_PER_MINUTE, log);
-  check(log.some((l) => l.endsWith('bed check: pass')), `interrupted, the bed check still reaches the player's cell (${log.join('; ')})`);
+  check(
+    log.some((l) => l.endsWith('bed check: pass')),
+    `interrupted, the bed check still reaches the player's cell (${log.join('; ')})`,
+  );
 
   // Running straight away doesn't shake off a chasing guard: guards run faster than the player walks.
   const c = morning(6);
@@ -251,7 +275,12 @@ function morning(seed: number): Sim {
   plant(g, 28, 22, 1);
   g.wait = 0;
   put(c.state.player, 31, 22);
-  const caught = run(c, () => command(1), (s) => s.state.ko > 0, 20 * 20);
+  const caught = run(
+    c,
+    () => command(1),
+    (s) => s.state.ko > 0,
+    20 * 20,
+  );
   check(c.state.ko > 0, `running east along the corridor, caught (${caught.join('; ')})`);
   console.log('review fixes: no recognition through walls, interrupted bed checks resume, no outrunning a guard');
 
@@ -284,7 +313,12 @@ function morning(seed: number): Sim {
   put(k.state.player, 33, 22);
   let lost = false;
   const turn = (s: Sim) => (s.state.player.x < 33.5 * UNIT ? command(1) : command(13));
-  run(k, (s) => (kg.mode === GUARD.INVESTIGATE && (lost = true), turn(s)), (s) => s.state.ko > 0, 20 * 20);
+  run(
+    k,
+    (s) => (kg.mode === GUARD.INVESTIGATE && (lost = true), turn(s)),
+    (s) => s.state.ko > 0,
+    20 * 20,
+  );
   check(k.state.ko > 0 && !lost, 'turning a corner in plain view does not shake a chaser');
 }
 
@@ -315,7 +349,10 @@ function morning(seed: number): Sim {
   const log = run(sim, idle, (s) => s.state.ko === 0 && s.events.some((e) => e.type === 'infirmary'), 2000);
   console.log('== wanted at 85%');
   for (const l of log) console.log(l);
-  check(log.some((l) => l.endsWith('caught → infirmary')), 'caught under 90%: the infirmary');
+  check(
+    log.some((l) => l.endsWith('caught → infirmary')),
+    'caught under 90%: the infirmary',
+  );
   check(sim.playerZone === 'infirmary' && itemOf(sim.state.items.inv[0]) === 0, 'woken in the infirmary, the file taken');
 }
 
@@ -350,7 +387,10 @@ function morning(seed: number): Sim {
   console.log('== no dummy');
   for (const l of bad.log.filter((l) => !l.includes('shakedown') && !l.includes('searched'))) console.log(l);
   check(!!bad.log.find((l) => / bed check: (pass|fail)/.test(l))?.endsWith('fail'), 'without it the first check finds the bed empty');
-  check(bad.log.some((l) => l.endsWith('caught → solitary')), 'and the guards come for the player');
+  check(
+    bad.log.some((l) => l.endsWith('caught → solitary')),
+    'and the guards come for the player',
+  );
 }
 
 // ------------------------------------------------------------------ the shakedown
@@ -378,12 +418,15 @@ function morning(seed: number): Sim {
   }
   console.log('== shakedowns');
   for (const l of log.filter((l) => l.includes('shakedown') || l.includes('searched'))) console.log(l);
-  check(searched, 'within 15 mornings the player\'s cell is searched');
+  check(searched, "within 15 mornings the player's cell is searched");
   check(itemOf(box()[1]) === n('metal_file'), 'the hidden file is never found');
   check(itemOf(box()[8]) === 0, 'the screwdriver in a standard drawer is taken');
   check(itemOf(box()[9]) === n('bed_sheet'), 'a legal bed sheet stays');
   // (A strict guard's third cell may take it into breakfast, P15.)
-  check(times.every((l) => / 0[89]:/.test(l)), 'every search is done in the morning');
+  check(
+    times.every((l) => / 0[89]:/.test(l)),
+    'every search is done in the morning',
+  );
   check(sim.state.heat === 0, 'the model prisoner keeps 0 heat through it all');
 }
 
@@ -412,8 +455,13 @@ function morning(seed: number): Sim {
       }
     }
   }
-  console.log(`rounds over 3 days: ${legs.join(', ')} stops; ${bedChecks} bed checks, the longest ${Math.round(longest / STEPS_PER_MINUTE)} game minutes`);
-  check(legs.every((l) => l >= 60), 'every guard keeps walking its round');
+  console.log(
+    `rounds over 3 days: ${legs.join(', ')} stops; ${bedChecks} bed checks, the longest ${Math.round(longest / STEPS_PER_MINUTE)} game minutes`,
+  );
+  check(
+    legs.every((l) => l >= 60),
+    'every guard keeps walking its round',
+  );
   check(bedChecks === 6 && longest < 45 * STEPS_PER_MINUTE, 'two bed checks a night, each done within 45 minutes');
   check(sim.state.heat === 0, 'the model prisoner ends 3 days with 0 heat among guards');
 
@@ -438,7 +486,16 @@ function morning(seed: number): Sim {
     const p = sim.state.player;
     const px = Math.floor(p.x / UNIT);
     const pz = Math.floor(p.z / UNIT);
-    const ways: Array<[number, number, number]> = [[-3, 0, 1], [3, 0, 9], [0, -3, 5], [0, 3, 13], [-2, 0, 1], [2, 0, 9], [0, -2, 5], [0, 2, 13]];
+    const ways: Array<[number, number, number]> = [
+      [-3, 0, 1],
+      [3, 0, 9],
+      [0, -3, 5],
+      [0, 3, 13],
+      [-2, 0, 1],
+      [2, 0, 9],
+      [0, -2, 5],
+      [0, 2, 13],
+    ];
     for (const [dx, dz, f] of ways) {
       if (sim.world.blocked(px + dx, pz + dz)) continue;
       plant(g, px + dx, pz + dz, f);
@@ -452,13 +509,22 @@ function morning(seed: number): Sim {
   {
     const sim = morning(4);
     run(sim, idle, (s) => minute(s) >= 15 * 60 + 1, DAY);
-    check(sim.playerZone === 'canteen' && !sim.dutyZones.includes(sim.playerZone), `exercise, and the player still in the ${sim.playerZone}`);
+    check(
+      sim.playerZone === 'canteen' && !sim.dutyZones.includes(sim.playerZone),
+      `exercise, and the player still in the ${sim.playerZone}`,
+    );
     check(watcher(sim, sim.state.guards[0]), 'a guard looking at the player');
     const h0 = sim.state.heat;
     const log = run(sim, idle, (s) => clockAt(s.state.step + 1).minuteOfDay >= 15 * 60 + 20, DAY);
-    check(sim.state.seen && sim.state.heat === h0 && !log.some((l) => l.endsWith('skipping')), `seen on the way, the first 20 minutes: nothing (${h0}% → ${sim.state.heat}%)`);
+    check(
+      sim.state.seen && sim.state.heat === h0 && !log.some((l) => l.endsWith('skipping')),
+      `seen on the way, the first 20 minutes: nothing (${h0}% → ${sim.state.heat}%)`,
+    );
     const log2 = run(sim, idle, () => false, 10 * 20);
-    check(!!log2[0]?.endsWith('15:20 spotted: skipping') && sim.state.heat === h0 + 20, `then a guard minds: +2% a second (${log2[0]}; ${h0}% → ${sim.state.heat}%)`);
+    check(
+      !!log2[0]?.endsWith('15:20 spotted: skipping') && sim.state.heat === h0 + 20,
+      `then a guard minds: +2% a second (${log2[0]}; ${h0}% → ${sim.state.heat}%)`,
+    );
     sim.state.attended = true;
     const h1 = sim.state.heat;
     run(sim, idle, () => false, 10 * 20);
@@ -468,7 +534,8 @@ function morning(seed: number): Sim {
 
   // Snooping: an inmate's desk open in their cell (its owner away), in a guard's sight: +20% at once, then +4% a second. Not the player's own desk, not in a guard's uniform, not before 2.23.
   {
-    const deskOfCell = (sim: Sim, cell: number) => containersOf(sim.world).findIndex((c) => c.prop.kind === 'desk' && sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
+    const deskOfCell = (sim: Sim, cell: number) =>
+      containersOf(sim.world).findIndex((c) => c.prop.kind === 'desk' && sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] === cell);
     const search = (sim: Sim, cell: number) => {
       const t = placesOf(sim.world).deskside[cell];
       put(sim.state.player, t % MAP_W, Math.floor(t / MAP_W));
@@ -490,14 +557,19 @@ function morning(seed: number): Sim {
       return { first, then: sim.state.heat - h0 - first, seen, open: sim.state.items.open >= 0 };
     };
     const theirs = snoop(() => {});
-    check(theirs.open && theirs.seen && theirs.first === 20 && theirs.then === 20, `another inmate's desk in sight: +${theirs.first}% at once, +${theirs.then}% in 5 s`);
+    check(
+      theirs.open && theirs.seen && theirs.first === 20 && theirs.then === 20,
+      `another inmate's desk in sight: +${theirs.first}% at once, +${theirs.then}% in 5 s`,
+    );
     const mine = snoop(() => {}, 1);
     check(mine.open && !mine.seen && mine.first === 0 && mine.then === 0, "the player's own desk: nothing");
     const uniform = snoop((sim) => (sim.state.items.inv[SLOT.OUTFIT] = slot(n('guard_outfit'))));
     check(!uniform.seen && uniform.first === 0 && uniform.then === 0, "in a guard's uniform: a shakedown, as far as the guard can tell");
     const old = snoop((sim) => (sim.rules222 = true));
     check(!old.seen && old.first === 0 && old.then === 0, 'before 2.23: overlooked');
-    console.log(`snooping in a guard's sight: +${theirs.first}% at once, +${theirs.then}% more in 5 s; own desk, a guard's uniform, before 2.23: nothing`);
+    console.log(
+      `snooping in a guard's sight: +${theirs.first}% at once, +${theirs.then}% more in 5 s; own desk, a guard's uniform, before 2.23: nothing`,
+    );
   }
 
   // The owner: at hand in their cell, they see the player at their desk: 15 less opinion, once a search; a grudge left, they fight.
@@ -519,13 +591,19 @@ function morning(seed: number): Sim {
     sim.step(0);
     const said = sim.events.find((e) => e.type === 'snooped');
     for (let k = 0; k < 40; k++) sim.step(0);
-    check(said?.type === 'snooped' && !said.fights && m.opinion === 35 && m.angry === 0, `the owner sees: opinion 50 → ${m.opinion}, once a search (${JSON.stringify(said)})`);
+    check(
+      said?.type === 'snooped' && !said.fights && m.opinion === 35 && m.angry === 0,
+      `the owner sees: opinion 50 → ${m.opinion}, once a search (${JSON.stringify(said)})`,
+    );
     sim.state.items.open = -1;
     sim.step(0);
     open();
     sim.step(0);
     const again = sim.events.find((e) => e.type === 'snooped');
-    check(again?.type === 'snooped' && again.fights && m.opinion === 20 && m.angry > 0, `caught at it again with a grudge: opinion ${m.opinion}, and they fight`);
+    check(
+      again?.type === 'snooped' && again.fights && m.opinion === 20 && m.angry > 0,
+      `caught at it again with a grudge: opinion ${m.opinion}, and they fight`,
+    );
     console.log(`the owner: opinion 50 → 35 on seeing, 20 (a grudge) and a fight the next time`);
   }
 }

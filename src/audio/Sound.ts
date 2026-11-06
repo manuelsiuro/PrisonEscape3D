@@ -103,7 +103,8 @@ export class Sound {
 
   private musicLevel() {
     const c = this.ctx;
-    if (c && this.musicOut) this.musicOut.gain.setTargetAtTime(this.musicVolume * MUSIC_LEVEL * (this.ducked ? 0.4 : 1), c.currentTime, 0.15);
+    if (c && this.musicOut)
+      this.musicOut.gain.setTargetAtTime(this.musicVolume * MUSIC_LEVEL * (this.ducked ? 0.4 : 1), c.currentTime, 0.15);
   }
 
   // ---------------------------------------------------------------- music
@@ -193,7 +194,8 @@ export class Sound {
       const walk = [0, -1, 7, -1, 12, -1, 7, 5];
       if (walk[inBar] >= 0) this.note(hz(chord[0] - 24 + walk[inBar]), at, eighth * 1.6, 'triangle', 0.12, 0.01, 900);
       if (k % 16 === 0) this.pad(chord, at, eighth * 16, 0.03, 1100);
-      if (inBar % 2 === 0 ? r < 0.3 : r < 0.12) this.note(hz(chord[1 + Math.floor(Math.random() * 3)] + 12), at, eighth * 3, 'triangle', 0.045, 0.004, 2600);
+      if (inBar % 2 === 0 ? r < 0.3 : r < 0.12)
+        this.note(hz(chord[1 + Math.floor(Math.random() * 3)] + 12), at, eighth * 3, 'triangle', 0.045, 0.004, 2600);
       return;
     }
     // Night and title: long roots and pads, a far bell now and then (the title: a motif).
@@ -287,7 +289,10 @@ export class Sound {
       g.gain.exponentialRampToValueAtTime(gain, t + swell);
     } else g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + swell + dur);
-    src.connect(f).connect(g).connect(dest ?? this.out);
+    src
+      .connect(f)
+      .connect(g)
+      .connect(dest ?? this.out);
     src.start(t, Math.random() * 1.5);
     src.stop(t + swell + dur);
   }
@@ -483,7 +488,13 @@ export class Sound {
   }
 
   /** The weather's sound (P17): rain (0–1) and wind (0–1), looping, muffled indoors and below. */
-  private wx: { rain: GainNode; rainF: BiquadFilterNode; wind: GainNode; windF: BiquadFilterNode; sources: AudioScheduledSourceNode[] } | null = null;
+  private wx: {
+    rain: GainNode;
+    rainF: BiquadFilterNode;
+    wind: GainNode;
+    windF: BiquadFilterNode;
+    sources: AudioScheduledSourceNode[];
+  } | null = null;
   private wxWant = { rain: 0, wind: 0 };
   setWeather(rain: number, wind: number) {
     if (rain === this.wxWant.rain && wind === this.wxWant.wind) return;
@@ -719,7 +730,8 @@ export class Sound {
       [0.05, 1760],
       [0.13, 2093],
       [0.21, 2637],
-    ]) this.tone(f, f, 0.18, 'sine', 0.05, d);
+    ])
+      this.tone(f, f, 0.18, 'sine', 0.05, d);
   }
 
   /** A stroke of the peeler: a short wet scrape (a done potato plops in the pot). */
@@ -835,7 +847,8 @@ export class Sound {
       [523, 0.2],
       [659, 0.45],
       [784, 0.7],
-    ]) this.tone(f, f, 0.5, 'triangle', 0.1, d);
+    ])
+      this.tone(f, f, 0.5, 'triangle', 0.1, d);
   }
 
   /** A tunnel roof coming down: a rumble and a slide of earth. */
@@ -860,9 +873,19 @@ export class Sound {
     if (gain <= 0.02) return;
     if (thud >= 2) {
       // Metal: an inharmonic ring over a click, bouncing once.
-      for (const [f, g] of [[860, 0.07], [1370, 0.05], [2210, 0.035], [3120, 0.02]] as const) this.tone(f, f * 0.995, 0.55, 'sine', g * gain);
+      for (const [f, g] of [
+        [860, 0.07],
+        [1370, 0.05],
+        [2210, 0.035],
+        [3120, 0.02],
+      ] as const)
+        this.tone(f, f * 0.995, 0.55, 'sine', g * gain);
       this.hiss(0.05, 'highpass', 3000, 0.7, 0.12 * gain);
-      for (const [f, g] of [[860, 0.03], [1370, 0.02]] as const) this.tone(f, f * 0.995, 0.3, 'sine', g * gain, 0.16);
+      for (const [f, g] of [
+        [860, 0.03],
+        [1370, 0.02],
+      ] as const)
+        this.tone(f, f * 0.995, 0.3, 'sine', g * gain, 0.16);
     } else if (thud === 1) {
       // Hard: a knock and a little rattle.
       this.tone(320, 170, 0.09, 'triangle', 0.18 * gain);
@@ -889,7 +912,8 @@ export class Sound {
     this.tone(180, 40, 0.45, 'sawtooth', 0.22 * gain);
     this.tone(90, 30, 0.6, 'sine', 0.35 * gain, 0.01);
     this.hiss(0.6, 'lowpass', 900, 0.6, 0.25 * gain);
-    for (let k = 0; k < 6; k++) this.hiss(0.03, 'bandpass', 3000 + k * 400, 2, 0.1 * gain, undefined, 0.25 + k * 0.09 + Math.random() * 0.05);
+    for (let k = 0; k < 6; k++)
+      this.hiss(0.03, 'bandpass', 3000 + k * 400, 2, 0.1 * gain, undefined, 0.25 + k * 0.09 + Math.random() * 0.05);
   }
 
   /** An alarm clock ringing (a second of it): the hammer between two bells. */
@@ -1100,7 +1124,8 @@ export class Sound {
   /** A rat (P20): a few high squeaks (`panic`: a frantic run of them, and a scatter of feet). */
   squeak(gain = 1, panic = false) {
     const n = panic ? 5 : 2;
-    for (let k = 0; k < n; k++) this.tone(2400 + (k % 2) * 500, 3100 + (k % 3) * 300, 0.06, 'triangle', 0.045 * gain, k * (panic ? 0.11 : 0.15));
+    for (let k = 0; k < n; k++)
+      this.tone(2400 + (k % 2) * 500, 3100 + (k % 3) * 300, 0.06, 'triangle', 0.045 * gain, k * (panic ? 0.11 : 0.15));
     if (panic) for (let k = 0; k < 6; k++) this.hiss(0.04, 'bandpass', 3200, 3, 0.05 * gain, undefined, 0.05 + k * 0.07);
   }
 
@@ -1121,10 +1146,12 @@ export class Sound {
     this.tone(2600, 2400, 0.04, 'triangle', 0.04);
     this.tone(2200, 2000, 0.04, 'triangle', 0.035, 0.09);
     this.tone(160, 150, 0.08, 'triangle', 0.05, 0.2);
-    if (ring) for (const at of [0.45, 0.95]) {
-      this.tone(440, 440, 0.32, 'sine', 0.025, at);
-      this.tone(480, 480, 0.32, 'sine', 0.025, at);
-    } else {
+    if (ring)
+      for (const at of [0.45, 0.95]) {
+        this.tone(440, 440, 0.32, 'sine', 0.025, at);
+        this.tone(480, 480, 0.32, 'sine', 0.025, at);
+      }
+    else {
       this.tone(350, 350, 0.5, 'sine', 0.02, 0.32);
       this.tone(440, 440, 0.5, 'sine', 0.02, 0.32);
     }
@@ -1183,7 +1210,8 @@ export class Sound {
       [0.13, 0.45],
       [0.2, 0.3],
       [0.26, 0.18],
-    ]) this.tone(1450 + Math.random() * 500, 1100, 0.03, 'square', 0.05 * g * gain, d);
+    ])
+      this.tone(1450 + Math.random() * 500, 1100, 0.03, 'square', 0.05 * g * gain, d);
   }
 
   /** Straining at an arm-wrestle (P22): a short throaty grunt. */
@@ -1411,7 +1439,7 @@ export class Sound {
     this.tone(236, 236, 0.2, 'square', 0.007 * gain);
   }
 
-    /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
+  /** Into the vehicle among the crates (a shuffle, a creak), and out again. */
   stow(on: boolean) {
     this.hiss(0.22, 'lowpass', 700, 0.7, 0.12);
     this.tone(on ? 330 : 260, on ? 240 : 360, 0.16, 'triangle', 0.05, 0.08);

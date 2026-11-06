@@ -45,7 +45,13 @@ import { RELEASE_HEAT } from '../src/content/paperwork';
 /** The run's ledger in a line (P16): counters that moved, and each day's bits. */
 export function ledgerLine(feats: readonly number[], days: readonly number[]): string {
   const moved = FEATS.map((f, k) => (feats[k] && f !== 'walked' ? `${f} ${feats[k]}` : '')).filter(Boolean);
-  const bits = days.map((b) => Object.entries(DAY_BITS).filter(([, v]) => b & v).map(([k]) => k.toLowerCase()).join('+') || 'quiet');
+  const bits = days.map(
+    (b) =>
+      Object.entries(DAY_BITS)
+        .filter(([, v]) => b & v)
+        .map(([k]) => k.toLowerCase())
+        .join('+') || 'quiet',
+  );
   return `${moved.join(', ') || 'nothing'}; walked ${Math.round(feats[FEATS.indexOf('walked')] / 1024)} tiles; days ${bits.join(' / ')}`;
 }
 
@@ -63,9 +69,14 @@ function report(name: string, bot: Bot) {
   // Saved and loaded at four points of the run (the last two in the escape itself), the game ends the same.
   const at = resumes(bot, [0.5, 0.9, 0.98, 0.995]);
   console.log(`  saved and loaded at ${at.join(', ')}`);
-  check(at.every((a) => a.endsWith('resumes')), `${name}: a game saved and loaded plays on exactly as before`);
+  check(
+    at.every((a) => a.endsWith('resumes')),
+    `${name}: a game saved and loaded plays on exactly as before`,
+  );
   console.log(`  ledger: ${ledgerLine(st.feats, st.days)}`);
-  console.log(`  → ${st.escaped ? `out ${bot.time} by ${ESCAPES[st.via]}` : `still inside, ${bot.time}, in the ${bot.sim.playerZone}`}; heat peak ${bot.heatPeak}%; walls ${walls}, tunnel tiles ${dug}, guards out cold ${guards}, cash $${cash}`);
+  console.log(
+    `  → ${st.escaped ? `out ${bot.time} by ${ESCAPES[st.via]}` : `still inside, ${bot.time}, in the ${bot.sim.playerZone}`}; heat peak ${bot.heatPeak}%; walls ${walls}, tunnel tiles ${dug}, guards out cold ${guards}, cash $${cash}`,
+  );
 }
 
 /** The evening: roll call attended, the kit from the desk, the dummy in bed, Lights Out and the cell locked. */
@@ -92,7 +103,8 @@ function nightfall(bot: Bot, kitSize: number) {
   bot.until(() => false, 10 * STEPS_PER_MINUTE);
 }
 
-export type Route = 'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider' | 'paperwork';
+export type Route =
+  'cutout' | 'tunnel' | 'rooftop' | 'takeover' | 'gate' | 'raft' | 'helicopter' | 'stowaway' | 'bluff' | 'glider' | 'paperwork';
 
 /** Where each route goes in a prison: tiles as [x, z], with a facing where it matters. */
 export interface Plan {
@@ -335,7 +347,10 @@ function cutout(p: Plan) {
     bot.face(iface);
     const mesh = tileOf(ix + (iface === DIR.EAST ? 1 : 0), iz + (iface === DIR.SOUTH ? 1 : 0));
     check(bot.sim.world.ground.kind[mesh] === TILE.FENCE, 'facing the chain-link');
-    check(bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[mesh] === TILE.FENCE_CUT), 'the chain-link cut');
+    check(
+      bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[mesh] === TILE.FENCE_CUT),
+      'the chain-link cut',
+    );
   }
   // To the electric stretch of the fence, and through it.
   const [fx, fz, face] = p.fence!;
@@ -363,7 +378,10 @@ function tunnel(p: Plan) {
   bot.walkTo(places.deskside[1]);
   bot.face(DIR.EAST);
   const desk = tileOf(...p.desk!);
-  check(bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT), 'the entrance under the desk');
+  check(
+    bot.strikeUntil('sturdy_shovel', () => bot.sim.world.ground.kind[desk] === TILE.SHAFT),
+    'the entrance under the desk',
+  );
   // Its dirt down the toilet.
   bot.walkTo(tileOf(...p.toilet!));
   bot.face(DIR.SOUTH);
@@ -383,13 +401,19 @@ function tunnel(p: Plan) {
       bot.use();
     }
     bot.face(face);
-    const ok = bot.strikeUntil('sturdy_shovel', () => bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL || bot.sim.events.some((e) => e.type === 'caveIn'));
+    const ok = bot.strikeUntil(
+      'sturdy_shovel',
+      () => bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL || bot.sim.events.some((e) => e.type === 'caveIn'),
+    );
     check(ok && bot.sim.world.layers[LAYER.UNDER].kind[tileOf(x, z)] !== TILE.SOIL, `tile ${p.def === CENTER_PERKS ? z : `${x},${z}`} dug`);
     check(bot.walkTo(tileOf(x, z), 400), `along to ${p.def === CENTER_PERKS ? z : `${x},${z}`}`);
   });
   // Facing back along it, up through the road.
   bot.face(DIR.SOUTH);
-  check(bot.strikeUntil('sturdy_shovel', () => bot.done || st.layer === LAYER.GROUND), 'dug up');
+  check(
+    bot.strikeUntil('sturdy_shovel', () => bot.done || st.layer === LAYER.GROUND),
+    'dug up',
+  );
   report(p.name('tunnel'), bot);
   check(bot.done && ESCAPES[st.via] === 'tunnel', 'escaped through the tunnel');
   check(bot.heatPeak < 80, 'never wanted on the way');
@@ -405,7 +429,10 @@ function rooftop(p: Plan) {
   // The cell's grate, from the floor under it.
   const grate = tileOf(...p.grate);
   check(bot.walkTo(grate), 'under the grate');
-  check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN), 'the grate unscrewed');
+  check(
+    bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN),
+    'the grate unscrewed',
+  );
   bot.act();
   check(st.layer === LAYER.VENTS, 'up into the vents');
   // The fake cover over the hole behind.
@@ -477,7 +504,13 @@ function takeover(p: Plan) {
   const pouch = p.riotCups && p.pouch ? ['pouch'] : [];
   bot.stash('nunchucks', 'plated_outfit', ...cups, ...pouch);
   // Two friends: the first two inmates, or the two strongest (GDD §12: allies that can fight).
-  const friends = p.strongest ? st.inmates.map((m, i) => ({ i, str: m.str })).sort((a, b) => b.str - a.str || a.i - b.i).slice(0, 2).map((f) => f.i) : [0, 1];
+  const friends = p.strongest
+    ? st.inmates
+        .map((m, i) => ({ i, str: m.str }))
+        .sort((a, b) => b.str - a.str || a.i - b.i)
+        .slice(0, 2)
+        .map((f) => f.i)
+    : [0, 1];
   for (const id of friends) st.inmates[id].opinion = 90;
   // Roll call first, then the friends, recruited where they stand (2.23: before it's counted the player; the fight's lockdown lets them off the rest).
   check(bot.routineUntil(1, 8 * 60 + 20), 'roll call kept');
@@ -485,7 +518,11 @@ function takeover(p: Plan) {
     const m = st.inmates[id];
     for (let k = 0; k < 40 && st.talk !== id; k++) {
       bot.pilot.goTo(Math.floor(m.body.z / UNIT) * MAP_W + Math.floor(m.body.x / UNIT));
-      bot.until(() => Math.abs(m.body.x - st.player.x) + Math.abs(m.body.z - st.player.z) < UNIT, 60, () => command(bot.pilot.dir(st.player)));
+      bot.until(
+        () => Math.abs(m.body.x - st.player.x) + Math.abs(m.body.z - st.player.z) < UNIT,
+        60,
+        () => command(bot.pilot.dir(st.player)),
+      );
       bot.pilot.stop();
       bot.step(command(0));
       bot.act();
@@ -512,7 +549,10 @@ function takeover(p: Plan) {
     bot.op(OP.EQUIP, bot.slotOf('nunchucks'));
     bot.op(OP.EQUIP, bot.slotOf('plated_outfit'));
   }
-  check(itemOf(st.items.inv[SLOT.WEAPON]) === n('nunchucks') && itemOf(st.items.inv[SLOT.OUTFIT]) === n('plated_outfit'), 'armed and armored');
+  check(
+    itemOf(st.items.inv[SLOT.WEAPON]) === n('nunchucks') && itemOf(st.items.inv[SLOT.OUTFIT]) === n('plated_outfit'),
+    'armed and armored',
+  );
   // Nothing in hand on the way (a cup of molten chocolate is contraband in plain sight): an empty slot, or the pouch.
   if (cups.length) bot.op(OP.SELECT, pouch.length ? bot.slotOf('pouch') : st.items.inv.slice(0, 6).indexOf(0));
   // The routine kept until the fight's hour, where the plan says.
@@ -520,7 +560,13 @@ function takeover(p: Plan) {
   // Somewhere out of the towers' reach, near the gates, for the first guard to come by.
   if (p.rally) {
     check(bot.walkTo(tileOf(...p.rally), 2000), 'at the rally point');
-    check(bot.until(() => st.guards.some((g) => awake(g) && Math.max(Math.abs(g.body.x - st.player.x), Math.abs(g.body.z - st.player.z)) < 3 * UNIT), 60 * STEPS_PER_MINUTE), 'a guard comes by');
+    check(
+      bot.until(
+        () => st.guards.some((g) => awake(g) && Math.max(Math.abs(g.body.x - st.player.x), Math.abs(g.body.z - st.player.z)) < 3 * UNIT),
+        60 * STEPS_PER_MINUTE,
+      ),
+      'a guard comes by',
+    );
   }
   // The fight: the nearest guard standing, each in turn (the first blow is seen: every guard comes).
   const inmates = st.inmates.length;
@@ -565,8 +611,18 @@ function takeover(p: Plan) {
     if (st.lock !== inmates + g) bot.op(OP.LOCK, 2 + inmates + g);
     // A cup of molten chocolate left (once the alarm is up, where it has to be raised first): thrown from where the player stands.
     // (With riot guards about, the cups kept for them; one more than they need goes on whoever is nearest.)
-    const spare = p.riotCups && st.items.inv.filter((it) => it && itemOf(it) === n('molten_chocolate')).length > st.guards.filter((q, k) => awake(q) && p.def.guards[k].riot).length;
-    if (cups.length && (!p.alarmFirst || st.lockdown) && (!p.riotCups || p.def.guards[g].riot || spare) && bot.slotOf('molten_chocolate') >= 0 && d < 2.8 * UNIT && st.lock === inmates + g) {
+    const spare =
+      p.riotCups &&
+      st.items.inv.filter((it) => it && itemOf(it) === n('molten_chocolate')).length >
+        st.guards.filter((q, k) => awake(q) && p.def.guards[k].riot).length;
+    if (
+      cups.length &&
+      (!p.alarmFirst || st.lockdown) &&
+      (!p.riotCups || p.def.guards[g].riot || spare) &&
+      bot.slotOf('molten_chocolate') >= 0 &&
+      d < 2.8 * UNIT &&
+      st.lock === inmates + g
+    ) {
       bot.hold('molten_chocolate');
       bot.op(OP.USE, 1);
       continue;
@@ -576,7 +632,9 @@ function takeover(p: Plan) {
     else bot.step(command(dirFromVector(gb.x - st.player.x, gb.z - st.player.z)));
   }
   check(st.takeover, 'every guard out cold at once: the takeover');
-  console.log(`  takeover: health ${st.health}/${maxHealth(st.str)}, guards down ${st.guards.filter((g) => g.ko > 0).length}/${st.guards.length}, ${st.guards.map((g) => g.mode === GUARD.CHASE ? 'C' : g.ko > 0 ? 'x' : '.').join('')}`);
+  console.log(
+    `  takeover: health ${st.health}/${maxHealth(st.str)}, guards down ${st.guards.filter((g) => g.ko > 0).length}/${st.guards.length}, ${st.guards.map((g) => (g.mode === GUARD.CHASE ? 'C' : g.ko > 0 ? 'x' : '.')).join('')}`,
+  );
   // Out through the open gates.
   check(bot.walkTo(tileOf(...p.gates), 800), 'out through the gates');
   report(p.name('takeover'), bot);
@@ -631,7 +689,10 @@ function nightfallBig(bot: Bot, kit: string[]) {
   for (let k = 0, at = 10; k < 6; k++) if (bot.st.items.inv[k]) bot.op(OP.MOVE, k, SLOT.CONTAINER + at++);
   bot.takeAll(2 + kit.length);
   bot.close();
-  check(kit.every((id) => bot.slotOf(id) >= 0), `the kit in the pockets (${kit.filter((id) => bot.slotOf(id) < 0).join(', ') || 'all'})`);
+  check(
+    kit.every((id) => bot.slotOf(id) >= 0),
+    `the kit in the pockets (${kit.filter((id) => bot.slotOf(id) < 0).join(', ') || 'all'})`,
+  );
   check(
     bot.until(() => bot.sim.cellsLocked && (bot.sim.world.lockedCells & 2n) !== 0n, 60 * STEPS_PER_MINUTE),
     'Lights Out, locked in',
@@ -653,7 +714,10 @@ function raft(p: Plan, seed: number) {
   bot.face(gface);
   // The south walkway's guard at the far end of its round, walking away from the way out.
   const g = bot.st.guards[p.walkwayGuard!];
-  check(bot.until(() => g.body.x < 24 * UNIT, 20 * STEPS_PER_MINUTE), 'the walkway guard at its west end');
+  check(
+    bot.until(() => g.body.x < 24 * UNIT, 20 * STEPS_PER_MINUTE),
+    'the walkway guard at its west end',
+  );
   bot.act();
   check(bot.st.powerOff2 > 0 && bot.st.powerOff === 0, 'GEN-2 off (GEN-1 still running)');
   const offAt = bot.st.step;
@@ -662,7 +726,10 @@ function raft(p: Plan, seed: number) {
   bot.face(face);
   const wire = tileOf(fx + 1, fz);
   check(bot.sim.world.ground.kind[wire] === TILE.ELECTRIC, 'facing the electric fence');
-  check(bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT) && bot.st.powerOff2 > 0, 'cut through before GEN-2 came back');
+  check(
+    bot.strikeUntil('sturdy_cutters', () => bot.sim.world.ground.kind[wire] === TILE.FENCE_CUT) && bot.st.powerOff2 > 0,
+    'cut through before GEN-2 came back',
+  );
   console.log(`  raft: the dock fence cut ${((bot.st.step - offAt) / 20).toFixed(1)} s after GEN-2 went off`);
   const [px, pz, pface] = p.pier!;
   check(bot.walkTo(tileOf(px, pz), 200), 'at the pier’s end');
@@ -686,7 +753,10 @@ function helicopter(p: Plan, seed: number) {
   const st = bot.st;
   const grate = tileOf(...p.grate!);
   check(bot.walkTo(grate), 'under the grate');
-  check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN), 'the grate unscrewed');
+  check(
+    bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN),
+    'the grate unscrewed',
+  );
   bot.act();
   check(st.layer === LAYER.VENTS, 'up into the vents');
   bot.hold('fake_vent');
@@ -769,7 +839,10 @@ function stowaway(p: Plan, from: number) {
     }
   }
   check(bot.walkTo(tileOf(d.tail.x, d.tail.z), 4000), `at the ${d.vehicle}'s tail`);
-  check(bot.until(() => !bot.st.seen && !bot.st.guards.some((g) => g.mode === GUARD.CHASE), 60 * STEPS_PER_MINUTE), 'nobody looking');
+  check(
+    bot.until(() => !bot.st.seen && !bot.st.guards.some((g) => g.mode === GUARD.CHASE), 60 * STEPS_PER_MINUTE),
+    'nobody looking',
+  );
   bot.act();
   check(bot.st.stowed, `hidden in the ${d.vehicle}`);
   if (lure) {
@@ -779,13 +852,21 @@ function stowaway(p: Plan, from: number) {
     const [tb, tc] = tossArgs(tileOf(...lure));
     bot.step(command(0, OP.EXT, EXT.THROW, tb, tc));
     check(bot.st.fuses.length === 1, 'thrown across the court, lit');
-    check(bot.until(() => !bot.st.seen, 60 * STEPS_PER_MINUTE), 'nobody looking');
+    check(
+      bot.until(() => !bot.st.seen, 60 * STEPS_PER_MINUTE),
+      'nobody looking',
+    );
     bot.act();
     check(bot.st.stowed, 'back in');
   }
-  check(bot.until(() => bot.done, 3 * 60 * STEPS_PER_MINUTE), 'away with it');
+  check(
+    bot.until(() => bot.done, 3 * 60 * STEPS_PER_MINUTE),
+    'away with it',
+  );
   report(p.name('stowaway'), bot);
-  console.log(`  seed ${seed}: the search ${lure ? `thorough, the supervisor drawn off (${bot.st.feats[FEATS.indexOf('slipped')]} slipped through)` : 'a quick look'}`);
+  console.log(
+    `  seed ${seed}: the search ${lure ? `thorough, the supervisor drawn off (${bot.st.feats[FEATS.indexOf('slipped')]} slipped through)` : 'a quick look'}`,
+  );
   check(bot.done && ESCAPES[bot.st.via] === 'stowaway', 'away as a stowaway');
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
@@ -817,7 +898,10 @@ function bluff(p: Plan, seed: number) {
   check(itemOf(bot.st.items.inv[SLOT.OUTFIT]) === n('guard_outfit'), 'in uniform');
   check(bot.walkTo(tileOf(c.window[0].x, c.window[0].z), 6000), 'at the checkpoint’s window');
   bot.face(DIR.SOUTH);
-  check(bot.until(() => shiftChange(bot.st.step), 60 * STEPS_PER_MINUTE), 'the gate changing shifts');
+  check(
+    bot.until(() => shiftChange(bot.st.step), 60 * STEPS_PER_MINUTE),
+    'the gate changing shifts',
+  );
   bot.act();
   check(bot.st.waved > 0, 'waved through');
   check(bot.walkTo(tileOf(...p.gates), 800) || bot.done, 'out through the gates');
@@ -842,7 +926,10 @@ function glider(p: Plan, seed: number) {
     nightfall(bot, 4);
     const grate = tileOf(...p.grate);
     check(bot.walkTo(grate), 'under the grate');
-    check(bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN), 'the grate unscrewed');
+    check(
+      bot.strikeUntil('screwdriver', () => bot.sim.world.layers[LAYER.VENTS].kind[grate] === TILE.GRATE_OPEN),
+      'the grate unscrewed',
+    );
     bot.act();
     check(st.layer === LAYER.VENTS, 'up into the vents');
     bot.hold('fake_vent');
@@ -868,7 +955,9 @@ function glider(p: Plan, seed: number) {
   bot.use();
   report(p.name('glider'), bot);
   const flight = bot.sim.events.find((e) => e.type === 'glide');
-  console.log(`  the wind from the ${['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][wind]}, strength ${force}: ${flight && flight.type === 'glide' ? `${flight.dist} tiles` : 'no glide'}`);
+  console.log(
+    `  the wind from the ${['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][wind]}, strength ${force}: ${flight && flight.type === 'glide' ? `${flight.dist} tiles` : 'no glide'}`,
+  );
   check(bot.done && ESCAPES[st.via] === 'glider', 'away on the glider');
   check(bot.heatPeak < 80, 'never wanted on the way');
 }
@@ -903,9 +992,12 @@ function paperwork(p: Plan, seed: number) {
   check(bot.walkTo(tileOf(r.at[0].x, r.at[0].z), 6000), 'at the release desk');
   check(bot.hold('forged_release'), 'the forged form in hand');
   // (A guard passing by: wait till nobody's watching, then slip it in.)
-  check(bot.until(() => !st.seen, 30 * STEPS_PER_MINUTE), 'nobody watching');
+  check(
+    bot.until(() => !st.seen, 30 * STEPS_PER_MINUTE),
+    'nobody watching',
+  );
   bot.act();
-  check(st.release[0] === 2, 'the name on tomorrow\'s list');
+  check(st.release[0] === 2, "the name on tomorrow's list");
   bot.op(OP.SELECT, st.items.inv.slice(0, 6).indexOf(0));
   check(bot.routineUntil(1, 22 * 60) && bot.counted(), 'roll call');
   check(bot.walkTo(places.deskside[1], 6000), 'back beside the desk');
@@ -913,9 +1005,15 @@ function paperwork(p: Plan, seed: number) {
   check(bot.open(bot.desk), 'the desk opens');
   kit.slice(1).forEach((id, k) => bot.putIn(id, k));
   bot.close();
-  check(st.items.inv.slice(0, 6).every((v) => !v), 'nothing in the pockets');
+  check(
+    st.items.inv.slice(0, 6).every((v) => !v),
+    'nothing in the pockets',
+  );
   // (Lights Out in the cell: the door locks once the player is in.)
-  check(bot.until(() => bot.sim.cellsLocked && (bot.sim.world.lockedCells & 2n) !== 0n, 60 * STEPS_PER_MINUTE), 'Lights Out, locked in');
+  check(
+    bot.until(() => bot.sim.cellsLocked && (bot.sim.world.lockedCells & 2n) !== 0n, 60 * STEPS_PER_MINUTE),
+    'Lights Out, locked in',
+  );
   check(bot.routineUntil(2, 10 * 60), 'the night slept, the morning kept');
   check(bot.walkTo(tileOf(r.at[0].x, r.at[0].z), 3000), 'at the release desk');
   bot.act();

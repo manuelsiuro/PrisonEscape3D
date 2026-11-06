@@ -57,7 +57,11 @@ function ownerSees(sim: SimContext, cell: number) {
   const m = s.inmates[who];
   if (!m || m.ko > 0 || m.angry > 0 || m.doing === DOING.SLEEP || s.followers.includes(who)) return;
   const p = s.player;
-  if (Math.max(Math.abs(m.body.x - p.x), Math.abs(m.body.z - p.z)) > SNOOP_SIGHT * UNIT || !lineOfSight(sim.world, m.body.x, m.body.z, p.x, p.z)) return;
+  if (
+    Math.max(Math.abs(m.body.x - p.x), Math.abs(m.body.z - p.z)) > SNOOP_SIGHT * UNIT ||
+    !lineOfSight(sim.world, m.body.x, m.body.z, p.x, p.z)
+  )
+    return;
   s.snoop[OWNER] = 1;
   changeOpinion(sim, who, -SNOOP_OPINION);
   const fights = m.opinion <= OPINION_LOW && !s.lockdown;

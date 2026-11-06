@@ -1,11 +1,38 @@
 import { buzz } from '../app/haptics';
-import { ANSWER_STEPS, APPLY_DAY, BOARD_LOOKS, HEARING_AFTER, HEARING_FROM, HEARING_TO, LAWYER_SOONER, MEMBERS, PASS, RECORD, TOPICS } from '../content/parole';
+import {
+  ANSWER_STEPS,
+  APPLY_DAY,
+  BOARD_LOOKS,
+  HEARING_AFTER,
+  HEARING_FROM,
+  HEARING_TO,
+  LAWYER_SOONER,
+  MEMBERS,
+  PASS,
+  RECORD,
+  TOPICS,
+} from '../content/parole';
 import { t, type Key } from '../i18n';
 import { EXT, OP } from '../sim/command';
 import type { Sim, SimEvent } from '../sim/Sim';
 import { dayMinute, prisonDay } from '../sim/systems/calendar';
 import { atDesk, atRelease, atTray, calledNow } from '../sim/systems/paperwork';
-import { answerLeft, ANSWERED, applyRefusal, claimTrue, hearingDue, hearingOf, topicsOf, linePoints, OUTCOME, P, recordCounts, recordScore, VOIDS, WALKED_OUT } from '../sim/systems/parole';
+import {
+  answerLeft,
+  ANSWERED,
+  applyRefusal,
+  claimTrue,
+  hearingDue,
+  hearingOf,
+  topicsOf,
+  linePoints,
+  OUTCOME,
+  P,
+  recordCounts,
+  recordScore,
+  VOIDS,
+  WALKED_OUT,
+} from '../sim/systems/parole';
 import { STEPS_PER_SECOND } from '../sim/tuning';
 import { PLAYER } from '../talk/fill';
 import type { ParoleView } from '../ui/parole';
@@ -30,7 +57,14 @@ import { announcePa, dayTime } from './warden';
 
 /** The verdict held on the card (ms of play time). Not state. */
 const VERDICT_MS = 9000;
-let verdict: { at: number; what: 'granted' | 'denied' | 'walkedOut'; score: number; lines: number[]; record: number[]; topics: number[] } | null = null;
+let verdict: {
+  at: number;
+  what: 'granted' | 'denied' | 'walkedOut';
+  score: number;
+  lines: number[];
+  record: number[];
+  topics: number[];
+} | null = null;
 /** The member's word on the last answer, while it's weighed. Not state. */
 let react: { q: number; text: string; good: boolean } | null = null;
 
@@ -53,7 +87,9 @@ function weighedText(code: number, counts: readonly number[], topics?: readonly 
   if (code === WALKED_OUT) return t('parole.walkedOutLine');
   if (code >= ANSWERED) {
     const topic = topics?.[code - ANSWERED];
-    return topic === undefined ? t('parole.answerLine', { n: code - ANSWERED + 1 }) : t('parole.answerOn', { topic: t(`parole.topic.${TOPICS[topic].id}` as Key) });
+    return topic === undefined
+      ? t('parole.answerLine', { n: code - ANSWERED + 1 })
+      : t('parole.answerOn', { topic: t(`parole.topic.${TOPICS[topic].id}` as Key) });
   }
   const r = RECORD[code];
   if (!r) return '';
@@ -65,13 +101,50 @@ function weighedText(code: number, counts: readonly number[], topics?: readonly 
 let faces: string[] = [];
 const boardFaces = () => (faces.length ? faces : (faces = BOARD_LOOKS.map((m) => sitterPortraitOf(m.look, m.suit))));
 
-const VIEW: ParoleView = { phase: 'desk', title: '', status: '', statusTone: 'quiet', lines: [], score: '', canApply: false, why: '', apply: '', member: '', memberK: 0, faces: [], q: 0, question: '', file: '', fileOk: true, answers: [], said: -1, react: '', reactGood: true, left: 1, secs: 0, verdict: '', verdictGood: true, weighed: [], note: '' };
+const VIEW: ParoleView = {
+  phase: 'desk',
+  title: '',
+  status: '',
+  statusTone: 'quiet',
+  lines: [],
+  score: '',
+  canApply: false,
+  why: '',
+  apply: '',
+  member: '',
+  memberK: 0,
+  faces: [],
+  q: 0,
+  question: '',
+  file: '',
+  fileOk: true,
+  answers: [],
+  said: -1,
+  react: '',
+  reactGood: true,
+  left: 1,
+  secs: 0,
+  verdict: '',
+  verdictGood: true,
+  weighed: [],
+  note: '',
+};
 
 /** The record's lines as the card lists them: every line with something on it, its points when they aren't 0 (and the lines for at nothing, while applying, together on one line). */
 function recordLines(sim: Sim, all: boolean): ParoleView['lines'] {
   const counts = recordCounts(sim.state);
   const pts = linePoints(counts);
-  const lines: Array<ParoleView['lines'][number]> = RECORD.flatMap((r, k) => (counts[k] || pts[k] ? [{ text: lineText(r.id, counts[k]), pts: pts[k] ? signed(pts[k]) : '', tone: pts[k] > 0 ? 'good' : pts[k] < 0 ? 'bad' : 'quiet' } as const] : []));
+  const lines: Array<ParoleView['lines'][number]> = RECORD.flatMap((r, k) =>
+    counts[k] || pts[k]
+      ? [
+          {
+            text: lineText(r.id, counts[k]),
+            pts: pts[k] ? signed(pts[k]) : '',
+            tone: pts[k] > 0 ? 'good' : pts[k] < 0 ? 'bad' : 'quiet',
+          } as const,
+        ]
+      : [],
+  );
   const none = all ? RECORD.filter((r, k) => r.side > 0 && !counts[k]).map((r) => t(`parole.lineName.${r.id}` as Key)) : [];
   if (none.length) lines.push({ text: t('parole.nothingYet', { lines: none.join(', ') }), pts: '', tone: 'quiet' });
   return lines;
@@ -111,7 +184,11 @@ export function paroleNow(sim: Sim): ParoleView | null {
     const lines = topic.lines.map((id) => lineText(id, counts[RECORD.findIndex((r) => r.id === id)])).join(' · ');
     v.fileOk = claimTrue(counts, o.topics[o.q]);
     const need = topic.need ?? 1;
-    v.file = v.fileOk ? t('parole.fileHolds', { lines }) : need > 1 && topic.lines.every((id) => RECORD.find((r) => r.id === id)!.side > 0) ? t('parole.fileNeeds', { lines, n: need }) : t('parole.fileLie', { lines });
+    v.file = v.fileOk
+      ? t('parole.fileHolds', { lines })
+      : need > 1 && topic.lines.every((id) => RECORD.find((r) => r.id === id)!.side > 0)
+        ? t('parole.fileNeeds', { lines, n: need })
+        : t('parole.fileLie', { lines });
     v.answers = [t(`parole.claim.${topic.id}` as Key), t(`parole.own.${topic.id}` as Key), t(`parole.words.${topic.id}` as Key)];
     v.said = o.said[o.q];
     if (o.until && react?.q === o.q) {
@@ -153,7 +230,10 @@ export function paroleNow(sim: Sim): ParoleView | null {
   v.score = '';
   v.lines = [];
   if (p[P.HEARING]) {
-    v.status = p[P.HEARING] === day ? t('parole.hearingToday', { time: dayTime(HEARING_FROM), room: roomOf(sim) }) : t('parole.hearingOn', { n: p[P.HEARING], time: dayTime(HEARING_FROM), room: roomOf(sim) });
+    v.status =
+      p[P.HEARING] === day
+        ? t('parole.hearingToday', { time: dayTime(HEARING_FROM), room: roomOf(sim) })
+        : t('parole.hearingOn', { n: p[P.HEARING], time: dayTime(HEARING_FROM), room: roomOf(sim) });
     v.statusTone = 'job';
     v.lines = recordLines(sim, true);
     v.score = t('parole.recordScore', { n: signed(recordScore(recordCounts(s))), of: PASS });
@@ -172,7 +252,10 @@ export function paroleNow(sim: Sim): ParoleView | null {
     v.status = t(`parole.status.${out}` as Key, { n: p[P.AGAIN] });
     v.statusTone = 'bad';
     if (out === 'voided') v.weighed = [t(`parole.void.${VOIDS[p[P.LINE1]] ?? 'dig'}` as Key)];
-    else if (out === 'denied') v.weighed = [p[P.LINE1], p[P.LINE2]].filter((c) => c >= 0).map((c) => (c >= ANSWERED || c === WALKED_OUT ? weighedText(c, []) : t(`parole.lineName.${RECORD[c]?.id ?? 'work'}` as Key)));
+    else if (out === 'denied')
+      v.weighed = [p[P.LINE1], p[P.LINE2]]
+        .filter((c) => c >= 0)
+        .map((c) => (c >= ANSWERED || c === WALKED_OUT ? weighedText(c, []) : t(`parole.lineName.${RECORD[c]?.id ?? 'work'}` as Key)));
     v.note = t('parole.offer', { n: HEARING_AFTER, m: HEARING_AFTER - LAWYER_SOONER, time: dayTime(HEARING_FROM), d: APPLY_DAY });
     // (The status says when already.)
     if (why === 'paroleWait') v.why = '';
@@ -191,7 +274,8 @@ export function paroleChip(sim: Sim): { text: string; soon: boolean } | null {
   if (!p[P.HEARING] || s.hearing) return null;
   const day = prisonDay(s.step);
   const m = dayMinute(s.step);
-  if (p[P.HEARING] === day && m >= HEARING_FROM && m < HEARING_TO) return { text: t('hud.hearingNow', { room: roomOf(sim), time: dayTime(HEARING_TO) }), soon: true };
+  if (p[P.HEARING] === day && m >= HEARING_FROM && m < HEARING_TO)
+    return { text: t('hud.hearingNow', { room: roomOf(sim), time: dayTime(HEARING_TO) }), soon: true };
   if (p[P.HEARING] === day && m < HEARING_FROM) return { text: t('hud.hearingToday', { time: dayTime(HEARING_FROM) }), soon: false };
   if (p[P.HEARING] > day) return { text: t('hud.hearingDay', { n: p[P.HEARING] }), soon: false };
   return null;
@@ -218,7 +302,11 @@ export function announceParole(sim: Sim, e: Extract<SimEvent, { type: 'parole' }
     case 'applied':
       sound.stamp();
       buzz('attended');
-      banner.toast(t(e.lawyer ? 'toast.parole.lawyer' : 'toast.parole.applied', { n: e.n ?? 0, time: dayTime(HEARING_FROM), room: roomOf(sim) }), 'good', 4800);
+      banner.toast(
+        t(e.lawyer ? 'toast.parole.lawyer' : 'toast.parole.applied', { n: e.n ?? 0, time: dayTime(HEARING_FROM), room: roomOf(sim) }),
+        'good',
+        4800,
+      );
       coachOnce('parole', 'hint.parole', { n: e.n ?? 0, room: roomOf(sim) });
       return;
     case 'called':
@@ -261,7 +349,14 @@ export function announceParole(sim: Sim, e: Extract<SimEvent, { type: 'parole' }
     case 'granted':
     case 'denied':
     case 'walkedOut':
-      verdict = { at: playNow(), what: e.what, score: e.score ?? 0, lines: e.lines ?? (e.what === 'walkedOut' ? [WALKED_OUT] : []), record: recordCounts(s), topics: topicsOf(s.salt, prisonDay(s.step)) };
+      verdict = {
+        at: playNow(),
+        what: e.what,
+        score: e.score ?? 0,
+        lines: e.lines ?? (e.what === 'walkedOut' ? [WALKED_OUT] : []),
+        record: recordCounts(s),
+        topics: topicsOf(s.salt, prisonDay(s.step)),
+      };
       react = null;
       if (e.what === 'granted') {
         sound.levelUp();
@@ -292,4 +387,3 @@ export function boardShown(sim: Sim): boolean {
 
 /** The hearing under way (the other actions wait; the answer keys are the board's). */
 export const paroleBusy = (s: { hearing: unknown }) => !!s.hearing;
-

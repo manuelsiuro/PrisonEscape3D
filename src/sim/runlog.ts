@@ -51,7 +51,21 @@ export interface RunLog {
 export function sumOf(sim: Sim): string {
   const s = sim.state;
   return fnv1a(
-    JSON.stringify([s.step, s.rng, s.player.x, s.player.z, s.layer, s.heat, s.health, s.cash, s.escaped, s.items.inv, s.inmates.map((m) => [m.body.x, m.body.z]), s.guards.map((g) => [g.body.x, g.body.z]), s.tiles]),
+    JSON.stringify([
+      s.step,
+      s.rng,
+      s.player.x,
+      s.player.z,
+      s.layer,
+      s.heat,
+      s.health,
+      s.cash,
+      s.escaped,
+      s.items.inv,
+      s.inmates.map((m) => [m.body.x, m.body.z]),
+      s.guards.map((g) => [g.body.x, g.body.z]),
+      s.tiles,
+    ]),
   );
 }
 
@@ -119,14 +133,27 @@ export function fromBase64(text: string): Uint8Array | null {
 export function fitLog(v: unknown): RunLog | null {
   const l = v as Partial<RunLog> | null;
   if (!l || typeof l !== 'object' || l.v !== 1) return null;
-  if (typeof l.prison !== 'string' || typeof l.seed !== 'number' || typeof l.from !== 'number' || typeof l.steps !== 'number' || typeof l.data !== 'string' || typeof l.game !== 'string') return null;
+  if (
+    typeof l.prison !== 'string' ||
+    typeof l.seed !== 'number' ||
+    typeof l.from !== 'number' ||
+    typeof l.steps !== 'number' ||
+    typeof l.data !== 'string' ||
+    typeof l.game !== 'string'
+  )
+    return null;
   // (Whole numbers, a start and a length that can be: a file from elsewhere may say anything, P25.)
-  if (!Number.isSafeInteger(l.seed) || !Number.isSafeInteger(l.from) || !Number.isSafeInteger(l.steps) || l.from < 0 || l.steps < 0) return null;
+  if (!Number.isSafeInteger(l.seed) || !Number.isSafeInteger(l.from) || !Number.isSafeInteger(l.steps) || l.from < 0 || l.steps < 0)
+    return null;
   if (!Array.isArray(l.sums) || !l.sums.every((s) => Array.isArray(s) && typeof s[0] === 'number' && typeof s[1] === 'string')) return null;
   if (l.seed < 0 && !(l.start && typeof l.start === 'object' && l.start.prison === l.prison)) return null;
   if (l.mods !== undefined && !(Array.isArray(l.mods) && l.mods.every((m) => typeof m === 'string'))) return null;
   if (l.holiday !== undefined && !(Number.isInteger(l.holiday) && l.holiday >= 0 && l.holiday < HOLIDAYS.length)) return null;
-  if ((l.via !== undefined && !(ESCAPES as readonly unknown[]).includes(l.via)) || (l.daily !== undefined && !(Number.isSafeInteger(l.daily) && l.daily >= 0))) return null;
+  if (
+    (l.via !== undefined && !(ESCAPES as readonly unknown[]).includes(l.via)) ||
+    (l.daily !== undefined && !(Number.isSafeInteger(l.daily) && l.daily >= 0))
+  )
+    return null;
   return l as RunLog;
 }
 
@@ -152,7 +179,16 @@ export class RunRecorder {
     origin: { seed: number; game: string } | { log: RunLog | null; game: string },
   ) {
     const from = sim.state.step;
-    if ('seed' in origin) this.head = { v: 1, prison: sim.prison.id, seed: origin.seed, ...(sim.state.mods.length ? { mods: [...sim.state.mods] } : {}), ...(sim.state.holiday ? { holiday: sim.state.holiday } : {}), game: origin.game, from };
+    if ('seed' in origin)
+      this.head = {
+        v: 1,
+        prison: sim.prison.id,
+        seed: origin.seed,
+        ...(sim.state.mods.length ? { mods: [...sim.state.mods] } : {}),
+        ...(sim.state.holiday ? { holiday: sim.state.holiday } : {}),
+        game: origin.game,
+        from,
+      };
     else {
       const log = origin.log;
       // (A log from before the day's events (P17) can't be carried on under them, nor one from before the dogs (P19) where there are dogs: the game starts a log of its own from here.)
@@ -170,9 +206,21 @@ export class RunRecorder {
       // (Nor one from before the reading marker slowed down and waited, 2.34.)
       // (Every one of those versions comes before 2.34.0, the latest gate: one test covers them all.)
       const stale = beforeSlowReading(log?.game ?? '');
-      const runs = log && log.prison === sim.prison.id && log.from + log.steps === from && !stale ? decodeRuns(fromBase64(log.data) ?? new Uint8Array()) : null;
+      const runs =
+        log && log.prison === sim.prison.id && log.from + log.steps === from && !stale
+          ? decodeRuns(fromBase64(log.data) ?? new Uint8Array())
+          : null;
       if (log && runs) {
-        this.head = { v: 1, prison: log.prison, seed: log.seed, ...(log.mods ? { mods: log.mods } : {}), ...(log.holiday ? { holiday: log.holiday } : {}), ...(log.start ? { start: log.start } : {}), game: log.game, from: log.from };
+        this.head = {
+          v: 1,
+          prison: log.prison,
+          seed: log.seed,
+          ...(log.mods ? { mods: log.mods } : {}),
+          ...(log.holiday ? { holiday: log.holiday } : {}),
+          ...(log.start ? { start: log.start } : {}),
+          game: log.game,
+          from: log.from,
+        };
         this.put(encodeRuns(runs));
         this.steps = log.steps;
         this.sums.push(...log.sums);
@@ -326,7 +374,8 @@ export function prepareReplay(log: RunLog, prison: PrisonDef): { sim: Sim; runs:
   const logDays: number[] = [];
   for (let day = prisonDay(log.from); day <= lastDay(log); day++) logDays.push(day);
   const logPlan = (day: number) => planOf(sim, day).event;
-  if (beforeVisits(log.game) && !beforeDays(log.game)) keepOldCards(sim.state, logDays, logPlan, { visiting: book?.beforeVisits ?? 'none' });
+  if (beforeVisits(log.game) && !beforeDays(log.game))
+    keepOldCards(sim.state, logDays, logPlan, { visiting: book?.beforeVisits ?? 'none' });
   // Played before sports day (P22): likewise.
   if (beforeSports(log.game) && !beforeDays(log.game)) keepOldCards(sim.state, logDays, logPlan, { sports: book?.beforeSports ?? 'none' });
   // Played before stage nights (P30): likewise, for both.

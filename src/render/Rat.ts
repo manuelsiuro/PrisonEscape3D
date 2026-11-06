@@ -88,12 +88,27 @@ export class Rats {
   constructor() {
     const body = bodyGeometry();
     const tail = tailGeometry();
-    const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
+    const material = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.85,
+      metalness: 0.05,
+      stencilWrite: true,
+      stencilRef: 1,
+      stencilFunc: THREE.AlwaysStencilFunc,
+      stencilZPass: THREE.ReplaceStencilOp,
+    });
     // A pale rim round the body (its back faces, a little larger): the dark rat reads on light floors, the rim on dark ones (grass, carpet).
     const rim = new THREE.SphereGeometry(1, 10, 8);
     rim.scale(0.082, 0.07, 0.142);
     rim.translate(0, 0.068, -0.005);
-    const rimMat = new THREE.MeshBasicMaterial({ color: RIM, side: THREE.BackSide, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
+    const rimMat = new THREE.MeshBasicMaterial({
+      color: RIM,
+      side: THREE.BackSide,
+      stencilWrite: true,
+      stencilRef: 1,
+      stencilFunc: THREE.AlwaysStencilFunc,
+      stencilZPass: THREE.ReplaceStencilOp,
+    });
     const carry = new THREE.BoxGeometry(0.07, 0.04, 0.07);
     for (let k = 0; k < MAX_RATS; k++) {
       const root = new THREE.Group();
@@ -116,7 +131,15 @@ export class Rats {
    * view gives, facing the way the player does), scurrying with its tail going, darting about
    * when loose; `floor` false: the player is off the ground floor (only a perched rat shows).
    */
-  update(rats: readonly RatFrame[], shoulder: THREE.Vector3 | null, playerFacing: number, dt: number, time: number, motion: boolean, floor: boolean) {
+  update(
+    rats: readonly RatFrame[],
+    shoulder: THREE.Vector3 | null,
+    playerFacing: number,
+    dt: number,
+    time: number,
+    motion: boolean,
+    floor: boolean,
+  ) {
     for (let k = 0; k < MAX_RATS; k++) {
       const r = rats[k];
       const rig = this.rigs[k];

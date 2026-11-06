@@ -8,7 +8,21 @@
  * run log. Every escape bot under each holiday: holidaybotstest.ts; the evenings played: holidayruntest.ts.
  */
 import { check } from './assert';
-import { easterSunday, HOLIDAY, HOLIDAY_DAY, HOLIDAY_DAYS, holidayDaysOn, holidayOn, HOLIDAYS, TREAT, TREATS, WET_SIGHT, FIREWORK_NOISE, EGG_DESKS, EGG_YARD } from '../src/content/holidays';
+import {
+  easterSunday,
+  HOLIDAY,
+  HOLIDAY_DAY,
+  HOLIDAY_DAYS,
+  holidayDaysOn,
+  holidayOn,
+  HOLIDAYS,
+  TREAT,
+  TREATS,
+  WET_SIGHT,
+  FIREWORK_NOISE,
+  EGG_DESKS,
+  EGG_YARD,
+} from '../src/content/holidays';
 import { runHoliday } from '../src/game/holidays';
 import { DAY_BOOKS } from '../src/content/days';
 import { ROUTINE } from '../src/content/routine';
@@ -39,13 +53,29 @@ import { dateHoliday } from '../src/game/holidays';
 import { courtRect, holidayDecor, HOSE_FAN, HOSE_SWAY, LANE, PARASOL_GAP } from '../src/render/holidayDecor';
 
 // ------------------------------------------------------------------ the date
-const EASTERS = ['2026-04-05', '2027-03-28', '2028-04-16', '2029-04-01', '2030-04-21', '2031-04-13', '2032-03-28', '2033-04-17', '2034-04-09', '2035-03-25'];
+const EASTERS = [
+  '2026-04-05',
+  '2027-03-28',
+  '2028-04-16',
+  '2029-04-01',
+  '2030-04-21',
+  '2031-04-13',
+  '2032-03-28',
+  '2033-04-17',
+  '2034-04-09',
+  '2035-03-25',
+];
 const iso = (y: number, [m, d]: readonly number[]) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 const easters = EASTERS.map((_, k) => iso(2026 + k, easterSunday(2026 + k)));
 console.log(`Easter Sundays 2026–2035: ${easters.join(', ')}`);
 check(easters.join() === EASTERS.join(), 'the computus gives every Easter Sunday 2026–2035');
 // (Some famous ones: the earliest and latest possible dates.)
-check(iso(1818, easterSunday(1818)) === '1818-03-22' && iso(1943, easterSunday(1943)) === '1943-04-25' && iso(2285, easterSunday(2285)) === '2285-03-22', 'and the earliest and latest there have been (1818, 1943, 2285)');
+check(
+  iso(1818, easterSunday(1818)) === '1818-03-22' &&
+    iso(1943, easterSunday(1943)) === '1943-04-25' &&
+    iso(2285, easterSunday(2285)) === '2285-03-22',
+  'and the earliest and latest there have been (1818, 1943, 2285)',
+);
 
 const H = (y: number, m: number, d: number) => HOLIDAYS[holidayOn(y, m, d)];
 const edges: Array<[number, number, number, string]> = [];
@@ -59,29 +89,63 @@ for (let k = 0; k < 10; k++) {
   edges.push([...at(-3), 'none'], [...at(-2), 'easter'], [...at(0), 'easter'], [...at(1), 'easter'], [...at(2), 'none']);
 }
 edges.push(
-  [2026, 6, 30, 'none'], [2026, 7, 1, 'summer'], [2026, 8, 31, 'summer'], [2026, 9, 1, 'none'],
-  [2026, 10, 23, 'none'], [2026, 10, 24, 'halloween'], [2026, 10, 31, 'halloween'], [2026, 11, 2, 'halloween'], [2026, 11, 3, 'none'],
-  [2026, 12, 14, 'none'], [2026, 12, 15, 'christmas'], [2026, 12, 25, 'christmas'], [2026, 12, 31, 'christmas'], [2027, 1, 1, 'christmas'], [2027, 1, 6, 'christmas'], [2027, 1, 7, 'none'],
-  [2027, 2, 29 - 1, 'none'], [2028, 2, 29, 'none'], [2026, 5, 1, 'none'],
+  [2026, 6, 30, 'none'],
+  [2026, 7, 1, 'summer'],
+  [2026, 8, 31, 'summer'],
+  [2026, 9, 1, 'none'],
+  [2026, 10, 23, 'none'],
+  [2026, 10, 24, 'halloween'],
+  [2026, 10, 31, 'halloween'],
+  [2026, 11, 2, 'halloween'],
+  [2026, 11, 3, 'none'],
+  [2026, 12, 14, 'none'],
+  [2026, 12, 15, 'christmas'],
+  [2026, 12, 25, 'christmas'],
+  [2026, 12, 31, 'christmas'],
+  [2027, 1, 1, 'christmas'],
+  [2027, 1, 6, 'christmas'],
+  [2027, 1, 7, 'none'],
+  [2027, 2, 29 - 1, 'none'],
+  [2028, 2, 29, 'none'],
+  [2026, 5, 1, 'none'],
 );
 const wrong = edges.filter(([y, m, d, want]) => H(y, m, d) !== want);
-check(wrong.length === 0, `every window's edges: ${wrong.map(([y, m, d, w]) => `${y}-${m}-${d} gave ${H(y, m, d)}, not ${w}`).join('; ') || 'right'}`);
-console.log(`window edges: ${edges.length} dates checked (Good Friday to Easter Monday for ten years, 1 Jul–31 Aug, 24 Oct–2 Nov, 15 Dec–6 Jan)`);
+check(
+  wrong.length === 0,
+  `every window's edges: ${wrong.map(([y, m, d, w]) => `${y}-${m}-${d} gave ${H(y, m, d)}, not ${w}`).join('; ') || 'right'}`,
+);
+console.log(
+  `window edges: ${edges.length} dates checked (Good Friday to Easter Monday for ten years, 1 Jul–31 Aug, 24 Oct–2 Nov, 15 Dec–6 Jan)`,
+);
 
 // Settings: by the date, picked, off.
 const halloween = new Date(2026, 9, 31, 12);
-check(runHoliday({ holidays: 'calendar', holidayPick: 'easter' }, halloween) === HOLIDAY.HALLOWEEN, 'by the calendar: 31 October is Halloween');
-check(runHoliday({ holidays: 'calendar', holidayPick: 'easter' }, new Date(2026, 4, 12, 12)) === HOLIDAY.NONE, 'by the calendar: 12 May is no holiday');
+check(
+  runHoliday({ holidays: 'calendar', holidayPick: 'easter' }, halloween) === HOLIDAY.HALLOWEEN,
+  'by the calendar: 31 October is Halloween',
+);
+check(
+  runHoliday({ holidays: 'calendar', holidayPick: 'easter' }, new Date(2026, 4, 12, 12)) === HOLIDAY.NONE,
+  'by the calendar: 12 May is no holiday',
+);
 check(runHoliday({ holidays: 'pick', holidayPick: 'summer' }, halloween) === HOLIDAY.SUMMER, 'picked: summer, whatever the date');
 check(runHoliday({ holidays: 'off', holidayPick: 'summer' }, halloween) === HOLIDAY.NONE, 'off: none, whatever the date');
-check(dateHoliday({ holidays: 'pick' }, halloween) === HOLIDAY.HALLOWEEN && dateHoliday({ holidays: 'calendar' }, halloween) === HOLIDAY.HALLOWEEN && dateHoliday({ holidays: 'off' }, halloween) === HOLIDAY.NONE, "a Daily's decor: the date's holiday, never the one picked (none with holidays off)");
+check(
+  dateHoliday({ holidays: 'pick' }, halloween) === HOLIDAY.HALLOWEEN &&
+    dateHoliday({ holidays: 'calendar' }, halloween) === HOLIDAY.HALLOWEEN &&
+    dateHoliday({ holidays: 'off' }, halloween) === HOLIDAY.NONE,
+  "a Daily's decor: the date's holiday, never the one picked (none with holidays off)",
+);
 
 // ------------------------------------------------------------------ the days dealt
 for (let h = 1; h < HOLIDAYS.length; h++) {
   const days = Array.from({ length: 17 }, (_, k) => k + 1).flatMap((d) => holidayDaysOn(h, d).map((id) => `${id} ${d}`));
   console.log(`${HOLIDAYS[h]}: ${days.join(', ')}`);
 }
-check(holidayDaysOn(0, 2).length === 0 && HOLIDAY_DAYS.every((id) => !holidayDaysOn(HOLIDAY_DAY[id].holiday, 1).includes(id)), 'no holiday, no day; and never on day 1 (the escape bots’ day)');
+check(
+  holidayDaysOn(0, 2).length === 0 && HOLIDAY_DAYS.every((id) => !holidayDaysOn(HOLIDAY_DAY[id].holiday, 1).includes(id)),
+  'no holiday, no day; and never on day 1 (the escape bots’ day)',
+);
 
 // ------------------------------------------------------------------ in the sim
 /** A game under a holiday, run to a prison day's minute (0 is 08:00). */
@@ -95,7 +159,8 @@ const runTo = (sim: Sim, day: number, minute: number, each?: () => void) => {
 };
 const events = (sim: Sim, what: string) => sim.events.filter((e) => e.type === 'holiday' && e.what === what);
 const holidayLog = (sim: Sim, out: string[]) => () => {
-  for (const e of sim.events) if (e.type === 'holiday') out.push(`${formatTime(sim.clock)} ${e.what}${e.day ? ` ${e.day}` : ''}${e.n ? ` ${e.n}` : ''}`);
+  for (const e of sim.events)
+    if (e.type === 'holiday') out.push(`${formatTime(sim.clock)} ${e.what}${e.day ? ` ${e.day}` : ''}${e.n ? ` ${e.n}` : ''}`);
 };
 const at = (sim: Sim, tile: number) => {
   sim.state.player.x = (tile % MAP_W) * UNIT + UNIT / 2;
@@ -123,14 +188,20 @@ for (const p of PRISONS) {
     if (h === HOLIDAY.CHRISTMAS) runTo(sim, 3, 971, holidayLog(sim, seen));
     else runTo(sim, 2, 841, holidayLog(sim, seen));
     const want = HOLIDAY_DAYS.filter((id) => HOLIDAY_DAY[id].holiday === h);
-    check(want.every((id) => seen.some((l) => l.endsWith(`start ${id}`)) && seen.some((l) => l.endsWith(`end ${id}`))), `${p.id} under ${HOLIDAYS[h]}: its days begin and end (${seen.join(', ')})`);
+    check(
+      want.every((id) => seen.some((l) => l.endsWith(`start ${id}`)) && seen.some((l) => l.endsWith(`end ${id}`))),
+      `${p.id} under ${HOLIDAYS[h]}: its days begin and end (${seen.join(', ')})`,
+    );
   }
 }
 {
   const { TRAINING } = await import('../src/content/prisons/training');
   const sim = game(HOLIDAY.EASTER, TRAINING);
   runTo(sim, 2, 60);
-  check(!DAY_BOOKS[TRAINING.id] && sim.state.items.ground.every(([, v]) => itemOf(v) !== CHOC_EGG), 'the Training Block keeps no holiday (no eggs)');
+  check(
+    !DAY_BOOKS[TRAINING.id] && sim.state.items.ground.every(([, v]) => itemOf(v) !== CHOC_EGG),
+    'the Training Block keeps no holiday (no eggs)',
+  );
 }
 
 // Easter: the egg hunt.
@@ -139,18 +210,30 @@ for (const p of PRISONS) {
   const log: string[] = [];
   runTo(sim, 2, 1, holidayLog(sim, log));
   const list = containersOf(sim.world);
-  const inDesks = list.flatMap((c, k) => (c.table === 'inmateDesk' ? sim.state.items.containers[k].filter((v) => itemOf(v) === CHOC_EGG) : []));
-  const inYard = sim.state.items.ground.filter(([t, v]) => itemOf(v) === CHOC_EGG && sim.world.zoneAt(t % MAP_W, Math.floor(t / MAP_W)) === 'yard');
+  const inDesks = list.flatMap((c, k) =>
+    c.table === 'inmateDesk' ? sim.state.items.containers[k].filter((v) => itemOf(v) === CHOC_EGG) : [],
+  );
+  const inYard = sim.state.items.ground.filter(
+    ([t, v]) => itemOf(v) === CHOC_EGG && sim.world.zoneAt(t % MAP_W, Math.floor(t / MAP_W)) === 'yard',
+  );
   console.log(`easter at center-perks: ${log.join(', ')}; ${inDesks.length} eggs in inmates' desks, ${inYard.length} about the yard`);
   check(inDesks.length === EGG_DESKS && inYard.length === EGG_YARD, `eggs hidden at 08:00: ${EGG_DESKS} in desks, ${EGG_YARD} in the yard`);
-  check(list.every((c, k) => c.table !== 'playerDesk' || !sim.state.items.containers[k].some((v) => itemOf(v) === CHOC_EGG)), "(none in the player's own desk)");
+  check(
+    list.every((c, k) => c.table !== 'playerDesk' || !sim.state.items.containers[k].some((v) => itemOf(v) === CHOC_EGG)),
+    "(none in the player's own desk)",
+  );
   const again = game(HOLIDAY.EASTER);
   runTo(again, 2, 1);
   check(JSON.stringify(again.state.items) === JSON.stringify(sim.state.items), 'the same eggs in the same places for the same run');
   // The rumour (P42's gossip): whose desk hides an egg, each one true.
   const tips = facts(sim).filter((f) => f.kind === 'eggDesk');
-  const deskOf = (who: number) => list.findIndex((c) => c.table === 'inmateDesk' && sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] === sim.state.inmates[who].cell);
-  check(tips.length === EGG_DESKS && tips.every((f) => sim.state.items.containers[deskOf(f.inmate!)].some((v) => itemOf(v) === CHOC_EGG && usesOf(v) === 1)), `the inmates tell whose desk hides an egg (${tips.length} tips, every one true)`);
+  const deskOf = (who: number) =>
+    list.findIndex((c) => c.table === 'inmateDesk' && sim.world.cellOf[c.prop.z * MAP_W + c.prop.x] === sim.state.inmates[who].cell);
+  check(
+    tips.length === EGG_DESKS &&
+      tips.every((f) => sim.state.items.containers[deskOf(f.inmate!)].some((v) => itemOf(v) === CHOC_EGG && usesOf(v) === 1)),
+    `the inmates tell whose desk hides an egg (${tips.length} tips, every one true)`,
+  );
   check(!facts(game(0)).some((f) => f.kind === 'eggDesk'), '(no egg hunt, no such tip)');
   // One taken from an inmate's desk (as the player would: the desk open, moved to the hotbar).
   const desk = list.findIndex((c, k) => c.table === 'inmateDesk' && sim.state.items.containers[k].some((v) => itemOf(v) === CHOC_EGG));
@@ -159,7 +242,13 @@ for (const p of PRISONS) {
   sim.step(command(0, OP.MOVE, SLOT.CONTAINER + k, 0));
   // (Found as the next step looks in the pockets.)
   sim.step(0);
-  check(events(sim, 'egg').length === 1 && itemOf(sim.state.items.inv[0]) === CHOC_EGG && usesOf(sim.state.items.inv[0]) === 0 && sim.state.feats[FEAT.eggsFound] === 1, 'an egg found: in the pockets, counted once');
+  check(
+    events(sim, 'egg').length === 1 &&
+      itemOf(sim.state.items.inv[0]) === CHOC_EGG &&
+      usesOf(sim.state.items.inv[0]) === 0 &&
+      sim.state.feats[FEAT.eggsFound] === 1,
+    'an egg found: in the pockets, counted once',
+  );
   sim.step(0);
   check(sim.state.feats[FEAT.eggsFound] === 1, '(and not again)');
   check(saleOf(CHOC_EGG) > 0, `a merchant buys an egg ($${saleOf(CHOC_EGG)})`);
@@ -170,7 +259,10 @@ for (const p of PRISONS) {
   runTo(sim, 2, 9 * 60 + 30);
   check(feastNow(sim), 'a lamb roast: dinner is a feast');
   runTo(sim, 2, 14 * 60 + 1);
-  check(!sim.state.items.ground.some(([, v]) => itemOf(v) === CHOC_EGG && usesOf(v) === 1), '22:00: the eggs left in the yard are gone (the inmates found them)');
+  check(
+    !sim.state.items.ground.some(([, v]) => itemOf(v) === CHOC_EGG && usesOf(v) === 1),
+    '22:00: the eggs left in the yard are gone (the inmates found them)',
+  );
   const plain = game(0);
   runTo(plain, 2, 9 * 60 + 30);
   check(!feastNow(plain), '(no holiday: an ordinary dinner)');
@@ -178,8 +270,12 @@ for (const p of PRISONS) {
 
 // Easter, the rules review: what wasn't found by 22:00 is gone from the inmates' desks too (else, week after week, the eggs fill the desks and leave no room for their loot); an egg carried off out of the yard stays where it lies.
 {
-  const desksOf = (sim: Sim) => containersOf(sim.world).map((c, k) => ({ c, k })).filter(({ c }) => c.table === 'inmateDesk');
-  const hiddenIn = (sim: Sim) => desksOf(sim).reduce((n, { k }) => n + sim.state.items.containers[k].filter((v) => itemOf(v) === CHOC_EGG && usesOf(v) === 1).length, 0);
+  const desksOf = (sim: Sim) =>
+    containersOf(sim.world)
+      .map((c, k) => ({ c, k }))
+      .filter(({ c }) => c.table === 'inmateDesk');
+  const hiddenIn = (sim: Sim) =>
+    desksOf(sim).reduce((n, { k }) => n + sim.state.items.containers[k].filter((v) => itemOf(v) === CHOC_EGG && usesOf(v) === 1).length, 0);
   const runs = [0, HOLIDAY.EASTER].map((h) => {
     const sim = game(h);
     const loot: string[] = [];
@@ -205,9 +301,17 @@ for (const p of PRISONS) {
     }
     return { loot: loot.join(','), left };
   });
-  check(runs[1].left.length === 9 && runs[1].left.every((n) => n === 0), `22:00 on every egg hunt in 8 weeks: no egg left hidden in an inmate's desk (${runs[1].left.join(',')})`);
-  check(runs[1].loot === runs[0].loot, `the inmates' desks give as much loot over 8 weeks of Easter as without it (${runs[1].loot} / ${runs[0].loot})`);
-  console.log(`easter over 8 weeks: the inmates' desks' loot as without a holiday (${runs[0].loot.split(',').reduce((a, b) => a + Number(b), 0)} items in 57 mornings), no egg left in a desk after 22:00`);
+  check(
+    runs[1].left.length === 9 && runs[1].left.every((n) => n === 0),
+    `22:00 on every egg hunt in 8 weeks: no egg left hidden in an inmate's desk (${runs[1].left.join(',')})`,
+  );
+  check(
+    runs[1].loot === runs[0].loot,
+    `the inmates' desks give as much loot over 8 weeks of Easter as without it (${runs[1].loot} / ${runs[0].loot})`,
+  );
+  console.log(
+    `easter over 8 weeks: the inmates' desks' loot as without a holiday (${runs[0].loot.split(',').reduce((a, b) => a + Number(b), 0)} items in 57 mornings), no egg left in a desk after 22:00`,
+  );
   // An egg carried out of the yard (a rat's, dropped at the player's feet indoors) and one up on the roof over the yard: still there at 22:00.
   const sim = game(HOLIDAY.EASTER);
   runTo(sim, 2, 13 * 60);
@@ -216,7 +320,10 @@ for (const p of PRISONS) {
   sim.state.items.ground.push([canteen, slot(CHOC_EGG, 1)], [placeKey(LAYER.ROOF, yard), slot(CHOC_EGG, 1)]);
   runTo(sim, 2, 14 * 60 + 1);
   const still = sim.state.items.ground.filter(([, v]) => itemOf(v) === CHOC_EGG && usesOf(v) === 1).map(([key]) => key);
-  check(still.length === 2 && still.includes(canteen) && still.includes(placeKey(LAYER.ROOF, yard)), `22:00: only the yard's eggs are gone; one carried indoors and one on a roof stay (${still.join(',')})`);
+  check(
+    still.length === 2 && still.includes(canteen) && still.includes(placeKey(LAYER.ROOF, yard)),
+    `22:00: only the yard's eggs are gone; one carried indoors and one on a roof stay (${still.join(',')})`,
+  );
 }
 
 // The treats, the rules review: on offer only until their holiday day is over (the lolly until 15:30, the costume and the pumpkin until 21:00, the present until 22:00).
@@ -236,9 +343,15 @@ for (const p of PRISONS) {
       sim.state.items.open = containerOf(sim, TREATS[what].table);
       return treatCheck(sim, what);
     };
-    check(treats.every((w) => open(w) === null), `${HOLIDAYS[h]}: the treats still on offer at ${formatTime(sim.clock)}`);
+    check(
+      treats.every((w) => open(w) === null),
+      `${HOLIDAYS[h]}: the treats still on offer at ${formatTime(sim.clock)}`,
+    );
     runTo(sim, 2, end);
-    check(treats.every((w) => open(w) === 'notHere'), `${HOLIDAYS[h]}: and gone at ${formatTime(sim.clock)}`);
+    check(
+      treats.every((w) => open(w) === 'notHere'),
+      `${HOLIDAYS[h]}: and gone at ${formatTime(sim.clock)}`,
+    );
     for (const w of treats) takeTreat(sim, TREATS[w].table, w);
     check(treats.every((w) => !held(sim, TREATS[w].item)) && sim.state.feats[FEAT.treats] === 0, `${HOLIDAYS[h]}: none taken after hours`);
     rows.push(`${treats.map((w) => TREATS[w].item).join(' and ')} until ${formatTime(sim.clock)}`);
@@ -253,7 +366,10 @@ for (const p of PRISONS) {
   takeTreat(sim, 'canteenCounter', TREAT.LOLLY);
   check(held(sim, 'ice_lolly') && sim.state.feats[FEAT.treats] === 1, 'summer: an ice lolly from the canteen counter');
   takeTreat(sim, 'canteenCounter', TREAT.LOLLY);
-  check(sim.events.some((e) => e.type === 'refused' && e.why === 'takenToday'), 'one a day');
+  check(
+    sim.events.some((e) => e.type === 'refused' && e.why === 'takenToday'),
+    'one a day',
+  );
   takeTreat(sim, 'canteenCounter', TREAT.GIFT);
   check(!held(sim, 'gift'), "(not Christmas's present)");
   runTo(sim, 2, 7 * 60 + 5);
@@ -272,8 +388,13 @@ for (const p of PRISONS) {
   g.body.x = (yard[0] % MAP_W) * UNIT + UNIT / 2;
   g.body.z = Math.floor(yard[0] / MAP_W) * UNIT + UNIT / 2;
   const courtyard = sightOf(sim, g);
-  console.log(`summer's water fight: a guard on the sports ground sees ${wet / UNIT} tiles (${normal / UNIT} without it; ${courtyard / UNIT} in the courtyard, where there's none)`);
-  check(wet === WET_SIGHT * UNIT && normal > wet && courtyard === normal, 'a soaked guard on the sports ground sees only WET_SIGHT tiles (none soaked in the courtyard)');
+  console.log(
+    `summer's water fight: a guard on the sports ground sees ${wet / UNIT} tiles (${normal / UNIT} without it; ${courtyard / UNIT} in the courtyard, where there's none)`,
+  );
+  check(
+    wet === WET_SIGHT * UNIT && normal > wet && courtyard === normal,
+    'a soaked guard on the sports ground sees only WET_SIGHT tiles (none soaked in the courtyard)',
+  );
   Object.assign(g.body, before);
   at(sim, yard[0]);
   sim.step(0);
@@ -281,16 +402,27 @@ for (const p of PRISONS) {
   at(sim, sports[0]);
   sim.step(0);
   const exercise = ROUTINE.findIndex((r) => r.id === 'exercise');
-  check(events(sim, 'splash').length === 1 && sim.state.feats[FEAT.waterFights] === 1, 'the player out on the sports ground joins the water fight');
+  check(
+    events(sim, 'splash').length === 1 && sim.state.feats[FEAT.waterFights] === 1,
+    'the player out on the sports ground joins the water fight',
+  );
   // (2.23: the time there counting toward Exercise.)
   check(sim.state.routine === exercise && sim.state.present > 0, `and is present for Exercise (${sim.state.present} steps)`);
   sim.step(0);
   check(sim.state.feats[FEAT.waterFights] === 1, '(once)');
   runTo(sim, 2, 9 * 60 + 30);
   check(feastNow(sim), 'the barbecue: dinner is a feast');
-  const heat = (h: number) => PRISONS.filter((p) => DAY_BOOKS[p.id]).map((p) => Array.from({ length: 60 }, (_, k) => dayPlan(p.id, 3, k + 2, [], [], h).weather).filter((w) => w === 'heatwave').length);
-  console.log(`heatwave days in 60 (center-perks, stalag-flucht, shankton, san-pancho, irongate): ${heat(0).join(', ')}; in summer ${heat(HOLIDAY.SUMMER).join(', ')}`);
-  check(heat(HOLIDAY.SUMMER).every((n, k) => n >= heat(0)[k]) && heat(HOLIDAY.SUMMER).reduce((a, b) => a + b) > heat(0).reduce((a, b) => a + b), 'summer brings heatwaves more often (never where the climate has none)');
+  const heat = (h: number) =>
+    PRISONS.filter((p) => DAY_BOOKS[p.id]).map(
+      (p) => Array.from({ length: 60 }, (_, k) => dayPlan(p.id, 3, k + 2, [], [], h).weather).filter((w) => w === 'heatwave').length,
+    );
+  console.log(
+    `heatwave days in 60 (center-perks, stalag-flucht, shankton, san-pancho, irongate): ${heat(0).join(', ')}; in summer ${heat(HOLIDAY.SUMMER).join(', ')}`,
+  );
+  check(
+    heat(HOLIDAY.SUMMER).every((n, k) => n >= heat(0)[k]) && heat(HOLIDAY.SUMMER).reduce((a, b) => a + b) > heat(0).reduce((a, b) => a + b),
+    'summer brings heatwaves more often (never where the climate has none)',
+  );
   check(heat(HOLIDAY.SUMMER)[1] === 0, '(never in the Alps)');
 }
 
@@ -316,7 +448,10 @@ for (const p of PRISONS) {
   }
   const laughs = sim.state.laughed.slice(1);
   console.log(`costume night: ${laughs.length} laughed, inmate 0's opinion ${was} → ${m.opinion}`);
-  check(laughs.includes(0) && m.opinion === Math.min(100, was + 5) && sim.state.feats[FEAT.laughs] === laughs.length, 'costume night: an inmate close by laughs, once, and likes the player more');
+  check(
+    laughs.includes(0) && m.opinion === Math.min(100, was + 5) && sim.state.feats[FEAT.laughs] === laughs.length,
+    'costume night: an inmate close by laughs, once, and likes the player more',
+  );
   check(!inDisguise(sim), 'the costume fools nobody: no disguise');
   hold(sim, 'pumpkin');
   sim.step(command(0, OP.USE, 1));
@@ -338,7 +473,14 @@ for (const p of PRISONS) {
   sim.state.player.x = m.body.x + UNIT / 2;
   sim.state.player.z = m.body.z;
   sim.state.talk = 1;
-  sim.step(command(0, OP.TALK, TALK.GIFT, sim.state.items.inv.slice(0, 6).findIndex((v) => itemOf(v) === itemNumber('gift'))));
+  sim.step(
+    command(
+      0,
+      OP.TALK,
+      TALK.GIFT,
+      sim.state.items.inv.slice(0, 6).findIndex((v) => itemOf(v) === itemNumber('gift')),
+    ),
+  );
   console.log(`christmas: a present given, the inmate's opinion ${was} → ${m.opinion}`);
   check(m.opinion > was && sim.state.feats[FEAT.giftsGiven] === 1, 'the gift swap: a present raises opinion, counted');
   runTo(sim, 2, 9 * 60 + 30);
@@ -356,7 +498,15 @@ for (const p of PRISONS) {
 
 // The inmates' holiday talk (the rules review): the day's own talk only on the holiday's days, never "water fight at three" on day 5.
 {
-  const recent = { now: 0, incidents: [], searched: new Set<number>(), caughtAt: -1e9, cameTo: new Map<number, number>(), bumped: new Map<number, number>(), powerOutAt: -1e9 };
+  const recent = {
+    now: 0,
+    incidents: [],
+    searched: new Set<number>(),
+    caughtAt: -1e9,
+    cameTo: new Map<number, number>(),
+    bumped: new Map<number, number>(),
+    powerOutAt: -1e9,
+  };
   const talk = (sim: Sim, day: number) => {
     const banks = new Set<string>();
     for (let m = 60; m < 15 * 60; m += 30) {
@@ -369,12 +519,21 @@ for (const p of PRISONS) {
     return [...banks].sort().join(',') || 'none';
   };
   const rows: string[] = [];
-  for (const [h, def] of [[HOLIDAY.SUMMER, CENTER_PERKS], [HOLIDAY.CHRISTMAS, PRISONS.find((p) => p.id === 'stalag-flucht')!]] as const) {
+  for (const [h, def] of [
+    [HOLIDAY.SUMMER, CENTER_PERKS],
+    [HOLIDAY.CHRISTMAS, PRISONS.find((p) => p.id === 'stalag-flucht')!],
+  ] as const) {
     const sim = game(h, def, 5);
     const on = talk(sim, 2);
     const off = talk(sim, 5);
     rows.push(`${HOLIDAYS[h]} at ${def.id}: day 2 ${on}; day 5 ${off}`);
-    check(on !== 'none' && !off.split(',').some((b) => ['in.hol.summer', 'in.hol.christmas', 'in.hol.newYear', 'in.hol.easter', 'in.hol.halloween'].includes(b)), `${HOLIDAYS[h]}: the day's talk on its day only (${on} / ${off})`);
+    check(
+      on !== 'none' &&
+        !off
+          .split(',')
+          .some((b) => ['in.hol.summer', 'in.hol.christmas', 'in.hol.newYear', 'in.hol.easter', 'in.hol.halloween'].includes(b)),
+      `${HOLIDAYS[h]}: the day's talk on its day only (${on} / ${off})`,
+    );
   }
   console.log(`holiday talk: ${rows.join('; ')}`);
 }
@@ -387,7 +546,10 @@ for (const p of PRISONS) {
   const log = rec.toLog();
   check(log.holiday === HOLIDAY.HALLOWEEN, "a run log keeps the run's holiday");
   const back = replayLog(log, CENTER_PERKS);
-  check(!!back?.ok && back.sim.state.holiday === HOLIDAY.HALLOWEEN && back.sim.hash() === sim.hash(), 'and plays back under it, every checksum met, to the same state');
+  check(
+    !!back?.ok && back.sim.state.holiday === HOLIDAY.HALLOWEEN && back.sim.hash() === sim.hash(),
+    'and plays back under it, every checksum met, to the same state',
+  );
   const loaded = new Sim(CENTER_PERKS, 1);
   loaded.restore(JSON.parse(JSON.stringify(sim.snapshot())));
   check(loaded.state.holiday === HOLIDAY.HALLOWEEN && loaded.hash() === sim.hash(), 'a game saved and loaded keeps its holiday');
@@ -400,14 +562,18 @@ for (const p of PRISONS) {
   delete st.state.hol;
   delete st.state.laughed;
   old.restore(st);
-  check(old.state.holiday === 0 && old.state.hol.join() === '0,0' && old.state.laughed.length === 0, 'a save from before holidays loads with none');
+  check(
+    old.state.holiday === 0 && old.state.hol.join() === '0,0' && old.state.laughed.length === 0,
+    'a save from before holidays loads with none',
+  );
 }
 
 // ------------------------------------------------------------------ the decor (render only)
 
 {
   const rows: string[] = [];
-  const near = (a: number, b: number) => Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
+  const near = (a: number, b: number) =>
+    Math.max(Math.abs((a % MAP_W) - (b % MAP_W)), Math.abs(Math.floor(a / MAP_W) - Math.floor(b / MAP_W)));
   for (const p of PRISONS) {
     const w = new Sim(p).world;
     // What's there already (counted here from the prison's data, not by the decor's own planner): furniture, the floor decor, the pastimes' grounds; the doorways; what hangs on the canteen's north wall.
@@ -436,7 +602,10 @@ for (const p of PRISONS) {
     for (let z = 1; z < MAP_W - 1; z++) {
       for (let x = 1; x < MAP_W - 1; x++) {
         if (solid(x, z)) continue;
-        for (const [ax, az] of [[0, 1], [1, 0]]) {
+        for (const [ax, az] of [
+          [0, 1],
+          [1, 0],
+        ]) {
           if (solid(x - ax, z - az) || solid(x + ax, z + az)) continue;
           const zones = new Set([w.zoneAt(x - ax, z - az), w.zoneAt(x, z), w.zoneAt(x + ax, z + az)]);
           if (zones.size < 2) continue;
@@ -453,12 +622,16 @@ for (const p of PRISONS) {
     const hung = new Set<number>();
     const hungWest = new Set<number>();
     const hungEast = new Set<number>();
-    for (const d of p.decor ?? []) if (DECOR[d.kind].wall && (d.rot ?? 0) === 0) for (let x = d.x; x < d.x + (d.w ?? 1); x++) hung.add(d.z * MAP_W + x);
+    for (const d of p.decor ?? [])
+      if (DECOR[d.kind].wall && (d.rot ?? 0) === 0) for (let x = d.x; x < d.x + (d.w ?? 1); x++) hung.add(d.z * MAP_W + x);
     // (On a side wall: turned to face east, the west wall; west, the east wall.)
-    for (const d of p.decor ?? []) if (DECOR[d.kind].wall && d.rot === 1) for (let z = d.z; z < d.z + (d.d ?? 1); z++) hungWest.add(z * MAP_W + d.x);
-    for (const d of p.decor ?? []) if (DECOR[d.kind].wall && d.rot === 3) for (let z = d.z; z < d.z + (d.d ?? 1); z++) hungEast.add(z * MAP_W + d.x + (d.w ?? 1) - 1);
+    for (const d of p.decor ?? [])
+      if (DECOR[d.kind].wall && d.rot === 1) for (let z = d.z; z < d.z + (d.d ?? 1); z++) hungWest.add(z * MAP_W + d.x);
+    for (const d of p.decor ?? [])
+      if (DECOR[d.kind].wall && d.rot === 3) for (let z = d.z; z < d.z + (d.d ?? 1); z++) hungEast.add(z * MAP_W + d.x + (d.w ?? 1) - 1);
     // (P40's odd jobs board, on a canteen wall.)
-    if (p.board) ({ 13: hung, 9: hungWest, 1: hungEast } as Record<number, Set<number>>)[p.board.face]?.add(p.board.z * MAP_W + p.board.x);
+    if (p.board)
+      (({ 13: hung, 9: hungWest, 1: hungEast }) as Record<number, Set<number>>)[p.board.face]?.add(p.board.z * MAP_W + p.board.x);
     const view = new HolidaysView();
     view.setWorld(w);
     const counts: string[] = [];
@@ -474,29 +647,61 @@ for (const p of PRISONS) {
         const zone = w.zoneAt(tx, tz);
         const summer = d.what === 'parasol' || d.what === 'barbecue' || d.what === 'hose';
         // (Parasols out in the yard only where the sports ground has no room for one: Center Perks'.)
-        const yardParasols = d.what === 'parasol' && !plan.some((q) => q.what === 'parasol' && w.zoneAt(Math.floor(q.x), Math.floor(q.z)) === 'sports');
+        const yardParasols =
+          d.what === 'parasol' && !plan.some((q) => q.what === 'parasol' && w.zoneAt(Math.floor(q.x), Math.floor(q.z)) === 'sports');
         // (The tree in the canteen; out in the yard where the canteen has no room for one anywhere, San Pancho's.)
-        const where = d.what === 'garland' || d.y ? 'canteen' : d.what === 'tree' ? (zone === 'canteen' ? 'canteen' : 'yard') : summer && !yardParasols ? 'sports' : 'yard';
-        check(floor && (zone === where || (where === 'yard' && zone === 'sports')), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${d.x},${d.z} stands on the ${where}'s floor (${zone}, ${floor ? 'floor' : 'solid'})`);
+        const where =
+          d.what === 'garland' || d.y
+            ? 'canteen'
+            : d.what === 'tree'
+              ? zone === 'canteen'
+                ? 'canteen'
+                : 'yard'
+              : summer && !yardParasols
+                ? 'sports'
+                : 'yard';
+        check(
+          floor && (zone === where || (where === 'yard' && zone === 'sports')),
+          `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${d.x},${d.z} stands on the ${where}'s floor (${zone}, ${floor ? 'floor' : 'solid'})`,
+        );
         if (d.what === 'garland') {
           // On the north wall of its row, or a side wall down its column: never the south wall (the camera sees only its back, and the see-through cut shows it floating).
-          const tiles = d.side ? Array.from({ length: d.z1! - d.z }, (_, k) => (d.z + k) * MAP_W + tx) : Array.from({ length: d.x1! - d.x }, (_, k) => tz * MAP_W + d.x + k);
-          check(tiles.length >= 1 && tiles.every((u) => (d.side ? opaque((u % MAP_W) + d.side, Math.floor(u / MAP_W)) : opaque(u % MAP_W, Math.floor(u / MAP_W) - 1))), `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} hangs on a north or a side wall all along`);
+          const tiles = d.side
+            ? Array.from({ length: d.z1! - d.z }, (_, k) => (d.z + k) * MAP_W + tx)
+            : Array.from({ length: d.x1! - d.x }, (_, k) => tz * MAP_W + d.x + k);
+          check(
+            tiles.length >= 1 &&
+              tiles.every((u) =>
+                d.side ? opaque((u % MAP_W) + d.side, Math.floor(u / MAP_W)) : opaque(u % MAP_W, Math.floor(u / MAP_W) - 1),
+              ),
+            `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} hangs on a north or a side wall all along`,
+          );
           check(!('south' in d), `${p.id}: no garland on a south wall`);
           const over = tiles.filter((u) => (d.side ? (d.side < 0 ? hungWest : hungEast) : hung).has(u));
-          check(!over.length, `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} crosses nothing hung on the wall (${over.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
+          check(
+            !over.length,
+            `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} crosses nothing hung on the wall (${over.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`,
+          );
           // Not behind the parole board's heads (seated in front of the wall at the hearing).
           const heads = HEARINGS[p.id]?.zone === 'canteen' ? HEARINGS[p.id].board : [];
           const behind = heads.filter((b) => tiles.includes(b.z * MAP_W + b.x));
-          check(!behind.length, `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} hangs behind none of the parole board (${behind.map((b) => `${b.x},${b.z}`).join('; ')})`);
+          check(
+            !behind.length,
+            `${p.id} ${HOLIDAYS[h]}: the garland at ${tx},${tz} hangs behind none of the parole board (${behind.map((b) => `${b.x},${b.z}`).join('; ')})`,
+          );
         } else if (!d.y) {
           // Out on the floor: on nothing that's there already, and clear of the doorways and the openings with no door.
           check(!there.has(t), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} stands on no ${there.get(t)}`);
           if (d.what === 'hose') {
             const reach = Math.hypot(d.x1! - d.x, d.z1! - d.z);
-            check(reach >= 1 && reach <= 4.01 && w.zoneAt(Math.floor(d.x1!), Math.floor(d.z1!)) === 'sports', `${p.id}: the hose at ${tx},${tz} sprays ${reach.toFixed(1)} tiles, onto the sports ground`);
+            check(
+              reach >= 1 && reach <= 4.01 && w.zoneAt(Math.floor(d.x1!), Math.floor(d.z1!)) === 'sports',
+              `${p.id}: the hose at ${tx},${tz} sprays ${reach.toFixed(1)} tiles, onto the sports ground`,
+            );
             // Its jets, all across their fan, over nothing standing (furniture, the gym's machines, a wall) and none of the other summer pieces.
-            const others = plan.filter((q) => q !== d && !q.y && q.what !== 'garland').map((q) => Math.floor(q.z) * MAP_W + Math.floor(q.x));
+            const others = plan
+              .filter((q) => q !== d && !q.y && q.what !== 'garland')
+              .map((q) => Math.floor(q.z) * MAP_W + Math.floor(q.x));
             const hit: string[] = [];
             const wide = HOSE_FAN + HOSE_SWAY;
             for (const a of [-wide, 0, wide]) {
@@ -505,27 +710,46 @@ for (const p of PRISONS) {
               for (let u = 0.1; u <= 1.001; u += 0.05) {
                 const [ux, uz] = [Math.floor(d.x + ex * u), Math.floor(d.z + ez * u)];
                 const k = uz * MAP_W + ux;
-                if (k !== t && (solid(ux, uz) || (there.has(k) && !['pitch', 'track', 'court', 'garden'].includes(there.get(k)!)) || others.includes(k))) hit.push(`${ux},${uz}`);
+                if (
+                  k !== t &&
+                  (solid(ux, uz) || (there.has(k) && !['pitch', 'track', 'court', 'garden'].includes(there.get(k)!)) || others.includes(k))
+                )
+                  hit.push(`${ux},${uz}`);
               }
             }
             check(!hit.length, `${p.id}: the hose at ${tx},${tz} sprays over nothing standing (${hit.join('; ')})`);
           }
           const gap = d.what === 'tree' ? 2 : 1;
           const by = ways.filter((u) => near(u, t) <= gap);
-          check(!by.length, `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} is clear of the doors and the openings (${gap} tiles: ${by.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
+          check(
+            !by.length,
+            `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} is clear of the doors and the openings (${gap} tiles: ${by.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`,
+          );
           // Not in a passage a tile wide; a tile off a fence's wire; never just north of a wall, which would hide it from the camera.
-          check(!((solid(tx - 1, tz) && solid(tx + 1, tz)) || (solid(tx, tz - 1) && solid(tx, tz + 1))), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} stands in no passage a tile wide`);
+          check(
+            !((solid(tx - 1, tz) && solid(tx + 1, tz)) || (solid(tx, tz - 1) && solid(tx, tz + 1))),
+            `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} stands in no passage a tile wide`,
+          );
           const wire = [-1, 0, 1].some((dz) => [-1, 0, 1].some((dx) => fence(w.ground.kind[(tz + dz) * MAP_W + tx + dx])));
           check(!wire, `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} keeps a tile off the fences`);
-          check(!opaque(tx, tz + 1), `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} has no wall just south of it, hiding it from the camera`);
+          check(
+            !opaque(tx, tz + 1),
+            `${p.id} ${HOLIDAYS[h]}: the ${d.what} at ${tx},${tz} has no wall just south of it, hiding it from the camera`,
+          );
           // A parasol off the ways in: not in line with a doorway, LANE tiles on from it (a tile either side).
           if (d.what === 'parasol') {
             const inLine = ways.filter((u) => {
               const [ux, uz] = [u % MAP_W, Math.floor(u / MAP_W)];
               const [dx, dz] = [tx - ux, tz - uz];
-              return (Math.abs(dx) <= 1 && Math.abs(dz) <= LANE && !solid(ux, uz + Math.sign(dz))) || (Math.abs(dz) <= 1 && Math.abs(dx) <= LANE && !solid(ux + Math.sign(dx), uz));
+              return (
+                (Math.abs(dx) <= 1 && Math.abs(dz) <= LANE && !solid(ux, uz + Math.sign(dz))) ||
+                (Math.abs(dz) <= 1 && Math.abs(dx) <= LANE && !solid(ux + Math.sign(dx), uz))
+              );
             });
-            check(!inLine.length, `${p.id}: the parasol at ${tx},${tz} stands off the ways in (${inLine.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
+            check(
+              !inLine.length,
+              `${p.id}: the parasol at ${tx},${tz} stands off the ways in (${inLine.map((u) => `${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`,
+            );
           }
         }
       }
@@ -534,36 +758,68 @@ for (const p of PRISONS) {
         const tx = Math.floor(tree.x);
         const tz = Math.floor(tree.z);
         // Its boughs and presents (0.7 tiles out, and 0.2 more) touch no furniture, no prop, no floor decor.
-        const touching = [...there.entries()].filter(([u, what]) => !['pitch', 'track', 'court', 'garden'].includes(what) && Math.max(Math.abs((u % MAP_W) + 0.5 - tree.x), Math.abs(Math.floor(u / MAP_W) + 0.5 - tree.z)) < 0.5 + 0.9);
-        check(!touching.length, `${p.id}: the tree at ${tree.x},${tree.z} touches nothing (${touching.map(([u, what]) => `${what} ${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`);
-        check(!plan.some((g) => g.what === 'garland' && g.z === tz && tx >= g.x - 1 && tx <= g.x1!), `${p.id}: the tree stands under no garland`);
+        const touching = [...there.entries()].filter(
+          ([u, what]) =>
+            !['pitch', 'track', 'court', 'garden'].includes(what) &&
+            Math.max(Math.abs((u % MAP_W) + 0.5 - tree.x), Math.abs(Math.floor(u / MAP_W) + 0.5 - tree.z)) < 0.5 + 0.9,
+        );
+        check(
+          !touching.length,
+          `${p.id}: the tree at ${tree.x},${tree.z} touches nothing (${touching.map(([u, what]) => `${what} ${u % MAP_W},${Math.floor(u / MAP_W)}`).join('; ')})`,
+        );
+        check(
+          !plan.some((g) => g.what === 'garland' && g.z === tz && tx >= g.x - 1 && tx <= g.x1!),
+          `${p.id}: the tree stands under no garland`,
+        );
         check(!p.board || !(p.board.z === tz && Math.abs(p.board.x - tx) <= 1), `${p.id}: the tree hides no part of the odd jobs board`);
-        const above = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && ((d.rot ?? 0) % 2 === 0 ? d.z === tz && tx >= d.x - 1 && tx <= d.x + (d.w ?? 1) : d.x === tx && tz >= d.z - 1 && tz <= d.z + (d.d ?? 1)));
+        const above = (p.decor ?? []).filter(
+          (d) =>
+            DECOR[d.kind].wall &&
+            ((d.rot ?? 0) % 2 === 0
+              ? d.z === tz && tx >= d.x - 1 && tx <= d.x + (d.w ?? 1)
+              : d.x === tx && tz >= d.z - 1 && tz <= d.z + (d.d ?? 1)),
+        );
         check(!above.length, `${p.id}: the tree stands under nothing hung on a wall (${above.map((d) => d.kind).join(', ')})`);
       }
       // No two pieces out on the floor side by side (Irongate's lanterns were: all picked before the first was set down).
       const floor = plan.filter((d) => !d.y && d.what !== 'garland').map((d) => Math.floor(d.z) * MAP_W + Math.floor(d.x));
-      check(floor.every((a, k) => floor.every((b, j) => j === k || near(a, b) >= 2)), `${p.id} ${HOLIDAYS[h]}: no two pieces on the floor side by side`);
+      check(
+        floor.every((a, k) => floor.every((b, j) => j === k || near(a, b) >= 2)),
+        `${p.id} ${HOLIDAYS[h]}: no two pieces on the floor side by side`,
+      );
       const parasols = plan.filter((d) => d.what === 'parasol').map((d) => Math.floor(d.z) * MAP_W + Math.floor(d.x));
-      check(parasols.every((a, k) => parasols.every((b, j) => j === k || near(a, b) >= PARASOL_GAP)), `${p.id} ${HOLIDAYS[h]}: the parasols ${PARASOL_GAP} tiles apart at least`);
+      check(
+        parasols.every((a, k) => parasols.every((b, j) => j === k || near(a, b) >= PARASOL_GAP)),
+        `${p.id} ${HOLIDAYS[h]}: the parasols ${PARASOL_GAP} tiles apart at least`,
+      );
       const n = (what: string) => plan.filter((d) => d.what === what).length;
       check(n('garland') > 0, `${p.id} ${HOLIDAYS[h]}: the canteen dressed`);
       if (h === HOLIDAY.CHRISTMAS) check(n('tree') === 1 && n('snowman') === 1, `${p.id}: a Christmas tree and a snowman`);
       // (San Pancho's sports ground has room for one parasol off its ways in.)
-      if (h === HOLIDAY.SUMMER) check(n('parasol') >= (p.id === 'san-pancho' ? 1 : 2) && n('barbecue') === 1 && n('hose') === 2, `${p.id}: parasols, the barbecue, two hoses on the sports ground`);
+      if (h === HOLIDAY.SUMMER)
+        check(
+          n('parasol') >= (p.id === 'san-pancho' ? 1 : 2) && n('barbecue') === 1 && n('hose') === 2,
+          `${p.id}: parasols, the barbecue, two hoses on the sports ground`,
+        );
       // Every table in the canteen dressed (Center Perks' eight, not the first six).
       const tables = w.props.filter((q) => q.kind === 'table' && w.zoneAt(q.x, q.z) === 'canteen').length;
-      if (h === HOLIDAY.EASTER || h === HOLIDAY.HALLOWEEN) check(plan.filter((d) => d.y).length === tables, `${p.id} ${HOLIDAYS[h]}: something on each of the canteen's ${tables} tables`);
+      if (h === HOLIDAY.EASTER || h === HOLIDAY.HALLOWEEN)
+        check(plan.filter((d) => d.y).length === tables, `${p.id} ${HOLIDAYS[h]}: something on each of the canteen's ${tables} tables`);
       view.dress(h);
       check(view.group.children.length > view.baseMeshes, `${p.id} ${HOLIDAYS[h]}: the decor built`);
       counts.push(`${HOLIDAYS[h]} ${[...new Set(plan.map((d) => d.what))].map((k) => `${k} ${n(k)}`).join(' ')}`);
     }
     view.dress(0);
-    check(view.group.children.length === view.baseMeshes, `${p.id}: no holiday, no decor (only the sprays', the sparks' and the warmers' meshes)`);
+    check(
+      view.group.children.length === view.baseMeshes,
+      `${p.id}: no holiday, no decor (only the sprays', the sparks' and the warmers' meshes)`,
+    );
     view.dispose();
     rows.push(`  ${p.id}: ${counts.join('; ')}`);
   }
-  console.log(`the decor (on nothing, clear of doors and openings, a tile off fences, none hidden behind a wall, parasols apart and off the ways in, hoses over nothing, garlands on north or side walls round what hangs there and the parole board):\n${rows.join('\n')}`);
+  console.log(
+    `the decor (on nothing, clear of doors and openings, a tile off fences, none hidden behind a wall, parasols apart and off the ways in, hoses over nothing, garlands on north or side walls round what hangs there and the parole board):\n${rows.join('\n')}`,
+  );
 }
 
 // (The escape bots under each holiday: holidaybotstest.ts; the evenings played by a bot: holidayruntest.ts. Both run beside this one.)

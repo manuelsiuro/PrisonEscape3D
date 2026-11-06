@@ -82,7 +82,16 @@ export async function score() {
 
   // ---------------------------------------------------------------- own voices
   /** A burst of filtered noise at a moment. */
-  function hiss(at: number, dur: number, type: BiquadFilterType, freq: number, q: number, gain: number, to: AudioNode = v.musicOut, f1 = 0) {
+  function hiss(
+    at: number,
+    dur: number,
+    type: BiquadFilterType,
+    freq: number,
+    q: number,
+    gain: number,
+    to: AudioNode = v.musicOut,
+    f1 = 0,
+  ) {
     const src = ctx.createBufferSource();
     src.buffer = noise;
     const f = ctx.createBiquadFilter();
@@ -328,7 +337,15 @@ export async function score() {
   const glideBus = bus(1);
   into(glideBus);
   cue(takeoff - 0.25, () => snd.glide(touch - takeoff + 0.2));
-  hold(DM.map((s) => s + 12), takeoff, touch - takeoff, 0.014, 2600, 0.6, 0.1);
+  hold(
+    DM.map((s) => s + 12),
+    takeoff,
+    touch - takeoff,
+    0.014,
+    2600,
+    0.6,
+    0.1,
+  );
   hold(DM, takeoff, touch - takeoff, 0.016, 700, 0.8, 0.1);
   v.note(hz(-24), takeoff, touch - takeoff, 'sine', 0.12, 1.2);
   v.note(hz(19), takeoff + 0.6, 2.4, 'sine', 0.025, 0.8);

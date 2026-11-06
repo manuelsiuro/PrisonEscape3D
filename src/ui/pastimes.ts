@@ -3,14 +3,12 @@ import { OP, TALK } from '../sim/command';
 import { confirmed, esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 
-
 /**
  * Card sharks (P27) on screen: the card for a hand of Cheat, the court's card (the power meter,
  * the shootout's scoreboard, the Shoot pad), and the old-timer's checkers board. Each is drawn
  * from a view the play layer fills from the sim (play/pastimes.ts): what they show is what the
  * rules judge. Every button is an OP.TALK (or the shot's EXT.SHOOT), redrawn from the sim.
  */
-
 
 /** A card's letter and name key (CARD: 1 King, 2 Queen, 3 Ace, 4 Joker). */
 const RANK = ['', 'K', 'Q', 'A', '★'];
@@ -68,7 +66,10 @@ export class CheatCard {
   private deal = -1;
   private said = '';
 
-  constructor(private readonly send: Send, private readonly click: () => void) {
+  constructor(
+    private readonly send: Send,
+    private readonly click: () => void,
+  ) {
     this.el = h('div', 'train-card cheat-card hidden');
     this.el.setAttribute('role', 'dialog');
     this.say = h('span', 'sr-only');
@@ -134,7 +135,8 @@ export class CheatCard {
     if (key === this.drawn) return;
     this.drawn = key;
     const had = this.el.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
-    const again = had?.dataset.pick !== undefined ? `[data-pick="${had.dataset.pick}"]` : had?.dataset.do ? `[data-do="${had.dataset.do}"]` : '';
+    const again =
+      had?.dataset.pick !== undefined ? `[data-pick="${had.dataset.pick}"]` : had?.dataset.do ? `[data-do="${had.dataset.do}"]` : '';
     const chips = (n: number) => Array.from({ length: v.of }, (_, k) => `<i class="${k < n ? 'on' : ''}"></i>`).join('');
     const table = `<div class="cheat-table"><span class="cheat-label">${t('cheat.table')}</span>${cardFace(v.table, 'big')}<b>${esc(cardName(v.table, true))}</b><small>${t('cheat.jokerWild')}</small></div>`;
     // What's happening now: the inmate's last play and its tell, a call turned over, whose move.
@@ -142,7 +144,13 @@ export class CheatCard {
     if (v.reveal) {
       const r = v.reveal;
       const caller = r.by === 0 ? t('games.you') : esc(v.name);
-      const verdict = r.lie ? (r.by === 0 ? t('cheat.caught', { name: esc(v.name) }) : t('cheat.youCaught')) : r.by === 0 ? t('cheat.wrongCall') : t('cheat.theyWrong', { name: esc(v.name) });
+      const verdict = r.lie
+        ? r.by === 0
+          ? t('cheat.caught', { name: esc(v.name) })
+          : t('cheat.youCaught')
+        : r.by === 0
+          ? t('cheat.wrongCall')
+          : t('cheat.theyWrong', { name: esc(v.name) });
       now = `<div class="cheat-reveal" data-lie="${r.lie}" data-loser="${r.loser}"><p class="cheat-call">${t('cheat.called', { who: caller })}</p><div class="cheat-flip">${r.cards.map((c) => cardFace(c, 'flip')).join('')}</div><p class="cheat-verdict">${verdict}</p></div>`;
     } else {
       const last = v.last
@@ -151,11 +159,23 @@ export class CheatCard {
           : `<p class="cheat-claim mine">${t(v.last.n === 1 ? 'cheat.youLaid1' : 'cheat.youLaid', { n: v.last.n, card: esc(cardName(v.table, v.last.n > 1)) })}</p>`
         : '';
       const tell = v.tell ? `<p class="cheat-tell">${icon('eye', 13)}<span>${esc(v.tell)}</span></p>` : '';
-      const status = v.phase === 'theirs' ? t('cheat.thinking', { name: esc(v.name) }) : v.mustCall ? t('cheat.mustCall', { name: esc(v.name) }) : v.canCall ? t('cheat.yourMoveCall') : t('cheat.yourMove', { card: esc(cardName(v.table, true)) });
+      const status =
+        v.phase === 'theirs'
+          ? t('cheat.thinking', { name: esc(v.name) })
+          : v.mustCall
+            ? t('cheat.mustCall', { name: esc(v.name) })
+            : v.canCall
+              ? t('cheat.yourMoveCall')
+              : t('cheat.yourMove', { card: esc(cardName(v.table, true)) });
       const clock = v.clock > 0 && v.phase === 'yours' ? ` <b class="cheat-clock">${t('cheat.clock', { n: v.clock })}</b>` : '';
       now = `${last}${tell}<p class="train-note cheat-status">${status}${clock}</p>`;
     }
-    const hand = v.mine.map((c, k) => `<button class="pcard-btn${(this.sel >> k) & 1 ? ' on' : ''}" data-pick="${k}" aria-pressed="${(this.sel >> k) & 1 ? 'true' : 'false'}" aria-label="${esc(cardName(c))}" ${v.canPlay ? '' : 'disabled'}>${cardFace(c)}${TOUCH ? '' : `<kbd>${k + 1}</kbd>`}</button>`).join('');
+    const hand = v.mine
+      .map(
+        (c, k) =>
+          `<button class="pcard-btn${(this.sel >> k) & 1 ? ' on' : ''}" data-pick="${k}" aria-pressed="${(this.sel >> k) & 1 ? 'true' : 'false'}" aria-label="${esc(cardName(c))}" ${v.canPlay ? '' : 'disabled'}>${cardFace(c)}${TOUCH ? '' : `<kbd>${k + 1}</kbd>`}</button>`,
+      )
+      .join('');
     const n = bitsOf(this.sel);
     const layLabel = n ? t(n === 1 ? 'cheat.lay1' : 'cheat.lay', { n, card: esc(cardName(v.table, n > 1)) }) : t('cheat.pick');
     const acts = `<div class="dice-acts cheat-acts"><button class="big-btn ${n && v.canPlay ? 'primary' : 'ghost'} small" data-do="lay" ${n && v.canPlay ? '' : 'disabled'}>${icon('cards', 16)}<span>${layLabel}</span></button><button class="big-btn ${v.canCall ? 'danger' : 'ghost'} small" data-do="liar" ${v.canCall ? '' : 'disabled'}>${icon('siren', 16)}<span>${t('cheat.liar')}</span>${TOUCH ? '' : '<kbd>L</kbd>'}</button></div>`;
@@ -164,11 +184,20 @@ export class CheatCard {
       ${table}<div class="cheat-now">${now}</div><div class="cheat-hand" role="group" aria-label="${esc(t('cheat.hand'))}">${hand}</div>${acts}`;
     this.el.append(this.say);
     this.el.setAttribute('aria-label', t('cheat.title', { name: v.name }));
-    if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? this.el.querySelector<HTMLElement>('.cheat-acts button:not([disabled])'))?.focus();
+    if (again)
+      (
+        this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ??
+        this.el.querySelector<HTMLElement>('.cheat-acts button:not([disabled])')
+      )?.focus();
     // What a screen reader hears: the call's verdict (the cards turned over by name), the inmate's play and tell, whose move.
     const nowEl = this.el.querySelector('.cheat-now')!;
     const flipped = v.reveal ? v.reveal.cards.map((c) => cardName(c)).join(', ') : '';
-    const said = [...nowEl.querySelectorAll('p')].map((p) => p.textContent!.trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ') + (flipped ? ` (${flipped})` : '');
+    const said =
+      [...nowEl.querySelectorAll('p')]
+        .map((p) => p.textContent!.trim())
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ') + (flipped ? ` (${flipped})` : '');
     if (said !== this.said) {
       this.said = said;
       setText(this.say, said);
@@ -282,16 +311,45 @@ export class CourtCard {
       return;
     }
     const shoot = !!v.name;
-    const key = [v.name, v.spot, v.onSpot, v.holding, v.wind, v.rain, v.mine.join(), v.theirs.join(), v.turn, v.practice, v.of, currentLang(), TOUCH].join('|');
+    const key = [
+      v.name,
+      v.spot,
+      v.onSpot,
+      v.holding,
+      v.wind,
+      v.rain,
+      v.mine.join(),
+      v.theirs.join(),
+      v.turn,
+      v.practice,
+      v.of,
+      currentLang(),
+      TOUCH,
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       setText(this.title, shoot ? t('hoops.shootout', { name: v.name }) : t('hoops.practice'));
       const made = (a: number[]) => a.filter((x) => x === 1).length;
-      setText(this.score, shoot ? `${made(v.mine)}–${made(v.theirs)}` : v.of ? t('hoops.makes', { n: v.practice, of: v.of }) : t('hoops.makesDone', { n: v.practice }));
+      setText(
+        this.score,
+        shoot
+          ? `${made(v.mine)}–${made(v.theirs)}`
+          : v.of
+            ? t('hoops.makes', { n: v.practice, of: v.of })
+            : t('hoops.makesDone', { n: v.practice }),
+      );
       const dots = (a: number[]) => a.map((x) => `<i class="${x === 1 ? 'in' : x === 0 ? 'out' : ''}"></i>`).join('');
-      this.board.innerHTML = shoot ? `<div class="court-row"><em>${t('games.you')}</em>${dots(v.mine)}</div><div class="court-row them"><em>${esc(v.name)}</em>${dots(v.theirs)}</div>` : '';
+      this.board.innerHTML = shoot
+        ? `<div class="court-row"><em>${t('games.you')}</em>${dots(v.mine)}</div><div class="court-row them"><em>${esc(v.name)}</em>${dots(v.theirs)}</div>`
+        : '';
       this.board.classList.toggle('hidden', !shoot);
-      const where = !v.onSpot ? t('hoops.toSpot', { n: v.spot }) : shoot && v.turn === 1 ? t('hoops.theirShot', { name: v.name }) : TOUCH ? t('hoops.touch') : t('hoops.keys');
+      const where = !v.onSpot
+        ? t('hoops.toSpot', { n: v.spot })
+        : shoot && v.turn === 1
+          ? t('hoops.theirShot', { name: v.name })
+          : TOUCH
+            ? t('hoops.touch')
+            : t('hoops.keys');
       const wind = v.wind ? ` · ${t(v.wind === 'behind' ? 'hoops.windBehind' : 'hoops.windAgainst')}` : '';
       setText(this.note, `${where}${v.onSpot ? `${wind}${v.rain ? ` · ${t('hoops.rain')}` : ''}` : ''}`);
       setText(this.pad.querySelector('span')!, t('hoops.shoot'));
@@ -348,7 +406,10 @@ export class BoardCard {
   private readonly say: HTMLElement;
   private said = '';
 
-  constructor(private readonly send: Send, private readonly click: () => void) {
+  constructor(
+    private readonly send: Send,
+    private readonly click: () => void,
+  ) {
     this.el = h('div', 'train-card board-card hidden');
     this.say = h('span', 'sr-only');
     this.say.setAttribute('role', 'status');
@@ -421,14 +482,40 @@ export class BoardCard {
         }
         const i = r * 4 + (c >> 1);
         const p = v.sq[i];
-        const cls = [p ? `p${p}` : '', i === this.chosen ? 'chosen' : '', targets.has(i) ? 'target' : '', movable.has(i) && i !== this.chosen ? 'can' : '', last.has(i) ? 'last' : ''].filter(Boolean).join(' ');
+        const cls = [
+          p ? `p${p}` : '',
+          i === this.chosen ? 'chosen' : '',
+          targets.has(i) ? 'target' : '',
+          movable.has(i) && i !== this.chosen ? 'can' : '',
+          last.has(i) ? 'last' : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
         const live = targets.has(i) || movable.has(i);
-        const label = p ? t(p === 1 ? 'checkers.yourMan' : p === 2 ? 'checkers.yourKing' : p === 3 ? 'checkers.hisMan' : 'checkers.hisKing', { name: v.name }) : targets.has(i) ? t('checkers.moveHere') : t('checkers.empty');
+        const label = p
+          ? t(p === 1 ? 'checkers.yourMan' : p === 2 ? 'checkers.yourKing' : p === 3 ? 'checkers.hisMan' : 'checkers.hisKing', {
+              name: v.name,
+            })
+          : targets.has(i)
+            ? t('checkers.moveHere')
+            : t('checkers.empty');
         const pressed = movable.has(i) ? ` aria-pressed="${i === this.chosen ? 'true' : 'false'}"` : '';
         cells += `<button class="sq ${cls}" data-sq="${i}" ${live ? '' : 'disabled'}${pressed} aria-label="${esc(`${label}, ${'abcdefgh'[c]}${8 - r}`)}">${p ? '<span class="piece"></span>' : ''}</button>`;
       }
     const status =
-      v.over === 1 ? t('checkers.won', { name: v.name }) : v.over === 2 ? t('checkers.lost', { name: v.name }) : v.over === 3 ? t('checkers.drawn') : v.thinking ? t('checkers.thinking', { name: v.name }) : v.chain >= 0 ? t('checkers.jumpOn') : v.steps.some((s) => Math.abs(s.to - s.from) > 5) ? t('checkers.mustJump') : t(TOUCH ? 'checkers.yourMoveTouch' : 'checkers.yourMove');
+      v.over === 1
+        ? t('checkers.won', { name: v.name })
+        : v.over === 2
+          ? t('checkers.lost', { name: v.name })
+          : v.over === 3
+            ? t('checkers.drawn')
+            : v.thinking
+              ? t('checkers.thinking', { name: v.name })
+              : v.chain >= 0
+                ? t('checkers.jumpOn')
+                : v.steps.some((s) => Math.abs(s.to - s.from) > 5)
+                  ? t('checkers.mustJump')
+                  : t(TOUCH ? 'checkers.yourMoveTouch' : 'checkers.yourMove');
     const acts =
       v.over > 0
         ? `<button class="big-btn primary small" data-do="new">${icon('replay', 16)}<span>${t('checkers.newGame')}</span></button><button class="big-btn ghost small" data-do="up">${icon('close', 16)}<span>${t('checkers.getUp')}</span></button>`
@@ -443,6 +530,11 @@ export class BoardCard {
       this.said = status;
       setText(this.say, status);
     }
-    if (again) (this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ?? this.el.querySelector<HTMLElement>('.sq:not([disabled])') ?? this.el.querySelector<HTMLElement>('[data-do]'))?.focus();
+    if (again)
+      (
+        this.el.querySelector<HTMLElement>(`${again}:not([disabled])`) ??
+        this.el.querySelector<HTMLElement>('.sq:not([disabled])') ??
+        this.el.querySelector<HTMLElement>('[data-do]')
+      )?.focus();
   }
 }

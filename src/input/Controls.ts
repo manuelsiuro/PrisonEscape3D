@@ -99,7 +99,8 @@ export class Controls {
       return;
     }
     if (this.aimId !== null) return;
-    this.press = this.pointers.size === 0 && e.button === 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), far: false } : null;
+    this.press =
+      this.pointers.size === 0 && e.button === 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), far: false } : null;
     if (e.pointerType === 'mouse') return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try {
@@ -169,7 +170,8 @@ export class Controls {
     const p = this.press;
     if (p?.id === e.pointerId) {
       this.press = null;
-      if (e.type === 'pointerup' && this.enabled && !p.far && this.pointers.size <= 1 && performance.now() - p.t < TAP_MS) this.onTap(p.x, p.y);
+      if (e.type === 'pointerup' && this.enabled && !p.far && this.pointers.size <= 1 && performance.now() - p.t < TAP_MS)
+        this.onTap(p.x, p.y);
     }
     this.pointers.delete(e.pointerId);
     if (this.pointers.size < 2) this.pinch = 0;

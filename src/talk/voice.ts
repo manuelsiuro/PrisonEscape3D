@@ -2,7 +2,6 @@ import type { PrisonDef } from '../content/prisons/types';
 import { hash32 } from '../sim/rng';
 import { INMATE_VOICES, type GuardVoice, type InmateVoice, type Voice } from './types';
 
-
 /** How often a voice speaks up, against the others (1: average). */
 export const CHATTY: Record<Voice, number> = {
   jokester: 1.4,

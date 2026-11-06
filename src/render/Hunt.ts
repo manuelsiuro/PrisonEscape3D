@@ -75,7 +75,16 @@ export class HuntView {
   private readonly under = (x: number, z: number) => !!this.prison?.covers(x, z);
 
   /** How the player got there (P41 review: the van, glider, raft and helicopter starts began on foot, nothing to show for it): the van driving on, the glider left lying, the raft beached, the helicopter lifting away. */
-  private arrival: { g: THREE.Group; kind: StartKind; t: number; dx: number; dz: number; x: number; z: number; rotor: THREE.Group | null } | null = null;
+  private arrival: {
+    g: THREE.Group;
+    kind: StartKind;
+    t: number;
+    dx: number;
+    dz: number;
+    x: number;
+    z: number;
+    rotor: THREE.Group | null;
+  } | null = null;
 
   /** The outside of a hunt (`lou`: his car waits there; `kind`: how the player got out). */
   set(o: OutsideWorld, lou: boolean, kind?: StartKind) {
@@ -113,7 +122,12 @@ export class HuntView {
     // Somewhere clear beside the player, `r` tiles off or a little further (behind first, then either side, then ahead): open ground all round it (`wide` tiles), no cover, no tree.
     const clear = (r: number, wide: number): [number, number] => {
       for (const rr of [r, r + 1, r + 2])
-        for (const [ax, az] of [[-dx, -dz], [-dz, dx], [dz, -dx], [dx, dz]]) {
+        for (const [ax, az] of [
+          [-dx, -dz],
+          [-dz, dx],
+          [dz, -dx],
+          [dx, dz],
+        ]) {
           const cx = x + ax * rr;
           const cz = z + az * rr;
           let ok = true;
@@ -159,7 +173,13 @@ export class HuntView {
     } else if (kind === 'sea') {
       // Beached at the water's edge behind them.
       const parts: Part[] = [];
-      for (let k = 0; k < 5; k++) parts.push(paint(new THREE.CylinderGeometry(0.1, 0.1, 1.3, 7).rotateX(Math.PI / 2).translate(-0.4 + k * 0.2, 0, 0), k % 2 ? 0xd8c08a : 0xe8d2a0));
+      for (let k = 0; k < 5; k++)
+        parts.push(
+          paint(
+            new THREE.CylinderGeometry(0.1, 0.1, 1.3, 7).rotateX(Math.PI / 2).translate(-0.4 + k * 0.2, 0, 0),
+            k % 2 ? 0xd8c08a : 0xe8d2a0,
+          ),
+        );
       parts.push(box(0.04, 1.1, 0.04, 0x6e4a2b, 0, 0, 0), paint(new THREE.PlaneGeometry(0.7, 0.8).translate(0.37, 0.65, 0), 0xeef1f4));
       g.add(new THREE.Mesh(merge(parts), kitMaterial));
       g.rotation.z = 0.08;
@@ -224,7 +244,14 @@ export class HuntView {
     const g = new THREE.Group();
     const posts = merge([cyl(0.04, 1.3, 0x7a5a3a, -0.75, 0), cyl(0.04, 1.3, 0x7a5a3a, 0.75, 0), box(1.5, 0.015, 0.015, 0xe8e2d4, 0, 1.22)]);
     g.add(new THREE.Mesh(posts, kitMaterial));
-    const clothes = new THREE.Mesh(merge([box(0.34, 0.42, 0.03, 0x4a6a96, -0.4, 0.8), box(0.3, 0.5, 0.03, 0xc8a24a, 0.02, 0.72), box(0.3, 0.34, 0.03, 0xe2ddd0, 0.42, 0.88)]), kitMaterial);
+    const clothes = new THREE.Mesh(
+      merge([
+        box(0.34, 0.42, 0.03, 0x4a6a96, -0.4, 0.8),
+        box(0.3, 0.5, 0.03, 0xc8a24a, 0.02, 0.72),
+        box(0.3, 0.34, 0.03, 0xe2ddd0, 0.42, 0.88),
+      ]),
+      kitMaterial,
+    );
     clothes.name = 'clothes';
     clothes.castShadow = true;
     g.add(clothes);
@@ -245,7 +272,11 @@ export class HuntView {
     const across = Math.max(w, d);
     const parts: Part[] = [];
     for (let k = 0; k < across * 3; k++) parts.push(box(1 / 3, 0.16, 0.08, k % 2 ? 0xf4f1ea : 0xd23f36, -across / 2 + (k + 0.5) / 3, 0.62));
-    for (const s of [-1, 1]) parts.push(box(0.06, 0.62, 0.3, 0x3a3f46, s * (across / 2 - 0.15), 0), paint(new THREE.ConeGeometry(0.16, 0.42, 8).translate(s * (across / 2 + 0.3), 0.21, 0.3), 0xff7a1a));
+    for (const s of [-1, 1])
+      parts.push(
+        box(0.06, 0.62, 0.3, 0x3a3f46, s * (across / 2 - 0.15), 0),
+        paint(new THREE.ConeGeometry(0.16, 0.42, 8).translate(s * (across / 2 + 0.3), 0.21, 0.3), 0xff7a1a),
+      );
     const g = new THREE.Group();
     const mesh = new THREE.Mesh(merge(parts), kitMaterial);
     mesh.castShadow = true;
@@ -322,10 +353,24 @@ export class HuntView {
     this.heli = g;
     this.group.add(g);
     // Its searchlight: a pale cone down to the ground, the pool where it lands.
-    this.beamMat = new THREE.MeshBasicMaterial({ color: 0xfff6d8, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    this.beamMat = new THREE.MeshBasicMaterial({
+      color: 0xfff6d8,
+      transparent: true,
+      opacity: 0.12,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
     this.beam = new THREE.Mesh(new THREE.ConeGeometry(HUNT.heliLight, HELI_Y, 24, 1, true).translate(0, HELI_Y / 2, 0), this.beamMat);
     this.beam.visible = false;
-    this.poolMat = new THREE.MeshBasicMaterial({ map: pool(), color: 0xfff1c8, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
+    this.poolMat = new THREE.MeshBasicMaterial({
+      map: pool(),
+      color: 0xfff1c8,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
     this.poolMesh = new THREE.Mesh(new THREE.PlaneGeometry(HUNT.heliLight * 2.2, HUNT.heliLight * 2.2).rotateX(-Math.PI / 2), this.poolMat);
     this.poolMesh.renderOrder = 7;
     this.poolMesh.visible = false;
@@ -370,7 +415,13 @@ export class HuntView {
   update(f: HuntFrame, dt: number, time: number, night: number, motion: boolean) {
     // A faint glow at the player's feet after dark (their outline reads against the ground, in any clothes).
     if (!this.glow) {
-      this.glowMat = new THREE.MeshBasicMaterial({ color: 0xbfd8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+      this.glowMat = new THREE.MeshBasicMaterial({
+        color: 0xbfd8ff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
       this.glow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 28).rotateX(-Math.PI / 2), this.glowMat);
       this.glow.renderOrder = 5;
       this.group.add(this.glow);

@@ -29,7 +29,11 @@ const item = (id: string, where: string) => {
   if (!ITEM[id]) bad(`${where}: no item ${id}`);
 };
 const iconOrItem = (name: string, where: string) =>
-  name.startsWith('item:') ? item(name.slice(5), where) : name.startsWith('dot:') ? /^dot:#[0-9a-f]{6}$/.test(name) || bad(`${where}: a dot ${name}`) : hasIcon(name) || bad(`${where}: no icon ${name}`);
+  name.startsWith('item:')
+    ? item(name.slice(5), where)
+    : name.startsWith('dot:')
+      ? /^dot:#[0-9a-f]{6}$/.test(name) || bad(`${where}: a dot ${name}`)
+      : hasIcon(name) || bad(`${where}: no icon ${name}`);
 
 const ids = ALL_TOPICS.map((tp) => tp.id);
 if (new Set(ids).size !== ids.length) bad('a topic is listed twice');
@@ -62,15 +66,20 @@ for (const tp of ALL_TOPICS) {
     if (e === undefined) continue;
     if (f === undefined) bad(`${k(p)}: not in French`);
     else if (lines(e).length !== lines(f).length) bad(`${k(p)}: ${lines(e).length} lines in English, ${lines(f).length} in French`);
-    if (PAIRS.includes(p)) for (const l of [...lines(e), ...lines(f)]) if (l.split('|').length !== 2 || l.split('|').some((x) => !x.trim())) bad(`${k(p)}: "${l}" isn't "value|what"`);
+    if (PAIRS.includes(p))
+      for (const l of [...lines(e), ...lines(f)])
+        if (l.split('|').length !== 2 || l.split('|').some((x) => !x.trim())) bad(`${k(p)}: "${l}" isn't "value|what"`);
   }
   for (const p of ['bars']) for (const l of lines(E[k(p)])) if (!/^\d+$/.test(l.split('|')[0])) bad(`${k(p)}: "${l}" needs a whole number`);
   for (const l of lines(E[k('meter')])) if (!/^\d+%$/.test(l.split('|')[0])) bad(`${k('meter')}: "${l}" needs a percentage`);
   if (tp.diagram && DIAGRAM_PART[tp.diagram] && !E[k(DIAGRAM_PART[tp.diagram])]) bad(`${tp.id}: its ${tp.diagram} has no lines`);
-  if (tp.stepIcons && tp.stepIcons.length !== lines(E[k('steps')]).length) bad(`${tp.id}: ${tp.stepIcons.length} step icons for ${lines(E[k('steps')]).length} steps`);
-  if (tp.listIcons && tp.listIcons.length !== lines(E[k('list')]).length) bad(`${tp.id}: ${tp.listIcons.length} list icons for ${lines(E[k('list')]).length} lines`);
+  if (tp.stepIcons && tp.stepIcons.length !== lines(E[k('steps')]).length)
+    bad(`${tp.id}: ${tp.stepIcons.length} step icons for ${lines(E[k('steps')]).length} steps`);
+  if (tp.listIcons && tp.listIcons.length !== lines(E[k('list')]).length)
+    bad(`${tp.id}: ${tp.listIcons.length} list icons for ${lines(E[k('list')]).length} lines`);
   if (E[k('list2')] && !E[k('lh2')]) bad(`${tp.id}: a second list with no heading`);
-  if (tp.list2Icons && tp.list2Icons.length !== lines(E[k('list2')]).length) bad(`${tp.id}: ${tp.list2Icons.length} icons for ${lines(E[k('list2')]).length} lines of its second list`);
+  if (tp.list2Icons && tp.list2Icons.length !== lines(E[k('list2')]).length)
+    bad(`${tp.id}: ${tp.list2Icons.length} icons for ${lines(E[k('list2')]).length} lines of its second list`);
   if (tp.pic) {
     const f = `public/help/${tp.id}.webp`;
     if (!existsSync(f)) bad(`${tp.id}: no picture ${f}`);
@@ -83,7 +92,9 @@ for (const tp of ALL_TOPICS) {
     if (E[`help.${tp.id}`] !== undefined) bad(`${tp.id}: the old paragraph is still there`);
     const shown = ['sum', 'steps', 'list', 'list2', 'nums', 'tip', 'warn'].reduce((n, p) => n + words(E[k(p)] ?? ''), 0);
     pageWords += shown;
-    rows.push(`  ${tp.id.padEnd(10)} ${String(shown).padStart(3)} words on the page, ${String(words(E[k('more')] ?? '')).padStart(3)} folded; ${lines(E[k('steps')]).length} steps, ${lines(E[k('nums')]).length} chips${tp.diagram ? `, ${tp.diagram}` : ''}${tp.recipes ? `, ${tp.recipes.length} recipes` : ''}${tp.lessons ? `, ${tp.lessons.length} lessons` : ''}`);
+    rows.push(
+      `  ${tp.id.padEnd(10)} ${String(shown).padStart(3)} words on the page, ${String(words(E[k('more')] ?? '')).padStart(3)} folded; ${lines(E[k('steps')]).length} steps, ${lines(E[k('nums')]).length} chips${tp.diagram ? `, ${tp.diagram}` : ''}${tp.recipes ? `, ${tp.recipes.length} recipes` : ''}${tp.lessons ? `, ${tp.lessons.length} lessons` : ''}`,
+    );
   } else if (!E[`help.${tp.id}`]) bad(`${tp.id}: neither a summary nor a paragraph`);
   else oldWords += words(E[`help.${tp.id}`]);
 }
@@ -99,10 +110,14 @@ for (const key of Object.keys(E)) {
   const lo = Math.min(...defs.map((d) => d.pay));
   const hi = Math.max(...defs.map(top));
   const fixer = Math.max(...defs.filter((d) => d.fixer).map((d) => Math.round((top(d) * FIXER_PAY) / 100)));
-  if (!E['help.oddjobs.nums'].includes(`$${lo}–${hi}|`) || !E['help.oddjobs.nums'].includes(`$${fixer})`)) bad(`help.oddjobs.nums: the pay is $${lo}–${hi}, the fixer's up to $${fixer}`);
-  if (!F['help.oddjobs.nums']?.includes(`${lo}–${hi}\u202f$|`) || !F['help.oddjobs.nums']?.includes(`${fixer}\u202f$`)) bad(`help.oddjobs.nums (fr): the pay is ${lo}–${hi} $, the fixer's up to ${fixer} $`);
+  if (!E['help.oddjobs.nums'].includes(`$${lo}–${hi}|`) || !E['help.oddjobs.nums'].includes(`$${fixer})`))
+    bad(`help.oddjobs.nums: the pay is $${lo}–${hi}, the fixer's up to $${fixer}`);
+  if (!F['help.oddjobs.nums']?.includes(`${lo}–${hi}\u202f$|`) || !F['help.oddjobs.nums']?.includes(`${fixer}\u202f$`))
+    bad(`help.oddjobs.nums (fr): the pay is ${lo}–${hi} $, the fixer's up to ${fixer} $`);
 }
 if (problems.length) throw new Error(problems.join('\n'));
-console.log(`${ALL_TOPICS.length} topics in ${Object.values(HELP).flat().length} groups: ${shaped} laid out as pages (${pageWords} words before the fine print), ${ALL_TOPICS.length - shaped} still a paragraph (${oldWords} words); ${pics} pictures`);
+console.log(
+  `${ALL_TOPICS.length} topics in ${Object.values(HELP).flat().length} groups: ${shaped} laid out as pages (${pageWords} words before the fine print), ${ALL_TOPICS.length - shaped} still a paragraph (${oldWords} words); ${pics} pictures`,
+);
 console.log('every part in French with as many lines; every item, recipe, icon, lesson, prison and picture there');
 console.log(rows.join('\n'));

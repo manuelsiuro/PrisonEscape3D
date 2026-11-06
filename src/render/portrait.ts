@@ -111,7 +111,8 @@ export function sitterPortraitOf(look: number, suit?: number): string {
     [parts.clothes, col.clothes],
     [parts.skin, col.skin],
     [parts.hair, col.hair],
-  ] as const) who.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, color: c })));
+  ] as const)
+    who.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, color: c })));
   who.rotation.y = -0.38;
   scene.add(who);
   const height = SITTER_TOP - SITTER_FOOT;

@@ -42,7 +42,8 @@ const give = (bot: Bot, ...ids: string[]) => {
 };
 const zoneAt = (bot: Bot, i: number) => ZONES[bot.sim.world.ground.zone[i]];
 /** The hour of day 1 (or the next day's, past midnight): run the clock there, the player standing still. */
-const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.step / STEPS_PER_MINUTE) % 1440 === minute % 1440, 1440 * STEPS_PER_MINUTE);
+const runTo = (bot: Bot, minute: number) =>
+  bot.until(() => Math.floor(bot.st.step / STEPS_PER_MINUTE) % 1440 === minute % 1440, 1440 * STEPS_PER_MINUTE);
 
 // ------------------------------------------------------------------ the island
 {
@@ -50,14 +51,20 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   const w = bot.sim.world;
   const g = w.ground;
   let edge = 0;
-  for (let k = 0; k < MAP_W; k++) for (const i of [tileOf(k, 0), tileOf(k, MAP_H - 1), tileOf(0, k), tileOf(MAP_W - 1, k)]) if (g.kind[i] !== TILE.WATER) edge++;
+  for (let k = 0; k < MAP_W; k++)
+    for (const i of [tileOf(k, 0), tileOf(k, MAP_H - 1), tileOf(0, k), tileOf(MAP_W - 1, k)]) if (g.kind[i] !== TILE.WATER) edge++;
   check(edge === 0, `the sea all round the map's edge (${edge} other)`);
   // The road: only the ferry landing, which touches nothing but the sea and the drawbridge.
   const road: number[] = [];
   for (let i = 0; i < MAP_W * MAP_H; i++) if (zoneAt(bot, i) === 'outside') road.push(i);
   const touches = new Set<string>();
-  for (const i of road) for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (zoneAt(bot, j) !== 'outside') touches.add(w.bridge[j] ? 'drawbridge' : TILE_INFO[g.kind[j]].name);
-  check(road.every((i) => g.kind[i] === TILE.ROAD) && [...touches].sort().join() === 'drawbridge,water', `the only road is the ferry landing, beyond the water and the drawbridge (${road.length} tiles; touches ${[...touches].join(', ')})`);
+  for (const i of road)
+    for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W])
+      if (zoneAt(bot, j) !== 'outside') touches.add(w.bridge[j] ? 'drawbridge' : TILE_INFO[g.kind[j]].name);
+  check(
+    road.every((i) => g.kind[i] === TILE.ROAD) && [...touches].sort().join() === 'drawbridge,water',
+    `the only road is the ferry landing, beyond the water and the drawbridge (${road.length} tiles; touches ${[...touches].join(', ')})`,
+  );
   // Underground: from anywhere on the island, the landing can't be reached without digging under the sea.
   const seen = new Uint8Array(MAP_W * MAP_H);
   const queue: number[] = [];
@@ -81,7 +88,10 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   const pier = Array.from(g.kind).filter((k) => k === TILE.PIER).length;
   const bridge = Array.from(w.bridge).filter((v) => v).length;
   check(pier === 6 && bridge === 6, `the pier (${pier} tiles) and the drawbridge (${bridge} tiles)`);
-  check(IRONGATE.escapes!.join() === 'raft,helicopter,takeover,stowaway,bluff,paperwork,parole', `seven ways out: ${IRONGATE.escapes!.join(', ')}`);
+  check(
+    IRONGATE.escapes!.join() === 'raft,helicopter,takeover,stowaway,bluff,paperwork,parole',
+    `seven ways out: ${IRONGATE.escapes!.join(', ')}`,
+  );
   console.log(`island: the sea all round, the landing (${road.length} road tiles) only past the drawbridge, the pier ${pier} tiles`);
 }
 
@@ -142,7 +152,11 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   check(gens.length === 2, `two generators (${gens.length})`);
   const where = (k: number) => zoneAt(bot, w.props[gens[k]].z * MAP_W + w.props[gens[k]].x);
   check(where(0) === 'generator' && where(1) === 'generator', 'both in generator rooms');
-  check(['detectors', 'cameras'].every((u) => genFor(w, u as never) === 0) && ['fence', 'searchlights', 'lights'].every((u) => genFor(w, u as never) === 1), 'GEN-1 runs the arches and cameras, GEN-2 the fence, searchlights and lamps');
+  check(
+    ['detectors', 'cameras'].every((u) => genFor(w, u as never) === 0) &&
+      ['fence', 'searchlights', 'lights'].every((u) => genFor(w, u as never) === 1),
+    'GEN-1 runs the arches and cameras, GEN-2 the fence, searchlights and lamps',
+  );
   const at = (k: number) => {
     const p = w.props[gens[k]];
     place(bot, p.x, p.z - 1);
@@ -152,8 +166,14 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   at(0);
   bot.act();
   check(st.powerOff === POWER_OFF_STEPS && st.powerOff2 === 0, 'GEN-1 off, GEN-2 running');
-  check(!powered(w, st, 'detectors') && !powered(w, st, 'cameras') && powered(w, st, 'fence') && powered(w, st, 'searchlights'), 'arches and cameras dead; the fence and the searchlights live');
-  check(bot.sim.events.some((e) => e.type === 'power' && !e.on && e.gen === 0), "the event names GEN-1");
+  check(
+    !powered(w, st, 'detectors') && !powered(w, st, 'cameras') && powered(w, st, 'fence') && powered(w, st, 'searchlights'),
+    'arches and cameras dead; the fence and the searchlights live',
+  );
+  check(
+    bot.sim.events.some((e) => e.type === 'power' && !e.on && e.gen === 0),
+    'the event names GEN-1',
+  );
   // A camera that sees the player in the control room… sees nothing now.
   place(bot, 24, 44);
   st.items.inv[SLOT.OUTFIT] = slot(n('inmate_outfit'));
@@ -161,7 +181,10 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   // GEN-2 off too: the fence dead.
   at(1);
   bot.act();
-  check(st.powerOff2 === POWER_OFF_STEPS && !powered(w, st, 'fence') && !powered(w, st, 'searchlights') && !powered(w, st, 'lights'), 'GEN-2 off: the fence, the searchlights and the lamps dead');
+  check(
+    st.powerOff2 === POWER_OFF_STEPS && !powered(w, st, 'fence') && !powered(w, st, 'searchlights') && !powered(w, st, 'lights'),
+    'GEN-2 off: the fence, the searchlights and the lamps dead',
+  );
   // Back on by itself: GEN-1 first (it went off first).
   bot.until(() => st.powerOff === 0, POWER_OFF_STEPS + 5);
   check(st.powerOff2 > 0 && powered(w, st, 'cameras') && !powered(w, st, 'fence'), 'GEN-1 back after 45 s, GEN-2 still off');
@@ -175,8 +198,13 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   shocked.face(DIR.EAST);
   shocked.st.powerOff = POWER_OFF_STEPS;
   shocked.use();
-  check(shocked.sim.events.some((e) => e.type === 'shocked'), 'GEN-1 off, the dock fence (on GEN-2) still shocks');
-  console.log(`generators: GEN-1 at ${w.props[gens[0]].x},${w.props[gens[0]].z} (arches, cameras), GEN-2 at ${w.props[gens[1]].x},${w.props[gens[1]].z} (fence, searchlights, lamps)`);
+  check(
+    shocked.sim.events.some((e) => e.type === 'shocked'),
+    'GEN-1 off, the dock fence (on GEN-2) still shocks',
+  );
+  console.log(
+    `generators: GEN-1 at ${w.props[gens[0]].x},${w.props[gens[0]].z} (arches, cameras), GEN-2 at ${w.props[gens[1]].x},${w.props[gens[1]].z} (fence, searchlights, lamps)`,
+  );
 }
 
 // ------------------------------------------------------------------ the raft
@@ -229,9 +257,15 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   bot.hold('grapnel');
   bot.face(DIR.SOUTH);
   const t = toolTarget(w, LAYER.ROOF, st.player, n('grapnel'), [], st.items.inv);
-  check(t?.action === 'grapnel' && t.layer === LAYER.ROOF && t.fits, `the grapnel hooks the roof across the yard (${t?.action}, layer ${t?.layer})`);
+  check(
+    t?.action === 'grapnel' && t.layer === LAYER.ROOF && t.fits,
+    `the grapnel hooks the roof across the yard (${t?.action}, layer ${t?.layer})`,
+  );
   bot.use();
-  check(st.layer === LAYER.ROOF && Math.floor(st.player.z / UNIT) === 27 && bot.slotOf('sheet_rope') >= 0, 'swung across onto the middle block, the sheet rope kept');
+  check(
+    st.layer === LAYER.ROOF && Math.floor(st.player.z / UNIT) === 27 && bot.slotOf('sheet_rope') >= 0,
+    'swung across onto the middle block, the sheet rope kept',
+  );
   // Along the roofs to the helipad court's west edge (the wall top beside it), and down the rope into it.
   check(bot.walkTo(tileOf(32, 44), 600), 'over the roofs to the court');
   bot.hold('sheet_rope');
@@ -242,7 +276,10 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   const other = new Bot(IRONGATE, 6);
   place(other, 36, 27, LAYER.ROOF);
   other.face(DIR.NORTH);
-  check(toolTarget(other.sim.world, LAYER.ROOF, other.st.player, n('grapnel'), [], [slot(n('sheet_rope'))]) === null, 'no hooking back north (the north block is no landing)');
+  check(
+    toolTarget(other.sim.world, LAYER.ROOF, other.st.player, n('grapnel'), [], [slot(n('sheet_rope'))]) === null,
+    'no hooking back north (the north block is no landing)',
+  );
   console.log('roofs: north roof → across the yard on the grapnel → the south roofs → down the sheet rope into the court');
 }
 
@@ -284,7 +321,10 @@ const runTo = (bot: Bot, minute: number) => bot.until(() => Math.floor(bot.st.st
   const w = bot.sim.world;
   const k = IRONGATE.guards.findIndex((d) => d.riot);
   const plain = IRONGATE.guards.findIndex((d) => !d.riot);
-  check(bot.st.guards[k].hp === maxHealth(RIOT_STR) && bot.st.guards[plain].hp === maxHealth(GUARD_STR), `riot guards: ${maxHealth(RIOT_STR)} health (a guard ${maxHealth(GUARD_STR)})`);
+  check(
+    bot.st.guards[k].hp === maxHealth(RIOT_STR) && bot.st.guards[plain].hp === maxHealth(GUARD_STR),
+    `riot guards: ${maxHealth(RIOT_STR)} health (a guard ${maxHealth(GUARD_STR)})`,
+  );
   check(guardDefense(w, k) === RIOT_DEFENSE && guardDefense(w, plain) === GUARD_DEFENSE, 'their plates: defense ' + RIOT_DEFENSE);
   const fist = damage(90, 0, guardDefense(w, plain));
   const vsRiot = damage(90, 0, guardDefense(w, k));

@@ -23,9 +23,11 @@ export const EAGLE_SIGHT = 2;
 /** Short Fuse: what a guard watching adds, ×3/2 (rounded up); heat cools at half the pace. */
 const FUSE_DECAY = 2;
 /** How often heat cools a point while nobody looks (steps). */
-export const coolEvery = (s: { readonly mods: readonly string[] }) => (twist(s, 'shortFuse') ? HEAT_DECAY_STEPS * FUSE_DECAY : HEAT_DECAY_STEPS);
+export const coolEvery = (s: { readonly mods: readonly string[] }) =>
+  twist(s, 'shortFuse') ? HEAT_DECAY_STEPS * FUSE_DECAY : HEAT_DECAY_STEPS;
 /** What a guard's eye adds to the heat as it trickles in (a step's worth: under 100). */
-export const trickle = (s: { readonly mods: readonly string[] }, heat: number) => (heat < 100 && twist(s, 'shortFuse') ? Math.ceil((heat * 3) / 2) : heat);
+export const trickle = (s: { readonly mods: readonly string[] }, heat: number) =>
+  heat < 100 && twist(s, 'shortFuse') ? Math.ceil((heat * 3) / 2) : heat;
 /** Crackdown: cells more at the morning shakedown. */
 export const CRACKDOWN_CELLS = 2;
 /** Night Owl: the bed checks besides 00:30 and 04:00 (clock minutes: 02:00, 05:30). */
@@ -36,7 +38,18 @@ export const LAST_DAY = 3;
 export const CARE_CASH = 40;
 
 /** Care Package: what may be in it (three of them, drawn for the run). */
-export const CARE_ITEMS: readonly string[] = ['duct_tape', 'metal_file', 'timber', 'wire', 'battery', 'glue', 'screwdriver', 'crowbar', 'sheet_metal', 'chocolate'];
+export const CARE_ITEMS: readonly string[] = [
+  'duct_tape',
+  'metal_file',
+  'timber',
+  'wire',
+  'battery',
+  'glue',
+  'screwdriver',
+  'crowbar',
+  'sheet_metal',
+  'chocolate',
+];
 
 /**
  * Day 1 under the Daily's twists, as the game is made (before the coins and the favors; never

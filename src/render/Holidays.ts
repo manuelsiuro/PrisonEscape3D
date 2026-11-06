@@ -17,7 +17,6 @@ export const NO_HOLIDAY: HolidayFrame = { kind: 0, water: false, fireworks: fals
 const FIRE = [0xff5f6d, 0xffd23f, 0x5fb3ff, 0x7ed957, 0xff9ec7, 0xffffff];
 const WHITE = new THREE.Color(0xffffff);
 
-
 const FIREWORK_BURSTS = 6;
 const SPARKS = 28;
 /** A burst's flash at its heart, and each spark's trail: this many fading copies behind it. */
@@ -42,8 +41,19 @@ export class HolidaysView {
   private world: World | null = null;
   private kind = -1;
   private readonly glowMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
-  private readonly sparkMat = new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-  private readonly dropMat = new THREE.MeshStandardMaterial({ color: 0x9fd8ff, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.85 });
+  private readonly sparkMat = new THREE.MeshBasicMaterial({
+    toneMapped: false,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  private readonly dropMat = new THREE.MeshStandardMaterial({
+    color: 0x9fd8ff,
+    roughness: 0.2,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.85,
+  });
   private readonly sparks: THREE.InstancedMesh;
   private readonly flashes: THREE.InstancedMesh;
   private readonly drops: THREE.InstancedMesh;
@@ -52,7 +62,12 @@ export class HolidaysView {
    * nobody's under one, and CANOPY_STEPS faded ones, shared (a material each, cloned, used to
    * compile a shader and its shadow afresh the first time they drew: a hitch). Warmed with the day.
    */
-  private readonly canopyMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05, side: THREE.DoubleSide });
+  private readonly canopyMat = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.85,
+    metalness: 0.05,
+    side: THREE.DoubleSide,
+  });
   private readonly canopyFades = Array.from({ length: CANOPY_STEPS }, (_, k) => {
     const m = this.canopyMat.clone();
     m.transparent = true;
@@ -131,8 +146,7 @@ export class HolidaysView {
       else if (d.what === 'hose') {
         this.hoses.push({ x0: d.x, z0: d.z, x1: d.x1!, z1: d.z1! });
         hoseReel(parts, d.x, d.z, Math.sign(d.x1! - d.x), Math.sign(d.z1! - d.z));
-      }
-      else if (d.what === 'lantern') lantern(parts, glow, d.x, d.y ?? 0, d.z, d.y ? 0.8 : 1.2);
+      } else if (d.what === 'lantern') lantern(parts, glow, d.x, d.y ?? 0, d.z, d.y ? 0.8 : 1.2);
       else if (d.what === 'tree') tree(parts, glow, d.x, d.z);
       else if (d.what === 'snowman') snowman(parts, d.x, d.z, this.world.def.theme === 'desert');
     }
@@ -189,7 +203,17 @@ export class HolidaysView {
    * (`lit`, 0–1), the parasols' canopies faded over whoever's under one (the player, `guards`,
    * `inmates`). Still with reduced motion: no sprays, no bursts (the decor stays).
    */
-  update(f: HolidayFrame, dt: number, time: number, x: number, z: number, motion: boolean, lit = 1, guards: ReadonlyArray<{ x: number; z: number }> = [], inmates: ReadonlyArray<{ x: number; z: number }> = []) {
+  update(
+    f: HolidayFrame,
+    dt: number,
+    time: number,
+    x: number,
+    z: number,
+    motion: boolean,
+    lit = 1,
+    guards: ReadonlyArray<{ x: number; z: number }> = [],
+    inmates: ReadonlyArray<{ x: number; z: number }> = [],
+  ) {
     this.glowMat.color.setScalar(0.25 + 0.75 * lit);
     // A parasol's canopy fades while the player or anyone else stands under it, as the walls cut away.
     for (const c of this.canopies) {
@@ -240,7 +264,14 @@ export class HolidaysView {
       if (this.burstClock <= 0) {
         this.burstClock = 0.35 + Math.random() * 0.5;
         const b = this.bursts.reduce((a, c) => (c.t > a.t ? c : a));
-        Object.assign(b, { t: 0, life: 1.4 + Math.random() * 0.6, x: x + (Math.random() - 0.5) * 6, y: 3.6 + Math.random() * 1.8, z: z - 1 - Math.random() * 3, color: FIRE[Math.floor(Math.random() * FIRE.length)] });
+        Object.assign(b, {
+          t: 0,
+          life: 1.4 + Math.random() * 0.6,
+          x: x + (Math.random() - 0.5) * 6,
+          y: 3.6 + Math.random() * 1.8,
+          z: z - 1 - Math.random() * 3,
+          color: FIRE[Math.floor(Math.random() * FIRE.length)],
+        });
       }
     }
     // (Each spark with its trail, dimmer and smaller the further behind; a flash at the burst's heart as it goes off. Added light: they fade to nothing. None with reduced motion.)
@@ -256,7 +287,11 @@ export class HolidaysView {
         for (let i = 0; i < SPARKS; i++) {
           const a = (i / SPARKS) * Math.PI * 2;
           const up = Math.sin(i * 2.399) * 0.9;
-          this.p.set(b.x + Math.cos(a) * r * Math.sqrt(1 - up * up), b.y + up * r - k * k * 1.2, b.z + Math.sin(a) * r * Math.sqrt(1 - up * up) * 0.6);
+          this.p.set(
+            b.x + Math.cos(a) * r * Math.sqrt(1 - up * up),
+            b.y + up * r - k * k * 1.2,
+            b.z + Math.sin(a) * r * Math.sqrt(1 - up * up) * 0.6,
+          );
           this.m.compose(this.p, this.q, this.s);
           this.sparks.setMatrixAt(s, this.m);
           this.sparks.setColorAt(s++, this.c);
@@ -267,7 +302,10 @@ export class HolidaysView {
         this.p.set(b.x, b.y, b.z);
         this.s.setScalar(0.6 + f0 * 1.2);
         this.m.compose(this.p, this.q, this.s);
-        this.c.setHex(b.color).lerp(WHITE, 0.6).multiplyScalar(1.4 * (1 - f0) * (1 - f0));
+        this.c
+          .setHex(b.color)
+          .lerp(WHITE, 0.6)
+          .multiplyScalar(1.4 * (1 - f0) * (1 - f0));
         this.flashes.setMatrixAt(fl, this.m);
         this.flashes.setColorAt(fl++, this.c);
       }

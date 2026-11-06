@@ -34,7 +34,13 @@ if (tests.length === 0) {
   process.exit(1);
 }
 
-interface Result { name: string; ok: boolean; ms: number; out: string; note?: string }
+interface Result {
+  name: string;
+  ok: boolean;
+  ms: number;
+  out: string;
+  note?: string;
+}
 
 /** Compares stdout with the golden copy; returns a short diff note, or undefined when it matches. */
 function compareSnapshot(name: string, stdout: string): string | undefined {
@@ -47,7 +53,8 @@ function compareSnapshot(name: string, stdout: string): string | undefined {
   const want = readFileSync(file, 'utf8').split('\n');
   const got = stdout.split('\n');
   for (let i = 0; i < Math.max(want.length, got.length); i++) {
-    if (want[i] !== got[i]) return `output differs from snapshot at line ${i + 1}:\n  - ${want[i] ?? '(none)'}\n  + ${got[i] ?? '(none)'}\n(run \`npm test -- -u\` if the change is intended)`;
+    if (want[i] !== got[i])
+      return `output differs from snapshot at line ${i + 1}:\n  - ${want[i] ?? '(none)'}\n  + ${got[i] ?? '(none)'}\n(run \`npm test -- -u\` if the change is intended)`;
   }
   return undefined;
 }

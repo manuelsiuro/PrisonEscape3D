@@ -17,10 +17,15 @@ import { prisonName, securityOf } from './prisons';
  */
 
 /** "Monday 2 November" in the player's language (the Daily's own date, wherever they are). */
-const dailyDay = (n: number) => new Intl.DateTimeFormat(currentLang(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(dailyDate(n));
+const dailyDay = (n: number) =>
+  new Intl.DateTimeFormat(currentLang(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(dailyDate(n));
 
 /** The share text: the Daily, the medal and the day, the tries, the strip, the streak and the check code (nothing of how). */
-function shareText(n: number, best: { medal: Medal | null; day: number; tries: number; strip: readonly number[]; code: string }, streak: number): string {
+function shareText(
+  n: number,
+  best: { medal: Medal | null; day: number; tries: number; strip: readonly number[]; code: string },
+  streak: number,
+): string {
   return [
     `Prison Escape 3D · ${t('daily.name', { n: n + 1 })}`,
     `${best.medal ? `${t(`medal.${best.medal}` as Key)} · ` : ''}${t('hud.day', { n: best.day })} · ${t(best.tries === 1 ? 'daily.tries1' : 'daily.tries', { n: best.tries })}`,
@@ -83,7 +88,10 @@ function twistRows(ids: readonly string[]): string {
   return ids
     .map((id) => twistOf(id))
     .filter((x) => !!x)
-    .map((x) => `<li class="twist-row${x!.cost < 0 ? ' gift' : ''}"><span class="tw-ic">${icon(x!.icon, 18)}</span><span><b>${t(`twist.${x!.id}` as Key)}</b><small>${t(`twist.${x!.id}.d` as Key)}</small></span></li>`)
+    .map(
+      (x) =>
+        `<li class="twist-row${x!.cost < 0 ? ' gift' : ''}"><span class="tw-ic">${icon(x!.icon, 18)}</span><span><b>${t(`twist.${x!.id}` as Key)}</b><small>${t(`twist.${x!.id}.d` as Key)}</small></span></li>`,
+    )
     .join('');
 }
 
@@ -122,7 +130,10 @@ export function showDaily(info: DailyInfo, click: () => void): Promise<DailyChoi
     const stars = Array.from({ length: 5 }, (_, i) => `<i class="${i < d.prison.difficulty ? 'on' : ''}">${icon('star', 11)}</i>`).join('');
     const tabs = late
       ? `<div class="daily-tabs" role="tablist">${[info.today, yesterday]
-          .map((k) => `<button role="tab" class="daily-tab${k === n ? ' on' : ''}" aria-selected="${k === n}" tabindex="${k === n ? 0 : -1}" data-n="${k}">${t(k === info.today ? 'daily.today' : 'daily.yesterday')}<small>${t('daily.num', { n: k + 1 })}</small></button>`)
+          .map(
+            (k) =>
+              `<button role="tab" class="daily-tab${k === n ? ' on' : ''}" aria-selected="${k === n}" tabindex="${k === n ? 0 : -1}" data-n="${k}">${t(k === info.today ? 'daily.today' : 'daily.yesterday')}<small>${t('daily.num', { n: k + 1 })}</small></button>`,
+          )
           .join('')}</div>`
       : '';
     const saved = info.saved === n;
@@ -235,7 +246,8 @@ export interface DailyResult {
 
 /** Out of a Daily: the medal, the day and time, the tries, the strip, the streak, the check code; Share, Try again, the title (and Watch, P25; `back`: shown again after it). */
 export function showDailyResult(v: DailyResult, click: () => void, back = false): Promise<'again' | 'title' | 'watch'> {
-  const stat = (ic: string, n: string | number, label: string) => `<div class="v-stat">${icon(ic, 18)}<b>${n}</b><small>${label}</small></div>`;
+  const stat = (ic: string, n: string | number, label: string) =>
+    `<div class="v-stat">${icon(ic, 18)}<b>${n}</b><small>${label}</small></div>`;
   const earned = earnedRow(v.earned);
   const el = h(
     'div',
@@ -275,7 +287,10 @@ export function showDailyResult(v: DailyResult, click: () => void, back = false)
       if (!c) return;
       click();
       if (c === 'share') {
-        await shareFrom(el.querySelector('.card')!, shareText(v.n, { medal: v.medal, day: v.day, tries: v.tries, strip: v.strip, code: v.code }, v.streak));
+        await shareFrom(
+          el.querySelector('.card')!,
+          shareText(v.n, { medal: v.medal, day: v.day, tries: v.tries, strip: v.strip, code: v.code }, v.streak),
+        );
         return;
       }
       el.remove();

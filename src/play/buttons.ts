@@ -13,7 +13,16 @@ import { counterTray, trayOffer } from '../sim/systems/canteen';
 import { menuOffer } from '../sim/systems/menu';
 import { letterDue } from '../sim/systems/jobs';
 import type { Body } from '../sim/systems/movement';
-import { climbTarget, digUpTarget, facesProp, preferClimb, STRIKES, toolTarget, type ClimbTarget, type ToolTarget } from '../sim/systems/structure';
+import {
+  climbTarget,
+  digUpTarget,
+  facesProp,
+  preferClimb,
+  STRIKES,
+  toolTarget,
+  type ClimbTarget,
+  type ToolTarget,
+} from '../sim/systems/structure';
 import { strikeNoise, wouldHear } from '../sim/systems/noise';
 import { canChat } from '../sim/systems/ways';
 import { TOUCH } from '../ui/dom';
@@ -26,7 +35,21 @@ import { togglePhone } from './smuggle';
 import { hiddenIn } from '../sim/systems/kiosk';
 
 /** What the buttons would do, worked out once per simulation step. */
-export const targets: { step: number; busy: boolean; panel: boolean; rev: number; climb: ClimbTarget | null; target: Target; tool: ToolTarget | null; up: ToolTarget | null; upHeard: boolean; canLock: boolean; fighting: boolean; station: Station | null; heard: boolean } = {
+export const targets: {
+  step: number;
+  busy: boolean;
+  panel: boolean;
+  rev: number;
+  climb: ClimbTarget | null;
+  target: Target;
+  tool: ToolTarget | null;
+  up: ToolTarget | null;
+  upHeard: boolean;
+  canLock: boolean;
+  fighting: boolean;
+  station: Station | null;
+  heard: boolean;
+} = {
   station: null,
   heard: false,
   up: null,
@@ -51,7 +74,17 @@ export const lockList: number[] = [];
  * or a cave-in, the hold ends) and of what it was pressed on; a fresh press waiting for the next
  * step; the steps between the player's blows now (the press waits for it, as the sim does).
  */
-export const press: { toolNow: ToolView | null; toolKey: number; heldOn: number; pressQueued: boolean; attackPace: number; upQueued: boolean; upKey: number; onGear: boolean; gearHeld: boolean } = {
+export const press: {
+  toolNow: ToolView | null;
+  toolKey: number;
+  heldOn: number;
+  pressQueued: boolean;
+  attackPace: number;
+  upQueued: boolean;
+  upKey: number;
+  onGear: boolean;
+  gearHeld: boolean;
+} = {
   onGear: false,
   gearHeld: false,
   toolNow: null,
@@ -190,18 +223,44 @@ export function updateTargets(sim: Sim, ladderFoot: number, busy: boolean, panel
     const vend = !busy && vendOffer(sim) ? sim.world.props.indexOf(vendProp(sim)!) : -1;
     // (2.33: the water cooler, then the menu board (no prop: the button's own), faced, ahead of whoever's beside them;
     // a meal's tray at the counter in reach comes first, as actions.ts has it: the counter behind them at a meal.)
-    const plain = busy ? null : interactTarget(sim.world, it, p, sim.bedtime, st.layer, peopleOf(sim), st.inmates.length, chatty(sim), sim.bedtime && !sim.rules227);
+    const plain = busy
+      ? null
+      : interactTarget(
+          sim.world,
+          it,
+          p,
+          sim.bedtime,
+          st.layer,
+          peopleOf(sim),
+          st.inmates.length,
+          chatty(sim),
+          sim.bedtime && !sim.rules227,
+        );
     const tray = !busy && (counterTray(sim) ?? (plain?.kind === 'container' ? trayOffer(sim, plain.index) : null));
     const cooler = !busy && !tray && vend < 0 && coolerOffer(sim) ? sim.world.props.indexOf(coolerProp(sim)!) : -1;
     const board = !busy && !tray && vend < 0 && cooler < 0 && menuOffer(sim);
-    const near: Target | null = busy || board ? null : vend >= 0 ? { kind: 'fixture', index: vend, use: 'vending' } : cooler >= 0 ? { kind: 'fixture', index: cooler, use: 'cooler' } : bookSeat >= 0 ? { kind: 'fixture', index: bookSeat, use: 'sit' } : letterDue(sim) >= 0 ? { kind: 'person', who: letterDue(sim) } : plain;
+    const near: Target | null =
+      busy || board
+        ? null
+        : vend >= 0
+          ? { kind: 'fixture', index: vend, use: 'vending' }
+          : cooler >= 0
+            ? { kind: 'fixture', index: cooler, use: 'cooler' }
+            : bookSeat >= 0
+              ? { kind: 'fixture', index: bookSeat, use: 'sit' }
+              : letterDue(sim) >= 0
+                ? { kind: 'person', who: letterDue(sim) }
+                : plain;
     // (P29: in a match, the players running by aren't offered for a talk: the action button never pops up under the thumb for them.)
     const reach = near?.kind === 'person' && st.match?.team.includes(near.who) ? null : near;
     memo.station = busy || st.layer !== LAYER.GROUND ? null : sim.station();
     const faced = reach?.kind === 'container' || reach?.kind === 'sleep' ? facesProp(p, containersOf(sim.world)[reach.index].prop) : false;
     memo.climb = busy ? null : preferClimb(climbTarget(sim.world, st.layer, p, ladderFoot, bodiesOf(sim)), faced);
     memo.target = memo.climb ? null : reach;
-    memo.tool = busy || panel ? null : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv, airOf(sim), st.plots, hiddenIn(it.inv[it.hand]));
+    memo.tool =
+      busy || panel
+        ? null
+        : toolTarget(sim.world, st.layer, p, held, bodiesOf(sim), it.inv, airOf(sim), st.plots, hiddenIn(it.inv[it.hand]));
     // The ear on the tool button (P14): a guard awake would hear this strike (the sim's own rule).
     const tool = memo.tool;
     memo.heard = !!tool && STRIKES.has(tool.action) && tool.fits && tool.hp > 0 && wouldHear(sim, strikeNoise(st.layer, tool, held));

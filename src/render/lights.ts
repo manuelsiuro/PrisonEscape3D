@@ -48,7 +48,9 @@ export class Lights {
     // Bulbs.
     this.bulbs = new THREE.MeshBasicMaterial({ color: 0x555555 });
     // (One under each head, turned with its arm: 2.34.1.)
-    const heads = lamps.flatMap((p) => lampHeads(p.aim, p.heads).map((h) => ({ x: p.x + 0.5 + h.dx, z: p.z + 0.5 + h.dz, angle: h.angle })));
+    const heads = lamps.flatMap((p) =>
+      lampHeads(p.aim, p.heads).map((h) => ({ x: p.x + 0.5 + h.dx, z: p.z + 0.5 + h.dz, angle: h.angle })),
+    );
     const bulbs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.05, 0.22), this.bulbs, Math.max(1, heads.length));
     const m = new THREE.Matrix4();
     heads.forEach((h, i) => bulbs.setMatrixAt(i, m.makeRotationY(h.angle).setPosition(h.x, LAMP_BULB_Y - 0.03, h.z)));
@@ -89,7 +91,14 @@ export class Lights {
 
   private addPools(spots: Array<[number, number, number]>, color: number, map: THREE.Texture): THREE.MeshBasicMaterial | null {
     if (!spots.length) return null;
-    const mat = new THREE.MeshBasicMaterial({ map, color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const mat = new THREE.MeshBasicMaterial({
+      map,
+      color,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
     const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, spots.length);
     const m = new THREE.Matrix4();
     spots.forEach(([x, z, size], i) => mesh.setMatrixAt(i, m.makeScale(size, 1, size).setPosition(x, 0.008, z)));

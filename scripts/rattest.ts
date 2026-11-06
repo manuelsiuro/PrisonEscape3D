@@ -36,7 +36,20 @@ import { guardKit, itemOf, maskOf, pocketOf, slot } from '../src/sim/systems/ite
 import { DOG, handlersOf } from '../src/sim/systems/k9';
 import { FEAT } from '../src/sim/systems/ledger';
 import { crowdAt, petOf, RAT, RAT_ROOMS, ratPath, ratTargets, trapChance } from '../src/sim/systems/rats';
-import { FLEE_RANGE, PANIC_PEOPLE, PANIC_STEPS, RAT_MEALS, RAT_REACH, SQUEAK_GUARDS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TRAP_KITCHEN, TRAP_MINUTE, TRAP_TUNNEL, UNIT } from '../src/sim/tuning';
+import {
+  FLEE_RANGE,
+  PANIC_PEOPLE,
+  PANIC_STEPS,
+  RAT_MEALS,
+  RAT_REACH,
+  SQUEAK_GUARDS,
+  STEPS_PER_MINUTE,
+  STEPS_PER_SECOND,
+  TRAP_KITCHEN,
+  TRAP_MINUTE,
+  TRAP_TUNNEL,
+  UNIT,
+} from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { LAYER, layerOfKey, MAP_W, placeKey, tileOfKey } from '../src/sim/world/World';
 import { check } from './assert';
@@ -94,7 +107,8 @@ function game(def: PrisonDef, seed = 5) {
   return { sim, seen, step, to, blind, until, tame };
 }
 
-const ratEvents = (seen: SimEvent[], what: string) => seen.filter((e): e is Extract<SimEvent, { type: 'rat' }> => e.type === 'rat' && e.what === what);
+const ratEvents = (seen: SimEvent[], what: string) =>
+  seen.filter((e): e is Extract<SimEvent, { type: 'rat' }> => e.type === 'rat' && e.what === what);
 const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EXT.RAT_LEAVE : EXT.RAT_FETCH, ...tossArgs(container));
 
 // ------------------------------------------------------------------ the data
@@ -102,15 +116,31 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
   check(!itemDef(n('rat_trap')).contraband && itemDef(n('caught_rat')).contraband, 'a rat trap is legal, a caught rat contraband');
   const trap = RECIPES.find((r) => r.result === 'rat_trap');
   check(!!trap && trap.ingredients.join() === 'plastic_cup,potato|chocolate|jerky', 'the trap: a cup over potato, chocolate or jerky');
-  check(KEY_ITEM_COLORS.every(([c]) => itemDef(n(`key_${c}`)).small && itemDef(n(`mold_${c}`)).small && itemDef(n(`plastic_key_${c}`)).small), 'keys, molds and plastic keys are small');
+  check(
+    KEY_ITEM_COLORS.every(([c]) => itemDef(n(`key_${c}`)).small && itemDef(n(`mold_${c}`)).small && itemDef(n(`plastic_key_${c}`)).small),
+    'keys, molds and plastic keys are small',
+  );
   const big = ['timber', 'crowbar', 'sturdy_shovel', 'guard_outfit', 'baton', 'pillow', 'caught_rat', 'rat_trap', 'raft'];
-  check(big.every((id) => !itemDef(n(id)).small), 'nothing long, heavy or bulky is');
+  check(
+    big.every((id) => !itemDef(n(id)).small),
+    'nothing long, heavy or bulky is',
+  );
   for (const p of PRISONS) {
     const sim = new Sim(p, 1);
     check(floorOf(sim.world, RAT_ROOMS).length > 0, `${p.id}: floor where rats come to a trap`);
   }
   // What the help, the toasts and the panel say, in numbers.
-  check(TRAP_KITCHEN === 60 && TRAP_TUNNEL === 85 && TRAP_MINUTE === 240 && RAT_MEALS === 2 && RAT_REACH === 16 && PANIC_PEOPLE === 3 && PANIC_STEPS === 20 * STEPS_PER_SECOND && SQUEAK_GUARDS === 3, 'the numbers the words say: 60%, 85%, 04:00, two meals, 16 tiles, 3 people, 20 s, 3 guards');
+  check(
+    TRAP_KITCHEN === 60 &&
+      TRAP_TUNNEL === 85 &&
+      TRAP_MINUTE === 240 &&
+      RAT_MEALS === 2 &&
+      RAT_REACH === 16 &&
+      PANIC_PEOPLE === 3 &&
+      PANIC_STEPS === 20 * STEPS_PER_SECOND &&
+      SQUEAK_GUARDS === 3,
+    'the numbers the words say: 60%, 85%, 04:00, two meals, 16 tiles, 3 people, 20 s, 3 guards',
+  );
   console.log(`data: ${ITEMS.filter((d) => d.small).length} small items; every prison has a kitchen or canteen for traps`);
 }
 
@@ -120,7 +150,13 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
   const w = sim.world;
   const canteen = floorOf(w, ['canteen'])[0];
   const corridor = floorOf(w, ['corridor'])[0];
-  check(trapChance(w, LAYER.GROUND, canteen) === TRAP_KITCHEN && trapChance(w, LAYER.UNDER, corridor) === TRAP_TUNNEL && trapChance(w, LAYER.GROUND, corridor) === 0 && trapChance(w, LAYER.VENTS, corridor) === 0, 'kitchens 60%, tunnels 85%, elsewhere never');
+  check(
+    trapChance(w, LAYER.GROUND, canteen) === TRAP_KITCHEN &&
+      trapChance(w, LAYER.UNDER, corridor) === TRAP_TUNNEL &&
+      trapChance(w, LAYER.GROUND, corridor) === 0 &&
+      trapChance(w, LAYER.VENTS, corridor) === 0,
+    'kitchens 60%, tunnels 85%, elsewhere never',
+  );
   let k = 0;
   let t = 0;
   for (let day = 1; day <= 400; day++) {
@@ -142,10 +178,18 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
   it.inv[0] = slot(n('rat_trap'));
   it.hand = 0;
   step(command(0, OP.USE, 1));
-  check(it.inv[0] === 0 && it.ground.some(([key, v]) => key === canteen[0] && itemOf(v) === n('rat_trap')), 'the use button sets the trap down where the player stands');
+  check(
+    it.inv[0] === 0 && it.ground.some(([key, v]) => key === canteen[0] && itemOf(v) === n('rat_trap')),
+    'the use button sets the trap down where the player stands',
+  );
   // More traps: two more in the canteen (one on the same tile), one in the corridor, one down a tunnel.
   const places = [canteen[0], canteen[5], placeKey(LAYER.UNDER, corridor), corridor];
-  it.ground.push([canteen[0], slot(n('rat_trap'))], [canteen[5], slot(n('rat_trap'))], [places[2], slot(n('rat_trap'))], [corridor, slot(n('rat_trap'))]);
+  it.ground.push(
+    [canteen[0], slot(n('rat_trap'))],
+    [canteen[5], slot(n('rat_trap'))],
+    [places[2], slot(n('rat_trap'))],
+    [corridor, slot(n('rat_trap'))],
+  );
   // What roll() says for tonight, worked out ahead.
   const day = 1;
   const expect = it.ground.map(([key, v], k) => {
@@ -158,10 +202,16 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
   check(ratEvents(seen, 'caught').length === 0, 'nothing caught before 04:00');
   to(1, 4, 1);
   const got = it.ground.map(([, v]) => itemOf(v) === n('caught_rat'));
-  check(JSON.stringify(got) === JSON.stringify(expect) && ratEvents(seen, 'caught').length === expect.filter(Boolean).length, `04:00: caught as roll() says (${got.map((g) => (g ? 'rat' : '-')).join(' ')})`);
+  check(
+    JSON.stringify(got) === JSON.stringify(expect) && ratEvents(seen, 'caught').length === expect.filter(Boolean).length,
+    `04:00: caught as roll() says (${got.map((g) => (g ? 'rat' : '-')).join(' ')})`,
+  );
   check(!got[it.ground.findIndex(([key]) => key === corridor)], 'never in the corridor');
   to(2, 4, 1);
-  check(got.every((g, k) => !g || itemOf(it.ground[k][1]) === n('caught_rat')), 'a caught rat stays caught');
+  check(
+    got.every((g, k) => !g || itemOf(it.ground[k][1]) === n('caught_rat')),
+    'a caught rat stays caught',
+  );
   console.log(`traps: ${got.filter(Boolean).length} of ${got.length} caught at ${hhmm(sim.state.step - 1440 * STEPS_PER_MINUTE)}`);
 }
 
@@ -179,7 +229,10 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
   check(it.inv[2] === 0 && itemOf(it.inv[1]) === n('chocolate') && it.inv[0] === slot(n('caught_rat'), 1), 'the potato first; one meal');
   step(command(0, OP.USE, 1));
   const pet = petOf(sim.state);
-  check(it.inv[0] === 0 && it.inv[1] === 0 && !!pet && pet.mode === RAT.SHOULDER && ratEvents(seen, 'tamed').length === 1, 'the second meal: tame, on the shoulder');
+  check(
+    it.inv[0] === 0 && it.inv[1] === 0 && !!pet && pet.mode === RAT.SHOULDER && ratEvents(seen, 'tamed').length === 1,
+    'the second meal: tame, on the shoulder',
+  );
   it.inv[0] = slot(n('caught_rat'));
   it.inv[1] = slot(n('jerky'));
   step(command(0, OP.USE, 1));
@@ -197,9 +250,18 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
   const list = containersOf(w);
   // A desk in another cell, near the player's.
   const targets = ratTargets(sim);
-  check(targets.length > 0 && targets.every((x) => x.dist <= RAT_REACH), `from the cell: ${targets.length} places within ${RAT_REACH} tiles of its way`);
-  check(targets.every((x) => x.who >= 0 || !list[x.container].mine), 'never the player\'s own furniture');
-  check(targets.every((x) => x.who < 0 || sim.state.inmates[x.who]?.ko > 0 || sim.state.inmates[x.who]?.doing === DOING.SLEEP), 'pockets only of sleepers and the knocked out');
+  check(
+    targets.length > 0 && targets.every((x) => x.dist <= RAT_REACH),
+    `from the cell: ${targets.length} places within ${RAT_REACH} tiles of its way`,
+  );
+  check(
+    targets.every((x) => x.who >= 0 || !list[x.container].mine),
+    "never the player's own furniture",
+  );
+  check(
+    targets.every((x) => x.who < 0 || sim.state.inmates[x.who]?.ko > 0 || sim.state.inmates[x.who]?.doing === DOING.SLEEP),
+    'pockets only of sleepers and the knocked out',
+  );
   const desk = targets.find((x) => x.who < 0 && list[x.container].table === 'inmateDesk');
   check(!!desk, 'an inmate desk within reach');
   if (desk) {
@@ -217,7 +279,10 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
     const t0 = sim.state.step;
     const ok = until(sim, step, 'home');
     const took = ratEvents(seen, 'took')[0];
-    check(ok && took?.item === n('lighter') && took.cash === 7, `back with the lighter (the most valuable small thing) and $7, in ${sim.state.step - t0} steps`);
+    check(
+      ok && took?.item === n('lighter') && took.cash === 7,
+      `back with the lighter (the most valuable small thing) and $7, in ${sim.state.step - t0} steps`,
+    );
     check(it.inv.some((v) => itemOf(v) === n('lighter')) && sim.state.cash === cash + 7, 'into the hotbar, the change into the pocket');
     check(hidden === 0 || itemOf(box[0]) === n('key_red'), 'a hidden compartment is left be');
     check(itemOf(box[hidden + 2]) === n('timber') && itemOf(box[hidden]) === n('sock'), 'the rest stays');
@@ -228,11 +293,19 @@ const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EX
     check(it.inv[3] === 0 && until(sim, step, 'home') && box.some((v) => itemOf(v) === n('battery')), 'the battery left in the desk');
     it.inv[3] = slot(n('crowbar'));
     step(send(desk.container, true));
-    check(ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'big') && itemOf(it.inv[3]) === n('crowbar') && petOf(sim.state)!.mode === RAT.SHOULDER, 'a crowbar is too big to carry');
+    check(
+      ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'big') &&
+        itemOf(it.inv[3]) === n('crowbar') &&
+        petOf(sim.state)!.mode === RAT.SHOULDER,
+      'a crowbar is too big to carry',
+    );
     // Too far: a container well out of reach.
     const far = list.findIndex((c, i) => !c.mine && !ratTargets(sim).some((x) => x.container === i));
     step(send(far));
-    check(ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'far') && petOf(sim.state)!.mode === RAT.SHOULDER, 'out of its reach: it stays');
+    check(
+      ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'far') && petOf(sim.state)!.mode === RAT.SHOULDER,
+      'out of its reach: it stays',
+    );
   }
   console.log('errands: furniture within reach, the best small thing and the change back, a small thing left');
 }
@@ -277,9 +350,15 @@ for (const heist of [false, true]) {
   const pockets = it.containers[pocketOf(w, who)];
   const key = guardKit(w, sl.k)[0];
   putTile(sim.state.player, sl.at);
-  check(ratTargets(sim).some((x) => x.who === who), 'his pockets within reach while he sleeps');
+  check(
+    ratTargets(sim).some((x) => x.who === who),
+    'his pockets within reach while he sleeps',
+  );
   step(send(pocketOf(w, who)));
-  check(until(sim, step, 'home') && it.inv.some((v) => itemOf(v) === key) && !pockets.some((v) => itemOf(v) === key) && g.doing === DOING.SLEEP, `the rat brings his ${itemDef(key).id}; he sleeps on`);
+  check(
+    until(sim, step, 'home') && it.inv.some((v) => itemOf(v) === key) && !pockets.some((v) => itemOf(v) === key) && g.doing === DOING.SLEEP,
+    `the rat brings his ${itemDef(key).id}; he sleeps on`,
+  );
   if (heist) {
     // Pressed into putty (the key kept), then back in his pockets before he wakes.
     it.int = 60;
@@ -288,19 +367,34 @@ for (const heist of [false, true]) {
     it.inv[p0] = slot(n('putty'));
     const recipe = RECIPES.findIndex((r) => r.result === `mold_${itemDef(key).id.slice(4)}`);
     step(command(0, OP.CRAFT, maskOf([k0, p0]), recipe + 1));
-    check(it.inv.some((v) => itemOf(v) === n(`mold_${itemDef(key).id.slice(4)}`)) && itemOf(it.inv[k0]) === key, 'a mold of it, the key kept');
+    check(
+      it.inv.some((v) => itemOf(v) === n(`mold_${itemDef(key).id.slice(4)}`)) && itemOf(it.inv[k0]) === key,
+      'a mold of it, the key kept',
+    );
     step(command(0, OP.SELECT, k0));
     step(send(pocketOf(w, who), true));
-    check(until(sim, step, 'home') && pockets.some((v) => itemOf(v) === key) && !it.inv.some((v) => itemOf(v) === key), 'the key back in his pockets');
+    check(
+      until(sim, step, 'home') && pockets.some((v) => itemOf(v) === key) && !it.inv.some((v) => itemOf(v) === key),
+      'the key back in his pockets',
+    );
   }
   to(1, 7, 59);
   check(!seen.some((e) => e.type === 'keyless'), 'nothing missed while he sleeps');
   to(2, 8, 1, false);
   const keyless = seen.filter((e) => e.type === 'keyless');
   if (heist) {
-    check(keyless.length === 0 && !seen.some((e) => e.type === 'spotted' && e.reason === 'keyMissing') && sim.state.feats[FEAT.keyHeists] === 1, '08:00: he wakes with his key: never missed (a key heist)');
+    check(
+      keyless.length === 0 && !seen.some((e) => e.type === 'spotted' && e.reason === 'keyMissing') && sim.state.feats[FEAT.keyHeists] === 1,
+      '08:00: he wakes with his key: never missed (a key heist)',
+    );
   } else {
-    check(keyless.length === 1 && seen.some((e) => e.type === 'spotted' && e.reason === 'keyMissing') && sim.state.lockdown && pockets.some((v) => itemOf(v) === key), '08:00: he wakes without it: the alarm, a lockdown, a spare drawn');
+    check(
+      keyless.length === 1 &&
+        seen.some((e) => e.type === 'spotted' && e.reason === 'keyMissing') &&
+        sim.state.lockdown &&
+        pockets.some((v) => itemOf(v) === key),
+      '08:00: he wakes without it: the alarm, a lockdown, a spare drawn',
+    );
     check(sim.state.feats[FEAT.ratKeys] === 1 && sim.state.feats[FEAT.keyless] === 1, 'the ledger counts the key and the alarm');
     // Pockets stuffed full while his key was gone: he still draws a spare, and misses his key once, not every morning.
     const it2 = sim.state.items;
@@ -312,9 +406,16 @@ for (const heist of [false, true]) {
     to(3, 8, 2, false);
     to(4, 8, 2, false);
     const again = seen.filter((e) => e.type === 'keyless').length;
-    check(again === 2 && pk.some((v) => itemOf(v) === key), `full pockets: a spare all the same, one more alarm (${again - 1}), not one every morning`);
+    check(
+      again === 2 && pk.some((v) => itemOf(v) === key),
+      `full pockets: a spare all the same, one more alarm (${again - 1}), not one every morning`,
+    );
   }
-  console.log(heist ? `the heist: key fetched, molded, put back; 08:00 no alarm (${hhmm(sim.state.step)})` : `keys: a guard who wakes without his key raises the alarm (${hhmm(sim.state.step)})`);
+  console.log(
+    heist
+      ? `the heist: key fetched, molded, put back; 08:00 no alarm (${hhmm(sim.state.step)})`
+      : `keys: a guard who wakes without his key raises the alarm (${hhmm(sim.state.step)})`,
+  );
 }
 
 // ------------------------------------------------------------------ someone who wakes first
@@ -333,9 +434,15 @@ for (const heist of [false, true]) {
   if (at !== undefined) {
     putTile(sim.state.player, at);
     const who = sim.state.inmates.length + k;
-    check(ratTargets(sim).some((x) => x.who === who), 'his pockets within reach while he\'s out cold');
+    check(
+      ratTargets(sim).some((x) => x.who === who),
+      "his pockets within reach while he's out cold",
+    );
     step(send(pocketOf(w, who)));
-    check(until(sim, step, 'home') && ratEvents(seen, 'woke').length === 1 && ratEvents(seen, 'took').length === 0, 'up again by the time it gets there: it comes back with nothing');
+    check(
+      until(sim, step, 'home') && ratEvents(seen, 'woke').length === 1 && ratEvents(seen, 'took').length === 0,
+      'up again by the time it gets there: it comes back with nothing',
+    );
   } else check(false, 'somewhere near a guard');
   console.log('woken: the rat comes back empty');
 }
@@ -347,7 +454,10 @@ for (const heist of [false, true]) {
   tame();
   // In the player's own cell: nobody to scare.
   step(command(0, OP.EXT, EXT.RAT_LOOSE));
-  check(ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'few') && petOf(sim.state)!.mode === RAT.SHOULDER, 'alone: nobody to scare, it stays');
+  check(
+    ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'few') && petOf(sim.state)!.mode === RAT.SHOULDER,
+    'alone: nobody to scare, it stays',
+  );
   // Breakfast: the canteen full.
   to(1, 9, 20);
   blind();
@@ -367,28 +477,52 @@ for (const heist of [false, true]) {
   const { spot, most } = crowded();
   putTile(sim.state.player, spot);
   check(most >= PANIC_PEOPLE, `a crowd: ${most} people in sight`);
-  const near = sim.state.inmates.map((m, k) => ({ k, d: Math.hypot(m.body.x - sim.state.player.x, m.body.z - sim.state.player.z) })).filter((x) => x.d < FLEE_RANGE - UNIT);
+  const near = sim.state.inmates
+    .map((m, k) => ({ k, d: Math.hypot(m.body.x - sim.state.player.x, m.body.z - sim.state.player.z) }))
+    .filter((x) => x.d < FLEE_RANGE - UNIT);
   step(command(0, OP.EXT, EXT.RAT_LOOSE));
   const noise = seen.filter((e) => e.type === 'noise' && e.kind === 'squeak');
-  check(ratEvents(seen, 'loose').length === 1 && noise.length === 1 && noise[0].type === 'noise' && noise[0].sent.length <= SQUEAK_GUARDS, `let loose: a panic, its squeak sends ${noise[0]?.type === 'noise' ? noise[0].sent.length : '?'} guards (at most ${SQUEAK_GUARDS})`);
+  check(
+    ratEvents(seen, 'loose').length === 1 && noise.length === 1 && noise[0].type === 'noise' && noise[0].sent.length <= SQUEAK_GUARDS,
+    `let loose: a panic, its squeak sends ${noise[0]?.type === 'noise' ? noise[0].sent.length : '?'} guards (at most ${SQUEAK_GUARDS})`,
+  );
   for (let k = 0; k < 40; k++) step();
   const pet = petOf(sim.state)!;
-  const fled = near.filter((x) => Math.hypot(sim.state.inmates[x.k].body.x - pet.x, sim.state.inmates[x.k].body.z - pet.z) > x.d - UNIT / 2).length;
+  const fled = near.filter(
+    (x) => Math.hypot(sim.state.inmates[x.k].body.x - pet.x, sim.state.inmates[x.k].body.z - pet.z) > x.d - UNIT / 2,
+  ).length;
   check(near.length > 0 && fled >= near.length - 1, `${fled} of the ${near.length} inmates near it got away from it`);
   check(until(sim, step, 'calm', PANIC_STEPS) && until(sim, step, 'home', 400), 'over after 20 s, the rat back on the shoulder');
-  check(sim.state.inmates.some((m) => m.path.length > 0 || m.body.moving || m.doing === DOING.EAT), 'the inmates back to the routine');
+  check(
+    sim.state.inmates.some((m) => m.path.length > 0 || m.body.moving || m.doing === DOING.EAT),
+    'the inmates back to the routine',
+  );
   for (let k = 0; k < 60; k++) step();
   const seated = sim.state.inmates.filter((m) => m.ko <= 0 && m.goal >= 0 && !m.path.length && tileOf(m.body) === m.goal);
-  check(seated.length > 0 && seated.every((m) => m.doing === DOING.EAT), `back in their seats, eating (${seated.length} at ${hhmm(sim.state.step)})`);
-  check(sim.state.inmates.every((m) => m.goal >= -1), 'nobody left fleeing');
+  check(
+    seated.length > 0 && seated.every((m) => m.doing === DOING.EAT),
+    `back in their seats, eating (${seated.length} at ${hhmm(sim.state.step)})`,
+  );
+  check(
+    sim.state.inmates.every((m) => m.goal >= -1),
+    'nobody left fleeing',
+  );
   step(command(0, OP.EXT, EXT.RAT_LOOSE));
-  check(ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'tired') && petOf(sim.state)!.mode === RAT.SHOULDER, 'once a day');
+  check(
+    ratEvents(seen, 'refused').some((e) => e.type === 'rat' && e.why === 'tired') && petOf(sim.state)!.mode === RAT.SHOULDER,
+    'once a day',
+  );
   check(sim.state.feats[FEAT.ratPanics] === 1, 'the ledger counts the panic');
   // A caught rat thrown into the crowd at dinner: a panic, then gone.
   to(1, 17, 20);
   blind();
   const din = crowded();
-  const from = floorOf(w, ['canteen']).find((t) => !w.block[t] && t !== din.spot && Math.abs((t % MAP_W) - (din.spot % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(din.spot / MAP_W)) === 3)!;
+  const from = floorOf(w, ['canteen']).find(
+    (t) =>
+      !w.block[t] &&
+      t !== din.spot &&
+      Math.abs((t % MAP_W) - (din.spot % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(din.spot / MAP_W)) === 3,
+  )!;
   putTile(sim.state.player, from);
   const it = sim.state.items;
   it.inv[4] = slot(n('caught_rat'));
@@ -398,7 +532,7 @@ for (const heist of [false, true]) {
   const wild = sim.state.rats.find((r) => r.wild);
   check(!!wild && wild.mode === RAT.LOOSE && it.inv[4] === 0, 'a caught rat thrown into the crowd: loose');
   for (let k = 0; k < PANIC_STEPS + 2; k++) step();
-  check(!sim.state.rats.some((r) => r.wild) && ratEvents(seen, 'calm').length === 2, 'and gone once it\'s over');
+  check(!sim.state.rats.some((r) => r.wild) && ratEvents(seen, 'calm').length === 2, "and gone once it's over");
   // Thrown where nobody is: off it runs.
   const empty = floorOf(w, ['playerCell']).find((t) => !w.block[t])!;
   putTile(sim.state.player, empty);
@@ -419,7 +553,7 @@ for (const heist of [false, true]) {
   const k = 0;
   const d = sim.state.dogs[k];
   const g = sim.state.guards[handlersOf(w)[k]];
-  check(d.mode === DOG.HEEL, 'Canela at her handler\'s heel');
+  check(d.mode === DOG.HEEL, "Canela at her handler's heel");
   // The player beside the dog, something within the rat's reach.
   putTile(sim.state.player, tileOf(d.body));
   const to0 = ratTargets(sim).find((x) => x.who < 0);

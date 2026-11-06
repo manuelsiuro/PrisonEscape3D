@@ -268,7 +268,12 @@ export class LongView {
           this.crops.setColorAt(crops++, this.tint.setHex(b.crop === 2 ? BERRY : VEG));
         }
       }
-      for (const [mesh, n] of [[this.soilDry, dry], [this.soilWet, wet], [this.crops, crops], [this.plants, this.growing.length]] as const) {
+      for (const [mesh, n] of [
+        [this.soilDry, dry],
+        [this.soilWet, wet],
+        [this.crops, crops],
+        [this.plants, this.growing.length],
+      ] as const) {
         mesh.count = n;
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
@@ -336,7 +341,11 @@ export class LongView {
   private placePlants(time: number, sway: boolean) {
     this.growing.forEach((b, k) => {
       this.e.set(b.wilted ? 0.35 : 0, b.turn, sway ? Math.sin(time * 1.3 + k) * 0.05 : 0);
-      this.m.compose(this.v.set(b.x, 0.04, b.z), this.q.setFromEuler(this.e), this.sc.set(b.scale, b.wilted ? b.scale * 0.7 : b.scale, b.scale));
+      this.m.compose(
+        this.v.set(b.x, 0.04, b.z),
+        this.q.setFromEuler(this.e),
+        this.sc.set(b.scale, b.wilted ? b.scale * 0.7 : b.scale, b.scale),
+      );
       this.plants.setMatrixAt(k, this.m);
     });
     this.plants.instanceMatrix.needsUpdate = true;

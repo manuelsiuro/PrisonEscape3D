@@ -25,8 +25,29 @@ export function foodWords(item: number): string {
   return f.health ? t('toast.ateHealth', { n: f.health }) : t('toast.ate', { n: f.energy ?? 0 });
 }
 
-const view: VendView = { cash: 0, rows: [], screen: '', tone: 'idle', coil: -1, jam: -1, ahead: 0, inLine: false, canCut: false, thumpKeys: '', note: '' };
-const rows: VendRow[] = GOODS.map((g, k) => ({ k, code: rowCode(k), item: itemNumber(g.id), name: '', price: `$${g.price}`, left: 0, gives: '', why: '' }));
+const view: VendView = {
+  cash: 0,
+  rows: [],
+  screen: '',
+  tone: 'idle',
+  coil: -1,
+  jam: -1,
+  ahead: 0,
+  inLine: false,
+  canCut: false,
+  thumpKeys: '',
+  note: '',
+};
+const rows: VendRow[] = GOODS.map((g, k) => ({
+  k,
+  code: rowCode(k),
+  item: itemNumber(g.id),
+  name: '',
+  price: `$${g.price}`,
+  left: 0,
+  gives: '',
+  why: '',
+}));
 
 /** The card now, or null with it shut. */
 export function vendingNow(sim: Sim): VendView | null {

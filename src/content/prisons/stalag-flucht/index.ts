@@ -266,9 +266,7 @@ const GEAR: PropPlacement[] = [
 ];
 
 /** The library's added chairs and the librarian's at the end of a table (2.31): last, as the gym's gear. Not solid. */
-const READING: PropPlacement[] = [
-  { kind: 'deskChair', x: 8, z: 56, rot: 3 },
-];
+const READING: PropPlacement[] = [{ kind: 'deskChair', x: 8, z: 56, rot: 3 }];
 
 export const STALAG_FLUCHT: PrisonDef = {
   id: 'stalag-flucht',
@@ -312,12 +310,28 @@ export const STALAG_FLUCHT: PrisonDef = {
   // other place along the north wall is taken (the odd jobs board's reader at 5, the stage at 10, the door, the counter)
   // or worse: at 13, beside the door, the crowd at meals pressed together half as much again. Here it takes the end of
   // the west bench (sat at from its ends only), so a meal runs a minute or two longer.
-  vending: { x: 9, z: 30, line: [{ x: 9, z: 31 }, { x: 9, z: 32 }, { x: 9, z: 33 }, { x: 9, z: 34 }] },
+  vending: {
+    x: 9,
+    z: 30,
+    line: [
+      { x: 9, z: 31 },
+      { x: 9, z: 32 },
+      { x: 9, z: 33 },
+      { x: 9, z: 34 },
+    ],
+  },
   // 2.33: the menu board over these floor tiles (its decor draws the frame), and the water cooler (a prop, decor before;
   // last, so that no other prop's number moves) with the tiles beside it where inmates stand to drink.
   menu: { x: 16, z: 30, w: 2 },
   // (Its decor stood a tile west, on a guard's stop: in the corner now, clear of it.)
-  cooler: { x: 18, z: 35, spots: [{ x: 18, z: 34 }, { x: 17, z: 34 }] },
+  cooler: {
+    x: 18,
+    z: 35,
+    spots: [
+      { x: 18, z: 34 },
+      { x: 17, z: 34 },
+    ],
+  },
   rollCall,
   spawn: { x: 6, z: 9 },
   reachable: ['cellBlock', 'rollCall', 'yard', 'canteen', 'gym', 'showers', 'library', 'infirmary', 'corridor', 'sports', 'garden'],
@@ -403,7 +417,28 @@ export const STALAG_FLUCHT: PrisonDef = {
   // Rebuilt in 2.8 (P32): the sports ground in the guards' compound, the garden along the north wire.
   // The pay phone (P34): on the corridor's north wall, its queue along it; the front gate's inside for Lou's diversion, the road for his car.
   // (P36: the release reported in the yard at the front gate.)
-  comms: comms([13, 51, 13], [[14, 51], [15, 51], [16, 51], [17, 51]], [20, 60], [24, 63, 1], [17, 54, 13], { at: [[20, 60], [21, 60]], gates: [[20, 61], [21, 61]] }),
+  comms: comms(
+    [13, 51, 13],
+    [
+      [14, 51],
+      [15, 51],
+      [16, 51],
+      [17, 51],
+    ],
+    [20, 60],
+    [24, 63, 1],
+    [17, 54, 13],
+    {
+      at: [
+        [20, 60],
+        [21, 60],
+      ],
+      gates: [
+        [20, 61],
+        [21, 61],
+      ],
+    },
+  ),
   // The odd jobs board (P40): on the canteen's north wall, clear of the stage and of the two rows a wall hides.
   board: { x: 5, z: 30, face: 13 },
   map: 1,

@@ -19,7 +19,31 @@
  *   at roll call settled on the chips (a shootout off);
  * - saves: a hand of Cheat, a shootout and the board carry on the same; damaged ones are dropped.
  */
-import { CALL_MAX, CARD, COURT_LEAVE, COURT_RANGE, CHIPS, DECK, DRAW_PLIES, ELDER_DEPTH, ELDER_OPINION, FALSE_TELL, GAMES_A_DAY, HAND, NEED_BASE, NEED_PER_TILE, PRACTICE_MAKES, REVEAL_STEPS, SHOOT_SPOTS, SHOT_CLOCK, SPORTS_WINS, STAKES, THINK_STEPS, TURN_STEPS, WIN_OPINION } from '../src/content/games';
+import {
+  CALL_MAX,
+  CARD,
+  COURT_LEAVE,
+  COURT_RANGE,
+  CHIPS,
+  DECK,
+  DRAW_PLIES,
+  ELDER_DEPTH,
+  ELDER_OPINION,
+  FALSE_TELL,
+  GAMES_A_DAY,
+  HAND,
+  NEED_BASE,
+  NEED_PER_TILE,
+  PRACTICE_MAKES,
+  REVEAL_STEPS,
+  SHOOT_SPOTS,
+  SHOT_CLOCK,
+  SPORTS_WINS,
+  STAKES,
+  THINK_STEPS,
+  TURN_STEPS,
+  WIN_OPINION,
+} from '../src/content/games';
 import { ROUTINE } from '../src/content/routine';
 import type { ForcedDay } from '../src/sim/systems/calendar';
 import { PRISONS } from '../src/content/prisons';
@@ -89,7 +113,8 @@ function yardTile(sim: Sim): number {
   for (let i = MAP_W; i < MAP_W * 63; i++) {
     const x = i % MAP_W;
     const z = Math.floor(i / MAP_W);
-    if (w.zoneAt(x, z) === 'yard' && w.zoneAt(x + 1, z) === 'yard' && !w.blocked(x, z) && !w.blocked(x + 1, z) && !w.blocked(x - 1, z)) out.push(i);
+    if (w.zoneAt(x, z) === 'yard' && w.zoneAt(x + 1, z) === 'yard' && !w.blocked(x, z) && !w.blocked(x + 1, z) && !w.blocked(x - 1, z))
+      out.push(i);
   }
   return out[out.length >> 1];
 }
@@ -106,13 +131,22 @@ function yardTile(sim: Sim): number {
     const r = rimOf(c);
     // The rim over open floor, where the decor's hoop stands, turned the same way (rot 0 south, 1 east, 2 north, 3 west).
     const rot = c.face === 5 ? 0 : c.face === 1 ? 1 : c.face === 13 ? 2 : 3;
-    check(!w.blocked(c.x, c.z) && (p.decor ?? []).some((d) => d.kind === 'hoop' && d.x === c.x && d.z === c.z && (d.rot ?? 0) === rot), `${p.id}: the rim over open floor, the decor's hoop there facing the court`);
+    check(
+      !w.blocked(c.x, c.z) && (p.decor ?? []).some((d) => d.kind === 'hoop' && d.x === c.x && d.z === c.z && (d.rot ?? 0) === rot),
+      `${p.id}: the rim over open floor, the decor's hoop there facing the court`,
+    );
     check((p.decor ?? []).filter((d) => d.kind === 'hoop').length === 1, `${p.id}: one hoop`);
     for (const q of c.spots) {
       const zone = w.zoneAt(q.x, q.z);
       check(!w.blocked(q.x, q.z) && w.propSolid[q.z * MAP_W + q.x] === 0, `${p.id}: spot ${q.x},${q.z} open floor`);
-      check(!(p.decor ?? []).some((d) => q.x >= d.x && q.x < d.x + (d.w ?? 1) && q.z >= d.z && q.z < d.z + (d.d ?? 1)), `${p.id}: spot ${q.x},${q.z} clear of decor`);
-      check(zone === 'yard' || zone === 'rollCall' || zone === 'sports', `${p.id}: spot ${q.x},${q.z} in the yard or on the sports ground (${zone})`);
+      check(
+        !(p.decor ?? []).some((d) => q.x >= d.x && q.x < d.x + (d.w ?? 1) && q.z >= d.z && q.z < d.z + (d.d ?? 1)),
+        `${p.id}: spot ${q.x},${q.z} clear of decor`,
+      );
+      check(
+        zone === 'yard' || zone === 'rollCall' || zone === 'sports',
+        `${p.id}: spot ${q.x},${q.z} in the yard or on the sports ground (${zone})`,
+      );
       check(lineOfSight(w, q.x * UNIT + UNIT / 2, q.z * UNIT + UNIT / 2, r.x, r.z), `${p.id}: spot ${q.x},${q.z} in sight of the rim`);
       // (Nothing standing in the way of the shot: no bench, tree or bush between the spot and the rim.)
       let clear = true;
@@ -120,7 +154,11 @@ function yardTile(sim: Sim): number {
         const x = Math.floor(q.x + 0.5 + ((r.x / UNIT - q.x - 0.5) * k) / 20);
         const z = Math.floor(q.z + 0.5 + ((r.z / UNIT - q.z - 0.5) * k) / 20);
         if ((x === q.x && z === q.z) || (x === c.x && z === c.z)) continue;
-        if (w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d) || (p.decor ?? []).some((d) => d.kind !== 'hoop' && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1))) clear = false;
+        if (
+          w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d) ||
+          (p.decor ?? []).some((d) => d.kind !== 'hoop' && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1))
+        )
+          clear = false;
       }
       check(clear, `${p.id}: nothing between spot ${q.x},${q.z} and the rim`);
     }
@@ -128,7 +166,10 @@ function yardTile(sim: Sim): number {
     check(elder >= 0, `${p.id}: an old-timer`);
     lines.push(`${p.id} ${p.names[sim.state.inmates[elder].cell - 2]}, spots ${c.spots.map((_, k) => spotDistance(c, k) / 10).join('/')}`);
   }
-  check(DECK.join() === '4,4,4,2' && HAND === 5 && CHIPS === 2 && STAKES.join() === '5,10,20', 'Cheat: 14 cards (4 Kings, 4 Queens, 4 Aces, 2 Jokers), five each, two chips, stakes $5/$10/$20');
+  check(
+    DECK.join() === '4,4,4,2' && HAND === 5 && CHIPS === 2 && STAKES.join() === '5,10,20',
+    'Cheat: 14 cards (4 Kings, 4 Queens, 4 Aces, 2 Jokers), five each, two chips, stakes $5/$10/$20',
+  );
   console.log(`data: ${lines.join(' | ')}`);
 }
 
@@ -144,11 +185,24 @@ function yardTile(sim: Sim): number {
   blind();
   talk(TALK.CHEAT, 1);
   const c = s.cheat!;
-  check(!!c && s.cash === 90 && playedToday(s, 0) === 1 && c.mine.length === HAND && c.theirs.length === HAND && c.table >= 1 && c.table <= 3 && c.turn === 0, 'a game for $10: the stake on the table, one of the day\'s games, five cards each, the player leads');
+  check(
+    !!c &&
+      s.cash === 90 &&
+      playedToday(s, 0) === 1 &&
+      c.mine.length === HAND &&
+      c.theirs.length === HAND &&
+      c.table >= 1 &&
+      c.table <= 3 &&
+      c.turn === 0,
+    "a game for $10: the stake on the table, one of the day's games, five cards each, the player leads",
+  );
   // The deal: the cards of one deck.
   const counts = [0, 0, 0, 0];
   for (const card of [...c.mine, ...c.theirs]) counts[card - 1]++;
-  check(counts.every((n, k) => n <= DECK[k]), `the deal comes from one deck (${counts.join(',')})`);
+  check(
+    counts.every((n, k) => n <= DECK[k]),
+    `the deal comes from one deck (${counts.join(',')})`,
+  );
   // Only legal plays.
   talk(TALK.LIAR);
   check(!seen.some((e) => e.type === 'cheat' && e.what === 'called'), 'nothing to call before the inmate has played');
@@ -157,7 +211,7 @@ function yardTile(sim: Sim): number {
   talk(TALK.PLAY, 1 << 5);
   check(c.mine.length === HAND && c.by === -1, 'four cards, none, a card not in the hand: refused');
   talk(TALK.PLAY, 0b11);
-  check(c.mine.length === HAND - 2 && c.by === 0 && c.turn === 1 && c.pile === 2, 'two cards laid: the inmate\'s move');
+  check(c.mine.length === HAND - 2 && c.by === 0 && c.turn === 1 && c.pile === 2, "two cards laid: the inmate's move");
   const before = s.step;
   while (s.cheat && s.cheat.turn === 1) step();
   check(s.step - before === THINK_STEPS, `it thinks ${THINK_STEPS / 20} s`);
@@ -169,19 +223,30 @@ function yardTile(sim: Sim): number {
       step();
       continue;
     }
-    const trueKs = g.mine.map((card, k) => (isTrue(card, g.table) ? k : -1)).filter((k) => k >= 0).slice(0, 3);
+    const trueKs = g.mine
+      .map((card, k) => (isTrue(card, g.table) ? k : -1))
+      .filter((k) => k >= 0)
+      .slice(0, 3);
     if (g.by === 1 && (g.tell || !g.theirs.length)) talk(TALK.LIAR);
-    else if (g.mine.length) talk(TALK.PLAY, (trueKs.length ? trueKs : [0]).reduce((m, k) => m | (1 << k), 0));
+    else if (g.mine.length)
+      talk(
+        TALK.PLAY,
+        (trueKs.length ? trueKs : [0]).reduce((m, k) => m | (1 << k), 0),
+      );
     else talk(TALK.LIAR);
   }
-  const end = seen.filter((e) => e.type === 'cheat' && (e.what === 'won' || e.what === 'lost')).at(-1) as Extract<SimEvent, { type: 'cheat' }> | undefined;
+  const end = seen.filter((e) => e.type === 'cheat' && (e.what === 'won' || e.what === 'lost')).at(-1) as
+    Extract<SimEvent, { type: 'cheat' }> | undefined;
   check(!!end && !s.cheat, 'the game played to its end');
   check(s.cash === (end?.what === 'won' ? 110 : 90), `the stake settled (${end?.what}: $${s.cash})`);
   const calls = seen.filter((e) => e.type === 'cheat' && e.what === 'called') as Array<Extract<SimEvent, { type: 'cheat' }>>;
-  check(calls.length >= CHIPS && calls.every((e) => e.loser === (e.lie ? 1 - (e.by ?? 0) : e.by)), 'every call cost the side that was wrong a chip');
+  check(
+    calls.length >= CHIPS && calls.every((e) => e.loser === (e.lie ? 1 - (e.by ?? 0) : e.by)),
+    'every call cost the side that was wrong a chip',
+  );
   // A call's cards stay up, then the loser leads.
   const dealt = seen.filter((e) => e.type === 'cheat' && e.what === 'dealt').length;
-  check(dealt >= 2, 'a round dealt after each call that wasn\'t the last');
+  check(dealt >= 2, "a round dealt after each call that wasn't the last");
   // Walking away folds; the sirens give it back.
   talk(TALK.CHEAT, 0);
   check(!!s.cheat && s.cash === (end?.what === 'won' ? 105 : 85), 'a second game, $5');
@@ -193,7 +258,10 @@ function yardTile(sim: Sim): number {
   const was2 = s.cash;
   s.lockdown = true;
   step(0, false);
-  check(!s.cheat && s.cash === was2 + 20 && seen.some((e) => e.type === 'cheat' && e.what === 'off'), 'the sirens: the game off, the $20 back');
+  check(
+    !s.cheat && s.cash === was2 + 20 && seen.some((e) => e.type === 'cheat' && e.what === 'off'),
+    'the sirens: the game off, the $20 back',
+  );
   s.lockdown = false;
   // Knocked out by someone else (not the player's blow): off, the stake back (another inmate, a game of their own).
   put(s.inmates[0].body, tile + 3 * MAP_W);
@@ -203,7 +271,10 @@ function yardTile(sim: Sim): number {
   const was3 = s.cash;
   s.inmates[1].ko = 200;
   step();
-  check(!s.cheat && s.cash === was3 + 5 && seen.some((e) => e.type === 'cheat' && e.what === 'off' && e.who === 1), 'the partner knocked out by someone else: off, the stake back');
+  check(
+    !s.cheat && s.cash === was3 + 5 && seen.some((e) => e.type === 'cheat' && e.what === 'off' && e.who === 1),
+    'the partner knocked out by someone else: off, the stake back',
+  );
   s.inmates[1].ko = 0;
   put(s.inmates[1].body, tile + 3 * MAP_W);
   check(talkTo(0, tile), 'at the table once more');
@@ -225,14 +296,20 @@ function yardTile(sim: Sim): number {
   talk(TALK.CHEAT, 1);
   const from = s.step;
   while (s.cheat && s.step - from < TURN_STEPS * 2) step();
-  check(!s.cheat && s.cash === 90 && seen.some((e) => e.type === 'cheat' && e.what === 'folded') && s.step - from <= TURN_STEPS + 2, `the player's move let run out (${TURN_STEPS / 20} s): folded, the stake lost (${s.step - from} steps)`);
+  check(
+    !s.cheat && s.cash === 90 && seen.some((e) => e.type === 'cheat' && e.what === 'folded') && s.step - from <= TURN_STEPS + 2,
+    `the player's move let run out (${TURN_STEPS / 20} s): folded, the stake lost (${s.step - from} steps)`,
+  );
   // Nothing to do but call (the inmate's hand played out): the clock calls for them.
   talk(TALK.CHEAT, 0);
   const c = s.cheat!;
   Object.assign(c, { by: 1, theirs: [], last: [CARD.JOKER], turn: 0, due: s.step + 5 });
   const before = seen.length;
   for (let k = 0; k < 10 && s.cheat?.turn === 0; k++) step();
-  check(seen.slice(before).some((e) => e.type === 'cheat' && e.what === 'called' && e.by === 0), 'only a call left them: the clock makes it');
+  check(
+    seen.slice(before).some((e) => e.type === 'cheat' && e.what === 'called' && e.by === 0),
+    'only a call left them: the clock makes it',
+  );
   s.cheat = null;
   // A 2.5.0 replay: no clock.
   s.played = [];
@@ -253,8 +330,11 @@ function yardTile(sim: Sim): number {
       l.blind();
       l.talk(TALK.CHEAT, 0);
       for (let k = 0; k < TURN_STEPS * 2 && l.sim.state.cheat; k++) l.step();
-      check(!!l.sim.state.cheat && l.sim.state.cheat.turn === 0 && !l.sim.state.cheat.due, 'the lessons\' prison: the move waits (no clock)');
-    } else check(false, 'a game of Cheat in the lessons\' prison');
+      check(
+        !!l.sim.state.cheat && l.sim.state.cheat.turn === 0 && !l.sim.state.cheat.due,
+        "the lessons' prison: the move waits (no clock)",
+      );
+    } else check(false, "a game of Cheat in the lessons' prison");
   }
   // Still at it at the evening roll call: settled on the chips there and then (the stake back when level).
   const bell = (chips: [number, number]) => {
@@ -280,13 +360,33 @@ function yardTile(sim: Sim): number {
   const behind = bell([1, 2]);
   const level = bell([1, 1]);
   // (Never won at the bell: a player one chip up could stall to it for a sure profit.)
-  check(ahead === 'off $100' && behind === 'lost $80' && level === 'off $100', `the roll call's bell: behind lost, ahead or level the stake back (${ahead}, ${behind}, ${level})`);
+  check(
+    ahead === 'off $100' && behind === 'lost $80' && level === 'off $100',
+    `the roll call's bell: behind lost, ahead or level the stake back (${ahead}, ${behind}, ${level})`,
+  );
   console.log(`cheat's clock: ${TURN_STEPS} steps, then folded (or the call made); at the bell: ${ahead}, ${behind}, ${level}`);
 }
 
 // ------------------------------------------------------------------ Cheat: the inmate's ways, measured
 {
-  const fresh = (): Cheat => ({ who: 0, stake: 0, chips: [CHIPS, CHIPS], round: 0, table: CARD.KING, mine: [], theirs: [], turn: 0, at: 0, last: [], by: -1, pile: 0, tell: false, lead: 0, laid: 0, spent: 0 });
+  const fresh = (): Cheat => ({
+    who: 0,
+    stake: 0,
+    chips: [CHIPS, CHIPS],
+    round: 0,
+    table: CARD.KING,
+    mine: [],
+    theirs: [],
+    turn: 0,
+    at: 0,
+    last: [],
+    by: -1,
+    pile: 0,
+    tell: false,
+    lead: 0,
+    laid: 0,
+    spent: 0,
+  });
   // A claim its own cards prove false: always called.
   let proved = 0;
   for (let k = 0; k < 200; k++) {
@@ -327,7 +427,7 @@ function yardTile(sim: Sim): number {
     c.pile = 1;
     if (decide(c, 78, k, 0).call) out++;
   }
-  check(out === 100, 'the player\'s hand played out: called every time');
+  check(out === 100, "the player's hand played out: called every time");
   // The tell's odds, over many plays at two Intellects.
   const tells: string[] = [];
   for (const int of [0, 80]) {
@@ -350,7 +450,10 @@ function yardTile(sim: Sim): number {
       }
     }
     const want = tellOdds(int);
-    check(Math.abs((lieTells * 100) / lies - want) < 2 && Math.abs((truthTells * 100) / truths - FALSE_TELL) < 2, `Intellect ${int}: its tell on ${want}% of lies and ${FALSE_TELL}% of truths`);
+    check(
+      Math.abs((lieTells * 100) / lies - want) < 2 && Math.abs((truthTells * 100) / truths - FALSE_TELL) < 2,
+      `Intellect ${int}: its tell on ${want}% of lies and ${FALSE_TELL}% of truths`,
+    );
     tells.push(`Int ${int}: tell on ${pct(lieTells, lies)} of ${lies} lies, ${pct(truthTells, truths)} of ${truths} truths`);
   }
   console.log(`cheat, the tell: ${tells.join('; ')}`);
@@ -369,7 +472,10 @@ function yardTile(sim: Sim): number {
     bluffer: (c) => (c.by === 1 && (c.tell || !c.theirs.length) ? { call: true } : { ks: c.mine.length > 1 ? [0, 1] : [0] }),
   };
   function honest(c: Cheat): number[] {
-    const ks = c.mine.map((card, k) => (isTrue(card, c.table) ? k : -1)).filter((k) => k >= 0).slice(0, 3);
+    const ks = c.mine
+      .map((card, k) => (isTrue(card, c.table) ? k : -1))
+      .filter((k) => k >= 0)
+      .slice(0, 3);
     return ks.length ? ks : [0];
   }
   const rows: string[] = [];
@@ -423,9 +529,23 @@ function yardTile(sim: Sim): number {
 // ------------------------------------------------------------------ Hoops
 {
   // The marker, and a window's numbers.
-  check(powerAt(0) === 0 && powerAt(12) === 504 && powerAt(24) === 992 && powerAt(36) === 488 && powerAt(48) === 16, 'the power marker sweeps up and down');
-  check(eighthOf(0, -5) === 0 && eighthOf(5, 0) === 2 && eighthOf(0, 5) === 4 && eighthOf(-5, 0) === 6 && eighthOf(5, -5) === 1 && eighthOf(-5, 5) === 5, 'directions in eighths');
-  check(judge(600, 600, 60) === 'swish' && judge(640, 600, 60) === 'in' && judge(700, 600, 60) === 'rim' && judge(800, 600, 60) === 'air', 'a shot judged: swish, in, rim, airball');
+  check(
+    powerAt(0) === 0 && powerAt(12) === 504 && powerAt(24) === 992 && powerAt(36) === 488 && powerAt(48) === 16,
+    'the power marker sweeps up and down',
+  );
+  check(
+    eighthOf(0, -5) === 0 &&
+      eighthOf(5, 0) === 2 &&
+      eighthOf(0, 5) === 4 &&
+      eighthOf(-5, 0) === 6 &&
+      eighthOf(5, -5) === 1 &&
+      eighthOf(-5, 5) === 5,
+    'directions in eighths',
+  );
+  check(
+    judge(600, 600, 60) === 'swish' && judge(640, 600, 60) === 'in' && judge(700, 600, 60) === 'rim' && judge(800, 600, 60) === 'air',
+    'a shot judged: swish, in, rim, airball',
+  );
   // Center Perks, a calm clear day, then a storm with a gale behind or against the top spot.
   const { sim, seen, step, to, talkTo, talk } = game(CENTER_PERKS, 5, [[0, 0, 0, -1, 0]]);
   const s = sim.state;
@@ -435,7 +555,10 @@ function yardTile(sim: Sim): number {
     shotWindow(sim, k, win);
     return `${win[0]}±${win[1]}`;
   });
-  check(shotWindow(sim, 2, win)[0] === NEED_BASE + Math.round((NEED_PER_TILE * spotDistance(c, 2)) / 10), 'the top spot needs its distance\'s power');
+  check(
+    shotWindow(sim, 2, win)[0] === NEED_BASE + Math.round((NEED_PER_TILE * spotDistance(c, 2)) / 10),
+    "the top spot needs its distance's power",
+  );
   const stormy = (wind: number) => {
     s.calendar = [[0, 0, 3, wind, 3]];
     shotWindow(sim, 2, win);
@@ -446,8 +569,13 @@ function yardTile(sim: Sim): number {
   const behind = ways.reduce((a, b) => (b[2] > a[2] ? b : a));
   const against = ways.reduce((a, b) => (b[2] < a[2] ? b : a));
   s.calendar = [[0, 0, 0, -1, 0]];
-  check(behind[2] > 0 && against[2] < 0 && behind[0] < against[0] && behind[1] < shotWindow(sim, 2, [0, 0])[1], `the wind: behind the shot needs less (${behind[0]}), against it more (${against[0]}); the rain narrows it (±${behind[1]})`);
-  console.log(`hoops: center-perks windows (calm) ${calm.join(', ')}; a gale behind ${behind[0]}±${behind[1]}, against ${against[0]}±${against[1]}`);
+  check(
+    behind[2] > 0 && against[2] < 0 && behind[0] < against[0] && behind[1] < shotWindow(sim, 2, [0, 0])[1],
+    `the wind: behind the shot needs less (${behind[0]}), against it more (${against[0]}); the rain narrows it (±${behind[1]})`,
+  );
+  console.log(
+    `hoops: center-perks windows (calm) ${calm.join(', ')}; a gale behind ${behind[0]}±${behind[1]}, against ${against[0]}±${against[1]}`,
+  );
   // A shot by commands, released at the best step.
   to(1, 10, 30);
   const spotTile = (k: number) => c.spots[k].z * MAP_W + c.spots[k].x;
@@ -492,7 +620,15 @@ function yardTile(sim: Sim): number {
       const x = i % MAP_W;
       const z = Math.floor(i / MAP_W);
       const d = Math.max(Math.abs(x * UNIT + UNIT / 2 - r0.x), Math.abs(z * UNIT + UNIT / 2 - r0.z)) / UNIT;
-      if (d > min && d < max && !sim.world.blocked(x, z) && !sim.world.blocked(x + 1, z) && sim.world.zoneAt(x, z) !== 'outside' && sim.world.zoneAt(x, z) !== 'perimeter') return i;
+      if (
+        d > min &&
+        d < max &&
+        !sim.world.blocked(x, z) &&
+        !sim.world.blocked(x + 1, z) &&
+        sim.world.zoneAt(x, z) !== 'outside' &&
+        sim.world.zoneAt(x, z) !== 'perimeter'
+      )
+        return i;
     }
     return -1;
   };
@@ -503,7 +639,7 @@ function yardTile(sim: Sim): number {
   check(refusals(seen).at(-1) === 'noCourt' && !s.shootout, 'not at the court: no shootout');
   check(talkTo(0, spotTile(1) - 1), 'talking at the court');
   talk(TALK.HOOPS);
-  check(!!s.shootout && playedToday(s, 0) === 1, 'a shootout on: one of the day\'s games');
+  check(!!s.shootout && playedToday(s, 0) === 1, "a shootout on: one of the day's games");
   const opinion = s.inmates[0].opinion;
   let guard = 0;
   while (s.shootout && guard++ < 3000) {
@@ -513,7 +649,10 @@ function yardTile(sim: Sim): number {
   }
   const end = seen.filter((e) => e.type === 'hoops' && e.what !== 'start').at(-1) as Extract<SimEvent, { type: 'hoops' }>;
   const theirs = seen.filter((e) => e.type === 'hoopShot' && e.by === 0).length;
-  check(end?.what === 'won' && s.inmates[0].opinion >= opinion + WIN_OPINION - 1 && theirs >= SHOOT_SPOTS, `every shot a swish: won ${end?.mine}–${end?.theirs} (+${WIN_OPINION}, +1 Speed)`);
+  check(
+    end?.what === 'won' && s.inmates[0].opinion >= opinion + WIN_OPINION - 1 && theirs >= SHOOT_SPOTS,
+    `every shot a swish: won ${end?.mine}–${end?.theirs} (+${WIN_OPINION}, +1 Speed)`,
+  );
   // The court left: off.
   check(talkTo(0, spotTile(1) - 1), 'talking at the court again');
   talk(TALK.HOOPS);
@@ -528,7 +667,10 @@ function yardTile(sim: Sim): number {
   const airs = () => seen.filter((e) => e.type === 'hoopShot' && e.by === -1 && e.result === 'air').length;
   const air0 = airs();
   while (s.shootout && s.shootout.turn === 0 && s.step - clockFrom < SHOT_CLOCK * 2) step();
-  check(!!s.shootout && s.shootout.turn === 1 && airs() === air0 + 1 && s.step - clockFrom <= SHOT_CLOCK + 2, `no shot in ${SHOT_CLOCK / 20} s: an airball, the inmate's shot (${s.step - clockFrom} steps)`);
+  check(
+    !!s.shootout && s.shootout.turn === 1 && airs() === air0 + 1 && s.step - clockFrom <= SHOT_CLOCK + 2,
+    `no shot in ${SHOT_CLOCK / 20} s: an airball, the inmate's shot (${s.step - clockFrom} steps)`,
+  );
   let n = 0;
   while (s.shootout && n++ < (SHOT_CLOCK + 60) * 12) step();
   check(!s.shootout, 'stood still on the spot: the shootout plays itself out');
@@ -545,8 +687,10 @@ function yardTile(sim: Sim): number {
     step();
   }
   const last = seen.filter((e) => e.type === 'hoops').at(-1) as Extract<SimEvent, { type: 'hoops' }> | undefined;
-  check(!s.shootout && last?.what === 'off' && ROUTINE[s.routine].id === 'eveningRollCall', 'the roll call\'s bell: off');
-  console.log(`hoops: a swish on the mark, an airball off it; practice +1 Speed at ${PRACTICE_MAKES}; a shootout won ${end?.mine}–${end?.theirs}; off the court, off`);
+  check(!s.shootout && last?.what === 'off' && ROUTINE[s.routine].id === 'eveningRollCall', "the roll call's bell: off");
+  console.log(
+    `hoops: a swish on the mark, an airball off it; practice +1 Speed at ${PRACTICE_MAKES}; a shootout won ${end?.mine}–${end?.theirs}; off the court, off`,
+  );
   // Sports day: a shootout won counts as a bout won.
   const sd = game(CENTER_PERKS, 6, [[0, DAY_EVENTS.indexOf('sports'), 0]]);
   sd.to(2, 10, 30);
@@ -572,7 +716,10 @@ function yardTile(sim: Sim): number {
       } else sd.step();
     }
   }
-  check(sd.seen.some((e) => e.type === 'today' && e.event === 'sports' && e.phase === 'prize'), 'sports day: three shootouts won earn the prize');
+  check(
+    sd.seen.some((e) => e.type === 'today' && e.event === 'sports' && e.phase === 'prize'),
+    'sports day: three shootouts won earn the prize',
+  );
 }
 
 // ------------------------------------------------------------------ Checkers
@@ -587,8 +734,15 @@ function yardTile(sim: Sim): number {
   at2(3, 4, PIECE.HIS_MAN);
   at2(6, 5, PIECE.MAN);
   const first = stepsOf(sq, 0);
-  check(first.length === 1 && first[0].from === squareAt(6, 1) && first[0].to === squareAt(4, 3) && first[0].cap === squareAt(5, 2), 'a capture there is: the only move');
-  const more = stepsOf(sq.map((p, i) => (i === squareAt(6, 1) || i === squareAt(5, 2) ? 0 : i === squareAt(4, 3) ? PIECE.MAN : p)), 0, squareAt(4, 3));
+  check(
+    first.length === 1 && first[0].from === squareAt(6, 1) && first[0].to === squareAt(4, 3) && first[0].cap === squareAt(5, 2),
+    'a capture there is: the only move',
+  );
+  const more = stepsOf(
+    sq.map((p, i) => (i === squareAt(6, 1) || i === squareAt(5, 2) ? 0 : i === squareAt(4, 3) ? PIECE.MAN : p)),
+    0,
+    squareAt(4, 3),
+  );
   check(more.length === 1 && more[0].to === squareAt(2, 5), 'the jump goes on from where it landed');
   // His search: the same move every time, a capture taken.
   const his = new Array(32).fill(PIECE.EMPTY);
@@ -597,7 +751,10 @@ function yardTile(sim: Sim): number {
   his[squareAt(7, 0)] = PIECE.MAN;
   his[squareAt(0, 1)] = PIECE.HIS_MAN;
   const mv = elderMove(his, 9, 0, 0, 4);
-  check(!!mv && mv[0].cap === squareAt(3, 4) && JSON.stringify(elderMove(his, 9, 0, 0, 4)) === JSON.stringify(mv), 'he takes the capture, the same way every time');
+  check(
+    !!mv && mv[0].cap === squareAt(3, 4) && JSON.stringify(elderMove(his, 9, 0, 0, 4)) === JSON.stringify(mv),
+    'he takes the capture, the same way every time',
+  );
   // Quick enough at every depth (from the opening and a busy middle game).
   for (let lv = 0; lv < ELDER_DEPTH.length; lv++) {
     const t0 = performance.now();
@@ -680,10 +837,10 @@ function yardTile(sim: Sim): number {
   check(refusals(seen).at(-1) === 'elderOpinion' && !s.board, `he plays from opinion ${ELDER_OPINION}`);
   s.inmates[elder].opinion = ELDER_OPINION;
   talk(TALK.CHECKERS, 1);
-  check(!!s.board && s.board.seated && s.board.turn === 0 && playedToday(s, elder) === 0, 'the board set up (not one of the day\'s games)');
+  check(!!s.board && s.board.seated && s.board.turn === 0 && playedToday(s, elder) === 0, "the board set up (not one of the day's games)");
   const opening = stepsOf(s.board!.sq, 0)[0];
   talk(TALK.MOVE, opening.from, opening.to + 1);
-  check(s.board!.turn === 0, 'a step that isn\'t a move: refused');
+  check(s.board!.turn === 0, "a step that isn't a move: refused");
   talk(TALK.MOVE, opening.from, opening.to);
   check(s.board!.turn === 1 && s.board!.sq[opening.to] === PIECE.MAN, 'a move made: his turn');
   let n = 0;
@@ -702,7 +859,10 @@ function yardTile(sim: Sim): number {
     talk(TALK.CHECKERS, 1);
     talk(TALK.CHECKERS, 2);
   }
-  check(s.items.int === int && s.inmates[elder].opinion === op0 && s.elder[1] === 11, 'resigning over and over: no opinion, no Intellect to farm');
+  check(
+    s.items.int === int && s.inmates[elder].opinion === op0 && s.elder[1] === 11,
+    'resigning over and over: no opinion, no Intellect to farm',
+  );
   // A win: set up a board he's lost, one move from the end.
   talk(TALK.CHECKERS, 1);
   const bd = s.board!;
@@ -712,9 +872,12 @@ function yardTile(sim: Sim): number {
   bd.turn = 0;
   const op = s.inmates[elder].opinion;
   talk(TALK.MOVE, squareAt(5, 2), squareAt(3, 4));
-  check(bd.over === 1 && s.elder[0] === 1 && s.items.int === int + 1 && s.inmates[elder].opinion > op, 'his last man taken: won (+1 Intellect, his respect, his level up)');
+  check(
+    bd.over === 1 && s.elder[0] === 1 && s.items.int === int + 1 && s.inmates[elder].opinion > op,
+    'his last man taken: won (+1 Intellect, his respect, his level up)',
+  );
   const won = seen.some((e) => e.type === 'checkers' && e.what === 'won');
-  check(won, 'the win announced (the play layer\'s secret)');
+  check(won, "the win announced (the play layer's secret)");
   console.log('checkers in the game: the board set up, a move, his answer, kept between times, resigned, won');
 }
 
@@ -738,7 +901,16 @@ function yardTile(sim: Sim): number {
   s.cash = 50;
   blind();
   talk(TALK.CHEAT, 1);
-  check(!!s.cheat && twin(sim, [command(0, OP.TALK, TALK.PLAY, 1), ...Array.from({ length: 50 }, () => 0), command(0, OP.TALK, TALK.LIAR), ...Array.from({ length: REVEAL_STEPS + 40 }, () => 0)]), 'saved mid-hand of Cheat: the same hand');
+  check(
+    !!s.cheat &&
+      twin(sim, [
+        command(0, OP.TALK, TALK.PLAY, 1),
+        ...Array.from({ length: 50 }, () => 0),
+        command(0, OP.TALK, TALK.LIAR),
+        ...Array.from({ length: REVEAL_STEPS + 40 }, () => 0),
+      ]),
+    'saved mid-hand of Cheat: the same hand',
+  );
   // The shootout and the board.
   const c = courtOf(sim)!;
   s.cheat = null;
@@ -747,27 +919,58 @@ function yardTile(sim: Sim): number {
   s.inmates[1].opinion = 70;
   talk(TALK.HOOPS);
   put(s.player, c.spots[0].z * MAP_W + c.spots[0].x);
-  check(!!s.shootout && twin(sim, [command(0, OP.EXT, EXT.SHOOT, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, command(0, OP.EXT, EXT.SHOOT, 1), ...Array.from({ length: 60 }, () => 0)]), 'saved mid-shootout: the same shootout');
+  check(
+    !!s.shootout &&
+      twin(sim, [
+        command(0, OP.EXT, EXT.SHOOT, 0),
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        command(0, OP.EXT, EXT.SHOOT, 1),
+        ...Array.from({ length: 60 }, () => 0),
+      ]),
+    'saved mid-shootout: the same shootout',
+  );
   const elder = elderOf(sim);
   // (Away from the others: talking goes to whoever's nearest.)
   for (const m of s.inmates) put(m.body, yardTile(sim) + 2 * MAP_W);
   check(talkTo(elder, yardTile(sim)), 'talking to the old-timer');
   talk(TALK.CHECKERS, 1);
   const st = stepsOf(s.board!.sq, 0)[2];
-  check(!!s.board && twin(sim, [command(0, OP.TALK, TALK.MOVE, st.from, st.to), ...Array.from({ length: 80 }, () => 0)]), 'saved at the board: the same game');
+  check(
+    !!s.board && twin(sim, [command(0, OP.TALK, TALK.MOVE, st.from, st.to), ...Array.from({ length: 80 }, () => 0)]),
+    'saved at the board: the same game',
+  );
   // Damaged ones dropped.
   const bad = sim.snapshot();
   Object.assign(bad.state, { cheat: { who: 99 }, shootout: { who: -4 }, shot: [1, 99], practice: 'x', board: { sq: [9] }, elder: [1] });
   const fixed = new Sim(CENTER_PERKS, 1);
   fixed.restore(bad);
   for (let k = 0; k < 20; k++) fixed.step(0);
-  check(!fixed.state.cheat && !fixed.state.shootout && !fixed.state.shot.length && fixed.state.practice === 0 && !fixed.state.board && fixed.state.elder.join() === '0,0,0,0', 'a damaged save: the broken games are gone');
+  check(
+    !fixed.state.cheat &&
+      !fixed.state.shootout &&
+      !fixed.state.shot.length &&
+      fixed.state.practice === 0 &&
+      !fixed.state.board &&
+      fixed.state.elder.join() === '0,0,0,0',
+    'a damaged save: the broken games are gone',
+  );
   // A save from before P27: none of it.
   const old = sim.snapshot();
   const o = old.state as unknown as Record<string, unknown>;
   for (const k of ['cheat', 'shootout', 'shot', 'practice', 'board', 'elder']) delete o[k];
   const loaded = new Sim(CENTER_PERKS, 1);
   loaded.restore(old);
-  check(loaded.state.cheat === null && loaded.state.board === null && loaded.state.elder.length === 4, 'a save from before P27: no games under way');
+  check(
+    loaded.state.cheat === null && loaded.state.board === null && loaded.state.elder.length === 4,
+    'a save from before P27: no games under way',
+  );
   console.log(`saves: a hand of Cheat, a shootout and the board carry on; damaged ones dropped; old saves load`);
 }

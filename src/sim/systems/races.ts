@@ -17,7 +17,33 @@
  *
  * Nothing happens in the simulation unless the player bets or enters: the card is worked out, never stored.
  */
-import { BET_RANGE, BETS, CARD_MINUTE, CARD_MINUTE_215, FED_BONUS, START_RANGE, LEGS, LUCK, ODDS_MARGIN, ODDS_MAX, ODDS_MIN, ODDS_SAMPLES, PURSE, RACE_MINUTE, RACE_NOISE, RACE_STEPS, RAT_NAMES, RAT_START_SPEED, RIVAL_FED, RIVAL_SPEED, RIVAL_SPREAD, RIVALS, TRACK_GAIN, TRACK_SLOW, TRACK_STEPS } from '../../content/long';
+import {
+  BET_RANGE,
+  BETS,
+  CARD_MINUTE,
+  CARD_MINUTE_215,
+  FED_BONUS,
+  START_RANGE,
+  LEGS,
+  LUCK,
+  ODDS_MARGIN,
+  ODDS_MAX,
+  ODDS_MIN,
+  ODDS_SAMPLES,
+  PURSE,
+  RACE_MINUTE,
+  RACE_NOISE,
+  RACE_STEPS,
+  RAT_NAMES,
+  RAT_START_SPEED,
+  RIVAL_FED,
+  RIVAL_SPEED,
+  RIVAL_SPREAD,
+  RIVALS,
+  TRACK_GAIN,
+  TRACK_SLOW,
+  TRACK_STEPS,
+} from '../../content/long';
 import { DICE_HEAT } from '../../content/games';
 import { ROUTINE } from '../../content/routine';
 import type { Track } from '../../content/prisons/types';
@@ -86,7 +112,8 @@ export function rivals(s: Pick<SimState, 'salt' | 'inmates'>, day: number): Entr
 export function raceCard(s: SimState, day: number): Entrant[] {
   const card = rivals(s, day);
   const pet = petOf(s);
-  if (pet && s.race[RACE.DAY] === day && s.race[RACE.ENTERED] === 1) card.push({ owner: -1, name: -1, speed: pet.speed ?? RAT_START_SPEED, fed: pet.fed === day });
+  if (pet && s.race[RACE.DAY] === day && s.race[RACE.ENTERED] === 1)
+    card.push({ owner: -1, name: -1, speed: pet.speed ?? RAT_START_SPEED, fed: pet.fed === day });
   return card;
 }
 
@@ -102,7 +129,8 @@ export function oddsOf(salt: number, day: number, card: readonly Entrant[]): num
     for (let lane = 0; lane < card.length; lane++) {
       const fed = rollInt(salt, SALT.RACE, 7_000_000 + day * 1024 + k, lane, 100) < RIVAL_FED;
       let d = 0;
-      for (let l = 0; l < LEGS; l++) d += card[lane].speed + (fed ? FED_BONUS : 0) + rollInt(salt, SALT.RACE, 8_000_000 + (day * 1024 + k) * 16 + l, lane, LUCK + 1);
+      for (let l = 0; l < LEGS; l++)
+        d += card[lane].speed + (fed ? FED_BONUS : 0) + rollInt(salt, SALT.RACE, 8_000_000 + (day * 1024 + k) * 16 + l, lane, LUCK + 1);
       at[lane] = d;
       if (best < 0 || d > at[best]) best = lane;
     }
@@ -130,7 +158,10 @@ export function runRace(salt: number, day: number, card: readonly Entrant[]): Ra
     let at = 0;
     const out: number[] = [];
     for (let l = 0; l < LEGS; l++) {
-      at += e.speed + (e.fed ? FED_BONUS : 0) + rollInt(salt, SALT.RACE, day * 16 + l, 4000 + (e.owner < 0 ? 999 : e.owner) * 8 + lane, LUCK + 1);
+      at +=
+        e.speed +
+        (e.fed ? FED_BONUS : 0) +
+        rollInt(salt, SALT.RACE, day * 16 + l, 4000 + (e.owner < 0 ? 999 : e.owner) * 8 + lane, LUCK + 1);
       out.push(at);
     }
     return out;

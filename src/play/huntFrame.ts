@@ -96,7 +96,25 @@ export function frameOf(run: HuntRun, a: number, paused: boolean, guide: Array<{
   // The lookout, on their rise, looking out over the map.
   if (run.lookout) {
     const lt = spotTile(h.def.lookout, h.out.ox, h.out.oz);
-    const o = (f.inmates[0] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, cell: 0, angry: false, badge: '', trayAt: 0, trayLeft: 1, held: 0, bare: false, towel: 0, attention: false, prop: -1, at: { x: 0, z: 0, facing: 0, y: 0 }, bench: { x: 0, z: 0, angle: 0 } });
+    const o = (f.inmates[0] ??= {
+      x: 0,
+      z: 0,
+      facing: 0,
+      moving: false,
+      doing: 0,
+      cell: 0,
+      angry: false,
+      badge: '',
+      trayAt: 0,
+      trayLeft: 1,
+      held: 0,
+      bare: false,
+      towel: 0,
+      attention: false,
+      prop: -1,
+      at: { x: 0, z: 0, facing: 0, y: 0 },
+      bench: { x: 0, z: 0, angle: 0 },
+    });
     o.x = (lt % MAP_W) + 0.5;
     o.z = Math.floor(lt / MAP_W) + 0.5;
     o.facing = headingAngle(h.def.lookout.face ?? 13);
@@ -107,7 +125,21 @@ export function frameOf(run: HuntRun, a: number, paused: boolean, guide: Array<{
   // The searchers as guards (one not out yet stands off the map), their cones as far as they see now.
   f.guards.length = s.searchers.length;
   s.searchers.forEach((m, k) => {
-    const o = (f.guards[k] ??= { x: 0, z: 0, facing: 0, moving: false, doing: 0, alert: 0, pace: 1, held: 0, hasKey: false, away: false, awayLeft: 0, stir: 0, range: 7 });
+    const o = (f.guards[k] ??= {
+      x: 0,
+      z: 0,
+      facing: 0,
+      moving: false,
+      doing: 0,
+      alert: 0,
+      pace: 1,
+      held: 0,
+      hasKey: false,
+      away: false,
+      awayLeft: 0,
+      stir: 0,
+      range: 7,
+    });
     const off = m.mode === SEEK.OFF;
     const q = run.prevS[k];
     o.x = off ? AWAY : lerp(q?.x ?? m.body.x, m.body.x);
@@ -115,8 +147,22 @@ export function frameOf(run: HuntRun, a: number, paused: boolean, guide: Array<{
     o.facing = headingAngle(m.body.facing);
     o.moving = m.body.moving && !paused && !!q && (q.x !== m.body.x || q.z !== m.body.z);
     o.doing = DOING.NOTHING;
-    o.alert = off ? ALERT.NONE : m.mode === SEEK.CHASE ? ALERT.HOSTILE : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.mode === SEEK.SWEEP || m.notice > 0 ? ALERT.SUSPICIOUS : ALERT.CALM;
-    o.pace = ((m.mode === SEEK.CHASE ? HUNT.chase : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.mode === SEEK.SWEEP ? HUNT.hurry : HUNT.walk) * HUNT.pace) / 100 / WALK_SPEED;
+    o.alert = off
+      ? ALERT.NONE
+      : m.mode === SEEK.CHASE
+        ? ALERT.HOSTILE
+        : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.mode === SEEK.SWEEP || m.notice > 0
+          ? ALERT.SUSPICIOUS
+          : ALERT.CALM;
+    o.pace =
+      ((m.mode === SEEK.CHASE
+        ? HUNT.chase
+        : m.mode === SEEK.LOOK || m.mode === SEEK.FOLLOW || m.mode === SEEK.SWEEP
+          ? HUNT.hurry
+          : HUNT.walk) *
+        HUNT.pace) /
+      100 /
+      WALK_SPEED;
     o.held = m.mode === SEEK.CHASE ? BATON : 0;
     o.hasKey = false;
     o.range = h.sight;
@@ -131,7 +177,16 @@ export function frameOf(run: HuntRun, a: number, paused: boolean, guide: Array<{
     o.z = off ? AWAY : lerp(q?.z ?? d.body.z, d.body.z);
     o.facing = headingAngle(d.body.facing);
     o.moving = d.body.moving && !paused;
-    o.pose = d.mode === HOUND.TRACK ? 'track' : d.mode === HOUND.POINT ? 'point' : d.mode === HOUND.ASLEEP ? 'asleep' : d.mode === HOUND.DAZED || d.mode === HOUND.CALM ? 'dazed' : 'heel';
+    o.pose =
+      d.mode === HOUND.TRACK
+        ? 'track'
+        : d.mode === HOUND.POINT
+          ? 'point'
+          : d.mode === HOUND.ASLEEP
+            ? 'asleep'
+            : d.mode === HOUND.DAZED || d.mode === HOUND.CALM
+              ? 'dazed'
+              : 'heel';
     o.pace = q ? Math.hypot(d.body.x - q.x, d.body.z - q.z) / GUARD_SPEED : 1;
     o.friend = d.mode === HOUND.CALM;
   });
@@ -154,7 +209,20 @@ export function frameOf(run: HuntRun, a: number, paused: boolean, guide: Array<{
   return f;
 }
 
-const hudState: HuntHudState = { goal: 'bus', dist: 0, angle: 0, alarm: 0, dogs: false, roadblocks: false, heli: false, state: '', lookout: '', act: null, cut: 0, stone: -1 };
+const hudState: HuntHudState = {
+  goal: 'bus',
+  dist: 0,
+  angle: 0,
+  alarm: 0,
+  dogs: false,
+  roadblocks: false,
+  heli: false,
+  state: '',
+  lookout: '',
+  act: null,
+  cut: 0,
+  stone: -1,
+};
 
 /** A hunt's safe tiles (open ground), listed once. */
 const safeTiles = new WeakMap<Hunt, number[]>();
@@ -188,10 +256,30 @@ export function hudOf(run: HuntRun): HuntHudState {
   st.dogs = age >= 0 && s.dogs.some((d) => s.searchers[d.handler].mode !== SEEK.OFF);
   st.roadblocks = s.blocks !== 0;
   st.heli = s.heli.on;
-  st.state = s.heli.lit ? 'lit' : s.searchers.some((m) => m.mode === SEEK.CHASE) ? 'chased' : s.dogs.some((d) => d.mode === HOUND.TRACK || d.mode === HOUND.POINT) ? 'tracked' : s.hidden ? 'hidden' : o.cover[here] ? 'cover' : '';
+  st.state = s.heli.lit
+    ? 'lit'
+    : s.searchers.some((m) => m.mode === SEEK.CHASE)
+      ? 'chased'
+      : s.dogs.some((d) => d.mode === HOUND.TRACK || d.mode === HOUND.POINT)
+        ? 'tracked'
+        : s.hidden
+          ? 'hidden'
+          : o.cover[here]
+            ? 'cover'
+            : '';
   st.lookout = run.lookout?.name ?? '';
   const a = run.ended ? null : actionOf(h);
-  st.act = !a ? null : a.kind === 'line' ? { icon: 'shirt', verb: 'manhunt.act.clothes', what: '' } : a.kind === 'cut' ? { icon: 'cutters', verb: 'manhunt.act.cut', what: '' } : { icon: 'bone', verb: 'manhunt.act.treat', what: t(`manhunt.treat.${a.what}` as Key, { name: h.def.searchers[s.dogs[a.dog].handler]?.dog?.name ?? '' }) };
+  st.act = !a
+    ? null
+    : a.kind === 'line'
+      ? { icon: 'shirt', verb: 'manhunt.act.clothes', what: '' }
+      : a.kind === 'cut'
+        ? { icon: 'cutters', verb: 'manhunt.act.cut', what: '' }
+        : {
+            icon: 'bone',
+            verb: 'manhunt.act.treat',
+            what: t(`manhunt.treat.${a.what}` as Key, { name: h.def.searchers[s.dogs[a.dog].handler]?.dog?.name ?? '' }),
+          };
   st.cut = s.cutting.length ? s.cutting[1] / HUNT.cutSteps : 0;
   st.stone = run.ended ? -1 : Math.min(1, (s.step - s.stoneAt) / HUNT.stoneEvery);
   return st;

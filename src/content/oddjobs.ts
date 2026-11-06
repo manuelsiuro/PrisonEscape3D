@@ -34,7 +34,20 @@ export const KIND = {
   /** The errand: a bag of sugar from a merchant (for a brew), to the one who asked. */
   ERRAND: 11,
 } as const;
-export const KINDS = ['lift', 'drop', 'frame', 'wrestle', 'cheat', 'checkers', 'rat', 'cake', 'lookout', 'deliver', 'tip', 'errand'] as const;
+export const KINDS = [
+  'lift',
+  'drop',
+  'frame',
+  'wrestle',
+  'cheat',
+  'checkers',
+  'rat',
+  'cake',
+  'lookout',
+  'deliver',
+  'tip',
+  'errand',
+] as const;
 export type KindId = (typeof KINDS)[number];
 
 /** What a job ends with besides the cash: nothing more, a rare item, a debt (the one who asked owes the player one). */
@@ -143,7 +156,14 @@ export interface ChainDef {
   steps: readonly ChainStep[];
 }
 
-const step = (kind: number, variant: number, target: number, pay: number, perk: number = PERK.NONE, item?: string): ChainStep => ({ kind, variant, target, pay, perk, ...(item ? { item } : {}) });
+const step = (kind: number, variant: number, target: number, pay: number, perk: number = PERK.NONE, item?: string): ChainStep => ({
+  kind,
+  variant,
+  target,
+  pay,
+  perk,
+  ...(item ? { item } : {}),
+});
 
 /**
  * The five stories. Center Perks: Doc the old-timer's lost watch (word from Mouse, the watch off a
@@ -154,10 +174,19 @@ const step = (kind: number, variant: number, target: number, pay: number, perk: 
  * signal, a parcel in Kipper's desk, the old-timer kept busy at checkers).
  */
 export const CHAINS: Record<string, ChainDef> = {
-  'center-perks': { who: 5, steps: [step(KIND.DELIVER, 0, 4, 20), step(KIND.LIFT, LIFT.KEEPSAKE, 0, 40), step(KIND.CHECKERS, 1, 5, 30, PERK.DEBT)] },
-  'stalag-flucht': { who: 2, steps: [step(KIND.ERRAND, 0, 3, 20), step(KIND.LOOKOUT, 0, 0, 35), step(KIND.FRAME, 0, 10, 40, PERK.ITEM, 'light_shovel')] },
+  'center-perks': {
+    who: 5,
+    steps: [step(KIND.DELIVER, 0, 4, 20), step(KIND.LIFT, LIFT.KEEPSAKE, 0, 40), step(KIND.CHECKERS, 1, 5, 30, PERK.DEBT)],
+  },
+  'stalag-flucht': {
+    who: 2,
+    steps: [step(KIND.ERRAND, 0, 3, 20), step(KIND.LOOKOUT, 0, 0, 35), step(KIND.FRAME, 0, 10, 40, PERK.ITEM, 'light_shovel')],
+  },
   shankton: { who: 11, steps: [step(KIND.CHEAT, 1, 10, 25), step(KIND.DELIVER, 0, 4, 20), step(KIND.TIP, 0, 10, 40, PERK.DEBT)] },
-  'san-pancho': { who: 7, steps: [step(KIND.ERRAND, 0, 3, 15), step(KIND.CAKE, 0, 0, 35), step(KIND.WRESTLE, 0, 7, 30, PERK.ITEM, 'screwdriver')] },
+  'san-pancho': {
+    who: 7,
+    steps: [step(KIND.ERRAND, 0, 3, 15), step(KIND.CAKE, 0, 0, 35), step(KIND.WRESTLE, 0, 7, 30, PERK.ITEM, 'screwdriver')],
+  },
   irongate: { who: 3, steps: [step(KIND.LIFT, LIFT.WHISTLE, 0, 30), step(KIND.DROP, 0, 11, 35), step(KIND.CHECKERS, 0, 4, 30, PERK.DEBT)] },
 };
 
@@ -167,7 +196,21 @@ export const CHAINS: Record<string, ChainDef> = {
  * a frame-up's tip, the day the cake found no room. WARN: the guards coming at a dig, a bit each; a
  * drop's or a frame-up's: the fewest of it the desk has held since the job was taken; the cake's: the step it was taken.
  */
-export const J = { KIND: 0, VAR: 1, GIVER: 2, TARGET: 3, ENDS: 4, FROM: 5, STAGE: 6, PROG: 7, AUX: 8, PAY: 9, PERK: 10, ITEM: 11, WARN: 12 } as const;
+export const J = {
+  KIND: 0,
+  VAR: 1,
+  GIVER: 2,
+  TARGET: 3,
+  ENDS: 4,
+  FROM: 5,
+  STAGE: 6,
+  PROG: 7,
+  AUX: 8,
+  PAY: 9,
+  PERK: 10,
+  ITEM: 11,
+  WARN: 12,
+} as const;
 export const JOB_LEN = 13;
 /** The record (`state.oddjobs`): [the prison day of the pins taken, which (a bit each), the story's next step, the prison day its last was handed in, who owes the player (a bit per inmate)]. */
 export const R = { DAY: 0, PINS: 1, CHAIN: 2, CHAIN_DAY: 3, OWED: 4 } as const;

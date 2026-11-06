@@ -41,7 +41,10 @@ export class GroundsView {
     if (leisure && sports && world.zoneAt(leisure.hoop.x, leisure.hoop.z) === 'sports') this.court(leisure.hoop, rubber, paintParts);
     const flat = (parts: Part[], opacity: number, order: number) => {
       if (!parts.length) return;
-      const mesh = new THREE.Mesh(merge(parts, false), new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity, depthWrite: false }));
+      const mesh = new THREE.Mesh(
+        merge(parts, false),
+        new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity, depthWrite: false }),
+      );
       mesh.position.y = 0.004;
       mesh.renderOrder = order;
       mesh.receiveShadow = true;
@@ -106,8 +109,14 @@ export class GroundsView {
     for (const [a, b, c, d] of straights) rubber.push(box(c - a, 0.002, d - b, RUBBER, (a + c) / 2, 0, (b + d) / 2));
     // Edges: the outer rectangle and the inner one.
     const frame = (ax: number, az: number, bx: number, bz: number) => {
-      lines.push(box(bx - ax, 0.003, W, LINE, (ax + bx) / 2, 0.001, az + W / 2), box(bx - ax, 0.003, W, LINE, (ax + bx) / 2, 0.001, bz - W / 2));
-      lines.push(box(W, 0.003, bz - az - 2 * W, LINE, ax + W / 2, 0.001, (az + bz) / 2), box(W, 0.003, bz - az - 2 * W, LINE, bx - W / 2, 0.001, (az + bz) / 2));
+      lines.push(
+        box(bx - ax, 0.003, W, LINE, (ax + bx) / 2, 0.001, az + W / 2),
+        box(bx - ax, 0.003, W, LINE, (ax + bx) / 2, 0.001, bz - W / 2),
+      );
+      lines.push(
+        box(W, 0.003, bz - az - 2 * W, LINE, ax + W / 2, 0.001, (az + bz) / 2),
+        box(W, 0.003, bz - az - 2 * W, LINE, bx - W / 2, 0.001, (az + bz) / 2),
+      );
     };
     frame(x0 + 0.03, z0 + 0.03, x1 - 0.03, z1 - 0.03);
     frame(x0 + 0.97, z0 + 0.97, x1 - 0.97, z1 - 0.97);

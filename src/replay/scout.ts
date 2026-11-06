@@ -22,11 +22,45 @@ const MERGE_STEPS = 60 * STEPS_PER_MINUTE;
 /** Quiet stretches shorter than this aren't worth a skip. */
 const QUIET_MIN = 2 * STEPS_PER_MINUTE;
 
-const HIGHLIGHTS = ['caught', 'lockdown', 'ko', 'mishap', 'through', 'tunnel', 'vents', 'roof', 'power', 'takeover', 'stow', 'bluff', 'glide', 'release', 'escape', 'parole'] as const;
+const HIGHLIGHTS = [
+  'caught',
+  'lockdown',
+  'ko',
+  'mishap',
+  'through',
+  'tunnel',
+  'vents',
+  'roof',
+  'power',
+  'takeover',
+  'stow',
+  'bluff',
+  'glide',
+  'release',
+  'escape',
+  'parole',
+] as const;
 export type HighlightKind = (typeof HIGHLIGHTS)[number];
 
 /** Each highlight's icon on the scrubber. */
-export const HIGHLIGHT_ICON: Record<HighlightKind, string> = { caught: 'siren', lockdown: 'bell', ko: 'fist', mishap: 'heart', through: 'pick', tunnel: 'shovel', vents: 'screw', roof: 'hook', power: 'plug', takeover: 'users', stow: 'truck', bluff: 'idCard', glide: 'glider', release: 'clipboard', escape: 'run', parole: 'scale' };
+export const HIGHLIGHT_ICON: Record<HighlightKind, string> = {
+  caught: 'siren',
+  lockdown: 'bell',
+  ko: 'fist',
+  mishap: 'heart',
+  through: 'pick',
+  tunnel: 'shovel',
+  vents: 'screw',
+  roof: 'hook',
+  power: 'plug',
+  takeover: 'users',
+  stow: 'truck',
+  bluff: 'idCard',
+  glide: 'glider',
+  release: 'clipboard',
+  escape: 'run',
+  parole: 'scale',
+};
 
 export interface Highlight {
   step: number;
@@ -82,7 +116,14 @@ export function highlightOf(e: SimEvent): HighlightKind | null {
       return 'mishap';
     case 'strike':
       // A wall, a fence or a grate giving way; a shaft opened in a floor; up out of a tunnel.
-      return e.broke && (e.action === 'chip' || e.action === 'cut' || e.action === 'unscrew' || e.action === 'digUp' || (e.action === 'dig' && e.layer === LAYER.GROUND)) ? 'through' : null;
+      return e.broke &&
+        (e.action === 'chip' ||
+          e.action === 'cut' ||
+          e.action === 'unscrew' ||
+          e.action === 'digUp' ||
+          (e.action === 'dig' && e.layer === LAYER.GROUND))
+        ? 'through'
+        : null;
     case 'layer':
       return e.layer === LAYER.UNDER ? 'tunnel' : e.layer === LAYER.VENTS ? 'vents' : e.layer === LAYER.ROOF ? 'roof' : null;
     case 'power':

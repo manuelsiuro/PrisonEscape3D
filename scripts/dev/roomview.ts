@@ -6,8 +6,18 @@ import { TILE } from '../../src/sim/world/tiles';
 for (const p of PRISONS) {
   const w = new Sim(p, 1).world;
   for (const zone of ['canteen', 'library']) {
-    let x0 = MAP_W, x1 = 0, z0 = MAP_H, z1 = 0;
-    for (let z = 0; z < MAP_H; z++) for (let x = 0; x < MAP_W; x++) if (w.zoneAt(x, z) === zone) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    let x0 = MAP_W,
+      x1 = 0,
+      z0 = MAP_H,
+      z1 = 0;
+    for (let z = 0; z < MAP_H; z++)
+      for (let x = 0; x < MAP_W; x++)
+        if (w.zoneAt(x, z) === zone) {
+          x0 = Math.min(x0, x);
+          x1 = Math.max(x1, x);
+          z0 = Math.min(z0, z);
+          z1 = Math.max(z1, z);
+        }
     console.log(`== ${p.id} ${zone} x ${x0}-${x1} z ${z0}-${z1}`);
     let head = '     ';
     for (let x = x0 - 1; x <= x1 + 1; x++) head += String(x % 10);

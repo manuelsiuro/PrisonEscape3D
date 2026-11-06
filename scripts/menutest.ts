@@ -51,14 +51,23 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
     check(!!m && !!c, `${def.id}: a menu board and a water cooler`);
     // The board: the decor's frame over the same tiles, floor in the canteen in front of a wall.
     const decor = (def.decor ?? []).find((d) => d.kind === 'menuBoard');
-    check(!!decor && decor.x === m.x && decor.z === m.z && (decor.w ?? 1) === m.w && (decor.rot ?? 0) === 0 && DECOR.menuBoard.wall, `${def.id}: the board's frame is the decor's, over the same tiles`);
+    check(
+      !!decor && decor.x === m.x && decor.z === m.z && (decor.w ?? 1) === m.w && (decor.rot ?? 0) === 0 && DECOR.menuBoard.wall,
+      `${def.id}: the board's frame is the decor's, over the same tiles`,
+    );
     for (let x = m.x; x < m.x + m.w; x++) {
-      check(w.zoneAt(x, m.z) === 'canteen' && !w.blocked(x, m.z) && w.blocked(x, m.z - 1), `${def.id}: the board's tile ${x},${m.z} is canteen floor against the wall`);
+      check(
+        w.zoneAt(x, m.z) === 'canteen' && !w.blocked(x, m.z) && w.blocked(x, m.z - 1),
+        `${def.id}: the board's tile ${x},${m.z} is canteen floor against the wall`,
+      );
     }
     // The cooler: a prop, last, solid, in the canteen; its places beside it free floor, nobody else's.
     const p = coolerProp(sim);
     check(!!p && w.props.indexOf(p!) === w.props.length - 1, `${def.id}: the cooler's prop comes last, so that no index moves`);
-    check(w.propSolid[c.z * MAP_W + c.x] === 1 && w.zoneAt(c.x, c.z) === 'canteen' && fixtureUse(w, p!) === 'cooler', `${def.id}: the cooler stands solid in the canteen`);
+    check(
+      w.propSolid[c.z * MAP_W + c.x] === 1 && w.zoneAt(c.x, c.z) === 'canteen' && fixtureUse(w, p!) === 'cooler',
+      `${def.id}: the cooler stands solid in the canteen`,
+    );
     check(!(def.decor ?? []).some((d) => (d.kind as string) === 'waterCooler'), `${def.id}: no decor cooler left under it`);
     const pl = placesOf(w);
     const stops = new Set(def.guards.flatMap((g) => g.beat.map((b) => b.z * MAP_W + b.x)));
@@ -72,7 +81,10 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
       check(isFloor(w, s.x, s.z) && w.zoneAt(s.x, s.z) === 'canteen', `${def.id}: drink place ${s.x},${s.z} is canteen floor`);
       check(Math.max(Math.abs(s.x - c.x), Math.abs(s.z - c.z)) === 1, `${def.id}: drink place ${s.x},${s.z} is beside the cooler`);
       // (A counter's place is the meals' only, the cooler's the free times': Stalag Flucht's corner shares one.)
-      check(!stops.has(t) && !vline.has(t) && !seats.has(t), `${def.id}: drink place ${s.x},${s.z} is nobody else's (a guard's stop, the machine's line, a seat)`);
+      check(
+        !stops.has(t) && !vline.has(t) && !seats.has(t),
+        `${def.id}: drink place ${s.x},${s.z} is nobody else's (a guard's stop, the machine's line, a seat)`,
+      );
       if (counters.has(t)) lines.push(`${def.id}: ${s.x},${s.z} is also a place at the counter at meals`);
       check(!(m.z === s.z && s.x >= m.x && s.x < m.x + m.w), `${def.id}: drink place ${s.x},${s.z} isn't where the board is read`);
     }
@@ -81,8 +93,15 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
     old.rules232 = true;
     old.rules2331 = true;
     old.rules233 = true;
-    check(old.world.propSolid[c.z * MAP_W + c.x] === 0 && fixtureUse(old.world, old.world.props[old.world.props.length - 1]) === undefined, `${def.id}: before 2.33 the cooler is decoration`);
-    check(canDigFloor(old.world, c.z * MAP_W + c.x, []) === canDigFloor(new Sim(def, 3).world, c.z * MAP_W + c.x, []) || !canDigFloor(sim.world, c.z * MAP_W + c.x, []), `${def.id}: digging under the cooler as it was`);
+    check(
+      old.world.propSolid[c.z * MAP_W + c.x] === 0 && fixtureUse(old.world, old.world.props[old.world.props.length - 1]) === undefined,
+      `${def.id}: before 2.33 the cooler is decoration`,
+    );
+    check(
+      canDigFloor(old.world, c.z * MAP_W + c.x, []) === canDigFloor(new Sim(def, 3).world, c.z * MAP_W + c.x, []) ||
+        !canDigFloor(sim.world, c.z * MAP_W + c.x, []),
+      `${def.id}: digging under the cooler as it was`,
+    );
     // (And where nobody may dig, as it was then: the chokepoints a solid cooler or machine made aren't there in an old run.)
     const was = new Sim(def, 3);
     was.rules231 = true;
@@ -93,8 +112,13 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
     // (The old map: the checkpoint's booth only drawn too, as before 2.33.2.)
     bare.rules2331 = true;
     bare.rules233 = true;
-    check([...reserved(was.world)].sort().join() === [...reserved(bare.world)].sort().join(), `${def.id}: before 2.32 the tiles nobody may dig are the map's without the machine and the cooler`);
-    lines.push(`${def.id} board ${m.x}–${m.x + m.w - 1},${m.z}, cooler ${c.x},${c.z} (drink at ${c.spots.map((s) => `${s.x},${s.z}`).join(' ')})`);
+    check(
+      [...reserved(was.world)].sort().join() === [...reserved(bare.world)].sort().join(),
+      `${def.id}: before 2.32 the tiles nobody may dig are the map's without the machine and the cooler`,
+    );
+    lines.push(
+      `${def.id} board ${m.x}–${m.x + m.w - 1},${m.z}, cooler ${c.x},${c.z} (drink at ${c.spots.map((s) => `${s.x},${s.z}`).join(' ')})`,
+    );
   }
   console.log(`places: ${lines.join('; ')}`);
 }
@@ -104,8 +128,14 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
   const salt = new Sim(CENTER_PERKS, 3).state.salt;
   const out: string[] = [];
   for (const def of PRISONS) {
-    check(dishOn(salt, def.id, 1, MEAL.BREAKFAST) === BREAKFASTS[0] && dishOn(salt, def.id, 1, MEAL.DINNER) === DINNERS[0], `${def.id}: the first day serves the plain tray`);
-    check(BREAKFASTS[0].energy === MEAL_ENERGY && DINNERS[0].energy === MEAL_ENERGY && !BREAKFASTS[0].health && !DINNERS[0].health, 'the plain tray is the old one');
+    check(
+      dishOn(salt, def.id, 1, MEAL.BREAKFAST) === BREAKFASTS[0] && dishOn(salt, def.id, 1, MEAL.DINNER) === DINNERS[0],
+      `${def.id}: the first day serves the plain tray`,
+    );
+    check(
+      BREAKFASTS[0].energy === MEAL_ENERGY && DINNERS[0].energy === MEAL_ENERGY && !BREAKFASTS[0].health && !DINNERS[0].health,
+      'the plain tray is the old one',
+    );
     const sums = [0, 0];
     const hps = [0, 0];
     let repeats = 0;
@@ -123,7 +153,9 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
     check(house > 0, `${def.id}: its own dinner comes up`);
     const avg = (sums[0] + sums[1]) / (DAYS * 2);
     check(avg >= 30 && avg <= 40, `${def.id}: a tray gives about what it did on average (${avg.toFixed(1)})`);
-    out.push(`${def.id} breakfast ${(sums[0] / DAYS).toFixed(1)} energy +${(hps[0] / DAYS).toFixed(1)} health, dinner ${(sums[1] / DAYS).toFixed(1)} +${(hps[1] / DAYS).toFixed(1)}, its own ${house}/${DAYS}`);
+    out.push(
+      `${def.id} breakfast ${(sums[0] / DAYS).toFixed(1)} energy +${(hps[0] / DAYS).toFixed(1)} health, dinner ${(sums[1] / DAYS).toFixed(1)} +${(hps[1] / DAYS).toFixed(1)}, its own ${house}/${DAYS}`,
+    );
   }
   console.log(`dishes over 60 days: ${out.join('; ')}`);
   // A feast beats the dish: the day's event, a holiday's.
@@ -156,9 +188,15 @@ const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused'
   bot.st.energy = 20;
   bot.st.health = 10;
   bot.act();
-  check(bot.until(() => bot.events.some((e) => e.type === 'meal'), 400), 'eaten');
+  check(
+    bot.until(() => bot.events.some((e) => e.type === 'meal'), 400),
+    'eaten',
+  );
   const meal = bot.events.find((e) => e.type === 'meal') as { n?: number; hp?: number; dish?: string };
-  check(meal.dish === dish.id && meal.n === dish.energy && (meal.hp ?? 0) === (dish.health ?? 0), `the event says what it gave (${meal.dish} +${meal.n})`);
+  check(
+    meal.dish === dish.id && meal.n === dish.energy && (meal.hp ?? 0) === (dish.health ?? 0),
+    `the event says what it gave (${meal.dish} +${meal.n})`,
+  );
   // (Sitting brings a little energy back too, a point every so often.)
   check(bot.st.energy >= 20 + dish.energy, `energy up by the dish's (${dish.energy}) at least`);
   console.log(`a meal on day 2 at center-perks: ${dish.id}, +${dish.energy} energy${dish.health ? `, +${dish.health} health` : ''}`);
@@ -216,7 +254,10 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   const before = bot.st.inmates.map((im) => im.opinion);
   bot.routineUntil(2, 17 * 60 + 30);
   const laughed = bot.st.menu.laughed.length;
-  check(laughed > 0 && bot.st.menu.laughed.every((k) => bot.st.inmates[k].opinion >= before[k]), `inmates laugh at it by dinner (${laughed})`);
+  check(
+    laughed > 0 && bot.st.menu.laughed.every((k) => bot.st.inmates[k].opinion >= before[k]),
+    `inmates laugh at it by dinner (${laughed})`,
+  );
   check(new Set(bot.st.menu.laughed).size === laughed, 'each once');
   bot.routineUntil(3, 8 * 60 + 5);
   check(bot.st.menu.scribbled === 0 && bot.st.menu.laughed.length === 0, 'wiped by the morning');
@@ -280,7 +321,10 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
     check(bot.st.energy === 50 + CUP_ENERGY && bot.st.drank > 0, `${def.id}: a cup, +${CUP_ENERGY} energy`);
     const at = bot.st.drank;
     bot.act();
-    check(bot.st.energy <= 50 + CUP_ENERGY + 1 && bot.st.drank === at && refusals(bot).includes('notThirsty'), `${def.id}: again at once: not thirsty, nothing counted`);
+    check(
+      bot.st.energy <= 50 + CUP_ENERGY + 1 && bot.st.drank === at && refusals(bot).includes('notThirsty'),
+      `${def.id}: again at once: not thirsty, nothing counted`,
+    );
     out.push(`${def.id} at ${bot.time}`);
   }
   console.log(`a cup: ${out.join('; ')}`);
@@ -314,11 +358,12 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   let found: Bot | null = null;
   for (let seed = 1; seed < 40 && !found; seed++) {
     const sim = new Sim(SAN_PANCHO, seed);
-    for (let d = 1; d <= 3 && !found; d++) if (planOf(sim, d).weather === 'heatwave') {
-      const bot = new Bot(SAN_PANCHO, seed);
-      bot.routineUntil(d, 13 * 60);
-      if (today(bot.sim).weather === 'heatwave') found = bot;
-    }
+    for (let d = 1; d <= 3 && !found; d++)
+      if (planOf(sim, d).weather === 'heatwave') {
+        const bot = new Bot(SAN_PANCHO, seed);
+        bot.routineUntil(d, 13 * 60);
+        if (today(bot.sim).weather === 'heatwave') found = bot;
+      }
   }
   check(!!found, 'a heatwave found at San Pancho');
   if (found) {
@@ -373,7 +418,10 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   // None at the Training Block.
   const t = new Bot(TRAINING, 3);
   t.keepRoutine(() => false, 2 * DAY_STEPS);
-  check(t.st.cooler.who.every((k) => k < 0), 'nobody else drinks at the Training Block');
+  check(
+    t.st.cooler.who.every((k) => k < 0),
+    'nobody else drinks at the Training Block',
+  );
 }
 
 // ------------------------------------------------------------------ old logs as they were
@@ -383,7 +431,7 @@ function atBoard(def = CENTER_PERKS, seed = 3, clear = true) {
   was.rules2331 = true;
   was.rules233 = true;
   const prev = new RunRecorder(was, { seed: 24, game: '2.32.0' });
-  for (let k = 0; k < (34 * 60) * STEPS_PER_MINUTE && prev.sim.state.step < DAY_STEPS + 9 * 60 * STEPS_PER_MINUTE; k++) prev.step(0);
+  for (let k = 0; k < 34 * 60 * STEPS_PER_MINUTE && prev.sim.state.step < DAY_STEPS + 9 * 60 * STEPS_PER_MINUTE; k++) prev.step(0);
   check(dishNow(prev.sim) === null, 'the old rules: no dish');
   const replayed = replayLog(prev.toLog(), CENTER_PERKS);
   check(!!replayed?.ok && replayed.sim.rules232 === true, 'a 2.32 log replays whole under the old rules');

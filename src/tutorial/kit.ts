@@ -95,7 +95,8 @@ export const tile = (x: number, z: number) => z * MAP_W + x;
 export const phoneFail = (c: LessonCtx): Key | null => (phoneOpen(c.sim) ? null : 'lesson.payphone.shut');
 /** The kiosk's lesson (P35): off once it shuts; logged out and walked off. */
 export const kioskFail = (c: LessonCtx): Key | null => (kioskOpen(c.sim) ? null : 'lesson.kiosk.shut');
-export const kioskLeft = (c: LessonCtx): Key | null => kioskFail(c) ?? (!loggedIn(c.sim.state) && !atKiosk(c.sim) ? 'lesson.kiosk.left' : null);
+export const kioskLeft = (c: LessonCtx): Key | null =>
+  kioskFail(c) ?? (!loggedIn(c.sim.state) && !atKiosk(c.sim) ? 'lesson.kiosk.left' : null);
 /** The odd jobs board's lesson (P40): on the board's own tile; where the job held's giver or target stands. */
 export const onBoard = (sim: Sim) => {
   const b = sim.prison.board!;
@@ -266,7 +267,10 @@ export function merchantAt(sim: Sim): number {
 export function talkFail(c: LessonCtx): Key | null {
   const it = c.sim.state.items;
   const mag = n('magazine');
-  const somewhere = it.inv.some((v) => itemOf(v) === mag) || it.containers.some((box, k) => box.some((v) => itemOf(v) === mag) && containersOf(c.sim.world)[k]?.mine) || it.ground.some(([, v]) => itemOf(v) === mag);
+  const somewhere =
+    it.inv.some((v) => itemOf(v) === mag) ||
+    it.containers.some((box, k) => box.some((v) => itemOf(v) === mag) && containersOf(c.sim.world)[k]?.mine) ||
+    it.ground.some(([, v]) => itemOf(v) === mag);
   if (favorPaid(c.sim)) return null;
   // (Left untaken overnight, his favor lapses: something else asked for, or nothing.)
   if (!magazineFavor(c.sim)) return 'lesson.talk.lapsed';
@@ -314,7 +318,11 @@ export function nextCorner(sim: Sim): number | null {
     return c.z * MAP_W + c.x;
   }
   const p = sim.state.player;
-  const best = corners.reduce((a, b) => ((a.x + 0.5) * UNIT - p.x) ** 2 + ((a.z + 0.5) * UNIT - p.z) ** 2 <= ((b.x + 0.5) * UNIT - p.x) ** 2 + ((b.z + 0.5) * UNIT - p.z) ** 2 ? a : b);
+  const best = corners.reduce((a, b) =>
+    ((a.x + 0.5) * UNIT - p.x) ** 2 + ((a.z + 0.5) * UNIT - p.z) ** 2 <= ((b.x + 0.5) * UNIT - p.x) ** 2 + ((b.z + 0.5) * UNIT - p.z) ** 2
+      ? a
+      : b,
+  );
   return best.z * MAP_W + best.x;
 }
 export function jobFail(c: LessonCtx): Key | null {
@@ -324,8 +332,7 @@ export function jobFail(c: LessonCtx): Key | null {
 export function besideProp(sim: Sim, prop: number): number | null {
   const p = sim.world.props[prop];
   if (!p) return null;
-  for (let x = p.x; x < p.x + p.w; x++)
-    for (const z of [p.z - 1, p.z + p.d]) if (isFloor(sim.world, x, z)) return z * MAP_W + x;
+  for (let x = p.x; x < p.x + p.w; x++) for (const z of [p.z - 1, p.z + p.d]) if (isFloor(sim.world, x, z)) return z * MAP_W + x;
   for (let z = p.z; z < p.z + p.d; z++) for (const x of [p.x - 1, p.x + p.w]) if (isFloor(sim.world, x, z)) return z * MAP_W + x;
   return null;
 }
@@ -362,12 +369,16 @@ export function stowFail(c: LessonCtx): Key | null {
   if (s.escaped || s.stowed) return null;
   // (From the sign-off on the supervisor stands at the tail: nobody climbs in unseen any more.)
   const p = planOf(c.sim);
-  return dayMinute(s.step) >= searchMinute(p) - SIGN_OFF_MINUTES || (!vehicleIn(c.sim) && dayMinute(s.step) > p.at) ? 'lesson.stowaway.missed' : null;
+  return dayMinute(s.step) >= searchMinute(p) - SIGN_OFF_MINUTES || (!vehicleIn(c.sim) && dayMinute(s.step) > p.at)
+    ? 'lesson.stowaway.missed'
+    : null;
 }
 /** The lockpick lesson's dead end: the lockpick broken before the door is open. */
 export function pickFail(c: LessonCtx): Key | null {
   // (Dropped, it lies there to pick up again.)
-  return !carries(c.sim, 'lockpick') && !onFloor(c.sim, 'lockpick') && !c.sim.state.picked.length && c.sim.playerZone !== 'generator' ? 'lesson.lockpick.broke' : null;
+  return !carries(c.sim, 'lockpick') && !onFloor(c.sim, 'lockpick') && !c.sim.state.picked.length && c.sim.playerZone !== 'generator'
+    ? 'lesson.lockpick.broke'
+    : null;
 }
 /** The bluff lesson's dead end: the shift change over and the player not waved through. */
 export function bluffFail(c: LessonCtx): Key | null {
@@ -409,7 +420,8 @@ export function bagsHidden(sim: Sim): number {
   const list = containersOf(sim.world);
   let k = 0;
   list.forEach((c, i) => {
-    if (c.mine && (c.prop.kind === 'desk' || c.prop.kind === 'toilet')) for (const v of sim.state.items.containers[i]) if (itemOf(v) === n('pruno_bag')) k++;
+    if (c.mine && (c.prop.kind === 'desk' || c.prop.kind === 'toilet'))
+      for (const v of sim.state.items.containers[i]) if (itemOf(v) === n('pruno_bag')) k++;
   });
   return k;
 }

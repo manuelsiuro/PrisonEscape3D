@@ -17,7 +17,8 @@ export function garland(out: Part[], g: HolidayPiece, colors: readonly number[],
   const [s0, s1] = side ? [g.z, g.z1!] : [g.x, g.x1!];
   // (Its face: a little off the wall, into the room.)
   const face = side ? (side < 0 ? g.x + 0.06 : g.x + 1 - 0.06) : g.z + 0.06;
-  const put = (geo: THREE.BufferGeometry, s: number, yy: number) => (side ? geo.rotateY(-Math.PI / 2).translate(face, yy, s) : geo.translate(s, yy, face));
+  const put = (geo: THREE.BufferGeometry, s: number, yy: number) =>
+    side ? geo.rotateY(-Math.PI / 2).translate(face, yy, s) : geo.translate(s, yy, face);
   for (let s = s0 + 0.25, k = 0; s < s1 - 0.1; s += 0.5, k++) {
     const dip = Math.sin(((s - s0) / 1.5) * Math.PI) * 0.06;
     const c = colors[k % colors.length];
@@ -27,13 +28,16 @@ export function garland(out: Part[], g: HolidayPiece, colors: readonly number[],
   // (The string itself, a thin dark line; the Christmas lights' wire drooping from bulb to bulb.)
   if (!bulbs) out.push(paint(put(new THREE.BoxGeometry(s1 - s0 - 0.2, 0.015, 0.015), (s0 + s1) / 2, y - 0.02 + 0.0075), 0x3a3a3a));
   else {
-    const at = (s: number) => y - 0.03 - Math.abs(Math.sin(((s - s0) / 1.5) * Math.PI) * 0.06) - Math.sin(((s - s0) / 0.5) * Math.PI) ** 2 * 0.04;
+    const at = (s: number) =>
+      y - 0.03 - Math.abs(Math.sin(((s - s0) / 1.5) * Math.PI) * 0.06) - Math.sin(((s - s0) / 0.5) * Math.PI) ** 2 * 0.04;
     for (let s = s0 + 0.1; s < s1 - 0.1; s += 0.125) {
       const sb = Math.min(s + 0.125, s1 - 0.1);
       const ya = at(s);
       const yb = at(sb);
       const len = Math.hypot(sb - s, yb - ya);
-      out.push(paint(put(new THREE.BoxGeometry(len, 0.012, 0.012).rotateZ(Math.atan2(yb - ya, sb - s)), (s + sb) / 2, (ya + yb) / 2), 0x2a3a2a));
+      out.push(
+        paint(put(new THREE.BoxGeometry(len, 0.012, 0.012).rotateZ(Math.atan2(yb - ya, sb - s)), (s + sb) / 2, (ya + yb) / 2), 0x2a3a2a),
+      );
     }
   }
 }
@@ -44,18 +48,35 @@ export function hoseReel(out: Part[], x: number, z: number, dx: number, dz: numb
   const bx = x - dx * 0.36;
   const bz = z - dz * 0.36;
   const [sx, sz] = [-dz, dx];
-  out.push(cyl(0.035, 0.7, 0x8a9096, bx, 0, bz, 8), box(0.1, 0.06, 0.1, 0xc0c4c8, bx, 0.62, bz), box(0.04, 0.04, 0.12, 0xd23f36, bx, 0.7, bz));
+  out.push(
+    cyl(0.035, 0.7, 0x8a9096, bx, 0, bz, 8),
+    box(0.1, 0.06, 0.1, 0xc0c4c8, bx, 0.62, bz),
+    box(0.04, 0.04, 0.12, 0xd23f36, bx, 0.7, bz),
+  );
   const rx = bx + sx * 0.28;
   const rz = bz + sz * 0.28;
   // (Its drum facing out from the wall, its axle along the jet.)
-  const reel = new THREE.CylinderGeometry(0.2, 0.2, 0.12, 14).rotateZ(Math.PI / 2).rotateY(Math.atan2(-dz, dx)).translate(rx, 0.28, rz);
+  const reel = new THREE.CylinderGeometry(0.2, 0.2, 0.12, 14)
+    .rotateZ(Math.PI / 2)
+    .rotateY(Math.atan2(-dz, dx))
+    .translate(rx, 0.28, rz);
   out.push(paint(reel, 0x3fb950), box(0.04, 0.3, 0.04, 0x2b3038, rx - dx * 0.08, 0, rz - dz * 0.08));
   // (The hose, low along the ground from the reel to the stake, then up it.)
   const len = Math.hypot(x - rx, z - rz);
-  out.push(paint(new THREE.BoxGeometry(0.05, 0.05, len).rotateY(Math.atan2(x - rx, z - rz)).translate((x + rx) / 2, 0.04, (z + rz) / 2), 0x2f8a3a));
+  out.push(
+    paint(new THREE.BoxGeometry(0.05, 0.05, len).rotateY(Math.atan2(x - rx, z - rz)).translate((x + rx) / 2, 0.04, (z + rz) / 2), 0x2f8a3a),
+  );
   out.push(cyl(0.02, 0.85, 0x6e4a2b, x, 0, z, 6), cyl(0.028, 0.8, 0x2f8a3a, x + dx * 0.04, 0.04, z + dz * 0.04, 6));
   // (The nozzle, pointing along the jet.)
-  out.push(paint(new THREE.CylinderGeometry(0.025, 0.04, 0.16, 8).rotateX(Math.PI / 2).rotateY(Math.atan2(dx, dz)).translate(x + dx * 0.1, 0.85, z + dz * 0.1), 0xffd23f));
+  out.push(
+    paint(
+      new THREE.CylinderGeometry(0.025, 0.04, 0.16, 8)
+        .rotateX(Math.PI / 2)
+        .rotateY(Math.atan2(dx, dz))
+        .translate(x + dx * 0.1, 0.85, z + dz * 0.1),
+      0xffd23f,
+    ),
+  );
 }
 
 /** Easter: a basket of painted eggs on a table. */
@@ -63,7 +84,12 @@ export function basket(out: Part[], x: number, z: number) {
   out.push(cyl(0.16, 0.1, 0xb07a45, x, TABLE_TOP, z, 12), cyl(0.012, 0.22, 0x8a5a2e, x, TABLE_TOP + 0.1, z, 6));
   for (let k = 0; k < 4; k++) {
     const a = (k / 4) * Math.PI * 2 + 0.4;
-    out.push(paint(new THREE.SphereGeometry(0.055, 8, 6).scale(1, 1.3, 1).translate(x + Math.cos(a) * 0.08, TABLE_TOP + 0.13, z + Math.sin(a) * 0.08), PASTEL[k % PASTEL.length]));
+    out.push(
+      paint(
+        new THREE.SphereGeometry(0.055, 8, 6).scale(1, 1.3, 1).translate(x + Math.cos(a) * 0.08, TABLE_TOP + 0.13, z + Math.sin(a) * 0.08),
+        PASTEL[k % PASTEL.length],
+      ),
+    );
   }
 }
 
@@ -78,9 +104,16 @@ export function barbecue(out: Part[], glow: Part[], x: number, z: number) {
 /** Halloween: a jack-o'-lantern, its face lit. */
 export function lantern(out: Part[], glow: Part[], x: number, y: number, z: number, size: number) {
   const r = 0.14 * size;
-  out.push(paint(new THREE.SphereGeometry(r, 12, 8).scale(1, 0.78, 1).translate(x, y + r * 0.78, z), 0xf28c28), cyl(0.02 * size, 0.06 * size, 0x4f8a2e, x, y + r * 1.5, z, 6));
+  out.push(
+    paint(new THREE.SphereGeometry(r, 12, 8).scale(1, 0.78, 1).translate(x, y + r * 0.78, z), 0xf28c28),
+    cyl(0.02 * size, 0.06 * size, 0x4f8a2e, x, y + r * 1.5, z, 6),
+  );
   const f = z + r * 0.95;
-  glow.push(box(0.05 * size, 0.05 * size, 0.02, 0xffd23f, x - 0.05 * size, y + r * 0.95, f), box(0.05 * size, 0.05 * size, 0.02, 0xffd23f, x + 0.05 * size, y + r * 0.95, f), box(0.13 * size, 0.03 * size, 0.02, 0xffd23f, x, y + r * 0.5, f));
+  glow.push(
+    box(0.05 * size, 0.05 * size, 0.02, 0xffd23f, x - 0.05 * size, y + r * 0.95, f),
+    box(0.05 * size, 0.05 * size, 0.02, 0xffd23f, x + 0.05 * size, y + r * 0.95, f),
+    box(0.13 * size, 0.03 * size, 0.02, 0xffd23f, x, y + r * 0.5, f),
+  );
 }
 
 /** Christmas: a tree in tiers, a star, coloured lights; presents at its foot. */
@@ -97,14 +130,17 @@ export function tree(out: Part[], glow: Part[], x: number, z: number) {
     const y = 0.3 + (k / 14) * 1.1;
     const r = 0.5 * (1 - (y - 0.2) / 1.4) + 0.04;
     const a = k * 2.3;
-    glow.push(paint(new THREE.SphereGeometry(0.035, 6, 4).translate(x + Math.cos(a) * r, y, z + Math.sin(a) * r), LIGHTS[k % LIGHTS.length]));
+    glow.push(
+      paint(new THREE.SphereGeometry(0.035, 6, 4).translate(x + Math.cos(a) * r, y, z + Math.sin(a) * r), LIGHTS[k % LIGHTS.length]),
+    );
   }
   const gifts: Array<[number, number, number, number]> = [
     [0.4, 0.25, 0xd23f36, 0xf4c542],
     [-0.38, 0.3, 0x2fb6c8, 0xffffff],
     [0.15, 0.45, 0x3fb950, 0xd23f36],
   ];
-  for (const [dx, dz, c, rib] of gifts) out.push(box(0.22, 0.16, 0.2, c, x + dx, 0, z + dz), box(0.04, 0.165, 0.205, rib, x + dx, 0, z + dz));
+  for (const [dx, dz, c, rib] of gifts)
+    out.push(box(0.22, 0.16, 0.2, c, x + dx, 0, z + dz), box(0.04, 0.165, 0.205, rib, x + dx, 0, z + dz));
 }
 
 /** Christmas: a snowman in the yard (in the desert, a sandman), in a Santa hat. */

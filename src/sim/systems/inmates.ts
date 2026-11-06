@@ -9,7 +9,31 @@ import { lineOfSight } from '../ai/sight';
 import { route, walkPath, type Crowd, type Walker } from '../ai/walker';
 import { floorOf, placesOf, type Spot } from '../ai/places';
 import { randomInt } from '../rng';
-import { BODY_HALF, BROWSE_STEPS, DUTY_HAND_STEPS, DUTY_MOP_STEPS, DUTY_REST_STEPS, EAT_SPREAD, FLEE_RANGE, FLEE_SPEED, HOSTILE_GRUDGE, HOSTILE_OPINION, INMATE_DRY_STEPS, INMATE_EAT_STEPS, INMATE_REACTION, INMATE_WASH_STEPS, INMATE_SPEED, INMATE_STR_MIN, JOG_EXTRA, INMATE_STR_SPAN, OPINION_START, SERVE_STEPS, STEPS_PER_SECOND, UNIT, WASH_SPREAD } from '../tuning';
+import {
+  BODY_HALF,
+  BROWSE_STEPS,
+  DUTY_HAND_STEPS,
+  DUTY_MOP_STEPS,
+  DUTY_REST_STEPS,
+  EAT_SPREAD,
+  FLEE_RANGE,
+  FLEE_SPEED,
+  HOSTILE_GRUDGE,
+  HOSTILE_OPINION,
+  INMATE_DRY_STEPS,
+  INMATE_EAT_STEPS,
+  INMATE_REACTION,
+  INMATE_WASH_STEPS,
+  INMATE_SPEED,
+  INMATE_STR_MIN,
+  JOG_EXTRA,
+  INMATE_STR_SPAN,
+  OPINION_START,
+  SERVE_STEPS,
+  STEPS_PER_SECOND,
+  UNIT,
+  WASH_SPREAD,
+} from '../tuning';
 import { MAP_H, MAP_W, type World } from '../world/World';
 import { DIR_X, DIR_Z } from '../command';
 import { maxHealth, type Fighter } from './combat';
@@ -70,7 +94,18 @@ const HANGOUTS: readonly ZoneId[] = ['yard', 'yard', 'library', 'gym', 'cellBloc
 /** 2.31: the library's a place people go. */
 const HANGOUTS_READ: readonly ZoneId[] = [...HANGOUTS, 'library', 'library'];
 /** P31: where they go with a sports ground and a garden open (the courtyard is the quiet yard now). */
-const HANGOUTS_GROUNDS: readonly ZoneId[] = ['yard', 'sports', 'sports', 'garden', 'library', 'gym', 'cellBlock', 'rollCall', 'corridor', 'canteen'];
+const HANGOUTS_GROUNDS: readonly ZoneId[] = [
+  'yard',
+  'sports',
+  'sports',
+  'garden',
+  'library',
+  'gym',
+  'cellBlock',
+  'rollCall',
+  'corridor',
+  'canteen',
+];
 const HANGOUTS_GROUNDS_READ: readonly ZoneId[] = [...HANGOUTS_GROUNDS, 'library', 'library'];
 
 /** One inmate per cell after the player's, starting in bed-side position (in a hostile prison, cooler towards the player). */
@@ -134,11 +169,22 @@ let bay: Uint8Array | null = null;
 
 /** Goals other inmates already hold, or the player's seat (so two never pick the same tile); under the delivery's vehicle. */
 function taken(all: Inmate[], tile: number) {
-  return tile === playerSeat || offTiles.includes(tile) || (bay !== null && bay[tile] === 1) || all.some((m) => m.goal === tile || m.seat === tile);
+  return (
+    tile === playerSeat ||
+    offTiles.includes(tile) ||
+    (bay !== null && bay[tile] === 1) ||
+    all.some((m) => m.goal === tile || m.seat === tile)
+  );
 }
 
 /** What each machine has someone doing on it (2.29). */
-const USED_AS: Partial<Record<string, number>> = { weights: DOING.BENCH, pullup: DOING.PULLUP, treadmill: DOING.RUN, mat: DOING.PUSHUP, punchingBag: DOING.BAG };
+const USED_AS: Partial<Record<string, number>> = {
+  weights: DOING.BENCH,
+  pullup: DOING.PULLUP,
+  treadmill: DOING.RUN,
+  mat: DOING.PUSHUP,
+  punchingBag: DOING.BAG,
+};
 
 /**
  * A free machine in a zone for an inmate who uses them (2.29: two in three, by its cell, so no draw; the
@@ -205,7 +251,8 @@ const TURN_STEPS = 8;
  * free; else it waits there a step back for its turn. True when it isn't walking on this step.
  */
 function waitsItsTurn(c: Crowd, all: Inmate[], m: Inmate): boolean {
-  const stoodAt = (tile: number) => all.some((o) => o !== m && !o.body.moving && tileAt(o.body.x, o.body.z) === tile) || c.others.some((o) => tileAt(o.x, o.z) === tile);
+  const stoodAt = (tile: number) =>
+    all.some((o) => o !== m && !o.body.moving && tileAt(o.body.x, o.body.z) === tile) || c.others.some((o) => tileAt(o.x, o.z) === tile);
   const g = m.goal;
   if (!stoodAt(g) || Math.abs(centerX(g) - m.body.x) + Math.abs(centerZ(g) - m.body.z) > COUNTER_SIGHT) return false;
   const free = placesOf(c.w).counters.find((s) => !stoodAt(s.tile) && !all.some((o) => o !== m && o.goal === s.tile));
@@ -222,7 +269,7 @@ function waitsItsTurn(c: Crowd, all: Inmate[], m: Inmate): boolean {
 }
 
 /** How long an inmate's tray lasts it. */
-export const inmateEatSteps = (m: Pick<Inmate, 'cell'>) => INMATE_EAT_STEPS + (m.cell * 53) % EAT_SPREAD;
+export const inmateEatSteps = (m: Pick<Inmate, 'cell'>) => INMATE_EAT_STEPS + ((m.cell * 53) % EAT_SPREAD);
 
 /** A meal given up: no tray, its seat free for anyone. */
 function dropMeal(m: Inmate) {
@@ -244,7 +291,8 @@ function freeHead(c: Crowd, all: Inmate[], m: Inmate): Spot | null {
 }
 
 /** Someone else stopped on that tile, inmate, player or guard. */
-const standsOn = (c: Crowd, all: Inmate[], m: Inmate, tile: number) => all.some((o) => o !== m && !o.body.moving && tileAt(o.body.x, o.body.z) === tile) || c.others.some((o) => tileAt(o.x, o.z) === tile);
+const standsOn = (c: Crowd, all: Inmate[], m: Inmate, tile: number) =>
+  all.some((o) => o !== m && !o.body.moving && tileAt(o.body.x, o.body.z) === tile) || c.others.some((o) => tileAt(o.x, o.z) === tile);
 
 /**
  * Where an inmate waits for a head, or dries off: a free tile of the room, clear of the heads and, while
@@ -254,7 +302,8 @@ function asideSpot(c: Crowd, all: Inmate[], m: Inmate): Spot {
   const heads = placesOf(c.w).showers;
   const isHead = (t: number) => heads.some((h) => h.tile === t);
   // (A head's front: the tile the opposite way from its wall.)
-  const before = (t: number) => heads.some((h) => t === h.tile - Math.round(DIR_X[h.wall] / 1024) - Math.round(DIR_Z[h.wall] / 1024) * MAP_W);
+  const before = (t: number) =>
+    heads.some((h) => t === h.tile - Math.round(DIR_X[h.wall] / 1024) - Math.round(DIR_Z[h.wall] / 1024) * MAP_W);
   const floor = floorOf(c.w, ['showers']).filter((t) => !isHead(t));
   const start = (m.cell * 5) % floor.length;
   const turned = floor.map((_, k) => floor[(start + k) % floor.length]);
@@ -312,7 +361,8 @@ function dutyStop(c: Crowd, all: Inmate[], m: Inmate, job: number): { spot: Spot
     if (!others.length) return { spot: d.machines[0], then: DOING.WORK };
     const to = others[((n - 1) / 2 + m.cell) % others.length].body;
     const t = tileAt(to.x, to.z);
-    const beside = [t + MAP_W, t - 1, t + 1, t - MAP_W].find((q) => q >= 0 && q < c.w.ground.zone.length && !c.w.npcBlock[q] && !taken(all, q)) ?? t;
+    const beside =
+      [t + MAP_W, t - 1, t + 1, t - MAP_W].find((q) => q >= 0 && q < c.w.ground.zone.length && !c.w.npcBlock[q] && !taken(all, q)) ?? t;
     return { spot: { tile: beside, face: nearestDir(to.x - centerX(beside), to.z - centerZ(beside)) || 5 }, then: DOING.WORK };
   }
   const piece = Math.floor(n / 3);
@@ -323,7 +373,7 @@ function dutyStop(c: Crowd, all: Inmate[], m: Inmate, job: number): { spot: Spot
 /** How long it stays at the stop it has just reached. */
 function dutyWait(w: World, m: Inmate, job: number): number {
   const def = JOBS[w.def.jobs[job].id];
-  const rest = DUTY_REST_STEPS + (m.cell * 17) % DUTY_REST_STEPS;
+  const rest = DUTY_REST_STEPS + ((m.cell * 17) % DUTY_REST_STEPS);
   const cycle = (def.cycle ?? 3) * STEPS_PER_SECOND;
   if (def.flow === 'mop') return m.duty === 0 ? DUTY_HAND_STEPS : DUTY_MOP_STEPS;
   if (def.flow === 'mail') return m.duty % 2 === 0 ? cycle : DUTY_HAND_STEPS + rest;
@@ -363,7 +413,12 @@ export function dutyCarry(w: World, m: Inmate, job: number): string | null {
 export function dutyMachine(w: World, m: Inmate, job: number): { prop: number; done: number } | null {
   const def = JOBS[w.def.jobs[job]?.id];
   if (!def || !dutyHere(w, job) || m.doing !== DOING.WORK) return null;
-  const at = def.flow === 'machine' && m.duty % 3 === 1 ? placesOf(w).duties[job].machines : def.flow === 'mail' && m.duty % 2 === 0 ? placesOf(w).duties[job].machines : null;
+  const at =
+    def.flow === 'machine' && m.duty % 3 === 1
+      ? placesOf(w).duties[job].machines
+      : def.flow === 'mail' && m.duty % 2 === 0
+        ? placesOf(w).duties[job].machines
+        : null;
   const tile = tileAt(m.body.x, m.body.z);
   const q = at?.find((s) => s.tile === tile);
   if (!q) return null;
@@ -442,7 +497,11 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       }
       const r = randomInt(rng, 3);
       if (r === 2) {
-        spot = pickSpot(all, cornersOf(ring).map((q) => ({ tile: q.z * MAP_W + q.x, face: 1 })), rng);
+        spot = pickSpot(
+          all,
+          cornersOf(ring).map((q) => ({ tile: q.z * MAP_W + q.x, face: 1 })),
+          rng,
+        );
         then = DOING.JOG;
         break;
       }
@@ -450,7 +509,14 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
       const seats = new Set(places.rests.map((q) => q.tile));
       // (2.29: nor on the tile a machine is used from.)
       const mounts = machines ? new Set(places.machines.map((q) => q.tile)) : null;
-      spot = pickSpot(all, tiles(floorOf(w, r ? ['sports'] : ['gym']).filter((t) => !seats.has(t) && !mounts?.has(t)), 1 + randomInt(rng, 16)), rng);
+      spot = pickSpot(
+        all,
+        tiles(
+          floorOf(w, r ? ['sports'] : ['gym']).filter((t) => !seats.has(t) && !mounts?.has(t)),
+          1 + randomInt(rng, 16),
+        ),
+        rng,
+      );
       then = DOING.EXERCISE;
       // (2.29: on a machine, if it uses them and one's free.)
       const on = machineFor(c, all, m, r ? 'sports' : 'gym');
@@ -511,7 +577,14 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
         const yard = zoneIndex('yard');
         // (P31: the sports ground's bleachers too, while it's open.)
         const stands = OPEN_HOURS.sports!.includes(id) ? zoneIndex('sports') : -1;
-        const free = places.rests.filter((r) => (w.ground.zone[r.tile] === lib || w.ground.zone[r.tile] === yard || w.ground.zone[r.tile] === stands || w.cellOf[r.tile] === m.cell) && !taken(all, r.tile));
+        const free = places.rests.filter(
+          (r) =>
+            (w.ground.zone[r.tile] === lib ||
+              w.ground.zone[r.tile] === yard ||
+              w.ground.zone[r.tile] === stands ||
+              w.cellOf[r.tile] === m.cell) &&
+            !taken(all, r.tile),
+        );
         if (free.length) {
           spot = free[randomInt(rng, free.length)];
           then = w.ground.zone[spot.tile] === lib ? DOING.SIT_READ : DOING.SIT;
@@ -563,7 +636,16 @@ function choose(c: Crowd, m: Inmate, all: Inmate[], rng: { rng: number }, work: 
  * Inmates make way for each other and for `others` (the player, guards); they never pick
  * the same spot.
  */
-export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: number }, others: readonly Body[], step: number, foe: Body | null = null, social: Social = NO_SOCIAL) {
+export function stepInmates(
+  w: World,
+  all: Inmate[],
+  plan: number,
+  rng: { rng: number },
+  others: readonly Body[],
+  step: number,
+  foe: Body | null = null,
+  social: Social = NO_SOCIAL,
+) {
   const c: Crowd = { w, grid: w.npcBlock, all, others, step };
   playerSeat = social.seat;
   offTiles = social.off ?? [];
@@ -689,7 +771,12 @@ export function stepInmates(w: World, all: Inmate[], plan: number, rng: { rng: n
     if (m.path.length) {
       if (serving && m.then === DOING.SERVE && waitsItsTurn(c, all, m)) return;
       // (2.26: the head it was heading for has someone under it now, the player perhaps: back to waiting.)
-      if (turns && m.then === DOING.SHOWER && standsOn(c, all, m, m.goal) && Math.abs(centerX(m.goal) - m.body.x) + Math.abs(centerZ(m.goal) - m.body.z) <= COUNTER_SIGHT) {
+      if (
+        turns &&
+        m.then === DOING.SHOWER &&
+        standsOn(c, all, m, m.goal) &&
+        Math.abs(centerX(m.goal) - m.body.x) + Math.abs(centerZ(m.goal) - m.body.z) <= COUNTER_SIGHT
+      ) {
         setOff(c, m, asideSpot(c, all, m), DOING.SHOWER_WAIT);
         return;
       }
@@ -861,7 +948,7 @@ function settle(m: Inmate) {
   if (m.then === DOING.SERVE) m.wait = SERVE_STEPS;
   else if (m.then === DOING.EAT && m.tray === TRAY.FULL) m.wait = inmateEatSteps(m);
   // (2.26: a turn at the showers. Replaying an older run, it stays under the head for the block.)
-  else if (turns && m.then === DOING.SHOWER) m.wait = INMATE_WASH_STEPS + (m.cell * 37) % WASH_SPREAD;
+  else if (turns && m.then === DOING.SHOWER) m.wait = INMATE_WASH_STEPS + ((m.cell * 37) % WASH_SPREAD);
   else if (m.then === DOING.TOWEL) m.wait = INMATE_DRY_STEPS;
 }
 

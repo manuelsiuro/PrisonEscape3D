@@ -34,14 +34,22 @@ const g = w.ground;
   let doors = 0;
   let other = 0;
   for (let k = 8; k <= 55; k++) {
-    for (const [x, z] of [[k, 8], [k, 55], [8, k], [55, k]]) {
+    for (const [x, z] of [
+      [k, 8],
+      [k, 55],
+      [8, k],
+      [55, k],
+    ]) {
       const kind = g.kind[tileOf(x, z)];
       if (kind === TILE.REINFORCED) walls++;
       else if (kind === TILE.DOOR) doors++;
       else other++;
     }
   }
-  check(other === 0 && g.kind[tileOf(30, 30)] !== TILE.REINFORCED, 'the shell is reinforced concrete and doors all round, and only the shell');
+  check(
+    other === 0 && g.kind[tileOf(30, 30)] !== TILE.REINFORCED,
+    'the shell is reinforced concrete and doors all round, and only the shell',
+  );
   // From the cell, a pickaxe at the shell (north) and at the brick between cells (east, from the next tile).
   st.items.inv[0] = slot(n('sturdy_pickaxe'));
   check(bot.walkTo(tileOf(10, 9)), 'in the cell under the shell');
@@ -52,13 +60,18 @@ const g = w.ground;
   const energy = st.energy;
   bot.use();
   const refused = sim.events.find((e) => e.type === 'cantStrike');
-  check(refused?.type === 'cantStrike' && refused.why === 'reinforced', `the strike is refused (${refused?.type === 'cantStrike' ? refused.why : 'no refusal'})`);
+  check(
+    refused?.type === 'cantStrike' && refused.why === 'reinforced',
+    `the strike is refused (${refused?.type === 'cantStrike' ? refused.why : 'no refusal'})`,
+  );
   check(st.energy === energy && g.kind[tileOf(10, 8)] === TILE.REINFORCED, 'no energy spent, the wall stands');
   check(bot.walkTo(tileOf(10, 12)), 'by the cell’s south wall');
   bot.face(DIR.SOUTH);
   const brick = toolTarget(w, LAYER.GROUND, st.player, n('sturdy_pickaxe'), []);
   check(brick?.action === 'chip' && brick.hp > 0 && g.kind[brick.tile] === TILE.BRICK, 'a brick wall inside can be chipped');
-  console.log(`shell: ${walls} reinforced tiles, ${doors} doors; a pickaxe refused (${itemDef(n('sturdy_pickaxe')).tool!.energy} energy kept), brick inside chippable`);
+  console.log(
+    `shell: ${walls} reinforced tiles, ${doors} doors; a pickaxe refused (${itemDef(n('sturdy_pickaxe')).tool!.energy} energy kept), brick inside chippable`,
+  );
 }
 
 // ------------------------------------------------------------------ the detectors
@@ -84,12 +97,35 @@ function reachedFrom(x: number, z: number): Set<string> {
 {
   const arches = g.kind.filter((k) => k === TILE.DETECTOR).length;
   const wings = [reachedFrom(11, 11), reachedFrom(15, 50)];
-  const behind = ['canteen', 'kitchen', 'yard', 'rollCall', 'library', 'infirmary', 'woodshop', 'metalshop', 'laundry', 'janitor', 'mailroom', 'generator', 'guardQuarters', 'controlRoom'];
+  const behind = [
+    'canteen',
+    'kitchen',
+    'yard',
+    'rollCall',
+    'library',
+    'infirmary',
+    'woodshop',
+    'metalshop',
+    'laundry',
+    'janitor',
+    'mailroom',
+    'generator',
+    'guardQuarters',
+    'controlRoom',
+  ];
   for (const [k, z] of wings.entries()) {
     const past = behind.filter((b) => z.has(b));
     check(past.length === 0, `from the ${k ? 'south' : 'north'} wing, nothing past the arches without one (${past.join(', ') || 'none'})`);
   }
-  console.log(`detectors: ${arches} arches; without one, the north wing reaches ${[...wings[0]].filter((z) => z !== 'none').sort().join(', ')}; the south wing ${[...wings[1]].filter((z) => z !== 'none').sort().join(', ')}`);
+  console.log(
+    `detectors: ${arches} arches; without one, the north wing reaches ${[...wings[0]]
+      .filter((z) => z !== 'none')
+      .sort()
+      .join(', ')}; the south wing ${[...wings[1]]
+      .filter((z) => z !== 'none')
+      .sort()
+      .join(', ')}`,
+  );
 }
 
 // ------------------------------------------------------------------ the cameras
@@ -106,7 +142,8 @@ function reachedFrom(x: number, z: number): Set<string> {
         all++;
         const at = { x: x * UNIT + UNIT / 2, z: z * UNIT + UNIT / 2 };
         let hit = false;
-        for (let step = 0; step < 8 * CAMERA_TURN_STEPS && !hit; step += CAMERA_TURN_STEPS / 4) hit = cams.some((c, k) => cameraSees(w, c, k, step, at));
+        for (let step = 0; step < 8 * CAMERA_TURN_STEPS && !hit; step += CAMERA_TURN_STEPS / 4)
+          hit = cams.some((c, k) => cameraSees(w, c, k, step, at));
         if (hit) seen++;
       }
     }
@@ -149,7 +186,10 @@ function reachedFrom(x: number, z: number): Set<string> {
   const gate = grapnelSwing(w, body(53, 55, DIR.SOUTH));
   check(gate?.roof === true && gate.land === tileOf(53, 58), 'from the shell’s roof, across onto the gatehouse');
   const mesh = grapnelSwing(w, body(30, 55, DIR.SOUTH));
-  check(mesh?.roof === false && mesh.fence === tileOf(30, 58) && mesh.land === tileOf(30, 59), 'elsewhere, over the chain-link and down between the fences');
+  check(
+    mesh?.roof === false && mesh.fence === tileOf(30, 58) && mesh.land === tileOf(30, 59),
+    'elsewhere, over the chain-link and down between the fences',
+  );
   const north = grapnelSwing(w, body(30, 8, DIR.NORTH));
   check(north?.roof === false && north.land === tileOf(30, 4), 'and on the north side too');
   console.log('grapnel: onto the gatehouse roof at 53,58; over the chain-link elsewhere (down between the fences)');

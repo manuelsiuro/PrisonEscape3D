@@ -32,9 +32,29 @@ export function buildGround(world: World, pitch: Pitch | null = world.def.leisur
     cached = { key, paint: paintLayer(world, pitch), ao: contactShadows(world) };
   }
   const group = new THREE.Group();
-  const shade = () => new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.MultiplyBlending, premultipliedAlpha: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const shade = () =>
+    new THREE.MeshBasicMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.MultiplyBlending,
+      premultipliedAlpha: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    });
   group.add(
-    overlay(cached.paint, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }), 0.002, 0.1),
+    overlay(
+      cached.paint,
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      }),
+      0.002,
+      0.1,
+    ),
     overlay(cached.ao, shade(), 0.004, 0.2),
   );
   // (Past the edge: round the sea, and round the manhunt's outside, whose ground runs on out; a prison's own fields stay as they're tinted.)
@@ -75,7 +95,9 @@ function outerShade(world: World, material: THREE.MeshBasicMaterial): THREE.Mesh
       const z = Math.round(pos.getZ(k));
       // (Straight out from an edge tile, north or south (`across`), west or east: its kind, a river carrying on; off a corner: the fields.)
       const corner = across ? x < 0 || x > MAP_W : z < 0 || z > MAP_H;
-      const edge = corner ? TILE.GRASS : world.ground.kind[Math.min(MAP_H - 1, Math.max(0, z)) * MAP_W + Math.min(MAP_W - 1, Math.max(0, x))];
+      const edge = corner
+        ? TILE.GRASS
+        : world.ground.kind[Math.min(MAP_H - 1, Math.max(0, z)) * MAP_W + Math.min(MAP_W - 1, Math.max(0, x))];
       (island || edge === TILE.WATER ? white : open).toArray(colors, k * 3);
     }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -201,7 +223,10 @@ function drawRollCall(c: CanvasRenderingContext2D, def: PrisonDef, ox: number, o
 function rollCallBounds(def: PrisonDef): { x0: number; z0: number; x1: number; z1: number } | null {
   const yard = def.zones.find(([id]) => id === 'rollCall');
   let b = yard ? { x0: yard[1], z0: yard[2], x1: yard[3], z1: yard[4] } : null;
-  for (const s of def.rollCall) b = b ? { x0: Math.min(b.x0, s.x), z0: Math.min(b.z0, s.z), x1: Math.max(b.x1, s.x), z1: Math.max(b.z1, s.z) } : { x0: s.x, z0: s.z, x1: s.x, z1: s.z };
+  for (const s of def.rollCall)
+    b = b
+      ? { x0: Math.min(b.x0, s.x), z0: Math.min(b.z0, s.z), x1: Math.max(b.x1, s.x), z1: Math.max(b.z1, s.z) }
+      : { x0: s.x, z0: s.z, x1: s.x, z1: s.z };
   return b;
 }
 
@@ -246,7 +271,15 @@ export function rollCallLayer(world: World, pitch: Pitch | null = world.def.leis
   canvas.height = d * PAINT_RES;
   drawRollCall(canvas.getContext('2d')!, world.def, b.x0, b.z0);
   const tex = canvasTexture(canvas, 'sharp');
-  const material = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const material = new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
+  });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), material);
   mesh.position.set(b.x0 + w / 2, 0.012, b.z0 + d / 2);
   // (Over the pitch's lines while it shows, under the fog veil.)
@@ -288,7 +321,8 @@ function contactShadows(world: World): THREE.CanvasTexture {
   const cover = new Float32Array(W * H);
   const fill = (x0: number, z0: number, x1: number, z1: number, v: number) => {
     for (let y = Math.max(0, Math.floor(z0 * AO_RES)); y < Math.min(H, Math.ceil(z1 * AO_RES)); y++)
-      for (let x = Math.max(0, Math.floor(x0 * AO_RES)); x < Math.min(W, Math.ceil(x1 * AO_RES)); x++) cover[y * W + x] = Math.max(cover[y * W + x], v);
+      for (let x = Math.max(0, Math.floor(x0 * AO_RES)); x < Math.min(W, Math.ceil(x1 * AO_RES)); x++)
+        cover[y * W + x] = Math.max(cover[y * W + x], v);
   };
   for (let z = 0; z < MAP_H; z++) {
     for (let x = 0; x < MAP_W; x++) {

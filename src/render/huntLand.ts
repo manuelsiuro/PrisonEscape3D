@@ -71,13 +71,19 @@ export function runOff(land: Land, o: OutsideWorld, theme: string): RunOff {
   const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   const color = new THREE.Color();
   for (const [tex, cells] of byTex) {
-    const mat = new THREE.MeshStandardMaterial({ map: TEX[tex](), roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const mat = new THREE.MeshStandardMaterial({
+      map: TEX[tex](),
+      roughness: 0.95,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
     const mesh = new THREE.InstancedMesh(geo, mat, cells.length / 2);
     for (let k = 0; k < cells.length / 2; k++) {
       const x = cells[k * 2];
       const z = cells[k * 2 + 1];
       mesh.setMatrixAt(k, land.m.makeTranslation(x + 0.5, 0.001, z + 0.5));
-      mesh.setColorAt(k, color.setScalar(0.95 + ((((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000) / 1000 * 0.07));
+      mesh.setColorAt(k, color.setScalar(0.95 + (((((x * 73856093) ^ (z * 19349663)) >>> 0) % 1000) / 1000) * 0.07));
     }
     mesh.receiveShadow = true;
     land.group.add(mesh);
@@ -91,14 +97,20 @@ export function woods(land: Land, theme: string, ...keepOff: ReadonlyArray<Reado
   const rand = seeded(12345);
   const spots: Array<[number, number, number]> = [];
   const clear = (x: number, z: number) => {
-    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (keepOff.some((k) => k.has(key(Math.floor(x) + dx, Math.floor(z) + dz)))) return false;
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dx = -1; dx <= 1; dx++) if (keepOff.some((k) => k.has(key(Math.floor(x) + dx, Math.floor(z) + dz)))) return false;
     return true;
   };
   for (let k = 0; k < 1500 && spots.length < 280; k++) {
     const x = -24 + rand() * (MAP_W + 48);
     const z = -24 + rand() * (MAP_H + 48);
     if (x > -2 && x < MAP_W + 2 && z > -2 && z < MAP_H + 2) continue;
-    if (land.under(Math.floor(x), Math.floor(z)) || land.under(Math.floor(x + 0.9), Math.floor(z + 0.9)) || land.under(Math.floor(x - 0.9), Math.floor(z - 0.9))) continue;
+    if (
+      land.under(Math.floor(x), Math.floor(z)) ||
+      land.under(Math.floor(x + 0.9), Math.floor(z + 0.9)) ||
+      land.under(Math.floor(x - 0.9), Math.floor(z - 0.9))
+    )
+      continue;
     if (!clear(x, z) || spots.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < 2.2)) continue;
     spots.push([x, z, 0.8 + rand() * 0.9]);
   }
@@ -108,7 +120,9 @@ export function woods(land: Land, theme: string, ...keepOff: ReadonlyArray<Reado
   const up = new THREE.Vector3(0, 1, 0);
   const v = new THREE.Vector3();
   const sc = new THREE.Vector3();
-  spots.forEach(([x, z, k], i) => trees.setMatrixAt(i, land.m.compose(v.set(x, 0, z), q.setFromAxisAngle(up, rand() * Math.PI), sc.set(k, k * (0.9 + rand() * 0.3), k))));
+  spots.forEach(([x, z, k], i) =>
+    trees.setMatrixAt(i, land.m.compose(v.set(x, 0, z), q.setFromAxisAngle(up, rand() * Math.PI), sc.set(k, k * (0.9 + rand() * 0.3), k))),
+  );
   trees.castShadow = true;
   land.group.add(trees);
 }
@@ -122,10 +136,20 @@ export function scenery(land: Land, o: OutsideWorld, theme: string, run: RunOff)
     const d = o.deco[i];
     if (!d) continue;
     // The woods past the map's edge: a tree on most tiles, not all (fewer to draw); none on a road running on out.
-    if (d === DECO.WOODS && (hash01(i, 7) < 0.45 || run.covered.has(key(i % MAP_W, Math.floor(i / MAP_W))) || land.under(i % MAP_W, Math.floor(i / MAP_W)))) continue;
+    if (
+      d === DECO.WOODS &&
+      (hash01(i, 7) < 0.45 || run.covered.has(key(i % MAP_W, Math.floor(i / MAP_W))) || land.under(i % MAP_W, Math.floor(i / MAP_W)))
+    )
+      continue;
     (at[d] ??= []).push(i);
   }
-  const instanced = (geo: THREE.BufferGeometry, tiles: number[] | undefined, mat: THREE.Material, place: (i: number, k: number, m: THREE.Matrix4) => void, shadow = true) => {
+  const instanced = (
+    geo: THREE.BufferGeometry,
+    tiles: number[] | undefined,
+    mat: THREE.Material,
+    place: (i: number, k: number, m: THREE.Matrix4) => void,
+    shadow = true,
+  ) => {
     if (!tiles?.length) return;
     const mesh = new THREE.InstancedMesh(geo, mat, tiles.length);
     const m = new THREE.Matrix4();
@@ -150,8 +174,12 @@ export function scenery(land: Land, o: OutsideWorld, theme: string, run: RunOff)
   // Trees (an island town's are the suburbs' leafy ones), the woods past the edge bigger and looser.
   const tree = sceneryTree(theme === 'island' ? 'suburban' : theme);
   const trees = [...(at[DECO.TREE] ?? []), ...(at[DECO.WOODS] ?? [])];
-  instanced(tree, trees, tall, (t, _k, m) => put(m, t, o.inside[t] ? 0.25 : 0.7, (o.inside[t] ? 0.82 : 1.05) + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2));
-  instanced(sceneryTree('desert'), at[DECO.CACTUS], tall, (t, _k, m) => put(m, t, 0.2, 0.8 + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2));
+  instanced(tree, trees, tall, (t, _k, m) =>
+    put(m, t, o.inside[t] ? 0.25 : 0.7, (o.inside[t] ? 0.82 : 1.05) + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2),
+  );
+  instanced(sceneryTree('desert'), at[DECO.CACTUS], tall, (t, _k, m) =>
+    put(m, t, 0.2, 0.8 + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2),
+  );
   // Rocks: a boulder or two, grey (sandstone in the desert, snow-capped in the Alps).
   const rockColor = theme === 'desert' ? 0xb48a62 : theme === 'industrial' ? 0x7c7a72 : 0x8d9096;
   const rock = merge([
@@ -161,59 +189,131 @@ export function scenery(land: Land, o: OutsideWorld, theme: string, run: RunOff)
   ]);
   instanced(rock, at[DECO.ROCK], tall, (t, _k, m) => put(m, t, 0.2, 0.9 + hash01(t, 3) * 0.3, hash01(t, 5) * Math.PI * 2));
   // Crates and containers stacked in the yards (a rusty wreck or a wagon reads the same from up here).
-  const crate = merge([box(0.92, 0.9, 0.92, 0x8a6a42), box(0.94, 0.06, 0.94, 0x6a5232, 0, 0.45), box(0.7, 0.62, 0.7, 0x9a7a4e, 0.05, 0.9, 0.04)]);
+  const crate = merge([
+    box(0.92, 0.9, 0.92, 0x8a6a42),
+    box(0.94, 0.06, 0.94, 0x6a5232, 0, 0.45),
+    box(0.7, 0.62, 0.7, 0x9a7a4e, 0.05, 0.9, 0.04),
+  ]);
   const container = merge([box(0.96, 1.1, 0.96, 0x9c3b2e), ...[-0.3, 0, 0.3].map((x) => box(0.04, 1.0, 0.98, 0x7e2f25, x, 0.05))]);
   const crates = at[DECO.CRATES] ?? [];
-  instanced(crate, crates.filter((t) => hash01(t, 9) < 0.5), tall, (t, _k, m) => put(m, t, 0.06, 1, Math.floor(hash01(t, 5) * 4) * (Math.PI / 2)));
-  instanced(container, crates.filter((t) => hash01(t, 9) >= 0.5), tall, (t, _k, m) => put(m, t, 0, 1, 0));
+  instanced(
+    crate,
+    crates.filter((t) => hash01(t, 9) < 0.5),
+    tall,
+    (t, _k, m) => put(m, t, 0.06, 1, Math.floor(hash01(t, 5) * 4) * (Math.PI / 2)),
+  );
+  instanced(
+    container,
+    crates.filter((t) => hash01(t, 9) >= 0.5),
+    tall,
+    (t, _k, m) => put(m, t, 0, 1, 0),
+  );
   // Hedges and thickets (cover): dense low bushes filling the tile.
   const leaf = theme === 'alpine' ? 0x3d6650 : theme === 'desert' ? 0x8a8a4e : theme === 'industrial' ? 0x5f6b45 : 0x3f7a3a;
   const leaf2 = theme === 'alpine' ? 0xe8eef4 : theme === 'desert' ? 0x9c9a5a : theme === 'industrial' ? 0x6e7a50 : 0x4f8f45;
-  const hedge = merge([cyl(0.5, 0.62, leaf, 0, 0, 0, 7), cyl(0.36, 0.3, leaf2, 0.1, 0.55, -0.05, 7), cyl(0.3, 0.25, leaf, -0.18, 0.52, 0.16, 6)]);
+  const hedge = merge([
+    cyl(0.5, 0.62, leaf, 0, 0, 0, 7),
+    cyl(0.36, 0.3, leaf2, 0.1, 0.55, -0.05, 7),
+    cyl(0.3, 0.25, leaf, -0.18, 0.52, 0.16, 6),
+  ]);
   instanced(hedge, at[DECO.HEDGE], tall, (t, _k, m) => put(m, t, 0.1, 0.95 + hash01(t, 3) * 0.15, hash01(t, 5) * Math.PI * 2));
   // Culverts: under the road, a concrete headwall and the pipe's dark mouth at each edge of it.
-  const mouth = merge([box(0.96, 0.3, 0.14, 0x9a9890, 0, -0.04, 0), paint(new THREE.CircleGeometry(0.26, 12, 0, Math.PI).translate(0, -0.02, 0.075), 0x14171c), box(0.62, 0.05, 0.16, 0x7e7c75, 0, 0.26, 0)]);
+  const mouth = merge([
+    box(0.96, 0.3, 0.14, 0x9a9890, 0, -0.04, 0),
+    paint(new THREE.CircleGeometry(0.26, 12, 0, Math.PI).translate(0, -0.02, 0.075), 0x14171c),
+    box(0.62, 0.05, 0.16, 0x7e7c75, 0, 0.26, 0),
+  ]);
   const mouths: number[] = [];
   const mouthTurn: number[] = [];
   for (const t of at[DECO.CULVERT] ?? []) {
     // The road runs along x (its neighbours east or west are road): the pipe runs across it, along z; its mouths face north and south where the road ends.
     const roadAlongX = o.world.ground.kind[t - 1] === TILE.ROAD || o.world.ground.kind[t + 1] === TILE.ROAD;
-    for (const [d, turn] of roadAlongX ? ([[-MAP_W, Math.PI], [MAP_W, 0]] as const) : ([[-1, -Math.PI / 2], [1, Math.PI / 2]] as const)) {
+    for (const [d, turn] of roadAlongX
+      ? ([
+          [-MAP_W, Math.PI],
+          [MAP_W, 0],
+        ] as const)
+      : ([
+          [-1, -Math.PI / 2],
+          [1, Math.PI / 2],
+        ] as const)) {
       const n = t + d;
       if (o.deco[n] === DECO.CULVERT || o.world.ground.kind[n] === TILE.ROAD) continue;
       mouths.push(t);
       mouthTurn.push(turn);
     }
   }
-  instanced(mouth, mouths, low, (t, k, m) => {
-    const turn = mouthTurn[k];
-    q.setFromAxisAngle(up, turn);
-    m.compose(v.set((t % MAP_W) + 0.5 + Math.sin(turn) * 0.5, 0, Math.floor(t / MAP_W) + 0.5 + Math.cos(turn) * 0.5), q, sc.set(1, 1, 1));
-  }, false);
+  instanced(
+    mouth,
+    mouths,
+    low,
+    (t, k, m) => {
+      const turn = mouthTurn[k];
+      q.setFromAxisAngle(up, turn);
+      m.compose(v.set((t % MAP_W) + 0.5 + Math.sin(turn) * 0.5, 0, Math.floor(t / MAP_W) + 0.5 + Math.cos(turn) * 0.5), q, sc.set(1, 1, 1));
+    },
+    false,
+  );
   // Railway lines: two rails on sleepers, along the line's run.
-  const rails = merge([box(1.0, 0.05, 0.14, 0x5a4634, 0, 0, -0.32), box(1.0, 0.05, 0.14, 0x5a4634, 0, 0, 0.32), box(0.16, 0.05, 0.86, 0x5a4634, -0.3, 0), box(0.16, 0.05, 0.86, 0x5a4634, 0.2, 0), box(1.0, 0.07, 0.05, 0xa4a8ae, 0, 0.05, -0.2), box(1.0, 0.07, 0.05, 0xa4a8ae, 0, 0.05, 0.2)], false);
-  instanced(rails, at[DECO.RAIL], low, (t, _k, m) => {
-    const alongX = o.deco[t - 1] === DECO.RAIL || o.deco[t + 1] === DECO.RAIL;
-    q.setFromAxisAngle(up, alongX ? 0 : Math.PI / 2);
-    m.compose(v.set((t % MAP_W) + 0.5, 0.005, Math.floor(t / MAP_W) + 0.5), q, sc.set(1, 1, 1));
-  }, false);
+  const rails = merge(
+    [
+      box(1.0, 0.05, 0.14, 0x5a4634, 0, 0, -0.32),
+      box(1.0, 0.05, 0.14, 0x5a4634, 0, 0, 0.32),
+      box(0.16, 0.05, 0.86, 0x5a4634, -0.3, 0),
+      box(0.16, 0.05, 0.86, 0x5a4634, 0.2, 0),
+      box(1.0, 0.07, 0.05, 0xa4a8ae, 0, 0.05, -0.2),
+      box(1.0, 0.07, 0.05, 0xa4a8ae, 0, 0.05, 0.2),
+    ],
+    false,
+  );
+  instanced(
+    rails,
+    at[DECO.RAIL],
+    low,
+    (t, _k, m) => {
+      const alongX = o.deco[t - 1] === DECO.RAIL || o.deco[t + 1] === DECO.RAIL;
+      q.setFromAxisAngle(up, alongX ? 0 : Math.PI / 2);
+      m.compose(v.set((t % MAP_W) + 0.5, 0.005, Math.floor(t / MAP_W) + 0.5), q, sc.set(1, 1, 1));
+    },
+    false,
+  );
   // (And on off the picture's edge, along the line's run.)
   const railsOut = run.rails.map(([x, z]) => z * MAP_W + x);
-  if (railsOut.length) instanced(rails.clone(), railsOut, low, (_t, k, m) => {
-    const [x, z, alongX] = run.rails[k];
-    q.setFromAxisAngle(up, alongX ? 0 : Math.PI / 2);
-    m.compose(v.set(x + 0.5, 0.005, z + 0.5), q, sc.set(1, 1, 1));
-  }, false);
+  if (railsOut.length)
+    instanced(
+      rails.clone(),
+      railsOut,
+      low,
+      (_t, k, m) => {
+        const [x, z, alongX] = run.rails[k];
+        q.setFromAxisAngle(up, alongX ? 0 : Math.PI / 2);
+        m.compose(v.set(x + 0.5, 0.005, z + 0.5), q, sc.set(1, 1, 1));
+      },
+      false,
+    );
   // Gravel: a scatter of grey stones over the tile.
   const stones: Part[] = [];
-  for (let k = 0; k < 7; k++) stones.push(paint(new THREE.DodecahedronGeometry(0.05 + hash01(k, 11) * 0.04, 0).translate(hash01(k, 12) - 0.5, 0.02, hash01(k, 13) - 0.5), 0x8c8a84));
+  for (let k = 0; k < 7; k++)
+    stones.push(
+      paint(
+        new THREE.DodecahedronGeometry(0.05 + hash01(k, 11) * 0.04, 0).translate(hash01(k, 12) - 0.5, 0.02, hash01(k, 13) - 0.5),
+        0x8c8a84,
+      ),
+    );
   const pebbles = merge(stones, false);
   instanced(pebbles, at[DECO.GRAVEL], low, (t, _k, m) => put(m, t, 0, 1, hash01(t, 5) * Math.PI * 2), false);
-  if (run.gravel.length) instanced(pebbles.clone(), run.gravel.map(([x, z]) => z * MAP_W + x), low, (_t, k, m) => {
-    const [x, z] = run.gravel[k];
-    q.setFromAxisAngle(up, hash01(key(x, z), 5) * Math.PI * 2);
-    m.compose(v.set(x + 0.5, 0, z + 0.5), q, sc.set(1, 1, 1));
-  }, false);
+  if (run.gravel.length)
+    instanced(
+      pebbles.clone(),
+      run.gravel.map(([x, z]) => z * MAP_W + x),
+      low,
+      (_t, k, m) => {
+        const [x, z] = run.gravel[k];
+        q.setFromAxisAngle(up, hash01(key(x, z), 5) * Math.PI * 2);
+        m.compose(v.set(x + 0.5, 0, z + 0.5), q, sc.set(1, 1, 1));
+      },
+      false,
+    );
 }
 
 /** Rivers and fords (an island's sea is the Island view's): water where the floor isn't drawn, shallows a little paler; a river running off the world's edge carries on out of sight. The tiles it carries on over, past the edge (keyed). */
@@ -230,10 +330,11 @@ export function water(land: Land, o: OutsideWorld, theme: string): Set<number> {
       deep.push([x, z]);
       // (At the world's edge: on out, never ending square.)
       const [dx, dz] = x === 0 ? [-1, 0] : x === MAP_W - 1 ? [1, 0] : z === 0 ? [0, -1] : z === MAP_H - 1 ? [0, 1] : [0, 0];
-      if (dx || dz) for (let k = 1; k <= RUN_OFF && !land.under(x + dx * k, z + dz * k); k++) {
-        deep.push([x + dx * k, z + dz * k]);
-        wet.add(key(x + dx * k, z + dz * k));
-      }
+      if (dx || dz)
+        for (let k = 1; k <= RUN_OFF && !land.under(x + dx * k, z + dz * k); k++) {
+          deep.push([x + dx * k, z + dz * k]);
+          wet.add(key(x + dx * k, z + dz * k));
+        }
     }
   }
   const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);

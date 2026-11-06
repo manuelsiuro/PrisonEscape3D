@@ -5,7 +5,6 @@ import { esc, h, type Send, setText, TOUCH } from './dom';
 import { icon } from './icons';
 import { pad2 } from '../sim/systems/clock';
 
-
 /**
  * The pay phone (P34) on screen: its card at the phone. The dial (home, the lawyer, cousin Lou,
  * an anonymous tip, each with its price and why not), the queue (who's on it, who waits, the
@@ -13,7 +12,6 @@ import { pad2 } from '../sim/systems/clock';
  * tapped line (who's listening in, three phrases a line, 1–3). Drawn from a view the play layer
  * fills from the sim (play/payphone.ts): the sim's own functions decide everything shown.
  */
-
 
 /** What can be called, as the dial lists it: `id` names its text, `b` and `c` what's sent. */
 export interface DialRow {
@@ -139,7 +137,10 @@ export class PayphoneCard {
   /** The next (or previous) cell to tip off. */
   private stepCell(by: number) {
     if (!this.cells.length) return;
-    const at = Math.max(0, this.cells.findIndex(([c]) => c === this.pick.cell));
+    const at = Math.max(
+      0,
+      this.cells.findIndex(([c]) => c === this.pick.cell),
+    );
     this.pick.cell = this.cells[(at + by + this.cells.length) % this.cells.length][0];
   }
 
@@ -160,7 +161,34 @@ export class PayphoneCard {
     }
     if (!this.cells.some(([c]) => c === this.pick.cell) && this.cells.length) this.pick.cell = this.cells[0][0];
     const armed = this.cutArmed > 0 && performance.now() - this.cutArmed < 4000;
-    const key = [v.phase, v.closed, v.hint, v.second, v.cash, v.on, v.walking, v.waiting.join(), v.place, v.turnLeft >= 0, v.canJoin, v.canCut, v.rows.map((r) => r.id + r.why + r.note + r.price).join(), v.mail, v.calling, v.line, v.ear, v.phrases.join(), v.known.join(), v.result, this.pick.menu, this.pick.hour, this.pick.cell, armed, currentLang(), TOUCH].join('|');
+    const key = [
+      v.phase,
+      v.closed,
+      v.hint,
+      v.second,
+      v.cash,
+      v.on,
+      v.walking,
+      v.waiting.join(),
+      v.place,
+      v.turnLeft >= 0,
+      v.canJoin,
+      v.canCut,
+      v.rows.map((r) => r.id + r.why + r.note + r.price).join(),
+      v.mail,
+      v.calling,
+      v.line,
+      v.ear,
+      v.phrases.join(),
+      v.known.join(),
+      v.result,
+      this.pick.menu,
+      this.pick.hour,
+      this.pick.cell,
+      armed,
+      currentLang(),
+      TOUCH,
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       this.el.dataset.phase = v.phase;
@@ -168,8 +196,14 @@ export class PayphoneCard {
       setText(this.value, t('phone.price', { n: v.cash }));
       // The queue: who's on it, who waits.
       const q: string[] = [];
-      if (v.on) q.push(`<p class="phone-on">${icon('phone', 14)}<span>${esc(t(v.walking ? 'phone.walking' : 'phone.onIt', { name: v.on }))}</span></p>`);
-      if (v.waiting.length) q.push(`<ol class="phone-line">${v.waiting.map((n, k) => `<li class="${k === v.place ? 'me' : ''}">${esc(n)}</li>`).join('')}</ol>`);
+      if (v.on)
+        q.push(
+          `<p class="phone-on">${icon('phone', 14)}<span>${esc(t(v.walking ? 'phone.walking' : 'phone.onIt', { name: v.on }))}</span></p>`,
+        );
+      if (v.waiting.length)
+        q.push(
+          `<ol class="phone-line">${v.waiting.map((n, k) => `<li class="${k === v.place ? 'me' : ''}">${esc(n)}</li>`).join('')}</ol>`,
+        );
       this.queue.innerHTML = v.phase === 'call' || v.phase === 'lou' || v.phase === 'result' ? '' : q.join('');
       this.body.innerHTML = this.bodyHtml(v);
       // The notes: a turn, a place, the mail; Lou's how-to.
@@ -205,16 +239,25 @@ export class PayphoneCard {
       return `<p class="phone-ear">${icon('ear', 14)}<span>${esc(v.ear)}</span></p>
         <p class="phone-step"><b>${esc(t('phone.line', { n: v.line + 1 }))}</b> · ${esc(names[v.line] ?? '')}</p>
         <div class="phone-says">${v.phrases
-          .map((p, k) => `<button class="phone-say${v.known[k] ? ' known' : ''}" data-say="${k}">${TOUCH ? '' : `<kbd>${k + 1}</kbd>`}<span>${esc(p)}</span>${v.known[k] ? `<i class="phone-known" title="${esc(t('phone.known'))}">${icon('star', 12)}</i>` : ''}</button>`)
+          .map(
+            (p, k) =>
+              `<button class="phone-say${v.known[k] ? ' known' : ''}" data-say="${k}">${TOUCH ? '' : `<kbd>${k + 1}</kbd>`}<span>${esc(p)}</span>${v.known[k] ? `<i class="phone-known" title="${esc(t('phone.known'))}">${icon('star', 12)}</i>` : ''}</button>`,
+          )
           .join('')}</div>`;
     }
     if (v.phase === 'queue' || v.closed) return '';
     // The dial: the main menu, or one caller's options.
     const row = (r: DialRow) => {
-      const label = t(`phone.${r.id === 'home' || r.id === 'tip' ? r.id : r.id === 'appeal' || r.id === 'retainer' || r.id === 'parole' ? r.id : `job.${r.id}`}` as never);
+      const label = t(
+        `phone.${r.id === 'home' || r.id === 'tip' ? r.id : r.id === 'appeal' || r.id === 'retainer' || r.id === 'parole' ? r.id : `job.${r.id}`}` as never,
+      );
       return `<button class="phone-row" data-call="${r.b}" data-arg="${r.c}" ${r.why ? 'disabled' : ''}><span><b>${esc(label)}</b><small>${esc(r.why || r.note)}</small></span><em>${esc(r.price)}</em></button>`;
     };
-    const rows = (ids: DialRow['id'][]) => v.rows.filter((r) => ids.includes(r.id)).map(row).join('');
+    const rows = (ids: DialRow['id'][]) =>
+      v.rows
+        .filter((r) => ids.includes(r.id))
+        .map(row)
+        .join('');
     const back = `<button class="phone-back" data-menu="main">${icon('chevronLeft', 14)}<span>${esc(t('phone.back'))}</span></button>`;
     switch (this.pick.menu) {
       case 'lawyer':
@@ -229,18 +272,25 @@ export class PayphoneCard {
         return `${back}${cell}${rows(['tip'])}`;
       }
       default: {
-        const menu = (id: 'lawyer' | 'cousin' | 'tip', ic: string) => `<button class="phone-row" data-menu="${id}"><span><b>${esc(t(`phone.${id}`))}</b><small>${esc(t(`phone.${id}.d`))}</small></span><em>${icon(ic, 14)}</em></button>`;
+        const menu = (id: 'lawyer' | 'cousin' | 'tip', ic: string) =>
+          `<button class="phone-row" data-menu="${id}"><span><b>${esc(t(`phone.${id}`))}</b><small>${esc(t(`phone.${id}.d`))}</small></span><em>${icon(ic, 14)}</em></button>`;
         return `${rows(['home'])}${menu('lawyer', 'briefcase')}${menu('cousin', 'route')}${menu('tip', 'ear')}`;
       }
     }
   }
 
   private actionsHtml(v: PayphoneView, armed: boolean): string {
-    if (v.phase === 'call' || v.phase === 'lou') return `<button class="big-btn ghost small" data-hang>${icon('close', 16)}<span>${esc(t('phone.hangUp'))}</span></button>`;
+    if (v.phase === 'call' || v.phase === 'lou')
+      return `<button class="big-btn ghost small" data-hang>${icon('close', 16)}<span>${esc(t('phone.hangUp'))}</span></button>`;
     const out: string[] = [];
-    if (v.canJoin) out.push(`<button class="big-btn primary small" data-line="join">${icon('users', 16)}<span>${esc(t('phone.join'))}</span></button>`);
-    if (v.place >= 0) out.push(`<button class="big-btn ghost small" data-line="leave">${icon('close', 16)}<span>${esc(t('phone.leave'))}</span></button>`);
-    if (v.canCut) out.push(`<button class="big-btn ghost small${armed ? ' armed' : ''}" data-line="cut">${icon('bolt', 16)}<span>${esc(t(armed ? 'phone.cutSure' : 'phone.cut'))}</span></button>`);
+    if (v.canJoin)
+      out.push(`<button class="big-btn primary small" data-line="join">${icon('users', 16)}<span>${esc(t('phone.join'))}</span></button>`);
+    if (v.place >= 0)
+      out.push(`<button class="big-btn ghost small" data-line="leave">${icon('close', 16)}<span>${esc(t('phone.leave'))}</span></button>`);
+    if (v.canCut)
+      out.push(
+        `<button class="big-btn ghost small${armed ? ' armed' : ''}" data-line="cut">${icon('bolt', 16)}<span>${esc(t(armed ? 'phone.cutSure' : 'phone.cut'))}</span></button>`,
+      );
     return out.join('');
   }
 }

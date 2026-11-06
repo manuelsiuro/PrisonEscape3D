@@ -62,7 +62,8 @@ export interface Cast {
   inmates: readonly Fighter[];
   guards: readonly Fighter[];
 }
-export const personOf = (c: Cast, id: number): Fighter | undefined => (id < 0 ? undefined : id < c.inmates.length ? c.inmates[id] : c.guards[id - c.inmates.length]);
+export const personOf = (c: Cast, id: number): Fighter | undefined =>
+  id < 0 ? undefined : id < c.inmates.length ? c.inmates[id] : c.guards[id - c.inmates.length];
 export const isGuard = (c: Cast, id: number) => id >= c.inmates.length;
 const peopleCount = (c: Cast) => c.inmates.length + c.guards.length;
 

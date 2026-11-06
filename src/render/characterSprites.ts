@@ -24,10 +24,13 @@ export function sleepTexture(): THREE.CanvasTexture {
   const tex = canvasTexture(c);
   zTexture = tex;
   // Made before the web font arrives (the player is built at startup): drawn again once it has.
-  document.fonts?.load('900 52px Fredoka').then(() => {
-    draw();
-    tex.needsUpdate = true;
-  }, () => {});
+  document.fonts?.load('900 52px Fredoka').then(
+    () => {
+      draw();
+      tex.needsUpdate = true;
+    },
+    () => {},
+  );
   return tex;
 }
 
@@ -85,7 +88,13 @@ export function markTexture(ch: string): THREE.CanvasTexture {
  * a follower. Drawn shapes, not font glyphs, so they look the same everywhere.
  */
 export type BadgeKind = '' | 'favor' | 'done' | 'shop' | 'mail' | 'ally';
-const BADGE_COLORS: Record<Exclude<BadgeKind, ''>, string> = { favor: '#ffc23d', done: '#42c97a', shop: '#3fbf6f', mail: '#4aa3ff', ally: '#29b6c8' };
+const BADGE_COLORS: Record<Exclude<BadgeKind, ''>, string> = {
+  favor: '#ffc23d',
+  done: '#42c97a',
+  shop: '#3fbf6f',
+  mail: '#4aa3ff',
+  ally: '#29b6c8',
+};
 const badgeTextures = new Map<string, THREE.CanvasTexture>();
 export function badgeTexture(kind: Exclude<BadgeKind, ''>): THREE.CanvasTexture {
   let t = badgeTextures.get(kind);

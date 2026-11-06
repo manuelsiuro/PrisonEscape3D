@@ -77,7 +77,11 @@ export class ToolControls {
     this.btn = h('button', 'tool-btn hidden');
     this.prompt = h('div', 'tool-prompt hidden');
     // The vitals pill (GDD §13.2): health (while it's down or in a fight) and energy.
-    this.energy = h('div', 'energy hidden', `<span class="vital hp">${icon('heart', 14)}<i class="energy-bar"><i></i></i></span><span class="vital en">${icon('bolt', 14)}<i class="energy-bar"><i></i></i></span>`);
+    this.energy = h(
+      'div',
+      'energy hidden',
+      `<span class="vital hp">${icon('heart', 14)}<i class="energy-bar"><i></i></i></span><span class="vital en">${icon('bolt', 14)}<i class="energy-bar"><i></i></i></span>`,
+    );
     this.healthPart = this.energy.querySelector('.vital.hp')!;
     this.energyPart = this.energy.querySelector('.vital.en')!;
     this.healthFill = this.healthPart.querySelector('.energy-bar i')!;

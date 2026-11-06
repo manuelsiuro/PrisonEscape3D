@@ -16,7 +16,34 @@
  *   and QUIZ_WIN_OPINION with the contestants; playing it out, QUIZ_OPINION. Given up (EXT.QUIZ 1)
  *   or off (the player QUIZ_LEAVE away, a lockdown): nothing.
  */
-import { BUZZ_MIN, BUZZ_MIN_215, BUZZ_SPAN, BUZZ_SPAN_215, HISTORY, QUESTION_STEPS, QUESTION_STEPS_215, READ_LONG, READ_STEPS, QUIZ_CALL, QUIZ_GATHER, QUIZ_HISTORY, QUIZ_INTELLECT, QUIZ_LAST, QUIZ_LAST_215, QUIZ_LEAVE, QUIZ_OPINION, QUIZ_PRIZE, QUIZ_QUESTIONS, QUIZ_RANGE, QUIZ_WIN_OPINION, REVEAL_STEPS, RIGHT_BASE, RIGHT_PER, WITS_MIN, WITS_SPAN } from '../../content/nights';
+import {
+  BUZZ_MIN,
+  BUZZ_MIN_215,
+  BUZZ_SPAN,
+  BUZZ_SPAN_215,
+  HISTORY,
+  QUESTION_STEPS,
+  QUESTION_STEPS_215,
+  READ_LONG,
+  READ_STEPS,
+  QUIZ_CALL,
+  QUIZ_GATHER,
+  QUIZ_HISTORY,
+  QUIZ_INTELLECT,
+  QUIZ_LAST,
+  QUIZ_LAST_215,
+  QUIZ_LEAVE,
+  QUIZ_OPINION,
+  QUIZ_PRIZE,
+  QUIZ_QUESTIONS,
+  QUIZ_RANGE,
+  QUIZ_WIN_OPINION,
+  REVEAL_STEPS,
+  RIGHT_BASE,
+  RIGHT_PER,
+  WITS_MIN,
+  WITS_SPAN,
+} from '../../content/nights';
 import { DAY_BOOKS, EVENT_TIMES } from '../../content/days';
 import { KEY_ITEM_COLORS } from '../../content/items';
 import { RECIPES } from '../../content/recipes';
@@ -56,7 +83,13 @@ export interface Quiz {
 }
 
 /** A choice as the card shows it: a time (minutes of the day), a guard (index), an item (id), a number, a key's colour, a history answer (its place in the text). */
-export type Choice = { kind: 'time'; m: number } | { kind: 'guard'; k: number } | { kind: 'item'; id: string } | { kind: 'n'; n: number } | { kind: 'colour'; c: string } | { kind: 'h'; k: number };
+export type Choice =
+  | { kind: 'time'; m: number }
+  | { kind: 'guard'; k: number }
+  | { kind: 'item'; id: string }
+  | { kind: 'n'; n: number }
+  | { kind: 'colour'; c: string }
+  | { kind: 'h'; k: number };
 
 /** A question: its text (`quiz.<id>`), what it needs (a guard, ingredients), the four choices, the right one. */
 export interface Question {
@@ -102,7 +135,9 @@ function timeQuestion(id: string, m: number, salt: number, day: number, k: numbe
 const blockAt = (id: string) => ROUTINE.find((r) => r.id === id)!.start;
 
 /** What a recipe needs, as plain item ids (none with a choice of items, none with keys). */
-const plainRecipes = RECIPES.filter((r) => r.ingredients.every((i) => !i.includes('|') && !i.startsWith('key_') && !i.startsWith('mold_')) && !r.keep);
+const plainRecipes = RECIPES.filter(
+  (r) => r.ingredients.every((i) => !i.includes('|') && !i.startsWith('key_') && !i.startsWith('mold_')) && !r.keep,
+);
 
 /** The questions about this prison that it can be asked (each always true in the running game). */
 function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: number, mods: readonly string[], kind: number): Question[] {
@@ -121,14 +156,26 @@ function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: num
     const no = named.filter((e) => (e.g.trait ?? 'steady') !== trait);
     if (!yes.length || no.length < 3) continue;
     const right = yes[rollInt(salt, kind, day, 500 + trait.length, yes.length)].k;
-    const others = shuffled(no.map((e) => e.k), salt, day, 6 + trait.length, kind).slice(0, 3);
+    const others = shuffled(
+      no.map((e) => e.k),
+      salt,
+      day,
+      6 + trait.length,
+      kind,
+    ).slice(0, 3);
     const choices = shuffled([right, ...others], salt, day, 9 + trait.length, kind).map((k): Choice => ({ kind: 'guard', k }));
     out.push({ id: `trait.${trait}`, choices, answer: choices.findIndex((c) => c.kind === 'guard' && c.k === right) });
   }
   // A guard's key's colour.
   if (named.length) {
     const g = named[rollInt(salt, kind, day, 600, named.length)];
-    const others = shuffled(KEY_ITEM_COLORS.map(([c]) => c).filter((c) => c !== g.g.key), salt, day, 13, kind).slice(0, 3);
+    const others = shuffled(
+      KEY_ITEM_COLORS.map(([c]) => c).filter((c) => c !== g.g.key),
+      salt,
+      day,
+      13,
+      kind,
+    ).slice(0, 3);
     const choices = shuffled([g.g.key, ...others], salt, day, 14, kind).map((c): Choice => ({ kind: 'colour', c }));
     out.push({ id: 'key', guard: g.k, choices, answer: choices.findIndex((c) => c.kind === 'colour' && c.c === g.g.key) });
   }
@@ -142,11 +189,17 @@ function prisonQuestions(sim: Pick<SimContext, 'prison'>, salt: number, day: num
     const r = plainRecipes[rollInt(salt, kind, day, 700, plainRecipes.length)];
     const others = shuffled([...new Set(plainRecipes.map((x) => x.result).filter((x) => x !== r.result))], salt, day, 15, kind).slice(0, 3);
     const choices = shuffled([r.result, ...others], salt, day, 16, kind).map((id): Choice => ({ kind: 'item', id }));
-    out.push({ id: 'recipe', items: [...r.ingredients], choices, answer: choices.findIndex((c) => c.kind === 'item' && c.id === r.result) });
+    out.push({
+      id: 'recipe',
+      items: [...r.ingredients],
+      choices,
+      answer: choices.findIndex((c) => c.kind === 'item' && c.id === r.result),
+    });
   }
   // The day cards' hours, where the deck deals them (minutes into the prison day + 08:00).
   const deck = DAY_BOOKS[p.id]?.deck ?? [];
-  if (deck.includes('delivery')) out.push(timeQuestion('delivery', 480 + (EVENT_TIMES.delivery.at as number) + EVENT_TIMES.delivery.length - 1, salt, day, 4, kind));
+  if (deck.includes('delivery'))
+    out.push(timeQuestion('delivery', 480 + (EVENT_TIMES.delivery.at as number) + EVENT_TIMES.delivery.length - 1, salt, day, 4, kind));
   if (deck.includes('visiting')) out.push(timeQuestion('visiting', 480 + (EVENT_TIMES.visiting.at as number), salt, day, 5, kind));
   return out;
 }
@@ -157,13 +210,25 @@ const asked = new Map<string, Question[]>();
  * The night's eight questions, in order: escape history and this prison by turns. Pure (and kept).
  * (P35: a kiosk course's are drawn the same way under SALT.COURSE, `n` of them, `history` of those from the bank.)
  */
-export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt' | 'mods'> }, day: number, kind: number = SALT.QUIZ, n = QUIZ_QUESTIONS, historyN = QUIZ_HISTORY): Question[] {
+export function questionsOf(
+  sim: Pick<SimContext, 'prison'> & { state: Pick<SimState, 'salt' | 'mods'> },
+  day: number,
+  kind: number = SALT.QUIZ,
+  n = QUIZ_QUESTIONS,
+  historyN = QUIZ_HISTORY,
+): Question[] {
   const salt = sim.state.salt;
   const mods = sim.state.mods ?? [];
   const key = `${sim.prison.id}:${salt}:${day}:${mods.join()}:${kind}:${n}:${historyN}`;
   const had = asked.get(key);
   if (had) return had;
-  const history = shuffled(HISTORY.map((_, k) => k), salt, day, 1, kind)
+  const history = shuffled(
+    HISTORY.map((_, k) => k),
+    salt,
+    day,
+    1,
+    kind,
+  )
     .slice(0, historyN)
     .map((k, j): Question => {
       const order = shuffled([0, 1, 2, 3], salt, day, 20 + j, kind);
@@ -181,16 +246,27 @@ export function questionsOf(sim: Pick<SimContext, 'prison'> & { state: Pick<SimS
 }
 
 /** How long a question is read before the contestants' buzzers open (steps): longer for escape history and recipes; none before 2.16. */
-export const readOf = (sim: Pick<SimContext, 'rules215'>, q: Pick<Question, 'id'>) => (sim.rules215 ? 0 : q.id.startsWith('h.') || q.id === 'recipe' ? READ_LONG : READ_STEPS);
+export const readOf = (sim: Pick<SimContext, 'rules215'>, q: Pick<Question, 'id'>) =>
+  sim.rules215 ? 0 : q.id.startsWith('h.') || q.id === 'recipe' ? READ_LONG : READ_STEPS;
 
 /** How long a question is open, its reading time included (steps). */
 export const questionSteps = (sim: Pick<SimContext, 'rules215'>) => (sim.rules215 ? QUESTION_STEPS_215 : QUESTION_STEPS);
 
 /** A contestant's buzz on a question: when (steps after it's put: `read` steps of reading first, -1 as before 2.16), and whether right; the wrong choice it gives otherwise. */
-function buzzOf(s: Pick<SimState, 'salt' | 'inmates'>, day: number, q: number, who: number, answer: number, read: number): { at: number; right: boolean; says: number } {
+function buzzOf(
+  s: Pick<SimState, 'salt' | 'inmates'>,
+  day: number,
+  q: number,
+  who: number,
+  answer: number,
+  read: number,
+): { at: number; right: boolean; says: number } {
   const salt = s.salt;
   const wits = witsOf(salt, s.inmates[who]?.cell ?? 0);
-  const at = read < 0 ? BUZZ_MIN_215 + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN_215) : read + BUZZ_MIN + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN);
+  const at =
+    read < 0
+      ? BUZZ_MIN_215 + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN_215)
+      : read + BUZZ_MIN + rollInt(salt, SALT.QUIZ, day * 16 + q, 1000 + who, BUZZ_SPAN);
   const right = rollInt(salt, SALT.QUIZ, day * 16 + q, 2000 + who, 100) < RIGHT_BASE + Math.floor((wits * RIGHT_PER) / 100);
   const wrong = rollInt(salt, SALT.QUIZ, day * 16 + q, 3000 + who, 3);
   return { at, right, says: right ? answer : wrong >= answer ? wrong + 1 : wrong };
@@ -221,7 +297,17 @@ export function nearestPlace(sim: SimContext): number {
   return best;
 }
 
-const BUSY: ReadonlySet<number> = new Set([DOING.SLEEP, DOING.BOARD, DOING.CARDS, DOING.DICE, DOING.WRESTLE, DOING.LOOKOUT, DOING.BRAWL, DOING.DRUMS, DOING.GUITAR]);
+const BUSY: ReadonlySet<number> = new Set([
+  DOING.SLEEP,
+  DOING.BOARD,
+  DOING.CARDS,
+  DOING.DICE,
+  DOING.WRESTLE,
+  DOING.LOOKOUT,
+  DOING.BRAWL,
+  DOING.DRUMS,
+  DOING.GUITAR,
+]);
 
 /** The three contestants: the nearest inmates up and about to the places, not busy with the player or the crew (ties: the lower index); null if fewer. */
 function contestantsFor(sim: SimContext): number[] | null {
@@ -232,7 +318,8 @@ function contestantsFor(sim: SimContext): number[] | null {
   const pool: number[] = [];
   s.inmates.forEach((m, k) => {
     if (m.ko > 0 || m.angry > 0 || BUSY.has(m.doing) || s.talk === k || s.followers.includes(k)) return;
-    if (s.match?.team.includes(k) || s.ink?.who === k || s.cheat?.who === k || s.shootout?.who === k || s.dice[0] === k || s.bout[0] === k) return;
+    if (s.match?.team.includes(k) || s.ink?.who === k || s.cheat?.who === k || s.shootout?.who === k || s.dice[0] === k || s.bout[0] === k)
+      return;
     if (Math.max(Math.abs(m.body.x - c.x), Math.abs(m.body.z - c.z)) > QUIZ_CALL * UNIT) return;
     pool.push(k);
   });
@@ -311,7 +398,17 @@ export function keepQuiz(sim: SimContext) {
   const o = s.quiz;
   const pl = quizOf(sim.world);
   if (!o) return;
-  if (!pl || s.lockdown || sim.away || s.sleeping || s.stowed || s.ko > 0 || s.layer !== LAYER.GROUND || offBy(pl, o.seats[0], s.player.x, s.player.z) > QUIZ_LEAVE) return endQuiz(sim, 'off');
+  if (
+    !pl ||
+    s.lockdown ||
+    sim.away ||
+    s.sleeping ||
+    s.stowed ||
+    s.ko > 0 ||
+    s.layer !== LAYER.GROUND ||
+    offBy(pl, o.seats[0], s.player.x, s.player.z) > QUIZ_LEAVE
+  )
+    return endQuiz(sim, 'off');
   // (A contestant knocked out or going for the player: the quiz is off, never won by default.)
   if (o.who.some((k) => !s.inmates[k] || s.inmates[k].ko > 0 || s.inmates[k].angry > 0)) return endQuiz(sim, 'off');
   if (o.q < 0) {
@@ -380,7 +477,14 @@ export function endQuiz(sim: SimContext, how: 'done' | 'quit' | 'off') {
     s.trained |= 1 << ATTRS.indexOf('int');
   }
   for (const k of o.who) changeOpinion(sim, k, won ? QUIZ_WIN_OPINION : QUIZ_OPINION);
-  sim.events.push({ type: 'quiz', what: won ? 'won' : tie ? 'tie' : 'lost', who: o.who.slice(), pts: o.pts.slice(), prize, int: Math.max(0, gain) });
+  sim.events.push({
+    type: 'quiz',
+    what: won ? 'won' : tie ? 'tie' : 'lost',
+    who: o.who.slice(),
+    pts: o.pts.slice(),
+    prize,
+    int: Math.max(0, gain),
+  });
 }
 
 /** The contestants at their places, facing the same way (socialNow). */

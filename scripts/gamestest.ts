@@ -24,7 +24,26 @@
  *   place of.
  */
 import { DAY_BOOKS, DAY_EVENTS, EVENT_TIMES } from '../src/content/days';
-import { BAR, BOUT_ENERGY, BOUT_STEPS, CROWD_OPINION, CROWD_RANGE, DICE_HEAT, GAME_OPINION, GAMES_A_DAY, PICK_HIT_NOISE, PICK_MISS_NOISE, PICKED_STEPS, PINS, PLAY_OPINION, SPORTS_OPINION, SPORTS_PRIZE, SPORTS_WINS, STAKES, WIN_OPINION } from '../src/content/games';
+import {
+  BAR,
+  BOUT_ENERGY,
+  BOUT_STEPS,
+  CROWD_OPINION,
+  CROWD_RANGE,
+  DICE_HEAT,
+  GAME_OPINION,
+  GAMES_A_DAY,
+  PICK_HIT_NOISE,
+  PICK_MISS_NOISE,
+  PICKED_STEPS,
+  PINS,
+  PLAY_OPINION,
+  SPORTS_OPINION,
+  SPORTS_PRIZE,
+  SPORTS_WINS,
+  STAKES,
+  WIN_OPINION,
+} from '../src/content/games';
 import { itemDef, itemNumber, KEY_ITEM_COLORS } from '../src/content/items';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
@@ -40,7 +59,19 @@ import { replayLog, RunRecorder } from '../src/sim/runlog';
 import { Sim, type SimEvent } from '../src/sim/Sim';
 import { planOf, TODAY } from '../src/sim/systems/calendar';
 import { DAY_STEPS } from '../src/sim/systems/clock';
-import { drainOf, eyesOn, gamesOpen, lockAt, markerAt, pinsOf, playedToday, pushOf, sportsWins, surging, sweetSpot } from '../src/sim/systems/games';
+import {
+  drainOf,
+  eyesOn,
+  gamesOpen,
+  lockAt,
+  markerAt,
+  pinsOf,
+  playedToday,
+  pushOf,
+  sportsWins,
+  surging,
+  sweetSpot,
+} from '../src/sim/systems/games';
 import { DOING } from '../src/sim/systems/inmates';
 import { coolEvery } from '../src/sim/systems/twists';
 import { itemOf, slot, usesOf } from '../src/sim/systems/items';
@@ -109,7 +140,8 @@ function yardSpot(sim: Sim, skip = 0): number {
     for (let x = 2; x < MAP_W - 3; x++) {
       if (w.zoneAt(x, z) !== 'yard') continue;
       let ok = true;
-      for (let dz = -1; dz <= 1 && ok; dz++) for (let dx = -1; dx <= 2 && ok; dx++) ok = !w.blocked(x + dx, z + dz) && w.zoneAt(x + dx, z + dz) === 'yard';
+      for (let dz = -1; dz <= 1 && ok; dz++)
+        for (let dx = -1; dx <= 2 && ok; dx++) ok = !w.blocked(x + dx, z + dz) && w.zoneAt(x + dx, z + dz) === 'yard';
       if (ok) yard.push(z * MAP_W + x);
     }
   return yard[(yard.length >> 1) + skip * 7];
@@ -127,33 +159,67 @@ function plainDoor(w: Sim['world']): { door: number; from: number; dir: number }
     ] as const) {
       const a = i + d;
       const b = i - d;
-      if (!w.block[a] && !w.block[b] && w.ground.kind[a] !== 14 && w.ground.kind[b] !== 14 && inside(a) && inside(b)) return { door: i, from: a, dir: f };
+      if (!w.block[a] && !w.block[b] && w.ground.kind[a] !== 14 && w.ground.kind[b] !== 14 && inside(a) && inside(b))
+        return { door: i, from: a, dir: f };
     }
   }
   return { door: -1, from: -1, dir: 0 };
 }
 const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
-const last = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type).at(-1) as Extract<SimEvent, { type: T }> | undefined;
+const last = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
+  seen.filter((e) => e.type === type).at(-1) as Extract<SimEvent, { type: T }> | undefined;
 const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DICE, step, k, 6);
 
 // ------------------------------------------------------------------ the data
 {
   const d = itemDef(LOCKPICK);
-  check(d.cat === 'gear' && d.contraband && !!d.small && d.uses === 12 && d.thud === 1, 'the lockpick: contraband gear, small (a rat carries it), 12 uses, lands hard');
+  check(
+    d.cat === 'gear' && d.contraband && !!d.small && d.uses === 12 && d.thud === 1,
+    'the lockpick: contraband gear, small (a rat carries it), 12 uses, lands hard',
+  );
   const r = RECIPES.find((x) => x.result === 'lockpick');
   check(!!r && r.int === 40 && [...r.ingredients].sort().join() === 'nail_file,wire', 'the lockpick: wire and a nail file, Intellect 40');
-  check(CATALOGUE[8]?.item === 'lockpick' && CATALOGUE[8]?.price === 35, 'the lockpick on the phone at $35 (appended: orders keep their numbers)');
-  check(PINS[KEY.YELLOW] === 2 && PINS[KEY.CYAN] === 3 && PINS[KEY.PURPLE] === 4 && PINS[KEY.RED] === 5 && PINS[KEY.GREEN] === 6, 'pins by colour: yellow 2, cyan 3, purple 4, red 5, green 6 (as the help says)');
-  check(STAKES.join() === '5,10,20' && GAME_OPINION === 40 && GAMES_A_DAY === 3 && DICE_HEAT === 10 && BOUT_ENERGY === 6 && WIN_OPINION === 6 && CROWD_OPINION === 2 && PLAY_OPINION === 2, 'the numbers the words say: $5/$10/$20, opinion 40, three a day, +10% heat, 6 energy, +6, +2 watching, +2 a game');
-  check(SPORTS_WINS === 3 && SPORTS_PRIZE === 30 && SPORTS_OPINION === 3 && PICK_HIT_NOISE === 2 && PICK_MISS_NOISE === 6 && PICKED_STEPS === 15 * STEPS_PER_SECOND, 'sports day: three wins, $30, +3 everyone; a pin clicks (2), a slip carries 6 tiles; a door open 15 s');
+  check(
+    CATALOGUE[8]?.item === 'lockpick' && CATALOGUE[8]?.price === 35,
+    'the lockpick on the phone at $35 (appended: orders keep their numbers)',
+  );
+  check(
+    PINS[KEY.YELLOW] === 2 && PINS[KEY.CYAN] === 3 && PINS[KEY.PURPLE] === 4 && PINS[KEY.RED] === 5 && PINS[KEY.GREEN] === 6,
+    'pins by colour: yellow 2, cyan 3, purple 4, red 5, green 6 (as the help says)',
+  );
+  check(
+    STAKES.join() === '5,10,20' &&
+      GAME_OPINION === 40 &&
+      GAMES_A_DAY === 3 &&
+      DICE_HEAT === 10 &&
+      BOUT_ENERGY === 6 &&
+      WIN_OPINION === 6 &&
+      CROWD_OPINION === 2 &&
+      PLAY_OPINION === 2,
+    'the numbers the words say: $5/$10/$20, opinion 40, three a day, +10% heat, 6 energy, +6, +2 watching, +2 a game',
+  );
+  check(
+    SPORTS_WINS === 3 &&
+      SPORTS_PRIZE === 30 &&
+      SPORTS_OPINION === 3 &&
+      PICK_HIT_NOISE === 2 &&
+      PICK_MISS_NOISE === 6 &&
+      PICKED_STEPS === 15 * STEPS_PER_SECOND,
+    'sports day: three wins, $30, +3 everyone; a pin clicks (2), a slip carries 6 tiles; a door open 15 s',
+  );
   const t = EVENT_TIMES.sports;
   check(t.at === 120 && t.length === 720, 'sports day runs 10:00–22:00 (free time, the exercise hour, the evening)');
   check(!DAY_BOOKS[TRAINING.id], 'the Training Block has no sports day');
   for (const p of PRISONS) {
     const b = DAY_BOOKS[p.id];
-    check(b.deck.length === 7 && b.deck.filter((e) => e === 'sports').length === 1 && !!b.beforeSports && b.beforeSports !== 'sports', `${p.id}: sports day once a week (in place of ${b.beforeSports})`);
+    check(
+      b.deck.length === 7 && b.deck.filter((e) => e === 'sports').length === 1 && !!b.beforeSports && b.beforeSports !== 'sports',
+      `${p.id}: sports day once a week (in place of ${b.beforeSports})`,
+    );
   }
-  console.log(`data: the lockpick (wire + nail file, Int 40, $35 on the phone, 12 uses); sports day in place of ${PRISONS.map((p) => `${p.id} ${DAY_BOOKS[p.id].beforeSports}`).join(', ')}`);
+  console.log(
+    `data: the lockpick (wire + nail file, Int 40, $35 on the phone, 12 uses); sports day in place of ${PRISONS.map((p) => `${p.id} ${DAY_BOOKS[p.id].beforeSports}`).join(', ')}`,
+  );
 }
 
 // ------------------------------------------------------------------ who plays, and when
@@ -178,14 +244,17 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     to(1, h, m);
     blocks.push(`${ROUTINE[s.routine].id} ${gamesOpen(sim) ? 'on' : 'off'}`);
   }
-  check(blocks.join() === 'freeTime on,work off,exercise on,showers off,eveningFreeTime on', `games on in free time and the exercise hour only (${blocks.join(', ')})`);
+  check(
+    blocks.join() === 'freeTime on,work off,exercise on,showers off,eveningFreeTime on',
+    `games on in free time and the exercise hour only (${blocks.join(', ')})`,
+  );
   s.lockdown = true;
   check(!gamesOpen(sim), 'never in a lockdown');
   s.lockdown = false;
   check(talkTo(0), 'talking in the evening');
   s.inmates[0].opinion = GAME_OPINION - 1;
   talk(TALK.DICE, 0);
-  check(refusals(seen).at(-1) === 'gameOpinion', 'opinion 39: they won\'t play');
+  check(refusals(seen).at(-1) === 'gameOpinion', "opinion 39: they won't play");
   s.inmates[0].opinion = GAME_OPINION;
   for (let g = 0; g < GAMES_A_DAY; g++) {
     talk(TALK.DICE, 0);
@@ -202,7 +271,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.cash = 4;
   s.inmates[0].opinion = 60;
   talk(TALK.DICE, 0);
-  check(refusals(seen).at(-1) === 'cash', 'a stake they can\'t pay: refused');
+  check(refusals(seen).at(-1) === 'cash', "a stake they can't pay: refused");
   s.energy = TIRED - 1;
   talk(TALK.WRESTLE);
   check(refusals(seen).at(-1) === 'tired', 'too tired for a bout');
@@ -227,7 +296,12 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     talk(TALK.DICE, 2);
     const rolled = last(seen, 'dice')!;
     const t0 = s.step;
-    if (rolled.what !== 'rolled' || rolled.mine.join() !== `${die(s.salt, t0, 0)},${die(s.salt, t0, 1)}` || s.inmates[2].opinion !== Math.min(100, op + PLAY_OPINION)) wrong++;
+    if (
+      rolled.what !== 'rolled' ||
+      rolled.mine.join() !== `${die(s.salt, t0, 0)},${die(s.salt, t0, 1)}` ||
+      s.inmates[2].opinion !== Math.min(100, op + PLAY_OPINION)
+    )
+      wrong++;
     talk(TALK.REROLL, mask);
     const t1 = s.step;
     const mine = [mask & 1 ? die(s.salt, t1, 2) : rolled.mine[0], mask & 2 ? die(s.salt, t1, 3) : rolled.mine[1]];
@@ -242,7 +316,10 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     if (end.mine.join() !== mine.join() || end.theirs?.join() !== `${a},${b}` || s.cash !== cash + want || s.dice.length) wrong++;
     checked++;
   }
-  check(wrong === 0, `${checked} games: every throw is roll()'s, only the dice chosen are thrown again, the inmate's lower die again when behind, the stake by the totals`);
+  check(
+    wrong === 0,
+    `${checked} games: every throw is roll()'s, only the dice chosen are thrown again, the inmate's lower die again when behind, the stake by the totals`,
+  );
   // The stake on the table: spent at once, so nothing bought meanwhile makes a loss any cheaper.
   s.played[2] = 0;
   s.cash = 20;
@@ -252,7 +329,7 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   talk(TALK.REROLL, 3);
   check(s.dice.length === 4, 'both dice thrown again: refused, the dice still on the table');
   talk(TALK.GIFT_CASH, 5);
-  check(refusals(seen).at(-1) === 'cash' && s.cash === 0, 'the stake can\'t be spent meanwhile');
+  check(refusals(seen).at(-1) === 'cash' && s.cash === 0, "the stake can't be spent meanwhile");
   talk(TALK.REROLL, 0);
   const res = last(seen, 'dice')!;
   check(s.cash === (res.what === 'won' ? 40 : res.what === 'push' ? 20 : 0), `settled: ${res.what}, $${s.cash} back`);
@@ -261,14 +338,20 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.cash = 50;
   talk(TALK.DICE, 0);
   const other = s.inmates.findIndex((m, k) => k !== 2 && m.ko === 0);
-  check(talkTo(other, yardSpot(sim, 4)) && !s.dice.length && last(seen, 'dice')!.what !== 'rolled', 'talking to someone else: the dice stand');
+  check(
+    talkTo(other, yardSpot(sim, 4)) && !s.dice.length && last(seen, 'dice')!.what !== 'rolled',
+    'talking to someone else: the dice stand',
+  );
   // The talk over with the dice on the table: the player stands on them.
   s.played[2] = 0;
   talk(TALK.DICE, 0);
   const left = last(seen, 'dice')!.mine;
   step(command(0, OP.CLOSE));
   const settled = last(seen, 'dice')!;
-  check(s.talk < 0 && !s.dice.length && settled.what !== 'rolled' && settled.mine.join() === left.join(), 'the talk over with the dice down: they stand');
+  check(
+    s.talk < 0 && !s.dice.length && settled.what !== 'rolled' && settled.mine.join() === left.join(),
+    'the talk over with the dice down: they stand',
+  );
   // A guard who sees it: +10% heat, the card's warning (eyesOn) exactly when it happens.
   let warned = 0;
   let heated = 0;
@@ -288,7 +371,9 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     const warn = eyesOn(s, s.step);
     sim.step(command(0, OP.TALK, TALK.DICE, 0));
     // (Seen on a step the heat cools on, the tenth comes off it at once.)
-    const hot = (s.heat === DICE_HEAT || (s.heat === DICE_HEAT - 1 && s.step % coolEvery(s) === 0)) && sim.events.some((e) => e.type === 'spotted' && e.reason === 'gambling');
+    const hot =
+      (s.heat === DICE_HEAT || (s.heat === DICE_HEAT - 1 && s.step % coolEvery(s) === 0)) &&
+      sim.events.some((e) => e.type === 'spotted' && e.reason === 'gambling');
     if (warn) warned++;
     if (hot) heated++;
     if (warn === hot && (hot || s.heat === 0)) agree++;
@@ -296,7 +381,10 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     s.heat = 0;
     s.lockdown = false;
   }
-  check(agree === trials && trials >= 30 && warned > 5 && warned < trials - 5, `the card's warning is the rule: ${warned} warned, ${heated} cost +${DICE_HEAT}% heat (${agree}/${trials} agree)`);
+  check(
+    agree === trials && trials >= 30 && warned > 5 && warned < trials - 5,
+    `the card's warning is the rule: ${warned} warned, ${heated} cost +${DICE_HEAT}% heat (${agree}/${trials} agree)`,
+  );
   // The games' hours over with the dice down: they stand.
   check(talkTo(2), 'back to the game');
   s.cash = 200;
@@ -325,7 +413,9 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
       else push++;
     }
   const all = won + lost + push;
-  console.log(`dice: ${checked} games as roll() throws them; dice left on the table stand; the warning agrees ${agree}/${trials}; rethrowing a low die: won ${Math.round((won / all) * 100)}%, lost ${Math.round((lost / all) * 100)}%, tied ${Math.round((push / all) * 100)}%`);
+  console.log(
+    `dice: ${checked} games as roll() throws them; dice left on the table stand; the warning agrees ${agree}/${trials}; rethrowing a low die: won ${Math.round((won / all) * 100)}%, lost ${Math.round((lost / all) * 100)}%, tied ${Math.round((push / all) * 100)}%`,
+  );
   check(s.feats[FEAT.dice] > 0 && s.feats[FEAT.diceWon] > 0, 'the ledger counts games and wins');
 }
 
@@ -358,7 +448,10 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     bar = Math.max(0, bar - drainOf(m.str, surging(s.salt, s.bout[3], t)));
     if (s.bout[1] !== bar) wrong++;
   }
-  check(wrong === 0, 'the bar moves by the push (20 + Strength/4) and their push back ((Strength + 20)/10, half again in a surge), alternate presses only');
+  check(
+    wrong === 0,
+    'the bar moves by the push (20 + Strength/4) and their push back ((Strength + 20)/10, half again in a surge), alternate presses only',
+  );
   // Not pressing: pinned.
   const before = m.opinion;
   for (let k = 0; k < BOUT_STEPS && s.bout.length; k++) step();
@@ -379,15 +472,36 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     step(command(0, OP.TRAIN, 1 + (k % 2)));
   }
   const won = last(seen, 'bout')!;
-  const watching = s.inmates.map((x, k) => k !== 1 && x.ko === 0 && x.angry === 0 && x.doing !== DOING.SLEEP && (x.body.x - s.player.x) ** 2 + (x.body.z - s.player.z) ** 2 <= (CROWD_RANGE * UNIT) ** 2 && lineOfSight(sim.world, x.body.x, x.body.z, s.player.x, s.player.z));
-  const crowdOk = s.inmates.every((x, k) => x.opinion === Math.min(100, ops[k] + (k === 1 ? WIN_OPINION : watching[k] ? CROWD_OPINION : 0)));
-  check(won.what === 'won' && won.crowd === watching.filter(Boolean).length && near.every((k) => watching[k]) && crowdOk && s.str === 61 && (s.trained & 1) === 1, `a win: +${WIN_OPINION} (the loser), +${CROWD_OPINION} from each of the ${won.crowd} watching, +1 Strength (trained today)`);
+  const watching = s.inmates.map(
+    (x, k) =>
+      k !== 1 &&
+      x.ko === 0 &&
+      x.angry === 0 &&
+      x.doing !== DOING.SLEEP &&
+      (x.body.x - s.player.x) ** 2 + (x.body.z - s.player.z) ** 2 <= (CROWD_RANGE * UNIT) ** 2 &&
+      lineOfSight(sim.world, x.body.x, x.body.z, s.player.x, s.player.z),
+  );
+  const crowdOk = s.inmates.every(
+    (x, k) => x.opinion === Math.min(100, ops[k] + (k === 1 ? WIN_OPINION : watching[k] ? CROWD_OPINION : 0)),
+  );
+  check(
+    won.what === 'won' &&
+      won.crowd === watching.filter(Boolean).length &&
+      near.every((k) => watching[k]) &&
+      crowdOk &&
+      s.str === 61 &&
+      (s.trained & 1) === 1,
+    `a win: +${WIN_OPINION} (the loser), +${CROWD_OPINION} from each of the ${won.crowd} watching, +1 Strength (trained today)`,
+  );
   // A draw at the bell: pressing only while the bar is on their side.
   s.played[1] = 0;
   talk(TALK.WRESTLE);
   const drawFrom = m.opinion;
   for (let k = 0; k < BOUT_STEPS + 5 && s.bout.length; k++) step(s.bout[1] < BAR / 2 ? command(0, OP.TRAIN, 1 + (k % 2)) : 0);
-  check(last(seen, 'bout')!.what === 'draw' && m.opinion === drawFrom + PLAY_OPINION, `the bell after ${BOUT_STEPS / STEPS_PER_SECOND} s: a draw, +${PLAY_OPINION}`);
+  check(
+    last(seen, 'bout')!.what === 'draw' && m.opinion === drawFrom + PLAY_OPINION,
+    `the bell after ${BOUT_STEPS / STEPS_PER_SECOND} s: a draw, +${PLAY_OPINION}`,
+  );
   // Giving up (Close, or a step away), and a bout broken off.
   s.played[1] = 0;
   talk(TALK.WRESTLE);
@@ -444,7 +558,9 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     }
     rows.push(`Strength ${str} vs 30 · 45 · 60: ${cells.join('; ')}`);
   }
-  console.log(`arm-wrestling: the bar as the rule says; a win +${WIN_OPINION} / +${CROWD_OPINION} x ${won.crowd} watching / +1 Strength; lost, drawn +${PLAY_OPINION}; given up, broken off`);
+  console.log(
+    `arm-wrestling: the bar as the rule says; a win +${WIN_OPINION} / +${CROWD_OPINION} x ${won.crowd} watching / +1 Strength; lost, drawn +${PLAY_OPINION}; given up, broken off`,
+  );
   for (const r of rows) console.log(`  ${r}`);
 }
 
@@ -475,15 +591,27 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   const ops = s.inmates.map((x) => x.opinion);
   check(win(), 'the third win');
   const prize = seen.some((e) => e.type === 'today' && e.event === 'sports' && e.phase === 'prize');
-  check(prize && s.cash === cash + SPORTS_PRIZE && (s.eventFlags & TODAY.SPORTS_PRIZE) !== 0 && s.inmates.every((x, k) => x.opinion >= Math.min(100, ops[k] + SPORTS_OPINION)), `three wins: $${SPORTS_PRIZE} and +${SPORTS_OPINION} from everyone`);
+  check(
+    prize &&
+      s.cash === cash + SPORTS_PRIZE &&
+      (s.eventFlags & TODAY.SPORTS_PRIZE) !== 0 &&
+      s.inmates.every((x, k) => x.opinion >= Math.min(100, ops[k] + SPORTS_OPINION)),
+    `three wins: $${SPORTS_PRIZE} and +${SPORTS_OPINION} from everyone`,
+  );
   // A fourth win (tomorrow's games with another inmate): no second prize.
   check(talkTo(5, yardSpot(sim, 3)), 'another inmate');
   s.inmates[5].opinion = 60;
   s.energy = 100;
   const prizes = seen.filter((e) => e.type === 'today' && e.phase === 'prize').length;
-  check(win() && sportsWins(s) === SPORTS_WINS && seen.filter((e) => e.type === 'today' && e.phase === 'prize').length === prizes, 'a fourth win: one prize a day');
+  check(
+    win() && sportsWins(s) === SPORTS_WINS && seen.filter((e) => e.type === 'today' && e.phase === 'prize').length === prizes,
+    'a fourth win: one prize a day',
+  );
   to(3, 8, 1);
-  check(sportsWins(s) === 0 && !(s.eventFlags & TODAY.SPORTS_PRIZE) && s.feats[FEAT.champion] === 1, 'the next morning: forgotten (and the ledger has a champion)');
+  check(
+    sportsWins(s) === 0 && !(s.eventFlags & TODAY.SPORTS_PRIZE) && s.feats[FEAT.champion] === 1,
+    'the next morning: forgotten (and the ledger has a champion)',
+  );
   console.log(`sports day: ${SPORTS_WINS} wins earn $${SPORTS_PRIZE} and +${SPORTS_OPINION} from everyone, once, only on the day`);
 }
 
@@ -507,7 +635,11 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
       if (pinsOf(w, i) !== PINS[w.ground.key[i]]) wrong++;
     }
     check(wrong === 0, `${p.id}: no gate pickable, pins by colour`);
-    doors.push(`${p.id} ${Object.entries(by).map(([c, k]) => `${c} ${k}`).join(', ')}${gates ? `; ${gates} gates` : ''}`);
+    doors.push(
+      `${p.id} ${Object.entries(by)
+        .map(([c, k]) => `${c} ${k}`)
+        .join(', ')}${gates ? `; ${gates} gates` : ''}`,
+    );
   }
   console.log(`lockpick doors: ${doors.join(' | ')}`);
 
@@ -566,14 +698,29 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   step(command(0, OP.USE, 1));
   const slip = last(seen, 'pick')!;
   const scrape = last(seen, 'noise')!;
-  check(slip.what === 'slip' && s.pick[1] === 0 && usesOf(s.items.inv[0]) === uses - 1 && scrape.reach === PICK_MISS_NOISE && s.struckAt === s.step, `a slip: a scrape heard ${PICK_MISS_NOISE} tiles off, the pick worn, work on a door (tampering if seen)`);
-  check(ear === scrape.heard.length > 0 || wouldHear(sim, { layer: LAYER.GROUND, tile: door, reach: PICK_MISS_NOISE }) === scrape.heard.length > 0, 'the card\'s ear is the noise\'s own rule');
+  check(
+    slip.what === 'slip' &&
+      s.pick[1] === 0 &&
+      usesOf(s.items.inv[0]) === uses - 1 &&
+      scrape.reach === PICK_MISS_NOISE &&
+      s.struckAt === s.step,
+    `a slip: a scrape heard ${PICK_MISS_NOISE} tiles off, the pick worn, work on a door (tampering if seen)`,
+  );
+  check(
+    ear === scrape.heard.length > 0 ||
+      wouldHear(sim, { layer: LAYER.GROUND, tile: door, reach: PICK_MISS_NOISE }) === scrape.heard.length > 0,
+    "the card's ear is the noise's own rule",
+  );
   // Each pin set in the green: a click.
   for (let pin = 0; pin < pins && s.pick.length; pin++) {
     for (let g = 0; g < 200 && s.pick.length && !inZone(s.step + 1 - s.pick[2]); g++) step();
     step(command(0, OP.USE, 1));
     const e = last(seen, 'pick')!;
-    if (pin < pins - 1) check(e.what === 'set' && e.pin === pin + 1 && last(seen, 'noise')!.reach === PICK_HIT_NOISE, `pin ${pin + 1} set: a click (${PICK_HIT_NOISE})`);
+    if (pin < pins - 1)
+      check(
+        e.what === 'set' && e.pin === pin + 1 && last(seen, 'noise')!.reach === PICK_HIT_NOISE,
+        `pin ${pin + 1} set: a click (${PICK_HIT_NOISE})`,
+      );
   }
   check(last(seen, 'pick')?.what === 'open' && s.picked[0] === door && !s.pick.length, 'the last pin: open');
   check(w.block[door] === 0 && w.npcBlock[door] === 1, 'open for the player, still shut for the inmates');
@@ -595,7 +742,10 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   }
   const opened = s.step;
   for (let g = 0; g < PICKED_STEPS + 10 && s.picked.length; g++) step();
-  check(s.step === opened + PICKED_STEPS && w.block[door] === 1, `never gone through: locked again after ${PICKED_STEPS / STEPS_PER_SECOND} s`);
+  check(
+    s.step === opened + PICKED_STEPS && w.block[door] === 1,
+    `never gone through: locked again after ${PICKED_STEPS / STEPS_PER_SECOND} s`,
+  );
   // A step away stops the picking.
   step(command(0, OP.USE, 1));
   check(s.pick.length === 3 && s.pick[1] === 0, 'at it again');
@@ -609,7 +759,10 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     for (let g = 0; g < 200 && s.pick.length && (inZone(s.step + 1 - s.pick[2]) || inZone(s.step - s.pick[2])); g++) step();
     step(command(0, OP.USE, 1));
   }
-  check(itemOf(s.items.inv[0]) === 0 && !s.pick.length && seen.some((e) => e.type === 'broke' && e.item === LOCKPICK), 'worn out: the pick breaks');
+  check(
+    itemOf(s.items.inv[0]) === 0 && !s.pick.length && seen.some((e) => e.type === 'broke' && e.item === LOCKPICK),
+    'worn out: the pick breaks',
+  );
   // A perimeter gate: no lock to pick.
   let gate = -1;
   for (let i = 0; i < MAP_W * MAP_H && gate < 0; i++) if (lockAt(w, i) === 'gate') gate = i;
@@ -629,7 +782,10 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     s.items.inv[0] = slot(LOCKPICK);
     const g = toolTarget(w, LAYER.GROUND, s.player, LOCKPICK, []);
     step(command(0, OP.USE, 1));
-    check(g?.action === 'pick' && !g.fits && !s.pick.length && seen.some((e) => e.type === 'cantStrike' && e.why === 'gate'), 'a perimeter gate: no lock to pick');
+    check(
+      g?.action === 'pick' && !g.fits && !s.pick.length && seen.some((e) => e.type === 'cantStrike' && e.why === 'gate'),
+      'a perimeter gate: no lock to pick',
+    );
     check(!s.escaped, 'still inside');
   }
   // The player's own cell door at night, from inside.
@@ -668,7 +824,9 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
     step(command(0, OP.USE, 1));
   }
   check(s.picked[0] === cellDoor && w.block[cellDoor] === 0, 'the own cell door picked from inside at night');
-  console.log(`lockpick: start, a slip (${PICK_MISS_NOISE}, worn), pins set (${PICK_HIT_NOISE}), open for the player alone until through or ${PICKED_STEPS / STEPS_PER_SECOND} s, a step stops it, it breaks, never a gate, the cell door at night`);
+  console.log(
+    `lockpick: start, a slip (${PICK_MISS_NOISE}, worn), pins set (${PICK_HIT_NOISE}), open for the player alone until through or ${PICKED_STEPS / STEPS_PER_SECOND} s, a step stops it, it breaks, never a gate, the cell door at night`,
+  );
 }
 
 // ------------------------------------------------------------------ saves
@@ -691,14 +849,28 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   talk(TALK.DICE, 1);
   check(s.dice.length === 4 && twin(sim, [command(0, OP.TALK, TALK.REROLL, 1), 0, 0]), 'saved with the dice on the table: the same game');
   talk(TALK.WRESTLE);
-  check(s.bout.length === 4 && twin(sim, Array.from({ length: 60 }, (_, k) => (k % 3 ? 0 : command(0, OP.TRAIN, 1 + ((k / 3) % 2))))), 'saved mid-bout: the same bout');
+  check(
+    s.bout.length === 4 &&
+      twin(
+        sim,
+        Array.from({ length: 60 }, (_, k) => (k % 3 ? 0 : command(0, OP.TRAIN, 1 + ((k / 3) % 2)))),
+      ),
+    'saved mid-bout: the same bout',
+  );
   // Damaged: dice that aren't dice, a bout with nobody, a lock that isn't a door.
   const bad = sim.snapshot();
   Object.assign(bad.state, { dice: [0, 9, 7, 1], bout: [99, 500, 0, 1], pick: [5, 0, 1], picked: [5, 9, 0], played: ['x'] });
   const fixed = new Sim(CENTER_PERKS, 1);
   fixed.restore(bad);
   for (let k = 0; k < 40; k++) fixed.step(0);
-  check(!fixed.state.dice.length && !fixed.state.bout.length && !fixed.state.pick.length && !fixed.state.picked.length && fixed.state.played.length === 0, 'a damaged save: the broken games are gone');
+  check(
+    !fixed.state.dice.length &&
+      !fixed.state.bout.length &&
+      !fixed.state.pick.length &&
+      !fixed.state.picked.length &&
+      fixed.state.played.length === 0,
+    'a damaged save: the broken games are gone',
+  );
   // A save from before P22 on a sports day: today and tomorrow keep the card it took the place of.
   const fresh = new Sim(CENTER_PERKS, 4);
   let day = 2;
@@ -715,10 +887,13 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   const rec = new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.15.1' });
   const replay = replayLog({ ...rec.toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, CENTER_PERKS);
   check(!!replay && planOf(replay.sim, day).event === before, 'a run logged before P22 replays with the old card');
-  const now = replayLog({ ...new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.16.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, CENTER_PERKS);
+  const now = replayLog(
+    { ...new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.16.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] },
+    CENTER_PERKS,
+  );
   check(!!now && planOf(now.sim, day).event === 'sports', 'one logged since deals sports day');
   const carried = new RunRecorder(new Sim(CENTER_PERKS, 4), { log: rec.toLog(), game: '1.16.0' }).toLog();
-  check(carried.seed === -1 && !!carried.start, 'an old log isn\'t carried on: the game starts its own');
+  check(carried.seed === -1 && !!carried.start, "an old log isn't carried on: the game starts its own");
   console.log(`saves: dice and a bout carry on; damaged games dropped; an old save on sports day ${day} keeps its ${before}`);
 }
 {
@@ -748,6 +923,6 @@ const die = (salt: number, step: number, k: number) => 1 + rollInt(salt, SALT.DI
   s.picked = [door, s.step + PICKED_STEPS, 0];
   const open = new Sim(CENTER_PERKS, 1);
   open.restore(JSON.parse(JSON.stringify(sim.snapshot())));
-  check(open.world.block[door] === 0 && open.world.pickedDoor === door, 'saved with a door picked open: it\'s open when loaded');
+  check(open.world.block[door] === 0 && open.world.pickedDoor === door, "saved with a door picked open: it's open when loaded");
   console.log('saves: a lock half picked and a door picked open carry on');
 }

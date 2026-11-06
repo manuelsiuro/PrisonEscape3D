@@ -24,7 +24,22 @@ import { centerX, centerZ, tileAt } from '../world/grid';
 import { lineOfSight } from '../ai/sight';
 import type { SimContext } from '../context';
 import { rollInt, SALT } from '../rng';
-import { PANIC_PEOPLE, PANIC_RANGE, PANIC_STEPS, RAT_HOME, RAT_MEALS, RAT_REACH, RAT_SPEED, SQUEAK_GUARDS, SQUEAK_NOISE, STEPS_PER_MINUTE, TRAP_KITCHEN, TRAP_MINUTE, TRAP_TUNNEL, UNIT } from '../tuning';
+import {
+  PANIC_PEOPLE,
+  PANIC_RANGE,
+  PANIC_STEPS,
+  RAT_HOME,
+  RAT_MEALS,
+  RAT_REACH,
+  RAT_SPEED,
+  SQUEAK_GUARDS,
+  SQUEAK_NOISE,
+  STEPS_PER_MINUTE,
+  TRAP_KITCHEN,
+  TRAP_MINUTE,
+  TRAP_TUNNEL,
+  UNIT,
+} from '../tuning';
 import { containersOf } from '../world/containers';
 import { TILE, TILE_INFO } from '../world/tiles';
 import { LAYER, layerOfKey, MAP_H, MAP_W, tileOfKey, type World } from '../world/World';
@@ -306,7 +321,22 @@ export function throwRat(sim: SimContext, tile: number) {
 }
 
 export function newRat(wild: boolean, x: number, z: number): Rat {
-  const r: Rat = { mode: RAT.SHOULDER, x, z, facing: 5, path: [], at: 0, target: -1, leave: false, carry: 0, cash: 0, tile: -1, until: 0, wild, looseDay: 0 };
+  const r: Rat = {
+    mode: RAT.SHOULDER,
+    x,
+    z,
+    facing: 5,
+    path: [],
+    at: 0,
+    target: -1,
+    leave: false,
+    carry: 0,
+    cash: 0,
+    tile: -1,
+    until: 0,
+    wild,
+    looseDay: 0,
+  };
   // (P28: a pet's racing form, from the start.)
   return wild ? r : Object.assign(r, { speed: RAT_START_SPEED, fed: 0, lap: 0 });
 }
@@ -358,8 +388,7 @@ export function feedRat(sim: SimContext) {
 
 /** The hotbar slot whose bait a caught rat would eat (-1: none there). */
 export function baitSlot(inv: readonly number[]): number {
-  for (const n of BAIT)
-    for (let k = 0; k < HOTBAR; k++) if (itemOf(inv[k]) === n) return k;
+  for (const n of BAIT) for (let k = 0; k < HOTBAR; k++) if (itemOf(inv[k]) === n) return k;
   return -1;
 }
 
@@ -372,7 +401,7 @@ export function baitSlot(inv: readonly number[]): number {
 export function rats(sim: SimContext) {
   const s = sim.state;
   if (s.step % STEPS_PER_MINUTE === 0 && clockAt(s.step).minuteOfDay === TRAP_MINUTE) traps(sim);
-  for (let k = 0; k < s.rats.length; ) {
+  for (let k = 0; k < s.rats.length;) {
     if (stepRat(sim, s.rats[k])) s.rats.splice(k, 1);
     else k++;
   }
@@ -508,7 +537,11 @@ function errand(sim: SimContext, r: Rat) {
     delete s.coins[c];
     r.cash = cash;
   }
-  sim.events.push(best >= 0 || cash ? { type: 'rat', what: 'took', item: itemOf(r.carry), cash, who, container: c } : { type: 'rat', what: 'empty', who, container: c });
+  sim.events.push(
+    best >= 0 || cash
+      ? { type: 'rat', what: 'took', item: itemOf(r.carry), cash, who, container: c }
+      : { type: 'rat', what: 'empty', who, container: c },
+  );
   headHome(sim, r);
 }
 
@@ -566,7 +599,9 @@ function scurry(sim: SimContext, r: Rat) {
       const t = spots[k];
       const d = Math.abs((t % MAP_W) - (r.tile % MAP_W)) + Math.abs(Math.floor(t / MAP_W) - Math.floor(r.tile / MAP_W));
       if (d >= 2) continue;
-      for (const n of [t - MAP_W, t + 1, t + MAP_W, t - 1]) if (n >= 0 && n < MAP_W * MAP_H && Math.abs((n % MAP_W) - (t % MAP_W)) <= 1 && !spots.includes(n) && ratWay(w, n) && !inDuct(w, n)) spots.push(n);
+      for (const n of [t - MAP_W, t + 1, t + MAP_W, t - 1])
+        if (n >= 0 && n < MAP_W * MAP_H && Math.abs((n % MAP_W) - (t % MAP_W)) <= 1 && !spots.includes(n) && ratWay(w, n) && !inDuct(w, n))
+          spots.push(n);
     }
     const to = spots.length ? spots[rollInt(s.salt, SALT.SCURRY, s.step, r.tile, spots.length)] : r.tile;
     r.path = ratPath(w, tileAt(r.x, r.z), to, 8, true) ?? [tileAt(r.x, r.z)];

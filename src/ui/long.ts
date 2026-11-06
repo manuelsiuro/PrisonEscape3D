@@ -5,14 +5,12 @@ import { RACE_ENTER } from '../sim/systems/races';
 import { arrowStep, esc, h, type Send, setText } from './dom';
 import { icon } from './icons';
 
-
 /**
  * Long games (P28) on screen: the race card at the track on a race night (the rats, their form
  * and the bookie's odds, a bet, the pet entered; then the race as it's run, and the result). It's
  * drawn from a view the play layer fills from the sim (play/long.ts): the card, the odds and the
  * race are the sim's own pure functions. Every button is an OP.EXT RACE.
  */
-
 
 /** A lane on the card. */
 export interface RaceLane {
@@ -173,12 +171,33 @@ export class RaceCard {
     const sk = `${betting}|${v.cash}|${currentLang()}`;
     if (sk !== this.stakesDrawn) {
       this.stakesDrawn = sk;
-      if (betting && BETS[this.stake] > v.cash) this.stake = Math.max(0, BETS.reduce((best, n, k) => (n <= v.cash ? k : best), 0));
+      if (betting && BETS[this.stake] > v.cash)
+        this.stake = Math.max(
+          0,
+          BETS.reduce((best, n, k) => (n <= v.cash ? k : best), 0),
+        );
       this.stakes.classList.toggle('hidden', !betting);
       this.stakes.setAttribute('aria-label', t('race.stake'));
-      this.stakes.innerHTML = betting ? BETS.map((n, k) => `<button class="seg${k === this.stake ? ' on' : ''}${n > v.cash ? ' poor' : ''}" role="radio" aria-checked="${k === this.stake}" tabindex="${k === this.stake ? 0 : -1}" data-stake="${k}">$${n}</button>`).join('') : '';
+      this.stakes.innerHTML = betting
+        ? BETS.map(
+            (n, k) =>
+              `<button class="seg${k === this.stake ? ' on' : ''}${n > v.cash ? ' poor' : ''}" role="radio" aria-checked="${k === this.stake}" tabindex="${k === this.stake ? 0 : -1}" data-stake="${k}">$${n}</button>`,
+          ).join('')
+        : '';
     }
-    const key = [v.phase, v.at, v.lanes.map((l) => `${l.name}:${l.owner}:${l.speed}:${l.odds}:${l.place}:${l.fed}`).join(','), v.bet ? `${v.bet.lane}:${v.bet.stake}` : '', v.enter, v.entered, v.why, v.result, v.cash, this.stake, currentLang()].join('|');
+    const key = [
+      v.phase,
+      v.at,
+      v.lanes.map((l) => `${l.name}:${l.owner}:${l.speed}:${l.odds}:${l.place}:${l.fed}`).join(','),
+      v.bet ? `${v.bet.lane}:${v.bet.stake}` : '',
+      v.enter,
+      v.entered,
+      v.why,
+      v.result,
+      v.cash,
+      this.stake,
+      currentLang(),
+    ].join('|');
     if (key !== this.drawn) {
       this.drawn = key;
       setText(this.title, t('race.title'));
@@ -192,14 +211,27 @@ export class RaceCard {
           const odds = oddsText(l.odds);
           const betHere = v.bet?.lane === k;
           const tag = betHere ? `<em class="race-tag">${t('race.yourBet', { n: v.bet!.stake })}</em>` : '';
-          const place = l.place ? `<em class="race-place">${t(l.place === 1 ? 'race.first' : (`race.place${Math.min(4, l.place)}` as 'race.place2'))}</em>` : '';
+          const place = l.place
+            ? `<em class="race-place">${t(l.place === 1 ? 'race.first' : (`race.place${Math.min(4, l.place)}` as 'race.place2'))}</em>`
+            : '';
           const ok = betting && !v.why;
           const label = t('race.betOn', { n: stake, name: l.name, odds, m: pays(stake, l.odds), speed: l.speed });
-          const action = ok ? `<button class="big-btn small primary${stake > v.cash ? ' poor' : ''}" data-bet="${k}" aria-label="${esc(label)}"><span>${t('race.bet')}</span><small>${t('race.pays', { n: pays(stake, l.odds) })}</small></button>` : '';
+          const action = ok
+            ? `<button class="big-btn small primary${stake > v.cash ? ' poor' : ''}" data-bet="${k}" aria-label="${esc(label)}"><span>${t('race.bet')}</span><small>${t('race.pays', { n: pays(stake, l.odds) })}</small></button>`
+            : '';
           return `<div class="race-row${l.mine ? ' mine' : ''}${betHere ? ' backed' : ''}${l.place === 1 ? ' won' : ''}"><i class="race-dot" style="--lane:${l.mine ? PET_COLOR : LANE_COLORS[k % LANE_COLORS.length]}"></i><span class="race-name"><b>${esc(l.name)}</b><small>${who}${fed}</small></span><span class="race-speed"><i class="race-form" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${l.speed}" aria-label="${esc(t('race.form', { n: l.speed }))}"><i style="width:${l.speed}%"></i></i><small aria-hidden="true">${l.speed}</small></span><span class="race-odds">${odds}</span>${action}${tag}${place}<i class="race-run" aria-hidden="true"><i></i></i></div>`;
         })
         .join('');
-      const note = v.result || (card ? v.why || (v.bet ? t('race.betPlaced', { n: v.bet.stake, odds: oddsText(v.bet.odds), m: pays(v.bet.stake, v.bet.odds) }) : v.entered ? t('race.stay', { name: v.entered, time: v.at }) : t('race.pick')) : t('race.watch'));
+      const note =
+        v.result ||
+        (card
+          ? v.why ||
+            (v.bet
+              ? t('race.betPlaced', { n: v.bet.stake, odds: oddsText(v.bet.odds), m: pays(v.bet.stake, v.bet.odds) })
+              : v.entered
+                ? t('race.stay', { name: v.entered, time: v.at })
+                : t('race.pick'))
+          : t('race.watch'));
       setText(this.note, note);
       this.enter.classList.toggle('hidden', !v.enter || !card);
       setText(this.enter.querySelector('span')!, v.enter ? t('race.enter', { name: v.enter }) : '');

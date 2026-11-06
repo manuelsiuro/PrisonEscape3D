@@ -69,11 +69,21 @@ function phoneParts(): { body: Part[]; handset: Part[]; out: Part[] } {
     box(0.07, 0.06, 0.075, BLACK, 0.23, 1.16, 0.15),
     box(0.07, 0.06, 0.075, BLACK, 0.23, 0.94, 0.15),
   ];
-  const coil = new THREE.CatmullRomCurve3([new THREE.Vector3(0.12, 0.84, 0.1), new THREE.Vector3(0.16, 0.72, 0.13), new THREE.Vector3(0.21, 0.72, 0.15), new THREE.Vector3(0.23, 0.94, 0.145)]);
+  const coil = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.12, 0.84, 0.1),
+    new THREE.Vector3(0.16, 0.72, 0.13),
+    new THREE.Vector3(0.21, 0.72, 0.15),
+    new THREE.Vector3(0.23, 0.94, 0.145),
+  ]);
   handset.push(paint(new THREE.TubeGeometry(coil, 14, 0.014, 5, false), BLACK));
   // Off the hook: only the cord, stretched out of the box, sagging, up into the caller's raised fist
   // (Character: drawn PHONE_SHIFT to their right, the fist over the ear at PHONE_ARM).
-  const stub = new THREE.CatmullRomCurve3([new THREE.Vector3(0.12, 0.84, 0.1), new THREE.Vector3(0.2, 0.72, 0.17), new THREE.Vector3(0.23, 0.86, 0.27), new THREE.Vector3(0.165, 1.08, 0.33)]);
+  const stub = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.12, 0.84, 0.1),
+    new THREE.Vector3(0.2, 0.72, 0.17),
+    new THREE.Vector3(0.23, 0.86, 0.27),
+    new THREE.Vector3(0.165, 1.08, 0.33),
+  ]);
   return { body, handset, out: [paint(new THREE.TubeGeometry(stub, 14, 0.016, 5, false), BLACK)] };
 }
 
@@ -90,7 +100,8 @@ export function carParts(): { body: Part[]; glass: Part[]; lamps: Part[] } {
   const ROOF = 0xe6dcc6;
   const GLASS = 0x1c2a38;
   // A slab tilted about x (a windscreen), its middle at (y, z): a positive tilt drops its +z end.
-  const slab = (w: number, h: number, d: number, color: number, y: number, z: number, tilt: number) => paint(new THREE.BoxGeometry(w, h, d).rotateX(tilt).translate(0, y, z), color);
+  const slab = (w: number, h: number, d: number, color: number, y: number, z: number, tilt: number) =>
+    paint(new THREE.BoxGeometry(w, h, d).rotateX(tilt).translate(0, y, z), color);
   const W = 1.24;
   const body: Part[] = [
     box(W, 0.34, 2.8, PAINT, 0, 0.16, 0),
@@ -105,9 +116,17 @@ export function carParts(): { body: Part[]; glass: Part[]; lamps: Part[] } {
     box(0.62, 0.13, 0.02, 0x0d1015, 0, 0.27, 1.405),
     box(W + 0.04, 0.1, 0.08, CHROME, 0, 0.13, 1.42),
     box(W + 0.04, 0.1, 0.08, CHROME, 0, 0.13, -1.42),
-    ...[-1, 1].flatMap((s) => [box(0.012, 0.025, 0.1, CHROME, s * (W / 2 + 0.004), 0.38, 0.1), box(0.012, 0.025, 0.1, CHROME, s * (W / 2 + 0.004), 0.38, -0.5)]),
+    ...[-1, 1].flatMap((s) => [
+      box(0.012, 0.025, 0.1, CHROME, s * (W / 2 + 0.004), 0.38, 0.1),
+      box(0.012, 0.025, 0.1, CHROME, s * (W / 2 + 0.004), 0.38, -0.5),
+    ]),
     // The wheels, half under the body.
-    ...[0.92, -0.92].flatMap((z) => [-1, 1].flatMap((s) => [rod(0.22, 0.18, 0x15171b, s * (W / 2 - 0.08), 0.22, z, 12), rod(0.12, 0.19, 0x9aa1ab, s * (W / 2 - 0.08), 0.22, z, 10)])),
+    ...[0.92, -0.92].flatMap((z) =>
+      [-1, 1].flatMap((s) => [
+        rod(0.22, 0.18, 0x15171b, s * (W / 2 - 0.08), 0.22, z, 12),
+        rod(0.12, 0.19, 0x9aa1ab, s * (W / 2 - 0.08), 0.22, z, 10),
+      ]),
+    ),
   ];
   // The glass: the side windows under the roof, the windscreen from the hood (z 0.6) up to the roof's
   // front (z 0.26), the rear window from the roof's back (z -0.7) down to the trunk.
@@ -152,7 +171,14 @@ export class PhoneView {
   /** How far the car may pull away before its nose leaves the road (tiles), and so how hard it pulls. */
   private carPull = AWAY_PULL;
   private readonly lampMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false, transparent: true });
-  private readonly beamMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0xfff0c8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  private readonly beamMat = new THREE.MeshBasicMaterial({
+    map: glowTexture(),
+    color: 0xfff0c8,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
   private carAt = { x: 0, z: 0, angle: 0 };
   /** Pulling away (seconds since; -1 not), and gone until the night's car is over. */
   private leaving = -1;
@@ -160,8 +186,23 @@ export class PhoneView {
   /** The beacon: a post, its amber dome, a flashing pool around it. */
   private readonly beacon = new THREE.Group();
   private readonly domeMat = new THREE.MeshBasicMaterial({ color: 0xffa524, toneMapped: false });
-  private readonly glareMat = new THREE.SpriteMaterial({ map: glowTexture(), color: 0xffa524, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false });
-  private readonly poolMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0xff9a1f, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  private readonly glareMat = new THREE.SpriteMaterial({
+    map: glowTexture(),
+    color: 0xffa524,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    depthTest: false,
+  });
+  private readonly poolMat = new THREE.MeshBasicMaterial({
+    map: glowTexture(),
+    color: 0xff9a1f,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
   private readonly sweep: THREE.Mesh;
   /** Game minutes the beacon still flashes (0: dark), and the clock at the last frame. */
   private alarmLeft = 0;
@@ -182,7 +223,10 @@ export class PhoneView {
     this.car.add(body, glass, lamps, beam);
     this.car.visible = false;
     // The beacon: a grey post on a foot, the amber dome on top, a glare round the dome (seen over the walls), the light washing the ground.
-    const post = new THREE.Mesh(merge([cyl(0.16, 0.05, 0x3b3f46, 0, 0, 0, 10), cyl(0.035, 1.5, 0x8a929c, 0, 0.05, 0, 8), cyl(0.13, 0.06, 0x2b2e34, 0, 1.55, 0, 12)]), kitMaterial);
+    const post = new THREE.Mesh(
+      merge([cyl(0.16, 0.05, 0x3b3f46, 0, 0, 0, 10), cyl(0.035, 1.5, 0x8a929c, 0, 0.05, 0, 8), cyl(0.13, 0.06, 0x2b2e34, 0, 1.55, 0, 12)]),
+      kitMaterial,
+    );
     post.castShadow = true;
     const dome = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 1.61, 0), this.domeMat);
     const glare = new THREE.Sprite(this.glareMat);
@@ -239,7 +283,12 @@ export class PhoneView {
     const dz = Math.sign(DIR_Z[c.car.face] ?? 0);
     const base = world.ground.base;
     let road = 0;
-    for (let x = c.car.x + dx, z = c.car.z + dz; road < 16 && x >= 0 && x < MAP_W && z >= 0 && z < MAP_H && base[z * MAP_W + x] === TILE.ROAD; x += dx, z += dz) road++;
+    for (
+      let x = c.car.x + dx, z = c.car.z + dz;
+      road < 16 && x >= 0 && x < MAP_W && z >= 0 && z < MAP_H && base[z * MAP_W + x] === TILE.ROAD;
+      x += dx, z += dz
+    )
+      road++;
     const room = Math.max(0.3, road + 0.5 - CAR_NOSE);
     this.carPull = Math.min(AWAY_PULL, (2 * room) / (AWAY_SECS * AWAY_SECS));
   }
@@ -258,8 +307,14 @@ export class PhoneView {
     const tz = Math.floor(tile / MAP_W);
     let ox = 0;
     let oz = 0;
-    const door = (x: number, z: number) => !!this.world && x >= 0 && x < MAP_W && z >= 0 && z < MAP_H && this.world.ground.base[z * MAP_W + x] === TILE.DOOR;
-    for (const [dx, dz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+    const door = (x: number, z: number) =>
+      !!this.world && x >= 0 && x < MAP_W && z >= 0 && z < MAP_H && this.world.ground.base[z * MAP_W + x] === TILE.DOOR;
+    for (const [dx, dz] of [
+      [0, 1],
+      [0, -1],
+      [1, 0],
+      [-1, 0],
+    ]) {
       if (!door(tx + dx, tz + dz)) continue;
       // (The two ways along the gate: toward the one where it stops, west or north first.)
       const side = [-1, 1].find((k) => !door(tx + dx + k * dz, tz + dz + k * dx)) ?? 0;

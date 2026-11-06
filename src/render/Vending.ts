@@ -39,11 +39,20 @@ export class VendingView {
   readonly group = new THREE.Group();
   private readonly lit = seeThrough(new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
   private readonly goodsMat = seeThrough(new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
-  private readonly glassMat = seeThrough(new THREE.MeshBasicMaterial({ color: 0xbfe4ff, transparent: true, opacity: 0.14, depthWrite: false, toneMapped: false }));
+  private readonly glassMat = seeThrough(
+    new THREE.MeshBasicMaterial({ color: 0xbfe4ff, transparent: true, opacity: 0.14, depthWrite: false, toneMapped: false }),
+  );
   private readonly dark = seeThrough(kitMaterial.clone());
   private readonly signMat = seeThrough(new THREE.MeshBasicMaterial({ map: signTexture(), toneMapped: false }));
   private readonly ledMat = seeThrough(new THREE.MeshBasicMaterial({ color: 0x38e07a, toneMapped: false }));
-  private readonly poolMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0xfff0c0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  private readonly poolMat = new THREE.MeshBasicMaterial({
+    map: glowTexture(),
+    color: 0xfff0c0,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
   private body: THREE.Group | null = null;
   /** Each row's goods, front first. */
   private rows: THREE.Mesh[][] = [];
@@ -97,7 +106,8 @@ export class VendingView {
       box(0.48, 0.11, 0.01, 0x0b0d10, -0.1, 0.14, FRONT + 0.02),
       box(0.3, 0.02, 0.012, 0x8d949e, -0.1, 0.22, FRONT + 0.025),
     ];
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) panel.push(box(0.03, 0.03, 0.01, 0xd9dde3, 0.285 + c * 0.04, 0.68 + r * 0.05, FRONT + 0.02));
+    for (let r = 0; r < 4; r++)
+      for (let c = 0; c < 3; c++) panel.push(box(0.03, 0.03, 0.01, 0xd9dde3, 0.285 + c * 0.04, 0.68 + r * 0.05, FRONT + 0.02));
     g.add(new THREE.Mesh(merge(panel), this.dark));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.84, 0.15), this.signMat);
     sign.position.set(0, 1.545, FRONT + 0.012);

@@ -2,7 +2,26 @@
 import { nearestDir } from '../ai/path';
 import type { SimContext } from '../context';
 import { type Attr, ATTRS } from '../events';
-import { ATTR_MAX, GIVE_WAY_STEPS, GYM_ENERGY, READ_FILL_EVERY, READ_HIT, READ_LEAD, READ_SETS_A_DAY, READ_WAIT, READ_WINDOW, REP_DRAIN_STEPS, REP_GAIN, SET_BEATS, STUDY_ENERGY, STUDY_TIP_EVERY, TALK_REACH, TIRED, TRAIN_GAIN, UNIT } from '../tuning';
+import {
+  ATTR_MAX,
+  GIVE_WAY_STEPS,
+  GYM_ENERGY,
+  READ_FILL_EVERY,
+  READ_HIT,
+  READ_LEAD,
+  READ_SETS_A_DAY,
+  READ_WAIT,
+  READ_WINDOW,
+  REP_DRAIN_STEPS,
+  REP_GAIN,
+  SET_BEATS,
+  STUDY_ENERGY,
+  STUDY_TIP_EVERY,
+  TALK_REACH,
+  TIRED,
+  TRAIN_GAIN,
+  UNIT,
+} from '../tuning';
 import { keyAt, keyFrom, READ_PACE, SUBJECTS } from '../../content/books';
 import { containersOf } from '../world/containers';
 import { LAYER, MAP_W } from '../world/World';
@@ -35,7 +54,13 @@ export function setAttr(sim: SimContext, a: Attr, v: number) {
 /** What a prop trains: the weights, P31's pull-up bar and 2.29's mat Strength, the treadmill and 2.29's bag Speed, a library shelf Intellect. */
 export function trainsOn(sim: Pick<SimContext, 'world'>, prop: number): Attr | null {
   const kind = sim.world.props[prop]?.kind;
-  return kind === 'weights' || kind === 'pullup' || kind === 'mat' ? 'str' : kind === 'treadmill' || kind === 'punchingBag' ? 'spd' : kind === 'shelf' ? 'int' : null;
+  return kind === 'weights' || kind === 'pullup' || kind === 'mat'
+    ? 'str'
+    : kind === 'treadmill' || kind === 'punchingBag'
+      ? 'spd'
+      : kind === 'shelf'
+        ? 'int'
+        : null;
 }
 
 /** What a set costs now: as it's written, and double when chilled. */
@@ -54,7 +79,9 @@ export function beatAt(step: number, beat: number): { n: number; off: number } {
 export function onMachine(sim: Pick<SimContext, 'state' | 'world'>, prop: number): number {
   const spot = placesOf(sim.world).machines.find((q) => q.prop === prop);
   if (!spot) return -1;
-  return sim.state.inmates.findIndex((m) => m.goal === spot.tile && ON_MACHINE.includes(m.doing) && m.ko === 0 && tileAt(m.body.x, m.body.z) === spot.tile);
+  return sim.state.inmates.findIndex(
+    (m) => m.goal === spot.tile && ON_MACHINE.includes(m.doing) && m.ko === 0 && tileAt(m.body.x, m.body.z) === spot.tile,
+  );
 }
 
 /** Whether a set can't be begun: why (shown), or null. */
@@ -64,7 +91,8 @@ function refused(sim: SimContext, a: Attr): 'tired' | 'max' | 'full' | null {
 }
 
 /** The librarian (2.31), by index, -1 none. */
-export const librarianOf = (sim: Pick<SimContext, 'state' | 'world'>) => inmateInCell(sim.state, sim.world.def.leisure?.librarian?.cell ?? -1);
+export const librarianOf = (sim: Pick<SimContext, 'state' | 'world'>) =>
+  inmateInCell(sim.state, sim.world.def.leisure?.librarian?.cell ?? -1);
 
 /** The day's reading done (2.31): no more till tomorrow. */
 export const headFull = (sim: Pick<SimContext, 'state' | 'rules230'>) => !sim.rules230 && sim.state.readToday >= READ_SETS_A_DAY;
@@ -105,7 +133,8 @@ export function readOn(sim: SimContext) {
 export function chairForBook(sim: SimContext): number {
   const s = sim.state;
   if (sim.rules230 || !s.book || s.seat >= 0 || s.train >= 0 || s.layer !== LAYER.GROUND) return -1;
-  const busy = (t: number) => s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === t || m.seat === t || tileAt(m.body.x, m.body.z) === t));
+  const busy = (t: number) =>
+    s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === t || m.seat === t || tileAt(m.body.x, m.body.z) === t));
   let best = -1;
   let near = Infinity;
   sim.world.props.forEach((p, k) => {
@@ -122,7 +151,8 @@ export function chairForBook(sim: SimContext): number {
 /** A library chair the player could sit on now, as sitDown has it (2.31). */
 export function freeReadSeat(sim: SimContext): number {
   const s = sim.state;
-  const busy = (t: number) => s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === t || m.seat === t || tileAt(m.body.x, m.body.z) === t));
+  const busy = (t: number) =>
+    s.inmates.some((m) => m.ko === 0 && m.angry <= 0 && m.plan >= 0 && (m.goal === t || m.seat === t || tileAt(m.body.x, m.body.z) === t));
   return placesOf(sim.world).readSeats.find((q) => !busy(q.tile))?.tile ?? -1;
 }
 
@@ -167,7 +197,15 @@ export function keepTurn(sim: SimContext) {
   const s = sim.state;
   if (!s.askTurn.length) return;
   const [prop, left] = s.askTurn;
-  if (sim.away || s.lockdown || s.sleeping || s.ko > 0 || s.solitary > 0 || s.layer !== LAYER.GROUND || !atProp(sim.world, prop, s.player, REACH + UNIT / 4)) {
+  if (
+    sim.away ||
+    s.lockdown ||
+    s.sleeping ||
+    s.ko > 0 ||
+    s.solitary > 0 ||
+    s.layer !== LAYER.GROUND ||
+    !atProp(sim.world, prop, s.player, REACH + UNIT / 4)
+  ) {
     s.askTurn = [];
     return;
   }
@@ -194,7 +232,8 @@ export function startTraining(sim: SimContext, prop: number, use: FixtureUse | '
   const p = sim.world.props[prop];
   s.player.moving = false;
   // (2.31: on a chair, reading, they face its table.)
-  if (s.seat < 0 || sim.rules230) s.player.facing = nearestDir((p.x + p.w / 2) * UNIT - s.player.x, (p.z + p.d / 2) * UNIT - s.player.z) || s.player.facing;
+  if (s.seat < 0 || sim.rules230)
+    s.player.facing = nearestDir((p.x + p.w / 2) * UNIT - s.player.x, (p.z + p.d / 2) * UNIT - s.player.z) || s.player.facing;
   s.train = prop;
   s.readFrom = s.step;
   s.reps = 0;
@@ -319,7 +358,11 @@ function keepBook(sim: SimContext) {
   const s = sim.state;
   const p = s.player;
   // (In the library, or at one of its shelves from the far side of a doorway.)
-  const here = sim.world.zoneAt(Math.floor(p.x / UNIT), Math.floor(p.z / UNIT)) === 'library' || sim.world.props.some((q, k) => q.kind === 'shelf' && sim.world.zoneAt(q.x, q.z) === 'library' && atProp(sim.world, k, p, REACH + UNIT / 4));
+  const here =
+    sim.world.zoneAt(Math.floor(p.x / UNIT), Math.floor(p.z / UNIT)) === 'library' ||
+    sim.world.props.some(
+      (q, k) => q.kind === 'shelf' && sim.world.zoneAt(q.x, q.z) === 'library' && atProp(sim.world, k, p, REACH + UNIT / 4),
+    );
   if (!here || sim.away || s.lockdown || s.sleeping || s.ko > 0 || s.solitary > 0 || s.layer !== LAYER.GROUND) {
     stopTraining(sim);
     putBack(sim);

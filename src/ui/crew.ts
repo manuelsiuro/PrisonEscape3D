@@ -7,7 +7,6 @@ import { icon } from './icons';
 /** Each line of work's icon (P23): the talk panel, the crew's pill and panel, the chips over their heads, the prisoner's file. */
 export const SPEC_ICON: Readonly<Record<Speciality, string>> = { lookout: 'eye', digger: 'shovel', muscle: 'fist', smuggler: 'box' };
 
-
 /** One order in the talk panel (P23): what it says, the line under it (what it does, or why not now), whether it can be given, whether it's the one in force. */
 export interface CrewOrderView {
   order: number;
@@ -94,7 +93,11 @@ export class CrewPanel {
   onRecall: (who: number) => void = () => {};
 
   constructor(private readonly click: () => void) {
-    this.el = h('div', 'item-panel board-panel crew-panel hidden', `<div class="panel-head"><b>${icon('users', 20)}<span></span></b><button class="icon-btn small" data-crew="close">${icon('close', 18)}</button></div><span class="sr-only" role="status"></span><div class="crew-body"></div>`);
+    this.el = h(
+      'div',
+      'item-panel board-panel crew-panel hidden',
+      `<div class="panel-head"><b>${icon('users', 20)}<span></span></b><button class="icon-btn small" data-crew="close">${icon('close', 18)}</button></div><span class="sr-only" role="status"></span><div class="crew-body"></div>`,
+    );
     this.el.setAttribute('role', 'dialog');
     this.body = this.el.querySelector('.crew-body')!;
     this.say = this.el.querySelector('[role="status"]')!;
@@ -159,10 +162,13 @@ export class CrewPanel {
           `<div class="board-row crew-row"><span class="board-ic crew-act-ic">${icon(SPEC_ICON[r.spec], 20)}</span><span class="board-text"><b>${esc(r.name)}<em>${t(`spec.${r.spec}`)}</em>${r.night ? `<i class="crew-moon" title="${esc(t('crew.nightOn'))}">${icon('moon', 12)}</i><span class="sr-only">${esc(t('crew.nightOn'))}</span>` : ''}</b><small>${esc(r.status)}</small></span>${r.recall ? `<button class="big-btn primary small" data-crew="recall" data-who="${r.who}" aria-label="${esc(t('crew.recallAria', { name: r.name }))}">${icon('bell', 16)}<span>${t('crew.recall')}</span></button>` : ''}</div>`,
       )
       .join('')}</div><p class="board-note">${t('crew.panelNote')}</p>${TOUCH ? '' : `<p class="rat-keys">${t('crew.keys')}</p>`}`;
-    if (had !== undefined) (this.body.querySelector<HTMLElement>(`[data-who="${had}"]`) ?? this.el.querySelector<HTMLElement>('[data-crew="close"]'))?.focus();
+    if (had !== undefined)
+      (this.body.querySelector<HTMLElement>(`[data-who="${had}"]`) ?? this.el.querySelector<HTMLElement>('[data-crew="close"]'))?.focus();
     if (this.focusNext) {
       this.focusNext = false;
-      (this.body.querySelector<HTMLElement>('button[data-crew="recall"]') ?? this.el.querySelector<HTMLElement>('[data-crew="close"]'))?.focus();
+      (
+        this.body.querySelector<HTMLElement>('button[data-crew="recall"]') ?? this.el.querySelector<HTMLElement>('[data-crew="close"]')
+      )?.focus();
     }
   }
 }
@@ -173,7 +179,12 @@ export class CrewChips {
   private readonly at = { x: 0, y: 0 };
 
   /** `unit`: CSS pixels per world unit at the chips' height (the zoom): the chips grow and shrink with the world's badges. */
-  update(list: readonly CrewChip[], project: (id: number, out: { x: number; y: number }, height: number) => { x: number; y: number } | null, hidden: boolean, unit = 57) {
+  update(
+    list: readonly CrewChip[],
+    project: (id: number, out: { x: number; y: number }, height: number) => { x: number; y: number } | null,
+    hidden: boolean,
+    unit = 57,
+  ) {
     let n = 0;
     // A badge is half a unit across: the chip a little smaller, beside it just clear of its edge when there's one.
     const badge = unit * 0.5;

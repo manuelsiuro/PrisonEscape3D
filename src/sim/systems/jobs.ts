@@ -13,7 +13,20 @@ import { placesOf } from '../ai/places';
 import type { SimContext } from '../context';
 import { randomInt } from '../rng';
 import { type Attr, ATTRS } from '../events';
-import { ATTR_START, CHASE_HEAT, MAIL_WARNING, STEPS_PER_SECOND, STRANGER_CAP, STRANGER_EVERY, STRANGER_GAP, STRANGER_GRACE, STRANGER_HEAT, UNIT, VACANCY_DAYS, WORK_WARNING } from '../tuning';
+import {
+  ATTR_START,
+  CHASE_HEAT,
+  MAIL_WARNING,
+  STEPS_PER_SECOND,
+  STRANGER_CAP,
+  STRANGER_EVERY,
+  STRANGER_GAP,
+  STRANGER_GRACE,
+  STRANGER_HEAT,
+  UNIT,
+  VACANCY_DAYS,
+  WORK_WARNING,
+} from '../tuning';
 import { containersOf } from '../world/containers';
 import { MAP_W } from '../world/World';
 import { clockAt } from './clock';
@@ -68,7 +81,8 @@ export function nextWork(sim: SimContext): NextWork | null {
   const done = def.done ? itemNumber(def.done) : 0;
   const carried = s.items.inv.slice(0, HOTBAR);
   const has = (item: number) => !!item && carried.some((v) => itemOf(v) === item);
-  if (def.flow === 'mop') return has(raw) ? { act: 'mop', prop: -1, item: raw, who: -1 } : { act: 'take', prop: room.take, item: raw, who: -1 };
+  if (def.flow === 'mop')
+    return has(raw) ? { act: 'mop', prop: -1, item: raw, who: -1 } : { act: 'take', prop: room.take, item: raw, who: -1 };
   const running = room.machines.filter((i) => s.machines[i] !== undefined);
   const ready = running.find((i) => s.machines[i] <= s.step);
   if (def.flow === 'mail') {
@@ -81,7 +95,8 @@ export function nextWork(sim: SimContext): NextWork | null {
   if (ready !== undefined) return { act: 'unload', prop: ready, item: done, who: -1 };
   if (has(done)) return { act: 'put', prop: room.put, item: done, who: -1 };
   const free = room.machines.find((i) => s.machines[i] === undefined);
-  if (has(raw)) return free !== undefined ? { act: 'load', prop: free, item: raw, who: -1 } : { act: 'wait', prop: running[0], item: done, who: -1 };
+  if (has(raw))
+    return free !== undefined ? { act: 'load', prop: free, item: raw, who: -1 } : { act: 'wait', prop: running[0], item: done, who: -1 };
   // (As many on the go as it still owes: no fresh one, as the bin wouldn't give it.)
   if (running.length >= def.quota - s.quota) return running.length ? { act: 'wait', prop: running[0], item: done, who: -1 } : null;
   return { act: 'take', prop: room.take, item: raw, who: -1 };
@@ -102,7 +117,8 @@ export function work(sim: SimContext, st: Station) {
   };
   stopTraining(sim);
   const prop = sim.world.props[st.prop];
-  if (prop) s.player.facing = nearestDir((prop.x + prop.w / 2) * UNIT - s.player.x, (prop.z + prop.d / 2) * UNIT - s.player.z) || s.player.facing;
+  if (prop)
+    s.player.facing = nearestDir((prop.x + prop.w / 2) * UNIT - s.player.x, (prop.z + prop.d / 2) * UNIT - s.player.z) || s.player.facing;
   switch (st.act) {
     case 'full':
       sim.events.push({ type: 'full' });
@@ -263,7 +279,8 @@ export function stranger(sim: SimContext, zone: ZoneId, seen: boolean): number {
     return -1;
   };
   // (Wanted already: that's what a guard reacts to, and it says so.)
-  if (sim.rules229 || sim.world.def.rules?.relaxed || s.lockdown || ROUTINE[s.routine].id !== 'work' || s.heat >= CHASE_HEAT) return clear();
+  if (sim.rules229 || sim.world.def.rules?.relaxed || s.lockdown || ROUTINE[s.routine].id !== 'work' || s.heat >= CHASE_HEAT)
+    return clear();
   const rooms = jobRooms(sim.world);
   const mine = sim.playerJob >= 0 ? rooms[sim.playerJob]?.def : undefined;
   const at = zone === 'garden' ? undefined : rooms.find((r) => r.def.zone === zone);
@@ -370,7 +387,8 @@ export function spreadCoins(sim: SimContext) {
   containersOf(w).forEach((c, i) => {
     if (c.table === 'inmateDesk' && randomInt(s, 5) < 2) s.coins[i] = (s.coins[i] ?? 0) + 1 + randomInt(s, 8);
   });
-  for (let k = 0; k < s.inmates.length; k++) if (randomInt(s, 2) === 0) s.coins[pocketOf(w, k)] = (s.coins[pocketOf(w, k)] ?? 0) + 1 + randomInt(s, 6);
+  for (let k = 0; k < s.inmates.length; k++)
+    if (randomInt(s, 2) === 0) s.coins[pocketOf(w, k)] = (s.coins[pocketOf(w, k)] ?? 0) + 1 + randomInt(s, 6);
 }
 
 /** Opening a desk or someone's pockets: the change in it is the player's. */

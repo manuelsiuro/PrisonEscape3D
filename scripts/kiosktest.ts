@@ -22,7 +22,19 @@ import { TRAINING } from '../src/content/prisons/training';
 import { DECOR } from '../src/content/decor';
 import { itemDef, itemNumber } from '../src/content/items';
 import { RECIPES } from '../src/content/recipes';
-import { COURSE_ENERGY, COURSE_FEE, COURSE_INT, COURSE_QUESTIONS, COURSE_STEPS, KIOSK, KIOSK_BLOCK, NEWS_DAYS, PHOTO_WALL, SHOP, shopPrice } from '../src/content/kiosk';
+import {
+  COURSE_ENERGY,
+  COURSE_FEE,
+  COURSE_INT,
+  COURSE_QUESTIONS,
+  COURSE_STEPS,
+  KIOSK,
+  KIOSK_BLOCK,
+  NEWS_DAYS,
+  PHOTO_WALL,
+  SHOP,
+  shopPrice,
+} from '../src/content/kiosk';
 import { MONEY_EVERY } from '../src/content/phone';
 import { CALLEE } from '../src/content/phone';
 import { command, EXT, OP, SLOT, TALK } from '../src/sim/command';
@@ -45,7 +57,8 @@ import { MAP_W } from '../src/sim/world/World';
 import { check } from './assert';
 
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
-const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
+const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) =>
+  seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 const news = (seen: SimEvent[], what: string) => of(seen, 'kiosk').filter((e) => e.what === what);
 const refusals = (seen: SimEvent[]) => of(seen, 'refused').map((e) => e.why);
 const n = itemNumber;
@@ -104,13 +117,20 @@ function deskOf(sim: Sim) {
     const k = p.comms?.kiosk;
     check(!!k, `${p.id}: a kiosk`);
     if (!k) continue;
-    const onFloor = (x: number, z: number) => w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d) || (p.decor ?? []).some((d) => !DECOR[d.kind].wall && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
+    const onFloor = (x: number, z: number) =>
+      w.props.some((o) => x >= o.x && x < o.x + o.w && z >= o.z && z < o.z + o.d) ||
+      (p.decor ?? []).some((d) => !DECOR[d.kind].wall && x >= d.x && x < d.x + (d.w ?? 1) && z >= d.z && z < d.z + (d.d ?? 1));
     const zone = w.zoneAt(k.x, k.z);
-    check(!w.blocked(k.x, k.z) && !onFloor(k.x, k.z) && zone === 'library', `${p.id}: the kiosk's tile is open floor in the library (${zone})`);
+    check(
+      !w.blocked(k.x, k.z) && !onFloor(k.x, k.z) && zone === 'library',
+      `${p.id}: the kiosk's tile is open floor in the library (${zone})`,
+    );
     const dx = k.face === 1 ? 1 : k.face === 9 ? -1 : 0;
     const dz = k.face === 13 ? -1 : k.face === 5 ? 1 : 0;
     check(k.face !== 5 && w.blocked(k.x + dx, k.z + dz), `${p.id}: it hangs on a wall the camera sees (north, or a side wall)`);
-    const wallDecor = (p.decor ?? []).filter((d) => DECOR[d.kind].wall && d.x <= k.x && d.x + (d.w ?? 1) > k.x && d.z <= k.z && d.z + (d.d ?? 1) > k.z);
+    const wallDecor = (p.decor ?? []).filter(
+      (d) => DECOR[d.kind].wall && d.x <= k.x && d.x + (d.w ?? 1) > k.x && d.z <= k.z && d.z + (d.d ?? 1) > k.z,
+    );
     check(wallDecor.length === 0, `${p.id}: nothing else hangs on its bit of wall (${wallDecor.map((d) => d.kind).join(' ')})`);
     // (Never in the two rows a wall south of it hides.)
     check(!w.blocked(k.x, k.z + 1) && !w.blocked(k.x, k.z + 2), `${p.id}: no wall in the two rows in front of it (the camera's side)`);
@@ -122,7 +142,12 @@ function deskOf(sim: Sim) {
       const t = queue.pop()!;
       const x = t % MAP_W;
       const z = Math.floor(t / MAP_W);
-      for (const [ddx, ddz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [ddx, ddz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         const nt = (z + ddz) * MAP_W + x + ddx;
         if (reach.has(nt) || !w.inside(x + ddx, z + ddz) || w.npcBlock[nt]) continue;
         reach.add(nt);
@@ -141,7 +166,10 @@ function deskOf(sim: Sim) {
   for (const id of SHOP) {
     const d = itemDef(n(id));
     check(!d.contraband, `the shop sells ${id}: legal`);
-    check(shopPrice(id) < priceOf(d.value, OPINION_START), `${id}: $${shopPrice(id)}, under a merchant's $${priceOf(d.value, OPINION_START)} to a stranger`);
+    check(
+      shopPrice(id) < priceOf(d.value, OPINION_START),
+      `${id}: $${shopPrice(id)}, under a merchant's $${priceOf(d.value, OPINION_START)} to a stranger`,
+    );
   }
   console.log(`shop: ${SHOP.map((id) => `${id} $${shopPrice(id)}`).join(', ')}`);
 }
@@ -163,7 +191,10 @@ function deskOf(sim: Sim) {
   g.ext(KIOSK.WRITE);
   check(refusals(seen).at(-1) === 'loggedOut', 'a letter needs logging in first');
   g.ext(KIOSK.LOGIN);
-  check(sim.state.kiosk === sim.state.step + KIOSK_BLOCK && sim.state.cash === 2 && news(seen, 'login').length === 1, 'logged in: $1, ten minutes paid');
+  check(
+    sim.state.kiosk === sim.state.step + KIOSK_BLOCK && sim.state.cash === 2 && news(seen, 'login').length === 1,
+    'logged in: $1, ten minutes paid',
+  );
   g.ext(KIOSK.LOGIN);
   check(refusals(seen).at(-1) === 'loggedIn', 'not twice');
   for (let k = 0; k < KIOSK_BLOCK; k++) g.step();
@@ -217,7 +248,10 @@ function deskOf(sim: Sim) {
   g.ext(KIOSK.LOGIN);
   g.ext(KIOSK.WRITE);
   const wrote = news(seen, 'wrote');
-  check(wrote.length === 1 && (wrote[0].n ?? 0) > 0 && sim.state.phoned[1] === wrote[0].n, 'a letter home: the week\'s money order asked for');
+  check(
+    wrote.length === 1 && (wrote[0].n ?? 0) > 0 && sim.state.phoned[1] === wrote[0].n,
+    "a letter home: the week's money order asked for",
+  );
   const coming = sim.state.post[1];
   check(coming > 0 && sim.state.post[2] === 1, 'and a reply on its way');
   g.ext(KIOSK.WRITE);
@@ -225,10 +259,16 @@ function deskOf(sim: Sim) {
   g.ext(KIOSK.LOGOUT);
   const cash = sim.state.cash;
   g.to(1, 12, 1);
-  check(sim.state.cash === cash + wrote[0].n! && sim.state.photos.length === 0 && news(seen, 'photo').length === 0, 'mail call: the money, but no reply the same day');
+  check(
+    sim.state.cash === cash + wrote[0].n! && sim.state.photos.length === 0 && news(seen, 'photo').length === 0,
+    'mail call: the money, but no reply the same day',
+  );
   g.to(2, 12, 1);
   const photo = news(seen, 'photo');
-  check(photo.length === 1 && sim.state.photos.join() === String(coming - 1) && sim.state.post[1] === 0, 'the next day\'s mail call: the drawing pinned over the bed');
+  check(
+    photo.length === 1 && sim.state.photos.join() === String(coming - 1) && sim.state.post[1] === 0,
+    "the next day's mail call: the drawing pinned over the bed",
+  );
   // A week on, the phone's call home brings no second money order that week.
   g.jump(3, 10, 2);
   g.toKiosk();
@@ -243,7 +283,10 @@ function deskOf(sim: Sim) {
     g.ext(KIOSK.WRITE);
     g.to(day + 1, 12, 1);
   }
-  check(sim.state.photos.length === PHOTO_WALL && new Set(sim.state.photos).size === PHOTO_WALL, `at most ${PHOTO_WALL} pinned, all different (${sim.state.photos.join(' ')})`);
+  check(
+    sim.state.photos.length === PHOTO_WALL && new Set(sim.state.photos).size === PHOTO_WALL,
+    `at most ${PHOTO_WALL} pinned, all different (${sim.state.photos.join(' ')})`,
+  );
   check(news(seen, 'wrote').filter((e) => (e.n ?? 0) > 0).length === 2, `money orders a week apart (days 1 and ${1 + MONEY_EVERY})`);
   // A lockdown at noon: the reply waits for the next mail call.
   g.jump(12, 10, 2);
@@ -272,14 +315,17 @@ function deskOf(sim: Sim) {
   g.ext(KIOSK.LOGIN);
   const book = SHOP.indexOf('thick_book');
   g.ext(KIOSK.ORDER, book);
-  check(news(seen, 'ordered').length === 1 && sim.state.cash === 40 - 1 - shopPrice('thick_book') && sim.state.post[3] === n('thick_book'), 'a thick book ordered, paid at once');
+  check(
+    news(seen, 'ordered').length === 1 && sim.state.cash === 40 - 1 - shopPrice('thick_book') && sim.state.post[3] === n('thick_book'),
+    'a thick book ordered, paid at once',
+  );
   g.ext(KIOSK.ORDER, SHOP.indexOf('soap'));
   check(refusals(seen).at(-1) === 'orderComing', 'one order coming at a time');
   const desk = deskOf(sim);
   g.to(1, 12, 1);
   const got = news(seen, 'goods');
   const k = desk.box.indexOf(n('thick_book'));
-  check(got.length === 1 && k >= desk.hidden && sim.state.post[3] === 0, 'mail call: into the desk\'s open drawers');
+  check(got.length === 1 && k >= desk.hidden && sim.state.post[3] === 0, "mail call: into the desk's open drawers");
   g.jump(1, 18, 5);
   g.toKiosk();
   g.ext(KIOSK.LOGIN);
@@ -311,18 +357,28 @@ function deskOf(sim: Sim) {
     g.jump(2 + d, 9);
     const p = today(sim);
     const was = ahead[d - 1];
-    check(p.event === was.event && p.weather === was.weather && p.wind === was.wind && p.windForce === was.windForce, `day ${2 + d}: as the news said (${was.event}, ${was.weather})`);
+    check(
+      p.event === was.event && p.weather === was.weather && p.wind === was.wind && p.windForce === was.windForce,
+      `day ${2 + d}: as the news said (${was.event}, ${was.weather})`,
+    );
   }
-  console.log(`news from day 2 (seed 9): ${ahead.map((p) => `day ${p.day} ${p.event} ${p.weather} wind ${p.wind}/${p.windForce}`).join('; ')}`);
+  console.log(
+    `news from day 2 (seed 9): ${ahead.map((p) => `day ${p.day} ${p.event} ${p.weather} wind ${p.wind}/${p.windForce}`).join('; ')}`,
+  );
 }
 
 // ------------------------------------------------------------------ courses
 {
   const g = game();
   const { sim, seen } = g;
-  const quiz = questionsOf(sim, 1).map((q) => q.id + q.answer).join();
+  const quiz = questionsOf(sim, 1)
+    .map((q) => q.id + q.answer)
+    .join();
   const course = questionsOf(sim, 1, SALT.COURSE, COURSE_QUESTIONS, 2);
-  check(course.length === COURSE_QUESTIONS && course.map((q) => q.id + q.answer).join() !== quiz.slice(0, course.length), 'a course: its own questions, not quiz night\'s');
+  check(
+    course.length === COURSE_QUESTIONS && course.map((q) => q.id + q.answer).join() !== quiz.slice(0, course.length),
+    "a course: its own questions, not quiz night's",
+  );
   check(course.filter((q) => q.id.startsWith('h.')).length === 2, 'two of escape history, three of this prison');
   g.jump(1, 10, 2);
   g.toKiosk();
@@ -331,7 +387,10 @@ function deskOf(sim: Sim) {
   const int0 = sim.state.items.int;
   g.ext(KIOSK.LOGIN);
   g.ext(KIOSK.COURSE);
-  check(sim.state.course.length === 6 && sim.state.cash === 30 - 1 - COURSE_FEE && sim.state.energy === 50 - COURSE_ENERGY, `a course begun: $${COURSE_FEE} and ${COURSE_ENERGY} energy`);
+  check(
+    sim.state.course.length === 6 && sim.state.cash === 30 - 1 - COURSE_FEE && sim.state.energy === 50 - COURSE_ENERGY,
+    `a course begun: $${COURSE_FEE} and ${COURSE_ENERGY} energy`,
+  );
   for (let q = 0; q < COURSE_QUESTIONS; q++) {
     const now = courseQuestion(sim)!;
     check(now.id === course[q].id, `question ${q + 1} is the course's own`);
@@ -339,7 +398,10 @@ function deskOf(sim: Sim) {
     while (sim.state.course.length && sim.state.course[1] === q) g.step();
   }
   const passed = news(seen, 'passed');
-  check(passed.length === 1 && passed[0].n === COURSE_QUESTIONS && sim.state.items.int === int0 + COURSE_INT, `all right: passed, +${COURSE_INT} Intellect`);
+  check(
+    passed.length === 1 && passed[0].n === COURSE_QUESTIONS && sim.state.items.int === int0 + COURSE_INT,
+    `all right: passed, +${COURSE_INT} Intellect`,
+  );
   g.ext(KIOSK.COURSE);
   check(refusals(seen).at(-1) === 'coursed', 'one course a prison day');
   // Day 2: three right, one wrong, one let run out: failed.
@@ -394,11 +456,17 @@ function deskOf(sim: Sim) {
   const it = sim.state.items;
   g.jump(1, 10, 2);
   const r = RECIPES.findIndex((x) => x.result === 'hollow_book');
-  check(r >= 0 && RECIPES[r].int === 30 && RECIPES[r].keep?.includes('razor_blade') === true, 'a hollow book: a thick book and a razor blade (Intellect 30), the blade kept');
+  check(
+    r >= 0 && RECIPES[r].int === 30 && RECIPES[r].keep?.includes('razor_blade') === true,
+    'a hollow book: a thick book and a razor blade (Intellect 30), the blade kept',
+  );
   it.inv = [slot(n('thick_book')), slot(n('razor_blade')), 0, 0, 0, 0, 0, slot(n('inmate_outfit'))];
   it.int = 40;
   g.step(command(0, OP.CRAFT, 3, r + 1));
-  check(it.inv.some((v) => (v & 255) === HOLLOW_BOOK) && it.inv.some((v) => (v & 255) === n('razor_blade')), 'crafted, the razor blade still in hand');
+  check(
+    it.inv.some((v) => (v & 255) === HOLLOW_BOOK) && it.inv.some((v) => (v & 255) === n('razor_blade')),
+    'crafted, the razor blade still in hand',
+  );
   const bookAt = it.inv.findIndex((v) => (v & 255) === HOLLOW_BOOK);
   // A non-small item onto it: an ordinary swap.
   const free = it.inv.indexOf(0);
@@ -411,14 +479,17 @@ function deskOf(sim: Sim) {
   const pick = it.inv.indexOf(0);
   it.inv[pick] = slot(n('lockpick'), 7);
   g.step(command(0, OP.MOVE, pick, bookAt));
-  check(it.inv[pick] === 0 && hiddenIn(it.inv[bookAt]) === slot(n('lockpick'), 7) && news(seen, 'hidden').length === 1, 'a lockpick (worn to 7) hidden in it');
+  check(
+    it.inv[pick] === 0 && hiddenIn(it.inv[bookAt]) === slot(n('lockpick'), 7) && news(seen, 'hidden').length === 1,
+    'a lockpick (worn to 7) hidden in it',
+  );
   check(!itemDef(it.inv[bookAt] & 255).contraband, 'the book itself is nothing to look at');
   // (The razor blade put away: only the book's secret on the player.)
   it.inv[it.inv.findIndex((v) => (v & 255) === n('razor_blade'))] = 0;
   // A detector's frisk: not found (the same pockets with the pick out in the open trip it).
   const tile = Math.floor(sim.state.player.z / UNIT) * MAP_W + Math.floor(sim.state.player.x / UNIT);
   frisk(sim, tile);
-  check(!sim.events.some((e) => e.type === 'scanned' && e.tripped), 'a detector\'s frisk: not found');
+  check(!sim.events.some((e) => e.type === 'scanned' && e.tripped), "a detector's frisk: not found");
   const was = it.inv.slice();
   it.inv[pick] = slot(n('lockpick'));
   sim.events = [];
@@ -427,7 +498,7 @@ function deskOf(sim: Sim) {
   it.inv = was;
   check(tripped || sim.events.length === 0, 'the same pick out in the open trips it (where the detectors are on)');
   // A dog smells it all the same.
-  check(smellsOfContraband(sim), 'a dog still smells what\'s in it');
+  check(smellsOfContraband(sim), "a dog still smells what's in it");
   // Caught: the guards take contraband, not the book or what's in it.
   sim.state.wake = 2;
   wakeUp(sim);
@@ -442,7 +513,10 @@ function deskOf(sim: Sim) {
   g.jump(1, 13);
   assign(sim.state.guards[guard >= 0 ? guard : 0], GUARD.SHAKEDOWN, [1]);
   for (let k = 0; k < 20 * 60 * 3 && !seen.some((e) => e.type === 'searched' && e.cell === 1); k++) g.step();
-  check(seen.some((e) => e.type === 'searched' && e.cell === 1), 'the player\'s cell searched');
+  check(
+    seen.some((e) => e.type === 'searched' && e.cell === 1),
+    "the player's cell searched",
+  );
   check(hiddenIn(desk.box[j]) === slot(n('lockpick'), 7), 'the cell search: the book and what it hides left alone');
   // Taken out with the use button.
   it.inv[0] = desk.box[j];
@@ -450,7 +524,10 @@ function deskOf(sim: Sim) {
   it.hand = 0;
   for (let k = 1; k < 6; k++) it.inv[k] = 0;
   g.step(command(0, OP.USE, 1));
-  check(it.inv[0] === slot(HOLLOW_BOOK) && it.inv.slice(1, 6).includes(slot(n('lockpick'), 7)) && news(seen, 'unhidden').length === 1, 'opened: the pick out (its wear kept), the book empty again');
+  check(
+    it.inv[0] === slot(HOLLOW_BOOK) && it.inv.slice(1, 6).includes(slot(n('lockpick'), 7)) && news(seen, 'unhidden').length === 1,
+    'opened: the pick out (its wear kept), the book empty again',
+  );
   check(!smellsOfContraband(sim) || it.inv.some((v) => itemDef(v & 255)?.contraband), 'and nothing left to smell in the book');
   // Given away with something in it: refused (what it hides would go with it).
   const pk = it.inv.findIndex((v) => (v & 255) === n('lockpick'));
@@ -482,7 +559,10 @@ function deskOf(sim: Sim) {
   const saved = JSON.parse(JSON.stringify(sim.state));
   const back = new Sim(CENTER_PERKS, 5);
   back.state = loadState(back.world, CENTER_PERKS, saved);
-  check(JSON.stringify(back.state) === JSON.stringify(sim.state) && back.state.course.length === 6 && back.state.kiosk > 0, 'a save mid-course loads as it was');
+  check(
+    JSON.stringify(back.state) === JSON.stringify(sim.state) && back.state.course.length === 6 && back.state.kiosk > 0,
+    'a save mid-course loads as it was',
+  );
   for (let k = 0; k < 400; k++) {
     sim.step(0);
     back.step(0);
@@ -492,7 +572,10 @@ function deskOf(sim: Sim) {
   for (const k of ['kiosk', 'post', 'photos', 'course']) delete old[k];
   const o = new Sim(CENTER_PERKS, 5);
   o.state = loadState(o.world, CENTER_PERKS, old);
-  check(o.state.kiosk === 0 && o.state.post.join() === '0,0,0,0,0,0' && o.state.photos.length === 0 && o.state.course.length === 0, 'a save from before the kiosk: logged out, nothing coming');
+  check(
+    o.state.kiosk === 0 && o.state.post.join() === '0,0,0,0,0,0' && o.state.photos.length === 0 && o.state.course.length === 0,
+    'a save from before the kiosk: logged out, nothing coming',
+  );
   const bad = JSON.parse(JSON.stringify(sim.state));
   bad.post = [1, 99, 0, n('lockpick'), 0, 0];
   bad.photos = [1, 2, 3, 4];
@@ -500,7 +583,10 @@ function deskOf(sim: Sim) {
   bad.kiosk = -5;
   const b = new Sim(CENTER_PERKS, 5);
   b.state = loadState(b.world, CENTER_PERKS, bad);
-  check(b.state.post.join() === '0,0,0,0,0,0' && b.state.photos.length === 0 && b.state.course.length === 0 && b.state.kiosk === 0, 'damaged numbers (contraband ordered, a fourth drawing) load as none');
+  check(
+    b.state.post.join() === '0,0,0,0,0,0' && b.state.photos.length === 0 && b.state.course.length === 0 && b.state.kiosk === 0,
+    'damaged numbers (contraband ordered, a fourth drawing) load as none',
+  );
   // A course with nobody logged in, time paid far ahead: neither.
   const odd = JSON.parse(JSON.stringify(saved));
   odd.kiosk = 0;

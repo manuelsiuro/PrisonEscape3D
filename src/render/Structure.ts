@@ -56,7 +56,9 @@ export class Structure {
   ) {
     const ductTex = TEX.duct();
     this.mats = {
-      duct: seeThrough(new THREE.MeshStandardMaterial({ map: ductTex, metalness: 0.45, roughness: 0.5, transparent: true, emissive: 0x000000 })),
+      duct: seeThrough(
+        new THREE.MeshStandardMaterial({ map: ductTex, metalness: 0.45, roughness: 0.5, transparent: true, emissive: 0x000000 }),
+      ),
       wallTop: seeThrough(new THREE.MeshStandardMaterial({ map: TEX.wallTop(), roughness: 0.85 })),
       // Lit from within (the rooms below dim while the player crawls): the duct is the brightest thing on screen.
       ductInside: new THREE.MeshStandardMaterial({ color: 0x8a939c, metalness: 0.3, roughness: 0.7, emissive: 0x4a525c }),
@@ -65,11 +67,28 @@ export class Structure {
       glow: new THREE.MeshBasicMaterial({ color: 0xffe6a8, transparent: true, opacity: 0.35, depthWrite: false }),
       brick: seeThrough(new THREE.MeshStandardMaterial({ map: lintelBrick(), roughness: 0.9 })),
       kit: seeThrough(kitMaterial.clone(), 0.6),
-      cracks: seeThrough(new THREE.MeshStandardMaterial({ map: TEX.cracks(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, roughness: 1 })),
-      poster: seeThrough(new THREE.MeshStandardMaterial({ map: TEX.poster(), roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2 })),
+      cracks: seeThrough(
+        new THREE.MeshStandardMaterial({
+          map: TEX.cracks(),
+          transparent: true,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          roughness: 1,
+        }),
+      ),
+      poster: seeThrough(
+        new THREE.MeshStandardMaterial({ map: TEX.poster(), roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2 }),
+      ),
       fence: new THREE.MeshStandardMaterial({ map: TEX.fence(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.5 }),
       hole: new THREE.MeshBasicMaterial({ color: 0x0b0806, polygonOffset: true, polygonOffsetFactor: -2 }),
-      dirt: new THREE.MeshStandardMaterial({ map: TEX.dirt(), roughness: 1, transparent: true, polygonOffset: true, polygonOffsetFactor: -1 }),
+      dirt: new THREE.MeshStandardMaterial({
+        map: TEX.dirt(),
+        roughness: 1,
+        transparent: true,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+      }),
     };
     const { body, lid } = this.buildDucts();
     this.ducts.add(body);
@@ -162,7 +181,11 @@ export class Structure {
     const h = ROOF_Y - WALL_H;
     const m = new THREE.Matrix4();
     const slabsOf = (list: number[], sides: THREE.Material) => {
-      const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, h, 1), [sides, sides, gravel, gravel, sides, sides], Math.max(1, list.length));
+      const mesh = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(1, h, 1),
+        [sides, sides, gravel, gravel, sides, sides],
+        Math.max(1, list.length),
+      );
       list.forEach((i, k) => mesh.setMatrixAt(k, m.makeTranslation((i % MAP_W) + 0.5, WALL_H + h / 2, Math.floor(i / MAP_W) + 0.5)));
       mesh.count = list.length;
       mesh.castShadow = mesh.receiveShadow = true;
@@ -170,15 +193,24 @@ export class Structure {
     };
     // (A door through the shell counts: its lintel is the same concrete.)
     const base = this.world.ground.base;
-    const onConcrete = (i: number) => base[i] === TILE.REINFORCED || (base[i] === TILE.DOOR && [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => base[j] === TILE.REINFORCED));
-    const slabs = slabsOf(tiles.filter((i) => !onConcrete(i)), side);
+    const onConcrete = (i: number) =>
+      base[i] === TILE.REINFORCED ||
+      (base[i] === TILE.DOOR && [i - 1, i + 1, i - MAP_W, i + MAP_W].some((j) => base[j] === TILE.REINFORCED));
+    const slabs = slabsOf(
+      tiles.filter((i) => !onConcrete(i)),
+      side,
+    );
     const concreteSlabs = slabsOf(tiles.filter(onConcrete), concrete);
     // Copings along the walls below: the rooms' layout shows on the roof (where am I?).
     const walls = tiles.filter((i) => {
       const k = this.world.ground.base[i];
       return k === TILE.BRICK || k === TILE.REINFORCED;
     });
-    const coping = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.07, 1), (this.mats.coping = new THREE.MeshStandardMaterial({ color: 0xa8a39a, roughness: 0.9 })), Math.max(1, walls.length));
+    const coping = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1, 0.07, 1),
+      (this.mats.coping = new THREE.MeshStandardMaterial({ color: 0xa8a39a, roughness: 0.9 })),
+      Math.max(1, walls.length),
+    );
     walls.forEach((i, k) => coping.setMatrixAt(k, m.makeTranslation((i % MAP_W) + 0.5, ROOF_Y + 0.035, Math.floor(i / MAP_W) + 0.5)));
     coping.count = walls.length;
     coping.receiveShadow = coping.castShadow = true;
@@ -196,18 +228,34 @@ export class Structure {
       if (!isRoof(x + 1, z)) parts.push(box(0.1, 0.16, 1, edge, x + 0.95, ROOF_Y, z + 0.5));
       if (roof[i] === TILE.LADDER) {
         // The hatch: a raised frame, its lid propped open, the ladder's top rungs.
-        parts.push(box(0.8, 0.12, 0.8, 0x5e646e, x + 0.5, ROOF_Y, z + 0.5), box(0.62, 0.02, 0.62, 0x0b0d10, x + 0.5, ROOF_Y + 0.12, z + 0.5));
+        parts.push(
+          box(0.8, 0.12, 0.8, 0x5e646e, x + 0.5, ROOF_Y, z + 0.5),
+          box(0.62, 0.02, 0.62, 0x0b0d10, x + 0.5, ROOF_Y + 0.12, z + 0.5),
+        );
         const lidPart = box(0.66, 0.05, 0.66, 0x8d949e, 0, 0, 0);
         lidPart.rotateX(-1.1);
         lidPart.translate(x + 0.5, ROOF_Y + 0.42, z + 0.15);
-        parts.push(lidPart, box(0.05, 0.4, 0.05, 0x6a737e, x + 0.3, ROOF_Y, z + 0.4), box(0.05, 0.4, 0.05, 0x6a737e, x + 0.7, ROOF_Y, z + 0.4), rod(0.02, 0.4, 0xc0c8d2, x + 0.5, ROOF_Y + 0.3, z + 0.4));
+        parts.push(
+          lidPart,
+          box(0.05, 0.4, 0.05, 0x6a737e, x + 0.3, ROOF_Y, z + 0.4),
+          box(0.05, 0.4, 0.05, 0x6a737e, x + 0.7, ROOF_Y, z + 0.4),
+          rod(0.02, 0.4, 0xc0c8d2, x + 0.5, ROOF_Y + 0.3, z + 0.4),
+        );
         continue;
       }
       // Now and then an AC unit or a vent cap (a fixed scatter: the same roofs every game).
       const r = ((x * 73856093) ^ (z * 19349663)) >>> 0;
       const inner = isRoof(x - 1, z) && isRoof(x + 1, z) && isRoof(x, z - 1) && isRoof(x, z + 1);
-      if (inner && r % 29 === 0 && n++ % 2 === 0) parts.push(box(0.7, 0.42, 0.55, 0xb9bec4, x + 0.5, ROOF_Y, z + 0.5), box(0.5, 0.03, 0.4, 0x3b4048, x + 0.5, ROOF_Y + 0.42, z + 0.5));
-      else if (inner && r % 23 === 0) parts.push(box(0.22, 0.32, 0.22, 0x8d949e, x + 0.5, ROOF_Y, z + 0.5), box(0.32, 0.06, 0.32, 0x6a737e, x + 0.5, ROOF_Y + 0.32, z + 0.5));
+      if (inner && r % 29 === 0 && n++ % 2 === 0)
+        parts.push(
+          box(0.7, 0.42, 0.55, 0xb9bec4, x + 0.5, ROOF_Y, z + 0.5),
+          box(0.5, 0.03, 0.4, 0x3b4048, x + 0.5, ROOF_Y + 0.42, z + 0.5),
+        );
+      else if (inner && r % 23 === 0)
+        parts.push(
+          box(0.22, 0.32, 0.22, 0x8d949e, x + 0.5, ROOF_Y, z + 0.5),
+          box(0.32, 0.06, 0.32, 0x6a737e, x + 0.5, ROOF_Y + 0.32, z + 0.5),
+        );
     }
     const extras = new THREE.Mesh(merge(parts), kitMaterial);
     extras.castShadow = extras.receiveShadow = true;
@@ -257,7 +305,14 @@ export class Structure {
       const z = Math.floor(i / MAP_W);
       if (k === TILE.HOLE) {
         // The wall's top stays as a rough lintel; rubble either side.
-        const lintel = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 1), [this.mats.brick, this.mats.brick, this.mats.wallTop, this.mats.wallTop, this.mats.brick, this.mats.brick]);
+        const lintel = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 1), [
+          this.mats.brick,
+          this.mats.brick,
+          this.mats.wallTop,
+          this.mats.wallTop,
+          this.mats.brick,
+          this.mats.brick,
+        ]);
         lintel.castShadow = lintel.receiveShadow = true;
         lintel.position.set(x + 0.5, WALL_H - 0.2, z + 0.5);
         this.damage.add(lintel);
@@ -265,9 +320,20 @@ export class Structure {
         for (let r = 0; r < 7; r++) {
           const h = ((i * 31 + r * 17) % 10) / 10;
           const sz = 0.08 + h * 0.08;
-          rubble.push(box(sz, sz * 0.8, sz, r % 3 ? 0x9a4a3a : 0x8f8a80, x + 0.15 + ((r * 0.37 + h) % 0.7), 0, z + 0.15 + ((r * 0.53 + h * 0.5) % 0.7)));
+          rubble.push(
+            box(
+              sz,
+              sz * 0.8,
+              sz,
+              r % 3 ? 0x9a4a3a : 0x8f8a80,
+              x + 0.15 + ((r * 0.37 + h) % 0.7),
+              0,
+              z + 0.15 + ((r * 0.53 + h * 0.5) % 0.7),
+            ),
+          );
         }
-        for (let r = 0; r < 4; r++) rubble.push(box(0.12, 0.1, 0.14, 0x9a4a3a, x + 0.12 + r * 0.25, WALL_H - 0.5 - (r % 2) * 0.06, z + 0.5));
+        for (let r = 0; r < 4; r++)
+          rubble.push(box(0.12, 0.1, 0.14, 0x9a4a3a, x + 0.12 + r * 0.25, WALL_H - 0.5 - (r % 2) * 0.06, z + 0.5));
         add(merge(rubble), this.mats.kit, true);
       } else if (k === TILE.HOLE_POSTER) {
         // On the cell's side of the wall only (the other side shows the wall, patched).
@@ -294,7 +360,12 @@ export class Structure {
         // A dark hole with a rim of dug earth and the top of a rope ladder.
         const hole = add(plane(0.72, 0.72).rotateX(-Math.PI / 2), this.mats.hole);
         hole.position.set(x + 0.5, 0.012, z + 0.5);
-        const rim: Part[] = [box(0.9, 0.07, 0.12, 0x7d5d3f, x + 0.5, 0, z + 0.08), box(0.9, 0.07, 0.12, 0x7d5d3f, x + 0.5, 0, z + 0.92), box(0.12, 0.07, 0.7, 0x86663f, x + 0.08, 0, z + 0.5), box(0.12, 0.07, 0.7, 0x86663f, x + 0.92, 0, z + 0.5)];
+        const rim: Part[] = [
+          box(0.9, 0.07, 0.12, 0x7d5d3f, x + 0.5, 0, z + 0.08),
+          box(0.9, 0.07, 0.12, 0x7d5d3f, x + 0.5, 0, z + 0.92),
+          box(0.12, 0.07, 0.7, 0x86663f, x + 0.08, 0, z + 0.5),
+          box(0.12, 0.07, 0.7, 0x86663f, x + 0.92, 0, z + 0.5),
+        ];
         rim.push(box(0.04, 0.18, 0.04, 0xa06a3a, x + 0.36, 0, z + 0.2), box(0.04, 0.18, 0.04, 0xa06a3a, x + 0.64, 0, z + 0.2));
         add(merge(rim), this.mats.kit, true);
       }
@@ -350,7 +421,10 @@ export class Structure {
       const z = Math.floor(i / MAP_W);
       if (k === TILE.LADDER) {
         // In the duct, the ladder's top: a square opening with rungs leading up.
-        const parts: Part[] = [box(0.06, 0.5, 0.06, 0x6a737e, x + 0.28, DUCT_Y, z + 0.5), box(0.06, 0.5, 0.06, 0x6a737e, x + 0.72, DUCT_Y, z + 0.5)];
+        const parts: Part[] = [
+          box(0.06, 0.5, 0.06, 0x6a737e, x + 0.28, DUCT_Y, z + 0.5),
+          box(0.06, 0.5, 0.06, 0x6a737e, x + 0.72, DUCT_Y, z + 0.5),
+        ];
         for (let r = 0; r < 2; r++) parts.push(rod(0.02, 0.44, 0xc0c8d2, x + 0.5, DUCT_Y + 0.15 + r * 0.2, z + 0.5));
         const m = new THREE.Mesh(merge(parts), kitMaterial);
         this.damage.add(m);
@@ -358,7 +432,12 @@ export class Structure {
       }
       const open = k === TILE.GRATE_OPEN;
       // The vent box hanging under the duct, its faces a grille or, unscrewed, dark.
-      const hood = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.16, 0.66), open ? [this.mats.dark, this.mats.dark, this.mats.duct, this.mats.dark, this.mats.dark, this.mats.dark] : [this.mats.grille, this.mats.grille, this.mats.duct, this.mats.grille, this.mats.grille, this.mats.grille]);
+      const hood = new THREE.Mesh(
+        new THREE.BoxGeometry(0.66, 0.16, 0.66),
+        open
+          ? [this.mats.dark, this.mats.dark, this.mats.duct, this.mats.dark, this.mats.dark, this.mats.dark]
+          : [this.mats.grille, this.mats.grille, this.mats.duct, this.mats.grille, this.mats.grille, this.mats.grille],
+      );
       hood.position.set(x + 0.5, DUCT_Y - 0.08, z + 0.5);
       this.damage.add(hood);
       // Inside the duct: the grille in its floor, or the hole with the room's light coming up.

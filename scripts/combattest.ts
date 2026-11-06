@@ -50,12 +50,18 @@ const N = 13;
     ['nunchucks', itemDef(n('nunchucks')).attack!],
   ] as const) {
     const hits = (def: number, hp: number) => Math.ceil(hp / damage(40, attack, def));
-    rows.push(`${label} ${damage(40, attack, INMATE_DEFENSE)}/${damage(40, attack, GUARD_DEFENSE)} (${hits(INMATE_DEFENSE, maxHealth(45))}/${hits(GUARD_DEFENSE, maxHealth(60))} blows)`);
+    rows.push(
+      `${label} ${damage(40, attack, INMATE_DEFENSE)}/${damage(40, attack, GUARD_DEFENSE)} (${hits(INMATE_DEFENSE, maxHealth(45))}/${hits(GUARD_DEFENSE, maxHealth(60))} blows)`,
+    );
   }
   console.log(`STR 40 damage vs inmate/guard: ${rows.join(', ')}`);
   const plated = itemDef(n('plated_outfit')).defense!;
-  console.log(`a guard's baton on the player: ${damage(60, itemDef(n('baton')).attack!, itemDef(n('inmate_outfit')).defense!)} (plated ${damage(60, itemDef(n('baton')).attack!, plated)}) of ${maxHealth(40)} health`);
-  console.log(`swing every ${swingSteps(40, null)} steps at SPD 40, ${swingSteps(100, null)} at 100, ${swingSteps(40, itemDef(n('nunchucks')))} with nunchucks`);
+  console.log(
+    `a guard's baton on the player: ${damage(60, itemDef(n('baton')).attack!, itemDef(n('inmate_outfit')).defense!)} (plated ${damage(60, itemDef(n('baton')).attack!, plated)}) of ${maxHealth(40)} health`,
+  );
+  console.log(
+    `swing every ${swingSteps(40, null)} steps at SPD 40, ${swingSteps(100, null)} at 100, ${swingSteps(40, itemDef(n('nunchucks')))} with nunchucks`,
+  );
   check(damage(40, 0, INMATE_DEFENSE) > 0 && damage(20, 0, plated) === 1, 'every blow does at least 1');
   check(swingSteps(100, null) < swingSteps(40, null), 'speed swings faster');
   check(maxHealth(40) === 90, 'max health is 50 + STR');
@@ -159,7 +165,9 @@ function arena(seed = 3) {
     blows = events.filter((e) => e.type === 'hit').length;
   }
   const hurt = events.filter((e) => e.type === 'hurt');
-  console.log(`fight: the inmate (STR ${m.str}, ${hp0} health) down in ${blows} blows of the sock mace; it landed ${hurt.length} punches (player ${st.health}/${maxHealth(st.str)}); heat ${st.heat}`);
+  console.log(
+    `fight: the inmate (STR ${m.str}, ${hp0} health) down in ${blows} blows of the sock mace; it landed ${hurt.length} punches (player ${st.health}/${maxHealth(st.str)}); heat ${st.heat}`,
+  );
   check(m.ko > 0 && blows >= 2, 'the inmate goes down after a few blows');
   check(hurt.length > 0 && st.health < 90, 'it fought back');
   check(st.heat === 0 && !st.lockdown, 'no guard saw it: no heat');
@@ -178,7 +186,10 @@ function arena(seed = 3) {
   while (m.ko > 0 && st.step - down < KO_STEPS + 5) step();
   check(st.step - down <= KO_STEPS && m.ko === 0 && m.hp === maxHealth(m.str), 'it comes round within 30 s, healed');
   check(st.items.open === -1, 'its pockets close when it gets up');
-  check(events.some((e) => e.type === 'cameTo' && e.who === 0 && !e.keyMissing), 'and nothing is raised');
+  check(
+    events.some((e) => e.type === 'cameTo' && e.who === 0 && !e.keyMissing),
+    'and nothing is raised',
+  );
 }
 
 // ------------------------------------------------------------------ the same blow seen by a guard
@@ -190,7 +201,9 @@ function arena(seed = 3) {
   op(OP.LOCK);
   press();
   const spotted = events.find((e) => e.type === 'spotted');
-  console.log(`seen hitting an inmate: ${spotted?.type === 'spotted' ? spotted.reason : 'nothing'}, heat ${st.heat}, lockdown ${st.lockdown}`);
+  console.log(
+    `seen hitting an inmate: ${spotted?.type === 'spotted' ? spotted.reason : 'nothing'}, heat ${st.heat}, lockdown ${st.lockdown}`,
+  );
   check(st.lockdown && spotted?.type === 'spotted' && spotted.reason === 'fight', 'a guard who sees a blow calls a lockdown');
 }
 
@@ -204,7 +217,9 @@ function arena(seed = 3) {
   for (let k = 0; k < 400 && st.ko === 0; k++) step();
   const blows = events.filter((e) => e.type === 'hurt').length;
   const caught = events.find((e) => e.type === 'caught');
-  console.log(`wanted (85%): ${blows} baton blows, down after ${((st.step - t0) / 20).toFixed(1)} s → ${caught?.type === 'caught' ? (caught.solitary ? 'solitary' : 'the infirmary') : 'still up'} (${at(sim)})`);
+  console.log(
+    `wanted (85%): ${blows} baton blows, down after ${((st.step - t0) / 20).toFixed(1)} s → ${caught?.type === 'caught' ? (caught.solitary ? 'solitary' : 'the infirmary') : 'still up'} (${at(sim)})`,
+  );
   check(blows >= 2 && !!caught, 'a guard beats a wanted player down (not one touch)');
   check(caught?.type === 'caught' && !caught.solitary, 'under 90%: the infirmary');
   // Waking up: patched up.
@@ -241,9 +256,14 @@ function arena(seed = 3) {
   while (g.ko > 0) step();
   step();
   const raised = events.find((e) => e.type === 'cameTo' && e.who === id);
-  console.log(`key thief: guard pockets ${kit}; it wakes at ${at(sim)} missing its key: ${raised?.type === 'cameTo' && raised.keyMissing}, lockdown ${st.lockdown}`);
+  console.log(
+    `key thief: guard pockets ${kit}; it wakes at ${at(sim)} missing its key: ${raised?.type === 'cameTo' && raised.keyMissing}, lockdown ${st.lockdown}`,
+  );
   check(raised?.type === 'cameTo' && raised.keyMissing && st.lockdown, 'the guard wakes to a missing key: lockdown');
-  check(events.some((e) => e.type === 'spotted' && e.reason === 'keyMissing'), 'the alarm says why');
+  check(
+    events.some((e) => e.type === 'spotted' && e.reason === 'keyMissing'),
+    'the alarm says why',
+  );
   check(itemOf(st.items.inv[0]) === key, 'the player keeps the key');
 }
 
@@ -284,7 +304,9 @@ function arena(seed = 3) {
   while (g.ko > 0) step();
   step();
   const woke = events.find((e) => e.type === 'cameTo' && e.who === id);
-  console.log(`key cloner: key back with ${(left / 20).toFixed(1)} s to spare: ${back}; guard wakes, key missing ${woke?.type === 'cameTo' && woke.keyMissing}, lockdown ${st.lockdown}`);
+  console.log(
+    `key cloner: key back with ${(left / 20).toFixed(1)} s to spare: ${back}; guard wakes, key missing ${woke?.type === 'cameTo' && woke.keyMissing}, lockdown ${st.lockdown}`,
+  );
   check(back && woke?.type === 'cameTo' && !woke.keyMissing && !st.lockdown, 'the key put back in time: no lockdown');
   // Mold + molten plastic: a plastic key.
   const m2 = maskOf([moldAt, st.items.inv.findIndex((v) => itemOf(v) === n('molten_plastic'))]);
@@ -298,10 +320,16 @@ function arena(seed = 3) {
   // The guard's door (purple: the generator room, from the south corridor).
   const w = sim.world;
   const door = 38 * MAP_W + 10;
-  check(w.ground.kind[door] === TILE.DOOR && w.ground.key[door] === KEY[color.toUpperCase() as 'PURPLE'], `the generator room door is ${color}`);
+  check(
+    w.ground.kind[door] === TILE.DOOR && w.ground.key[door] === KEY[color.toUpperCase() as 'PURPLE'],
+    `the generator room door is ${color}`,
+  );
   check(w.block[door] === 0 && w.npcBlock[door] === 1, 'a key opens its door for the player only');
   const eye = { x: 10 * UNIT + UNIT / 2, z: 36 * UNIT + UNIT / 2, facing: S, moving: false };
-  check(!canSee(w, eye, { x: 10 * UNIT + UNIT / 2, z: 40 * UNIT + UNIT / 2 }), "sight still stops at the shut door (the player's key opens nothing to the eye)");
+  check(
+    !canSee(w, eye, { x: 10 * UNIT + UNIT / 2, z: 40 * UNIT + UNIT / 2 }),
+    "sight still stops at the shut door (the player's key opens nothing to the eye)",
+  );
   put(st.player, 10, 36);
   for (let s = 0; s < 22; s++) step(command(S));
   const inside = Math.floor(st.player.z / UNIT);
@@ -328,7 +356,10 @@ function arena(seed = 3) {
   step();
   const yardDoor = 45 * MAP_W + 30;
   const gate = 61 * MAP_W + 30;
-  check(w.ground.key[yardDoor] === KEY.GREEN && w.ground.key[gate] === KEY.GREEN && w.gate[gate] === 1 && w.gate[yardDoor] === 0, 'the south gate is a perimeter gate, the yard door is not');
+  check(
+    w.ground.key[yardDoor] === KEY.GREEN && w.ground.key[gate] === KEY.GREEN && w.gate[gate] === 1 && w.gate[yardDoor] === 0,
+    'the south gate is a perimeter gate, the yard door is not',
+  );
   check(w.block[yardDoor] === 0 && w.block[gate] === 1, 'the green key opens the yard door, never the perimeter gate');
   for (let s = 0; s < 120; s++) step(command(S));
   const z = Math.floor(st.player.z / UNIT);
@@ -366,9 +397,14 @@ function arena(seed = 3) {
   // Then stand there and take it.
   op(OP.LOCK, 1);
   for (let k = 0; k < 600 && st.ko === 0; k++) step();
-  check(events.some((e) => e.type === 'floored'), 'an inmate can knock the player out');
+  check(
+    events.some((e) => e.type === 'floored'),
+    'an inmate can knock the player out',
+  );
   while (st.ko > 0) step();
-  console.log(`floored by an inmate: woke in the ${sim.playerZone} (${at(sim)}), health ${st.health}, lighter ${st.items.inv.some((v) => itemOf(v) === n('lighter')) ? 'kept' : 'taken'}`);
+  console.log(
+    `floored by an inmate: woke in the ${sim.playerZone} (${at(sim)}), health ${st.health}, lighter ${st.items.inv.some((v) => itemOf(v) === n('lighter')) ? 'kept' : 'taken'}`,
+  );
   check(sim.playerZone === 'infirmary' && m.angry === 0, 'the infirmary, and the inmate calms down');
 }
 
@@ -393,7 +429,9 @@ function arena(seed = 3) {
     sim.step(cmd);
   }
   check(twin.hash() === sim.hash(), 'and it plays on the same');
-  console.log(`restored mid-fight at step ${snap.state.step}: plays on the same (${HOTBAR} hotbar slots, inmate ${st.inmates[0].ko > 0 ? 'down' : 'up'}), ${clockAt(st.step).minuteOfDay} min`);
+  console.log(
+    `restored mid-fight at step ${snap.state.step}: plays on the same (${HOTBAR} hotbar slots, inmate ${st.inmates[0].ko > 0 ? 'down' : 'up'}), ${clockAt(st.step).minuteOfDay} min`,
+  );
 }
 
 // ------------------------------------------------------------------ review fixes
@@ -505,4 +543,7 @@ function arena(seed = 3) {
 }
 
 // Every recipe is still craftable (weapons made in P2 are now used).
-check(RECIPES.some((r) => r.result === 'molten_chocolate'), 'molten chocolate can be crafted');
+check(
+  RECIPES.some((r) => r.result === 'molten_chocolate'),
+  'molten chocolate can be crafted',
+);

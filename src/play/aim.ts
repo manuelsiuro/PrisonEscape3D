@@ -209,7 +209,13 @@ export function updateAim(busy: boolean) {
   view.setAim(shown);
   aimUI.show(aim.how === 'held' ? 'mouse' : TOUCH ? 'touch' : 'click');
   const spot = view.screenAt(shown.toX, 0, shown.toZ, spotAt);
-  const text = result.why ? t(`toss.${result.why}` as Key) : !ears.length ? t('aim.quiet') : ears.length === 1 ? t('aim.heardOne') : t('aim.heardMany', { n: ears.length });
+  const text = result.why
+    ? t(`toss.${result.why}` as Key)
+    : !ears.length
+      ? t('aim.quiet')
+      : ears.length === 1
+        ? t('aim.heardOne')
+        : t('aim.heardMany', { n: ears.length });
   earIds.length = 0;
   for (const k of ears) earIds.push(st.inmates.length + k);
   aimUI.update(spot, text, !!result.why, earIds, headAt);

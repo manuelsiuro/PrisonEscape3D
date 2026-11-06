@@ -26,7 +26,11 @@ export async function intakeFlow(first = false): Promise<boolean> {
   view.previewTurn = 0;
   view.setPreview(start);
   document.body.classList.add('intake-on');
-  const shown = showIntake(start, { unlocked: unlockedCosmetics(), first, onChange: (p) => view.setPreview(p), onTurn: (r) => (view.previewTurn += r) }, click);
+  const shown = showIntake(
+    start,
+    { unlocked: unlockedCosmetics(), first, onChange: (p) => view.setPreview(p), onTurn: (r) => (view.previewTurn += r) },
+    click,
+  );
   // The panel's size follows the part shown: the picture follows the panel.
   const card = document.querySelector<HTMLElement>('.intake-card');
   const watch = new ResizeObserver(() => clearOfPanel());

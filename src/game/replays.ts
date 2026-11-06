@@ -45,7 +45,13 @@ export function replayFile(log: RunLog, by: Prisoner | null): string {
 
 /** A file name for a replay: the prison, the day, the way out. */
 export function replayFileName(log: RunLog): string {
-  const parts = ['prison-escape', log.prison, log.daily !== undefined ? `daily-${log.daily + 1}` : '', `day${replayDay(log)}`, log.via ?? ''].filter(Boolean);
+  const parts = [
+    'prison-escape',
+    log.prison,
+    log.daily !== undefined ? `daily-${log.daily + 1}` : '',
+    `day${replayDay(log)}`,
+    log.via ?? '',
+  ].filter(Boolean);
   return `${parts.join('-')}.pe3d.json`;
 }
 
@@ -65,10 +71,12 @@ export function readReplayFile(text: string): Replay | ReplayFileError {
   const log = fitLog(f.log);
   if (!log) return 'notReplay';
   // (A prison or a twist from a later version of the game: this one can't set it up.)
-  if (!PRISONS.some((p) => p.id === log.prison) || (log.mods ?? []).some((m) => !(TWIST_IDS as readonly string[]).includes(m))) return 'unknownPrison';
+  if (!PRISONS.some((p) => p.id === log.prison) || (log.mods ?? []).some((m) => !(TWIST_IDS as readonly string[]).includes(m)))
+    return 'unknownPrison';
   // Its commands as long as it says, no longer than any run kept; and a game that sets up from its start.
   const runs = decodeRuns(fromBase64(log.data) ?? new Uint8Array());
-  if (!runs || log.steps <= 0 || log.from + log.steps > FILE_DAYS * DAY_STEPS || runs.reduce((n, [, k]) => n + k, 0) !== log.steps) return 'notReplay';
+  if (!runs || log.steps <= 0 || log.from + log.steps > FILE_DAYS * DAY_STEPS || runs.reduce((n, [, k]) => n + k, 0) !== log.steps)
+    return 'notReplay';
   try {
     const prison = prisonById(log.prison)!;
     const set = prepareReplay(log, prison);

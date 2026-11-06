@@ -27,7 +27,20 @@ import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { STALAG_FLUCHT } from '../src/content/prisons/stalag-flucht';
 import { TRAINING } from '../src/content/prisons/training';
 import type { PrisonDef } from '../src/content/prisons/types';
-import { CATALOGUE, DRONE_GUARDS, DRONE_NOISE, FEES, GIFT_MAX, GIFT_MIN, ORDER_LEAD, PARCEL_MINUTE, PHONE_OPINION, PHONE_PRICE, VISIT_STEPS, WAY } from '../src/content/smuggling';
+import {
+  CATALOGUE,
+  DRONE_GUARDS,
+  DRONE_NOISE,
+  FEES,
+  GIFT_MAX,
+  GIFT_MIN,
+  ORDER_LEAD,
+  PARCEL_MINUTE,
+  PHONE_OPINION,
+  PHONE_PRICE,
+  VISIT_STEPS,
+  WAY,
+} from '../src/content/smuggling';
 import { command, EXT, OP, TALK } from '../src/sim/command';
 import { replayLog, RunRecorder } from '../src/sim/runlog';
 import { Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
@@ -36,7 +49,18 @@ import { dayMinute, DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
 import { HOTBAR, itemOf, slot } from '../src/sim/systems/items';
 import { FEAT } from '../src/sim/systems/ledger';
 import { seatSpot } from '../src/sim/systems/rest';
-import { arrival, catalogueItem, droneMinute, dropTile, fixerOf, guestSpot, inRect, orderPrice, PHONE, visitExits } from '../src/sim/systems/smuggling';
+import {
+  arrival,
+  catalogueItem,
+  droneMinute,
+  dropTile,
+  fixerOf,
+  guestSpot,
+  inRect,
+  orderPrice,
+  PHONE,
+  visitExits,
+} from '../src/sim/systems/smuggling';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
@@ -82,15 +106,32 @@ function game(def: PrisonDef, seed = 5, calendar: Array<[number, number, number]
   const order = (k: number, way: number) => step(command(0, OP.EXT, EXT.ORDER, k, way));
   return { sim, seen, step, to, blind, phone, order };
 }
-const news = (seen: SimEvent[], what: string) => seen.filter((e) => e.type === 'smuggle' && e.what === what) as Array<Extract<SimEvent, { type: 'smuggle' }>>;
+const news = (seen: SimEvent[], what: string) =>
+  seen.filter((e) => e.type === 'smuggle' && e.what === what) as Array<Extract<SimEvent, { type: 'smuggle' }>>;
 const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
 
 // ------------------------------------------------------------------ the data
 {
   const d = itemDef(PHONE);
   check(d.contraband && !!d.obvious && d.from.includes('fixer'), 'the burner phone: contraband, plain to see in hand, from the fixer');
-  check(CATALOGUE.every((c) => !!itemNumber(c.item) && c.price > 0), 'the catalogue lists items that exist, at a price');
-  check(FEES[WAY.DRONE] === 20 && FEES[WAY.VISITOR] === 10 && PHONE_PRICE === 60 && PHONE_OPINION === 60 && GIFT_MIN === 10 && GIFT_MAX === 20 && VISIT_STEPS === 3 * STEPS_PER_MINUTE && ORDER_LEAD === 60 && DRONE_NOISE === 8 && DRONE_GUARDS === 2 && PARCEL_MINUTE === 405, 'the numbers the words say: drone +$20, visitor +$10, phone $60 at opinion 60, gifts $10–20, 3 minutes, an hour\'s notice, noise 8 sending 2, the parcel at 14:45');
+  check(
+    CATALOGUE.every((c) => !!itemNumber(c.item) && c.price > 0),
+    'the catalogue lists items that exist, at a price',
+  );
+  check(
+    FEES[WAY.DRONE] === 20 &&
+      FEES[WAY.VISITOR] === 10 &&
+      PHONE_PRICE === 60 &&
+      PHONE_OPINION === 60 &&
+      GIFT_MIN === 10 &&
+      GIFT_MAX === 20 &&
+      VISIT_STEPS === 3 * STEPS_PER_MINUTE &&
+      ORDER_LEAD === 60 &&
+      DRONE_NOISE === 8 &&
+      DRONE_GUARDS === 2 &&
+      PARCEL_MINUTE === 405,
+    "the numbers the words say: drone +$20, visitor +$10, phone $60 at opinion 60, gifts $10–20, 3 minutes, an hour's notice, noise 8 sending 2, the parcel at 14:45",
+  );
   check(!TRAINING.smuggling, 'the Training Block has no smuggling');
   for (const p of PRISONS) {
     const sim = new Sim(p, 1);
@@ -99,18 +140,28 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
     if (!sm) continue;
     check(p.merchants.includes(sm.fixer) && fixerOf(sim) >= 0, `${p.id}: the fixer (cell ${sm.fixer}) is a merchant`);
     let land = 0;
-    for (let z = sm.drop[1]; z <= sm.drop[3]; z++) for (let x = sm.drop[0]; x <= sm.drop[2]; x++) if (landable(sim.world, z * MAP_W + x)) land++;
+    for (let z = sm.drop[1]; z <= sm.drop[3]; z++)
+      for (let x = sm.drop[0]; x <= sm.drop[2]; x++) if (landable(sim.world, z * MAP_W + x)) land++;
     check(land >= 20, `${p.id}: the drop area has open ground (${land} tiles)`);
     // One zone throughout (the phone and the gossip name it), the yard or its roll call square.
     const zones = new Set<string>();
-    for (let z = sm.drop[1]; z <= sm.drop[3]; z++) for (let x = sm.drop[0]; x <= sm.drop[2]; x++) if (landable(sim.world, z * MAP_W + x)) zones.add(sim.world.zoneAt(x, z));
-    check(zones.size === 1 && ['yard', 'rollCall'].includes([...zones][0]), `${p.id}: the drop area is one zone of the yard (${[...zones].join(', ')})`);
+    for (let z = sm.drop[1]; z <= sm.drop[3]; z++)
+      for (let x = sm.drop[0]; x <= sm.drop[2]; x++) if (landable(sim.world, z * MAP_W + x)) zones.add(sim.world.zoneAt(x, z));
+    check(
+      zones.size === 1 && ['yard', 'rollCall'].includes([...zones][0]),
+      `${p.id}: the drop area is one zone of the yard (${[...zones].join(', ')})`,
+    );
     const deck = DAY_BOOKS[p.id].deck;
-    check(!!sm.visits === deck.includes('visiting') && !!sm.parcel === !sm.visits, `${p.id}: visiting day dealt where people visit (else a parcel)`);
+    check(
+      !!sm.visits === deck.includes('visiting') && !!sm.parcel === !sm.visits,
+      `${p.id}: visiting day dealt where people visit (else a parcel)`,
+    );
     if (sm.parcel) check(deck.includes('delivery'), `${p.id}: the parcel comes with a vehicle`);
     if (sm.visits) {
       // Seats across a counter or a table, with a guest's seat opposite.
-      const seats = sim.world.props.map((q, i) => ({ q, i })).filter(({ q }) => (q.kind === 'seat' || q.kind === 'chair') && inRect(sm.visits!, q.x, q.z));
+      const seats = sim.world.props
+        .map((q, i) => ({ q, i }))
+        .filter(({ q }) => (q.kind === 'seat' || q.kind === 'chair') && inRect(sm.visits!, q.x, q.z));
       let pairs = 0;
       for (const { q, i } of seats) {
         for (let dx = 0; dx < q.w; dx++) {
@@ -161,7 +212,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   check(refused(seen).includes('room'), 'a full hotbar: no room');
   for (let k = 0; k < HOTBAR; k++) s.items.inv[k] = 0;
   buy(fixer);
-  check(s.items.inv.some((v) => itemOf(v) === PHONE) && s.cash === 200 - PHONE_PRICE && s.feats[FEAT.phones] === 1, 'bought: the phone in the hotbar, $60 paid');
+  check(
+    s.items.inv.some((v) => itemOf(v) === PHONE) && s.cash === 200 - PHONE_PRICE && s.feats[FEAT.phones] === 1,
+    'bought: the phone in the hotbar, $60 paid',
+  );
   buy(fixer);
   check(refused(seen).includes('havePhone') && s.cash === 200 - PHONE_PRICE, 'one phone at a time');
   // Out of the merchants' hours: closed.
@@ -195,13 +249,16 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
     s.heat = 0;
     return spotted;
   };
-  check(look(true), 'a phone in hand in a guard\'s sight: contraband seen');
-  check(!look(false), 'in the pocket, it isn\'t');
+  check(look(true), "a phone in hand in a guard's sight: contraband seen");
+  check(!look(false), "in the pocket, it isn't");
 }
 
 // ------------------------------------------------------------------ orders
 {
-  const { sim, seen, to, phone, order } = game(CENTER_PERKS, 5, [[0, 0, 0], [6, VISITING, 0]]);
+  const { sim, seen, to, phone, order } = game(CENTER_PERKS, 5, [
+    [0, 0, 0],
+    [6, VISITING, 0],
+  ]);
   const s = sim.state;
   to(1, 10, 0);
   s.cash = 500;
@@ -216,7 +273,12 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   phone(500);
   seen.length = 0;
   order(2, WAY.VISITOR);
-  check(s.order.join() === `2,${WAY.VISITOR},2` && s.cash === 500 - CATALOGUE[2].price - FEES[WAY.VISITOR] && news(seen, 'ordered')[0]?.item === catalogueItem(2), 'an order paid on the spot, a visitor from tomorrow');
+  check(
+    s.order.join() === `2,${WAY.VISITOR},2` &&
+      s.cash === 500 - CATALOGUE[2].price - FEES[WAY.VISITOR] &&
+      news(seen, 'ordered')[0]?.item === catalogueItem(2),
+    'an order paid on the spot, a visitor from tomorrow',
+  );
   seen.length = 0;
   order(1, WAY.DRONE);
   check(refused(seen).includes('ordered') && s.order[0] === 2, 'one order at a time');
@@ -226,7 +288,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
     q.to(1, 10, 0);
     q.phone(500);
     q.order(0, WAY.VISITOR);
-    check(refused(q.seen).includes('noWay') && !q.sim.state.order.length && q.sim.state.cash === 500, 'no visiting day in sight: no order, no money taken');
+    check(
+      refused(q.seen).includes('noWay') && !q.sim.state.order.length && q.sim.state.cash === 500,
+      'no visiting day in sight: no order, no money taken',
+    );
   }
   check(s.feats[FEAT.orders] === 1, 'the ledger counts the order');
 }
@@ -248,12 +313,23 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   seen.length = 0;
   while (!news(seen, 'dropped').length && s.step < at(3, 8)) step();
   const dropped = news(seen, 'dropped')[0];
-  check(!!dropped && prisonDay(s.step) === 2 && dayMinute(s.step) === tonight && s.step % STEPS_PER_MINUTE === 0, 'it came at the minute the phone said');
-  check(dropped?.tile === tile && dropped.item === catalogueItem(0) && s.items.ground.some(([k, v]) => k === tile && itemOf(v) === catalogueItem(0)), 'where dropTile said, lying on the ground');
+  check(
+    !!dropped && prisonDay(s.step) === 2 && dayMinute(s.step) === tonight && s.step % STEPS_PER_MINUTE === 0,
+    'it came at the minute the phone said',
+  );
+  check(
+    dropped?.tile === tile &&
+      dropped.item === catalogueItem(0) &&
+      s.items.ground.some(([k, v]) => k === tile && itemOf(v) === catalogueItem(0)),
+    'where dropTile said, lying on the ground',
+  );
   const buzz = seen.find((e) => e.type === 'noise' && e.kind === 'buzz') as Extract<SimEvent, { type: 'noise' }> | undefined;
-  check(!!buzz && buzz.tile === tile && buzz.reach <= DRONE_NOISE && buzz.sent.length <= DRONE_GUARDS, `its buzz: reach ${buzz?.reach}, ${buzz?.sent.length} sent to look`);
+  check(
+    !!buzz && buzz.tile === tile && buzz.reach <= DRONE_NOISE && buzz.sent.length <= DRONE_GUARDS,
+    `its buzz: reach ${buzz?.reach}, ${buzz?.sent.length} sent to look`,
+  );
   check(!s.order.length && s.drops.length === 1, 'the order done, the drop lying there');
-  check(s.feats[FEAT.decoys] === 0, 'the drone\'s buzz is no decoy of the player\'s');
+  check(s.feats[FEAT.decoys] === 0, "the drone's buzz is no decoy of the player's");
   // Guards looking the other way leave it be; the player picks it up.
   for (let k = 0; k < 40; k++) step();
   check(s.drops.length === 1, 'nobody seized it (every guard looking the other way)');
@@ -263,15 +339,23 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   seen.length = 0;
   step(command(0, OP.INTERACT));
   step();
-  check(ground >= 0 && news(seen, 'collected').length === 1 && s.items.inv.some((v) => itemOf(v) === catalogueItem(0)) && s.feats[FEAT.drops] === 1, 'picked up by the player: collected');
+  check(
+    ground >= 0 &&
+      news(seen, 'collected').length === 1 &&
+      s.items.inv.some((v) => itemOf(v) === catalogueItem(0)) &&
+      s.feats[FEAT.drops] === 1,
+    'picked up by the player: collected',
+  );
   // Ordered too late for tonight: tomorrow night.
   to(2, 8 + Math.floor((tonight - ORDER_LEAD + 1) / 60), (tonight - ORDER_LEAD + 1) % 60);
   if (s.step < at(2, 8) + tonight * STEPS_PER_MINUTE) {
     phone();
     order(1, WAY.DRONE);
-    check(s.order[2] === 3, 'less than an hour\'s notice: tomorrow night');
+    check(s.order[2] === 3, "less than an hour's notice: tomorrow night");
   }
-  console.log(`drone: ordered 09:00 day 2, came at minute ${tonight} (${Math.floor((480 + tonight) / 60) % 24}:${String(tonight % 60).padStart(2, '0')}) on tile ${tile % MAP_W},${Math.floor(tile / MAP_W)}`);
+  console.log(
+    `drone: ordered 09:00 day 2, came at minute ${tonight} (${Math.floor((480 + tonight) / 60) % 24}:${String(tonight % 60).padStart(2, '0')}) on tile ${tile % MAP_W},${Math.floor(tile / MAP_W)}`,
+  );
 }
 {
   // A guard who sees it takes it.
@@ -294,11 +378,21 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   seen.length = 0;
   step();
   const seized = news(seen, 'seized')[0];
-  check(!!seized && seized.guard === 1 && !s.drops.length && !s.items.ground.some(([k, v]) => k === tile && itemOf(v) === catalogueItem(0)) && s.feats[FEAT.dropsSeized] === 1, 'a guard who sees it takes it');
+  check(
+    !!seized &&
+      seized.guard === 1 &&
+      !s.drops.length &&
+      !s.items.ground.some(([k, v]) => k === tile && itemOf(v) === catalogueItem(0)) &&
+      s.feats[FEAT.dropsSeized] === 1,
+    'a guard who sees it takes it',
+  );
 }
 {
   // Never in a storm; the sirens turn it back.
-  const { sim, seen, step, to, phone, order, blind } = game(CENTER_PERKS, 7, [[0, 0, 0], [2, 0, 3]]);
+  const { sim, seen, step, to, phone, order, blind } = game(CENTER_PERKS, 7, [
+    [0, 0, 0],
+    [2, 0, 3],
+  ]);
   const s = sim.state;
   to(2, 9, 0);
   phone();
@@ -337,7 +431,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   seen.length = 0;
   step();
   const back = news(seen, 'turnedBack')[0];
-  check(!!back && back.guard === 1 && !news(seen, 'dropped').length && s.order[2] === when.day + 1 && !s.drops.length, 'a guard watching the landing spot: turned back, tomorrow night');
+  check(
+    !!back && back.guard === 1 && !news(seen, 'dropped').length && s.order[2] === when.day + 1 && !s.drops.length,
+    'a guard watching the landing spot: turned back, tomorrow night',
+  );
 }
 {
   // Downwind: over many nights, a strong wind carries it off the middle the way it blows.
@@ -356,8 +453,11 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
       const vx = [0, 1, 1, 1, 0, -1, -1, -1][to];
       const vz = [-1, -1, 0, 1, 1, 1, 0, -1][to];
       windy++;
-      if ((t % MAP_W - mx) * vx + (Math.floor(t / MAP_W) - mz) * vz > 0) down++;
-      check(inRect(r, t % MAP_W, Math.floor(t / MAP_W)) && landable(sim.world, t), `${p.id} day ${day}: it lands in the drop area, on open ground`);
+      if (((t % MAP_W) - mx) * vx + (Math.floor(t / MAP_W) - mz) * vz > 0) down++;
+      check(
+        inRect(r, t % MAP_W, Math.floor(t / MAP_W)) && landable(sim.world, t),
+        `${p.id} day ${day}: it lands in the drop area, on open ground`,
+      );
     }
   }
   check(down / windy > 0.9, `downwind ${down} of ${windy} windy nights`);
@@ -395,7 +495,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 
 // ------------------------------------------------------------------ visits and the arches
 {
-  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 5, [[0, 0, 0], [3, VISITING, 0]]);
+  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 5, [
+    [0, 0, 0],
+    [3, VISITING, 0],
+  ]);
   const s = sim.state;
   const w = sim.world;
   to(2, 10, 30);
@@ -409,7 +512,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
     s.player.facing = 5;
     s.seat = chair;
   };
-  check(chair >= 0 && seatSpot(w, chair, { ...s.player, x: 27 * UNIT + 512, z: 39 * UNIT + 512 }).facing === 5, 'the chair faces the counter');
+  check(
+    chair >= 0 && seatSpot(w, chair, { ...s.player, x: 27 * UNIT + 512, z: 39 * UNIT + 512 }).facing === 5,
+    'the chair faces the counter',
+  );
   to(3, 9, 50);
   sit();
   for (let k = 0; k < VISIT_STEPS + 5; k++) step();
@@ -424,13 +530,25 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   check(!news(seen, 'visit').length, `not before ${VISIT_STEPS} steps sat waiting`);
   step();
   const v = news(seen, 'visit')[0];
-  check(!!v && v.cash! >= GIFT_MIN && v.cash! <= GIFT_MAX && s.cash === cash + v.cash! && v.item === catalogueItem(0) && s.items.inv.some((x) => itemOf(x) === catalogueItem(0)) && !s.order.length, `the visitor: $${v?.cash} and the order slipped across`);
-  check(!!(s.eventFlags & TODAY.VISITED) && s.feats[FEAT.visits] === 1 && s.feats[FEAT.smuggled] === 1, 'counted: one visit, one thing smuggled');
+  check(
+    !!v &&
+      v.cash! >= GIFT_MIN &&
+      v.cash! <= GIFT_MAX &&
+      s.cash === cash + v.cash! &&
+      v.item === catalogueItem(0) &&
+      s.items.inv.some((x) => itemOf(x) === catalogueItem(0)) &&
+      !s.order.length,
+    `the visitor: $${v?.cash} and the order slipped across`,
+  );
+  check(
+    !!(s.eventFlags & TODAY.VISITED) && s.feats[FEAT.visits] === 1 && s.feats[FEAT.smuggled] === 1,
+    'counted: one visit, one thing smuggled',
+  );
   seen.length = 0;
   for (let k = 0; k < VISIT_STEPS * 2; k++) step();
   check(!news(seen, 'visit').length, 'once a visiting day');
   // Leaving with the crowbar (contraband): the arch at the room's way out trips.
-  check(visitExits(w).has(38 * MAP_W + 30), 'the room\'s north opening is an arch');
+  check(visitExits(w).has(38 * MAP_W + 30), "the room's north opening is an arch");
   s.seat = -1;
   putTile(s.player, 40 * MAP_W + 30);
   seen.length = 0;
@@ -452,12 +570,18 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   putTile(s.player, 40 * MAP_W + 33);
   seen.length = 0;
   for (let k = 0; k < STEPS_PER_MINUTE + 1; k++) step(0, false);
-  check(seen.some((e) => e.type === 'scanned' && e.tripped), '12:00: scanned on the way out of the room');
+  check(
+    seen.some((e) => e.type === 'scanned' && e.tripped),
+    '12:00: scanned on the way out of the room',
+  );
   s.heat = 0;
   s.lockdown = false;
   // Stood in an arch at noon: scanned once, as they stepped in (not again by the noon scan).
   {
-    const q = game(CENTER_PERKS, 5, [[0, 0, 0], [3, VISITING, 0]]);
+    const q = game(CENTER_PERKS, 5, [
+      [0, 0, 0],
+      [3, VISITING, 0],
+    ]);
     q.to(3, 11, 58);
     q.sim.state.items.inv[1] = slot(n('crowbar'));
     q.sim.state.items.inv[2] = slot(n('pouch'));
@@ -474,7 +598,11 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 }
 {
   // No room in the hotbar: kept for next time.
-  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 5, [[0, 0, 0], [3, VISITING, 0], [10, VISITING, 0]]);
+  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 5, [
+    [0, 0, 0],
+    [3, VISITING, 0],
+    [10, VISITING, 0],
+  ]);
   const s = sim.state;
   to(2, 10, 30);
   phone();
@@ -486,14 +614,20 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   s.seat = chair;
   seen.length = 0;
   for (let k = 0; k < VISIT_STEPS; k++) step();
-  check(news(seen, 'visit')[0]?.item === 0 && news(seen, 'noRoom')[0]?.item === catalogueItem(3) && s.order[0] === 3, 'a full hotbar: the gift, and the order kept for next time');
+  check(
+    news(seen, 'visit')[0]?.item === 0 && news(seen, 'noRoom')[0]?.item === catalogueItem(3) && s.order[0] === 3,
+    'a full hotbar: the gift, and the order kept for next time',
+  );
   check(arrival(sim)?.day === 10, 'next visiting day: day 10');
 }
 
 // ------------------------------------------------------------------ the Red Cross parcel (Stalag Flucht)
 {
   const parcelRun = (item: number, close: boolean, full = false) => {
-    const { sim, seen, step, to, phone, order } = game(STALAG_FLUCHT, 5, [[0, 0, 0], [3, DELIVERY, 0]]);
+    const { sim, seen, step, to, phone, order } = game(STALAG_FLUCHT, 5, [
+      [0, 0, 0],
+      [3, DELIVERY, 0],
+    ]);
     const s = sim.state;
     to(2, 10, 0);
     phone();
@@ -512,22 +646,35 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
     const { sim, seen, when, desk } = parcelRun(crowbar, false);
     check(when?.day === 3 && when.minute === PARCEL_MINUTE, 'the parcel: next delivery day, 14:45');
     const hidden = containersOf(sim.world)[desk].hidden;
-    check(news(seen, 'parcel').length === 1 && sim.state.items.containers[desk].findIndex((v) => itemOf(v) === catalogueItem(crowbar)) >= hidden && !sim.state.order.length, 'a quick search: the crowbar in the desk (in plain sight, never its hidden compartment)');
+    check(
+      news(seen, 'parcel').length === 1 &&
+        sim.state.items.containers[desk].findIndex((v) => itemOf(v) === catalogueItem(crowbar)) >= hidden &&
+        !sim.state.order.length,
+      'a quick search: the crowbar in the desk (in plain sight, never its hidden compartment)',
+    );
   }
   {
     const { sim, seen } = parcelRun(crowbar, true);
-    check(news(seen, 'parcelSeized').length === 1 && !sim.state.order.length && sim.state.feats[FEAT.parcelsSeized] === 1, 'a thorough search: the crowbar seized');
+    check(
+      news(seen, 'parcelSeized').length === 1 && !sim.state.order.length && sim.state.feats[FEAT.parcelsSeized] === 1,
+      'a thorough search: the crowbar seized',
+    );
   }
   {
     const { sim, seen, desk } = parcelRun(battery, true);
-    check(!itemDef(catalogueItem(battery)).contraband && news(seen, 'parcel').length === 1 && sim.state.items.containers[desk].some((v) => itemOf(v) === catalogueItem(battery)), 'a thorough search lets a battery through');
+    check(
+      !itemDef(catalogueItem(battery)).contraband &&
+        news(seen, 'parcel').length === 1 &&
+        sim.state.items.containers[desk].some((v) => itemOf(v) === catalogueItem(battery)),
+      'a thorough search lets a battery through',
+    );
   }
   {
     const { sim, seen, desk, step } = parcelRun(battery, false, true);
     check(news(seen, 'deskFull').length === 1 && sim.state.order.length === 3, 'a full desk: the parcel waits');
     sim.state.items.containers[desk][containersOf(sim.world)[desk].hidden] = 0;
     for (let k = 0; k < STEPS_PER_MINUTE + 1; k++) step();
-    check(news(seen, 'parcel').length === 1 && !sim.state.order.length, 'and comes as soon as there\'s room');
+    check(news(seen, 'parcel').length === 1 && !sim.state.order.length, "and comes as soon as there's room");
   }
   console.log('parcel: into the desk, seized by a thorough search (contraband only), waits for room');
 }
@@ -547,7 +694,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
     twin.step(0);
     twin.state.heat = 0;
   }
-  check(twin.state.order.join() === sim.state.order.join() && twin.hash() === sim.hash(), 'saved and loaded with an order on its way: the same game');
+  check(
+    twin.state.order.join() === sim.state.order.join() && twin.hash() === sim.hash(),
+    'saved and loaded with an order on its way: the same game',
+  );
 }
 {
   // A save from before P21: today and tomorrow keep the card visiting day took the place of.
@@ -562,7 +712,10 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   delete old.visit;
   const loaded = new Sim(CENTER_PERKS, 1);
   loaded.restore(snap);
-  check(planOf(loaded, day).event === DAY_BOOKS['center-perks'].beforeVisits && loaded.state.order.length === 0, `an old save on visiting day ${day}: it keeps its ${DAY_BOOKS['center-perks'].beforeVisits}`);
+  check(
+    planOf(loaded, day).event === DAY_BOOKS['center-perks'].beforeVisits && loaded.state.order.length === 0,
+    `an old save on visiting day ${day}: it keeps its ${DAY_BOOKS['center-perks'].beforeVisits}`,
+  );
   // A damaged one: an order for nothing in the catalogue, a drop of no item: dropped, never a crash.
   const bad = sim.snapshot();
   Object.assign(bad.state, { order: [99, 0, 1], drops: [[5, 0, 1]] });
@@ -576,12 +729,18 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
   const g2 = new Sim(CENTER_PERKS, 1);
   g2.restore(ghost);
   g2.step(0);
-  check(g2.state.drops.length === 0 && g2.state.feats[FEAT.drops] === 0, 'a save with a drop that isn\'t there: no pick-up counted');
+  check(g2.state.drops.length === 0 && g2.state.feats[FEAT.drops] === 0, "a save with a drop that isn't there: no pick-up counted");
   // A run logged before P21 replays with the old card.
   const rec = new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.14.2' });
   const replay = replayLog({ ...rec.toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, CENTER_PERKS);
-  check(!!replay && planOf(replay.sim, day).event === DAY_BOOKS['center-perks'].beforeVisits, 'a run logged before P21 replays with the old card');
-  const now = replayLog({ ...new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.15.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] }, CENTER_PERKS);
+  check(
+    !!replay && planOf(replay.sim, day).event === DAY_BOOKS['center-perks'].beforeVisits,
+    'a run logged before P21 replays with the old card',
+  );
+  const now = replayLog(
+    { ...new RunRecorder(new Sim(CENTER_PERKS, 4), { seed: 4, game: '1.15.0' }).toLog(), from: 0, steps: day * DAY_STEPS, sums: [] },
+    CENTER_PERKS,
+  );
   check(!!now && planOf(now.sim, day).event === 'visiting', 'one logged since deals visiting day');
   console.log(`saves: an order carries on; an old save on visiting day ${day} keeps its ${DAY_BOOKS['center-perks'].beforeVisits}`);
 }

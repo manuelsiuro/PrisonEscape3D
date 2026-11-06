@@ -11,7 +11,18 @@ import { isLegal } from './manhunt';
 import type { Medal } from './medals';
 
 export type AchievementGroup = 'out' | 'speed' | 'conduct' | 'skills' | 'life' | 'days' | 'daily' | 'holidays' | 'mishaps' | 'career';
-export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = ['out', 'speed', 'conduct', 'skills', 'life', 'days', 'daily', 'holidays', 'mishaps', 'career'];
+export const ACHIEVEMENT_GROUPS: readonly AchievementGroup[] = [
+  'out',
+  'speed',
+  'conduct',
+  'skills',
+  'life',
+  'days',
+  'daily',
+  'holidays',
+  'mishaps',
+  'career',
+];
 
 /** A run as the checks see it: the ledger and a few of the player's numbers. */
 export interface RunView {
@@ -81,7 +92,10 @@ const whole = (r: RunView) => f(r, 'partial') === 0;
 const conduct = (e: EscapeView) => whole(e) && !isLegal(e.via);
 const stat = (c: Career, k: string) => c.stats[k] ?? 0;
 /** A career count reaching a goal, with its progress. */
-const counted = (k: string, goal: number) => ({ career: (c: Career) => stat(c, k) >= goal, progress: (c: Career) => [Math.min(goal, stat(c, k)), goal] as const });
+const counted = (k: string, goal: number) => ({
+  career: (c: Career) => stat(c, k) >= goal,
+  progress: (c: Career) => [Math.min(goal, stat(c, k)), goal] as const,
+});
 
 export const ACHIEVEMENTS: readonly Achievement[] = [
   // Ways out.
@@ -100,16 +114,35 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   // P36: walked out the front gate, your name on the release list.
   { id: 'timeServed', group: 'out', icon: 'clipboard', escape: (e) => e.via === 'paperwork' },
   { id: 'houdini', group: 'out', icon: 'star', gives: 'topHat', career: (c) => c.prisons.some((p) => p.routes.length >= p.of) },
-  { id: 'grandTour', group: 'out', icon: 'map', gives: 'crown', career: (c) => c.prisons.every((p) => p.routes.length > 0), progress: (c) => [c.prisons.filter((p) => p.routes.length > 0).length, c.prisons.length] },
+  {
+    id: 'grandTour',
+    group: 'out',
+    icon: 'map',
+    gives: 'crown',
+    career: (c) => c.prisons.every((p) => p.routes.length > 0),
+    progress: (c) => [c.prisons.filter((p) => p.routes.length > 0).length, c.prisons.length],
+  },
   // Speed.
   { id: 'dayOne', group: 'speed', icon: 'clock', gives: 'shades', escape: (e) => e.day === 1 },
   { id: 'quickStep', group: 'speed', icon: 'walk', gives: 'tangerine', escape: (e) => e.day <= 3 },
   { id: 'goldStandard', group: 'speed', icon: 'trophy', gives: 'gold', escape: (e) => e.medal === 'gold' },
   // Conduct: the whole run, out by an escape (not a legal release).
   // No blow, nothing thrown at anyone, and nobody knocked out on your account (your followers' fists count too).
-  { id: 'pacifist', group: 'conduct', icon: 'heart', gives: 'heart', escape: (e) => conduct(e) && f(e, 'blows') + f(e, 'flung') + f(e, 'koGuards') + f(e, 'koInmates') === 0 },
+  {
+    id: 'pacifist',
+    group: 'conduct',
+    icon: 'heart',
+    gives: 'heart',
+    escape: (e) => conduct(e) && f(e, 'blows') + f(e, 'flung') + f(e, 'koGuards') + f(e, 'koInmates') === 0,
+  },
   { id: 'ghost', group: 'conduct', icon: 'eyeOff', gives: 'platinum', escape: (e) => conduct(e) && f(e, 'spotted') === 0 },
-  { id: 'cleanRecord', group: 'conduct', icon: 'shield', gives: 'cream', escape: (e) => conduct(e) && f(e, 'caught') === 0 && f(e, 'solitary') === 0 },
+  {
+    id: 'cleanRecord',
+    group: 'conduct',
+    icon: 'shield',
+    gives: 'cream',
+    escape: (e) => conduct(e) && f(e, 'caught') === 0 && f(e, 'solitary') === 0,
+  },
   { id: 'modelPrisoner', group: 'conduct', icon: 'bell', gives: 'ponytail', escape: (e) => conduct(e) && f(e, 'missed') === 0 },
   { id: 'calm', group: 'conduct', icon: 'sun', gives: 'swallow', escape: (e) => conduct(e) && f(e, 'lockdowns') === 0 },
   // Skills.
@@ -232,7 +265,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'moneybags', group: 'career', icon: 'coin', gives: 'ginger', ...counted('cash', 500) },
   { id: 'seasoned', group: 'career', icon: 'route', ...counted('escapes', 10) },
   { id: 'marathon', group: 'career', icon: 'walk', ...counted('walked', 10000) },
-  { id: 'graduate', group: 'career', icon: 'bulb', career: (c) => c.lessons >= c.lessonsOf, progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf] },
+  {
+    id: 'graduate',
+    group: 'career',
+    icon: 'bulb',
+    career: (c) => c.lessons >= c.lessonsOf,
+    progress: (c) => [Math.min(c.lessons, c.lessonsOf), c.lessonsOf],
+  },
   // v2.18 (P39, the parole board): out on parole; parole granted on the lawyer's filing; a lie the board caught; an application voided by plotting.
   { id: 'goodBehaviour', group: 'out', icon: 'scale', gives: 'paroleSpecs', escape: (e) => e.via === 'parole' },
   { id: 'counsel', group: 'life', icon: 'briefcase', run: (r) => f(r, 'lawyerGranted') >= 1 },
@@ -253,7 +292,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'getawayDriver', group: 'out', icon: 'truck', hunt: (h) => h.safe && h.lou },
   { id: 'longArm', group: 'mishaps', icon: 'siren', hidden: true, hunt: (h) => !h.safe },
   { id: 'soClose', group: 'mishaps', icon: 'flag', hidden: true, hunt: (h) => !h.safe && h.progress >= 0.9 },
-  { id: 'allClear', group: 'career', icon: 'map', career: (c) => c.prisons.every((p) => (p.clean ?? 0) > 0), progress: (c) => [c.prisons.filter((p) => (p.clean ?? 0) > 0).length, c.prisons.length] },
+  {
+    id: 'allClear',
+    group: 'career',
+    icon: 'map',
+    career: (c) => c.prisons.every((p) => (p.clean ?? 0) > 0),
+    progress: (c) => [c.prisons.filter((p) => (p.clean ?? 0) > 0).length, c.prisons.length],
+  },
   // v2.21 (P42, holidays): five eggs found in one egg hunt's run; in the water fight; three inmates laughing at the costume; a present given; work done under New Year's fireworks.
   { id: 'eggHunter', group: 'holidays', icon: 'egg', gives: 'holBunny', run: (r) => f(r, 'eggsFound') >= 5 },
   { id: 'splashdown', group: 'holidays', icon: 'splash', gives: 'holShades', run: (r) => f(r, 'waterFights') >= 1 },

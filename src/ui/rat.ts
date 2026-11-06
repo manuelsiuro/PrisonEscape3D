@@ -33,7 +33,6 @@ export interface RatView {
   looseNote: string;
 }
 
-
 /**
  * The pet rat's panel (P20): its name and what it's up to (a polite live region, written in
  * place), letting it loose, and the places in its reach (the sleepers first, then the nearest
@@ -127,22 +126,35 @@ export class RatPanel {
     if (key === this.drawn) return;
     this.drawn = key;
     // (Only distances or the crowd's count changed, walking along: written in place, the focus and the screen reader left be.)
-    const shape = JSON.stringify([v.ready, v.rows.map((r) => [r.container, r.name, r.key, r.icon]), v.more, v.leave, v.leaveNo, v.loose]) + currentLang();
+    const shape =
+      JSON.stringify([v.ready, v.rows.map((r) => [r.container, r.name, r.key, r.icon]), v.more, v.leave, v.leaveNo, v.loose]) +
+      currentLang();
     if (shape === this.shape && this.patch(v)) return;
     this.shape = shape;
     this.el.querySelector('[data-rat="close"]')!.setAttribute('aria-label', t('box.close'));
     const rows = v.rows
       .map((r) => {
-        const chip = r.key ? `<i class="rat-key" style="--key:${r.key}" aria-hidden="true" title="${esc(t('rat.hasKey'))}">${icon('key', 12)}</i>` : '';
+        const chip = r.key
+          ? `<i class="rat-key" style="--key:${r.key}" aria-hidden="true" title="${esc(t('rat.hasKey'))}">${icon('key', 12)}</i>`
+          : '';
         // (What a screen reader says of the place: its name, where it is, and a guard's key on him.)
         const where = [r.name, r.meta, r.key ? t('rat.hasKeySay') : ''].filter(Boolean).join(', ');
-        const leave = v.leave ? `<button class="big-btn ghost small" data-rat="leave" data-box="${r.container}" aria-label="${esc(t('rat.leaveAt', { item: v.leave, where }))}">${icon('down', 16)}<span>${t('rat.leave')}</span></button>` : '';
+        const leave = v.leave
+          ? `<button class="big-btn ghost small" data-rat="leave" data-box="${r.container}" aria-label="${esc(t('rat.leaveAt', { item: v.leave, where }))}">${icon('down', 16)}<span>${t('rat.leave')}</span></button>`
+          : '';
         return `<div class="board-row rat-row"><span class="board-ic">${icon(r.icon, 20)}</span><span class="board-text"><b>${esc(r.name)}${chip}</b><small>${esc(r.meta)}</small></span><span class="rat-acts"><button class="big-btn primary small" data-rat="fetch" data-box="${r.container}" aria-label="${esc(t('rat.fetchFrom', { where }))}">${icon('up', 16)}<span>${t('rat.fetch')}</span></button>${leave}</span></div>`;
       })
       .join('');
     const more = v.more ? `<p class="rat-empty rat-more">${esc(t(v.more === 1 ? 'rat.moreOne' : 'rat.more', { n: v.more }))}</p>` : '';
-    const list = !v.ready ? '' : v.rows.length ? `<div class="board-list">${rows}</div>${more}` : `<p class="rat-empty">${t('rat.nothing')}</p>`;
-    const carry = v.ready && v.rows.length ? `<p class="board-note">${esc(v.leave ? t('rat.carry', { item: v.leave }) : v.leaveNo || t('rat.carryNone'))}</p>` : '';
+    const list = !v.ready
+      ? ''
+      : v.rows.length
+        ? `<div class="board-list">${rows}</div>${more}`
+        : `<p class="rat-empty">${t('rat.nothing')}</p>`;
+    const carry =
+      v.ready && v.rows.length
+        ? `<p class="board-note">${esc(v.leave ? t('rat.carry', { item: v.leave }) : v.leaveNo || t('rat.carryNone'))}</p>`
+        : '';
     const loose = v.ready
       ? `<div class="rat-loose"><button class="big-btn ${v.loose ? 'danger' : 'ghost'} small" data-rat="loose" aria-describedby="rat-loose-why" ${v.loose ? '' : 'disabled'}>${icon('siren', 16)}<span>${t('rat.loose')}</span></button><small id="rat-loose-why">${esc(v.looseNote)}</small></div>`
       : '';
@@ -152,13 +164,18 @@ export class RatPanel {
     this.body.innerHTML = `${loose}${carry}${list}${TOUCH ? '' : `<p class="rat-keys">${t('rat.keys')}</p>`}`;
     if (was) {
       const [what, box] = was.split('|');
-      const again = this.body.querySelector<HTMLButtonElement>(`button[data-rat="${what}"]${box ? `[data-box="${box}"]` : ''}:not([disabled])`) ?? this.body.querySelector<HTMLButtonElement>('button:not([disabled])');
+      const again =
+        this.body.querySelector<HTMLButtonElement>(`button[data-rat="${what}"]${box ? `[data-box="${box}"]` : ''}:not([disabled])`) ??
+        this.body.querySelector<HTMLButtonElement>('button:not([disabled])');
       (again ?? this.el.querySelector<HTMLButtonElement>('[data-rat="close"]'))?.focus();
     }
     if (this.focusNext) {
       this.focusNext = false;
       // (The first Fetch: never Let it loose, a once-a-day panic one stray Space away.)
-      (this.body.querySelector<HTMLButtonElement>('button[data-rat="fetch"]') ?? this.el.querySelector<HTMLButtonElement>('[data-rat="close"]'))?.focus();
+      (
+        this.body.querySelector<HTMLButtonElement>('button[data-rat="fetch"]') ??
+        this.el.querySelector<HTMLButtonElement>('[data-rat="close"]')
+      )?.focus();
     }
   }
 }

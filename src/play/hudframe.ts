@@ -45,7 +45,31 @@ const paroleHud = { icon: 'scale', color: '#8a6bd1', text: '', time: '', soon: f
 /** When the paw last lit for a dog's nose (real ms), and how long it stays lit after. */
 let pawAt = -1e9;
 const PAW_HOLD_MS = 1500;
-export const hudState: HudState = { routine: 0, attended: false, heat: 0, lockdown: false, seen: false, solitaryMinutes: null, cash: 0, work: null, powerLeft: null, powerKey: 'hud.powerOut', takeoverLeft: null, wavedLeft: null, wavedKey: 'hud.waved', cold: null, bribe: null, weather: { icon: '', name: '', color: '' }, today: null, drill: null, dog: null, rat: null, order: null, crew: null, tipsy: null };
+export const hudState: HudState = {
+  routine: 0,
+  attended: false,
+  heat: 0,
+  lockdown: false,
+  seen: false,
+  solitaryMinutes: null,
+  cash: 0,
+  work: null,
+  powerLeft: null,
+  powerKey: 'hud.powerOut',
+  takeoverLeft: null,
+  wavedLeft: null,
+  wavedKey: 'hud.waved',
+  cold: null,
+  bribe: null,
+  weather: { icon: '', name: '', color: '' },
+  today: null,
+  drill: null,
+  dog: null,
+  rat: null,
+  order: null,
+  crew: null,
+  tipsy: null,
+};
 /** Tipsy (P28): the HUD's pill, refilled in place. */
 const tipsyHud = { until: '', left: 0, of: TIPSY_STEPS / STEPS_PER_MINUTE };
 const coldHud = { built: 0, left: 0, bit: false, warming: false, hot: false };
@@ -90,11 +114,13 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   const need = presenceNeeded(sim);
   const present = Math.floor(st.present / STEPS_PER_MINUTE);
   if (!need || st.attended) hudState.presence = null;
-  else if (hudState.presence?.[0] !== present || hudState.presence[1] !== need / STEPS_PER_MINUTE) hudState.presence = [present, need / STEPS_PER_MINUTE];
+  else if (hudState.presence?.[0] !== present || hudState.presence[1] !== need / STEPS_PER_MINUTE)
+    hudState.presence = [present, need / STEPS_PER_MINUTE];
   // (P24's glider lesson, on the roof after Lights Out: the routine pill asks nothing of the player.)
   hudState.quietRoutine = !!g.lesson && LESSONS[g.lesson.index].routine === false;
   // At roll call (2.27): where to stand till counted; on it, the morning's shakedown, until it's over.
-  hudState.square = squareNeeded(sim) && !st.attended && !onOwnSquare(sim) ? t('routine.yourSquare') : (shakedownLine(sim) ?? homeLine(sim, g));
+  hudState.square =
+    squareNeeded(sim) && !st.attended && !onOwnSquare(sim) ? t('routine.yourSquare') : (shakedownLine(sim) ?? homeLine(sim, g));
   hudState.heat = st.heat;
   hudState.lockdown = st.lockdown;
   hudState.seen = st.seen;
@@ -111,9 +137,14 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
     const d = jobRooms(sim.world)[job].def;
     // (2.30: on the clock, in its room or on its round, the next step; else the room to go to.)
     const next = nextWork(sim);
-    workHud.place = next && (sim.dutyZones.includes(sim.playerZone) || d.flow !== 'machine') ? nextLabel(sim, next) : t(`zone.${d.zone}` as Key);
+    workHud.place =
+      next && (sim.dutyZones.includes(sim.playerZone) || d.flow !== 'machine') ? nextLabel(sim, next) : t(`zone.${d.zone}` as Key);
     const now = sim.clock.minuteOfDay;
-    workHud.late = !st.paid && !st.lockdown && !st.excused && (now >= LAST_WARNING || (now >= workWarningAt(d) && (d.flow !== 'mail' || st.quota === 0)));
+    workHud.late =
+      !st.paid &&
+      !st.lockdown &&
+      !st.excused &&
+      (now >= LAST_WARNING || (now >= workWarningAt(d) && (d.flow !== 'mail' || st.quota === 0)));
     workHud.quota = st.quota;
     workHud.of = d.quota;
     workHud.paid = st.paid;
@@ -122,7 +153,12 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   // Irongate's two generators (P12): the pill says which half is dead (both: the power).
   const off = Math.max(st.powerOff, st.powerOff2);
   hudState.powerLeft = off > 0 ? (off - a) / STEPS_PER_SECOND : null;
-  hudState.powerKey = !sim.world.def.grid || (st.powerOff > 0 && st.powerOff2 > 0) ? 'hud.powerOut' : st.powerOff > 0 ? 'hud.powerOutCams' : 'hud.powerOutFence';
+  hudState.powerKey =
+    !sim.world.def.grid || (st.powerOff > 0 && st.powerOff2 > 0)
+      ? 'hud.powerOut'
+      : st.powerOff > 0
+        ? 'hud.powerOutCams'
+        : 'hud.powerOutFence';
   let wakes = Infinity;
   for (const x of st.guards) if (x.ko > 0) wakes = Math.min(wakes, x.ko);
   hudState.takeoverLeft = st.takeover && wakes < Infinity ? (wakes - a) / STEPS_PER_SECOND : null;
@@ -197,8 +233,11 @@ export function hudFrame(g: Game, a: number, tile: { x: number; z: number }, bus
   sound.duck((g.paused && !g.over) || songOn);
   // Out on the road: the title theme plays over the victory screen.
   if (!g.over) sound.music(chased ? 'tension' : night || st.solitary > 0 ? 'night' : 'day');
-  const outdoors = st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
-  sound.setScene(st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor');
+  const outdoors =
+    st.layer === LAYER.ROOF || (st.layer === LAYER.GROUND && !!TILE_INFO[sim.world.ground.kind[tile.z * MAP_W + tile.x]]?.outdoor);
+  sound.setScene(
+    st.layer === LAYER.UNDER ? 'under' : outdoors ? (night || clock.minuteOfDay < 8 * 60 ? 'outdoorNight' : 'outdoorDay') : 'indoor',
+  );
 }
 
 /** The look last photographed for the file's button (render/portrait.ts: a new WebGL context and shader, so in an idle moment if one comes within 2 s). */
@@ -233,7 +272,7 @@ function fileButton(g: Game) {
       profile.face = url;
     };
     if (fresh) take();
-    else ('requestIdleCallback' in window ? requestIdleCallback(take, { timeout: 2000 }) : setTimeout(take, 16));
+    else 'requestIdleCallback' in window ? requestIdleCallback(take, { timeout: 2000 }) : setTimeout(take, 16);
   }
   hud.setNews(!g.replay && profile.newsFor(g.rec.sim));
   const now = playNow();
@@ -252,7 +291,16 @@ let darkSim: Sim | null = null;
 function homeLine(sim: Sim, g: Game): string | null {
   const st = sim.state;
   // (A lesson about something else, set up at night, has its own place to send them.)
-  if ((g.lesson && LESSONS[g.lesson.index].id !== 'night') || sim.rules227 || st.lockdown || ROUTINE[st.routine].id !== 'lightsOut' || afterHours(sim) || sim.playerZone === 'playerCell' || sim.world.def.rules?.relaxed) return null;
+  if (
+    (g.lesson && LESSONS[g.lesson.index].id !== 'night') ||
+    sim.rules227 ||
+    st.lockdown ||
+    ROUTINE[st.routine].id !== 'lightsOut' ||
+    afterHours(sim) ||
+    sim.playerZone === 'playerCell' ||
+    sim.world.def.rules?.relaxed
+  )
+    return null;
   return t('routine.homeBy', { time: hhmm(ROUTINE[st.routine].start + LIGHTS_OUT_GRACE / STEPS_PER_MINUTE) });
 }
 

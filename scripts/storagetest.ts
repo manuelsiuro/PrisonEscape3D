@@ -20,7 +20,10 @@ const { DEFAULT_SETTINGS, hasSeen, loadSettings, markSeen, saveSettings } = awai
 
 migrateStorage();
 check(mem.get(KEYS.version) === String(SAVE_VERSION), 'version is stamped');
-check(Object.keys(KEYS).every((k) => KEYS[k as keyof typeof KEYS].startsWith('pe3d.')), 'every key has the game prefix');
+check(
+  Object.keys(KEYS).every((k) => KEYS[k as keyof typeof KEYS].startsWith('pe3d.')),
+  'every key has the game prefix',
+);
 
 // Settings: saved and read back; a bad field falls back to its default.
 saveSettings({ ...DEFAULT_SETTINGS, sfxVolume: 0.3, lang: 'fr' });
@@ -103,9 +106,13 @@ console.log('storage ok, version', SAVE_VERSION);
 {
   const { resetProgress } = await import('../src/game/settings');
   const { replayBestKey, PROGRESS_KEYS } = await import('../src/game/storage');
-  for (const k of [KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log2, KEYS.replayLast, replayBestKey('irongate'), KEYS.prisoner]) mem.set(k, '{}');
+  for (const k of [KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log2, KEYS.replayLast, replayBestKey('irongate'), KEYS.prisoner])
+    mem.set(k, '{}');
   resetProgress();
-  check([KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log2, KEYS.replayLast, replayBestKey('irongate')].every((k) => !mem.has(k)), 'reset progress wipes achievements, stats, logs and replays');
+  check(
+    [KEYS.stats, KEYS.trophies, KEYS.logAuto, KEYS.log2, KEYS.replayLast, replayBestKey('irongate')].every((k) => !mem.has(k)),
+    'reset progress wipes achievements, stats, logs and replays',
+  );
   check(mem.has(KEYS.prisoner) && !PROGRESS_KEYS.includes(KEYS.prisoner), 'your prisoner stays');
   check(replayBestKey('shankton').startsWith('pe3d.'), 'replay keys have the game prefix');
   console.log('progress keys ok');

@@ -33,7 +33,6 @@ import { START_SPD, START_STR, STUDY_TIP_EVERY } from './tuning';
 import { LAYER, type World } from './world/World';
 import { WAKE } from './events';
 
-
 /**
  * Everything that changes, as plain data (the world's tiles are kept in World and saved
  * with it). New fields go at the end and must be optional when loading old snapshots.

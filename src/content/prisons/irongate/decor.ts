@@ -6,8 +6,12 @@ const COUNTER = 0.56;
 
 /** The cells: a poster on the back wall (north row: the north wall; south row: the south wall), beside the bed. */
 const cells: DecorPlacement[] = [
-  ...[8, 13, 18, 23, 28, 33, 38, 43].map((x0, k) => ({ kind: (['poster', 'posterB', 'posterC'] as const)[k % 3], x: x0 + 1, z: 9 }) as const),
-  ...[8, 13, 18, 23, 33, 38].map((x0, k) => ({ kind: (['posterC', 'poster', 'wallShelf'] as const)[k % 3], x: x0 + 1, z: 20, rot: 2 }) as const),
+  ...[8, 13, 18, 23, 28, 33, 38, 43].map(
+    (x0, k) => ({ kind: (['poster', 'posterB', 'posterC'] as const)[k % 3], x: x0 + 1, z: 9 }) as const,
+  ),
+  ...[8, 13, 18, 23, 33, 38].map(
+    (x0, k) => ({ kind: (['posterC', 'poster', 'wallShelf'] as const)[k % 3], x: x0 + 1, z: 20, rot: 2 }) as const,
+  ),
 ];
 
 /** Warnings on the fortress wall facing the walkway, every so often. */

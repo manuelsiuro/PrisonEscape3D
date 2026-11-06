@@ -8,7 +8,22 @@ import { chapterOf, LESSONS } from '../tutorial/lessons';
 import { LessonProgress } from '../tutorial/progress';
 import { LessonCard, showLessonResult, type LessonResult } from '../ui/lessonCard';
 import { showObjectives, type Objectives } from '../ui/screens/objectives';
-import { board, click, controls, hud, itemsUI, profile, ratPanel, phonePanel, crewPanel, socialOpen, sound, talk, tools, view } from './context';
+import {
+  board,
+  click,
+  controls,
+  hud,
+  itemsUI,
+  profile,
+  ratPanel,
+  phonePanel,
+  crewPanel,
+  socialOpen,
+  sound,
+  talk,
+  tools,
+  view,
+} from './context';
 import { play, type Game } from './game';
 import { type LessonCtx } from '../tutorial/kit';
 
@@ -99,7 +114,18 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   // Waiting for time to pass: the clock hurries (never while the player could miss something).
   if (!g.paused && !run.ended) g.speed = run.tick <= 0 && run.shown === run.progress.k ? (step.speed ?? 1) : 1;
   const ch = chapterOf(run.index);
-  card.update(ch.n, ch.of, ch.id, lesson.id, step.text, step.touch, lesson.steps.length, Math.min(run.shown, lesson.steps.length), run.tick > 0, hidden || run.ended);
+  card.update(
+    ch.n,
+    ch.of,
+    ch.id,
+    lesson.id,
+    step.text,
+    step.touch,
+    lesson.steps.length,
+    Math.min(run.shown, lesson.steps.length),
+    run.tick > 0,
+    hidden || run.ended,
+  );
   // A panel over the card: its step at the panel's top instead (what to do in the panel, often).
   const over = run.ended ? null : coveringPanel();
   card.dock(over);
@@ -159,7 +185,13 @@ async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {
   const ch = chapterOf(run.index);
   // (A short title, and what happened under it when the lesson has words for it: `<why>Sub`.)
   const sub = `${why}Sub` as Key;
-  const choice = await showLessonResult(won ? 'lesson.done' : why, run.index + 1 < LESSONS.length ? (ch.n === ch.of ? 'chapter' : 'lesson') : null, t(`lesson.${LESSONS[run.index].id}.t` as Key), click, !won && sub in en ? sub : null);
+  const choice = await showLessonResult(
+    won ? 'lesson.done' : why,
+    run.index + 1 < LESSONS.length ? (ch.n === ch.of ? 'chapter' : 'lesson') : null,
+    t(`lesson.${LESSONS[run.index].id}.t` as Key),
+    click,
+    !won && sub in en ? sub : null,
+  );
   run.finish(choice);
 }
 

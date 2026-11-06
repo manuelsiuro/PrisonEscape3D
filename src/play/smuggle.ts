@@ -7,7 +7,21 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { planOf, TODAY } from '../sim/systems/calendar';
 import { DAY_STEPS, dayMinute, prisonDay } from '../sim/systems/clock';
 import { itemOf } from '../sim/systems/items';
-import { archesUp, arrival, awaitingVisit, catalogueItem, dropTile, firstDay, guestSpot, landingTile, PHONE, smugglingOf, visitExits, visitPairs, wayOpen } from '../sim/systems/smuggling';
+import {
+  archesUp,
+  arrival,
+  awaitingVisit,
+  catalogueItem,
+  dropTile,
+  firstDay,
+  guestSpot,
+  landingTile,
+  PHONE,
+  smugglingOf,
+  visitExits,
+  visitPairs,
+  wayOpen,
+} from '../sim/systems/smuggling';
 import { TILE, TILE_INFO } from '../sim/world/tiles';
 import { seatSpot } from '../sim/systems/rest';
 import { STEPS_PER_MINUTE, STEPS_PER_SECOND, UNIT } from '../sim/tuning';
@@ -63,7 +77,11 @@ function whenText(sim: Sim, way: number, order: readonly number[]): string {
   // (Where that night's drop lands: the drop area is one zone, but its own tile says it.)
   if (way === WAY.DRONE) {
     const tile = dropTile(sim, a.day);
-    return t(`phone.drone${rel}` as Key, { n: a.day, time: dayTime(a.minute), place: zoneWords(tile >= 0 ? sim.world.zoneAt(tile % MAP_W, Math.floor(tile / MAP_W)) : dropZone(sim)).the });
+    return t(`phone.drone${rel}` as Key, {
+      n: a.day,
+      time: dayTime(a.minute),
+      place: zoneWords(tile >= 0 ? sim.world.zoneAt(tile % MAP_W, Math.floor(tile / MAP_W)) : dropZone(sim)).the,
+    });
   }
   if (smugglingOf(sim)!.parcel) return t(`phone.parcel${rel}` as Key, { n: a.day, time: dayTime(PARCEL_MINUTE) });
   const until = planOf(sim, a.day).until;
@@ -77,7 +95,13 @@ function wayLook(sim: Sim, way: number): { icon: string; label: string } {
 }
 
 const ways: PhoneWay[] = [];
-const rows = CATALOGUE.map((c, k) => ({ k, item: catalogueItem(k), name: '', price: c.price, contraband: itemDef(catalogueItem(k)).contraband }));
+const rows = CATALOGUE.map((c, k) => ({
+  k,
+  item: catalogueItem(k),
+  name: '',
+  price: c.price,
+  contraband: itemDef(catalogueItem(k)).contraband,
+}));
 const view: PhoneView = { status: '', statusIcon: 'phone', say: '', ready: false, note: '', ways, rows, cash: 0 };
 
 /** The order on its way, or what the drone left lying (a sentence; '' none), and its icon. */
@@ -94,7 +118,10 @@ function orderStatus(sim: Sim): { text: string; icon: string } {
   if (s.drops.length) {
     const [key, item] = s.drops[s.drops.length - 1];
     const tile = tileOfKey(key);
-    return { text: t('phone.lying', { item: itemName(item), place: zoneWords(sim.world.zoneAt(tile % MAP_W, Math.floor(tile / MAP_W))).at }), icon: 'drone' };
+    return {
+      text: t('phone.lying', { item: itemName(item), place: zoneWords(sim.world.zoneAt(tile % MAP_W, Math.floor(tile / MAP_W))).at }),
+      icon: 'drone',
+    };
   }
   return { text: '', icon: 'phone' };
 }
@@ -171,7 +198,13 @@ function orderPill(sim: Sim): HudState['order'] {
   hudOrder.icon = look.icon;
   // (Its time today; "now" once it's come round: visiting hours on, the parcel waiting for room.)
   const today = !!a && a.day === prisonDay(s.step);
-  hudOrder.text = !a ? '…' : !today ? t('phone.pillDay', { n: a.day }) : dayMinute(s.step) >= a.minute ? t('phone.pillNow') : dayTime(a.minute);
+  hudOrder.text = !a
+    ? '…'
+    : !today
+      ? t('phone.pillDay', { n: a.day })
+      : dayMinute(s.step) >= a.minute
+        ? t('phone.pillNow')
+        : dayTime(a.minute);
   hudOrder.sr = orderStatus(sim).text;
   return hudOrder;
 }
@@ -229,13 +262,18 @@ export function announceSmuggle(sim: Sim, e: Extract<SimEvent, { type: 'smuggle'
       break;
     case 'turnedBack':
       // (The sirens, or a guard looking right where it would land.)
-      if (e.guard !== undefined) itemsUI.toast(t('toast.turnedBackWatched', { item, guard: t('guard.the', { name: sim.prison.guards[e.guard]?.name ?? '' }) }));
+      if (e.guard !== undefined)
+        itemsUI.toast(t('toast.turnedBackWatched', { item, guard: t('guard.the', { name: sim.prison.guards[e.guard]?.name ?? '' }) }));
       else itemsUI.toast(t('toast.turnedBack', { item }));
       break;
     case 'dropped': {
       const tile = e.tile ?? 0;
       sound.parcelThump(gainAt(sim, tile));
-      banner.toast(t('toast.dropped', { item, place: zoneWords(sim.world.zoneAt(tile % MAP_W, Math.floor(tile / MAP_W))).at }), 'good', 4600);
+      banner.toast(
+        t('toast.dropped', { item, place: zoneWords(sim.world.zoneAt(tile % MAP_W, Math.floor(tile / MAP_W))).at }),
+        'good',
+        4600,
+      );
       break;
     }
     case 'seized':
@@ -306,7 +344,13 @@ function archesOf(sim: Sim): Array<{ tile: number; alongX: boolean }> {
   if (list) return list;
   const w = sim.world;
   const r = smugglingOf(sim)?.visits;
-  const outside = (x: number, z: number) => !!r && !(x >= r[0] && x <= r[2] && z >= r[1] && z <= r[3]) && x >= 0 && z >= 0 && x < MAP_W && (w.ground.base[z * MAP_W + x] === TILE.DOOR || !TILE_INFO[w.ground.base[z * MAP_W + x]].solid);
+  const outside = (x: number, z: number) =>
+    !!r &&
+    !(x >= r[0] && x <= r[2] && z >= r[1] && z <= r[3]) &&
+    x >= 0 &&
+    z >= 0 &&
+    x < MAP_W &&
+    (w.ground.base[z * MAP_W + x] === TILE.DOOR || !TILE_INFO[w.ground.base[z * MAP_W + x]].solid);
   list = [...visitExits(w)].map((tile) => {
     const x = tile % MAP_W;
     const z = Math.floor(tile / MAP_W);
@@ -336,7 +380,11 @@ function guestsOf(sim: Sim): Guest[] {
     const z = Math.floor(p.guest / MAP_W);
     // (Turned round from the seat across: facing the table.)
     const back = ((p.facing - 1 + 8) % 16) + 1;
-    list.push({ tile: p.guest, facing: headingAngle(back), chair: sim.world.props.some((q) => q.kind === 'chair' && q.x === x && q.z === z) });
+    list.push({
+      tile: p.guest,
+      facing: headingAngle(back),
+      chair: sim.world.props.some((q) => q.kind === 'chair' && q.x === x && q.z === z),
+    });
   }
   guestCache.set(sim.world, list);
   return list;
@@ -344,9 +392,24 @@ function guestsOf(sim: Sim): Guest[] {
 /** How many visitors sit about the room besides the player's. */
 const AMBIENT = 3;
 /** The visitors drawn this frame, reused. */
-const pool: Array<SmuggleFrame['visitors'][number]> = Array.from({ length: AMBIENT + 1 }, () => ({ x: 0, z: 0, facing: 0, look: 0, chair: false, arrive: 1 }));
+const pool: Array<SmuggleFrame['visitors'][number]> = Array.from({ length: AMBIENT + 1 }, () => ({
+  x: 0,
+  z: 0,
+  facing: 0,
+  look: 0,
+  chair: false,
+  arrive: 1,
+}));
 /** The parole board's three (P39): suits, never the guards' navy nor the inmates' orange. */
-const members: Array<SmuggleFrame['visitors'][number]> = BOARD_LOOKS.map(({ look, suit }) => ({ x: 0, z: 0, facing: 0, look, chair: false, arrive: 1, suit }));
+const members: Array<SmuggleFrame['visitors'][number]> = BOARD_LOOKS.map(({ look, suit }) => ({
+  x: 0,
+  z: 0,
+  facing: 0,
+  look,
+  chair: false,
+  arrive: 1,
+  suit,
+}));
 const NO_TILES: number[] = [];
 /** Where the player's visitor sat today (a guest tile, -1 none): they stay there until visiting hours are over. */
 let metAt = -1;
@@ -478,7 +541,8 @@ function seatTile(sim: Sim): number {
 function occupied(sim: Sim, tile: number): boolean {
   const cx = centerX(tile);
   const cz = centerZ(tile);
-  for (const m of sim.state.inmates) if (!m.body.moving && Math.abs(m.body.x - cx) < OCCUPIED && Math.abs(m.body.z - cz) < OCCUPIED) return true;
+  for (const m of sim.state.inmates)
+    if (!m.body.moving && Math.abs(m.body.x - cx) < OCCUPIED && Math.abs(m.body.z - cz) < OCCUPIED) return true;
   return false;
 }
 const OCCUPIED = Math.round(UNIT * 0.7);

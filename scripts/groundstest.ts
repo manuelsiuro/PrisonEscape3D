@@ -29,7 +29,13 @@ import { n, beatPress } from './bots';
 import { postable } from '../src/sim/systems/crew';
 import { check } from './assert';
 
-(globalThis as { localStorage?: unknown }).localStorage = { getItem: () => null, setItem: () => undefined, removeItem: () => undefined, key: () => null, length: 0 };
+(globalThis as { localStorage?: unknown }).localStorage = {
+  getItem: () => null,
+  setItem: () => undefined,
+  removeItem: () => undefined,
+  key: () => null,
+  length: 0,
+};
 const { rebuiltSince, saveFileOf } = await import('../src/game/saves');
 
 /** A step count at a time: game day (from 1), hour, minute (days start at 08:00). */
@@ -59,7 +65,10 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
 
 // ------------------------------------------------------------------ the places, as data
 {
-  check(REBUILT.length === PRISONS.length + 1 && REBUILT.every((p) => p.map === 1), 'rebuilt (P31–P33): every prison and the Training Block, map 1');
+  check(
+    REBUILT.length === PRISONS.length + 1 && REBUILT.every((p) => p.map === 1),
+    'rebuilt (P31–P33): every prison and the Training Block, map 1',
+  );
   const lines: string[] = [];
   for (const p of REBUILT) {
     const sim = new Sim(p, 1);
@@ -77,13 +86,19 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
     check(lanes.length === 0, `${p.id}: the track's lanes are open sports floor (${lanes.join(' ')})`);
     const pt = l.pitch;
     check(pt.x === r.x + 1 && pt.z === r.z + 1 && pt.w === r.w - 2 && pt.d === r.d - 2, `${p.id}: the pitch fills the track's middle`);
-    check(w.zoneAt(l.hoop.x, l.hoop.z) === 'sports' && l.hoop.spots.every((q) => w.zoneAt(q.x, q.z) === 'sports'), `${p.id}: the court on the sports ground`);
+    check(
+      w.zoneAt(l.hoop.x, l.hoop.z) === 'sports' && l.hoop.spots.every((q) => w.zoneAt(q.x, q.z) === 'sports'),
+      `${p.id}: the court on the sports ground`,
+    );
     const g = l.garden;
     let beds = 0;
     for (let z = g.z; z < g.z + g.d; z++) for (let x = g.x; x < g.x + g.w; x++) if (w.zoneAt(x, z) === 'garden') beds++;
     check(beds === g.w * g.d && beds === 12, `${p.id}: twelve beds in the garden (${beds})`);
     const inSports = (k: string) => w.props.some((q) => q.kind === k && w.zoneAt(q.x, q.z) === 'sports');
-    check(inSports('pullup') && inSports('weights') && inSports('bleachers') && inSports('lamp'), `${p.id}: the weights corner, a pull-up bar, bleachers and a lamp on the sports ground`);
+    check(
+      inSports('pullup') && inSports('weights') && inSports('bleachers') && inSports('lamp'),
+      `${p.id}: the weights corner, a pull-up bar, bleachers and a lamp on the sports ground`,
+    );
     // The gates: doors that open by the hour, into each place, and no other door into it.
     for (const zone of Object.keys(OPEN_HOURS)) {
       const z = zoneIndex(zone as 'sports');
@@ -104,7 +119,8 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
       ]) {
         const f = i + dx + dz * MAP_W;
         const past = w.zoneAt((i % MAP_W) + 2 * dx, Math.floor(i / MAP_W) + 2 * dz);
-        if (w.ground.kind[f] === TILE.FENCE && (past === 'perimeter' || past === 'outside' || past === 'none')) out.push(`${f % MAP_W},${Math.floor(f / MAP_W)}`);
+        if (w.ground.kind[f] === TILE.FENCE && (past === 'perimeter' || past === 'outside' || past === 'none'))
+          out.push(`${f % MAP_W},${Math.floor(f / MAP_W)}`);
       }
     }
     // (The Training Block's own fence is plain: the tutorial's.)
@@ -113,13 +129,19 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
     if (p.jobs.length) {
       check(job >= 0, `${p.id}: the gardener's job is on the board`);
       const room = jobRooms(w)[job];
-      check(room.take >= 0 && room.put >= 0 && room.machines.length >= JOBS.gardener.quota, `${p.id}: the shed, the crate and a planter for each crate of the quota (${room.machines.length})`);
+      check(
+        room.take >= 0 && room.put >= 0 && room.machines.length >= JOBS.gardener.quota,
+        `${p.id}: the shed, the crate and a planter for each crate of the quota (${room.machines.length})`,
+      );
     }
-    lines.push(`${p.id}: track ${r.w}×${r.d} (${2 * (r.w + r.d) - 4} lanes), pitch ${pt.w}×${pt.d}, ${beds} beds, ${job >= 0 ? `${jobRooms(w)[job].machines.length} planters` : 'no gardener'}`);
+    lines.push(
+      `${p.id}: track ${r.w}×${r.d} (${2 * (r.w + r.d) - 4} lanes), pitch ${pt.w}×${pt.d}, ${beds} beds, ${job >= 0 ? `${jobRooms(w)[job].machines.length} planters` : 'no gardener'}`,
+    );
   }
   console.log(lines.join('\n'));
   // Prisons not rebuilt yet keep their yards as they were: no track, no new zones.
-  for (const p of PRISONS.filter((q) => !q.map)) check(!p.leisure?.track && !p.zones.some(([z]) => z === 'sports' || z === 'garden'), `${p.id}: not rebuilt yet, its yard as it was`);
+  for (const p of PRISONS.filter((q) => !q.map))
+    check(!p.leisure?.track && !p.zones.some(([z]) => z === 'sports' || z === 'garden'), `${p.id}: not rebuilt yet, its yard as it was`);
 }
 
 // ------------------------------------------------------------------ laps of the track
@@ -148,7 +170,10 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   const s0 = a.st.spd;
   const e0 = a.st.energy;
   walk(round(0, 1, lanes + 1));
-  check(laps() === 1 && a.st.spd === s0 + TRAIN_GAIN && (a.st.trained & 2) === 2, `a lap clockwise: +${TRAIN_GAIN} Speed, Speed trained today`);
+  check(
+    laps() === 1 && a.st.spd === s0 + TRAIN_GAIN && (a.st.trained & 2) === 2,
+    `a lap clockwise: +${TRAIN_GAIN} Speed, Speed trained today`,
+  );
   check(a.st.energy <= e0 - GYM_ENERGY + 2 && a.st.energy >= e0 - GYM_ENERGY, `a lap costs a set's energy (${e0} → ${a.st.energy})`);
   walk(round(2, -1, lanes + 1));
   check(laps() === 2, 'a lap the other way round counts too');
@@ -168,7 +193,9 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   const s1 = a.st.spd;
   walk(round(0, 1, lanes + 1));
   check(laps() === 3 && a.st.spd === s1 && a.seen.some((e) => e.type === 'cantTrain' && e.why === 'tired'), 'too tired: a lap, no Speed');
-  console.log(`laps: ${lanes} lane tiles a lap at Center Perks; +${TRAIN_GAIN} Speed and ${GYM_ENERGY} energy each, either way round; turned back or off the lanes, none`);
+  console.log(
+    `laps: ${lanes} lane tiles a lap at Center Perks; +${TRAIN_GAIN} Speed and ${GYM_ENERGY} energy each, either way round; turned back or off the lanes, none`,
+  );
 }
 
 // ------------------------------------------------------------------ the pull-up bar
@@ -213,7 +240,10 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
     seen.push(`${ROUTINE[a.st.routine].id} ${open(sports) ? 'S' : '-'}${open(garden) ? 'G' : '-'}`);
   }
   // (The garden is the gardener's room too: open for the Work Period.)
-  check(seen.join() === 'rollCall --,freeTime SG,work -G,exercise SG,showers --,eveningFreeTime SG,eveningRollCall --,lightsOut --', `the gates by the hour (${seen.join(', ')})`);
+  check(
+    seen.join() === 'rollCall --,freeTime SG,work -G,exercise SG,showers --,eveningFreeTime SG,eveningRollCall --,lightsOut --',
+    `the gates by the hour (${seen.join(', ')})`,
+  );
   // A lockdown shuts them; someone still inside keeps theirs open until they're out.
   const b = arena(CENTER_PERKS, at(1, 10, 30));
   b.step();
@@ -225,7 +255,10 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   const c = arena(CENTER_PERKS, at(1, 11, 59));
   put(c.st.player, 16, 51);
   for (let k = 0; k < 3 * STEPS_PER_MINUTE; k++) c.step();
-  check(ROUTINE[c.st.routine].id === 'work' && c.sim.world.doorShut[gate('sports')] === 0, 'the player still on the sports ground at noon: its gate waits for them');
+  check(
+    ROUTINE[c.st.routine].id === 'work' && c.sim.world.doorShut[gate('sports')] === 0,
+    'the player still on the sports ground at noon: its gate waits for them',
+  );
   console.log(`gates: ${seen.join(', ')}`);
 }
 
@@ -252,18 +285,23 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   a.st.health = 40;
   for (let k = 0; k < 10 * STEPS_PER_MINUTE && !a.seen.some((e) => e.type === 'meal'); k++) a.step();
   const meal = a.seen.find((e) => e.type === 'meal');
-  check(!!meal && meal.type === 'meal' && !!meal.fresh && a.st.energy >= 20 + MEAL_ENERGY + FRESH_ENERGY - 1, `a fresh dinner: +${MEAL_ENERGY + FRESH_ENERGY} energy, health up (energy ${a.st.energy}, health ${a.st.health})`);
+  check(
+    !!meal && meal.type === 'meal' && !!meal.fresh && a.st.energy >= 20 + MEAL_ENERGY + FRESH_ENERGY - 1,
+    `a fresh dinner: +${MEAL_ENERGY + FRESH_ENERGY} energy, health up (energy ${a.st.energy}, health ${a.st.health})`,
+  );
   // A day on: the kitchen's back to the usual.
   a.st.step += FRESH_FOR;
   check(!freshMeals(a.sim), 'a day after, the meals are as ever');
   // An inmate gardener's shift: his own crates, no fresh meals (they're the player's to earn).
   const b = arena(CENTER_PERKS, at(1, 14, 59));
   const who = b.st.jobs[job];
-  check(who >= 0, 'an inmate holds the gardener\'s job on day 1');
+  check(who >= 0, "an inmate holds the gardener's job on day 1");
   b.st.inmates[who].shift = 1;
   settleWork(b.sim);
   check(!freshMeals(b.sim) && b.st.jobs[job] === who, 'an inmate gardener at work all shift: the job kept, no fresh meals for it');
-  console.log(`gardener: quota ${JOBS.gardener.quota} crates, $${JOBS.gardener.wage}; fresh meals +${FRESH_ENERGY} energy and health for a day`);
+  console.log(
+    `gardener: quota ${JOBS.gardener.quota} crates, $${JOBS.gardener.wage}; fresh meals +${FRESH_ENERGY} energy and health for a day`,
+  );
 }
 
 // ------------------------------------------------------------------ inmates at the exercise hour
@@ -281,7 +319,10 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
       if (a.sim.world.zoneAt(x, z) === 'sports') out++;
     }
   }
-  check(jogging > 0 && out > jogging, `the exercise hour: inmates out on the sports ground, some jogging the track (${out} inmate-steps out, ${jogging} jogging)`);
+  check(
+    jogging > 0 && out > jogging,
+    `the exercise hour: inmates out on the sports ground, some jogging the track (${out} inmate-steps out, ${jogging} jogging)`,
+  );
   console.log(`exercise hour: ${out} inmate-steps on the sports ground, ${jogging} of them jogging the track`);
 }
 
@@ -299,14 +340,18 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
     [57, 46, 57, 56],
     [35, 56, 57, 56],
   ])
-    for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) if (w.ground.kind[z * MAP_W + x] === TILE.ELECTRIC) live.add(z * MAP_W + x);
+    for (let z = z0; z <= z1; z++)
+      for (let x = x0; x <= x1; x++) if (w.ground.kind[z * MAP_W + x] === TILE.ELECTRIC) live.add(z * MAP_W + x);
   check(live.size === 86, `Center Perks: the new places' fences are electric all round (${live.size} tiles)`);
   put(a.st.player, 6, 50);
   a.st.player.facing = 9;
   a.st.items.inv[0] = slot(n('sturdy_cutters'));
   a.st.items.hand = 0;
   for (let k = 0; k < 400 && !a.seen.some((e) => e.type === 'shocked'); k++) a.step(command(0, OP.USE, 1));
-  check(a.seen.some((e) => e.type === 'shocked') && w.ground.kind[50 * MAP_W + 5] === TILE.ELECTRIC, 'cutting the sports ground\'s fence with the power on: shocked, the fence stands');
+  check(
+    a.seen.some((e) => e.type === 'shocked') && w.ground.kind[50 * MAP_W + 5] === TILE.ELECTRIC,
+    "cutting the sports ground's fence with the power on: shocked, the fence stands",
+  );
   // A lookout can't be posted on the sports ground or in the garden (he'd hold the gate open all night).
   for (const [x, z] of [
     [16, 51],
@@ -326,10 +371,15 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   const c = arena(CENTER_PERKS, at(1, 15, 1));
   c.step();
   check(c.sim.dutyZones.join() === 'gym,sports', `Center Perks' exercise hour: ${c.sim.dutyZones.join(', ')}`);
-  const d = arena(PRISONS.find((q) => q.id === 'san-pancho')!, at(1, 15, 1));
+  const d = arena(
+    PRISONS.find((q) => q.id === 'san-pancho')!,
+    at(1, 15, 1),
+  );
   d.step();
   check(d.sim.dutyZones.join() === 'gym,sports', `San Pancho's exercise hour: ${d.sim.dutyZones.join(', ')}`);
-  console.log(`holes: ${live.size} live fence tiles round Center Perks' places; no lookout posts in them; no laps in a lockdown; exercise at Center Perks: ${c.sim.dutyZones.join(', ')}`);
+  console.log(
+    `holes: ${live.size} live fence tiles round Center Perks' places; no lookout posts in them; no laps in a lockdown; exercise at Center Perks: ${c.sim.dutyZones.join(', ')}`,
+  );
 }
 
 // ------------------------------------------------------------------ saves from before the rebuild
@@ -342,6 +392,9 @@ const REBUILT = [...PRISONS, TRAINING].filter((p) => (p.map ?? 0) > 0);
   check(rebuiltSince(before), 'a Center Perks save from 2.6: its prison has been rebuilt since (the run starts again)');
   // (Every prison is rebuilt since P33: a save made now in each loads as ever.)
   const fresh = PRISONS.map((p) => saveFileOf(new Sim(p, 1), 0, 'test'));
-  check(fresh.every((f) => f.map === 1 && !rebuiltSince(f)), 'a save made now in any prison loads as ever');
+  check(
+    fresh.every((f) => f.map === 1 && !rebuiltSince(f)),
+    'a save made now in any prison loads as ever',
+  );
   console.log('saves: from before a rebuild, the run starts again there; saves made now load as ever');
 }

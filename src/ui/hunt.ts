@@ -91,7 +91,11 @@ export class HuntHud {
     q('.hunt-pause').addEventListener('click', () => this.onPause());
     this.act = h('button', 'act-btn hunt-act hidden');
     this.act.addEventListener('click', () => this.onAct());
-    this.stoneBtn = h('button', 'tool-btn hunt-stone hidden', `<i class="tool-round"><i class="tool-ring"></i>${icon('toss', 22)}<span></span></i>`);
+    this.stoneBtn = h(
+      'button',
+      'tool-btn hunt-stone hidden',
+      `<i class="tool-round"><i class="tool-ring"></i>${icon('toss', 22)}<span></span></i>`,
+    );
     this.stoneBtn.setAttribute('aria-keyshortcuts', 'Space');
     this.stoneBtn.addEventListener('click', () => this.onStone());
     document.body.append(this.el, this.act, this.stoneBtn);
@@ -140,12 +144,23 @@ export class HuntHud {
     if (tiers !== this.shownTiers) {
       this.shownTiers = tiers;
       this.tiers.innerHTML = `${s.dogs ? icon('paw', 14) : ''}${s.roadblocks ? icon('bars', 14) : ''}${s.heli ? icon('heli', 14) : ''}`;
-      this.alarmPill.setAttribute('aria-label', [t(up ? 'manhunt.alarmUp' : 'manhunt.alarmIn'), s.dogs ? t('manhunt.tier.dogs') : '', s.roadblocks ? t('manhunt.tier.roadblocks') : '', s.heli ? t('manhunt.tier.heli') : ''].filter(Boolean).join(', '));
+      this.alarmPill.setAttribute(
+        'aria-label',
+        [
+          t(up ? 'manhunt.alarmUp' : 'manhunt.alarmIn'),
+          s.dogs ? t('manhunt.tier.dogs') : '',
+          s.roadblocks ? t('manhunt.tier.roadblocks') : '',
+          s.heli ? t('manhunt.tier.heli') : '',
+        ]
+          .filter(Boolean)
+          .join(', '),
+      );
     }
     if (s.state !== this.shownState) {
       this.shownState = s.state;
       this.statePill.className = `pill hud-alert hunt-state${s.state ? ` st-${s.state}` : ' hidden'}`;
-      if (s.state) this.statePill.innerHTML = `${icon(s.state === 'hidden' ? 'eyeOff' : s.state === 'lit' ? 'sun' : s.state === 'chased' ? 'siren' : s.state === 'tracked' ? 'paw' : 'eye', 15)}<span>${t(`manhunt.state.${s.state}` as Key)}</span>`;
+      if (s.state)
+        this.statePill.innerHTML = `${icon(s.state === 'hidden' ? 'eyeOff' : s.state === 'lit' ? 'sun' : s.state === 'chased' ? 'siren' : s.state === 'tracked' ? 'paw' : 'eye', 15)}<span>${t(`manhunt.state.${s.state}` as Key)}</span>`;
     }
     this.crewPill.classList.toggle('hidden', !s.lookout);
     if (s.lookout) setText(this.crewPill.querySelector('span')!, t('manhunt.lookout', { name: s.lookout }));
