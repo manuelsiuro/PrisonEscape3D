@@ -17,7 +17,7 @@ export const ZOOM_MAX = 1.9;
 export const SCREEN_ROWS = 15;
 export const SCREEN_COLS = 11;
 
-/** What the screen holds at zoom 1 (tiles): across, and down the ground (stretched by the camera's tilt), as View.applyZoom sets the camera. */
+/** What the screen holds at zoom 1 (tiles): across, and down the ground (stretched by the camera's tilt), as CameraRig.applyZoom (viewCamera.ts) sets the camera. */
 export function screenTiles(aspect: number): { wide: number; deep: number } {
   return { wide: Math.max(SCREEN_ROWS * aspect, SCREEN_COLS), deep: Math.max(SCREEN_ROWS, SCREEN_COLS / aspect) * PITCH_DEPTH };
 }

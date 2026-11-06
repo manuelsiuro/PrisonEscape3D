@@ -91,7 +91,7 @@ src/
   ui/                 HUD, panels and cards; screens/ (title, prisons, help, settings,
                       trophies, install, share…), each a function returning a Promise
   talk/               speech bubbles: the director, moods, voices, gossip (always true)
-  tutorial/           the lessons as data (lessons.ts, CHAPTERS), their kit (kit.ts: step
+  tutorial/           the lessons as data (lessons*.ts, CHAPTERS), their kit (kit.ts: step
                       types, scene setup, goal and failure checks) and progress rules
   game/               storage (the only localStorage), saves, settings, records, trophies,
                       stats, replays, the campaign

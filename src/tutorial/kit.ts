@@ -1,4 +1,4 @@
-/** What the lessons are made of (tutorial/lessons.ts): the step and lesson types, the scenes' setup, and the checks a step's goal, arrows and failures are told by. */
+/** What the lessons are made of (tutorial/lessons.ts and its chapters' files): the step and lesson types, the scenes' setup, and the checks a step's goal, arrows and failures are told by. */
 import { BLOCK, OPEN_HOURS, ROUTINE, routineAt } from '../content/routine';
 import { RECORDS_MINUTE } from '../content/paperwork';
 import { freedNow } from '../sim/systems/paperwork';

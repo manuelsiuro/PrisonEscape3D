@@ -64,7 +64,7 @@ export async function shootOutside(k: number) {
   // Nobody in it: the player, the searchers out on their beats and their dogs, their cones, the lookout.
   const v = view as unknown as {
     player: { root: { visible: boolean } };
-    dogs: { group: { visible: boolean } };
+    pieces: { dogs: { group: { visible: boolean } } };
     cones: { group: { visible: boolean } };
     setGuards(b: unknown[]): void;
     setCast(c: 0): void;
@@ -72,7 +72,7 @@ export async function shootOutside(k: number) {
   v.player.root.visible = false;
   v.setGuards([]);
   v.setCast(0);
-  v.dogs.group.visible = false;
+  v.pieces.dogs.group.visible = false;
   v.cones.group.visible = false;
   const name = (en as Record<string, string>)[`prison.${def.id}`] ?? def.id;
   const out = framed(
@@ -82,7 +82,7 @@ export async function shootOutside(k: number) {
     `v${pkg.version} · rulers: the outside's tiles as the Outside view's · the prison stands past the wall (bottom)`,
   );
   v.player.root.visible = true;
-  v.dogs.group.visible = true;
+  v.pieces.dogs.group.visible = true;
   v.cones.group.visible = true;
   return out;
 }

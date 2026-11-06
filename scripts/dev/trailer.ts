@@ -231,9 +231,10 @@ let ownDraw: View['draw'] | null = null;
 
 /** The view's camera put through `cam` (the point it eases to, the angle it looks from). */
 function rig(on: boolean) {
-  const v = view() as unknown as { target: THREE.Vector3; cineOffset: THREE.Vector3 };
+  // (The view's camera rig, viewCamera.ts: the point it eases to, its offset from it.)
+  const v = (view() as unknown as { cam: { target: THREE.Vector3; offset: THREE.Vector3 } }).cam;
   const target = v.target;
-  const off = v.cineOffset;
+  const off = v.offset;
   for (const o of [target, off] as Array<Partial<THREE.Vector3>>) {
     delete o.lerp;
     delete o.set;
@@ -288,7 +289,7 @@ function tick(ms: number) {
 }
 
 function setCam(c: Cam) {
-  const v = view() as unknown as { zoom: number; zoomGoal: number; applyZoom(): void };
+  const v = (view() as unknown as { cam: { zoom: number; zoomGoal: number; applyZoom(): void } }).cam;
   if (c.zoom !== undefined && Math.abs(v.zoom - c.zoom) > 1e-6) {
     v.zoom = v.zoomGoal = c.zoom;
     v.applyZoom();

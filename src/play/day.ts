@@ -394,7 +394,7 @@ export function dayEvent(e: SimEvent, sim: Sim) {
         buzz('attended');
         banner.toast(t('toast.stowed', { vehicle: vehicleThe(sim), time: dayTime(today(sim).until) }), 'good', 4200);
       } else if (e.found) {
-        // (The capture's banner says it: announce.ts.)
+        // (The capture's banner says it: announceDay.ts.)
         announcePa(sim, t('pa.found', { vehicle: vehicleThe(sim) }));
       } else {
         sound.stow(false);

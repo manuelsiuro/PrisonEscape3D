@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { DOING } from '../sim/systems/inmates';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { kitMaterial, merge, type Part } from './kit';
+import { kitMaterial, merge } from './kit';
 import { type Look } from './look';
 import { badgeTexture, type BadgeKind, koTexture, markTexture, sleepTexture } from './characterSprites';
-import { beardParts, glassesParts, hatParts, inkedParts, instrumentGeometry, instruments, part, tattooParts } from './characterParts';
+import { activityPose, type Limbs, type Moves } from './characterPose';
+import { instrumentGeometry, instruments, part } from './characterParts';
+import { bodyMaterial, buildFigure, ghostSkin } from './characterBody';
 
 /** Where a sleeper lies: the middle of the bed and the way its pillow points (radians). */
 export interface BedPose {
@@ -29,8 +30,6 @@ const PERCHED_GLANCE = 0.2;
 
 /** On the pay phone (P34): drawn this far to their right of where they stand (tiles). */
 const PHONE_SHIFT = 0.27;
-/** On the pay phone: the raised arm's turn (nearly straight up beside the head, the fist just over the ear). */
-const PHONE_ARM = -2.75;
 
 /** At the internet kiosk (P35): drawn this far back from where they stand (tiles), so the screen shows over their head and the hands come down on the keyboard. */
 const KIOSK_BACK = 0.22;
@@ -56,58 +55,9 @@ const TRAY_FOOD: ReadonlyArray<readonly [number, number, number, number, number,
 export const BED_TOP = 0.6;
 export const BED_FEET = 0.55;
 
-/** What people wash in (2.26), and their towels. */
-const SHORTS = 0x46566c;
+/** The towels after the showers (2.26; the shorts are characterBody.ts's). */
 const TOWEL = 0xf0f1ec;
 const TOWEL_EDGE = 0xc9d4de;
-
-const bodyMaterial = kitMaterial.clone();
-/** Their shadow-pass material, likewise kept apart from the unskinned meshes'. */
-const bodyDepth = new THREE.MeshDepthMaterial();
-/** Generous bounds round a character (standing, lying in bed, prone in a vent), in its own frame: the skinned body is culled by these. */
-const BODY_BOUNDS = new THREE.Sphere(new THREE.Vector3(0, 0.5, -0.2), 1.6);
-
-/**
- * One skinned mesh from the limbs' parts (each given in its pivot's frame): every vertex
- * follows its own pivot (a bone), so the whole body is a single draw call however the limbs
- * move. Bound with the pivots as they stand now (rest), relative to `root`.
- */
-function skinned(limbs: Array<[Part[], THREE.Bone]>, root: THREE.Object3D, material: THREE.Material): THREE.SkinnedMesh {
-  // (The root unscaled at the origin: the bones' world matrices are their rest pose in its frame.)
-  root.updateMatrixWorld(true);
-  const bones: THREE.Bone[] = [];
-  const geos = limbs.map(([parts, bone]) => {
-    let b = bones.indexOf(bone);
-    if (b < 0) b = bones.push(bone) - 1;
-    const g = merge(parts, false).applyMatrix4(bone.matrixWorld);
-    const n = g.attributes.position.count;
-    const index = new Uint16Array(n * 4);
-    const weight = new Float32Array(n * 4);
-    for (let i = 0; i < n; i++) {
-      index[i * 4] = b;
-      weight[i * 4] = 1;
-    }
-    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(index, 4));
-    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(weight, 4));
-    return g;
-  });
-  const geo = mergeGeometries(geos);
-  for (const g of geos) g.dispose();
-  const mesh = new THREE.SkinnedMesh(geo, material);
-  mesh.castShadow = true;
-  mesh.customDepthMaterial = bodyDepth;
-  mesh.boundingSphere = BODY_BOUNDS.clone();
-  mesh.bind(new THREE.Skeleton(bones), new THREE.Matrix4());
-  return mesh;
-}
-
-/** The silhouette's copy of a skinned body: the same geometry and bones, the flat tint. */
-function ghostSkin(body: THREE.SkinnedMesh, material: THREE.Material): THREE.SkinnedMesh {
-  const copy = new THREE.SkinnedMesh(body.geometry, material);
-  copy.boundingSphere = BODY_BOUNDS.clone();
-  copy.bind(body.skeleton, new THREE.Matrix4());
-  return copy;
-}
 
 /**
  * A blocky character, a 3D take on the Escapists sprites: a big head with blinking eyes,
@@ -184,8 +134,6 @@ export class Character {
   shudder = false;
   /** Dice in a cupped hand, not thrown yet (P22): it shakes them. */
   diceShake = false;
-  /** The strain as drawn (eased: the arms never jump). */
-  private strainNow = 0;
   private hit = 0;
   /** A punch (1 at the blow, easing to 0) and a flinch from a blow taken (the same). */
   private jab = 0;
@@ -246,8 +194,6 @@ export class Character {
   /** 2.29: 0 standing … 1 on hands and toes on a mat; on a bench, not in bed (no blanket, eyes open). */
   private prone = 0;
   private benching = false;
-  /** Face up to the water, at the rinse. */
-  private headBack = 0;
   /** The silhouette material (the player only). */
   private ghost: THREE.MeshBasicMaterial | null = null;
   /** Down to shorts, for the showers (2.26; only how they look: the outfit they wear doesn't change). */
@@ -256,14 +202,36 @@ export class Character {
   towel = 0;
   /** Standing straight for the warden, at roll call (2.27). */
   attention = false;
-  private straight = 0;
   private clipboard: THREE.Mesh | null = null;
   /** The item in the right hand (its model), and which item it is. */
   private held: THREE.Mesh | null = null;
   private heldItem = 0;
-  /** 2.33: how far into a sip at the water cooler (0–1): the cup's tip toward the lips. */
-  private sip = 0;
   private readonly at = new THREE.Vector3();
+  /** The pose being built (the walk, then the activity's, `activityPose`), and what the activity reads and keeps. */
+  private readonly limbs: Limbs = { legL: 0, legR: 0, armLx: 0, armRx: 0, armLz: 0, armRz: 0, legZ: 0, bob: 0, bend: 0 };
+  private readonly moves: Moves = {
+    dt: 0,
+    t: 0,
+    a: 0,
+    motion: true,
+    moving: false,
+    ko: false,
+    act: 0,
+    lie: 0,
+    phase: 0,
+    swing: 0,
+    pumped: 0,
+    pumps: 0,
+    washSeed: 0,
+    attention: false,
+    strain: 0,
+    shudder: false,
+    diceShake: false,
+    straight: 0,
+    headBack: 0,
+    strainNow: 0,
+    sip: 0,
+  };
   private readonly bedAt = new THREE.Vector3();
 
   constructor(look: Look) {
@@ -271,220 +239,17 @@ export class Character {
       look.silhouette !== undefined
         ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, ...STENCIL_MARK })
         : bodyMaterial;
-    const outfit = look.outfit;
-    const outfitDark = new THREE.Color(outfit).multiplyScalar(0.78).getHex();
-    const trousers = look.trousers ?? outfit;
-    const guard = look.cap !== undefined;
-    const trim = guard ? undefined : look.trim;
-    const gold = 0xe8b828;
-    const { skin, hair } = look;
-    const white = 0xf2f2ee;
-    const dark = 0x1b1b22;
-    const shoe = 0x2a2a30;
-    // Each limb's parts, in its pivot's frame: skinned to that pivot (bone) below.
-    const limbs: Array<[Part[], THREE.Bone]> = [];
-    const mesh = (parts: Part[], bone: THREE.Bone) => void limbs.push([parts, bone]);
-    // The same limbs in shorts (2.26).
-    const bare: Array<[Part[], THREE.Bone]> = [];
-
-    // Legs: pivots at the hips.
-    for (const [pivot, x] of [
-      [this.legL, -0.11],
-      [this.legR, 0.11],
-    ] as const) {
-      pivot.position.set(x, 0.4, 0);
-      mesh(
-        [
-          part(0.19, 0.34, 0.2, trousers, 0, -0.17, 0),
-          part(0.21, 0.08, 0.27, shoe, 0, -0.36, 0.03),
-          ...(trim !== undefined ? [part(0.196, 0.035, 0.206, trim, 0, -0.29, 0)] : []),
-        ],
-        pivot,
-      );
-      bare.push([
-        [
-          part(0.19, 0.17, 0.2, SHORTS, 0, -0.085, 0),
-          part(0.17, 0.17, 0.18, skin, 0, -0.255, 0),
-          part(0.19, 0.06, 0.25, skin, 0, -0.37, 0.03),
-        ],
-        pivot,
-      ]);
-    }
-
-    // Torso: the jumpsuit, a white collar, the number patch (a guard: a belt, a tie, a badge).
-    mesh(
-      guard
-        ? [
-            part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0),
-            part(0.53, 0.07, 0.31, dark, 0, 0.43, 0),
-            part(0.08, 0.05, 0.02, gold, 0, 0.43, 0.157),
-            part(0.06, 0.2, 0.02, trousers, 0, 0.7, 0.152),
-            part(0.22, 0.05, 0.02, 0xdfe7f2, 0, 0.79, 0.152),
-            part(0.08, 0.09, 0.025, gold, -0.13, 0.67, 0.153),
-            part(0.05, 0.25, 0.05, dark, 0.27, 0.32, 0.06),
-          ]
-        : [
-            part(0.52, 0.42, 0.3, outfit, 0, 0.6, 0),
-            part(0.53, 0.06, 0.31, trim ?? outfitDark, 0, 0.42, 0),
-            part(0.2, 0.06, 0.02, white, 0, 0.79, 0.152),
-            part(0.13, 0.08, 0.02, white, 0.12, 0.66, 0.152),
-            part(0.08, 0.015, 0.025, dark, 0.12, 0.665, 0.153),
-            // A trim (P16): a stripe down each side.
-            ...(trim !== undefined ? [part(0.012, 0.34, 0.2, trim, -0.262, 0.62, 0), part(0.012, 0.34, 0.2, trim, 0.262, 0.62, 0)] : []),
-          ],
-      this.body,
+    const fig = buildFigure(
+      look,
+      { body: this.body, head: this.head, eyes: this.eyes, armL: this.armL, armR: this.armR, legL: this.legL, legR: this.legR },
+      this.root,
+      this.material,
     );
-
-    bare.push([[part(0.52, 0.36, 0.3, skin, 0, 0.63, 0), part(0.53, 0.09, 0.31, SHORTS, 0, 0.42, 0)], this.body]);
-
-    // A riot guard's plates: a chest plate, a back plate, shoulder guards.
-    if (look.riot) {
-      const plate = 0x3b4250;
-      mesh(
-        [
-          part(0.56, 0.32, 0.06, plate, 0, 0.62, 0.16),
-          part(0.56, 0.32, 0.06, plate, 0, 0.62, -0.16),
-          part(0.18, 0.08, 0.34, plate, -0.3, 0.8, 0),
-          part(0.18, 0.08, 0.34, plate, 0.3, 0.8, 0),
-          part(0.3, 0.05, 0.02, 0xe8b828, 0, 0.7, 0.195),
-        ],
-        this.body,
-      );
-    }
-
-    // Arms: pivots at the shoulders; sleeves rolled up to the elbow.
-    for (const [pivot, x] of [
-      [this.armL, -0.34],
-      [this.armR, 0.34],
-    ] as const) {
-      pivot.position.set(x, 0.78, 0);
-      mesh(
-        [
-          part(0.15, 0.2, 0.16, outfit, 0, -0.1, 0),
-          part(0.13, 0.15, 0.14, skin, 0, -0.27, 0),
-          part(0.14, 0.09, 0.15, skin, 0, -0.38, 0),
-          ...(trim !== undefined ? [part(0.156, 0.034, 0.166, trim, 0, -0.187, 0)] : []),
-          ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f, skin) : []),
-          // (P29: those inked inside: the left forearm's front and outer side, the right's outer side.)
-          ...inkedParts(look.inked ?? [], x < 0, skin),
-        ],
-        pivot,
-      );
-      bare.push([
-        [
-          part(0.15, 0.2, 0.16, skin, 0, -0.1, 0),
-          part(0.13, 0.15, 0.14, skin, 0, -0.27, 0),
-          part(0.14, 0.09, 0.15, skin, 0, -0.38, 0),
-          ...(x > 0 && look.tattoo ? tattooParts(look.tattoo, look.tattooColor ?? 0x2f4f6f, skin) : []),
-          ...inkedParts(look.inked ?? [], x < 0, skin),
-        ],
-        pivot,
-      ]);
-    }
-
-    // Head: a big block with brows, a nose, a mouth and a haircut; the eyes blink on their own.
-    this.head.position.y = 0.8;
-    const face: Part[] = [
-      part(0.46, 0.44, 0.44, skin, 0, 0.22, 0),
-      part(0.06, 0.07, 0.04, skin, 0, 0.18, 0.235),
-      part(0.11, 0.025, 0.02, 0x8a4b3a, 0, 0.1, 0.222),
-    ];
-    for (const s of [-1, 1]) face.push(part(0.11, 0.035, 0.02, hair, s * 0.1, 0.32, 0.222));
-    // Under a hat, hair that would stand up through it lies flat (P16).
-    const hatted = !!look.hat && look.cap === undefined && !look.riot;
-    const style0 = look.hairStyle ?? 0;
-    // (Under a guard's cap too: a disguise's crown stays a cap.)
-    const covered = hatted || look.cap !== undefined || !!look.riot;
-    // Under a hat (or the cap): a tall top lies flat, a mohawk is shaved down to a buzz cut, curls keep their sides and back.
-    const style = covered && style0 === 3 ? 0 : covered && style0 === 4 ? 1 : style0;
-    if (style === 0 || style === 3 || style === 6) {
-      const top = style === 3 ? 0.22 : 0.1;
-      face.push(
-        part(0.48, top, 0.47, hair, 0, 0.42 + top / 2, -0.005),
-        part(0.48, 0.26, 0.08, hair, 0, 0.33, -0.21),
-        part(0.05, 0.14, 0.4, hair, -0.23, 0.36, -0.02),
-        part(0.05, 0.14, 0.4, hair, 0.23, 0.36, -0.02),
-      );
-      // A ponytail with a band (P16).
-      if (style === 6) face.push(part(0.1, 0.24, 0.1, hair, 0, 0.3, -0.29), part(0.11, 0.04, 0.11, 0xff9a3c, 0, 0.42, -0.29));
-    } else if (style === 1) {
-      face.push(part(0.47, 0.03, 0.45, hair, 0, 0.45, 0), part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215));
-    } else if (style === 4) {
-      // A mohawk: shaved sides, a crest front to back.
-      face.push(
-        part(0.47, 0.03, 0.45, hair, 0, 0.45, 0),
-        part(0.47, 0.2, 0.03, hair, 0, 0.36, -0.215),
-        part(0.1, 0.2, 0.46, hair, 0, 0.55, -0.01),
-      );
-    } else if (style === 5) {
-      // Curls: a round mop over the top (a short top under a hat), down the sides and the back.
-      face.push(
-        covered ? part(0.48, 0.1, 0.47, hair, 0, 0.47, -0.005) : part(0.56, 0.2, 0.54, hair, 0, 0.5, -0.02),
-        part(0.08, 0.2, 0.42, hair, -0.27, 0.36, -0.04),
-        part(0.08, 0.2, 0.42, hair, 0.27, 0.36, -0.04),
-        part(0.54, 0.3, 0.1, hair, 0, 0.32, -0.25),
-      );
-    }
-    if (look.beard) face.push(...beardParts(look.beard, hair, skin));
-    if (look.glasses) face.push(...glassesParts(look.glasses, look.glassesColor ?? 0x2a2a30));
-    // A hat sits on what's under it: the short cut's top (0.52), a buzz cut's (0.465), a bald head's (0.44),
-    // a hair's breadth above (no shared faces); a headband stays round the brow whatever the hair.
-    if (hatted) {
-      const dy = look.hat === 3 ? 0 : (style === 2 ? 0.45 : style === 1 ? 0.475 : 0.52) - 0.52;
-      face.push(...hatParts(look.hat!, look.hatColor ?? 0x8c3b2a).map((g) => g.translate(0, dy, 0)));
-    }
-    if (look.riot) {
-      // A riot helmet: the shell over the head, its visor down over the eyes, a chin guard.
-      face.push(
-        part(0.54, 0.24, 0.52, 0x1d2129, 0, 0.5, -0.01),
-        part(0.5, 0.2, 0.03, 0x6f8aa0, 0, 0.28, 0.25),
-        part(0.4, 0.06, 0.08, 0x1d2129, 0, 0.06, 0.2),
-        part(0.08, 0.05, 0.02, 0xe8b828, 0, 0.56, 0.26),
-      );
-    } else if (look.cap !== undefined) {
-      // A peaked cap: the crown, a band, the peak over the eyes, a gold badge.
-      face.push(
-        part(0.5, 0.16, 0.48, look.cap, 0, 0.55, -0.01),
-        part(0.51, 0.05, 0.49, 0x10161f, 0, 0.47, -0.01),
-        part(0.44, 0.03, 0.16, 0x10161f, 0, 0.455, 0.29),
-        part(0.08, 0.07, 0.02, gold, 0, 0.52, 0.235),
-      );
-    }
-    mesh(face, this.head);
-    this.eyes.position.set(0, 0.24, 0.222);
-    mesh([part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], this.eyes);
-    this.head.add(this.eyes);
-
-    // A guard's key: a ring and a key in its color, hanging from the belt.
-    if (look.key !== undefined) {
-      this.keyTag = new THREE.Bone();
-      mesh(
-        [
-          part(0.09, 0.09, 0.03, look.key, 0, 0.36, 0),
-          part(0.035, 0.12, 0.025, look.key, 0, 0.26, 0),
-          part(0.05, 0.03, 0.025, look.key, 0.03, 0.22, 0),
-        ],
-        this.keyTag,
-      );
-      this.keyTag.position.set(-0.2, 0.02, 0.16);
-      this.body.add(this.keyTag);
-    }
-    this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
-    this.root.add(this.body);
-    // (Before the first skinned(): merging a list spends the geometry it's given only as far as the GPU, and nothing's been drawn.)
-    const washes = !guard || look.silhouette !== undefined;
-    if (washes)
-      bare.push([face, this.head], [[part(0.065, 0.09, 0.02, dark, -0.1, 0, 0), part(0.065, 0.09, 0.02, dark, 0.1, 0, 0)], this.eyes]);
-    const whole = skinned(limbs, this.root, this.material);
-    this.skeleton = whole.skeleton;
-    this.dressed = whole;
-    this.root.add(whole);
-    if (washes) {
-      this.washBody = skinned(bare, this.root, this.material);
-      this.washSkeleton = this.washBody.skeleton;
-      this.washBody.visible = false;
-      this.root.add(this.washBody);
-    }
+    this.dressed = fig.dressed;
+    this.skeleton = fig.dressed.skeleton;
+    this.washBody = fig.washBody;
+    this.washSkeleton = fig.washBody?.skeleton ?? null;
+    this.keyTag = fig.keyTag;
     this.root.scale.setScalar(look.size ?? 1);
     this.gait = look.gait ?? 1;
     // The silhouette covers the body only, not the props below.
@@ -597,7 +362,7 @@ export class Character {
     );
     this.towelHead.castShadow = true;
     // A guard's clipboard, for the count (2.27).
-    if (guard) {
+    if (look.cap !== undefined) {
       this.clipboard = new THREE.Mesh(
         merge(
           [
@@ -832,15 +597,16 @@ export class Character {
       stepped = Math.floor(this.phase / Math.PI) !== before;
     }
     const s = Math.sin(this.phase) * (0.75 + 0.3 * running) * this.swing;
-    let legL = s;
-    let legR = -s;
+    const l = this.limbs;
+    l.legL = s;
+    l.legR = -s;
     // (A rat perched on the left shoulder, P20: that arm holds still while walking.)
-    let armLx = this.perched ? 0 : -s * (0.85 + 0.25 * running);
-    let armRx = s * (0.85 + 0.25 * running);
-    let armLz = 0;
-    let armRz = 0;
-    let legZ = 0;
-    let bob =
+    l.armLx = this.perched ? 0 : -s * (0.85 + 0.25 * running);
+    l.armRx = s * (0.85 + 0.25 * running);
+    l.armLz = 0;
+    l.armRz = 0;
+    l.legZ = 0;
+    l.bob =
       Math.abs(Math.cos(this.phase)) * (0.045 + 0.04 * running) * this.swing +
       (motion ? Math.sin(time * 2.2 + this.offset) * 0.006 * (1 - this.swing) : 0);
 
@@ -880,390 +646,45 @@ export class Character {
     const t = time + this.offset;
     // Seated (a canteen bench, a chair, a yard bench): legs forward, a little lower.
     const sit = doing === DOING.EAT || doing === DOING.SIT || doing === DOING.SIT_READ ? this.act : 0;
-    legL -= sit * 1.45;
-    legR -= sit * 1.45;
-    bob -= sit * 0.06;
-    let bend = 0;
-    if (doing === DOING.EAT) {
-      // Spoon to mouth, bite by bite, the head down to meet it; the other hand on the tray.
-      const lift = Math.max(0, Math.sin(t * 2.6)) ** 2;
-      armRx += (-0.75 - lift * 1.55) * a;
-      armRz += -0.22 * a;
-      armLx += -0.75 * a;
-      armLz += 0.18 * a;
-      bend = (0.05 + lift * 0.07) * a;
-    } else if (doing === DOING.EXERCISE) {
-      // Jumping jacks.
-      const j = (Math.sin(t * 6) + 1) / 2;
-      armLz -= j * 2.5 * a;
-      armRz += j * 2.5 * a;
-      legZ = j * 0.28 * a;
-      bob += Math.abs(Math.sin(t * 6)) * 0.08 * a;
-    } else if (doing === DOING.SEARCH) {
-      // Rummaging through a desk: bent over, hands digging in turn.
-      armLx += (-1.3 + Math.sin(t * 7) * 0.35) * a;
-      armRx += (-1.3 + Math.cos(t * 7) * 0.35) * a;
-      bob -= 0.03 * a;
-    } else if (doing === DOING.DIG) {
-      // Digging under the bed (P40, the odd jobs' lookout): crouched low, both hands scraping at the
-      // floor in turn, a stroke down and back. (Held still with reduced motion: a crouch over the hole.)
-      const s = motion ? Math.sin(t * 5.5) : 0;
-      armLx += (-1.55 + s * 0.4) * a;
-      armRx += (-1.55 - s * 0.4) * a;
-      armLz -= 0.12 * a;
-      armRz += 0.12 * a;
-      legL += 0.5 * a;
-      legR += 0.5 * a;
-      bob -= (0.16 + (motion ? Math.abs(s) * 0.02 : 0)) * a;
-    } else if (ko) {
-      // Out cold: arms flung out.
-      armLz -= 1.1 * this.lie;
-      armRz += 1.1 * this.lie;
-      legZ = 0.25 * this.lie;
-    } else if (doing === DOING.CRAWL) {
-      // Elbows forward in turn, knees after them.
-      const c = Math.sin(this.phase * 0.7) * 0.45 * this.swing;
-      armLx = -2.5 + c;
-      armRx = -2.5 - c;
-      armLz = -0.25;
-      armRz = 0.25;
-      legL = 0.15 - c * 0.6;
-      legR = 0.15 + c * 0.6;
-      bob = 0;
-    } else if (doing === DOING.WORK) {
-      // At work: hands busy at waist height, a little bent.
-      armLx += (-0.9 + Math.sin(t * 5) * 0.3) * a;
-      armRx += (-0.9 + Math.cos(t * 5) * 0.3) * a;
-      bob -= 0.015 * a;
-    } else if (doing === DOING.MOP) {
-      // Mopping (2.30): the handle in both hands, swept from side to side, the body going with it.
-      const sweep = motion ? Math.sin(t * 3.2) : 0;
-      armLx += (-1.05 + sweep * 0.12) * a;
-      armRx += (-1.05 - sweep * 0.12) * a;
-      armLz -= sweep * 0.22 * a;
-      armRz -= sweep * 0.22 * a;
-      bob -= 0.02 * a;
-    } else if (doing === DOING.LIFT) {
-      // Pressing a weight overhead: up on each rep, slowly down between.
-      const up = this.pumped;
-      armLx += (-2.2 - up * 0.7) * a;
-      armRx += (-2.2 - up * 0.7) * a;
-      armLz -= (0.5 - up * 0.3) * a;
-      armRz += (0.5 - up * 0.3) * a;
-      bob -= (1 - up) * 0.03 * a;
-    } else if (doing === DOING.BENCH) {
-      // On their back on the bench (2.29), the bar over the chest: straight up on each rep, slowly back.
-      const up = this.pumped;
-      armLx += (-1.95 + up * 0.45) * a;
-      armRx += (-1.95 + up * 0.45) * a;
-      armLz -= 0.12 * a;
-      armRz += 0.12 * a;
-    } else if (doing === DOING.PULLUP) {
-      // Hanging from the bar, hands up on it; up to it on each rep, slowly down.
-      const up = this.pumped;
-      armLx += -3.0 * a;
-      armRx += -3.0 * a;
-      armLz -= 0.15 * a;
-      armRz += 0.15 * a;
-      bob += up * 0.22 * a;
-    } else if (doing === DOING.PUSHUP) {
-      // Hands under the shoulders, straight arms; the body lifted on each rep (below).
-      armLx += -1.5 * a;
-      armRx += -1.5 * a;
-    } else if (doing === DOING.BAG) {
-      // Fists up, one thrown at each rep, in turn.
-      const up = this.pumped;
-      const left = this.pumps % 2 === 0;
-      armLx += (-1.35 - (left ? up * 0.45 : 0)) * a;
-      armRx += (-1.35 - (left ? 0 : up * 0.45)) * a;
-      armLz += 0.35 * a;
-      armRz -= 0.35 * a;
-    } else if (doing === DOING.RUN) {
-      // Running in place on the belt: quicker with each rep.
-      const r = Math.sin(t * (9 + this.pumped * 5)) * 0.8 * a;
-      legL += r;
-      legR -= r;
-      armLx -= r * 0.9;
-      armRx += r * 0.9;
-      bob += Math.abs(Math.cos(t * (9 + this.pumped * 5))) * 0.05 * a;
-    } else if (doing === DOING.SIT) {
-      // Sitting back: hands on the knees.
-      armLx += -0.75 * a;
-      armRx += -0.75 * a;
-    } else if (doing === DOING.READ || doing === DOING.SIT_READ) {
-      // A book held up in both hands; a page turns on each rep.
-      armLx += -1.25 * a;
-      armRx += (-1.25 - this.pumped * 0.25) * a;
-      // (2.31: hands together, in front of the chest, as a book's held: they stood out to the sides before.)
-      armLz += 0.42 * a;
-      armRz -= 0.42 * a;
-    } else if (doing === DOING.COUNT) {
-      // The warden, clipboard in one hand, the pen in the other. (Held still with reduced motion: it says what they're doing.)
-      const wa = this.act;
-      const tick = motion ? Math.sin(t * 6) * 0.07 : 0;
-      armLx -= 1.25 * wa;
-      armLz += 0.45 * wa;
-      armRx += (-1.15 + tick) * wa;
-      armRz -= 0.5 * wa;
-    } else if (doing === DOING.LINE_UP) {
-      // In line, bored: shifting about, a yawn, a scratch; straight as the warden comes to them.
-      this.straight += ((this.attention ? 1 : 0) - this.straight) * k(6);
-      const loose = motion ? this.act * (1 - this.straight) : 0;
-      const beat = motion ? (t * 0.14 + this.washSeed) % 4 : 3;
-      const stage = Math.floor(beat);
-      const on = Math.sin(Math.min(1, (beat - stage) * 1.6) * Math.PI);
-      // (A yawn: a hand up to the mouth, the head back. A scratch at the back of the head.)
-      const yawn = stage === 0 ? on * loose : 0;
-      const scratch = stage === 1 ? on * loose : 0;
-      armRx -= 2.1 * yawn;
-      armRz -= 0.55 * yawn;
-      this.headBack = 0.8 * yawn;
-      armLx -= 2.5 * scratch;
-      armLz -= 0.4 * scratch;
-      // Shoulders back.
-      armLz -= 0.06 * this.straight * this.act;
-      armRz += 0.06 * this.straight * this.act;
-    } else if (doing === DOING.SHOWER) {
-      // Hair, then soap, then a rinse, round and round, each one easing into the next.
-      // (With reduced motion, held scrubbing the hair: the pose says what they're doing.)
-      const wa = this.act;
-      const beat = motion ? (t * 0.42 + this.washSeed) % 3 : 0;
-      const stage = Math.floor(beat);
-      const mix = Math.max(0, (beat - stage - 0.8) / 0.2);
-      const hair = stage === 0 ? 1 - mix : stage === 2 ? mix : 0;
-      const soap = stage === 1 ? 1 - mix : stage === 0 ? mix : 0;
-      const rinse = stage === 2 ? 1 - mix : stage === 1 ? mix : 0;
-      const rub = motion ? Math.sin(t * 9) : 0;
-      const rub2 = motion ? Math.cos(t * 9) : 0;
-      armLx += (hair * (-2.7 + rub * 0.15) + soap * (-1.3 + rub * 0.22) - rinse * 0.2) * wa;
-      armRx += (hair * (-2.7 + rub2 * 0.15) + soap * (-1.3 + rub2 * 0.22) - rinse * 0.2) * wa;
-      armLz += (-hair * 0.35 + soap * 0.6 - rinse * 0.16) * wa;
-      armRz += (hair * 0.35 - soap * 0.6 + rinse * 0.16) * wa;
-      this.headBack = rinse * wa;
-    } else if (doing === DOING.TOWEL) {
-      // Rubbing the hair dry.
-      const wa = this.act;
-      const rub = motion ? Math.sin(t * 7) : 0;
-      armLx += (-2.45 + rub * 0.22) * wa;
-      armRx += (-2.45 - rub * 0.22) * wa;
-      armLz -= 0.22 * wa;
-      armRz += 0.22 * wa;
-    } else if (doing === DOING.SHOWER_WAIT) {
-      // Arms folded, waiting for a head.
-      const wa = this.act;
-      armLx -= 1.2 * wa;
-      armRx -= 1.2 * wa;
-      armLz += 0.62 * wa;
-      armRz -= 0.62 * wa;
-    } else if (doing === DOING.WRESTLE) {
-      // An arm-wrestle (P22): right hands locked between the two at chest height, the left
-      // braced on the hip; winning, the arm drives forward and the body leans into it; losing,
-      // it's forced back and up, the body giving way. A shudder under the other's surge.
-      // (These poses carry their meaning: with reduced motion they hold still rather than vanish.)
-      const ga = this.act;
-      this.strainNow += (this.strain - this.strainNow) * k(6);
-      const g = this.strainNow;
-      const shake = motion ? Math.sin(t * (this.shudder ? 47 : 31)) * (this.shudder ? 0.07 : 0.035) : 0;
-      // (The strain is carried by the lean and the stance, View: the grip stays at one height for both.)
-      armRx += (-1.42 - g * 0.08 + shake) * ga;
-      armRz += (-0.32 + shake * 0.5) * ga;
-      armLx += -0.35 * ga;
-      armLz += 0.45 * ga;
-      bob -= 0.03 * ga;
-    } else if (doing === DOING.PICK) {
-      // At a lock (P22): bent to it, both hands at the keyhole, the right one working the pick
-      // (a twitch at each pin, `pumped`).
-      const ga = this.act;
-      armRx += (-1.05 - this.pumped * 0.25 + (motion ? Math.sin(t * 13) * 0.04 : 0)) * ga;
-      armRz += -0.28 * ga;
-      armLx += -0.95 * ga;
-      armLz += 0.3 * ga;
-      bob -= 0.06 * ga;
-    } else if (doing === DOING.DICE) {
-      // Dice (P22): crouched over them, the right hand cupped and shaking, flung out at a throw (`pumped`).
-      const ga = this.act;
-      const shake = motion && this.diceShake && this.pumped < 0.05 ? Math.sin(t * 24) * 0.12 : 0;
-      armRx += (-0.85 - this.pumped * 0.7 + shake) * ga;
-      armRz += -0.12 * ga;
-      armLx += -0.55 * ga;
-      legL -= 0.35 * ga;
-      legR -= 0.35 * ga;
-      bob -= 0.1 * ga;
-    } else if (doing === DOING.CARDS) {
-      // Cheat (P27): crouched over the pile, the hand of cards held up close in the left, the
-      // right laying them down now and then.
-      const ga = this.act;
-      const lay = motion ? Math.max(0, Math.sin(t * 1.3)) ** 6 : 0;
-      armLx += -1.15 * ga;
-      armLz += 0.32 * ga;
-      armRx += (-0.6 - lay * 0.5) * ga;
-      armRz += -0.12 * ga;
-      legL -= 0.35 * ga;
-      legR -= 0.35 * ga;
-      bob -= 0.1 * ga;
-    } else if (doing === DOING.BOARD) {
-      // Checkers (P27): crouched at the board, the left hand on the knee, the right hovering over the pieces.
-      const ga = this.act;
-      const hover = motion ? Math.sin(t * 0.9) * 0.08 : 0;
-      armLx += -0.55 * ga;
-      armLz += 0.12 * ga;
-      armRx += (-0.75 + hover) * ga;
-      armRz += -0.1 * ga;
-      legL -= 0.4 * ga;
-      legR -= 0.4 * ga;
-      bob -= 0.11 * ga;
-    } else if (doing === DOING.SHOOT) {
-      // A shot at the hoop (P27): the ball up over the head in both hands, the knees bent.
-      const ga = this.act;
-      // (The hands in under the ball, either side of it: in toward the middle.)
-      armLx += -2.75 * ga;
-      armRx += -2.75 * ga;
-      armLz += 0.35 * ga;
-      armRz -= 0.35 * ga;
-      legL -= 0.18 * ga;
-      legR -= 0.18 * ga;
-      bob -= 0.035 * ga;
-    } else if (doing === DOING.TATTOO) {
-      // At work on a tattoo (P29): the working hand low and forward, buzzing a little; the other steadying the arm.
-      const ga = this.act;
-      const buzz = motion ? Math.sin(t * 40) * 0.03 : 0;
-      armRx += (-0.75 + buzz) * ga;
-      armLx += -0.55 * ga;
-      armRz -= 0.15 * ga;
-      armLz += 0.15 * ga;
-      bob -= 0.02 * ga;
-    } else if (doing === DOING.DRUMS) {
-      // Bucket drums (P30): both sticks down onto the buckets in turn, on the beat; the head nods along.
-      const ga = this.act;
-      const beat = motion ? Math.sin(t * 13) : 0;
-      armRx += (-0.62 + beat * 0.3) * ga;
-      armLx += (-0.62 - beat * 0.3) * ga;
-      armRz -= 0.12 * ga;
-      armLz += 0.12 * ga;
-      legL -= 0.25 * ga;
-      legR -= 0.25 * ga;
-      bob += (motion ? Math.abs(Math.sin(t * 6.5)) * 0.02 : 0) * ga - 0.06 * ga;
-    } else if (doing === DOING.GUITAR) {
-      // A guitar (P30): the left hand up the neck, the right strumming across the body.
-      const ga = this.act;
-      const strum = motion ? Math.sin(t * 12) * 0.16 : 0;
-      armLx += -1.1 * ga;
-      armLz += 0.42 * ga;
-      armRx += (-1.0 + strum * 0.6) * ga;
-      armRz -= 0.42 * ga;
-      bob += (motion ? Math.abs(Math.sin(t * 4)) * 0.015 : 0) * ga;
-    } else if (doing === DOING.QUIZ) {
-      // At the buzzer (P30): the right hand ready over it, the left at the side, a little forward.
-      const ga = this.act;
-      armRx += -1.0 * ga;
-      armRz -= 0.35 * ga;
-      armLx += -0.15 * ga;
-    } else if (doing === DOING.FOOTBALL && !moving) {
-      // A kick wound up (P29): the kicking leg back, the arms out for balance.
-      const ga = this.act;
-      legR += 0.75 * ga;
-      legL -= 0.12 * ga;
-      armLz += 0.45 * ga;
-      armRz -= 0.45 * ga;
-      bob -= 0.03 * ga;
-    } else if (doing === DOING.PHONE) {
-      // On the pay phone (P34): the left hand up at the ear with the handset (the head tipped to
-      // it), the right hand talking a little at the side. Held still with reduced motion.
-      const ga = this.act;
-      const talk = motion ? Math.sin(t * 1.7) * 0.14 + Math.sin(t * 0.6) * 0.06 : 0;
-      armLx += PHONE_ARM * ga;
-      armLz += -0.1 * ga;
-      armRx += (-0.42 + talk) * ga;
-      armRz += -0.08 * ga;
-    } else if (doing === DOING.KIOSK) {
-      // At the internet kiosk (P35): both forearms forward over the keyboard on its shelf, a little in
-      // toward the middle, the hands tapping in turn (a typing bob). Held still with reduced motion.
-      const ga = this.act;
-      const tap = motion ? Math.sin(t * 15) * 0.07 + Math.sin(t * 6.1) * 0.03 : 0;
-      armLx += (-1.38 + tap) * ga;
-      armRx += (-1.38 - tap) * ga;
-      armLz += 0.22 * ga;
-      armRz -= 0.22 * ga;
-    } else if (doing === DOING.VEND) {
-      // At the vending machine (2.32): the right hand out at its keys, pressing, the other at the side. Held still with reduced motion.
-      const ga = this.act;
-      const tap = motion ? Math.max(0, Math.sin(t * 7)) * 0.09 : 0;
-      armRx += (-1.35 + tap) * ga;
-      armRz -= 0.12 * ga;
-    } else if (doing === DOING.THUMP) {
-      // Thumping it: the fist back and into its side, the shoulders with it; with reduced motion, the fist up against it.
-      const ga = this.act;
-      const hit = motion ? Math.sin(t * 16) * 0.42 : 0;
-      armRx += (-1.3 + hit) * ga;
-      armLx += (-0.5 - hit * 0.3) * ga;
-      armRz -= 0.1 * ga;
-    } else if (doing === DOING.SNACK) {
-      // Something from the machine: a hand up to the mouth now and then, the other at the side.
-      const ga = this.act;
-      // (2.33: in toward the middle of the face, as at the water cooler, not out to the side.)
-      const up = motion ? (Math.sin(t * 1.5) > 0.2 ? 1 : 0.55) : 0.8;
-      armRx += -1.8 * up * ga;
-      armRz -= 0.4 * up * ga;
-    } else if (doing === DOING.DRINK) {
-      // At the water cooler (2.33): the paper cup held in front of the mouth, the hand in toward the middle of the face,
-      // lifted a little for each sip as the cup tips toward the lips (the cup's own tilt: below); the other hand at the side.
-      const ga = this.act;
-      this.sip = motion ? Math.max(0, Math.sin(t * 2.2)) : 0.5;
-      armRx += (-1.86 - 0.14 * this.sip) * ga;
-      armRz -= 0.42 * ga;
-    } else if (doing === DOING.SCRIBBLE) {
-      // At the menu board (2.33): the right arm up at it, the hand scrawling small loops; the other hand on the hip.
-      const ga = this.act;
-      const loop = motion ? Math.sin(t * 11) * 0.12 : 0;
-      armRx += (-2.55 + loop) * ga;
-      armRz -= (0.18 + (motion ? Math.cos(t * 11) * 0.1 : 0)) * ga;
-      armLz += 0.35 * ga;
-    } else if (doing === DOING.QUEUE) {
-      // Waiting in line for the phone (P34): arms crossed, the weight shifting slowly from foot to foot (below).
-      const ga = this.act;
-      armLx += -0.95 * ga;
-      armRx += -0.95 * ga;
-      armLz += 0.55 * ga;
-      armRz -= 0.55 * ga;
-    } else if (doing === DOING.LOOKOUT) {
-      // On watch (P23): a hand at the brow, clear of the head (a salute's reach: a rigid arm can't
-      // get in front of the face), the other arm a little out; the whole body sweeps from side to
-      // side (above), the head held still. Held still with reduced motion: it still says "on watch".
-      const ga = this.act;
-      armRx += -2.57 * ga;
-      armRz += 0.15 * ga;
-      armLx += -0.3 * ga;
-      armLz += -0.15 * ga;
-    } else if (doing === DOING.BRAWL) {
-      // A brawl (P23): fists up, bobbing on the toes, a jab now and then from each hand in turn.
-      const ga = this.act;
-      const beat = (t * 1.9) % 2;
-      const jabR = motion && beat < 0.35 ? Math.sin((beat / 0.35) * Math.PI) : 0;
-      const jabL = motion && beat >= 1 && beat < 1.35 ? Math.sin(((beat - 1) / 0.35) * Math.PI) : 0;
-      armRx += (-1.25 - jabR * 0.45) * ga;
-      armRz += (-0.38 + jabR * 0.2) * ga;
-      armLx += (-1.45 - jabL * 0.3) * ga;
-      armLz += (0.36 - jabL * 0.2) * ga;
-      legL += 0.18 * ga;
-      legR -= 0.12 * ga;
-      bob += (motion ? Math.abs(Math.sin(t * 7)) * 0.035 : 0) * ga - 0.02 * ga;
-    }
+    l.legL -= sit * 1.45;
+    l.legR -= sit * 1.45;
+    l.bob -= sit * 0.06;
+    l.bend = 0;
+    const m = this.moves;
+    m.dt = dt;
+    m.t = t;
+    m.a = a;
+    m.motion = motion;
+    m.moving = moving;
+    m.ko = ko;
+    m.act = this.act;
+    m.lie = this.lie;
+    m.phase = this.phase;
+    m.swing = this.swing;
+    m.pumped = this.pumped;
+    m.pumps = this.pumps;
+    m.washSeed = this.washSeed;
+    m.attention = this.attention;
+    m.strain = this.strain;
+    m.shudder = this.shudder;
+    m.diceShake = this.diceShake;
+    activityPose(doing, l, m);
     // Dozing on its feet (P15): arms folded across the chest, a slouch and a sway (the chin
     // sinks and jerks back up, below). Eased by its own weight so waking unfolds them.
     const dz = this.doze * this.doze * (3 - 2 * this.doze);
     if (dz > 0) {
-      armLx += -0.95 * dz;
-      armRx += -0.95 * dz;
-      armLz += 0.55 * dz;
-      armRz -= 0.55 * dz;
-      bob -= 0.025 * dz;
+      l.armLx += -0.95 * dz;
+      l.armRx += -0.95 * dz;
+      l.armLz += 0.55 * dz;
+      l.armRz -= 0.55 * dz;
+      l.bob -= 0.025 * dz;
     }
     // The activity's own lean (bent to a desk, a lock, the dice, a scrap).
     let lean =
-      bend +
+      l.bend +
       (doing === DOING.SEARCH ? 0.35 * this.act : 0) +
       (doing === DOING.READ ? 0.12 * this.act : 0) +
-      (doing === DOING.WRESTLE ? (0.12 + this.strainNow * 0.1) * this.act : 0) +
+      (doing === DOING.WRESTLE ? (0.12 + this.moves.strainNow * 0.1) * this.act : 0) +
       (doing === DOING.PICK ? 0.32 * this.act : 0) +
       (doing === DOING.DICE || doing === DOING.CARDS ? 0.12 * this.act : 0) +
       (doing === DOING.BOARD ? 0.18 * this.act : 0) +
@@ -1275,51 +696,51 @@ export class Character {
       this.blend = Math.min(1, this.blend + dt * 5);
       const b = this.blend * this.blend * (3 - 2 * this.blend);
       const f = this.from;
-      legL = f[0] + (legL - f[0]) * b;
-      legR = f[1] + (legR - f[1]) * b;
-      armLx = f[2] + (armLx - f[2]) * b;
-      armLz = f[3] + (armLz - f[3]) * b;
-      armRx = f[4] + (armRx - f[4]) * b;
-      armRz = f[5] + (armRz - f[5]) * b;
-      bob = f[6] + (bob - f[6]) * b;
+      l.legL = f[0] + (l.legL - f[0]) * b;
+      l.legR = f[1] + (l.legR - f[1]) * b;
+      l.armLx = f[2] + (l.armLx - f[2]) * b;
+      l.armLz = f[3] + (l.armLz - f[3]) * b;
+      l.armRx = f[4] + (l.armRx - f[4]) * b;
+      l.armRz = f[5] + (l.armRz - f[5]) * b;
+      l.bob = f[6] + (l.bob - f[6]) * b;
       lean = f[7] + (lean - f[7]) * b;
     }
-    this.lastBob = bob;
+    this.lastBob = l.bob;
     this.lastLean = lean;
     // A strike: the tool arm up and down hard.
     if (this.hit > 0) {
       const h = this.hit;
-      armRx = h > 0.6 ? -2.6 * ((1 - h) / 0.4) : -2.6 * (h / 0.6) - 0.3 * (1 - h / 0.6);
-      armLx = Math.min(armLx, -0.5 * h);
+      l.armRx = h > 0.6 ? -2.6 * ((1 - h) / 0.4) : -2.6 * (h / 0.6) - 0.3 * (1 - h / 0.6);
+      l.armLx = Math.min(l.armLx, -0.5 * h);
     }
     // A punch: the right arm drawn back, then thrown straight out; the left guards the face.
     // Both hands on the tray, or reaching over the counter for one (2.25): the walk's swing gives way.
     this.carry += ((this.trayAt === TRAY_AT.HANDS ? 1 : 0) - this.carry) * k(10);
     const reach = Math.max(this.carry, doing === DOING.SERVE ? this.act : 0);
     if (reach > 0.01 && !ko) {
-      armLx += (-1.2 - armLx) * reach;
-      armRx += (-1.2 - armRx) * reach;
-      armLz += (0.26 - armLz) * reach;
-      armRz += (-0.26 - armRz) * reach;
+      l.armLx += (-1.2 - l.armLx) * reach;
+      l.armRx += (-1.2 - l.armRx) * reach;
+      l.armLz += (0.26 - l.armLz) * reach;
+      l.armRz += (-0.26 - l.armRz) * reach;
     }
     if (this.jab > 0) {
       const j = this.jab;
       // Out at the blow (the event fires as it lands), held a moment, then eased home.
       const out = Math.min(1, j * 1.6);
-      armRx = -1.7 * out * out * (3 - 2 * out);
-      armLx = Math.min(armLx, -1.1 * Math.min(1, j * 2));
-      armLz = -0.25 * j;
+      l.armRx = -1.7 * out * out * (3 - 2 * out);
+      l.armLx = Math.min(l.armLx, -1.1 * Math.min(1, j * 2));
+      l.armLz = -0.25 * j;
     }
-    this.legL.rotation.set(legL, 0, -legZ);
-    this.legR.rotation.set(legR, 0, legZ);
-    this.armL.rotation.set(armLx, 0, armLz);
-    this.armR.rotation.set(armRx, 0, armRz);
+    this.legL.rotation.set(l.legL, 0, -l.legZ);
+    this.legR.rotation.set(l.legR, 0, l.legZ);
+    this.armL.rotation.set(l.armLx, 0, l.armLz);
+    this.armR.rotation.set(l.armRx, 0, l.armRz);
     // (2.33: a cup or a can at the mouth, or a snack, stays upright in the fist whatever the arm does, tipped toward the
     // lips for a sip; anything else points forward out of the fist as the arm carries it.)
     if (this.held) {
       if (doing === DOING.DRINK || doing === DOING.SNACK) {
         UPRIGHT.copy(this.armR.quaternion).invert();
-        TIP.setFromEuler(TIP_E.set(doing === DOING.DRINK ? -0.25 - 0.55 * this.sip : -0.2, -Math.PI / 2, 0));
+        TIP.setFromEuler(TIP_E.set(doing === DOING.DRINK ? -0.25 - 0.55 * this.moves.sip : -0.2, -Math.PI / 2, 0));
         this.held.quaternion.copy(UPRIGHT).multiply(TIP);
         this.held.position.set(0, -0.46, 0.03);
       } else {
@@ -1329,7 +750,7 @@ export class Character {
     }
     // A bob and a little forward lean while walking, a slow breath while standing; flat in bed.
     this.body.position.y =
-      bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI) + this.prone * (0.08 + this.pumped * 0.14);
+      l.bob * (1 - this.lie) + this.crawl * 0.12 + 0.07 * Math.sin(this.startle * Math.PI) + this.prone * (0.08 + this.pumped * 0.14);
     // (In line for the phone, P34: a slow shift of the weight from foot to foot.)
     const shift = doing === DOING.QUEUE && motion ? Math.sin(t * 0.55) * 0.04 * this.act : 0;
     this.body.rotation.z = (motion ? Math.sin(t * 0.7) * 0.06 * dz : 0) + shift;
@@ -1399,7 +820,7 @@ export class Character {
       if (this.trayBase.distanceToSquared(TRAY_COUNTER) < 0.004) this.tray.visible = false;
     }
     this.tray.position.copy(this.trayBase);
-    if (handsTray) this.tray.position.y += bob * 0.5;
+    if (handsTray) this.tray.position.y += l.bob * 0.5;
     this.spoon.visible = doing === DOING.EAT && this.act > 0.3;
     const drums = doing === DOING.DRUMS && this.act > 0.3;
     this.buckets.visible = drums;
@@ -1449,7 +870,7 @@ export class Character {
         : doing === DOING.READ
           ? 0.3 * this.act
           : doing === DOING.SHOWER || doing === DOING.LINE_UP
-            ? -0.4 * this.headBack
+            ? -0.4 * this.moves.headBack
             : doing === DOING.TOWEL
               ? 0.25 * this.act
               : nod * dz * (1 - 0.7 * this.stir) - 0.25 * this.startle;

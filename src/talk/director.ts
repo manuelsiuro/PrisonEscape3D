@@ -1,9 +1,5 @@
-import { wardenOf } from '../sim/systems/rollcall';
-import { librarianOf } from '../sim/systems/training';
-import { RAT } from '../sim/systems/rats';
 import { itemDef } from '../content/items';
 import { ROUTINE } from '../content/routine';
-import { SEARCH_REACH } from '../content/days';
 import { t, type Key, type Lang } from '../i18n';
 import { enBarks, type BankId, type Barks } from '../i18n/barks/en';
 import { frBarks } from '../i18n/barks/fr';
@@ -12,14 +8,14 @@ import type { Sim, SimEvent } from '../sim/Sim';
 import { clockAt } from '../sim/systems/clock';
 import { DOING } from '../sim/systems/inmates';
 import { lookingAway } from '../sim/systems/ways';
-import { awake, GUARD } from '../sim/systems/guards';
-import { handlersOf } from '../sim/systems/k9';
+import { awake } from '../sim/systems/guards';
 import { itemOf } from '../sim/systems/items';
 import type { Body } from '../sim/systems/movement';
 import { DIR_X, DIR_Z, ORDER } from '../sim/command';
 import { OPINION_HIGH, OPINION_LOW, UNIT } from '../sim/tuning';
 import { LAYER } from '../sim/world/World';
 import { fill, nameOf, type FillContext } from './fill';
+import { react, type Reactor } from './reactions';
 import { facts, keepRumors, LASTING, type Fact, type Rumor } from './gossip';
 import { guardMood, inmateMood, outdoors, type Incident, type Mood, type Recent } from './mood';
 import type { Line, LineDef, Style, Tag, Voice } from './types';
@@ -27,8 +23,6 @@ import { CHATTY, guardVoice, inmateVoice, PAUSE, PITCH } from './voice';
 import { hash32, randomFrom } from '../sim/rng';
 import { FROM } from '../content/oddjobs';
 import { twoAtCooler } from '../sim/systems/cooler';
-import { dishNow } from '../sim/systems/menu';
-import { feastNow } from '../sim/systems/calendar';
 
 /**
  * The speech bubbles' director (P13): who says what, and when. Presentation only: it reads
@@ -107,17 +101,10 @@ interface Pending {
 const lineDef = (l: Line): LineDef => (typeof l === 'string' ? { t: l } : l);
 const NO_TAGS: ReadonlySet<Tag> = new Set();
 
-/** How near the librarian has to be to say anything about a book (tiles). */
-const LIBRARIAN_EARSHOT = 8;
-/** How near the vending machine the player has to be to catch what's said at it (tiles). */
-const VEND_EARSHOT = 10;
 /** 2.33: how near the water cooler the player has to stand to overhear what's said at it, how far to walk off before another visit; how much a day. */
 const COOLER_EARSHOT = 3;
 const COOLER_LEAVE = 6;
 const COOLER_TALES = 3;
-/** 2.33: a dish worth a word at the counter: this much energy or more (good), this much or less (bad). */
-const DISH_GOOD = 45;
-const DISH_BAD = 20;
 const dist = (a: Body, b: Body) => Math.hypot(a.x - b.x, a.z - b.z) / UNIT;
 
 /** The banks of a language with lines tied to moments (`when`). */
@@ -174,6 +161,23 @@ export class Director {
   private slipped = new Set<string>();
   /** Banks with lines tied to moments (only those need the moment worked out). */
   private timed = whenBanks('en');
+  /** What `react` (reactions.ts) may do here. */
+  private readonly reactor: Reactor = {
+    queueUp: (...a) => this.queueUp(...a),
+    inmatesNear: (...a) => this.inmatesNear(...a),
+    guardsNear: (...a) => this.guardsNear(...a),
+    incident: (...a) => this.incident(...a),
+    noteDay: (e) => this.noteDay(e),
+    bodyOf: (sim, id) => this.bodyOf(sim, id),
+    answerBank: (e, sim) => this.answerBank(e, sim),
+    random: () => this.random(),
+    caught: (now) => void (this.caughtAt = now),
+    cameTo: (who, now) => void this.cameTo.set(who, now),
+    searched: (cell) => void this.searched.add(cell),
+    grumble: (cell, at) => void this.grumble.set(cell, at),
+    powerOut: (now) => void (this.powerOutAt = now),
+    aboutDog: (dog) => void (this.dogAbout = dog),
+  };
 
   /** A new game (or a game loaded): everything forgotten, the voices of this prison. */
   reset(sim: Sim, seed = 0) {
@@ -464,476 +468,9 @@ export class Director {
     this.dayEvent = e;
   }
 
-  /** Reads one event of the step just run (called for each, in order). */
+  /** Reads one event of the step just run (called for each, in order): reactions.ts. */
   react(e: SimEvent, sim: Sim, now: number) {
-    const s = sim.state;
-    const n = s.inmates.length;
-    const px = s.player.x / UNIT;
-    const pz = s.player.z / UNIT;
-    const at = (id: number) => {
-      const b = this.bodyOf(sim, id);
-      return b ? { x: b.x / UNIT, z: b.z / UNIT } : { x: px, z: pz };
-    };
-    switch (e.type) {
-      case 'toldOff': {
-        const seeing = s.guards
-          .map((g, k) => ({ id: n + k, g }))
-          .filter((o) => o.g.sees && o.g.ko <= 0)
-          .sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player))
-          .map((o) => o.id);
-        this.queueUp(now, 're.spotted.stranger', seeing, 5, 'spotted:stranger', 'shout');
-        break;
-      }
-      case 'spotted': {
-        if (e.reason === 'none') break;
-        const seeing = s.guards
-          .map((g, k) => ({ id: n + k, g }))
-          .filter((o) => o.g.sees && o.g.ko <= 0)
-          .sort((a, b) => dist(a.g.body, s.player) - dist(b.g.body, s.player))
-          .map((o) => o.id);
-        const own = [
-          'night',
-          'restricted',
-          'contraband',
-          'recognized',
-          'wanted',
-          'damage',
-          'tampering',
-          'fight',
-          'gambling',
-          'skipping',
-          'stranger',
-          'snooping',
-        ] as const;
-        const bank = ((own as readonly string[]).includes(e.reason) ? `re.spotted.${e.reason}` : 're.spotted.other') as BankId;
-        this.queueUp(now, bank, seeing, 5, `spotted:${e.reason}`, 'shout');
-        break;
-      }
-      case 'caught':
-        this.caughtAt = now;
-        this.queueUp(now, 're.caught.gu', this.guardsNear(sim, px, pz, 4), 5, 'caught');
-        this.queueUp(now, 're.caught.in', this.inmatesNear(sim, px, pz, 9), 3, 'caughtIn', undefined, 1.2);
-        break;
-      case 'cantTrain':
-      case 'book': {
-        // (2.31: the librarian, in earshot: a nod for a book taken, a word when the head is full.)
-        const said = e.type === 'book' ? (e.on ? 're.library.book' : null) : e.why === 'full' ? 're.library.full' : null;
-        const who = librarianOf(sim);
-        if (said && who >= 0 && !sim.rules230 && s.inmates[who].ko <= 0 && dist(s.inmates[who].body, s.player) <= LIBRARIAN_EARSHOT)
-          this.queueUp(now, said, [who], 3, said);
-        break;
-      }
-      case 'menu': {
-        // (2.33: at the menu board, within earshot: a guard who caught the player at it, those laughing at what's on it.)
-        const mb = sim.world.def.menu;
-        if (!mb || Math.hypot(px - mb.x, pz - mb.z) > VEND_EARSHOT) break;
-        if (e.what === 'caught') this.queueUp(now, 're.menu.guard', this.guardsNear(sim, px, pz, 12), 5, 'menuGuard', 'shout');
-        else if (e.what === 'laugh' && e.who !== undefined) this.queueUp(now, 're.menu.laugh', [e.who], 3, 'menuLaugh', undefined, 0.3);
-        break;
-      }
-      case 'vend': {
-        // (2.32: at the machine, within earshot: a curse at a jam, what was bought, someone pushed past.)
-        const vm = sim.world.def.vending;
-        if (!vm || Math.hypot(px - vm.x, pz - vm.z) > VEND_EARSHOT) break;
-        if (e.what === 'toldOff') this.queueUp(now, 're.vend.guard', this.guardsNear(sim, px, pz, 10), 5, 'vendGuard');
-        else if (e.what === 'cut' && e.who !== undefined) this.queueUp(now, 're.vend.cut', [e.who], 5, 'vendCut');
-        else if (e.who === undefined) break;
-        else if (e.what === 'inmateJam' || e.what === 'inmateThump') this.queueUp(now, 're.vend.jam', [e.who], 3, 'vendJam');
-        else if (e.what === 'gaveUp') this.queueUp(now, 're.vend.gaveUp', [e.who], 3, 'vendGaveUp');
-        else if (e.what === 'empty') this.queueUp(now, 're.vend.empty', [e.who], 3, 'vendEmpty');
-        else if (e.what === 'inmateGot' && e.who % 3 === 0) this.queueUp(now, 're.vend.got', [e.who], 1, 'vendGot');
-        break;
-      }
-      case 'askTurn':
-        // (2.29: asked for the machine: they finish up, and say so.)
-        this.queueUp(now, 're.giveWay.in', [e.who], 4, 'giveWay');
-        break;
-      case 'bedCheck':
-        if (e.result === 'start') {
-          const k = s.guards.findIndex((_, i) => sim.prison.guards[i].duties?.includes('bedCheck'));
-          if (k >= 0) this.queueUp(now, 'gu.bedCheck', [n + k], 2, 'bedCheck', undefined, 0, 12);
-        } else if (e.awake) {
-          // (2.28: up in their cell as the guard looks in: there all the same, and told so.)
-          const k = s.guards.findIndex((_, i) => sim.prison.guards[i].duties?.includes('bedCheck'));
-          if (k >= 0) this.queueUp(now, 're.bedAwake.gu', [n + k], 4, 'bedAwake');
-        } else if (e.result === 'fail') this.queueUp(now, 're.bedFail.gu', this.guardsNear(sim, px, pz, 30), 5, 'bedFail', 'shout');
-        break;
-      case 'scanned':
-        if (e.tripped) {
-          this.incident('alarm', px, pz, now);
-          this.noteDay('detector');
-          this.queueUp(now, 're.detector.in', this.inmatesNear(sim, px, pz, 7), 3, 'detector');
-        }
-        break;
-      // A lazy guard woken from its doze (P15): it insists it never slept.
-      case 'nap':
-        // (Not under the sirens or in a chase: "Night shift, right" would ring false.)
-        if (!e.on && !sim.state.lockdown && sim.state.guards[e.guard]?.mode !== GUARD.CHASE)
-          this.queueUp(now, 're.napWoke.gu', [n + e.guard], 4, 'napWoke', undefined, 0.3);
-        break;
-      case 'cameTo':
-        this.cameTo.set(e.who, now);
-        this.queueUp(now, e.who >= n ? 're.cameTo.gu' : 're.cameTo.in', [e.who], 4, 'cameTo', undefined, 0.4);
-        break;
-      case 'hit': {
-        const p = at(e.who);
-        this.incident(e.ko ? 'ko' : 'fight', p.x, p.z, now);
-        this.noteDay('fight');
-        if (e.ko) {
-          this.queueUp(now, 're.ko.in', this.inmatesNear(sim, p.x, p.z, 8, e.who), 3, 'ko', undefined, 0.5);
-          if (e.who >= n) this.queueUp(now, 're.ko.gu', this.guardsNear(sim, p.x, p.z, 9, e.who), 4, 'koGuard', 'shout', 0.3);
-        } else this.queueUp(now, 're.fight.in', this.inmatesNear(sim, p.x, p.z, 7, e.who), 3, 'fight', 'shout', 0.3);
-        break;
-      }
-      case 'allyHit': {
-        const p = at(e.who);
-        this.incident(e.ko ? 'ko' : 'fight', p.x, p.z, now);
-        this.queueUp(now, 're.fight.in', this.inmatesNear(sim, p.x, p.z, 7, e.who), 3, 'fight', 'shout', 0.3);
-        // A follower's brawl: the guards nearby want it over.
-        this.queueUp(now, 're.fight.gu', this.guardsNear(sim, p.x, p.z, 8, e.who), 2, 'fightGu', 'shout', 0.8);
-        break;
-      }
-      case 'hurt':
-        if (e.by >= 0 && e.by < n) this.queueUp(now, 're.taunt.in', [e.by], 4, 'taunt', 'shout');
-        break;
-      case 'ambush':
-        this.queueUp(now, 're.ambush.in', [e.who], 5, 'ambush', 'shout');
-        break;
-      case 'snooped':
-        this.queueUp(now, 're.snooped.in', [e.who], 5, 'snooped', 'shout');
-        break;
-      case 'tray': {
-        // (2.33: a tray taken of a dish worth a word, good or bad: someone near says so.)
-        const dish = e.what === 'take' && !feastNow(sim) ? dishNow(sim) : null;
-        if (dish && (dish.energy >= DISH_GOOD || dish.energy <= DISH_BAD))
-          this.queueUp(
-            now,
-            dish.energy >= DISH_GOOD ? 're.menu.good' : 're.menu.bad',
-            this.inmatesNear(sim, px, pz, 5),
-            2,
-            'menuDish',
-            undefined,
-            1.5,
-          );
-        // (Not brought back: the nearest guard says so.)
-        if (!e.heat) break;
-        this.queueUp(now, 're.tray.gu', this.guardsNear(sim, px, pz, 12), 4, 'tray', 'shout');
-        break;
-      }
-      case 'thrown': {
-        const p = at(e.who);
-        this.incident('fight', p.x, p.z, now);
-        this.queueUp(now, 're.thrown.in', this.inmatesNear(sim, p.x, p.z, 8, e.who), 3, 'thrown', undefined, 0.4);
-        break;
-      }
-      case 'lockdown':
-        if (e.on) {
-          this.incident('alarm', px, pz, now);
-          this.noteDay('lockdown');
-          this.queueUp(now, 're.lockdown.gu', this.guardsNear(sim, px, pz, 40), 4, 'lockdown', 'shout', 0.6);
-          this.queueUp(now, 're.lockdown.in', this.inmatesNear(sim, px, pz, 40), 3, 'lockdownIn', undefined, 1.6);
-        } else this.queueUp(now, 're.lockdownOff.in', this.inmatesNear(sim, px, pz, 40), 2, 'lockdownOff', undefined, 1);
-        break;
-      case 'count': {
-        // The warden's call, and the answer from the line.
-        const warden = sim.state.inmates.length + wardenOf(sim);
-        // (Each its own trigger: a shared one's wait would swallow all but the first.)
-        if (e.what === 'called') this.queueUp(now, 're.count.gu', [warden], 3, 'count', 'shout');
-        else if (e.what === 'you') this.queueUp(now, 're.countYou.gu', [warden], 5, 'countYou', 'shout');
-        else if (e.what === 'missed') this.queueUp(now, 're.countMiss.gu', [warden], 5, 'countMiss', 'shout');
-        if (e.what === 'called' && e.who >= 0) this.queueUp(now, 're.count.in', [e.who], 3, 'countIn', undefined, 0.5);
-        break;
-      }
-      case 'shakedown':
-        this.noteDay('shakedown');
-        if (wardenOf(sim) >= 0) this.queueUp(now, 're.shakedown.gu', [sim.state.inmates.length + wardenOf(sim)], 4, 'shakedownGu', 'shout');
-        this.queueUp(now, 're.shakedown.in', this.inmatesNear(sim, px, pz, 30), 2, 'shakedown', undefined, 1.5, 6);
-        break;
-      case 'searched': {
-        this.searched.add(e.cell);
-        // Its inmate grumbles about it the next time it's on screen (a minute or so).
-        this.grumble.set(e.cell, now + 90);
-        break;
-      }
-      case 'power':
-        // Irongate's GEN-1 runs only the detectors and cameras: nobody notices a blackout that isn't one.
-        if (!e.on && !sim.powered('lights')) {
-          this.powerOutAt = now;
-          this.noteDay('power');
-          // P17: lightning has its own cries; the generator's service was announced (inmates still notice the dark).
-          const storm = e.by === 'storm' && sim.prison.theme !== 'alpine';
-          this.queueUp(now, storm ? 're.storm.in' : 're.power.in', this.inmatesNear(sim, px, pz, 30), 3, 'power', undefined, 0.5);
-          if (e.by !== 'maintenance')
-            this.queueUp(now, storm ? 're.storm.gu' : 're.power.gu', this.guardsNear(sim, px, pz, 30), 3, 'powerGu', 'shout', 1.4);
-        }
-        break;
-      // The day (P17): the drill's bell, a food fight breaking out.
-      case 'today':
-        if (e.phase === 'start' && e.event === 'drill')
-          this.queueUp(now, 're.drill.in', this.inmatesNear(sim, px, pz, 30), 3, 'drill', undefined, 0.6);
-        if (e.phase === 'start' && e.event === 'foodFight')
-          this.queueUp(now, 're.foodFight.in', this.inmatesNear(sim, px, pz, 20), 3, 'foodFight', 'shout', 0.2);
-        // Sports day (P22): everyone limbering up; the champion cheered.
-        if (e.phase === 'start' && e.event === 'sports')
-          this.queueUp(now, 're.sports.in', this.inmatesNear(sim, px, pz, 24), 3, 'sports', undefined, 1.2);
-        if (e.phase === 'prize' && e.event === 'sports')
-          this.queueUp(now, 're.champion.in', this.inmatesNear(sim, px, pz, 16), 3, 'champion', 'shout', 1.6);
-        // Visiting day (P21): the inmates about the visiting room, looking forward to it.
-        if (e.event === 'visiting' && e.phase === 'start' && sim.prison.smuggling?.visits) {
-          const r = sim.prison.smuggling.visits;
-          this.queueUp(now, 're.visiting.in', this.inmatesNear(sim, (r[0] + r[2]) / 2, (r[1] + r[3]) / 2, 24), 3, 'visiting', undefined, 1);
-        }
-        // Delivery day (P18): the inmates by its bay see it come in; its supervisor at the tail, searching.
-        if (e.event === 'delivery' && sim.prison.delivery) {
-          const tx = sim.prison.delivery.tail.x + 0.5;
-          const tz = sim.prison.delivery.tail.z + 0.5;
-          if (e.phase === 'start') this.queueUp(now, 're.delivery.in', this.inmatesNear(sim, tx, tz, 18), 2, 'delivery', undefined, 1.2);
-          if (e.phase === 'search')
-            this.queueUp(
-              now,
-              e.thorough ? 're.searchClose.gu' : 're.searchQuick.gu',
-              this.guardsNear(sim, tx, tz, SEARCH_REACH + 1),
-              4,
-              'search',
-              undefined,
-              0.2,
-            );
-        }
-        break;
-      case 'stow':
-        if (e.found) this.queueUp(now, 're.stowFound.in', this.inmatesNear(sim, px, pz, 12), 3, 'stowFound', undefined, 1.6);
-        break;
-      // The parole board (P39): inmates by the desk have a word for an application; a guard for one voided.
-      case 'parole':
-        if (e.what === 'applied' && !e.lawyer)
-          this.queueUp(now, 're.parole.in', this.inmatesNear(sim, px, pz, 6), 2, 'parole', undefined, 1);
-        else if (e.what === 'voided')
-          this.queueUp(now, 're.paroleVoid.gu', this.guardsNear(sim, px, pz, 10), 4, 'paroleVoid', undefined, 0.6);
-        else if (e.what === 'granted')
-          this.queueUp(now, 're.paroleGranted.in', this.inmatesNear(sim, px, pz, 8), 2, 'paroleGranted', undefined, 1.4);
-        break;
-      // Holidays (P42): a laugh at the costume, the water fight, the fireworks, the eggs hidden.
-      case 'holiday':
-        if (e.what === 'laugh' && e.who !== undefined) this.queueUp(now, 're.hol.laugh.in', [e.who], 4, 'holLaugh', 'shout', 0.1);
-        else if (e.what === 'start' && e.day === 'waterFight')
-          this.queueUp(now, 're.hol.water.in', this.inmatesNear(sim, px, pz, 24), 3, 'holWater', 'shout', 0.4);
-        else if (e.what === 'start' && e.day === 'newYearsEve')
-          this.queueUp(now, 're.hol.fireworks.in', this.inmatesNear(sim, px, pz, 30), 3, 'holFireworks', 'shout', 0.6);
-        else if (e.what === 'hidden') this.queueUp(now, 're.hol.eggs.in', this.inmatesNear(sim, px, pz, 30), 2, 'holEggs', undefined, 2, 5);
-        break;
-      // A glide (P24) that came down inside: whoever is near where the player landed has a word for it.
-      case 'glide':
-        if (!s.escaped) {
-          this.queueUp(now, 're.glide.gu', this.guardsNear(sim, px, pz, 10), 4, 'glide', 'shout', 0.3);
-          this.queueUp(now, 're.glide.in', this.inmatesNear(sim, px, pz, 12), 3, 'glideIn', undefined, 0.9);
-        }
-        break;
-      // Guard dogs (P19): its handler has something to say about what it did; inmates about a dog fed.
-      case 'dog': {
-        const d = s.dogs[e.dog];
-        const h = handlersOf(sim.world)[e.dog];
-        if (!d || h === undefined) break;
-        this.dogAbout = e.dog;
-        const handler = s.guards[h] && awake(s.guards[h]) ? [n + h] : [];
-        const bank = (
-          {
-            sniff: 're.dogSniff.gu',
-            track: 're.dogTrack.gu',
-            lost: 're.dogLost.gu',
-            dug: 're.dogDug.gu',
-            dazed: 're.dogDazed.gu',
-            asleep: 're.dogAsleep.gu',
-          } as Partial<Record<string, BankId>>
-        )[e.what];
-        if (bank)
-          this.queueUp(
-            now,
-            bank,
-            handler,
-            e.what === 'dug' || e.what === 'sniff' ? 5 : 4,
-            `dog:${e.what}`,
-            e.what === 'sniff' || e.what === 'dug' ? 'shout' : undefined,
-            0.3,
-          );
-        if (e.what === 'fed' || e.what === 'friend')
-          this.queueUp(now, 're.dogFed.in', this.inmatesNear(sim, d.body.x / UNIT, d.body.z / UNIT, 8), 2, 'dogFed', undefined, 0.8);
-        break;
-      }
-      // The pet rat (P20): a panic's shrieks and grumbles, a guard missing his key, a rat on the player's shoulder noticed.
-      case 'rat': {
-        const r = e.what === 'loose' ? (s.rats.find((x) => x.mode === RAT.LOOSE && x.wild === !!e.wild) ?? null) : null;
-        if (r) {
-          this.queueUp(now, 're.ratPanic.in', this.inmatesNear(sim, r.x / UNIT, r.z / UNIT, 7), 4, 'ratPanic', 'shout', 0.2);
-          this.queueUp(now, 're.ratPanic.gu', this.guardsNear(sim, r.x / UNIT, r.z / UNIT, 9), 4, 'ratPanicGu', undefined, 1.1);
-        }
-        if (e.what === 'tamed' || (e.what === 'home' && this.random() < 0.3))
-          this.queueUp(now, 're.ratShoulder.in', this.inmatesNear(sim, px, pz, 5), 2, 'ratShoulder', undefined, 0.9);
-        break;
-      }
-      case 'keyless':
-        if (s.guards[e.guard]) this.queueUp(now, 're.keyless.gu', [n + e.guard], 5, 'keyless', 'shout', 0.2);
-        break;
-      // Smuggling (P21): the drone overhead (guards and inmates near where it drops), a guard taking what it dropped, the player's visitor.
-      case 'smuggle': {
-        if (e.what === 'dropped' && e.tile !== undefined) {
-          const x = (e.tile % 64) + 0.5;
-          const z = Math.floor(e.tile / 64) + 0.5;
-          this.queueUp(now, 're.drone.gu', this.guardsNear(sim, x, z, 12), 2, 'drone', 'shout', 0.4);
-          this.queueUp(now, 're.drone.in', this.inmatesNear(sim, x, z, 10), 2, 'droneIn', undefined, 0.9);
-        }
-        if (e.what === 'seized' && e.guard !== undefined && s.guards[e.guard])
-          this.queueUp(now, 're.seized.gu', [n + e.guard], 5, 'seized', undefined, 0.3);
-        if (e.what === 'visit') this.queueUp(now, 're.visit.in', this.inmatesNear(sim, px, pz, 6), 2, 'visit', undefined, 1.4);
-        break;
-      }
-      // Side games (P22): the dice partner when the dice are down (a sore loser, a gloating winner), the crowd at a bout, sports day.
-      case 'dice':
-        if (e.what === 'won' || e.what === 'lost')
-          this.queueUp(
-            now,
-            e.what === 'won' ? 're.diceWon.in' : 're.diceLost.in',
-            [e.who],
-            4,
-            `dice:${e.what}`,
-            undefined,
-            e.theirs && sim.events.some((x) => x.type === 'dice' && x.what === 'rerolled') ? 2.1 : 1.5,
-          );
-        break;
-      case 'bout':
-        if (e.what === 'start')
-          this.queueUp(
-            now,
-            're.bout.in',
-            this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who),
-            2,
-            'bout',
-            'shout',
-            0.6,
-          );
-        if (e.what === 'won') {
-          this.queueUp(
-            now,
-            're.boutWon.in',
-            this.inmatesNear(sim, px, pz, 6).filter((k) => k !== e.who),
-            3,
-            'boutWon',
-            'shout',
-            0.3,
-          );
-          this.queueUp(now, 're.boutLoser.in', [e.who], 3, 'boutLoser', undefined, 1.4);
-        }
-        if (e.what === 'lost') this.queueUp(now, 're.boutWinner.in', [e.who], 3, 'boutWinner', undefined, 0.5);
-        break;
-      case 'shot':
-        this.incident('shot', px, pz, now);
-        this.noteDay('shot');
-        this.queueUp(now, 're.shot.in', this.inmatesNear(sim, px, pz, 12), 3, 'shot', 'shout', 0.3);
-        break;
-      case 'blast': {
-        const x = e.tile % 64;
-        const z = Math.floor(e.tile / 64);
-        this.incident('blast', x, z, now);
-        this.noteDay('blast');
-        this.queueUp(now, 're.blast.in', this.inmatesNear(sim, x, z, 16), 3, 'blast', 'shout', 0.4);
-        break;
-      }
-      case 'shocked':
-        this.queueUp(now, 're.shocked.in', this.inmatesNear(sim, px, pz, 9), 3, 'shocked', undefined, 0.6);
-        break;
-      case 'takeover':
-        if (e.on) {
-          this.noteDay('takeover');
-          this.queueUp(now, 're.takeover.in', this.inmatesNear(sim, px, pz, 40), 4, 'takeover', 'shout', 0.4);
-          this.queueUp(now, 're.takeover.gu', this.guardsNear(sim, px, pz, 40), 4, 'takeoverGu', 'shout', 1.4);
-        }
-        break;
-      // Said to the player across the talk panel: the panel shows it (see answer()); a bubble otherwise.
-      case 'gift':
-      case 'opinion':
-      case 'favor':
-      case 'recruit':
-      case 'oddjob':
-      case 'tip': {
-        const bank = this.answerBank(e, sim);
-        const who = e.who ?? -1;
-        if (bank && who >= 0 && who !== s.talk) this.queueUp(now, bank, [who], 3, bank);
-        break;
-      }
-      // The crew (P23): an order taken (in the talk panel, or a bubble), a lookout's whistle, a brawl and its crowd, a drop handed over, an ambush called off.
-      case 'crew':
-        switch (e.what) {
-          case 'order': {
-            const bank = this.answerBank(e, sim);
-            if (bank && e.who !== s.talk) this.queueUp(now, bank, [e.who], 3, bank);
-            break;
-          }
-          case 'whistle':
-            this.queueUp(now, 're.whistle.in', [e.who], 5, `whistle:${e.who}`, 'shout', 0, 2);
-            break;
-          case 'recalled':
-            this.queueUp(now, 're.recalled.in', [e.who], 3, 'recalled', undefined, 0.4);
-            break;
-          case 'brawl': {
-            const other = e.other ?? -1;
-            const c = at(other);
-            this.queueUp(now, 're.brawl.in', [e.who], 5, 'brawl', 'shout');
-            if (other >= 0) this.queueUp(now, 're.brawled.in', [other], 5, 'brawled', 'shout', 1.3);
-            this.queueUp(
-              now,
-              're.brawlCrowd.in',
-              this.inmatesNear(sim, c.x, c.z, 8).filter((k) => k !== e.who && k !== other),
-              3,
-              'brawlCrowd',
-              'shout',
-              2.4,
-            );
-            break;
-          }
-          case 'handed':
-            this.queueUp(now, 're.handed.in', [e.who], 3, 'handed', 'whisper');
-            break;
-          case 'stopped':
-            this.queueUp(now, 're.stopped.in', [e.who], 4, 'stopped');
-            break;
-        }
-        break;
-      case 'routine':
-        if (this.random() < 0.5) this.queueUp(now, 're.bell.in', this.inmatesNear(sim, px, pz, 14), 2, 'bell', undefined, 1);
-        break;
-      // Noise (P14): the guards sent to look say so, those close by wonder; a bang wakes the
-      // sleepers within earshot; an inmate hit by something thrown complains.
-      case 'noise': {
-        const x = e.tile % 64;
-        const z = Math.floor(e.tile / 64);
-        const sent = e.sent.map((k) => n + k);
-        if (e.kind === 'bang') {
-          this.incident('blast', x, z, now);
-          this.noteDay('firecracker');
-          this.queueUp(now, 're.bang.gu', sent, 4, 'bangGu', 'shout', 0.3);
-          this.queueUp(now, 're.bang.in', this.inmatesNear(sim, x, z, 10), 3, 'bang', 'shout', 0.6);
-          const woken = s.inmates
-            .map((m, k) =>
-              m.doing === DOING.SLEEP && m.ko <= 0 && e.tiles.includes(Math.floor(m.body.z / UNIT) * 64 + Math.floor(m.body.x / UNIT))
-                ? k
-                : -1,
-            )
-            .filter((k) => k >= 0);
-          this.queueUp(now, 're.woken.in', woken, 3, 'woken', undefined, 1.2);
-        } else if (e.kind === 'ring') {
-          this.noteDay('alarmClock');
-          this.queueUp(now, 're.ring.gu', sent, 3, 'ringGu', 'shout', 0.3);
-          this.queueUp(now, 're.ring.in', this.inmatesNear(sim, x, z, 7), 2, 'ring', undefined, 0.8);
-        } else {
-          this.queueUp(now, 're.noise.gu', sent, 3, 'noiseGu', undefined, 0.3);
-          if (e.kind === 'thud' || sent.length)
-            this.queueUp(now, 're.noise.in', this.inmatesNear(sim, x, z, 5), 1, 'noiseIn', undefined, 0.8);
-        }
-        break;
-      }
-      case 'tossed':
-        if (e.hit >= 0) this.queueUp(now, 're.tossHit.in', [e.hit], 4, 'tossHit', 'shout', 0.2);
-        break;
-    }
+    react(this.reactor, e, sim, now);
   }
 
   // ---------------------------------------------------------------- every frame

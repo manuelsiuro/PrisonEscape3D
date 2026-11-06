@@ -2,13 +2,12 @@ import { HUNT } from '../../content/manhunt';
 import { itemDef, itemNumber } from '../../content/items';
 import type { OutsideDef, Spot } from '../../content/outside/types';
 import type { PrisonDef } from '../../content/prisons/types';
-import { findPath, nearestDir } from '../ai/path';
 import { blockedIn, centerX, centerZ, chebTiles, neighbours4, tileAt } from '../world/grid';
-import { canSee, lineOfSight } from '../ai/sight';
+import { lineOfSight } from '../ai/sight';
 import { argA, argB, argC, DIR_X, DIR_Z, dirOf, EXT, OP, opOf, sideX, sideZ, tossTile } from '../command';
 import { fnv1a, rollInt, SALT } from '../rng';
 import { bodyAt, walk, type Body } from '../systems/movement';
-import { STEPS_PER_SECOND, UNIT, walkSpeed } from '../tuning';
+import { UNIT, walkSpeed } from '../tuning';
 import { TILE } from '../world/tiles';
 import { LAYER, MAP_H, MAP_W, type World } from '../world/World';
 import {
@@ -24,53 +23,22 @@ import {
   type HuntState,
   type Searcher,
 } from './state';
+import { dist2, DRAW, FOREVER, N, S, within } from './common';
+import { dogLost, dogsSniff } from './dogs';
+import { heliSweeps } from './heli';
+import { backToBeat, lookAt, searchersLook } from './searchers';
 import { fillArea, goalDistances, outsideWorld, spotTile, sweepPoints, type OutsideWorld } from './world';
 
 export * from './state';
+export type { Walker } from './common';
 
-const S = STEPS_PER_SECOND;
-const N = MAP_W * MAP_H;
 const GUARD_OUTFIT = itemNumber('guard_outfit');
 const OWN_CLOTHES = itemNumber('own_clothes');
 const TREATS = [itemNumber('jerky'), itemNumber('pepper'), itemNumber('sleepy_jerky')];
-/** Standing still at a beat's stop (steps); turning to look round while looking (every this many steps). */
-const STOP_STEPS = 2 * S;
-/** Longer than any hunt (steps): an officer at his post stays there. */
-const FOREVER = 1e9;
-const TURN_STEPS = 20;
-/** Close enough to a waypoint to aim at the next one (units), and steps without getting closer before the way is looked for again. */
-const REACHED = 200;
-const STUCK_STEPS = 24;
-/** A dog this far from its handler (tiles) runs to catch up; its pace then. */
-const DOG_CATCH_UP = 3;
-const DOG_RUN = 200;
-/** A dog that lost a trail picks one up again only after this long (steps); a pointing dog holds this long, barking every BARK_EVERY. */
-const TRAIL_REST = 10 * S;
-const POINT_HOLD = 3 * S;
-const BARK_EVERY = 30;
 /** Crunching gravel is heard at most this often (steps). */
 const CRUNCH_EVERY = 10;
 /** A washing line: this close (tiles) to take clothes off it. */
 const LINE_REACH = 1.5;
-/** The helicopter calls the player in every this many steps while it holds them lit. */
-const HELI_CALL = S;
-/** The search widened: the helicopter picks its next place among this many of the nearest not yet swept. */
-const HELI_PICK = 6;
-/** What the salt's draws are for (roll()'s first argument, negative: never a step). */
-const DRAW = { ORDER: -1, TIME: -2, STOP: -3, BLOCK: -4, HELI: -5, AIM: -6 } as const;
-
-const dist2 = (a: { x: number; z: number }, b: { x: number; z: number }) => (a.x - b.x) ** 2 + (a.z - b.z) ** 2;
-const within = (a: { x: number; z: number }, b: { x: number; z: number }, tiles: number) => dist2(a, b) <= (tiles * UNIT) ** 2;
-/** The whole square root of a whole number (the same on every device). */
-function isqrt(n: number): number {
-  let r = Math.floor(Math.sqrt(n));
-  while (r * r > n) r--;
-  while ((r + 1) * (r + 1) <= n) r++;
-  return r;
-}
-
-/** Someone who walks a way (a searcher, a dog). */
-type Walker = { body: Body; goal: number; path: number[]; best: number; stuck: number };
 
 /**
  * The manhunt (P41): a deterministic simulation of its own, outside the wall, at the inside's
@@ -107,7 +75,8 @@ export class Hunt {
   /** Bumps when a tile changes (wire cut): the view redraws the fences. Not state. */
   tilesRev = 0;
   private readonly feet = { blocked: blockedIn(this.grid) };
-  private readonly npcFeet = { blocked: blockedIn(this.chaseGrid) };
+  /** The searchers' and dogs' feet (walkers.ts). */
+  readonly npcFeet = { blocked: blockedIn(this.chaseGrid) };
   private readonly heard = new Int32Array(N);
   /** The searchers' and roadblocks' timings in steps after the alarm (Infinity: never, a lesson's; -Infinity: a patrol, out at once). */
   private readonly outAt: number[];
@@ -116,7 +85,7 @@ export class Hunt {
   /** Each searcher's first stop: on its beat (a patrol starts there), or the one it heads for once on. */
   private readonly firstStop: number[];
   /** The step after the alarm the search starts widening (Infinity: never). */
-  private readonly rampAt: number;
+  readonly rampAt: number;
 
   constructor(
     readonly def: OutsideDef,
@@ -282,9 +251,9 @@ export class Hunt {
     s.step++;
     this.playerMoves(cmd);
     this.timeline();
-    if (!s.over) this.searchersLook();
-    if (!s.over) this.dogsSniff();
-    if (!s.over) this.heliSweeps();
+    if (!s.over) searchersLook(this);
+    if (!s.over) dogsSniff(this);
+    if (!s.over) heliSweeps(this);
     if (!s.over) this.lookout();
     if (!s.over) this.outcome();
     // Noises fade from the view after a few seconds.
@@ -403,7 +372,7 @@ export class Hunt {
   }
 
   /** A searcher's beat (a roadblock's officer: his post). */
-  private beatOf(k: number): readonly Spot[] {
+  beatOf(k: number): readonly Spot[] {
     const n = this.def.searchers.length;
     return k < n ? this.def.searchers[k].beat : [this.def.roadblocks[k - n].post];
   }
@@ -460,7 +429,7 @@ export class Hunt {
         // A ford: the water takes the trail, and a dog on it loses it there (as at a washing line).
         if (s.trail.length) {
           s.trail = [];
-          for (const d of s.dogs) if (d.mode === HOUND.TRACK) this.dogLost(d);
+          for (const d of s.dogs) if (d.mode === HOUND.TRACK) dogLost(this, d);
         }
       } else {
         s.trail.push([t, s.step]);
@@ -517,7 +486,7 @@ export class Hunt {
       s.feats[HFEAT.swaps]++;
       // New clothes, a new scent: the trail so far is no use to a dog.
       s.trail = [];
-      for (const d of s.dogs) if (d.mode === HOUND.TRACK || d.mode === HOUND.POINT) this.dogLost(d);
+      for (const d of s.dogs) if (d.mode === HOUND.TRACK || d.mode === HOUND.POINT) dogLost(this, d);
       this.events.push({ type: 'swap', uniform });
       return;
     }
@@ -642,13 +611,13 @@ export class Hunt {
     // Pepper up its nose: the trail is gone for it.
     if (what === 1) d.trail = s.step;
     const h = s.searchers[d.handler];
-    if (h.mode === SEEK.FOLLOW) this.backToBeat(d.handler);
+    if (h.mode === SEEK.FOLLOW) backToBeat(this, d.handler);
     this.events.push({ type: 'treat', dog: k, what });
   }
 
   // ---------------------------------------------------------------- noise
   /** A noise: every searcher out within `reach` walking tiles of it goes to look (not one already after the player, nor an officer at his roadblock). Whether anyone heard it. */
-  private noise(tile: number, reach: number, kind: 'crunch' | 'stone' | 'cut' | 'bark', by = -1): boolean {
+  noise(tile: number, reach: number, kind: 'crunch' | 'stone' | 'cut' | 'bark', by = -1): boolean {
     let heard = false;
     const s = this.state;
     s.noises.push([tile, s.step, reach]);
@@ -670,210 +639,21 @@ export class Hunt {
       // (A bark: not its own handler, who goes to his dog anyway.)
       if (m.mode === SEEK.OFF || m.mode === SEEK.CHASE || m.mode === SEEK.FOLLOW || this.isPost(k) || k === by) return;
       if (d[tileAt(m.body.x, m.body.z)] < 0) return;
-      this.lookAt(k, tile);
+      lookAt(this, k, tile);
       this.events.push({ type: 'heard', who: k, tile });
       heard = true;
     });
     return heard;
   }
 
-  private isPost(k: number) {
+  isPost(k: number) {
     return k >= this.def.searchers.length;
   }
 
-  // ---------------------------------------------------------------- the searchers
-  /** Off to look at a tile (heard there, said on the radio, last seen there): the way there, then a look round. No way there: a look round where he stands. */
-  private lookAt(k: number, tile: number) {
-    const m = this.state.searchers[k];
-    m.mode = SEEK.LOOK;
-    m.wait = HUNT.look;
-    this.route(m, tile);
-    if (!m.path.length && !this.arrived(m)) m.goal = -1;
-  }
-
-  private backToBeat(k: number) {
-    const m = this.state.searchers[k];
-    m.mode = SEEK.BEAT;
-    m.goal = -1;
-    m.path = [];
-    m.notice = 0;
-  }
-
-  /** Spotted: after the player, and on the radio to the others (who come to look). */
-  private spot(k: number) {
-    const s = this.state;
-    const chasing = s.searchers.some((m) => m.mode === SEEK.CHASE);
-    const m = s.searchers[k];
-    m.mode = SEEK.CHASE;
-    m.unseen = 0;
-    m.last = this.tile;
-    m.path = [];
-    m.goal = -1;
-    this.know(this.tile);
-    if (!chasing) s.feats[HFEAT.spotted]++;
-    this.events.push({ type: 'spotted', who: k });
-    this.radio(k);
-    // (A patrol that spots them before any alarm radios it in: the alarm is up now, the head start over.)
-    if (s.step < s.alarmAt) s.alarmAt = s.step + 1;
-  }
-
-  /** The others within HUNT.radio tiles hear where the player is (none already after them, no officer leaves his roadblock). */
-  private radio(from: number) {
-    const s = this.state;
-    const t = this.tile;
-    s.searchers.forEach((o, j) => {
-      if (j === from || o.mode === SEEK.OFF || o.mode === SEEK.CHASE || this.isPost(j) || !within(o.body, s.player, HUNT.radio)) return;
-      if (o.mode === SEEK.FOLLOW && o.dog >= 0 && s.dogs[o.dog].mode === HOUND.TRACK) return;
-      this.lookAt(j, t);
-    });
-  }
-
-  /** Whether a searcher's eyes find the player: never hidden; moving (or not yet settled) in cover only close by, the cover they stand in no veil. */
-  private seesPlayer(m: Searcher, range: number): boolean {
-    const s = this.state;
-    if (s.hidden) return false;
-    const t = this.tile;
-    const r = this.out.cover[t] ? Math.min(range, HUNT.coverSeen) : range;
-    return canSee(this.world, m.body, s.player, r * UNIT, true, t);
-  }
-
-  private searchersLook() {
-    const s = this.state;
-    const p = s.player;
-    const range = this.sight;
-    const known = this.knownAt;
-    const t = this.tile;
-    const moving = s.still === 0;
-    const inCover = this.out.cover[t] === 1;
-    for (let k = 0; k < s.searchers.length; k++) {
-      const m = s.searchers[k];
-      m.sees = false;
-      if (m.mode === SEEK.OFF) continue;
-      // Eyes first.
-      const sees = this.seesPlayer(m, range);
-      m.sees = sees;
-      if (sees) {
-        if (m.mode === SEEK.CHASE) {
-          m.unseen = 0;
-          m.last = t;
-          this.know(t);
-        } else if (within(m.body, p, known)) {
-          // (Moving through cover, a third of the pace.)
-          if (!(inCover && moving && s.step % 3 !== 0)) m.notice += within(m.body, p, HUNT.near) ? 3 : 1;
-          if (m.notice >= HUNT.spot) this.spot(k);
-        }
-      } else if (m.notice > 0) m.notice--;
-      this.searcherMoves(k);
-      if (s.over) return;
-      // Caught: a chaser at arm's length in the open; in cover (he saw them go in), within reach of the hedge.
-      if (m.mode === SEEK.CHASE && within(m.body, p, inCover ? HUNT.found : HUNT.catch)) return this.caught(k);
-      // Found: a handler whose dog points at them in cover, hidden or not (in the open, his dog's find is a chase).
-      if (inCover && m.dog >= 0 && s.dogs[m.dog].mode === HOUND.POINT && within(m.body, p, HUNT.found)) return this.caught(k);
-    }
-  }
-
-  private searcherMoves(k: number) {
-    const s = this.state;
-    const m = s.searchers[k];
-    const beat = this.beatOf(k);
-    const { ox, oz } = this.out;
-    // (A handler whose dog is on the trail or pointing goes after it, whatever he was doing but a chase.)
-    if (m.dog >= 0 && (m.mode === SEEK.LOOK || m.mode === SEEK.BEAT || m.mode === SEEK.SWEEP)) {
-      const dm = s.dogs[m.dog].mode;
-      if (dm === HOUND.TRACK || dm === HOUND.POINT) {
-        m.mode = SEEK.FOLLOW;
-        m.path = [];
-        m.goal = -1;
-        return;
-      }
-    }
-    switch (m.mode) {
-      case SEEK.CHASE: {
-        // (In the helicopter's light the chase never loses them: it says on the radio where they are.)
-        const shown = m.sees || s.heli.lit;
-        if (s.heli.lit) m.last = this.tile;
-        m.unseen = shown ? 0 : m.unseen + 1;
-        if (m.unseen >= HUNT.lose) {
-          s.feats[HFEAT.lost]++;
-          this.events.push({ type: 'lost', who: k });
-          this.lookAt(k, m.last);
-          return;
-        }
-        const target = shown ? this.tile : m.last;
-        if (m.goal !== target && (s.step % HUNT.replan === 0 || !m.path.length)) this.route(m, target, this.chaseGrid);
-        this.follow(m, HUNT.chase, true, this.chaseGrid);
-        return;
-      }
-      case SEEK.LOOK: {
-        if (m.goal >= 0 && !this.arrived(m)) {
-          if (m.path.length) return void this.follow(m, HUNT.hurry);
-          // (The way lost: a look round here.)
-          m.goal = -1;
-        }
-        this.lookRound(m, k);
-        if (--m.wait <= 0) this.backToBeat(k);
-        return;
-      }
-      case SEEK.SWEEP: {
-        // The cover nearest where the player was last known, one place after another, a look round at each.
-        if (m.goal < 0) {
-          this.nextSweep(m);
-          m.wait = HUNT.sweepLook;
-          if (m.goal < 0) return this.backToBeat(k);
-        }
-        if (!this.arrived(m)) {
-          if (m.path.length) return void this.follow(m, HUNT.hurry);
-          m.goal = -1;
-          return;
-        }
-        this.lookRound(m, k);
-        if (--m.wait <= 0) m.goal = -1;
-        return;
-      }
-      case SEEK.FOLLOW: {
-        const d = s.dogs[m.dog];
-        if (!d || (d.mode !== HOUND.TRACK && d.mode !== HOUND.POINT)) return this.backToBeat(k);
-        // (Its dog pointing: to what it points at, the player, into cover if that's where they are.)
-        const pointing = d.mode === HOUND.POINT;
-        const target = pointing ? this.tile : tileAt(d.body.x, d.body.z);
-        if (chebTiles(target, tileAt(m.body.x, m.body.z)) <= (pointing ? 0 : 1)) {
-          m.body.moving = false;
-          m.body.facing = nearestDir(d.body.x - m.body.x, d.body.z - m.body.z) || m.body.facing;
-          return;
-        }
-        const grid = pointing ? this.chaseGrid : this.npcGrid;
-        if (m.goal !== target && (s.step % HUNT.replan === 0 || !m.path.length)) this.route(m, target, grid);
-        this.follow(m, HUNT.hurry, true, grid);
-        return;
-      }
-      case SEEK.BEAT: {
-        const stop = beat[m.k];
-        const goal = spotTile(stop, ox, oz);
-        if (m.goal !== goal) {
-          this.route(m, goal);
-          m.wait = beat.length > 1 ? STOP_STEPS : FOREVER;
-        }
-        if (!this.arrived(m)) {
-          if (m.path.length) return void this.follow(m, HUNT.walk);
-          // (No way to that stop now: on to the next.)
-          if (beat.length > 1) m.k = (m.k + 1) % beat.length;
-          return;
-        }
-        m.body.moving = false;
-        if (stop.face) m.body.facing = stop.face;
-        if (--m.wait <= 0) m.k = (m.k + 1) % beat.length;
-      }
-    }
-  }
-
-  /** Standing, turning this way and that. */
-  private lookRound(m: Searcher, k: number) {
-    m.body.moving = false;
-    if (m.wait % TURN_STEPS === 0) m.body.facing = 1 + rollInt(this.state.salt, SALT.HUNT, this.state.step, k, 16);
-  }
+  // ---------------------------------------------------------------- what the searchers know (they're searchers.ts)
 
   /** Where the player is known to be now (seen, lit, heard, found). */
-  private know(t: number) {
+  know(t: number) {
     this.state.known = t;
     this.state.knownAt = this.state.step;
   }
@@ -903,288 +683,7 @@ export class Hunt {
     return t;
   }
 
-  /** The next place to sweep (the nearest not yet swept to where the search reckons the player has got to, or once it has widened, for the dog teams every other time, to where they were last known; then nearest him), marked swept (sniffed, for a dog team); every one done, round again. */
-  private nextSweep(m: Searcher) {
-    const s = this.state;
-    const pts = this.sweepPts;
-    if (!pts.length) return;
-    // (The dog teams keep their own list: only a nose finds someone hidden, so a place an eye has swept is still to be sniffed.)
-    const dog = m.dog >= 0;
-    if (dog) s.sniffed ??= [];
-    const done = dog ? s.sniffed! : s.swept;
-    if (done.length >= pts.length) done.length = 0;
-    const here = tileAt(m.body.x, m.body.z);
-    // (Once the search widens, the dog teams work back where the player was last known every other time it widens.)
-    const turns = s.heat > 0 ? Math.floor((s.step - s.alarmAt - this.rampAt) / HUNT.rampEvery) : 0;
-    const back = s.heat > 0 && m.dog >= 0 && turns % 2 === 0;
-    const aim = back ? s.known : this.guess();
-    let best = -1;
-    let bestD = Infinity;
-    for (const t of pts) {
-      if (done.includes(t)) continue;
-      const d = 2 * chebTiles(t, aim) + chebTiles(t, here);
-      if (d < bestD) {
-        best = t;
-        bestD = d;
-      }
-    }
-    if (best < 0) return;
-    done.push(best);
-    this.route(m, best);
-    if (!m.path.length && !this.arrived(m)) m.goal = -1;
-  }
-
-  /** At its goal (in the tile, or next to it when the goal is somewhere it can't stand: cover, a hedge the player hid in). */
-  private arrived(m: { body: Body; goal: number; path: number[] }): boolean {
-    if (m.goal < 0) return true;
-    const here = tileAt(m.body.x, m.body.z);
-    if (here === m.goal) return Math.abs(m.body.x - centerX(m.goal)) + Math.abs(m.body.z - centerZ(m.goal)) < REACHED * 2 || !m.path.length;
-    return !m.path.length && chebTiles(here, m.goal) <= 1;
-  }
-
-  /** The way to a tile over a grid (next to it, if it's somewhere that grid won't stand on); from somewhere the grid shuts in (a searcher left in cover), through cover. */
-  private route(w: Walker, goal: number, grid = this.npcGrid) {
-    w.goal = goal;
-    w.best = FOREVER;
-    w.stuck = 0;
-    const from = tileAt(w.body.x, w.body.z);
-    const find = (g: Uint8Array) =>
-      findPath(this.world, from, !g[goal] ? (i) => i === goal : (i) => chebTiles(i, goal) <= 1, goal, N, undefined, g);
-    w.path = find(grid) ?? (grid !== this.chaseGrid ? find(this.chaseGrid) : null) ?? [];
-  }
-
-  /** A step along the way at a pace (a new way looked for when stuck against something). */
-  private follow(w: Walker, speed: number, rough = true, grid = this.npcGrid) {
-    const b = w.body;
-    while (w.path.length) {
-      const next = w.path[0];
-      const dx = centerX(next) - b.x;
-      const dz = centerZ(next) - b.z;
-      const d = Math.abs(dx) + Math.abs(dz);
-      if (d < REACHED) {
-        w.path.shift();
-        w.best = FOREVER;
-        continue;
-      }
-      if (d < w.best) {
-        w.best = d;
-        w.stuck = 0;
-      } else if (++w.stuck > STUCK_STEPS) {
-        this.route(w, w.goal, grid);
-        return;
-      }
-      walk(
-        this.npcFeet,
-        b,
-        nearestDir(dx, dz),
-        rough ? this.terrain(tileAt(b.x, b.z), speed) : Math.floor((speed * HUNT.pace) / 100),
-        LAYER.GROUND,
-      );
-      return;
-    }
-    b.moving = false;
-  }
-
-  private caught(k: number) {
-    const s = this.state;
-    s.over = OVER.CAUGHT;
-    s.overAt = s.step;
-    s.by = k;
-    s.player.moving = false;
-    this.events.push({ type: 'caught', by: k });
-  }
-
-  // ---------------------------------------------------------------- the dogs
-  private dogsSniff() {
-    const s = this.state;
-    s.dogs.forEach((d, k) => {
-      const h = s.searchers[d.handler];
-      if (h.mode === SEEK.OFF) return;
-      switch (d.mode) {
-        case HOUND.ASLEEP:
-          d.body.moving = false;
-          return;
-        case HOUND.CALM:
-        case HOUND.DAZED:
-          d.body.moving = false;
-          if (s.step >= d.until) d.mode = HOUND.HEEL;
-          return;
-        case HOUND.POINT: {
-          d.body.moving = false;
-          d.body.facing = nearestDir(s.player.x - d.body.x, s.player.z - d.body.z) || d.body.facing;
-          if ((s.step - d.until + POINT_HOLD) % BARK_EVERY === 0) this.noise(tileAt(d.body.x, d.body.z), HUNT.bark, 'bark', d.handler);
-          // (Out in the open, its handler is after them.)
-          if (!this.out.cover[this.tile] && h.mode !== SEEK.CHASE && within(d.body, s.player, HUNT.nose)) this.spot(d.handler);
-          if (s.step < d.until) return;
-          if (within(d.body, s.player, HUNT.nose)) d.until = s.step + POINT_HOLD;
-          else this.nextScent(d, k);
-          return;
-        }
-        case HOUND.TRACK: {
-          if (within(d.body, s.player, HUNT.nose)) return this.point(d, k);
-          if (this.arrived(d)) this.nextScent(d, k);
-          else this.follow(d, HUNT.dogTrack, false);
-          return;
-        }
-        default: {
-          // At the heel: the player under its nose, it points; a fresh trail close by puts it on it. At a place swept, it casts about round its handler for anyone hidden in the cover there.
-          if (within(d.body, s.player, HUNT.nose)) return this.point(d, k);
-          if (s.hidden && h.mode === SEEK.SWEEP && h.goal >= 0 && this.arrived(h) && within(h.body, s.player, HUNT.nose + HUNT.cast))
-            return this.point(d, k);
-          if (s.step >= d.rest) {
-            for (let j = s.trail.length - 1; j >= 0; j--) {
-              const [t, at] = s.trail[j];
-              if (at <= d.trail) break;
-              if (within(d.body, { x: centerX(t), z: centerZ(t) }, HUNT.sniff)) {
-                d.mode = HOUND.TRACK;
-                d.trail = at;
-                this.route(d, t);
-                this.events.push({ type: 'track', dog: k });
-                return;
-              }
-            }
-          }
-          const far = !within(d.body, h.body, DOG_CATCH_UP);
-          if (within(d.body, h.body, 1)) {
-            d.body.moving = false;
-            return;
-          }
-          const target = tileAt(h.body.x, h.body.z);
-          if (d.goal !== target && (s.step % HUNT.replan === 0 || !d.path.length)) this.route(d, target);
-          this.follow(d, far ? DOG_RUN : HUNT.dogHeel, false);
-        }
-      }
-    });
-  }
-
-  /** On along the trail: the next fresher scent tile, or the end of it (the player there: it points; else the trail's lost). */
-  private nextScent(d: HuntDog, k: number) {
-    const s = this.state;
-    const next = s.trail.find(([, at]) => at > d.trail);
-    if (next) {
-      d.mode = HOUND.TRACK;
-      d.trail = next[1];
-      this.route(d, next[0]);
-      return;
-    }
-    if (within(d.body, s.player, HUNT.nose)) return this.point(d, k);
-    this.dogLost(d);
-  }
-
-  /** It has them: it points and barks; in the open its handler is after them (a chase), in cover he comes to where it points. */
-  private point(d: HuntDog, k: number) {
-    const s = this.state;
-    d.mode = HOUND.POINT;
-    d.until = s.step + POINT_HOLD;
-    d.path = [];
-    d.goal = -1;
-    this.know(this.tile);
-    this.events.push({ type: 'point', dog: k });
-    this.noise(tileAt(d.body.x, d.body.z), HUNT.bark, 'bark', d.handler);
-    const h = s.searchers[d.handler];
-    if (h.mode === SEEK.CHASE) return;
-    if (!this.out.cover[this.tile]) return this.spot(d.handler);
-    h.mode = SEEK.FOLLOW;
-    h.path = [];
-    h.goal = -1;
-  }
-
-  private dogLost(d: HuntDog) {
-    d.mode = HOUND.HEEL;
-    d.rest = this.state.step + TRAIL_REST;
-    d.trail = this.state.step;
-    d.path = [];
-    d.goal = -1;
-  }
-
-  // ---------------------------------------------------------------- the helicopter
-  private heliSweeps() {
-    const s = this.state;
-    const h = s.heli;
-    if (!h.on) return;
-    const { ox, oz } = this.out;
-    const route = this.def.heli.route;
-    let tx: number;
-    let tz: number;
-    let pace: number;
-    const searching = s.heat > 0 && this.sweepPts.length > 0;
-    if (h.hold > 0) {
-      tx = s.player.x;
-      tz = s.player.z;
-      pace = Math.floor((HUNT.heliChase * HUNT.pace) / 100);
-      h.hold--;
-    } else if (searching) {
-      // The search widened: over the cover nearest where the player was last known.
-      if ((h.aim ?? -1) < 0) h.aim = this.heliAim();
-      tx = centerX(h.aim!);
-      tz = centerZ(h.aim!);
-      pace = Math.floor((HUNT.heliSpeed * HUNT.pace) / 100);
-    } else {
-      const stop = route[h.k];
-      tx = (stop.x + ox) * UNIT + UNIT / 2;
-      tz = (stop.z + oz) * UNIT + UNIT / 2;
-      pace = Math.floor((HUNT.heliSpeed * HUNT.pace) / 100);
-    }
-    const dx = tx - h.x;
-    const dz = tz - h.z;
-    const d = isqrt(dx * dx + dz * dz);
-    if (d <= pace) {
-      h.x = tx;
-      h.z = tz;
-      if (h.hold <= 0) {
-        if (searching) h.aim = -1;
-        else h.k = (h.k + 1) % route.length;
-      }
-    } else {
-      h.x += Math.trunc((dx * pace) / d);
-      h.z += Math.trunc((dz * pace) / d);
-    }
-    // Its light: someone in the open under it; someone moving in cover only under its middle; someone hidden never.
-    const reach = this.out.cover[this.tile] ? HUNT.heliCover : HUNT.heliLight;
-    const lit = !s.hidden && within(h, s.player, reach);
-    if (lit) {
-      h.hold = HUNT.heliHold;
-      this.know(this.tile);
-      if (!h.lit || s.step % HELI_CALL === 0) {
-        // The light on them: every searcher out within the radio's reach comes running (a chaser keeps on); none that near, the nearest comes all the same.
-        const t = this.tile;
-        let nearest = -1;
-        let near = Infinity;
-        let came = false;
-        s.searchers.forEach((m, j) => {
-          if (m.mode === SEEK.OFF || this.isPost(j)) return;
-          if (m.mode === SEEK.CHASE) return void (came = true);
-          const d = dist2(m.body, s.player);
-          if (d < near) {
-            near = d;
-            nearest = j;
-          }
-          if (!within(m.body, s.player, HUNT.radio)) return;
-          this.lookAt(j, t);
-          came = true;
-        });
-        if (!came && nearest >= 0) this.lookAt(nearest, t);
-      }
-    }
-    if (lit !== h.lit) {
-      h.lit = lit;
-      if (lit) s.feats[HFEAT.lit]++;
-      this.events.push({ type: 'lit', on: lit });
-    }
-  }
-
-  /** The helicopter's next place to search: one of the few nearest where the search reckons the player has got to, not yet swept on foot. */
-  private heliAim(): number {
-    const s = this.state;
-    const aim = this.guess();
-    const near = this.sweepPts
-      .filter((t) => !s.swept.includes(t))
-      .map((t) => [chebTiles(t, aim), t] as const)
-      .sort((a, b) => a[0] - b[0] || a[1] - b[1])
-      .slice(0, HELI_PICK);
-    if (!near.length) return this.sweepPts[rollInt(s.salt, SALT.HUNT, DRAW.AIM, s.step, this.sweepPts.length)];
-    return near[rollInt(s.salt, SALT.HUNT, DRAW.AIM, s.step, near.length)][1];
-  }
+  // (The dogs: dogs.ts; the helicopter: heli.ts.)
 
   // ---------------------------------------------------------------- the lookout, the end
   /** Where a crew member out too keeps watch (units). */

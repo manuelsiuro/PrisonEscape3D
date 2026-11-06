@@ -792,7 +792,8 @@ export async function stage(id: string, over: Partial<Shot> = {}) {
   g.guide = null;
   g.guideAge = -1e9;
   g.guideFrom = Math.floor(sim.state.player.z / UNIT) * 64 + Math.floor(sim.state.player.x / UNIT);
-  const v = view() as unknown as { zoom: number; zoomGoal: number; applyZoom(): void };
+  // (The view's camera rig, viewCamera.ts.)
+  const v = (view() as unknown as { cam: { zoom: number; zoomGoal: number; applyZoom(): void } }).cam;
   v.zoom = v.zoomGoal = s.zoom ?? 1.4;
   v.applyZoom();
   offset(s.dx ?? 0, s.dz ?? 0);
@@ -819,7 +820,7 @@ export function daylight(minute: number | undefined) {
  * see-through cut, still fits).
  */
 export function offset(dx: number, dz: number) {
-  const target = (view() as unknown as { target: THREE.Vector3 }).target;
+  const target = (view() as unknown as { cam: { target: THREE.Vector3 } }).cam.target;
   delete (target as Partial<THREE.Vector3>).lerp;
   delete (target as Partial<THREE.Vector3>).set;
   if (!dx && !dz) return;
