@@ -36,7 +36,7 @@ import { planOf, prisonDay, TODAY } from '../src/sim/systems/calendar';
 import { endCheat } from '../src/sim/systems/cards';
 import { elderOf } from '../src/sim/systems/checkers';
 import { HOTBAR, itemOf, pocketOf, slot } from '../src/sim/systems/items';
-import { boardOf, boardNow, boardRefusal, bringsOf, cakeComes, canWhistle, chainDeal, dealsOf, deskOf, type Deal, digFace, digOf, endsFor, fixerDeal, freezerOf, gameGate, handInRefusal, jobOf, oddjobs, owes, whistleNow } from '../src/sim/systems/oddjobs';
+import { boardOf, boardNow, boardRefusal, bringsOf, canWhistle, chainDeal, dealsOf, deskOf, type Deal, digFace, digOf, endsFor, fixerDeal, freezerOf, gameGate, jobOf, oddjobs, owes, whistleNow } from '../src/sim/systems/oddjobs';
 import { FEAT } from '../src/sim/systems/ledger';
 import { stapleSlot } from '../src/sim/systems/pantry';
 import { fixerOf, smugglingOf, visitPairs } from '../src/sim/systems/smuggling';
@@ -1071,7 +1071,6 @@ function handIn(g: Game, deal: Deal) {
   // 3. A job given up takes back what it handed over: from the hotbar, or the player's own desk.
   for (const kind of [KIND.DROP, KIND.FRAME, KIND.RAT, KIND.DELIVER]) {
     const { g, pin } = dealt(CENTER_PERKS, kind)!;
-    const s = g.sim.state;
     const gives = n(KIND_DEFS[KINDS[kind]].gives!);
     takeAt(g, pin);
     check(inHand(g.sim, gives) >= 0, `${KINDS[kind]}: handed over`);

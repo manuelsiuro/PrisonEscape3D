@@ -79,7 +79,7 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
     // A step that can't be done any more (the firecrackers gone off out of earshot), or out on the road some other way: try again (or done, if getting out was the goal).
     const why = run.progress.verdict(ctx);
     if (why) {
-      end(g, why === 'won', why === 'won' ? undefined : why);
+      void end(g, why === 'won', why === 'won' ? undefined : why);
       return;
     }
   }
@@ -107,7 +107,7 @@ export function updateLesson(g: Game, dt: number, hidden: boolean) {
   // (Shown at a panel's top counts as seen.)
   if (!hidden || over) run.seen = run.shown;
   hud.lesson(!run.ended, run.seen < Math.min(run.shown, lesson.steps.length - 1));
-  if (!run.ended && run.shown >= lesson.steps.length) end(g, true);
+  if (!run.ended && run.shown >= lesson.steps.length) void end(g, true);
 }
 
 /** What the lesson makes of the game's events: caught, knocked out, shocked or a step's own end fails it at once (once every step is done, nothing does). */
@@ -115,7 +115,7 @@ export function lessonEvent(g: Game, e: SimEvent) {
   const run = g.lesson;
   if (!run || run.ended || run.progress.done) return;
   run.progress.event(e, g.rec.sim);
-  if (run.progress.failed) end(g, false, run.progress.failed);
+  if (run.progress.failed) void end(g, false, run.progress.failed);
 }
 
 async function end(g: Game, won: boolean, why: Key = 'lesson.failed') {

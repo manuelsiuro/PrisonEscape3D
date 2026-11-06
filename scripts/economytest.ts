@@ -109,7 +109,7 @@ for (const prison of PRISONS) {
 }
 
 // ------------------------------------------------------------------ helpers
-type Bot = (sim: Sim) => number;
+type Pilot = (sim: Sim) => number;
 /** Puts a body in the middle of a tile. */
 function put(b: { x: number; z: number; moving?: boolean }, x: number, z: number) {
   b.x = x * UNIT + UNIT / 2;
@@ -123,7 +123,7 @@ const tileOf = (b: { x: number; z: number }) => Math.floor(b.z / UNIT) * MAP_W +
  * the job during the Work Period: walks to the station that comes next, faces it, presses
  * the action button.
  */
-function worker(work: boolean): (sim: Sim) => Bot {
+function worker(work: boolean): (sim: Sim) => Pilot {
   return (sim) => {
     const pilot = new Autopilot(sim.world);
     const places = placesOf(sim.world);
@@ -226,7 +226,7 @@ function describe(sim: Sim, e: SimEvent): string {
   }
 }
 
-function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim) => void, job = 0, prison: PrisonDef = CENTER_PERKS) {
+function run(bot: (sim: Sim) => Pilot, steps: number, seed = 3, every?: (sim: Sim) => void, job = 0, prison: PrisonDef = CENTER_PERKS) {
   const sim = new Sim(prison, seed);
   // Another job from day 1: the player takes it (its holder moves to the laundry).
   if (job > 0) [sim.state.jobs[0], sim.state.jobs[job]] = [sim.state.jobs[job], HOLDER.PLAYER];
@@ -478,7 +478,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 // ------------------------------------------------------------------ merchants, gifts, opinion
 {
   const a = arena(stepAt(1, 10, 30));
-  const { sim, st } = a;
+  const { st } = a;
   const who = st.inmates.findIndex((m) => m.cell === CENTER_PERKS.merchants[0]);
   check(talkTo(a, who), 'the action button on an inmate starts a talk');
   const shop = st.shops[0];
@@ -697,7 +697,7 @@ function talkTo(a: ReturnType<typeof arena>, who: number) {
 // Every station of every job is something the action button can do (the station logic is total).
 {
   const sim = new Sim(CENTER_PERKS);
-  const ws: WorkState = { job: 0, onDuty: true, machines: {}, puddles: [], step: 0, inv: [0, 0, 0, 0, 0, 0, 0, 0], hand: 0, mail: [], owed: 4 };
+  const ws: WorkState = { job: 0, onDuty: true, machines: {}, puddles: [], step: 0, inv: [0, 0, 0, 0, 0, 0, 0, 0], hand: 0, mail: [], owed: 4, pockets: true };
   const room = jobRooms(sim.world)[0];
   const p = sim.world.props[room.take];
   const b = { x: (p.x + 0.5) * UNIT, z: (p.z - 0.5) * UNIT, facing: 5, moving: false };

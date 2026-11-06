@@ -117,7 +117,7 @@ function run(bot: (sim: Sim) => Bot, steps: number, seed = 3, every?: (sim: Sim)
 }
 
 // The model prisoner, 3 days, with the inmates watched block by block.
-const MANDATORY = ROUTINE.map((r, k) => k).filter((k) => ROUTINE[k].zones.length > 0);
+const MANDATORY = ROUTINE.map((_, k) => k).filter((k) => ROUTINE[k].zones.length > 0);
 let blocks = 0;
 const inmateMisses: string[] = [];
 let seen = new Set<number>();

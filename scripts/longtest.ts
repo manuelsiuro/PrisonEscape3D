@@ -15,6 +15,7 @@
  * - saves mid-brew, mid-growth and mid-race; nothing happens without the player.
  */
 import { sendToLook } from '../src/sim/systems/guards';
+import type { ForcedDay } from '../src/sim/systems/calendar';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
@@ -51,7 +52,7 @@ const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').
 const of = <T extends SimEvent['type']>(seen: SimEvent[], type: T) => seen.filter((e) => e.type === type) as Array<Extract<SimEvent, { type: T }>>;
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet and clear unless forced. */
-function game(prison = CENTER_PERKS, seed = 5, calendar: Array<[number, number, number, number?, number?]> = [[0, 0, 0]]) {
+function game(prison = CENTER_PERKS, seed = 5, calendar: ForcedDay[] = [[0, 0, 0]]) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = calendar;
   const seen: SimEvent[] = [];

@@ -5,7 +5,7 @@
  * seeds, and old logs as they were.
  */
 import { BREAKFASTS, DINNERS, HOUSE_DINNER, MEAL, MENU, SCRIBBLE_HEAT, SCRIBBLE_STEPS } from '../src/content/menu';
-import { COOLER, COOLER_FROM_DAY, CUP_ENERGY, THIRST_STEPS } from '../src/content/cooler';
+import { COOLER_FROM_DAY, CUP_ENERGY, THIRST_STEPS } from '../src/content/cooler';
 import { DECOR } from '../src/content/decor';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
@@ -37,7 +37,6 @@ const check = (ok: boolean, what: string) => {
 };
 const ALL = [...PRISONS, TRAINING];
 const menuOp = (bot: Bot, b: number) => bot.op(OP.EXT, EXT.MENU, b);
-const drink = (bot: Bot) => bot.op(OP.EXT, EXT.COOLER, COOLER.DRINK);
 const seen = (bot: Bot) => bot.st.guards.some((g) => awake(g) && canSee(bot.sim.world, g.body, bot.st.player));
 const refusals = (bot: Bot) => bot.sim.events.filter((e) => e.type === 'refused').map((e) => (e as { why: string }).why);
 

@@ -139,7 +139,7 @@ function goTo(sim: Sim, tile: number, limit = 3000): boolean {
   const queue = [9 * MAP_W + 9];
   while (queue.length) {
     const i = queue.pop()!;
-    for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (!w.layers[LAYER.VENTS].block[j] && !seen.has(j)) (seen.add(j), queue.push(j));
+    for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (!w.layers[LAYER.VENTS].block[j] && !seen.has(j)) { seen.add(j); queue.push(j); }
   }
   const ducts = Array.from(vents).filter((k) => k !== TILE.EMPTY).length;
   check(seen.size === ducts && seen.has(ladder), 'one duct network, from the cell grate to the ladder');

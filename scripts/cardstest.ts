@@ -19,8 +19,9 @@
  *   at roll call settled on the chips (a shootout off);
  * - saves: a hand of Cheat, a shootout and the board carry on the same; damaged ones are dropped.
  */
-import { CALL_MAX, CARD, COURT_LEAVE, COURT_RANGE, CHIPS, DECK, DRAW_PLIES, ELDER_DEPTH, ELDER_OPINION, FALSE_TELL, GAMES_A_DAY, HAND, NEED_BASE, NEED_PER_TILE, PLAY_OPINION, PRACTICE_MAKES, REVEAL_STEPS, SHOOT_SPOTS, SHOT_CLOCK, SPORTS_WINS, STAKES, THINK_STEPS, TURN_STEPS, WIN_OPINION } from '../src/content/games';
+import { CALL_MAX, CARD, COURT_LEAVE, COURT_RANGE, CHIPS, DECK, DRAW_PLIES, ELDER_DEPTH, ELDER_OPINION, FALSE_TELL, GAMES_A_DAY, HAND, NEED_BASE, NEED_PER_TILE, PRACTICE_MAKES, REVEAL_STEPS, SHOOT_SPOTS, SHOT_CLOCK, SPORTS_WINS, STAKES, THINK_STEPS, TURN_STEPS, WIN_OPINION } from '../src/content/games';
 import { ROUTINE } from '../src/content/routine';
+import type { ForcedDay } from '../src/sim/systems/calendar';
 import { PRISONS } from '../src/content/prisons';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
@@ -46,7 +47,7 @@ const refusals = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').
 const pct = (a: number, b: number) => `${Math.round((a * 100) / Math.max(1, b))}%`;
 
 /** A game kept calm (heat and lockdowns cleared each step unless asked), every day quiet unless forced. */
-function game(prison = CENTER_PERKS, seed = 5, calendar: Array<[number, number, number, number?, number?]> = [[0, 0, 0]]) {
+function game(prison = CENTER_PERKS, seed = 5, calendar: ForcedDay[] = [[0, 0, 0]]) {
   const sim = new Sim(prison, seed);
   sim.state.calendar = calendar;
   const seen: SimEvent[] = [];
@@ -237,9 +238,9 @@ function yardTile(sim: Sim): number {
   s.played = [];
   talk(TALK.CHEAT, 0);
   sim.rules250 = true;
-  s.cheat!.due = s.step + 2;
+  sim.state.cheat!.due = s.step + 2;
   for (let k = 0; k < 100; k++) step();
-  check(!!s.cheat && s.cheat.turn === 0, '(a 2.5.0 replay: the move waits, as it did, its clock long out)');
+  check(!!sim.state.cheat && sim.state.cheat.turn === 0, '(a 2.5.0 replay: the move waits, as it did, its clock long out)');
   sim.rules250 = false;
   s.cheat = null;
   // The lessons' prison: no clock (a beginner reads the lesson first).

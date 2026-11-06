@@ -26,7 +26,7 @@ import { CALLEE, LAWYER } from '../src/content/phone';
 import { ROUTINE } from '../src/content/routine';
 import { MEDAL_DAYS } from '../src/content/medals';
 import { dailyOf } from '../src/content/daily';
-import { command, EXT, OP, SLOT } from '../src/sim/command';
+import { command, EXT, OP } from '../src/sim/command';
 import { ESCAPES, Sim, type SimEvent } from '../src/sim/Sim';
 import { WAKE } from '../src/sim/events';
 import { loadState } from '../src/sim/load';
@@ -70,7 +70,7 @@ function reachFrom(w: World, from: number[]): Uint8Array {
       [t - MAP_W, t >= MAP_W],
       [t + MAP_W, t < MAP_W * (MAP_H - 1)],
     ] as const)
-      if (ok && !seen[j] && !w.ground.block[j]) (seen[j] = 1), queue.push(j);
+      if (ok && !seen[j] && !w.ground.block[j]) { seen[j] = 1; queue.push(j); }
   }
   return seen;
 }

@@ -231,7 +231,7 @@ function logo(g: CanvasRenderingContext2D, t: number, t0: number) {
 // ------------------------------------------------------------------ the frame
 function frameAt(g: CanvasRenderingContext2D, lang: Lang, f: number, marks: Record<string, { at: number; end: number }>) {
   const t = f / FPS;
-  const L = lang === 'en' ? en : fr;
+  const L: typeof en = lang === 'en' ? en : (fr as typeof en); // (i18ntest: the French has every key)
   const own = OWN[lang];
   const end = marks.end.end;
   g.clearRect(0, 0, W, H);

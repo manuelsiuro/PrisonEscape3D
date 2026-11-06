@@ -123,9 +123,9 @@ function stepSim(g: Game, dt: number) {
       if (!g.lesson) chatterEvent(e, sim);
       lessonEvent(g, e);
       // Out on the road: the escape screen.
-      if (e.type === 'escaped') escaped();
+      if (e.type === 'escaped') void escaped();
       // (P26: a Three Days Daily, the fourth day dawned with the player still inside.)
-      if (e.type === 'timeUp') dailyTimeUp(g);
+      if (e.type === 'timeUp') void dailyTimeUp(g);
       // Carried somewhere (solitary, the infirmary, into bed): no slide from the old spot.
       if (e.type === 'solitary' || e.type === 'infirmary' || (e.type === 'sleep' && e.on)) {
         g.prev.x = p.x;

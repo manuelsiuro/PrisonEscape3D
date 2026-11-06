@@ -47,7 +47,7 @@ function flood(from: number, open: (i: number) => boolean): Int32Array {
       [t - MAP_W, t >= MAP_W],
       [t + MAP_W, t < MAP_W * (MAP_H - 1)],
     ] as const)
-      if (ok && d[j] < 0 && open(j)) (d[j] = d[t] + 1), q.push(j);
+      if (ok && d[j] < 0 && open(j)) { d[j] = d[t] + 1; q.push(j); }
   }
   return d;
 }

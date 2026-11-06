@@ -423,9 +423,9 @@ export class ItemsUI {
     if (this.lang !== currentLang()) this.relabel();
     const it = v.items;
     // Bench entries that emptied (crafted, dropped) fall off; picks of a closed box go.
-    for (let k = this.bench.length - 1; k >= 0; k--) if (!it.inv[this.bench[k]]) (this.bench.splice(k, 1), this.uiRev++);
-    if (this.picked !== null && it.open < 0) (this.picked = null), this.uiRev++;
-    if (this.menu !== null && !it.inv[this.menu]) (this.menu = null), this.uiRev++;
+    for (let k = this.bench.length - 1; k >= 0; k--) if (!it.inv[this.bench[k]]) { this.bench.splice(k, 1); this.uiRev++; }
+    if (this.picked !== null && it.open < 0) { this.picked = null; this.uiRev++; }
+    if (this.menu !== null && !it.inv[this.menu]) { this.menu = null; this.uiRev++; }
     this.updateAction(v);
     this.bar.classList.toggle('asleep', v.sleeping);
     // Redraw only on a change: the sim's item revision, the UI's own, or the language.

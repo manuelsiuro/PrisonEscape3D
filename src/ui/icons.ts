@@ -157,6 +157,6 @@ const P: Record<string, string> = {
 export const hasIcon = (name: string) => name in P;
 
 /** An inline SVG icon (`.ic`, display: block; inside text, make it inline-block). */
-export function icon(name: keyof typeof P | string, size = 22): string {
+export function icon(name: keyof typeof P | (string & {}), size = 22): string {
   return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] ?? ''}</svg>`;
 }

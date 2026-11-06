@@ -69,7 +69,7 @@ listenKeys();
 view.setWorld(new Sim(openPrisons().at(-1) ?? PRISONS[0]).world);
 requestAnimationFrame(frame);
 
-titleFlow();
+void titleFlow();
 // Item icons are photographed once; do it while the title is up, not at the first slot drawn.
 setTimeout(() => warmIcons(), 1200);
 // The game started: the boot guard in index.html stands down.

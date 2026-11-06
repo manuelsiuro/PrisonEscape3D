@@ -227,7 +227,7 @@ const freeSeat = (bot: Bot) => placesOf(bot.sim.world).seats.find((s) => !bot.st
   over.st.heat = CHASE_HEAT + 5;
   leave(over);
   check(over.st.heat === CHASE_HEAT + 5, 'already past the line: nothing added');
-  for (const text of [en['help.meals.warn'], fr['help.meals.warn']]) check(new RegExp(`\\+${TRAY_HEAT}\\s?%`).test(text), 'How to play says what it costs');
+  for (const text of [en['help.meals.warn'], fr['help.meals.warn']]) check(new RegExp(`\\+${TRAY_HEAT}\\s?%`).test(text ?? ''), 'How to play says what it costs');
   console.log(`not brought back: +${TRAY_HEAT}% heat for walking out with it eaten or holding it at the end; let off when full, dropped, finished in the last ${TRAY_GRACE_STEPS / STEPS_PER_MINUTE} minutes or in a lockdown; never past ${CHASE_HEAT - 1}%`);
 }
 

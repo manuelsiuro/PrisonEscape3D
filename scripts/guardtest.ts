@@ -200,7 +200,7 @@ function morning(seed: number): Sim {
   // Potato peeling: 5 presses a potato, 10 minutes each.
   const left = sim.state.solitary;
   let presses = 0;
-  run(sim, (s) => (presses++, command(0, OP.INTERACT)), (s) => s.state.solitary === 0, 400);
+  run(sim, () => (presses++, command(0, OP.INTERACT)), (s) => s.state.solitary === 0, 400);
   check(sim.state.solitary === 0 && presses <= 4 * 60 + 4, `peeling 12 potatoes buys release (${presses} presses, ${Math.round(left / STEPS_PER_MINUTE)} minutes were left)`);
   check(presses >= 200, `mashing faster than a stroke every 4 steps gains nothing (${presses} presses)`);
   check(sim.playerZone === 'playerCell', 'released at night: back in the cell');
@@ -304,7 +304,7 @@ function morning(seed: number): Sim {
   check(g.mode === GUARD.CHASE, 'out of sight, it keeps on for a moment');
   run(sim, idle, () => false, 20);
   check(g.mode === GUARD.INVESTIGATE && alertOf(g) === ALERT.SUSPICIOUS, 'lost: it investigates where it last saw them (orange)');
-  run(sim, idle, (s) => g.mode === GUARD.DUTY, 60 * 20);
+  run(sim, idle, () => g.mode === GUARD.DUTY, 60 * 20);
   check(g.mode === GUARD.DUTY, `then goes back to its round (${at(sim)})`);
   // Seen again, and this time the player stands there: caught, the infirmary under 90%.
   Object.assign(sim.state, { heat: 85 });
@@ -349,7 +349,7 @@ function morning(seed: number): Sim {
   const bad = sneak(false);
   console.log('== no dummy');
   for (const l of bad.log.filter((l) => !l.includes('shakedown') && !l.includes('searched'))) console.log(l);
-  check(bad.log.find((l) => / bed check: (pass|fail)/.test(l))?.endsWith('fail'), 'without it the first check finds the bed empty');
+  check(!!bad.log.find((l) => / bed check: (pass|fail)/.test(l))?.endsWith('fail'), 'without it the first check finds the bed empty');
   check(bad.log.some((l) => l.endsWith('caught → solitary')), 'and the guards come for the player');
 }
 

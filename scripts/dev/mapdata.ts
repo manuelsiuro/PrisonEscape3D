@@ -80,7 +80,7 @@ export function reachableRoof(w: World): Set<number> {
   const roof = w.layers[LAYER.ROOF].kind;
   const seen = new Set<number>();
   const queue: number[] = [];
-  for (let i = 0; i < roof.length; i++) if (roof[i] === TILE.LADDER) (seen.add(i), queue.push(i));
+  for (let i = 0; i < roof.length; i++) if (roof[i] === TILE.LADDER) { seen.add(i); queue.push(i); }
   for (let k = 0; k < queue.length; k++) {
     const t = queue[k];
     const x = t % MAP_W;

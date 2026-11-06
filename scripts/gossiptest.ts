@@ -34,7 +34,7 @@ import { cavesIn } from '../src/sim/systems/structure';
 import { traitOf } from '../src/sim/systems/guards';
 import { bribe, lookAwayPrice } from '../src/sim/systems/ways';
 import { BRIBE } from '../src/sim/command';
-import { BRIBE_REPORT_HEAT, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, NAP_TO, OPINION_LOW, POTATO_STEPS, POWER_OFF_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TOILET_LOADS, UNIT } from '../src/sim/tuning';
+import { BRIBE_REPORT_HEAT, CAMERA_BLIND_STEPS, KO_STEPS, NAP_FROM, NAP_TO, OPINION_LOW, POTATO_STEPS, SOLITARY_STEPS, STEPS_PER_MINUTE, STEPS_PER_SECOND, TOILET_LOADS, UNIT } from '../src/sim/tuning';
 import { isGrate, isSea, TILE } from '../src/sim/world/tiles';
 import { LAYER, MAP_H, MAP_W } from '../src/sim/world/World';
 import { fill, type FillContext } from '../src/talk/fill';

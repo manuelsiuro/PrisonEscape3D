@@ -165,7 +165,6 @@ const kind = (sim: Sim, x: number, z: number) => sim.world.ground.kind[tileOf(x,
   const st = sim.state;
   quiet(sim);
   // Chipping the woodshop's back wall in its eye.
-  const watch = (cmd: number, steps: number) => run(sim, steps, cmd);
   // Wait until it looks this way: its heading points at 42, 28 (south-east).
   stand(sim, 41, 29, SOUTH);
   carry(sim, 'sturdy_pickaxe');

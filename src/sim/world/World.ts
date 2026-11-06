@@ -350,12 +350,12 @@ export class World {
     const reach = new Uint8Array(MAP_W * MAP_H);
     const queue = home.map((q) => q.z * MAP_W + q.x);
     for (const t of queue) reach[t] = 1;
-    for (let k = 0; k < queue.length; k++) for (const [j, ok] of neighbours4(queue[k])) if (ok && !reach[j] && walk(j)) (reach[j] = 1), queue.push(j);
+    for (let k = 0; k < queue.length; k++) for (const [j, ok] of neighbours4(queue[k])) if (ok && !reach[j] && walk(j)) { reach[j] = 1; queue.push(j); }
     // What the way out touches that home doesn't reach (short of the road).
     const out = new Uint8Array(MAP_W * MAP_H);
     const more: number[] = [];
-    for (let i = 0; i < MAP_W * MAP_H; i++) if (way[i]) for (const [j, ok] of neighbours4(i)) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
-    for (let k = 0; k < more.length; k++) for (const [j, ok] of neighbours4(more[k])) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') (out[j] = 1), more.push(j);
+    for (let i = 0; i < MAP_W * MAP_H; i++) if (way[i]) for (const [j, ok] of neighbours4(i)) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') { out[j] = 1; more.push(j); }
+    for (let k = 0; k < more.length; k++) for (const [j, ok] of neighbours4(more[k])) if (ok && !reach[j] && !out[j] && walk(j) && ZONES[g.zone[j]] !== 'outside') { out[j] = 1; more.push(j); }
     return out;
   }
 
@@ -375,11 +375,11 @@ export class World {
       seen.fill(0);
       const walk = (j: number) => g.kind[j] === TILE.DOOR || !TILE_INFO[g.kind[j]].solid;
       const queue: number[] = [];
-      for (let i = 0; i < MAP_W * MAP_H; i++) if ((this.cellOf[i] === 1 || ZONES[g.zone[i]] === 'outside') && walk(i)) (seen[i] = 1), queue.push(i);
+      for (let i = 0; i < MAP_W * MAP_H; i++) if ((this.cellOf[i] === 1 || ZONES[g.zone[i]] === 'outside') && walk(i)) { seen[i] = 1; queue.push(i); }
       for (let k = 0; k < queue.length; k++) {
         const t = queue[k];
         for (const [j, ok] of neighbours4(t))
-          if (ok && !seen[j] && walk(j)) (seen[j] = 1), queue.push(j);
+          if (ok && !seen[j] && walk(j)) { seen[j] = 1; queue.push(j); }
       }
       this.afootTiles = seen;
       this.afootRev = this.rev;

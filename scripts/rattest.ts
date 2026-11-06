@@ -94,7 +94,7 @@ function game(def: PrisonDef, seed = 5) {
   return { sim, seen, step, to, blind, until, tame };
 }
 
-const ratEvents = (seen: SimEvent[], what: string) => seen.filter((e) => e.type === 'rat' && e.what === what);
+const ratEvents = (seen: SimEvent[], what: string) => seen.filter((e): e is Extract<SimEvent, { type: 'rat' }> => e.type === 'rat' && e.what === what);
 const send = (container: number, leave = false) => command(0, OP.EXT, leave ? EXT.RAT_LEAVE : EXT.RAT_FETCH, ...tossArgs(container));
 
 // ------------------------------------------------------------------ the data

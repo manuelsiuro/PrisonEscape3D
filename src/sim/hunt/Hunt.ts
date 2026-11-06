@@ -597,7 +597,7 @@ export class Hunt {
       const t = queue[q];
       if (d[t] >= reach) continue;
       for (const [j, ok] of neighbours4(t))
-        if (ok && d[j] < 0 && (!this.grid[j] || this.out.cover[j])) (d[j] = d[t] + 1), queue.push(j);
+        if (ok && d[j] < 0 && (!this.grid[j] || this.out.cover[j])) { d[j] = d[t] + 1; queue.push(j); }
     }
     s.searchers.forEach((m, k) => {
       // (A bark: not its own handler, who goes to his dog anyway.)
@@ -856,7 +856,7 @@ export class Hunt {
     for (const t of pts) {
       if (done.includes(t)) continue;
       const d = 2 * chebTiles(t, aim) + chebTiles(t, here);
-      if (d < bestD) (best = t), (bestD = d);
+      if (d < bestD) { best = t; bestD = d; }
     }
     if (best < 0) return;
     done.push(best);
@@ -1077,7 +1077,7 @@ export class Hunt {
           if (m.mode === SEEK.OFF || this.isPost(j)) return;
           if (m.mode === SEEK.CHASE) return void (came = true);
           const d = dist2(m.body, s.player);
-          if (d < near) (near = d), (nearest = j);
+          if (d < near) { near = d; nearest = j; }
           if (!within(m.body, s.player, HUNT.radio)) return;
           this.lookAt(j, t);
           came = true;

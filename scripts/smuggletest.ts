@@ -36,7 +36,7 @@ import { dayMinute, DAY_STEPS, prisonDay } from '../src/sim/systems/clock';
 import { HOTBAR, itemOf, slot } from '../src/sim/systems/items';
 import { FEAT } from '../src/sim/systems/ledger';
 import { seatSpot } from '../src/sim/systems/rest';
-import { arrival, catalogueItem, droneMinute, dropTile, fixerOf, guestSpot, inRect, orderPrice, PHONE, smugglingOf, visitExits } from '../src/sim/systems/smuggling';
+import { arrival, catalogueItem, droneMinute, dropTile, fixerOf, guestSpot, inRect, orderPrice, PHONE, visitExits } from '../src/sim/systems/smuggling';
 import { STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { containersOf } from '../src/sim/world/containers';
 import { MAP_W } from '../src/sim/world/World';
@@ -201,7 +201,7 @@ const refused = (seen: SimEvent[]) => seen.filter((e) => e.type === 'refused').m
 
 // ------------------------------------------------------------------ orders
 {
-  const { sim, seen, step, to, phone, order } = game(CENTER_PERKS, 5, [[0, 0, 0], [6, VISITING, 0]]);
+  const { sim, seen, to, phone, order } = game(CENTER_PERKS, 5, [[0, 0, 0], [6, VISITING, 0]]);
   const s = sim.state;
   to(1, 10, 0);
   s.cash = 500;

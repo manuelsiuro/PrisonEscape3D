@@ -77,7 +77,7 @@ for (const def of OUTSIDES) {
             }
           }
           n++;
-          if (h.state.over === OVER.CAUGHT) c++, cc++;
+          if (h.state.over === OVER.CAUGHT) { c++; cc++; }
           else if (h.state.over !== OVER.RUNNING) secs.push(Math.round(h.state.step / 20));
           const key = `${light}, ${how}, ${dress}`;
           const b = byCond.get(key) ?? [0, 0];

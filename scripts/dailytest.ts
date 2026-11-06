@@ -171,7 +171,7 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
   const desk = sim.world.props.find((p) => p.kind === 'desk' && sim.world.cellOf[p.z * MAP_W + p.x] === 1)!;
   const under = desk.z * MAP_W + desk.x;
   setTile(sim, LAYER.GROUND, under, TILE.SHAFT);
-  const wall = sim.world.ground.kind.findIndex((k) => k === TILE.WALL);
+  const wall = sim.world.ground.kind.findIndex((k) => k === TILE.BRICK);
   sim.state.wear[placeKey(LAYER.GROUND, under)] = 3;
   sim.state.wear[placeKey(LAYER.UNDER, under + 1)] = 3;
   sim.state.wear[placeKey(LAYER.GROUND, wall)] = 3;
@@ -185,7 +185,7 @@ check(wageOf({ mods: ['unpaidLabour'] }, 40) === 0 && wageOf({ mods: [] }, 40) =
 }
 {
   const sim = game(['bigFreeze']);
-  const yard = sim.world.ground.kind.findIndex((k, i) => TILE_INFO[k].outdoor && TILE_INFO[k].walk !== false && sim.world.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'yard');
+  const yard = sim.world.ground.kind.findIndex((k, i) => TILE_INFO[k].outdoor && !TILE_INFO[k].solid && sim.world.zoneAt(i % MAP_W, Math.floor(i / MAP_W)) === 'yard');
   sim.state.player.x = (yard % MAP_W) * UNIT + UNIT / 2;
   sim.state.player.z = Math.floor(yard / MAP_W) * UNIT + UNIT / 2;
   const plain = game([]);

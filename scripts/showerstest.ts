@@ -388,5 +388,5 @@ for (const def of PRISONS) {
 // ------------------------------------------------------------------ text
 for (const [name, k] of [['en', en], ['fr', fr]] as const) {
   for (const key of ['act.shower', 'refused.headTaken', 'hint.shower', 'hint.showerHostile'] as const) check(!!k[key], `${name}: ${key}`);
-  check(!/stand still|immobile/i.test(k['hint.shower']), `${name}: the hint no longer says to stand still`);
+  check(!/stand still|immobile/i.test(k['hint.shower'] ?? ''), `${name}: the hint no longer says to stand still`);
 }

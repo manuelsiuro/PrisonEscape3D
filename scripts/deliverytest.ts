@@ -28,7 +28,7 @@ import { ESCAPES, Sim, type SimEvent, type Snapshot } from '../src/sim/Sim';
 import { dayPlan, planOf, today } from '../src/sim/systems/calendar';
 import { dayMinute } from '../src/sim/systems/clock';
 import { atTail, searchMinute, thorough, vehicleIn } from '../src/sim/systems/delivery';
-import { GUARD, sendToLook } from '../src/sim/systems/guards';
+import { sendToLook } from '../src/sim/systems/guards';
 import { FEAT } from '../src/sim/systems/ledger';
 import { CHASE_HEAT, STEPS_PER_MINUTE, UNIT } from '../src/sim/tuning';
 import { LAYER, MAP_W } from '../src/sim/world/World';

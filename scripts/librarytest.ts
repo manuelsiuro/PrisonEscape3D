@@ -295,8 +295,9 @@ const human = (react: number, old = false) => {
   b.walkTo(placesOf(b.sim.world).shelves[0].tile);
   b.face(13);
   b.open(shelfOf(b));
+  const told = b.events.length;
   b.op(OP.TRAIN, 0, 1);
-  check(b.st.book === 0 && b.has?.('cantTrain') !== false, 'tomorrow, not today: refused at the shelf, no book');
+  check(b.st.book === 0 && b.events.slice(told).some((e) => e.type === 'cantTrain' || e.type === 'refused'), 'tomorrow, not today: refused at the shelf, no book');
   b.close();
   const others = b.st.items.int;
   b.st.items.int += 3; // A course on top: nothing stops it (kiosk.ts adds directly).

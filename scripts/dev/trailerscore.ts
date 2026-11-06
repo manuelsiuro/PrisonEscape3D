@@ -74,9 +74,9 @@ export async function score() {
   const nd = noise.getChannelData(0);
   for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
 
-  const snd = new Sound() as unknown as Voices & Sound;
-  Object.assign(snd, { ctx, out: fx, noise, volume: 0.8, musicVolume: 1 });
-  const v = snd as Voices;
+  const snd = new Sound();
+  const v = snd as unknown as Voices;
+  Object.assign(v, { ctx, out: fx, noise, volume: 0.8, musicVolume: 1 });
   /** Notes from here on go to this bus (a section's own, faded or cut as a whole). */
   const into = (b: AudioNode) => (v.musicOut = b);
 
@@ -368,7 +368,7 @@ export async function score() {
 
   // ---------------------------------------------------------------- render
   for (const [q, fns] of [...cues.entries()].sort((a, b) => a[0] - b[0])) {
-    ctx.suspend(q / SR).then(() => {
+    void ctx.suspend(q / SR).then(() => {
       for (const fn of fns) fn();
       return ctx.resume();
     });

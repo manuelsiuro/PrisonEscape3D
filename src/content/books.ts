@@ -65,7 +65,7 @@ export interface Token {
 /** A page's words, each language's text marking READ_KEYS key words. */
 export function pageTokens(text: string): Token[] {
   const out: Token[] = [];
-  for (const part of text.split(/(\[[^\]]*\][^\s\[]*)/)) {
+  for (const part of text.split(/(\[[^\]]*\][^\s[]*)/)) {
     if (part.startsWith('[')) out.push({ text: part.replace(/[[\]]/g, ''), key: true });
     else for (const w of part.split(/\s+/)) if (w) out.push({ text: w, key: false });
   }

@@ -89,7 +89,7 @@ const noiseOf = (ev: readonly SimEvent[], kind?: string) => ev.find((e): e is Ex
 const xz = (t: number) => `${t % MAP_W},${Math.floor(t / MAP_W)}`;
 const opaque = (sim: Sim, t: number) => TILE_INFO[sim.world.ground.kind[t]].opaque;
 /** The ground tiles within a square around a tile that pass a test. */
-function square(sim: Sim, tile: number, span: number, ok: (t: number) => boolean): number[] {
+function square(tile: number, span: number, ok: (t: number) => boolean): number[] {
   const out: number[] = [];
   for (let dz = -span; dz <= span; dz++)
     for (let dx = -span; dx <= span; dx++) {
@@ -127,12 +127,12 @@ const same = (a: readonly number[], b: readonly number[]) => a.length === b.leng
   // Below, above, on a roof.
   const src = tileOf(30, 22);
   const under = earshot(sim, { layer: LAYER.UNDER, tile: src, reach: 3 });
-  check(same(under, square(sim, src, 1, (t) => !opaque(sim, t))), 'from a tunnel: only the 3×3 tiles above');
+  check(same(under, square(src, 1, (t) => !opaque(sim, t))), 'from a tunnel: only the 3×3 tiles above');
   const vents = earshot(sim, { layer: LAYER.VENTS, tile: src, reach: 2 });
-  check(same(vents, square(sim, src, 2, (t) => !opaque(sim, t))), 'from the vents: the floor within 2 tiles below');
+  check(same(vents, square(src, 2, (t) => !opaque(sim, t))), 'from the vents: the floor within 2 tiles below');
   const roofTile = tileOf(12, 13);
   const roof = earshot(sim, { layer: LAYER.ROOF, tile: roofTile, reach: 7 });
-  check(roof.length > 0 && same(roof, square(sim, roofTile, 7, (t) => !opaque(sim, t) && TILE_INFO[w.ground.kind[t]].outdoor)), 'from a roof: the open ground around, nothing indoors');
+  check(roof.length > 0 && same(roof, square(roofTile, 7, (t) => !opaque(sim, t) && TILE_INFO[w.ground.kind[t]].outdoor)), 'from a roof: the open ground around, nothing indoors');
   const [g0, g1] = sim.state.guards;
   away(sim);
   post(g0, 31, 23);

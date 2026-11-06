@@ -198,7 +198,7 @@ function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
   for (let q = 0; q < queue.length; q++) {
     const t = queue[q];
     for (const [j, ok] of neighbours4(t))
-      if (ok && d[j] < 0 && open(j)) (d[j] = d[t] + 1), queue.push(j);
+      if (ok && d[j] < 0 && open(j)) { d[j] = d[t] + 1; queue.push(j); }
   }
 }
 
@@ -206,8 +206,8 @@ function flood(d: Int32Array, queue: number[], open: (i: number) => boolean) {
 export function goalDistances(o: OutsideWorld, grid: Uint8Array, lou: number, wire: boolean): Int32Array {
   const d = new Int32Array(N).fill(-1);
   const queue: number[] = [];
-  for (let i = 0; i < N; i++) if (o.safe[i]) (d[i] = 0), queue.push(i);
-  if (lou >= 0 && d[lou] !== 0) (d[lou] = 0), queue.push(lou);
+  for (let i = 0; i < N; i++) if (o.safe[i]) { d[i] = 0; queue.push(i); }
+  if (lou >= 0 && d[lou] !== 0) { d[lou] = 0; queue.push(lou); }
   // (The search reckons wire passable: cutters make it so; a way round it is shorter anyway where there is one.)
   const open = (i: number) => !grid[i] || (wire && o.wire[i] === 1);
   flood(d, queue, open);
@@ -242,7 +242,7 @@ export function sweepPoints(o: OutsideWorld, npcGrid: Uint8Array, start: number)
               const j = i + dz * MAP_W + dx;
               if (dx * dx + dz * dz <= 5 && j >= 0 && j < N && o.cover[j] && !done[j]) n++;
             }
-          if (n > bestN) (best = i), (bestN = n);
+          if (n > bestN) { best = i; bestN = n; }
         }
     done[c] = 1;
     if (best < 0) continue;

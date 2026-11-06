@@ -58,7 +58,7 @@ function reachFrom(w: World, from: number[]): Uint8Array {
       [t - MAP_W, t >= MAP_W],
       [t + MAP_W, t < MAP_W * (MAP_H - 1)],
     ] as const)
-      if (ok && !seen[j] && !w.ground.block[j]) (seen[j] = 1), queue.push(j);
+      if (ok && !seen[j] && !w.ground.block[j]) { seen[j] = 1; queue.push(j); }
   }
   return seen;
 }

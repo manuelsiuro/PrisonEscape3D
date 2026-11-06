@@ -21,7 +21,7 @@ for (const p of PRISONS) {
         let c = w.zoneAt(x, z) === zone ? '.' : ',';
         if (base === TILE.DOOR) c = 'D';
         else if (w.blocked(x, z)) c = '#';
-        if (prop) c = (prop as any).kind?.[0]?.toUpperCase() ?? 'P';
+        if (prop) c = prop.kind[0]?.toUpperCase() ?? 'P';
         if (dec) c = 'd';
         row += c;
       }

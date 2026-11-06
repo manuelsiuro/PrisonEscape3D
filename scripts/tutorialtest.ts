@@ -39,7 +39,7 @@ import { placesOf } from '../src/sim/ai/places';
 import { UNIT } from '../src/sim/tuning';
 
 import { TILE, TILE_INFO } from '../src/sim/world/tiles';
-import { LAYER, MAP_W, tileOfKey } from '../src/sim/world/World';
+import { LAYER, MAP_W } from '../src/sim/world/World';
 import { CHAPTERS, LESSONS } from '../src/tutorial/lessons';
 import { LessonProgress } from '../src/tutorial/progress';
 import { CALLEE, JOB, TIER } from '../src/content/phone';
@@ -185,12 +185,6 @@ play('escape', (bot) => {
 
 // ---------------------------------------------------------------- Getting by
 
-/** Faces a tile from where the player stands (a step's turn toward it). */
-function faceTile(bot: Bot, t: number) {
-  const dx = ((t % MAP_W) + 0.5) * UNIT - bot.st.player.x;
-  const dz = (Math.floor(t / MAP_W) + 0.5) * UNIT - bot.st.player.z;
-  bot.face(dirFromVector(dx, dz));
-}
 /** To a free tile beside a prop, facing it, and Interact. */
 function useProp(bot: Bot, prop: number) {
   const w = bot.sim.world;

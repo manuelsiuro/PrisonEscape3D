@@ -359,5 +359,5 @@ for (const def of PRISONS) {
 // ------------------------------------------------------------------ text
 for (const [name, k] of [['en', en], ['fr', fr]] as const) {
   for (const key of ['act.here', 'routine.yourSquare', 'routine.shakedown', 'routine.shakedownYou', 'toast.countCall', 'toast.countMissed', 'hint.rollCall'] as const) check(!!k[key], `${name}: ${key}`);
-  check(k['help.rollcall.steps'].split('\n').length === 3, `${name}: three steps`);
+  check((k['help.rollcall.steps'] ?? '').split('\n').length === 3, `${name}: three steps`);
 }

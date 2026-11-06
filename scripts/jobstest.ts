@@ -13,7 +13,7 @@ import { TRAINING } from '../src/content/prisons/training';
 import { ROUTINE } from '../src/content/routine';
 import { nearestDir } from '../src/sim/ai/path';
 import { placesOf } from '../src/sim/ai/places';
-import { command, OP } from '../src/sim/command';
+import { command } from '../src/sim/command';
 import { RunRecorder, replayLog } from '../src/sim/runlog';
 import { Sim } from '../src/sim/Sim';
 import { HOLDER, jobRooms } from '../src/sim/systems/economy';
@@ -484,7 +484,7 @@ for (const def of PRISONS) {
 for (const k of ['toast.workWarning', 'work.wait', 'spotted.stranger', 'hint.workRoom', 'help.work.steps'] as const) {
   check(!!en[k] && !!fr[k], `${k}: in both languages`);
 }
-check(en['help.work.steps'].split('\n').length === fr['help.work.steps'].split('\n').length, 'help: as many lines in French');
+check(en['help.work.steps'].split('\n').length === (fr['help.work.steps'] ?? '').split('\n').length, 'help: as many lines in French');
 
 // ------------------------------------------------------------------ saves and older runs
 {

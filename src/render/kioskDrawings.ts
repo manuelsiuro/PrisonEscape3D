@@ -37,6 +37,7 @@ function crayon(c: CanvasRenderingContext2D, id: (typeof PHOTOS)[number], seed: 
     for (let pass = 0; pass < 2; pass++) {
       c.globalAlpha = pass ? 0.55 : 0.9;
       c.beginPath();
+      // oxlint-disable-next-line typescript/unbound-method -- called on the canvas with .call(c)
       for (let i = 0; i < pts.length; i += 2) (i ? c.lineTo : c.moveTo).call(c, pts[i] + j(1.6), pts[i + 1] + j(1.6));
       if (close) c.closePath();
       c.stroke();

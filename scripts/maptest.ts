@@ -278,7 +278,7 @@ for (const def of [...PRISONS, TRAINING]) {
     const queue = [ducts[0]];
     while (queue.length) {
       const i = queue.pop()!;
-      for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !vents.block[j] && !seen.has(j)) (seen.add(j), queue.push(j));
+      for (const j of [i - 1, i + 1, i - MAP_W, i + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !vents.block[j] && !seen.has(j)) { seen.add(j); queue.push(j); }
     }
     check(seen.size === ducts.length, `${def.id}: the ducts are one network`);
     check(ladders >= 1 && ladderFootOf(w) >= 0, `${def.id}: a ladder, with a free foot`);

@@ -45,7 +45,6 @@ import { check } from './assert';
 const at = (x: number, z: number) => z * MAP_W + x;
 /** The step a minute of prison day 1 falls on (08:00 is step 0). */
 const minute = (m: number) => ((m - 8 * 60 + 1440) % 1440) * STEPS_PER_MINUTE;
-const FACINGS = [1, 5, 9, 13] as const;
 /** Everyone about on the ground floor (what the sim and the button both land around). */
 const bodiesOf = (sim: Sim) => [...sim.state.inmates.map((m) => m.body), ...sim.state.guards.map((g) => g.body)];
 const DIR8: Record<number, number> = { 1: 2, 5: 4, 9: 6, 13: 0 };
@@ -110,7 +109,7 @@ for (const def of [...PRISONS, TRAINING]) {
     for (let k = 0; k < q.length; k++) {
       const t = q[k];
       if (w.zoneAt(t % MAP_W, Math.floor(t / MAP_W)) === 'outside') return true;
-      for (const j of [t - 1, t + 1, t - MAP_W, t + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) (seen[j] = 1), q.push(j);
+      for (const j of [t - 1, t + 1, t - MAP_W, t + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) { seen[j] = 1; q.push(j); }
     }
     return false;
   };
@@ -122,7 +121,7 @@ for (const def of [...PRISONS, TRAINING]) {
     const seen = new Uint8Array(MAP_W * MAP_H);
     const q = [at(c.window[0].x, c.window[0].z)];
     seen[q[0]] = 1;
-    for (let k = 0; k < q.length; k++) for (const j of [q[k] - 1, q[k] + 1, q[k] - MAP_W, q[k] + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) (seen[j] = 1), q.push(j);
+    for (let k = 0; k < q.length; k++) for (const j of [q[k] - 1, q[k] + 1, q[k] - MAP_W, q[k] + MAP_W]) if (j >= 0 && j < MAP_W * MAP_H && !seen[j] && !w.block[j]) { seen[j] = 1; q.push(j); }
     w.setWaved(false);
     return q.length;
   };

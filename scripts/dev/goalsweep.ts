@@ -4,7 +4,7 @@ import { GATHER_STEPS, MATCH_STEPS } from '../../src/content/team';
 import { command, OP, TALK, EXT } from '../../src/sim/command';
 import { Sim } from '../../src/sim/Sim';
 import { DAY_STEPS } from '../../src/sim/systems/clock';
-import { centreOf, fieldOf, pitchOf } from '../../src/sim/systems/football';
+import { centreOf, fieldOf, pitchOf, type Match } from '../../src/sim/systems/football';
 import { nearestDir } from '../../src/sim/ai/path';
 import { STEPS_PER_MINUTE, UNIT } from '../../src/sim/tuning';
 const at = (day: number, hour: number, minute = 0) => (day - 1) * DAY_STEPS + ((hour * 60 + minute - 480 + 1440) % 1440) * STEPS_PER_MINUTE;
@@ -38,7 +38,7 @@ for (let seed = 1; seed <= 20; seed++) {
   let restart = 0;
   let held = 0;
   for (let k = 0; k < GATHER_STEPS + MATCH_STEPS + 50 && sim.state.match; k++) {
-    const o = sim.state.match;
+    const o: Match = sim.state.match;
     const [bx, bz] = o.ball;
     const gx = f.a1 + UNIT, gz = f.mid;
     const pl = sim.state.player;
@@ -49,7 +49,7 @@ for (let seed = 1; seed <= 20; seed++) {
     else if (Math.hypot(bx - pl.x, bz - pl.z) < 650 && d < 5 * UNIT && o.at && !o.pause) { held = 1; cmd = command(nearestDir(gx - pl.x, gz - pl.z), OP.EXT, EXT.KICK, 0); }
     else if (Math.hypot(sx - pl.x, sz - pl.z) < 300 || (Math.hypot(bx - pl.x, bz - pl.z) < 600 && (bx - pl.x) * (gx - bx) > 0)) cmd = command(nearestDir(gx - pl.x, gz - pl.z));
     else cmd = command(nearestDir(sx - pl.x, sz - pl.z));
-    const last = o.last;
+    const last: number = o.last;
     sim.step(cmd);
     for (const e of sim.events) {
       if (e.type === 'football' && e.what === 'restart') restart = sim.state.step;
@@ -62,7 +62,7 @@ for (let seed = 1; seed <= 20; seed++) {
         if (seed === 1) {
           const t = o.team;
           const pos = (id: number) => `${(sim.state.inmates[id].body.x / UNIT).toFixed(1)},${(sim.state.inmates[id].body.z / UNIT).toFixed(1)}`;
-          console.log(`goal ${e.mine ? 'for' : 'against'} at +${sim.state.step - restart}: ball was ${(bx / UNIT).toFixed(1)},${(bz / UNIT).toFixed(1)} v ${o.ball[2]},${o.ball[3]}; keeper ${pos(t[0])} rkeeper ${pos(t[4])}; player ${(pl.x / UNIT).toFixed(1)},${(pl.z / UNIT).toFixed(1)}; cool ${o.cool.map((c) => c - sim.state.step)}`);
+          console.log(`goal ${e.mine ? 'for' : 'against'} at +${sim.state.step - restart}: ball was ${(bx / UNIT).toFixed(1)},${(bz / UNIT).toFixed(1)} v ${o.ball[2]},${o.ball[3]}; keeper ${pos(t[0])} rkeeper ${pos(t[4])}; player ${(pl.x / UNIT).toFixed(1)},${(pl.z / UNIT).toFixed(1)}; cool ${o.cool.map((c: number) => c - sim.state.step)}`);
         }
       }
     }

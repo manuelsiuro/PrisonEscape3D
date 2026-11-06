@@ -229,7 +229,7 @@ console.log(`styles: ${[...styles].sort().map(([k, n]) => `${k} ${n}`).join(', '
   sim.state.inmates[who].opinion = 10;
   const dd = new Director();
   dd.reset(sim, 2);
-  const low = new Set(enBarks['gr.in.low'].map((l) => (typeof l === 'string' ? l : l.t)));
+  const low = new Set<string>(enBarks['gr.in.low']);
   const said = dd.greeting(sim, who);
   check(low.has(said), `a merchant with a grudge greets coldly ("${said}")`);
 }
