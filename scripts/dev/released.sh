@@ -38,9 +38,12 @@ print("tests:" + worst(tests, "pending") + " deploy:" + worst(deploy, "none"))'
 }
 
 live() {
-  js=$(curl -s "$SITE?$1" | grep -o 'assets/index-[A-Za-z0-9_-]*\.js' | head -1)
-  # The bundle writes the version in backticks or quotes: match the bare number.
-  [ -n "$js" ] && curl -s "$SITE$js" | grep -q "[\`\"']$VERSION[\`\"']"
+  # Every script the page loads (since 2.34.2 the entry is a stub: the version is in the game's
+  # file); the bundle writes the version in backticks or quotes: match the bare number.
+  for js in $(curl -s "$SITE?$1" | grep -o 'assets/[A-Za-z0-9_.-]*\.js' | sort -u); do
+    curl -s "$SITE$js" | grep -q "[\`\"']$VERSION[\`\"']" && return 0
+  done
+  return 1
 }
 
 echo "CI for ${SHA%"${SHA#???????}"} (v$VERSION)"

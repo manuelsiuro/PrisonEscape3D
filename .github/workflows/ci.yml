@@ -24,18 +24,27 @@ jobs:
       - run: npm test
       # Does this push change the game? Not when every file it touches is the docs, the tests and dev
       # tools, the skills, the map viewer or the lint and format settings (none of them is in dist/).
-      # Unsure (a manual run, 20 or more commits, whose file lists GitHub cuts short): deploy.
+      # The files are git's (the push's two trees compared: the push's commit list carried no files,
+      # so nothing deployed from 2.34.1 to 2.34.2). Unsure (a manual run, a new branch, no files,
+      # the diff failing): deploy.
       - id: site
+        env:
+          BEFORE: ${{ github.event.before }}
         run: |
           node -e '
-            const e = require(process.env.GITHUB_EVENT_PATH);
+            const { execSync } = require("child_process");
             const tools = /^(docs\/|scripts\/|\.claude\/|assets\/maps\/|[^/]+\.md$|\.(oxlintrc\.json|prettierrc\.json|prettierignore|git-blame-ignore-revs)$)/;
-            const commits = e.commits ?? [];
-            const files = commits.flatMap((c) => [...(c.added ?? []), ...(c.removed ?? []), ...(c.modified ?? [])]);
-            const known = commits.length > 0 && commits.length < 20;
-            const deploy = !known || files.some((f) => !tools.test(f));
+            const before = process.env.BEFORE ?? "";
+            let files = [];
+            if (/^[0-9a-f]{40}$/.test(before) && !/^0+$/.test(before)) {
+              try {
+                execSync(`git fetch --depth=1 origin ${before}`, { stdio: "ignore" });
+                files = execSync(`git diff --name-only ${before} HEAD`).toString().split("\n").filter(Boolean);
+              } catch {}
+            }
+            const deploy = files.length === 0 || files.some((f) => !tools.test(f));
             require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `deploy=${deploy}\n`);
-            console.log(deploy ? "the game may have changed: deploy" : `docs and tools only (${files.length} files): no deploy`);
+            console.log(`${files.length} files changed: ` + (deploy ? "the game may have changed (or unsure): deploy" : "docs and tools only: no deploy"));
           '
       - uses: actions/upload-pages-artifact@v4
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.site.outputs.deploy == 'true'
