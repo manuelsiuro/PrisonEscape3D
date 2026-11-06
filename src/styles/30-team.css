@@ -1,8 +1,23 @@
 /* ------------------------------------------------------------ team & ink (P29) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --team-slate-31: #2b3038;
+  --team-red-80: #ffa0a0;
+  --team-orange-84: #e9c4a0;
+  --team-orange-31: #462814;
+  --team-orange-31-rgb: 70, 40, 20;
+  --team-yellow-87: #f2d23c;
+  --team-yellow-87-rgb: 242, 210, 60;
+  --team-green-65: #3aa868;
+  --team-green-62: #2f9e5a;
+  --team-green-53: #23804b;
+  --team-blue-30: #1d2a5a;
+  --team-indigo-37: #3a3f5a;
+}
 
 /* The match's card: the pitch's green; the teams; the clock running down; the Kick pad and its power. */
 .match-card .train-ic {
-  background: #2f9e5a;
+  background: var(--team-green-62);
 }
 .match-score {
   flex: none;
@@ -21,14 +36,14 @@
   gap: 2px 6px;
   margin: 6px 0 0;
   font: 600 11.5px var(--font-ui);
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--white-rgb), 0.6);
 }
 .match-teams .ours {
-  color: #9fe6b9;
+  color: var(--green-87);
 }
 .match-teams em {
   font-style: normal;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(var(--white-rgb), 0.4);
 }
 .match-card .train-note {
   text-wrap: pretty;
@@ -38,33 +53,33 @@
   height: 5px;
   margin: 8px 0 2px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--white-rgb), 0.12);
   overflow: hidden;
 }
 .match-clock > i {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #3fc79a, #9fe6b9);
+  background: linear-gradient(90deg, var(--green-75), var(--green-87));
 }
 .match-card[data-phase='gather'] .match-clock > i {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(var(--white-rgb), 0.35);
 }
 .match-card[data-phase='goal'] {
   box-shadow:
-    0 20px 50px -14px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 2px #f2d23c;
+    0 20px 50px -14px rgba(var(--black-rgb), 0.7),
+    inset 0 0 0 2px var(--team-yellow-87);
 }
 .match-pad {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(#3aa868, #23804b);
+  background: linear-gradient(var(--team-green-65), var(--team-green-53));
 }
 .match-card.at-feet .match-pad {
-  background: linear-gradient(#3fc79a, #23966f);
+  background: linear-gradient(var(--green-75), var(--green-60));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 0 0 3px rgba(242, 210, 60, 0.75);
+    inset 0 1px 0 rgba(var(--white-rgb), 0.3),
+    0 0 0 3px rgba(var(--team-yellow-87-rgb), 0.75);
 }
 .match-power {
   position: absolute;
@@ -73,7 +88,7 @@
   bottom: 7px;
   height: 5px;
   border-radius: 3px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(var(--black-rgb), 0.25);
   opacity: 0;
   transition: opacity 0.1s;
 }
@@ -84,7 +99,7 @@
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #f2d23c, #e8742c);
+  background: linear-gradient(90deg, var(--team-yellow-87), var(--orange-68));
 }
 /* In a match the Kick pad takes the tool button's place. */
 body.matching .tool-btn,
@@ -94,10 +109,10 @@ body.matching .tool-prompt {
 
 /* The tattoo's card: the design on skin, the pen's ring, the needle's dot and its line in the design's ink. */
 .ink-card {
-  --ink: #2b3038;
+  --ink: var(--team-slate-31);
 }
 .ink-card .train-ic {
-  background: #3a3f5a;
+  background: var(--team-indigo-37);
 }
 .ink-art {
   display: grid;
@@ -121,11 +136,11 @@ body.matching .tool-prompt {
   cursor: default;
 }
 .ink-skin {
-  fill: #e9c4a0;
+  fill: var(--team-orange-84);
 }
 .ink-guide {
   fill: none;
-  stroke: rgba(70, 40, 20, 0.4);
+  stroke: rgba(var(--team-orange-31-rgb), 0.4);
   stroke-width: 1.4;
   stroke-dasharray: 2.4 2;
   stroke-linejoin: round;
@@ -133,7 +148,7 @@ body.matching .tool-prompt {
 /* The stretch ahead of what's traced: where the line goes next. */
 .ink-next {
   fill: none;
-  stroke: rgba(70, 40, 20, 0.55);
+  stroke: rgba(var(--team-orange-31-rgb), 0.55);
   stroke-width: 3.2;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -147,9 +162,9 @@ body.matching .tool-prompt {
 }
 .ink-pen {
   fill: none;
-  stroke: #f2d23c;
+  stroke: var(--team-yellow-87);
   stroke-width: 1.6;
-  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 0 1.5px rgba(var(--black-rgb), 0.6));
 }
 .ink-card.lead .ink-pen {
   animation: ink-pulse 0.8s ease-in-out infinite alternate;
@@ -160,8 +175,8 @@ body.matching .tool-prompt {
   }
 }
 .ink-needle {
-  fill: #1d2a5a;
-  stroke: white;
+  fill: var(--team-blue-30);
+  stroke: var(--white);
   stroke-width: 0.8;
   pointer-events: none;
 }
@@ -169,7 +184,7 @@ body.matching .tool-prompt {
   display: none;
 }
 .train-note.ink-hurry {
-  color: #ffd27a;
+  color: var(--gold-88);
 }
 .ink-quit {
   margin-top: 8px;
@@ -189,7 +204,7 @@ body.matching .tool-prompt {
   width: 18px;
   height: 18px;
   flex: none;
-  background: #e9c4a0;
+  background: var(--team-orange-84);
   border-radius: 4px;
 }
 .cash-btn.design span {
@@ -334,7 +349,7 @@ body.reduced-motion .ink-card.lead .ink-pen {
   text-transform: uppercase;
 }
 .match-teams span:last-child {
-  color: #ffa0a0;
+  color: var(--team-red-80);
 }
 
 /* Touch: a drag on the tattoo's card steers the needle as a drag on the picture would; the design itself (2.22: drawn on) and Give up take the touch. */
@@ -365,7 +380,7 @@ body.reduced-motion .ink-card.lead .ink-pen {
 .cash-btn.design.have::after {
   content: '✓';
   margin-left: 2px;
-  color: #3fc79a;
+  color: var(--green-75);
 }
 .ink-card.mine .ink-pen,
 .ink-card.mine .ink-needle {

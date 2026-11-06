@@ -1,4 +1,21 @@
 /* ------------------------------------------------------------ the manhunt (P41) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --manhunt-red-77: #ff8a9a;
+  --manhunt-red-73: #ff7a7a;
+  --manhunt-orange-89: #ffd2b0;
+  --manhunt-orange-77: #ff9650;
+  --manhunt-orange-77-rgb: 255, 150, 80;
+  --manhunt-orange-27: #3a1e0e;
+  --manhunt-orange-27-rgb: 58, 30, 14;
+  --manhunt-yellow-25: #2b2100;
+  --manhunt-green-92: #b9f5d3;
+  --manhunt-green-86: #6ff0a8;
+  --manhunt-green-81: #5fdca0;
+  --manhunt-green-81-rgb: 95, 220, 160;
+  --manhunt-green-47: #2e6840;
+  --manhunt-green-47-rgb: 46, 104, 64;
+}
 
 /* The way to safety: its name and distance, an arrow pointing the way (turned by the play layer). */
 .hunt-goal {
@@ -13,7 +30,7 @@
 }
 
 .hunt-goal.lou .hg-ic {
-  color: #ff8a9a;
+  color: var(--manhunt-red-77);
 }
 
 .hg-text,
@@ -46,7 +63,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  color: #12233a;
+  color: var(--blue-25);
   background: var(--ok);
   transition: transform 0.15s linear;
 }
@@ -58,13 +75,13 @@
 
 .hunt-alarm.up .ha-ic,
 .hunt-alarm.up .ha-text b {
-  color: #ff6b5a;
+  color: var(--red-71);
 }
 
 .ha-tiers {
   display: inline-flex;
   gap: 3px;
-  color: #ffb38a;
+  color: var(--orange-83);
 }
 
 .ha-tiers:empty {
@@ -75,51 +92,51 @@
 .hud-alert.hunt-state {
   gap: 6px;
   padding-bottom: 6px;
-  color: white;
+  color: var(--white);
   font-weight: 700;
-  background: rgba(18, 24, 36, 0.86);
+  background: rgba(var(--slate-21-rgb), 0.86);
 }
 
 .hud-alert.hunt-state.st-lit {
-  color: #2b2100;
-  background: #ffe27a;
+  color: var(--manhunt-yellow-25);
+  background: var(--yellow-91b);
 }
 
 .hud-alert.hunt-state.st-chased {
-  background: rgba(214, 48, 39, 0.92);
+  background: rgba(var(--red-58-rgb), 0.92);
 }
 
 /* (A dog on the trail: the HUD's dark pill, an orange edge and icon — not a light chip.) */
 .hud-alert.hunt-state.st-tracked {
-  color: #ffd2b0;
-  background: rgba(58, 30, 14, 0.9);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 150, 80, 0.75);
+  color: var(--manhunt-orange-89);
+  background: rgba(var(--manhunt-orange-27-rgb), 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--manhunt-orange-77-rgb), 0.75);
 }
 
 .hud-alert.hunt-state.st-tracked .ic {
-  color: #ff9a4d;
+  color: var(--orange-78);
 }
 
 .hud-alert.hunt-state.st-cover {
-  background: rgba(46, 104, 64, 0.88);
+  background: rgba(var(--manhunt-green-47-rgb), 0.88);
 }
 
 .hud-alert.hunt-state.st-hidden {
-  background: rgba(31, 157, 99, 0.9);
+  background: rgba(var(--ok-2-rgb), 0.9);
 }
 
 /* (The lookout: the HUD's dark pill with the crew's amber edge, as the job's chip has the board's.) */
 .hud-alert.hunt-crew {
   gap: 6px;
   padding-bottom: 6px;
-  color: #ffe2bf;
+  color: var(--gold-93);
   font-weight: 700;
-  background: rgba(40, 30, 20, 0.9);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 169, 77, 0.6);
+  background: rgba(var(--stone-24-rgb), 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--crew-rgb), 0.6);
 }
 
 .hud-alert.hunt-crew .ic {
-  color: #ffa94d;
+  color: var(--crew);
 }
 
 /* A cut at the wire: the action button fills as it goes. */
@@ -161,7 +178,7 @@ body.hunting .hud:not(.hunt-hud) {
 
 .v-hunt b {
   font: 800 15px/1.2 var(--font-ui);
-  color: #fff;
+  color: var(--white);
 }
 
 .v-hunt small {
@@ -174,23 +191,23 @@ body.hunting .hud:not(.hunt-hud) {
 
 /* In the dialog's own dark skin (no light panel on it): a tint and an edge in the row's colour, its icon lit. */
 .v-hunt.offer {
-  color: #ffd2b0;
-  background: linear-gradient(110deg, rgba(255, 119, 20, 0.22), rgba(255, 119, 20, 0.05));
+  color: var(--manhunt-orange-89);
+  background: linear-gradient(110deg, rgba(var(--orange-rgb), 0.22), rgba(var(--orange-rgb), 0.05));
   box-shadow:
-    inset 0 0 0 1px rgba(255, 140, 60, 0.5),
-    0 0 24px -12px rgba(255, 119, 20, 0.7);
+    inset 0 0 0 1px rgba(var(--orange-75b-rgb), 0.5),
+    0 0 24px -12px rgba(var(--orange-rgb), 0.7);
 }
 
 .v-hunt.offer > .ic {
-  color: #ff9a4d;
+  color: var(--orange-78);
 }
 
 .v-hunt.safe {
-  color: #b9f5d3;
-  background: linear-gradient(110deg, rgba(63, 199, 154, 0.22), rgba(63, 199, 154, 0.05));
+  color: var(--manhunt-green-92);
+  background: linear-gradient(110deg, rgba(var(--green-75-rgb), 0.22), rgba(var(--green-75-rgb), 0.05));
   box-shadow:
-    inset 0 0 0 1px rgba(95, 220, 160, 0.5),
-    0 0 24px -12px rgba(63, 199, 154, 0.7);
+    inset 0 0 0 1px rgba(var(--manhunt-green-81-rgb), 0.5),
+    0 0 24px -12px rgba(var(--green-75-rgb), 0.7);
 }
 
 .v-hunt.safe .v-star {
@@ -199,19 +216,19 @@ body.hunting .hud:not(.hunt-hud) {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: white;
-  background: radial-gradient(circle at 40% 30%, #6ff0a8, var(--ok-2));
-  box-shadow: 0 6px 14px -6px rgba(31, 157, 99, 0.9);
+  color: var(--white);
+  background: radial-gradient(circle at 40% 30%, var(--manhunt-green-86), var(--ok-2));
+  box-shadow: 0 6px 14px -6px rgba(var(--ok-2-rgb), 0.9);
 }
 
 .v-hunt.caught {
-  color: #ffc4c0;
-  background: linear-gradient(110deg, rgba(229, 72, 77, 0.24), rgba(229, 72, 77, 0.06));
-  box-shadow: inset 0 0 0 1px rgba(255, 110, 110, 0.5);
+  color: var(--red-87);
+  background: linear-gradient(110deg, rgba(var(--red-63-rgb), 0.24), rgba(var(--red-63-rgb), 0.06));
+  box-shadow: inset 0 0 0 1px rgba(var(--red-71b-rgb), 0.5);
 }
 
 .v-hunt.caught > .ic {
-  color: #ff7a7a;
+  color: var(--manhunt-red-73);
 }
 
 /* Keep running or Skip: the first in one line (« Continuer à courir »), the wider; Skip beside it. */
@@ -232,8 +249,8 @@ body.hunting .hud:not(.hunt-hud) {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  color: white;
-  background: radial-gradient(circle at 40% 30%, #6ff0a8, var(--ok-2));
+  color: var(--white);
+  background: radial-gradient(circle at 40% 30%, var(--manhunt-green-86), var(--ok-2));
 }
 
 @media (max-height: 520px) {

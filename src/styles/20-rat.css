@@ -1,4 +1,14 @@
 /* ------------------------------------------------------------ the pet rat (P20) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --rat-grey-22: #1a1a1a;
+  --rat-stone-23: #2a1420;
+  --rat-pink-91: #ffd3e4;
+  --rat-pink-86: #f2c2d8;
+  --rat-pink-86-rgb: 242, 194, 216;
+  --rat-pink-81: #f2a7c4;
+  --rat-pink-62: #b86a8a;
+}
 
 /* Its pill under the HUD rows: a soft rose rim (its squeak's colour), a button to its panel. */
 .hud-alert.hud-rat {
@@ -6,14 +16,14 @@
   cursor: pointer;
   pointer-events: auto;
   font-family: inherit;
-  background: rgba(30, 40, 60, 0.9);
-  box-shadow: inset 0 0 0 1.5px rgba(242, 194, 216, 0.6);
+  background: rgba(var(--slate-28-rgb), 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--rat-pink-86-rgb), 0.6);
 }
 .hud-alert.hud-rat .ic {
-  color: #f2c2d8;
+  color: var(--rat-pink-86);
 }
 .hud-alert.hud-rat b {
-  color: #f2c2d8;
+  color: var(--rat-pink-86);
   font-weight: 600;
 }
 .hud-alert.hud-rat b:empty {
@@ -23,7 +33,7 @@
   animation: rat-scurry 0.5s ease-in-out infinite alternate;
 }
 .hud-alert.hud-rat .hud-alert-bar i {
-  background: #f2c2d8;
+  background: var(--rat-pink-86);
 }
 .hud-alert.hud-rat:active {
   transform: scale(0.95);
@@ -47,12 +57,12 @@
 
 /* Its panel: the job board's rows, two buttons each. */
 .rat-panel .panel-head .ic {
-  color: #f2c2d8;
+  color: var(--rat-pink-86);
 }
 .rat-status {
   margin: 0 0 10px;
   font: 600 13px/1.4 var(--font-ui);
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(var(--white-rgb), 0.85);
 }
 .rat-loose {
   display: flex;
@@ -61,18 +71,18 @@
   margin: 0 0 12px;
   padding: 8px 10px;
   border-radius: 14px;
-  background: rgba(242, 194, 216, 0.08);
+  background: rgba(var(--rat-pink-86-rgb), 0.08);
 }
 .rat-loose small {
   flex: 1;
   min-width: 0;
   font: 500 11.5px/1.3 var(--font-ui);
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(var(--white-rgb), 0.65);
 }
 .rat-panel .big-btn.danger {
-  color: #2a1420;
-  background: linear-gradient(180deg, #ffd3e4, #f2a7c4);
-  box-shadow: 0 3px 0 #b86a8a;
+  color: var(--rat-stone-23);
+  background: linear-gradient(180deg, var(--rat-pink-91), var(--rat-pink-81));
+  box-shadow: 0 3px 0 var(--rat-pink-62);
 }
 .rat-panel .big-btn.small {
   flex: none;
@@ -99,18 +109,18 @@
   margin-left: 6px;
   vertical-align: -3px;
   border-radius: 6px;
-  color: #1a1a1a;
+  color: var(--rat-grey-22);
   background: var(--key, var(--gold));
 }
 .rat-empty,
 .rat-keys {
   margin: 8px 0 0;
   font: 500 12px/1.4 var(--font-ui);
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--white-rgb), 0.6);
 }
 .rat-keys {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(var(--white-rgb), 0.45);
 }
 
 @media (max-height: 520px) {

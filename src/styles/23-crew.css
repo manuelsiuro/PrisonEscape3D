@@ -1,14 +1,19 @@
 /* ------------------------------------------------------------ the crew (P23) */
 
-/* The crew's colour: the inmates' orange, warmer. */
+/* The crew's colour (the inmates' orange, warmer) is --crew in 01-base.css. */
 :root {
-  --crew: #ffa94d;
-  --crew-soft: rgba(255, 169, 77, 0.16);
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --crew-red-76: #ff8a6a;
+  --crew-orange-69: #d9822b;
+  --crew-orange-62: #b8722a;
+  --crew-gold-87: #ffc98a;
+  --crew-blue-87: #c8d4ff;
+  --crew-blue-27: #1c2440;
 }
 
 /* Everyone's line of work in the talk panel's chips. */
 .chip.spec {
-  color: #ffe2c2;
+  color: var(--gold-93);
   background: var(--crew-soft);
 }
 .chip.spec .ic {
@@ -19,15 +24,15 @@
 .talk-crew {
   padding: 8px 12px 6px;
   border-radius: 14px;
-  background: rgba(255, 169, 77, 0.07);
-  box-shadow: inset 0 0 0 1px rgba(255, 169, 77, 0.24);
+  background: rgba(var(--crew-rgb), 0.07);
+  box-shadow: inset 0 0 0 1px rgba(var(--crew-rgb), 0.24);
 }
 .talk-crew .box-label .ic {
   color: var(--crew);
 }
 .crew-status {
   margin: 2px 0 8px;
-  color: #ffe2c2;
+  color: var(--gold-93);
   font-weight: 600;
 }
 .crew-orders {
@@ -46,10 +51,10 @@
   border: 0;
   border-radius: 14px;
   text-align: left;
-  color: #fff3e6;
+  color: var(--stone-97);
   font-family: inherit;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 169, 77, 0.28);
+  background: rgba(var(--white-rgb), 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--crew-rgb), 0.28);
   cursor: pointer;
   transition:
     background 0.15s,
@@ -57,8 +62,8 @@
     transform 0.1s;
 }
 .crew-act:hover:not(:disabled) {
-  background: rgba(255, 169, 77, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 169, 77, 0.55);
+  background: rgba(var(--crew-rgb), 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--crew-rgb), 0.55);
 }
 .crew-act:active:not(:disabled) {
   transform: scale(0.98);
@@ -74,9 +79,9 @@
   width: 36px;
   height: 36px;
   border-radius: 11px;
-  color: #2a1a08;
-  background: linear-gradient(180deg, #ffc98a, var(--crew));
-  box-shadow: 0 2px 0 #b8722a;
+  color: var(--stone-23);
+  background: linear-gradient(180deg, var(--crew-gold-87), var(--crew));
+  box-shadow: 0 2px 0 var(--crew-orange-62);
 }
 .crew-act-text {
   display: grid;
@@ -86,15 +91,15 @@
 }
 .crew-act-text b {
   font: 800 14.5px/1.2 var(--font-ui);
-  color: white;
+  color: var(--white);
 }
 .crew-act-text small {
   font: 500 12px/1.3 var(--font-ui);
-  color: rgba(255, 255, 255, 0.66);
+  color: rgba(var(--white-rgb), 0.66);
 }
 /* The order in force: lit, with its tag. */
 .crew-act.on {
-  background: linear-gradient(135deg, rgba(255, 169, 77, 0.26), rgba(255, 169, 77, 0.1));
+  background: linear-gradient(135deg, rgba(var(--crew-rgb), 0.26), rgba(var(--crew-rgb), 0.1));
   box-shadow: inset 0 0 0 2px var(--crew);
 }
 .crew-act.on:disabled {
@@ -106,7 +111,7 @@
   align-self: flex-start;
   padding: 3px 8px;
   border-radius: 999px;
-  color: #2a1a08;
+  color: var(--stone-23);
   font: 800 10.5px/1.2 var(--font-ui);
   font-style: normal;
   letter-spacing: 0.04em;
@@ -116,15 +121,15 @@
 /* Not now: dimmed, the reason on its second line. */
 .crew-act:disabled:not(.on) {
   cursor: default;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.08);
 }
 .crew-act:disabled:not(.on) .crew-act-ic {
-  color: rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.1);
+  color: rgba(var(--white-rgb), 0.55);
+  background: rgba(var(--white-rgb), 0.1);
   box-shadow: none;
 }
 .crew-act:disabled:not(.on) .crew-act-text b {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--white-rgb), 0.5);
 }
 .crew-act.armed::after {
   font-size: 14px;
@@ -146,8 +151,8 @@
   cursor: pointer;
   pointer-events: auto;
   font-family: inherit;
-  background: rgba(30, 40, 60, 0.9);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 169, 77, 0.6);
+  background: rgba(var(--slate-28-rgb), 0.9);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--crew-rgb), 0.6);
 }
 .hud-alert.hud-crew .hud-crew-ic {
   display: inline-flex;
@@ -157,17 +162,17 @@
 .hud-alert.hud-crew b {
   overflow: hidden;
   max-width: 60vw;
-  color: #ffe2c2;
+  color: var(--gold-93);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .hud-alert.hud-crew.urgent {
-  box-shadow: inset 0 0 0 2px #ff6b4a;
+  box-shadow: inset 0 0 0 2px var(--energy-low);
   animation: crew-ring 0.5s ease-in-out 3;
 }
 .hud-alert.hud-crew.urgent .hud-crew-ic {
-  color: #ff8a6a;
+  color: var(--crew-red-76);
 }
 .hud-alert.hud-crew:active {
   transform: scale(0.95);
@@ -175,8 +180,8 @@
 @keyframes crew-ring {
   50% {
     box-shadow:
-      inset 0 0 0 2px #ff6b4a,
-      0 0 16px rgba(255, 107, 74, 0.6);
+      inset 0 0 0 2px var(--energy-low),
+      0 0 16px rgba(var(--energy-low-rgb), 0.6);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -206,13 +211,13 @@
   text-transform: uppercase;
 }
 .crew-row .board-text small {
-  color: #ffe2c2;
+  color: var(--gold-93);
 }
 .crew-moon {
   display: inline-grid;
   margin-left: 5px;
   vertical-align: -2px;
-  color: #c8d4ff;
+  color: var(--crew-blue-87);
 }
 .crew-panel .big-btn.small {
   flex: none;
@@ -242,26 +247,26 @@
   height: 24px;
   margin: -12px 0 0 -12px;
   border-radius: 50%;
-  color: rgba(255, 226, 194, 0.85);
-  background: rgba(18, 24, 36, 0.78);
+  color: rgba(var(--gold-93-rgb), 0.85);
+  background: rgba(var(--slate-21-rgb), 0.78);
   box-shadow:
-    inset 0 0 0 1.5px rgba(255, 169, 77, 0.45),
-    0 4px 10px -4px rgba(0, 0, 0, 0.6);
+    inset 0 0 0 1.5px rgba(var(--crew-rgb), 0.45),
+    0 4px 10px -4px rgba(var(--black-rgb), 0.6);
   pointer-events: none;
 }
 .crew-chip.busy {
-  color: #2a1a08;
+  color: var(--stone-23);
   background: var(--crew);
-  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 10px -4px rgba(var(--black-rgb), 0.6);
 }
 .crew-chip.alert {
-  color: white;
-  background: #ff6b4a;
+  color: var(--white);
+  background: var(--energy-low);
   animation: chip-ring 0.4s ease-in-out 4;
 }
 @keyframes chip-ring {
   50% {
-    box-shadow: 0 0 0 6px rgba(255, 107, 74, 0.35);
+    box-shadow: 0 0 0 6px rgba(var(--energy-low-rgb), 0.35);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -283,14 +288,14 @@
   padding: 7px 12px;
   border-radius: 14px;
   text-align: left;
-  color: #ffe2bf;
+  color: var(--gold-93);
   font: 700 13.5px/1.3 var(--font-ui);
-  background: linear-gradient(110deg, rgba(255, 169, 77, 0.18), rgba(255, 169, 77, 0.04));
-  box-shadow: inset 0 0 0 1px rgba(255, 169, 77, 0.45);
+  background: linear-gradient(110deg, rgba(var(--crew-rgb), 0.18), rgba(var(--crew-rgb), 0.04));
+  box-shadow: inset 0 0 0 1px rgba(var(--crew-rgb), 0.45);
 }
 .v-crew .ic {
   flex: none;
-  color: #ffa94d;
+  color: var(--crew);
 }
 @media (max-height: 520px) {
   .v-crew {
@@ -310,7 +315,7 @@
   font: 600 12.5px/1.3 var(--font-ui);
 }
 .medal-crew .ic {
-  color: #d9822b;
+  color: var(--crew-orange-69);
 }
 
 /* A panel open beside it on a phone on its side: the pill's line kept short of it. */
@@ -333,8 +338,8 @@
   gap: 10px;
   padding: 8px 10px 8px 8px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: rgba(var(--white-rgb), 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.06);
 }
 .file-ic {
   display: grid;
@@ -344,8 +349,8 @@
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  color: white;
-  background: var(--c, rgba(255, 255, 255, 0.1));
+  color: var(--white);
+  background: var(--c, rgba(var(--white-rgb), 0.1));
 }
 .file-text {
   display: grid;
@@ -359,7 +364,7 @@
   flex-wrap: wrap;
   gap: 0 8px;
   font: 700 14px/1.25 var(--font-display);
-  color: white;
+  color: var(--white);
 }
 .file-text b em {
   font: 700 10.5px/1.2 var(--font-ui);
@@ -370,18 +375,18 @@
 }
 .file-text small {
   font: 500 12px/1.35 var(--font-ui);
-  color: rgba(255, 255, 255, 0.66);
+  color: rgba(var(--white-rgb), 0.66);
 }
 .file-text small.quote {
   font-style: italic;
-  color: rgba(255, 255, 255, 0.74);
+  color: rgba(var(--white-rgb), 0.74);
 }
 .file-state {
   font: 700 11.5px/1.3 var(--font-ui);
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(var(--white-rgb), 0.55);
 }
 .file-state.ok {
-  color: #6fe3a0;
+  color: var(--green-83);
 }
 .file-tag {
   display: inline-flex;
@@ -392,36 +397,36 @@
   padding: 4px 9px;
   border-radius: 99px;
   font: 800 12px/1.1 var(--font-ui);
-  color: white;
+  color: var(--white);
   background: var(--steel-2);
 }
 .file-tag.done {
-  background: #2f9e55;
+  background: var(--green-62);
 }
 .file-tag.cash {
-  color: #2a2008;
+  color: var(--stone-25);
   background: var(--gold);
 }
 .file-tag.night {
-  color: #1c2440;
-  background: #c8d4ff;
+  color: var(--crew-blue-27);
+  background: var(--crew-blue-87);
 }
 .file-row.ready {
-  box-shadow: inset 0 0 0 1px rgba(66, 201, 122, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(var(--green-74-rgb), 0.5);
 }
 /* Nothing there yet: a muted row saying what would be. */
 .file-row.empty {
   padding: 7px 9px 7px 7px;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(var(--white-rgb), 0.14);
+  background: rgba(var(--white-rgb), 0.02);
   box-shadow: none;
 }
 .file-row.empty .file-ic {
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.08);
+  color: rgba(var(--white-rgb), 0.5);
+  background: rgba(var(--white-rgb), 0.08);
 }
 .file-row.empty .file-text b {
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(var(--white-rgb), 0.78);
   font-size: 13.5px;
 }
 /* Rumors: a gold tile, the line, who told it and when under it (old news faded, only its line struck). */
@@ -429,7 +434,7 @@
   display: grid;
   flex: none;
   place-items: center;
-  color: #2a2008;
+  color: var(--stone-25);
   background: var(--gold);
 }
 .rumor-ic .ic {
@@ -445,26 +450,26 @@
   margin: 0;
   opacity: 1;
   font: 600 11px/1.2 var(--font-ui);
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(var(--white-rgb), 0.5);
 }
 .file-list.rumors .rumor.old span {
   text-decoration: none;
 }
 .file-list.rumors .rumor.old .rumor-text > span {
   text-decoration: line-through;
-  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-decoration-color: rgba(var(--white-rgb), 0.35);
 }
 .file-list.rumors .rumor.old .rumor-ic {
-  color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.12);
+  color: rgba(var(--white-rgb), 0.6);
+  background: rgba(var(--white-rgb), 0.12);
 }
 
 /* The attributes and the rumors as cards too: every section of the file lines up. */
 .profile-panel .stat-row {
   padding: 8px 10px 8px 8px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: rgba(var(--white-rgb), 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.06);
 }
 .profile-panel .stat-row .stat-ic {
   align-self: start;
@@ -477,7 +482,7 @@
 }
 .profile-panel .stat-text small {
   font: 500 12px/1.35 var(--font-ui);
-  color: rgba(255, 255, 255, 0.66);
+  color: rgba(var(--white-rgb), 0.66);
   white-space: normal;
 }
 .file-list.rumors {
@@ -489,8 +494,8 @@
   padding: 8px 10px 8px 8px;
   border-top: 0;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: rgba(var(--white-rgb), 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.06);
 }
 .rumor-ic {
   width: 32px;
@@ -512,7 +517,7 @@
 }
 .file-day .pa-row {
   padding: 8px 10px 8px 8px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(var(--white-rgb), 0.06);
 }
 .file-day .pa-ic {
   width: 32px;

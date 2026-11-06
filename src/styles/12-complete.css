@@ -1,4 +1,12 @@
 /* ------------------------------------------------------------ saved games (P8) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --complete-stone-95: #dcf5e8;
+  --complete-red-50: #b4232a;
+  --complete-gold-43: #6b4a00;
+  --complete-green-82: #5fe0a0;
+  --complete-green-52: #1f7a4f;
+}
 .saves-card {
   width: min(420px, 100%);
   max-height: calc(100dvh - 24px);
@@ -42,8 +50,8 @@
   padding: 8px 12px 8px 8px;
   border-radius: 16px;
   text-align: left;
-  background: #f2f5f9;
-  box-shadow: inset 0 0 0 1px rgba(18, 35, 58, 0.06);
+  background: var(--silver-1);
+  box-shadow: inset 0 0 0 1px rgba(var(--blue-25-rgb), 0.06);
   transition:
     transform 0.18s var(--spring),
     background 0.2s;
@@ -65,13 +73,13 @@
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  color: white;
+  color: var(--white);
   background: linear-gradient(150deg, var(--steel), var(--steel-2));
 }
 
 .save-row.empty .save-ic {
   color: var(--ink-soft);
-  background: #e2e7ee;
+  background: var(--grey-93);
 }
 
 .save-row:first-child .save-ic {
@@ -79,7 +87,7 @@
 }
 
 .save-row.empty:first-child .save-ic {
-  background: #e2e7ee;
+  background: var(--grey-93);
 }
 
 .save-text {
@@ -115,7 +123,7 @@
 }
 
 .save-row.armed .save-main {
-  background: #fff1e6;
+  background: var(--stone-97);
   box-shadow: inset 0 0 0 2px var(--orange);
 }
 
@@ -135,15 +143,15 @@
   padding: 0 12px;
   border-radius: 16px;
   color: var(--ink-soft);
-  background: #f2f5f9;
+  background: var(--silver-1);
   transition:
     background 0.2s,
     color 0.2s;
 }
 
 .save-del.armed {
-  color: white;
-  background: #e5484d;
+  color: var(--white);
+  background: var(--red-63);
   font: 700 13px var(--font-ui);
 }
 
@@ -221,8 +229,8 @@
   width: 42px;
   height: 42px;
   border-radius: 13px;
-  color: white;
-  background: linear-gradient(150deg, var(--tone), color-mix(in srgb, var(--tone) 70%, black));
+  color: var(--white);
+  background: linear-gradient(150deg, var(--tone), color-mix(in srgb, var(--tone) 70%, var(--black)));
   box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--tone) 80%, transparent);
 }
 
@@ -246,7 +254,7 @@
 }
 
 .help-day li:nth-child(odd) {
-  background: #f4f6f9;
+  background: var(--silver-1);
 }
 
 .help-day time {
@@ -268,13 +276,13 @@
   border-radius: 999px;
   font: 700 11px var(--font-ui);
   font-style: normal;
-  color: #8a5a00;
-  background: #ffefc6;
+  color: var(--gold-51);
+  background: var(--gold-95);
 }
 
 .help-day .must.lock {
-  color: white;
-  background: #e5484d;
+  color: var(--white);
+  background: var(--red-63);
 }
 
 .help-device {
@@ -313,8 +321,8 @@
   font: 700 12.5px var(--font-ui);
   text-align: center;
   color: var(--ink);
-  background: #eef1f5;
-  box-shadow: inset 0 -2px 0 #d3dae3;
+  background: var(--dlg-text);
+  box-shadow: inset 0 -2px 0 var(--grey-89);
 }
 
 .help-btn {
@@ -324,8 +332,8 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  color: white;
-  background: rgba(18, 24, 36, 0.82);
+  color: var(--white);
+  background: rgba(var(--slate-21-rgb), 0.82);
 }
 
 .help-foot {
@@ -366,7 +374,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 14px;
-  border-top: 1px solid #edf0f4;
+  border-top: 1px solid var(--dlg-text);
 }
 
 .set-actions .link-btn {
@@ -374,13 +382,13 @@
 }
 
 .link-btn.danger.armed {
-  color: white;
-  background: #e5484d;
+  color: var(--white);
+  background: var(--red-63);
 }
 
 .link-btn.done {
-  color: #1f7a4f;
-  background: #dcf5e8;
+  color: var(--complete-green-52);
+  background: var(--complete-stone-95);
 }
 
 /* Landscape phones: the rows tighten so more fit. */
@@ -407,11 +415,11 @@
   margin: 8px auto 0;
   padding: 7px 8px 7px 7px;
   border-radius: 16px;
-  color: white;
-  background: rgba(18, 24, 36, 0.82);
+  color: var(--white);
+  background: rgba(var(--slate-21-rgb), 0.82);
   box-shadow:
-    0 10px 24px -10px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 1px rgba(255, 194, 61, 0.35);
+    0 10px 24px -10px rgba(var(--black-rgb), 0.6),
+    inset 0 0 0 1px rgba(var(--gold-rgb), 0.35);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   pointer-events: auto;
@@ -426,14 +434,14 @@
   height: 34px;
   border-radius: 11px;
   color: var(--ink);
-  background: linear-gradient(150deg, #ffd66b, var(--gold));
+  background: linear-gradient(150deg, var(--gold-89), var(--gold));
   transition:
     background 0.25s,
     transform 0.3s var(--spring);
 }
 
 .coach.done .coach-ic {
-  color: white;
+  color: var(--white);
   background: linear-gradient(150deg, var(--ok), var(--ok-2));
   transform: scale(1.12);
 }
@@ -446,7 +454,7 @@
 
 .coach.finish .coach-ic {
   background: linear-gradient(150deg, var(--orange), var(--orange-2));
-  color: white;
+  color: var(--white);
 }
 
 .coach-text {
@@ -474,8 +482,8 @@
   height: 32px;
   margin-left: 2px;
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.1);
+  color: rgba(var(--white-rgb), 0.7);
+  background: rgba(var(--white-rgb), 0.1);
 }
 
 /* ------------------------------------------------------------ "Game saved" (P8) */
@@ -490,8 +498,8 @@
   padding: 5px 10px 5px 7px;
   border-radius: 999px;
   font: 700 12px var(--font-ui);
-  color: white;
-  background: rgba(18, 24, 36, 0.72);
+  color: var(--white);
+  background: rgba(var(--slate-21-rgb), 0.72);
   opacity: 0;
   transform: translateY(8px);
   transition:
@@ -501,7 +509,7 @@
 }
 
 .saved-mark .ic {
-  color: #5fe0a0;
+  color: var(--complete-green-82);
 }
 
 .saved-mark.on {
@@ -535,15 +543,15 @@ body.touch .saved-mark {
   padding: 8px 8px 8px 14px;
   border-radius: 18px;
   font-weight: 600;
-  background: white;
+  background: var(--white);
   box-shadow: var(--shadow);
   transform: translateX(-50%);
   animation: hint-in 0.45s var(--spring) both;
 }
 
 .help-day .must.job {
-  color: #6b4a00;
-  background: #ffe2a3;
+  color: var(--complete-gold-43);
+  background: var(--gold-92);
 }
 
 /* Landscape phones: the logo on the left, the menu beside it (everything above the fold). */
@@ -615,7 +623,7 @@ body.touch .saved-mark {
 }
 
 .card-note.warn {
-  color: #b4232a;
+  color: var(--complete-red-50);
 }
 
 /* Landscape phones: the saves two by two, a slimmer header, everything in sight. */
@@ -688,7 +696,7 @@ body.touch .coach-skip {
   margin-bottom: 12px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef1f5;
+  background: var(--dlg-text);
 }
 
 .lessons-bar i {
@@ -725,8 +733,8 @@ body.touch .coach-skip {
   padding: 8px 12px 8px 8px;
   border-radius: 16px;
   text-align: left;
-  background: #f2f5f9;
-  box-shadow: inset 0 0 0 1px rgba(18, 35, 58, 0.06);
+  background: var(--silver-1);
+  box-shadow: inset 0 0 0 1px rgba(var(--blue-25-rgb), 0.06);
   animation: card-in 0.35s var(--spring) both;
   animation-delay: var(--d, 0s);
   transition: transform 0.18s var(--spring);
@@ -737,7 +745,7 @@ body.touch .coach-skip {
 }
 
 .lesson-card.next {
-  background: #fff3e8;
+  background: var(--stone-97);
   box-shadow: inset 0 0 0 2px var(--orange);
 }
 
@@ -758,11 +766,11 @@ body.touch .coach-skip {
   border-radius: 50%;
   font: 700 13px var(--font-ui);
   color: var(--ink-soft);
-  background: white;
+  background: var(--white);
 }
 
 .lesson-card.done .lesson-num {
-  color: white;
+  color: var(--white);
   background: var(--ok-2);
 }
 
@@ -773,7 +781,7 @@ body.touch .coach-skip {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  color: white;
+  color: var(--white);
   background: linear-gradient(150deg, var(--steel), var(--steel-2));
 }
 
@@ -810,7 +818,7 @@ body.touch .coach-skip {
   width: 14px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(var(--white-rgb), 0.25);
 }
 
 .lesson-dots i.on {

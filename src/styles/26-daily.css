@@ -1,4 +1,16 @@
 /* ------------------------------------------------------------ the Daily Escape (P26) */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --daily-slate-96: #dff6fa;
+  --daily-orange-83: #ffb27a;
+  --daily-orange-77: #ff9440;
+  --daily-orange-75: #ff8a2b;
+  --daily-orange-64: #e25a12;
+  --daily-orange-64-rgb: 226, 90, 18;
+  --daily-gold-85: #f5c842;
+  --daily-cyan-81: #5fd3e3;
+  --daily-blue-72: #8fa6c6;
+}
 
 /* The title's Daily card: a pill on the right (new, the streak, done). */
 .daily-btn .menu-text small {
@@ -16,19 +28,19 @@
   padding: 3px 8px;
   border-radius: 99px;
   font: 700 11.5px var(--font-ui);
-  color: #fff;
-  background: linear-gradient(135deg, #ff8a2b, #e25a12);
-  box-shadow: 0 2px 6px -2px rgba(226, 90, 18, 0.6);
+  color: var(--white);
+  background: linear-gradient(135deg, var(--daily-orange-75), var(--daily-orange-64));
+  box-shadow: 0 2px 6px -2px rgba(var(--daily-orange-64-rgb), 0.6);
 }
 
 .daily-pill.new {
-  background: linear-gradient(135deg, #2fb6c8, #1d7f9a);
-  box-shadow: 0 2px 6px -2px rgba(29, 127, 154, 0.6);
+  background: linear-gradient(135deg, var(--cyan-71), var(--cyan-56));
+  box-shadow: 0 2px 6px -2px rgba(var(--cyan-56-rgb), 0.6);
 }
 
 .daily-pill.done {
-  background: linear-gradient(135deg, #43d18e, #1f9d63);
-  box-shadow: 0 2px 6px -2px rgba(31, 157, 99, 0.6);
+  background: linear-gradient(135deg, var(--ok), var(--ok-2));
+  box-shadow: 0 2px 6px -2px rgba(var(--ok-2-rgb), 0.6);
 }
 
 .daily-btn.locked {
@@ -72,7 +84,7 @@
 }
 
 .daily-card h2 .ic {
-  color: #5fd3e3;
+  color: var(--daily-cyan-81);
 }
 
 .daily-tabs {
@@ -102,9 +114,9 @@
 }
 
 .daily-tab.on {
-  color: #fff;
+  color: var(--white);
   background: var(--dlg-surface-hi);
-  box-shadow: inset 0 0 0 1px rgba(255, 150, 60, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(var(--orange-77-rgb), 0.5);
 }
 
 .daily-when {
@@ -119,7 +131,7 @@
 
 .daily-when b {
   font: 600 19px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .daily-when span::first-letter {
@@ -161,7 +173,7 @@
 
 .daily-prison .dp-text b {
   font: 600 17px/1.15 var(--font-display);
-  color: #fff;
+  color: var(--white);
   overflow-wrap: anywhere;
 }
 
@@ -190,13 +202,13 @@
   gap: 10px;
   padding: 8px 10px;
   border-radius: 12px;
-  background: linear-gradient(110deg, rgba(47, 182, 200, 0.16), rgba(47, 182, 200, 0.03));
-  box-shadow: inset 0 0 0 1px rgba(47, 182, 200, 0.3);
+  background: linear-gradient(110deg, rgba(var(--cyan-71-rgb), 0.16), rgba(var(--cyan-71-rgb), 0.03));
+  box-shadow: inset 0 0 0 1px rgba(var(--cyan-71-rgb), 0.3);
 }
 
 .twist-row.gift {
-  background: linear-gradient(110deg, rgba(67, 209, 142, 0.16), rgba(67, 209, 142, 0.03));
-  box-shadow: inset 0 0 0 1px rgba(67, 209, 142, 0.32);
+  background: linear-gradient(110deg, rgba(var(--ok-rgb), 0.16), rgba(var(--ok-rgb), 0.03));
+  box-shadow: inset 0 0 0 1px rgba(var(--ok-rgb), 0.32);
 }
 
 .tw-ic {
@@ -206,12 +218,12 @@
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  color: #fff;
-  background: linear-gradient(135deg, #2fb6c8, #1d7f9a);
+  color: var(--white);
+  background: linear-gradient(135deg, var(--cyan-71), var(--cyan-56));
 }
 
 .twist-row.gift .tw-ic {
-  background: linear-gradient(135deg, #43d18e, #1f9d63);
+  background: linear-gradient(135deg, var(--ok), var(--ok-2));
 }
 
 .twist-row > span:last-child {
@@ -222,7 +234,7 @@
 
 .twist-row b {
   font: 600 15px var(--font-display);
-  color: #fff;
+  color: var(--white);
 }
 
 .twist-row small {
@@ -272,7 +284,7 @@
 }
 
 .daily-stats > span.hot {
-  color: #ffb27a;
+  color: var(--daily-orange-83);
 }
 
 .daily-card .card-note {
@@ -301,20 +313,20 @@
   width: 14px;
   height: 14px;
   border-radius: 3px;
-  background: #d9dee6;
+  background: var(--grey-91);
 }
 
 .daily-strip i.s-spotted {
-  background: #f5c842;
+  background: var(--daily-gold-85);
 }
 .daily-strip i.s-hot {
-  background: #ff9440;
+  background: var(--daily-orange-77);
 }
 .daily-strip i.s-caught {
-  background: #e5484d;
+  background: var(--red-63);
 }
 .daily-strip i.s-out {
-  background: #43d18e;
+  background: var(--ok);
 }
 
 .daily-share-row {
@@ -349,13 +361,13 @@
   border-radius: 99px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #dff6fa;
-  background: rgba(47, 182, 200, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(47, 182, 200, 0.4);
+  color: var(--daily-slate-96);
+  background: rgba(var(--cyan-71-rgb), 0.18);
+  box-shadow: inset 0 0 0 1px rgba(var(--cyan-71-rgb), 0.4);
 }
 
 .twist-chip .ic {
-  color: #5fd3e3;
+  color: var(--daily-cyan-81);
 }
 
 /* The share text, where it can't be shared or copied for the player. */
@@ -414,9 +426,9 @@
   height: 64px;
   margin: 0 auto 6px;
   border-radius: 50%;
-  color: #fff;
-  background: radial-gradient(circle at 40% 30%, #8fa6c6, #3d5f84);
-  box-shadow: 0 12px 26px -8px rgba(30, 58, 95, 0.9);
+  color: var(--white);
+  background: radial-gradient(circle at 40% 30%, var(--daily-blue-72), var(--steel-2));
+  box-shadow: 0 12px 26px -8px rgba(var(--navy-rgb), 0.9);
 }
 
 /* The Daily's result: its three stats a row; on a phone on its side, always the victory card's two halves. */

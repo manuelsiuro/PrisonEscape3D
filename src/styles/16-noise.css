@@ -3,6 +3,14 @@
  * a label at the landing spot (amber: who would hear it; red: why it can't go), an ear over
  * each guard who would hear it. After a noise, a "?" over each guard on the way to look. An
  * ear on the tool when a guard would hear the work; a wound alarm clock's countdown on its slot. */
+:root {
+  /* This file's own colours (session 7), by hue and lightness (OKLCH L×100); shared ones: 01-base.css. */
+  --noise-stone-22: #24180a;
+  --noise-red-67: #ff4a3a;
+  --noise-red-67-rgb: 255, 74, 58;
+  --noise-gold-82: #ffb347;
+  --noise-gold-82-rgb: 255, 179, 71;
+}
 .aim-layer {
   position: fixed;
   inset: 0;
@@ -24,12 +32,12 @@
   max-width: calc(100vw - 24px);
   padding: 6px 6px 6px 12px;
   border-radius: 999px;
-  color: white;
+  color: var(--white);
   font: 600 14px/1.25 var(--font-ui);
-  background: rgba(22, 30, 46, 0.94);
+  background: rgba(var(--dlg-bottom-rgb), 0.94);
   box-shadow:
-    0 12px 26px -12px rgba(0, 0, 0, 0.7),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    0 12px 26px -12px rgba(var(--black-rgb), 0.7),
+    inset 0 0 0 1px rgba(var(--white-rgb), 0.08);
   transform: translateX(-50%);
   /* Its own entrance (on `translate`): the toasts' would drop the centring while it plays. */
   animation: aim-in 0.25s var(--spring);
@@ -44,7 +52,7 @@
 
 .aim-hint > .ic {
   flex: none;
-  color: #ffb347;
+  color: var(--noise-gold-82);
 }
 
 .aim-hint span {
@@ -63,9 +71,9 @@
   gap: 5px;
   padding: 8px 12px;
   border-radius: 999px;
-  color: white;
+  color: var(--white);
   font: 700 13px var(--font-ui);
-  background: rgba(255, 255, 255, 0.13);
+  background: rgba(var(--white-rgb), 0.13);
 }
 
 .aim-cancel:active {
@@ -81,25 +89,25 @@
   gap: 5px;
   padding: 4px 10px 4px 7px;
   border-radius: 999px;
-  color: #ffe4b8;
+  color: var(--gold-93b);
   font: 700 12px var(--font-ui);
   white-space: nowrap;
-  background: rgba(22, 30, 46, 0.92);
+  background: rgba(var(--dlg-bottom-rgb), 0.92);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 179, 71, 0.5),
-    0 8px 18px -10px rgba(0, 0, 0, 0.7);
+    inset 0 0 0 1px rgba(var(--noise-gold-82-rgb), 0.5),
+    0 8px 18px -10px rgba(var(--black-rgb), 0.7);
 }
 
 .aim-label .ic {
-  color: #ffb347;
+  color: var(--noise-gold-82);
 }
 
 .aim-label.bad {
   padding-left: 10px;
-  color: #ffd2ca;
+  color: var(--red-90);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 74, 58, 0.65),
-    0 8px 18px -10px rgba(0, 0, 0, 0.7);
+    inset 0 0 0 1px rgba(var(--noise-red-67-rgb), 0.65),
+    0 8px 18px -10px rgba(var(--black-rgb), 0.7);
 }
 
 .aim-label.bad .ic {
@@ -117,11 +125,11 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  color: #24180a;
-  background: #ffb347;
+  color: var(--noise-stone-22);
+  background: var(--noise-gold-82);
   box-shadow:
-    0 0 0 2px rgba(22, 30, 46, 0.88),
-    0 6px 12px -4px rgba(0, 0, 0, 0.6);
+    0 0 0 2px rgba(var(--dlg-bottom-rgb), 0.88),
+    0 6px 12px -4px rgba(var(--black-rgb), 0.6);
 }
 
 /* On the way to look at a noise: a "?" that pops in. */
@@ -129,7 +137,7 @@
   width: 26px;
   height: 26px;
   font: 700 17px/1 var(--font-display);
-  background: #ff8a3d;
+  background: var(--orange-75b);
 }
 
 .heard-pop.on {
@@ -153,9 +161,9 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  color: #24180a;
-  background: #ffb347;
-  box-shadow: 0 0 0 2px rgba(22, 30, 46, 0.9);
+  color: var(--noise-stone-22);
+  background: var(--noise-gold-82);
+  box-shadow: 0 0 0 2px rgba(var(--dlg-bottom-rgb), 0.9);
   animation: heard-pop 0.32s var(--spring);
 }
 
@@ -168,8 +176,8 @@
   height: 22px;
   margin-left: -2px;
   border-radius: 50%;
-  color: #24180a;
-  background: #ffb347;
+  color: var(--noise-stone-22);
+  background: var(--noise-gold-82);
 }
 
 /* While aiming, the prompts and the coach's hint under the aim's hint step aside. */
@@ -191,15 +199,15 @@ body.aiming .hint {
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  color: #24180a;
+  color: var(--noise-stone-22);
   font: 800 10px/1 var(--font-ui);
   background: var(--gold);
   pointer-events: none;
 }
 
 .slot-clock.ringing {
-  color: white;
-  background: #ff5a3a;
+  color: var(--white);
+  background: var(--red-68);
   animation: clock-shake 0.24s linear infinite;
 }
 

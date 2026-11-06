@@ -146,7 +146,7 @@ export function showVictory(v: Victory, click: () => void, back = false): Promis
   );
   // A burst of confetti behind the card (none with reduced motion: the stylesheet hides it).
   const burst = h('div', 'v-confetti');
-  const colors = ['#ffc23d', '#f26b1d', '#3fb950', '#2fb6c8', '#ffffff', '#8e4fc4'];
+  const colors = ['var(--gold)', 'var(--accent)', 'var(--green-70)', 'var(--cyan-71)', 'var(--white)', 'var(--purple-56)'];
   for (let k = 0; k < 36; k++) {
     const bit = document.createElement('i');
     bit.style.cssText = `--x:${(Math.random() * 100).toFixed(1)}vw;--d:${(Math.random() * 0.6).toFixed(2)}s;--t:${(1.8 + Math.random() * 1.4).toFixed(2)}s;--r:${Math.round(Math.random() * 720 - 360)}deg;--s:${(Math.random() * 30 - 15).toFixed(0)}vw;background:${colors[k % colors.length]}`;

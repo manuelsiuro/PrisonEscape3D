@@ -51,7 +51,7 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
           <span class="hero-ic">${icon('play', 22)}</span>
           <span class="hero-text"><b>${t('title.continue')}</b><small>${info.resume}</small></span>
         </button>
-        <button class="menu-btn" data-c="play" style="--tone:#ff7714;--tone-2:#d9530a">
+        <button class="menu-btn" data-c="play" style="--tone:var(--orange);--tone-2:var(--orange-2)">
           <span class="menu-ic">${icon('replay', 18)}</span>
           <span class="menu-text"><span class="menu-label">${t('title.newGame')}</span><small>${info.record ? `${icon('trophy', 12)}${info.record}` : info.prisonLine}</small></span>
           ${icon('chevronRight', 16)}
@@ -63,34 +63,34 @@ export function showTitle(info: TitleInfo, click: () => void): Promise<TitleChoi
         }
         ${
           info.saves
-            ? `<button class="menu-btn" data-c="load" style="--tone:#6f93b8;--tone-2:#3d5f84">
+            ? `<button class="menu-btn" data-c="load" style="--tone:var(--steel);--tone-2:var(--steel-2)">
           <span class="menu-ic">${icon('folder', 18)}</span>
           <span class="menu-text"><span class="menu-label">${t('title.load')}</span></span>
           ${icon('chevronRight', 16)}
         </button>`
             : ''
         }
-        <button class="menu-btn daily-btn${info.daily.locked ? ' locked' : info.daily.done ? ' done' : ''}" data-c="daily" style="--tone:#2fb6c8;--tone-2:#1d7f9a"${info.daily.locked ? ' aria-disabled="true"' : ''}>
+        <button class="menu-btn daily-btn${info.daily.locked ? ' locked' : info.daily.done ? ' done' : ''}" data-c="daily" style="--tone:var(--cyan-71);--tone-2:var(--cyan-56)"${info.daily.locked ? ' aria-disabled="true"' : ''}>
           <span class="menu-ic">${icon(info.daily.locked ? 'lock' : 'calendar', 18)}</span>
           <span class="menu-text"><span class="menu-label">${t('daily.title')}</span><small></small></span>
           ${info.daily.locked ? '' : info.daily.done ? `<span class="daily-pill done">${icon('check', 12)}${info.daily.streak > 1 ? t('daily.streakShort', { n: info.daily.streak }) : t('daily.doneShort')}</span>` : info.daily.streak ? `<span class="daily-pill" aria-label="${t('daily.streakShort', { n: info.daily.streak })}">${icon('flame', 12)}${info.daily.streak}</span>` : `<span class="daily-pill new">${t('daily.new')}</span>`}
         </button>
-        <button class="menu-btn${info.newcomer ? ' suggest' : ''}" data-c="tutorial" style="--tone:#8e4fc4;--tone-2:#6a35a0">
+        <button class="menu-btn${info.newcomer ? ' suggest' : ''}" data-c="tutorial" style="--tone:var(--purple-56);--tone-2:var(--title-purple-45)">
           <span class="menu-ic">${icon('book', 18)}</span>
           <span class="menu-text"><span class="menu-label">${t('title.tutorial')}</span><small>${info.tutorial}</small></span>
           ${icon('chevronRight', 16)}
         </button>
         <div class="title-row three">
-          <button class="menu-btn" data-c="trophies" style="--tone:#e2a21b;--tone-2:#b87a0c;--done:${Math.round((100 * info.trophies.n) / Math.max(1, info.trophies.of))}%">
+          <button class="menu-btn" data-c="trophies" style="--tone:var(--gold-75);--tone-2:var(--title-gold-63);--done:${Math.round((100 * info.trophies.n) / Math.max(1, info.trophies.of))}%">
             <span class="menu-ic">${icon('trophy', 18)}<span class="menu-count${info.trophiesNew ? ' new' : ''}" aria-hidden="true">${info.trophies.n}/${info.trophies.of}</span></span>
             <span class="menu-text"><span class="menu-label">${t('title.trophies')}</span><span class="sr-only">, ${t('title.trophiesSr', info.trophies)}${info.trophiesNew ? `, ${t('trophy.newSr')}` : ''}</span></span>
             <span class="menu-bar"></span>
           </button>
-          <button class="menu-btn" data-c="help" style="--tone:#3fb07a;--tone-2:#1f8a5a">
+          <button class="menu-btn" data-c="help" style="--tone:var(--title-green-68);--tone-2:var(--title-green-56)">
             <span class="menu-ic">${icon('help', 18)}</span>
             <span class="menu-text"><span class="menu-label">${t('title.help')}</span></span>
           </button>
-          <button class="menu-btn" data-c="settings" style="--tone:#8a94a6;--tone-2:#5d6779">
+          <button class="menu-btn" data-c="settings" style="--tone:var(--title-slate-66);--tone-2:var(--slate-51)">
             <span class="menu-ic">${icon('gear', 18)}</span>
             <span class="menu-text"><span class="menu-label">${t('title.settings')}</span></span>
           </button>
