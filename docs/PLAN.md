@@ -194,7 +194,7 @@ its reviews, plus the Install button (v2.21.5), a full code review (v2.21.6), th
 38 ways out, 149 items, 60 recipes, 142 achievements, 55 lessons in 4 chapters, 65 help topics,
 4,785 text keys in English and French, 67 test scripts.
 
-Parked ideas, none planned: gangs and turf, the riot, photo mode and postcards, a custom
-escape (twist sandbox), the escape planner corkboard, a story through the prisons.
+What's open (the areas not polished yet, the checks only a person can do, the ideas the user
+parked): [`BACKLOG.md`](BACKLOG.md).
 
 The history of every release is in [`docs/HISTORY.md`](HISTORY.md).

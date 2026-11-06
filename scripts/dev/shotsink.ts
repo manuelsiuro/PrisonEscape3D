@@ -12,7 +12,7 @@ const MAPS = 'assets/maps';
 mkdirSync(DIR, { recursive: true });
 /** A help picture, or a map viewer's in-game picture and its frame (N-<prison>-game, N-<prison>-outside-game). */
 const HELP = /^[a-z]+\.webp$/;
-const MAP = /^[0-9]-[a-z-]+-(game|outside-game)\.(png|json)$/;
+const MAP = /^[0-9]-[a-z-]+-(game|outside-game)\.(webp|json)$/;
 createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5310');
   res.setHeader('Access-Control-Allow-Headers', 'content-type');
@@ -20,7 +20,7 @@ createServer((req, res) => {
   const name = new URL(req.url ?? '', 'http://localhost').searchParams.get('name') ?? '';
   if (req.method !== 'POST' || !(HELP.test(name) || MAP.test(name))) {
     res.statusCode = 400;
-    return void res.end('POST ?name=<id>.webp or ?name=N-<prison>-game.png');
+    return void res.end('POST ?name=<id>.webp or ?name=N-<prison>-game.webp');
   }
   const parts: Buffer[] = [];
   req.on('data', (c: Buffer) => parts.push(c));

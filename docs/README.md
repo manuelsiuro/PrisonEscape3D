@@ -11,6 +11,7 @@ record. Nothing was rewritten: rows and entries moved word for word.
 | What a polish pass already did to an area, the user's choices, its known limits | [`POLISH.md`](POLISH.md) |
 | What one release changed, what its reviews found | [`HISTORY.md`](HISTORY.md), one line per release, then its range's file in [`history/`](history/) |
 | How a phase was planned and proved (P0–P42, the polish series) | [`phases/`](phases/), one file per roadmap (the list is in `PLAN.md` §4) |
+| What's open: areas not polished yet, checks only a person can do, parked ideas | [`BACKLOG.md`](BACKLOG.md) |
 | What the game has, for players | [`FEATURES.md`](FEATURES.md) |
 | The original design | [`the_escapists_3d_complete_game_design_document.md`](source/the_escapists_3d_complete_game_design_document.md) (the GDD, the source of truth), [`game_idea.md`](source/game_idea.md), [`tech_plan.md`](source/tech_plan.md) (engineering, where the GDD says nothing) |
 

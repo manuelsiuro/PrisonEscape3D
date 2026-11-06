@@ -2,7 +2,8 @@
 // (2026-11-06). Run: npm run docs:released. For the version in package.json it
 //   - drops "not released yet" from its history entry (docs/history/) and its line in HISTORY.md;
 //   - sets PLAN.md §8's status line to today and this version;
-//   - restamps the map viewer (npm run maps: its pages carry the version);
+//   - restamps the map viewer (npm run maps: its data.js carries the version; the pictures change only
+//     when a map does);
 // then lists what changed and the commit to make. It commits nothing itself.
 import { execSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';

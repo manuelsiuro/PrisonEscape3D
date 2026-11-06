@@ -3,8 +3,8 @@
 // assets/maps/, for the map viewer's "In game" view; and (P41 review) each prison's outside, as the
 // manhunt draws it, for its "Outside 3D" view. In the dev build's console:
 //   const m = await import('/scripts/dev/mapshot.ts');
-//   await m.download();          // every prison: N-<id>-game.png and N-<id>-game.json, as downloads
-//   await m.shoot(3);            // one prison (index as in the viewer): { png: data URL, meta }
+//   await m.download();          // every prison: N-<id>-game.webp and N-<id>-game.json, as downloads
+//   await m.shoot(3);            // one prison (index as in the viewer): { png: data URL (WebP), meta }
 //   await m.send();              // every prison and every outside, straight to assets/maps/ (needs shotsink.ts running); send(true): the outsides only
 //   await m.shootOutside(3);     // one prison's outside: { png, meta }
 // Move the downloads into assets/maps/ (send() writes them there), then `npm run maps` puts them in the viewer's data.
@@ -36,7 +36,7 @@ export async function shoot(k: number) {
   // A few frames behind the title first: the new prison's meshes built, its shaders warm.
   await frames(30);
   const name = def.id === 'training' ? 'Training Block' : ((en as Record<string, string>)[`prison.${def.id}`] ?? def.id);
-  return framed(view.mapShot(S, 2, true), `${k}-${def.id}-game.png`, `${name} — in game: the 3D view from the game's camera, nobody in it, 10:00 (searchlights faint: they light at night)`, `v${pkg.version} · map rev ${def.map ?? 0} · rulers: the floor's tiles (walls stand up over the rows north of them)`);
+  return framed(view.mapShot(S, 2, true), `${k}-${def.id}-game.webp`, `${name} — in game: the 3D view from the game's camera, nobody in it, 10:00 (searchlights faint: they light at night)`, `v${pkg.version} · map rev ${def.map ?? 0} · rulers: the floor's tiles (walls stand up over the rows north of them)`);
 }
 
 /**
@@ -63,7 +63,7 @@ export async function shootOutside(k: number) {
   v.dogs.group.visible = false;
   v.cones.group.visible = false;
   const name = (en as Record<string, string>)[`prison.${def.id}`] ?? def.id;
-  const out = framed(view.mapShot(S, 2), `${k}-${def.id}-outside-game.png`, `${name} — the outside in game (P41, the manhunt): the 3D view from the game's camera, nobody in it, 10:00`, `v${pkg.version} · rulers: the outside's tiles as the Outside view's · the prison stands past the wall (bottom)`);
+  const out = framed(view.mapShot(S, 2), `${k}-${def.id}-outside-game.webp`, `${name} — the outside in game (P41, the manhunt): the 3D view from the game's camera, nobody in it, 10:00`, `v${pkg.version} · rulers: the outside's tiles as the Outside view's · the prison stands past the wall (bottom)`);
   v.player.root.visible = true;
   v.dogs.group.visible = true;
   v.cones.group.visible = true;
@@ -109,7 +109,8 @@ function framed(shot: { canvas: HTMLCanvasElement; top: number; rows: number }, 
     g.fillRect(w - M, y0 + n * dz, t, 1);
   }
   const meta = { file, width: w, height: h, originX: M, originY: y0, tileW: S, tileH: dz };
-  return { png: c.toDataURL('image/png'), meta };
+  // (WebP since 2.34.1: a fraction of a PNG's size for a 3D photo, so the repository doesn't grow by megabytes a shot.)
+  return { png: c.toDataURL('image/webp', 0.9), meta };
 }
 
 /** Every prison, saved as downloads (the picture and its frame's numbers). */
@@ -123,7 +124,7 @@ export async function download() {
       a.click();
     };
     save(png, meta.file);
-    save(URL.createObjectURL(new Blob([JSON.stringify(meta)], { type: 'application/json' })), meta.file.replace('.png', '.json'));
+    save(URL.createObjectURL(new Blob([JSON.stringify(meta)], { type: 'application/json' })), meta.file.replace('.webp', '.json'));
     await frames(10);
   }
 }
@@ -139,7 +140,7 @@ export async function send(outsides = false) {
     for (const shot of [outsides ? null : await shoot(k), await shootOutside(k)]) {
       if (!shot) continue;
       await post(shot.meta.file, await (await fetch(shot.png)).blob());
-      await post(shot.meta.file.replace('.png', '.json'), new Blob([JSON.stringify(shot.meta)], { type: 'application/json' }));
+      await post(shot.meta.file.replace('.webp', '.json'), new Blob([JSON.stringify(shot.meta)], { type: 'application/json' }));
       sent.push(shot.meta.file);
     }
     if (play.game) (await import('../../src/play/session')).endGame();

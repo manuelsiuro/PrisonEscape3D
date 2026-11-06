@@ -9,6 +9,7 @@
  * - Each file within its size, so that one question means one small read; entries written from
  *   2.35 on wrapped (no line over 300 characters), a POLISH row from 2.35 on short.
  * - The counts written in PLAN.md §8, FEATURES.md and the README are the game's.
+ * - BACKLOG.md's areas not polished yet are POLISH.md's.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
@@ -150,3 +151,25 @@ for (const [f, re, what] of WRITTEN) {
   if (m) check(Number(m[1].replace(/,/g, '')) === COUNT[what], `${f}: ${m[1]} ${what}, the game has ${COUNT[what]}`);
 }
 console.log('the counts in PLAN.md, FEATURES.md and the README are the game\'s');
+
+// ------------------------------------------------------------------ the backlog
+// Its first table is POLISH.md's areas not done (Not reviewed, Partly): one list, kept in step.
+const notDone = read('docs/POLISH.md')
+  .split('\n')
+  .filter((l) => l.startsWith('| ') && !l.startsWith('| Area'))
+  .map((l) => l.split('|').map((c) => c.trim()))
+  .filter((c) => c[3] === 'Not reviewed' || c[3] === 'Partly')
+  .map((c) => `${c[1]} | ${c[3]}`)
+  .sort();
+const backlog = read('docs/BACKLOG.md');
+const first = backlog.slice(backlog.indexOf('## 1.'), backlog.indexOf('## 2.'));
+const listed = first
+  .split('\n')
+  .filter((l) => l.startsWith('| ') && !l.startsWith('| Area'))
+  .map((l) => l.split('|').map((c) => c.trim()))
+  .map((c) => `${c[1]} | ${c[2]}`)
+  .sort();
+for (const a of notDone) check(listed.includes(a), `BACKLOG.md §1 lists ${a} (POLISH.md)`);
+for (const a of listed) check(notDone.includes(a), `BACKLOG.md §1's ${a} is still open in POLISH.md`);
+check(Buffer.byteLength(backlog) <= 16 * KB, `docs/BACKLOG.md within 16 KB`);
+console.log("BACKLOG.md's areas are POLISH.md's open ones");
