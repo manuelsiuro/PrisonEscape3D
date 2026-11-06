@@ -91,6 +91,20 @@ const ACTS: Record<string, () => void> = {
   cinema: () => void view.cinema(true, false),
   shift: () => view.setShift(260, 40),
   zoom: () => view.zoomBy(1.7),
+  // What lands and flies, by the player (the inmate 0 struck, a cup thrown at them, bangs and blasts a tile or two off).
+  effects: () => {
+    const g = play.game!;
+    const p = g.rec.sim.state.player;
+    const t = Math.floor(p.z / 1024) * 64 + Math.floor(p.x / 1024) + 2;
+    view.impact('chip', t, 0, true);
+    view.impact('cut', t + 1, 0, false);
+    view.blow(-1, 0, true);
+    view.throwAt(0);
+    view.bang(t - 4);
+    view.blast(t + 64);
+    view.shock();
+    view.shot(0, p.x / 1024 + 1, p.z / 1024, false);
+  },
 };
 type Scene = [string, number, number, string?];
 export const SCENES: Scene[] = [
