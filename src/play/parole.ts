@@ -42,7 +42,6 @@ import { coachOnce } from './tips';
 import { releaseChip } from './paperwork';
 import { sitterPortraitOf } from '../render/portrait';
 import { TOUCH } from '../ui/dom';
-import { LESSONS } from '../tutorial/lessons';
 import { floatUp } from './floats';
 import { refusedText } from './refusals';
 import { announcePa, dayTime } from './warden';
@@ -218,7 +217,7 @@ export function paroleNow(sim: Sim): ParoleView | null {
   // At the release desk (not reporting there, nor with a form for the tray: the action button has those).
   // (Not in the Daily, which has no parole board, nor in another lesson's scene at the desk: the paperwork's.)
   const lesson = play.game?.lesson;
-  if (s.mods.length || (lesson && LESSONS[lesson.index]?.id !== 'parole')) return null;
+  if (s.mods.length || (lesson && lesson.lesson.id !== 'parole')) return null;
   if (!atDesk(sim) || atRelease(sim) || atTray(sim) || calledNow(s)) return null;
   v.phase = 'desk';
   const p = s.parole;

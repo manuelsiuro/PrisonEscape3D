@@ -77,10 +77,11 @@ import { clearPlayTimers, play, type DailyRun, type Game } from './game';
 import { dailyBanner, dailyEscaped, dailyPlace, dailyRestart, dailyTwistsHtml } from './daily';
 import { ask } from '../ui/screens/ask';
 import { firstDay, seenTip, settingsChanged, tipsSeen } from './tips';
-import { hideLesson, lessonPlace, objectivesOf, type LessonRun } from './lesson';
+import { hideLesson, lessonPlace, objectivesOf } from './lazy';
+import type { LessonRun } from './lesson';
 import { showObjectives } from '../ui/screens/objectives';
 import { escapeScene, stageWorld } from './stage';
-import { hasOutside, runHunt, stopHunt } from './hunt';
+import { hasOutside, loadHunt, runHunt, stopHunt } from './lazy';
 import { huntLeft, huntOver } from './huntEnd';
 import { isLegal } from '../content/manhunt';
 import { outsideOf } from '../content/outside';
@@ -454,7 +455,15 @@ export async function escaped() {
   };
   // The manhunt (P41): after a way out over the wall (not a legal release), the card offers to keep running.
   const outside = !isLegal(via) && hasOutside(sim.prison.id) ? outsideOf(sim.prison.id)! : null;
-  if (outside) victory.hunt = { state: 'offer', goal: outside.safeKind, lou: st.lou[5] < 0 };
+  // (Its code is a file of its own, in by now: if it couldn't be fetched, offline on a first visit, no offer.)
+  const huntIn =
+    !!outside &&
+    (await loadHunt().then(
+      () => true,
+      () => false,
+    ));
+  if (play.game !== g) return;
+  if (outside && huntIn) victory.hunt = { state: 'offer', goal: outside.safeKind, lou: st.lou[5] < 0 };
   // (Watch the replay, P25: then the card again.)
   let choice: VictoryChoice;
   for (let back = false; ; back = true) {

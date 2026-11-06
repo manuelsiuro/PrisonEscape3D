@@ -1,6 +1,7 @@
 import type { Bubble } from '../talk/director';
 import { h } from './dom';
 import { icon } from './icons';
+import { fontsKnown } from '../app/fonts';
 
 /** Where someone is on screen at a height (world units above their feet); -1 is the player. */
 type Project = (id: number, out: { x: number; y: number }, height: number) => { x: number; y: number } | null;
@@ -98,7 +99,7 @@ export class Bubbles {
       this.measuredAt = 0;
     };
     addEventListener('resize', remeasure);
-    document.fonts?.ready.then(remeasure).catch(() => {});
+    void fontsKnown().then(remeasure);
   }
 
   /** A new bubble: its element made (or reused). */

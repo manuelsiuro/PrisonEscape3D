@@ -1,6 +1,7 @@
 /** The sprites over people's heads, drawn once on canvases and shared: sleep's Z, a knockout's stars, marks and badges. */
 import * as THREE from 'three';
 import { canvasTexture } from './canvas';
+import { fontsKnown } from '../app/fonts';
 
 /** "Z" for sleepers, drawn once and shared. */
 let zTexture: THREE.CanvasTexture | null = null;
@@ -23,14 +24,17 @@ export function sleepTexture(): THREE.CanvasTexture {
   draw();
   const tex = canvasTexture(c);
   zTexture = tex;
-  // Made before the web font arrives (the player is built at startup): drawn again once it has.
-  document.fonts?.load('900 52px Fredoka').then(
-    () => {
-      draw();
-      tex.needsUpdate = true;
-    },
-    () => {},
-  );
+  // Made before the web font arrives (the player is built at startup): drawn again once it has
+  // (asked once its stylesheet is in: before, no face is known and the answer comes at once).
+  void fontsKnown()
+    .then(() => document.fonts?.load('900 52px Fredoka'))
+    .then(
+      () => {
+        draw();
+        tex.needsUpdate = true;
+      },
+      () => {},
+    );
   return tex;
 }
 

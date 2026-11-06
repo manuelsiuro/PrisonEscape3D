@@ -19,9 +19,9 @@ import { holidayStep } from './holidays';
 import { raceStep } from './long';
 import { checkRun } from '../game/trophies';
 import { markTip, updateFirstDay } from './tips';
-import { lessonEvent, lessonHidden, updateLesson } from './lesson';
+import { lessonEvent, lessonHidden, updateLesson } from './lazy';
 import { replayFrame } from './replay';
-import { huntFrame } from './hunt';
+import { huntFrame } from './lazy';
 import { needleOp } from './team';
 
 const NO_OP: [number, number, number, number] = [0, 0, 0, 0];

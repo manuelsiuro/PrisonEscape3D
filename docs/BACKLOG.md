@@ -63,12 +63,11 @@ The user picked all sixteen from a survey of the code, the UI, the 3D and the ga
 one development session each. The order puts safety nets before refactors, measurements before
 fixes, and polished systems before the feature built on them; the user may reorder. Each session
 starts by asking the user's choices, and ends with its history entry; take it off here when done
-(the numbers stay: 1, lint and types, 2, the action button's test, and 3, the giant modules split,
-were done in v2.34.2).
+(the numbers stay: 1, lint and types, 2, the action button's test, 3, the giant modules split, and
+4, the faster first load, were done in v2.34.2).
 
 | # | Session | Why now, what it found |
 |---|---|---|
-| 4 | Faster first load | One 3 MB bundle, no dynamic import: the tutorial, manhunt, minigames and French loaded on demand |
 | 5 | Phone performance pass | `budgettest` counts the static world headless (30–37 calls); nothing measures the browser: frame time, the whole scene's calls (166–254 at roll call, v2.5.0), day and night |
 | 6 | Hitches and memory | `budgettest` proves a world frees what it made; not measured: shader-compile stalls, garbage collection, memory over a long game in a browser |
 | 7 | Design-token cleanup | ~720 colours written into the CSS outside `01-base.css`, 79 inline styles; 380 KB of CSS |

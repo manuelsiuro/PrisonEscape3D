@@ -1,10 +1,10 @@
-import { huntTap } from './hunt';
+import { huntTap } from './lazy';
 import { itemNumber } from '../content/items';
 import { ROUTINE } from '../content/routine';
 import { clockAt } from '../sim/systems/clock';
 import { NIGHT_WARNING } from '../sim/tuning';
 import { t } from '../i18n';
-import { lessonGoal } from './lesson';
+import { lessonGoal } from './lazy';
 import { ZONES } from '../content/zones';
 import { findPath, smooth } from '../sim/ai/path';
 import { tileAt } from '../sim/world/grid';

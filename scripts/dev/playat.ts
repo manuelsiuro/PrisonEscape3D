@@ -6,12 +6,12 @@
 //   await p.at('stalag-flucht', 1, 9 * 60 + 1);   // the model prisoner's day up to then, on screen
 //   await p.to(53, 10); await p.press('KeyE');     // walked there by keys, the action button
 //   p.freeze(); p.zoom(3);                         // held still, the canvas enlarged on the player
-//   p.lang('fr'); p.info();
+//   await p.lang('fr'); p.info();
 // Every prison open in a test profile: seed `pe3d.escapes` with a route for each of the first four
 // prisons in an isolated context, then reload (once more, so no achievement toast is left on screen).
 import { PRISONS } from '../../src/content/prisons';
 import { TRAINING } from '../../src/content/prisons/training';
-import { setLang } from '../../src/i18n';
+import { loadLang, setLang } from '../../src/i18n';
 import { play } from '../../src/play/game';
 import { endGame, startGame } from '../../src/play/session';
 import type { View } from '../../src/render/View';
@@ -98,7 +98,10 @@ export function zoom(k: number) {
 }
 
 /** The language, for what's drawn from now on (open the panel again to see it: what's on screen stays). */
-export const lang = (l: 'en' | 'fr' | 'auto') => setLang(l);
+export const lang = async (l: 'en' | 'fr' | 'auto') => {
+  await loadLang(l);
+  setLang(l);
+};
 
 /** Where the game is. */
 export function info() {

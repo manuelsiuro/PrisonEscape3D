@@ -7,7 +7,7 @@ import { showLessons } from '../ui/screens/lessons';
 import { click, view } from '../play/context';
 import { endGame, startGame } from '../play/session';
 import { newLessonRun } from '../play/lesson';
-import { lessonHunt } from '../play/hunt';
+import { lessonHunt, loadHunt } from '../play/lazy';
 import { play } from '../play/game';
 
 /**
@@ -36,9 +36,18 @@ export async function tutorialFlow(first: number | null = null): Promise<boolean
 }
 
 /** One lesson: its scene set up on a fresh game, played until it ends one way or the other. */
-function runLesson(k: number): Promise<LessonResult | 'quit'> {
+async function runLesson(k: number): Promise<LessonResult | 'quit'> {
+  const lesson = LESSONS[k];
+  // (P41: a lesson in the manhunt needs its code, fetched first; not fetched, back to the list.)
+  if (
+    lesson.hunt &&
+    !(await loadHunt().then(
+      () => true,
+      () => false,
+    ))
+  )
+    return 'quit';
   return new Promise((resolve) => {
-    const lesson = LESSONS[k];
     const sim = new Sim(lesson.prison ?? TRAINING, lesson.seed ?? 7 + k);
     lesson.setup(sim);
     let settled = false;
