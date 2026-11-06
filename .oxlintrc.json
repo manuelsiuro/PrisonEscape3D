@@ -1,20 +1,32 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // oxlint, not ESLint: ESLint's TypeScript plugin needs TypeScript below 6.1 (this is 7), and
+  // oxlint's type-aware rules run on TypeScript 7's own engine (oxlint-tsgolint). v2.34.2.
   "plugins": ["eslint", "typescript", "unicorn", "oxc"],
+  // The rules that find bugs; the style categories aren't on.
   "categories": {
     "correctness": "error"
   },
   "rules": {
+    // `cond && f()` and `a ? f() : g()` are this code's way; a statement that does nothing is not.
     "no-unused-expressions": ["error", { "allowShortCircuit": true, "allowTernary": true }],
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    // A name's length is counted in code points on purpose ([...name]).
     "typescript/no-misused-spread": ["error", { "allow": [{ "from": "lib", "name": "string" }] }],
+    // Off: the copies it calls useless ([...followers] in a loop that dismisses them, a scene's
+    // children removed while walked) keep those loops from skipping; its fix would break them.
     "unicorn/no-useless-spread": "off",
+    // Off: `return void f()` returns early from a void function in one line.
     "typescript/no-meaningless-void-operator": "off",
+    // Off: an inmate's plan has a `then` step, never awaited.
     "unicorn/no-thenable": "off",
+    // Off: new Array(n).fill(x) makes the grids.
     "unicorn/no-new-array": "off"
   },
   "overrides": [
     {
+      // The tests and tools: printing and sorting for the log, patching methods on purpose,
+      // and the map viewer's data.js read by evaluating it.
       "files": ["scripts/**"],
       "rules": {
         "typescript/require-array-sort-compare": "off",
