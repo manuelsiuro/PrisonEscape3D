@@ -1,5 +1,5 @@
 /**
- * The makings of P28's long games, had on request (docs/PLAN.md §9): fruit off an open canteen
+ * The makings of P28's long games, had on request (docs/phases/3-free-time.md): fruit off an open canteen
  * counter at a meal (one piece a meal), sugar from an open kitchen freezer and a seed packet off an
  * open library shelf (one a prison day each); every merchant's staples (sugar and seed packets,
  * whatever its stock); and what a merchant buys (ripe pruno, vegetables) at its value. Nothing is

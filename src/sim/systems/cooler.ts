@@ -1,5 +1,5 @@
 /**
- * The canteen's water cooler (2.33, docs/PLAN.md §2): a paper cup of water.
+ * The canteen's water cooler (2.33, docs/decisions/routine.md): a paper cup of water.
  *
  * - **A cup** (the action button at it, faced; EXT.COOLER DRINK): +5 energy, then nothing more for half an hour
  *   ("not thirsty"); on a heatwave's day it cools the player down at once, as a shower does. Full and cool, it's

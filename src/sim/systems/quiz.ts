@@ -1,5 +1,5 @@
 /**
- * Quiz night (P30, docs/PLAN.md §9): a day card, 19:00–21:00, at the four places in the library.
+ * Quiz night (P30, docs/phases/3-free-time.md): a day card, 19:00–21:00, at the four places in the library.
  *
  * - **Joining** (EXT.QUIZ 0): within QUIZ_RANGE of a place, once a night. The three nearest
  *   inmates up and about (within QUIZ_CALL) are the contestants; they walk over (QUIZ_GATHER at

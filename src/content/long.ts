@@ -1,5 +1,5 @@
 /**
- * Long games (P28, docs/PLAN.md §9): pruno brewed over two prison days, a garden bed grown over
+ * Long games (P28, docs/phases/3-free-time.md): pruno brewed over two prison days, a garden bed grown over
  * three, and a pet rat trained for the race nights. The makings are taken on request (pantry.ts),
  * never stocked: nothing here changes what the furniture holds or draws on the state's RNG.
  */

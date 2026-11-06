@@ -1,5 +1,5 @@
 /**
- * The internet kiosk (P35, docs/PLAN.md §11): a wall terminal in every campaign prison's library,
+ * The internet kiosk (P35, docs/phases/5-phone-kiosk.md): a wall terminal in every campaign prison's library,
  * open in the free times outside a lockdown. Logged in, the player pays $1 a block of ten game
  * minutes, up front. Its apps: Mail (a letter home: the week's money order, shared with the
  * phone, and a reply with a family drawing at a later mail call), a Shop of legal goods (cheaper

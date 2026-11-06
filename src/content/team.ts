@@ -1,5 +1,5 @@
 /**
- * Team & ink (P29, docs/PLAN.md §9): yard football (three a side on the yard's pitch, and the
+ * Team & ink (P29, docs/phases/3-free-time.md): yard football (three a side on the yard's pitch, and the
  * cover it gives) and the tattoo parlour (a homemade gun, a design traced for an inmate's money,
  * a friend's work on the player's own arm). Nothing here happens without the player asking, and
  * nothing draws on the state's RNG: the escape bots' runs stay as they were.

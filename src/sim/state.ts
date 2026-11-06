@@ -355,7 +355,7 @@ export interface SimState {
   laughed: number[];
 
   /**
-   * v2.23 (the guards keep watch, PLAN §2): the steps the player has spent in the block's zones
+   * v2.23 (the guards keep watch, docs/decisions/routine.md): the steps the player has spent in the block's zones
    * so far (checking in takes ROUTINE's `stay`; cleared as a block begins); a search of another
    * inmate's cell (snoop.ts: [] none; else [the container open, the step a guard last saw it at
    * it (0 none yet), 1 once its owner has seen]).

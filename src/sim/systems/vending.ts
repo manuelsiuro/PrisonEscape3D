@@ -1,5 +1,5 @@
 /**
- * The vending machine (2.32, docs/PLAN.md §2): one in each campaign prison's canteen, its rows filled every morning
+ * The vending machine (2.32, docs/decisions/jobs-money.md): one in each campaign prison's canteen, its rows filled every morning
  * (a little more on a delivery day) and bought from by the player and the inmates alike.
  *
  * - **Up to it** (the action button, EXT.VEND OPEN): its card opens. Nobody there first: it's the player's. Someone

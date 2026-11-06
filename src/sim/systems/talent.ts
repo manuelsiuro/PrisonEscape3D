@@ -1,5 +1,5 @@
 /**
- * Talent night (P30, docs/PLAN.md §9): a day card, 19:00–21:00, on the stage in the canteen.
+ * Talent night (P30, docs/phases/3-free-time.md): a day card, 19:00–21:00, on the stage in the canteen.
  *
  * - **The acts**: two or three inmates (by roll(), each with a song, an instrument and the
  *   judges' mark) take the stage in turn, ACT_MINUTES each from 19:00, ACT_GAP apart. All a pure

@@ -4,7 +4,7 @@
  * logs and written down, and docs/POLISH.md, the record of what's been done. (Everything else on
  * the list is the polish-gameplay skill's: it needs eyes.)
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { CENTER_PERKS } from '../src/content/prisons/center-perks';
 import { TRAINING } from '../src/content/prisons/training';
 import { Sim } from '../src/sim/Sim';
@@ -45,12 +45,14 @@ console.log(`${pictured.length} pictures, each with its recipe`);
 // ------------------------------------------------------------------ rule changes
 const num = (v: string) => v.split('.').reduce((sum, x) => sum * 1000 + Number(x), 0);
 const flags = Object.keys(new Sim(CENTER_PERKS, 1)).filter((k) => /^rules\d+$/.test(k));
-const plan = readFileSync('docs/PLAN.md', 'utf8');
+/** The plan, with its decisions and phases, and the history: each split into files (2026-11-06). */
+const docs = (...dirs: string[]) => dirs.flatMap((d) => readdirSync(d).filter((f) => f.endsWith('.md')).map((f) => readFileSync(`${d}/${f}`, 'utf8'))).join('\n');
+const plan = readFileSync('docs/PLAN.md', 'utf8') + docs('docs/decisions', 'docs/phases');
 /** The version a flag is named for: rules224, played under 2.24 or before; but rules250, under 2.5.0. */
 const version = (flag: string) => (flag === 'rules250' ? [2, 5, 0] : [Number(flag[5]), Number(flag.slice(6)), 0]);
 const log = (game: string): RunLog => ({ v: 1, prison: CENTER_PERKS.id, seed: 1, game, from: 0, steps: 0, data: '', sums: [] });
 for (const flag of flags) {
-  check(plan.includes(`Sim.${flag}`), `${flag}: written down in PLAN.md`);
+  check(plan.includes(`Sim.${flag}`), `${flag}: written down in the plan (PLAN.md, docs/decisions/, docs/phases/)`);
   const [a, b, c] = version(flag);
   const set = prepareReplay(log(`${a}.${b}.${c}`), CENTER_PERKS);
   check(!!set && (set.sim as unknown as Record<string, boolean>)[flag] === true, `${flag}: a log from ${a}.${b}.${c} replays under it`);
@@ -67,7 +69,8 @@ console.log(`rule flags: ${flags.join(', ')}; each gated and written down`);
 
 // ------------------------------------------------------------------ the record
 check(existsSync('docs/POLISH.md'), 'docs/POLISH.md is there');
-const history = readFileSync('docs/HISTORY.md', 'utf8');
+const history = docs('docs/history');
+const index = readFileSync('docs/HISTORY.md', 'utf8');
 const release = JSON.parse(readFileSync('package.json', 'utf8')).version as string;
 const rows = readFileSync('docs/POLISH.md', 'utf8')
   .split('\n')
@@ -84,9 +87,14 @@ for (const [area, ver, state, choices] of rows) {
     check(!ver && !choices, `POLISH: ${area} isn't reviewed, yet has a version or choices`);
     continue;
   }
-  // (Ahead of the game only while the work waits for its release, HISTORY.md saying so: tests go green before the version is bumped.)
+  // (Ahead of the game only while the work waits for its release, its history entry saying so: tests go green before the version is bumped.)
   check(/^\d+\.\d+\.\d+$/.test(ver) && (num(ver) <= num(release) || history.includes(`v${ver}, not released yet`)), `POLISH: ${area}'s version (${ver}, the game's at ${release})`);
-  check(history.includes(`v${ver}`), `POLISH: ${area}'s v${ver} is in HISTORY.md`);
+  check(history.includes(`v${ver}`) && index.includes(`v${ver}`), `POLISH: ${area}'s v${ver} is in docs/history/ and HISTORY.md's index`);
   check(!!choices, `POLISH: ${area} says what the user chose`);
 }
+// Every release in the history files has its line in HISTORY.md's index, in the same order.
+const entries = history.split('\n').filter((l) => l.startsWith('- ')).length;
+const lines = index.split('\n').filter((l) => l.startsWith('- ')).length;
+check(entries === lines, `HISTORY.md's index has a line for each of the ${entries} entries in docs/history/ (${lines})`);
+console.log(`docs/history/: ${entries} entries, each in the index`);
 console.log(`docs/POLISH.md: ${rows.length} areas, ${Object.entries(count).map(([k, n]) => `${n} ${k}`).join(', ')}`);

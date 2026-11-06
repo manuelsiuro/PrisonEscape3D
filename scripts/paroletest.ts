@@ -1,5 +1,5 @@
 /**
- * The parole board (P39, docs/PLAN.md §13), through the real simulation:
+ * The parole board (P39, docs/phases/7-after-hours.md), through the real simulation:
  * - the data: each campaign prison's hearing room (walked to at 10:00 with no key), the board's
  *   three places in it, the player's seat; the record's lines and the topics;
  * - applying: at the release desk from prison day 3, refused before, away from the desk, with a

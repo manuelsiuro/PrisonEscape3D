@@ -1,5 +1,5 @@
 /**
- * The canteen's menu board (2.33, docs/PLAN.md §2): the day's dishes, each tray giving what its dish does (content/menu.ts).
+ * The canteen's menu board (2.33, docs/decisions/routine.md): the day's dishes, each tray giving what its dish does (content/menu.ts).
  *
  * - **The dishes**: one for breakfast and one for dinner, drawn for the day by roll() (never the state's RNG), never the
  *   same as the day before; the first day the plain tray (+35 at each meal, as ever). A feast beats whatever was on.

@@ -9,12 +9,13 @@ A mechanic here reaches much further than its own code, and tests stay green whi
 into a trap. Rules alone don't prevent that: when the canteen was reworked (v2.25), `CLAUDE.md`
 already asked for a How to play page and it was still skipped until a review. So this is a
 procedure, and it ends with evidence. `CLAUDE.md` still holds the project's rules; `web-sim-game-playbook`
-holds the general method. The worked example of all of this is the canteen's entry in `docs/HISTORY.md`.
+holds the general method. The worked example of all of this is the canteen's entry in `docs/history/v2.20-v2.29.md`.
 
 ## 1. Start from what's known
 
-Read the area's row in `docs/POLISH.md`, then its entries in `docs/HISTORY.md` and its row in
-`docs/PLAN.md` §2. Those record what the user already chose and accepted: build on it rather than
+Read the area's row in `docs/POLISH.md`, then its entries in `docs/history/` (find them by name:
+`grep -l`) and its rows in its `docs/decisions/` file (`docs/README.md` says which). Read those files,
+not the whole record. They hold what the user already chose and accepted: build on it rather than
 reopening it. Work on a `feature/` branch.
 
 Read the code before asking anything. Then ask only what's truly the user's to decide (how it should
@@ -122,7 +123,7 @@ cause, change one thing at a time in the same build (2.33: inmates at the cooler
 walk-through: the escape bots' drift went to zero, so the cooler being solid was all of it). A route lost on 24 seeds
 may be luck: measure it on 60 on the old code and on each candidate fix before moving anything (Irongate's bluff: 58,
 58 and 57; the cooler stayed where it was). Check a long probe has really started (a `.ts` with top-level await dies at once under `tsx`; use `.mts`). Remove the worktree
-afterwards, and list every accepted change in `PLAN.md`.
+afterwards, and list every accepted change in the pass's row in `docs/phases/8-polish.md`.
 
 ## 6. Play it
 
@@ -171,7 +172,7 @@ seen and where), or "not checked". Never tick a line from memory.
 | How to play page and picture; other pages that mention it | |
 | English and French read through, on screen on a phone | |
 | Desktop and both phone sizes; keyboard and touch; console clean | |
-| Bot snapshot changes read and classified, listed in `PLAN.md` | |
+| Bot snapshot changes read and classified, listed in `docs/phases/8-polish.md` | |
 | Old saves load, old logs replay, a log from before isn't carried on | |
 | Map viewer: `npm run maps`, overlays, photos of what changed | |
 | Independent review done, findings fixed | |
@@ -179,7 +180,7 @@ seen and where), or "not checked". Never tick a line from memory.
 
 Then, with the work:
 - `docs/POLISH.md`: the area's row, with the user's choices and the known limits.
-- `docs/HISTORY.md` (what changed, what the review found, what was accepted) and `docs/PLAN.md` (§2's row, the status line and counts). `docs/FEATURES.md` and the README's counts if they moved.
+- The history entry (what changed, what the review found, what was accepted) at the end of the latest `docs/history/` file, "(vX.Y.Z, not released yet)" until it is, and its line in `docs/HISTORY.md`; the area's row in its `docs/decisions/` file; the pass's row in `docs/phases/8-polish.md`; `docs/PLAN.md` §8's status line and counts. `docs/FEATURES.md` and the README's counts if they moved.
 - Anything general the pass taught goes in `web-sim-game-playbook`; anything about this project's method, here.
 
 Commit, merge and release only when the user asks, following `CLAUDE.md`'s Release rule, with `npm run released` in the background.

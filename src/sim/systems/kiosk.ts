@@ -1,5 +1,5 @@
 /**
- * The internet kiosk (P35, docs/PLAN.md §11): a wall terminal in the library (`comms.kiosk`),
+ * The internet kiosk (P35, docs/phases/5-phone-kiosk.md): a wall terminal in the library (`comms.kiosk`),
  * open in the free times outside a lockdown, for one at a time (inmates never use it: the escape
  * bots play as before).
  *

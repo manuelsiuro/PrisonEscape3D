@@ -3,11 +3,13 @@
 An Escapists-like 3D prison escape for the browser (phone and desktop). Built from
 web-game-starter with the **web-game-playbook** and **web-sim-game-playbook** skills.
 
-- **The plan**: `docs/PLAN.md` (phases, decisions, conflicts resolved). The design source of
-  truth is `docs/the_escapists_3d_complete_game_design_document.md` (GDD); `docs/tech_plan.md`
-  fills engineering gaps only. A new conflict goes into PLAN.md §2 in the same commit.
-  `docs/HISTORY.md` holds every release (what changed, what reviews found, what was accepted);
-  PLAN.md §8 has the status.
+- **The plan**: `docs/README.md` says where to find what; read only the file you need. `docs/PLAN.md`
+  (decisions, architecture, tests, release routine; §8 the status). The design source of truth is
+  `docs/the_escapists_3d_complete_game_design_document.md` (GDD); `docs/tech_plan.md` fills
+  engineering gaps only. A new conflict goes into its area's file in `docs/decisions/` in the same
+  commit. Every release: one line in `docs/HISTORY.md` (the index), its entry (what changed, what
+  reviews found, what was accepted) in the latest file of `docs/history/` (one per ten minor
+  versions). The finished phase plans are in `docs/phases/`.
 - **Vertical slices**: every phase ships sim + render + phone/desktop UI + i18n + tests, then
   a release.
 
@@ -58,6 +60,6 @@ Rules that matter every time:
 - **Release**: build + tests green (gate on the exit code, never `npm test | tail`) → commit →
   `npm version patch|minor` → `git push --follow-tags origin main` → `npm run released` in the
   background (waits for CI on HEAD, then the live bundle; exits 1 on a failed run or a timeout).
-  Then add the release to the end of `docs/HISTORY.md`.
+  Then add the release to the end of the latest `docs/history/` file and its line to `docs/HISTORY.md`.
 - **Bots pass what people fail**: lessons and minigames are also played by hand in the browser
   at the three sizes before a release.

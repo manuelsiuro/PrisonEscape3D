@@ -1,5 +1,5 @@
 /**
- * The paperwork escape (P36, docs/PLAN.md §11; numbers in content/paperwork.ts).
+ * The paperwork escape (P36, docs/phases/5-phone-kiosk.md; numbers in content/paperwork.ts).
  *
  * - **The form**: the strict guard (the morning shakedown's) carries a blank release form in its
  *   pockets (items.ts guardKit; a new one at 08:00 if it's gone). Forged with ink (Intellect

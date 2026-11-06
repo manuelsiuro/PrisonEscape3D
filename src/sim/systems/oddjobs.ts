@@ -1,5 +1,5 @@
 /**
- * The odd jobs board (P40, docs/PLAN.md §13): a cork board on a canteen wall (`PrisonDef.board`).
+ * The odd jobs board (P40, docs/phases/7-after-hours.md): a cork board on a canteen wall (`PrisonDef.board`).
  *
  * - **The board** holds PINS jobs a prison day, dealt by roll() (SALT.ODDJOBS) from what the
  *   prison has (`kindsHere`): a deal never asks for something it lacks. A pin taken stays taken

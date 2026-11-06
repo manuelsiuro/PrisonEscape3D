@@ -1,5 +1,5 @@
 /**
- * The garden plot (P28, docs/PLAN.md §9): a rectangle of beds in the yard (`leisure.garden`, a
+ * The garden plot (P28, docs/phases/3-free-time.md): a rectangle of beds in the yard (`leisure.garden`, a
  * tile each). A seed packet plants a bed, a plastic cup waters it; it grows a stage each prison
  * day it was watered (rain and storms water it; a heatwave's day takes two cupfuls) and is ripe
  * at GROWN. A dry day wilts it, DRY_DEATH in a row kill it. Ripe, the use button harvests it,

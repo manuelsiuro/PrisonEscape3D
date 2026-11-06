@@ -1,5 +1,5 @@
 /**
- * 2.23: going through the furniture in another inmate's cell (PLAN §2). A guard who sees it
+ * 2.23: going through the furniture in another inmate's cell (docs/decisions/routine.md). A guard who sees it
  * minds (watch.ts asks here what it costs), and so does the cell's owner: they think less of
  * the player, and with a grudge left they fight.
  */

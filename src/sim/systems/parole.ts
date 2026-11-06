@@ -1,5 +1,5 @@
 /**
- * The parole board (P39, docs/PLAN.md §13; numbers in content/parole.ts). A second, slower way
+ * The parole board (P39, docs/phases/7-after-hours.md; numbers in content/parole.ts). A second, slower way
  * out: route `parole`, through the front door as the paperwork's release (P36) goes.
  *
  * - **Applying** (EXT.PAROLE APPLY at the release desk, or the lawyer by phone for PAROLE_FEE: a
