@@ -1,5 +1,5 @@
 /**
- * Meals at the serving counter (since 2.25, docs/PLAN.md §2): a tray taken from the canteen's
+ * Meals at the serving counter (since 2.25, docs/decisions/routine.md): a tray taken from the canteen's
  * counter at breakfast or dinner, held in both hands (no hotbar slot) on the way to a table, eaten
  * sitting down, and carried back empty. Eaten and not brought back, it costs heat (taken out of the canteen, or still in hand when the meal ends). A prison with
  * no counter (Training's common room) and a run logged before 2.25 (Sim.rules224) eat as they did:

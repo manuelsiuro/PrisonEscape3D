@@ -1,8 +1,8 @@
 # Gameplay polish: what's been done
 
 One row per area of the game. Read an area's row before changing it, and update it when the work
-is released (the `polish-gameplay` skill does both). The detail is in `HISTORY.md`, the rules in
-`PLAN.md` §2. `polishtest` (npm test) checks this table's shape and that each version is in the history.
+is released (the `polish-gameplay` skill does both). The detail is in `history/` (`HISTORY.md` is its index), the rules
+in `decisions/`. `polishtest` (npm test) checks this table's shape and that each version is in the history.
 
 **State:** *Done*: reworked or reviewed at the user's request and checked in the browser (which doesn't
 mean finished). *Partly*: one side of it was reworked, the rest wasn't looked at. *Not reviewed*: built

@@ -1,5 +1,5 @@
 /**
- * The paperwork escape (P36, docs/PLAN.md §11), through the real simulation:
+ * The paperwork escape (P36, docs/phases/5-phone-kiosk.md), through the real simulation:
  * - the data: every campaign guard's nickname, home town and team (A–Z, 5–7 letters, none twice
  *   in a prison); each prison's release desk (walked to at 10:00 with no key) and its doors out
  *   (the road reached through them once they're open, and only then, for the player alone);

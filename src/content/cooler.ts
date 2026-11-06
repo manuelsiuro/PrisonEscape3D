@@ -1,5 +1,5 @@
 /**
- * The canteen's water cooler (2.33, docs/PLAN.md §2): a paper cup of water. As data; the rules are systems/cooler.ts.
+ * The canteen's water cooler (2.33, docs/decisions/routine.md): a paper cup of water. As data; the rules are systems/cooler.ts.
  * A cup gives a little energy, once in a while, and on a heatwave's day cools the player down at once, as a shower
  * does. Inmates stop at it in the free times for a drink and a word: standing by while two are at it, the player
  * overhears something true (talk/director.ts).

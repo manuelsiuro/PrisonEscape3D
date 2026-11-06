@@ -1,5 +1,5 @@
 /**
- * The odd jobs board (P40, docs/PLAN.md §13), through the real simulation:
+ * The odd jobs board (P40, docs/phases/7-after-hours.md), through the real simulation:
  * - the data: every campaign prison's board (open canteen floor before a north wall, nothing
  *   else on its bit of wall, out of the two rows a wall hides, reachable); none at the Training
  *   Block; the story chains name real cells, and kinds their prison has;

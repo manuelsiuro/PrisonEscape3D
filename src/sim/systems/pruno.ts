@@ -1,5 +1,5 @@
 /**
- * Pruno (P28, docs/PLAN.md §9): fruit and sugar in a bag, left in a desk (any drawer) or a
+ * Pruno (P28, docs/phases/3-free-time.md): fruit and sugar in a bag, left in a desk (any drawer) or a
  * toilet's tank, ferment for BREW_DAYS prison days (the bag's uses, counted down at 08:00);
  * carried or on the floor it doesn't. The smell carries: a dog on shift that passes close
  * (BREW_SNIFF, through the bars and walls) points at it and the bag is seized (k9.ts). A

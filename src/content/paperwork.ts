@@ -1,5 +1,5 @@
 /**
- * The paperwork escape (P36, docs/PLAN.md §11): the numbers it works by. The strict guard (the
+ * The paperwork escape (P36, docs/phases/5-phone-kiosk.md): the numbers it works by. The strict guard (the
  * morning shakedown's: a supervisor) carries blank release forms. One filled in and signed in its
  * hand (Intellect FORGE_INT, ink) and slipped unseen into the tray at the release desk puts the
  * player's name on tomorrow's release list. The records are checked at 22:00: a name with the heat

@@ -1,5 +1,5 @@
 /**
- * The pay phone (P34, docs/PLAN.md §11): a wall phone in a corridor (`PrisonDef.comms`), open in
+ * The pay phone (P34, docs/phases/5-phone-kiosk.md): a wall phone in a corridor (`PrisonDef.comms`), open in
  * the free times outside a lockdown.
  *
  * - **The queue** (from LINE_DAY): in each free time an inmate may want a call (roll(), CALL_WANT

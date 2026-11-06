@@ -1,5 +1,5 @@
 /**
- * The pay phone (P34, docs/PLAN.md §11), through the real simulation:
+ * The pay phone (P34, docs/phases/5-phone-kiosk.md), through the real simulation:
  * - the data: every campaign prison's phone (open floor in front of a wall, outside the
  *   restricted zones), its queue's tiles and the front gate's inside, all reachable; none at the
  *   Training Block;

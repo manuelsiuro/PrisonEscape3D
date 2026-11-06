@@ -1,5 +1,5 @@
 /**
- * The internet kiosk (P35, docs/PLAN.md §11), through the real simulation:
+ * The internet kiosk (P35, docs/phases/5-phone-kiosk.md), through the real simulation:
  * - the data: every campaign prison's kiosk (open floor in the library before a wall, clear of
  *   what stands on the floor, out of the rows a wall hides, reachable); none at the Training Block;
  * - logging in: its hours and refusals, $1 a block of ten game minutes paid up front, the next

@@ -1,5 +1,5 @@
 /**
- * Team & ink (P29, docs/PLAN.md §9), through the real simulation:
+ * Team & ink (P29, docs/phases/3-free-time.md), through the real simulation:
  * - the data: every prison's pitch (its field and nets open yard floor, clear of the garden, the
  *   hoop and props);
  * - the ball: friction, the boards, the goals' mouths;

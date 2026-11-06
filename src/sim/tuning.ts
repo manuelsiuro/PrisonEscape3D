@@ -50,7 +50,7 @@ export const CONTRABAND_HEAT = 2;
 /** In a guard outfit, a guard this close (units) for this long recognizes the player: +50% a second after that. */
 export const RECOGNIZE_RANGE = Math.round(2.5 * UNIT);
 export const RECOGNIZE_STEPS = 2 * STEPS_PER_SECOND;
-/** Knocked out for 30 s (docs/PLAN.md §2): the player, then carried off; inmates and guards, then up again (GDD §10.2). */
+/** Knocked out for 30 s (docs/decisions/combat.md): the player, then carried off; inmates and guards, then up again (GDD §10.2). */
 export const KO_STEPS = 30 * STEPS_PER_SECOND;
 /** Solitary lasts 2 game hours; each peeled potato takes 10 minutes off, a potato is 5 presses (GDD §5.6). */
 export const SOLITARY_STEPS = 120 * STEPS_PER_MINUTE;
@@ -247,7 +247,7 @@ export const HOSTILE_GRUDGE = 20;
 /** A score settled: an inmate who put the player down gets over its grudge (its opinion back up to this). */
 export const GRUDGE_SETTLED = 35;
 export const OPINION_HIGH = 80;
-/** An inmate tells the player a recipe (once a day) from this opinion up (P8+, PLAN §2). */
+/** An inmate tells the player a recipe (once a day) from this opinion up (P8+, docs/decisions/items.md). */
 export const TIP_OPINION = 60;
 /** Studying tells the player a recipe each time Intellect passes a multiple of this. */
 export const STUDY_TIP_EVERY = 5;

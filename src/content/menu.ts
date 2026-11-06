@@ -1,5 +1,5 @@
 /**
- * The canteen's menu board (2.33, docs/PLAN.md §2): what each meal's tray holds, a dish a meal that changes from day
+ * The canteen's menu board (2.33, docs/decisions/routine.md): what each meal's tray holds, a dish a meal that changes from day
  * to day, each giving its own energy (and some health). As data; the rules are systems/menu.ts. The first day serves
  * the plain tray everyone knew (+35 at each meal), so a run's opening is what it always was and the board teaches the
  * rest. A feast (P17's, a holiday's) still beats whatever was on.

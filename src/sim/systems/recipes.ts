@@ -1,5 +1,5 @@
 /**
- * Learning recipes (P8+, PLAN §2): beyond crafting one by chance (GDD §8, the handbook), the
+ * Learning recipes (P8+, docs/decisions/items.md): beyond crafting one by chance (GDD §8, the handbook), the
  * handbook shows every recipe within the player's Intellect as a mystery whose ingredients
  * appear once the player has carried them; studying in the library (every few points of
  * Intellect) and inmates who like the player (once a day each) tell them a recipe outright.

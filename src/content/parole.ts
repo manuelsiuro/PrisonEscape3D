@@ -1,5 +1,5 @@
 /**
- * The parole board (P39, docs/PLAN.md §13): the numbers it works by. A second, slower way out
+ * The parole board (P39, docs/phases/7-after-hours.md): the numbers it works by. A second, slower way out
  * for the model prisoner: apply at the release desk (or through the lawyer, by phone), keep a
  * good record for a week, face the board at its hearing, and walk out through the front door the
  * morning after (route `parole`). Plotting voids it. How it plays out is

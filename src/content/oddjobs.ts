@@ -1,5 +1,5 @@
 /**
- * The odd jobs board (P40, docs/PLAN.md §13): a cork board on a canteen wall in every campaign
+ * The odd jobs board (P40, docs/phases/7-after-hours.md): a cork board on a canteen wall in every campaign
  * prison (`PrisonDef.board`), three jobs pinned on it each morning (dealt by roll(): nothing here
  * or in the deal draws on the state's RNG), the fixer's own job, and a story chain per prison.
  * One job at a time, on a timer of 1–3 prison days; each ends with the one who asked (paid, a rare

@@ -1,5 +1,5 @@
 /**
- * The pay phone (P34, docs/PLAN.md §11): a wall phone in a corridor of every campaign prison.
+ * The pay phone (P34, docs/phases/5-phone-kiosk.md): a wall phone in a corridor of every campaign prison.
  * Calls home, to a lawyer, to the player's cousin Lou outside (on a tapped line: the job said in
  * three lines, each picked from three phrases), and anonymous tips. Inmates queue for it from
  * prison day 2. Nothing here draws on the state's RNG.

@@ -1,5 +1,5 @@
 /**
- * Stage nights (P30, docs/PLAN.md §9): two day cards for the evening's free time. Talent night
+ * Stage nights (P30, docs/phases/3-free-time.md): two day cards for the evening's free time. Talent night
  * on a stage in the canteen (a song played in time, three lanes of notes, judged by the step)
  * and quiz night in the library (eight questions against three inmates on the buzzers). Nothing
  * here happens without the player asking, and nothing draws on the state's RNG.
@@ -167,7 +167,7 @@ export const QUIZ_OPINION = 1;
 export const QUIZ_HISTORY = 4;
 
 /**
- * Escape history: written facts, checked (docs/PLAN.md §9). Each has its question and four
+ * Escape history: written facts, checked (docs/phases/3-free-time.md). Each has its question and four
  * answers in the text (`quiz.h.<id>`, `quiz.h.<id>.0`–`.3`), the first the right one; the
  * choices are shuffled by roll().
  */

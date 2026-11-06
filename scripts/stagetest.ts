@@ -1,5 +1,5 @@
 /**
- * Stage nights (P30, docs/PLAN.md §9), through the real simulation:
+ * Stage nights (P30, docs/phases/3-free-time.md), through the real simulation:
  * - the data: every prison's stage (open canteen floor) and quiz places (open library floor);
  *   the decks (each card once a week, the cards they took the places of); the songs' charts;
  * - talent night: the night's acts and their performers on the stage; the sign-up's refusals; a

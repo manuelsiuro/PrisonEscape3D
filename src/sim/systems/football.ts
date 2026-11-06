@@ -1,5 +1,5 @@
 /**
- * Yard football (P29, docs/PLAN.md §9): three a side on the yard's pitch (PrisonDef.leisure.pitch).
+ * Yard football (P29, docs/phases/3-free-time.md): three a side on the yard's pitch (PrisonDef.leisure.pitch).
  * Talked into it by an inmate at the pitch in the games' hours (TALK.FOOTBALL: he captains the
  * other side), the player plays with the two inmates who think most of them, against him and the
  * two others nearest. The players walk on; the whistle blows once they're on the field (or after

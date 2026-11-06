@@ -4,7 +4,7 @@ import type { ZoneId } from './zones';
  * The daily schedule (GDD §2.1). Each block starts at `start` (minute of the day) and runs
  * until the next one; Lights Out wraps past midnight to 08:00. A block with zones is
  * mandatory: the player checks in by stepping into one of them during it (GDD §2.2; 2.23: and
- * staying `stay` minutes in all, PLAN §2). Missing it costs heat or starts a lockdown. Names go
+ * staying `stay` minutes in all, docs/decisions/routine.md). Missing it costs heat or starts a lockdown. Names go
  * through t() as `routine.<id>`.
  */
 export interface RoutineDef {

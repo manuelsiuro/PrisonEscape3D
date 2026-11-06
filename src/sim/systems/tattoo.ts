@@ -1,5 +1,5 @@
 /**
- * The tattoo parlour (P29, docs/PLAN.md §9). With a homemade gun and a jar of ink in the hotbar:
+ * The tattoo parlour (P29, docs/phases/3-free-time.md). With a homemade gun and a jar of ink in the hotbar:
  *
  * - **A job** (TALK.TATTOO, b = the design): an inmate at INK_OPINION or more, in the games'
  *   hours (one of the day's games with them), takes a heart, a skull or an eagle. The player

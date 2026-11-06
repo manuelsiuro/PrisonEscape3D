@@ -1,5 +1,5 @@
 /**
- * Long games (P28, docs/PLAN.md §9), through the real simulation:
+ * Long games (P28, docs/phases/3-free-time.md), through the real simulation:
  * - the data: every prison's garden beds (open, diggable yard soil nobody needs to stand on, clear
  *   of the court) and its rat track (open floor in the cell block or a corridor);
  * - the makings on request: fruit at a meal (once a meal), sugar and a seed packet once a day, the

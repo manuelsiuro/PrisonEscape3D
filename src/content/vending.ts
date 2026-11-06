@@ -1,5 +1,5 @@
 /**
- * The vending machine (2.32, docs/PLAN.md §2): one in every campaign prison's canteen. What it holds, as data;
+ * The vending machine (2.32, docs/decisions/jobs-money.md): one in every campaign prison's canteen. What it holds, as data;
  * the rules are systems/vending.ts. Prices sit above the kiosk's (which takes till mail call) because it's there
  * and then, and what it sells is worth less than it costs: nothing to be made selling it on or giving it away.
  */

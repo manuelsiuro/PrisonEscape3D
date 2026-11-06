@@ -77,7 +77,7 @@ export interface Achievement {
 const f = (r: RunView, k: Feat) => r.feats[FEAT[k]] ?? 0;
 /** The whole run is in the ledger (not a game loaded from before it). */
 const whole = (r: RunView) => f(r, 'partial') === 0;
-/** Conduct: the whole run, and an escape (full review, PLAN §2: a legal release, paperwork or parole, earns no conduct; it asks for it anyway). */
+/** Conduct: the whole run, and an escape (full review, docs/decisions/modes.md: a legal release, paperwork or parole, earns no conduct; it asks for it anyway). */
 const conduct = (e: EscapeView) => whole(e) && !isLegal(e.via);
 const stat = (c: Career, k: string) => c.stats[k] ?? 0;
 /** A career count reaching a goal, with its progress. */

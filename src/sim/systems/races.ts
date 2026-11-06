@@ -1,5 +1,5 @@
 /**
- * Rat racing (P28, docs/PLAN.md §9; builds on P20's pet rat).
+ * Rat racing (P28, docs/phases/3-free-time.md; builds on P20's pet rat).
  *
  * - **Training:** the rat track (a magazine taped into a run) used in the player's cell in evening
  *   free time, once a prison day, with bait in the hotbar: the rat eats it (fed today) and runs,
