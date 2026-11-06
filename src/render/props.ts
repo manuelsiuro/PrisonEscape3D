@@ -18,6 +18,23 @@ const WHITE = 0xeef1f4;
 export const LAMP_ARM = 0.42;
 export const LAMP_BULB_Y = 2.2;
 
+/** A street lamp's pole and its arms: one reaching south, or a second reaching north too (2.34.1: `heads`). */
+export function lampParts(heads: number): Part[] {
+  const parts = [cyl(0.14, 0.12, DARK, 0, 0, 0, 8), cyl(0.05, 2.3, 0x59606b, 0, 0.1, 0, 8)];
+  for (const s of heads === 2 ? [1, -1] : [1]) parts.push(box(0.06, 0.06, 0.5, 0x59606b, 0, 2.3, s * 0.22), box(0.26, 0.1, 0.3, 0x2b3038, 0, 2.22, s * LAMP_ARM));
+  return parts;
+}
+
+/** Where a lamp's heads hang, from its pole (tiles; x east, z south): its aim in eighth turns, one per head. */
+export function lampHeads(aim: number, heads: number): Array<{ dx: number; dz: number; angle: number }> {
+  const out = [];
+  for (let k = 0; k < heads; k++) {
+    const angle = ((aim + k * 4) * Math.PI) / 4;
+    out.push({ dx: Math.sin(angle) * LAMP_ARM, dz: Math.cos(angle) * LAMP_ARM, angle });
+  }
+  return out;
+}
+
 /** Four legs under a top w×d at height h. */
 const legs = (w: number, d: number, h: number, color: number, inset = 0.08): Part[] =>
   [
@@ -115,13 +132,8 @@ const BUILDERS: Record<PropKind, Builder> = {
     for (let k = 0; k < Math.round(w * 3); k++) parts.push(box(0.2, 0.12, 0.02, WHITE, -w / 2 + 0.25 + k * 0.32, 0.72, -d / 2 + 0.31));
     return parts;
   },
-  /** A pole with an arm reaching south; the glowing bulb is drawn by the lights (lights.ts). */
-  lamp: () => [
-    cyl(0.14, 0.12, DARK, 0, 0, 0, 8),
-    cyl(0.05, 2.3, 0x59606b, 0, 0.1, 0, 8),
-    box(0.06, 0.06, 0.5, 0x59606b, 0, 2.3, 0.22),
-    box(0.26, 0.1, 0.3, 0x2b3038, 0, 2.22, LAMP_ARM),
-  ],
+  /** A pole with an arm reaching south (turned by its aim, WorldView); the glowing bulb is drawn by the lights (lights.ts). */
+  lamp: () => lampParts(1),
   seat: (w) => [...legs(w - 0.2, 0.22, 0.3, DARK, 0.04), box(w - 0.12, 0.07, 0.3, WOOD, 0, 0.3)],
   bench: (w, d) => [
     ...legs(w - 0.2, d - 0.5, 0.26, DARK, 0.06).map((p) => p.translate(0, 0, 0.05)),

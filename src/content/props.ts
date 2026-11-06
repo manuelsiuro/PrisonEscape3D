@@ -69,4 +69,15 @@ export interface PropPlacement {
   w?: number;
   d?: number;
   rot?: 0 | 1 | 2 | 3;
+  /**
+   * A lamp's arm (2.34.1, drawing only: the rules never read it): the way it reaches, in eighth turns
+   * (AIM). Over what it lights, as a real one would: a drive or path beside it, the fence of a
+   * perimeter strip, a yard or ground from its corner. Unset: south, as before.
+   */
+  aim?: number;
+  /** A lamp with a second arm opposite the first (2.34.1, drawing only): one standing in the open. */
+  heads?: 1 | 2;
 }
+
+/** A lamp's `aim`: eighth turns from south, the same way round as `rot` (2 east, 4 north, 6 west). */
+export const AIM = { S: 0, SE: 1, E: 2, NE: 3, N: 4, NW: 5, W: 6, SW: 7 } as const;
