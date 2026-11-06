@@ -13,7 +13,17 @@ import { tierFor, TIERS } from './quality';
  */
 type Timer = { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number };
 
+/** Takes the counter down (null: it isn't up). */
+let takeDown: (() => void) | null = null;
+
+/** The counter comes down (the settings' switch turned off). */
+export function hideCounter() {
+  takeDown?.();
+  takeDown = null;
+}
+
 export function showCounter() {
+  if (takeDown) return;
   const el = h('div', 'perf-counter');
   el.setAttribute('aria-hidden', 'true');
   document.body.append(el);
@@ -79,6 +89,13 @@ export function showCounter() {
     work.length = gpu.length = 0;
     frames = 0;
   }
+
+  // (Taken down between frames: no time query is open then, only answers still waiting.)
+  takeDown = () => {
+    perfHook.begin = perfHook.end = null;
+    for (const q of queries.splice(0)) gl.deleteQuery(q);
+    el.remove();
+  };
 }
 
 /**
