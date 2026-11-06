@@ -93,7 +93,19 @@ export class World {
     for (const p of this.props) if (p.kind === 'cooler') this.propSolid[p.z * MAP_W + p.x] = on ? 0 : 1;
     this.refreshBlock();
   }
-  /** Tiles covered by solid props on the ground floor. */
+  /** Replaying a run from before 2.33.2: the checkpoint's booth is only drawn, to be walked through as it was (Sim.rules233). */
+  private boothDecor = false;
+  get plainBooth() {
+    return this.boothDecor;
+  }
+  set plainBooth(on: boolean) {
+    if (on === this.boothDecor) return;
+    this.boothDecor = on;
+    const b = this.def.checkpoint?.booth;
+    if (b) this.propSolid[b.z * MAP_W + b.x] = on ? 0 : 1;
+    this.refreshBlock();
+  }
+  /** Tiles covered by solid props on the ground floor (and the checkpoint's booth, 2.33.2). */
   readonly propSolid = new Uint8Array(MAP_W * MAP_H);
   /** Derived: 1 where the player can't walk on the ground floor right now (the ground layer's block). */
   readonly block: Uint8Array;
@@ -199,6 +211,8 @@ export class World {
     if (def.comms?.release.bridge && def.drawbridge) this.fill(this.release, ...def.drawbridge, 1);
     this.props = def.props.map((p) => ({ kind: p.kind, x: p.x, z: p.z, w: p.w ?? 1, d: p.d ?? 1, rot: p.rot ?? 0 }));
     for (const p of this.props) if (PROPS[p.kind].solid) this.fill(this.propSolid, p.x, p.z, p.x + p.w - 1, p.z + p.d - 1, 1);
+    // The checkpoint's booth stands in the way (2.33.2; walked through before: plainBooth).
+    if (def.checkpoint) this.propSolid[def.checkpoint.booth.z * MAP_W + def.checkpoint.booth.x] = 1;
     // A cell's door is the door tile next to one of its tiles; its bed the bed inside it.
     def.cells.forEach((_, k) => {
       this.cellDoor.push(-1);
