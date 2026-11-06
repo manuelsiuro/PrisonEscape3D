@@ -30,34 +30,21 @@ import { Underground } from './Underground';
 import { setTheme } from './textures';
 import { skipEmpty } from './batch';
 import { Blobs } from './Blobs';
-import { Snowfall } from './Snow';
-import { Weather, type WeatherFrame, type WeatherView } from './Weather';
-import { Delivery } from './Delivery';
-import { DayEvents, type EventsFrame } from './DayEvents';
-import { HolidaysView, NO_HOLIDAY } from './Holidays';
+
+import { type WeatherFrame, type WeatherView } from './Weather';
+
+import { type EventsFrame } from './DayEvents';
+import { NO_HOLIDAY } from './Holidays';
 import type { NoiseKind } from '../sim/events';
-import { Dogs } from './Dog';
-import { Rats } from './Rat';
-import { GetawayView } from './Getaway';
-import { SmuggleView } from './Smuggling';
-import { GamesView } from './Games';
-import { PastimesView } from './Pastimes';
-import { LongView, type LongFrame } from './Long';
-import { TeamView } from './Team';
-import { GroundsView } from './Grounds';
-import { NightsView } from './Nights';
-import { PhoneView } from './Phone';
-import { KioskView } from './Kiosk';
-import { VendingView } from './Vending';
-import { CoolerView, MenuBoardView } from './MenuBoard';
-import { OddJobsView } from './OddJobs';
-import { ReleaseView } from './Release';
-import { handlersOf } from '../sim/systems/k9';
+
+import { type LongFrame } from './Long';
+
 import type { Frame, Quality } from './viewFrame';
 import { CameraRig, CAMERA_OFFSET } from './viewCamera';
 import { Crowd } from './viewCrowd';
 import { PlayerView } from './viewPlayer';
 import { Lighting } from './viewLight';
+import { DayPieces } from './viewPieces';
 import { INMATE_LOOK, type Look } from './look';
 
 const NO_FUSES: readonly number[] = [];
@@ -180,46 +167,12 @@ export class View {
   private readonly onStage: Character[] = [];
   /** Where everyone stands this frame (x, z pairs, tiles): the trees' leaves fade over them. */
   private readonly people: number[] = [];
-  private readonly snow = new Snowfall();
-  /** The day (P17): rain, ripples and fog; the movie screen, the food fight, the inspectors. */
-  private readonly weather = new Weather();
-  private readonly events = new DayEvents();
-  /** P42: the holidays' decor, sprays and fireworks; the holiday behind the title (the date's, as Settings have it). */
-  private readonly holidaysView = new HolidaysView();
+  /** The day's pieces in the picture: the weather, the day's events, the holidays, the vehicle, dogs, rats, smuggling, the getaways, the games and pastimes, the stage, the phone, the kiosk, the machines and boards, the release desk (viewPieces.ts). */
+  private readonly pieces = new DayPieces();
   private titleHoliday = 0;
-  /** Delivery day's vehicle (P18; Irongate's helicopter is the island's). */
-  private readonly delivery = new Delivery();
-  /** The guard dogs, their kennels, the trail (P19). */
-  private readonly dogs = new Dogs();
-  /** The rats (P20), and where the player's shoulder is this frame. */
-  private readonly rats = new Rats();
-  /** Smuggling (P21): the drone, the drops' beacons, visiting day. */
-  private readonly smuggling = new SmuggleView();
-  /** Bluff & glider (P24): the checkpoint's booth, the glide's preview and flight. */
-  private readonly getaway = new GetawayView();
   private readonly flyAt = new THREE.Vector3();
-  private readonly gamesView = new GamesView();
-  private readonly pastimesView = new PastimesView();
-  private readonly longView = new LongView();
-  private readonly teamView = new TeamView();
   /** The player where they're drawn this frame (the match's ring under them). */
   private readonly meAt = { x: 0, z: 0 };
-  /** P31: the sports ground's track and court paint, the garden's crops. */
-  private readonly groundsView = new GroundsView();
-  private readonly nightsView = new NightsView();
-  /** P34: the pay phone, Lou's car, the diversion's beacon. */
-  private readonly phoneView = new PhoneView();
-  /** P35: the internet kiosk on the library wall, the family's drawings over the player's bed. */
-  private readonly kioskView = new KioskView();
-  /** 2.32: the vending machine's front. */
-  private readonly vendingView = new VendingView();
-  /** 2.33: the menu board's face, the water cooler's bubbles. */
-  private readonly menuView = new MenuBoardView();
-  private readonly coolerView = new CoolerView();
-  /** P40: the odd jobs board on the canteen wall. */
-  private readonly oddJobsView = new OddJobsView();
-  /** P36: the release desk's sign, tray and lamp. */
-  private readonly releaseView = new ReleaseView();
   /** How far the tipsy sway is in (0–1, eased). */
   private tipsySway = 0;
   private buzzClock = 0;
@@ -348,13 +301,13 @@ export class View {
       this.dummy,
       this.gear.group,
       this.workGear.group,
-      this.vendingView.group,
-      this.menuView.group,
-      this.coolerView.group,
+      this.pieces.vendingView.group,
+      this.pieces.menuView.group,
+      this.pieces.coolerView.group,
       this.blobs.mesh,
       this.dust.mesh,
       this.showerWater.group,
-      this.snow.points,
+      this.pieces.snow.points,
       this.sparks.mesh,
       this.snores.group,
       this.guide.group,
@@ -364,29 +317,29 @@ export class View {
       this.ring,
       this.cup,
       this.puddles,
-      this.weather.group,
-      this.events.group,
-      this.delivery.group,
-      this.dogs.group,
-      this.rats.group,
-      this.smuggling.group,
-      this.gamesView.group,
-      this.pastimesView.group,
-      this.longView.group,
-      this.teamView.group,
-      this.groundsView.group,
-      this.nightsView.group,
-      this.phoneView.group,
-      this.kioskView.group,
-      this.oddJobsView.group,
-      this.holidaysView.group,
-      this.releaseView.group,
-      this.getaway.group,
+      this.pieces.weather.group,
+      this.pieces.events.group,
+      this.pieces.delivery.group,
+      this.pieces.dogs.group,
+      this.pieces.rats.group,
+      this.pieces.smuggling.group,
+      this.pieces.gamesView.group,
+      this.pieces.pastimesView.group,
+      this.pieces.longView.group,
+      this.pieces.teamView.group,
+      this.pieces.groundsView.group,
+      this.pieces.nightsView.group,
+      this.pieces.phoneView.group,
+      this.pieces.kioskView.group,
+      this.pieces.oddJobsView.group,
+      this.pieces.holidaysView.group,
+      this.pieces.releaseView.group,
+      this.pieces.getaway.group,
     );
     this.cam.shadow = this.lighting.sun.shadow.camera;
-    this.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
+    this.pieces.delivery.onSound = (kind, x, z) => this.onDelivery(kind, x, z);
     // Food landing in a food fight: a splat of it.
-    this.events.onSplat = (x, z, color) => {
+    this.pieces.events.onSplat = (x, z, color) => {
       this.dust.puff(x, z, color, 5, 0.1);
       this.onSplat(x, z);
     };
@@ -509,7 +462,7 @@ export class View {
       this.structure = new Structure(world, this.worldView);
       this.scene.add(this.worldView.group, this.structure.group, this.structure.roofs);
     }
-    this.smuggling.setLampMaterial(this.worldView!.archLight);
+    this.pieces.smuggling.setLampMaterial(this.worldView!.archLight);
     this.underground = new Underground(world);
     this.scene.add(this.underground.group, this.underground.lantern);
     this.layer = -1;
@@ -519,30 +472,7 @@ export class View {
     this.guide.world = world;
     this.cones.world = world;
     // (Their last prison's parts freed after the next frame, as the rest.)
-    const later = this.later;
-    this.events.setWorld(world, later);
-    this.delivery.setWorld(world, later);
-    this.gamesView.setWorld(world, later);
-    this.teamView.setWorld(pitch, world.def.theme ?? 'suburban', later);
-    this.longView.setWorld(later);
-    this.groundsView.setWorld(world, later);
-    this.pastimesView.setWorld(world, pitch);
-    this.getaway.setWorld(world);
-    this.phoneView.setWorld(world, later);
-    this.kioskView.setWorld(world, later);
-    this.vendingView.setWorld(world, later);
-    this.menuView.setWorld(world);
-    this.coolerView.setWorld(world);
-    this.oddJobsView.setWorld(world, later);
-    this.releaseView.setWorld(world, later);
-    this.holidaysView.setWorld(world, later);
-    this.dogs.setDogs(
-      handlersOf(world).map((h) => {
-        const d = world.def.guards[h].dog!;
-        return { x: d.kennel.x, z: d.kennel.z, face: d.kennel.face ?? 5, coat: d.coat };
-      }),
-    );
-    this.weather.setWorld(world);
+    this.pieces.setWorld(world, pitch, this.later);
     this.warmDay();
     this.lighting.newWorld();
     // A new game dresses (rebuilds) the player afresh: nothing carries over, not even a pose.
@@ -681,12 +611,12 @@ export class View {
 
   /** Off a roof on a glider (P24): the flight from the roof tile to the ground tile; resolves once it's down (at once without motion). */
   glide(from: number, to: number, dist: number, out: boolean): Promise<void> {
-    return new Promise((done) => this.getaway.glide(from, to, dist, out, !this.reducedMotion, done));
+    return new Promise((done) => this.pieces.getaway.glide(from, to, dist, out, !this.reducedMotion, done));
   }
 
   /** A glide still in the air on screen (P24: the player's input waits for it to land). */
   get gliding(): boolean {
-    return this.getaway.flying;
+    return this.pieces.getaway.flying;
   }
 
   /** A replay's jump in time (P25): the weather shown as it is at once, not eased in from the moment before. */
@@ -696,7 +626,7 @@ export class View {
 
   /** Resolves once a glide in the air is down (P24: the escape camera waits for it). */
   glideDown(): Promise<void> {
-    return new Promise((done) => this.getaway.whenDown(done));
+    return new Promise((done) => this.pieces.getaway.whenDown(done));
   }
 
   /** A firecracker going off (P14): a flash of sparks and smoke, the camera jolted. */
@@ -840,10 +770,10 @@ export class View {
     this.noiseFx.group.visible = true;
     this.me.dress(f.outfit, f.inked);
     // (P24: a glide still higher than the walls keeps the roofs drawn.)
-    this.showLayer(this.getaway.aloft ? LAYER.ROOF : f.layer);
+    this.showLayer(this.pieces.getaway.aloft ? LAYER.ROOF : f.layer);
     this.redrawTiles(f);
     // (P24: hanging from a glider's bar in flight, both hands up.)
-    const doing = this.getaway.flying
+    const doing = this.pieces.getaway.flying
       ? DOING.LIFT
       : f.knockedOut
         ? DOING.KNOCKED_OUT
@@ -878,11 +808,16 @@ export class View {
     this.drawPastimes(f, dt, time);
     // Tipsy (P28): the walk sways, on their feet only, easing in and out (none with reduced motion).
     const upright =
-      !f.sleeping && !f.knockedOut && this.player.lying < 0.2 && this.player.crawling < 0.1 && !this.carrying && !this.getaway.flying;
+      !f.sleeping &&
+      !f.knockedOut &&
+      this.player.lying < 0.2 &&
+      this.player.crawling < 0.1 &&
+      !this.carrying &&
+      !this.pieces.getaway.flying;
     this.tipsySway += ((f.long?.tipsy && upright && !this.reducedMotion ? 1 : 0) - this.tipsySway) * Math.min(1, dt * 2);
     this.player.root.rotation.z = this.tipsySway > 0.001 ? Math.sin(time * 2.3) * 0.07 * this.tipsySway : 0;
     // (Its buzz unheard below ground and in the vents, where it isn't drawn either.)
-    const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.smuggling.droneAt : null;
+    const drone = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF ? this.pieces.smuggling.droneAt : null;
     if (drone && (this.buzzClock -= dt) <= 0) {
       this.buzzClock = 1.3;
       this.onDrone(drone.x, drone.z);
@@ -927,7 +862,7 @@ export class View {
     // The camera rises and sinks with the layer (into the tunnels at once: it's another view).
     const y = LAYER_Y[f.layer];
     // (Aboard the raft or the helicopter, the camera follows them instead: below.)
-    if (this.carrying || this.getaway.flying) {
+    if (this.carrying || this.pieces.getaway.flying) {
       /* followed below */
     } else if (Math.abs(this.cam.target.x - f.x) + Math.abs(this.cam.target.z - f.z) > 10 || f.layer === LAYER.UNDER)
       this.cam.target.set(f.x, y, f.z);
@@ -968,11 +903,11 @@ export class View {
     }
     // Delivery day (P18): the vehicle in or on its road (the gates it passes open for it); the player hidden in it out of sight.
     const dv = f.delivery;
-    this.delivery.group.visible = f.layer !== LAYER.UNDER;
+    this.pieces.delivery.group.visible = f.layer !== LAYER.UNDER;
     const near =
       !!this.world?.def.delivery && Math.hypot(f.x - this.world.def.delivery.tail.x - 0.5, f.z - this.world.def.delivery.tail.z - 0.5) < 4;
-    this.delivery.update(dv, dt, time, !this.reducedMotion, near, f.layer === LAYER.GROUND);
-    for (const t of this.delivery.opening) this.doorsOpen.add(t);
+    this.pieces.delivery.update(dv, dt, time, !this.reducedMotion, near, f.layer === LAYER.GROUND);
+    for (const t of this.pieces.delivery.opening) this.doorsOpen.add(t);
     // Waved through the checkpoint (P24): its gates stand open all the way out.
     const cp = this.world?.def.checkpoint;
     if (f.getaway.waved && cp) for (const q of cp.gates) this.doorsOpen.add(q.z * MAP_W + q.x);
@@ -992,8 +927,8 @@ export class View {
         if (f.guards[k].doing === DOING.SLEEP && this.crowd.guardCast[k]) this.head(this.crowd.guardCast[k]);
     }
     // The dogs (P19): out of the picture below ground; asleep, Z's over them too.
-    this.dogs.group.visible = f.layer !== LAYER.UNDER;
-    this.dogs.update(
+    this.pieces.dogs.group.visible = f.layer !== LAYER.UNDER;
+    this.pieces.dogs.update(
       f.dogs,
       f.scent,
       f.x,
@@ -1013,7 +948,7 @@ export class View {
     // Snow over an alpine prison, or on a Big Freeze Daily anywhere (P26), out in the open (ground floor and roofs).
     const wx = f.weather;
     const snowing = this.world?.def.theme === 'alpine' || wx.snow;
-    this.snow.update(
+    this.pieces.snow.update(
       dt,
       time,
       f.x,
@@ -1031,7 +966,7 @@ export class View {
       this.wxSnow.rain = 0;
       wxNow = this.wxSnow;
     }
-    this.weather.update(
+    this.pieces.weather.update(
       wxNow,
       dt,
       time,
@@ -1056,7 +991,7 @@ export class View {
       o.z = g.z;
       o.awake = g.alert !== ALERT.NONE && g.doing !== DOING.KNOCKED_OUT;
     }
-    this.inspecting = this.events.update(
+    this.inspecting = this.pieces.events.update(
       f.events,
       dt,
       time,
@@ -1074,9 +1009,19 @@ export class View {
   /** The holiday (P42), the lock-on ring, the guards' cones, the cameras and searchlights, a takeover's riot. */
   private drawWatch(f: Frame, dt: number, time: number) {
     // The holiday (P42): its decor, the water fight's sprays, New Year's fireworks (from anywhere but a tunnel).
-    this.holidaysView.dress(f.holiday.kind, this.later);
-    this.holidaysView.group.visible = f.layer !== LAYER.UNDER;
-    this.holidaysView.update(f.holiday, dt, time, f.x, f.z, !this.reducedMotion, this.security?.powerLevel ?? 1, f.guards, f.inmates);
+    this.pieces.holidaysView.dress(f.holiday.kind, this.later);
+    this.pieces.holidaysView.group.visible = f.layer !== LAYER.UNDER;
+    this.pieces.holidaysView.update(
+      f.holiday,
+      dt,
+      time,
+      f.x,
+      f.z,
+      !this.reducedMotion,
+      this.security?.powerLevel ?? 1,
+      f.guards,
+      f.inmates,
+    );
     this.sparks.update(dt);
     this.drawLock(f, dt, time);
     this.cones.update(f.guards, dt, this.lighting.night, !this.reducedMotion);
@@ -1112,21 +1057,21 @@ export class View {
       this.player.root.visible = !this.island.aboard && this.player.root.visible;
     }
     // Away in the delivery's truck (P18): the camera follows it out.
-    const ride = this.delivery.carry(this.carried);
+    const ride = this.pieces.delivery.carry(this.carried);
     if (ride) {
       this.carrying = true;
       this.player.root.visible = false;
       this.cam.target.lerp(this.v.set(ride.x, 0, ride.z), Math.min(1, dt * 3));
     }
     // Off a roof on a glider (P24): carried along its fall, the camera going with them.
-    this.getaway.group.visible = f.layer !== LAYER.UNDER;
-    if (this.getaway.update(f.getaway, dt, time, !this.reducedMotion, this.lighting.night, this.flyAt)) {
+    this.pieces.getaway.group.visible = f.layer !== LAYER.UNDER;
+    if (this.pieces.getaway.update(f.getaway, dt, time, !this.reducedMotion, this.lighting.night, this.flyAt)) {
       this.player.root.position.copy(this.flyAt);
       this.cam.target.lerp(this.v.set(this.flyAt.x, 0, this.flyAt.z), Math.min(1, dt * 5));
     }
     // The rats (P20), after the player has gone wherever they go (a raft, the helicopter, a truck): on the floor seen from anywhere but a tunnel;
     // on the shoulder of a player up and about (not lying, not crawling, not in a tunnel), turning with them.
-    this.rats.group.visible = true;
+    this.pieces.rats.group.visible = true;
     // (Hands busy, it ducks into a pocket a moment: never an arm through it.)
     const perch =
       this.player.perched &&
@@ -1139,25 +1084,25 @@ export class View {
       !this.player.armsBusy
         ? this.player.shoulder(this.shoulderAt)
         : null;
-    this.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    this.pieces.rats.update(f.rats, perch, this.player.root.rotation.y, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
   }
 
   /** The rest of the day's pieces: smuggling, the side games and pastimes, the long games, the pitch, the stage, the phone, the kiosk, the machines, the boards, the gym, the bed dummy, the release desk. */
   private drawPastimes(f: Frame, dt: number, time: number) {
     // Smuggling (P21): the drone, the drops, visiting day's arches and visitors.
     // (From the vents and the roof the ground floor shows too, its visitors and arches with it.)
-    this.smuggling.group.visible = f.layer !== LAYER.UNDER;
-    this.smuggling.update(f.smuggle, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    this.pieces.smuggling.group.visible = f.layer !== LAYER.UNDER;
+    this.pieces.smuggling.update(f.smuggle, dt, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // The side games (P22): dice on the ground floor, sports day's bunting (seen from the roofs too).
-    this.gamesView.group.visible = f.layer !== LAYER.UNDER;
-    this.gamesView.update(f.games, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    this.pieces.gamesView.group.visible = f.layer !== LAYER.UNDER;
+    this.pieces.gamesView.update(f.games, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // Card sharks (P27): the court's spots, the ball, the cards, the board (the ground floor only).
-    this.pastimesView.group.visible = f.layer === LAYER.GROUND;
-    this.groundsView.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
-    this.groundsView.update(f.planters);
-    this.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND, !!f.team.ball, dt);
+    this.pieces.pastimesView.group.visible = f.layer === LAYER.GROUND;
+    this.pieces.groundsView.group.visible = f.layer === LAYER.GROUND || f.layer === LAYER.ROOF;
+    this.pieces.groundsView.update(f.planters);
+    this.pieces.pastimesView.update(f.pastimes, f.x, f.z, time, !this.reducedMotion, f.layer === LAYER.GROUND, !!f.team.ball, dt);
     // Long games (P28): the garden, the track, the racers, the pet's laps (the ground floor, and from the roofs).
-    this.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
+    this.pieces.longView.update(f.long, time, !this.reducedMotion, f.layer === LAYER.GROUND || f.layer === LAYER.ROOF);
     // The roll call's boxes over the pitch: chalked in for roll call, gone for the rest of the day (and any match).
     if (this.rollCallPaint) {
       const goal = f.rollCall && !f.team.ball ? 1 : 0;
@@ -1169,20 +1114,20 @@ export class View {
     // Team & ink (P29): the pitch and the ball (seen from the roofs and the vents too; not from the tunnels).
     this.meAt.x = f.x;
     this.meAt.z = f.z;
-    this.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER, this.meAt);
+    this.pieces.teamView.update(f.team, f.inmates, dt, f.layer !== LAYER.UNDER, this.meAt);
     // Stage nights (P30): the stage, the buzzers (the ground floor, and from the vents and roofs over it).
-    this.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    this.pieces.nightsView.update(f.nights, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
     // The pay phone (P34): the handset, Lou's car, the diversion's beacon (not from the tunnels).
-    this.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.lighting.night, f.layer !== LAYER.UNDER);
+    this.pieces.phoneView.update(f.phone, dt, f.minuteOfDay, time, !this.reducedMotion, this.lighting.night, f.layer !== LAYER.UNDER);
     // The internet kiosk (P35): its screen, its glow after dark; the drawings over the bed (not from the tunnels).
-    this.kioskView.update(f.kiosk, time, !this.reducedMotion, this.lighting.night, this.powerLevel, f.layer !== LAYER.UNDER);
+    this.pieces.kioskView.update(f.kiosk, time, !this.reducedMotion, this.lighting.night, this.powerLevel, f.layer !== LAYER.UNDER);
     // The vending machine (2.32): its front, what's left in it, what's dropping (not from the tunnels).
-    this.vendingView.update(f.vending, dt, time, !this.reducedMotion, this.lighting.night, f.layer !== LAYER.UNDER);
+    this.pieces.vendingView.update(f.vending, dt, time, !this.reducedMotion, this.lighting.night, f.layer !== LAYER.UNDER);
     // The menu board's dishes and the water cooler's bubbles (2.33).
-    this.menuView.update(f.menu);
-    this.coolerView.update(f.cooler, dt, !this.reducedMotion);
+    this.pieces.menuView.update(f.menu);
+    this.pieces.coolerView.update(f.cooler, dt, !this.reducedMotion);
     // The odd jobs board (P40): the cards still up today, the job tag (not from the tunnels).
-    this.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
+    this.pieces.oddJobsView.update(f.oddjobs, f.layer !== LAYER.UNDER);
     // (2.28: a dummy in the player's bed shows, but not under them, nor from the tunnels.)
     // (2.29: the bars: the player's, and those the inmates have up, gathered by Crowd.drawInmates.)
     if (f.doing === DOING.BENCH) this.gearUses.push({ prop: f.trainProp, up: this.player.pressed });
@@ -1191,7 +1136,7 @@ export class View {
     this.gearUses.length = 0;
     this.dummy.visible = f.bedDummy && !f.sleeping && f.layer !== LAYER.UNDER && !!this.crowd.beds[1];
     this.blockDarkGoal = f.blockDark ? 1 : 0;
-    this.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
+    this.pieces.releaseView.update(f.release, time, !this.reducedMotion, f.layer !== LAYER.UNDER);
   }
 
   /** A sleeper's head, for the snores. */
@@ -1215,7 +1160,7 @@ export class View {
     const p = this.player.root.position;
     if (kind === 'stowaway') {
       if (this.world?.def.delivery?.vehicle === 'helicopter') this.island?.depart('helicopter', p.x, p.z);
-      else this.delivery.depart();
+      else this.pieces.delivery.depart();
       return;
     }
     this.island?.depart(kind, p.x, p.z);
@@ -1223,12 +1168,12 @@ export class View {
 
   /** Lou's car pulls away with the player in it (P34, the phone's 'wheels' event): along its facing, fading out. */
   carAway() {
-    this.phoneView.carAway();
+    this.pieces.phoneView.carAway();
   }
 
   /** The diversion at the gate (P34, the phone's 'diversion' and 'ignored' events): an amber beacon flashes at the ground tile for ten game minutes (steady with reduced motion). */
   phoneAlarm(tile: number) {
-    this.phoneView.alarm(tile);
+    this.pieces.phoneView.alarm(tile);
   }
 
   /** Delivery day's sounds (the play layer plays them): reversing beeps, the tailgate, the engine. */
@@ -1298,18 +1243,7 @@ export class View {
     this.showLayer(LAYER.GROUND);
     // Nothing of a game's noise behind the title (a lit firecracker, an aim, a wave).
     this.noiseFx.group.visible = false;
-    this.rats.group.visible = false;
-    this.smuggling.clear();
-    this.getaway.clear();
-    this.gamesView.update(null, 0, false, false);
-    this.pastimesView.update(null, 0, 0, 0, false, false);
-    this.longView.update(null, 0, false, false);
-    this.teamView.update(null, [], 0, false);
-    this.nightsView.update(null, 0, false, false);
-    this.phoneView.update(null, dt, 0, 0, false, 0, false);
-    this.kioskView.update(null, 0, false, 0, 1, false);
-    this.oddJobsView.update(null, false);
-    this.releaseView.update(null, 0, false);
+    this.pieces.blank(dt);
     // (The trees whole again; no match's framing.)
     this.decor?.shelter(this.people, 0, dt, false);
     this.cam.fitZoom = 0;
@@ -1346,7 +1280,7 @@ export class View {
       else this.cam.target.copy(this.v);
     }
     // Snow falling over an alpine prison behind the title too (no day's weather there).
-    this.snow.update(
+    this.pieces.snow.update(
       dt,
       time,
       this.cam.target.x,
@@ -1355,7 +1289,7 @@ export class View {
       this.openSky,
     );
     this.lighting.weather = null;
-    this.weather.update(
+    this.pieces.weather.update(
       NO_WEATHER,
       dt,
       time,
@@ -1369,11 +1303,11 @@ export class View {
       this.rainBelow,
       this.puddly,
     );
-    this.inspecting = this.events.update(NO_EVENTS, dt, time, [], [], false, false);
-    this.holidaysView.dress(this.titleHoliday, this.later);
-    this.holidaysView.group.visible = true;
-    this.holidaysView.update(NO_HOLIDAY, dt, time, this.cam.target.x, this.cam.target.z, !this.reducedMotion);
-    this.delivery.update(null, dt, time, false, false);
+    this.inspecting = this.pieces.events.update(NO_EVENTS, dt, time, [], [], false, false);
+    this.pieces.holidaysView.dress(this.titleHoliday, this.later);
+    this.pieces.holidaysView.group.visible = true;
+    this.pieces.holidaysView.update(NO_HOLIDAY, dt, time, this.cam.target.x, this.cam.target.z, !this.reducedMotion);
+    this.pieces.delivery.update(null, dt, time, false, false);
     this.render(600, dt, model ? this.feet : null, time);
   }
 
@@ -1419,16 +1353,21 @@ export class View {
     this.lighting.placeSun(600, this.cam.target, this.cam.shadowHalf);
     // (P42: nor a holiday's decor: the map viewer's pictures never depend on the date.)
     const hidden = [
-      this.snow.points,
-      this.weather.group,
+      this.pieces.snow.points,
+      this.pieces.weather.group,
       this.dust.mesh,
       this.showerWater.group,
       this.guide.group,
-      this.holidaysView.group,
+      this.pieces.holidaysView.group,
     ].filter((o) => o.visible);
     for (const o of hidden) o.visible = false;
     // The pay phone, the kiosk and the odd jobs board hang on their walls in game, but the title screen behind the shot hides their groups.
-    const shown = [this.phoneView.group, this.kioskView.group, this.oddJobsView.group, this.releaseView.group].filter((o) => !o.visible);
+    const shown = [
+      this.pieces.phoneView.group,
+      this.pieces.kioskView.group,
+      this.pieces.oddJobsView.group,
+      this.pieces.releaseView.group,
+    ].filter((o) => !o.visible);
     for (const o of shown) o.visible = true;
     const undress = dress ? this.dressForMap() : null;
     this.renderer.setPixelRatio(ss);
@@ -1500,7 +1439,7 @@ export class View {
     }
     const ls = def.leisure;
     if (this.pitch)
-      this.teamView.update({ pitch: this.pitch, theme: def.theme ?? 'suburban', ball: null, mates: [], rivals: [] }, [], 0, true);
+      this.pieces.teamView.update({ pitch: this.pitch, theme: def.theme ?? 'suburban', ball: null, mates: [], rivals: [] }, [], 0, true);
     if (ls) {
       const beds: LongFrame['beds'] = [];
       for (let z = ls.garden.z; z < ls.garden.z + ls.garden.d; z++)
@@ -1510,14 +1449,14 @@ export class View {
       const track = Array.from({ length: ls.race.len }, (_, k) =>
         tile(ls.race.x + Math.round(Math.cos(a)) * k, ls.race.z + Math.round(Math.sin(a)) * k),
       );
-      this.longView.update({ beds, track, rats: [], laps: null, tipsy: false }, 0, false, true);
+      this.pieces.longView.update({ beds, track, rats: [], laps: null, tipsy: false }, 0, false, true);
     }
     // (Its one piece never otherwise moved behind the title: up, as in a day's play; the helicopter away at 10:00.)
     this.island?.update(100, 0, 600, false, false);
     return () => {
       if (sec) sec.group.visible = false;
-      this.teamView.update(null, [], 0, false);
-      this.longView.update(null, 0, false, false);
+      this.pieces.teamView.update(null, [], 0, false);
+      this.pieces.longView.update(null, 0, false, false);
     };
   }
 
@@ -1574,7 +1513,7 @@ export class View {
 
   /** The day's effects compiled while nothing is on screen (a new game; new graphics settings), not on a phone in the middle of a food fight. */
   private warmDay() {
-    const views = [this.weather, this.events, this.delivery, this.gamesView, this.pastimesView];
+    const views = this.pieces.warming;
     for (const v of views) v.warm(true);
     this.renderer.compile(this.scene, this.cam.camera);
     for (const v of views) v.warm(false);
