@@ -24,6 +24,7 @@ import { dailyFlow } from './daily';
 import { dailyNumber, dailyOf } from '../content/daily';
 import { dailyRecord, streakOf } from '../game/daily';
 import { intakeFlow } from './intake';
+import { hideLoading, showLoading, withLoading } from '../ui/loading';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { readPrisoner } from '../game/prisoner';
 import { careerOf, earnedTrophies, markTrophiesSeen, syncCareer, unseenTrophies } from '../game/trophies';
@@ -48,7 +49,7 @@ export async function titleFlow() {
     // Progress reset (settings): the prison behind the title may be locked again.
     if (!open.includes(backdrop)) {
       backdrop = open.at(-1) ?? PRISONS[0];
-      view.setWorld(new Sim(backdrop).world);
+      await withLoading(() => view.setWorld(new Sim(backdrop).world));
     }
     // Ways out found across the campaign, of all its prisons have.
     const found = PRISONS.reduce((n, p) => n + recordOf(p.id).routes.length, 0);
@@ -104,7 +105,7 @@ export async function titleFlow() {
         topic = picked.topic;
         const k = LESSON_IDS.indexOf(picked.lesson);
         const played = await tutorialFlow(k);
-        view.setWorld(new Sim(backdrop).world);
+        await withLoading(() => view.setWorld(new Sim(backdrop).world));
         if (played) {
           next = 'play';
           break;
@@ -126,7 +127,7 @@ export async function titleFlow() {
         markTrophiesSeen();
         if (back.to === 'watch') {
           await watchReplay(back.replay, null);
-          view.setWorld(new Sim(backdrop).world);
+          await withLoading(() => view.setWorld(new Sim(backdrop).world));
           sound.music('title');
         } else await intakeFlow();
       }
@@ -139,7 +140,7 @@ export async function titleFlow() {
     }
     if (choice === 'tutorial') {
       if (await tutorialFlow()) next = 'play';
-      view.setWorld(new Sim(backdrop).world);
+      await withLoading(() => view.setWorld(new Sim(backdrop).world));
       continue;
     }
     let sim: Sim | null = null;
@@ -156,15 +157,18 @@ export async function titleFlow() {
       if (!again && resume && !(await ask(t('title.newSure', { when: saveWhen(resume) }), t('title.newYes'), click))) continue;
       // The first game: the Intake first (once; skipped, it isn't asked again).
       if (!readPrisoner()) {
-        view.setWorld(new Sim(prison).world);
+        await withLoading(() => view.setWorld(new Sim(prison).world));
         // Escape: not now (back to the title).
         if (!(await intakeFlow(true))) continue;
       }
+      // (The veil up before the prison is built: ui/loading.ts.)
+      await showLoading();
       seed = Date.now() & 0x7fffffff;
       sim = new Sim(prison, seed, [], newRunHoliday(prison));
     } else {
       slot = choice === 'continue' ? 'auto' : await showSaves('load', click);
       if (slot === null) continue;
+      await showLoading();
       const f = readSave(slot);
       // (P31: its prison rebuilt since: the run starts again there, the stale save let go.)
       if (f && rebuiltSince(f)) {
@@ -176,12 +180,13 @@ export async function titleFlow() {
         startGame(sim, false, null, [], { seed });
         backdrop = sim.prison;
         await untilQuit();
-        view.setWorld(new Sim(backdrop).world);
+        await withLoading(() => view.setWorld(new Sim(backdrop).world));
         continue;
       }
       sim = f && loadSave(f);
       rumors = f?.rumors;
       if (!sim) {
+        hideLoading();
         banner.toast(t('toast.loadFailed'), 'bad');
         continue;
       }
@@ -189,7 +194,7 @@ export async function titleFlow() {
     startGame(sim, choice !== 'play', null, rumors, seed >= 0 ? { seed } : { log: slot === null ? null : readLog(slot) });
     backdrop = sim.prison;
     await untilQuit();
-    view.setWorld(new Sim(backdrop).world);
+    await withLoading(() => view.setWorld(new Sim(backdrop).world));
   }
 }
 
